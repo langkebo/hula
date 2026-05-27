@@ -341,7 +341,14 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       if (response && typeof response === 'object') {
         const arrayField = response.items ?? response.friends ?? response.data
         if (Array.isArray(arrayField)) {
-          return normalizeFriendInfoList(arrayField)
+          // 按 user_id 去重，防止后端返回重复数据
+          const seen = new Set<string>()
+          const deduped = arrayField.filter((f: SynapseFriendInfo) => {
+            if (!f.user_id || seen.has(f.user_id)) return false
+            seen.add(f.user_id)
+            return true
+          })
+          return normalizeFriendInfoList(deduped)
         }
         if (Array.isArray(response)) {
           return response

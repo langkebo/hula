@@ -514,6 +514,7 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
 {
     use crate::command::admin_command::check_admin_status;
     use crate::command::ai_command::ai_message_cancel_stream;
+    use crate::command::ai_command::check_openclaw_installation;
     use crate::command::asset_command::allow_asset_path;
     use crate::command::markdown_command::get_readme_html;
     use crate::command::markdown_command::parse_markdown;
@@ -589,6 +590,7 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         update_settings,
         // AI 相关命令
         ai_message_cancel_stream,
+        check_openclaw_installation,
         // OAuth
         start_oauth_server,
         // Markdown 相关命令

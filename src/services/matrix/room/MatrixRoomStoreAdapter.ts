@@ -137,8 +137,8 @@ function convertTimelineEventToMessage(roomId: string, event: Record<string, unk
   return {
     clientKey: event.event_id as string,
     fromUser: {
-      uid: event.sender as string,
-      username: event.sender as string,
+      uid: (event.sender as string | undefined) ?? '',
+      username: (event.sender as string | undefined) ?? '',
       avatar: ''
     },
     message: {

@@ -36,7 +36,8 @@
             </span>
 
             <!-- 有多少条消息 -->
-            <div class="text-(10px #fff) rounded-full px-6px py-2px flex-center bg-[--color-danger]">
+            <div
+              class="text-(10px [--hula-text-inverse]) rounded-full px-6px py-2px flex-center bg-[--hula-color-danger-500]">
               {{ group.messageCount > 99 ? '99+' : group.messageCount }}
             </div>
           </n-flex>

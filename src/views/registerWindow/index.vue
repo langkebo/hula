@@ -196,8 +196,8 @@
         <div
           v-if="isMac()"
           @click="emailCodeModal = false"
-          class="mac-close z-999 size-13px shadow-inner bg-#ed6a5eff rounded-50% select-none absolute top-3px left-4px">
-          <svg class="hidden size-7px color-#000 select-none absolute top-3px left-3px">
+          class="mac-close z-999 size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none absolute top-3px left-4px">
+          <svg class="hidden size-7px text-[--hula-text-primary] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>

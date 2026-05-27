@@ -61,7 +61,7 @@ const { showFeedback } = useActionFeedback()
 
 const userStore = useUserStore()
 const { userInfo, avatarSrc, requestMsg, syncDefaultMessage, submitRequest } = useFriends({
-  defaultRequestMessage: computed(() => `我是${userStore.userInfo!.name}`)
+  defaultRequestMessage: computed(() => `我是${userStore.userInfo?.name ?? ''}`)
 })
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')

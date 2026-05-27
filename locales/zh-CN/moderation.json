@@ -8,6 +8,22 @@
   "filterPattern": "过滤模式",
   "filterPatternPlaceholder": "请输入关键词、正则表达式或图片哈希",
   "filterAction": "处理动作",
+  "report": {
+    "title": "举报消息",
+    "event_preview": "消息预览",
+    "reason": "举报原因",
+    "reason_placeholder": "请选择举报原因",
+    "reason_required": "请选择举报原因",
+    "reason_spam": "垃圾信息",
+    "reason_abuse": "辱骂骚扰",
+    "reason_inappropriate": "不当内容",
+    "reason_other": "其他",
+    "comment": "补充说明",
+    "comment_placeholder": "可选：补充说明举报原因...",
+    "submit": "提交举报",
+    "success": "举报已提交",
+    "failed": "举报失败，请稍后重试"
+  },
   "status": {
     "open": "待处理",
     "resolved": "已解决",

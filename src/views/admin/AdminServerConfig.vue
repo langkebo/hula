@@ -155,11 +155,13 @@ import {
 } from 'naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService } from '@/services/matrix/admin'
 import { useAdminErrorHandler } from './useAdminError'
 
 const { t } = useI18n()
 const dialog = useDialog()
+const { showFeedback } = useActionFeedback()
 const { handleAdminError } = useAdminErrorHandler()
 
 const loading = ref(false)
@@ -336,6 +338,7 @@ function handleSave() {
         const payload = buildConfigPayload()
         await adminService.updateServerConfig(payload)
         originalForm.value = { ...form }
+        showFeedback(t('admin.server_config.save_success'), 'success')
       } catch (err) {
         handleAdminError(err, t('admin.server_config.save_failed'))
       } finally {

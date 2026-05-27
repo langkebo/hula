@@ -3,13 +3,15 @@ import { cryptoHealthMonitor } from '@/services/matrix/crypto/CryptoHealthMonito
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import {
   type CrossSigningInfo,
+  type VerificationRequest as CryptoVerificationRequest,
   type EncryptionSettings,
   type KeyBackupInfo,
   type KeyRotationRecord,
   type KeyRotationStatus,
   matrixEncryptionService,
-  type VerificationRequest
+  type SetupKeyBackupOptions
 } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { matrixVerificationService, type VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
 
 export type { CryptoHealthStatus } from '@/services/matrix/crypto/CryptoHealthMonitor'
 export type {
@@ -22,8 +24,9 @@ export type {
   KeyBackupInfo,
   KeyRotationRecord,
   KeyRotationStatus,
-  VerificationRequest
+  SetupKeyBackupOptions
 } from '@/services/matrix/crypto/MatrixEncryptionService'
+export type { VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
 
 export interface UseEncryptionResult {
   isEncryptionEnabled: Ref<boolean>
@@ -39,9 +42,10 @@ export interface UseEncryptionResult {
   resetCrossSigning: () => Promise<void>
   checkCrossSigningReady: () => Promise<boolean>
 
-  setupKeyBackup: (recoveryKey?: string) => Promise<string>
+  setupKeyBackup: (input?: string | SetupKeyBackupOptions) => Promise<string>
   getKeyBackupInfo: () => Promise<KeyBackupInfo | null>
   restoreFromBackup: (recoveryKey: string) => Promise<{ imported: number; total: number }>
+  restoreFromBackupWithPassphrase: (passphrase: string) => Promise<{ imported: number; total: number }>
   deleteKeyBackup: () => Promise<void>
   prepareKeyBackupVersionAuthData: () => Promise<Record<string, unknown> | null>
 
@@ -50,6 +54,8 @@ export interface UseEncryptionResult {
   getCurrentDeviceId: () => string | null
   getRotationHistory: (deviceId: string) => Promise<KeyRotationRecord[]>
   configureKeyRotation: (enabled: boolean, intervalDays?: number) => Promise<void>
+  checkNeedsRotation: () => Promise<boolean>
+  revokeOldKeys: (deviceId: string, keyIds: string[]) => Promise<number>
 
   trustDevice: (userId: string, deviceId: string) => Promise<void>
   untrustDevice: (userId: string, deviceId: string) => Promise<void>
@@ -63,8 +69,20 @@ export interface UseEncryptionResult {
     isCrossSigningVerified: boolean
     isTofu: boolean
   }>
-  requestDeviceVerification: (userId: string, deviceId: string, methods?: string[]) => Promise<VerificationRequest>
-  requestUserVerification: (userId: string, methods?: string[]) => Promise<VerificationRequest>
+  requestDeviceVerification: (
+    userId: string,
+    deviceId: string,
+    methods?: string[]
+  ) => Promise<CryptoVerificationRequest>
+  requestUserVerification: (userId: string, methods?: string[]) => Promise<CryptoVerificationRequest>
+
+  startSasVerification: (userId: string, deviceId: string) => Promise<string>
+  acceptVerification: (transactionId: string) => Promise<void>
+  confirmSas: (transactionId: string) => Promise<void>
+  cancelVerification: (transactionId: string, reason: string) => Promise<void>
+  getPendingVerifications: () => Promise<VerificationRequest[]>
+  getQrCodeShow: () => Promise<{ qr_code: string; transaction_id: string } | null>
+  scanQrCode: (qrCodeData: string) => Promise<boolean>
 
   exportRoomKeys: () => Promise<string>
   importRoomKeys: (keysJson: string) => Promise<{ imported: number; total: number }>
@@ -119,8 +137,8 @@ export function useEncryption(): UseEncryptionResult {
     return ready
   }
 
-  async function setupKeyBackup(recoveryKey?: string) {
-    return matrixEncryptionService.setupKeyBackup(recoveryKey)
+  async function setupKeyBackup(input?: string | SetupKeyBackupOptions) {
+    return matrixEncryptionService.setupKeyBackup(input)
   }
 
   async function getKeyBackupInfo() {
@@ -129,6 +147,10 @@ export function useEncryption(): UseEncryptionResult {
 
   async function restoreFromBackup(recoveryKey: string) {
     return matrixEncryptionService.restoreFromBackup(recoveryKey)
+  }
+
+  async function restoreFromBackupWithPassphrase(passphrase: string) {
+    return matrixEncryptionService.restoreFromBackupWithPassphrase(passphrase)
   }
 
   async function deleteKeyBackup() {
@@ -157,6 +179,14 @@ export function useEncryption(): UseEncryptionResult {
 
   async function configureKeyRotation(enabled: boolean, intervalDays?: number) {
     await matrixEncryptionService.configureKeyRotation(enabled, intervalDays)
+  }
+
+  async function checkNeedsRotation() {
+    return matrixEncryptionService.checkNeedsRotation()
+  }
+
+  async function revokeOldKeys(deviceId: string, keyIds: string[]) {
+    return matrixEncryptionService.revokeOldKeys(deviceId, keyIds)
   }
 
   async function trustDevice(userId: string, deviceId: string) {
@@ -239,6 +269,7 @@ export function useEncryption(): UseEncryptionResult {
     setupKeyBackup,
     getKeyBackupInfo,
     restoreFromBackup,
+    restoreFromBackupWithPassphrase,
     deleteKeyBackup,
     prepareKeyBackupVersionAuthData,
     getKeyRotationStatus,
@@ -246,6 +277,8 @@ export function useEncryption(): UseEncryptionResult {
     getCurrentDeviceId,
     getRotationHistory,
     configureKeyRotation,
+    checkNeedsRotation,
+    revokeOldKeys,
     trustDevice,
     untrustDevice,
     blockDevice,
@@ -253,6 +286,13 @@ export function useEncryption(): UseEncryptionResult {
     getDeviceTrustLevel,
     requestDeviceVerification,
     requestUserVerification,
+    startSasVerification: matrixVerificationService.startSasVerification,
+    acceptVerification: matrixVerificationService.acceptVerification,
+    confirmSas: matrixVerificationService.confirmSas,
+    cancelVerification: matrixVerificationService.cancelVerification,
+    getPendingVerifications: matrixVerificationService.getPendingVerifications,
+    getQrCodeShow: matrixVerificationService.getQrCodeShow,
+    scanQrCode: matrixVerificationService.scanQrCode,
     exportRoomKeys,
     importRoomKeys,
     getUnverifiedDevicesInRoom,

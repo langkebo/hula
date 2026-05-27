@@ -1,0 +1,56 @@
+{
+  "title": "Rendezvous Session Manager",
+  "create_hint": "Create a Rendezvous session to start the MSC3886 secure cross-device login flow",
+  "create_session": "Create Session",
+  "creating": "Creating session...",
+  "create_success": "Session created successfully",
+  "create_failed": "Failed to create session",
+  "session_id": "Session ID",
+  "session_status": "Session Status",
+  "qr_hint": "Scan this QR code with another device to connect to the session",
+  "messages": "Messages",
+  "no_messages": "No messages yet",
+  "message_placeholder": "Type a message...",
+  "send_success": "Message sent successfully",
+  "send_failed": "Failed to send message",
+  "get_messages_failed": "Failed to get messages",
+  "complete_session": "Complete Session",
+  "complete_success": "Session completed successfully",
+  "complete_failed": "Failed to complete session",
+  "delete_session": "Delete Session",
+  "delete_success": "Session deleted",
+  "delete_failed": "Failed to delete session",
+  "completed_title": "Session Completed",
+  "completed_desc": "The Rendezvous session has been completed successfully and the device is securely connected",
+  "failed_title": "Session Failed",
+  "failed_desc": "An error occurred during the Rendezvous session. Please try again.",
+  "retry": "Retry",
+  "steps": {
+    "create": "Create Session",
+    "connect": "Device Connect",
+    "exchange": "Message Exchange",
+    "complete": "Complete Login"
+  },
+  "status": {
+    "idle": {
+      "title": "Ready",
+      "desc": "Click create session to start Rendezvous login"
+    },
+    "creating": {
+      "title": "Creating",
+      "desc": "Creating Rendezvous session..."
+    },
+    "active": {
+      "title": "Active",
+      "desc": "Session established, waiting for device connection and message exchange"
+    },
+    "completed": {
+      "title": "Completed",
+      "desc": "Session completed successfully"
+    },
+    "failed": {
+      "title": "Failed",
+      "desc": "An error occurred with the session"
+    }
+  }
+}

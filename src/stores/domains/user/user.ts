@@ -15,6 +15,8 @@ export interface MatrixUserProfile {
   userId: string
   displayName: string | null
   avatarUrl: string | null
+  sex?: number
+  resume?: string
   presence?: string
   statusMessage?: string
 }
@@ -57,15 +59,32 @@ export const useUserStore = defineStore(
 
       try {
         const profile = await profileService.getProfile(targetUserId)
+        const extendedProfile = await profileService.getExtendedProfile(targetUserId)
 
         const userProfile: MatrixUserProfile = {
           userId: targetUserId,
           displayName: profile.displayname ?? null,
-          avatarUrl: profile.avatarUrl ?? null
+          avatarUrl: profile.avatarUrl ?? null,
+          sex: typeof extendedProfile.sex === 'number' ? extendedProfile.sex : undefined,
+          resume: typeof extendedProfile.resume === 'string' ? extendedProfile.resume : undefined
         }
 
         if (!userId || userId === matrixStore.userId) {
           matrixProfile.value = userProfile
+          if (userInfo.value) {
+            if (userProfile.displayName) {
+              userInfo.value.name = userProfile.displayName
+            }
+            if (userProfile.avatarUrl) {
+              userInfo.value.avatar = userProfile.avatarUrl
+            }
+            if (typeof userProfile.sex === 'number') {
+              userInfo.value.sex = userProfile.sex as UserInfoType['sex']
+            }
+            if (typeof userProfile.resume === 'string') {
+              userInfo.value.resume = userProfile.resume
+            }
+          }
         }
 
         info(`[UserStore] 获取用户资料成功: ${targetUserId}`)

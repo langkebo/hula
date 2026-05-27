@@ -1,5 +1,5 @@
 <template>
-  <mobile-layout :title="t('admin.users')" show-back>
+  <mobile-layout :title="t('admin.users.title')" show-back>
     <div class="mobile-admin-users">
       <!-- 搜索栏 -->
       <van-search v-model="searchQuery" :placeholder="t('admin.search_users')" @search="onRefresh" />

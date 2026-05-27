@@ -213,6 +213,7 @@ import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
 import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedbackSummary'
 import { OnlineEnum, ThemeEnum } from '@/enums'
+import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { type FriendRequestItem, type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
@@ -507,10 +508,16 @@ const handleContextMenuSelect = async (item: { label: string }) => {
 
   switch (item.label) {
     case t('friend.context.send_message'): {
-      const roomId = await contactStore.startDirectRoom(friend.userId, false)
-      if (roomId) {
+      const dmInfo = await matrixFriendService.getFriendDmRoom(friend.userId)
+      if (dmInfo.room_id) {
         const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
-        await openMsgSessionByRoomId(roomId)
+        await openMsgSessionByRoomId(dmInfo.room_id)
+      } else {
+        const roomId = await contactStore.startDirectRoom(friend.userId, false)
+        if (roomId) {
+          const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+          await openMsgSessionByRoomId(roomId)
+        }
       }
       break
     }

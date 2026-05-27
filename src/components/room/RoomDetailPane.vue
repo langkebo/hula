@@ -138,6 +138,18 @@
           <div class="pane-divider" />
 
           <div class="pane-section">
+            <RoomEncryptionSettings v-if="roomId" :room-id="roomId" />
+          </div>
+
+          <div class="pane-divider" />
+
+          <div class="pane-section">
+            <RoomParentSpaces :room-id="roomId!" />
+          </div>
+
+          <div class="pane-divider" />
+
+          <div class="pane-section">
             <div class="section-title">{{ t('room.detail.actions') }}</div>
 
             <div class="action-buttons">
@@ -195,6 +207,8 @@ import { useClipboard } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import InviteDialog from '@/components/room/InviteDialog.vue'
+import RoomEncryptionSettings from '@/components/room/RoomEncryptionSettings.vue'
+import RoomParentSpaces from '@/components/space/RoomParentSpaces.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'

@@ -3,8 +3,66 @@ import type { FederationDestination } from './AdminTypes'
 
 type SecurityDomainSdkGetter = () => Promise<unknown>
 
+export interface AdminFeatureFlagTarget {
+  subjectType: string
+  subjectId: string
+}
+
+export interface AdminFeatureFlag {
+  flagKey: string
+  enabled: boolean
+  status: string
+  description: string
+  targetScope: string
+  rolloutPercent: number
+  expiresAt: number | null
+  reason: string
+  createdBy: string
+  createdTs: number
+  updatedTs: number
+  targets: AdminFeatureFlagTarget[]
+}
+
+export interface AdminFeatureFlagInput {
+  flagKey: string
+  targetScope: string
+  rolloutPercent: number
+  expiresAt?: number | null
+  reason?: string
+  targets?: AdminFeatureFlagTarget[]
+}
+
 export class AdminSecurityService {
   constructor(private readonly sdkAdmin: SecurityDomainSdkGetter) {}
+
+  private normalizeFeatureFlag(flag: Record<string, unknown>): AdminFeatureFlag {
+    const targets = Array.isArray(flag.targets)
+      ? flag.targets.map((target) => {
+          const typedTarget = (target ?? {}) as Record<string, unknown>
+          return {
+            subjectType: String(typedTarget.subject_type ?? typedTarget.subjectType ?? ''),
+            subjectId: String(typedTarget.subject_id ?? typedTarget.subjectId ?? '')
+          }
+        })
+      : []
+
+    const status = String(flag.status ?? (flag.enabled ? 'enabled' : 'disabled'))
+    return {
+      flagKey: String(flag.flag_key ?? flag.key ?? ''),
+      enabled: typeof flag.enabled === 'boolean' ? flag.enabled : status === 'enabled',
+      status,
+      description: String(flag.description ?? flag.reason ?? ''),
+      targetScope: String(flag.target_scope ?? flag.targetScope ?? 'global'),
+      rolloutPercent: Number(flag.rollout_percent ?? flag.rolloutPercent ?? 0),
+      expiresAt:
+        typeof flag.expires_at === 'number' ? flag.expires_at : ((flag.expiresAt as number | null | undefined) ?? null),
+      reason: String(flag.reason ?? ''),
+      createdBy: String(flag.created_by ?? flag.createdBy ?? ''),
+      createdTs: Number(flag.created_ts ?? flag.createdTs ?? 0),
+      updatedTs: Number(flag.updated_ts ?? flag.updatedTs ?? 0),
+      targets
+    }
+  }
 
   async getFederationDestinations(): Promise<FederationDestination[]> {
     try {
@@ -152,30 +210,83 @@ export class AdminSecurityService {
     }
   }
 
-  async getExperimentalFeatures(): Promise<Record<string, unknown>> {
+  async listFeatureFlagsDetailed(): Promise<AdminFeatureFlag[]> {
     try {
       const admin = (await this.sdkAdmin()) as unknown as {
-        getExperimentalFeatures(): Promise<{
-          features?: Record<string, unknown>
-          enabled?: Array<Record<string, unknown>>
-          disabled?: Array<Record<string, unknown>>
+        listFeatureFlags(params?: Record<string, string | number | undefined>): Promise<{
+          flags?: Array<Record<string, unknown>>
+          total?: number
         }>
       }
-      const result = await admin.getExperimentalFeatures()
-      if (result?.features) return result.features
-      const out: Record<string, boolean> = {}
-      for (const flag of result?.enabled ?? []) {
-        const key = (flag.flag_key as string) ?? (flag.key as string)
-        if (key) out[key] = true
-      }
-      for (const flag of result?.disabled ?? []) {
-        const key = (flag.flag_key as string) ?? (flag.key as string)
-        if (key) out[key] = false
-      }
-      return out
+
+      const result = await admin.listFeatureFlags()
+      return (result?.flags ?? []).map((flag) => this.normalizeFeatureFlag(flag))
     } catch (err) {
-      error(`[Admin] 获取实验特性失败: ${err}`)
-      return {}
+      error(`[Admin] 获取特性开关列表失败: ${err}`)
+      return []
+    }
+  }
+
+  async getExperimentalFeatures(): Promise<Record<string, unknown>> {
+    const flags = await this.listFeatureFlagsDetailed()
+    const out: Record<string, unknown> = {}
+    for (const flag of flags) {
+      out[flag.flagKey] = {
+        enabled: flag.enabled,
+        status: flag.status,
+        description: flag.description,
+        targetScope: flag.targetScope,
+        rolloutPercent: flag.rolloutPercent,
+        reason: flag.reason,
+        expiresAt: flag.expiresAt,
+        updatedTs: flag.updatedTs,
+        createdTs: flag.createdTs,
+        targets: flag.targets
+      }
+    }
+    return out
+  }
+
+  async getFeatureFlagDetail(flagKey: string): Promise<AdminFeatureFlag | null> {
+    try {
+      const admin = (await this.sdkAdmin()) as unknown as {
+        getFeatureFlag(flagKey: string): Promise<Record<string, unknown>>
+      }
+      const result = await admin.getFeatureFlag(flagKey)
+      return result ? this.normalizeFeatureFlag(result) : null
+    } catch (err) {
+      error(`[Admin] 获取特性开关详情失败: ${err}`)
+      return null
+    }
+  }
+
+  async saveFeatureFlag(input: AdminFeatureFlagInput): Promise<AdminFeatureFlag> {
+    try {
+      const admin = (await this.sdkAdmin()) as unknown as {
+        setFeatureFlag(
+          flagKey: string,
+          targetScope: string,
+          rolloutPercent: number,
+          expiresAt: number | null,
+          reason: string,
+          targets: Array<{ subject_type: string; subject_id: string }>
+        ): Promise<Record<string, unknown>>
+      }
+      const result = await admin.setFeatureFlag(
+        input.flagKey,
+        input.targetScope,
+        input.rolloutPercent,
+        input.expiresAt ?? null,
+        input.reason ?? '',
+        (input.targets ?? []).map((target) => ({
+          subject_type: target.subjectType,
+          subject_id: target.subjectId
+        }))
+      )
+      return this.normalizeFeatureFlag(result)
+    } catch (err) {
+      error(`[Admin] 保存特性开关失败: ${err}`)
+      throw err
     }
   }
 
@@ -188,6 +299,19 @@ export class AdminSecurityService {
       info(`[Admin] 实验特性已${enabled ? '启用' : '禁用'}: ${feature}`)
     } catch (err) {
       error(`[Admin] 设置实验特性失败: ${err}`)
+      throw err
+    }
+  }
+
+  async deleteFeatureFlag(flagKey: string): Promise<void> {
+    try {
+      const admin = (await this.sdkAdmin()) as unknown as {
+        deleteFeatureFlag(flagKey: string): Promise<void>
+      }
+      await admin.deleteFeatureFlag(flagKey)
+      info(`[Admin] 已删除特性开关: ${flagKey}`)
+    } catch (err) {
+      error(`[Admin] 删除特性开关失败: ${err}`)
       throw err
     }
   }

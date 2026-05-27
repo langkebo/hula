@@ -9,6 +9,7 @@ import { useI18nGlobal } from '@/services/i18n'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 import {
+  type SynapseDmInfo,
   type SynapseFriendInfo,
   type SynapseFriendRequest,
   synapseRustExtensionsService
@@ -668,6 +669,18 @@ class MatrixFriendService {
     } catch (err) {
       error(`[MatrixFriend] 获取好友信息失败: ${err}`)
       throw err
+    }
+  }
+
+  /** 获取与指定好友的 DM 房间（对应后端 GET /friends/{uid}/dm） */
+  async getFriendDmRoom(userId: string): Promise<SynapseDmInfo> {
+    try {
+      const result = await synapseRustExtensionsService.getDmRoom(userId)
+      info(`[MatrixFriend] 获取好友 DM 房间: userId=${userId}, roomId=${result.room_id || '(none)'}`)
+      return result
+    } catch (err) {
+      error(`[MatrixFriend] 获取好友 DM 房间失败: ${err}`)
+      return { room_id: '', exists: false }
     }
   }
 

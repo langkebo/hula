@@ -83,7 +83,7 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
     const { fileUrl, fileName, encryptedFile, i18nKeys } = params
     const fileStatus = fileDownloadStore.getFileStatus(fileUrl)
     const currentChatRoomId = globalStore.currentSessionRoomId
-    const currentUserUid = userStore.userInfo!.uid as string
+    const currentUserUid = (userStore.userInfo?.uid ?? '') as string
 
     const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
     let absolutePath = await join(resourceDirPath, fileName)
@@ -156,7 +156,7 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
 
     const getCurrentFileStatus = () => fileDownloadStore.getFileStatus(item.message.body.url)
     const currentChatRoomId = globalStore.currentSessionRoomId
-    const currentUserUid = userStore.userInfo!.uid as string
+    const currentUserUid = (userStore.userInfo?.uid ?? '') as string
     const encryptedFile =
       bodyRecord.encryptedFile && typeof bodyRecord.encryptedFile === 'object'
         ? (bodyRecord.encryptedFile as MatrixEncryptedAttachmentLike)

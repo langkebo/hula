@@ -13,7 +13,33 @@
       "explain": "解释一下这个概念",
       "news": "今天有什么新闻",
       "movie": "推荐一些电影"
-    }
+    },
+    "install": {
+      "checking": "正在检测 OpenClaw 安装状态...",
+      "title": "安装 OpenClaw 以使用 AI 助手",
+      "description": "OpenClaw 是一个本地 AI 网关服务，用于连接各种 AI 模型。安装后即可在 HuLa 中使用 AI 对话功能。",
+      "step1_title": "下载安装",
+      "step1_desc": "点击下方按钮下载适用于当前系统的 OpenClaw 安装包",
+      "step2_title": "启动服务",
+      "step2_desc": "安装完成后启动 OpenClaw，默认将在本地 8080 端口运行",
+      "step3_title": "配置连接",
+      "step3_desc": "在 HuLa 设置中填入 API 地址和密钥，完成连接配置",
+      "recheck": "重新检测",
+      "installing_title": "请完成 OpenClaw 安装",
+      "installing_desc": "安装完成后，点击「重新检测」按钮验证安装状态。如果已安装，请直接点击重新检测。",
+      "config_title": "配置 OpenClaw 连接",
+      "config_desc": "OpenClaw 已安装，请完成以下配置步骤以开始使用 AI 助手。",
+      "config_step1": "确保 OpenClaw 服务已启动（默认端口 8080）",
+      "config_step2": "点击「打开设置」进入 API 配置页面",
+      "config_step3": "在 API 端点中填入 http://127.0.0.1:8080/v1",
+      "config_step4": "填入 API Key（如未设置可留空），选择模型后即可开始对话",
+      "open_settings": "打开设置"
+    },
+    "settings": {
+      "title": "设置"
+    },
+    "error_no_endpoint": "请先配置 API 端点地址",
+    "error_no_key": "请先配置 API Key"
   },
   "title": "AI 助手",
   "welcome": "你好，我是 AI 助手",

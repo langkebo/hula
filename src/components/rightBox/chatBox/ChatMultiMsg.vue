@@ -77,7 +77,7 @@ const processedContentList = computed(() => {
     const message = chatStore.currentMessageMap?.[msgId.msgId]
 
     if (message) {
-      const userInfo = groupStore.getUserInfo(message.fromUser.uid)
+      const userInfo = groupStore.getUserInfo(message.fromUser?.uid ?? '')
       const userName = userInfo?.name || ''
       const msgType = message.message.type
 

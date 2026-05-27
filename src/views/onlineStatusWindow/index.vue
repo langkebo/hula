@@ -5,7 +5,7 @@
     <n-flex
       vertical
       :size="130"
-      :style="`background: linear-gradient(to bottom, ${RGBA} 0%, #f1f1f1 100%)`"
+      :style="`background: linear-gradient(to bottom, ${RGBA} 0%, var(--hula-surface-subtle) 100%)`"
       class="size-full p-20px box-border"
       data-tauri-drag-region>
       <!-- 当前选中的状态 -->
@@ -143,7 +143,7 @@ onMounted(async () => {
   border-radius: 8px;
   cursor: pointer;
   span {
-    color: #fff;
+    color: var(--hula-text-inverse);
   }
 }
 

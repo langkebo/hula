@@ -3,23 +3,36 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixVerificationService } from '../MatrixVerificationService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
+vi.mock('../../MatrixClientService', () => {
+  const service = {
     getClient: vi.fn()
   }
-}))
+  return {
+    default: service,
+    matrixClientService: service
+  }
+})
 
 describe('MatrixVerificationService', () => {
   let mockClient: Partial<MatrixClient>
   let mockCrypto: {
     requestDeviceVerification: ReturnType<typeof vi.fn>
     getDeviceVerificationStatus: ReturnType<typeof vi.fn>
+    verificationRequests: Map<
+      string,
+      {
+        accept: ReturnType<typeof vi.fn>
+        cancel: ReturnType<typeof vi.fn>
+        verifier?: { verify: ReturnType<typeof vi.fn> }
+      }
+    >
   }
 
   beforeEach(() => {
     mockCrypto = {
       requestDeviceVerification: vi.fn(),
-      getDeviceVerificationStatus: vi.fn()
+      getDeviceVerificationStatus: vi.fn(),
+      verificationRequests: new Map()
     }
 
     mockClient = {
@@ -79,6 +92,85 @@ describe('MatrixVerificationService', () => {
       await expect(matrixVerificationService.startSasVerification('@user:example.com', 'DEVICE123')).rejects.toThrow(
         'Network error'
       )
+    })
+  })
+
+  describe('verification actions', () => {
+    it('应该接受已有的验证请求，而不是重新发起事务', async () => {
+      const accept = vi.fn().mockResolvedValue(undefined)
+      mockCrypto.verificationRequests.set('txn-1', {
+        accept,
+        cancel: vi.fn()
+      })
+
+      await expect(matrixVerificationService.acceptVerification('txn-1')).resolves.toBeUndefined()
+      expect(accept).toHaveBeenCalledTimes(1)
+      expect(mockCrypto.requestDeviceVerification).not.toHaveBeenCalled()
+    })
+
+    it('应该在找不到现有验证请求时抛错，而不是重新发起验证', async () => {
+      ;(matrixVerificationService as unknown as { pendingRequests: Map<string, unknown> }).pendingRequests.set(
+        'txn-2',
+        {
+          transactionId: 'txn-2',
+          userId: '@user:example.com',
+          deviceId: 'DEVICE123',
+          methods: ['m.sas.v1'],
+          timestamp: Date.now()
+        }
+      )
+
+      await expect(matrixVerificationService.acceptVerification('txn-2')).rejects.toThrow('txn-2')
+      expect(mockCrypto.requestDeviceVerification).not.toHaveBeenCalled()
+    })
+
+    it('应该确认 SAS 并清理待处理请求', async () => {
+      const verify = vi.fn().mockResolvedValue(undefined)
+      mockCrypto.verificationRequests.set('txn-3', {
+        accept: vi.fn(),
+        cancel: vi.fn(),
+        verifier: { verify }
+      })
+      ;(matrixVerificationService as unknown as { pendingRequests: Map<string, unknown> }).pendingRequests.set(
+        'txn-3',
+        {
+          transactionId: 'txn-3',
+          userId: '@user:example.com',
+          deviceId: 'DEVICE123',
+          methods: ['m.sas.v1'],
+          timestamp: Date.now()
+        }
+      )
+
+      await expect(matrixVerificationService.confirmSas('txn-3')).resolves.toBeUndefined()
+      expect(verify).toHaveBeenCalledTimes(1)
+      expect(
+        (matrixVerificationService as unknown as { pendingRequests: Map<string, unknown> }).pendingRequests.has('txn-3')
+      ).toBe(false)
+    })
+
+    it('应该取消现有验证并清理待处理请求', async () => {
+      const cancel = vi.fn().mockResolvedValue(undefined)
+      mockCrypto.verificationRequests.set('txn-4', {
+        accept: vi.fn(),
+        cancel
+      })
+      ;(matrixVerificationService as unknown as { pendingRequests: Map<string, unknown> }).pendingRequests.set(
+        'txn-4',
+        {
+          transactionId: 'txn-4',
+          userId: '@user:example.com',
+          deviceId: 'DEVICE123',
+          methods: ['m.sas.v1'],
+          timestamp: Date.now()
+        }
+      )
+
+      await expect(matrixVerificationService.cancelVerification('txn-4', 'user_cancelled')).resolves.toBeUndefined()
+      expect(cancel).toHaveBeenCalledWith({ reason: 'user_cancelled' })
+      expect(
+        (matrixVerificationService as unknown as { pendingRequests: Map<string, unknown> }).pendingRequests.has('txn-4')
+      ).toBe(false)
     })
   })
 

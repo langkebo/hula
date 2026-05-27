@@ -519,11 +519,7 @@ class MatrixCryptoService extends BaseMatrixService {
         const backups = await this.getSecureBackupList()
         if (backups.length > 0) {
           const result = await secureBackupManager.restoreFromSecureBackup(backups[0].backup_id, backupKey)
-          if (result.success) {
-            info(`[MatrixCrypto] 安全恢复密钥成功: ${result.key_count} 个密钥`)
-          } else {
-            throw new Error(result.message ?? '恢复密钥失败')
-          }
+          info(`[MatrixCrypto] 安全恢复密钥成功: recovered=${result.recovered_keys}, total=${result.total_keys}`)
         }
         return
       }
@@ -657,7 +653,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const secureBackupManager = this.getSecureBackupManager()
       if (secureBackupManager) {
         const result = await secureBackupManager.restoreFromSecureBackup(backupId, passphrase)
-        info(`[MatrixCrypto] 从安全备份恢复: success=${result.success}, key_count=${result.key_count}`)
+        info(`[MatrixCrypto] 从安全备份恢复: recovered=${result.recovered_keys}, total=${result.total_keys}`)
         return result
       }
       return null

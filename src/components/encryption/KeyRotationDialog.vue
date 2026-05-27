@@ -63,17 +63,72 @@
         </div>
 
         <div v-if="showHistory && rotationHistory.length > 0" class="history-list">
-          <div v-for="(record, index) in rotationHistory" :key="index" class="history-item">
-            <div class="history-info">
-              <span class="history-key">{{ formatKeyId(record.keyId) }}</span>
-              <span class="history-time">{{ formatDate(record.rotatedAt) }}</span>
-            </div>
-          </div>
+          <n-timeline>
+            <n-timeline-item
+              v-for="(record, index) in rotationHistory"
+              :key="index"
+              :type="index === 0 ? 'success' : 'default'"
+              :title="formatKeyId(record.keyId)">
+              <template #footer>
+                <span class="history-time">{{ formatDate(record.rotatedAt) }}</span>
+              </template>
+            </n-timeline-item>
+          </n-timeline>
         </div>
 
         <n-empty
           v-if="showHistory && rotationHistory.length === 0"
           :description="t('encryption.key_rotation.no_history')" />
+
+        <div class="action-item">
+          <div class="action-info">
+            <Icon icon="mdi:shield-check" :width="24" />
+            <div class="action-text">
+              <span class="action-label">{{ t('encryption.key_rotation.check_status') }}</span>
+              <span class="action-desc">{{ t('encryption.key_rotation.check_desc') }}</span>
+            </div>
+          </div>
+          <n-button :loading="checking" @click="handleCheckStatus">
+            {{ checking ? t('encryption.key_rotation.checking') : t('encryption.key_rotation.check_status') }}
+          </n-button>
+        </div>
+
+        <div v-if="checkResult !== null" class="check-result">
+          <n-alert
+            :type="checkResult ? 'warning' : 'success'"
+            :title="
+              checkResult
+                ? t('encryption.key_rotation.check_rotation_needed')
+                : t('encryption.key_rotation.check_no_rotation')
+            ">
+            <div v-if="lastRotationTime" class="check-detail">
+              <span>{{ t('encryption.key_rotation.check_last_rotation') }}: {{ formatDate(lastRotationTime) }}</span>
+            </div>
+            <div v-if="rotationInterval" class="check-detail">
+              <span>
+                {{ t('encryption.key_rotation.check_interval') }}: {{ rotationInterval }} {{ t('common.days') }}
+              </span>
+            </div>
+          </n-alert>
+        </div>
+
+        <div v-if="isAdminUser" class="action-item">
+          <div class="action-info">
+            <Icon icon="mdi:key-remove" :width="24" />
+            <div class="action-text">
+              <span class="action-label">
+                {{ t('encryption.key_rotation.revoke_key') }}
+                <n-tag size="small" type="warning" style="margin-left: 6px">
+                  {{ t('encryption.key_rotation.admin_only') }}
+                </n-tag>
+              </span>
+              <span class="action-desc">{{ t('encryption.key_rotation.revoke_desc') }}</span>
+            </div>
+          </div>
+          <n-button type="error" @click="showRevokeDialog = true">
+            {{ t('encryption.key_rotation.revoke_key') }}
+          </n-button>
+        </div>
       </div>
 
       <n-divider />
@@ -108,15 +163,53 @@
       </n-flex>
     </template>
   </n-modal>
+
+  <n-modal
+    v-model:show="showRevokeDialog"
+    preset="dialog"
+    :title="t('encryption.key_rotation.revoke_confirm_title')"
+    :positive-text="t('common.confirm')"
+    :negative-text="t('common.cancel')"
+    :loading="revoking"
+    @positive-click="handleRevoke">
+    <div class="revoke-form">
+      <p>{{ t('encryption.key_rotation.revoke_confirm_content') }}</p>
+      <n-input
+        v-model:value="revokeKeyId"
+        :placeholder="t('encryption.key_rotation.revoke_key_id_placeholder')"
+        :label="t('encryption.key_rotation.revoke_key_id_label')"
+        style="margin-top: 12px" />
+      <n-input
+        v-model:value="revokeReason"
+        :placeholder="t('encryption.key_rotation.revoke_reason_placeholder')"
+        :label="t('encryption.key_rotation.revoke_reason_label')"
+        style="margin-top: 8px" />
+    </div>
+  </n-modal>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NEmpty, NFlex, NModal, NSelect, NSpin, NSwitch } from 'naive-ui'
+import {
+  NAlert,
+  NButton,
+  NDivider,
+  NEmpty,
+  NFlex,
+  NInput,
+  NModal,
+  NSelect,
+  NSpin,
+  NSwitch,
+  NTag,
+  NTimeline,
+  NTimelineItem
+} from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { type KeyRotationRecord, useEncryption } from '@/composables/encryption'
+import { useAdminStore } from '@/stores/domains/admin/admin'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('KeyRotation')
@@ -124,6 +217,7 @@ const logger = createLogger('KeyRotation')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const encryption = useEncryption()
+const adminStore = useAdminStore()
 const emit = defineEmits<{
   updated: []
 }>()
@@ -132,12 +226,20 @@ const visible = defineModel<boolean>('show', { default: false })
 
 const loading = ref(false)
 const rotating = ref(false)
+const checking = ref(false)
+const revoking = ref(false)
 const needsRotation = ref(false)
 const lastRotationTime = ref<number | null>(null)
 const autoRotate = ref(true)
 const rotationInterval = ref(7)
 const showHistory = ref(false)
 const rotationHistory = ref<KeyRotationRecord[]>([])
+const checkResult = ref<boolean | null>(null)
+const showRevokeDialog = ref(false)
+const revokeKeyId = ref('')
+const revokeReason = ref('')
+
+const isAdminUser = computed(() => adminStore.isAdmin)
 
 const intervalOptions = [
   { label: '7 ' + t('common.days'), value: 7 },
@@ -221,6 +323,49 @@ const handleConfigChange = async () => {
   } catch (err) {
     logger.error('Failed to update key rotation config:', err)
     showFeedback(t('encryption.key_rotation.config_failed'), 'error')
+  }
+}
+
+const handleCheckStatus = async () => {
+  checking.value = true
+  try {
+    const result = await encryption.checkNeedsRotation()
+    checkResult.value = result
+    await loadRotationStatus()
+  } catch (err) {
+    logger.error('Failed to check key status:', err)
+    showFeedback(t('encryption.key_rotation.check_failed'), 'error')
+  } finally {
+    checking.value = false
+  }
+}
+
+const handleRevoke = async () => {
+  if (!revokeKeyId.value.trim()) {
+    showFeedback(t('encryption.key_rotation.revoke_key_id_placeholder'), 'warning')
+    return false
+  }
+  revoking.value = true
+  try {
+    const deviceId = encryption.getCurrentDeviceId()
+    if (!deviceId) {
+      showFeedback(t('encryption.key_rotation.revoke_failed'), 'error')
+      return false
+    }
+    await encryption.revokeOldKeys(deviceId, [revokeKeyId.value.trim()])
+    showFeedback(t('encryption.key_rotation.revoke_success'), 'success')
+    showRevokeDialog.value = false
+    revokeKeyId.value = ''
+    revokeReason.value = ''
+    await loadRotationHistory()
+    emit('updated')
+    return true
+  } catch (err) {
+    logger.error('Failed to revoke key:', err)
+    showFeedback(t('encryption.key_rotation.revoke_failed'), 'error')
+    return false
+  } finally {
+    revoking.value = false
   }
 }
 
@@ -343,30 +488,30 @@ watch(visible, (val) => {
 
 .history-list {
   margin-top: 8px;
-  max-height: 150px;
+  max-height: 200px;
   overflow-y: auto;
-}
-
-.history-item {
-  padding: 8px 12px;
-  background: var(--hula-surface-panel);
-  border-radius: 4px;
-  margin-bottom: 4px;
-}
-
-.history-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-}
-
-.history-key {
-  font-family: monospace;
-  color: var(--hula-text-primary);
+  padding: 8px 4px;
 }
 
 .history-time {
   color: var(--hula-text-secondary);
+  font-size: 12px;
+}
+
+.check-result {
+  margin-top: 8px;
+}
+
+.check-detail {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.revoke-form {
+  p {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
 }
 
 .rotation-config {

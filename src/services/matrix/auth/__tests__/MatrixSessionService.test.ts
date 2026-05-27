@@ -141,10 +141,40 @@ describe('MatrixSessionService', () => {
     })
   })
 
-  it('should return empty array when dm rooms query fails while listing sessions', async () => {
-    mockDirectMessageService.getDMRooms.mockRejectedValueOnce(new Error('DirectMessageManager 未初始化'))
+  it('should still build sessions when dm rooms query fails while listing sessions', async () => {
+    const room = createRoom({
+      roomId: '!group:example.com',
+      name: 'General',
+      joinedMemberCount: 3,
+      events: [createEvent(1712000000000, 'latest update')]
+    })
 
-    await expect(matrixSessionService.getSessionList()).resolves.toEqual([])
+    mockDirectMessageService.getDMRooms.mockImplementationOnce(async (throwOnError?: boolean) => {
+      if (throwOnError === false) {
+        return []
+      }
+      throw new Error('DirectMessageManager 未初始化')
+    })
+    mockClient.getRooms.mockReturnValueOnce([room] as unknown as Room[])
+
+    await expect(matrixSessionService.getSessionList()).resolves.toEqual([
+      {
+        id: '!group:example.com',
+        roomId: '!group:example.com',
+        name: 'General',
+        avatar: '',
+        type: RoomTypeEnum.GROUP,
+        unreadCount: 0,
+        activeTime: 1712000000000,
+        top: false,
+        shield: false,
+        muteNotification: NotificationTypeEnum.RECEPTION,
+        detailId: undefined,
+        account: undefined,
+        text: 'latest update'
+      }
+    ])
+    expect(mockDirectMessageService.getDMRooms).toHaveBeenCalledWith(false)
   })
 
   it('should use room tag api when setting session top', async () => {

@@ -346,7 +346,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       rtcMsg.value = {
         roomId,
         callType: type,
-        callerId: userStore.userInfo!.uid,
+        callerId: userStore.userInfo?.uid ?? '',
         uidList: uidList || []
       }
       isLinker.value = true // 标记是会话人
@@ -393,7 +393,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   const sendOffer = async (offer: RTCSessionDescriptionInit) => {
     try {
       const signalData = {
-        callerUid: userStore.userInfo!.uid,
+        callerUid: userStore.userInfo?.uid ?? '',
         roomId: roomId,
         signal: JSON.stringify(offer),
         signalType: 'offer',
@@ -523,7 +523,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
   const sendAnswer = async (answer: RTCSessionDescriptionInit) => {
     try {
       const signalData = {
-        callerUid: userStore.userInfo!.uid,
+        callerUid: userStore.userInfo?.uid ?? '',
         roomId: roomId,
         signal: JSON.stringify(answer),
         signalType: SignalTypeEnum.ANSWER,

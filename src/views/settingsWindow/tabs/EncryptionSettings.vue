@@ -16,6 +16,12 @@
           {{ t('setting.encryption.quick_setup') }}
         </n-button>
       </div>
+      <div v-if="!e2eeFullySetup && encryptionEnabled" class="e2ee-bootstrap-action">
+        <n-button type="primary" @click="showE2EEBootstrapWizard = true">
+          <template #icon><Icon icon="mdi:shield-lock" :width="16" /></template>
+          {{ t('setting.encryption.complete_e2ee_setup') }}
+        </n-button>
+      </div>
     </div>
 
     <n-divider />
@@ -73,6 +79,21 @@
     <n-divider />
 
     <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.encryption.secure_backup_section') }}</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.encryption.secure_backup_label') }}</span>
+          <span class="setting-desc">{{ t('setting.encryption.secure_backup_desc') }}</span>
+        </div>
+        <n-button size="small" @click="showSecureBackupDialog = true">
+          {{ t('setting.encryption.manage') }}
+        </n-button>
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
       <h3 class="section-title">{{ t('setting.encryption.cross_signing_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -105,6 +126,21 @@
     <n-divider />
 
     <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.encryption.dehydrated_device_section') }}</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.encryption.dehydrated_device_label') }}</span>
+          <span class="setting-desc">{{ t('setting.encryption.dehydrated_device_desc') }}</span>
+        </div>
+        <n-button size="small" @click="showDehydratedDeviceManager = true">
+          {{ t('setting.encryption.manage') }}
+        </n-button>
+      </div>
+    </div>
+
+    <n-divider />
+
+    <div class="settings-section">
       <h3 class="section-title">{{ t('setting.encryption.device_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -124,10 +160,50 @@
       </div>
       <div class="setting-item">
         <div class="setting-info">
+          <span class="setting-label">{{ t('setting.encryption.qr_verify_label') }}</span>
+          <span class="setting-desc">{{ t('setting.encryption.qr_verify_desc') }}</span>
+        </div>
+        <div class="flex gap-8px">
+          <n-button size="small" @click="openVerifyDialog('qr_show')">
+            {{ t('setting.device_verify_dialog.show_qr') }}
+          </n-button>
+          <n-button size="small" @click="openVerifyDialog('qr_scan')">
+            {{ t('setting.device_verify_dialog.scan_qr') }}
+          </n-button>
+        </div>
+      </div>
+      <div v-if="pendingVerifications.length" class="pending-verifications">
+        <div class="pending-title">{{ t('setting.encryption.pending_verifications_label') }}</div>
+        <div v-for="request in pendingVerifications" :key="request.transactionId" class="pending-item">
+          <div>
+            <div class="pending-device">{{ request.deviceId }}</div>
+            <div class="pending-user">{{ request.userId }}</div>
+          </div>
+          <div class="flex gap-8px">
+            <n-button size="small" type="primary" @click="handleAcceptPendingVerification(request)">
+              {{ t('setting.device_verify_dialog.accept_request') }}
+            </n-button>
+            <n-button size="small" @click="handleCancelPendingVerification(request)">
+              {{ t('common.cancel') }}
+            </n-button>
+          </div>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
           <span class="setting-label">{{ t('setting.encryption.device_key_label') }}</span>
           <span class="setting-desc">{{ t('setting.encryption.device_key_desc') }}</span>
         </div>
         <n-button size="small" @click="handleShowDeviceKey">{{ t('setting.encryption.view') }}</n-button>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.encryption.device_trust_label') }}</span>
+          <span class="setting-desc">{{ t('setting.encryption.device_trust_desc') }}</span>
+        </div>
+        <n-button size="small" @click="showDeviceTrustManager = true">
+          {{ t('setting.encryption.manage') }}
+        </n-button>
       </div>
     </div>
 
@@ -155,11 +231,20 @@
       </div>
     </div>
 
+    <SecureBackupDialog v-model:show="showSecureBackupDialog" @success="handleSecureBackupSuccess" />
+
     <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupCreated" />
 
     <KeyBackupRestoreDialog v-model:show="showRestoreDialog" @success="handleRestoreSuccess" />
 
-    <DeviceVerifyDialog v-model:show="showVerifyDialog" @success="handleVerifySuccess" />
+    <DeviceVerifyDialog
+      :show="showVerifyDialog"
+      :device-id="selectedVerificationRequest?.deviceId"
+      :device-name="selectedVerificationRequest?.deviceId"
+      :inbound-request="selectedVerificationRequest"
+      :initial-mode="verifyDialogMode"
+      @update:show="handleVerifyDialogVisibilityChange"
+      @success="handleVerifySuccess" />
 
     <CrossSigningDialog v-model:show="showCrossSigningDialog" />
 
@@ -171,6 +256,15 @@
       v-model:show="showOnboardingDialog"
       @complete="handleOnboardingComplete"
       @skip="handleOnboardingSkip" />
+
+    <DeviceTrustManager v-model:show="showDeviceTrustManager" />
+
+    <DehydratedDeviceManager v-model:show="showDehydratedDeviceManager" />
+
+    <E2EEBootstrapWizard
+      v-model:show="showE2EEBootstrapWizard"
+      @complete="handleE2EEBootstrapComplete"
+      @skip="handleE2EEBootstrapSkip" />
 
     <n-modal
       v-model:show="deviceKeyVisible"
@@ -192,15 +286,19 @@ import { NButton, NDivider, NModal, NSwitch, NTag } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CrossSigningDialog from '@/components/encryption/CrossSigningDialog.vue'
+import DehydratedDeviceManager from '@/components/encryption/DehydratedDeviceManager.vue'
+import DeviceTrustManager from '@/components/encryption/DeviceTrustManager.vue'
 import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
+import E2EEBootstrapWizard from '@/components/encryption/E2EEBootstrapWizard.vue'
 import E2EEOnboardingDialog from '@/components/encryption/E2EEOnboardingDialog.vue'
 import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import KeyRotationDialog from '@/components/encryption/KeyRotationDialog.vue'
+import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { matrixVerificationService, type VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 
@@ -222,8 +320,15 @@ const showVerifyDialog = ref(false)
 const showCrossSigningDialog = ref(false)
 const showKeyRotationDialog = ref(false)
 const showSecurityKeyDialog = ref(false)
+const showSecureBackupDialog = ref(false)
 const showOnboardingDialog = ref(false)
+const showDeviceTrustManager = ref(false)
+const showDehydratedDeviceManager = ref(false)
+const showE2EEBootstrapWizard = ref(false)
 const createBackupLoading = ref(false)
+const pendingVerifications = ref<VerificationRequest[]>([])
+const selectedVerificationRequest = ref<VerificationRequest | null>(null)
+const verifyDialogMode = ref<'sas' | 'qr_show' | 'qr_scan'>('sas')
 
 const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
 const securityKeySetup = computed(() => encryptionStore.securityKeyConfigured)
@@ -266,6 +371,7 @@ async function loadEncryptionInfo() {
     }
 
     await encryptionStore.loadDeviceVerification()
+    pendingVerifications.value = await matrixVerificationService.getPendingVerifications()
   } catch (error) {
     logger.error('Failed to load encryption details', error)
   }
@@ -311,12 +417,48 @@ function handleRestoreSuccess() {
 }
 
 function handleVerifyDevice() {
+  openVerifyDialog('sas')
+}
+
+function openVerifyDialog(mode: 'sas' | 'qr_show' | 'qr_scan') {
+  verifyDialogMode.value = mode
+  selectedVerificationRequest.value = null
   showVerifyDialog.value = true
+}
+
+function handleVerifyDialogVisibilityChange(value: boolean) {
+  showVerifyDialog.value = value
+  if (!value) {
+    selectedVerificationRequest.value = null
+    verifyDialogMode.value = 'sas'
+    void loadEncryptionInfo()
+  }
 }
 
 function handleVerifySuccess() {
   encryptionStore.markDeviceVerified()
   showFeedback(t('setting.encryption.verify_success'), 'success')
+  showVerifyDialog.value = false
+  void loadEncryptionInfo()
+}
+
+function handleAcceptPendingVerification(request: VerificationRequest) {
+  verifyDialogMode.value = 'sas'
+  selectedVerificationRequest.value = request
+  showVerifyDialog.value = true
+}
+
+async function handleCancelPendingVerification(request: VerificationRequest) {
+  try {
+    await matrixVerificationService.cancelVerification(request.transactionId, 'User cancelled verification')
+    showFeedback(t('setting.encryption.pending_verification_cancelled'), 'success')
+    pendingVerifications.value = pendingVerifications.value.filter(
+      (item) => item.transactionId !== request.transactionId
+    )
+  } catch (error) {
+    logger.error('Failed to cancel pending verification', error)
+    showFeedback(t('setting.encryption.pending_verification_cancel_failed'), 'error')
+  }
 }
 
 function handleShowDeviceKey() {
@@ -342,6 +484,19 @@ function handleOnboardingComplete() {
 }
 
 function handleOnboardingSkip() {
+  showFeedback(t('setting.encryption.onboarding_skip'), 'warning')
+}
+
+function handleSecureBackupSuccess() {
+  showFeedback(t('setting.encryption.secure_backup_success'), 'success')
+}
+
+function handleE2EEBootstrapComplete() {
+  loadEncryptionInfo()
+  showFeedback(t('setting.encryption.onboarding_complete'), 'success')
+}
+
+function handleE2EEBootstrapSkip() {
   showFeedback(t('setting.encryption.onboarding_skip'), 'warning')
 }
 </script>
@@ -481,5 +636,44 @@ function handleOnboardingSkip() {
   border-radius: var(--hula-radius-sm);
   font-size: var(--hula-font-size-sm);
   color: var(--hula-text-secondary);
+}
+
+.e2ee-bootstrap-action {
+  margin-top: var(--hula-space-3);
+  display: flex;
+  justify-content: center;
+}
+
+.pending-verifications {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hula-space-2);
+  padding: var(--hula-space-3) 0;
+}
+
+.pending-title {
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-secondary);
+}
+
+.pending-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hula-space-3);
+  padding: var(--hula-space-3);
+  border: 1px solid var(--hula-settings-divider);
+  border-radius: var(--hula-radius-sm);
+}
+
+.pending-device {
+  font-size: var(--hula-font-size-base);
+  font-weight: var(--hula-font-weight-medium);
+  color: var(--hula-text-primary);
+}
+
+.pending-user {
+  font-size: var(--hula-font-size-sm);
+  color: var(--hula-text-quaternary);
 }
 </style>

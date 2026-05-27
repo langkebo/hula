@@ -107,7 +107,13 @@
       "account_login": "Pwd Login",
       "register": "Register",
       "register_title": "Register"
-    }
+    },
+    "mode": {
+      "quick": "Quick Login",
+      "rendezvous": "Rendezvous Login"
+    },
+    "rendezvous_hint": "Use MSC3886 Rendezvous protocol for secure cross-device login",
+    "open_rendezvous": "Open Rendezvous Manager"
   },
   "guide": {
     "welcome": {

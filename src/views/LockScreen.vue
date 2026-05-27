@@ -38,10 +38,10 @@
         <n-flex vertical align="center" justify="center" :size="30" class="mt--75px">
           <n-avatar
             round
-            style="border: 2px solid var(--lock-border-color, #f1f1f1)"
+            style="border: 2px solid var(--lock-border-color, var(--hula-surface-subtle))"
             :size="120"
-            :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)" />
-          <p class="text-(24px [--hula-text-secondary]) font-500">{{ userStore.userInfo!.name }}</p>
+            :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')" />
+          <p class="text-(24px [--hula-text-secondary]) font-500">{{ userStore.userInfo?.name ?? '' }}</p>
 
           <!-- 密码输入框 -->
           <n-input
@@ -51,8 +51,8 @@
               width: 320px;
               border: 2px solid rgba(255, 255, 255, 0.1);
               border-bottom-color: rgba(19, 152, 127, 1);
-              background-color: var(--lock-input-bg, #404040);
-              color: var(--lock-input-color, #fff);
+              background-color: var(--lock-input-bg, var(--hula-surface-panel-muted));
+              color: var(--lock-input-color, var(--hula-text-inverse));
             "
             spellCheck="false"
             autoComplete="off"
@@ -68,7 +68,7 @@
                 <template #trigger>
                   <svg
                     @click.stop="unlock"
-                    class="size-16px color-#e3e3e3 mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-all duration-300 ease-in-out hover:bg-[--color-primary]e6">
+                    class="size-16px text-[--hula-text-secondary] mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-all duration-300 ease-in-out hover:bg-[--hula-color-primary-600]">
                     <use href="#arrow-right"></use>
                   </svg>
                 </template>
@@ -88,7 +88,7 @@
             <p class="text-(18px [--hula-text-secondary])">{{ t('message.lock_screen.wrong_password') }}</p>
             <p
               @click="init"
-              class="w-120px bg-[rgba(255,255,255,0.1)] backdrop-blur-xl cursor-pointer p-10px rounded-8px text-(14px #323232 center) font-500">
+              class="w-120px bg-[--hula-surface-inverse-hover] backdrop-blur-xl cursor-pointer p-10px rounded-8px text-(14px var(--hula-text-primary) center) font-500">
               {{ t('message.lock_screen.confirm_button') }}
             </p>
           </n-flex>
@@ -269,7 +269,7 @@ onUnmounted(() => {
   @apply cursor-pointer w-240px p-12px rounded-8px transition-all duration-300 ease-in-out;
   svg {
     @apply size-24px p-4px rounded-8px;
-    color: var(--lock-icon-color, #f1f1f1);
+    color: var(--lock-icon-color, var(--hula-surface-subtle));
     background-color: var(--lock-icon-bg, rgba(128, 128, 128, 0.5));
   }
 }
@@ -277,16 +277,16 @@ onUnmounted(() => {
 :deep(.hover-box),
 :deep(.action-close) {
   svg {
-    color: var(--lock-action-color, #fff);
+    color: var(--lock-action-color, var(--hula-text-inverse));
   }
 }
 :deep(.hover-box) {
   &:hover {
-    background-color: var(--lock-hover-bg, #464646);
+    background-color: var(--lock-hover-bg, var(--hula-surface-sidebar-active));
   }
 }
 :deep(.n-input .n-input__input-el, .n-input .n-input__textarea-el) {
-  color: var(--lock-input-color, #fff);
+  color: var(--lock-input-color, var(--hula-text-inverse));
 }
 
 /*

@@ -67,6 +67,8 @@ const { mockRoomService, mockRoomSummaryService, mockMatrixClientService, mockCh
   },
   mockChatStore: {
     pushMsg: vi.fn(),
+    updateMsg: vi.fn(),
+    checkMsgExist: vi.fn(),
     clearRoomMessages: vi.fn()
   }
 }))
@@ -653,12 +655,16 @@ describe('RoomStore', () => {
 
     it('should react to room event listeners', () => {
       const callbacks: Record<string, (...args: any[]) => void> = {}
+      const matrixClientCallbacks: Record<string, (...args: any[]) => void> = {}
 
       ;(mockRoomService.onTimelineEvent as any).mockImplementation((cb: (...args: any[]) => void) => {
         callbacks.timeline = cb
       })
       ;(mockRoomService.onRoomNameChange as any).mockImplementation((cb: (...args: any[]) => void) => {
         callbacks.name = cb
+      })
+      ;(mockMatrixClientService.on as any).mockImplementation((event: string, cb: (...args: any[]) => void) => {
+        matrixClientCallbacks[event] = cb
       })
 
       const store = useRoomStore()
@@ -719,6 +725,108 @@ describe('RoomStore', () => {
       expect(store.rooms.get('!room:id')).toMatchObject({
         name: 'After'
       })
+
+      mockChatStore.checkMsgExist.mockReturnValue(true)
+      mockRoomService.convertRoomToRoomInfo.mockReturnValueOnce({
+        roomId: '!room:id',
+        name: 'After',
+        avatarUrl: null,
+        isDirect: false,
+        isEncrypted: true,
+        unreadCount: 0,
+        highlightCount: 0,
+        notificationCount: 0,
+        lastMessage: 'decrypted hello',
+        lastMessageTime: 3000,
+        members: []
+      })
+
+      matrixClientCallbacks['eventDecrypted']?.({
+        event: {
+          getId: () => '$new',
+          getRoomId: () => '!room:id',
+          getSender: () => '@user:server',
+          getTs: () => 3000,
+          getType: () => 'm.room.encrypted',
+          getContent: () => ({ body: 'decrypted hello' })
+        },
+        room: {
+          roomId: '!room:id',
+          getMember: () => null
+        }
+      })
+
+      expect(mockChatStore.updateMsg).toHaveBeenCalledWith({
+        msgId: '$new',
+        roomId: '!room:id',
+        status: 'success',
+        body: expect.objectContaining({ body: 'decrypted hello' })
+      })
+    })
+
+    it('should update existing encrypted placeholder when the same event arrives as decrypted room message', () => {
+      const callbacks: Record<string, (...args: any[]) => void> = {}
+
+      ;(mockRoomService.onTimelineEvent as any).mockImplementation((cb: (...args: any[]) => void) => {
+        callbacks.timeline = cb
+      })
+
+      const store = useRoomStore()
+      store.rooms.set('!room:id', {
+        roomId: '!room:id',
+        name: 'Before',
+        avatarUrl: null,
+        isDirect: false,
+        isEncrypted: true,
+        unreadCount: 0,
+        highlightCount: 0,
+        notificationCount: 0,
+        lastMessage: null,
+        lastMessageTime: null,
+        members: []
+      })
+
+      store.setupEventListeners()
+      mockChatStore.checkMsgExist.mockReturnValue(true)
+
+      callbacks.timeline?.({
+        roomId: '!room:id',
+        eventType: 'm.room.message',
+        roomInfo: {
+          roomId: '!room:id',
+          name: 'Before',
+          avatarUrl: null,
+          isDirect: false,
+          isEncrypted: true,
+          unreadCount: 0,
+          highlightCount: 0,
+          notificationCount: 0,
+          lastMessage: 'hello decrypted',
+          lastMessageTime: 2000,
+          members: []
+        },
+        message: {
+          fromUser: { uid: '@user:server', username: '@user:server', avatar: '' },
+          message: {
+            id: '$same',
+            roomId: '!room:id',
+            type: MsgEnum.TEXT,
+            body: { body: 'hello decrypted' },
+            sendTime: 2000,
+            messageMarks: {},
+            status: 'success'
+          },
+          sendTime: 2000
+        }
+      })
+
+      expect(mockChatStore.updateMsg).toHaveBeenCalledWith({
+        msgId: '$same',
+        roomId: '!room:id',
+        status: 'success',
+        body: { body: 'hello decrypted' }
+      })
+      expect(mockChatStore.pushMsg).not.toHaveBeenCalled()
     })
   })
 

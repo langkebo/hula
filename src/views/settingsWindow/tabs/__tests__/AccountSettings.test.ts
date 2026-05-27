@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AccountSettings from '../AccountSettings.vue'
 
@@ -8,10 +8,13 @@ const {
   deactivateAccountMock,
   updateAvatarMock,
   uploadImageMock,
+  getExtendedProfileMock,
+  updateOwnExtendedProfileMock,
   messageSuccessMock,
   messageWarningMock,
   messageErrorMock,
   dialogWarningMock,
+  hasUnstableMock,
   translationMap
 } = vi.hoisted(() => {
   return {
@@ -20,12 +23,26 @@ const {
     deactivateAccountMock: vi.fn().mockResolvedValue(undefined),
     updateAvatarMock: vi.fn().mockResolvedValue(undefined),
     uploadImageMock: vi.fn().mockResolvedValue({ contentUri: 'mxc://test/avatar' }),
+    getExtendedProfileMock: vi.fn().mockResolvedValue({
+      resume: '已保存简介',
+      sex: 2,
+      region: '杭州',
+      birthday: '2000-01-02'
+    }),
+    updateOwnExtendedProfileMock: vi.fn().mockResolvedValue(undefined),
     messageSuccessMock: vi.fn(),
     messageWarningMock: vi.fn(),
     messageErrorMock: vi.fn(),
     dialogWarningMock: vi.fn(),
+    hasUnstableMock: vi.fn((flag: string) => flag === 'uk.tcpip.msc4133'),
     translationMap: {
       'setting.account.profile': '个人资料',
+      'setting.account.about': '简介',
+      'setting.account.gender': '性别',
+      'setting.account.region': '地区',
+      'setting.account.birthday': '生日',
+      'setting.account.extended_profile_updated': '资料已更新',
+      'setting.account.extended_profile_unsupported': '当前服务器暂不支持扩展资料',
       'setting.account.password_incomplete': '请填写完整密码信息',
       'setting.account.password_mismatch': '两次输入的密码不一致',
       'setting.account.password_change_failed_with_hint': '密码修改失败，请检查当前密码是否正确',
@@ -37,12 +54,18 @@ const {
 vi.mock('naive-ui', () => ({
   NAvatar: { name: 'NAvatar', template: '<div class="n-avatar" />', props: ['round', 'size', 'src', 'fallbackSrc'] },
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['size', 'type', 'loading'] },
+  NCheckbox: { name: 'NCheckbox', template: '<label><slot /></label>', props: ['checked'] },
   NForm: { name: 'NForm', template: '<form><slot /></form>', props: ['model', 'labelPlacement', 'labelWidth'] },
   NFormItem: { name: 'NFormItem', template: '<div><slot /></div>', props: ['label', 'path'] },
   NInput: {
     name: 'NInput',
     template: '<input />',
     props: ['value', 'type', 'placeholder', 'disabled', 'maxlength', 'showPasswordOn']
+  },
+  NSelect: {
+    name: 'NSelect',
+    template: '<select />',
+    props: ['value', 'options', 'placeholder', 'clearable']
   },
   NDivider: { name: 'NDivider', template: '<hr />' },
   useMessage: () => ({
@@ -53,11 +76,29 @@ vi.mock('naive-ui', () => ({
   useDialog: () => ({ warning: dialogWarningMock })
 }))
 
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+      if (type === 'success') messageSuccessMock(message)
+      if (type === 'warning') messageWarningMock(message)
+      if (type === 'error') messageErrorMock(message)
+    }
+  })
+}))
+
 vi.mock('@/stores/domains/user/user', () => ({
   useUserStore: () => ({
     currentUserDisplayName: 'TestUser',
     currentUserAvatarUrl: '',
-    updateAvatar: vi.fn().mockResolvedValue(undefined)
+    updateAvatar: vi.fn().mockResolvedValue(undefined),
+    userInfo: {
+      resume: '',
+      sex: 1
+    },
+    matrixProfile: {
+      resume: '',
+      sex: 1
+    }
   })
 }))
 
@@ -75,6 +116,19 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
     deactivateAccount: () => deactivateAccountMock(),
     updateAvatar: (...args: any[]) => updateAvatarMock(...args)
   }
+}))
+
+vi.mock('@/services/matrix/user/MatrixProfileService', () => ({
+  profileService: {
+    getExtendedProfile: (...args: any[]) => getExtendedProfileMock(...args),
+    updateOwnExtendedProfile: (...args: any[]) => updateOwnExtendedProfileMock(...args)
+  }
+}))
+
+vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
+  useServerCapability: () => ({
+    hasUnstable: (flag: string) => hasUnstableMock(flag)
+  })
 }))
 
 vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
@@ -115,12 +169,24 @@ describe('AccountSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    hasUnstableMock.mockImplementation((flag: string) => flag === 'uk.tcpip.msc4133')
   })
 
   it('renders correctly', () => {
     const wrapper = mount(AccountSettings)
     expect(wrapper.find('.account-settings').exists()).toBe(true)
     expect(wrapper.text()).toContain('个人资料')
+  })
+
+  it('loads extended profile fields on mount', async () => {
+    const wrapper = mount(AccountSettings)
+    await flushPromises()
+
+    expect(getExtendedProfileMock).toHaveBeenCalledWith('@test:localhost')
+    expect((wrapper.vm as any).formData.about).toBe('已保存简介')
+    expect((wrapper.vm as any).formData.sex).toBe(2)
+    expect((wrapper.vm as any).formData.region).toBe('杭州')
+    expect((wrapper.vm as any).formData.birthday).toBe('2000-01-02')
   })
 
   it('displays user ID', () => {
@@ -162,10 +228,10 @@ describe('AccountSettings', () => {
     const wrapper = mount(AccountSettings)
     const vm = wrapper.vm as any
     vm.passwordForm.oldPassword = 'oldpass'
-    vm.passwordForm.newPassword = 'newpass'
-    vm.passwordForm.confirmPassword = 'newpass'
+    vm.passwordForm.newPassword = 'Newpass1!'
+    vm.passwordForm.confirmPassword = 'Newpass1!'
     await vm.handlePasswordChange()
-    expect(changePasswordMock).toHaveBeenCalledWith('oldpass', 'newpass', undefined)
+    expect(changePasswordMock).toHaveBeenCalledWith('oldpass', 'Newpass1!', false)
   })
 
   it('clears password form after successful change', async () => {
@@ -173,8 +239,8 @@ describe('AccountSettings', () => {
     const wrapper = mount(AccountSettings)
     const vm = wrapper.vm as any
     vm.passwordForm.oldPassword = 'oldpass'
-    vm.passwordForm.newPassword = 'newpass'
-    vm.passwordForm.confirmPassword = 'newpass'
+    vm.passwordForm.newPassword = 'Newpass1!'
+    vm.passwordForm.confirmPassword = 'Newpass1!'
     await vm.handlePasswordChange()
     expect((wrapper.vm as any).passwordForm.oldPassword).toBe('')
     expect((wrapper.vm as any).passwordForm.newPassword).toBe('')
@@ -186,8 +252,8 @@ describe('AccountSettings', () => {
     const wrapper = mount(AccountSettings)
     const vm = wrapper.vm as any
     vm.passwordForm.oldPassword = 'oldpass'
-    vm.passwordForm.newPassword = 'newpass'
-    vm.passwordForm.confirmPassword = 'newpass'
+    vm.passwordForm.newPassword = 'Newpass1!'
+    vm.passwordForm.confirmPassword = 'Newpass1!'
     await vm.handlePasswordChange()
     expect(messageErrorMock).toHaveBeenCalledWith('密码修改失败，请检查当前密码是否正确')
   })
@@ -207,6 +273,51 @@ describe('AccountSettings', () => {
     vm.formData.displayName = 'NewName'
     await vm.handleDisplayNameChange()
     expect(updateDisplayNameMock).toHaveBeenCalledWith('NewName')
+  })
+
+  it('saves about field through extended profile API', async () => {
+    const wrapper = mount(AccountSettings)
+    await flushPromises()
+    const vm = wrapper.vm as any
+
+    vm.formData.about = '新的桌面简介'
+    await vm.handleAboutChange()
+
+    expect(updateOwnExtendedProfileMock).toHaveBeenCalledWith({ resume: '新的桌面简介' })
+    expect(messageSuccessMock).toHaveBeenCalledWith('资料已更新')
+  })
+
+  it('saves gender field through extended profile API', async () => {
+    const wrapper = mount(AccountSettings)
+    await flushPromises()
+    const vm = wrapper.vm as any
+
+    await vm.handleSexChange(1)
+
+    expect(updateOwnExtendedProfileMock).toHaveBeenCalledWith({ sex: 1 })
+  })
+
+  it('shows hint and blocks extended profile updates when server does not support MSC4133', async () => {
+    hasUnstableMock.mockReturnValue(false)
+    const wrapper = mount(AccountSettings)
+    await flushPromises()
+
+    expect(getExtendedProfileMock).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('当前服务器暂不支持扩展资料')
+
+    const inputComponents = wrapper.findAllComponents({ name: 'NInput' })
+    expect(inputComponents.at(2)?.props('disabled')).toBe(true)
+    expect(inputComponents.at(3)?.props('disabled')).toBe(true)
+    expect(inputComponents.at(4)?.props('disabled')).toBe(true)
+
+    const vm = wrapper.vm as any
+    vm.formData.about = '新的桌面简介'
+    await vm.handleAboutChange()
+    await vm.handleSexChange(1)
+
+    expect(updateOwnExtendedProfileMock).not.toHaveBeenCalled()
+    expect(messageWarningMock).toHaveBeenCalledWith('当前服务器暂不支持扩展资料')
+    expect(messageWarningMock).toHaveBeenCalledTimes(2)
   })
 
   it('shows deactivate account dialog', () => {

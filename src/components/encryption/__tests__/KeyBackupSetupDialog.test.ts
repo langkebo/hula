@@ -5,11 +5,12 @@ import KeyBackupSetupDialog from '../KeyBackupSetupDialog.vue'
 type KeyBackupSetupDialogVm = {
   step: 'intro' | 'showKey' | 'verify' | 'success'
   recoveryKey: string
+  currentPassword: string
   verifyKey: string
   keySaved: boolean
   dialogTitle: string
   startSetup: () => Promise<void>
-  confirmSetup: () => void
+  confirmSetup: () => Promise<void>
   verifyKeyInput: () => Promise<void>
   copyKey: () => Promise<void>
   downloadKey: () => void
@@ -18,10 +19,13 @@ type KeyBackupSetupDialogVm = {
 }
 
 const {
+  waitForClientReadyMock,
+  createRecoveryKeyFromPassphraseMock,
   setupKeyBackupMock,
   getKeyBackupInfoMock,
   messageSuccessMock,
   messageErrorMock,
+  messageWarningMock,
   writeTextMock,
   createObjectURLMock,
   revokeObjectURLMock,
@@ -29,10 +33,13 @@ const {
   removeChildMock,
   clickMock
 } = vi.hoisted(() => ({
+  waitForClientReadyMock: vi.fn(),
+  createRecoveryKeyFromPassphraseMock: vi.fn(),
   setupKeyBackupMock: vi.fn(),
   getKeyBackupInfoMock: vi.fn(),
   messageSuccessMock: vi.fn(),
   messageErrorMock: vi.fn(),
+  messageWarningMock: vi.fn(),
   writeTextMock: vi.fn(),
   createObjectURLMock: vi.fn(),
   revokeObjectURLMock: vi.fn(),
@@ -75,10 +82,6 @@ vi.mock('naive-ui', async () => {
       props: ['value'],
       emits: ['update:value'],
       template: '<textarea />'
-    }),
-    useMessage: () => ({
-      success: messageSuccessMock,
-      error: messageErrorMock
     })
   }
 })
@@ -87,6 +90,32 @@ vi.mock('@iconify/vue', () => ({
   Icon: {
     name: 'Icon',
     template: '<i data-test="icon" />'
+  }
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: (message: string, type: 'success' | 'error' | 'warning') => {
+      if (type === 'success') {
+        messageSuccessMock(message)
+      } else if (type === 'warning') {
+        messageWarningMock(message)
+      } else {
+        messageErrorMock(message)
+      }
+    }
+  })
+}))
+
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    waitForClientReady: waitForClientReadyMock
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
+  default: {
+    createRecoveryKeyFromPassphrase: createRecoveryKeyFromPassphraseMock
   }
 }))
 
@@ -113,6 +142,16 @@ describe('KeyBackupSetupDialog', () => {
   beforeEach(() => {
     vi.resetAllMocks()
 
+    waitForClientReadyMock.mockResolvedValue(undefined)
+    createRecoveryKeyFromPassphraseMock.mockResolvedValue({
+      encodedPrivateKey: 'RECOVERY-KEY-123',
+      privateKey: new Uint8Array(32),
+      keyInfo: {
+        algorithm: 'm.secret_storage.v1.aes-hmac-sha2',
+        iv: 'iv',
+        mac: 'mac'
+      }
+    })
     setupKeyBackupMock.mockResolvedValue('RECOVERY-KEY-123')
     getKeyBackupInfoMock.mockResolvedValue({
       version: '1',
@@ -170,25 +209,36 @@ describe('KeyBackupSetupDialog', () => {
 
   it('支持从创建备份到验证成功的完整流程', async () => {
     const wrapper = mountComponent()
+    const vm = wrapper.vm as unknown as KeyBackupSetupDialogVm
 
-    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).startSetup()
+    await vm.startSetup()
 
-    expect(setupKeyBackupMock).toHaveBeenCalled()
-    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('showKey')
-    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey).toBe('RECOVERY-KEY-123')
-    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).dialogTitle).toBe('保存恢复密钥')
+    expect(waitForClientReadyMock).toHaveBeenCalled()
+    expect(createRecoveryKeyFromPassphraseMock).toHaveBeenCalled()
+    expect(setupKeyBackupMock).not.toHaveBeenCalled()
+    expect(vm.step).toBe('showKey')
+    expect(vm.recoveryKey).toBe('RECOVERY-KEY-123')
+    expect(vm.dialogTitle).toBe('保存恢复密钥')
 
-    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).keySaved = true
-    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).confirmSetup()
-    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'RECOVERY-KEY-123'
-    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
+    vm.keySaved = true
+    vm.currentPassword = 'current-pass'
+    await vm.confirmSetup()
+    expect(setupKeyBackupMock).toHaveBeenCalledWith({
+      password: 'current-pass',
+      generatedKey: expect.objectContaining({
+        encodedPrivateKey: 'RECOVERY-KEY-123'
+      })
+    })
+
+    vm.verifyKey = 'RECOVERY-KEY-123'
+    await vm.verifyKeyInput()
 
     expect(getKeyBackupInfoMock).toHaveBeenCalled()
-    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('success')
-    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).dialogTitle).toBe('设置完成')
+    expect(vm.step).toBe('success')
+    expect(vm.dialogTitle).toBe('设置完成')
     expect(messageSuccessMock).toHaveBeenCalledWith('安全备份验证成功')
 
-    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).handleClose()
+    vm.handleClose()
 
     expect(wrapper.emitted('update:show')).toEqual([[false]])
     expect(wrapper.emitted('success')).toEqual([[]])
@@ -213,27 +263,38 @@ describe('KeyBackupSetupDialog', () => {
   })
 
   it('在创建、复制或验证失败时给出兜底提示', async () => {
-    setupKeyBackupMock.mockRejectedValueOnce(new Error('setup failed'))
+    createRecoveryKeyFromPassphraseMock.mockRejectedValueOnce(new Error('generate failed'))
     writeTextMock.mockRejectedValueOnce(new Error('copy failed'))
     getKeyBackupInfoMock.mockRejectedValueOnce(new Error('verify failed'))
 
     const wrapper = mountComponent()
+    const vm = wrapper.vm as unknown as KeyBackupSetupDialogVm
 
-    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).startSetup()
-    expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('intro')
+    await vm.startSetup()
+    expect(vm.step).toBe('intro')
     expect(messageErrorMock).toHaveBeenCalledWith('创建安全备份失败，请稍后重试')
 
-    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey = 'RECOVERY-KEY-123'
-    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).copyKey()
+    vm.recoveryKey = 'RECOVERY-KEY-123'
+    await vm.copyKey()
     await flushPromises()
     expect(messageErrorMock).toHaveBeenCalledWith('复制失败，请手动复制')
 
-    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).step = 'verify'
-    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey = 'RECOVERY-KEY-123'
-    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'RECOVERY-KEY-123'
-    await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
+    vm.step = 'verify'
+    vm.recoveryKey = 'RECOVERY-KEY-123'
+    vm.verifyKey = 'RECOVERY-KEY-123'
+    await vm.verifyKeyInput()
 
     expect(messageErrorMock).toHaveBeenCalledWith('验证备份失败')
+  })
+
+  it('缺少当前密码时阻止初始化备份', async () => {
+    const wrapper = mountComponent()
+    const vm = wrapper.vm as unknown as KeyBackupSetupDialogVm
+
+    await vm.confirmSetup()
+
+    expect(setupKeyBackupMock).not.toHaveBeenCalled()
+    expect(messageWarningMock).toHaveBeenCalledWith('setting.account.current_password_required')
   })
 
   it('在密钥不匹配或备份信息缺失时阻止完成设置', async () => {

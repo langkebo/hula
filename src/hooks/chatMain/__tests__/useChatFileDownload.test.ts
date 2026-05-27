@@ -7,6 +7,13 @@ const { showFeedbackMock, showProgressFeedbackMock, progressDestroyMock } = vi.h
   showProgressFeedbackMock: vi.fn(() => ({ destroy: progressDestroyMock }))
 }))
 
+const { userStoreMock } = vi.hoisted(() => ({
+  userStoreMock: {
+    userInfo: { uid: 'user123' } as { uid: string } | undefined,
+    getUserRoomAbsoluteDir: vi.fn(() => Promise.resolve('/users/user123/rooms'))
+  }
+}))
+
 const mockFileDownloadStore = {
   getFileStatus: vi.fn(() => ({ absolutePath: '/test/file.txt', nativePath: '/test' })),
   downloadFile: vi.fn(() => Promise.resolve('/downloaded/file.txt')),
@@ -39,10 +46,7 @@ vi.mock('@/stores/domains/widget/global', () => ({
 }))
 
 vi.mock('@/stores/domains/user/user', () => ({
-  useUserStore: () => ({
-    userInfo: { uid: 'user123' },
-    getUserRoomAbsoluteDir: vi.fn(() => Promise.resolve('/users/user123/rooms'))
-  })
+  useUserStore: () => userStoreMock
 }))
 
 vi.mock('@/utils/PathUtil', () => ({
@@ -77,6 +81,7 @@ const createHook = () =>
 describe('useChatFileDownload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    userStoreMock.userInfo = { uid: 'user123' }
   })
 
   describe('revealInDirSafely', () => {
@@ -210,6 +215,26 @@ describe('useChatFileDownload', () => {
 
       expect(mockFileDownloadStore.downloadEncryptedFile).toHaveBeenCalled()
       expect(mockFileDownloadStore.downloadFile).not.toHaveBeenCalled()
+    })
+
+    it('refreshes file status with empty userId when current user info is missing', async () => {
+      const { getFilesMeta } = await import('@/utils/PathUtil')
+      userStoreMock.userInfo = undefined
+      vi.mocked(getFilesMeta).mockResolvedValueOnce([{ exists: false }] as never)
+      mockFileDownloadStore.downloadFile.mockResolvedValueOnce('/new/path.txt')
+
+      const { downloadAndRevealFile } = createHook()
+      await downloadAndRevealFile({
+        fileUrl: 'https://example.com/file.txt',
+        fileName: 'file.txt',
+        i18nKeys: { downloadPrompt: 'prompt', success: 'success', failed: 'failed' }
+      })
+
+      expect(mockFileDownloadStore.refreshFileDownloadStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: ''
+        })
+      )
     })
 
     it('reveals existing file without downloading', async () => {

@@ -141,6 +141,7 @@ export type {
 export { matrixVerificationService } from './crypto/MatrixVerificationService'
 export { matrixFriendService } from './friends/MatrixFriendService'
 export { matrixSpecialFriendService } from './friends/MatrixSpecialFriendService'
+export { matrixGuestService } from './guest/MatrixGuestService'
 export { matrixApplicationService } from './MatrixApplicationService'
 export { createCachedFetcher, MatrixCacheManager } from './MatrixCacheManager'
 export { matrixEventService } from './MatrixEventService'
@@ -185,11 +186,25 @@ export { matrixReceiptService } from './messaging/MatrixReceiptService'
 export type { Thread, ThreadMessage } from './messaging/MatrixThreadService'
 export { matrixThreadService } from './messaging/MatrixThreadService'
 export { matrixTypingService } from './messaging/MatrixTypingService'
+export { matrixEventReportService } from './moderation/MatrixEventReportService'
 export { matrixNotificationService } from './notifications/MatrixNotificationService'
 export type { IPusher, IPushRule, IPushRules } from './notifications/MatrixPushService'
 export { matrixPushService } from './notifications/MatrixPushService'
 export { matrixRoomNotificationService } from './notifications/MatrixRoomNotificationService'
 export { matrixServerNotificationService } from './notifications/MatrixServerNotificationService'
+export type {
+  CreateSessionResponse,
+  GetMessagesResponse,
+  RendezvousMessage,
+  RendezvousSession,
+  RendezvousSessionIntent,
+  RendezvousSessionStatus,
+  RendezvousSessionTransport,
+  SendMessageResponse,
+  UpdateSessionResponse
+} from './rendezvous/MatrixRendezvousService'
+// Rendezvous 服务
+export { matrixRendezvousService } from './rendezvous/MatrixRendezvousService'
 export { matrixRoomAccountDataService } from './room/AccountDataService'
 export { matrixRoomAliasesService } from './room/AliasesService'
 export { matrixRoomCreationService } from './room/CreationService'

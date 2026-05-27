@@ -16,7 +16,7 @@ export class AdminUserService {
     limit = 100,
     from?: string,
     name?: string,
-    _guests = true
+    guests?: boolean
   ): Promise<{ users: UserInfo[]; nextToken?: string }> {
     try {
       const admin = (await this.sdkAdmin()) as unknown as {
@@ -26,8 +26,10 @@ export class AdminUserService {
         }>
       }
       const result = await admin.getUsersPaginated({ from, limit, name })
-      const users: UserInfo[] = (result?.items ?? []).map((user) => this.mapUserInfo(user))
-      return { users, nextToken: result?.nextToken }
+      const users = (result?.items ?? []).map((user) => this.mapUserInfo(user))
+      const filteredUsers =
+        typeof guests === 'boolean' ? users.filter((user) => Boolean(user.isGuest) === guests) : users
+      return { users: filteredUsers, nextToken: result?.nextToken }
     } catch (err) {
       error(`[Admin] 获取用户列表失败: ${err}`)
       return { users: [] }
@@ -400,9 +402,9 @@ export class AdminUserService {
     limit = 100,
     from?: string,
     name?: string,
-    _guests = true
+    guests?: boolean
   ): Promise<{ users: UserInfo[]; nextToken?: string }> {
-    return this.getUsers(limit, from, name, _guests)
+    return this.getUsers(limit, from, name, guests)
   }
 
   async getUserV2(userId: string): Promise<UserInfo | null> {
@@ -740,6 +742,8 @@ export class AdminUserService {
       avatarUrl: user.avatar_url as string | undefined,
       admin: user.admin as boolean | undefined,
       deactivated: user.deactivated as boolean | undefined,
+      isGuest: user.is_guest as boolean | undefined,
+      createdTs: (user.creation_ts as number | undefined) ?? (user.created_ts as number | undefined),
       displayname: user.displayname as string | undefined,
       lastSeenTs: user.last_seen_ts as number | undefined
     }

@@ -2,15 +2,27 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import KeyBackupDialog from '../KeyBackupDialog.vue'
 
-const { showFeedbackMock, clipboardWriteTextMock, saveMock, writeTextFileMock, getKeyBackupInfoMock } = vi.hoisted(
-  () => ({
-    showFeedbackMock: vi.fn(),
-    clipboardWriteTextMock: vi.fn(),
-    saveMock: vi.fn(),
-    writeTextFileMock: vi.fn(),
-    getKeyBackupInfoMock: vi.fn()
-  })
-)
+const {
+  showFeedbackMock,
+  clipboardWriteTextMock,
+  saveMock,
+  writeTextFileMock,
+  getKeyBackupInfoMock,
+  setupKeyBackupMock,
+  restoreFromBackupMock,
+  waitForClientReadyMock,
+  createRecoveryKeyFromPassphraseMock
+} = vi.hoisted(() => ({
+  showFeedbackMock: vi.fn(),
+  clipboardWriteTextMock: vi.fn(),
+  saveMock: vi.fn(),
+  writeTextFileMock: vi.fn(),
+  getKeyBackupInfoMock: vi.fn(),
+  setupKeyBackupMock: vi.fn(),
+  restoreFromBackupMock: vi.fn(),
+  waitForClientReadyMock: vi.fn(),
+  createRecoveryKeyFromPassphraseMock: vi.fn()
+}))
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
   save: saveMock
@@ -35,9 +47,21 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 vi.mock('@/composables/encryption', () => ({
   useEncryption: () => ({
     getKeyBackupInfo: getKeyBackupInfoMock,
-    setupKeyBackup: vi.fn(),
-    restoreFromBackup: vi.fn()
+    setupKeyBackup: setupKeyBackupMock,
+    restoreFromBackup: restoreFromBackupMock
   })
+}))
+
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    waitForClientReady: waitForClientReadyMock
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
+  default: {
+    createRecoveryKeyFromPassphrase: createRecoveryKeyFromPassphraseMock
+  }
 }))
 
 const mountComponent = () =>
@@ -72,6 +96,18 @@ describe('KeyBackupDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getKeyBackupInfoMock.mockResolvedValue(null)
+    setupKeyBackupMock.mockResolvedValue('RECOVERY-KEY-123')
+    restoreFromBackupMock.mockResolvedValue({ imported: 1, total: 1 })
+    waitForClientReadyMock.mockResolvedValue(undefined)
+    createRecoveryKeyFromPassphraseMock.mockResolvedValue({
+      encodedPrivateKey: 'RECOVERY-KEY-123',
+      privateKey: new Uint8Array(32),
+      keyInfo: {
+        algorithm: 'm.secret_storage.v1.aes-hmac-sha2',
+        iv: 'iv',
+        mac: 'mac'
+      }
+    })
     saveMock.mockResolvedValue('/tmp/recovery-key.txt')
     writeTextFileMock.mockResolvedValue(undefined)
     clipboardWriteTextMock.mockResolvedValue(undefined)
@@ -113,5 +149,35 @@ describe('KeyBackupDialog', () => {
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('encryption.backup.download_failed', 'error')
+  })
+
+  it('uses generated recovery key and current password when creating a backup', async () => {
+    const wrapper = mountComponent()
+    const vm = wrapper.vm as unknown as {
+      handleCreateBackup: () => Promise<void>
+      handleProceed: () => Promise<void>
+      recoveryKey: string
+      currentPassword: string
+      keySaved: boolean
+      currentStep: number
+    }
+
+    await vm.handleCreateBackup()
+
+    expect(waitForClientReadyMock).toHaveBeenCalled()
+    expect(createRecoveryKeyFromPassphraseMock).toHaveBeenCalled()
+    expect(vm.recoveryKey).toBe('RECOVERY-KEY-123')
+    expect(vm.currentStep).toBe(2)
+
+    vm.keySaved = true
+    vm.currentPassword = 'current-pass'
+    await vm.handleProceed()
+
+    expect(setupKeyBackupMock).toHaveBeenCalledWith({
+      password: 'current-pass',
+      generatedKey: expect.objectContaining({
+        encodedPrivateKey: 'RECOVERY-KEY-123'
+      })
+    })
   })
 })

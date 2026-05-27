@@ -7,7 +7,7 @@
     :closable="true"
     :mask-closable="false"
     class="key-backup-dialog"
-    style="width: 500px; max-width: 90vw">
+    style="width: 600px; max-width: 90vw">
     <n-spin :show="loading">
       <n-steps :current="currentStep" :status="stepStatus" size="small">
         <n-step :title="t('encryption.backup.step.status')" />
@@ -18,9 +18,12 @@
       <div class="step-content mt-20px">
         <template v-if="currentStep === 1">
           <n-flex vertical :size="16">
+            <!-- Status section -->
             <div class="status-card">
               <n-flex align="center" :size="12">
-                <n-icon size="24" :color="backupStatus.hasBackup ? '#18a058' : '#f0a020'">
+                <n-icon
+                  size="24"
+                  :color="backupStatus.hasBackup ? 'var(--hula-color-success-500)' : 'var(--hula-color-warning-500)'">
                   <svg><use :href="backupStatus.hasBackup ? '#check-circle' : '#warning'" /></svg>
                 </n-icon>
                 <n-flex vertical :size="4">
@@ -34,6 +37,41 @@
               </n-flex>
             </div>
 
+            <!-- Version Management section -->
+            <div v-if="backupVersions.length > 0" class="version-section">
+              <div class="section-label">{{ t('encryption.backup.versions.title') }}</div>
+              <n-flex vertical :size="8">
+                <div v-for="ver in backupVersions" :key="ver.version" class="version-item">
+                  <n-flex align="center" justify="space-between">
+                    <n-flex vertical :size="2">
+                      <span class="text-13px font-medium">
+                        {{ t('encryption.backup.versions.version') }} {{ ver.version }}
+                      </span>
+                      <span class="text-11px text-gray-500">{{ ver.algorithm }}</span>
+                    </n-flex>
+                    <n-flex :size="8" align="center">
+                      <n-button size="tiny" quaternary @click="handleViewVersionDetail(ver.version)">
+                        <template #icon>
+                          <Icon icon="mdi:eye-outline" />
+                        </template>
+                      </n-button>
+                      <n-popconfirm @positive-click="handleDeleteVersion(ver.version)">
+                        <template #trigger>
+                          <n-button size="tiny" quaternary type="error">
+                            <template #icon>
+                              <Icon icon="mdi:delete-outline" />
+                            </template>
+                          </n-button>
+                        </template>
+                        {{ t('encryption.backup.versions.delete_confirm') }}
+                      </n-popconfirm>
+                    </n-flex>
+                  </n-flex>
+                </div>
+              </n-flex>
+            </div>
+
+            <!-- Actions -->
             <n-flex :size="12" vertical>
               <n-button block @click="handleCreateBackup">
                 {{ t('encryption.backup.create_new') }}
@@ -41,7 +79,37 @@
               <n-button v-if="backupStatus.hasBackup" block @click="handleRestoreBackup">
                 {{ t('encryption.backup.restore') }}
               </n-button>
+
+              <!-- Export / Import / Verify buttons -->
+              <n-flex :size="8">
+                <n-button flex="1" secondary :loading="exporting" @click="handleExportKeys">
+                  <template #icon>
+                    <Icon icon="mdi:export" />
+                  </template>
+                  {{ t('encryption.backup.export_keys') }}
+                </n-button>
+                <n-button flex="1" secondary @click="triggerImportFile">
+                  <template #icon>
+                    <Icon icon="mdi:import" />
+                  </template>
+                  {{ t('encryption.backup.import_keys') }}
+                </n-button>
+              </n-flex>
+              <n-button
+                v-if="backupStatus.hasBackup && currentBackupVersion"
+                block
+                secondary
+                :loading="verifying"
+                @click="handleVerifyBackup">
+                <template #icon>
+                  <Icon icon="mdi:shield-check-outline" />
+                </template>
+                {{ t('encryption.backup.verify_backup') }}
+              </n-button>
             </n-flex>
+
+            <!-- Import file input (hidden) -->
+            <input ref="importFileInput" type="file" accept=".json" class="hidden" @change="handleImportFileChange" />
           </n-flex>
         </template>
 
@@ -77,6 +145,16 @@
                 </n-flex>
               </n-flex>
 
+              <n-flex vertical :size="8">
+                <span class="text-14px text-gray-500">{{ t('setting.account.current_password') }}</span>
+                <n-input
+                  v-model:value="currentPassword"
+                  type="password"
+                  show-password-on="click"
+                  :placeholder="t('setting.account.current_password_placeholder')" />
+                <span class="text-12px text-gray-500">{{ t('encryption.onboarding.current_password_hint') }}</span>
+              </n-flex>
+
               <n-checkbox v-model:checked="keySaved">
                 {{ t('encryption.backup.key_saved_confirm') }}
               </n-checkbox>
@@ -110,30 +188,71 @@
       </div>
     </n-spin>
 
-    <template #footer>
-      <n-flex justify="end" :size="12">
-        <n-button v-if="currentStep > 1 && currentStep < 3" @click="handleBack">
-          {{ t('common.back') }}
-        </n-button>
-        <n-button
-          v-if="currentStep === 2"
-          type="primary"
-          :disabled="!canProceed"
-          :loading="processing"
-          @click="handleProceed">
-          {{ mode === 'create' ? t('encryption.backup.confirm_create') : t('encryption.backup.confirm_restore') }}
-        </n-button>
-      </n-flex>
-    </template>
+    <!-- Version detail modal -->
+    <n-modal
+      v-model:show="versionDetailVisible"
+      preset="card"
+      :title="t('encryption.backup.versions.detail_title')"
+      :bordered="false"
+      style="width: 460px; max-width: 90vw">
+      <n-spin :show="versionDetailLoading">
+        <n-descriptions v-if="versionDetail" bordered :column="1" label-placement="left" size="small">
+          <n-descriptions-item :label="t('encryption.backup.versions.version')">
+            {{ versionDetail.version }}
+          </n-descriptions-item>
+          <n-descriptions-item :label="t('encryption.backup.versions.algorithm')">
+            {{ versionDetail.algorithm }}
+          </n-descriptions-item>
+          <n-descriptions-item v-if="versionDetail.count != null" :label="t('encryption.backup.versions.key_count')">
+            {{ versionDetail.count }}
+          </n-descriptions-item>
+          <n-descriptions-item v-if="versionDetail.etag" label="ETag">
+            {{ versionDetail.etag }}
+          </n-descriptions-item>
+        </n-descriptions>
+      </n-spin>
+    </n-modal>
+
+    <!-- Verify result modal -->
+    <n-modal
+      v-model:show="verifyResultVisible"
+      preset="card"
+      :title="t('encryption.backup.verify_result.title')"
+      :bordered="false"
+      style="width: 460px; max-width: 90vw">
+      <n-descriptions v-if="verifyResult" bordered :column="1" label-placement="left" size="small">
+        <n-descriptions-item :label="t('encryption.backup.verify_result.status')">
+          <n-tag :type="verifyResult.valid ? 'success' : 'error'" size="small">
+            {{
+              verifyResult.valid
+                ? t('encryption.backup.verify_result.valid')
+                : t('encryption.backup.verify_result.invalid')
+            }}
+          </n-tag>
+        </n-descriptions-item>
+        <n-descriptions-item :label="t('encryption.backup.versions.algorithm')">
+          {{ verifyResult.algorithm }}
+        </n-descriptions-item>
+        <n-descriptions-item :label="t('encryption.backup.versions.key_count')">
+          {{ verifyResult.key_count }}
+        </n-descriptions-item>
+      </n-descriptions>
+    </n-modal>
   </n-modal>
 </template>
 
 <script setup lang="ts">
-import { save } from '@tauri-apps/plugin-dialog'
-import { writeTextFile } from '@tauri-apps/plugin-fs'
+import { Icon } from '@iconify/vue'
+import { open, save } from '@tauri-apps/plugin-dialog'
+import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useEncryption } from '@/composables/encryption'
+import matrixCryptoService from '@/services/matrix/crypto/MatrixCryptoService'
+import type { BackupVersion, VerifyResult } from '@/services/matrix/crypto/MatrixKeyBackupService'
+import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import type { GeneratedSecretStorageKey } from '@/types/matrix-extensions'
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -151,14 +270,35 @@ const backupStatus = ref({
   count: 0
 })
 const recoveryKey = ref('')
+const generatedRecoveryKey = ref<GeneratedSecretStorageKey | null>(null)
+const currentPassword = ref('')
 const restoreKey = ref('')
 const keySaved = ref(false)
 const operationSuccess = ref(false)
 const successMessage = ref('')
 
+// Version management
+const backupVersions = ref<BackupVersion[]>([])
+const currentBackupVersion = ref<string | null>(null)
+
+// Version detail
+const versionDetailVisible = ref(false)
+const versionDetailLoading = ref(false)
+const versionDetail = ref<BackupVersion | null>(null)
+
+// Export / Import
+const exporting = ref(false)
+const importing = ref(false)
+const importFileInput = ref<HTMLInputElement | null>(null)
+
+// Verify
+const verifying = ref(false)
+const verifyResultVisible = ref(false)
+const verifyResult = ref<VerifyResult | null>(null)
+
 const canProceed = computed(() => {
   if (mode.value === 'create') {
-    return keySaved.value
+    return keySaved.value && currentPassword.value.trim().length > 0
   } else {
     return restoreKey.value.trim().length > 0
   }
@@ -172,6 +312,11 @@ const loadBackupStatus = async () => {
       hasBackup: !!info,
       count: info?.count || 0
     }
+    if (info?.version) {
+      currentBackupVersion.value = info.version
+    }
+    // Load backup versions
+    await loadBackupVersions()
   } catch (err) {
     backupStatus.value = { hasBackup: false, count: 0 }
   } finally {
@@ -179,26 +324,155 @@ const loadBackupStatus = async () => {
   }
 }
 
-const handleCreateBackup = () => {
+const loadBackupVersions = async () => {
+  try {
+    const versions = await matrixKeyBackupService.getBackupVersions()
+    backupVersions.value = versions.map((v) => ({
+      version: v.version,
+      algorithm: v.algorithm,
+      auth_data: v.auth_data
+    }))
+  } catch {
+    backupVersions.value = []
+  }
+}
+
+const handleViewVersionDetail = async (version: string) => {
+  versionDetailLoading.value = true
+  versionDetailVisible.value = true
+  try {
+    const detail = await matrixKeyBackupService.getBackupVersion(version)
+    versionDetail.value = detail
+  } catch {
+    showFeedback(t('encryption.backup.versions.detail_failed'), 'error')
+    versionDetailVisible.value = false
+  } finally {
+    versionDetailLoading.value = false
+  }
+}
+
+const handleDeleteVersion = async (version: string) => {
+  try {
+    await matrixKeyBackupService.deleteBackupVersion(version)
+    showFeedback(t('encryption.backup.versions.delete_success'), 'success')
+    await loadBackupStatus()
+  } catch {
+    showFeedback(t('encryption.backup.versions.delete_failed'), 'error')
+  }
+}
+
+const handleExportKeys = async () => {
+  exporting.value = true
+  try {
+    const result = await matrixKeyBackupService.exportKeys()
+    const jsonStr = JSON.stringify(result, null, 2)
+    const filePath = await save({
+      defaultPath: `key-backup-${Date.now()}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (filePath) {
+      await writeTextFile(filePath, jsonStr)
+      showFeedback(t('encryption.backup.export_success'), 'success')
+    }
+  } catch {
+    showFeedback(t('encryption.backup.export_failed'), 'error')
+  } finally {
+    exporting.value = false
+  }
+}
+
+const triggerImportFile = async () => {
+  try {
+    const filePath = await open({
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      multiple: false
+    })
+    if (filePath) {
+      await performImport(filePath as string)
+    }
+  } catch {
+    // User cancelled dialog
+  }
+}
+
+const performImport = async (filePath: string) => {
+  importing.value = true
+  try {
+    const content = await readTextFile(filePath)
+    const keys = JSON.parse(content)
+    const result = await matrixKeyBackupService.importKeys(keys)
+    showFeedback(
+      t('encryption.backup.import_success', { count: result.count, total: result.total }),
+      result.failed > 0 ? 'warning' : 'success'
+    )
+    await loadBackupStatus()
+  } catch {
+    showFeedback(t('encryption.backup.import_failed'), 'error')
+  } finally {
+    importing.value = false
+  }
+}
+
+const handleImportFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  importing.value = true
+  try {
+    const content = await file.text()
+    const keys = JSON.parse(content)
+    const result = await matrixKeyBackupService.importKeys(keys)
+    showFeedback(
+      t('encryption.backup.import_success', { count: result.count, total: result.total }),
+      result.failed > 0 ? 'warning' : 'success'
+    )
+    await loadBackupStatus()
+  } catch {
+    showFeedback(t('encryption.backup.import_failed'), 'error')
+  } finally {
+    importing.value = false
+    target.value = ''
+  }
+}
+
+const handleVerifyBackup = async () => {
+  if (!currentBackupVersion.value) return
+  verifying.value = true
+  try {
+    const result = await matrixKeyBackupService.verifyBackup(currentBackupVersion.value)
+    verifyResult.value = result
+    verifyResultVisible.value = true
+  } catch {
+    showFeedback(t('encryption.backup.verify_failed'), 'error')
+  } finally {
+    verifying.value = false
+  }
+}
+
+const handleCreateBackup = async () => {
   mode.value = 'create'
-  currentStep.value = 2
-  recoveryKey.value = generateRecoveryKey()
+  processing.value = true
+  try {
+    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+    const generatedKey = await matrixCryptoService.createRecoveryKeyFromPassphrase()
+    if (!generatedKey?.encodedPrivateKey) {
+      throw new Error('Failed to generate recovery key')
+    }
+    generatedRecoveryKey.value = generatedKey
+    recoveryKey.value = generatedKey.encodedPrivateKey
+    currentStep.value = 2
+  } catch {
+    showFeedback(t('encryption.backup.failed_desc'), 'error')
+  } finally {
+    processing.value = false
+  }
 }
 
 const handleRestoreBackup = () => {
   mode.value = 'restore'
   currentStep.value = 2
   restoreKey.value = ''
-}
-
-const generateRecoveryKey = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let key = ''
-  for (let i = 0; i < 64; i++) {
-    if (i > 0 && i % 8 === 0) key += ' '
-    key += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return key
 }
 
 const handleCopyKey = async () => {
@@ -231,7 +505,17 @@ const handleProceed = async () => {
 
   try {
     if (mode.value === 'create') {
-      await encryption.setupKeyBackup(recoveryKey.value)
+      if (!currentPassword.value.trim()) {
+        showFeedback(t('setting.account.current_password_required'), 'warning')
+        return
+      }
+      if (!generatedRecoveryKey.value) {
+        throw new Error('Missing generated recovery key')
+      }
+      await encryption.setupKeyBackup({
+        password: currentPassword.value.trim(),
+        generatedKey: generatedRecoveryKey.value
+      })
       successMessage.value = t('encryption.backup.create_success')
     } else {
       const result = await encryption.restoreFromBackup(restoreKey.value)
@@ -267,10 +551,18 @@ const resetState = () => {
   currentStep.value = 1
   stepStatus.value = 'process'
   recoveryKey.value = ''
+  generatedRecoveryKey.value = null
+  currentPassword.value = ''
   restoreKey.value = ''
   keySaved.value = false
   operationSuccess.value = false
   successMessage.value = ''
+  backupVersions.value = []
+  currentBackupVersion.value = null
+  versionDetailVisible.value = false
+  versionDetail.value = null
+  verifyResultVisible.value = false
+  verifyResult.value = null
 }
 
 watch(visible, (val) => {
@@ -302,6 +594,29 @@ watch(visible, (val) => {
   padding: 16px;
   border-radius: 8px;
   background: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-default);
+}
+
+.version-section {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--hula-surface-panel);
+  border: 1px solid var(--hula-border-default);
+}
+
+.section-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hula-text-tertiary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.version-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--hula-surface-raised);
   border: 1px solid var(--hula-border-default);
 }
 

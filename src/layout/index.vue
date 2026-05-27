@@ -369,7 +369,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
 
   const currentUid = userUid.value
   // 不是自己发的消息才通知
-  if (!currentUid || data.fromUser.uid !== currentUid) {
+  if (!currentUid || data.fromUser?.uid !== currentUid) {
     // 获取该消息的会话信息
     const session = chatStore.sessionList.find((s) => s.roomId === data.message.roomId)
 

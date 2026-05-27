@@ -3,9 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixEncryptionService } from '../MatrixEncryptionService'
 
+const { getClientMock } = vi.hoisted(() => ({
+  getClientMock: vi.fn()
+}))
+
 vi.mock('../../MatrixClientService', () => ({
+  matrixClientService: {
+    getClient: getClientMock
+  },
   default: {
-    getClient: vi.fn()
+    getClient: getClientMock
   }
 }))
 
@@ -13,15 +20,23 @@ describe('MatrixEncryptionService', () => {
   let mockClient: Partial<MatrixClient>
   let mockCrypto: {
     bootstrapCrossSigning: ReturnType<typeof vi.fn>
+    bootstrapSecretStorage: ReturnType<typeof vi.fn>
+    createRecoveryKeyFromPassphrase: ReturnType<typeof vi.fn>
     getDeviceVerificationStatus: ReturnType<typeof vi.fn>
     prepareKeyBackupVersion: ReturnType<typeof vi.fn>
+    resetKeyBackup: ReturnType<typeof vi.fn>
+    restoreKeyBackup: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
     mockCrypto = {
       bootstrapCrossSigning: vi.fn(),
+      bootstrapSecretStorage: vi.fn(),
+      createRecoveryKeyFromPassphrase: vi.fn(),
       getDeviceVerificationStatus: vi.fn(),
-      prepareKeyBackupVersion: vi.fn()
+      prepareKeyBackupVersion: vi.fn(),
+      resetKeyBackup: vi.fn(),
+      restoreKeyBackup: vi.fn()
     }
 
     mockClient = {
@@ -159,6 +174,61 @@ describe('MatrixEncryptionService', () => {
 
       const result = await matrixEncryptionService.getCrossSigningInfo()
       expect(result.isSetup).toBe(false)
+    })
+  })
+
+  describe('setupCrossSigning', () => {
+    it('retries with returned UIA session when password auth is provided', async () => {
+      mockCrypto.bootstrapCrossSigning.mockImplementationOnce(async ({ authUploadDeviceSigningKeys }) => {
+        const makeRequest = vi
+          .fn()
+          .mockRejectedValueOnce({ data: { session: 'uia-session' } })
+          .mockResolvedValueOnce({})
+        await authUploadDeviceSigningKeys(makeRequest)
+        expect(makeRequest).toHaveBeenNthCalledWith(1, {
+          type: 'm.login.password',
+          user: '@user:example.com',
+          password: 'secret'
+        })
+        expect(makeRequest).toHaveBeenNthCalledWith(2, {
+          type: 'm.login.password',
+          user: '@user:example.com',
+          password: 'secret',
+          session: 'uia-session'
+        })
+      })
+
+      await expect(matrixEncryptionService.setupCrossSigning({ password: 'secret' })).resolves.toBeUndefined()
+    })
+  })
+
+  describe('setupKeyBackup', () => {
+    it('bootstraps secret storage with generated recovery key and password auth', async () => {
+      mockCrypto.createRecoveryKeyFromPassphrase.mockResolvedValueOnce({
+        encodedPrivateKey: 'RECOVERY-KEY',
+        privateKey: new Uint8Array(32),
+        keyInfo: {
+          algorithm: 'm.secret_storage.v1.aes-hmac-sha2',
+          iv: 'iv',
+          mac: 'mac'
+        }
+      })
+      mockCrypto.bootstrapSecretStorage.mockResolvedValueOnce(undefined)
+
+      const result = await matrixEncryptionService.setupKeyBackup({ password: 'secret' })
+
+      expect(result).toBe('RECOVERY-KEY')
+      expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          setupNewSecretStorage: true,
+          setupNewKeyBackup: true,
+          setupNewKeyBackupAuth: {
+            type: 'm.login.password',
+            user: '@user:example.com',
+            password: 'secret'
+          }
+        })
+      )
     })
   })
 })

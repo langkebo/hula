@@ -27,14 +27,14 @@
             <div class="bg-white dark:bg-dark-card rounded-lg p-15px flex gap-20px items-center">
               <img
                 class="w-74px h-74px rounded-full object-cover flex-shrink-0"
-                :src="AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)"
+                :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')"
                 alt="用户头像"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 
               <div @click="toMyInfo" class="flex flex-col flex-1 py-10px">
-                <div class="font-bold text-18px">{{ userStore.userInfo!.name }}</div>
+                <div class="font-bold text-18px">{{ userStore.userInfo?.name ?? '' }}</div>
                 <div class="mt-2 text-bold-style line-height-22px line-clamp-2">
-                  {{ userStore.userInfo!.resume || t('mobile_my.default_bio') }}
+                  {{ userStore.userInfo?.resume ?? ('' || t('mobile_my.default_bio')) }}
                 </div>
               </div>
 

@@ -57,16 +57,16 @@
               <n-avatar
                 round
                 :size="34"
-                @click="handleAvatarClick(message.fromUser.uid, message.message.id)"
+                @click="handleAvatarClick(senderUid, message.message.id)"
                 class="select-none"
                 color="var(--hula-surface-panel)"
                 :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                :src="getAvatarSrc(message.fromUser.uid)"
+                :src="getAvatarSrc(senderUid)"
                 :class="isMe ? '' : 'mr-10px'" />
             </ContextMenu>
           </template>
           <!-- 用户个人信息框 -->
-          <InfoPopover v-if="selectKey === message.message.id" :uid="fromUser.uid" />
+          <InfoPopover v-if="selectKey === message.message.id && senderUid" :uid="senderUid" />
         </n-popover>
 
         <n-flex vertical :size="6" class="color-[--hula-text-primary] flex-1" :class="isMe ? 'items-end mr-10px' : ''">
@@ -95,13 +95,13 @@
             </ContextMenu>
             <!-- 群主 -->
             <div
-              v-if="groupStore.isCurrentLord(fromUser.uid)"
+              v-if="senderUid && groupStore.isCurrentLord(senderUid)"
               class="flex px-4px py-3px rounded-4px bg-[--hula-color-danger-500]30 size-fit select-none">
               <span class="text-(9px [--hula-color-danger-500])">{{ t('home.chat_sidebar.roles.owner') }}</span>
             </div>
             <!-- 管理员 -->
             <div
-              v-if="groupStore.isAdmin(fromUser.uid)"
+              v-if="senderUid && groupStore.isAdmin(senderUid)"
               class="flex px-4px py-3px rounded-4px bg-[--hula-color-primary-100] size-fit select-none">
               <span class="text-(9px [--hula-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</span>
             </div>
@@ -156,7 +156,7 @@
                 :body="message.message.body"
                 :message-status="message.message.status"
                 :upload-progress="uploadProgress"
-                :from-user-uid="fromUser?.uid"
+                :from-user-uid="senderUid"
                 :message="message.message"
                 :data-message-id="message.message.id"
                 :is-group="isGroup"
@@ -190,7 +190,7 @@
               :body="message.message.body"
               :message-status="message.message.status"
               :upload-progress="uploadProgress"
-              :from-user-uid="fromUser?.uid"
+              :from-user-uid="senderUid"
               :message="message.message"
               :data-message-id="message.message.id"
               :is-group="isGroup"
@@ -297,7 +297,7 @@
             v-if="!historyMode"
             :message-id="message.message.id"
             :room-id="message.message.roomId"
-            :sender-id="fromUser.uid"
+            :sender-id="senderUid"
             :timestamp="message.message.sendTime"
             :status="message.message.status"
             :is-me="isMe"
@@ -365,8 +365,8 @@ const props = withDefaults(
     message: MessageType
     uploadProgress?: number
     isGroup: boolean
-    fromUser: {
-      uid: string
+    fromUser?: {
+      uid?: string
     }
     onImageClick?: (url: string) => void
     onVideoClick?: (url: string) => void
@@ -381,6 +381,7 @@ const props = withDefaults(
 const emit = defineEmits(['jump2Reply'])
 const { t } = useI18n()
 const globalStore = useGlobalStore()
+const senderUid = computed(() => props.fromUser?.uid || props.message?.fromUser?.uid || '')
 
 const messageBody = computed((): MessageBody => {
   const body = props.message?.message?.body
@@ -390,16 +391,25 @@ const messageBody = computed((): MessageBody => {
   return { content: String(body || '') }
 })
 
-const selectKey = ref(props.fromUser!.uid)
+const selectKey = ref(senderUid.value || props.message.message.id)
 const infoPopoverRefs = reactive<Record<string, ShowablePopover | null>>({})
 const { handlePopoverUpdate } = usePopover(selectKey, 'image-chat-main')
 const setInfoPopoverRef = (messageId: string, el: unknown) => {
   infoPopoverRefs[messageId] = isShowablePopover(el) ? el : null
 }
 
-const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarClick } = useMessageUser(props, {
-  selectKey
-})
+const messageUserInput: Parameters<typeof useMessageUser>[0] = {
+  message: props.message,
+  fromUser: props.fromUser,
+  isGroup: props.isGroup
+}
+
+const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarClick } = useMessageUser(
+  messageUserInput,
+  {
+    selectKey
+  }
+)
 
 const activeReply = ref<string>('')
 const settingStore = useSettingStore()

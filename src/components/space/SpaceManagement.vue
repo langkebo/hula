@@ -40,6 +40,32 @@
                     {{ t('common.save') }}
                   </n-button>
                 </n-form>
+
+                <n-collapse class="state-collapse">
+                  <n-collapse-item :title="t('space.management.state_events')" name="state">
+                    <template #header-extra>
+                      <n-button text size="small" @click.stop="handleLoadState">
+                        <Icon icon="mdi:refresh" :class="{ 'spin-icon': stateLoading }" />
+                      </n-button>
+                    </template>
+                    <n-spin :show="stateLoading" size="small">
+                      <n-empty v-if="spaceState.length === 0" :description="t('space.management.no_state_events')" />
+                      <n-list v-else bordered size="small">
+                        <n-list-item v-for="(evt, idx) in spaceState" :key="idx">
+                          <div class="state-event-item">
+                            <div class="state-event-header">
+                              <n-tag size="small" round>{{ evt.type }}</n-tag>
+                              <span v-if="evt.stateKey" class="state-key">{{ evt.stateKey }}</span>
+                            </div>
+                            <div class="state-event-content">
+                              {{ formatContent(evt.content) }}
+                            </div>
+                          </div>
+                        </n-list-item>
+                      </n-list>
+                    </n-spin>
+                  </n-collapse-item>
+                </n-collapse>
               </div>
             </n-tab-pane>
 
@@ -99,6 +125,122 @@
               </div>
             </n-tab-pane>
 
+            <n-tab-pane :name="'hierarchy'" :tab="t('space.management.tab_hierarchy')">
+              <div class="tab-content">
+                <div class="action-row">
+                  <n-button size="small" :loading="hierarchyLoading" @click="handleLoadHierarchy">
+                    <Icon icon="mdi:refresh" style="margin-right: 4px" />
+                    {{ t('space.management.refresh') }}
+                  </n-button>
+                </div>
+                <n-spin :show="hierarchyLoading" size="small">
+                  <n-empty v-if="hierarchyTreeData.length === 0" :description="t('space.management.no_hierarchy')" />
+                  <n-tree
+                    v-else
+                    :data="hierarchyTreeData"
+                    :block-line="true"
+                    key-field="key"
+                    label-field="label"
+                    children-field="children"
+                    default-expand-all />
+                </n-spin>
+              </div>
+            </n-tab-pane>
+
+            <n-tab-pane :name="'summary'" :tab="t('space.management.tab_summary')">
+              <div class="tab-content">
+                <div class="action-row">
+                  <n-button size="small" :loading="summaryLoading" @click="handleLoadSummary">
+                    <Icon icon="mdi:refresh" style="margin-right: 4px" />
+                    {{ t('space.management.refresh') }}
+                  </n-button>
+                </div>
+                <n-spin :show="summaryLoading" size="small">
+                  <template v-if="spaceSummary">
+                    <n-descriptions bordered :column="1" label-placement="left" size="small">
+                      <n-descriptions-item :label="t('space.name')">
+                        {{ spaceSummary.space.name || '-' }}
+                      </n-descriptions-item>
+                      <n-descriptions-item :label="t('space.topic')">
+                        {{ spaceSummary.space.topic || '-' }}
+                      </n-descriptions-item>
+                      <n-descriptions-item :label="t('space.management.member_count_label')">
+                        {{ spaceSummary.space.memberCount }}
+                      </n-descriptions-item>
+                      <n-descriptions-item :label="t('space.management.room_count_label')">
+                        {{ spaceSummary.space.childCount }}
+                      </n-descriptions-item>
+                    </n-descriptions>
+
+                    <div class="section-title">
+                      {{ t('space.management.summary_children') }}
+                    </div>
+                    <n-list bordered size="small">
+                      <n-list-item v-for="child in spaceSummary.children" :key="child.roomId">
+                        <div class="summary-child-item">
+                          <div class="summary-child-info">
+                            <span class="summary-child-name">{{ child.name || child.roomId }}</span>
+                            <n-tag size="small" round>
+                              {{ child.memberCount }} {{ t('space.management.member_count_label') }}
+                            </n-tag>
+                            <n-tag v-if="child.joinRule" size="small" type="info" round>{{ child.joinRule }}</n-tag>
+                          </div>
+                        </div>
+                      </n-list-item>
+                    </n-list>
+                    <n-empty
+                      v-if="spaceSummary.children.length === 0"
+                      :description="t('space.management.no_summary_children')" />
+                  </template>
+                  <n-empty v-else :description="t('space.management.no_summary')" />
+                </n-spin>
+
+                <n-collapse class="summary-collapse">
+                  <n-collapse-item :title="t('space.management.summary_with_children')" name="summaryWithChildren">
+                    <template #header-extra>
+                      <n-button text size="small" @click.stop="handleLoadSummaryWithChildren">
+                        <Icon icon="mdi:refresh" :class="{ 'spin-icon': summaryWithChildrenLoading }" />
+                      </n-button>
+                    </template>
+                    <n-spin :show="summaryWithChildrenLoading" size="small">
+                      <template v-if="spaceSummaryWithChildren">
+                        <n-descriptions bordered :column="1" label-placement="left" size="small">
+                          <n-descriptions-item :label="t('space.name')">
+                            {{ spaceSummaryWithChildren.space.name || '-' }}
+                          </n-descriptions-item>
+                          <n-descriptions-item :label="t('space.topic')">
+                            {{ spaceSummaryWithChildren.space.topic || '-' }}
+                          </n-descriptions-item>
+                          <n-descriptions-item :label="t('space.management.member_count_label')">
+                            {{ spaceSummaryWithChildren.space.memberCount }}
+                          </n-descriptions-item>
+                          <n-descriptions-item :label="t('space.management.room_count_label')">
+                            {{ spaceSummaryWithChildren.space.childCount }}
+                          </n-descriptions-item>
+                        </n-descriptions>
+                        <n-list bordered size="small" style="margin-top: 8px">
+                          <n-list-item v-for="(child, idx) in spaceSummaryWithChildren.children" :key="idx">
+                            <div class="summary-child-item">
+                              <div class="summary-child-info">
+                                <span class="summary-child-name">
+                                  {{ (child.name as string) || (child.room_id as string) || '-' }}
+                                </span>
+                                <n-tag v-if="child.room_type" size="small" round>{{ child.room_type as string }}</n-tag>
+                              </div>
+                            </div>
+                          </n-list-item>
+                        </n-list>
+                        <n-empty
+                          v-if="spaceSummaryWithChildren.children.length === 0"
+                          :description="t('space.management.no_summary_children')" />
+                      </template>
+                      <n-empty v-else :description="t('space.management.no_summary')" />
+                    </n-spin>
+                  </n-collapse-item>
+                </n-collapse>
+              </div>
+            </n-tab-pane>
+
             <n-tab-pane :name="'danger'" :tab="t('space.management.tab_danger')">
               <div class="tab-content">
                 <div class="danger-zone">
@@ -121,6 +263,7 @@
 </template>
 
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -148,19 +291,31 @@ const {
   children,
   loading,
   mutating,
+  spaceState,
+  spaceHierarchy,
+  spaceSummary,
+  spaceSummaryWithChildren,
   loadSpace,
   updateSpaceInfo,
   inviteUser,
   addChildRoom,
   removeChildRoom,
   leaveSpace,
-  deleteSpace
+  deleteSpace,
+  loadSpaceState,
+  loadSpaceHierarchy,
+  loadSpaceSummary,
+  loadSpaceSummaryWithChildren
 } = useSpaceManagement(() => props.spaceId)
 
 const editName = ref('')
 const editTopic = ref('')
 const inviteUserId = ref('')
 const addRoomId = ref('')
+const stateLoading = ref(false)
+const hierarchyLoading = ref(false)
+const summaryLoading = ref(false)
+const summaryWithChildrenLoading = ref(false)
 
 const hasInfoChanged = computed(() => {
   if (!spaceInfo.value) return false
@@ -172,6 +327,73 @@ const membershipTagType = (membership: string): 'success' | 'warning' | 'default
   if (membership === 'invite') return 'warning'
   return 'default'
 }
+
+const formatContent = (content: unknown): string => {
+  if (!content) return ''
+  try {
+    const str = JSON.stringify(content)
+    return str.length > 120 ? str.slice(0, 120) + '...' : str
+  } catch {
+    return String(content)
+  }
+}
+
+const hierarchyTreeData = computed(() => {
+  const rooms = spaceHierarchy.value
+  if (!rooms.length) return []
+
+  const roomIdToChildren = new Map<string, Array<Record<string, unknown>>>()
+  const allRoomIds = new Set(rooms.map((r) => r.room_id as string))
+
+  for (const room of rooms) {
+    const childIds = (room.children_state as Array<Record<string, unknown>>) ?? []
+    for (const child of childIds) {
+      const childRoomId = child.state_key as string
+      if (!childRoomId) continue
+      if (!roomIdToChildren.has(room.room_id as string)) {
+        roomIdToChildren.set(room.room_id as string, [])
+      }
+      roomIdToChildren.get(room.room_id as string)!.push({ room_id: childRoomId })
+    }
+  }
+
+  const buildNode = (roomId: string, visited: Set<string>): Record<string, unknown> | null => {
+    if (visited.has(roomId)) return null
+    visited.add(roomId)
+
+    const room = rooms.find((r) => r.room_id === roomId)
+    const childEntries = roomIdToChildren.get(roomId) ?? []
+    const childNodes: Array<Record<string, unknown>> = []
+
+    for (const child of childEntries) {
+      const childId = child.room_id as string
+      if (allRoomIds.has(childId)) {
+        const node = buildNode(childId, visited)
+        if (node) childNodes.push(node)
+      } else {
+        childNodes.push({
+          key: childId,
+          label: childId,
+          prefix: () => '📦'
+        })
+      }
+    }
+
+    return {
+      key: roomId,
+      label: (room?.name as string) || roomId,
+      prefix: () => ((room?.room_type as string) === 'm.space' ? '📁' : '📦'),
+      children: childNodes.length > 0 ? childNodes : undefined
+    }
+  }
+
+  const rootRoom = rooms[0]
+  if (!rootRoom) return []
+
+  const visited = new Set<string>()
+  const rootNode = buildNode(rootRoom.room_id as string, visited)
+  return rootNode ? [rootNode] : []
+})
 
 const handleUpdateInfo = async () => {
   const data: Record<string, string> = {}
@@ -240,6 +462,42 @@ const handleDelete = async () => {
   }
 }
 
+const handleLoadState = async () => {
+  stateLoading.value = true
+  try {
+    await loadSpaceState()
+  } finally {
+    stateLoading.value = false
+  }
+}
+
+const handleLoadHierarchy = async () => {
+  hierarchyLoading.value = true
+  try {
+    await loadSpaceHierarchy()
+  } finally {
+    hierarchyLoading.value = false
+  }
+}
+
+const handleLoadSummary = async () => {
+  summaryLoading.value = true
+  try {
+    await loadSpaceSummary()
+  } finally {
+    summaryLoading.value = false
+  }
+}
+
+const handleLoadSummaryWithChildren = async () => {
+  summaryWithChildrenLoading.value = true
+  try {
+    await loadSpaceSummaryWithChildren()
+  } finally {
+    summaryWithChildrenLoading.value = false
+  }
+}
+
 watch(
   () => [props.visible, props.spaceId] as const,
   ([visible, id]) => {
@@ -303,7 +561,8 @@ watch(spaceInfo, (info) => {
 }
 
 .invite-row,
-.add-room-row {
+.add-room-row,
+.action-row {
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
@@ -352,5 +611,83 @@ watch(spaceInfo, (info) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.state-collapse {
+  margin-top: 16px;
+}
+
+.state-event-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.state-event-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.state-key {
+  font-size: 12px;
+  color: var(--hula-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state-event-content {
+  font-size: 12px;
+  color: var(--hula-text-secondary);
+  word-break: break-all;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+.summary-collapse {
+  margin-top: 16px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hula-text-primary);
+  margin: 12px 0 8px;
+}
+
+.summary-child-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.summary-child-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.summary-child-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--hula-text-primary);
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

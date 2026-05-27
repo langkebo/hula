@@ -191,7 +191,7 @@ const {
     // 更新编辑信息
     editInfo.value.content.avatar = mxcUrl
     // 更新登录历史记录
-    const historyItem = loginHistoriesStore.loginHistories.find((item) => item.uid === userStore.userInfo!.uid)
+    const historyItem = loginHistoriesStore.loginHistories.find((item) => item.uid === (userStore.userInfo?.uid ?? ''))
     if (historyItem) {
       historyItem.avatar = mxcUrl
     }

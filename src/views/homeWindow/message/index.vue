@@ -51,6 +51,7 @@ import { WORKBENCH_SESSION_ENGAGEMENT_FILTERS, WORKBENCH_SESSION_TYPE_FILTERS } 
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useRoomStore } from '@/stores/domains/chat/room'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useTimerManager } from '@/utils/TimerManager'
 
@@ -63,6 +64,7 @@ const appWindow = WebviewWindow.getCurrent()
 const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
+const roomStore = useRoomStore()
 const { addListener } = useTauriListener()
 const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visibleSpecialMenu } = useMessage()
 
@@ -91,6 +93,15 @@ const {
 
 const sessionListRef = ref<InstanceType<typeof RoomSessionList> | null>(null)
 let clearUnreadTimer: number | null = null // Moved this up
+
+const ensureSessionListLoaded = async (): Promise<void> => {
+  if (route.path !== '/message') return
+  if (chatStore.sessionOptions.isLoading || syncLoading.value) return
+  if (sessionList.value.length > 0) return
+  if (roomStore.roomList.length === 0) return
+
+  await retrySessions()
+}
 
 const emptyDescription = computed(() => {
   if (
@@ -156,6 +167,7 @@ watch(
 
     // 只在路由切换到/message时处理
     if (newPath === '/message') {
+      await ensureSessionListLoaded()
       // 检查是否有选中的会话
       const currentRoomId = globalStore.currentSessionRoomId
       if (currentRoomId) {
@@ -171,6 +183,16 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(
+  () => roomStore.roomList.length,
+  async (roomCount, previousCount) => {
+    if (roomCount <= 0) return
+    if (sessionList.value.length > 0) return
+    if (previousCount === roomCount && previousCount !== 0) return
+    await ensureSessionListLoaded()
+  }
 )
 
 onBeforeMount(async () => {

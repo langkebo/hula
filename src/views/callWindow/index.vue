@@ -13,7 +13,7 @@
         class="rounded-12px shadow-md" />
       <!-- 通话类型指示器 -->
       <div class="absolute -bottom-2px -right-2px w-20px h-20px rounded-full bg-blue-500 flex-center shadow-lg">
-        <svg class="size-14px color-#fff">
+        <svg class="size-14px text-[--hula-text-inverse]">
           <use :href="callType === CallTypeEnum.VIDEO ? '#video-one' : '#phone-telephone'"></use>
         </svg>
       </div>
@@ -39,7 +39,7 @@
       <div
         @click="hangUp(CallResponseStatus.REJECTED)"
         class="size-40px rounded-full bg-[--hula-color-danger-500] hover:bg-[--hula-color-danger-500] flex-center cursor-pointer shadow-lg">
-        <svg class="color-#fff size-20px">
+        <svg class="text-[--hula-text-inverse] size-20px">
           <use href="#PhoneHangup"></use>
         </svg>
       </div>
@@ -47,7 +47,7 @@
       <div
         @click="acceptCall"
         class="size-40px rounded-full bg-[--hula-color-primary-500] hover:bg-[--hula-color-primary-500] flex-center cursor-pointer shadow-lg">
-        <svg class="color-#fff size-20px">
+        <svg class="text-[--hula-text-inverse] size-20px">
           <use href="#phone-telephone-entity"></use>
         </svg>
       </div>
@@ -55,7 +55,10 @@
   </div>
 
   <!-- 正常通话窗口 -->
-  <div v-else data-tauri-drag-region class="h-full flex flex-col select-none relative bg-#161616">
+  <div
+    v-else
+    data-tauri-drag-region
+    class="h-full flex flex-col select-none relative bg-[--hula-surface-media-preview]">
     <!-- 背景羽化模糊层 -->
     <div
       :style="{
@@ -116,7 +119,7 @@
           <!-- 切换提示 -->
           <div
             class="absolute inset-0 flex-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-30 rounded-8px pointer-events-none">
-            <svg class="text-#fff size-20px">
+            <svg class="text-[--hula-text-inverse] size-20px">
               <use href="#switch"></use>
             </svg>
           </div>
@@ -132,7 +135,7 @@
           }">
           <!-- 通话时长 -->
           <div v-if="connectionStatus === RTCCallStatus.ACCEPT" class="pb-16px text-center pointer-events-none">
-            <div class="inline-block rounded-full bg-black/50 px-16px py-6px text-14px text-#fff">
+            <div class="inline-block rounded-full bg-black/50 px-16px py-6px text-14px text-[--hula-text-inverse]">
               {{ formattedCallDuration }}
             </div>
           </div>
@@ -148,7 +151,7 @@
                     ? 'bg-gray-600 hover:bg-gray-500'
                     : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
                 ">
-                <svg class="size-16px color-#fff">
+                <svg class="size-16px text-[--hula-text-inverse]">
                   <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
                 </svg>
               </div>
@@ -164,7 +167,7 @@
                     ? 'bg-gray-600 hover:bg-gray-500'
                     : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
                 ">
-                <svg class="size-16px color-#fff">
+                <svg class="size-16px text-[--hula-text-inverse]">
                   <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
                 </svg>
               </div>
@@ -175,7 +178,7 @@
               <div
                 @click="switchCameraFacing"
                 class="size-44px rounded-full flex-center cursor-pointer bg-gray-600 hover:bg-gray-500">
-                <svg class="size-16px color-#fff">
+                <svg class="size-16px text-[--hula-text-inverse]">
                   <use href="#refresh"></use>
                 </svg>
               </div>
@@ -191,7 +194,7 @@
                     ? 'bg-gray-600 hover:bg-gray-500'
                     : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
                 ">
-                <svg class="size-16px color-#fff">
+                <svg class="size-16px text-[--hula-text-inverse]">
                   <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
                 </svg>
               </div>
@@ -202,7 +205,7 @@
               <div
                 @click="hangUp()"
                 class="size-44px rounded-full bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80 flex-center cursor-pointer">
-                <svg class="size-16px color-#fff">
+                <svg class="size-16px text-[--hula-text-inverse]">
                   <use href="#PhoneHangup"></use>
                 </svg>
               </div>
@@ -254,7 +257,7 @@
                 ? 'bg-gray-600 hover:bg-gray-500'
                 : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
             ">
-            <svg class="size-16px color-#fff">
+            <svg class="size-16px text-[--hula-text-inverse]">
               <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
             </svg>
           </div>
@@ -273,7 +276,7 @@
                 ? 'bg-gray-600 hover:bg-gray-500'
                 : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
             ">
-            <svg class="size-16px color-#fff">
+            <svg class="size-16px text-[--hula-text-inverse]">
               <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
             </svg>
           </div>
@@ -292,7 +295,7 @@
                 ? 'bg-gray-600 hover:bg-gray-500'
                 : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
             ">
-            <svg class="size-16px color-#fff">
+            <svg class="size-16px text-[--hula-text-inverse]">
               <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
             </svg>
           </div>
@@ -306,7 +309,7 @@
           <div
             @click="hangUp()"
             class="size-44px rounded-full bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80 flex-center cursor-pointer">
-            <svg class="size-16px color-#fff">
+            <svg class="size-16px text-[--hula-text-inverse]">
               <use href="#PhoneHangup"></use>
             </svg>
           </div>
@@ -330,7 +333,7 @@
                   ? 'bg-gray-600 hover:bg-gray-500'
                   : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
               ">
-              <svg class="size-16px color-#fff">
+              <svg class="size-16px text-[--hula-text-inverse]">
                 <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
               </svg>
             </div>
@@ -349,7 +352,7 @@
                   ? 'bg-gray-600 hover:bg-gray-500'
                   : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
               ">
-              <svg class="size-16px color-#fff">
+              <svg class="size-16px text-[--hula-text-inverse]">
                 <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
               </svg>
             </div>
@@ -364,7 +367,7 @@
           <div
             @click="hangUp()"
             class="size-66px rounded-full bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80 flex-center cursor-pointer">
-            <svg class="size-24px color-#fff">
+            <svg class="size-24px text-[--hula-text-inverse]">
               <use href="#PhoneHangup"></use>
             </svg>
           </div>

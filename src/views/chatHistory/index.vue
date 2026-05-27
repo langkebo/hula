@@ -132,7 +132,7 @@ const { specialMenuList } = useChatMain(true, { disableHistoryActions: true })
 const { t } = useI18n()
 
 const isGroup = computed(() => chatStore.isGroup)
-const userUid = computed(() => userStore.userInfo!.uid)
+const userUid = computed(() => userStore.userInfo?.uid ?? '')
 
 // 响应式数据
 const messages = ref<MessageType[]>([])
@@ -235,7 +235,7 @@ const handleDateChange = useDebounceFn((value: [number, number] | null) => {
 
 // 获取用户头像
 const getAvatarSrc = (uid: string) => {
-  const avatar = uid === userUid.value ? userStore.userInfo!.avatar : groupStore.getUserInfo(uid)?.avatar
+  const avatar = uid === userUid.value ? (userStore.userInfo?.avatar ?? '') : groupStore.getUserInfo(uid)?.avatar
   return AvatarUtils.getAvatarUrl(avatar as string)
 }
 

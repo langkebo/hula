@@ -43,22 +43,29 @@
       </n-gi>
 
       <n-gi span="2">
-        <n-card :title="t('admin.maintenance.experimental_features')" size="small">
-          <n-empty v-if="!featureEntries.length" :description="t('admin.maintenance.no_features')" size="small" />
-          <n-list v-else bordered>
-            <n-list-item v-for="entry in featureEntries" :key="entry.key">
-              <n-flex align="center" justify="space-between">
-                <div>
-                  <div class="text-14px font-semibold">{{ entry.key }}</div>
-                  <div class="text-12px op-60">{{ entry.description }}</div>
-                </div>
-                <n-switch
-                  :value="entry.enabled"
-                  :loading="featureMutating"
-                  @update:value="(v: boolean) => handleToggleFeature(entry.key, v)" />
-              </n-flex>
-            </n-list-item>
-          </n-list>
+        <n-card size="small">
+          <n-tabs v-model:value="featureTab" type="line" animated>
+            <n-tab-pane :name="'simple'" :tab="t('admin.maintenance.experimental_features')">
+              <n-empty v-if="!featureEntries.length" :description="t('admin.maintenance.no_features')" size="small" />
+              <n-list v-else bordered>
+                <n-list-item v-for="entry in featureEntries" :key="entry.key">
+                  <n-flex align="center" justify="space-between">
+                    <div>
+                      <div class="text-14px font-semibold">{{ entry.key }}</div>
+                      <div class="text-12px op-60">{{ entry.description }}</div>
+                    </div>
+                    <n-switch
+                      :value="entry.enabled"
+                      :loading="featureMutating"
+                      @update:value="(v: boolean) => handleToggleFeature(entry.key, v)" />
+                  </n-flex>
+                </n-list-item>
+              </n-list>
+            </n-tab-pane>
+            <n-tab-pane :name="'advanced'" :tab="t('admin.maintenance.advanced_feature_flags')">
+              <FeatureFlagManager />
+            </n-tab-pane>
+          </n-tabs>
         </n-card>
       </n-gi>
     </n-grid>
@@ -83,10 +90,13 @@ import {
   NPageHeader,
   NSpace,
   NSwitch,
+  NTabPane,
+  NTabs,
   NTag
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import FeatureFlagManager from '@/components/admin/FeatureFlagManager.vue'
 import { useAdminMaintenance } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
@@ -104,6 +114,7 @@ const purging = maintenance.purging
 const featureMutating = maintenance.featureMutating
 
 const purgeBeforeTs = ref<number | null>(null)
+const featureTab = ref('advanced')
 
 interface FeatureEntry {
   key: string

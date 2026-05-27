@@ -149,6 +149,11 @@ export interface SessionStorePort {
 class MatrixRuntimeSessionService {
   constructor(private readonly port: SessionStorePort) {}
 
+  private getCurrentClientDeviceId(): string | null {
+    const client = this.port.matrix.getClient() as { getDeviceId?: () => string | null } | null
+    return client?.getDeviceId?.() ?? null
+  }
+
   private async ensureClientReadyForBootstrap(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
     if (this.port.matrix.getClient()) {
       return
@@ -292,6 +297,7 @@ class MatrixRuntimeSessionService {
       }
       patchMatrixSessionSnapshot({
         userId: uid,
+        deviceId: this.getCurrentClientDeviceId(),
         accessToken,
         homeserverUrl
       })
@@ -362,6 +368,7 @@ class MatrixRuntimeSessionService {
       const refreshToken = this.port.matrix.getRefreshToken() ?? ''
       patchMatrixSessionSnapshot({
         userId: uid,
+        deviceId: this.getCurrentClientDeviceId(),
         accessToken,
         homeserverUrl
       })
@@ -445,6 +452,7 @@ class MatrixRuntimeSessionService {
       const refreshToken = this.port.matrix.getRefreshToken() ?? ''
       patchMatrixSessionSnapshot({
         userId: uid,
+        deviceId: this.getCurrentClientDeviceId(),
         accessToken,
         homeserverUrl
       })
@@ -597,7 +605,7 @@ class MatrixRuntimeSessionService {
         .map((msg: MessageType) => ({
           eventId: msg.message.id,
           roomId: msg.message.roomId,
-          sender: msg.fromUser.uid,
+          sender: msg.fromUser?.uid ?? '',
           timestamp: msg.message.sendTime,
           msgtype: 'm.text',
           body: msg.message.body as unknown as string

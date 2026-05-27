@@ -347,7 +347,7 @@ const handleFileClick = async () => {
     }
   } finally {
     const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
-    const currentUserUid = userStore.userInfo!.uid as string
+    const currentUserUid = userStore.userInfo?.uid ?? ''
 
     const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
     const absolutePath = await join(resourceDirPath, props.body.fileName)
@@ -419,7 +419,7 @@ const downloadFileOnly = async () => {
   } finally {
     // 刷新文件状态
     const currentChatRoomId = globalStore.currentSessionRoomId
-    const currentUserUid = userStore.userInfo!.uid as string
+    const currentUserUid = userStore.userInfo?.uid ?? ''
 
     const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
     const absolutePath = await join(resourceDirPath, props.body.fileName)

@@ -4,6 +4,13 @@ import type { RateLimit, ShadowBanStatus, UserDevice, UserInfo } from '@/service
 
 export type { UserDevice, UserInfo } from '@/services/matrix/admin/AdminTypes'
 
+export interface UserSession {
+  deviceId: string
+  deviceName?: string
+  lastSeenIp?: string
+  lastSeenTs?: number
+}
+
 export interface UseAdminUsersResult {
   // state
   users: Ref<UserInfo[]>
@@ -19,6 +26,15 @@ export interface UseAdminUsersResult {
   rateLimitLoading: Ref<boolean>
   shadowBanStatus: Ref<ShadowBanStatus | null>
   shadowBanLoading: Ref<boolean>
+  userSessions: Ref<UserSession[]>
+  sessionsLoading: Ref<boolean>
+  userStats: Ref<Record<string, unknown> | null>
+  statsLoading: Ref<boolean>
+  accountStatus: Ref<Record<string, unknown> | null>
+  accountStatusLoading: Ref<boolean>
+
+  // batch selection state
+  selectedUserIds: Ref<Set<string>>
 
   // actions
   loadUsers: (limit?: number) => Promise<void>
@@ -26,6 +42,14 @@ export interface UseAdminUsersResult {
   loadUserDevices: () => Promise<void>
   loadRateLimit: () => Promise<void>
   loadShadowBanStatus: () => Promise<void>
+  loadUserSessions: () => Promise<void>
+  loadUserStats: () => Promise<void>
+  loadAccountStatus: () => Promise<void>
+  invalidateSession: (userId: string) => Promise<void>
+  batchDeactivate: (userIds: string[], erase?: boolean) => Promise<Array<{ userId: string; success: boolean }>>
+  toggleUserSelection: (userId: string) => void
+  selectAllUsers: () => void
+  clearSelection: () => void
 
   createUser: (
     username: string,
@@ -64,6 +88,13 @@ export function useAdminUsers(): UseAdminUsersResult {
   const rateLimitLoading = ref(false)
   const shadowBanStatus = ref<ShadowBanStatus | null>(null)
   const shadowBanLoading = ref(false)
+  const userSessions = ref<UserSession[]>([])
+  const sessionsLoading = ref(false)
+  const userStats = ref<Record<string, unknown> | null>(null)
+  const statsLoading = ref(false)
+  const accountStatus = ref<Record<string, unknown> | null>(null)
+  const accountStatusLoading = ref(false)
+  const selectedUserIds = ref<Set<string>>(new Set())
 
   const filteredUsers = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
@@ -92,8 +123,18 @@ export function useAdminUsers(): UseAdminUsersResult {
     userDevices.value = []
     rateLimit.value = null
     shadowBanStatus.value = null
+    userSessions.value = []
+    userStats.value = null
+    accountStatus.value = null
     if (!user) return
-    await Promise.allSettled([loadUserDevices(), loadRateLimit(), loadShadowBanStatus()])
+    await Promise.allSettled([
+      loadUserDevices(),
+      loadRateLimit(),
+      loadShadowBanStatus(),
+      loadUserSessions(),
+      loadUserStats(),
+      loadAccountStatus()
+    ])
   }
 
   async function loadUserDevices() {
@@ -175,6 +216,79 @@ export function useAdminUsers(): UseAdminUsersResult {
     if (selectedUser.value?.userId === userId) await loadShadowBanStatus()
   }
 
+  async function loadUserSessions() {
+    if (!selectedUser.value) return
+    sessionsLoading.value = true
+    try {
+      const sessions = await adminService.getUserSessions(selectedUser.value.userId)
+      userSessions.value = sessions.map((s) => ({
+        deviceId: (s.device_id as string) ?? (s.deviceId as string) ?? '',
+        deviceName: (s.device_name as string) ?? (s.deviceName as string) ?? undefined,
+        lastSeenIp: (s.last_seen_ip as string) ?? (s.lastSeenIp as string) ?? undefined,
+        lastSeenTs: (s.last_seen_ts as number) ?? (s.lastSeenTs as number) ?? undefined
+      }))
+    } finally {
+      sessionsLoading.value = false
+    }
+  }
+
+  async function loadUserStats() {
+    if (!selectedUser.value) return
+    statsLoading.value = true
+    try {
+      userStats.value = await adminService.getUserStats(selectedUser.value.userId)
+    } finally {
+      statsLoading.value = false
+    }
+  }
+
+  async function loadAccountStatus() {
+    if (!selectedUser.value) return
+    accountStatusLoading.value = true
+    try {
+      accountStatus.value = await adminService.getAccountStatus(selectedUser.value.userId)
+    } finally {
+      accountStatusLoading.value = false
+    }
+  }
+
+  async function invalidateSession(userId: string) {
+    await adminService.invalidateUserSession(userId)
+    if (selectedUser.value?.userId === userId) await loadUserSessions()
+  }
+
+  async function batchDeactivate(
+    userIds: string[],
+    erase = false
+  ): Promise<Array<{ userId: string; success: boolean }>> {
+    const result = await adminService.batchDeactivateUsers(userIds, erase)
+    await loadUsers()
+    clearSelection()
+    return result
+  }
+
+  function toggleUserSelection(userId: string) {
+    const next = new Set(selectedUserIds.value)
+    if (next.has(userId)) {
+      next.delete(userId)
+    } else {
+      next.add(userId)
+    }
+    selectedUserIds.value = next
+  }
+
+  function selectAllUsers() {
+    const next = new Set<string>()
+    for (const u of filteredUsers.value) {
+      next.add(u.userId)
+    }
+    selectedUserIds.value = next
+  }
+
+  function clearSelection() {
+    selectedUserIds.value = new Set()
+  }
+
   return {
     users,
     filteredUsers,
@@ -187,11 +301,26 @@ export function useAdminUsers(): UseAdminUsersResult {
     rateLimitLoading,
     shadowBanStatus,
     shadowBanLoading,
+    userSessions,
+    sessionsLoading,
+    userStats,
+    statsLoading,
+    accountStatus,
+    accountStatusLoading,
+    selectedUserIds,
     loadUsers,
     selectUser,
     loadUserDevices,
     loadRateLimit,
     loadShadowBanStatus,
+    loadUserSessions,
+    loadUserStats,
+    loadAccountStatus,
+    invalidateSession,
+    batchDeactivate,
+    toggleUserSelection,
+    selectAllUsers,
+    clearSelection,
     createUser,
     resetPassword,
     deactivateUser,

@@ -34,7 +34,7 @@ class UploadService {
    * @param params 参数
    * @returns OSS 令牌信息
    */
-  async getOssToken(params: { scene?: UploadSceneEnum; fileName: string }): Promise<OssTokenResponse> {
+  async getOssToken(params: { scene?: UploadSceneEnum; fileName: string }): Promise<OssTokenResponse | null> {
     try {
       const response = await fetch(`${this.baseUrl}/_matrix/client/v3/upload/token`, {
         method: 'POST',
@@ -43,6 +43,12 @@ class UploadService {
         },
         body: JSON.stringify(params)
       })
+
+      if (response.status === 404) {
+        // upload/token 端点不可用，降级到标准 Matrix 上传方式
+        info('[Upload] upload/token 端点不可用(404)，将使用默认上传方式')
+        return null
+      }
 
       if (!response.ok) {
         throw new Error(`获取上传令牌失败: ${response.statusText}`)
@@ -53,7 +59,7 @@ class UploadService {
       return data
     } catch (err) {
       error(`[Upload] 获取上传令牌失败: ${err}`)
-      throw err
+      return null
     }
   }
 

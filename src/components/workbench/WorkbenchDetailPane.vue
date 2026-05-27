@@ -344,6 +344,7 @@
             <div v-if="detailMembers.length" class="detail-members">
               <div v-if="showMemberDirectory" class="detail-members__directory">
                 <MemberList
+                  :room-id="groupRoomId"
                   :members="
                     detailMembers.map((m) => ({
                       userId: m.userId,

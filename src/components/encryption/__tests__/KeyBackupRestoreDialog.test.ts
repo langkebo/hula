@@ -5,6 +5,9 @@ import KeyBackupRestoreDialog from '../KeyBackupRestoreDialog.vue'
 
 const {
   restoreFromBackupMock,
+  restoreFromBackupWithPassphraseMock,
+  getKeyBackupInfoMock,
+  showFeedbackMock,
   messageWarningMock,
   messageSuccessMock,
   messageErrorMock,
@@ -16,12 +19,22 @@ const {
 } = vi.hoisted(() => {
   const intervalCallbackRef = { current: null as null | (() => void) }
   const timeoutCallbackRef = { current: null as null | (() => void) }
+  const messageWarningMock = vi.fn()
+  const messageSuccessMock = vi.fn()
+  const messageErrorMock = vi.fn()
 
   return {
     restoreFromBackupMock: vi.fn(),
-    messageWarningMock: vi.fn(),
-    messageSuccessMock: vi.fn(),
-    messageErrorMock: vi.fn(),
+    restoreFromBackupWithPassphraseMock: vi.fn(),
+    getKeyBackupInfoMock: vi.fn(),
+    showFeedbackMock: vi.fn((message: string, type: 'warning' | 'success' | 'error') => {
+      if (type === 'warning') messageWarningMock(message)
+      if (type === 'success') messageSuccessMock(message)
+      if (type === 'error') messageErrorMock(message)
+    }),
+    messageWarningMock,
+    messageSuccessMock,
+    messageErrorMock,
     setIntervalMock: vi.fn((callback: () => void) => {
       intervalCallbackRef.current = callback
       return 101
@@ -37,8 +50,12 @@ const {
 })
 
 type KeyBackupRestoreDialogVm = ComponentPublicInstance & {
+  activeTab: string
   formData: {
     recoveryKey: string
+  }
+  passphraseData: {
+    passphrase: string
   }
   restoreProgress: number | null
   restoreResult: {
@@ -86,15 +103,34 @@ vi.mock('naive-ui', async () => {
       emits: ['update:value'],
       template: '<textarea />'
     }),
+    NCollapse: defineComponent({
+      name: 'NCollapse',
+      template: '<div><slot /></div>'
+    }),
+    NCollapseItem: defineComponent({
+      name: 'NCollapseItem',
+      template: '<div><slot /></div>'
+    }),
+    NSelect: defineComponent({
+      name: 'NSelect',
+      template: '<div><slot /></div>'
+    }),
+    NTabs: defineComponent({
+      name: 'NTabs',
+      template: '<div><slot /></div>'
+    }),
+    NTabPane: defineComponent({
+      name: 'NTabPane',
+      template: '<div><slot /></div>'
+    }),
+    NUpload: defineComponent({
+      name: 'NUpload',
+      template: '<div><slot /></div>'
+    }),
     NProgress: defineComponent({
       name: 'NProgress',
       props: ['percentage'],
       template: '<div data-test="progress">{{ percentage }}</div>'
-    }),
-    useMessage: () => ({
-      warning: messageWarningMock,
-      success: messageSuccessMock,
-      error: messageErrorMock
     })
   }
 })
@@ -106,9 +142,42 @@ vi.mock('@iconify/vue', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
-  matrixEncryptionService: {
-    restoreFromBackup: restoreFromBackupMock
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, unknown>) => {
+      const messages: Record<string, string> = {
+        'encryption.recovery_key_required': '请输入恢复密钥',
+        'encryption.restore_success': '恢复成功',
+        'encryption.restore_backup_failed': '恢复失败',
+        'encryption.backup_restore_dialog.restore_result_failed': '恢复失败，请检查密钥是否正确',
+        'encryption.backup_restore_dialog.passphrase_required': '请输入安全短语'
+      }
+      if (key === 'encryption.backup_restore_dialog.restore_result_success') {
+        return `成功恢复 ${params?.imported ?? 0} 个密钥`
+      }
+      return messages[key] ?? key
+    }
+  })
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
+  })
+}))
+
+vi.mock('@/composables/encryption', () => ({
+  useEncryption: () => ({
+    getKeyBackupInfo: getKeyBackupInfoMock,
+    restoreFromBackup: restoreFromBackupMock,
+    restoreFromBackupWithPassphrase: restoreFromBackupWithPassphraseMock
+  })
+}))
+
+vi.mock('@/services/matrix', () => ({
+  matrixKeyBackupService: {
+    recoverRoomKeys: vi.fn(),
+    recoverSessionKey: vi.fn()
   }
 }))
 
@@ -133,9 +202,17 @@ describe('KeyBackupRestoreDialog', () => {
     vi.clearAllMocks()
     intervalCallbackRef.current = null
     timeoutCallbackRef.current = null
+    getKeyBackupInfoMock.mockResolvedValue({
+      version: '1',
+      algorithm: 'm.megolm_backup.v1.curve25519-aes-sha2'
+    })
     restoreFromBackupMock.mockResolvedValue({
       imported: 3,
       total: 3
+    })
+    restoreFromBackupWithPassphraseMock.mockResolvedValue({
+      imported: 2,
+      total: 2
     })
   })
 
@@ -184,6 +261,23 @@ describe('KeyBackupRestoreDialog', () => {
     expect(wrapper.emitted('update:show')).toEqual([[false]])
     expect(wrapper.emitted('success')).toEqual([[]])
     expect(vm.formData.recoveryKey).toBe('')
+  })
+
+  it('使用安全短语恢复时调用专用恢复入口', async () => {
+    const wrapper = mountComponent()
+    const vm = getVm(wrapper)
+    vm.activeTab = 'passphrase'
+    vm.passphraseData.passphrase = '  horse battery  '
+
+    await vm.handleRestore()
+    await flushPromises()
+
+    expect(restoreFromBackupWithPassphraseMock).toHaveBeenCalledWith('horse battery')
+    expect(restoreFromBackupMock).not.toHaveBeenCalled()
+    expect(vm.restoreResult).toEqual({
+      success: true,
+      message: '成功恢复 2 个密钥'
+    })
   })
 
   it('恢复失败时清理进度定时器并显示错误结果', async () => {

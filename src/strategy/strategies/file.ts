@@ -144,6 +144,9 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
       }
 
       const result = await this.uploadHook.getUploadAndDownloadUrl(path, uploadOptions)
+      if (!result) {
+        throw new AppException('获取文件上传链接失败，上传服务不可用')
+      }
       return result
     } catch (error) {
       logger.error('获取文件上传链接失败:', error)

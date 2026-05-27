@@ -33,6 +33,13 @@ type SyncErrorLike = {
 }
 
 type StartClientOptions = Parameters<MatrixClient['startClient']>[0]
+type RustCryptoCapableClient = MatrixClient & {
+  getCrypto?: () => unknown
+  initRustCrypto?: (args?: { useIndexedDB?: boolean }) => Promise<void>
+}
+type WhoamiCapableClient = MatrixClient & {
+  whoami?: () => Promise<{ device_id?: string | null; user_id?: string | null }>
+}
 
 /**
  * Matrix 客户端配置接口
@@ -77,6 +84,21 @@ export interface LoginResult {
   error?: string
 }
 
+export interface RustCryptoDebugState {
+  attempted: boolean
+  initialized: boolean
+  skippedReason: string | null
+  error: string | null
+  usedIndexedDB: boolean | null
+}
+
+export interface EventDecryptedDebugState {
+  count: number
+  lastEventId: string | null
+  lastRoomId: string | null
+  lastError: string | null
+}
+
 /**
  * Matrix 客户端服务
  *
@@ -111,6 +133,19 @@ class MatrixClientService {
   private slidingSyncReadyPromise: Promise<void> | null = null
   private tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null
   private isRefreshingToken = false
+  private rustCryptoDebugState: RustCryptoDebugState = {
+    attempted: false,
+    initialized: false,
+    skippedReason: null,
+    error: null,
+    usedIndexedDB: null
+  }
+  private eventDecryptedDebugState: EventDecryptedDebugState = {
+    count: 0,
+    lastEventId: null,
+    lastRoomId: null,
+    lastError: null
+  }
   private readonly syncListener = (state: string, prevState?: string, data?: unknown) => {
     this.emit('sync', { state, prevState, data })
 
@@ -215,6 +250,18 @@ class MatrixClientService {
         // Worker 转发失败不输出日志，避免刷屏
       })
     }
+  }
+
+  private readonly eventDecryptedListener = (event: MatrixEvent, err?: Error) => {
+    const roomId = event.getRoomId()
+    const room = roomId ? this.client?.getRoom(roomId) : undefined
+    this.eventDecryptedDebugState = {
+      count: this.eventDecryptedDebugState.count + 1,
+      lastEventId: event.getId() ?? null,
+      lastRoomId: roomId ?? null,
+      lastError: err?.message ?? null
+    }
+    this.emit('eventDecrypted', { event, err, room })
   }
 
   private readonly typingListener = (...args: unknown[]) => {
@@ -327,6 +374,19 @@ class MatrixClientService {
       this.slidingSyncInstance?.stop?.()
       this.config = config
       this.connectionState = 'CONNECTING'
+      this.rustCryptoDebugState = {
+        attempted: false,
+        initialized: false,
+        skippedReason: null,
+        error: null,
+        usedIndexedDB: null
+      }
+      this.eventDecryptedDebugState = {
+        count: 0,
+        lastEventId: null,
+        lastRoomId: null,
+        lastError: null
+      }
 
       // 在创建客户端之前，注册所有 Manager 扩展
       // 使用主入口的 initializeManagerExtensions 确保修改的是预打包版本的 MatrixClient.prototype
@@ -585,6 +645,19 @@ class MatrixClientService {
         userId: userId
       })
 
+      let resolvedDeviceId = this.client?.getDeviceId?.() ?? undefined
+      if (!resolvedDeviceId) {
+        resolvedDeviceId = await this.resolveTokenLoginDeviceId(userId)
+        if (resolvedDeviceId) {
+          await this.initialize({
+            ...this.config,
+            accessToken: token,
+            userId,
+            deviceId: resolvedDeviceId
+          })
+        }
+      }
+
       this.connectionState = 'CONNECTED'
 
       // 如果有 refresh_token，尝试获取 token 过期时间并调度刷新
@@ -630,6 +703,7 @@ class MatrixClientService {
       return {
         success: true,
         userId: userId,
+        deviceId: resolvedDeviceId,
         accessToken: token
       }
     } catch (err) {
@@ -674,6 +748,118 @@ class MatrixClientService {
    *
    * @throws {Error} 如果客户端未初始化
    */
+  private async ensureRustCrypto(): Promise<void> {
+    if (!this.client || !this.config?.accessToken) {
+      this.rustCryptoDebugState = {
+        attempted: false,
+        initialized: false,
+        skippedReason: 'missing-client-or-access-token',
+        error: null,
+        usedIndexedDB: null
+      }
+      return
+    }
+
+    const cryptoClient = this.client as RustCryptoCapableClient
+    if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
+      this.rustCryptoDebugState = {
+        attempted: false,
+        initialized: true,
+        skippedReason: 'crypto-already-available',
+        error: null,
+        usedIndexedDB: null
+      }
+      return
+    }
+
+    if (typeof cryptoClient.initRustCrypto !== 'function') {
+      this.rustCryptoDebugState = {
+        attempted: false,
+        initialized: false,
+        skippedReason: 'init-method-unavailable',
+        error: null,
+        usedIndexedDB: null
+      }
+      return
+    }
+
+    const userId = cryptoClient.getUserId?.()
+    const deviceId = cryptoClient.getDeviceId?.()
+    if (!userId || !deviceId) {
+      this.rustCryptoDebugState = {
+        attempted: false,
+        initialized: false,
+        skippedReason: 'missing-user-or-device-id',
+        error: null,
+        usedIndexedDB: null
+      }
+      logger.warn('缺少 userId 或 deviceId，跳过 Rust Crypto 初始化')
+      return
+    }
+
+    const useIndexedDB = typeof globalThis.indexedDB !== 'undefined'
+    this.rustCryptoDebugState = {
+      attempted: true,
+      initialized: false,
+      skippedReason: null,
+      error: null,
+      usedIndexedDB: useIndexedDB
+    }
+
+    try {
+      await cryptoClient.initRustCrypto({
+        useIndexedDB
+      })
+      this.rustCryptoDebugState = {
+        attempted: true,
+        initialized: true,
+        skippedReason: null,
+        error: null,
+        usedIndexedDB: useIndexedDB
+      }
+      logger.info(`Rust Crypto 初始化完成: ${userId}/${deviceId}`)
+    } catch (err) {
+      this.rustCryptoDebugState = {
+        attempted: true,
+        initialized: false,
+        skippedReason: null,
+        error: err instanceof Error ? err.message : String(err),
+        usedIndexedDB: useIndexedDB
+      }
+      logger.warn('Rust Crypto 初始化失败，继续以非加密模式启动:', err)
+    }
+  }
+
+  private async resolveTokenLoginDeviceId(userId: string): Promise<string | undefined> {
+    if (!this.client) {
+      return undefined
+    }
+
+    const currentDeviceId = this.client.getDeviceId?.() ?? undefined
+    if (currentDeviceId) {
+      return currentDeviceId
+    }
+
+    const whoamiCapableClient = this.client as WhoamiCapableClient
+    if (typeof whoamiCapableClient.whoami !== 'function') {
+      return undefined
+    }
+
+    try {
+      const response = await whoamiCapableClient.whoami()
+      const resolvedDeviceId = response.device_id ?? undefined
+      if (resolvedDeviceId) {
+        logger.info(`Token 登录通过 whoami 回填 deviceId: ${userId}/${resolvedDeviceId}`)
+      } else {
+        logger.warn(`Token 登录 whoami 未返回 deviceId: ${userId}`)
+      }
+      return resolvedDeviceId
+    } catch (err) {
+      logger.warn(`Token 登录回填 deviceId 失败: ${userId}`, err)
+      return undefined
+    }
+  }
+
   async startClient(): Promise<void> {
     if (!this.client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
@@ -694,6 +880,8 @@ class MatrixClientService {
       } else {
         this.slidingSyncInstance = null
       }
+
+      await this.ensureRustCrypto()
 
       // 在启动客户端之前注册事件监听器，确保不遗漏初始 sync 事件
       this.setupEventListeners()
@@ -935,6 +1123,14 @@ class MatrixClientService {
     return this.slidingSyncInstance
   }
 
+  getRustCryptoDebugState(): RustCryptoDebugState {
+    return { ...this.rustCryptoDebugState }
+  }
+
+  getEventDecryptedDebugState(): EventDecryptedDebugState {
+    return { ...this.eventDecryptedDebugState }
+  }
+
   resetSlidingSyncReady(): void {
     if (this.slidingSyncReadyPromise) {
       this.slidingSyncReadyResolve?.()
@@ -1165,6 +1361,7 @@ class MatrixClientService {
     client.on('room', this.roomListener)
     client.on('room_timeline', this.roomTimelineListener)
     client.on('Event.redaction', this.redactionListener)
+    client.on('Event.decrypted', this.eventDecryptedListener as never)
     client.on('Room.typing', this.typingListener)
     client.on('Room.receipt', this.receiptListener)
     this.observedClient = client
@@ -1175,6 +1372,7 @@ class MatrixClientService {
     client.off('room', this.roomListener)
     client.off('room_timeline', this.roomTimelineListener)
     client.off('Event.redaction', this.redactionListener)
+    client.off('Event.decrypted', this.eventDecryptedListener as never)
     client.off('Room.typing', this.typingListener)
     client.off('Room.receipt', this.receiptListener)
 

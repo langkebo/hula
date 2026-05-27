@@ -1,6 +1,6 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import ChatMain from '../ChatMain.vue'
 
 const {
@@ -51,6 +51,7 @@ let chatStore: ReturnType<
   }>
 >
 let globalStore: ReturnType<typeof reactive<{ currentSessionRoomId: string }>>
+let userStore: ReturnType<typeof reactive<{ userInfo: { uid: string } | undefined }>>
 
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
   WebviewWindow: {
@@ -183,9 +184,7 @@ vi.mock('@/stores/domains/chat/chat', () => ({
 }))
 
 vi.mock('@/stores/domains/user/user', () => ({
-  useUserStore: () => ({
-    userInfo: computed(() => ({ uid: '@me:example.com' }))
-  })
+  useUserStore: () => userStore
 }))
 
 vi.mock('@/stores/domains/widget/global', () => ({
@@ -249,6 +248,11 @@ describe('ChatMain', () => {
     globalStore = reactive({
       currentSessionRoomId: '!room:example.com'
     })
+    userStore = reactive({
+      userInfo: {
+        uid: '@me:example.com'
+      }
+    })
 
     chatStore = reactive({
       isGroup: false,
@@ -306,5 +310,26 @@ describe('ChatMain', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('正在查找消息...', 'info')
     expect(showFeedbackMock).toHaveBeenCalledWith('无法找到原始消息，可能已被删除或太久远', 'warning')
     expect(chatStore.loadMore).toHaveBeenCalledTimes(5)
+  })
+
+  it('does not crash when sender info or current user info is temporarily missing', async () => {
+    userStore.userInfo = undefined
+    chatStore.chatMessageList = [
+      {
+        message: {
+          id: '$missing-user',
+          roomId: '!room:example.com',
+          sendTime: Date.now(),
+          type: 0,
+          body: { content: 'hello' }
+        },
+        fromUser: undefined
+      } as unknown
+    ]
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.exists()).toBe(true)
   })
 })

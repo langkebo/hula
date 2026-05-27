@@ -1,5 +1,5 @@
 <template>
-  <mobile-layout :title="t('admin.rooms')" show-back>
+  <mobile-layout :title="t('admin.rooms.title')" show-back>
     <div class="mobile-admin-rooms">
       <van-search v-model="admin.searchQuery.value" :placeholder="t('admin.search_rooms')" @search="onRefresh" />
 

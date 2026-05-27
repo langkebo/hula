@@ -54,10 +54,45 @@ export {
 export type { AdminManager } from 'matrix-js-sdk/admin'
 export { ClientEvent } from 'matrix-js-sdk/client'
 export { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
+export type {
+  CreateReportBody,
+  DismissReportBody,
+  EscalateReportBody,
+  EventReportCountResponse,
+  EventReportManager,
+  QueryParams,
+  ReportResponse,
+  ResolveReportBody,
+  StatsResponse,
+  StatusCountResponse,
+  UpdateReportBody
+} from 'matrix-js-sdk/event-report'
 export type { Friend, FriendRequest } from 'matrix-js-sdk/friend'
 export { FriendEvent, FriendManager } from 'matrix-js-sdk/friend'
+export type {
+  GuestManager,
+  IAuthDict,
+  IGuestInfo,
+  IGuestLoginResponse,
+  IGuestRegisterResponse,
+  IServerGuestInfo,
+  IUpgradeGuestRequest,
+  IUpgradeGuestResponse
+} from 'matrix-js-sdk/guest'
 export { RoomEvent } from 'matrix-js-sdk/models/room'
 export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'
 export type { PushManager } from 'matrix-js-sdk/push'
+export type {
+  CreateSessionResponse,
+  GetMessagesResponse,
+  RendezvousMessage,
+  RendezvousSession,
+  RendezvousSessionIntent,
+  RendezvousSessionStatus,
+  RendezvousSessionTransport,
+  SendMessageResponse,
+  UpdateSessionResponse
+} from 'matrix-js-sdk/rendezvous'
+export { RendezvousManager } from 'matrix-js-sdk/rendezvous'
 export type { ISyncStateData } from 'matrix-js-sdk/sync'
 export { SyncState } from 'matrix-js-sdk/sync'

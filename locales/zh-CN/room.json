@@ -74,7 +74,9 @@
     "id_copied": "已复制房间 ID",
     "no_data": "暂无数据",
     "update_success": "房间设置已更新",
-    "update_failed": "房间设置更新失败"
+    "update_failed": "房间设置更新失败",
+    "parent_spaces": "所属空间",
+    "no_parent_spaces": "不在任何空间中"
   },
   "invitation": {
     "accept": "接受",
@@ -96,6 +98,35 @@
     "pin": "置顶",
     "mute": "静音",
     "leave": "退出"
+  },
+  "members": {
+    "title": "成员",
+    "search_placeholder": "搜索成员",
+    "admins": "管理员",
+    "admin": "管理员",
+    "moderators": "版主",
+    "moderator": "版主",
+    "members": "成员",
+    "send_message": "发送消息",
+    "send_message_failed": "打开消息失败",
+    "kick": "踢出房间",
+    "kick_title": "踢出成员",
+    "kick_confirm": "确认踢出",
+    "kick_success": "已将 {name} 踢出房间",
+    "kick_failed": "踢出成员失败",
+    "ban": "封禁",
+    "ban_title": "封禁成员",
+    "ban_confirm": "确认封禁",
+    "ban_success": "已封禁 {name}",
+    "ban_failed": "封禁成员失败",
+    "unban": "解封",
+    "unban_title": "解封成员",
+    "unban_confirm": "确认解封",
+    "unban_confirm_text": "确定要解封 {name} 吗？解封后该用户可以重新加入房间。",
+    "unban_success": "已解封 {name}",
+    "unban_failed": "解封成员失败",
+    "reason_label": "原因",
+    "reason_placeholder": "请输入原因（可选）"
   },
   "state": {
     "encrypted": "加密房间",

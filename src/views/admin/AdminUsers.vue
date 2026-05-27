@@ -9,9 +9,14 @@
           </svg>
         </template>
       </n-input>
-      <n-button type="primary" @click="showCreateDialog = true">
-        {{ t('admin.users.createUser') }}
-      </n-button>
+      <n-space>
+        <n-button type="primary" @click="showCreateDialog = true">
+          {{ t('admin.users.createUser') }}
+        </n-button>
+        <n-button v-if="selectedUserIds.size > 0" type="error" @click="handleBatchDeactivate">
+          {{ t('admin.users.batchDeactivate') }} ({{ selectedUserIds.size }})
+        </n-button>
+      </n-space>
     </div>
 
     <n-spin :show="loading">
@@ -60,9 +65,28 @@
             </n-tag>
           </n-descriptions-item>
           <n-descriptions-item :label="t('admin.users.role')">
-            <n-tag :type="selectedUser.admin ? 'warning' : 'default'" size="small">
-              {{ selectedUser.admin ? t('admin.users.adminRole') : t('admin.users.userRole') }}
-            </n-tag>
+            <n-space align="center" :size="8">
+              <n-tag :type="selectedUser.admin ? 'warning' : 'default'" size="small">
+                {{ selectedUser.admin ? t('admin.users.adminRole') : t('admin.users.userRole') }}
+              </n-tag>
+              <n-switch
+                :value="!!selectedUser.admin"
+                size="small"
+                @update:value="(val: boolean) => handleToggleAdminSwitch(val)">
+                <template #checked>{{ t('admin.users.adminRole') }}</template>
+                <template #unchecked>{{ t('admin.users.userRole') }}</template>
+              </n-switch>
+            </n-space>
+          </n-descriptions-item>
+          <n-descriptions-item v-if="accountStatusData" :label="t('admin.users.accountStatus')" :span="2">
+            <n-space :size="8">
+              <n-tag :type="accountStatusTagType" size="small">
+                {{ accountStatusLabel }}
+              </n-tag>
+              <span v-if="accountStatusData.suspended" class="account-detail">
+                {{ t('admin.users.suspended') }}
+              </span>
+            </n-space>
           </n-descriptions-item>
         </n-descriptions>
 
@@ -77,6 +101,46 @@
                 size="small"
                 :row-key="(row: UserDevice) => row.deviceId" />
               <n-empty v-else :description="t('admin.users.noDevices')" style="padding: 24px 0" />
+            </n-spin>
+          </n-tab-pane>
+
+          <n-tab-pane name="sessions" :tab="t('admin.users.sessions')">
+            <n-spin :show="sessionsLoading">
+              <n-data-table
+                v-if="userSessions.length > 0"
+                :columns="sessionColumns"
+                :data="userSessions"
+                :bordered="false"
+                size="small"
+                :row-key="(row: UserSession) => row.deviceId" />
+              <n-empty v-else :description="t('admin.users.noSessions')" style="padding: 24px 0" />
+            </n-spin>
+          </n-tab-pane>
+
+          <n-tab-pane name="statistics" :tab="t('admin.users.statistics')">
+            <n-spin :show="statsLoading">
+              <template v-if="userStats">
+                <n-space :size="24" style="padding: 16px 0">
+                  <n-statistic
+                    :label="t('admin.users.roomsJoined')"
+                    :value="userStats.joined_rooms ?? userStats.joinedRooms ?? '-'" />
+                  <n-statistic
+                    :label="t('admin.users.messagesSent')"
+                    :value="userStats.messages_sent ?? userStats.messagesSent ?? '-'" />
+                  <n-statistic
+                    :label="t('admin.users.mediaUploaded')"
+                    :value="userStats.media_uploaded ?? userStats.mediaUploaded ?? '-'" />
+                  <n-statistic
+                    :label="t('admin.users.invitesSent')"
+                    :value="userStats.invites_sent ?? userStats.invitesSent ?? '-'" />
+                </n-space>
+                <n-descriptions v-if="hasExtraStats" bordered :column="2" label-placement="left" size="small">
+                  <n-descriptions-item v-for="(value, key) in extraStats" :key="String(key)" :label="String(key)">
+                    {{ value }}
+                  </n-descriptions-item>
+                </n-descriptions>
+              </template>
+              <n-empty v-else :description="t('admin.users.noStats')" style="padding: 24px 0" />
             </n-spin>
           </n-tab-pane>
 
@@ -140,6 +204,14 @@
                 @click="handleToggleDeactivate(selectedUser!)">
                 {{ selectedUser!.deactivated ? t('admin.users.reactivate') : t('admin.users.deactivate') }}
               </n-button>
+              <n-popconfirm @positive-click="handleInvalidateSession">
+                <template #trigger>
+                  <n-button size="small" type="warning">
+                    {{ t('admin.users.invalidateAllSessions') }}
+                  </n-button>
+                </template>
+                {{ t('admin.users.invalidateSessionConfirm') }}
+              </n-popconfirm>
             </n-space>
           </n-tab-pane>
         </n-tabs>
@@ -173,10 +245,10 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NSpace, NTag, useDialog } from 'naive-ui'
+import { NButton, NCheckbox, NSpace, NSwitch, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type UserDevice, type UserInfo, useAdminUsers } from '@/composables/admin'
+import { type UserDevice, type UserInfo, type UserSession, useAdminUsers } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
@@ -208,6 +280,13 @@ const rateLimit = admin.rateLimit
 const rateLimitLoading = admin.rateLimitLoading
 const shadowBanStatus = admin.shadowBanStatus
 const shadowBanLoading = admin.shadowBanLoading
+const userSessions = admin.userSessions
+const sessionsLoading = admin.sessionsLoading
+const userStats = admin.userStats
+const statsLoading = admin.statsLoading
+const accountStatus = admin.accountStatus
+const accountStatusLoading = admin.accountStatusLoading
+const selectedUserIds = admin.selectedUserIds
 
 const createForm = ref({
   username: '',
@@ -226,7 +305,60 @@ const createRules = {
   password: { required: true, message: t('admin.users.passwordRequired') }
 }
 
+// Account status computed
+const accountStatusData = computed(() => accountStatus.value)
+
+const accountStatusLabel = computed(() => {
+  if (!accountStatus.value) return ''
+  if (accountStatus.value.suspended) return t('admin.users.suspended')
+  if (accountStatus.value.deactivated) return t('admin.users.deactivated')
+  return t('admin.users.active')
+})
+
+const accountStatusTagType = computed(() => {
+  if (!accountStatus.value) return 'default' as const
+  if (accountStatus.value.suspended) return 'warning' as const
+  if (accountStatus.value.deactivated) return 'error' as const
+  return 'success' as const
+})
+
+// Stats computed - extract known keys and show the rest
+const knownStatKeys = new Set([
+  'joined_rooms',
+  'joinedRooms',
+  'messages_sent',
+  'messagesSent',
+  'media_uploaded',
+  'mediaUploaded',
+  'invites_sent',
+  'invitesSent'
+])
+
+const extraStats = computed(() => {
+  if (!userStats.value) return {}
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(userStats.value)) {
+    if (!knownStatKeys.has(key)) {
+      result[key] = value
+    }
+  }
+  return result
+})
+
+const hasExtraStats = computed(() => Object.keys(extraStats.value).length > 0)
+
 const columns = computed(() => [
+  {
+    title: '',
+    key: '__selection',
+    width: 50,
+    render(row: UserInfo) {
+      return h(NCheckbox, {
+        checked: selectedUserIds.value.has(row.userId),
+        onUpdateChecked: () => admin.toggleUserSelection(row.userId)
+      })
+    }
+  },
   {
     title: t('admin.users.userId'),
     key: 'userId',
@@ -301,6 +433,32 @@ const deviceColumns = computed(() => [
     render(row: UserDevice) {
       return h(NButton, { size: 'small', type: 'error', onClick: () => handleDeleteDevice(row.deviceId) }, () =>
         t('admin.users.deleteDevice')
+      )
+    }
+  }
+])
+
+const sessionColumns = computed(() => [
+  { title: t('admin.users.deviceId'), key: 'deviceId', ellipsis: { tooltip: true }, width: 140 },
+  { title: t('admin.users.deviceName'), key: 'deviceName', width: 140 },
+  { title: t('admin.users.lastSeenIp'), key: 'lastSeenIp', width: 130 },
+  {
+    title: t('admin.users.lastSeenTime'),
+    key: 'lastSeenTs',
+    width: 160,
+    render(row: UserSession) {
+      return row.lastSeenTs ? new Date(row.lastSeenTs).toLocaleString() : '-'
+    }
+  },
+  {
+    title: t('admin.common.actions'),
+    key: 'actions',
+    width: 100,
+    render(row: UserSession) {
+      return h(
+        NButton,
+        { size: 'small', type: 'warning', onClick: () => handleInvalidateSingleSession(row.deviceId) },
+        () => t('admin.users.invalidateSession')
       )
     }
   }
@@ -388,6 +546,27 @@ async function handleToggleAdmin(user: UserInfo) {
   })
 }
 
+async function handleToggleAdminSwitch(isAdmin: boolean) {
+  if (!selectedUser.value) return
+  dialog.warning({
+    title: isAdmin ? t('admin.users.grantAdmin') : t('admin.users.removeAdmin'),
+    content: t('admin.users.adminConfirm', {
+      userId: selectedUser.value.userId,
+      action: isAdmin ? t('admin.users.grantAdmin') : t('admin.users.removeAdmin')
+    }),
+    positiveText: t('admin.common.confirm'),
+    negativeText: t('admin.common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        await admin.setAdmin(selectedUser.value!.userId, isAdmin)
+        showFeedback(t('admin.users.adminUpdateSuccess'), 'success')
+      } catch (err) {
+        if (handleAdminError(err)) showFeedback(t('admin.users.adminUpdateFailed'), 'error')
+      }
+    }
+  })
+}
+
 async function handleDeleteDevice(deviceId: string) {
   if (!selectedUser.value) return
   dialog.warning({
@@ -461,6 +640,59 @@ async function handleUnshadowBan() {
   }
 }
 
+async function handleInvalidateSession() {
+  if (!selectedUser.value) return
+  try {
+    await admin.invalidateSession(selectedUser.value.userId)
+    showFeedback(t('admin.users.invalidateSessionSuccess'), 'success')
+  } catch (err) {
+    if (handleAdminError(err)) showFeedback(t('admin.users.invalidateSessionFailed'), 'error')
+  }
+}
+
+async function handleInvalidateSingleSession(_deviceId: string) {
+  if (!selectedUser.value) return
+  // invalidateUserSession invalidates all sessions for the user
+  dialog.warning({
+    title: t('admin.users.invalidateSession'),
+    content: t('admin.users.invalidateSessionConfirm'),
+    positiveText: t('admin.common.confirm'),
+    negativeText: t('admin.common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        await admin.invalidateSession(selectedUser.value!.userId)
+        showFeedback(t('admin.users.invalidateSessionSuccess'), 'success')
+      } catch (err) {
+        if (handleAdminError(err)) showFeedback(t('admin.users.invalidateSessionFailed'), 'error')
+      }
+    }
+  })
+}
+
+async function handleBatchDeactivate() {
+  const ids = Array.from(selectedUserIds.value)
+  if (ids.length === 0) return
+  dialog.warning({
+    title: t('admin.users.batchDeactivate'),
+    content: t('admin.users.batchDeactivateConfirm', { count: ids.length }),
+    positiveText: t('admin.common.confirm'),
+    negativeText: t('admin.common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        const result = await admin.batchDeactivate(ids)
+        const failedCount = result.filter((r) => !r.success).length
+        if (failedCount === 0) {
+          showFeedback(t('admin.users.batchDeactivateSuccess'), 'success')
+        } else {
+          showFeedback(t('admin.users.batchDeactivatePartial', { failed: failedCount }), 'warning')
+        }
+      } catch (err) {
+        if (handleAdminError(err)) showFeedback(t('admin.users.batchDeactivateFailed'), 'error')
+      }
+    }
+  })
+}
+
 onMounted(loadUsers)
 </script>
 
@@ -488,6 +720,11 @@ onMounted(loadUsers)
 .ban-time {
   font-size: 13px;
   color: var(--color-text-quaternary);
+}
+
+.account-detail {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
 }
 
 @media (max-width: 768px) {

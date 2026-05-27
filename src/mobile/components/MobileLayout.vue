@@ -59,7 +59,7 @@ const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const { ensureNotifyWindow } = useWindow()
-const userUid = computed(() => userStore.userInfo!.uid)
+const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const playMessageSound = async () => {
   // 检查是否开启了消息提示音
   if (!settingStore.notification?.messageSound) {

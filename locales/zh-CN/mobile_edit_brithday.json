@@ -6,5 +6,8 @@
     "displsy_age": "显示年龄",
     "display_constellation": "显示星座"
   },
-  "save_btn": "保存"
+  "save_btn": "保存",
+  "save_success": "生日资料已更新",
+  "save_failed": "生日资料保存失败",
+  "unsupported": "当前服务器暂不支持保存生日资料"
 }

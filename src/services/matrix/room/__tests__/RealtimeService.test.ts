@@ -13,9 +13,11 @@ vi.mock('../../MatrixClientService', () => ({
 }))
 
 const convertEventToMessageTypeMock = vi.fn()
+const convertEventToMessageMock = vi.fn()
 vi.mock('../../MatrixEventService', () => ({
   default: {
-    convertEventToMessageType: (e: MatrixEvent) => convertEventToMessageTypeMock(e)
+    convertEventToMessageType: (e: MatrixEvent) => convertEventToMessageTypeMock(e),
+    convertEventToMessage: (e: MatrixEvent, room: Room) => convertEventToMessageMock(e, room)
   }
 }))
 
@@ -61,6 +63,7 @@ describe('MatrixRoomRealtimeService', () => {
     service = new MatrixRoomRealtimeService()
     getClientMock.mockReset()
     convertEventToMessageTypeMock.mockReset()
+    convertEventToMessageMock.mockReset()
     applySlidingSyncUnreadCountsMock.mockReset()
     getUnreadCountMock.mockReset()
     convertRoomToRoomInfoMock.mockReset()
@@ -126,7 +129,7 @@ describe('MatrixRoomRealtimeService', () => {
     it('onTimelineEvent converts room info; message for m.room.message', () => {
       const { on } = setupClient()
       convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
-      convertEventToMessageTypeMock.mockReturnValueOnce({ id: 'm1' })
+      convertEventToMessageMock.mockReturnValueOnce({ id: 'm1' })
       const cb = vi.fn()
       service.onTimelineEvent(cb)
       const handler = on.mock.calls[0][1]
@@ -138,6 +141,7 @@ describe('MatrixRoomRealtimeService', () => {
         roomInfo: { roomId: '!r:e' },
         message: { id: 'm1' }
       })
+      expect(convertEventToMessageMock).toHaveBeenCalled()
     })
 
     it('onTimelineEvent converts message for m.room.encrypted', () => {
@@ -159,6 +163,45 @@ describe('MatrixRoomRealtimeService', () => {
       on.mock.calls[0][1]({ getType: () => 'm.room.member', getContent: () => ({}) }, makeRoom())
       expect(cb.mock.calls[0][0].message).toBeNull()
       expect(convertEventToMessageTypeMock).not.toHaveBeenCalled()
+    })
+
+    it('onTimelineEvent retries encrypted events and re-emits once they become decrypted messages', () => {
+      vi.useFakeTimers()
+      try {
+        const { on } = setupClient()
+        const room = makeRoom()
+        let eventType = 'm.room.encrypted'
+        const event = {
+          getType: () => eventType,
+          getContent: () => ({ body: eventType === 'm.room.message' ? 'hello' : undefined })
+        }
+
+        convertRoomToRoomInfoMock.mockReturnValue({ roomId: '!r:e' })
+        convertEventToMessageTypeMock.mockReturnValueOnce({ id: 'enc' })
+        convertEventToMessageMock.mockReturnValueOnce({ id: 'dec' })
+
+        const cb = vi.fn()
+        service.onTimelineEvent(cb)
+        on.mock.calls[0][1](event, room)
+
+        expect(cb).toHaveBeenCalledTimes(1)
+        expect(cb.mock.calls[0][0]).toMatchObject({
+          eventType: 'm.room.encrypted',
+          message: { id: 'enc' }
+        })
+
+        eventType = 'm.room.message'
+        vi.advanceTimersByTime(250)
+
+        expect(cb).toHaveBeenCalledTimes(2)
+        expect(cb.mock.calls[1][0]).toMatchObject({
+          eventType: 'm.room.message',
+          message: { id: 'dec' }
+        })
+        expect(convertEventToMessageMock).toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('onRoomNameChange forwards roomId + name', () => {

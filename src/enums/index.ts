@@ -141,7 +141,9 @@ export enum MittEnum {
   OPEN_ANNOUNCEMENT_PANEL = 'openAnnouncementPanel',
   OPEN_ADD_FRIEND_DIALOG = 'openAddFriendDialog',
   ROOM_TYPING_CHANGED = 'roomTypingChanged',
-  ROOM_RECEIPT_CHANGED = 'roomReceiptChanged'
+  ROOM_RECEIPT_CHANGED = 'roomReceiptChanged',
+  /** 打开事件举报对话框 */
+  OPEN_EVENT_REPORT = 'openEventReport'
 }
 
 /** 主题类型 */

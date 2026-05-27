@@ -227,6 +227,7 @@ const emit = defineEmits<{
   joinRoom: []
   savePreset: []
   applySavedPreset: []
+  discoverSpaces: []
 }>()
 
 const { t } = useI18n()
@@ -258,6 +259,11 @@ const moreOptions = computed(() => {
   }
 
   options.push({
+    label: t('space.discovery.title'),
+    key: 'discover'
+  })
+
+  options.push({
     type: 'divider',
     key: 'd1'
   })
@@ -281,6 +287,9 @@ const handleMoreSelect = (key: string) => {
       break
     case 'join':
       emit('joinRoom')
+      break
+    case 'discover':
+      emit('discoverSpaces')
       break
   }
 }

@@ -42,6 +42,23 @@ class VerificationService extends BaseMatrixService {
   private observedClient: MatrixClient | null = null
   private pendingRequests: Map<string, VerificationRequest> = new Map()
 
+  private getExistingVerificationRequest(
+    crypto: CryptoApi,
+    transactionId: string,
+    action: string
+  ): SDKVerificationRequest {
+    const verification = crypto.verificationRequests?.get(transactionId)
+    if (verification) {
+      return verification
+    }
+
+    if (this.pendingRequests.has(transactionId)) {
+      throw new Error(`Cannot ${action}: verification request ${transactionId} is not available in active SDK requests`)
+    }
+
+    throw new Error(`Cannot ${action}: verification request ${transactionId} was not found`)
+  }
+
   private readonly requestedListener = (event: SDKVerificationRequest): void => {
     if (event?.transactionId) {
       this.pendingRequests.set(event.transactionId, {
@@ -184,20 +201,9 @@ class VerificationService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.crypto.not_enabled'))
       }
 
-      const verification = crypto.verificationRequests?.get(transactionId)
-      if (verification) {
-        await verification.accept()
-        info(`[Verification] 验证请求已接受: ${transactionId}`)
-      } else {
-        const pendingRequest = this.pendingRequests.get(transactionId)
-        if (pendingRequest) {
-          const newRequest = await crypto.requestDeviceVerification?.(pendingRequest.userId, pendingRequest.deviceId)
-          if (newRequest) {
-            await newRequest.accept()
-          }
-        }
-        info(`[Verification] 验证请求已接受: ${transactionId}`)
-      }
+      const verification = this.getExistingVerificationRequest(crypto, transactionId, 'accept verification request')
+      await verification.accept()
+      info(`[Verification] 验证请求已接受: ${transactionId}`)
     } catch (err) {
       error(`[Verification] 接受验证请求失败: ${err}`)
       throw err
@@ -212,12 +218,10 @@ class VerificationService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.crypto.not_enabled'))
       }
 
-      const verification = crypto.verificationRequests?.get(transactionId)
-      if (verification) {
-        const sasVerifier = verification.verifier
-        if (sasVerifier) {
-          await sasVerifier.verify()
-        }
+      const verification = this.getExistingVerificationRequest(crypto, transactionId, 'confirm SAS')
+      const sasVerifier = verification.verifier
+      if (sasVerifier) {
+        await sasVerifier.verify()
       }
 
       this.pendingRequests.delete(transactionId)
@@ -236,10 +240,8 @@ class VerificationService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.crypto.not_enabled'))
       }
 
-      const verification = crypto.verificationRequests?.get(transactionId)
-      if (verification) {
-        await verification.cancel({ reason })
-      }
+      const verification = this.getExistingVerificationRequest(crypto, transactionId, 'cancel verification request')
+      await verification.cancel({ reason })
 
       this.pendingRequests.delete(transactionId)
       info(`[Verification] 验证已取消: ${transactionId}, 原因: ${reason}`)

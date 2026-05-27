@@ -117,8 +117,9 @@ const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
 const isCurrentUser = computed(() => props.fromUserUid === userStore.userInfo?.uid)
 const iconColor = computed(() =>
   isCurrentUser.value
-    ? '#fff'
-    : getComputedStyle(document.documentElement).getPropertyValue('--voice-icon-color-other').trim() || '#000'
+    ? 'var(--hula-text-inverse)'
+    : getComputedStyle(document.documentElement).getPropertyValue('--voice-icon-color-other').trim() ||
+      'var(--hula-text-primary)'
 )
 
 const waveformWidth = computed(() => {

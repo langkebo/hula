@@ -25,7 +25,8 @@
     "paths": {
       "~/*": ["./*"],
       "@/*": ["./src/*"],
-      "#/*": ["./src/mobile/*"]
+      "#/*": ["./src/mobile/*"],
+      "matrix-js-sdk/rendezvous": ["../matrix-js-sdk/src/rendezvous/index.ts"]
     },
     "types": ["vitest/globals", "@vue/test-utils", "node"],
     "allowSyntheticDefaultImports": true,

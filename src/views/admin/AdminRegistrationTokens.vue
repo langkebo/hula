@@ -3,7 +3,7 @@
     <n-flex vertical :size="16">
       <n-flex align="center" justify="space-between">
         <span class="text-16px font-semibold">{{ t('admin.registration_tokens.title') }}</span>
-        <n-button type="primary" size="small" @click="showCreateDialog = true">
+        <n-button type="primary" size="small" @click="openCreateDialog">
           {{ t('admin.registration_tokens.create') }}
         </n-button>
       </n-flex>
@@ -17,26 +17,33 @@
         size="small" />
     </n-flex>
 
-    <n-modal v-model:show="showCreateDialog" :title="t('admin.registration_tokens.create_title')" preset="dialog">
-      <n-form :model="createForm" label-placement="left" label-width="100">
+    <!-- Create / Edit Token Dialog -->
+    <n-modal
+      v-model:show="showDialog"
+      :title="isEditing ? t('admin.registration_tokens.edit_title') : t('admin.registration_tokens.create_title')"
+      preset="dialog">
+      <n-form :model="dialogForm" label-placement="left" label-width="100">
         <n-form-item :label="t('admin.registration_tokens.token')">
-          <n-input v-model:value="createForm.token" :placeholder="t('admin.registration_tokens.token_auto')" />
+          <n-input
+            v-model:value="dialogForm.token"
+            :placeholder="t('admin.registration_tokens.token_auto')"
+            :disabled="isEditing" />
         </n-form-item>
         <n-form-item :label="t('admin.registration_tokens.uses_allowed')">
           <n-input-number
-            v-model:value="createForm.usesAllowed"
+            v-model:value="dialogForm.usesAllowed"
             :min="0"
             :placeholder="t('admin.registration_tokens.unlimited')"
             style="width: 100%" />
         </n-form-item>
         <n-form-item :label="t('admin.registration_tokens.expiry_time')">
-          <n-date-picker v-model:value="createForm.expiryTime" type="datetime" clearable style="width: 100%" />
+          <n-date-picker v-model:value="dialogForm.expiryTime" type="datetime" clearable style="width: 100%" />
         </n-form-item>
       </n-form>
       <template #action>
         <n-flex justify="end" :size="12">
-          <n-button @click="showCreateDialog = false">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" :loading="creating" @click="handleCreateToken">
+          <n-button @click="showDialog = false">{{ t('common.cancel') }}</n-button>
+          <n-button type="primary" :loading="submitting" @click="handleSubmit">
             {{ t('common.confirm') }}
           </n-button>
         </n-flex>
@@ -46,8 +53,8 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NSpace, NTag } from 'naive-ui'
-import { h, onMounted, ref } from 'vue'
+import { NButton, NPopconfirm, NSpace, NTag } from 'naive-ui'
+import { h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type RegistrationToken, useAdminRegistrationTokens } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -60,9 +67,12 @@ const loading = registrationTokens.loading
 const tokens = registrationTokens.tokens
 const creating = registrationTokens.creating
 
-const showCreateDialog = ref(false)
+const showDialog = ref(false)
+const isEditing = ref(false)
+const submitting = ref(false)
+const editingToken = ref<string | null>(null)
 
-const createForm = ref<{
+const dialogForm = reactive<{
   token: string
   usesAllowed: number | null
   expiryTime: number | null
@@ -73,6 +83,24 @@ const createForm = ref<{
 })
 
 const pagination = { pageSize: 20 }
+
+function openCreateDialog() {
+  isEditing.value = false
+  editingToken.value = null
+  dialogForm.token = ''
+  dialogForm.usesAllowed = null
+  dialogForm.expiryTime = null
+  showDialog.value = true
+}
+
+function openEditDialog(row: RegistrationToken) {
+  isEditing.value = true
+  editingToken.value = row.token
+  dialogForm.token = row.token
+  dialogForm.usesAllowed = row.usesAllowed ?? null
+  dialogForm.expiryTime = row.expiryTime ?? null
+  showDialog.value = true
+}
 
 const columns = [
   {
@@ -98,6 +126,13 @@ const columns = [
     width: 100
   },
   {
+    title: t('admin.registration_tokens.expiry_time'),
+    key: 'expiryTime',
+    width: 180,
+    render: (row: RegistrationToken) =>
+      row.expiryTime ? new Date(row.expiryTime).toLocaleString() : t('admin.registration_tokens.unlimited')
+  },
+  {
     title: t('admin.registration_tokens.status'),
     key: 'status',
     width: 100,
@@ -116,9 +151,14 @@ const columns = [
     width: 160,
     render: (row: RegistrationToken) =>
       h(NSpace, { size: 8 }, () => [
-        h(NButton, { size: 'tiny', onClick: () => handleEditToken(row) }, () => t('common.edit')),
-        h(NButton, { size: 'tiny', type: 'error', onClick: () => handleDeleteToken(row.token) }, () =>
-          t('common.delete')
+        h(NButton, { size: 'tiny', onClick: () => openEditDialog(row) }, () => t('common.edit')),
+        h(
+          NPopconfirm,
+          { onPositiveClick: () => handleDeleteToken(row.token) },
+          {
+            trigger: () => h(NButton, { size: 'tiny', type: 'error' }, () => t('common.delete')),
+            default: () => t('admin.registration_tokens.delete_confirm')
+          }
         )
       ])
   }
@@ -132,23 +172,35 @@ async function loadTokens() {
   }
 }
 
-async function handleCreateToken() {
+async function handleSubmit() {
+  submitting.value = true
   try {
-    const options: { token?: string; usesAllowed?: number; expiryTime?: number } = {}
-    if (createForm.value.token.trim()) options.token = createForm.value.token.trim()
-    if (createForm.value.usesAllowed !== null) options.usesAllowed = createForm.value.usesAllowed
-    if (createForm.value.expiryTime !== null) options.expiryTime = createForm.value.expiryTime
-    await registrationTokens.createToken(options)
-    showFeedback(t('admin.registration_tokens.create_success'), 'success')
-    showCreateDialog.value = false
-    createForm.value = { token: '', usesAllowed: null, expiryTime: null }
+    if (isEditing.value && editingToken.value) {
+      const updates: { usesAllowed?: number; expiryTime?: number } = {}
+      if (dialogForm.usesAllowed !== null) updates.usesAllowed = dialogForm.usesAllowed
+      if (dialogForm.expiryTime !== null) updates.expiryTime = dialogForm.expiryTime
+      await registrationTokens.updateToken(editingToken.value, updates)
+      showFeedback(t('admin.registration_tokens.update_success'), 'success')
+    } else {
+      const options: { token?: string; usesAllowed?: number; expiryTime?: number } = {}
+      if (dialogForm.token.trim()) options.token = dialogForm.token.trim()
+      if (dialogForm.usesAllowed !== null) options.usesAllowed = dialogForm.usesAllowed
+      if (dialogForm.expiryTime !== null) options.expiryTime = dialogForm.expiryTime
+      await registrationTokens.createToken(options)
+      showFeedback(t('admin.registration_tokens.create_success'), 'success')
+    }
+    showDialog.value = false
+    dialogForm.token = ''
+    dialogForm.usesAllowed = null
+    dialogForm.expiryTime = null
   } catch {
-    showFeedback(t('admin.registration_tokens.create_failed'), 'error')
+    showFeedback(
+      isEditing.value ? t('admin.registration_tokens.update_failed') : t('admin.registration_tokens.create_failed'),
+      'error'
+    )
+  } finally {
+    submitting.value = false
   }
-}
-
-function handleEditToken(_row: RegistrationToken) {
-  showFeedback(t('admin.registration_tokens.edit_hint'), 'info')
 }
 
 async function handleDeleteToken(token: string) {

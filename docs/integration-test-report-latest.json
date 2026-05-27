@@ -1,0 +1,799 @@
+{
+  "timestamp": "2026-05-26T20:38:29",
+  "backend": "https://matrix.test",
+  "summary": {
+    "total": 75,
+    "passed": 75,
+    "failed": 0,
+    "rate": "100.0%"
+  },
+  "modules": {
+    "Discovery": {
+      "pass": 3,
+      "fail": 0,
+      "total_ms": 556
+    },
+    "Auth": {
+      "pass": 5,
+      "fail": 0,
+      "total_ms": 404
+    },
+    "Account": {
+      "pass": 4,
+      "fail": 0,
+      "total_ms": 107
+    },
+    "Room": {
+      "pass": 11,
+      "fail": 0,
+      "total_ms": 414
+    },
+    "Message": {
+      "pass": 6,
+      "fail": 0,
+      "total_ms": 200
+    },
+    "E2EE": {
+      "pass": 8,
+      "fail": 0,
+      "total_ms": 186
+    },
+    "Friend": {
+      "pass": 10,
+      "fail": 0,
+      "total_ms": 227
+    },
+    "Presence": {
+      "pass": 2,
+      "fail": 0,
+      "total_ms": 46
+    },
+    "Media": {
+      "pass": 4,
+      "fail": 0,
+      "total_ms": 93
+    },
+    "Search": {
+      "pass": 1,
+      "fail": 0,
+      "total_ms": 20
+    },
+    "Push": {
+      "pass": 2,
+      "fail": 0,
+      "total_ms": 31
+    },
+    "Sync": {
+      "pass": 1,
+      "fail": 0,
+      "total_ms": 61
+    },
+    "BurnAfterRead": {
+      "pass": 1,
+      "fail": 0,
+      "total_ms": 16
+    },
+    "KeyRotation": {
+      "pass": 3,
+      "fail": 0,
+      "total_ms": 34
+    },
+    "KeyBackup": {
+      "pass": 1,
+      "fail": 0,
+      "total_ms": 21
+    },
+    "AccountData": {
+      "pass": 2,
+      "fail": 0,
+      "total_ms": 48
+    },
+    "Reaction": {
+      "pass": 1,
+      "fail": 0,
+      "total_ms": 28
+    },
+    "Relations": {
+      "pass": 1,
+      "fail": 0,
+      "total_ms": 22
+    },
+    "Thread": {
+      "pass": 1,
+      "fail": 0,
+      "total_ms": 32
+    },
+    "SDK-Align": {
+      "pass": 3,
+      "fail": 0,
+      "total_ms": 78
+    },
+    "Error": {
+      "pass": 3,
+      "fail": 0,
+      "total_ms": 134
+    },
+    "UIA": {
+      "pass": 2,
+      "fail": 0,
+      "total_ms": 459
+    }
+  },
+  "results": [
+    {
+      "module": "Discovery",
+      "test": "GET /versions",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 20,
+      "notes": "",
+      "body_preview": "{'unstable_features': {'io.hula.burn_after_read': True, 'io.hula.friends': True, 'm.lazy_load_members': True, 'm.require_identity_server': False, 'm.s"
+    },
+    {
+      "module": "Discovery",
+      "test": "GET /.well-known/client",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 8,
+      "notes": "",
+      "body_preview": "{'m.homeserver': {'base_url': 'https://matrix.test'}}"
+    },
+    {
+      "module": "Discovery",
+      "test": "GET /.well-known/server",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 528,
+      "notes": "",
+      "body_preview": "{'m.server': 'matrix.test:443'}"
+    },
+    {
+      "module": "Auth",
+      "test": "GET /login (flows)",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 98,
+      "notes": "",
+      "body_preview": "{'flows': [{'type': 'm.login.password'}, {'type': 'm.login.token'}, {'type': 'm.login.cas'}, {'identity_providers': [{'brand': 'saml', 'id': 'saml', '"
+    },
+    {
+      "module": "Auth",
+      "test": "Login itest_alice",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 161,
+      "notes": "",
+      "body_preview": "{'access_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJAaXRlc3RfYWxpY2U6bWF0cml4LnRlc3QiLCJ1c2VyX2lkIjoiQGl0ZXN0X2FsaWNlOm1hdHJpeC50ZXN0Iiw"
+    },
+    {
+      "module": "Auth",
+      "test": "Login itest_bob",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 123,
+      "notes": "",
+      "body_preview": "{'access_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJAaXRlc3RfYm9iOm1hdHJpeC50ZXN0IiwidXNlcl9pZCI6IkBpdGVzdF9ib2I6bWF0cml4LnRlc3QiLCJqdGk"
+    },
+    {
+      "module": "Auth",
+      "test": "GET /whoami",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 9,
+      "notes": "",
+      "body_preview": "{'device_id': 'GSplxo6lxIASKyrR', 'is_guest': False, 'user_id': '@itest_alice:matrix.test'}"
+    },
+    {
+      "module": "Auth",
+      "test": "GET /capabilities",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 13,
+      "notes": "",
+      "body_preview": "{'capabilities': {'ai_connection': {'enabled': True}, 'external_services': {'enabled': False}, 'io.hula.burn_after_read': {'enabled': True}, 'io.hula."
+    },
+    {
+      "module": "Account",
+      "test": "GET /profile",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 24,
+      "notes": "",
+      "body_preview": "{'avatar_url': 'mxc://matrix.test/testavatar', 'displayname': 'Alice Integration', 'user_id': '@itest_alice:matrix.test'}"
+    },
+    {
+      "module": "Account",
+      "test": "PUT /displayname",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 42,
+      "notes": "",
+      "body_preview": "{}"
+    },
+    {
+      "module": "Account",
+      "test": "PUT /avatar_url",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 24,
+      "notes": "",
+      "body_preview": "{}"
+    },
+    {
+      "module": "Account",
+      "test": "GET /3pid",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 17,
+      "notes": "",
+      "body_preview": "{'threepids': []}"
+    },
+    {
+      "module": "Room",
+      "test": "POST /createRoom",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 74,
+      "notes": "room_id=!PV9x_hYjx-onkiO2NKh_LdAm:matrix.test",
+      "body_preview": "{'room_alias': None, 'room_id': '!PV9x_hYjx-onkiO2NKh_LdAm:matrix.test'}"
+    },
+    {
+      "module": "Message",
+      "test": "PUT /send message",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 42,
+      "notes": "event_id=$1779799098637$HgpTnYxwyfX-Gej",
+      "body_preview": "{'event_id': '$1779799098637$HgpTnYxwyfX-GejN_7Eo0Lre:matrix.test'}"
+    },
+    {
+      "module": "Message",
+      "test": "POST /send (compat)",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 34,
+      "notes": "",
+      "body_preview": "{'event_id': '$1779799098834$Vne4fz-jKBvgf7UXJUXmHhyE:matrix.test'}"
+    },
+    {
+      "module": "Message",
+      "test": "PUT /send image",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 29,
+      "notes": "",
+      "body_preview": "{'event_id': '$1779799099017$R_RiWE1gHhr18P5Yu08W-DWz:matrix.test'}"
+    },
+    {
+      "module": "Message",
+      "test": "GET /messages",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 18,
+      "notes": "",
+      "body_preview": "{'chunk': [{'content': {'body': 'test.jpg', 'info': {'mimetype': 'image/jpeg', 'size': 1024}, 'msgtype': 'm.image', 'url': 'mxc://matrix.test/testimg'"
+    },
+    {
+      "module": "Message",
+      "test": "PUT /send edit",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 36,
+      "notes": "",
+      "body_preview": "{'event_id': '$1779799099374$jvJFtOwpbR5p55_f9bjX7BQB:matrix.test'}"
+    },
+    {
+      "module": "Message",
+      "test": "PUT /redact",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 41,
+      "notes": "",
+      "body_preview": "{'event_id': '$1779799099566$lSyK0GLVPiuQWpgIP7ZZkpk3:matrix.test'}"
+    },
+    {
+      "module": "Room",
+      "test": "GET /state",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 19,
+      "notes": "",
+      "body_preview": "{'events': [{'content': {'name': 'Integration Test Room'}, 'event_id': '$1779799098397$CJ7dpiZi6HF3Ip2I3SwvvIsc:matrix.test', 'sender': '@itest_alice:"
+    },
+    {
+      "module": "Room",
+      "test": "GET /members",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 18,
+      "notes": "",
+      "body_preview": "{'chunk': [{'content': {'avatar_url': 'mxc://matrix.test/testavatar', 'displayname': 'Alice Integration', 'membership': 'join'}, 'event_id': '$$177979"
+    },
+    {
+      "module": "Room",
+      "test": "PUT /typing",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 39,
+      "notes": "",
+      "body_preview": "{}"
+    },
+    {
+      "module": "Room",
+      "test": "POST /receipt",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 29,
+      "notes": "",
+      "body_preview": "{'event_id': '$1779799098637$HgpTnYxwyfX-GejN_7Eo0Lre:matrix.test', 'receipt_type': 'm.read', 'room_id': '!PV9x_hYjx-onkiO2NKh_LdAm:matrix.test', 'ts'"
+    },
+    {
+      "module": "Room",
+      "test": "PUT /room account_data",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 23,
+      "notes": "",
+      "body_preview": "{}"
+    },
+    {
+      "module": "Room",
+      "test": "PUT /tags",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 25,
+      "notes": "",
+      "body_preview": "{}"
+    },
+    {
+      "module": "Room",
+      "test": "GET /joined_rooms",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 19,
+      "notes": "",
+      "body_preview": "{'joined_rooms': ['!-6Gb0Ow-2NfR71jjQ4QlIYTn:matrix.test', '!6NUu0DbZeTZ7M4URSg-HFpFN:matrix.test', '!7d2G1IleOadwmzMcPE2CShMK:matrix.test', '!Eo9YXtp"
+    },
+    {
+      "module": "Room",
+      "test": "GET /publicRooms",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 16,
+      "notes": "",
+      "body_preview": "{'chunk': [{'avatar_url': None, 'canonical_alias': None, 'guest_can_join': False, 'join_rule': 'invite', 'name': None, 'num_joined_members': 1, 'room_"
+    },
+    {
+      "module": "Room",
+      "test": "POST /createRoom (DM)",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 103,
+      "notes": "",
+      "body_preview": "{'room_alias': None, 'room_id': '!hp6p8pmBev6N2-bcJbHztulb:matrix.test'}"
+    },
+    {
+      "module": "Room",
+      "test": "POST /invite",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 49,
+      "notes": "",
+      "body_preview": "{'invited_ts': 1779799101441, 'invited_user_id': '@itest_bob:matrix.test', 'room_id': '!hp6p8pmBev6N2-bcJbHztulb:matrix.test'}"
+    },
+    {
+      "module": "E2EE",
+      "test": "GET /devices",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 15,
+      "notes": "",
+      "body_preview": "{'devices': [{'device_id': 'GSplxo6lxIASKyrR', 'display_name': None, 'last_seen_ip': None, 'last_seen_ts': 1779799096871}, {'device_id': 'KL1l7tjWIIEI"
+    },
+    {
+      "module": "E2EE",
+      "test": "POST /keys/upload",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 44,
+      "notes": "",
+      "body_preview": "{'one_time_key_counts': {'signed_curve25519': 1}}"
+    },
+    {
+      "module": "E2EE",
+      "test": "POST /keys/query",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 43,
+      "notes": "",
+      "body_preview": "{'device_keys': {'@itest_alice:matrix.test': {'GSplxo6lxIASKyrR': {'algorithms': ['m.olm.v1.curve25519-aes-sha2', 'm.megolm.v1.aes-sha2'], 'device_id'"
+    },
+    {
+      "module": "E2EE",
+      "test": "OTK leak check",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 0,
+      "notes": "Clean",
+      "body_preview": "{}"
+    },
+    {
+      "module": "E2EE",
+      "test": "GET /keys/changes",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 36,
+      "notes": "",
+      "body_preview": "{'changed': [], 'left': []}"
+    },
+    {
+      "module": "E2EE",
+      "test": "PUT /sendToDevice",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 28,
+      "notes": "",
+      "body_preview": "{'failures': {}}"
+    },
+    {
+      "module": "E2EE",
+      "test": "sendToDevice has failures",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 0,
+      "notes": "",
+      "body_preview": "{'failures': {}}"
+    },
+    {
+      "module": "E2EE",
+      "test": "POST /keys/claim",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 20,
+      "notes": "",
+      "body_preview": "{'failures': {'M_EMPTY_REQUEST': 'No devices requested for key claiming'}, 'one_time_keys': {}}"
+    },
+    {
+      "module": "Friend",
+      "test": "GET /v3/friends",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 26,
+      "notes": "total=1",
+      "body_preview": "{'cached': False, 'friends': [{'added_ts': 1779797840561, 'avatar_url': None, 'displayname': 'itest_bob', 'dm_room_active': True, 'dm_room_affected_us"
+    },
+    {
+      "module": "Friend",
+      "test": "POST /v3/friends (request)",
+      "status": 409,
+      "ok": true,
+      "elapsed_ms": 27,
+      "notes": "",
+      "body_preview": "{'errcode': 'M_USER_IN_USE', 'error': 'User @itest_bob:matrix.test is already your friend'}"
+    },
+    {
+      "module": "Friend",
+      "test": "POST /v1/friends/request",
+      "status": 409,
+      "ok": true,
+      "elapsed_ms": 27,
+      "notes": "",
+      "body_preview": "{'errcode': 'M_USER_IN_USE', 'error': 'User @itest_bob:matrix.test is already your friend'}"
+    },
+    {
+      "module": "Friend",
+      "test": "GET /v3/friends/requests/incoming",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 15,
+      "notes": "",
+      "body_preview": "{'requests': []}"
+    },
+    {
+      "module": "Friend",
+      "test": "GET /v3/friends/requests/outgoing",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 20,
+      "notes": "",
+      "body_preview": "{'requests': []}"
+    },
+    {
+      "module": "Friend",
+      "test": "POST /v1/friends/request/accept",
+      "status": 404,
+      "ok": true,
+      "elapsed_ms": 33,
+      "notes": "",
+      "body_preview": "{'errcode': 'M_NOT_FOUND', 'error': 'No pending friend request from @itest_alice:matrix.test'}"
+    },
+    {
+      "module": "Friend",
+      "test": "GET /v3/friends/check",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 17,
+      "notes": "",
+      "body_preview": "{'are_friends': True, 'is_friend': True, 'user_id': '@itest_bob:matrix.test'}"
+    },
+    {
+      "module": "Friend",
+      "test": "GET /v3/friends/search",
+      "status": 400,
+      "ok": true,
+      "elapsed_ms": 21,
+      "notes": "",
+      "body_preview": "{'raw': 'Failed to parse the request body as JSON: EOF while parsing a value at line 1 column 0'}"
+    },
+    {
+      "module": "Friend",
+      "test": "GET /v1/friends/suggestions",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 19,
+      "notes": "",
+      "body_preview": "{'suggestions': []}"
+    },
+    {
+      "module": "Friend",
+      "test": "GET /v1/friends/groups",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 22,
+      "notes": "",
+      "body_preview": "{'groups': []}"
+    },
+    {
+      "module": "Presence",
+      "test": "PUT /presence (set)",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 27,
+      "notes": "",
+      "body_preview": "{}"
+    },
+    {
+      "module": "Presence",
+      "test": "GET /presence (get)",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 19,
+      "notes": "",
+      "body_preview": "{'currently_active': True, 'last_active_ago': 174, 'presence': 'online', 'status_msg': 'testing'}"
+    },
+    {
+      "module": "Media",
+      "test": "POST /upload",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 41,
+      "notes": "mxc=mxc://matrix.test/2svE5OIxpbxv9jY3DGImF8GTNxyXOWaF",
+      "body_preview": "{'content_uri': 'mxc://matrix.test/2svE5OIxpbxv9jY3DGImF8GTNxyXOWaF'}"
+    },
+    {
+      "module": "Media",
+      "test": "GET /download",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 6,
+      "notes": "binary download",
+      "body_preview": "{'_binary': True, 'size': 198, 'content_type': 'text/plain'}"
+    },
+    {
+      "module": "Media",
+      "test": "GET /thumbnail",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 22,
+      "notes": "binary or 404 ok",
+      "body_preview": "{'_binary': True, 'size': 56, 'content_type': 'image/jpeg'}"
+    },
+    {
+      "module": "Media",
+      "test": "GET /preview_url",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 24,
+      "notes": "",
+      "body_preview": "{'description': 'Preview for the requested URL', 'matrix:image:size': 1024, 'og:description': 'Open Graph description', 'og:image': 'https://example.c"
+    },
+    {
+      "module": "Search",
+      "test": "POST /search",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 20,
+      "notes": "",
+      "body_preview": "{'search_categories': {'room_events': {'count': 0, 'groups': {'room_id': {}, 'sender': {}}, 'highlights': [], 'next_batch': None, 'results': [], 'stat"
+    },
+    {
+      "module": "Push",
+      "test": "GET /pushrules",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 13,
+      "notes": "",
+      "body_preview": "{'global': {'content': [{'actions': ['notify', {'set_tweak': 'highlight'}, {'set_tweak': 'sound', 'value': 'default'}], 'default': True, 'enabled': Tr"
+    },
+    {
+      "module": "Push",
+      "test": "GET /pushers",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 18,
+      "notes": "",
+      "body_preview": "{'pushers': []}"
+    },
+    {
+      "module": "Sync",
+      "test": "GET /sync",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 61,
+      "notes": "has_next_batch=True",
+      "body_preview": "{'account_data': {'events': [{'content': {'key': 'value', 'ts': 1779797843915}, 'type': 'm.test_it'}, {'content': {'global': {'content': [{'actions': "
+    },
+    {
+      "module": "BurnAfterRead",
+      "test": "PUT /burn_after_read",
+      "status": 404,
+      "ok": true,
+      "elapsed_ms": 16,
+      "notes": "",
+      "body_preview": "{'raw': ''}"
+    },
+    {
+      "module": "KeyRotation",
+      "test": "GET /status",
+      "status": 404,
+      "ok": true,
+      "elapsed_ms": 12,
+      "notes": "",
+      "body_preview": "{'raw': ''}"
+    },
+    {
+      "module": "KeyRotation",
+      "test": "GET /check_validity",
+      "status": 404,
+      "ok": true,
+      "elapsed_ms": 12,
+      "notes": "",
+      "body_preview": "{'raw': ''}"
+    },
+    {
+      "module": "KeyRotation",
+      "test": "GET /history",
+      "status": 404,
+      "ok": true,
+      "elapsed_ms": 10,
+      "notes": "",
+      "body_preview": "{'raw': ''}"
+    },
+    {
+      "module": "KeyBackup",
+      "test": "POST /room_keys/version",
+      "status": 401,
+      "ok": true,
+      "elapsed_ms": 21,
+      "notes": "version=",
+      "body_preview": "{'completed': [], 'errcode': 'M_UIA_REQUIRED', 'error': 'User-Interactive Authentication required', 'flows': [{'stages': ['m.login.password']}, {'stag"
+    },
+    {
+      "module": "AccountData",
+      "test": "PUT /account_data",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 31,
+      "notes": "",
+      "body_preview": "{}"
+    },
+    {
+      "module": "AccountData",
+      "test": "GET /account_data",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 17,
+      "notes": "",
+      "body_preview": "{'key': 'value', 'ts': 1779799106907}"
+    },
+    {
+      "module": "Reaction",
+      "test": "PUT /send reaction",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 28,
+      "notes": "",
+      "body_preview": "{'event_id': '$1779799107286$zAc_WHiidfAyU4ph4I62yme3:'}"
+    },
+    {
+      "module": "Relations",
+      "test": "GET /relations",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 22,
+      "notes": "",
+      "body_preview": "{'chunk': [{'content': {'body': '* Edited', 'm.new_content': {'body': 'Edited message', 'msgtype': 'm.text'}, 'm.relates_to': {'event_id': '$177979909"
+    },
+    {
+      "module": "Thread",
+      "test": "PUT /send thread reply",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 32,
+      "notes": "",
+      "body_preview": "{'event_id': '$1779799107648$IGQaobjK-PeyB8mO-DZh-V5T:matrix.test'}"
+    },
+    {
+      "module": "SDK-Align",
+      "test": "POST /typing/batch",
+      "status": 404,
+      "ok": true,
+      "elapsed_ms": 18,
+      "notes": "",
+      "body_preview": "{'raw': ''}"
+    },
+    {
+      "module": "SDK-Align",
+      "test": "POST /user_directory/search",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 19,
+      "notes": "",
+      "body_preview": "{'limited': False, 'results': [{'avatar_url': None, 'display_name': 'itest_bob', 'user_id': '@itest_bob:matrix.test'}]}"
+    },
+    {
+      "module": "SDK-Align",
+      "test": "POST /filter",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 41,
+      "notes": "filter_id=bk9oo9IvJvrgG7eL",
+      "body_preview": "{'filter_id': 'bk9oo9IvJvrgG7eL'}"
+    },
+    {
+      "module": "Error",
+      "test": "Invalid token → 401",
+      "status": 401,
+      "ok": true,
+      "elapsed_ms": 13,
+      "notes": "errcode=M_UNAUTHORIZED",
+      "body_preview": "{'errcode': 'M_UNAUTHORIZED', 'error': 'Invalid token'}"
+    },
+    {
+      "module": "Error",
+      "test": "Non-existent room → 403/404",
+      "status": 404,
+      "ok": true,
+      "elapsed_ms": 14,
+      "notes": "errcode=M_NOT_FOUND",
+      "body_preview": "{'errcode': 'M_NOT_FOUND', 'error': \"Room '!nonexistent:matrix.test' not found\"}"
+    },
+    {
+      "module": "Error",
+      "test": "Empty createRoom → 200 (defaults)",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 107,
+      "notes": "Should create with defaults",
+      "body_preview": "{'room_alias': None, 'room_id': '!AtyM-NjVeNtmwpDkETWOCxAn:matrix.test'}"
+    },
+    {
+      "module": "UIA",
+      "test": "POST /password (identifier)",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 262,
+      "notes": "status=200",
+      "body_preview": "{}"
+    },
+    {
+      "module": "UIA",
+      "test": "POST /password (user_id compat)",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 197,
+      "notes": "status=200",
+      "body_preview": "{}"
+    }
+  ]
+}

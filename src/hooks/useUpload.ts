@@ -151,7 +151,7 @@ export const useUpload = () => {
       const fileHash = await calculateFileHash(fileObj)
       const fileSuffix = fileName.split('.').pop() || ''
       // 获取当前登录用户的account
-      const account = userStore.userInfo!.account
+      const account = userStore.userInfo?.account ?? userStore.userInfo?.uid ?? 'anonymous'
       key = `${options.scene}/${account}/${fileHash}.${fileSuffix}`
       logger.debug('使用文件去重模式，文件哈希:', fileHash)
     } else {
@@ -179,6 +179,10 @@ export const useUpload = () => {
 
   const getUploadCredential = async (fileName: string, scene?: UploadSceneEnum) => {
     const credential = await uploadService.getOssToken({ scene, fileName })
+    if (!credential) {
+      // upload/token 端点不可用，返回 null 让调用方降级到标准 Matrix 上传
+      return null
+    }
     if (!credential?.uploadUrl || !credential?.downloadUrl) {
       throw new Error(t('hooks.upload.credential_failed'))
     }
@@ -277,6 +281,12 @@ export const useUpload = () => {
 
     try {
       const credential = await getUploadCredential(file.name, options?.scene)
+      if (!credential) {
+        // upload/token 不可用，降级到标准 Matrix 上传
+        isUploading.value = false
+        showFeedback(t('hooks.upload.credential_failed'), 'error')
+        return
+      }
       fileInfo.value = { ...info }
       await onStart.trigger(fileInfo)
 
@@ -307,9 +317,12 @@ export const useUpload = () => {
   const getUploadAndDownloadUrl = async (
     _path: string,
     options?: UploadOptions
-  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }> => {
+  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> } | null> => {
     const provider = await resolveProvider(options?.provider)
     const credential = await getUploadCredential(extractFileName(_path), options?.scene)
+    if (!credential) {
+      return null
+    }
     return {
       uploadUrl: credential.uploadUrl,
       downloadUrl: credential.downloadUrl,

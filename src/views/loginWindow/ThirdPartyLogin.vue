@@ -234,7 +234,7 @@ const ssoOptions = computed(() => [
     key: 'saml',
     label: t('login.sso.saml'),
     icon: 'SAML',
-    style: 'color-#303030 dark:color-#fefefe90',
+    style: 'text-[--hula-text-primary]',
     action: handleSamlLogin,
     available: isSsoFlowAvailable('saml')
   },
@@ -258,7 +258,7 @@ const ssoOptions = computed(() => [
     key: 'github',
     label: t('login.third_party.github'),
     icon: '#github-login',
-    style: 'color-#303030 dark:color-#fefefe90',
+    style: 'text-[--hula-text-primary]',
     action: resolvedContext.githubLogin || noop,
     available: true
   }

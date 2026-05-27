@@ -469,6 +469,27 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'server-logs',
         name: 'mobileAdminServerLogs',
         component: () => import('../../mobile/views/admin/AdminServerLogs.vue')
+      },
+      {
+        path: 'spaces',
+        name: 'mobileAdminSpaces',
+        component: () => import('@/views/admin/AdminSpaces.vue')
+      },
+      {
+        path: 'notifications',
+        name: 'mobileAdminNotifications',
+        component: () => import('@/views/admin/AdminNotifications.vue')
+      },
+      {
+        path: 'app-services',
+        name: 'mobileAdminAppServices',
+        component: () => import('@/views/admin/AdminAppServices.vue')
+      },
+      {
+        path: 'guests',
+        name: 'mobileAdminGuests',
+        component: () => import('@/views/admin/AdminGuests.vue'),
+        meta: { requiresAdmin: true }
       }
     ]
   },

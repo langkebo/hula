@@ -6,6 +6,12 @@ const { showFeedbackMock } = vi.hoisted(() => ({
   showFeedbackMock: vi.fn()
 }))
 
+const { userStoreMock } = vi.hoisted(() => ({
+  userStoreMock: {
+    userInfo: { account: 'test-user', uid: 'test-uid' } as { account?: string; uid?: string } | undefined
+  }
+}))
+
 vi.mock('@tauri-apps/api/core', () => ({
   Channel: vi.fn(() => ({ onmessage: null })),
   invoke: vi.fn()
@@ -18,9 +24,7 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
 }))
 
 vi.mock('@/stores/domains/user/user', () => ({
-  useUserStore: vi.fn(() => ({
-    userInfo: { account: 'test-user', uid: 'test-uid' }
-  }))
+  useUserStore: vi.fn(() => userStoreMock)
 }))
 
 vi.mock('@/services/UploadService', () => ({
@@ -67,6 +71,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 describe('useUpload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    userStoreMock.userInfo = { account: 'test-user', uid: 'test-uid' }
   })
 
   it('should initialize with default values', () => {
@@ -153,6 +158,26 @@ describe('useUpload', () => {
     const key = await generateHashKey({ scene: UploadSceneEnum.CHAT, enableDeduplication: true }, file, 'test.txt')
 
     expect(key).toMatch(/^chat\/test-user\/[a-f0-9]+\.txt$/)
+  })
+
+  it('should fallback to uid when account is temporarily missing', async () => {
+    userStoreMock.userInfo = { uid: 'fallback-uid' }
+
+    const { generateHashKey } = useUpload()
+    const file = new File(['test'], 'test.txt', { type: 'text/plain' })
+    const key = await generateHashKey({ scene: UploadSceneEnum.CHAT, enableDeduplication: true }, file, 'test.txt')
+
+    expect(key).toMatch(/^chat\/fallback-uid\/[a-f0-9]+\.txt$/)
+  })
+
+  it('should fallback to anonymous when user info is missing entirely', async () => {
+    userStoreMock.userInfo = undefined
+
+    const { generateHashKey } = useUpload()
+    const file = new File(['test'], 'test.txt', { type: 'text/plain' })
+    const key = await generateHashKey({ scene: UploadSceneEnum.CHAT, enableDeduplication: true }, file, 'test.txt')
+
+    expect(key).toMatch(/^chat\/anonymous\/[a-f0-9]+\.txt$/)
   })
 
   it('should generate timestamp key without deduplication', async () => {

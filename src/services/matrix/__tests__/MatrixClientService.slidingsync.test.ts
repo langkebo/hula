@@ -10,6 +10,9 @@ vi.mock('matrix-js-sdk', () => ({
     startClient: vi.fn(),
     stopClient: vi.fn(),
     logout: vi.fn(),
+    whoami: vi.fn().mockResolvedValue({ user_id: '@test:example.com', device_id: 'DEVICE123' }),
+    getCrypto: vi.fn(() => undefined),
+    initRustCrypto: vi.fn().mockResolvedValue(undefined),
     getUserId: vi.fn(() => '@test:example.com'),
     getDeviceId: vi.fn(() => 'DEVICE123'),
     on: vi.fn(),
@@ -50,6 +53,11 @@ vi.mock('@/services/matrix/network/runtimeFetch', () => ({
 }))
 
 describe('MatrixClientService - SlidingSync 初始化修复', () => {
+  type RustCryptoCapableClient = MatrixClient & {
+    initRustCrypto?: ReturnType<typeof vi.fn>
+    getCrypto?: ReturnType<typeof vi.fn>
+  }
+
   type MatrixClientServiceInternals = {
     client: MatrixClient | null
     slidingSyncInstance: SlidingSync | null
@@ -109,6 +117,30 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
   })
 
   describe('startClient()', () => {
+    it('应该在启动客户端前初始化 Rust Crypto', async () => {
+      await matrixClientService.initialize(testConfig)
+      await matrixClientService.startClient()
+
+      const client = matrixClientService.getClient() as RustCryptoCapableClient | null
+      expect(client?.initRustCrypto).toHaveBeenCalledTimes(1)
+      expect(client?.initRustCrypto).toHaveBeenCalledWith({
+        useIndexedDB: typeof globalThis.indexedDB !== 'undefined'
+      })
+    })
+
+    it('应该在缺少 deviceId 时跳过 Rust Crypto 初始化但继续启动', async () => {
+      await matrixClientService.initialize(testConfig)
+
+      const client = matrixClientService.getClient() as RustCryptoCapableClient | null
+      if (client) {
+        vi.mocked(client.getDeviceId).mockReturnValueOnce(null)
+      }
+
+      await expect(matrixClientService.startClient()).resolves.toBeUndefined()
+      expect(client?.initRustCrypto).not.toHaveBeenCalled()
+      expect(client?.startClient).toHaveBeenCalledTimes(1)
+    })
+
     it('应该在 startClient() 时创建 SlidingSync 实例', async () => {
       await matrixClientService.initialize(testConfig)
       await matrixClientService.startClient()
@@ -178,6 +210,46 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
     })
   })
 
+  describe('loginWithToken()', () => {
+    it('应该在 token 恢复缺少 deviceId 时通过 whoami 回填', async () => {
+      const { createClient } = await import('matrix-js-sdk')
+      const whoamiMock = vi.fn().mockResolvedValue({
+        user_id: '@restore:example.com',
+        device_id: 'RESTOREDEVICE'
+      })
+      vi.mocked(createClient).mockImplementation(
+        () =>
+          ({
+            login: vi.fn(),
+            startClient: vi.fn(),
+            stopClient: vi.fn(),
+            logout: vi.fn(),
+            whoami: whoamiMock,
+            getCrypto: vi.fn(() => undefined),
+            initRustCrypto: vi.fn().mockResolvedValue(undefined),
+            getUserId: vi.fn(() => '@restore:example.com'),
+            getDeviceId: vi.fn(() => null),
+            on: vi.fn(),
+            off: vi.fn()
+          }) as any
+      )
+
+      await matrixClientService.initialize({
+        homeserverUrl: 'http://localhost:28008'
+      })
+
+      const result = await matrixClientService.loginWithToken('restore-token', '@restore:example.com')
+
+      expect(whoamiMock).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({
+        success: true,
+        userId: '@restore:example.com',
+        deviceId: 'RESTOREDEVICE',
+        accessToken: 'restore-token'
+      })
+    })
+  })
+
   describe('错误处理', () => {
     it('应该在同步错误时记录详细日志', async () => {
       await matrixClientService.initialize(testConfig)
@@ -203,6 +275,12 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
       expect(matrixClientService.getConnectionState()).toBe('CONNECTING')
 
       await matrixClientService.startClient()
+      const client = matrixClientService.getClient()
+      const syncListener = vi.mocked(client!.on).mock.calls.find((call) => call[0] === 'sync')?.[1] as
+        | ((state: string, prevState?: string, data?: unknown) => void)
+        | undefined
+
+      syncListener?.('SYNCING', 'CONNECTING')
 
       expect(matrixClientService.getConnectionState()).toBe('CONNECTED')
     })
