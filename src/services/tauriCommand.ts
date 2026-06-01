@@ -46,6 +46,7 @@ export const getSettings = async (): Promise<Settings> => {
 }
 
 export const updateSettings = async (settings: UpdateSettingsParams) => {
+  await ensureAppStateReady()
   return await invokeWithErrorHandler('update_settings', { settings })
 }
 
