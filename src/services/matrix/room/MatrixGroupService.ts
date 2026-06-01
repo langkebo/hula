@@ -1,7 +1,9 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import { type ICreateRoomOpts, Preset, Visibility } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { matrixRoomService } from './MatrixRoomService'
+
+const logger = createLogger('MatrixGroupService')
 
 export type CreateRoomOptions = ICreateRoomOpts
 
@@ -36,7 +38,7 @@ class MatrixGroupService {
       const room = await matrixRoomService.createRoom(options)
       return { roomId: room.roomId }
     } catch (err) {
-      error(`[MatrixGroup] 创建群组失败: ${err}`)
+      logger.error(`[MatrixGroup] 创建群组失败: ${err}`)
       throw err
     }
   }
@@ -51,7 +53,7 @@ class MatrixGroupService {
       })
       return { roomId: room.roomId }
     } catch (err) {
-      error(`[MatrixGroup] 创建群聊失败: ${err}`)
+      logger.error(`[MatrixGroup] 创建群聊失败: ${err}`)
       throw err
     }
   }
@@ -60,7 +62,7 @@ class MatrixGroupService {
     try {
       await matrixRoomService.leaveRoom(roomId)
     } catch (err) {
-      error(`[MatrixGroup] 离开房间失败: ${err}`)
+      logger.error(`[MatrixGroup] 离开房间失败: ${err}`)
       throw err
     }
   }
@@ -73,7 +75,7 @@ class MatrixGroupService {
     try {
       await matrixRoomService.setRoomName(roomId, name)
     } catch (err) {
-      error(`[MatrixGroup] 更新群名失败: ${err}`)
+      logger.error(`[MatrixGroup] 更新群名失败: ${err}`)
       throw err
     }
   }
@@ -82,7 +84,7 @@ class MatrixGroupService {
     try {
       await matrixRoomService.inviteUser(roomId, userId)
     } catch (err) {
-      error(`[MatrixGroup] 邀请成员失败: ${err}`)
+      logger.error(`[MatrixGroup] 邀请成员失败: ${err}`)
       throw err
     }
   }
@@ -91,7 +93,7 @@ class MatrixGroupService {
     try {
       await matrixRoomService.kickUser(roomId, userId)
     } catch (err) {
-      error(`[MatrixGroup] 移除成员失败: ${err}`)
+      logger.error(`[MatrixGroup] 移除成员失败: ${err}`)
       throw err
     }
   }
@@ -100,7 +102,7 @@ class MatrixGroupService {
     try {
       await matrixClientService.joinRoom(account)
     } catch (err) {
-      error(`[MatrixGroup] 申请加群失败: ${err}`)
+      logger.error(`[MatrixGroup] 申请加群失败: ${err}`)
       throw err
     }
   }
@@ -129,13 +131,13 @@ class MatrixGroupService {
         }))
 
       if (results.length === 0) {
-        warn(`[MatrixGroup] 未找到匹配群组: ${normalizedKeyword}`)
+        logger.warn(`[MatrixGroup] 未找到匹配群组: ${normalizedKeyword}`)
       } else {
-        info(`[MatrixGroup] 搜索群组成功: ${normalizedKeyword}, ${results.length} 条`)
+        logger.info(`[MatrixGroup] 搜索群组成功: ${normalizedKeyword}, ${results.length} 条`)
       }
       return results
     } catch (err) {
-      error(`[MatrixGroup] 搜索群组失败: ${err}`)
+      logger.error(`[MatrixGroup] 搜索群组失败: ${err}`)
       return []
     }
   }

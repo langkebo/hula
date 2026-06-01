@@ -1,6 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { getMatrixAccessToken, getMatrixHomeserverUrl } from '@/services/matrix/matrixClientAccessor'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ChunkUploadService')
 
 export interface ChunkUploadOptions {
   file: File
@@ -100,10 +102,10 @@ class ChunkUploadService {
 
     try {
       const result = await this.processUpload(context)
-      info(`[ChunkUpload] 上传完成: ${file.name}`)
+      logger.info(`[ChunkUpload] 上传完成: ${file.name}`)
       return result
     } catch (err) {
-      error(`[ChunkUpload] 上传失败: ${err}`)
+      logger.error(`[ChunkUpload] 上传失败: ${err}`)
       // Try to cancel the upload on server
       try {
         await this.cancelUpload(serverUploadId)
@@ -300,7 +302,7 @@ class ChunkUploadService {
     })
 
     if (!resp.ok) {
-      error(`[ChunkUpload] Failed to cancel upload ${uploadId}: ${resp.status}`)
+      logger.error(`[ChunkUpload] Failed to cancel upload ${uploadId}: ${resp.status}`)
     }
   }
 
@@ -331,7 +333,7 @@ class ChunkUploadService {
       context.aborted = true
       // Fire-and-forget cancel on server
       this.cancelUpload(uploadId).catch(() => {})
-      info(`[ChunkUpload] 上传已取消: ${uploadId}`)
+      logger.info(`[ChunkUpload] 上传已取消: ${uploadId}`)
     }
   }
 

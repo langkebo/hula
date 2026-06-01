@@ -1,4 +1,3 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -112,12 +111,12 @@ class MatrixVoIPService extends BaseMatrixService {
         }
         this.setupCallHandlers(client)
         this.observedClient = client
-        info('[VoIP] VoIP 模块初始化成功')
+        logger.info('[VoIP] VoIP 模块初始化成功')
       } else {
-        warn('[VoIP] VoIP 模块不可用')
+        logger.warn('[VoIP] VoIP 模块不可用')
       }
     } catch (err) {
-      error(`[VoIP] 初始化失败: ${err}`)
+      logger.error(`[VoIP] 初始化失败: ${err}`)
     }
   }
 
@@ -152,7 +151,7 @@ class MatrixVoIPService extends BaseMatrixService {
     const callId = call.callId
     const roomId = call.roomId
 
-    info(`[VoIP] 收到来电: ${callId}`)
+    logger.info(`[VoIP] 收到来电: ${callId}`)
 
     const callInfo: CallInfo = {
       callId,
@@ -169,7 +168,7 @@ class MatrixVoIPService extends BaseMatrixService {
 
   private handleCallHangup(call: VoIPCall): void {
     const callId = call.callId
-    info(`[VoIP] 通话结束: ${callId}`)
+    logger.info(`[VoIP] 通话结束: ${callId}`)
 
     const callInfo = this.calls.get(callId)
     if (callInfo) {
@@ -180,7 +179,7 @@ class MatrixVoIPService extends BaseMatrixService {
   }
 
   private handleCallReplaced(newCall: VoIPCall, oldCall: VoIPCall): void {
-    info(`[VoIP] 通话被替换: ${oldCall.callId} -> ${newCall.callId}`)
+    logger.info(`[VoIP] 通话被替换: ${oldCall.callId} -> ${newCall.callId}`)
     this.handleCallHangup(oldCall)
     this.handleIncomingCall(newCall)
   }
@@ -222,10 +221,10 @@ class MatrixVoIPService extends BaseMatrixService {
 
       await call.placeCall(this.localStream, options.video)
 
-      info(`[VoIP] 发起通话: ${callId}`)
+      logger.info(`[VoIP] 发起通话: ${callId}`)
       return callId
     } catch (err) {
-      error(`[VoIP] 发起通话失败: ${err}`)
+      logger.error(`[VoIP] 发起通话失败: ${err}`)
       throw err
     }
   }
@@ -255,9 +254,9 @@ class MatrixVoIPService extends BaseMatrixService {
 
       await call.answer(this.localStream, options.video)
 
-      info(`[VoIP] 接听通话: ${callId}`)
+      logger.info(`[VoIP] 接听通话: ${callId}`)
     } catch (err) {
-      error(`[VoIP] 接听通话失败: ${err}`)
+      logger.error(`[VoIP] 接听通话失败: ${err}`)
       throw err
     }
   }
@@ -272,9 +271,9 @@ class MatrixVoIPService extends BaseMatrixService {
       }
 
       this.calls.delete(callId)
-      info(`[VoIP] 拒绝通话: ${callId}`)
+      logger.info(`[VoIP] 拒绝通话: ${callId}`)
     } catch (err) {
-      error(`[VoIP] 拒绝通话失败: ${err}`)
+      logger.error(`[VoIP] 拒绝通话失败: ${err}`)
       throw err
     }
   }
@@ -289,9 +288,9 @@ class MatrixVoIPService extends BaseMatrixService {
       }
 
       this.cleanupCall(callId)
-      info(`[VoIP] 挂断通话: ${callId}`)
+      logger.info(`[VoIP] 挂断通话: ${callId}`)
     } catch (err) {
-      error(`[VoIP] 挂断通话失败: ${err}`)
+      logger.error(`[VoIP] 挂断通话失败: ${err}`)
       throw err
     }
   }
@@ -313,7 +312,7 @@ class MatrixVoIPService extends BaseMatrixService {
 
     call.on('error', (...args: unknown[]) => {
       const err = args[0] as Error
-      error(`[VoIP] 通话错误: ${err}`)
+      logger.error(`[VoIP] 通话错误: ${err}`)
       const callInfo = this.calls.get(callId)
       if (callInfo) {
         callInfo.state = 'error'
@@ -376,7 +375,7 @@ class MatrixVoIPService extends BaseMatrixService {
     const audioTrack = this.localStream.getAudioTracks()[0]
     if (audioTrack) {
       audioTrack.enabled = !audioTrack.enabled
-      info(`[VoIP] ${audioTrack.enabled ? '取消静音' : '静音'}: ${callId}`)
+      logger.info(`[VoIP] ${audioTrack.enabled ? '取消静音' : '静音'}: ${callId}`)
       return !audioTrack.enabled
     }
     return false
@@ -388,7 +387,7 @@ class MatrixVoIPService extends BaseMatrixService {
     const videoTrack = this.localStream.getVideoTracks()[0]
     if (videoTrack) {
       videoTrack.enabled = !videoTrack.enabled
-      info(`[VoIP] ${videoTrack.enabled ? '开启视频' : '关闭视频'}: ${callId}`)
+      logger.info(`[VoIP] ${videoTrack.enabled ? '开启视频' : '关闭视频'}: ${callId}`)
       return !videoTrack.enabled
     }
     return false
@@ -408,9 +407,9 @@ class MatrixVoIPService extends BaseMatrixService {
         await call.setScreensharingEnabled(true, { audio: false })
       }
 
-      info(`[VoIP] 开始屏幕共享: ${callId}`)
+      logger.info(`[VoIP] 开始屏幕共享: ${callId}`)
     } catch (err) {
-      error(`[VoIP] 屏幕共享失败: ${err}`)
+      logger.error(`[VoIP] 屏幕共享失败: ${err}`)
       throw err
     }
   }
@@ -428,7 +427,7 @@ class MatrixVoIPService extends BaseMatrixService {
       this.screenStream = null
     }
 
-    info(`[VoIP] 停止屏幕共享: ${callId}`)
+    logger.info(`[VoIP] 停止屏幕共享: ${callId}`)
   }
 
   getCall(callId: string): CallInfo | undefined {
@@ -541,7 +540,7 @@ class MatrixVoIPService extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/voip/turnServer')
       const r = result as Record<string, unknown>
-      info('[VoIP] 获取 TURN 服务器配置成功')
+      logger.info('[VoIP] 获取 TURN 服务器配置成功')
       return {
         username: (r.username as string) ?? '',
         password: (r.password as string) ?? '',
@@ -549,7 +548,7 @@ class MatrixVoIPService extends BaseMatrixService {
         ttl: (r.ttl as number) ?? 3600
       }
     } catch (err) {
-      error(`[VoIP] 获取 TURN 服务器配置失败: ${err}`)
+      logger.error(`[VoIP] 获取 TURN 服务器配置失败: ${err}`)
       throw err
     }
   }
@@ -582,11 +581,11 @@ class MatrixVoIPService extends BaseMatrixService {
       if (uris.length === 0) {
         turnAvailableCache = false
         turnCheckTimestamp = now
-        warn('[VoIP] TURN 服务器未配置')
+        logger.warn('[VoIP] TURN 服务器未配置')
         return { available: false, reason: 'TURN 服务器未部署，语音通话可能在 NAT 环境下不可用' }
       }
 
-      info('[VoIP] TURN 服务器可用')
+      logger.info('[VoIP] TURN 服务器可用')
       turnAvailableCache = true
       turnCheckTimestamp = now
       return {
@@ -602,7 +601,7 @@ class MatrixVoIPService extends BaseMatrixService {
       turnAvailableCache = false
       turnCheckTimestamp = now
       const errMsg = err instanceof Error ? err.message : String(err)
-      warn(`[VoIP] TURN 服务器检测失败: ${errMsg}`)
+      logger.warn(`[VoIP] TURN 服务器检测失败: ${errMsg}`)
       return { available: false, reason: 'TURN 服务检测失败，语音通话功能可能受限' }
     }
   }

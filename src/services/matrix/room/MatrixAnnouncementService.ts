@@ -1,7 +1,9 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { matrixMessageService } from '../messaging/MatrixMessageService'
 import { matrixRoomQueryService } from './QueryService'
+
+const logger = createLogger('MatrixAnnouncementService')
 
 export interface Announcement {
   id: string
@@ -35,7 +37,7 @@ class MatrixAnnouncementService {
   private getClient() {
     const client = matrixClientService.getClient()
     if (!client) {
-      info('[Announcement] Matrix client not initialized, service unavailable.')
+      logger.info('[Announcement] Matrix client not initialized, service unavailable.')
       return null
     }
     return client
@@ -93,7 +95,7 @@ class MatrixAnnouncementService {
         createdAt: event.getTs()
       }
     } catch (err) {
-      error(`[Announcement] 获取公告失败: ${err}`)
+      logger.error(`[Announcement] 获取公告失败: ${err}`)
       return null
     }
   }
@@ -108,7 +110,7 @@ class MatrixAnnouncementService {
         await client.sendStateEvent(roomId, 'm.room.topic', { topic: options.content }, '')
         const refreshedRoom = await this.getRoom(roomId)
         const topicEvent = refreshedRoom.currentState.getStateEvents('m.room.topic' as never, '')
-        info(`[Announcement] 更新置顶公告: ${roomId}`)
+        logger.info(`[Announcement] 更新置顶公告: ${roomId}`)
         return topicEvent?.getId() || 'topic'
       }
 
@@ -116,10 +118,10 @@ class MatrixAnnouncementService {
       const eventId = response.event_id
       const pinnedEventIds = await this.getPinnedEventIds(roomId)
       await this.setPinnedEventIds(roomId, [...pinnedEventIds, eventId])
-      info(`[Announcement] 新增公告: ${roomId}, ${eventId}`)
+      logger.info(`[Announcement] 新增公告: ${roomId}, ${eventId}`)
       return eventId
     } catch (err) {
-      error(`[Announcement] 推送公告失败: ${err}`)
+      logger.error(`[Announcement] 推送公告失败: ${err}`)
       throw err
     }
   }
@@ -134,7 +136,7 @@ class MatrixAnnouncementService {
         await client.sendStateEvent(roomId, 'm.room.topic', { topic: options.content }, '')
         const refreshedRoom = await this.getRoom(roomId)
         const topicEvent = refreshedRoom.currentState.getStateEvents('m.room.topic' as never, '')
-        info(`[Announcement] 编辑置顶公告: ${roomId}`)
+        logger.info(`[Announcement] 编辑置顶公告: ${roomId}`)
         return topicEvent?.getId() || options.id
       }
 
@@ -143,10 +145,10 @@ class MatrixAnnouncementService {
       const eventId = response.event_id
       const nextPinnedEventIds = pinnedEventIds.map((item) => (item === options.id ? eventId : item))
       await this.setPinnedEventIds(roomId, nextPinnedEventIds)
-      info(`[Announcement] 编辑普通公告: ${roomId}, ${options.id} -> ${eventId}`)
+      logger.info(`[Announcement] 编辑普通公告: ${roomId}, ${options.id} -> ${eventId}`)
       return eventId
     } catch (err) {
-      error(`[Announcement] 编辑公告失败: ${err}`)
+      logger.error(`[Announcement] 编辑公告失败: ${err}`)
       throw err
     }
   }
@@ -160,16 +162,16 @@ class MatrixAnnouncementService {
         if (!client) throw new Error('Matrix client not initialized')
 
         await client.sendStateEvent(roomId, 'm.room.topic', { topic: '' }, '')
-        info(`[Announcement] 删除置顶公告: ${roomId}`)
+        logger.info(`[Announcement] 删除置顶公告: ${roomId}`)
         return
       }
 
       const pinnedEventIds = await this.getPinnedEventIds(roomId)
       const nextPinnedEventIds = pinnedEventIds.filter((item) => item !== announcementId)
       await this.setPinnedEventIds(roomId, nextPinnedEventIds)
-      info(`[Announcement] 删除普通公告: ${roomId}, ${announcementId}`)
+      logger.info(`[Announcement] 删除普通公告: ${roomId}, ${announcementId}`)
     } catch (err) {
-      error(`[Announcement] 删除公告失败: ${err}`)
+      logger.error(`[Announcement] 删除公告失败: ${err}`)
       throw err
     }
   }

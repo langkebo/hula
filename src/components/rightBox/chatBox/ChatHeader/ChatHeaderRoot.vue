@@ -76,7 +76,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RoomActEnum, RoomTypeEnum } from '@/enums'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
 import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import syncService from '@/services/matrix/sync/MatrixSyncService'
@@ -368,7 +368,7 @@ watch(
     }
 
     try {
-      const encrypted = await matrixEncryptionService.isRoomEncrypted(roomId)
+      const encrypted = await cryptoSDKAdapter.isRoomEncrypted(roomId)
       if (requestId !== encryptionStatusRequestId) {
         return
       }

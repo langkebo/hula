@@ -1,3 +1,4 @@
+import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminUserService } from '../UserService'
 
@@ -7,39 +8,39 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const makeAdmin = () => ({
-  getUsersPaginated: vi.fn(),
-  getUser: vi.fn(),
-  createUser: vi.fn(),
-  resetPassword: vi.fn(),
-  setAdmin: vi.fn(),
-  deactivateUser: vi.fn(),
-  getUserDevices: vi.fn(),
-  deleteUserDevice: vi.fn(),
-  deleteUserDevices: vi.fn(),
-  getRateLimitOverride: vi.fn(),
-  overrideRateLimit: vi.fn(),
-  deleteRateLimitOverride: vi.fn(),
-  shadowBanUser: vi.fn(),
-  unshadowBanUser: vi.fn(),
-  getShadowBanStatus: vi.fn(),
-  whois: vi.fn(),
-  getUserRooms: vi.fn(),
-  getUserStats: vi.fn(),
-  listUserStats: vi.fn(),
-  batchCreateUsers: vi.fn(),
-  batchDeactivateUsers: vi.fn(),
-  evictUser: vi.fn(),
-  loginAsUser: vi.fn(),
-  logoutUserDevices: vi.fn(),
-  getUserSessions: vi.fn(),
-  invalidateUserSessions: vi.fn(),
-  getAccountDetails: vi.fn(),
-  updateAccount: vi.fn(),
-  isAdmin: vi.fn(),
-  getAccountStatus: vi.fn(),
-  listLoginFailures: vi.fn()
-})
+const makeAdmin = () =>
+  ({
+    getUsersPaginated: vi.fn(),
+    getUser: vi.fn(),
+    createUser: vi.fn(),
+    resetPassword: vi.fn(),
+    setAdmin: vi.fn(),
+    deactivateUser: vi.fn(),
+    getUserDevices: vi.fn(),
+    deleteUserDevice: vi.fn(),
+    deleteUserDevices: vi.fn(),
+    getRateLimitOverride: vi.fn(),
+    overrideRateLimit: vi.fn(),
+    deleteRateLimitOverride: vi.fn(),
+    shadowBanUser: vi.fn(),
+    unshadowBanUser: vi.fn(),
+    getShadowBanStatus: vi.fn(),
+    whois: vi.fn(),
+    getUserRooms: vi.fn(),
+    getUserStats: vi.fn(),
+    listUserStats: vi.fn(),
+    batchCreateUsers: vi.fn(),
+    batchDeactivateUsers: vi.fn(),
+    evictUser: vi.fn(),
+    loginAsUser: vi.fn(),
+    logoutUser: vi.fn(),
+    getUserSession: vi.fn(),
+    invalidateUserSession: vi.fn(),
+    getAccountDetails: vi.fn(),
+    updateAccountDetails: vi.fn(),
+    isAdmin: vi.fn(),
+    getAccountStatus: vi.fn()
+  }) as unknown as AdminManager
 
 describe('AdminUserService', () => {
   let admin: ReturnType<typeof makeAdmin>
@@ -57,7 +58,7 @@ describe('AdminUserService', () => {
   })
 
   it('getUsers maps SDK payload to UserInfo', async () => {
-    admin.getUsersPaginated.mockResolvedValueOnce({
+    ;(admin as any).getUsersPaginated.mockResolvedValueOnce({
       items: [
         {
           name: '@user:server.com',
@@ -94,7 +95,7 @@ describe('AdminUserService', () => {
   })
 
   it('getUsers respects guest filtering when SDK response mixes guest and normal users', async () => {
-    admin.getUsersPaginated.mockResolvedValueOnce({
+    ;(admin as any).getUsersPaginated.mockResolvedValueOnce({
       items: [
         { name: '@guest:server.com', is_guest: true },
         { name: '@user:server.com', is_guest: false }
@@ -113,11 +114,11 @@ describe('AdminUserService', () => {
   })
 
   it('createUser composes full matrix user id from client domain', async () => {
-    admin.createUser.mockResolvedValueOnce({ name: '@alice:server.com' })
+    ;(admin as any).createUser.mockResolvedValueOnce({ name: '@alice:server.com' })
 
     const result = await service.createUser('alice', 'secret', { admin: true, displayname: 'Alice' })
 
-    expect(admin.createUser).toHaveBeenCalledWith('@alice:server.com', {
+    expect((admin as any).createUser).toHaveBeenCalledWith('@alice:server.com', {
       password: 'secret',
       admin: true,
       displayname: 'Alice',
@@ -132,7 +133,7 @@ describe('AdminUserService', () => {
   })
 
   it('getUserRooms supports string and object room entries', async () => {
-    admin.getUserRooms.mockResolvedValueOnce({
+    ;(admin as any).getUserRooms.mockResolvedValueOnce({
       rooms: ['!plain:server.com', { room_id: '!rich:server.com', membership: 'join', is_room_admin: true }]
     })
 
@@ -145,7 +146,7 @@ describe('AdminUserService', () => {
   })
 
   it('batchCreateUsers falls back to created and failed arrays', async () => {
-    admin.batchCreateUsers.mockResolvedValueOnce({
+    ;(admin as any).batchCreateUsers.mockResolvedValueOnce({
       created: ['@ok:server.com'],
       failed: ['@bad:server.com']
     })
@@ -159,7 +160,7 @@ describe('AdminUserService', () => {
   })
 
   it('getRateLimit maps snake_case response', async () => {
-    admin.getRateLimitOverride.mockResolvedValueOnce({
+    ;(admin as any).getRateLimitOverride.mockResolvedValueOnce({
       messages_per_second: 5,
       burst_count: 10
     })
@@ -173,7 +174,7 @@ describe('AdminUserService', () => {
   })
 
   it('loginUserAs maps access token payload', async () => {
-    admin.loginAsUser.mockResolvedValueOnce({
+    ;(admin as any).loginAsUser.mockResolvedValueOnce({
       access_token: 'token',
       device_id: 'device'
     })
@@ -187,11 +188,11 @@ describe('AdminUserService', () => {
   })
 
   it('checkUserAdmin passes throwOnError=false', async () => {
-    admin.isAdmin.mockResolvedValueOnce(true)
+    ;(admin as any).isAdmin.mockResolvedValueOnce(true)
 
     const result = await service.checkUserAdmin('@alice:server.com')
 
     expect(result).toBe(true)
-    expect(admin.isAdmin).toHaveBeenCalledWith('@alice:server.com', false)
+    expect((admin as any).isAdmin).toHaveBeenCalledWith('@alice:server.com', false)
   })
 })

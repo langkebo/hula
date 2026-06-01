@@ -375,7 +375,7 @@ const {
   transition: all 0.3s;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--hula-shadow-card);
   }
 }
 

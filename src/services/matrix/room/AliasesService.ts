@@ -1,5 +1,7 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('AliasesService')
 
 /**
  * Room aliases domain service.
@@ -18,7 +20,7 @@ export class MatrixRoomAliasesService extends BaseMatrixService {
       if (canonical) aliases.unshift(canonical)
       return aliases
     } catch (err) {
-      error(`[MatrixRoom] 获取房间别名失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间别名失败: ${err}`)
       throw err
     }
   }
@@ -27,9 +29,9 @@ export class MatrixRoomAliasesService extends BaseMatrixService {
     const client = this.getClient()
     try {
       await client.createAlias(alias, roomId)
-      info(`[MatrixRoom] 设置房间别名成功: ${alias}`)
+      logger.info(`[MatrixRoom] 设置房间别名成功: ${alias}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置房间别名失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置房间别名失败: ${err}`)
       throw err
     }
   }
@@ -38,9 +40,9 @@ export class MatrixRoomAliasesService extends BaseMatrixService {
     const client = this.getClient()
     try {
       await client.deleteAlias(alias)
-      info(`[MatrixRoom] 删除房间别名成功: ${alias}`)
+      logger.info(`[MatrixRoom] 删除房间别名成功: ${alias}`)
     } catch (err) {
-      error(`[MatrixRoom] 删除房间别名失败: ${err}`)
+      logger.error(`[MatrixRoom] 删除房间别名失败: ${err}`)
       throw err
     }
   }

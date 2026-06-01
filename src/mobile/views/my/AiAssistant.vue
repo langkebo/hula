@@ -3,7 +3,7 @@
     <template #header>
       <HeaderBar
         :isOfficial="false"
-        class="bg-white"
+        class="bg-[--hula-surface-panel]"
         style="border-bottom: 1px solid; border-color: var(--hula-border-default)"
         :hidden-right="true"
         :room-name="t('ai_assistant.title')" />
@@ -13,7 +13,7 @@
       <div class="bg-cover bg-center flex flex-col overflow-hidden h-full">
         <div class="flex flex-col flex-1 overflow-hidden">
           <!-- 连接状态栏 -->
-          <div class="flex-shrink-0 bg-white border-b border-gray-100 px-12px py-8px">
+          <div class="flex-shrink-0 bg-[--hula-surface-panel] border-b border-[--hula-border-default] px-12px py-8px">
             <van-cell-group inset>
               <van-cell center>
                 <template #title>
@@ -35,7 +35,8 @@
           </div>
 
           <!-- AI 模型选择栏 -->
-          <div class="flex-shrink-0 bg-white border-b border-gray-100 px-12px py-8px overflow-x-auto">
+          <div
+            class="flex-shrink-0 bg-[--hula-surface-panel] border-b border-[--hula-border-default] px-12px py-8px overflow-x-auto">
             <div class="flex items-center gap-8px">
               <van-tag
                 v-for="model in filteredModels"
@@ -52,9 +53,13 @@
           </div>
 
           <!-- 角色预设选择栏 -->
-          <div v-if="characters.length > 0" class="flex-shrink-0 bg-gray-50 px-12px py-8px overflow-x-auto">
+          <div
+            v-if="characters.length > 0"
+            class="flex-shrink-0 bg-[--hula-surface-panel-muted] px-12px py-8px overflow-x-auto">
             <div class="flex items-center gap-8px">
-              <span class="text-12px text-gray-500 flex-shrink-0">{{ t('ai_assistant.character') }}:</span>
+              <span class="text-12px text-[--hula-text-tertiary] flex-shrink-0">
+                {{ t('ai_assistant.character') }}:
+              </span>
               <van-tag
                 v-for="char in characters"
                 :key="char.id"
@@ -75,8 +80,8 @@
                 class="w-80px h-80px rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center">
                 <Icon icon="mdi:robot" :width="40" color="#fff" />
               </div>
-              <div class="text-16px font-bold text-gray-800">{{ t('ai_assistant.welcome') }}</div>
-              <div class="text-14px text-gray-500 text-center px-20px">
+              <div class="text-16px font-bold text-[--hula-text-primary]">{{ t('ai_assistant.welcome') }}</div>
+              <div class="text-14px text-[--hula-text-tertiary] text-center px-20px">
                 {{ t('ai_assistant.welcome_desc') }}
               </div>
 
@@ -84,13 +89,13 @@
                 <div
                   v-for="suggestion in suggestions"
                   :key="suggestion.id"
-                  class="bg-white rounded-12px p-12px shadow-sm border border-gray-100 active:bg-gray-50"
+                  class="bg-[--hula-surface-panel] rounded-12px p-12px shadow-sm border border-[--hula-border-default] active:bg-[--hula-surface-list-hover]"
                   @click="handleSuggestionClick(suggestion)">
                   <div class="flex items-center gap-8px mb-8px">
                     <Icon :icon="suggestion.icon" :width="18" :color="suggestion.color" />
                     <span class="text-14px font-medium">{{ suggestion.title }}</span>
                   </div>
-                  <div class="text-12px text-gray-500">{{ suggestion.desc }}</div>
+                  <div class="text-12px text-[--hula-text-tertiary]">{{ suggestion.desc }}</div>
                 </div>
               </div>
             </div>
@@ -103,14 +108,18 @@
                 <div
                   :class="[
                     'w-36px h-36px rounded-full flex items-center justify-center flex-shrink-0',
-                    message.role === 'user' ? 'bg-blue-500' : 'bg-gradient-to-br from-purple-400 to-blue-500'
+                    message.role === 'user'
+                      ? 'bg-[--hula-color-primary-500]'
+                      : 'bg-gradient-to-br from-purple-400 to-blue-500'
                   ]">
                   <Icon :icon="message.role === 'user' ? 'mdi:account' : 'mdi:robot'" :width="20" color="#fff" />
                 </div>
                 <div
                   :class="[
                     'max-w-75% rounded-16px p-12px text-14px',
-                    message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-white border border-gray-100 text-gray-800'
+                    message.role === 'user'
+                      ? 'bg-[--hula-color-primary-500] text-white'
+                      : 'bg-[--hula-surface-panel] border border-[--hula-border-default] text-[--hula-text-primary]'
                   ]">
                   <div v-if="message.loading" class="flex items-center gap-8px">
                     <van-loading size="14" />
@@ -126,7 +135,7 @@
           </div>
 
           <!-- 输入区域 -->
-          <div class="flex-shrink-0 border-t border-gray-100 bg-white p-12px">
+          <div class="flex-shrink-0 border-t border-[--hula-border-default] bg-[--hula-surface-panel] p-12px">
             <div class="flex items-center gap-12px">
               <van-field
                 v-model="inputText"
@@ -134,7 +143,7 @@
                 autosize
                 type="textarea"
                 rows="1"
-                class="flex-1 bg-gray-50 rounded-20px"
+                class="flex-1 bg-[--hula-surface-panel-muted] rounded-20px"
                 @keydown.enter.prevent="handleSend" />
               <van-button
                 type="primary"
@@ -149,10 +158,10 @@
 
             <!-- API Key 管理入口 -->
             <div class="flex items-center justify-between mt-8px">
-              <span class="text-12px text-gray-500">
+              <span class="text-12px text-[--hula-text-tertiary]">
                 {{ providerDisplayName }}
               </span>
-              <span class="text-12px text-gray-400 cursor-pointer" @click="showApiKeySettings = true">
+              <span class="text-12px text-[--hula-text-quaternary] cursor-pointer" @click="showApiKeySettings = true">
                 {{ t('ai_assistant.settings') }}
               </span>
             </div>

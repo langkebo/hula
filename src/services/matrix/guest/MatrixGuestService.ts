@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import type {
   GuestManager,
@@ -10,8 +9,11 @@ import type {
   IUpgradeGuestRequest,
   IUpgradeGuestResponse
 } from 'matrix-js-sdk/guest'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MatrixGuestService')
 
 type GuestManagerCompat = GuestManager & {
   registerGuestOnServer?: (deviceId?: string, initialDeviceDisplayName?: string) => Promise<IGuestRegisterResponse>
@@ -62,10 +64,10 @@ class MatrixGuestService extends BaseMatrixService {
     try {
       const manager = await this.requireGuestManager()
       const result = await manager.registerGuest(deviceId, initialDeviceDisplayName)
-      info(`[MatrixGuest] 访客注册成功: ${result.user_id}`)
+      logger.info(`[MatrixGuest] 访客注册成功: ${result.user_id}`)
       return result
     } catch (err) {
-      error(`[MatrixGuest] 访客注册失败: ${err}`)
+      logger.error(`[MatrixGuest] 访客注册失败: ${err}`)
       throw err
     }
   }
@@ -75,13 +77,13 @@ class MatrixGuestService extends BaseMatrixService {
       const manager = await this.requireGuestManager()
       if (typeof manager.registerGuestOnServer === 'function') {
         const result = await manager.registerGuestOnServer(deviceId, initialDeviceDisplayName)
-        info(`[MatrixGuest] 服务端访客注册成功: ${result.user_id}`)
+        logger.info(`[MatrixGuest] 服务端访客注册成功: ${result.user_id}`)
         return result
       }
       // 回退到 registerGuest
       return await this.registerGuest(deviceId, initialDeviceDisplayName)
     } catch (err) {
-      error(`[MatrixGuest] 服务端访客注册失败: ${err}`)
+      logger.error(`[MatrixGuest] 服务端访客注册失败: ${err}`)
       throw err
     }
   }
@@ -90,10 +92,10 @@ class MatrixGuestService extends BaseMatrixService {
     try {
       const manager = await this.requireGuestManager()
       const result = await manager.loginGuest(deviceId, initialDeviceDisplayName)
-      info(`[MatrixGuest] 访客登录成功: ${result.user_id}`)
+      logger.info(`[MatrixGuest] 访客登录成功: ${result.user_id}`)
       return result
     } catch (err) {
-      error(`[MatrixGuest] 访客登录失败: ${err}`)
+      logger.error(`[MatrixGuest] 访客登录失败: ${err}`)
       throw err
     }
   }
@@ -103,7 +105,7 @@ class MatrixGuestService extends BaseMatrixService {
       const manager = await this.requireGuestManager()
       return await manager.isGuest(userId)
     } catch (err) {
-      error(`[MatrixGuest] 检查访客状态失败: ${err}`)
+      logger.error(`[MatrixGuest] 检查访客状态失败: ${err}`)
       return false
     }
   }
@@ -113,7 +115,7 @@ class MatrixGuestService extends BaseMatrixService {
       const manager = await this.requireGuestManager()
       return await manager.getGuestAccessToken()
     } catch (err) {
-      error(`[MatrixGuest] 获取访客令牌失败: ${err}`)
+      logger.error(`[MatrixGuest] 获取访客令牌失败: ${err}`)
       return null
     }
   }
@@ -123,7 +125,7 @@ class MatrixGuestService extends BaseMatrixService {
       const manager = this.syncGuestManager()
       return manager?.getGuestInfo?.() ?? null
     } catch (err) {
-      error(`[MatrixGuest] 获取访客信息失败: ${err}`)
+      logger.error(`[MatrixGuest] 获取访客信息失败: ${err}`)
       return null
     }
   }
@@ -137,10 +139,10 @@ class MatrixGuestService extends BaseMatrixService {
       // 回退到直接 HTTP 请求
       const client = this.getClient()
       const result = (await client.http.authedRequest('GET', MATRIX_PATHS.GUEST.INFO)) as IServerGuestInfo
-      info(`[MatrixGuest] 从服务端获取访客信息成功`)
+      logger.info(`[MatrixGuest] 从服务端获取访客信息成功`)
       return result
     } catch (err) {
-      error(`[MatrixGuest] 从服务端获取访客信息失败: ${err}`)
+      logger.error(`[MatrixGuest] 从服务端获取访客信息失败: ${err}`)
       throw err
     }
   }
@@ -149,9 +151,9 @@ class MatrixGuestService extends BaseMatrixService {
     try {
       const manager = await this.requireGuestManager()
       await manager.upgradeGuestAccount(password, authDict)
-      info('[MatrixGuest] 访客账户升级成功')
+      logger.info('[MatrixGuest] 访客账户升级成功')
     } catch (err) {
-      error(`[MatrixGuest] 访客账户升级失败: ${err}`)
+      logger.error(`[MatrixGuest] 访客账户升级失败: ${err}`)
       throw err
     }
   }
@@ -161,14 +163,14 @@ class MatrixGuestService extends BaseMatrixService {
       const manager = await this.requireGuestManager()
       if (typeof manager.upgradeGuestAccountOnServer === 'function') {
         const result = await manager.upgradeGuestAccountOnServer(request)
-        info(`[MatrixGuest] 服务端访客账户升级成功: ${result.user_id}`)
+        logger.info(`[MatrixGuest] 服务端访客账户升级成功: ${result.user_id}`)
         return result
       }
       // 回退到 upgradeGuestAccount
       await this.upgradeGuestAccount(request.password, request.auth)
       return { success: true, user_id: '', access_token: '' }
     } catch (err) {
-      error(`[MatrixGuest] 服务端访客账户升级失败: ${err}`)
+      logger.error(`[MatrixGuest] 服务端访客账户升级失败: ${err}`)
       throw err
     }
   }
@@ -178,7 +180,7 @@ class MatrixGuestService extends BaseMatrixService {
       const manager = await this.requireGuestManager()
       return await manager.getGuestRooms()
     } catch (err) {
-      error(`[MatrixGuest] 获取访客房间列表失败: ${err}`)
+      logger.error(`[MatrixGuest] 获取访客房间列表失败: ${err}`)
       return []
     }
   }
@@ -187,10 +189,10 @@ class MatrixGuestService extends BaseMatrixService {
     try {
       const manager = await this.requireGuestManager()
       const result = await manager.joinRoomAsGuest(roomIdOrAlias)
-      info(`[MatrixGuest] 访客加入房间成功: ${result.roomId}`)
+      logger.info(`[MatrixGuest] 访客加入房间成功: ${result.roomId}`)
       return result
     } catch (err) {
-      error(`[MatrixGuest] 访客加入房间失败: ${err}`)
+      logger.error(`[MatrixGuest] 访客加入房间失败: ${err}`)
       throw err
     }
   }
@@ -200,7 +202,7 @@ class MatrixGuestService extends BaseMatrixService {
       const manager = await this.requireGuestManager()
       return await manager.canJoinRoom(roomIdOrAlias)
     } catch (err) {
-      error(`[MatrixGuest] 检查访客能否加入房间失败: ${err}`)
+      logger.error(`[MatrixGuest] 检查访客能否加入房间失败: ${err}`)
       return false
     }
   }
@@ -210,7 +212,7 @@ class MatrixGuestService extends BaseMatrixService {
       const manager = this.syncGuestManager()
       return manager?.isGuestTokenValid?.() ?? false
     } catch (err) {
-      error(`[MatrixGuest] 检查访客令牌有效性失败: ${err}`)
+      logger.error(`[MatrixGuest] 检查访客令牌有效性失败: ${err}`)
       return false
     }
   }
@@ -219,9 +221,9 @@ class MatrixGuestService extends BaseMatrixService {
     try {
       const manager = this.syncGuestManager()
       manager?.clearGuestInfo?.()
-      info('[MatrixGuest] 访客信息已清除')
+      logger.info('[MatrixGuest] 访客信息已清除')
     } catch (err) {
-      error(`[MatrixGuest] 清除访客信息失败: ${err}`)
+      logger.error(`[MatrixGuest] 清除访客信息失败: ${err}`)
     }
   }
 
@@ -231,7 +233,7 @@ class MatrixGuestService extends BaseMatrixService {
       this.guestManager = null
     }
     this.observedClient = null
-    info('[MatrixGuest] GuestService 已停止')
+    logger.info('[MatrixGuest] GuestService 已停止')
   }
 }
 

@@ -1,5 +1,7 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { configService } from '@/services/ConfigService'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('iceServers')
 
 /**
  * Built-in fallback configuration used when the server-side ICE config is
@@ -75,11 +77,11 @@ export async function loadIceServers(): Promise<void> {
     const entry = parseIceServerEntry(iceServer)
     if (entry) {
       currentConfiguration = { iceServers: [entry], iceTransportPolicy: 'all' }
-      info(`ICE 配置已加载: ${JSON.stringify(currentConfiguration)}`)
+      logger.info(`ICE 配置已加载: ${JSON.stringify(currentConfiguration)}`)
     } else {
-      info('ICE 配置为空，使用内置默认配置')
+      logger.info('ICE 配置为空，使用内置默认配置')
     }
   } catch (e) {
-    error(`加载 ICE 配置失败: ${String(e)}`)
+    logger.error(`加载 ICE 配置失败: ${String(e)}`)
   }
 }

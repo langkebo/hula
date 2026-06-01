@@ -6,8 +6,8 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { LimitEnum, MessageStatusEnum, MittEnum, MsgEnum, UploadSceneEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useI18nGlobal } from '@/services/i18n'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import type { UserItem, VoiceBody } from '@/services/types.ts'
@@ -175,7 +175,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       void _progressCallback
 
       // 检查房间是否加密
-      const isEncrypted = await matrixEncryptionService.isRoomEncrypted(targetRoomId)
+      const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(targetRoomId)
 
       if (isEncrypted) {
         // 使用加密上传
@@ -272,7 +272,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       void _progressCallback
 
       // 检查房间是否加密
-      const isEncrypted = await matrixEncryptionService.isRoomEncrypted(targetRoomId)
+      const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(targetRoomId)
 
       if (isEncrypted) {
         // 加密房间：读取文件内容并加密上传
@@ -366,7 +366,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       let voiceHandledByMatrixService = false
 
       if (msg.type === MsgEnum.IMAGE || msg.type === MsgEnum.EMOJI) {
-        const isEncrypted = await matrixEncryptionService.isRoomEncrypted(targetRoomId)
+        const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(targetRoomId)
 
         if (isEncrypted) {
           const fileData = await readFile(msg.path as string, {
@@ -401,7 +401,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
           status: MessageStatusEnum.SENDING
         })
       } else if (msg.type === MsgEnum.VIDEO) {
-        const isEncrypted = await matrixEncryptionService.isRoomEncrypted(targetRoomId)
+        const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(targetRoomId)
 
         if (isEncrypted) {
           // 加密房间：加密视频与缩略图

@@ -1,5 +1,7 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('MemberProfileService')
 
 interface MemberEventContent {
   displayname?: string
@@ -42,9 +44,9 @@ export class MatrixRoomMemberProfileService extends BaseMatrixService {
         userId
       )
 
-      info(`[MatrixRoom] 设置成员昵称成功: ${roomId} -> ${displayName}`)
+      logger.info(`[MatrixRoom] 设置成员昵称成功: ${roomId} -> ${displayName}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置成员昵称失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置成员昵称失败: ${err}`)
       throw err
     }
   }
@@ -58,7 +60,7 @@ export class MatrixRoomMemberProfileService extends BaseMatrixService {
       const member = room.getMember(userId)
       return member?.rawDisplayName || member?.name || null
     } catch (err) {
-      error(`[MatrixRoom] 获取成员显示名称失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取成员显示名称失败: ${err}`)
       return null
     }
   }
@@ -67,9 +69,9 @@ export class MatrixRoomMemberProfileService extends BaseMatrixService {
     const client = this.getClient()
     try {
       await client.setUserPowerLevel(userId, roomId, powerLevel)
-      info(`[MatrixRoom] 成功设置用户 ${userId} 的权力等级为 ${powerLevel}`)
+      logger.info(`[MatrixRoom] 成功设置用户 ${userId} 的权力等级为 ${powerLevel}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置权力等级失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置权力等级失败: ${err}`)
       throw err
     }
   }
@@ -78,7 +80,7 @@ export class MatrixRoomMemberProfileService extends BaseMatrixService {
     try {
       await this.setMemberPowerLevel(roomId, userId, 100)
     } catch (err) {
-      error(`[MatrixRoom] 设置管理员失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置管理员失败: ${err}`)
       throw err
     }
   }
@@ -87,7 +89,7 @@ export class MatrixRoomMemberProfileService extends BaseMatrixService {
     try {
       await this.setMemberPowerLevel(roomId, userId, 0)
     } catch (err) {
-      error(`[MatrixRoom] 移除管理员失败: ${err}`)
+      logger.error(`[MatrixRoom] 移除管理员失败: ${err}`)
       throw err
     }
   }

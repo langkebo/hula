@@ -1,4 +1,3 @@
-import { info } from '@tauri-apps/plugin-log'
 import { sendNotification } from '@tauri-apps/plugin-notification'
 import type { ComputedRef, Ref } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
@@ -368,7 +367,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
   const updateMarkCount = async (
     markList: Array<{ msgId: string; markType: number; markCount: number; actType: number; uid: string }>
   ) => {
-    await info('保存消息标记到本地数据库')
+    await logger.info('保存消息标记到本地数据库')
     for (const mark of markList) {
       const { msgId, markType, markCount, actType, uid } = mark
 

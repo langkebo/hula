@@ -731,11 +731,21 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
         },
         { errorTracker }
       ] = await Promise.all([
-        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/matrix.ts'),
-        importBrowserModule<{ useRoomStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/room.ts'),
-        importBrowserModule<{ useSessionStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/session.ts'),
-        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => any }>('/src/stores/domains/widget/global.ts'),
-        importBrowserModule<{ useChatStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/index.ts'),
+        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/chat/matrix.ts'
+        ),
+        importBrowserModule<{ useRoomStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/chat/room.ts'
+        ),
+        importBrowserModule<{ useSessionStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/chat/chat/session.ts'
+        ),
+        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/widget/global.ts'
+        ),
+        importBrowserModule<{ useChatStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/chat/chat/index.ts'
+        ),
         importBrowserModule<{
           matrixClientService: {
             getRustCryptoDebugState: () => Record<string, unknown>
@@ -749,10 +759,13 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
           resolveMatrixSessionEndpointConfig: () => unknown
         }>('/src/services/backend/config.ts'),
         importBrowserModule<{
-          filterAndSortSessions: (sessions: any[], options: Record<string, unknown>) => any[]
-          matchesKeyword: (session: any, keyword: string) => boolean
-          matchesSessionType: (session: any, sessionTypeFilter: string) => boolean
-          matchesSessionEngagement: (session: any, sessionEngagementFilter: string) => boolean
+          filterAndSortSessions: (
+            sessions: Record<string, unknown>[],
+            options: Record<string, unknown>
+          ) => Record<string, unknown>[]
+          matchesKeyword: (session: Record<string, unknown>, keyword: string) => boolean
+          matchesSessionType: (session: Record<string, unknown>, sessionTypeFilter: string) => boolean
+          matchesSessionEngagement: (session: Record<string, unknown>, sessionEngagementFilter: string) => boolean
         }>('/src/composables/workbench/sessionListFilters.ts'),
         importBrowserModule<{
           readSpaceWorkbenchSearch: (query: Record<string, unknown>) => string
@@ -995,10 +1008,18 @@ const resolveMatrixLiveRoomCandidates = async (
       const importBrowserModule = <T>(modulePath: string): Promise<T> =>
         import(/* @vite-ignore */ modulePath) as Promise<T>
       const [{ useMatrixStore }, { useRoomStore }, { useSessionStore }, { useGlobalStore }] = await Promise.all([
-        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/matrix.ts'),
-        importBrowserModule<{ useRoomStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/room.ts'),
-        importBrowserModule<{ useSessionStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/session.ts'),
-        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => any }>('/src/stores/domains/widget/global.ts')
+        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/chat/matrix.ts'
+        ),
+        importBrowserModule<{ useRoomStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/chat/room.ts'
+        ),
+        importBrowserModule<{ useSessionStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/chat/chat/session.ts'
+        ),
+        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/widget/global.ts'
+        )
       ])
 
       const matrixStore = useMatrixStore(runtimeWindow.pinia)
@@ -1215,8 +1236,12 @@ export const resolveLiveTimelineTextCandidate = async (
       const importBrowserModule = <T>(modulePath: string): Promise<T> =>
         import(/* @vite-ignore */ modulePath) as Promise<T>
       const [{ useMatrixStore }, { useChatStore }] = await Promise.all([
-        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/matrix.ts'),
-        importBrowserModule<{ useChatStore: (pinia?: unknown) => any }>('/src/stores/domains/chat/chat/index.ts')
+        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/chat/matrix.ts'
+        ),
+        importBrowserModule<{ useChatStore: (pinia?: unknown) => Record<string, unknown> }>(
+          '/src/stores/domains/chat/chat/index.ts'
+        )
       ])
 
       const matrixStore = useMatrixStore(runtimeWindow.pinia)

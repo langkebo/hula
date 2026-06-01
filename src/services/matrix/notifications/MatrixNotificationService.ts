@@ -1,4 +1,3 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleKind } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { safeJsonParse, validateObject } from '@/utils/typeGuard'
@@ -93,9 +92,9 @@ class MatrixNotificationService extends BaseMatrixService {
         MatrixNotificationService.ACCOUNT_DATA_TYPE,
         this.config as unknown as Record<string, unknown>
       )
-      info('[MatrixNotification] 通知配置已同步到服务端')
+      logger.info('[MatrixNotification] 通知配置已同步到服务端')
     } catch (err) {
-      error(`[MatrixNotification] 同步通知配置到服务端失败: ${err}`)
+      logger.error(`[MatrixNotification] 同步通知配置到服务端失败: ${err}`)
     }
   }
 
@@ -109,13 +108,13 @@ class MatrixNotificationService extends BaseMatrixService {
         if (serverConfig && typeof serverConfig === 'object') {
           this.config = { ...this.config, ...serverConfig }
           this.persistConfig()
-          info('[MatrixNotification] 从服务端同步通知配置成功')
+          logger.info('[MatrixNotification] 从服务端同步通知配置成功')
           return true
         }
       }
       return false
     } catch (err) {
-      error(`[MatrixNotification] 从服务端同步通知配置失败: ${err}`)
+      logger.error(`[MatrixNotification] 从服务端同步通知配置失败: ${err}`)
       return false
     }
   }
@@ -128,9 +127,9 @@ class MatrixNotificationService extends BaseMatrixService {
     try {
       const client = this.getNotificationClient()
       await client.setAccountData(MatrixNotificationService.DND_ACCOUNT_DATA_TYPE, settings as Record<string, unknown>)
-      info('[MatrixNotification] DND 设置已同步到服务端')
+      logger.info('[MatrixNotification] DND 设置已同步到服务端')
     } catch (err) {
-      error(`[MatrixNotification] 同步 DND 设置到服务端失败: ${err}`)
+      logger.error(`[MatrixNotification] 同步 DND 设置到服务端失败: ${err}`)
     }
   }
 
@@ -150,7 +149,7 @@ class MatrixNotificationService extends BaseMatrixService {
           endTime?: number | null
         }
         if (dndSettings && typeof dndSettings === 'object') {
-          info('[MatrixNotification] 从服务端同步 DND 设置成功')
+          logger.info('[MatrixNotification] 从服务端同步 DND 设置成功')
           return {
             enabled: (dndSettings.enabled ?? false) as boolean,
             startTime: (dndSettings.startTime ?? null) as number | null,
@@ -160,7 +159,7 @@ class MatrixNotificationService extends BaseMatrixService {
       }
       return null
     } catch (err) {
-      warn(`[MatrixNotification] 从服务端同步 DND 设置失败: ${err}`)
+      logger.warn(`[MatrixNotification] 从服务端同步 DND 设置失败: ${err}`)
       return null
     }
   }
@@ -198,9 +197,9 @@ class MatrixNotificationService extends BaseMatrixService {
       const client = this.getNotificationClient()
       const rules = await client.getPushRules()
       this.pushRules = this.flattenRules(rules)
-      info('[MatrixNotification] 初始化完成')
+      logger.info('[MatrixNotification] 初始化完成')
     } catch (err) {
-      error(`[MatrixNotification] 初始化失败: ${err}`)
+      logger.error(`[MatrixNotification] 初始化失败: ${err}`)
       throw err
     }
   }
@@ -209,9 +208,9 @@ class MatrixNotificationService extends BaseMatrixService {
     const client = this.getNotificationClient()
     try {
       await client.setPushRule('global', rule.kind as PushRuleKind, rule.ruleId, rule.actions)
-      info(`[MatrixNotification] 设置推送规则成功: ${rule.ruleId}`)
+      logger.info(`[MatrixNotification] 设置推送规则成功: ${rule.ruleId}`)
     } catch (err) {
-      error(`[MatrixNotification] 设置推送规则失败: ${err}`)
+      logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
       throw err
     }
   }
@@ -221,9 +220,9 @@ class MatrixNotificationService extends BaseMatrixService {
     try {
       const resolvedKind = kind ?? (await this.findPushRuleKind(client, ruleId))
       await client.deletePushRule('global', resolvedKind, ruleId)
-      info(`[MatrixNotification] 删除推送规则成功: ${ruleId} (kind: ${resolvedKind})`)
+      logger.info(`[MatrixNotification] 删除推送规则成功: ${ruleId} (kind: ${resolvedKind})`)
     } catch (err) {
-      error(`[MatrixNotification] 删除推送规则失败: ${err}`)
+      logger.error(`[MatrixNotification] 删除推送规则失败: ${err}`)
       throw err
     }
   }
@@ -250,9 +249,9 @@ class MatrixNotificationService extends BaseMatrixService {
     const client = this.getNotificationClient()
     try {
       await client.setPusher(pusher)
-      info('[MatrixNotification] 设置 pusher 成功')
+      logger.info('[MatrixNotification] 设置 pusher 成功')
     } catch (err) {
-      error(`[MatrixNotification] 设置 pusher 失败: ${err}`)
+      logger.error(`[MatrixNotification] 设置 pusher 失败: ${err}`)
       throw err
     }
   }
@@ -293,7 +292,7 @@ class MatrixNotificationService extends BaseMatrixService {
       const permission = await Notification.requestPermission()
       return permission === 'granted'
     } catch (err) {
-      error(`[MatrixNotification] 请求通知权限失败: ${err}`)
+      logger.error(`[MatrixNotification] 请求通知权限失败: ${err}`)
       return false
     }
   }
@@ -305,7 +304,7 @@ class MatrixNotificationService extends BaseMatrixService {
       }
 
       if (typeof Notification === 'undefined') {
-        warn('[MatrixNotification] Notification API 不可用')
+        logger.warn('[MatrixNotification] Notification API 不可用')
         return
       }
 
@@ -320,7 +319,7 @@ class MatrixNotificationService extends BaseMatrixService {
         body: this.config.showMessageContent ? body : undefined
       })
     } catch (err) {
-      error(`[MatrixNotification] 显示通知失败: ${err}`)
+      logger.error(`[MatrixNotification] 显示通知失败: ${err}`)
     }
   }
 
@@ -333,7 +332,7 @@ class MatrixNotificationService extends BaseMatrixService {
       const audio = new Audio(url)
       await audio.play()
     } catch (err) {
-      warn(`[MatrixNotification] 播放提示音失败: ${err}`)
+      logger.warn(`[MatrixNotification] 播放提示音失败: ${err}`)
     }
   }
 
@@ -345,7 +344,7 @@ class MatrixNotificationService extends BaseMatrixService {
 
       navigator.vibrate(pattern)
     } catch (err) {
-      warn(`[MatrixNotification] 震动失败: ${err}`)
+      logger.warn(`[MatrixNotification] 震动失败: ${err}`)
     }
   }
 
@@ -364,7 +363,7 @@ class MatrixNotificationService extends BaseMatrixService {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.NOTIFICATION.NOTIFICATIONS, queryParams)
       return result as { notifications: Array<Record<string, unknown>>; next_token?: string }
     } catch (err) {
-      error(`[MatrixNotification] 获取通知列表失败: ${err}`)
+      logger.error(`[MatrixNotification] 获取通知列表失败: ${err}`)
       return { notifications: [] }
     }
   }
@@ -376,10 +375,10 @@ class MatrixNotificationService extends BaseMatrixService {
         'POST',
         `/_matrix/client/v3/notifications/${encodeURIComponent(notificationId)}/ack`
       )
-      info(`[MatrixNotification] 通知确认成功: ${notificationId}`)
+      logger.info(`[MatrixNotification] 通知确认成功: ${notificationId}`)
       return true
     } catch (err) {
-      error(`[MatrixNotification] 通知确认失败: ${err}`)
+      logger.error(`[MatrixNotification] 通知确认失败: ${err}`)
       return false
     }
   }
@@ -409,7 +408,7 @@ class MatrixNotificationService extends BaseMatrixService {
       return { success: true, method: 'ack' }
     }
 
-    info(`[MatrixNotification] ack 端点不可用，回退到已读回执: ${notificationId}`)
+    logger.info(`[MatrixNotification] ack 端点不可用，回退到已读回执: ${notificationId}`)
     ackEndpointAvailableCache = false
     ackCheckTimestamp = now
     const receiptOk = await this.sendReadReceipt(roomId, eventId)
@@ -425,10 +424,10 @@ class MatrixNotificationService extends BaseMatrixService {
         undefined,
         {}
       )
-      info(`[MatrixNotification] 已读回执发送成功: ${roomId}/${eventId}`)
+      logger.info(`[MatrixNotification] 已读回执发送成功: ${roomId}/${eventId}`)
       return true
     } catch (err) {
-      error(`[MatrixNotification] 已读回执发送失败: ${err}`)
+      logger.error(`[MatrixNotification] 已读回执发送失败: ${err}`)
       return false
     }
   }
@@ -442,7 +441,7 @@ class MatrixNotificationService extends BaseMatrixService {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.NOTIFICATION.PUSH_RULES)
       return result as IPushRules
     } catch (err) {
-      error(`[MatrixNotification] 获取推送规则失败: ${err}`)
+      logger.error(`[MatrixNotification] 获取推送规则失败: ${err}`)
       throw err
     }
   }
@@ -455,9 +454,9 @@ class MatrixNotificationService extends BaseMatrixService {
     try {
       const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
       await client.http.authedRequest('PUT', path, undefined, body)
-      info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
+      logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
-      error(`[MatrixNotification] 设置推送规则失败: ${err}`)
+      logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
       throw err
     }
   }
@@ -470,9 +469,9 @@ class MatrixNotificationService extends BaseMatrixService {
     try {
       const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
       await client.http.authedRequest('DELETE', path)
-      info(`[MatrixNotification] 删除推送规则成功: ${scope}/${kind}/${ruleId}`)
+      logger.info(`[MatrixNotification] 删除推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
-      error(`[MatrixNotification] 删除推送规则失败: ${err}`)
+      logger.error(`[MatrixNotification] 删除推送规则失败: ${err}`)
       throw err
     }
   }
@@ -487,7 +486,7 @@ class MatrixNotificationService extends BaseMatrixService {
       const response = result as { pushers?: Array<Record<string, unknown>> }
       return response.pushers ?? []
     } catch (err) {
-      error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
+      logger.error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
       throw err
     }
   }
@@ -499,9 +498,9 @@ class MatrixNotificationService extends BaseMatrixService {
     const client = this.getNotificationClient()
     try {
       await client.http.authedRequest('POST', MATRIX_PATHS.NOTIFICATION.PUSHERS + '/set', undefined, pusher)
-      info('[MatrixNotification] 设置推送设备成功')
+      logger.info('[MatrixNotification] 设置推送设备成功')
     } catch (err) {
-      error(`[MatrixNotification] 设置推送设备失败: ${err}`)
+      logger.error(`[MatrixNotification] 设置推送设备失败: ${err}`)
       throw err
     }
   }

@@ -1,8 +1,10 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { Room } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MembershipService')
 
 /**
  * Room membership domain service.
@@ -20,7 +22,7 @@ export class MatrixRoomMembershipService {
   async joinRoom(roomId: string): Promise<Room> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('membership', roomId, { roomId, type: 'join' })
-      info(`[MatrixRoom] 离线状态，已将加入房间入队: ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将加入房间入队: ${roomId}`)
       // 返回一个模拟的 Room 对象或抛出特定错误供上层处理
       return { roomId } as Room
     }
@@ -28,7 +30,7 @@ export class MatrixRoomMembershipService {
     try {
       return await matrixClientService.joinRoom(roomId)
     } catch (err) {
-      error(`[MatrixRoom] 加入房间失败: ${err}`)
+      logger.error(`[MatrixRoom] 加入房间失败: ${err}`)
       throw err
     }
   }
@@ -36,14 +38,14 @@ export class MatrixRoomMembershipService {
   async leaveRoom(roomId: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('membership', roomId, { roomId, type: 'leave' })
-      info(`[MatrixRoom] 离线状态，已将离开房间入队: ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将离开房间入队: ${roomId}`)
       return
     }
 
     try {
       await matrixClientService.leaveRoom(roomId)
     } catch (err) {
-      error(`[MatrixRoom] 离开房间失败: ${err}`)
+      logger.error(`[MatrixRoom] 离开房间失败: ${err}`)
       throw err
     }
   }
@@ -51,16 +53,16 @@ export class MatrixRoomMembershipService {
   async inviteUser(roomId: string, userId: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('membership', roomId, { roomId, userId, type: 'invite' })
-      info(`[MatrixRoom] 离线状态，已将邀请用户入队: ${userId} -> ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将邀请用户入队: ${userId} -> ${roomId}`)
       return
     }
 
     const client = this.getClient(false)
     try {
       await client.invite(roomId, userId)
-      info(`[MatrixRoom] 邀请用户成功: ${userId} -> ${roomId}`)
+      logger.info(`[MatrixRoom] 邀请用户成功: ${userId} -> ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 邀请用户失败: ${err}`)
+      logger.error(`[MatrixRoom] 邀请用户失败: ${err}`)
       throw err
     }
   }
@@ -68,16 +70,16 @@ export class MatrixRoomMembershipService {
   async kickUser(roomId: string, userId: string, reason?: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('membership', roomId, { roomId, userId, reason, type: 'kick' })
-      info(`[MatrixRoom] 离线状态，已将踢出用户入队: ${userId} <- ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将踢出用户入队: ${userId} <- ${roomId}`)
       return
     }
 
     const client = this.getClient(false)
     try {
       await client.kick(roomId, userId, reason)
-      info(`[MatrixRoom] 踢出用户成功: ${userId} <- ${roomId}`)
+      logger.info(`[MatrixRoom] 踢出用户成功: ${userId} <- ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 踢出用户失败: ${err}`)
+      logger.error(`[MatrixRoom] 踢出用户失败: ${err}`)
       throw err
     }
   }
@@ -85,16 +87,16 @@ export class MatrixRoomMembershipService {
   async banUser(roomId: string, userId: string, reason?: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('membership', roomId, { roomId, userId, reason, type: 'ban' })
-      info(`[MatrixRoom] 离线状态，已将封禁用户入队: ${userId} <- ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将封禁用户入队: ${userId} <- ${roomId}`)
       return
     }
 
     const client = this.getClient(false)
     try {
       await client.ban(roomId, userId, reason)
-      info(`[MatrixRoom] 封禁用户成功: ${userId} <- ${roomId}`)
+      logger.info(`[MatrixRoom] 封禁用户成功: ${userId} <- ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 封禁用户失败: ${err}`)
+      logger.error(`[MatrixRoom] 封禁用户失败: ${err}`)
       throw err
     }
   }
@@ -102,16 +104,16 @@ export class MatrixRoomMembershipService {
   async unbanUser(roomId: string, userId: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('membership', roomId, { roomId, userId, type: 'unban' })
-      info(`[MatrixRoom] 离线状态，已将解封用户入队: ${userId} <- ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将解封用户入队: ${userId} <- ${roomId}`)
       return
     }
 
     const client = this.getClient(false)
     try {
       await client.unban(roomId, userId)
-      info(`[MatrixRoom] 解封用户成功: ${userId} <- ${roomId}`)
+      logger.info(`[MatrixRoom] 解封用户成功: ${userId} <- ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 解封用户失败: ${err}`)
+      logger.error(`[MatrixRoom] 解封用户失败: ${err}`)
       throw err
     }
   }
@@ -120,9 +122,9 @@ export class MatrixRoomMembershipService {
     const client = this.getClient()
     try {
       await client.forget(roomId)
-      info(`[MatrixRoom] 忘记房间成功: ${roomId}`)
+      logger.info(`[MatrixRoom] 忘记房间成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 忘记房间失败: ${err}`)
+      logger.error(`[MatrixRoom] 忘记房间失败: ${err}`)
       throw err
     }
   }
@@ -131,10 +133,10 @@ export class MatrixRoomMembershipService {
     const client = this.getClient()
     try {
       const room = await client.joinRoom(roomId, { viaServers: [], reason } as Record<string, unknown>)
-      info(`[MatrixRoom] 敲门加入房间成功: ${roomId}`)
+      logger.info(`[MatrixRoom] 敲门加入房间成功: ${roomId}`)
       return room
     } catch (err) {
-      error(`[MatrixRoom] 敲门加入房间失败: ${err}`)
+      logger.error(`[MatrixRoom] 敲门加入房间失败: ${err}`)
       throw err
     }
   }
@@ -152,10 +154,10 @@ export class MatrixRoomMembershipService {
         undefined,
         body
       )
-      info(`[MatrixRoom] 通过别名加入房间成功: ${roomIdOrAlias}`)
+      logger.info(`[MatrixRoom] 通过别名加入房间成功: ${roomIdOrAlias}`)
       return result as { room_id: string }
     } catch (err) {
-      error(`[MatrixRoom] 通过别名加入房间失败: ${err}`)
+      logger.error(`[MatrixRoom] 通过别名加入房间失败: ${err}`)
       throw err
     }
   }

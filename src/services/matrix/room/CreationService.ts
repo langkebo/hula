@@ -1,10 +1,12 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { ICreateRoomOpts, Room, RoomMember } from 'matrix-js-sdk'
 import { NotificationCountType, Preset, Visibility } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import type { RoomInfo, RoomMemberInfo } from '@/services/types'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { matrixRoomMembershipService } from './MembershipService'
+
+const logger = createLogger('CreationService')
 
 export interface CreateGroupRoomOptions {
   name: string
@@ -29,7 +31,7 @@ export class MatrixRoomCreationService {
   async createRoom(options: ICreateRoomOpts): Promise<Room> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('creation', 'pending', { options })
-      info('[MatrixRoom] 离线状态，已将创建房间请求入队')
+      logger.info('[MatrixRoom] 离线状态，已将创建房间请求入队')
       // 返回一个伪造的 Room 对象，包含必要的字段以避免前端崩溃
       return {
         roomId: `!pending-${Date.now()}`,
@@ -41,7 +43,7 @@ export class MatrixRoomCreationService {
     try {
       return await matrixClientService.createRoom(options)
     } catch (err) {
-      error(`[MatrixRoom] 创建房间失败: ${err}`)
+      logger.error(`[MatrixRoom] 创建房间失败: ${err}`)
       throw err
     }
   }

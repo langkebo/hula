@@ -37,7 +37,7 @@
           <div
             v-for="item in filteredContacts"
             :key="item.uid"
-            class="rounded-10px border border-gray-200 overflow-hidden">
+            class="rounded-10px border border-[--hula-border-default] overflow-hidden">
             <van-checkbox
               :name="item.uid"
               shape="square"
@@ -46,7 +46,7 @@
                 'cursor-pointer select-none transition-colors duration-150',
                 selectedList.includes(item.uid)
                   ? 'bg-[--hula-surface-panel-muted] border-blue-300'
-                  : 'hover:bg-[--hula-surface-panel-muted] border-gray-200'
+                  : 'hover:bg-[--hula-surface-panel-muted] border-[--hula-border-default]'
               ]">
               <template #default>
                 <div class="flex items-center gap-10px px-8px py-10px">
@@ -60,7 +60,7 @@
                     <span class="text-14px font-medium truncate">
                       {{ groupStore.getUserInfo(item.uid)!.name }}
                     </span>
-                    <div class="text-12px text-gray-500 flex items-center gap-4px truncate">
+                    <div class="text-12px text-[--hula-text-tertiary] flex items-center gap-4px truncate">
                       <template v-if="getUserState(item.uid)">
                         <img
                           class="size-12px rounded-50%"
@@ -94,7 +94,8 @@
     </div>
 
     <!-- 底部操作栏 -->
-    <div class="px-16px py-10px bg-white border-t border-gray-200 flex justify-between items-center">
+    <div
+      class="px-16px py-10px bg-[--hula-surface-panel] border-t border-[--hula-border-default] flex justify-between items-center">
       <span class="text-14px">已选择 {{ selectedList.length }} 人</span>
       <van-button type="primary" :disabled="selectedList.length === 0" @click="createGroup">发起群聊</van-button>
     </div>
@@ -211,7 +212,7 @@ const resetCreateGroupState = () => {
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--hula-overlay-mobile-sheet);
 }
 
 :deep(.van-cell.van-field::after) {

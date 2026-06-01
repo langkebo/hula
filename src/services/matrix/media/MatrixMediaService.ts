@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import {
   type MatrixEncryptedAttachmentLike,
   matrixAttachmentDecryptionService
@@ -8,9 +7,12 @@ import {
   matrixAttachmentEncryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { compressImage, formatFileSize, isImageFile } from '@/utils/ImageUtils'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MatrixMediaService')
 
 export interface UploadResult {
   contentUri: string
@@ -165,7 +167,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       )
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
+      logger.info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
 
       // 记录遥测
       const telemetry = matrixClientService.getTelemetry()
@@ -179,7 +181,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         mimetype: file.type || 'application/octet-stream'
       }
     } catch (err) {
-      error(`[MatrixMedia] 文件上传失败: ${err}`)
+      logger.error(`[MatrixMedia] 文件上传失败: ${err}`)
       throw err
     }
   }
@@ -195,7 +197,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       )
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 加密文件上传成功: ${contentUri}`)
+      logger.info(`[MatrixMedia] 加密文件上传成功: ${contentUri}`)
 
       return {
         contentUri,
@@ -207,7 +209,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         }
       }
     } catch (err) {
-      error(`[MatrixMedia] 加密文件上传失败: ${err}`)
+      logger.error(`[MatrixMedia] 加密文件上传失败: ${err}`)
       throw err
     }
   }
@@ -228,11 +230,11 @@ class MatrixMediaServiceClass extends BaseMatrixService {
           fileToUpload = new File([result.blob], file.name || 'image.jpg', { type: result.blob.type })
           originalSize = result.originalSize ?? file.size
           compressedSize = result.compressedSize ?? file.size
-          info(
+          logger.info(
             `[MatrixMedia] 图片压缩完成: ${formatFileSize(originalSize)} -> ${formatFileSize(compressedSize)} (${result.compressionRatio.toFixed(1)}%)`
           )
         } catch (compressErr) {
-          error(`[MatrixMedia] 图片压缩失败，使用原图: ${compressErr}`)
+          logger.error(`[MatrixMedia] 图片压缩失败，使用原图: ${compressErr}`)
         }
       }
 
@@ -242,7 +244,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       )
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 图片上传成功: ${contentUri}`)
+      logger.info(`[MatrixMedia] 图片上传成功: ${contentUri}`)
       return {
         contentUri,
         size: compressedSize,
@@ -251,7 +253,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         height: dimensions.height
       }
     } catch (err) {
-      error(`[MatrixMedia] 图片上传失败: ${err}`)
+      logger.error(`[MatrixMedia] 图片上传失败: ${err}`)
       throw err
     }
   }
@@ -268,7 +270,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       )
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 视频上传成功: ${contentUri}`)
+      logger.info(`[MatrixMedia] 视频上传成功: ${contentUri}`)
       return {
         contentUri,
         size: file.size,
@@ -278,7 +280,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         duration: metadata.duration
       }
     } catch (err) {
-      error(`[MatrixMedia] 视频上传失败: ${err}`)
+      logger.error(`[MatrixMedia] 视频上传失败: ${err}`)
       throw err
     }
   }
@@ -295,7 +297,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       )
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 音频上传成功: ${contentUri}`)
+      logger.info(`[MatrixMedia] 音频上传成功: ${contentUri}`)
       return {
         contentUri,
         size: file.size,
@@ -303,7 +305,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         duration
       }
     } catch (err) {
-      error(`[MatrixMedia] 音频上传失败: ${err}`)
+      logger.error(`[MatrixMedia] 音频上传失败: ${err}`)
       throw err
     }
   }
@@ -317,14 +319,14 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       })
 
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] Blob 上传成功: ${contentUri}`)
+      logger.info(`[MatrixMedia] Blob 上传成功: ${contentUri}`)
       return {
         contentUri,
         size: blob.size,
         mimetype
       }
     } catch (err) {
-      error(`[MatrixMedia] Blob 上传失败: ${err}`)
+      logger.error(`[MatrixMedia] Blob 上传失败: ${err}`)
       throw err
     }
   }
@@ -365,7 +367,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         name: file instanceof File ? file.name : undefined
       })
       const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-      info(`[MatrixMedia] 具名上传成功: ${contentUri}`)
+      logger.info(`[MatrixMedia] 具名上传成功: ${contentUri}`)
       return {
         contentUri,
         size: file.size,
@@ -373,7 +375,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
           mimetype || (file instanceof File ? file.type || 'application/octet-stream' : 'application/octet-stream')
       }
     } catch (err) {
-      error(`[MatrixMedia] 具名上传失败: ${err}`)
+      logger.error(`[MatrixMedia] 具名上传失败: ${err}`)
       throw err
     }
   }
@@ -382,10 +384,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.CONFIG)
-      info('[MatrixMedia] 获取上传配置成功')
+      logger.info('[MatrixMedia] 获取上传配置成功')
       return result as { 'm.upload.size'?: number; [key: string]: unknown }
     } catch (err) {
-      error(`[MatrixMedia] 获取上传配置失败: ${err}`)
+      logger.error(`[MatrixMedia] 获取上传配置失败: ${err}`)
       throw err
     }
   }
@@ -397,10 +399,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         'POST',
         MATRIX_PATHS.MEDIA.DELETE(encodeURIComponent(serverName), encodeURIComponent(mediaId))
       )
-      info(`[MatrixMedia] 媒体删除成功: ${serverName}/${mediaId}`)
+      logger.info(`[MatrixMedia] 媒体删除成功: ${serverName}/${mediaId}`)
       return true
     } catch (err) {
-      error(`[MatrixMedia] 媒体删除失败: ${serverName}/${mediaId}, ${err}`)
+      logger.error(`[MatrixMedia] 媒体删除失败: ${serverName}/${mediaId}, ${err}`)
       throw err
     }
   }
@@ -409,10 +411,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.QUOTA_ALERTS)
-      info('[MatrixMedia] 获取配额告警成功')
+      logger.info('[MatrixMedia] 获取配额告警成功')
       return (result as { alerts?: Array<Record<string, unknown>> }).alerts ?? []
     } catch (err) {
-      error(`[MatrixMedia] 获取配额告警失败: ${err}`)
+      logger.error(`[MatrixMedia] 获取配额告警失败: ${err}`)
       return []
     }
   }
@@ -427,7 +429,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         remaining: (result.remaining as number) ?? 0
       }
     } catch (err) {
-      error(`[MatrixMedia] 配额检查失败: ${err}`)
+      logger.error(`[MatrixMedia] 配额检查失败: ${err}`)
       return null
     }
   }
@@ -446,7 +448,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         limitBytes: (result.limit_bytes as number) ?? 0
       }
     } catch (err) {
-      error(`[MatrixMedia] 获取配额统计失败: ${err}`)
+      logger.error(`[MatrixMedia] 获取配额统计失败: ${err}`)
       return null
     }
   }
@@ -461,13 +463,13 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         string,
         unknown
       >
-      info('[MatrixMedia] 获取认证媒体配置成功')
+      logger.info('[MatrixMedia] 获取认证媒体配置成功')
       return {
         authenticated_media: (result.authenticated_media as boolean) ?? false,
         ...result
       }
     } catch (err) {
-      error(`[MatrixMedia] 获取认证媒体配置失败: ${err}`)
+      logger.error(`[MatrixMedia] 获取认证媒体配置失败: ${err}`)
       return null
     }
   }

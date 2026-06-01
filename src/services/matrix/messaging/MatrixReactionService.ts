@@ -1,9 +1,11 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { MatrixContentField } from '@/common/matrixConstants'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixReactionService')
 
 export interface ReactionInfo {
   key: string
@@ -27,7 +29,7 @@ class MatrixReactionService extends BaseMatrixService {
   async addReaction(roomId: string, eventId: string, emoji: string): Promise<string> {
     if (!navigator.onLine) {
       const offlineId = offlineQueueService.enqueue('reaction', roomId, { roomId, eventId, emoji })
-      info(`[MatrixReaction] 离线状态，已将表情回复入队: ${roomId}/${eventId} -> ${emoji}`)
+      logger.info(`[MatrixReaction] 离线状态，已将表情回复入队: ${roomId}/${eventId} -> ${emoji}`)
       return offlineId
     }
 
@@ -46,10 +48,10 @@ class MatrixReactionService extends BaseMatrixService {
       }
 
       const response = await client.sendEvent(roomId, 'm.reaction', content)
-      info(`[MatrixReaction] 添加反应成功: ${eventId} -> ${emoji}`)
+      logger.info(`[MatrixReaction] 添加反应成功: ${eventId} -> ${emoji}`)
       return response.event_id
     } catch (err) {
-      error(`[MatrixReaction] 添加反应失败: ${err}`)
+      logger.error(`[MatrixReaction] 添加反应失败: ${err}`)
       throw err
     }
   }
@@ -57,7 +59,7 @@ class MatrixReactionService extends BaseMatrixService {
   async removeReaction(roomId: string, reactionEventId: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('redact', roomId, { roomId, eventId: reactionEventId })
-      info(`[MatrixReaction] 离线状态，已将移除反应操作入队: ${roomId}/${reactionEventId}`)
+      logger.info(`[MatrixReaction] 离线状态，已将移除反应操作入队: ${roomId}/${reactionEventId}`)
       return
     }
 
@@ -68,9 +70,9 @@ class MatrixReactionService extends BaseMatrixService {
 
     try {
       await client.redactEvent(roomId, reactionEventId)
-      info(`[MatrixReaction] 移除反应成功: ${reactionEventId}`)
+      logger.info(`[MatrixReaction] 移除反应成功: ${reactionEventId}`)
     } catch (err) {
-      error(`[MatrixReaction] 移除反应失败: ${err}`)
+      logger.error(`[MatrixReaction] 移除反应失败: ${err}`)
       throw err
     }
   }
@@ -102,7 +104,7 @@ class MatrixReactionService extends BaseMatrixService {
         return { added: true, eventId: newEventId }
       }
     } catch (err) {
-      error(`[MatrixReaction] 切换反应失败: ${err}`)
+      logger.error(`[MatrixReaction] 切换反应失败: ${err}`)
       throw err
     }
   }

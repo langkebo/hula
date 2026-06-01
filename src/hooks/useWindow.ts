@@ -2,7 +2,7 @@ import { LogicalSize } from '@tauri-apps/api/dpi'
 import type { WebviewOptions } from '@tauri-apps/api/webview'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { type Monitor, primaryMonitor, UserAttentionType, type WindowOptions } from '@tauri-apps/api/window'
-import { info } from '@tauri-apps/plugin-log'
+
 import { assign } from 'es-toolkit/compat'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
@@ -237,7 +237,7 @@ export const useWindow = () => {
     })
 
     await webview.once('tauri://error', async () => {
-      info('窗口创建失败')
+      logger.info('窗口创建失败')
       // 使用错误处理检测窗口是否已存在（刷新时直接用 getByLabel 可能返回 null）
       await checkWinExist(label)
     })

@@ -1,6 +1,6 @@
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { error, info } from '@tauri-apps/plugin-log'
+
 import { getCurrentInstance, onUnmounted } from 'vue'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
@@ -69,7 +69,7 @@ export const useTauriListener = () => {
         const unlisten = await normalizedListener
         safeUnlisten(unlisten)
       } catch (e) {
-        error(`[跟踪] 取消新监听器失败:${listenerId}, 错误:${e}`)
+        logger.error(`[跟踪] 取消新监听器失败:${listenerId}, 错误:${e}`)
       }
     } else {
       // 添加新的监听器
@@ -116,7 +116,7 @@ export const useTauriListener = () => {
     // 只有当存在监听器时才打印日志和执行清理
     if (listeners.length > 0) {
       const componentName = instance?.type?.name || instance?.type?.__name || '未知组件'
-      info(`[useTauriListener]清除组件[${componentName}]的Tauri 监听器，监听器数量:[${listeners.length}]`)
+      logger.info(`[useTauriListener]清除组件[${componentName}]的Tauri 监听器，监听器数量:[${listeners.length}]`)
       try {
         // 等待所有的 unlisten 函数 resolve
         const unlistenFns = await Promise.all(listeners)
@@ -152,7 +152,7 @@ export const useTauriListener = () => {
     const windowListeners = globalListeners.get(windowLabel)
     if (!windowListeners) return
 
-    info(`[useTauriListener]清除窗口[${windowLabel}]的所有Tauri监听器，监听器数量:[${windowListeners.length}]`)
+    logger.info(`[useTauriListener]清除窗口[${windowLabel}]的所有Tauri监听器，监听器数量:[${windowListeners.length}]`)
     try {
       // 等待所有的 unlisten 函数 resolve
       const unlistenFns = await Promise.all(windowListeners)
@@ -192,9 +192,9 @@ export const useTauriListener = () => {
 
       // 监听窗口关闭请求事件
       if (currentWindowLabel !== 'home') {
-        info(`[useTauriListener]当前窗口标签设置关闭监听: ${currentWindowLabel}`)
+        logger.info(`[useTauriListener]当前窗口标签设置关闭监听: ${currentWindowLabel}`)
         const closeUnlisten = await appWindow.onCloseRequested(async () => {
-          info(`[useTauriListener]监听[${currentWindowLabel}]窗口关闭事件-清理所有监听器`)
+          logger.info(`[useTauriListener]监听[${currentWindowLabel}]窗口关闭事件-清理所有监听器`)
           // 清理该窗口的所有监听器
           await cleanupAllListenersForWindow(currentWindowLabel)
           // 清理窗口关闭监听器

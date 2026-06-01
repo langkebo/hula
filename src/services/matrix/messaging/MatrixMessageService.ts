@@ -1,4 +1,3 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import type { ISendEventResponse, MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import {
   MatrixBurnDuration,
@@ -9,11 +8,14 @@ import {
 } from '@/common/matrixConstants'
 import { MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixEventService } from '../MatrixEventService'
 import { matrixMessageRelationService } from './MatrixMessageRelationService'
 import { matrixReactionService } from './MatrixReactionService'
 import { matrixReceiptService } from './MatrixReceiptService'
+
+const logger = createLogger('MatrixMessageService')
 
 export interface MessageSearchOptions {
   roomId?: string
@@ -90,7 +92,7 @@ class MatrixMessageService extends BaseMatrixService {
   registerSentMessage(localEventId: string, remoteEventId: string): void {
     if (this.isLocalEventId(localEventId)) {
       this.localToRemoteEventIdMap.set(localEventId, remoteEventId)
-      info(`[MatrixMessage] 已注册本地→远程事件 ID 映射: ${localEventId} -> ${remoteEventId}`)
+      logger.info(`[MatrixMessage] 已注册本地→远程事件 ID 映射: ${localEventId} -> ${remoteEventId}`)
     }
   }
   private asRecord(value: unknown): Record<string, unknown> {
@@ -254,13 +256,13 @@ class MatrixMessageService extends BaseMatrixService {
         lastError = err instanceof Error ? err : new Error(String(err))
 
         if (attempt < MESSAGE_SEND_MAX_RETRIES) {
-          logError(
+          logger.error(
             `[MatrixMessage] ${operationName} failed (attempt ${attempt}/${MESSAGE_SEND_MAX_RETRIES}): ${lastError.message}, retrying in ${delay}ms...`
           )
           await new Promise((resolve) => setTimeout(resolve, delay))
           delay *= MESSAGE_SEND_RETRY_BACKOFF
         } else {
-          logError(
+          logger.error(
             `[MatrixMessage] ${operationName} failed after ${MESSAGE_SEND_MAX_RETRIES} attempts: ${lastError.message}`
           )
         }
@@ -286,7 +288,7 @@ class MatrixMessageService extends BaseMatrixService {
       if (payload.id && this.isLocalEventId(payload.id)) {
         this.registerSentMessage(payload.id, eventId)
       }
-      info(`[MatrixMessage] Structured message sent to ${payload.roomId}: ${eventId}`)
+      logger.info(`[MatrixMessage] Structured message sent to ${payload.roomId}: ${eventId}`)
       return { event_id: eventId } as ISendEventResponse
     }, 'sendStructuredMessage')
   }
@@ -301,7 +303,7 @@ class MatrixMessageService extends BaseMatrixService {
           body: content
         }
       })
-      info(`[MatrixMessage] 离线状态，已将文本消息入队: ${roomId} (queueId: ${id})`)
+      logger.info(`[MatrixMessage] 离线状态，已将文本消息入队: ${roomId} (queueId: ${id})`)
       return { event_id: `local-${id}` } as ISendEventResponse
     }
 
@@ -310,7 +312,7 @@ class MatrixMessageService extends BaseMatrixService {
 
       const txnId = txId || `m${Date.now()}`
       const response = await client.sendTextMessage(roomId, content, txnId)
-      info(`[MatrixMessage] Text message sent to ${roomId}: ${txnId}`)
+      logger.info(`[MatrixMessage] Text message sent to ${roomId}: ${txnId}`)
       return response
     }, 'sendTextMessage')
   }
@@ -327,7 +329,7 @@ class MatrixMessageService extends BaseMatrixService {
           formatted_body: html
         }
       })
-      info(`[MatrixMessage] 离线状态，已将 HTML 消息入队: ${roomId} (queueId: ${id})`)
+      logger.info(`[MatrixMessage] 离线状态，已将 HTML 消息入队: ${roomId} (queueId: ${id})`)
       return { event_id: `local-${id}` } as ISendEventResponse
     }
 
@@ -336,7 +338,7 @@ class MatrixMessageService extends BaseMatrixService {
 
       const txnId = txId || `m${Date.now()}`
       const response = await client.sendHtmlMessage(roomId, txnId, body, html)
-      info(`[MatrixMessage] HTML message sent to ${roomId}: ${txnId}`)
+      logger.info(`[MatrixMessage] HTML message sent to ${roomId}: ${txnId}`)
       return response
     }, 'sendHtmlMessage')
   }
@@ -351,7 +353,7 @@ class MatrixMessageService extends BaseMatrixService {
           body: content
         }
       })
-      info(`[MatrixMessage] 离线状态，已将 Emote 消息入队: ${roomId} (queueId: ${id})`)
+      logger.info(`[MatrixMessage] 离线状态，已将 Emote 消息入队: ${roomId} (queueId: ${id})`)
       return { event_id: `local-${id}` } as ISendEventResponse
     }
 
@@ -360,7 +362,7 @@ class MatrixMessageService extends BaseMatrixService {
 
       const txnId = txId || `m${Date.now()}`
       const response = await client.sendEmote(roomId, txnId, content)
-      info(`[MatrixMessage] Emote message sent to ${roomId}: ${txnId}`)
+      logger.info(`[MatrixMessage] Emote message sent to ${roomId}: ${txnId}`)
       return response
     }, 'sendEmoteMessage')
   }
@@ -373,7 +375,7 @@ class MatrixMessageService extends BaseMatrixService {
 
     if (!navigator.onLine) {
       offlineQueueService.enqueue('redact', roomId, { roomId, eventId: resolvedId })
-      info(`[MatrixMessage] 离线状态，已将撤回消息操作入队: ${roomId}/${resolvedId}`)
+      logger.info(`[MatrixMessage] 离线状态，已将撤回消息操作入队: ${roomId}/${resolvedId}`)
       return
     }
 
@@ -382,9 +384,9 @@ class MatrixMessageService extends BaseMatrixService {
 
       const txnId = txId || `m${Date.now()}`
       await client.redactEvent(roomId, resolvedId, txnId)
-      info(`[MatrixMessage] Message redacted in ${roomId}: ${resolvedId}`)
+      logger.info(`[MatrixMessage] Message redacted in ${roomId}: ${resolvedId}`)
     } catch (err) {
-      logError(`[MatrixMessage] Failed to recall message: ${err}`)
+      logger.error(`[MatrixMessage] Failed to recall message: ${err}`)
       throw err
     }
   }
@@ -427,7 +429,7 @@ class MatrixMessageService extends BaseMatrixService {
 
       return events.slice(0, limit)
     } catch (err) {
-      logError(`[MatrixMessage] Failed to get message events: ${err}`)
+      logger.error(`[MatrixMessage] Failed to get message events: ${err}`)
       throw err
     }
   }
@@ -435,9 +437,9 @@ class MatrixMessageService extends BaseMatrixService {
   async addReaction(roomId: string, eventId: string, reaction: string): Promise<void> {
     try {
       await matrixReactionService.addReaction(roomId, eventId, reaction)
-      info(`[MatrixMessage] Reaction added to ${eventId} in ${roomId}`)
+      logger.info(`[MatrixMessage] Reaction added to ${eventId} in ${roomId}`)
     } catch (err) {
-      logError(`[MatrixMessage] Failed to add reaction: ${err}`)
+      logger.error(`[MatrixMessage] Failed to add reaction: ${err}`)
       throw err
     }
   }
@@ -445,9 +447,9 @@ class MatrixMessageService extends BaseMatrixService {
   async removeReaction(roomId: string, eventId: string, _reaction: string, reactionEventId: string): Promise<void> {
     try {
       await matrixReactionService.removeReaction(roomId, reactionEventId)
-      info(`[MatrixMessage] Reaction removed from ${eventId} in ${roomId}`)
+      logger.info(`[MatrixMessage] Reaction removed from ${eventId} in ${roomId}`)
     } catch (err) {
-      logError(`[MatrixMessage] Failed to remove reaction: ${err}`)
+      logger.error(`[MatrixMessage] Failed to remove reaction: ${err}`)
       throw err
     }
   }
@@ -461,10 +463,10 @@ class MatrixMessageService extends BaseMatrixService {
       const newEventId = await matrixMessageRelationService.editMessage(roomId, resolvedId, {
         body: newContent
       })
-      info(`[MatrixMessage] Message edited in ${roomId}: ${resolvedId}`)
+      logger.info(`[MatrixMessage] Message edited in ${roomId}: ${resolvedId}`)
       return { event_id: newEventId } as ISendEventResponse
     } catch (err) {
-      logError(`[MatrixMessage] Failed to edit message: ${err}`)
+      logger.error(`[MatrixMessage] Failed to edit message: ${err}`)
       throw err
     }
   }
@@ -476,7 +478,7 @@ class MatrixMessageService extends BaseMatrixService {
       const room = client.getRoom(roomId)
       return room?.findEventById(eventId) || null
     } catch (err) {
-      logError(`[MatrixMessage] Failed to get room message: ${err}`)
+      logger.error(`[MatrixMessage] Failed to get room message: ${err}`)
       throw err
     }
   }
@@ -497,7 +499,7 @@ class MatrixMessageService extends BaseMatrixService {
       const hasRead = room.hasUserReadEvent(myUserId, eventId)
       return { hasRead }
     } catch (err) {
-      logError(`[MatrixMessage] Failed to get read receipt: ${err}`)
+      logger.error(`[MatrixMessage] Failed to get read receipt: ${err}`)
       throw err
     }
   }
@@ -505,9 +507,9 @@ class MatrixMessageService extends BaseMatrixService {
   async markMessagesRead(roomId: string, eventId: string): Promise<void> {
     try {
       await matrixReceiptService.sendReadReceiptByEventId(roomId, eventId)
-      info(`[MatrixMessage] Messages marked as read in ${roomId} up to ${eventId}`)
+      logger.info(`[MatrixMessage] Messages marked as read in ${roomId} up to ${eventId}`)
     } catch (err) {
-      logError(`[MatrixMessage] Failed to mark messages read: ${err}`)
+      logger.error(`[MatrixMessage] Failed to mark messages read: ${err}`)
       throw err
     }
   }
@@ -525,7 +527,7 @@ class MatrixMessageService extends BaseMatrixService {
 
       await this.markMessagesRead(roomId, eventId)
     } catch (err) {
-      logError(`[MatrixMessage] Failed to mark room as read: ${err}`)
+      logger.error(`[MatrixMessage] Failed to mark room as read: ${err}`)
       throw err
     }
   }
@@ -554,7 +556,7 @@ class MatrixMessageService extends BaseMatrixService {
 
       return unreadEvents
     } catch (err) {
-      logError(`[MatrixMessage] Failed to get unread messages: ${err}`)
+      logger.error(`[MatrixMessage] Failed to get unread messages: ${err}`)
       throw err
     }
   }
@@ -636,7 +638,7 @@ class MatrixMessageService extends BaseMatrixService {
         hasMore
       }
     } catch (err) {
-      logError(`[MatrixMessage] Failed to get message list: ${err}`)
+      logger.error(`[MatrixMessage] Failed to get message list: ${err}`)
       throw err
     }
   }
@@ -657,7 +659,7 @@ class MatrixMessageService extends BaseMatrixService {
       const chunk = response.chunk
       return Array.isArray(chunk) ? (chunk as MatrixEvent[]) : []
     } catch (err) {
-      logError(`[MatrixMessage] Failed to fetch server messages: ${err}`)
+      logger.error(`[MatrixMessage] Failed to fetch server messages: ${err}`)
       return []
     }
   }
@@ -698,7 +700,7 @@ class MatrixMessageService extends BaseMatrixService {
 
       return events.slice(0, limit)
     } catch (err) {
-      logError(`[MatrixMessage] Failed to get message list: ${err}`)
+      logger.error(`[MatrixMessage] Failed to get message list: ${err}`)
       throw err
     }
   }
@@ -724,12 +726,12 @@ class MatrixMessageService extends BaseMatrixService {
               messages.push(event)
             }
           } catch (e) {
-            logError(`[MatrixMessage] Failed to get message ${msgId}: ${e}`)
+            logger.error(`[MatrixMessage] Failed to get message ${msgId}: ${e}`)
           }
         }
         return messages
       } catch (err) {
-        logError(`[MatrixMessage] Failed to get messages by IDs: ${err}`)
+        logger.error(`[MatrixMessage] Failed to get messages by IDs: ${err}`)
         return []
       }
     }
@@ -746,10 +748,10 @@ class MatrixMessageService extends BaseMatrixService {
   async markMsg(roomId: string, eventId: string): Promise<boolean> {
     try {
       await matrixReceiptService.sendReadReceiptByEventId(roomId, eventId)
-      info(`[MatrixMessage] Message marked as read: ${eventId} in ${roomId}`)
+      logger.info(`[MatrixMessage] Message marked as read: ${eventId} in ${roomId}`)
       return true
     } catch (err) {
-      logError(`[MatrixMessage] Failed to mark message as read: ${err}`)
+      logger.error(`[MatrixMessage] Failed to mark message as read: ${err}`)
       return false
     }
   }
@@ -769,14 +771,16 @@ class MatrixMessageService extends BaseMatrixService {
       const latestEventId = resolvedIds[resolvedIds.length - 1]
       try {
         await matrixReceiptService.sendReadReceiptByEventId(roomId, latestEventId)
-        info(`[MatrixMessage] Marked ${resolvedIds.length} messages as read in ${roomId} (latest: ${latestEventId})`)
+        logger.info(
+          `[MatrixMessage] Marked ${resolvedIds.length} messages as read in ${roomId} (latest: ${latestEventId})`
+        )
         return resolvedIds.length
       } catch {
-        logError(`[MatrixMessage] Failed to mark latest message ${latestEventId} as read`)
+        logger.error(`[MatrixMessage] Failed to mark latest message ${latestEventId} as read`)
         return 0
       }
     } catch (err) {
-      logError(`[MatrixMessage] Failed to mark messages as read: ${err}`)
+      logger.error(`[MatrixMessage] Failed to mark messages as read: ${err}`)
       throw err
     }
   }
@@ -795,7 +799,7 @@ class MatrixMessageService extends BaseMatrixService {
 
       const txnId = txId || `m${Date.now()}`
       const response = await client.sendTextMessage(roomId, content, txnId)
-      info(`[MatrixMessage] Stream message sent to ${roomId}: ${txnId}`)
+      logger.info(`[MatrixMessage] Stream message sent to ${roomId}: ${txnId}`)
       return response
     }, 'messageSendStream')
   }

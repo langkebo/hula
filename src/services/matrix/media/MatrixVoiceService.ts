@@ -1,4 +1,4 @@
-import { error as logError, warn as logWarn } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import matrixClientService from '../MatrixClientService'
@@ -46,6 +46,8 @@ interface RoomLike {
 }
 
 import type { EncryptedAttachmentFile } from '../crypto/MatrixAttachmentEncryptionService'
+
+const logger = createLogger('MatrixVoiceService')
 
 interface VoiceMessageResult {
   eventId?: string
@@ -100,7 +102,7 @@ class MatrixVoiceService extends BaseMatrixService {
     try {
       return this.resolveHttpUrl(sourceUrl) ?? fallbackUrl ?? sourceUrl
     } catch (err) {
-      logWarn(`[MatrixVoiceService] getPlayableUrl failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] getPlayableUrl failed: ${err}`)
       return fallbackUrl ?? sourceUrl
     }
   }
@@ -138,7 +140,7 @@ class MatrixVoiceService extends BaseMatrixService {
         httpUrl: this.resolveHttpUrl(mxcUrl)
       }
     } catch (err) {
-      logError(`[MatrixVoiceService] 上传语音失败: ${err}`)
+      logger.error(`[MatrixVoiceService] 上传语音失败: ${err}`)
       throw err
     }
   }
@@ -167,7 +169,7 @@ class MatrixVoiceService extends BaseMatrixService {
         httpUrl: this.resolveHttpUrl(mxcUrl)
       }
     } catch (err) {
-      logError(`[MatrixVoiceService] 获取语音信息失败: ${roomId}/${eventId} ${err}`)
+      logger.error(`[MatrixVoiceService] 获取语音信息失败: ${roomId}/${eventId} ${err}`)
       return null
     }
   }
@@ -184,7 +186,7 @@ class MatrixVoiceService extends BaseMatrixService {
         segments: undefined
       }
     } catch (err) {
-      logError(`[MatrixVoiceService] 语音转文字失败: ${params.eventId} ${err}`)
+      logger.error(`[MatrixVoiceService] 语音转文字失败: ${params.eventId} ${err}`)
       throw err
     }
   }
@@ -203,7 +205,7 @@ class MatrixVoiceService extends BaseMatrixService {
       const path = roomId ? MATRIX_PATHS.VOICE.ROOM_STATS(roomId) : MATRIX_PATHS.VOICE.STATS
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
-        logWarn('[MatrixVoiceService] 语音统计端点不可用')
+        logger.warn('[MatrixVoiceService] 语音统计端点不可用')
         return { totalDuration: 0, totalMessages: 0, averageDuration: 0 }
       }
 
@@ -214,7 +216,7 @@ class MatrixVoiceService extends BaseMatrixService {
         averageDuration: (result.average_duration as number) ?? 0
       }
     } catch (err) {
-      logWarn(`[MatrixVoiceService] getVoiceStats failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] getVoiceStats failed: ${err}`)
       return { totalDuration: 0, totalMessages: 0, averageDuration: 0 }
     }
   }
@@ -232,7 +234,7 @@ class MatrixVoiceService extends BaseMatrixService {
       const path = MATRIX_PATHS.VOICE.USER_STATS(userId)
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
-        logWarn('[MatrixVoiceService] 用户语音统计端点不可用')
+        logger.warn('[MatrixVoiceService] 用户语音统计端点不可用')
         return { totalDuration: 0, totalMessages: 0 }
       }
 
@@ -242,7 +244,7 @@ class MatrixVoiceService extends BaseMatrixService {
         totalMessages: (result.total_messages as number) ?? 0
       }
     } catch (err) {
-      logWarn(`[MatrixVoiceService] getUserVoiceStats failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] getUserVoiceStats failed: ${err}`)
       return { totalDuration: 0, totalMessages: 0 }
     }
   }
@@ -269,7 +271,7 @@ class MatrixVoiceService extends BaseMatrixService {
         autoTranscribe: (result.auto_transcribe as boolean) ?? false
       }
     } catch (err) {
-      logWarn(`[MatrixVoiceService] getVoiceConfig failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] getVoiceConfig failed: ${err}`)
       return { maxDuration: 300, allowedFormats: ['audio/webm', 'audio/ogg', 'audio/mp4'], autoTranscribe: false }
     }
   }
@@ -283,12 +285,12 @@ class MatrixVoiceService extends BaseMatrixService {
       const path = MATRIX_PATHS.VOICE.CONTENT(messageId)
       const available = await endpointCapabilityService.check('DELETE', path)
       if (!available) {
-        logWarn('[MatrixVoiceService] 语音删除端点不可用')
+        logger.warn('[MatrixVoiceService] 语音删除端点不可用')
         return
       }
       await client.http.authedRequest('DELETE', path)
     } catch (err) {
-      logError(`[MatrixVoiceService] 删除语音失败: ${messageId} ${err}`)
+      logger.error(`[MatrixVoiceService] 删除语音失败: ${messageId} ${err}`)
       throw err
     }
   }
@@ -322,7 +324,7 @@ class MatrixVoiceService extends BaseMatrixService {
         total: (result.total as number) ?? 0
       }
     } catch (err) {
-      logWarn(`[MatrixVoiceService] getRoomVoiceList failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] getRoomVoiceList failed: ${err}`)
       return { voices: [], total: 0 }
     }
   }
@@ -356,7 +358,7 @@ class MatrixVoiceService extends BaseMatrixService {
         total: (result.total as number) ?? 0
       }
     } catch (err) {
-      logWarn(`[MatrixVoiceService] getUserVoiceList failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] getUserVoiceList failed: ${err}`)
       return { voices: [], total: 0 }
     }
   }
@@ -376,7 +378,7 @@ class MatrixVoiceService extends BaseMatrixService {
       const result = await client.http.authedRequest('GET', path)
       return result as Record<string, unknown>
     } catch (err) {
-      logWarn(`[MatrixVoiceService] getVoiceContent failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] getVoiceContent failed: ${err}`)
       return null
     }
   }
@@ -390,7 +392,7 @@ class MatrixVoiceService extends BaseMatrixService {
     try {
       const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.CONVERT)
       if (!available) {
-        logWarn('[MatrixVoiceService] 语音转换端点不可用')
+        logger.warn('[MatrixVoiceService] 语音转换端点不可用')
         return null
       }
 
@@ -400,7 +402,7 @@ class MatrixVoiceService extends BaseMatrixService {
       })) as Record<string, unknown>
       return { url: (result.url as string) ?? '', format: (result.format as string) ?? targetFormat }
     } catch (err) {
-      logWarn(`[MatrixVoiceService] convertVoice failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] convertVoice failed: ${err}`)
       return null
     }
   }
@@ -417,7 +419,7 @@ class MatrixVoiceService extends BaseMatrixService {
     try {
       const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.OPTIMIZE)
       if (!available) {
-        logWarn('[MatrixVoiceService] 语音优化端点不可用')
+        logger.warn('[MatrixVoiceService] 语音优化端点不可用')
         return null
       }
 
@@ -431,7 +433,7 @@ class MatrixVoiceService extends BaseMatrixService {
       >
       return { url: (result.url as string) ?? '', size: (result.size as number) ?? 0 }
     } catch (err) {
-      logWarn(`[MatrixVoiceService] optimizeVoice failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] optimizeVoice failed: ${err}`)
       return null
     }
   }
@@ -448,7 +450,7 @@ class MatrixVoiceService extends BaseMatrixService {
     try {
       const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.TRANSCRIPTION)
       if (!available) {
-        logWarn('[MatrixVoiceService] 语音转文字端点不可用')
+        logger.warn('[MatrixVoiceService] 语音转文字端点不可用')
         return null
       }
 
@@ -467,7 +469,7 @@ class MatrixVoiceService extends BaseMatrixService {
         confidence: result.confidence as number | undefined
       }
     } catch (err) {
-      logWarn(`[MatrixVoiceService] transcribeVoiceViaApi failed: ${err}`)
+      logger.warn(`[MatrixVoiceService] transcribeVoiceViaApi failed: ${err}`)
       return null
     }
   }

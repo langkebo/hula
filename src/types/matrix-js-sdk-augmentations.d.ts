@@ -710,6 +710,8 @@ declare module 'matrix-js-sdk' {
     syncOnce(opts?: Record<string, unknown>): Promise<void>
     getBurnAfterReadManager(): BurnAfterReadManager
     getSpaceManager(): import('matrix-js-sdk/space').SpaceManager
+    getKeyRotationManager(): import('matrix-js-sdk/src/key-rotation/index').KeyRotationManager
+    getDehydratedDeviceManager(): import('matrix-js-sdk/src/dehydrated-device/index').DehydratedDeviceManager
     oidcUserInfo(): Promise<Record<string, unknown>>
     isCrossSigningReady(): Promise<boolean>
     isSecretStorageReady(): Promise<boolean>
@@ -717,8 +719,7 @@ declare module 'matrix-js-sdk' {
     requestVerification(userId: string, methods?: string[]): Promise<unknown>
     getVerificationRequestsToDevice(userId: string): unknown[]
     setDeviceVerified(userId: string, deviceId: string, verified?: boolean): Promise<void>
-    setDeviceBlocked(userId: string, deviceId: string, blocked?: boolean): Promise<void>
-    setDeviceKnown(userId: string, deviceId: string, known?: boolean): Promise<void>
+    setDeviceBlocked(userId: string, deviceId: string, blocked: boolean): Promise<void>
     checkKeyBackup(): Promise<unknown>
     isKeyBackupKeyBackupEnabled(): Promise<boolean>
     getKeyBackupInfo(): Promise<unknown>
@@ -726,7 +727,6 @@ declare module 'matrix-js-sdk' {
     checkDeviceTrust(userId: string, deviceId: string): Promise<unknown>
     getStoredDevicesForUser(userId: string): Promise<unknown[]>
     getRoomStateEvent(roomId: string, eventType: string, stateKey: string): Promise<Record<string, unknown>>
-    getServerRetention(): Promise<RetentionPolicy | null>
     sync(options: Record<string, unknown>): Promise<void>
     on(event: 'sync', listener: (state: string) => void): void
     on(event: 'room', listener: (room: Room) => void): void
@@ -799,6 +799,9 @@ declare module 'matrix-js-sdk' {
     quotaManager?: unknown
     getDeviceManager?(): unknown
     getKeyBackupManager?(): unknown
+    getDeviceKeysManager?(): import('matrix-js-sdk/device-keys').DeviceKeysManager
+    getCryptoKeysManager?(): import('matrix-js-sdk/crypto-keys').CryptoKeysManager
+    getKeyVerificationManager?(): import('matrix-js-sdk/key-verification').KeyVerificationManager
     getPushers?(): Promise<unknown>
     // Upload
     uploadContent(
@@ -815,9 +818,8 @@ declare module 'matrix-js-sdk' {
     // Report
     reportEvent(roomId: string, eventId: string, reason: string, explanation?: string): Promise<unknown>
     // Retention
+    getServerRetention(): Promise<RetentionPolicy | null>
     getServerRetention(): Promise<Record<string, unknown>>
-    // Sync
-    sync(opts?: Record<string, unknown>): Promise<Record<string, unknown>>
     // Client lifecycle
     stopClient(): void
   }
@@ -1456,7 +1458,264 @@ declare module 'matrix-js-sdk/sending' {
   export function extendMatrixClient(): void
 }
 
+declare module 'matrix-js-sdk/device-keys' {
+  export interface DeviceKeys {
+    user_id: string
+    device_id: string
+    algorithms: string[]
+    keys: Record<string, string>
+    signatures: Record<string, Record<string, string>>
+    unsigned?: Record<string, unknown>
+  }
+  export interface OneTimeKeys {
+    [keyId: string]: {
+      key: string
+      signatures?: Record<string, Record<string, string>>
+    }
+  }
+  export interface UploadKeysResponse {
+    one_time_key_counts?: Record<string, number>
+  }
+  export interface FallbackKeys {
+    [keyId: string]: {
+      key: string
+      signatures?: Record<string, Record<string, string>>
+    }
+  }
+  export interface UploadKeysOptions {
+    deviceKeys?: DeviceKeys
+    oneTimeKeys?: OneTimeKeys
+    fallbackKeys?: FallbackKeys
+  }
+  export interface QueryKeysRequest {
+    device_keys?: Record<string, string[]>
+    token?: string
+  }
+  export interface CrossSigningKey {
+    user_id: string
+    usage: string[]
+    keys: Record<string, string>
+    signatures?: Record<string, Record<string, string>>
+  }
+  export interface QueryKeysResponse {
+    device_keys?: Record<string, Record<string, DeviceKeys>>
+    master_keys?: Record<string, CrossSigningKey>
+    self_signing_keys?: Record<string, CrossSigningKey>
+    user_signing_keys?: Record<string, CrossSigningKey>
+    failures?: Record<string, Record<string, string>>
+  }
+  export interface ClaimKeysRequest {
+    one_time_keys: Record<string, Record<string, string>>
+  }
+  export interface ClaimKeysResponse {
+    one_time_keys?: Record<string, Record<string, { key: string; signatures?: Record<string, Record<string, string>> }>>
+    failures?: Record<string, Record<string, string>>
+  }
+  export interface KeyChangesResponse {
+    changed?: string[]
+    left?: string[]
+  }
+  export interface SendToDeviceMessage {
+    [userId: string]: {
+      [deviceId: string]: Record<string, unknown>
+    }
+  }
+  export interface SignaturesUploadResponse {
+    failures?: Record<string, Record<string, string>>
+  }
+  export class DeviceKeysManager {
+    uploadKeys(options: UploadKeysOptions): Promise<UploadKeysResponse>
+    queryKeys(request: QueryKeysRequest): Promise<QueryKeysResponse>
+    claimKeys(request: ClaimKeysRequest): Promise<ClaimKeysResponse>
+    getKeyChanges(from: string, to?: string): Promise<KeyChangesResponse>
+    sendToDevice(eventType: string, transactionId: string, messages: SendToDeviceMessage): Promise<void>
+    uploadSignatures(
+      signatures: Record<string, Record<string, Record<string, string>>>
+    ): Promise<SignaturesUploadResponse>
+    uploadDeviceSigning(keys: {
+      master_key?: CrossSigningKey
+      self_signing_key?: CrossSigningKey
+      user_signing_key?: CrossSigningKey
+    }): Promise<void>
+    createRoomKeyRequest(request: {
+      room_id: string
+      session_id: string
+      algorithm: string
+      request_type?: string
+      request_id?: string
+    }): Promise<{ request_id: string }>
+  }
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/key-backup' {
+  export interface EncryptedData {
+    ciphertext: string
+    ephemeral: string
+    mac: string
+  }
+  export interface AuthData {
+    public_key: string
+    signatures?: Record<string, Record<string, string>>
+  }
+  export interface SessionData {
+    first_message_index: number
+    forwarded_count: number
+    is_verified: boolean
+    session_data: EncryptedData | Record<string, unknown>
+  }
+  export interface BackupVersionInfo {
+    version: string
+    algorithm: string
+    auth_data: AuthData | Record<string, unknown>
+    count?: number
+    etag?: string
+  }
+  export interface RoomSessions {
+    sessions: Record<string, SessionData>
+  }
+  export interface RoomKeyBackup {
+    rooms: Record<string, RoomSessions>
+    etag?: string
+  }
+  export interface UploadKeysResult {
+    count: number
+    etag: string
+  }
+  export interface PutRoomKeysBody {
+    rooms: Record<string, RoomSessions>
+  }
+  export interface PutRoomSessionsBody {
+    sessions: Record<string, SessionData>
+  }
+  export interface RecoverKeysResult {
+    rooms: Record<string, RoomSessions>
+    total_keys: number
+    recovered_keys: number
+  }
+  export interface RecoveryProgress {
+    user_id: string
+    version: string
+    total_keys: number
+    recovered_keys: number
+    status: string
+    started_ts: number
+    updated_ts: number
+  }
+  export interface BatchRecoverResult {
+    rooms: Record<string, RoomSessions>
+    total_sessions: number
+    has_more: boolean
+    next_batch?: string
+  }
+  export interface ExportResult {
+    room_keys: Array<{
+      room_id: string
+      session_id: string
+      session_data: EncryptedData | Record<string, unknown>
+      first_message_index: number
+      forwarded_count: number
+      is_verified: boolean
+    }>
+    version: string
+  }
+  export interface ImportResult {
+    count: number
+    failed: number
+    total: number
+  }
+  export interface VerifyResult {
+    valid: boolean
+    algorithm: string
+    auth_data: AuthData | Record<string, unknown>
+    key_count: number
+    signatures?: Record<string, Record<string, string>>
+  }
+  export interface RecoverRoomKeysResult {
+    room_id: string
+    sessions: SessionData[]
+  }
+  export interface RecoverSessionKeyResult {
+    room_id: string
+    session_id: string
+    session_data: EncryptedData | Record<string, unknown>
+  }
+  export class KeyBackupManager {
+    getLatestBackupVersion(forceRefresh?: boolean): Promise<BackupVersionInfo>
+    getBackupVersions(forceRefresh?: boolean): Promise<{ versions: BackupVersionInfo[] }>
+    createBackupVersion(
+      algorithm?: string,
+      authData?: AuthData | Record<string, unknown>,
+      auth?: Record<string, unknown>
+    ): Promise<{ version: string }>
+    getBackupVersion(version: string, forceRefresh?: boolean): Promise<BackupVersionInfo>
+    updateBackupVersion(version: string, authData: AuthData | Record<string, unknown>): Promise<{ version: string }>
+    deleteBackupVersion(version: string): Promise<{ deleted: boolean; version: string }>
+    getAllRoomKeys(version: string): Promise<RoomKeyBackup>
+    putAllRoomKeys(version: string, body: PutRoomKeysBody): Promise<UploadKeysResult>
+    getRoomKeys(version: string, roomId: string): Promise<{ sessions: Record<string, SessionData> }>
+    putRoomKeys(version: string, roomId: string, body: PutRoomSessionsBody): Promise<UploadKeysResult>
+    deleteAllRoomKeys(version: string): Promise<UploadKeysResult>
+    deleteRoomKeys(version: string, roomId: string): Promise<UploadKeysResult>
+    getSessionKey(version: string, roomId: string, sessionId: string): Promise<EncryptedData | Record<string, unknown>>
+    putSessionKey(
+      version: string,
+      roomId: string,
+      sessionId: string,
+      sessionData: SessionData
+    ): Promise<UploadKeysResult>
+    deleteSessionKey(version: string, roomId: string, sessionId: string): Promise<UploadKeysResult>
+    recoverKeys(version: string, rooms?: string[]): Promise<RecoverKeysResult>
+    getRecoveryProgress(version: string): Promise<RecoveryProgress>
+    verifyBackup(version: string): Promise<VerifyResult>
+    batchRecover(version: string, roomIds: string[], sessionLimit?: number): Promise<BatchRecoverResult>
+    recoverRoomKeys(version: string, roomId: string): Promise<RecoverRoomKeysResult>
+    recoverSessionKey(version: string, roomId: string, sessionId: string): Promise<RecoverSessionKeyResult>
+    exportKeys(version?: string): Promise<ExportResult>
+    importKeys(roomKeys: ExportResult['room_keys'], version?: string): Promise<ImportResult>
+  }
+  export function extendMatrixClient(): void
+}
+
+declare module 'matrix-js-sdk/key-verification' {
+  export class KeyVerificationManager {
+    startDeviceSigningVerification(request: Record<string, unknown>, version?: string): Promise<Record<string, unknown>>
+    acceptDeviceSigningVerification(
+      request: Record<string, unknown>,
+      version?: string
+    ): Promise<Record<string, unknown>>
+    sendDeviceSigningVerificationKeyAgreement(
+      request: Record<string, unknown>,
+      version?: string
+    ): Promise<Record<string, unknown>>
+    confirmDeviceSigningVerificationMac(
+      request: Record<string, unknown>,
+      version?: string
+    ): Promise<Record<string, unknown>>
+    completeDeviceSigningVerification(
+      request: Record<string, unknown>,
+      version?: string
+    ): Promise<Record<string, unknown>>
+    cancelDeviceSigningVerification(
+      request: Record<string, unknown>,
+      version?: string
+    ): Promise<Record<string, unknown>>
+    getVerificationRequestsHttp(version?: string): Promise<Record<string, unknown>>
+    showQrCodeHttp(version?: string): Promise<Record<string, unknown>>
+    scanQrCodeHttp(request: Record<string, unknown>, version?: string): Promise<Record<string, unknown>>
+  }
+  export function extendMatrixClient(): void
+}
+
 declare module 'matrix-js-sdk/crypto-keys' {
+  export class CryptoKeysManager {
+    uploadKeys(content: Record<string, unknown>): Promise<{ one_time_key_counts: Record<string, number> }>
+    queryKeys(userIds: string[], opts?: { token?: string; timeout?: number }): Promise<Record<string, unknown>>
+    claimKeys(devices: [string, string][], keyAlgorithm?: string, timeout?: number): Promise<Record<string, unknown>>
+    getKeysChanges(from: string, to: string): Promise<{ changed: string[]; left: string[] }>
+    uploadKeySignatures(signatures: Record<string, unknown>): Promise<Record<string, unknown>>
+    uploadDeviceSigning(masterKey?: Record<string, unknown>, selfSigningKey?: Record<string, unknown>): Promise<void>
+  }
   export function extendMatrixClient(): void
 }
 

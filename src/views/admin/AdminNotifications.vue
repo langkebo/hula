@@ -62,7 +62,7 @@
             :pagination="{ pageSize: 20 }"
             :bordered="false"
             striped
-            :row-key="(_: any, index: number) => String(index)" />
+            :row-key="(row: Record<string, unknown>) => String(row.pushkey ?? row.app_display_name ?? Math.random())" />
         </n-spin>
       </n-tab-pane>
     </n-tabs>

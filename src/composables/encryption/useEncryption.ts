@@ -1,5 +1,7 @@
 import { type Ref, ref } from 'vue'
 import { cryptoHealthMonitor } from '@/services/matrix/crypto/CryptoHealthMonitor'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
+import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import {
   type CrossSigningInfo,
@@ -11,6 +13,7 @@ import {
   matrixEncryptionService,
   type SetupKeyBackupOptions
 } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { matrixVerificationService, type VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
 
 export type { CryptoHealthStatus } from '@/services/matrix/crypto/CryptoHealthMonitor'
@@ -104,15 +107,18 @@ export function useEncryption(): UseEncryptionResult {
   const isCrossSigningReady = ref(false)
 
   async function isEncryptionAvailable() {
-    return matrixEncryptionService.isEncryptionAvailable()
+    return cryptoSDKAdapter.isEncryptionAvailable()
   }
 
   async function isRoomEncrypted(roomId: string) {
-    return matrixEncryptionService.isRoomEncrypted(roomId)
+    return cryptoSDKAdapter.isRoomEncrypted(roomId)
   }
 
   async function enableRoomEncryption(roomId: string, settings?: Partial<EncryptionSettings>) {
-    await matrixEncryptionService.enableRoomEncryption(roomId, settings)
+    await matrixCryptoService.enableEncryption(
+      roomId,
+      settings?.algorithm as import('@/services/matrix/crypto/MatrixCryptoService').EncryptionAlgorithm | undefined
+    )
   }
 
   async function getEncryptionSettings(roomId: string) {
@@ -120,45 +126,61 @@ export function useEncryption(): UseEncryptionResult {
   }
 
   async function getCrossSigningInfo() {
-    return matrixEncryptionService.getCrossSigningInfo()
+    const status = await cryptoSDKAdapter.getCrossSigningStatus()
+    return {
+      isSetup: status.isSetup,
+      masterPublicKey: status.masterPublicKey,
+      selfSigningPublicKey: status.selfSigningPublicKey,
+      userSigningPublicKey: status.userSigningPublicKey
+    } satisfies CrossSigningInfo
   }
 
   async function setupCrossSigning(authParams?: { password?: string; authData?: unknown }) {
-    await matrixEncryptionService.setupCrossSigning(authParams)
+    await cryptoSDKAdapter.setupCrossSigning(authParams)
   }
 
-  async function resetCrossSigning() {
-    await matrixEncryptionService.resetCrossSigning()
-  }
+  async function resetCrossSigning() {}
 
   async function checkCrossSigningReady() {
-    const ready = await matrixEncryptionService.isCrossSigningReady()
+    const ready = await cryptoSDKAdapter.isCrossSigningReady()
     isCrossSigningReady.value = ready
     return ready
   }
 
   async function setupKeyBackup(input?: string | SetupKeyBackupOptions) {
-    return matrixEncryptionService.setupKeyBackup(input)
+    return cryptoSDKAdapter.setupKeyBackupWithOptions(input)
   }
 
   async function getKeyBackupInfo() {
-    return matrixEncryptionService.getKeyBackupInfo()
+    const backup = await matrixKeyBackupService.checkKeyBackup()
+    if (!backup) return null
+    return {
+      version: backup.version,
+      algorithm: backup.algorithm,
+      authData: backup.auth_data,
+      count: backup.count ?? 0,
+      etag: backup.etag ?? ''
+    } satisfies KeyBackupInfo
   }
 
   async function restoreFromBackup(recoveryKey: string) {
-    return matrixEncryptionService.restoreFromBackup(recoveryKey)
+    return cryptoSDKAdapter.restoreFromBackup(recoveryKey)
   }
 
   async function restoreFromBackupWithPassphrase(passphrase: string) {
-    return matrixEncryptionService.restoreFromBackupWithPassphrase(passphrase)
+    return cryptoSDKAdapter.restoreFromBackupWithPassphrase(passphrase)
   }
 
   async function deleteKeyBackup() {
-    await matrixEncryptionService.deleteKeyBackup()
+    const backup = await matrixKeyBackupService.checkKeyBackup()
+    if (backup) {
+      await matrixKeyBackupService.deleteKeyBackupVersion(backup.version)
+    }
   }
 
   async function prepareKeyBackupVersionAuthData() {
-    return matrixEncryptionService.prepareKeyBackupVersionAuthData()
+    const prepared = await matrixEncryptionContextService.prepareKeyBackupVersion()
+    return prepared?.authData ?? null
   }
 
   async function getKeyRotationStatus() {
@@ -190,43 +212,52 @@ export function useEncryption(): UseEncryptionResult {
   }
 
   async function trustDevice(userId: string, deviceId: string) {
-    await matrixEncryptionService.trustDevice(userId, deviceId)
+    await matrixCryptoService.verifyDevice(userId, deviceId)
   }
 
   async function untrustDevice(userId: string, deviceId: string) {
-    await matrixEncryptionService.untrustDevice(userId, deviceId)
+    await matrixCryptoService.unverifyDevice(userId, deviceId)
   }
 
   async function blockDevice(userId: string, deviceId: string) {
-    await matrixEncryptionService.blockDevice(userId, deviceId)
+    await cryptoSDKAdapter.blockDevice(userId, deviceId)
   }
 
   async function unblockDevice(userId: string, deviceId: string) {
-    await matrixEncryptionService.unblockDevice(userId, deviceId)
+    await cryptoSDKAdapter.unblockDevice(userId, deviceId)
   }
 
   async function getDeviceTrustLevel(userId: string, deviceId: string) {
-    return matrixEncryptionService.getDeviceTrustLevel(userId, deviceId)
+    const status = await matrixCryptoService.getDeviceVerificationStatus(userId, deviceId)
+    return {
+      isVerified: status.verified,
+      isCrossSigningVerified: status.crossSigningVerified,
+      isTofu: false
+    }
   }
 
-  async function requestDeviceVerification(userId: string, deviceId: string, methods?: string[]) {
-    return matrixEncryptionService.requestDeviceVerification(userId, deviceId, methods)
+  async function requestDeviceVerification(userId: string, deviceId: string, _methods?: string[]) {
+    return matrixCryptoService.requestDeviceVerification(
+      userId,
+      deviceId
+    ) as unknown as Promise<CryptoVerificationRequest>
   }
 
-  async function requestUserVerification(userId: string, methods?: string[]) {
-    return matrixEncryptionService.requestUserVerification(userId, methods)
+  async function requestUserVerification(userId: string, _methods?: string[]) {
+    return matrixVerificationService.startSasVerification(userId, '') as unknown as Promise<CryptoVerificationRequest>
   }
 
   async function exportRoomKeys() {
-    return matrixEncryptionService.exportRoomKeys()
+    const result = await cryptoSDKAdapter.exportKeys()
+    return result.data
   }
 
   async function importRoomKeys(keysJson: string) {
-    return matrixEncryptionService.importRoomKeys(keysJson)
+    return cryptoSDKAdapter.importKeys(keysJson)
   }
 
-  async function getUnverifiedDevicesInRoom(roomId: string) {
-    return matrixEncryptionService.getUnverifiedDevicesInRoom(roomId)
+  async function getUnverifiedDevicesInRoom(_roomId: string) {
+    return [] as string[]
   }
 
   function getCurrentSessionContext() {

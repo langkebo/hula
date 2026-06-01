@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
 import { computed, reactive, shallowReactive, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum, StoresEnum } from '@/enums'
@@ -119,9 +118,9 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       if (!roomId) return
       try {
         await matrixRoomService.setMemberDisplayName(roomId, value)
-        info(`[GroupStore] Successfully set display name to: ${value}`)
+        logger.info(`[GroupStore] Successfully set display name to: ${value}`)
       } catch (e) {
-        error(`[GroupStore] Failed to set display name: ${e}`)
+        logger.error(`[GroupStore] Failed to set display name: ${e}`)
       }
     }
   })
@@ -145,9 +144,9 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
         // Matrix power level: 100=创建者/管理员, 0=普通成员
         const powerLevel = value <= 1 ? 100 : 0
         await matrixRoomService.setMemberPowerLevel(roomId, myUserId, powerLevel)
-        info(`[GroupStore] 成功设置角色: ${value}`)
+        logger.info(`[GroupStore] 成功设置角色: ${value}`)
       } catch (e) {
-        error(`[GroupStore] 设置角色失败: ${e}`)
+        logger.error(`[GroupStore] 设置角色失败: ${e}`)
       }
     }
   })
@@ -201,7 +200,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
   async function loadRoomMembers(roomId: string, forceRefresh = false): Promise<MatrixRoomMember[]> {
     const client = matrixClientService.getClient()
     if (!client) {
-      error('[GroupStore] 客户端未初始化')
+      logger.error('[GroupStore] 客户端未初始化')
       return []
     }
 
@@ -233,10 +232,10 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       }))
 
       membersMap[roomId] = matrixMembers
-      info(`[GroupStore] 加载房间成员成功: ${roomId}, ${matrixMembers.length} 个成员`)
+      logger.info(`[GroupStore] 加载房间成员成功: ${roomId}, ${matrixMembers.length} 个成员`)
       return matrixMembers
     } catch (err) {
-      error(`[GroupStore] 加载房间成员失败: ${err}`)
+      logger.error(`[GroupStore] 加载房间成员失败: ${err}`)
       return []
     } finally {
       loadingRooms.value.delete(roomId)
@@ -284,7 +283,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       groupInfoMap[roomId] = groupInfo
       return groupInfo
     } catch (err) {
-      error(`[GroupStore] 加载群组信息失败: ${err}`)
+      logger.error(`[GroupStore] 加载群组信息失败: ${err}`)
       return null
     }
   }
@@ -292,10 +291,10 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
   async function inviteUser(roomId: string, userId: string): Promise<boolean> {
     try {
       await matrixRoomService.inviteUser(roomId, userId)
-      info(`[GroupStore] 邀请用户成功: ${userId} -> ${roomId}`)
+      logger.info(`[GroupStore] 邀请用户成功: ${userId} -> ${roomId}`)
       return true
     } catch (err) {
-      error(`[GroupStore] 邀请用户失败: ${err}`)
+      logger.error(`[GroupStore] 邀请用户失败: ${err}`)
       return false
     }
   }
@@ -304,10 +303,10 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     try {
       await matrixRoomService.kickUser(roomId, userId, reason)
       membersMap[roomId] = membersMap[roomId]?.filter((m) => m.userId !== userId) || []
-      info(`[GroupStore] 踢出用户成功: ${userId} <- ${roomId}`)
+      logger.info(`[GroupStore] 踢出用户成功: ${userId} <- ${roomId}`)
       return true
     } catch (err) {
-      error(`[GroupStore] 踢出用户失败: ${err}`)
+      logger.error(`[GroupStore] 踢出用户失败: ${err}`)
       return false
     }
   }
@@ -321,10 +320,10 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     try {
       await client.ban(roomId, userId, reason)
       await loadRoomMembers(roomId, true)
-      info(`[GroupStore] 封禁用户成功: ${userId} <- ${roomId}`)
+      logger.info(`[GroupStore] 封禁用户成功: ${userId} <- ${roomId}`)
       return true
     } catch (err) {
-      error(`[GroupStore] 封禁用户失败: ${err}`)
+      logger.error(`[GroupStore] 封禁用户失败: ${err}`)
       return false
     }
   }
@@ -334,10 +333,10 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       await matrixRoomService.leaveRoom(roomId)
       delete membersMap[roomId]
       delete groupInfoMap[roomId]
-      info(`[GroupStore] 离开房间成功: ${roomId}`)
+      logger.info(`[GroupStore] 离开房间成功: ${roomId}`)
       return true
     } catch (err) {
-      error(`[GroupStore] 离开房间失败: ${err}`)
+      logger.error(`[GroupStore] 离开房间失败: ${err}`)
       return false
     }
   }
@@ -348,10 +347,10 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       if (groupInfoMap[roomId]) {
         groupInfoMap[roomId] = { ...groupInfoMap[roomId], name }
       }
-      info(`[GroupStore] 设置房间名称成功: ${name}`)
+      logger.info(`[GroupStore] 设置房间名称成功: ${name}`)
       return true
     } catch (err) {
-      error(`[GroupStore] 设置房间名称失败: ${err}`)
+      logger.error(`[GroupStore] 设置房间名称失败: ${err}`)
       return false
     }
   }
@@ -367,10 +366,10 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       if (groupInfoMap[roomId]) {
         groupInfoMap[roomId] = { ...groupInfoMap[roomId], topic }
       }
-      info(`[GroupStore] 设置房间主题成功`)
+      logger.info(`[GroupStore] 设置房间主题成功`)
       return true
     } catch (err) {
-      error(`[GroupStore] 设置房间主题失败: ${err}`)
+      logger.error(`[GroupStore] 设置房间主题失败: ${err}`)
       return false
     }
   }
@@ -394,10 +393,10 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
 
       await client.sendStateEvent(roomId, EventType.RoomPowerLevels, powerLevels, '')
       await loadRoomMembers(roomId, true)
-      info(`[GroupStore] 设置用户权限成功: ${userId} -> ${powerLevel}`)
+      logger.info(`[GroupStore] 设置用户权限成功: ${userId} -> ${powerLevel}`)
       return true
     } catch (err) {
-      error(`[GroupStore] 设置用户权限失败: ${err}`)
+      logger.error(`[GroupStore] 设置用户权限失败: ${err}`)
       return false
     }
   }
@@ -536,9 +535,9 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       for (const uid of uidList) {
         await matrixRoomService.setMemberPowerLevel(roomId, uid, 100)
       }
-      info(`[GroupStore] 成功添加 ${uidList.length} 个管理员`)
+      logger.info(`[GroupStore] 成功添加 ${uidList.length} 个管理员`)
     } catch (e) {
-      error(`[GroupStore] 添加管理员失败: ${e}`)
+      logger.error(`[GroupStore] 添加管理员失败: ${e}`)
       throw e
     }
   }
@@ -550,9 +549,9 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       for (const uid of uidList) {
         await matrixRoomService.setMemberPowerLevel(roomId, uid, 0)
       }
-      info(`[GroupStore] 成功撤销 ${uidList.length} 个管理员`)
+      logger.info(`[GroupStore] 成功撤销 ${uidList.length} 个管理员`)
     } catch (e) {
-      error(`[GroupStore] 撤销管理员失败: ${e}`)
+      logger.error(`[GroupStore] 撤销管理员失败: ${e}`)
       throw e
     }
   }

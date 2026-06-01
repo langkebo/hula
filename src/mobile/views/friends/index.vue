@@ -50,8 +50,7 @@
 
     <div class="custom-rounded flex-1 bg-[--hula-surface-panel]">
       <!-- 卡片头部 -->
-      <div
-        class="flex items-center justify-between py-15px px-16px text-14px border-b border-gray-100 dark:border-gray-700">
+      <div class="flex items-center justify-between py-15px px-16px text-14px border-b border-[--hula-border-default]">
         <span class="font-medium">{{ t('mobile_contact.my_chat') }}</span>
         <div class="flex items-center gap-8px" @click="toMessage">
           <span
@@ -327,7 +326,7 @@
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--hula-overlay-mobile-sheet);
 }
 
 :deep(.van-cell.van-field::after) {

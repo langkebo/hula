@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { StoresEnum } from '@/enums'
@@ -10,6 +9,9 @@ import type {
   UserReputation
 } from '@/services/matrix/admin'
 import { adminService } from '@/services/matrix/admin'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('moderation')
 
 export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
   const reports = ref<Report[]>([])
@@ -31,11 +33,11 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
     try {
       currentFilters.value = filters ?? {}
       reports.value = await adminService.getModerationReports(filters)
-      info(`[ModerationStore] 获取举报列表成功: ${reports.value.length} 条`)
+      logger.info(`[ModerationStore] 获取举报列表成功: ${reports.value.length} 条`)
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : '获取举报列表失败'
       errorState.value = errorMessage
-      error(`[ModerationStore] 获取举报列表失败: ${errorMessage}`)
+      logger.error(`[ModerationStore] 获取举报列表失败: ${errorMessage}`)
     } finally {
       loading.value = false
     }
@@ -54,12 +56,12 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
       if (index !== -1) {
         reports.value[index].status = 'resolved'
       }
-      info(`[ModerationStore] 处理举报成功: ${reportId} -> ${action}`)
+      logger.info(`[ModerationStore] 处理举报成功: ${reportId} -> ${action}`)
       return true
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : '处理举报失败'
       errorState.value = errorMessage
-      error(`[ModerationStore] 处理举报失败: ${errorMessage}`)
+      logger.error(`[ModerationStore] 处理举报失败: ${errorMessage}`)
       return false
     } finally {
       loading.value = false
@@ -71,10 +73,10 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
       const reputation = await adminService.getUserReputation(userId)
       userReputations.value.set(userId, reputation)
       triggerRef(userReputations)
-      info(`[ModerationStore] 获取用户信誉成功: ${userId} -> ${reputation.level}`)
+      logger.info(`[ModerationStore] 获取用户信誉成功: ${userId} -> ${reputation.level}`)
       return reputation
     } catch (e) {
-      error(`[ModerationStore] 获取用户信誉失败: ${e}`)
+      logger.error(`[ModerationStore] 获取用户信誉失败: ${e}`)
       return null
     }
   }
@@ -87,12 +89,12 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
         reputation.score = score
         triggerRef(userReputations)
       }
-      info(`[ModerationStore] 设置用户信誉成功: ${userId} -> ${score}`)
+      logger.info(`[ModerationStore] 设置用户信誉成功: ${userId} -> ${score}`)
       return true
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : '设置用户信誉失败'
       errorState.value = errorMessage
-      error(`[ModerationStore] 设置用户信誉失败: ${errorMessage}`)
+      logger.error(`[ModerationStore] 设置用户信誉失败: ${errorMessage}`)
       return false
     }
   }
@@ -100,9 +102,9 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
   async function fetchContentFilters(): Promise<void> {
     try {
       contentFilters.value = await adminService.getContentFilters()
-      info(`[ModerationStore] 获取内容过滤器成功: ${contentFilters.value.length} 条`)
+      logger.info(`[ModerationStore] 获取内容过滤器成功: ${contentFilters.value.length} 条`)
     } catch (e) {
-      error(`[ModerationStore] 获取内容过滤器失败: ${e}`)
+      logger.error(`[ModerationStore] 获取内容过滤器失败: ${e}`)
     }
   }
 
@@ -112,12 +114,12 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
     try {
       const newFilter = await adminService.addContentFilter(filter)
       contentFilters.value.push(newFilter)
-      info(`[ModerationStore] 添加内容过滤器成功: ${newFilter.id}`)
+      logger.info(`[ModerationStore] 添加内容过滤器成功: ${newFilter.id}`)
       return newFilter
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : '添加内容过滤器失败'
       errorState.value = errorMessage
-      error(`[ModerationStore] 添加内容过滤器失败: ${errorMessage}`)
+      logger.error(`[ModerationStore] 添加内容过滤器失败: ${errorMessage}`)
       return null
     } finally {
       loading.value = false
@@ -128,12 +130,12 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
     try {
       await adminService.removeContentFilter(filterId)
       contentFilters.value = contentFilters.value.filter((f) => f.id !== filterId)
-      info(`[ModerationStore] 移除内容过滤器成功: ${filterId}`)
+      logger.info(`[ModerationStore] 移除内容过滤器成功: ${filterId}`)
       return true
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : '移除内容过滤器失败'
       errorState.value = errorMessage
-      error(`[ModerationStore] 移除内容过滤器失败: ${errorMessage}`)
+      logger.error(`[ModerationStore] 移除内容过滤器失败: ${errorMessage}`)
       return false
     }
   }
@@ -150,7 +152,7 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
     loading.value = false
     errorState.value = null
     currentFilters.value = {}
-    info('[ModerationStore] Store 已重置')
+    logger.info('[ModerationStore] Store 已重置')
   }
 
   return {

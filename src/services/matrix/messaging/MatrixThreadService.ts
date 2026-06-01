@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { EventType, MatrixEvent, Room } from 'matrix-js-sdk'
 import {
   MatrixContentField,
@@ -7,9 +6,12 @@ import {
   MatrixMsgType,
   MatrixRelType
 } from '@/common/matrixConstants'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { matrixReceiptService } from './MatrixReceiptService'
+
+const logger = createLogger('MatrixThreadService')
 
 type MsgType = string
 
@@ -224,10 +226,10 @@ class MatrixThreadService extends BaseMatrixService {
       }
 
       const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE as EventType, content)
-      info(`[MatrixThread] 创建线程成功: ${rootEventId}`)
+      logger.info(`[MatrixThread] 创建线程成功: ${rootEventId}`)
       return response.event_id
     } catch (err) {
-      error(`[MatrixThread] 创建线程失败: ${err}`)
+      logger.error(`[MatrixThread] 创建线程失败: ${err}`)
       throw err
     }
   }
@@ -258,10 +260,10 @@ class MatrixThreadService extends BaseMatrixService {
       }
 
       const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE as EventType, messageContent)
-      info(`[MatrixThread] 发送线程回复成功: ${threadRootId}`)
+      logger.info(`[MatrixThread] 发送线程回复成功: ${threadRootId}`)
       return response.event_id
     } catch (err) {
-      error(`[MatrixThread] 发送线程回复失败: ${err}`)
+      logger.error(`[MatrixThread] 发送线程回复失败: ${err}`)
       throw err
     }
   }
@@ -525,7 +527,7 @@ class MatrixThreadService extends BaseMatrixService {
 
     if (lastReply) {
       await matrixReceiptService.sendReadReceiptByEventId(roomId, lastReply.getId()!)
-      info(`[MatrixThread] 标记线程已读: ${threadRootId}`)
+      logger.info(`[MatrixThread] 标记线程已读: ${threadRootId}`)
     }
   }
 
@@ -543,9 +545,9 @@ class MatrixThreadService extends BaseMatrixService {
         },
         mute: mute
       })
-      info(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程成功: ${threadRootId}`)
+      logger.info(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程成功: ${threadRootId}`)
     } catch (err) {
-      error(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程失败: ${err}`)
+      logger.error(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程失败: ${err}`)
       throw err
     }
   }
@@ -563,9 +565,9 @@ class MatrixThreadService extends BaseMatrixService {
           event_id: threadRootId
         }
       })
-      info(`[MatrixThread] 冻结线程成功: ${threadRootId}`)
+      logger.info(`[MatrixThread] 冻结线程成功: ${threadRootId}`)
     } catch (err) {
-      error(`[MatrixThread] 冻结线程失败: ${err}`)
+      logger.error(`[MatrixThread] 冻结线程失败: ${err}`)
       throw err
     }
   }
@@ -583,9 +585,9 @@ class MatrixThreadService extends BaseMatrixService {
           event_id: threadRootId
         }
       })
-      info(`[MatrixThread] 解冻线程成功: ${threadRootId}`)
+      logger.info(`[MatrixThread] 解冻线程成功: ${threadRootId}`)
     } catch (err) {
-      error(`[MatrixThread] 解冻线程失败: ${err}`)
+      logger.error(`[MatrixThread] 解冻线程失败: ${err}`)
       throw err
     }
   }
@@ -607,7 +609,7 @@ class MatrixThreadService extends BaseMatrixService {
       }
     }
 
-    info(`[MatrixThread] 获取未读线程: ${unreadThreads.length} 个`)
+    logger.info(`[MatrixThread] 获取未读线程: ${unreadThreads.length} 个`)
     return unreadThreads
   }
 
@@ -673,7 +675,7 @@ class MatrixThreadService extends BaseMatrixService {
       const result = await manager.getGlobalThreadList(limit, from)
       return { threads: result.threads, nextBatch: result.next_batch, total: result.total }
     } catch (err) {
-      error(`[MatrixThread] 获取全局线程列表失败: ${err}`)
+      logger.error(`[MatrixThread] 获取全局线程列表失败: ${err}`)
       return { threads: [], total: 0 }
     }
   }
@@ -688,7 +690,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       return await manager.createGlobalThread(roomId, rootEventId, content)
     } catch (err) {
-      error(`[MatrixThread] 全局创建线程失败: ${err}`)
+      logger.error(`[MatrixThread] 全局创建线程失败: ${err}`)
       throw err
     }
   }
@@ -700,7 +702,7 @@ class MatrixThreadService extends BaseMatrixService {
       const result = await manager.getSubscribedThreads()
       return Array.isArray(result) ? result : []
     } catch (err) {
-      error(`[MatrixThread] 获取已订阅线程失败: ${err}`)
+      logger.error(`[MatrixThread] 获取已订阅线程失败: ${err}`)
       return []
     }
   }
@@ -712,7 +714,7 @@ class MatrixThreadService extends BaseMatrixService {
       const result = await manager.getGlobalUnreadThreads()
       return Array.isArray(result) ? result : []
     } catch (err) {
-      error(`[MatrixThread] 获取全局未读线程失败: ${err}`)
+      logger.error(`[MatrixThread] 获取全局未读线程失败: ${err}`)
       return []
     }
   }
@@ -727,7 +729,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       return await manager.createRoomThread(roomId, rootEventId, content)
     } catch (err) {
-      error(`[MatrixThread] 房间内创建线程失败: ${err}`)
+      logger.error(`[MatrixThread] 房间内创建线程失败: ${err}`)
       throw err
     }
   }
@@ -744,7 +746,7 @@ class MatrixThreadService extends BaseMatrixService {
       const result = await manager.getRoomThreadList(roomId, limit, from, includeAll)
       return { threads: result.threads ?? [], nextBatch: result.next_batch }
     } catch (err) {
-      error(`[MatrixThread] 获取房间线程列表失败: ${err}`)
+      logger.error(`[MatrixThread] 获取房间线程列表失败: ${err}`)
       return { threads: [] }
     }
   }
@@ -755,7 +757,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       return (await manager.searchRoomThreads(roomId, query, limit)) ?? []
     } catch (err) {
-      error(`[MatrixThread] 搜索房间线程失败: ${err}`)
+      logger.error(`[MatrixThread] 搜索房间线程失败: ${err}`)
       return []
     }
   }
@@ -767,7 +769,7 @@ class MatrixThreadService extends BaseMatrixService {
       const result = await manager.getRoomUnreadThreads(roomId)
       return Array.isArray(result) ? result : []
     } catch (err) {
-      error(`[MatrixThread] 获取房间未读线程失败: ${err}`)
+      logger.error(`[MatrixThread] 获取房间未读线程失败: ${err}`)
       return []
     }
   }
@@ -783,7 +785,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       return await manager.getRoomThread(roomId, threadId, includeReplies, replyLimit)
     } catch (err) {
-      error(`[MatrixThread] 获取线程详情失败: ${err}`)
+      logger.error(`[MatrixThread] 获取线程详情失败: ${err}`)
       return null
     }
   }
@@ -794,7 +796,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       await manager.deleteRoomThread(roomId, threadId)
     } catch (err) {
-      error(`[MatrixThread] 删除线程失败: ${err}`)
+      logger.error(`[MatrixThread] 删除线程失败: ${err}`)
       throw err
     }
   }
@@ -805,7 +807,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       await manager.freezeThread(roomId, threadId)
     } catch (err) {
-      error(`[MatrixThread] 冻结线程失败: ${err}`)
+      logger.error(`[MatrixThread] 冻结线程失败: ${err}`)
       throw err
     }
   }
@@ -816,7 +818,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       await manager.unfreezeThread(roomId, threadId)
     } catch (err) {
-      error(`[MatrixThread] 解冻线程失败: ${err}`)
+      logger.error(`[MatrixThread] 解冻线程失败: ${err}`)
       throw err
     }
   }
@@ -832,7 +834,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       return await manager.addThreadReply(roomId, threadId, content, inReplyToEventId)
     } catch (err) {
-      error(`[MatrixThread] 添加线程回复失败: ${err}`)
+      logger.error(`[MatrixThread] 添加线程回复失败: ${err}`)
       throw err
     }
   }
@@ -844,7 +846,7 @@ class MatrixThreadService extends BaseMatrixService {
       const result = await manager.getThreadReplies(roomId, threadId)
       return Array.isArray(result) ? result : []
     } catch (err) {
-      error(`[MatrixThread] 获取线程回复失败: ${err}`)
+      logger.error(`[MatrixThread] 获取线程回复失败: ${err}`)
       return []
     }
   }
@@ -859,7 +861,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       return await manager.subscribeToThread(roomId, threadId, notificationLevel)
     } catch (err) {
-      error(`[MatrixThread] 订阅线程失败: ${err}`)
+      logger.error(`[MatrixThread] 订阅线程失败: ${err}`)
       throw err
     }
   }
@@ -870,7 +872,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       await manager.unsubscribeFromThread(roomId, threadId)
     } catch (err) {
-      error(`[MatrixThread] 取消订阅线程失败: ${err}`)
+      logger.error(`[MatrixThread] 取消订阅线程失败: ${err}`)
       throw err
     }
   }
@@ -881,7 +883,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       return await manager.muteThread(roomId, threadId)
     } catch (err) {
-      error(`[MatrixThread] 静音线程失败: ${err}`)
+      logger.error(`[MatrixThread] 静音线程失败: ${err}`)
       throw err
     }
   }
@@ -897,7 +899,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       return await manager.markThreadRead(roomId, threadId, eventId, originServerTs)
     } catch (err) {
-      error(`[MatrixThread] 标记线程已读失败: ${err}`)
+      logger.error(`[MatrixThread] 标记线程已读失败: ${err}`)
       return null
     }
   }
@@ -908,7 +910,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       return await manager.getThreadStats(roomId, threadId)
     } catch (err) {
-      error(`[MatrixThread] 获取线程统计失败: ${err}`)
+      logger.error(`[MatrixThread] 获取线程统计失败: ${err}`)
       return null
     }
   }
@@ -919,7 +921,7 @@ class MatrixThreadService extends BaseMatrixService {
     try {
       await manager.redactThreadReply(roomId, eventId)
     } catch (err) {
-      error(`[MatrixThread] 撤回线程回复失败: ${err}`)
+      logger.error(`[MatrixThread] 撤回线程回复失败: ${err}`)
       throw err
     }
   }
@@ -937,7 +939,7 @@ class MatrixThreadService extends BaseMatrixService {
       const result = await manager.getLegacyRoomThreadList(userId, roomId, limit, from, includeAll)
       return { chunk: result.chunk ?? [], nextBatch: result.next_batch }
     } catch (err) {
-      error(`[MatrixThread] 获取兼容旧版线程列表失败: ${err}`)
+      logger.error(`[MatrixThread] 获取兼容旧版线程列表失败: ${err}`)
       return { chunk: [] }
     }
   }

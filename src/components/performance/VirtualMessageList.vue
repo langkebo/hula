@@ -237,7 +237,7 @@ defineExpose({
   padding: 8px 16px;
   background: var(--hula-surface-app);
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--hula-shadow-card);
   font-size: 13px;
   color: var(--hula-text-secondary);
 }
@@ -256,7 +256,7 @@ defineExpose({
   border-radius: 16px;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--hula-shadow-card-hover);
   transition: transform 0.2s;
 
   &:hover {

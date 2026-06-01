@@ -1,9 +1,16 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
-import type { CryptoApi, VerificationRequest as SDKVerificationRequest } from '@/types/matrix-extensions'
+import type { KeyVerificationManager } from 'matrix-js-sdk/key-verification'
+import type {
+  CryptoApi,
+  MatrixClientExtended,
+  VerificationRequest as SDKVerificationRequest
+} from '@/types/matrix-extensions'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixVerificationService')
 
 export type VerificationMethod = 'm.sas.v1' | 'm.qr_code.show.v1' | 'm.reciprocate.v1'
 
@@ -68,21 +75,21 @@ class VerificationService extends BaseMatrixService {
         methods: (event.methods || []) as VerificationMethod[],
         timestamp: Date.now()
       })
-      info(`[Verification] 收到验证请求: ${event.transactionId}`)
+      logger.info(`[Verification] 收到验证请求: ${event.transactionId}`)
     }
   }
 
   private readonly finishedListener = (request: SDKVerificationRequest): void => {
     if (request?.transactionId) {
       this.pendingRequests.delete(request.transactionId)
-      info(`[Verification] 验证完成: ${request.transactionId}`)
+      logger.info(`[Verification] 验证完成: ${request.transactionId}`)
     }
   }
 
   private readonly cancelledListener = (request: SDKVerificationRequest): void => {
     if (request?.transactionId) {
       this.pendingRequests.delete(request.transactionId)
-      info(`[Verification] 验证已取消: ${request.transactionId}`)
+      logger.info(`[Verification] 验证已取消: ${request.transactionId}`)
     }
   }
 
@@ -109,13 +116,18 @@ class VerificationService extends BaseMatrixService {
 
   initialize(): void {
     this.setupEventListeners()
-    info('[Verification] 服务已初始化')
+    logger.info('[Verification] 服务已初始化')
   }
 
   private getVerificationClient(): MatrixClient {
     const client = this.getClient()
     this.setupEventListeners(client)
     return client
+  }
+
+  private getSDKKeyVerificationManager(): KeyVerificationManager | null {
+    const client = this.getClient() as unknown as MatrixClientExtended
+    return client.getKeyVerificationManager?.() ?? null
   }
 
   getCurrentUserId(): string | null {
@@ -177,10 +189,10 @@ class VerificationService extends BaseMatrixService {
         })
       }
 
-      info(`[Verification] SAS 验证已开始: ${userId}/${deviceId}`)
+      logger.info(`[Verification] SAS 验证已开始: ${userId}/${deviceId}`)
       return transactionId
     } catch (err) {
-      error(`[Verification] 开始 SAS 验证失败: ${err}`)
+      logger.error(`[Verification] 开始 SAS 验证失败: ${err}`)
       throw err
     }
   }
@@ -203,9 +215,9 @@ class VerificationService extends BaseMatrixService {
 
       const verification = this.getExistingVerificationRequest(crypto, transactionId, 'accept verification request')
       await verification.accept()
-      info(`[Verification] 验证请求已接受: ${transactionId}`)
+      logger.info(`[Verification] 验证请求已接受: ${transactionId}`)
     } catch (err) {
-      error(`[Verification] 接受验证请求失败: ${err}`)
+      logger.error(`[Verification] 接受验证请求失败: ${err}`)
       throw err
     }
   }
@@ -225,9 +237,9 @@ class VerificationService extends BaseMatrixService {
       }
 
       this.pendingRequests.delete(transactionId)
-      info(`[Verification] SAS 已确认: ${transactionId}`)
+      logger.info(`[Verification] SAS 已确认: ${transactionId}`)
     } catch (err) {
-      error(`[Verification] 确认 SAS 失败: ${err}`)
+      logger.error(`[Verification] 确认 SAS 失败: ${err}`)
       throw err
     }
   }
@@ -244,9 +256,9 @@ class VerificationService extends BaseMatrixService {
       await verification.cancel({ reason })
 
       this.pendingRequests.delete(transactionId)
-      info(`[Verification] 验证已取消: ${transactionId}, 原因: ${reason}`)
+      logger.info(`[Verification] 验证已取消: ${transactionId}, 原因: ${reason}`)
     } catch (err) {
-      error(`[Verification] 取消验证失败: ${err}`)
+      logger.error(`[Verification] 取消验证失败: ${err}`)
       throw err
     }
   }
@@ -255,7 +267,7 @@ class VerificationService extends BaseMatrixService {
     try {
       return Array.from(this.pendingRequests.values())
     } catch (err) {
-      error(`[Verification] 获取待处理验证请求失败: ${err}`)
+      logger.error(`[Verification] 获取待处理验证请求失败: ${err}`)
       return []
     }
   }
@@ -271,7 +283,7 @@ class VerificationService extends BaseMatrixService {
       const deviceInfo = await crypto.getDeviceVerificationStatus(userId, deviceId)
       return deviceInfo?.isVerified?.() || false
     } catch (err) {
-      error(`[Verification] 检查设备验证状态失败: ${err}`)
+      logger.error(`[Verification] 检查设备验证状态失败: ${err}`)
       return false
     }
   }
@@ -286,39 +298,41 @@ class VerificationService extends BaseMatrixService {
   }
 
   async getVerificationRequests(): Promise<Array<Record<string, unknown>>> {
-    const client = this.getVerificationClient()
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/keys/device_signing/requests')
-      info('[Verification] 获取验证请求列表成功')
-      return (result as { requests?: Array<Record<string, unknown>> }).requests ?? []
+      const manager = this.getSDKKeyVerificationManager()
+      if (!manager) throw new Error('KeyVerificationManager not available')
+      const result = await manager.getVerificationRequestsHttp()
+      logger.info('[Verification] 获取验证请求列表成功')
+      return (result.requests ?? []) as unknown as Array<Record<string, unknown>>
     } catch (err) {
-      error(`[Verification] 获取验证请求列表失败: ${err}`)
+      logger.error(`[Verification] 获取验证请求列表失败: ${err}`)
       return []
     }
   }
 
   async getQrCodeShow(): Promise<{ qr_code: string; transaction_id: string } | null> {
-    const client = this.getVerificationClient()
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/keys/qr_code/show')
-      info('[Verification] 获取二维码成功')
-      return result as { qr_code: string; transaction_id: string }
+      const manager = this.getSDKKeyVerificationManager()
+      if (!manager) throw new Error('KeyVerificationManager not available')
+      const result = await manager.showQrCodeHttp()
+      logger.info('[Verification] 获取二维码成功')
+      return result as unknown as { qr_code: string; transaction_id: string }
     } catch (err) {
-      error(`[Verification] 获取二维码失败: ${err}`)
+      logger.error(`[Verification] 获取二维码失败: ${err}`)
       return null
     }
   }
 
   async scanQrCode(qrCodeData: string): Promise<boolean> {
-    const client = this.getVerificationClient()
     try {
-      await client.http.authedRequest('POST', '/_matrix/client/v3/keys/qr_code/scan', undefined, {
-        qr_code: qrCodeData
-      })
-      info('[Verification] 扫描二维码成功')
+      const manager = this.getSDKKeyVerificationManager()
+      if (!manager) throw new Error('KeyVerificationManager not available')
+      // biome-ignore lint/suspicious/noExplicitAny: SDK crypto client lacks type definitions for synapse-rust extensions
+      await manager.scanQrCodeHttp({ qr_code: qrCodeData } as any)
+      logger.info('[Verification] 扫描二维码成功')
       return true
     } catch (err) {
-      error(`[Verification] 扫描二维码失败: ${err}`)
+      logger.error(`[Verification] 扫描二维码失败: ${err}`)
       return false
     }
   }

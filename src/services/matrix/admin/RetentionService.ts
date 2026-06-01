@@ -1,8 +1,10 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import type { RetentionPolicy, RoomRetention } from './AdminTypes'
 
-type RetentionDomainSdkGetter = () => Promise<unknown>
+const logger = createLogger('RetentionService')
+
+type RetentionDomainSdkGetter = () => Promise<import('matrix-js-sdk/admin').AdminManager>
 type GetClientGetter = () => MatrixClient
 
 export class AdminRetentionService {
@@ -16,78 +18,65 @@ export class AdminRetentionService {
     _from?: string
   ): Promise<{ policies: Array<Record<string, unknown>>; nextToken?: string }> {
     try {
-      const admin = (await this.sdkAdmin()) as unknown as {
-        getRetentionPolicy(): Promise<unknown>
-      }
+      const admin = await this.sdkAdmin()
       const policy = await admin.getRetentionPolicy()
       return {
-        policies: policy ? [policy as Record<string, unknown>] : [],
+        policies: policy ? [policy as unknown as Record<string, unknown>] : [],
         nextToken: undefined
       }
     } catch (err) {
-      error(`[AdminRetention] 获取保留策略列表失败: ${err}`)
+      logger.error(`[AdminRetention] 获取保留策略列表失败: ${err}`)
       return { policies: [] }
     }
   }
 
   async getRetentionPolicy(roomId: string): Promise<Record<string, unknown> | null> {
     try {
-      const admin = (await this.sdkAdmin()) as unknown as {
-        getRoomRetentionPolicy(roomId: string): Promise<unknown>
-      }
+      const admin = await this.sdkAdmin()
       const policy = await admin.getRoomRetentionPolicy(roomId)
-      return (policy as Record<string, unknown>) ?? null
+      return (policy as unknown as Record<string, unknown>) ?? null
     } catch (err) {
-      error(`[AdminRetention] 获取房间保留策略失败: ${err}`)
+      logger.error(`[AdminRetention] 获取房间保留策略失败: ${err}`)
       return null
     }
   }
 
   async setRetentionPolicy(roomId: string, maxLifetime?: number, minLifetime?: number): Promise<void> {
     try {
-      const admin = (await this.sdkAdmin()) as unknown as {
-        setRoomRetentionPolicy(
-          roomId: string,
-          policy: { max_lifetime?: number; min_lifetime?: number }
-        ): Promise<unknown>
-      }
+      const admin = await this.sdkAdmin()
       const policy: { max_lifetime?: number; min_lifetime?: number } = {}
       if (maxLifetime !== undefined) policy.max_lifetime = maxLifetime
       if (minLifetime !== undefined) policy.min_lifetime = minLifetime
       await admin.setRoomRetentionPolicy(roomId, policy)
-      info(`[AdminRetention] 设置保留策略: ${roomId}`)
+      logger.info(`[AdminRetention] 设置保留策略: ${roomId}`)
     } catch (err) {
-      error(`[AdminRetention] 设置保留策略失败: ${err}`)
+      logger.error(`[AdminRetention] 设置保留策略失败: ${err}`)
       throw err
     }
   }
 
   async deleteRetentionPolicy(_roomId: string): Promise<void> {
-    warn('[AdminRetention] deleteRetentionPolicy: backend does not support deleting a retention policy; no-op.')
+    logger.warn('[AdminRetention] deleteRetentionPolicy: backend does not support deleting a retention policy; no-op.')
   }
 
   async runRetentionTask(): Promise<void> {
     try {
-      const admin = (await this.sdkAdmin()) as unknown as {
-        runRetention(roomId?: string): Promise<unknown>
-      }
+      const admin = await this.sdkAdmin()
       await admin.runRetention()
-      info('[AdminRetention] 保留策略任务已启动')
+      logger.info('[AdminRetention] 保留策略任务已启动')
     } catch (err) {
-      error(`[AdminRetention] 启动保留策略任务失败: ${err}`)
+      logger.error(`[AdminRetention] 启动保留策略任务失败: ${err}`)
       throw err
     }
   }
 
   async getRetentionStatus(): Promise<Record<string, unknown>> {
     try {
-      const admin = (await this.sdkAdmin()) as unknown as {
-        getRetentionStatus(): Promise<unknown>
-      }
+      const admin = await this.sdkAdmin()
       const status = await admin.getRetentionStatus()
-      return (status as Record<string, unknown>) ?? {}
+      return (status as unknown as Record<string, unknown>) ?? {}
     } catch (err) {
-      error(`[AdminRetention] 获取保留策略状态失败: ${err}`)
+      logger.error(`[AdminRetention] 获取保留策略状态失败: ${err}`)
       return {}
     }
   }
@@ -109,7 +98,7 @@ export class AdminRetentionService {
           : undefined
       }
     } catch (err) {
-      error(`[AdminRetention] 获取保留策略失败: ${err}`)
+      logger.error(`[AdminRetention] 获取保留策略失败: ${err}`)
       return { roomId }
     }
   }
@@ -119,9 +108,9 @@ export class AdminRetentionService {
     const client = this.getClient()
     try {
       await client.sendStateEvent(roomId, 'm.room.retention', policy, '')
-      info(`[AdminRetention] 设置保留策略成功: ${roomId}`)
+      logger.info(`[AdminRetention] 设置保留策略成功: ${roomId}`)
     } catch (err) {
-      error(`[AdminRetention] 设置保留策略失败: ${err}`)
+      logger.error(`[AdminRetention] 设置保留策略失败: ${err}`)
       throw err
     }
   }
@@ -131,9 +120,9 @@ export class AdminRetentionService {
     const client = this.getClient()
     try {
       await client.redact(roomId, '')
-      info(`[AdminRetention] 删除保留策略成功: ${roomId}`)
+      logger.info(`[AdminRetention] 删除保留策略成功: ${roomId}`)
     } catch (err) {
-      error(`[AdminRetention] 删除保留策略失败: ${err}`)
+      logger.error(`[AdminRetention] 删除保留策略失败: ${err}`)
       throw err
     }
   }
@@ -145,7 +134,7 @@ export class AdminRetentionService {
       const config = await client.getServerRetention()
       return config || null
     } catch (err) {
-      error(`[AdminRetention] 获取默认保留策略失败: ${err}`)
+      logger.error(`[AdminRetention] 获取默认保留策略失败: ${err}`)
       return null
     }
   }

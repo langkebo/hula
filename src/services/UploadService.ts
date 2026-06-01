@@ -1,6 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { UploadSceneEnum } from '@/enums'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('UploadService')
 
 export interface OssTokenResponse {
   uploadUrl: string
@@ -46,7 +48,7 @@ class UploadService {
 
       if (response.status === 404) {
         // upload/token 端点不可用，降级到标准 Matrix 上传方式
-        info('[Upload] upload/token 端点不可用(404)，将使用默认上传方式')
+        logger.info('[Upload] upload/token 端点不可用(404)，将使用默认上传方式')
         return null
       }
 
@@ -55,10 +57,10 @@ class UploadService {
       }
 
       const data = await response.json()
-      info('[Upload] 获取上传令牌成功')
+      logger.info('[Upload] 获取上传令牌成功')
       return data
     } catch (err) {
-      error(`[Upload] 获取上传令牌失败: ${err}`)
+      logger.error(`[Upload] 获取上传令牌失败: ${err}`)
       return null
     }
   }
@@ -81,10 +83,10 @@ class UploadService {
       }
 
       const data = await response.json()
-      info('[Upload] 获取上传提供商成功')
+      logger.info('[Upload] 获取上传提供商成功')
       return data
     } catch (err) {
-      error(`[Upload] 获取上传提供商失败: ${err}`)
+      logger.error(`[Upload] 获取上传提供商失败: ${err}`)
       // 返回默认值
       return { provider: 'default' }
     }

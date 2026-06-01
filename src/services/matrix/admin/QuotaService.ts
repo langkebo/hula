@@ -1,7 +1,9 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from '@/services/matrix/sdk'
+import { createLogger } from '@/utils/Logger'
 import type { QuotaAlert, QuotaConfig, QuotaStats, QuotaStatus, ServerQuota } from './AdminTypes'
+
+const logger = createLogger('QuotaService')
 
 interface QuotaManager {
   checkQuota(): Promise<QuotaStatus>
@@ -40,10 +42,10 @@ export class AdminQuotaService {
   async checkQuota(): Promise<QuotaStatus> {
     try {
       const status = await this.quotaManager.checkQuota()
-      info('[AdminQuota] 配额检查完成')
+      logger.info('[AdminQuota] 配额检查完成')
       return status
     } catch (err) {
-      error(`[AdminQuota] 配额检查失败: ${err}`)
+      logger.error(`[AdminQuota] 配额检查失败: ${err}`)
       throw err
     }
   }
@@ -51,10 +53,10 @@ export class AdminQuotaService {
   async getQuotaStats(): Promise<QuotaStats> {
     try {
       const stats = await this.quotaManager.getQuotaStats()
-      info('[AdminQuota] 获取配额统计成功')
+      logger.info('[AdminQuota] 获取配额统计成功')
       return stats
     } catch (err) {
-      error(`[AdminQuota] 获取配额统计失败: ${err}`)
+      logger.error(`[AdminQuota] 获取配额统计失败: ${err}`)
       throw err
     }
   }
@@ -62,10 +64,10 @@ export class AdminQuotaService {
   async getQuotaAlerts(): Promise<QuotaAlert[]> {
     try {
       const alerts = await this.quotaManager.getQuotaAlerts()
-      info(`[AdminQuota] 获取配额告警成功: ${alerts.length} 条`)
+      logger.info(`[AdminQuota] 获取配额告警成功: ${alerts.length} 条`)
       return alerts
     } catch (err) {
-      error(`[AdminQuota] 获取配额告警失败: ${err}`)
+      logger.error(`[AdminQuota] 获取配额告警失败: ${err}`)
       throw err
     }
   }
@@ -73,10 +75,10 @@ export class AdminQuotaService {
   async getQuotaConfigs(): Promise<QuotaConfig[]> {
     try {
       const configs = await this.quotaManager.getQuotaConfigs()
-      info('[AdminQuota] 获取配额配置成功')
+      logger.info('[AdminQuota] 获取配额配置成功')
       return configs
     } catch (err) {
-      error(`[AdminQuota] 获取配额配置失败: ${err}`)
+      logger.error(`[AdminQuota] 获取配额配置失败: ${err}`)
       throw err
     }
   }
@@ -84,9 +86,9 @@ export class AdminQuotaService {
   async setUserQuota(userId: string, quota: number): Promise<void> {
     try {
       await this.quotaManager.setUserQuota(userId, quota)
-      info(`[AdminQuota] 设置用户配额成功: ${userId} -> ${quota}`)
+      logger.info(`[AdminQuota] 设置用户配额成功: ${userId} -> ${quota}`)
     } catch (err) {
-      error(`[AdminQuota] 设置用户配额失败: ${err}`)
+      logger.error(`[AdminQuota] 设置用户配额失败: ${err}`)
       throw err
     }
   }
@@ -94,10 +96,10 @@ export class AdminQuotaService {
   async getServerQuota(): Promise<ServerQuota> {
     try {
       const serverQuota = await this.quotaManager.getServerQuota()
-      info('[AdminQuota] 获取服务器配额成功')
+      logger.info('[AdminQuota] 获取服务器配额成功')
       return serverQuota
     } catch (err) {
-      error(`[AdminQuota] 获取服务器配额失败: ${err}`)
+      logger.error(`[AdminQuota] 获取服务器配额失败: ${err}`)
       throw err
     }
   }
@@ -108,10 +110,10 @@ export class AdminQuotaService {
         throw new Error('[AdminQuota] upload_size_limit_unavailable')
       }
       const limit = await this.quotaManager.getUploadSizeLimit(throwOnError)
-      info(`[AdminQuota] 获取上传大小限制成功: ${limit}`)
+      logger.info(`[AdminQuota] 获取上传大小限制成功: ${limit}`)
       return limit
     } catch (err) {
-      error(`[AdminQuota] 获取上传大小限制失败: ${err}`)
+      logger.error(`[AdminQuota] 获取上传大小限制失败: ${err}`)
       if (throwOnError) throw err
       return 10 * 1024 * 1024
     }
@@ -123,10 +125,10 @@ export class AdminQuotaService {
         throw new Error('[AdminQuota] upload_file_size_limit_unavailable')
       }
       const limit = await this.quotaManager.getUploadFileSizeLimit(throwOnError)
-      info(`[AdminQuota] 获取文件上传大小限制成功: ${limit}`)
+      logger.info(`[AdminQuota] 获取文件上传大小限制成功: ${limit}`)
       return limit
     } catch (err) {
-      error(`[AdminQuota] 获取文件上传大小限制失败: ${err}`)
+      logger.error(`[AdminQuota] 获取文件上传大小限制失败: ${err}`)
       if (throwOnError) throw err
       return 10 * 1024 * 1024
     }
@@ -138,10 +140,10 @@ export class AdminQuotaService {
         throw new Error('[AdminQuota] user_storage_usage_unavailable')
       }
       const usage = await this.quotaManager.getUserStorageUsage(throwOnError)
-      info(`[AdminQuota] 获取用户存储使用量成功: ${usage?.size ?? 0}`)
+      logger.info(`[AdminQuota] 获取用户存储使用量成功: ${usage?.size ?? 0}`)
       return usage
     } catch (err) {
-      error(`[AdminQuota] 获取用户存储使用量失败: ${err}`)
+      logger.error(`[AdminQuota] 获取用户存储使用量失败: ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -153,10 +155,10 @@ export class AdminQuotaService {
         throw new Error('[AdminQuota] has_storage_space_unavailable')
       }
       const result = await this.quotaManager.hasStorageSpace(requiredBytes)
-      info(`[AdminQuota] 检查存储空间成功: ${requiredBytes} -> ${result}`)
+      logger.info(`[AdminQuota] 检查存储空间成功: ${requiredBytes} -> ${result}`)
       return result
     } catch (err) {
-      error(`[AdminQuota] 检查存储空间失败: ${err}`)
+      logger.error(`[AdminQuota] 检查存储空间失败: ${err}`)
       return false
     }
   }

@@ -1,5 +1,7 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MediaService')
 
 type RawMediaItem = {
   media_id?: string
@@ -53,7 +55,7 @@ export class AdminMediaService {
         nextToken: result?.next_token
       }
     } catch (err) {
-      error(`[AdminMedia] 获取媒体列表失败: ${err}`)
+      logger.error(`[AdminMedia] 获取媒体列表失败: ${err}`)
       return { media: [] }
     }
   }
@@ -62,9 +64,9 @@ export class AdminMediaService {
     try {
       const admin = await this.sdkAdmin()
       await admin.deleteMedia(mediaId)
-      info(`[AdminMedia] 媒体已删除: ${mediaId}`)
+      logger.info(`[AdminMedia] 媒体已删除: ${mediaId}`)
     } catch (err) {
-      error(`[AdminMedia] 删除媒体失败: ${err}`)
+      logger.error(`[AdminMedia] 删除媒体失败: ${err}`)
       throw err
     }
   }
@@ -80,10 +82,10 @@ export class AdminMediaService {
         before_ts: beforeTs,
         include_profiles: includeProfiles
       })
-      info(`[AdminMedia] 清理远程媒体成功: ${(result as { deleted?: number }).deleted ?? 0} 个`)
+      logger.info(`[AdminMedia] 清理远程媒体成功: ${(result as { deleted?: number }).deleted ?? 0} 个`)
       return { deleted: (result as { deleted?: number }).deleted ?? 0 }
     } catch (err) {
-      error(`[AdminMedia] 清理远程媒体失败: ${err}`)
+      logger.error(`[AdminMedia] 清理远程媒体失败: ${err}`)
       throw err
     }
   }
@@ -92,10 +94,10 @@ export class AdminMediaService {
     try {
       const admin = await this.sdkAdmin()
       const result = (await admin.purgeMediaCache?.(beforeTs)) ?? {}
-      info(`[AdminMedia] 清理媒体缓存: ${result?.deleted ?? 0}个`)
+      logger.info(`[AdminMedia] 清理媒体缓存: ${result?.deleted ?? 0}个`)
       return { deleted: result?.deleted ?? 0 }
     } catch (err) {
-      error(`[AdminMedia] 清理媒体缓存失败: ${err}`)
+      logger.error(`[AdminMedia] 清理媒体缓存失败: ${err}`)
       throw err
     }
   }
@@ -105,7 +107,7 @@ export class AdminMediaService {
       const admin = await this.sdkAdmin()
       return (await admin.getMediaStats?.()) ?? null
     } catch (err) {
-      error(`[AdminMedia] 获取媒体统计失败: ${err}`)
+      logger.error(`[AdminMedia] 获取媒体统计失败: ${err}`)
       return null
     }
   }

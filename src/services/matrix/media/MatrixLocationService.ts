@@ -1,6 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { EventType, IContent, MatrixEvent } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixLocationService')
 
 export interface LocationData {
   latitude: number
@@ -55,7 +57,7 @@ class MatrixLocationService {
           })
         },
         (err) => {
-          error(`[Location] 获取位置失败: ${err.message}`)
+          logger.error(`[Location] 获取位置失败: ${err.message}`)
           reject(err)
         },
         {
@@ -87,10 +89,10 @@ class MatrixLocationService {
       }
 
       const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
-      info(`[Location] 发送位置成功: ${roomId}`)
+      logger.info(`[Location] 发送位置成功: ${roomId}`)
       return response.event_id
     } catch (err) {
-      error(`[Location] 发送位置失败: ${err}`)
+      logger.error(`[Location] 发送位置失败: ${err}`)
       throw err
     }
   }
@@ -121,10 +123,10 @@ class MatrixLocationService {
       }
 
       const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
-      info(`[Location] 开始实时位置分享: ${roomId}`)
+      logger.info(`[Location] 开始实时位置分享: ${roomId}`)
       return response.event_id
     } catch (err) {
-      error(`[Location] 开始实时位置分享失败: ${err}`)
+      logger.error(`[Location] 开始实时位置分享失败: ${err}`)
       throw err
     }
   }
@@ -157,9 +159,9 @@ class MatrixLocationService {
       }
 
       await client.sendEvent(roomId, 'm.room.message' as EventType, content)
-      info(`[Location] 更新实时位置: ${roomId}`)
+      logger.info(`[Location] 更新实时位置: ${roomId}`)
     } catch (err) {
-      error(`[Location] 更新实时位置失败: ${err}`)
+      logger.error(`[Location] 更新实时位置失败: ${err}`)
       throw err
     }
   }

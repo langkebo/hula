@@ -749,14 +749,14 @@ async function handleReject() {
 }
 
 .device-info-card {
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: var(--hula-encryption-surface-subtle);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
 }
 
 :deep(.dark) .device-info-card {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--hula-encryption-surface-dark);
 }
 
 .info-row {
@@ -766,7 +766,7 @@ async function handleReject() {
 }
 
 .info-row:not(:last-child) {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--hula-border-muted);
 }
 
 :deep(.dark) .info-row:not(:last-child) {
@@ -807,12 +807,12 @@ async function handleReject() {
   font-size: 18px;
   font-weight: 500;
   padding: 8px 12px;
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: var(--hula-encryption-surface-subtle);
   border-radius: 4px;
 }
 
 :deep(.dark) .fingerprint-chunk {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--hula-encryption-surface-dark);
 }
 
 .key-hint {

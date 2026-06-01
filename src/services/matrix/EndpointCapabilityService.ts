@@ -1,6 +1,8 @@
-import { info, warn } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from './MatrixClientService'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
+
+const logger = createLogger('EndpointCapabilityService')
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
@@ -72,23 +74,23 @@ class EndpointCapabilityService {
       // 401/403 = 端点存在但权限问题（仍标记可用）
       // 其他 4xx（如 404）= 端点不存在
       if (response.ok || response.status === 405 || response.status === 401 || response.status === 403) {
-        info(`[EndpointCapability] ${method} ${path} 可用 (HTTP ${response.status})`)
+        logger.info(`[EndpointCapability] ${method} ${path} 可用 (HTTP ${response.status})`)
         endpointCache.set(key, { available: true, checkedAt: now })
         return true
       }
 
       if (response.status >= 500) {
-        warn(`[EndpointCapability] ${method} ${path} 服务端错误 ${response.status}，不缓存结果`)
+        logger.warn(`[EndpointCapability] ${method} ${path} 服务端错误 ${response.status}，不缓存结果`)
         return false
       }
 
       // 404 和其他 4xx = 端点不可用
-      warn(`[EndpointCapability] ${method} ${path} 不可用: Server returned ${response.status} error`)
+      logger.warn(`[EndpointCapability] ${method} ${path} 不可用: Server returned ${response.status} error`)
       endpointCache.set(key, { available: false, checkedAt: now })
       return false
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
-      warn(`[EndpointCapability] ${method} ${path} 检查失败: ${errMsg}`)
+      logger.warn(`[EndpointCapability] ${method} ${path} 检查失败: ${errMsg}`)
       // 网络错误不缓存，下次重试
       return false
     }

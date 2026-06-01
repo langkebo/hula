@@ -1,6 +1,6 @@
 import { NotificationTypeEnum } from '@/enums'
+import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 import { MatrixRequestDeduper } from '@/services/matrix/MatrixRequestDeduper'
-import { MatrixRequestHelper } from '@/services/matrix/MatrixRequestHelper'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixPushService } from './MatrixPushService'
@@ -75,13 +75,13 @@ class MatrixRoomNotificationService extends BaseMatrixService {
     if (!roomId || !this.isUnreadCountSupported) return null
 
     return MatrixRequestDeduper.dedupe(`room-unread-count:${roomId}`, async () => {
-      const path = MatrixRequestHelper.buildRoomPath(roomId, 'unread_count')
+      const path = matrixHttpClient.buildRoomPath(roomId, 'unread_count')
 
       try {
-        const result = await MatrixRequestHelper.safeGet<Partial<RoomUnreadCountPayload>>(path, undefined, {
+        const result = await matrixHttpClient.get<Partial<RoomUnreadCountPayload>>(path, {
           logPrefix: 'RoomUnreadCount',
           throwOnError: true,
-          quiet: true // 初始尝试静默，如果失败且为 404 则标记为不支持
+          quiet: true
         })
 
         if (!result) return null

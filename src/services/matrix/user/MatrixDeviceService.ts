@@ -5,9 +5,11 @@
  * 参考 API 契约: device.md
  */
 
-import { error, info } from '@tauri-apps/plugin-log'
 import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('MatrixDeviceService')
 
 /**
  * 设备信息接口
@@ -86,16 +88,16 @@ class MatrixDeviceService extends BaseMatrixService {
       if (deviceManager) {
         // 使用 DeviceManager
         const devices = await deviceManager.getDevices()
-        info(`[DeviceService] 获取设备列表成功: ${devices.length} 个设备`)
+        logger.info(`[DeviceService] 获取设备列表成功: ${devices.length} 个设备`)
         return devices
       } else {
         // 降级到直接 HTTP 调用
         const response = (await client.http.authedRequest('GET', '/_matrix/client/v3/devices')) as DevicesResponse
-        info(`[DeviceService] 获取设备列表成功: ${response.devices.length} 个设备`)
+        logger.info(`[DeviceService] 获取设备列表成功: ${response.devices.length} 个设备`)
         return response.devices
       }
     } catch (err) {
-      error(`[DeviceService] 获取设备列表失败: ${err}`)
+      logger.error(`[DeviceService] 获取设备列表失败: ${err}`)
       throw err
     }
   }
@@ -114,7 +116,7 @@ class MatrixDeviceService extends BaseMatrixService {
       if (deviceManager) {
         // 使用 DeviceManager
         const device = await deviceManager.getDevice(deviceId)
-        info(`[DeviceService] 获取设备详情成功: ${deviceId}`)
+        logger.info(`[DeviceService] 获取设备详情成功: ${deviceId}`)
         return device
       } else {
         // 降级到直接 HTTP 调用
@@ -122,7 +124,7 @@ class MatrixDeviceService extends BaseMatrixService {
           'GET',
           `/_matrix/client/v3/devices/${encodeURIComponent(deviceId)}`
         )) as DeviceDetailResponse
-        info(`[DeviceService] 获取设备详情成功: ${deviceId}`)
+        logger.info(`[DeviceService] 获取设备详情成功: ${deviceId}`)
         // 返回嵌套的 device 对象或扁平字段
         return (
           response.device || {
@@ -134,7 +136,7 @@ class MatrixDeviceService extends BaseMatrixService {
         )
       }
     } catch (err) {
-      error(`[DeviceService] 获取设备详情失败: ${deviceId}, ${err}`)
+      logger.error(`[DeviceService] 获取设备详情失败: ${deviceId}, ${err}`)
       throw err
     }
   }
@@ -154,7 +156,7 @@ class MatrixDeviceService extends BaseMatrixService {
       if (deviceManager) {
         // 使用 DeviceManager
         await deviceManager.updateDevice(deviceId, displayName)
-        info(`[DeviceService] 更新设备成功: ${deviceId}`)
+        logger.info(`[DeviceService] 更新设备成功: ${deviceId}`)
         return {
           device_id: deviceId,
           display_name: displayName,
@@ -168,11 +170,11 @@ class MatrixDeviceService extends BaseMatrixService {
           undefined,
           { display_name: displayName }
         )) as DeviceUpdateResponse
-        info(`[DeviceService] 更新设备成功: ${deviceId}`)
+        logger.info(`[DeviceService] 更新设备成功: ${deviceId}`)
         return response
       }
     } catch (err) {
-      error(`[DeviceService] 更新设备失败: ${deviceId}, ${err}`)
+      logger.error(`[DeviceService] 更新设备失败: ${deviceId}, ${err}`)
       throw err
     }
   }
@@ -191,7 +193,7 @@ class MatrixDeviceService extends BaseMatrixService {
       if (deviceManager) {
         // 使用 DeviceManager（会自动保护当前设备）
         await deviceManager.deleteDevice(deviceId, auth)
-        info(`[DeviceService] 删除设备成功: ${deviceId}`)
+        logger.info(`[DeviceService] 删除设备成功: ${deviceId}`)
       } else {
         // 降级到直接 HTTP 调用
         await client.http.authedRequest(
@@ -200,10 +202,10 @@ class MatrixDeviceService extends BaseMatrixService {
           undefined,
           auth ? { auth } : undefined
         )
-        info(`[DeviceService] 删除设备成功: ${deviceId}`)
+        logger.info(`[DeviceService] 删除设备成功: ${deviceId}`)
       }
     } catch (err) {
-      error(`[DeviceService] 删除设备失败: ${deviceId}, ${err}`)
+      logger.error(`[DeviceService] 删除设备失败: ${deviceId}, ${err}`)
       throw err
     }
   }
@@ -222,17 +224,17 @@ class MatrixDeviceService extends BaseMatrixService {
       if (deviceManager) {
         // 使用 DeviceManager
         await deviceManager.deleteDevices(deviceIds, auth)
-        info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)
+        logger.info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)
       } else {
         // 降级到直接 HTTP 调用
         await client.http.authedRequest('POST', '/_matrix/client/v3/delete_devices', undefined, {
           devices: deviceIds,
           auth
         })
-        info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)
+        logger.info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)
       }
     } catch (err) {
-      error(`[DeviceService] 批量删除设备失败: ${err}`)
+      logger.error(`[DeviceService] 批量删除设备失败: ${err}`)
       throw err
     }
   }
@@ -257,7 +259,7 @@ class MatrixDeviceService extends BaseMatrixService {
               ? request.from
               : undefined
         const updates = await deviceManager.getDeviceListUpdates(request.users, sinceToken)
-        info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
+        logger.info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
         return updates
       } else {
         // 降级到直接 HTTP 调用
@@ -267,11 +269,11 @@ class MatrixDeviceService extends BaseMatrixService {
           undefined,
           request
         )) as DeviceListUpdatesResponse
-        info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
+        logger.info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
         return response
       }
     } catch (err) {
-      error(`[DeviceService] 获取设备变更失败: ${err}`)
+      logger.error(`[DeviceService] 获取设备变更失败: ${err}`)
       throw err
     }
   }
@@ -286,7 +288,7 @@ class MatrixDeviceService extends BaseMatrixService {
       const client = this.getClient()
       return client.getDeviceId() || null
     } catch (err) {
-      error(`[DeviceService] 获取当前设备 ID 失败: ${err}`)
+      logger.error(`[DeviceService] 获取当前设备 ID 失败: ${err}`)
       return null
     }
   }
@@ -306,10 +308,10 @@ class MatrixDeviceService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/room_keys/request')
-      info('[DeviceService] 获取密钥请求列表成功')
+      logger.info('[DeviceService] 获取密钥请求列表成功')
       return (result as { requests?: Array<Record<string, unknown>> }).requests ?? []
     } catch (err) {
-      error(`[DeviceService] 获取密钥请求列表失败: ${err}`)
+      logger.error(`[DeviceService] 获取密钥请求列表失败: ${err}`)
       return []
     }
   }
@@ -318,10 +320,10 @@ class MatrixDeviceService extends BaseMatrixService {
     const client = this.getClient()
     try {
       await client.http.authedRequest('DELETE', `/_matrix/client/v3/room_keys/request/${encodeURIComponent(requestId)}`)
-      info(`[DeviceService] 删除密钥请求成功: ${requestId}`)
+      logger.info(`[DeviceService] 删除密钥请求成功: ${requestId}`)
       return true
     } catch (err) {
-      error(`[DeviceService] 删除密钥请求失败: ${err}`)
+      logger.error(`[DeviceService] 删除密钥请求失败: ${err}`)
       return false
     }
   }

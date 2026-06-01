@@ -1,6 +1,8 @@
 import { invoke } from '@tauri-apps/api/core'
-import { error, info } from '@tauri-apps/plugin-log'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ConfigService')
 
 export interface IceServerConfig {
   urls: string[]
@@ -39,10 +41,10 @@ class ConfigService {
     try {
       const config = await invoke<AppConfig>('get_config')
       this.configCache = config
-      info('[Config] 从 Tauri 后端加载配置成功')
+      logger.info('[Config] 从 Tauri 后端加载配置成功')
       return config
     } catch (err) {
-      error(`[Config] 从 Tauri 后端加载配置失败: ${err}`)
+      logger.error(`[Config] 从 Tauri 后端加载配置失败: ${err}`)
       this.configCache = {}
       return {}
     }

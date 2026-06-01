@@ -13,7 +13,8 @@
       <div v-else class="flex-1 min-h-0">
         <chat-footer :detail-id="globalStore.currentSession?.detailId"></chat-footer>
       </div>
-      <div class="flex items-center justify-center py-4px border-t border-gray-100 bg-white">
+      <div
+        class="flex items-center justify-center py-4px border-t border-[--hula-border-default] bg-[--hula-surface-panel]">
         <van-button
           size="small"
           :type="showVoicePanel ? 'primary' : 'default'"
@@ -115,7 +116,7 @@ defineExpose({ root })
 }
 
 .footer-bar-shadow {
-  box-shadow: 0 -3px 6px -4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--hula-shadow-top-bar);
 }
 
 .voice-panel-container {

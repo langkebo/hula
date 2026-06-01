@@ -209,6 +209,6 @@ if (props.lazy) {
   left: 0;
   right: 0;
   padding: 4px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.5));
+  background: linear-gradient(transparent, var(--hula-overlay-mask-default));
 }
 </style>

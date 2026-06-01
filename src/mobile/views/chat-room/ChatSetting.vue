@@ -15,7 +15,9 @@
             <div class="flex py-10px rounded-10px w-full items-center gap-10px" @click="clickInfo">
               <!-- 群头像 -->
               <div class="flex justify-center">
-                <div class="rounded-full relative bg-white w-38px h-38px overflow-hidden" style="margin-left: 10px">
+                <div
+                  class="rounded-full relative bg-[--hula-surface-panel] w-38px h-38px overflow-hidden"
+                  style="margin-left: 10px">
                   <img
                     class="absolute size-38px rounded-full object-cover"
                     style="top: 50%; left: 50%; transform: translate(-50%, -50%)"
@@ -132,7 +134,7 @@
                 </div>
               </div>
             </div>
-            <div class="mx-15px border-b border-gray-100 dark:border-gray-700"></div>
+            <div class="mx-15px border-b border-[--hula-border-default]"></div>
             <!-- 公告内容 -->
             <div @click="goToNotice" v-if="isGroup" class="flex flex-col text-14px gap-10px p-15px">
               <div>{{ t('mobile_chat_setting.group_notice.title') }}</div>
@@ -141,7 +143,7 @@
               </div>
             </div>
 
-            <div v-if="isGroup" class="mx-15px border-b border-gray-100 dark:border-gray-700"></div>
+            <div v-if="isGroup" class="mx-15px border-b border-[--hula-border-default]"></div>
 
             <!-- 群名称 -->
             <div class="flex justify-between p-15px items-center">
@@ -157,7 +159,7 @@
               </div>
             </div>
 
-            <div class="mx-15px border-b border-gray-100 dark:border-gray-700"></div>
+            <div class="mx-15px border-b border-[--hula-border-default]"></div>
 
             <!-- 群别名 -->
             <div v-if="isGroup" class="flex justify-between p-15px items-center">
@@ -198,7 +200,7 @@
               <div class="text-14px">{{ t('mobile_chat_setting.pintop') }}</div>
               <van-switch :model-value="!!activeItem?.top" @update:model-value="handleTop" size="20px" />
             </div>
-            <div class="mx-15px border-b border-gray-100 dark:border-gray-700"></div>
+            <div class="mx-15px border-b border-[--hula-border-default]"></div>
             <div class="flex justify-between p-15px items-center">
               <div class="text-14px">{{ t('mobile_chat_setting.silent') }}</div>
               <van-switch

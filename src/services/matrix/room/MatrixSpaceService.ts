@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { Room, Visibility } from 'matrix-js-sdk'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
@@ -92,7 +91,7 @@ class SpaceService extends BaseMatrixService {
         }
       ])
     } catch (err) {
-      error(`[Space] 通过父空间回退树路径失败: ${spaceId}, ${err}`)
+      logger.error(`[Space] 通过父空间回退树路径失败: ${spaceId}, ${err}`)
       return []
     }
   }
@@ -143,7 +142,7 @@ class SpaceService extends BaseMatrixService {
         ]
       })
 
-      info(`[Space] Space 已创建: ${room_id}`)
+      logger.info(`[Space] Space 已创建: ${room_id}`)
 
       // Register with SpaceManager on the backend
       try {
@@ -155,9 +154,9 @@ class SpaceService extends BaseMatrixService {
           avatar_url: options.avatarUrl,
           visibility: options.visibility === 'public' ? 'public' : 'private'
         })
-        info(`[Space] Space 已注册到后端: ${room_id}`)
+        logger.info(`[Space] Space 已注册到后端: ${room_id}`)
       } catch (mgrErr) {
-        info(`[Space] SpaceManager 注册失败（非致命）: ${mgrErr}`)
+        logger.info(`[Space] SpaceManager 注册失败（非致命）: ${mgrErr}`)
       }
 
       return {
@@ -169,7 +168,7 @@ class SpaceService extends BaseMatrixService {
         childCount: 0
       }
     } catch (err) {
-      error(`[Space] 创建 Space 失败: ${err}`)
+      logger.error(`[Space] 创建 Space 失败: ${err}`)
       throw err
     }
   }
@@ -202,7 +201,7 @@ class SpaceService extends BaseMatrixService {
       // Fallback to local Room-based approach
       const errMsg = err instanceof Error ? err.message : String(err)
       if (!errMsg.includes('M_NOT_FOUND') && !errMsg.includes('404')) {
-        error(`[Space] SpaceManager 获取 Space 失败: ${err}`)
+        logger.error(`[Space] SpaceManager 获取 Space 失败: ${err}`)
       }
       try {
         const client = this.getClient()
@@ -210,7 +209,7 @@ class SpaceService extends BaseMatrixService {
         if (!room) return null
         return this.roomToSpaceInfo(room)
       } catch (fallbackErr) {
-        error(`[Space] 回退获取 Space 失败: ${fallbackErr}`)
+        logger.error(`[Space] 回退获取 Space 失败: ${fallbackErr}`)
         return null
       }
     }
@@ -224,10 +223,10 @@ class SpaceService extends BaseMatrixService {
         topic: options.topic,
         avatar_url: options.avatarUrl
       })
-      info(`[Space] Space 已更新: ${spaceId}`)
+      logger.info(`[Space] Space 已更新: ${spaceId}`)
     } catch (err) {
       // Fallback to raw client calls
-      info(`[Space] SpaceManager 更新失败，回退到客户端调用: ${err}`)
+      logger.info(`[Space] SpaceManager 更新失败，回退到客户端调用: ${err}`)
       const client = this.getClient()
       try {
         if (options.name) {
@@ -239,9 +238,9 @@ class SpaceService extends BaseMatrixService {
         if (options.avatarUrl) {
           await client.setRoomAvatar(spaceId, options.avatarUrl)
         }
-        info(`[Space] Space 已更新（回退）: ${spaceId}`)
+        logger.info(`[Space] Space 已更新（回退）: ${spaceId}`)
       } catch (fallbackErr) {
-        error(`[Space] 更新 Space 失败: ${fallbackErr}`)
+        logger.error(`[Space] 更新 Space 失败: ${fallbackErr}`)
         throw fallbackErr
       }
     }
@@ -251,16 +250,16 @@ class SpaceService extends BaseMatrixService {
     try {
       const manager = this.getSpaceManager()
       await manager.deleteSpace(spaceId)
-      info(`[Space] Space 已删除: ${spaceId}`)
+      logger.info(`[Space] Space 已删除: ${spaceId}`)
     } catch (err) {
       // Fallback to leaving the room
-      info(`[Space] SpaceManager 删除失败，回退到离开房间: ${err}`)
+      logger.info(`[Space] SpaceManager 删除失败，回退到离开房间: ${err}`)
       const client = this.getClient()
       try {
         await client.leave(spaceId)
-        info(`[Space] Space 已删除（回退）: ${spaceId}`)
+        logger.info(`[Space] Space 已删除（回退）: ${spaceId}`)
       } catch (fallbackErr) {
-        error(`[Space] 删除 Space 失败: ${fallbackErr}`)
+        logger.error(`[Space] 删除 Space 失败: ${fallbackErr}`)
         throw fallbackErr
       }
     }
@@ -275,7 +274,7 @@ class SpaceService extends BaseMatrixService {
       const manager = this.getSpaceManager()
       return await manager.getSpaceMembers(spaceId)
     } catch (err) {
-      error(`[Space] SpaceManager 获取成员失败，回退: ${err}`)
+      logger.error(`[Space] SpaceManager 获取成员失败，回退: ${err}`)
       // Fallback: return basic member info from local room data
       const client = this.getClient()
       try {
@@ -292,7 +291,7 @@ class SpaceService extends BaseMatrixService {
           user_id: m.userId
         }))
       } catch (fallbackErr) {
-        error(`[Space] 回退获取成员也失败: ${fallbackErr}`)
+        logger.error(`[Space] 回退获取成员也失败: ${fallbackErr}`)
         return []
       }
     }
@@ -302,16 +301,16 @@ class SpaceService extends BaseMatrixService {
     try {
       const manager = this.getSpaceManager()
       await manager.inviteToSpace(spaceId, userId)
-      info(`[Space] 邀请用户到 Space 成功: ${userId} -> ${spaceId}`)
+      logger.info(`[Space] 邀请用户到 Space 成功: ${userId} -> ${spaceId}`)
     } catch (err) {
       // Fallback to raw client invite
-      info(`[Space] SpaceManager 邀请失败，回退到客户端调用: ${err}`)
+      logger.info(`[Space] SpaceManager 邀请失败，回退到客户端调用: ${err}`)
       const client = this.getClient()
       try {
         await client.invite(spaceId, userId)
-        info(`[Space] 邀请用户到 Space 成功（回退）: ${userId} -> ${spaceId}`)
+        logger.info(`[Space] 邀请用户到 Space 成功（回退）: ${userId} -> ${spaceId}`)
       } catch (fallbackErr) {
-        error(`[Space] 邀请用户到 Space 失败: ${fallbackErr}`)
+        logger.error(`[Space] 邀请用户到 Space 失败: ${fallbackErr}`)
         throw fallbackErr
       }
     }
@@ -321,16 +320,16 @@ class SpaceService extends BaseMatrixService {
     try {
       const manager = this.getSpaceManager()
       await manager.joinSpace(spaceId, viaServers ? { via_servers: viaServers } : undefined)
-      info(`[Space] 加入 Space 成功: ${spaceId}`)
+      logger.info(`[Space] 加入 Space 成功: ${spaceId}`)
     } catch (err) {
       // Fallback to raw client join
-      info(`[Space] SpaceManager 加入失败，回退到客户端调用: ${err}`)
+      logger.info(`[Space] SpaceManager 加入失败，回退到客户端调用: ${err}`)
       const client = this.getClient()
       try {
         await client.joinRoom(spaceId, { viaServers })
-        info(`[Space] 加入 Space 成功（回退）: ${spaceId}`)
+        logger.info(`[Space] 加入 Space 成功（回退）: ${spaceId}`)
       } catch (fallbackErr) {
-        error(`[Space] 加入 Space 失败: ${fallbackErr}`)
+        logger.error(`[Space] 加入 Space 失败: ${fallbackErr}`)
         throw fallbackErr
       }
     }
@@ -340,16 +339,16 @@ class SpaceService extends BaseMatrixService {
     try {
       const manager = this.getSpaceManager()
       await manager.leaveSpace(spaceId)
-      info(`[Space] 离开 Space 成功: ${spaceId}`)
+      logger.info(`[Space] 离开 Space 成功: ${spaceId}`)
     } catch (err) {
       // Fallback to raw client leave
-      info(`[Space] SpaceManager 离开失败，回退到客户端调用: ${err}`)
+      logger.info(`[Space] SpaceManager 离开失败，回退到客户端调用: ${err}`)
       const client = this.getClient()
       try {
         await client.leave(spaceId)
-        info(`[Space] 离开 Space 成功（回退）: ${spaceId}`)
+        logger.info(`[Space] 离开 Space 成功（回退）: ${spaceId}`)
       } catch (fallbackErr) {
-        error(`[Space] 离开 Space 失败: ${fallbackErr}`)
+        logger.error(`[Space] 离开 Space 失败: ${fallbackErr}`)
         throw fallbackErr
       }
     }
@@ -364,7 +363,7 @@ class SpaceService extends BaseMatrixService {
       const manager = this.getSpaceManager()
       return await manager.getSpaceChildren(spaceId)
     } catch (err) {
-      error(`[Space] SpaceManager 获取子房间失败，回退: ${err}`)
+      logger.error(`[Space] SpaceManager 获取子房间失败，回退: ${err}`)
       // Fallback to local Room state events
       const client = this.getClient()
       try {
@@ -386,7 +385,7 @@ class SpaceService extends BaseMatrixService {
         }
         return children
       } catch (fallbackErr) {
-        error(`[Space] 回退获取子房间也失败: ${fallbackErr}`)
+        logger.error(`[Space] 回退获取子房间也失败: ${fallbackErr}`)
         return []
       }
     }
@@ -396,16 +395,16 @@ class SpaceService extends BaseMatrixService {
     try {
       const manager = this.getSpaceManager()
       await manager.addChild(spaceId, { room_id: roomId, via_servers: [], suggested: false })
-      info(`[Space] 子房间已添加: ${roomId} 到 ${spaceId}`)
+      logger.info(`[Space] 子房间已添加: ${roomId} 到 ${spaceId}`)
     } catch (err) {
       // Fallback to raw state event
-      info(`[Space] SpaceManager 添加子房间失败，回退到状态事件: ${err}`)
+      logger.info(`[Space] SpaceManager 添加子房间失败，回退到状态事件: ${err}`)
       const client = this.getClient()
       try {
         await client.sendStateEvent(spaceId, 'm.space.child', { via: [], suggested: false, order }, roomId)
-        info(`[Space] 子房间已添加（回退）: ${roomId} 到 ${spaceId}`)
+        logger.info(`[Space] 子房间已添加（回退）: ${roomId} 到 ${spaceId}`)
       } catch (fallbackErr) {
-        error(`[Space] 添加子房间失败: ${fallbackErr}`)
+        logger.error(`[Space] 添加子房间失败: ${fallbackErr}`)
         throw fallbackErr
       }
     }
@@ -415,16 +414,16 @@ class SpaceService extends BaseMatrixService {
     try {
       const manager = this.getSpaceManager()
       await manager.removeChild(spaceId, roomId)
-      info(`[Space] 子房间已移除: ${roomId} 从 ${spaceId}`)
+      logger.info(`[Space] 子房间已移除: ${roomId} 从 ${spaceId}`)
     } catch (err) {
       // Fallback to raw state event
-      info(`[Space] SpaceManager 移除子房间失败，回退到状态事件: ${err}`)
+      logger.info(`[Space] SpaceManager 移除子房间失败，回退到状态事件: ${err}`)
       const client = this.getClient()
       try {
         await client.sendStateEvent(spaceId, 'm.space.child', {}, roomId)
-        info(`[Space] 子房间已移除（回退）: ${roomId} 从 ${spaceId}`)
+        logger.info(`[Space] 子房间已移除（回退）: ${roomId} 从 ${spaceId}`)
       } catch (fallbackErr) {
-        error(`[Space] 移除子房间失败: ${fallbackErr}`)
+        logger.error(`[Space] 移除子房间失败: ${fallbackErr}`)
         throw fallbackErr
       }
     }
@@ -443,10 +442,10 @@ class SpaceService extends BaseMatrixService {
         via_servers: options?.via || [],
         suggested: options?.suggested || false
       })
-      info(`[Space] 子房间已添加: ${roomId} 到 ${spaceId}`)
+      logger.info(`[Space] 子房间已添加: ${roomId} 到 ${spaceId}`)
     } catch (err) {
       // Fallback to raw state event
-      info(`[Space] SpaceManager 添加子房间失败，回退到状态事件: ${err}`)
+      logger.info(`[Space] SpaceManager 添加子房间失败，回退到状态事件: ${err}`)
       const client = this.getClient()
       try {
         await client.sendStateEvent(
@@ -458,9 +457,9 @@ class SpaceService extends BaseMatrixService {
           },
           roomId
         )
-        info(`[Space] 子房间已添加（回退）: ${roomId} 到 ${spaceId}`)
+        logger.info(`[Space] 子房间已添加（回退）: ${roomId} 到 ${spaceId}`)
       } catch (fallbackErr) {
-        error(`[Space] 添加子房间失败: ${fallbackErr}`)
+        logger.error(`[Space] 添加子房间失败: ${fallbackErr}`)
         throw fallbackErr
       }
     }
@@ -485,7 +484,7 @@ class SpaceService extends BaseMatrixService {
       if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
         return null
       }
-      error(`[Space] SpaceManager 获取房间所属空间失败: ${err}`)
+      logger.error(`[Space] SpaceManager 获取房间所属空间失败: ${err}`)
       return null
     }
   }
@@ -496,7 +495,7 @@ class SpaceService extends BaseMatrixService {
       const spaces = await manager.getRoomParentSpaces(roomId)
       return spaces.map((s) => this.sdkSpaceToSpaceInfo(s))
     } catch (err) {
-      error(`[Space] SpaceManager 获取父空间失败，回退: ${err}`)
+      logger.error(`[Space] SpaceManager 获取父空间失败，回退: ${err}`)
       // Fallback to local filtering
       const client = this.getClient()
       try {
@@ -510,7 +509,7 @@ class SpaceService extends BaseMatrixService {
         }
         return parentSpaces
       } catch (fallbackErr) {
-        error(`[Space] 回退获取父空间也失败: ${fallbackErr}`)
+        logger.error(`[Space] 回退获取父空间也失败: ${fallbackErr}`)
         return []
       }
     }
@@ -540,7 +539,7 @@ class SpaceService extends BaseMatrixService {
           .slice(0, limit)
           .map((room) => this.roomToSpaceInfo(room))
       } catch (fallbackErr) {
-        error(`[Space] 本地搜索空间失败: ${fallbackErr}`)
+        logger.error(`[Space] 本地搜索空间失败: ${fallbackErr}`)
         return []
       }
     }
@@ -557,13 +556,13 @@ class SpaceService extends BaseMatrixService {
       if (!client) {
         return []
       }
-      error(`[Space] SpaceManager 获取用户 Spaces 失败，回退: ${err}`)
+      logger.error(`[Space] SpaceManager 获取用户 Spaces 失败，回退: ${err}`)
       // Fallback to local room list
       try {
         const rooms = client.getRooms()
         return rooms.filter((room: Room) => room.isSpaceRoom()).map((room: Room) => this.roomToSpaceInfo(room))
       } catch (fallbackErr) {
-        error(`[Space] 回退获取用户 Spaces 也失败: ${fallbackErr}`)
+        logger.error(`[Space] 回退获取用户 Spaces 也失败: ${fallbackErr}`)
         return []
       }
     }
@@ -581,7 +580,7 @@ class SpaceService extends BaseMatrixService {
       const rawList = response.spaces ?? response.chunk ?? response.rooms ?? []
       return rawList.map((s) => this.sdkSpaceToSpaceInfo(s))
     } catch (err) {
-      error(`[Space] SpaceManager 获取公开空间失败，回退: ${err}`)
+      logger.error(`[Space] SpaceManager 获取公开空间失败，回退: ${err}`)
       // Fallback to client.publicRooms
       const client = this.getClient()
       try {
@@ -595,7 +594,7 @@ class SpaceService extends BaseMatrixService {
           childCount: 0
         }))
       } catch (fallbackErr) {
-        error(`[Space] 回退获取公开空间也失败: ${fallbackErr}`)
+        logger.error(`[Space] 回退获取公开空间也失败: ${fallbackErr}`)
         return []
       }
     }
@@ -615,7 +614,7 @@ class SpaceService extends BaseMatrixService {
         avatarUrl: s.avatar_url || undefined
       }))
     } catch (err) {
-      error(`[Space] SpaceManager 获取 Space 房间列表失败，回退: ${err}`)
+      logger.error(`[Space] SpaceManager 获取 Space 房间列表失败，回退: ${err}`)
       // Fallback to local room lookup
       const client = this.getClient()
       try {
@@ -637,7 +636,7 @@ class SpaceService extends BaseMatrixService {
         }
         return rooms
       } catch (fallbackErr) {
-        error(`[Space] 回退获取 Space 房间列表也失败: ${fallbackErr}`)
+        logger.error(`[Space] 回退获取 Space 房间列表也失败: ${fallbackErr}`)
         return []
       }
     }
@@ -653,12 +652,12 @@ class SpaceService extends BaseMatrixService {
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
-        info(`[Space] v3/spaces/rooms 不可用，回退到 hierarchy 端点: ${spaceId}`)
+        logger.info(`[Space] v3/spaces/rooms 不可用，回退到 hierarchy 端点: ${spaceId}`)
         try {
           const hierarchy = await this.getSpaceHierarchy(spaceId, { limit: 100 })
           return hierarchy.rooms.filter((r) => r.room_id !== spaceId)
         } catch (hierarchyErr) {
-          info(`[Space] hierarchy 也失败，回退到标准 /state 端点: ${hierarchyErr}`)
+          logger.info(`[Space] hierarchy 也失败，回退到标准 /state 端点: ${hierarchyErr}`)
           try {
             const stateEvents = (await client.http.authedRequest(
               'GET',
@@ -668,11 +667,11 @@ class SpaceService extends BaseMatrixService {
               .filter((e) => e.type === 'm.space.child' && e.state_key)
               .map((e) => ({ room_id: e.state_key, via: (e.content as Record<string, unknown>)?.via ?? [] }))
           } catch (finalErr) {
-            error(`[Space] 所有回退端点均失败: ${finalErr}`)
+            logger.error(`[Space] 所有回退端点均失败: ${finalErr}`)
           }
         }
       }
-      error(`[Space] 通过API获取 Space 房间列表失败: ${err}`)
+      logger.error(`[Space] 通过API获取 Space 房间列表失败: ${err}`)
       return []
     }
   }
@@ -694,7 +693,7 @@ class SpaceService extends BaseMatrixService {
         }
       })
     } catch (err) {
-      error(`[Space] SpaceManager 获取 Space 状态失败，回退: ${err}`)
+      logger.error(`[Space] SpaceManager 获取 Space 状态失败，回退: ${err}`)
       const client = this.getClient()
       try {
         const room = client.getRoom(spaceId)
@@ -706,7 +705,7 @@ class SpaceService extends BaseMatrixService {
           content: e.getContent()
         }))
       } catch (fallbackErr) {
-        error(`[Space] 回退获取 Space 状态也失败: ${fallbackErr}`)
+        logger.error(`[Space] 回退获取 Space 状态也失败: ${fallbackErr}`)
         return []
       }
     }
@@ -738,7 +737,7 @@ class SpaceService extends BaseMatrixService {
       })
       return { space: spaceInfo, children }
     } catch (err) {
-      error(`[Space] 获取 Space 摘要失败: ${err}`)
+      logger.error(`[Space] 获取 Space 摘要失败: ${err}`)
       return null
     }
   }
@@ -759,7 +758,7 @@ class SpaceService extends BaseMatrixService {
         suggested_only: options?.suggestedOnly
       })) as { rooms: Array<Record<string, unknown>>; next_batch?: string }
     } catch (err) {
-      error(`[Space] SpaceManager 获取空间层级失败，回退: ${spaceId}, ${err}`)
+      logger.error(`[Space] SpaceManager 获取空间层级失败，回退: ${spaceId}, ${err}`)
       // Fallback to raw HTTP
       const client = this.getClient()
       try {
@@ -776,7 +775,7 @@ class SpaceService extends BaseMatrixService {
         )
         return result as { rooms: Array<Record<string, unknown>>; next_batch?: string }
       } catch (fallbackErr) {
-        error(`[Space] 回退获取空间层级也失败: ${spaceId}, ${fallbackErr}`)
+        logger.error(`[Space] 回退获取空间层级也失败: ${spaceId}, ${fallbackErr}`)
         return { rooms: [] }
       }
     }
@@ -798,7 +797,7 @@ class SpaceService extends BaseMatrixService {
         suggested_only: options?.suggestedOnly
       })) as { rooms: Array<Record<string, unknown>>; next_batch?: string }
     } catch (err) {
-      error(`[Space] SpaceManager 获取空间层级v1失败，回退: ${spaceId}, ${err}`)
+      logger.error(`[Space] SpaceManager 获取空间层级v1失败，回退: ${spaceId}, ${err}`)
       // Fallback to raw HTTP
       const client = this.getClient()
       try {
@@ -815,7 +814,7 @@ class SpaceService extends BaseMatrixService {
         )
         return result as { rooms: Array<Record<string, unknown>>; next_batch?: string }
       } catch (fallbackErr) {
-        error(`[Space] 回退获取空间层级v1也失败: ${spaceId}, ${fallbackErr}`)
+        logger.error(`[Space] 回退获取空间层级v1也失败: ${spaceId}, ${fallbackErr}`)
         return { rooms: [] }
       }
     }
@@ -844,7 +843,7 @@ class SpaceService extends BaseMatrixService {
         children: (result.children as Array<Record<string, unknown>>) ?? []
       }
     } catch (err) {
-      error(`[Space] SpaceManager 获取空间摘要含子级失败，回退: ${spaceId}, ${err}`)
+      logger.error(`[Space] SpaceManager 获取空间摘要含子级失败，回退: ${spaceId}, ${err}`)
       // Fallback to raw HTTP
       const client = this.getClient()
       try {
@@ -868,7 +867,7 @@ class SpaceService extends BaseMatrixService {
           children: (result.children as Array<Record<string, unknown>>) ?? []
         }
       } catch (fallbackErr) {
-        error(`[Space] 回退获取空间摘要含子级也失败: ${spaceId}, ${fallbackErr}`)
+        logger.error(`[Space] 回退获取空间摘要含子级也失败: ${spaceId}, ${fallbackErr}`)
         return null
       }
     }
@@ -880,7 +879,7 @@ class SpaceService extends BaseMatrixService {
       const result = (await manager.getSpaceTreePath(spaceId)) as { path?: Array<{ space_id: string; name: string }> }
       return this.normalizeSpaceTreePathItems(result.path ?? [])
     } catch (err) {
-      info(`[Space] SpaceManager tree_path 失败，回退: ${spaceId}, ${err}`)
+      logger.info(`[Space] SpaceManager tree_path 失败，回退: ${spaceId}, ${err}`)
       // Fallback to raw HTTP
       const client = this.getClient()
       try {
@@ -889,7 +888,7 @@ class SpaceService extends BaseMatrixService {
         }
         return this.normalizeSpaceTreePathItems(result.path ?? [])
       } catch (httpErr) {
-        info(`[Space] HTTP tree_path 也不可用，回退到 parents 链路: ${spaceId}, ${httpErr}`)
+        logger.info(`[Space] HTTP tree_path 也不可用，回退到 parents 链路: ${spaceId}, ${httpErr}`)
         return await this.getSpaceTreePathViaParents(spaceId)
       }
     }
@@ -909,13 +908,13 @@ class SpaceService extends BaseMatrixService {
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
-        info(`[Space] v3/spaces/members API 不可用，回退到 SDK 本地数据: ${spaceId}`)
+        logger.info(`[Space] v3/spaces/members API 不可用，回退到 SDK 本地数据: ${spaceId}`)
         const room = client.getRoom(spaceId)
         if (room) {
           return room.getJoinedMembers().map((m) => ({ user_id: m.userId, displayname: m.name || m.userId }))
         }
       }
-      error(`[Space] 通过API获取 Space 成员失败: ${err}`)
+      logger.error(`[Space] 通过API获取 Space 成员失败: ${err}`)
       return []
     }
   }
@@ -936,7 +935,7 @@ class SpaceService extends BaseMatrixService {
         childCount: (space.child_count as number) ?? 0
       }))
     } catch (err) {
-      error(`[Space] 搜索空间失败: ${err}`)
+      logger.error(`[Space] 搜索空间失败: ${err}`)
       return []
     }
   }
@@ -946,13 +945,13 @@ class SpaceService extends BaseMatrixService {
       const manager = this.getSpaceManager()
       return (await manager.getSpaceStatistics()) as Record<string, unknown>
     } catch (err) {
-      error(`[Space] SpaceManager 获取空间统计失败，回退: ${err}`)
+      logger.error(`[Space] SpaceManager 获取空间统计失败，回退: ${err}`)
       const client = this.getClient()
       try {
         const result = await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.STATISTICS)
         return result as Record<string, unknown>
       } catch (fallbackErr) {
-        error(`[Space] 回退获取空间统计也失败: ${fallbackErr}`)
+        logger.error(`[Space] 回退获取空间统计也失败: ${fallbackErr}`)
         return {}
       }
     }
@@ -973,7 +972,7 @@ class SpaceService extends BaseMatrixService {
         childCount: (space.child_count as number) ?? 0
       }))
     } catch (err) {
-      error(`[Space] 获取用户空间列表失败: ${err}`)
+      logger.error(`[Space] 获取用户空间列表失败: ${err}`)
       return []
     }
   }
@@ -984,7 +983,7 @@ class SpaceService extends BaseMatrixService {
       const spaces = await manager.getRoomParentSpaces(roomId)
       return spaces.map((s) => this.sdkSpaceToSpaceInfo(s))
     } catch (err) {
-      error(`[Space] SpaceManager 获取房间所属空间失败，回退: ${roomId}, ${err}`)
+      logger.error(`[Space] SpaceManager 获取房间所属空间失败，回退: ${roomId}, ${err}`)
       const client = this.getClient()
       try {
         const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.PARENTS(roomId))) as Array<
@@ -999,7 +998,7 @@ class SpaceService extends BaseMatrixService {
           childCount: (space.child_count as number) ?? 0
         }))
       } catch (fallbackErr) {
-        error(`[Space] 回退获取房间所属空间也失败: ${roomId}, ${fallbackErr}`)
+        logger.error(`[Space] 回退获取房间所属空间也失败: ${roomId}, ${fallbackErr}`)
         return []
       }
     }
@@ -1015,7 +1014,7 @@ class SpaceService extends BaseMatrixService {
       if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
         return null
       }
-      error(`[Space] SpaceManager 获取房间空间信息失败，回退: ${roomId}, ${err}`)
+      logger.error(`[Space] SpaceManager 获取房间空间信息失败，回退: ${roomId}, ${err}`)
       const client = this.getClient()
       try {
         const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.BY_ROOM(roomId))) as Record<
@@ -1032,7 +1031,7 @@ class SpaceService extends BaseMatrixService {
           childCount: (result.child_count as number) ?? 0
         }
       } catch (fallbackErr) {
-        error(`[Space] 回退获取房间空间信息也失败: ${roomId}, ${fallbackErr}`)
+        logger.error(`[Space] 回退获取房间空间信息也失败: ${roomId}, ${fallbackErr}`)
         return null
       }
     }
@@ -1060,7 +1059,7 @@ class SpaceService extends BaseMatrixService {
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       if (errMsg.includes('M_UNAUTHORIZED') || errMsg.includes('401')) {
-        info(`[Space] 空间 ${spaceId} 需要登录后才能访问`)
+        logger.info(`[Space] 空间 ${spaceId} 需要登录后才能访问`)
         return { requiresAuth: true, accessible: false, reason: '该空间需要登录后才能浏览' }
       }
       if (errMsg.includes('M_FORBIDDEN') || errMsg.includes('403')) {
@@ -1069,7 +1068,7 @@ class SpaceService extends BaseMatrixService {
       if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
         return { requiresAuth: false, accessible: false, reason: '空间不存在或已被删除' }
       }
-      error(`[Space] 检查空间可访问性失败: ${err}`)
+      logger.error(`[Space] 检查空间可访问性失败: ${err}`)
       return { requiresAuth: false, accessible: false, reason: '空间访问检测失败' }
     }
   }
@@ -1099,7 +1098,7 @@ class SpaceService extends BaseMatrixService {
         )
 
         if (response.status === 401) {
-          info(`[Space] 匿名访问空间 ${spaceId} 需要登录`)
+          logger.info(`[Space] 匿名访问空间 ${spaceId} 需要登录`)
           return { rooms: [], requiresAuth: true, authMessage: '请登录后浏览空间内容' }
         }
         if (response.status === 403) {
@@ -1111,7 +1110,7 @@ class SpaceService extends BaseMatrixService {
 
         return (await response.json()) as { rooms: Array<Record<string, unknown>>; next_batch?: string }
       } catch (err) {
-        error(`[Space] 匿名获取空间层级失败: ${err}`)
+        logger.error(`[Space] 匿名获取空间层级失败: ${err}`)
         return { rooms: [] }
       }
     }
@@ -1132,13 +1131,13 @@ class SpaceService extends BaseMatrixService {
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       if (errMsg.includes('M_UNAUTHORIZED') || errMsg.includes('401')) {
-        info(`[Space] 访问空间 ${spaceId} 需要登录`)
+        logger.info(`[Space] 访问空间 ${spaceId} 需要登录`)
         return { rooms: [], requiresAuth: true, authMessage: '请登录后浏览空间内容' }
       }
       if (errMsg.includes('M_FORBIDDEN') || errMsg.includes('403')) {
         return { rooms: [], requiresAuth: true, authMessage: '您没有权限访问该空间' }
       }
-      error(`[Space] 获取空间层级失败: ${spaceId}, ${err}`)
+      logger.error(`[Space] 获取空间层级失败: ${spaceId}, ${err}`)
       return { rooms: [] }
     }
   }

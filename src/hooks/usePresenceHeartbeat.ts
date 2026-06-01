@@ -13,10 +13,12 @@
  * 由 App.vue 在登录成功后调用 startPresenceHeartbeat(), 登出或 onUnmounted 调用 stopPresenceHeartbeat().
  */
 
-import { error } from '@tauri-apps/plugin-log'
 import { OnlineEnum } from '@/enums'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { useUserStore } from '@/stores/domains/user/user'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('usePresenceHeartbeat')
 
 const HEARTBEAT_INTERVAL_MS = 4 * 60 * 1000
 const ACTIVITY_THROTTLE_MS = 60 * 1000
@@ -36,7 +38,7 @@ async function pushOnline(): Promise<void> {
       userStore.userInfo.lastOptTime = Date.now()
     }
   } catch (err) {
-    error(`[PresenceHeartbeat] setPresence(online) 失败: ${err}`)
+    logger.error(`[PresenceHeartbeat] setPresence(online) 失败: ${err}`)
   }
 }
 

@@ -5,7 +5,6 @@
  * 参考 API 契约: presence.md
  */
 
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { createLogger } from '@/utils/Logger'
@@ -138,7 +137,7 @@ class MatrixPresenceService extends BaseMatrixService {
 
       if (presenceManager) {
         await presenceManager.setPresence(presence, statusMsg ?? '')
-        info(`[Presence] 设置在线状态成功: ${presence}`)
+        logger.info(`[Presence] 设置在线状态成功: ${presence}`)
       } else {
         await client.http.authedRequest(
           'PUT',
@@ -149,10 +148,10 @@ class MatrixPresenceService extends BaseMatrixService {
             status_msg: statusMsg
           }
         )
-        info(`[Presence] 设置在线状态成功: ${presence}`)
+        logger.info(`[Presence] 设置在线状态成功: ${presence}`)
       }
     } catch (err) {
-      error(`[Presence] 设置在线状态失败 [${presence}]: ${formatMatrixError(err)}`)
+      logger.error(`[Presence] 设置在线状态失败 [${presence}]: ${formatMatrixError(err)}`)
       throw err
     }
   }
@@ -189,7 +188,7 @@ class MatrixPresenceService extends BaseMatrixService {
     } catch (err) {
       const isForbidden = this.isForbiddenError(err)
       if (isForbidden) {
-        info(`[Presence] 无权查看用户 ${userId} 在线状态，降级为离线`)
+        logger.info(`[Presence] 无权查看用户 ${userId} 在线状态，降级为离线`)
         return {
           user_id: userId,
           presence: 'offline' as PresenceState,
@@ -198,7 +197,7 @@ class MatrixPresenceService extends BaseMatrixService {
           currently_active: undefined
         }
       }
-      error(`[Presence] 获取在线状态失败: ${userId}, ${formatMatrixError(err)}`)
+      logger.error(`[Presence] 获取在线状态失败: ${userId}, ${formatMatrixError(err)}`)
       throw err
     }
   }
@@ -217,7 +216,7 @@ class MatrixPresenceService extends BaseMatrixService {
 
       return await this.getPresence(userId)
     } catch (err) {
-      error(`[Presence] 获取当前用户在线状态失败: ${formatMatrixError(err)}`)
+      logger.error(`[Presence] 获取当前用户在线状态失败: ${formatMatrixError(err)}`)
       throw err
     }
   }
@@ -239,7 +238,7 @@ class MatrixPresenceService extends BaseMatrixService {
 
       if (presenceManager) {
         const result = await presenceManager.subscribeToPresence(userIds)
-        info(
+        logger.info(
           `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
         )
         return result as PresenceListResponse
@@ -250,13 +249,13 @@ class MatrixPresenceService extends BaseMatrixService {
           undefined,
           payload
         )) as PresenceListResponse
-        info(
+        logger.info(
           `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
         )
         return response
       }
     } catch (err) {
-      error(`[Presence] 订阅在线状态失败: ${formatMatrixError(err)}`)
+      logger.error(`[Presence] 订阅在线状态失败: ${formatMatrixError(err)}`)
       throw err
     }
   }
@@ -273,13 +272,13 @@ class MatrixPresenceService extends BaseMatrixService {
 
       if (presenceManager) {
         await presenceManager.unsubscribeFromPresence(userIds)
-        info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
+        logger.info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
       } else {
         await client.http.authedRequest('POST', '/_matrix/client/v3/presence/list', undefined, { unsubscribe: userIds })
-        info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
+        logger.info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
       }
     } catch (err) {
-      error(`[Presence] 取消订阅在线状态失败: ${formatMatrixError(err)}`)
+      logger.error(`[Presence] 取消订阅在线状态失败: ${formatMatrixError(err)}`)
       throw err
     }
   }
@@ -301,18 +300,18 @@ class MatrixPresenceService extends BaseMatrixService {
 
       if (presenceManager) {
         const result = await presenceManager.getPresenceList(targetUserId)
-        info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
+        logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
         return result as PresenceListResponse
       } else {
         const response = (await client.http.authedRequest(
           'GET',
           `/_matrix/client/v3/presence/list/${encodeURIComponent(targetUserId)}`
         )) as PresenceListResponse
-        info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
+        logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
         return response
       }
     } catch (err) {
-      error(`[Presence] 获取在线状态列表失败: ${formatMatrixError(err)}`)
+      logger.error(`[Presence] 获取在线状态列表失败: ${formatMatrixError(err)}`)
       throw err
     }
   }
@@ -329,11 +328,11 @@ class MatrixPresenceService extends BaseMatrixService {
     try {
       const batchResult = await this.getBatchPresenceViaList(userIds)
       if (batchResult.length > 0) {
-        info(`[Presence] 批量获取在线状态成功(批量接口): ${batchResult.length}/${userIds.length}`)
+        logger.info(`[Presence] 批量获取在线状态成功(批量接口): ${batchResult.length}/${userIds.length}`)
         return batchResult
       }
     } catch (err) {
-      info(`[Presence] 批量接口获取失败，降级为逐个获取: ${formatMatrixError(err)}`)
+      logger.info(`[Presence] 批量接口获取失败，降级为逐个获取: ${formatMatrixError(err)}`)
     }
 
     return this.getBatchPresenceIndividually(userIds)
@@ -359,7 +358,7 @@ class MatrixPresenceService extends BaseMatrixService {
     const results = await Promise.all(promises)
     const presences = results.filter((p): p is PresenceInfo => p !== null)
 
-    info(`[Presence] 批量获取在线状态成功(逐个获取): ${presences.length}/${userIds.length}`)
+    logger.info(`[Presence] 批量获取在线状态成功(逐个获取): ${presences.length}/${userIds.length}`)
     return presences
   }
 

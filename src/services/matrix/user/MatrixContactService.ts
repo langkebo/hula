@@ -1,12 +1,14 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import type { MatrixEvent, RoomMember, User } from 'matrix-js-sdk'
 import { ERROR_CLIENT_NOT_INITIALIZED_EN } from '@/common/matrixConstants'
+import { createLogger } from '@/utils/Logger'
 import { normalizeMatrixUserId, toLocalpart } from '@/utils/userIdentity'
 import { matrixFriendService } from '../friends/MatrixFriendService'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
 import { matrixRoomService } from '../room/MatrixRoomService'
 import { synapseRustExtensionsService } from '../SynapseRustExtensionsService'
+
+const logger = createLogger('MatrixContactService')
 
 export interface UserProfile {
   userId: string
@@ -93,7 +95,7 @@ class MatrixContactService {
       if (!client) {
         if (!this.hasLoggedSearchBeforeClientReady) {
           this.hasLoggedSearchBeforeClientReady = true
-          info('[MatrixContact] Matrix client 未就绪，返回空搜索结果')
+          logger.info('[MatrixContact] Matrix client 未就绪，返回空搜索结果')
         }
         return []
       }
@@ -153,11 +155,11 @@ class MatrixContactService {
       if (this.isClientNotReadyError(err)) {
         if (!this.hasLoggedSearchBeforeClientReady) {
           this.hasLoggedSearchBeforeClientReady = true
-          info('[MatrixContact] Matrix client 未就绪，返回空搜索结果')
+          logger.info('[MatrixContact] Matrix client 未就绪，返回空搜索结果')
         }
         return []
       }
-      logError(`[MatrixContact] Failed to search users: ${err}`)
+      logger.error(`[MatrixContact] Failed to search users: ${err}`)
       throw err
     }
   }
@@ -176,7 +178,7 @@ class MatrixContactService {
         avatarUrl: profile.avatar_url
       }
     } catch (err) {
-      logError(`[MatrixContact] Failed to get user profile: ${err}`)
+      logger.error(`[MatrixContact] Failed to get user profile: ${err}`)
       return null
     }
   }
@@ -184,10 +186,10 @@ class MatrixContactService {
   async getOrCreateDirectChat(userId: string): Promise<DirectChatResult> {
     try {
       const roomId = await matrixDirectMessageService.getOrCreateDmRoom(userId)
-      info(`[MatrixContact] Direct chat created/accessed: ${roomId}`)
+      logger.info(`[MatrixContact] Direct chat created/accessed: ${roomId}`)
       return { roomId }
     } catch (err) {
-      logError(`[MatrixContact] Failed to create direct chat: ${err}`)
+      logger.error(`[MatrixContact] Failed to create direct chat: ${err}`)
       throw err
     }
   }
@@ -197,7 +199,7 @@ class MatrixContactService {
       const rooms = await matrixDirectMessageService.getDMRooms(false)
       return rooms.map((room) => room.roomId)
     } catch (err) {
-      logError(`[MatrixContact] Failed to get DM rooms: ${err}`)
+      logger.error(`[MatrixContact] Failed to get DM rooms: ${err}`)
       throw err
     }
   }
@@ -205,9 +207,9 @@ class MatrixContactService {
   async inviteUser(roomId: string, userId: string): Promise<void> {
     try {
       await matrixRoomService.inviteUser(roomId, userId)
-      info(`[MatrixContact] Invited user ${userId} to room ${roomId}`)
+      logger.info(`[MatrixContact] Invited user ${userId} to room ${roomId}`)
     } catch (err) {
-      logError(`[MatrixContact] Failed to invite user: ${err}`)
+      logger.error(`[MatrixContact] Failed to invite user: ${err}`)
       throw err
     }
   }
@@ -215,9 +217,9 @@ class MatrixContactService {
   async kickUser(roomId: string, userId: string, reason?: string): Promise<void> {
     try {
       await matrixRoomService.kickUser(roomId, userId, reason)
-      info(`[MatrixContact] Kicked user ${userId} from room ${roomId}`)
+      logger.info(`[MatrixContact] Kicked user ${userId} from room ${roomId}`)
     } catch (err) {
-      logError(`[MatrixContact] Failed to kick user: ${err}`)
+      logger.error(`[MatrixContact] Failed to kick user: ${err}`)
       throw err
     }
   }
@@ -225,9 +227,9 @@ class MatrixContactService {
   async banUser(roomId: string, userId: string, reason?: string): Promise<void> {
     try {
       await matrixRoomService.banUser(roomId, userId, reason)
-      info(`[MatrixContact] Banned user ${userId} from room ${roomId}`)
+      logger.info(`[MatrixContact] Banned user ${userId} from room ${roomId}`)
     } catch (err) {
-      logError(`[MatrixContact] Failed to ban user: ${err}`)
+      logger.error(`[MatrixContact] Failed to ban user: ${err}`)
       throw err
     }
   }
@@ -235,9 +237,9 @@ class MatrixContactService {
   async unbanUser(roomId: string, userId: string): Promise<void> {
     try {
       await matrixRoomService.unbanUser(roomId, userId)
-      info(`[MatrixContact] Unbanned user ${userId} from room ${roomId}`)
+      logger.info(`[MatrixContact] Unbanned user ${userId} from room ${roomId}`)
     } catch (err) {
-      logError(`[MatrixContact] Failed to unban user: ${err}`)
+      logger.error(`[MatrixContact] Failed to unban user: ${err}`)
       throw err
     }
   }
@@ -246,7 +248,7 @@ class MatrixContactService {
     try {
       return await matrixRoomService.getMembers(roomId)
     } catch (err) {
-      logError(`[MatrixContact] Failed to get room members: ${err}`)
+      logger.error(`[MatrixContact] Failed to get room members: ${err}`)
       throw err
     }
   }
@@ -260,7 +262,7 @@ class MatrixContactService {
 
       return (stateEvents as MatrixEvent[]).filter((event) => event.getType?.() === eventType)
     } catch (err) {
-      logError(`[MatrixContact] Failed to get room state: ${err}`)
+      logger.error(`[MatrixContact] Failed to get room state: ${err}`)
       throw err
     }
   }
@@ -296,7 +298,7 @@ class MatrixContactService {
       }
       return users
     } catch (err) {
-      logError(`[MatrixContact] Failed to get users by ids: ${err}`)
+      logger.error(`[MatrixContact] Failed to get users by ids: ${err}`)
       throw err
     }
   }
@@ -312,7 +314,7 @@ class MatrixContactService {
       const roomId = (await matrixDirectMessageService.getDmForUser(normalizedUserId, false)) ?? ''
       return { roomId }
     } catch (err) {
-      logError(`[MatrixContact] Failed to send friend request: ${err}`)
+      logger.error(`[MatrixContact] Failed to send friend request: ${err}`)
       throw err
     }
   }

@@ -24,7 +24,7 @@
                 </svg>
               </div>
             </div>
-            <div class="bg-white dark:bg-dark-card rounded-lg p-15px flex gap-20px items-center">
+            <div class="bg-[--hula-surface-panel] rounded-lg p-15px flex gap-20px items-center">
               <img
                 class="w-74px h-74px rounded-full object-cover flex-shrink-0"
                 :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')"
@@ -34,7 +34,7 @@
               <div @click="toMyInfo" class="flex flex-col flex-1 py-10px">
                 <div class="font-bold text-18px">{{ userStore.userInfo?.name ?? '' }}</div>
                 <div class="mt-2 text-bold-style line-height-22px line-clamp-2">
-                  {{ userStore.userInfo?.resume ?? ('' || t('mobile_my.default_bio')) }}
+                  {{ userStore.userInfo?.resume || t('mobile_my.default_bio') }}
                 </div>
               </div>
 
@@ -42,7 +42,7 @@
                 <svg @click="handleBack" class="w-24px text-gray h-24px iconpark-icon"><use href="#right"></use></svg>
               </div>
             </div>
-            <div class="bg-white dark:bg-dark-card rounded-lg p-15px flex flex-col w-full flex-1">
+            <div class="bg-[--hula-surface-panel] rounded-lg p-15px flex flex-col w-full flex-1">
               <div
                 v-for="item in options"
                 :key="item.label"

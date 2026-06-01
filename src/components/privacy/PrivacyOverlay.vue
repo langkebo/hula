@@ -99,9 +99,9 @@ function calculateWatermarkCount() {
   align-items: center;
   gap: 12px;
   padding: 24px 32px;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--hula-overlay-inverse-strong);
   border-radius: 12px;
-  color: white;
+  color: var(--hula-text-inverse);
   pointer-events: none;
 }
 

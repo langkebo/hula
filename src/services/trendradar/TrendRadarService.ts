@@ -1,5 +1,7 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import { ref } from 'vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('TrendRadarService')
 
 export interface TrendRadarTool {
   name: string
@@ -77,7 +79,7 @@ class TrendRadarService {
 
   setEndpoint(endpoint: string): void {
     this.mcpEndpoint = endpoint
-    info(`[TrendRadar] MCP endpoint set to: ${endpoint}`)
+    logger.info(`[TrendRadar] MCP endpoint set to: ${endpoint}`)
   }
 
   getEndpoint(): string {
@@ -124,11 +126,11 @@ class TrendRadarService {
       clearTimeout(timeoutId)
 
       if (err instanceof Error && err.name === 'AbortError') {
-        warn('[TrendRadar] MCP request timeout')
+        logger.warn('[TrendRadar] MCP request timeout')
         throw new Error('请求超时，请检查 TrendRadar 服务是否正常运行')
       }
 
-      error(`[TrendRadar] MCP call failed: ${err}`)
+      logger.error(`[TrendRadar] MCP call failed: ${err}`)
       throw err
     }
   }
@@ -136,25 +138,25 @@ class TrendRadarService {
   async listTools(): Promise<TrendRadarTool[]> {
     try {
       const result = await this.callMcp<{ tools: TrendRadarTool[] }>('tools/list')
-      info(`[TrendRadar] Listed ${result.tools?.length || 0} tools`)
+      logger.info(`[TrendRadar] Listed ${result.tools?.length || 0} tools`)
       return result.tools || []
     } catch (err) {
-      error(`[TrendRadar] Failed to list tools: ${err}`)
+      logger.error(`[TrendRadar] Failed to list tools: ${err}`)
       throw new Error(`获取工具列表失败: ${err}`)
     }
   }
 
   async callTool<T = unknown>(toolName: string, args?: Record<string, unknown>): Promise<T> {
-    info(`[TrendRadar] Calling tool: ${toolName}`)
+    logger.info(`[TrendRadar] Calling tool: ${toolName}`)
     try {
       const result = await this.callMcp<T>('tools/call', {
         name: toolName,
         arguments: args || {}
       })
-      info(`[TrendRadar] Tool ${toolName} called successfully`)
+      logger.info(`[TrendRadar] Tool ${toolName} called successfully`)
       return result
     } catch (err) {
-      error(`[TrendRadar] Failed to call tool ${toolName}: ${err}`)
+      logger.error(`[TrendRadar] Failed to call tool ${toolName}: ${err}`)
       throw new Error(`调用工具 ${toolName} 失败: ${err}`)
     }
   }
@@ -174,7 +176,7 @@ class TrendRadarService {
         total: getNumberField(result, 'total') ?? news.length
       }
     } catch (err) {
-      error(`[TrendRadar] Failed to get latest news: ${err}`)
+      logger.error(`[TrendRadar] Failed to get latest news: ${err}`)
       throw new Error(`获取最新新闻失败: ${err}`)
     }
   }
@@ -194,7 +196,7 @@ class TrendRadarService {
         total: getNumberField(result, 'total') ?? news.length
       }
     } catch (err) {
-      error(`[TrendRadar] Failed to search news: ${err}`)
+      logger.error(`[TrendRadar] Failed to search news: ${err}`)
       throw new Error(`搜索新闻失败: ${err}`)
     }
   }
@@ -206,7 +208,7 @@ class TrendRadarService {
       })
       return getArrayField<TrendRadarTopic>(result, 'topics') ?? (Array.isArray(result) ? result : [])
     } catch (err) {
-      error(`[TrendRadar] Failed to get trending topics: ${err}`)
+      logger.error(`[TrendRadar] Failed to get trending topics: ${err}`)
       throw new Error(`获取趋势话题失败: ${err}`)
     }
   }
@@ -222,7 +224,7 @@ class TrendRadarService {
       )
       return getArrayField<TrendRadarRssArticle>(result, 'articles') ?? (Array.isArray(result) ? result : [])
     } catch (err) {
-      error(`[TrendRadar] Failed to get RSS updates: ${err}`)
+      logger.error(`[TrendRadar] Failed to get RSS updates: ${err}`)
       throw new Error(`获取 RSS 更新失败: ${err}`)
     }
   }
@@ -232,7 +234,7 @@ class TrendRadarService {
       const result = await this.callTool<TrendRadarAnalysisResult>('analyze_topic_trend', { topic })
       return result
     } catch (err) {
-      error(`[TrendRadar] Failed to analyze topic trend: ${err}`)
+      logger.error(`[TrendRadar] Failed to analyze topic trend: ${err}`)
       throw new Error(`分析话题趋势失败: ${err}`)
     }
   }
@@ -260,13 +262,13 @@ async function setupTrendRadar(endpoint?: string): Promise<void> {
     const connected = await trendRadarClient.healthCheck()
     isConnected.value = connected
     if (connected) {
-      info('[TrendRadar] Connected successfully')
+      logger.info('[TrendRadar] Connected successfully')
     } else {
-      warn('[TrendRadar] Connection failed')
+      logger.warn('[TrendRadar] Connection failed')
     }
   } catch (err) {
     isConnected.value = false
-    error(`[TrendRadar] Setup failed: ${err}`)
+    logger.error(`[TrendRadar] Setup failed: ${err}`)
     throw err
   }
 }

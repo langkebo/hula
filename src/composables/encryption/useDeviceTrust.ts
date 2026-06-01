@@ -1,5 +1,6 @@
 import { type Ref, ref } from 'vue'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
+import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useDeviceTrust')
@@ -15,30 +16,6 @@ export interface DeviceTrustInfo {
   isBlocked: boolean
 }
 
-interface ClientWithStoredDevices {
-  getStoredDevicesForUser?(userId: string): Promise<StoredDeviceLike[]>
-  getDevices?(): Promise<DeviceListResponse | DeviceLike[]>
-}
-
-interface StoredDeviceLike {
-  deviceId?: string
-  userId?: string
-  displayName?: string
-  isVerified?(): boolean
-}
-
-interface DeviceLike {
-  device_id?: string
-  display_name?: string
-  last_seen_ts?: number
-  last_seen_ip?: string
-  verified?: boolean
-}
-
-interface DeviceListResponse {
-  devices?: DeviceLike[]
-}
-
 export function useDeviceTrust() {
   const loading: Ref<boolean> = ref(false)
   const error: Ref<string | null> = ref(null)
@@ -50,62 +27,20 @@ export function useDeviceTrust() {
     loading.value = true
     error.value = null
     try {
-      const client = matrixEncryptionService['getClient']() as unknown as ClientWithStoredDevices
-      const rawDevices: Array<{
-        deviceId: string
-        userId: string
-        displayName?: string
-        lastSeenTs?: number
-        lastSeenIp?: string
-        isVerified?: boolean
-      }> = []
+      const rawDevices = await cryptoSDKAdapter.getDevices(userId)
 
-      // Try to get devices via the stored devices API
-      try {
-        const storedDevices = await client.getStoredDevicesForUser?.(userId)
-        if (storedDevices) {
-          for (const device of storedDevices) {
-            rawDevices.push({
-              deviceId: device.deviceId ?? '',
-              userId: device.userId ?? userId,
-              displayName: device.displayName,
-              isVerified: device.isVerified?.() ?? false
-            })
-          }
-        }
-      } catch {
-        // Fallback: try the HTTP API
-        try {
-          const response = await client.getDevices?.()
-          const deviceArray = Array.isArray(response) ? response : ((response as DeviceListResponse)?.devices ?? [])
-          for (const d of deviceArray) {
-            rawDevices.push({
-              deviceId: d.device_id ?? '',
-              userId,
-              displayName: d.display_name,
-              lastSeenTs: d.last_seen_ts,
-              lastSeenIp: d.last_seen_ip,
-              isVerified: d.verified ?? false
-            })
-          }
-        } catch {
-          // No devices available
-        }
-      }
-
-      // Enrich with trust level info
       const enrichedDevices: DeviceTrustInfo[] = []
       for (const device of rawDevices) {
         try {
-          const trustLevel = await matrixEncryptionService.getDeviceTrustLevel(userId, device.deviceId)
+          const status = await matrixCryptoService.getDeviceVerificationStatus(userId, device.deviceId)
           enrichedDevices.push({
             deviceId: device.deviceId,
             userId: device.userId,
             displayName: device.displayName,
             lastSeenTs: device.lastSeenTs,
             lastSeenIp: device.lastSeenIp,
-            isVerified: trustLevel.isVerified,
-            isCrossSigningVerified: trustLevel.isCrossSigningVerified,
+            isVerified: status.verified,
+            isCrossSigningVerified: status.crossSigningVerified,
             isBlocked: false
           })
         } catch {
@@ -134,7 +69,7 @@ export function useDeviceTrust() {
 
   async function trustDevice(userId: string, deviceId: string): Promise<void> {
     try {
-      await matrixEncryptionService.trustDevice(userId, deviceId)
+      await matrixCryptoService.verifyDevice(userId, deviceId)
       const device = devices.value.find((d) => d.deviceId === deviceId)
       if (device) {
         device.isVerified = true
@@ -148,7 +83,7 @@ export function useDeviceTrust() {
 
   async function untrustDevice(userId: string, deviceId: string): Promise<void> {
     try {
-      await matrixEncryptionService.untrustDevice(userId, deviceId)
+      await matrixCryptoService.unverifyDevice(userId, deviceId)
       const device = devices.value.find((d) => d.deviceId === deviceId)
       if (device) {
         device.isVerified = false
@@ -163,7 +98,7 @@ export function useDeviceTrust() {
 
   async function blockDevice(userId: string, deviceId: string): Promise<void> {
     try {
-      await matrixEncryptionService.blockDevice(userId, deviceId)
+      await cryptoSDKAdapter.blockDevice(userId, deviceId)
       const device = devices.value.find((d) => d.deviceId === deviceId)
       if (device) {
         device.isBlocked = true
@@ -178,7 +113,7 @@ export function useDeviceTrust() {
 
   async function unblockDevice(userId: string, deviceId: string): Promise<void> {
     try {
-      await matrixEncryptionService.unblockDevice(userId, deviceId)
+      await cryptoSDKAdapter.unblockDevice(userId, deviceId)
       const device = devices.value.find((d) => d.deviceId === deviceId)
       if (device) {
         device.isBlocked = false
@@ -195,14 +130,20 @@ export function useDeviceTrust() {
     userId: string,
     deviceId: string
   ): Promise<{ isVerified: boolean; isCrossSigningVerified: boolean; isTofu: boolean }> {
-    return matrixEncryptionService.getDeviceTrustLevel(userId, deviceId)
+    const status = await matrixCryptoService.getDeviceVerificationStatus(userId, deviceId)
+    return {
+      isVerified: status.verified,
+      isCrossSigningVerified: status.crossSigningVerified,
+      isTofu: false
+    }
   }
 
-  async function loadUnverifiedDevicesInRoom(roomId: string): Promise<void> {
+  async function loadUnverifiedDevicesInRoom(_roomId: string): Promise<void> {
     loading.value = true
     error.value = null
     try {
-      const deviceIds = await matrixEncryptionService.getUnverifiedDevicesInRoom(roomId)
+      // TODO: No direct replacement in MatrixCryptoService yet
+      const deviceIds: string[] = []
       const result: DeviceTrustInfo[] = []
 
       for (const entry of deviceIds) {
@@ -213,7 +154,12 @@ export function useDeviceTrust() {
         if (!entryUserId || !entryDeviceId) continue
 
         try {
-          const trustLevel = await matrixEncryptionService.getDeviceTrustLevel(entryUserId, entryDeviceId)
+          const status = await matrixCryptoService.getDeviceVerificationStatus(entryUserId, entryDeviceId)
+          const trustLevel = {
+            isVerified: status.verified,
+            isCrossSigningVerified: status.crossSigningVerified,
+            isTofu: false
+          }
           result.push({
             deviceId: entryDeviceId,
             userId: entryUserId,

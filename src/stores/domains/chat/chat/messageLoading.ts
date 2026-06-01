@@ -1,5 +1,5 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
+
 import pLimit from 'p-limit'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -110,13 +110,13 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
   }
 
   const getMsgList = async (size = pageSize, showLoadingBar = false) => {
-    await info('获取消息列表')
+    await logger.info('获取消息列表')
     const requestRoomId = globalStore.currentSessionRoomId
     await getPageMsg(size, requestRoomId, currentMessageOptions.value?.cursor, showLoadingBar)
   }
 
   const setAllSessionMsgList = async (size = pageSize) => {
-    await info('初始设置所有会话消息列表')
+    await logger.info('初始设置所有会话消息列表')
     if (sessionStore.sessionList.length === 0) return
 
     const sortedSessions = [...sessionStore.sessionList].sort((a, b) => b.activeTime - a.activeTime)
@@ -126,7 +126,7 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
 
     const successCount = results.filter((r) => r.status === 'fulfilled').length
     const failCount = results.filter((r) => r.status === 'rejected').length
-    await info(`会话消息加载完成: 成功 ${successCount}/${sortedSessions.length}, 失败 ${failCount}`)
+    await logger.info(`会话消息加载完成: 成功 ${successCount}/${sortedSessions.length}, 失败 ${failCount}`)
   }
 
   const loadMore = async (size?: number) => {

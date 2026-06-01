@@ -1,5 +1,7 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('ModerationService')
 
 /**
  * Room invite moderation domain service.
@@ -18,7 +20,7 @@ export class MatrixRoomModerationService extends BaseMatrixService {
       )
       return (result as { blocked?: string[] }).blocked ?? []
     } catch (err) {
-      error(`[MatrixRoom] 获取邀请黑名单失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取邀请黑名单失败: ${err}`)
       return []
     }
   }
@@ -32,9 +34,9 @@ export class MatrixRoomModerationService extends BaseMatrixService {
         undefined,
         { blocked }
       )
-      info(`[MatrixRoom] 设置邀请黑名单成功: ${roomId}`)
+      logger.info(`[MatrixRoom] 设置邀请黑名单成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置邀请黑名单失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置邀请黑名单失败: ${err}`)
       throw err
     }
   }
@@ -48,7 +50,7 @@ export class MatrixRoomModerationService extends BaseMatrixService {
       )
       return (result as { allowed?: string[] }).allowed ?? []
     } catch (err) {
-      error(`[MatrixRoom] 获取邀请白名单失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取邀请白名单失败: ${err}`)
       return []
     }
   }
@@ -62,9 +64,9 @@ export class MatrixRoomModerationService extends BaseMatrixService {
         undefined,
         { allowed }
       )
-      info(`[MatrixRoom] 设置邀请白名单成功: ${roomId}`)
+      logger.info(`[MatrixRoom] 设置邀请白名单成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置邀请白名单失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置邀请白名单失败: ${err}`)
       throw err
     }
   }

@@ -1,6 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixMultimediaService')
 
 export interface VoiceMessageConfig {
   maxDuration: number
@@ -70,9 +72,9 @@ class MatrixMultimediaService extends BaseMatrixService {
 
       this.mediaRecorder.start(100)
       this.recordingStartTime = Date.now()
-      info('[Multimedia] 开始语音录制')
+      logger.info('[Multimedia] 开始语音录制')
     } catch (err) {
-      error(`[Multimedia] 启动语音录制失败: ${err}`)
+      logger.error(`[Multimedia] 启动语音录制失败: ${err}`)
       throw err
     }
   }
@@ -94,7 +96,7 @@ class MatrixMultimediaService extends BaseMatrixService {
         const duration = Date.now() - this.recordingStartTime
 
         this.cleanup()
-        info(`[Multimedia] 语音录制完成: ${duration}ms`)
+        logger.info(`[Multimedia] 语音录制完成: ${duration}ms`)
         resolve({ blob, duration })
       }
 
@@ -107,7 +109,7 @@ class MatrixMultimediaService extends BaseMatrixService {
       this.mediaRecorder.stop()
     }
     this.cleanup()
-    info('[Multimedia] 取消语音录制')
+    logger.info('[Multimedia] 取消语音录制')
   }
 
   private cleanup(): void {
@@ -284,10 +286,10 @@ class MatrixMultimediaService extends BaseMatrixService {
       }
 
       const blob = await response.blob()
-      info(`[Multimedia] 下载媒体成功: ${filename}`)
+      logger.info(`[Multimedia] 下载媒体成功: ${filename}`)
       return blob
     } catch (err) {
-      error(`[Multimedia] 下载媒体失败: ${err}`)
+      logger.error(`[Multimedia] 下载媒体失败: ${err}`)
       throw err
     }
   }
@@ -304,7 +306,7 @@ class MatrixMultimediaService extends BaseMatrixService {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
 
-    info(`[Multimedia] 保存文件成功: ${filename}`)
+    logger.info(`[Multimedia] 保存文件成功: ${filename}`)
   }
 
   getMediaDimensions(file: File): Promise<{ width: number; height: number }> {

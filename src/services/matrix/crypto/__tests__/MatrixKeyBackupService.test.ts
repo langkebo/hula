@@ -1,12 +1,14 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { BackupInfo, KeyBackupManager } from '@/types/matrix-extensions'
+import type { BackupInfo, KeyBackupManager, SecureBackupManager } from '@/types/matrix-extensions'
 import matrixClientService from '../../MatrixClientService'
 import { matrixKeyBackupService } from '../MatrixKeyBackupService'
 
-// Mock matrixClientService
 vi.mock('../../MatrixClientService', () => ({
   default: {
+    getClient: vi.fn()
+  },
+  matrixClientService: {
     getClient: vi.fn()
   }
 }))
@@ -14,99 +16,95 @@ vi.mock('../../MatrixClientService', () => ({
 describe('MatrixKeyBackupService', () => {
   let mockClient: Partial<MatrixClient>
   let mockKeyBackupManager: Partial<KeyBackupManager>
-  let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
+  let mockSecureBackupManager: Partial<SecureBackupManager>
 
   beforeEach(() => {
-    mockHttp = {
-      authedRequest: vi.fn()
-    }
-
     mockKeyBackupManager = {
       checkKeyBackup: vi.fn(),
       prepareKeyBackupVersion: vi.fn(),
       createKeyBackupVersion: vi.fn(),
       deleteKeyBackupVersion: vi.fn(),
       restoreKeyBackupWithRecoveryKey: vi.fn(),
-      scheduleKeyBackupSend: vi.fn()
+      scheduleKeyBackupSend: vi.fn(),
+      getLatestBackupVersion: vi.fn(),
+      getBackupVersion: vi.fn(),
+      createBackupVersion: vi.fn(),
+      updateBackupVersion: vi.fn(),
+      deleteBackupVersion: vi.fn(),
+      getAllRoomKeys: vi.fn(),
+      putAllRoomKeys: vi.fn(),
+      getRoomKeys: vi.fn(),
+      putRoomKeys: vi.fn(),
+      deleteAllRoomKeys: vi.fn(),
+      deleteRoomKeys: vi.fn(),
+      getSessionKey: vi.fn(),
+      putSessionKey: vi.fn(),
+      deleteSessionKey: vi.fn(),
+      recoverKeys: vi.fn(),
+      getRecoveryProgress: vi.fn(),
+      verifyBackup: vi.fn(),
+      batchRecover: vi.fn(),
+      recoverRoomKeys: vi.fn(),
+      recoverSessionKey: vi.fn(),
+      exportKeys: vi.fn(),
+      importKeys: vi.fn()
+    }
+
+    mockSecureBackupManager = {
+      createSecureBackup: vi.fn(),
+      getSecureBackup: vi.fn(),
+      deleteSecureBackup: vi.fn(),
+      addKeysToSecureBackup: vi.fn(),
+      restoreFromSecureBackup: vi.fn(),
+      verifySecureBackup: vi.fn(),
+      clearCache: vi.fn()
     }
 
     mockClient = {
-      http: mockHttp as unknown as MatrixClient['http'],
-      getKeyBackupManager: vi.fn(() => mockKeyBackupManager as KeyBackupManager)
-    }
+      getKeyBackupManager: vi.fn(() => mockKeyBackupManager as KeyBackupManager),
+      getSecureBackupManager: vi.fn(() => mockSecureBackupManager as SecureBackupManager)
+    } as unknown as Partial<MatrixClient>
 
     vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
     matrixKeyBackupService.initialize(mockClient as MatrixClient)
   })
 
   describe('checkKeyBackup', () => {
-    it('应该在未调用 initialize 时回退到 matrixClientService', async () => {
-      ;(matrixKeyBackupService as unknown as { client: unknown }).client = null
-
+    it('应该通过 KeyBackupManager.getLatestBackupVersion 检查备份', async () => {
       const mockBackupInfo: BackupInfo = {
         version: 'v1',
         algorithm: 'm.megolm_backup.v1.curve25519-aes-sha2',
         auth_data: { public_key: 'test_key' }
       }
 
-      mockKeyBackupManager.checkKeyBackup = vi.fn().mockResolvedValue(mockBackupInfo)
-
-      const result = await matrixKeyBackupService.checkKeyBackup()
-
-      expect(matrixClientService.getClient).toHaveBeenCalled()
-      expect(result).toEqual(mockBackupInfo)
-    })
-
-    it('应该通过 KeyBackupManager 检查备份', async () => {
-      const mockBackupInfo: BackupInfo = {
-        version: 'v1',
-        algorithm: 'm.megolm_backup.v1.curve25519-aes-sha2',
-        auth_data: { public_key: 'test_key' }
-      }
-
-      mockKeyBackupManager.checkKeyBackup = vi.fn().mockResolvedValue(mockBackupInfo)
+      mockKeyBackupManager.getLatestBackupVersion = vi.fn().mockResolvedValue(mockBackupInfo)
 
       const result = await matrixKeyBackupService.checkKeyBackup()
 
       expect(result).toEqual(mockBackupInfo)
-      expect(mockKeyBackupManager.checkKeyBackup).toHaveBeenCalled()
+      expect(mockKeyBackupManager.getLatestBackupVersion).toHaveBeenCalled()
     })
 
     it('应该在没有备份时返回 null', async () => {
-      mockKeyBackupManager.checkKeyBackup = vi.fn().mockResolvedValue(null)
+      const error = Object.assign(new Error('Not found'), { httpStatus: 404 })
+      mockKeyBackupManager.getLatestBackupVersion = vi.fn().mockRejectedValue(error)
 
       const result = await matrixKeyBackupService.checkKeyBackup()
 
       expect(result).toBeNull()
     })
 
-    it('应该降级到 HTTP 调用', async () => {
+    it('应该在 KeyBackupManager 不可用时抛出错误', async () => {
       mockClient.getKeyBackupManager = vi.fn(() => null)
 
-      const mockBackupInfo: BackupInfo = {
-        version: 'v1',
-        algorithm: 'm.megolm_backup.v1.curve25519-aes-sha2',
-        auth_data: { public_key: 'test_key' }
-      }
-
-      mockHttp.authedRequest.mockResolvedValue(mockBackupInfo)
-
-      const result = await matrixKeyBackupService.checkKeyBackup()
-
-      expect(result).toEqual(mockBackupInfo)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        '/_matrix/client/v3/room_keys/version',
-        undefined,
-        undefined
-      )
+      await expect(matrixKeyBackupService.checkKeyBackup()).rejects.toThrow('[KeyBackup] KeyBackupManager 不可用')
     })
   })
 
   describe('createKeyBackupVersion', () => {
     it('应该创建密钥备份版本', async () => {
       const mockVersion = { version: 'v1' }
-      mockKeyBackupManager.createKeyBackupVersion = vi.fn().mockResolvedValue(mockVersion)
+      mockKeyBackupManager.createBackupVersion = vi.fn().mockResolvedValue(mockVersion)
 
       const result = await matrixKeyBackupService.createKeyBackupVersion({
         algorithm: 'm.megolm_backup.v1.curve25519-aes-sha2',
@@ -114,11 +112,13 @@ describe('MatrixKeyBackupService', () => {
       })
 
       expect(result).toEqual(mockVersion)
-      expect(mockKeyBackupManager.createKeyBackupVersion).toHaveBeenCalled()
+      expect(mockKeyBackupManager.createBackupVersion).toHaveBeenCalledWith('m.megolm_backup.v1.curve25519-aes-sha2', {
+        public_key: 'test_key'
+      })
     })
 
     it('应该处理创建失败', async () => {
-      mockKeyBackupManager.createKeyBackupVersion = vi.fn().mockRejectedValue(new Error('Failed to create'))
+      mockKeyBackupManager.createBackupVersion = vi.fn().mockRejectedValue(new Error('Failed to create'))
 
       await expect(
         matrixKeyBackupService.createKeyBackupVersion({
@@ -131,43 +131,33 @@ describe('MatrixKeyBackupService', () => {
 
   describe('deleteKeyBackupVersion', () => {
     it('应该删除密钥备份版本', async () => {
-      mockKeyBackupManager.deleteKeyBackupVersion = vi.fn().mockResolvedValue(undefined)
+      mockKeyBackupManager.deleteBackupVersion = vi.fn().mockResolvedValue({ deleted: true, version: 'v1' })
 
       await matrixKeyBackupService.deleteKeyBackupVersion('v1')
 
-      expect(mockKeyBackupManager.deleteKeyBackupVersion).toHaveBeenCalledWith('v1')
+      expect(mockKeyBackupManager.deleteBackupVersion).toHaveBeenCalledWith('v1')
     })
   })
 
   describe('restoreKeyBackup', () => {
-    it('应该使用恢复密钥恢复备份', async () => {
-      const mockResult = { total: 10, imported: 10 }
-      mockKeyBackupManager.restoreKeyBackupWithRecoveryKey = vi.fn().mockResolvedValue(mockResult)
+    it('应该恢复备份', async () => {
+      const mockResult = { total_keys: 10, recovered_keys: 10, rooms: {} }
+      mockKeyBackupManager.recoverKeys = vi.fn().mockResolvedValue(mockResult)
 
-      const result = await matrixKeyBackupService.restoreKeyBackup('recovery_key_123')
+      const result = await matrixKeyBackupService.restoreKeyBackup('v1')
 
-      expect(result).toEqual(mockResult)
-      expect(mockKeyBackupManager.restoreKeyBackupWithRecoveryKey).toHaveBeenCalledWith(
-        'recovery_key_123',
-        undefined,
-        undefined,
-        undefined
-      )
+      expect(result).toEqual({ total: 10, imported: 10 })
+      expect(mockKeyBackupManager.recoverKeys).toHaveBeenCalledWith('v1', undefined)
     })
 
-    it('应该恢复特定房间的备份', async () => {
-      const mockResult = { total: 5, imported: 5 }
-      mockKeyBackupManager.restoreKeyBackupWithRecoveryKey = vi.fn().mockResolvedValue(mockResult)
+    it('应该恢复指定房间的备份', async () => {
+      const mockResult = { total_keys: 5, recovered_keys: 5, rooms: {} }
+      mockKeyBackupManager.recoverKeys = vi.fn().mockResolvedValue(mockResult)
 
-      const result = await matrixKeyBackupService.restoreKeyBackup('recovery_key_123', '!room:example.com')
+      const result = await matrixKeyBackupService.restoreKeyBackup('v1', ['!room:example.com'])
 
-      expect(result).toEqual(mockResult)
-      expect(mockKeyBackupManager.restoreKeyBackupWithRecoveryKey).toHaveBeenCalledWith(
-        'recovery_key_123',
-        '!room:example.com',
-        undefined,
-        undefined
-      )
+      expect(result).toEqual({ total: 5, imported: 5 })
+      expect(mockKeyBackupManager.recoverKeys).toHaveBeenCalledWith('v1', ['!room:example.com'])
     })
   })
 
@@ -184,21 +174,16 @@ describe('MatrixKeyBackupService', () => {
   describe('getBackupKeysByVersion', () => {
     it('应该获取指定版本的备份密钥', async () => {
       const mockKeys = { rooms: {}, etag: 'etag1' }
-      mockHttp.authedRequest.mockResolvedValue(mockKeys)
+      mockKeyBackupManager.getAllRoomKeys = vi.fn().mockResolvedValue(mockKeys)
 
       const result = await matrixKeyBackupService.getBackupKeysByVersion('v1')
 
       expect(result).toEqual(mockKeys)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        expect.stringContaining('/_matrix/client/v3/room_keys/keys/v1'),
-        undefined,
-        undefined
-      )
+      expect(mockKeyBackupManager.getAllRoomKeys).toHaveBeenCalledWith('v1')
     })
 
     it('应该处理获取失败', async () => {
-      mockHttp.authedRequest.mockRejectedValue(new Error('Not found'))
+      mockKeyBackupManager.getAllRoomKeys = vi.fn().mockRejectedValue(new Error('Not found'))
 
       await expect(matrixKeyBackupService.getBackupKeysByVersion('v99')).rejects.toThrow('Not found')
     })
@@ -207,133 +192,93 @@ describe('MatrixKeyBackupService', () => {
   describe('uploadKeysToVersion', () => {
     it('应该上传密钥到指定版本', async () => {
       const keys = { rooms: { '!room:example.com': { sessions: {} } } }
-      mockHttp.authedRequest.mockResolvedValue(undefined)
+      mockKeyBackupManager.putAllRoomKeys = vi.fn().mockResolvedValue({ count: 1, etag: 'etag1' })
 
       await matrixKeyBackupService.uploadKeysToVersion('v1', keys)
 
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'PUT',
-        expect.stringContaining('/_matrix/client/v3/room_keys/keys/v1'),
-        undefined,
-        keys
-      )
+      expect(mockKeyBackupManager.putAllRoomKeys).toHaveBeenCalledWith('v1', keys)
     })
   })
 
   describe('getRoomBackupKeys', () => {
     it('应该获取房间备份密钥', async () => {
       const mockRoomKeys = { sessions: {} }
-      mockHttp.authedRequest.mockResolvedValue(mockRoomKeys)
+      mockKeyBackupManager.getRoomKeys = vi.fn().mockResolvedValue(mockRoomKeys)
 
       const result = await matrixKeyBackupService.getRoomBackupKeys('v1', '!room:example.com')
 
       expect(result).toEqual(mockRoomKeys)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        expect.stringContaining('/_matrix/client/v3/room_keys/keys/v1/'),
-        undefined,
-        undefined
-      )
+      expect(mockKeyBackupManager.getRoomKeys).toHaveBeenCalledWith('v1', '!room:example.com')
     })
   })
 
   describe('getSessionBackupKey', () => {
     it('应该获取会话备份密钥', async () => {
       const mockSessionKey = { session_data: {} }
-      mockHttp.authedRequest.mockResolvedValue(mockSessionKey)
+      mockKeyBackupManager.getSessionKey = vi.fn().mockResolvedValue(mockSessionKey)
 
       const result = await matrixKeyBackupService.getSessionBackupKey('v1', '!room:example.com', 'session-1')
 
       expect(result).toEqual(mockSessionKey)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        expect.stringContaining('/session-1'),
-        undefined,
-        undefined
-      )
+      expect(mockKeyBackupManager.getSessionKey).toHaveBeenCalledWith('v1', '!room:example.com', 'session-1')
     })
   })
 
   describe('batchRecover', () => {
     it('应该批量恢复密钥', async () => {
       const mockResult = { rooms: {}, total_sessions: 10, has_more: false }
-      mockHttp.authedRequest.mockResolvedValue(mockResult)
+      mockKeyBackupManager.batchRecover = vi.fn().mockResolvedValue(mockResult)
 
       const result = await matrixKeyBackupService.batchRecover('v1', { rooms: ['!room:example.com'], limit: 50 })
 
       expect(result).toEqual(mockResult)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'POST',
-        expect.stringContaining('/_matrix/client/v3/room_keys/batch_recover'),
-        undefined,
-        expect.objectContaining({ version: 'v1', rooms: ['!room:example.com'], limit: 50 })
-      )
+      expect(mockKeyBackupManager.batchRecover).toHaveBeenCalledWith('v1', ['!room:example.com'], 50)
     })
 
     it('应该不带选项批量恢复', async () => {
       const mockResult = { rooms: {}, total_sessions: 0, has_more: false }
-      mockHttp.authedRequest.mockResolvedValue(mockResult)
+      mockKeyBackupManager.batchRecover = vi.fn().mockResolvedValue(mockResult)
 
       const result = await matrixKeyBackupService.batchRecover('v1')
 
       expect(result).toEqual(mockResult)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'POST',
-        expect.stringContaining('/_matrix/client/v3/room_keys/batch_recover'),
-        undefined,
-        expect.objectContaining({ version: 'v1' })
-      )
+      expect(mockKeyBackupManager.batchRecover).toHaveBeenCalledWith('v1', [], undefined)
     })
   })
 
   describe('recoverRoomKeys', () => {
     it('应该恢复房间级密钥', async () => {
       const mockResult = { recovered: 5 }
-      mockHttp.authedRequest.mockResolvedValue(mockResult)
+      mockKeyBackupManager.recoverRoomKeys = vi.fn().mockResolvedValue(mockResult)
 
       const result = await matrixKeyBackupService.recoverRoomKeys('v1', '!room:example.com')
 
       expect(result).toEqual(mockResult)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        expect.stringContaining('/_matrix/client/v3/room_keys/recover/v1/'),
-        undefined,
-        undefined
-      )
+      expect(mockKeyBackupManager.recoverRoomKeys).toHaveBeenCalledWith('v1', '!room:example.com')
     })
   })
 
   describe('recoverSessionKey', () => {
     it('应该恢复会话级密钥', async () => {
       const mockResult = { session_data: {} }
-      mockHttp.authedRequest.mockResolvedValue(mockResult)
+      mockKeyBackupManager.recoverSessionKey = vi.fn().mockResolvedValue(mockResult)
 
       const result = await matrixKeyBackupService.recoverSessionKey('v1', '!room:example.com', 'session-1')
 
       expect(result).toEqual(mockResult)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        expect.stringContaining('/session-1'),
-        undefined,
-        undefined
-      )
+      expect(mockKeyBackupManager.recoverSessionKey).toHaveBeenCalledWith('v1', '!room:example.com', 'session-1')
     })
   })
 
   describe('exportKeysByVersion', () => {
     it('应该按版本导出密钥', async () => {
       const mockExport = { room_keys: [], version: 'v1' }
-      mockHttp.authedRequest.mockResolvedValue(mockExport)
+      mockKeyBackupManager.exportKeys = vi.fn().mockResolvedValue(mockExport)
 
       const result = await matrixKeyBackupService.exportKeysByVersion('v1')
 
       expect(result).toEqual(mockExport)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        expect.stringContaining('/_matrix/client/v3/room_keys/export/v1'),
-        undefined,
-        undefined
-      )
+      expect(mockKeyBackupManager.exportKeys).toHaveBeenCalledWith('v1')
     })
   })
 
@@ -341,77 +286,55 @@ describe('MatrixKeyBackupService', () => {
     it('应该按版本导入密钥', async () => {
       const keys = { room_keys: [], version: 'v1' }
       const mockResult = { count: 10, failed: 0, total: 10 }
-      mockHttp.authedRequest.mockResolvedValue(mockResult)
+      mockKeyBackupManager.importKeys = vi.fn().mockResolvedValue(mockResult)
 
       const result = await matrixKeyBackupService.importKeysToVersion('v1', keys)
 
       expect(result).toEqual(mockResult)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-        'POST',
-        expect.stringContaining('/_matrix/client/v3/room_keys/import/v1'),
-        undefined,
-        keys
-      )
+      expect(mockKeyBackupManager.importKeys).toHaveBeenCalledWith([], 'v1')
     })
   })
 
   describe('Secure Backup', () => {
     describe('createSecureBackup', () => {
       it('应该创建安全备份', async () => {
-        const mockResult = { id: 'backup-1', algorithm: 'm.megolm_backup.v1' }
-        mockHttp.authedRequest.mockResolvedValue(mockResult)
-
-        const result = await matrixKeyBackupService.createSecureBackup({
+        const mockSecureInfo = {
+          backup_id: 'backup-1',
           algorithm: 'm.megolm_backup.v1',
-          auth_data: { public_key: 'key123' }
-        })
+          version: 'v1',
+          auth_data: {},
+          created_ts: 123,
+          key_count: 0
+        }
+        mockSecureBackupManager.createSecureBackup = vi.fn().mockResolvedValue(mockSecureInfo)
 
-        expect(result).toEqual(mockResult)
-        expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-          'POST',
-          '/_matrix/client/v3/keys/backup/secure',
-          undefined,
-          expect.objectContaining({
-            algorithm: 'm.megolm_backup.v1',
-            auth_data: { public_key: 'key123' }
-          })
-        )
-      })
+        const result = await matrixKeyBackupService.createSecureBackup('my-passphrase')
 
-      it('应该创建不带可选参数的安全备份', async () => {
-        const mockResult = { id: 'backup-2', algorithm: '' }
-        mockHttp.authedRequest.mockResolvedValue(mockResult)
-
-        const result = await matrixKeyBackupService.createSecureBackup({})
-
-        expect(result).toEqual(mockResult)
-        expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-          'POST',
-          '/_matrix/client/v3/keys/backup/secure',
-          undefined,
-          {}
-        )
+        expect(result).toEqual({ id: 'backup-1', algorithm: 'm.megolm_backup.v1' })
+        expect(mockSecureBackupManager.createSecureBackup).toHaveBeenCalledWith('my-passphrase')
       })
     })
 
     describe('getSecureBackup', () => {
       it('应该获取安全备份', async () => {
-        const mockBackup = { id: 'backup-1', algorithm: 'm.megolm_backup.v1' }
-        mockHttp.authedRequest.mockResolvedValue(mockBackup)
+        const mockBackup = {
+          backup_id: 'backup-1',
+          algorithm: 'm.megolm_backup.v1',
+          version: 'v1',
+          auth_data: {},
+          created_ts: 123,
+          key_count: 0
+        }
+        mockSecureBackupManager.getSecureBackup = vi.fn().mockResolvedValue(mockBackup)
 
         const result = await matrixKeyBackupService.getSecureBackup('backup-1')
 
         expect(result).toEqual(mockBackup)
-        expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-          'GET',
-          expect.stringContaining('/_matrix/client/v3/keys/backup/secure/backup-1'),
-          undefined,
-          undefined
-        )
+        expect(mockSecureBackupManager.getSecureBackup).toHaveBeenCalledWith('backup-1')
       })
 
       it('应该在获取失败时返回 null', async () => {
-        mockHttp.authedRequest.mockRejectedValue(new Error('Not found'))
+        mockSecureBackupManager.getSecureBackup = vi.fn().mockRejectedValue(new Error('Not found'))
 
         const result = await matrixKeyBackupService.getSecureBackup('nonexistent')
 
@@ -421,20 +344,15 @@ describe('MatrixKeyBackupService', () => {
 
     describe('deleteSecureBackup', () => {
       it('应该删除安全备份', async () => {
-        mockHttp.authedRequest.mockResolvedValue(undefined)
+        mockSecureBackupManager.deleteSecureBackup = vi.fn().mockResolvedValue(undefined)
 
         await matrixKeyBackupService.deleteSecureBackup('backup-1')
 
-        expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-          'DELETE',
-          expect.stringContaining('/_matrix/client/v3/keys/backup/secure/backup-1'),
-          undefined,
-          undefined
-        )
+        expect(mockSecureBackupManager.deleteSecureBackup).toHaveBeenCalledWith('backup-1')
       })
 
       it('应该处理删除失败', async () => {
-        mockHttp.authedRequest.mockRejectedValue(new Error('Delete failed'))
+        mockSecureBackupManager.deleteSecureBackup = vi.fn().mockRejectedValue(new Error('Delete failed'))
 
         await expect(matrixKeyBackupService.deleteSecureBackup('backup-1')).rejects.toThrow('Delete failed')
       })
@@ -442,51 +360,40 @@ describe('MatrixKeyBackupService', () => {
 
     describe('addKeysToSecureBackup', () => {
       it('应该写入密钥到安全备份', async () => {
-        const keys = { sessions: { 'session-1': {} } }
-        mockHttp.authedRequest.mockResolvedValue(undefined)
+        const sessionKeys = [{ session_id: 's1', session_data: {} }]
+        mockSecureBackupManager.addKeysToSecureBackup = vi.fn().mockResolvedValue({ count: 1 })
 
-        await matrixKeyBackupService.addKeysToSecureBackup('backup-1', keys)
+        await matrixKeyBackupService.addKeysToSecureBackup('backup-1', 'passphrase', sessionKeys)
 
-        expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-          'POST',
-          expect.stringContaining('/_matrix/client/v3/keys/backup/secure/backup-1/keys'),
-          undefined,
-          keys
+        expect(mockSecureBackupManager.addKeysToSecureBackup).toHaveBeenCalledWith(
+          'backup-1',
+          'passphrase',
+          sessionKeys
         )
       })
     })
 
     describe('restoreFromSecureBackup', () => {
       it('应该从安全备份恢复', async () => {
-        const mockResult = { count: 10, failed: 0, total: 10 }
-        mockHttp.authedRequest.mockResolvedValue(mockResult)
+        const mockRestoreResult = { recovered_keys: 10, total_keys: 10 }
+        mockSecureBackupManager.restoreFromSecureBackup = vi.fn().mockResolvedValue(mockRestoreResult)
 
-        const result = await matrixKeyBackupService.restoreFromSecureBackup('backup-1', 'recovery_key_123')
+        const result = await matrixKeyBackupService.restoreFromSecureBackup('backup-1', 'passphrase')
 
-        expect(result).toEqual(mockResult)
-        expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-          'POST',
-          expect.stringContaining('/_matrix/client/v3/keys/backup/secure/backup-1/restore'),
-          undefined,
-          { recovery_key: 'recovery_key_123' }
-        )
+        expect(result).toEqual({ count: 10, failed: 0, total: 10 })
+        expect(mockSecureBackupManager.restoreFromSecureBackup).toHaveBeenCalledWith('backup-1', 'passphrase')
       })
     })
 
     describe('verifySecureBackup', () => {
       it('应该校验安全备份', async () => {
-        const mockResult = { valid: true, algorithm: 'm.megolm_backup.v1', auth_data: {}, key_count: 100 }
-        mockHttp.authedRequest.mockResolvedValue(mockResult)
+        const mockVerifyResult = { valid: true }
+        mockSecureBackupManager.verifySecureBackup = vi.fn().mockResolvedValue(mockVerifyResult)
 
-        const result = await matrixKeyBackupService.verifySecureBackup('backup-1')
+        const result = await matrixKeyBackupService.verifySecureBackup('backup-1', 'passphrase')
 
-        expect(result).toEqual(mockResult)
-        expect(mockHttp.authedRequest).toHaveBeenCalledWith(
-          'POST',
-          expect.stringContaining('/_matrix/client/v3/keys/backup/secure/backup-1/verify'),
-          undefined,
-          undefined
-        )
+        expect(result.valid).toBe(true)
+        expect(mockSecureBackupManager.verifySecureBackup).toHaveBeenCalledWith('backup-1', 'passphrase')
       })
     })
   })

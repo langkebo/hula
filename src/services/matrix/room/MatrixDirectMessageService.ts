@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { Room } from 'matrix-js-sdk'
 import type {
   CreateDmOptions,
@@ -7,8 +6,11 @@ import type {
   DmRoomInfo,
   IDirectRoomsMap
 } from 'matrix-js-sdk/dm'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixDirectMessageService')
 
 export type { CreateDmOptions, DmPartnerResponse, DmRoomInfo, IDirectRoomsMap }
 
@@ -65,7 +67,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
 
       await this.refreshCache()
     } catch (err) {
-      error(`[MatrixDM] 初始化失败: ${err}`)
+      logger.error(`[MatrixDM] 初始化失败: ${err}`)
       throw err
     }
   }
@@ -94,10 +96,10 @@ class MatrixDirectMessageService extends BaseMatrixService {
       }
       const roomId = await manager.createDm(opts as CreateDmOptions)
       await this.refreshCache()
-      info(`[MatrixDM] 创建私聊房间成功: ${roomId} -> ${userId}`)
+      logger.info(`[MatrixDM] 创建私聊房间成功: ${roomId} -> ${userId}`)
       return roomId
     } catch (err) {
-      error(`[MatrixDM] 创建私聊房间失败: ${err}`)
+      logger.error(`[MatrixDM] 创建私聊房间失败: ${err}`)
       throw err
     }
   }
@@ -108,10 +110,10 @@ class MatrixDirectMessageService extends BaseMatrixService {
     try {
       const roomId = await manager.createDm({ userIds: [userId], isEncrypted: true })
       await this.refreshCache()
-      info(`[MatrixDM] 创建加密私聊房间成功: ${roomId} -> ${userId}`)
+      logger.info(`[MatrixDM] 创建加密私聊房间成功: ${roomId} -> ${userId}`)
       return roomId
     } catch (err) {
-      error(`[MatrixDM] 创建加密私聊房间失败: ${err}`)
+      logger.error(`[MatrixDM] 创建加密私聊房间失败: ${err}`)
       throw err
     }
   }
@@ -131,7 +133,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
     try {
       return await manager.getDMRooms()
     } catch (err) {
-      error(`[MatrixDM] 获取DM房间列表失败: ${err}`)
+      logger.error(`[MatrixDM] 获取DM房间列表失败: ${err}`)
       if (throwOnError) throw err
       return []
     }
@@ -152,7 +154,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
     try {
       return manager.getDmForUser(userId) ?? null
     } catch (err) {
-      error(`[MatrixDM] 获取用户DM房间失败: ${userId} ${err}`)
+      logger.error(`[MatrixDM] 获取用户DM房间失败: ${userId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -169,9 +171,9 @@ class MatrixDirectMessageService extends BaseMatrixService {
     try {
       await manager.setDmRoom(roomId, userId)
       await this.refreshCache()
-      info(`[MatrixDM] 设置房间为私聊: ${roomId} -> ${userId}`)
+      logger.info(`[MatrixDM] 设置房间为私聊: ${roomId} -> ${userId}`)
     } catch (err) {
-      error(`[MatrixDM] 设置房间为私聊失败: ${err}`)
+      logger.error(`[MatrixDM] 设置房间为私聊失败: ${err}`)
       throw err
     }
   }
@@ -182,9 +184,9 @@ class MatrixDirectMessageService extends BaseMatrixService {
     try {
       await manager.removeDmRoom(roomId, userId)
       await this.refreshCache()
-      info(`[MatrixDM] 从私聊列表移除房间: ${roomId}`)
+      logger.info(`[MatrixDM] 从私聊列表移除房间: ${roomId}`)
     } catch (err) {
-      error(`[MatrixDM] 从私聊列表移除房间失败: ${err}`)
+      logger.error(`[MatrixDM] 从私聊列表移除房间失败: ${err}`)
       throw err
     }
   }
@@ -257,7 +259,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       }
       return rooms
     } catch (err) {
-      error(`[MatrixDM] 批量获取DM房间失败: ${err}`)
+      logger.error(`[MatrixDM] 批量获取DM房间失败: ${err}`)
       if (throwOnError) throw err
       return []
     }
@@ -267,7 +269,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
     try {
       return await this.requireManager().getDirectRoomsFromServer()
     } catch (err) {
-      error(`[MatrixDM] 从服务器获取DM房间失败: ${err}`)
+      logger.error(`[MatrixDM] 从服务器获取DM房间失败: ${err}`)
       throw err
     }
   }
@@ -277,7 +279,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       await this.requireManager().updateDirectRoom(roomId, userIds)
       await this.refreshCache()
     } catch (err) {
-      error(`[MatrixDM] 更新DM房间失败: ${roomId} ${err}`)
+      logger.error(`[MatrixDM] 更新DM房间失败: ${roomId} ${err}`)
       throw err
     }
   }
@@ -339,7 +341,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
     try {
       const existingRoomId = await this.getDmForUser(userId)
       if (existingRoomId) {
-        info(`[MatrixDM] 使用现有私聊房间: ${existingRoomId}`)
+        logger.info(`[MatrixDM] 使用现有私聊房间: ${existingRoomId}`)
         return existingRoomId
       }
 
@@ -348,7 +350,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       }
       return this.createDm(userId)
     } catch (err) {
-      error(`[MatrixDM] 获取或创建DM房间失败: ${userId} ${err}`)
+      logger.error(`[MatrixDM] 获取或创建DM房间失败: ${userId} ${err}`)
       throw err
     }
   }
@@ -376,7 +378,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
     this.dmManager = null
     this.observedClient = null
     this.dmRoomsCache.clear()
-    info('[MatrixDM] DirectMessageService 已停止')
+    logger.info('[MatrixDM] DirectMessageService 已停止')
   }
 }
 

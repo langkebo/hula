@@ -1,8 +1,10 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from '@/services/matrix/sdk'
+import { createLogger } from '@/utils/Logger'
 import { MATRIX_PATHS } from '../paths'
 import type { FederationBlacklistEntry, FederationDestination } from './AdminTypes'
+
+const logger = createLogger('FederationService')
 
 type SdkAdminGetter = () => Promise<AdminManager>
 type GetClientGetter = () => MatrixClient
@@ -33,7 +35,7 @@ export class AdminFederationService {
       const destinations = await admin.getFederationDestinations()
       return (destinations ?? []).map((d) => this.mapFederationDestination(d))
     } catch (err) {
-      error(`[AdminFederation] 获取联邦目的地失败: ${err}`)
+      logger.error(`[AdminFederation] 获取联邦目的地失败: ${err}`)
       return []
     }
   }
@@ -44,7 +46,7 @@ export class AdminFederationService {
       const result = await admin.getFederationDestination(destination)
       return result ? this.mapFederationDestination(result, destination) : null
     } catch (err) {
-      error(`[AdminFederation] 获取联邦目的地详情失败: ${err}`)
+      logger.error(`[AdminFederation] 获取联邦目的地详情失败: ${err}`)
       return null
     }
   }
@@ -53,9 +55,9 @@ export class AdminFederationService {
     try {
       const admin = await this.sdkAdmin()
       await admin.resetFederationConnection(destination)
-      info(`[AdminFederation] 联邦连接已重置: ${destination}`)
+      logger.info(`[AdminFederation] 联邦连接已重置: ${destination}`)
     } catch (err) {
-      error(`[AdminFederation] 重置联邦连接失败: ${err}`)
+      logger.error(`[AdminFederation] 重置联邦连接失败: ${err}`)
       throw err
     }
   }
@@ -75,7 +77,7 @@ export class AdminFederationService {
         .map((item) => this.toBlacklistEntry(item))
         .filter((entry): entry is FederationBlacklistEntry => entry !== null)
     } catch (err) {
-      error(`[AdminFederation] 获取联邦黑名单失败: ${err}`)
+      logger.error(`[AdminFederation] 获取联邦黑名单失败: ${err}`)
       return []
     }
   }
@@ -83,10 +85,10 @@ export class AdminFederationService {
   async addToFederationBlacklist(domain: string, reason?: string): Promise<boolean> {
     try {
       await this.adminRequest('POST', `/federation/blacklist/${encodeURIComponent(domain)}`, { reason })
-      info(`[AdminFederation] 添加联邦黑名单成功: ${domain}`)
+      logger.info(`[AdminFederation] 添加联邦黑名单成功: ${domain}`)
       return true
     } catch (err) {
-      error(`[AdminFederation] 添加联邦黑名单失败: ${err}`)
+      logger.error(`[AdminFederation] 添加联邦黑名单失败: ${err}`)
       return false
     }
   }
@@ -94,10 +96,10 @@ export class AdminFederationService {
   async removeFromFederationBlacklist(domain: string): Promise<boolean> {
     try {
       await this.adminRequest('DELETE', `/federation/blacklist/${encodeURIComponent(domain)}`)
-      info(`[AdminFederation] 删除联邦黑名单成功: ${domain}`)
+      logger.info(`[AdminFederation] 删除联邦黑名单成功: ${domain}`)
       return true
     } catch (err) {
-      error(`[AdminFederation] 删除联邦黑名单失败: ${err}`)
+      logger.error(`[AdminFederation] 删除联邦黑名单失败: ${err}`)
       return false
     }
   }
@@ -105,10 +107,10 @@ export class AdminFederationService {
   async getFederationStatus(): Promise<Record<string, unknown>> {
     try {
       const response = await this.adminRequest<Record<string, unknown>>('GET', '/federation/status')
-      info('[AdminFederation] 获取联邦状态成功')
+      logger.info('[AdminFederation] 获取联邦状态成功')
       return response
     } catch (err) {
-      error(`[AdminFederation] 获取联邦状态失败: ${err}`)
+      logger.error(`[AdminFederation] 获取联邦状态失败: ${err}`)
       return {}
     }
   }

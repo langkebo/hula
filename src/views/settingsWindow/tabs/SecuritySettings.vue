@@ -349,7 +349,8 @@ import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAccount } from '@/composables/user/useAccount'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
+import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
@@ -512,9 +513,9 @@ async function loadBackupInfo() {
   if (!encryptionEnabled.value) return
 
   try {
-    const info = await matrixEncryptionService.getKeyBackupInfo()
+    const info = await matrixKeyBackupService.checkKeyBackup()
     hasBackup.value = !!info
-    backupInfo.value = info ? { version: info.version, count: info.count } : null
+    backupInfo.value = info ? { version: info.version, count: info.count ?? 0 } : null
   } catch (error) {
     logger.error('Failed to fetch backup info', error)
   }
@@ -570,7 +571,8 @@ async function handleExportKey() {
 
   exportLoading.value = true
   try {
-    const keysJson = await matrixEncryptionService.exportRoomKeys()
+    const keysResult = await cryptoSDKAdapter.exportKeys()
+    const keysJson = keysResult.data
 
     const blob = new Blob([keysJson], { type: 'application/json' })
     const url = URL.createObjectURL(blob)

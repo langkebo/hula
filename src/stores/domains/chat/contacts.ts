@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum, StoresEnum } from '@/enums'
@@ -13,6 +12,9 @@ import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { EventType } from '@/services/matrix/sdk'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('contacts')
 
 export interface MatrixContact {
   userId: string
@@ -149,9 +151,9 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       await ensureFriendServicesReady()
       await loadContacts()
       await loadFriendRequests()
-      info('[ContactStore] 初始化完成')
+      logger.info('[ContactStore] 初始化完成')
     } catch (err) {
-      error(`[ContactStore] 初始化失败: ${err}`)
+      logger.error(`[ContactStore] 初始化失败: ${err}`)
       setFriendListError('initialize', err, '好友列表初始化失败')
     }
   }
@@ -285,9 +287,9 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       }
 
       contactsList.value = contacts
-      info(`[ContactStore] 加载联系人成功: ${contacts.length} 个`)
+      logger.info(`[ContactStore] 加载联系人成功: ${contacts.length} 个`)
     } catch (err) {
-      error(`[ContactStore] 加载联系人失败: ${err}`)
+      logger.error(`[ContactStore] 加载联系人失败: ${err}`)
       // 客户端未初始化是暂时状态，不设置错误状态避免干扰 UI
       if (String(err).includes('客户端未初始化')) return
       setFriendListError('contacts', err, '加载好友列表失败')
@@ -324,9 +326,9 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       ]
 
       globalStore.setFriendUnreadCount(incoming.length)
-      info(`[ContactStore] 加载好友请求成功: ${requestFriendsList.value.length} 个`)
+      logger.info(`[ContactStore] 加载好友请求成功: ${requestFriendsList.value.length} 个`)
     } catch (err) {
-      error(`[ContactStore] 加载好友请求失败: ${err}`)
+      logger.error(`[ContactStore] 加载好友请求失败: ${err}`)
       // 客户端未初始化是暂时状态，不需要额外处理
     }
   }
@@ -362,7 +364,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         hideTheirPosts: false
       }
     } catch {
-      error(`[ContactStore] 获取用户资料失败: ${userId}`)
+      logger.error(`[ContactStore] 获取用户资料失败: ${userId}`)
       return null
     }
   }
@@ -399,10 +401,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         triggerRef(contactsList)
       }
 
-      info(`[ContactStore] 创建私聊房间成功: ${roomId}`)
+      logger.info(`[ContactStore] 创建私聊房间成功: ${roomId}`)
       return roomId
     } catch (err) {
-      error(`[ContactStore] 创建私聊房间失败: ${err}`)
+      logger.error(`[ContactStore] 创建私聊房间失败: ${err}`)
       return null
     }
   }
@@ -410,10 +412,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   async function sendFriendRequest(userId: string, message?: string): Promise<boolean> {
     try {
       await matrixFriendService.sendFriendRequest(userId, message)
-      info(`[ContactStore] 发送好友请求成功: ${userId}`)
+      logger.info(`[ContactStore] 发送好友请求成功: ${userId}`)
       return true
     } catch (err) {
-      error(`[ContactStore] 发送好友请求失败: ${err}`)
+      logger.error(`[ContactStore] 发送好友请求失败: ${err}`)
       return false
     }
   }
@@ -425,7 +427,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         (r) => !(r.userId === userId && r.direction === 'incoming')
       )
       globalStore.decrementFriendUnreadCount()
-      info(`[ContactStore] 接受好友请求成功: ${userId}`)
+      logger.info(`[ContactStore] 接受好友请求成功: ${userId}`)
 
       loadContacts()
       const roomId = await startDirectRoom(userId)
@@ -436,7 +438,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
       return true
     } catch (err) {
-      error(`[ContactStore] 接受好友请求失败: ${err}`)
+      logger.error(`[ContactStore] 接受好友请求失败: ${err}`)
       return false
     }
   }
@@ -448,10 +450,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         (r) => !(r.userId === userId && r.direction === 'incoming')
       )
       globalStore.decrementFriendUnreadCount()
-      info(`[ContactStore] 拒绝好友请求成功: ${userId}`)
+      logger.info(`[ContactStore] 拒绝好友请求成功: ${userId}`)
       return true
     } catch (err) {
-      error(`[ContactStore] 拒绝好友请求失败: ${err}`)
+      logger.error(`[ContactStore] 拒绝好友请求失败: ${err}`)
       return false
     }
   }
@@ -462,10 +464,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       requestFriendsList.value = requestFriendsList.value.filter(
         (r) => !(r.userId === userId && r.direction === 'outgoing')
       )
-      info(`[ContactStore] 取消好友请求成功: ${userId}`)
+      logger.info(`[ContactStore] 取消好友请求成功: ${userId}`)
       return true
     } catch (err) {
-      error(`[ContactStore] 取消好友请求失败: ${err}`)
+      logger.error(`[ContactStore] 取消好友请求失败: ${err}`)
       return false
     }
   }
@@ -476,10 +478,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         await matrixFriendService.removeFriend(userId)
       }
       contactsList.value = contactsList.value.filter((c) => c.userId !== userId)
-      info(`[ContactStore] 移除联系人成功: ${userId}`)
+      logger.info(`[ContactStore] 移除联系人成功: ${userId}`)
       return true
     } catch (err) {
-      error(`[ContactStore] 移除联系人失败: ${err}`)
+      logger.error(`[ContactStore] 移除联系人失败: ${err}`)
       return false
     }
   }
@@ -501,10 +503,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         contact.note = note
         triggerRef(contactsList)
       }
-      info(`[ContactStore] 设置好友备注成功: ${userId}`)
+      logger.info(`[ContactStore] 设置好友备注成功: ${userId}`)
       return true
     } catch (err) {
-      error(`[ContactStore] 设置好友备注失败: ${err}`)
+      logger.error(`[ContactStore] 设置好友备注失败: ${err}`)
       return false
     }
   }
@@ -517,10 +519,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         contact.remark = displayName
         triggerRef(contactsList)
       }
-      info(`[ContactStore] 设置好友显示名成功: ${userId}`)
+      logger.info(`[ContactStore] 设置好友显示名成功: ${userId}`)
       return true
     } catch (err) {
-      error(`[ContactStore] 设置好友显示名失败: ${err}`)
+      logger.error(`[ContactStore] 设置好友显示名失败: ${err}`)
       return false
     }
   }
@@ -531,7 +533,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     try {
       return await matrixFriendService.getFriendSuggestions()
     } catch (err) {
-      error(`[ContactStore] 获取好友建议失败: ${err}`)
+      logger.error(`[ContactStore] 获取好友建议失败: ${err}`)
       return []
     }
   }
@@ -544,10 +546,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
         contact.friendStatus = normalizeFriendStatus(status)
         triggerRef(contactsList)
       }
-      info(`[ContactStore] 设置好友状态成功: ${userId} -> ${status}`)
+      logger.info(`[ContactStore] 设置好友状态成功: ${userId} -> ${status}`)
       return true
     } catch (err) {
-      error(`[ContactStore] 设置好友状态失败: ${err}`)
+      logger.error(`[ContactStore] 设置好友状态失败: ${err}`)
       return false
     }
   }
@@ -563,7 +565,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       const invites: ContactInvite[] = []
 
       for (const room of rooms) {
-        const membership = (room as unknown as { getMyMembership?: () => string | undefined }).getMyMembership?.()
+        const membership = (room as { getMyMembership?: () => string | undefined }).getMyMembership?.()
         if (membership === 'invite') {
           const inviteState = room.getLiveTimeline()?.getState('f')
           const inviteFrom = inviteState?.getStateEvents(EventType.RoomMember, client.getUserId() ?? '')?.getSender()
@@ -581,7 +583,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       pendingInvites.value = invites
       globalStore.setGroupUnreadCount(invites.filter((i) => i.isGroup).length)
     } catch (err) {
-      error(`[ContactStore] 加载邀请列表失败: ${err}`)
+      logger.error(`[ContactStore] 加载邀请列表失败: ${err}`)
     }
   }
 
@@ -593,10 +595,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       }
       await client.joinRoom(roomId)
       pendingInvites.value = pendingInvites.value.filter((i) => i.roomId !== roomId)
-      info(`[ContactStore] 接受邀请成功: ${roomId}`)
+      logger.info(`[ContactStore] 接受邀请成功: ${roomId}`)
       return true
     } catch (err) {
-      error(`[ContactStore] 接受邀请失败: ${err}`)
+      logger.error(`[ContactStore] 接受邀请失败: ${err}`)
       return false
     }
   }
@@ -609,10 +611,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       }
       await client.leave(roomId)
       pendingInvites.value = pendingInvites.value.filter((i) => i.roomId !== roomId)
-      info(`[ContactStore] 拒绝邀请成功: ${roomId}`)
+      logger.info(`[ContactStore] 拒绝邀请成功: ${roomId}`)
       return true
     } catch (err) {
-      error(`[ContactStore] 拒绝邀请失败: ${err}`)
+      logger.error(`[ContactStore] 拒绝邀请失败: ${err}`)
       return false
     }
   }

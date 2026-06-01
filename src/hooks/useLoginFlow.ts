@@ -5,7 +5,6 @@
  * 不再直接承载底层 Matrix 登录、会话恢复或退出编排实现。
  */
 
-import { info as logInfo } from '@tauri-apps/plugin-log'
 import { useNetwork } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -14,6 +13,7 @@ import { resolveMatrixEndpointConfig } from '@/services/backend'
 import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
+import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useI18nGlobal } from '../services/i18n'
@@ -21,6 +21,8 @@ import type { UserInfoType } from '../services/types'
 import { useSettingStore } from '../stores/domains/settings/setting'
 import { useUserStore } from '../stores/domains/user/user'
 import { useMitt } from './useMitt'
+
+const logger = createLogger('useLoginFlow')
 
 export const useLoginFlow = () => {
   const settingStore = useSettingStore()
@@ -34,7 +36,7 @@ export const useLoginFlow = () => {
   try {
     router = useRouter()
   } catch {
-    void logInfo('[useLoginFlow] 无法获取 router 实例,可能不在组件上下文中')
+    void logger.info('[useLoginFlow] 无法获取 router 实例,可能不在组件上下文中')
   }
 
   const { isOnline } = useNetwork()
@@ -102,7 +104,7 @@ export const useLoginFlow = () => {
       loginText.value = isOnline.value ? t('login.button.login.default') : t('login.button.login.network_error')
       uiState.value = 'manual'
       settingStore.setAutoLogin(false)
-      logInfo('自动登录信息已失效，请手动登录')
+      logger.info('自动登录信息已失效，请手动登录')
       return
     }
 
@@ -110,7 +112,7 @@ export const useLoginFlow = () => {
       loading.value = false
       loginDisabled.value = false
       loginText.value = isOnline.value ? '登录' : '网络异常'
-      logInfo('账号信息缺失，请重新输入')
+      logger.info('账号信息缺失，请重新输入')
       return
     }
 

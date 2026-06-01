@@ -1,4 +1,3 @@
-import { info as tauriInfo } from '@tauri-apps/plugin-log'
 import * as sdk from 'matrix-js-sdk'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { useI18nGlobal } from '@/services/i18n'
@@ -712,7 +711,7 @@ export class MatrixAuthService {
         return result.flows ?? []
       } catch (err) {
         // Worker 中浏览器 fetch 对自签名 HTTPS 可能失败，回退到主线程
-        tauriInfo(`[MatrixAuth] Worker 获取登录流失败，回退到主线程: ${err}`)
+        logger.info(`[MatrixAuth] Worker 获取登录流失败，回退到主线程: ${err}`)
       }
     }
     // 确保 SDK Manager 扩展已加载（尤其是 getAccountManager），避免临时客户端缺少原型方法

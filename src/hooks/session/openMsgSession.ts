@@ -8,7 +8,6 @@
  * `useCommon` along.
  */
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
@@ -17,7 +16,10 @@ import { useI18nGlobal } from '@/services/i18n'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { createLogger } from '@/utils/Logger'
 import { invokeWithErrorHandler } from '../../utils/TauriInvokeHandler'
+
+const logger = createLogger('openMsgSession')
 
 const SESSION_READY_TIMEOUT_MS = 1500
 const SESSION_READY_POLL_INTERVAL_MS = 100
@@ -76,7 +78,7 @@ export const openMsgSession = async (uid: string, type: number = 2) => {
   const { t } = useI18nGlobal()
   const { showFeedback } = useActionFeedback()
 
-  info('打开消息会话')
+  logger.info('打开消息会话')
   const res = await matrixSessionService.getSessionDetailWithFriends({ id: uid, roomType: type })
   if (!res) {
     showFeedback(t('hooks.session.detail_failed'), 'error')
@@ -102,6 +104,6 @@ export const openMsgSessionByRoomId = async (roomId: string) => {
     return
   }
 
-  info(`按 roomId 打开消息会话: ${roomId}`)
+  logger.info(`按 roomId 打开消息会话: ${roomId}`)
   await focusSessionRoom(roomId)
 }

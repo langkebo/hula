@@ -169,7 +169,6 @@
 <script setup lang="ts">
 import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
 import { exit } from '@tauri-apps/plugin-process'
 import { useI18n } from 'vue-i18n'
 import { CloseBxEnum, EventEnum, MittEnum } from '@/enums'
@@ -179,7 +178,10 @@ import router from '@/router'
 import { useAlwaysOnTopStore } from '@/stores/domains/settings/alwaysOnTop'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { createLogger } from '@/utils/Logger'
 import { isCompatibility, isMac, isWindows } from '@/utils/PlatformConstants'
+
+const logger = createLogger('ActionBar')
 
 const { t } = useI18n()
 const tauriRuntimeAvailable = hasTauriRuntime()
@@ -361,13 +363,13 @@ onMounted(async () => {
   // 监听 home 窗口的关闭事件
   if (appWindow.label === 'home') {
     appWindow.onCloseRequested((event) => {
-      info('[ActionBar]监听[home]窗口关闭事件')
+      logger.info('[ActionBar]监听[home]窗口关闭事件')
       if (isProgrammaticClose) {
         // 清理监听器
-        info('[ActionBar]清理[home]窗口的监听器')
+        logger.info('[ActionBar]清理[home]窗口的监听器')
         exit(0)
       }
-      info('[ActionBar]阻止[home]窗口关闭事件')
+      logger.info('[ActionBar]阻止[home]窗口关闭事件')
       event.preventDefault()
       appWindow.hide()
     })

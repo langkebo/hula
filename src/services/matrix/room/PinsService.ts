@@ -1,6 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('PinsService')
 
 /**
  * Room pinned / sticky events domain service.
@@ -19,7 +21,7 @@ export class MatrixRoomPinsService extends BaseMatrixService {
       const content = pinEvent?.getContent?.() as { pinned?: string[] } | undefined
       return content?.pinned ?? []
     } catch (err) {
-      error(`[MatrixRoom] 获取置顶事件失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取置顶事件失败: ${err}`)
       return []
     }
   }
@@ -27,15 +29,15 @@ export class MatrixRoomPinsService extends BaseMatrixService {
   async setPinnedEvents(roomId: string, eventIds: string[]): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('pin', roomId, { roomId, type: 'pinned', eventIds })
-      info(`[MatrixRoom] 离线状态，已将设置置顶事件入队: ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将设置置顶事件入队: ${roomId}`)
       return
     }
     const client = this.getClient()
     try {
       await client.sendStateEvent(roomId, 'm.room.pinned_events', { pinned: eventIds }, '')
-      info(`[MatrixRoom] 设置置顶事件成功: ${roomId}`)
+      logger.info(`[MatrixRoom] 设置置顶事件成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置置顶事件失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置置顶事件失败: ${err}`)
       throw err
     }
   }
@@ -43,7 +45,7 @@ export class MatrixRoomPinsService extends BaseMatrixService {
   async pinEvent(roomId: string, eventId: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('pin', roomId, { roomId, type: 'pin', eventId })
-      info(`[MatrixRoom] 离线状态，已将置顶事件入队: ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将置顶事件入队: ${roomId}`)
       return
     }
     try {
@@ -53,9 +55,9 @@ export class MatrixRoomPinsService extends BaseMatrixService {
         pinnedEvents.push(eventId)
       }
       await this.setPinnedEvents(roomId, pinnedEvents)
-      info(`[MatrixRoom] 置顶事件成功: ${roomId}/${eventId}`)
+      logger.info(`[MatrixRoom] 置顶事件成功: ${roomId}/${eventId}`)
     } catch (err) {
-      error(`[MatrixRoom] 置顶事件失败: ${err}`)
+      logger.error(`[MatrixRoom] 置顶事件失败: ${err}`)
       throw err
     }
   }
@@ -63,7 +65,7 @@ export class MatrixRoomPinsService extends BaseMatrixService {
   async unpinEvent(roomId: string, eventId: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('pin', roomId, { roomId, type: 'unpin', eventId })
-      info(`[MatrixRoom] 离线状态，已将取消置顶事件入队: ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将取消置顶事件入队: ${roomId}`)
       return
     }
     try {
@@ -71,9 +73,9 @@ export class MatrixRoomPinsService extends BaseMatrixService {
       const pinnedEvents = await this.getPinnedEvents(roomId)
       const updatedEvents = pinnedEvents.filter((id) => id !== eventId)
       await this.setPinnedEvents(roomId, updatedEvents)
-      info(`[MatrixRoom] 取消置顶事件成功: ${roomId}/${eventId}`)
+      logger.info(`[MatrixRoom] 取消置顶事件成功: ${roomId}/${eventId}`)
     } catch (err) {
-      error(`[MatrixRoom] 取消置顶事件失败: ${err}`)
+      logger.error(`[MatrixRoom] 取消置顶事件失败: ${err}`)
       throw err
     }
   }
@@ -87,7 +89,7 @@ export class MatrixRoomPinsService extends BaseMatrixService {
       )
       return result as Record<string, unknown>
     } catch (err) {
-      error(`[MatrixRoom] 获取粘性事件失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取粘性事件失败: ${err}`)
       return {}
     }
   }
@@ -95,7 +97,7 @@ export class MatrixRoomPinsService extends BaseMatrixService {
   async setStickyEvents(roomId: string, events: Record<string, unknown>): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('pin', roomId, { roomId, type: 'sticky', events })
-      info(`[MatrixRoom] 离线状态，已将设置粘性事件入队: ${roomId}`)
+      logger.info(`[MatrixRoom] 离线状态，已将设置粘性事件入队: ${roomId}`)
       return
     }
     const client = this.getClient()
@@ -106,9 +108,9 @@ export class MatrixRoomPinsService extends BaseMatrixService {
         undefined,
         events
       )
-      info(`[MatrixRoom] 设置粘性事件成功: ${roomId}`)
+      logger.info(`[MatrixRoom] 设置粘性事件成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置粘性事件失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置粘性事件失败: ${err}`)
       throw err
     }
   }

@@ -1,6 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { useI18nGlobal } from '@/services/i18n'
+import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+
+const logger = createLogger('MatrixWidgetService')
 
 export interface Widget {
   id: string
@@ -157,7 +159,7 @@ class MatrixWidgetService {
         const response = await manager.listRoomWidgets(roomId)
         return (response?.widgets ?? []).map((w) => this.toFacade(w))
       } catch (err) {
-        error(`[MatrixWidgetService] listRoomWidgets failed for ${roomId}: ${err}`)
+        logger.error(`[MatrixWidgetService] listRoomWidgets failed for ${roomId}: ${err}`)
         if (throwOnError) throw err
         return this.getWidgetsFromRoomState(roomId)
       }
@@ -190,10 +192,10 @@ class MatrixWidgetService {
         name: body.name,
         data: body.data
       })
-      info(`[MatrixWidgetService] Created widget ${response.widget.widget_id} in room ${roomId}`)
+      logger.info(`[MatrixWidgetService] Created widget ${response.widget.widget_id} in room ${roomId}`)
       return this.toFacade(response.widget)
     } catch (err) {
-      error(`[MatrixWidgetService] Failed to create widget: ${err}`)
+      logger.error(`[MatrixWidgetService] Failed to create widget: ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -225,10 +227,10 @@ class MatrixWidgetService {
     }
     try {
       await manager.deleteWidget(widgetId)
-      info(`[MatrixWidgetService] Deleted widget ${widgetId}`)
+      logger.info(`[MatrixWidgetService] Deleted widget ${widgetId}`)
       return true
     } catch (err) {
-      error(`[MatrixWidgetService] Failed to delete widget ${widgetId}: ${err}`)
+      logger.error(`[MatrixWidgetService] Failed to delete widget ${widgetId}: ${err}`)
       if (throwOnError) throw err
       return false
     }
@@ -251,7 +253,7 @@ class MatrixWidgetService {
       const response = await manager.getWidgetById(widgetId)
       return this.toFacade(response.widget)
     } catch (err) {
-      error(`[MatrixWidgetService] getWidgetById ${widgetId} failed: ${err}`)
+      logger.error(`[MatrixWidgetService] getWidgetById ${widgetId} failed: ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -271,7 +273,7 @@ class MatrixWidgetService {
       })
       return this.toFacade(response.widget)
     } catch (err) {
-      error(`[MatrixWidgetService] Failed to update widget ${widgetId}: ${err}`)
+      logger.error(`[MatrixWidgetService] Failed to update widget ${widgetId}: ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -286,7 +288,7 @@ class MatrixWidgetService {
     try {
       return await manager.getWidgetConfig(widgetId)
     } catch (err) {
-      error(`[MatrixWidgetService] 获取Widget配置失败: ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 获取Widget配置失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -301,7 +303,7 @@ class MatrixWidgetService {
     try {
       return await manager.getJitsiConfig(roomId)
     } catch (err) {
-      error(`[MatrixWidgetService] 获取Jitsi配置失败: ${roomId} ${err}`)
+      logger.error(`[MatrixWidgetService] 获取Jitsi配置失败: ${roomId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -316,7 +318,7 @@ class MatrixWidgetService {
     try {
       return await manager.getWidgetPermissions(widgetId)
     } catch (err) {
-      error(`[MatrixWidgetService] 获取Widget权限失败: ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 获取Widget权限失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -336,7 +338,7 @@ class MatrixWidgetService {
     try {
       return await manager.setWidgetPermission(widgetId, { user_id: userId, permissions })
     } catch (err) {
-      error(`[MatrixWidgetService] 设置Widget权限失败: ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 设置Widget权限失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -352,7 +354,7 @@ class MatrixWidgetService {
       await manager.deleteWidgetPermission(widgetId, userId)
       return true
     } catch (err) {
-      error(`[MatrixWidgetService] 删除Widget权限失败: ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 删除Widget权限失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return false
     }
@@ -374,7 +376,7 @@ class MatrixWidgetService {
         expires_in_ms: options?.expiresInMs
       })
     } catch (err) {
-      error(`[MatrixWidgetService] 创建Widget会话失败: ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 创建Widget会话失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -389,7 +391,7 @@ class MatrixWidgetService {
     try {
       return await manager.listWidgetSessions(widgetId)
     } catch (err) {
-      error(`[MatrixWidgetService] 获取Widget会话列表失败: ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 获取Widget会话列表失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return []
     }
@@ -404,7 +406,7 @@ class MatrixWidgetService {
     try {
       return await manager.getWidgetSession(sessionId)
     } catch (err) {
-      error(`[MatrixWidgetService] 获取Widget会话失败: ${sessionId} ${err}`)
+      logger.error(`[MatrixWidgetService] 获取Widget会话失败: ${sessionId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -420,7 +422,7 @@ class MatrixWidgetService {
       await manager.terminateWidgetSession(sessionId)
       return true
     } catch (err) {
-      error(`[MatrixWidgetService] 终止Widget会话失败: ${sessionId} ${err}`)
+      logger.error(`[MatrixWidgetService] 终止Widget会话失败: ${sessionId} ${err}`)
       if (throwOnError) throw err
       return false
     }
@@ -440,7 +442,7 @@ class MatrixWidgetService {
       try {
         return await manager.getWidgetCapabilities(roomId, widgetId)
       } catch (err) {
-        error(`[MatrixWidgetService] 获取Widget能力失败: ${widgetId} ${err}`)
+        logger.error(`[MatrixWidgetService] 获取Widget能力失败: ${widgetId} ${err}`)
         if (throwOnError) throw err
         return null
       }
@@ -457,7 +459,7 @@ class MatrixWidgetService {
       )) as WidgetCapabilitiesResponse
       return result
     } catch (err) {
-      error(`[MatrixWidgetService] 获取Widget能力失败(v3): ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 获取Widget能力失败(v3): ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -474,7 +476,7 @@ class MatrixWidgetService {
       try {
         return await manager.setWidgetCapabilities(roomId, widgetId, capabilities)
       } catch (err) {
-        error(`[MatrixWidgetService] 设置Widget能力失败: ${widgetId} ${err}`)
+        logger.error(`[MatrixWidgetService] 设置Widget能力失败: ${widgetId} ${err}`)
         if (throwOnError) throw err
         return null
       }
@@ -491,10 +493,10 @@ class MatrixWidgetService {
         undefined,
         { capabilities }
       )) as WidgetCapabilitiesResponse
-      info(`[MatrixWidgetService] 设置Widget能力成功: ${widgetId}`)
+      logger.info(`[MatrixWidgetService] 设置Widget能力成功: ${widgetId}`)
       return result
     } catch (err) {
-      error(`[MatrixWidgetService] 设置Widget能力失败(v3): ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 设置Widget能力失败(v3): ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -511,7 +513,7 @@ class MatrixWidgetService {
       try {
         return await manager.sendWidgetMessage(roomId, widgetId, message)
       } catch (err) {
-        error(`[MatrixWidgetService] 发送Widget消息失败: ${widgetId} ${err}`)
+        logger.error(`[MatrixWidgetService] 发送Widget消息失败: ${widgetId} ${err}`)
         if (throwOnError) throw err
         return null
       }
@@ -528,10 +530,10 @@ class MatrixWidgetService {
         undefined,
         message
       )) as SendWidgetMessageResponse
-      info(`[MatrixWidgetService] 发送Widget消息成功: ${widgetId}, event_id=${result.event_id}`)
+      logger.info(`[MatrixWidgetService] 发送Widget消息成功: ${widgetId}, event_id=${result.event_id}`)
       return result
     } catch (err) {
-      error(`[MatrixWidgetService] 发送Widget消息失败(v3): ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 发送Widget消息失败(v3): ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }

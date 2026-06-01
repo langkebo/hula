@@ -1,5 +1,5 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import type {
   ContentFilter,
   CreateContentFilterRequest,
@@ -8,6 +8,8 @@ import type {
   ResolveReportRequest,
   UserReputation
 } from './AdminTypes'
+
+const logger = createLogger('AdminModerationService')
 
 type GetClientGetter = () => MatrixClient
 
@@ -78,37 +80,37 @@ export class AdminModerationService {
     manager.on(ModerationEvent.ReportCreated, (...args: unknown[]) => {
       const report = args[0] as Report
       this.emitModerationEvent('reportCreated', report)
-      info(`[Admin] 新举报: ${report.id}`)
+      logger.info(`[Admin] 新举报: ${report.id}`)
     })
 
     manager.on(ModerationEvent.ReportResolved, (...args: unknown[]) => {
       const report = args[0] as Report
       this.emitModerationEvent('reportResolved', report)
-      info(`[Admin] 举报已处理: ${report.id}`)
+      logger.info(`[Admin] 举报已处理: ${report.id}`)
     })
 
     manager.on(ModerationEvent.UserReputationChanged, (...args: unknown[]) => {
       const reputation = args[0] as UserReputation
       this.emitModerationEvent('reputationChanged', reputation)
-      info(`[Admin] 用户信誉变更: ${reputation.userId}`)
+      logger.info(`[Admin] 用户信誉变更: ${reputation.userId}`)
     })
 
     manager.on(ModerationEvent.ContentFilterAdded, (...args: unknown[]) => {
       const filter = args[0] as ContentFilter
       this.emitModerationEvent('filterAdded', filter)
-      info(`[Admin] 内容过滤器添加: ${filter.id}`)
+      logger.info(`[Admin] 内容过滤器添加: ${filter.id}`)
     })
 
     manager.on(ModerationEvent.ContentFilterRemoved, (...args: unknown[]) => {
       const filterId = args[0] as string
       this.emitModerationEvent('filterRemoved', filterId)
-      info(`[Admin] 内容过滤器移除: ${filterId}`)
+      logger.info(`[Admin] 内容过滤器移除: ${filterId}`)
     })
 
     manager.on(ModerationEvent.Error, (...args: unknown[]) => {
       const err = args[0] as Error
       this.emitModerationEvent('error', err)
-      error(`[Admin] Moderation 错误: ${err.message}`)
+      logger.error(`[Admin] Moderation 错误: ${err.message}`)
     })
   }
 
@@ -142,17 +144,17 @@ export class AdminModerationService {
     this.observedClient = null
     this.managerStarted = false
     this.eventListeners.clear()
-    info('[Admin] Moderation 已停止')
+    logger.info('[Admin] Moderation 已停止')
   }
 
   async getModerationReports(filters?: ReportFilters): Promise<Report[]> {
     const manager = (await this.ensureModerationManager())!
     try {
       const reports = await manager.getReports(filters)
-      info(`[Admin] 获取举报列表: ${reports.length} 条`)
+      logger.info(`[Admin] 获取举报列表: ${reports.length} 条`)
       return reports
     } catch (err) {
-      error(`[Admin] 获取举报列表失败: ${err}`)
+      logger.error(`[Admin] 获取举报列表失败: ${err}`)
       throw err
     }
   }
@@ -161,9 +163,9 @@ export class AdminModerationService {
     const manager = (await this.ensureModerationManager())!
     try {
       await manager.resolveReport(reportId, request)
-      info(`[Admin] 处理举报成功: ${reportId} -> ${request.action}`)
+      logger.info(`[Admin] 处理举报成功: ${reportId} -> ${request.action}`)
     } catch (err) {
-      error(`[Admin] 处理举报失败: ${err}`)
+      logger.error(`[Admin] 处理举报失败: ${err}`)
       throw err
     }
   }
@@ -172,10 +174,10 @@ export class AdminModerationService {
     const manager = (await this.ensureModerationManager())!
     try {
       const reputation = await manager.getUserReputation(userId)
-      info(`[Admin] 获取用户信誉: ${userId} -> ${reputation.level}`)
+      logger.info(`[Admin] 获取用户信誉: ${userId} -> ${reputation.level}`)
       return reputation
     } catch (err) {
-      error(`[Admin] 获取用户信誉失败: ${err}`)
+      logger.error(`[Admin] 获取用户信誉失败: ${err}`)
       throw err
     }
   }
@@ -184,9 +186,9 @@ export class AdminModerationService {
     const manager = (await this.ensureModerationManager())!
     try {
       await manager.setUserReputation(userId, score)
-      info(`[Admin] 设置用户信誉: ${userId} -> ${score}`)
+      logger.info(`[Admin] 设置用户信誉: ${userId} -> ${score}`)
     } catch (err) {
-      error(`[Admin] 设置用户信誉失败: ${err}`)
+      logger.error(`[Admin] 设置用户信誉失败: ${err}`)
       throw err
     }
   }
@@ -195,10 +197,10 @@ export class AdminModerationService {
     const manager = (await this.ensureModerationManager())!
     try {
       const filters = await manager.getContentFilters()
-      info(`[Admin] 获取内容过滤器: ${filters.length} 条`)
+      logger.info(`[Admin] 获取内容过滤器: ${filters.length} 条`)
       return filters
     } catch (err) {
-      error(`[Admin] 获取内容过滤器失败: ${err}`)
+      logger.error(`[Admin] 获取内容过滤器失败: ${err}`)
       throw err
     }
   }
@@ -207,10 +209,10 @@ export class AdminModerationService {
     const manager = (await this.ensureModerationManager())!
     try {
       const result = await manager.addContentFilter(filter)
-      info(`[Admin] 添加内容过滤器: ${result.id}`)
+      logger.info(`[Admin] 添加内容过滤器: ${result.id}`)
       return result
     } catch (err) {
-      error(`[Admin] 添加内容过滤器失败: ${err}`)
+      logger.error(`[Admin] 添加内容过滤器失败: ${err}`)
       throw err
     }
   }
@@ -219,9 +221,9 @@ export class AdminModerationService {
     const manager = (await this.ensureModerationManager())!
     try {
       await manager.removeContentFilter(filterId)
-      info(`[Admin] 移除内容过滤器: ${filterId}`)
+      logger.info(`[Admin] 移除内容过滤器: ${filterId}`)
     } catch (err) {
-      error(`[Admin] 移除内容过滤器失败: ${err}`)
+      logger.error(`[Admin] 移除内容过滤器失败: ${err}`)
       throw err
     }
   }

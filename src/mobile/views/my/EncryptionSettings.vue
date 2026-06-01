@@ -146,7 +146,7 @@
         show-cancel-button
         @confirm="handleRestoreConfirm">
         <div class="p-16px">
-          <div class="text-14px text-gray-600 mb-12px">
+          <div class="text-14px text-[--hula-text-secondary] mb-12px">
             {{ t('setting.encryption.restore_backup_desc') }}
           </div>
           <van-field
@@ -349,7 +349,7 @@ const handleRestoreConfirm = async () => {
     }
 
     const latestVersion = versions[versions.length - 1]
-    await matrixKeyBackupService.recoverKeys(latestVersion.version, recoveryKey.value.trim())
+    await matrixKeyBackupService.recoverKeys(latestVersion.version)
 
     showToast(t('setting.encryption.restore_backup_success'))
     showRestoreDialog.value = false

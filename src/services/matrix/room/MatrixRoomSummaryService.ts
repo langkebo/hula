@@ -1,7 +1,9 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import { type MatrixClient, type MatrixEvent, NotificationCountType, type Room } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixRoomStoreAdapter from './MatrixRoomStoreAdapter'
+
+const logger = createLogger('MatrixRoomSummaryService')
 
 interface RoomSummaryManager {
   createRoomSummary(roomId: string): Promise<Record<string, unknown>>
@@ -76,7 +78,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
       const room = this.getClient().getRoom(roomId)
       return room ? this.buildSummary(room) : null
     } catch (err) {
-      warn(`[MatrixRoomSummaryService] 获取房间摘要失败: ${String(err)}`)
+      logger.warn(`[MatrixRoomSummaryService] 获取房间摘要失败: ${String(err)}`)
       return null
     }
   }
@@ -94,7 +96,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
       const rooms = this.getClient().getRooms()
       return rooms.map((room) => this.buildSummary(room))
     } catch (err) {
-      warn(`[MatrixRoomSummaryService] 获取全部房间摘要失败: ${String(err)}`)
+      logger.warn(`[MatrixRoomSummaryService] 获取全部房间摘要失败: ${String(err)}`)
       return []
     }
   }
@@ -104,7 +106,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
       const room = this.getClient().getRoom(roomId)
       return room ? this.buildRoomListSnapshot(room) : null
     } catch (err) {
-      warn(`[MatrixRoomSummaryService] 获取房间列表快照失败: ${String(err)}`)
+      logger.warn(`[MatrixRoomSummaryService] 获取房间列表快照失败: ${String(err)}`)
       return null
     }
   }
@@ -114,7 +116,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
       const rooms = this.getClient().getRooms()
       return rooms.map((room) => this.buildRoomListSnapshot(room))
     } catch (err) {
-      warn(`[MatrixRoomSummaryService] 获取全部房间列表快照失败: ${String(err)}`)
+      logger.warn(`[MatrixRoomSummaryService] 获取全部房间列表快照失败: ${String(err)}`)
       return []
     }
   }
@@ -138,7 +140,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
         createdAt: this.getEventTs(createdEvent)
       }
     } catch (err) {
-      warn(`[MatrixRoomSummaryService] 获取房间统计失败: ${String(err)}`)
+      logger.warn(`[MatrixRoomSummaryService] 获取房间统计失败: ${String(err)}`)
       return null
     }
   }
@@ -157,7 +159,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
         avatarUrl: member.getMxcAvatarUrl() || ''
       }))
     } catch (err) {
-      warn(`[MatrixRoomSummaryService] 获取房间成员失败: ${String(err)}`)
+      logger.warn(`[MatrixRoomSummaryService] 获取房间成员失败: ${String(err)}`)
       return []
     }
   }
@@ -225,10 +227,10 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager) return null
     try {
       const result = await manager.createRoomSummary(roomId)
-      info(`[MatrixRoomSummary] 创建房间摘要成功: ${roomId}`)
+      logger.info(`[MatrixRoomSummary] 创建房间摘要成功: ${roomId}`)
       return result
     } catch (err) {
-      error(`[MatrixRoomSummary] 创建房间摘要失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 创建房间摘要失败: ${err}`)
       return null
     }
   }
@@ -241,10 +243,10 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager) return null
     try {
       const result = await manager.updateRoomSummary(roomId, updates)
-      info(`[MatrixRoomSummary] 更新房间摘要成功: ${roomId}`)
+      logger.info(`[MatrixRoomSummary] 更新房间摘要成功: ${roomId}`)
       return result
     } catch (err) {
-      error(`[MatrixRoomSummary] 更新房间摘要失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 更新房间摘要失败: ${err}`)
       throw err
     }
   }
@@ -254,9 +256,9 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager.deleteRoomSummary) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.deleteRoomSummary(roomId)
-      info(`[MatrixRoomSummary] 删除房间摘要成功: ${roomId}`)
+      logger.info(`[MatrixRoomSummary] 删除房间摘要成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoomSummary] 删除房间摘要失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 删除房间摘要失败: ${err}`)
       throw err
     }
   }
@@ -266,10 +268,10 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager?.syncRoomSummary) return null
     try {
       const result = await manager.syncRoomSummary(roomId)
-      info(`[MatrixRoomSummary] 同步房间摘要成功: ${roomId}`)
+      logger.info(`[MatrixRoomSummary] 同步房间摘要成功: ${roomId}`)
       return result
     } catch (err) {
-      error(`[MatrixRoomSummary] 同步房间摘要失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 同步房间摘要失败: ${err}`)
       return null
     }
   }
@@ -279,9 +281,9 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager.batchWriteMemberSummaries) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.batchWriteMemberSummaries(roomId, members)
-      info(`[MatrixRoomSummary] 批量写入成员摘要成功: ${roomId}`)
+      logger.info(`[MatrixRoomSummary] 批量写入成员摘要成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoomSummary] 批量写入成员摘要失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 批量写入成员摘要失败: ${err}`)
       throw err
     }
   }
@@ -291,9 +293,9 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager.updateMemberSummary) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.updateMemberSummary(roomId, userId, data)
-      info(`[MatrixRoomSummary] 更新成员摘要成功: ${roomId}/${userId}`)
+      logger.info(`[MatrixRoomSummary] 更新成员摘要成功: ${roomId}/${userId}`)
     } catch (err) {
-      error(`[MatrixRoomSummary] 更新成员摘要失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 更新成员摘要失败: ${err}`)
       throw err
     }
   }
@@ -303,9 +305,9 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager.deleteMemberSummary) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.deleteMemberSummary(roomId, userId)
-      info(`[MatrixRoomSummary] 删除成员摘要成功: ${roomId}/${userId}`)
+      logger.info(`[MatrixRoomSummary] 删除成员摘要成功: ${roomId}/${userId}`)
     } catch (err) {
-      error(`[MatrixRoomSummary] 删除成员摘要失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 删除成员摘要失败: ${err}`)
       throw err
     }
   }
@@ -316,7 +318,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     try {
       return await manager.getSummaryState(roomId, type, key)
     } catch (err) {
-      error(`[MatrixRoomSummary] 获取摘要状态失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 获取摘要状态失败: ${err}`)
       return null
     }
   }
@@ -331,9 +333,9 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager.updateSummaryState) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.updateSummaryState(roomId, type, key, content)
-      info(`[MatrixRoomSummary] 更新摘要状态成功: ${roomId}/${type}/${key}`)
+      logger.info(`[MatrixRoomSummary] 更新摘要状态成功: ${roomId}/${type}/${key}`)
     } catch (err) {
-      error(`[MatrixRoomSummary] 更新摘要状态失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 更新摘要状态失败: ${err}`)
       throw err
     }
   }
@@ -344,7 +346,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     try {
       return await manager.recalculateStats(roomId)
     } catch (err) {
-      error(`[MatrixRoomSummary] 重算统计失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 重算统计失败: ${err}`)
       return null
     }
   }
@@ -354,9 +356,9 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager.recalculateHeroes) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.recalculateHeroes(roomId)
-      info(`[MatrixRoomSummary] 重算 heroes 成功: ${roomId}`)
+      logger.info(`[MatrixRoomSummary] 重算 heroes 成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoomSummary] 重算 heroes 失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 重算 heroes 失败: ${err}`)
       throw err
     }
   }
@@ -366,9 +368,9 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     if (!manager.clearUnread) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
     try {
       await manager.clearUnread(roomId)
-      info(`[MatrixRoomSummary] 清理未读摘要成功: ${roomId}`)
+      logger.info(`[MatrixRoomSummary] 清理未读摘要成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoomSummary] 清理未读摘要失败: ${err}`)
+      logger.error(`[MatrixRoomSummary] 清理未读摘要失败: ${err}`)
       throw err
     }
   }

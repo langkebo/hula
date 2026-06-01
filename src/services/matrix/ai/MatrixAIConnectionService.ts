@@ -1,7 +1,9 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import { useI18nGlobal } from '@/services/i18n'
+import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MatrixAIConnectionService')
 
 export interface AIConnectionInfo {
   id: string
@@ -58,10 +60,10 @@ class MatrixAIConnectionService {
     try {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.AI.CONNECTIONS)
       const response = result as AIConnectionsListResponse
-      info(`[AIConnection] 获取 AI 连接列表: ${response.connections?.length ?? 0} 个`)
+      logger.info(`[AIConnection] 获取 AI 连接列表: ${response.connections?.length ?? 0} 个`)
       return response.connections ?? []
     } catch (err) {
-      logError(`[AIConnection] 获取连接列表失败: ${err}`)
+      logger.error(`[AIConnection] 获取连接列表失败: ${err}`)
       throw err
     }
   }
@@ -71,10 +73,10 @@ class MatrixAIConnectionService {
     try {
       const result = await client.http.authedRequest('POST', MATRIX_PATHS.AI.CONNECTIONS, undefined, request)
       const response = result as CreateAIConnectionResponse
-      info(`[AIConnection] 创建 AI 连接成功: ${response.id}`)
+      logger.info(`[AIConnection] 创建 AI 连接成功: ${response.id}`)
       return response.id
     } catch (err) {
-      logError(`[AIConnection] 创建连接失败: ${err}`)
+      logger.error(`[AIConnection] 创建连接失败: ${err}`)
       throw err
     }
   }
@@ -84,10 +86,10 @@ class MatrixAIConnectionService {
     try {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.AI.CONNECTION_BY_ID(id))
       const response = result as AIConnectionInfo
-      info(`[AIConnection] 获取 AI 连接: ${response.name ?? id}`)
+      logger.info(`[AIConnection] 获取 AI 连接: ${response.name ?? id}`)
       return response
     } catch (err) {
-      logError(`[AIConnection] 获取连接详情失败: ${err}`)
+      logger.error(`[AIConnection] 获取连接详情失败: ${err}`)
       throw err
     }
   }
@@ -96,9 +98,9 @@ class MatrixAIConnectionService {
     const client = this.ensureClient()
     try {
       await client.http.authedRequest('DELETE', MATRIX_PATHS.AI.CONNECTION_BY_ID(id))
-      info(`[AIConnection] 删除 AI 连接成功: ${id}`)
+      logger.info(`[AIConnection] 删除 AI 连接成功: ${id}`)
     } catch (err) {
-      logError(`[AIConnection] 删除连接失败: ${err}`)
+      logger.error(`[AIConnection] 删除连接失败: ${err}`)
       throw err
     }
   }
@@ -108,10 +110,10 @@ class MatrixAIConnectionService {
     try {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.AI.MCP_TOOLS)
       const response = result as McpToolsResponse
-      info(`[AIConnection] 获取 MCP 工具列表: ${response.tools?.length ?? 0} 个`)
+      logger.info(`[AIConnection] 获取 MCP 工具列表: ${response.tools?.length ?? 0} 个`)
       return response.tools ?? []
     } catch (err) {
-      logError(`[AIConnection] 获取 MCP 工具列表失败: ${err}`)
+      logger.error(`[AIConnection] 获取 MCP 工具列表失败: ${err}`)
       throw err
     }
   }
@@ -121,10 +123,10 @@ class MatrixAIConnectionService {
     try {
       const result = await client.http.authedRequest('POST', MATRIX_PATHS.AI.MCP_TOOLS_CALL, undefined, request)
       const response = result as CallMcpToolResponse
-      info(`[AIConnection] 调用 MCP 工具成功: ${request.tool}`)
+      logger.info(`[AIConnection] 调用 MCP 工具成功: ${request.tool}`)
       return response.result
     } catch (err) {
-      logError(`[AIConnection] 调用 MCP 工具失败: ${err}`)
+      logger.error(`[AIConnection] 调用 MCP 工具失败: ${err}`)
       throw err
     }
   }

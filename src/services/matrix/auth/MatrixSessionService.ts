@@ -1,8 +1,10 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
+
+const logger = createLogger('MatrixSessionService')
 
 interface RoomNotificationSettings {
   shield?: boolean
@@ -59,7 +61,7 @@ class MatrixSessionService extends BaseMatrixService {
         return this.buildSessionFromRoom(room, dmRoomInfo)
       })
     } catch (err) {
-      error(`[MatrixSession] 获取会话列表失败: ${err}`)
+      logger.error(`[MatrixSession] 获取会话列表失败: ${err}`)
       return []
     }
   }
@@ -72,26 +74,26 @@ class MatrixSessionService extends BaseMatrixService {
       if (top) {
         if (typeof client.setRoomTag === 'function') {
           await client.setRoomTag(roomId, tagName, { order: '0.5' })
-          info(`[MatrixSession] 设置会话置顶成功: ${roomId}`)
+          logger.info(`[MatrixSession] 设置会话置顶成功: ${roomId}`)
           return true
         }
       } else {
         if (typeof client.deleteRoomTag === 'function') {
           await client.deleteRoomTag(roomId, tagName)
-          info(`[MatrixSession] 取消会话置顶成功: ${roomId}`)
+          logger.info(`[MatrixSession] 取消会话置顶成功: ${roomId}`)
           return true
         }
         if (typeof client.removeRoomTag === 'function') {
           await client.removeRoomTag(roomId, tagName)
-          info(`[MatrixSession] 取消会话置顶成功: ${roomId}`)
+          logger.info(`[MatrixSession] 取消会话置顶成功: ${roomId}`)
           return true
         }
       }
 
-      warn(`[MatrixSession] 当前 SDK 未暴露房间标签接口，跳过置顶同步: ${roomId}`)
+      logger.warn(`[MatrixSession] 当前 SDK 未暴露房间标签接口，跳过置顶同步: ${roomId}`)
       return false
     } catch (err) {
-      error(`[MatrixSession] 设置会话置顶失败: ${err}`)
+      logger.error(`[MatrixSession] 设置会话置顶失败: ${err}`)
       return false
     }
   }
@@ -104,7 +106,7 @@ class MatrixSessionService extends BaseMatrixService {
       }
       return this.getDirectSessionDetail(normalized.id)
     } catch (err) {
-      error(`[MatrixSession] 获取会话详情失败: ${err}`)
+      logger.error(`[MatrixSession] 获取会话详情失败: ${err}`)
       return null
     }
   }
@@ -173,7 +175,7 @@ class MatrixSessionService extends BaseMatrixService {
       }
     }
 
-    info(`[MatrixSession] 目标会话在等待窗口内仍未同步到本地房间列表，先返回占位会话: ${roomId}`)
+    logger.info(`[MatrixSession] 目标会话在等待窗口内仍未同步到本地房间列表，先返回占位会话: ${roomId}`)
     return null
   }
 

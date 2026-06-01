@@ -10,13 +10,13 @@
 
 .gradient-button {
   @apply text-#fff border-none;
-  background: linear-gradient(135deg, #13987f, #1ab292);
+  background: linear-gradient(135deg, var(--hula-brand), var(--hula-color-primary-400));
   box-shadow:
     0 4px 14px rgba(19, 152, 127, 0.4),
     inset 0px 1px 0px rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease;
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #0f7a66, #13987f);
+    background: linear-gradient(135deg, var(--hula-color-primary-600), var(--hula-brand));
     box-shadow: 0 6px 20px rgba(19, 152, 127, 0.5);
     transform: translateY(-1px);
   }
@@ -31,10 +31,10 @@
 
 [data-theme='dark'] {
   .gradient-button {
-    background: linear-gradient(135deg, #0f7a66, #13987f);
+    background: linear-gradient(135deg, var(--hula-color-primary-600), var(--hula-brand));
     box-shadow: 0 4px 14px rgba(19, 152, 127, 0.3);
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, #0a5c4d, #0f7a66);
+      background: linear-gradient(135deg, var(--hula-color-primary-700), var(--hula-color-primary-600));
       box-shadow: 0 6px 20px rgba(19, 152, 127, 0.4);
     }
   }

@@ -206,7 +206,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { info } from '@tauri-apps/plugin-log'
+
 import { showDialog, showToast } from 'vant'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -309,7 +309,7 @@ async function handleLogout() {
         await logout()
 
         settingStore.toggleLogin(false, false)
-        info('登出账号')
+        logger.info('登出账号')
         isTrayMenuShow.value = false
 
         showToast({
@@ -326,7 +326,7 @@ async function handleLogout() {
       }
     })
     .catch(() => {
-      info('用户点击取消')
+      logger.info('用户点击取消')
     })
     .finally(() => {
       isLoggingOut.value = false

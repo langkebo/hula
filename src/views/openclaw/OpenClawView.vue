@@ -512,12 +512,13 @@ const fetchAIStream = async (conversationId: string, userMessageContent: string,
       const msg = c.messages.find((m) => m.id === assistantMsgId)
       if (msg) msg.status = 'done'
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as Error & { message?: string }
     store.updateCurrentConversation((c) => {
       const msg = c.messages.find((m) => m.id === assistantMsgId)
       if (msg) {
         msg.status = 'error'
-        msg.errorMessage = err.message
+        msg.errorMessage = error.message
       }
     })
   } finally {

@@ -155,15 +155,16 @@ class MatrixHttpClient {
           window.$loadingBar.finish()
         }
         return result
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as Error & { message?: string }
         // Retry only on network errors or 5xx server errors
-        const isRetryable = err instanceof TypeError || err.message?.includes('HTTP 5')
+        const isRetryable = err instanceof TypeError || error.message?.includes('HTTP 5')
         if (!isRetryable || retries <= 0) {
           if (showLoading && window.$loadingBar) {
             window.$loadingBar.error()
           }
           if (showErrorToast && window.$message) {
-            window.$message.error(err.message || String(err))
+            window.$message.error(error.message || String(err))
           }
           throw err
         }

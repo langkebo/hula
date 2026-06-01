@@ -143,8 +143,8 @@ import { NButton, NCheckbox, NInput, NModal, NSpin } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { GeneratedSecretStorageKey } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
@@ -273,7 +273,7 @@ async function setupCrossSigning() {
   crossSigningDone.value = false
   crossSigningError.value = ''
   try {
-    await matrixEncryptionService.setupCrossSigning({ password: currentPassword.value.trim() })
+    await cryptoSDKAdapter.setupCrossSigning({ password: currentPassword.value.trim() })
     crossSigningDone.value = true
   } catch (err: unknown) {
     logger.error('Failed to setup cross-signing:', err)
@@ -290,7 +290,7 @@ async function setupBackup() {
   backupDone.value = false
   backupError.value = ''
   try {
-    await matrixEncryptionService.setupKeyBackup({
+    await cryptoSDKAdapter.setupKeyBackupWithOptions({
       password: currentPassword.value.trim(),
       generatedKey: generatedRecoveryKey.value
     })
@@ -398,14 +398,14 @@ watch(
 }
 
 .key-display {
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: var(--hula-encryption-surface-subtle);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
 }
 
 :deep(.dark) .key-display {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--hula-encryption-surface-dark);
 }
 
 .key-label {
@@ -420,13 +420,13 @@ watch(
   word-break: break-all;
   line-height: 1.6;
   padding: 12px;
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: var(--hula-encryption-surface-subtle);
   border-radius: 4px;
   margin-bottom: 12px;
 }
 
 :deep(.dark) .key-value {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--hula-encryption-surface-dark);
 }
 
 .key-actions {

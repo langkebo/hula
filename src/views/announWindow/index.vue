@@ -188,7 +188,7 @@
 <script setup lang="ts">
 import { emitTo } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
+
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -508,7 +508,7 @@ const handlePushAnnouncement = async () => {
       newTopAnnouncement = announList.value.find((item) => item.top) || null
     }
 
-    info(`发送更新事件通知home: `)
+    logger.info(`发送更新事件通知home: `)
     // 发送更新事件通知其他组件
     await emitTo('home', 'announcementUpdated', {
       hasAnnouncements: announList.value.length > 0,

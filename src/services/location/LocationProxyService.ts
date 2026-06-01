@@ -1,6 +1,8 @@
-import { warn } from '@tauri-apps/plugin-log'
 import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 import { MATRIX_PATHS } from '@/services/matrix/paths'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('LocationProxyService')
 
 export type ProxyCoordinate = {
   lat: number
@@ -52,7 +54,7 @@ export async function transformCoordinates(lat: number, lng: number): Promise<Pr
     }
     throw result.error
   } catch (err) {
-    warn(`[LocationProxy] 坐标转换失败: ${err}`)
+    logger.warn(`[LocationProxy] 坐标转换失败: ${err}`)
     return { lat, lng }
   }
 }
@@ -74,7 +76,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
     }
     return ''
   } catch (err) {
-    warn(`[LocationProxy] 逆地理编码失败: ${err}`)
+    logger.warn(`[LocationProxy] 逆地理编码失败: ${err}`)
     return ''
   }
 }

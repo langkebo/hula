@@ -8,7 +8,6 @@
  * - 内存使用情况
  */
 
-import { info, warn } from '@tauri-apps/plugin-log'
 import { createLogger } from '@/utils/Logger'
 import { performanceReporter } from '@/utils/PerformanceReporter'
 
@@ -71,7 +70,7 @@ class RoomPerformanceMonitor {
   endMark(name: string): number {
     const start = this.marks.get(name)
     if (!start) {
-      warn(`[RoomPerf] No start mark found: ${name}`)
+      logger.warn(`[RoomPerf] No start mark found: ${name}`)
       return 0
     }
 
@@ -91,7 +90,7 @@ class RoomPerformanceMonitor {
     switch (name) {
       case 'room-list-render':
         this.metrics.listRenderTime = value
-        info(`[RoomPerf] 列表渲染: ${value.toFixed(2)}ms`)
+        logger.info(`[RoomPerf] 列表渲染: ${value.toFixed(2)}ms`)
         performanceReporter.reportPageRender('room-list', value, 200, 'room-list')
         break
       case 'room-item-render':
@@ -99,7 +98,7 @@ class RoomPerformanceMonitor {
         break
       case 'load-rooms':
         this.metrics.loadRoomsTime = value
-        info(`[RoomPerf] 加载房间: ${value.toFixed(2)}ms`)
+        logger.info(`[RoomPerf] 加载房间: ${value.toFixed(2)}ms`)
         break
       case 'load-room-detail':
         this.metrics.loadDetailTime = value
@@ -154,7 +153,7 @@ class RoomPerformanceMonitor {
       if (this.fpsHistory.length > 0) {
         const avgFPS = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length
         this.metrics.scrollFPS = Math.round(avgFPS)
-        info(`[RoomPerf] 平均 FPS: ${this.metrics.scrollFPS}`)
+        logger.info(`[RoomPerf] 平均 FPS: ${this.metrics.scrollFPS}`)
       }
 
       this.fpsHistory = []
@@ -207,7 +206,7 @@ class RoomPerformanceMonitor {
 └─────────────────────────────────────┘
 `
     logger.info(report)
-    info('[RoomPerf] ' + report.replace(/\n/g, ' | '))
+    logger.info('[RoomPerf] ' + report.replace(/\n/g, ' | '))
   }
 
   /**
