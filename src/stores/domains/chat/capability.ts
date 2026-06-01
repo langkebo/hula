@@ -18,12 +18,20 @@ export const useCapabilityStore = defineStore(StoresEnum.CAPABILITY, () => {
     isLoaded.value = true
   }
 
-  const hasUnstable = (flag: string) => computed(() => !!unstableFeatures.value[flag])
+  const isCapabilityEnabled = (value: unknown): boolean => {
+    if (typeof value === 'boolean') return value
+    if (value && typeof value === 'object' && 'enabled' in value) {
+      return (value as { enabled?: unknown }).enabled === true
+    }
+    return false
+  }
+
+  const hasUnstable = (flag: string) => computed(() => unstableFeatures.value[flag] === true)
 
   const hasFeature = (feature: string) =>
     computed(() => {
       // 检查 capabilities 或 client_config 中的特性
-      return !!capabilities.value[feature] || !!clientConfig.value[feature]
+      return isCapabilityEnabled(capabilities.value[feature]) || isCapabilityEnabled(clientConfig.value[feature])
     })
 
   return {

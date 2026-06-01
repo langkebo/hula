@@ -2,14 +2,34 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixHttpClient } from '../MatrixHttpClient'
 
-const { getMatrixClientMock, infoMock, errorMock } = vi.hoisted(() => ({
+const {
+  getMatrixClientMock,
+  getMatrixHomeserverUrlMock,
+  getMatrixAccessTokenMock,
+  runtimeFetchMock,
+  infoMock,
+  errorMock
+} = vi.hoisted(() => ({
   getMatrixClientMock: vi.fn(),
+  getMatrixHomeserverUrlMock: vi.fn(),
+  getMatrixAccessTokenMock: vi.fn(),
+  runtimeFetchMock: vi.fn(),
   infoMock: vi.fn(),
   errorMock: vi.fn()
 }))
 
 vi.mock('../matrixClientAccessor', () => ({
-  getMatrixClient: getMatrixClientMock
+  getMatrixClient: getMatrixClientMock,
+  getMatrixHomeserverUrl: getMatrixHomeserverUrlMock,
+  getMatrixAccessToken: getMatrixAccessTokenMock
+}))
+
+vi.mock('@/services/backend', () => ({
+  resolveMatrixRuntimeEndpointConfig: () => ({ homeserverUrl: 'https://fallback.matrix.test' })
+}))
+
+vi.mock('../network/runtimeFetch', () => ({
+  getRuntimeAwareFetch: () => runtimeFetchMock
 }))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -30,6 +50,9 @@ describe('MatrixHttpClient', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authedRequest = vi.fn().mockResolvedValue({})
+    getMatrixHomeserverUrlMock.mockReturnValue('https://matrix.test')
+    getMatrixAccessTokenMock.mockReturnValue('tok-abc')
+    runtimeFetchMock.mockResolvedValue(new Response('{}', { status: 200 }))
     getMatrixClientMock.mockReturnValue({
       http: { authedRequest }
     } as unknown as MatrixClient)
@@ -87,9 +110,23 @@ describe('MatrixHttpClient', () => {
     )
   })
 
-  it('fails when the Matrix client accessor has not been registered', async () => {
+  it('falls back to runtime fetch when the Matrix client accessor has not been registered', async () => {
     getMatrixClientMock.mockReturnValueOnce(null)
 
-    await expect(matrixHttpClient.request('GET', '/test')).rejects.toThrow('matrix_error.common.client_not_initialized')
+    await expect(
+      matrixHttpClient.request('POST', '/test', {
+        queryParams: { via: 'fallback' },
+        body: { ok: true }
+      })
+    ).resolves.toEqual({})
+
+    expect(runtimeFetchMock).toHaveBeenCalledWith('https://matrix.test/test?via=fallback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer tok-abc'
+      },
+      body: JSON.stringify({ ok: true })
+    })
   })
 })

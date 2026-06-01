@@ -31,6 +31,42 @@ type MatrixCapabilitiesResponse = {
  */
 export type HulaCapability = 'sliding-sync' | 'e2ee' | 'voip' | 'friend-list' | 'admin-api'
 
+const HULA_CAPABILITY_ALIASES: Record<HulaCapability, { unstable: string[]; capabilities: string[] }> = {
+  'sliding-sync': {
+    unstable: ['org.matrix.msc3886.sliding_sync', 'org.matrix.msc3575', 'org.matrix.simplified_msc3575'],
+    capabilities: ['io.hula.sliding_sync']
+  },
+  e2ee: {
+    unstable: ['org.matrix.msc3814'],
+    capabilities: ['m.room.encryption']
+  },
+  voip: {
+    unstable: ['org.matrix.msc3245'],
+    capabilities: ['m.voice', 'm.voip', 'io.hula.voice_extended']
+  },
+  'friend-list': {
+    unstable: ['io.hula.friends'],
+    capabilities: ['io.hula.friends']
+  },
+  'admin-api': {
+    unstable: ['io.hula.admin'],
+    capabilities: ['io.hula.admin']
+  }
+}
+
+const THREAD_UNSTABLE_FEATURES = ['org.matrix.msc3983', 'org.matrix.msc3983.thread', 'org.matrix.msc3026']
+
+function mergeUnstableFeatures(...sources: Array<Record<string, boolean> | undefined>): Record<string, boolean> {
+  const merged: Record<string, boolean> = {}
+  for (const source of sources) {
+    if (!source) continue
+    for (const [key, enabled] of Object.entries(source)) {
+      merged[key] = merged[key] === true || enabled === true
+    }
+  }
+  return merged
+}
+
 export class CapabilityUnavailableError extends Error {
   capability: string
   code = 'CAPABILITY_UNAVAILABLE'
@@ -79,20 +115,14 @@ function tryGetStore() {
 }
 
 export class MatrixCapabilityService {
-  private capabilityMap: Record<HulaCapability, string> = {
-    'sliding-sync': 'org.matrix.msc3575',
-    e2ee: 'm.e2ee',
-    voip: 'm.voip',
-    'friend-list': 'io.hula.friends',
-    'admin-api': 'io.hula.admin'
-  }
-
   hasCapability(capability: HulaCapability): boolean {
     const store = tryGetStore()
     if (!store) return false
-    const featureKey = this.capabilityMap[capability]
-    if (!featureKey) return false
-    return store.hasFeature(featureKey).value || store.hasUnstable(featureKey).value
+    const aliases = HULA_CAPABILITY_ALIASES[capability]
+    return (
+      aliases.unstable.some((feature) => store.hasUnstable(feature).value) ||
+      aliases.capabilities.some((feature) => store.hasFeature(feature).value)
+    )
   }
 
   canUseAdminApi(): boolean {
@@ -104,9 +134,7 @@ export class MatrixCapabilityService {
   }
 
   canUseSlidingSync(): boolean {
-    const store = tryGetStore()
-    if (!store) return false
-    return store.hasUnstable('org.matrix.msc3575').value || store.hasUnstable('org.matrix.simplified_msc3575').value
+    return this.hasCapability('sliding-sync')
   }
 
   canUseE2EE(): boolean {
@@ -121,6 +149,14 @@ export class MatrixCapabilityService {
 
   canUseVoip(): boolean {
     return this.hasCapability('voip')
+  }
+
+  canUseThreads(): boolean {
+    const store = tryGetStore()
+    if (!store) return false
+    return (
+      THREAD_UNSTABLE_FEATURES.some((feature) => store.hasUnstable(feature).value) || store.hasFeature('m.thread').value
+    )
   }
 
   requireCapability(capability: HulaCapability): void {
@@ -160,10 +196,7 @@ export class MatrixCapabilityService {
       const capabilitiesUnstable = (capabilities as Record<string, unknown>).unstable_features as
         | Record<string, boolean>
         | undefined
-      const mergedUnstableFeatures: Record<string, boolean> = {
-        ...(capabilitiesUnstable || {}),
-        ...(versions.unstable_features || {})
-      }
+      const mergedUnstableFeatures = mergeUnstableFeatures(capabilitiesUnstable, versions.unstable_features)
 
       const result: MatrixCapabilities = {
         unstable_features: mergedUnstableFeatures,
@@ -238,7 +271,7 @@ export function useServerCapability() {
     canSetAvatar: computed(() => tryGetStore()?.hasFeature('m.set_avatar_url').value ?? false),
     hasVoip: computed(() => tryGetStore()?.hasFeature('m.voip').value ?? false),
     hasSpaces: computed(() => tryGetStore()?.hasFeature('m.spaces').value ?? false),
-    hasThreads: computed(() => tryGetStore()?.hasUnstable('org.matrix.msc3026').value ?? false),
+    hasThreads: computed(() => service.canUseThreads()),
 
     canUseAdminApi: computed(() => service.canUseAdminApi()),
     canUseFriendList: computed(() => service.canUseFriendList()),

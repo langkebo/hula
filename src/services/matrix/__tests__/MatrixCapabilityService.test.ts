@@ -31,15 +31,21 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     registerCapabilityStoreResolver(() => useCapabilityStore())
   })
 
-  it('canUseSlidingSync reflects msc3575 flags', () => {
+  it('canUseSlidingSync reflects synapse-rust feature flags and compatibility aliases', () => {
     const store = useCapabilityStore()
     expect(matrixCapabilityService.canUseSlidingSync()).toBe(false)
 
-    store.setCapabilities({ unstable_features: { 'org.matrix.msc3575': true } })
+    store.setCapabilities({ unstable_features: { 'org.matrix.msc3886.sliding_sync': true } })
     expect(matrixCapabilityService.canUseSlidingSync()).toBe(true)
 
     store.setCapabilities({
       unstable_features: { 'org.matrix.msc3575': false, 'org.matrix.simplified_msc3575': true }
+    })
+    expect(matrixCapabilityService.canUseSlidingSync()).toBe(true)
+
+    store.setCapabilities({
+      unstable_features: {},
+      capabilities: { 'io.hula.sliding_sync': { enabled: true } }
     })
     expect(matrixCapabilityService.canUseSlidingSync()).toBe(true)
   })
@@ -52,12 +58,20 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     expect(matrixCapabilityService.canUseE2EE()).toBe(false)
   })
 
-  it('canUseVoip checks feature and msc3401', () => {
+  it('canUseVoip checks synapse-rust voice aliases', () => {
     const store = useCapabilityStore()
     expect(matrixCapabilityService.canUseVoip()).toBe(false)
 
-    store.setCapabilities({ capabilities: { 'm.voip': true } })
+    store.setCapabilities({ capabilities: { 'm.voice': { enabled: true } } })
     expect(matrixCapabilityService.canUseVoip()).toBe(true)
+
+    store.setCapabilities({ capabilities: { 'm.voice': { enabled: false }, 'io.hula.voice_extended': true } })
+    expect(matrixCapabilityService.canUseVoip()).toBe(true)
+
+    store.setCapabilities({
+      capabilities: { 'm.voice': { enabled: false }, 'io.hula.voice_extended': { enabled: false } }
+    })
+    expect(matrixCapabilityService.canUseVoip()).toBe(false)
   })
 
   it('canUseFriendList / canUseAdminApi recognize hula extensions', () => {
@@ -70,18 +84,38 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     })
     expect(matrixCapabilityService.canUseFriendList()).toBe(true)
     expect(matrixCapabilityService.canUseAdminApi()).toBe(true)
+
+    store.setCapabilities({
+      capabilities: { 'io.hula.friends': { enabled: false }, 'io.hula.admin': { enabled: false } }
+    })
+    expect(matrixCapabilityService.canUseFriendList()).toBe(false)
+    expect(matrixCapabilityService.canUseAdminApi()).toBe(false)
   })
 
   it('hasCapability resolves symbolic names', () => {
     const store = useCapabilityStore()
     store.setCapabilities({
-      unstable_features: { 'org.matrix.msc3575': true },
+      unstable_features: { 'org.matrix.msc3886.sliding_sync': true },
       capabilities: { 'io.hula.admin': true }
     })
     expect(matrixCapabilityService.hasCapability('sliding-sync')).toBe(true)
     expect(matrixCapabilityService.hasCapability('admin-api')).toBe(true)
     expect(matrixCapabilityService.hasCapability('voip')).toBe(false)
     expect(matrixCapabilityService.hasCapability('friend-list')).toBe(false)
+  })
+
+  it('canUseThreads recognizes the backend m.thread capability and MSC3983 flags', () => {
+    const store = useCapabilityStore()
+    expect(matrixCapabilityService.canUseThreads()).toBe(false)
+
+    store.setCapabilities({ capabilities: { 'm.thread': { enabled: true } } })
+    expect(matrixCapabilityService.canUseThreads()).toBe(true)
+
+    store.setCapabilities({
+      capabilities: { 'm.thread': { enabled: false } },
+      unstable_features: { 'org.matrix.msc3983': true }
+    })
+    expect(matrixCapabilityService.canUseThreads()).toBe(true)
   })
 
   it('requireCapability throws CapabilityUnavailableError when missing', () => {
@@ -99,7 +133,7 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
 
   it('requireCapability is a no-op when capability is present', () => {
     const store = useCapabilityStore()
-    store.setCapabilities({ capabilities: { 'm.voip': true } })
+    store.setCapabilities({ capabilities: { 'm.voice': { enabled: true } } })
     expect(() => matrixCapabilityService.requireCapability('voip')).not.toThrow()
   })
 })
