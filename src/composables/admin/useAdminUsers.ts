@@ -11,6 +11,18 @@ export interface UserSession {
   lastSeenTs?: number
 }
 
+export interface UserStats {
+  joined_rooms?: number
+  joinedRooms?: number
+  messages_sent?: number
+  messagesSent?: number
+  media_uploaded?: number
+  mediaUploaded?: number
+  invites_sent?: number
+  invitesSent?: number
+  [key: string]: unknown
+}
+
 export interface UseAdminUsersResult {
   // state
   users: Ref<UserInfo[]>
@@ -28,7 +40,7 @@ export interface UseAdminUsersResult {
   shadowBanLoading: Ref<boolean>
   userSessions: Ref<UserSession[]>
   sessionsLoading: Ref<boolean>
-  userStats: Ref<Record<string, unknown> | null>
+  userStats: Ref<UserStats | null>
   statsLoading: Ref<boolean>
   accountStatus: Ref<Record<string, unknown> | null>
   accountStatusLoading: Ref<boolean>
@@ -90,7 +102,7 @@ export function useAdminUsers(): UseAdminUsersResult {
   const shadowBanLoading = ref(false)
   const userSessions = ref<UserSession[]>([])
   const sessionsLoading = ref(false)
-  const userStats = ref<Record<string, unknown> | null>(null)
+  const userStats = ref<UserStats | null>(null)
   const statsLoading = ref(false)
   const accountStatus = ref<Record<string, unknown> | null>(null)
   const accountStatusLoading = ref(false)

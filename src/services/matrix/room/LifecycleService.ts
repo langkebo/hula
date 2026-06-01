@@ -1,4 +1,3 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 
@@ -32,7 +31,7 @@ export class MatrixRoomLifecycleService {
           const url = new URL(baseUrl)
           const hostname = url.hostname
           if (hostname && hostname !== '0.0.0.0' && hostname !== '::') {
-            info(`[MatrixRoom] getDomain() 返回空，从 baseUrl 提取域名: ${hostname}`)
+            logger.info(`[MatrixRoom] getDomain() 返回空，从 baseUrl 提取域名: ${hostname}`)
             return hostname
           }
         } catch (err) {
@@ -41,10 +40,10 @@ export class MatrixRoomLifecycleService {
       }
 
       // 允许回退到默认值以保证基本运行
-      warn('[MatrixRoom] 无法确定服务器域名，回退到默认值 matrix.org')
+      logger.warn('[MatrixRoom] 无法确定服务器域名，回退到默认值 matrix.org')
       return 'matrix.org'
     } catch (err) {
-      error(`[MatrixRoom] 获取服务器域名失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取服务器域名失败: ${err}`)
       throw err
     }
   }
@@ -53,10 +52,10 @@ export class MatrixRoomLifecycleService {
     const client = this.getClient(true)
     try {
       const result = await client.upgradeRoom(roomId, newVersion)
-      info(`[MatrixRoom] 升级房间成功: ${roomId} -> ${result}`)
+      logger.info(`[MatrixRoom] 升级房间成功: ${roomId} -> ${result}`)
       return result
     } catch (err) {
-      error(`[MatrixRoom] 升级房间失败: ${err}`)
+      logger.error(`[MatrixRoom] 升级房间失败: ${err}`)
       throw err
     }
   }
@@ -66,9 +65,9 @@ export class MatrixRoomLifecycleService {
       const client = this.getClient(false)
       const room = client.getRoom(roomId)
       if (!room) throw new Error(`房间不存在: ${roomId}`)
-      info(`[MatrixRoom] 房间 ${roomId} 未读计数增加${highlight ? '（高亮）' : ''}`)
+      logger.info(`[MatrixRoom] 房间 ${roomId} 未读计数增加${highlight ? '（高亮）' : ''}`)
     } catch (err) {
-      error(`[MatrixRoom] 增加未读计数失败: ${err}`)
+      logger.error(`[MatrixRoom] 增加未读计数失败: ${err}`)
     }
   }
 
@@ -77,9 +76,9 @@ export class MatrixRoomLifecycleService {
       const client = this.getClient(false)
       const room = client.getRoom(roomId)
       if (!room) throw new Error(`房间不存在: ${roomId}`)
-      info(`[MatrixRoom] 房间 ${roomId} 未读计数已清除`)
+      logger.info(`[MatrixRoom] 房间 ${roomId} 未读计数已清除`)
     } catch (err) {
-      error(`[MatrixRoom] 清除未读计数失败: ${err}`)
+      logger.error(`[MatrixRoom] 清除未读计数失败: ${err}`)
     }
   }
 }

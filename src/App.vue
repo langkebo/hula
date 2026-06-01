@@ -27,7 +27,7 @@
 </template>
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
+
 import { exit } from '@tauri-apps/plugin-process'
 import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.vue'
 import GlobalAriaLive from '@/components/common/GlobalAriaLive.vue'
@@ -200,7 +200,7 @@ const listenMobileReLogin = async () => {
     const { logout } = useLoginFlow()
     addListener(
       listen('relogin', async () => {
-        info('收到重新登录事件')
+        logger.info('收到重新登录事件')
         await logout()
       }),
       'mobile-relogin'
@@ -555,21 +555,7 @@ onMounted(async () => {
   listenMobileReLogin()
 
   // 注册 WS 事件处理器（从 useWsEventHandler 迁移）
-  const wsEventHandler = useWsEventHandler({
-    getMatrixClientService,
-    getMatrixPresenceService,
-    syncAvatarPresence,
-    refreshActiveGroupMembers,
-    subscribedPresenceUserIds,
-    unsubscribePresenceListener: {
-      get value() {
-        return unsubscribePresenceListener
-      },
-      set value(v) {
-        unsubscribePresenceListener = v
-      }
-    }
-  })
+  const wsEventHandler = useWsEventHandler()
   wsEventHandler.registerHandlers()
 })
 

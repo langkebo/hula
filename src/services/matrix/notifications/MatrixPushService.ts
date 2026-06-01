@@ -1,7 +1,9 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { IPusher, IPushRule, IPushRules, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
 import { PushRuleKind, type TweakName } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('MatrixPushService')
 
 type PushRuleScope = 'global' | string
 
@@ -12,7 +14,7 @@ class MatrixPushService extends BaseMatrixService {
       const response = (await client.http.authedRequest('GET', '/_matrix/client/v3/pushers')) as { pushers?: unknown }
       return Array.isArray(response.pushers) ? (response.pushers as IPusher[]) : []
     } catch (err) {
-      error(`[MatrixPush] 获取 pushers 失败: ${err}`)
+      logger.error(`[MatrixPush] 获取 pushers 失败: ${err}`)
       throw err
     }
   }
@@ -22,7 +24,7 @@ class MatrixPushService extends BaseMatrixService {
     try {
       return await client.getPushRules()
     } catch (err) {
-      error(`[MatrixPush] 获取 push rules 失败: ${err}`)
+      logger.error(`[MatrixPush] 获取 push rules 失败: ${err}`)
       throw err
     }
   }
@@ -35,9 +37,9 @@ class MatrixPushService extends BaseMatrixService {
         app_id: appId,
         kind: null
       })
-      info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
+      logger.info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
     } catch (err) {
-      error(`[MatrixPush] 注销 pusher 失败: ${err}`)
+      logger.error(`[MatrixPush] 注销 pusher 失败: ${err}`)
       throw err
     }
   }
@@ -49,9 +51,9 @@ class MatrixPushService extends BaseMatrixService {
         ruleId
       )}/enabled`
       await client.http.authedRequest('PUT', path, undefined, { enabled })
-      info(`[MatrixPush] 设置规则 enabled 成功: ${scope}/${String(kind)}/${ruleId} -> ${enabled}`)
+      logger.info(`[MatrixPush] 设置规则 enabled 成功: ${scope}/${String(kind)}/${ruleId} -> ${enabled}`)
     } catch (err) {
-      error(`[MatrixPush] 设置规则 enabled 失败: ${err}`)
+      logger.error(`[MatrixPush] 设置规则 enabled 失败: ${err}`)
       throw err
     }
   }
@@ -68,9 +70,9 @@ class MatrixPushService extends BaseMatrixService {
         ruleId
       )}/actions`
       await client.http.authedRequest('PUT', path, undefined, { actions })
-      info(`[MatrixPush] 设置规则 actions 成功: ${scope}/${String(kind)}/${ruleId}`)
+      logger.info(`[MatrixPush] 设置规则 actions 成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
-      error(`[MatrixPush] 设置规则 actions 失败: ${err}`)
+      logger.error(`[MatrixPush] 设置规则 actions 失败: ${err}`)
       throw err
     }
   }
@@ -83,9 +85,9 @@ class MatrixPushService extends BaseMatrixService {
         actions: ['dont_notify'],
         enabled: true
       })
-      info(`[MatrixPush] 房间静音成功: ${roomId}`)
+      logger.info(`[MatrixPush] 房间静音成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixPush] 房间静音失败: ${err}`)
+      logger.error(`[MatrixPush] 房间静音失败: ${err}`)
       throw err
     }
   }
@@ -95,9 +97,9 @@ class MatrixPushService extends BaseMatrixService {
     try {
       const path = `/_matrix/client/v3/pushrules/global/room/${encodeURIComponent(roomId)}`
       await client.http.authedRequest('DELETE', path)
-      info(`[MatrixPush] 取消房间静音成功: ${roomId}`)
+      logger.info(`[MatrixPush] 取消房间静音成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixPush] 取消房间静音失败: ${err}`)
+      logger.error(`[MatrixPush] 取消房间静音失败: ${err}`)
       throw err
     }
   }
@@ -117,9 +119,9 @@ class MatrixPushService extends BaseMatrixService {
       if ((pusher as unknown as Record<string, unknown>).profile_tag)
         body.profile_tag = (pusher as unknown as Record<string, unknown>).profile_tag
       await client.http.authedRequest('POST', '/_matrix/client/v3/pushers/set', undefined, body)
-      info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
+      logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
     } catch (err) {
-      error(`[MatrixPush] 注册 pusher 失败: ${err}`)
+      logger.error(`[MatrixPush] 注册 pusher 失败: ${err}`)
       throw err
     }
   }
@@ -139,9 +141,9 @@ class MatrixPushService extends BaseMatrixService {
       if (conditions) body.conditions = conditions
       if (pattern) body.pattern = pattern
       await client.http.authedRequest('PUT', path, undefined, body)
-      info(`[MatrixPush] 创建推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
+      logger.info(`[MatrixPush] 创建推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
-      error(`[MatrixPush] 创建推送规则失败: ${err}`)
+      logger.error(`[MatrixPush] 创建推送规则失败: ${err}`)
       throw err
     }
   }
@@ -151,9 +153,9 @@ class MatrixPushService extends BaseMatrixService {
     try {
       const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
       await client.http.authedRequest('DELETE', path)
-      info(`[MatrixPush] 删除推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
+      logger.info(`[MatrixPush] 删除推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
-      error(`[MatrixPush] 删除推送规则失败: ${err}`)
+      logger.error(`[MatrixPush] 删除推送规则失败: ${err}`)
       throw err
     }
   }

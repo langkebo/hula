@@ -218,7 +218,7 @@ const handleSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--hula-overlay-mask-default);
   color: var(--hula-text-inverse);
   opacity: 0;
   transition: opacity 0.15s;

@@ -1,7 +1,9 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { BackupInfo, KeyBackupManager, MatrixClientExtended } from '@/types/matrix-extensions'
+import type { BackupInfo, KeyBackupManager, MatrixClientExtended, SecureBackupManager } from '@/types/matrix-extensions'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('MatrixKeyBackupService')
 
 export interface BackupVersionInfo {
   version: string
@@ -75,32 +77,6 @@ export interface VerifyResult {
   signatures?: Record<string, unknown>
 }
 
-interface HttpCapableClient {
-  http: {
-    authedRequest: <T = unknown>(
-      method: string,
-      path: string,
-      queryParams?: Record<string, string>,
-      body?: object
-    ) => Promise<T>
-  }
-}
-
-interface BackupVersionsResponse {
-  current_version?: string
-  version?: string
-  algorithm?: string
-  auth_data?: Record<string, unknown>
-  count?: number
-  etag?: string
-  versions?: BackupVersionInfo[]
-}
-
-type MatrixHttpErrorLike = {
-  httpStatus?: number
-  errcode?: string
-}
-
 interface RestoreBackupResult {
   total: number
   imported: number
@@ -111,57 +87,50 @@ interface CreateKeyBackupVersionRequest {
   auth_data: Record<string, unknown>
 }
 
+type MatrixHttpErrorLike = {
+  httpStatus?: number
+  errcode?: string
+}
+
 class MatrixKeyBackupService extends BaseMatrixService {
   initialize(client: MatrixClient): void {
     this.setFallbackClient(client)
-    info('[KeyBackup] 服务已初始化')
-  }
-
-  private ensureClient(): HttpCapableClient {
-    return this.getClient() as HttpCapableClient
+    logger.info('[KeyBackup] 服务已初始化')
   }
 
   private getKeyBackupManager(): KeyBackupManager | null {
-    const client = this.ensureClient() as MatrixClientExtended
+    const client = this.getClient() as MatrixClientExtended
     return client.getKeyBackupManager?.() ?? null
   }
 
-  private async request<T>(method: string, path: string, body?: object): Promise<T> {
-    const client = this.ensureClient()
-    return (await client.http.authedRequest(method, path, undefined, body)) as T
+  private getSecureBackupManager(): SecureBackupManager | null {
+    const client = this.getClient() as MatrixClientExtended
+    return client.getSecureBackupManager?.() ?? null
   }
 
   async checkKeyBackup(): Promise<BackupInfo | null> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
-      if (keyBackupManager) {
-        return await keyBackupManager.checkKeyBackup()
-      }
-
-      const response = await this.request<BackupVersionsResponse>('GET', '/_matrix/client/v3/room_keys/version')
-      if (!response.version || !response.algorithm || !response.auth_data) {
-        return null
-      }
-
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const info = await keyBackupManager.getLatestBackupVersion()
       return {
-        version: response.version,
-        algorithm: response.algorithm,
-        auth_data: response.auth_data,
-        count: response.count,
-        etag: response.etag
+        version: info.version,
+        algorithm: info.algorithm,
+        auth_data: info.auth_data as Record<string, unknown>,
+        count: info.count,
+        etag: info.etag
       }
     } catch (err: unknown) {
       const matrixError = err as MatrixHttpErrorLike
-      // 13.4.4: /room_keys/version 404 表示尚无备份，是规范允许的语义，静默处理
       if (
         matrixError?.httpStatus === 404 ||
         matrixError?.errcode === 'M_NOT_FOUND' ||
         (err instanceof Error && err.message.includes('404'))
       ) {
-        info('[KeyBackup] 尚无密钥备份版本 (404)')
+        logger.info('[KeyBackup] 尚无密钥备份版本 (404)')
         return null
       }
-      error(`[KeyBackup] 检查备份失败: ${err}`)
+      logger.error(`[KeyBackup] 检查备份失败: ${err}`)
       throw err
     }
   }
@@ -169,18 +138,10 @@ class MatrixKeyBackupService extends BaseMatrixService {
   async createKeyBackupVersion(infoRequest: CreateKeyBackupVersionRequest): Promise<{ version: string }> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
-      if (keyBackupManager) {
-        return await keyBackupManager.createKeyBackupVersion(infoRequest)
-      }
-
-      const response = await this.request<{ version: string }>(
-        'POST',
-        '/_matrix/client/v3/room_keys/version',
-        infoRequest
-      )
-      return response
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      return await keyBackupManager.createBackupVersion(infoRequest.algorithm, infoRequest.auth_data)
     } catch (err) {
-      error(`[KeyBackup] 创建密钥备份版本失败: ${err}`)
+      logger.error(`[KeyBackup] 创建密钥备份版本失败: ${err}`)
       throw err
     }
   }
@@ -188,38 +149,26 @@ class MatrixKeyBackupService extends BaseMatrixService {
   async deleteKeyBackupVersion(version: string): Promise<void> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
-      if (keyBackupManager) {
-        await keyBackupManager.deleteKeyBackupVersion(version)
-        return
-      }
-
-      await this.request('DELETE', `/_matrix/client/v3/room_keys/version/${encodeURIComponent(version)}`)
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      await keyBackupManager.deleteBackupVersion(version)
     } catch (err) {
-      error(`[KeyBackup] 删除密钥备份版本失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 删除密钥备份版本失败: ${version}, ${err}`)
       throw err
     }
   }
 
-  async restoreKeyBackup(
-    recoveryKey: string,
-    roomId?: string,
-    sessionId?: string,
-    backupInfo?: BackupInfo
-  ): Promise<RestoreBackupResult> {
+  async restoreKeyBackup(version: string, rooms?: string[]): Promise<RestoreBackupResult> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
-      if (keyBackupManager) {
-        return await keyBackupManager.restoreKeyBackupWithRecoveryKey(recoveryKey, roomId, sessionId, backupInfo)
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.recoverKeys(version, rooms)
+      const data = result as Record<string, unknown>
+      return {
+        total: (data.total_keys as number) ?? 0,
+        imported: (data.recovered_keys as number) ?? 0
       }
-
-      return await this.request<RestoreBackupResult>('POST', '/_matrix/client/v3/room_keys/restore', {
-        recovery_key: recoveryKey,
-        room_id: roomId,
-        session_id: sessionId,
-        backup_info: backupInfo
-      })
     } catch (err) {
-      error(`[KeyBackup] 恢复密钥备份失败: ${err}`)
+      logger.error(`[KeyBackup] 恢复密钥备份失败: ${err}`)
       throw err
     }
   }
@@ -227,10 +176,17 @@ class MatrixKeyBackupService extends BaseMatrixService {
   scheduleKeyBackup(): void {
     const keyBackupManager = this.getKeyBackupManager()
     if (!keyBackupManager) {
-      warn('[KeyBackup] KeyBackupManager 不可用，跳过调度')
+      logger.warn('[KeyBackup] KeyBackupManager 不可用，跳过调度')
       return
     }
-    keyBackupManager.scheduleKeyBackupSend()
+    if (
+      'scheduleKeyBackupSend' in keyBackupManager &&
+      typeof (keyBackupManager as unknown as Record<string, unknown>).scheduleKeyBackupSend === 'function'
+    ) {
+      ;(keyBackupManager as unknown as Record<string, () => void>).scheduleKeyBackupSend()
+    } else {
+      logger.warn('[KeyBackup] KeyBackupManager 不支持 scheduleKeyBackupSend，跳过调度')
+    }
   }
 
   async getBackupVersions(): Promise<BackupVersionInfo[]> {
@@ -253,316 +209,315 @@ class MatrixKeyBackupService extends BaseMatrixService {
 
   async getBackupVersion(version: string): Promise<BackupVersion> {
     try {
-      return await this.request<BackupVersion>(
-        'GET',
-        `/_matrix/client/v3/room_keys/version/${encodeURIComponent(version)}`
-      )
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const info = await keyBackupManager.getBackupVersion(version)
+      return {
+        version: info.version,
+        algorithm: info.algorithm,
+        auth_data: info.auth_data as Record<string, unknown>,
+        count: info.count,
+        etag: info.etag
+      }
     } catch (err) {
-      error(`[KeyBackup] 获取备份版本详情失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 获取备份版本详情失败: ${version}, ${err}`)
       throw err
     }
   }
 
-  async updateBackupVersion(version: string, algorithm: string, authData: Record<string, unknown>): Promise<void> {
+  async updateBackupVersion(version: string, _algorithm: string, authData: Record<string, unknown>): Promise<void> {
     try {
-      await this.request('PUT', `/_matrix/client/v3/room_keys/version/${encodeURIComponent(version)}`, {
-        algorithm,
-        auth_data: authData
-      })
-      info(`[KeyBackup] 更新备份版本成功: ${version}`)
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      await keyBackupManager.updateBackupVersion(version, authData)
+      logger.info(`[KeyBackup] 更新备份版本成功: ${version}`)
     } catch (err) {
-      error(`[KeyBackup] 更新备份版本失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 更新备份版本失败: ${version}, ${err}`)
       throw err
     }
   }
 
   async deleteBackupVersion(version: string): Promise<void> {
     await this.deleteKeyBackupVersion(version)
-    info(`[KeyBackup] 删除备份版本成功: ${version}`)
+    logger.info(`[KeyBackup] 删除备份版本成功: ${version}`)
   }
 
   async getAllBackupKeys(version: string): Promise<RoomKeyBackup> {
     try {
-      const response = await this.request<RoomKeyBackup>(
-        'GET',
-        `/_matrix/client/v3/room_keys/keys/${encodeURIComponent(version)}`
-      )
-      info(`[KeyBackup] 获取所有备份密钥成功: ${version}`)
-      return response
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.getAllRoomKeys(version)
+      logger.info(`[KeyBackup] 获取所有备份密钥成功: ${version}`)
+      return result as RoomKeyBackup
     } catch (err) {
-      error(`[KeyBackup] 获取所有备份密钥失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 获取所有备份密钥失败: ${version}, ${err}`)
       throw err
     }
   }
 
   async uploadKeys(version: string, keys: RoomKeyBackup | Record<string, unknown>): Promise<void> {
     try {
-      await this.request('PUT', `/_matrix/client/v3/room_keys/keys/${encodeURIComponent(version)}`, keys)
-      info(`[KeyBackup] 上传密钥成功: ${version}`)
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      await keyBackupManager.putAllRoomKeys(version, keys as Record<string, unknown>)
+      logger.info(`[KeyBackup] 上传密钥成功: ${version}`)
     } catch (err) {
-      error(`[KeyBackup] 上传密钥失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 上传密钥失败: ${version}, ${err}`)
       throw err
     }
   }
 
-  async recoverKeys(version: string, recoveryKey: string): Promise<void> {
-    const backupInfo = await this.getBackupVersion(version)
-    await this.restoreKeyBackup(recoveryKey, undefined, undefined, backupInfo)
-    info(`[KeyBackup] 恢复密钥成功: ${version}`)
+  async recoverKeys(version: string): Promise<void> {
+    await this.restoreKeyBackup(version)
+    logger.info(`[KeyBackup] 恢复密钥成功: ${version}`)
   }
 
   async getRecoveryProgress(version: string): Promise<RecoveryProgress> {
     try {
-      const response = await this.request<RecoveryProgress>(
-        'GET',
-        `/_matrix/client/v3/room_keys/recovery/${encodeURIComponent(version)}/progress`
-      )
-      info(`[KeyBackup] 获取恢复进度成功: ${version}`)
-      return response
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.getRecoveryProgress(version)
+      logger.info(`[KeyBackup] 获取恢复进度成功: ${version}`)
+      return result as RecoveryProgress
     } catch (err) {
-      error(`[KeyBackup] 获取恢复进度失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 获取恢复进度失败: ${version}, ${err}`)
       throw err
     }
   }
 
   async verifyBackup(version: string): Promise<VerifyResult> {
     try {
-      const response = await this.request<VerifyResult>(
-        'GET',
-        `/_matrix/client/v3/room_keys/verify/${encodeURIComponent(version)}`
-      )
-      info(`[KeyBackup] 验证备份成功: ${version}`)
-      return response
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.verifyBackup(version)
+      logger.info(`[KeyBackup] 验证备份成功: ${version}`)
+      return result as VerifyResult
     } catch (err) {
-      error(`[KeyBackup] 验证备份失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 验证备份失败: ${version}, ${err}`)
       throw err
     }
   }
 
   async exportKeys(version?: string): Promise<ExportResult> {
     try {
-      const path = version
-        ? `/_matrix/client/v3/room_keys/export/${encodeURIComponent(version)}`
-        : '/_matrix/client/v3/room_keys/export'
-      const response = await this.request<ExportResult>('GET', path)
-      info('[KeyBackup] 导出密钥成功')
-      return response
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.exportKeys(version)
+      logger.info('[KeyBackup] 导出密钥成功')
+      return result as ExportResult
     } catch (err) {
-      error(`[KeyBackup] 导出密钥失败: ${err}`)
+      logger.error(`[KeyBackup] 导出密钥失败: ${err}`)
       throw err
     }
   }
 
   async importKeys(keys: ExportResult | Record<string, unknown>, version?: string): Promise<ImportResult> {
     try {
-      const path = version
-        ? `/_matrix/client/v3/room_keys/import/${encodeURIComponent(version)}`
-        : '/_matrix/client/v3/room_keys/import'
-      const response = await this.request<ImportResult>('POST', path, keys)
-      info('[KeyBackup] 导入密钥成功')
-      return response
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const roomKeys = ('room_keys' in keys ? keys.room_keys : keys) as Array<Record<string, unknown>>
+      const result = await keyBackupManager.importKeys(roomKeys, version)
+      logger.info('[KeyBackup] 导入密钥成功')
+      return result as ImportResult
     } catch (err) {
-      error(`[KeyBackup] 导入密钥失败: ${err}`)
+      logger.error(`[KeyBackup] 导入密钥失败: ${err}`)
       throw err
     }
   }
 
   async getBackupKeysByVersion(version: string): Promise<RoomKeyBackup> {
     try {
-      return await this.request<RoomKeyBackup>(
-        'GET',
-        `/_matrix/client/v3/room_keys/keys/${encodeURIComponent(version)}`
-      )
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.getAllRoomKeys(version)
+      return result as RoomKeyBackup
     } catch (err) {
-      error(`[KeyBackup] 获取指定版本密钥失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 获取指定版本密钥失败: ${version}, ${err}`)
       throw err
     }
   }
 
   async uploadKeysToVersion(version: string, keys: RoomKeyBackup | Record<string, unknown>): Promise<void> {
     try {
-      await this.request('PUT', `/_matrix/client/v3/room_keys/keys/${encodeURIComponent(version)}`, keys)
-      info(`[KeyBackup] 上传密钥到指定版本成功: ${version}`)
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      await keyBackupManager.putAllRoomKeys(version, keys as Record<string, unknown>)
+      logger.info(`[KeyBackup] 上传密钥到指定版本成功: ${version}`)
     } catch (err) {
-      error(`[KeyBackup] 上传密钥到指定版本失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 上传密钥到指定版本失败: ${version}, ${err}`)
       throw err
     }
   }
 
   async getRoomBackupKeys(version: string, roomId: string): Promise<Record<string, unknown>> {
     try {
-      return await this.request<Record<string, unknown>>(
-        'GET',
-        `/_matrix/client/v3/room_keys/keys/${encodeURIComponent(version)}/${encodeURIComponent(roomId)}`
-      )
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.getRoomKeys(version, roomId)
+      return result as Record<string, unknown>
     } catch (err) {
-      error(`[KeyBackup] 获取房间备份密钥失败: ${roomId}, ${err}`)
+      logger.error(`[KeyBackup] 获取房间备份密钥失败: ${roomId}, ${err}`)
       throw err
     }
   }
 
   async getSessionBackupKey(version: string, roomId: string, sessionId: string): Promise<Record<string, unknown>> {
     try {
-      return await this.request<Record<string, unknown>>(
-        'GET',
-        `/_matrix/client/v3/room_keys/keys/${encodeURIComponent(version)}/${encodeURIComponent(roomId)}/${encodeURIComponent(sessionId)}`
-      )
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.getSessionKey(version, roomId, sessionId)
+      return result as Record<string, unknown>
     } catch (err) {
-      error(`[KeyBackup] 获取会话备份密钥失败: ${roomId}/${sessionId}, ${err}`)
+      logger.error(`[KeyBackup] 获取会话备份密钥失败: ${roomId}/${sessionId}, ${err}`)
       throw err
     }
   }
 
   async batchRecover(version: string, options?: { rooms?: string[]; limit?: number }): Promise<BatchRecoverResult> {
     try {
-      const body: Record<string, unknown> = {}
-      if (options?.rooms) body.rooms = options.rooms
-      if (options?.limit) body.limit = options.limit
-      const response = await this.request<BatchRecoverResult>('POST', `/_matrix/client/v3/room_keys/batch_recover`, {
-        version,
-        ...body
-      })
-      info(`[KeyBackup] 批量恢复成功: ${version}`)
-      return response
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.batchRecover(version, options?.rooms ?? [], options?.limit)
+      logger.info(`[KeyBackup] 批量恢复成功: ${version}`)
+      return result as BatchRecoverResult
     } catch (err) {
-      error(`[KeyBackup] 批量恢复失败: ${err}`)
+      logger.error(`[KeyBackup] 批量恢复失败: ${err}`)
       throw err
     }
   }
 
   async recoverRoomKeys(version: string, roomId: string): Promise<Record<string, unknown>> {
     try {
-      const response = await this.request<Record<string, unknown>>(
-        'GET',
-        `/_matrix/client/v3/room_keys/recover/${encodeURIComponent(version)}/${encodeURIComponent(roomId)}`
-      )
-      info(`[KeyBackup] 房间级恢复成功: ${roomId}`)
-      return response
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.recoverRoomKeys(version, roomId)
+      logger.info(`[KeyBackup] 房间级恢复成功: ${roomId}`)
+      return result as Record<string, unknown>
     } catch (err) {
-      error(`[KeyBackup] 房间级恢复失败: ${roomId}, ${err}`)
+      logger.error(`[KeyBackup] 房间级恢复失败: ${roomId}, ${err}`)
       throw err
     }
   }
 
   async recoverSessionKey(version: string, roomId: string, sessionId: string): Promise<Record<string, unknown>> {
     try {
-      const response = await this.request<Record<string, unknown>>(
-        'GET',
-        `/_matrix/client/v3/room_keys/recover/${encodeURIComponent(version)}/${encodeURIComponent(roomId)}/${encodeURIComponent(sessionId)}`
-      )
-      info(`[KeyBackup] 会话级恢复成功: ${roomId}/${sessionId}`)
-      return response
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.recoverSessionKey(version, roomId, sessionId)
+      logger.info(`[KeyBackup] 会话级恢复成功: ${roomId}/${sessionId}`)
+      return result as Record<string, unknown>
     } catch (err) {
-      error(`[KeyBackup] 会话级恢复失败: ${roomId}/${sessionId}, ${err}`)
+      logger.error(`[KeyBackup] 会话级恢复失败: ${roomId}/${sessionId}, ${err}`)
       throw err
     }
   }
 
   async exportKeysByVersion(version: string): Promise<ExportResult> {
     try {
-      return await this.request<ExportResult>(
-        'GET',
-        `/_matrix/client/v3/room_keys/export/${encodeURIComponent(version)}`
-      )
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const result = await keyBackupManager.exportKeys(version)
+      return result as ExportResult
     } catch (err) {
-      error(`[KeyBackup] 按版本导出密钥失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 按版本导出密钥失败: ${version}, ${err}`)
       throw err
     }
   }
 
   async importKeysToVersion(version: string, keys: ExportResult | Record<string, unknown>): Promise<ImportResult> {
     try {
-      return await this.request<ImportResult>(
-        'POST',
-        `/_matrix/client/v3/room_keys/import/${encodeURIComponent(version)}`,
-        keys
-      )
+      const keyBackupManager = this.getKeyBackupManager()
+      if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
+      const roomKeys = ('room_keys' in keys ? keys.room_keys : keys) as Array<Record<string, unknown>>
+      const result = await keyBackupManager.importKeys(roomKeys, version)
+      return result as ImportResult
     } catch (err) {
-      error(`[KeyBackup] 按版本导入密钥失败: ${version}, ${err}`)
+      logger.error(`[KeyBackup] 按版本导入密钥失败: ${version}, ${err}`)
       throw err
     }
   }
 
   // ==================== Secure Backup ====================
 
-  async createSecureBackup(options: {
-    algorithm?: string
-    auth_data?: Record<string, unknown>
-  }): Promise<{ id: string; algorithm: string }> {
+  async createSecureBackup(passphrase: string): Promise<{ id: string; algorithm: string }> {
     try {
-      const body: Record<string, unknown> = {}
-      if (options.algorithm) body.algorithm = options.algorithm
-      if (options.auth_data) body.auth_data = options.auth_data
-      const response = await this.request<{ id: string; algorithm: string }>(
-        'POST',
-        '/_matrix/client/v3/keys/backup/secure',
-        body
-      )
-      info('[KeyBackup] 创建安全备份成功')
-      return response
+      const secureBackupManager = this.getSecureBackupManager()
+      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
+      const result = await secureBackupManager.createSecureBackup(passphrase)
+      logger.info('[KeyBackup] 创建安全备份成功')
+      return { id: result.backup_id, algorithm: result.algorithm }
     } catch (err) {
-      error(`[KeyBackup] 创建安全备份失败: ${err}`)
+      logger.error(`[KeyBackup] 创建安全备份失败: ${err}`)
       throw err
     }
   }
 
   async getSecureBackup(backupId: string): Promise<Record<string, unknown> | null> {
     try {
-      return await this.request<Record<string, unknown>>(
-        'GET',
-        `/_matrix/client/v3/keys/backup/secure/${encodeURIComponent(backupId)}`
-      )
+      const secureBackupManager = this.getSecureBackupManager()
+      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
+      const result = await secureBackupManager.getSecureBackup(backupId)
+      return result as unknown as Record<string, unknown>
     } catch (err) {
-      error(`[KeyBackup] 获取安全备份失败: ${backupId}, ${err}`)
+      logger.error(`[KeyBackup] 获取安全备份失败: ${backupId}, ${err}`)
       return null
     }
   }
 
   async deleteSecureBackup(backupId: string): Promise<void> {
     try {
-      await this.request('DELETE', `/_matrix/client/v3/keys/backup/secure/${encodeURIComponent(backupId)}`)
-      info(`[KeyBackup] 删除安全备份成功: ${backupId}`)
+      const secureBackupManager = this.getSecureBackupManager()
+      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
+      await secureBackupManager.deleteSecureBackup(backupId)
+      logger.info(`[KeyBackup] 删除安全备份成功: ${backupId}`)
     } catch (err) {
-      error(`[KeyBackup] 删除安全备份失败: ${backupId}, ${err}`)
+      logger.error(`[KeyBackup] 删除安全备份失败: ${backupId}, ${err}`)
       throw err
     }
   }
 
-  async addKeysToSecureBackup(backupId: string, keys: Record<string, unknown>): Promise<void> {
+  async addKeysToSecureBackup(
+    backupId: string,
+    passphrase: string,
+    sessionKeys: Array<{ session_id: string; session_data: Record<string, unknown> }>
+  ): Promise<void> {
     try {
-      await this.request('POST', `/_matrix/client/v3/keys/backup/secure/${encodeURIComponent(backupId)}/keys`, keys)
-      info(`[KeyBackup] 写入安全备份密钥成功: ${backupId}`)
+      const secureBackupManager = this.getSecureBackupManager()
+      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
+      await secureBackupManager.addKeysToSecureBackup(backupId, passphrase, sessionKeys)
+      logger.info(`[KeyBackup] 写入安全备份密钥成功: ${backupId}`)
     } catch (err) {
-      error(`[KeyBackup] 写入安全备份密钥失败: ${backupId}, ${err}`)
+      logger.error(`[KeyBackup] 写入安全备份密钥失败: ${backupId}, ${err}`)
       throw err
     }
   }
 
-  async restoreFromSecureBackup(backupId: string, recoveryKey: string): Promise<ImportResult> {
+  async restoreFromSecureBackup(backupId: string, passphrase: string): Promise<ImportResult> {
     try {
-      const response = await this.request<ImportResult>(
-        'POST',
-        `/_matrix/client/v3/keys/backup/secure/${encodeURIComponent(backupId)}/restore`,
-        { recovery_key: recoveryKey }
-      )
-      info(`[KeyBackup] 安全备份恢复成功: ${backupId}`)
-      return response
+      const secureBackupManager = this.getSecureBackupManager()
+      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
+      const result = await secureBackupManager.restoreFromSecureBackup(backupId, passphrase)
+      logger.info(`[KeyBackup] 安全备份恢复成功: ${backupId}`)
+      return {
+        count: result.recovered_keys,
+        failed: 0,
+        total: result.total_keys
+      }
     } catch (err) {
-      error(`[KeyBackup] 安全备份恢复失败: ${backupId}, ${err}`)
+      logger.error(`[KeyBackup] 安全备份恢复失败: ${backupId}, ${err}`)
       throw err
     }
   }
 
-  async verifySecureBackup(backupId: string): Promise<VerifyResult> {
+  async verifySecureBackup(backupId: string, passphrase: string): Promise<VerifyResult> {
     try {
-      const response = await this.request<VerifyResult>(
-        'POST',
-        `/_matrix/client/v3/keys/backup/secure/${encodeURIComponent(backupId)}/verify`
-      )
-      info(`[KeyBackup] 安全备份校验成功: ${backupId}`)
-      return response
+      const secureBackupManager = this.getSecureBackupManager()
+      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
+      const result = await secureBackupManager.verifySecureBackup(backupId, passphrase)
+      logger.info(`[KeyBackup] 安全备份校验成功: ${backupId}`)
+      return { valid: result.valid, algorithm: '', auth_data: {}, key_count: 0 }
     } catch (err) {
-      error(`[KeyBackup] 安全备份校验失败: ${backupId}, ${err}`)
+      logger.error(`[KeyBackup] 安全备份校验失败: ${backupId}, ${err}`)
       throw err
     }
   }

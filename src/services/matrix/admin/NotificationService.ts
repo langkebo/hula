@@ -1,5 +1,7 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import type { ServerNoticeInfo, ServerNoticeResult } from './AdminTypes'
+
+const logger = createLogger('NotificationService')
 
 type NotificationAdminSdk = {
   sendServerNotice(
@@ -40,10 +42,10 @@ export class AdminNotificationService {
         userId,
         content as { msgtype: string; body: string; [k: string]: unknown }
       )
-      info(`[AdminNotification] 服务器通知已发送: ${userId}`)
+      logger.info(`[AdminNotification] 服务器通知已发送: ${userId}`)
       return { eventId: result?.event_id }
     } catch (err) {
-      error(`[AdminNotification] 发送服务器通知失败: ${err}`)
+      logger.error(`[AdminNotification] 发送服务器通知失败: ${err}`)
       throw err
     }
   }
@@ -64,7 +66,7 @@ export class AdminNotificationService {
         })
       }
     } catch (err) {
-      error(`[AdminNotification] 获取服务器通知失败: ${err}`)
+      logger.error(`[AdminNotification] 获取服务器通知失败: ${err}`)
       return null
     }
   }
@@ -74,7 +76,7 @@ export class AdminNotificationService {
       const admin = await this.sdkAdmin()
       return (await admin.getUserNotification?.(userId)) ?? null
     } catch (err) {
-      error(`[AdminNotification] 获取用户通知设置失败: ${err}`)
+      logger.error(`[AdminNotification] 获取用户通知设置失败: ${err}`)
       return null
     }
   }
@@ -83,9 +85,9 @@ export class AdminNotificationService {
     try {
       const admin = await this.sdkAdmin()
       await admin.setUserNotification?.(userId, settings)
-      info(`[AdminNotification] 更新用户通知设置: ${userId}`)
+      logger.info(`[AdminNotification] 更新用户通知设置: ${userId}`)
     } catch (err) {
-      error(`[AdminNotification] 更新用户通知设置失败: ${err}`)
+      logger.error(`[AdminNotification] 更新用户通知设置失败: ${err}`)
       throw err
     }
   }
@@ -96,7 +98,7 @@ export class AdminNotificationService {
       const result = await admin.getUserPushers?.(userId)
       return (result?.pushers ?? []) as Array<Record<string, unknown>>
     } catch (err) {
-      error(`[AdminNotification] 获取用户 Pushers 失败: ${err}`)
+      logger.error(`[AdminNotification] 获取用户 Pushers 失败: ${err}`)
       return []
     }
   }
@@ -105,9 +107,9 @@ export class AdminNotificationService {
     try {
       const admin = await this.sdkAdmin()
       await admin.deleteUserPusher?.(userId, pushkey)
-      info(`[AdminNotification] 删除用户 Pusher: ${userId}`)
+      logger.info(`[AdminNotification] 删除用户 Pusher: ${userId}`)
     } catch (err) {
-      error(`[AdminNotification] 删除用户 Pusher 失败: ${err}`)
+      logger.error(`[AdminNotification] 删除用户 Pusher 失败: ${err}`)
       throw err
     }
   }
@@ -122,10 +124,10 @@ export class AdminNotificationService {
       const body: { content: string; type?: string; target_users?: string[] } = { content, type }
       if (targetUsers) body.target_users = targetUsers
       const result = await admin.createNotification?.(body)
-      info('[AdminNotification] 创建系统通知成功')
+      logger.info('[AdminNotification] 创建系统通知成功')
       return { notificationId: result?.notification_id ?? '' }
     } catch (err) {
-      error(`[AdminNotification] 创建系统通知失败: ${err}`)
+      logger.error(`[AdminNotification] 创建系统通知失败: ${err}`)
       throw err
     }
   }
@@ -142,7 +144,7 @@ export class AdminNotificationService {
         nextToken: result?.next_token
       }
     } catch (err) {
-      error(`[AdminNotification] 获取系统通知列表失败: ${err}`)
+      logger.error(`[AdminNotification] 获取系统通知列表失败: ${err}`)
       return { notifications: [] }
     }
   }
@@ -152,7 +154,7 @@ export class AdminNotificationService {
       const admin = await this.sdkAdmin()
       return (await admin.getNotification?.(notificationId)) ?? null
     } catch (err) {
-      error(`[AdminNotification] 获取系统通知详情失败: ${err}`)
+      logger.error(`[AdminNotification] 获取系统通知详情失败: ${err}`)
       return null
     }
   }
@@ -161,9 +163,9 @@ export class AdminNotificationService {
     try {
       const admin = await this.sdkAdmin()
       await admin.updateNotification?.(notificationId, updates)
-      info(`[AdminNotification] 更新系统通知: ${notificationId}`)
+      logger.info(`[AdminNotification] 更新系统通知: ${notificationId}`)
     } catch (err) {
-      error(`[AdminNotification] 更新系统通知失败: ${err}`)
+      logger.error(`[AdminNotification] 更新系统通知失败: ${err}`)
       throw err
     }
   }
@@ -172,9 +174,9 @@ export class AdminNotificationService {
     try {
       const admin = await this.sdkAdmin()
       await admin.deleteNotification?.(notificationId)
-      info(`[AdminNotification] 删除系统通知: ${notificationId}`)
+      logger.info(`[AdminNotification] 删除系统通知: ${notificationId}`)
     } catch (err) {
-      error(`[AdminNotification] 删除系统通知失败: ${err}`)
+      logger.error(`[AdminNotification] 删除系统通知失败: ${err}`)
       throw err
     }
   }

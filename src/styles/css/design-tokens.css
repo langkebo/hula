@@ -2,7 +2,10 @@
   /* ==================== Hula Design Tokens ==================== */
 
   /* 品牌色 */
-  --hula-color-primary-500: #13987f;
+  --hula-brand: #13987f;
+  --hula-brand-light: #cef9ec;
+  --hula-brand-sidebar: #64a29c;
+  --hula-color-primary-500: var(--hula-brand);
   --hula-color-primary-400: #1ab292;
   --hula-color-primary-300: #64c9b3;
   --hula-color-primary-600: #0f7a66;
@@ -47,7 +50,7 @@
   --hula-surface-subtle: #f1f1f1;
   --hula-surface-elevated: #fdfdfd;
   --hula-surface-search: #eaeaea;
-  --hula-surface-sidebar: #64a29c;
+  --hula-surface-sidebar: var(--hula-brand-sidebar);
   --hula-surface-sidebar-hover: rgba(255, 255, 255, 0.2);
   --hula-surface-sidebar-active: rgba(222, 222, 222, 0.2);
   --hula-surface-sidebar-selected: rgba(222, 222, 222, 0.2);
@@ -126,6 +129,11 @@
   --hula-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
   --hula-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
   --hula-shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --hula-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --hula-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --hula-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --hula-shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --hula-shadow-top-bar: 0 -3px 6px -4px rgba(0, 0, 0, 0.1);
 
   /* 动效 */
   --hula-motion-duration-fast: 120ms;
@@ -200,6 +208,14 @@
   --hula-admin-health-ok-text: #2e7d32;
   --hula-admin-health-err-bg: #ffebee;
   --hula-admin-health-err-text: #c62828;
+
+  --hula-encryption-surface-subtle: rgba(0, 0, 0, 0.02);
+  --hula-encryption-surface-dark: rgba(255, 255, 255, 0.05);
+  --hula-overlay-mobile-sheet: rgba(255, 255, 255, 0.85);
+  --hula-color-indigo-500: #6366f1;
+  --hula-color-indigo-100: rgba(99, 102, 241, 0.14);
+  --hula-admin-notice-text: #2a5f9e;
+  --hula-admin-notice-bg: #eef6ff;
 
   /* ==================== Backward-Compatible Aliases ==================== */
 
@@ -436,9 +452,9 @@
   /* 右侧面板主题渐变背景 */
   --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.3) 20%, rgba(130, 193, 187, 0.3) 100%);
   /* 选中边框品牌色 */
-  --border-active-color: #64a29c;
+  --border-active-color: var(--hula-brand-sidebar);
   /* 消息激活色 */
-  --msg-active-color: #13987f;
+  --msg-active-color: var(--hula-brand);
 }
 
 /* 暗色主题 */
@@ -499,6 +515,11 @@ html[data-theme='dark'] {
   --hula-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.32);
   --hula-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
   --hula-shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --hula-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.24);
+  --hula-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.36);
+  --hula-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.36);
+  --hula-shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.48);
+  --hula-shadow-top-bar: 0 -3px 6px -4px rgba(0, 0, 0, 0.24);
   --hula-settings-divider: rgba(255, 255, 255, 0.05);
   --hula-settings-card-bg: rgba(255, 255, 255, 0.05);
   --hula-settings-card-bg-hover: rgba(255, 255, 255, 0.1);
@@ -544,6 +565,12 @@ html[data-theme='dark'] {
   --hula-admin-health-ok-text: #66bb6a;
   --hula-admin-health-err-bg: rgba(198, 40, 40, 0.15);
   --hula-admin-health-err-text: #ef5350;
+
+  --hula-encryption-surface-subtle: rgba(255, 255, 255, 0.05);
+  --hula-encryption-surface-dark: rgba(0, 0, 0, 0.02);
+  --hula-overlay-mobile-sheet: rgba(33, 33, 33, 0.95);
+  --hula-admin-notice-text: #40a9ff;
+  --hula-admin-notice-bg: rgba(24, 144, 255, 0.12);
 
   --color-success: var(--hula-color-success-500);
   --color-warning: var(--hula-color-warning-500);
@@ -665,6 +692,6 @@ html[data-theme='dark'] {
 
   /* 暗色右侧面板主题渐变背景 */
   --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.2) 0%, rgba(130, 193, 187, 0.2) 150%);
-  --border-active-color: #64a29c;
+  --border-active-color: var(--hula-brand-sidebar);
   --msg-active-color: rgba(19, 152, 127, 0.4);
 }

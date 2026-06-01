@@ -1,7 +1,7 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { ref } from 'vue'
 import { TauriCommand } from '@/enums'
+import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
@@ -53,6 +53,8 @@ import { AdminRoomService } from './RoomService'
 import { type AdminFeatureFlag, type AdminFeatureFlagInput, AdminSecurityService } from './SecurityService'
 import { AdminServerService } from './ServerService'
 import { AdminUserService } from './UserService'
+
+const logger = createLogger('AdminFacadeService')
 
 export type {
   AdminReport,
@@ -113,7 +115,9 @@ class AdminFacadeService extends BaseMatrixService {
     () => this.sdkAdmin(),
     () => this.getClient()
   )
-  readonly applications = new AdminApplicationService(() => this.sdkAdmin())
+  readonly applications = new AdminApplicationService(
+    async () => this.sdkAdmin() as unknown as import('./ApplicationService').ApplicationServiceAdmin
+  )
   readonly reports = new AdminReportService(
     () => this.sdkAdmin(),
     () => this.getClient()
@@ -129,7 +133,7 @@ class AdminFacadeService extends BaseMatrixService {
   readonly moderation = new AdminModerationService(() => this.getClient())
 
   initialize(): void {
-    info('[Admin] 服务已初始化')
+    logger.info('[Admin] 服务已初始化')
   }
 
   async checkAdminApiAvailability(): Promise<boolean> {
@@ -153,7 +157,7 @@ class AdminFacadeService extends BaseMatrixService {
       const accessToken = client.getAccessToken()
 
       if (!userId || !accessToken) {
-        warn('[Admin] 服务端权限验证: 缺少 userId 或 accessToken')
+        logger.warn('[Admin] 服务端权限验证: 缺少 userId 或 accessToken')
         return false
       }
 
@@ -169,7 +173,7 @@ class AdminFacadeService extends BaseMatrixService {
       })
 
       if (result.isErr()) {
-        error(`[Admin] 服务端权限验证异常: ${result.error}`)
+        logger.error(`[Admin] 服务端权限验证异常: ${result.error}`)
         return false
       }
 
@@ -177,20 +181,20 @@ class AdminFacadeService extends BaseMatrixService {
       this.adminVerifiedAt = now
 
       if (!result.value.is_admin) {
-        warn(`[Admin] 服务端权限验证失败: userId=${result.value.user_id}, isAdmin=false`)
+        logger.warn(`[Admin] 服务端权限验证失败: userId=${result.value.user_id}, isAdmin=false`)
       }
 
       return result.value.is_admin
     } catch (err) {
-      error(`[Admin] 服务端权限验证异常: ${err}`)
+      logger.error(`[Admin] 服务端权限验证异常: ${err}`)
       return false
     }
   }
 
-  private async sdkAdmin() {
+  private async sdkAdmin(): Promise<import('matrix-js-sdk/admin').AdminManager> {
     const hasPermission = await this.verifyServerSidePermission()
     if (!hasPermission) {
-      error('[Admin] 权限不足，拒绝访问 SDK AdminManager')
+      logger.error('[Admin] 权限不足，拒绝访问 SDK AdminManager')
       throw new Error('ADMIN_PERMISSION_DENIED')
     }
     const client = this.getClient() as MatrixClient & {

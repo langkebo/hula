@@ -2,7 +2,7 @@
   <!-- 通知样式窗口 (接收方且未接听) -->
   <div
     v-if="isReceiver && !isCallAccepted"
-    class="w-360px h-full bg-white dark:bg-gray-800 flex-y-center px-12px select-none">
+    class="w-360px h-full bg-[--hula-surface-panel] dark:bg-[--hula-surface-panel] flex-y-center px-12px select-none">
     <!-- 用户头像 -->
     <div class="relative mr-12px">
       <n-avatar
@@ -12,7 +12,8 @@
         :fallback-src="cssVar('--avatar-fallback-src')"
         class="rounded-12px shadow-md" />
       <!-- 通话类型指示器 -->
-      <div class="absolute -bottom-2px -right-2px w-20px h-20px rounded-full bg-blue-500 flex-center shadow-lg">
+      <div
+        class="absolute -bottom-2px -right-2px w-20px h-20px rounded-full bg-[--hula-color-primary-500] flex-center shadow-lg">
         <svg class="size-14px text-[--hula-text-inverse]">
           <use :href="callType === CallTypeEnum.VIDEO ? '#video-one' : '#phone-telephone'"></use>
         </svg>
@@ -21,10 +22,10 @@
 
     <!-- 用户信息和状态 -->
     <div class="flex-1 min-w-0">
-      <div class="text-15px font-semibold text-gray-900 dark:text-white mb-12px truncate">
+      <div class="text-15px font-semibold text-[--hula-text-primary] dark:text-white mb-12px truncate">
         {{ remoteUserInfo?.name || t('message.call_window.unknown_user') }}
       </div>
-      <div class="text-12px text-gray-500 dark:text-gray-400 flex items-center">
+      <div class="text-12px text-[--hula-text-tertiary] dark:text-[--hula-text-tertiary] flex items-center">
         <div class="w-6px h-6px rounded-full bg-[--hula-color-primary-500] mr-6px animate-pulse"></div>
         {{ t('message.call_window.incoming') }} ·
         {{
@@ -148,7 +149,7 @@
                 class="size-44px rounded-full flex-center cursor-pointer"
                 :class="
                   !isMuted
-                    ? 'bg-gray-600 hover:bg-gray-500'
+                    ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
                     : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
                 ">
                 <svg class="size-16px text-[--hula-text-inverse]">
@@ -164,7 +165,7 @@
                 class="size-44px rounded-full flex-center cursor-pointer"
                 :class="
                   isSpeakerOn
-                    ? 'bg-gray-600 hover:bg-gray-500'
+                    ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
                     : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
                 ">
                 <svg class="size-16px text-[--hula-text-inverse]">
@@ -177,7 +178,7 @@
             <div v-if="callType === CallTypeEnum.VIDEO" class="flex-center">
               <div
                 @click="switchCameraFacing"
-                class="size-44px rounded-full flex-center cursor-pointer bg-gray-600 hover:bg-gray-500">
+                class="size-44px rounded-full flex-center cursor-pointer bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]">
                 <svg class="size-16px text-[--hula-text-inverse]">
                   <use href="#refresh"></use>
                 </svg>
@@ -191,7 +192,7 @@
                 class="size-44px rounded-full flex-center cursor-pointer"
                 :class="
                   isVideoEnabled
-                    ? 'bg-gray-600 hover:bg-gray-500'
+                    ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
                     : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
                 ">
                 <svg class="size-16px text-[--hula-text-inverse]">
@@ -254,14 +255,14 @@
             class="size-44px rounded-full flex-center cursor-pointer"
             :class="
               !isMuted
-                ? 'bg-gray-600 hover:bg-gray-500'
+                ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
                 : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
             ">
             <svg class="size-16px text-[--hula-text-inverse]">
               <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
             </svg>
           </div>
-          <div class="text-12px text-gray-400 text-center">
+          <div class="text-12px text-[--hula-text-quaternary] text-center">
             {{ !isMuted ? t('message.call_window.mic_on') : t('message.call_window.mic_off') }}
           </div>
         </div>
@@ -273,14 +274,14 @@
             class="size-44px rounded-full flex-center cursor-pointer"
             :class="
               isSpeakerOn
-                ? 'bg-gray-600 hover:bg-gray-500'
+                ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
                 : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
             ">
             <svg class="size-16px text-[--hula-text-inverse]">
               <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
             </svg>
           </div>
-          <div class="text-12px text-gray-400 text-center">
+          <div class="text-12px text-[--hula-text-quaternary] text-center">
             {{ isSpeakerOn ? t('message.call_window.speaker_on') : t('message.call_window.speaker_off') }}
           </div>
         </div>
@@ -292,14 +293,14 @@
             class="size-44px rounded-full flex-center cursor-pointer"
             :class="
               isVideoEnabled
-                ? 'bg-gray-600 hover:bg-gray-500'
+                ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
                 : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
             ">
             <svg class="size-16px text-[--hula-text-inverse]">
               <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
             </svg>
           </div>
-          <div class="text-12px text-gray-400 text-center">
+          <div class="text-12px text-[--hula-text-quaternary] text-center">
             {{ isVideoEnabled ? t('message.call_window.camera_disable') : t('message.call_window.camera_enable') }}
           </div>
         </div>
@@ -313,7 +314,7 @@
               <use href="#PhoneHangup"></use>
             </svg>
           </div>
-          <div class="text-12px text-gray-400 text-center">{{ t('message.call_window.hangup') }}</div>
+          <div class="text-12px text-[--hula-text-quaternary] text-center">{{ t('message.call_window.hangup') }}</div>
         </div>
       </div>
     </div>
@@ -330,14 +331,14 @@
               class="size-44px rounded-full flex-center cursor-pointer"
               :class="
                 !isMuted
-                  ? 'bg-gray-600 hover:bg-gray-500'
+                  ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
                   : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
               ">
               <svg class="size-16px text-[--hula-text-inverse]">
                 <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
               </svg>
             </div>
-            <div v-if="!isMobileDevice" class="text-12px text-gray-400 text-center">
+            <div v-if="!isMobileDevice" class="text-12px text-[--hula-text-quaternary] text-center">
               {{ !isMuted ? t('message.call_window.mic_on') : t('message.call_window.mic_off') }}
             </div>
           </div>
@@ -349,14 +350,14 @@
               class="size-44px rounded-full flex-center cursor-pointer"
               :class="
                 isSpeakerOn
-                  ? 'bg-gray-600 hover:bg-gray-500'
+                  ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
                   : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
               ">
               <svg class="size-16px text-[--hula-text-inverse]">
                 <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
               </svg>
             </div>
-            <div v-if="!isMobileDevice" class="text-12px text-gray-400 text-center">
+            <div v-if="!isMobileDevice" class="text-12px text-[--hula-text-quaternary] text-center">
               {{ isSpeakerOn ? t('message.call_window.speaker_on') : t('message.call_window.speaker_off') }}
             </div>
           </div>
@@ -383,7 +384,7 @@
 import { LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize } from '@tauri-apps/api/dpi'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { primaryMonitor } from '@tauri-apps/api/window'
-import { info } from '@tauri-apps/plugin-log'
+
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -613,7 +614,7 @@ const toggleMute = () => {
 // 更新所有远程视频元素的音频状态
 const updateRemoteVideoAudio = () => {
   const shouldMute = !isSpeakerOn.value
-  info(`updateRemoteVideoAudio, shouldMute: ${shouldMute}`)
+  logger.info(`updateRemoteVideoAudio, shouldMute: ${shouldMute}`)
 
   // 更新专用的音频元素
   if (remoteAudioRef.value && remoteStream.value) {

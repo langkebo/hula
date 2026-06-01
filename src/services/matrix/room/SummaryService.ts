@@ -1,7 +1,9 @@
-import { error } from '@tauri-apps/plugin-log'
 import type { Room } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { type RoomSummary as SynapseRoomSummary, synapseRustExtensionsService } from '../SynapseRustExtensionsService'
+
+const logger = createLogger('SummaryService')
 
 export interface MatrixRoomSummary {
   roomId: string
@@ -109,7 +111,7 @@ export class MatrixRoomSummaryAggregateService extends BaseMatrixService {
 
       return room ? this.toLocalRoomSummary(room) : null
     } catch (err) {
-      error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
       if (throwOnError) {
         throw err
       }
@@ -124,7 +126,7 @@ export class MatrixRoomSummaryAggregateService extends BaseMatrixService {
     try {
       return this.fallbackGetRoomSummaries(roomIds)
     } catch (err) {
-      error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
       throw err
     }
   }

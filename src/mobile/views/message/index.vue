@@ -80,7 +80,7 @@
           </template>
         </van-field>
       </div>
-      <div class="m-0 p-0 mt-10px border-b border-gray-200 dark:border-gray-700"></div>
+      <div class="m-0 p-0 mt-10px border-b border-[--hula-border-default]"></div>
     </div>
 
     <van-pull-refresh
@@ -127,7 +127,7 @@
                 <!-- 中间：两行内容 -->
                 <div class="truncate pl-7 flex pt-5px gap-10px leading-tight flex-col">
                   <span class="text-16px font-bold flex-1 truncate">{{ item.name }}</span>
-                  <div class="text-13px text-gray-600 dark:text-gray-400 truncate">
+                  <div class="text-13px text-[--hula-text-secondary] dark:text-[--hula-text-tertiary] truncate">
                     {{ item.lastMsg }}
                   </div>
                 </div>
@@ -145,7 +145,7 @@
                         <use href="#star"></use>
                       </svg>
                     </span>
-                    <span class="text-gray-600 whitespace-nowrap">
+                    <span class="text-[--hula-text-secondary] whitespace-nowrap">
                       {{ formatTimestamp(item?.activeTime) }}
                     </span>
                   </div>
@@ -640,7 +640,7 @@ const handleLongPress = (e: PointerEvent, item: SessionItem) => {
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--hula-overlay-mobile-sheet);
 }
 
 :deep(.van-cell.van-field::after) {

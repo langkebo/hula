@@ -1,10 +1,12 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from './BaseMatrixService'
 import endpointCapabilityService from './EndpointCapabilityService'
 import { matrixCapabilityService } from './MatrixCapabilityService'
 import { matrixClientService } from './MatrixClientService'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
 import { MATRIX_PATHS } from './paths'
+
+const logger = createLogger('SynapseRustExtensionsService')
 
 export interface SynapseFriendInfo {
   user_id: string
@@ -257,7 +259,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       // 429 限流是正常行为，降级为 WARN 避免日志噪音
       if (response.status === 429) {
         const retryAfter = response.headers.get('Retry-After')
-        warn(`[SynapseRust] ${endpoint} 请求被限流${retryAfter ? `，建议 ${retryAfter}s 后重试` : ''}`)
+        logger.warn(`[SynapseRust] ${endpoint} 请求被限流${retryAfter ? `，建议 ${retryAfter}s 后重试` : ''}`)
         throw new Error(this.t('matrix_error.extensions.rate_limited'))
       }
 
@@ -267,7 +269,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       } catch {
         parsed = { error: text || `HTTP ${response.status}` }
       }
-      error(`[SynapseRust] API 请求失败: ${endpoint}`, parsed)
+      logger.error(`[SynapseRust] API 请求失败: ${endpoint}`, parsed)
       throw new Error(
         (parsed.message as string) ||
           (parsed.error as string) ||
@@ -276,14 +278,14 @@ class SynapseRustExtensionsService extends BaseMatrixService {
     }
 
     if (!text || text.trim() === '') {
-      warn(`[SynapseRust] ${endpoint} 返回空响应体`)
+      logger.warn(`[SynapseRust] ${endpoint} 返回空响应体`)
       return {} as T
     }
 
     try {
       return JSON.parse(text) as T
     } catch {
-      warn(`[SynapseRust] ${endpoint} 返回非 JSON 响应: ${text.substring(0, 200)}`)
+      logger.warn(`[SynapseRust] ${endpoint} 返回非 JSON 响应: ${text.substring(0, 200)}`)
       return {} as T
     }
   }
@@ -302,7 +304,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         return wrapped.data
       }
       if (wrapped.status === 'ok' && wrapped.data === undefined) {
-        warn('[SynapseRust] 响应 status=ok 但缺少 data 字段，尝试将整个响应作为数据返回')
+        logger.warn('[SynapseRust] 响应 status=ok 但缺少 data 字段，尝试将整个响应作为数据返回')
         const { data: _, status: __, code: ___, message: ____, ...rest } = wrapped as Record<string, unknown>
         if (Object.keys(rest).length > 0) {
           return rest as unknown as T
@@ -327,7 +329,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async getFriends(): Promise<SynapseFriendInfo[]> {
     try {
       if (!(await this.isFriendEndpointAvailable())) {
-        info('[SynapseRust] 好友端点不可用，已降级')
+        logger.info('[SynapseRust] 好友端点不可用，已降级')
         return []
       }
 
@@ -363,11 +365,11 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       ) {
         if (!this.hasLoggedFriendsBeforeClientReady) {
           this.hasLoggedFriendsBeforeClientReady = true
-          info('[SynapseRust] Matrix 客户端未就绪，返回空好友列表')
+          logger.info('[SynapseRust] Matrix 客户端未就绪，返回空好友列表')
         }
         return []
       }
-      error(`[SynapseRust] 获取好友列表失败: ${err}`)
+      logger.error(`[SynapseRust] 获取好友列表失败: ${err}`)
       return []
     }
   }
@@ -399,10 +401,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         }
       }
 
-      info(`[SynapseRust] 发送好友请求成功: ${userId}`)
+      logger.info(`[SynapseRust] 发送好友请求成功: ${userId}`)
       return data || { request_id: 0, status: 'error' }
     } catch (err) {
-      error(`[SynapseRust] 发送好友请求失败: ${err}`)
+      logger.error(`[SynapseRust] 发送好友请求失败: ${err}`)
       throw err
     }
   }
@@ -441,13 +443,13 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       ) {
         if (!this.hasLoggedFriendsBeforeClientReady) {
           this.hasLoggedFriendsBeforeClientReady = true
-          info('[SynapseRust] Matrix 客户端未就绪，返回空好友搜索结果')
+          logger.info('[SynapseRust] Matrix 客户端未就绪，返回空好友搜索结果')
         }
         return []
       }
 
       this.hasLoggedFriendsBeforeClientReady = false
-      error(`[SynapseRust] 搜索好友失败: ${err}`)
+      logger.error(`[SynapseRust] 搜索好友失败: ${err}`)
       return []
     }
   }
@@ -483,7 +485,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         outgoing: extractRequests(outgoingResponse)
       }
     } catch (err) {
-      error(`[SynapseRust] 获取待处理请求失败: ${err}`)
+      logger.error(`[SynapseRust] 获取待处理请求失败: ${err}`)
       return { incoming: [], outgoing: [] }
     }
   }
@@ -512,10 +514,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         }
       }
 
-      info(`[SynapseRust] 接受好友请求成功: ${userId}`)
+      logger.info(`[SynapseRust] 接受好友请求成功: ${userId}`)
       return data || { status: 'error', room_id: '' }
     } catch (err) {
-      error(`[SynapseRust] 接受好友请求失败: ${err}`)
+      logger.error(`[SynapseRust] 接受好友请求失败: ${err}`)
       throw err
     }
   }
@@ -527,9 +529,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'POST',
         body: JSON.stringify({})
       })
-      info(`[SynapseRust] 拒绝好友请求成功: ${userId}`)
+      logger.info(`[SynapseRust] 拒绝好友请求成功: ${userId}`)
     } catch (err) {
-      error(`[SynapseRust] 拒绝好友请求失败: ${err}`)
+      logger.error(`[SynapseRust] 拒绝好友请求失败: ${err}`)
       throw err
     }
   }
@@ -541,9 +543,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'POST',
         body: JSON.stringify({})
       })
-      info(`[SynapseRust] 取消好友请求成功: ${userId}`)
+      logger.info(`[SynapseRust] 取消好友请求成功: ${userId}`)
     } catch (err) {
-      error(`[SynapseRust] 取消好友请求失败: ${err}`)
+      logger.error(`[SynapseRust] 取消好友请求失败: ${err}`)
       throw err
     }
   }
@@ -554,9 +556,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       await this.request(MATRIX_PATHS.FRIENDS.REMOVE(encodeURIComponent(userId)), {
         method: 'DELETE'
       })
-      info(`[SynapseRust] 删除好友成功: ${userId}`)
+      logger.info(`[SynapseRust] 删除好友成功: ${userId}`)
     } catch (err) {
-      error(`[SynapseRust] 删除好友失败: ${err}`)
+      logger.error(`[SynapseRust] 删除好友失败: ${err}`)
       throw err
     }
   }
@@ -568,9 +570,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'PUT',
         body: JSON.stringify({ note })
       })
-      info(`[SynapseRust] 设置好友备注成功: ${userId}`)
+      logger.info(`[SynapseRust] 设置好友备注成功: ${userId}`)
     } catch (err) {
-      error(`[SynapseRust] 设置好友备注失败: ${err}`)
+      logger.error(`[SynapseRust] 设置好友备注失败: ${err}`)
       throw err
     }
   }
@@ -585,7 +587,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const data = this.unwrapMaybeWrappedData(response)
       return data?.are_friends || false
     } catch (err) {
-      error(`[SynapseRust] 检查好友关系失败: ${err}`)
+      logger.error(`[SynapseRust] 检查好友关系失败: ${err}`)
       return false
     }
   }
@@ -600,10 +602,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         }
       )
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 创建私密私信房间: ${userId}, isPrivate=${isPrivate}`)
+      logger.info(`[SynapseRust] 创建私密私信房间: ${userId}, isPrivate=${isPrivate}`)
       return data || { room_id: '', created: false }
     } catch (err) {
-      error(`[SynapseRust] 创建私密私信房间失败: ${err}`)
+      logger.error(`[SynapseRust] 创建私密私信房间失败: ${err}`)
       throw err
     }
   }
@@ -617,7 +619,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const data = this.unwrapMaybeWrappedData(response)
       return data || { room_id: '', exists: false }
     } catch (err) {
-      error(`[SynapseRust] 获取私信房间失败: ${err}`)
+      logger.error(`[SynapseRust] 获取私信房间失败: ${err}`)
       return { room_id: '', exists: false }
     }
   }
@@ -628,10 +630,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'GET'
       })
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 获取阅后即焚统计成功: ${JSON.stringify(data)}`)
+      logger.info(`[SynapseRust] 获取阅后即焚统计成功: ${JSON.stringify(data)}`)
       return data || { total_burned: 0, total_pending: 0, rooms_with_burn_enabled: 0 }
     } catch (err) {
-      error(`[SynapseRust] 获取阅后即焚统计失败: ${err}`)
+      logger.error(`[SynapseRust] 获取阅后即焚统计失败: ${err}`)
       return { total_burned: 0, total_pending: 0, rooms_with_burn_enabled: 0 }
     }
   }
@@ -647,9 +649,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'PUT',
         body: JSON.stringify({ enabled, ...(burnAfterMs !== undefined && { burn_after_ms: burnAfterMs }) })
       })
-      info(`[SynapseRust] ${enabled ? '启用' : '禁用'}阅后即焚成功: roomId=${roomId}`)
+      logger.info(`[SynapseRust] ${enabled ? '启用' : '禁用'}阅后即焚成功: roomId=${roomId}`)
     } catch (err) {
-      error(`[SynapseRust] ${enabled ? '启用' : '禁用'}阅后即焚失败: ${err}`)
+      logger.error(`[SynapseRust] ${enabled ? '启用' : '禁用'}阅后即焚失败: ${err}`)
       throw err
     }
   }
@@ -667,7 +669,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const data = this.unwrapMaybeWrappedData(response)
       return data?.enabled || false
     } catch (err) {
-      error(`[SynapseRust] 检查阅后即焚状态失败: ${err}`)
+      logger.error(`[SynapseRust] 检查阅后即焚状态失败: ${err}`)
       return false
     }
   }
@@ -683,9 +685,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'PUT',
         body: JSON.stringify({ enabled })
       })
-      info(`[SynapseRust] ${enabled ? '启用' : '禁用'}防截屏成功: roomId=${roomId}`)
+      logger.info(`[SynapseRust] ${enabled ? '启用' : '禁用'}防截屏成功: roomId=${roomId}`)
     } catch (err) {
-      error(`[SynapseRust] ${enabled ? '启用' : '禁用'}防截屏失败: ${err}`)
+      logger.error(`[SynapseRust] ${enabled ? '启用' : '禁用'}防截屏失败: ${err}`)
       throw err
     }
   }
@@ -703,7 +705,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const data = this.unwrapMaybeWrappedData(response)
       return data?.enabled || false
     } catch (err) {
-      error(`[SynapseRust] 检查防截屏状态失败: ${err}`)
+      logger.error(`[SynapseRust] 检查防截屏状态失败: ${err}`)
       return false
     }
   }
@@ -744,10 +746,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       await this.enableBurnAfterRead(roomId, true)
       await this.enableAntiScreenshot(roomId, true)
 
-      info(`[SynapseRust] 创建私密聊天成功: roomId=${roomId}`)
+      logger.info(`[SynapseRust] 创建私密聊天成功: roomId=${roomId}`)
       return roomId
     } catch (err) {
-      error(`[SynapseRust] 创建私密聊天失败: ${err}`)
+      logger.error(`[SynapseRust] 创建私密聊天失败: ${err}`)
       throw err
     }
   }
@@ -759,10 +761,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 获取邀请屏蔽列表成功: roomId=${roomId}`)
+      logger.info(`[SynapseRust] 获取邀请屏蔽列表成功: roomId=${roomId}`)
       return data || { blocked_users: [], updated_ts: 0 }
     } catch (err) {
-      error(`[SynapseRust] 获取邀请屏蔽列表失败: ${err}`)
+      logger.error(`[SynapseRust] 获取邀请屏蔽列表失败: ${err}`)
       return { blocked_users: [], updated_ts: 0 }
     }
   }
@@ -773,9 +775,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'POST',
         body: JSON.stringify({ user_ids: userIds })
       })
-      info(`[SynapseRust] 设置邀请屏蔽列表成功: roomId=${roomId}, count=${userIds.length}`)
+      logger.info(`[SynapseRust] 设置邀请屏蔽列表成功: roomId=${roomId}, count=${userIds.length}`)
     } catch (err) {
-      error(`[SynapseRust] 设置邀请屏蔽列表失败: ${err}`)
+      logger.error(`[SynapseRust] 设置邀请屏蔽列表失败: ${err}`)
       throw err
     }
   }
@@ -787,10 +789,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 获取邀请白名单成功: roomId=${roomId}`)
+      logger.info(`[SynapseRust] 获取邀请白名单成功: roomId=${roomId}`)
       return data || { allowed_users: [], updated_ts: 0 }
     } catch (err) {
-      error(`[SynapseRust] 获取邀请白名单失败: ${err}`)
+      logger.error(`[SynapseRust] 获取邀请白名单失败: ${err}`)
       return { allowed_users: [], updated_ts: 0 }
     }
   }
@@ -801,9 +803,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'POST',
         body: JSON.stringify({ user_ids: userIds })
       })
-      info(`[SynapseRust] 设置邀请白名单成功: roomId=${roomId}, count=${userIds.length}`)
+      logger.info(`[SynapseRust] 设置邀请白名单成功: roomId=${roomId}, count=${userIds.length}`)
     } catch (err) {
-      error(`[SynapseRust] 设置邀请白名单失败: ${err}`)
+      logger.error(`[SynapseRust] 设置邀请白名单失败: ${err}`)
       throw err
     }
   }
@@ -813,7 +815,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
-        warn('[SynapseRust] 粘性事件端点不可用')
+        logger.warn('[SynapseRust] 粘性事件端点不可用')
         return []
       }
 
@@ -821,10 +823,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'GET'
       })
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 获取粘性事件成功: roomId=${roomId}`)
+      logger.info(`[SynapseRust] 获取粘性事件成功: roomId=${roomId}`)
       return data?.events || []
     } catch (err) {
-      error(`[SynapseRust] 获取粘性事件失败: ${err}`)
+      logger.error(`[SynapseRust] 获取粘性事件失败: ${err}`)
       return []
     }
   }
@@ -837,9 +839,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
           events: [{ event_id: eventId, event_type: eventType }]
         })
       })
-      info(`[SynapseRust] 设置粘性事件成功: roomId=${roomId}, eventId=${eventId}`)
+      logger.info(`[SynapseRust] 设置粘性事件成功: roomId=${roomId}, eventId=${eventId}`)
     } catch (err) {
-      error(`[SynapseRust] 设置粘性事件失败: ${err}`)
+      logger.error(`[SynapseRust] 设置粘性事件失败: ${err}`)
       throw err
     }
   }
@@ -850,9 +852,9 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events/${encodeURIComponent(eventType)}`,
         { method: 'DELETE' }
       )
-      info(`[SynapseRust] 清除粘性事件成功: roomId=${roomId}, eventType=${eventType}`)
+      logger.info(`[SynapseRust] 清除粘性事件成功: roomId=${roomId}, eventType=${eventType}`)
     } catch (err) {
-      error(`[SynapseRust] 清除粘性事件失败: ${err}`)
+      logger.error(`[SynapseRust] 清除粘性事件失败: ${err}`)
       throw err
     }
   }
@@ -862,16 +864,16 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary`
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
-        warn('[SynapseRust] 房间摘要端点不可用')
+        logger.warn('[SynapseRust] 房间摘要端点不可用')
         return null
       }
 
       const response = await this.request<RoomSummary | { data?: RoomSummary }>(path, { method: 'GET' })
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 获取房间摘要成功: roomId=${roomId}`)
+      logger.info(`[SynapseRust] 获取房间摘要成功: roomId=${roomId}`)
       return data || null
     } catch (err) {
-      error(`[SynapseRust] 获取房间摘要失败: ${err}`)
+      logger.error(`[SynapseRust] 获取房间摘要失败: ${err}`)
       if (throwOnError) {
         throw err
       }
@@ -887,10 +889,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       )
       const data = this.unwrapMaybeWrappedData(response)
       const members = data || []
-      info(`[SynapseRust] 获取房间摘要成员成功: roomId=${roomId}, count=${members.length}`)
+      logger.info(`[SynapseRust] 获取房间摘要成员成功: roomId=${roomId}, count=${members.length}`)
       return members
     } catch (err) {
-      error(`[SynapseRust] 获取房间摘要成员失败: ${err}`)
+      logger.error(`[SynapseRust] 获取房间摘要成员失败: ${err}`)
       if (throwOnError) {
         throw err
       }
@@ -901,7 +903,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async getRoomSummaryHeroes(roomId: string, throwOnError = true): Promise<RoomSummaryMember[]> {
     const members = await this.getRoomSummaryMembers(roomId, throwOnError)
     const heroes = members.filter((member) => member.is_hero)
-    info(`[SynapseRust] 获取房间英雄成员成功: roomId=${roomId}, count=${heroes.length}`)
+    logger.info(`[SynapseRust] 获取房间英雄成员成功: roomId=${roomId}, count=${heroes.length}`)
     return heroes
   }
 
@@ -913,10 +915,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       )
       const data = this.unwrapMaybeWrappedData(response)
       const state = data || []
-      info(`[SynapseRust] 获取房间摘要状态成功: roomId=${roomId}, count=${state.length}`)
+      logger.info(`[SynapseRust] 获取房间摘要状态成功: roomId=${roomId}, count=${state.length}`)
       return state
     } catch (err) {
-      error(`[SynapseRust] 获取房间摘要状态失败: ${err}`)
+      logger.error(`[SynapseRust] 获取房间摘要状态失败: ${err}`)
       if (throwOnError) {
         throw err
       }
@@ -931,10 +933,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 获取房间摘要统计成功: roomId=${roomId}`)
+      logger.info(`[SynapseRust] 获取房间摘要统计成功: roomId=${roomId}`)
       return data || null
     } catch (err) {
-      error(`[SynapseRust] 获取房间摘要统计失败: ${err}`)
+      logger.error(`[SynapseRust] 获取房间摘要统计失败: ${err}`)
       if (throwOnError) {
         throw err
       }
@@ -947,7 +949,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ephemeral`
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
-        warn('[SynapseRust] 房间临时事件端点不可用')
+        logger.warn('[SynapseRust] 房间临时事件端点不可用')
         return []
       }
 
@@ -957,10 +959,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 获取房间临时事件成功: roomId=${roomId}`)
+      logger.info(`[SynapseRust] 获取房间临时事件成功: roomId=${roomId}`)
       return data?.chunk || []
     } catch (err) {
-      error(`[SynapseRust] 获取房间临时事件失败: ${err}`)
+      logger.error(`[SynapseRust] 获取房间临时事件失败: ${err}`)
       return []
     }
   }
@@ -974,13 +976,13 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         body: JSON.stringify({ target: mobile, captcha_type: captchaType })
       })
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 发送验证码成功: ${mobile}`)
+      logger.info(`[SynapseRust] 发送验证码成功: ${mobile}`)
       return {
         success: !!data?.captcha_id,
         captchaId: data?.captcha_id
       }
     } catch (err) {
-      error(`[SynapseRust] 发送验证码失败: ${err}`)
+      logger.error(`[SynapseRust] 发送验证码失败: ${err}`)
       throw err
     }
   }
@@ -995,10 +997,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         }
       )
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 验证码校验成功: ${captchaId}`)
+      logger.info(`[SynapseRust] 验证码校验成功: ${captchaId}`)
       return data?.verified ?? false
     } catch (err) {
-      error(`[SynapseRust] 验证码校验失败: ${err}`)
+      logger.error(`[SynapseRust] 验证码校验失败: ${err}`)
       return false
     }
   }
@@ -1010,10 +1012,10 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
-      info(`[SynapseRust] 获取验证码状态成功: ${captchaId}`)
+      logger.info(`[SynapseRust] 获取验证码状态成功: ${captchaId}`)
       return data || {}
     } catch (err) {
-      error(`[SynapseRust] 获取验证码状态失败: ${err}`)
+      logger.error(`[SynapseRust] 获取验证码状态失败: ${err}`)
       return {}
     }
   }
@@ -1025,7 +1027,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/thirdparty/protocols')
       return (result as Record<string, unknown>) || {}
     } catch (err) {
-      error(`[SynapseRust] 获取第三方协议失败: ${err}`)
+      logger.error(`[SynapseRust] 获取第三方协议失败: ${err}`)
       return {}
     }
   }
@@ -1044,7 +1046,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       )
       return (result as Array<Record<string, unknown>>) || []
     } catch (err) {
-      error(`[SynapseRust] 获取第三方位置失败: ${err}`)
+      logger.error(`[SynapseRust] 获取第三方位置失败: ${err}`)
       return []
     }
   }
@@ -1060,14 +1062,14 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       )
       return (result as Array<Record<string, unknown>>) || []
     } catch (err) {
-      error(`[SynapseRust] 获取第三方用户失败: ${err}`)
+      logger.error(`[SynapseRust] 获取第三方用户失败: ${err}`)
       return []
     }
   }
 
   stop(): void {
     this.accessToken = ''
-    info('[SynapseRust] SynapseRustExtensionsService 已停止')
+    logger.info('[SynapseRust] SynapseRustExtensionsService 已停止')
   }
 }
 

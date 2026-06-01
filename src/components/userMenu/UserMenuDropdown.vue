@@ -156,20 +156,20 @@ onUnmounted(() => {
 .user-menu-dropdown {
   position: absolute;
   width: 240px;
-  background-color: var(--bg-color, #fff);
+  background-color: var(--bg-color, var(--hula-surface-panel));
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--hula-shadow-dropdown);
   overflow: hidden;
 }
 
 :deep(.dark) .user-menu-dropdown {
   background-color: var(--hula-surface-app);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--hula-shadow-dropdown);
 }
 
 .menu-divider {
   height: 1px;
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: var(--hula-surface-list-hover);
   margin: 4px 0;
 }
 
@@ -180,7 +180,7 @@ onUnmounted(() => {
 .menu-section-title {
   padding: 8px 16px 4px;
   font-size: 12px;
-  color: var(--text-secondary, #999);
+  color: var(--text-secondary, var(--hula-text-tertiary));
   font-weight: 500;
 }
 

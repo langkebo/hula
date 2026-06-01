@@ -1,6 +1,8 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('MatrixQrLoginBridgeService')
 
 export interface QrCodeResult {
   transactionId: string
@@ -40,7 +42,7 @@ class MatrixQrLoginBridgeService extends BaseMatrixService {
     const manager = this.ensureQrLoginManager()
     try {
       const result = await manager.getQrCode()
-      info(`[QrLoginBridge] 获取二维码成功: ${result.transaction_id}`)
+      logger.info(`[QrLoginBridge] 获取二维码成功: ${result.transaction_id}`)
       return {
         transactionId: result.transaction_id,
         mode: result.mode,
@@ -48,7 +50,7 @@ class MatrixQrLoginBridgeService extends BaseMatrixService {
         expiresIn: result.expires_in
       }
     } catch (err) {
-      logError(`[QrLoginBridge] 获取二维码失败: ${err}`)
+      logger.error(`[QrLoginBridge] 获取二维码失败: ${err}`)
       throw err
     }
   }
@@ -61,9 +63,9 @@ class MatrixQrLoginBridgeService extends BaseMatrixService {
         device_id: deviceId,
         initial_display_name: displayName
       })
-      info(`[QrLoginBridge] 启动二维码登录事务: ${transactionId}`)
+      logger.info(`[QrLoginBridge] 启动二维码登录事务: ${transactionId}`)
     } catch (err) {
-      logError(`[QrLoginBridge] 启动二维码登录失败: ${err}`)
+      logger.error(`[QrLoginBridge] 启动二维码登录失败: ${err}`)
       throw err
     }
   }
@@ -72,9 +74,9 @@ class MatrixQrLoginBridgeService extends BaseMatrixService {
     const manager = this.ensureQrLoginManager()
     try {
       await manager.confirmQrLogin({ transaction_id: transactionId })
-      info(`[QrLoginBridge] 确认二维码登录: ${transactionId}`)
+      logger.info(`[QrLoginBridge] 确认二维码登录: ${transactionId}`)
     } catch (err) {
-      logError(`[QrLoginBridge] 确认二维码登录失败: ${err}`)
+      logger.error(`[QrLoginBridge] 确认二维码登录失败: ${err}`)
       throw err
     }
   }
@@ -89,7 +91,7 @@ class MatrixQrLoginBridgeService extends BaseMatrixService {
         status: result.status
       }
     } catch (err) {
-      logError(`[QrLoginBridge] 查询二维码状态失败: ${err}`)
+      logger.error(`[QrLoginBridge] 查询二维码状态失败: ${err}`)
       throw err
     }
   }
@@ -98,9 +100,9 @@ class MatrixQrLoginBridgeService extends BaseMatrixService {
     const manager = this.ensureQrLoginManager()
     try {
       await manager.invalidateQrLogin({ transaction_id: transactionId })
-      info(`[QrLoginBridge] 使二维码登录失效: ${transactionId}`)
+      logger.info(`[QrLoginBridge] 使二维码登录失效: ${transactionId}`)
     } catch (err) {
-      logError(`[QrLoginBridge] 使二维码登录失效失败: ${err}`)
+      logger.error(`[QrLoginBridge] 使二维码登录失效失败: ${err}`)
       throw err
     }
   }
@@ -113,14 +115,14 @@ class MatrixQrLoginBridgeService extends BaseMatrixService {
     const manager = this.ensureQrLoginManager()
     try {
       const result = await manager.waitForConfirmation(transactionId, timeoutMs, pollIntervalMs)
-      info(`[QrLoginBridge] 二维码登录已确认: ${result.user_id}`)
+      logger.info(`[QrLoginBridge] 二维码登录已确认: ${result.user_id}`)
       return {
         transactionId: result.transaction_id,
         userId: result.user_id,
         status: result.status as QrLoginStatusResult['status']
       }
     } catch (err) {
-      logError(`[QrLoginBridge] 等待二维码确认失败: ${err}`)
+      logger.error(`[QrLoginBridge] 等待二维码确认失败: ${err}`)
       throw err
     }
   }

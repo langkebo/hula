@@ -1,6 +1,8 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MatrixOidcService')
 
 export interface OidcDiscoveryDocument {
   issuer: string
@@ -51,23 +53,23 @@ class MatrixOidcService {
 
   async discoverOidc(homeserverUrl: string): Promise<OidcDiscoveryDocument | null> {
     try {
-      info(`[MatrixOidcService] Discovering OIDC for ${homeserverUrl}`)
+      logger.info(`[MatrixOidcService] Discovering OIDC for ${homeserverUrl}`)
       this.setHomeserverUrl(homeserverUrl)
 
       const url = `${homeserverUrl}${MATRIX_PATHS.WELL_KNOWN.OIDC_DISCOVERY}`
 
       const response = await fetch(url)
       if (!response.ok) {
-        logError(`[MatrixOidcService] OIDC discovery failed: ${response.status}`)
+        logger.error(`[MatrixOidcService] OIDC discovery failed: ${response.status}`)
         return null
       }
 
       const discovery: OidcDiscoveryDocument = await response.json()
       this.discovery = discovery
-      info(`[MatrixOidcService] OIDC discovered successfully. Issuer: ${discovery.issuer}`)
+      logger.info(`[MatrixOidcService] OIDC discovered successfully. Issuer: ${discovery.issuer}`)
       return discovery
     } catch (err) {
-      logError(`[MatrixOidcService] OIDC Discovery failed: ${err}`)
+      logger.error(`[MatrixOidcService] OIDC Discovery failed: ${err}`)
       return null
     }
   }
@@ -82,7 +84,7 @@ class MatrixOidcService {
 
   async getAuthorizationUrl(params: OidcAuthorizationUrlParams): Promise<string | null> {
     if (!this.discovery) {
-      logError('[MatrixOidcService] OIDC not discovered. Call discoverOidc first.')
+      logger.error('[MatrixOidcService] OIDC not discovered. Call discoverOidc first.')
       return null
     }
 
@@ -105,10 +107,10 @@ class MatrixOidcService {
       sessionStorage.setItem('oidc_state', state)
       sessionStorage.setItem('oidc_code_verifier', await this.getCodeVerifier())
 
-      info(`[MatrixOidcService] Generated authorization URL with client_id: ${clientId}`)
+      logger.info(`[MatrixOidcService] Generated authorization URL with client_id: ${clientId}`)
       return url.toString()
     } catch (err) {
-      logError(`[MatrixOidcService] Error generating auth URL: ${err}`)
+      logger.error(`[MatrixOidcService] Error generating auth URL: ${err}`)
       return null
     }
   }
@@ -119,22 +121,22 @@ class MatrixOidcService {
     const homeserverUrl = this.resolveHomeserverUrl()
 
     if (!savedState || savedState !== state) {
-      logError('[MatrixOidcService] Invalid OIDC state')
+      logger.error('[MatrixOidcService] Invalid OIDC state')
       return null
     }
 
     if (!codeVerifier) {
-      logError('[MatrixOidcService] Missing code verifier')
+      logger.error('[MatrixOidcService] Missing code verifier')
       return null
     }
 
     if (!homeserverUrl) {
-      logError('[MatrixOidcService] Missing homeserver URL for OIDC callback')
+      logger.error('[MatrixOidcService] Missing homeserver URL for OIDC callback')
       return null
     }
 
     try {
-      info(`[MatrixOidcService] Exchanging authorization code for tokens`)
+      logger.info(`[MatrixOidcService] Exchanging authorization code for tokens`)
 
       const response = await fetch(`${homeserverUrl}/_matrix/client/v3/oidc/token`, {
         method: 'POST',
@@ -151,19 +153,19 @@ class MatrixOidcService {
 
       if (!response.ok) {
         const errorText = await response.text()
-        logError(`[MatrixOidcService] Token exchange failed: ${response.status} - ${errorText}`)
+        logger.error(`[MatrixOidcService] Token exchange failed: ${response.status} - ${errorText}`)
         return null
       }
 
       const tokenResponse: OidcTokenResponse = await response.json()
-      info(`[MatrixOidcService] Token exchange successful`)
+      logger.info(`[MatrixOidcService] Token exchange successful`)
 
       sessionStorage.removeItem('oidc_state')
       sessionStorage.removeItem('oidc_code_verifier')
 
       return tokenResponse
     } catch (err) {
-      logError(`[MatrixOidcService] Error handling callback: ${err}`)
+      logger.error(`[MatrixOidcService] Error handling callback: ${err}`)
       return null
     }
   }
@@ -171,7 +173,7 @@ class MatrixOidcService {
   private getClient() {
     const client = matrixClientService.getClient()
     if (!client) {
-      info('[MatrixOidcService] Matrix client not initialized, service unavailable.')
+      logger.info('[MatrixOidcService] Matrix client not initialized, service unavailable.')
       return null
     }
     return client
@@ -179,7 +181,7 @@ class MatrixOidcService {
 
   async getUserInfo(): Promise<OidcUserInfo | null> {
     if (!this.discovery) {
-      logError('[MatrixOidcService] OIDC not discovered')
+      logger.error('[MatrixOidcService] OIDC not discovered')
       return null
     }
 
@@ -190,22 +192,22 @@ class MatrixOidcService {
       const userInfo = await client.oidcUserInfo()
       return userInfo as unknown as OidcUserInfo
     } catch (err) {
-      logError(`[MatrixOidcService] Error getting user info: ${err}`)
+      logger.error(`[MatrixOidcService] Error getting user info: ${err}`)
       return null
     }
   }
 
   async logout(): Promise<boolean> {
     try {
-      info(`[MatrixOidcService] Logging out via OIDC`)
+      logger.info(`[MatrixOidcService] Logging out via OIDC`)
 
       const client = await matrixClientService.waitForClientReady()
       await client.http.authedRequest('POST', '/_matrix/client/v3/oidc/logout')
 
-      info(`[MatrixOidcService] OIDC logout successful`)
+      logger.info(`[MatrixOidcService] OIDC logout successful`)
       return true
     } catch (err) {
-      logError(`[MatrixOidcService] Error during OIDC logout: ${err}`)
+      logger.error(`[MatrixOidcService] Error during OIDC logout: ${err}`)
       return false
     }
   }
@@ -252,12 +254,12 @@ class MatrixOidcService {
   ): Promise<{ user_id: string; access_token: string; device_id: string; refresh_token?: string } | null> {
     const homeserverUrl = this.resolveHomeserverUrl()
     if (!homeserverUrl) {
-      logError('[MatrixOidcService] Missing homeserver URL for OIDC token exchange')
+      logger.error('[MatrixOidcService] Missing homeserver URL for OIDC token exchange')
       return null
     }
 
     try {
-      info(`[MatrixOidcService] Exchanging OIDC token for Matrix token`)
+      logger.info(`[MatrixOidcService] Exchanging OIDC token for Matrix token`)
 
       const response = await fetch(`${homeserverUrl}/_matrix/client/v3/oidc/token`, {
         method: 'POST',
@@ -273,15 +275,15 @@ class MatrixOidcService {
 
       if (!response.ok) {
         const errorText = await response.text()
-        logError(`[MatrixOidcService] Token exchange failed: ${response.status} - ${errorText}`)
+        logger.error(`[MatrixOidcService] Token exchange failed: ${response.status} - ${errorText}`)
         return null
       }
 
       const result = await response.json()
-      info(`[MatrixOidcService] OIDC to Matrix token exchange successful`)
+      logger.info(`[MatrixOidcService] OIDC to Matrix token exchange successful`)
       return result
     } catch (err) {
-      logError(`[MatrixOidcService] Error exchanging OIDC for Matrix token: ${err}`)
+      logger.error(`[MatrixOidcService] Error exchanging OIDC for Matrix token: ${err}`)
       return null
     }
   }

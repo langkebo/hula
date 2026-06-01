@@ -1,4 +1,6 @@
-import { info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MatrixRequestDeduper')
 
 interface PendingRequest<T> {
   promise: Promise<T>
@@ -36,7 +38,7 @@ export class MatrixRequestDeduper {
 
   static clear(): void {
     MatrixRequestDeduper.pending.clear()
-    info('[Deduper] 请求去重缓存已清空')
+    logger.info('[Deduper] 请求去重缓存已清空')
   }
 }
 

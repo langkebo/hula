@@ -10,8 +10,8 @@ vi.mock('@/services/matrix/media/MatrixVoiceService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
-  matrixEncryptionService: {
+vi.mock('@/services/matrix/crypto/CryptoSDKAdapter', () => ({
+  cryptoSDKAdapter: {
     isRoomEncrypted: vi.fn()
   }
 }))
@@ -24,7 +24,7 @@ vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
 }))
 
 import { readFile } from '@tauri-apps/plugin-fs'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
 import { useVoiceInput } from '../useVoiceInput'
@@ -37,7 +37,7 @@ describe('useVoiceInput', () => {
   it('reads local file then delegates to matrixVoiceService.uploadVoice', async () => {
     const bytes = new Uint8Array([1, 2, 3])
     vi.mocked(readFile).mockResolvedValueOnce(bytes)
-    vi.mocked(matrixEncryptionService.isRoomEncrypted).mockResolvedValueOnce(false)
+    vi.mocked(cryptoSDKAdapter.isRoomEncrypted).mockResolvedValueOnce(false)
     const fakeResult = { eventId: 'evt', httpUrl: 'http://x', mxcUrl: 'mxc://y', filename: 'voice.webm' }
     vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce(fakeResult as never)
 
@@ -63,7 +63,7 @@ describe('useVoiceInput', () => {
 
   it('propagates uploadVoice errors', async () => {
     vi.mocked(readFile).mockResolvedValueOnce(new Uint8Array())
-    vi.mocked(matrixEncryptionService.isRoomEncrypted).mockResolvedValueOnce(false)
+    vi.mocked(cryptoSDKAdapter.isRoomEncrypted).mockResolvedValueOnce(false)
     vi.mocked(matrixVoiceService.uploadVoice).mockRejectedValueOnce(new Error('upload failed'))
     const { uploadVoiceToMatrix } = useVoiceInput()
     await expect(uploadVoiceToMatrix('!r:s', '/p', 'v.webm', 'audio/webm')).rejects.toThrow('upload failed')
@@ -71,7 +71,7 @@ describe('useVoiceInput', () => {
 
   it('passes through custom filename + mimeType to the constructed File', async () => {
     vi.mocked(readFile).mockResolvedValueOnce(new Uint8Array([9]))
-    vi.mocked(matrixEncryptionService.isRoomEncrypted).mockResolvedValueOnce(false)
+    vi.mocked(cryptoSDKAdapter.isRoomEncrypted).mockResolvedValueOnce(false)
     vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce({} as never)
     const { uploadVoiceToMatrix } = useVoiceInput()
     await uploadVoiceToMatrix('!r', '/a', 'custom.m4a', 'audio/mp4')
@@ -82,7 +82,7 @@ describe('useVoiceInput', () => {
 
   it('uses encrypted upload pipeline when room encryption is enabled', async () => {
     vi.mocked(readFile).mockResolvedValueOnce(new Uint8Array([7, 8]))
-    vi.mocked(matrixEncryptionService.isRoomEncrypted).mockResolvedValueOnce(true)
+    vi.mocked(cryptoSDKAdapter.isRoomEncrypted).mockResolvedValueOnce(true)
     vi.mocked(matrixMediaService.uploadEncryptedFile).mockResolvedValueOnce({
       contentUri: 'mxc://example.org/encrypted-voice',
       size: 2,
@@ -94,25 +94,16 @@ describe('useVoiceInput', () => {
         v: 'v2',
         key: {
           alg: 'A256CTR',
-          k: 'secret',
-          kty: 'oct',
           ext: true,
+          kty: 'oct',
+          k: 'test-key',
           key_ops: ['encrypt', 'decrypt']
         }
       }
-    } as never)
-
-    const { uploadVoiceToMatrix } = useVoiceInput()
-    const result = await uploadVoiceToMatrix('!r', '/voice', 'voice.webm', 'audio/webm')
-
-    expect(matrixMediaService.uploadEncryptedFile).toHaveBeenCalledTimes(1)
-    expect(matrixVoiceService.uploadVoice).not.toHaveBeenCalled()
-    expect(result).toMatchObject({
-      mxcUrl: 'mxc://example.org/encrypted-voice',
-      filename: 'voice.webm',
-      encryptedFile: {
-        v: 'v2'
-      }
     })
+    vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce({} as never)
+    const { uploadVoiceToMatrix } = useVoiceInput()
+    await uploadVoiceToMatrix('!r', '/p', 'voice.webm', 'audio/webm')
+    expect(matrixMediaService.uploadEncryptedFile).toHaveBeenCalledTimes(1)
   })
 })

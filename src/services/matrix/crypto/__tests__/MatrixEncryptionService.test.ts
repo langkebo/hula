@@ -18,137 +18,31 @@ vi.mock('../../MatrixClientService', () => ({
 
 describe('MatrixEncryptionService', () => {
   let mockClient: Partial<MatrixClient>
-  let mockCrypto: {
-    bootstrapCrossSigning: ReturnType<typeof vi.fn>
-    bootstrapSecretStorage: ReturnType<typeof vi.fn>
-    createRecoveryKeyFromPassphrase: ReturnType<typeof vi.fn>
-    getDeviceVerificationStatus: ReturnType<typeof vi.fn>
-    prepareKeyBackupVersion: ReturnType<typeof vi.fn>
-    resetKeyBackup: ReturnType<typeof vi.fn>
-    restoreKeyBackup: ReturnType<typeof vi.fn>
-  }
 
   beforeEach(() => {
-    mockCrypto = {
-      bootstrapCrossSigning: vi.fn(),
-      bootstrapSecretStorage: vi.fn(),
-      createRecoveryKeyFromPassphrase: vi.fn(),
-      getDeviceVerificationStatus: vi.fn(),
-      prepareKeyBackupVersion: vi.fn(),
-      resetKeyBackup: vi.fn(),
-      restoreKeyBackup: vi.fn()
-    }
-
     mockClient = {
-      isCryptoEnabled: vi.fn(() => true),
-      getCrypto: vi.fn(() => mockCrypto as unknown as MatrixClient['crypto']),
       getUserId: vi.fn(() => '@user:example.com'),
-      getDeviceId: vi.fn(() => 'DEVICE_1'),
+      deviceId: 'DEVICE_1',
       getRoom: vi.fn(),
-      sendStateEvent: vi.fn(),
-      isRoomEncrypted: vi.fn(() => false)
+      getKeyRotationManager: vi.fn(() => ({
+        postCheck: vi.fn().mockResolvedValue({
+          enabled: true,
+          interval_ms: 604800000,
+          needs_rotation: false
+        }),
+        rotateKey: vi.fn().mockResolvedValue({
+          success: true,
+          key_id: 'key_1',
+          rotated_at: 1234567890
+        }),
+        getRotationHistory: vi.fn().mockResolvedValue({ rotations: [] }),
+        revokeKey: vi.fn().mockResolvedValue({ revoked: 1 }),
+        updateConfig: vi.fn().mockResolvedValue({})
+      }))
     }
 
     vi.mocked(matrixClientService.getClient).mockReset()
     vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
-
-    ;(matrixEncryptionService as unknown as { crypto: unknown })['crypto'] = null
-  })
-
-  describe('initialize', () => {
-    it('should initialize with crypto enabled', async () => {
-      await matrixEncryptionService.initialize()
-      expect((matrixEncryptionService as unknown as { crypto: unknown })['crypto']).toBe(mockCrypto)
-    })
-
-    it('should handle crypto not enabled', async () => {
-      mockClient.isCryptoEnabled = vi.fn(() => false)
-      mockClient.getCrypto = vi.fn(() => undefined)
-
-      await matrixEncryptionService.initialize()
-      expect((matrixEncryptionService as unknown as { crypto: unknown })['crypto']).toBeNull()
-    })
-
-    it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as unknown as MatrixClient)
-
-      await expect(matrixEncryptionService.initialize()).rejects.toThrow()
-    })
-  })
-
-  describe('isEncryptionAvailable', () => {
-    it('should return true when crypto is available', async () => {
-      ;(matrixEncryptionService as unknown as { crypto: unknown })['crypto'] = mockCrypto
-
-      const result = await matrixEncryptionService.isEncryptionAvailable()
-      expect(result).toBe(true)
-    })
-
-    it('should return false when crypto is not available', async () => {
-      ;(matrixEncryptionService as unknown as { crypto: unknown })['crypto'] = null
-      mockClient.getCrypto = vi.fn(() => null)
-
-      const result = await matrixEncryptionService.isEncryptionAvailable()
-      expect(result).toBe(false)
-    })
-  })
-
-  describe('isRoomEncrypted', () => {
-    it('should return false when client is not available', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as unknown as MatrixClient)
-
-      const result = await matrixEncryptionService.isRoomEncrypted('!room:example.com')
-      expect(result).toBe(false)
-    })
-
-    it('should return room encryption status', async () => {
-      mockClient.isRoomEncrypted = vi.fn(() => true)
-
-      const result = await matrixEncryptionService.isRoomEncrypted('!room:example.com')
-      expect(result).toBe(true)
-    })
-  })
-
-  describe('enableRoomEncryption', () => {
-    it('should send encryption state event', async () => {
-      mockClient.sendStateEvent = vi.fn().mockResolvedValue({})
-
-      await matrixEncryptionService.enableRoomEncryption('!room:example.com')
-
-      expect(mockClient.sendStateEvent).toHaveBeenCalledWith(
-        '!room:example.com',
-        'm.room.encryption',
-        expect.objectContaining({ algorithm: 'm.megolm.v1.aes-sha2' }),
-        ''
-      )
-    })
-
-    it('should include custom settings in state event', async () => {
-      mockClient.sendStateEvent = vi.fn().mockResolvedValue({})
-
-      await matrixEncryptionService.enableRoomEncryption('!room:example.com', {
-        algorithm: 'm.megolm.v1.aes-sha2',
-        rotationPeriodMs: 86400000,
-        rotationPeriodMsgs: 50
-      })
-
-      expect(mockClient.sendStateEvent).toHaveBeenCalledWith(
-        '!room:example.com',
-        'm.room.encryption',
-        expect.objectContaining({
-          algorithm: 'm.megolm.v1.aes-sha2',
-          rotation_period_ms: 86400000,
-          rotation_period_msgs: 50
-        }),
-        ''
-      )
-    })
-
-    it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null as unknown as MatrixClient)
-
-      await expect(matrixEncryptionService.enableRoomEncryption('!room:example.com')).rejects.toThrow()
-    })
   })
 
   describe('getEncryptionSettings', () => {
@@ -165,70 +59,66 @@ describe('MatrixEncryptionService', () => {
       const result = await matrixEncryptionService.getEncryptionSettings('!room:example.com')
       expect(result).toBeNull()
     })
-  })
 
-  describe('getCrossSigningInfo', () => {
-    it('should return isSetup false when crypto is not available', async () => {
-      ;(matrixEncryptionService as unknown as { crypto: unknown })['crypto'] = null
-      mockClient.getCrypto = vi.fn(() => null)
-
-      const result = await matrixEncryptionService.getCrossSigningInfo()
-      expect(result.isSetup).toBe(false)
-    })
-  })
-
-  describe('setupCrossSigning', () => {
-    it('retries with returned UIA session when password auth is provided', async () => {
-      mockCrypto.bootstrapCrossSigning.mockImplementationOnce(async ({ authUploadDeviceSigningKeys }) => {
-        const makeRequest = vi
-          .fn()
-          .mockRejectedValueOnce({ data: { session: 'uia-session' } })
-          .mockResolvedValueOnce({})
-        await authUploadDeviceSigningKeys(makeRequest)
-        expect(makeRequest).toHaveBeenNthCalledWith(1, {
-          type: 'm.login.password',
-          user: '@user:example.com',
-          password: 'secret'
-        })
-        expect(makeRequest).toHaveBeenNthCalledWith(2, {
-          type: 'm.login.password',
-          user: '@user:example.com',
-          password: 'secret',
-          session: 'uia-session'
-        })
-      })
-
-      await expect(matrixEncryptionService.setupCrossSigning({ password: 'secret' })).resolves.toBeUndefined()
-    })
-  })
-
-  describe('setupKeyBackup', () => {
-    it('bootstraps secret storage with generated recovery key and password auth', async () => {
-      mockCrypto.createRecoveryKeyFromPassphrase.mockResolvedValueOnce({
-        encodedPrivateKey: 'RECOVERY-KEY',
-        privateKey: new Uint8Array(32),
-        keyInfo: {
-          algorithm: 'm.secret_storage.v1.aes-hmac-sha2',
-          iv: 'iv',
-          mac: 'mac'
+    it('should return encryption settings from room state', async () => {
+      const mockRoom = {
+        currentState: {
+          getStateEvents: vi.fn(() => ({
+            getContent: () => ({
+              algorithm: 'm.megolm.v1.aes-sha2',
+              rotation_period_ms: 86400000,
+              rotation_period_msgs: 50
+            })
+          }))
         }
-      })
-      mockCrypto.bootstrapSecretStorage.mockResolvedValueOnce(undefined)
-
-      const result = await matrixEncryptionService.setupKeyBackup({ password: 'secret' })
-
-      expect(result).toBe('RECOVERY-KEY')
-      expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          setupNewSecretStorage: true,
-          setupNewKeyBackup: true,
-          setupNewKeyBackupAuth: {
-            type: 'm.login.password',
-            user: '@user:example.com',
-            password: 'secret'
-          }
-        })
+      }
+      mockClient.getRoom = vi.fn(
+        () => mockRoom as unknown as MatrixClient['getRoom'] extends (...args: unknown[]) => infer R ? R : never
       )
+
+      const result = await matrixEncryptionService.getEncryptionSettings('!room:example.com')
+      expect(result).toEqual({
+        algorithm: 'm.megolm.v1.aes-sha2',
+        rotationPeriodMs: 86400000,
+        rotationPeriodMsgs: 50
+      })
+    })
+  })
+
+  describe('getKeyRotationStatus', () => {
+    it('should return rotation status from key rotation manager', async () => {
+      const result = await matrixEncryptionService.getKeyRotationStatus()
+      expect(result).toEqual({
+        enabled: true,
+        intervalMs: 604800000,
+        lastRotation: undefined,
+        needsRotation: false
+      })
+    })
+
+    it('should return default when client is not available', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null as unknown as MatrixClient)
+
+      const result = await matrixEncryptionService.getKeyRotationStatus()
+      expect(result).toEqual({
+        enabled: false,
+        intervalMs: 0,
+        needsRotation: false
+      })
+    })
+  })
+
+  describe('getCurrentDeviceId', () => {
+    it('should return device id', () => {
+      const result = matrixEncryptionService.getCurrentDeviceId()
+      expect(result).toBe('DEVICE_1')
+    })
+
+    it('should return null when client is not available', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null as unknown as MatrixClient)
+
+      const result = matrixEncryptionService.getCurrentDeviceId()
+      expect(result).toBeNull()
     })
   })
 })

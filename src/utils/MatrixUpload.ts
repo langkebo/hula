@@ -1,7 +1,9 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { matrixEventService } from '@/services/matrix/MatrixEventService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MatrixUpload')
 
 export interface MatrixUploadOptions {
   onProgress?: (progress: number) => void
@@ -39,7 +41,7 @@ class MatrixUploadService {
       )
 
       options.onSuccess?.(eventId)
-      await info(`[MatrixUpload] 图片上传并发送成功: ${eventId}`)
+      await logger.info(`[MatrixUpload] 图片上传并发送成功: ${eventId}`)
 
       return {
         contentUri: uploadResult.contentUri,
@@ -50,7 +52,7 @@ class MatrixUploadService {
     } catch (err) {
       const uploadError = err instanceof Error ? err : new Error(String(err))
       options.onError?.(uploadError)
-      await error(`[MatrixUpload] 图片上传失败: ${err}`)
+      await logger.error(`[MatrixUpload] 图片上传失败: ${err}`)
       throw uploadError
     }
   }
@@ -78,7 +80,7 @@ class MatrixUploadService {
       )
 
       options.onSuccess?.(eventId)
-      await info(`[MatrixUpload] 视频上传并发送成功: ${eventId}`)
+      await logger.info(`[MatrixUpload] 视频上传并发送成功: ${eventId}`)
 
       return {
         contentUri: uploadResult.contentUri,
@@ -89,7 +91,7 @@ class MatrixUploadService {
     } catch (err) {
       const uploadError = err instanceof Error ? err : new Error(String(err))
       options.onError?.(uploadError)
-      await error(`[MatrixUpload] 视频上传失败: ${err}`)
+      await logger.error(`[MatrixUpload] 视频上传失败: ${err}`)
       throw uploadError
     }
   }
@@ -114,7 +116,7 @@ class MatrixUploadService {
       )
 
       options.onSuccess?.(eventId)
-      await info(`[MatrixUpload] 文件上传并发送成功: ${eventId}`)
+      await logger.info(`[MatrixUpload] 文件上传并发送成功: ${eventId}`)
 
       return {
         contentUri: uploadResult.contentUri,
@@ -125,7 +127,7 @@ class MatrixUploadService {
     } catch (err) {
       const uploadError = err instanceof Error ? err : new Error(String(err))
       options.onError?.(uploadError)
-      await error(`[MatrixUpload] 文件上传失败: ${err}`)
+      await logger.error(`[MatrixUpload] 文件上传失败: ${err}`)
       throw uploadError
     }
   }
@@ -151,7 +153,7 @@ class MatrixUploadService {
       )
 
       options.onSuccess?.(eventId)
-      await info(`[MatrixUpload] 音频上传并发送成功: ${eventId}`)
+      await logger.info(`[MatrixUpload] 音频上传并发送成功: ${eventId}`)
 
       return {
         contentUri: uploadResult.contentUri,
@@ -162,7 +164,7 @@ class MatrixUploadService {
     } catch (err) {
       const uploadError = err instanceof Error ? err : new Error(String(err))
       options.onError?.(uploadError)
-      await error(`[MatrixUpload] 音频上传失败: ${err}`)
+      await logger.error(`[MatrixUpload] 音频上传失败: ${err}`)
       throw uploadError
     }
   }
@@ -192,7 +194,7 @@ class MatrixUploadService {
       )
 
       options.onSuccess?.(eventId)
-      await info(`[MatrixUpload] 语音上传并发送成功: ${eventId}`)
+      await logger.info(`[MatrixUpload] 语音上传并发送成功: ${eventId}`)
 
       return {
         contentUri: uploadResult.contentUri,
@@ -203,7 +205,7 @@ class MatrixUploadService {
     } catch (err) {
       const uploadError = err instanceof Error ? err : new Error(String(err))
       options.onError?.(uploadError)
-      await error(`[MatrixUpload] 语音上传失败: ${err}`)
+      await logger.error(`[MatrixUpload] 语音上传失败: ${err}`)
       throw uploadError
     }
   }

@@ -1,6 +1,8 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixMediaService } from '../media/MatrixMediaService'
+
+const logger = createLogger('MatrixEmojiService')
 
 /**
  * 表情包/贴纸包项
@@ -97,10 +99,10 @@ class MatrixEmojiService extends BaseMatrixService {
       const userId = this.assertSupportedUser(options?.userId)
       const response = await this.loadEmojiResponse(userId)
 
-      info(`[MatrixEmoji] 获取表情包列表成功，用户: ${userId}`)
+      logger.info(`[MatrixEmoji] 获取表情包列表成功，用户: ${userId}`)
       return this.parseEmojiResponse(response)
     } catch (err) {
-      logError(`[MatrixEmoji] 获取表情包列表失败: ${err}`)
+      logger.error(`[MatrixEmoji] 获取表情包列表失败: ${err}`)
       throw err
     }
   }
@@ -139,7 +141,7 @@ class MatrixEmojiService extends BaseMatrixService {
 
       await this.saveEmojiResponse(response)
 
-      info(`[MatrixEmoji] 上传自定义表情成功: ${name}, URL: ${mxcUrl}`)
+      logger.info(`[MatrixEmoji] 上传自定义表情成功: ${name}, URL: ${mxcUrl}`)
 
       return {
         id: emojiId,
@@ -148,7 +150,7 @@ class MatrixEmojiService extends BaseMatrixService {
         mxcUrl
       }
     } catch (err) {
-      logError(`[MatrixEmoji] 上传自定义表情失败: ${err}`)
+      logger.error(`[MatrixEmoji] 上传自定义表情失败: ${err}`)
       throw err
     }
   }
@@ -188,9 +190,9 @@ class MatrixEmojiService extends BaseMatrixService {
         await this.saveEmojiResponse(response)
       }
 
-      info(`[MatrixEmoji] 删除自定义表情成功: ${emojiId}`)
+      logger.info(`[MatrixEmoji] 删除自定义表情成功: ${emojiId}`)
     } catch (err) {
-      logError(`[MatrixEmoji] 删除自定义表情失败: ${err}`)
+      logger.error(`[MatrixEmoji] 删除自定义表情失败: ${err}`)
       throw err
     }
   }
@@ -226,7 +228,7 @@ class MatrixEmojiService extends BaseMatrixService {
 
       await this.saveEmojiResponse(response)
 
-      info(`[MatrixEmoji] 创建表情包成功: ${name}`)
+      logger.info(`[MatrixEmoji] 创建表情包成功: ${name}`)
 
       return {
         id: packId,
@@ -237,7 +239,7 @@ class MatrixEmojiService extends BaseMatrixService {
         updatedTs: now
       }
     } catch (err) {
-      logError(`[MatrixEmoji] 创建表情包失败: ${err}`)
+      logger.error(`[MatrixEmoji] 创建表情包失败: ${err}`)
       throw err
     }
   }
@@ -256,9 +258,9 @@ class MatrixEmojiService extends BaseMatrixService {
         await this.saveEmojiResponse(response)
       }
 
-      info(`[MatrixEmoji] 删除表情包成功: ${packId}`)
+      logger.info(`[MatrixEmoji] 删除表情包成功: ${packId}`)
     } catch (err) {
-      logError(`[MatrixEmoji] 删除表情包失败: ${err}`)
+      logger.error(`[MatrixEmoji] 删除表情包失败: ${err}`)
       throw err
     }
   }
@@ -287,9 +289,9 @@ class MatrixEmojiService extends BaseMatrixService {
 
       await this.saveEmojiResponse(response)
 
-      info(`[MatrixEmoji] 添加表情到表情包成功: pack=${packId}, emoji=${emojiId}`)
+      logger.info(`[MatrixEmoji] 添加表情到表情包成功: pack=${packId}, emoji=${emojiId}`)
     } catch (err) {
-      logError(`[MatrixEmoji] 添加表情到表情包失败: ${err}`)
+      logger.error(`[MatrixEmoji] 添加表情到表情包失败: ${err}`)
       throw err
     }
   }
@@ -311,9 +313,9 @@ class MatrixEmojiService extends BaseMatrixService {
         await this.saveEmojiResponse(response)
       }
 
-      info(`[MatrixEmoji] 从表情包移除表情成功: pack=${packId}, emoji=${emojiId}`)
+      logger.info(`[MatrixEmoji] 从表情包移除表情成功: pack=${packId}, emoji=${emojiId}`)
     } catch (err) {
-      logError(`[MatrixEmoji] 从表情包移除表情失败: ${err}`)
+      logger.error(`[MatrixEmoji] 从表情包移除表情失败: ${err}`)
       throw err
     }
   }

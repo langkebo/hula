@@ -128,8 +128,8 @@ const highlightText = (value?: string | null) => {
 
 <style scoped lang="scss">
 .friend-list-item {
-  --friend-card-bg: var(--hula-surface-panel, #ffffff);
-  --friend-card-border: var(--hula-border-default, #e3e3e3);
+  --friend-card-bg: var(--hula-surface-panel);
+  --friend-card-border: var(--hula-border-default);
   --friend-card-text: var(--hula-text-primary, #18181c);
   --friend-card-subtle: var(--hula-text-tertiary, #909090);
   align-items: center;

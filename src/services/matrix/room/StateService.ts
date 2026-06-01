@@ -1,6 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('StateService')
 
 /**
  * Room state domain service.
@@ -12,16 +14,16 @@ export class MatrixRoomStateService extends BaseMatrixService {
   async setRoomName(roomId: string, name: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('state', roomId, { roomId, type: 'name', content: name })
-      info(`[MatrixRoom] 离线状态，已将设置房间名称入队: ${roomId} -> ${name}`)
+      logger.info(`[MatrixRoom] 离线状态，已将设置房间名称入队: ${roomId} -> ${name}`)
       return
     }
 
     const client = this.getClient()
     try {
       await client.setRoomName(roomId, name)
-      info(`[MatrixRoom] 设置房间名称成功: ${roomId} -> ${name}`)
+      logger.info(`[MatrixRoom] 设置房间名称成功: ${roomId} -> ${name}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置房间名称失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置房间名称失败: ${err}`)
       throw err
     }
   }
@@ -29,16 +31,16 @@ export class MatrixRoomStateService extends BaseMatrixService {
   async setRoomTopic(roomId: string, topic: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('state', roomId, { roomId, type: 'topic', content: topic })
-      info(`[MatrixRoom] 离线状态，已将设置房间主题入队: ${roomId} -> ${topic}`)
+      logger.info(`[MatrixRoom] 离线状态，已将设置房间主题入队: ${roomId} -> ${topic}`)
       return
     }
 
     const client = this.getClient()
     try {
       await client.setRoomTopic(roomId, topic)
-      info(`[MatrixRoom] 设置房间主题成功: ${roomId}`)
+      logger.info(`[MatrixRoom] 设置房间主题成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置房间主题失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置房间主题失败: ${err}`)
       throw err
     }
   }
@@ -46,16 +48,16 @@ export class MatrixRoomStateService extends BaseMatrixService {
   async setRoomAvatar(roomId: string, avatarUrl: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('state', roomId, { roomId, type: 'avatar', content: avatarUrl })
-      info(`[MatrixRoom] 离线状态，已将设置房间头像入队: ${roomId} -> ${avatarUrl}`)
+      logger.info(`[MatrixRoom] 离线状态，已将设置房间头像入队: ${roomId} -> ${avatarUrl}`)
       return
     }
 
     const client = this.getClient()
     try {
       await client.sendStateEvent(roomId, 'm.room.avatar', { url: avatarUrl }, '')
-      info(`[MatrixRoom] 设置房间头像成功: ${roomId}`)
+      logger.info(`[MatrixRoom] 设置房间头像成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置房间头像失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置房间头像失败: ${err}`)
       throw err
     }
   }
@@ -69,7 +71,7 @@ export class MatrixRoomStateService extends BaseMatrixService {
       }
       return room.currentState.getStateEvents('*')
     } catch (err) {
-      error(`[MatrixRoom] 获取房间状态失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间状态失败: ${err}`)
       throw err
     }
   }
@@ -77,7 +79,7 @@ export class MatrixRoomStateService extends BaseMatrixService {
   async setPushRule(roomId: string, enabled: boolean): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('push_rule', roomId, { roomId, enabled })
-      info(`[MatrixRoom] 离线状态，已将设置推送规则入队: ${roomId} -> ${enabled}`)
+      logger.info(`[MatrixRoom] 离线状态，已将设置推送规则入队: ${roomId} -> ${enabled}`)
       return
     }
 
@@ -97,9 +99,9 @@ export class MatrixRoomStateService extends BaseMatrixService {
           actions: []
         })
       }
-      info(`[MatrixRoom] 设置推送规则成功: ${roomId} -> ${enabled}`)
+      logger.info(`[MatrixRoom] 设置推送规则成功: ${roomId} -> ${enabled}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置推送规则失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置推送规则失败: ${err}`)
       throw err
     }
   }

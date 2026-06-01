@@ -1,6 +1,8 @@
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+
+const logger = createLogger('TagsService')
 
 /**
  * Room tags domain service.
@@ -25,7 +27,7 @@ export class MatrixRoomTagsService extends BaseMatrixService {
       if (this.isTagsUnsupportedError(err)) {
         this.tagsUnsupported = true
         if (!this.unsupportedLogged) {
-          warn('[MatrixRoom] 当前服务端未提供 room tags 接口，后续跳过标签拉取')
+          logger.warn('[MatrixRoom] 当前服务端未提供 room tags 接口，后续跳过标签拉取')
           this.unsupportedLogged = true
         }
         return {}
@@ -38,16 +40,16 @@ export class MatrixRoomTagsService extends BaseMatrixService {
   async setTag(roomId: string, tag: string, order?: number): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('tag', roomId, { roomId, tag, order, action: 'set' })
-      info(`[MatrixRoom] 离线状态，已将设置标签入队: ${roomId}/${tag}`)
+      logger.info(`[MatrixRoom] 离线状态，已将设置标签入队: ${roomId}/${tag}`)
       return
     }
     const client = this.getClient()
     try {
       if (!client.getUserId()) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
       await client.setRoomTag(roomId, tag, order !== undefined ? { order } : {})
-      info(`[MatrixRoom] 设置标签成功: ${roomId}/${tag}`)
+      logger.info(`[MatrixRoom] 设置标签成功: ${roomId}/${tag}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置标签失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置标签失败: ${err}`)
       throw err
     }
   }
@@ -55,16 +57,16 @@ export class MatrixRoomTagsService extends BaseMatrixService {
   async removeTag(roomId: string, tag: string): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('tag', roomId, { roomId, tag, action: 'remove' })
-      info(`[MatrixRoom] 离线状态，已将移除标签入队: ${roomId}/${tag}`)
+      logger.info(`[MatrixRoom] 离线状态，已将移除标签入队: ${roomId}/${tag}`)
       return
     }
     const client = this.getClient()
     try {
       if (!client.getUserId()) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
       await client.deleteRoomTag(roomId, tag)
-      info(`[MatrixRoom] 移除标签成功: ${roomId}/${tag}`)
+      logger.info(`[MatrixRoom] 移除标签成功: ${roomId}/${tag}`)
     } catch (err) {
-      error(`[MatrixRoom] 移除标签失败: ${err}`)
+      logger.error(`[MatrixRoom] 移除标签失败: ${err}`)
       throw err
     }
   }

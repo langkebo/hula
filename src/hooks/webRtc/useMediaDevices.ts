@@ -1,5 +1,7 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { ref } from 'vue'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('useMediaDevices')
 
 /**
  * 媒体设备枚举状态封装：音/视频输入设备清单 + 当前选中项 + 加载态。
@@ -20,18 +22,18 @@ export const useMediaDevices = () => {
 
   const refresh = async (): Promise<boolean> => {
     try {
-      info('start getDevices')
+      logger.info('start getDevices')
       isDeviceLoad.value = true
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
         stream.getTracks().forEach((track) => track.stop())
       } catch {
-        error('Permission denied, will get limited device info')
+        logger.error('Permission denied, will get limited device info')
       }
 
       const devices = (await navigator.mediaDevices.enumerateDevices()) || []
-      info(`getDevices, devices: ${JSON.stringify(devices)}`)
+      logger.info(`getDevices, devices: ${JSON.stringify(devices)}`)
       if (devices.length === 0) {
         isDeviceLoad.value = false
         return false
@@ -48,7 +50,7 @@ export const useMediaDevices = () => {
       isDeviceLoad.value = false
       return true
     } catch (err) {
-      error(`获取设备失败: ${err}`)
+      logger.error(`获取设备失败: ${err}`)
       selectedAudioDevice.value = selectedAudioDevice.value || null
       selectedVideoDevice.value = selectedVideoDevice.value || null
       isDeviceLoad.value = false

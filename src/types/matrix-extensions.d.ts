@@ -55,8 +55,10 @@ export interface SasVerifier {
 
 export interface DeviceVerificationStatus {
   isVerified(): boolean
-  isCrossSigningVerified(): boolean
-  isTofu(): boolean
+  readonly crossSigningVerified: boolean
+  readonly localVerified: boolean
+  readonly signedByOwner: boolean
+  readonly tofu: boolean
 }
 
 export interface LegacyStoredDevice {
@@ -69,8 +71,8 @@ export interface LegacyStoredDevice {
 
 export interface LegacyDeviceTrustInfo {
   isVerified(): boolean
-  isCrossSigningVerified(): boolean
-  isTofu(): boolean
+  readonly crossSigningVerified: boolean
+  readonly tofu: boolean
 }
 
 export interface LegacyUserTrustInfo extends LegacyDeviceTrustInfo {
@@ -87,7 +89,7 @@ export interface LegacyVerificationRequest {
 
 export interface CryptoApi {
   requestDeviceVerification(userId: string, deviceId: string): Promise<VerificationRequest>
-  getDeviceVerificationStatus(userId: string, deviceId: string): Promise<DeviceVerificationStatus>
+  getDeviceVerificationStatus(userId: string, deviceId: string): Promise<DeviceVerificationStatus | null>
   verificationRequests?: Map<string, VerificationRequest>
   getOwnDeviceKeys(): Promise<{ ed25519: string; curve25519: string }>
   isSecretStorageReady(): Promise<boolean>
@@ -101,41 +103,47 @@ export interface CryptoApi {
     authUploadDeviceSigningKeys: (makeRequest: (authData: unknown) => Promise<unknown>) => Promise<unknown>
   }): Promise<void>
   getCrossSigningStatus(): Promise<{
-    crossSigningVerifiedOnDevice: boolean
-    crossSigningPrivateKeysInStorage: boolean
-    masterPublicKeyInStorage: boolean
+    publicKeysOnDevice: boolean
+    privateKeysInSecretStorage: boolean
+    privateKeysCachedLocally: {
+      masterKey: boolean
+      selfSigningKey: boolean
+      userSigningKey: boolean
+    }
   }>
   isCrossSigningReady(): Promise<boolean>
-  restoreKeyBackup(
-    key: string | Uint8Array,
-    targetRoomId?: string,
-    targetSessionId?: string
-  ): Promise<{ imported: number; total: number }>
-  resetKeyBackup(auth?: MatrixAuthData): Promise<{ version: string } | string>
+  restoreKeyBackup(opts?: KeyBackupRestoreOpts): Promise<KeyBackupRestoreResult>
+  restoreKeyBackupWithPassphrase(passphrase: string, opts?: KeyBackupRestoreOpts): Promise<KeyBackupRestoreResult>
+  resetKeyBackup(auth?: MatrixAuthData): Promise<void>
   prepareKeyBackupVersion(
     key?: string,
     opts?: Record<string, unknown>
   ): Promise<{ version: string; algorithm: string; auth_data: Record<string, unknown> }>
-  getKeyBackupVersion(
-    version?: string
-  ): Promise<{ version: string; algorithm: string; auth_data: Record<string, unknown>; count: number; etag: string }>
+  getKeyBackupInfo(): Promise<KeyBackupInfo | null>
   deleteKeyBackupVersion(version: string): Promise<void>
   exportRoomKeys(opts?: Record<string, unknown>): Promise<Array<Record<string, unknown>>>
-  importRoomKeys(
-    keys: Array<Record<string, unknown>>,
-    opts?: Record<string, unknown>
-  ): Promise<{ imported: number; total: number; errors: Array<Record<string, unknown>> }>
+  importRoomKeys(keys: Array<Record<string, unknown>>, opts?: Record<string, unknown>): Promise<void>
   resetCrossSigningKeys(opts?: Record<string, unknown>): Promise<void>
   getUserDeviceInfo(userId: string, timeoutMs?: number): Promise<unknown>
-  setDeviceVerified(userId: string, deviceId: string): Promise<void>
-  setDeviceBlocked(userId: string, deviceId: string): Promise<void>
-  setDeviceKnown(userId: string, deviceId: string): Promise<void>
-  verifyDevice(userId: string, deviceId: string): Promise<void>
-  requestVerification(userId: string, devices?: string[]): Promise<unknown>
-  startVerification(request: unknown): Promise<unknown>
-  acceptVerification(request: unknown): Promise<unknown>
-  cancelVerification(request: unknown): Promise<void>
+  setDeviceVerified(userId: string, deviceId: string, verified?: boolean): Promise<void>
   createRecoveryKeyFromPassphrase(password?: string): Promise<GeneratedSecretStorageKey>
+}
+
+export interface KeyBackupRestoreOpts {
+  progressCallback?: (progress: { stage: string; successes?: number; failures?: number; total?: number }) => void
+}
+
+export interface KeyBackupRestoreResult {
+  total: number
+  imported: number
+}
+
+export interface KeyBackupInfo {
+  algorithm: string
+  auth_data: Record<string, unknown>
+  count?: number
+  etag?: string
+  version?: string
 }
 
 // ============================================
@@ -189,6 +197,64 @@ export interface BackupInfo {
   etag?: string
 }
 
+export interface RoomKeyBackup {
+  rooms: Record<
+    string,
+    {
+      sessions: Record<
+        string,
+        {
+          first_message_index: number
+          forwarded_count: number
+          is_verified: boolean
+          session_data: Record<string, unknown>
+        }
+      >
+    }
+  >
+  etag?: string
+}
+
+export interface RecoveryProgress {
+  user_id: string
+  version: string
+  total_keys: number
+  recovered_keys: number
+  status: string
+  started_ts: number
+  updated_ts: number
+}
+
+export interface BatchRecoverResult {
+  rooms: Record<string, unknown>
+  total_sessions: number
+  has_more: boolean
+  next_batch?: string
+}
+
+export interface ExportResult {
+  room_keys: Array<{
+    room_id: string
+    session_id: string
+    session_data: Record<string, unknown>
+  }>
+  version: string
+}
+
+export interface ImportResult {
+  count: number
+  failed: number
+  total: number
+}
+
+export interface VerifyResult {
+  valid: boolean
+  algorithm: string
+  auth_data: Record<string, unknown>
+  key_count: number
+  signatures?: Record<string, unknown>
+}
+
 export interface KeyBackupManager {
   checkKeyBackup(): Promise<BackupInfo | null>
   prepareKeyBackupVersion(key?: Uint8Array): Promise<{
@@ -205,52 +271,80 @@ export interface KeyBackupManager {
     backupInfo?: BackupInfo
   ): Promise<{ total: number; imported: number }>
   scheduleKeyBackupSend(): void
+  getLatestBackupVersion(forceRefresh?: boolean): Promise<BackupInfo>
+  getBackupVersion(version: string, forceRefresh?: boolean): Promise<BackupInfo>
+  createBackupVersion(
+    algorithm?: string,
+    authData?: Record<string, unknown>,
+    auth?: Record<string, unknown>
+  ): Promise<{ version: string }>
+  updateBackupVersion(version: string, authData: Record<string, unknown>): Promise<{ version: string }>
+  deleteBackupVersion(version: string): Promise<{ deleted: boolean; version: string }>
+  getAllRoomKeys(version: string): Promise<RoomKeyBackup>
+  putAllRoomKeys(version: string, body: Record<string, unknown>): Promise<{ count: number; etag: string }>
+  getRoomKeys(version: string, roomId: string): Promise<Record<string, unknown>>
+  putRoomKeys(version: string, roomId: string, body: Record<string, unknown>): Promise<{ count: number; etag: string }>
+  deleteAllRoomKeys(version: string): Promise<{ count: number; etag: string }>
+  deleteRoomKeys(version: string, roomId: string): Promise<{ count: number; etag: string }>
+  getSessionKey(version: string, roomId: string, sessionId: string): Promise<Record<string, unknown>>
+  putSessionKey(
+    version: string,
+    roomId: string,
+    sessionId: string,
+    sessionData: Record<string, unknown>
+  ): Promise<{ count: number; etag: string }>
+  deleteSessionKey(version: string, roomId: string, sessionId: string): Promise<{ count: number; etag: string }>
+  recoverKeys(version: string, rooms?: string[]): Promise<Record<string, unknown>>
+  getRecoveryProgress(version: string): Promise<RecoveryProgress>
+  verifyBackup(version: string): Promise<VerifyResult>
+  batchRecover(version: string, roomIds: string[], sessionLimit?: number): Promise<BatchRecoverResult>
+  recoverRoomKeys(version: string, roomId: string): Promise<Record<string, unknown>>
+  recoverSessionKey(version: string, roomId: string, sessionId: string): Promise<Record<string, unknown>>
+  exportKeys(version?: string): Promise<ExportResult>
+  importKeys(roomKeys: Array<Record<string, unknown>>, version?: string): Promise<ImportResult>
 }
 
 // ============================================
 // Device Trust Manager 扩展 (SDK Manager Layer)
 // ============================================
 
-export type TrustLevel = 'verified' | 'cross_signed' | 'unverified' | 'unknown' | 'blacklisted'
+export type TrustLevel = 'verified' | 'cross_signed' | 'unverified' | 'blacklisted'
 
 export interface IDeviceTrustInfo {
   device_id: string
-  user_id: string
+  user_id?: string
   display_name?: string
   trust_level: TrustLevel
   last_seen_ts?: number
   last_seen_ip?: string
-  is_verified: boolean
-  is_cross_signed: boolean
-  is_blacklisted: boolean
+  verified_at?: number
+  verified_by?: string
 }
 
 export interface IDeviceVerificationRequest {
-  new_device_id: string
-  device_id: string
-  method?: 'sas' | 'qr_code'
+  new_device_id?: string
+  device_id?: string
+  method?: 'sas' | 'qr' | 'emoji'
 }
 
 export interface IDeviceVerificationResponse {
+  request_token: string
   token: string
+  status: 'pending' | 'approved' | 'rejected' | 'expired' | 'not_found'
   expires_at: number
-  device_id: string
-  new_device_id: string
-  method: string
-  status: 'pending' | 'approved' | 'rejected' | 'expired'
+  methods_available: ('sas' | 'qr' | 'emoji')[]
 }
 
 export interface IVerificationRespondResult {
   success: boolean
-  message?: string
+  trust_level: TrustLevel
 }
 
 export interface ISecuritySummary {
-  total_devices: number
   verified_devices: number
   unverified_devices: number
-  blacklisted_devices: number
-  cross_signed_devices: number
+  blocked_devices: number
+  has_cross_signing_master: boolean
   security_score: number
   recommendations: string[]
 }
@@ -313,6 +407,10 @@ export interface MatrixClientExtended extends MatrixClient {
   getDeviceManager?(): DeviceManager | null
   getCrypto(): CryptoApi | null
   getKeyBackupManager?(): KeyBackupManager | null
+  getDeviceKeysManager?(): import('matrix-js-sdk/device-keys').DeviceKeysManager | null
+  getCryptoKeysManager?(): import('matrix-js-sdk/crypto-keys').CryptoKeysManager | null
+  getKeyVerificationManager?(): import('matrix-js-sdk/key-verification').KeyVerificationManager | null
+  getSDKKeyBackupManager?(): import('matrix-js-sdk/key-backup').KeyBackupManager | null
   getDeviceTrustManager?(): DeviceTrustManager | null
   getSecureBackupManager?(): SecureBackupManager | null
   checkUserTrust?(userId: string): Promise<LegacyUserTrustInfo>
@@ -320,6 +418,9 @@ export interface MatrixClientExtended extends MatrixClient {
   getStoredDevicesForUser?(userId: string): Promise<LegacyStoredDevice[]>
   getStoredDevice?(userId: string, deviceId: string): LegacyStoredDevice | null
   getVerificationRequestsToDevice?(userId: string): LegacyVerificationRequest[]
+  setDeviceVerified?(userId: string, deviceId: string, verified?: boolean): Promise<void>
+  setDeviceBlocked?(userId: string, deviceId: string, blocked: boolean): Promise<void>
+  isCrossSigningReady?(): Promise<boolean>
 }
 
 // ============================================

@@ -1,6 +1,8 @@
-import { error } from '@tauri-apps/plugin-log'
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixEncryptionContextService')
 
 export interface MatrixEncryptionSessionContext {
   userId: string | null
@@ -48,7 +50,7 @@ class MatrixEncryptionContextService {
       const keys = await this.getCrypto()?.getOwnDeviceKeys?.()
       return keys?.ed25519 ?? null
     } catch (err) {
-      error(`[EncryptionContext] 获取当前设备指纹失败: ${err}`)
+      logger.error(`[EncryptionContext] 获取当前设备指纹失败: ${err}`)
       return null
     }
   }
@@ -73,7 +75,7 @@ class MatrixEncryptionContextService {
       const storedDevice = await this.getExtendedClient()?.getStoredDevice?.(resolvedUserId, resolvedDeviceId)
       return (storedDevice as StoredDeviceLike | null)?.getFingerprint?.() ?? null
     } catch (err) {
-      error(`[EncryptionContext] 获取设备指纹失败: ${err}`)
+      logger.error(`[EncryptionContext] 获取设备指纹失败: ${err}`)
       return null
     }
   }
@@ -103,7 +105,7 @@ class MatrixEncryptionContextService {
         privateKey: preparedByCrypto.privateKey
       }
     } catch (err) {
-      error(`[EncryptionContext] 准备密钥备份版本失败: ${err}`)
+      logger.error(`[EncryptionContext] 准备密钥备份版本失败: ${err}`)
       return null
     }
   }

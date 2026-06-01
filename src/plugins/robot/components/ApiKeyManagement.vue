@@ -103,7 +103,9 @@
                   <span class="text-primary font-600 text-16px">
                     {{ balanceMap[apiKey.id].balanceInfos[0].totalBalance || '0' }}
                   </span>
-                  <span class="text-gray-500">{{ balanceMap[apiKey.id].balanceInfos[0].currency || 'USD' }}</span>
+                  <span class="text-[--hula-text-tertiary]">
+                    {{ balanceMap[apiKey.id].balanceInfos[0].currency || 'USD' }}
+                  </span>
                 </n-flex>
               </n-descriptions-item>
             </n-descriptions>
@@ -436,7 +438,7 @@ onMounted(() => {
   transition: all 0.3s;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--hula-shadow-card);
   }
 
   .api-key-card-header {

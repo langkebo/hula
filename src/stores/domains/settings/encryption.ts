@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('EncryptionStore')
@@ -82,7 +84,7 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
 
   async function loadCrossSigningStatus() {
     try {
-      const crossSigningInfo = await matrixEncryptionService.getCrossSigningInfo()
+      const crossSigningInfo = await cryptoSDKAdapter.getCrossSigningStatus()
       crossSigningSetup.value = crossSigningInfo.isSetup
     } catch {
       crossSigningSetup.value = false
@@ -91,7 +93,7 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
 
   async function loadBackupStatus() {
     try {
-      const backupInfo = await matrixEncryptionService.getKeyBackupInfo()
+      const backupInfo = await matrixKeyBackupService.checkKeyBackup()
       if (backupInfo) {
         backupEnabled.value = true
         backupVersion.value = backupInfo.version ?? ''

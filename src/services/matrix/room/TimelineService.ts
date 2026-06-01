@@ -1,6 +1,8 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('TimelineService')
 
 /**
  * Room timeline / context domain service.
@@ -23,10 +25,10 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.getEventContext(roomId, eventId, { limit })
-      info(`[MatrixRoom] 获取事件上下文成功: ${roomId}/${eventId}`)
+      logger.info(`[MatrixRoom] 获取事件上下文成功: ${roomId}/${eventId}`)
       return result as { event: unknown; events_before: unknown[]; events_after: unknown[]; state: unknown[] }
     } catch (err) {
-      error(`[MatrixRoom] 获取事件上下文失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取事件上下文失败: ${err}`)
       throw err
     }
   }
@@ -53,7 +55,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
       )
       return result as { chunk: unknown[]; start: string; end: string }
     } catch (err) {
-      error(`[MatrixRoom] 获取房间时间线失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间时间线失败: ${err}`)
       return { chunk: [], start: '', end: '' }
     }
   }
@@ -79,7 +81,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
         unread_highlighted: unreadCountResult.unread_highlighted ?? unreadCountResult.highlight_count ?? 0
       }
     } catch (err) {
-      error(`[MatrixRoom] 获取未读计数失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取未读计数失败: ${err}`)
       return { unread_notifications: 0, unread_highlighted: 0 }
     }
   }
@@ -97,7 +99,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
       })
       return result as { event_id: string; origin_server_ts: number }
     } catch (err) {
-      error(`[MatrixRoom] 时间戳反查事件失败: ${err}`)
+      logger.error(`[MatrixRoom] 时间戳反查事件失败: ${err}`)
       return null
     }
   }
@@ -119,7 +121,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
       )
       return result as { notifications: Array<Record<string, unknown>>; next_token?: string }
     } catch (err) {
-      error(`[MatrixRoom] 获取房间通知失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间通知失败: ${err}`)
       return { notifications: [] }
     }
   }
@@ -133,7 +135,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
       )
       return result as Record<string, unknown>
     } catch (err) {
-      error(`[MatrixRoom] 获取通话会话失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取通话会话失败: ${err}`)
       return null
     }
   }

@@ -624,14 +624,14 @@ async function handleDelete() {
 }
 
 .key-display {
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: var(--hula-encryption-surface-subtle);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
 }
 
 :deep(.dark) .key-display {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--hula-encryption-surface-dark);
 }
 
 .key-label {
@@ -646,13 +646,13 @@ async function handleDelete() {
   word-break: break-all;
   line-height: 1.6;
   padding: 12px;
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: var(--hula-encryption-surface-subtle);
   border-radius: 4px;
   margin-bottom: 12px;
 }
 
 :deep(.dark) .key-value {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--hula-encryption-surface-dark);
 }
 
 .key-actions {

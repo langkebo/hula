@@ -43,7 +43,7 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { UserAttentionType } from '@tauri-apps/api/window'
-import { info } from '@tauri-apps/plugin-log'
+
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
@@ -483,7 +483,7 @@ const setupNativeFileDropListeners = async () => {
 }
 
 listen('relogin', async () => {
-  info('收到重新登录事件')
+  logger.info('收到重新登录事件')
   await logout()
 })
 

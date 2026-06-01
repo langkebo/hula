@@ -54,7 +54,7 @@
 import { PhysicalPosition } from '@tauri-apps/api/dpi'
 import { type Event, emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
+
 import { useDebounceFn } from '@vueuse/core'
 import { sumBy } from 'es-toolkit'
 import { useI18n } from 'vue-i18n'
@@ -135,7 +135,7 @@ const handleClickMsg = async (group: GroupedMessage) => {
   // 找到对应的会话 - 根据roomId而不是消息ID
   const session = chatStore.sessionList.find((s) => s.roomId === group.roomId)
   if (session) {
-    info(`点击消息，打开会话：${JSON.stringify(session)}`)
+    logger.info(`点击消息，打开会话：${JSON.stringify(session)}`)
     emitTo('home', 'search_to_msg', {
       uid: group.roomType === RoomTypeEnum.SINGLE ? session.detailId : session.roomId,
       roomType: group.roomType
@@ -191,7 +191,7 @@ const showWindow = async (event: Event<NotifyEnterPayload>) => {
 const hideWindow = async () => {
   // 如果鼠标正在窗口内，不执行隐藏
   if (isMouseInWindow.value) {
-    info('鼠标在窗口内，跳过隐藏')
+    logger.info('鼠标在窗口内，跳过隐藏')
     return
   }
   // 延迟检查，确保鼠标确实离开了窗口区域
@@ -230,7 +230,7 @@ onMounted(async () => {
 
   if (isWindows()) {
     appWindow.listen<NotifyEnterPayload>('notify_enter', async (event) => {
-      info('监听到enter事件，打开notify窗口')
+      logger.info('监听到enter事件，打开notify窗口')
       await showWindow(event)
     })
 

@@ -130,10 +130,12 @@
 </template>
 
 <script setup lang="ts">
-import { info, error as logError } from '@tauri-apps/plugin-log'
 import { useI18n } from 'vue-i18n'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
+import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('VoiceRecorderEnhanced')
 
 const { t } = useI18n()
 const timerManager = useTimerManager()
@@ -237,17 +239,17 @@ const startRecording = async () => {
       }
     }, 1000)
 
-    info('[VoiceRecorder] 开始录音')
+    logger.info('[VoiceRecorder] 开始录音')
   } catch (err) {
     error.value = t('voice.recorder.permission_denied')
-    logError(`[VoiceRecorder] 录音权限被拒绝: ${err}`)
+    logger.error(`[VoiceRecorder] 录音权限被拒绝: ${err}`)
   }
 }
 
 const stopRecording = () => {
   if (mediaRecorder && isRecording.value) {
     mediaRecorder.stop()
-    info('[VoiceRecorder] 停止录音')
+    logger.info('[VoiceRecorder] 停止录音')
   }
 }
 
@@ -313,11 +315,11 @@ const handleSend = async () => {
       }
     })
 
-    info(`[VoiceRecorder] 语音上传成功: ${mxcUrl}`)
+    logger.info(`[VoiceRecorder] 语音上传成功: ${mxcUrl}`)
     resetState()
   } catch (err) {
     error.value = t('voice.recorder.upload_failed')
-    logError(`[VoiceRecorder] 上传失败: ${err}`)
+    logger.error(`[VoiceRecorder] 上传失败: ${err}`)
   } finally {
     sending.value = false
     isUploading.value = false

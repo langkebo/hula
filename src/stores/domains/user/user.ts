@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
@@ -6,10 +5,13 @@ import { SexEnum, StoresEnum } from '@/enums'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { profileService } from '@/services/matrix/user/MatrixProfileService'
 import type { UserInfoType } from '@/services/types'
+import { createLogger } from '@/utils/Logger'
 import * as PathUtil from '@/utils/PathUtil'
 import { toLocalpart } from '@/utils/userIdentity'
 import { useMatrixStore } from '../chat/matrix'
 import { useGlobalStore } from '../widget/global'
+
+const logger = createLogger('user')
 
 export interface MatrixUserProfile {
   userId: string
@@ -53,7 +55,7 @@ export const useUserStore = defineStore(
     async function fetchUserProfile(userId?: string): Promise<MatrixUserProfile | null> {
       const targetUserId = userId || matrixStore.userId
       if (!targetUserId) {
-        error('[UserStore] 用户ID不存在')
+        logger.error('[UserStore] 用户ID不存在')
         return null
       }
 
@@ -87,10 +89,10 @@ export const useUserStore = defineStore(
           }
         }
 
-        info(`[UserStore] 获取用户资料成功: ${targetUserId}`)
+        logger.info(`[UserStore] 获取用户资料成功: ${targetUserId}`)
         return userProfile
       } catch (err) {
-        error(`[UserStore] 获取用户资料失败: ${formatMatrixError(err)}`)
+        logger.error(`[UserStore] 获取用户资料失败: ${formatMatrixError(err)}`)
         return null
       }
     }
@@ -101,10 +103,10 @@ export const useUserStore = defineStore(
         if (matrixProfile.value) {
           matrixProfile.value.displayName = displayName
         }
-        info(`[UserStore] 更新显示名称成功: ${displayName}`)
+        logger.info(`[UserStore] 更新显示名称成功: ${displayName}`)
         return true
       } catch (err) {
-        error(`[UserStore] 更新显示名称失败: ${formatMatrixError(err)}`)
+        logger.error(`[UserStore] 更新显示名称失败: ${formatMatrixError(err)}`)
         return false
       }
     }
@@ -115,10 +117,10 @@ export const useUserStore = defineStore(
         if (matrixProfile.value) {
           matrixProfile.value.avatarUrl = avatarUrl
         }
-        info('[UserStore] 更新头像成功')
+        logger.info('[UserStore] 更新头像成功')
         return true
       } catch (err) {
-        error(`[UserStore] 更新头像失败: ${formatMatrixError(err)}`)
+        logger.error(`[UserStore] 更新头像失败: ${formatMatrixError(err)}`)
         return false
       }
     }
@@ -128,7 +130,7 @@ export const useUserStore = defineStore(
         const presence = await matrixPresenceService.getPresence(userId)
         return presence.presence || null
       } catch (err) {
-        error(`[UserStore] 获取用户状态失败: ${formatMatrixError(err)}`)
+        logger.error(`[UserStore] 获取用户状态失败: ${formatMatrixError(err)}`)
         return null
       }
     }

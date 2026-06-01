@@ -194,7 +194,7 @@ defineExpose({
 <style scoped>
 .message-container {
   position: relative;
-  background-color: var(--color-bg-primary, #fff);
+  background-color: var(--color-bg-primary, var(--hula-surface-panel));
 }
 
 .message-scroll-container {
@@ -241,11 +241,11 @@ defineExpose({
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  background: var(--color-primary, #13987f);
-  color: #fff;
+  background: var(--color-primary, var(--hula-brand));
+  color: var(--hula-text-inverse);
   border-radius: 20px;
   font-size: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--hula-shadow-card-hover);
   cursor: pointer;
   z-index: 10;
 }

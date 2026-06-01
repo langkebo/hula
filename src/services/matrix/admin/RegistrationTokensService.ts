@@ -1,5 +1,7 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import type { RegistrationToken } from './AdminTypes'
+
+const logger = createLogger('RegistrationTokensService')
 
 type SdkAdminManager = {
   getRegistrationTokens(): Promise<
@@ -50,7 +52,7 @@ export class AdminRegistrationTokensService {
         expiryTime: t.expiry_ts
       }))
     } catch (err) {
-      error(`[Admin] 获取注册令牌失败: ${err}`)
+      logger.error(`[Admin] 获取注册令牌失败: ${err}`)
       return []
     }
   }
@@ -60,7 +62,7 @@ export class AdminRegistrationTokensService {
       const tokens = await this.list()
       return tokens.find((t) => t.token === token) ?? null
     } catch (err) {
-      error(`[Admin] 获取注册令牌详情失败: ${err}`)
+      logger.error(`[Admin] 获取注册令牌详情失败: ${err}`)
       return null
     }
   }
@@ -83,7 +85,7 @@ export class AdminRegistrationTokensService {
       } else {
         result = await admin.createRegistrationToken(`hula_${Date.now()}`, options?.usesAllowed, options?.expiryTime)
       }
-      info('[Admin] 注册令牌已创建')
+      logger.info('[Admin] 注册令牌已创建')
       return {
         token: result.token,
         usesAllowed: result.uses_allowed,
@@ -92,7 +94,7 @@ export class AdminRegistrationTokensService {
         expiryTime: result.expiry_ts
       }
     } catch (err) {
-      error(`[Admin] 创建注册令牌失败: ${err}`)
+      logger.error(`[Admin] 创建注册令牌失败: ${err}`)
       return null
     }
   }
@@ -107,10 +109,10 @@ export class AdminRegistrationTokensService {
       if (updates.usesAllowed !== undefined) body.uses_allowed = updates.usesAllowed
       if (updates.expiryTime !== undefined) body.expiry_ts = updates.expiryTime
       await admin.updateRegistrationToken(token, body)
-      info(`[Admin] 注册令牌已更新: ${token}`)
+      logger.info(`[Admin] 注册令牌已更新: ${token}`)
       return this.get(token)
     } catch (err) {
-      error(`[Admin] 更新注册令牌失败: ${err}`)
+      logger.error(`[Admin] 更新注册令牌失败: ${err}`)
       return null
     }
   }
@@ -119,9 +121,9 @@ export class AdminRegistrationTokensService {
     try {
       const admin = await this.sdkAdmin()
       await admin.deleteRegistrationToken(token)
-      info(`[Admin] 注册令牌已删除: ${token}`)
+      logger.info(`[Admin] 注册令牌已删除: ${token}`)
     } catch (err) {
-      error(`[Admin] 删除注册令牌失败: ${err}`)
+      logger.error(`[Admin] 删除注册令牌失败: ${err}`)
       throw err
     }
   }

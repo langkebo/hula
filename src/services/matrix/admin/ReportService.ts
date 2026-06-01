@@ -1,8 +1,10 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from '@/services/matrix/sdk'
+import { createLogger } from '@/utils/Logger'
 import { MATRIX_PATHS } from '../paths'
 import type { AdminReport, ReportRequest, ReportRoomResponse, ScannerInfo } from './AdminTypes'
+
+const logger = createLogger('ReportService')
 
 type ReportDomainSdkGetter = () => Promise<AdminManager>
 type ReportDomainClientGetter = () => MatrixClient
@@ -18,9 +20,9 @@ export class AdminReportService {
     const { roomId, eventId, reason, explanation } = request
     try {
       await client.reportEvent(roomId, eventId, reason, explanation || '')
-      info(`[Admin] 举报成功: ${roomId}/${eventId}`)
+      logger.info(`[Admin] 举报成功: ${roomId}/${eventId}`)
     } catch (err) {
-      error(`[Admin] 举报失败: ${err}`)
+      logger.error(`[Admin] 举报失败: ${err}`)
       throw err
     }
   }
@@ -38,16 +40,16 @@ export class AdminReportService {
               const roomId = room.roomId
               if (eventId && roomId) {
                 await this.reportEvent({ roomId, eventId, reason, explanation })
-                info(`[Admin] 举报用户成功: ${userId}`)
+                logger.info(`[Admin] 举报用户成功: ${userId}`)
                 return
               }
             }
           }
         }
       }
-      info(`[Admin] 未找到用户 ${userId} 的可举报事件`)
+      logger.info(`[Admin] 未找到用户 ${userId} 的可举报事件`)
     } catch (err) {
-      error(`[Admin] 举报用户失败: ${err}`)
+      logger.error(`[Admin] 举报用户失败: ${err}`)
       throw err
     }
   }
@@ -61,10 +63,10 @@ export class AdminReportService {
         undefined,
         { reason, description }
       )) as ReportRoomResponse
-      info(`[Admin] 举报房间成功: ${roomId}, report_id=${result.report_id}`)
+      logger.info(`[Admin] 举报房间成功: ${roomId}, report_id=${result.report_id}`)
       return result
     } catch (err) {
-      error(`[Admin] v3 举报房间失败，回退到事件举报: ${err}`)
+      logger.error(`[Admin] v3 举报房间失败，回退到事件举报: ${err}`)
       try {
         const room = client.getRoom(roomId)
         if (room && room.timeline.length > 0) {
@@ -78,7 +80,7 @@ export class AdminReportService {
           return { report_id: '' }
         }
       } catch (fallbackErr) {
-        error(`[Admin] 回退举报房间也失败: ${fallbackErr}`)
+        logger.error(`[Admin] 回退举报房间也失败: ${fallbackErr}`)
       }
       throw err
     }
@@ -96,9 +98,9 @@ export class AdminReportService {
         undefined,
         { score }
       )
-      info(`[Admin] 举报评分成功: ${roomId}/${eventId}, score=${score}`)
+      logger.info(`[Admin] 举报评分成功: ${roomId}/${eventId}, score=${score}`)
     } catch (err) {
-      error(`[Admin] 举报评分失败: ${err}`)
+      logger.error(`[Admin] 举报评分失败: ${err}`)
       throw err
     }
   }
@@ -112,7 +114,7 @@ export class AdminReportService {
       )) as ScannerInfo
       return result
     } catch (err) {
-      error(`[Admin] 获取扫描器信息失败: ${err}`)
+      logger.error(`[Admin] 获取扫描器信息失败: ${err}`)
       return null
     }
   }
@@ -133,7 +135,7 @@ export class AdminReportService {
         next_batch: (result as { next_batch?: string }).next_batch
       }
     } catch (err) {
-      error(`[Admin] 获取管理端报表失败: ${err}`)
+      logger.error(`[Admin] 获取管理端报表失败: ${err}`)
       return { reports: [] }
     }
   }
@@ -144,7 +146,7 @@ export class AdminReportService {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
       return result as AdminReport
     } catch (err) {
-      error(`[Admin] 获取报表详情失败: ${err}`)
+      logger.error(`[Admin] 获取报表详情失败: ${err}`)
       return null
     }
   }
@@ -153,10 +155,10 @@ export class AdminReportService {
     const client = this.getClient()
     try {
       await client.http.authedRequest('DELETE', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
-      info(`[Admin] 驳回报表成功: ${reportId}`)
+      logger.info(`[Admin] 驳回报表成功: ${reportId}`)
       return true
     } catch (err) {
-      error(`[Admin] 驳回报表失败: ${err}`)
+      logger.error(`[Admin] 驳回报表失败: ${err}`)
       return false
     }
   }

@@ -1,6 +1,8 @@
-import { error } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MetadataService')
 
 /**
  * Room metadata domain service.
@@ -20,7 +22,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
       const content = createEvent?.getContent?.() as { room_version?: string } | undefined
       return content?.room_version ?? null
     } catch (err) {
-      error(`[MatrixRoom] 获取房间版本失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间版本失败: ${err}`)
       return null
     }
   }
@@ -34,7 +36,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
       )
       return result as Record<string, unknown>
     } catch (err) {
-      error(`[MatrixRoom] 获取房间能力失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间能力失败: ${err}`)
       return {}
     }
   }
@@ -48,7 +50,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
       )
       return result as Record<string, unknown>
     } catch (err) {
-      error(`[MatrixRoom] 获取房间元数据失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间元数据失败: ${err}`)
       return {}
     }
   }
@@ -62,7 +64,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
       )
       return result as Record<string, unknown>
     } catch (err) {
-      error(`[MatrixRoom] 获取房间 TURN 服务器失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间 TURN 服务器失败: ${err}`)
       return {}
     }
   }
@@ -76,7 +78,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
       )
       return result as Record<string, unknown>
     } catch (err) {
-      error(`[MatrixRoom] 获取房间级同步失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间级同步失败: ${err}`)
       return {}
     }
   }
@@ -87,7 +89,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.PERMISSIONS(roomId))
       return result as Record<string, unknown>
     } catch (err) {
-      error(`[MatrixRoom] 获取房间权限失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间权限失败: ${err}`)
       return {}
     }
   }

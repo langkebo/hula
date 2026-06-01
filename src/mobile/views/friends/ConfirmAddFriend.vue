@@ -85,7 +85,7 @@ onMounted(async () => {
 :deep(.van-cell.van-field) {
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--hula-overlay-mobile-sheet);
 }
 
 :deep(.van-cell.van-field::after) {

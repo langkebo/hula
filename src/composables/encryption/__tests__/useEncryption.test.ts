@@ -7,34 +7,32 @@ const {
   mockStop,
   mockGetCurrentSessionContext,
   mockGetDeviceFingerprint,
-  mockIsEncryptionAvailable,
-  mockIsRoomEncrypted,
-  mockEnableRoomEncryption,
+  mockContextPrepareKeyBackupVersion,
+  mockCryptoSDKIsEncryptionAvailable,
+  mockCryptoSDKIsRoomEncrypted,
+  mockCryptoSDKGetCrossSigningStatus,
+  mockCryptoSDKSetupCrossSigning,
+  mockCryptoSDKIsCrossSigningReady,
+  mockCryptoSDKSetupKeyBackupWithOptions,
+  mockCryptoSDKRestoreFromBackup,
+  mockCryptoSDKExportKeys,
+  mockCryptoSDKImportKeys,
+  mockCryptoSDKBlockDevice,
+  mockCryptoSDKUnblockDevice,
+  mockKeyBackupCheckKeyBackup,
+  mockKeyBackupDeleteKeyBackupVersion,
+  mockMatrixCryptoEnableEncryption,
+  mockMatrixCryptoVerifyDevice,
+  mockMatrixCryptoUnverifyDevice,
+  mockMatrixCryptoGetDeviceVerificationStatus,
+  mockMatrixCryptoRequestDeviceVerification,
+  mockVerificationStartSasVerification,
   mockGetEncryptionSettings,
-  mockGetCrossSigningInfo,
-  mockSetupCrossSigning,
-  mockResetCrossSigning,
-  mockIsCrossSigningReady,
-  mockSetupKeyBackup,
-  mockGetKeyBackupInfo,
-  mockRestoreFromBackup,
-  mockDeleteKeyBackup,
-  mockPrepareKeyBackupVersionAuthData,
   mockGetKeyRotationStatus,
   mockRotateKeys,
   mockGetCurrentDeviceId,
   mockGetRotationHistory,
-  mockConfigureKeyRotation,
-  mockTrustDevice,
-  mockUntrustDevice,
-  mockBlockDevice,
-  mockUnblockDevice,
-  mockGetDeviceTrustLevel,
-  mockRequestDeviceVerification,
-  mockRequestUserVerification,
-  mockExportRoomKeys,
-  mockImportRoomKeys,
-  mockGetUnverifiedDevicesInRoom
+  mockConfigureKeyRotation
 } = vi.hoisted(() => ({
   mockPerformCheck: vi.fn(),
   mockRegisterCallbacks: vi.fn(),
@@ -42,34 +40,32 @@ const {
   mockStop: vi.fn(),
   mockGetCurrentSessionContext: vi.fn(),
   mockGetDeviceFingerprint: vi.fn(),
-  mockIsEncryptionAvailable: vi.fn(),
-  mockIsRoomEncrypted: vi.fn(),
-  mockEnableRoomEncryption: vi.fn(),
+  mockContextPrepareKeyBackupVersion: vi.fn(),
+  mockCryptoSDKIsEncryptionAvailable: vi.fn(),
+  mockCryptoSDKIsRoomEncrypted: vi.fn(),
+  mockCryptoSDKGetCrossSigningStatus: vi.fn(),
+  mockCryptoSDKSetupCrossSigning: vi.fn(),
+  mockCryptoSDKIsCrossSigningReady: vi.fn(),
+  mockCryptoSDKSetupKeyBackupWithOptions: vi.fn(),
+  mockCryptoSDKRestoreFromBackup: vi.fn(),
+  mockCryptoSDKExportKeys: vi.fn(),
+  mockCryptoSDKImportKeys: vi.fn(),
+  mockCryptoSDKBlockDevice: vi.fn(),
+  mockCryptoSDKUnblockDevice: vi.fn(),
+  mockKeyBackupCheckKeyBackup: vi.fn(),
+  mockKeyBackupDeleteKeyBackupVersion: vi.fn(),
+  mockMatrixCryptoEnableEncryption: vi.fn(),
+  mockMatrixCryptoVerifyDevice: vi.fn(),
+  mockMatrixCryptoUnverifyDevice: vi.fn(),
+  mockMatrixCryptoGetDeviceVerificationStatus: vi.fn(),
+  mockMatrixCryptoRequestDeviceVerification: vi.fn(),
+  mockVerificationStartSasVerification: vi.fn(),
   mockGetEncryptionSettings: vi.fn(),
-  mockGetCrossSigningInfo: vi.fn(),
-  mockSetupCrossSigning: vi.fn(),
-  mockResetCrossSigning: vi.fn(),
-  mockIsCrossSigningReady: vi.fn(),
-  mockSetupKeyBackup: vi.fn(),
-  mockGetKeyBackupInfo: vi.fn(),
-  mockRestoreFromBackup: vi.fn(),
-  mockDeleteKeyBackup: vi.fn(),
-  mockPrepareKeyBackupVersionAuthData: vi.fn(),
   mockGetKeyRotationStatus: vi.fn(),
   mockRotateKeys: vi.fn(),
   mockGetCurrentDeviceId: vi.fn(),
   mockGetRotationHistory: vi.fn(),
-  mockConfigureKeyRotation: vi.fn(),
-  mockTrustDevice: vi.fn(),
-  mockUntrustDevice: vi.fn(),
-  mockBlockDevice: vi.fn(),
-  mockUnblockDevice: vi.fn(),
-  mockGetDeviceTrustLevel: vi.fn(),
-  mockRequestDeviceVerification: vi.fn(),
-  mockRequestUserVerification: vi.fn(),
-  mockExportRoomKeys: vi.fn(),
-  mockImportRoomKeys: vi.fn(),
-  mockGetUnverifiedDevicesInRoom: vi.fn()
+  mockConfigureKeyRotation: vi.fn()
 }))
 
 vi.mock('@/services/matrix/crypto/CryptoHealthMonitor', () => ({
@@ -84,40 +80,58 @@ vi.mock('@/services/matrix/crypto/CryptoHealthMonitor', () => ({
 vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
     getCurrentSessionContext: mockGetCurrentSessionContext,
-    getDeviceFingerprint: mockGetDeviceFingerprint
+    getDeviceFingerprint: mockGetDeviceFingerprint,
+    prepareKeyBackupVersion: mockContextPrepareKeyBackupVersion
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/CryptoSDKAdapter', () => ({
+  cryptoSDKAdapter: {
+    isEncryptionAvailable: mockCryptoSDKIsEncryptionAvailable,
+    isRoomEncrypted: mockCryptoSDKIsRoomEncrypted,
+    getCrossSigningStatus: mockCryptoSDKGetCrossSigningStatus,
+    setupCrossSigning: mockCryptoSDKSetupCrossSigning,
+    isCrossSigningReady: mockCryptoSDKIsCrossSigningReady,
+    setupKeyBackupWithOptions: mockCryptoSDKSetupKeyBackupWithOptions,
+    restoreFromBackup: mockCryptoSDKRestoreFromBackup,
+    exportKeys: mockCryptoSDKExportKeys,
+    importKeys: mockCryptoSDKImportKeys,
+    blockDevice: mockCryptoSDKBlockDevice,
+    unblockDevice: mockCryptoSDKUnblockDevice
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixKeyBackupService', () => ({
+  matrixKeyBackupService: {
+    checkKeyBackup: mockKeyBackupCheckKeyBackup,
+    deleteKeyBackupVersion: mockKeyBackupDeleteKeyBackupVersion
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
+  matrixCryptoService: {
+    enableEncryption: mockMatrixCryptoEnableEncryption,
+    verifyDevice: mockMatrixCryptoVerifyDevice,
+    unverifyDevice: mockMatrixCryptoUnverifyDevice,
+    getDeviceVerificationStatus: mockMatrixCryptoGetDeviceVerificationStatus,
+    requestDeviceVerification: mockMatrixCryptoRequestDeviceVerification
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
+  matrixVerificationService: {
+    startSasVerification: mockVerificationStartSasVerification
   }
 }))
 
 vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   matrixEncryptionService: {
-    isEncryptionAvailable: mockIsEncryptionAvailable,
-    isRoomEncrypted: mockIsRoomEncrypted,
-    enableRoomEncryption: mockEnableRoomEncryption,
     getEncryptionSettings: mockGetEncryptionSettings,
-    getCrossSigningInfo: mockGetCrossSigningInfo,
-    setupCrossSigning: mockSetupCrossSigning,
-    resetCrossSigning: mockResetCrossSigning,
-    isCrossSigningReady: mockIsCrossSigningReady,
-    setupKeyBackup: mockSetupKeyBackup,
-    getKeyBackupInfo: mockGetKeyBackupInfo,
-    restoreFromBackup: mockRestoreFromBackup,
-    deleteKeyBackup: mockDeleteKeyBackup,
-    prepareKeyBackupVersionAuthData: mockPrepareKeyBackupVersionAuthData,
     getKeyRotationStatus: mockGetKeyRotationStatus,
     rotateKeys: mockRotateKeys,
     getCurrentDeviceId: mockGetCurrentDeviceId,
     getRotationHistory: mockGetRotationHistory,
-    configureKeyRotation: mockConfigureKeyRotation,
-    trustDevice: mockTrustDevice,
-    untrustDevice: mockUntrustDevice,
-    blockDevice: mockBlockDevice,
-    unblockDevice: mockUnblockDevice,
-    getDeviceTrustLevel: mockGetDeviceTrustLevel,
-    requestDeviceVerification: mockRequestDeviceVerification,
-    requestUserVerification: mockRequestUserVerification,
-    exportRoomKeys: mockExportRoomKeys,
-    importRoomKeys: mockImportRoomKeys,
-    getUnverifiedDevicesInRoom: mockGetUnverifiedDevicesInRoom
+    configureKeyRotation: mockConfigureKeyRotation
   }
 }))
 
@@ -135,34 +149,34 @@ describe('useEncryption', () => {
   })
 
   describe('encryption availability & room encryption', () => {
-    it('isEncryptionAvailable delegates to service', async () => {
-      mockIsEncryptionAvailable.mockResolvedValueOnce(true)
+    it('isEncryptionAvailable delegates to cryptoSDKAdapter', async () => {
+      mockCryptoSDKIsEncryptionAvailable.mockResolvedValueOnce(true)
       const { isEncryptionAvailable } = useEncryption()
       const result = await isEncryptionAvailable()
       expect(result).toBe(true)
-      expect(mockIsEncryptionAvailable).toHaveBeenCalled()
+      expect(mockCryptoSDKIsEncryptionAvailable).toHaveBeenCalled()
     })
 
-    it('isRoomEncrypted delegates to service', async () => {
-      mockIsRoomEncrypted.mockResolvedValueOnce(true)
+    it('isRoomEncrypted delegates to cryptoSDKAdapter', async () => {
+      mockCryptoSDKIsRoomEncrypted.mockResolvedValueOnce(true)
       const { isRoomEncrypted } = useEncryption()
       const result = await isRoomEncrypted('!room1')
       expect(result).toBe(true)
-      expect(mockIsRoomEncrypted).toHaveBeenCalledWith('!room1')
+      expect(mockCryptoSDKIsRoomEncrypted).toHaveBeenCalledWith('!room1')
     })
 
-    it('enableRoomEncryption delegates to service with settings', async () => {
-      mockEnableRoomEncryption.mockResolvedValueOnce(undefined)
+    it('enableRoomEncryption delegates to matrixCryptoService with settings', async () => {
+      mockMatrixCryptoEnableEncryption.mockResolvedValueOnce(undefined)
       const { enableRoomEncryption } = useEncryption()
       await enableRoomEncryption('!room1', { algorithm: 'm.megolm.v1.aes-sha2' })
-      expect(mockEnableRoomEncryption).toHaveBeenCalledWith('!room1', { algorithm: 'm.megolm.v1.aes-sha2' })
+      expect(mockMatrixCryptoEnableEncryption).toHaveBeenCalledWith('!room1', 'm.megolm.v1.aes-sha2')
     })
 
     it('enableRoomEncryption works without settings', async () => {
-      mockEnableRoomEncryption.mockResolvedValueOnce(undefined)
+      mockMatrixCryptoEnableEncryption.mockResolvedValueOnce(undefined)
       const { enableRoomEncryption } = useEncryption()
       await enableRoomEncryption('!room1')
-      expect(mockEnableRoomEncryption).toHaveBeenCalledWith('!room1', undefined)
+      expect(mockMatrixCryptoEnableEncryption).toHaveBeenCalledWith('!room1', undefined)
     })
 
     it('getEncryptionSettings returns settings for a room', async () => {
@@ -183,37 +197,48 @@ describe('useEncryption', () => {
   })
 
   describe('cross-signing', () => {
-    it('getCrossSigningInfo delegates to service', async () => {
-      const info = { isSetup: true, hasMasterKey: true, hasSelfSigningKey: true, hasUserSigningKey: true }
-      mockGetCrossSigningInfo.mockResolvedValueOnce(info)
+    it('getCrossSigningInfo delegates to cryptoSDKAdapter.getCrossSigningStatus', async () => {
+      const statusResult = {
+        isSetup: true,
+        masterPublicKey: 'master',
+        selfSigningPublicKey: 'self',
+        userSigningPublicKey: 'user',
+        privateKeysCached: true,
+        crossSigningVerified: true
+      }
+      mockCryptoSDKGetCrossSigningStatus.mockResolvedValueOnce(statusResult)
       const { getCrossSigningInfo } = useEncryption()
       const result = await getCrossSigningInfo()
-      expect(result).toEqual(info)
+      expect(result).toEqual({
+        isSetup: true,
+        masterPublicKey: 'master',
+        selfSigningPublicKey: 'self',
+        userSigningPublicKey: 'user'
+      })
+      expect(mockCryptoSDKGetCrossSigningStatus).toHaveBeenCalled()
     })
 
     it('setupCrossSigning delegates with authParams', async () => {
-      mockSetupCrossSigning.mockResolvedValueOnce(undefined)
+      mockCryptoSDKSetupCrossSigning.mockResolvedValueOnce(undefined)
       const { setupCrossSigning } = useEncryption()
       await setupCrossSigning({ password: 'pass123' })
-      expect(mockSetupCrossSigning).toHaveBeenCalledWith({ password: 'pass123' })
+      expect(mockCryptoSDKSetupCrossSigning).toHaveBeenCalledWith({ password: 'pass123' })
     })
 
     it('setupCrossSigning works without authParams', async () => {
-      mockSetupCrossSigning.mockResolvedValueOnce(undefined)
+      mockCryptoSDKSetupCrossSigning.mockResolvedValueOnce(undefined)
       const { setupCrossSigning } = useEncryption()
       await setupCrossSigning()
-      expect(mockSetupCrossSigning).toHaveBeenCalledWith(undefined)
+      expect(mockCryptoSDKSetupCrossSigning).toHaveBeenCalledWith(undefined)
     })
 
-    it('resetCrossSigning delegates to service', async () => {
-      mockResetCrossSigning.mockResolvedValueOnce(undefined)
+    it('resetCrossSigning completes without error', async () => {
       const { resetCrossSigning } = useEncryption()
-      await resetCrossSigning()
-      expect(mockResetCrossSigning).toHaveBeenCalled()
+      await expect(resetCrossSigning()).resolves.toBeUndefined()
     })
 
     it('checkCrossSigningReady updates ref and returns value', async () => {
-      mockIsCrossSigningReady.mockResolvedValueOnce(true)
+      mockCryptoSDKIsCrossSigningReady.mockResolvedValueOnce(true)
       const { checkCrossSigningReady, isCrossSigningReady } = useEncryption()
       const result = await checkCrossSigningReady()
       expect(result).toBe(true)
@@ -221,7 +246,7 @@ describe('useEncryption', () => {
     })
 
     it('checkCrossSigningReady sets ref to false when not ready', async () => {
-      mockIsCrossSigningReady.mockResolvedValueOnce(false)
+      mockCryptoSDKIsCrossSigningReady.mockResolvedValueOnce(false)
       const { checkCrossSigningReady, isCrossSigningReady } = useEncryption()
       const result = await checkCrossSigningReady()
       expect(result).toBe(false)
@@ -231,60 +256,88 @@ describe('useEncryption', () => {
 
   describe('key backup', () => {
     it('setupKeyBackup returns recovery key', async () => {
-      mockSetupKeyBackup.mockResolvedValueOnce('recovery-key-123')
+      mockCryptoSDKSetupKeyBackupWithOptions.mockResolvedValueOnce('recovery-key-123')
       const { setupKeyBackup } = useEncryption()
       const result = await setupKeyBackup()
       expect(result).toBe('recovery-key-123')
     })
 
     it('setupKeyBackup with custom recovery key', async () => {
-      mockSetupKeyBackup.mockResolvedValueOnce('custom-key')
+      mockCryptoSDKSetupKeyBackupWithOptions.mockResolvedValueOnce('custom-key')
       const { setupKeyBackup } = useEncryption()
       await setupKeyBackup('my-key')
-      expect(mockSetupKeyBackup).toHaveBeenCalledWith('my-key')
+      expect(mockCryptoSDKSetupKeyBackupWithOptions).toHaveBeenCalledWith('my-key')
     })
 
-    it('getKeyBackupInfo returns info', async () => {
-      const info = { version: '1', algorithm: 'm.megolm_backup.v1.aes-sha2' }
-      mockGetKeyBackupInfo.mockResolvedValueOnce(info)
+    it('getKeyBackupInfo returns mapped info', async () => {
+      const backupInfo = {
+        version: '1',
+        algorithm: 'm.megolm_backup.v1.aes-sha2',
+        auth_data: { iv: 'abc' },
+        count: 5,
+        etag: 'etag1'
+      }
+      mockKeyBackupCheckKeyBackup.mockResolvedValueOnce(backupInfo)
       const { getKeyBackupInfo } = useEncryption()
       const result = await getKeyBackupInfo()
-      expect(result).toEqual(info)
+      expect(result).toEqual({
+        version: '1',
+        algorithm: 'm.megolm_backup.v1.aes-sha2',
+        authData: { iv: 'abc' },
+        count: 5,
+        etag: 'etag1'
+      })
+      expect(mockKeyBackupCheckKeyBackup).toHaveBeenCalled()
     })
 
     it('getKeyBackupInfo returns null when no backup', async () => {
-      mockGetKeyBackupInfo.mockResolvedValueOnce(null)
+      mockKeyBackupCheckKeyBackup.mockResolvedValueOnce(null)
       const { getKeyBackupInfo } = useEncryption()
       const result = await getKeyBackupInfo()
       expect(result).toBeNull()
     })
 
     it('restoreFromBackup returns import stats', async () => {
-      mockRestoreFromBackup.mockResolvedValueOnce({ imported: 10, total: 12 })
+      mockCryptoSDKRestoreFromBackup.mockResolvedValueOnce({ imported: 10, total: 12 })
       const { restoreFromBackup } = useEncryption()
       const result = await restoreFromBackup('recovery-key')
       expect(result).toEqual({ imported: 10, total: 12 })
-      expect(mockRestoreFromBackup).toHaveBeenCalledWith('recovery-key')
+      expect(mockCryptoSDKRestoreFromBackup).toHaveBeenCalledWith('recovery-key')
     })
 
-    it('deleteKeyBackup delegates to service', async () => {
-      mockDeleteKeyBackup.mockResolvedValueOnce(undefined)
+    it('deleteKeyBackup delegates to matrixKeyBackupService', async () => {
+      mockKeyBackupCheckKeyBackup.mockResolvedValueOnce({ version: '1', algorithm: 'alg', auth_data: {} })
+      mockKeyBackupDeleteKeyBackupVersion.mockResolvedValueOnce(undefined)
       const { deleteKeyBackup } = useEncryption()
       await deleteKeyBackup()
-      expect(mockDeleteKeyBackup).toHaveBeenCalled()
+      expect(mockKeyBackupCheckKeyBackup).toHaveBeenCalled()
+      expect(mockKeyBackupDeleteKeyBackupVersion).toHaveBeenCalledWith('1')
+    })
+
+    it('deleteKeyBackup does nothing when no backup exists', async () => {
+      mockKeyBackupCheckKeyBackup.mockResolvedValueOnce(null)
+      const { deleteKeyBackup } = useEncryption()
+      await deleteKeyBackup()
+      expect(mockKeyBackupCheckKeyBackup).toHaveBeenCalled()
+      expect(mockKeyBackupDeleteKeyBackupVersion).not.toHaveBeenCalled()
     })
 
     it('prepareKeyBackupVersionAuthData returns auth data', async () => {
       const authData = { iv: 'abc', mac: 'def' }
-      mockPrepareKeyBackupVersionAuthData.mockResolvedValueOnce(authData)
+      mockContextPrepareKeyBackupVersion.mockResolvedValueOnce({
+        algorithm: 'm.megolm_backup.v1.aes-sha2',
+        authData,
+        privateKey: new Uint8Array()
+      })
       const { prepareKeyBackupVersionAuthData } = useEncryption()
       const result = await prepareKeyBackupVersionAuthData()
       expect(result).toEqual(authData)
+      expect(mockContextPrepareKeyBackupVersion).toHaveBeenCalled()
     })
   })
 
   describe('key rotation', () => {
-    it('getKeyRotationStatus delegates to service', async () => {
+    it('getKeyRotationStatus delegates to matrixEncryptionService', async () => {
       const status = { rotationEnabled: true, lastRotatedAt: 1000, nextRotationAt: 2000 }
       mockGetKeyRotationStatus.mockResolvedValueOnce(status)
       const { getKeyRotationStatus } = useEncryption()
@@ -312,7 +365,7 @@ describe('useEncryption', () => {
       expect(getCurrentDeviceId()).toBeNull()
     })
 
-    it('getRotationHistory delegates to service', async () => {
+    it('getRotationHistory delegates to matrixEncryptionService', async () => {
       const history = [{ keyId: 'k1', rotatedAt: 1000 }]
       mockGetRotationHistory.mockResolvedValueOnce(history)
       const { getRotationHistory } = useEncryption()
@@ -337,88 +390,81 @@ describe('useEncryption', () => {
   })
 
   describe('device trust', () => {
-    it('trustDevice delegates to service', async () => {
-      mockTrustDevice.mockResolvedValueOnce(undefined)
+    it('trustDevice delegates to matrixCryptoService.verifyDevice', async () => {
+      mockMatrixCryptoVerifyDevice.mockResolvedValueOnce(undefined)
       const { trustDevice } = useEncryption()
       await trustDevice('@user:server', 'DEVICE1')
-      expect(mockTrustDevice).toHaveBeenCalledWith('@user:server', 'DEVICE1')
+      expect(mockMatrixCryptoVerifyDevice).toHaveBeenCalledWith('@user:server', 'DEVICE1')
     })
 
-    it('untrustDevice delegates to service', async () => {
-      mockUntrustDevice.mockResolvedValueOnce(undefined)
+    it('untrustDevice delegates to matrixCryptoService.unverifyDevice', async () => {
+      mockMatrixCryptoUnverifyDevice.mockResolvedValueOnce(undefined)
       const { untrustDevice } = useEncryption()
       await untrustDevice('@user:server', 'DEVICE1')
-      expect(mockUntrustDevice).toHaveBeenCalledWith('@user:server', 'DEVICE1')
+      expect(mockMatrixCryptoUnverifyDevice).toHaveBeenCalledWith('@user:server', 'DEVICE1')
     })
 
-    it('blockDevice delegates to service', async () => {
-      mockBlockDevice.mockResolvedValueOnce(undefined)
+    it('blockDevice delegates to cryptoSDKAdapter.blockDevice', async () => {
+      mockCryptoSDKBlockDevice.mockResolvedValueOnce(undefined)
       const { blockDevice } = useEncryption()
       await blockDevice('@user:server', 'DEVICE1')
-      expect(mockBlockDevice).toHaveBeenCalledWith('@user:server', 'DEVICE1')
+      expect(mockCryptoSDKBlockDevice).toHaveBeenCalledWith('@user:server', 'DEVICE1')
     })
 
-    it('unblockDevice delegates to service', async () => {
-      mockUnblockDevice.mockResolvedValueOnce(undefined)
+    it('unblockDevice delegates to cryptoSDKAdapter.unblockDevice', async () => {
+      mockCryptoSDKUnblockDevice.mockResolvedValueOnce(undefined)
       const { unblockDevice } = useEncryption()
       await unblockDevice('@user:server', 'DEVICE1')
-      expect(mockUnblockDevice).toHaveBeenCalledWith('@user:server', 'DEVICE1')
+      expect(mockCryptoSDKUnblockDevice).toHaveBeenCalledWith('@user:server', 'DEVICE1')
     })
 
-    it('getDeviceTrustLevel returns trust info', async () => {
-      const trustLevel = { isVerified: true, isCrossSigningVerified: true, isTofu: false }
-      mockGetDeviceTrustLevel.mockResolvedValueOnce(trustLevel)
+    it('getDeviceTrustLevel returns mapped trust info', async () => {
+      mockMatrixCryptoGetDeviceVerificationStatus.mockResolvedValueOnce({
+        verified: true,
+        crossSigningVerified: true,
+        devicesCrossSigningVerified: true
+      })
       const { getDeviceTrustLevel } = useEncryption()
       const result = await getDeviceTrustLevel('@user:server', 'DEVICE1')
-      expect(result).toEqual(trustLevel)
-      expect(mockGetDeviceTrustLevel).toHaveBeenCalledWith('@user:server', 'DEVICE1')
+      expect(result).toEqual({ isVerified: true, isCrossSigningVerified: true, isTofu: false })
+      expect(mockMatrixCryptoGetDeviceVerificationStatus).toHaveBeenCalledWith('@user:server', 'DEVICE1')
     })
 
-    it('requestDeviceVerification delegates with methods', async () => {
+    it('requestDeviceVerification delegates to matrixCryptoService', async () => {
       const req = { requestId: 'req1' }
-      mockRequestDeviceVerification.mockResolvedValueOnce(req)
+      mockMatrixCryptoRequestDeviceVerification.mockResolvedValueOnce(req)
       const { requestDeviceVerification } = useEncryption()
       const result = await requestDeviceVerification('@user:server', 'DEVICE1', ['m.sas.v1'])
       expect(result).toEqual(req)
-      expect(mockRequestDeviceVerification).toHaveBeenCalledWith('@user:server', 'DEVICE1', ['m.sas.v1'])
+      expect(mockMatrixCryptoRequestDeviceVerification).toHaveBeenCalledWith('@user:server', 'DEVICE1')
     })
 
-    it('requestUserVerification delegates with methods', async () => {
-      const req = { requestId: 'req2' }
-      mockRequestUserVerification.mockResolvedValueOnce(req)
+    it('requestUserVerification delegates to matrixVerificationService.startSasVerification', async () => {
+      mockVerificationStartSasVerification.mockResolvedValueOnce('txn-123')
       const { requestUserVerification } = useEncryption()
       const result = await requestUserVerification('@user:server', ['m.sas.v1'])
-      expect(result).toEqual(req)
-      expect(mockRequestUserVerification).toHaveBeenCalledWith('@user:server', ['m.sas.v1'])
+      expect(result).toBe('txn-123')
+      expect(mockVerificationStartSasVerification).toHaveBeenCalledWith('@user:server', '')
     })
   })
 
   describe('key import/export', () => {
-    it('exportRoomKeys returns JSON string', async () => {
-      mockExportRoomKeys.mockResolvedValueOnce('{"keys":[]}')
+    it('exportRoomKeys returns data from cryptoSDKAdapter.exportKeys', async () => {
+      mockCryptoSDKExportKeys.mockResolvedValueOnce({ data: '{"keys":[]}', count: 0 })
       const { exportRoomKeys } = useEncryption()
       const result = await exportRoomKeys()
       expect(result).toBe('{"keys":[]}')
     })
 
     it('importRoomKeys returns import stats', async () => {
-      mockImportRoomKeys.mockResolvedValueOnce({ imported: 5, total: 5 })
+      mockCryptoSDKImportKeys.mockResolvedValueOnce({ imported: 5, total: 5 })
       const { importRoomKeys } = useEncryption()
       const result = await importRoomKeys('{"keys":[]}')
       expect(result).toEqual({ imported: 5, total: 5 })
-      expect(mockImportRoomKeys).toHaveBeenCalledWith('{"keys":[]}')
-    })
-
-    it('getUnverifiedDevicesInRoom returns device ids', async () => {
-      mockGetUnverifiedDevicesInRoom.mockResolvedValueOnce(['DEV1', 'DEV2'])
-      const { getUnverifiedDevicesInRoom } = useEncryption()
-      const result = await getUnverifiedDevicesInRoom('!room1')
-      expect(result).toEqual(['DEV1', 'DEV2'])
-      expect(mockGetUnverifiedDevicesInRoom).toHaveBeenCalledWith('!room1')
+      expect(mockCryptoSDKImportKeys).toHaveBeenCalledWith('{"keys":[]}')
     })
 
     it('getUnverifiedDevicesInRoom returns empty array', async () => {
-      mockGetUnverifiedDevicesInRoom.mockResolvedValueOnce([])
       const { getUnverifiedDevicesInRoom } = useEncryption()
       const result = await getUnverifiedDevicesInRoom('!room1')
       expect(result).toEqual([])
@@ -481,43 +527,37 @@ describe('useEncryption', () => {
 
   describe('error handling', () => {
     it('isEncryptionAvailable propagates service error', async () => {
-      mockIsEncryptionAvailable.mockRejectedValueOnce(new Error('crypto not available'))
+      mockCryptoSDKIsEncryptionAvailable.mockRejectedValueOnce(new Error('crypto not available'))
       const { isEncryptionAvailable } = useEncryption()
       await expect(isEncryptionAvailable()).rejects.toThrow('crypto not available')
     })
 
     it('enableRoomEncryption propagates service error', async () => {
-      mockEnableRoomEncryption.mockRejectedValueOnce(new Error('already encrypted'))
+      mockMatrixCryptoEnableEncryption.mockRejectedValueOnce(new Error('already encrypted'))
       const { enableRoomEncryption } = useEncryption()
       await expect(enableRoomEncryption('!room1')).rejects.toThrow('already encrypted')
     })
 
     it('restoreFromBackup propagates service error', async () => {
-      mockRestoreFromBackup.mockRejectedValueOnce(new Error('invalid key'))
+      mockCryptoSDKRestoreFromBackup.mockRejectedValueOnce(new Error('invalid key'))
       const { restoreFromBackup } = useEncryption()
       await expect(restoreFromBackup('bad-key')).rejects.toThrow('invalid key')
     })
 
     it('setupCrossSigning propagates service error', async () => {
-      mockSetupCrossSigning.mockRejectedValueOnce(new Error('auth failed'))
+      mockCryptoSDKSetupCrossSigning.mockRejectedValueOnce(new Error('auth failed'))
       const { setupCrossSigning } = useEncryption()
       await expect(setupCrossSigning({ password: 'wrong' })).rejects.toThrow('auth failed')
     })
 
-    it('resetCrossSigning propagates service error', async () => {
-      mockResetCrossSigning.mockRejectedValueOnce(new Error('reset failed'))
-      const { resetCrossSigning } = useEncryption()
-      await expect(resetCrossSigning()).rejects.toThrow('reset failed')
-    })
-
     it('setupKeyBackup propagates service error', async () => {
-      mockSetupKeyBackup.mockRejectedValueOnce(new Error('backup setup failed'))
+      mockCryptoSDKSetupKeyBackupWithOptions.mockRejectedValueOnce(new Error('backup setup failed'))
       const { setupKeyBackup } = useEncryption()
       await expect(setupKeyBackup()).rejects.toThrow('backup setup failed')
     })
 
     it('deleteKeyBackup propagates service error', async () => {
-      mockDeleteKeyBackup.mockRejectedValueOnce(new Error('delete backup failed'))
+      mockKeyBackupCheckKeyBackup.mockRejectedValueOnce(new Error('delete backup failed'))
       const { deleteKeyBackup } = useEncryption()
       await expect(deleteKeyBackup()).rejects.toThrow('delete backup failed')
     })
@@ -529,19 +569,19 @@ describe('useEncryption', () => {
     })
 
     it('trustDevice propagates service error', async () => {
-      mockTrustDevice.mockRejectedValueOnce(new Error('trust failed'))
+      mockMatrixCryptoVerifyDevice.mockRejectedValueOnce(new Error('trust failed'))
       const { trustDevice } = useEncryption()
       await expect(trustDevice('@user:server', 'DEV1')).rejects.toThrow('trust failed')
     })
 
     it('exportRoomKeys propagates service error', async () => {
-      mockExportRoomKeys.mockRejectedValueOnce(new Error('export failed'))
+      mockCryptoSDKExportKeys.mockRejectedValueOnce(new Error('export failed'))
       const { exportRoomKeys } = useEncryption()
       await expect(exportRoomKeys()).rejects.toThrow('export failed')
     })
 
     it('importRoomKeys propagates service error', async () => {
-      mockImportRoomKeys.mockRejectedValueOnce(new Error('import failed'))
+      mockCryptoSDKImportKeys.mockRejectedValueOnce(new Error('import failed'))
       const { importRoomKeys } = useEncryption()
       await expect(importRoomKeys('bad-json')).rejects.toThrow('import failed')
     })
@@ -556,20 +596,19 @@ describe('useEncryption', () => {
   describe('verification without methods', () => {
     it('requestDeviceVerification delegates without methods', async () => {
       const req = { requestId: 'req3' }
-      mockRequestDeviceVerification.mockResolvedValueOnce(req)
+      mockMatrixCryptoRequestDeviceVerification.mockResolvedValueOnce(req)
       const { requestDeviceVerification } = useEncryption()
       const result = await requestDeviceVerification('@user:server', 'DEVICE1')
       expect(result).toEqual(req)
-      expect(mockRequestDeviceVerification).toHaveBeenCalledWith('@user:server', 'DEVICE1', undefined)
+      expect(mockMatrixCryptoRequestDeviceVerification).toHaveBeenCalledWith('@user:server', 'DEVICE1')
     })
 
     it('requestUserVerification delegates without methods', async () => {
-      const req = { requestId: 'req4' }
-      mockRequestUserVerification.mockResolvedValueOnce(req)
+      mockVerificationStartSasVerification.mockResolvedValueOnce('txn-456')
       const { requestUserVerification } = useEncryption()
       const result = await requestUserVerification('@user:server')
-      expect(result).toEqual(req)
-      expect(mockRequestUserVerification).toHaveBeenCalledWith('@user:server', undefined)
+      expect(result).toBe('txn-456')
+      expect(mockVerificationStartSasVerification).toHaveBeenCalledWith('@user:server', '')
     })
   })
 

@@ -6,10 +6,15 @@ export const CRYPTO = {
   DEVICE_SIGNING_UPLOAD: '/_matrix/client/v3/keys/device_signing/upload',
   SIGNATURES_UPLOAD: '/_matrix/client/v3/keys/signatures/upload',
   SEND_TO_DEVICE: (eventType: string, txnId: string) => `/_matrix/client/v3/sendToDevice/${eventType}/${txnId}`,
+  /** @deprecated Unused - will be removed in a future version */
   SECURE_BACKUP: '/_matrix/client/v3/keys/backup/secure',
+  /** @deprecated Unused - will be removed in a future version */
   SECURE_BACKUP_BY_ID: (backupId: string) => `/_matrix/client/v3/keys/backup/secure/${backupId}`,
+  /** @deprecated Unused - will be removed in a future version */
   SECURE_BACKUP_KEYS: (backupId: string) => `/_matrix/client/v3/keys/backup/secure/${backupId}/keys`,
+  /** @deprecated Unused - will be removed in a future version */
   SECURE_BACKUP_RESTORE: (backupId: string) => `/_matrix/client/v3/keys/backup/secure/${backupId}/restore`,
+  /** @deprecated Unused - will be removed in a future version */
   SECURE_BACKUP_VERIFY: (backupId: string) => `/_matrix/client/v3/keys/backup/secure/${backupId}/verify`,
   ROOM_KEYS_VERSION: '/_matrix/client/v3/room_keys/version',
   ROOM_KEYS_VERSION_BY_ID: (version: string) => `/_matrix/client/v3/room_keys/version/${version}`,
@@ -39,6 +44,7 @@ export const CRYPTO = {
   VERIFY_REQUESTS: '/_matrix/client/v1/keys/device_signing/requests',
   QR_CODE_SHOW: '/_matrix/client/v1/keys/qr_code/show',
   QR_CODE_SCAN: '/_matrix/client/v1/keys/qr_code/scan',
+  /** @deprecated Unused - will be removed in a future version */
   KEY_ROTATION_STATUS: '/_matrix/client/v1/keys/rotation/status',
   KEY_ROTATION_CHECK: '/_matrix/client/v1/keys/rotation/check',
   KEY_ROTATION_ROTATE: '/_matrix/client/v1/keys/rotation/rotate',

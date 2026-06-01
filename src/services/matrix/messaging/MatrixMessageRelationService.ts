@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixEvent } from 'matrix-js-sdk'
 import {
   MatrixContentField,
@@ -7,8 +6,11 @@ import {
   MatrixMsgType,
   MatrixRelType
 } from '@/common/matrixConstants'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixMessageRelationService')
 
 type RelatesTo = {
   rel_type?: string
@@ -153,10 +155,10 @@ class MatrixMessageRelationService extends BaseMatrixService {
       }
 
       const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
-      info(`[MessageRelation] 编辑消息成功: ${originalEventId}`)
+      logger.info(`[MessageRelation] 编辑消息成功: ${originalEventId}`)
       return response.event_id
     } catch (err) {
-      error(`[MessageRelation] 编辑消息失败: ${err}`)
+      logger.error(`[MessageRelation] 编辑消息失败: ${err}`)
       throw err
     }
   }
@@ -200,10 +202,10 @@ class MatrixMessageRelationService extends BaseMatrixService {
       }
 
       const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
-      info(`[MessageRelation] 编辑媒体消息成功: ${originalEventId}`)
+      logger.info(`[MessageRelation] 编辑媒体消息成功: ${originalEventId}`)
       return response.event_id
     } catch (err) {
-      error(`[MessageRelation] 编辑媒体消息失败: ${err}`)
+      logger.error(`[MessageRelation] 编辑媒体消息失败: ${err}`)
       throw err
     }
   }
@@ -303,10 +305,10 @@ class MatrixMessageRelationService extends BaseMatrixService {
       }
 
       const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, messageContent)
-      info(`[MessageRelation] 回复消息成功: ${replyToEventId}`)
+      logger.info(`[MessageRelation] 回复消息成功: ${replyToEventId}`)
       return response.event_id
     } catch (err) {
-      error(`[MessageRelation] 回复消息失败: ${err}`)
+      logger.error(`[MessageRelation] 回复消息失败: ${err}`)
       throw err
     }
   }
@@ -340,10 +342,10 @@ class MatrixMessageRelationService extends BaseMatrixService {
       }
 
       const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, messageContent)
-      info(`[MessageRelation] 线程回复成功: ${threadRootId}`)
+      logger.info(`[MessageRelation] 线程回复成功: ${threadRootId}`)
       return response.event_id
     } catch (err) {
-      error(`[MessageRelation] 线程回复失败: ${err}`)
+      logger.error(`[MessageRelation] 线程回复失败: ${err}`)
       throw err
     }
   }
@@ -511,9 +513,9 @@ class MatrixMessageRelationService extends BaseMatrixService {
       }
 
       await client.redactEvent(roomId, eventId, undefined, reason ? { reason } : undefined)
-      info(`[MessageRelation] 删除消息成功: ${eventId}`)
+      logger.info(`[MessageRelation] 删除消息成功: ${eventId}`)
     } catch (err) {
-      error(`[MessageRelation] 删除消息失败: ${err}`)
+      logger.error(`[MessageRelation] 删除消息失败: ${err}`)
       throw err
     }
   }
@@ -540,10 +542,10 @@ class MatrixMessageRelationService extends BaseMatrixService {
         `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}`,
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )) as RelationsResponse
-      info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${result.chunk?.length ?? 0}`)
+      logger.info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${result.chunk?.length ?? 0}`)
       return result
     } catch (err) {
-      error(`[MessageRelation] 获取关系列表失败: ${err}`)
+      logger.error(`[MessageRelation] 获取关系列表失败: ${err}`)
       return null
     }
   }
@@ -567,10 +569,10 @@ class MatrixMessageRelationService extends BaseMatrixService {
         `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`,
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )) as RelationsResponse
-      info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${result.chunk?.length ?? 0}`)
+      logger.info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${result.chunk?.length ?? 0}`)
       return result
     } catch (err) {
-      error(`[MessageRelation] 获取类型关系列表失败: ${err}`)
+      logger.error(`[MessageRelation] 获取类型关系列表失败: ${err}`)
       return null
     }
   }
@@ -583,10 +585,10 @@ class MatrixMessageRelationService extends BaseMatrixService {
         'GET',
         `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/aggregations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`
       )) as AggregationsResponse
-      info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
+      logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
       return result
     } catch (err) {
-      error(`[MessageRelation] 获取聚合数据失败: ${err}`)
+      logger.error(`[MessageRelation] 获取聚合数据失败: ${err}`)
       return null
     }
   }
@@ -611,10 +613,10 @@ class MatrixMessageRelationService extends BaseMatrixService {
         undefined,
         { ...body, type: eventType }
       )) as SendRelationResponse
-      info(`[MessageRelation] 发送关系事件成功: ${result.event_id}`)
+      logger.info(`[MessageRelation] 发送关系事件成功: ${result.event_id}`)
       return result
     } catch (err) {
-      error(`[MessageRelation] 发送关系事件失败: ${err}`)
+      logger.error(`[MessageRelation] 发送关系事件失败: ${err}`)
       return null
     }
   }

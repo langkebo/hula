@@ -1,9 +1,11 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent, ReadReceiptsManager, Room } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { NotificationCountType } from '@/types/matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixReceiptService')
 
 const ROOM_READY_TIMEOUT_MS = 3000
 const ROOM_READY_POLL_INTERVAL_MS = 100
@@ -123,7 +125,7 @@ class MatrixReceiptService extends BaseMatrixService {
         this.clearPendingMarkAsReadTask(roomId)
         if (!this.loggedDroppedReceiptRooms.has(roomId)) {
           this.loggedDroppedReceiptRooms.add(roomId)
-          info(`[MatrixReceipt] 房间长时间未就绪，已跳过本次已读补发: ${roomId}`)
+          logger.info(`[MatrixReceipt] 房间长时间未就绪，已跳过本次已读补发: ${roomId}`)
         }
         return
       }
@@ -133,7 +135,7 @@ class MatrixReceiptService extends BaseMatrixService {
       }, DEFERRED_READ_RETRY_INTERVAL_MS)
     } catch (err) {
       this.clearPendingMarkAsReadTask(roomId)
-      error(`[MatrixReceipt] 补发已读回执失败: ${err}`)
+      logger.error(`[MatrixReceipt] 补发已读回执失败: ${err}`)
     }
   }
 
@@ -164,10 +166,10 @@ class MatrixReceiptService extends BaseMatrixService {
       // 不要使用 sendReadReceipt(event)，因为它需要 MatrixEvent 实例
       const manager = this.getReadReceiptsManager()
       await manager.sendReadReceiptByEventId(roomId, eventId)
-      info(`[MatrixReceipt] 发送阅读回执成功: ${roomId}/${eventId}`)
+      logger.info(`[MatrixReceipt] 发送阅读回执成功: ${roomId}/${eventId}`)
       return eventId
     } catch (err) {
-      error(`[MatrixReceipt] 发送阅读回执失败: ${err}`)
+      logger.error(`[MatrixReceipt] 发送阅读回执失败: ${err}`)
       throw err
     }
   }
@@ -175,7 +177,7 @@ class MatrixReceiptService extends BaseMatrixService {
   async sendReadReceiptByEventId(roomId: string, eventId: string): Promise<string | undefined> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('receipt', roomId, { roomId, eventId })
-      info(`[MatrixReceipt] 离线状态，已将阅读回执入队: ${roomId}/${eventId}`)
+      logger.info(`[MatrixReceipt] 离线状态，已将阅读回执入队: ${roomId}/${eventId}`)
       return eventId
     }
 
@@ -195,7 +197,7 @@ class MatrixReceiptService extends BaseMatrixService {
 
       return this.sendReadReceipt(roomId, event)
     } catch (err) {
-      error(`[MatrixReceipt] 通过事件ID发送阅读回执失败: ${err}`)
+      logger.error(`[MatrixReceipt] 通过事件ID发送阅读回执失败: ${err}`)
       throw err
     }
   }
@@ -204,9 +206,9 @@ class MatrixReceiptService extends BaseMatrixService {
     try {
       const manager = this.getReadReceiptsManager()
       await manager.setReadMarker(roomId, eventId)
-      info(`[MatrixReceipt] 设置阅读标记成功: ${roomId}/${eventId}`)
+      logger.info(`[MatrixReceipt] 设置阅读标记成功: ${roomId}/${eventId}`)
     } catch (err) {
-      error(`[MatrixReceipt] 设置阅读标记失败: ${err}`)
+      logger.error(`[MatrixReceipt] 设置阅读标记失败: ${err}`)
       throw err
     }
   }
@@ -225,7 +227,7 @@ class MatrixReceiptService extends BaseMatrixService {
       this.clearPendingMarkAsReadTask(roomId)
       await this.sendLatestReadReceipt(roomId, room)
     } catch (err) {
-      error(`[MatrixReceipt] 标记房间已读失败: ${err}`)
+      logger.error(`[MatrixReceipt] 标记房间已读失败: ${err}`)
       throw err
     }
   }

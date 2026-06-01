@@ -1,9 +1,11 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { useI18nGlobal } from '@/services/i18n'
 import type { SearchEventContext } from '@/types/matrix-api'
+import { createLogger } from '@/utils/Logger'
 import type { SearchMessageHit } from '@/workers/matrixWorkerTypes'
 import matrixClientService from './MatrixClientService'
 import matrixWorkerHost from './MatrixWorkerHost'
+
+const logger = createLogger('MatrixSearchService')
 
 export interface UserSearchResult {
   userId: string
@@ -153,7 +155,7 @@ class MatrixSearchService {
     try {
       if (source === 'local') {
         const localResults = await this.searchMessagesLocal(query, options)
-        info(`[MatrixSearch] 本地搜索完成: "${query}" 找到 ${localResults.length} 条结果`)
+        logger.info(`[MatrixSearch] 本地搜索完成: "${query}" 找到 ${localResults.length} 条结果`)
         return localResults
       }
 
@@ -161,21 +163,21 @@ class MatrixSearchService {
         const localResults = await this.searchMessagesLocal(query, options)
         const limit = options?.limit || 20
         if (localResults.length >= limit) {
-          info(`[MatrixSearch] 混合搜索命中本地索引: "${query}" 找到 ${localResults.length} 条结果`)
+          logger.info(`[MatrixSearch] 混合搜索命中本地索引: "${query}" 找到 ${localResults.length} 条结果`)
           return localResults
         }
 
         const remoteResults = await this.searchMessagesRemote(query, options)
-        info(`[MatrixSearch] 混合搜索回退远程: "${query}" 找到 ${remoteResults.length} 条结果`)
+        logger.info(`[MatrixSearch] 混合搜索回退远程: "${query}" 找到 ${remoteResults.length} 条结果`)
         return remoteResults
       }
 
       const results = await this.searchMessagesRemote(query, options)
 
-      info(`[MatrixSearch] 远程搜索完成: "${query}" 找到 ${results.length} 条结果`)
+      logger.info(`[MatrixSearch] 远程搜索完成: "${query}" 找到 ${results.length} 条结果`)
       return results
     } catch (err) {
-      error(`[MatrixSearch] 搜索失败: ${err}`)
+      logger.error(`[MatrixSearch] 搜索失败: ${err}`)
       throw err
     }
   }
@@ -232,7 +234,7 @@ class MatrixSearchService {
 
       const results = this.toUserSearchResults(response.results || [])
 
-      info(`[MatrixSearch] 用户搜索完成: "${query}" 找到 ${results.length} 个用户`)
+      logger.info(`[MatrixSearch] 用户搜索完成: "${query}" 找到 ${results.length} 个用户`)
       return results
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
@@ -242,10 +244,10 @@ class MatrixSearchService {
         errMsg.includes('M_FORBIDDEN') ||
         errMsg.includes('403')
       ) {
-        info(`[MatrixSearch] 用户搜索需要认证 (${errMsg.includes('403') ? '403' : '401'})`)
+        logger.info(`[MatrixSearch] 用户搜索需要认证 (${errMsg.includes('403') ? '403' : '401'})`)
         return []
       }
-      error(`[MatrixSearch] 用户搜索失败: ${err}`)
+      logger.error(`[MatrixSearch] 用户搜索失败: ${err}`)
       throw err
     }
   }
@@ -301,7 +303,7 @@ class MatrixSearchService {
 
       const rooms = this.toRoomSearchResults(response.chunk || [])
 
-      info(`[MatrixSearch] 获取公开房间成功: ${rooms.length} 个房间`)
+      logger.info(`[MatrixSearch] 获取公开房间成功: ${rooms.length} 个房间`)
 
       return {
         rooms,
@@ -310,7 +312,7 @@ class MatrixSearchService {
         totalRooms: response.total_room_count_estimate || 0
       }
     } catch (err) {
-      error(`[MatrixSearch] 获取公开房间失败: ${err}`)
+      logger.error(`[MatrixSearch] 获取公开房间失败: ${err}`)
       throw err
     }
   }
@@ -331,10 +333,10 @@ class MatrixSearchService {
 
       const rooms = this.toRoomSearchResults(response.chunk || [])
 
-      info(`[MatrixSearch] 搜索公开房间成功: "${query}" 找到 ${rooms.length} 个房间`)
+      logger.info(`[MatrixSearch] 搜索公开房间成功: "${query}" 找到 ${rooms.length} 个房间`)
       return rooms
     } catch (err) {
-      error(`[MatrixSearch] 搜索公开房间失败: ${err}`)
+      logger.error(`[MatrixSearch] 搜索公开房间失败: ${err}`)
       throw err
     }
   }
@@ -349,7 +351,7 @@ class MatrixSearchService {
       const response = await client.getRoomDirectoryVisibility(roomId)
       return response.visibility as 'public' | 'private'
     } catch (err) {
-      error(`[MatrixSearch] 获取房间可见性失败: ${err}`)
+      logger.error(`[MatrixSearch] 获取房间可见性失败: ${err}`)
       throw err
     }
   }
@@ -362,9 +364,9 @@ class MatrixSearchService {
 
     try {
       await client.setRoomDirectoryVisibility(roomId, visibility)
-      info(`[MatrixSearch] 设置房间可见性成功: ${roomId} -> ${visibility}`)
+      logger.info(`[MatrixSearch] 设置房间可见性成功: ${roomId} -> ${visibility}`)
     } catch (err) {
-      error(`[MatrixSearch] 设置房间可见性失败: ${err}`)
+      logger.error(`[MatrixSearch] 设置房间可见性失败: ${err}`)
       throw err
     }
   }

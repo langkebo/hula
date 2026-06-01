@@ -1,3 +1,4 @@
+import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminSecurityService } from '../SecurityService'
 
@@ -7,31 +8,20 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const makeAdmin = () => ({
-  getFederationDestinations: vi.fn(),
-  getFederationDestination: vi.fn(),
-  resetFederationConnection: vi.fn(),
-  listAuditEvents: vi.fn(),
-  getSamlConfig: vi.fn(),
-  updateSamlConfig: vi.fn(),
-  listFeatureFlags: vi.fn(),
-  getFeatureFlag: vi.fn(),
-  setFeatureFlag: vi.fn(),
-  updateFeatureFlag: vi.fn(),
-  deleteFeatureFlag: vi.fn(),
-  listBackups: vi.fn(),
-  getAuditEvent: vi.fn(),
-  listSamlMappings: vi.fn(),
-  getSamlMapping: vi.fn(),
-  updateSamlMapping: vi.fn(),
-  deleteSamlMapping: vi.fn(),
-  samlLogout: vi.fn(),
-  listSecurityEvents: vi.fn(),
-  listIpBlocks: vi.fn(),
-  blockIp: vi.fn(),
-  unblockIp: vi.fn(),
-  getIpReputation: vi.fn()
-})
+const makeAdmin = () =>
+  ({
+    getFederationDestinations: vi.fn(),
+    getFederationDestination: vi.fn(),
+    resetFederationConnection: vi.fn(),
+    listAuditEvents: vi.fn(),
+    listFeatureFlags: vi.fn(),
+    getFeatureFlag: vi.fn(),
+    setFeatureFlag: vi.fn(),
+    updateFeatureFlag: vi.fn(),
+    deleteFeatureFlag: vi.fn(),
+    listBackups: vi.fn(),
+    getAuditEvent: vi.fn()
+  }) as unknown as AdminManager
 
 describe('AdminSecurityService', () => {
   let admin: ReturnType<typeof makeAdmin>
@@ -43,7 +33,7 @@ describe('AdminSecurityService', () => {
   })
 
   it('maps federation destinations into facade shape', async () => {
-    admin.getFederationDestinations.mockResolvedValueOnce([
+    ;(admin as any).getFederationDestinations.mockResolvedValueOnce([
       {
         destination: 'server.com',
         retry_last_ts: 1,
@@ -65,14 +55,14 @@ describe('AdminSecurityService', () => {
   })
 
   it('maps audit log query and response', async () => {
-    admin.listAuditEvents.mockResolvedValueOnce({
+    ;(admin as any).listAuditEvents.mockResolvedValueOnce({
       events: [{ event_id: '$e1' }],
       next_batch: 'next'
     })
 
     const result = await service.getAuditLog(25, '1700000000', '@u:server', 'login')
 
-    expect(admin.listAuditEvents).toHaveBeenCalledWith({
+    expect((admin as any).listAuditEvents).toHaveBeenCalledWith({
       limit: 25,
       from: 1700000000,
       actor_id: '@u:server',
@@ -85,7 +75,7 @@ describe('AdminSecurityService', () => {
   })
 
   it('normalizes experimental features from feature flag list response', async () => {
-    admin.listFeatureFlags.mockResolvedValueOnce({
+    ;(admin as any).listFeatureFlags.mockResolvedValueOnce({
       flags: [
         { flag_key: 'mscA', status: 'enabled', reason: 'for testing', rollout_percent: 100, target_scope: 'global' },
         { flag_key: 'mscB', status: 'disabled', rollout_percent: 0, target_scope: 'user' }
@@ -110,7 +100,7 @@ describe('AdminSecurityService', () => {
   })
 
   it('lists feature flags with detailed fields', async () => {
-    admin.listFeatureFlags.mockResolvedValueOnce({
+    ;(admin as any).listFeatureFlags.mockResolvedValueOnce({
       flags: [
         {
           flag_key: 'flag-x',
@@ -146,7 +136,7 @@ describe('AdminSecurityService', () => {
   })
 
   it('gets, saves and deletes feature flag detail', async () => {
-    admin.getFeatureFlag.mockResolvedValueOnce({
+    ;(admin as any).getFeatureFlag.mockResolvedValueOnce({
       flag_key: 'flag-y',
       status: 'disabled',
       target_scope: 'global',
@@ -158,7 +148,7 @@ describe('AdminSecurityService', () => {
       updated_ts: 4,
       targets: []
     })
-    admin.setFeatureFlag.mockResolvedValueOnce({
+    ;(admin as any).setFeatureFlag.mockResolvedValueOnce({
       flag_key: 'flag-y',
       status: 'enabled',
       target_scope: 'global',
@@ -170,7 +160,7 @@ describe('AdminSecurityService', () => {
       updated_ts: 5,
       targets: [{ subject_type: 'user', subject_id: '@bob:server' }]
     })
-    admin.deleteFeatureFlag.mockResolvedValueOnce(undefined)
+    ;(admin as any).deleteFeatureFlag.mockResolvedValueOnce(undefined)
 
     await expect(service.getFeatureFlagDetail('flag-y')).resolves.toEqual(
       expect.objectContaining({
@@ -195,31 +185,31 @@ describe('AdminSecurityService', () => {
         rolloutPercent: 50
       })
     )
-    expect(admin.setFeatureFlag).toHaveBeenCalledWith('flag-y', 'global', 50, 123, 'gradual', [
+    expect((admin as any).setFeatureFlag).toHaveBeenCalledWith('flag-y', 'global', 50, 123, 'gradual', [
       { subject_type: 'user', subject_id: '@bob:server' }
     ])
 
     await service.deleteFeatureFlag('flag-y')
-    expect(admin.deleteFeatureFlag).toHaveBeenCalledWith('flag-y')
+    expect((admin as any).deleteFeatureFlag).toHaveBeenCalledWith('flag-y')
   })
 
   it('sets experimental feature via updateFeatureFlag', async () => {
-    admin.updateFeatureFlag.mockResolvedValueOnce(undefined)
+    ;(admin as any).updateFeatureFlag.mockResolvedValueOnce(undefined)
 
     await service.setExperimentalFeature('msc1234', true)
 
-    expect(admin.updateFeatureFlag).toHaveBeenCalledWith('msc1234', { status: 'enabled' })
+    expect((admin as any).updateFeatureFlag).toHaveBeenCalledWith('msc1234', { status: 'enabled' })
   })
 
   it('delegates federation server status with throwOnError false', async () => {
-    admin.getFederationDestination.mockResolvedValueOnce({ online: true })
+    ;(admin as any).getFederationDestination.mockResolvedValueOnce({ online: true })
 
     await expect(service.getFederationServerStatus('server.com')).resolves.toEqual({ online: true })
-    expect(admin.getFederationDestination).toHaveBeenCalledWith('server.com', false)
+    expect((admin as any).getFederationDestination).toHaveBeenCalledWith('server.com', false)
   })
 
   it('maps saml mappings pagination response', async () => {
-    admin.listSamlMappings.mockResolvedValueOnce({
+    ;(admin as any).listSamlMappings.mockResolvedValueOnce({
       mappings: [{ name_id: 'n1' }],
       next_token: 'tok'
     })
@@ -231,14 +221,14 @@ describe('AdminSecurityService', () => {
   })
 
   it('merges security filters and pagination', async () => {
-    admin.listSecurityEvents.mockResolvedValueOnce({
+    ;(admin as any).listSecurityEvents.mockResolvedValueOnce({
       events: [{ id: 1 }],
       next_token: 'n1'
     })
 
     const result = await service.getSecurityEvents(50, 'from', { event_type: 'login_fail' })
 
-    expect(admin.listSecurityEvents).toHaveBeenCalledWith({
+    expect((admin as any).listSecurityEvents).toHaveBeenCalledWith({
       limit: 50,
       from: 'from',
       event_type: 'login_fail'
@@ -250,12 +240,12 @@ describe('AdminSecurityService', () => {
   })
 
   it('maps blockIp options to SDK snake_case fields', async () => {
-    admin.blockIp.mockResolvedValueOnce({ ip: '1.2.3.4' })
+    ;(admin as any).blockIp.mockResolvedValueOnce({ ip: '1.2.3.4' })
 
     await expect(service.blockIp('1.2.3.4', { cidr: 24, expireAt: 999, reason: 'abuse' })).resolves.toEqual({
       ip: '1.2.3.4'
     })
-    expect(admin.blockIp).toHaveBeenCalledWith('1.2.3.4', {
+    expect((admin as any).blockIp).toHaveBeenCalledWith('1.2.3.4', {
       cidr: 24,
       expire_at: 999,
       reason: 'abuse'

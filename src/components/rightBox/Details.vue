@@ -245,7 +245,7 @@ const openImageViewer = () => {
 
 .single-details__avatar {
   border: 3px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--hula-shadow-lg);
 }
 
 .single-details__name {

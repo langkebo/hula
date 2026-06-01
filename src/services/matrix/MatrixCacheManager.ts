@@ -1,4 +1,6 @@
-import { info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MatrixCacheManager')
 
 interface CacheEntry<T> {
   data: T
@@ -64,7 +66,7 @@ export class MatrixCacheManager {
 
   static clear(): void {
     MatrixCacheManager.caches.clear()
-    info('[Cache] 缓存已清空')
+    logger.info('[Cache] 缓存已清空')
   }
 
   static getStats(): { size: number; maxSize: number; hitRate: number; hits: number; misses: number } {

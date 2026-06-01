@@ -770,7 +770,7 @@ onUnmounted(() => {
 
 :deep(.van-cell.van-field) {
   padding: 10px 16px;
-  background: var(--login-field-bg, rgba(255, 255, 255, 0.85));
+  background: var(--hula-overlay-mobile-sheet);
   border-radius: 8px;
 }
 

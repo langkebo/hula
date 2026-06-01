@@ -131,7 +131,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--hula-surface-panel);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -172,7 +172,7 @@
         color: var(--hula-text-primary);
         width: fit-content;
         margin-bottom: 15px;
-        border-bottom: 2px solid #13987f90;
+        border-bottom: 2px solid color-mix(in srgb, var(--hula-brand) 56%, transparent);
         padding-bottom: 5px;
       }
 

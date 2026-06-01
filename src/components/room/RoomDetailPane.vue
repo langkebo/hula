@@ -465,7 +465,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--hula-overlay-mask-default);
   opacity: 0;
   transition: opacity 0.15s;
   color: var(--hula-text-inverse);
@@ -485,7 +485,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--hula-overlay-mask-default);
 }
 
 .header-info {

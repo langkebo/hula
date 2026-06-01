@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { MessageStatusEnum, MsgEnum, StoresEnum } from '@/enums'
@@ -14,7 +13,7 @@ import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { createLogger } from '@/utils/Logger'
 import { LRUCache } from '@/utils/LRUCache'
 
-const _logger = createLogger('RoomStore')
+const logger = createLogger('RoomStore')
 
 type TimelineEvent = {
   event_id: string
@@ -93,7 +92,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       // 加载房间列表成功不输出日志，避免 SlidingSync 高频触发时刷屏
       return roomsChanged // 返回是否发生变化
     } catch (err) {
-      error(`[RoomStore] 加载房间列表失败: ${err}`)
+      logger.error(`[RoomStore] 加载房间列表失败: ${err}`)
       throw err
     } finally {
       isLoading.value = false
@@ -196,14 +195,14 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
     rooms.value.set(roomId, existingRoom)
     triggerRef(rooms)
-    info(`[RoomStore] 处理增量更新: ${roomId}`)
+    logger.info(`[RoomStore] 处理增量更新: ${roomId}`)
   }
 
   async function handleBatchIncrementalUpdate(updates: Record<string, TimelineUpdate>): Promise<void> {
     for (const [roomId, roomData] of Object.entries(updates)) {
       await handleIncrementalUpdate(roomId, roomData)
     }
-    info(`[RoomStore] 批量增量更新完成: ${Object.keys(updates).length} 个房间`)
+    logger.info(`[RoomStore] 批量增量更新完成: ${Object.keys(updates).length} 个房间`)
   }
 
   async function createRoom(options: {
@@ -247,10 +246,10 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       }
       rooms.value.set(room.roomId, roomInfo)
       triggerRef(rooms)
-      info(`[RoomStore] 创建房间成功: ${room.roomId}`)
+      logger.info(`[RoomStore] 创建房间成功: ${room.roomId}`)
       return roomInfo
     } catch (err) {
-      error(`[RoomStore] 创建房间失败: ${err}`)
+      logger.error(`[RoomStore] 创建房间失败: ${err}`)
       throw err
     }
   }
@@ -260,10 +259,10 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       const roomInfo = await matrixRoomService.joinRoomAndGetInfo(roomId)
       rooms.value.set(roomInfo.roomId, roomInfo)
       triggerRef(rooms)
-      info(`[RoomStore] 加入房间成功: ${roomInfo.roomId}`)
+      logger.info(`[RoomStore] 加入房间成功: ${roomInfo.roomId}`)
       return roomInfo
     } catch (err) {
-      error(`[RoomStore] 加入房间失败: ${err}`)
+      logger.error(`[RoomStore] 加入房间失败: ${err}`)
       throw err
     }
   }
@@ -277,9 +276,9 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       if (currentRoomId.value === roomId) {
         currentRoomId.value = null
       }
-      info(`[RoomStore] 离开房间成功: ${roomId}`)
+      logger.info(`[RoomStore] 离开房间成功: ${roomId}`)
     } catch (err) {
-      error(`[RoomStore] 离开房间失败: ${err}`)
+      logger.error(`[RoomStore] 离开房间失败: ${err}`)
       throw err
     }
   }
@@ -443,7 +442,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     try {
       await matrixSlidingSyncService.initialize()
     } catch (err) {
-      error(`[RoomStore] Sliding Sync 服务初始化失败: ${err}`)
+      logger.error(`[RoomStore] Sliding Sync 服务初始化失败: ${err}`)
     }
   }
 
@@ -482,7 +481,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
         roomDetailCache.set(roomId, detail)
         return detail
       } catch (err) {
-        error(`[RoomStore] 加载房间详情失败: ${roomId} ${err}`)
+        logger.error(`[RoomStore] 加载房间详情失败: ${roomId} ${err}`)
         return null
       } finally {
         roomDetailPending.delete(roomId)
@@ -497,11 +496,11 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     const uncachedIds = roomIds.filter((id) => !roomDetailCache.has(id))
 
     if (uncachedIds.length === 0) {
-      info('[RoomStore] 所有房间详情已缓存')
+      logger.info('[RoomStore] 所有房间详情已缓存')
       return
     }
 
-    info(`[RoomStore] 开始批量加载 ${uncachedIds.length} 个房间详情`)
+    logger.info(`[RoomStore] 开始批量加载 ${uncachedIds.length} 个房间详情`)
 
     const batchSize = 3
     for (let i = 0; i < uncachedIds.length; i += batchSize) {
@@ -521,16 +520,16 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       )
     }
 
-    info(`[RoomStore] 批量加载完成`)
+    logger.info(`[RoomStore] 批量加载完成`)
   }
 
   function clearRoomDetailCache(roomId?: string): void {
     if (roomId) {
       roomDetailCache.delete(roomId)
-      info(`[RoomStore] 清除房间详情缓存: ${roomId}`)
+      logger.info(`[RoomStore] 清除房间详情缓存: ${roomId}`)
     } else {
       roomDetailCache.clear()
-      info('[RoomStore] 清除所有房间详情缓存')
+      logger.info('[RoomStore] 清除所有房间详情缓存')
     }
   }
 
@@ -540,14 +539,14 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     isLoading.value = false
     clearRoomDetailCache()
     triggerRef(rooms)
-    info('[RoomStore] 房间状态已重置')
+    logger.info('[RoomStore] 房间状态已重置')
   }
 
   function pruneCache(keepCount: number = 20): void {
     const currentSize = roomDetailCache.size
     if (currentSize <= keepCount) return
 
-    info(`[RoomStore] 缓存裁剪: ${currentSize} -> ${keepCount}`)
+    logger.info(`[RoomStore] 缓存裁剪: ${currentSize} -> ${keepCount}`)
   }
 
   function getCacheStats(): { size: number; keys: string[] } {
@@ -637,7 +636,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       }
     } catch (err) {
       setTagsForRoom(roomId, previous)
-      error(`[RoomStore] 写入标签失败, 已回滚: ${roomId}/${tag}`)
+      logger.error(`[RoomStore] 写入标签失败, 已回滚: ${roomId}/${tag}`)
       throw err
     }
   }
@@ -657,7 +656,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       }
     } catch (err) {
       setTagsForRoom(roomId, previous)
-      error(`[RoomStore] 移除标签失败, 已回滚: ${roomId}/${tag}`)
+      logger.error(`[RoomStore] 移除标签失败, 已回滚: ${roomId}/${tag}`)
       throw err
     }
   }

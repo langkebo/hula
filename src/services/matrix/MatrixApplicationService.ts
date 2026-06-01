@@ -1,6 +1,8 @@
-import { error } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from './BaseMatrixService'
 import { MATRIX_PATHS } from './paths'
+
+const logger = createLogger('MatrixApplicationService')
 
 export interface ApplicationServiceNamespace {
   exclusive: boolean
@@ -30,7 +32,7 @@ class MatrixApplicationService extends BaseMatrixService {
       await this.getClient().http.authedRequest('POST', MATRIX_PATHS.ADMIN.APPSERVICES, undefined, payload)
       return true
     } catch (err) {
-      error(`[MatrixApplicationService] 注册失败: ${err}`)
+      logger.error(`[MatrixApplicationService] 注册失败: ${err}`)
       return false
     }
   }
@@ -42,7 +44,7 @@ class MatrixApplicationService extends BaseMatrixService {
       }
       return Array.isArray(response.services) ? (response.services as RegisteredApplicationService[]) : []
     } catch (err) {
-      error(`[MatrixApplicationService] 获取列表失败: ${err}`)
+      logger.error(`[MatrixApplicationService] 获取列表失败: ${err}`)
       return []
     }
   }
@@ -54,7 +56,7 @@ class MatrixApplicationService extends BaseMatrixService {
       })
       return true
     } catch (err) {
-      error(`[MatrixApplicationService] 设置启用状态失败: ${err}`)
+      logger.error(`[MatrixApplicationService] 设置启用状态失败: ${err}`)
       return false
     }
   }
@@ -78,7 +80,7 @@ class MatrixApplicationService extends BaseMatrixService {
       const value = response.namespaces?.[key]
       return Array.isArray(value) ? (value as ApplicationServiceNamespace[]) : []
     } catch (err) {
-      error(`[MatrixApplicationService] 获取 namespace 失败: ${err}`)
+      logger.error(`[MatrixApplicationService] 获取 namespace 失败: ${err}`)
       return []
     }
   }

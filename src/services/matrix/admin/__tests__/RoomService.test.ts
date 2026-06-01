@@ -1,3 +1,4 @@
+import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminRoomService } from '../RoomService'
 
@@ -7,34 +8,38 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const makeAdmin = () => ({
-  getRooms: vi.fn(),
-  getRoom: vi.fn(),
-  getRoomMembers: vi.fn(),
-  getRoomState: vi.fn(),
-  deleteRoom: vi.fn(),
-  blockRoom: vi.fn(),
-  shutdownRoom: vi.fn(),
-  forceJoinRoom: vi.fn(),
-  forceLeaveRoom: vi.fn(),
-  getRoomMessages: vi.fn(),
-  getRoomAliases: vi.fn(),
-  getRoomVersion: vi.fn(),
-  getRoomBlockStatus: vi.fn(),
-  unblockRoom: vi.fn(),
-  makeRoomAdmin: vi.fn(),
-  purgeHistoryGlobal: vi.fn(),
-  purgeRoom: vi.fn(),
-  listRoomStats: vi.fn(),
-  getRoomStats: vi.fn(),
-  getRoomListings: vi.fn(),
-  setRoomPublicListing: vi.fn(),
-  getRoomEventContext: vi.fn(),
-  searchInRoom: vi.fn(),
-  searchRooms: vi.fn(),
-  getRoomForwardExtremities: vi.fn(),
-  deleteRoomV2: vi.fn()
-})
+const makeAdmin = () =>
+  ({
+    getRoomsPaginated: vi.fn(),
+    getRoom: vi.fn(),
+    getRoomMembers: vi.fn(),
+    getRoomState: vi.fn(),
+    deleteRoom: vi.fn(),
+    deleteRoomAdmin: vi.fn(),
+    blockRoom: vi.fn(),
+    shutdownRoom: vi.fn(),
+    joinRoom: vi.fn(),
+    removeRoomMember: vi.fn(),
+    getRoomMessages: vi.fn(),
+    getRoomAliases: vi.fn(),
+    getRoomVersion: vi.fn(),
+    getRoomBlockStatus: vi.fn(),
+    unblockRoom: vi.fn(),
+    makeRoomAdmin: vi.fn(),
+    purgeRoomHistory: vi.fn(),
+    purgeRoom: vi.fn(),
+    getRoomStats: vi.fn(),
+    getRoomStatsByRoom: vi.fn(),
+    getRoomListings: vi.fn(),
+    setRoomPublicListing: vi.fn(),
+    getRoomEventContext: vi.fn(),
+    searchRoomEvents: vi.fn(),
+    searchRooms: vi.fn(),
+    getRoomForwardExtremities: vi.fn(),
+    listSpaces: vi.fn(),
+    getSpaceUsers: vi.fn(),
+    getSpaceRooms: vi.fn()
+  }) as unknown as AdminManager
 
 describe('AdminRoomService', () => {
   let admin: ReturnType<typeof makeAdmin>
@@ -59,8 +64,8 @@ describe('AdminRoomService', () => {
   })
 
   it('getRooms maps SDK room payload to RoomInfo', async () => {
-    admin.getRooms.mockResolvedValueOnce({
-      rooms: [
+    ;(admin as any).getRoomsPaginated.mockResolvedValueOnce({
+      items: [
         {
           room_id: '!room:server.com',
           name: 'Room',
@@ -73,7 +78,7 @@ describe('AdminRoomService', () => {
           public: true
         }
       ],
-      next_token: 'next'
+      nextToken: 'next'
     })
 
     const result = await service.getRooms()
@@ -102,7 +107,7 @@ describe('AdminRoomService', () => {
   })
 
   it('shutdownRoom maps kicked and alias fields', async () => {
-    admin.shutdownRoom.mockResolvedValueOnce({
+    ;(admin as any).shutdownRoom.mockResolvedValueOnce({
       kicked_users: ['@u1:server.com'],
       failed_to_kick_users: ['@u2:server.com'],
       local_aliases: ['#room:server.com']
@@ -123,7 +128,7 @@ describe('AdminRoomService', () => {
   })
 
   it('purgeHistory maps camelCase options to snake_case', async () => {
-    admin.purgeHistoryGlobal.mockResolvedValueOnce({ purge_id: 'pid-1' })
+    ;(admin as any).purgeRoomHistory.mockResolvedValueOnce({ purge_id: 'pid-1' })
 
     const result = await service.purgeHistory('!room:server.com', {
       purgeUpToEventId: '$event',
@@ -132,23 +137,20 @@ describe('AdminRoomService', () => {
     })
 
     expect(result).toEqual({ purgeId: 'pid-1' })
-    expect(admin.purgeHistoryGlobal).toHaveBeenCalledWith('!room:server.com', {
+    expect((admin as any).purgeRoomHistory).toHaveBeenCalledWith('!room:server.com', {
       purge_up_to_event_id: '$event',
       purge_up_to_ts: 123,
       delete_local_events: true
     })
   })
 
-  it('getRoomForwardExtremities accepts results and forward_extremities array shapes', async () => {
-    admin.getRoomForwardExtremities.mockResolvedValueOnce({ results: [{ event_id: '$a' }] })
+  it('getRoomForwardExtremities returns array directly', async () => {
+    ;(admin as any).getRoomForwardExtremities.mockResolvedValueOnce([{ event_id: '$a' }])
     expect(await service.getRoomForwardExtremities('!room:server.com')).toEqual([{ event_id: '$a' }])
-
-    admin.getRoomForwardExtremities.mockResolvedValueOnce({ forward_extremities: [{ event_id: '$b' }] })
-    expect(await service.getRoomForwardExtremities('!room:server.com')).toEqual([{ event_id: '$b' }])
   })
 
   it('deleteRoomV2 maps option keys and response fields', async () => {
-    admin.deleteRoomV2.mockResolvedValueOnce({
+    ;(admin as any).deleteRoomAdmin.mockResolvedValueOnce({
       kicked_users: ['@u1:server.com'],
       failed_to_kick_users: [],
       local_aliases: ['#room:server.com'],
@@ -164,9 +166,9 @@ describe('AdminRoomService', () => {
       block: true
     })
 
-    expect(admin.deleteRoomV2).toHaveBeenCalledWith('!room:server.com', {
+    expect((admin as any).deleteRoomAdmin).toHaveBeenCalledWith('!room:server.com', {
       purge: true,
-      force: true,
+      force_purge: true,
       new_room_user_id: '@admin:server.com',
       room_name: 'Archive',
       message: 'bye',
@@ -176,7 +178,7 @@ describe('AdminRoomService', () => {
   })
 
   it('deleteRoomCompat keeps force_purge compatibility body', async () => {
-    admin.deleteRoomV2.mockResolvedValueOnce({
+    ;(admin as any).deleteRoomAdmin.mockResolvedValueOnce({
       kicked_users: ['@u1:server.com'],
       new_room_id: '!new:server.com'
     })
@@ -189,7 +191,7 @@ describe('AdminRoomService', () => {
       message: 'bye'
     })
 
-    expect(admin.deleteRoomV2).toHaveBeenCalledWith('!room:server.com', {
+    expect((admin as any).deleteRoomAdmin).toHaveBeenCalledWith('!room:server.com', {
       purge: true,
       force_purge: true,
       new_room_user_id: '@admin:server.com',

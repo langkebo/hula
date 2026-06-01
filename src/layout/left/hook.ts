@@ -1,4 +1,3 @@
-import { info } from '@tauri-apps/plugin-log'
 import { useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -16,6 +15,9 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('LeftHook')
 
 export const leftHook = () => {
   const prefers = matchMedia('(prefers-color-scheme: dark)')
@@ -150,7 +152,7 @@ export const leftHook = () => {
   ) => {
     if (window) {
       useTimeoutFn(async () => {
-        info(`打开窗口: ${title}`)
+        logger.info(`打开窗口: ${title}`)
         const webview = await createWebviewWindow(
           title!,
           url,

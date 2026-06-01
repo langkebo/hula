@@ -15,6 +15,11 @@ import { useMitt } from '@/hooks/useMitt'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { setMatrixClientAccessor } from '@/services/matrix/matrixClientAccessor'
+import {
+  logoutExpiredSession,
+  persistRefreshedToken,
+  setupSystemResumeListener
+} from '@/services/matrix/matrixClientPlatform'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
 import { type ICreateClientOpts, PendingEventOrdering } from '@/types/matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
@@ -678,18 +683,9 @@ class MatrixClientService {
             }
 
             if (newAccessToken && newExpiresInMs && newExpiresInMs > 0) {
-              // 更新客户端的 access token
-              // 持久化新 token
-              const { invoke } = await import('@tauri-apps/api/core')
               const uid = this.client.getUserId()
               if (uid) {
-                await invoke('update_token', {
-                  req: {
-                    uid,
-                    token: newAccessToken,
-                    refreshToken: newRefreshToken ?? refreshToken
-                  }
-                })
+                await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? refreshToken)
               }
               this.scheduleTokenRefresh(newRefreshToken ?? refreshToken, newExpiresInMs)
             }
@@ -924,22 +920,11 @@ class MatrixClientService {
    * and trigger Matrix sync reconnection
    */
   private setupResumeListener(): void {
-    if (typeof window !== 'undefined' && '__TAURI__' in window) {
-      import('@tauri-apps/api/event')
-        .then(({ listen }) => {
-          listen('system-resumed', () => {
-            logger.info('[LIFECYCLE] System resumed, reconnecting Matrix sync')
-            if (this.client && this.connectionState === 'CONNECTED') {
-              this.forceReconnect()
-            }
-          }).catch((err) => {
-            logger.warn('Failed to listen for system-resumed event:', err)
-          })
-        })
-        .catch((err) => {
-          logger.warn('Failed to import Tauri event module:', err)
-        })
-    }
+    setupSystemResumeListener(() => {
+      if (this.client && this.connectionState === 'CONNECTED') {
+        this.forceReconnect()
+      }
+    })
   }
 
   /**
@@ -1015,16 +1000,9 @@ class MatrixClientService {
       }
 
       if (newAccessToken) {
-        const { invoke } = await import('@tauri-apps/api/core')
         const uid = this.client.getUserId()
         if (uid) {
-          await invoke('update_token', {
-            req: {
-              uid,
-              token: newAccessToken,
-              refreshToken: newRefreshToken ?? ''
-            }
-          })
+          await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? '')
         }
         logger.info('[TokenRefresh] 访问令牌刷新成功')
         this.scheduleTokenRefresh(newRefreshToken, newExpiresInMs)
@@ -1047,8 +1025,7 @@ class MatrixClientService {
       logger.error(`[TokenRefresh] 刷新访问令牌失败: ${err}`)
       logger.warn('[TokenRefresh] Session expired, clearing stored session')
       try {
-        const { sessionOrchestrator } = await import('./auth/SessionOrchestrator')
-        await sessionOrchestrator.logoutCurrentSession({ resetLocalState: true, preserveTokens: false })
+        await logoutExpiredSession()
       } catch (err) {
         logger.warn('Cleanup error:', err)
       }

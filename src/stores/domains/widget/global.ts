@@ -1,5 +1,5 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { info } from '@tauri-apps/plugin-log'
+
 import { defineStore } from 'pinia'
 import { MittEnum, StoresEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt.ts'
@@ -254,7 +254,7 @@ export const useGlobalStore = defineStore(StoresEnum.GLOBAL, () => {
   }
 
   const updateGlobalUnreadCount = () => {
-    info('[global]更新全局未读消息计数')
+    logger.info('[global]更新全局未读消息计数')
     unreadCountManager.calculateTotal(chatStore.sessionList, unReadMark)
   }
 
@@ -293,7 +293,7 @@ export const useGlobalStore = defineStore(StoresEnum.GLOBAL, () => {
 
     const session = chatStore.getSession(val)
     if (session?.unreadCount) {
-      info(`[global]当前会话发生实际变化: ${oldVal} -> ${val}`)
+      logger.info(`[global]当前会话发生实际变化: ${oldVal} -> ${val}`)
       chatStore.markSessionRead(val)
     }
 

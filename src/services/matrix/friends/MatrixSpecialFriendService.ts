@@ -1,7 +1,9 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixSpecialFriendService')
 
 const SPECIAL_FRIENDS_EVENT_TYPE = 'm.special_friends' as const
 
@@ -89,12 +91,12 @@ class MatrixSpecialFriendService extends BaseMatrixService {
       if (err instanceof Error && err.message === '客户端未初始化') {
         if (!this.hasWarnedBeforeClientReady) {
           this.hasWarnedBeforeClientReady = true
-          info('[SpecialFriend] Matrix 客户端未就绪，返回空特别关注列表')
+          logger.info('[SpecialFriend] Matrix 客户端未就绪，返回空特别关注列表')
         }
         return []
       }
 
-      error(`[SpecialFriend] 获取特别关注好友失败: ${err}`)
+      logger.error(`[SpecialFriend] 获取特别关注好友失败: ${err}`)
       return []
     }
   }
@@ -105,7 +107,7 @@ class MatrixSpecialFriendService extends BaseMatrixService {
       const currentList = await this.getSpecialFriends()
 
       if (currentList.includes(userId)) {
-        info(`[SpecialFriend] 用户已是特别关注: ${userId}`)
+        logger.info(`[SpecialFriend] 用户已是特别关注: ${userId}`)
         return
       }
 
@@ -115,10 +117,10 @@ class MatrixSpecialFriendService extends BaseMatrixService {
       } satisfies SpecialFriendsContent)
 
       this.cache = new Set(newList)
-      info(`[SpecialFriend] 添加特别关注好友成功: ${userId}`)
+      logger.info(`[SpecialFriend] 添加特别关注好友成功: ${userId}`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '添加特别关注好友失败'
-      error(`[SpecialFriend] ${errorMessage}`)
+      logger.error(`[SpecialFriend] ${errorMessage}`)
       throw new Error(errorMessage)
     }
   }
@@ -129,7 +131,7 @@ class MatrixSpecialFriendService extends BaseMatrixService {
       const currentList = await this.getSpecialFriends()
 
       if (!currentList.includes(userId)) {
-        info(`[SpecialFriend] 用户不在特别关注列表中: ${userId}`)
+        logger.info(`[SpecialFriend] 用户不在特别关注列表中: ${userId}`)
         return
       }
 
@@ -139,10 +141,10 @@ class MatrixSpecialFriendService extends BaseMatrixService {
       } satisfies SpecialFriendsContent)
 
       this.cache = new Set(newList)
-      info(`[SpecialFriend] 移除特别关注好友成功: ${userId}`)
+      logger.info(`[SpecialFriend] 移除特别关注好友成功: ${userId}`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '移除特别关注好友失败'
-      error(`[SpecialFriend] ${errorMessage}`)
+      logger.error(`[SpecialFriend] ${errorMessage}`)
       throw new Error(errorMessage)
     }
   }

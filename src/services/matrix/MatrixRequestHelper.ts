@@ -1,9 +1,21 @@
-import { info, error as logError } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from './MatrixClientService'
 
+const logger = createLogger('MatrixRequestHelper')
+
 /**
- * @deprecated Use MatrixHttpClient for new code. This class will be merged into MatrixHttpClient
- * in a future refactor. See A-1 in code review for details.
+ * @deprecated **DO NOT USE** — This class is deprecated and will be removed in a future release.
+ *
+ * All consumers have been migrated to `MatrixHttpClient` (import `matrixHttpClient` from
+ * `@/services/matrix/MatrixHttpClient` or the barrel `@/services/matrix`).
+ *
+ * Migration guide:
+ *   MatrixRequestHelper.safeGet(path, qp?, opts?)  → matrixHttpClient.get(path, { queryParams: qp, ...opts })
+ *   MatrixRequestHelper.safePost(path, body?, opts?) → matrixHttpClient.post(path, body, opts)
+ *   MatrixRequestHelper.safePut(path, body?, opts?)  → matrixHttpClient.put(path, body, opts)
+ *   MatrixRequestHelper.safeDelete(path, opts?)      → matrixHttpClient.delete(path, opts)
+ *   MatrixRequestHelper.buildRoomPath / buildUserPath / encodeMatrixId → same methods on matrixHttpClient
+ *   RequestOptions → MatrixHttpRequestOptions
  */
 
 export interface RequestOptions {
@@ -22,7 +34,7 @@ export class MatrixRequestHelper {
     const { logPrefix = 'MatrixRequest', defaultValue = null, quiet = false } = options
     const client = matrixClientService.getClient()
     if (!client) {
-      if (!quiet) logError(`[${logPrefix}] 客户端未初始化`)
+      if (!quiet) logger.error(`[${logPrefix}] 客户端未初始化`)
       return defaultValue as T | null
     }
 
@@ -30,7 +42,7 @@ export class MatrixRequestHelper {
       const result = await client.http.authedRequest('GET', path, queryParams)
       return result as T
     } catch (err) {
-      if (!quiet) logError(`[${logPrefix}] GET ${path} 失败: ${err}`)
+      if (!quiet) logger.error(`[${logPrefix}] GET ${path} 失败: ${err}`)
       if (options.throwOnError) throw err
       return defaultValue as T | null
     }
@@ -44,16 +56,16 @@ export class MatrixRequestHelper {
     const { logPrefix = 'MatrixRequest', defaultValue = null, quiet = false } = options
     const client = matrixClientService.getClient()
     if (!client) {
-      if (!quiet) logError(`[${logPrefix}] 客户端未初始化`)
+      if (!quiet) logger.error(`[${logPrefix}] 客户端未初始化`)
       return defaultValue as T | null
     }
 
     try {
       const result = await client.http.authedRequest('POST', path, undefined, body)
-      if (!quiet) info(`[${logPrefix}] POST ${path} 成功`)
+      if (!quiet) logger.info(`[${logPrefix}] POST ${path} 成功`)
       return result as T
     } catch (err) {
-      if (!quiet) logError(`[${logPrefix}] POST ${path} 失败: ${err}`)
+      if (!quiet) logger.error(`[${logPrefix}] POST ${path} 失败: ${err}`)
       if (options.throwOnError) throw err
       return defaultValue as T | null
     }
@@ -67,16 +79,16 @@ export class MatrixRequestHelper {
     const { logPrefix = 'MatrixRequest', defaultValue = null, quiet = false } = options
     const client = matrixClientService.getClient()
     if (!client) {
-      if (!quiet) logError(`[${logPrefix}] 客户端未初始化`)
+      if (!quiet) logger.error(`[${logPrefix}] 客户端未初始化`)
       return defaultValue as T | null
     }
 
     try {
       const result = await client.http.authedRequest('PUT', path, undefined, body)
-      if (!quiet) info(`[${logPrefix}] PUT ${path} 成功`)
+      if (!quiet) logger.info(`[${logPrefix}] PUT ${path} 成功`)
       return result as T
     } catch (err) {
-      if (!quiet) logError(`[${logPrefix}] PUT ${path} 失败: ${err}`)
+      if (!quiet) logger.error(`[${logPrefix}] PUT ${path} 失败: ${err}`)
       if (options.throwOnError) throw err
       return defaultValue as T | null
     }
@@ -86,16 +98,16 @@ export class MatrixRequestHelper {
     const { logPrefix = 'MatrixRequest', quiet = false } = options
     const client = matrixClientService.getClient()
     if (!client) {
-      if (!quiet) logError(`[${logPrefix}] 客户端未初始化`)
+      if (!quiet) logger.error(`[${logPrefix}] 客户端未初始化`)
       return false
     }
 
     try {
       await client.http.authedRequest('DELETE', path)
-      if (!quiet) info(`[${logPrefix}] DELETE ${path} 成功`)
+      if (!quiet) logger.info(`[${logPrefix}] DELETE ${path} 成功`)
       return true
     } catch (err) {
-      if (!quiet) logError(`[${logPrefix}] DELETE ${path} 失败: ${err}`)
+      if (!quiet) logger.error(`[${logPrefix}] DELETE ${path} 失败: ${err}`)
       if (options.throwOnError) throw err
       return false
     }

@@ -12,7 +12,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col flex-1 items-center p-15px z-2 my-15">
-          <div class="flex flex-col rounded-15px py-10 bg-white dark:bg-dark-card w-full">
+          <div class="flex flex-col rounded-15px py-10 bg-[--hula-surface-panel] w-full">
             <div class="flex flex-1 flex-col px-5 gap-10px">
               <div class="flex flex-wrap ps-3 gap-10px">
                 <div class="flex h-auto">
@@ -26,7 +26,7 @@
                 <div
                   class="flex flex-col text-[--hula-text-secondary] h-auto gap-8px overflow-hidden justify-center text-18px whitespace-normal break-words max-w-46">
                   <span class="font-bold">{{ userInfo?.name }}</span>
-                  <span class="text-16px text-gray-400">
+                  <span class="text-16px text-[--hula-text-quaternary]">
                     {{ t('mobile_personal_info_qr.account') }}:{{ userInfo?.account }}
                   </span>
                 </div>

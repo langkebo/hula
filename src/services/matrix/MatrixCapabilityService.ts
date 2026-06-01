@@ -1,11 +1,13 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { computed } from 'vue'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import type { MatrixCapabilities } from '@/types/message'
+import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from './MatrixClientService'
 import { MATRIX_PATHS } from './paths'
 import { matrixAccountService } from './user/MatrixAccountService'
+
+const logger = createLogger('MatrixCapabilityService')
 
 type MatrixVersionsResponse = {
   unstable_features?: Record<string, boolean>
@@ -134,12 +136,12 @@ export class MatrixCapabilityService {
   async fetchCapabilities(): Promise<MatrixCapabilities | null> {
     const client = matrixClientService.getClient()
     if (!client) {
-      error('[CapabilityService] Client not initialized, skipping capability detection')
+      logger.error('[CapabilityService] Client not initialized, skipping capability detection')
       return null
     }
 
     const baseUrl = client.getHomeserverUrl()
-    info(`[CapabilityService] Detecting server capabilities: ${baseUrl}`)
+    logger.info(`[CapabilityService] Detecting server capabilities: ${baseUrl}`)
 
     try {
       const [versionsResult, capabilitiesResult, clientConfigResult] = await Promise.allSettled([
@@ -169,10 +171,10 @@ export class MatrixCapabilityService {
         client_config: clientConfig || {}
       }
 
-      info('[CapabilityService] Server capability detection complete')
+      logger.info('[CapabilityService] Server capability detection complete')
       return result
     } catch (err) {
-      error(`[CapabilityService] Server capability detection partially failed: ${err}`)
+      logger.error(`[CapabilityService] Server capability detection partially failed: ${err}`)
       return null
     }
   }

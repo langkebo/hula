@@ -1,11 +1,10 @@
 /**
- * 脱水设备服务 (MSC2987)
+ * 脱水设备服务 (MSC3814)
  * 允许在不使用密钥的情况下创建和恢复设备
  */
 
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('DehydratedDevice')
 
@@ -40,7 +39,6 @@ class MatrixDehydratedDeviceService {
 
   /**
    * 创建脱水设备
-   * 使用 /_matrix/client/unstable/org.matrix.msc3814.v1/dehydrated_device 创建新设备
    */
   async createDevice(params: CreateDehydratedDeviceParams): Promise<DehydratedDevice | null> {
     const { initialDeviceDisplayName, deviceData } = params
@@ -48,20 +46,17 @@ class MatrixDehydratedDeviceService {
     if (!client) return null
 
     try {
-      const response = (await client.http.authedRequest({}, 'POST', MATRIX_PATHS.DEHYDRATED_DEVICE.BASE, undefined, {
-        body: JSON.stringify({
-          device_data: deviceData || {},
-          initial_device_display_name: initialDeviceDisplayName
-        })
-      })) as { device_id: string; device_data?: Record<string, unknown>; expires_at?: number }
+      const response = await client.getDehydratedDeviceManager().createDevice({
+        device_data: (deviceData || {}) as { algorithm: string; account: string },
+        initial_device_display_name: initialDeviceDisplayName
+      })
 
       return {
         deviceId: response.device_id,
         userId: client.getUserId() || '',
         initialDeviceDisplayName,
-        deviceData: response.device_data,
-        createdAt: Date.now(),
-        expiresAt: response.expires_at
+        deviceData: deviceData,
+        createdAt: Date.now()
       }
     } catch (error) {
       logger.error('创建失败:', error)
@@ -76,25 +71,14 @@ class MatrixDehydratedDeviceService {
     const client = this.getClient()
     if (!client) return null
     try {
-      const response = (await client.http.authedRequest(
-        {},
-        'GET',
-        MATRIX_PATHS.DEHYDRATED_DEVICE.BY_ID(deviceId),
-        undefined
-      )) as {
-        device_id: string
-        initial_device_display_name?: string
-        device_data?: Record<string, unknown>
-        created_at: number
-        expires_at?: number
-      }
+      const response = await client.getDehydratedDeviceManager().getDevice(deviceId)
 
       return {
         deviceId: response.device_id,
         userId: client.getUserId() || '',
         initialDeviceDisplayName: response.initial_device_display_name,
-        deviceData: response.device_data,
-        createdAt: response.created_at,
+        deviceData: response.device_data as Record<string, unknown> | undefined,
+        createdAt: response.created_at ?? Date.now(),
         expiresAt: response.expires_at
       }
     } catch (error) {
@@ -110,15 +94,7 @@ class MatrixDehydratedDeviceService {
     const client = this.getClient()
     if (!client) return []
     try {
-      const response = (await client.http.authedRequest({}, 'GET', MATRIX_PATHS.DEHYDRATED_DEVICE.BASE, undefined)) as {
-        devices: Array<{
-          device_id: string
-          initial_device_display_name?: string
-          device_data?: Record<string, unknown>
-          created_at: number
-          expires_at?: number
-        }>
-      }
+      const response = await client.getDehydratedDeviceManager().getDevices()
       const devices: DehydratedDevice[] = []
 
       for (const device of response.devices || []) {
@@ -126,8 +102,8 @@ class MatrixDehydratedDeviceService {
           deviceId: device.device_id,
           userId: client.getUserId() || '',
           initialDeviceDisplayName: device.initial_device_display_name,
-          deviceData: device.device_data,
-          createdAt: device.created_at,
+          deviceData: device.device_data as Record<string, unknown> | undefined,
+          createdAt: device.created_at ?? Date.now(),
           expiresAt: device.expires_at
         })
       }
@@ -141,7 +117,6 @@ class MatrixDehydratedDeviceService {
 
   /**
    * 认领脱水设备
-   * 使用设备ID和密钥恢复设备
    */
   async claimDevice(
     deviceId: string,
@@ -150,21 +125,16 @@ class MatrixDehydratedDeviceService {
     const client = this.getClient()
     if (!client) return null
     try {
-      const response = (await client.http.authedRequest(
-        {},
-        'POST',
-        MATRIX_PATHS.DEHYDRATED_DEVICE.CLAIM(deviceId),
-        undefined,
-        {
-          body: JSON.stringify({
-            signing_pubkey: signingPubKey
-          })
+      const response = await client.getDehydratedDeviceManager().claimDevice(deviceId, {
+        rehydrate_data: {
+          algorithm: 'org.matrix.msc3814.v1',
+          account: signingPubKey
         }
-      )) as { access_token: string; device_id: string }
+      })
 
       return {
-        accessToken: response.access_token,
-        deviceId: response.device_id
+        accessToken: (response as Record<string, unknown>).access_token as string,
+        deviceId: (response as Record<string, unknown>).device_id as string
       }
     } catch (error) {
       logger.error('认领设备失败:', error)
@@ -179,10 +149,8 @@ class MatrixDehydratedDeviceService {
     const client = this.getClient()
     if (!client) return false
     try {
-      await client.http.authedRequest({}, 'PUT', MATRIX_PATHS.DEHYDRATED_DEVICE.BY_ID(deviceId), undefined, {
-        body: JSON.stringify({
-          device_data: deviceData
-        })
+      await client.getDehydratedDeviceManager().updateDeviceData(deviceId, {
+        device_data: deviceData as { algorithm: string; account: string }
       })
 
       return true
@@ -199,7 +167,7 @@ class MatrixDehydratedDeviceService {
     const client = this.getClient()
     if (!client) return false
     try {
-      await client.http.authedRequest({}, 'DELETE', MATRIX_PATHS.DEHYDRATED_DEVICE.BY_ID(deviceId), undefined)
+      await client.getDehydratedDeviceManager().deleteDevice(deviceId)
 
       return true
     } catch (error) {
@@ -210,20 +178,14 @@ class MatrixDehydratedDeviceService {
 
   /**
    * 获取设备事件
-   * 用于获取脱水设备的初始状态
    */
   async getDeviceEvent(deviceId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     if (!client) return null
     try {
-      const response = await client.http.authedRequest(
-        {},
-        'GET',
-        MATRIX_PATHS.DEHYDRATED_DEVICE.INITIAL_DEVICE(deviceId),
-        undefined
-      )
+      const response = await client.getDehydratedDeviceManager().getDeviceEvent(deviceId)
 
-      return response as Record<string, unknown>
+      return response
     } catch (error) {
       logger.error('获取设备事件失败:', error)
       return null

@@ -44,7 +44,7 @@ const goHome = () => {
   padding: 60px 40px;
   background: white;
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--hula-shadow-md);
   max-width: 480px;
   width: 90%;
 }

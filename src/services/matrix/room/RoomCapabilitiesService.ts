@@ -1,6 +1,8 @@
-import { info } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
+import { matrixHttpClient } from '../MatrixHttpClient'
 import { MatrixRequestDeduper } from '../MatrixRequestDeduper'
-import { MatrixRequestHelper } from '../MatrixRequestHelper'
+
+const logger = createLogger('RoomCapabilitiesService')
 
 /**
  * 契约: GET /_matrix/client/v3/rooms/{room_id}/capabilities
@@ -47,12 +49,12 @@ class RoomCapabilitiesService {
     }
 
     return MatrixRequestDeduper.dedupe(`room-capabilities:${roomId}`, async () => {
-      const path = MatrixRequestHelper.buildRoomPath(roomId, 'capabilities')
-      const result = await MatrixRequestHelper.safeGet<RoomCapabilitiesPayload>(path, undefined, {
+      const path = matrixHttpClient.buildRoomPath(roomId, 'capabilities')
+      const result = await matrixHttpClient.get<RoomCapabilitiesPayload>(path, {
         logPrefix: 'RoomCapabilities'
       })
       if (!result) {
-        info(`[RoomCapabilities] ${roomId} 拉取失败, 沿用既有缓存`)
+        logger.info(`[RoomCapabilities] ${roomId} 拉取失败, 沿用既有缓存`)
         return this.cache.get(roomId)?.payload ?? null
       }
       const payload: RoomCapabilitiesPayload = {

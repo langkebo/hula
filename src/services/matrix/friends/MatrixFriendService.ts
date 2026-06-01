@@ -3,9 +3,9 @@ import { type Friend, FriendEvent, type FriendManager, type FriendRequest } from
 // Extend FriendStatus for local UI needs
 export type FriendStatus = 'pending' | 'accepted' | 'rejected' | 'favorite' | 'normal' | 'blocked' | 'hidden'
 
-import { error, info, warn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 import {
@@ -15,6 +15,8 @@ import {
   synapseRustExtensionsService
 } from '../SynapseRustExtensionsService'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
+
+const logger = createLogger('MatrixFriendService')
 
 export type { Friend, FriendRequest }
 
@@ -61,16 +63,16 @@ class MatrixFriendService {
       if (!manager) {
         if (!this.hasLoggedMissingFriendManager) {
           this.hasLoggedMissingFriendManager = true
-          info('[MatrixFriend] FriendManager 未在客户端上找到，已降级到好友 REST 接口')
+          logger.info('[MatrixFriend] FriendManager 未在客户端上找到，已降级到好友 REST 接口')
         }
         // 即使 FriendManager 不可用，也启动轮询（使用 REST API）
         this.startPolling()
         return
       }
       this.hasLoggedMissingFriendManager = false
-      info('[MatrixFriend] FriendService 初始化完成')
+      logger.info('[MatrixFriend] FriendService 初始化完成')
     } catch (err) {
-      error(`[MatrixFriend] 初始化失败: ${err}`)
+      logger.error(`[MatrixFriend] 初始化失败: ${err}`)
       throw err
     }
   }
@@ -171,7 +173,7 @@ class MatrixFriendService {
       try {
         await this.pollFriendRequests()
       } catch (err) {
-        warn(`[MatrixFriend] 轮询好友请求失败: ${err}`)
+        logger.warn(`[MatrixFriend] 轮询好友请求失败: ${err}`)
       }
     }, MatrixFriendService.POLL_INTERVAL)
   }
@@ -202,7 +204,7 @@ class MatrixFriendService {
           outgoingRequests: (pending.outgoing ?? []).map((r) => this.normalizeSynapseFriendRequest(r))
         }
       } catch (err) {
-        warn(`[MatrixFriend] REST API 轮询好友请求失败: ${err}`)
+        logger.warn(`[MatrixFriend] REST API 轮询好友请求失败: ${err}`)
         return
       }
     }
@@ -213,7 +215,7 @@ class MatrixFriendService {
       this.emit('requestReceived', request)
     }
     if (newIncoming.length > 0) {
-      info(`[MatrixFriend] 轮询发现 ${newIncoming.length} 个新好友请求`)
+      logger.info(`[MatrixFriend] 轮询发现 ${newIncoming.length} 个新好友请求`)
     }
 
     // 检测出站请求变化
@@ -268,7 +270,7 @@ class MatrixFriendService {
       const friends = await synapseRustExtensionsService.getFriends()
       return friends.map((friend) => this.normalizeFriend(friend))
     } catch (err) {
-      error(`[MatrixFriend] 回退好友列表接口失败: ${err}`)
+      logger.error(`[MatrixFriend] 回退好友列表接口失败: ${err}`)
       return []
     }
   }
@@ -287,7 +289,7 @@ class MatrixFriendService {
     this.friendManager.on(FriendEvent.ListUpdated, () => {
       this.updateSyncState()
       this.emit('sync', this.syncState)
-      info('[MatrixFriend] 同步完成')
+      logger.info('[MatrixFriend] 同步完成')
     })
 
     // Mapping legacy events to current SDK events where applicable
@@ -299,7 +301,7 @@ class MatrixFriendService {
       if (!userId) return
       this.updateSyncState()
       this.emit('friendRemoved', userId)
-      info(`[MatrixFriend] 好友移除: ${userId}`)
+      logger.info(`[MatrixFriend] 好友移除: ${userId}`)
     })
 
     this.friendManager.on(FriendEvent.RequestReceived, (...args: unknown[]) => {
@@ -307,7 +309,7 @@ class MatrixFriendService {
       if (!request) return
       this.updateSyncState()
       this.emit('requestReceived', request)
-      info(`[MatrixFriend] 收到好友请求: ${this.getRequestUserId(request)}`)
+      logger.info(`[MatrixFriend] 收到好友请求: ${this.getRequestUserId(request)}`)
     })
 
     this.friendManager.on(FriendEvent.Invited, (...args: unknown[]) => {
@@ -316,7 +318,7 @@ class MatrixFriendService {
       if (!userId || !request) return
       this.updateSyncState()
       this.emit('requestSent', request)
-      info(`[MatrixFriend] 发送好友请求: ${userId}`)
+      logger.info(`[MatrixFriend] 发送好友请求: ${userId}`)
     })
 
     this.friendManager.on(FriendEvent.Accepted, (...args: unknown[]) => {
@@ -324,7 +326,7 @@ class MatrixFriendService {
       if (!userId) return
       this.updateSyncState()
       this.emit('requestAccepted', userId)
-      info(`[MatrixFriend] 好友请求已接受: ${userId}`)
+      logger.info(`[MatrixFriend] 好友请求已接受: ${userId}`)
     })
 
     this.friendManager.on(FriendEvent.Rejected, (...args: unknown[]) => {
@@ -332,7 +334,7 @@ class MatrixFriendService {
       if (!userId) return
       this.updateSyncState()
       this.emit('requestRejected', userId)
-      info(`[MatrixFriend] 好友请求已拒绝: ${userId}`)
+      logger.info(`[MatrixFriend] 好友请求已拒绝: ${userId}`)
     })
 
     this.friendManager.on(FriendEvent.Cancelled, (...args: unknown[]) => {
@@ -340,7 +342,7 @@ class MatrixFriendService {
       if (!userId) return
       this.updateSyncState()
       this.emit('requestCancelled', userId)
-      info(`[MatrixFriend] 好友请求已取消: ${userId}`)
+      logger.info(`[MatrixFriend] 好友请求已取消: ${userId}`)
     })
   }
 
@@ -358,7 +360,7 @@ class MatrixFriendService {
         outgoingRequests: results[2].status === 'fulfilled' ? results[2].value : this.syncState.outgoingRequests
       }
     } catch (err) {
-      error(`[MatrixFriend] 更新同步状态失败: ${err}`)
+      logger.error(`[MatrixFriend] 更新同步状态失败: ${err}`)
     }
   }
 
@@ -370,13 +372,13 @@ class MatrixFriendService {
         if (friends.length > 0) {
           return friends.map((friend) => this.normalizeFriend(friend))
         }
-        info('[MatrixFriend] FriendManager 返回空列表，尝试从回退 API 获取')
+        logger.info('[MatrixFriend] FriendManager 返回空列表，尝试从回退 API 获取')
       } else {
-        info('[MatrixFriend] FriendManager 不可用，尝试从回退 API 获取')
+        logger.info('[MatrixFriend] FriendManager 不可用，尝试从回退 API 获取')
       }
       return await this.getFriendsByFallbackApi()
     } catch (err) {
-      error(`[MatrixFriend] 获取好友列表失败，回退到 REST API: ${err}`)
+      logger.error(`[MatrixFriend] 获取好友列表失败，回退到 REST API: ${err}`)
       return await this.getFriendsByFallbackApi()
     }
   }
@@ -386,7 +388,7 @@ class MatrixFriendService {
       const friends = await this.getFriends()
       return friends.find((friend) => this.getFriendUserId(friend) === userId)
     } catch (err) {
-      error(`[MatrixFriend] 获取好友失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取好友失败: ${err}`)
       return undefined
     }
   }
@@ -403,14 +405,14 @@ class MatrixFriendService {
         return friends.some((f: Friend) => this.getFriendUserId(f) === userId)
       }
     } catch (err) {
-      error(`[MatrixFriend] FriendManager 检查好友关系失败，回退到 REST API: ${err}`)
+      logger.error(`[MatrixFriend] FriendManager 检查好友关系失败，回退到 REST API: ${err}`)
     }
 
     // FriendManager 不可用时，回退到 REST API
     try {
       return await synapseRustExtensionsService.checkFriendship(userId)
     } catch (restErr) {
-      error(`[MatrixFriend] REST API 检查好友关系也失败: ${restErr}`)
+      logger.error(`[MatrixFriend] REST API 检查好友关系也失败: ${restErr}`)
       return false
     }
   }
@@ -420,7 +422,7 @@ class MatrixFriendService {
       const friends = await this.getFriends()
       return friends.length
     } catch (err) {
-      error(`[MatrixFriend] 获取好友数量失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取好友数量失败: ${err}`)
       return 0
     }
   }
@@ -433,7 +435,7 @@ class MatrixFriendService {
         return await manager.getIncomingRequests()
       }
     } catch (err) {
-      error(`[MatrixFriend] FriendManager 获取入站好友请求失败，回退到 REST API: ${err}`)
+      logger.error(`[MatrixFriend] FriendManager 获取入站好友请求失败，回退到 REST API: ${err}`)
     }
 
     // FriendManager 不可用时，回退到 REST API
@@ -441,7 +443,7 @@ class MatrixFriendService {
       const pending = await synapseRustExtensionsService.getPendingRequests()
       return pending.incoming as unknown as FriendRequest[]
     } catch (restErr) {
-      error(`[MatrixFriend] REST API 获取入站好友请求也失败: ${restErr}`)
+      logger.error(`[MatrixFriend] REST API 获取入站好友请求也失败: ${restErr}`)
       return []
     }
   }
@@ -454,7 +456,7 @@ class MatrixFriendService {
         return await manager.getOutgoingRequests()
       }
     } catch (err) {
-      error(`[MatrixFriend] FriendManager 获取出站好友请求失败，回退到 REST API: ${err}`)
+      logger.error(`[MatrixFriend] FriendManager 获取出站好友请求失败，回退到 REST API: ${err}`)
     }
 
     // FriendManager 不可用时，回退到 REST API
@@ -462,7 +464,7 @@ class MatrixFriendService {
       const pending = await synapseRustExtensionsService.getPendingRequests()
       return pending.outgoing as unknown as FriendRequest[]
     } catch (restErr) {
-      error(`[MatrixFriend] REST API 获取出站好友请求也失败: ${restErr}`)
+      logger.error(`[MatrixFriend] REST API 获取出站好友请求也失败: ${restErr}`)
       return []
     }
   }
@@ -472,7 +474,7 @@ class MatrixFriendService {
       await this.updateSyncState()
       return this.syncState
     } catch (err) {
-      error(`[MatrixFriend] 获取同步状态失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取同步状态失败: ${err}`)
       return this.syncState
     }
   }
@@ -486,13 +488,13 @@ class MatrixFriendService {
       } else {
         await synapseRustExtensionsService.sendFriendRequest(userId, reason)
       }
-      info(`[MatrixFriend] 发送好友请求成功: ${userId}`)
+      logger.info(`[MatrixFriend] 发送好友请求成功: ${userId}`)
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
 
       // 409 已存在待处理的好友请求，属于正常业务场景，不应作为错误
       if (errMsg.includes('already exists') || errMsg.includes('M_USER_IN_USE') || errMsg.includes('409')) {
-        info(`[MatrixFriend] 好友请求已存在: ${userId}`)
+        logger.info(`[MatrixFriend] 好友请求已存在: ${userId}`)
         return
       }
 
@@ -500,7 +502,7 @@ class MatrixFriendService {
       if (manager) {
         try {
           await synapseRustExtensionsService.sendFriendRequest(userId, reason)
-          info(`[MatrixFriend] 发送好友请求成功(REST降级): ${userId}`)
+          logger.info(`[MatrixFriend] 发送好友请求成功(REST降级): ${userId}`)
           return
         } catch (restErr) {
           const restErrMsg = restErr instanceof Error ? restErr.message : String(restErr)
@@ -510,27 +512,27 @@ class MatrixFriendService {
             restErrMsg.includes('M_USER_IN_USE') ||
             restErrMsg.includes('409')
           ) {
-            info(`[MatrixFriend] 好友请求已存在(REST): ${userId}`)
+            logger.info(`[MatrixFriend] 好友请求已存在(REST): ${userId}`)
             return
           }
-          error(`[MatrixFriend] REST API 发送好友请求也失败: ${restErr}`)
+          logger.error(`[MatrixFriend] REST API 发送好友请求也失败: ${restErr}`)
         }
       }
 
       // 好友端点不可用时，回退到创建 DM 房间作为添加好友的替代方案
       if (errMsg.includes('不可用') || errMsg.includes('unavailable') || errMsg.includes('404')) {
-        info(`[MatrixFriend] 好友端点不可用，回退到创建 DM 房间: ${userId}`)
+        logger.info(`[MatrixFriend] 好友端点不可用，回退到创建 DM 房间: ${userId}`)
         try {
           const { matrixRoomDirectMessageService } = await import('../room/DirectMessageService')
           await matrixRoomDirectMessageService.createDirectRoom(userId)
-          info(`[MatrixFriend] 已创建 DM 房间作为好友替代: ${userId}`)
+          logger.info(`[MatrixFriend] 已创建 DM 房间作为好友替代: ${userId}`)
           return
         } catch (dmErr) {
-          error(`[MatrixFriend] 创建 DM 房间也失败: ${dmErr}`)
+          logger.error(`[MatrixFriend] 创建 DM 房间也失败: ${dmErr}`)
         }
       }
 
-      error(`[MatrixFriend] 发送好友请求失败: ${err}`)
+      logger.error(`[MatrixFriend] 发送好友请求失败: ${err}`)
       throw err
     }
   }
@@ -539,10 +541,10 @@ class MatrixFriendService {
     try {
       const manager = await this.requireFriendManager()
       await manager.acceptFriendRequest(userId)
-      info(`[MatrixFriend] 接受好友请求成功: ${userId}`)
+      logger.info(`[MatrixFriend] 接受好友请求成功: ${userId}`)
     } catch {
       await synapseRustExtensionsService.acceptFriendRequest(userId)
-      info(`[MatrixFriend] 接受好友请求成功(REST降级): ${userId}`)
+      logger.info(`[MatrixFriend] 接受好友请求成功(REST降级): ${userId}`)
     }
   }
 
@@ -552,19 +554,19 @@ class MatrixFriendService {
     try {
       if (manager) {
         await manager.cancelFriendRequest(userId)
-        info(`[MatrixFriend] 取消好友请求成功: ${userId}`)
+        logger.info(`[MatrixFriend] 取消好友请求成功: ${userId}`)
         return
       }
     } catch (err) {
-      error(`[MatrixFriend] FriendManager 取消好友请求失败，回退到 REST API: ${err}`)
+      logger.error(`[MatrixFriend] FriendManager 取消好友请求失败，回退到 REST API: ${err}`)
     }
 
     // FriendManager 不可用或失败时，回退到 REST API
     try {
       await synapseRustExtensionsService.cancelFriendRequest(userId)
-      info(`[MatrixFriend] 取消好友请求成功(REST降级): ${userId}`)
+      logger.info(`[MatrixFriend] 取消好友请求成功(REST降级): ${userId}`)
     } catch (restErr) {
-      error(`[MatrixFriend] REST API 取消好友请求也失败: ${restErr}`)
+      logger.error(`[MatrixFriend] REST API 取消好友请求也失败: ${restErr}`)
       throw restErr
     }
   }
@@ -573,10 +575,10 @@ class MatrixFriendService {
     try {
       const manager = await this.requireFriendManager()
       await manager.rejectFriendRequest(userId)
-      info(`[MatrixFriend] 拒绝好友请求成功: ${userId}`)
+      logger.info(`[MatrixFriend] 拒绝好友请求成功: ${userId}`)
     } catch {
       await synapseRustExtensionsService.declineFriendRequest(userId)
-      info(`[MatrixFriend] 拒绝好友请求成功(REST降级): ${userId}`)
+      logger.info(`[MatrixFriend] 拒绝好友请求成功(REST降级): ${userId}`)
     }
   }
 
@@ -584,10 +586,10 @@ class MatrixFriendService {
     try {
       const manager = await this.requireFriendManager()
       await manager.removeFriend(userId)
-      info(`[MatrixFriend] 删除好友成功: ${userId}`)
+      logger.info(`[MatrixFriend] 删除好友成功: ${userId}`)
     } catch {
       await synapseRustExtensionsService.removeFriend(userId)
-      info(`[MatrixFriend] 删除好友成功(REST降级): ${userId}`)
+      logger.info(`[MatrixFriend] 删除好友成功(REST降级): ${userId}`)
     }
   }
 
@@ -595,9 +597,9 @@ class MatrixFriendService {
     try {
       const manager = await this.requireFriendManager()
       await manager.setFriendDisplayName(userId, displayName)
-      info(`[MatrixFriend] 设置好友备注成功: ${userId}`)
+      logger.info(`[MatrixFriend] 设置好友备注成功: ${userId}`)
     } catch (err) {
-      error(`[MatrixFriend] 设置好友备注失败: ${err}`)
+      logger.error(`[MatrixFriend] 设置好友备注失败: ${err}`)
       throw err
     }
   }
@@ -613,10 +615,10 @@ class MatrixFriendService {
         throw new Error(useI18nGlobal().t('matrix_error.friends.remark_update_unsupported'))
       }
 
-      info(`[MatrixFriend] 设置好友笔记成功: ${userId}`)
+      logger.info(`[MatrixFriend] 设置好友笔记成功: ${userId}`)
     } catch {
       await synapseRustExtensionsService.setFriendNote(userId, note)
-      info(`[MatrixFriend] 设置好友笔记成功(REST降级): ${userId}`)
+      logger.info(`[MatrixFriend] 设置好友笔记成功(REST降级): ${userId}`)
     }
   }
 
@@ -626,14 +628,14 @@ class MatrixFriendService {
     try {
       if (status === 'favorite') {
         await matrixSpecialFriendService.addSpecialFriend(userId)
-        info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
+        logger.info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
         return
       }
 
       await matrixSpecialFriendService.removeSpecialFriend(userId)
 
       if (status === 'accepted' || status === 'normal') {
-        info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
+        logger.info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
         return
       }
 
@@ -643,9 +645,9 @@ class MatrixFriendService {
       }
 
       await manager.setFriendStatus(userId, status)
-      info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
+      logger.info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
     } catch (err) {
-      error(`[MatrixFriend] 设置好友状态失败: ${err}`)
+      logger.error(`[MatrixFriend] 设置好友状态失败: ${err}`)
       throw err
     }
   }
@@ -654,7 +656,7 @@ class MatrixFriendService {
     try {
       return matrixSpecialFriendService.getSpecialFriends()
     } catch (err) {
-      error(`[MatrixFriend] 获取特别好友失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取特别好友失败: ${err}`)
       return []
     }
   }
@@ -664,10 +666,10 @@ class MatrixFriendService {
 
     try {
       const friend = await manager.getFriendInfo(userId)
-      info(`[MatrixFriend] 获取好友信息成功: ${userId}`)
+      logger.info(`[MatrixFriend] 获取好友信息成功: ${userId}`)
       return friend ?? undefined
     } catch (err) {
-      error(`[MatrixFriend] 获取好友信息失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取好友信息失败: ${err}`)
       throw err
     }
   }
@@ -676,10 +678,10 @@ class MatrixFriendService {
   async getFriendDmRoom(userId: string): Promise<SynapseDmInfo> {
     try {
       const result = await synapseRustExtensionsService.getDmRoom(userId)
-      info(`[MatrixFriend] 获取好友 DM 房间: userId=${userId}, roomId=${result.room_id || '(none)'}`)
+      logger.info(`[MatrixFriend] 获取好友 DM 房间: userId=${userId}, roomId=${result.room_id || '(none)'}`)
       return result
     } catch (err) {
-      error(`[MatrixFriend] 获取好友 DM 房间失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取好友 DM 房间失败: ${err}`)
       return { room_id: '', exists: false }
     }
   }
@@ -689,9 +691,9 @@ class MatrixFriendService {
 
     try {
       await this.updateSyncState()
-      info('[MatrixFriend] 手动同步完成')
+      logger.info('[MatrixFriend] 手动同步完成')
     } catch (err) {
-      error(`[MatrixFriend] 同步失败: ${err}`)
+      logger.error(`[MatrixFriend] 同步失败: ${err}`)
       throw err
     }
   }
@@ -705,10 +707,10 @@ class MatrixFriendService {
           getFriendGroups?: () => Promise<FriendGroup[]>
         }
       ).getFriendGroups?.()
-      info(`[MatrixFriend] 获取好友分组成功: ${groups?.length ?? 0} 个`)
+      logger.info(`[MatrixFriend] 获取好友分组成功: ${groups?.length ?? 0} 个`)
       return (groups as unknown as FriendGroup[] | undefined) ?? []
     } catch (err) {
-      error(`[MatrixFriend] 获取好友分组失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取好友分组失败: ${err}`)
       throw err
     }
   }
@@ -722,7 +724,7 @@ class MatrixFriendService {
           createFriendGroup?: (name: string) => Promise<unknown>
         }
       ).createFriendGroup?.(name)
-      info(`[MatrixFriend] 创建好友分组成功: ${name}`)
+      logger.info(`[MatrixFriend] 创建好友分组成功: ${name}`)
 
       if (typeof result === 'string') {
         return { group_id: result, name }
@@ -734,7 +736,7 @@ class MatrixFriendService {
         name: raw.name ?? name
       }
     } catch (err) {
-      error(`[MatrixFriend] 创建好友分组失败: ${err}`)
+      logger.error(`[MatrixFriend] 创建好友分组失败: ${err}`)
       throw err
     }
   }
@@ -748,9 +750,9 @@ class MatrixFriendService {
           deleteFriendGroup?: (groupId: string) => Promise<void>
         }
       ).deleteFriendGroup?.(groupId)
-      info(`[MatrixFriend] 删除好友分组成功: ${groupId}`)
+      logger.info(`[MatrixFriend] 删除好友分组成功: ${groupId}`)
     } catch (err) {
-      error(`[MatrixFriend] 删除好友分组失败: ${err}`)
+      logger.error(`[MatrixFriend] 删除好友分组失败: ${err}`)
       throw err
     }
   }
@@ -764,9 +766,9 @@ class MatrixFriendService {
           renameFriendGroup?: (groupId: string, name: string) => Promise<void>
         }
       ).renameFriendGroup?.(groupId, name)
-      info(`[MatrixFriend] 重命名好友分组成功: ${groupId} -> ${name}`)
+      logger.info(`[MatrixFriend] 重命名好友分组成功: ${groupId} -> ${name}`)
     } catch (err) {
-      error(`[MatrixFriend] 重命名好友分组失败: ${err}`)
+      logger.error(`[MatrixFriend] 重命名好友分组失败: ${err}`)
       throw err
     }
   }
@@ -780,9 +782,9 @@ class MatrixFriendService {
           addFriendToGroup?: (groupId: string, userId: string) => Promise<void>
         }
       ).addFriendToGroup?.(groupId, userId)
-      info(`[MatrixFriend] 添加好友到分组成功: ${userId} -> ${groupId}`)
+      logger.info(`[MatrixFriend] 添加好友到分组成功: ${userId} -> ${groupId}`)
     } catch (err) {
-      error(`[MatrixFriend] 添加好友到分组失败: ${err}`)
+      logger.error(`[MatrixFriend] 添加好友到分组失败: ${err}`)
       throw err
     }
   }
@@ -796,9 +798,9 @@ class MatrixFriendService {
           removeFriendFromGroup?: (groupId: string, userId: string) => Promise<void>
         }
       ).removeFriendFromGroup?.(groupId, userId)
-      info(`[MatrixFriend] 从分组移除好友成功: ${userId} <- ${groupId}`)
+      logger.info(`[MatrixFriend] 从分组移除好友成功: ${userId} <- ${groupId}`)
     } catch (err) {
-      error(`[MatrixFriend] 从分组移除好友失败: ${err}`)
+      logger.error(`[MatrixFriend] 从分组移除好友失败: ${err}`)
       throw err
     }
   }
@@ -812,10 +814,10 @@ class MatrixFriendService {
           getFriendsInGroup?: (groupId: string) => Promise<Friend[]>
         }
       ).getFriendsInGroup?.(groupId)
-      info(`[MatrixFriend] 获取分组内好友成功: ${groupId} -> ${friends?.length ?? 0} 个`)
+      logger.info(`[MatrixFriend] 获取分组内好友成功: ${groupId} -> ${friends?.length ?? 0} 个`)
       return friends ?? []
     } catch (err) {
-      error(`[MatrixFriend] 获取分组内好友失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取分组内好友失败: ${err}`)
       throw err
     }
   }
@@ -829,10 +831,10 @@ class MatrixFriendService {
           getFriendGroupsByUser?: (userId: string) => Promise<FriendGroup[]>
         }
       ).getFriendGroupsByUser?.(userId)
-      info(`[MatrixFriend] 获取用户所属分组成功: ${userId} -> ${groups?.length ?? 0} 个`)
+      logger.info(`[MatrixFriend] 获取用户所属分组成功: ${userId} -> ${groups?.length ?? 0} 个`)
       return groups ?? []
     } catch (err) {
-      error(`[MatrixFriend] 获取用户所属分组失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取用户所属分组失败: ${err}`)
       throw err
     }
   }
@@ -844,14 +846,14 @@ class MatrixFriendService {
 
     try {
       if (typeof manager.getFriendSuggestions !== 'function') {
-        info('[MatrixFriend] FriendManager 不支持好友建议，返回空列表')
+        logger.info('[MatrixFriend] FriendManager 不支持好友建议，返回空列表')
         return []
       }
       const suggestions = await manager.getFriendSuggestions()
-      info(`[MatrixFriend] 获取好友建议成功: ${suggestions?.length ?? 0} 个`)
+      logger.info(`[MatrixFriend] 获取好友建议成功: ${suggestions?.length ?? 0} 个`)
       return suggestions ?? []
     } catch (err) {
-      error(`[MatrixFriend] 获取好友建议失败: ${err}`)
+      logger.error(`[MatrixFriend] 获取好友建议失败: ${err}`)
       throw err
     }
   }
@@ -862,18 +864,18 @@ class MatrixFriendService {
     try {
       if (manager && typeof manager.getFriendStatus === 'function') {
         const status = await manager.getFriendStatus(userId)
-        info(`[MatrixFriend] 获取好友状态成功: ${userId}`)
+        logger.info(`[MatrixFriend] 获取好友状态成功: ${userId}`)
         return (status as FriendStatus | undefined) ?? null
       }
     } catch (err) {
-      error(`[MatrixFriend] FriendManager 获取好友状态失败，回退到 REST API: ${err}`)
+      logger.error(`[MatrixFriend] FriendManager 获取好友状态失败，回退到 REST API: ${err}`)
     }
 
     try {
       const result = await synapseRustExtensionsService.checkFriendship(userId)
       return result ? 'accepted' : null
     } catch (restErr) {
-      error(`[MatrixFriend] REST API 获取好友状态也失败: ${restErr}`)
+      logger.error(`[MatrixFriend] REST API 获取好友状态也失败: ${restErr}`)
       return null
     }
   }
@@ -888,7 +890,7 @@ class MatrixFriendService {
       >
       return result
     } catch (err) {
-      error(`[MatrixFriend] 获取好友状态详情失败: ${userId}, ${err}`)
+      logger.error(`[MatrixFriend] 获取好友状态详情失败: ${userId}, ${err}`)
       return null
     }
   }
@@ -907,7 +909,7 @@ class MatrixFriendService {
         avatar_url: r.avatar_url
       }))
     } catch (err) {
-      error(`[MatrixFriend] REST 搜索好友失败: ${err}`)
+      logger.error(`[MatrixFriend] REST 搜索好友失败: ${err}`)
       return []
     }
   }
@@ -926,7 +928,7 @@ class MatrixFriendService {
       incomingRequests: [],
       outgoingRequests: []
     }
-    info('[MatrixFriend] FriendService 已停止')
+    logger.info('[MatrixFriend] FriendService 已停止')
   }
 
   on(event: string, callback: FriendServiceEventHandler): void {

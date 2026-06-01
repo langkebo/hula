@@ -1,5 +1,5 @@
 import { readFile } from '@tauri-apps/plugin-fs'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
 
@@ -28,7 +28,7 @@ export function useVoiceInput(): VoiceInputHook {
     const file = new File([fileBytes], filename, { type: mimeType })
 
     // 检查房间是否加密
-    const isEncrypted = await matrixEncryptionService.isRoomEncrypted(roomId)
+    const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(roomId)
 
     if (isEncrypted) {
       // 加密房间：使用加密上传

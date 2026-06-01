@@ -87,7 +87,7 @@ const handleClick = () => {
   transition: box-shadow 0.2s;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--hula-shadow-card);
   }
 }
 
@@ -96,7 +96,7 @@ const handleClick = () => {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  color: var(--text-secondary, #999);
+  color: var(--hula-text-quaternary);
 
   .loading-spinner {
     width: 16px;
@@ -148,14 +148,14 @@ const handleClick = () => {
 
 .site-name {
   font-size: 12px;
-  color: var(--text-secondary, #999);
+  color: var(--hula-text-quaternary);
   margin-bottom: 4px;
 }
 
 .preview-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary, #333);
+  color: var(--hula-text-primary);
   margin-bottom: 4px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -165,7 +165,7 @@ const handleClick = () => {
 
 .preview-description {
   font-size: 13px;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary, var(--hula-text-secondary));
   margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -175,6 +175,6 @@ const handleClick = () => {
 
 .preview-url {
   font-size: 12px;
-  color: var(--text-secondary, #999);
+  color: var(--hula-text-quaternary);
 }
 </style>

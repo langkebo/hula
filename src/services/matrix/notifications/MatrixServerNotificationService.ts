@@ -1,6 +1,8 @@
-import { error } from '@tauri-apps/plugin-log'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('MatrixServerNotificationService')
 
 export interface ServerNotificationPayload {
   title: string
@@ -27,7 +29,7 @@ class MatrixServerNotificationService extends BaseMatrixService {
     try {
       return (await this.getClient().http.authedRequest(method, path, undefined, body)) as T
     } catch (err) {
-      error(`[MatrixServerNotificationService] 请求失败: ${err}`)
+      logger.error(`[MatrixServerNotificationService] 请求失败: ${err}`)
       return null
     }
   }

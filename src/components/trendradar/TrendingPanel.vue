@@ -130,7 +130,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 
 .trending-panel__rank--hot {
   background: linear-gradient(135deg, var(--hula-color-danger-400), var(--hula-color-danger-500));
-  color: white;
+  color: var(--hula-text-inverse);
 }
 
 .trending-panel__content {

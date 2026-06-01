@@ -1,7 +1,9 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { IsYesEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { buildBadgeCatalog } from '@/stores/domains/chat/badge'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('BadgeService')
 
 export interface Badge {
   id: string
@@ -51,9 +53,9 @@ class BadgeService {
           ownedIds
         } as never
       )
-      info(`[Badge] 设置徽章成功: ${badgeId}`)
+      logger.info(`[Badge] 设置徽章成功: ${badgeId}`)
     } catch (err) {
-      error(`[Badge] 设置徽章失败: ${err}`)
+      logger.error(`[Badge] 设置徽章失败: ${err}`)
       throw err
     }
   }
@@ -66,14 +68,14 @@ class BadgeService {
     try {
       const { ownedIds, wearingItemId } = this.getCurrentUserBadgeState()
       const badges = buildBadgeCatalog(ownedIds)
-      info('[Badge] 获取徽章列表成功')
+      logger.info('[Badge] 获取徽章列表成功')
       return badges.map((badge) => ({
         ...badge,
         obtain: IsYesEnum.YES,
         wearing: badge.id === wearingItemId ? IsYesEnum.YES : IsYesEnum.NO
       }))
     } catch (err) {
-      error(`[Badge] 获取徽章列表失败: ${err}`)
+      logger.error(`[Badge] 获取徽章列表失败: ${err}`)
       return []
     }
   }
@@ -87,14 +89,14 @@ class BadgeService {
     try {
       const { wearingItemId } = this.getCurrentUserBadgeState()
       const badges = buildBadgeCatalog(badgeIds)
-      info('[Badge] 批量获取徽章成功')
+      logger.info('[Badge] 批量获取徽章成功')
       return badges.map((badge) => ({
         ...badge,
         obtain: IsYesEnum.YES,
         wearing: badge.id === wearingItemId ? IsYesEnum.YES : IsYesEnum.NO
       }))
     } catch (err) {
-      error(`[Badge] 批量获取徽章失败: ${err}`)
+      logger.error(`[Badge] 批量获取徽章失败: ${err}`)
       return []
     }
   }

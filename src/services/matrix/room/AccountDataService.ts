@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import { createLogger } from '@/utils/Logger'
 import { type AIConnectionInfo, type McpTool, matrixAIConnectionService } from '../ai/MatrixAIConnectionService'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -28,7 +27,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
       )
       return result as Record<string, unknown>
     } catch (err) {
-      error(`[MatrixRoom] 获取房间 account data 失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间 account data 失败: ${err}`)
       return null
     }
   }
@@ -42,9 +41,9 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
         undefined,
         content
       )
-      info(`[MatrixRoom] 设置房间 account data 成功: ${roomId}/${eventType}`)
+      logger.info(`[MatrixRoom] 设置房间 account data 成功: ${roomId}/${eventType}`)
     } catch (err) {
-      error(`[MatrixRoom] 设置房间 account data 失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置房间 account data 失败: ${err}`)
       throw err
     }
   }
@@ -55,7 +54,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId))
       return result as Record<string, unknown>
     } catch (err) {
-      error(`[MatrixRoom] 获取内容扫描信息失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取内容扫描信息失败: ${err}`)
       return null
     }
   }
@@ -67,9 +66,9 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
         enabled: true,
         burn_after_ms: lifetimeMs
       })
-      info(`[MatrixRoom] 设置阅后即焚成功: ${roomId} (${lifetimeMs}ms)`)
+      logger.info(`[MatrixRoom] 设置阅后即焚成功: ${roomId} (${lifetimeMs}ms)`)
     } catch (err) {
-      error(`[MatrixRoom] 设置阅后即焚失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置阅后即焚失败: ${err}`)
       throw err
     }
   }
@@ -91,7 +90,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
         logger.warn('Account data operation failed:', err)
       }
     }
-    error('[MatrixRoom] 获取外部服务列表失败: Admin API not available')
+    logger.error('[MatrixRoom] 获取外部服务列表失败: Admin API not available')
     return []
   }
 
@@ -104,7 +103,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
       const data = result as { enabled?: boolean }
       return { enabled: data.enabled ?? false }
     } catch (err) {
-      error(`[MatrixRoom] 获取防截屏设置失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取防截屏设置失败: ${err}`)
       return { enabled: false }
     }
   }
@@ -113,9 +112,9 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       await client.http.authedRequest('PUT', MATRIX_PATHS.ROOM.ANTI_SCREENSHOT(roomId), undefined, { enabled })
-      info(`[MatrixRoom] 设置防截屏成功: ${roomId} (enabled=${enabled})`)
+      logger.info(`[MatrixRoom] 设置防截屏成功: ${roomId} (enabled=${enabled})`)
     } catch (err) {
-      error(`[MatrixRoom] 设置防截屏失败: ${err}`)
+      logger.error(`[MatrixRoom] 设置防截屏失败: ${err}`)
       throw err
     }
   }
@@ -129,7 +128,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
       const data = result as { total?: number; active?: number }
       return { total: data.total ?? 0, active: data.active ?? 0 }
     } catch (err) {
-      error(`[MatrixRoom] 获取阅后即焚统计失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取阅后即焚统计失败: ${err}`)
       return { total: 0, active: 0 }
     }
   }
@@ -138,9 +137,9 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       await client.http.authedRequest('POST', MATRIX_PATHS.BURN.ROOM_BURN(roomId))
-      info(`[MatrixRoom] 立即焚毁房间成功: ${roomId}`)
+      logger.info(`[MatrixRoom] 立即焚毁房间成功: ${roomId}`)
     } catch (err) {
-      error(`[MatrixRoom] 立即焚毁房间失败: ${err}`)
+      logger.error(`[MatrixRoom] 立即焚毁房间失败: ${err}`)
       throw err
     }
   }
@@ -151,7 +150,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       return await matrixRoomSummaryService.getRoomSummary(roomId)
     } catch (err) {
-      error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
       return null
     }
   }
@@ -162,7 +161,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.SUMMARY_MEMBERS(roomId))
       return result
     } catch (err) {
-      error(`[MatrixRoom] 获取房间摘要成员失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间摘要成员失败: ${err}`)
       throw err
     }
   }
@@ -173,7 +172,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.SUMMARY_STATE(roomId))
       return result
     } catch (err) {
-      error(`[MatrixRoom] 获取房间摘要状态失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取房间摘要状态失败: ${err}`)
       throw err
     }
   }
@@ -184,7 +183,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       return await matrixAIConnectionService.listConnections()
     } catch (err) {
-      error(`[MatrixRoom] 获取 AI 连接列表失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取 AI 连接列表失败: ${err}`)
       throw err
     }
   }
@@ -196,7 +195,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
       )
       return await matrixAIConnectionService.getConnection(id)
     } catch (err) {
-      error(`[MatrixRoom] 创建 AI 连接失败: ${err}`)
+      logger.error(`[MatrixRoom] 创建 AI 连接失败: ${err}`)
       throw err
     }
   }
@@ -205,7 +204,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       await matrixAIConnectionService.deleteConnection(id)
     } catch (err) {
-      error(`[MatrixRoom] 删除 AI 连接失败: ${err}`)
+      logger.error(`[MatrixRoom] 删除 AI 连接失败: ${err}`)
       throw err
     }
   }
@@ -214,7 +213,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       return await matrixAIConnectionService.listMcpTools()
     } catch (err) {
-      error(`[MatrixRoom] 获取 MCP 工具列表失败: ${err}`)
+      logger.error(`[MatrixRoom] 获取 MCP 工具列表失败: ${err}`)
       throw err
     }
   }
@@ -223,7 +222,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       return await matrixAIConnectionService.callMcpTool({ tool: toolId, parameters: params })
     } catch (err) {
-      error(`[MatrixRoom] 调用 MCP 工具失败: ${err}`)
+      logger.error(`[MatrixRoom] 调用 MCP 工具失败: ${err}`)
       throw err
     }
   }

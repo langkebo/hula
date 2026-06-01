@@ -5,7 +5,6 @@
  * 对应后端: synapse-rust/src/web/routes/rendezvous.rs
  */
 
-import { error, info } from '@tauri-apps/plugin-log'
 import type {
   CreateSessionResponse,
   GetMessagesResponse,
@@ -17,7 +16,10 @@ import type {
   SendMessageResponse,
   UpdateSessionResponse
 } from 'matrix-js-sdk/rendezvous'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+
+const logger = createLogger('MatrixRendezvousService')
 
 export type {
   CreateSessionResponse,
@@ -86,10 +88,10 @@ class MatrixRendezvousService {
     try {
       const manager = this.getRendezvousManager()
       const response = await manager.createSession(options)
-      info(`[MatrixRendezvous] 会话创建成功: ${response.session_id}`)
+      logger.info(`[MatrixRendezvous] 会话创建成功: ${response.session_id}`)
       return response
     } catch (err) {
-      error(`[MatrixRendezvous] 创建会话失败: ${err}`)
+      logger.error(`[MatrixRendezvous] 创建会话失败: ${err}`)
       throw err
     }
   }
@@ -101,10 +103,10 @@ class MatrixRendezvousService {
     try {
       const manager = this.getRendezvousManager()
       const session = await manager.getSession(sessionId, sessionKey)
-      info(`[MatrixRendezvous] 获取会话: ${sessionId}`)
+      logger.info(`[MatrixRendezvous] 获取会话: ${sessionId}`)
       return session
     } catch (err) {
-      error(`[MatrixRendezvous] 获取会话失败: ${sessionId}, ${err}`)
+      logger.error(`[MatrixRendezvous] 获取会话失败: ${sessionId}, ${err}`)
       throw err
     }
   }
@@ -120,10 +122,10 @@ class MatrixRendezvousService {
     try {
       const manager = this.getRendezvousManager()
       const response = await manager.updateSession(sessionId, status, sessionKey)
-      info(`[MatrixRendezvous] 更新会话状态: ${sessionId} -> ${status}`)
+      logger.info(`[MatrixRendezvous] 更新会话状态: ${sessionId} -> ${status}`)
       return response
     } catch (err) {
-      error(`[MatrixRendezvous] 更新会话失败: ${sessionId}, ${err}`)
+      logger.error(`[MatrixRendezvous] 更新会话失败: ${sessionId}, ${err}`)
       throw err
     }
   }
@@ -135,9 +137,9 @@ class MatrixRendezvousService {
     try {
       const manager = this.getRendezvousManager()
       await manager.deleteSession(sessionId, sessionKey)
-      info(`[MatrixRendezvous] 会话已删除: ${sessionId}`)
+      logger.info(`[MatrixRendezvous] 会话已删除: ${sessionId}`)
     } catch (err) {
-      error(`[MatrixRendezvous] 删除会话失败: ${sessionId}, ${err}`)
+      logger.error(`[MatrixRendezvous] 删除会话失败: ${sessionId}, ${err}`)
       throw err
     }
   }
@@ -149,10 +151,10 @@ class MatrixRendezvousService {
     try {
       const manager = this.getRendezvousManager()
       const response = await manager.sendMessage(sessionId, message, sessionKey)
-      info(`[MatrixRendezvous] 消息已发送: ${sessionId}, messageId=${response.message_id}`)
+      logger.info(`[MatrixRendezvous] 消息已发送: ${sessionId}, messageId=${response.message_id}`)
       return response
     } catch (err) {
-      error(`[MatrixRendezvous] 发送消息失败: ${sessionId}, ${err}`)
+      logger.error(`[MatrixRendezvous] 发送消息失败: ${sessionId}, ${err}`)
       throw err
     }
   }
@@ -164,10 +166,10 @@ class MatrixRendezvousService {
     try {
       const manager = this.getRendezvousManager()
       const response = await manager.getMessages(sessionId, sessionKey)
-      info(`[MatrixRendezvous] 获取消息: ${sessionId}, count=${response.messages?.length ?? 0}`)
+      logger.info(`[MatrixRendezvous] 获取消息: ${sessionId}, count=${response.messages?.length ?? 0}`)
       return response
     } catch (err) {
-      error(`[MatrixRendezvous] 获取消息失败: ${sessionId}, ${err}`)
+      logger.error(`[MatrixRendezvous] 获取消息失败: ${sessionId}, ${err}`)
       throw err
     }
   }
@@ -179,10 +181,10 @@ class MatrixRendezvousService {
     try {
       const manager = this.getRendezvousManager()
       const response = await manager.connectToSession(sessionId, sessionKey)
-      info(`[MatrixRendezvous] 已连接会话: ${sessionId}`)
+      logger.info(`[MatrixRendezvous] 已连接会话: ${sessionId}`)
       return response
     } catch (err) {
-      error(`[MatrixRendezvous] 连接会话失败: ${sessionId}, ${err}`)
+      logger.error(`[MatrixRendezvous] 连接会话失败: ${sessionId}, ${err}`)
       throw err
     }
   }
@@ -197,10 +199,10 @@ class MatrixRendezvousService {
     try {
       const manager = this.getRendezvousManager()
       const result = await manager.completeSession(sessionId, sessionKey)
-      info(`[MatrixRendezvous] 会话已完成: ${sessionId}`)
+      logger.info(`[MatrixRendezvous] 会话已完成: ${sessionId}`)
       return result
     } catch (err) {
-      error(`[MatrixRendezvous] 完成会话失败: ${sessionId}, ${err}`)
+      logger.error(`[MatrixRendezvous] 完成会话失败: ${sessionId}, ${err}`)
       throw err
     }
   }
@@ -220,10 +222,10 @@ class MatrixRendezvousService {
     try {
       const manager = this.getRendezvousManager()
       const messages = await manager.pollForMessages(sessionId, options)
-      info(`[MatrixRendezvous] 轮询完成: ${sessionId}, 消息数=${messages.length}`)
+      logger.info(`[MatrixRendezvous] 轮询完成: ${sessionId}, 消息数=${messages.length}`)
       return messages
     } catch (err) {
-      error(`[MatrixRendezvous] 轮询消息失败: ${sessionId}, ${err}`)
+      logger.error(`[MatrixRendezvous] 轮询消息失败: ${sessionId}, ${err}`)
       throw err
     }
   }

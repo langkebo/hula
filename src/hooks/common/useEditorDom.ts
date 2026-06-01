@@ -61,7 +61,7 @@ export const useEditorDom = (options: UseEditorDomOptions) => {
       const spanNode = document.createElement('span')
       spanNode.id = 'aitSpan'
       spanNode.contentEditable = 'false'
-      spanNode.classList.add('text-#13987f')
+      spanNode.classList.add('text-[--hula-brand]')
       spanNode.classList.add('select-none')
       spanNode.classList.add('cursor-default')
       spanNode.style.userSelect = 'text'

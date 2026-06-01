@@ -189,9 +189,9 @@ import {
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixE2EEBootstrapService } from '@/services/matrix/crypto/MatrixE2EEBootstrapService'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import type { GeneratedSecretStorageKey } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 
@@ -319,7 +319,7 @@ async function runCrossSigningSetup() {
   stepResult.value = 'idle'
   stepError.value = ''
   try {
-    await matrixEncryptionService.setupCrossSigning({ password: currentPassword.value.trim() })
+    await cryptoSDKAdapter.setupCrossSigning({ password: currentPassword.value.trim() })
     stepResult.value = 'success'
     showFeedback(t('encryption.bootstrap.cross_signing_success'), 'success')
   } catch (err: unknown) {
@@ -342,7 +342,7 @@ async function runKeyBackupSetup() {
     if (recoveryKeyResult) {
       generatedRecoveryKey.value = recoveryKeyResult
     }
-    await matrixEncryptionService.setupKeyBackup({
+    await cryptoSDKAdapter.setupKeyBackupWithOptions({
       password: currentPassword.value.trim(),
       generatedKey: generatedRecoveryKey.value
     })

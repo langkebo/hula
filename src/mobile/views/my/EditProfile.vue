@@ -13,7 +13,9 @@
         <div class="p-20px">
           <!-- 头像 -->
           <div class="flex justify-center mb-50px">
-            <div class="rounded-full relative bg-white w-86px h-86px overflow-hidden" @click="openAvatarCropper">
+            <div
+              class="rounded-full relative bg-[--hula-surface-panel] w-86px h-86px overflow-hidden"
+              @click="openAvatarCropper">
               <img
                 class="absolute size-86px rounded-full object-cover"
                 :src="AvatarUtils.getAvatarUrl(localUserInfo.avatar!)"
@@ -43,7 +45,7 @@
                 readonly
                 class="bg-transparent!" />
 
-              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
+              <div class="mx-16px border-b border-[--hula-border-default]"></div>
 
               <van-field
                 v-model="genderText"
@@ -54,7 +56,7 @@
                 @click="pickerState.gender = true"
                 class="bg-transparent!" />
 
-              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
+              <div class="mx-16px border-b border-[--hula-border-default]"></div>
 
               <van-field
                 v-model="birthday"
@@ -65,7 +67,7 @@
                 @click="toEditBirthday"
                 class="bg-transparent!" />
 
-              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
+              <div class="mx-16px border-b border-[--hula-border-default]"></div>
 
               <van-field
                 v-model="region"
@@ -76,7 +78,7 @@
                 @click="pickerState.region = true"
                 class="bg-transparent!" />
 
-              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
+              <div class="mx-16px border-b border-[--hula-border-default]"></div>
 
               <van-field
                 v-model="localUserInfo.phone"
@@ -86,7 +88,7 @@
                 disabled
                 class="bg-transparent!" />
 
-              <div class="mx-16px border-b border-gray-200 dark:border-gray-700"></div>
+              <div class="mx-16px border-b border-[--hula-border-default]"></div>
 
               <van-field
                 v-model="localUserInfo.resume"

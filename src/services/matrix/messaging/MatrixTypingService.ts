@@ -1,4 +1,3 @@
-import { error, info } from '@tauri-apps/plugin-log'
 import type { MatrixClient, TypingManager } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -48,9 +47,9 @@ class MatrixTypingService extends BaseMatrixService {
         this.activeTypingRooms.delete(roomId)
       }
 
-      info(`[MatrixTyping] 发送输入状态: ${roomId} -> ${isTyping ? 'typing' : 'stopped'}`)
+      logger.info(`[MatrixTyping] 发送输入状态: ${roomId} -> ${isTyping ? 'typing' : 'stopped'}`)
     } catch (err) {
-      error(`[MatrixTyping] 发送输入状态失败: ${err}`)
+      logger.error(`[MatrixTyping] 发送输入状态失败: ${err}`)
       throw err
     }
   }
@@ -92,7 +91,7 @@ class MatrixTypingService extends BaseMatrixService {
         })
       }
     } catch (e) {
-      error(`[MatrixTyping] 获取输入用户失败: ${e}`)
+      logger.error(`[MatrixTyping] 获取输入用户失败: ${e}`)
     }
 
     return typingUsers
