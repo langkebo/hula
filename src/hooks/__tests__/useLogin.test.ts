@@ -232,4 +232,19 @@ describe('useLoginFlow', () => {
     expect(uiState.value).toBe('manual')
     expect(mockSettingStore.setAutoLogin).toHaveBeenCalledWith(false)
   })
+
+  it('shows invalid credentials for login-context forbidden errors', async () => {
+    mockSessionOrchestrator.restoreWithAccessToken.mockRejectedValueOnce(
+      Object.assign(new Error('Invalid username or password'), {
+        errcode: 'M_FORBIDDEN',
+        httpStatus: 403
+      })
+    )
+
+    const { normalLogin } = useLoginFlow()
+
+    await normalLogin('PC', true, true)
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('error.matrix.invalid_credentials', 'error')
+  })
 })
