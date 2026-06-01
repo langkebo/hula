@@ -1,6 +1,7 @@
 {
   "matrix": {
     "forbidden": "Permission denied",
+    "invalid_credentials": "Invalid username or password",
     "unknown_token": "Session expired, please log in again",
     "missing_token": "Not logged in, please log in",
     "rate_limited": "Too many requests, please try later",

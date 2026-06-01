@@ -13,6 +13,8 @@ export interface TranslatedError {
   retryAfterMs?: number
 }
 
+export type MatrixErrorTranslationContext = 'default' | 'login'
+
 const ERROR_MAP: Record<string, TranslatedError> = {
   M_FORBIDDEN: {
     userMessage: 'error.matrix.forbidden',
@@ -115,10 +117,20 @@ const UNKNOWN_ERROR: TranslatedError = {
   action: 'none'
 }
 
+const LOGIN_FORBIDDEN_ERROR: TranslatedError = {
+  userMessage: 'error.matrix.invalid_credentials',
+  level: 'toast',
+  recoverable: false,
+  action: 'none'
+}
+
 /**
  * @deprecated Use `toAppError()` from `@/common/errors` instead. This function will be removed in a future version.
  */
-export function translateMatrixError(err: unknown): TranslatedError {
+export function translateMatrixError(
+  err: unknown,
+  options: { context?: MatrixErrorTranslationContext } = {}
+): TranslatedError {
   if (!err) return UNKNOWN_ERROR
 
   if (err instanceof TypeError && err.message.includes('fetch')) {
@@ -132,6 +144,10 @@ export function translateMatrixError(err: unknown): TranslatedError {
   const errObj = err as Record<string, unknown>
 
   const errcode = (errObj.errcode as string) || (errObj.code as string) || ''
+  if (options.context === 'login' && errcode === 'M_FORBIDDEN') {
+    return LOGIN_FORBIDDEN_ERROR
+  }
+
   if (errcode && ERROR_MAP[errcode]) {
     const translated = { ...ERROR_MAP[errcode] }
     if (errcode === 'M_LIMIT_EXCEEDED') {
@@ -149,6 +165,9 @@ export function translateMatrixError(err: unknown): TranslatedError {
       case 401:
         return ERROR_MAP.M_UNKNOWN_TOKEN
       case 403:
+        if (options.context === 'login') {
+          return LOGIN_FORBIDDEN_ERROR
+        }
         return ERROR_MAP.M_FORBIDDEN
       case 404:
         return ERROR_MAP.M_NOT_FOUND

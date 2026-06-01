@@ -7,6 +7,7 @@
 
 import { useNetwork } from '@vueuse/core'
 import { useRouter } from 'vue-router'
+import { translateMatrixError } from '@/common/matrixErrorTranslator'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum } from '@/enums'
 import { resolveMatrixEndpointConfig } from '@/services/backend'
@@ -189,8 +190,13 @@ export const useLoginFlow = () => {
       loading.value = false
       loginDisabled.value = false
       loginText.value = t('login.button.login.default')
-      const error = err as Error & { message?: string }
-      showFeedback(error.message || '登录失败', 'error')
+      const matrixErr = err as Error & { errcode?: string; httpStatus?: number; message?: string }
+      const translated = translateMatrixError(matrixErr, { context: 'login' })
+      const userMessage =
+        translated.userMessage !== 'error.matrix.unknown'
+          ? t(translated.userMessage)
+          : matrixErr.message || t('matrix_error.auth.login_failed_check_network')
+      showFeedback(userMessage, 'error')
       if (auto) {
         uiState.value = 'manual'
         settingStore.setAutoLogin(false)

@@ -8,6 +8,12 @@ describe('matrixErrorTranslator', () => {
     expect(result.recoverable).toBe(false)
   })
 
+  it('translates login M_FORBIDDEN as invalid credentials', () => {
+    const result = translateMatrixError({ errcode: 'M_FORBIDDEN' }, { context: 'login' })
+    expect(result.userMessage).toBe('error.matrix.invalid_credentials')
+    expect(result.recoverable).toBe(false)
+  })
+
   it('translates M_UNKNOWN_TOKEN with relogin action', () => {
     const result = translateMatrixError({ errcode: 'M_UNKNOWN_TOKEN' })
     expect(result.action).toBe('relogin')
