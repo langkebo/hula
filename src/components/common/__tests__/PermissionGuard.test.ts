@@ -17,16 +17,18 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   matrixAccountService: { getCapabilities: vi.fn().mockResolvedValue({}) }
 }))
 
+import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 
 describe('PermissionGuard §16.5.3 (layer 2)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    registerCapabilityStoreResolver(() => useCapabilityStore())
   })
 
   it('renders the default slot when capability is granted', async () => {
     const store = useCapabilityStore()
-    store.setCapabilities({ capabilities: { 'm.voip': true } })
+    store.setCapabilities({ capabilities: { 'm.voice': { enabled: true } } })
 
     const wrapper = mount(PermissionGuard, {
       props: { require: 'voip' },

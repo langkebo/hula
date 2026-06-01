@@ -170,11 +170,11 @@ describe('MatrixWorkerHost', () => {
       type: 'getServerVersions',
       id: sent.id,
       success: true,
-      data: { versions: ['v1.6', 'v1.7'], unstable_features: { 'org.matrix.msc3575': true } }
+      data: { versions: ['v1.6', 'v1.7'], unstable_features: { 'org.matrix.msc3886.sliding_sync': true } }
     })
     await expect(promise).resolves.toEqual({
       versions: ['v1.6', 'v1.7'],
-      unstable_features: { 'org.matrix.msc3575': true }
+      unstable_features: { 'org.matrix.msc3886.sliding_sync': true }
     })
   })
 
@@ -215,7 +215,7 @@ describe('MatrixWorkerHost', () => {
     host.start()
     worker.emit({ type: 'ready', id: 'init', success: true })
 
-    const endpoints = ['/_matrix/client/v3/sync', '/_matrix/client/unstable/org.matrix.msc3575/sync']
+    const endpoints = ['/_matrix/client/v1/sync', '/_matrix/client/unstable/org.matrix.msc3575/sync']
     const promise = host.probeSlidingSyncEndpoints('https://matrix.test', endpoints)
     const sent = worker.postedMessages[0]
     expect(sent.type).toBe('probeSlidingSyncEndpoints')

@@ -1,6 +1,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import { MATRIX_PATHS } from '@/services/matrix/paths'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from './Logger'
 
@@ -96,11 +97,7 @@ export class MatrixDiagnostics {
 
   private async checkSlidingSyncEndpoint(): Promise<DiagnosticResult> {
     const { t } = useI18nGlobal()
-    const endpoints = [
-      '/_matrix/client/v3/sync',
-      '/_matrix/client/unstable/org.matrix.msc3575/sync',
-      '/_matrix/client/unstable/org.matrix.simplified_msc3575/sync'
-    ]
+    const endpoints = [...MATRIX_PATHS.SYNC.SLIDING_SYNC_CANDIDATES]
 
     let results: Array<{ endpoint: string; status: number | 'error'; available: boolean; error?: string }>
 
