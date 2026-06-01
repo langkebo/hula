@@ -215,7 +215,7 @@ class MatrixHttpClient {
     const fullUrl = requestPath.startsWith('http') ? requestPath : `${baseUrl}/${requestPath.replace(/^\//, '')}`
 
     let urlWithParams = fullUrl
-    if (queryParams && method === 'GET') {
+    if (queryParams) {
       const searchParams = new URLSearchParams(queryParams)
       urlWithParams = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}${searchParams.toString()}`
     }
