@@ -11,6 +11,7 @@ const logger = createLogger('AppStateReady')
  */
 let isReady = false
 let pendingPromise: Promise<void> | null = null
+const APP_STATE_READY_TIMEOUT_MS = 10_000
 
 /**
  * 等待一次后端广播的 ready 事件。事件触发后即解除监听，并允许后续调用直接读取缓存结果。
@@ -18,22 +19,40 @@ let pendingPromise: Promise<void> | null = null
 const waitForReadyEvent = () =>
   new Promise<void>((resolve) => {
     let cleanup: (() => void) | null = null
-    listen('app-state-ready', () => {
-      isReady = true
-      resolve()
+    let settled = false
+    const timer = setTimeout(() => {
+      logger.warn(`等待 app-state-ready 超时 (${APP_STATE_READY_TIMEOUT_MS}ms)，继续执行`)
+      finish(false)
+    }, APP_STATE_READY_TIMEOUT_MS)
+
+    function finish(ready: boolean) {
+      if (settled) return
+      settled = true
+      if (ready) {
+        isReady = true
+      }
+      clearTimeout(timer)
       if (cleanup) {
         cleanup()
         cleanup = null
       }
       pendingPromise = null
+      resolve()
+    }
+
+    listen('app-state-ready', () => {
+      finish(true)
     })
       .then((unlisten) => {
+        if (settled) {
+          unlisten()
+          return
+        }
         cleanup = unlisten
       })
       .catch((error) => {
         logger.warn('Failed to register listener:', error)
-        pendingPromise = null
-        resolve()
+        finish(false)
       })
   })
 

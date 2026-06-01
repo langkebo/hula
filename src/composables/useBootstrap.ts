@@ -32,14 +32,21 @@ const useSharedBootstrap = createSharedComposable(() => {
   }
 
   function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T | undefined> {
+    let timer: ReturnType<typeof setTimeout> | null = null
     return Promise.race([
-      promise,
-      new Promise<undefined>((resolve) =>
-        setTimeout(() => {
+      promise.finally(() => {
+        if (timer) {
+          clearTimeout(timer)
+          timer = null
+        }
+      }),
+      new Promise<undefined>((resolve) => {
+        timer = setTimeout(() => {
+          timer = null
           logger.warn(`${label} 超时 (${ms}ms)，跳过`)
           resolve(undefined)
         }, ms)
-      )
+      })
     ])
   }
 
@@ -107,7 +114,7 @@ const useSharedBootstrap = createSharedComposable(() => {
       const wsUrl =
         proxySettings.wsType + '://' + proxySettings.wsIp + ':' + proxySettings.wsPort + proxySettings.wsSuffix
 
-      await updateSettings({ baseUrl, wsUrl })
+      await withTimeout(updateSettings({ baseUrl, wsUrl }), 3_000, '恢复代理设置')
     } catch (err) {
       logger.warn('恢复代理设置失败:', err)
     }
