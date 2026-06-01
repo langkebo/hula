@@ -269,7 +269,7 @@ export function useServerCapability() {
     hasFeature: (feature: string) => tryGetStore()?.hasFeature(feature).value ?? false,
 
     canSetAvatar: computed(() => tryGetStore()?.hasFeature('m.set_avatar_url').value ?? false),
-    hasVoip: computed(() => tryGetStore()?.hasFeature('m.voip').value ?? false),
+    hasVoip: computed(() => service.canUseVoip()),
     hasSpaces: computed(() => tryGetStore()?.hasFeature('m.spaces').value ?? false),
     hasThreads: computed(() => service.canUseThreads()),
 
