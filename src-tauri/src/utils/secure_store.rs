@@ -8,13 +8,13 @@ static SERVICE_NAME: OnceLock<String> = OnceLock::new();
 
 fn get_service_name() -> &'static str {
     SERVICE_NAME.get_or_init(|| {
-        if let Ok(profile_dir) = std::env::var("HULA_PROFILE_DIR") {
-            if !profile_dir.is_empty() {
-                let mut hasher = DefaultHasher::new();
-                profile_dir.hash(&mut hasher);
-                let hash = hasher.finish();
-                return format!("hula-secure-storage-{:08x}", hash);
-            }
+        if let Ok(profile_dir) = std::env::var("HULA_PROFILE_DIR")
+            && !profile_dir.is_empty()
+        {
+            let mut hasher = DefaultHasher::new();
+            profile_dir.hash(&mut hasher);
+            let hash = hasher.finish();
+            return format!("hula-secure-storage-{:08x}", hash);
         }
         "hula-secure-storage".to_string()
     })
@@ -100,9 +100,6 @@ impl SecureStore {
 
     pub fn is_available() -> bool {
         let test_entry = Entry::new(get_service_name(), "__hula_test_availability__");
-        match test_entry {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        test_entry.is_ok()
     }
 }

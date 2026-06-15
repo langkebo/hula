@@ -43,13 +43,17 @@ describe('adminService facade', () => {
       getFederationDestinations: vi.fn().mockResolvedValue([]),
       getFederationDestination: vi.fn().mockResolvedValue(null),
       getRooms: vi.fn().mockResolvedValue({ rooms: [], next_token: undefined }),
+      getRoomsPaginated: vi.fn().mockResolvedValue({ items: [], nextToken: undefined }),
       getRoom: vi.fn().mockResolvedValue(null),
       getRoomMembers: vi.fn().mockResolvedValue([]),
       getRoomState: vi.fn().mockResolvedValue({ state: [] }),
       deleteRoom: vi.fn().mockResolvedValue(undefined),
+      deleteRoomAdmin: vi.fn().mockResolvedValue({ kicked_users: [], failed_to_kick_users: [], local_aliases: [] }),
       blockRoom: vi.fn().mockResolvedValue(undefined),
       shutdownRoom: vi.fn().mockResolvedValue({ kicked_users: [], failed_to_kick_users: [], local_aliases: [] }),
+      joinRoom: vi.fn().mockResolvedValue(undefined),
       forceJoinRoom: vi.fn().mockResolvedValue(undefined),
+      removeRoomMember: vi.fn().mockResolvedValue(undefined),
       forceLeaveRoom: vi.fn().mockResolvedValue(undefined),
       getRetentionPolicy: vi.fn().mockResolvedValue(null),
       getRoomRetentionPolicy: vi.fn().mockResolvedValue(null),
@@ -88,7 +92,9 @@ describe('adminService facade', () => {
       listSpaces: vi.fn().mockResolvedValue({ spaces: [], next_batch: undefined }),
       deleteSpace: vi.fn().mockResolvedValue(undefined),
       getSpace: vi.fn().mockResolvedValue(null),
+      getSpaceUsers: vi.fn().mockResolvedValue({ users: [] }),
       listSpaceUsers: vi.fn().mockResolvedValue({ users: [] }),
+      getSpaceRooms: vi.fn().mockResolvedValue({ rooms: [] }),
       listSpaceRooms: vi.fn().mockResolvedValue({ rooms: [] }),
       getSpaceStats: vi.fn().mockResolvedValue({}),
       listSecurityEvents: vi.fn().mockResolvedValue({ events: [], next_token: undefined }),
@@ -101,18 +107,21 @@ describe('adminService facade', () => {
       getMediaStats: vi.fn().mockResolvedValue({ total: 0 }),
       getRoomMessages: vi.fn().mockResolvedValue({ chunk: [] }),
       getRoomAliases: vi.fn().mockResolvedValue({ aliases: [] }),
-      getRoomVersion: vi.fn().mockResolvedValue(null),
+      getRoomVersion: vi.fn().mockResolvedValue('9'),
       getRoomBlockStatus: vi.fn().mockResolvedValue({ block: false }),
       unblockRoom: vi.fn().mockResolvedValue(undefined),
       makeRoomAdmin: vi.fn().mockResolvedValue(undefined),
       purgeRoom: vi.fn().mockResolvedValue({ success: true }),
+      purgeRoomHistory: vi.fn().mockResolvedValue({ purge_id: 'p1' }),
       purgeHistoryGlobal: vi.fn().mockResolvedValue({ purge_id: '' }),
       listRoomStats: vi.fn().mockResolvedValue({ room_stats: [], next_token: undefined }),
-      getRoomStats: vi.fn().mockResolvedValue(null),
+      getRoomStats: vi.fn().mockResolvedValue({ room_stats: [], next_token: undefined }),
+      getRoomStatsByRoom: vi.fn().mockResolvedValue(null),
       getRoomListings: vi.fn().mockResolvedValue(null),
       setRoomPublicListing: vi.fn().mockResolvedValue(undefined),
       getRoomEventContext: vi.fn().mockResolvedValue(null),
       searchInRoom: vi.fn().mockResolvedValue({ results: [] }),
+      searchRoomEvents: vi.fn().mockResolvedValue({ results: [] }),
       searchRooms: vi.fn().mockResolvedValue({ rooms: [] }),
       getRoomForwardExtremities: vi.fn().mockResolvedValue({ results: [] }),
       deleteRoomV2: vi.fn().mockResolvedValue({
@@ -128,12 +137,16 @@ describe('adminService facade', () => {
       listUserStats: vi.fn().mockResolvedValue({ user_stats: [], next_token: undefined }),
       batchCreateUsers: vi.fn().mockResolvedValue({ results: [] }),
       batchDeactivateUsers: vi.fn().mockResolvedValue({ results: [] }),
-      evictUser: vi.fn().mockResolvedValue({}),
+      evictUser: vi.fn().mockResolvedValue(undefined),
       loginAsUser: vi.fn().mockResolvedValue({ access_token: '', device_id: '' }),
+      logoutUser: vi.fn().mockResolvedValue(undefined),
       logoutUserDevices: vi.fn().mockResolvedValue({}),
+      getUserSession: vi.fn().mockResolvedValue({ sessions: [] }),
       getUserSessions: vi.fn().mockResolvedValue({ sessions: [] }),
+      invalidateUserSession: vi.fn().mockResolvedValue(undefined),
       invalidateUserSessions: vi.fn().mockResolvedValue({}),
       getAccountDetails: vi.fn().mockResolvedValue(null),
+      updateAccountDetails: vi.fn().mockResolvedValue(undefined),
       updateAccount: vi.fn().mockResolvedValue({}),
       isAdmin: vi.fn().mockResolvedValue(false),
       listLoginFailures: vi.fn().mockResolvedValue({ failures: [], next_token: undefined }),
@@ -145,8 +158,8 @@ describe('adminService facade', () => {
       updateFeatureFlag: vi.fn().mockResolvedValue({}),
       deleteFeatureFlag: vi.fn().mockResolvedValue(undefined),
       listBackups: vi.fn().mockResolvedValue({ backups: [] }),
-      registerNonce: vi.fn().mockResolvedValue(''),
-      adminRegister: vi.fn().mockResolvedValue({}),
+      getRegisterNonce: vi.fn().mockResolvedValue({ nonce: 'abc123' }),
+      registerAdmin: vi.fn().mockResolvedValue({ access_token: 'tok2', user_id: '@new:server', device_id: 'dev2' }),
       getServerStats: vi.fn().mockResolvedValue({}),
       getServerStatus: vi.fn().mockResolvedValue(null),
       getServerHealth: vi.fn().mockResolvedValue(null),
@@ -448,7 +461,8 @@ describe('adminService facade', () => {
 
     it('should batch create users via SDK', async () => {
       mockAdminManager.batchCreateUsers.mockResolvedValue({
-        results: [{ user_id: '@u1:server', success: true }]
+        created: ['@u1:server'],
+        errors: []
       })
       const result = await adminService.batchCreateUsers([{ username: 'u1', password: 'pass' }])
       expect(result).toHaveLength(1)
@@ -458,11 +472,12 @@ describe('adminService facade', () => {
 
     it('should batch deactivate users via SDK', async () => {
       mockAdminManager.batchDeactivateUsers.mockResolvedValue({
-        results: [{ user_id: '@u1:server', success: true }]
+        deactivated: ['@u1:server'],
+        errors: []
       })
       const result = await adminService.batchDeactivateUsers(['@u1:server'])
       expect(result).toHaveLength(1)
-      expect(mockAdminManager.batchDeactivateUsers).toHaveBeenCalledWith(['@u1:server'], false)
+      expect(mockAdminManager.batchDeactivateUsers).toHaveBeenCalledWith({ user_ids: ['@u1:server'], erase: false })
     })
 
     it('should evict user via SDK', async () => {
@@ -479,7 +494,7 @@ describe('adminService facade', () => {
 
     it('should logout all user devices via SDK', async () => {
       await expect(adminService.logoutUserAll('@user:server')).resolves.toBeUndefined()
-      expect(mockAdminManager.logoutUserDevices).toHaveBeenCalledWith('@user:server')
+      expect(mockAdminManager.logoutUser).toHaveBeenCalledWith('@user:server')
     })
 
     it('should get user sessions via SDK', async () => {
@@ -555,7 +570,7 @@ describe('adminService facade', () => {
       mockAdminManager.getRoomVersion.mockResolvedValue({ room_version: '10' })
       const result = await adminService.getRoomVersion('!room:server')
       expect(result).toBe('10')
-      expect(mockAdminManager.getRoomVersion).toHaveBeenCalledWith('!room:server', false)
+      expect(mockAdminManager.getRoomVersion).toHaveBeenCalledWith('!room:server')
     })
 
     it('should get room block status via SDK', async () => {
@@ -571,18 +586,18 @@ describe('adminService facade', () => {
 
     it('should make room admin via SDK', async () => {
       await adminService.makeRoomAdmin('!room:server', '@user:server')
-      expect(mockAdminManager.makeRoomAdmin).toHaveBeenCalledWith('!room:server', '@user:server')
+      expect(mockAdminManager.makeRoomAdmin).toHaveBeenCalledWith('!room:server', { user_id: '@user:server' })
     })
 
     it('should purge history via SDK with field mapping', async () => {
-      mockAdminManager.purgeHistoryGlobal.mockResolvedValue({ purge_id: 'pid123' })
+      mockAdminManager.purgeRoomHistory.mockResolvedValue({ purge_id: 'pid123' })
       const result = await adminService.purgeHistory('!room:server', {
         purgeUpToTs: 123456,
         purgeUpToEventId: '$e1',
         deleteLocalEvents: true
       })
       expect(result.purgeId).toBe('pid123')
-      expect(mockAdminManager.purgeHistoryGlobal).toHaveBeenCalledWith('!room:server', {
+      expect(mockAdminManager.purgeRoomHistory).toHaveBeenCalledWith('!room:server', {
         purge_up_to_event_id: '$e1',
         purge_up_to_ts: 123456,
         delete_local_events: true
@@ -591,42 +606,39 @@ describe('adminService facade', () => {
 
     it('should purge room via SDK', async () => {
       await expect(adminService.purgeRoom('!room:server')).resolves.toBeUndefined()
-      expect(mockAdminManager.purgeRoom).toHaveBeenCalledWith('!room:server')
+      expect(mockAdminManager.purgeRoom).toHaveBeenCalledWith({ room_id: '!room:server' })
     })
 
     it('should get room stats via SDK list', async () => {
-      mockAdminManager.listRoomStats.mockResolvedValue({
-        room_stats: [{ joined_members: 5 }],
-        next_token: 'n'
-      })
+      mockAdminManager.getRoomStats.mockResolvedValue([{ joined_members: 5 }])
       const result = await adminService.getRoomStats(50, 'f')
       expect(result.stats).toHaveLength(1)
-      expect(result.nextToken).toBe('n')
-      expect(mockAdminManager.listRoomStats).toHaveBeenCalledWith({ limit: 50, from: 'f' })
+      expect(result.nextToken).toBeUndefined()
+      expect(mockAdminManager.getRoomStats).toHaveBeenCalledWith('f', 50)
     })
 
     it('should search in room via SDK', async () => {
-      mockAdminManager.searchInRoom.mockResolvedValue({ results: [{ event_id: '$e1' }] })
+      mockAdminManager.searchRoomEvents.mockResolvedValue({ results: [{ event_id: '$e1' }] })
       const result = await adminService.searchInRoom('!room:server', 'test')
       expect(result.results).toHaveLength(1)
-      expect(mockAdminManager.searchInRoom).toHaveBeenCalledWith('!room:server', 'test', 50)
+      expect(mockAdminManager.searchRoomEvents).toHaveBeenCalledWith('!room:server', { search_term: 'test', limit: 50 })
     })
 
     it('should search rooms globally via SDK', async () => {
-      mockAdminManager.searchRooms.mockResolvedValue({ rooms: [{ room_id: '!r1:server' }] })
+      mockAdminManager.searchRooms.mockResolvedValue({ results: [{ room_id: '!r1:server' }] })
       const result = await adminService.searchRooms('test')
       expect(result.rooms).toHaveLength(1)
-      expect(mockAdminManager.searchRooms).toHaveBeenCalledWith('test', 50)
+      expect(mockAdminManager.searchRooms).toHaveBeenCalledWith({ search_term: 'test' })
     })
 
     it('should get room forward extremities via SDK (object form tolerant)', async () => {
-      mockAdminManager.getRoomForwardExtremities.mockResolvedValue({ results: [{ event_id: '$e1' }] })
+      mockAdminManager.getRoomForwardExtremities.mockResolvedValue([{ event_id: '$e1' }])
       const result = await adminService.getRoomForwardExtremities('!room:server')
       expect(result).toHaveLength(1)
     })
 
     it('should delete room v2 via SDK with field mapping', async () => {
-      mockAdminManager.deleteRoomV2.mockResolvedValue({
+      mockAdminManager.deleteRoomAdmin.mockResolvedValue({
         kicked_users: ['@u1:server'],
         failed_to_kick_users: [],
         local_aliases: ['#room:server'],
@@ -639,10 +651,13 @@ describe('adminService facade', () => {
       })
       expect(result.kickedUsers).toHaveLength(1)
       expect(result.newRoomId).toBe('!new:server')
-      expect(mockAdminManager.deleteRoomV2).toHaveBeenCalledWith('!room:server', {
+      expect(mockAdminManager.deleteRoomAdmin).toHaveBeenCalledWith('!room:server', {
         purge: true,
+        force_purge: undefined,
         new_room_user_id: '@new:server',
-        room_name: 'n'
+        room_name: 'n',
+        message: undefined,
+        block: undefined
       })
     })
   })
@@ -652,21 +667,21 @@ describe('adminService facade', () => {
       mockAdminManager.getSpace.mockResolvedValue({ room_id: '!space:server', name: 'Test' })
       const result = await adminService.getSpaceDetails('!space:server')
       expect(result?.room_id).toBe('!space:server')
-      expect(mockAdminManager.getSpace).toHaveBeenCalledWith('!space:server', false)
+      expect(mockAdminManager.getSpace).toHaveBeenCalledWith('!space:server')
     })
 
     it('should get space users via SDK', async () => {
-      mockAdminManager.listSpaceUsers.mockResolvedValue({ users: [{ user_id: '@u1:server' }] })
+      mockAdminManager.getSpaceUsers.mockResolvedValue({ users: [{ user_id: '@u1:server' }] })
       const result = await adminService.getSpaceUsers('!space:server')
       expect(result).toHaveLength(1)
-      expect(mockAdminManager.listSpaceUsers).toHaveBeenCalledWith('!space:server')
+      expect(mockAdminManager.getSpaceUsers).toHaveBeenCalledWith('!space:server')
     })
 
     it('should get space rooms via SDK', async () => {
-      mockAdminManager.listSpaceRooms.mockResolvedValue({ rooms: [{ room_id: '!r1:server' }] })
+      mockAdminManager.getSpaceRooms.mockResolvedValue({ rooms: [{ room_id: '!r1:server' }] })
       const result = await adminService.getSpaceRooms('!space:server')
       expect(result).toHaveLength(1)
-      expect(mockAdminManager.listSpaceRooms).toHaveBeenCalledWith('!space:server')
+      expect(mockAdminManager.getSpaceRooms).toHaveBeenCalledWith('!space:server')
     })
 
     it('should get space stats via SDK', async () => {
@@ -729,20 +744,20 @@ describe('adminService facade', () => {
 
   describe('Admin Registration', () => {
     it('should get registration nonce via SDK', async () => {
-      mockAdminManager.registerNonce.mockResolvedValue('abc123')
+      mockAdminManager.getRegisterNonce.mockResolvedValue({ nonce: 'abc123' })
       const result = await adminService.getRegistrationNonce()
       expect(result).toBe('abc123')
     })
 
     it('should admin register user via SDK', async () => {
-      mockAdminManager.adminRegister.mockResolvedValue({
+      mockAdminManager.registerAdmin.mockResolvedValue({
         access_token: 'at',
         user_id: '@new:server',
         device_id: 'dev'
       })
       const result = await adminService.adminRegister('new', 'pass', 'nonce')
       expect(result?.userId).toBe('@new:server')
-      expect(mockAdminManager.adminRegister).toHaveBeenCalledWith({
+      expect(mockAdminManager.registerAdmin).toHaveBeenCalledWith({
         username: 'new',
         password: 'pass',
         nonce: 'nonce',
@@ -874,7 +889,7 @@ describe('adminService facade', () => {
     it('should list audit log via SDK', async () => {
       mockAdminManager.listAuditEvents.mockResolvedValue({
         events: [{ event_id: '$e1' }],
-        next_batch: 'tok2'
+        next_token: 'tok2'
       })
       const result = await adminService.getAuditLog(25, '1700000000', '@u:server', 'login')
       expect(result.logs).toHaveLength(1)

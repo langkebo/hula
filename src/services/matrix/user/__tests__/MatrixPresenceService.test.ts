@@ -1,13 +1,17 @@
 import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
 import { matrixPresenceService } from '../MatrixPresenceService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
+const { mockServiceInstance } = vi.hoisted(() => ({
+  mockServiceInstance: {
     getClient: vi.fn(),
     waitForClientReady: vi.fn()
   }
+}))
+
+vi.mock('../../MatrixClientService', () => ({
+  default: mockServiceInstance,
+  matrixClientService: mockServiceInstance
 }))
 
 describe('MatrixPresenceService', () => {
@@ -42,10 +46,10 @@ describe('MatrixPresenceService', () => {
       off: vi.fn()
     }
 
-    vi.mocked(matrixClientService.getClient).mockReset()
-    vi.mocked(matrixClientService.waitForClientReady).mockReset()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
-    vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue(mockClient as MatrixClient)
+    vi.mocked(mockServiceInstance.getClient).mockReset()
+    vi.mocked(mockServiceInstance.waitForClientReady).mockReset()
+    vi.mocked(mockServiceInstance.getClient).mockReturnValue(mockClient as MatrixClient)
+    vi.mocked(mockServiceInstance.waitForClientReady).mockResolvedValue(mockClient as MatrixClient)
   })
 
   describe('setPresence', () => {
@@ -72,8 +76,8 @@ describe('MatrixPresenceService', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
-      vi.mocked(matrixClientService.waitForClientReady).mockRejectedValue(
+      vi.mocked(mockServiceInstance.getClient).mockReturnValue(null)
+      vi.mocked(mockServiceInstance.waitForClientReady).mockRejectedValue(
         new Error('Matrix client initialization timeout')
       )
 
@@ -208,8 +212,8 @@ describe('MatrixPresenceService', () => {
         off: vi.fn()
       } as MatrixClient
 
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
-      vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue(readyClient)
+      vi.mocked(mockServiceInstance.getClient).mockReturnValue(null)
+      vi.mocked(mockServiceInstance.waitForClientReady).mockResolvedValue(readyClient)
 
       matrixPresenceService.onPresenceChange(vi.fn())
       await Promise.resolve()

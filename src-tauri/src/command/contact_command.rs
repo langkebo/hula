@@ -20,15 +20,14 @@ pub async fn list_contacts_command(
 
         let local_data = list_contact(&*state.db_conn.read().await, &login_uid).await;
 
-        if let Ok(local_contacts) = &local_data {
-            if !local_contacts.is_empty() {
+        if let Ok(local_contacts) = &local_data
+            && !local_contacts.is_empty() {
                 info!(
                     "Returning {} contacts from local SQLite",
                     local_contacts.len()
                 );
                 return Ok(local_contacts.clone());
             }
-        }
 
         info!("No local contacts found, returning empty list. Frontend SDK should handle network sync.");
         Ok(Vec::new())

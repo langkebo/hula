@@ -282,20 +282,30 @@ class Logger {
 
     const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false })
     const style = CONSOLE_STYLES[level] || ''
-    const prefix = `%c[${timestamp}] [${level.toUpperCase()}] [${this.context}]`
+    const prefix = `[${timestamp}] [${level.toUpperCase()}] [${this.context}]`
 
-    const _consoleArgs: unknown[] = [prefix, style, message, ...args]
+    const consoleArgs: unknown[] = [`%c${prefix}`, style, message, ...args]
 
     switch (level) {
       case 'trace':
+        // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+        console.trace(...consoleArgs)
         break
       case 'debug':
+        // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+        console.debug(...consoleArgs)
         break
       case 'info':
+        // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+        console.info(...consoleArgs)
         break
       case 'warn':
+        // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+        console.warn(...consoleArgs)
         break
       case 'error':
+        // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+        console.error(...consoleArgs)
         break
     }
   }
@@ -373,6 +383,8 @@ class Logger {
       const key = `__time_${this.context}_${label}`
       ;(console as unknown as Record<string, unknown>)[key] = performance.now()
       if (Logger.logToConsole) {
+        // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+        console.debug(`[${this.context}] ⏱ ${label} — start`)
       }
     }
   }
@@ -381,9 +393,12 @@ class Logger {
     if (this.shouldLog('debug')) {
       const key = `__time_${this.context}_${label}`
       const start = (console as unknown as Record<string, unknown>)[key] as number | undefined
-      if (start !== undefined && Logger.logToConsole) {
-        const _elapsed = (performance.now() - start).toFixed(1)
-
+      if (start !== undefined) {
+        const elapsed = (performance.now() - start).toFixed(1)
+        if (Logger.logToConsole) {
+          // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+          console.debug(`[${this.context}] ⏱ ${label} — ${elapsed}ms`)
+        }
         delete (console as unknown as Record<string, unknown>)[key]
       }
     }
@@ -391,18 +406,26 @@ class Logger {
 
   group(_label: string): void {
     if (Logger.logToConsole && this.shouldLog('debug')) {
+      // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+      console.group(_label)
     }
   }
 
   groupEnd(): void {
     if (Logger.logToConsole) {
+      // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+      console.groupEnd()
     }
   }
 
   table(_data: unknown, columns?: string[]): void {
     if (Logger.logToConsole && this.shouldLog('debug')) {
       if (columns) {
+        // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+        console.table(_data, columns)
       } else {
+        // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
+        console.table(_data)
       }
     }
   }

@@ -3,11 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixRoomSummaryService, type RoomSummary } from '../MatrixRoomSummaryService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
+vi.mock('../../MatrixClientService', () => {
+  const mockService = {
     getClient: vi.fn()
   }
-}))
+  return {
+    default: mockService,
+    matrixClientService: mockService
+  }
+})
 
 vi.mock('../MatrixRoomStoreAdapter', () => {
   type SlidingSyncCounts = {

@@ -24,7 +24,12 @@ const { MatrixRoomTagsService } = await import('../TagsService')
 
 function makeClient(
   userId: string | null,
-  httpImpl: (method: string, url: string, qp?: unknown, body?: unknown) => unknown
+  httpImpl: (method: string, url: string, qp?: unknown, body?: unknown) => unknown,
+  tagOverrides?: {
+    getRoomTags?: (roomId: string) => Promise<{ tags?: Record<string, { order?: number }> }>
+    setRoomTag?: (roomId: string, tag: string, content?: Record<string, unknown>) => Promise<void>
+    deleteRoomTag?: (roomId: string, tag: string) => Promise<void>
+  }
 ): MatrixClient {
   return {
     getUserId: () => userId,
@@ -32,7 +37,10 @@ function makeClient(
       authedRequest: vi.fn((method: string, url: string, qp?: unknown, body?: unknown) =>
         httpImpl(method, url, qp, body)
       )
-    }
+    },
+    getRoomTags: tagOverrides?.getRoomTags ?? vi.fn().mockResolvedValue({}),
+    setRoomTag: tagOverrides?.setRoomTag ?? vi.fn().mockResolvedValue(undefined),
+    deleteRoomTag: tagOverrides?.deleteRoomTag ?? vi.fn().mockResolvedValue(undefined)
   } as unknown as MatrixClient
 }
 
@@ -56,14 +64,13 @@ describe('MatrixRoomTagsService', () => {
   })
 
   it('getTags hits the expected endpoint and unwraps tags', async () => {
-    const client = makeClient('@me:e', () => ({ tags: { 'm.favourite': { order: 0.5 } } }))
+    const client = makeClient('@me:e', () => ({}), {
+      getRoomTags: vi.fn().mockResolvedValue({ tags: { 'm.favourite': { order: 0.5 } } })
+    })
     getClientMock.mockReturnValueOnce(client)
     const result = await service.getTags('!r:e')
     expect(result).toEqual({ 'm.favourite': { order: 0.5 } })
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      `/_matrix/client/v3/user/${encodeURIComponent('@me:e')}/rooms/${encodeURIComponent('!r:e')}/tags`
-    )
+    expect(client.getRoomTags).toHaveBeenCalledWith('!r:e')
   })
 
   it('getTags returns {} when backend payload omits tags field', async () => {
@@ -73,30 +80,29 @@ describe('MatrixRoomTagsService', () => {
 
   it('getTags swallows backend errors and returns {}', async () => {
     getClientMock.mockReturnValueOnce(
-      makeClient('@me:e', () => {
-        throw new Error('500')
+      makeClient('@me:e', () => ({}), {
+        getRoomTags: vi.fn().mockRejectedValue(new Error('500'))
       })
     )
     expect(await service.getTags('!r')).toEqual({})
   })
 
   it('setTag posts order when provided', async () => {
-    const client = makeClient('@me:e', () => undefined)
+    const client = makeClient('@me:e', () => undefined, {
+      setRoomTag: vi.fn().mockResolvedValue(undefined)
+    })
     getClientMock.mockReturnValueOnce(client)
     await service.setTag('!r', 'm.favourite', 0.5)
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'PUT',
-      `/_matrix/client/v3/user/${encodeURIComponent('@me:e')}/rooms/${encodeURIComponent('!r')}/tags/${encodeURIComponent('m.favourite')}`,
-      undefined,
-      { order: 0.5 }
-    )
+    expect(client.setRoomTag).toHaveBeenCalledWith('!r', 'm.favourite', { order: 0.5 })
   })
 
   it('setTag posts empty body when order is undefined', async () => {
-    const client = makeClient('@me:e', () => undefined)
+    const client = makeClient('@me:e', () => undefined, {
+      setRoomTag: vi.fn().mockResolvedValue(undefined)
+    })
     getClientMock.mockReturnValueOnce(client)
     await service.setTag('!r', 'm.favourite')
-    expect(client.http.authedRequest).toHaveBeenCalledWith('PUT', expect.any(String), undefined, {})
+    expect(client.setRoomTag).toHaveBeenCalledWith('!r', 'm.favourite', {})
   })
 
   it('setTag throws when user is not logged in', async () => {
@@ -106,8 +112,8 @@ describe('MatrixRoomTagsService', () => {
 
   it('setTag re-throws backend errors', async () => {
     getClientMock.mockReturnValueOnce(
-      makeClient('@me:e', () => {
-        throw new Error('403')
+      makeClient('@me:e', () => undefined, {
+        setRoomTag: vi.fn().mockRejectedValue(new Error('403'))
       })
     )
     await expect(service.setTag('!r', 'x')).rejects.toThrow('403')
@@ -126,19 +132,18 @@ describe('MatrixRoomTagsService', () => {
   })
 
   it('removeTag issues DELETE to the tag url', async () => {
-    const client = makeClient('@me:e', () => undefined)
+    const client = makeClient('@me:e', () => undefined, {
+      deleteRoomTag: vi.fn().mockResolvedValue(undefined)
+    })
     getClientMock.mockReturnValueOnce(client)
     await service.removeTag('!r', 'm.favourite')
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'DELETE',
-      `/_matrix/client/v3/user/${encodeURIComponent('@me:e')}/rooms/${encodeURIComponent('!r')}/tags/${encodeURIComponent('m.favourite')}`
-    )
+    expect(client.deleteRoomTag).toHaveBeenCalledWith('!r', 'm.favourite')
   })
 
   it('removeTag re-throws backend errors', async () => {
     getClientMock.mockReturnValueOnce(
-      makeClient('@me:e', () => {
-        throw new Error('404')
+      makeClient('@me:e', () => undefined, {
+        deleteRoomTag: vi.fn().mockRejectedValue(new Error('404'))
       })
     )
     await expect(service.removeTag('!r', 'x')).rejects.toThrow('404')

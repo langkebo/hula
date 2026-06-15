@@ -16,11 +16,7 @@ fn process_image_url(url: &str, base_dir: &Path) -> String {
     }
 
     // 处理相对路径
-    let img_path = if url.starts_with("./") || url.starts_with("../") {
-        base_dir.join(url)
-    } else {
-        base_dir.join(url)
-    };
+    let img_path = base_dir.join(url);
 
     // 尝试读取图片文件并转换为 base64
     if let Ok(img_data) = fs::read(&img_path) {

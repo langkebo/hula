@@ -106,15 +106,15 @@ pub struct AppData {
 pub(crate) static APP_STATE_READY: AtomicBool = AtomicBool::new(false);
 
 pub fn get_secure_storage_service_name() -> String {
-    if let Ok(profile_dir) = std::env::var("HULA_PROFILE_DIR") {
-        if !profile_dir.is_empty() {
-            use std::collections::hash_map::DefaultHasher;
-            use std::hash::{Hash, Hasher};
-            let mut hasher = DefaultHasher::new();
-            profile_dir.hash(&mut hasher);
-            let hash = hasher.finish();
-            return format!("hula-secure-storage-{:08x}", hash);
-        }
+    if let Ok(profile_dir) = std::env::var("HULA_PROFILE_DIR")
+        && !profile_dir.is_empty()
+    {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut hasher = DefaultHasher::new();
+        profile_dir.hash(&mut hasher);
+        let hash = hasher.finish();
+        return format!("hula-secure-storage-{:08x}", hash);
     }
     "hula-secure-storage".to_string()
 }
@@ -204,7 +204,7 @@ fn setup_desktop() -> Result<(), CommonError> {
             }
 
             #[cfg(target_os = "macos")]
-            app_event::handle_app_event(&app_handle, event);
+            app_event::handle_app_event(app_handle, event);
         });
     Ok(())
 }
@@ -301,7 +301,6 @@ pub async fn build_request_client() -> Result<reqwest::Client, CommonError> {
 }
 
 #[allow(dead_code)]
-
 /// 处理退出登录时的窗口管理逻辑
 ///
 /// 该函数会：

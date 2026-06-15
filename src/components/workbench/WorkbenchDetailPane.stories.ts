@@ -85,7 +85,7 @@ export const Default: Story = {
   },
   render,
   decorators: [
-    (story) => {
+    (story: any) => {
       resetGroupStoreMock()
       resetAnnouncementStoreMock()
       resetSpaceRoomsMock()
@@ -151,7 +151,7 @@ export const MembersMode: Story = {
   args: {
     ...Default.args
   },
-  render: (args) => renderWithTab(args, 'members'),
+  render: (args: any) => renderWithTab(args, 'members'),
   decorators: Default.decorators
 }
 
@@ -159,7 +159,7 @@ export const ActivityMode: Story = {
   args: {
     ...Default.args
   },
-  render: (args) => renderWithTab(args, 'activity'),
+  render: (args: any) => renderWithTab(args, 'activity'),
   decorators: Default.decorators
 }
 

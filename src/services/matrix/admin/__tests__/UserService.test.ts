@@ -66,7 +66,7 @@ describe('AdminUserService', () => {
           admin: true,
           deactivated: false,
           is_guest: true,
-          creation_ts: 456,
+          created_ts: 456,
           displayname: 'User',
           last_seen_ts: 123
         }
@@ -148,7 +148,7 @@ describe('AdminUserService', () => {
   it('batchCreateUsers falls back to created and failed arrays', async () => {
     ;(admin as any).batchCreateUsers.mockResolvedValueOnce({
       created: ['@ok:server.com'],
-      failed: ['@bad:server.com']
+      errors: [{ user_id: '@bad:server.com' }]
     })
 
     const result = await service.batchCreateUsers([{ username: 'ok', password: 'pass' }])

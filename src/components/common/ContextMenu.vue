@@ -13,7 +13,14 @@
             <div v-for="(item, index) in displayedEmojis" :key="index" class="p-4px">
               <n-popover :delay="500" :duration="0" trigger="hover" :show-arrow="false" placement="top">
                 <template #trigger>
-                  <div class="emoji-item" @click="handleReplyEmoji(item)">
+                  <div
+                    class="emoji-item"
+                    role="button"
+                    tabindex="0"
+                    :aria-label="item.title"
+                    @click="handleReplyEmoji(item)"
+                    @keydown.enter.prevent="handleReplyEmoji(item)"
+                    @keydown.space.prevent="handleReplyEmoji(item)">
                     <img :title="item.title" class="size-18px" :src="item.url" :alt="item.title" />
                   </div>
                 </template>
@@ -21,7 +28,16 @@
               </n-popover>
             </div>
             <div v-if="!showAllEmojis && emoji.length > 4" class="py-4px">
-              <div class="emoji-more-btn" @click="showAllEmojis = true">{{ t('menu.ctx_menu_more') }}</div>
+              <div
+                class="emoji-more-btn"
+                role="button"
+                tabindex="0"
+                :aria-label="t('menu.ctx_menu_more')"
+                @click="showAllEmojis = true"
+                @keydown.enter.prevent="showAllEmojis = true"
+                @keydown.space.prevent="showAllEmojis = true">
+                {{ t('menu.ctx_menu_more') }}
+              </div>
             </div>
           </div>
         </div>
@@ -113,7 +129,12 @@
             v-if="(visibleMenu && visibleMenu.length > 0) || (visibleSpecialMenu && visibleSpecialMenu.length > 0)"
             class="max-w-70vw grid grid-cols-5 gap-5px h-auto!">
             <div
+              role="button"
+              tabindex="0"
+              :aria-label="getMenuItemProp(item, 'label')"
               @click="handleClick(item)"
+              @keydown.enter.prevent="handleClick(item)"
+              @keydown.space.prevent="handleClick(item)"
               v-for="(item, index) in visibleMenu"
               :key="index"
               class="w-45px h-45px flex justify-center items-center">
@@ -135,8 +156,14 @@
               v-for="(subItem, subIndex) in activeSubmenu"
               :key="subIndex"
               class="menu-item"
+              role="menuitem"
+              tabindex="-1"
               :class="{ 'menu-item-danger': isDangerousItem(subItem) }">
-              <div class="menu-item-content" @click="handleSubItemClick(subItem)">
+              <div
+                class="menu-item-content"
+                @click="handleSubItemClick(subItem)"
+                @keydown.enter.prevent="handleSubItemClick(subItem)"
+                @keydown.space.prevent="handleSubItemClick(subItem)">
                 <svg class="check-icon">
                   <use :href="`#${getMenuItemProp(subItem, 'icon')}`"></use>
                 </svg>

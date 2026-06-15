@@ -140,21 +140,19 @@ async fn should_skip_message_insert<C: ConnectionTrait>(
 
     if let Some(row) = conn.query_one(clear_stmt).await? {
         let cleared_at: i64 = row.try_get("", "cleared_at")?;
-        if let Some(send_time) = send_time {
-            if send_time <= cleared_at {
-                return Ok(true);
-            }
+        if let Some(send_time) = send_time
+            && send_time <= cleared_at
+        {
+            return Ok(true);
         }
 
         let last_id: Option<String> = row.try_get("", "last_cleared_msg_id")?;
-        if let Some(last_id) = last_id {
-            if let (Some(current), Ok(threshold)) =
+        if let Some(last_id) = last_id
+            && let (Some(current), Ok(threshold)) =
                 (parse_message_id(message_id), last_id.parse::<i64>())
-            {
-                if current <= threshold {
-                    return Ok(true);
-                }
-            }
+            && current <= threshold
+        {
+            return Ok(true);
         }
     }
 
@@ -380,10 +378,10 @@ where
     let existing_thumbnail_map = fetch_thumbnail_map(db, &message_keys).await?;
 
     for message in &mut messages {
-        if message.thumbnail_path.is_none() {
-            if let Some(path) = existing_thumbnail_map.get(&message.key()) {
-                message.thumbnail_path = Some(path.clone());
-            }
+        if message.thumbnail_path.is_none()
+            && let Some(path) = existing_thumbnail_map.get(&message.key())
+        {
+            message.thumbnail_path = Some(path.clone());
         }
     }
 
@@ -549,18 +547,18 @@ pub async fn save_message(
     }
 
     // 如果缺少，就填充time_block，使用统一的计算函数
-    if record.message.time_block.is_none() {
-        if let Some(current_send_time) = record.message.send_time {
-            // 使用统一的 time_block 计算函数
-            record.message.time_block = calculate_time_block(
-                db,
-                &record.message.room_id,
-                &record.message.id,
-                current_send_time,
-                &record.message.login_uid,
-            )
-            .await?;
-        }
+    if record.message.time_block.is_none()
+        && let Some(current_send_time) = record.message.send_time
+    {
+        // 使用统一的 time_block 计算函数
+        record.message.time_block = calculate_time_block(
+            db,
+            &record.message.room_id,
+            &record.message.id,
+            current_send_time,
+            &record.message.login_uid,
+        )
+        .await?;
     }
 
     let active_model = record.message.clone().into_active_model();
@@ -863,7 +861,7 @@ pub async fn query_chat_history(
             let mut keyword_condition = Condition::any();
             for json_path in ["$.content", "$.fileName", "$.url"] {
                 keyword_condition = keyword_condition.add(Expr::cust_with_values(
-                    &format!("JSON_EXTRACT(body, '{}') LIKE ?", json_path),
+                    format!("JSON_EXTRACT(body, '{}') LIKE ?", json_path),
                     [Value::from(keyword_pattern.clone())],
                 ));
             }

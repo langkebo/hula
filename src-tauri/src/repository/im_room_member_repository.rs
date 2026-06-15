@@ -39,11 +39,11 @@ pub async fn cursor_page_room_members(
     if !cursor_page_param.cursor.is_empty() {
         // 从 cursor 中根据'_'分割最后一个字符串转为 i64
         let cursor_parts: Vec<&str> = cursor_page_param.cursor.split('_').collect();
-        if let Some(last_part) = cursor_parts.last() {
-            if let Ok(cursor_value) = last_part.parse::<i64>() {
-                // 使用游标值过滤，获取小于该值的记录（因为是降序排列）
-                query = query.filter(im_room_member::Column::LastOptTime.lt(cursor_value));
-            }
+        if let Some(last_part) = cursor_parts.last()
+            && let Ok(cursor_value) = last_part.parse::<i64>()
+        {
+            // 使用游标值过滤，获取小于该值的记录（因为是降序排列）
+            query = query.filter(im_room_member::Column::LastOptTime.lt(cursor_value));
         }
     }
 

@@ -82,17 +82,5 @@ export type {
 export { RoomEvent } from 'matrix-js-sdk/models/room'
 export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'
 export type { PushManager } from 'matrix-js-sdk/push'
-export type {
-  CreateSessionResponse,
-  GetMessagesResponse,
-  RendezvousMessage,
-  RendezvousSession,
-  RendezvousSessionIntent,
-  RendezvousSessionStatus,
-  RendezvousSessionTransport,
-  SendMessageResponse,
-  UpdateSessionResponse
-} from 'matrix-js-sdk/rendezvous'
-export { RendezvousManager } from 'matrix-js-sdk/rendezvous'
 export type { ISyncStateData } from 'matrix-js-sdk/sync'
 export { SyncState } from 'matrix-js-sdk/sync'

@@ -1,7 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fingerprint, isAuthError, isRetryable, toAppError } from '../errors'
-import { AppException, ErrorType } from '../exception'
 
+// Mock matrixErrorTranslator before importing errors.ts
+vi.mock('@/common/matrixErrorTranslator', () => ({
+  translateMatrixError: vi.fn().mockReturnValue({ recoverable: false, userMessage: 'translated error' })
+}))
+
+// Mock useActionFeedback (used by AppException)
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: vi.fn()
+  })
+}))
+
+// Mock tauri plugin-log
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -10,188 +21,321 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   trace: vi.fn()
 }))
 
-describe('§18.8.2 — toAppError discriminated union', () => {
-  it('passes through an existing AppError unchanged (idempotent)', () => {
-    const already = { kind: 'retryable' as const, code: 'X', message: 'x' }
-    expect(toAppError(already)).toBe(already)
-  })
+import {
+  type AppError,
+  type AppErrorAuth,
+  type AppErrorFatal,
+  type AppErrorNotFound,
+  type AppErrorRetryable,
+  type AppErrorValidation,
+  fingerprint,
+  isAuthError,
+  isRetryable,
+  toAppError
+} from '@/common/errors'
+import { AppException, ErrorType } from '@/common/exception'
+import { translateMatrixError } from '@/common/matrixErrorTranslator'
 
-  it('null / undefined → fatal with correlation id', () => {
-    const err = toAppError(null)
-    expect(err.kind).toBe('fatal')
-    if (err.kind === 'fatal') {
-      expect(err.code).toBe('UNKNOWN')
-      expect(err.correlationId).toBeTruthy()
-    }
-  })
-
-  describe('Matrix errcode mapping', () => {
-    it('M_LIMIT_EXCEEDED → retryable with retry_after_ms', () => {
-      const err = toAppError({
-        name: 'MatrixError',
-        message: 'slow down',
-        errcode: 'M_LIMIT_EXCEEDED',
-        retry_after_ms: 1500
-      })
-      expect(err.kind).toBe('retryable')
-      if (err.kind === 'retryable') {
-        expect(err.code).toBe('M_LIMIT_EXCEEDED')
-        expect(err.retryAfterMs).toBe(1500)
-      }
-    })
-
-    it('M_UNKNOWN_TOKEN → auth, recoverable', () => {
-      const err = toAppError({ name: 'MatrixError', message: 'relogin', errcode: 'M_UNKNOWN_TOKEN' })
-      expect(err.kind).toBe('auth')
-      if (err.kind === 'auth') {
-        expect(err.recoverable).toBe(true)
-        expect(err.code).toBe('M_UNKNOWN_TOKEN')
-      }
-    })
-
-    it('M_FORBIDDEN → auth, not recoverable', () => {
-      const err = toAppError({ name: 'MatrixError', message: 'forbidden', errcode: 'M_FORBIDDEN' })
-      expect(err.kind).toBe('auth')
-      if (err.kind === 'auth') {
-        expect(err.recoverable).toBe(false)
-      }
-    })
-
-    it('M_NOT_FOUND → not_found, carries resource hint', () => {
-      const err = toAppError(
-        { name: 'MatrixError', message: 'no such room', errcode: 'M_NOT_FOUND' },
-        { resource: 'room:!abc' }
-      )
-      expect(err.kind).toBe('not_found')
-      if (err.kind === 'not_found') {
-        expect(err.resource).toBe('room:!abc')
-      }
-    })
-
-    it('M_BAD_JSON → validation with field', () => {
-      const err = toAppError({ name: 'MatrixError', message: 'bad json', errcode: 'M_BAD_JSON' }, { field: 'body' })
-      expect(err.kind).toBe('validation')
-      if (err.kind === 'validation') {
-        expect(err.field).toBe('body')
-        expect(err.code).toBe('M_BAD_JSON')
-      }
-    })
-  })
-
-  describe('HTTP status fallback', () => {
-    it('httpStatus 401 → auth recoverable', () => {
-      const err = toAppError(Object.assign(new Error('unauthorized'), { httpStatus: 401 }))
-      expect(isAuthError(err) && err.recoverable).toBe(true)
-    })
-
-    it('httpStatus 403 → auth non-recoverable', () => {
-      const err = toAppError(Object.assign(new Error('forbidden'), { httpStatus: 403 }))
-      expect(isAuthError(err) && err.recoverable).toBe(false)
-    })
-
-    it('httpStatus 404 → not_found', () => {
-      const err = toAppError(Object.assign(new Error('nope'), { httpStatus: 404 }), { resource: 'widget:42' })
-      expect(err.kind).toBe('not_found')
-      if (err.kind === 'not_found') {
-        expect(err.resource).toBe('widget:42')
-      }
-    })
-
-    it('httpStatus 503 → retryable', () => {
-      const err = toAppError(Object.assign(new Error('unavailable'), { httpStatus: 503 }))
-      expect(isRetryable(err)).toBe(true)
-      if (err.kind === 'retryable') {
-        expect(err.code).toBe('HTTP_503')
-      }
-    })
-  })
-
-  describe('transport-level errors from runtimeFetch', () => {
-    it('NetworkError (by name) → retryable', () => {
-      const e = new Error('Unable to connect')
-      e.name = 'NetworkError'
-      expect(toAppError(e).kind).toBe('retryable')
-    })
-
-    it('TlsError → fatal with TLS_ERROR code', () => {
-      const e = new Error('cert failure')
-      e.name = 'TlsError'
-      const out = toAppError(e)
-      expect(out.kind).toBe('fatal')
-      if (out.kind === 'fatal') {
-        expect(out.code).toBe('TLS_ERROR')
-        expect(out.correlationId).toBeTruthy()
-      }
-    })
-
-    it('TimeoutError → retryable', () => {
-      const e = new Error('timeout')
-      e.name = 'TimeoutError'
-      expect(toAppError(e).kind).toBe('retryable')
-    })
-
-    it('category from details (no name match) is honored', () => {
-      const e = Object.assign(new Error('abort'), { details: { category: 'abort' } })
-      const out = toAppError(e)
-      expect(out.kind).toBe('retryable')
-      if (out.kind === 'retryable') {
-        expect(out.code).toBe('ABORT')
-      }
-    })
-  })
-
-  describe('AppException mapping', () => {
-    it('ErrorType.Authentication → auth', () => {
-      const ex = new AppException('need login', { type: ErrorType.Authentication })
-      expect(toAppError(ex).kind).toBe('auth')
-    })
-
-    it('ErrorType.RateLimit → retryable with retryAfterMs', () => {
-      const ex = new AppException('slow', { type: ErrorType.RateLimit, details: { retryAfterMs: 2000 } })
-      const out = toAppError(ex)
-      expect(out.kind).toBe('retryable')
-      if (out.kind === 'retryable') {
-        expect(out.retryAfterMs).toBe(2000)
-      }
-    })
-
-    it('ErrorType.Validation → validation', () => {
-      const ex = new AppException('bad input', { type: ErrorType.Validation })
-      expect(toAppError(ex, { field: 'email' }).kind).toBe('validation')
-    })
-
-    it('ErrorType.NotFound → not_found', () => {
-      const ex = new AppException('missing', { type: ErrorType.NotFound })
-      expect(toAppError(ex, { resource: 'user:@a:b' }).kind).toBe('not_found')
-    })
-
-    it('ErrorType.Unknown → fatal', () => {
-      const ex = new AppException('?', { type: ErrorType.Unknown })
-      expect(toAppError(ex).kind).toBe('fatal')
-    })
-  })
-
+describe('errors', () => {
   describe('fingerprint', () => {
-    it('collapses errors with identical shape', () => {
-      const a = Object.assign(new Error('slow'), { errcode: 'M_LIMIT_EXCEEDED' })
-      const b = Object.assign(new Error('slow'), { errcode: 'M_LIMIT_EXCEEDED' })
-      expect(fingerprint(a)).toBe(fingerprint(b))
+    it('returns fingerprint for Error objects', () => {
+      const err = new Error('test message')
+      const fp = fingerprint(err)
+      expect(fp).toContain('Error')
+      expect(fp).toContain('test message')
     })
 
-    it('distinguishes different error codes', () => {
-      const a = Object.assign(new Error('x'), { errcode: 'M_FORBIDDEN' })
-      const b = Object.assign(new Error('x'), { errcode: 'M_NOT_FOUND' })
-      expect(fingerprint(a)).not.toBe(fingerprint(b))
+    it('returns fingerprint with errcode', () => {
+      const err = Object.assign(new Error('rate limit'), { errcode: 'M_LIMIT_EXCEEDED' })
+      const fp = fingerprint(err)
+      expect(fp).toContain('M_LIMIT_EXCEEDED')
     })
 
-    it('produces raw:<prefix> for non-Error values', () => {
-      expect(fingerprint('just a string')).toMatch(/^raw:/)
+    it('returns fingerprint with httpStatus', () => {
+      const err = Object.assign(new Error('not found'), { httpStatus: 404 })
+      const fp = fingerprint(err)
+      expect(fp).toContain('404')
+    })
+
+    it('returns fingerprint for non-Error values', () => {
+      const fp = fingerprint('plain string error')
+      expect(fp).toContain('raw:')
+      expect(fp).toContain('plain string error')
+    })
+
+    it('returns fingerprint for null/undefined', () => {
+      const fp = fingerprint(null)
+      expect(fp).toBe('raw:null')
     })
 
     it('truncates long messages', () => {
-      const longMsg = 'x'.repeat(500)
-      const fp = fingerprint(new Error(longMsg))
-      expect(fp.length).toBeLessThan(200)
+      const longMessage = 'x'.repeat(200)
+      const err = new Error(longMessage)
+      const fp = fingerprint(err)
+      expect(fp.length).toBeLessThan(150)
+    })
+
+    it('uses name field from error object', () => {
+      const err = Object.assign(new Error('msg'), { name: 'CustomError' })
+      const fp = fingerprint(err)
+      expect(fp).toContain('CustomError')
+    })
+  })
+
+  describe('toAppError', () => {
+    it('returns fatal error for null input', () => {
+      const result = toAppError(null)
+      expect(result.kind).toBe('fatal')
+      expect((result as AppErrorFatal).code).toBe('UNKNOWN')
+    })
+
+    it('returns fatal error for undefined input', () => {
+      const result = toAppError(undefined)
+      expect(result.kind).toBe('fatal')
+      expect((result as AppErrorFatal).code).toBe('UNKNOWN')
+      expect((result as AppErrorFatal).correlationId).toBeTruthy()
+    })
+
+    it('returns same AppError if already an AppError (idempotent)', () => {
+      const existing: AppError = {
+        kind: 'auth',
+        code: 'M_UNKNOWN_TOKEN',
+        recoverable: true,
+        message: 'token error'
+      }
+      const result = toAppError(existing)
+      expect(result).toBe(existing)
+    })
+
+    it('converts AppException.Auth to AppError auth', () => {
+      const ex = new AppException('auth failed', { type: ErrorType.Authentication })
+      const result = toAppError(ex)
+      expect(result.kind).toBe('auth')
+      expect((result as AppErrorAuth).code).toBe(ErrorType.Authentication)
+      expect((result as AppErrorAuth).recoverable).toBe(true)
+    })
+
+    it('converts AppException.NotFound to AppError not_found', () => {
+      const ex = new AppException('not found', { type: ErrorType.NotFound })
+      const result = toAppError(ex, { resource: 'user' })
+      expect(result.kind).toBe('not_found')
+      expect((result as AppErrorNotFound).resource).toBe('user')
+    })
+
+    it('converts AppException.Validation to AppError validation', () => {
+      const ex = new AppException('invalid', { type: ErrorType.Validation })
+      const result = toAppError(ex, { field: 'username' })
+      expect(result.kind).toBe('validation')
+      expect((result as AppErrorValidation).field).toBe('username')
+    })
+
+    it('converts AppException.RateLimit to AppError retryable', () => {
+      const ex = new AppException('rate limited', {
+        type: ErrorType.RateLimit,
+        details: { retryAfterMs: 5000 }
+      })
+      const result = toAppError(ex)
+      expect(result.kind).toBe('retryable')
+      expect((result as AppErrorRetryable).retryAfterMs).toBe(5000)
+    })
+
+    it('converts AppException.Network to AppError retryable', () => {
+      const ex = new AppException('network error', { type: ErrorType.Network })
+      const result = toAppError(ex)
+      expect(result.kind).toBe('retryable')
+    })
+
+    it('converts AppException.Permission to AppError auth (non-recoverable)', () => {
+      const ex = new AppException('forbidden', { type: ErrorType.Permission })
+      const result = toAppError(ex)
+      expect(result.kind).toBe('auth')
+      expect((result as AppErrorAuth).recoverable).toBe(false)
+    })
+
+    it('converts TlsError to fatal', () => {
+      const err = Object.assign(new Error('TLS handshake failed'), { name: 'TlsError' })
+      const result = toAppError(err)
+      expect(result.kind).toBe('fatal')
+      expect((result as AppErrorFatal).code).toBe('TLS_ERROR')
+    })
+
+    it('converts NetworkError to retryable', () => {
+      const err = Object.assign(new Error('fetch failed'), { name: 'NetworkError' })
+      const result = toAppError(err)
+      expect(result.kind).toBe('retryable')
+      expect((result as AppErrorRetryable).code).toBe('NETWORK_ERROR')
+    })
+
+    it('converts TimeoutError to retryable', () => {
+      const err = Object.assign(new Error('request timeout'), { name: 'TimeoutError' })
+      const result = toAppError(err)
+      expect(result.kind).toBe('retryable')
+      expect((result as AppErrorRetryable).code).toBe('TIMEOUT')
+    })
+
+    it('converts AbortError to retryable', () => {
+      const err = Object.assign(new Error('aborted'), { name: 'AbortError' })
+      const result = toAppError(err)
+      expect(result.kind).toBe('retryable')
+      expect((result as AppErrorRetryable).code).toBe('ABORT')
+    })
+
+    it('converts M_LIMIT_EXCEEDED to retryable', () => {
+      const err = Object.assign(new Error('rate limit exceeded'), { errcode: 'M_LIMIT_EXCEEDED' })
+      const result = toAppError(err)
+      expect(result.kind).toBe('retryable')
+      expect((result as AppErrorRetryable).code).toBe('M_LIMIT_EXCEEDED')
+    })
+
+    it('converts HTTP 429 to retryable', () => {
+      const err = Object.assign(new Error('too many requests'), { httpStatus: 429 })
+      const result = toAppError(err)
+      expect(result.kind).toBe('retryable')
+    })
+
+    it('converts M_UNKNOWN_TOKEN to auth (recoverable)', () => {
+      const err = Object.assign(new Error('unknown token'), { errcode: 'M_UNKNOWN_TOKEN' })
+      const result = toAppError(err)
+      expect(result.kind).toBe('auth')
+      expect((result as AppErrorAuth).recoverable).toBe(true)
+    })
+
+    it('converts M_FORBIDDEN to auth (non-recoverable)', () => {
+      const err = Object.assign(new Error('forbidden'), { errcode: 'M_FORBIDDEN' })
+      const result = toAppError(err)
+      expect(result.kind).toBe('auth')
+      expect((result as AppErrorAuth).recoverable).toBe(false)
+    })
+
+    it('converts M_NOT_FOUND to not_found', () => {
+      const err = Object.assign(new Error('not found'), { errcode: 'M_NOT_FOUND' })
+      const result = toAppError(err, { resource: 'room' })
+      expect(result.kind).toBe('not_found')
+      expect((result as AppErrorNotFound).resource).toBe('room')
+    })
+
+    it('converts HTTP 404 to not_found', () => {
+      const err = Object.assign(new Error('page not found'), { httpStatus: 404 })
+      const result = toAppError(err)
+      expect(result.kind).toBe('not_found')
+    })
+
+    it('converts M_INVALID_USERNAME to validation', () => {
+      const err = Object.assign(new Error('bad username'), { errcode: 'M_INVALID_USERNAME' })
+      const result = toAppError(err, { field: 'username' })
+      expect(result.kind).toBe('validation')
+      expect((result as AppErrorValidation).code).toBe('M_INVALID_USERNAME')
+    })
+
+    it('converts M_USER_IN_USE to validation', () => {
+      const err = Object.assign(new Error('already registered'), { errcode: 'M_USER_IN_USE' })
+      const result = toAppError(err)
+      expect(result.kind).toBe('validation')
+    })
+
+    it('converts HTTP 401 to auth (recoverable)', () => {
+      const err = Object.assign(new Error('unauthorized'), { httpStatus: 401 })
+      const result = toAppError(err)
+      expect(result.kind).toBe('auth')
+      expect((result as AppErrorAuth).recoverable).toBe(true)
+    })
+
+    it('converts HTTP 403 to auth (non-recoverable)', () => {
+      const err = Object.assign(new Error('forbidden'), { httpStatus: 403 })
+      const result = toAppError(err)
+      expect(result.kind).toBe('auth')
+      expect((result as AppErrorAuth).recoverable).toBe(false)
+    })
+
+    it('converts HTTP 500 to retryable', () => {
+      const err = Object.assign(new Error('server error'), { httpStatus: 500 })
+      const result = toAppError(err)
+      expect(result.kind).toBe('retryable')
+      expect((result as AppErrorRetryable).code).toBe('HTTP_500')
+    })
+
+    it('converts HTTP 503 to retryable', () => {
+      const err = Object.assign(new Error('unavailable'), { httpStatus: 503 })
+      const result = toAppError(err)
+      expect(result.kind).toBe('retryable')
+    })
+
+    it('falls back to translateMatrixError for unrecognized errors', () => {
+      const err = new Error('some random error')
+      const result = toAppError(err)
+      expect(translateMatrixError).toHaveBeenCalled()
+      expect(result.kind).toBe('fatal')
+      expect((result as AppErrorFatal).correlationId).toBeTruthy()
+    })
+
+    it('falls back to retryable when translateMatrixError says recoverable', () => {
+      vi.mocked(translateMatrixError).mockReturnValueOnce({
+        recoverable: true,
+        userMessage: 'retry plz',
+        level: 'toast'
+      })
+      const err = new Error('transient')
+      const result = toAppError(err)
+      expect(result.kind).toBe('retryable')
+    })
+
+    it('converts plain string input to fatal', () => {
+      const result = toAppError('plain text error')
+      expect(result.kind).toBe('fatal')
+    })
+
+    it('sets i18nKey for known matrix errors', () => {
+      const err = Object.assign(new Error('token unknown'), { errcode: 'M_UNKNOWN_TOKEN' })
+      const result = toAppError(err)
+      expect((result as AppErrorAuth).i18nKey).toBeTruthy()
+    })
+  })
+
+  describe('isRetryable', () => {
+    it('returns true for retryable kind', () => {
+      const err: AppError = { kind: 'retryable', message: 'retry' }
+      expect(isRetryable(err)).toBe(true)
+    })
+
+    it('returns false for auth kind', () => {
+      const err: AppError = { kind: 'auth', code: 'x', recoverable: true, message: 'auth' }
+      expect(isRetryable(err)).toBe(false)
+    })
+
+    it('returns false for fatal kind', () => {
+      const err: AppError = { kind: 'fatal', code: 'x', message: 'fatal', correlationId: 'abc' }
+      expect(isRetryable(err)).toBe(false)
+    })
+
+    it('narrows type', () => {
+      const err: AppError = { kind: 'retryable', message: 'retry' }
+      if (isRetryable(err)) {
+        expect(err.kind).toBe('retryable')
+      }
+    })
+  })
+
+  describe('isAuthError', () => {
+    it('returns true for auth kind', () => {
+      const err: AppError = { kind: 'auth', code: 'x', recoverable: true, message: 'auth' }
+      expect(isAuthError(err)).toBe(true)
+    })
+
+    it('returns false for retryable kind', () => {
+      const err: AppError = { kind: 'retryable', message: 'retry' }
+      expect(isAuthError(err)).toBe(false)
+    })
+
+    it('returns false for validation kind', () => {
+      const err: AppError = { kind: 'validation', code: 'x', message: 'bad' }
+      expect(isAuthError(err)).toBe(false)
+    })
+
+    it('narrows type', () => {
+      const err: AppError = { kind: 'auth', code: 'M_FORBIDDEN', recoverable: false, message: 'nope' }
+      if (isAuthError(err)) {
+        expect(err.recoverable).toBe(false)
+      }
     })
   })
 })

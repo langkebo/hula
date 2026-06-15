@@ -34,21 +34,17 @@ pub fn merge_config(mut base: Value, local: Value) -> Value {
     };
 
     // If local uses old family, remove new family from base
-    if local_has_old_hs_family {
-        if let Some(obj) = base.as_object_mut() {
-            obj.remove("default_server_name");
-            obj.remove("default_server_config");
-            info!("Layered config: local uses old HS family, removing new HS family from base");
-        }
+    if local_has_old_hs_family && let Some(obj) = base.as_object_mut() {
+        obj.remove("default_server_name");
+        obj.remove("default_server_config");
+        info!("Layered config: local uses old HS family, removing new HS family from base");
     }
 
     // If local uses new family, remove old family from base
-    if local_has_new_hs_family {
-        if let Some(obj) = base.as_object_mut() {
-            obj.remove("default_hs_url");
-            obj.remove("default_is_url");
-            info!("Layered config: local uses new HS family, removing old HS family from base");
-        }
+    if local_has_new_hs_family && let Some(obj) = base.as_object_mut() {
+        obj.remove("default_hs_url");
+        obj.remove("default_is_url");
+        info!("Layered config: local uses new HS family, removing old HS family from base");
     }
 
     // Merge local overrides into base

@@ -236,7 +236,10 @@ describe('ProfileService', () => {
       })
       expect(mockClient.http.authedRequest).toHaveBeenCalledWith(
         'GET',
-        '/_matrix/client/unstable/uk.tcpip.msc4133/profile/%40user%3Amatrix.org'
+        '/uk.tcpip.msc4133/profile/%40user%3Amatrix.org',
+        undefined,
+        undefined,
+        { prefix: '/_matrix/client/unstable' }
       )
     })
 

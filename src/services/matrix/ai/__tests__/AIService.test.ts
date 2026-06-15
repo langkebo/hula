@@ -79,9 +79,8 @@ describe('AIService · conversation CRUD', () => {
     mockRequest.mockResolvedValueOnce([{ id: 'c1', title: 'A' }])
     const result = await aiService.conversationGetMy({ id: 'c1' })
     expect(result).toEqual([{ id: 'c1', title: 'A' }])
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: '/api/ai/conversation/my',
-      params: { id: 'c1' }
+    expect(mockRequest).toHaveBeenCalledWith({ url: '/api/ai/conversation/my', params: { id: 'c1' } }, undefined, {
+      logPrefix: 'MatrixAI'
     })
   })
 
@@ -94,30 +93,33 @@ describe('AIService · conversation CRUD', () => {
     mockRequest.mockResolvedValueOnce({ id: 'c1', title: 'New' })
     const result = await aiService.conversationCreate({ roleId: 'r1', title: 'New' })
     expect(result.id).toBe('c1')
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: '/api/ai/conversation/create',
-      body: { roleId: 'r1', title: 'New' }
-    })
+    expect(mockRequest).toHaveBeenCalledWith(
+      { url: '/api/ai/conversation/create', method: 'POST', body: { roleId: 'r1', title: 'New' } },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   })
 
   it('conversationUpdate posts body with id', async () => {
     mockRequest.mockResolvedValueOnce({ id: 'c1', pinned: true })
     const result = await aiService.conversationUpdate({ id: 'c1', pinned: true })
     expect(result.pinned).toBe(true)
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: '/api/ai/conversation/update',
-      body: { id: 'c1', pinned: true }
-    })
+    expect(mockRequest).toHaveBeenCalledWith(
+      { url: '/api/ai/conversation/update', method: 'POST', body: { id: 'c1', pinned: true } },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   })
 
   it('conversationDelete wraps the id list and returns true', async () => {
     mockRequest.mockResolvedValueOnce(undefined)
     const ok = await aiService.conversationDelete(['c1', 'c2'])
     expect(ok).toBe(true)
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: '/api/ai/conversation/delete',
-      body: { conversationIdList: ['c1', 'c2'] }
-    })
+    expect(mockRequest).toHaveBeenCalledWith(
+      { url: '/api/ai/conversation/delete', method: 'POST', body: { conversationIdList: ['c1', 'c2'] } },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   })
 
   it('conversationDelete re-throws on request failure', async () => {
@@ -157,10 +159,11 @@ describe('AIService · message CRUD', () => {
     mockRequest.mockResolvedValueOnce(undefined)
     const ok = await aiService.messageDeleteByConversationId({ conversationIdList: ['c1'] })
     expect(ok).toBe(true)
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: '/api/ai/message/deleteByConversation',
-      body: { conversationIdList: ['c1'] }
-    })
+    expect(mockRequest).toHaveBeenCalledWith(
+      { url: '/api/ai/message/deleteByConversation', method: 'POST', body: { conversationIdList: ['c1'] } },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   })
 })
 
@@ -175,10 +178,11 @@ describe('AIService · media generation', () => {
     const result = await aiService.generateImage({ modelId: 'm1', prompt: 'sunset', width: 512, height: 512 })
     expect(typeof result).toBe('object')
     expect(result && typeof result === 'object' ? result.url : undefined).toContain('https://')
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: '/api/ai/image/draw',
-      body: { modelId: 'm1', prompt: 'sunset', width: 512, height: 512 }
-    })
+    expect(mockRequest).toHaveBeenCalledWith(
+      { url: '/api/ai/image/draw', method: 'POST', body: { modelId: 'm1', prompt: 'sunset', width: 512, height: 512 } },
+      undefined,
+      { logPrefix: 'MatrixAI' }
+    )
   })
 
   it('videoGenerate propagates network errors', async () => {
@@ -190,9 +194,8 @@ describe('AIService · media generation', () => {
     mockRequest.mockResolvedValueOnce([{ id: 'v1', name: 'Alice' }])
     const voices = await aiService.audioGetVoices({ model: 'tts-1' })
     expect(voices).toHaveLength(1)
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: '/api/ai/audio/voices',
-      params: { model: 'tts-1' }
+    expect(mockRequest).toHaveBeenCalledWith({ url: '/api/ai/audio/voices', params: { model: 'tts-1' } }, undefined, {
+      logPrefix: 'MatrixAI'
     })
   })
 })
@@ -216,9 +219,8 @@ describe('AIService · paginated reads', () => {
       pageSize: 20
     })
     expect(result).toEqual({ list: [], total: 0 })
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: expectedUrl,
-      params: { pageNo: 2, pageSize: 20 }
+    expect(mockRequest).toHaveBeenCalledWith({ url: expectedUrl, params: { pageNo: 2, pageSize: 20 } }, undefined, {
+      logPrefix: 'MatrixAI'
     })
   })
 })

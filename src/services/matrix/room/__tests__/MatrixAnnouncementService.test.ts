@@ -14,17 +14,27 @@ vi.mock('../MatrixRoomService', () => ({
   }
 }))
 
+vi.mock('../QueryService', () => ({
+  matrixRoomQueryService: {
+    getRoom: mockGetRoom
+  }
+}))
+
 vi.mock('../../messaging/MatrixMessageService', () => ({
   matrixMessageService: {
     sendTextMessage: mockSendTextMessage
   }
 }))
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
+vi.mock('../../MatrixClientService', () => {
+  const mockService = {
     getClient: vi.fn()
   }
-}))
+  return {
+    default: mockService,
+    matrixClientService: mockService
+  }
+})
 
 const matrixClientService = (await import('../../MatrixClientService')).default
 const { matrixAnnouncementService } = await import('../MatrixAnnouncementService')

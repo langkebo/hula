@@ -2285,6 +2285,7 @@ export type I18nKeys = {
   "error": {
     "matrix": {
       "forbidden": "权限不足，无法执行此操作",
+      "invalid_credentials": "用户名或密码错误，请重新输入",
       "unknown_token": "会话已过期，请重新登录",
       "missing_token": "未登录或会话丢失，请重新登录",
       "rate_limited": "请求过于频繁，请稍后重试",

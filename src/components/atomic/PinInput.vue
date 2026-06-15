@@ -10,6 +10,7 @@
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
+        :aria-label="`Pin ${index + 1} of ${digits.length}`"
         :class="[
           'bg-[--pin-input-bg]',
           'text-center rounded-8px',

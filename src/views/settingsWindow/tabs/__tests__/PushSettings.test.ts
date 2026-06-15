@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import PushSettings from '../PushSettings.vue'
@@ -87,6 +88,16 @@ vi.mock('naive-ui', () => ({
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['size', 'type'] },
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
   NDivider: { name: 'NDivider', template: '<hr />' },
+  NModal: {
+    name: 'NModal',
+    template: '<div class="n-modal"><slot /></div>',
+    props: ['show', 'title', 'positiveText', 'negativeText', 'maskClosable'],
+    emits: ['update:show', 'positiveClick', 'negativeClick']
+  },
+  NForm: { name: 'NForm', template: '<form><slot /></form>', props: ['model'] },
+  NFormItem: { name: 'NFormItem', template: '<div><slot /></div>', props: ['label'] },
+  NInput: { name: 'NInput', template: '<input />', props: ['value', 'placeholder'] },
+  NSelect: { name: 'NSelect', template: '<select><slot /></select>', props: ['value', 'options'] },
   NTimePicker: {
     name: 'NTimePicker',
     template: '<div class="n-time-picker" />',
@@ -113,6 +124,15 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+      if (type === 'success') messageSuccessMock(message)
+      if (type === 'error') messageErrorMock(message)
+    }
+  })
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() })
 }))
@@ -127,10 +147,19 @@ vi.mock('@/services/matrix/notifications/MatrixPushService', () => ({
   }
 }))
 
+vi.mock('@/services/matrix/notifications/MatrixNotificationService', () => ({
+  matrixNotificationService: {
+    getNotifications: vi.fn().mockResolvedValue([]),
+    syncDndFromAccountData: vi.fn().mockResolvedValue(null),
+    syncDndToAccountData: vi.fn()
+  }
+}))
+
 describe('PushSettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as PushSettingsVm
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     localStorage.clear()
 

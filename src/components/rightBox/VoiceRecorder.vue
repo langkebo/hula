@@ -28,7 +28,11 @@
 
         <div v-if="!isRecording && audioBlob && !isProcessing" class="status-completed">
           <div class="playback-controls">
-            <button @click="togglePlayback" class="play-btn">
+            <button
+              @click="togglePlayback"
+              class="play-btn"
+              :aria-label="isPlaying ? t('message.voice_recorder.pause') : t('message.voice_recorder.play')"
+              :aria-pressed="isPlaying">
               <svg v-if="!isPlaying" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" />
               </svg>
@@ -46,27 +50,53 @@
         <!-- 未录音状态 -->
         <div v-if="!isRecording && !audioBlob && !isProcessing" class="controls-idle">
           <div
+            role="button"
+            tabindex="0"
+            :aria-label="t('message.voice_recorder.start_recording')"
             @mousedown="startRecording"
             @mouseup="stopRecording"
             @mouseleave="stopRecording"
             @touchstart="startRecording"
             @touchend="stopRecording"
+            @keydown.enter.prevent="startRecording"
+            @keydown.space.prevent="startRecording"
             class="record-btn">
             <svg><use href="#voice"></use></svg>
           </div>
-          <div @click="handleCancel" class="cancel-btn">
+          <div
+            role="button"
+            tabindex="0"
+            :aria-label="t('common.cancel')"
+            @click="handleCancel"
+            @keydown.enter.prevent="handleCancel"
+            @keydown.space.prevent="handleCancel"
+            class="cancel-btn">
             <svg><use href="#close"></use></svg>
           </div>
         </div>
 
         <!-- 录音中状态 -->
         <div v-if="isRecording" class="controls-recording">
-          <div @click="stopRecording" class="stop-btn">
+          <div
+            role="button"
+            tabindex="0"
+            :aria-label="t('message.voice_recorder.stop_recording')"
+            @click="stopRecording"
+            @keydown.enter.prevent="stopRecording"
+            @keydown.space.prevent="stopRecording"
+            class="stop-btn">
             <svg viewBox="0 0 24 24">
               <path fill="currentColor" d="M18,18H6V6H18V18Z" />
             </svg>
           </div>
-          <div @click="cancelRecording" class="cancel-record-btn">
+          <div
+            role="button"
+            tabindex="0"
+            :aria-label="t('message.voice_recorder.cancel_recording')"
+            @click="cancelRecording"
+            @keydown.enter.prevent="cancelRecording"
+            @keydown.space.prevent="cancelRecording"
+            class="cancel-record-btn">
             <svg><use href="#close"></use></svg>
           </div>
         </div>
@@ -80,14 +110,36 @@
 
         <!-- 录音完成状态 -->
         <div v-if="!isRecording && audioBlob && !isProcessing" class="controls-completed">
-          <div @click="reRecord" class="refresh-btn">
+          <div
+            role="button"
+            tabindex="0"
+            :aria-label="t('message.voice_recorder.re_record')"
+            @click="reRecord"
+            @keydown.enter.prevent="reRecord"
+            @keydown.space.prevent="reRecord"
+            class="refresh-btn">
             <svg><use href="#refresh"></use></svg>
           </div>
-          <div @click="handleSend" class="send-btn" :disabled="sending">
+          <div
+            role="button"
+            tabindex="0"
+            :aria-label="t('message.voice_recorder.send')"
+            @click="handleSend"
+            @keydown.enter.prevent="handleSend"
+            @keydown.space.prevent="handleSend"
+            class="send-btn"
+            :disabled="sending">
             <svg v-if="!sending"><use href="#send"></use></svg>
             <div v-else class="loading-spinner"></div>
           </div>
-          <div @click="handleCancel" class="cancel-btn">
+          <div
+            role="button"
+            tabindex="0"
+            :aria-label="t('common.cancel')"
+            @click="handleCancel"
+            @keydown.enter.prevent="handleCancel"
+            @keydown.space.prevent="handleCancel"
+            class="cancel-btn">
             <svg><use href="#close"></use></svg>
           </div>
         </div>

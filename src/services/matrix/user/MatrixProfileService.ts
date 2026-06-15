@@ -135,7 +135,9 @@ class MatrixProfileService extends BaseMatrixService {
   async getExtendedProfile(userId: string): Promise<MatrixExtendedProfile> {
     try {
       const client = this.getClient()
-      const response = await client.http.authedRequest('GET', USER.EXTENDED_PROFILE(userId))
+      const response = await client.http.authedRequest('GET', USER.EXTENDED_PROFILE(userId), undefined, undefined, {
+        prefix: '/_matrix/client/unstable'
+      })
       if (!response || typeof response !== 'object' || Array.isArray(response)) {
         return {}
       }
@@ -161,7 +163,8 @@ class MatrixProfileService extends BaseMatrixService {
         'PUT',
         USER.EXTENDED_PROFILE_FIELD(userId, keyName),
         undefined,
-        toMatrixJsonBody(value)
+        toMatrixJsonBody(value),
+        { prefix: '/_matrix/client/unstable' }
       )
       logger.info(`设置扩展资料字段成功: ${userId}/${keyName}`)
     } catch (err) {
@@ -176,7 +179,9 @@ class MatrixProfileService extends BaseMatrixService {
   async deleteExtendedProfileField(userId: string, keyName: string): Promise<void> {
     try {
       const client = this.getClient()
-      await client.http.authedRequest('DELETE', USER.EXTENDED_PROFILE_FIELD(userId, keyName))
+      await client.http.authedRequest('DELETE', USER.EXTENDED_PROFILE_FIELD(userId, keyName), undefined, undefined, {
+        prefix: '/_matrix/client/unstable'
+      })
       logger.info(`删除扩展资料字段成功: ${userId}/${keyName}`)
     } catch (err) {
       if (this.isUnsupportedExtendedProfileError(err)) {

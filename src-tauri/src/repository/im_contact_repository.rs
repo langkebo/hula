@@ -44,8 +44,8 @@ pub async fn save_contact_batch(
         .into_iter()
         .map(|mut contact| {
             contact.login_uid = login_uid.to_string();
-            let active_model = contact.into_active_model();
-            active_model
+
+            contact.into_active_model()
         })
         .collect();
 

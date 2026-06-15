@@ -194,6 +194,22 @@ vi.mock('naive-ui', async () => {
         return () => h('div', { 'data-test': 'NDivider' })
       }
     }),
+    NBadge: defineComponent({
+      name: 'NBadge',
+      props: {
+        dot: {
+          type: Boolean,
+          default: false
+        },
+        type: {
+          type: String,
+          default: undefined
+        }
+      },
+      setup(_props, { slots }) {
+        return () => h('span', { 'data-test': 'NBadge' }, slots.default?.())
+      }
+    }),
     NButton: defineComponent({
       name: 'NButton',
       props: {
@@ -218,6 +234,43 @@ vi.mock('naive-ui', async () => {
             },
             [...(slots.icon?.() ?? []), ...(slots.default?.() ?? [])]
           )
+      }
+    }),
+    NPopover: defineComponent({
+      name: 'NPopover',
+      props: {
+        placement: { type: String, default: 'top' },
+        trigger: { type: String, default: 'hover' }
+      },
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': 'NPopover' }, [...(slots.trigger?.() ?? []), ...(slots.default?.() ?? [])])
+      }
+    }),
+    NDropdown: defineComponent({
+      name: 'NDropdown',
+      props: {
+        options: { type: Array, default: () => [] },
+        trigger: { type: String, default: 'hover' },
+        placement: { type: String, default: 'bottom' }
+      },
+      emits: ['select'],
+      setup(props, { emit, slots }) {
+        return () =>
+          h('div', { 'data-test': 'NDropdown' }, [
+            ...(slots.default?.() ?? []),
+            ...(props.options as Array<{ key: string; label: string }>).map((opt) =>
+              h(
+                'button',
+                {
+                  key: opt.key,
+                  'data-test': `session-sort-${opt.key}`,
+                  type: 'button',
+                  onClick: () => emit('select', opt.key)
+                },
+                opt.label
+              )
+            )
+          ])
       }
     })
   }

@@ -5,10 +5,9 @@ export const USER = {
   DISPLAYNAME: (userId: string) => `/_matrix/client/v3/profile/${encodeURIComponent(userId)}/displayname`,
   /** @deprecated Use MatrixProfileService.setAvatarUrl() instead */
   AVATAR: (userId: string) => `/_matrix/client/v3/profile/${encodeURIComponent(userId)}/avatar_url`,
-  EXTENDED_PROFILE: (userId: string) =>
-    `/_matrix/client/unstable/uk.tcpip.msc4133/profile/${encodeURIComponent(userId)}`,
+  EXTENDED_PROFILE: (userId: string) => `/uk.tcpip.msc4133/profile/${encodeURIComponent(userId)}`,
   EXTENDED_PROFILE_FIELD: (userId: string, keyName: string) =>
-    `/_matrix/client/unstable/uk.tcpip.msc4133/profile/${encodeURIComponent(userId)}/${encodeURIComponent(keyName)}`,
+    `/uk.tcpip.msc4133/profile/${encodeURIComponent(userId)}/${encodeURIComponent(keyName)}`,
   /** @deprecated Use MatrixUserDirectoryService.search() instead */
   DIRECTORY_SEARCH: '/_matrix/client/v3/user_directory/search',
   /** @deprecated Use MatrixPresenceService methods instead */

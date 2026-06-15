@@ -54,9 +54,7 @@ impl<R: Runtime> CustomInit for tauri::Builder<R> {
 impl<R: Runtime> DesktopCustomInit for tauri::Builder<R> {
     // 初始化web窗口事件
     fn init_webwindow_event(self) -> Self {
-        self.on_webview_event(|_, event| match event {
-            _ => (),
-        })
+        self.on_webview_event(|_, _event| ())
     }
 
     // 初始化系统窗口事件
@@ -66,7 +64,7 @@ impl<R: Runtime> DesktopCustomInit for tauri::Builder<R> {
                 #[cfg(target_os = "macos")]
                 if *flag {
                     let app_handle = window.app_handle();
-                    let _ = apply_macos_traffic_lights_spacing_default(window.label(), &app_handle);
+                    let _ = apply_macos_traffic_lights_spacing_default(window.label(), app_handle);
                 }
                 // 自定义系统托盘-实现托盘菜单失去焦点时隐藏
                 #[cfg(not(target_os = "macos"))]
@@ -75,10 +73,11 @@ impl<R: Runtime> DesktopCustomInit for tauri::Builder<R> {
                         let _ = tray_window.hide();
                     }
                 }
-                if window.label().eq("tray") && !flag {
-                    if let Err(e) = window.hide() {
-                        tracing::warn!("Failed to hide tray window: {}", e);
-                    }
+                if window.label().eq("tray")
+                    && !flag
+                    && let Err(e) = window.hide()
+                {
+                    tracing::warn!("Failed to hide tray window: {}", e);
                 }
                 #[cfg(target_os = "windows")]
                 if !window.label().eq("notify") && *flag {
@@ -139,7 +138,7 @@ impl<R: Runtime> DesktopCustomInit for tauri::Builder<R> {
                 #[cfg(target_os = "macos")]
                 {
                     let app_handle = window.app_handle();
-                    let _ = apply_macos_traffic_lights_spacing_default(window.label(), &app_handle);
+                    let _ = apply_macos_traffic_lights_spacing_default(window.label(), app_handle);
                 }
             }
             _ => (),

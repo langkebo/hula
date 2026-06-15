@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import NotificationSettings from '../NotificationSettings.vue'
@@ -46,6 +47,12 @@ vi.mock('naive-ui', () => ({
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
   NSlider: { name: 'NSlider', template: '<div class="n-slider" />', props: ['value', 'min', 'max', 'step'] },
   NDivider: { name: 'NDivider', template: '<hr />' },
+  NModal: {
+    name: 'NModal',
+    template: '<div class="n-modal"><slot /></div>',
+    props: ['show', 'title', 'positiveText', 'negativeText', 'maskClosable'],
+    emits: ['update:show', 'positiveClick', 'negativeClick']
+  },
   NInput: { name: 'NInput', template: '<input />', props: ['value', 'placeholder'] },
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['type'] },
   NTag: { name: 'NTag', template: '<span class="n-tag"><slot /></span>', props: ['closable'] },
@@ -87,7 +94,9 @@ describe('NotificationSettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as NotificationSettingsVm
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, warning: messageWarningMock }
     localStorage.clear()
   })
 

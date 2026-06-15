@@ -4,7 +4,7 @@
  * 为 matrix-js-sdk 提供额外的类型定义，避免使用 any 类型
  */
 
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { IPusher, IPusherRequest, MatrixClient } from 'matrix-js-sdk'
 
 // ============================================
 // Crypto API 扩展
@@ -161,10 +161,22 @@ export interface Device {
 export interface DeviceManager {
   getDevices(): Promise<Device[]>
   getDevice(deviceId: string): Promise<Device>
-  updateDevice(deviceId: string, displayName: string): Promise<void>
+  updateDevice(deviceId: string, updates: IDeviceUpdateRequest): Promise<void> // SDK-9: IDeviceUpdateRequest 对象签名
   deleteDevice(deviceId: string, auth?: AuthDict): Promise<void>
   deleteDevices(deviceIds: string[], auth?: AuthDict): Promise<void>
   getDeviceListUpdates(users: string[], since?: string): Promise<DeviceListUpdatesResponse>
+}
+
+// SDK-9: 设备更新请求类型
+export interface IDeviceUpdateRequest {
+  display_name?: string
+}
+
+// SDK-7: Push 管理器类型
+export interface PushManager {
+  setPusher(pusher: IPusherRequest): Promise<void>
+  removePusher(pushkey: string, appId: string, deviceId?: string): Promise<void>
+  getPushers(forceRefresh?: boolean): Promise<IPusher[]>
 }
 
 export interface DeviceListUpdatesResponse {
@@ -405,6 +417,7 @@ export interface SecureBackupManager {
 
 export interface MatrixClientExtended extends MatrixClient {
   getDeviceManager?(): DeviceManager | null
+  getPushManager?(): PushManager | null // SDK-7: Push 管理器扩展
   getCrypto(): CryptoApi | null
   getKeyBackupManager?(): KeyBackupManager | null
   getDeviceKeysManager?(): import('matrix-js-sdk/device-keys').DeviceKeysManager | null

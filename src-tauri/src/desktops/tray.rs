@@ -116,34 +116,36 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
                     }
                 } else if id == &exit_id {
                     // 退出应用
-                    let _ = tray_handler.exit(0);
+                    tray_handler.exit(0);
                 }
             })
-            .on_tray_icon_event(move |tray, event| match event {
-                TrayIconEvent::Click {
+            .on_tray_icon_event(move |tray, event| {
+                if let TrayIconEvent::Click {
                     id: _,
                     position: _,
                     rect: _,
                     button,
                     button_state,
-                } => match button {
-                    MouseButton::Left if MouseButtonState::Up == button_state => {
-                        // 左键点击直接打开主面板
-                        let windows = tray.app_handle().webview_windows();
+                } = event
+                {
+                    match button {
+                        MouseButton::Left if MouseButtonState::Up == button_state => {
+                            // 左键点击直接打开主面板
+                            let windows = tray.app_handle().webview_windows();
 
-                        // 优先显示已存在的home窗口
-                        for (name, window) in windows {
-                            if name == "home" {
-                                let _ = window.show();
-                                let _ = window.unminimize();
-                                let _ = window.set_focus();
-                                break;
+                            // 优先显示已存在的home窗口
+                            for (name, window) in windows {
+                                if name == "home" {
+                                    let _ = window.show();
+                                    let _ = window.unminimize();
+                                    let _ = window.set_focus();
+                                    break;
+                                }
                             }
                         }
+                        _ => {}
                     }
-                    _ => {}
-                },
-                _ => {}
+                }
             })
             .build(app)?;
     }

@@ -116,7 +116,7 @@ impl DatabaseSettings {
                 Err(e) => {
                     let error_msg = format!("Failed to get app_data_dir: {}", e);
                     tracing::error!("{}", error_msg);
-                    return Err(CommonError::RequestError(error_msg).into());
+                    return Err(CommonError::RequestError(error_msg));
                 }
             }
         };

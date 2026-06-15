@@ -47,10 +47,8 @@ fn main() -> std::io::Result<()> {
     } else if let Some(ref name) = profile_name {
         let default_dir = get_default_app_data_dir();
         format!("{}-{}", default_dir, name)
-    } else if let Ok(env_dir) = std::env::var("HULA_PROFILE_DIR") {
-        env_dir
     } else {
-        String::new()
+        std::env::var("HULA_PROFILE_DIR").unwrap_or_default()
     };
 
     if !profile_path.is_empty() {

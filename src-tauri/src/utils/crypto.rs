@@ -20,15 +20,13 @@ static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 fn get_master_key() -> &'static [u8; 32] {
     MASTER_KEY.get_or_init(|| {
         // 1. 尝试从系统 Keyring 获取
-        if let Ok(entry) = Entry::new(SERVICE_NAME, KEY_NAME) {
-            if let Ok(key_base64) = entry.get_password() {
-                if let Ok(key_bytes) = STANDARD.decode(key_base64) {
-                    if let Ok(key) = key_bytes.try_into() {
-                        info!("Successfully retrieved encryption key from system keyring");
-                        return key;
-                    }
-                }
-            }
+        if let Ok(entry) = Entry::new(SERVICE_NAME, KEY_NAME)
+            && let Ok(key_base64) = entry.get_password()
+            && let Ok(key_bytes) = STANDARD.decode(key_base64)
+            && let Ok(key) = key_bytes.try_into()
+        {
+            info!("Successfully retrieved encryption key from system keyring");
+            return key;
         }
 
         // 2. 如果 Keyring 不可用或没有密钥，生成一个新密钥

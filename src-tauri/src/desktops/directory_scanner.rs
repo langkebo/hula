@@ -100,7 +100,7 @@ async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> R
             entry = entries.next() => {
                 match entry {
                     Some(Ok(entry)) => {
-                        if entry.file_type().await.map_or(false, |ft| ft.is_file()) {
+                        if entry.file_type().await.is_ok_and(|ft| ft.is_file()) {
                             total_files += 1;
                         }
                     }
@@ -129,7 +129,7 @@ async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> R
             entry = entries.next() => {
                 match entry {
                     Some(Ok(entry)) => {
-                        if entry.file_type().await.map_or(false, |ft| ft.is_file()) {
+                        if entry.file_type().await.is_ok_and(|ft| ft.is_file()) {
                             match entry.metadata().await {
                                 Ok(metadata) => {
                                     total_size = total_size.saturating_add(metadata.len());
@@ -138,7 +138,7 @@ async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> R
                                     // 进度更新：每200ms或每100个文件发送一次
                                     let now = Instant::now();
                                     if now.duration_since(last_progress_time).as_millis() > 200
-                                        || files_processed % 100 == 0
+                                        || files_processed.is_multiple_of(100)
                                     {
                                         last_progress_time = now;
 

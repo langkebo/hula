@@ -299,18 +299,12 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
       }
       // 创建信道
       channel.value = pc.createDataChannel('chat')
-      channel.value.onopen = () => {
-        // console.log("信道已打开");
-      }
-      channel.value.onmessage = (_event) => {
-        // console.log("收到消息:", event.data);
-      }
+      channel.value.onopen = () => {}
+      channel.value.onmessage = (_event) => {}
       channel.value.onerror = (event) => {
         logger.warn('信道出错:', event)
       }
-      channel.value.onclose = () => {
-        // console.log("信道已关闭");
-      }
+      channel.value.onclose = () => {}
       pc.onicecandidate = async (event) => {
         logger.info('pc 监听到 onicecandidate 事件')
         if (event.candidate && roomId) {

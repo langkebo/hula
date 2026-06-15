@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LabsSettings from '../LabsSettings.vue'
 
@@ -55,6 +56,12 @@ const translationMap: Record<string, string> = {
 vi.mock('naive-ui', () => ({
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
   NDivider: { name: 'NDivider', template: '<hr />' },
+  NModal: {
+    name: 'NModal',
+    template: '<div class="n-modal"><slot /></div>',
+    props: ['show', 'title', 'positiveText', 'negativeText', 'maskClosable'],
+    emits: ['update:show', 'positiveClick', 'negativeClick']
+  },
   NTag: { name: 'NTag', template: '<span class="n-tag"><slot /></span>', props: ['type', 'size'] },
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['size', 'type'] },
   NAlert: { name: 'NAlert', template: '<div><slot /></div>', props: ['type'] },
@@ -86,7 +93,9 @@ vi.mock('vue-i18n', () => ({
 
 describe('LabsSettings', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, info: messageInfoMock }
     localStorage.clear()
   })
 
