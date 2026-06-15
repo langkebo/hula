@@ -109,6 +109,8 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     const accessToken = client.getAccessToken()
     if (accessToken && downloadUrl.startsWith(client.getHomeserverUrl())) {
       // 优先使用 Bearer 认证头下载
+      // 注：当前后端 v3 媒体下载端点不校验 Bearer token，
+      // 该认证头对 v3 端点实际是冗余的，但保留用于前向兼容（未来后端可能启用校验）。
       let response = await fetch(downloadUrl, {
         headers: { Authorization: `Bearer ${accessToken}` }
       })
@@ -355,24 +357,40 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async uploadContentWithId(
-    _serverName: string,
-    _mediaId: string,
+    serverName: string,
+    mediaId: string,
     file: File | Blob,
     mimetype?: string
   ): Promise<UploadResult> {
     const client = this.getClient()
+    const resolvedMimetype =
+      mimetype || (file instanceof File ? file.type || 'application/octet-stream' : 'application/octet-stream')
     try {
-      const uploadResponse = await client.uploadContent(file, {
-        type: mimetype || (file instanceof File ? file.type : undefined),
-        name: file instanceof File ? file.name : undefined
+      // 使用 PUT /_matrix/media/v3/upload/{serverName}/{mediaId}
+      const uploadPath = MATRIX_PATHS.MEDIA.UPLOAD_WITH_ID(serverName, mediaId)
+      const uploadUrl = `${client.getHomeserverUrl()}${uploadPath}`
+      const accessToken = client.getAccessToken()
+
+      const response = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': resolvedMimetype,
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: file
       })
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+
+      if (!response.ok) {
+        throw new Error(`媒体上传失败: HTTP ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      const contentUri = typeof data === 'string' ? data : (data as { content_uri: string }).content_uri
       logger.info(`[MatrixMedia] 具名上传成功: ${contentUri}`)
       return {
         contentUri,
         size: file.size,
-        mimetype:
-          mimetype || (file instanceof File ? file.type || 'application/octet-stream' : 'application/octet-stream')
+        mimetype: resolvedMimetype
       }
     } catch (err) {
       logger.error(`[MatrixMedia] 具名上传失败: ${err}`)

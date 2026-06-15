@@ -23,7 +23,7 @@ export interface MatrixRegisterResult {
   access_token?: string
   device_id?: string
   refresh_token?: string
-  expires_in_ms?: number
+  expires_in?: number
 }
 
 export interface MatrixEmailTokenResult {
@@ -312,7 +312,7 @@ async function matrixLogin(
       user: username,
       password,
       device_id: deviceId,
-      initial_device_display_name: deviceName
+      initial_display_name: deviceName
     },
     '登录失败'
   )
@@ -478,7 +478,7 @@ export class MatrixAuthService {
           user: username,
           password,
           device_id: deviceId,
-          initial_device_display_name: deviceName
+          initial_display_name: deviceName
         }),
       () => matrixLogin(username, password, deviceId, deviceName),
       '登录失败'
@@ -751,6 +751,19 @@ export class MatrixAuthService {
     }
   }
 
+  static async logout(): Promise<void> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
+    }
+
+    try {
+      await client.http.authedRequest('POST', MATRIX_PATHS.AUTH.LOGOUT)
+    } catch (err) {
+      throw normalizeSdkMatrixError(err, '登出失败')
+    }
+  }
+
   static async logoutAll(): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -785,7 +798,9 @@ export class MatrixAuthService {
     }
 
     try {
-      await client.http.authedRequest('POST', `/_matrix/client/v3/login/qr/${encodeURIComponent(qrId)}/invalidate`)
+      await client.http.authedRequest('POST', '/_matrix/client/v1/login/qr/invalidate', undefined, {
+        qr_id: qrId
+      })
     } catch (err) {
       throw normalizeSdkMatrixError(err, '二维码失效操作失败')
     }
@@ -870,7 +885,7 @@ export class MatrixAuthService {
       const r = result as Record<string, unknown>
       return {
         accessToken: (r.access_token as string) ?? '',
-        expiresIn: r.expires_in_ms as number | undefined,
+        expiresIn: r.expires_in as number | undefined,
         refreshToken: r.refresh_token as string | undefined
       }
     } catch (err) {

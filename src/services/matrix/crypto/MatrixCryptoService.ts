@@ -462,16 +462,21 @@ class MatrixCryptoService extends BaseMatrixService {
 
   async uploadKeys(
     deviceKeys?: Record<string, unknown>,
-    oneTimeKeys?: Record<string, unknown>
+    oneTimeKeys?: Record<string, unknown>,
+    fallbackKeys?: Record<string, unknown>
   ): Promise<{ oneTimeKeyCounts: Record<string, number> }> {
     try {
       const manager = cryptoSDKAdapter.requireSDKDeviceKeysManager()
-      const result = await manager.uploadKeys({
+      const requestBody: Record<string, unknown> = {
         // biome-ignore lint/suspicious/noExplicitAny: Service layer uses generic types; SDK expects DeviceKeys/OneTimeKeys
         deviceKeys: deviceKeys as any,
         // biome-ignore lint/suspicious/noExplicitAny: Service layer uses generic types; SDK expects DeviceKeys/OneTimeKeys
         oneTimeKeys: oneTimeKeys as any
-      })
+      }
+      if (fallbackKeys) {
+        requestBody.fallback_keys = fallbackKeys
+      }
+      const result = await manager.uploadKeys(requestBody as any)
       logger.info('[MatrixCrypto] 上传密钥成功')
       return { oneTimeKeyCounts: result.one_time_key_counts ?? {} }
     } catch (err) {
@@ -550,7 +555,8 @@ class MatrixCryptoService extends BaseMatrixService {
   async uploadDeviceSigningKeys(
     masterKey?: Record<string, unknown>,
     selfSigningKey?: Record<string, unknown>,
-    userSigningKey?: Record<string, unknown>
+    userSigningKey?: Record<string, unknown>,
+    auth?: Record<string, unknown>
   ): Promise<void> {
     try {
       const manager = cryptoSDKAdapter.requireSDKDeviceKeysManager()
@@ -558,6 +564,7 @@ class MatrixCryptoService extends BaseMatrixService {
       if (masterKey) keys.master_key = masterKey
       if (selfSigningKey) keys.self_signing_key = selfSigningKey
       if (userSigningKey) keys.user_signing_key = userSigningKey
+      if (auth) keys.auth = auth
       await manager.uploadDeviceSigning(keys as Parameters<typeof manager.uploadDeviceSigning>[0])
       logger.info('[MatrixCrypto] 上传设备签名密钥成功')
     } catch (err) {
@@ -595,7 +602,11 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getBackupVersions()
-      return result.versions as KeyBackupVersionInfo[]
+      const versions = result.versions
+      if (!Array.isArray(versions) && versions && typeof versions === 'object') {
+        return [versions as KeyBackupVersionInfo]
+      }
+      return versions as KeyBackupVersionInfo[]
     } catch (err) {
       logger.error(`[MatrixCrypto] 获取备份版本列表失败: ${err}`)
       return []
@@ -972,13 +983,14 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
-  async confirmMac(transactionId: string, mac: Record<string, string>): Promise<SasMacResponse | null> {
+  async confirmMac(transactionId: string, mac: string | Record<string, string>): Promise<SasMacResponse | null> {
     try {
       if (!(await this.isSasEndpointAvailable())) return null
       const manager = cryptoSDKAdapter.requireSDKKeyVerificationManager()
+      const macValue = typeof mac === 'object' ? JSON.stringify(mac) : mac
       const result = await manager.confirmDeviceSigningVerificationMac({
         transaction_id: transactionId,
-        mac: mac as Parameters<typeof manager.confirmDeviceSigningVerificationMac>[0]['mac']
+        mac: macValue as Parameters<typeof manager.confirmDeviceSigningVerificationMac>[0]['mac']
       } as Parameters<typeof manager.confirmDeviceSigningVerificationMac>[0])
       logger.info(`[MatrixCrypto] 确认MAC: txn=${transactionId}, verified=${result.verified}`)
       return result as unknown as SasMacResponse

@@ -1,6 +1,8 @@
 export const MEDIA = {
   /** @deprecated Use client.uploadContent() instead */
   UPLOAD: '/_matrix/media/v3/upload',
+  UPLOAD_WITH_ID: (serverName: string, mediaId: string) =>
+    `/_matrix/media/v3/upload/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`,
   CONFIG: '/_matrix/media/v3/config',
   DELETE: (serverName: string, mediaId: string) =>
     `/_matrix/media/v3/delete/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`,

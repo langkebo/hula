@@ -67,6 +67,9 @@ export interface SetupKeyBackupOptions {
   generatedKey?: import('@/types/matrix-extensions').GeneratedSecretStorageKey | null
 }
 
+/**
+ * @remarks 密钥轮换需要管理员权限，普通用户调用将降级处理
+ */
 class MatrixEncryptionService extends BaseMatrixService {
   async getEncryptionSettings(roomId: string): Promise<EncryptionSettings | null> {
     let client: MatrixClient
@@ -116,6 +119,10 @@ class MatrixEncryptionService extends BaseMatrixService {
         needsRotation: response.needs_rotation ?? true
       }
     } catch (err) {
+      if (this.isForbiddenError(err)) {
+        logger.warn('[Encryption] 密钥轮换需要管理员权限，降级返回默认值')
+        return { enabled: false, intervalMs: 0, needsRotation: false, lastRotation: undefined }
+      }
       logger.error(`[Encryption] 获取密钥轮换状态失败: ${err}`)
       return { enabled: true, intervalMs: 604800000, needsRotation: false }
     }
@@ -133,6 +140,10 @@ class MatrixEncryptionService extends BaseMatrixService {
       const response = await client.getKeyRotationManager().postCheck()
       return response.needs_rotation ?? false
     } catch (err) {
+      if (this.isForbiddenError(err)) {
+        logger.warn('[Encryption] 检查密钥轮换需要管理员权限，降级返回 false')
+        return false
+      }
       logger.error(`[Encryption] 检查密钥轮换需求失败: ${err}`)
       return false
     }
@@ -150,6 +161,10 @@ class MatrixEncryptionService extends BaseMatrixService {
         rotatedAt: response.rotated_at ?? Date.now()
       }
     } catch (err) {
+      if (this.isForbiddenError(err)) {
+        logger.warn('[Encryption] 密钥轮换需要管理员权限，降级返回失败结果')
+        return { success: false, keyId: '', rotatedAt: 0 }
+      }
       logger.error(`[Encryption] 密钥轮换失败: ${err}`)
       throw err
     }
@@ -181,6 +196,10 @@ class MatrixEncryptionService extends BaseMatrixService {
         deviceId
       }))
     } catch (err) {
+      if (this.isForbiddenError(err)) {
+        logger.warn('[Encryption] 获取轮换历史需要管理员权限，降级返回空数组')
+        return []
+      }
       logger.error(`[Encryption] 获取轮换历史失败: ${err}`)
       return []
     }
@@ -198,6 +217,10 @@ class MatrixEncryptionService extends BaseMatrixService {
       logger.info(`[Encryption] 撤销旧密钥成功: ${totalRevoked} 个`)
       return totalRevoked
     } catch (err) {
+      if (this.isForbiddenError(err)) {
+        logger.warn('[Encryption] 撤销旧密钥需要管理员权限，降级返回 0')
+        return 0
+      }
       logger.error(`[Encryption] 撤销旧密钥失败: ${err}`)
       throw err
     }
@@ -213,9 +236,31 @@ class MatrixEncryptionService extends BaseMatrixService {
       })
       logger.info('[Encryption] 密钥轮换配置已更新')
     } catch (err) {
+      if (this.isForbiddenError(err)) {
+        logger.warn('[Encryption] 配置密钥轮换需要管理员权限，降级跳过')
+        return
+      }
       logger.error(`[Encryption] 配置密钥轮换失败: ${err}`)
       throw err
     }
+  }
+
+  private isForbiddenError(err: unknown): boolean {
+    if (err instanceof Error) {
+      const msg = err.message.toLowerCase()
+      if (msg.includes('403') || msg.includes('forbidden') || msg.includes('forbidden access')) {
+        return true
+      }
+    }
+    if (typeof err === 'object' && err !== null) {
+      const code = (err as Record<string, unknown>).httpStatus
+      if (code === 403) return true
+      const errCode = (err as Record<string, unknown>).errcode || (err as Record<string, unknown>).error
+      if (typeof errCode === 'string' && (errCode.includes('403') || errCode.toLowerCase().includes('forbidden'))) {
+        return true
+      }
+    }
+    return false
   }
 }
 
