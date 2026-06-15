@@ -149,7 +149,7 @@ vi.mock('@/services/matrix/notifications/MatrixPushService', () => ({
 
 vi.mock('@/services/matrix/notifications/MatrixNotificationService', () => ({
   matrixNotificationService: {
-    getNotifications: vi.fn().mockResolvedValue([]),
+    getNotifications: vi.fn().mockResolvedValue({ notifications: [] }),
     syncDndFromAccountData: vi.fn().mockResolvedValue(null),
     syncDndToAccountData: vi.fn()
   }

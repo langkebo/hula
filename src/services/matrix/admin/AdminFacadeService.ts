@@ -110,6 +110,7 @@ class AdminFacadeService extends BaseMatrixService {
   readonly security = new AdminSecurityService(() => this.sdkAdmin())
   readonly server = new AdminServerService(() => this.sdkAdmin())
   readonly media = new AdminMediaService(() => this.sdkAdmin())
+  // biome-ignore lint/suspicious/noExplicitAny: SDK admin type differs from service wrapper type
   readonly notifications = new AdminNotificationService(() => this.sdkAdmin() as Promise<any>)
   readonly retention = new AdminRetentionService(
     () => this.sdkAdmin(),

@@ -37,6 +37,7 @@ export const Default: Story = {
   },
   render,
   decorators: [
+    // biome-ignore lint/suspicious/noExplicitAny: Storybook decorator signature
     (story: any) => {
       resetGroupStoreMock()
       configureGroupStoreMock({
@@ -61,6 +62,7 @@ export const Loading: Story = {
   },
   render,
   decorators: [
+    // biome-ignore lint/suspicious/noExplicitAny: Storybook decorator signature
     (story: any) => {
       resetGroupStoreMock()
       // Don't configure mock, buildRoomDetail will be slow or we could mock loading state if needed
@@ -97,6 +99,7 @@ export const LongAnnouncement: Story = {
   },
   render,
   decorators: [
+    // biome-ignore lint/suspicious/noExplicitAny: Storybook decorator signature
     (story: any) => {
       resetGroupStoreMock()
       configureGroupStoreMock({

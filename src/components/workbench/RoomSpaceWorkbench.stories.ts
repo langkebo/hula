@@ -671,7 +671,9 @@ export const Default: Story = {
     settingsName: '设计协作',
     settingsTopic: '设计评审与交付',
     spaceTreeLoader: createStorySpaceTreeLoader(),
+    // biome-ignore lint/suspicious/noExplicitAny: Storybook render callback args are untyped
     onMsgClick: (_item: any) => {},
+    // biome-ignore lint/suspicious/noExplicitAny: Storybook render callback args are untyped
     onMsgDblclick: (_item: any) => {},
     onRetryNetwork: () => {}
   },
@@ -747,6 +749,7 @@ export const BatchMode: Story = {
   args: {
     ...Default.args
   },
+  // biome-ignore lint/suspicious/noExplicitAny: Storybook render functions use untyped args
   render: (args: any) => renderWithBatchMode(args)
 }
 
@@ -767,6 +770,7 @@ export const NarrowDrawer: Story = {
     ...Default.args,
     layoutModeOverride: 'narrow'
   },
+  // biome-ignore lint/suspicious/noExplicitAny: Storybook render functions use untyped args
   render: (args: any) => renderWithDetailDrawer(args)
 }
 
@@ -774,6 +778,7 @@ export const PerfFilterLatency: Story = {
   args: {
     ...Default.args
   },
+  // biome-ignore lint/suspicious/noExplicitAny: Storybook render functions use untyped args
   render: (args: any) =>
     renderWithPerfHarness(args, {
       actionLabel: '采样筛选耗时',
@@ -791,6 +796,7 @@ export const PerfSpaceSwitch: Story = {
   args: {
     ...Default.args
   },
+  // biome-ignore lint/suspicious/noExplicitAny: Storybook render functions use untyped args
   render: (args: any) =>
     renderWithPerfHarness(args, {
       actionLabel: '采样空间切换耗时',
@@ -810,6 +816,7 @@ export const PerfPaginationAppend: Story = {
   args: {
     ...Default.args
   },
+  // biome-ignore lint/suspicious/noExplicitAny: Storybook render functions use untyped args
   render: (args: any) =>
     renderWithPerfHarness(args, {
       actionLabel: '采样分页追加耗时',
