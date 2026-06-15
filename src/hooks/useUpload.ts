@@ -178,7 +178,7 @@ export const useUpload = () => {
   }
 
   const getUploadCredential = async (fileName: string, scene?: UploadSceneEnum) => {
-    const credential = await uploadService.getOssToken({ scene, fileName })
+    const credential = await uploadService.getOssToken({ scene, filename: fileName })
     if (!credential) {
       // upload/token 端点不可用，返回 null 让调用方降级到标准 Matrix 上传
       return null

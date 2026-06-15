@@ -786,22 +786,10 @@ class MatrixMessageService extends BaseMatrixService {
   }
 
   /**
-   * 流式发送消息（用于 AI 消息等场景）
-   *
-   * @param roomId - 房间 ID
-   * @param content - 消息内容
-   * @param txId - 事务 ID
-   * @returns 发送响应
+   * @deprecated 使用 {@link sendMessageStream} 代替，该方法将在未来版本中移除。
    */
   async messageSendStream(roomId: string, content: string, txId?: string): Promise<ISendEventResponse> {
-    return this.sendWithRetry(async () => {
-      const client = this.getClient()
-
-      const txnId = txId || `m${Date.now()}`
-      const response = await client.sendTextMessage(roomId, content, txnId)
-      logger.info(`[MatrixMessage] Stream message sent to ${roomId}: ${txnId}`)
-      return response
-    }, 'messageSendStream')
+    return this.sendMessageStream(roomId, content, txId)
   }
 }
 

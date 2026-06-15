@@ -376,6 +376,13 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取当前用户已加入的房间列表。
+   *
+   * 注意：`/_matrix/client/v3/my_rooms` 并非标准 Matrix Spec 端点，
+   * 在某些后端（如 synapse-rust）上可能返回 404。
+   * 当该端点不可用时，自动降级为 SDK 的标准 `getJoinedRooms()` 方法。
+   */
   async getMyRooms(): Promise<string[]> {
     const client = this.getClient()
 
@@ -383,6 +390,18 @@ class MatrixAccountService extends BaseMatrixService {
       const result = await client.http.authedRequest('GET', '/_matrix/client/v3/my_rooms')
       return (result as { room_ids?: string[] }).room_ids ?? []
     } catch (err) {
+      // 如果返回 404，说明该非标准端点在后端不存在，降级到标准 Matrix API
+      const statusCode = (err as { httpStatus?: number }).httpStatus
+      if (statusCode === 404) {
+        logger.info('[MatrixAccount] /my_rooms 端点不可用(404)，降级使用 getJoinedRooms()')
+        try {
+          const joinedRooms = await client.getJoinedRooms()
+          return joinedRooms.map((room: { roomId: string }) => room.roomId)
+        } catch (fallbackErr) {
+          logger.error(`[MatrixAccount] 降级 getJoinedRooms() 也失败: ${fallbackErr}`)
+          return []
+        }
+      }
       logger.error(`[MatrixAccount] 获取我的房间列表失败: ${err}`)
       return []
     }

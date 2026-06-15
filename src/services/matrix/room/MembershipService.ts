@@ -129,14 +129,18 @@ export class MatrixRoomMembershipService {
     }
   }
 
-  async knockRoom(roomId: string, reason?: string): Promise<Room> {
+  async knockRoom(roomId: string, reason?: string, viaServers?: string[]): Promise<{ room_id: string }> {
     const client = this.getClient()
     try {
-      const room = await client.joinRoom(roomId, { viaServers: [], reason } as Record<string, unknown>)
-      logger.info(`[MatrixRoom] 敲门加入房间成功: ${roomId}`)
-      return room
+      const body: Record<string, unknown> = { room_id_or_alias: roomId }
+      if (reason) body.reason = reason
+      if (viaServers && viaServers.length > 0) body.via = viaServers
+
+      const result = await client.http.authedRequest('POST', MATRIX_PATHS.ROOM.KNOCK(roomId), undefined, body)
+      logger.info(`[MatrixRoom] 敲门房间成功: ${roomId}`)
+      return result as { room_id: string }
     } catch (err) {
-      logger.error(`[MatrixRoom] 敲门加入房间失败: ${err}`)
+      logger.error(`[MatrixRoom] 敲门房间失败: ${err}`)
       throw err
     }
   }

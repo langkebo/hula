@@ -1,7 +1,16 @@
 import { type Friend, FriendEvent, type FriendManager, type FriendRequest } from 'matrix-js-sdk/friend'
 
-// Extend FriendStatus for local UI needs
-export type FriendStatus = 'pending' | 'accepted' | 'rejected' | 'favorite' | 'normal' | 'blocked' | 'hidden'
+// 好友请求状态（发送/接受/拒绝流程中的状态）
+export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected'
+
+// 好友关系状态（已建立好友关系后的分类标记）
+export type FriendRelationStatus = 'favorite' | 'normal' | 'blocked' | 'hidden'
+
+/**
+ * @deprecated 请使用 `FriendRequestStatus` 或 `FriendRelationStatus` 替代。
+ * 该类型混合了请求状态和关系状态，语义不清晰，将在未来版本中移除。
+ */
+export type FriendStatus = FriendRequestStatus | FriendRelationStatus
 
 import type { MatrixClient } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
@@ -634,8 +643,9 @@ class MatrixFriendService {
 
       await matrixSpecialFriendService.removeSpecialFriend(userId)
 
+      // 'accepted' 和 'normal' 是默认关系状态，无需调用后端 API
       if (status === 'accepted' || status === 'normal') {
-        logger.info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
+        logger.info(`[MatrixFriend] 设置好友状态成功（本地默认状态，无需后端调用）: ${userId} -> ${status}`)
         return
       }
 

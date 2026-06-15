@@ -126,6 +126,17 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取房间通话会话信息。
+   *
+   * **注意：** 此方法调用的 `GET /_matrix/client/v3/rooms/{roomId}/call/{callId}` 端点
+   * 当前后端尚未实现。请求失败时会返回 `null` 而非抛出异常。
+   *
+   * @param roomId - 房间 ID
+   * @param callId - 通话 ID
+   * @returns 通话会话数据，或 null（端点不可用时）
+   * @todo 等待后端实现 `/call/{callId}` 路由
+   */
   async getRoomCall(roomId: string, callId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {

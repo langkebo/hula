@@ -235,7 +235,7 @@ class MatrixDeviceService extends BaseMatrixService {
       } else {
         // 降级到直接 HTTP 调用
         await client.http.authedRequest('POST', '/_matrix/client/v3/delete_devices', undefined, {
-          devices: deviceIds,
+          device_ids: deviceIds,
           auth
         })
         logger.info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)

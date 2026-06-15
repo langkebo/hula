@@ -36,7 +36,11 @@ class UploadService {
    * @param params 参数
    * @returns OSS 令牌信息
    */
-  async getOssToken(params: { scene?: UploadSceneEnum; fileName: string }): Promise<OssTokenResponse | null> {
+  async getOssToken(params: {
+    scene?: UploadSceneEnum
+    filename: string
+    content_type?: string
+  }): Promise<OssTokenResponse | null> {
     try {
       const response = await fetch(`${this.baseUrl}/_matrix/client/v3/upload/token`, {
         method: 'POST',

@@ -37,7 +37,7 @@ export interface MatrixRoomActionFacade {
   clearUnread(roomId: string): Promise<void>
   forgetRoom(roomId: string): Promise<void>
   upgradeRoom(roomId: string, newVersion: string): Promise<string>
-  knockRoom(roomId: string, reason?: string): Promise<Room>
+  knockRoom(roomId: string, reason?: string, viaServers?: string[]): Promise<{ room_id: string }>
   setRoomAlias(roomId: string, alias: string): Promise<void>
   deleteRoomAlias(alias: string): Promise<void>
   setRoomAccountData(roomId: string, eventType: string, content: Record<string, unknown>): Promise<void>

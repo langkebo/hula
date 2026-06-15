@@ -286,8 +286,8 @@ class MatrixRoomService
     return matrixRoomActionFacade.upgradeRoom(roomId, newVersion)
   }
 
-  knockRoom(roomId: string, reason?: string): Promise<Room> {
-    return matrixRoomActionFacade.knockRoom(roomId, reason)
+  knockRoom(roomId: string, reason?: string, viaServers?: string[]): Promise<{ room_id: string }> {
+    return matrixRoomActionFacade.knockRoom(roomId, reason, viaServers)
   }
 
   setRoomAlias(roomId: string, alias: string): Promise<void> {
