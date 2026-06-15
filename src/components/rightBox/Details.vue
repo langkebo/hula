@@ -244,7 +244,7 @@ const openImageViewer = () => {
 }
 
 .single-details__avatar {
-  border: 3px solid rgba(255, 255, 255, 0.85);
+  border: 3px solid var(--hula-overlay-mobile-sheet);
   box-shadow: var(--hula-shadow-lg);
 }
 
