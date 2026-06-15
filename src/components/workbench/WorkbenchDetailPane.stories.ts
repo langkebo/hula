@@ -85,6 +85,7 @@ export const Default: Story = {
   },
   render,
   decorators: [
+    // biome-ignore lint/suspicious/noExplicitAny: Storybook decorator signature
     (story: any) => {
       resetGroupStoreMock()
       resetAnnouncementStoreMock()
@@ -151,6 +152,7 @@ export const MembersMode: Story = {
   args: {
     ...Default.args
   },
+  // biome-ignore lint/suspicious/noExplicitAny: Storybook render functions use untyped args
   render: (args: any) => renderWithTab(args, 'members'),
   decorators: Default.decorators
 }
@@ -159,6 +161,7 @@ export const ActivityMode: Story = {
   args: {
     ...Default.args
   },
+  // biome-ignore lint/suspicious/noExplicitAny: Storybook render functions use untyped args
   render: (args: any) => renderWithTab(args, 'activity'),
   decorators: Default.decorators
 }

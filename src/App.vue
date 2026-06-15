@@ -192,7 +192,7 @@ const presenceSync = usePresenceSync({
   getMatrixClientService,
   getMatrixPresenceService,
   globalStore,
-  sessionStore: sessionStore as any
+  sessionStore
 })
 
 // ========== WS event handler ==========

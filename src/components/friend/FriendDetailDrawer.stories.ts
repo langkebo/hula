@@ -18,6 +18,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+// biome-ignore lint/suspicious/noExplicitAny: Storybook render functions use untyped args
 const render: Story['render'] = (args: any) =>
   defineComponent({
     components: { FriendDetailDrawer },

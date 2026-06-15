@@ -290,7 +290,7 @@ async function fetchNotifications() {
   historyLoading.value = true
   try {
     const result = await matrixNotificationService.getNotifications(undefined, 20)
-    notifications.value = result.notifications
+    notifications.value = (result as { notifications?: Array<Record<string, unknown>> })?.notifications ?? []
   } catch (error) {
     logger.warn('Failed to fetch notifications', error)
   } finally {

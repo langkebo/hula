@@ -476,6 +476,7 @@ class MatrixCryptoService extends BaseMatrixService {
       if (fallbackKeys) {
         requestBody.fallback_keys = fallbackKeys
       }
+      // biome-ignore lint/suspicious/noExplicitAny: SDK expects DeviceKeys/OneTimeKeys types
       const result = await manager.uploadKeys(requestBody as any)
       logger.info('[MatrixCrypto] 上传密钥成功')
       return { oneTimeKeyCounts: result.one_time_key_counts ?? {} }
