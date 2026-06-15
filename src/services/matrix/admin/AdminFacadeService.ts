@@ -110,7 +110,7 @@ class AdminFacadeService extends BaseMatrixService {
   readonly security = new AdminSecurityService(() => this.sdkAdmin())
   readonly server = new AdminServerService(() => this.sdkAdmin())
   readonly media = new AdminMediaService(() => this.sdkAdmin())
-  readonly notifications = new AdminNotificationService(() => this.sdkAdmin())
+  readonly notifications = new AdminNotificationService(() => this.sdkAdmin() as Promise<any>)
   readonly retention = new AdminRetentionService(
     () => this.sdkAdmin(),
     () => this.getClient()
@@ -253,7 +253,7 @@ class AdminFacadeService extends BaseMatrixService {
     limit = 100,
     from?: string,
     name?: string,
-    _guests = true
+    _guests?: boolean
   ): Promise<{ users: UserInfo[]; nextToken?: string }> {
     return this.users.getUsers(limit, from, name, _guests)
   }

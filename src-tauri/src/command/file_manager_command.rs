@@ -99,15 +99,15 @@ pub async fn query_files(
     let messages = match param.navigation_type.as_str() {
         "myFiles" => {
             // 查询所有房间的文件
-            query_all_files(&*db, &login_uid, &param).await?
+            query_all_files(&db, &login_uid, &param).await?
         }
         "senders" => {
             // 按发送人分组查询文件
-            query_files_by_senders(&*db, &login_uid, &param).await?
+            query_files_by_senders(&db, &login_uid, &param).await?
         }
         "sessions" | "groups" => {
             // 按会话或群聊分组查询文件
-            query_files_by_sessions(&*db, &login_uid, &param).await?
+            query_files_by_sessions(&db, &login_uid, &param).await?
         }
         _ => {
             return Err("不支持的导航类型".to_string());
@@ -117,7 +117,7 @@ pub async fn query_files(
     // 转换为文件信息
     let file_infos: Vec<FileInfo> = messages
         .into_iter()
-        .filter_map(|msg| convert_message_to_file_info(msg))
+        .filter_map(convert_message_to_file_info)
         .collect();
 
     // 提取用户列表
@@ -269,7 +269,7 @@ fn convert_message_to_file_info(record: MessageWithThumbnail) -> Option<FileInfo
                     if message_type == 6 {
                         file_data["url"].as_str().and_then(|url| {
                             url.split('/')
-                                .last()
+                                .next_back()
                                 .map(|s| s.split('?').next().unwrap_or(s))
                         })
                     } else {

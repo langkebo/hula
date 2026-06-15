@@ -264,7 +264,7 @@ pub fn convert_message_to_resp(
             message_marks,
             send_time: msg.send_time,
         },
-        old_msg_id: old_msg_id,
+        old_msg_id,
         time_block: msg.time_block,
     }
 }
@@ -288,19 +288,19 @@ fn inject_thumbnail_path(body: &mut Option<serde_json::Value>, path: Option<&str
         return;
     }
 
-    if let Some(val) = body {
-        if let Some(map) = val.as_object_mut() {
-            let exists = map
-                .get("thumbnailPath")
-                .and_then(|v| v.as_str())
-                .map(|s| !s.is_empty())
-                .unwrap_or(false);
-            if !exists {
-                map.insert(
-                    "thumbnailPath".to_string(),
-                    serde_json::Value::String(path.to_string()),
-                );
-            }
+    if let Some(val) = body
+        && let Some(map) = val.as_object_mut()
+    {
+        let exists = map
+            .get("thumbnailPath")
+            .and_then(|v| v.as_str())
+            .map(|s| !s.is_empty())
+            .unwrap_or(false);
+        if !exists {
+            map.insert(
+                "thumbnailPath".to_string(),
+                serde_json::Value::String(path.to_string()),
+            );
         }
     }
 }
@@ -489,20 +489,20 @@ pub async fn delete_message(
     let resolved_room_id = if let Some(room) = room_id {
         room
     } else {
-        im_message_repository::get_room_id_by_message_id(&*db, &message_id, &login_uid)
+        im_message_repository::get_room_id_by_message_id(&db, &message_id, &login_uid)
             .await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Message not found or room info missing".to_string())?
     };
 
-    im_message_repository::delete_message_by_id(&*db, &message_id, &login_uid)
+    im_message_repository::delete_message_by_id(&db, &message_id, &login_uid)
         .await
         .map_err(|e| {
             error!("Failed to delete message {}: {}", message_id, e);
             e.to_string()
         })?;
 
-    im_message_repository::record_deleted_message(&*db, &message_id, &resolved_room_id, &login_uid)
+    im_message_repository::record_deleted_message(&db, &message_id, &resolved_room_id, &login_uid)
         .await
         .map_err(|e| {
             error!(
@@ -528,7 +528,7 @@ pub async fn delete_room_messages(
     let login_uid = state.user_info.lock().await.uid.clone();
     let db = state.db_conn.read().await;
 
-    let last_msg_id = im_message_repository::get_room_max_message_id(&*db, &room_id, &login_uid)
+    let last_msg_id = im_message_repository::get_room_max_message_id(&db, &room_id, &login_uid)
         .await
         .map_err(|e| {
             error!(
@@ -538,14 +538,14 @@ pub async fn delete_room_messages(
             e.to_string()
         })?;
 
-    let affected_rows = im_message_repository::delete_messages_by_room(&*db, &room_id, &login_uid)
+    let affected_rows = im_message_repository::delete_messages_by_room(&db, &room_id, &login_uid)
         .await
         .map_err(|e| {
             error!("Failed to delete messages for room {}: {}", room_id, e);
             e.to_string()
         })?;
 
-    im_message_repository::record_room_clear(&*db, &room_id, &login_uid, last_msg_id)
+    im_message_repository::record_room_clear(&db, &room_id, &login_uid, last_msg_id)
         .await
         .map_err(|e| {
             error!(

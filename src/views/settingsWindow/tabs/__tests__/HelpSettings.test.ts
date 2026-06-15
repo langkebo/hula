@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import HelpSettings from '../HelpSettings.vue'
@@ -68,6 +69,12 @@ vi.mock('naive-ui', () => ({
     props: ['size', 'type', 'loading']
   },
   NDivider: { name: 'NDivider', template: '<hr />' },
+  NModal: {
+    name: 'NModal',
+    template: '<div class="n-modal"><slot /></div>',
+    props: ['show', 'title', 'positiveText', 'negativeText', 'maskClosable'],
+    emits: ['update:show', 'positiveClick', 'negativeClick']
+  },
   useMessage: () => ({ success: messageSuccessMock, error: messageErrorMock, info: messageInfoMock })
 }))
 
@@ -115,7 +122,9 @@ describe('HelpSettings', () => {
   const openWindowMock = vi.fn()
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, error: messageErrorMock, info: messageInfoMock }
     isDesktopPlatformMock = false
 
     fetchMock.mockResolvedValue({

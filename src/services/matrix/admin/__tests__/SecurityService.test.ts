@@ -20,7 +20,22 @@ const makeAdmin = () =>
     updateFeatureFlag: vi.fn(),
     deleteFeatureFlag: vi.fn(),
     listBackups: vi.fn(),
-    getAuditEvent: vi.fn()
+    getAuditEvent: vi.fn(),
+    listSamlMappings: vi.fn(),
+    listSecurityEvents: vi.fn(),
+    blockIp: vi.fn(),
+    unblockIp: vi.fn(),
+    listIpBlocks: vi.fn(),
+    getIpReputation: vi.fn(),
+    getSamlConfig: vi.fn(),
+    getSamlMetadata: vi.fn(),
+    getSpMetadata: vi.fn(),
+    updateSamlConfig: vi.fn(),
+    refreshIdpMetadata: vi.fn(),
+    getSamlMapping: vi.fn(),
+    updateSamlMapping: vi.fn(),
+    deleteSamlMapping: vi.fn(),
+    samlLogout: vi.fn()
   }) as unknown as AdminManager
 
 describe('AdminSecurityService', () => {
@@ -57,7 +72,7 @@ describe('AdminSecurityService', () => {
   it('maps audit log query and response', async () => {
     ;(admin as any).listAuditEvents.mockResolvedValueOnce({
       events: [{ event_id: '$e1' }],
-      next_batch: 'next'
+      next_token: 'next'
     })
 
     const result = await service.getAuditLog(25, '1700000000', '@u:server', 'login')

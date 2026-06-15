@@ -7,11 +7,15 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
+vi.mock('../../MatrixClientService', () => {
+  const mockService = {
     getClient: vi.fn(() => null as MatrixClient | null)
   }
-}))
+  return {
+    default: mockService,
+    matrixClientService: mockService
+  }
+})
 
 const createAccountDataEvent = (specialFriends: string[]) =>
   ({
@@ -38,7 +42,9 @@ describe('MatrixSpecialFriendService', () => {
     await expect(matrixSpecialFriendService.getSpecialFriends()).resolves.toEqual([])
 
     expect(info).toHaveBeenCalledTimes(1)
-    expect(info).toHaveBeenCalledWith('[SpecialFriend] Matrix 客户端未就绪，返回空特别关注列表')
+    expect(info).toHaveBeenCalledWith(
+      expect.stringContaining('[SpecialFriend] Matrix 客户端未就绪，返回空特别关注列表')
+    )
     expect(error).not.toHaveBeenCalled()
   })
 

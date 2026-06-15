@@ -5,6 +5,7 @@
  * 参考 API 契约: device.md
  */
 
+import type { IDeviceUpdateRequest } from 'matrix-js-sdk'
 import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -150,12 +151,18 @@ class MatrixDeviceService extends BaseMatrixService {
    */
   async updateDevice(deviceId: string, displayName: string): Promise<DeviceUpdateResponse> {
     try {
+      // SDK-9: 设备名称长度 ≤100 字符前端校验
+      if (displayName && displayName.length > 100) {
+        throw new Error(`设备名称不能超过 100 个字符（当前: ${displayName.length}）`)
+      }
+
       const client = this.getClient()
       const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
 
       if (deviceManager) {
-        // 使用 DeviceManager
-        await deviceManager.updateDevice(deviceId, displayName)
+        // 使用 DeviceManager（SDK-9: 适配 IDeviceUpdateRequest 对象签名）
+        const updates: IDeviceUpdateRequest = { display_name: displayName }
+        await deviceManager.updateDevice(deviceId, updates)
         logger.info(`[DeviceService] 更新设备成功: ${deviceId}`)
         return {
           device_id: deviceId,

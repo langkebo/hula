@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import type { DeviceInfo } from '@/services/matrix/user/MatrixAccountService'
@@ -99,7 +100,9 @@ describe('SessionSettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as SessionSettingsVm
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, error: messageErrorMock, warning: messageWarningMock }
     localStorage.clear()
     getDevicesMock.mockResolvedValue([])
   })

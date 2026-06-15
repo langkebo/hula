@@ -150,7 +150,7 @@ describe('MatrixDeviceService', () => {
 
       expect(result.device_id).toBe('DEVICE1')
       expect(result.display_name).toBe('New Name')
-      expect(mockDeviceManager.updateDevice).toHaveBeenCalledWith('DEVICE1', 'New Name')
+      expect(mockDeviceManager.updateDevice).toHaveBeenCalledWith('DEVICE1', { display_name: 'New Name' })
     })
 
     it('应该通过 HTTP 更新设备', async () => {

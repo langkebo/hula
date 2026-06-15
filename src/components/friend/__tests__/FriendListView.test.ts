@@ -7,6 +7,7 @@ import FriendListView from '../FriendListView.vue'
 const { contactStoreMock, capabilityState, announceMock, addSpecialFriendMock, showFeedbackMock } = vi.hoisted(() => ({
   contactStoreMock: {
     contactsList: [] as Array<Record<string, unknown>>,
+    requestFriendsList: [] as Array<Record<string, unknown>>,
     isLoading: false,
     incomingRequestsCount: 0,
     lastFriendError: null as { message: string } | null,

@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import PreferencesSettings from '../PreferencesSettings.vue'
@@ -213,6 +214,12 @@ vi.mock('naive-ui', () => ({
   NSelect: { name: 'NSelect', template: '<select><slot /></select>', props: ['value', 'options'] },
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
   NDivider: { name: 'NDivider', template: '<hr />' },
+  NModal: {
+    name: 'NModal',
+    template: '<div class="n-modal"><slot /></div>',
+    props: ['show', 'title', 'positiveText', 'negativeText', 'maskClosable'],
+    emits: ['update:show', 'positiveClick', 'negativeClick']
+  },
   useMessage: () => ({ success: messageSuccessMock, warning: messageWarningMock, error: messageErrorMock })
 }))
 
@@ -282,7 +289,9 @@ describe('PreferencesSettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as PreferencesSettingsVm
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, warning: messageWarningMock, error: messageErrorMock }
     localStorage.clear()
     settingStoreMock.chat.sendKey = 'Enter'
     settingStoreMock.autoLoginEnabled = false

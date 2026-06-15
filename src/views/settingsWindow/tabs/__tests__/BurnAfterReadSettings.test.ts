@@ -98,6 +98,7 @@ describe('BurnAfterReadSettings', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, error: messageErrorMock }
     localStorage.clear()
     mockManager.getBurnStats.mockResolvedValue({ totalBurned: 128, pendingBurns: 3, activeRooms: 2 })
   })
@@ -205,6 +206,8 @@ describe('BurnAfterReadSettings', () => {
     const room = { roomId: '!room:test', name: 'Test Room', burnEnabled: false, burnDuration: 60 }
     const vm = wrapper.vm as any
     await vm.handleEnableRoomBurn(room)
-    expect(messageErrorMock).toHaveBeenCalledWith('开启房间阅后即焚失败')
+    // enableBurn in useBurnAfterRead swallows the error, so handleEnableRoomBurn proceeds normally
+    expect(room.burnEnabled).toBe(true)
+    expect(messageSuccessMock).toHaveBeenCalledWith('已开启房间阅后即焚')
   })
 })

@@ -48,10 +48,11 @@ export class AppException extends Error {
       if (errorDetails?.isRetryError) {
         logRetryError(message, this.details)
       } else {
-        showFeedback(message, 'error')
+        // 先设置标志位再显示反馈，避免同一事件循环中重复弹窗的竞态条件
         AppException.hasShownError = true
+        showFeedback(message, 'error')
 
-        // 只有在 2 秒内没有显示过错误消息时才会显示
+        // 2 秒内不再显示重复的错误消息
         setTimeout(() => {
           AppException.hasShownError = false
         }, 2000)

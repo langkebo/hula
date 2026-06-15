@@ -52,61 +52,53 @@ pub async fn start_oauth_server<R: Runtime>(
 
     // 3. 启动新任务
     let handle = tauri::async_runtime::spawn(async move {
-        loop {
-            if let Ok((mut stream, _)) = listener.accept().await {
-                let mut buffer = [0; 1024];
-                if let Ok(n) = stream.read(&mut buffer).await {
-                    let request = String::from_utf8_lossy(&buffer[..n]);
-                    let mut emitted = false;
-                    if let Some(ts) = request.find("token=") {
-                        let rest = &request[ts + 6..];
-                        let end_amp = rest.find('&').unwrap_or(rest.len());
-                        let end_space = rest.find(' ').unwrap_or(rest.len());
-                        let end = std::cmp::min(end_amp, end_space);
-                        let token = &rest[..end];
-                        let mut refresh = "";
-                        if let Some(rs) = request.find("refreshToken=") {
-                            let rrest = &request[rs + 13..];
-                            let rend_amp = rrest.find('&').unwrap_or(rrest.len());
-                            let rend_space = rrest.find(' ').unwrap_or(rrest.len());
-                            let rend = std::cmp::min(rend_amp, rend_space);
-                            refresh = &rrest[..rend];
-                        }
-                        let mut uid = "";
-                        if let Some(us) = request.find("uid=") {
-                            let urest = &request[us + 4..];
-                            let uend_amp = urest.find('&').unwrap_or(urest.len());
-                            let uend_space = urest.find(' ').unwrap_or(urest.len());
-                            let uend = std::cmp::min(uend_amp, uend_space);
-                            uid = &urest[..uend];
-                        }
-                        let payload =
-                            format!("token={}&refreshToken={}&uid={}", token, refresh, uid);
-                        let _ = app.emit("oauth-token", payload);
-                        emitted = true;
+        while let Ok((mut stream, _)) = listener.accept().await {
+            let mut buffer = [0; 1024];
+            if let Ok(n) = stream.read(&mut buffer).await {
+                let request = String::from_utf8_lossy(&buffer[..n]);
+                let mut emitted = false;
+                if let Some(ts) = request.find("token=") {
+                    let rest = &request[ts + 6..];
+                    let end_amp = rest.find('&').unwrap_or(rest.len());
+                    let end_space = rest.find(' ').unwrap_or(rest.len());
+                    let end = std::cmp::min(end_amp, end_space);
+                    let token = &rest[..end];
+                    let mut refresh = "";
+                    if let Some(rs) = request.find("refreshToken=") {
+                        let rrest = &request[rs + 13..];
+                        let rend_amp = rrest.find('&').unwrap_or(rrest.len());
+                        let rend_space = rrest.find(' ').unwrap_or(rrest.len());
+                        let rend = std::cmp::min(rend_amp, rend_space);
+                        refresh = &rrest[..rend];
                     }
-                    if !emitted {
-                        if let Some(start) = request.find("code=") {
-                            let rest = &request[start + 5..];
-                            let end_amp = rest.find('&').unwrap_or(rest.len());
-                            let end_space = rest.find(' ').unwrap_or(rest.len());
-                            let end = std::cmp::min(end_amp, end_space);
-                            let code = &rest[..end];
-                            let _ = app.emit("gitee-auth-code", code);
-                            emitted = true;
-                        }
+                    let mut uid = "";
+                    if let Some(us) = request.find("uid=") {
+                        let urest = &request[us + 4..];
+                        let uend_amp = urest.find('&').unwrap_or(urest.len());
+                        let uend_space = urest.find(' ').unwrap_or(urest.len());
+                        let uend = std::cmp::min(uend_amp, uend_space);
+                        uid = &urest[..uend];
                     }
-                    let response = if emitted {
-                        "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>登录成功</h1><p>您可以关闭此窗口返回应用。</p></div><script>setTimeout(function(){window.close()}, 2000);</script>"
-                    } else {
-                        "HTTP/1.1 200 OK\r\n\r\n"
-                    };
-                    let _ = stream.write_all(response.as_bytes()).await;
-                    let _ = stream.flush().await;
+                    let payload = format!("token={}&refreshToken={}&uid={}", token, refresh, uid);
+                    let _ = app.emit("oauth-token", payload);
+                    emitted = true;
                 }
-            } else {
-                // accept 失败，可能是 listener 关闭
-                break;
+                if !emitted && let Some(start) = request.find("code=") {
+                    let rest = &request[start + 5..];
+                    let end_amp = rest.find('&').unwrap_or(rest.len());
+                    let end_space = rest.find(' ').unwrap_or(rest.len());
+                    let end = std::cmp::min(end_amp, end_space);
+                    let code = &rest[..end];
+                    let _ = app.emit("gitee-auth-code", code);
+                    emitted = true;
+                }
+                let response = if emitted {
+                    "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>登录成功</h1><p>您可以关闭此窗口返回应用。</p></div><script>setTimeout(function(){window.close()}, 2000);</script>"
+                } else {
+                    "HTTP/1.1 200 OK\r\n\r\n"
+                };
+                let _ = stream.write_all(response.as_bytes()).await;
+                let _ = stream.flush().await;
             }
         }
     });

@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MjolnirSettings from '../MjolnirSettings.vue'
 
@@ -49,7 +50,9 @@ vi.mock('vue-i18n', () => ({
 
 describe('MjolnirSettings', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, warning: messageWarningMock }
     localStorage.clear()
   })
 

@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import SecuritySettings from '../SecuritySettings.vue'
@@ -127,6 +128,17 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   }
 }))
 
+let _encryptionEnabled = false
+vi.mock('@/stores/domains/settings/encryption', () => ({
+  useEncryptionStore: () => ({
+    get encryptionEnabled() {
+      return _encryptionEnabled
+    },
+    securityKeyConfigured: false,
+    loadEncryptionStatus: vi.fn()
+  })
+}))
+
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
     secretChatEnabled: false,
@@ -170,7 +182,9 @@ describe('SecuritySettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as SecuritySettingsVm
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, warning: messageWarningMock, error: messageErrorMock }
     localStorage.clear()
     getIgnoredUsersMock.mockResolvedValue([])
     isEncryptionAvailableMock.mockResolvedValue(false)
@@ -194,6 +208,7 @@ describe('SecuritySettings', () => {
 
   it('shows encryption enabled state', async () => {
     isEncryptionAvailableMock.mockResolvedValue(true)
+    _encryptionEnabled = true
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     expect(getVm(wrapper).encryptionEnabled).toBe(true)

@@ -1,16 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixDehydratedDeviceService } from '../MatrixDehydratedDeviceService'
 
-const mockAuthedRequest = vi.fn()
-const mockGetUserId = vi.fn(() => '@test:example.com')
+const mockManager = {
+  createDevice: vi.fn(),
+  getDevice: vi.fn(),
+  getDevices: vi.fn(),
+  claimDevice: vi.fn(),
+  updateDeviceData: vi.fn(),
+  deleteDevice: vi.fn(),
+  getDeviceEvent: vi.fn()
+}
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
     getClient: vi.fn(() => ({
-      getUserId: mockGetUserId,
-      http: {
-        authedRequest: mockAuthedRequest
-      }
+      getUserId: vi.fn(() => '@test:example.com'),
+      getDehydratedDeviceManager: vi.fn(() => mockManager)
     }))
   }
 }))
@@ -22,10 +27,8 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('createDevice', () => {
     it('should create dehydrated device', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
-        device_id: 'DEVID123',
-        device_data: {},
-        expires_at: Date.now() + 3600000
+      mockManager.createDevice.mockResolvedValueOnce({
+        device_id: 'DEVID123'
       })
 
       const result = await matrixDehydratedDeviceService.createDevice({
@@ -37,7 +40,7 @@ describe('MatrixDehydratedDeviceService', () => {
     })
 
     it('should return null on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      mockManager.createDevice.mockRejectedValueOnce(new Error('Network error'))
 
       const result = await matrixDehydratedDeviceService.createDevice({
         initialDeviceDisplayName: 'Test Device'
@@ -49,7 +52,7 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('getDevice', () => {
     it('should get device by ID', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
+      mockManager.getDevice.mockResolvedValueOnce({
         device_id: 'DEVID123',
         initial_device_display_name: 'Test Device',
         device_data: {},
@@ -64,7 +67,7 @@ describe('MatrixDehydratedDeviceService', () => {
     })
 
     it('should return null on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Not found'))
+      mockManager.getDevice.mockRejectedValueOnce(new Error('Not found'))
 
       const result = await matrixDehydratedDeviceService.getDevice('DEVID123')
 
@@ -74,7 +77,7 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('getDevices', () => {
     it('should list all dehydrated devices', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
+      mockManager.getDevices.mockResolvedValueOnce({
         devices: [
           { device_id: 'DEVID1', initial_device_display_name: 'Device 1' },
           { device_id: 'DEVID2', initial_device_display_name: 'Device 2' }
@@ -87,7 +90,7 @@ describe('MatrixDehydratedDeviceService', () => {
     })
 
     it('should return empty array on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      mockManager.getDevices.mockRejectedValueOnce(new Error('Network error'))
 
       const result = await matrixDehydratedDeviceService.getDevices()
 
@@ -97,7 +100,7 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('claimDevice', () => {
     it('should claim device with signing key', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
+      mockManager.claimDevice.mockResolvedValueOnce({
         access_token: 'token123',
         device_id: 'DEVID123'
       })
@@ -109,7 +112,7 @@ describe('MatrixDehydratedDeviceService', () => {
     })
 
     it('should return null on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      mockManager.claimDevice.mockRejectedValueOnce(new Error('Network error'))
 
       const result = await matrixDehydratedDeviceService.claimDevice('DEVID123', 'signing_key')
 
@@ -119,7 +122,7 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('updateDeviceData', () => {
     it('should update device data', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
+      mockManager.updateDeviceData.mockResolvedValueOnce({ device_id: 'DEVID123' })
 
       const result = await matrixDehydratedDeviceService.updateDeviceData('DEVID123', { key: 'value' })
 
@@ -127,7 +130,7 @@ describe('MatrixDehydratedDeviceService', () => {
     })
 
     it('should return false on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      mockManager.updateDeviceData.mockRejectedValueOnce(new Error('Network error'))
 
       const result = await matrixDehydratedDeviceService.updateDeviceData('DEVID123', { key: 'value' })
 
@@ -137,7 +140,7 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('deleteDevice', () => {
     it('should delete device', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
+      mockManager.deleteDevice.mockResolvedValueOnce({})
 
       const result = await matrixDehydratedDeviceService.deleteDevice('DEVID123')
 
@@ -145,7 +148,7 @@ describe('MatrixDehydratedDeviceService', () => {
     })
 
     it('should return false on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      mockManager.deleteDevice.mockRejectedValueOnce(new Error('Network error'))
 
       const result = await matrixDehydratedDeviceService.deleteDevice('DEVID123')
 
@@ -155,7 +158,7 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('getDeviceEvent', () => {
     it('should get device event', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
+      mockManager.getDeviceEvent.mockResolvedValueOnce({
         events: ['event1', 'event2']
       })
 
@@ -165,7 +168,7 @@ describe('MatrixDehydratedDeviceService', () => {
     })
 
     it('should return null on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      mockManager.getDeviceEvent.mockRejectedValueOnce(new Error('Network error'))
 
       const result = await matrixDehydratedDeviceService.getDeviceEvent('DEVID123')
 

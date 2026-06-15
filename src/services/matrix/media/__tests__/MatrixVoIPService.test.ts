@@ -7,11 +7,15 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
+vi.mock('../../MatrixClientService', () => {
+  const mockService = {
     getClient: vi.fn(() => null as MatrixClient | null)
   }
-}))
+  return {
+    default: mockService,
+    matrixClientService: mockService
+  }
+})
 
 const { default: matrixClientService } = await import('../../MatrixClientService')
 const { matrixVoIPService } = await import('../MatrixVoIPService')

@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import VoiceVideoSettings from '../VoiceVideoSettings.vue'
 
@@ -88,6 +89,12 @@ vi.mock('naive-ui', () => ({
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['type', 'loading'] },
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
   NDivider: { name: 'NDivider', template: '<hr />' },
+  NModal: {
+    name: 'NModal',
+    template: '<div class="n-modal"><slot /></div>',
+    props: ['show', 'title', 'positiveText', 'negativeText', 'maskClosable'],
+    emits: ['update:show', 'positiveClick', 'negativeClick']
+  },
   useMessage: () => ({ success: messageSuccessMock, error: messageErrorMock })
 }))
 
@@ -112,7 +119,9 @@ vi.mock('@/utils/Logger', () => ({
 
 describe('VoiceVideoSettings', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, error: messageErrorMock }
     localStorage.clear()
 
     Object.defineProperty(navigator, 'mediaDevices', {

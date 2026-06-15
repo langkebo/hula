@@ -416,17 +416,17 @@ class MatrixClientService {
         clientOpts.idBaseUrl = config.identityServerUrl
       }
 
-      // 不在这里创建 SlidingSync，延迟到 startClient() 时创建
-      // 这样可以确保有有效的 accessToken
-      this.client = createClient(clientOpts)
-
-      // 注册全局 accessor，消除 "getClient 在 accessor 注册前被调用" 警告
+      // 注册全局 accessor（提前注册，getter 延迟访问 this.client）
       setMatrixClientAccessor({
         getClient: () => this.client,
         getAccessToken: () => this.client?.getAccessToken() ?? null,
         getHomeserverUrl: () => this.client?.getHomeserverUrl() ?? null,
         waitForClientReady: (opts) => this.waitForClientReady(opts)
       })
+
+      // 不在这里创建 SlidingSync，延迟到 startClient() 时创建
+      // 这样可以确保有有效的 accessToken
+      this.client = createClient(clientOpts)
 
       logger.info(`客户端初始化完成: ${config.homeserverUrl}`)
     } catch (err) {

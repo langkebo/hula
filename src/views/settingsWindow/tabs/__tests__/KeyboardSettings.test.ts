@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import KeyboardSettings from '../KeyboardSettings.vue'
@@ -95,7 +96,9 @@ describe('KeyboardSettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as KeyboardSettingsVm
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock }
 
     mockStore = {
       screenshotShortcut: 'Ctrl+Alt+H',

@@ -119,7 +119,7 @@ describe('MatrixSpaceService', () => {
       expect(result[0].spaceId).toBe('!space1:server')
       expect(result[0].name).toBe('Space 1')
       expect(mockHttp.authedRequest).toHaveBeenCalledWith('GET', '/_matrix/client/v3/spaces/search', {
-        query: 'test',
+        search_term: 'test',
         limit: '10'
       })
     })

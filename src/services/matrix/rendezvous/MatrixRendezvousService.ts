@@ -5,33 +5,60 @@
  * 对应后端: synapse-rust/src/web/routes/rendezvous.rs
  */
 
-import type {
-  CreateSessionResponse,
-  GetMessagesResponse,
-  RendezvousMessage,
-  RendezvousSession,
-  RendezvousSessionIntent,
-  RendezvousSessionStatus,
-  RendezvousSessionTransport,
-  SendMessageResponse,
-  UpdateSessionResponse
-} from 'matrix-js-sdk/rendezvous'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 
 const logger = createLogger('MatrixRendezvousService')
 
-export type {
-  CreateSessionResponse,
-  GetMessagesResponse,
-  RendezvousMessage,
-  RendezvousSession,
-  RendezvousSessionIntent,
-  RendezvousSessionStatus,
-  RendezvousSessionTransport,
-  SendMessageResponse,
-  UpdateSessionResponse
-} from 'matrix-js-sdk/rendezvous'
+export type RendezvousSessionIntent = 'login.start' | 'login.reciprocate'
+
+export type RendezvousSessionTransport = 'http.v1' | 'http.v2'
+
+export type RendezvousSessionStatus = 'created' | 'connected' | 'completed' | 'expired' | 'cancelled'
+
+export interface RendezvousSession {
+  session_id: string
+  intent: RendezvousSessionIntent
+  transport: RendezvousSessionTransport
+  transport_data?: Record<string, unknown>
+  status: RendezvousSessionStatus
+  created_ts: number
+  expires_at?: number
+  user_id?: string
+  device_id?: string
+  key?: string
+}
+
+export interface CreateSessionResponse {
+  url: string
+  session_id: string
+  key: string
+}
+
+export interface UpdateSessionResponse {
+  session_id: string
+  status: RendezvousSessionStatus
+  login_finish?: {
+    access_token: string
+    device_id: string
+    user_id: string
+  }
+}
+
+export interface RendezvousMessage {
+  type: string
+  content: Record<string, unknown>
+}
+
+export interface SendMessageResponse {
+  session_id: string
+  message_id: string
+  sent_ts: number
+}
+
+export interface GetMessagesResponse {
+  messages: RendezvousMessage[]
+}
 
 type RendezvousManagerLike = {
   createSession(options: {

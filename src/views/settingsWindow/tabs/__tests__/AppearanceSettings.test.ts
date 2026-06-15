@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import AppearanceSettings from '../AppearanceSettings.vue'
@@ -80,6 +81,12 @@ vi.mock('naive-ui', () => ({
     props: ['value']
   },
   NDivider: { name: 'NDivider', template: '<hr />' },
+  NModal: {
+    name: 'NModal',
+    template: '<div class="n-modal"><slot /></div>',
+    props: ['show', 'title', 'positiveText', 'negativeText', 'maskClosable'],
+    emits: ['update:show', 'positiveClick', 'negativeClick']
+  },
   NSelect: { name: 'NSelect', template: '<select><slot /></select>', props: ['value', 'options'] },
   useMessage: () => ({ success: messageSuccessMock })
 }))
@@ -105,7 +112,9 @@ describe('AppearanceSettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as AppearanceSettingsVm
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock }
     localStorage.clear()
     document.documentElement.style.removeProperty('--font-family')
     document.documentElement.style.removeProperty('--font-size-base')

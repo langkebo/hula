@@ -5,6 +5,7 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 import { visualizer } from 'rollup-plugin-visualizer'
 import AutoImport from 'unplugin-auto-import/vite'
 import type { UserConfig } from 'vite'
+import compression from 'vite-plugin-compression'
 import VueSetupExtend from 'vite-plugin-vue-setup-extend'
 import packageJson from '../../package.json'
 import { createManualChunks } from './chunks'
@@ -100,6 +101,18 @@ export const baseConfig: UserConfig = {
       gzipSize: true,
       brotliSize: true,
       filename: 'dist/stats.html'
+    }),
+    compression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+      threshold: 1024,
+      deleteOriginFile: false
+    }),
+    compression({
+      algorithm: 'gzip',
+      ext: '.gz',
+      threshold: 1024,
+      deleteOriginFile: false
     })
   ],
   worker: {
@@ -110,6 +123,7 @@ export const baseConfig: UserConfig = {
     cssCodeSplit: true,
     minify: 'esbuild',
     chunkSizeWarningLimit: 500,
+    reportCompressedSize: false,
     modulePreload: {
       polyfill: true,
       resolveDependencies: (_filename, deps) => {

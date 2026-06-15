@@ -7,9 +7,10 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 const getClientMock = vi.fn()
+const waitForClientReadyMock = vi.fn().mockResolvedValue(undefined)
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() },
-  matrixClientService: { getClient: () => getClientMock() }
+  default: { getClient: () => getClientMock(), waitForClientReady: () => waitForClientReadyMock() },
+  matrixClientService: { getClient: () => getClientMock(), waitForClientReady: () => waitForClientReadyMock() }
 }))
 
 const { MatrixRoomLifecycleService } = await import('../LifecycleService')

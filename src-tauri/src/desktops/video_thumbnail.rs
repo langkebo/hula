@@ -76,7 +76,7 @@ async fn generate_thumbnail_macos(
 
     // 使用 qlmanage 生成缩略图
     let output = Command::new("qlmanage")
-        .args(&[
+        .args([
             "-t",
             "-s",
             "300", // 缩略图大小
@@ -91,20 +91,14 @@ async fn generate_thumbnail_macos(
         ])
         .output()
         .map_err(|e| {
-            tauri::Error::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("执行 qlmanage 失败: {}", e),
-            ))
+            tauri::Error::Io(std::io::Error::other(format!("执行 qlmanage 失败: {}", e)))
         })?;
 
     if !output.status.success() {
-        return Err(tauri::Error::Io(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!(
-                "qlmanage 执行失败: {}",
-                String::from_utf8_lossy(&output.stderr)
-            ),
-        )));
+        return Err(tauri::Error::Io(std::io::Error::other(format!(
+            "qlmanage 执行失败: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ))));
     }
 
     // 寻找生成的缩略图文件
@@ -117,13 +111,13 @@ async fn generate_thumbnail_macos(
     let mut generated_thumbnail = None;
     if let Ok(entries) = fs::read_dir(&temp_dir) {
         for entry in entries {
-            if let Ok(entry) = entry {
-                if let Some(name) = entry.file_name().to_str() {
-                    if name.contains(&video_file_stem) && name.ends_with(".png") {
-                        generated_thumbnail = Some(entry.path());
-                        break;
-                    }
-                }
+            if let Ok(entry) = entry
+                && let Some(name) = entry.file_name().to_str()
+                && name.contains(video_file_stem)
+                && name.ends_with(".png")
+            {
+                generated_thumbnail = Some(entry.path());
+                break;
             }
         }
     }
@@ -147,29 +141,16 @@ async fn generate_thumbnail_macos(
     };
 
     // 读取生成的缩略图
-    let thumbnail_data = tokio::fs::read(&thumbnail_path).await.map_err(|e| {
-        tauri::Error::Io(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("读取缩略图失败: {}", e),
-        ))
-    })?;
+    let thumbnail_data = tokio::fs::read(&thumbnail_path)
+        .await
+        .map_err(|e| tauri::Error::Io(std::io::Error::other(format!("读取缩略图失败: {}", e))))?;
 
     // 获取图像尺寸
     let img = ImageReader::new(std::io::Cursor::new(&thumbnail_data))
         .with_guessed_format()
-        .map_err(|e| {
-            tauri::Error::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("读取图像格式失败: {}", e),
-            ))
-        })?
+        .map_err(|e| tauri::Error::Io(std::io::Error::other(format!("读取图像格式失败: {}", e))))?
         .decode()
-        .map_err(|e| {
-            tauri::Error::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("解码图像失败: {}", e),
-            ))
-        })?;
+        .map_err(|e| tauri::Error::Io(std::io::Error::other(format!("解码图像失败: {}", e))))?;
 
     let width = img.width();
     let height = img.height();
@@ -180,12 +161,7 @@ async fn generate_thumbnail_macos(
 
     image::DynamicImage::ImageRgb8(rgb_img)
         .write_to(&mut std::io::Cursor::new(&mut jpeg_data), ImageFormat::Jpeg)
-        .map_err(|e| {
-            tauri::Error::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("转换为 JPEG 失败: {}", e),
-            ))
-        })?;
+        .map_err(|e| tauri::Error::Io(std::io::Error::other(format!("转换为 JPEG 失败: {}", e))))?;
 
     // 转换为 base64
     let base64_string = general_purpose::STANDARD.encode(&jpeg_data);
@@ -208,7 +184,7 @@ async fn generate_thumbnail_macos(
 #[cfg(target_os = "macos")]
 async fn get_video_duration_macos(video_path: &str) -> Option<f64> {
     let output = Command::new("mdls")
-        .args(&["-name", "kMDItemDurationSeconds", video_path])
+        .args(["-name", "kMDItemDurationSeconds", video_path])
         .output()
         .ok()?;
 

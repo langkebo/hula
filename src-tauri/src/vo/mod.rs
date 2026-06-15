@@ -1,2 +1,2 @@
-pub mod user_info;
+#[allow(clippy::module_inception)]
 pub mod vo;

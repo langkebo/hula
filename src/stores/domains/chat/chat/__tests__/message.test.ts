@@ -103,6 +103,14 @@ vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
   }
 }))
 
+vi.mock('@/services/matrix/room/QueryService', () => ({
+  matrixRoomQueryService: {
+    getRoom: vi.fn(() => null),
+    getRooms: vi.fn(() => []),
+    getMembers: vi.fn(() => [])
+  }
+}))
+
 vi.mock('@/services/matrix/MatrixEventService', () => ({
   default: {
     getPagedRoomMessages: vi.fn(),

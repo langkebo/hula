@@ -9,11 +9,15 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
+vi.mock('../../MatrixClientService', () => {
+  const mockService = {
     getClient: vi.fn(() => null as MatrixClient | null)
   }
-}))
+  return {
+    default: mockService,
+    matrixClientService: mockService
+  }
+})
 
 const mockTypingManager = {
   startTyping: vi.fn(),
@@ -22,7 +26,11 @@ const mockTypingManager = {
 }
 
 const mockRoom = {
-  getTypingUsers: vi.fn(() => ['@user1:matrix.org', '@user2:matrix.org']),
+  currentState: {
+    getStateEvents: vi.fn(() => ({
+      getContent: vi.fn(() => ({ user_ids: ['@user1:matrix.org', '@user2:matrix.org'] }))
+    }))
+  },
   getMember: vi.fn((userId: string) => ({
     name: userId.split(':')[0].replace('@', ''),
     getMxcAvatarUrl: vi.fn(() => `mxc://matrix.org/avatar/${userId}`)
@@ -44,7 +52,7 @@ describe('MatrixTypingService', () => {
 
   afterEach(() => {
     vi.useRealTimers()
-    vi.resetAllMocks()
+    vi.clearAllMocks()
     matrixTypingService.cleanup()
   })
 
@@ -163,41 +171,53 @@ describe('MatrixTypingService', () => {
     })
 
     it('should return empty string when no users are typing', () => {
-      mockRoom.getTypingUsers.mockReturnValueOnce([])
+      mockRoom.currentState.getStateEvents.mockReturnValueOnce({
+        getContent: vi.fn(() => ({ user_ids: [] }))
+      })
 
       const text = matrixTypingService.getTypingUsersText('!room:id')
       expect(text).toBe('')
     })
 
     it('should return text for single typing user', () => {
-      mockRoom.getTypingUsers.mockReturnValueOnce(['@user1:matrix.org'])
+      mockRoom.currentState.getStateEvents.mockReturnValueOnce({
+        getContent: vi.fn(() => ({ user_ids: ['@user1:matrix.org'] }))
+      })
 
       const text = matrixTypingService.getTypingUsersText('!room:id')
       expect(text).toBe('user1 正在输入...')
     })
 
     it('should return text for two typing users', () => {
-      mockRoom.getTypingUsers.mockReturnValueOnce(['@user1:matrix.org', '@user2:matrix.org'])
+      mockRoom.currentState.getStateEvents.mockReturnValueOnce({
+        getContent: vi.fn(() => ({ user_ids: ['@user1:matrix.org', '@user2:matrix.org'] }))
+      })
 
       const text = matrixTypingService.getTypingUsersText('!room:id')
       expect(text).toBe('user1 和 user2 正在输入...')
     })
 
     it('should return text for three typing users', () => {
-      mockRoom.getTypingUsers.mockReturnValueOnce(['@user1:matrix.org', '@user2:matrix.org', '@user3:matrix.org'])
+      mockRoom.currentState.getStateEvents.mockReturnValueOnce({
+        getContent: vi.fn(() => ({ user_ids: ['@user1:matrix.org', '@user2:matrix.org', '@user3:matrix.org'] }))
+      })
 
       const text = matrixTypingService.getTypingUsersText('!room:id')
       expect(text).toBe('user1、user2 和 user3 正在输入...')
     })
 
     it('should return text for many typing users with max display', () => {
-      mockRoom.getTypingUsers.mockReturnValueOnce([
-        '@user1:matrix.org',
-        '@user2:matrix.org',
-        '@user3:matrix.org',
-        '@user4:matrix.org',
-        '@user5:matrix.org'
-      ])
+      mockRoom.currentState.getStateEvents.mockReturnValueOnce({
+        getContent: vi.fn(() => ({
+          user_ids: [
+            '@user1:matrix.org',
+            '@user2:matrix.org',
+            '@user3:matrix.org',
+            '@user4:matrix.org',
+            '@user5:matrix.org'
+          ]
+        }))
+      })
 
       const text = matrixTypingService.getTypingUsersText('!room:id', 3)
       expect(text).toBe('user1、user2、user3 和其他 2 人正在输入...')

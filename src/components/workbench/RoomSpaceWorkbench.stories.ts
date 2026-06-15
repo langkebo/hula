@@ -671,8 +671,8 @@ export const Default: Story = {
     settingsName: '设计协作',
     settingsTopic: '设计评审与交付',
     spaceTreeLoader: createStorySpaceTreeLoader(),
-    onMsgClick: (_item) => {},
-    onMsgDblclick: (_item) => {},
+    onMsgClick: (_item: any) => {},
+    onMsgDblclick: (_item: any) => {},
     onRetryNetwork: () => {}
   },
   render
@@ -747,7 +747,7 @@ export const BatchMode: Story = {
   args: {
     ...Default.args
   },
-  render: (args) => renderWithBatchMode(args)
+  render: (args: any) => renderWithBatchMode(args)
 }
 
 export const SavedPreset: Story = {
@@ -767,14 +767,14 @@ export const NarrowDrawer: Story = {
     ...Default.args,
     layoutModeOverride: 'narrow'
   },
-  render: (args) => renderWithDetailDrawer(args)
+  render: (args: any) => renderWithDetailDrawer(args)
 }
 
 export const PerfFilterLatency: Story = {
   args: {
     ...Default.args
   },
-  render: (args) =>
+  render: (args: any) =>
     renderWithPerfHarness(args, {
       actionLabel: '采样筛选耗时',
       actionTestId: 'perf-filter-latency-trigger',
@@ -791,7 +791,7 @@ export const PerfSpaceSwitch: Story = {
   args: {
     ...Default.args
   },
-  render: (args) =>
+  render: (args: any) =>
     renderWithPerfHarness(args, {
       actionLabel: '采样空间切换耗时',
       actionTestId: 'perf-space-switch-trigger',
@@ -810,7 +810,7 @@ export const PerfPaginationAppend: Story = {
   args: {
     ...Default.args
   },
-  render: (args) =>
+  render: (args: any) =>
     renderWithPerfHarness(args, {
       actionLabel: '采样分页追加耗时',
       actionTestId: 'perf-pagination-append-trigger',

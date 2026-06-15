@@ -37,7 +37,7 @@ export const Default: Story = {
   },
   render,
   decorators: [
-    (story) => {
+    (story: any) => {
       resetGroupStoreMock()
       configureGroupStoreMock({
         detail: GROUP_DETAIL_MOCKS.private,
@@ -61,7 +61,7 @@ export const Loading: Story = {
   },
   render,
   decorators: [
-    (story) => {
+    (story: any) => {
       resetGroupStoreMock()
       // Don't configure mock, buildRoomDetail will be slow or we could mock loading state if needed
       // But the component manages its own loading ref based on the async buildRoomDetail
@@ -97,7 +97,7 @@ export const LongAnnouncement: Story = {
   },
   render,
   decorators: [
-    (story) => {
+    (story: any) => {
       resetGroupStoreMock()
       configureGroupStoreMock({
         detail: {

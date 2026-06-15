@@ -16,6 +16,7 @@ vi.mock('../../MatrixClientService', () => {
   const mock = {
     getClient: vi.fn(() => null),
     isLoggedIn: vi.fn(() => false),
+    waitForClientReady: vi.fn().mockRejectedValue(new Error('waitForClientReady is not a function')),
     createRoom: vi.fn(() => {
       throw new Error('客户端未初始化')
     }),

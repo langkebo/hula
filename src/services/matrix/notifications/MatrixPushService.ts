@@ -1,5 +1,6 @@
-import type { IPusher, IPushRule, IPushRules, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
+import type { IPusher, IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
 import { PushRuleKind, type TweakName } from 'matrix-js-sdk'
+import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 
@@ -31,13 +32,23 @@ class MatrixPushService extends BaseMatrixService {
 
   async unregisterPusher(pushkey: string, appId: string): Promise<void> {
     const client = this.getClient()
+    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      await client.http.authedRequest('POST', '/_matrix/client/v3/pushers/set', undefined, {
-        pushkey,
-        app_id: appId,
-        kind: null
-      })
-      logger.info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
+      const pushManager = extendedClient.getPushManager?.()
+      const deviceId = client.getDeviceId()
+
+      if (pushManager) {
+        // 使用 SDK PushManager.removePusher（SDK-7: 支持 deviceId 参数）
+        await pushManager.removePusher(pushkey, appId, deviceId || undefined)
+        logger.info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
+      } else {
+        await client.http.authedRequest('POST', '/_matrix/client/v3/pushers/set', undefined, {
+          pushkey,
+          app_id: appId,
+          kind: null
+        })
+        logger.info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
+      }
     } catch (err) {
       logger.error(`[MatrixPush] 注销 pusher 失败: ${err}`)
       throw err
@@ -106,20 +117,45 @@ class MatrixPushService extends BaseMatrixService {
 
   async registerPusher(pusher: IPusher): Promise<void> {
     const client = this.getClient()
+    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      const body: Record<string, unknown> = {
-        pushkey: pusher.pushkey,
-        kind: pusher.kind,
-        app_id: pusher.app_id,
-        app_display_name: pusher.app_display_name,
-        device_display_name: pusher.device_display_name,
-        lang: pusher.lang,
-        data: pusher.data
+      const pushManager = extendedClient.getPushManager?.()
+      const deviceId = client.getDeviceId()
+      const pusherData = pusher as unknown as Record<string, unknown>
+
+      if (pushManager) {
+        // 使用 SDK PushManager（SDK-7: device_id 必填化）
+        const pusherRequest: IPusherRequest = {
+          pushkey: pusher.pushkey,
+          kind: pusher.kind,
+          app_id: pusher.app_id,
+          app_display_name: pusher.app_display_name,
+          device_display_name: pusher.device_display_name,
+          lang: pusher.lang,
+          data: pusher.data,
+          device_id: (pusherData.device_id as string) || deviceId || undefined
+        }
+        if (pusherData.profile_tag) {
+          pusherRequest.profile_tag = pusherData.profile_tag as string
+        }
+        await pushManager.setPusher(pusherRequest)
+        logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
+      } else {
+        // 降级到直接 HTTP 调用（同时确保 device_id 必填，SDK-7）
+        const body: Record<string, unknown> = {
+          pushkey: pusher.pushkey,
+          kind: pusher.kind,
+          app_id: pusher.app_id,
+          app_display_name: pusher.app_display_name,
+          device_display_name: pusher.device_display_name,
+          lang: pusher.lang,
+          data: pusher.data,
+          device_id: pusherData.device_id || deviceId
+        }
+        if (pusherData.profile_tag) body.profile_tag = pusherData.profile_tag
+        await client.http.authedRequest('POST', '/_matrix/client/v3/pushers/set', undefined, body)
+        logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
       }
-      if ((pusher as unknown as Record<string, unknown>).profile_tag)
-        body.profile_tag = (pusher as unknown as Record<string, unknown>).profile_tag
-      await client.http.authedRequest('POST', '/_matrix/client/v3/pushers/set', undefined, body)
-      logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
     } catch (err) {
       logger.error(`[MatrixPush] 注册 pusher 失败: ${err}`)
       throw err

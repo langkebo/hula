@@ -26,7 +26,8 @@ describe('MatrixPushService', () => {
       http: mockHttp as unknown as MatrixClient['http'],
       getPushRules: vi.fn().mockResolvedValue({
         global: { room: [{ rule_id: '!room:server', enabled: true }] }
-      })
+      }),
+      getDeviceId: vi.fn().mockReturnValue('TEST_DEVICE_ID')
     } as unknown as MatrixClient)
   })
 

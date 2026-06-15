@@ -200,10 +200,10 @@ fn ensure_traffic_lights_resize_observer<R: Runtime>(
 
                 {
                     let mut map = cell.borrow_mut();
-                    if let Some(existing) = map.get(label.as_str()) {
-                        if existing.window_ptr == window_ptr {
-                            return;
-                        }
+                    if let Some(existing) = map.get(label.as_str())
+                        && existing.window_ptr == window_ptr
+                    {
+                        return;
                     }
                     if let Some(existing) = map.remove(label.as_str()) {
                         let _: () = unsafe {
@@ -287,32 +287,6 @@ pub struct WindowsScaleInfo {
     /// 是否检测到文本缩放
     pub has_text_scaling: bool,
 }
-// // 定义用户信息结构体
-// #[derive(Debug, Clone, Serialize)]
-// pub struct UserInfo {
-//     user_id: i64,
-//     username: String,
-//     token: String,
-//     portrait: String,
-//     is_sign: bool,
-// }
-
-// impl Default for UserInfo {
-//     fn default() -> Self {
-//         UserInfo {
-//             user_id: -1,
-//             username: String::new(),
-//             token: String::new(),
-//             portrait: String::new(),
-//             is_sign: false,
-//         }
-//     }
-// }
-
-// // 全局变量
-// lazy_static! {
-//     static ref USER_INFO: Arc<RwLock<UserInfo>> = Arc::new(RwLock::new(UserInfo::default()));
-// }
 
 #[tauri::command]
 pub fn default_window_icon<R: Runtime>(
@@ -512,10 +486,10 @@ fn ensure_live_resize_traffic_lights_task<R: Runtime>(
             .lock()
             .map_err(|_| "Failed to lock traffic lights tasks".to_string())?;
 
-        if let Some(existing) = pending.get(&window_label) {
-            if (existing.spacing - spacing).abs() < 0.001 {
-                return Ok(());
-            }
+        if let Some(existing) = pending.get(&window_label)
+            && (existing.spacing - spacing).abs() < 0.001
+        {
+            return Ok(());
         }
 
         if let Some(existing) = pending.remove(&window_label) {
@@ -594,7 +568,7 @@ pub(crate) fn apply_macos_traffic_lights_spacing_default<R: Runtime>(
     window_label: &str,
     handle: &AppHandle<R>,
 ) -> Result<(), String> {
-    let webview_window = get_webview_window(&handle, window_label)?;
+    let webview_window = get_webview_window(handle, window_label)?;
     let ns_window = get_nswindow_from_webview_window(&webview_window)?;
     let _ = ensure_traffic_lights_resize_observer(handle, window_label);
     let spacing = get_desired_traffic_lights_spacing(window_label);

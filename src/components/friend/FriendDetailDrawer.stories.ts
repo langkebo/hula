@@ -18,7 +18,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const render: Story['render'] = (args) =>
+const render: Story['render'] = (args: any) =>
   defineComponent({
     components: { FriendDetailDrawer },
     setup() {

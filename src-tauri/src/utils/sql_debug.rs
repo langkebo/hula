@@ -78,10 +78,10 @@ impl SqlDebug {
     /// 简化的SQL日志记录
     pub fn log_simple(sql: &str, values: Option<&sea_orm::Values>, label: &str) {
         info!("[{}] {}", label, sql);
-        if let Some(values) = values {
-            if !values.0.is_empty() {
-                info!("[{}] Parameters: {:?}", label, values);
-            }
+        if let Some(values) = values
+            && !values.0.is_empty()
+        {
+            info!("[{}] Parameters: {:?}", label, values);
         }
     }
 }

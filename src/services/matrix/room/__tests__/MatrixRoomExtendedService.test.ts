@@ -35,7 +35,10 @@ describe('MatrixRoomService - Extended Features', () => {
       createAlias: vi.fn(),
       deleteAlias: vi.fn(),
       getRoom: vi.fn(() => mockRoom as Room),
-      getEventContext: vi.fn()
+      getEventContext: vi.fn(),
+      setRoomTag: vi.fn(),
+      deleteRoomTag: vi.fn(),
+      getRoomTags: vi.fn()
     }
 
     vi.mocked(matrixClientService.getClient).mockReset()

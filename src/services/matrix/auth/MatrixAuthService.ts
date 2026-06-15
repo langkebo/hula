@@ -238,11 +238,15 @@ async function runSdkFirst<T>(
   try {
     return await sdkRequest()
   } catch (error) {
-    // 登录/注册场景始终尝试 fallback——SDK 请求可能因请求格式差异、
-    // 中间件干扰等原因失败，而 fallback 等同于 curl 直接请求
+    // Matrix 标准错误（带 errcode）是用户可操作的错误，直接抛出而不回退
+    const errcode = (error as { errcode?: string })?.errcode
+    if (errcode) {
+      throw normalizeSdkMatrixError(error, failureLabel)
+    }
+
+    // 登录/注册场景 SDK 内部错误时尝试 fallback
     const errInfo = error instanceof Error ? error.message : String(error)
     const httpStatus = (error as { httpStatus?: number })?.httpStatus
-    const errcode = (error as { errcode?: string })?.errcode
     logger.warn(`SDK 请求失败 (status=${httpStatus}, errcode=${errcode}): ${errInfo}，尝试 HTTP 回退`)
     try {
       return await fallbackRequest()

@@ -237,11 +237,7 @@
               {{ t('setting.device_verify_dialog.cancel_verification') }}
             </n-button>
             <template v-else>
-              <n-button
-                @click="
-                  showCancelReason = false
-                  cancelReason = ''
-                ">
+              <n-button @click="hideCancelReason">
                 {{ t('common.cancel') }}
               </n-button>
               <n-button type="error" @click="handleCancelWithReason">
@@ -289,11 +285,7 @@
               {{ t('setting.device_verify_dialog.cancel_verification') }}
             </n-button>
             <template v-else>
-              <n-button
-                @click="
-                  showCancelReason = false
-                  cancelReason = ''
-                ">
+              <n-button @click="hideCancelReason">
                 {{ t('common.cancel') }}
               </n-button>
               <n-button type="error" @click="handleCancelWithReason">
@@ -339,11 +331,7 @@
               {{ t('setting.device_verify_dialog.cancel_verification') }}
             </n-button>
             <template v-else>
-              <n-button
-                @click="
-                  showCancelReason = false
-                  cancelReason = ''
-                ">
+              <n-button @click="hideCancelReason">
                 {{ t('common.cancel') }}
               </n-button>
               <n-button type="error" @click="handleCancelWithReason">
@@ -604,6 +592,11 @@ async function handleCancelWithReason() {
   } finally {
     loading.value = false
   }
+}
+
+function hideCancelReason() {
+  showCancelReason.value = false
+  cancelReason.value = ''
 }
 
 function handleClose() {

@@ -25,23 +25,96 @@
   </div>
   <component :is="mobileRtcCallFloatCell" v-if="mobileRtcCallFloatCell" />
 </template>
+
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-
 import { exit } from '@tauri-apps/plugin-process'
-import ConnectionStatusBanner from '@/components/common/ConnectionStatusBanner.vue'
-import GlobalAriaLive from '@/components/common/GlobalAriaLive.vue'
-import NetworkStatusBar from '@/components/common/NetworkStatusBar.vue'
+import { useOfflineQueueReplay } from '@/composables/app/useOfflineQueueReplay'
+import { usePresenceSync } from '@/composables/app/usePresenceSync'
 import { useWsEventHandler } from '@/composables/app/useWsEventHandler'
+import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
-import { EventEnum, MittEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
+import { MittEnum, ThemeEnum } from '@/enums'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useWindow } from '@/hooks/useWindow.ts'
-import { loadLanguage } from '@/services/i18n'
-import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
+import { useSessionStore } from '@/stores/domains/chat/chat/session'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useUserStore } from '@/stores/domains/user/user'
+import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
+import { createLogger } from '@/utils/Logger'
+import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
 
+const logger = createLogger('App')
+
+const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
+const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
+const SplashScreen = defineAsyncComponent(() => import('@/components/common/SplashScreen.vue'))
+
+const mobileRtcCallFloatCell = isMobile()
+  ? defineAsyncComponent(() => import('@/mobile/components/RtcCallFloatCell.vue'))
+  : null
+
+const isDev = import.meta.env.DEV
+const tauriRuntimeAvailable = hasTauriRuntime()
+const showMemoryMonitor = ref(true)
+const appWindow = tauriRuntimeAvailable ? WebviewWindow.getCurrent() : null
+const isHomeDesktopWindow = computed(() => isDesktop() && appWindow?.label === 'home')
+
+// ========== Bootstrap ==========
+const {
+  state: bootstrapState,
+  loadingMessage: bootstrapMessage,
+  loadingProgress: bootstrapProgress,
+  error: bootstrapError,
+  bootstrap
+} = useBootstrap()
+
+// ========== Connection ==========
+const { state: connectionState, retryCount: connectionRetryCount, retry: handleConnectionRetry } = useConnectionStatus()
+const showSplash = computed(() => bootstrapState.value === 'initializing' || bootstrapState.value === 'idle')
+
+const handleBootstrapRetry = async () => {
+  await bootstrap()
+}
+
+// ========== Stores ==========
+const settingStore = useSettingStore()
+const globalStore = useGlobalStore()
+const sessionStore = useSessionStore()
+const userStore = useUserStore()
+const { lockScreen } = storeToRefs(settingStore)
+const router = useRouter()
+
+// ========== Lock screen ==========
+const LockExclusion = new Set(['/login', '/tray', '/qrCode', '/about', '/onlineStatus', '/capture'])
+const isLock = computed(() => {
+  return !LockExclusion.has(router.currentRoute.value.path) && lockScreen.value.enable
+})
+
+// ========== Window & global shortcuts (desktop only) ==========
+const { ensureCheckUpdateWindow, createWebviewWindow } = isDesktop()
+  ? useWindow()
+  : { ensureCheckUpdateWindow: () => {}, createWebviewWindow: () => {} }
+const { initializeGlobalShortcut, cleanupGlobalShortcut } = useGlobalShortcut()
+
+// ========== Security: prevent drag & context menu in production ==========
+const preventImageInputDrag = (e: MouseEvent) => {
+  const el = e.target as HTMLElement
+  if (el.nodeName.toLowerCase() === 'img' || el.nodeName.toLowerCase() === 'input') {
+    e.preventDefault()
+  }
+}
+const preventGlobalContextMenu = (event: MouseEvent) => event.preventDefault()
+const handleGlobalKeydown = (e: KeyboardEvent) => {
+  if (e.ctrlKey && (e.key === 'f' || e.key === 'r' || e.key === 'g' || e.key === 'j')) {
+    e.preventDefault()
+  }
+}
+
+// ========== Lazy service loaders (used by composables) ==========
 function createLazyLoader<T, K extends keyof T>(importFn: () => Promise<T>, key: K): () => Promise<T[K]> {
   let cached: T[K] | undefined
   let loaded = false
@@ -100,564 +173,226 @@ const getMatrixRoomPinsService = createLazyLoader(
   'matrixRoomPinsService'
 )
 
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { hasTauriRuntime } from '@/utils/AppHarness'
-import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
-import { buildPresenceStorePatch, collectTrackedPresenceUserIds } from '@/utils/presenceStatus'
+// ========== Offline queue (delegates to composable) ==========
+const { initOfflineQueue } = useOfflineQueueReplay({
+  getMatrixClientService,
+  getMatrixMessageService,
+  getMatrixReceiptService,
+  getMatrixReactionService,
+  getMatrixRoomStateService,
+  getMatrixRoomService,
+  getMatrixRoomCreationService,
+  getMatrixRoomDirectMessageService,
+  getMatrixRoomTagsService,
+  getMatrixRoomPinsService
+})
 
-const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
-const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
+// ========== Presence sync (delegates to composable) ==========
+const presenceSync = usePresenceSync({
+  getMatrixClientService,
+  getMatrixPresenceService,
+  globalStore,
+  sessionStore: sessionStore as any
+})
 
-import { listen } from '@tauri-apps/api/event'
-import SplashScreen from '@/components/common/SplashScreen.vue'
-import { useBootstrap } from '@/composables/useBootstrap'
-import { useTauriListener } from '@/hooks/useTauriListener'
+// ========== WS event handler ==========
+const wsEventHandler = useWsEventHandler()
 
-import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
-import { useChatStore } from '@/stores/domains/chat/chat'
-import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { useUserStore } from '@/stores/domains/user/user'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('App')
-const mobileRtcCallFloatCell = isMobile()
-  ? defineAsyncComponent(() => import('@/mobile/components/RtcCallFloatCell.vue'))
-  : null
-
-const isDev = import.meta.env.DEV
-const tauriRuntimeAvailable = hasTauriRuntime()
-const showMemoryMonitor = ref(true)
-const isHomeDesktopWindow = computed(() => isDesktop() && appWindow?.label === 'home')
-
-const {
-  state: bootstrapState,
-  loadingMessage: bootstrapMessage,
-  loadingProgress: bootstrapProgress,
-  error: bootstrapError,
-  bootstrap
-} = useBootstrap()
-
-const { state: connectionState, retryCount: connectionRetryCount, retry: handleConnectionRetry } = useConnectionStatus()
-
-const showSplash = computed(() => bootstrapState.value === 'initializing' || bootstrapState.value === 'idle')
-
-const handleBootstrapRetry = async () => {
-  await bootstrap()
-}
-
-const userStore = useUserStore()
-const contactStore = useContactStore()
-const announcementStore = useAnnouncementStore()
-const groupStore = useGroupStore()
-const chatStore = useChatStore()
-const appWindow = tauriRuntimeAvailable ? WebviewWindow.getCurrent() : null
-const { ensureCheckUpdateWindow } = useWindow()
-const globalStore = useGlobalStore()
-const router = useRouter()
-const { addListener } = useTauriListener()
-const subscribedPresenceUserIds = new Set<string>()
-let isPresenceSyncInFlight = false
-let hasPendingPresenceSync = false
-let unsubscribePresenceListener: (() => void) | null = null
-// 只在桌面端初始化窗口管理功能
-const { createWebviewWindow } = isDesktop() ? useWindow() : { createWebviewWindow: () => {} }
-const settingStore = useSettingStore()
-const { lockScreen } = storeToRefs(settingStore)
-// 全局快捷键管理
-const { initializeGlobalShortcut, cleanupGlobalShortcut } = useGlobalShortcut()
-// 提前初始化网络状态监听，确保不错过 WebSocket 状态变化事件
+// ========== Network status (desktop) ==========
 if (isDesktop()) {
   useNetworkStatus()
 }
 
-/** 不需要锁屏的页面 */
-const LockExclusion = new Set(['/login', '/tray', '/qrCode', '/about', '/onlineStatus', '/capture'])
-const isLock = computed(() => {
-  return !LockExclusion.has(router.currentRoute.value.path) && lockScreen.value.enable
-})
+// ========== Window event handlers (desktop) ==========
+async function setupWindowHandlers() {
+  if (!isDesktop() || !tauriRuntimeAvailable || !appWindow) return
 
-/** 禁止图片以及输入框的拖拽 */
-const preventDrag = (e: MouseEvent) => {
-  const event = e.target as HTMLElement
-  // 检查目标元素是否是<img>元素
-  if (event.nodeName.toLowerCase() === 'img' || event.nodeName.toLowerCase() === 'input') {
-    e.preventDefault()
-  }
-}
-const preventGlobalContextMenu = (event: MouseEvent) => event.preventDefault()
-const handleGlobalKeydown = (e: KeyboardEvent) => {
-  if (e.ctrlKey && (e.key === 'f' || e.key === 'r' || e.key === 'g' || e.key === 'j')) {
-    e.preventDefault()
-  }
-}
-
-const listenMobileReLogin = async () => {
-  if (isMobile()) {
-    const { useLoginFlow } = await import('@/hooks/useLoginFlow')
-
-    const { logout } = useLoginFlow()
-    addListener(
-      listen('relogin', async () => {
-        logger.info('收到重新登录事件')
-        await logout()
-      }),
-      'mobile-relogin'
-    )
-  }
-}
-
-// 登录/重连后兜底刷新：仅刷新当前（或首个）群聊成员，避免消息渲染成"未知用户"
-const refreshActiveGroupMembers = async () => {
-  const tasks: Promise<unknown>[] = []
-  try {
-    const isCurrentGroup = globalStore.currentSession?.type === RoomTypeEnum.GROUP
-    const activeRoomId =
-      (isCurrentGroup && globalStore.currentSessionRoomId) ||
-      chatStore.sessionList.find((item) => item.type === RoomTypeEnum.GROUP)?.roomId
-
-    if (activeRoomId) {
-      tasks.push(groupStore.getGroupUserList(activeRoomId, true))
-    }
-    await Promise.allSettled(tasks)
-    await syncAvatarPresence()
-  } catch (error) {
-    logger.error('刷新群成员失败:', error)
-  }
-}
-
-const applyPresenceToStores = async () => {
-  const trackedUserIds = collectTrackedPresenceUserIds({
-    currentUserId: userStore.userInfo?.uid,
-    contacts: contactStore.contactsList,
-    members: groupStore.allUserInfo
+  useMitt.on(MittEnum.CHECK_UPDATE, async () => {
+    const checkUpdateWindow = await ensureCheckUpdateWindow()
+    await checkUpdateWindow?.show()
   })
-
-  if (!trackedUserIds.length) {
-    return
-  }
-
-  const clientService = await getMatrixClientService()
-  if (!clientService.getClient()) {
-    return
-  }
-
-  const presenceService = await getMatrixPresenceService()
-  const nextSubscribedUserIds = trackedUserIds.filter((userId) => !subscribedPresenceUserIds.has(userId))
-  if (nextSubscribedUserIds.length) {
-    await presenceService.subscribeToPresence(nextSubscribedUserIds)
-    nextSubscribedUserIds.forEach((userId) => subscribedPresenceUserIds.add(userId))
-  }
-
-  const presences = await presenceService.getBatchPresence(trackedUserIds)
-  const now = Date.now()
-
-  presences.forEach((presence) => {
-    const patch = buildPresenceStorePatch(presence, now)
-    contactStore.updateContactPresence(presence.user_id, patch)
-    groupStore.updateUserPresence(presence.user_id, {
-      activeStatus: patch.activeStatus,
-      lastOptTime: patch.lastOptTime
-    })
-    if (userStore.userInfo && presence.user_id === userStore.userInfo.uid) {
-      userStore.userInfo.activeStatus = patch.activeStatus
-      userStore.userInfo.lastOptTime = patch.lastOptTime
-    }
+  useMitt.on<{ close: string }>(MittEnum.DO_UPDATE, async (event) => {
+    await createWebviewWindow('update', 'update', 490, 335, '', false, 490, 335, false, true)
+    const closeWindow = await WebviewWindow.getByLabel(event.close)
+    closeWindow?.close()
   })
+  // Listen for exit event
+  const { useTauriListener } = await import('@/hooks/useTauriListener')
+  const { addListener } = useTauriListener()
+  const { EventEnum } = await import('@/enums')
+  addListener(
+    appWindow.listen(EventEnum.EXIT, async () => {
+      await exit(0)
+    }),
+    'app-exit'
+  )
 }
 
-const syncAvatarPresence = async () => {
-  if (isPresenceSyncInFlight) {
-    hasPendingPresenceSync = true
-    return
-  }
-
-  isPresenceSyncInFlight = true
-  try {
-    await applyPresenceToStores()
-  } catch (error) {
-    logger.error('同步头像在线状态失败:', error)
-  } finally {
-    isPresenceSyncInFlight = false
-    if (hasPendingPresenceSync) {
-      hasPendingPresenceSync = false
-      await syncAvatarPresence()
-    }
-  }
-}
-
-let lastWsConnectionState: string | null = null
-let isReconnectInFlight = false
-
-type WebsocketConnectionStatePayload = {
-  type?: string
-  state?: string
-  isReconnection?: boolean
-  is_reconnection?: boolean
-}
-
-const handleWebsocketEvent = async (event: { payload: WebsocketConnectionStatePayload | null | undefined }) => {
-  const payload = event.payload
-  if (!payload || payload.type !== 'connectionStateChanged') return
-
-  const previousState = (lastWsConnectionState || '').toUpperCase() || null
-  const nextStateRaw = payload.state
-  const nextState = typeof nextStateRaw === 'string' ? nextStateRaw.toUpperCase() : ''
-  const isReconnectionFlag = payload.isReconnection ?? payload.is_reconnection
-  // 只有明确标记为重连的情况才触发同步，避免首次连接时触发不必要的全量同步
-  const shouldHandleReconnect = nextState === 'CONNECTED' && isReconnectionFlag
-
-  lastWsConnectionState = nextState || previousState
-
-  if (!shouldHandleReconnect) return
-  // 防止并行重连/同步导致 syncLoading 卡死
-  if (isReconnectInFlight || chatStore.syncLoading) return
-  isReconnectInFlight = true
-
-  // 开始同步，显示加载状态
-  chatStore.syncLoading = true
-  try {
-    // 消息同步已由前端 MatrixSyncService 通过 SDK 处理
-    await chatStore.getSessionList(true)
-
-    // 重连后同步当前/首个群聊成员信息，避免展示断网前的旧数据
-    await refreshActiveGroupMembers()
-
-    if (globalStore.currentSessionRoomId) {
-      const currentRoomId = globalStore.currentSessionRoomId
-      const currentSession = chatStore.getSession(currentRoomId)
-
-      // 增量拉取当前会话的新消息，而不是清空重建
-      await chatStore.fetchCurrentRoomRemoteOnce(20)
-
-      // 重连后如果当前会话仍有未读，补一次已读上报和本地清零，避免气泡卡住
-      if (currentSession?.unreadCount) {
-        chatStore.markSessionRead(currentRoomId)
-      }
-    }
-    globalStore.refreshUnreadBadge()
-  } finally {
-    // 同步完成，隐藏加载状态
-    chatStore.syncLoading = false
-    isReconnectInFlight = false
-  }
-}
-
-/**
- * iOS网络权限预请求
- * 在应用启动时发起一个轻量级网络请求，触发iOS的网络权限弹窗
- */
-const requestNetworkPermissionForIOS = async () => {
-  await fetch('https://www.apple.com/favicon.ico', {
-    method: 'HEAD',
-    cache: 'no-cache'
-  })
-}
-
-onMounted(async () => {
-  await bootstrap()
-
-  const { offlineQueueService } = await import('@/services/offline/OfflineQueueService')
-  offlineQueueService.setReplayFn(async (op) => {
-    const clientService = await getMatrixClientService()
-    const messageService = await getMatrixMessageService()
-    const receiptService = await getMatrixReceiptService()
-    const reactionService = await getMatrixReactionService()
-    const roomStateService = await getMatrixRoomStateService()
-    const roomService = await getMatrixRoomService()
-    const roomCreationService = await getMatrixRoomCreationService()
-    const roomDirectMessageService = await getMatrixRoomDirectMessageService()
-    const roomTagsService = await getMatrixRoomTagsService()
-    const roomPinsService = await getMatrixRoomPinsService()
-
-    switch (op.type) {
-      case 'message': {
-        const payload = op.payload as Record<string, unknown>
-        const localEventId = `local-${op.id}`
-        if (payload.eventType && payload.content) {
-          const { roomId, eventType, content } = payload as {
-            roomId: string
-            eventType: string
-            content: Record<string, unknown>
-          }
-          const client = clientService.getClient()
-          if (client) {
-            const sendResult = await client.sendEvent(roomId, eventType, content)
-            messageService.registerSentMessage(localEventId, sendResult.event_id)
-          }
-        } else {
-          const structuredPayload = (payload.payload || payload) as SendMessagePayload
-          const result = await messageService.sendStructuredMessage(structuredPayload)
-          if (result?.event_id) {
-            messageService.registerSentMessage(localEventId, result.event_id)
-          }
-        }
-        break
-      }
-      case 'receipt': {
-        const { roomId, eventId } = op.payload as { roomId: string; eventId: string }
-        await receiptService.sendReadReceiptByEventId(roomId, eventId)
-        break
-      }
-      case 'reaction': {
-        const { roomId, eventId, emoji } = op.payload as { roomId: string; eventId: string; emoji: string }
-        await reactionService.addReaction(roomId, eventId, emoji)
-        break
-      }
-      case 'state': {
-        const { roomId, type, content } = op.payload as {
-          roomId: string
-          type: 'name' | 'topic' | 'avatar'
-          content: string
-        }
-        if (type === 'name') {
-          await roomStateService.setRoomName(roomId, content)
-        } else if (type === 'topic') {
-          await roomStateService.setRoomTopic(roomId, content)
-        } else if (type === 'avatar') {
-          await roomStateService.setRoomAvatar(roomId, content)
-        }
-        break
-      }
-      case 'redact': {
-        const { roomId, eventId, reason } = op.payload as {
-          roomId: string
-          eventId: string
-          reason?: string
-        }
-        await clientService.getClient()?.redactEvent(roomId, eventId, undefined, { reason })
-        break
-      }
-      case 'push_rule': {
-        const { roomId, enabled } = op.payload as { roomId: string; enabled: boolean }
-        await roomStateService.setPushRule(roomId, enabled)
-        break
-      }
-      case 'membership': {
-        const payload = op.payload as {
-          roomId: string
-          type: 'join' | 'leave' | 'invite' | 'kick' | 'ban' | 'unban'
-          userId?: string
-          reason?: string
-        }
-        if (payload.type === 'join') {
-          await roomService.joinRoom(payload.roomId)
-        } else if (payload.type === 'leave') {
-          await roomService.leaveRoom(payload.roomId)
-        } else if (payload.type === 'invite' && payload.userId) {
-          await roomService.inviteUser(payload.roomId, payload.userId)
-        } else if (payload.type === 'kick' && payload.userId) {
-          await roomService.kickUser(payload.roomId, payload.userId, payload.reason)
-        } else if (payload.type === 'ban' && payload.userId) {
-          await roomService.banUser(payload.roomId, payload.userId, payload.reason)
-        } else if (payload.type === 'unban' && payload.userId) {
-          await roomService.unbanUser(payload.roomId, payload.userId)
-        }
-        break
-      }
-      case 'creation': {
-        const { options } = op.payload as { options: Record<string, unknown> }
-        await roomCreationService.createRoom(options)
-        break
-      }
-      case 'dm_creation': {
-        const { userId } = op.payload as { userId: string }
-        await roomDirectMessageService.createDirectRoom(userId)
-        break
-      }
-      case 'tag': {
-        const { roomId, tag, order, action } = op.payload as {
-          roomId: string
-          tag: string
-          order?: number
-          action: 'set' | 'remove'
-        }
-        if (action === 'set') {
-          await roomTagsService.setTag(roomId, tag, order)
-        } else {
-          await roomTagsService.removeTag(roomId, tag)
-        }
-        break
-      }
-      case 'pin': {
-        const payload = op.payload as {
-          roomId: string
-          type: 'pinned' | 'sticky'
-          eventIds?: string[]
-          events?: Record<string, unknown>
-        }
-        if (payload.type === 'pinned' && payload.eventIds) {
-          await roomPinsService.setPinnedEvents(payload.roomId, payload.eventIds)
-        } else if (payload.type === 'sticky' && payload.events) {
-          await roomPinsService.setStickyEvents(payload.roomId, payload.events)
-        }
-        break
-      }
-    }
-  })
-  offlineQueueService.startNetworkListener()
-
-  if (isIOS()) {
-    requestNetworkPermissionForIOS()
-  }
-
+// ========== Theme & style initialization ==========
+function initPlatformStyles() {
   if (isWindows10() && appWindow) {
     void appWindow.setShadow(false).catch((error) => {
-      logger.warn('禁用窗口阴影失败:', error)
+      logger.warn('disable window shadow failed:', error)
     })
   }
-  // 判断是否是桌面端，桌面端需要调整样式
-  isDesktop() && import('@/styles/scss/global/desktop.scss').catch((e) => logger.warn('加载桌面端样式失败:', e))
-  isMobile() && import('@/styles/scss/global/mobile.scss').catch((e) => logger.warn('加载移动端样式失败:', e))
 
   if (isDesktop()) {
-    await import('@/styles/scss/theme/simple.scss')
-    document.querySelector('#app')?.classList.add('simple')
+    import('@/styles/scss/global/desktop.scss').catch((e) => logger.warn('load desktop styles failed:', e))
+    import('@/styles/scss/theme/simple.scss').then(() => {
+      document.querySelector('#app')?.classList.add('simple')
+    })
   }
-  // 首次运行使用跟随系统；已恢复状态时只做合法化修正
+
+  if (isMobile()) {
+    import('@/styles/scss/global/mobile.scss').catch((e) => logger.warn('load mobile styles failed:', e))
+  }
+
   settingStore.ensureThemeReady(ThemeEnum.OS)
-  window.addEventListener('dragstart', preventDrag)
+}
 
-  if (tauriRuntimeAvailable) {
-    addListener(listen('websocket-event', handleWebsocketEvent), 'websocket-event')
+// ========== Security: install event listeners ==========
+function installSecurityListeners() {
+  window.addEventListener('dragstart', preventImageInputDrag)
+
+  if (import.meta.env.PROD) {
+    window.addEventListener('keydown', handleGlobalKeydown)
+    window.addEventListener('contextmenu', preventGlobalContextMenu, false)
   }
 
-  // 只在桌面端的主窗口中初始化全局快捷键
+  // Init global shortcuts on desktop main window
   if (isDesktop() && appWindow?.label === 'home') {
     initializeGlobalShortcut()
   }
-  /** 开发环境不禁止 */
-  if (process.env.NODE_ENV !== 'development') {
-    /** 禁用浏览器默认的快捷键 */
-    window.addEventListener('keydown', handleGlobalKeydown)
-    /** 禁止右键菜单 */
-    window.addEventListener('contextmenu', preventGlobalContextMenu, false)
-  }
-  // 只在桌面端处理窗口相关事件
-  if (isDesktop() && tauriRuntimeAvailable && appWindow) {
-    useMitt.on(MittEnum.CHECK_UPDATE, async () => {
-      const checkUpdateWindow = await ensureCheckUpdateWindow()
-      await checkUpdateWindow?.show()
-    })
-    useMitt.on<{ close: string }>(MittEnum.DO_UPDATE, async (event) => {
-      await createWebviewWindow('更新', 'update', 490, 335, '', false, 490, 335, false, true)
-      const closeWindow = await WebviewWindow.getByLabel(event.close)
-      closeWindow?.close()
-    })
-    addListener(
-      appWindow.listen(EventEnum.EXIT, async () => {
-        await exit(0)
-      }),
-      'app-exit'
-    )
-  }
-  listenMobileReLogin()
+}
 
-  // 注册 WS 事件处理器（从 useWsEventHandler 迁移）
-  const wsEventHandler = useWsEventHandler()
-  wsEventHandler.registerHandlers()
-})
-
-onUnmounted(async () => {
-  subscribedPresenceUserIds.clear()
-  if (unsubscribePresenceListener) {
-    unsubscribePresenceListener()
-    unsubscribePresenceListener = null
-  }
-  window.removeEventListener('contextmenu', preventGlobalContextMenu, false)
-  window.removeEventListener('dragstart', preventDrag)
-  if (process.env.NODE_ENV !== 'development') {
+function uninstallSecurityListeners() {
+  window.removeEventListener('dragstart', preventImageInputDrag)
+  if (import.meta.env.PROD) {
     window.removeEventListener('keydown', handleGlobalKeydown)
+    window.removeEventListener('contextmenu', preventGlobalContextMenu, false)
   }
+}
 
-  // 只在桌面端的主窗口中清理全局快捷键
-  if (isDesktop() && appWindow?.label === 'home') {
-    await cleanupGlobalShortcut()
+// ========== iOS network permission ==========
+const requestIOSNetworkPermission = async () => {
+  if (!isIOS()) return
+  try {
+    await fetch('https://www.apple.com/favicon.ico', {
+      method: 'HEAD',
+      cache: 'no-cache'
+    })
+  } catch {
+    // Expected to fail on first launch, triggers the permission dialog
   }
-})
+}
 
-watch(
-  () =>
-    collectTrackedPresenceUserIds({
-      currentUserId: userStore.userInfo?.uid,
-      contacts: contactStore.contactsList,
-      members: groupStore.allUserInfo
-    }).join('|'),
-  () => {
-    void syncAvatarPresence()
-  },
-  {
-    immediate: true
-  }
-)
+// ========== Mobile re-login listener ==========
+const setupMobileReLoginListener = async () => {
+  if (!isMobile()) return
+  const { useLoginFlow } = await import('@/hooks/useLoginFlow')
+  const { useTauriListener } = await import('@/hooks/useTauriListener')
+  const { listen } = await import('@tauri-apps/api/event')
+  const { addListener } = useTauriListener()
+  const { logout } = useLoginFlow()
+  addListener(
+    listen('relogin', async () => {
+      logger.info('received re-login event')
+      await logout()
+    }),
+    'mobile-relogin'
+  )
+}
 
-/** 控制阴影 */
-watch(
-  () => settingStore.pageShadowEnabled,
-  (val) => {
-    // 移动端始终禁用阴影
-    if (isMobile()) {
-      document.documentElement.style.setProperty('--shadow-enabled', '1')
-    } else {
-      document.documentElement.style.setProperty('--shadow-enabled', val ? '0' : '1')
-    }
-  },
-  { immediate: true }
-)
-
-/** 控制高斯模糊 */
-watch(
-  () => settingStore.pageBlurEnabled,
-  (val) => {
-    document.documentElement.setAttribute('data-blur', val ? '1' : '0')
-  },
-  { immediate: true }
-)
-
-/** 控制字体样式 */
-watch(
-  () => settingStore.pageFontFamily,
-  (val) => {
-    document.documentElement.style.setProperty('--font-family', val)
-  },
-  { immediate: true }
-)
-
-/**
- * 语言发生变化
- */
-watch(
-  () => settingStore.languagePreference,
-  (lang) => {
-    void loadLanguage(lang)
-  }
-)
-
-/** 监听会话变化 */
-useMitt.on(MittEnum.MSG_INIT, async () => {
+// ========== Theme reactivity watchers ==========
+function setupThemeWatchers() {
   watch(
-    () => [globalStore.currentSessionRoomId, globalStore.currentSession?.type] as const,
-    async ([sessionRoomId, sessionType]) => {
-      if (!sessionRoomId || sessionType !== RoomTypeEnum.GROUP) {
-        return
-      }
-
-      try {
-        const result = await groupStore.switchSession({ roomId: sessionRoomId })
-        if (result?.success) {
-          await announcementStore.loadGroupAnnouncements()
-        }
-      } catch (error) {
-        logger.error('会话切换处理失败:', error)
+    () => settingStore.pageShadowEnabled,
+    (val) => {
+      if (isMobile()) {
+        document.documentElement.style.setProperty('--shadow-enabled', '1')
+      } else {
+        document.documentElement.style.setProperty('--shadow-enabled', val ? '0' : '1')
       }
     },
     { immediate: true }
   )
+
+  watch(
+    () => settingStore.pageBlurEnabled,
+    (val) => {
+      document.documentElement.setAttribute('data-blur', val ? '1' : '0')
+    },
+    { immediate: true }
+  )
+
+  watch(
+    () => settingStore.pageFontFamily,
+    (val) => {
+      document.documentElement.style.setProperty('--font-family', val)
+    },
+    { immediate: true }
+  )
+
+  watch(
+    () => settingStore.languagePreference,
+    (lang) => {
+      void import('@/services/i18n').then(({ loadLanguage }) => loadLanguage(lang))
+    }
+  )
+}
+
+// ========== Session change watcher ==========
+async function setupSessionWatch() {
+  const { MittEnum, RoomTypeEnum } = await import('@/enums')
+  useMitt.on(MittEnum.MSG_INIT, async () => {
+    const { useAnnouncementStore } = await import('@/stores/domains/chat/announcement')
+    const { useGroupStore } = await import('@/stores/domains/chat/group')
+    const announcementStore = useAnnouncementStore()
+    const groupStore = useGroupStore()
+
+    watch(
+      () => [globalStore.currentSessionRoomId, globalStore.currentSession?.type] as const,
+      async ([sessionRoomId, sessionType]) => {
+        if (!sessionRoomId || sessionType !== RoomTypeEnum.GROUP) return
+        try {
+          const result = await groupStore.switchSession({ roomId: sessionRoomId })
+          if (result?.success) {
+            await announcementStore.loadGroupAnnouncements()
+          }
+        } catch (error) {
+          logger.error('session switch failed:', error)
+        }
+      },
+      { immediate: true }
+    )
+  })
+}
+
+// ========== Lifecycle ==========
+onMounted(async () => {
+  await bootstrap()
+  await initOfflineQueue()
+  await requestIOSNetworkPermission()
+  initPlatformStyles()
+  installSecurityListeners()
+  await setupWindowHandlers()
+  await setupMobileReLoginListener()
+  setupThemeWatchers()
+  wsEventHandler.registerHandlers()
+  presenceSync.startPresenceWatch()
+})
+
+onUnmounted(async () => {
+  wsEventHandler.cleanup()
+  presenceSync.cleanup()
+  uninstallSecurityListeners()
+  if (isDesktop() && appWindow?.label === 'home') {
+    await cleanupGlobalShortcut()
+  }
 })
 </script>
+
 <style lang="scss">
-/* 修改naive-ui select 组件的样式 */
 .n-base-selection,
 .n-base-select-menu,
 .n-base-select-menu .n-base-select-option .n-base-select-option__content,

@@ -12,13 +12,17 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
+vi.mock('../../MatrixClientService', () => {
+  const mockService = {
     getSlidingSync: vi.fn(() => null as SlidingSync | null),
     getClient: vi.fn(() => null as MatrixClient | null),
     updateConnectionState: vi.fn()
   }
-}))
+  return {
+    default: mockService,
+    matrixClientService: mockService
+  }
+})
 
 describe('MatrixSlidingSyncService', () => {
   beforeEach(() => {

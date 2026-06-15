@@ -22,7 +22,14 @@ vi.mock('../network/runtimeFetch', () => ({
 
 vi.mock('../EndpointCapabilityService', () => ({
   default: {
-    check: vi.fn(() => Promise.resolve(true))
+    check: vi.fn(() => Promise.resolve(true)),
+    clear: vi.fn()
+  }
+}))
+
+vi.mock('../MatrixCapabilityService', () => ({
+  matrixCapabilityService: {
+    canUseFriendList: vi.fn(() => true)
   }
 }))
 

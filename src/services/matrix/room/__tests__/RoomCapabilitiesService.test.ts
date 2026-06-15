@@ -5,12 +5,27 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn()
 }))
 
-const authedRequest = vi.fn()
-const getClient = vi.fn(() => ({ http: { authedRequest } }))
+const mockAuthedRequest = vi.fn()
+const mockAccessorClient = {
+  http: {
+    authedRequest: mockAuthedRequest
+  }
+}
 
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: { getClient },
-  default: { getClient }
+vi.mock('../../matrixClientAccessor', () => ({
+  getMatrixClient: vi.fn(() => mockAccessorClient),
+  getMatrixAccessToken: vi.fn(() => 'mock-token'),
+  getMatrixHomeserverUrl: vi.fn(() => 'https://matrix.org'),
+  getMatrixTelemetry: vi.fn(() => null),
+  waitForMatrixClientReady: vi.fn(),
+  setMatrixClientAccessor: vi.fn(),
+  hasRegisteredMatrixClientAccessor: vi.fn(() => true),
+  getMatrixClientAccessor: vi.fn(() => ({
+    getClient: vi.fn(() => mockAccessorClient),
+    getAccessToken: vi.fn(() => 'mock-token'),
+    getHomeserverUrl: vi.fn(() => 'https://matrix.org')
+  })),
+  resetMatrixClientAccessorForTests: vi.fn()
 }))
 
 const { roomCapabilitiesService, ROOM_CAPABILITY_NAMES, __ROOM_CAPABILITIES_TTL_MS__ } = await import(
@@ -19,14 +34,12 @@ const { roomCapabilitiesService, ROOM_CAPABILITY_NAMES, __ROOM_CAPABILITIES_TTL_
 
 describe('RoomCapabilitiesService', () => {
   beforeEach(() => {
-    authedRequest.mockReset()
-    getClient.mockReset()
-    getClient.mockReturnValue({ http: { authedRequest } })
+    mockAuthedRequest.mockReset()
     roomCapabilitiesService.invalidate()
   })
 
   it('returns capability payload from network on first fetch', async () => {
-    authedRequest.mockResolvedValueOnce({
+    mockAuthedRequest.mockResolvedValueOnce({
       room_id: '!a:server',
       room_version: '11',
       capabilities: { knock: { enabled: true }, threading: { enabled: false } },
@@ -37,11 +50,11 @@ describe('RoomCapabilitiesService', () => {
 
     expect(result?.room_version).toBe('11')
     expect(result?.capabilities?.threading?.enabled).toBe(false)
-    expect(authedRequest).toHaveBeenCalledTimes(1)
+    expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
   })
 
   it('serves later calls from cache within TTL', async () => {
-    authedRequest.mockResolvedValueOnce({
+    mockAuthedRequest.mockResolvedValueOnce({
       room_id: '!cache:server',
       capabilities: { knock: { enabled: true } }
     })
@@ -50,12 +63,12 @@ describe('RoomCapabilitiesService', () => {
     const second = await roomCapabilitiesService.fetch('!cache:server')
 
     expect(first).toBe(second)
-    expect(authedRequest).toHaveBeenCalledTimes(1)
+    expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
   })
 
   it('refetches when force=true', async () => {
-    authedRequest.mockResolvedValueOnce({ room_id: '!f:server', capabilities: {} })
-    authedRequest.mockResolvedValueOnce({
+    mockAuthedRequest.mockResolvedValueOnce({ room_id: '!f:server', capabilities: {} })
+    mockAuthedRequest.mockResolvedValueOnce({
       room_id: '!f:server',
       capabilities: { restricted: { enabled: false } }
     })
@@ -64,21 +77,21 @@ describe('RoomCapabilitiesService', () => {
     const refreshed = await roomCapabilitiesService.fetch('!f:server', { force: true })
 
     expect(refreshed?.capabilities?.restricted?.enabled).toBe(false)
-    expect(authedRequest).toHaveBeenCalledTimes(2)
+    expect(mockAuthedRequest).toHaveBeenCalledTimes(2)
   })
 
   it('falls back to last cached payload on network failure', async () => {
-    authedRequest.mockResolvedValueOnce({ room_id: '!fb:server', capabilities: { knock: { enabled: true } } })
+    mockAuthedRequest.mockResolvedValueOnce({ room_id: '!fb:server', capabilities: { knock: { enabled: true } } })
     await roomCapabilitiesService.fetch('!fb:server')
 
-    authedRequest.mockRejectedValueOnce(new Error('boom'))
+    mockAuthedRequest.mockRejectedValueOnce(new Error('boom'))
     const refreshed = await roomCapabilitiesService.fetch('!fb:server', { force: true })
 
     expect(refreshed?.capabilities?.knock?.enabled).toBe(true)
   })
 
   it('invalidate(roomId) drops only that entry', async () => {
-    authedRequest.mockResolvedValue({ room_id: '!x', capabilities: {} })
+    mockAuthedRequest.mockResolvedValue({ room_id: '!x', capabilities: {} })
     await roomCapabilitiesService.fetch('!a:server')
     await roomCapabilitiesService.fetch('!b:server')
 

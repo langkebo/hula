@@ -316,6 +316,60 @@ vi.mock('@/components/encryption/KeyRotationDialog.vue', () => ({
   }
 }))
 
+vi.mock('@/components/encryption/SecureBackupDialog.vue', () => ({
+  default: {
+    name: 'SecureBackupDialog',
+    props: ['show'],
+    emits: ['update:show', 'success'],
+    template: '<div data-test="secure-backup-dialog" />'
+  }
+}))
+
+vi.mock('@/components/encryption/SecurityKeySetupDialog.vue', () => ({
+  default: {
+    name: 'SecurityKeySetupDialog',
+    props: ['show'],
+    emits: ['update:show', 'success'],
+    template: '<div data-test="security-key-dialog" />'
+  }
+}))
+
+vi.mock('@/components/encryption/E2EEOnboardingDialog.vue', () => ({
+  default: {
+    name: 'E2EEOnboardingDialog',
+    props: ['show'],
+    emits: ['update:show', 'complete', 'skip'],
+    template: '<div data-test="e2ee-onboarding-dialog" />'
+  }
+}))
+
+vi.mock('@/components/encryption/DeviceTrustManager.vue', () => ({
+  default: {
+    name: 'DeviceTrustManager',
+    props: ['show'],
+    emits: ['update:show'],
+    template: '<div data-test="device-trust-manager" />'
+  }
+}))
+
+vi.mock('@/components/encryption/DehydratedDeviceManager.vue', () => ({
+  default: {
+    name: 'DehydratedDeviceManager',
+    props: ['show'],
+    emits: ['update:show'],
+    template: '<div data-test="dehydrated-device-manager" />'
+  }
+}))
+
+vi.mock('@/components/encryption/E2EEBootstrapWizard.vue', () => ({
+  default: {
+    name: 'E2EEBootstrapWizard',
+    props: ['show'],
+    emits: ['update:show', 'complete', 'skip'],
+    template: '<div data-test="e2ee-bootstrap-wizard" />'
+  }
+}))
+
 describe('EncryptionSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()

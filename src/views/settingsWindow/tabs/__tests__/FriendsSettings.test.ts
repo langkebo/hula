@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import FriendsSettings from '../FriendsSettings.vue'
 
@@ -104,7 +105,9 @@ vi.mock('vue-i18n', () => ({
 
 describe('FriendsSettings', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    ;(window as any).$message = { success: messageSuccessMock, warning: messageWarningMock, error: messageErrorMock }
     localStorage.clear()
     mockManager.getFriendGroups.mockResolvedValue([])
     mockManager.getIncomingRequests.mockResolvedValue([])

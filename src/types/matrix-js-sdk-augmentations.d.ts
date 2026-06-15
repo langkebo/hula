@@ -380,6 +380,7 @@ declare module 'matrix-js-sdk' {
 
   export interface IPusherRequest extends Omit<IPusher, 'device_id'> {
     append?: boolean
+    device_id?: string // SDK-7: required for pusher authentication (P2 #32)
   }
 
   // ==================== Event 和 Timeline 类型 ====================
@@ -477,14 +478,16 @@ declare module 'matrix-js-sdk' {
         method: string,
         path: string,
         queryParams?: Record<string, string>,
-        body?: object
+        body?: object,
+        paramOpts?: { prefix?: string; baseUrl?: string; headers?: Record<string, string>; localTimeoutMs?: number }
       ): Promise<T>
       authedRequest<T = unknown>(
         opts: Record<string, unknown>,
         method: string,
         path: string,
         queryParams?: Record<string, unknown>,
-        data?: unknown
+        data?: unknown,
+        paramOpts?: Record<string, unknown>
       ): Promise<T>
       request<T = unknown>(
         method: string,
@@ -660,6 +663,7 @@ declare module 'matrix-js-sdk' {
     getDevices(): Promise<Device[]>
     getDevice(deviceId: string): Promise<Device>
     setDeviceName(deviceId: string, name: string): Promise<void>
+    updateDevice(deviceId: string, updates: IDeviceUpdateRequest): Promise<void>
     deleteDevice(deviceId: string, auth?: Record<string, unknown>): Promise<void>
     deleteMultipleDevices(deviceIds: string[], auth?: Record<string, unknown>): Promise<void>
     getThreePids(): Promise<{
@@ -1337,6 +1341,11 @@ declare module 'matrix-js-sdk' {
     last_seen_ts?: number
     last_seen_user_agent?: string
     known_at?: number
+  }
+
+  // SDK-9: 设备更新请求（display_name ≤100 字符）
+  export interface IDeviceUpdateRequest {
+    display_name?: string
   }
 
   export interface DeviceUpdate {
