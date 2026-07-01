@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.0.10](https://github.com/langkebo/hula/compare/v3.0.9...v3.0.10) (2026-07-01)
+
+### 🔧 Refactoring | 重构
+
+* **service:** remove shallow pass-through modules (MatrixRoomService, MatrixGroupService, RoomNavigationService, RoomStateService, RoomListService) — consumers call sub-services directly
+* **hook:** inline useThread, useChatMessageActions, useRoomActions composables — components import service methods directly
+* **service:** add convenience methods to MatrixClientService (getUser, isRoomEncrypted, canManageSpace) and MatrixAccountService (getAccountData, setAccountData)
+* **service:** eliminate direct getClient() calls from Pinia stores, restore service-layer seams
+
 ## [3.0.9](https://gitee.com/llangkebo/hula/compare/v3.0.8...v3.0.9) (2026-01-19)
 
 ### ✨ Features | 新功能
