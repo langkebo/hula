@@ -1,5 +1,4 @@
 import { type ComputedRef, computed, nextTick, type Ref, ref } from 'vue'
-import type { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
 import type { ActionFeedbackType } from '@/composables/common/useActionFeedback'
 import { MergeMessageType, MittEnum, MsgEnum, PowerEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import type { useDownload } from '@/hooks/useDownload'
@@ -27,7 +26,7 @@ const logger = createLogger('ChatContextMenu')
 export interface UseChatContextMenuDeps {
   t: (key: string) => string
   showFeedback: (message: string, type: ActionFeedbackType) => void
-  recallMessage: ReturnType<typeof useChatMessageActions>['recallMessage']
+  recallMessage: (roomId: string, eventId: string, txId?: string) => Promise<import('matrix-js-sdk').ISendEventResponse>
   handleCopy: (content: string | undefined, prioritizeSelection?: boolean, messageId?: string) => Promise<void>
   downloadFile: DownloadFileFn
   downloadAndRevealFile: (params: {

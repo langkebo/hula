@@ -34,7 +34,7 @@ const logger = createLogger('ChatMain')
 type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
 
 import { useI18n } from 'vue-i18n'
-import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { matrixRoomTranslateService } from '@/services/matrix/room/TranslateService'
 import type { MessageType } from '@/stores/domains/chat/chat'
@@ -62,7 +62,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const { showFeedback } = useActionFeedback()
   const { createWebviewWindow, sendWindowPayload, startRtcCall } = useWindow()
   const { getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
-  const { recallMessage } = useChatMessageActions()
+  const { recallMessage } = matrixMessageService
   const settingStore = useSettingStore()
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()

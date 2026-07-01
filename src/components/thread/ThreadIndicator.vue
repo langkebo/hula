@@ -20,9 +20,9 @@
 import { Icon } from '@iconify/vue'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useThread } from '@/composables/chat/useThread'
+import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 
-const { getThread } = useThread()
+const { getThread } = matrixThreadService
 
 const { t } = useI18n()
 
