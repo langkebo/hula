@@ -115,7 +115,8 @@ vi.mock('@/hooks/useWindow', () => ({
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
-    getClient: () => null
+    getClient: vi.fn(),
+    getRoom: vi.fn(() => null)
   }
 }))
 

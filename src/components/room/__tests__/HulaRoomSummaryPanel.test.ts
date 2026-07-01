@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 import HulaRoomSummaryPanel from '../HulaRoomSummaryPanel.vue'
 
-const { getClientMock, loadGroupInfoMock } = vi.hoisted(() => ({
-  getClientMock: vi.fn(),
+const { loadGroupInfoMock } = vi.hoisted(() => ({
   loadGroupInfoMock: vi.fn()
 }))
 
@@ -21,10 +20,14 @@ vi.mock('@/components/workbench/HulaSpaceJoinCta.vue', () => ({
   }
 }))
 
+const matrixClientMock = vi.hoisted(() => ({
+  getClient: vi.fn(),
+  getRoom: vi.fn(),
+  getUserId: vi.fn()
+}))
+
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: getClientMock
-  }
+  matrixClientService: matrixClientMock
 }))
 
 let groupStore: ReturnType<
@@ -113,21 +116,17 @@ describe('HulaRoomSummaryPanel', () => {
       joinRule: 'invite'
     })
 
-    getClientMock.mockReturnValue({
-      getUserId: vi.fn(() => '@me:example.com'),
-      getRoom: vi.fn(() => createRoom())
-    })
+    matrixClientMock.getRoom.mockReturnValue(createRoom())
+    matrixClientMock.getUserId.mockReturnValue('@me:example.com')
   })
 
   it('shows invited state card and disables enter/manage actions', async () => {
-    getClientMock.mockReturnValue({
-      getUserId: vi.fn(() => '@me:example.com'),
-      getRoom: vi.fn(() =>
-        createRoom({
-          getMyMembership: vi.fn(() => 'invite')
-        })
-      )
-    })
+    matrixClientMock.getRoom.mockReturnValue(
+      createRoom({
+        getMyMembership: vi.fn(() => 'invite')
+      })
+    )
+    matrixClientMock.getUserId.mockReturnValue('@me:example.com')
 
     const wrapper = mountComponent()
     await flushPromises()
@@ -142,16 +141,14 @@ describe('HulaRoomSummaryPanel', () => {
   })
 
   it('shows tombstoned state card and keeps enter action available', async () => {
-    getClientMock.mockReturnValue({
-      getUserId: vi.fn(() => '@me:example.com'),
-      getRoom: vi.fn(() =>
-        createRoom({
-          currentState: {
-            getStateEvents: vi.fn((eventType: string) => (eventType === 'm.room.tombstone' ? { event_id: '$t' } : null))
-          }
-        })
-      )
-    })
+    matrixClientMock.getRoom.mockReturnValue(
+      createRoom({
+        currentState: {
+          getStateEvents: vi.fn((eventType: string) => (eventType === 'm.room.tombstone' ? { event_id: '$t' } : null))
+        }
+      })
+    )
+    matrixClientMock.getUserId.mockReturnValue('@me:example.com')
 
     const wrapper = mountComponent()
     await flushPromises()
@@ -166,14 +163,12 @@ describe('HulaRoomSummaryPanel', () => {
   })
 
   it('shows no-permission state card without disabling room entry', async () => {
-    getClientMock.mockReturnValue({
-      getUserId: vi.fn(() => '@me:example.com'),
-      getRoom: vi.fn(() =>
-        createRoom({
-          canSendEvent: vi.fn(() => false)
-        })
-      )
-    })
+    matrixClientMock.getRoom.mockReturnValue(
+      createRoom({
+        canSendEvent: vi.fn(() => false)
+      })
+    )
+    matrixClientMock.getUserId.mockReturnValue('@me:example.com')
 
     const wrapper = mountComponent()
     await flushPromises()

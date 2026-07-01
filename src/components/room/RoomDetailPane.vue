@@ -343,9 +343,8 @@ const buildRoomDetail = async (): Promise<RoomDetail | null> => {
     // 用真实 power level 推 canEdit / canInvite，避免硬编码
     let canEdit = false
     let canInvite = false
-    const client = matrixClientService.getClient()
-    const room = client?.getRoom(props.roomId)
-    const userId = client?.getUserId()
+    const room = matrixClientService.getRoom(props.roomId)
+    const userId = matrixClientService.getUserId()
     if (room && userId) {
       canEdit = (
         room.currentState as unknown as { maySendStateEvent: (t: string, u: string) => boolean }

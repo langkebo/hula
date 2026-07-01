@@ -35,10 +35,28 @@ vi.mock('@/composables/chat/useTyping', () => ({
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
-    getClient: getClientMock
+    getClient: getClientMock,
+    getUserId: vi.fn(() => '@me:example.com'),
+    getUser: vi.fn((userId: string) => ({
+      presence: userId === '@alice:example.com' ? 'online' : 'offline'
+    })),
+    getRoom: vi.fn(() => ({
+      getMember: () => ({
+        name: 'Alice'
+      })
+    }))
   },
   default: {
-    getClient: getClientMock
+    getClient: getClientMock,
+    getUserId: vi.fn(() => '@me:example.com'),
+    getUser: vi.fn((userId: string) => ({
+      presence: userId === '@alice:example.com' ? 'online' : 'offline'
+    })),
+    getRoom: vi.fn(() => ({
+      getMember: () => ({
+        name: 'Alice'
+      })
+    }))
   }
 }))
 
