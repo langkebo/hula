@@ -77,8 +77,8 @@ import { useI18n } from 'vue-i18n'
 import { RoomActEnum, RoomTypeEnum } from '@/enums'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
-import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
 import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomStateService } from '@/services/matrix/room/StateService'
 import syncService from '@/services/matrix/sync/MatrixSyncService'
 import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -225,7 +225,7 @@ const handleMuteNotification = async (type: string) => {
 const handleUpdateGroupName = async (name: string) => {
   if (!currentSessionRoomId.value || !name.trim()) return
   try {
-    await matrixGroupService.updateRoomName(currentSessionRoomId.value, name.trim())
+    await matrixRoomStateService.setRoomName(currentSessionRoomId.value, name.trim())
   } catch (error) {
     logger.error('更新群名失败:', error)
   }

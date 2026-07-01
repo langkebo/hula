@@ -281,15 +281,20 @@ vi.mock('@/composables/space', () => ({
   })
 }))
 
-vi.mock('@/services/matrix/room/RoomListService', () => ({
-  roomListService: {
-    markAsRead: markAsReadMock,
+vi.mock('@/services/matrix/messaging/MatrixReceiptService', () => ({
+  matrixReceiptService: {
+    markRoomAsRead: markAsReadMock
+  }
+}))
+
+vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
+  matrixRoomSummaryService: {
     clearUnreadSummary: clearUnreadSummaryMock
   }
 }))
 
-vi.mock('@/services/matrix/room/RoomStateService', () => ({
-  roomStateService: {
+vi.mock('@/services/matrix/notifications/MatrixRoomNotificationService', () => ({
+  matrixRoomNotificationService: {
     setRoomNotification: setRoomNotificationMock
   }
 }))

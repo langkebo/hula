@@ -97,9 +97,10 @@ import { useMitt } from '@/hooks/useMitt'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { buildCreateSpaceRoute, SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
+import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
 import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
-import { roomListService } from '@/services/matrix/room/RoomListService'
-import { roomStateService } from '@/services/matrix/room/RoomStateService'
+import { matrixRoomSummaryService } from '@/services/matrix/room/MatrixRoomSummaryService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import type { SpaceOptions } from '@/types/matrix-services'
 
@@ -526,8 +527,8 @@ const runBatchAction = async (
 
 const handleBatchMarkRead = async (roomIds: string[]) => {
   await runBatchAction(roomIds, async (session) => {
-    await roomListService.markAsRead(session.roomId)
-    await roomListService.clearUnreadSummary(session.roomId).catch(() => undefined)
+    await matrixReceiptService.markRoomAsRead(session.roomId)
+    await matrixRoomSummaryService.clearUnreadSummary(session.roomId).catch(() => undefined)
     chatStore.updateSession(session.roomId, {
       unreadCount: 0
     })
@@ -546,7 +547,7 @@ const handleBatchPin = async (roomIds: string[]) => {
 
 const handleBatchMute = async (roomIds: string[]) => {
   await runBatchAction(roomIds, async (session) => {
-    await roomStateService.setRoomNotification(session.roomId, NotificationTypeEnum.NOT_DISTURB)
+    await matrixRoomNotificationService.setRoomNotification(session.roomId, NotificationTypeEnum.NOT_DISTURB)
     chatStore.updateSession(session.roomId, {
       muteNotification: NotificationTypeEnum.NOT_DISTURB
     })

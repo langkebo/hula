@@ -5,9 +5,6 @@ export { matrixRoomDirectMessageService } from './DirectMessageService'
 export { matrixRoomLifecycleService } from './LifecycleService'
 export type { Announcement, AnnouncementContent } from './MatrixAnnouncementService'
 export { matrixAnnouncementService } from './MatrixAnnouncementService'
-export type { CreateRoomOptions, RoomPowerLevels } from './MatrixGroupService'
-// 业务高级封装
-export { matrixGroupService } from './MatrixGroupService'
 export { matrixRoomService } from './MatrixRoomService'
 export { matrixRoomStoreAdapter } from './MatrixRoomStoreAdapter'
 export { matrixRoomSummaryService } from './MatrixRoomSummaryService'
@@ -27,8 +24,6 @@ export type {
   StableRoomFeatureName
 } from './RoomCapabilitiesService'
 export { ROOM_CAPABILITY_NAMES, ROOM_FEATURE_NAMES, roomCapabilitiesService } from './RoomCapabilitiesService'
-export { roomListService } from './RoomListService'
-export { roomStateService } from './RoomStateService'
 export { matrixRoomStateService } from './StateService'
 export type { MatrixRoomSummary } from './SummaryService'
 export { matrixRoomSummaryAggregateService } from './SummaryService'

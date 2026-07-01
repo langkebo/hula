@@ -4,8 +4,8 @@ import { computed, reactive, ref, shallowRef, triggerRef } from 'vue'
 import { type NotificationTypeEnum, RoomTypeEnum, StoresEnum } from '@/enums'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
-import { roomListService } from '@/services/matrix/room/RoomListService'
 import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -239,7 +239,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     persistUnreadCount(roomId, 0)
     writeUnreadDetail(roomId, { total: 0, highlight: 0, silent: getUnreadDetail(roomId)?.silent ?? false })
     try {
-      await roomListService.markAsRead(roomId)
+      await matrixReceiptService.markRoomAsRead(roomId)
       void refreshUnreadDetail(roomId).catch(() => null)
     } catch (err) {
       logger.error('标记会话已读失败:', err)

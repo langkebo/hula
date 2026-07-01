@@ -1,5 +1,5 @@
 import { computed, type MaybeRefOrGetter, ref, toValue, watch } from 'vue'
-import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
+import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 type GroupConfirmTarget = {
@@ -28,7 +28,7 @@ export function useGroupRequestConfirm(defaultMessage?: MaybeRefOrGetter<string>
 
   const submitRequest = async () => {
     if (!userInfo.value.account) return false
-    await matrixGroupService.applyGroup(String(userInfo.value.account))
+    await matrixRoomMembershipService.joinRoom(String(userInfo.value.account))
     return true
   }
 
