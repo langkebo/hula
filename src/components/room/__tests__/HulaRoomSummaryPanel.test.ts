@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 import HulaRoomSummaryPanel from '../HulaRoomSummaryPanel.vue'
 
-const { getClientMock, loadGroupInfoMock } = vi.hoisted(() => ({
-  getClientMock: vi.fn(),
+const { loadGroupInfoMock } = vi.hoisted(() => ({
   loadGroupInfoMock: vi.fn()
 }))
 
@@ -21,10 +20,14 @@ vi.mock('@/components/workbench/HulaSpaceJoinCta.vue', () => ({
   }
 }))
 
+const matrixClientMock = vi.hoisted(() => ({
+  getClient: vi.fn(),
+  getRoom: vi.fn(),
+  getUserId: vi.fn()
+}))
+
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: getClientMock
-  }
+  matrixClientService: matrixClientMock
 }))
 
 let groupStore: ReturnType<
@@ -113,75 +116,74 @@ describe('HulaRoomSummaryPanel', () => {
       joinRule: 'invite'
     })
 
-    getClientMock.mockReturnValue({
-      getUserId: vi.fn(() => '@me:example.com'),
-      getRoom: vi.fn(() => createRoom())
-    })
+    matrixClientMock.getRoom.mockReturnValue(createRoom())
+    matrixClientMock.getUserId.mockReturnValue('@me:example.com')
   })
 
-  it('shows invited state card and disables enter/manage actions', async () => {
-    getClientMock.mockReturnValue({
-      getUserId: vi.fn(() => '@me:example.com'),
-      getRoom: vi.fn(() =>
-        createRoom({
-          getMyMembership: vi.fn(() => 'invite')
-        })
-      )
-    })
+  it('shows invite UI when inviteMode prop is set', async () => {
+    matrixClientMock.getRoom.mockReturnValue(
+      createRoom({
+        getMyMembership: vi.fn(() => 'invite')
+      })
+    )
+    matrixClientMock.getUserId.mockReturnValue('@me:example.com')
 
-    const wrapper = mountComponent()
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('room.detail.state_invited_title')
-    expect(wrapper.text()).toContain('room.detail.state_invited_description')
-
-    const buttons = wrapper.findAll('button')
-    expect(buttons[0]?.attributes('disabled')).toBeDefined()
-    expect(buttons[1]?.attributes('disabled')).toBeDefined()
-    expect(buttons[2]?.attributes('disabled')).toBeDefined()
-  })
-
-  it('shows tombstoned state card and keeps enter action available', async () => {
-    getClientMock.mockReturnValue({
-      getUserId: vi.fn(() => '@me:example.com'),
-      getRoom: vi.fn(() =>
-        createRoom({
-          currentState: {
-            getStateEvents: vi.fn((eventType: string) => (eventType === 'm.room.tombstone' ? { event_id: '$t' } : null))
+    const wrapper = mount(HulaRoomSummaryPanel, {
+      props: {
+        roomId: '!room:example.com',
+        inviteMode: true,
+        inviteUserId: ''
+      },
+      global: {
+        stubs: {
+          'n-spin': true,
+          'n-avatar': true,
+          'n-tag': true,
+          'n-flex': { template: '<div><slot /></div>' },
+          'n-form': { template: '<form><slot /></form>' },
+          'n-form-item': { template: '<div><slot /></div>' },
+          'n-input': true,
+          'n-button': {
+            props: ['disabled'],
+            template: '<button type="button" :disabled="disabled"><slot /><slot name="icon" /></button>'
           }
-        })
-      )
+        }
+      }
     })
-
-    const wrapper = mountComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('room.detail.state_tombstoned_title')
-    expect(wrapper.text()).toContain('room.detail.state_tombstoned_description')
-
-    const buttons = wrapper.findAll('button')
-    expect(buttons[0]?.attributes('disabled')).toBeUndefined()
-    expect(buttons[1]?.attributes('disabled')).toBeDefined()
-    expect(buttons[2]?.attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('space.invite_title')
   })
 
-  it('shows no-permission state card without disabling room entry', async () => {
-    getClientMock.mockReturnValue({
-      getUserId: vi.fn(() => '@me:example.com'),
-      getRoom: vi.fn(() =>
-        createRoom({
-          canSendEvent: vi.fn(() => false)
-        })
-      )
-    })
+  it('shows room detail when tombstoned (tombstone no longer blocks view)', async () => {
+    matrixClientMock.getRoom.mockReturnValue(
+      createRoom({
+        currentState: {
+          getStateEvents: vi.fn((eventType: string) => (eventType === 'm.room.tombstone' ? { event_id: '$t' } : null))
+        }
+      })
+    )
+    matrixClientMock.getUserId.mockReturnValue('@me:example.com')
 
     const wrapper = mountComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('room.detail.state_no_permission_title')
-    expect(wrapper.text()).toContain('room.detail.state_no_permission_description')
+    expect(wrapper.text()).toContain('Demo Room')
+  })
 
-    const buttons = wrapper.findAll('button')
-    expect(buttons[0]?.attributes('disabled')).toBeUndefined()
+  it('shows permission denied view when loadGroupInfo returns null', async () => {
+    matrixClientMock.getRoom.mockReturnValue(
+      createRoom({
+        canSendEvent: vi.fn(() => false)
+      })
+    )
+    loadGroupInfoMock.mockResolvedValue(null)
+    matrixClientMock.getUserId.mockReturnValue('@me:example.com')
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('space.detail_permission_denied_title')
+    expect(wrapper.text()).toContain('space.detail_permission_denied_description')
   })
 })

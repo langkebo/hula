@@ -76,8 +76,8 @@ vi.mock('@/stores/domains/chat/chat/session', () => ({
   })
 }))
 
-vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
-  matrixRoomService: {
+vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  matrixRoomActionFacade: {
     getRoom: vi.fn(() => null)
   }
 }))

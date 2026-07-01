@@ -260,16 +260,18 @@ describe('ProfileService', () => {
       expect(mockClient.http.authedRequest).toHaveBeenNthCalledWith(
         1,
         'PUT',
-        '/_matrix/client/unstable/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/resume',
+        '/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/resume',
         undefined,
-        'Updated bio'
+        'Updated bio',
+        { prefix: '/_matrix/client/unstable' }
       )
       expect(mockClient.http.authedRequest).toHaveBeenNthCalledWith(
         2,
         'PUT',
-        '/_matrix/client/unstable/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/sex',
+        '/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/sex',
         undefined,
-        1
+        1,
+        { prefix: '/_matrix/client/unstable' }
       )
     })
 

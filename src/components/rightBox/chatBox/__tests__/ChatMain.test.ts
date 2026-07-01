@@ -111,6 +111,14 @@ vi.mock('vue-virtual-scroller', async () => {
   }
 })
 
+vi.mock('vue', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue')>()
+  return {
+    ...actual,
+    defineAsyncComponent: () => ({ template: '<div/>' })
+  }
+})
+
 vi.mock('@/composables/chat/useChatScrollManager', () => ({
   useChatScrollManager: () => ({
     isAtBottom: ref(true),

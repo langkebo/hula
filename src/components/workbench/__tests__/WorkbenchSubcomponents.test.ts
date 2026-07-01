@@ -385,6 +385,55 @@ const switchWorkbenchTab = async (wrapper: ReturnType<typeof mount>, index: numb
   await flushPromises()
 }
 
+vi.mock('@/services/matrix/friends/MatrixSpecialFriendService', () => ({
+  matrixSpecialFriendService: {
+    addSpecialFriend: vi.fn().mockResolvedValue(undefined),
+    removeSpecialFriend: vi.fn().mockResolvedValue(undefined),
+    getSpecialFriends: vi.fn().mockReturnValue([]),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    clearCache: vi.fn()
+  }
+}))
+
+vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
+  matrixFriendService: {
+    initialize: vi.fn(),
+    on: vi.fn(),
+    stop: vi.fn(),
+    getFriends: vi.fn().mockReturnValue([]),
+    getSpecialFriends: vi.fn().mockReturnValue([]),
+    getIncomingRequests: vi.fn().mockReturnValue([]),
+    getOutgoingRequests: vi.fn().mockReturnValue([]),
+    isFriend: vi.fn().mockReturnValue(false),
+    acceptFriendRequest: vi.fn(),
+    rejectFriendRequest: vi.fn(),
+    cancelFriendRequest: vi.fn(),
+    removeFriend: vi.fn(),
+    sendFriendRequest: vi.fn()
+  }
+}))
+
+vi.mock('@/stores/domains/chat/chat', () => ({
+  useChatStore: () => ({
+    chatMessageMap: {},
+    messageCountMap: {}
+  }),
+  useSessionStore: () => ({
+    sessionList: [],
+    syncLoading: false,
+    sessionOptions: { isLoading: false }
+  })
+}))
+
+vi.mock('@/stores/domains/chat/chat/session', () => ({
+  useSessionStore: () => ({
+    sessionList: [],
+    syncLoading: false,
+    sessionOptions: { isLoading: false }
+  })
+}))
+
 vi.mock('@/utils/AvatarUtils', () => ({
   AvatarUtils: {
     getAvatarUrl: (value?: string) => value || 'avatar.png'
@@ -506,13 +555,16 @@ describe('RoomSpaceToolbar', () => {
     expect(wrapper.text()).toContain('2/7')
     expect(wrapper.text()).toContain('space.filter_all')
     expect(wrapper.text()).toContain('space.sort_recent')
-    expect(wrapper.text()).toContain('space.sort_summary_recent')
-    expect(wrapper.text()).toContain('space.search_filter_tag')
+    expect(wrapper.text()).toContain('space.sort_label')
 
     await input.setValue('beta')
-    await wrapper.get('[data-test="session-create-space"]').trigger('click')
-    await wrapper.get('[data-test="session-type-group"]').trigger('click')
-    await wrapper.get('[data-test="session-sort-name"]').trigger('click')
+    await wrapper.get('[data-test="session-sort-create"]').trigger('click')
+
+    const chipButtons = wrapper.findAll('button.toolbar-chip')
+    const typeGroupBtn = chipButtons.find((btn) => btn.text() === 'space.filter_group')
+    const sortNameBtn = chipButtons.find((btn) => btn.text() === 'space.sort_name')
+    await typeGroupBtn!.trigger('click')
+    await sortNameBtn!.trigger('click')
 
     expect(wrapper.emitted('update:searchKeyword')).toEqual([['beta']])
     expect(wrapper.emitted('update:sessionTypeFilter')).toEqual([['group']])
@@ -533,7 +585,7 @@ describe('RoomSpaceToolbar', () => {
     })
 
     expect(wrapper.text()).toContain('room.batch.exit')
-    await wrapper.findAll('button')[0].trigger('click')
+    await wrapper.get('[data-test="session-sort-batch"]').trigger('click')
     expect(wrapper.emitted('toggleBatchMode')).toEqual([[]])
   })
 
@@ -551,19 +603,20 @@ describe('RoomSpaceToolbar', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('space.saved_preset_label')
-    expect(wrapper.find('[data-test="session-save-preset"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="session-apply-preset"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('space.save_preset')
+    expect(wrapper.text()).toContain('space.apply_saved_preset')
 
-    await wrapper.get('[data-test="session-save-preset"]').trigger('click')
-    await wrapper.get('[data-test="session-apply-preset"]').trigger('click')
+    const presetButtons = wrapper.findAll('.toolbar-preset-button')
+    await presetButtons[0].trigger('click')
+    await presetButtons[1].trigger('click')
     await wrapper.get('.toolbar-filter-tag').trigger('close')
-    await wrapper.get('.toolbar-clear-all').trigger('click')
+    const clearAllBtn = wrapper.findAll('button').find((btn) => btn.text() === 'space.clear_all_filters')
+    await clearAllBtn!.trigger('click')
 
     expect(wrapper.emitted('savePreset')).toEqual([[]])
     expect(wrapper.emitted('applySavedPreset')).toEqual([[]])
-    expect(wrapper.emitted('update:searchKeyword')).toEqual([[''], ['']])
-    expect(wrapper.emitted('update:sessionTypeFilter')).toEqual([['all']])
+    expect(wrapper.emitted('update:searchKeyword')).toEqual([['']])
+    expect(wrapper.emitted('update:sessionTypeFilter')).toEqual([['all'], ['all']])
     expect(wrapper.emitted('update:sessionEngagementFilter')).toEqual([['all']])
     expect(wrapper.emitted('update:sessionSort')).toEqual([['recent']])
   })
@@ -599,8 +652,8 @@ describe('RoomSpaceToolbar', () => {
 
     expect(wrapper.attributes('data-test')).toBe('message-session-toolbar')
     expect(wrapper.text()).not.toContain('space.create')
-    expect(wrapper.find('[data-test="message-session-type-all"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="message-session-sort-recent"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('space.filter_all')
+    expect(wrapper.text()).toContain('space.sort_recent')
   })
 })
 

@@ -107,7 +107,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
-import { type GroupCreateResult, matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
+import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -171,12 +171,17 @@ const createGroup = async () => {
   }
 
   try {
-    const result: GroupCreateResult = await matrixGroupService.createGroupChat(selectedList.value)
+    const room = await matrixRoomCreationService.createRoom({
+      invite: selectedList.value,
+      is_direct: false,
+      preset: 'private_chat' as any,
+      visibility: 'private' as any
+    })
 
     await chatStore.getSessionList(true)
 
-    const resultRoomId = result?.roomId != null ? String(result.roomId) : undefined
-    const resultId = result?.roomId != null ? String(result.roomId) : undefined
+    const resultRoomId = room?.roomId != null ? String(room.roomId) : undefined
+    const resultId = room?.roomId != null ? String(room.roomId) : undefined
 
     const matchedSession = chatStore.sessionList.find((session) => {
       const sessionRoomId = String(session.roomId)

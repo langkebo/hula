@@ -145,9 +145,35 @@ vi.mock('@/utils/TimerManager', () => ({
   })
 }))
 
-vi.mock('@/stores/domains/chat/chat', () => ({
-  useChatStore: () => chatStore
-}))
+vi.mock('@/stores/domains/chat/chat', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/stores/domains/chat/chat')>()
+
+  return {
+    ...actual,
+    useChatStore: () => chatStore,
+    useSessionStore: () => ({
+      syncLoading: false,
+      sessionOptions: {
+        isLoading: false
+      },
+      sessionList: [
+        {
+          roomId: '!alice:server',
+          name: 'Alice',
+          type: RoomTypeEnum.SINGLE,
+          avatar: '',
+          activeTime: 10,
+          unreadCount: 0,
+          top: false,
+          account: '',
+          shield: false,
+          muteNotification: 0
+        }
+      ],
+      getSessionList: getSessionListMock
+    })
+  }
+})
 
 vi.mock('@/stores/domains/widget/global', () => ({
   useGlobalStore: () => ({
@@ -160,6 +186,21 @@ vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => ({
     getUserInfo: vi.fn(() => null),
     countInfo: null
+  })
+}))
+
+vi.mock('@/stores/domains/chat/room', () => ({
+  useRoomStore: () => ({
+    roomActions: {},
+    roomId: '',
+    room: null,
+    roomList: [],
+    currentJoinRule: null,
+    roomSummaryCache: new Map(),
+    loadRoomInfo: vi.fn(),
+    loadRoomAliases: vi.fn(),
+    joinRoom: vi.fn(),
+    leaveRoom: vi.fn()
   })
 }))
 
@@ -240,7 +281,7 @@ describe('MessageView', () => {
     expect(wrapper.find('[data-test="message-toolbar"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="session-list"]').exists()).toBe(true)
     expect(wrapper.findComponent({ name: 'RoomSpaceWorkbench' }).exists()).toBe(false)
-    expect(wrapper.get('[data-test="toolbar-title"]').text()).toBe('消息')
+    expect(wrapper.get('[data-test="toolbar-title"]').text()).toBe('home.action.message_short_title')
     expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('1/1')
 
     await wrapper.get('[data-test="toolbar-search"]').trigger('click')

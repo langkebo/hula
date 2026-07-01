@@ -232,9 +232,8 @@ const fallbackAvatar = computed(() => (settingStore.themeContent === ThemeEnum.D
 const isPublic = computed(() => detail.value?.isPublic || detail.value?.joinRule === 'public')
 const onlineCount = computed(() => (props.roomId ? groupStore.onlineCountMap[props.roomId] : 0) ?? 0)
 const canInvite = computed(() => {
-  const client = matrixClientService.getClient()
-  const room = props.roomId ? client?.getRoom(props.roomId) : null
-  const userId = client?.getUserId()
+  const room = props.roomId ? matrixClientService.getRoom(props.roomId) : null
+  const userId = matrixClientService.getUserId()
   if (!room || !userId) return false
   return room.canInvite(userId)
 })
@@ -250,9 +249,8 @@ const loadDetail = async () => {
 
   loading.value = true
   try {
-    const client = matrixClientService.getClient()
-    if (client && props.roomId) {
-      const room = client.getRoom(props.roomId)
+    if (props.roomId) {
+      const room = matrixClientService.getRoom(props.roomId)
       if (room && typeof room.getMyMembership === 'function') {
         membership.value = room.getMyMembership()
       } else {

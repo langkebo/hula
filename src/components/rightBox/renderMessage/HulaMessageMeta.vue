@@ -85,8 +85,7 @@ const receipts = computed<ReceiptInfo[]>(() => {
   if (!props.isMe || isSending.value || showRetry.value) return []
   if (matrixMessageService.isLocalEventId(resolvedMessageId.value)) return []
 
-  const client = matrixClientService.getClient()
-  const myUserId = client?.getUserId()
+  const myUserId = matrixClientService.getUserId()
 
   return matrixReceiptService
     .getReadReceipts(props.roomId, resolvedMessageId.value)
@@ -99,7 +98,7 @@ const receipts = computed<ReceiptInfo[]>(() => {
 })
 
 const senderPresence = computed(() => {
-  const user = matrixClientService.getClient()?.getUser(props.senderId)
+  const user = matrixClientService.getUser(props.senderId)
   return (user as unknown as { presence?: string })?.presence
 })
 
@@ -111,7 +110,7 @@ const senderPresenceText = computed(() => {
 const { getTypingUsers } = useTyping()
 
 const typingUsers = computed<string[]>(() => {
-  const myUserId = matrixClientService.getClient()?.getUserId()
+  const myUserId = matrixClientService.getUserId()
   return getTypingUsers(props.roomId)
     .map((user) => user.userId)
     .filter((userId) => userId && userId !== myUserId)
@@ -121,8 +120,7 @@ const typingText = computed(() => {
   if (!typingUsers.value.length) return ''
   if (typingUsers.value.length === 1) {
     const name =
-      matrixClientService.getClient()?.getRoom(props.roomId)?.getMember(typingUsers.value[0])?.name ||
-      typingUsers.value[0]
+      matrixClientService.getRoom(props.roomId)?.getMember(typingUsers.value[0])?.name || typingUsers.value[0]
     return t('home.chat_main.typing.single', { name })
   }
   return t('home.chat_main.typing.multiple', { count: typingUsers.value.length })

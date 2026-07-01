@@ -67,8 +67,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useRoomActions } from '@/composables/room/useRoomActions'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
@@ -151,15 +151,13 @@ const addManualUser = () => {
   }
 }
 
-const { inviteUser } = useRoomActions()
-
 const handleInvite = async () => {
   if (selectedUsers.value.length === 0) return
 
   inviting.value = true
   try {
     for (const userId of selectedUsers.value) {
-      await inviteUser(props.roomId, userId)
+      await matrixRoomActionFacade.inviteUser(props.roomId, userId)
     }
 
     showFeedback(t('room.invite.success', { count: selectedUsers.value.length }), 'success')

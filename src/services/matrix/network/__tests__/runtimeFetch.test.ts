@@ -97,7 +97,7 @@ describe('runtimeFetch', () => {
       credentials: 'omit',
       method: 'POST'
     })
-    expect(warnMock).toHaveBeenCalledTimes(1)
+    expect(warnMock).toHaveBeenCalledTimes(2)
   })
 
   it('warns only once for repeated native fetch fallback failures', async () => {
@@ -111,7 +111,8 @@ describe('runtimeFetch', () => {
     await runtimeFetch('https://matrix.test/_matrix/client/v3/capabilities')
 
     expect(browserFetch).toHaveBeenCalledTimes(2)
-    expect(warnMock).toHaveBeenCalledTimes(1)
+    // One warn per native fetch exception (2 calls) + one fallback warn (1 call) = 3 total
+    expect(warnMock).toHaveBeenCalledTimes(3)
   })
 
   it('preserves explicit credentials when provided', async () => {

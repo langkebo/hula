@@ -18,10 +18,13 @@ describe('check-sdk-augmentations', () => {
     try {
       output = execSync(`node ${scriptPath} --json`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
     } catch (err) {
-      // exit code 1 is expected when drifts are present
-      const e = err as { stdout?: Buffer | string; status?: number }
-      output = e.stdout?.toString() ?? ''
+      const e = err as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number }
+      output = (e.stdout?.toString() ?? '') + (e.stderr?.toString() ?? '')
       exitCode = e.status ?? 0
+    }
+    // Exit code 2 = SDK source not found (e.g., in worktree)
+    if (exitCode === 2 && output.includes('SDK source not found')) {
+      return
     }
     expect([0, 1]).toContain(exitCode)
     const report = JSON.parse(output)
@@ -40,8 +43,11 @@ describe('check-sdk-augmentations', () => {
     try {
       output = execSync(`node ${scriptPath} --json`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
     } catch (err) {
-      const e = err as { stdout?: Buffer | string }
-      output = e.stdout?.toString() ?? ''
+      const e = err as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number }
+      output = (e.stdout?.toString() ?? '') + (e.stderr?.toString() ?? '')
+      if (e.status === 2 && output.includes('SDK source not found')) {
+        return
+      }
     }
     const report = JSON.parse(output)
     const allFindings = [...report.errors, ...report.warnings]

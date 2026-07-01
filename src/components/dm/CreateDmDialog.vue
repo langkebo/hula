@@ -99,7 +99,7 @@
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { ThemeEnum } from '@/enums'
-import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
+import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -150,7 +150,7 @@ const handleCreate = async () => {
 
   creating.value = true
   try {
-    const room = await roomNavigationService.getOrCreateDirectMessage(searchResult.value.userId, encrypted.value)
+    const room = await matrixDirectMessageService.getOrCreateDmRoom(searchResult.value.userId, encrypted.value)
     if (room) {
       emit('created', room)
       visible.value = false

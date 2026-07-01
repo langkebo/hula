@@ -154,4 +154,85 @@ describe('MatrixAccountService', () => {
       expect(mockClient.setPresence).toHaveBeenCalledWith('online', { status_msg: 'Working' })
     })
   })
+
+  describe('getAccountData', () => {
+    it('should return account data content when available', async () => {
+      const mockAccountDataEvent = {
+        getContent: vi.fn().mockReturnValue({ badges: [{ id: 'badge1' }] })
+      }
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountData: vi.fn().mockReturnValue(mockAccountDataEvent)
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      const result = await matrixAccountService.getAccountData('m.badges')
+      expect(result).toEqual({ badges: [{ id: 'badge1' }] })
+      expect(mockClientWithData.getAccountData).toHaveBeenCalledWith('m.badges')
+    })
+
+    it('should return null when no account data exists', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountData: vi.fn().mockReturnValue(null)
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      const result = await matrixAccountService.getAccountData('m.badges')
+      expect(result).toBeNull()
+    })
+
+    it('should return null when account data has no content', async () => {
+      const mockAccountDataEvent = {
+        getContent: vi.fn().mockReturnValue(null)
+      }
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountData: vi.fn().mockReturnValue(mockAccountDataEvent)
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      const result = await matrixAccountService.getAccountData('m.badges')
+      expect(result).toBeNull()
+    })
+
+    it('should return null on error', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountData: vi.fn().mockImplementation(() => {
+          throw new Error('Network error')
+        })
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      const result = await matrixAccountService.getAccountData('m.badges')
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('setAccountData', () => {
+    it('should set account data successfully', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        setAccountData: vi.fn().mockResolvedValue(undefined)
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      await expect(matrixAccountService.setAccountData('m.badges', { wearingItemId: 'badge1' })).resolves.not.toThrow()
+      expect(mockClientWithData.setAccountData).toHaveBeenCalledWith('m.badges', {
+        wearingItemId: 'badge1'
+      })
+    })
+
+    it('should throw when setAccountData fails', async () => {
+      const error = new Error('Server error')
+      const mockClientWithData = {
+        ...mockClient,
+        setAccountData: vi.fn().mockRejectedValue(error)
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      await expect(matrixAccountService.setAccountData('m.badges', {})).rejects.toThrow('Server error')
+    })
+  })
 })

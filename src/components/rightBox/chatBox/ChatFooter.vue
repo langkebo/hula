@@ -439,9 +439,7 @@ const isFriend = computed(() => {
 const isRoomReadonly = computed(() => {
   const roomId = globalStore.currentSessionRoomId
   if (!roomId) return false
-  const client = matrixClientService.getClient()
-  if (!client) return false
-  const room = client.getRoom(roomId)
+  const room = matrixClientService.getRoom(roomId)
   if (!room) return false
   const tombstoneEvent = room.currentState.getStateEvents('m.room.tombstone', '')
   if (tombstoneEvent) return true

@@ -34,9 +34,9 @@ const logger = createLogger('ChatMain')
 type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<string, unknown>
 
 import { useI18n } from 'vue-i18n'
-import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
-import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
-import { roomStateService } from '@/services/matrix/room/RoomStateService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomTranslateService } from '@/services/matrix/room/TranslateService'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -62,7 +62,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const { showFeedback } = useActionFeedback()
   const { createWebviewWindow, sendWindowPayload, startRtcCall } = useWindow()
   const { getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
-  const { recallMessage } = useChatMessageActions()
+  const { recallMessage } = matrixMessageService
   const settingStore = useSettingStore()
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
@@ -311,7 +311,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
 
         item.message.body.translatedText = { provider: settingStore.chatTranslateProvider || 'client', text: '' }
         try {
-          const translatedText = await roomStateService.translateText(content)
+          const translatedText = await matrixRoomTranslateService.translateText(content)
           item.message.body.translatedText = {
             provider: settingStore.chatTranslateProvider || 'client',
             text: translatedText || content
@@ -722,7 +722,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         if (!roomId) return
 
         try {
-          await roomNavigationService.removeMember(roomId, targetUid)
+          await matrixRoomActionFacade.kickUser(roomId, targetUid)
           // 从群成员列表中移除该用户
           groupStore.removeUserItem(targetUid, roomId)
           showFeedback(t('menu.remove_from_group_success'), 'success')

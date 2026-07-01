@@ -49,7 +49,7 @@ export function createSessionStorePort(): SessionStorePort {
   return {
     matrix: {
       getClient() {
-        return getMatrixClient() ?? matrixStore().getClient?.() ?? null
+        return getMatrixClient() ?? null
       },
       getUserId() {
         return getRuntimeMatrixSession().userId

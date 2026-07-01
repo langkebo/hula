@@ -18,7 +18,6 @@ export type { Thread, ThreadDisplayMessage } from '@/services/matrix/messaging/M
 export type { IPusher, IPushRule, IPushRules } from '@/services/matrix/notifications/MatrixPushService'
 export type { Announcement } from '@/services/matrix/room/MatrixAnnouncementService'
 export type { DmRoomInfo } from '@/services/matrix/room/MatrixDirectMessageService'
-export type { GroupCreateResult } from '@/services/matrix/room/MatrixGroupService'
 export type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
 export type { MatrixEvent, PushRuleKind, Room } from '@/services/matrix/sdk'
 export type { DeviceInfo } from '@/services/matrix/user/MatrixAccountService'

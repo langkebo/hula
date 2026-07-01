@@ -223,7 +223,8 @@ import { MsgEnum, NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useReplaceMsg } from '@/hooks/useReplaceMsg'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
-import { roomListService } from '@/services/matrix/room/RoomListService'
+import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
+import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
 import { syncService } from '@/services/matrix/sync/MatrixSyncService'
 import { IsAllUserEnum } from '@/services/types.ts'
 import type { SessionItem } from '@/stores/domains/chat/chat'
@@ -414,7 +415,7 @@ const handleToggleTop = async (item: SessionItem | null) => {
   try {
     const newTopState = !item.top
 
-    await roomListService.setSessionTop(item.roomId, newTopState)
+    await matrixSessionService.setSessionTop(item.roomId, newTopState)
 
     chatStore.updateSession(item.roomId, { top: newTopState })
   } catch (error) {
@@ -442,7 +443,7 @@ const handleToggleReadStatus = async (markAsRead: boolean, sessionItem?: Session
     globalStore.updateGlobalUnreadCount()
 
     if (markAsRead) {
-      await roomListService.markAsRead(item.roomId)
+      await matrixReceiptService.markRoomAsRead(item.roomId)
     }
 
     showFeedback(successMsg, 'success')

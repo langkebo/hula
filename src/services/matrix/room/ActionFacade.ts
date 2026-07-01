@@ -20,6 +20,7 @@ export interface MatrixRoomActionFacade {
     alias?: string
     isEncrypted?: boolean
     historyVisibility?: 'shared' | 'invited' | 'joined' | 'world_readable'
+    joinRule?: 'invite' | 'knock' | 'public' | 'restricted'
   }): Promise<Room>
   createDirectRoom(userId: string): Promise<string>
   joinRoom(roomId: string): Promise<Room>

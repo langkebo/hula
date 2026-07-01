@@ -92,7 +92,7 @@ describe('MatrixAuthService', () => {
           user: 'testuser',
           password: 'password123',
           device_id: 'device-id',
-          initial_device_display_name: 'Device Name'
+          initial_display_name: 'Device Name'
         })
         expect(mockFetch).not.toHaveBeenCalled()
         expect(result).toEqual({
