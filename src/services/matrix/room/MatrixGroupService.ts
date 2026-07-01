@@ -2,6 +2,7 @@ import { type ICreateRoomOpts, Preset, Visibility } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { matrixRoomService } from './MatrixRoomService'
+import { type GroupSearchResult, matrixRoomQueryService } from './QueryService'
 
 const logger = createLogger('MatrixGroupService')
 
@@ -19,14 +20,8 @@ export interface RoomPowerLevels {
   redact?: number
 }
 
-export interface GroupSearchResult {
-  account: string
-  name: string
-  avatar?: string
-  deleteStatus?: boolean
-  extJson?: string
-  roomId: string
-}
+// Re-exported for backward compatibility — consumers import GroupSearchResult from MatrixGroupService
+export type { GroupSearchResult } from './QueryService'
 
 export interface GroupCreateResult {
   roomId: string
@@ -108,38 +103,7 @@ class MatrixGroupService {
   }
 
   async searchGroup(keyword: string): Promise<GroupSearchResult[]> {
-    try {
-      const normalizedKeyword = keyword.trim()
-      if (!normalizedKeyword) return []
-
-      const client = matrixClientService.getClient()
-      if (!client) return []
-
-      const rooms = client.getRooms()
-      const lowerKeyword = normalizedKeyword.toLowerCase()
-      const results = rooms
-        .filter((room) => {
-          const name = room.name?.toLowerCase() ?? ''
-          const roomId = room.roomId?.toLowerCase() ?? ''
-          return name.includes(lowerKeyword) || roomId.includes(lowerKeyword)
-        })
-        .map((room) => ({
-          account: room.roomId,
-          name: room.name || room.roomId,
-          avatar: room.getMxcAvatarUrl?.() ?? undefined,
-          roomId: room.roomId
-        }))
-
-      if (results.length === 0) {
-        logger.warn(`[MatrixGroup] 未找到匹配群组: ${normalizedKeyword}`)
-      } else {
-        logger.info(`[MatrixGroup] 搜索群组成功: ${normalizedKeyword}, ${results.length} 条`)
-      }
-      return results
-    } catch (err) {
-      logger.error(`[MatrixGroup] 搜索群组失败: ${err}`)
-      return []
-    }
+    return matrixRoomQueryService.searchGroup(keyword)
   }
 }
 
