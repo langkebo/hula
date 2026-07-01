@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, type MaybeRefOrGetter, ref, toValue, watch } from 'vue'
 import { OnlineEnum, UserType } from '@/enums'
 import { type FriendGroup, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
-import { type GroupSearchResult, matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
+import { type GroupSearchResult, matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import type { UserProfile } from '@/services/matrix/user/MatrixContactService'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
@@ -362,7 +362,7 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
 
     try {
       if (searchType.value === 'group') {
-        const groups = await matrixGroupService.searchGroup(keyword)
+        const groups = await matrixRoomQueryService.searchGroup(keyword)
         searchResults.value = sortFriendSearchResults(
           groups.map(
             (group: GroupSearchResult): GroupSearchViewItem => ({

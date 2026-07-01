@@ -99,7 +99,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
 import router from '@/router'
-import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
+import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -160,7 +160,7 @@ const handleInvite = async () => {
   try {
     await Promise.all(
       selectedList.value.map((uid: string) =>
-        matrixGroupService.inviteGroupMember(globalStore.currentSessionRoomId, uid)
+        matrixRoomMembershipService.inviteUser(globalStore.currentSessionRoomId, uid)
       )
     )
 

@@ -44,7 +44,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/hooks/useMitt'
 import { useWindow } from '@/hooks/useWindow'
 import { getDisabledOptions, getFilteredOptions, renderLabel, renderSourceList } from '@/layout/center/model.tsx'
-import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
+import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -78,7 +78,9 @@ const handleInvite = async () => {
 
   try {
     // 调用邀请群成员API
-    await Promise.all(selectedValue.value.map((uid: string) => matrixGroupService.inviteGroupMember(roomId.value, uid)))
+    await Promise.all(
+      selectedValue.value.map((uid: string) => matrixRoomMembershipService.inviteUser(roomId.value, uid))
+    )
 
     showFeedback(t('space.invite_success', { count: selectedValue.value.length }), 'success')
     timerManager.setTimeout(() => {

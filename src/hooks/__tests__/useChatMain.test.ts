@@ -165,8 +165,8 @@ vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/room/RoomStateService', () => ({
-  roomStateService: {
+vi.mock('@/services/matrix/room/TranslateService', () => ({
+  matrixRoomTranslateService: {
     translateText: vi.fn()
   }
 }))

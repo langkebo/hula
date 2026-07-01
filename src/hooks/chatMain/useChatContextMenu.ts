@@ -4,7 +4,7 @@ import type { ActionFeedbackType } from '@/composables/common/useActionFeedback'
 import { MergeMessageType, MittEnum, MsgEnum, PowerEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import type { useDownload } from '@/hooks/useDownload'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { roomStateService } from '@/services/matrix/room/RoomStateService'
+import { matrixRoomTranslateService } from '@/services/matrix/room/TranslateService'
 import type { RightMouseMessageItem } from '@/services/types.ts'
 import type { MessageType, useChatStore } from '@/stores/domains/chat/chat'
 import type { useEmojiStore } from '@/stores/domains/chat/emoji'
@@ -281,7 +281,7 @@ export const useChatContextMenu = (deps: UseChatContextMenuDeps) => {
 
         item.message.body.translatedText = { provider: settingStore.chatTranslateProvider || 'client', text: '' }
         try {
-          const translatedText = await roomStateService.translateText(content)
+          const translatedText = await matrixRoomTranslateService.translateText(content)
           item.message.body.translatedText = {
             provider: settingStore.chatTranslateProvider || 'client',
             text: translatedText || content

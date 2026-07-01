@@ -36,7 +36,7 @@ type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<stri
 import { useI18n } from 'vue-i18n'
 import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
 import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
-import { roomStateService } from '@/services/matrix/room/RoomStateService'
+import { matrixRoomTranslateService } from '@/services/matrix/room/TranslateService'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -311,7 +311,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
 
         item.message.body.translatedText = { provider: settingStore.chatTranslateProvider || 'client', text: '' }
         try {
-          const translatedText = await roomStateService.translateText(content)
+          const translatedText = await matrixRoomTranslateService.translateText(content)
           item.message.body.translatedText = {
             provider: settingStore.chatTranslateProvider || 'client',
             text: translatedText || content
