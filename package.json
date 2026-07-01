@@ -88,7 +88,7 @@
     "@vue-office/pdf": "^2.0.10",
     "@vue-office/pptx": "^1.0.1",
     "@vueuse/components": "^14.2.1",
-    "colorthief": "^2.7.0",
+    "colorthief": "^3.3.1",
     "dayjs": "^1.11.19",
     "digest-wasm": "^0.1.4",
     "dompurify": "^3.4.0",
