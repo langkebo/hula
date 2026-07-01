@@ -31,6 +31,7 @@
     "preinstall": "pnpm dlx only-allow pnpm && node scripts/check-all.js",
     "commit": "git add . && git-cz",
     "check": "pnpm gen:i18n && biome check && node scripts/check-i18n.mjs",
+    "check:ci": "pnpm gen:i18n && biome ci && node scripts/check-i18n.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",
     "gen:i18n": "node scripts/generate-i18n-types.mjs",
     "check:write": "biome check --write --unsafe",

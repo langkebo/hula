@@ -34,7 +34,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "a11y": {
         "noStaticElementInteractions": "off",
         "useKeyWithClickEvents": "off",
@@ -56,7 +56,8 @@
         "noNonNullAssertion": "off",
         "useNamingConvention": "off",
         "useTemplate": "off",
-        "useImportType": "warn"
+        "useImportType": "warn",
+        "useVueMultiWordComponentNames": "off"
       },
       "suspicious": {
         "noGlobalIsNan": "off",
