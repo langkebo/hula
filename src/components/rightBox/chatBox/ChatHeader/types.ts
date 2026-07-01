@@ -41,6 +41,6 @@ export interface UserInfo {
   avatar: string
 }
 
-export type { UserItem, MessageType }
+export type { MessageType, UserItem }
 
 import type { RoomActEnum } from '@/enums'

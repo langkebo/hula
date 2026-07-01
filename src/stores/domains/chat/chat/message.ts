@@ -17,8 +17,8 @@ import {
   ROOM_MESSAGE_CACHE_LIMIT
 } from './types'
 
-export type { MessageType, MessageBody, RecalledMessage, CustomForwardTask }
-export { pageSize, ROOM_MESSAGE_CACHE_LIMIT, RECALL_EXPIRATION_TIME }
+export type { CustomForwardTask, MessageBody, MessageType, RecalledMessage }
+export { pageSize, RECALL_EXPIRATION_TIME, ROOM_MESSAGE_CACHE_LIMIT }
 
 import { createMessageLoading } from './messageLoading'
 import { createMessageMutations } from './messageMutations'
