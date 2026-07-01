@@ -13,6 +13,7 @@
       "!node_modules/*",
       "!tauri-plugin-hula/*",
       "!dist/*",
+      "!_matrix-js-sdk/*",
       "!src-tauri/gen/schemas",
       "!.release-it.json"
     ]
