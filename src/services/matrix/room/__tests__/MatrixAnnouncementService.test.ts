@@ -8,12 +8,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 const mockGetRoom = vi.fn()
 const mockSendTextMessage = vi.fn()
 
-vi.mock('../MatrixRoomService', () => ({
-  matrixRoomService: {
-    getRoom: mockGetRoom
-  }
-}))
-
 vi.mock('../QueryService', () => ({
   matrixRoomQueryService: {
     getRoom: mockGetRoom

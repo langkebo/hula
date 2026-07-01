@@ -1,17 +1,28 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum } from '@/enums'
-import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import matrixRoomSummaryService from '@/services/matrix/room/MatrixRoomSummaryService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
 import { useRoomStore } from '@/stores/domains/chat/room'
 
-const { mockRoomService, mockRoomSummaryService, mockMatrixClientService, mockChatStore } = vi.hoisted(() => ({
-  mockRoomService: {
-    getRoomSummary: vi.fn(),
-    getRooms: vi.fn(),
+const {
+  mockReadFacade,
+  mockActionFacade,
+  mockCreationService,
+  mockRealtimeService,
+  mockRoomSummaryService,
+  mockMatrixClientService,
+  mockChatStore
+} = vi.hoisted(() => ({
+  mockReadFacade: {
+    getRoomSummary: vi.fn()
+  },
+  mockActionFacade: {
     createRoom: vi.fn(),
-    joinRoom: vi.fn(),
-    leaveRoom: vi.fn(),
+    leaveRoom: vi.fn()
+  },
+  mockCreationService: {
     convertRoomToRoomInfo: vi.fn((room: any) => {
       const timeline = room.getLiveTimeline?.()?.getEvents?.() ?? []
       const lastEvent = timeline[timeline.length - 1]
@@ -49,12 +60,14 @@ const { mockRoomService, mockRoomSummaryService, mockMatrixClientService, mockCh
         }))
       }
     }),
+    joinRoomAndGetInfo: vi.fn()
+  },
+  mockRealtimeService: {
+    getAllRoomInfos: vi.fn(),
     onTimelineEvent: vi.fn(),
     onRoomNameChange: vi.fn(),
     onRoomAvatarChange: vi.fn(),
-    onRoomMemberChange: vi.fn(),
-    getAllRoomInfos: vi.fn(),
-    joinRoomAndGetInfo: vi.fn()
+    onRoomMemberChange: vi.fn()
   },
   mockRoomSummaryService: {
     getRoomListSnapshot: vi.fn(),
@@ -79,8 +92,20 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
-  default: mockRoomService
+vi.mock('@/services/matrix/room/ReadFacade', () => ({
+  matrixRoomReadFacade: mockReadFacade
+}))
+
+vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  matrixRoomActionFacade: mockActionFacade
+}))
+
+vi.mock('@/services/matrix/room/CreationService', () => ({
+  matrixRoomCreationService: mockCreationService
+}))
+
+vi.mock('@/services/matrix/room/RealtimeService', () => ({
+  matrixRoomRealtimeService: mockRealtimeService
 }))
 
 vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
@@ -244,7 +269,7 @@ describe('RoomStore', () => {
         members: []
       })
 
-      vi.mocked(matrixRoomService.getRoomSummary).mockResolvedValueOnce({
+      vi.mocked(matrixRoomReadFacade.getRoomSummary).mockResolvedValueOnce({
         roomId: '!room:id',
         topic: 'Topic',
         memberCount: 3,
@@ -286,7 +311,7 @@ describe('RoomStore', () => {
         members: []
       })
 
-      vi.mocked(matrixRoomService.getRoomSummary).mockResolvedValueOnce({
+      vi.mocked(matrixRoomReadFacade.getRoomSummary).mockResolvedValueOnce({
         roomId: '!room:id',
         topic: null,
         memberCount: 1,
@@ -298,7 +323,7 @@ describe('RoomStore', () => {
 
       await store.loadRoomDetails(['!room:id', '!room:id'])
 
-      expect(matrixRoomService.getRoomSummary).toHaveBeenCalledTimes(1)
+      expect(matrixRoomReadFacade.getRoomSummary).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -481,7 +506,7 @@ describe('RoomStore', () => {
 
   describe('loadRooms', () => {
     it('should load rooms and prefer sliding sync unread counts', async () => {
-      mockRoomService.getAllRoomInfos.mockReturnValue([
+      mockRealtimeService.getAllRoomInfos.mockReturnValue([
         {
           roomId: '!room:1',
           name: 'Alpha',
@@ -501,7 +526,7 @@ describe('RoomStore', () => {
       const store = useRoomStore()
       await store.loadRooms()
 
-      expect(mockRoomService.getAllRoomInfos).toHaveBeenCalled()
+      expect(mockRealtimeService.getAllRoomInfos).toHaveBeenCalled()
       expect(store.rooms.get('!room:1')).toMatchObject({
         roomId: '!room:1',
         name: 'Alpha',
@@ -523,7 +548,7 @@ describe('RoomStore', () => {
   describe('room actions', () => {
     it('should create room and store room info', async () => {
       const room = createMockRoom({ roomId: '!new:room', name: 'New Room' })
-      vi.mocked(matrixRoomService.createRoom).mockResolvedValue(room as any)
+      vi.mocked(matrixRoomActionFacade.createRoom).mockResolvedValue(room as any)
       vi.mocked(matrixRoomSummaryService.getRoomListSnapshot).mockReturnValue({
         roomId: '!new:room',
         name: 'New Room',
@@ -541,7 +566,7 @@ describe('RoomStore', () => {
       const store = useRoomStore()
       const result = await store.createRoom({ name: 'New Room', isEncrypted: true })
 
-      expect(matrixRoomService.createRoom).toHaveBeenCalledWith(
+      expect(matrixRoomActionFacade.createRoom).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'New Room',
           initial_state: [
@@ -558,7 +583,7 @@ describe('RoomStore', () => {
     })
 
     it('should join and leave room', async () => {
-      mockRoomService.joinRoomAndGetInfo.mockResolvedValue({
+      mockCreationService.joinRoomAndGetInfo.mockResolvedValue({
         roomId: '!join:room',
         name: 'Join Room',
         avatarUrl: 'mxc://room/avatar',
@@ -571,7 +596,7 @@ describe('RoomStore', () => {
         lastMessageTime: 1000,
         members: []
       })
-      vi.mocked(matrixRoomService.leaveRoom).mockResolvedValue(undefined)
+      vi.mocked(matrixRoomActionFacade.leaveRoom).mockResolvedValue(undefined)
 
       const store = useRoomStore()
       await store.joinRoom('!join:room')
@@ -602,7 +627,7 @@ describe('RoomStore', () => {
         members: []
       })
 
-      vi.mocked(matrixRoomService.getRoomSummary).mockResolvedValue({
+      vi.mocked(matrixRoomReadFacade.getRoomSummary).mockResolvedValue({
         roomId: '!room:id',
         topic: 'Topic',
         memberCount: 2,
@@ -616,7 +641,7 @@ describe('RoomStore', () => {
       const second = store.loadRoomDetail('!room:id')
       const [detail1, detail2] = await Promise.all([first, second])
 
-      expect(matrixRoomService.getRoomSummary).toHaveBeenCalledTimes(1)
+      expect(matrixRoomReadFacade.getRoomSummary).toHaveBeenCalledTimes(1)
       expect(detail1).toEqual(detail2)
       expect(store.getCacheStats().size).toBe(1)
     })
@@ -636,7 +661,7 @@ describe('RoomStore', () => {
         lastMessageTime: null,
         members: []
       })
-      vi.mocked(matrixRoomService.getRoomSummary).mockResolvedValue({
+      vi.mocked(matrixRoomReadFacade.getRoomSummary).mockResolvedValue({
         roomId: '!room:id',
         topic: null,
         memberCount: 1,
@@ -657,10 +682,10 @@ describe('RoomStore', () => {
       const callbacks: Record<string, (...args: any[]) => void> = {}
       const matrixClientCallbacks: Record<string, (...args: any[]) => void> = {}
 
-      ;(mockRoomService.onTimelineEvent as any).mockImplementation((cb: (...args: any[]) => void) => {
+      ;(mockRealtimeService.onTimelineEvent as any).mockImplementation((cb: (...args: any[]) => void) => {
         callbacks.timeline = cb
       })
-      ;(mockRoomService.onRoomNameChange as any).mockImplementation((cb: (...args: any[]) => void) => {
+      ;(mockRealtimeService.onRoomNameChange as any).mockImplementation((cb: (...args: any[]) => void) => {
         callbacks.name = cb
       })
       ;(mockMatrixClientService.on as any).mockImplementation((event: string, cb: (...args: any[]) => void) => {
@@ -727,7 +752,7 @@ describe('RoomStore', () => {
       })
 
       mockChatStore.checkMsgExist.mockReturnValue(true)
-      mockRoomService.convertRoomToRoomInfo.mockReturnValueOnce({
+      mockCreationService.convertRoomToRoomInfo.mockReturnValueOnce({
         roomId: '!room:id',
         name: 'After',
         avatarUrl: null,
@@ -767,7 +792,7 @@ describe('RoomStore', () => {
     it('should update existing encrypted placeholder when the same event arrives as decrypted room message', () => {
       const callbacks: Record<string, (...args: any[]) => void> = {}
 
-      ;(mockRoomService.onTimelineEvent as any).mockImplementation((cb: (...args: any[]) => void) => {
+      ;(mockRealtimeService.onTimelineEvent as any).mockImplementation((cb: (...args: any[]) => void) => {
         callbacks.timeline = cb
       })
 

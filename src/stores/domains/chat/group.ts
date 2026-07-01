@@ -2,7 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, reactive, shallowReactive, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum, StoresEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
+import { matrixRoomQueryFacade } from '@/services/matrix/room/QueryFacade'
 import { Direction, EventType, type RoomMember } from '@/services/matrix/sdk'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -117,7 +119,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       const roomId = globalStore.currentSessionRoomId
       if (!roomId) return
       try {
-        await matrixRoomService.setMemberDisplayName(roomId, value)
+        await matrixRoomMemberFacade.setMemberDisplayName(roomId, value)
         logger.info(`[GroupStore] Successfully set display name to: ${value}`)
       } catch (e) {
         logger.error(`[GroupStore] Failed to set display name: ${e}`)
@@ -143,7 +145,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
         // 0=创建者, 1=管理员, 2=普通成员
         // Matrix power level: 100=创建者/管理员, 0=普通成员
         const powerLevel = value <= 1 ? 100 : 0
-        await matrixRoomService.setMemberPowerLevel(roomId, myUserId, powerLevel)
+        await matrixRoomMemberFacade.setMemberPowerLevel(roomId, myUserId, powerLevel)
         logger.info(`[GroupStore] 成功设置角色: ${value}`)
       } catch (e) {
         logger.error(`[GroupStore] 设置角色失败: ${e}`)
@@ -211,7 +213,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     loadingRooms.value.add(roomId)
     triggerRef(loadingRooms)
     try {
-      const members = await matrixRoomService.getMembers(roomId)
+      const members = await matrixRoomQueryFacade.getMembers(roomId)
       const matrixMembers: MatrixRoomMember[] = members.map((m: RoomMember) => ({
         userId: m.userId,
         uid: m.userId,
@@ -290,7 +292,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
 
   async function inviteUser(roomId: string, userId: string): Promise<boolean> {
     try {
-      await matrixRoomService.inviteUser(roomId, userId)
+      await matrixRoomActionFacade.inviteUser(roomId, userId)
       logger.info(`[GroupStore] 邀请用户成功: ${userId} -> ${roomId}`)
       return true
     } catch (err) {
@@ -301,7 +303,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
 
   async function kickUser(roomId: string, userId: string, reason?: string): Promise<boolean> {
     try {
-      await matrixRoomService.kickUser(roomId, userId, reason)
+      await matrixRoomActionFacade.kickUser(roomId, userId, reason)
       membersMap[roomId] = membersMap[roomId]?.filter((m) => m.userId !== userId) || []
       logger.info(`[GroupStore] 踢出用户成功: ${userId} <- ${roomId}`)
       return true
@@ -330,7 +332,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
 
   async function leaveRoom(roomId: string): Promise<boolean> {
     try {
-      await matrixRoomService.leaveRoom(roomId)
+      await matrixRoomActionFacade.leaveRoom(roomId)
       delete membersMap[roomId]
       delete groupInfoMap[roomId]
       logger.info(`[GroupStore] 离开房间成功: ${roomId}`)
@@ -343,7 +345,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
 
   async function setRoomName(roomId: string, name: string): Promise<boolean> {
     try {
-      await matrixRoomService.setRoomName(roomId, name)
+      await matrixRoomActionFacade.setRoomName(roomId, name)
       if (groupInfoMap[roomId]) {
         groupInfoMap[roomId] = { ...groupInfoMap[roomId], name }
       }
@@ -533,7 +535,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     if (!roomId) return
     try {
       for (const uid of uidList) {
-        await matrixRoomService.setMemberPowerLevel(roomId, uid, 100)
+        await matrixRoomMemberFacade.setMemberPowerLevel(roomId, uid, 100)
       }
       logger.info(`[GroupStore] 成功添加 ${uidList.length} 个管理员`)
     } catch (e) {
@@ -547,7 +549,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     if (!roomId) return
     try {
       for (const uid of uidList) {
-        await matrixRoomService.setMemberPowerLevel(roomId, uid, 0)
+        await matrixRoomMemberFacade.setMemberPowerLevel(roomId, uid, 0)
       }
       logger.info(`[GroupStore] 成功撤销 ${uidList.length} 个管理员`)
     } catch (e) {

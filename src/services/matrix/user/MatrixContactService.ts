@@ -4,8 +4,10 @@ import { createLogger } from '@/utils/Logger'
 import { normalizeMatrixUserId, toLocalpart } from '@/utils/userIdentity'
 import { matrixFriendService } from '../friends/MatrixFriendService'
 import { matrixClientService } from '../MatrixClientService'
+import { matrixRoomActionFacade } from '../room/ActionFacade'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
-import { matrixRoomService } from '../room/MatrixRoomService'
+import { matrixRoomQueryFacade } from '../room/QueryFacade'
+import { matrixRoomReadFacade } from '../room/ReadFacade'
 import { synapseRustExtensionsService } from '../SynapseRustExtensionsService'
 
 const logger = createLogger('MatrixContactService')
@@ -206,7 +208,7 @@ class MatrixContactService {
 
   async inviteUser(roomId: string, userId: string): Promise<void> {
     try {
-      await matrixRoomService.inviteUser(roomId, userId)
+      await matrixRoomActionFacade.inviteUser(roomId, userId)
       logger.info(`[MatrixContact] Invited user ${userId} to room ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixContact] Failed to invite user: ${err}`)
@@ -216,7 +218,7 @@ class MatrixContactService {
 
   async kickUser(roomId: string, userId: string, reason?: string): Promise<void> {
     try {
-      await matrixRoomService.kickUser(roomId, userId, reason)
+      await matrixRoomActionFacade.kickUser(roomId, userId, reason)
       logger.info(`[MatrixContact] Kicked user ${userId} from room ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixContact] Failed to kick user: ${err}`)
@@ -226,7 +228,7 @@ class MatrixContactService {
 
   async banUser(roomId: string, userId: string, reason?: string): Promise<void> {
     try {
-      await matrixRoomService.banUser(roomId, userId, reason)
+      await matrixRoomActionFacade.banUser(roomId, userId, reason)
       logger.info(`[MatrixContact] Banned user ${userId} from room ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixContact] Failed to ban user: ${err}`)
@@ -236,7 +238,7 @@ class MatrixContactService {
 
   async unbanUser(roomId: string, userId: string): Promise<void> {
     try {
-      await matrixRoomService.unbanUser(roomId, userId)
+      await matrixRoomActionFacade.unbanUser(roomId, userId)
       logger.info(`[MatrixContact] Unbanned user ${userId} from room ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixContact] Failed to unban user: ${err}`)
@@ -246,7 +248,7 @@ class MatrixContactService {
 
   async getRoomMembers(roomId: string): Promise<RoomMember[]> {
     try {
-      return await matrixRoomService.getMembers(roomId)
+      return await matrixRoomQueryFacade.getMembers(roomId)
     } catch (err) {
       logger.error(`[MatrixContact] Failed to get room members: ${err}`)
       throw err
@@ -255,7 +257,7 @@ class MatrixContactService {
 
   async getRoomState(roomId: string, eventType: string): Promise<MatrixEvent[]> {
     try {
-      const stateEvents = await matrixRoomService.getRoomState(roomId)
+      const stateEvents = await matrixRoomReadFacade.getRoomState(roomId)
       if (eventType === '*') {
         return stateEvents as MatrixEvent[]
       }

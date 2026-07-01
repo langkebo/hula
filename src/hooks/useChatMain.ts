@@ -35,7 +35,7 @@ type ContextMenuItem = { uid?: string; fromUser: { uid: string } } & Record<stri
 
 import { useI18n } from 'vue-i18n'
 import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { matrixRoomTranslateService } from '@/services/matrix/room/TranslateService'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -722,7 +722,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
         if (!roomId) return
 
         try {
-          await matrixRoomService.kickUser(roomId, targetUid)
+          await matrixRoomActionFacade.kickUser(roomId, targetUid)
           // 从群成员列表中移除该用户
           groupStore.removeUserItem(targetUid, roomId)
           showFeedback(t('menu.remove_from_group_success'), 'success')

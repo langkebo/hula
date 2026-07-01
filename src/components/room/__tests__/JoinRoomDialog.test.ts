@@ -21,8 +21,8 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
-  matrixRoomService: {
+vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  matrixRoomActionFacade: {
     joinRoom: joinRoomMock
   }
 }))

@@ -11,7 +11,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RoomInviteActions')
@@ -35,7 +35,7 @@ const handleAccept = async () => {
   if (accepting.value || rejecting.value) return
   accepting.value = true
   try {
-    await matrixRoomService.joinRoom(props.roomId)
+    await matrixRoomActionFacade.joinRoom(props.roomId)
     emit('accepted', props.roomId)
   } catch (err) {
     logger.error(`接受邀请失败: ${err}`)
@@ -49,7 +49,7 @@ const handleReject = async () => {
   if (accepting.value || rejecting.value) return
   rejecting.value = true
   try {
-    await matrixRoomService.leaveRoom(props.roomId)
+    await matrixRoomActionFacade.leaveRoom(props.roomId)
     emit('rejected', props.roomId)
   } catch (err) {
     logger.error(`拒绝邀请失败: ${err}`)
