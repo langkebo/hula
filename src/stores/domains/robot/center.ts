@@ -156,11 +156,6 @@ export const useRobotCenterStore = defineStore(
         return
       }
 
-      const client = matrixClientService.getClient()
-      if (!client) {
-        return
-      }
-
       const existingRooms = await matrixRoomQueryFacade.getRooms()
       existingRooms.forEach(attachRoomStateObserver)
       matrixClientService.on('room', attachRoomStateObserver)

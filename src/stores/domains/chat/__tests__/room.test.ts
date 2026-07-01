@@ -538,10 +538,11 @@ describe('RoomStore', () => {
       expect(store.isLoading).toBe(false)
     })
 
-    it('should throw when client is not initialized', async () => {
+    it('should not throw when client is not initialized (handled by service)', async () => {
+      mockRealtimeService.getAllRoomInfos.mockReturnValue([])
       const store = useRoomStore()
 
-      await expect(store.loadRooms()).rejects.toThrow('客户端未初始化')
+      await expect(store.loadRooms()).resolves.toBe(false)
     })
   })
 

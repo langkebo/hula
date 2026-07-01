@@ -210,10 +210,6 @@ export const useMatrixStore = defineStore(
       await matrixClientService.stopClient()
     }
 
-    function getClient() {
-      return matrixClientService.getClient()
-    }
-
     return {
       connectionState,
       userId,
@@ -232,8 +228,7 @@ export const useMatrixStore = defineStore(
       completeSSOLogin,
       logout,
       startClient,
-      stopClient,
-      getClient
+      stopClient
     }
   },
   {

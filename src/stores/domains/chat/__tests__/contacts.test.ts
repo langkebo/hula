@@ -6,16 +6,19 @@ import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectM
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { type ContactInvite, useContactStore } from '../contacts'
 
-const { matrixClientServiceMock, getClientMock } = vi.hoisted(() => {
+const { matrixClientServiceMock, getClientMock, getUserIdMock } = vi.hoisted(() => {
   const waitForClientReadyMock = vi.fn()
   const getClientMock = vi.fn()
+  const getUserIdMock = vi.fn()
   const matrixClientServiceMock = {
     waitForClientReady: waitForClientReadyMock,
-    getClient: getClientMock
+    getClient: getClientMock,
+    getUserId: getUserIdMock
   }
   return {
     matrixClientServiceMock,
-    getClientMock
+    getClientMock,
+    getUserIdMock
   }
 })
 
@@ -65,6 +68,31 @@ vi.mock('@/services/matrix/room/MatrixDirectMessageService', () => ({
     getDmRoomInfos: vi.fn(),
     createDm: vi.fn()
   }
+}))
+
+const profileServiceMock = vi.hoisted(() => ({
+  getProfile: vi.fn()
+}))
+
+vi.mock('@/services/matrix/user/MatrixProfileService', () => ({
+  profileService: profileServiceMock
+}))
+
+const matrixRoomActionFacadeMock = vi.hoisted(() => ({
+  joinRoom: vi.fn(),
+  leaveRoom: vi.fn()
+}))
+
+vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  matrixRoomActionFacade: matrixRoomActionFacadeMock
+}))
+
+const matrixRoomQueryFacadeMock = vi.hoisted(() => ({
+  getRooms: vi.fn()
+}))
+
+vi.mock('@/services/matrix/room/QueryFacade', () => ({
+  matrixRoomQueryFacade: matrixRoomQueryFacadeMock
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
@@ -121,40 +149,32 @@ describe('contacts store startup client readiness', () => {
     getClientMock.mockReturnValue(null)
   })
 
-  it('getUserProfile returns null when client is not available', async () => {
-    getClientMock.mockReturnValue(null)
+  it('getUserProfile returns null when profile service throws', async () => {
+    profileServiceMock.getProfile.mockRejectedValue(new Error('not found'))
 
     const store = useContactStore()
     const profile = await store.getUserProfile('@test:matrix.org')
 
-    expect(getClientMock).toHaveBeenCalled()
     expect(profile).toBeNull()
   })
 
-  it('getUserProfile reads profile when client is available', async () => {
-    const getProfileInfo = vi.fn().mockResolvedValue({
+  it('getUserProfile reads profile when available', async () => {
+    profileServiceMock.getProfile.mockResolvedValue({
+      userId: '@test:matrix.org',
       displayname: 'Test User',
-      avatar_url: 'mxc://avatar/test'
-    })
-
-    getClientMock.mockReturnValue({
-      getProfileInfo
+      avatarUrl: 'mxc://avatar/test'
     })
 
     const store = useContactStore()
     const profile = await store.getUserProfile('@test:matrix.org')
 
-    expect(getProfileInfo).toHaveBeenCalledWith('@test:matrix.org')
+    expect(profileServiceMock.getProfile).toHaveBeenCalledWith('@test:matrix.org')
     expect(profile?.displayName).toBe('Test User')
     expect(profile?.avatarUrl).toBe('mxc://avatar/test')
   })
 
   it('getUserProfile returns null when getProfileInfo throws', async () => {
-    const getProfileInfo = vi.fn().mockRejectedValue(new Error('not found'))
-
-    getClientMock.mockReturnValue({
-      getProfileInfo
-    })
+    profileServiceMock.getProfile.mockRejectedValue(new Error('not found'))
 
     const store = useContactStore()
     const profile = await store.getUserProfile('@test:matrix.org')
@@ -163,7 +183,7 @@ describe('contacts store startup client readiness', () => {
   })
 
   it('loadPendingInvites returns early when client is not available', async () => {
-    getClientMock.mockReturnValue(null)
+    getUserIdMock.mockReturnValue(null)
 
     const store = useContactStore()
     await store.loadPendingInvites()
@@ -172,10 +192,8 @@ describe('contacts store startup client readiness', () => {
   })
 
   it('loadPendingInvites reads invite rooms when client is available', async () => {
-    getClientMock.mockReturnValue({
-      getRooms: vi.fn(() => [createInviteRoom()]),
-      getUserId: vi.fn(() => '@me:matrix.org')
-    })
+    getUserIdMock.mockReturnValue('@me:matrix.org')
+    matrixRoomQueryFacadeMock.getRooms.mockResolvedValue([createInviteRoom()])
 
     const store = useContactStore()
     await store.loadPendingInvites()
@@ -190,28 +208,26 @@ describe('contacts store startup client readiness', () => {
   })
 
   it('acceptInvite joins room when client is available', async () => {
-    const joinRoom = vi.fn().mockResolvedValue(undefined)
-    getClientMock.mockReturnValue({ joinRoom })
+    matrixRoomActionFacadeMock.joinRoom.mockResolvedValue({ roomId: '!invite:matrix.org' })
 
     const store = useContactStore()
     store.$patch({ pendingInvites: [createInvite()] })
 
     await expect(store.acceptInvite('!invite:matrix.org')).resolves.toBe(true)
 
-    expect(joinRoom).toHaveBeenCalledWith('!invite:matrix.org')
+    expect(matrixRoomActionFacadeMock.joinRoom).toHaveBeenCalledWith('!invite:matrix.org')
     expect(store.pendingInvites).toHaveLength(0)
   })
 
   it('rejectInvite leaves room when client is available', async () => {
-    const leave = vi.fn().mockResolvedValue(undefined)
-    getClientMock.mockReturnValue({ leave })
+    matrixRoomActionFacadeMock.leaveRoom.mockResolvedValue(undefined)
 
     const store = useContactStore()
     store.$patch({ pendingInvites: [createInvite()] })
 
     await expect(store.rejectInvite('!invite:matrix.org')).resolves.toBe(true)
 
-    expect(leave).toHaveBeenCalledWith('!invite:matrix.org')
+    expect(matrixRoomActionFacadeMock.leaveRoom).toHaveBeenCalledWith('!invite:matrix.org')
     expect(store.pendingInvites).toHaveLength(0)
   })
 })

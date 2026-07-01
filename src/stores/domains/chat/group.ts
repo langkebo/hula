@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, shallowReactive, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum, StoresEnum } from '@/enums'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
 import { matrixRoomQueryFacade } from '@/services/matrix/room/QueryFacade'
@@ -200,12 +200,6 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
   const memberList = computed(() => currentRoomMembers.value)
 
   async function loadRoomMembers(roomId: string, forceRefresh = false): Promise<MatrixRoomMember[]> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      logger.error('[GroupStore] 客户端未初始化')
-      return []
-    }
-
     if (!forceRefresh && membersMap[roomId]?.length) {
       return membersMap[roomId]
     }
@@ -246,13 +240,8 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
   }
 
   async function loadGroupInfo(roomId: string): Promise<MatrixGroupInfo | null> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      return null
-    }
-
     try {
-      const room = client.getRoom(roomId)
+      const room = await matrixRoomQueryFacade.getRoom(roomId, false)
       if (!room) {
         return null
       }
@@ -272,7 +261,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
         memberCount: room.getJoinedMembers().length,
         memberNum: room.getJoinedMembers().length,
         // onlineNum 留空由 presence 同步流填写；不要用 memberCount 冒充
-        isEncrypted: client.isRoomEncrypted(roomId),
+        isEncrypted: await matrixCryptoService.isRoomEncrypted(roomId),
         isPublic: room.currentState.getStateEvents(EventType.RoomJoinRules, '')?.getContent()?.join_rule === 'public',
         creator,
         groupName: room.name || roomId,
@@ -314,13 +303,8 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
   }
 
   async function banUser(roomId: string, userId: string, reason?: string): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      return false
-    }
-
     try {
-      await client.ban(roomId, userId, reason)
+      await matrixRoomActionFacade.banUser(roomId, userId, reason)
       await loadRoomMembers(roomId, true)
       logger.info(`[GroupStore] 封禁用户成功: ${userId} <- ${roomId}`)
       return true
@@ -358,13 +342,8 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
   }
 
   async function setRoomTopic(roomId: string, topic: string): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      return false
-    }
-
     try {
-      await client.setRoomTopic(roomId, topic)
+      await matrixRoomActionFacade.setRoomTopic(roomId, topic)
       if (groupInfoMap[roomId]) {
         groupInfoMap[roomId] = { ...groupInfoMap[roomId], topic }
       }
@@ -377,23 +356,8 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
   }
 
   async function setPowerLevel(roomId: string, userId: string, powerLevel: number): Promise<boolean> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      return false
-    }
-
     try {
-      const room = client.getRoom(roomId)
-      if (!room) return false
-
-      const powerLevelsEvent = room.currentState.getStateEvents(EventType.RoomPowerLevels, '')
-      const powerLevels: { users?: Record<string, number>; [key: string]: unknown } =
-        powerLevelsEvent?.getContent() || {}
-
-      powerLevels.users = powerLevels.users || {}
-      powerLevels.users[userId] = powerLevel
-
-      await client.sendStateEvent(roomId, EventType.RoomPowerLevels, powerLevels, '')
+      await matrixRoomMemberFacade.setMemberPowerLevel(roomId, userId, powerLevel)
       await loadRoomMembers(roomId, true)
       logger.info(`[GroupStore] 设置用户权限成功: ${userId} -> ${powerLevel}`)
       return true
@@ -606,10 +570,7 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
   }
 
   async function setGroupDetails(): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) return
-
-    const rooms = client.getRooms()
+    const rooms = await matrixRoomQueryFacade.getRooms()
     for (const room of rooms) {
       if (!groupInfoMap[room.roomId]) {
         await loadGroupInfo(room.roomId)
