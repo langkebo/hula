@@ -48,6 +48,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build SDK types
+        run: cd _matrix-js-sdk && pnpm install --frozen-lockfile && pnpm build:types
+
       - name: Run npm audit
         run: pnpm audit:deps
         continue-on-error: true
@@ -101,6 +104,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build SDK types
+        run: cd _matrix-js-sdk && pnpm install --frozen-lockfile && pnpm build:types
 
       - name: Build project
         run: pnpm build
@@ -189,6 +195,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build SDK types
+        run: cd _matrix-js-sdk && pnpm install --frozen-lockfile && pnpm build:types
+
       - name: Run TypeScript check
         run: pnpm exec vue-tsc --noEmit
 
@@ -221,6 +230,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build SDK types
+        run: cd _matrix-js-sdk && pnpm install --frozen-lockfile && pnpm build:types
 
       - name: Run tests with coverage
         run: pnpm coverage
@@ -261,6 +273,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build SDK types
+        run: cd _matrix-js-sdk && pnpm install --frozen-lockfile && pnpm build:types
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps

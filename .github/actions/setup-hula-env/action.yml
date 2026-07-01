@@ -65,3 +65,11 @@ runs:
     - name: Install dependencies
       shell: bash
       run: pnpm install ${{ inputs.install-flags }}
+
+    - name: Install SDK dependencies
+      shell: bash
+      run: cd _matrix-js-sdk && pnpm install --frozen-lockfile
+
+    - name: Build SDK types
+      shell: bash
+      run: cd _matrix-js-sdk && pnpm build:types

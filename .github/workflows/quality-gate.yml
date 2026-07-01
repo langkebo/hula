@@ -65,6 +65,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install SDK dependencies
+        run: cd _matrix-js-sdk && pnpm install --frozen-lockfile
+
+      - name: Build SDK types
+        run: cd _matrix-js-sdk && pnpm build:types
+
       - name: Lint
         run: pnpm check:ci
 

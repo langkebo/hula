@@ -75,6 +75,11 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm install
 
+      - name: Build SDK types
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: cd _matrix-js-sdk && pnpm install --frozen-lockfile && pnpm build:types
+
       - name: Generate component typings
         env:
           NODE_OPTIONS: --max-old-space-size=4096
