@@ -21,10 +21,10 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/composables/room/useRoomActions', () => ({
-  useRoomActions: () => ({
+vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
+  matrixRoomService: {
     joinRoom: joinRoomMock
-  })
+  }
 }))
 
 vi.mock('@/utils/Logger', () => ({
