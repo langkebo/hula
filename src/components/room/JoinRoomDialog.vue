@@ -42,7 +42,7 @@
 import type { FormInst, FormRules } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useRoomActions } from '@/composables/room/useRoomActions'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('JoinRoomDialog')
@@ -73,8 +73,6 @@ const rules: FormRules = {
   ]
 }
 
-const { joinRoom } = useRoomActions()
-
 const handleJoin = async () => {
   try {
     await formRef.value?.validate()
@@ -84,7 +82,7 @@ const handleJoin = async () => {
 
   joining.value = true
   try {
-    const room = await joinRoom(formData.roomIdOrAlias)
+    const room = await matrixRoomService.joinRoom(formData.roomIdOrAlias)
     showFeedback(t('room.join.success'), 'success')
     emit('joined', room?.roomId || formData.roomIdOrAlias)
     emit('update:visible', false)
