@@ -74,11 +74,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
   async function loadRooms(): Promise<boolean> {
     // 返回 boolean
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('客户端未初始化')
-    }
-
     isLoading.value = true
     let roomsChanged = false // 新增标志位
     try {

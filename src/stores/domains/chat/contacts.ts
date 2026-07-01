@@ -9,8 +9,11 @@ import {
   matrixFriendService
 } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
+import { matrixRoomQueryFacade } from '@/services/matrix/room/QueryFacade'
 import { EventType } from '@/services/matrix/sdk'
+import { profileService } from '@/services/matrix/user/MatrixProfileService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
@@ -342,20 +345,15 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   }
 
   async function getUserProfile(userId: string): Promise<MatrixContact | null> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      return null
-    }
-
     try {
-      const profile = await client.getProfileInfo(userId)
+      const profile = await profileService.getProfile(userId)
       return {
         userId,
         uid: userId,
         displayName: profile.displayname || null,
         name: profile.displayname || userId.split(':')[0],
-        avatarUrl: profile.avatar_url || null,
-        avatar: profile.avatar_url || '',
+        avatarUrl: profile.avatarUrl || null,
+        avatar: profile.avatarUrl || '',
         account: userId.split(':')[0],
         activeStatus: OnlineEnum.ONLINE,
         remark: '',
@@ -555,20 +553,20 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   }
 
   async function loadPendingInvites(): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
+    const currentUserId = matrixClientService.getUserId()
+    if (!currentUserId) {
       return
     }
 
     try {
-      const rooms = client.getRooms()
+      const rooms = await matrixRoomQueryFacade.getRooms()
       const invites: ContactInvite[] = []
 
       for (const room of rooms) {
         const membership = (room as { getMyMembership?: () => string | undefined }).getMyMembership?.()
         if (membership === 'invite') {
           const inviteState = room.getLiveTimeline()?.getState('f')
-          const inviteFrom = inviteState?.getStateEvents(EventType.RoomMember, client.getUserId() ?? '')?.getSender()
+          const inviteFrom = inviteState?.getStateEvents(EventType.RoomMember, currentUserId)?.getSender()
 
           invites.push({
             roomId: room.roomId,
@@ -589,11 +587,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   async function acceptInvite(roomId: string): Promise<boolean> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('客户端未初始化')
-      }
-      await client.joinRoom(roomId)
+      await matrixRoomActionFacade.joinRoom(roomId)
       pendingInvites.value = pendingInvites.value.filter((i) => i.roomId !== roomId)
       logger.info(`[ContactStore] 接受邀请成功: ${roomId}`)
       return true
@@ -605,11 +599,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   async function rejectInvite(roomId: string): Promise<boolean> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('客户端未初始化')
-      }
-      await client.leave(roomId)
+      await matrixRoomActionFacade.leaveRoom(roomId)
       pendingInvites.value = pendingInvites.value.filter((i) => i.roomId !== roomId)
       logger.info(`[ContactStore] 拒绝邀请成功: ${roomId}`)
       return true
