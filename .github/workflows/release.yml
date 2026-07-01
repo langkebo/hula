@@ -23,7 +23,7 @@ jobs:
         run: echo "${{ secrets.ENV_LOCAL_CONTENT }}" > .env.local
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
           run_install: false
@@ -155,7 +155,7 @@ jobs:
 
       # 首先安装 pnpm
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
           run_install: false
