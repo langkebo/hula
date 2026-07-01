@@ -25,19 +25,19 @@ const {
 vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
   matrixRoomService: {
     joinRoom: mockJoinRoom,
-    inviteUser: mockInviteUser
-  }
-}))
-
-vi.mock('@/services/matrix/room/RoomNavigationService', () => ({
-  roomNavigationService: {
+    inviteUser: mockInviteUser,
     createGroupRoom: mockCreateGroupRoom,
     getServerDomain: mockGetServerDomain,
     leaveRoom: mockLeaveRoom,
-    removeMember: mockRemoveMember,
-    createDirectMessage: mockCreateDirectMessage,
-    getOrCreateDirectMessage: mockGetOrCreateDirectMessage,
-    getDirectRooms: mockGetDirectRooms
+    kickUser: mockRemoveMember
+  }
+}))
+
+vi.mock('@/services/matrix/room/MatrixDirectMessageService', () => ({
+  matrixDirectMessageService: {
+    createDm: mockCreateDirectMessage,
+    getOrCreateDmRoom: mockGetOrCreateDirectMessage,
+    getDMRooms: mockGetDirectRooms
   }
 }))
 
@@ -79,7 +79,7 @@ describe('useRoomActions', () => {
   })
 
   describe('createGroupRoom', () => {
-    it('delegates to roomNavigationService.createGroupRoom', async () => {
+    it('delegates to matrixRoomService.createGroupRoom', async () => {
       mockCreateGroupRoom.mockResolvedValueOnce({ roomId: '!new-room' })
       const { createGroupRoom } = useRoomActions()
       const options = { name: 'Test Room', visibility: 'private' as const }
@@ -96,7 +96,7 @@ describe('useRoomActions', () => {
   })
 
   describe('getServerDomain', () => {
-    it('returns server domain from navigation service', () => {
+    it('returns server domain from matrix room service', () => {
       mockGetServerDomain.mockReturnValue('example.com')
       const { getServerDomain } = useRoomActions()
       expect(getServerDomain()).toBe('example.com')
@@ -126,7 +126,7 @@ describe('useRoomActions', () => {
   })
 
   describe('leaveRoom', () => {
-    it('delegates to roomNavigationService.leaveRoom', async () => {
+    it('delegates to matrixRoomService.leaveRoom', async () => {
       mockLeaveRoom.mockResolvedValueOnce(undefined)
       const { leaveRoom } = useRoomActions()
       await leaveRoom('!room1')
@@ -141,7 +141,7 @@ describe('useRoomActions', () => {
   })
 
   describe('removeMember', () => {
-    it('delegates to roomNavigationService.removeMember', async () => {
+    it('delegates to matrixRoomService.kickUser', async () => {
       mockRemoveMember.mockResolvedValueOnce(undefined)
       const { removeMember } = useRoomActions()
       await removeMember('!room1', '@user:server')
@@ -156,34 +156,34 @@ describe('useRoomActions', () => {
   })
 
   describe('createDirectMessage', () => {
-    it('delegates to roomNavigationService.createDirectMessage', async () => {
-      mockCreateDirectMessage.mockResolvedValueOnce({ roomId: '!dm1' })
+    it('delegates to matrixDirectMessageService.createDm', async () => {
+      mockCreateDirectMessage.mockResolvedValueOnce('!dm1:server')
       const { createDirectMessage } = useRoomActions()
       const result = await createDirectMessage('@user:server')
-      expect(result).toEqual({ roomId: '!dm1' })
+      expect(result).toBe('!dm1:server')
       expect(mockCreateDirectMessage).toHaveBeenCalledWith('@user:server')
     })
   })
 
   describe('getOrCreateDirectMessage', () => {
     it('delegates without encryption flag', async () => {
-      mockGetOrCreateDirectMessage.mockResolvedValueOnce({ roomId: '!dm1' })
+      mockGetOrCreateDirectMessage.mockResolvedValueOnce('!dm1:server')
       const { getOrCreateDirectMessage } = useRoomActions()
       const result = await getOrCreateDirectMessage('@user:server')
-      expect(result).toEqual({ roomId: '!dm1' })
+      expect(result).toBe('!dm1:server')
       expect(mockGetOrCreateDirectMessage).toHaveBeenCalledWith('@user:server', undefined)
     })
 
     it('delegates with encryption=true', async () => {
-      mockGetOrCreateDirectMessage.mockResolvedValueOnce({ roomId: '!dm1' })
+      mockGetOrCreateDirectMessage.mockResolvedValueOnce('!dm1:server')
       const { getOrCreateDirectMessage } = useRoomActions()
       const result = await getOrCreateDirectMessage('@user:server', true)
-      expect(result).toEqual({ roomId: '!dm1' })
+      expect(result).toBe('!dm1:server')
       expect(mockGetOrCreateDirectMessage).toHaveBeenCalledWith('@user:server', true)
     })
 
     it('delegates with encryption=false', async () => {
-      mockGetOrCreateDirectMessage.mockResolvedValueOnce({ roomId: '!dm1' })
+      mockGetOrCreateDirectMessage.mockResolvedValueOnce('!dm1:server')
       const { getOrCreateDirectMessage } = useRoomActions()
       await getOrCreateDirectMessage('@user:server', false)
       expect(mockGetOrCreateDirectMessage).toHaveBeenCalledWith('@user:server', false)
@@ -191,7 +191,7 @@ describe('useRoomActions', () => {
   })
 
   describe('getDirectRooms', () => {
-    it('returns direct rooms from navigation service', async () => {
+    it('returns direct rooms from direct message service', async () => {
       const rooms = [{ roomId: '!dm1' }, { roomId: '!dm2' }]
       mockGetDirectRooms.mockResolvedValueOnce(rooms)
       const { getDirectRooms } = useRoomActions()

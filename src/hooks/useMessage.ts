@@ -3,8 +3,8 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { roomListService } from '@/services/matrix/room/RoomListService'
-import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 import { roomStateService } from '@/services/matrix/room/RoomStateService'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -339,7 +339,7 @@ export const useMessage = () => {
         }
 
         // 群聊：解散或退出
-        await roomNavigationService.leaveRoom(item.roomId)
+        await matrixRoomService.leaveRoom(item.roomId)
         await handleMsgDelete(item.roomId)
         showFeedback(
           item.operate === SessionOperateEnum.DISSOLUTION_GROUP

@@ -1,6 +1,6 @@
 import type { CreateGroupRoomOptions } from '@/services/matrix/room/CreationService'
+import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
-import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 
 export function useRoomActions() {
   const joinRoom = (roomIdOrAlias: string) => {
@@ -8,11 +8,11 @@ export function useRoomActions() {
   }
 
   const createGroupRoom = (options: CreateGroupRoomOptions) => {
-    return roomNavigationService.createGroupRoom(options)
+    return matrixRoomService.createGroupRoom(options)
   }
 
   const getServerDomain = () => {
-    return roomNavigationService.getServerDomain()
+    return matrixRoomService.getServerDomain()
   }
 
   const inviteUser = (roomId: string, userId: string) => {
@@ -20,23 +20,23 @@ export function useRoomActions() {
   }
 
   const leaveRoom = (roomId: string) => {
-    return roomNavigationService.leaveRoom(roomId)
+    return matrixRoomService.leaveRoom(roomId)
   }
 
   const removeMember = (roomId: string, userId: string) => {
-    return roomNavigationService.removeMember(roomId, userId)
+    return matrixRoomService.kickUser(roomId, userId)
   }
 
   const createDirectMessage = (userId: string) => {
-    return roomNavigationService.createDirectMessage(userId)
+    return matrixDirectMessageService.createDm(userId)
   }
 
   const getOrCreateDirectMessage = (userId: string, encryption?: boolean) => {
-    return roomNavigationService.getOrCreateDirectMessage(userId, encryption)
+    return matrixDirectMessageService.getOrCreateDmRoom(userId, encryption)
   }
 
   const getDirectRooms = () => {
-    return roomNavigationService.getDirectRooms()
+    return matrixDirectMessageService.getDMRooms()
   }
 
   return {
