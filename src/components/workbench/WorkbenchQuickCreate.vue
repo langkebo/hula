@@ -84,7 +84,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { type SpaceInfo, useSpaces } from '@/composables/space'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WorkbenchQuickCreate')
@@ -131,7 +131,7 @@ const historyOptions = [
 
 const loadServerDomain = async () => {
   try {
-    serverDomain.value = await roomNavigationService.getServerDomain()
+    serverDomain.value = await matrixRoomService.getServerDomain()
   } catch (error) {
     logger.error('Failed to get server domain:', error)
   }
@@ -165,7 +165,7 @@ const handleCreateSpace = async () => {
 }
 
 const handleCreateRoom = async () => {
-  const room = await roomNavigationService.createGroupRoom({
+  const room = await matrixRoomService.createGroupRoom({
     name: formData.name,
     topic: formData.topic,
     avatarUrl: formData.avatarUrl || undefined,

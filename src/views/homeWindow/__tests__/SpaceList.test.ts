@@ -294,8 +294,8 @@ vi.mock('@/services/matrix/room/RoomStateService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/room/RoomNavigationService', () => ({
-  roomNavigationService: {
+vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
+  matrixRoomService: {
     leaveRoom: leaveRoomMock
   }
 }))

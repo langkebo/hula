@@ -97,8 +97,8 @@ import { useMitt } from '@/hooks/useMitt'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { buildCreateSpaceRoute, SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 import { roomListService } from '@/services/matrix/room/RoomListService'
-import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
 import { roomStateService } from '@/services/matrix/room/RoomStateService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import type { SpaceOptions } from '@/types/matrix-services'
@@ -559,7 +559,7 @@ const handleBatchLeave = async (roomIds: string[]) => {
     if (session.type === RoomTypeEnum.SINGLE) {
       throw new Error(`Direct message is not supported for batch leave: ${session.roomId}`)
     }
-    await roomNavigationService.leaveRoom(session.roomId)
+    await matrixRoomService.leaveRoom(session.roomId)
     await handleMsgDelete(session.roomId)
   })
 }
