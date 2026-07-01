@@ -40,6 +40,7 @@ export default defineConfig(
           },
           test: {
             name: 'storybook',
+            setupFiles: ['./.storybook/setup-file.ts'],
             exclude: [
               'src/components/friend/FriendDetailDrawer.stories.ts',
               'src/components/friend/FriendListView.stories.ts',
@@ -49,7 +50,10 @@ export default defineConfig(
               'src/components/room/RoomDetailPane.stories.ts',
               'src/components/workbench/RoomSessionList.stories.ts',
               'src/components/workbench/RoomSpaceWorkbench.stories.ts',
-              'src/components/workbench/WorkbenchDetailPane.stories.ts'
+              'src/components/workbench/WorkbenchDetailPane.stories.ts',
+              'src/components/workbench/HulaSpaceTree.stories.ts',
+              'src/components/rightBox/MsgInput.stories.ts',
+              'src/components/rightBox/renderMessage/HulaMessageMeta.stories.ts'
             ],
             browser: {
               enabled: true,

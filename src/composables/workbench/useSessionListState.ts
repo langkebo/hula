@@ -130,9 +130,8 @@ export const useSessionListState = () => {
           displayMsg = botDisplayText.value || displayMsg
         }
 
-        const client = matrixClientService.getClient()
-        const room = client?.getRoom(item.roomId)
-        const isEncrypted = room ? client!.isRoomEncrypted(item.roomId) : false
+        const room = matrixClientService.getRoom(item.roomId)
+        const isEncrypted = room ? matrixClientService.isRoomEncrypted(item.roomId) : false
         const isBurnAfterRead = !!room?.currentState?.getStateEvents('m.burn_after_read')?.length
 
         return {

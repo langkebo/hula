@@ -314,13 +314,13 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BurnMessage from '@/components/burn/BurnMessage.vue'
 import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
-import { useThread } from '@/composables/chat/useThread'
 import { MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain'
 import { useMitt } from '@/hooks/useMitt'
 import { usePopover } from '@/hooks/usePopover'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
 import router from '@/router'
+import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import type { MessageBody, MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -443,7 +443,7 @@ const {
 const { recordSelectionBeforeContext, handleContextMenuSelection, longPressOption, handleLongPress } =
   useMessageContextMenu({ activeBubble })
 
-const { isBodyInThread } = useThread()
+const { isBodyInThread } = matrixThreadService
 
 const isThreadReply = computed(() => {
   const msg = props.message?.message

@@ -49,6 +49,10 @@ export function useSessionEvents(options: UseSessionEventsOptions) {
     await Promise.resolve(scrollToSession(roomId))
   }
 
+  useMitt.on(MittEnum.UPDATE_SESSION_LAST_MSG, handleUpdateSessionLastMsg)
+  useMitt.on(MittEnum.DELETE_SESSION, handleDeleteSessionEvent)
+  useMitt.on(MittEnum.LOCATE_SESSION, handleLocateSessionEvent)
+
   onUnmounted(() => {
     useMitt.off(MittEnum.UPDATE_SESSION_LAST_MSG, handleUpdateSessionLastMsg)
     useMitt.off(MittEnum.DELETE_SESSION, handleDeleteSessionEvent)

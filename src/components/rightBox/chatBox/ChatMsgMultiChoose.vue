@@ -147,12 +147,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { ErrorType } from '@/common/exception'
-import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum, MsgEnum, RoomTypeEnum, TauriCommand } from '@/enums'
 import { useCustomForwardTask } from '@/hooks/useCustomForwardTask'
 import { useImageViewer } from '@/hooks/useImageViewer'
 import { useMitt } from '@/hooks/useMitt.ts'
+import { matrixForwardService } from '@/services/matrix/messaging/MatrixForwardService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import type { MessageBody, MessageType } from '@/stores/domains/chat/chat/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -166,7 +167,8 @@ import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import ChatMultiMsg from './ChatMultiMsg.vue'
 
 const logger = createLogger('ChatMsgMultiChoose')
-const { forwardRoomMessages, sendStructuredMessage } = useChatMessageActions()
+const { forwardRoomMessages } = matrixForwardService
+const { sendStructuredMessage } = matrixMessageService
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()

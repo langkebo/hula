@@ -4,7 +4,9 @@ import { useFriends } from '@/composables/useFriends'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 vi.mock('@/composables/useFriends')
-vi.mock('@/composables/common/useActionFeedback')
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: vi.fn(() => ({ showFeedback: vi.fn() }))
+}))
 vi.mock('@/stores/domains/widget/global')
 
 describe('AddFriendRequestDialog Logic', () => {

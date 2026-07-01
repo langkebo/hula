@@ -40,74 +40,24 @@ let currentReporter: Reporter = defaultReporter
 let sdkRequestStatsTimer: ReturnType<typeof setInterval> | null = null
 let sdkRequestStatsSnapshots = new Map<string, string>()
 
-type SdkRequestStats = {
-  total: number
-  successful: number
-  failed: number
-  retried: number
-}
-
-type ManagerWithRequestStats = {
-  getRequestStats: () => SdkRequestStats
-}
-
-const isManagerWithRequestStats = (value: unknown): value is ManagerWithRequestStats => {
-  return (
-    !!value && typeof value === 'object' && typeof (value as ManagerWithRequestStats).getRequestStats === 'function'
-  )
-}
-
-const extractManagerGetterNames = (client: object): string[] => {
-  const getterNames = new Set<string>()
-  let prototype = Object.getPrototypeOf(client)
-
-  while (prototype && prototype !== Object.prototype) {
-    for (const name of Object.getOwnPropertyNames(prototype)) {
-      if (name !== 'constructor' && /^get[A-Z].*Manager$/.test(name)) {
-        getterNames.add(name)
-      }
-    }
-    prototype = Object.getPrototypeOf(prototype)
-  }
-
-  return [...getterNames]
-}
-
-const toManagerMetricName = (getterName: string): string => {
-  const baseName = getterName.replace(/^get/, '').replace(/Manager$/, '')
-  return baseName ? baseName.charAt(0).toLowerCase() + baseName.slice(1) : getterName
-}
-
 const sampleSdkRequestStats = (): void => {
-  const client = matrixClientService.getClient()
-  if (!client) return
+  const managerStats = matrixClientService.getManagerStatsList()
+  if (managerStats.length === 0) return
 
-  for (const getterName of extractManagerGetterNames(client)) {
-    const getter = (client as unknown as Record<string, unknown>)[getterName]
-    if (typeof getter !== 'function') continue
-
-    try {
-      const manager = (getter as () => unknown).call(client)
-      if (!isManagerWithRequestStats(manager)) continue
-
-      const stats = manager.getRequestStats()
-      if (stats.total === 0 && stats.successful === 0 && stats.failed === 0 && stats.retried === 0) {
-        continue
-      }
-
-      const snapshotKey = JSON.stringify(stats)
-      const managerName = toManagerMetricName(getterName)
-      if (sdkRequestStatsSnapshots.get(managerName) === snapshotKey) {
-        continue
-      }
-
-      sdkRequestStatsSnapshots.set(managerName, snapshotKey)
-      performanceReporter.reportSdkRequestStats(managerName, stats, {
-        source: 'matrix-sdk'
-      })
-    } catch (error) {
-      logger.debug(`[WebVitals] 采样 SDK manager requestStats 失败: ${getterName}`, error)
+  for (const { name: managerName, stats } of managerStats) {
+    if (stats.total === 0 && stats.successful === 0 && stats.failed === 0 && stats.retried === 0) {
+      continue
     }
+
+    const snapshotKey = JSON.stringify(stats)
+    if (sdkRequestStatsSnapshots.get(managerName) === snapshotKey) {
+      continue
+    }
+
+    sdkRequestStatsSnapshots.set(managerName, snapshotKey)
+    performanceReporter.reportSdkRequestStats(managerName, stats, {
+      source: 'matrix-sdk'
+    })
   }
 }
 

@@ -61,7 +61,7 @@ describe('usePluginsList', () => {
     const { usePluginsList } = await import('../config.tsx')
     const plugins = usePluginsList()
 
-    expect(plugins.value.map((item) => item.url)).toEqual(['roomList', 'space', 'robot'])
+    expect(plugins.value.map((item) => item.url)).toEqual(['roomList', 'space', 'openclaw'])
     expect(plugins.value[0]).toMatchObject({
       icon: 'view-grid-card',
       iconAction: 'view-grid-card',

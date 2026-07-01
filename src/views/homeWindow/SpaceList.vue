@@ -86,7 +86,6 @@ import type RoomSpaceWorkbench from '@/components/workbench/RoomSpaceWorkbench.v
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useSpace, useSpaceMembers, useSpaceRooms } from '@/composables/space'
-import { canManageSpaceByPowerLevel } from '@/composables/workbench/spacePermissions'
 import { useRoomSpaceWorkbench } from '@/composables/workbench/useRoomSpaceWorkbench'
 import { useSessionListState } from '@/composables/workbench/useSessionListState'
 import { useSessionPageSync } from '@/composables/workbench/useSessionPageSync'
@@ -97,9 +96,10 @@ import { useMitt } from '@/hooks/useMitt'
 import { useTauriListener } from '@/hooks/useTauriListener'
 import { buildCreateSpaceRoute, SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { roomListService } from '@/services/matrix/room/RoomListService'
-import { roomNavigationService } from '@/services/matrix/room/RoomNavigationService'
-import { roomStateService } from '@/services/matrix/room/RoomStateService'
+import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
+import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomSummaryService } from '@/services/matrix/room/MatrixRoomSummaryService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import type { SpaceOptions } from '@/types/matrix-services'
 
@@ -222,7 +222,7 @@ const { addRoom: addRoomToSpace, mutating: addRoomMutating } = useSpaceRooms(() 
 
 const canManageSelectedSpace = computed(() => {
   const spaceId = selectedSpaceId.value
-  return canManageSpaceByPowerLevel(matrixClientService.getClient(), spaceId)
+  return matrixClientService.canManageSpace(spaceId)
 })
 
 const spaceBreadcrumbItems = ref<Array<{ spaceId: string; name: string }>>([])
@@ -526,8 +526,8 @@ const runBatchAction = async (
 
 const handleBatchMarkRead = async (roomIds: string[]) => {
   await runBatchAction(roomIds, async (session) => {
-    await roomListService.markAsRead(session.roomId)
-    await roomListService.clearUnreadSummary(session.roomId).catch(() => undefined)
+    await matrixReceiptService.markRoomAsRead(session.roomId)
+    await matrixRoomSummaryService.clearUnreadSummary(session.roomId).catch(() => undefined)
     chatStore.updateSession(session.roomId, {
       unreadCount: 0
     })
@@ -546,7 +546,7 @@ const handleBatchPin = async (roomIds: string[]) => {
 
 const handleBatchMute = async (roomIds: string[]) => {
   await runBatchAction(roomIds, async (session) => {
-    await roomStateService.setRoomNotification(session.roomId, NotificationTypeEnum.NOT_DISTURB)
+    await matrixRoomNotificationService.setRoomNotification(session.roomId, NotificationTypeEnum.NOT_DISTURB)
     chatStore.updateSession(session.roomId, {
       muteNotification: NotificationTypeEnum.NOT_DISTURB
     })
@@ -559,7 +559,7 @@ const handleBatchLeave = async (roomIds: string[]) => {
     if (session.type === RoomTypeEnum.SINGLE) {
       throw new Error(`Direct message is not supported for batch leave: ${session.roomId}`)
     }
-    await roomNavigationService.leaveRoom(session.roomId)
+    await matrixRoomActionFacade.leaveRoom(session.roomId)
     await handleMsgDelete(session.roomId)
   })
 }

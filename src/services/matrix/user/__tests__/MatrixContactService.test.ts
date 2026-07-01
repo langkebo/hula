@@ -50,8 +50,16 @@ vi.mock('../../SynapseRustExtensionsService', () => ({
   synapseRustExtensionsService: mockSynapseExtensionsService
 }))
 
-vi.mock('../../room/MatrixRoomService', () => ({
-  matrixRoomService: mockRoomService
+vi.mock('../../room/ActionFacade', () => ({
+  matrixRoomActionFacade: mockRoomService
+}))
+
+vi.mock('../../room/QueryFacade', () => ({
+  matrixRoomQueryFacade: mockRoomService
+}))
+
+vi.mock('../../room/ReadFacade', () => ({
+  matrixRoomReadFacade: mockRoomService
 }))
 
 const { matrixContactService } = await import('../MatrixContactService')

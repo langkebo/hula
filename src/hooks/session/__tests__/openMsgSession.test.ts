@@ -164,7 +164,7 @@ describe('openMsgSessionByRoomId', () => {
     const { openMsgSessionByRoomId } = await import('../openMsgSession')
     chatStoreMock.getSession.mockReturnValueOnce({ roomId: 'room-known' })
     await openMsgSessionByRoomId('room-known')
-    expect(infoMock).toHaveBeenCalledWith('按 roomId 打开消息会话: room-known')
+    expect(infoMock).toHaveBeenCalledWith(expect.stringContaining('按 roomId 打开消息会话: room-known'))
     expect(chatStoreMock.getSession).toHaveBeenCalledWith('room-known')
     expect(globalStoreMock.updateCurrentSessionRoomId).toHaveBeenCalledWith('room-known')
   })

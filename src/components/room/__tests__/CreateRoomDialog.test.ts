@@ -39,9 +39,14 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/services/matrix/room/RoomNavigationService', () => ({
-  roomNavigationService: {
-    createGroupRoom: createGroupRoomMock,
+vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  matrixRoomActionFacade: {
+    createGroupRoom: createGroupRoomMock
+  }
+}))
+
+vi.mock('@/services/matrix/room/LifecycleService', () => ({
+  matrixRoomLifecycleService: {
     getServerDomain: getServerDomainMock
   }
 }))

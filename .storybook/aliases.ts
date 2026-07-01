@@ -21,6 +21,15 @@ export const storybookMockAliases = {
   '@/components/common/InfoPopover.vue': resolveFromStorybook('./mocks/info-popover.ts'),
   '@/components/common/ContextMenu.vue': resolveFromStorybook('./mocks/context-menu.ts'),
   '@/components/room/MemberList.vue': resolveFromStorybook('./mocks/member-list.ts'),
+  '@tauri-apps/api/core': resolveFromStorybook('./mocks/tauri-core.ts'),
   '@tauri-apps/api/webviewWindow': resolveFromStorybook('./mocks/tauri-webview-window.ts'),
-  '@tauri-apps/api/window': resolveFromStorybook('./mocks/tauri-webview-window.ts')
+  '@tauri-apps/api/window': resolveFromStorybook('./mocks/tauri-webview-window.ts'),
+  'dayjs/': resolveFromStorybook('../node_modules/dayjs/esm/'),
+  'events': resolveFromStorybook('./mocks/events.ts'),
+  'loglevel': resolveFromStorybook('./mocks/loglevel.ts'),
+  'content-type': resolveFromStorybook('./mocks/content-type.js'),
+  'sdp-transform': resolveFromStorybook('./mocks/sdp-transform.js'),
+  'matrix-events-sdk': resolveFromStorybook('./mocks/matrix-events-sdk.js'),
+  'matrix-widget-api': resolveFromStorybook('./mocks/matrix-widget-api.js'),
+  'node:events': resolveFromStorybook('./mocks/events.ts')
 } as const

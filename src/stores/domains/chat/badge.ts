@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('BadgeStore')
@@ -54,19 +54,9 @@ export const useBadgeStore = defineStore(StoresEnum.BADGE, () => {
 
   const loadBadges = async () => {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        logger.warn('Matrix client not initialized')
-        return
-      }
-
-      // 从账户数据加载徽章
-      const accountData = client.getAccountData('m.badges' as never)
-      if (accountData) {
-        const content = accountData.getContent()
-        if (content?.badges && Array.isArray(content.badges)) {
-          badges.value = buildBadgeCatalog((content.badges as Badge[]).map((badge) => badge.id))
-        }
+      const content = await matrixAccountService.getAccountData<{ badges?: { id: string }[] }>('m.badges')
+      if (content?.badges && Array.isArray(content.badges)) {
+        badges.value = buildBadgeCatalog(content.badges.map((badge) => badge.id))
       }
     } catch (error) {
       logger.error('Failed to load badges:', error)

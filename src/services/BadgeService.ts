@@ -1,5 +1,5 @@
 import { IsYesEnum } from '@/enums'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { buildBadgeCatalog } from '@/stores/domains/chat/badge'
 import { createLogger } from '@/utils/Logger'
 
@@ -20,13 +20,13 @@ export interface Badge {
 class BadgeService {
   private readonly accountDataType = 'io.hula.badge.preference'
 
-  private getCurrentUserBadgeState() {
-    const client = matrixClientService.getClient()
-    const accountData = client?.getAccountData(this.accountDataType as never)
-    const content = accountData?.getContent?.()
+  private async getCurrentUserBadgeState() {
+    const content = await matrixAccountService.getAccountData<{ wearingItemId?: string; ownedIds?: string[] }>(
+      this.accountDataType
+    )
 
-    const wearingItemId = content?.wearingItemId as string | undefined
-    const ownedIds = (content?.ownedIds as string[] | undefined) || []
+    const wearingItemId = content?.wearingItemId
+    const ownedIds = content?.ownedIds || []
 
     return {
       ownedIds,
@@ -40,19 +40,11 @@ class BadgeService {
    */
   async setUserBadge(badgeId: string): Promise<void> {
     try {
-      const client = matrixClientService.getClient()
-      if (!client) {
-        throw new Error('Matrix 客户端未初始化')
-      }
-
-      const { ownedIds } = this.getCurrentUserBadgeState()
-      await client.setAccountData(
-        this.accountDataType as never,
-        {
-          wearingItemId: badgeId,
-          ownedIds
-        } as never
-      )
+      const { ownedIds } = await this.getCurrentUserBadgeState()
+      await matrixAccountService.setAccountData(this.accountDataType, {
+        wearingItemId: badgeId,
+        ownedIds
+      })
       logger.info(`[Badge] 设置徽章成功: ${badgeId}`)
     } catch (err) {
       logger.error(`[Badge] 设置徽章失败: ${err}`)
@@ -66,7 +58,7 @@ class BadgeService {
    */
   async getBadgeList(): Promise<Badge[]> {
     try {
-      const { ownedIds, wearingItemId } = this.getCurrentUserBadgeState()
+      const { ownedIds, wearingItemId } = await this.getCurrentUserBadgeState()
       const badges = buildBadgeCatalog(ownedIds)
       logger.info('[Badge] 获取徽章列表成功')
       return badges.map((badge) => ({
@@ -87,7 +79,7 @@ class BadgeService {
    */
   async getBadgesBatch(badgeIds: string[]): Promise<Badge[]> {
     try {
-      const { wearingItemId } = this.getCurrentUserBadgeState()
+      const { wearingItemId } = await this.getCurrentUserBadgeState()
       const badges = buildBadgeCatalog(badgeIds)
       logger.info('[Badge] 批量获取徽章成功')
       return badges.map((badge) => ({

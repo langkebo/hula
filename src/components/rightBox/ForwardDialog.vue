@@ -50,14 +50,16 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { matrixForwardService } from '@/services/matrix/messaging/MatrixForwardService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ForwardDialog')
-const { getRoomMessage, forwardEventToMultipleRooms } = useChatMessageActions()
+const { getRoomMessage } = matrixMessageService
+const { forwardEventToMultipleRooms } = matrixForwardService
 
 const props = defineProps<{
   visible: boolean

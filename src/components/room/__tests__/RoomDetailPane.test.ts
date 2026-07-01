@@ -2,10 +2,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RoomDetailPane from '../RoomDetailPane.vue'
 
-const { getGroupDetailByRoomId, getMembersByRoomId, getClient } = vi.hoisted(() => ({
+const { getGroupDetailByRoomId, getMembersByRoomId, getRoomMock, getUserIdMock } = vi.hoisted(() => ({
   getGroupDetailByRoomId: vi.fn(),
   getMembersByRoomId: vi.fn(),
-  getClient: vi.fn()
+  getRoomMock: vi.fn(),
+  getUserIdMock: vi.fn()
 }))
 
 const { copyMock, showFeedbackMock } = vi.hoisted(() => ({
@@ -21,7 +22,11 @@ vi.mock('@/stores/domains/chat/group', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: { getClient }
+  matrixClientService: {
+    getClient: vi.fn(),
+    getRoom: getRoomMock,
+    getUserId: getUserIdMock
+  }
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -92,10 +97,8 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
   })
 
   it('renders invite button and edit overlay when user has full power level', async () => {
-    getClient.mockReturnValue({
-      getUserId: () => '@admin:matrix.test',
-      getRoom: () => fakeRoom({ canInvite: true, canEdit: true })
-    })
+    getUserIdMock.mockReturnValue('@admin:matrix.test')
+    getRoomMock.mockReturnValue(fakeRoom({ canInvite: true, canEdit: true }))
 
     const wrapper = await mountPane()
 
@@ -104,10 +107,8 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
   })
 
   it('hides edit overlay but keeps invite button for non-admin who can still invite', async () => {
-    getClient.mockReturnValue({
-      getUserId: () => '@member:matrix.test',
-      getRoom: () => fakeRoom({ canInvite: true, canEdit: false })
-    })
+    getUserIdMock.mockReturnValue('@member:matrix.test')
+    getRoomMock.mockReturnValue(fakeRoom({ canInvite: true, canEdit: false }))
 
     const wrapper = await mountPane()
 
@@ -116,10 +117,8 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
   })
 
   it('hides both edit overlay and invite button for read-only members', async () => {
-    getClient.mockReturnValue({
-      getUserId: () => '@guest:matrix.test',
-      getRoom: () => fakeRoom({ canInvite: false, canEdit: false })
-    })
+    getUserIdMock.mockReturnValue('@guest:matrix.test')
+    getRoomMock.mockReturnValue(fakeRoom({ canInvite: false, canEdit: false }))
 
     const wrapper = await mountPane()
 
@@ -128,7 +127,8 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
   })
 
   it('falls back to canEdit=false / canInvite=false when no Matrix client is available', async () => {
-    getClient.mockReturnValue(null)
+    getUserIdMock.mockReturnValue(null)
+    getRoomMock.mockReturnValue(null)
 
     const wrapper = await mountPane()
 
@@ -151,10 +151,8 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
       { userId: '@c:matrix.test', activeStatus: 0 },
       { userId: '@d:matrix.test', activeStatus: 0 }
     ])
-    getClient.mockReturnValue({
-      getUserId: () => '@a:matrix.test',
-      getRoom: () => fakeRoom({ canInvite: false, canEdit: false })
-    })
+    getUserIdMock.mockReturnValue('@a:matrix.test')
+    getRoomMock.mockReturnValue(fakeRoom({ canInvite: false, canEdit: false }))
 
     const wrapper = await mountPane()
 
@@ -167,10 +165,8 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
 
   it('uses room.canInvite() result, not a hardcoded true', async () => {
     const room = fakeRoom({ canInvite: false, canEdit: false })
-    getClient.mockReturnValue({
-      getUserId: () => '@u:matrix.test',
-      getRoom: () => room
-    })
+    getUserIdMock.mockReturnValue('@u:matrix.test')
+    getRoomMock.mockReturnValue(room)
 
     await mountPane()
 
@@ -179,10 +175,8 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
   })
 
   it('uses action feedback after copying the room id', async () => {
-    getClient.mockReturnValue({
-      getUserId: () => '@admin:matrix.test',
-      getRoom: () => fakeRoom({ canInvite: true, canEdit: true })
-    })
+    getUserIdMock.mockReturnValue('@admin:matrix.test')
+    getRoomMock.mockReturnValue(fakeRoom({ canInvite: true, canEdit: true }))
 
     const wrapper = await mountPane()
     await wrapper.find('.copy-btn').trigger('click')

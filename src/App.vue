@@ -153,8 +153,8 @@ const getMatrixRoomStateService = createLazyLoader(
   'matrixRoomStateService'
 )
 const getMatrixRoomService = createLazyLoader(
-  () => import('@/services/matrix/room/MatrixRoomService'),
-  'matrixRoomService'
+  () => import('@/services/matrix/room/ActionFacade'),
+  'matrixRoomActionFacade'
 )
 const getMatrixRoomCreationService = createLazyLoader(
   () => import('@/services/matrix/room/CreationService'),

@@ -77,8 +77,9 @@ import { useI18n } from 'vue-i18n'
 import { RoomActEnum, RoomTypeEnum } from '@/enums'
 import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
-import { matrixGroupService } from '@/services/matrix/room/MatrixGroupService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
+import { matrixRoomStateService } from '@/services/matrix/room/StateService'
 import syncService from '@/services/matrix/sync/MatrixSyncService'
 import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -184,7 +185,7 @@ const handleModalConfirm = async () => {
 const handleDeleteRoom = async () => {
   if (!currentSessionRoomId.value) return
   try {
-    await matrixRoomService.leaveRoom(currentSessionRoomId.value)
+    await matrixRoomActionFacade.leaveRoom(currentSessionRoomId.value)
     chatStore.removeSession(currentSessionRoomId.value)
     globalStore.updateCurrentSessionRoomId('')
   } catch (error) {
@@ -206,7 +207,7 @@ const handlePinRoom = async () => {
   if (!currentSessionRoomId.value) return
   try {
     const newPinStatus = !isPinned.value
-    await matrixRoomService.setPushRule(currentSessionRoomId.value, newPinStatus)
+    await matrixRoomActionFacade.setPushRule(currentSessionRoomId.value, newPinStatus)
   } catch (error) {
     logger.error('置顶操作失败:', error)
   }
@@ -216,7 +217,7 @@ const handleMuteNotification = async (type: string) => {
   if (!currentSessionRoomId.value) return
   try {
     const shield = type === 'shield'
-    await matrixRoomService.setPushRule(currentSessionRoomId.value, !shield)
+    await matrixRoomActionFacade.setPushRule(currentSessionRoomId.value, !shield)
   } catch (error) {
     logger.error('消息设置失败:', error)
   }
@@ -225,7 +226,7 @@ const handleMuteNotification = async (type: string) => {
 const handleUpdateGroupName = async (name: string) => {
   if (!currentSessionRoomId.value || !name.trim()) return
   try {
-    await matrixGroupService.updateRoomName(currentSessionRoomId.value, name.trim())
+    await matrixRoomStateService.setRoomName(currentSessionRoomId.value, name.trim())
   } catch (error) {
     logger.error('更新群名失败:', error)
   }
@@ -234,7 +235,7 @@ const handleUpdateGroupName = async (name: string) => {
 const handleUpdateMyName = async (name: string) => {
   if (!currentSessionRoomId.value) return
   try {
-    await matrixRoomService.setMemberDisplayName(currentSessionRoomId.value, name.trim())
+    await matrixRoomMemberFacade.setMemberDisplayName(currentSessionRoomId.value, name.trim())
   } catch (error) {
     logger.error('更新昵称失败:', error)
   }

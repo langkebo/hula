@@ -1,10 +1,9 @@
 import { type ComputedRef, computed, nextTick, type Ref, ref } from 'vue'
-import type { useChatMessageActions } from '@/composables/chat/useChatMessageActions'
 import type { ActionFeedbackType } from '@/composables/common/useActionFeedback'
 import { MergeMessageType, MittEnum, MsgEnum, PowerEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import type { useDownload } from '@/hooks/useDownload'
 import { useMitt } from '@/hooks/useMitt.ts'
-import { roomStateService } from '@/services/matrix/room/RoomStateService'
+import { matrixRoomTranslateService } from '@/services/matrix/room/TranslateService'
 import type { RightMouseMessageItem } from '@/services/types.ts'
 import type { MessageType, useChatStore } from '@/stores/domains/chat/chat'
 import type { useEmojiStore } from '@/stores/domains/chat/emoji'
@@ -27,7 +26,7 @@ const logger = createLogger('ChatContextMenu')
 export interface UseChatContextMenuDeps {
   t: (key: string) => string
   showFeedback: (message: string, type: ActionFeedbackType) => void
-  recallMessage: ReturnType<typeof useChatMessageActions>['recallMessage']
+  recallMessage: (roomId: string, eventId: string, txId?: string) => Promise<import('matrix-js-sdk').ISendEventResponse>
   handleCopy: (content: string | undefined, prioritizeSelection?: boolean, messageId?: string) => Promise<void>
   downloadFile: DownloadFileFn
   downloadAndRevealFile: (params: {
@@ -281,7 +280,7 @@ export const useChatContextMenu = (deps: UseChatContextMenuDeps) => {
 
         item.message.body.translatedText = { provider: settingStore.chatTranslateProvider || 'client', text: '' }
         try {
-          const translatedText = await roomStateService.translateText(content)
+          const translatedText = await matrixRoomTranslateService.translateText(content)
           item.message.body.translatedText = {
             provider: settingStore.chatTranslateProvider || 'client',
             text: translatedText || content

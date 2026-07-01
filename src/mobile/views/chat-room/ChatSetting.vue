@@ -248,8 +248,9 @@ import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { useMyRoomInfoUpdater } from '@/hooks/useMyRoomInfoUpdater'
 import router from '@/router'
-import { roomListService } from '@/services/matrix/room/RoomListService'
-import { roomStateService } from '@/services/matrix/room/RoomStateService'
+import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
+import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
+import { matrixRoomStateService } from '@/services/matrix/room/StateService'
 import type { UserItem } from '@/services/types'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -468,7 +469,7 @@ const handleLoadGroupAnnoun = async () => {
 const handleTop = (value: boolean) => {
   const session = activeItem.value
   if (!session) return
-  roomListService
+  matrixSessionService
     .setSessionTop(currentSessionRoomId.value, value)
     .then(() => {
       chatStore.updateSession(currentSessionRoomId.value, { top: value })
@@ -526,9 +527,9 @@ const handleGroupInfoUpdate = async () => {
     return
   }
 
-  await roomStateService.setRoomName(currentSessionRoomId.value, nameValue.value)
+  await matrixRoomStateService.setRoomName(currentSessionRoomId.value, nameValue.value)
   if (avatarValue.value && avatarValue.value !== session.avatar) {
-    await roomStateService.setRoomAvatar(currentSessionRoomId.value, avatarValue.value)
+    await matrixRoomStateService.setRoomAvatar(currentSessionRoomId.value, avatarValue.value)
   }
   session.avatar = avatarValue.value
   session.name = nameValue.value
@@ -561,7 +562,7 @@ const fetchGroupMembers = async (roomId: string) => {
 const handleShield = (value: boolean) => {
   const session = activeItem.value
   if (!session) return
-  roomStateService
+  matrixRoomNotificationService
     .setRoomShield(currentSessionRoomId.value, value)
     .then(() => {
       chatStore.updateSession(currentSessionRoomId.value, {
@@ -591,7 +592,7 @@ const handleNotification = (value: boolean) => {
   if (session.shield) {
     handleShield(false)
   }
-  roomStateService
+  matrixRoomNotificationService
     .setRoomNotification(currentSessionRoomId.value, newType)
     .then(() => {
       chatStore.updateSession(currentSessionRoomId.value, {

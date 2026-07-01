@@ -213,7 +213,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { roomStateService } from '@/services/matrix/room/RoomStateService'
+import { matrixRoomStateService } from '@/services/matrix/room/StateService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 
 interface RoomDetail {
@@ -276,7 +276,7 @@ const {
 } = useAvatarUpload({
   onSuccess: async (mxcUrl) => {
     if (!props.roomId) return
-    await roomStateService.setRoomAvatar(props.roomId, mxcUrl)
+    await matrixRoomStateService.setRoomAvatar(props.roomId, mxcUrl)
     if (roomDetail.value) {
       roomDetail.value = { ...roomDetail.value, avatar: mxcUrl }
     }
@@ -343,9 +343,8 @@ const buildRoomDetail = async (): Promise<RoomDetail | null> => {
     // 用真实 power level 推 canEdit / canInvite，避免硬编码
     let canEdit = false
     let canInvite = false
-    const client = matrixClientService.getClient()
-    const room = client?.getRoom(props.roomId)
-    const userId = client?.getUserId()
+    const room = matrixClientService.getRoom(props.roomId)
+    const userId = matrixClientService.getUserId()
     if (room && userId) {
       canEdit = (
         room.currentState as unknown as { maySendStateEvent: (t: string, u: string) => boolean }

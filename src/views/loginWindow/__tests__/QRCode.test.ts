@@ -37,6 +37,8 @@ vi.mock('naive-ui', () => {
     lightTheme: { name: 'light' },
     NConfigProvider: stub('NConfigProvider'),
     NFlex: stub('NFlex'),
+    NButton: stub('NButton'),
+    NButtonGroup: stub('NButtonGroup'),
     NSkeleton: stub('NSkeleton'),
     NQrCode: stub('NQrCode'),
     NSpin: stub('NSpin')

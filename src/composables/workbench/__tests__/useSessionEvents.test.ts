@@ -19,10 +19,16 @@ const useMittOnMock = vi.fn((event: MittEnum | string, handler: (payload?: unkno
   }
 })
 
+const useMittOffMock = vi.fn((event: MittEnum | string, handler: (payload?: unknown) => unknown) => {
+  const key = String(event)
+  mittHandlers.get(key)?.delete(handler)
+})
+
 vi.mock('@/hooks/useMitt', () => ({
   useMitt: {
     emit: useMittEmitMock,
-    on: useMittOnMock
+    on: useMittOnMock,
+    off: useMittOffMock
   }
 }))
 

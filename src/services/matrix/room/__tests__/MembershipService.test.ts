@@ -124,16 +124,21 @@ describe('MatrixRoomMembershipService', () => {
       expect(forget).toHaveBeenCalledWith('!r')
     })
 
-    it('knockRoom forwards viaServers + reason to client.joinRoom', async () => {
-      const joinRoom = vi.fn().mockResolvedValue({ roomId: '!r' })
-      getClientMock.mockReturnValueOnce({ joinRoom })
-      const out = await service.knockRoom('!r', 'please')
-      expect(joinRoom).toHaveBeenCalledWith('!r', { viaServers: [], reason: 'please' })
-      expect(out).toEqual({ roomId: '!r' })
+    it('knockRoom forwards viaServers + reason to client.http.authedRequest', async () => {
+      const authedRequest = vi.fn().mockResolvedValue({ room_id: '!r' })
+      getClientMock.mockReturnValueOnce({ http: { authedRequest } })
+      const out = await service.knockRoom('!r', 'please', ['matrix.test'])
+      expect(authedRequest).toHaveBeenCalledWith('POST', expect.stringContaining('/knock/'), undefined, {
+        room_id_or_alias: '!r',
+        reason: 'please',
+        via: ['matrix.test']
+      })
+      expect(out).toEqual({ room_id: '!r' })
     })
 
     it('knockRoom re-throws backend errors', async () => {
-      getClientMock.mockReturnValueOnce({ joinRoom: vi.fn().mockRejectedValue(new Error('403')) })
+      const authedRequest = vi.fn().mockRejectedValue(new Error('403'))
+      getClientMock.mockReturnValueOnce({ http: { authedRequest } })
       await expect(service.knockRoom('!r')).rejects.toThrow('403')
     })
   })

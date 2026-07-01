@@ -151,13 +151,17 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('naive-ui', () => ({
-  useMessage: () => ({
-    success: messageSuccessMock,
-    warning: messageWarningMock,
-    error: messageErrorMock
-  })
-}))
+vi.mock('naive-ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('naive-ui')>()
+  return {
+    ...actual,
+    useMessage: () => ({
+      success: messageSuccessMock,
+      warning: messageWarningMock,
+      error: messageErrorMock
+    })
+  }
+})
 
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
   WebviewWindow: {
@@ -203,7 +207,8 @@ vi.mock('@/composables/workbench/spacePermissions', () => ({
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn(() => ({}))
+    getClient: vi.fn(() => ({})),
+    canManageSpace: vi.fn(() => true)
   }
 }))
 
@@ -281,21 +286,26 @@ vi.mock('@/composables/space', () => ({
   })
 }))
 
-vi.mock('@/services/matrix/room/RoomListService', () => ({
-  roomListService: {
-    markAsRead: markAsReadMock,
+vi.mock('@/services/matrix/messaging/MatrixReceiptService', () => ({
+  matrixReceiptService: {
+    markRoomAsRead: markAsReadMock
+  }
+}))
+
+vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
+  matrixRoomSummaryService: {
     clearUnreadSummary: clearUnreadSummaryMock
   }
 }))
 
-vi.mock('@/services/matrix/room/RoomStateService', () => ({
-  roomStateService: {
+vi.mock('@/services/matrix/notifications/MatrixRoomNotificationService', () => ({
+  matrixRoomNotificationService: {
     setRoomNotification: setRoomNotificationMock
   }
 }))
 
-vi.mock('@/services/matrix/room/RoomNavigationService', () => ({
-  roomNavigationService: {
+vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  matrixRoomActionFacade: {
     leaveRoom: leaveRoomMock
   }
 }))
@@ -468,7 +478,7 @@ describe('SpaceListView', () => {
       engagement: 'unread',
       sort: 'name'
     })
-    expect(messageSuccessMock).toHaveBeenCalledWith('space.saved_preset_saved')
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.saved_preset_saved', 'success')
   })
 
   it('applies the saved toolbar preset back into the workbench state', async () => {
@@ -489,7 +499,7 @@ describe('SpaceListView', () => {
     expect(setSessionTypeFilterMock).toHaveBeenCalledWith('single')
     expect(setSessionEngagementFilterMock).toHaveBeenCalledWith('mention')
     expect(setSessionSortMock).toHaveBeenCalledWith('name')
-    expect(messageSuccessMock).toHaveBeenCalledWith('space.saved_preset_applied')
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.saved_preset_applied', 'success')
   })
 
   it('loads breadcrumb path for the selected space and forwards ancestor selection', async () => {
@@ -520,8 +530,9 @@ describe('SpaceListView', () => {
       unreadCount: 0
     })
     expect(chatStore.updateTotalUnreadCount).toHaveBeenCalledTimes(1)
-    expect(messageSuccessMock).toHaveBeenCalledWith(
-      'setting.notice.message_group_batch_update_result:{"success_count":2,"fail_count":0}'
+    expect(showFeedbackMock).toHaveBeenCalledWith(
+      'setting.notice.message_group_batch_update_result:{"success_count":2,"fail_count":0}',
+      'success'
     )
   })
 
@@ -534,8 +545,9 @@ describe('SpaceListView', () => {
 
     expect(addRoomTagMock).toHaveBeenCalledTimes(1)
     expect(addRoomTagMock).toHaveBeenCalledWith('!alpha:server', 'm.favourite')
-    expect(messageSuccessMock).toHaveBeenCalledWith(
-      'setting.notice.message_group_batch_update_result:{"success_count":2,"fail_count":0}'
+    expect(showFeedbackMock).toHaveBeenCalledWith(
+      'setting.notice.message_group_batch_update_result:{"success_count":2,"fail_count":0}',
+      'success'
     )
   })
 
@@ -560,8 +572,9 @@ describe('SpaceListView', () => {
     expect(leaveRoomMock).toHaveBeenCalledTimes(1)
     expect(leaveRoomMock).toHaveBeenCalledWith('!alpha:server')
     expect(handleMsgDeleteMock).toHaveBeenCalledWith('!alpha:server')
-    expect(messageWarningMock).toHaveBeenCalledWith(
-      'setting.notice.message_group_batch_update_result:{"success_count":1,"fail_count":1}'
+    expect(showFeedbackMock).toHaveBeenCalledWith(
+      'setting.notice.message_group_batch_update_result:{"success_count":1,"fail_count":1}',
+      'warning'
     )
   })
 
