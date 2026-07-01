@@ -22,10 +22,16 @@ vi.mock('../MatrixRoomService', () => ({
   }
 }))
 
+const mockGetClient = vi.fn()
+const mockJoinRoom = vi.fn()
 vi.mock('../../MatrixClientService', () => ({
+  matrixClientService: {
+    joinRoom: mockJoinRoom,
+    getClient: mockGetClient
+  },
   default: {
-    joinRoom: vi.fn(),
-    getClient: vi.fn()
+    joinRoom: mockJoinRoom,
+    getClient: mockGetClient
   }
 }))
 
