@@ -32,7 +32,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: ${{ vars.MATRIX_JS_SDK_REPO || 'langkebo/matrix-js-sdk' }}
-          path: ../matrix-js-sdk
+          path: _matrix-js-sdk
+
+      - name: Link matrix-js-sdk
+        run: ln -sf "$GITHUB_WORKSPACE/_matrix-js-sdk" "$GITHUB_WORKSPACE/../matrix-js-sdk"
 
       - name: Setup Node.js
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2

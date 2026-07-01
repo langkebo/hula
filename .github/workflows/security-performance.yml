@@ -29,7 +29,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: ${{ vars.MATRIX_JS_SDK_REPO || 'langkebo/matrix-js-sdk' }}
-          path: ../matrix-js-sdk
+          path: _matrix-js-sdk
+
+      - name: Link matrix-js-sdk
+        run: ln -sf "$GITHUB_WORKSPACE/_matrix-js-sdk" "$GITHUB_WORKSPACE/../matrix-js-sdk"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -80,7 +83,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: ${{ vars.MATRIX_JS_SDK_REPO || 'langkebo/matrix-js-sdk' }}
-          path: ../matrix-js-sdk
+          path: _matrix-js-sdk
+
+      - name: Link matrix-js-sdk
+        run: ln -sf "$GITHUB_WORKSPACE/_matrix-js-sdk" "$GITHUB_WORKSPACE/../matrix-js-sdk"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -164,7 +170,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: ${{ vars.MATRIX_JS_SDK_REPO || 'langkebo/matrix-js-sdk' }}
-          path: ../matrix-js-sdk
+          path: _matrix-js-sdk
+
+      - name: Link matrix-js-sdk
+        run: ln -sf "$GITHUB_WORKSPACE/_matrix-js-sdk" "$GITHUB_WORKSPACE/../matrix-js-sdk"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -194,7 +203,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: ${{ vars.MATRIX_JS_SDK_REPO || 'langkebo/matrix-js-sdk' }}
-          path: ../matrix-js-sdk
+          path: _matrix-js-sdk
+
+      - name: Link matrix-js-sdk
+        run: ln -sf "$GITHUB_WORKSPACE/_matrix-js-sdk" "$GITHUB_WORKSPACE/../matrix-js-sdk"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -231,7 +243,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: ${{ vars.MATRIX_JS_SDK_REPO || 'langkebo/matrix-js-sdk' }}
-          path: ../matrix-js-sdk
+          path: _matrix-js-sdk
+
+      - name: Link matrix-js-sdk
+        run: ln -sf "$GITHUB_WORKSPACE/_matrix-js-sdk" "$GITHUB_WORKSPACE/../matrix-js-sdk"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
