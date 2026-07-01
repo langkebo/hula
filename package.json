@@ -136,7 +136,7 @@
     "@types/node": "^25.3.3",
     "@types/qrcode": "^1.5.6",
     "@types/three": "^0.182.0",
-    "@types/uuid": "^10.0.0",
+    "@types/uuid": "^11.0.0",
     "@unocss/preset-wind3": "^66.6.4",
     "@unocss/reset": "^66.6.4",
     "@unocss/transformer-directives": "^66.6.4",
