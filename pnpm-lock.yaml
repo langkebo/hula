@@ -123,8 +123,8 @@ importers:
         specifier: ^1.45.0
         version: 1.45.0
       file-type:
-        specifier: ^21.3.2
-        version: 21.3.4
+        specifier: ^22.0.1
+        version: 22.0.1
       grapheme-splitter:
         specifier: ^1.0.4
         version: 1.0.4
@@ -566,8 +566,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@borewit/text-codec@0.2.1':
-    resolution: {integrity: sha512-k7vvKPbf7J2fZ5klGRD9AeKfUvojuZIQ3BT5u7Jfv+puwXkUBUT5PVyMDfJZpy30CBDXGMgw7fguK/lpOMBvgw==}
+  '@borewit/text-codec@0.2.2':
+    resolution: {integrity: sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ==}
 
   '@braintree/sanitize-url@7.1.2':
     resolution: {integrity: sha512-jigsZK+sMF/cuiB7sERuo9V7N9jx+dhmHHnQyDSVdpZwVutaBu7WvNYqMDLSgFgfB30n452TP3vjDAvFC973mA==}
@@ -3387,9 +3387,9 @@ packages:
     resolution: {integrity: sha512-yaduQFRKLXYOGgEn6AZau90j3ggSOyiqXU0F9JZfeXYhNa+Jk4X+s45A2zg5jns87GAFa34BBm2kXw4XpNcbdg==}
     engines: {node: '>=8'}
 
-  file-type@21.3.4:
-    resolution: {integrity: sha512-Ievi/yy8DS3ygGvT47PjSfdFoX+2isQueoYP1cntFW1JLYAuS4GD7NUPGg4zv2iZfV52uDyk5w5Z0TdpRS6Q1g==}
-    engines: {node: '>=20'}
+  file-type@22.0.1:
+    resolution: {integrity: sha512-ww5Mhre0EE+jmBvOXTmXAbEMuZE7uX4a3+oRCQFNj8w++g3ev913N6tXQz0XTXbueQ5TWQfm6BdaViEHHn8bhA==}
+    engines: {node: '>=22'}
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -4941,8 +4941,8 @@ packages:
   strip-literal@3.1.0:
     resolution: {integrity: sha512-8r3mkIM/2+PpjHoOtiAW8Rg3jJLHaV7xPwG+YRGrv6FP0wwk/toTpATxWYOW0BKdWwl82VT2tFYi5DlROa0Mxg==}
 
-  strtok3@10.3.4:
-    resolution: {integrity: sha512-KIy5nylvC5le1OdaaoCJ07L+8iQzJHGH6pWDuzS+d07Cu7n1MZ2x26P8ZKIWfbK02+XIL8Mp4RkWeqdUCrDMfg==}
+  strtok3@10.3.5:
+    resolution: {integrity: sha512-ki4hZQfh5rX0QDLLkOCj+h+CVNkqmp/CMf8v8kZpkNVK6jGQooMytqzLZYUVYIZcFZ6yDB70EfD8POcFXiF5oA==}
     engines: {node: '>=18'}
 
   stylis@4.4.0:
@@ -5789,7 +5789,7 @@ snapshots:
   '@biomejs/cli-win32-x64@2.4.5':
     optional: true
 
-  '@borewit/text-codec@0.2.1': {}
+  '@borewit/text-codec@0.2.2': {}
 
   '@braintree/sanitize-url@7.1.2':
     optional: true
@@ -8650,10 +8650,10 @@ snapshots:
     dependencies:
       escape-string-regexp: 1.0.5
 
-  file-type@21.3.4:
+  file-type@22.0.1:
     dependencies:
       '@tokenizer/inflate': 0.4.1
-      strtok3: 10.3.4
+      strtok3: 10.3.5
       token-types: 6.1.2
       uint8array-extras: 1.5.0
     transitivePeerDependencies:
@@ -10381,7 +10381,7 @@ snapshots:
     dependencies:
       js-tokens: 9.0.1
 
-  strtok3@10.3.4:
+  strtok3@10.3.5:
     dependencies:
       '@tokenizer/token': 0.3.0
 
@@ -10461,7 +10461,7 @@ snapshots:
 
   token-types@6.1.2:
     dependencies:
-      '@borewit/text-codec': 0.2.1
+      '@borewit/text-codec': 0.2.2
       '@tokenizer/token': 0.3.0
       ieee754: 1.2.1
 
