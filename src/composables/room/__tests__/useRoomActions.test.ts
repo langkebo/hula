@@ -22,14 +22,19 @@ const {
   mockGetDirectRooms: vi.fn()
 }))
 
-vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
-  matrixRoomService: {
+vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  matrixRoomActionFacade: {
     joinRoom: mockJoinRoom,
     inviteUser: mockInviteUser,
     createGroupRoom: mockCreateGroupRoom,
-    getServerDomain: mockGetServerDomain,
     leaveRoom: mockLeaveRoom,
     kickUser: mockRemoveMember
+  }
+}))
+
+vi.mock('@/services/matrix/room/LifecycleService', () => ({
+  matrixRoomLifecycleService: {
+    getServerDomain: mockGetServerDomain
   }
 }))
 
@@ -41,104 +46,105 @@ vi.mock('@/services/matrix/room/MatrixDirectMessageService', () => ({
   }
 }))
 
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomLifecycleService } from '@/services/matrix/room/LifecycleService'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
 
-describe('matrixRoomService (formerly useRoomActions pass-through)', () => {
+describe('matrixRoomActionFacade (formerly useRoomActions pass-through)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   describe('joinRoom', () => {
-    it('delegates to matrixRoomService.joinRoom', async () => {
+    it('delegates to matrixRoomActionFacade.joinRoom', async () => {
       mockJoinRoom.mockResolvedValueOnce({ roomId: '!room1' })
-      const result = await matrixRoomService.joinRoom('#room:server')
+      const result = await matrixRoomActionFacade.joinRoom('#room:server')
       expect(result).toEqual({ roomId: '!room1' })
       expect(mockJoinRoom).toHaveBeenCalledWith('#room:server')
     })
 
     it('joins by room alias', async () => {
       mockJoinRoom.mockResolvedValueOnce({ roomId: '!room1' })
-      await matrixRoomService.joinRoom('#alias:server.com')
+      await matrixRoomActionFacade.joinRoom('#alias:server.com')
       expect(mockJoinRoom).toHaveBeenCalledWith('#alias:server.com')
     })
 
     it('joins by room id', async () => {
       mockJoinRoom.mockResolvedValueOnce({ roomId: '!room1' })
-      await matrixRoomService.joinRoom('!room1:server.com')
+      await matrixRoomActionFacade.joinRoom('!room1:server.com')
       expect(mockJoinRoom).toHaveBeenCalledWith('!room1:server.com')
     })
 
     it('propagates error when join fails', async () => {
       mockJoinRoom.mockRejectedValueOnce(new Error('room not found'))
-      await expect(matrixRoomService.joinRoom('#nonexistent:server')).rejects.toThrow('room not found')
+      await expect(matrixRoomActionFacade.joinRoom('#nonexistent:server')).rejects.toThrow('room not found')
     })
   })
 
   describe('createGroupRoom', () => {
-    it('delegates to matrixRoomService.createGroupRoom', async () => {
+    it('delegates to matrixRoomActionFacade.createGroupRoom', async () => {
       mockCreateGroupRoom.mockResolvedValueOnce({ roomId: '!new-room' })
       const options = { name: 'Test Room', visibility: 'private' as const }
-      const result = await matrixRoomService.createGroupRoom(options)
+      const result = await matrixRoomActionFacade.createGroupRoom(options)
       expect(result).toEqual({ roomId: '!new-room' })
       expect(mockCreateGroupRoom).toHaveBeenCalledWith(options)
     })
 
     it('propagates error when creation fails', async () => {
       mockCreateGroupRoom.mockRejectedValueOnce(new Error('creation failed'))
-      await expect(matrixRoomService.createGroupRoom({ name: 'Fail' })).rejects.toThrow('creation failed')
+      await expect(matrixRoomActionFacade.createGroupRoom({ name: 'Fail' })).rejects.toThrow('creation failed')
     })
   })
 
   describe('getServerDomain', () => {
     it('returns server domain from matrix room service', () => {
       mockGetServerDomain.mockReturnValue('example.com')
-      expect(matrixRoomService.getServerDomain()).toBe('example.com')
+      expect(matrixRoomLifecycleService.getServerDomain()).toBe('example.com')
       expect(mockGetServerDomain).toHaveBeenCalled()
     })
 
     it('returns empty string when no domain', () => {
       mockGetServerDomain.mockReturnValue('')
-      expect(matrixRoomService.getServerDomain()).toBe('')
+      expect(matrixRoomLifecycleService.getServerDomain()).toBe('')
     })
   })
 
   describe('inviteUser', () => {
-    it('delegates to matrixRoomService.inviteUser', async () => {
+    it('delegates to matrixRoomActionFacade.inviteUser', async () => {
       mockInviteUser.mockResolvedValueOnce(undefined)
-      await matrixRoomService.inviteUser('!room1', '@user:server')
+      await matrixRoomActionFacade.inviteUser('!room1', '@user:server')
       expect(mockInviteUser).toHaveBeenCalledWith('!room1', '@user:server')
     })
 
     it('propagates error when invite fails', async () => {
       mockInviteUser.mockRejectedValueOnce(new Error('not in room'))
-      await expect(matrixRoomService.inviteUser('!room1', '@user:server')).rejects.toThrow('not in room')
+      await expect(matrixRoomActionFacade.inviteUser('!room1', '@user:server')).rejects.toThrow('not in room')
     })
   })
 
   describe('leaveRoom', () => {
-    it('delegates to matrixRoomService.leaveRoom', async () => {
+    it('delegates to matrixRoomActionFacade.leaveRoom', async () => {
       mockLeaveRoom.mockResolvedValueOnce(undefined)
-      await matrixRoomService.leaveRoom('!room1')
+      await matrixRoomActionFacade.leaveRoom('!room1')
       expect(mockLeaveRoom).toHaveBeenCalledWith('!room1')
     })
 
     it('propagates error when leave fails', async () => {
       mockLeaveRoom.mockRejectedValueOnce(new Error('leave failed'))
-      await expect(matrixRoomService.leaveRoom('!room1')).rejects.toThrow('leave failed')
+      await expect(matrixRoomActionFacade.leaveRoom('!room1')).rejects.toThrow('leave failed')
     })
   })
 
   describe('removeMember', () => {
-    it('delegates to matrixRoomService.kickUser', async () => {
+    it('delegates to matrixRoomActionFacade.kickUser', async () => {
       mockRemoveMember.mockResolvedValueOnce(undefined)
-      await matrixRoomService.kickUser('!room1', '@user:server')
+      await matrixRoomActionFacade.kickUser('!room1', '@user:server')
       expect(mockRemoveMember).toHaveBeenCalledWith('!room1', '@user:server')
     })
 
     it('propagates error when remove fails', async () => {
       mockRemoveMember.mockRejectedValueOnce(new Error('no permission'))
-      await expect(matrixRoomService.kickUser('!room1', '@user:server')).rejects.toThrow('no permission')
+      await expect(matrixRoomActionFacade.kickUser('!room1', '@user:server')).rejects.toThrow('no permission')
     })
   })
 
@@ -209,7 +215,7 @@ describe('matrixRoomService (formerly useRoomActions pass-through)', () => {
       mockGetServerDomain.mockImplementation(() => {
         throw new Error('domain error')
       })
-      expect(() => matrixRoomService.getServerDomain()).toThrow('domain error')
+      expect(() => matrixRoomLifecycleService.getServerDomain()).toThrow('domain error')
     })
   })
 })

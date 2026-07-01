@@ -299,8 +299,8 @@ vi.mock('@/services/matrix/notifications/MatrixRoomNotificationService', () => (
   }
 }))
 
-vi.mock('@/services/matrix/room/MatrixRoomService', () => ({
-  matrixRoomService: {
+vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  matrixRoomActionFacade: {
     leaveRoom: leaveRoomMock
   }
 }))

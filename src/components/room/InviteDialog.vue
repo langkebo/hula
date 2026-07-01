@@ -68,7 +68,7 @@
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
@@ -157,7 +157,7 @@ const handleInvite = async () => {
   inviting.value = true
   try {
     for (const userId of selectedUsers.value) {
-      await matrixRoomService.inviteUser(props.roomId, userId)
+      await matrixRoomActionFacade.inviteUser(props.roomId, userId)
     }
 
     showFeedback(t('room.invite.success', { count: selectedUsers.value.length }), 'success')

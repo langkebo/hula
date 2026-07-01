@@ -5,7 +5,7 @@ import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserT
 import { useMitt } from '@/hooks/useMitt'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -339,7 +339,7 @@ export const useMessage = () => {
         }
 
         // 群聊：解散或退出
-        await matrixRoomService.leaveRoom(item.roomId)
+        await matrixRoomActionFacade.leaveRoom(item.roomId)
         await handleMsgDelete(item.roomId)
         showFeedback(
           item.operate === SessionOperateEnum.DISSOLUTION_GROUP

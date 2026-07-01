@@ -1,7 +1,7 @@
 import { defineStore, storeToRefs } from 'pinia'
 import { StoresEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomQueryFacade } from '@/services/matrix/room/QueryFacade'
 import { robotAuditService } from '@/services/robot/RobotAuditService'
 import { robotDispatchService } from '@/services/robot/RobotDispatchService'
 import { robotPluginRegistry } from '@/services/robot/RobotPluginRegistry'
@@ -161,7 +161,7 @@ export const useRobotCenterStore = defineStore(
         return
       }
 
-      const existingRooms = await matrixRoomService.getRooms()
+      const existingRooms = await matrixRoomQueryFacade.getRooms()
       existingRooms.forEach(attachRoomStateObserver)
       matrixClientService.on('room', attachRoomStateObserver)
       stateBridgeInitialized.value = true

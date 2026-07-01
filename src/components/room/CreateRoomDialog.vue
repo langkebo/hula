@@ -78,7 +78,8 @@ import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomLifecycleService } from '@/services/matrix/room/LifecycleService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('CreateRoomDialog')
@@ -135,7 +136,7 @@ const joinRuleOptions = [
 
 const loadServerDomain = async () => {
   try {
-    serverDomain.value = await matrixRoomService.getServerDomain()
+    serverDomain.value = await matrixRoomLifecycleService.getServerDomain()
   } catch (error) {
     logger.error('获取 homeserver 域名失败:', error)
     serverDomain.value = 'matrix.org'
@@ -164,7 +165,7 @@ const handleCreate = async () => {
 
   creating.value = true
   try {
-    const room = await matrixRoomService.createGroupRoom({
+    const room = await matrixRoomActionFacade.createGroupRoom({
       name: formData.name,
       topic: formData.topic,
       avatarUrl: formData.avatarUrl || undefined,

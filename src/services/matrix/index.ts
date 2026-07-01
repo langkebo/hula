@@ -221,7 +221,6 @@ export type { Announcement, AnnouncementContent } from './room/MatrixAnnouncemen
 export { matrixAnnouncementService } from './room/MatrixAnnouncementService'
 export type { CreateDmOptions, DmRoomInfo, IDirectRoomsMap } from './room/MatrixDirectMessageService'
 export { matrixDirectMessageService } from './room/MatrixDirectMessageService'
-export { matrixRoomService } from './room/MatrixRoomService'
 export { matrixRoomStoreAdapter } from './room/MatrixRoomStoreAdapter'
 export type {
   MatrixRoomMemberInfo,

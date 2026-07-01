@@ -99,7 +99,7 @@ import { buildCreateSpaceRoute, SPACE_ROUTE_NAMES } from '@/router/spaceNavigati
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { matrixRoomSummaryService } from '@/services/matrix/room/MatrixRoomSummaryService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import type { SpaceOptions } from '@/types/matrix-services'
@@ -560,7 +560,7 @@ const handleBatchLeave = async (roomIds: string[]) => {
     if (session.type === RoomTypeEnum.SINGLE) {
       throw new Error(`Direct message is not supported for batch leave: ${session.roomId}`)
     }
-    await matrixRoomService.leaveRoom(session.roomId)
+    await matrixRoomActionFacade.leaveRoom(session.roomId)
     await handleMsgDelete(session.roomId)
   })
 }

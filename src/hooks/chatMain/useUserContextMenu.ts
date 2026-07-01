@@ -4,7 +4,7 @@ import { MittEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { useMitt } from '@/hooks/useMitt.ts'
 import { adminService } from '@/services/matrix/admin'
-import { matrixRoomService } from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import type { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -183,7 +183,7 @@ export const useUserContextMenu = (deps: UseUserContextMenuDeps) => {
         if (!roomId) return
 
         try {
-          await matrixRoomService.kickUser(roomId, targetUid)
+          await matrixRoomActionFacade.kickUser(roomId, targetUid)
           groupStore.removeUserItem(targetUid, roomId)
           showFeedback(t('menu.remove_from_group_success'), 'success')
         } catch (error) {

@@ -3,7 +3,10 @@ import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { MessageStatusEnum, MsgEnum, StoresEnum } from '@/enums'
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import matrixEventService from '@/services/matrix/MatrixEventService'
-import matrixRoomService from '@/services/matrix/room/MatrixRoomService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
+import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
 import { matrixRoomTagsService } from '@/services/matrix/room/TagsService'
 import matrixSlidingSyncService, { type SlidingSyncUnreadUpdate } from '@/services/matrix/sync/MatrixSlidingSyncService'
 import type { RoomDetail, RoomInfo } from '@/services/types'
@@ -79,7 +82,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     isLoading.value = true
     let roomsChanged = false // 新增标志位
     try {
-      const newRoomInfos = matrixRoomService.getAllRoomInfos()
+      const newRoomInfos = matrixRoomRealtimeService.getAllRoomInfos()
       // 比较新旧房间列表，判断是否有变化
       if (
         newRoomInfos.length !== rooms.value.size ||
@@ -213,7 +216,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     isEncrypted?: boolean
   }): Promise<RoomInfo> {
     try {
-      const room = await matrixRoomService.createRoom({
+      const room = await matrixRoomActionFacade.createRoom({
         name: options.name,
         topic: options.topic,
         invite: options.invite,
@@ -256,7 +259,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
   async function joinRoom(roomId: string): Promise<RoomInfo> {
     try {
-      const roomInfo = await matrixRoomService.joinRoomAndGetInfo(roomId)
+      const roomInfo = await matrixRoomCreationService.joinRoomAndGetInfo(roomId)
       rooms.value.set(roomInfo.roomId, roomInfo)
       triggerRef(rooms)
       logger.info(`[RoomStore] 加入房间成功: ${roomInfo.roomId}`)
@@ -269,7 +272,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
   async function leaveRoom(roomId: string): Promise<void> {
     try {
-      await matrixRoomService.leaveRoom(roomId)
+      await matrixRoomActionFacade.leaveRoom(roomId)
       rooms.value.delete(roomId)
       triggerRef(rooms)
       useChatStore().clearRoomMessages(roomId)
@@ -320,7 +323,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       return typeof typedBody.content === 'string' || typeof typedBody.body === 'string'
     }
 
-    matrixRoomService.onTimelineEvent(({ roomId, eventType, roomInfo, message }) => {
+    matrixRoomRealtimeService.onTimelineEvent(({ roomId, eventType, roomInfo, message }) => {
       if ((eventType === 'm.room.message' || eventType === 'm.room.encrypted') && message) {
         if (chatStore.checkMsgExist(roomId, message.message.id)) {
           if (eventType === 'm.room.message' && hasRenderableMessageBody(message.message.body)) {
@@ -369,19 +372,19 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
         chatStore.pushMsg(message)
       }
 
-      rooms.value.set(roomId, matrixRoomService.convertRoomToRoomInfo(room))
+      rooms.value.set(roomId, matrixRoomCreationService.convertRoomToRoomInfo(room))
       triggerRef(rooms)
     })
 
-    matrixRoomService.onRoomNameChange((roomId, name) => {
+    matrixRoomRealtimeService.onRoomNameChange((roomId, name) => {
       updateRoom(roomId, { name })
     })
 
-    matrixRoomService.onRoomAvatarChange((roomId, avatarUrl) => {
+    matrixRoomRealtimeService.onRoomAvatarChange((roomId, avatarUrl) => {
       updateRoom(roomId, { avatarUrl })
     })
 
-    matrixRoomService.onRoomMemberChange((roomId, roomInfo) => {
+    matrixRoomRealtimeService.onRoomMemberChange((roomId, roomInfo) => {
       rooms.value.set(roomId, roomInfo)
       triggerRef(rooms)
     })
@@ -459,7 +462,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
     const promise = (async () => {
       try {
-        const summary = await matrixRoomService.getRoomSummary(roomId)
+        const summary = await matrixRoomReadFacade.getRoomSummary(roomId)
         if (!summary) return null
 
         const detail: RoomDetail = {
