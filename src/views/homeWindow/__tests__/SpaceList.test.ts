@@ -203,7 +203,8 @@ vi.mock('@/composables/workbench/spacePermissions', () => ({
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
-    getClient: vi.fn(() => ({}))
+    getClient: vi.fn(() => ({})),
+    canManageSpace: vi.fn(() => true)
   }
 }))
 

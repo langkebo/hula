@@ -86,7 +86,6 @@ import type RoomSpaceWorkbench from '@/components/workbench/RoomSpaceWorkbench.v
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useSpace, useSpaceMembers, useSpaceRooms } from '@/composables/space'
-import { canManageSpaceByPowerLevel } from '@/composables/workbench/spacePermissions'
 import { useRoomSpaceWorkbench } from '@/composables/workbench/useRoomSpaceWorkbench'
 import { useSessionListState } from '@/composables/workbench/useSessionListState'
 import { useSessionPageSync } from '@/composables/workbench/useSessionPageSync'
@@ -223,7 +222,7 @@ const { addRoom: addRoomToSpace, mutating: addRoomMutating } = useSpaceRooms(() 
 
 const canManageSelectedSpace = computed(() => {
   const spaceId = selectedSpaceId.value
-  return canManageSpaceByPowerLevel(matrixClientService.getClient(), spaceId)
+  return matrixClientService.canManageSpace(spaceId)
 })
 
 const spaceBreadcrumbItems = ref<Array<{ spaceId: string; name: string }>>([])

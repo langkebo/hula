@@ -295,6 +295,18 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  async setAccountData(eventType: string, content: unknown): Promise<void> {
+    const client = this.getClient()
+
+    try {
+      await client.setAccountData(eventType, content)
+      logger.info(`[MatrixAccount] 设置账户数据成功: ${eventType}`)
+    } catch (err) {
+      logger.error(`[MatrixAccount] 设置账户数据失败: ${eventType}: ${err}`)
+      throw err
+    }
+  }
+
   async deactivateAccount(authData?: AuthData, erase: boolean = false): Promise<void> {
     const client = this.getClient()
 

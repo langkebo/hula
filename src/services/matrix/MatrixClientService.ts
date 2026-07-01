@@ -7,7 +7,8 @@ import {
   type MatrixEvent,
   type Room,
   SlidingSync,
-  type SlidingSync as SlidingSyncInstance
+  type SlidingSync as SlidingSyncInstance,
+  type User
 } from 'matrix-js-sdk'
 import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 import { MittEnum } from '@/enums'
@@ -1181,6 +1182,114 @@ class MatrixClientService {
    */
   getDeviceId(): string | null {
     return this.client?.getDeviceId() ?? null
+  }
+
+  /**
+   * 获取用户信息
+   *
+   * @param userId - 用户 ID
+   * @returns 用户实例，如果不存在则返回 null
+   */
+  getUser(userId: string): User | null {
+    return this.client?.getUser(userId) ?? null
+  }
+
+  /**
+   * 同步判断房间是否已加密
+   *
+   * @param roomId - 房间 ID
+   * @returns 是否已加密
+   */
+  isRoomEncrypted(roomId: string): boolean {
+    return this.client?.isRoomEncrypted?.(roomId) ?? false
+  }
+
+  /**
+   * 判断当前用户是否有权限管理指定 Space
+   *
+   * 检查用户是否已加入该 space，且 power level >= 50
+   *
+   * @param spaceId - Space 房间 ID
+   * @returns 是否有管理权限
+   */
+  canManageSpace(spaceId: string): boolean {
+    if (!this.client || !spaceId) return false
+
+    const userId = this.client.getUserId()
+    const room = this.client.getRoom(spaceId)
+    if (!userId || !room || room.getMyMembership?.() !== 'join') {
+      return false
+    }
+
+    const member = room.getMember(userId) ?? room.currentState?.getMember?.(userId)
+    const powerLevel =
+      member?.powerLevel ?? (member as { getPowerLevel?: () => number } | undefined)?.getPowerLevel?.() ?? 0
+    return powerLevel >= 50
+  }
+
+  /**
+   * 收集所有 Manager 的 RequestStats（供性能监控模块使用）
+   *
+   * @returns Manager stats 列表
+   */
+  getManagerStatsList(): Array<{
+    name: string
+    stats: { total: number; successful: number; failed: number; retried: number }
+  }> {
+    if (!this.client) return []
+
+    const results: Array<{
+      name: string
+      stats: { total: number; successful: number; failed: number; retried: number }
+    }> = []
+    const getterNames = this.extractManagerGetterNames(this.client)
+
+    for (const getterName of getterNames) {
+      const getter = (this.client as unknown as Record<string, unknown>)[getterName]
+      if (typeof getter !== 'function') continue
+      try {
+        const manager = (getter as () => unknown).call(this.client)
+        if (
+          manager &&
+          typeof (
+            manager as {
+              getRequestStats?: () => { total: number; successful: number; failed: number; retried: number }
+            }
+          ).getRequestStats === 'function'
+        ) {
+          const stats = (
+            manager as { getRequestStats: () => { total: number; successful: number; failed: number; retried: number } }
+          ).getRequestStats()
+          const managerName = this.toManagerMetricName(getterName)
+          results.push({ name: managerName, stats })
+        }
+      } catch {
+        // ignore individual manager access errors
+      }
+    }
+
+    return results
+  }
+
+  private extractManagerGetterNames(client: object): string[] {
+    const getterNames = new Set<string>()
+    let prototype = Object.getPrototypeOf(client)
+
+    while (prototype && prototype !== Object.prototype) {
+      for (const name of Object.getOwnPropertyNames(prototype)) {
+        if (name !== 'constructor' && /^get[A-Z].*Manager$/.test(name)) {
+          getterNames.add(name)
+        }
+      }
+      prototype = Object.getPrototypeOf(prototype)
+    }
+
+    return [...getterNames]
+  }
+
+  private toManagerMetricName(getterName: string): string {
+    const baseName = getterName.replace(/^get/, '').replace(/Manager$/, '')
+    return baseName ? baseName.charAt(0).toLowerCase() + baseName.slice(1) : getterName
   }
 
   /**
