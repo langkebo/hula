@@ -26,6 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout matrix-js-sdk
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.MATRIX_JS_SDK_REPO || 'langkebo/matrix-js-sdk' }}
+          path: ../matrix-js-sdk
+
       - name: Install Ubuntu dependencies
         if: inputs.platform == 'ubuntu-22.04'
         run: |
@@ -69,7 +75,7 @@ jobs:
       - name: Generate component typings
         env:
           NODE_OPTIONS: --max-old-space-size=4096
-        run: pnpm vite build --emptyOutDir
+        run: npx vite build --emptyOutDir
 
       - name: Build Vite + Tauri
         run: pnpm build

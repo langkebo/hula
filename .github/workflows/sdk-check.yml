@@ -28,6 +28,12 @@ jobs:
         with:
           submodules: true
 
+      - name: Checkout matrix-js-sdk
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ${{ vars.MATRIX_JS_SDK_REPO || 'langkebo/matrix-js-sdk' }}
+          path: ../matrix-js-sdk
+
       - name: Setup Node.js
         uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
@@ -77,7 +83,7 @@ jobs:
       - name: Audit production dependencies
         run: |
           echo "Auditing production dependencies..."
-          pnpm audit --production --audit-level=moderate || true
+          pnpm audit:deps || true
           echo "Audit completed"
 
       - name: Check for unused dependencies

@@ -56,6 +56,10 @@
     "check:sdk-types": "node scripts/check-sdk-augmentations.mjs",
     "check:v-html": "node scripts/check-v-html.mjs",
     "audit:deps": "node scripts/audit-deps.mjs",
+    "sdk:pack:apply": "node scripts/sdk-pack-apply.mjs",
+    "sdk:pin:refresh": "node scripts/sdk-pin-refresh.mjs",
+    "verify:sdk-pin": "node scripts/verify-sdk-pin.mjs",
+    "check:release": "node scripts/check-release.mjs",
     "deploy:openclaw": "bash scripts/deploy_openclaw.sh",
     "test:e2e:mobile": "playwright test --project=mobile-chromium --project=mobile-safari",
     "test:e2e:dynamic": "playwright test e2e/dynamic-flow.spec.ts --project=mobile-chromium"
