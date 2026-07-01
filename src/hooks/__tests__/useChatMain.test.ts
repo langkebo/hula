@@ -343,7 +343,7 @@ describe('useChatMain', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('menu.set_admin_fail', 'error')
   })
 
-  it('举报消息缺少上下文时播报 warning，成功时播报 success', async () => {
+  it('举报消息缺少上下文时播报 warning，成功时打开举报弹窗', async () => {
     const wrapper = mountComposable()
     const vm = wrapper.vm as unknown as ReturnType<typeof useChatMain>
     const reportMenu = (
@@ -357,19 +357,17 @@ describe('useChatMain', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('无法获取消息信息', 'warning')
 
     showFeedbackMock.mockClear()
-    reportEventMock.mockResolvedValueOnce(undefined)
+    mittEmitMock.mockClear()
     await reportMenu?.click?.({
       fromUser: { uid: '@target:example.com' },
       message: { id: '$event' }
     } as any)
 
-    expect(reportEventMock).toHaveBeenCalledWith({
+    expect(mittEmitMock).toHaveBeenCalledWith(MittEnum.OPEN_EVENT_REPORT, {
       roomId: '!room:example.com',
       eventId: '$event',
-      reason: 'violation',
-      explanation: 'User reported via chat menu'
+      eventContent: ''
     })
-    expect(showFeedbackMock).toHaveBeenCalledWith('menu.report_success', 'success')
   })
 
   it('当前用户信息缺失时仍可执行撤回并写入空 recallUid', async () => {

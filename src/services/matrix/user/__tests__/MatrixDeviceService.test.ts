@@ -220,7 +220,7 @@ describe('MatrixDeviceService', () => {
       await matrixDeviceService.deleteDevices(deviceIds, auth)
 
       expect(mockHttp.authedRequest).toHaveBeenCalledWith('POST', '/_matrix/client/v3/delete_devices', undefined, {
-        devices: deviceIds,
+        device_ids: deviceIds,
         auth
       })
     })

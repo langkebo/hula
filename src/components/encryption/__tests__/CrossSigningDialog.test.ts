@@ -19,14 +19,16 @@ const {
   resetCrossSigningMock,
   messageSuccessMock,
   messageErrorMock,
-  writeTextMock
+  writeTextMock,
+  showFeedbackMock
 } = vi.hoisted(() => ({
   getCrossSigningInfoMock: vi.fn(),
   setupCrossSigningMock: vi.fn(),
   resetCrossSigningMock: vi.fn(),
   messageSuccessMock: vi.fn(),
   messageErrorMock: vi.fn(),
-  writeTextMock: vi.fn()
+  writeTextMock: vi.fn(),
+  showFeedbackMock: vi.fn()
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -90,6 +92,14 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   }
 }))
 
+vi.mock('@/composables/encryption', () => ({
+  useEncryption: () => ({
+    getCrossSigningInfo: getCrossSigningInfoMock,
+    setupCrossSigning: setupCrossSigningMock,
+    resetCrossSigning: resetCrossSigningMock
+  })
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     info: vi.fn(),
@@ -97,6 +107,12 @@ vi.mock('@/utils/Logger', () => ({
     error: vi.fn(),
     debug: vi.fn(),
     trace: vi.fn()
+  })
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: showFeedbackMock
   })
 }))
 
@@ -178,8 +194,8 @@ describe('CrossSigningDialog', () => {
 
     expect(setupCrossSigningMock).toHaveBeenCalled()
     expect(resetCrossSigningMock).toHaveBeenCalled()
-    expect(messageSuccessMock).toHaveBeenCalledWith('encryption.cross_signing.setup_success')
-    expect(messageSuccessMock).toHaveBeenCalledWith('encryption.cross_signing.reset_success')
+    expect(showFeedbackMock).toHaveBeenCalledWith('encryption.cross_signing.setup_success', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith('encryption.cross_signing.reset_success', 'success')
     expect(getCrossSigningInfoMock).toHaveBeenCalledTimes(3)
   })
 
@@ -201,8 +217,8 @@ describe('CrossSigningDialog', () => {
     expect(writeTextMock).toHaveBeenCalledWith(
       'Master Key: master-key\nSelf-Signing Key: self-key\nUser-Signing Key: user-key'
     )
-    expect(messageSuccessMock).toHaveBeenCalledWith('encryption.cross_signing.copied')
-    expect(messageErrorMock).toHaveBeenCalledWith('encryption.cross_signing.copy_failed')
+    expect(showFeedbackMock).toHaveBeenCalledWith('encryption.cross_signing.copied', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith('encryption.cross_signing.copy_failed', 'error')
   })
 
   it('在设置、重置和加载失败时保留兜底状态', async () => {
@@ -219,8 +235,8 @@ describe('CrossSigningDialog', () => {
     await (wrapper.vm as unknown as CrossSigningDialogVm).handleSetup()
     await (wrapper.vm as unknown as CrossSigningDialogVm).handleReset()
 
-    expect(messageErrorMock).toHaveBeenCalledWith('encryption.cross_signing.setup_failed')
-    expect(messageErrorMock).toHaveBeenCalledWith('encryption.cross_signing.reset_failed')
+    expect(showFeedbackMock).toHaveBeenCalledWith('encryption.cross_signing.setup_failed', 'error')
+    expect(showFeedbackMock).toHaveBeenCalledWith('encryption.cross_signing.reset_failed', 'error')
   })
 
   it('支持关闭弹窗', async () => {

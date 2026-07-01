@@ -331,8 +331,15 @@ describe('MatrixMediaService', () => {
     })
 
     it('should upload content with id successfully', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ content_uri: 'mxc://matrix.org/named123' })
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/named123' })
+        getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
+        getAccessToken: vi.fn(() => 'token123')
       } as unknown as MatrixClient)
       vi.mocked(matrixClientService.getTelemetry).mockReturnValue(null)
 
@@ -341,6 +348,8 @@ describe('MatrixMediaService', () => {
 
       expect(result.contentUri).toBe('mxc://matrix.org/named123')
       expect(result.mimetype).toBe('text/plain')
+
+      vi.unstubAllGlobals()
     })
   })
 })

@@ -101,6 +101,20 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   }
 }))
 
+vi.mock('@/composables/encryption', () => ({
+  useEncryption: () => ({
+    setupCrossSigning: setupCrossSigningMock,
+    setupKeyBackup: setupKeyBackupMock
+  })
+}))
+
+vi.mock('@/services/matrix/crypto/CryptoSDKAdapter', () => ({
+  cryptoSDKAdapter: {
+    setupCrossSigning: setupCrossSigningMock,
+    setupKeyBackupWithOptions: setupKeyBackupMock
+  }
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     info: vi.fn(),

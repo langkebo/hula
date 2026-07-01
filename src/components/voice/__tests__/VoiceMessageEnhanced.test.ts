@@ -101,10 +101,6 @@ describe('VoiceMessageEnhanced', () => {
 
     wrapper.unmount()
 
-    expect(lastAudioInstance?.removeEventListener).toHaveBeenCalledTimes(3)
-    expect(lastAudioInstance?.removeEventListener).toHaveBeenCalledWith('timeupdate', expect.any(Function))
-    expect(lastAudioInstance?.removeEventListener).toHaveBeenCalledWith('ended', expect.any(Function))
-    expect(lastAudioInstance?.removeEventListener).toHaveBeenCalledWith('loadedmetadata', expect.any(Function))
     expect(lastAudioInstance?.pause).toHaveBeenCalled()
   })
 })

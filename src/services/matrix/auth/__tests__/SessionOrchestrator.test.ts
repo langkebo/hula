@@ -181,15 +181,12 @@ describe('createSessionStorePort', () => {
     expect(port.matrix.isLoggedIn()).toBe(true)
   })
 
-  it('falls back to the matrix store client when accessor is not registered', () => {
-    const storeClient = { kind: 'store-client' }
+  it('returns null from getClient when the accessor is not registered', () => {
     getMatrixClientMock.mockReturnValue(null)
-    matrixStoreMock.getClient.mockReturnValue(storeClient)
 
     const port = createSessionStorePort()
 
-    expect(port.matrix.getClient()).toBe(storeClient)
-    expect(matrixStoreMock.getClient).toHaveBeenCalledTimes(1)
+    expect(port.matrix.getClient()).toBeNull()
   })
 
   it('falls back to matrix store session fields when lightweight snapshot is not ready', () => {
