@@ -73,12 +73,16 @@ import { Icon } from '@iconify/vue'
 import dayjs from 'dayjs'
 import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type Thread, type ThreadDisplayMessage, useThread } from '@/composables/chat/useThread'
+import {
+  matrixThreadService,
+  type Thread,
+  type ThreadDisplayMessage
+} from '@/services/matrix/messaging/MatrixThreadService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ThreadView')
 const { t } = useI18n()
-const { getThreadViewData, sendThreadReply } = useThread()
+const { getThreadViewData, sendThreadReply } = matrixThreadService
 
 const props = defineProps<{
   roomId: string

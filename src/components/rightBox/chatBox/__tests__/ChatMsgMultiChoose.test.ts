@@ -73,11 +73,15 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/composables/chat/useChatMessageActions', () => ({
-  useChatMessageActions: () => ({
-    forwardRoomMessages: forwardRoomMessagesMock,
+vi.mock('@/services/matrix/messaging/MatrixForwardService', () => ({
+  matrixForwardService: {
+    forwardRoomMessages: forwardRoomMessagesMock
+  }
+}))
+vi.mock('@/services/matrix/messaging/MatrixMessageService', () => ({
+  matrixMessageService: {
     sendStructuredMessage: sendStructuredMessageMock
-  })
+  }
 }))
 
 vi.mock('@/hooks/useCustomForwardTask', () => ({

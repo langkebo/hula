@@ -147,10 +147,10 @@ vi.mock('../chatMain/useGroupNicknameModal', () => ({
   })
 }))
 
-vi.mock('@/composables/chat/useChatMessageActions', () => ({
-  useChatMessageActions: () => ({
+vi.mock('@/services/matrix/messaging/MatrixMessageService', () => ({
+  matrixMessageService: {
     recallMessage: recallMessageMock
-  })
+  }
 }))
 
 vi.mock('@/services/matrix/admin', () => ({
