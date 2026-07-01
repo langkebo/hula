@@ -58,8 +58,15 @@ vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
   matrixCapabilityService: matrixCapabilityServiceMock
 }))
 
+vi.mock('@/stores/domains/admin/admin', () => ({
+  useAdminStore: () => ({
+    clearAdminState: vi.fn()
+  })
+}))
+
 describe('MatrixStore', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     setActivePinia(createPinia())
     vi.clearAllMocks()
   })

@@ -4,7 +4,9 @@ import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 vi.mock('@/composables/useGroupRequestConfirm')
-vi.mock('@/composables/common/useActionFeedback')
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: vi.fn(() => ({ showFeedback: vi.fn() }))
+}))
 vi.mock('@/stores/domains/widget/global')
 
 describe('AddGroupRequestDialog Logic', () => {

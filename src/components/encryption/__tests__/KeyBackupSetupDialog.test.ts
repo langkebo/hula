@@ -126,6 +126,14 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   }
 }))
 
+vi.mock('@/composables/encryption', () => ({
+  useEncryption: () => ({
+    setupKeyBackup: setupKeyBackupMock,
+    getKeyBackupInfo: getKeyBackupInfoMock,
+    generateRecoveryKey: vi.fn()
+  })
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     info: vi.fn(),

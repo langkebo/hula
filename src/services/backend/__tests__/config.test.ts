@@ -141,11 +141,11 @@ describe('backend config', () => {
 
   it('keeps custom homeserver urls unchanged outside the local dev proxy rewrite case', () => {
     const storage = createStorage({
-      [MATRIX_HOMESERVER_STORAGE_KEY]: 'https://matrix.example.com'
+      [MATRIX_HOMESERVER_STORAGE_KEY]: 'http://matrix.example.com:8008'
     })
 
     withMockWindowLocation(() => {
-      expect(resolveMatrixRuntimeEndpointConfig(storage).homeserverUrl).toBe('https://matrix.example.com')
+      expect(resolveMatrixRuntimeEndpointConfig(storage).homeserverUrl).toBe('http://matrix.example.com:8008')
     })
   })
 
