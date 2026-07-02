@@ -181,14 +181,13 @@ const createGroup = async () => {
     await chatStore.getSessionList(true)
 
     const resultRoomId = room?.roomId != null ? String(room.roomId) : undefined
-    const resultId = room?.roomId != null ? String(room.roomId) : undefined
 
     const matchedSession = chatStore.sessionList.find((session) => {
       const sessionRoomId = String(session.roomId)
       const sessionDetailId = session.detailId != null ? String(session.detailId) : undefined
       return (
         (resultRoomId !== undefined && sessionRoomId === resultRoomId) ||
-        (resultId !== undefined && (sessionDetailId === resultId || sessionRoomId === resultId))
+        (resultRoomId !== undefined && (sessionDetailId === resultRoomId || sessionRoomId === resultRoomId))
       )
     })
 

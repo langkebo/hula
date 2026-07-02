@@ -1212,6 +1212,8 @@ class MatrixClientService {
    * @param spaceId - Space 房间 ID
    * @returns 是否有管理权限
    */
+  private static readonly DEFAULT_MODERATOR_POWER_LEVEL = 50
+
   canManageSpace(spaceId: string): boolean {
     if (!this.client || !spaceId) return false
 
@@ -1224,7 +1226,7 @@ class MatrixClientService {
     const member = room.getMember(userId) ?? room.currentState?.getMember?.(userId)
     const powerLevel =
       member?.powerLevel ?? (member as { getPowerLevel?: () => number } | undefined)?.getPowerLevel?.() ?? 0
-    return powerLevel >= 50
+    return powerLevel >= MatrixClientService.DEFAULT_MODERATOR_POWER_LEVEL
   }
 
   /**

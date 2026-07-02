@@ -5656,6 +5656,12 @@ export type I18nKeys = {
         "confirm": "确认添加",
         "cancel": "取消"
       },
+      "no_notifications": "暂无推送消息",
+      "notification_count": "{count} 条通知",
+      "clear_all": "清空全部",
+      "just_now": "刚刚",
+      "minutes_ago": "{count} 分钟前",
+      "hours_ago": "{count} 小时前",
       "rules_by_kind": {
         "title": "推送规则详情",
         "desc": "按类别查看和管理所有推送规则",

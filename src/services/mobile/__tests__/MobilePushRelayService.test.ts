@@ -9,23 +9,24 @@ describe('MobilePushRelayService', () => {
     service = new MobilePushRelayService()
   })
 
-  it('registers a push callback and invokes it on dispatch', () => {
+  it('registers a push callback and invokes it on dispatch when active', () => {
     const handler = vi.fn()
     service.onPushReceived(handler)
+    service.startRelay()
 
     service.dispatchTestPush({ id: 'p1', title: 'Test', body: 'Test body' })
 
     expect(handler).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1', title: 'Test', body: 'Test body' }))
   })
 
-  it('startRelay sets active to true and stopRelay sets it to false', () => {
-    expect(service.isActive()).toBe(false)
+  it('dispatchTestPush is a no-op when relay is stopped', () => {
+    const handler = vi.fn()
+    service.onPushReceived(handler)
+    // service is not started, active defaults to false
 
-    service.startRelay()
-    expect(service.isActive()).toBe(true)
+    service.dispatchTestPush({ id: 'p1', title: 'T', body: 'B' })
 
-    service.stopRelay()
-    expect(service.isActive()).toBe(false)
+    expect(handler).not.toHaveBeenCalled()
   })
 
   it('startRelay and stopRelay toggle isActive state', () => {
@@ -46,6 +47,7 @@ describe('MobilePushRelayService', () => {
     const h2 = vi.fn()
     const remove1 = service.onPushReceived(h1)
     service.onPushReceived(h2)
+    service.startRelay()
 
     service.dispatchTestPush({ id: '1', title: 'T', body: 'B' })
     expect(h1).toHaveBeenCalledTimes(1)

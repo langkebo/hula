@@ -34,6 +34,7 @@ export class MobilePushRelayService {
   }
 
   dispatchTestPush(payload: PushPayload): void {
+    if (!this.active) return
     for (const handler of this.handlers) {
       handler(payload)
     }
