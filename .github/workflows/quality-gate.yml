@@ -82,9 +82,6 @@ jobs:
           pnpm check:sdk-types
           pnpm check:v-html
 
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install chromium --with-deps
-
       - name: Unit Tests
         run: pnpm test:run
 

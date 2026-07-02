@@ -234,9 +234,6 @@ jobs:
       - name: Build SDK types
         run: cd _matrix-js-sdk && pnpm install --frozen-lockfile && pnpm build:types
 
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install chromium --with-deps
-
       - name: Run tests with coverage
         run: pnpm coverage
 
