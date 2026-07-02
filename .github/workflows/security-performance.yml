@@ -120,11 +120,13 @@ jobs:
         continue-on-error: true
 
       - name: Summarize bundle baseline
+        continue-on-error: true
         run: |
           echo "## Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
           echo "```" >> $GITHUB_STEP_SUMMARY
-          du -sh dist/ >> $GITHUB_STEP_SUMMARY
-          node --input-type=module <<'EOF' >> $GITHUB_STEP_SUMMARY
+          du -sh dist/ 2>/dev/null >> $GITHUB_STEP_SUMMARY || echo "(dist/ not found)" >> $GITHUB_STEP_SUMMARY
+          if [ -f dist/bundle-metrics.json ]; then
+          node --input-type=module <<'EOF1' >> $GITHUB_STEP_SUMMARY
           import fs from 'node:fs'
 
           const metrics = JSON.parse(fs.readFileSync('dist/bundle-metrics.json', 'utf8'))
@@ -133,18 +135,22 @@ jobs:
           console.log(`CSS files: ${metrics.summary.cssCount}`)
           console.log(`Total size: ${metrics.summary.totalSizeMB}`)
           console.log(`JS over 500KB: ${metrics.largeJavaScriptAssets.length}`)
-          EOF
+          EOF1
           echo "```" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Top Bundle Assets" >> $GITHUB_STEP_SUMMARY
-          node --input-type=module <<'EOF' >> $GITHUB_STEP_SUMMARY
+          node --input-type=module <<'EOF2' >> $GITHUB_STEP_SUMMARY
           import fs from 'node:fs'
 
           const metrics = JSON.parse(fs.readFileSync('dist/bundle-metrics.json', 'utf8'))
           for (const asset of metrics.topAssets.slice(0, 5)) {
             console.log(`- ${asset.file}: ${asset.sizeKB}`)
           }
-          EOF
+          EOF2
+          else
+          echo "bundle-metrics.json not found — skipping summary" >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Check for large bundles
         run: |
