@@ -201,10 +201,6 @@ vi.mock('@/composables/workbench/useSessionPageSync', () => ({
   useSessionPageSync: vi.fn()
 }))
 
-vi.mock('@/composables/workbench/spacePermissions', () => ({
-  canManageSpaceByPowerLevel: () => true
-}))
-
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
     getClient: vi.fn(() => ({})),
