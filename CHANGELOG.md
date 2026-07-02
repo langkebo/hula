@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.0.10](https://github.com/langkebo/hula/compare/v3.0.9...v3.0.10) (2026-07-01)
+## [3.0.10](https://github.com/langkebo/hula/compare/v3.0.9...v3.0.10) (2026-07-02)
 
 ### 🔧 Refactoring | 重构
 
