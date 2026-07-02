@@ -2,7 +2,7 @@
 import { execSync } from 'node:child_process'
 
 const steps = [
-  { name: 'Lint', cmd: 'pnpm check' },
+  { name: 'Lint', cmd: 'pnpm check:ci' },
   { name: 'Type Check', cmd: 'pnpm exec vue-tsc --noEmit' },
   { name: 'Unit Tests', cmd: 'pnpm test:run' },
 ]
