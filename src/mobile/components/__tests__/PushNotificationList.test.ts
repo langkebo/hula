@@ -1,14 +1,20 @@
 // src/mobile/components/__tests__/PushNotificationList.test.ts
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import PushNotificationList from '../PushNotificationList.vue'
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  })
+}))
 
 describe('PushNotificationList', () => {
   it('renders empty state when no notifications', () => {
     const wrapper = mount(PushNotificationList, {
       props: { notifications: [] }
     })
-    expect(wrapper.text()).toContain('暂无推送消息')
+    expect(wrapper.text()).toContain('push.no_notifications')
   })
 
   it('renders notification items with title and body', () => {
