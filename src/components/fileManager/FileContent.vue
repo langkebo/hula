@@ -89,12 +89,12 @@
 import { sumBy } from 'es-toolkit'
 import { useI18n } from 'vue-i18n'
 import ContextMenu from '@/components/common/ContextMenu.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useDownload } from '@/hooks/useDownload'
 import type { FileBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import { createLogger } from '@/utils/Logger'
-import EmptyState from './EmptyState.vue'
 
 const logger = createLogger('FileContent')
 
