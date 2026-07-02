@@ -24,7 +24,7 @@ jobs:
   debug-build:
     runs-on: ${{ inputs.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Checkout matrix-js-sdk
         uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
 
       # 安装 pnpm
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
           run_install: false
