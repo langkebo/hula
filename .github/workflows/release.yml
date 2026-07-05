@@ -211,7 +211,7 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Cache cargo target
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: |
             ${{ runner.os == 'Windows' && env.USERPROFILE || env.HOME }}/.cargo/registry
