@@ -473,6 +473,16 @@ declare module 'matrix-js-sdk' {
   // MatrixClient 接口扩展
   interface MatrixClient {
     readonly deviceId: string | null
+    readonly baseUrl: string
+    getHttp(): {
+      authedRequest<T = unknown>(
+        method: string,
+        path: string,
+        queryParams?: Record<string, string | string[] | undefined>,
+        body?: object,
+        paramOpts?: { prefix?: string; baseUrl?: string; headers?: Record<string, string>; localTimeoutMs?: number }
+      ): Promise<T>
+    }
     http: {
       authedRequest<T = unknown>(
         method: string,
@@ -702,7 +712,7 @@ declare module 'matrix-js-sdk' {
       opts?: Record<string, unknown>
     ): Promise<Record<string, unknown>>
     forget(roomId: string): Promise<void>
-    upgradeRoom(roomId: string, version: string): Promise<string>
+    upgradeRoom(roomId: string, version: string): Promise<{ replacement_room: string }>
     createAlias(alias: string, roomId: string): Promise<void>
     deleteAlias(alias: string): Promise<void>
     getEventContext(roomId: string, eventId: string, opts?: Record<string, unknown>): Promise<Record<string, unknown>>
@@ -836,7 +846,7 @@ declare module 'matrix-js-sdk' {
     getTs(): number
     getRoomId(): string
     getOriginServerTs(): number
-    getContent(): Record<string, unknown>
+    getContent(): Record<string, any>
     getWireContent(): Record<string, unknown>
     getRaw(): Record<string, unknown>
     getStateKey(): string | null

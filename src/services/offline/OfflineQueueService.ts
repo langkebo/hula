@@ -15,6 +15,7 @@ export type OperationType =
   | 'dm_creation'
   | 'tag'
   | 'pin'
+  | 'sticky'
 
 export interface QueuedOperation {
   id: string
