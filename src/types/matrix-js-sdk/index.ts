@@ -15,11 +15,9 @@ export type {
   MSC3575RoomData,
   MSC3575SlidingSyncResponse,
   PushRuleAction,
-  RegisterResponse
+  RegisterResponse,
+  SlidingSync
 } from 'matrix-js-sdk'
-// 重新导出官方类型
-export * from 'matrix-js-sdk'
-// 补充 SDK 缺失的类型
 export {
   ClientPrefix,
   EventType,
@@ -30,6 +28,7 @@ export {
   PushRuleKind,
   ReceiptType,
   RoomType,
+  SlidingSyncEvent,
   SlidingSyncState,
   TweakName,
   Visibility

@@ -60,7 +60,7 @@
         <!-- 工具栏 -->
         <div
           v-if="!isMobile()"
-          class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-[--hula-border-default]">
+          class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-[--hula-border-layout-divider]">
           <!-- 位置共享 -->
           <n-tooltip trigger="hover">
             <template #trigger>
@@ -107,7 +107,7 @@
         <!-- 发送按钮 -->
         <div
           v-if="!isMobile()"
-          class="flex-shrink-0 max-h-52px p-4px pr-12px border-t border-[--hula-border-default] flex justify-end mb-4px">
+          class="flex-shrink-0 max-h-52px p-4px pr-12px border-t border-[--hula-border-layout-divider] flex justify-end mb-4px">
           <n-button-group size="small">
             <n-button
               type="primary"

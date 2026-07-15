@@ -2,11 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://localhost:* http://localhost:* https://repo.huaweicloud.com:*; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http: mxc:; connect-src 'self' ipc://localhost https://localhost:* http://localhost:* https://127.0.0.1:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://repo.huaweicloud.com:* https://matrix.test https://matrix.test:* https://element.test https://element.test:*; font-src 'self' data:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none';" />
-    <!-- COEP/COOP 仅在浏览器端启用，Tauri WebView 有自己的 CSP 机制 -->
-    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
-    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
-    <meta http-equiv="Cross-Origin-Resource-Policy" content="same-origin" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://localhost:* http://localhost:* http://127.0.0.1:* https://repo.huaweicloud.com:*; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http: mxc:; connect-src 'self' ipc://localhost https://localhost:* http://localhost:* https://127.0.0.1:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://repo.huaweicloud.com:* https://matrix.test https://matrix.test:* https://element.test https://element.test:*; font-src 'self' data:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none';" />
+    <!-- COEP/COOP removed for WKWebView compatibility (breaks iOS Tauri) -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
@@ -197,7 +194,27 @@
         </div>
       </div>
     </div>
-    <!-- 🚀 Vue 应用入口 -->
+    <script>
+      // Global error capture - report via Tauri IPC
+      var _report = function(tag, msg) {
+        if (window.__TAURI__) {
+          try {
+            window.__TAURI__.core.invoke('set_complete', { task: tag + ': ' + String(msg).slice(0, 200) });
+          } catch(e) {}
+        }
+      };
+      window.addEventListener('error', function(e) {
+        if (e.target && e.target.tagName === 'SCRIPT') {
+          _report('MODULE-LOAD-ERROR', (e.target.src || 'inline') + ' ' + (e.message || ''));
+        } else {
+          _report('JS-RUNTIME-ERROR', e.message + ' ' + e.filename + ':' + e.lineno);
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        _report('UNHANDLED-REJECTION', (e.reason && e.reason.message) || String(e.reason));
+      });
+      window.__TAURI__ && window.__TAURI__.core.invoke('hide_splash_screen');
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

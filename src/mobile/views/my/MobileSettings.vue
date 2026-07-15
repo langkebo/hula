@@ -334,4 +334,22 @@ async function handleLogout() {
 }
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+:deep(.van-cell-group--inset) {
+  margin: 0 12px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+:deep(.van-cell) {
+  background: var(--hula-surface-panel);
+}
+
+:deep(.van-cell::after) {
+  border-bottom: 1px solid var(--hula-border-layout-divider);
+}
+
+:deep(.van-cell:last-child::after) {
+  border-bottom: none;
+}
+</style>

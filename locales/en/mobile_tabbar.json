@@ -2,7 +2,8 @@
   "items": {
     "messages": "Chats",
     "contacts": "Contacts",
-    "community": "Community",
-    "me": "me"
+    "rooms": "Rooms",
+    "spaces": "Spaces",
+    "me": "Me"
   }
 }

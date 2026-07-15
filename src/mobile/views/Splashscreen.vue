@@ -12,9 +12,20 @@ const settingStore = useSettingStore()
 const router = useRouter()
 const { normalLogin } = useLoginFlow()
 
+const SPLASH_TIMEOUT_MS = 15_000
+
 const init = async () => {
   if (settingStore.autoLoginEnabled) {
-    normalLogin('MOBILE', true, true)
+    const splashTimeout = setTimeout(() => {
+      router.replace('/mobile/login')
+      invokeSilently('hide_splash_screen')
+    }, SPLASH_TIMEOUT_MS)
+
+    try {
+      await normalLogin('MOBILE', true, true)
+    } finally {
+      clearTimeout(splashTimeout)
+    }
   } else {
     router.push('/mobile/login')
     await invokeSilently('hide_splash_screen')

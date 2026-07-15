@@ -106,6 +106,10 @@ export const useLoginFlow = () => {
       uiState.value = 'manual'
       settingStore.setAutoLogin(false)
       logger.info('自动登录信息已失效，请手动登录')
+      if (isMobile()) {
+        await invokeSilently('hide_splash_screen')
+        router?.replace('/mobile/login')
+      }
       return
     }
 
@@ -207,6 +211,7 @@ export const useLoginFlow = () => {
           info.value.uid = userStore.userInfo.uid
         }
         if (isMobile()) {
+          await invokeSilently('hide_splash_screen')
           router?.replace('/mobile/login')
         }
       }

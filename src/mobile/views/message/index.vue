@@ -70,6 +70,7 @@
           :spellcheck="false"
           autocorrect="off"
           autocapitalize="off"
+          v-model="searchText"
           :placeholder="t('mobile_home.input.search')"
           @focus="lockScroll"
           @blur="unlockScroll">
@@ -92,7 +93,7 @@
       <div class="flex flex-col h-full">
         <SmartVirtualList
           class="mobile-session-list flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
-          :items="sessionList"
+          :items="filteredSessionList"
           :item-height="72"
           :buffer="6"
           key-field="roomId"
@@ -211,12 +212,45 @@
         </div>
       </div>
     </teleport>
+
+    <!-- New Chat Dialog -->
+    <van-dialog
+      v-model:show="showNewChatDialog"
+      :title="t('mobile_home.new_chat_title')"
+      show-cancel-button
+      :confirm-button-text="t('common.confirm')"
+      :cancel-button-text="t('common.cancel')"
+      :before-close="beforeCloseNewChat">
+      <van-field
+        v-model="newChatUserId"
+        :placeholder="t('mobile_home.user_id_placeholder')"
+        class="mx-16px my-12px rounded-8px" />
+    </van-dialog>
+
+    <!-- Create Group Chat Dialog -->
+    <van-dialog
+      v-model:show="showCreateGroupDialog"
+      :title="t('mobile_home.create_group_title')"
+      show-cancel-button
+      :confirm-button-text="t('common.confirm')"
+      :cancel-button-text="t('common.cancel')"
+      :before-close="beforeCloseCreateGroup">
+      <van-field
+        v-model="createGroupName"
+        :placeholder="t('mobile_home.group_name_placeholder')"
+        class="mx-16px mt-12px rounded-8px" />
+      <van-field
+        v-model="createGroupMemberIds"
+        :placeholder="t('mobile_home.group_members_placeholder')"
+        class="mx-16px mt-8px mb-12px rounded-8px" />
+    </van-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { vOnLongPress } from '@vueuse/components'
 import { useDebounceFn, useThrottleFn } from '@vueuse/core'
+import { showFailToast, showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
 import { useMessage } from '@/composables/chat/useMessage'
@@ -224,6 +258,7 @@ import { useReplaceMsg } from '@/composables/chat/useReplaceMsg'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MsgEnum, NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
+import { matrixDirectMessageService, matrixRoomCreationService } from '@/services/matrix'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
 import { syncService } from '@/services/matrix/sync/MatrixSyncService'
@@ -257,14 +292,25 @@ const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplace
 
 const showAddPopover = ref(false)
 const addActions = [
-  { text: t('menu.start_group_chat'), value: '/mobile/mobileFriends/startGroupChat' },
+  { text: t('mobile_home.menu.new_chat'), value: 'newChat' },
+  { text: t('mobile_home.menu.create_group_chat'), value: 'createGroupChat' },
   { text: t('menu.add_contact'), value: '/mobile/mobileFriends/addFriends' }
 ]
 
-const onAddActionSelect = (action: { text: string; value: string }) => {
-  router.push(action.value)
+const onAddActionSelect = async (action: { text: string; value: string }) => {
+  showAddPopover.value = false
   maskHandler.close()
+
+  if (action.value === 'newChat') {
+    await handleNewChat()
+  } else if (action.value === 'createGroupChat') {
+    await handleCreateGroupChat()
+  } else {
+    router.push(action.value)
+  }
 }
+
+const searchText = ref('')
 
 type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
 
@@ -383,6 +429,14 @@ const sessionList = computed(() => {
       if (!a.top && b.top) return 1
       return b.activeTime - a.activeTime
     })
+})
+
+const filteredSessionList = computed(() => {
+  if (!searchText.value.trim()) {
+    return sessionList.value
+  }
+  const query = searchText.value.trim().toLowerCase()
+  return sessionList.value.filter((item) => item.name?.toLowerCase().includes(query))
 })
 
 watch(
@@ -635,6 +689,88 @@ const handleLongPress = (e: PointerEvent, item: SessionItem) => {
   setLongPressMenuTop()
 
   longPressState.value.showLongPressMenu = true
+}
+
+const showNewChatDialog = ref(false)
+const newChatUserId = ref('')
+const showCreateGroupDialog = ref(false)
+const createGroupName = ref('')
+const createGroupMemberIds = ref('')
+
+function handleNewChat() {
+  newChatUserId.value = ''
+  showNewChatDialog.value = true
+}
+
+async function beforeCloseNewChat(action: string): Promise<boolean> {
+  if (action === 'cancel') {
+    showNewChatDialog.value = false
+    return true
+  }
+
+  const userId = newChatUserId.value.trim()
+  if (!userId) {
+    showFailToast(t('mobile_home.user_id_required'))
+    return false
+  }
+
+  try {
+    showToast({ type: 'loading', message: t('mobile_home.new_chat_creating'), forbidClick: true })
+    const roomId = await matrixDirectMessageService.createDm(userId)
+    showToast({ type: 'success', message: t('mobile_home.new_chat_success') })
+    showNewChatDialog.value = false
+    await chatStore.getSessionList(true)
+    router.push(`/mobile/chatRoom/chatMain/${roomId}`)
+    return true
+  } catch (e: any) {
+    logger.error('Create DM failed:', e)
+    showFailToast(e?.message || t('mobile_home.new_chat_failed'))
+    return false
+  }
+}
+
+function handleCreateGroupChat() {
+  createGroupName.value = ''
+  createGroupMemberIds.value = ''
+  showCreateGroupDialog.value = true
+}
+
+async function beforeCloseCreateGroup(action: string): Promise<boolean> {
+  if (action === 'cancel') {
+    showCreateGroupDialog.value = false
+    return true
+  }
+
+  const name = createGroupName.value.trim()
+  if (!name) {
+    showFailToast(t('mobile_home.group_name_required'))
+    return false
+  }
+
+  const memberIds = createGroupMemberIds.value
+    .split(',')
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0)
+
+  try {
+    showToast({ type: 'loading', message: t('mobile_home.create_group_creating'), forbidClick: true })
+    const room = await matrixRoomCreationService.createGroupRoom({
+      name,
+      invite: memberIds
+    })
+
+    if (room?.roomId) {
+      showToast({ type: 'success', message: t('mobile_home.create_group_success') })
+      showCreateGroupDialog.value = false
+      await chatStore.getSessionList(true)
+      router.push(`/mobile/chatRoom/chatMain/${room.roomId}`)
+    }
+    return true
+  } catch (e: any) {
+    logger.error('Create group chat failed:', e)
+    showFailToast(e?.message || t('mobile_home.create_group_failed'))
+    return false
+  }
 }
 </script>
 

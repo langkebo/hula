@@ -1,14 +1,14 @@
 <template>
   <!-- 个人信息区 -->
-  <div class="flex flex-col px-16px">
+  <div class="flex flex-col px-16px border-b border-[--hula-border-layout-divider] pb-16px">
     <!-- 头像基本信息 -->
-    <div ref="avatarBox" class="grid grid-cols-[86px_1fr] z-1 items-start mt-6 gap-2" style="transform: translateZ(0)">
+    <div ref="avatarBox" class="grid grid-cols-[64px_1fr] z-1 items-start mt-6 gap-2" style="transform: translateZ(0)">
       <!-- 头像 -->
       <div
         class="self-center h-auto transition-transform duration-300 ease-in-out origin-top"
         :style="{ transform: props.isShow ? 'scale(1) translateY(0)' : 'scale(0.62) translateY(0px)' }">
         <img
-          class="size-86px rounded-full object-cover"
+          class="size-64px rounded-full object-cover"
           :src="AvatarUtils.getAvatarUrl(userDetailInfo!.avatar)"
           alt="用户头像"
           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
@@ -18,7 +18,7 @@
       <div ref="infoBox" class="pl-2 flex gap-8px flex-col transition-transform duration-300 ease-in-out">
         <!-- 名字与在线状态 -->
         <div class="flex flex-warp gap-4 items-center">
-          <span class="font-bold text-20px">{{ userDetailInfo!.name }}</span>
+          <span class="font-semibold text-18px">{{ userDetailInfo!.name }}</span>
           <div
             v-show="hasUserOnlineState"
             class="bg-[--hula-color-primary-100] flex flex-wrap ps-2 px-8px items-center rounded-full gap-1 h-24px">

@@ -1,7 +1,7 @@
 <template>
   <div class="tab-bar-wrap">
     <div class="h-1px bg-[--hula-border-layout-divider]"></div>
-    <div class="tab-bar flex justify-around items-end pt-3">
+    <nav class="tab-bar flex justify-around items-end" aria-label="移动端主导航">
       <RouterLink
         v-for="item in navItems"
         :key="item.path"
@@ -9,22 +9,22 @@
         :data-testid="item.testId"
         :aria-label="item.label"
         :aria-current="route.path === item.path ? 'page' : undefined"
-        class="tab-item flex flex-col flex-1 items-center no-underline relative"
+        class="tab-item flex flex-col flex-1 items-center no-underline relative min-h-48px justify-center"
         :class="route.path === item.path ? 'color-[--hula-color-primary-500]' : 'text-[--hula-text-tertiary]'"
         @click="handleNavigate(item.path)">
         <van-badge
-          class="flex flex-col w-55% flex-1 relative items-center"
+          class="flex flex-col w-full flex-1 relative items-center justify-center"
           :offset="[-6, 6]"
           color="var(--hula-color-danger-500)"
           :content="getUnReadCount(item.label) || ''"
           :max="99">
-          <svg class="w-22px h-22px">
+          <svg class="w-26px h-26px">
             <use :href="`#${route.path === item.path ? item.actionIcon : item.icon}`"></use>
           </svg>
-          <span class="text-xs mt-1">{{ item.label }}</span>
+          <span class="text-11px mt-0.5">{{ item.label }}</span>
         </van-badge>
       </RouterLink>
-    </div>
+    </nav>
   </div>
 </template>
 
@@ -59,9 +59,7 @@ const handleNavigate = (path: string) => {
   if (path === '/mobile/dynamic') {
     startRenderSample('mobile-dynamic-index', {
       route: path,
-      meta: {
-        source: 'tab-bar'
-      }
+      meta: { source: 'tab-bar' }
     })
   }
 }
@@ -82,7 +80,14 @@ const navItems: NavItem[] = [
     testId: 'mobile-tab-friends'
   },
   {
-    label: t('mobile_tabbar.items.community'),
+    label: t('mobile_tabbar.items.rooms'),
+    path: '/mobile/rooms',
+    icon: 'room',
+    actionIcon: 'room-action',
+    testId: 'mobile-tab-rooms'
+  },
+  {
+    label: t('mobile_tabbar.items.spaces'),
     path: '/mobile/dynamic',
     icon: 'robot',
     actionIcon: 'robot',
@@ -104,14 +109,17 @@ const navItems: NavItem[] = [
 }
 
 .tab-bar {
-  height: 52px;
+  height: 62px;
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
 
 .tab-item {
   gap: 2px;
-  font-size: 10px;
+  font-size: 11px;
   padding-bottom: var(--safe-area-inset-bottom, 10px);
+  /* 触摸热区 >= 48x48px，配合 min-h-48px 确保可点击区域 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 </style>

@@ -30,7 +30,7 @@ const createI18nFn = getCreateI18n()
 export const i18n = createI18nFn
   ? createI18nFn({
       legacy: false,
-      locale: ''
+      locale: 'zh-CN'
     })
   : null
 
@@ -82,9 +82,15 @@ const formatFallbackMessage = (message: string, params?: Record<string, unknown>
   })
 }
 
+// Preload zh-CN messages synchronously so the UI never shows English
+// before the async bootstrap completes.
+if (i18n && fallbackMessages['zh-CN']) {
+  i18n.global.setLocaleMessage('zh-CN', fallbackMessages['zh-CN'] as any)
+}
+
 const fallbackComposer: FallbackComposer = {
   locale: {
-    value: (typeof process !== 'undefined' && process.env.VITEST ? 'zh-CN' : 'en') as Locale
+    value: 'zh-CN' as Locale
   },
   t: (key, params) => {
     const localized =

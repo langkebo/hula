@@ -33,6 +33,7 @@
     <!-- 输入框 -->
     <div class="px-16px mt-2 mb-12px z-1">
       <van-field
+        v-model="searchKeyword"
         id="search"
         class="rounded-6px w-full relative text-12px"
         maxlength="20"
@@ -41,11 +42,50 @@
         :spellcheck="false"
         autocorrect="off"
         autocapitalize="off"
-        :placeholder="t('mobile_contact.input.search')">
+        :placeholder="t('mobile_contact.input.search')"
+        @update:model-value="onUserSearch">
         <template #left-icon>
           <svg class="w-12px h-12px"><use href="#search"></use></svg>
         </template>
       </van-field>
+    </div>
+
+    <!-- 用户搜索结果 -->
+    <div v-if="searchKeyword.trim()" class="px-16px mb-12px z-1">
+      <div v-if="userSearchLoading" class="flex justify-center py-20px">
+        <van-loading size="20px" />
+      </div>
+      <div v-else-if="userSearchResults.length > 0" class="flex flex-col gap-8px">
+        <div
+          v-for="result in userSearchResults"
+          :key="result.userId"
+          class="flex items-center gap-10px p-10px rounded-10px bg-[--hula-surface-panel]">
+          <img
+            class="size-40px rounded-full object-cover"
+            :src="AvatarUtils.getAvatarUrl(result.avatarUrl || '')"
+            alt="头像"
+            @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+          <div class="flex-1 min-w-0">
+            <div class="text-14px font-medium truncate text-[--hula-text-primary]">
+              {{ result.displayName || result.userId }}
+            </div>
+            <div class="text-12px text-[--hula-text-tertiary] truncate">
+              {{ result.userId }}
+            </div>
+          </div>
+          <van-button
+            size="small"
+            type="primary"
+            plain
+            :loading="addingFriend === result.userId"
+            @click="handleAddFriendBySearch(result.userId)">
+            {{ t('mobile_contact.button.add') }}
+          </van-button>
+        </div>
+      </div>
+      <div v-else-if="hasUserSearched" class="py-20px text-center text-13px text-[--hula-text-tertiary]">
+        {{ t('mobile_contact.search_no_result') }}
+      </div>
     </div>
 
     <div class="custom-rounded flex-1 bg-[--hula-surface-panel]">
@@ -194,52 +234,57 @@
                 </template>
                 <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
                   <div @contextmenu.stop="$event.preventDefault()">
-                    <div
-                      v-for="item in normalContacts"
-                      :key="item.uid"
-                      @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
-                      :class="{ active: activeItem === item.uid }"
-                      class="item-box w-full h-75px mb-5px flex items-center gap-10px">
-                      <img
-                        class="size-44px rounded-full object-cover grayscale"
-                        :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
-                        style="border: 1px solid var(--avatar-border-color)"
-                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                        alt="用户头像"
-                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-                      <div class="flex flex-col justify-between h-fit flex-1 truncate">
-                        <span class="text-14px leading-tight flex-1 truncate">
-                          {{ groupStore.getUserInfo(item.uid)?.name }}
-                        </span>
-                        <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
-                          [
-                          <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
-                          <template v-else-if="getUserState(item.uid)">
-                            <img
-                              class="size-12px rounded-50%"
-                              :src="getUserState(item.uid)?.url"
-                              :alt="translateStateTitle(getUserState(item.uid)?.title)" />
-                            {{ translateStateTitle(getUserState(item.uid)?.title) }}
-                          </template>
-                          <template v-else>
-                            <span
-                              class="inline-block size-8px rounded-full"
-                              :style="{
-                                backgroundColor:
-                                  item.activeStatus === OnlineEnum.ONLINE
-                                    ? 'var(--color-online)'
-                                    : 'var(--color-offline)'
-                              }"></span>
-                            {{
-                              item.activeStatus === OnlineEnum.ONLINE
-                                ? t('mobile_contact.status.online') || '在线'
-                                : t('mobile_contact.status.offline') || '离线'
-                            }}
-                          </template>
-                          ]
+                    <van-swipe-cell v-for="item in normalContacts" :key="item.uid">
+                      <div
+                        @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
+                        :class="{ active: activeItem === item.uid }"
+                        class="item-box w-full h-75px mb-5px flex items-center gap-10px">
+                        <img
+                          class="size-44px rounded-full object-cover grayscale"
+                          :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
+                          style="border: 1px solid var(--avatar-border-color)"
+                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                          alt="用户头像"
+                          @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                        <div class="flex flex-col justify-between h-fit flex-1 truncate">
+                          <span class="text-14px leading-tight flex-1 truncate">
+                            {{ groupStore.getUserInfo(item.uid)?.name }}
+                          </span>
+                          <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
+                            [
+                            <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
+                            <template v-else-if="getUserState(item.uid)">
+                              <img
+                                class="size-12px rounded-50%"
+                                :src="getUserState(item.uid)?.url"
+                                :alt="translateStateTitle(getUserState(item.uid)?.title)" />
+                              {{ translateStateTitle(getUserState(item.uid)?.title) }}
+                            </template>
+                            <template v-else>
+                              <span
+                                class="inline-block size-8px rounded-full"
+                                :style="{
+                                  backgroundColor:
+                                    item.activeStatus === OnlineEnum.ONLINE
+                                      ? 'var(--color-online)'
+                                      : 'var(--color-offline)'
+                                }"></span>
+                              {{
+                                item.activeStatus === OnlineEnum.ONLINE
+                                  ? t('mobile_contact.status.online') || '在线'
+                                  : t('mobile_contact.status.offline') || '离线'
+                              }}
+                            </template>
+                            ]
+                          </div>
                         </div>
                       </div>
-                    </div>
+                      <template #right>
+                        <van-button square type="danger" class="h-full" @click="handleDeleteContact(item.uid)">
+                          {{ t('common.delete') }}
+                        </van-button>
+                      </template>
+                    </van-swipe-cell>
                   </div>
                 </div>
               </van-collapse-item>
@@ -344,6 +389,8 @@
 </style>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
+import { showConfirmDialog, showFailToast, showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
 import { resolveFriendListViewState } from '@/components/friend/friendListViewState'
@@ -353,6 +400,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useFriends } from '@/composables/useFriends'
 import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import router from '@/router'
+import { matrixFriendService, userDirectoryService } from '@/services/matrix'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -379,6 +427,13 @@ const onAddActionSelect = (action: { text: string; value: string }) => {
 const activeTab = ref(0)
 const activeCollapseNames = ref(['special', 'normal'])
 const activeGroupCollapseNames = ref(['1'])
+
+// User search state
+const searchKeyword = ref('')
+const userSearchResults = ref<any[]>([])
+const userSearchLoading = ref(false)
+const hasUserSearched = ref(false)
+const addingFriend = ref<string | null>(null)
 
 const menuList = ref([
   { label: t('mobile_contact.menu.add_group'), icon: 'plus' },
@@ -472,6 +527,61 @@ const handleClick = async (id: string, type: number) => {
 const showMenu = (_event: MouseEvent) => {}
 
 const handleSelect = (_event: MouseEvent) => {}
+
+// Debounced user search
+const onUserSearch = useDebounceFn(async (value: string) => {
+  if (!value?.trim()) {
+    userSearchResults.value = []
+    hasUserSearched.value = false
+    return
+  }
+
+  userSearchLoading.value = true
+  hasUserSearched.value = true
+  try {
+    const results = await userDirectoryService.searchUsers(value.trim(), 20)
+    userSearchResults.value = results
+  } catch (e: any) {
+    logger.error('User search failed:', e)
+    showFailToast(e?.message || t('mobile_contact.search_failed'))
+    userSearchResults.value = []
+  } finally {
+    userSearchLoading.value = false
+  }
+}, 400)
+
+// Add friend from search results
+async function handleAddFriendBySearch(userId: string) {
+  addingFriend.value = userId
+  try {
+    await matrixFriendService.sendFriendRequest(userId)
+    showToast({ type: 'success', message: t('mobile_contact.add_friend_success') })
+  } catch (e: any) {
+    logger.error('Send friend request failed:', e)
+    showFailToast(e?.message || t('mobile_contact.add_friend_failed'))
+  } finally {
+    addingFriend.value = null
+  }
+}
+
+// Delete contact with confirmation
+async function handleDeleteContact(uid: string) {
+  try {
+    await showConfirmDialog({
+      title: t('mobile_contact.delete_friend_title'),
+      message: t('mobile_contact.delete_friend_confirm')
+    })
+    showToast({ type: 'loading', message: t('mobile_contact.deleting'), forbidClick: true })
+    await matrixFriendService.removeFriend(uid)
+    showToast({ type: 'success', message: t('mobile_contact.delete_friend_success') })
+    await contactStore.getContactList(true)
+  } catch (e: any) {
+    if (e !== 'cancel') {
+      logger.error('Delete friend failed:', e)
+      showFailToast(e?.message || t('mobile_contact.delete_friend_failed'))
+    }
+  }
+}
 
 const translateStateTitle = (title?: string) => {
   if (!title) return ''

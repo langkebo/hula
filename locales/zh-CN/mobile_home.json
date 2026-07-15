@@ -2,6 +2,8 @@
   "menu": {
     "start_group_chat": "发起群聊",
     "add_contact": "添加联系人",
+    "new_chat": "新建聊天",
+    "create_group_chat": "创建群聊",
     "pintop": "置顶",
     "unpin": "取消置顶",
     "read": "已读",
@@ -23,5 +25,20 @@
   "marked_as_read": "已标记为已读",
   "marked_as_unread": "已标记为未读",
   "mark_as_read_failed": "标记已读失败",
-  "mark_as_unread_failed": "标记未读失败"
+  "mark_as_unread_failed": "标记未读失败",
+  "new_chat_title": "新建聊天",
+  "new_chat_prompt": "请输入对方的用户 ID",
+  "new_chat_creating": "创建中...",
+  "new_chat_success": "聊天创建成功",
+  "new_chat_failed": "创建聊天失败",
+  "user_id_placeholder": "用户 ID，如 @alice:example.com",
+  "user_id_required": "请输入用户 ID",
+  "create_group_title": "创建群聊",
+  "create_group_prompt": "请输入群聊名称和成员 ID（用逗号分隔）",
+  "group_name_placeholder": "群聊名称",
+  "group_name_required": "请输入群聊名称",
+  "group_members_placeholder": "成员 ID，用逗号分隔（可选）",
+  "create_group_creating": "创建群聊中...",
+  "create_group_success": "群聊创建成功",
+  "create_group_failed": "创建群聊失败"
 }

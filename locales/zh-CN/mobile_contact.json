@@ -47,5 +47,12 @@
     "rename_group": "重命名该组",
     "delete_group": "删除分组"
   },
-  "refresh_notification_failed": "刷新通知失败，请稍后再试"
+  "refresh_notification_failed": "刷新通知失败，请稍后再试",
+  "add_friend_success": "好友请求已发送",
+  "add_friend_failed": "发送好友请求失败",
+  "delete_friend_title": "删除好友",
+  "delete_friend_confirm": "确定要删除该好友吗？此操作无法撤销。",
+  "delete_friend_success": "好友已删除",
+  "delete_friend_failed": "删除好友失败",
+  "deleting": "删除中..."
 }
