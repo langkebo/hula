@@ -181,7 +181,7 @@ import { showToast } from 'vant'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('HelpFeedback')

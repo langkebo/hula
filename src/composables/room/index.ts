@@ -1,2 +1,2 @@
-// Bridge re-exports from @/hooks
+// Previously bridged from @/hooks; now native
 export { useMyRoomInfoUpdater } from './useMyRoomInfoUpdater'

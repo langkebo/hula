@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { globalFileUploadQueue } from '@/hooks/useFileUploadQueue'
+import { globalFileUploadQueue } from '@/composables/common/useFileUploadQueue'
 
 const { t } = useI18n()
 

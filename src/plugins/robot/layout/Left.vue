@@ -213,7 +213,7 @@ import { Icon } from '@iconify/vue'
 import type { InputInst, VirtualListInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useMitt } from '@/hooks/useMitt.ts'
+import { useMitt } from '@/composables/common/useMitt'
 import router from '@/router'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 import { chatRoleService } from '@/services/matrix/ai/ChatRoleService'
@@ -230,7 +230,7 @@ const { showFeedback } = useActionFeedback()
 const logger = createLogger('RobotLeft')
 const timerManager = useTimerManager()
 
-import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { openExternalUrl } from '@/composables/common/useLinkSegments'
 
 const userStore = useUserStore()
 const activeItem = ref<ChatItem | null>(null)

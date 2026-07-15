@@ -1,8 +1,8 @@
 import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useWindow } from '@/composables/common/useWindow'
+import { startPresenceHeartbeat, stopPresenceHeartbeat } from '@/composables/user/usePresenceHeartbeat'
 import { EventEnum, MsgEnum, OnlineEnum, SexEnum, TauriCommand } from '@/enums'
-import { startPresenceHeartbeat, stopPresenceHeartbeat } from '@/hooks/usePresenceHeartbeat'
-import { useWindow } from '@/hooks/useWindow'
 import {
   clearMatrixSessionEndpointConfig,
   resolveMatrixSessionEndpointConfig,

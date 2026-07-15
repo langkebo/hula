@@ -21,7 +21,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 const uploadAvatarCropMock = vi.fn()
 const openAvatarCropperMock = vi.fn()
 const handleFileChangeMock = vi.fn()
-vi.mock('@/hooks/useAvatarUpload', () => ({
+vi.mock('@/composables/user/useAvatarUpload', () => ({
   useAvatarUpload: vi.fn(() => ({
     fileInput: ref(null),
     localImageUrl: ref(''),

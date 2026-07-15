@@ -44,7 +44,7 @@
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { useWindow } from '@/hooks/useWindow.ts'
+import { useWindow } from '@/composables/common/useWindow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'

@@ -48,8 +48,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
 import type { AnnouncementBody } from '@/services/types'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'

@@ -17,7 +17,7 @@ export type { UseChatMainContext } from './useChatMain'
 export { chatMainInjectionKey, useChatMain } from './useChatMain'
 export { useChatScrollManager } from './useChatScrollManager'
 export { useCustomForwardTask } from './useCustomForwardTask'
-// Bridge re-exports from @/hooks
+// Previously bridged from @/hooks; now native
 export { useMessage } from './useMessage'
 export type { SendWithTrackingOptions } from './useMessageSender'
 export { useMessageSender } from './useMessageSender'

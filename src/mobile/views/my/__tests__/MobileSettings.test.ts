@@ -64,7 +64,7 @@ vi.mock('@/stores/domains/user/userStatus', () => ({
   })
 }))
 
-vi.mock('@/hooks/useLoginFlow', () => ({
+vi.mock('@/composables/user/useLoginFlow', () => ({
   useLoginFlow: () => ({ logout: logoutMock })
 }))
 

@@ -12,8 +12,8 @@
 import type { UploadFileInfo } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { UploadProviderEnum, useUpload } from '@/composables/common/useUpload'
 import { UploadSceneEnum } from '@/enums'
-import { UploadProviderEnum, useUpload } from '@/hooks/useUpload'
 import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
@@ -86,7 +86,7 @@ export const useAiGenerationParams = () => {
 
   const loadAudioVoices = async (model: AIModel) => {
     try {
-      if (!model || !model.model) return
+      if (!model?.model) return
 
       const voices = await aiService.audioGetVoices({ model: model.model })
       if (voices && voices.length > 0) {

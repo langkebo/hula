@@ -430,7 +430,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       loadContacts()
       const roomId = await startDirectRoom(userId)
       if (roomId) {
-        const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+        const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
         await openMsgSessionByRoomId(roomId)
       }
 

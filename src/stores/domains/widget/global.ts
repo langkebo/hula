@@ -1,8 +1,8 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { defineStore } from 'pinia'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, StoresEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt.ts'
 import { type SessionItem, useChatStore } from '@/stores/domains/chat/chat'
 import { createLogger } from '@/utils/Logger'
 import { unreadCountManager } from '@/utils/UnreadCountManager'

@@ -163,7 +163,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAriaLive } from '@/composables/common/useAriaLive'
-import { useViewport } from '@/hooks/useViewport'
+import { useViewport } from '@/composables/common/useViewport'
 import {
   WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
   WORKBENCH_SESSION_TYPE_FILTERS,

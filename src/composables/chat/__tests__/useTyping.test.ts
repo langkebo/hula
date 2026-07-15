@@ -13,7 +13,7 @@ vi.mock('@/services/matrix/messaging/MatrixTypingService', () => ({
   }
 }))
 
-vi.mock('@/hooks/useMitt', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     on: vi.fn(),
     off: vi.fn(),

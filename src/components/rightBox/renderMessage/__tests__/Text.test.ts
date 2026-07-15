@@ -19,7 +19,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/hooks/useLinkSegments', () => ({
+vi.mock('@/composables/common/useLinkSegments', () => ({
   openExternalUrl: vi.fn()
 }))
 

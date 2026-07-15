@@ -159,7 +159,7 @@ import { useI18n } from 'vue-i18n'
 import NewsCard from '@/components/trendradar/NewsCard.vue'
 import SearchPanel from '@/components/trendradar/SearchPanel.vue'
 import TrendingPanel from '@/components/trendradar/TrendingPanel.vue'
-import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import type { TrendRadarNews, TrendRadarRssArticle, TrendRadarTopic } from '@/services/trendradar'
 import { useTrendRadar } from '@/services/trendradar'
 

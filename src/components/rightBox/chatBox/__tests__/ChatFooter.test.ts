@@ -77,14 +77,14 @@ vi.mock('@/composables/useBurnAfterRead', () => ({
   })
 }))
 
-vi.mock('@/hooks/useChatLayout', () => ({
+vi.mock('@/composables/chat/useChatLayout', () => ({
   useChatLayoutGlobal: () => ({
     footerHeight: ref(240),
     setFooterHeight: vi.fn()
   })
 }))
 
-vi.mock('@/hooks/useCommon.ts', () => ({
+vi.mock('@/composables/common/useCommon', () => ({
   useCommon: () => ({
     insertNodeAtRange: vi.fn(),
     triggerInputEvent: vi.fn(),
@@ -93,13 +93,13 @@ vi.mock('@/hooks/useCommon.ts', () => ({
   })
 }))
 
-vi.mock('@/hooks/useGlobalShortcut.ts', () => ({
+vi.mock('@/composables/common/useGlobalShortcut', () => ({
   useGlobalShortcut: () => ({
     handleScreenshot: vi.fn()
   })
 }))
 
-vi.mock('@/hooks/useMitt', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     on: mittOnMock,
     off: mittOffMock,
@@ -107,7 +107,7 @@ vi.mock('@/hooks/useMitt', () => ({
   }
 }))
 
-vi.mock('@/hooks/useWindow', () => ({
+vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     createWebviewWindow: vi.fn()
   })

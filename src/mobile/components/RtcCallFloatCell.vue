@@ -33,8 +33,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useMitt } from '@/composables/common/useMitt'
 import { CallTypeEnum, MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
 import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useMobileStore } from '@/stores/domains/settings/mobile'

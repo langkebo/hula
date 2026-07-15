@@ -125,9 +125,9 @@ import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('QRCode')
 
+import { useWindow } from '@/composables/common/useWindow'
+import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { TauriCommand } from '@/enums'
-import { useLoginFlow } from '@/hooks/useLoginFlow'
-import { useWindow } from '@/hooks/useWindow.ts'
 import router from '@/router'
 import { saveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { getEnhancedFingerprint } from '@/services/fingerprint'

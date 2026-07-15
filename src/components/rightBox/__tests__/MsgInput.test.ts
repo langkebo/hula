@@ -83,14 +83,14 @@ vi.mock('@/composables/settings/settingsOptions', () => ({
   useSendOptions: () => []
 }))
 
-vi.mock('@/hooks/useCommon.ts', () => ({
+vi.mock('@/composables/common/useCommon', () => ({
   useCommon: () => ({
     handlePaste: vi.fn(),
     processFiles: processFilesMock
   })
 }))
 
-vi.mock('@/hooks/useMitt.ts', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     on: mittOnMock,
     off: mittOffMock,
@@ -98,7 +98,7 @@ vi.mock('@/hooks/useMitt.ts', () => ({
   }
 }))
 
-vi.mock('@/hooks/useMsgInput.ts', () => ({
+vi.mock('@/composables/chat/useMsgInput', () => ({
   useMsgInput: () => ({
     inputKeyDown: vi.fn(),
     handleAit: vi.fn(),
@@ -125,7 +125,7 @@ vi.mock('@/hooks/useMsgInput.ts', () => ({
   })
 }))
 
-vi.mock('@/hooks/useGeolocation', () => ({
+vi.mock('@/composables/common/useGeolocation', () => ({
   useGeolocation: () => ({
     getCurrentPosition: getCurrentPositionMock
   })

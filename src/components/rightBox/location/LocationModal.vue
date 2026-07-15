@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { useGeolocation } from '@/hooks/useGeolocation'
+import { useGeolocation } from '@/composables/common/useGeolocation'
 import { reverseGeocode } from '@/services/mapApi'
 import type { LocationData } from '@/types/common'
 import { createLogger } from '@/utils/Logger'

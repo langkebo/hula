@@ -1,7 +1,7 @@
 import { computed, type Ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'

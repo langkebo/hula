@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import { AppException } from '@/common/exception.ts'
+import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables/common/useUpload'
 import { MsgEnum, UploadSceneEnum } from '@/enums'
-import { type UploadOptions, UploadProviderEnum, useUpload } from '@/hooks/useUpload'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { AbstractMessageStrategy } from './base'
 

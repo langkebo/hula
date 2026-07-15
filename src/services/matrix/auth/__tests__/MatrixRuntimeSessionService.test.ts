@@ -93,7 +93,7 @@ vi.mock('@/utils/AppStateReady', () => ({
   ensureAppStateReady: mockEnsureAppStateReady
 }))
 
-vi.mock('@/hooks/useWindow', () => ({
+vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     resizeWindow: mockResizeWindow,
     createWebviewWindow: mockCreateWebviewWindow
@@ -137,7 +137,7 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
-vi.mock('@/hooks/usePresenceHeartbeat', () => ({
+vi.mock('@/composables/user/usePresenceHeartbeat', () => ({
   startPresenceHeartbeat: vi.fn(),
   stopPresenceHeartbeat: vi.fn()
 }))

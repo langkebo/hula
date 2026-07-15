@@ -124,8 +124,8 @@ import { NButton, NDivider } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { usePlatform } from '@/composables/usePlatform'
-import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('HelpSettings')

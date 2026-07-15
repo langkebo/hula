@@ -52,7 +52,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { LinkPreviewBody } from '@/services/types'
 

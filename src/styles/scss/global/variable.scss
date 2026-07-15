@@ -159,6 +159,24 @@ html[data-blur='1'] {
   --n-border-hover: 1px solid var(--hula-color-primary-500) !important;
 }
 
+/* 自定义滚动条 — 对齐原型设计 */
+html[data-theme='dark'] {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #52525b;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

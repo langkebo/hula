@@ -212,7 +212,7 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
-vi.mock('@/hooks/useWindow', () => ({
+vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     createModalWindow: createModalWindowMock
   })

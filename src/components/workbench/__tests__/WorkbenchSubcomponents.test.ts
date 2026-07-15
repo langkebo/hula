@@ -284,7 +284,7 @@ vi.mock('@/stores/domains/chat/announcement', () => ({
   useAnnouncementStore: () => announcementStoreMock
 }))
 
-vi.mock('@/hooks/useMitt.ts', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     emit: mittEmitMock,
     on: vi.fn(),
@@ -349,7 +349,7 @@ vi.mock('@/composables/space/useSpaceRooms', async () => {
   }
 })
 
-vi.mock('@/hooks/useLinkSegments', () => ({
+vi.mock('@/composables/common/useLinkSegments', () => ({
   useLinkSegments: (source: string | { value?: string }) => ({
     segments: computed(() => {
       const text = String(unref(source as never) ?? '')

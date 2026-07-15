@@ -17,7 +17,7 @@ vi.mock('@/services/matrix/ai/AIService', () => ({ aiService: aiServiceMock }))
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: errorMock, warn: vi.fn(), debug: vi.fn() })
 }))
-vi.mock('@/hooks/useUpload', () => ({
+vi.mock('@/composables/common/useUpload', () => ({
   useUpload: () => ({ uploadFile: uploadMock, fileInfo: fileInfoRef }),
   UploadProviderEnum: { DEFAULT: 'default' }
 }))

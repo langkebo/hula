@@ -127,10 +127,10 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, OnlineEnum, ThemeEnum } from '@/enums/index.ts'
-import { openMsgSession } from '@/hooks/session/openMsgSession'
-import { useMitt } from '@/hooks/useMitt'
 import { leftHook } from '@/layout/left/hook'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'

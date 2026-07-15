@@ -1,4 +1,4 @@
-import { useMitt } from '@/hooks/useMitt'
+import { useMitt } from '@/composables/common/useMitt'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import {
   ClientEvent,

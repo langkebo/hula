@@ -1,7 +1,7 @@
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import type { useDownload } from '@/hooks/useDownload'
+import type { useDownload } from '@/composables/common/useDownload'
 import { useI18nGlobal } from '@/services/i18n'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'

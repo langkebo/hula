@@ -63,10 +63,10 @@
 </template>
 
 <script setup lang="ts">
-import { useAudioFileManager } from '@/hooks/useAudioFileManager'
-import { useAudioPlayback } from '@/hooks/useAudioPlayback'
-import { useVoiceDragControl } from '@/hooks/useVoiceDragControl'
-import { useWaveformRenderer } from '@/hooks/useWaveformRenderer'
+import { useVoiceDragControl } from '@/composables/chat/useVoiceDragControl'
+import { useWaveformRenderer } from '@/composables/chat/useWaveformRenderer'
+import { useAudioFileManager } from '@/composables/common/useAudioFileManager'
+import { useAudioPlayback } from '@/composables/common/useAudioPlayback'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import type { MsgType, VoiceBody } from '@/services/types'
 import { useSettingStore } from '@/stores/domains/settings/setting'

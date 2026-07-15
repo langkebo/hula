@@ -51,7 +51,7 @@ import { createLogger } from '@/utils/Logger'
 
 const HuLaAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/HuLaAssistant.vue'))
 
-import { type AssistantModelPreset, useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
+import { type AssistantModelPreset, useAssistantModelPresets } from '@/composables/chat/useAssistantModelPresets'
 
 const logger = createLogger('MobileChatMain')
 const { t } = useI18n()

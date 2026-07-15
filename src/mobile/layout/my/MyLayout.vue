@@ -16,8 +16,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
 import router from '@/router'
 import { matrixQrLoginService } from '@/services/matrix/auth/MatrixQrLoginService'
 import { useGroupStore } from '@/stores/domains/chat/group'

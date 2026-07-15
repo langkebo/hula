@@ -32,13 +32,13 @@ import { exit } from '@tauri-apps/plugin-process'
 import { useOfflineQueueReplay } from '@/composables/app/useOfflineQueueReplay'
 import { usePresenceSync } from '@/composables/app/usePresenceSync'
 import { useWsEventHandler } from '@/composables/app/useWsEventHandler'
+import { useGlobalShortcut } from '@/composables/common/useGlobalShortcut'
+import { useMitt } from '@/composables/common/useMitt'
+import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
+import { useWindow } from '@/composables/common/useWindow'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { MittEnum, ThemeEnum } from '@/enums'
-import { useGlobalShortcut } from '@/hooks/useGlobalShortcut.ts'
-import { useMitt } from '@/hooks/useMitt.ts'
-import { useNetworkStatus } from '@/hooks/useNetworkStatus'
-import { useWindow } from '@/hooks/useWindow.ts'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -199,7 +199,7 @@ async function setupWindowHandlers() {
     closeWindow?.close()
   })
   // Listen for exit event
-  const { useTauriListener } = await import('@/hooks/useTauriListener')
+  const { useTauriListener } = await import('@/composables/common/useTauriListener')
   const { addListener } = useTauriListener()
   const { EventEnum } = await import('@/enums')
   addListener(
@@ -271,8 +271,8 @@ const requestIOSNetworkPermission = async () => {
 // ========== Mobile re-login listener ==========
 const setupMobileReLoginListener = async () => {
   if (!isMobile()) return
-  const { useLoginFlow } = await import('@/hooks/useLoginFlow')
-  const { useTauriListener } = await import('@/hooks/useTauriListener')
+  const { useLoginFlow } = await import('@/composables/user/useLoginFlow')
+  const { useTauriListener } = await import('@/composables/common/useTauriListener')
   const { listen } = await import('@tauri-apps/api/event')
   const { addListener } = useTauriListener()
   const { logout } = useLoginFlow()

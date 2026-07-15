@@ -1,6 +1,6 @@
 import { type Ref, ref } from 'vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useMitt } from '@/hooks/useMitt.ts'
+import { useMitt } from '@/composables/common/useMitt'
 import { useI18nGlobal } from '@/services/i18n'
 import { conversationService } from '@/services/matrix/ai/ConversationService'
 import { createLogger } from '@/utils/Logger'

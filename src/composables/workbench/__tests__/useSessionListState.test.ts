@@ -55,11 +55,11 @@ vi.mock('@/stores/domains/user/bot', () => ({
   useBotStore: () => botStoreMock
 }))
 
-vi.mock('@/hooks/useNetworkStatus', () => ({
+vi.mock('@/composables/common/useNetworkStatus', () => ({
   useNetworkStatus: () => networkStateMock
 }))
 
-vi.mock('@/hooks/useReplaceMsg.ts', () => ({
+vi.mock('@/composables/chat/useReplaceMsg', () => ({
   useReplaceMsg: () => replaceMsgMock
 }))
 

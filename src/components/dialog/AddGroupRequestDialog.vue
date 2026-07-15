@@ -42,8 +42,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { countGraphemes } from '@/composables/common/useCommon'
 import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
-import { countGraphemes } from '@/hooks/useCommon'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 

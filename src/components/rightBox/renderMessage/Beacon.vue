@@ -47,7 +47,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import type { BeaconBody } from '@/services/types'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -103,7 +103,7 @@ let timer: number | undefined
 const { showFeedback } = useActionFeedback()
 
 const isActive = computed(() => {
-  if (!props.body || !props.body.isLive) return false
+  if (!props.body?.isLive) return false
   const startTime = props.body.lastUpdateTs || Date.now()
   return now.value < startTime + (props.body.timeout || 0)
 })

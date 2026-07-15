@@ -22,7 +22,7 @@ vi.mock('vue-router', () => ({
 vi.mock('@/services/matrix/ai/AIService', () => ({
   aiService: aiServiceMock
 }))
-vi.mock('@/hooks/useMitt.ts', () => ({ useMitt: mittMock }))
+vi.mock('@/composables/common/useMitt', () => ({ useMitt: mittMock }))
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: infoMock, error: errorMock, warn: vi.fn(), debug: vi.fn() })
 }))

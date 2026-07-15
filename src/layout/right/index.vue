@@ -42,8 +42,8 @@
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, ThemeEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt.ts'
 import router from '@/router'
 import type { DetailsContent } from '@/services/types'
 import { useSettingStore } from '@/stores/domains/settings/setting'

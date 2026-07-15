@@ -1,7 +1,7 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { onBeforeMount, onUnmounted, toValue } from 'vue'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
 
 export interface UseSessionEventsOptions {
   currentSessionRoomId: MaybeRefOrGetter<string | null | undefined>

@@ -25,8 +25,8 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import { merge } from 'es-toolkit'
 import type { FileTypeResult } from 'file-type'
 import { defineAsyncComponent } from 'vue'
-import { useTauriListener } from '@/hooks/useTauriListener'
-import { useWindow } from '@/hooks/useWindow'
+import { useTauriListener } from '@/composables/common/useTauriListener'
+import { useWindow } from '@/composables/common/useWindow'
 import { createLogger } from '@/utils/Logger'
 import { getFile } from '@/utils/PathUtil'
 

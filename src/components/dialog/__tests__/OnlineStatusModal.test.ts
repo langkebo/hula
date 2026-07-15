@@ -31,7 +31,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/hooks/useOnlineStatus', () => ({
+vi.mock('@/composables/common/useOnlineStatus', () => ({
   useOnlineStatus: () => ({
     currentState: ref(null),
     statusIcon: ref(''),

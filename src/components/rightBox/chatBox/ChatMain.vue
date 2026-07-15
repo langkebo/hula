@@ -277,20 +277,20 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
+import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useChatScrollManager } from '@/composables/chat/useChatScrollManager'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum, MsgEnum } from '@/enums'
-import { chatMainInjectionKey, useChatMain } from '@/hooks/useChatMain.ts'
 
 // 异步加载非首屏或重型组件
 const FileUploadProgress = defineAsyncComponent(() => import('@/components/rightBox/FileUploadProgress.vue'))
 const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/ThreadPanel.vue'))
 const EventReportDialog = defineAsyncComponent(() => import('@/components/moderation/EventReportDialog.vue'))
 
-import { useMitt } from '@/hooks/useMitt.ts'
-import { useNetworkStatus } from '@/hooks/useNetworkStatus'
-import { usePopover } from '@/hooks/usePopover.ts'
-import { useWindow } from '@/hooks/useWindow.ts'
+import { useMitt } from '@/composables/common/useMitt'
+import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
+import { usePopover } from '@/composables/common/usePopover'
+import { useWindow } from '@/composables/common/useWindow'
 import type { Announcement } from '@/stores/domains/chat/announcement'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import type { MessageType } from '@/stores/domains/chat/chat'

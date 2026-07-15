@@ -25,7 +25,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/hooks/useWindow', () => ({
+vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     createWebviewWindow: createWebviewWindowMock,
     sendWindowPayload: sendWindowPayloadMock

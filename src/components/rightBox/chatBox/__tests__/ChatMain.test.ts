@@ -138,7 +138,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/hooks/useChatMain.ts', () => ({
+vi.mock('@/composables/chat/useChatMain', () => ({
   chatMainInjectionKey: Symbol('chat-main'),
   useChatMain: () => ({
     handleConfirm: vi.fn(),
@@ -153,7 +153,7 @@ vi.mock('@/hooks/useChatMain.ts', () => ({
   })
 }))
 
-vi.mock('@/hooks/useMitt.ts', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     on: mittOnMock,
     off: mittOffMock,
@@ -161,7 +161,7 @@ vi.mock('@/hooks/useMitt.ts', () => ({
   }
 }))
 
-vi.mock('@/hooks/useNetworkStatus', () => ({
+vi.mock('@/composables/common/useNetworkStatus', () => ({
   useNetworkStatus: () => ({
     browserOnline: ref(true),
     isWsConnecting: ref(false),
@@ -169,13 +169,13 @@ vi.mock('@/hooks/useNetworkStatus', () => ({
   })
 }))
 
-vi.mock('@/hooks/usePopover.ts', () => ({
+vi.mock('@/composables/common/usePopover', () => ({
   usePopover: () => ({
     enableScroll: vi.fn()
   })
 }))
 
-vi.mock('@/hooks/useWindow.ts', () => ({
+vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     createWebviewWindow: vi.fn()
   })

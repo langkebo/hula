@@ -60,7 +60,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OnlineStatusWindow')
 
-import { useOnlineStatus } from '@/hooks/useOnlineStatus.ts'
+import { useOnlineStatus } from '@/composables/common/useOnlineStatus'
 import type { UserState } from '@/services/types'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 

@@ -84,7 +84,7 @@ vi.mock('@/services/matrix/messaging/MatrixMessageService', () => ({
   }
 }))
 
-vi.mock('@/hooks/useCustomForwardTask', () => ({
+vi.mock('@/composables/chat/useCustomForwardTask', () => ({
   useCustomForwardTask: () => ({
     clearCustomForwardTask: clearCustomForwardTaskMock,
     resetMultiChooseState: resetMultiChooseStateMock,
@@ -92,13 +92,13 @@ vi.mock('@/hooks/useCustomForwardTask', () => ({
   })
 }))
 
-vi.mock('@/hooks/useImageViewer', () => ({
+vi.mock('@/composables/common/useImageViewer', () => ({
   useImageViewer: () => ({
     openImageViewer: openImageViewerMock
   })
 }))
 
-vi.mock('@/hooks/useMitt.ts', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     on: mittOnMock,
     emit: mittEmitMock

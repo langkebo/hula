@@ -179,8 +179,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { useContextMenu } from '@/hooks/useContextMenu.ts'
-import { useViewport } from '@/hooks/useViewport.ts'
+import { useContextMenu } from '@/composables/common/useContextMenu'
+import { useViewport } from '@/composables/common/useViewport'
 import { isMobile } from '@/utils/PlatformConstants'
 
 type MenuContent = unknown

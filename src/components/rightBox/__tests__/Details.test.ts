@@ -30,11 +30,11 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/hooks/session/openMsgSession', () => ({
+vi.mock('@/composables/chat/openMsgSession', () => ({
   openMsgSession: openMsgSessionMock
 }))
 
-vi.mock('@/hooks/useWindow', () => ({
+vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     startRtcCall: startRtcCallMock,
     createWebviewWindow: createWebviewWindowMock

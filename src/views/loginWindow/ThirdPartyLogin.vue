@@ -43,7 +43,7 @@ const logger = createLogger('ThirdPartyLogin')
 const { getLoginFlows, discoverOidc, getOidcAuthorizationUrl } = useSessionActions()
 const { showFeedback } = useActionFeedback()
 
-import { useLoginFlow } from '@/hooks/useLoginFlow'
+import { useLoginFlow } from '@/composables/user/useLoginFlow'
 
 export type ThirdPartyLoginContext = Pick<ReturnType<typeof useLoginFlow>, 'loading' | 'loginDisabled'> & {
   giteeLogin?: () => void

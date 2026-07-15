@@ -30,8 +30,8 @@
 </template>
 
 <script setup lang="ts">
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, MsgEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt.ts'
 import type { MessageBody, MsgType } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'

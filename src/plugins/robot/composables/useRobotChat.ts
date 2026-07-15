@@ -1,7 +1,7 @@
 import { computed, onMounted, onUnmounted, type Ref, ref, watch } from 'vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useMitt } from '@/composables/common/useMitt'
 import type { AiMsgContentTypeEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt.ts'
 import { useAiConversationLifecycle } from '@/plugins/robot/composables/useAiConversationLifecycle'
 import { useAiConversationMessages } from '@/plugins/robot/composables/useAiConversationMessages'
 import { useAiGenerationParams } from '@/plugins/robot/composables/useAiGenerationParams'

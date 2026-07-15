@@ -27,7 +27,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/hooks/useVoiceRecordRust', () => ({
+vi.mock('@/composables/chat/useVoiceRecordRust', () => ({
   useVoiceRecordRust: (options: typeof capturedOptions) => {
     capturedOptions = options
     return {

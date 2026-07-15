@@ -29,19 +29,19 @@ vi.mock('@/stores/domains/admin/admin', () => ({
   })
 }))
 
-vi.mock('@/hooks/useLoginFlow', () => ({
+vi.mock('@/composables/user/useLoginFlow', () => ({
   useLoginFlow: () => ({
     logout: vi.fn()
   })
 }))
 
-vi.mock('@/hooks/useMitt.ts', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     emit: vi.fn()
   }
 }))
 
-vi.mock('@/hooks/useWindow.ts', () => ({
+vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     createWebviewWindow: vi.fn()
   })

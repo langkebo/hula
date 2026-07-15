@@ -50,7 +50,7 @@ vi.mock('vue-router', () => ({
   useRouter: () => ({ push: routerPushMock })
 }))
 
-vi.mock('@/hooks/useLoginFlow', () => ({
+vi.mock('@/composables/user/useLoginFlow', () => ({
   useLoginFlow: () => ({ logout: logoutMock })
 }))
 

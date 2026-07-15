@@ -1,26 +1,28 @@
 <template>
-  <div class="h-1px bg-gray-200 dark:bg-gray-700"></div>
-  <div class="tab-bar flex justify-around items-end pt-3">
-    <RouterLink
-      v-for="item in navItems"
-      :key="item.path"
-      :to="item.path"
-      :data-testid="item.testId"
-      class="tab-item flex flex-col flex-1 items-center no-underline relative"
-      :class="route.path === item.path ? 'color-[--tab-bar-icon-color]' : 'text-[--hula-text-primary]'"
-      @click="handleNavigate(item.path)">
-      <van-badge
-        class="flex flex-col w-55% flex-1 relative items-center"
-        :offset="[-6, 6]"
-        color="var(--hula-color-danger-500)"
-        :content="getUnReadCount(item.label) || ''"
-        :max="99">
-        <svg class="w-22px h-22px">
-          <use :href="`#${route.path === item.path ? item.actionIcon : item.icon}`"></use>
-        </svg>
-        <span class="text-xs mt-1">{{ item.label }}</span>
-      </van-badge>
-    </RouterLink>
+  <div class="tab-bar-wrap">
+    <div class="h-1px bg-[--hula-border-layout-divider]"></div>
+    <div class="tab-bar flex justify-around items-end pt-3">
+      <RouterLink
+        v-for="item in navItems"
+        :key="item.path"
+        :to="item.path"
+        :data-testid="item.testId"
+        class="tab-item flex flex-col flex-1 items-center no-underline relative"
+        :class="route.path === item.path ? 'color-[--hula-color-primary-500]' : 'text-[--hula-text-tertiary]'"
+        @click="handleNavigate(item.path)">
+        <van-badge
+          class="flex flex-col w-55% flex-1 relative items-center"
+          :offset="[-6, 6]"
+          color="var(--hula-color-danger-500)"
+          :content="getUnReadCount(item.label) || ''"
+          :max="99">
+          <svg class="w-22px h-22px">
+            <use :href="`#${route.path === item.path ? item.actionIcon : item.icon}`"></use>
+          </svg>
+          <span class="text-xs mt-1">{{ item.label }}</span>
+        </van-badge>
+      </RouterLink>
+    </div>
   </div>
 </template>
 
@@ -95,8 +97,19 @@ const navItems: NavItem[] = [
 </script>
 
 <style scoped lang="scss">
+.tab-bar-wrap {
+  background: var(--center-bg-color);
+}
+
 .tab-bar {
+  height: 52px;
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+}
+
+.tab-item {
+  gap: 2px;
+  font-size: 10px;
+  padding-bottom: var(--safe-area-inset-bottom, 10px);
 }
 </style>

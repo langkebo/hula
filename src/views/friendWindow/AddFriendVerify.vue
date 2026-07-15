@@ -51,8 +51,8 @@
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { countGraphemes } from '@/composables/common/useCommon'
 import { useFriends } from '@/composables/useFriends'
-import { countGraphemes } from '@/hooks/useCommon.ts'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 
