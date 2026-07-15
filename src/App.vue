@@ -148,10 +148,6 @@ const getMatrixReactionService = createLazyLoader(
   () => import('@/services/matrix/messaging/MatrixReactionService'),
   'matrixReactionService'
 )
-const getMatrixRoomStateService = createLazyLoader(
-  () => import('@/services/matrix/room/StateService'),
-  'matrixRoomStateService'
-)
 const getMatrixRoomService = createLazyLoader(
   () => import('@/services/matrix/room/ActionFacade'),
   'matrixRoomActionFacade'
@@ -160,18 +156,7 @@ const getMatrixRoomCreationService = createLazyLoader(
   () => import('@/services/matrix/room/CreationService'),
   'matrixRoomCreationService'
 )
-const getMatrixRoomDirectMessageService = createLazyLoader(
-  () => import('@/services/matrix/room/DirectMessageService'),
-  'matrixRoomDirectMessageService'
-)
-const getMatrixRoomTagsService = createLazyLoader(
-  () => import('@/services/matrix/room/TagsService'),
-  'matrixRoomTagsService'
-)
-const getMatrixRoomPinsService = createLazyLoader(
-  () => import('@/services/matrix/room/PinsService'),
-  'matrixRoomPinsService'
-)
+const getRoomOperations = createLazyLoader(() => import('@/services/matrix/room/RoomOperations'), 'roomOperations')
 
 // ========== Offline queue (delegates to composable) ==========
 const { initOfflineQueue } = useOfflineQueueReplay({
@@ -179,12 +164,9 @@ const { initOfflineQueue } = useOfflineQueueReplay({
   getMatrixMessageService,
   getMatrixReceiptService,
   getMatrixReactionService,
-  getMatrixRoomStateService,
   getMatrixRoomService,
   getMatrixRoomCreationService,
-  getMatrixRoomDirectMessageService,
-  getMatrixRoomTagsService,
-  getMatrixRoomPinsService
+  getRoomOperations
 })
 
 // ========== Presence sync (delegates to composable) ==========
