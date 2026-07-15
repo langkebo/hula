@@ -1,5 +1,5 @@
 <template>
-  <div class="empty-state" :class="{ 'empty-state--compact': compact }">
+  <div class="empty-state" :class="[variantClass, { 'empty-state--compact': compact }]" role="status">
     <div class="empty-state__icon" :class="{ 'empty-state__icon--compact': compact }">
       <Icon :icon="icon" />
     </div>
@@ -16,20 +16,24 @@ import { Icon } from '@iconify/vue'
 
 defineOptions({ name: 'EmptyState' })
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     icon?: string
     title?: string
     description?: string
     compact?: boolean
+    variant?: 'default' | 'welcome' | 'subtle'
   }>(),
   {
     icon: 'mdi:inbox-outline',
     title: '',
     description: '',
-    compact: false
+    compact: false,
+    variant: 'default'
   }
 )
+
+const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`)
 </script>
 
 <style scoped lang="scss">
@@ -86,5 +90,34 @@ withDefaults(
   margin-top: 12px;
   display: flex;
   gap: 8px;
+}
+
+.empty-state--welcome .empty-state__icon {
+  color: var(--hula-color-primary-500);
+  background: var(--hula-color-primary-100);
+}
+
+.empty-state--welcome .empty-state__title {
+  color: var(--hula-text-primary);
+  font-size: 16px;
+}
+
+.empty-state--subtle {
+  opacity: 0.75;
+}
+
+.empty-state__enter-active {
+  animation: empty-fade-in 240ms var(--hula-motion-ease-enter);
+}
+
+@keyframes empty-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
