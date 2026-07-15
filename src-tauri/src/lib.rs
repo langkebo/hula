@@ -56,6 +56,7 @@ pub mod configuration;
 pub mod error;
 pub mod pojo;
 pub mod repository;
+pub mod service;
 pub mod timeout_config;
 pub mod utils;
 mod vo;

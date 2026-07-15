@@ -1,17 +1,8 @@
 use crate::AppData;
-use crate::repository::im_user_repository;
-use crate::utils::secure_store::SecureStore;
-use chrono::Local;
-use entity::im_user;
-use entity::prelude::ImUserEntity;
-use sea_orm::ActiveValue::Set;
-use sea_orm::ColumnTrait;
-use sea_orm::EntityTrait;
-use sea_orm::IntoActiveModel;
-use sea_orm::QueryFilter;
+use crate::service::user_service::UserService;
 use serde::{Deserialize, Serialize};
 use tauri::State;
-use tracing::{debug, info, warn};
+use tracing::info;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -47,56 +38,19 @@ pub async fn save_user_info(
     state: State<'_, AppData>,
 ) -> Result<(), String> {
     let db = state.db_conn.read().await;
-
-    let exists = ImUserEntity::find()
-        .filter(im_user::Column::Id.eq(&user_info.uid))
-        .one(&*db)
+    UserService::save_user_info(&*db, &user_info.uid)
         .await
-        .map_err(|err| format!("Failed to query user: {}", err))?;
-
-    if exists.is_none() {
-        info!("User does not exist, preparing to insert new user");
-
-        let user = im_user::ActiveModel {
-            id: Set(user_info.uid.clone()),
-            is_init: Set(true),
-            ..Default::default()
-        };
-
-        im_user::Entity::insert(user)
-            .exec(&*db)
-            .await
-            .map_err(|err| format!("Failed to insert user: {}", err))?;
-    } else {
-        debug!("User already exists, no need to insert");
-    }
-    Ok(())
+        .map_err(|e| format!("Failed to save user info: {}", e))
 }
 
 #[tauri::command]
 pub async fn update_user_last_opt_time(state: State<'_, AppData>) -> Result<(), String> {
     info!("Updating user last operation time");
     let db = state.db_conn.read().await;
-
     let uid = state.user_info.lock().await.uid.clone();
-
-    let user = ImUserEntity::find()
-        .filter(im_user::Column::Id.eq(uid.clone()))
-        .one(&*db)
+    UserService::update_last_opt_time(&*db, &uid)
         .await
-        .map_err(|err| format!("Failed to query user: {}", err))?;
-
-    if let Some(user) = user {
-        let mut active_model = user.into_active_model();
-        active_model.last_opt_time = Set(Some(Local::now().timestamp_millis()));
-
-        ImUserEntity::update(active_model)
-            .exec(&*db)
-            .await
-            .map_err(|err| format!("Failed to update user last operation time: {}", err))?;
-    }
-
-    Ok(())
+        .map_err(|e| format!("Failed to update user last opt time: {}", e))
 }
 
 #[tauri::command]
@@ -151,13 +105,10 @@ pub async fn remove_tokens(state: State<'_, AppData>) -> Result<(), String> {
     };
 
     if !uid.is_empty() {
-        let secure_key = format!("matrix_token_{}", uid);
-        if let Err(e) = SecureStore::delete(&secure_key) {
-            warn!("Failed to delete token from secure storage: {}", e);
-        }
+        UserService::delete_secure_token(&uid);
     }
 
-    info!("Successfully removed user token info");
+    info!("Successfully removed user token info for uid: {}", uid);
     Ok(())
 }
 
@@ -184,7 +135,7 @@ pub async fn update_token(
         user_info.token = req.token.clone();
         user_info.refresh_token = refresh_token.clone();
     }
-    im_user_repository::save_user_tokens(
+    UserService::save_tokens(
         &*state.db_conn.read().await,
         &req.uid,
         &req.token,
@@ -193,10 +144,7 @@ pub async fn update_token(
     .await
     .map_err(|e| e.to_string())?;
 
-    let secure_key = format!("matrix_token_{}", req.uid);
-    if let Err(e) = SecureStore::set(&secure_key, &req.token) {
-        warn!("Failed to store token in secure storage: {}", e);
-    }
+    UserService::store_token_in_secure_storage(&req.uid, &req.token);
 
     Ok(())
 }

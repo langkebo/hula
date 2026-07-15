@@ -1,67 +1,15 @@
 use crate::AppData;
-use crate::error::CommonError;
 use crate::pojo::common::{CursorPageParam, CursorPageResp};
-use crate::repository::im_message_repository;
-use crate::repository::im_message_repository::MessageWithThumbnail;
+use crate::repository::im_message_repository::{self, MessageWithThumbnail};
+use crate::service::message_service::{self, MessageService};
 use crate::vo::vo::ChatMessageReq;
 
 use entity::im_message;
 use sea_orm::TransactionTrait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::future::Future;
-use std::sync::Arc;
 use tauri::{State, ipc::Channel};
-use tokio::sync::Mutex;
-use tokio::time::{Duration, sleep};
-use tracing::{debug, error, info, warn};
-
-const WRITE_RETRY_LIMIT: usize = 3;
-const WRITE_RETRY_DELAY_MS: u64 = 80;
-
-async fn run_with_write_lock<T, F, Fut>(
-    lock: Arc<Mutex<()>>,
-    op_name: &str,
-    mut operation: F,
-) -> Result<T, String>
-where
-    F: FnMut() -> Fut,
-    Fut: Future<Output = Result<T, CommonError>>,
-{
-    let mut attempt: usize = 0;
-    loop {
-        let guard = lock.lock().await;
-        let result = operation().await;
-        drop(guard);
-
-        match result {
-            Ok(val) => return Ok(val),
-            Err(err) => {
-                let err_msg = err.to_string();
-                let lowered = err_msg.to_lowercase();
-                let is_locked =
-                    lowered.contains("database is locked") || lowered.contains("database is busy");
-
-                if is_locked && attempt + 1 < WRITE_RETRY_LIMIT {
-                    let delay = WRITE_RETRY_DELAY_MS * (attempt as u64 + 1);
-                    warn!(
-                        target: "tauri_db",
-                        "[{}] database locked (attempt {}), retrying in {}ms",
-                        op_name,
-                        attempt + 1,
-                        delay
-                    );
-                    attempt += 1;
-                    sleep(Duration::from_millis(delay)).await;
-                    continue;
-                }
-
-                error!(target: "tauri_db", "[{}] database write failed: {}", op_name, err_msg);
-                return Err(err_msg);
-            }
-        }
-    }
-}
+use tracing::{debug, error, info};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -149,7 +97,7 @@ pub async fn page_msg(
         user_info.uid.clone()
     };
 
-    let db_result = im_message_repository::cursor_page_messages(
+    let db_result = MessageService::page_messages(
         &*state.db_conn.read().await,
         param.room_id,
         param.cursor_page_param,
@@ -341,20 +289,13 @@ pub async fn send_msg(
         time_block: None,
     };
 
-    let mut message_record = MessageWithThumbnail::new(message_model, thumbnail_path);
+    let message_record = MessageWithThumbnail::new(message_model, thumbnail_path);
 
-    let write_lock = state.write_lock.clone();
-    message_record = run_with_write_lock(write_lock, "send_msg", || {
-        let db_conn = state.db_conn.clone();
-        let mut record = message_record.clone();
-        async move {
-            let db = db_conn.read().await;
-            let tx = db.begin().await.map_err(CommonError::DatabaseError)?;
-            record = im_message_repository::save_message(&tx, record).await?;
-            tx.commit().await.map_err(CommonError::DatabaseError)?;
-            Ok(record)
-        }
-    })
+    let message_record = MessageService::send_message_with_lock(
+        state.write_lock.clone(),
+        state.db_conn.clone(),
+        message_record,
+    )
     .await?;
 
     info!(
@@ -372,7 +313,7 @@ pub async fn send_msg(
 
         let status = "success";
 
-        let model = im_message_repository::update_message_status(
+        let model = MessageService::update_message_status(
             &*db_conn.read().await,
             record_for_send,
             status,
@@ -401,13 +342,13 @@ pub async fn save_msg(data: MessageResp, state: State<'_, AppData>) -> Result<()
     let record = convert_resp_to_record_for_save(data, state.user_info.lock().await.uid.clone());
 
     let lock = state.write_lock.clone();
-    run_with_write_lock(lock, "save_msg", || {
+    message_service::run_with_write_lock(lock, "save_msg", || {
         let db_conn = state.db_conn.clone();
         let record = record.clone();
         async move {
             let db = db_conn.read().await;
             let tx = db.begin().await?;
-            im_message_repository::save_message(&tx, record).await?;
+            MessageService::save_message_in_tx(&tx, record).await?;
             tx.commit().await?;
             Ok(())
         }
@@ -461,7 +402,7 @@ pub async fn update_message_recall_status(
 ) -> Result<(), String> {
     let login_uid = state.user_info.lock().await.uid.clone();
 
-    im_message_repository::update_message_recall_status(
+    MessageService::update_message_recall_status(
         &*state.db_conn.read().await,
         &message_id,
         message_type,
@@ -484,33 +425,38 @@ pub async fn delete_message(
     state: State<'_, AppData>,
 ) -> Result<(), String> {
     let login_uid = state.user_info.lock().await.uid.clone();
-
     let db = state.db_conn.read().await;
-    let resolved_room_id = if let Some(room) = room_id {
-        room
-    } else {
-        im_message_repository::get_room_id_by_message_id(&db, &message_id, &login_uid)
+
+    if let Some(room) = room_id {
+        im_message_repository::delete_message_by_id(&db, &message_id, &login_uid)
             .await
-            .map_err(|e| e.to_string())?
-            .ok_or_else(|| "Message not found or room info missing".to_string())?
-    };
+            .map_err(|e| {
+                error!("Failed to delete message {}: {}", message_id, e);
+                e.to_string()
+            })?;
 
-    im_message_repository::delete_message_by_id(&db, &message_id, &login_uid)
-        .await
-        .map_err(|e| {
-            error!("Failed to delete message {}: {}", message_id, e);
-            e.to_string()
-        })?;
-
-    im_message_repository::record_deleted_message(&db, &message_id, &resolved_room_id, &login_uid)
-        .await
-        .map_err(|e| {
-            error!(
-                "Failed to record deletion for message {} in room {}: {}",
-                message_id, resolved_room_id, e
-            );
-            e.to_string()
-        })?;
+        im_message_repository::record_deleted_message(&db, &message_id, &room, &login_uid)
+            .await
+            .map_err(|e| {
+                error!(
+                    "Failed to record deletion for message {} in room {}: {}",
+                    message_id, room, e
+                );
+                e.to_string()
+            })?;
+    } else {
+        let resolved = MessageService::delete_message(&db, &message_id, &login_uid)
+            .await
+            .map_err(|e| {
+                error!("Failed to delete message {}: {}", message_id, e);
+                e.to_string()
+            })?;
+        info!(
+            "Deleted message {} for current user {} from room {:?}",
+            message_id, login_uid, resolved
+        );
+        return Ok(());
+    }
 
     info!(
         "Deleted message {} for current user {} from local database",
@@ -528,30 +474,10 @@ pub async fn delete_room_messages(
     let login_uid = state.user_info.lock().await.uid.clone();
     let db = state.db_conn.read().await;
 
-    let last_msg_id = im_message_repository::get_room_max_message_id(&db, &room_id, &login_uid)
-        .await
-        .map_err(|e| {
-            error!(
-                "Failed to query last message id for room {}: {}",
-                room_id, e
-            );
-            e.to_string()
-        })?;
-
-    let affected_rows = im_message_repository::delete_messages_by_room(&db, &room_id, &login_uid)
+    let affected_rows = MessageService::delete_room_messages(&db, &room_id, &login_uid)
         .await
         .map_err(|e| {
             error!("Failed to delete messages for room {}: {}", room_id, e);
-            e.to_string()
-        })?;
-
-    im_message_repository::record_room_clear(&db, &room_id, &login_uid, last_msg_id)
-        .await
-        .map_err(|e| {
-            error!(
-                "Failed to record room clear for room {} (user {}): {}",
-                room_id, login_uid, e
-            );
             e.to_string()
         })?;
 
