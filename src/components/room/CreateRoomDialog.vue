@@ -79,7 +79,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
-import { matrixRoomLifecycleService } from '@/services/matrix/room/LifecycleService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('CreateRoomDialog')
@@ -136,7 +136,7 @@ const joinRuleOptions = [
 
 const loadServerDomain = async () => {
   try {
-    serverDomain.value = await matrixRoomLifecycleService.getServerDomain()
+    serverDomain.value = await matrixRoomReadFacade.getServerDomain()
   } catch (error) {
     logger.error('获取 homeserver 域名失败:', error)
     serverDomain.value = 'matrix.org'

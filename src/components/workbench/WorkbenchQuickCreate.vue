@@ -85,7 +85,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { type SpaceInfo, useSpaces } from '@/composables/space'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
-import { matrixRoomLifecycleService } from '@/services/matrix/room/LifecycleService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WorkbenchQuickCreate')
@@ -132,7 +132,7 @@ const historyOptions = [
 
 const loadServerDomain = async () => {
   try {
-    serverDomain.value = await matrixRoomLifecycleService.getServerDomain()
+    serverDomain.value = await matrixRoomReadFacade.getServerDomain()
   } catch (error) {
     logger.error('Failed to get server domain:', error)
   }
