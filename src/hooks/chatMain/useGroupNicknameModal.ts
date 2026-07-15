@@ -2,7 +2,7 @@ import { type Ref, ref } from 'vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum } from '@/enums'
 import { useMitt } from '@/hooks/useMitt'
-import { matrixRoomMemberProfileService } from '@/services/matrix/room/MemberProfileService'
+import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { createLogger } from '@/utils/Logger'
 
@@ -73,7 +73,7 @@ export const useGroupNicknameModal = ({ userUid, t, enableMitt = false }: Option
 
     try {
       groupNicknameSubmitting.value = true
-      await matrixRoomMemberProfileService.setMemberDisplayName(roomId, trimmedName)
+      await matrixRoomMemberFacade.setMemberDisplayName(roomId, trimmedName)
       groupStore.updateUserItem(currentUid, { myName: trimmedName }, roomId)
       await groupStore.updateGroupDetail(roomId, { myName: trimmedName })
       if (currentUid === userUid.value) {
