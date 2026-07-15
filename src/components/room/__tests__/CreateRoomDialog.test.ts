@@ -45,8 +45,8 @@ vi.mock('@/services/matrix/room/ActionFacade', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/room/LifecycleService', () => ({
-  matrixRoomLifecycleService: {
+vi.mock('@/services/matrix/room/ReadFacade', () => ({
+  matrixRoomReadFacade: {
     getServerDomain: getServerDomainMock
   }
 }))

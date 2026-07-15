@@ -10,8 +10,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 const setMemberDisplayName = vi.fn()
-vi.mock('@/services/matrix/room/MemberProfileService', () => ({
-  matrixRoomMemberProfileService: {
+vi.mock('@/services/matrix/room/MemberFacade', () => ({
+  matrixRoomMemberFacade: {
     setMemberDisplayName: (...args: unknown[]) => setMemberDisplayName(...args)
   }
 }))
