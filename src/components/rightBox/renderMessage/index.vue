@@ -208,10 +208,18 @@
               :visible="isHovered && !chatStore.isMsgMultiChoose"
               :is-me="isMe"
               :message-type="message.message.type"
+              @react="showReactionPickerId = message.message.id"
               @reply="useMitt.emit(MittEnum.REPLY_MEG, message)"
               @forward="handleForwardAction(message)"
               @copy="handleCopyAction(message)"
               @delete="handleDeleteAction(message)" />
+
+            <ReactionPicker
+              v-if="showReactionPickerId === message.message.id"
+              :room-id="message.message.roomId"
+              :event-id="message.message.id"
+              @reaction-added="showReactionPickerId = ''"
+              @reaction-removed="showReactionPickerId = ''" />
 
             <!-- 显示翻译文本 -->
             <Transition name="fade-translate" appear mode="out-in">
@@ -346,6 +354,7 @@ import Emoji from './Emoji.vue'
 import HulaMessageMeta from './HulaMessageMeta.vue'
 import Image from './Image.vue'
 import MessageActionBar from './MessageActionBar.vue'
+import ReactionPicker from './ReactionPicker.vue'
 import RecallMessage from './special/RecallMessage.vue'
 import SystemMessage from './special/SystemMessage.vue'
 import Text from './Text.vue'
@@ -469,6 +478,7 @@ const {
 } = useMessageActions({ isMe, emojiList })
 
 const isHovered = ref(false)
+const showReactionPickerId = ref('')
 
 const { recordSelectionBeforeContext, handleContextMenuSelection, longPressOption, handleLongPress } =
   useMessageContextMenu({ activeBubble })
