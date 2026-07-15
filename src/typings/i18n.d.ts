@@ -7023,5 +7023,31 @@ export type I18nKeys = {
     "transcription_failed": "语音转文字失败",
     "download_success": "语音已保存",
     "download_failed": "保存失败"
+  },
+  "mobile_error": {
+    "dm_create_failed": "创建私聊失败",
+    "group_create_failed": "创建群聊失败",
+    "search_user_failed": "搜索用户失败",
+    "add_friend_failed": "添加好友失败",
+    "remove_friend_failed": "删除好友失败",
+    "add_friend_confirm": "确定要添加 {userId} 为好友吗？",
+    "remove_friend_confirm": "确定要删除 {userId} 吗？",
+    "join_room_failed": "加入房间失败",
+    "leave_room_failed": "退出房间失败",
+    "leave_room_confirm": "确定要退出该房间吗？",
+    "delete_room_failed": "删除房间失败",
+    "delete_room_confirm": "确定要删除该房间吗？此操作不可撤销。",
+    "create_space_failed": "创建社区失败",
+    "invite_to_space_failed": "邀请成员失败",
+    "space_load_failed": "加载社区列表失败",
+    "profile_update_failed": "更新资料失败",
+    "profile_update_success": "资料已更新",
+    "logout_failed": "退出登录失败",
+    "logout_confirm": "确定要退出登录吗？",
+    "logout_success": "已退出登录",
+    "no_user_id": "请输入用户 ID",
+    "no_room_id": "请输入房间 ID",
+    "no_group_name": "请输入群聊名称",
+    "no_space_name": "请输入社区名称"
   }
 }

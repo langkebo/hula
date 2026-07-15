@@ -27,6 +27,11 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('Main')
 const { showFeedback } = useActionFeedback()
 
+// DEBUG: Test if JS executes at all in WKWebView
+if (isMobile() && hasTauriRuntime()) {
+  invokeSilently('hide_splash_screen').catch(() => {})
+}
+
 performance.mark('hula-init-start')
 
 initializePlatform()

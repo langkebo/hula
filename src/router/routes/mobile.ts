@@ -253,22 +253,32 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
       {
         path: '/mobile/message',
         name: 'mobileMessage',
-        component: MobileMessagePage
+        component: MobileMessagePage,
+        meta: { keepAlive: true }
       },
       {
         path: '/mobile/friends',
         name: 'mobileFriends',
-        component: MobileFriendPage
+        component: MobileFriendPage,
+        meta: { keepAlive: true }
       },
       {
         path: '/mobile/my',
         name: 'mobileMy',
-        component: MobileMy
+        component: MobileMy,
+        meta: { keepAlive: true }
+      },
+      {
+        path: '/mobile/rooms',
+        name: 'mobileRooms',
+        component: () => import('#/views/rooms/index.vue'),
+        meta: { keepAlive: true }
       },
       {
         path: '/mobile/dynamic',
         name: 'mobileDynamic',
-        component: MobileDynamicPage
+        component: MobileDynamicPage,
+        meta: { keepAlive: true }
       },
       {
         path: '/mobile/dynamic/:id',

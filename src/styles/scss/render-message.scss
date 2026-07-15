@@ -1,6 +1,6 @@
 /** 气泡样式 */
 @mixin bubble {
-  @apply w-fit min-h-1em p-[8px_12px] line-height-22px rounded-[2px_18px_18px] custom-shadow;
+  @apply w-fit min-h-1em p-[8px_12px] line-height-22px rounded-[4px_12px_12px_12px] custom-shadow;
   background-color: var(--hula-surface-elevated);
   max-width: var(--bubble-max-width, 32vw); /** 默认为群聊宽度 */
   white-space: pre-wrap; /** 保留空白符号并正常换行，支持特殊字符 */
@@ -31,7 +31,7 @@
 }
 .bubble-oneself {
   @include bubble;
-  @apply rounded-[18px_2px_18px_18px] color-[--hula-text-inverse];
+  @apply rounded-[12px_4px_12px_12px] color-[--hula-text-inverse];
   background-color: var(--hula-color-primary-500);
 }
 
@@ -44,6 +44,22 @@
 .bubble-oneself *::selection {
   background: color-mix(in srgb, var(--hula-text-inverse) 30%, transparent);
 }
+
+/* 消息入场动画 — 对齐原型设计 */
+.msg-row {
+  animation: msgIn 0.15s ease-out;
+}
+@keyframes msgIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .photo-wall {
   @extend .bubble-oneself;
   @apply flex flex-col items-start gap-6px flex-1;

@@ -21,6 +21,36 @@
   hyphens: auto; /** 行尾自动断开长单词 */
   -webkit-hyphens: auto;
 }
+
+/* 输入框容器聚焦边框 — 对齐原型设计 */
+#message-form > div > .context-menu-trigger,
+#message-form > div > [class*='context-menu'] {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: border-color 0.15s ease;
+}
+
+#message-form:focus-within .n-scrollbar {
+  border: 1px solid var(--hula-color-primary-500);
+  border-radius: 8px;
+  transition: border-color 0.15s ease;
+}
+
+/* 移动端输入框聚焦边框 */
+#message-input.empty:before {
+  content: attr(data-placeholder);
+}
+
+/* 移动端输入框胶囊样式 */
+.mobile #message-form #message-input {
+  border: 1px solid transparent;
+  border-radius: 16px;
+  transition: border-color 0.15s ease;
+}
+
+.mobile #message-form:focus-within #message-input {
+  border-color: var(--hula-color-primary-500);
+}
 .ait-options {
   @apply z-999 w-200px h-fit max-h-190px bg-[--hula-surface-panel] rounded-8px p-[5px_0_5px_5px] border-(1px solid [--hula-border-default]);
   box-shadow: var(--hula-shadow-md);

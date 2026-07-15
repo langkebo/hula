@@ -4,7 +4,9 @@
       <div class="flex-1 overflow-hidden">
         <RouterView v-slot="{ Component }">
           <Transition name="slide" appear mode="out-in">
-            <component :is="Component" :key="route.fullPath" />
+            <keep-alive :max="10">
+              <component :is="Component" :key="route.name" />
+            </keep-alive>
           </Transition>
         </RouterView>
       </div>

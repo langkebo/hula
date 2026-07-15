@@ -17,6 +17,7 @@ export interface CreateGroupRoomOptions {
   isEncrypted?: boolean
   historyVisibility?: 'shared' | 'invited' | 'joined' | 'world_readable'
   joinRule?: 'invite' | 'knock' | 'public' | 'restricted'
+  invite?: string[]
 }
 
 /**
@@ -90,6 +91,10 @@ export class MatrixRoomCreationService {
         state_key: '',
         content: { join_rule: options.joinRule }
       })
+    }
+
+    if (options.invite && options.invite.length > 0) {
+      createOpts.invite = options.invite
     }
 
     return this.createRoom(createOpts)

@@ -155,9 +155,19 @@ export const baseConfig: UserConfig = {
     }
   },
   optimizeDeps: {
-    include: ['vue', 'vue-router', 'pinia', '@vueuse/core', 'naive-ui', 'dayjs', 'es-toolkit', 'dompurify', 'mitt'],
+    include: [
+      'vue',
+      'vue-router',
+      'pinia',
+      '@vueuse/core',
+      'naive-ui',
+      'dayjs',
+      'es-toolkit',
+      'dompurify',
+      'mitt',
+      'matrix-js-sdk'
+    ],
     exclude: [
-      'matrix-js-sdk',
       '@matrix-org/matrix-sdk-crypto-wasm',
       'three',
       '@vue-office/docx',

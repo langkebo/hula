@@ -47,5 +47,12 @@
     "rename_group": "Rename Group",
     "delete_group": "Delete Group"
   },
-  "refresh_notification_failed": "Failed to refresh notifications. Please try again later."
+  "refresh_notification_failed": "Failed to refresh notifications. Please try again later.",
+  "add_friend_success": "Friend request sent",
+  "add_friend_failed": "Failed to send friend request",
+  "delete_friend_title": "Delete Friend",
+  "delete_friend_confirm": "Are you sure you want to delete this friend? This action cannot be undone.",
+  "delete_friend_success": "Friend deleted",
+  "delete_friend_failed": "Failed to delete friend",
+  "deleting": "Deleting..."
 }

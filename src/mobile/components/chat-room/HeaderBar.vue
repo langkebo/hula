@@ -28,7 +28,7 @@
     </div>
   </div>
 
-  <div v-if="props.border" class="h-1px bg-gray-200 dark:bg-gray-700"></div>
+  <div v-if="props.border" class="h-1px bg-[--hula-border-layout-divider]"></div>
 </template>
 
 <script setup lang="ts">

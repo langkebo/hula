@@ -392,7 +392,7 @@ watch(
   justify-content: space-between;
   padding: 12px 16px;
   background-color: var(--hula-surface-panel);
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--hula-border-layout-divider);
   min-height: 60px;
 }
 

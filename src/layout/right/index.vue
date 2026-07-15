@@ -1,6 +1,8 @@
 <template>
   <!-- 主容器维持 600px 的最小宽度，确保聊天侧边信息不过度挤压 -->
-  <main data-tauri-drag-region class="flex-1 bg-[--right-bg-color] flex flex-col min-h-0 min-w-600px">
+  <main
+    data-tauri-drag-region
+    class="flex-1 bg-[--right-bg-color] flex flex-col min-h-0 min-w-600px border-l border-[--hula-border-layout-divider]">
     <div
       :style="{ background: shouldShowChat ? 'var(--right-theme-bg-color)' : '' }"
       data-tauri-drag-region

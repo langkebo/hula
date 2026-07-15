@@ -2,7 +2,8 @@
   "items": {
     "messages": "消息",
     "contacts": "联系人",
-    "community": "社区",
+    "rooms": "房间",
+    "spaces": "空间",
     "me": "我的"
   }
 }
