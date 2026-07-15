@@ -1,4 +1,4 @@
-import { matrixRoomMemberProfileService } from '@/services/matrix/room/MemberProfileService'
+import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -15,7 +15,7 @@ export const useMyRoomInfoUpdater = () => {
   const userStore = useUserStore()
 
   const persistMyRoomInfo = async ({ roomId, myName, remark }: UpdatePayload) => {
-    await matrixRoomMemberProfileService.setMemberDisplayName(roomId, myName)
+    await matrixRoomMemberFacade.setMemberDisplayName(roomId, myName)
 
     groupStore.myNameInCurrentGroup = myName
     if (groupStore.countInfo) {
