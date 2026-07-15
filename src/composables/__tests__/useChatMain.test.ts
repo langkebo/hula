@@ -123,13 +123,13 @@ vi.mock('@/composables/chat/openMsgSession', () => ({
   openMsgSession: vi.fn()
 }))
 
-vi.mock('../chatMain/useChatCopy', () => ({
+vi.mock('../chat/useChatCopy', () => ({
   useChatCopy: () => ({
     handleCopy: vi.fn()
   })
 }))
 
-vi.mock('../chatMain/useChatFileDownload', () => ({
+vi.mock('../chat/useChatFileDownload', () => ({
   useChatFileDownload: () => ({
     downloadAndRevealFile: vi.fn(),
     downloadAndRevealVideo: vi.fn(),
@@ -137,7 +137,7 @@ vi.mock('../chatMain/useChatFileDownload', () => ({
   })
 }))
 
-vi.mock('../chatMain/useGroupNicknameModal', () => ({
+vi.mock('../chat/useGroupNicknameModal', () => ({
   useGroupNicknameModal: () => ({
     groupNicknameModalVisible: ref(false),
     groupNicknameValue: ref(''),
@@ -233,11 +233,11 @@ vi.mock('@/utils/TauriInvokeHandler', () => ({
   invokeWithErrorHandler: invokeWithErrorHandlerMock
 }))
 
-vi.mock('../chatMain/emojiMenuData', () => ({
+vi.mock('../chat/emojiMenuData', () => ({
   createEmojiList: vi.fn(() => [])
 }))
 
-vi.mock('../chatMain/selectionUtils', () => ({
+vi.mock('../chat/selectionUtils', () => ({
   clearSelection: vi.fn(),
   extractMsgIdFromDataKey: vi.fn(),
   getSelectedText: vi.fn(() => ''),

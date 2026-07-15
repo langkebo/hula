@@ -15,7 +15,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 // ---- Sub-hook mocks ---------------------------------------------------------
 
 const inputShortcutsSpy = vi.fn()
-vi.mock('../msgInput/useInputShortcuts', () => ({
+vi.mock('../chat/useInputShortcuts', () => ({
   useInputShortcuts: (opts: unknown) => {
     inputShortcutsSpy(opts)
     return { chatKey: ref('Enter'), handleInput: vi.fn(), inputKeyDown: vi.fn() }
@@ -24,7 +24,7 @@ vi.mock('../msgInput/useInputShortcuts', () => ({
 
 const sendCore = vi.fn().mockResolvedValue(undefined)
 const msgInputSendSpy = vi.fn()
-vi.mock('../msgInput/useMsgInputSend', () => ({
+vi.mock('../chat/useMsgInputSend', () => ({
   useMsgInputSend: (opts: unknown) => {
     msgInputSendSpy(opts)
     return {
@@ -40,7 +40,7 @@ vi.mock('../msgInput/useMsgInputSend', () => ({
 }))
 
 const mentionActionsSpy = vi.fn()
-vi.mock('../msgInput/useMsgInputMentionActions', () => ({
+vi.mock('../chat/useMsgInputMentionActions', () => ({
   useMsgInputMentionActions: (opts: unknown) => {
     mentionActionsSpy(opts)
     return { editorRange: ref(null), handleAit: vi.fn(), handleAI: vi.fn() }
@@ -48,7 +48,7 @@ vi.mock('../msgInput/useMsgInputMentionActions', () => ({
 }))
 
 const eventsSpy = vi.fn()
-vi.mock('../msgInput/useMsgInputEvents', () => ({
+vi.mock('../chat/useMsgInputEvents', () => ({
   useMsgInputEvents: (opts: unknown) => {
     eventsSpy(opts)
     return {
@@ -60,11 +60,11 @@ vi.mock('../msgInput/useMsgInputEvents', () => ({
   }
 }))
 
-vi.mock('../msgInput/useClipboardPaste', () => ({
+vi.mock('../chat/useClipboardPaste', () => ({
   useClipboardPaste: () => ({ menuList: ref([]) })
 }))
 
-vi.mock('../msgInput/useMentionState', () => ({
+vi.mock('../chat/useMentionState', () => ({
   useMentionState: () => ({
     ait: ref(false),
     aitKey: ref(''),
@@ -73,11 +73,11 @@ vi.mock('../msgInput/useMentionState', () => ({
   })
 }))
 
-vi.mock('../msgInput/useVoiceInput', () => ({
+vi.mock('../chat/useVoiceInput', () => ({
   useVoiceInput: () => ({ uploadVoiceToMatrix: vi.fn() })
 }))
 
-vi.mock('../msgInput/useCursorManager', () => ({
+vi.mock('../chat/useCursorManager', () => ({
   useCursorManager: () => ({
     getCursorSelectionRange: vi.fn(),
     updateSelectionRange: vi.fn(),
@@ -85,7 +85,7 @@ vi.mock('../msgInput/useCursorManager', () => ({
   })
 }))
 
-vi.mock('../useCommon.ts', () => ({
+vi.mock('../common/useCommon', () => ({
   useCommon: () => ({
     triggerInputEvent: vi.fn(),
     insertNode: vi.fn(),
@@ -97,11 +97,11 @@ vi.mock('../useCommon.ts', () => ({
   })
 }))
 
-vi.mock('../useTrigger', () => ({
+vi.mock('../common/useTrigger', () => ({
   useTrigger: () => ({ handleTrigger: vi.fn(), resetAllStates: vi.fn() })
 }))
 
-vi.mock('../useMessageSender', () => ({
+vi.mock('../chat/useMessageSender', () => ({
   useMessageSender: () => ({ sendWithTracking: vi.fn() })
 }))
 

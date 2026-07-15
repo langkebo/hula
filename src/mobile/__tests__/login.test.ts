@@ -145,7 +145,7 @@ const mobileLoadingRef = ref(false)
 const mobileLoginTextRef = ref('登录')
 const mobileLoginDisabledRef = ref(false)
 
-vi.mock('../../hooks/useLoginFlow', () => ({
+vi.mock('@/composables/user/useLoginFlow', () => ({
   useLoginFlow: () => ({
     normalLogin: vi.fn(),
     loading: mobileLoadingRef,
@@ -161,7 +161,7 @@ vi.mock('../../hooks/useLoginFlow', () => ({
   })
 }))
 
-vi.mock('../../hooks/useMitt', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     emit: useMittEmitMock,
     on: useMittOnMock
