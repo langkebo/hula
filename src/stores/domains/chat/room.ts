@@ -7,7 +7,6 @@ import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
 import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
 import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
-import { matrixRoomTagsService } from '@/services/matrix/room/TagsService'
 import matrixSlidingSyncService, { type SlidingSyncUnreadUpdate } from '@/services/matrix/sync/MatrixSlidingSyncService'
 import type { RoomDetail, RoomInfo } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -577,7 +576,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
 
   async function refreshRoomTags(roomId: string): Promise<Record<string, { order?: number }>> {
     if (!roomId) return {}
-    const tags = await matrixRoomTagsService.getTags(roomId)
+    const tags = await matrixRoomReadFacade.getTags(roomId)
     setTagsForRoom(roomId, tags)
     const sessionStore = useSessionStore()
     const isTop = 'm.favourite' in tags
@@ -627,7 +626,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     const previous = getTagsForRoom(roomId)
     setTagsForRoom(roomId, { ...previous, [tag]: order !== undefined ? { order } : {} })
     try {
-      await matrixRoomTagsService.setTag(roomId, tag, order)
+      await matrixRoomActionFacade.setTag(roomId, tag, order)
       if (tag === 'm.favourite') {
         const sessionStore = useSessionStore()
         sessionStore.updateSession(roomId, { top: true })
@@ -647,7 +646,7 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     delete next[tag]
     setTagsForRoom(roomId, next)
     try {
-      await matrixRoomTagsService.removeTag(roomId, tag)
+      await matrixRoomActionFacade.removeTag(roomId, tag)
       if (tag === 'm.favourite') {
         const sessionStore = useSessionStore()
         sessionStore.updateSession(roomId, { top: false })
