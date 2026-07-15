@@ -1,19 +1,16 @@
 export { type AIConnection, type MCPTool, matrixRoomAccountDataService } from './AccountDataService'
-export { matrixRoomAliasesService } from './AliasesService'
 export { matrixRoomCreationService } from './CreationService'
-export { matrixRoomDirectMessageService } from './DirectMessageService'
-export { matrixRoomLifecycleService } from './LifecycleService'
+// DirectMessageService, LifecycleService absorbed into RoomOperations
 export type { Announcement, AnnouncementContent } from './MatrixAnnouncementService'
 export { matrixAnnouncementService } from './MatrixAnnouncementService'
 export { matrixRoomStoreAdapter } from './MatrixRoomStoreAdapter'
 export { matrixRoomSummaryService } from './MatrixRoomSummaryService'
 export type { SpaceInfo, SpaceOptions } from './MatrixSpaceService'
 export { matrixSpaceService } from './MatrixSpaceService'
-export { matrixRoomMemberProfileService } from './MemberProfileService'
+// MemberProfileService absorbed into RoomOperations
 export { matrixRoomMembershipService } from './MembershipService'
 export { matrixRoomMetadataService } from './MetadataService'
-export { matrixRoomModerationService } from './ModerationService'
-export { matrixRoomPinsService } from './PinsService'
+// ModerationService, PinsService absorbed into RoomOperations
 export { matrixRoomQueryService } from './QueryService'
 export type { VisibleRoomSession } from './RealtimeService'
 export { matrixRoomRealtimeService } from './RealtimeService'
@@ -23,9 +20,10 @@ export type {
   StableRoomFeatureName
 } from './RoomCapabilitiesService'
 export { ROOM_CAPABILITY_NAMES, ROOM_FEATURE_NAMES, roomCapabilitiesService } from './RoomCapabilitiesService'
-export { matrixRoomStateService } from './StateService'
+export { roomOperations } from './RoomOperations'
+// StateService absorbed into RoomOperations
 export type { MatrixRoomSummary } from './SummaryService'
 export { matrixRoomSummaryAggregateService } from './SummaryService'
-export { matrixRoomTagsService } from './TagsService'
+// TagsService absorbed into RoomOperations
 export { matrixRoomTimelineService } from './TimelineService'
-export { matrixRoomTranslateService } from './TranslateService'
+// TranslateService absorbed into RoomOperations

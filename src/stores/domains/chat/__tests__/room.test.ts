@@ -116,9 +116,14 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
   default: mockMatrixClientService
 }))
 
-vi.mock('@/services/matrix/room/TagsService', () => ({
-  matrixRoomTagsService: {
-    getTags: vi.fn(),
+vi.mock('@/services/matrix/room/ReadFacade', () => ({
+  matrixRoomReadFacade: {
+    getTags: vi.fn()
+  }
+}))
+
+vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  matrixRoomActionFacade: {
     setTag: vi.fn(),
     removeTag: vi.fn()
   }
@@ -857,13 +862,23 @@ describe('RoomStore', () => {
   })
 
   describe('tagsByRoom slice', () => {
-    let tagsServiceMock: typeof import('@/services/matrix/room/TagsService').matrixRoomTagsService
+    let tagsServiceMock: {
+      getTags: ReturnType<typeof vi.fn>
+      setTag: ReturnType<typeof vi.fn>
+      removeTag: ReturnType<typeof vi.fn>
+    }
 
     beforeEach(async () => {
-      tagsServiceMock = (await import('@/services/matrix/room/TagsService')).matrixRoomTagsService
-      vi.mocked(tagsServiceMock.getTags).mockReset()
-      vi.mocked(tagsServiceMock.setTag).mockReset()
-      vi.mocked(tagsServiceMock.removeTag).mockReset()
+      const readFacade = await import('@/services/matrix/room/ReadFacade')
+      const actionFacade = await import('@/services/matrix/room/ActionFacade')
+      tagsServiceMock = {
+        getTags: vi.mocked(readFacade.matrixRoomReadFacade.getTags),
+        setTag: vi.mocked(actionFacade.matrixRoomActionFacade.setTag),
+        removeTag: vi.mocked(actionFacade.matrixRoomActionFacade.removeTag)
+      }
+      tagsServiceMock.getTags.mockReset()
+      tagsServiceMock.setTag.mockReset()
+      tagsServiceMock.removeTag.mockReset()
     })
 
     it('starts with empty tagsByRoom map', () => {
