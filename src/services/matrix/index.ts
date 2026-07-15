@@ -213,10 +213,7 @@ export type {
 // Rendezvous 服务
 export { matrixRendezvousService } from './rendezvous/MatrixRendezvousService'
 export { matrixRoomAccountDataService } from './room/AccountDataService'
-export { matrixRoomAliasesService } from './room/AliasesService'
 export { matrixRoomCreationService } from './room/CreationService'
-export { matrixRoomDirectMessageService } from './room/DirectMessageService'
-export { matrixRoomLifecycleService } from './room/LifecycleService'
 export type { Announcement, AnnouncementContent } from './room/MatrixAnnouncementService'
 export { matrixAnnouncementService } from './room/MatrixAnnouncementService'
 export type { CreateDmOptions, DmRoomInfo, IDirectRoomsMap } from './room/MatrixDirectMessageService'
@@ -230,19 +227,14 @@ export type {
 export { matrixRoomSummaryService } from './room/MatrixRoomSummaryService'
 export type { SpaceInfo, SpaceOptions } from './room/MatrixSpaceService'
 export { matrixSpaceService } from './room/MatrixSpaceService'
-export { matrixRoomMemberProfileService } from './room/MemberProfileService'
 export { matrixRoomMembershipService } from './room/MembershipService'
 export { matrixRoomMetadataService } from './room/MetadataService'
-export { matrixRoomModerationService } from './room/ModerationService'
-export { matrixRoomPinsService } from './room/PinsService'
 export type { VisibleRoomSession } from './room/RealtimeService'
 export { matrixRoomRealtimeService } from './room/RealtimeService'
-export { matrixRoomStateService } from './room/StateService'
+export { roomOperations } from './room/RoomOperations'
 export type { MatrixRoomSummary } from './room/SummaryService'
 export { matrixRoomSummaryAggregateService } from './room/SummaryService'
-export { matrixRoomTagsService } from './room/TagsService'
 export { matrixRoomTimelineService } from './room/TimelineService'
-export { matrixRoomTranslateService } from './room/TranslateService'
 export type {
   BurnStats,
   InviteAllowlist,

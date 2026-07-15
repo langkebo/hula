@@ -32,8 +32,8 @@ vi.mock('@/services/matrix/room/ActionFacade', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/room/LifecycleService', () => ({
-  matrixRoomLifecycleService: {
+vi.mock('@/services/matrix/room/ReadFacade', () => ({
+  matrixRoomReadFacade: {
     getServerDomain: mockGetServerDomain
   }
 }))
@@ -47,8 +47,8 @@ vi.mock('@/services/matrix/room/MatrixDirectMessageService', () => ({
 }))
 
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
-import { matrixRoomLifecycleService } from '@/services/matrix/room/LifecycleService'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
 
 describe('matrixRoomActionFacade (formerly useRoomActions pass-through)', () => {
   beforeEach(() => {
@@ -99,13 +99,13 @@ describe('matrixRoomActionFacade (formerly useRoomActions pass-through)', () => 
   describe('getServerDomain', () => {
     it('returns server domain from matrix room service', () => {
       mockGetServerDomain.mockReturnValue('example.com')
-      expect(matrixRoomLifecycleService.getServerDomain()).toBe('example.com')
+      expect(matrixRoomReadFacade.getServerDomain()).toBe('example.com')
       expect(mockGetServerDomain).toHaveBeenCalled()
     })
 
     it('returns empty string when no domain', () => {
       mockGetServerDomain.mockReturnValue('')
-      expect(matrixRoomLifecycleService.getServerDomain()).toBe('')
+      expect(matrixRoomReadFacade.getServerDomain()).toBe('')
     })
   })
 
@@ -215,7 +215,7 @@ describe('matrixRoomActionFacade (formerly useRoomActions pass-through)', () => 
       mockGetServerDomain.mockImplementation(() => {
         throw new Error('domain error')
       })
-      expect(() => matrixRoomLifecycleService.getServerDomain()).toThrow('domain error')
+      expect(() => matrixRoomReadFacade.getServerDomain()).toThrow('domain error')
     })
   })
 })
