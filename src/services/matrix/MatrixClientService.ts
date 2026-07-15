@@ -6,8 +6,7 @@ import {
   type MatrixClient,
   type MatrixEvent,
   type Room,
-  SlidingSync,
-  type SlidingSync as SlidingSyncInstance,
+  type SlidingSync,
   type User
 } from 'matrix-js-sdk'
 import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
@@ -16,15 +15,13 @@ import { MittEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { setMatrixClientAccessor } from '@/services/matrix/matrixClientAccessor'
-import {
-  logoutExpiredSession,
-  persistRefreshedToken,
-  setupSystemResumeListener
-} from '@/services/matrix/matrixClientPlatform'
+import { persistRefreshedToken, setupSystemResumeListener } from '@/services/matrix/matrixClientPlatform'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
 import { type ICreateClientOpts, PendingEventOrdering } from '@/types/matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import type { SearchEventDoc } from '@/workers/matrixWorkerTypes'
+import { MatrixSyncManager } from './MatrixSyncManager'
+import { MatrixTokenManager } from './MatrixTokenManager'
 
 const logger = createLogger('MatrixClient')
 
@@ -109,6 +106,7 @@ export interface EventDecryptedDebugState {
  * Matrix 客户端服务
  *
  * 负责 Matrix 客户端的初始化、登录、登出和生命周期管理。
+ * 内部委托给 MatrixTokenManager（token 刷新）和 MatrixSyncManager（Sliding Sync）。
  *
  * @example
  * ```typescript
@@ -132,13 +130,11 @@ class MatrixClientService {
   private config: MatrixClientConfig | null = null
   private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
   private roomListeners: Map<string, { room: Room; handlers: Map<string, (...args: unknown[]) => void> }> = new Map()
-  private slidingSyncInstance: SlidingSync | null = null
   private telemetryManager: TelemetryManager | null = null
   private observedClient: MatrixClient | null = null
-  private slidingSyncReadyResolve: (() => void) | null = null
-  private slidingSyncReadyPromise: Promise<void> | null = null
-  private tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null
-  private isRefreshingToken = false
+  private readonly tokenManager = new MatrixTokenManager()
+  private readonly syncManager = new MatrixSyncManager()
+
   private rustCryptoDebugState: RustCryptoDebugState = {
     attempted: false,
     initialized: false,
@@ -152,6 +148,9 @@ class MatrixClientService {
     lastRoomId: null,
     lastError: null
   }
+
+  // ---- Event listeners --------------------------------------------------------
+
   private readonly syncListener = (state: string, prevState?: string, data?: unknown) => {
     this.emit('sync', { state, prevState, data })
 
@@ -169,7 +168,6 @@ class MatrixClientService {
     } else if (state !== prevState) {
       logger.info(`同步状态: ${state}`)
     }
-    // 状态不变时不再输出日志，避免刷屏
 
     const nextConnectionState = this.mapSyncStateToConnectionState(state)
     if (nextConnectionState) {
@@ -177,15 +175,15 @@ class MatrixClientService {
     }
 
     if (state === 'PREPARED' || state === 'SYNCING') {
-      this.markSlidingSyncReady()
+      this.syncManager.markReady()
     }
   }
+
   private readonly roomListener = (room: Room) => {
     this.emit('room', room)
 
     const homeserverUrl = this.client?.getHomeserverUrl() || ''
 
-    // 当有新房间加入时，通知搜索索引
     const updateRoom = () => {
       void matrixWorkerHost
         .upsertSearchRooms([
@@ -203,7 +201,6 @@ class MatrixClientService {
 
     updateRoom()
 
-    // 监听房间元数据变化
     const roomAny = room as unknown as {
       on: (event: string, handler: (...args: unknown[]) => void) => void
       off: (event: string, handler: (...args: unknown[]) => void) => void
@@ -230,6 +227,7 @@ class MatrixClientService {
       })
     }
   }
+
   private readonly roomTimelineListener = (event: MatrixEvent, room: Room | undefined) => {
     this.emit('timeline', { event, room })
 
@@ -288,6 +286,8 @@ class MatrixClientService {
     logger.info?.('Matrix 客户端服务初始化')
   }
 
+  // ---- HTTP fallback login helpers --------------------------------------------
+
   private async loginByHttpFallback(username: string, password: string, deviceName?: string): Promise<LoginResponse> {
     if (!this.config?.homeserverUrl) {
       throw new Error(useI18nGlobal().t('matrix_error.auth.client_config_missing'))
@@ -334,7 +334,6 @@ class MatrixClientService {
         return (await response.json()) as LoginResponse
       }
 
-      // 429 限流：等待 retry_after_ms 后重试
       if (response.status === 429 && attempt < maxRetries) {
         let retryAfterMs = 5000
         try {
@@ -357,19 +356,12 @@ class MatrixClientService {
     throw new Error('登录请求被限流，请稍后重试')
   }
 
-  /**
-   * 获取 Telemetry 实例
-   */
+  // ---- Public API -------------------------------------------------------------
+
   getTelemetry(): TelemetryManager | null {
     return this.telemetryManager
   }
 
-  /**
-   * 初始化 Matrix 客户端
-   *
-   * @param config - 客户端配置
-   * @throws {Error} 如果配置无效
-   */
   async initialize(config: MatrixClientConfig): Promise<void> {
     try {
       if (this.observedClient) {
@@ -377,7 +369,7 @@ class MatrixClientService {
         this.observedClient = null
       }
 
-      this.slidingSyncInstance?.stop?.()
+      this.syncManager.stop()
       this.config = config
       this.connectionState = 'CONNECTING'
       this.rustCryptoDebugState = {
@@ -394,8 +386,6 @@ class MatrixClientService {
         lastError: null
       }
 
-      // 在创建客户端之前，注册所有 Manager 扩展
-      // 使用主入口的 initializeManagerExtensions 确保修改的是预打包版本的 MatrixClient.prototype
       try {
         await initializeManagerExtensions()
         logger.info('Manager 扩展注册完成')
@@ -417,7 +407,6 @@ class MatrixClientService {
         clientOpts.idBaseUrl = config.identityServerUrl
       }
 
-      // 注册全局 accessor（提前注册，getter 延迟访问 this.client）
       setMatrixClientAccessor({
         getClient: () => this.client,
         getAccessToken: () => this.client?.getAccessToken() ?? null,
@@ -425,10 +414,7 @@ class MatrixClientService {
         waitForClientReady: (opts) => this.waitForClientReady(opts)
       })
 
-      // 不在这里创建 SlidingSync，延迟到 startClient() 时创建
-      // 这样可以确保有有效的 accessToken
       this.client = createClient(clientOpts)
-
       logger.info(`客户端初始化完成: ${config.homeserverUrl}`)
     } catch (err) {
       this.connectionState = 'ERROR'
@@ -437,61 +423,8 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 创建 Sliding Sync 实例
-   */
-  private createSlidingSync(): SlidingSyncInstance {
-    if (!this.client || !this.config) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
+  // ---- Auth / Login -----------------------------------------------------------
 
-    const slidingSyncConfig = this.config.slidingSync ?? {}
-    const roomRangeEnd = slidingSyncConfig.roomRangeEnd ?? 49
-    const timelineLimit = slidingSyncConfig.timelineLimit ?? 10
-    const pollTimeout = slidingSyncConfig.pollTimeout ?? 30000
-
-    const requiredState: Array<[string, string]> = [
-      ['m.room.name', ''],
-      ['m.room.avatar', ''],
-      ['m.room.encryption', ''],
-      ['m.room.create', ''],
-      ['m.room.power_levels', ''],
-      ['m.room.member', '*']
-    ]
-
-    const lists = new Map()
-    lists.set('default', {
-      ranges: [[0, roomRangeEnd]],
-      sort: ['by_recency'],
-      timeline_limit: timelineLimit,
-      required_state: requiredState
-    })
-
-    const slidingSync = new SlidingSync(
-      this.config.homeserverUrl,
-      lists,
-      {
-        timeline_limit: timelineLimit,
-        required_state: requiredState
-      },
-      this.client,
-      pollTimeout
-    )
-
-    logger.info(
-      `Sliding Sync 实例已创建 (rooms=${roomRangeEnd + 1}, timeline=${timelineLimit}, timeout=${pollTimeout}ms)`
-    )
-    return slidingSync
-  }
-
-  /**
-   * 使用用户名密码登录
-   *
-   * @param username - 用户名
-   * @param password - 密码
-   * @param deviceName - 设备名称 (可选)
-   * @returns 登录结果
-   */
   async login(username: string, password: string, deviceName?: string): Promise<LoginResult> {
     if (!this.client) {
       return { success: false, error: '客户端未初始化' }
@@ -508,8 +441,6 @@ class MatrixClientService {
           initial_device_display_name: deviceName || 'HuLa Client'
         })
       } catch (error) {
-        // 登录场景始终尝试 HTTP fallback——SDK 登录可能因请求格式差异、
-        // 中间件干扰等原因失败，而 HTTP fallback 等同于 curl 直接请求
         const errInfo = error instanceof Error ? error.message : String(error)
         const httpStatus = (error as { httpStatus?: number })?.httpStatus
         const errcode = (error as { errcode?: string })?.errcode
@@ -527,7 +458,9 @@ class MatrixClientService {
       })
 
       this.connectionState = 'CONNECTED'
-      this.scheduleTokenRefresh(loginResponse.refresh_token, loginResponse.expires_in)
+      if (loginResponse.refresh_token && loginResponse.expires_in) {
+        this.tokenManager.schedule(this.client!, loginResponse.refresh_token, loginResponse.expires_in)
+      }
 
       return {
         success: true,
@@ -546,13 +479,6 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 获取 SSO 登录 URL
-   *
-   * @param identityProviderId - 身份提供者 ID (可选)
-   * @returns SSO 登录 URL
-   * @throws {Error} 如果客户端未初始化或服务器不支持 SSO
-   */
   async getSSOLoginUrl(identityProviderId?: string): Promise<string> {
     if (!this.client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
@@ -577,12 +503,6 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 完成 SSO 登录
-   *
-   * @param loginToken - SSO 登录令牌
-   * @returns 登录结果
-   */
   async completeSSOLogin(loginToken: string): Promise<LoginResult> {
     if (!this.client) {
       return { success: false, error: '客户端未初始化' }
@@ -613,7 +533,9 @@ class MatrixClientService {
       })
 
       this.connectionState = 'CONNECTED'
-      this.scheduleTokenRefresh(loginResponse.refresh_token, loginResponse.expires_in)
+      if (loginResponse.refresh_token && loginResponse.expires_in) {
+        this.tokenManager.schedule(this.client!, loginResponse.refresh_token, loginResponse.expires_in)
+      }
 
       return {
         success: true,
@@ -632,13 +554,6 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 使用 Token 登录
-   *
-   * @param token - 访问令牌
-   * @param userId - 用户 ID
-   * @returns 登录结果
-   */
   async loginWithToken(token: string, userId: string, refreshToken?: string): Promise<LoginResult> {
     if (!this.config) {
       return { success: false, error: '配置未初始化' }
@@ -666,11 +581,9 @@ class MatrixClientService {
 
       this.connectionState = 'CONNECTED'
 
-      // 如果有 refresh_token，尝试获取 token 过期时间并调度刷新
       if (refreshToken) {
         try {
           if (this.client) {
-            // 尝试刷新 token 以获取 expires_in 信息
             const refreshResult = (await this.client.http.request('POST', '/_matrix/client/v3/refresh', undefined, {
               refresh_token: refreshToken
             })) as Record<string, unknown>
@@ -688,12 +601,11 @@ class MatrixClientService {
               if (uid) {
                 await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? refreshToken)
               }
-              this.scheduleTokenRefresh(newRefreshToken ?? refreshToken, newExpiresInMs)
+              this.tokenManager.schedule(this.client, newRefreshToken ?? refreshToken, newExpiresInMs)
             }
           }
         } catch {
           // 服务器不支持 refresh 或刷新失败，不影响登录
-          // Token 登录用户将使用现有 token 直到过期
         }
       }
 
@@ -714,15 +626,12 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 登出
-   */
   async logout(): Promise<void> {
     if (!this.client) {
       return
     }
 
-    this.clearTokenRefreshTimer()
+    this.tokenManager.clear()
 
     try {
       await this.client!.logout()
@@ -732,19 +641,15 @@ class MatrixClientService {
       const errorMessage = err instanceof Error ? err.message : '登出失败'
       logger.error(errorMessage)
     } finally {
-      this.slidingSyncInstance?.stop?.()
-      this.slidingSyncInstance = null
+      this.syncManager.stop()
       this.observedClient = null
       this.client = null
       this.connectionState = 'DISCONNECTED'
     }
   }
 
-  /**
-   * 启动客户端
-   *
-   * @throws {Error} 如果客户端未初始化
-   */
+  // ---- Lifecycle --------------------------------------------------------------
+
   private async ensureRustCrypto(): Promise<void> {
     if (!this.client || !this.config?.accessToken) {
       this.rustCryptoDebugState = {
@@ -871,22 +776,19 @@ class MatrixClientService {
       }
 
       if (this.config?.accessToken) {
-        this.slidingSyncInstance ??= this.createSlidingSync()
-        this.resetSlidingSyncReady()
-        startOpts.slidingSync = this.slidingSyncInstance
+        if (!this.syncManager.get()) {
+          this.syncManager.create(this.client, this.config)
+        }
+        this.syncManager.resetReady()
+        startOpts.slidingSync = this.syncManager.get()!
       } else {
-        this.slidingSyncInstance = null
+        this.syncManager.stop()
       }
 
       await this.ensureRustCrypto()
-
-      // 在启动客户端之前注册事件监听器，确保不遗漏初始 sync 事件
       this.setupEventListeners()
-
       await this.client!.startClient(startOpts)
 
-      // startClient 返回后 sync 可能仍在进行中，
-      // 连接状态由 syncListener 中的 mapSyncStateToConnectionState 管理
       logger.info('客户端启动成功')
     } catch (err) {
       this.connectionState = 'ERROR'
@@ -896,16 +798,13 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 停止客户端
-   */
   async stopClient(): Promise<void> {
     try {
-      this.clearTokenRefreshTimer()
+      this.tokenManager.clear()
       if (this.client) {
         this.detachEventListeners(this.client)
         this.observedClient = null
-        this.slidingSyncInstance?.stop?.()
+        this.syncManager.stop()
         this.client.stopClient()
         this.connectionState = 'DISCONNECTED'
         logger.info('客户端已停止')
@@ -916,10 +815,6 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * Listen for system resume events (wake from sleep)
-   * and trigger Matrix sync reconnection
-   */
   private setupResumeListener(): void {
     setupSystemResumeListener(() => {
       if (this.client && this.connectionState === 'CONNECTED') {
@@ -928,9 +823,6 @@ class MatrixClientService {
     })
   }
 
-  /**
-   * Force a Matrix sync reconnection
-   */
   private async forceReconnect(): Promise<void> {
     if (!this.client) return
 
@@ -946,9 +838,11 @@ class MatrixClientService {
       }
 
       if (this.config?.accessToken) {
-        this.slidingSyncInstance ??= this.createSlidingSync()
-        this.resetSlidingSyncReady()
-        startOpts.slidingSync = this.slidingSyncInstance
+        if (!this.syncManager.get()) {
+          this.syncManager.create(this.client, this.config)
+        }
+        this.syncManager.resetReady()
+        startOpts.slidingSync = this.syncManager.get()!
       }
 
       this.client.startClient(startOpts)
@@ -959,87 +853,8 @@ class MatrixClientService {
     }
   }
 
-  private scheduleTokenRefresh(refreshToken?: string, expiresInMs?: number): void {
-    this.clearTokenRefreshTimer()
-    if (!refreshToken || !expiresInMs || expiresInMs <= 0) return
+  // ---- Connection state -------------------------------------------------------
 
-    // Matrix 规范中 expires_in 是秒，需转换为毫秒
-    // 如果值小于 1000，说明传入的是秒而非毫秒
-    const expiresInMsActual = expiresInMs < 1000 ? expiresInMs * 1000 : expiresInMs
-    const refreshAt = Math.max(expiresInMsActual - 60000, 30000)
-    logger.info(`[TokenRefresh] 已调度 Token 刷新: ${refreshAt}ms 后 (原始值: ${expiresInMs})`)
-    this.tokenRefreshTimer = setTimeout(() => {
-      void this.tryRefreshToken(refreshToken)
-    }, refreshAt)
-  }
-
-  private clearTokenRefreshTimer(): void {
-    if (this.tokenRefreshTimer) {
-      clearTimeout(this.tokenRefreshTimer)
-      this.tokenRefreshTimer = null
-    }
-  }
-
-  private async tryRefreshToken(refreshToken: string): Promise<void> {
-    if (this.isRefreshingToken || !this.client) return
-    this.isRefreshingToken = true
-
-    try {
-      logger.info('[TokenRefresh] 开始刷新访问令牌')
-      // 使用未认证请求，因为 refresh 端点不需要旧的 access_token
-      const result = (await this.client.http.request('POST', '/_matrix/client/v3/refresh', undefined, {
-        refresh_token: refreshToken
-      })) as Record<string, unknown>
-
-      const newAccessToken = result.access_token as string | undefined
-      const newRefreshToken = result.refresh_token as string | undefined
-      // Matrix 规范中 expires_in 是秒，需转换为毫秒
-      let newExpiresInMs = result.expires_in_ms as number | undefined
-      const expiresInSec = result.expires_in as number | undefined
-      if (!newExpiresInMs && expiresInSec) {
-        newExpiresInMs = expiresInSec * 1000
-      }
-
-      if (newAccessToken) {
-        const uid = this.client.getUserId()
-        if (uid) {
-          await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? '')
-        }
-        logger.info('[TokenRefresh] 访问令牌刷新成功')
-        this.scheduleTokenRefresh(newRefreshToken, newExpiresInMs)
-      }
-    } catch (err) {
-      const httpStatus = (err as { httpStatus?: number })?.httpStatus
-      // 404 表示服务器不支持 refresh 端点，不应登出，只需停止后续刷新
-      if (httpStatus === 404) {
-        logger.warn('[TokenRefresh] 服务器不支持 Token 刷新端点 (404)，停止自动刷新')
-        this.clearTokenRefreshTimer()
-        return
-      }
-      // 429 限流，稍后重试
-      if (httpStatus === 429) {
-        logger.warn('[TokenRefresh] Token 刷新被限流 (429)，将在 30s 后重试')
-        this.scheduleTokenRefresh(refreshToken, 30000)
-        return
-      }
-      // 其他错误（如 M_UNKNOWN_TOKEN）才触发登出
-      logger.error(`[TokenRefresh] 刷新访问令牌失败: ${err}`)
-      logger.warn('[TokenRefresh] Session expired, clearing stored session')
-      try {
-        await logoutExpiredSession()
-      } catch (err) {
-        logger.warn('Cleanup error:', err)
-      }
-    } finally {
-      this.isRefreshingToken = false
-    }
-  }
-
-  /**
-   * 更新连接状态并触发事件
-   *
-   * @param state - 新的连接状态
-   */
   updateConnectionState(state: ConnectionState): void {
     if (this.connectionState === state) return
     this.connectionState = state
@@ -1064,24 +879,12 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 获取 Matrix 客户端实例
-   *
-   * @returns Matrix 客户端实例，如果未初始化则返回 null
-   */
+  // ---- Accessors --------------------------------------------------------------
+
   getClient(): MatrixClient | null {
     return this.client
   }
 
-  /**
-   * 等待客户端就绪
-   *
-   * 调用方在初始化竞争窗口里需要拿到一个非 null 的 MatrixClient，
-   * 该方法会以轮询方式等待 `this.client` 被赋值；超时后抛错。
-   *
-   * @param opts.timeoutMs 超时毫秒数，默认 5000
-   * @param opts.intervalMs 轮询间隔，默认 50ms
-   */
   async waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
     if (this.client) return this.client
     const timeoutMs = opts?.timeoutMs ?? 5000
@@ -1094,11 +897,8 @@ class MatrixClientService {
     throw new Error(useI18nGlobal().t('matrix_error.client.not_ready_timeout'))
   }
 
-  /**
-   * 获取 Sliding Sync 实例
-   */
   getSlidingSync(): SlidingSync | null {
-    return this.slidingSyncInstance
+    return this.syncManager.get()
   }
 
   getRustCryptoDebugState(): RustCryptoDebugState {
@@ -1109,109 +909,40 @@ class MatrixClientService {
     return { ...this.eventDecryptedDebugState }
   }
 
-  resetSlidingSyncReady(): void {
-    if (this.slidingSyncReadyPromise) {
-      this.slidingSyncReadyResolve?.()
-    }
-    this.slidingSyncReadyPromise = new Promise<void>((resolve) => {
-      this.slidingSyncReadyResolve = resolve
-    })
-  }
-
-  markSlidingSyncReady(): void {
-    if (this.slidingSyncReadyResolve) {
-      this.slidingSyncReadyResolve()
-      this.slidingSyncReadyResolve = null
-    }
-  }
-
   async waitForSlidingSyncReady(timeoutMs: number = 10000): Promise<boolean> {
-    if (!this.slidingSyncInstance) return false
-    if (!this.slidingSyncReadyPromise) return true
-    try {
-      await Promise.race([
-        this.slidingSyncReadyPromise,
-        new Promise<void>((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
-      ])
-      return true
-    } catch {
-      return false
-    }
+    return this.syncManager.waitForReady(timeoutMs)
   }
 
-  /**
-   * 获取当前连接状态
-   *
-   * @returns 连接状态
-   */
   getConnectionState(): ConnectionState {
     return this.connectionState
   }
 
-  /**
-   * 获取当前用户 ID
-   *
-   * @returns 用户 ID，如果未登录则返回 null
-   */
   getUserId(): string | null {
     return this.client?.getUserId() ?? null
   }
 
-  /**
-   * 获取当前访问令牌
-   *
-   * 在 client 尚未完全 ready 的恢复窗口里，优先回退到 initialize() 保存的 config。
-   */
   getAccessToken(): string | null {
     return this.client?.getAccessToken?.() ?? this.config?.accessToken ?? null
   }
 
-  /**
-   * 获取当前 homeserver URL
-   *
-   * 在 client 尚未完全 ready 的恢复窗口里，优先回退到 initialize() 保存的 config。
-   */
   getHomeserverUrl(): string | null {
     return this.client?.getHomeserverUrl?.() ?? this.config?.homeserverUrl ?? null
   }
 
-  /**
-   * 获取当前设备 ID
-   *
-   * @returns 设备 ID，如果未登录则返回 null
-   */
   getDeviceId(): string | null {
     return this.client?.getDeviceId() ?? null
   }
 
-  /**
-   * 获取用户信息
-   *
-   * @param userId - 用户 ID
-   * @returns 用户实例，如果不存在则返回 null
-   */
   getUser(userId: string): User | null {
     return this.client?.getUser(userId) ?? null
   }
 
-  /**
-   * 同步判断房间是否已加密
-   *
-   * @param roomId - 房间 ID
-   * @returns 是否已加密
-   */
   isRoomEncrypted(roomId: string): boolean {
     return this.client?.isRoomEncrypted?.(roomId) ?? false
   }
 
-  /**
-   * 判断当前用户是否有权限管理指定 Space
-   *
-   * 检查用户是否已加入该 space，且 power level >= 50
-   *
-   * @param spaceId - Space 房间 ID
-   * @returns 是否有管理权限
-   */
+  // ---- Space management -------------------------------------------------------
+
   private static readonly DEFAULT_MODERATOR_POWER_LEVEL = 50
 
   canManageSpace(spaceId: string): boolean {
@@ -1229,11 +960,8 @@ class MatrixClientService {
     return powerLevel >= MatrixClientService.DEFAULT_MODERATOR_POWER_LEVEL
   }
 
-  /**
-   * 收集所有 Manager 的 RequestStats（供性能监控模块使用）
-   *
-   * @returns Manager stats 列表
-   */
+  // ---- Manager stats ----------------------------------------------------------
+
   getManagerStatsList(): Array<{
     name: string
     stats: { total: number; successful: number; failed: number; retried: number }
@@ -1294,32 +1022,16 @@ class MatrixClientService {
     return baseName ? baseName.charAt(0).toLowerCase() + baseName.slice(1) : getterName
   }
 
-  /**
-   * 获取所有房间
-   *
-   * @returns 房间列表
-   */
+  // ---- Room operations --------------------------------------------------------
+
   getRooms(): Room[] {
     return this.client?.getRooms() ?? []
   }
 
-  /**
-   * 获取指定房间
-   *
-   * @param roomId - 房间 ID
-   * @returns 房间实例，如果不存在则返回 null
-   */
   getRoom(roomId: string): Room | null {
     return this.client?.getRoom(roomId) ?? null
   }
 
-  /**
-   * 创建房间
-   *
-   * @param options - 房间创建选项
-   * @returns 创建的房间
-   * @throws {Error} 如果客户端未初始化或创建失败
-   */
   async createRoom(options: ICreateRoomOpts): Promise<Room> {
     if (!this.client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
@@ -1340,13 +1052,6 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 加入房间
-   *
-   * @param roomId - 房间 ID 或别名
-   * @returns 加入的房间
-   * @throws {Error} 如果客户端未初始化或加入失败
-   */
   async joinRoom(roomId: string): Promise<Room> {
     if (!this.client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
@@ -1368,12 +1073,6 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 离开房间
-   *
-   * @param roomId - 房间 ID
-   * @throws {Error} 如果客户端未初始化或离开失败
-   */
   async leaveRoom(roomId: string): Promise<void> {
     if (!this.client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
@@ -1390,12 +1089,8 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 注册事件监听器
-   *
-   * @param event - 事件名称
-   * @param callback - 回调函数
-   */
+  // ---- Event system -----------------------------------------------------------
+
   on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set())
@@ -1403,12 +1098,6 @@ class MatrixClientService {
     this.eventListeners.get(event)!.add(callback)
   }
 
-  /**
-   * 移除事件监听器
-   *
-   * @param event - 事件名称
-   * @param callback - 回调函数
-   */
   off(event: string, callback: (...args: unknown[]) => void): void {
     const listeners = this.eventListeners.get(event)
     if (listeners) {
@@ -1416,12 +1105,6 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 触发事件
-   *
-   * @param event - 事件名称
-   * @param data - 事件数据
-   */
   private emit(event: string, ...data: unknown[]): void {
     const listeners = this.eventListeners.get(event)
     if (listeners) {
@@ -1429,10 +1112,6 @@ class MatrixClientService {
     }
   }
 
-  /**
-   * 设置 SDK 事件监听器
-   * 注意: MatrixClient 继承自 EventEmitter，事件名称为字符串字面量
-   */
   private setupEventListeners(): void {
     if (!this.client) return
 
@@ -1463,8 +1142,6 @@ class MatrixClientService {
     client.off('Event.decrypted', this.eventDecryptedListener as never)
     client.off('Room.typing', this.typingListener)
     client.off('Room.receipt', this.receiptListener)
-
-    // 清理 Room 级别的事件监听器
     this.detachRoomListeners()
   }
 
