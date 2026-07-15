@@ -1,4 +1,4 @@
-import { matrixRoomMemberProfileService } from './MemberProfileService'
+import { roomOperations } from './RoomOperations'
 
 export interface MatrixRoomMemberFacade {
   setMemberDisplayName(roomId: string, displayName: string): Promise<void>
@@ -9,23 +9,9 @@ export interface MatrixRoomMemberFacade {
 }
 
 export const matrixRoomMemberFacade: MatrixRoomMemberFacade = {
-  async setMemberDisplayName(roomId, displayName) {
-    return matrixRoomMemberProfileService.setMemberDisplayName(roomId, displayName)
-  },
-
-  async getMemberDisplayName(roomId, userId) {
-    return matrixRoomMemberProfileService.getMemberDisplayName(roomId, userId)
-  },
-
-  async setMemberPowerLevel(roomId, userId, powerLevel) {
-    return matrixRoomMemberProfileService.setMemberPowerLevel(roomId, userId, powerLevel)
-  },
-
-  async setMemberAsAdmin(roomId, userId) {
-    return matrixRoomMemberProfileService.setMemberAsAdmin(roomId, userId)
-  },
-
-  async removeMemberAsAdmin(roomId, userId) {
-    return matrixRoomMemberProfileService.removeMemberAsAdmin(roomId, userId)
-  }
+  setMemberDisplayName: (roomId, displayName) => roomOperations.setMemberDisplayName(roomId, displayName),
+  getMemberDisplayName: (roomId, userId) => roomOperations.getMemberDisplayName(roomId, userId),
+  setMemberPowerLevel: (roomId, userId, powerLevel) => roomOperations.setMemberPowerLevel(roomId, userId, powerLevel),
+  setMemberAsAdmin: (roomId, userId) => roomOperations.setMemberAsAdmin(roomId, userId),
+  removeMemberAsAdmin: (roomId, userId) => roomOperations.removeMemberAsAdmin(roomId, userId)
 }
