@@ -52,8 +52,9 @@ export class MatrixRoomLifecycleService {
     const client = this.getClient(true)
     try {
       const result = await client.upgradeRoom(roomId, newVersion)
-      logger.info(`[MatrixRoom] 升级房间成功: ${roomId} -> ${result}`)
-      return result
+      const newRoomId = result.replacement_room
+      logger.info(`[MatrixRoom] 升级房间成功: ${roomId} -> ${newRoomId}`)
+      return newRoomId
     } catch (err) {
       logger.error(`[MatrixRoom] 升级房间失败: ${err}`)
       throw err
