@@ -21,13 +21,6 @@ interface ReactionServiceDeps {
   addReaction(roomId: string, eventId: string, emoji: string): Promise<string>
 }
 
-interface RoomStateServiceDeps {
-  setRoomName(roomId: string, name: string): Promise<void>
-  setRoomTopic(roomId: string, topic: string): Promise<void>
-  setRoomAvatar(roomId: string, avatarUrl: string): Promise<void>
-  setPushRule(roomId: string, enabled: boolean): Promise<void>
-}
-
 interface RoomServiceDeps {
   joinRoom(roomId: string): Promise<unknown>
   leaveRoom(roomId: string): Promise<void>
@@ -41,16 +34,14 @@ interface RoomCreationServiceDeps {
   createRoom(options: Record<string, unknown>): Promise<unknown>
 }
 
-interface RoomDirectMessageServiceDeps {
+interface RoomOperationsDeps {
+  setRoomName(roomId: string, name: string): Promise<void>
+  setRoomTopic(roomId: string, topic: string): Promise<void>
+  setRoomAvatar(roomId: string, avatarUrl: string): Promise<void>
+  setPushRule(roomId: string, enabled: boolean): Promise<void>
   createDirectRoom(userId: string): Promise<string>
-}
-
-interface RoomTagsServiceDeps {
   setTag(roomId: string, tag: string, order?: number): Promise<void>
   removeTag(roomId: string, tag: string): Promise<void>
-}
-
-interface RoomPinsServiceDeps {
   setPinnedEvents(roomId: string, eventIds: string[]): Promise<void>
   setStickyEvents(roomId: string, events: Record<string, unknown>): Promise<void>
 }
@@ -60,12 +51,9 @@ export function useOfflineQueueReplay(deps: {
   getMatrixMessageService: () => Promise<MessageServiceDeps>
   getMatrixReceiptService: () => Promise<ReceiptServiceDeps>
   getMatrixReactionService: () => Promise<ReactionServiceDeps>
-  getMatrixRoomStateService: () => Promise<RoomStateServiceDeps>
   getMatrixRoomService: () => Promise<RoomServiceDeps>
   getMatrixRoomCreationService: () => Promise<RoomCreationServiceDeps>
-  getMatrixRoomDirectMessageService: () => Promise<RoomDirectMessageServiceDeps>
-  getMatrixRoomTagsService: () => Promise<RoomTagsServiceDeps>
-  getMatrixRoomPinsService: () => Promise<RoomPinsServiceDeps>
+  getRoomOperations: () => Promise<RoomOperationsDeps>
 }) {
   const initOfflineQueue = async () => {
     const { offlineQueueService } = await import('@/services/offline/OfflineQueueService')
@@ -74,12 +62,9 @@ export function useOfflineQueueReplay(deps: {
       const messageService = await deps.getMatrixMessageService()
       const receiptService = await deps.getMatrixReceiptService()
       const reactionService = await deps.getMatrixReactionService()
-      const roomStateService = await deps.getMatrixRoomStateService()
       const roomService = await deps.getMatrixRoomService()
       const roomCreationService = await deps.getMatrixRoomCreationService()
-      const roomDirectMessageService = await deps.getMatrixRoomDirectMessageService()
-      const roomTagsService = await deps.getMatrixRoomTagsService()
-      const roomPinsService = await deps.getMatrixRoomPinsService()
+      const roomOps = await deps.getRoomOperations()
 
       switch (op.type) {
         case 'message': {
@@ -122,11 +107,11 @@ export function useOfflineQueueReplay(deps: {
             content: string
           }
           if (type === 'name') {
-            await roomStateService.setRoomName(roomId, content)
+            await roomOps.setRoomName(roomId, content)
           } else if (type === 'topic') {
-            await roomStateService.setRoomTopic(roomId, content)
+            await roomOps.setRoomTopic(roomId, content)
           } else if (type === 'avatar') {
-            await roomStateService.setRoomAvatar(roomId, content)
+            await roomOps.setRoomAvatar(roomId, content)
           }
           break
         }
@@ -143,7 +128,7 @@ export function useOfflineQueueReplay(deps: {
         }
         case 'push_rule': {
           const { roomId, enabled } = op.payload as { roomId: string; enabled: boolean }
-          await roomStateService.setPushRule(roomId, enabled)
+          await roomOps.setPushRule(roomId, enabled)
           break
         }
         case 'membership': {
@@ -175,7 +160,7 @@ export function useOfflineQueueReplay(deps: {
         }
         case 'dm_creation': {
           const { userId } = op.payload as { userId: string }
-          await roomDirectMessageService.createDirectRoom(userId)
+          await roomOps.createDirectRoom(userId)
           break
         }
         case 'tag': {
@@ -186,9 +171,9 @@ export function useOfflineQueueReplay(deps: {
             action: 'set' | 'remove'
           }
           if (action === 'set') {
-            await roomTagsService.setTag(roomId, tag, order)
+            await roomOps.setTag(roomId, tag, order)
           } else {
-            await roomTagsService.removeTag(roomId, tag)
+            await roomOps.removeTag(roomId, tag)
           }
           break
         }
@@ -200,9 +185,9 @@ export function useOfflineQueueReplay(deps: {
             events?: Record<string, unknown>
           }
           if (payload.type === 'pinned' && payload.eventIds) {
-            await roomPinsService.setPinnedEvents(payload.roomId, payload.eventIds)
+            await roomOps.setPinnedEvents(payload.roomId, payload.eventIds)
           } else if (payload.type === 'sticky' && payload.events) {
-            await roomPinsService.setStickyEvents(payload.roomId, payload.events)
+            await roomOps.setStickyEvents(payload.roomId, payload.events)
           }
           break
         }
