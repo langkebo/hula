@@ -44,6 +44,11 @@
       </div>
     </Transition>
 
+    <E2EEBanner
+      v-if="globalStore.currentSessionRoomId"
+      :key="globalStore.currentSessionRoomId"
+      :room-id="globalStore.currentSessionRoomId" />
+
     <!-- 聊天内容 -->
     <div class="flex flex-col flex-1 min-h-0">
       <div
@@ -287,6 +292,7 @@ const FileUploadProgress = defineAsyncComponent(() => import('@/components/right
 const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/ThreadPanel.vue'))
 const EventReportDialog = defineAsyncComponent(() => import('@/components/moderation/EventReportDialog.vue'))
 
+import E2EEBanner from '@/components/chat/E2EEBanner.vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { usePopover } from '@/composables/common/usePopover'
