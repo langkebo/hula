@@ -58,8 +58,9 @@ vi.mock('@/composables/common/useMitt', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
-  matrixEncryptionService: {
+vi.mock('@/services/matrix/crypto/CryptoSDKAdapter', () => ({
+  cryptoSDKAdapter: {
+    getClient: vi.fn(() => ({})),
     isRoomEncrypted: isRoomEncryptedMock
   }
 }))
@@ -74,7 +75,7 @@ vi.mock('@/strategy/MessageStrategy.ts', () => ({
   getStrategy: getStrategyMock
 }))
 
-vi.mock('../../useFileUploadQueue.ts', () => ({
+vi.mock('../../common/useFileUploadQueue', () => ({
   globalFileUploadQueue: {
     initQueue: initQueueMock,
     updateFileStatus: updateFileStatusMock,
@@ -82,7 +83,7 @@ vi.mock('../../useFileUploadQueue.ts', () => ({
   }
 }))
 
-vi.mock('../../useUpload.ts', () => ({
+vi.mock('../../common/useUpload', () => ({
   UploadProviderEnum: { DEFAULT: 'default' },
   useUpload: () => ({
     uploadFile: vi.fn(),

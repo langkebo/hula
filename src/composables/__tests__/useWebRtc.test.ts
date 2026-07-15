@@ -142,12 +142,12 @@ vi.mock('../useTauriListener', () => ({
   })
 }))
 
-vi.mock('../webRtc/iceServers', () => ({
+vi.mock('../webrtc/iceServers', () => ({
   getIceConfiguration: () => ({}),
   loadIceServers: loadIceServersMock
 }))
 
-vi.mock('../webRtc/useCallBell', () => ({
+vi.mock('../webrtc/useCallBell', () => ({
   useCallBell: () => ({
     startBell: startBellMock,
     stopBell: stopBellMock,
@@ -156,7 +156,7 @@ vi.mock('../webRtc/useCallBell', () => ({
   })
 }))
 
-vi.mock('../webRtc/useCallTimer', () => ({
+vi.mock('../webrtc/useCallTimer', () => ({
   useCallTimer: () => ({
     callDuration: ref(0),
     startCallTimer: startCallTimerMock,
@@ -164,7 +164,7 @@ vi.mock('../webRtc/useCallTimer', () => ({
   })
 }))
 
-vi.mock('../webRtc/useCameraSwitch', () => ({
+vi.mock('../webrtc/useCameraSwitch', () => ({
   useCameraSwitch: (options: Record<string, unknown>) => {
     useCameraSwitchArgs.push(options)
     return {
@@ -175,7 +175,7 @@ vi.mock('../webRtc/useCameraSwitch', () => ({
   }
 }))
 
-vi.mock('../webRtc/useMediaDevices', () => ({
+vi.mock('../webrtc/useMediaDevices', () => ({
   useMediaDevices: () => ({
     audioDevices: mediaDevicesState.audioDevices,
     videoDevices: mediaDevicesState.videoDevices,
@@ -186,7 +186,7 @@ vi.mock('../webRtc/useMediaDevices', () => ({
   })
 }))
 
-vi.mock('../webRtc/useScreenShare', () => ({
+vi.mock('../webrtc/useScreenShare', () => ({
   useScreenShare: (options: Record<string, unknown>) => {
     useScreenShareArgs.push(options)
     return {

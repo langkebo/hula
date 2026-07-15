@@ -94,7 +94,7 @@ import type { FileBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import { createLogger } from '@/utils/Logger'
-import EmptyState from './EmptyState.vue'
+import EmptyState from './FileManagerEmptyState.vue'
 
 const logger = createLogger('FileContent')
 
