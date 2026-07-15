@@ -7,6 +7,8 @@
         :key="item.path"
         :to="item.path"
         :data-testid="item.testId"
+        :aria-label="item.label"
+        :aria-current="route.path === item.path ? 'page' : undefined"
         class="tab-item flex flex-col flex-1 items-center no-underline relative"
         :class="route.path === item.path ? 'color-[--hula-color-primary-500]' : 'text-[--hula-text-tertiary]'"
         @click="handleNavigate(item.path)">

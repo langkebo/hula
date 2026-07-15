@@ -930,7 +930,9 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     groupNicknameError,
     groupNicknameSubmitting,
     handleGroupNicknameConfirm,
-    activeBubble
+    activeBubble,
+    delIndex,
+    delRoomId
   }
 }
 

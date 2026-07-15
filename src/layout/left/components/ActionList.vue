@@ -11,13 +11,14 @@
           showMode === ShowModeEnum.ICON ? 'p-[6px_8px]' : 'w-46px py-4px'
         ]"
         style="text-align: center"
+        :aria-label="item.title"
         @click="pageJumps(item.url, item.title, item.size, item.window)"
         :title="item.title">
         <!-- 已经打开窗口时展示 -->
         <n-popover :show-arrow="false" v-if="openWindowsList.has(item.url)" trigger="hover" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge">
-              <svg class="size-22px" @click="tipShow = false">
+              <svg class="size-22px" @click="tipShow = false" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
               </svg>
@@ -29,7 +30,7 @@
         <n-popover style="padding: 12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge" dot :show="item.dot">
-              <svg class="size-22px" @click="handleTipShow(item)">
+              <svg class="size-22px" @click="handleTipShow(item)" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
               </svg>
@@ -44,7 +45,7 @@
         </n-popover>
         <!-- 该选项无提示时展示 -->
         <n-badge v-else :max="99" :value="getMenuBadgeValue(item.url)" :show="getMenuBadgeShow(item.url)">
-          <svg class="size-22px">
+          <svg class="size-22px" aria-hidden="true">
             <use
               :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
           </svg>
@@ -73,6 +74,7 @@
             }
           ]"
           :title="item.title"
+          :aria-label="item.title"
           @click="pageJumps(item.url, item.title, item.size, item.window)">
           <span class="workspace-entry__indicator" aria-hidden="true"></span>
           <span class="workspace-entry__surface">
@@ -98,13 +100,14 @@
           showMode === ShowModeEnum.ICON ? 'p-[6px_8px]' : 'w-46px py-4px'
         ]"
         style="text-align: center"
+        :aria-label="item.title"
         @click="pageJumps(item.url, item.title, item.size, item.window)"
         :title="item.title">
         <!-- 已经打开窗口时展示 -->
         <n-popover :show-arrow="false" v-if="openWindowsList.has(item.url)" trigger="hover" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge">
-              <svg class="size-22px" @click="tipShow = false">
+              <svg class="size-22px" @click="tipShow = false" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
               </svg>
@@ -116,7 +119,7 @@
         <n-popover style="padding: 12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge" dot :show="item.dot">
-              <svg class="size-22px" @click="handleTipShow(item)">
+              <svg class="size-22px" @click="handleTipShow(item)" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
               </svg>
@@ -133,7 +136,7 @@
         <n-popover v-else :show-arrow="false" trigger="hover" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge" :show="(item.badge ?? 0) > 0">
-              <svg class="size-22px">
+              <svg class="size-22px" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
               </svg>
@@ -200,13 +203,14 @@
           showMode === ShowModeEnum.ICON ? 'p-[6px_8px]' : 'w-46px py-4px'
         ]"
         style="text-align: center"
+        :aria-label="item.title"
         @click="pageJumps(item.url, item.title, item.size, item.window)"
         :title="item.title">
         <!-- 已经打开窗口时展示 -->
         <n-popover :show-arrow="false" v-if="openWindowsList.has(item.url)" trigger="hover" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge">
-              <svg class="size-22px" @click="tipShow = false">
+              <svg class="size-22px" @click="tipShow = false" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
               </svg>
@@ -218,7 +222,7 @@
         <n-popover style="padding: 12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge">
-              <svg class="size-22px" @click="tipShow = false">
+              <svg class="size-22px" @click="tipShow = false" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
               </svg>
@@ -226,14 +230,14 @@
           </template>
           <n-flex align="center" justify="space-between">
             <p class="select-none">{{ item.tip }}</p>
-            <svg @click="tipShow = false" class="size-12px cursor-pointer">
+            <svg @click="tipShow = false" class="size-12px cursor-pointer" aria-hidden="true">
               <use href="#close"></use>
             </svg>
           </n-flex>
         </n-popover>
         <!-- 该选项无提示时展示 -->
         <n-badge v-else :max="99" :value="item.badge">
-          <svg class="size-22px">
+          <svg class="size-22px" aria-hidden="true">
             <use
               :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
           </svg>
@@ -244,7 +248,10 @@
       </div>
 
       <!--  更多选项面板  -->
-      <div :title="t('home.action.more')" :class="{ 'bottom-action py-4px': showMode === ShowModeEnum.TEXT }">
+      <div
+        :title="t('home.action.more')"
+        :aria-label="t('home.action.more')"
+        :class="{ 'bottom-action py-4px': showMode === ShowModeEnum.TEXT }">
         <n-popover
           v-model:show="settingShow"
           style="padding: 0; background: transparent; user-select: none"
