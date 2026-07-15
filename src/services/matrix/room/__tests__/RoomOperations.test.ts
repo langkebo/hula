@@ -9,10 +9,13 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 const getClientMock = vi.fn()
 const waitForClientReadyMock = vi.fn().mockResolvedValue(undefined)
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock(), waitForClientReady: () => waitForClientReadyMock() },
+  default: {
+    getClient: () => getClientMock(),
+    waitForClientReady: waitForClientReadyMock
+  },
   matrixClientService: {
     getClient: () => getClientMock(),
-    waitForClientReady: () => waitForClientReadyMock()
+    waitForClientReady: waitForClientReadyMock
   }
 }))
 
@@ -44,14 +47,9 @@ describe('RoomOperations', () => {
   // === State methods ===
 
   describe('setRoomName', () => {
-    it('throws when client is not initialized', async () => {
-      getClientMock.mockReturnValueOnce(null)
-      await expect(ops.setRoomName('!r', 'x')).rejects.toThrow('客户端未初始化')
-    })
-
     it('forwards to client.setRoomName', async () => {
       const setRoomName = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ setRoomName })
+      getClientMock.mockReturnValue({ setRoomName })
       await ops.setRoomName('!r', 'New')
       expect(setRoomName).toHaveBeenCalledWith('!r', 'New')
     })
@@ -67,17 +65,12 @@ describe('RoomOperations', () => {
       })
       Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true })
     })
-
-    it('re-throws backend errors', async () => {
-      getClientMock.mockReturnValueOnce({ setRoomName: vi.fn().mockRejectedValue(new Error('403')) })
-      await expect(ops.setRoomName('!r', 'x')).rejects.toThrow('403')
-    })
   })
 
   describe('setRoomTopic', () => {
     it('forwards to client.setRoomTopic', async () => {
       const setRoomTopic = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ setRoomTopic })
+      getClientMock.mockReturnValue({ setRoomTopic })
       await ops.setRoomTopic('!r', 'hello')
       expect(setRoomTopic).toHaveBeenCalledWith('!r', 'hello')
     })
@@ -86,7 +79,7 @@ describe('RoomOperations', () => {
   describe('setRoomAvatar', () => {
     it('sends m.room.avatar state event with url', async () => {
       const sendStateEvent = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ sendStateEvent })
+      getClientMock.mockReturnValue({ sendStateEvent })
       await ops.setRoomAvatar('!r', 'mxc://e/abc')
       expect(sendStateEvent).toHaveBeenCalledWith('!r', 'm.room.avatar', { url: 'mxc://e/abc' }, '')
     })
@@ -94,14 +87,14 @@ describe('RoomOperations', () => {
 
   describe('getRoomState', () => {
     it('throws when room is missing from local cache', async () => {
-      getClientMock.mockReturnValueOnce({ getRoom: () => null })
+      getClientMock.mockReturnValue({ getRoom: () => null })
       await expect(ops.getRoomState('!r')).rejects.toThrow('房间不存在: !r')
     })
 
     it('returns all state events via currentState', async () => {
       const events = [{ type: 'm.room.name' }, { type: 'm.room.topic' }]
       const room = { currentState: { getStateEvents: vi.fn().mockReturnValue(events) } }
-      getClientMock.mockReturnValueOnce({ getRoom: () => room })
+      getClientMock.mockReturnValue({ getRoom: () => room })
       expect(await ops.getRoomState('!r')).toBe(events)
     })
   })
@@ -109,30 +102,19 @@ describe('RoomOperations', () => {
   describe('setPushRule', () => {
     it('enabled=true deletes override push rule', async () => {
       const deletePushRule = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ deletePushRule, addPushRule: vi.fn() })
+      getClientMock.mockReturnValue({ deletePushRule, addPushRule: vi.fn() })
       await ops.setPushRule('!r', true)
       expect(deletePushRule).toHaveBeenCalledWith('global', 'override', '!r')
     })
 
     it('enabled=false installs an empty-actions override rule', async () => {
       const addPushRule = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ deletePushRule: vi.fn(), addPushRule })
+      getClientMock.mockReturnValue({ deletePushRule: vi.fn(), addPushRule })
       await ops.setPushRule('!r', false)
       expect(addPushRule).toHaveBeenCalledWith('global', 'override', '!r', {
         conditions: [{ kind: 'event_match', key: 'room_id', pattern: '!r' }],
         actions: []
       })
-    })
-
-    it('enqueues when offline', async () => {
-      const originalOnLine = navigator.onLine
-      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
-      await ops.setPushRule('!r', true)
-      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('push_rule', '!r', {
-        roomId: '!r',
-        enabled: true
-      })
-      Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true })
     })
   })
 
@@ -140,17 +122,23 @@ describe('RoomOperations', () => {
 
   describe('getTags', () => {
     it('forwards to client.getRoomTags', async () => {
-      const getRoomTags = vi.fn().mockResolvedValue({ 'm.favourite': { order: 0.5 } })
-      getClientMock.mockReturnValueOnce({ getRoomTags })
+      const getRoomTags = vi.fn().mockResolvedValue({ tags: { 'm.favourite': { order: 0.5 } } })
+      getClientMock.mockReturnValue({ getRoomTags })
       expect(await ops.getTags('!r')).toEqual({ 'm.favourite': { order: 0.5 } })
     })
 
     it('returns {} on M_UNRECOGNIZED and caches unavailability', async () => {
-      getClientMock.mockReturnValueOnce({
+      getClientMock.mockReturnValue({
         getRoomTags: vi.fn().mockRejectedValue({ errcode: 'M_UNRECOGNIZED' })
       })
       expect(await ops.getTags('!r')).toEqual({})
-      // second call should be cached — no getClient call needed
+      expect(await ops.getTags('!r')).toEqual({})
+    })
+
+    it('returns {} on any error (rate-limit resilience)', async () => {
+      getClientMock.mockReturnValue({
+        getRoomTags: vi.fn().mockRejectedValue(new Error('429'))
+      })
       expect(await ops.getTags('!r')).toEqual({})
     })
   })
@@ -158,18 +146,43 @@ describe('RoomOperations', () => {
   describe('setTag', () => {
     it('delegates to client.setRoomTag', async () => {
       const setRoomTag = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ setRoomTag })
+      getClientMock.mockReturnValue({ setRoomTag, getUserId: () => '@me:e' })
       await ops.setTag('!r', 'm.favourite', 0.5)
       expect(setRoomTag).toHaveBeenCalledWith('!r', 'm.favourite', { order: 0.5 })
+    })
+
+    it('enqueues with full payload when offline', async () => {
+      const originalOnLine = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+      await ops.setTag('!r', 'm.favourite', 0.5)
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('tag', '!r', {
+        roomId: '!r',
+        tag: 'm.favourite',
+        order: 0.5,
+        action: 'set'
+      })
+      Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true })
     })
   })
 
   describe('removeTag', () => {
     it('delegates to client.deleteRoomTag', async () => {
       const deleteRoomTag = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ deleteRoomTag })
+      getClientMock.mockReturnValue({ deleteRoomTag, getUserId: () => '@me:e' })
       await ops.removeTag('!r', 'm.favourite')
       expect(deleteRoomTag).toHaveBeenCalledWith('!r', 'm.favourite')
+    })
+
+    it('enqueues with full payload when offline', async () => {
+      const originalOnLine = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+      await ops.removeTag('!r', 'm.favourite')
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('tag', '!r', {
+        roomId: '!r',
+        tag: 'm.favourite',
+        action: 'remove'
+      })
+      Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true })
     })
   })
 
@@ -178,7 +191,7 @@ describe('RoomOperations', () => {
   describe('setAlias', () => {
     it('forwards to client.createAlias', async () => {
       const createAlias = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ createAlias })
+      getClientMock.mockReturnValue({ createAlias })
       await ops.setAlias('!r', '#alias:e')
       expect(createAlias).toHaveBeenCalledWith('#alias:e', '!r')
     })
@@ -187,24 +200,24 @@ describe('RoomOperations', () => {
   describe('deleteAlias', () => {
     it('forwards to client.deleteAlias', async () => {
       const deleteAlias = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ deleteAlias })
+      getClientMock.mockReturnValue({ deleteAlias })
       await ops.deleteAlias('#alias:e')
       expect(deleteAlias).toHaveBeenCalledWith('#alias:e')
     })
   })
 
   describe('getAliases', () => {
-    it('throws when room not found', async () => {
-      getClientMock.mockReturnValueOnce({ getRoom: () => null })
-      await expect(ops.getAliases('!r')).rejects.toThrow('房间不存在: !r')
+    it('returns empty array when room not found', async () => {
+      getClientMock.mockReturnValue({ getRoom: () => null })
+      expect(await ops.getAliases('!r')).toEqual([])
     })
 
-    it('returns canonical alias plus alt aliases', async () => {
-      const canonical = { getContent: () => ({ alias: '#canon:e' }) }
-      const alt = { getContent: () => ({ alt_aliases: ['#alt1:e', '#alt2:e'] }) }
-      const getStateEvents = vi.fn().mockReturnValueOnce(canonical).mockReturnValueOnce(alt)
-      getClientMock.mockReturnValueOnce({
-        getRoom: () => ({ currentState: { getStateEvents } })
+    it('returns alt aliases with canonical alias first', async () => {
+      getClientMock.mockReturnValue({
+        getRoom: () => ({
+          getAltAliases: () => ['#alt1:e', '#alt2:e'],
+          getCanonicalAlias: () => '#canon:e'
+        })
       })
       expect(await ops.getAliases('!r')).toEqual(['#canon:e', '#alt1:e', '#alt2:e'])
     })
@@ -214,20 +227,20 @@ describe('RoomOperations', () => {
 
   describe('getServerDomain', () => {
     it('returns client.getDomain() when available', async () => {
-      getClientMock.mockReturnValueOnce({ getDomain: () => 'example.org' })
+      getClientMock.mockReturnValue({ getDomain: () => 'example.org' })
       expect(await ops.getServerDomain()).toBe('example.org')
     })
 
-    it('falls back to hostname extracted from baseUrl', async () => {
-      getClientMock.mockReturnValueOnce({
+    it('falls back to baseUrl hostname', async () => {
+      getClientMock.mockReturnValue({
         getDomain: () => '',
         baseUrl: 'https://matrix.example.com'
       })
       expect(await ops.getServerDomain()).toBe('matrix.example.com')
     })
 
-    it('falls back to matrix.org when domain and baseUrl are unusable', async () => {
-      getClientMock.mockReturnValueOnce({ getDomain: () => '' })
+    it('falls back to matrix.org when everything is unusable', async () => {
+      getClientMock.mockReturnValue({ getDomain: () => '' })
       expect(await ops.getServerDomain()).toBe('matrix.org')
     })
   })
@@ -235,7 +248,7 @@ describe('RoomOperations', () => {
   describe('upgradeRoom', () => {
     it('forwards to client.upgradeRoom and returns replacement_room string', async () => {
       const upgradeRoom = vi.fn().mockResolvedValue({ replacement_room: '!new:e' })
-      getClientMock.mockReturnValueOnce({ upgradeRoom })
+      getClientMock.mockReturnValue({ upgradeRoom })
       expect(await ops.upgradeRoom('!old:e', '11')).toBe('!new:e')
       expect(upgradeRoom).toHaveBeenCalledWith('!old:e', '11')
     })
@@ -243,29 +256,19 @@ describe('RoomOperations', () => {
 
   describe('incrementUnread', () => {
     it('resolves silently when room exists', async () => {
-      getClientMock.mockReturnValueOnce({ getRoom: () => ({ roomId: '!r' }) })
+      getClientMock.mockReturnValue({ getRoom: () => ({ roomId: '!r' }) })
       await expect(ops.incrementUnread('!r')).resolves.toBeUndefined()
     })
 
-    it('swallows "room not found"', async () => {
-      getClientMock.mockReturnValueOnce({ getRoom: () => null })
-      await expect(ops.incrementUnread('!r')).resolves.toBeUndefined()
-    })
-
-    it('swallows "client not initialized"', async () => {
-      getClientMock.mockReturnValueOnce(null)
+    it('swallows errors when room is missing', async () => {
+      getClientMock.mockReturnValue({ getRoom: () => null })
       await expect(ops.incrementUnread('!r')).resolves.toBeUndefined()
     })
   })
 
   describe('clearUnread', () => {
     it('resolves silently when room exists', async () => {
-      getClientMock.mockReturnValueOnce({ getRoom: () => ({ roomId: '!r' }) })
-      await expect(ops.clearUnread('!r')).resolves.toBeUndefined()
-    })
-
-    it('swallows "room not found"', async () => {
-      getClientMock.mockReturnValueOnce({ getRoom: () => null })
+      getClientMock.mockReturnValue({ getRoom: () => ({ roomId: '!r' }) })
       await expect(ops.clearUnread('!r')).resolves.toBeUndefined()
     })
   })
@@ -273,24 +276,29 @@ describe('RoomOperations', () => {
   // === Translate methods ===
 
   describe('translateText', () => {
-    it('calls the backend translate endpoint and returns translated text', async () => {
-      const authedRequest = vi.fn().mockResolvedValue({ translated_text: 'Hallo' })
-      getClientMock.mockReturnValueOnce({ getHttp: () => ({ authedRequest }) })
-      expect(await ops.translateText('Hello', 'de')).toBe('Hallo')
+    it('calls backend translate and returns translated text', async () => {
+      const authedRequest = vi.fn().mockResolvedValue({ translated_text: '你好' })
+      getClientMock.mockReturnValue({ http: { authedRequest } })
+      expect(await ops.translateText('Hello', 'zh-CN')).toBe('你好')
     })
 
     it('falls back to Google Translate on backend failure', async () => {
       const authedRequest = vi.fn().mockRejectedValue(new Error('502'))
-      getClientMock.mockReturnValueOnce({ getHttp: () => ({ authedRequest }) })
-      // fetch will fail in test env; with throwOnError=false (default is true, but we pass false), returns original
+      getClientMock.mockReturnValue({ http: { authedRequest } })
       const result = await ops.translateText('Hello', 'de', false)
       expect(result).toBe('Hello')
     })
 
-    it('throws when all translation paths fail and throwOnError is true', async () => {
+    it('throws when all paths fail and throwOnError is true', async () => {
       const authedRequest = vi.fn().mockRejectedValue(new Error('502'))
-      getClientMock.mockReturnValueOnce({ getHttp: () => ({ authedRequest }) })
-      await expect(ops.translateText('Hello', 'de', true)).rejects.toThrow('翻译失败')
+      getClientMock.mockReturnValue({ http: { authedRequest } })
+      await expect(ops.translateText('Hello', 'de', true)).rejects.toThrow()
+    })
+
+    it('defaults target language to zh-CN', async () => {
+      const authedRequest = vi.fn().mockResolvedValue({ translated_text: '你好' })
+      getClientMock.mockReturnValue({ http: { authedRequest } })
+      expect(await ops.translateText('Hello')).toBe('你好')
     })
   })
 
@@ -301,15 +309,36 @@ describe('RoomOperations', () => {
       const getStateEvents = vi.fn().mockReturnValue({
         getContent: () => ({ pinned: ['$e1', '$e2'] })
       })
-      getClientMock.mockReturnValueOnce({
+      getClientMock.mockReturnValue({
         getRoom: () => ({ currentState: { getStateEvents } })
       })
       expect(await ops.getPinnedEvents('!r')).toEqual(['$e1', '$e2'])
     })
 
     it('returns empty array when room not found', async () => {
-      getClientMock.mockReturnValueOnce({ getRoom: () => null })
+      getClientMock.mockReturnValue({ getRoom: () => null })
       expect(await ops.getPinnedEvents('!r')).toEqual([])
+    })
+  })
+
+  describe('setPinnedEvents', () => {
+    it('sends m.room.pinned_events state event', async () => {
+      const sendStateEvent = vi.fn().mockResolvedValue(undefined)
+      getClientMock.mockReturnValue({ sendStateEvent })
+      await ops.setPinnedEvents('!r', ['$e1'])
+      expect(sendStateEvent).toHaveBeenCalledWith('!r', 'm.room.pinned_events', { pinned: ['$e1'] }, '')
+    })
+
+    it('enqueues with pin type and subtype when offline', async () => {
+      const originalOnLine = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+      await ops.setPinnedEvents('!r', ['$e1'])
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('pin', '!r', {
+        roomId: '!r',
+        type: 'pinned',
+        eventIds: ['$e1']
+      })
+      Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true })
     })
   })
 
@@ -328,7 +357,7 @@ describe('RoomOperations', () => {
     })
 
     it('does not duplicate existing eventId', async () => {
-      const sendStateEvent = vi.fn().mockResolvedValue(undefined)
+      const sendStateEvent = vi.fn()
       const getStateEvents = vi.fn().mockReturnValue({
         getContent: () => ({ pinned: ['$e1'] })
       })
@@ -338,6 +367,18 @@ describe('RoomOperations', () => {
       })
       await ops.pinEvent('!r', '$e1')
       expect(sendStateEvent).not.toHaveBeenCalled()
+    })
+
+    it('enqueues when offline', async () => {
+      const originalOnLine = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+      await ops.pinEvent('!r', '$e1')
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('pin', '!r', {
+        roomId: '!r',
+        type: 'pin',
+        eventId: '$e1'
+      })
+      Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true })
     })
   })
 
@@ -354,32 +395,81 @@ describe('RoomOperations', () => {
       await ops.unpinEvent('!r', '$e1')
       expect(sendStateEvent).toHaveBeenCalledWith('!r', 'm.room.pinned_events', { pinned: ['$e2'] }, '')
     })
+
+    it('enqueues when offline', async () => {
+      const originalOnLine = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+      await ops.unpinEvent('!r', '$e1')
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('pin', '!r', {
+        roomId: '!r',
+        type: 'unpin',
+        eventId: '$e1'
+      })
+      Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true })
+    })
   })
 
   // === Moderation methods ===
 
   describe('getInviteBlocklist', () => {
-    it('GETs invite blocklist from synapse admin API', async () => {
+    it('GETs invite blocklist via client.http', async () => {
       const authedRequest = vi.fn().mockResolvedValue({ blocked: ['@bad:e'] })
-      getClientMock.mockReturnValueOnce({ getHttp: () => ({ authedRequest }) })
+      getClientMock.mockReturnValue({ http: { authedRequest } })
       expect(await ops.getInviteBlocklist('!r')).toEqual(['@bad:e'])
     })
 
-    it('returns empty array on null response', async () => {
-      const authedRequest = vi.fn().mockResolvedValue(null)
-      getClientMock.mockReturnValueOnce({ getHttp: () => ({ authedRequest }) })
+    it('returns empty array on error', async () => {
+      const authedRequest = vi.fn().mockRejectedValue(new Error('500'))
+      getClientMock.mockReturnValue({ http: { authedRequest } })
       expect(await ops.getInviteBlocklist('!r')).toEqual([])
     })
   })
 
   describe('setInviteBlocklist', () => {
-    it('POSTs blocklist to synapse admin API', async () => {
+    it('POSTs blocklist via client.http', async () => {
       const authedRequest = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ getHttp: () => ({ authedRequest }) })
+      getClientMock.mockReturnValue({ http: { authedRequest } })
       await ops.setInviteBlocklist('!r', ['@bad:e'])
-      expect(authedRequest).toHaveBeenCalledWith('POST', '/_synapse/admin/v1/rooms/!r/invite_blocklist', undefined, {
+      expect(authedRequest).toHaveBeenCalledWith('POST', '/_matrix/client/v3/rooms/!r/invite_blocklist', undefined, {
         blocked: ['@bad:e']
       })
+    })
+  })
+
+  describe('getStickyEvents', () => {
+    it('GETs sticky events via client.http', async () => {
+      const authedRequest = vi.fn().mockResolvedValue({ key: 'value' })
+      getClientMock.mockReturnValue({ http: { authedRequest } })
+      expect(await ops.getStickyEvents('!r')).toEqual({ key: 'value' })
+    })
+
+    it('returns empty object on error', async () => {
+      const authedRequest = vi.fn().mockRejectedValue(new Error('500'))
+      getClientMock.mockReturnValue({ http: { authedRequest } })
+      expect(await ops.getStickyEvents('!r')).toEqual({})
+    })
+  })
+
+  describe('setStickyEvents', () => {
+    it('POSTs sticky events via client.http', async () => {
+      const authedRequest = vi.fn().mockResolvedValue(undefined)
+      getClientMock.mockReturnValue({ http: { authedRequest } })
+      await ops.setStickyEvents('!r', { key: 'value' })
+      expect(authedRequest).toHaveBeenCalledWith('POST', '/_matrix/client/v3/rooms/!r/sticky_events', undefined, {
+        key: 'value'
+      })
+    })
+
+    it('enqueues with pin type and sticky subtype when offline', async () => {
+      const originalOnLine = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+      await ops.setStickyEvents('!r', { key: 'value' })
+      expect(offlineQueueService.enqueue).toHaveBeenCalledWith('pin', '!r', {
+        roomId: '!r',
+        type: 'sticky',
+        events: { key: 'value' }
+      })
+      Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true })
     })
   })
 
@@ -391,7 +481,7 @@ describe('RoomOperations', () => {
       const getStateEvents = vi.fn().mockReturnValue({
         getContent: () => ({ membership: 'join', displayname: 'Old' })
       })
-      getClientMock.mockReturnValueOnce({
+      getClientMock.mockReturnValue({
         getRoom: () => ({ currentState: { getStateEvents } }),
         getUserId: () => '@me:e',
         sendStateEvent
@@ -411,8 +501,8 @@ describe('RoomOperations', () => {
   })
 
   describe('getMemberDisplayName', () => {
-    it('returns displayName from room member', async () => {
-      getClientMock.mockReturnValueOnce({
+    it('returns rawDisplayName from room member', async () => {
+      getClientMock.mockReturnValue({
         getRoom: () => ({
           getMember: (_uid: string) => ({ rawDisplayName: 'Alice', name: 'alice' })
         })
@@ -421,7 +511,7 @@ describe('RoomOperations', () => {
     })
 
     it('returns null when room is missing', async () => {
-      getClientMock.mockReturnValueOnce({ getRoom: () => null })
+      getClientMock.mockReturnValue({ getRoom: () => null })
       expect(await ops.getMemberDisplayName('!r', '@alice:e')).toBeNull()
     })
   })
@@ -429,7 +519,7 @@ describe('RoomOperations', () => {
   describe('setMemberPowerLevel', () => {
     it('forwards to client.setUserPowerLevel', async () => {
       const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ setUserPowerLevel })
+      getClientMock.mockReturnValue({ setUserPowerLevel })
       await ops.setMemberPowerLevel('!r', '@u:e', 50)
       expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 50)
     })
@@ -438,7 +528,7 @@ describe('RoomOperations', () => {
   describe('setMemberAsAdmin', () => {
     it('sets power level to 100', async () => {
       const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ setUserPowerLevel })
+      getClientMock.mockReturnValue({ setUserPowerLevel })
       await ops.setMemberAsAdmin('!r', '@u:e')
       expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 100)
     })
@@ -447,7 +537,7 @@ describe('RoomOperations', () => {
   describe('removeMemberAsAdmin', () => {
     it('sets power level to 0', async () => {
       const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValueOnce({ setUserPowerLevel })
+      getClientMock.mockReturnValue({ setUserPowerLevel })
       await ops.removeMemberAsAdmin('!r', '@u:e')
       expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 0)
     })

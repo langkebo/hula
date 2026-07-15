@@ -1,7 +1,7 @@
-// src/services/matrix/room/RoomOperations.ts
-
+import { Preset, Visibility } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { BaseMatrixService } from '../BaseMatrixService'
+import matrixClientService from '../MatrixClientService'
 
 export class RoomOperations extends BaseMatrixService {
   // --- Aliases (was AliasesService) ---
@@ -9,15 +9,11 @@ export class RoomOperations extends BaseMatrixService {
   async getAliases(roomId: string): Promise<string[]> {
     const client = this.getClient()
     const room = client.getRoom(roomId)
-    if (!room) throw new Error(`房间不存在: ${roomId}`)
-    const canonical =
-      (room.currentState.getStateEvents('m.room.canonical_alias', '')?.getContent()?.alias as string | undefined) ??
-      null
-    const altEvents =
-      (room.currentState.getStateEvents('m.room.alt_aliases', '')?.getContent()?.alt_aliases as string[] | undefined) ??
-      []
-    const result = [canonical, ...altEvents].filter(Boolean) as string[]
-    return result
+    if (!room) return []
+    const aliases = room.getAltAliases() ?? []
+    const canonical = room.getCanonicalAlias()
+    if (canonical) aliases.unshift(canonical)
+    return aliases
   }
 
   async setAlias(roomId: string, alias: string): Promise<void> {
@@ -39,34 +35,37 @@ export class RoomOperations extends BaseMatrixService {
     if (this.tagsUnsupported) return {}
     const client = this.getClient()
     try {
-      return await client.getRoomTags(roomId)
+      const result = await client.getRoomTags(roomId)
+      return result.tags ?? {}
     } catch (e: any) {
-      if (e?.errcode === 'M_UNRECOGNIZED' || e?.httpStatus === 404) {
+      if (e?.errcode === 'M_UNRECOGNIZED' || e?.errcode === 'M_NOT_FOUND' || e?.httpStatus === 404) {
         this.tagsUnsupported = true
         if (!this.unsupportedLogged) {
           this.unsupportedLogged = true
         }
         return {}
       }
-      throw e
+      return {}
     }
   }
 
   async setTag(roomId: string, tag: string, order?: number): Promise<void> {
     if (!navigator.onLine) {
-      offlineQueueService.enqueue('tag', roomId, { tag, order })
+      offlineQueueService.enqueue('tag', roomId, { roomId, tag, order, action: 'set' })
       return
     }
     const client = this.getClient()
-    await client.setRoomTag(roomId, tag, order ? { order } : (undefined as any))
+    if (!client.getUserId()) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
+    await client.setRoomTag(roomId, tag, order !== undefined ? { order } : {})
   }
 
   async removeTag(roomId: string, tag: string): Promise<void> {
     if (!navigator.onLine) {
-      offlineQueueService.enqueue('tag', roomId, { tag, action: 'remove' })
+      offlineQueueService.enqueue('tag', roomId, { roomId, tag, action: 'remove' })
       return
     }
     const client = this.getClient()
+    if (!client.getUserId()) throw new Error(this.t('matrix_error.common.user_not_logged_in'))
     await client.deleteRoomTag(roomId, tag)
   }
 
@@ -126,99 +125,129 @@ export class RoomOperations extends BaseMatrixService {
 
   async createDirectRoom(userId: string): Promise<string> {
     if (!navigator.onLine) {
-      const tempId = `!pending-dm-${userId}-${Date.now()}`
-      offlineQueueService.enqueue('dm_creation', userId, { userId })
+      const tempId = `!pending-dm-${Date.now()}`
+      offlineQueueService.enqueue('dm_creation', tempId, { userId })
       return tempId
     }
     const client = this.getClient()
-    const { Preset } = await import('matrix-js-sdk')
     const result = await client.createRoom({
       invite: [userId],
       is_direct: true,
       preset: Preset.TrustedPrivateChat,
-      visibility: 'private'
+      visibility: Visibility.Private
     })
     return result.room_id
   }
 
-  async getDirectRooms(_throwOnError: boolean = true): Promise<Map<string, string[]>> {
+  async getDirectRooms(throwOnError?: boolean): Promise<Map<string, string[]>> {
     const client = this.getClient()
-    const accountData = await client.getAccountData('m.direct')
-    if (!accountData) return new Map()
-    const content = accountData.getContent()
-    return new Map(Object.entries(content))
+    try {
+      const accountData = client.getAccountData('m.direct')
+      if (!accountData) return new Map()
+      return this.parseDirectRoomsContent(accountData.getContent())
+    } catch (err) {
+      if (throwOnError) throw err
+      return new Map()
+    }
+  }
+
+  private parseDirectRoomsContent(content: Record<string, unknown>): Map<string, string[]> {
+    const directRooms = new Map<string, string[]>()
+    for (const [userId, roomIds] of Object.entries(content)) {
+      if (!Array.isArray(roomIds)) continue
+      const normalized = roomIds.filter((id): id is string => typeof id === 'string')
+      directRooms.set(userId, normalized)
+    }
+    return directRooms
   }
 
   async setDirectRoom(userId: string, roomId: string): Promise<void> {
     const client = this.getClient()
-    const current = await this.getDirectRooms(false)
-    const existing = current.get(userId) ?? []
-    const updated = [...new Set([...existing, roomId])]
-    // Filter rooms where the user still belongs
-    const valid = updated.filter((id) => {
-      const room = client.getRoom(id)
-      if (!room) return false
-      const membership = room.getMyMembership()
-      return membership === 'join' || membership === 'invite'
-    })
-    current.set(userId, valid)
-    await client.setAccountData('m.direct', Object.fromEntries(current))
+    const directRooms = await this.getDirectRooms()
+    const rooms = directRooms.get(userId) ?? []
+    if (!rooms.includes(roomId)) {
+      rooms.push(roomId)
+      const validRooms = rooms.filter((id) => {
+        const room = client.getRoom(id)
+        if (!room) return true
+        return room.getMyMembership() === 'join'
+      })
+      if (validRooms.length > 0) {
+        directRooms.set(userId, validRooms)
+        await client.setAccountData('m.direct', Object.fromEntries(directRooms))
+      }
+    }
   }
 
   // --- Moderation (was ModerationService) ---
 
   async getInviteBlocklist(roomId: string): Promise<string[]> {
     const client = this.getClient()
-    const res = (await client
-      .getHttp()
-      .authedRequest('GET', `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/invite_blocklist`)) as {
-      blocked?: string[]
+    try {
+      const result = await client.http.authedRequest(
+        'GET',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_blocklist`
+      )
+      return (result as { blocked?: string[] }).blocked ?? []
+    } catch {
+      return []
     }
-    return res?.blocked ?? []
   }
 
   async setInviteBlocklist(roomId: string, blocked: string[]): Promise<void> {
     const client = this.getClient()
-    await client
-      .getHttp()
-      .authedRequest('POST', `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/invite_blocklist`, undefined, {
-        blocked
-      })
+    await client.http.authedRequest(
+      'POST',
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_blocklist`,
+      undefined,
+      { blocked }
+    )
   }
 
   async getInviteAllowlist(roomId: string): Promise<string[]> {
     const client = this.getClient()
-    const res = (await client
-      .getHttp()
-      .authedRequest('GET', `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/invite_allowlist`)) as {
-      allowed?: string[]
+    try {
+      const result = await client.http.authedRequest(
+        'GET',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_allowlist`
+      )
+      return (result as { allowed?: string[] }).allowed ?? []
+    } catch {
+      return []
     }
-    return res?.allowed ?? []
   }
 
   async setInviteAllowlist(roomId: string, allowed: string[]): Promise<void> {
     const client = this.getClient()
-    await client
-      .getHttp()
-      .authedRequest('POST', `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/invite_allowlist`, undefined, {
-        allowed
-      })
+    await client.http.authedRequest(
+      'POST',
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_allowlist`,
+      undefined,
+      { allowed }
+    )
   }
 
   // --- Lifecycle (was LifecycleService) ---
 
   async getServerDomain(): Promise<string> {
-    const { matrixClientService } = await import('../MatrixClientService')
-    await matrixClientService.waitForClientReady()
+    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
     const client = this.getClient()
     const domain = client.getDomain()
     if (domain) return domain
-    try {
-      const url = new URL(client.baseUrl)
-      if (url.hostname) return url.hostname
-    } catch {
-      /* not a valid URL */
+
+    const baseUrl = (client as unknown as { baseUrl?: string }).baseUrl
+    if (baseUrl) {
+      try {
+        const url = new URL(baseUrl)
+        const hostname = url.hostname
+        if (hostname && hostname !== '0.0.0.0' && hostname !== '::') {
+          return hostname
+        }
+      } catch {
+        /* not a valid URL */
+      }
     }
+
     return 'matrix.org'
   }
 
@@ -231,9 +260,8 @@ export class RoomOperations extends BaseMatrixService {
   async incrementUnread(roomId: string, _highlight?: boolean): Promise<void> {
     try {
       const client = this.getClient()
-      if (!client) return
       const room = client.getRoom(roomId)
-      if (!room) return
+      if (!room) throw new Error(`房间不存在: ${roomId}`)
     } catch {
       /* advisory counter; ignore all errors */
     }
@@ -242,9 +270,8 @@ export class RoomOperations extends BaseMatrixService {
   async clearUnread(roomId: string): Promise<void> {
     try {
       const client = this.getClient()
-      if (!client) return
       const room = client.getRoom(roomId)
-      if (!room) return
+      if (!room) throw new Error(`房间不存在: ${roomId}`)
     } catch {
       /* advisory counter; ignore all errors */
     }
@@ -253,28 +280,44 @@ export class RoomOperations extends BaseMatrixService {
   // --- Translate (was TranslateService) ---
 
   async translateText(text: string, targetLang?: string, throwOnErrorOrSource?: boolean | string): Promise<string> {
+    const target = typeof targetLang === 'string' && targetLang !== '' ? targetLang : 'zh-CN'
     const throwOnError = typeof throwOnErrorOrSource === 'boolean' ? throwOnErrorOrSource : true
     const sourceLang = typeof throwOnErrorOrSource === 'string' ? throwOnErrorOrSource : undefined
-    const lang = targetLang ?? 'en'
-    const client = this.getClient()
+
     try {
-      const res = (await client.getHttp().authedRequest('POST', '/_matrix/client/v3/translate', undefined, {
-        text,
-        target_lang: lang,
-        source_lang: sourceLang
-      })) as { translated_text?: string }
-      return res?.translated_text ?? text
+      const result = await this.translateViaBackend(text, target, sourceLang)
+      return result.translated_text
     } catch {
       try {
-        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang ?? 'auto'}&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`
-        const res = await fetch(url)
-        const json = (await res.json()) as any
-        return json?.[0]?.map((s: any) => s[0])?.join('') ?? text
-      } catch {
-        if (throwOnError) throw new Error('翻译失败')
+        const translated = await this.translateViaFallback(text, target)
+        return translated
+      } catch (fallbackErr) {
+        if (throwOnError) throw fallbackErr
         return text
       }
     }
+  }
+
+  private async translateViaBackend(
+    text: string,
+    targetLang: string,
+    sourceLang?: string
+  ): Promise<{ translated_text: string }> {
+    const client = this.getClient()
+    const body: Record<string, unknown> = { text, target_lang: targetLang }
+    if (sourceLang) body.source_lang = sourceLang
+    return (await client.http.authedRequest('POST', '/_matrix/client/v3/translate', undefined, body)) as {
+      translated_text: string
+    }
+  }
+
+  private async translateViaFallback(text: string, targetLang: string): Promise<string> {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`翻译请求失败: ${response.status}`)
+    const data = (await response.json()) as any
+    if (data?.[0]) return data[0].map((item: unknown[]) => item[0]).join('')
+    return text
   }
 
   // --- Pins (was PinsService) ---
@@ -289,7 +332,7 @@ export class RoomOperations extends BaseMatrixService {
 
   async setPinnedEvents(roomId: string, eventIds: string[]): Promise<void> {
     if (!navigator.onLine) {
-      offlineQueueService.enqueue('pin', roomId, { eventIds })
+      offlineQueueService.enqueue('pin', roomId, { roomId, type: 'pinned', eventIds })
       return
     }
     const client = this.getClient()
@@ -297,6 +340,10 @@ export class RoomOperations extends BaseMatrixService {
   }
 
   async pinEvent(roomId: string, eventId: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('pin', roomId, { roomId, type: 'pin', eventId })
+      return
+    }
     const current = await this.getPinnedEvents(roomId)
     if (!current.includes(eventId)) {
       await this.setPinnedEvents(roomId, [...current, eventId])
@@ -304,6 +351,10 @@ export class RoomOperations extends BaseMatrixService {
   }
 
   async unpinEvent(roomId: string, eventId: string): Promise<void> {
+    if (!navigator.onLine) {
+      offlineQueueService.enqueue('pin', roomId, { roomId, type: 'unpin', eventId })
+      return
+    }
     const current = await this.getPinnedEvents(roomId)
     await this.setPinnedEvents(
       roomId,
@@ -313,31 +364,35 @@ export class RoomOperations extends BaseMatrixService {
 
   async getStickyEvents(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
-    const res = (await client
-      .getHttp()
-      .authedRequest('GET', `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/sticky_events`)) as Record<
-      string,
-      unknown
-    >
-    return res ?? {}
+    try {
+      const result = await client.http.authedRequest(
+        'GET',
+        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`
+      )
+      return result as Record<string, unknown>
+    } catch {
+      return {}
+    }
   }
 
   async setStickyEvents(roomId: string, events: Record<string, unknown>): Promise<void> {
     if (!navigator.onLine) {
-      offlineQueueService.enqueue('sticky', roomId, { events })
+      offlineQueueService.enqueue('pin', roomId, { roomId, type: 'sticky', events })
       return
     }
     const client = this.getClient()
-    await client
-      .getHttp()
-      .authedRequest('POST', `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/sticky_events`, undefined, events)
+    await client.http.authedRequest(
+      'POST',
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`,
+      undefined,
+      events
+    )
   }
 
   // --- MemberProfile (was MemberProfileService) ---
 
   async setMemberDisplayName(roomId: string, displayName: string): Promise<void> {
     const client = this.getClient()
-    // Read current membership event and merge displayname
     const room = client.getRoom(roomId)
     const myUserId = client.getUserId()
     if (!room || !myUserId) throw new Error('房间或用户不存在')
