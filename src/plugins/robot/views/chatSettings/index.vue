@@ -41,7 +41,7 @@
 </template>
 <script setup lang="tsx">
 import { useI18n } from 'vue-i18n'
-import { useMitt } from '@/hooks/useMitt.ts'
+import { useMitt } from '@/composables/common/useMitt'
 import router from '@/router'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { content } from './config.tsx'

@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { emit } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useTauriListener } from '@/hooks/useTauriListener'
+import { useTauriListener } from '@/composables/common/useTauriListener'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SharedScreen')

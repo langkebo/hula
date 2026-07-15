@@ -29,7 +29,7 @@ vi.mock('@/stores/domains/chat/chat', () => ({
   useChatStore: vi.fn(() => chatStoreMock)
 }))
 
-vi.mock('@/hooks/useMitt.ts', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     on: vi.fn(),
     off: vi.fn(),

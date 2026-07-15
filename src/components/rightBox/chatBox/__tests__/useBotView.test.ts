@@ -27,7 +27,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/hooks/useAssistantModelPresets', () => ({
+vi.mock('@/composables/chat/useAssistantModelPresets', () => ({
   useAssistantModelPresets: () => ({
     presets: ref([]),
     metaMap: ref({}),

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixUrlPreviewService, simplifyUrl, type UrlPreview } from '@/services/matrix/media/MatrixUrlPreviewService'
 
 interface Props {

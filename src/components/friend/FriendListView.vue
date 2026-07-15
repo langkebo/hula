@@ -510,12 +510,12 @@ const handleContextMenuSelect = async (item: { label: string }) => {
     case t('friend.context.send_message'): {
       const dmInfo = await matrixFriendService.getFriendDmRoom(friend.userId)
       if (dmInfo.room_id) {
-        const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+        const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
         await openMsgSessionByRoomId(dmInfo.room_id)
       } else {
         const roomId = await contactStore.startDirectRoom(friend.userId, false)
         if (roomId) {
-          const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+          const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
           await openMsgSessionByRoomId(roomId)
         }
       }
@@ -524,7 +524,7 @@ const handleContextMenuSelect = async (item: { label: string }) => {
     case t('friend.context.encrypted_chat'): {
       const roomId = await contactStore.startDirectRoom(friend.userId, true)
       if (roomId) {
-        const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+        const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
         await openMsgSessionByRoomId(roomId)
       }
       break

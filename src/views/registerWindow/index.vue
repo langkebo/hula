@@ -258,7 +258,7 @@ const {
 
 import PinInput from '@/components/atomic/PinInput.vue'
 import Validation from '@/components/common/Validation.vue'
-import { useWindow } from '@/hooks/useWindow'
+import { useWindow } from '@/composables/common/useWindow'
 import router from '@/router'
 import type { RegisterUserReq } from '@/services/types.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'

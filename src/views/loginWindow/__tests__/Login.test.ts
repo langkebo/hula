@@ -106,21 +106,21 @@ vi.mock('naive-ui', () => {
   }
 })
 
-vi.mock('@/hooks/useCheckUpdate', () => ({
+vi.mock('@/composables/common/useCheckUpdate', () => ({
   useCheckUpdate: () => ({
     checkUpdate: vi.fn(),
     CHECK_UPDATE_LOGIN_TIME: 60000
   })
 }))
 
-vi.mock('@/hooks/useDriver', () => ({
+vi.mock('@/composables/common/useDriver', () => ({
   useDriver: () => ({
     startTour: vi.fn(),
     reinitialize: vi.fn()
   })
 }))
 
-vi.mock('@/hooks/useLoginFlow', () => ({
+vi.mock('@/composables/user/useLoginFlow', () => ({
   useLoginFlow: () => ({
     normalLogin: normalLoginMock,
     loading: loginLoadingRef,
@@ -139,7 +139,7 @@ vi.mock('@/hooks/useLoginFlow', () => ({
   })
 }))
 
-vi.mock('@/hooks/useWindow.ts', () => ({
+vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     createWebviewWindow: vi.fn(),
     createModalWindow: vi.fn(),

@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import type { TextBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { isMobile } from '@/utils/PlatformConstants'

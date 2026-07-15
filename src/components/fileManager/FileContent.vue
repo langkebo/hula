@@ -89,7 +89,7 @@
 import { sumBy } from 'es-toolkit'
 import { useI18n } from 'vue-i18n'
 import ContextMenu from '@/components/common/ContextMenu.vue'
-import { useDownload } from '@/hooks/useDownload'
+import { useDownload } from '@/composables/common/useDownload'
 import type { FileBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'

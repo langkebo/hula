@@ -54,7 +54,7 @@ vi.mock('@tauri-apps/plugin-notification', () => ({
   sendNotification: vi.fn()
 }))
 
-vi.mock('@/hooks/useMitt', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     emit: vi.fn(),
     on: vi.fn()

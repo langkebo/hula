@@ -348,8 +348,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useAvatarUpload } from '@/hooks/useAvatarUpload'
-import { openExternalUrl } from '@/hooks/useLinkSegments'
+import { openExternalUrl } from '@/composables/common/useLinkSegments'
+import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import type { ApiKey, Platform } from '@/services/matrix/ai/ApiKeyService'
 import { apiKeyService } from '@/services/matrix/ai/ApiKeyService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
@@ -490,7 +490,7 @@ const modelExamples = computed(() => {
     return []
   }
   const info = platformModelInfo.value[formData.value.platform]
-  if (!info || !info.examples) {
+  if (!info?.examples) {
     return []
   }
   // 将 examples 字符串按逗号分割，去重，并转换为选项格式

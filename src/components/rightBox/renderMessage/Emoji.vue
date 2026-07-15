@@ -55,8 +55,8 @@
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { exists } from '@tauri-apps/plugin-fs'
+import { useImageViewer } from '@/composables/common/useImageViewer'
 import { MsgEnum } from '@/enums/index'
-import { useImageViewer } from '@/hooks/useImageViewer'
 import type { EmojiBody, MsgType } from '@/services/types'
 import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { createLogger } from '@/utils/Logger'

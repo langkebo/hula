@@ -11,8 +11,8 @@ import {
   type User
 } from 'matrix-js-sdk'
 import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { setMatrixClientAccessor } from '@/services/matrix/matrixClientAccessor'

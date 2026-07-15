@@ -52,12 +52,12 @@ const handleOpenDm = async () => {
   try {
     const dmInfo = await matrixFriendService.getFriendDmRoom(props.uid)
     if (dmInfo.room_id) {
-      const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+      const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
       await openMsgSessionByRoomId(dmInfo.room_id)
     } else {
       const roomId = await contactStore.startDirectRoom(props.uid, false)
       if (roomId) {
-        const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+        const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
         await openMsgSessionByRoomId(roomId)
       }
     }

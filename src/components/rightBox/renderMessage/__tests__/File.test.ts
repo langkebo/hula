@@ -64,7 +64,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
-vi.mock('@/hooks/useDownload', () => ({
+vi.mock('@/composables/common/useDownload', () => ({
   useDownload: () => ({
     isDownloading: ref(false)
   })

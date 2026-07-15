@@ -45,7 +45,7 @@
 import { darkTheme, lightTheme } from 'naive-ui'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useWindow } from '@/hooks/useWindow.ts'
+import { useWindow } from '@/composables/common/useWindow'
 import router from '@/router'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'

@@ -1,6 +1,6 @@
 import { onUnmounted, type Ref, reactive, ref, watch } from 'vue'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
 import {
   type BatchTypingResult,
   matrixTypingService,

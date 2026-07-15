@@ -24,7 +24,7 @@ const { matrixClientServiceMock, getClientMock, getUserIdMock } = vi.hoisted(() 
 
 const openMsgSessionByRoomIdMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/hooks/session/openMsgSession', () => ({
+vi.mock('@/composables/chat/openMsgSession', () => ({
   openMsgSessionByRoomId: openMsgSessionByRoomIdMock
 }))
 

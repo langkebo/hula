@@ -131,7 +131,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useAvatarUpload } from '@/hooks/useAvatarUpload'
+import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import router from '@/router'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { ExtendedProfileUnsupportedError, profileService } from '@/services/matrix/user/MatrixProfileService'

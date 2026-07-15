@@ -18,7 +18,24 @@
 .top-action,
 .bottom-action,
 .more {
+  position: relative;
   @include action;
+}
+
+/* 激活项左侧指示条 — 对齐原型设计 */
+.top-action.active,
+.bottom-action.active {
+  &::before {
+    content: '';
+    position: absolute;
+    left: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 22px;
+    background: var(--hula-color-primary-500);
+    border-radius: 0 3px 3px 0;
+  }
 }
 
 /** 通用的 active 样式  */

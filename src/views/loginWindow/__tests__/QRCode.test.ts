@@ -90,14 +90,14 @@ vi.mock('@/enums', async (importOriginal) => {
   }
 })
 
-vi.mock('@/hooks/useLoginFlow', () => ({
+vi.mock('@/composables/user/useLoginFlow', () => ({
   useLoginFlow: () => ({
     loading: ref(false),
     loginDisabled: ref(false)
   })
 }))
 
-vi.mock('@/hooks/useWindow.ts', () => ({
+vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     createWebviewWindow: vi.fn()
   })

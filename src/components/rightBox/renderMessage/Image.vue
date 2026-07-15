@@ -71,8 +71,8 @@
 
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
+import { useImageViewer } from '@/composables/common/useImageViewer'
 import { MessageStatusEnum, MsgEnum, TauriCommand } from '@/enums'
-import { useImageViewer } from '@/hooks/useImageViewer'
 import type { ImageBody, MsgType } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'

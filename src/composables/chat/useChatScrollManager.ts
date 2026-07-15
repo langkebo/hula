@@ -1,8 +1,8 @@
 import type { UseResizeObserverReturn } from '@vueuse/core'
 import { useDebounceFn, useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onUnmounted, ref, watch, watchPostEffect } from 'vue'
+import { useAutoScrollGuard } from '@/composables/chat/useAutoScrollGuard'
 import { ScrollIntentEnum } from '@/enums'
-import { useAutoScrollGuard } from '@/hooks/useAutoScrollGuard'
 
 export interface UseChatScrollManagerOptions {
   scrollContainer: Ref<HTMLElement | null>

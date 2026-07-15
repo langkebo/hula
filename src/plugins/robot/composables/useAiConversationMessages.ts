@@ -1,7 +1,7 @@
 import { type Ref, ref } from 'vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useMitt } from '@/composables/common/useMitt'
 import { AiMsgContentTypeEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt.ts'
 import { isLikelyImageUrl, isLikelyMediaUrl } from '@/plugins/robot/utils/aiMediaUrl'
 import { useI18nGlobal } from '@/services/i18n'
 import type { AIConversation } from '@/services/matrix/ai/AIService'

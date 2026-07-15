@@ -202,8 +202,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { openMsgSession } from '@/hooks/session/openMsgSession'
 import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'

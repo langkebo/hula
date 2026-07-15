@@ -19,8 +19,8 @@
 </template>
 <script lang="ts" setup>
 import type { Component } from 'vue'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, ModalEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt.ts'
 import { isMac26 } from '@/utils/PlatformConstants'
 import ActionList from './components/ActionList.vue'
 import InfoEdit from './components/InfoEdit.vue'

@@ -3,7 +3,7 @@
 </template>
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useTauriListener } from '@/hooks/useTauriListener'
+import { useTauriListener } from '@/composables/common/useTauriListener'
 
 const appWindow = WebviewWindow.getCurrent()
 const { addListener } = useTauriListener()

@@ -40,8 +40,8 @@
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useWindowSize } from '@vueuse/core'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useTimerManager } from '@/utils/TimerManager'
 

@@ -96,7 +96,7 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import { readDir } from '@tauri-apps/plugin-fs'
 import { useI18n } from 'vue-i18n'
 import ActionBar from '@/components/windows/ActionBar.vue'
-import { useTauriListener } from '@/hooks/useTauriListener'
+import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useVideoViewer } from '@/stores/domains/widget/videoViewer'
 import { createLogger } from '@/utils/Logger'
 

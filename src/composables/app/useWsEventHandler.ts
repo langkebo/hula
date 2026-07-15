@@ -4,9 +4,9 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useMitt } from '@/composables/common/useMitt'
+import { useWindow } from '@/composables/common/useWindow'
 import { CallTypeEnum, ChangeTypeEnum, MittEnum, OnlineEnum, RoomTypeEnum, WsResponseMessageType } from '@/enums'
-import { useMitt } from '@/hooks/useMitt.ts'
-import { useWindow } from '@/hooks/useWindow.ts'
 import type { LoginSuccessResType, OnStatusChangeType, WsTokenExpire } from '@/services/legacy/wsEventTypes'
 import type { PresenceInfo } from '@/services/matrix/user/MatrixPresenceService'
 import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
@@ -170,7 +170,7 @@ export function useWsEventHandler() {
 
   const handleWebsocketEvent = async (event: { payload: WebsocketConnectionStatePayload | null | undefined }) => {
     const payload = event.payload
-    if (!payload || payload.type !== 'connectionStateChanged') return
+    if (payload?.type !== 'connectionStateChanged') return
 
     const previousState = (lastWsConnectionState || '').toUpperCase() || null
     const nextStateRaw = payload.state
@@ -426,7 +426,7 @@ export function useWsEventHandler() {
         Number(userUid.value) === Number(wsTokenExpire.uid) &&
         (userStore.userInfo?.client ?? '') === wsTokenExpire.client
       ) {
-        const { useLoginFlow } = await import('@/hooks/useLoginFlow')
+        const { useLoginFlow } = await import('@/composables/user/useLoginFlow')
         const { logout } = useLoginFlow()
         if (isMobile()) {
           try {

@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
+import { useLinkSegments } from '@/composables/common/useLinkSegments'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, RoomTypeEnum } from '@/enums'
-import { useLinkSegments } from '@/hooks/useLinkSegments'
-import { useMitt } from '@/hooks/useMitt'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { createLogger } from '@/utils/Logger'
 

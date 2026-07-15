@@ -127,25 +127,25 @@ const registerMocks = () => {
     }
   }))
 
-  vi.doMock('@/hooks/useTauriListener.ts', () => ({
+  vi.doMock('@/composables/common/useTauriListener', () => ({
     useTauriListener: () => ({
       addListener
     })
   }))
 
-  vi.doMock('@/hooks/useWindow.ts', () => ({
+  vi.doMock('@/composables/common/useWindow', () => ({
     useWindow: () => ({
       createWebviewWindow
     })
   }))
 
-  vi.doMock('@/hooks/useLoginFlow', () => ({
+  vi.doMock('@/composables/user/useLoginFlow', () => ({
     useLoginFlow: () => ({
       logout
     })
   }))
 
-  vi.doMock('@/hooks/useMitt.ts', () => ({
+  vi.doMock('@/composables/common/useMitt', () => ({
     useMitt: {
       emit
     }

@@ -22,7 +22,7 @@ export { useImageViewer } from './useImageViewer'
 export { useIntersectionTaskQueue } from './useIntersectionTaskQueue'
 export type { LinkSegment } from './useLinkSegments'
 export { extractLinkSegments, normalizeExternalUrl, openExternalUrl, useLinkSegments } from './useLinkSegments'
-// Bridge re-exports from @/hooks
+// Previously bridged from @/hooks; now native
 export { useMitt } from './useMitt'
 export type { ConnectionStatus } from './useNetworkStatus'
 export { useNetworkStatus } from './useNetworkStatus'

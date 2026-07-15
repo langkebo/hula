@@ -21,7 +21,7 @@ vi.mock('@/composables/common/useAriaLive', () => ({
   })
 }))
 
-vi.mock('@/hooks/useViewport', () => ({
+vi.mock('@/composables/common/useViewport', () => ({
   useViewport: () => ({
     vw: viewportWidthMock,
     vh: { value: 900 }

@@ -12,8 +12,8 @@
  * - Homeserver 健康探针（指数退避，Rust 已实现）
  */
 import { ref } from 'vue'
+import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
-import { useTauriListener } from '@/hooks/useTauriListener'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 

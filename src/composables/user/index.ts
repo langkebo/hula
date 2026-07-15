@@ -3,7 +3,7 @@ export { useAccount } from './useAccount'
 export type { AvatarUploadOptions } from './useAvatarUpload'
 export { useAvatarUpload } from './useAvatarUpload'
 
-// Bridge re-exports from @/hooks
+// Previously bridged from @/hooks; now native
 export { useLoginFlow } from './useLoginFlow'
 export { startPresenceHeartbeat, stopPresenceHeartbeat } from './usePresenceHeartbeat'
 export type {

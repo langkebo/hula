@@ -60,8 +60,8 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useMitt } from '@/composables/common/useMitt'
 import { MergeMessageType, MittEnum } from '@/enums'
-import { useMitt } from '@/hooks/useMitt'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import type { MsgType } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'

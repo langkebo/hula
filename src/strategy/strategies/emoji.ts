@@ -1,6 +1,6 @@
 import { AppException } from '@/common/exception.ts'
+import type { UploadOptions, UploadProviderEnum } from '@/composables/common/useUpload'
 import { MsgEnum } from '@/enums'
-import type { UploadOptions, UploadProviderEnum } from '@/hooks/useUpload'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { AbstractMessageStrategy, strategyLogger as logger, type ReplyRef } from './base'
 

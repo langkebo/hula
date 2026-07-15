@@ -71,7 +71,7 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
-vi.mock('@/hooks/useLoginFlow', () => ({
+vi.mock('@/composables/user/useLoginFlow', () => ({
   useLoginFlow: () => ({
     loading: ref(false),
     loginDisabled: ref(false)

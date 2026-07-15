@@ -1,8 +1,8 @@
 import type { ComputedRef } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { EmojiMenuItem } from '@/composables/chat/emojiMenuData'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
-import type { EmojiMenuItem } from '@/hooks/chatMain/emojiMenuData'
 import { matrixEventService } from '@/services/matrix/MatrixEventService'
 import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
 import type { MessageType } from '@/stores/domains/chat/chat'
@@ -138,7 +138,7 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
   }
 
   const isSingleLineEmojis = (item: MessageType): boolean => {
-    if (!item || !item.fromUser || !item.message) return false
+    if (!item?.fromUser || !item.message) return false
 
     let emojiCount = 0
     for (const emoji of emojiList.value) {
@@ -151,7 +151,7 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
   }
 
   const cancelReplyEmoji = async (item: MessageType, type: number): Promise<void> => {
-    if (!item || !item.message || !item.message.messageMarks) return
+    if (!item?.message?.messageMarks) return
 
     const userMarked = item.message.messageMarks[String(type)]?.userMarked
 
@@ -165,13 +165,13 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
   }
 
   const getEmojiCount = (item: MessageType, emojiType: number): number => {
-    if (!item || !item.message || !item.message.messageMarks) return 0
+    if (!item?.message?.messageMarks) return 0
 
     return item.message.messageMarks[String(emojiType)]?.count || 0
   }
 
   const hasUserMarkedEmoji = (item: MessageType, emojiType: number) => {
-    if (!item || !item.message || !item.message.messageMarks) return false
+    if (!item?.message?.messageMarks) return false
 
     return item.message.messageMarks[String(emojiType)]?.userMarked
   }
@@ -180,7 +180,7 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
     context: { label: string; value: number; title: string },
     item: MessageType
   ): Promise<void> => {
-    if (!item || !item.message) return
+    if (!item?.message) return
 
     if (!item.message.messageMarks) {
       item.message.messageMarks = {}

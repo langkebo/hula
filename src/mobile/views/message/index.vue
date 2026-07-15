@@ -63,7 +63,7 @@
       <div class="py-5px shrink-0">
         <van-field
           id="search"
-          class="rounded-6px w-full relative text-12px"
+          class="search-field rounded-8px w-full relative text-13px"
           maxlength="20"
           clearable
           autocomplete="off"
@@ -74,13 +74,13 @@
           @focus="lockScroll"
           @blur="unlockScroll">
           <template #left-icon>
-            <svg class="w-12px h-12px">
+            <svg class="w-14px h-14px color-[--hula-text-tertiary]">
               <use href="#search"></use>
             </svg>
           </template>
         </van-field>
       </div>
-      <div class="m-0 p-0 mt-10px border-b border-[--hula-border-default]"></div>
+      <div class="m-0 p-0 mt-10px border-b border-[--hula-border-layout-divider]"></div>
     </div>
 
     <van-pull-refresh
@@ -93,7 +93,7 @@
         <SmartVirtualList
           class="mobile-session-list flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
           :items="sessionList"
-          :item-height="82"
+          :item-height="72"
           :buffer="6"
           key-field="roomId"
           @scroll="onScroll">
@@ -107,7 +107,7 @@
               <!-- 长按项 -->
               <div
                 @click.stop="intoRoom(item)"
-                class="grid grid-cols-[2.2rem_1fr_max-content] items-start px-4 py-3 gap-1">
+                class="grid grid-cols-[48px_1fr_max-content] items-center px-4 py-2.5 gap-3">
                 <div class="flex-shrink-0">
                   <van-badge
                     :offset="[-6, 6]"
@@ -119,38 +119,39 @@
                     :content="item.unreadCount"
                     :max="99">
                     <img
-                      class="size-52px rounded-full object-cover"
+                      class="size-48px rounded-8px object-cover"
                       :src="AvatarUtils.getAvatarUrl(item.avatar)"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                   </van-badge>
                 </div>
                 <!-- 中间：两行内容 -->
-                <div class="truncate pl-7 flex pt-5px gap-10px leading-tight flex-col">
-                  <span class="text-16px font-bold flex-1 truncate">{{ item.name }}</span>
+                <div class="truncate flex gap-10px leading-tight flex-col min-w-0">
+                  <span class="text-15px font-medium flex-1 truncate text-[--hula-text-primary]">{{ item.name }}</span>
                   <div class="text-13px text-[--hula-text-secondary] dark:text-[--hula-text-tertiary] truncate">
                     {{ item.lastMsg }}
                   </div>
                 </div>
 
                 <!-- 时间：靠顶 -->
-                <div class="text-12px pt-9px text-right flex flex-col gap-1 items-end justify-center">
+                <div
+                  class="text-11px text-right flex flex-col gap-1 items-end justify-center text-[--hula-text-tertiary]">
                   <div class="flex items-center gap-1">
                     <span v-if="item.hotFlag === IsAllUserEnum.Yes">
-                      <svg class="size-22px select-none outline-none cursor-pointer color-[--color-primary]">
+                      <svg class="size-14px select-none outline-none cursor-pointer color-[--color-primary]">
                         <use href="#auth"></use>
                       </svg>
                     </span>
                     <span v-if="item.isFavorite">
-                      <svg class="size-22px select-none outline-none cursor-pointer color-[--color-warning]">
+                      <svg class="size-14px select-none outline-none cursor-pointer color-[--color-warning]">
                         <use href="#star"></use>
                       </svg>
                     </span>
-                    <span class="text-[--hula-text-secondary] whitespace-nowrap">
+                    <span class="whitespace-nowrap">
                       {{ formatTimestamp(item?.activeTime) }}
                     </span>
                   </div>
                   <div v-if="item.muteNotification === NotificationTypeEnum.NOT_DISTURB">
-                    <svg class="size-14px z-100 color-gray-500/90">
+                    <svg class="size-14px z-100 color-[--hula-text-tertiary]">
                       <use href="#close-remind"></use>
                     </svg>
                   </div>
@@ -218,10 +219,10 @@ import { vOnLongPress } from '@vueuse/components'
 import { useDebounceFn, useThrottleFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
+import { useMessage } from '@/composables/chat/useMessage'
+import { useReplaceMsg } from '@/composables/chat/useReplaceMsg'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MsgEnum, NotificationTypeEnum, RoomTypeEnum } from '@/enums'
-import { useMessage } from '@/hooks/useMessage.ts'
-import { useReplaceMsg } from '@/hooks/useReplaceMsg'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
@@ -640,8 +641,14 @@ const handleLongPress = (e: PointerEvent, item: SessionItem) => {
 <style scoped lang="scss">
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
-  border-radius: 6px;
-  background: var(--hula-overlay-mobile-sheet);
+  border-radius: 8px;
+  background: var(--hula-surface-search);
+  border: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+:deep(.van-cell.van-field:focus-within) {
+  border-color: var(--hula-color-primary-500);
 }
 
 :deep(.van-cell.van-field::after) {

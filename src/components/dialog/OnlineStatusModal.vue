@@ -51,7 +51,7 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { useOnlineStatus } from '@/composables/common/useOnlineStatus'
 import type { UserState } from '@/services/types'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 

@@ -55,9 +55,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import RenderMessage from '@/components/rightBox/renderMessage/index.vue'
+import { useImageViewer } from '@/composables/common/useImageViewer'
+import { useVideoViewer } from '@/composables/common/useVideoViewer'
 import { MsgEnum } from '@/enums'
-import { useImageViewer } from '@/hooks/useImageViewer'
-import { useVideoViewer } from '@/hooks/useVideoViewer'
 import { matrixMessageAdapter } from '@/services/matrix/messaging/MatrixMessageAdapter'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'

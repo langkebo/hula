@@ -272,12 +272,12 @@ const handleSendMessage = async () => {
   try {
     const dmInfo = await matrixFriendService.getFriendDmRoom(props.userId)
     if (dmInfo.room_id) {
-      const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+      const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
       await openMsgSessionByRoomId(dmInfo.room_id)
     } else {
       const roomId = await contactStore.startDirectRoom(props.userId, false)
       if (roomId) {
-        const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+        const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
         await openMsgSessionByRoomId(roomId)
       }
     }
@@ -292,7 +292,7 @@ const handleEncryptedChat = async () => {
   try {
     const roomId = await contactStore.startDirectRoom(props.userId, true)
     if (roomId) {
-      const { openMsgSessionByRoomId } = await import('@/hooks/session/openMsgSession')
+      const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
       await openMsgSessionByRoomId(roomId)
     }
     visible.value = false

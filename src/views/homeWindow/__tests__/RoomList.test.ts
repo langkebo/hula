@@ -106,17 +106,17 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
   }
 }))
 
-vi.mock('@/hooks/useTauriListener', () => ({
+vi.mock('@/composables/common/useTauriListener', () => ({
   useTauriListener: () => ({
     addListener: addListenerMock
   })
 }))
 
-vi.mock('@/hooks/session/openMsgSession', () => ({
+vi.mock('@/composables/chat/openMsgSession', () => ({
   openMsgSession: vi.fn()
 }))
 
-vi.mock('@/hooks/useMessage.ts', () => ({
+vi.mock('@/composables/chat/useMessage', () => ({
   useMessage: () => ({
     handleMsgClick: handleMsgClickMock,
     handleMsgDelete: vi.fn(),
@@ -124,7 +124,7 @@ vi.mock('@/hooks/useMessage.ts', () => ({
   })
 }))
 
-vi.mock('@/hooks/useMitt', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     on: useMittOnMock,
     emit: useMittEmitMock

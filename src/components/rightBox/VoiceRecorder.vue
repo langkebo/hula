@@ -150,8 +150,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useVoiceRecordRust } from '@/composables/chat/useVoiceRecordRust'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useVoiceRecordRust } from '@/hooks/useVoiceRecordRust'
 import { createLogger } from '@/utils/Logger'
 
 export type VoiceRecordPayload = {

@@ -98,17 +98,17 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
   }
 }))
 
-vi.mock('@/hooks/useTauriListener', () => ({
+vi.mock('@/composables/common/useTauriListener', () => ({
   useTauriListener: () => ({
     addListener: addListenerMock
   })
 }))
 
-vi.mock('@/hooks/session/openMsgSession', () => ({
+vi.mock('@/composables/chat/openMsgSession', () => ({
   openMsgSession: vi.fn()
 }))
 
-vi.mock('@/hooks/useMessage.ts', () => ({
+vi.mock('@/composables/chat/useMessage', () => ({
   useMessage: () => ({
     handleMsgClick: handleMsgClickMock,
     handleMsgDelete: handleMsgDeleteMock,
@@ -116,7 +116,7 @@ vi.mock('@/hooks/useMessage.ts', () => ({
   })
 }))
 
-vi.mock('@/hooks/useReplaceMsg.ts', () => ({
+vi.mock('@/composables/chat/useReplaceMsg', () => ({
   useReplaceMsg: () => ({
     checkRoomAtMe: vi.fn(() => false),
     getMessageSenderName: vi.fn(() => 'Alice'),
@@ -124,7 +124,7 @@ vi.mock('@/hooks/useReplaceMsg.ts', () => ({
   })
 }))
 
-vi.mock('@/hooks/useNetworkStatus', () => ({
+vi.mock('@/composables/common/useNetworkStatus', () => ({
   useNetworkStatus: () => ({
     browserOnline: ref(true),
     isWsConnecting: ref(false),
@@ -132,7 +132,7 @@ vi.mock('@/hooks/useNetworkStatus', () => ({
   })
 }))
 
-vi.mock('@/hooks/useMitt', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     on: useMittOnMock,
     emit: useMittEmitMock

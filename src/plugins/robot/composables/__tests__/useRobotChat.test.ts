@@ -117,7 +117,7 @@ const {
   }
 })
 
-vi.mock('@/hooks/useMitt.ts', () => ({ useMitt: mittMock }))
+vi.mock('@/composables/common/useMitt', () => ({ useMitt: mittMock }))
 vi.mock('@/stores/domains/user/user', () => ({ useUserStore: () => userStoreMock }))
 vi.mock('@/plugins/robot/utils/tokenEstimator', () => ({ estimateMessageTokens: () => 0 }))
 vi.mock('@/services/matrix', () => ({

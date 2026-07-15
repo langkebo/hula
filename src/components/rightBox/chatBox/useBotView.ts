@@ -8,8 +8,8 @@ import DOMPurify from 'dompurify'
 import type { DropdownOption } from 'naive-ui'
 import { computed, nextTick, type Ref, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { type AssistantModelPreset, useAssistantModelPresets } from '@/composables/chat/useAssistantModelPresets'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { type AssistantModelPreset, useAssistantModelPresets } from '@/hooks/useAssistantModelPresets'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
@@ -400,7 +400,7 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
     while (target && target.tagName !== 'A') {
       target = target.parentElement as HTMLElement
     }
-    if (!target || target.tagName !== 'A') return
+    if (target?.tagName !== 'A') return
 
     const href = (target as HTMLAnchorElement).getAttribute('href')
     if (!href) return

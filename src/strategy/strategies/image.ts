@@ -1,7 +1,7 @@
 import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs'
 import { AppException } from '@/common/exception.ts'
+import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables/common/useUpload'
 import { MsgEnum, UploadSceneEnum } from '@/enums'
-import { type UploadOptions, UploadProviderEnum, useUpload } from '@/hooks/useUpload'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { fixFileMimeType } from '@/utils/FileType'
 import { getMimeTypeFromExtension } from '@/utils/Formatting'

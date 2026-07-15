@@ -3,7 +3,7 @@ import { ClientEvent, RoomEvent, RoomStateEvent } from '@/services/matrix/sdk'
 import { WsResponseMessageType } from '@/services/wsType'
 
 const mockEmit = vi.fn()
-vi.mock('@/hooks/useMitt', () => ({
+vi.mock('@/composables/common/useMitt', () => ({
   useMitt: {
     emit: (...args: unknown[]) => mockEmit(...args),
     on: vi.fn(),

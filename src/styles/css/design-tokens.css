@@ -474,12 +474,12 @@ html[data-theme='dark'] {
   --hula-color-info-100: rgba(24, 144, 255, 0.15);
 
   --hula-text-primary: #ffffff;
-  --hula-text-secondary: #bfbfbf;
-  --hula-text-tertiary: #8c8c8c;
+  --hula-text-secondary: #909090;
+  --hula-text-tertiary: #707070;
   --hula-text-quaternary: #595959;
   --hula-text-disabled: #434343;
 
-  --hula-surface-app: #111111;
+  --hula-surface-app: #161616;
   --hula-surface-panel: #1b1b1b;
   --hula-surface-panel-muted: #262626;
   --hula-surface-subtle: #303030;
@@ -503,7 +503,7 @@ html[data-theme='dark'] {
   --hula-border-strong: #434343;
   --hula-border-contrast: rgba(255, 255, 255, 0.06);
   --hula-border-inverse-muted: rgba(255, 255, 255, 0.6);
-  --hula-border-layout-divider: var(--hula-border-muted);
+  --hula-border-layout-divider: #000000;
 
   --hula-status-online: #73d13d;
   --hula-status-offline: #595959;
@@ -648,7 +648,7 @@ html[data-theme='dark'] {
   --bg-edit: var(--hula-surface-panel-muted);
   --time-color: var(--hula-surface-subtle);
   --chat-bt-color: var(--hula-surface-subtle);
-  --chat-left-bg: color-mix(in srgb, var(--hula-color-primary-500) 32%, var(--hula-surface-panel));
+  --chat-left-bg: var(--hula-color-primary-500);
   --chat-right-bg: var(--hula-surface-sidebar);
   --chat-text-color: var(--hula-text-secondary);
   --chat-hover-color: var(--hula-surface-panel-muted);

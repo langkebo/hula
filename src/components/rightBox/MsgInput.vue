@@ -282,13 +282,13 @@ import type { VirtualListInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
+import { useMsgInput } from '@/composables/chat/useMsgInput'
 import { useTyping } from '@/composables/chat/useTyping'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useCommon } from '@/composables/common/useCommon'
+import { useMitt } from '@/composables/common/useMitt'
 import { useSendOptions } from '@/composables/settings/settingsOptions'
 import { MacOsKeyEnum, MittEnum, MobilePanelStateEnum, RoomTypeEnum, ThemeEnum, WinKeyEnum } from '@/enums'
-import { useCommon } from '@/hooks/useCommon.ts'
-import { useMitt } from '@/hooks/useMitt.ts'
-import { useMsgInput } from '@/hooks/useMsgInput.ts'
 import type { AIModel, UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -466,7 +466,7 @@ const handleBeaconClick = async () => {
 
   try {
     // 请求位置权限并获取当前位置
-    const { useGeolocation } = await import('@/hooks/useGeolocation')
+    const { useGeolocation } = await import('@/composables/common/useGeolocation')
     const { matrixBeaconService } = await import('@/services/matrix/media/MatrixBeaconService')
     const { getCurrentPosition } = useGeolocation()
 
