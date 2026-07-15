@@ -486,6 +486,21 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         component: () => import('@/views/admin/AdminAppServices.vue')
       },
       {
+        path: 'federation-monitor',
+        name: 'mobileAdminFederationMonitor',
+        component: () => import('@/views/admin/AdminFederationMonitor.vue')
+      },
+      {
+        path: 'server-config',
+        name: 'mobileAdminServerConfig',
+        component: () => import('@/views/admin/AdminServerConfig.vue')
+      },
+      {
+        path: 'moderation',
+        name: 'mobileAdminModeration',
+        component: () => import('@/views/admin/ModerationPanel.vue')
+      },
+      {
         path: 'guests',
         name: 'mobileAdminGuests',
         component: () => import('@/views/admin/AdminGuests.vue'),
