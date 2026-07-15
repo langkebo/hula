@@ -1,28 +1,28 @@
+// src/services/matrix/room/ReadFacade.ts
+
 import { matrixRoomAccountDataService } from './AccountDataService'
-import { matrixRoomAliasesService } from './AliasesService'
 import { matrixRoomMetadataService } from './MetadataService'
-import { matrixRoomModerationService } from './ModerationService'
-import { matrixRoomPinsService } from './PinsService'
-import { matrixRoomStateService } from './StateService'
-import { type MatrixRoomSummary, matrixRoomSummaryAggregateService } from './SummaryService'
-import { matrixRoomTagsService } from './TagsService'
+import { roomOperations } from './RoomOperations'
+import type { MatrixRoomLiteSummary, MatrixRoomSummary } from './SummaryService'
+import { matrixRoomSummaryAggregateService } from './SummaryService'
 import { matrixRoomTimelineService } from './TimelineService'
 
 export interface MatrixRoomReadFacade {
+  // --- Delegated to RoomOperations (absorbed) ---
   getRoomState(roomId: string): Promise<unknown[]>
-  getRoomSummary(roomId: string, throwOnError?: boolean): Promise<MatrixRoomSummary | null>
-  getRoomSummaries(roomIds: string[]): Promise<
-    Map<
-      string,
-      {
-        name: string | null
-        topic: string | null
-        avatarUrl: string | null
-        memberCount: number
-      }
-    >
-  >
   getRoomAliases(roomId: string): Promise<string[]>
+  getPinnedEvents(roomId: string): Promise<string[]>
+  getStickyEvents(roomId: string): Promise<Record<string, unknown>>
+  getInviteBlocklist(roomId: string): Promise<string[]>
+  getInviteAllowlist(roomId: string): Promise<string[]>
+  getTags(roomId: string): Promise<Record<string, { order?: number }>>
+  getServerDomain(): Promise<string>
+  translateText(text: string, targetLang?: string, throwOnError?: boolean): Promise<string>
+  getDirectRooms(throwOnError?: boolean): Promise<Map<string, string[]>>
+
+  // --- Delegated to deeper services ---
+  getRoomSummary(roomId: string, throwOnError?: boolean): Promise<MatrixRoomSummary | null>
+  getRoomSummaries(roomIds: string[]): Promise<Map<string, MatrixRoomLiteSummary>>
   getEventContext(
     roomId: string,
     eventId: string,
@@ -50,10 +50,6 @@ export interface MatrixRoomReadFacade {
   getRoomAccountData(roomId: string, eventType: string): Promise<Record<string, unknown> | null>
   getRoomMetadata(roomId: string): Promise<Record<string, unknown>>
   getRoomTurnServer(roomId: string): Promise<Record<string, unknown>>
-  getPinnedEvents(roomId: string): Promise<string[]>
-  getInviteBlocklist(roomId: string): Promise<string[]>
-  getInviteAllowlist(roomId: string): Promise<string[]>
-  getStickyEvents(roomId: string): Promise<Record<string, unknown>>
   timestampToEvent(
     roomId: string,
     timestamp: number,
@@ -61,7 +57,6 @@ export interface MatrixRoomReadFacade {
   ): Promise<{ event_id: string; origin_server_ts: number } | null>
   getRoomCall(roomId: string, callId: string): Promise<Record<string, unknown> | null>
   getRoomSync(roomId: string): Promise<Record<string, unknown>>
-  getTags(roomId: string): Promise<Record<string, { order?: number }>>
   getReportScannerInfo(roomId: string, eventId: string): Promise<Record<string, unknown> | null>
   getExternalServices(): Promise<Array<Record<string, unknown>>>
   getRoomNotifications(
@@ -72,99 +67,34 @@ export interface MatrixRoomReadFacade {
 }
 
 export const matrixRoomReadFacade: MatrixRoomReadFacade = {
-  async getRoomState(roomId) {
-    return matrixRoomStateService.getRoomState(roomId)
-  },
+  // Absorbed
+  getRoomState: (roomId) => roomOperations.getRoomState(roomId),
+  getRoomAliases: (roomId) => roomOperations.getAliases(roomId),
+  getPinnedEvents: (roomId) => roomOperations.getPinnedEvents(roomId),
+  getStickyEvents: (roomId) => roomOperations.getStickyEvents(roomId),
+  getInviteBlocklist: (roomId) => roomOperations.getInviteBlocklist(roomId),
+  getInviteAllowlist: (roomId) => roomOperations.getInviteAllowlist(roomId),
+  getTags: (roomId) => roomOperations.getTags(roomId),
+  getServerDomain: () => roomOperations.getServerDomain(),
+  translateText: (text, targetLang?, throwOnError?) => roomOperations.translateText(text, targetLang, throwOnError),
+  getDirectRooms: (throwOnError?) => roomOperations.getDirectRooms(throwOnError),
 
-  async getRoomSummary(roomId, throwOnError = true) {
-    return matrixRoomSummaryAggregateService.getRoomSummary(roomId, throwOnError)
-  },
-
-  async getRoomSummaries(roomIds) {
-    return matrixRoomSummaryAggregateService.getRoomSummaries(roomIds)
-  },
-
-  async getRoomAliases(roomId) {
-    return matrixRoomAliasesService.getAliases(roomId)
-  },
-
-  async getEventContext(roomId, eventId, limit = 10) {
-    return matrixRoomTimelineService.getEventContext(roomId, eventId, limit)
-  },
-
-  async getRoomVersion(roomId) {
-    return matrixRoomMetadataService.getRoomVersion(roomId)
-  },
-
-  async getRoomCapabilities(roomId) {
-    return matrixRoomMetadataService.getRoomCapabilities(roomId)
-  },
-
-  async getRoomTimeline(roomId, options) {
-    return matrixRoomTimelineService.getRoomTimeline(roomId, options)
-  },
-
-  async getRoomUnreadCount(roomId) {
-    return matrixRoomTimelineService.getRoomUnreadCount(roomId)
-  },
-
-  async getRoomAccountData(roomId, eventType) {
-    return matrixRoomAccountDataService.getRoomAccountData(roomId, eventType)
-  },
-
-  async getRoomMetadata(roomId) {
-    return matrixRoomMetadataService.getRoomMetadata(roomId)
-  },
-
-  async getRoomTurnServer(roomId) {
-    return matrixRoomMetadataService.getRoomTurnServer(roomId)
-  },
-
-  async getPinnedEvents(roomId) {
-    return matrixRoomPinsService.getPinnedEvents(roomId)
-  },
-
-  async getInviteBlocklist(roomId) {
-    return matrixRoomModerationService.getInviteBlocklist(roomId)
-  },
-
-  async getInviteAllowlist(roomId) {
-    return matrixRoomModerationService.getInviteAllowlist(roomId)
-  },
-
-  async getStickyEvents(roomId) {
-    return matrixRoomPinsService.getStickyEvents(roomId)
-  },
-
-  async timestampToEvent(roomId, timestamp, dir = 'b') {
-    return matrixRoomTimelineService.timestampToEvent(roomId, timestamp, dir)
-  },
-
-  async getRoomCall(roomId, callId) {
-    return matrixRoomTimelineService.getRoomCall(roomId, callId)
-  },
-
-  async getRoomSync(roomId) {
-    return matrixRoomMetadataService.getRoomSync(roomId)
-  },
-
-  async getTags(roomId) {
-    return matrixRoomTagsService.getTags(roomId)
-  },
-
-  async getReportScannerInfo(roomId, eventId) {
-    return matrixRoomAccountDataService.getReportScannerInfo(roomId, eventId)
-  },
-
-  async getExternalServices() {
-    return matrixRoomAccountDataService.getExternalServices()
-  },
-
-  async getRoomNotifications(roomId, params) {
-    return matrixRoomTimelineService.getRoomNotifications(roomId, params)
-  },
-
-  async getRoomPermissions(roomId) {
-    return matrixRoomMetadataService.getRoomPermissions(roomId)
-  }
+  // Deep
+  getRoomSummary: (roomId, throwOnError?) => matrixRoomSummaryAggregateService.getRoomSummary(roomId, throwOnError),
+  getRoomSummaries: (roomIds) => matrixRoomSummaryAggregateService.getRoomSummaries(roomIds),
+  getEventContext: (roomId, eventId, limit?) => matrixRoomTimelineService.getEventContext(roomId, eventId, limit),
+  getRoomVersion: (roomId) => matrixRoomMetadataService.getRoomVersion(roomId),
+  getRoomCapabilities: (roomId) => matrixRoomMetadataService.getRoomCapabilities(roomId),
+  getRoomTimeline: (roomId, options?) => matrixRoomTimelineService.getRoomTimeline(roomId, options),
+  getRoomUnreadCount: (roomId) => matrixRoomTimelineService.getRoomUnreadCount(roomId),
+  getRoomAccountData: (roomId, eventType) => matrixRoomAccountDataService.getRoomAccountData(roomId, eventType),
+  getRoomMetadata: (roomId) => matrixRoomMetadataService.getRoomMetadata(roomId),
+  getRoomTurnServer: (roomId) => matrixRoomMetadataService.getRoomTurnServer(roomId),
+  timestampToEvent: (roomId, timestamp, dir?) => matrixRoomTimelineService.timestampToEvent(roomId, timestamp, dir),
+  getRoomCall: (roomId, callId) => matrixRoomTimelineService.getRoomCall(roomId, callId),
+  getRoomSync: (roomId) => matrixRoomMetadataService.getRoomSync(roomId),
+  getReportScannerInfo: (roomId, eventId) => matrixRoomAccountDataService.getReportScannerInfo(roomId, eventId),
+  getExternalServices: () => matrixRoomAccountDataService.getExternalServices(),
+  getRoomNotifications: (roomId, params?) => matrixRoomTimelineService.getRoomNotifications(roomId, params),
+  getRoomPermissions: (roomId) => matrixRoomMetadataService.getRoomPermissions(roomId)
 }
