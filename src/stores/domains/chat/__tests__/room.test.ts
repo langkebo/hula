@@ -93,11 +93,18 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 vi.mock('@/services/matrix/room/ReadFacade', () => ({
-  matrixRoomReadFacade: mockReadFacade
+  matrixRoomReadFacade: {
+    ...mockReadFacade,
+    getTags: vi.fn()
+  }
 }))
 
 vi.mock('@/services/matrix/room/ActionFacade', () => ({
-  matrixRoomActionFacade: mockActionFacade
+  matrixRoomActionFacade: {
+    ...mockActionFacade,
+    setTag: vi.fn(),
+    removeTag: vi.fn()
+  }
 }))
 
 vi.mock('@/services/matrix/room/CreationService', () => ({
@@ -114,19 +121,6 @@ vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   default: mockMatrixClientService
-}))
-
-vi.mock('@/services/matrix/room/ReadFacade', () => ({
-  matrixRoomReadFacade: {
-    getTags: vi.fn()
-  }
-}))
-
-vi.mock('@/services/matrix/room/ActionFacade', () => ({
-  matrixRoomActionFacade: {
-    setTag: vi.fn(),
-    removeTag: vi.fn()
-  }
 }))
 
 vi.mock('@/stores/domains/chat/matrix', () => ({
