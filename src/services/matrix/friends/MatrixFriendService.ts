@@ -17,6 +17,7 @@ import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
+import { matrixRoomActionFacade } from '../room/ActionFacade'
 import {
   type SynapseDmInfo,
   type SynapseFriendInfo,
@@ -532,8 +533,7 @@ class MatrixFriendService {
       if (errMsg.includes('不可用') || errMsg.includes('unavailable') || errMsg.includes('404')) {
         logger.info(`[MatrixFriend] 好友端点不可用，回退到创建 DM 房间: ${userId}`)
         try {
-          const { matrixRoomDirectMessageService } = await import('../room/DirectMessageService')
-          await matrixRoomDirectMessageService.createDirectRoom(userId)
+          await matrixRoomActionFacade.createDirectRoom(userId)
           logger.info(`[MatrixFriend] 已创建 DM 房间作为好友替代: ${userId}`)
           return
         } catch (dmErr) {
