@@ -27,7 +27,7 @@ type WorkerRequest = {
 
 const workerRequests = new Map<string, WorkerRequest>()
 let imageDownloadWorker: Worker | null = null
-const imageDownloaderWorkerUrl = new URL('../workers/imageDownloader.ts', import.meta.url)
+const imageDownloaderWorkerUrl = new URL('../../workers/imageDownloader.ts', import.meta.url)
 
 const ensureWorker = () => {
   if (imageDownloadWorker || typeof window === 'undefined') return
