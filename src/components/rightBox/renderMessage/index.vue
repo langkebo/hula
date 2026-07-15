@@ -23,7 +23,12 @@
     :history-mode="historyMode" />
 
   <!-- 好友或者群聊的信息 -->
-  <div v-else class="flex flex-col w-full" :class="{ 'justify-end': isMe }">
+  <div
+    v-else
+    class="flex flex-col w-full msg-row"
+    :class="{ 'justify-end': isMe }"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false">
     <div class="flex justify-center items-center">
       <n-checkbox
         v-model:checked="message.isCheck"
@@ -199,6 +204,15 @@
               :search-keyword="searchKeyword"
               :history-mode="historyMode" />
 
+            <MessageActionBar
+              :visible="isHovered && !chatStore.isMsgMultiChoose"
+              :is-me="isMe"
+              :message-type="message.message.type"
+              @reply="useMitt.emit(MittEnum.REPLY_MEG, message)"
+              @forward="handleForwardAction(message)"
+              @copy="handleCopyAction(message)"
+              @delete="handleDeleteAction(message)" />
+
             <!-- 显示翻译文本 -->
             <Transition name="fade-translate" appear mode="out-in">
               <div v-if="messageBody.translatedText" class="translated-text cursor-default flex flex-col">
@@ -331,6 +345,7 @@ import { isMobile } from '@/utils/PlatformConstants'
 import Emoji from './Emoji.vue'
 import HulaMessageMeta from './HulaMessageMeta.vue'
 import Image from './Image.vue'
+import MessageActionBar from './MessageActionBar.vue'
 import RecallMessage from './special/RecallMessage.vue'
 import SystemMessage from './special/SystemMessage.vue'
 import Text from './Text.vue'
@@ -415,7 +430,20 @@ const activeReply = ref<string>('')
 const settingStore = useSettingStore()
 const injectedChatMain = inject(chatMainInjectionKey, null)
 const chatMainApi = injectedChatMain ?? useChatMain()
-const { optionsList, report, activeBubble, handleItemType, emojiList, specialMenuList, handleMsgClick } = chatMainApi
+const {
+  optionsList,
+  report,
+  activeBubble,
+  handleItemType,
+  emojiList,
+  specialMenuList,
+  handleMsgClick,
+  handleCopy,
+  tips,
+  modalShow,
+  delIndex,
+  delRoomId
+} = chatMainApi
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
 const isMultiSelectDisabled = computed(() => !isMessageMultiSelectEnabled(props.message.message.type))
@@ -440,8 +468,36 @@ const {
   handleEmojiSelect
 } = useMessageActions({ isMe, emojiList })
 
+const isHovered = ref(false)
+
 const { recordSelectionBeforeContext, handleContextMenuSelection, longPressOption, handleLongPress } =
   useMessageContextMenu({ activeBubble })
+
+const handleForwardAction = (item: MessageType) => {
+  if (!item?.message?.id) return
+  const target = chatStore.getMessage(item.message.id)
+  if (!target) return
+  chatStore.clearMsgCheck()
+  target.isCheck = true
+  chatStore.setMsgMultiChoose(true, 'forward')
+  nextTick(() => {
+    useMitt.emit(MittEnum.MSG_MULTI_CHOOSE, {
+      action: 'open-forward',
+      mergeType: 'single' as const
+    })
+  })
+}
+
+const handleCopyAction = (item: MessageType) => {
+  handleCopy(item.message.body.content || item.message.body.url || '', true, item.message.id)
+}
+
+const handleDeleteAction = (item: MessageType) => {
+  tips.value = t('home.chat_main.delete.confirm')
+  modalShow.value = true
+  delIndex.value = item.message.id
+  delRoomId.value = item.message.roomId
+}
 
 const { isBodyInThread } = matrixThreadService
 
