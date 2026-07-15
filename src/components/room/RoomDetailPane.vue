@@ -213,7 +213,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
 import { useAvatarUpload } from '@/hooks/useAvatarUpload'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { matrixRoomStateService } from '@/services/matrix/room/StateService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { useGroupStore } from '@/stores/domains/chat/group'
 
 interface RoomDetail {
@@ -276,7 +276,7 @@ const {
 } = useAvatarUpload({
   onSuccess: async (mxcUrl) => {
     if (!props.roomId) return
-    await matrixRoomStateService.setRoomAvatar(props.roomId, mxcUrl)
+    await matrixRoomActionFacade.setRoomAvatar(props.roomId, mxcUrl)
     if (roomDetail.value) {
       roomDetail.value = { ...roomDetail.value, avatar: mxcUrl }
     }

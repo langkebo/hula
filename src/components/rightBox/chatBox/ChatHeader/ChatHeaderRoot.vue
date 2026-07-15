@@ -79,7 +79,6 @@ import { openExternalUrl } from '@/hooks/useLinkSegments'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
-import { matrixRoomStateService } from '@/services/matrix/room/StateService'
 import syncService from '@/services/matrix/sync/MatrixSyncService'
 import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -226,7 +225,7 @@ const handleMuteNotification = async (type: string) => {
 const handleUpdateGroupName = async (name: string) => {
   if (!currentSessionRoomId.value || !name.trim()) return
   try {
-    await matrixRoomStateService.setRoomName(currentSessionRoomId.value, name.trim())
+    await matrixRoomActionFacade.setRoomName(currentSessionRoomId.value, name.trim())
   } catch (error) {
     logger.error('更新群名失败:', error)
   }

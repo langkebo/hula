@@ -250,7 +250,7 @@ import { useMyRoomInfoUpdater } from '@/hooks/useMyRoomInfoUpdater'
 import router from '@/router'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
-import { matrixRoomStateService } from '@/services/matrix/room/StateService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import type { UserItem } from '@/services/types'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -527,9 +527,9 @@ const handleGroupInfoUpdate = async () => {
     return
   }
 
-  await matrixRoomStateService.setRoomName(currentSessionRoomId.value, nameValue.value)
+  await matrixRoomActionFacade.setRoomName(currentSessionRoomId.value, nameValue.value)
   if (avatarValue.value && avatarValue.value !== session.avatar) {
-    await matrixRoomStateService.setRoomAvatar(currentSessionRoomId.value, avatarValue.value)
+    await matrixRoomActionFacade.setRoomAvatar(currentSessionRoomId.value, avatarValue.value)
   }
   session.avatar = avatarValue.value
   session.name = nameValue.value
