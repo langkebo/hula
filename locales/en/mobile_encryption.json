@@ -1,0 +1,14 @@
+{
+  "dehydrated_device": {
+    "title": "Dehydrated Device",
+    "description": "Manage your dehydrated device for offline key storage.",
+    "manage": "Manage Dehydrated Device",
+    "no_devices": "No dehydrated devices found.",
+    "device_id_label": "Device ID",
+    "create": "Create",
+    "create_success": "Dehydrated device created successfully.",
+    "create_failed": "Failed to create dehydrated device.",
+    "delete_confirm": "Are you sure you want to delete this dehydrated device?",
+    "delete_success": "Dehydrated device deleted successfully."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "dehydrated_device": {
+    "title": "脱水设备",
+    "description": "管理用于离线密钥存储的脱水设备。",
+    "manage": "管理脱水设备",
+    "no_devices": "未找到脱水设备。",
+    "device_id_label": "设备 ID",
+    "create": "创建",
+    "create_success": "脱水设备创建成功。",
+    "create_failed": "创建脱水设备失败。",
+    "delete_confirm": "确定要删除此脱水设备吗？",
+    "delete_success": "脱水设备已删除。"
+  }
+}
