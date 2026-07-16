@@ -10,20 +10,20 @@
       <!-- intro: Select verification mode -->
       <div v-if="step === 'intro'" class="flex flex-col gap-3">
         <van-button block @click="startSas">
-          {{ $t('encryption.verify.sas') }}
+          {{ $t('verification.methods.sas') }}
         </van-button>
         <van-button block plain @click="showQr">
-          {{ $t('encryption.verify.qrShow') }}
+          {{ $t('verification.methods.qr_show') }}
         </van-button>
         <van-button block plain @click="scanQr">
-          {{ $t('encryption.verify.qrScan') }}
+          {{ $t('verification.methods.qr_scan') }}
         </van-button>
       </div>
 
       <!-- pending: Loading spinner -->
       <div v-else-if="step === 'pending'" class="flex flex-col items-center gap-3">
         <van-loading />
-        <span>{{ $t('encryption.verify.waiting') }}</span>
+        <span>{{ $t('verification.sas.waiting') }}</span>
       </div>
 
       <!-- showKey: SAS emoji display -->
@@ -35,8 +35,8 @@
           </div>
         </div>
         <div class="flex gap-3">
-          <van-button type="danger" @click="mismatch">{{ $t('encryption.verify.mismatch') }}</van-button>
-          <van-button type="primary" @click="match">{{ $t('encryption.verify.match') }}</van-button>
+          <van-button type="danger" @click="mismatch">{{ $t('verification.sas.mismatch') }}</van-button>
+          <van-button type="primary" @click="match">{{ $t('verification.sas.match') }}</van-button>
         </div>
       </div>
 
@@ -45,7 +45,8 @@
         <div class="w-48 h-48 bg-[var(--hula-surface-panel)] flex items-center justify-center rounded-lg">
           <van-icon name="qr" size="64" color="var(--van-gray-5)" />
         </div>
-        <span class="text-sm text-[--text-secondary]">{{ $t('encryption.verify.qrShowHint') }}</span>
+        <span class="text-sm text-[--text-secondary]">{{ $t('verification.qr.show_desc') }}</span>
+        <span class="text-xs text-[--van-warning-color]">{{ $t('verification.qr.show_unavailable') }}</span>
       </div>
 
       <!-- scanQr: Scanner placeholder -->
@@ -53,13 +54,14 @@
         <div class="w-full h-48 bg-black flex items-center justify-center rounded-lg">
           <van-icon name="scan" size="48" color="var(--van-gray-5)" />
         </div>
-        <span class="text-sm text-[--text-secondary]">{{ $t('encryption.verify.qrScanHint') }}</span>
+        <span class="text-sm text-[--text-secondary]">{{ $t('verification.qr.scan_desc') }}</span>
+        <span class="text-xs text-[--van-warning-color]">{{ $t('verification.qr.scan_unavailable') }}</span>
       </div>
 
       <!-- success -->
       <div v-else-if="step === 'success'" class="flex flex-col items-center gap-3 py-8">
         <van-icon name="success" size="48" :color="successColor" />
-        <span>{{ $t('encryption.verify.complete') }}</span>
+        <span>{{ $t('verification.result.success_desc') }}</span>
       </div>
 
       <!-- failed / rejected / cancelled -->
@@ -67,20 +69,20 @@
         v-else-if="step === 'failed' || step === 'rejected' || step === 'cancelled'"
         class="flex flex-col items-center gap-3 py-8">
         <van-icon name="warning" size="48" :color="dangerColor" />
-        <span>{{ errorMessage || $t('encryption.verify.error') }}</span>
+        <span>{{ errorMessage || $t('verification.result.failed_desc') }}</span>
       </div>
 
       <!-- Pending requests list -->
       <div v-if="pendingRequests.length > 0" class="mt-4 border-t pt-3">
-        <p class="text-sm font-medium mb-2">{{ $t('encryption.verify.pendingRequests') }}</p>
+        <p class="text-sm font-medium mb-2">{{ $t('verification.pending_requests.title') }}</p>
         <div v-for="req in pendingRequests" :key="req.transactionId" class="flex items-center justify-between py-1">
           <span class="text-sm truncate flex-1 mr-2">{{ req.userId }}</span>
           <div class="flex gap-2 flex-shrink-0">
             <van-button size="small" type="danger" @click="rejectRequest(req.transactionId)">
-              {{ $t('common.reject') }}
+              {{ $t('verification.actions.reject') }}
             </van-button>
             <van-button size="small" type="primary" @click="acceptRequest(req.transactionId)">
-              {{ $t('common.accept') }}
+              {{ $t('verification.actions.accept') }}
             </van-button>
           </div>
         </div>
@@ -118,7 +120,6 @@ const dangerColor = 'var(--danger-color, #ef4444)'
 
 const {
   step,
-  loading,
   emojis,
   pendingRequests,
   errorMessage,
@@ -133,23 +134,19 @@ const {
 const dialogTitle = computed(() => {
   switch (step.value) {
     case 'intro':
-      return t('encryption.verify.title')
+      return t('verification.title')
     case 'showKey':
-      return t('encryption.verify.sasTitle')
+      return t('verification.steps.show_key')
     case 'showQr':
-      return t('encryption.verify.qrShowTitle')
+      return t('verification.steps.show_qr')
     case 'scanQr':
-      return t('encryption.verify.qrScanTitle')
+      return t('verification.steps.scan_qr')
     case 'success':
-      return t('encryption.verify.completeTitle')
+      return t('verification.result.success_title')
     default:
-      return t('encryption.verify.title')
+      return t('verification.title')
   }
 })
-
-async function startSasVerification() {
-  await startSas(props.userId, props.deviceId)
-}
 
 function showQr() {
   // QR show mode — platform-specific rendering would go here

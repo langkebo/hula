@@ -1,0 +1,77 @@
+{
+  "title": "设备验证",
+  "subtitle": "验证设备以确保消息安全",
+  "methods": {
+    "sas": "Emoji 对比验证",
+    "qr_scan": "扫码验证",
+    "qr_show": "显示二维码"
+  },
+  "steps": {
+    "intro": "简介",
+    "pending": "等待响应",
+    "show_key": "对比 Emoji",
+    "show_qr": "显示二维码",
+    "scan_qr": "扫描二维码",
+    "success": "验证成功",
+    "rejected": "已拒绝",
+    "cancelled": "已取消"
+  },
+  "intro": {
+    "title": "验证设备",
+    "desc": "通过对比 Emoji 或扫描二维码验证对方设备，确保消息不会被窃听。",
+    "start_sas": "开始 Emoji 验证",
+    "start_qr": "扫描对方二维码",
+    "show_qr": "向对方显示我的二维码",
+    "no_pending": "暂无待处理的验证请求",
+    "refresh": "刷新"
+  },
+  "sas": {
+    "desc": "请与对方对比以下 Emoji，确认顺序和图案一致后点击「匹配」。",
+    "match": "匹配",
+    "mismatch": "不匹配",
+    "waiting": "等待对方确认...",
+    "matched": "对方已确认匹配",
+    "mismatched": "对方标记为不匹配"
+  },
+  "qr": {
+    "show_desc": "请让对方扫描此二维码",
+    "scan_desc": "将摄像头对准对方显示的二维码",
+    "scan_failed": "扫码失败，请重试",
+    "scanning": "扫描中...",
+    "not_supported": "当前设备不支持扫码",
+    "show_unavailable": "二维码展示功能暂未开放",
+    "scan_unavailable": "二维码扫描功能暂未开放"
+  },
+  "result": {
+    "success_title": "验证成功",
+    "success_desc": "设备已验证，现在可以安全通信",
+    "rejected_title": "验证被拒绝",
+    "rejected_desc": "对方拒绝了验证请求",
+    "cancelled_title": "验证已取消",
+    "cancelled_desc": "验证流程已被取消",
+    "failed_title": "验证失败",
+    "failed_desc": "验证过程中出现错误"
+  },
+  "actions": {
+    "cancel": "取消",
+    "confirm": "确认",
+    "retry": "重试",
+    "close": "关闭",
+    "accept": "接受",
+    "reject": "拒绝"
+  },
+  "errors": {
+    "start_failed": "发起验证失败",
+    "accept_failed": "接受验证请求失败",
+    "confirm_failed": "确认验证失败",
+    "cancel_failed": "取消验证失败",
+    "timeout": "验证请求已超时",
+    "unsupported_method": "对方不支持此验证方式"
+  },
+  "pending_requests": {
+    "title": "待处理验证请求",
+    "from": "来自",
+    "device": "设备",
+    "time": "时间"
+  }
+}

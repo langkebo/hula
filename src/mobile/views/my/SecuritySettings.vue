@@ -77,7 +77,7 @@
               </template>
             </van-cell>
 
-            <van-cell :title="$t('encryption.verify.title')" is-link @click="showDeviceVerify = true">
+            <van-cell :title="$t('verification.title')" is-link @click="showDeviceVerify = true">
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
@@ -92,43 +92,6 @@
             :user-id="currentUserId"
             :device-id="currentDeviceId"
             @verified="onDeviceVerified" />
-
-          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
-            {{ t('mobile_security.secure_backup.title') }}
-          </div>
-
-          <van-cell-group inset data-test="secure-backup-section">
-            <van-cell
-              :title="t('mobile_security.secure_backup.title')"
-              :label="t('mobile_security.secure_backup.desc')"
-              data-test="secure-backup-status">
-              <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-key" :width="20" color="var(--hula-color-primary-500)" />
-                </div>
-              </template>
-              <template #right-icon>
-                <van-tag :type="secureBackupTagType" data-test="secure-backup-tag">
-                  {{ secureBackupStatusText }}
-                </van-tag>
-              </template>
-            </van-cell>
-
-            <van-cell
-              :title="t('mobile_security.secure_backup.create')"
-              :label="t('mobile_security.secure_backup.create_desc')"
-              is-link
-              data-test="secure-backup-create-entry"
-              @click="openSecureBackupCreate" />
-
-            <van-cell
-              :title="t('mobile_security.secure_backup.restore')"
-              :label="t('mobile_security.secure_backup.restore_desc')"
-              is-link
-              data-test="secure-backup-restore-entry"
-              @click="openSecureBackupRestore" />
-          </van-cell-group>
 
           <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
             {{ t('mobile_security.privacy_section') }}
@@ -210,96 +173,6 @@
             :placeholder="t('mobile_security.backup_passphrase_placeholder')" />
         </div>
       </van-dialog>
-
-      <!-- 安全备份流程 popup(基于 composable) -->
-      <van-popup
-        v-model:show="showSecureBackupPopup"
-        position="bottom"
-        round
-        :close-on-click-overlay="false"
-        data-test="secure-backup-popup">
-        <div class="secure-backup-flow">
-          <van-nav-bar :title="t('mobile_security.secure_backup.title')">
-            <template #right>
-              <van-icon name="cross" size="18" @click="closeSecureBackupFlow" />
-            </template>
-          </van-nav-bar>
-
-          <div v-if="secureBackupLoading" class="flex justify-center items-center py-48px">
-            <van-loading type="spinner" />
-          </div>
-
-          <template v-else>
-            <!-- create: 输入安全短语后创建 -->
-            <div v-if="secureBackupPhase === 'create'" class="flow-step p-16px" data-test="secure-backup-create-form">
-              <div class="text-14px text-[var(--hula-text-secondary)] mb-12px">
-                {{ t('mobile_security.secure_backup.create_desc') }}
-              </div>
-              <van-field
-                v-model="secureBackupPassphrase"
-                type="password"
-                :label="t('mobile_security.secure_backup.enter_passphrase')"
-                :placeholder="t('mobile_security.secure_backup.passphrase_placeholder')" />
-              <van-button
-                type="primary"
-                block
-                class="mt-16px"
-                data-test="secure-backup-create-confirm"
-                @click="handleCreateSecureBackup">
-                {{ t('mobile_security.secure_backup.create') }}
-              </van-button>
-            </div>
-
-            <!-- success: 显示恢复密钥 -->
-            <div v-else-if="secureBackupPhase === 'success'" class="flow-step p-16px" data-test="secure-backup-success">
-              <van-notice-bar type="warning" :text="t('mobile_security.secure_backup.key_warning')" />
-              <div class="recovery-key-title mt-12px">
-                {{ t('mobile_security.secure_backup.enter_recovery_key') }}
-              </div>
-              <div class="recovery-key-value">{{ secureBackupRecoveryKey || '-' }}</div>
-              <div class="flex gap-8px my-12px">
-                <van-button size="small" @click="copySecureBackupKey">
-                  {{ t('mobile_security.secure_backup.title') }}
-                </van-button>
-              </div>
-              <van-button type="primary" block @click="closeSecureBackupFlow">
-                {{ t('mobile_security.confirm') }}
-              </van-button>
-            </div>
-
-            <!-- restore: 输入恢复密钥 -->
-            <div
-              v-else-if="secureBackupPhase === 'restore'"
-              class="flow-step p-16px"
-              data-test="secure-backup-restore-form">
-              <van-field
-                v-model="secureBackupRestoreInput"
-                type="textarea"
-                rows="3"
-                :label="t('mobile_security.secure_backup.enter_recovery_key')"
-                :placeholder="t('mobile_security.secure_backup.recovery_key_placeholder')" />
-              <van-button
-                type="primary"
-                block
-                class="mt-16px"
-                data-test="secure-backup-restore-confirm"
-                @click="handleRestoreSecureBackup">
-                {{ t('mobile_security.secure_backup.restore') }}
-              </van-button>
-            </div>
-
-            <!-- error -->
-            <div v-else-if="secureBackupPhase === 'error'" class="flow-step p-16px" data-test="secure-backup-error">
-              <van-notice-bar
-                type="danger"
-                :text="secureBackupErrorMessage || t('mobile_security.secure_backup.create_failed')" />
-              <van-button type="primary" block class="mt-16px" @click="closeSecureBackupFlow">
-                {{ t('mobile_security.confirm') }}
-              </van-button>
-            </div>
-          </template>
-        </div>
-      </van-popup>
     </template>
   </AutoFixHeightPage>
 </template>
@@ -311,7 +184,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import MobileDeviceVerifyDialog from '#/components/encryption/MobileDeviceVerifyDialog.vue'
-import { useSecureBackupFlow } from '@/composables/encryption/useSecureBackupFlow'
 import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
@@ -345,48 +217,8 @@ const showDeviceVerify = ref(false)
 const currentUserId = computed(() => matrixStore.userId ?? '')
 const currentDeviceId = computed(() => matrixStore.deviceId ?? '')
 function onDeviceVerified() {
-  showToast(t('encryption.verify.verified'))
+  showToast(t('verification.result.success_title'))
 }
-
-// 安全备份流程(基于 composable)
-const {
-  phase: secureBackupPhase,
-  loading: secureBackupLoading,
-  recoveryKey: secureBackupRecoveryKey,
-  passphrase: secureBackupPassphrase,
-  restoreInput: secureBackupRestoreInput,
-  errorMessage: secureBackupErrorMessage,
-  status: secureBackupStatus,
-  refreshStatus: refreshSecureBackupStatus,
-  createSecureBackup,
-  restoreFromSecureBackup
-} = useSecureBackupFlow()
-
-const showSecureBackupPopup = ref(false)
-
-const secureBackupStatusText = computed(() => {
-  switch (secureBackupStatus.value) {
-    case 'active':
-      return t('mobile_security.secure_backup.status_active')
-    case 'inactive':
-      return t('mobile_security.secure_backup.status_inactive')
-    case 'incomplete':
-      return t('mobile_security.secure_backup.status_incomplete')
-    default:
-      return t('mobile_security.secure_backup.status_inactive')
-  }
-})
-
-const secureBackupTagType = computed<'success' | 'warning' | 'danger'>(() => {
-  switch (secureBackupStatus.value) {
-    case 'active':
-      return 'success'
-    case 'incomplete':
-      return 'warning'
-    default:
-      return 'warning'
-  }
-})
 
 const crossSigningStatus = computed(() => {
   return crossSigningEnabled.value
@@ -400,7 +232,6 @@ const keyBackupStatus = computed(() => {
 
 onMounted(async () => {
   await loadSecurityInfo()
-  await refreshSecureBackupStatus()
 })
 
 async function loadSecurityInfo() {
@@ -498,47 +329,6 @@ async function handleSetupBackup() {
   }
 }
 
-// === 安全备份流程(基于 composable) ===
-function openSecureBackupCreate() {
-  secureBackupPassphrase.value = ''
-  secureBackupPhase.value = 'create'
-  showSecureBackupPopup.value = true
-}
-
-function openSecureBackupRestore() {
-  secureBackupRestoreInput.value = ''
-  secureBackupPhase.value = 'restore'
-  showSecureBackupPopup.value = true
-}
-
-async function handleCreateSecureBackup() {
-  const ok = await createSecureBackup()
-  if (!ok && secureBackupPhase.value === 'error') {
-    // composable 已切换到 error 阶段,popup 仍展示错误信息
-  }
-}
-
-async function handleRestoreSecureBackup() {
-  const input = secureBackupRestoreInput.value.trim()
-  if (!input) {
-    showToast({ type: 'fail', message: t('mobile_security.secure_backup.enter_recovery_key') })
-    return
-  }
-  await restoreFromSecureBackup(input)
-}
-
-function closeSecureBackupFlow() {
-  showSecureBackupPopup.value = false
-}
-
-function copySecureBackupKey() {
-  if (!secureBackupRecoveryKey.value) return
-  navigator.clipboard
-    .writeText(secureBackupRecoveryKey.value)
-    .then(() => showToast({ type: 'success', message: t('mobile_security.secure_backup.title') }))
-    .catch(() => showToast({ type: 'fail', message: t('mobile_security.secure_backup.create_failed') }))
-}
-
 async function handleExportKeys() {
   try {
     await showConfirmDialog({
@@ -613,34 +403,3 @@ async function handleDeactivate() {
   }
 }
 </script>
-
-<style scoped lang="scss">
-.secure-backup-flow {
-  padding-bottom: env(safe-area-inset-bottom);
-
-  .flow-step {
-    background: var(--van-background-2);
-  }
-
-  .recovery-key-title {
-    font-size: 14px;
-    color: var(--hula-text-secondary, #999);
-    margin-bottom: 8px;
-  }
-
-  .recovery-key-value {
-    font-family: monospace;
-    font-size: 14px;
-    word-break: break-all;
-    line-height: 1.6;
-    padding: 12px;
-    background: var(--van-gray-1, #f7f8fa);
-    border-radius: 8px;
-    color: var(--hula-text-primary, #333);
-  }
-
-  :deep(.dark) .recovery-key-value {
-    background: rgba(255, 255, 255, 0.06);
-  }
-}
-</style>
