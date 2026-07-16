@@ -127,6 +127,19 @@ defineExpose({ root })
   box-shadow: var(--hula-shadow-top-bar);
 }
 
+.footer-bar-action {
+  min-width: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+}
+
 .voice-panel-container {
   min-height: 120px;
 }
