@@ -53,8 +53,10 @@ describe('MobileBatchToolbar', () => {
     const MobileBatchToolbar = (await import('#/components/message/MobileBatchToolbar.vue')).default
     const wrapper = mount(MobileBatchToolbar, {
       props: { roomId: '!test:localhost' },
-      global: { stubs: { 'van-button': { template: '<button><slot /></button>' } } }
+      global: { stubs: { 'van-button': { template: '<button v-bind="$attrs"><slot /></button>' } } }
     })
-    expect(wrapper.html()).toBeTruthy()
+    await wrapper.find('[data-testid="cancel-btn"]').trigger('click')
+    expect(wrapper.emitted('cancel')).toBeTruthy()
+    expect(wrapper.emitted('cancel')).toHaveLength(1)
   })
 })

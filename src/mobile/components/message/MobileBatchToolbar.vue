@@ -14,13 +14,14 @@
         {{ t('message.multi_select.delete') }}
       </van-button>
     </div>
-    <van-button size="small" plain type="default" @click="handleCancel">
+    <van-button size="small" plain type="default" data-testid="cancel-btn" @click="handleCancel">
       {{ t('common.cancel') }}
     </van-button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMessageMultiSelect } from '@/composables/messaging/useMessageMultiSelect'
 
@@ -36,6 +37,14 @@ const emit = defineEmits<{
 }>()
 
 const multiSelect = useMessageMultiSelect({ roomId: computed(() => props.roomId) })
+
+onMounted(() => {
+  multiSelect.enterMultiSelect()
+})
+
+onUnmounted(() => {
+  multiSelect.exitMultiSelect()
+})
 
 const { t } = useI18n()
 
