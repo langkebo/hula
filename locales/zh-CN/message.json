@@ -284,5 +284,11 @@
     "success": "已转发到 {count} 个房间",
     "failed": "转发失败"
   },
-  "merge_msg_title": "合并消息"
+  "merge_msg_title": "合并消息",
+  "multi_select": {
+    "selected_count": "已选 {count} 条",
+    "copy": "复制",
+    "forward": "转发",
+    "delete": "删除"
+  }
 }

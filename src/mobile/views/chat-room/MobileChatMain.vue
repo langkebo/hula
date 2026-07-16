@@ -34,7 +34,12 @@
       </div>
     </template>
     <template #footer>
-      <FooterBar v-if="!isBotSession" ref="footerBar" @location="handleLocationClick"></FooterBar>
+      <MobileBatchToolbar
+        v-if="showBatchToolbar"
+        :room-id="globalStore.currentSessionRoomId"
+        @forward="showForwardDialog = true"
+        @cancel="showBatchToolbar = false" />
+      <FooterBar v-else-if="!isBotSession" ref="footerBar" @location="handleLocationClick"></FooterBar>
     </template>
 
     <!-- 移动端消息长按操作面板 -->
@@ -48,13 +53,13 @@
       @reacted="handleReacted" />
 
     <!-- 移动端位置共享面板 -->
-    <LocationShare :show="showLocationShare" :room-id="globalStore.currentSessionRoomId" @update:show="showLocationShare = $event" />
+    <LocationShare
+      :show="showLocationShare"
+      :room-id="globalStore.currentSessionRoomId"
+      @update:show="showLocationShare = $event" />
 
     <!-- 移动端转发对话框 -->
-    <MobileForwardDialog
-      v-model:visible="showForwardDialog"
-      :event-id="reactionEventId"
-      :room-id="reactionRoomId" />
+    <MobileForwardDialog v-model:visible="showForwardDialog" :event-id="reactionEventId" :room-id="reactionRoomId" />
   </AutoFixHeightPage>
 </template>
 
@@ -69,6 +74,8 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
 const HuLaAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/HuLaAssistant.vue'))
+
+import MobileBatchToolbar from '#/components/message/MobileBatchToolbar.vue'
 import LocationShare from '#/views/chat-room/LocationShare.vue'
 import MobileForwardDialog from '#/views/chat-room/MobileForwardDialog.vue'
 
@@ -272,6 +279,9 @@ const showLocationShare = ref(false)
 /** 转发对话框 */
 const showForwardDialog = ref(false)
 
+/** 多选批量操作工具栏 */
+const showBatchToolbar = ref(false)
+
 /** 子级组件（如 renderMessage/ContextMenu）调用此函数以显示操作面板 */
 const showMessageActionsForEvent = (eventId: string, roomId: string) => {
   reactionEventId.value = eventId
@@ -289,6 +299,9 @@ const handleMessageActionSelect = (action: string) => {
       break
     case 'forward':
       showForwardDialog.value = true
+      break
+    case 'multi_select':
+      showBatchToolbar.value = true
       break
     // 其他操作由子级组件自行处理
   }

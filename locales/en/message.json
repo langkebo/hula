@@ -284,5 +284,11 @@
     "success": "Forwarded to {count} rooms",
     "failed": "Failed to forward"
   },
-  "merge_msg_title": "Merged Messages"
+  "merge_msg_title": "Merged Messages",
+  "multi_select": {
+    "selected_count": "{count} selected",
+    "copy": "Copy",
+    "forward": "Forward",
+    "delete": "Delete"
+  }
 }
