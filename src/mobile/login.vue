@@ -10,6 +10,7 @@
       <div class="w-80% h-40px absolute top-20vh flex-center">
         <div class="flex w-200px relative">
           <div
+            data-testid="tab-login"
             @click="activeTab = 'login'"
             :class="[
               'z-999 w-100px text-center transition-all duration-300 ease-out',
@@ -38,7 +39,10 @@
       <img v-if="activeTab === 'login'" :src="userInfo.avatar" alt="logo" class="size-86px rounded-full" />
 
       <!-- 登录表单 -->
-      <div v-if="activeTab === 'login'" class="text-center w-80% flex flex-col gap-16px">
+      <div
+        v-if="activeTab === 'login'"
+        data-testid="mobile-login-form"
+        class="text-center w-80% flex flex-col gap-16px">
         <van-field
           :class="{ 'pl-22px': loginHistories.length > 0 }"
           v-model="userInfo.account"
@@ -107,6 +111,7 @@
         </div>
 
         <van-button
+          data-testid="mobile-login-submit"
           :loading="loading"
           :disabled="loginDisabled"
           block
@@ -420,7 +425,16 @@ const handleSsoLoginCallback = async (): Promise<boolean> => {
     return true
   } catch (error) {
     logger.error('Failed to complete mobile SSO login callback', error)
-    showFailToast(t('login.sso_login_failed'))
+
+    const err = error as { errcode?: string; message?: string; httpStatus?: number }
+    if (err.errcode === 'M_UNKNOWN_TOKEN' || err.errcode === 'M_MISSING_TOKEN' || err.httpStatus === 401) {
+      showFailToast(t('error.matrix.unknown_token'))
+    } else if (err.message?.includes('expired') || err.message?.includes('token')) {
+      showFailToast(t('error.matrix.unknown_token'))
+    } else {
+      showFailToast(t('login.sso_login_failed'))
+    }
+
     loading.value = false
     loginDisabled.value = false
     loginText.value = t('login.button.login.default')
