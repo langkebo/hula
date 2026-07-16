@@ -37,6 +37,7 @@ tmp-dynamic.png
 
 target
 .claude/
+.gstack/
 .serena/
 *.sqlite
 db.sqlite
