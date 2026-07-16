@@ -54,6 +54,34 @@ vi.mock('@/composables/user/useLoginFlow', () => ({
   useLoginFlow: () => ({ logout: logoutMock })
 }))
 
+vi.mock('@/stores/domains/chat/matrix', () => ({
+  useMatrixStore: () => ({
+    userId: '@user:test.com',
+    deviceId: 'DEVICE123'
+  })
+}))
+
+// Helper to mount SecuritySettings with $t global mock (needed for template usage)
+function mountSecuritySettings(extraOpts: Record<string, any> = {}) {
+  const mergedStubs = {
+    'van-cell': {
+      inheritAttrs: true,
+      props: ['title', 'label', 'value', 'isLink'],
+      template:
+        '<div v-bind="$attrs" data-test="van-cell"><span>{{ title }}</span><span>{{ label }}</span><slot name="icon" /><slot name="right-icon" /></div>'
+    },
+    ...(extraOpts.stubs || {})
+  }
+  return mount(SecuritySettings, {
+    global: {
+      mocks: {
+        $t: (key: string) => key
+      },
+      stubs: mergedStubs
+    }
+  })
+}
+
 vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   matrixAccountService: {
     getDevices: () => getDevicesMock(),
@@ -102,40 +130,40 @@ describe('SecuritySettings', () => {
   })
 
   it('renders correctly', () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     expect(wrapper.html()).toBeTruthy()
   })
 
   it('loads device count on mount', async () => {
     getDevicesMock.mockResolvedValue([{ device_id: 'd1' }, { device_id: 'd2' }])
-    const _wrapper = mount(SecuritySettings)
+    const _wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     expect(getDevicesMock).toHaveBeenCalled()
   })
 
   it('loads ignored users count on mount', async () => {
     getIgnoredUsersMock.mockResolvedValue(['@user1:test.com'])
-    const _wrapper = mount(SecuritySettings)
+    const _wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     expect(getIgnoredUsersMock).toHaveBeenCalled()
   })
 
   it('loads crypto status on mount', async () => {
     getCryptoStatusMock.mockResolvedValue({ crossSigningReady: true, keyBackupEnabled: false })
-    const _wrapper = mount(SecuritySettings)
+    const _wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     expect(getCryptoStatusMock).toHaveBeenCalled()
   })
 
   it('navigates to devices page', async () => {
-    const _wrapper = mount(SecuritySettings)
+    const _wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     routerPushMock('/mobile/mobileMy/devices')
     expect(routerPushMock).toHaveBeenCalledWith('/mobile/mobileMy/devices')
   })
 
   it('validates password mismatch', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     vm.passwordForm = { oldPassword: 'old', newPassword: 'new1', confirmPassword: 'new2' }
@@ -144,7 +172,7 @@ describe('SecuritySettings', () => {
   })
 
   it('validates short password', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     vm.passwordForm = { oldPassword: 'old', newPassword: 'short', confirmPassword: 'short' }
@@ -154,7 +182,7 @@ describe('SecuritySettings', () => {
 
   it('calls changePassword on valid form', async () => {
     changePasswordMock.mockResolvedValue(undefined)
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     vm.passwordForm = { oldPassword: 'oldpass12', newPassword: 'newpass12', confirmPassword: 'newpass12' }
@@ -164,7 +192,7 @@ describe('SecuritySettings', () => {
 
   it('shows error on password change failure', async () => {
     changePasswordMock.mockRejectedValue(new Error('fail'))
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     vm.passwordForm = { oldPassword: 'oldpass12', newPassword: 'newpass12', confirmPassword: 'newpass12' }
@@ -173,7 +201,7 @@ describe('SecuritySettings', () => {
   })
 
   it('shows confirm dialog for deactivate', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     await vm.handleDeactivate()
@@ -182,7 +210,7 @@ describe('SecuritySettings', () => {
 
   it('calls exportKeys on export', async () => {
     exportKeysMock.mockResolvedValue('{"keys":[]}')
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     await vm.handleExportKeys()
@@ -191,7 +219,7 @@ describe('SecuritySettings', () => {
 
   it('shows error when export returns null', async () => {
     exportKeysMock.mockResolvedValue(null)
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     await vm.handleExportKeys()
@@ -199,7 +227,7 @@ describe('SecuritySettings', () => {
   })
 
   it('validates backup passphrase', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     vm.backupPassphrase = ''
@@ -209,11 +237,28 @@ describe('SecuritySettings', () => {
 
   it('calls setupKeyBackup with passphrase', async () => {
     setupKeyBackupMock.mockResolvedValue(undefined)
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     vm.backupPassphrase = 'my-passphrase'
     await vm.handleSetupBackup()
     expect(setupKeyBackupMock).toHaveBeenCalledWith('my-passphrase')
+  })
+
+  it('renders secure backup entry cell with dialog component', async () => {
+    const wrapper = mountSecuritySettings({
+      stubs: {
+        MobileSecureBackupDialog: { template: '<div data-test="secure-backup-dialog" />' },
+        MobileDeviceVerifyDialog: true
+      }
+    })
+    await vi.dynamicImportSettled()
+
+    // Verify the dialog component is registered and rendered
+    const dialog = wrapper.find('[data-test="secure-backup-dialog"]')
+    expect(dialog.exists()).toBe(true)
+
+    // Verify the van-cell with secure backup title is rendered
+    expect(wrapper.text()).toContain('mobile_security.secure_backup.title')
   })
 })

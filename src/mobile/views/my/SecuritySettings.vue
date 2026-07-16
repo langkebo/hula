@@ -68,6 +68,19 @@
               </template>
             </van-cell>
 
+            <van-cell
+              :title="t('mobile_security.secure_backup.title')"
+              :label="t('mobile_security.secure_backup.desc')"
+              is-link
+              @click="showSecureBackup = true">
+              <template #icon>
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--hula-color-warning-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:shield-lock" :width="20" color="var(--hula-color-warning-500)" />
+                </div>
+              </template>
+            </van-cell>
+
             <van-cell :title="t('mobile_security.export_keys')" is-link @click="handleExportKeys">
               <template #icon>
                 <div
@@ -92,6 +105,8 @@
             :user-id="currentUserId"
             :device-id="currentDeviceId"
             @verified="onDeviceVerified" />
+
+          <MobileSecureBackupDialog v-model="showSecureBackup" @complete="onSecureBackupComplete" />
 
           <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
             {{ t('mobile_security.privacy_section') }}
@@ -184,6 +199,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import MobileDeviceVerifyDialog from '#/components/encryption/MobileDeviceVerifyDialog.vue'
+import MobileSecureBackupDialog from '#/components/encryption/MobileSecureBackupDialog.vue'
 import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
@@ -214,10 +230,15 @@ const backupPassphrase = ref('')
 
 const matrixStore = useMatrixStore()
 const showDeviceVerify = ref(false)
+const showSecureBackup = ref(false)
 const currentUserId = computed(() => matrixStore.userId ?? '')
 const currentDeviceId = computed(() => matrixStore.deviceId ?? '')
 function onDeviceVerified() {
   showToast(t('verification.result.success_title'))
+}
+function onSecureBackupComplete() {
+  showToast(t('mobile_security.secure_backup.create_success'))
+  void loadSecurityInfo()
 }
 
 const crossSigningStatus = computed(() => {
