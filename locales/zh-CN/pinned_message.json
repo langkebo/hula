@@ -1,0 +1,12 @@
+{
+  "title": "置顶消息",
+  "pinned_by": "由 {name} 置顶",
+  "view": "查看",
+  "dismiss": "关闭",
+  "empty": "无置顶消息",
+  "load_failed": "加载置顶消息失败",
+  "unpin_success": "已取消置顶",
+  "unpin_failed": "取消置顶失败",
+  "pin_success": "已置顶",
+  "pin_failed": "置顶失败"
+}

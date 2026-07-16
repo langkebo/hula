@@ -1,0 +1,18 @@
+{
+  "title": "Room Tags",
+  "add": "Add Tag",
+  "add_placeholder": "Enter tag name",
+  "remove": "Remove",
+  "empty": "No tags yet",
+  "suggested": "Suggested Tags",
+  "name_too_long": "Tag name cannot exceed 32 characters",
+  "name_empty": "Tag name cannot be empty",
+  "name_exists": "Tag already exists",
+  "add_success": "Added successfully",
+  "add_failed": "Failed to add tag",
+  "remove_success": "Removed",
+  "remove_failed": "Failed to remove tag",
+  "clear_all": "Clear All",
+  "clear_confirm": "Are you sure to delete all tags?",
+  "load_failed": "Failed to load tags"
+}

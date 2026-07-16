@@ -1,0 +1,85 @@
+{
+  "title": "Call",
+  "states": {
+    "ringing_outgoing": "Calling...",
+    "ringing_incoming": "Incoming call",
+    "connecting": "Connecting...",
+    "connected": "In call",
+    "reconnecting": "Reconnecting...",
+    "ended": "Call ended",
+    "failed": "Call failed",
+    "rejected": "Rejected by the other side",
+    "missed": "Missed call",
+    "busy": "The other side is busy"
+  },
+  "incoming": {
+    "title": "Incoming Call",
+    "video_call": "Video Call",
+    "voice_call": "Voice Call",
+    "answer": "Answer",
+    "decline": "Decline",
+    "answer_with_video": "Answer with Video",
+    "answer_with_voice": "Answer with Voice"
+  },
+  "outgoing": {
+    "title": "Calling",
+    "cancelling": "Cancelling...",
+    "cancel": "Cancel Call"
+  },
+  "controls": {
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "mute_on": "Muted",
+    "mute_off": "Microphone On",
+    "video_on": "Camera On",
+    "video_off": "Camera Off",
+    "toggle_video": "Toggle Camera",
+    "speaker": "Speaker",
+    "speaker_on": "Speaker On",
+    "speaker_off": "Speaker Off",
+    "earpiece": "Earpiece",
+    "hangup": "Hang Up",
+    "switch_camera": "Switch Camera",
+    "screenshare": "Screen Share",
+    "screenshare_on": "Sharing Screen",
+    "screenshare_off": "Screen Share Stopped",
+    "more": "More"
+  },
+  "errors": {
+    "camera_failed": "Cannot access camera",
+    "mic_failed": "Cannot access microphone",
+    "camera_permission_denied": "Camera permission denied",
+    "mic_permission_denied": "Microphone permission denied",
+    "voip_unavailable": "VoIP service unavailable",
+    "turn_unavailable": "TURN server unavailable, NAT traversal may fail",
+    "network_error": "Network error, call may be unstable",
+    "start_failed": "Failed to start call",
+    "answer_failed": "Failed to answer call",
+    "hangup_failed": "Failed to hang up call",
+    "mute_failed": "Mute operation failed",
+    "video_failed": "Video toggle failed",
+    "screenshare_failed": "Screen share failed"
+  },
+  "duration": {
+    "format": "{minutes}:{seconds}",
+    "connected_for": "Connected for {duration}"
+  },
+  "notifications": {
+    "incoming_call_title": "Incoming Call",
+    "incoming_call_body": "{name} is calling you ({type})",
+    "missed_call_title": "Missed Call",
+    "missed_call_body": "{name} ({count} times)"
+  },
+  "quality": {
+    "excellent": "Quality: Excellent",
+    "good": "Quality: Good",
+    "fair": "Quality: Fair",
+    "poor": "Quality: Poor",
+    "unknown": "Quality: Unknown"
+  },
+  "actions": {
+    "back_to_call": "Back to Call",
+    "minimize": "Minimize",
+    "maximize": "Maximize"
+  }
+}

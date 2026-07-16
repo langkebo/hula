@@ -1,0 +1,72 @@
+{
+  "room_upgrade": {
+    "title": "升级房间版本",
+    "description": "将此房间升级到新版本,以使用最新的加密和功能特性。",
+    "current_version": "当前版本",
+    "target_version": "目标版本",
+    "auto_invite": "自动邀请原有成员",
+    "auto_invite_hint": "升级后将原成员重新邀请到新房间",
+    "warning": "升级将创建新房间,旧房间将被标记为已弃用。历史消息不会迁移。",
+    "submit": "确认升级",
+    "success": "房间升级成功",
+    "failed": "房间升级失败",
+    "cancelled": "已取消升级"
+  },
+  "allowlist": {
+    "title": "邀请白名单",
+    "description": "仅允许白名单内用户加入此房间",
+    "enable": "启用白名单",
+    "add_user": "添加白名单用户",
+    "remove": "移除",
+    "empty": "暂无白名单用户",
+    "input_placeholder": "输入用户 ID(如 @user:server)",
+    "user_added": "已加入白名单",
+    "user_removed": "已从白名单移除",
+    "add_failed": "添加白名单失败",
+    "remove_failed": "移除白名单失败"
+  },
+  "denylist": {
+    "title": "禁止名单",
+    "description": "禁止名单内用户加入或参与此房间",
+    "add_user": "添加禁止用户",
+    "remove": "解除禁止",
+    "empty": "暂无禁止用户",
+    "input_placeholder": "输入用户 ID(如 @user:server)",
+    "reason_label": "禁止原因",
+    "reason_placeholder": "可选,填写禁止原因",
+    "user_added": "已加入禁止名单",
+    "user_removed": "已解除禁止",
+    "add_failed": "添加禁止名单失败",
+    "remove_failed": "解除禁止失败"
+  },
+  "tags": {
+    "title": "房间标签",
+    "add": "添加标签",
+    "edit": "编辑标签",
+    "remove": "移除标签",
+    "order": "排序",
+    "name_placeholder": "输入标签名(如 m.favourite)",
+    "tag_favorite": "收藏",
+    "tag_lowpriority": "低优先级",
+    "tag_server_notice": "服务器通知",
+    "custom_tag": "自定义标签",
+    "save_success": "标签保存成功",
+    "save_failed": "标签保存失败",
+    "remove_success": "标签已移除",
+    "remove_failed": "标签移除失败",
+    "empty": "暂无标签"
+  },
+  "pins": {
+    "title": "置顶消息",
+    "pinned_in_room": "本房间置顶",
+    "pin": "置顶",
+    "unpin": "取消置顶",
+    "empty": "本房间暂无置顶消息",
+    "view_all": "查看全部置顶",
+    "pin_success": "已置顶",
+    "unpin_success": "已取消置顶",
+    "pin_failed": "置顶失败",
+    "unpin_failed": "取消置顶失败",
+    "banner_hint": "{count} 条置顶消息"
+  }
+}
