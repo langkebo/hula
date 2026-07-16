@@ -70,6 +70,16 @@
     "days_hours": "{days}天 {hours}小时",
     "minutes": "{minutes}分钟"
   },
+  "keyBackup": {
+    "setup": "设置密钥备份",
+    "restore": "恢复密钥备份",
+    "setupTitle": "设置密钥备份",
+    "restoreTitle": "恢复密钥备份",
+    "setupComplete": "密钥备份已设置成功。",
+    "restoreComplete": "密钥已恢复成功。",
+    "generating": "正在生成恢复密钥...",
+    "restoring": "正在恢复密钥..."
+  },
   "health": {
     "cross_signing_incomplete": "交叉签名未完成设置，其他设备无法验证此设备",
     "unverified_devices": "存在未验证的设备，建议进行设备验证以确保消息安全",
