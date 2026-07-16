@@ -321,10 +321,6 @@ const handleLocationClick = () => {
 }
 </script>
 
-<script lang="ts">
-export const MOBILE_MESSAGE_ACTIONS_INJECTION_KEY = Symbol('mobileMessageActions')
-</script>
-
 <style lang="scss">
 @use '@/styles/scss/render-message';
 
