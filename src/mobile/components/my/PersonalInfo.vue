@@ -9,7 +9,7 @@
         :style="{ transform: props.isShow ? 'scale(1) translateY(0)' : 'scale(0.62) translateY(0px)' }">
         <img
           class="size-64px rounded-full object-cover"
-          :src="AvatarUtils.getAvatarUrl(userDetailInfo!.avatar)"
+          :src="AvatarUtils.getAvatarUrl(userDetailInfo?.avatar || '')"
           alt="用户头像"
           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
       </div>
@@ -18,25 +18,25 @@
       <div ref="infoBox" class="pl-2 flex gap-8px flex-col transition-transform duration-300 ease-in-out">
         <!-- 名字与在线状态 -->
         <div class="flex flex-warp gap-4 items-center">
-          <span class="font-semibold text-18px">{{ userDetailInfo!.name }}</span>
+          <span class="font-semibold text-18px">{{ userDetailInfo?.name }}</span>
           <div
             v-show="hasUserOnlineState"
             class="bg-[--hula-color-primary-100] flex flex-wrap ps-2 px-8px items-center rounded-full gap-1 h-24px">
             <span class="w-12px h-12px rounded-15px flex items-center">
               <img
-                :src="friendUserState.url ? friendUserState.url : currentState?.url"
-                :alt="friendUserState.title || currentState.title"
+                :src="friendUserState?.url ? friendUserState.url : currentState?.url"
+                :alt="friendUserState?.title || currentState?.title || ''"
                 class="rounded-50% size-14px" />
             </span>
             <span class="text-bold-style" style="font-size: 12px; color: var(--hula-text-secondary)">
-              {{ friendUserState.title ? friendUserState.title : currentState.title }}
+              {{ friendUserState?.title ? friendUserState.title : currentState?.title || '' }}
             </span>
           </div>
         </div>
 
         <!-- 账号 -->
         <div class="flex flex-warp gap-2 items-center">
-          <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo!.account }}</span>
+          <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo?.account }}</span>
           <span v-if="isMyPage" @click="toMyQRCode" class="pe-15px">
             <img class="w-14px h-14px dark:invert" src="@/assets/mobile/my/qr-code.webp" alt="二维码" />
           </span>
@@ -49,7 +49,7 @@
     <div v-if="props.isShow" ref="animatedBox" style="transform: translateZ(0)" class="flex flex-col px-16px">
       <!-- 个人描述 -->
       <div class="mt-2 text-bold-style line-height-24px">
-        {{ isMyPage ? userStore.userInfo?.resume : (userDetailInfo as UserInfoType).resume }}
+        {{ displayResume }}
       </div>
       <!-- 点赞关注 -->
       <div class="flex flex-wrap justify-around mt-4">
@@ -175,6 +175,14 @@ const { preloadChatRoom } = useMessage()
 const uid = route.params.uid as string
 const isMyFriendState = ref(props.isMyFriend)
 
+const displayResume = computed(() => {
+  const info = props.isMyPage ? userStore.userInfo : userDetailInfo.value
+  if (info && 'resume' in info) {
+    return info.resume ?? ''
+  }
+  return ''
+})
+
 const isBotUser = (uid: string) => groupStore.getUserInfo(uid)?.account === UserType.BOT
 
 const toChatRoom = async () => {
@@ -211,7 +219,7 @@ const userDetailInfo = ref<UserItem | UserInfoType | undefined>({
   resume: ''
 })
 
-const friendUserState = ref<{ title: string; url: string; id?: string }>({
+const friendUserState = ref<{ title: string; url: string; id?: string } | null>({
   title: '',
   url: ''
 })
@@ -243,13 +251,16 @@ onMounted(() => {
 
   const foundedUser = groupStore.allUserInfo.find((i) => i.uid === uid)
 
-  userDetailInfo.value = foundedUser
+  if (foundedUser) {
+    userDetailInfo.value = foundedUser
+  }
 
   if (foundedUser?.userStateId && foundedUser?.userStateId !== '0') {
     const state = getUserState(foundedUser.userStateId)
-    friendUserState.value = state
-
-    hasUserOnlineState.value = true
+    if (state) {
+      friendUserState.value = state
+      hasUserOnlineState.value = true
+    }
   }
 
   const foundedFriend = contactStore.contactsList.find((item) => item.uid === uid)
