@@ -49,6 +49,12 @@
 
     <!-- 移动端位置共享面板 -->
     <LocationShare :show="showLocationShare" :room-id="globalStore.currentSessionRoomId" @update:show="showLocationShare = $event" />
+
+    <!-- 移动端转发对话框 -->
+    <MobileForwardDialog
+      v-model:visible="showForwardDialog"
+      :event-id="reactionEventId"
+      :room-id="reactionRoomId" />
   </AutoFixHeightPage>
 </template>
 
@@ -64,6 +70,7 @@ import { createLogger } from '@/utils/Logger'
 
 const HuLaAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/HuLaAssistant.vue'))
 import LocationShare from '#/views/chat-room/LocationShare.vue'
+import MobileForwardDialog from '#/views/chat-room/MobileForwardDialog.vue'
 
 import { type AssistantModelPreset, useAssistantModelPresets } from '@/composables/chat/useAssistantModelPresets'
 
@@ -262,6 +269,9 @@ const reactionRoomId = ref('')
 /** 位置共享面板 */
 const showLocationShare = ref(false)
 
+/** 转发对话框 */
+const showForwardDialog = ref(false)
+
 /** 子级组件（如 renderMessage/ContextMenu）调用此函数以显示操作面板 */
 const showMessageActionsForEvent = (eventId: string, roomId: string) => {
   reactionEventId.value = eventId
@@ -276,6 +286,9 @@ const handleMessageActionSelect = (action: string) => {
   switch (action) {
     case 'react':
       showReactionPicker.value = true
+      break
+    case 'forward':
+      showForwardDialog.value = true
       break
     // 其他操作由子级组件自行处理
   }
