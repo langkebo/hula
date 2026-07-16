@@ -34,7 +34,7 @@
       </div>
     </template>
     <template #footer>
-      <FooterBar v-if="!isBotSession" ref="footerBar"></FooterBar>
+      <FooterBar v-if="!isBotSession" ref="footerBar" @location="handleLocationClick"></FooterBar>
     </template>
 
     <!-- 移动端消息长按操作面板 -->
@@ -46,6 +46,9 @@
       :room-id="reactionRoomId"
       :event-id="reactionEventId"
       @reacted="handleReacted" />
+
+    <!-- 移动端位置共享面板 -->
+    <LocationShare :show="showLocationShare" :room-id="globalStore.currentSessionRoomId" @update:show="showLocationShare = $event" />
   </AutoFixHeightPage>
 </template>
 
@@ -60,6 +63,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
 const HuLaAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/HuLaAssistant.vue'))
+import LocationShare from '#/views/chat-room/LocationShare.vue'
 
 import { type AssistantModelPreset, useAssistantModelPresets } from '@/composables/chat/useAssistantModelPresets'
 
@@ -67,7 +71,7 @@ import { type AssistantModelPreset, useAssistantModelPresets } from '@/composabl
  * 提供给子级组件触发消息操作面板的 injection key
  * 子级调用: `(eventId: string, roomId: string) => void`
  */
-export const MOBILE_MESSAGE_ACTIONS_INJECTION_KEY = Symbol('mobileMessageActions')
+const MOBILE_MESSAGE_ACTIONS_INJECTION_KEY = Symbol('mobileMessageActions')
 
 const logger = createLogger('MobileChatMain')
 const { t } = useI18n()
@@ -255,6 +259,9 @@ const showReactionPicker = ref(false)
 const reactionEventId = ref('')
 const reactionRoomId = ref('')
 
+/** 位置共享面板 */
+const showLocationShare = ref(false)
+
 /** 子级组件（如 renderMessage/ContextMenu）调用此函数以显示操作面板 */
 const showMessageActionsForEvent = (eventId: string, roomId: string) => {
   reactionEventId.value = eventId
@@ -281,6 +288,15 @@ const handleReacted = (emoji: string) => {
   reactionEventId.value = ''
   reactionRoomId.value = ''
 }
+
+/** 位置共享点击处理 */
+const handleLocationClick = () => {
+  showLocationShare.value = true
+}
+</script>
+
+<script lang="ts">
+export const MOBILE_MESSAGE_ACTIONS_INJECTION_KEY = Symbol('mobileMessageActions')
 </script>
 
 <style lang="scss">

@@ -15,6 +15,14 @@
       </div>
       <div
         class="flex items-center justify-center py-4px border-t border-[--hula-border-default] bg-[--hula-surface-panel]">
+        <button
+          class="footer-bar-action"
+          data-testid="location-btn"
+          @click="emit('location')">
+          <svg class="w-22px h-22px iconpark-icon">
+            <use href="#location"></use>
+          </svg>
+        </button>
         <van-button
           size="small"
           :type="showVoicePanel ? 'primary' : 'default'"
@@ -42,7 +50,7 @@ import VoicePanel from './panel/VoicePanel.vue'
 
 const { t } = useI18n()
 const globalStore = useGlobalStore()
-const emit = defineEmits(['focus', 'blur', 'updateHeight'])
+const emit = defineEmits(['focus', 'blur', 'updateHeight', 'location'])
 
 const showVoicePanel = ref(false)
 
