@@ -98,6 +98,15 @@
           <van-cell :title="t('encryption.keyBackup.restore')" is-link @click="showKeyBackupRestore = true" />
         </van-cell-group>
 
+        <!-- 脱水设备管理 -->
+        <van-cell-group :title="t('mobile_encryption.dehydrated_device.title')" inset>
+          <van-cell
+            :title="t('mobile_encryption.dehydrated_device.manage')"
+            :label="t('mobile_encryption.dehydrated_device.description')"
+            is-link
+            @click="showDehydratedDevice = true" />
+        </van-cell-group>
+
         <!-- 加密设置 -->
         <van-cell-group :title="t('setting.encryption.settings')" inset>
           <van-cell
@@ -166,6 +175,7 @@
       <!-- Key backup dialog components -->
       <MobileKeyBackupDialog v-model="showKeyBackupSetup" mode="setup" @complete="onKeyBackupComplete" />
       <MobileKeyBackupDialog v-model="showKeyBackupRestore" mode="restore" @complete="onKeyBackupComplete" />
+      <MobileDehydratedDeviceDialog v-model:show="showDehydratedDevice" @complete="loadEncryptionStatus()" />
     </template>
   </AutoFixHeightPage>
 </template>
@@ -180,6 +190,7 @@ import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileKeyBackupDialog from '@/mobile/components/encryption/MobileKeyBackupDialog.vue'
+import MobileDehydratedDeviceDialog from '@/mobile/components/encryption/MobileDehydratedDeviceDialog.vue'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
@@ -203,6 +214,7 @@ const selectedDevice = ref<Device | null>(null)
 // MobileKeyBackupDialog state
 const showKeyBackupSetup = ref(false)
 const showKeyBackupRestore = ref(false)
+const showDehydratedDevice = ref(false)
 function onKeyBackupComplete() {
   loadBackupStatus()
 }
