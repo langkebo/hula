@@ -36,6 +36,16 @@
     <template #footer>
       <FooterBar v-if="!isBotSession" ref="footerBar"></FooterBar>
     </template>
+
+    <!-- 移动端消息长按操作面板 -->
+    <MobileMessageActions v-model:visible="showMessageActions" @select="handleMessageActionSelect" />
+
+    <!-- 移动端快捷表情回应面板 -->
+    <MobileReactionPicker
+      v-model:visible="showReactionPicker"
+      :room-id="reactionRoomId"
+      :event-id="reactionEventId"
+      @reacted="handleReacted" />
   </AutoFixHeightPage>
 </template>
 
@@ -52,6 +62,12 @@ import { createLogger } from '@/utils/Logger'
 const HuLaAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/HuLaAssistant.vue'))
 
 import { type AssistantModelPreset, useAssistantModelPresets } from '@/composables/chat/useAssistantModelPresets'
+
+/**
+ * 提供给子级组件触发消息操作面板的 injection key
+ * 子级调用: `(eventId: string, roomId: string) => void`
+ */
+export const MOBILE_MESSAGE_ACTIONS_INJECTION_KEY = Symbol('mobileMessageActions')
 
 const logger = createLogger('MobileChatMain')
 const { t } = useI18n()
@@ -227,6 +243,43 @@ const handleAssistantImport = async () => {
     logger.error('选择模型文件失败:', error)
     showFeedback('选择模型文件失败，请重试', 'error')
   }
+}
+
+// ── 消息操作面板 & 快捷表情回应 ──────────────────────────
+
+/** 消息操作面板（长按菜单） */
+const showMessageActions = ref(false)
+
+/** 快捷表情回应面板 */
+const showReactionPicker = ref(false)
+const reactionEventId = ref('')
+const reactionRoomId = ref('')
+
+/** 子级组件（如 renderMessage/ContextMenu）调用此函数以显示操作面板 */
+const showMessageActionsForEvent = (eventId: string, roomId: string) => {
+  reactionEventId.value = eventId
+  reactionRoomId.value = roomId
+  showMessageActions.value = true
+}
+
+provide(MOBILE_MESSAGE_ACTIONS_INJECTION_KEY, showMessageActionsForEvent)
+
+const handleMessageActionSelect = (action: string) => {
+  logger.info('消息操作选中:', action)
+  switch (action) {
+    case 'react':
+      showReactionPicker.value = true
+      break
+    // 其他操作由子级组件自行处理
+  }
+}
+
+const handleReacted = (emoji: string) => {
+  logger.info('表情回应已添加:', emoji)
+  showReactionPicker.value = false
+  // 清理状态
+  reactionEventId.value = ''
+  reactionRoomId.value = ''
 }
 </script>
 
