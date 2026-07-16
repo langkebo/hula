@@ -1,0 +1,18 @@
+{
+  "title": "房间标签",
+  "add": "添加标签",
+  "add_placeholder": "请输入标签名",
+  "remove": "删除",
+  "empty": "暂无标签",
+  "suggested": "推荐标签",
+  "name_too_long": "标签名不能超过 32 字符",
+  "name_empty": "标签名不能为空",
+  "name_exists": "标签已存在",
+  "add_success": "添加成功",
+  "add_failed": "添加失败",
+  "remove_success": "已删除",
+  "remove_failed": "删除失败",
+  "clear_all": "全部清除",
+  "clear_confirm": "确认删除所有标签?",
+  "load_failed": "加载标签失败"
+}

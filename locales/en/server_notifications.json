@@ -1,0 +1,42 @@
+{
+  "title": "Server Notifications",
+  "description": "Important notifications and announcements from the server",
+  "all": "All",
+  "unread": "Unread",
+  "read": "Read",
+  "mark_all_read": "Mark all as read",
+  "mark_read": "Mark as read",
+  "dismiss": "Dismiss",
+  "delete": "Delete",
+  "empty": "No notifications",
+  "no_unread": "No unread notifications",
+  "loading": "Loading...",
+  "refresh": "Refresh",
+  "expires_at": "Expires at {time}",
+  "severity_info": "Info",
+  "severity_warning": "Warning",
+  "severity_critical": "Critical",
+  "mark_read_success": "Marked as read",
+  "mark_read_failed": "Failed to mark as read",
+  "dismiss_success": "Dismissed",
+  "dismiss_failed": "Failed to dismiss",
+  "delete_success": "Deleted",
+  "delete_failed": "Failed to delete",
+  "load_failed": "Failed to load notifications",
+  "unread_count": "{count} unread",
+  "priority": {
+    "high": "High priority",
+    "normal": "Normal",
+    "low": "Low priority"
+  },
+  "category": {
+    "system": "System",
+    "security": "Security",
+    "admin": "Admin",
+    "federation": "Federation",
+    "maintenance": "Maintenance"
+  },
+  "received_at": "Received at {time}",
+  "view_detail": "View detail",
+  "fetch_failed": "Failed to fetch notifications"
+}

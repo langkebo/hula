@@ -1,0 +1,42 @@
+{
+  "title": "服务器通知",
+  "description": "来自服务器的重要通知与公告",
+  "all": "全部",
+  "unread": "未读",
+  "read": "已读",
+  "mark_all_read": "全部已读",
+  "mark_read": "已读",
+  "dismiss": "忽略",
+  "delete": "删除",
+  "empty": "暂无通知",
+  "no_unread": "暂无未读通知",
+  "loading": "加载中...",
+  "refresh": "刷新",
+  "expires_at": "有效期至 {time}",
+  "severity_info": "信息",
+  "severity_warning": "警告",
+  "severity_critical": "紧急",
+  "mark_read_success": "已标记已读",
+  "mark_read_failed": "标记已读失败",
+  "dismiss_success": "已忽略",
+  "dismiss_failed": "忽略失败",
+  "delete_success": "已删除",
+  "delete_failed": "删除失败",
+  "load_failed": "加载通知失败",
+  "unread_count": "{count} 条未读",
+  "priority": {
+    "high": "高优先级",
+    "normal": "普通",
+    "low": "低优先级"
+  },
+  "category": {
+    "system": "系统",
+    "security": "安全",
+    "admin": "管理员",
+    "federation": "联邦",
+    "maintenance": "维护"
+  },
+  "received_at": "收到于 {time}",
+  "view_detail": "查看详情",
+  "fetch_failed": "获取通知失败"
+}

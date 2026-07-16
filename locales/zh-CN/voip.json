@@ -1,0 +1,85 @@
+{
+  "title": "通话",
+  "states": {
+    "ringing_outgoing": "正在呼叫...",
+    "ringing_incoming": "来电中",
+    "connecting": "连接中...",
+    "connected": "通话中",
+    "reconnecting": "重新连接中...",
+    "ended": "通话已结束",
+    "failed": "通话失败",
+    "rejected": "对方已拒绝",
+    "missed": "未接来电",
+    "busy": "对方忙线中"
+  },
+  "incoming": {
+    "title": "来电",
+    "video_call": "视频来电",
+    "voice_call": "语音来电",
+    "answer": "接听",
+    "decline": "拒绝",
+    "answer_with_video": "视频接听",
+    "answer_with_voice": "语音接听"
+  },
+  "outgoing": {
+    "title": "正在呼叫",
+    "cancelling": "正在取消...",
+    "cancel": "取消呼叫"
+  },
+  "controls": {
+    "mute": "静音",
+    "unmute": "取消静音",
+    "mute_on": "已静音",
+    "mute_off": "已开启麦克风",
+    "video_on": "已开启摄像头",
+    "video_off": "已关闭摄像头",
+    "toggle_video": "切换摄像头",
+    "speaker": "扬声器",
+    "speaker_on": "扬声器已开启",
+    "speaker_off": "扬声器已关闭",
+    "earpiece": "听筒",
+    "hangup": "挂断",
+    "switch_camera": "翻转摄像头",
+    "screenshare": "屏幕共享",
+    "screenshare_on": "正在共享屏幕",
+    "screenshare_off": "屏幕共享已停止",
+    "more": "更多"
+  },
+  "errors": {
+    "camera_failed": "无法访问摄像头",
+    "mic_failed": "无法访问麦克风",
+    "camera_permission_denied": "摄像头权限被拒绝",
+    "mic_permission_denied": "麦克风权限被拒绝",
+    "voip_unavailable": "VoIP 服务不可用",
+    "turn_unavailable": "TURN 服务器不可用，可能无法穿透 NAT",
+    "network_error": "网络错误，通话可能不稳定",
+    "start_failed": "发起通话失败",
+    "answer_failed": "接听通话失败",
+    "hangup_failed": "挂断通话失败",
+    "mute_failed": "静音操作失败",
+    "video_failed": "切换视频失败",
+    "screenshare_failed": "屏幕共享失败"
+  },
+  "duration": {
+    "format": "{minutes}:{seconds}",
+    "connected_for": "已通话 {duration}"
+  },
+  "notifications": {
+    "incoming_call_title": "来电",
+    "incoming_call_body": "{name} 邀请你进行{type}通话",
+    "missed_call_title": "未接来电",
+    "missed_call_body": "{name} ({count} 次)"
+  },
+  "quality": {
+    "excellent": "通话质量：极佳",
+    "good": "通话质量：良好",
+    "fair": "通话质量：一般",
+    "poor": "通话质量：较差",
+    "unknown": "通话质量：未知"
+  },
+  "actions": {
+    "back_to_call": "返回通话",
+    "minimize": "最小化",
+    "maximize": "最大化"
+  }
+}

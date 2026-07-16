@@ -1,0 +1,72 @@
+{
+  "room_upgrade": {
+    "title": "Upgrade Room Version",
+    "description": "Upgrade this room to a new version to use the latest encryption and features.",
+    "current_version": "Current Version",
+    "target_version": "Target Version",
+    "auto_invite": "Auto-invite original members",
+    "auto_invite_hint": "Re-invite original members to the new room after upgrade",
+    "warning": "Upgrading creates a new room and marks the old one as deprecated. History is not migrated.",
+    "submit": "Confirm Upgrade",
+    "success": "Room upgraded successfully",
+    "failed": "Room upgrade failed",
+    "cancelled": "Upgrade cancelled"
+  },
+  "allowlist": {
+    "title": "Allowlist",
+    "description": "Only allowlist members can join this room",
+    "enable": "Enable allowlist",
+    "add_user": "Add to allowlist",
+    "remove": "Remove",
+    "empty": "No allowlist users",
+    "input_placeholder": "Enter user ID (e.g. @user:server)",
+    "user_added": "Added to allowlist",
+    "user_removed": "Removed from allowlist",
+    "add_failed": "Failed to add to allowlist",
+    "remove_failed": "Failed to remove from allowlist"
+  },
+  "denylist": {
+    "title": "Denylist",
+    "description": "Denylist users cannot join or participate in this room",
+    "add_user": "Add to denylist",
+    "remove": "Unban",
+    "empty": "No denylist users",
+    "input_placeholder": "Enter user ID (e.g. @user:server)",
+    "reason_label": "Reason",
+    "reason_placeholder": "Optional, ban reason",
+    "user_added": "Added to denylist",
+    "user_removed": "Removed from denylist",
+    "add_failed": "Failed to add to denylist",
+    "remove_failed": "Failed to remove from denylist"
+  },
+  "tags": {
+    "title": "Room Tags",
+    "add": "Add Tag",
+    "edit": "Edit Tag",
+    "remove": "Remove Tag",
+    "order": "Order",
+    "name_placeholder": "Enter tag name (e.g. m.favourite)",
+    "tag_favorite": "Favourite",
+    "tag_lowpriority": "Low Priority",
+    "tag_server_notice": "Server Notice",
+    "custom_tag": "Custom Tag",
+    "save_success": "Tag saved",
+    "save_failed": "Failed to save tag",
+    "remove_success": "Tag removed",
+    "remove_failed": "Failed to remove tag",
+    "empty": "No tags yet"
+  },
+  "pins": {
+    "title": "Pinned Messages",
+    "pinned_in_room": "Pinned in this room",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "empty": "No pinned messages in this room",
+    "view_all": "View all pins",
+    "pin_success": "Pinned",
+    "unpin_success": "Unpinned",
+    "pin_failed": "Failed to pin",
+    "unpin_failed": "Failed to unpin",
+    "banner_hint": "{count} pinned messages"
+  }
+}
