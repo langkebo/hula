@@ -221,6 +221,32 @@
                 <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
               </div>
             </div>
+            <div
+              v-if="isGroup && listMgmt.canManage.value"
+              class="mx-15px border-b border-[--hula-border-default]"></div>
+            <div
+              v-if="isGroup && listMgmt.canManage.value"
+              class="flex justify-between p-15px items-center cursor-pointer"
+              @click="listManagementTab = 'allowlist'; showListManagement = true">
+              <div class="text-14px">{{ t('room_advanced.allowlist.title') }}</div>
+              <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
+                <span>{{ listMgmt.allowlistCount.value }}</span>
+                <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
+              </div>
+            </div>
+            <div
+              v-if="isGroup && listMgmt.canManage.value"
+              class="mx-15px border-b border-[--hula-border-default]"></div>
+            <div
+              v-if="isGroup && listMgmt.canManage.value"
+              class="flex justify-between p-15px items-center cursor-pointer"
+              @click="listManagementTab = 'denylist'; showListManagement = true">
+              <div class="text-14px">{{ t('room_advanced.denylist.title') }}</div>
+              <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
+                <span>{{ listMgmt.denylistCount.value }}</span>
+                <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
+              </div>
+            </div>
           </div>
 
           <van-button plain class="cursor-pointer text-red text-14px rounded-10px w-full mb-20px">
@@ -251,6 +277,11 @@
     </template>
   </AutoFixHeightPage>
   <MobileRoomUpgradeDialog v-model:visible="showRoomUpgrade" :room-id="currentSessionRoomId" :can-upgrade="!!isAdmin" />
+  <MobileListManagementDialog
+    v-model:visible="showListManagement"
+    :room-id="currentSessionRoomId"
+    :can-manage="!!isAdmin"
+    :initial-tab="listManagementTab" />
 </template>
 
 <script setup lang="ts">
@@ -261,6 +292,8 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useMyRoomInfoUpdater } from '@/composables/room/useMyRoomInfoUpdater'
 import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
+import MobileListManagementDialog from '#/views/chat-room/MobileListManagementDialog.vue'
+import { useRoomListManagement } from '@/composables/room/useRoomListManagement'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import router from '@/router'
@@ -317,6 +350,13 @@ const showRoomUpgrade = ref(false)
 const roomUpgradeFlow = useRoomUpgradeFlow({
   roomId: currentSessionRoomId.value,
   canUpgrade: isAdmin.value
+})
+
+const showListManagement = ref(false)
+const listManagementTab = ref<'allowlist' | 'denylist'>('allowlist')
+const listMgmt = useRoomListManagement({
+  roomId: currentSessionRoomId.value,
+  canManage: isAdmin.value,
 })
 
 const groupMemberListSliced = computed(() => {
