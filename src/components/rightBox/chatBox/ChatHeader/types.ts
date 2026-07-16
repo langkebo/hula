@@ -1,5 +1,6 @@
 import type { UserItem } from '@/services/types'
 import type { MessageType } from '@/stores/domains/chat/chat'
+import type { RoomActEnum } from '@/enums'
 
 export interface ChatHeaderState {
   sidebarShow: boolean
@@ -18,29 +19,8 @@ export interface ChatHeaderState {
   } | null
 }
 
-export interface GroupQrData {
-  bytes: Uint8Array
-  width: number
-  height: number
-}
-
-export interface GroupQrShareOptions {
-  roomId: string
-  tempMsgId: string
-  bytes: Uint8Array
-  previewUrl: string
-  width: number
-  height: number
-  size: number
-  mimeType: string
-}
-
 export interface UserInfo {
   uid: string
   name: string
   avatar: string
 }
-
-export type { UserItem, MessageType }
-
-import type { RoomActEnum } from '@/enums'

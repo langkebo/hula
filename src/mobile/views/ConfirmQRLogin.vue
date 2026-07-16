@@ -89,8 +89,6 @@ const handleConfirmLogin = async () => {
 }
 
 onMounted(() => {
-  // console.log('确认登录页的props属性：', props)
-
   // 计算剩余秒数
   if (props.expireTime) {
     const expire = dayjs(Number(props.expireTime)) // 转成 dayjs 对象
