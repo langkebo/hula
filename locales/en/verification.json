@@ -1,0 +1,77 @@
+{
+  "title": "Device Verification",
+  "subtitle": "Verify devices to secure your messages",
+  "methods": {
+    "sas": "Emoji Match",
+    "qr_scan": "Scan QR Code",
+    "qr_show": "Show QR Code"
+  },
+  "steps": {
+    "intro": "Intro",
+    "pending": "Pending",
+    "show_key": "Compare Emoji",
+    "show_qr": "Show QR",
+    "scan_qr": "Scan QR",
+    "success": "Success",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled"
+  },
+  "intro": {
+    "title": "Verify Device",
+    "desc": "Verify the other device by comparing emojis or scanning a QR code to ensure messages cannot be intercepted.",
+    "start_sas": "Start Emoji Verification",
+    "start_qr": "Scan Their QR Code",
+    "show_qr": "Show My QR Code",
+    "no_pending": "No pending verification requests",
+    "refresh": "Refresh"
+  },
+  "sas": {
+    "desc": "Compare these emojis with the other device. If they all match, click \"Match\".",
+    "match": "They Match",
+    "mismatch": "They Don't Match",
+    "waiting": "Waiting for the other side to confirm...",
+    "matched": "The other side confirmed a match",
+    "mismatched": "The other side marked a mismatch"
+  },
+  "qr": {
+    "show_desc": "Ask the other side to scan this QR code",
+    "scan_desc": "Point your camera at the other device's QR code",
+    "scan_failed": "Scan failed, please retry",
+    "scanning": "Scanning...",
+    "not_supported": "This device does not support scanning",
+    "show_unavailable": "QR code display is not yet available",
+    "scan_unavailable": "QR code scanning is not yet available"
+  },
+  "result": {
+    "success_title": "Verification Successful",
+    "success_desc": "Device verified. You can now communicate securely.",
+    "rejected_title": "Verification Rejected",
+    "rejected_desc": "The other side rejected the verification request.",
+    "cancelled_title": "Verification Cancelled",
+    "cancelled_desc": "The verification flow has been cancelled.",
+    "failed_title": "Verification Failed",
+    "failed_desc": "An error occurred during verification."
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "close": "Close",
+    "accept": "Accept",
+    "reject": "Reject"
+  },
+  "errors": {
+    "start_failed": "Failed to start verification",
+    "accept_failed": "Failed to accept verification request",
+    "confirm_failed": "Failed to confirm verification",
+    "cancel_failed": "Failed to cancel verification",
+    "timeout": "Verification request timed out",
+    "unsupported_method": "The other side does not support this verification method"
+  },
+  "pending_requests": {
+    "title": "Pending Verification Requests",
+    "from": "From",
+    "device": "Device",
+    "time": "Time"
+  }
+}
