@@ -70,6 +70,16 @@
     "days_hours": "{days}d {hours}h",
     "minutes": "{minutes} min"
   },
+  "keyBackup": {
+    "setup": "Set Up Key Backup",
+    "restore": "Restore Key Backup",
+    "setupTitle": "Set Up Key Backup",
+    "restoreTitle": "Restore Key Backup",
+    "setupComplete": "Key backup has been set up successfully.",
+    "restoreComplete": "Keys have been restored successfully.",
+    "generating": "Generating recovery key...",
+    "restoring": "Restoring keys..."
+  },
   "health": {
     "cross_signing_incomplete": "Cross-signing not set up, other devices cannot verify this device",
     "unverified_devices": "Unverified devices detected, consider verifying them for message security",
