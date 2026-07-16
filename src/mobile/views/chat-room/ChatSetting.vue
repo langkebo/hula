@@ -208,6 +208,19 @@
                 @update:model-value="handleNotification"
                 size="20px" />
             </div>
+            <div
+              v-if="isGroup && roomUpgradeFlow.canUpgrade.value"
+              class="mx-15px border-b border-[--hula-border-default]"></div>
+            <div
+              v-if="isGroup && roomUpgradeFlow.canUpgrade.value"
+              class="flex justify-between p-15px items-center cursor-pointer"
+              @click="showRoomUpgrade = true">
+              <div class="text-14px">{{ t('room_advanced.room_upgrade.title') }}</div>
+              <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
+                <span>{{ roomUpgradeFlow.currentVersion.value || '—' }}</span>
+                <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
+              </div>
+            </div>
           </div>
 
           <van-button plain class="cursor-pointer text-red text-14px rounded-10px w-full mb-20px">
@@ -237,14 +250,17 @@
       </div>
     </template>
   </AutoFixHeightPage>
+  <MobileRoomUpgradeDialog v-model:visible="showRoomUpgrade" :room-id="currentSessionRoomId" :can-upgrade="!!isAdmin" />
 </template>
 
 <script setup lang="ts">
 import { showConfirmDialog } from 'vant'
 import { I18nT, useI18n } from 'vue-i18n'
+import MobileRoomUpgradeDialog from '#/views/chat-room/MobileRoomUpgradeDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useMyRoomInfoUpdater } from '@/composables/room/useMyRoomInfoUpdater'
+import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import router from '@/router'
@@ -295,6 +311,12 @@ const isLord = computed(() => {
 const isAdmin = computed(() => {
   const currentUser = groupStore.userList.find((user) => user.uid === useUserStore().userInfo?.uid)
   return currentUser?.roleId === RoleEnum.ADMIN
+})
+
+const showRoomUpgrade = ref(false)
+const roomUpgradeFlow = useRoomUpgradeFlow({
+  roomId: currentSessionRoomId.value,
+  canUpgrade: isAdmin.value
 })
 
 const groupMemberListSliced = computed(() => {
