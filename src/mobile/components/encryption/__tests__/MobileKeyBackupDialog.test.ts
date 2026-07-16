@@ -66,7 +66,7 @@ function createStubs() {
     },
     'van-notice-bar': {
       name: 'VanNoticeBar',
-      template: '<div class="van-notice-bar-stub"><slot /></div>',
+      template: '<div class="van-notice-bar-stub">{{ text }}</div>',
       props: ['text', 'type']
     }
   }
@@ -107,29 +107,30 @@ describe('MobileKeyBackupDialog', () => {
     expect(wrapper.find('[data-test="restore-input"]').exists()).toBe(true)
   })
 
-  it('shows recovery key in showKey step', () => {
+  it('shows success and warning notices in showKey step', () => {
     mockStep.value = 'showKey'
-    mockRecoveryKey.value = 'ABC-DEF-GHI-JKL'
     const wrapper = createWrapper({ mode: 'setup' })
-    expect(wrapper.text()).toContain('ABC-DEF-GHI-JKL')
+    expect(wrapper.text()).toContain('encryption.keyBackup.setupComplete')
+    expect(wrapper.text()).toContain('encryption.backup.recovery_key_desc')
+    expect(wrapper.find('[data-test="setup-showkey"]').exists()).toBe(true)
   })
 
   it('shows loading spinner in verify step', () => {
-    mockStep.value = 'verify' as any
+    mockStep.value = 'verify'
     const wrapper = createWrapper({ mode: 'setup' })
     expect(wrapper.find('.van-loading-stub').exists()).toBe(true)
     expect(wrapper.text()).toContain('encryption.backup.verify_backup')
   })
 
   it('shows success state with done button', () => {
-    mockStep.value = 'success' as any
+    mockStep.value = 'success'
     const wrapper = createWrapper({ mode: 'setup' })
     expect(wrapper.text()).toContain('encryption.keyBackup.setupComplete')
     expect(wrapper.text()).toContain('common.done')
   })
 
   it('shows error state with error message and close button', () => {
-    mockStep.value = 'error' as any
+    mockStep.value = 'error'
     mockErrorMessage.value = 'Something went wrong'
     const wrapper = createWrapper({ mode: 'setup' })
     expect(wrapper.text()).toContain('Something went wrong')
@@ -137,7 +138,7 @@ describe('MobileKeyBackupDialog', () => {
   })
 
   it('shows fallback text when errorMessage is null', () => {
-    mockStep.value = 'error' as any
+    mockStep.value = 'error'
     const wrapper = createWrapper({ mode: 'setup' })
     expect(wrapper.text()).toContain('encryption.backup.failed_desc')
   })
@@ -174,7 +175,7 @@ describe('MobileKeyBackupDialog', () => {
     mockStep.value = 'showKey'
     mockConfirmKeySaved.mockResolvedValue(undefined)
     mockVerifyBackup.mockImplementation(() => {
-      mockStep.value = 'success' as any
+      mockStep.value = 'success'
       return Promise.resolve(true)
     })
     const wrapper = createWrapper({ mode: 'setup' })
@@ -185,7 +186,7 @@ describe('MobileKeyBackupDialog', () => {
 
   it('emits complete on successful restore', async () => {
     mockImportFromRecoveryKey.mockImplementation(() => {
-      mockStep.value = 'success' as any
+      mockStep.value = 'success'
       return Promise.resolve(true)
     })
     const wrapper = createWrapper({ mode: 'restore' })

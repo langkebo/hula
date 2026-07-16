@@ -22,16 +22,10 @@
         </van-button>
       </div>
 
-      <!-- SETUP: showKey - display recovery key -->
+      <!-- SETUP: showKey - backup created, key managed by device encryption system -->
       <div v-else-if="isSetup && step === 'showKey'" class="flex flex-col gap-3" data-test="setup-showkey">
+        <van-notice-bar type="success" :text="t('encryption.keyBackup.setupComplete')" />
         <van-notice-bar type="warning" :text="t('encryption.backup.recovery_key_desc')" />
-        <div
-          class="recovery-key-box bg-[--van-gray-1] dark:bg-[rgba(255,255,255,0.06)] p-3 rounded font-mono text-sm break-all">
-          {{ recoveryKey || t('encryption.backup.recovery_key_title') }}
-        </div>
-        <van-button block size="small" plain @click="copyKey">
-          {{ t('encryption.backup.copy_key') }}
-        </van-button>
         <van-button block type="primary" :loading="loading" @click="handleConfirmKeySaved">
           {{ t('encryption.backup.key_saved_confirm') }}
         </van-button>
@@ -104,7 +98,6 @@ const recoveryKeyInput = ref('')
 
 const {
   step,
-  recoveryKey,
   loading,
   errorMessage,
   passphrase,
@@ -131,14 +124,11 @@ const successMessage = computed(() => {
   return t('encryption.keyBackup.restoreComplete')
 })
 
-// When dialog opens, reset finished state and set restore step
+// When dialog opens, reset finished state
 watch(visible, (newVal) => {
   if (newVal) {
     if (isFinished.value) {
       reset()
-    }
-    if (!isSetup.value) {
-      step.value = 'restore'
     }
   }
 })
@@ -165,17 +155,6 @@ async function handleRestore() {
   await importFromRecoveryKey(input)
   if (step.value === 'success') {
     emit('complete')
-  }
-}
-
-async function copyKey() {
-  if (recoveryKey.value) {
-    try {
-      await navigator.clipboard.writeText(recoveryKey.value)
-      showToast(t('encryption.backup.copy_success'))
-    } catch {
-      showToast(t('encryption.backup.copy_failed'))
-    }
   }
 }
 

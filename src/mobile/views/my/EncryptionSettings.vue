@@ -92,38 +92,7 @@
             @click="handleRestoreBackup" />
         </van-cell-group>
 
-        <!-- 密钥备份流程(基于 composable) -->
-        <van-cell-group :title="t('encryption.backup.title')" inset data-test="key-backup-flow-section">
-          <van-cell :title="t('encryption.backup.has_backup')" data-test="key-backup-status">
-            <template #right-icon>
-              <van-tag :type="hasBackup ? 'success' : 'warning'" size="medium">
-                {{ hasBackup ? t('encryption.backup.has_backup') : t('encryption.backup.no_backup') }}
-              </van-tag>
-            </template>
-          </van-cell>
-
-          <van-cell
-            v-if="currentVersion"
-            :title="t('encryption.backup.versions.version')"
-            :value="currentVersion"
-            data-test="key-backup-version" />
-
-          <van-cell
-            :title="t('encryption.backup.create_new')"
-            :label="t('encryption.backup.recovery_key_desc')"
-            is-link
-            data-test="key-backup-create-entry"
-            @click="openKeyBackupCreate" />
-
-          <van-cell
-            :title="t('encryption.backup.restore')"
-            :label="t('encryption.backup.enter_key')"
-            is-link
-            data-test="key-backup-restore-entry"
-            @click="openKeyBackupRestore" />
-        </van-cell-group>
-
-        <!-- 密钥备份对话框入口 -->
+        <!-- Key backup dialog entry -->
         <van-cell-group :title="t('encryption.backup.title')" inset>
           <van-cell :title="t('encryption.keyBackup.setup')" is-link @click="showKeyBackupSetup = true" />
           <van-cell :title="t('encryption.keyBackup.restore')" is-link @click="showKeyBackupRestore = true" />
@@ -194,74 +163,7 @@
         </div>
       </van-dialog>
 
-      <!-- 密钥备份流程 popup(基于 composable) -->
-      <van-popup
-        v-model:show="showKeyBackupFlowPopup"
-        position="bottom"
-        round
-        :close-on-click-overlay="false"
-        data-test="key-backup-flow-popup">
-        <div class="key-backup-flow">
-          <van-nav-bar :title="t('encryption.backup.title')">
-            <template #right>
-              <van-icon name="cross" size="18" @click="closeKeyBackupFlow" />
-            </template>
-          </van-nav-bar>
-
-          <div v-if="keyBackupLoading" class="flex justify-center items-center py-48px">
-            <van-loading type="spinner" />
-          </div>
-
-          <template v-else>
-            <!-- showKey: 显示恢复密钥 -->
-            <div v-if="keyBackupStep === 'showKey'" class="flow-step p-16px" data-test="key-backup-show-key">
-              <van-notice-bar type="warning" :text="t('encryption.backup.recovery_key_desc')" />
-              <div class="recovery-key-title mt-12px">{{ t('encryption.backup.your_key') }}</div>
-              <div class="recovery-key-value">{{ keyBackupRecoveryKey || '-' }}</div>
-              <div class="flex gap-8px my-12px">
-                <van-button size="small" @click="copyRecoveryKey">{{ t('encryption.backup.copy_key') }}</van-button>
-                <van-button size="small" @click="downloadRecoveryKey">
-                  {{ t('encryption.backup.download_key') }}
-                </van-button>
-              </div>
-              <van-button type="primary" block @click="handleConfirmKeySaved">
-                {{ t('encryption.backup.key_saved_confirm') }}
-              </van-button>
-            </div>
-
-            <!-- restore: 从恢复密钥导入 -->
-            <div v-else-if="keyBackupStep === 'restore'" class="flow-step p-16px" data-test="key-backup-restore-input">
-              <van-field
-                v-model="restoreKeyInput"
-                type="textarea"
-                rows="3"
-                :label="t('encryption.backup.enter_key')"
-                :placeholder="t('encryption.backup.key_placeholder')" />
-              <van-button type="primary" block class="mt-16px" @click="handleImportFromRecoveryKey">
-                {{ t('encryption.backup.confirm_restore') }}
-              </van-button>
-            </div>
-
-            <!-- success -->
-            <div v-else-if="keyBackupStep === 'success'" class="flow-step p-16px" data-test="key-backup-success">
-              <van-notice-bar type="success" :text="t('encryption.backup.create_success')" />
-              <van-button type="primary" block class="mt-16px" @click="closeKeyBackupFlow">
-                {{ t('common.close') }}
-              </van-button>
-            </div>
-
-            <!-- error -->
-            <div v-else-if="keyBackupStep === 'error'" class="flow-step p-16px" data-test="key-backup-error">
-              <van-notice-bar type="danger" :text="keyBackupErrorMessage || t('encryption.backup.failed')" />
-              <van-button type="primary" block class="mt-16px" @click="closeKeyBackupFlow">
-                {{ t('common.close') }}
-              </van-button>
-            </div>
-          </template>
-        </div>
-      </van-popup>
-
-      <!-- 密钥备份对话框(独立组件) -->
+      <!-- Key backup dialog components -->
       <MobileKeyBackupDialog v-model="showKeyBackupSetup" mode="setup" @complete="onKeyBackupComplete" />
       <MobileKeyBackupDialog v-model="showKeyBackupRestore" mode="restore" @complete="onKeyBackupComplete" />
     </template>
@@ -274,7 +176,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useKeyBackupFlow } from '@/composables/encryption/useKeyBackupFlow'
+
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileKeyBackupDialog from '@/mobile/components/encryption/MobileKeyBackupDialog.vue'
@@ -298,29 +200,11 @@ const neverSendUnencrypted = ref(false)
 const showEncryptionWarnings = ref(true)
 const showDeviceSheet = ref(false)
 const selectedDevice = ref<Device | null>(null)
-
-// 密钥备份流程(基于 composable)
-const {
-  hasBackup,
-  currentVersion,
-  recoveryKey: keyBackupRecoveryKey,
-  step: keyBackupStep,
-  loading: keyBackupLoading,
-  errorMessage: keyBackupErrorMessage,
-  refreshStatus: refreshKeyBackupStatus,
-  createBackup,
-  confirmKeySaved,
-  importFromRecoveryKey
-} = useKeyBackupFlow()
-
-const showKeyBackupFlowPopup = ref(false)
-const restoreKeyInput = ref('')
-
 // MobileKeyBackupDialog state
 const showKeyBackupSetup = ref(false)
 const showKeyBackupRestore = ref(false)
 function onKeyBackupComplete() {
-  refreshKeyBackupStatus()
+  loadBackupStatus()
 }
 
 const encryptionStatusText = computed(() => {
@@ -493,65 +377,10 @@ const handleRestoreConfirm = async () => {
     showToast(t('setting.encryption.restore_backup_failed'))
   }
 }
-
-// === 密钥备份流程(基于 composable) ===
-const openKeyBackupCreate = async () => {
-  const ok = await createBackup()
-  if (ok) {
-    showKeyBackupFlowPopup.value = true
-  }
-}
-
-const openKeyBackupRestore = () => {
-  restoreKeyInput.value = ''
-  keyBackupStep.value = 'restore'
-  showKeyBackupFlowPopup.value = true
-}
-
-const handleConfirmKeySaved = async () => {
-  await confirmKeySaved()
-}
-
-const handleImportFromRecoveryKey = async () => {
-  const input = restoreKeyInput.value.trim()
-  if (!input) {
-    showToast(t('setting.encryption.recovery_key_required'))
-    return
-  }
-  await importFromRecoveryKey(input)
-}
-
-const closeKeyBackupFlow = () => {
-  showKeyBackupFlowPopup.value = false
-}
-
-const copyRecoveryKey = () => {
-  if (!keyBackupRecoveryKey.value) return
-  navigator.clipboard
-    .writeText(keyBackupRecoveryKey.value)
-    .then(() => showToast(t('encryption.backup.copy_success')))
-    .catch(() => showToast(t('encryption.backup.copy_failed')))
-}
-
-const downloadRecoveryKey = () => {
-  if (!keyBackupRecoveryKey.value) return
-  const blob = new Blob([keyBackupRecoveryKey.value], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `hula-recovery-key-${Date.now()}.txt`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-  showToast(t('encryption.backup.download_success'))
-}
-
 onMounted(() => {
   loadDevices()
   loadEncryptionStatus()
   loadBackupStatus()
-  refreshKeyBackupStatus()
 })
 </script>
 
@@ -580,35 +409,6 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 12px;
-  }
-}
-
-.key-backup-flow {
-  padding-bottom: env(safe-area-inset-bottom);
-
-  .flow-step {
-    background: var(--van-background-2);
-  }
-
-  .recovery-key-title {
-    font-size: 14px;
-    color: var(--hula-text-secondary, #999);
-    margin-bottom: 8px;
-  }
-
-  .recovery-key-value {
-    font-family: monospace;
-    font-size: 14px;
-    word-break: break-all;
-    line-height: 1.6;
-    padding: 12px;
-    background: var(--van-gray-1, #f7f8fa);
-    border-radius: 8px;
-    color: var(--hula-text-primary, #333);
-  }
-
-  :deep(.dark) .recovery-key-value {
-    background: rgba(255, 255, 255, 0.06);
   }
 }
 </style>
