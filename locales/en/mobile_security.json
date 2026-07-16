@@ -53,5 +53,25 @@
     "cancel": "Cancel"
   },
   "deactivate_success": "Account deactivated",
-  "deactivate_failed": "Failed to deactivate account"
+  "deactivate_failed": "Failed to deactivate account",
+  "secure_backup": {
+    "title": "Secure Backup",
+    "desc": "Create or restore a cross-device secure backup to protect your encrypted messages",
+    "create": "Create Backup",
+    "restore": "Restore Backup",
+    "enter_passphrase": "Passphrase",
+    "passphrase_placeholder": "Enter a secure passphrase",
+    "generating": "Generating recovery key...",
+    "enter_recovery_key": "Recovery Key",
+    "recovery_key_placeholder": "Paste your recovery key here",
+    "restoring": "Restoring keys from backup...",
+    "create_success": "Secure backup created successfully",
+    "restore_success": "Keys restored from backup",
+    "create_failed": "Failed to create secure backup",
+    "restore_failed": "Failed to restore from backup",
+    "verify_success": "Backup verified successfully",
+    "verify_failed": "Backup verification failed",
+    "delete_success": "Backup deleted successfully",
+    "delete_failed": "Failed to delete backup"
+  }
 }

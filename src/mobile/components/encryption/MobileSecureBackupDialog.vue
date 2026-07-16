@@ -102,14 +102,14 @@ const localStep = ref<'menu' | 'create-input' | 'restore-input'>('menu')
 const passphraseInput = ref('')
 const recoveryKeyInput = ref('')
 
-const { phase, loading, errorMessage, passphrase, isActive, createSecureBackup, restoreFromSecureBackup, reset } =
+const { phase, loading, errorMessage, passphrase, createSecureBackup, restoreFromSecureBackup, reset } =
   useSecureBackupFlow()
 
 const successMessage = computed(() => {
   if (localStepBeforeAction.value === 'create-input') {
     return t('mobile_security.secure_backup.create_success')
   }
-  return t('mobile_security.secure_backup.restore_success', { count: 0 })
+  return t('mobile_security.secure_backup.restore_success')
 })
 
 const displayError = computed(() => {

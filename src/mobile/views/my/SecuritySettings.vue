@@ -237,7 +237,6 @@ function onDeviceVerified() {
   showToast(t('verification.result.success_title'))
 }
 function onSecureBackupComplete() {
-  showToast(t('mobile_security.secure_backup.create_success'))
   void loadSecurityInfo()
 }
 

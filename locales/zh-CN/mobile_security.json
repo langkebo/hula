@@ -53,5 +53,25 @@
     "cancel": "取消"
   },
   "deactivate_success": "账户已注销",
-  "deactivate_failed": "账户注销失败"
+  "deactivate_failed": "账户注销失败",
+  "secure_backup": {
+    "title": "安全备份",
+    "desc": "创建或恢复跨设备安全备份以保护您的加密消息",
+    "create": "创建备份",
+    "restore": "恢复备份",
+    "enter_passphrase": "密码短语",
+    "passphrase_placeholder": "请输入安全密码短语",
+    "generating": "正在生成恢复密钥...",
+    "enter_recovery_key": "恢复密钥",
+    "recovery_key_placeholder": "请粘贴恢复密钥",
+    "restoring": "正在从备份恢复密钥...",
+    "create_success": "安全备份创建成功",
+    "restore_success": "已从备份恢复密钥",
+    "create_failed": "安全备份创建失败",
+    "restore_failed": "从备份恢复失败",
+    "verify_success": "备份验证成功",
+    "verify_failed": "备份验证失败",
+    "delete_success": "备份删除成功",
+    "delete_failed": "备份删除失败"
+  }
 }
