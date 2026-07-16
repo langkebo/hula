@@ -35,10 +35,26 @@
         </template>
       </n-button>
 
+      <n-button circle :type="isSpeakerOn ? 'default' : 'warning'" @click="handleToggleSpeaker">
+        <template #icon>
+          <svg class="size-20px">
+            <use :href="isSpeakerOn ? '#volume-up' : '#volume-off'"></use>
+          </svg>
+        </template>
+      </n-button>
+
       <n-button v-if="isVideo" circle :type="isVideoMuted ? 'error' : 'default'" @click="toggleVideo">
         <template #icon>
           <svg class="size-20px">
             <use :href="isVideoMuted ? '#video-off' : '#video'"></use>
+          </svg>
+        </template>
+      </n-button>
+
+      <n-button v-if="isVideo" circle @click="handleSwitchCamera">
+        <template #icon>
+          <svg class="size-20px">
+            <use href="#camera-reverse"></use>
           </svg>
         </template>
       </n-button>
@@ -63,7 +79,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useVoIPCallFlow } from '@/composables/webrtc/useVoIPCallFlow'
 import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -93,6 +111,38 @@ const isMuted = ref(false)
 const isVideoMuted = ref(false)
 const isScreenSharing = ref(false)
 const defaultAvatar = '/logoD.png'
+const remoteVideoRef = ref<HTMLVideoElement>()
+const localVideoRef = ref<HTMLVideoElement>()
+
+// --- VoIP call flow composable bindings ---
+const { callInfo, toggleSpeaker, isSpeakerOn } = useVoIPCallFlow()
+
+const localStream = computed(() => callInfo.value?.localStream ?? null)
+const remoteStream = computed(() => callInfo.value?.remoteStream ?? null)
+
+// --- Stream binding ---
+watch(
+  localStream,
+  (stream) => {
+    if (localVideoRef.value) {
+      localVideoRef.value.srcObject = stream
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  remoteStream,
+  (stream) => {
+    if (remoteVideoRef.value) {
+      remoteVideoRef.value.srcObject = stream
+    }
+  },
+  { immediate: true }
+)
+
+// --- Camera facing mode for front/back toggle ---
+const cameraFacingMode = ref<'user' | 'environment'>('user')
 
 let durationTimer: number | null = null
 
@@ -141,6 +191,37 @@ const toggleScreenShare = async () => {
   }
 }
 
+const handleToggleSpeaker = async () => {
+  await toggleSpeaker()
+}
+
+const handleSwitchCamera = async () => {
+  const stream = callInfo.value?.localStream
+  if (!stream) return
+
+  try {
+    const videoTrack = stream.getVideoTracks()[0]
+    if (videoTrack) {
+      videoTrack.stop()
+      stream.removeTrack(videoTrack)
+    }
+
+    const newFacingMode: 'user' | 'environment' = cameraFacingMode.value === 'user' ? 'environment' : 'user'
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: newFacingMode },
+      audio: false
+    })
+
+    const newVideoTrack = newStream.getVideoTracks()[0]
+    stream.addTrack(newVideoTrack)
+    cameraFacingMode.value = newFacingMode
+
+    logger.info(`摄像头切换至: ${newFacingMode}`)
+  } catch (err) {
+    logger.error('摄像头切换失败:', err)
+  }
+}
+
 const handleHangup = async () => {
   await matrixVoIPService.hangupCall(props.callId)
   emit('hangup')
@@ -174,6 +255,14 @@ watch(
 onUnmounted(() => {
   stopDurationTimer()
   timerManager.clearAll()
+
+  // Clean up stream bindings
+  if (localVideoRef.value) {
+    localVideoRef.value.srcObject = null
+  }
+  if (remoteVideoRef.value) {
+    remoteVideoRef.value.srcObject = null
+  }
 })
 </script>
 
