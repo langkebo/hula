@@ -4018,7 +4018,13 @@ export type I18nKeys = {
       "success": "已转发到 {count} 个房间",
       "failed": "转发失败"
     },
-    "merge_msg_title": "合并消息"
+    "merge_msg_title": "合并消息",
+    "multi_select": {
+      "selected_count": "{count} selected",
+      "copy": "Copy",
+      "forward": "Forward",
+      "delete": "Delete"
+    }
   },
   "message_container": {
     "no_more": "没有更多消息了",
