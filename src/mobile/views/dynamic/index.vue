@@ -74,6 +74,8 @@
                 class="size-36px rounded-full object-cover"
                 :src="member.avatarUrl || '/logo.png'"
                 alt="成员头像"
+                loading="lazy"
+                decoding="async"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
               <div class="flex-1 min-w-0">
                 <div class="text-13px text-[--hula-text-primary] truncate">

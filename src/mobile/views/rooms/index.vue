@@ -54,6 +54,8 @@
               class="size-48px rounded-12px object-cover flex-shrink-0"
               :src="room.avatarUrl || '/logo.png'"
               :alt="room.name"
+              loading="lazy"
+              decoding="async"
               @error="($event.target as HTMLImageElement).src = '/logo.png'" />
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-6px">
