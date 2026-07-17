@@ -300,7 +300,6 @@ class MatrixClientService {
       password,
       initial_device_display_name: deviceName || 'HuLa Client'
     })
-
     return this.loginRequestWithRetry(url, body)
   }
 
@@ -435,9 +434,10 @@ class MatrixClientService {
       let loginResponse: LoginResponse
 
       try {
-        loginResponse = await this.client.login('m.login.password', {
-          user: username,
-          password: password,
+        loginResponse = await this.client.loginRequest({
+          type: 'm.login.password',
+          identifier: { type: 'm.id.user', user: username },
+          password,
           initial_device_display_name: deviceName || 'HuLa Client'
         })
       } catch (error) {
@@ -447,8 +447,6 @@ class MatrixClientService {
         logger.warn(`SDK 密码登录失败 (status=${httpStatus}, errcode=${errcode}): ${errInfo}，尝试 HTTP 回退`)
         loginResponse = await this.loginByHttpFallback(username, password, deviceName)
       }
-
-      logger.info(`登录成功: ${loginResponse.user_id}`)
 
       await this.initialize({
         ...this.config!,
@@ -581,10 +579,11 @@ class MatrixClientService {
 
       this.connectionState = 'CONNECTED'
 
+      let activeAccessToken = token
       if (refreshToken) {
         try {
           if (this.client) {
-            const refreshResult = (await this.client.http.request('POST', '/_matrix/client/v3/refresh', undefined, {
+            const refreshResult = (await this.client.http.request('POST', '/refresh', undefined, {
               refresh_token: refreshToken
             })) as Record<string, unknown>
 
@@ -597,6 +596,8 @@ class MatrixClientService {
             }
 
             if (newAccessToken && newExpiresInMs && newExpiresInMs > 0) {
+              this.client.setAccessToken(newAccessToken)
+              activeAccessToken = newAccessToken
               const uid = this.client.getUserId()
               if (uid) {
                 await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? refreshToken)
@@ -613,7 +614,7 @@ class MatrixClientService {
         success: true,
         userId: userId,
         deviceId: resolvedDeviceId,
-        accessToken: token
+        accessToken: activeAccessToken
       }
     } catch (err) {
       this.connectionState = 'ERROR'

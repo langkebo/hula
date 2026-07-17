@@ -17,6 +17,7 @@ describe('MatrixTokenManager', () => {
   const createMockClient = (overrides: Record<string, unknown> = {}) =>
     ({
       getUserId: () => '@user:example.com',
+      setAccessToken: vi.fn(),
       http: {
         request: vi.fn()
       },
@@ -81,7 +82,7 @@ describe('MatrixTokenManager', () => {
     // Fast-forward past the scheduled time to trigger the refresh
     await vi.advanceTimersByTimeAsync(900000)
 
-    expect(client.http.request).toHaveBeenCalledWith('POST', '/_matrix/client/v3/refresh', undefined, {
+    expect(client.http.request).toHaveBeenCalledWith('POST', '/refresh', undefined, {
       refresh_token: 'rt1'
     })
   })
@@ -101,6 +102,22 @@ describe('MatrixTokenManager', () => {
     await vi.advanceTimersByTimeAsync(60001)
 
     expect(persistRefreshedTokenMock).toHaveBeenCalledWith('@user:example.com', 'at2', 'rt2')
+  })
+
+  it('refresh 成功后更新活跃客户端的 access token', async () => {
+    const request = vi.fn().mockResolvedValue({
+      access_token: 'at-new',
+      refresh_token: 'rt-new',
+      expires_in_ms: 3600000
+    })
+    const setAccessToken = vi.fn()
+    const client = createMockClient({ http: { request }, setAccessToken })
+
+    manager.schedule(client, 'rt-old', 120000)
+    await vi.advanceTimersByTimeAsync(60000)
+
+    expect(setAccessToken).toHaveBeenCalledWith('at-new')
+    expect(persistRefreshedTokenMock).toHaveBeenCalledWith('@user:example.com', 'at-new', 'rt-new')
   })
 
   it('clears on 404 (server does not support refresh)', async () => {

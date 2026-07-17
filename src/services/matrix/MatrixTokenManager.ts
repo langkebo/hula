@@ -57,7 +57,7 @@ export class MatrixTokenManager {
 
     try {
       logger.info('[TokenRefresh] Attempting token refresh')
-      const result = (await client.http.request('POST', '/_matrix/client/v3/refresh', undefined, {
+      const result = (await client.http.request('POST', '/refresh', undefined, {
         refresh_token: refreshToken
       })) as Record<string, unknown>
 
@@ -70,6 +70,7 @@ export class MatrixTokenManager {
       }
 
       if (newAccessToken) {
+        client.setAccessToken(newAccessToken)
         const uid = client.getUserId()
         if (uid) {
           await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? '')
