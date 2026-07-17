@@ -150,7 +150,6 @@ class ChunkUploadService {
 
   private async processUpload(context: ChunkUploadContext): Promise<UploadResult> {
     const uploadPromises: Promise<void>[] = []
-    let _activeCount = 0
 
     const processNext = async () => {
       while (!context.aborted) {
@@ -158,7 +157,6 @@ class ChunkUploadService {
         if (!chunk) break
 
         chunk.status = 'uploading'
-        _activeCount++
 
         try {
           await this.uploadChunk(context, chunk)
@@ -171,8 +169,6 @@ class ChunkUploadService {
             throw err
           }
           chunk.status = 'pending'
-        } finally {
-          _activeCount--
         }
       }
     }

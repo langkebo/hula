@@ -112,6 +112,7 @@ export function useMessageForward(options: UseMessageForwardOptions) {
    * @returns 成功转发的房间数量,失败返回 0
    */
   const forward = async (): Promise<number> => {
+    if (forwarding.value) return 0
     const event = sourceEventRef.value
     if (!event) {
       const message = t('message.forward.failed')

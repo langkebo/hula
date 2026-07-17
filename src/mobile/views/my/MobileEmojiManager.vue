@@ -79,18 +79,26 @@
           </div>
 
           <div class="flex-1 overflow-auto p-12px">
-            <van-empty
-              v-if="!detailPack || detailPack.items.length === 0"
-              :description="t('emoticon.packs.empty')" />
+            <van-empty v-if="!detailPack || detailPack.items.length === 0" :description="t('emoticon.packs.empty')" />
 
             <div v-else class="grid grid-cols-4 gap-8px">
               <div v-for="emoji in detailPack.items" :key="emoji.id" class="relative">
                 <van-swipe-cell>
-                  <div class="aspect-square flex items-center justify-center bg-[--hula-surface-panel] rounded-8px overflow-hidden">
-                    <img :src="emoji.url" :alt="emoji.name" class="w-full h-full object-cover" />
+                  <div
+                    class="aspect-square flex items-center justify-center bg-[--hula-surface-panel] rounded-8px overflow-hidden">
+                    <img
+                      :src="emoji.url"
+                      :alt="emoji.name"
+                      loading="lazy"
+                      decoding="async"
+                      class="w-full h-full object-cover" />
                   </div>
                   <template #right>
-                    <van-button square type="danger" :text="t('emoticon.packs.remove_emoji')" @click="handleRemoveEmoji(emoji.id)" />
+                    <van-button
+                      square
+                      type="danger"
+                      :text="t('emoticon.packs.remove_emoji')"
+                      @click="handleRemoveEmoji(emoji.id)" />
                   </template>
                 </van-swipe-cell>
                 <div class="text-center text-10px text-[--hula-text-secondary] mt-4px truncate">{{ emoji.name }}</div>
@@ -99,7 +107,11 @@
           </div>
 
           <div class="p-12px border-t border-[--hula-border-layout-divider]">
-            <van-uploader :after-read="handleAfterRead" :preview-image="false" :max-count="1" accept="image/png,image/gif,image/webp">
+            <van-uploader
+              :after-read="handleAfterRead"
+              :preview-image="false"
+              :max-count="1"
+              accept="image/png,image/gif,image/webp">
               <van-button plain type="primary" block>
                 <Icon icon="mdi:upload" :width="16" class="mr-4px" />
                 {{ t('emoticon.packs.add_emoji') }}
