@@ -26,6 +26,8 @@ describe('MatrixTokenManager', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
+    persistRefreshedTokenMock.mockClear()
+    logoutExpiredSessionMock.mockClear()
     manager = new MatrixTokenManager()
   })
 
@@ -163,5 +165,26 @@ describe('MatrixTokenManager', () => {
     await vi.advanceTimersByTimeAsync(60001)
 
     expect(logoutExpiredSessionMock).toHaveBeenCalled()
+  })
+
+  it('网络错误(无 httpStatus)时安排 30s 重试且不登出', async () => {
+    const request = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const client = createMockClient({ http: { request } })
+
+    manager.schedule(client, 'rt1', 120000)
+    await vi.advanceTimersByTimeAsync(60000)
+
+    expect(logoutExpiredSessionMock).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+  })
+
+  it('401(token 失效)仍触发登出清理', async () => {
+    const request = vi.fn().mockRejectedValue(Object.assign(new Error('unknown token'), { httpStatus: 401 }))
+    const client = createMockClient({ http: { request } })
+
+    manager.schedule(client, 'rt1', 120000)
+    await vi.advanceTimersByTimeAsync(60000)
+
+    expect(logoutExpiredSessionMock).toHaveBeenCalledTimes(1)
   })
 })

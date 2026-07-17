@@ -90,6 +90,11 @@ export class MatrixTokenManager {
         this.schedule(client, refreshToken, 30000)
         return
       }
+      if (httpStatus === undefined) {
+        logger.warn(`[TokenRefresh] Network error during refresh, retrying in 30s: ${err}`)
+        this.schedule(client, refreshToken, 30000)
+        return
+      }
       logger.error(`[TokenRefresh] Refresh failed: ${err}`)
       logger.warn('[TokenRefresh] Session expired, clearing stored session')
       try {
