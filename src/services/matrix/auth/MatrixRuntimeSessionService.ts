@@ -806,7 +806,7 @@ class MatrixRuntimeSessionService {
   /**
    * Log out the current session: stop presence, clear state, and optionally reset all local data.
    *
-   * @throws Never throws (errors are caught and logged internally).
+   * @throws {Error} if resetLocalSessionState or the underlying logout request fails.
    */
   async logoutCurrentSession(options: LogoutMatrixRuntimeSessionOptions = {}): Promise<void> {
     const { resetLocalState = true, preserveTokens = false } = options
