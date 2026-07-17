@@ -37,6 +37,8 @@ export function useLocationShare(options: UseLocationShareOptions) {
   const error = ref<string | null>(null)
   // 实时共享对应的 beacon_info 事件 ID(用于停止共享)
   const beaconInfoEventId = ref<string | null>(null)
+  // 活跃 beacon 所在房间 ID(用于 reset 时停止 beacon)
+  const activeBeaconRoomId = ref<string | null>(null)
   // 操作进行中标志(获取位置/发送/启停)
   const loading = ref(false)
 
@@ -122,6 +124,7 @@ export function useLocationShare(options: UseLocationShareOptions) {
    * @param duration 共享时长(毫秒),默认 1 小时
    */
   const startBeacon = async (roomId: string, duration: number = DEFAULT_BEACON_TIMEOUT): Promise<boolean> => {
+    if (sharing.value) return false
     const resolved = resolveRoomId(roomId)
     if (!resolved) {
       showFeedback(t('location_share.start_failed'), 'error')
@@ -133,6 +136,7 @@ export function useLocationShare(options: UseLocationShareOptions) {
         timeout: duration
       })
       beaconInfoEventId.value = beacon.event_id
+      activeBeaconRoomId.value = resolved
       sharing.value = true
       showFeedback(t('location_share.start_success'), 'success')
       return true
@@ -157,6 +161,7 @@ export function useLocationShare(options: UseLocationShareOptions) {
       if (ok) {
         sharing.value = false
         beaconInfoEventId.value = null
+        activeBeaconRoomId.value = null
         showFeedback(t('location_share.stop_success'), 'success')
         return true
       }
@@ -173,10 +178,18 @@ export function useLocationShare(options: UseLocationShareOptions) {
    * 重置全部状态(组件卸载或切换房间时调用)
    */
   const reset = (): void => {
+    if (sharing.value && beaconInfoEventId.value && activeBeaconRoomId.value) {
+      const rid = activeBeaconRoomId.value
+      const eventId = beaconInfoEventId.value
+      matrixBeaconService.stopBeacon(rid, eventId).catch((err) => {
+        logger.warn('reset 时停止 beacon 失败', err)
+      })
+    }
     sharing.value = false
     currentLocation.value = null
     error.value = null
     beaconInfoEventId.value = null
+    activeBeaconRoomId.value = null
     loading.value = false
   }
 

@@ -346,6 +346,7 @@ describe('useLocationShare', () => {
         is_live: true,
         last_updated: 1
       })
+      mockStopBeacon.mockResolvedValueOnce(true)
       const composable = useLocationShare({ roomId: '!room:server' })
 
       // 制造一些状态
@@ -360,6 +361,30 @@ describe('useLocationShare', () => {
       expect(composable.error.value).toBeNull()
       expect(composable.beaconInfoEventId.value).toBeNull()
       expect(composable.loading.value).toBe(false)
+    })
+
+    it('reset 时若有在途 beacon 则调用 stopBeacon', async () => {
+      mockCreateBeacon.mockResolvedValueOnce({ event_id: '$beacon2' })
+      mockStopBeacon.mockResolvedValueOnce(true)
+      const composable = useLocationShare({ roomId: '!room:hs' })
+
+      await composable.startBeacon('!room:hs')
+      composable.reset()
+      await Promise.resolve()
+
+      expect(mockStopBeacon).toHaveBeenCalledWith('!room:hs', '$beacon2')
+      expect(composable.sharing.value).toBe(false)
+    })
+  })
+
+  describe('startBeacon reentry guard', () => {
+    it('sharing 中再次 startBeacon 直接返回 false 且不重复创建', async () => {
+      mockCreateBeacon.mockResolvedValueOnce({ event_id: '$beacon1' })
+      const composable = useLocationShare({ roomId: '!room:hs' })
+
+      expect(await composable.startBeacon('!room:hs')).toBe(true)
+      expect(await composable.startBeacon('!room:hs')).toBe(false)
+      expect(mockCreateBeacon).toHaveBeenCalledTimes(1)
     })
   })
 })
