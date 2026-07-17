@@ -5,7 +5,7 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
-import { MATRIX_PATHS } from '../paths'
+import { MATRIX_PATHS, PREFIX_V1, PREFIX_V3 } from '../paths'
 
 const logger = createLogger('MatrixAuth')
 
@@ -306,7 +306,7 @@ async function matrixLogin(
   }
 
   return postMatrixJson<MatrixLoginResult>(
-    '/_matrix/client/v3/login',
+    `${PREFIX_V3}/login`,
     {
       type: 'm.login.password',
       user: username,
@@ -329,7 +329,7 @@ async function matrixRegister(
   const auth = buildRegisterAuth(session, authType, authToken, clientSecret)
 
   return postMatrixJson<MatrixRegisterResult>(
-    '/_matrix/client/v3/register',
+    `${PREFIX_V3}/register`,
     {
       type: 'm.login.dummy',
       session,
@@ -348,7 +348,7 @@ async function matrixRequestEmailToken(
   sendAttempt: number
 ): Promise<MatrixEmailTokenResult> {
   return postMatrixJson<MatrixEmailTokenResult>(
-    '/_matrix/client/v3/register/email/requestToken',
+    `${PREFIX_V3}/register/email/requestToken`,
     {
       email,
       client_secret: clientSecret,
@@ -364,7 +364,7 @@ async function matrixRequestPasswordEmailToken(
   sendAttempt: number
 ): Promise<MatrixEmailTokenResult> {
   return postMatrixJson<MatrixEmailTokenResult>(
-    '/_matrix/client/v3/account/password/email/requestToken',
+    `${PREFIX_V3}/account/password/email/requestToken`,
     {
       email,
       client_secret: clientSecret,
@@ -376,8 +376,8 @@ async function matrixRequestPasswordEmailToken(
 
 function resolveSubmitEmailTokenPath(purpose: MatrixEmailTokenPurpose): string {
   return purpose === 'password_reset'
-    ? '/_matrix/client/v3/account/password/email/submitToken'
-    : '/_matrix/client/v3/register/email/submitToken'
+    ? `${PREFIX_V3}/account/password/email/submitToken`
+    : `${PREFIX_V3}/register/email/submitToken`
 }
 
 async function matrixSubmitEmailToken(
@@ -408,7 +408,7 @@ async function matrixGetCaptcha(options?: {
 
   if (resolvedSession) {
     return postMatrixJson<MatrixCaptchaResult>(
-      '/_matrix/client/v3/register/captcha/send',
+      `${PREFIX_V3}/register/captcha/send`,
       { captcha_type: captchaType, length, session: resolvedSession },
       '获取验证码失败'
     )
@@ -418,13 +418,13 @@ async function matrixGetCaptcha(options?: {
     const initResult = await postMatrixJson<{
       session?: string
       flows?: Array<{ type: string; stages?: string[] }>
-    }>('/_matrix/client/v3/register', { type: 'm.login.dummy' }, '获取注册会话失败')
+    }>(`${PREFIX_V3}/register`, { type: 'm.login.dummy' }, '获取注册会话失败')
     const session = initResult.session
     if (!session) {
       throw new Error(useI18nGlobal().t('matrix_error.auth.register_no_valid_session'))
     }
     return postMatrixJson<MatrixCaptchaResult>(
-      '/_matrix/client/v3/register/captcha/send',
+      `${PREFIX_V3}/register/captcha/send`,
       { captcha_type: captchaType, length, session },
       '获取验证码失败'
     )
@@ -447,7 +447,7 @@ async function matrixResetPassword(
   const auth = buildResetPasswordAuth(authSession, authType, authToken, clientSecret)
 
   return postMatrixJson(
-    '/_matrix/client/v3/account/password',
+    `${PREFIX_V3}/account/password`,
     {
       new_password: newPassword,
       auth
@@ -614,7 +614,7 @@ export class MatrixAuthService {
 
   static async verifyCaptcha(session: string, response: string): Promise<{ success: boolean }> {
     return postMatrixJson<{ success: boolean }>(
-      '/_matrix/client/v3/register/captcha/verify',
+      `${PREFIX_V3}/register/captcha/verify`,
       { session, response },
       '验证验证码失败'
     )
@@ -815,7 +815,7 @@ export class MatrixAuthService {
         {
           qr_id: qrId
         },
-        { prefix: '/_matrix/client/v1' }
+        { prefix: PREFIX_V1 }
       )
     } catch (err) {
       throw normalizeSdkMatrixError(err, '二维码失效操作失败')
@@ -852,7 +852,7 @@ export class MatrixAuthService {
     if (relayState) body.relay_state = relayState
     if (sessionId) body.session_id = sessionId
 
-    return postMatrixJson<MatrixLoginResult>('/_matrix/client/v3/login/saml/callback', body, 'SAML 回调处理失败')
+    return postMatrixJson<MatrixLoginResult>(`${PREFIX_V3}/login/saml/callback`, body, 'SAML 回调处理失败')
   }
 
   static async samlLogout(redirectUrl?: string): Promise<string | null> {
