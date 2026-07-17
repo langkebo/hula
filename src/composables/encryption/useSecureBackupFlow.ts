@@ -66,6 +66,7 @@ export function useSecureBackupFlow() {
   }
 
   const createSecureBackup = async (): Promise<boolean> => {
+    if (loading.value) return false
     loading.value = true
     phase.value = 'create'
     errorMessage.value = null
@@ -91,6 +92,7 @@ export function useSecureBackupFlow() {
   }
 
   const restoreFromSecureBackup = async (recoveryKeyInput?: string): Promise<boolean> => {
+    if (loading.value) return false
     loading.value = true
     phase.value = 'restore'
     errorMessage.value = null
@@ -120,6 +122,7 @@ export function useSecureBackupFlow() {
   }
 
   const verifyBackup = async (): Promise<boolean> => {
+    if (loading.value) return false
     loading.value = true
     try {
       const version = cryptoStatus.value.keyBackupVersion
@@ -144,6 +147,7 @@ export function useSecureBackupFlow() {
   }
 
   const deleteSecureBackup = async (): Promise<boolean> => {
+    if (loading.value) return false
     loading.value = true
     try {
       const version = cryptoStatus.value.keyBackupVersion
