@@ -20,6 +20,8 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/@vant/': 'vant',
 
   // Matrix SDK 相关
+  // link:../matrix-js-sdk 经 vite alias 解析为仓库外真实路径,不含 node_modules
+  '/matrix-js-sdk/src/': 'matrix-sdk',
   'node_modules/matrix-js-sdk': 'matrix-sdk',
   'node_modules/@matrix-org/': 'matrix-sdk',
   'node_modules/matrix-widget-api': 'matrix-widget',
