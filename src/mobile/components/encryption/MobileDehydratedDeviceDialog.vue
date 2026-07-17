@@ -62,14 +62,17 @@ const ddFlow = useDehydratedDevice()
 
 const dialogVisible = computed({
   get: () => props.show,
-  set: (val) => emit('update:show', val),
+  set: (val) => emit('update:show', val)
 })
 
-watch(() => props.show, async (isVisible) => {
-  if (isVisible) {
-    await ddFlow.loadDehydratedDevices()
+watch(
+  () => props.show,
+  async (isVisible) => {
+    if (isVisible) {
+      await ddFlow.loadDehydratedDevices()
+    }
   }
-})
+)
 
 const handleCreate = async () => {
   try {
@@ -86,7 +89,7 @@ const handleDelete = async (deviceId: string) => {
   try {
     await showConfirmDialog({
       title: t('common.confirm'),
-      message: t('mobile_encryption.dehydrated_device.delete_confirm'),
+      message: t('mobile_encryption.dehydrated_device.delete_confirm')
     })
     await ddFlow.deleteDehydratedDevice(deviceId)
     showToast(t('mobile_encryption.dehydrated_device.delete_success'))

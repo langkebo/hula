@@ -66,10 +66,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   }> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.ROOM.UNREAD_COUNT(roomId)
-      )
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.UNREAD_COUNT(roomId))
       const unreadCountResult = result as {
         unread_notifications?: number
         unread_highlighted?: number
@@ -140,10 +137,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   async getRoomCall(roomId: string, callId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.ROOM.CALL(roomId, callId)
-      )
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.CALL(roomId, callId))
       return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取通话会话失败: ${err}`)

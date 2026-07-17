@@ -35,8 +35,7 @@ export const SPACE = {
   LEAVE: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/leave`,
   /** @deprecated Use MatrixSpaceService.getSummary() instead */
   SUMMARY: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/summary`,
-  SUMMARY_WITH_CHILDREN: (spaceId: string) =>
-    `/spaces/${encodeURIComponent(spaceId)}/summary/with_children`,
+  SUMMARY_WITH_CHILDREN: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/summary/with_children`,
   TREE_PATH: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/tree_path`,
   PARENTS: (roomId: string) => `/spaces/room/${encodeURIComponent(roomId)}/parents`
 } as const

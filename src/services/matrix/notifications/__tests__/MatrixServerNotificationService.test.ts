@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import { matrixServerNotificationService } from '../MatrixServerNotificationService'
@@ -7,7 +7,7 @@ const TEST_BASE_URL = 'https://matrix.example.com'
 
 const server = setupMswServer(
   http.post(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications`, async ({ request }) => {
-    const body = await request.json() as Record<string, unknown>
+    const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json({
       id: 1,
       title: body.title,
@@ -56,7 +56,7 @@ vi.spyOn(matrixServerNotificationService as any, 'getClient').mockReturnValue({
       const url = `${TEST_BASE_URL}${path}`
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-access-token'
+        Authorization: 'Bearer test-access-token'
       }
       const response = await fetch(url, {
         method,
