@@ -4,7 +4,7 @@ import endpointCapabilityService from './EndpointCapabilityService'
 import { matrixCapabilityService } from './MatrixCapabilityService'
 import { matrixClientService } from './MatrixClientService'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
-import { MATRIX_PATHS } from './paths'
+import { MATRIX_PATHS, PREFIX_V3 } from './paths'
 
 const logger = createLogger('SynapseRustExtensionsService')
 
@@ -626,7 +626,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
 
   async getBurnStats(): Promise<BurnStats> {
     try {
-      const response = await this.request<BurnStats | { data?: BurnStats }>('/_matrix/client/v3/user/burn/stats', {
+      const response = await this.request<BurnStats | { data?: BurnStats }>(`${PREFIX_V3}/user/burn/stats`, {
         method: 'GET'
       })
       const data = this.unwrapMaybeWrappedData(response)
@@ -645,7 +645,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
    */
   async enableBurnAfterRead(roomId: string, enabled: boolean = true, burnAfterMs?: number): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/burn`, {
+      await this.request(`${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/burn`, {
         method: 'PUT',
         body: JSON.stringify({ enabled, ...(burnAfterMs !== undefined && { burn_after_ms: burnAfterMs }) })
       })
@@ -663,7 +663,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async isBurnAfterReadEnabled(roomId: string): Promise<boolean> {
     try {
       const response = await this.request<{ enabled: boolean } | { data?: { enabled: boolean } }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/burn`,
+        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/burn`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -681,7 +681,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
    */
   async enableAntiScreenshot(roomId: string, enabled: boolean = true): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/anti_screenshot`, {
+      await this.request(`${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/anti_screenshot`, {
         method: 'PUT',
         body: JSON.stringify({ enabled })
       })
@@ -699,7 +699,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async isAntiScreenshotEnabled(roomId: string): Promise<boolean> {
     try {
       const response = await this.request<{ enabled: boolean } | { data?: { enabled: boolean } }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/anti_screenshot`,
+        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/anti_screenshot`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -717,7 +717,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async createPrivateChat(userIds: string[]): Promise<string> {
     try {
       const response = await this.request<{ room_id: string } | { data?: { room_id: string } }>(
-        '/_matrix/client/v3/rooms/create_private',
+        `${PREFIX_V3}/rooms/create_private`,
         {
           method: 'POST',
           body: JSON.stringify({
@@ -757,7 +757,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async getInviteBlocklist(roomId: string): Promise<InviteBlocklist> {
     try {
       const response = await this.request<InviteBlocklist | { data?: InviteBlocklist }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_blocklist`,
+        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/invite_blocklist`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -771,7 +771,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
 
   async setInviteBlocklist(roomId: string, userIds: string[]): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_blocklist`, {
+      await this.request(`${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/invite_blocklist`, {
         method: 'POST',
         body: JSON.stringify({ user_ids: userIds })
       })
@@ -785,7 +785,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async getInviteAllowlist(roomId: string): Promise<InviteAllowlist> {
     try {
       const response = await this.request<InviteAllowlist | { data?: InviteAllowlist }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_allowlist`,
+        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/invite_allowlist`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -799,7 +799,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
 
   async setInviteAllowlist(roomId: string, userIds: string[]): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_allowlist`, {
+      await this.request(`${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/invite_allowlist`, {
         method: 'POST',
         body: JSON.stringify({ user_ids: userIds })
       })
@@ -812,7 +812,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
 
   async getStickyEvents(roomId: string): Promise<StickyEvent[]> {
     try {
-      const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`
+      const path = `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/sticky_events`
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
         logger.warn('[SynapseRust] 粘性事件端点不可用')
@@ -833,7 +833,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
 
   async setStickyEvent(roomId: string, eventId: string, eventType: string): Promise<void> {
     try {
-      await this.request(`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`, {
+      await this.request(`${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/sticky_events`, {
         method: 'POST',
         body: JSON.stringify({
           events: [{ event_id: eventId, event_type: eventType }]
@@ -849,7 +849,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async clearStickyEvent(roomId: string, eventType: string): Promise<void> {
     try {
       await this.request(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events/${encodeURIComponent(eventType)}`,
+        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/sticky_events/${encodeURIComponent(eventType)}`,
         { method: 'DELETE' }
       )
       logger.info(`[SynapseRust] 清除粘性事件成功: roomId=${roomId}, eventType=${eventType}`)
@@ -861,7 +861,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
 
   async getRoomSummary(roomId: string, throwOnError = true): Promise<RoomSummary | null> {
     try {
-      const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary`
+      const path = `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/summary`
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
         logger.warn('[SynapseRust] 房间摘要端点不可用')
@@ -884,7 +884,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async getRoomSummaryMembers(roomId: string, throwOnError = true): Promise<RoomSummaryMember[]> {
     try {
       const response = await this.request<RoomSummaryMember[] | { data?: RoomSummaryMember[] }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/members`,
+        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/summary/members`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -910,7 +910,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async getRoomSummaryState(roomId: string, throwOnError = true): Promise<RoomSummaryState[]> {
     try {
       const response = await this.request<RoomSummaryState[] | { data?: RoomSummaryState[] }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/state`,
+        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/summary/state`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -929,7 +929,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async getRoomSummaryStats(roomId: string, throwOnError = true): Promise<RoomSummaryStats | null> {
     try {
       const response = await this.request<RoomSummaryStats | { data?: RoomSummaryStats }>(
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/summary/stats`,
+        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/summary/stats`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -946,7 +946,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
 
   async getRoomEphemeral(roomId: string, types?: string[]): Promise<RoomEphemeralEvent[]> {
     try {
-      const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ephemeral`
+      const path = `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/ephemeral`
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
         logger.warn('[SynapseRust] 房间临时事件端点不可用')
@@ -971,7 +971,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
     try {
       const response = await this.request<
         { captcha_id: string; expires_in: number } | { data?: { captcha_id: string; expires_in: number } }
-      >('/_matrix/client/v3/register/captcha/send', {
+      >(`${PREFIX_V3}/register/captcha/send`, {
         method: 'POST',
         body: JSON.stringify({ target: mobile, captcha_type: captchaType })
       })
@@ -990,7 +990,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async verifyCaptcha(captchaId: string, code: string): Promise<boolean> {
     try {
       const response = await this.request<{ verified: boolean } | { data?: { verified: boolean } }>(
-        '/_matrix/client/v3/register/captcha/verify',
+        `${PREFIX_V3}/register/captcha/verify`,
         {
           method: 'POST',
           body: JSON.stringify({ captcha_id: captchaId, code })
@@ -1008,7 +1008,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
   async getCaptchaStatus(captchaId: string): Promise<Record<string, unknown>> {
     try {
       const response = await this.request<Record<string, unknown> | { data?: Record<string, unknown> }>(
-        `/_matrix/client/v3/register/captcha/status?captcha_id=${encodeURIComponent(captchaId)}`,
+        `${PREFIX_V3}/register/captcha/status?captcha_id=${encodeURIComponent(captchaId)}`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -1024,7 +1024,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
     try {
       const client = matrixClientService.getClient()
       if (!client) return {}
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/thirdparty/protocols')
+      const result = await client.http.authedRequest('GET', `${PREFIX_V3}/thirdparty/protocols`)
       return (result as Record<string, unknown>) || {}
     } catch (err) {
       logger.error(`[SynapseRust] 获取第三方协议失败: ${err}`)
@@ -1041,7 +1041,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       if (!client) return []
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/thirdparty/location/${encodeURIComponent(protocol)}`,
+        `${PREFIX_V3}/thirdparty/location/${encodeURIComponent(protocol)}`,
         params
       )
       return (result as Array<Record<string, unknown>>) || []
@@ -1057,7 +1057,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       if (!client) return []
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/thirdparty/user/${encodeURIComponent(protocol)}`,
+        `${PREFIX_V3}/thirdparty/user/${encodeURIComponent(protocol)}`,
         params
       )
       return (result as Array<Record<string, unknown>>) || []
