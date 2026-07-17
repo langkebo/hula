@@ -56,3 +56,14 @@ src/typings/components.mobile.d.ts
 # Playwright artifacts
 test-results/
 playwright-report/
+
+# Temporary reports and preview artifacts
+reports/
+preview/
+
+# Backup files
+*.bak
+*.vue.bak
+
+# Vitest full report (large, regenerated on demand)
+vitest-full-report.json
