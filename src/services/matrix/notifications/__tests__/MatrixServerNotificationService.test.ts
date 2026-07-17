@@ -1,18 +1,75 @@
+import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
 import { matrixServerNotificationService } from '../MatrixServerNotificationService'
 
-const mockAuthedRequest = vi.fn()
+const TEST_BASE_URL = 'https://matrix.example.com'
 
-vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: vi.fn(() => ({
-      getUserId: vi.fn(() => '@test:example.com'),
-      http: {
-        authedRequest: mockAuthedRequest
+const server = setupMswServer(
+  http.post(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications`, async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>
+    return HttpResponse.json({
+      id: 1,
+      title: body.title,
+      content: body.content,
+      level: body.level,
+      read: false,
+      dismissed: false
+    })
+  }),
+
+  http.get(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/1`, () => {
+    return HttpResponse.json({ id: 1, title: 'Test', content: 'Content', level: 'warning' })
+  }),
+
+  http.get(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/active`, () => {
+    return HttpResponse.json({
+      notifications: [
+        { id: 1, title: 'Test 1', content: 'Content 1' },
+        { id: 2, title: 'Test 2', content: 'Content 2' }
+      ]
+    })
+  }),
+
+  http.post(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/1/read`, () => {
+    return HttpResponse.json({})
+  }),
+
+  http.post(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/1/dismiss`, () => {
+    return HttpResponse.json({})
+  }),
+
+  http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/1`, () => {
+    return HttpResponse.json({})
+  }),
+
+  http.get(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/templates`, () => {
+    return HttpResponse.json({ templates: [{ name: 'template1', type: 'test' }] })
+  })
+)
+
+// Mock getClient() to return a client whose authedRequest calls real fetch (MSW-interceptable)
+vi.spyOn(matrixServerNotificationService as any, 'getClient').mockReturnValue({
+  getUserId: () => '@test:example.com',
+  http: {
+    authedRequest: async (method: string, path: string, _queryParams?: any, body?: any) => {
+      const url = `${TEST_BASE_URL}${path}`
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer test-access-token'
       }
-    }))
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      return response.json()
+    }
   }
-}))
+})
 
 describe('MatrixServerNotificationService', () => {
   beforeEach(() => {
@@ -21,15 +78,6 @@ describe('MatrixServerNotificationService', () => {
 
   describe('createNotification', () => {
     it('should create notification', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
-        id: 1,
-        title: 'Test',
-        content: 'Content',
-        level: 'info',
-        read: false,
-        dismissed: false
-      })
-
       const result = await matrixServerNotificationService.createNotification({
         title: 'Test',
         content: 'Content',
@@ -41,7 +89,11 @@ describe('MatrixServerNotificationService', () => {
     })
 
     it('should return null on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      server.use(
+        http.post(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
 
       const result = await matrixServerNotificationService.createNotification({
         title: 'Test',
@@ -55,13 +107,6 @@ describe('MatrixServerNotificationService', () => {
 
   describe('getNotification', () => {
     it('should get notification by ID', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
-        id: 1,
-        title: 'Test',
-        content: 'Content',
-        level: 'warning'
-      })
-
       const result = await matrixServerNotificationService.getNotification(1)
 
       expect(result).toBeTruthy()
@@ -69,7 +114,11 @@ describe('MatrixServerNotificationService', () => {
     })
 
     it('should return null on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Not found'))
+      server.use(
+        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/999`, () => {
+          return new HttpResponse(null, { status: 404 })
+        })
+      )
 
       const result = await matrixServerNotificationService.getNotification(999)
 
@@ -79,20 +128,17 @@ describe('MatrixServerNotificationService', () => {
 
   describe('listActive', () => {
     it('should list active notifications', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
-        notifications: [
-          { id: 1, title: 'Test 1', content: 'Content 1' },
-          { id: 2, title: 'Test 2', content: 'Content 2' }
-        ]
-      })
-
       const result = await matrixServerNotificationService.listActive()
 
       expect(result).toHaveLength(2)
     })
 
     it('should return empty array on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      server.use(
+        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/active`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
 
       const result = await matrixServerNotificationService.listActive()
 
@@ -102,15 +148,17 @@ describe('MatrixServerNotificationService', () => {
 
   describe('markAsRead', () => {
     it('should mark notification as read', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
-
       const result = await matrixServerNotificationService.markAsRead(1)
 
       expect(result).toBe(true)
     })
 
     it('should return false on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      server.use(
+        http.post(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/1/read`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
 
       const result = await matrixServerNotificationService.markAsRead(1)
 
@@ -120,15 +168,17 @@ describe('MatrixServerNotificationService', () => {
 
   describe('dismiss', () => {
     it('should dismiss notification', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
-
       const result = await matrixServerNotificationService.dismiss(1)
 
       expect(result).toBe(true)
     })
 
     it('should return false on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      server.use(
+        http.post(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/1/dismiss`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
 
       const result = await matrixServerNotificationService.dismiss(1)
 
@@ -138,15 +188,17 @@ describe('MatrixServerNotificationService', () => {
 
   describe('delete', () => {
     it('should delete notification', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
-
       const result = await matrixServerNotificationService.delete(1)
 
       expect(result).toBe(true)
     })
 
     it('should return false on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      server.use(
+        http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/1`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
 
       const result = await matrixServerNotificationService.delete(1)
 
@@ -156,17 +208,17 @@ describe('MatrixServerNotificationService', () => {
 
   describe('listTemplates', () => {
     it('should list templates', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
-        templates: [{ name: 'template1', type: 'test' }]
-      })
-
       const result = await matrixServerNotificationService.listTemplates()
 
       expect(Array.isArray(result)).toBe(true)
     })
 
     it('should return empty array on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      server.use(
+        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/templates`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
 
       const result = await matrixServerNotificationService.listTemplates()
 
