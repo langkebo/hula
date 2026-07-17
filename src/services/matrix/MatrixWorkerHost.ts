@@ -1,4 +1,5 @@
 import { useI18nGlobal } from '@/services/i18n'
+import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
 import type {
   SearchEventDoc,
@@ -47,7 +48,12 @@ export class MatrixWorkerHost {
   private nextId = 1
   private readyPromise: Promise<void> | null = null
   private readyResolve: (() => void) | null = null
+  private readyReject: ((err: Error) => void) | null = null
   private readonly factory: WorkerFactory
+  private readonly onWorkerError = (event: Event) => {
+    const message = (event as ErrorEvent)?.message || 'worker error'
+    this.disposeWorker(new Error(`[MatrixWorkerHost] worker failed: ${message}`))
+  }
   private readonly onMessage = (event: MessageEvent<WorkerResponse>) => {
     this.handleMessage(event.data)
   }
@@ -67,16 +73,27 @@ export class MatrixWorkerHost {
   /**
    * 启动 worker 并等待第一条 `ready` 信号。
    * 多次调用会复用同一个 worker / Promise。
+   *
+   * 设计变更(2026-07):
+   * 不再向 Worker 注入 fetch 代理——postMessage 的 structured clone 不能
+   * 直接序列化 function,实际运行时会失败。
+   * 探测函数(versions/loginFlows/probeSlidingSync/probeCors/getCapabilities)
+   * 已迁回主线程本类,用 getRuntimeAwareFetch()(tauri-plugin-http)发起请求。
+   * Worker 内 SDK createClient 仍用 Worker 内置 globalThis.fetch,
+   * 在 Tauri WebView 中受 capability 配置控制,不受 CORS 限制。
    */
   start(): Promise<void> {
     if (this.readyPromise) return this.readyPromise
 
     const worker = this.factory()
     worker.addEventListener('message', this.onMessage as EventListener)
+    worker.addEventListener('error', this.onWorkerError)
+    worker.addEventListener('messageerror', this.onWorkerError)
     this.worker = worker
 
-    this.readyPromise = new Promise<void>((resolve) => {
+    this.readyPromise = new Promise<void>((resolve, reject) => {
       this.readyResolve = resolve
+      this.readyReject = reject
     })
     return this.readyPromise
   }
@@ -90,67 +107,139 @@ export class MatrixWorkerHost {
   }
 
   /**
-   * 在 worker 内查询 homeserver 支持的 Matrix 协议版本。
-   * 等价于 `MatrixClient.getVersions()`，但在独立线程中发起 fetch，
-   * 避免主线程在登录前/重连时被阻塞。
+   * 在主线程查询 homeserver 支持的 Matrix 协议版本。
+   * 等价于 `MatrixClient.getVersions()`。
+   *
+   * 迁移说明(2026-07):
+   * 此前在 Worker 内用 globalThis.fetch,但 Worker 中无法访问
+   * __TAURI_INTERNALS__,导致无法调用 tauri-plugin-http 绕过 CORS。
+   * 现迁回主线程,用 getRuntimeAwareFetch() 走 tauri-plugin-http。
    */
   async getServerVersions(
     baseUrl: string,
     accessToken?: string
   ): Promise<{ versions: string[]; unstable_features?: Record<string, boolean> }> {
-    return this.request<{ versions: string[]; unstable_features?: Record<string, boolean> }>('getServerVersions', {
-      baseUrl,
-      accessToken
-    })
+    const trimmed = baseUrl.replace(/\/+$/, '')
+    const url = `${trimmed}/_matrix/client/versions`
+    const headers: Record<string, string> = { Accept: 'application/json' }
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`
+    }
+    const fetchFn = getRuntimeAwareFetch()
+    const response = await fetchFn(url, { method: 'GET', headers })
+    if (!response.ok) {
+      throw new Error(`getVersions HTTP ${response.status}`)
+    }
+    const json = (await response.json()) as { versions: string[]; unstable_features?: Record<string, boolean> }
+    return {
+      versions: Array.isArray(json.versions) ? json.versions : [],
+      unstable_features: json.unstable_features
+    }
   }
 
   /**
-   * 在 worker 内查询 homeserver 支持的登录流程。
-   * 等价于 `MatrixClient.loginFlows()`，走独立线程，预登录场景安全。
+   * 在主线程查询 homeserver 支持的登录流程。
+   * 等价于 `MatrixClient.loginFlows()`,预登录场景安全。
+   *
+   * 迁移说明(2026-07):从 Worker 迁回主线程,理由同 getServerVersions。
    */
   async getLoginFlows(baseUrl: string): Promise<{ flows: Array<{ type: string; [key: string]: unknown }> }> {
-    return this.request<{ flows: Array<{ type: string; [key: string]: unknown }> }>('getLoginFlows', {
-      baseUrl
-    })
+    const trimmed = baseUrl.replace(/\/+$/, '')
+    const url = `${trimmed}/_matrix/client/v3/login`
+    const fetchFn = getRuntimeAwareFetch()
+    const response = await fetchFn(url, { method: 'GET', headers: { Accept: 'application/json' } })
+    if (!response.ok) {
+      throw new Error(`getLoginFlows HTTP ${response.status}`)
+    }
+    const json = (await response.json()) as { flows: Array<{ type: string; [key: string]: unknown }> }
+    return {
+      flows: Array.isArray(json.flows) ? json.flows : []
+    }
   }
 
   /**
-   * 在 worker 内并行探测一组 Sliding Sync 候选端点（POST 一个空 body，
-   * 看 status 是否 404）。比主线程串行 fetch 更省墙钟时间，且不阻塞主线程。
+   * 在主线程并行探测一组 Sliding Sync 候选端点(POST 一个空 body,
+   * 看 status 是否 404)。
+   *
+   * 迁移说明(2026-07):从 Worker 迁回主线程,理由同 getServerVersions。
    */
   async probeSlidingSyncEndpoints(
     baseUrl: string,
     endpoints: string[]
   ): Promise<Array<{ endpoint: string; status: number | 'error'; available: boolean; error?: string }>> {
-    return this.request<Array<{ endpoint: string; status: number | 'error'; available: boolean; error?: string }>>(
-      'probeSlidingSyncEndpoints',
-      { baseUrl, endpoints }
+    const trimmed = baseUrl.replace(/\/+$/, '')
+    const list = Array.isArray(endpoints) ? endpoints : []
+    if (list.length === 0) return []
+
+    const fetchFn = getRuntimeAwareFetch()
+    return Promise.all(
+      list.map(async (endpoint) => {
+        try {
+          const response = await fetchFn(`${trimmed}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          })
+          return {
+            endpoint,
+            status: response.status as number,
+            available: response.status !== 404
+          }
+        } catch (error) {
+          return {
+            endpoint,
+            status: 'error' as const,
+            available: false,
+            error: String(error)
+          }
+        }
+      })
     )
   }
 
   /**
-   * 在 worker 内对 `/_matrix/client/versions` 发 OPTIONS 探测 CORS 响应头。
-   * 返回三个相关头的字符串值（缺失为 null）。
+   * 在主线程对 `/_matrix/client/versions` 发 OPTIONS 探测 CORS 响应头。
+   * 返回三个相关头的字符串值(缺失为 null)。
+   *
+   * 迁移说明(2026-07):从 Worker 迁回主线程,理由同 getServerVersions。
    */
   async probeCors(baseUrl: string): Promise<{
     'access-control-allow-origin': string | null
     'access-control-allow-methods': string | null
     'access-control-allow-headers': string | null
   }> {
-    return this.request<{
-      'access-control-allow-origin': string | null
-      'access-control-allow-methods': string | null
-      'access-control-allow-headers': string | null
-    }>('probeCors', { baseUrl })
+    const trimmed = baseUrl.replace(/\/+$/, '')
+    const fetchFn = getRuntimeAwareFetch()
+    const response = await fetchFn(`${trimmed}/_matrix/client/versions`, { method: 'OPTIONS' })
+    return {
+      'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+      'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
+      'access-control-allow-headers': response.headers.get('access-control-allow-headers')
+    }
   }
 
   /**
-   * 在 worker 内查询 homeserver 当前会话的能力声明。
-   * 等价于 `MatrixClient.getCapabilities()` /  `GET /_matrix/client/v3/capabilities`，
-   * 需要 access token；可与 `getServerVersions` 并发，登录后能力探测批次中常用。
+   * 在主线程查询 homeserver 当前会话的能力声明。
+   * 等价于 `MatrixClient.getCapabilities()` / `GET /_matrix/client/v3/capabilities`,
+   * 需要 access token;可与 getServerVersions 并发,登录后能力探测批次中常用。
+   *
+   * 迁移说明(2026-07):从 Worker 迁回主线程,理由同 getServerVersions。
    */
   async getCapabilities(baseUrl: string, accessToken: string): Promise<Record<string, unknown>> {
-    return this.request<Record<string, unknown>>('getCapabilities', { baseUrl, accessToken })
+    const trimmed = baseUrl.replace(/\/+$/, '')
+    const url = `${trimmed}/_matrix/client/v3/capabilities`
+    const fetchFn = getRuntimeAwareFetch()
+    const response = await fetchFn(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`
+      }
+    })
+    if (!response.ok) {
+      throw new Error(`getCapabilities HTTP ${response.status}`)
+    }
+    return (await response.json()) as Record<string, unknown>
   }
 
   async resetSearchIndex(): Promise<void> {
@@ -190,20 +279,32 @@ export class MatrixWorkerHost {
   }
 
   /**
+   * 清理 worker 残留（remove listeners + terminate + reject pending + reject ready）。
+   */
+  private disposeWorker(err: Error): void {
+    if (this.worker) {
+      this.worker.removeEventListener('message', this.onMessage as EventListener)
+      this.worker.removeEventListener('error', this.onWorkerError)
+      this.worker.removeEventListener('messageerror', this.onWorkerError)
+      this.worker.terminate()
+      this.worker = null
+    }
+    for (const pending of this.pending.values()) {
+      pending.reject(err)
+    }
+    this.pending.clear()
+    this.readyReject?.(err)
+    this.readyPromise = null
+    this.readyResolve = null
+    this.readyReject = null
+  }
+
+  /**
    * 终止 worker、reject 所有未决请求、清理状态。
    */
   terminate(reason: string = 'host terminated'): void {
     if (!this.worker) return
-    this.worker.removeEventListener('message', this.onMessage as EventListener)
-    this.worker.terminate()
-    this.worker = null
-
-    for (const pending of this.pending.values()) {
-      pending.reject(new Error(reason))
-    }
-    this.pending.clear()
-    this.readyPromise = null
-    this.readyResolve = null
+    this.disposeWorker(new Error(reason))
   }
 
   /**
@@ -238,6 +339,7 @@ export class MatrixWorkerHost {
     if (response.type === 'ready' && response.id === 'init') {
       this.readyResolve?.()
       this.readyResolve = null
+      this.readyReject = null
       return
     }
 
