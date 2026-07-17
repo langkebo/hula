@@ -161,7 +161,7 @@ class SyncService extends BaseMatrixService {
     const client = this.getInternalClient()
     if (!client) return []
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/joined_rooms')
+      const result = await client.http.authedRequest('GET', '/joined_rooms')
       const r = result as Record<string, unknown>
       return (r?.joined_rooms as string[]) ?? []
     } catch (err) {

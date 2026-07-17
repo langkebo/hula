@@ -340,7 +340,7 @@ async function selectBundle(selectedPlatform) {
   // 找到选中的选项
   const selectedOption = bundleOptions.find((option) => option.value === selectedBundle)
 
-  if (!selectedOption || !selectedOption.command) {
+  if (!selectedOption?.command) {
     console.log('\n👋 已取消打包操作')
     process.exit(0)
   }

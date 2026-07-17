@@ -661,7 +661,7 @@ class SpaceService extends BaseMatrixService {
           try {
             const stateEvents = (await client.http.authedRequest(
               'GET',
-              `/_matrix/client/v3/rooms/${encodeURIComponent(spaceId)}/state`
+              `/rooms/${encodeURIComponent(spaceId)}/state`
             )) as Array<Record<string, unknown>>
             return stateEvents
               .filter((e) => e.type === 'm.space.child' && e.state_key)
@@ -1021,7 +1021,7 @@ class SpaceService extends BaseMatrixService {
           string,
           unknown
         >
-        if (!result || !result.space_id) return null
+        if (!result?.space_id) return null
         return {
           spaceId: result.space_id as string,
           name: (result.name as string) || '',

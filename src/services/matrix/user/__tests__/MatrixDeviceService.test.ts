@@ -93,7 +93,7 @@ describe('MatrixDeviceService', () => {
       const devices = await matrixDeviceService.getDevices()
 
       expect(devices).toEqual(mockResponse.devices)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('GET', '/_matrix/client/v3/devices')
+      expect(mockHttp.authedRequest).toHaveBeenCalledWith('GET', '/devices')
     })
 
     it('应该处理获取失败', async () => {
@@ -167,7 +167,7 @@ describe('MatrixDeviceService', () => {
       const result = await matrixDeviceService.updateDevice('DEVICE1', 'New Name')
 
       expect(result).toEqual(mockResponse)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('PUT', '/_matrix/client/v3/devices/DEVICE1', undefined, {
+      expect(mockHttp.authedRequest).toHaveBeenCalledWith('PUT', '/devices/DEVICE1', undefined, {
         display_name: 'New Name'
       })
     })
@@ -219,7 +219,7 @@ describe('MatrixDeviceService', () => {
 
       await matrixDeviceService.deleteDevices(deviceIds, auth)
 
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('POST', '/_matrix/client/v3/delete_devices', undefined, {
+      expect(mockHttp.authedRequest).toHaveBeenCalledWith('POST', '/delete_devices', undefined, {
         device_ids: deviceIds,
         auth
       })

@@ -60,7 +60,7 @@ const panelVisible = computed({
 })
 
 const profile = ref<{ userId: string; displayName: string; avatarUrl?: string } | null>(null)
-const devices = ref<any[]>([])
+const devices = ref<Record<string, unknown>[]>([])
 const loading = ref(false)
 
 watch(

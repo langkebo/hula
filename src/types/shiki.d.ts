@@ -36,12 +36,14 @@ declare module '@shikijs/core' {
 
 declare module 'shiki/langs/*.mjs' {
   import type { LanguageRegistration } from '@shikijs/core'
+
   const lang: LanguageRegistration
   export default lang
 }
 
 declare module 'shiki/themes/*.mjs' {
   import type { ThemeRegistration } from '@shikijs/core'
+
   const theme: ThemeRegistration
   export default theme
 }

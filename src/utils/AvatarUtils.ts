@@ -22,7 +22,7 @@ export class AvatarUtils {
    */
   public static isDefaultAvatar(avatar: string): boolean {
     // 快速判断：如果为空或长度不是3，直接返回false
-    if (!avatar || avatar.length !== 3) return false
+    if (avatar?.length !== 3) return false
 
     // 检查是否全是数字
     const num = parseInt(avatar, 10)

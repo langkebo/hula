@@ -10,7 +10,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
   const isPC = ['windows', 'darwin', 'linux'].includes(currentPlatform)
 
   // 1. 获取基础/平台配置
-  let viteConfig = isPC ? desktopConfig : createMobileConfig(currentPlatform, config)
+  let viteConfig = isPC ? desktopConfig : createMobileConfig(currentPlatform)
 
   // 2. 动态注入模式相关的配置 (如 esbuild drop)
   viteConfig = mergeConfig(viteConfig, {

@@ -30,7 +30,8 @@ const mobileEntryCases: MobileEntryCase[] = [
   {
     name: 'mobile dynamic entry',
     path: '/mobile/dynamic',
-    readyPattern: /动态共享骨架|Dynamic/
+    // /mobile/dynamic 页面已改造为空间(Space)列表页
+    readyPattern: /空间|Space/
   },
   {
     name: 'mobile settings entry',

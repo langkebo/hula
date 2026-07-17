@@ -36,4 +36,5 @@ const getAllTypeEmojis = () => {
     gestureEmojis: { name: t('emoticon.categories.gesture'), value: emojiArr[2] }
   }
 }
+
 export { getAllTypeEmojis }

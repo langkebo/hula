@@ -12,4 +12,4 @@ const animalEmojis =
 // 手势
 const gestureEmojis = '💪👈👉👆👇✋👌👍👎✊👊👋👏👐'
 
-export { expressionEmojis, animalEmojis, gestureEmojis }
+export { animalEmojis, expressionEmojis, gestureEmojis }

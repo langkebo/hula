@@ -227,7 +227,10 @@
             <div
               v-if="isGroup && listMgmt.canManage.value"
               class="flex justify-between p-15px items-center cursor-pointer"
-              @click="listManagementTab = 'allowlist'; showListManagement = true">
+              @click="
+                listManagementTab = 'allowlist'
+                showListManagement = true
+              ">
               <div class="text-14px">{{ t('room_advanced.allowlist.title') }}</div>
               <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
                 <span>{{ listMgmt.allowlistCount.value }}</span>
@@ -240,7 +243,10 @@
             <div
               v-if="isGroup && listMgmt.canManage.value"
               class="flex justify-between p-15px items-center cursor-pointer"
-              @click="listManagementTab = 'denylist'; showListManagement = true">
+              @click="
+                listManagementTab = 'denylist'
+                showListManagement = true
+              ">
               <div class="text-14px">{{ t('room_advanced.denylist.title') }}</div>
               <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
                 <span>{{ listMgmt.denylistCount.value }}</span>
@@ -287,13 +293,13 @@
 <script setup lang="ts">
 import { showConfirmDialog } from 'vant'
 import { I18nT, useI18n } from 'vue-i18n'
+import MobileListManagementDialog from '#/views/chat-room/MobileListManagementDialog.vue'
 import MobileRoomUpgradeDialog from '#/views/chat-room/MobileRoomUpgradeDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useMyRoomInfoUpdater } from '@/composables/room/useMyRoomInfoUpdater'
-import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
-import MobileListManagementDialog from '#/views/chat-room/MobileListManagementDialog.vue'
 import { useRoomListManagement } from '@/composables/room/useRoomListManagement'
+import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import router from '@/router'
@@ -356,7 +362,7 @@ const showListManagement = ref(false)
 const listManagementTab = ref<'allowlist' | 'denylist'>('allowlist')
 const listMgmt = useRoomListManagement({
   roomId: currentSessionRoomId.value,
-  canManage: isAdmin.value,
+  canManage: isAdmin.value
 })
 
 const groupMemberListSliced = computed(() => {

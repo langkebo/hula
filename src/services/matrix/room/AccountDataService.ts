@@ -23,7 +23,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/user/${encodeURIComponent(client.getUserId()!)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+        `/user/${encodeURIComponent(client.getUserId()!)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
       )
       return result as Record<string, unknown>
     } catch (err) {
@@ -37,7 +37,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       await client.http.authedRequest(
         'PUT',
-        `/_matrix/client/v3/user/${encodeURIComponent(client.getUserId()!)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`,
+        `/user/${encodeURIComponent(client.getUserId()!)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`,
         undefined,
         content
       )
@@ -62,7 +62,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async setReadLifetime(roomId: string, lifetimeMs: number): Promise<void> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('PUT', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/burn`, undefined, {
+      await client.http.authedRequest('PUT', `/rooms/${encodeURIComponent(roomId)}/burn`, undefined, {
         enabled: true,
         burn_after_ms: lifetimeMs
       })

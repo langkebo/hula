@@ -31,7 +31,6 @@ const SAFE_TARGETS = [
   'coverage',
   'playwright-report',
   'test-results',
-  'storybook-static',
   '.vite',
   'docs/generated/transport-inventory.json',
 ]

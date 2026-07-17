@@ -291,6 +291,5 @@ export function useTrendRadar() {
   }
 }
 
-export { TrendRadarService }
-export { trendRadarClient }
+export { TrendRadarService, trendRadarClient }
 export default useTrendRadar

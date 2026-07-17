@@ -59,7 +59,7 @@ export class AdminReportService {
     try {
       const result = (await client.http.authedRequest(
         'POST',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/report`,
+        `/rooms/${encodeURIComponent(roomId)}/report`,
         undefined,
         { reason, description }
       )) as ReportRoomResponse
@@ -94,7 +94,7 @@ export class AdminReportService {
     try {
       await client.http.authedRequest(
         'PUT',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/score`,
+        `/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/score`,
         undefined,
         { score }
       )

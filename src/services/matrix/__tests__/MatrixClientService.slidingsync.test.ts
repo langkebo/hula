@@ -7,6 +7,7 @@ import { matrixClientService } from '../MatrixClientService'
 vi.mock('matrix-js-sdk', () => ({
   createClient: vi.fn(() => ({
     login: vi.fn(),
+    loginRequest: vi.fn(),
     startClient: vi.fn(),
     stopClient: vi.fn(),
     logout: vi.fn(),
@@ -192,7 +193,7 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
       // Mock 登录响应
       const mockClient = matrixClientService.getClient()
       if (mockClient) {
-        vi.mocked(mockClient.login).mockResolvedValue({
+        vi.mocked(mockClient.loginRequest).mockResolvedValue({
           access_token: 'new_token',
           user_id: '@test:example.com',
           device_id: 'DEVICE123'
@@ -221,6 +222,7 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
         () =>
           ({
             login: vi.fn(),
+            loginRequest: vi.fn(),
             startClient: vi.fn(),
             stopClient: vi.fn(),
             logout: vi.fn(),

@@ -15,8 +15,8 @@ import {
   ROOM_MESSAGE_CACHE_LIMIT
 } from './chat/types'
 
-export type { MessageType, MessageBody, RecalledMessage, CustomForwardTask }
-export { pageSize, ROOM_MESSAGE_CACHE_LIMIT, RECALL_EXPIRATION_TIME }
+export type { CustomForwardTask, MessageBody, MessageType, RecalledMessage }
+export { pageSize, RECALL_EXPIRATION_TIME, ROOM_MESSAGE_CACHE_LIMIT }
 
 /**
  * @deprecated 请使用 useChatStore 替代。本 store 仅作为 useChatStore 的透传代理，

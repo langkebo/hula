@@ -233,7 +233,7 @@ export const useRobotCenterStore = defineStore(
     const deployRobot = (roomId: string, botId: string): RobotInstance | null => {
       ensureBuiltins()
       const definition = definitionsMap.value[botId]
-      if (!definition || !definition.supportsRoomDeployment) {
+      if (!definition?.supportsRoomDeployment) {
         return null
       }
 

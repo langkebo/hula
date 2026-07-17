@@ -162,7 +162,7 @@ export const useAiMediaCache = (options: UseAiMediaCacheOptions) => {
   ) => {
     if (!remoteUrl || !userUid.value || !currentChat.value.id) return
     const targetMessage = messageList.value[messageIndex]
-    if (!targetMessage || targetMessage.type !== 'assistant') return
+    if (targetMessage?.type !== 'assistant') return
     const isSameMedia = targetMessage[urlField]
       ? targetMessage[urlField] === remoteUrl
       : targetMessage.content === remoteUrl

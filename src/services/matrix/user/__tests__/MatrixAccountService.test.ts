@@ -134,7 +134,7 @@ describe('MatrixAccountService', () => {
 
       const result = await matrixAccountService.getEventStream('from_token', 15000)
       expect(result).toEqual(mockEvents)
-      expect(mockClient.http.authedRequest).toHaveBeenCalledWith('GET', '/_matrix/client/v3/events', {
+      expect(mockClient.http.authedRequest).toHaveBeenCalledWith('GET', '/events', {
         timeout: '15000',
         from: 'from_token'
       })
