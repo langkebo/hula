@@ -3432,7 +3432,8 @@ export type I18nKeys = {
           "register": "注册",
           "next": "下一步",
           "send_email_code": "发送验证码",
-          "resend_in": "{seconds}秒后重试"
+          "resend_in": "{seconds}秒后重试",
+          "skip_email": "跳过邮箱，直接注册"
         },
         "pass_validate_info": {
           "minlength": "至少 {len} 个字符",
@@ -3561,6 +3562,7 @@ export type I18nKeys = {
       "receipt_event_id_missing": "事件 ID 不存在",
       "event_not_found": "事件不存在: {eventId}",
       "emoji_not_found": "表情不存在: {emojiId}",
+      "emoji_pack_not_found": "表情包不存在: {packId}",
       "unsupported_image_format": "不支持的图片格式: {type}，支持的格式: PNG、GIF、WebP",
       "message_not_found": "消息不存在: {eventId}",
       "original_message_not_found": "原始消息不存在: {originalEventId}",
@@ -4020,10 +4022,10 @@ export type I18nKeys = {
     },
     "merge_msg_title": "合并消息",
     "multi_select": {
-      "selected_count": "{count} selected",
-      "copy": "Copy",
-      "forward": "Forward",
-      "delete": "Delete"
+      "selected_count": "已选 {count} 条",
+      "copy": "复制",
+      "forward": "转发",
+      "delete": "删除"
     }
   },
   "message_container": {
@@ -4297,6 +4299,20 @@ export type I18nKeys = {
     "genders": {
       "male": "男",
       "female": "女"
+    }
+  },
+  "mobile_encryption": {
+    "dehydrated_device": {
+      "title": "脱水设备",
+      "description": "管理用于离线密钥存储的脱水设备。",
+      "manage": "管理脱水设备",
+      "no_devices": "未找到脱水设备。",
+      "device_id_label": "设备 ID",
+      "create": "创建",
+      "create_success": "脱水设备创建成功。",
+      "create_failed": "创建脱水设备失败。",
+      "delete_confirm": "确定要删除此脱水设备吗？",
+      "delete_success": "脱水设备已删除。"
     }
   },
   "mobile_error": {
@@ -7255,6 +7271,7 @@ export type I18nKeys = {
       "room_id_placeholder": "请输入房间 ID",
       "suggested": "推荐",
       "no_members": "暂无成员",
+      "show_all_members": "查看全部 {count} 位成员",
       "no_rooms": "暂无房间",
       "leave": "离开空间",
       "delete": "删除空间",

@@ -19,6 +19,8 @@ import { USER } from './user'
 import { VOICE } from './voice'
 import { WELL_KNOWN } from './wellKnown'
 
+export { PREFIX_V1, PREFIX_V3 } from './prefixes'
+
 export const MATRIX_PATHS = {
   AUTH,
   ROOM,
