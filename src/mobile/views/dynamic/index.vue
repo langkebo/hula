@@ -67,7 +67,7 @@
           </div>
           <div v-else>
             <div
-              v-for="member in spaceMemberMap[sp.spaceId || sp.roomId] || []"
+              v-for="member in visibleMembers(sp.spaceId || sp.roomId)"
               :key="member.userId || member.uid"
               class="flex items-center gap-10px px-14px py-10px border-b border-[--hula-border-default] last:border-b-0">
               <img
@@ -82,6 +82,19 @@
                   {{ member.displayName || member.userId || member.uid }}
                 </div>
               </div>
+            </div>
+            <div
+              v-if="
+                !expandedMembers[sp.spaceId || sp.roomId] &&
+                (spaceMemberMap[sp.spaceId || sp.roomId] || []).length > MEMBER_DISPLAY_LIMIT
+              "
+              class="py-10px text-center text-13px text-[--hula-color-primary] tap-highlight"
+              @click="expandedMembers[sp.spaceId || sp.roomId] = true">
+              {{
+                t('space.management.show_all_members', {
+                  count: (spaceMemberMap[sp.spaceId || sp.roomId] || []).length
+                })
+              }}
             </div>
           </div>
           <!-- 邀请按钮 -->
@@ -143,6 +156,14 @@ const spaceList = ref<any[]>([])
 const expandedSpaceId = ref<string | null>(null)
 const spaceMemberMap = ref<Record<string, any[]>>({})
 const memberLoadingMap = ref<Record<string, boolean>>({})
+
+const MEMBER_DISPLAY_LIMIT = 50
+const expandedMembers = ref<Record<string, boolean>>({})
+
+const visibleMembers = (key: string) => {
+  const list = spaceMemberMap.value[key] || []
+  return expandedMembers.value[key] ? list : list.slice(0, MEMBER_DISPLAY_LIMIT)
+}
 
 // Create space dialog
 const showCreateSpaceDialog = ref(false)
