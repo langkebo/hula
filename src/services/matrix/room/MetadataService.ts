@@ -32,7 +32,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/capabilities`
+        MATRIX_PATHS.ROOM.CAPABILITIES(roomId)
       )
       return result as Record<string, unknown>
     } catch (err) {
@@ -46,7 +46,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/metadata`
+        MATRIX_PATHS.ROOM.METADATA(roomId)
       )
       return result as Record<string, unknown>
     } catch (err) {
@@ -60,7 +60,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/turn_server`
+        MATRIX_PATHS.ROOM.TURN_SERVER(roomId)
       )
       return result as Record<string, unknown>
     } catch (err) {
@@ -74,7 +74,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sync`
+        MATRIX_PATHS.ROOM.ROOM_SYNC(roomId)
       )
       return result as Record<string, unknown>
     } catch (err) {
