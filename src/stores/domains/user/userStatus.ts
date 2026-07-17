@@ -1,4 +1,4 @@
-import Colorthief from 'colorthief'
+import { getColor } from 'colorthief'
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
@@ -6,18 +6,22 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { mapUserStateToPresence } from '@/utils/userStatus'
 
-const colorthief = new Colorthief()
-
-// 状态图标颜色
 const ensureStateColor = (state?: STO.UserState) => {
   if (!state || state.bgColor || !state.url) return
 
   const img = new Image()
   img.src = state.url
   img.onload = async () => {
-    const colors = await colorthief.getColor(img, 3)
-    state.bgColor = `rgba(${colors.join(',')}, 0.4)`
+    try {
+      const color = await getColor(img)
+      if (color) {
+        state.bgColor = `rgba(${color.array().join(',')}, 0.4)`
+      }
+    } catch {
+      // 颜色提取失败时保持默认背景,不产生 unhandled rejection
+    }
   }
+  img.onerror = () => {}
 }
 
 export const useUserStatusStore = defineStore(StoresEnum.USER_STATE, () => {

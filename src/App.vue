@@ -29,6 +29,7 @@
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { exit } from '@tauri-apps/plugin-process'
+import type { WatchStopHandle } from 'vue'
 import { useOfflineQueueReplay } from '@/composables/app/useOfflineQueueReplay'
 import { usePresenceSync } from '@/composables/app/usePresenceSync'
 import { useWsEventHandler } from '@/composables/app/useWsEventHandler'
@@ -271,18 +272,22 @@ const requestIOSNetworkPermission = async () => {
 // ========== Mobile re-login listener ==========
 const setupMobileReLoginListener = async () => {
   if (!isMobile()) return
-  const { useLoginFlow } = await import('@/composables/user/useLoginFlow')
-  const { useTauriListener } = await import('@/composables/common/useTauriListener')
-  const { listen } = await import('@tauri-apps/api/event')
-  const { addListener } = useTauriListener()
-  const { logout } = useLoginFlow()
-  addListener(
-    listen('relogin', async () => {
-      logger.info('received re-login event')
-      await logout()
-    }),
-    'mobile-relogin'
-  )
+  try {
+    const { useLoginFlow } = await import('@/composables/user/useLoginFlow')
+    const { useTauriListener } = await import('@/composables/common/useTauriListener')
+    const { listen } = await import('@tauri-apps/api/event')
+    const { addListener } = useTauriListener()
+    const { logout } = useLoginFlow()
+    addListener(
+      listen('relogin', async () => {
+        logger.info('received re-login event')
+        await logout()
+      }),
+      'mobile-relogin'
+    )
+  } catch (e) {
+    logger.warn('setupMobileReLoginListener failed:', e)
+  }
 }
 
 // ========== Theme reactivity watchers ==========
@@ -325,29 +330,35 @@ function setupThemeWatchers() {
 
 // ========== Session change watcher ==========
 async function setupSessionWatch() {
-  const { MittEnum, RoomTypeEnum } = await import('@/enums')
-  useMitt.on(MittEnum.MSG_INIT, async () => {
-    const { useAnnouncementStore } = await import('@/stores/domains/chat/announcement')
-    const { useGroupStore } = await import('@/stores/domains/chat/group')
-    const announcementStore = useAnnouncementStore()
-    const groupStore = useGroupStore()
+  try {
+    const { MittEnum, RoomTypeEnum } = await import('@/enums')
+    let sessionWatchStop: WatchStopHandle | null = null
+    useMitt.on(MittEnum.MSG_INIT, async () => {
+      const { useAnnouncementStore } = await import('@/stores/domains/chat/announcement')
+      const { useGroupStore } = await import('@/stores/domains/chat/group')
+      const announcementStore = useAnnouncementStore()
+      const groupStore = useGroupStore()
 
-    watch(
-      () => [globalStore.currentSessionRoomId, globalStore.currentSession?.type] as const,
-      async ([sessionRoomId, sessionType]) => {
-        if (!sessionRoomId || sessionType !== RoomTypeEnum.GROUP) return
-        try {
-          const result = await groupStore.switchSession({ roomId: sessionRoomId })
-          if (result?.success) {
-            await announcementStore.loadGroupAnnouncements()
+      sessionWatchStop?.()
+      sessionWatchStop = watch(
+        () => [globalStore.currentSessionRoomId, globalStore.currentSession?.type] as const,
+        async ([sessionRoomId, sessionType]) => {
+          if (!sessionRoomId || sessionType !== RoomTypeEnum.GROUP) return
+          try {
+            const result = await groupStore.switchSession({ roomId: sessionRoomId })
+            if (result?.success) {
+              await announcementStore.loadGroupAnnouncements()
+            }
+          } catch (error) {
+            logger.error('session switch failed:', error)
           }
-        } catch (error) {
-          logger.error('session switch failed:', error)
-        }
-      },
-      { immediate: true }
-    )
-  })
+        },
+        { immediate: true }
+      )
+    })
+  } catch (e) {
+    logger.warn('setupSessionWatch failed:', e)
+  }
 }
 
 // ========== Lifecycle ==========
