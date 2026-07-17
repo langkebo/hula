@@ -42,7 +42,7 @@ const i18n = createI18n({
       common: { cancel: '' },
       message: { forward: { title: 'Forward' } }
     }
-  }
+  } as any
 })
 
 describe('MobileChatMain - forward dialog', () => {

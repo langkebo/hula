@@ -266,6 +266,32 @@ class MatrixEmojiService extends BaseMatrixService {
   }
 
   /**
+   * 重命名表情包
+   *
+   * @param packId - 表情包 ID
+   * @param name - 新名称
+   */
+  async renamePack(packId: string, name: string): Promise<void> {
+    try {
+      this.assertSupportedUser()
+      const response = await this.loadEmojiResponse()
+      const pack = response.packs?.[packId]
+      if (!pack) {
+        throw new Error(this.t('matrix_error.messaging.pack_not_found', { packId }))
+      }
+
+      pack.name = name
+      pack.updated_at = Date.now()
+      await this.saveEmojiResponse(response)
+
+      logger.info(`[MatrixEmoji] 重命名表情包成功: ${packId} -> ${name}`)
+    } catch (err) {
+      logger.error(`[MatrixEmoji] 重命名表情包失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
    * 添加表情到表情包
    *
    * @param packId - 表情包 ID
@@ -324,7 +350,7 @@ class MatrixEmojiService extends BaseMatrixService {
    * 解析表情响应数据
    */
   private parseEmojiResponse(response: RawEmojiResponse): EmojiPack[] {
-    if (!response || !response.packs) {
+    if (!response?.packs) {
       return []
     }
 
