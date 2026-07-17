@@ -39,57 +39,60 @@
     </van-empty>
 
     <!-- 房间列表 -->
-    <van-pull-refresh v-else v-model="refreshing" @refresh="onRefresh" class="flex-1 overflow-auto">
-      <van-list
-        v-model:loading="loadingMore"
-        :finished="finished"
-        :finished-text="t('mobile_rooms.no_more')"
-        @load="onLoadMore">
-        <van-swipe-cell v-for="room in roomList" :key="room.roomId">
-          <div
-            :data-testid="`mobile-room-item-${room.roomId}`"
-            class="flex items-center gap-12px px-16px py-12px tap-highlight"
-            @click="enterRoom(room.roomId)">
-            <img
-              class="size-48px rounded-12px object-cover flex-shrink-0"
-              :src="room.avatarUrl || '/logo.png'"
-              :alt="room.name"
-              loading="lazy"
-              decoding="async"
-              @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-6px">
-                <span class="text-15px font-500 text-[--hula-text-primary] truncate">{{ room.name }}</span>
-                <span
-                  v-if="room.isEncrypted"
-                  class="text-12px color-[--hula-color-success-500]"
-                  :aria-label="t('mobile_rooms.encrypted')">
-                  &#x1F512;
+    <van-pull-refresh v-else v-model="refreshing" @refresh="onRefresh" class="flex-1 min-h-0">
+      <SmartVirtualList
+        class="h-full overflow-y-auto overflow-x-hidden"
+        :items="roomList"
+        :item-height="72"
+        :buffer="6"
+        key-field="roomId">
+        <template #default="{ item: room }">
+          <van-swipe-cell>
+            <div
+              :data-testid="`mobile-room-item-${room.roomId}`"
+              class="flex items-center gap-12px px-16px py-12px tap-highlight"
+              @click="enterRoom(room.roomId)">
+              <img
+                class="size-48px rounded-12px object-cover flex-shrink-0"
+                :src="room.avatarUrl || '/logo.png'"
+                :alt="room.name"
+                loading="lazy"
+                decoding="async"
+                @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-6px">
+                  <span class="text-15px font-500 text-[--hula-text-primary] truncate">{{ room.name }}</span>
+                  <span
+                    v-if="room.isEncrypted"
+                    class="text-12px color-[--hula-color-success-500]"
+                    :aria-label="t('mobile_rooms.encrypted')">
+                    &#x1F512;
+                  </span>
+                </div>
+                <div class="text-12px text-[--hula-text-tertiary] truncate mt-2px">
+                  {{ room.topic || t('mobile_rooms.no_topic') }}
+                </div>
+              </div>
+              <div class="flex flex-col items-end gap-4px flex-shrink-0">
+                <span class="text-11px text-[--hula-text-tertiary]">
+                  {{ room.memberCount }} {{ t('mobile_rooms.members') }}
                 </span>
-              </div>
-              <div class="text-12px text-[--hula-text-tertiary] truncate mt-2px">
-                {{ room.topic || t('mobile_rooms.no_topic') }}
+                <van-icon
+                  v-if="room.joinRule === 'public'"
+                  name="friends-o"
+                  size="14"
+                  class="color-[--hula-text-tertiary]"
+                  :aria-label="t('mobile_rooms.public_room')" />
               </div>
             </div>
-            <div class="flex flex-col items-end gap-4px flex-shrink-0">
-              <span class="text-11px text-[--hula-text-tertiary]">
-                {{ room.memberCount }} {{ t('mobile_rooms.members') }}
-              </span>
-              <van-icon
-                v-if="room.joinRule === 'public'"
-                name="friends-o"
-                size="14"
-                class="color-[--hula-text-tertiary]"
-                :aria-label="t('mobile_rooms.public_room')" />
-            </div>
-          </div>
-          <template #right>
-            <van-button square type="danger" class="h-full" @click="handleLeaveRoom(room.roomId)">
-              {{ t('mobile_rooms.leave_room') }}
-            </van-button>
-          </template>
-        </van-swipe-cell>
-      </van-list>
+            <template #right>
+              <van-button square type="danger" class="h-full" @click="handleLeaveRoom(room.roomId)">
+                {{ t('mobile_rooms.leave_room') }}
+              </van-button>
+            </template>
+          </van-swipe-cell>
+        </template>
+      </SmartVirtualList>
     </van-pull-refresh>
 
     <!-- 创建菜单弹出层 -->
@@ -150,6 +153,7 @@
 import { showConfirmDialog, showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
 import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
 import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
@@ -175,8 +179,6 @@ const router = useRouter()
 const searchText = ref('')
 const loading = ref(true)
 const refreshing = ref(false)
-const loadingMore = ref(false)
-const finished = ref(false)
 const showCreateMenu = ref(false)
 const roomList = ref<RoomItem[]>([])
 
@@ -249,10 +251,6 @@ function onSearch() {
 function onRefresh() {
   refreshing.value = true
   fetchRooms()
-}
-
-function onLoadMore() {
-  finished.value = true
 }
 
 function enterRoom(roomId: string) {
