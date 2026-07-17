@@ -1,3 +1,5 @@
+import { PREFIX_V1 } from './prefixes'
+
 export const CRYPTO = {
   KEYS_UPLOAD: '/keys/upload',
   KEYS_QUERY: '/keys/query',
@@ -35,21 +37,21 @@ export const CRYPTO = {
   ROOM_KEYS_IMPORT: (version?: string) =>
     version ? `/room_keys/import/${version}` : '/room_keys/import',
   ROOM_KEYS_REQUEST: '/room_keys/request',
-  VERIFY_START: '/_matrix/client/v1/keys/device_signing/verify_start',
-  VERIFY_ACCEPT: '/_matrix/client/v1/keys/device_signing/verify_accept',
-  VERIFY_KEY_AGREEMENT: '/_matrix/client/v1/keys/device_signing/verify_key_agreement',
-  VERIFY_MAC: '/_matrix/client/v1/keys/device_signing/verify_mac',
-  VERIFY_DONE: '/_matrix/client/v1/keys/device_signing/verify_done',
-  VERIFY_CANCEL: '/_matrix/client/v1/keys/device_signing/verify_cancel',
-  VERIFY_REQUESTS: '/_matrix/client/v1/keys/device_signing/requests',
-  QR_CODE_SHOW: '/_matrix/client/v1/keys/qr_code/show',
-  QR_CODE_SCAN: '/_matrix/client/v1/keys/qr_code/scan',
+  VERIFY_START: PREFIX_V1 + '/keys/device_signing/verify_start',
+  VERIFY_ACCEPT: PREFIX_V1 + '/keys/device_signing/verify_accept',
+  VERIFY_KEY_AGREEMENT: PREFIX_V1 + '/keys/device_signing/verify_key_agreement',
+  VERIFY_MAC: PREFIX_V1 + '/keys/device_signing/verify_mac',
+  VERIFY_DONE: PREFIX_V1 + '/keys/device_signing/verify_done',
+  VERIFY_CANCEL: PREFIX_V1 + '/keys/device_signing/verify_cancel',
+  VERIFY_REQUESTS: PREFIX_V1 + '/keys/device_signing/requests',
+  QR_CODE_SHOW: PREFIX_V1 + '/keys/qr_code/show',
+  QR_CODE_SCAN: PREFIX_V1 + '/keys/qr_code/scan',
   /** @deprecated Unused - will be removed in a future version */
-  KEY_ROTATION_STATUS: '/_matrix/client/v1/keys/rotation/status',
-  KEY_ROTATION_CHECK: '/_matrix/client/v1/keys/rotation/check',
-  KEY_ROTATION_ROTATE: '/_matrix/client/v1/keys/rotation/rotate',
+  KEY_ROTATION_STATUS: PREFIX_V1 + '/keys/rotation/status',
+  KEY_ROTATION_CHECK: PREFIX_V1 + '/keys/rotation/check',
+  KEY_ROTATION_ROTATE: PREFIX_V1 + '/keys/rotation/rotate',
   KEY_ROTATION_HISTORY: (deviceId: string) =>
-    `/_matrix/client/v1/keys/rotation/history/${encodeURIComponent(deviceId)}`,
-  KEY_ROTATION_REVOKE: '/_matrix/client/v1/keys/rotation/revoke',
-  KEY_ROTATION_CONFIG: '/_matrix/client/v1/keys/rotation/config'
+    `${PREFIX_V1}/keys/rotation/history/${encodeURIComponent(deviceId)}`,
+  KEY_ROTATION_REVOKE: PREFIX_V1 + '/keys/rotation/revoke',
+  KEY_ROTATION_CONFIG: PREFIX_V1 + '/keys/rotation/config'
 } as const

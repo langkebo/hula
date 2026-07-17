@@ -1,3 +1,5 @@
+import { PREFIX_V1 } from './prefixes'
+
 export const MEDIA = {
   /** @deprecated Use client.uploadContent() instead */
   UPLOAD: '/_matrix/media/v3/upload',
@@ -9,7 +11,7 @@ export const MEDIA = {
   QUOTA_ALERTS: '/_matrix/media/v1/quota/alerts',
   QUOTA_CHECK: '/_matrix/media/v1/quota/check',
   QUOTA_STATS: '/_matrix/media/v1/quota/stats',
-  CLIENT_MEDIA_CONFIG: '/_matrix/client/v1/media/config',
+  CLIENT_MEDIA_CONFIG: PREFIX_V1 + '/media/config',
   PREVIEW_URL: '/_matrix/media/r0/preview_url',
   DOWNLOAD_PREFIX: '/_matrix/media/r0/download/',
   MEDIA_PREFIX: '/_matrix/media/'
