@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import {
   type MatrixEncryptedAttachmentLike,
   matrixAttachmentDecryptionService
@@ -6,6 +7,7 @@ import {
   type EncryptedAttachmentFile,
   matrixAttachmentEncryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
+import { chunkUploadService } from '@/services/performance/ChunkUploadService'
 import { compressImage, formatFileSize, isImageFile } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -86,6 +88,31 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     this.enableCompression = enable
   }
 
+  private isPayloadTooLarge(err: unknown): boolean {
+    const e = err as { httpStatus?: number; errcode?: string }
+    return e?.httpStatus === 413 || e?.errcode === 'M_TOO_LARGE'
+  }
+
+  private async uploadContentWithChunkFallback(
+    client: MatrixClient,
+    file: File,
+    opts: ReturnType<MatrixMediaServiceClass['createUploadOptions']>,
+    onProgress?: (progress: number) => void
+  ): Promise<string> {
+    try {
+      const uploadResponse = await client.uploadContent(file, opts)
+      return typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+    } catch (err) {
+      if (!this.isPayloadTooLarge(err)) throw err
+      logger.warn(`[MatrixMedia] 上传返回 413,回退到分片上传: ${file.name}`)
+      const result = await chunkUploadService.upload({
+        file,
+        onProgress: (p) => onProgress?.(p.percentage)
+      })
+      return result.mxcUrl
+    }
+  }
+
   private resolveDownloadUrl(mediaUrl: string): string {
     if (!mediaUrl) {
       throw new Error(this.t('matrix_error.media.url_empty'))
@@ -163,12 +190,12 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const uploadResponse = await client.uploadContent(
+      const contentUri = await this.uploadContentWithChunkFallback(
+        client,
         file,
-        this.createUploadOptions(file.type, onProgress, file.name)
+        this.createUploadOptions(file.type, onProgress, file.name),
+        onProgress
       )
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       logger.info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
 
       // 记录遥测
@@ -193,12 +220,15 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
     try {
       const encryptedPayload = await matrixAttachmentEncryptionService.encryptAttachment(file)
-      const uploadResponse = await client.uploadContent(
-        encryptedPayload.encryptedData,
-        this.createUploadOptions('application/octet-stream', onProgress, file.name, false)
+      const encryptedBlobFile = new File([encryptedPayload.encryptedData as unknown as BlobPart], file.name, {
+        type: 'application/octet-stream'
+      })
+      const contentUri = await this.uploadContentWithChunkFallback(
+        client,
+        encryptedBlobFile,
+        this.createUploadOptions('application/octet-stream', onProgress, file.name, false),
+        onProgress
       )
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       logger.info(`[MatrixMedia] 加密文件上传成功: ${contentUri}`)
 
       return {
@@ -240,12 +270,12 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         }
       }
 
-      const uploadResponse = await client.uploadContent(
+      const contentUri = await this.uploadContentWithChunkFallback(
+        client,
         fileToUpload,
-        this.createUploadOptions(fileToUpload.type, onProgress, fileToUpload.name)
+        this.createUploadOptions(fileToUpload.type, onProgress, fileToUpload.name),
+        onProgress
       )
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       logger.info(`[MatrixMedia] 图片上传成功: ${contentUri}`)
       return {
         contentUri,
@@ -266,12 +296,12 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     try {
       const metadata = await this.getVideoMetadata(file)
 
-      const uploadResponse = await client.uploadContent(
+      const contentUri = await this.uploadContentWithChunkFallback(
+        client,
         file,
-        this.createUploadOptions(file.type, onProgress, file.name)
+        this.createUploadOptions(file.type, onProgress, file.name),
+        onProgress
       )
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       logger.info(`[MatrixMedia] 视频上传成功: ${contentUri}`)
       return {
         contentUri,
@@ -293,12 +323,12 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     try {
       const duration = await this.getAudioDuration(file)
 
-      const uploadResponse = await client.uploadContent(
+      const contentUri = await this.uploadContentWithChunkFallback(
+        client,
         file,
-        this.createUploadOptions(file.type, onProgress, file.name)
+        this.createUploadOptions(file.type, onProgress, file.name),
+        onProgress
       )
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
       logger.info(`[MatrixMedia] 音频上传成功: ${contentUri}`)
       return {
         contentUri,
@@ -334,7 +364,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   getMediaUrl(mxcUrl: string, width?: number, height?: number): string | null {
-    if (!mxcUrl || !mxcUrl.startsWith('mxc://')) {
+    if (!mxcUrl?.startsWith('mxc://')) {
       return null
     }
 
@@ -348,7 +378,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   getThumbnailUrl(mxcUrl: string, width: number, height: number): string | null {
-    if (!mxcUrl || !mxcUrl.startsWith('mxc://')) {
+    if (!mxcUrl?.startsWith('mxc://')) {
       return null
     }
 
