@@ -21,6 +21,13 @@ import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
 import { MatrixRuntimeSessionService, type SessionStorePort } from './MatrixRuntimeSessionService'
 
+/**
+ * Create a SessionStorePort that bridges Pinia stores, MatrixClientService,
+ * and the current user/room runtime state into a single interface for
+ * MatrixRuntimeSessionService.
+ *
+ * @throws Never throws (factory function, all store access is synchronous).
+ */
 export function createSessionStorePort(): SessionStorePort {
   const matrixStore = () => useMatrixStore(pinia)
   const userStore = () => useUserStore(pinia)

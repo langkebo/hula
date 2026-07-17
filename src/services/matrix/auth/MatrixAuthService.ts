@@ -461,6 +461,11 @@ export class MatrixAuthService {
     return generateClientSecret()
   }
 
+  /**
+   * @throws {MatrixError} M_FORBIDDEN — invalid credentials
+   * @throws {MatrixError} M_USER_DEACTIVATED — account deactivated
+   * @throws {MatrixError} M_LIMIT_EXCEEDED — rate limited, retry after `retry_after_ms`
+   */
   static async login(
     username: string,
     password: string,
@@ -628,6 +633,11 @@ export class MatrixAuthService {
     }
   }
 
+  /**
+   * @throws {MatrixError} M_FORBIDDEN — invalid credentials
+   * @throws {MatrixError} M_USER_DEACTIVATED — account deactivated
+   * @throws {MatrixError} M_LIMIT_EXCEEDED — rate limited, retry after `retry_after_ms`
+   */
   static async whoami(): Promise<{ userId: string; deviceId?: string }> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -746,6 +756,11 @@ export class MatrixAuthService {
     }
   }
 
+  /**
+   * @throws {MatrixError} M_FORBIDDEN — invalid credentials
+   * @throws {MatrixError} M_USER_DEACTIVATED — account deactivated
+   * @throws {MatrixError} M_LIMIT_EXCEEDED — rate limited, retry after `retry_after_ms`
+   */
   static async logout(): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {

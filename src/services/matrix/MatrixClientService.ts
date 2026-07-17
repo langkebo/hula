@@ -361,6 +361,13 @@ class MatrixClientService {
     return this.telemetryManager
   }
 
+  /**
+   * Initialize the Matrix client with the provided config.
+   * Detaches old event listeners, registers manager extensions,
+   * creates a MatrixClient, and sets up the accessor.
+   *
+   * @throws {Error} if client creation fails.
+   */
   async initialize(config: MatrixClientConfig): Promise<void> {
     try {
       if (this.observedClient) {
@@ -558,6 +565,12 @@ class MatrixClientService {
     }
   }
 
+  /**
+   * Authenticate using a pre-existing access token (e.g. from QR login or session restore).
+   * Optionally refreshes the token if a refreshToken is provided.
+   *
+   * @throws Never throws (returns { success: false, error } on failure).
+   */
   async loginWithToken(token: string, userId: string, refreshToken?: string): Promise<LoginResult> {
     if (!this.config) {
       return { success: false, error: '配置未初始化' }

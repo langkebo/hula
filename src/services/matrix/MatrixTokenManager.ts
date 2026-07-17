@@ -9,11 +9,10 @@ export class MatrixTokenManager {
   private refreshing = false
 
   /**
-   * Schedule automatic token refresh before expiry.
+   * Schedule automatic token refresh `expiresInMs - 60s` before expiry.
+   * Cancels any existing scheduled refresh.
    *
-   * @param client — MatrixClient for making the refresh request
-   * @param refreshToken — current refresh token
-   * @param expiresInMs — time until token expires in milliseconds
+   * @throws Never throws (errors surface in the refresh cycle's logout path).
    */
   schedule(client: MatrixClient, refreshToken: string, expiresInMs: number): void {
     this.clear()
@@ -29,6 +28,8 @@ export class MatrixTokenManager {
 
   /**
    * Cancel any pending token refresh timer.
+   *
+   * @throws Never throws (pure cleanup, no external calls).
    */
   clear(): void {
     if (this.timer) {
@@ -45,10 +46,14 @@ export class MatrixTokenManager {
   }
 
   /**
-   * Attempt to refresh the access token.
+   * Execute a token refresh against POST /refresh.
    *
-   * Handles 404 (unsupported), 429 (rate-limited retry),
-   * and fatal errors (session expiry).
+   * On success: persists new tokens and re-schedules the next refresh.
+   * On 404: stops auto-refresh (server does not support it).
+   * On 429 / network error: retries in 30s.
+   * On any other error: logs out the expired session.
+   *
+   * @throws Never throws to callers (all error paths handled internally).
    */
   private async refresh(client: MatrixClient, refreshToken: string): Promise<void> {
     if (this.refreshing) return
