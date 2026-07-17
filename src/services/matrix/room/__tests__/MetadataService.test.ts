@@ -1,4 +1,28 @@
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
+import matrixClientService from '../../MatrixClientService'
+import { MatrixRoomMetadataService } from '../MetadataService'
+
+const TEST_BASE_URL = 'https://matrix.example.com'
+
+const server = setupMswServer(
+  http.get(`${TEST_BASE_URL}/rooms/:roomId/capabilities`, () => {
+    return HttpResponse.json({ 'm.room_versions': { default: '11' } })
+  }),
+  http.get(`${TEST_BASE_URL}/rooms/:roomId/metadata`, () => {
+    return HttpResponse.json({ a: 1 })
+  }),
+  http.get(`${TEST_BASE_URL}/rooms/:roomId/turn_server`, () => {
+    return HttpResponse.json({ uris: ['turn:e'] })
+  }),
+  http.get(`${TEST_BASE_URL}/rooms/:roomId/sync`, () => {
+    return HttpResponse.json({ timeline: [] })
+  }),
+  http.get(`${TEST_BASE_URL}/rooms/:roomId/permissions`, () => {
+    return HttpResponse.json({ read: true })
+  })
+)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -6,17 +30,11 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const getClientMock = vi.fn()
-vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() },
-  matrixClientService: { getClient: () => getClientMock() }
-}))
+const authedRequestImpl = vi.fn()
 
-const { MatrixRoomMetadataService } = await import('../MetadataService')
-
-const makeHttpClient = (impl: (method: string, url: string, qp?: unknown, body?: unknown) => unknown) => ({
+const makeHttpClient = () => ({
   http: {
-    authedRequest: vi.fn((method: string, url: string, qp?: unknown, body?: unknown) => impl(method, url, qp, body))
+    authedRequest: authedRequestImpl
   }
 })
 
@@ -24,18 +42,37 @@ describe('MatrixRoomMetadataService', () => {
   let service: InstanceType<typeof MatrixRoomMetadataService>
 
   beforeEach(() => {
+    vi.clearAllMocks()
+    authedRequestImpl.mockImplementation(
+      async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
+        const url = `${TEST_BASE_URL}${path}`
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-access-token'
+        }
+        const response = await fetch(url, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined
+        })
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        return response.json()
+      }
+    )
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     service = new MatrixRoomMetadataService()
-    getClientMock.mockReset()
   })
 
   describe('getRoomVersion', () => {
     it('throws when client is not initialized', async () => {
-      getClientMock.mockReturnValueOnce(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(service.getRoomVersion('!r')).rejects.toThrow('客户端未初始化')
     })
 
     it('returns null when room is missing from local cache', async () => {
-      getClientMock.mockReturnValueOnce({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       expect(await service.getRoomVersion('!r')).toBeNull()
     })
 
@@ -45,7 +82,7 @@ describe('MatrixRoomMetadataService', () => {
           getStateEvents: vi.fn(() => ({ getContent: () => ({ room_version: '11' }) }))
         }
       }
-      getClientMock.mockReturnValueOnce({ getRoom: () => room })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => room } as never)
       expect(await service.getRoomVersion('!r')).toBe('11')
       expect(room.currentState.getStateEvents).toHaveBeenCalledWith('m.room.create', '')
     })
@@ -56,90 +93,84 @@ describe('MatrixRoomMetadataService', () => {
           getStateEvents: vi.fn(() => ({ getContent: () => ({}) }))
         }
       }
-      getClientMock.mockReturnValueOnce({ getRoom: () => room })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => room } as never)
       expect(await service.getRoomVersion('!r')).toBeNull()
     })
 
     it('swallows errors and returns null', async () => {
-      getClientMock.mockReturnValueOnce({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: () => {
           throw new Error('boom')
         }
-      })
+      } as never)
       expect(await service.getRoomVersion('!r')).toBeNull()
     })
   })
 
   describe('getRoomCapabilities', () => {
     it('GETs /capabilities and returns the payload', async () => {
-      const client = makeHttpClient(() => ({ 'm.room_versions': { default: '11' } }))
-      getClientMock.mockReturnValueOnce(client)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomCapabilities('!r:e')).toEqual({ 'm.room_versions': { default: '11' } })
-      expect(client.http.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        `/rooms/${encodeURIComponent('!r:e')}/capabilities`
-      )
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', `/rooms/${encodeURIComponent('!r:e')}/capabilities`)
     })
 
     it('swallows errors and returns {}', async () => {
-      getClientMock.mockReturnValueOnce(
-        makeHttpClient(() => {
-          throw new Error('500')
+      server.use(
+        http.get(`${TEST_BASE_URL}/rooms/:roomId/capabilities`, () => {
+          return new HttpResponse(null, { status: 500 })
         })
       )
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomCapabilities('!r')).toEqual({})
     })
   })
 
   describe('getRoomMetadata / getRoomTurnServer / getRoomSync', () => {
     it('getRoomMetadata hits /metadata', async () => {
-      const client = makeHttpClient(() => ({ a: 1 }))
-      getClientMock.mockReturnValueOnce(client)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomMetadata('!r')).toEqual({ a: 1 })
-      expect(client.http.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        `/rooms/${encodeURIComponent('!r')}/metadata`
-      )
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', `/rooms/${encodeURIComponent('!r')}/metadata`)
     })
 
     it('getRoomTurnServer hits /turn_server', async () => {
-      const client = makeHttpClient(() => ({ uris: ['turn:e'] }))
-      getClientMock.mockReturnValueOnce(client)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomTurnServer('!r')).toEqual({ uris: ['turn:e'] })
-      expect(client.http.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        `/rooms/${encodeURIComponent('!r')}/turn_server`
-      )
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', `/rooms/${encodeURIComponent('!r')}/turn_server`)
     })
 
     it('getRoomSync hits /sync', async () => {
-      const client = makeHttpClient(() => ({ timeline: [] }))
-      getClientMock.mockReturnValueOnce(client)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomSync('!r')).toEqual({ timeline: [] })
-      expect(client.http.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        `/rooms/${encodeURIComponent('!r')}/sync`
-      )
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', `/rooms/${encodeURIComponent('!r')}/sync`)
     })
 
     it('all three swallow errors and return {}', async () => {
-      const failing = () => {
-        throw new Error('500')
-      }
-      getClientMock.mockReturnValueOnce(makeHttpClient(failing))
+      server.use(
+        http.get(`${TEST_BASE_URL}/rooms/:roomId/metadata`, () => {
+          return new HttpResponse(null, { status: 500 })
+        }),
+        http.get(`${TEST_BASE_URL}/rooms/:roomId/turn_server`, () => {
+          return new HttpResponse(null, { status: 500 })
+        }),
+        http.get(`${TEST_BASE_URL}/rooms/:roomId/sync`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient)
+        .mockReturnValueOnce(makeHttpClient() as never)
+        .mockReturnValueOnce(makeHttpClient() as never)
+        .mockReturnValueOnce(makeHttpClient() as never)
       expect(await service.getRoomMetadata('!r')).toEqual({})
-      getClientMock.mockReturnValueOnce(makeHttpClient(failing))
       expect(await service.getRoomTurnServer('!r')).toEqual({})
-      getClientMock.mockReturnValueOnce(makeHttpClient(failing))
       expect(await service.getRoomSync('!r')).toEqual({})
     })
 
     it('all three throw when client is not initialized', async () => {
-      getClientMock.mockReturnValueOnce(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(service.getRoomMetadata('!r')).rejects.toThrow('客户端未初始化')
-      getClientMock.mockReturnValueOnce(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(service.getRoomTurnServer('!r')).rejects.toThrow('客户端未初始化')
-      getClientMock.mockReturnValueOnce(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(service.getRoomSync('!r')).rejects.toThrow('客户端未初始化')
     })
   })

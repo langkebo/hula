@@ -1,23 +1,56 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
 import { matrixAccountService } from '../MatrixAccountService'
 
-vi.mock('../../MatrixClientService', () => {
-  const mockServiceInstance = {
-    getClient: vi.fn()
-  }
-  return {
-    default: mockServiceInstance,
-    matrixClientService: mockServiceInstance
-  }
-})
+const TEST_BASE_URL = 'https://matrix.example.com'
+
+const server = setupMswServer(
+  http.get(`${TEST_BASE_URL}/capabilities`, () => {
+    return HttpResponse.json({ capabilities: { 'm.room.tombstone': { enabled: true } } })
+  }),
+  http.get(`${TEST_BASE_URL}/thirdparty/protocols`, () => {
+    return HttpResponse.json({ irc: { fields: ['network'] } })
+  }),
+  http.get(`${TEST_BASE_URL}/my_rooms`, () => {
+    return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
+  }),
+  http.get(`${TEST_BASE_URL}/events`, () => {
+    return HttpResponse.json({ chunk: [], end: 'token1' })
+  })
+)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
 }))
+
+const mockAuthedRequest = vi
+  .fn()
+  .mockImplementation(async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
+    const url = new URL(`${TEST_BASE_URL}${path}`)
+    if (queryParams && typeof queryParams === 'object') {
+      for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
+        url.searchParams.set(key, value)
+      }
+    }
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer test-access-token'
+    }
+    const response = await fetch(url.toString(), {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+    return response.json()
+  })
 
 describe('MatrixAccountService', () => {
   let mockClient: {
@@ -31,10 +64,13 @@ describe('MatrixAccountService', () => {
     deleteDevice: ReturnType<typeof vi.fn>
     deleteMultipleDevices: ReturnType<typeof vi.fn>
     setPresence: ReturnType<typeof vi.fn>
+    getAccountData: ReturnType<typeof vi.fn>
+    setAccountData: ReturnType<typeof vi.fn>
     http: { authedRequest: ReturnType<typeof vi.fn> }
   }
 
   beforeEach(() => {
+    vi.clearAllMocks()
     mockClient = {
       setDisplayName: vi.fn().mockResolvedValue({}),
       setAvatarUrl: vi.fn().mockResolvedValue({}),
@@ -49,9 +85,11 @@ describe('MatrixAccountService', () => {
       deleteDevice: vi.fn().mockResolvedValue({}),
       deleteMultipleDevices: vi.fn().mockResolvedValue({}),
       setPresence: vi.fn().mockResolvedValue({}),
-      http: { authedRequest: vi.fn().mockResolvedValue({}) }
+      getAccountData: vi.fn().mockReturnValue(null),
+      setAccountData: vi.fn().mockResolvedValue(undefined),
+      http: { authedRequest: mockAuthedRequest }
     }
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
   })
 
   describe('updateDisplayName', () => {
@@ -88,15 +126,23 @@ describe('MatrixAccountService', () => {
   describe('getCapabilities', () => {
     it('should get capabilities', async () => {
       const mockCaps = { capabilities: { 'm.room.tombstone': { enabled: true } } }
-      mockClient.http.authedRequest.mockResolvedValue(mockCaps)
+      server.use(
+        http.get(`${TEST_BASE_URL}/capabilities`, () => {
+          return HttpResponse.json(mockCaps)
+        })
+      )
 
       const result = await matrixAccountService.getCapabilities()
       expect(result).toEqual(mockCaps)
-      expect(mockClient.http.authedRequest).toHaveBeenCalledWith('GET', '/capabilities')
+      expect(mockAuthedRequest).toHaveBeenCalledWith('GET', '/capabilities')
     })
 
     it('should return empty object on error', async () => {
-      mockClient.http.authedRequest.mockRejectedValue(new Error('fail'))
+      server.use(
+        http.get(`${TEST_BASE_URL}/capabilities`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
       const result = await matrixAccountService.getCapabilities()
       expect(result).toEqual({})
     })
@@ -105,7 +151,11 @@ describe('MatrixAccountService', () => {
   describe('getThirdPartyProtocols', () => {
     it('should get third party protocols', async () => {
       const mockProtocols = { irc: { fields: ['network'] } }
-      mockClient.http.authedRequest.mockResolvedValue(mockProtocols)
+      server.use(
+        http.get(`${TEST_BASE_URL}/thirdparty/protocols`, () => {
+          return HttpResponse.json(mockProtocols)
+        })
+      )
 
       const result = await matrixAccountService.getThirdPartyProtocols()
       expect(result).toEqual(mockProtocols)
@@ -114,14 +164,22 @@ describe('MatrixAccountService', () => {
 
   describe('getMyRooms', () => {
     it('should get my rooms', async () => {
-      mockClient.http.authedRequest.mockResolvedValue({ room_ids: ['!room1:server', '!room2:server'] })
+      server.use(
+        http.get(`${TEST_BASE_URL}/my_rooms`, () => {
+          return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
+        })
+      )
 
       const result = await matrixAccountService.getMyRooms()
       expect(result).toEqual(['!room1:server', '!room2:server'])
     })
 
     it('should return empty array on error', async () => {
-      mockClient.http.authedRequest.mockRejectedValue(new Error('fail'))
+      server.use(
+        http.get(`${TEST_BASE_URL}/my_rooms`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
       const result = await matrixAccountService.getMyRooms()
       expect(result).toEqual([])
     })
@@ -130,18 +188,26 @@ describe('MatrixAccountService', () => {
   describe('getEventStream', () => {
     it('should get event stream with params', async () => {
       const mockEvents = { chunk: [], end: 'token1' }
-      mockClient.http.authedRequest.mockResolvedValue(mockEvents)
+      server.use(
+        http.get(`${TEST_BASE_URL}/events`, () => {
+          return HttpResponse.json(mockEvents)
+        })
+      )
 
       const result = await matrixAccountService.getEventStream('from_token', 15000)
       expect(result).toEqual(mockEvents)
-      expect(mockClient.http.authedRequest).toHaveBeenCalledWith('GET', '/events', {
+      expect(mockAuthedRequest).toHaveBeenCalledWith('GET', '/events', {
         timeout: '15000',
         from: 'from_token'
       })
     })
 
     it('should return empty object on error', async () => {
-      mockClient.http.authedRequest.mockRejectedValue(new Error('fail'))
+      server.use(
+        http.get(`${TEST_BASE_URL}/events`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
       const result = await matrixAccountService.getEventStream()
       expect(result).toEqual({})
     })

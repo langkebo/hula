@@ -4,6 +4,9 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('TokenManager')
 
+const MIN_REFRESH_INTERVAL_MS = 30000
+const RETRY_INTERVAL_MS = 30000
+
 export class MatrixTokenManager {
   private timer: ReturnType<typeof setTimeout> | null = null
   private refreshing = false
@@ -18,7 +21,7 @@ export class MatrixTokenManager {
     this.clear()
     if (!refreshToken || expiresInMs <= 0) return
 
-    const refreshAt = Math.max(expiresInMs - 60000, 30000)
+    const refreshAt = Math.max(expiresInMs - 60000, MIN_REFRESH_INTERVAL_MS)
     logger.info(`[TokenRefresh] Scheduled refresh in ${refreshAt}ms (expiresInMs=${expiresInMs})`)
 
     this.timer = setTimeout(() => {
@@ -95,12 +98,12 @@ export class MatrixTokenManager {
       }
       if (httpStatus === 429) {
         logger.warn('[TokenRefresh] Rate limited (429), retrying in 30s')
-        this.schedule(client, refreshToken, 30000)
+        this.schedule(client, refreshToken, RETRY_INTERVAL_MS)
         return
       }
       if (httpStatus === undefined) {
         logger.warn(`[TokenRefresh] Network error during refresh, retrying in 30s: ${err}`)
-        this.schedule(client, refreshToken, 30000)
+        this.schedule(client, refreshToken, RETRY_INTERVAL_MS)
         return
       }
       logger.error(`[TokenRefresh] Refresh failed: ${err}`)

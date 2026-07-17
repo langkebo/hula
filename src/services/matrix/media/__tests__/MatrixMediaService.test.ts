@@ -1,27 +1,30 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
+import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
 import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
+import matrixClientService from '../../MatrixClientService'
 import { matrixMediaService } from '../MatrixMediaService'
+
+const TEST_BASE_URL = 'https://matrix.test'
+
+const _server = setupMswServer(
+  http.get(`${TEST_BASE_URL}/_matrix/media/v3/config`, () => {
+    return HttpResponse.json({ 'm.upload.size': 52428800 })
+  }),
+  http.post(`${TEST_BASE_URL}/_matrix/media/v3/delete/:serverName/:mediaId`, () => {
+    return HttpResponse.json({})
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/media/v1/quota/alerts`, () => {
+    return HttpResponse.json({ alerts: [{ alert_id: '1', alert_type: 'warning' }] })
+  })
+)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
-}))
-
-const { mockMatrixClientService } = vi.hoisted(() => ({
-  mockMatrixClientService: {
-    getClient: vi.fn(() => null),
-    getTelemetry: vi.fn(() => null),
-    getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
-    getAccessToken: vi.fn(() => 'token123')
-  }
-}))
-
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: mockMatrixClientService,
-  default: mockMatrixClientService
 }))
 
 vi.mock('@/utils/ImageUtils', () => ({
@@ -30,7 +33,7 @@ vi.mock('@/utils/ImageUtils', () => ({
   formatFileSize: vi.fn((size: number) => `${size} B`)
 }))
 
-import { matrixClientService } from '../../MatrixClientService'
+const authedRequestImpl = vi.fn()
 
 const mockClient = {
   getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
@@ -42,6 +45,28 @@ const mockClient = {
 describe('MatrixMediaService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    authedRequestImpl.mockImplementation(
+      async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
+        const url = `${TEST_BASE_URL}${path}`
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-access-token'
+        }
+        const response = await fetch(url, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined
+        })
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        return response.json()
+      }
+    )
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+    vi.spyOn(matrixClientService, 'getTelemetry').mockReturnValue(null)
+    vi.spyOn(matrixClientService, 'getHomeserverUrl').mockReturnValue('https://matrix.test')
+    vi.spyOn(matrixClientService, 'getAccessToken').mockReturnValue('token123')
   })
 
   afterEach(() => {
@@ -263,19 +288,22 @@ describe('MatrixMediaService', () => {
 
   describe('getMediaConfig', () => {
     it('should get media config', async () => {
-      const mockConfig = { 'm.upload.size': 52428800 }
-      const mockHttp = { authedRequest: vi.fn().mockResolvedValue(mockConfig) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: { authedRequest: authedRequestImpl }
+      } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getMediaConfig()
 
       expect(result['m.upload.size']).toBe(52428800)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('GET', '/_matrix/media/v3/config')
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_matrix/media/v3/config')
     })
 
     it('should throw on error', async () => {
-      const mockHttp = { authedRequest: vi.fn().mockRejectedValue(new Error('fail')) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: {
+          authedRequest: vi.fn().mockRejectedValue(new Error('fail'))
+        }
+      } as unknown as MatrixClient)
 
       await expect(matrixMediaService.getMediaConfig()).rejects.toThrow('fail')
     })
@@ -283,18 +311,22 @@ describe('MatrixMediaService', () => {
 
   describe('deleteMedia', () => {
     it('should delete media successfully', async () => {
-      const mockHttp = { authedRequest: vi.fn().mockResolvedValue({}) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: { authedRequest: authedRequestImpl }
+      } as unknown as MatrixClient)
 
       const result = await matrixMediaService.deleteMedia('matrix.org', 'media123')
 
       expect(result).toBe(true)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('POST', '/_matrix/media/v3/delete/matrix.org/media123')
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/_matrix/media/v3/delete/matrix.org/media123')
     })
 
     it('should throw on delete error', async () => {
-      const mockHttp = { authedRequest: vi.fn().mockRejectedValue(new Error('forbidden')) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: {
+          authedRequest: vi.fn().mockRejectedValue(new Error('forbidden'))
+        }
+      } as unknown as MatrixClient)
 
       await expect(matrixMediaService.deleteMedia('matrix.org', 'media123')).rejects.toThrow('forbidden')
     })
@@ -302,19 +334,22 @@ describe('MatrixMediaService', () => {
 
   describe('getQuotaAlerts', () => {
     it('should get quota alerts', async () => {
-      const mockAlerts = { alerts: [{ alert_id: '1', alert_type: 'warning' }] }
-      const mockHttp = { authedRequest: vi.fn().mockResolvedValue(mockAlerts) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: { authedRequest: authedRequestImpl }
+      } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getQuotaAlerts()
 
       expect(result).toHaveLength(1)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('GET', '/_matrix/media/v1/quota/alerts')
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_matrix/media/v1/quota/alerts')
     })
 
     it('should return empty array on error', async () => {
-      const mockHttp = { authedRequest: vi.fn().mockRejectedValue(new Error('fail')) }
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: mockHttp } as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        http: {
+          authedRequest: vi.fn().mockRejectedValue(new Error('fail'))
+        }
+      } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getQuotaAlerts()
 

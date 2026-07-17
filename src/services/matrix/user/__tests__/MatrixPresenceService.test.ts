@@ -1,17 +1,33 @@
 import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
+import matrixClientService from '../../MatrixClientService'
 import { matrixPresenceService } from '../MatrixPresenceService'
 
-const { mockServiceInstance } = vi.hoisted(() => ({
-  mockServiceInstance: {
-    getClient: vi.fn(),
-    waitForClientReady: vi.fn()
-  }
-}))
+const TEST_BASE_URL = 'https://matrix.example.com'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: mockServiceInstance,
-  matrixClientService: mockServiceInstance
+const _server = setupMswServer(
+  http.put(`${TEST_BASE_URL}/_matrix/client/v3/presence/:userId/status`, async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json(body as Record<string, unknown>)
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v3/presence/:userId/status`, () => {
+    return HttpResponse.json({ presence: 'offline', last_active_ago: 300000 })
+  }),
+  http.post(`${TEST_BASE_URL}/_matrix/client/v3/presence/list`, async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json({ presences: [], ...(body as Record<string, unknown>) })
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v3/presence/list/:userId`, () => {
+    return HttpResponse.json({ presences: [] })
+  })
+)
+
+vi.mock('@tauri-apps/plugin-log', () => ({
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn()
 }))
 
 describe('MatrixPresenceService', () => {
@@ -25,10 +41,27 @@ describe('MatrixPresenceService', () => {
     getPresenceList: ReturnType<typeof vi.fn>
   }
 
+  const authedRequestImpl = vi
+    .fn()
+    .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
+      const url = `${TEST_BASE_URL}${path}`
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-access-token'
+      }
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      return response.json()
+    })
+
   beforeEach(() => {
-    mockHttp = {
-      authedRequest: vi.fn()
-    }
+    vi.clearAllMocks()
 
     mockPresenceManager = {
       setPresence: vi.fn(),
@@ -36,6 +69,10 @@ describe('MatrixPresenceService', () => {
       subscribeToPresence: vi.fn(),
       unsubscribeFromPresence: vi.fn(),
       getPresenceList: vi.fn()
+    }
+
+    mockHttp = {
+      authedRequest: authedRequestImpl
     }
 
     mockClient = {
@@ -46,10 +83,8 @@ describe('MatrixPresenceService', () => {
       off: vi.fn()
     }
 
-    vi.mocked(mockServiceInstance.getClient).mockReset()
-    vi.mocked(mockServiceInstance.waitForClientReady).mockReset()
-    vi.mocked(mockServiceInstance.getClient).mockReturnValue(mockClient as MatrixClient)
-    vi.mocked(mockServiceInstance.waitForClientReady).mockResolvedValue(mockClient as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as MatrixClient)
+    vi.spyOn(matrixClientService, 'waitForClientReady').mockResolvedValue(mockClient as MatrixClient)
   })
 
   describe('setPresence', () => {
@@ -63,11 +98,10 @@ describe('MatrixPresenceService', () => {
 
     it('should fallback to HTTP API when presenceManager is unavailable', async () => {
       mockClient.getPresenceManager = vi.fn(() => null)
-      mockHttp.authedRequest.mockResolvedValue({})
 
       await matrixPresenceService.setPresence('unavailable', 'Busy')
 
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith(
+      expect(authedRequestImpl).toHaveBeenCalledWith(
         'PUT',
         '/_matrix/client/v3/presence/%40user%3Aexample.com/status',
         undefined,
@@ -76,8 +110,8 @@ describe('MatrixPresenceService', () => {
     })
 
     it('should throw when client is not initialized', async () => {
-      vi.mocked(mockServiceInstance.getClient).mockReturnValue(null)
-      vi.mocked(mockServiceInstance.waitForClientReady).mockRejectedValue(
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+      vi.mocked(matrixClientService.waitForClientReady).mockRejectedValue(
         new Error('Matrix client initialization timeout')
       )
 
@@ -107,10 +141,6 @@ describe('MatrixPresenceService', () => {
 
     it('should fallback to HTTP API when presenceManager is unavailable', async () => {
       mockClient.getPresenceManager = vi.fn(() => null)
-      mockHttp.authedRequest.mockResolvedValue({
-        presence: 'offline',
-        last_active_ago: 300000
-      })
 
       const result = await matrixPresenceService.getPresence('@other:example.com')
 
@@ -147,11 +177,10 @@ describe('MatrixPresenceService', () => {
 
     it('should fallback to HTTP API', async () => {
       mockClient.getPresenceManager = vi.fn(() => null)
-      mockHttp.authedRequest.mockResolvedValue({ presences: [] })
 
       await matrixPresenceService.subscribeToPresence(['@a:example.com'])
 
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('POST', '/_matrix/client/v3/presence/list', undefined, {
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/_matrix/client/v3/presence/list', undefined, {
         subscribe: ['@a:example.com']
       })
     })
@@ -212,8 +241,8 @@ describe('MatrixPresenceService', () => {
         off: vi.fn()
       } as MatrixClient
 
-      vi.mocked(mockServiceInstance.getClient).mockReturnValue(null)
-      vi.mocked(mockServiceInstance.waitForClientReady).mockResolvedValue(readyClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+      vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue(readyClient)
 
       matrixPresenceService.onPresenceChange(vi.fn())
       await Promise.resolve()

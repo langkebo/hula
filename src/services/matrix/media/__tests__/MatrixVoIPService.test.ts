@@ -1,5 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import matrixClientService from '../../MatrixClientService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -7,22 +8,12 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => {
-  const mockService = {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  }
-  return {
-    default: mockService,
-    matrixClientService: mockService
-  }
-})
-
-const { default: matrixClientService } = await import('../../MatrixClientService')
 const { matrixVoIPService } = await import('../MatrixVoIPService')
 
 describe('MatrixVoIPService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     ;(matrixVoIPService as unknown as { calls: Map<string, unknown> }).calls.clear()
     ;(matrixVoIPService as unknown as { callHandlers: Map<string, unknown> }).callHandlers.clear()
     ;(matrixVoIPService as unknown as { localStream: unknown }).localStream = null

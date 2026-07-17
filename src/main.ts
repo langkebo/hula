@@ -27,7 +27,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('Main')
 const { showFeedback } = useActionFeedback()
 
-// DEBUG: Test if JS executes at all in WKWebView
+// Pre-emptively hide splash screen on mobile to reduce perceived startup time
 if (isMobile() && hasTauriRuntime()) {
   invokeSilently('hide_splash_screen').catch(() => {})
 }
