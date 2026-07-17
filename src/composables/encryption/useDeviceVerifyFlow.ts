@@ -69,6 +69,7 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
       return false
     }
 
+    if (loading.value) return false
     loading.value = true
     step.value = 'pending'
     errorMessage.value = null
@@ -92,6 +93,7 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
   }
 
   const acceptVerification = async (transactionId: string): Promise<boolean> => {
+    if (loading.value) return false
     loading.value = true
     try {
       await matrixVerificationService.acceptVerification(transactionId)
@@ -112,6 +114,7 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     if (!currentTransactionId.value) {
       return false
     }
+    if (loading.value) return false
     loading.value = true
     try {
       if (match) {

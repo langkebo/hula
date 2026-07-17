@@ -65,6 +65,7 @@ export function useKeyBackupFlow(options: UseKeyBackupFlowOptions = {}) {
   }
 
   const createBackup = async (): Promise<boolean> => {
+    if (loading.value) return false
     loading.value = true
     step.value = 'create'
     errorMessage.value = null
@@ -99,6 +100,7 @@ export function useKeyBackupFlow(options: UseKeyBackupFlowOptions = {}) {
       errorMessage.value = t('encryption.backup.verify_failed')
       return false
     }
+    if (loading.value) return false
     loading.value = true
     try {
       const result = await matrixKeyBackupService.verifyBackup(currentVersion.value)
@@ -128,6 +130,7 @@ export function useKeyBackupFlow(options: UseKeyBackupFlowOptions = {}) {
       showFeedback(errorMessage.value, 'error')
       return false
     }
+    if (loading.value) return false
     loading.value = true
     step.value = 'restore'
     errorMessage.value = null
@@ -151,6 +154,7 @@ export function useKeyBackupFlow(options: UseKeyBackupFlowOptions = {}) {
   }
 
   const importFromRecoveryKey = async (recoveryKeyInput: string): Promise<boolean> => {
+    if (loading.value) return false
     loading.value = true
     step.value = 'restore'
     errorMessage.value = null
@@ -178,6 +182,7 @@ export function useKeyBackupFlow(options: UseKeyBackupFlowOptions = {}) {
   }
 
   const deleteBackupVersion = async (version: string): Promise<boolean> => {
+    if (loading.value) return false
     loading.value = true
     try {
       await matrixKeyBackupService.deleteKeyBackupVersion(version)
