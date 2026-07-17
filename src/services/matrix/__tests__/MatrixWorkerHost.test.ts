@@ -1,16 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-// 顶层 hoisted mock:所有测试共用同一个 fetch mock
-const mockFetch = vi.hoisted(() =>
-  vi.fn(async () => new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }))
-)
-
-vi.mock('@/services/matrix/network/runtimeFetch', () => ({
-  getRuntimeAwareFetch: () => mockFetch
-}))
-
-// 必须在 mock 之后 dynamic import,确保 mock 生效
-const { MatrixWorkerHost } = await import('../MatrixWorkerHost')
+import { MatrixWorkerHost } from '../MatrixWorkerHost'
 
 interface FakeMessage {
   type: string
@@ -71,8 +60,6 @@ const makeReadyHost = () => {
 describe('MatrixWorkerHost', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockFetch.mockReset()
-    mockFetch.mockResolvedValue(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }))
   })
 
   it('start() registers a message listener and returns a pending Promise until ready arrives', async () => {
@@ -173,140 +160,107 @@ describe('MatrixWorkerHost', () => {
     expect(host.isStarted).toBe(false)
   })
 
-  // === 探测函数:已迁移到主线程,直接用 getRuntimeAwareFetch() ===
+  // === 探测方法:通过 Worker channel postMessage 转发 ===
 
-  it('getServerVersions() calls fetch on main thread and resolves with parsed response', async () => {
-    const { host } = makeReadyHost()
+  it('getServerVersions() forwards baseUrl/accessToken and resolves with the parsed response', async () => {
+    const { host, worker } = makeReadyHost()
 
-    mockFetch.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ versions: ['v1.6', 'v1.7'], unstable_features: { 'org.matrix.msc3886.sliding_sync': true } }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      )
-    )
+    const promise = host.getServerVersions('https://matrix.test', 'tok-abc')
+    expect(worker.postedMessages).toHaveLength(1)
+    const sent = worker.postedMessages[0]
+    expect(sent.type).toBe('getServerVersions')
+    expect(sent.payload).toEqual({ baseUrl: 'https://matrix.test', accessToken: 'tok-abc' })
 
-    const result = await host.getServerVersions('https://matrix.test', 'tok-abc')
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://matrix.test/_matrix/client/versions',
-      expect.objectContaining({
-        method: 'GET',
-        headers: expect.objectContaining({
-          Accept: 'application/json',
-          Authorization: 'Bearer tok-abc'
-        })
-      })
-    )
-    expect(result).toEqual({
+    worker.emit({
+      type: 'getServerVersions',
+      id: sent.id,
+      success: true,
+      data: { versions: ['v1.6', 'v1.7'], unstable_features: { 'org.matrix.msc3886.sliding_sync': true } }
+    })
+    await expect(promise).resolves.toEqual({
       versions: ['v1.6', 'v1.7'],
       unstable_features: { 'org.matrix.msc3886.sliding_sync': true }
     })
   })
 
-  it('getServerVersions() rejects when fetch returns non-ok status', async () => {
-    const { host } = makeReadyHost()
-    mockFetch.mockResolvedValueOnce(new Response('', { status: 502 }))
-    await expect(host.getServerVersions('https://matrix.test')).rejects.toThrow('getVersions HTTP 502')
+  it('getServerVersions() rejects when the worker reports failure', async () => {
+    const { host, worker } = makeReadyHost()
+
+    const promise = host.getServerVersions('https://matrix.test')
+    const sent = worker.postedMessages[0]
+    worker.emit({ type: 'getServerVersions', id: sent.id, success: false, error: 'getVersions HTTP 502' })
+    await expect(promise).rejects.toThrow('getVersions HTTP 502')
   })
 
-  it('getLoginFlows() calls fetch on main thread and resolves with parsed flows', async () => {
-    const { host } = makeReadyHost()
+  it('getLoginFlows() forwards baseUrl and resolves with parsed flows', async () => {
+    const { host, worker } = makeReadyHost()
 
-    mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ flows: [{ type: 'm.login.password' }, { type: 'm.login.sso' }] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    )
+    const promise = host.getLoginFlows('https://matrix.test')
+    const sent = worker.postedMessages[0]
+    expect(sent.type).toBe('getLoginFlows')
+    expect(sent.payload).toEqual({ baseUrl: 'https://matrix.test' })
 
-    const result = await host.getLoginFlows('https://matrix.test')
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://matrix.test/_matrix/client/v3/login',
-      expect.objectContaining({ method: 'GET' })
-    )
-    expect(result).toEqual({ flows: [{ type: 'm.login.password' }, { type: 'm.login.sso' }] })
+    worker.emit({
+      type: 'getLoginFlows',
+      id: sent.id,
+      success: true,
+      data: { flows: [{ type: 'm.login.password' }, { type: 'm.login.sso' }] }
+    })
+    await expect(promise).resolves.toEqual({
+      flows: [{ type: 'm.login.password' }, { type: 'm.login.sso' }]
+    })
   })
 
-  it('probeSlidingSyncEndpoints() calls fetch for each endpoint and resolves with the probe array', async () => {
-    const { host } = makeReadyHost()
-
-    // 第一个端点返回 400,第二个返回 404
-    mockFetch
-      .mockResolvedValueOnce(new Response('', { status: 400 }))
-      .mockResolvedValueOnce(new Response('', { status: 404 }))
+  it('probeSlidingSyncEndpoints() forwards baseUrl + endpoints and resolves with the probe array', async () => {
+    const { host, worker } = makeReadyHost()
 
     const endpoints = ['/_matrix/client/v1/sync', '/_matrix/client/unstable/org.matrix.msc3575/sync']
-    const result = await host.probeSlidingSyncEndpoints('https://matrix.test', endpoints)
+    const promise = host.probeSlidingSyncEndpoints('https://matrix.test', endpoints)
+    const sent = worker.postedMessages[0]
+    expect(sent.type).toBe('probeSlidingSyncEndpoints')
+    expect(sent.payload).toEqual({ baseUrl: 'https://matrix.test', endpoints })
 
-    expect(mockFetch).toHaveBeenCalledTimes(2)
-    expect(result).toEqual([
+    const probes = [
       { endpoint: endpoints[0], status: 400, available: true },
       { endpoint: endpoints[1], status: 404, available: false }
-    ])
+    ]
+    worker.emit({ type: 'probeSlidingSyncEndpoints', id: sent.id, success: true, data: probes })
+    await expect(promise).resolves.toEqual(probes)
   })
 
-  it('probeCors() calls fetch with OPTIONS and resolves with the three CORS headers', async () => {
-    const { host } = makeReadyHost()
+  it('probeCors() forwards baseUrl and resolves with the three CORS headers', async () => {
+    const { host, worker } = makeReadyHost()
 
-    mockFetch.mockResolvedValueOnce(
-      new Response('', {
-        status: 200,
-        headers: {
-          'access-control-allow-origin': '*',
-          'access-control-allow-methods': 'GET, POST, OPTIONS',
-          'access-control-allow-headers': 'Authorization, Content-Type'
-        }
-      })
-    )
+    const promise = host.probeCors('https://matrix.test')
+    const sent = worker.postedMessages[0]
+    expect(sent.type).toBe('probeCors')
+    expect(sent.payload).toEqual({ baseUrl: 'https://matrix.test' })
 
-    const result = await host.probeCors('https://matrix.test')
-
-    expect(mockFetch).toHaveBeenCalledWith('https://matrix.test/_matrix/client/versions', {
-      method: 'OPTIONS'
-    })
-    expect(result).toEqual({
+    const headers = {
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET, POST, OPTIONS',
       'access-control-allow-headers': 'Authorization, Content-Type'
-    })
+    }
+    worker.emit({ type: 'probeCors', id: sent.id, success: true, data: headers })
+    await expect(promise).resolves.toEqual(headers)
   })
 
-  it('getCapabilities() calls fetch on main thread and resolves with the capabilities map', async () => {
-    const { host } = makeReadyHost()
+  it('getCapabilities() forwards baseUrl + accessToken and resolves with the capabilities map', async () => {
+    const { host, worker } = makeReadyHost()
 
-    mockFetch.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          capabilities: {
-            'm.change_password': { enabled: true },
-            'm.room_versions': { default: '10', available: { '10': 'stable' } }
-          }
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
-    )
+    const promise = host.getCapabilities('https://matrix.test', 'tok-abc')
+    const sent = worker.postedMessages[0]
+    expect(sent.type).toBe('getCapabilities')
+    expect(sent.payload).toEqual({ baseUrl: 'https://matrix.test', accessToken: 'tok-abc' })
 
-    const result = await host.getCapabilities('https://matrix.test', 'tok-abc')
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://matrix.test/_matrix/client/v3/capabilities',
-      expect.objectContaining({
-        method: 'GET',
-        headers: expect.objectContaining({
-          Authorization: 'Bearer tok-abc'
-        })
-      })
-    )
-    expect(result).toEqual({
+    const caps = {
       capabilities: {
         'm.change_password': { enabled: true },
         'm.room_versions': { default: '10', available: { '10': 'stable' } }
       }
-    })
+    }
+    worker.emit({ type: 'getCapabilities', id: sent.id, success: true, data: caps })
+    await expect(promise).resolves.toEqual(caps)
   })
 
   it('querySearchIndex() forwards the search payload and resolves with worker hits', async () => {
