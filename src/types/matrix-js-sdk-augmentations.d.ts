@@ -1439,45 +1439,11 @@ declare module 'matrix-js-sdk' {
 }
 
 // ==================== SDK 子路径模块类型声明 ====================
-declare module 'matrix-js-sdk/account' {
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/auth' {
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/capabilities' {
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/credentials' {
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/room' {
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/media' {
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/message' {
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/profile' {
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/presence' {
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/sending' {
-  export function extendMatrixClient(): void
-}
+// 清单 D.3: 移除 10 个仅含 extendMatrixClient() 桩声明的 declare module 块。
+// extendMatrixClient 在 hula 生产代码中零引用（sdk-compat.ts 不导出该函数），
+// 这些增强块全是死代码。其中 credentials/message/profile/sending 4 个子路径
+// 在 SDK package.json exports 中不存在，属于幻影声明；其余 6 个（account/auth/
+// capabilities/room/media/presence）SDK 已提供真实类型，删除增强后 TS 自动回退。
 
 declare module 'matrix-js-sdk/device-keys' {
   export interface DeviceKeys {
@@ -1566,7 +1532,6 @@ declare module 'matrix-js-sdk/device-keys' {
       request_id?: string
     }): Promise<{ request_id: string }>
   }
-  export function extendMatrixClient(): void
 }
 
 declare module 'matrix-js-sdk/key-backup' {
@@ -1695,7 +1660,6 @@ declare module 'matrix-js-sdk/key-backup' {
     exportKeys(version?: string): Promise<ExportResult>
     importKeys(roomKeys: ExportResult['room_keys'], version?: string): Promise<ImportResult>
   }
-  export function extendMatrixClient(): void
 }
 
 declare module 'matrix-js-sdk/key-verification' {
@@ -1725,7 +1689,6 @@ declare module 'matrix-js-sdk/key-verification' {
     showQrCodeHttp(version?: string): Promise<Record<string, unknown>>
     scanQrCodeHttp(request: Record<string, unknown>, version?: string): Promise<Record<string, unknown>>
   }
-  export function extendMatrixClient(): void
 }
 
 declare module 'matrix-js-sdk/crypto-keys' {
@@ -1737,11 +1700,6 @@ declare module 'matrix-js-sdk/crypto-keys' {
     uploadKeySignatures(signatures: Record<string, unknown>): Promise<Record<string, unknown>>
     uploadDeviceSigning(masterKey?: Record<string, unknown>, selfSigningKey?: Record<string, unknown>): Promise<void>
   }
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/device' {
-  export function extendMatrixClient(): void
 }
 
 declare module 'matrix-js-sdk/telemetry' {
@@ -1784,12 +1742,6 @@ declare module 'matrix-js-sdk/telemetry' {
     start(): void
     stop(): void
   }
-
-  export function extendMatrixClient(): void
-}
-
-declare module 'matrix-js-sdk/qr-login' {
-  export function extendMatrixClient(): void
 }
 
 declare module 'matrix-js-sdk/dm' {
