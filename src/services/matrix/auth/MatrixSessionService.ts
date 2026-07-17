@@ -50,6 +50,11 @@ const DIRECT_ROOM_READY_TIMEOUT_MS = 3000
 const DIRECT_ROOM_READY_POLL_INTERVAL_MS = 100
 
 class MatrixSessionService extends BaseMatrixService {
+  /**
+   * Get all sessions for the current user.
+   *
+   * @throws Never throws (returns empty array on error).
+   */
   async getSessionList(): Promise<SessionInfo[]> {
     try {
       const client = this.getClient()
@@ -66,6 +71,11 @@ class MatrixSessionService extends BaseMatrixService {
     }
   }
 
+  /**
+   * Toggle the pinned/favourite state of a session.
+   *
+   * @throws Never throws (returns false on error).
+   */
   async setSessionTop(roomId: string, top: boolean): Promise<boolean> {
     try {
       const client = this.getClient() as MatrixClientWithTags
@@ -98,6 +108,11 @@ class MatrixSessionService extends BaseMatrixService {
     }
   }
 
+  /**
+   * Get detailed session information by room ID or query object.
+   *
+   * @throws Never throws (returns null on error).
+   */
   async getSessionDetailWithFriends(query: string | SessionDetailQuery): Promise<SessionDetail | null> {
     try {
       const normalized = this.normalizeQuery(query)

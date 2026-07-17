@@ -100,7 +100,11 @@ class MatrixHttpClient {
   }
 
   /**
-   * 发送底层 HTTP 请求
+   * Issue an HTTP request through the Matrix SDK client.
+   *
+   * @throws {MatrixError} with errcode M_UNKNOWN_TOKEN if the access token is invalid.
+   * @throws {MatrixError} with errcode M_LIMIT_EXCEEDED if rate-limited.
+   * @throws {MatrixError} with httpStatus 5xx for server errors (retried internally).
    */
   async request<T>(
     methodOrOptions:
@@ -247,6 +251,9 @@ class MatrixHttpClient {
 
   /**
    * 发送带错误处理的 HTTP 请求
+   *
+   * @throws {Error} Re-throws the underlying error when throwOnError is true.
+   * @throws {MatrixError} See {@link request} for error details.
    */
   async safeRequest<T>(
     method: MatrixHttpMethod,

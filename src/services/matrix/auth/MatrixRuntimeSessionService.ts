@@ -213,6 +213,11 @@ class MatrixRuntimeSessionService {
     logger.debug('Message cache has been cleared')
   }
 
+  /**
+   * Retrieve stored tokens from the Tauri backend.
+   *
+   * @throws Never throws (returns null tokens on error).
+   */
   async getStoredTokens(): Promise<StoredMatrixTokens> {
     await ensureAppStateReady()
     const result = await invokeWithResult<StoredMatrixTokens>(TauriCommand.GET_USER_TOKENS)
@@ -241,6 +246,12 @@ class MatrixRuntimeSessionService {
     }
   }
 
+  /**
+   * Restore an authenticated session using an existing access token.
+   *
+   * @throws {Error} if uid or accessToken is empty.
+   * @throws {Error} if session restore via loginWithToken fails.
+   */
   async restoreWithAccessToken(options: RestoreMatrixRuntimeSessionOptions): Promise<void> {
     try {
       const {
@@ -327,6 +338,11 @@ class MatrixRuntimeSessionService {
     }
   }
 
+  /**
+   * Authenticate with password credentials and bootstrap the session.
+   *
+   * @throws {Error} if login fails or session info is incomplete.
+   */
   async loginWithPassword(options: MatrixPasswordLoginOptions): Promise<{ uid: string; accessToken: string }> {
     try {
       const {
@@ -412,6 +428,12 @@ class MatrixRuntimeSessionService {
     }
   }
 
+  /**
+   * Authenticate with an SSO login token and bootstrap the session.
+   *
+   * @throws {Error} if loginToken is empty.
+   * @throws {Error} if SSO login fails or session info is incomplete.
+   */
   async loginWithSsoToken(options: MatrixSsoLoginOptions): Promise<{ uid: string; accessToken: string }> {
     try {
       const {
@@ -626,6 +648,11 @@ class MatrixRuntimeSessionService {
     })
   }
 
+  /**
+   * Bootstrap post-login state: sync, presence, search index, and UI.
+   *
+   * @throws {Error} if the user id is missing or any sub-step fails.
+   */
   async bootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
     try {
       const uid = this.port.matrix.getUserId() ?? this.port.user.getUserInfo()?.uid ?? ''
@@ -693,6 +720,11 @@ class MatrixRuntimeSessionService {
     }
   }
 
+  /**
+   * Reset the local runtime session state without server interaction.
+   *
+   * @throws {Error} if token removal or state cleanup fails.
+   */
   async resetLocalSessionState(options: ResetMatrixRuntimeSessionOptions = {}): Promise<void> {
     try {
       const { preserveTokens = false } = options
@@ -771,6 +803,11 @@ class MatrixRuntimeSessionService {
     }
   }
 
+  /**
+   * Log out the current session: stop presence, clear state, and optionally reset all local data.
+   *
+   * @throws Never throws (errors are caught and logged internally).
+   */
   async logoutCurrentSession(options: LogoutMatrixRuntimeSessionOptions = {}): Promise<void> {
     const { resetLocalState = true, preserveTokens = false } = options
     const { resizeWindow, createWebviewWindow } = useWindow()
