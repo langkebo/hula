@@ -1,4 +1,4 @@
-import type { Room } from 'matrix-js-sdk'
+import type { Room, RoomMember } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
@@ -164,6 +164,38 @@ export class MatrixRoomMembershipService {
       logger.error(`[MatrixRoom] 通过别名加入房间失败: ${err}`)
       throw err
     }
+  }
+
+  /**
+   * 获取房间中已邀请（invite）的成员列表
+   *
+   * @param roomId - 房间 ID
+   * @returns 已邀请成员列表，房间不存在时返回空数组
+   */
+  async getInvitedMembers(roomId: string): Promise<RoomMember[]> {
+    const client = this.getClient(false)
+    const room = client.getRoom(roomId)
+    if (!room) {
+      logger.warn(`[MatrixRoom] 获取邀请成员列表时房间不存在: ${roomId}`)
+      return []
+    }
+    return room.getMembersWithMembership('invite')
+  }
+
+  /**
+   * 获取房间中被封禁（ban）的成员列表
+   *
+   * @param roomId - 房间 ID
+   * @returns 被封禁成员列表，房间不存在时返回空数组
+   */
+  async getBannedMembers(roomId: string): Promise<RoomMember[]> {
+    const client = this.getClient(false)
+    const room = client.getRoom(roomId)
+    if (!room) {
+      logger.warn(`[MatrixRoom] 获取封禁成员列表时房间不存在: ${roomId}`)
+      return []
+    }
+    return room.getMembersWithMembership('ban')
   }
 }
 

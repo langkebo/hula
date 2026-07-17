@@ -38,7 +38,7 @@ const i18n = createI18n({
       },
       common: { cancel: '' }
     }
-  }
+  } as any
 })
 
 describe('MobileChatMain - location sharing', () => {

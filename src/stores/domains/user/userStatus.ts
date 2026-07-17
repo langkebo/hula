@@ -1,3 +1,4 @@
+// @ts-expect-error colorthief 3.x d.ts uses named exports but TS resolves as export=; runtime works
 import { getColor } from 'colorthief'
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
