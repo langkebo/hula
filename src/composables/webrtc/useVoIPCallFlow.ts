@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { CallInfo, CallOptions } from '@/services/matrix/media/MatrixVoIPService'
@@ -22,7 +22,7 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
 
   const callId = ref<string | null>(options.initialCallId ?? null)
   const roomId = ref<string>(options.initialRoomId ?? '')
-  const callInfo = ref<CallInfo | null>(null)
+  const callInfo = shallowRef<CallInfo | null>(null)
   const isAudioMuted = ref(false)
   const isVideoEnabled = ref(false)
   const isSpeakerOn = ref(false)
@@ -53,7 +53,7 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
   }
 
   const startCall = async (targetRoomId: string, callOptions: CallOptions): Promise<boolean> => {
-    if (!targetRoomId) {
+    if (!targetRoomId || loading.value) {
       return false
     }
     loading.value = true
@@ -78,7 +78,7 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
 
   const answerCall = async (targetCallId?: string, callOptions?: CallOptions): Promise<boolean> => {
     const id = targetCallId ?? callId.value
-    if (!id) return false
+    if (!id || loading.value) return false
     loading.value = true
     try {
       await matrixVoIPService.answerCall(id, callOptions)
@@ -112,23 +112,26 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
   }
 
   const hangup = async (): Promise<void> => {
-    if (!callId.value) return
+    const id = callId.value
+    if (!id) return
     loading.value = true
     try {
-      await matrixVoIPService.hangupCall(callId.value)
+      await matrixVoIPService.hangupCall(id)
     } catch (err) {
       logger.error('hangup failed', err)
       showFeedback(t('voip.errors.hangup_failed'), 'error')
     } finally {
-      callId.value = null
-      callInfo.value = null
-      isAudioMuted.value = false
-      isVideoEnabled.value = false
-      isSpeakerOn.value = false
-      isScreensharing.value = false
-      if (unsubscribeCallUpdate) {
-        unsubscribeCallUpdate()
-        unsubscribeCallUpdate = null
+      if (callId.value === id) {
+        callId.value = null
+        callInfo.value = null
+        isAudioMuted.value = false
+        isVideoEnabled.value = false
+        isSpeakerOn.value = false
+        isScreensharing.value = false
+        if (unsubscribeCallUpdate) {
+          unsubscribeCallUpdate()
+          unsubscribeCallUpdate = null
+        }
       }
       loading.value = false
     }
