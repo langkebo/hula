@@ -184,10 +184,7 @@ export class RoomOperations extends BaseMatrixService {
   async getInviteBlocklist(roomId: string): Promise<string[]> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_blocklist`
-      )
+      const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/invite_blocklist`)
       return (result as { blocked?: string[] }).blocked ?? []
     } catch {
       return []
@@ -196,21 +193,15 @@ export class RoomOperations extends BaseMatrixService {
 
   async setInviteBlocklist(roomId: string, blocked: string[]): Promise<void> {
     const client = this.getClient()
-    await client.http.authedRequest(
-      'POST',
-      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_blocklist`,
-      undefined,
-      { blocked }
-    )
+    await client.http.authedRequest('POST', `/rooms/${encodeURIComponent(roomId)}/invite_blocklist`, undefined, {
+      blocked
+    })
   }
 
   async getInviteAllowlist(roomId: string): Promise<string[]> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_allowlist`
-      )
+      const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/invite_allowlist`)
       return (result as { allowed?: string[] }).allowed ?? []
     } catch {
       return []
@@ -219,12 +210,9 @@ export class RoomOperations extends BaseMatrixService {
 
   async setInviteAllowlist(roomId: string, allowed: string[]): Promise<void> {
     const client = this.getClient()
-    await client.http.authedRequest(
-      'POST',
-      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite_allowlist`,
-      undefined,
-      { allowed }
-    )
+    await client.http.authedRequest('POST', `/rooms/${encodeURIComponent(roomId)}/invite_allowlist`, undefined, {
+      allowed
+    })
   }
 
   // --- Lifecycle (was LifecycleService) ---
@@ -306,7 +294,7 @@ export class RoomOperations extends BaseMatrixService {
     const client = this.getClient()
     const body: Record<string, unknown> = { text, target_lang: targetLang }
     if (sourceLang) body.source_lang = sourceLang
-    return (await client.http.authedRequest('POST', '/_matrix/client/v3/translate', undefined, body)) as {
+    return (await client.http.authedRequest('POST', '/translate', undefined, body)) as {
       translated_text: string
     }
   }
@@ -365,10 +353,7 @@ export class RoomOperations extends BaseMatrixService {
   async getStickyEvents(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`
-      )
+      const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/sticky_events`)
       return result as Record<string, unknown>
     } catch {
       return {}
@@ -381,12 +366,7 @@ export class RoomOperations extends BaseMatrixService {
       return
     }
     const client = this.getClient()
-    await client.http.authedRequest(
-      'POST',
-      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/sticky_events`,
-      undefined,
-      events
-    )
+    await client.http.authedRequest('POST', `/rooms/${encodeURIComponent(roomId)}/sticky_events`, undefined, events)
   }
 
   // --- MemberProfile (was MemberProfileService) ---

@@ -12,7 +12,7 @@ class MatrixPushService extends BaseMatrixService {
   async getPushers(): Promise<IPusher[]> {
     const client = this.getClient()
     try {
-      const response = (await client.http.authedRequest('GET', '/_matrix/client/v3/pushers')) as { pushers?: unknown }
+      const response = (await client.http.authedRequest('GET', '/pushers')) as { pushers?: unknown }
       return Array.isArray(response.pushers) ? (response.pushers as IPusher[]) : []
     } catch (err) {
       logger.error(`[MatrixPush] 获取 pushers 失败: ${err}`)
@@ -42,7 +42,7 @@ class MatrixPushService extends BaseMatrixService {
         await pushManager.removePusher(pushkey, appId, deviceId || undefined)
         logger.info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
       } else {
-        await client.http.authedRequest('POST', '/_matrix/client/v3/pushers/set', undefined, {
+        await client.http.authedRequest('POST', '/pushers/set', undefined, {
           pushkey,
           app_id: appId,
           kind: null
@@ -58,7 +58,7 @@ class MatrixPushService extends BaseMatrixService {
   async setPushRuleEnabled(scope: PushRuleScope, kind: PushRuleKind | string, ruleId: string, enabled: boolean) {
     const client = this.getClient()
     try {
-      const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
+      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
         ruleId
       )}/enabled`
       await client.http.authedRequest('PUT', path, undefined, { enabled })
@@ -77,7 +77,7 @@ class MatrixPushService extends BaseMatrixService {
   ) {
     const client = this.getClient()
     try {
-      const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
+      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
         ruleId
       )}/actions`
       await client.http.authedRequest('PUT', path, undefined, { actions })
@@ -91,7 +91,7 @@ class MatrixPushService extends BaseMatrixService {
   async muteRoom(roomId: string): Promise<void> {
     const client = this.getClient()
     try {
-      const path = `/_matrix/client/v3/pushrules/global/room/${encodeURIComponent(roomId)}`
+      const path = `/pushrules/global/room/${encodeURIComponent(roomId)}`
       await client.http.authedRequest('PUT', path, undefined, {
         actions: ['dont_notify'],
         enabled: true
@@ -106,7 +106,7 @@ class MatrixPushService extends BaseMatrixService {
   async unmuteRoom(roomId: string): Promise<void> {
     const client = this.getClient()
     try {
-      const path = `/_matrix/client/v3/pushrules/global/room/${encodeURIComponent(roomId)}`
+      const path = `/pushrules/global/room/${encodeURIComponent(roomId)}`
       await client.http.authedRequest('DELETE', path)
       logger.info(`[MatrixPush] 取消房间静音成功: ${roomId}`)
     } catch (err) {
@@ -153,7 +153,7 @@ class MatrixPushService extends BaseMatrixService {
           device_id: pusherData.device_id || deviceId
         }
         if (pusherData.profile_tag) body.profile_tag = pusherData.profile_tag
-        await client.http.authedRequest('POST', '/_matrix/client/v3/pushers/set', undefined, body)
+        await client.http.authedRequest('POST', '/pushers/set', undefined, body)
         logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
       }
     } catch (err) {
@@ -172,7 +172,7 @@ class MatrixPushService extends BaseMatrixService {
   ): Promise<void> {
     const client = this.getClient()
     try {
-      const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
+      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
       const body: Record<string, unknown> = { actions }
       if (conditions) body.conditions = conditions
       if (pattern) body.pattern = pattern
@@ -187,7 +187,7 @@ class MatrixPushService extends BaseMatrixService {
   async deletePushRule(scope: PushRuleScope, kind: PushRuleKind | string, ruleId: string): Promise<void> {
     const client = this.getClient()
     try {
-      const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
+      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
       await client.http.authedRequest('DELETE', path)
       logger.info(`[MatrixPush] 删除推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
