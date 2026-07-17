@@ -56,6 +56,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Ratchet Guard
+        run: pnpm check:ratchet
+
       - name: Lint
         run: pnpm lint
 
@@ -71,6 +74,10 @@ jobs:
 
       - name: Unit Tests
         run: pnpm test:unit
+
+      - name: SDK Pin Verification
+        continue-on-error: true
+        run: pnpm verify:sdk-pin
 
       - name: Build
         run: pnpm build

@@ -20,23 +20,23 @@ vi.mock('@/composables/encryption/useDehydratedDevice', async () => {
       createDehydratedDevice: mockCreateDehydratedDevice,
       claimDehydratedDevice: vi.fn(),
       deleteDehydratedDevice: mockDeleteDehydratedDevice,
-      getDehydratedDeviceKey: vi.fn(),
-    }),
+      getDehydratedDeviceKey: vi.fn()
+    })
   }
 })
 
 vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key }),
+  useI18n: () => ({ t: (key: string) => key })
 }))
 
 const dialogStub = {
   props: ['show'],
-  template: '<div data-test="van-dialog" v-if="show"><slot /></div>',
+  template: '<div data-test="van-dialog" v-if="show"><slot /></div>'
 }
 
 const renderCellStub = {
   props: ['title', 'label'],
-  template: '<div class="van-cell">{{ title }} {{ label }} <slot name="right-icon" /></div>',
+  template: '<div class="van-cell">{{ title }} {{ label }} <slot name="right-icon" /></div>'
 }
 
 function createWrapper() {
@@ -48,9 +48,9 @@ function createWrapper() {
         'van-button': { template: '<button><slot /></button>' },
         'van-cell-group': { template: '<div class="van-cell-group"><slot /></div>' },
         'van-cell': renderCellStub,
-        'van-loading': { template: '<div class="van-loading" />' },
-      },
-    },
+        'van-loading': { template: '<div class="van-loading" />' }
+      }
+    }
   })
 }
 

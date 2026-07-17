@@ -22,20 +22,16 @@ export const CRYPTO = {
   ROOM_KEYS_VERSION_BY_ID: (version: string) => `/room_keys/version/${version}`,
   ROOM_KEYS_KEYS: '/room_keys/keys',
   ROOM_KEYS_KEYS_BY_ROOM: (roomId: string) => `/room_keys/keys/${roomId}`,
-  ROOM_KEYS_KEYS_BY_SESSION: (roomId: string, sessionId: string) =>
-    `/room_keys/keys/${roomId}/${sessionId}`,
+  ROOM_KEYS_KEYS_BY_SESSION: (roomId: string, sessionId: string) => `/room_keys/keys/${roomId}/${sessionId}`,
   ROOM_KEYS_RECOVER: '/room_keys/recover',
   ROOM_KEYS_RECOVERY_PROGRESS: (version: string) => `/room_keys/recovery/${version}/progress`,
   ROOM_KEYS_VERIFY: (version: string) => `/room_keys/verify/${version}`,
   ROOM_KEYS_BATCH_RECOVER: '/room_keys/batch_recover',
-  ROOM_KEYS_RECOVER_ROOM: (version: string, roomId: string) =>
-    `/room_keys/recover/${version}/${roomId}`,
+  ROOM_KEYS_RECOVER_ROOM: (version: string, roomId: string) => `/room_keys/recover/${version}/${roomId}`,
   ROOM_KEYS_RECOVER_SESSION: (version: string, roomId: string, sessionId: string) =>
     `/room_keys/recover/${version}/${roomId}/${sessionId}`,
-  ROOM_KEYS_EXPORT: (version?: string) =>
-    version ? `/room_keys/export/${version}` : '/room_keys/export',
-  ROOM_KEYS_IMPORT: (version?: string) =>
-    version ? `/room_keys/import/${version}` : '/room_keys/import',
+  ROOM_KEYS_EXPORT: (version?: string) => (version ? `/room_keys/export/${version}` : '/room_keys/export'),
+  ROOM_KEYS_IMPORT: (version?: string) => (version ? `/room_keys/import/${version}` : '/room_keys/import'),
   ROOM_KEYS_REQUEST: '/room_keys/request',
   VERIFY_START: PREFIX_V1 + '/keys/device_signing/verify_start',
   VERIFY_ACCEPT: PREFIX_V1 + '/keys/device_signing/verify_accept',
@@ -50,8 +46,7 @@ export const CRYPTO = {
   KEY_ROTATION_STATUS: PREFIX_V1 + '/keys/rotation/status',
   KEY_ROTATION_CHECK: PREFIX_V1 + '/keys/rotation/check',
   KEY_ROTATION_ROTATE: PREFIX_V1 + '/keys/rotation/rotate',
-  KEY_ROTATION_HISTORY: (deviceId: string) =>
-    `${PREFIX_V1}/keys/rotation/history/${encodeURIComponent(deviceId)}`,
+  KEY_ROTATION_HISTORY: (deviceId: string) => `${PREFIX_V1}/keys/rotation/history/${encodeURIComponent(deviceId)}`,
   KEY_ROTATION_REVOKE: PREFIX_V1 + '/keys/rotation/revoke',
   KEY_ROTATION_CONFIG: PREFIX_V1 + '/keys/rotation/config'
 } as const

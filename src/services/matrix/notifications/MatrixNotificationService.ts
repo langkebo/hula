@@ -371,10 +371,7 @@ class MatrixNotificationService extends BaseMatrixService {
   async ackNotification(notificationId: string): Promise<boolean> {
     const client = this.getNotificationClient()
     try {
-      await client.http.authedRequest(
-        'POST',
-        MATRIX_PATHS.NOTIFICATION.NOTIFICATIONS_ACK(notificationId)
-      )
+      await client.http.authedRequest('POST', MATRIX_PATHS.NOTIFICATION.NOTIFICATIONS_ACK(notificationId))
       logger.info(`[MatrixNotification] 通知确认成功: ${notificationId}`)
       return true
     } catch (err) {
@@ -418,12 +415,7 @@ class MatrixNotificationService extends BaseMatrixService {
   private async sendReadReceipt(roomId: string, eventId: string): Promise<boolean> {
     const client = this.getNotificationClient()
     try {
-      await client.http.authedRequest(
-        'POST',
-        MATRIX_PATHS.ROOM.RECEIPT(roomId, 'm.read', eventId),
-        undefined,
-        {}
-      )
+      await client.http.authedRequest('POST', MATRIX_PATHS.ROOM.RECEIPT(roomId, 'm.read', eventId), undefined, {})
       logger.info(`[MatrixNotification] 已读回执发送成功: ${roomId}/${eventId}`)
       return true
     } catch (err) {

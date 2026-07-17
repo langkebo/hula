@@ -112,7 +112,8 @@
           },
           "style": {
             "useNamingConvention": "off",
-            "useTemplate": "off"
+            "useTemplate": "off",
+            "useVueMultiWordComponentNames": "off"
           },
           "suspicious": {
             "noExplicitAny": "warn",

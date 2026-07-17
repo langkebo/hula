@@ -1,5 +1,5 @@
-import { http, HttpResponse } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { HttpResponse, http } from 'msw'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import { getDomain, matrixUrlPreviewService, simplifyUrl } from '../MatrixUrlPreviewService'
 
@@ -27,7 +27,7 @@ vi.spyOn(matrixUrlPreviewService as any, 'client', 'get').mockReturnValue({
   getUserId: () => '@test:example.com',
   getMediaApiUrl: () => TEST_BASE_URL,
   http: {
-    authedRequest: async (arg1: unknown, arg2: unknown, arg3?: unknown, arg4?: unknown) => {
+    authedRequest: async (arg1: unknown, arg2: unknown, arg3?: unknown, _arg4?: unknown) => {
       // Detect argument order: if arg1 is a string method, use correct order.
       // If arg1 is an object, the real method is arg2 and the real path is arg3 (buggy order).
       const method = typeof arg1 === 'string' ? arg1 : (arg2 as string)
@@ -37,7 +37,7 @@ vi.spyOn(matrixUrlPreviewService as any, 'client', 'get').mockReturnValue({
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer test-token'
+          Authorization: 'Bearer test-token'
         }
       })
       if (!response.ok) {
