@@ -183,17 +183,20 @@ export function useMessageMultiSelect(options: UseMessageMultiSelectOptions) {
    * 返回成功删除的数量。
    */
   const batchDelete = async (): Promise<number> => {
+    if (processing.value) return 0
     if (selectedMessages.value.length === 0) {
       showFeedback(t('mobile_chat.multi_select.empty_selection'), 'warning')
       return 0
     }
     processing.value = true
-    const total = selectedMessages.value.length
+    const rid = roomId.value
+    const targets = [...selectedMessages.value]
+    const total = targets.length
     let successCount = 0
     try {
-      for (const msg of selectedMessages.value) {
+      for (const msg of targets) {
         try {
-          await matrixMessageService.recallMessage(roomId.value, msg.message.id)
+          await matrixMessageService.recallMessage(rid, msg.message.id)
           successCount++
         } catch (err) {
           logger.error(`[batchDelete] 删除消息失败: ${msg.message.id}`, err)
