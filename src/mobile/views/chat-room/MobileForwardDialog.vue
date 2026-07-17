@@ -27,41 +27,41 @@
       </div>
 
       <!-- 搜索框 -->
-      <van-search
-        v-model="searchQuery"
-        :placeholder="t('message.forward.search_placeholder')"
-        shape="round" />
+      <van-search v-model="searchQuery" :placeholder="t('message.forward.search_placeholder')" shape="round" />
 
       <!-- 房间列表 -->
       <div class="mobile-forward-dialog__list">
         <div v-if="filteredRooms.length === 0" class="mobile-forward-dialog__empty">
           {{ t('message.forward.no_rooms') }}
         </div>
-        <van-cell
-          v-for="room in filteredRooms"
-          :key="room.roomId"
-          clickable
-          data-test="forward-room-item"
-          :data-room-id="room.roomId"
-          @click="handleToggleRoom(room.roomId)">
-          <template #icon>
-            <van-checkbox
-              :model-value="flow.isRoomSelected(room.roomId)"
-              shape="round"
-              class="mobile-forward-dialog__checkbox" />
+        <SmartVirtualList
+          v-else
+          class="h-full overflow-y-auto"
+          :items="filteredRooms"
+          :item-height="56"
+          :buffer="6"
+          key-field="roomId">
+          <template #default="{ item: room }">
+            <van-cell
+              clickable
+              data-test="forward-room-item"
+              :data-room-id="room.roomId"
+              @click="handleToggleRoom(room.roomId)">
+              <template #icon>
+                <van-checkbox
+                  :model-value="flow.isRoomSelected(room.roomId)"
+                  shape="round"
+                  class="mobile-forward-dialog__checkbox" />
+              </template>
+              <template #title>
+                <div class="mobile-forward-dialog__room-info">
+                  <van-image round width="36" height="36" :src="room.avatar || defaultAvatar" fit="cover" />
+                  <span class="mobile-forward-dialog__room-name">{{ room.name }}</span>
+                </div>
+              </template>
+            </van-cell>
           </template>
-          <template #title>
-            <div class="mobile-forward-dialog__room-info">
-              <van-image
-                round
-                width="36"
-                height="36"
-                :src="room.avatar || defaultAvatar"
-                fit="cover" />
-              <span class="mobile-forward-dialog__room-name">{{ room.name }}</span>
-            </div>
-          </template>
-        </van-cell>
+        </SmartVirtualList>
       </div>
 
       <!-- 底部操作栏 -->
@@ -87,6 +87,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMessageForward } from '@/composables/messaging/useMessageForward'
+import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { createLogger } from '@/utils/Logger'
 
@@ -277,9 +278,7 @@ watch(
 
   &__list {
     flex: 1;
-    overflow-y: auto;
     min-height: 200px;
-    max-height: calc(75vh - 220px);
   }
 
   &__empty {
