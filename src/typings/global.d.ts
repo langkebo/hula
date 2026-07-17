@@ -63,11 +63,6 @@ export type MsgId = {
   fromUid: string
 }
 
-// 模块增强声明，以扩展 MatrixClient 类型
-import { MatrixClient } from 'matrix-js-sdk/src/client';
-import { MatrixClientExtensionMethods } from 'matrix-js-sdk/src/matrix-client-extensions.d';
-
-declare module 'matrix-js-sdk/src/client' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  export interface MatrixClient extends MatrixClientExtensionMethods {}
-}
+// 模块增强声明已移除（清单 B）：
+// SDK 公开 MatrixClient（matrix-js-sdk/client）已内置 extends MatrixClientExtensionMethods，
+// 包含 getRoomManager() 等全部扩展方法。之前的 deep-path 增强冗余且违反 sdk-boundary 检查。
