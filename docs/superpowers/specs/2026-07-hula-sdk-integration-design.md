@@ -1,8 +1,8 @@
 # Design Spec: HuLa 前端全链路优化 —— matrix-js-sdk ↔ synapse-rust 无缝对接
 
-- 日期:2026-07-16
+- 日期:2026-07-17
 - 分支:master
-- 状态:DRAFT(待评审)
+- 状态:APPROVED
 - 决策来源:/office-hours session(D1-D8)+ /grilling session(G1-G5),均已逐项确认
 - 上游设计文档:`~/.gstack/projects/langkebo-hula/ljf-master-design-20260716-223852.md`
 
@@ -13,7 +13,7 @@ HuLa 前端与 synapse-rust 后端的对接链路存在两个已知正确性 bug
 1. **URL 前缀重复**:调用方硬编码 `/_matrix` 全路径(src 内 348 处,基线已锁定)撞上 SDK `authedRequest` 自动加前缀,产生双前缀请求。`ClientPrefix` 枚举使用 0 次,两种路径约定混用是根因土壤。其中约半数硬编码已集中在 `src/services/matrix/paths/` 常量目录。
 2. **token refresh 失效**:token 过期后未正确静默刷新,用户掉线。属认证安全问题。
 
-同时移动端/桌面端存在 32 项 UI 功能缺失(清单见 `hula_UI_UX_Optimization_Report.md`)。
+同时移动端/桌面端存在 UI 功能缺失(P0 已清零,P1/P2 待推进,以 `docs/superpowers/plans/2026-07-15-ui-ux-optimization.md` 的 T1-T11 任务清单为准)。
 
 两个 bug 均带着 3871 个绿色测试逃逸到线上,机制已定位:379 个测试文件中 285 个使用 `vi.mock`,其中 22 个整体 mock 掉 `MatrixClientService`——URL 拼接与 token refresh 逻辑在测试中根本不执行(「假绿」)。
 
@@ -121,8 +121,8 @@ SDK 通过 `meta/sdk-pin.json` 锁定在 2026-05-14(commit d6bebd9,mode=link),CI
 | ratchet 的 lint 禁增被绕过(直接改基线) | 低 | 收敛失效 | 基线文件改动在 PR review 中显性可见;基线只允许单调下降 |
 | UI 分批迁移路径常量时引入行为变化 | 中 | 局部回归 | 卡口 + 契约测试兜底;`paths/` 目录约占硬编码半数,可整目录切换降低散点风险 |
 
-## 8. 遗留未决问题
+## 8. 遗留未决问题（全部已决议）
 
-1. SDK 目标升级 commit 待定(建议取 upstream 已验证 tag,Batch 2 前确定)。
-2. 32 项 UI 清单的 P0/P1 分级需拍板(建议标准:阻断核心聊天路径 = P0)。
-3. e2e 用 synapse-rust 实例形态(本地 Docker vs 共享环境)待定。
+1. **SDK 目标升级 commit** — 已决议:升至本地 HEAD `6ca8c3be9f7c084f5e1516dc9038c2eaddc7b43f` (v40.2.0)。已通过 `pnpm sdk:pin:refresh` 重锁 `meta/sdk-pin.json`,vue-tsc 0 错误,vitest 4110/4113 绿(3 失败属预存 WIP 非回归)。Commit: 61cdb5f1。
+2. **UI 缺失 P0/P1 分级** — 已决议:阻断核心聊天路径 = P0。P0 已全部清零(布局拥挤/空状态粗糙/错误反馈不闭环),P1 待推进 T3(消息操作栏)、T1(暗色令牌)、T2(DESIGN.md)、T11(A11y 审计)。以 `docs/superpowers/plans/2026-07-15-ui-ux-optimization.md` 的 T1-T11 任务列表为准。
+3. **e2e synapse-rust 实例形态** — 已决议:共享环境 + e2e 专用账号(如 `e2e-test@hula.local`)。当前 `playwright.config.ts` 已通过 `MATRIX_LIVE_HOMESERVER_URL` 支持。本地 Docker 作为离线开发可选 fallback,不进 CI。
