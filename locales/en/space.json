@@ -162,6 +162,7 @@
     "room_id_placeholder": "Enter room ID",
     "suggested": "Suggested",
     "no_members": "No members",
+    "show_all_members": "Show all {count} members",
     "no_rooms": "No rooms",
     "leave": "Leave Space",
     "delete": "Delete Space",
