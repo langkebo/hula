@@ -93,7 +93,7 @@ class MatrixDeviceService extends BaseMatrixService {
         return devices
       } else {
         // 降级到直接 HTTP 调用
-        const response = (await client.http.authedRequest('GET', '/_matrix/client/v3/devices')) as DevicesResponse
+        const response = (await client.http.authedRequest('GET', '/devices')) as DevicesResponse
         logger.info(`[DeviceService] 获取设备列表成功: ${response.devices.length} 个设备`)
         return response.devices
       }
@@ -123,7 +123,7 @@ class MatrixDeviceService extends BaseMatrixService {
         // 降级到直接 HTTP 调用
         const response = (await client.http.authedRequest(
           'GET',
-          `/_matrix/client/v3/devices/${encodeURIComponent(deviceId)}`
+          `/devices/${encodeURIComponent(deviceId)}`
         )) as DeviceDetailResponse
         logger.info(`[DeviceService] 获取设备详情成功: ${deviceId}`)
         // 返回嵌套的 device 对象或扁平字段
@@ -173,7 +173,7 @@ class MatrixDeviceService extends BaseMatrixService {
         // 降级到直接 HTTP 调用
         const response = (await client.http.authedRequest(
           'PUT',
-          `/_matrix/client/v3/devices/${encodeURIComponent(deviceId)}`,
+          `/devices/${encodeURIComponent(deviceId)}`,
           undefined,
           { display_name: displayName }
         )) as DeviceUpdateResponse
@@ -205,7 +205,7 @@ class MatrixDeviceService extends BaseMatrixService {
         // 降级到直接 HTTP 调用
         await client.http.authedRequest(
           'DELETE',
-          `/_matrix/client/v3/devices/${encodeURIComponent(deviceId)}`,
+          `/devices/${encodeURIComponent(deviceId)}`,
           undefined,
           auth ? { auth } : undefined
         )
@@ -234,7 +234,7 @@ class MatrixDeviceService extends BaseMatrixService {
         logger.info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)
       } else {
         // 降级到直接 HTTP 调用
-        await client.http.authedRequest('POST', '/_matrix/client/v3/delete_devices', undefined, {
+        await client.http.authedRequest('POST', '/delete_devices', undefined, {
           device_ids: deviceIds,
           auth
         })
@@ -272,7 +272,7 @@ class MatrixDeviceService extends BaseMatrixService {
         // 降级到直接 HTTP 调用
         const response = (await client.http.authedRequest(
           'POST',
-          '/_matrix/client/v3/keys/device_list_updates',
+          '/keys/device_list_updates',
           undefined,
           request
         )) as DeviceListUpdatesResponse
@@ -314,7 +314,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async getRoomKeyRequests(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/room_keys/request')
+      const result = await client.http.authedRequest('GET', '/room_keys/request')
       logger.info('[DeviceService] 获取密钥请求列表成功')
       return (result as { requests?: Array<Record<string, unknown>> }).requests ?? []
     } catch (err) {
@@ -326,7 +326,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async deleteRoomKeyRequest(requestId: string): Promise<boolean> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('DELETE', `/_matrix/client/v3/room_keys/request/${encodeURIComponent(requestId)}`)
+      await client.http.authedRequest('DELETE', `/room_keys/request/${encodeURIComponent(requestId)}`)
       logger.info(`[DeviceService] 删除密钥请求成功: ${requestId}`)
       return true
     } catch (err) {
