@@ -19,8 +19,7 @@ export class MatrixTokenManager {
     this.clear()
     if (!refreshToken || expiresInMs <= 0) return
 
-    const effectiveExpiry = expiresInMs < 1000 ? expiresInMs * 1000 : expiresInMs
-    const refreshAt = Math.max(effectiveExpiry - 60000, 30000)
+    const refreshAt = Math.max(expiresInMs - 60000, 30000)
     logger.info(`[TokenRefresh] Scheduled refresh in ${refreshAt}ms (expiresInMs=${expiresInMs})`)
 
     this.timer = setTimeout(() => {
@@ -76,7 +75,11 @@ export class MatrixTokenManager {
           await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? '')
         }
         logger.info('[TokenRefresh] Access token refreshed successfully')
-        this.schedule(client, newRefreshToken ?? refreshToken, newExpiresInMs ?? 0)
+        if (newExpiresInMs && newExpiresInMs > 0) {
+          this.schedule(client, newRefreshToken ?? refreshToken, newExpiresInMs)
+        } else {
+          logger.info('[TokenRefresh] Server returned no expiry, auto-refresh chain stops')
+        }
       }
     } catch (err: unknown) {
       const httpStatus = (err as { httpStatus?: number })?.httpStatus

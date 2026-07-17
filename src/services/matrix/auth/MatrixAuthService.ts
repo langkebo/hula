@@ -621,7 +621,7 @@ export class MatrixAuthService {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/register/captcha/status', { session })
+      const result = await client.http.authedRequest('GET', '/register/captcha/status', { session })
       return result as { verified: boolean }
     } catch (_err) {
       throw new Error(useI18nGlobal().t('matrix_error.auth.query_code_status_failed'))
@@ -635,7 +635,7 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/account/whoami')
+      const result = await client.http.authedRequest('GET', '/account/whoami')
       const r = result as Record<string, unknown>
       return {
         userId: (r.user_id as string) ?? '',
@@ -653,12 +653,7 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest(
-        'DELETE',
-        '/_matrix/client/v3/register/captcha/clean',
-        undefined,
-        {}
-      )
+      const result = await client.http.authedRequest('DELETE', '/register/captcha/clean', undefined, {})
       const r = result as Record<string, unknown>
       return { cleaned: (r.cleaned as number) ?? 0 }
     } catch (err) {
@@ -771,7 +766,7 @@ export class MatrixAuthService {
     }
 
     try {
-      await client.http.authedRequest('POST', '/_matrix/client/v3/logout/all')
+      await client.http.authedRequest('POST', '/logout/all')
     } catch (err) {
       throw normalizeSdkMatrixError(err, '全局登出失败')
     }
@@ -784,7 +779,7 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/capabilities')
+      const result = await client.http.authedRequest('GET', '/capabilities')
       return result as Record<string, unknown>
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取能力声明失败')
@@ -798,9 +793,15 @@ export class MatrixAuthService {
     }
 
     try {
-      await client.http.authedRequest('POST', '/_matrix/client/v1/login/qr/invalidate', undefined, {
-        qr_id: qrId
-      })
+      await client.http.authedRequest(
+        'POST',
+        '/login/qr/invalidate',
+        undefined,
+        {
+          qr_id: qrId
+        },
+        { prefix: '/_matrix/client/v1' }
+      )
     } catch (err) {
       throw normalizeSdkMatrixError(err, '二维码失效操作失败')
     }
@@ -818,7 +819,7 @@ export class MatrixAuthService {
       if (redirectUrl) queryParams.redirectUrl = redirectUrl
       const result = await client.http.authedRequest(
         'GET',
-        '/_matrix/client/v3/login/saml/redirect',
+        '/login/saml/redirect',
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )
       return (result as { redirect_url?: string }).redirect_url ?? ''
@@ -847,7 +848,7 @@ export class MatrixAuthService {
 
     try {
       const queryParams = redirectUrl ? { redirectUrl } : undefined
-      const result = await client.http.authedRequest('POST', '/_matrix/client/v3/login/saml/logout', queryParams)
+      const result = await client.http.authedRequest('POST', '/login/saml/logout', queryParams)
       return (result as { redirect_url?: string }).redirect_url ?? null
     } catch (err) {
       throw normalizeSdkMatrixError(err, 'SAML 登出失败')
@@ -861,35 +862,10 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/login/saml/metadata')
+      const result = await client.http.authedRequest('GET', '/login/saml/metadata')
       return result as Record<string, unknown>
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取 SAML 元数据失败')
-    }
-  }
-
-  static async refreshAccessToken(refreshToken: string): Promise<{
-    accessToken: string
-    expiresIn?: number
-    refreshToken?: string
-  }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const result = await client.http.authedRequest('POST', '/_matrix/client/v3/refresh', undefined, {
-        refresh_token: refreshToken
-      })
-      const r = result as Record<string, unknown>
-      return {
-        accessToken: (r.access_token as string) ?? '',
-        expiresIn: r.expires_in as number | undefined,
-        refreshToken: r.refresh_token as string | undefined
-      }
-    } catch (err) {
-      throw normalizeSdkMatrixError(err, '刷新访问令牌失败')
     }
   }
 
@@ -917,7 +893,9 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/versions')
+      const result = await client.http.authedRequest('GET', '/versions', undefined, undefined, {
+        prefix: '/_matrix/client'
+      })
       const r = result as Record<string, unknown>
       return {
         versions: (r.versions as string[]) ?? [],
@@ -959,7 +937,7 @@ export class MatrixAuthService {
       if (redirectUrl) queryParams.redirectUrl = redirectUrl
       const result = await client.http.authedRequest(
         'GET',
-        '/_matrix/client/v3/login/sso/redirect',
+        '/login/sso/redirect',
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )
       return (result as { redirect_url?: string }).redirect_url ?? ''

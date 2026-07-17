@@ -68,27 +68,6 @@ describe('MatrixTokenManager', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('handles millisecond-to-millisecond conversion correctly (expiresInMs < 1000 treated as seconds)', async () => {
-    const client = createMockClient({
-      http: {
-        request: vi.fn().mockResolvedValue({
-          access_token: 'new-at',
-          refresh_token: 'new-rt',
-          expires_in_ms: 7200000
-        })
-      }
-    })
-    // expiresInMs = 900 which is < 1000, so treated as seconds → 900000ms effective
-    manager.schedule(client, 'rt1', 900)
-
-    // Fast-forward past the scheduled time to trigger the refresh
-    await vi.advanceTimersByTimeAsync(900000)
-
-    expect(client.http.request).toHaveBeenCalledWith('POST', '/refresh', undefined, {
-      refresh_token: 'rt1'
-    })
-  })
-
   it('persists refreshed token on success', async () => {
     const client = createMockClient({
       http: {
@@ -176,6 +155,18 @@ describe('MatrixTokenManager', () => {
 
     expect(logoutExpiredSessionMock).not.toHaveBeenCalled()
     expect(vi.getTimerCount()).toBeGreaterThan(0)
+  })
+
+  it('schedule 只按毫秒解释 expiresInMs(不再把小值当秒)', async () => {
+    const request = vi.fn().mockResolvedValue({ access_token: 'x' })
+    const client = createMockClient({ http: { request }, setAccessToken: vi.fn() })
+
+    // 600ms 的过期时间 → refreshAt = max(600-60000, 30000) = 30000
+    manager.schedule(client, 'rt1', 600)
+    await vi.advanceTimersByTimeAsync(29999)
+    expect(request).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(request).toHaveBeenCalledTimes(1)
   })
 
   it('401(token 失效)仍触发登出清理', async () => {
