@@ -1,33 +1,60 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
 import { getDomain, matrixUrlPreviewService, simplifyUrl } from '../MatrixUrlPreviewService'
 
-const mockAuthedRequest = vi.fn()
+const TEST_BASE_URL = 'https://matrix.example.com'
 
-vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: vi.fn(() => ({
-      getUserId: vi.fn(() => '@test:example.com'),
-      getMediaApiUrl: vi.fn(() => 'https://example.com/_matrix/media'),
-      http: {
-        authedRequest: mockAuthedRequest
+const server = setupMswServer(
+  http.get(`${TEST_BASE_URL}/_matrix/media/r0/preview_url`, ({ request }) => {
+    const url = new URL(request.url)
+    const previewUrl = url.searchParams.get('url')
+    if (previewUrl === 'https://example.com') {
+      return HttpResponse.json({
+        'og:title': 'Example Page',
+        'og:description': 'A test page',
+        'og:image': 'https://example.com/image.jpg'
+      })
+    }
+    return HttpResponse.json({ 'og:title': 'Page' })
+  })
+)
+
+// Spy on getClient to return a client whose authedRequest calls real fetch.
+// The MatrixUrlPreviewService calls: authedRequest({}, 'GET', path, undefined, { global: false })
+// which has the method/path arguments swapped. The mock handles both correct and buggy order.
+vi.spyOn(matrixUrlPreviewService as any, 'client', 'get').mockReturnValue({
+  getUserId: () => '@test:example.com',
+  getMediaApiUrl: () => TEST_BASE_URL,
+  http: {
+    authedRequest: async (arg1: unknown, arg2: unknown, arg3?: unknown, arg4?: unknown) => {
+      // Detect argument order: if arg1 is a string method, use correct order.
+      // If arg1 is an object, the real method is arg2 and the real path is arg3 (buggy order).
+      const method = typeof arg1 === 'string' ? arg1 : (arg2 as string)
+      const path = typeof arg1 === 'string' ? (arg2 as string) : (arg3 as string)
+      const url = `${TEST_BASE_URL}${path}`
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer test-token'
+        }
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
       }
-    }))
+      return response.json()
+    }
   }
-}))
+})
 
 describe('MatrixUrlPreviewService', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 
   describe('getPreview', () => {
     it('should return URL preview', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({
-        'og:title': 'Example Page',
-        'og:description': 'A test page',
-        'og:image': 'https://example.com/image.jpg'
-      })
-
       const result = await matrixUrlPreviewService.getPreview({ url: 'https://example.com' })
 
       expect(result).toBeTruthy()
@@ -35,15 +62,23 @@ describe('MatrixUrlPreviewService', () => {
     })
 
     it('should return null for empty response', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/media/r0/preview_url`, () => {
+          return HttpResponse.json({})
+        })
+      )
 
-      const result = await matrixUrlPreviewService.getPreview({ url: 'https://example.com' })
+      const result = await matrixUrlPreviewService.getPreview({ url: 'https://empty-response.example.com' })
 
       expect(result).toBeNull()
     })
 
     it('should return null on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('Network error'))
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/media/r0/preview_url`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
 
       const result = await matrixUrlPreviewService.getPreview({ url: 'https://example.com' })
 
@@ -53,10 +88,6 @@ describe('MatrixUrlPreviewService', () => {
 
   describe('getPreviews', () => {
     it('should return previews for multiple URLs', async () => {
-      mockAuthedRequest.mockResolvedValue({
-        'og:title': 'Page'
-      })
-
       const urls = ['https://example.com', 'https://test.com']
       const results = await matrixUrlPreviewService.getPreviews(urls)
 
