@@ -50,7 +50,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
 
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/timeline`,
+        MATRIX_PATHS.ROOM.TIMELINE(roomId),
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )
       return result as { chunk: unknown[]; start: string; end: string }
@@ -68,7 +68,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/unread_count`
+        MATRIX_PATHS.ROOM.UNREAD_COUNT(roomId)
       )
       const unreadCountResult = result as {
         unread_notifications?: number
@@ -142,7 +142,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/call/${encodeURIComponent(callId)}`
+        MATRIX_PATHS.ROOM.CALL(roomId, callId)
       )
       return result as Record<string, unknown>
     } catch (err) {

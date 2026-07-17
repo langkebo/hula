@@ -373,7 +373,7 @@ class MatrixNotificationService extends BaseMatrixService {
     try {
       await client.http.authedRequest(
         'POST',
-        `/_matrix/client/v3/notifications/${encodeURIComponent(notificationId)}/ack`
+        MATRIX_PATHS.NOTIFICATION.NOTIFICATIONS_ACK(notificationId)
       )
       logger.info(`[MatrixNotification] 通知确认成功: ${notificationId}`)
       return true
@@ -420,7 +420,7 @@ class MatrixNotificationService extends BaseMatrixService {
     try {
       await client.http.authedRequest(
         'POST',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/receipt/m.read/${encodeURIComponent(eventId)}`,
+        MATRIX_PATHS.ROOM.RECEIPT(roomId, 'm.read', eventId),
         undefined,
         {}
       )
@@ -452,7 +452,7 @@ class MatrixNotificationService extends BaseMatrixService {
   async setPushRuleByScope(scope: string, kind: string, ruleId: string, body: Record<string, unknown>): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
+      const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
       await client.http.authedRequest('PUT', path, undefined, body)
       logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
@@ -467,7 +467,7 @@ class MatrixNotificationService extends BaseMatrixService {
   async deletePushRuleByScope(scope: string, kind: string, ruleId: string): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      const path = `/_matrix/client/v3/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
+      const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
       await client.http.authedRequest('DELETE', path)
       logger.info(`[MatrixNotification] 删除推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {

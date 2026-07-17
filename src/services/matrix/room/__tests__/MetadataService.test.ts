@@ -77,7 +77,7 @@ describe('MatrixRoomMetadataService', () => {
       expect(await service.getRoomCapabilities('!r:e')).toEqual({ 'm.room_versions': { default: '11' } })
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent('!r:e')}/capabilities`
+        `/rooms/${encodeURIComponent('!r:e')}/capabilities`
       )
     })
 
@@ -98,7 +98,7 @@ describe('MatrixRoomMetadataService', () => {
       expect(await service.getRoomMetadata('!r')).toEqual({ a: 1 })
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent('!r')}/metadata`
+        `/rooms/${encodeURIComponent('!r')}/metadata`
       )
     })
 
@@ -108,7 +108,7 @@ describe('MatrixRoomMetadataService', () => {
       expect(await service.getRoomTurnServer('!r')).toEqual({ uris: ['turn:e'] })
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent('!r')}/turn_server`
+        `/rooms/${encodeURIComponent('!r')}/turn_server`
       )
     })
 
@@ -118,7 +118,7 @@ describe('MatrixRoomMetadataService', () => {
       expect(await service.getRoomSync('!r')).toEqual({ timeline: [] })
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent('!r')}/sync`
+        `/rooms/${encodeURIComponent('!r')}/sync`
       )
     })
 

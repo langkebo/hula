@@ -64,7 +64,7 @@ describe('MatrixRoomTimelineService', () => {
       await service.getRoomTimeline('!r:e')
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent('!r:e')}/timeline`,
+        `/rooms/${encodeURIComponent('!r:e')}/timeline`,
         undefined
       )
     })
@@ -75,7 +75,7 @@ describe('MatrixRoomTimelineService', () => {
       await service.getRoomTimeline('!r', { from: 'tok', limit: 20, dir: 'b' })
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent('!r')}/timeline`,
+        `/rooms/${encodeURIComponent('!r')}/timeline`,
         { from: 'tok', limit: '20', dir: 'b' }
       )
     })
@@ -165,7 +165,7 @@ describe('MatrixRoomTimelineService', () => {
       expect(await service.getRoomCall('!r', 'c-1')).toEqual({ state: 'ringing' })
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent('!r')}/call/${encodeURIComponent('c-1')}`
+        `/rooms/${encodeURIComponent('!r')}/call/${encodeURIComponent('c-1')}`
       )
     })
 
