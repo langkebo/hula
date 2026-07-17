@@ -641,6 +641,7 @@ declare module 'matrix-js-sdk' {
     getRoomsNav(): unknown
     generateTxnId(): string
     getAccessToken(): string | null
+    setAccessToken(token: string): void
     getDomain(): string
     setDisplayName(name: string): Promise<void>
     setAvatarUrl(url: string): Promise<void>
@@ -888,6 +889,7 @@ declare module 'matrix-js-sdk' {
     getMember(userId: string): RoomMember | null
     getMembers(): RoomMember[]
     getJoinedMembers(): RoomMember[]
+    getMembersWithMembership(membership: string): RoomMember[]
     getName(): string
     getAvatarUrl(baseUrl?: string, width?: number, height?: number, resizeMethod?: string): string
     getMxcAvatarUrl(): string | null
