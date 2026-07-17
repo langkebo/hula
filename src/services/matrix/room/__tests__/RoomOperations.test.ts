@@ -1,22 +1,36 @@
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
+import matrixClientService from '../../MatrixClientService'
+import { RoomOperations } from '../RoomOperations'
+
+const TEST_BASE_URL = 'https://matrix.example.com'
+
+const server = setupMswServer(
+  http.post(`${TEST_BASE_URL}/_matrix/client/v3/translate`, () => {
+    return HttpResponse.json({ translated_text: '你好' })
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_blocklist`, () => {
+    return HttpResponse.json({ blocked: ['@bad:e'] })
+  }),
+  http.post(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_blocklist`, () => {
+    return HttpResponse.json({})
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/sticky_events`, () => {
+    return HttpResponse.json({ key: 'value' })
+  }),
+  http.post(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/sticky_events`, () => {
+    return HttpResponse.json({})
+  }),
+  http.get('https://translate.googleapis.com/translate_a/single', () => {
+    return new HttpResponse(null, { status: 500 })
+  })
+)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
-}))
-
-const getClientMock = vi.fn()
-const waitForClientReadyMock = vi.fn().mockResolvedValue(undefined)
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: () => getClientMock(),
-    waitForClientReady: waitForClientReadyMock
-  },
-  matrixClientService: {
-    getClient: () => getClientMock(),
-    waitForClientReady: waitForClientReadyMock
-  }
 }))
 
 vi.mock('@/services/offline/OfflineQueueService', () => ({
@@ -33,15 +47,39 @@ vi.mock('@/services/i18n', () => ({
 
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
-const { RoomOperations } = await import('../RoomOperations')
+const authedRequestImpl = vi.fn()
 
 describe('RoomOperations', () => {
   let ops: InstanceType<typeof RoomOperations>
 
   beforeEach(() => {
-    ops = new RoomOperations()
-    getClientMock.mockReset()
     vi.clearAllMocks()
+    authedRequestImpl.mockImplementation(
+      async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
+        const url = new URL(`${TEST_BASE_URL}${path}`)
+        if (queryParams && typeof queryParams === 'object') {
+          for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
+            url.searchParams.set(key, value)
+          }
+        }
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-access-token'
+        }
+        const response = await fetch(url.toString(), {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined
+        })
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        return response.json()
+      }
+    )
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+    vi.spyOn(matrixClientService, 'waitForClientReady').mockResolvedValue(undefined as never)
+    ops = new RoomOperations()
   })
 
   // === State methods ===
@@ -49,7 +87,7 @@ describe('RoomOperations', () => {
   describe('setRoomName', () => {
     it('forwards to client.setRoomName', async () => {
       const setRoomName = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ setRoomName })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setRoomName } as never)
       await ops.setRoomName('!r', 'New')
       expect(setRoomName).toHaveBeenCalledWith('!r', 'New')
     })
@@ -70,7 +108,7 @@ describe('RoomOperations', () => {
   describe('setRoomTopic', () => {
     it('forwards to client.setRoomTopic', async () => {
       const setRoomTopic = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ setRoomTopic })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setRoomTopic } as never)
       await ops.setRoomTopic('!r', 'hello')
       expect(setRoomTopic).toHaveBeenCalledWith('!r', 'hello')
     })
@@ -79,7 +117,7 @@ describe('RoomOperations', () => {
   describe('setRoomAvatar', () => {
     it('sends m.room.avatar state event with url', async () => {
       const sendStateEvent = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ sendStateEvent })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ sendStateEvent } as never)
       await ops.setRoomAvatar('!r', 'mxc://e/abc')
       expect(sendStateEvent).toHaveBeenCalledWith('!r', 'm.room.avatar', { url: 'mxc://e/abc' }, '')
     })
@@ -87,14 +125,14 @@ describe('RoomOperations', () => {
 
   describe('getRoomState', () => {
     it('throws when room is missing from local cache', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       await expect(ops.getRoomState('!r')).rejects.toThrow('房间不存在: !r')
     })
 
     it('returns all state events via currentState', async () => {
       const events = [{ type: 'm.room.name' }, { type: 'm.room.topic' }]
       const room = { currentState: { getStateEvents: vi.fn().mockReturnValue(events) } }
-      getClientMock.mockReturnValue({ getRoom: () => room })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => room } as never)
       expect(await ops.getRoomState('!r')).toBe(events)
     })
   })
@@ -102,14 +140,14 @@ describe('RoomOperations', () => {
   describe('setPushRule', () => {
     it('enabled=true deletes override push rule', async () => {
       const deletePushRule = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ deletePushRule, addPushRule: vi.fn() })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ deletePushRule, addPushRule: vi.fn() } as never)
       await ops.setPushRule('!r', true)
       expect(deletePushRule).toHaveBeenCalledWith('global', 'override', '!r')
     })
 
     it('enabled=false installs an empty-actions override rule', async () => {
       const addPushRule = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ deletePushRule: vi.fn(), addPushRule })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ deletePushRule: vi.fn(), addPushRule } as never)
       await ops.setPushRule('!r', false)
       expect(addPushRule).toHaveBeenCalledWith('global', 'override', '!r', {
         conditions: [{ kind: 'event_match', key: 'room_id', pattern: '!r' }],
@@ -123,22 +161,22 @@ describe('RoomOperations', () => {
   describe('getTags', () => {
     it('forwards to client.getRoomTags', async () => {
       const getRoomTags = vi.fn().mockResolvedValue({ tags: { 'm.favourite': { order: 0.5 } } })
-      getClientMock.mockReturnValue({ getRoomTags })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoomTags } as never)
       expect(await ops.getTags('!r')).toEqual({ 'm.favourite': { order: 0.5 } })
     })
 
     it('returns {} on M_UNRECOGNIZED and caches unavailability', async () => {
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoomTags: vi.fn().mockRejectedValue({ errcode: 'M_UNRECOGNIZED' })
-      })
+      } as never)
       expect(await ops.getTags('!r')).toEqual({})
       expect(await ops.getTags('!r')).toEqual({})
     })
 
     it('returns {} on any error (rate-limit resilience)', async () => {
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoomTags: vi.fn().mockRejectedValue(new Error('429'))
-      })
+      } as never)
       expect(await ops.getTags('!r')).toEqual({})
     })
   })
@@ -146,7 +184,7 @@ describe('RoomOperations', () => {
   describe('setTag', () => {
     it('delegates to client.setRoomTag', async () => {
       const setRoomTag = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ setRoomTag, getUserId: () => '@me:e' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setRoomTag, getUserId: () => '@me:e' } as never)
       await ops.setTag('!r', 'm.favourite', 0.5)
       expect(setRoomTag).toHaveBeenCalledWith('!r', 'm.favourite', { order: 0.5 })
     })
@@ -168,7 +206,7 @@ describe('RoomOperations', () => {
   describe('removeTag', () => {
     it('delegates to client.deleteRoomTag', async () => {
       const deleteRoomTag = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ deleteRoomTag, getUserId: () => '@me:e' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ deleteRoomTag, getUserId: () => '@me:e' } as never)
       await ops.removeTag('!r', 'm.favourite')
       expect(deleteRoomTag).toHaveBeenCalledWith('!r', 'm.favourite')
     })
@@ -191,7 +229,7 @@ describe('RoomOperations', () => {
   describe('setAlias', () => {
     it('forwards to client.createAlias', async () => {
       const createAlias = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ createAlias })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ createAlias } as never)
       await ops.setAlias('!r', '#alias:e')
       expect(createAlias).toHaveBeenCalledWith('#alias:e', '!r')
     })
@@ -200,7 +238,7 @@ describe('RoomOperations', () => {
   describe('deleteAlias', () => {
     it('forwards to client.deleteAlias', async () => {
       const deleteAlias = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ deleteAlias })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ deleteAlias } as never)
       await ops.deleteAlias('#alias:e')
       expect(deleteAlias).toHaveBeenCalledWith('#alias:e')
     })
@@ -208,17 +246,17 @@ describe('RoomOperations', () => {
 
   describe('getAliases', () => {
     it('returns empty array when room not found', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       expect(await ops.getAliases('!r')).toEqual([])
     })
 
     it('returns alt aliases with canonical alias first', async () => {
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: () => ({
           getAltAliases: () => ['#alt1:e', '#alt2:e'],
           getCanonicalAlias: () => '#canon:e'
         })
-      })
+      } as never)
       expect(await ops.getAliases('!r')).toEqual(['#canon:e', '#alt1:e', '#alt2:e'])
     })
   })
@@ -227,20 +265,20 @@ describe('RoomOperations', () => {
 
   describe('getServerDomain', () => {
     it('returns client.getDomain() when available', async () => {
-      getClientMock.mockReturnValue({ getDomain: () => 'example.org' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getDomain: () => 'example.org' } as never)
       expect(await ops.getServerDomain()).toBe('example.org')
     })
 
     it('falls back to baseUrl hostname', async () => {
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getDomain: () => '',
         baseUrl: 'https://matrix.example.com'
-      })
+      } as never)
       expect(await ops.getServerDomain()).toBe('matrix.example.com')
     })
 
     it('falls back to matrix.org when everything is unusable', async () => {
-      getClientMock.mockReturnValue({ getDomain: () => '' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getDomain: () => '' } as never)
       expect(await ops.getServerDomain()).toBe('matrix.org')
     })
   })
@@ -248,7 +286,7 @@ describe('RoomOperations', () => {
   describe('upgradeRoom', () => {
     it('forwards to client.upgradeRoom and returns replacement_room string', async () => {
       const upgradeRoom = vi.fn().mockResolvedValue({ replacement_room: '!new:e' })
-      getClientMock.mockReturnValue({ upgradeRoom })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ upgradeRoom } as never)
       expect(await ops.upgradeRoom('!old:e', '11')).toBe('!new:e')
       expect(upgradeRoom).toHaveBeenCalledWith('!old:e', '11')
     })
@@ -256,19 +294,19 @@ describe('RoomOperations', () => {
 
   describe('incrementUnread', () => {
     it('resolves silently when room exists', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => ({ roomId: '!r' }) })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => ({ roomId: '!r' }) } as never)
       await expect(ops.incrementUnread('!r')).resolves.toBeUndefined()
     })
 
     it('swallows errors when room is missing', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       await expect(ops.incrementUnread('!r')).resolves.toBeUndefined()
     })
   })
 
   describe('clearUnread', () => {
     it('resolves silently when room exists', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => ({ roomId: '!r' }) })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => ({ roomId: '!r' }) } as never)
       await expect(ops.clearUnread('!r')).resolves.toBeUndefined()
     })
   })
@@ -277,27 +315,33 @@ describe('RoomOperations', () => {
 
   describe('translateText', () => {
     it('calls backend translate and returns translated text', async () => {
-      const authedRequest = vi.fn().mockResolvedValue({ translated_text: '你好' })
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       expect(await ops.translateText('Hello', 'zh-CN')).toBe('你好')
     })
 
     it('falls back to Google Translate on backend failure', async () => {
-      const authedRequest = vi.fn().mockRejectedValue(new Error('502'))
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      server.use(
+        http.post(`${TEST_BASE_URL}/_matrix/client/v3/translate`, () => {
+          return new HttpResponse(null, { status: 502 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       const result = await ops.translateText('Hello', 'de', false)
       expect(result).toBe('Hello')
     })
 
     it('throws when all paths fail and throwOnError is true', async () => {
-      const authedRequest = vi.fn().mockRejectedValue(new Error('502'))
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      server.use(
+        http.post(`${TEST_BASE_URL}/_matrix/client/v3/translate`, () => {
+          return new HttpResponse(null, { status: 502 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       await expect(ops.translateText('Hello', 'de', true)).rejects.toThrow()
     })
 
     it('defaults target language to zh-CN', async () => {
-      const authedRequest = vi.fn().mockResolvedValue({ translated_text: '你好' })
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       expect(await ops.translateText('Hello')).toBe('你好')
     })
   })
@@ -309,14 +353,14 @@ describe('RoomOperations', () => {
       const getStateEvents = vi.fn().mockReturnValue({
         getContent: () => ({ pinned: ['$e1', '$e2'] })
       })
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: () => ({ currentState: { getStateEvents } })
-      })
+      } as never)
       expect(await ops.getPinnedEvents('!r')).toEqual(['$e1', '$e2'])
     })
 
     it('returns empty array when room not found', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       expect(await ops.getPinnedEvents('!r')).toEqual([])
     })
   })
@@ -324,7 +368,7 @@ describe('RoomOperations', () => {
   describe('setPinnedEvents', () => {
     it('sends m.room.pinned_events state event', async () => {
       const sendStateEvent = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ sendStateEvent })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ sendStateEvent } as never)
       await ops.setPinnedEvents('!r', ['$e1'])
       expect(sendStateEvent).toHaveBeenCalledWith('!r', 'm.room.pinned_events', { pinned: ['$e1'] }, '')
     })
@@ -348,10 +392,10 @@ describe('RoomOperations', () => {
       const getStateEvents = vi.fn().mockReturnValue({
         getContent: () => ({ pinned: ['$e1'] })
       })
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: () => ({ currentState: { getStateEvents } }),
         sendStateEvent
-      })
+      } as never)
       await ops.pinEvent('!r', '$e2')
       expect(sendStateEvent).toHaveBeenCalledWith('!r', 'm.room.pinned_events', { pinned: ['$e1', '$e2'] }, '')
     })
@@ -361,10 +405,10 @@ describe('RoomOperations', () => {
       const getStateEvents = vi.fn().mockReturnValue({
         getContent: () => ({ pinned: ['$e1'] })
       })
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: () => ({ currentState: { getStateEvents } }),
         sendStateEvent
-      })
+      } as never)
       await ops.pinEvent('!r', '$e1')
       expect(sendStateEvent).not.toHaveBeenCalled()
     })
@@ -388,10 +432,10 @@ describe('RoomOperations', () => {
       const getStateEvents = vi.fn().mockReturnValue({
         getContent: () => ({ pinned: ['$e1', '$e2'] })
       })
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: () => ({ currentState: { getStateEvents } }),
         sendStateEvent
-      })
+      } as never)
       await ops.unpinEvent('!r', '$e1')
       expect(sendStateEvent).toHaveBeenCalledWith('!r', 'm.room.pinned_events', { pinned: ['$e2'] }, '')
     })
@@ -413,49 +457,58 @@ describe('RoomOperations', () => {
 
   describe('getInviteBlocklist', () => {
     it('GETs invite blocklist via client.http', async () => {
-      const authedRequest = vi.fn().mockResolvedValue({ blocked: ['@bad:e'] })
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       expect(await ops.getInviteBlocklist('!r')).toEqual(['@bad:e'])
     })
 
     it('returns empty array on error', async () => {
-      const authedRequest = vi.fn().mockRejectedValue(new Error('500'))
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_blocklist`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       expect(await ops.getInviteBlocklist('!r')).toEqual([])
     })
   })
 
   describe('setInviteBlocklist', () => {
     it('POSTs blocklist via client.http', async () => {
-      const authedRequest = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       await ops.setInviteBlocklist('!r', ['@bad:e'])
-      expect(authedRequest).toHaveBeenCalledWith('POST', '/_matrix/client/v3/rooms/!r/invite_blocklist', undefined, {
-        blocked: ['@bad:e']
-      })
+      expect(authedRequestImpl).toHaveBeenCalledWith(
+        'POST',
+        '/_matrix/client/v3/rooms/!r/invite_blocklist',
+        undefined,
+        {
+          blocked: ['@bad:e']
+        }
+      )
     })
   })
 
   describe('getStickyEvents', () => {
     it('GETs sticky events via client.http', async () => {
-      const authedRequest = vi.fn().mockResolvedValue({ key: 'value' })
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       expect(await ops.getStickyEvents('!r')).toEqual({ key: 'value' })
     })
 
     it('returns empty object on error', async () => {
-      const authedRequest = vi.fn().mockRejectedValue(new Error('500'))
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/sticky_events`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       expect(await ops.getStickyEvents('!r')).toEqual({})
     })
   })
 
   describe('setStickyEvents', () => {
     it('POSTs sticky events via client.http', async () => {
-      const authedRequest = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ http: { authedRequest } })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       await ops.setStickyEvents('!r', { key: 'value' })
-      expect(authedRequest).toHaveBeenCalledWith('POST', '/_matrix/client/v3/rooms/!r/sticky_events', undefined, {
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/_matrix/client/v3/rooms/!r/sticky_events', undefined, {
         key: 'value'
       })
     })
@@ -481,11 +534,11 @@ describe('RoomOperations', () => {
       const getStateEvents = vi.fn().mockReturnValue({
         getContent: () => ({ membership: 'join', displayname: 'Old' })
       })
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: () => ({ currentState: { getStateEvents } }),
         getUserId: () => '@me:e',
         sendStateEvent
-      })
+      } as never)
       await ops.setMemberDisplayName('!r', 'New')
       expect(sendStateEvent).toHaveBeenCalledWith(
         '!r',
@@ -502,16 +555,16 @@ describe('RoomOperations', () => {
 
   describe('getMemberDisplayName', () => {
     it('returns rawDisplayName from room member', async () => {
-      getClientMock.mockReturnValue({
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
         getRoom: () => ({
           getMember: (_uid: string) => ({ rawDisplayName: 'Alice', name: 'alice' })
         })
-      })
+      } as never)
       expect(await ops.getMemberDisplayName('!r', '@alice:e')).toBe('Alice')
     })
 
     it('returns null when room is missing', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       expect(await ops.getMemberDisplayName('!r', '@alice:e')).toBeNull()
     })
   })
@@ -519,7 +572,7 @@ describe('RoomOperations', () => {
   describe('setMemberPowerLevel', () => {
     it('forwards to client.setUserPowerLevel', async () => {
       const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ setUserPowerLevel })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as never)
       await ops.setMemberPowerLevel('!r', '@u:e', 50)
       expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 50)
     })
@@ -528,7 +581,7 @@ describe('RoomOperations', () => {
   describe('setMemberAsAdmin', () => {
     it('sets power level to 100', async () => {
       const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ setUserPowerLevel })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as never)
       await ops.setMemberAsAdmin('!r', '@u:e')
       expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 100)
     })
@@ -537,7 +590,7 @@ describe('RoomOperations', () => {
   describe('removeMemberAsAdmin', () => {
     it('sets power level to 0', async () => {
       const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      getClientMock.mockReturnValue({ setUserPowerLevel })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as never)
       await ops.removeMemberAsAdmin('!r', '@u:e')
       expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 0)
     })

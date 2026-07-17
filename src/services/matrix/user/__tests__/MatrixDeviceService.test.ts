@@ -1,17 +1,62 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import matrixClientService from '../../MatrixClientService'
 import type { Device } from '../MatrixDeviceService'
 import { matrixDeviceService } from '../MatrixDeviceService'
 
-vi.mock('../../MatrixClientService', () => {
-  const getClient = vi.fn()
-  return {
-    default: { getClient },
-    matrixClientService: { getClient }
-  }
-})
+const TEST_BASE_URL = 'https://matrix.example.com'
+
+const _server = setupMswServer(
+  http.get(`${TEST_BASE_URL}/_matrix/client/v3/devices`, () => {
+    return HttpResponse.json({
+      devices: [
+        { device_id: 'DEVICE1', display_name: 'Device 1' },
+        { device_id: 'DEVICE2', display_name: 'Device 2' }
+      ]
+    })
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v3/devices/:deviceId`, () => {
+    return HttpResponse.json({
+      device_id: 'DEVICE1',
+      display_name: 'My Device',
+      device: {
+        device_id: 'DEVICE1',
+        display_name: 'My Device',
+        last_seen_ts: 1000000
+      }
+    })
+  }),
+  http.put(`${TEST_BASE_URL}/_matrix/client/v3/devices/:deviceId`, async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json({
+      device_id: 'DEVICE1',
+      display_name: (body as Record<string, unknown>)?.display_name ?? 'New Name',
+      updated_ts: Date.now()
+    })
+  }),
+  http.delete(`${TEST_BASE_URL}/_matrix/client/v3/devices/:deviceId`, () => {
+    return HttpResponse.json({})
+  }),
+  http.post(`${TEST_BASE_URL}/_matrix/client/v3/delete_devices`, async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json(body as Record<string, unknown>)
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v3/room_keys/request`, () => {
+    return HttpResponse.json({ requests: [] })
+  }),
+  http.delete(`${TEST_BASE_URL}/_matrix/client/v3/room_keys/request/:requestId`, () => {
+    return HttpResponse.json({})
+  })
+)
+
+vi.mock('@tauri-apps/plugin-log', () => ({
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn()
+}))
 
 describe('MatrixDeviceService', () => {
   let mockClient: Partial<MatrixClient>
@@ -25,10 +70,27 @@ describe('MatrixDeviceService', () => {
   }
   let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
 
+  const authedRequestImpl = vi
+    .fn()
+    .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
+      const url = `${TEST_BASE_URL}${path}`
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-access-token'
+      }
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      return response.json()
+    })
+
   beforeEach(() => {
-    mockHttp = {
-      authedRequest: vi.fn()
-    }
+    vi.clearAllMocks()
 
     mockDeviceManager = {
       getDevices: vi.fn(),
@@ -39,6 +101,8 @@ describe('MatrixDeviceService', () => {
       getDeviceListUpdates: vi.fn()
     }
 
+    mockHttp = { authedRequest: authedRequestImpl }
+
     mockClient = {
       http: mockHttp as unknown as MatrixClient['http'],
       getDeviceManager: vi.fn(
@@ -47,8 +111,7 @@ describe('MatrixDeviceService', () => {
       getDeviceId: vi.fn(() => 'CURRENT_DEVICE')
     }
 
-    vi.mocked(matrixClientService.getClient).mockReset()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as MatrixClient)
   })
 
   describe('getDevices', () => {
@@ -81,19 +144,13 @@ describe('MatrixDeviceService', () => {
     it('应该降级到 HTTP 调用', async () => {
       mockClient.getDeviceManager = vi.fn(() => null)
 
-      const mockResponse = {
-        devices: [
-          { device_id: 'DEVICE1', display_name: 'Device 1' },
-          { device_id: 'DEVICE2', display_name: 'Device 2' }
-        ]
-      }
-
-      mockHttp.authedRequest.mockResolvedValue(mockResponse)
-
       const devices = await matrixDeviceService.getDevices()
 
-      expect(devices).toEqual(mockResponse.devices)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('GET', '/devices')
+      expect(devices).toEqual([
+        { device_id: 'DEVICE1', display_name: 'Device 1' },
+        { device_id: 'DEVICE2', display_name: 'Device 2' }
+      ])
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_matrix/client/v3/devices')
     })
 
     it('应该处理获取失败', async () => {
@@ -124,21 +181,13 @@ describe('MatrixDeviceService', () => {
     it('应该处理嵌套的 device 对象', async () => {
       mockClient.getDeviceManager = vi.fn(() => null)
 
-      const mockResponse = {
-        device_id: 'DEVICE1',
-        display_name: 'My Device',
-        device: {
-          device_id: 'DEVICE1',
-          display_name: 'My Device',
-          last_seen_ts: 1000000
-        }
-      }
-
-      mockHttp.authedRequest.mockResolvedValue(mockResponse)
-
       const device = await matrixDeviceService.getDevice('DEVICE1')
 
-      expect(device).toEqual(mockResponse.device)
+      expect(device).toEqual({
+        device_id: 'DEVICE1',
+        display_name: 'My Device',
+        last_seen_ts: 1000000
+      })
     })
   })
 
@@ -156,18 +205,11 @@ describe('MatrixDeviceService', () => {
     it('应该通过 HTTP 更新设备', async () => {
       mockClient.getDeviceManager = vi.fn(() => null)
 
-      const mockResponse = {
-        device_id: 'DEVICE1',
-        display_name: 'New Name',
-        updated_ts: Date.now()
-      }
-
-      mockHttp.authedRequest.mockResolvedValue(mockResponse)
-
       const result = await matrixDeviceService.updateDevice('DEVICE1', 'New Name')
 
-      expect(result).toEqual(mockResponse)
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('PUT', '/devices/DEVICE1', undefined, {
+      expect(result.device_id).toBe('DEVICE1')
+      expect(result.display_name).toBe('New Name')
+      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', '/_matrix/client/v3/devices/DEVICE1', undefined, {
         display_name: 'New Name'
       })
     })
@@ -215,11 +257,9 @@ describe('MatrixDeviceService', () => {
       const deviceIds = ['DEVICE1', 'DEVICE2']
       const auth = { type: 'm.login.password', password: 'secret' }
 
-      mockHttp.authedRequest.mockResolvedValue({})
-
       await matrixDeviceService.deleteDevices(deviceIds, auth)
 
-      expect(mockHttp.authedRequest).toHaveBeenCalledWith('POST', '/delete_devices', undefined, {
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/_matrix/client/v3/delete_devices', undefined, {
         device_ids: deviceIds,
         auth
       })

@@ -1,5 +1,23 @@
 import type { MatrixClient, Room } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
+import matrixClientService from '../../MatrixClientService'
+
+const TEST_BASE_URL = 'https://matrix.example.com'
+
+const _server = setupMswServer(
+  http.post(`${TEST_BASE_URL}/_matrix/client/v1/voice/upload`, () => {
+    return HttpResponse.json({
+      event_id: '$voice-event',
+      content_uri: 'mxc://example.org/media'
+    })
+  }),
+  http.post(`${TEST_BASE_URL}/_matrix/client/v1/voice/transcription`, async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json({ text: 'hello world', language: 'en', ...(body as Record<string, unknown>) })
+  })
+)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -7,20 +25,32 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn()
 }))
 
-const getClientMock = vi.fn()
-const endpointCheckMock = vi.fn()
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: () => getClientMock() as MatrixClient | null
-  }
-}))
 vi.mock('../../EndpointCapabilityService', () => ({
   default: {
     check: (...args: unknown[]) => endpointCheckMock(...args)
   }
 }))
 
-const authedRequestMock = vi.fn()
+const endpointCheckMock = vi.fn()
+
+const authedRequestMock = vi
+  .fn()
+  .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
+    const url = `${TEST_BASE_URL}${path}`
+    const headers: Record<string, string> = {
+      Authorization: 'Bearer test-access-token'
+    }
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+    return response.json()
+  })
+
 const mockClient = {
   http: {
     authedRequest: authedRequestMock
@@ -34,16 +64,12 @@ const { matrixVoiceService, isVoiceMessageResult } = await import('../MatrixVoic
 describe('MatrixVoiceService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getClientMock.mockReturnValue(mockClient as unknown as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
     endpointCheckMock.mockResolvedValue(true)
   })
 
   it('uploads voice through the voice upload endpoint', async () => {
     const file = new Blob(['voice-bytes'], { type: 'audio/webm' })
-    authedRequestMock.mockResolvedValueOnce({
-      event_id: '$voice-event',
-      content_uri: 'mxc://example.org/media'
-    })
 
     const result = await matrixVoiceService.uploadVoice('!room:example.org', file)
 
@@ -97,11 +123,6 @@ describe('MatrixVoiceService', () => {
   })
 
   it('should transcribe voice through the voice transcription endpoint', async () => {
-    authedRequestMock.mockResolvedValueOnce({
-      text: 'hello world',
-      language: 'en'
-    })
-
     const result = await matrixVoiceService.transcribeVoice({
       roomId: '!room:example.org',
       eventId: '$voice-event'
@@ -138,7 +159,7 @@ describe('MatrixVoiceService', () => {
   })
 
   it('should fall back to original mxc url when client is unavailable', () => {
-    getClientMock.mockReturnValueOnce(null)
+    vi.mocked(matrixClientService.getClient).mockReturnValueOnce(null)
 
     expect(matrixVoiceService.getPlayableUrl('mxc://example.org/fallback')).toBe('mxc://example.org/fallback')
   })

@@ -1,6 +1,22 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
 import { ExtendedProfileUnsupportedError, profileService, useProfile } from '../MatrixProfileService'
+
+const TEST_BASE_URL = 'https://matrix.example.com'
+
+const server = setupMswServer(
+  http.get(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId`, () => {
+    return HttpResponse.json({ resume: 'Hello world', sex: 2, region: 'Shanghai' })
+  }),
+  http.put(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId/:field`, async () => {
+    return HttpResponse.json({})
+  }),
+  http.delete(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId/:field`, () => {
+    return HttpResponse.json({})
+  })
+)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -8,16 +24,9 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const { mockClientService } = vi.hoisted(() => ({
-  mockClientService: {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  }
-}))
+import matrixClientService from '../../MatrixClientService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: mockClientService,
-  matrixClientService: mockClientService
-}))
+const authedRequestImpl = vi.fn()
 
 const mockClient = {
   getProfileInfo: vi.fn(),
@@ -26,14 +35,48 @@ const mockClient = {
   uploadContent: vi.fn(),
   getUserId: vi.fn(() => '@self:matrix.org'),
   http: {
-    authedRequest: vi.fn()
+    authedRequest: authedRequestImpl
   }
 }
 
 describe('ProfileService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockClientService.getClient.mockReturnValue(null)
+    authedRequestImpl.mockImplementation(
+      async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+        const prefix = opts?.prefix ?? ''
+        const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
+        if (queryParams && typeof queryParams === 'object') {
+          for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
+            url.searchParams.set(key, value)
+          }
+        }
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-access-token'
+        }
+        const response = await fetch(url.toString(), {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined
+        })
+        if (!response.ok) {
+          const err = new Error(`HTTP ${response.status}`) as Error & { httpStatus: number; errcode?: string }
+          err.httpStatus = response.status
+          try {
+            const errBody = await response.json()
+            if (errBody && typeof errBody === 'object' && 'errcode' in errBody) {
+              err.errcode = (errBody as Record<string, string>).errcode
+            }
+          } catch {
+            /* ignore parse failures */
+          }
+          throw err
+        }
+        return response.json()
+      }
+    )
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
   })
 
   afterEach(() => {
@@ -74,7 +117,7 @@ describe('ProfileService', () => {
         displayname: 'Fallback User',
         avatar_url: 'mxc://matrix.org/fallback'
       })
-      mockClientService.getClient.mockReturnValue(mockClient as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
       const service = new (profileService.constructor as unknown as new () => typeof profileService)()
       const result = await service.getProfile('@fallback:matrix.org')
@@ -99,7 +142,7 @@ describe('ProfileService', () => {
           avatar_url: 'mxc://matrix.org/new'
         })
       }
-      mockClientService.getClient.mockReturnValue(newClient as unknown as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(newClient as unknown as MatrixClient)
 
       profileService.initialize(oldClient as unknown as MatrixClient)
       const result = await profileService.getProfile('@switch:matrix.org')
@@ -215,18 +258,17 @@ describe('ProfileService', () => {
 
   describe('extended profile', () => {
     it('should return empty object when extended profile does not exist', async () => {
-      mockClient.http.authedRequest.mockRejectedValueOnce({ httpStatus: 404 })
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId`, () => {
+          return new HttpResponse(null, { status: 404 })
+        })
+      )
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual({})
     })
 
     it('should return extended profile payload', async () => {
-      mockClient.http.authedRequest.mockResolvedValueOnce({
-        resume: 'Hello world',
-        sex: 2,
-        region: 'Shanghai'
-      })
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual({
@@ -234,7 +276,7 @@ describe('ProfileService', () => {
         sex: 2,
         region: 'Shanghai'
       })
-      expect(mockClient.http.authedRequest).toHaveBeenCalledWith(
+      expect(authedRequestImpl).toHaveBeenCalledWith(
         'GET',
         '/uk.tcpip.msc4133/profile/%40user%3Amatrix.org',
         undefined,
@@ -244,20 +286,18 @@ describe('ProfileService', () => {
     })
 
     it('should update own extended profile fields', async () => {
-      mockClient.http.authedRequest
-        .mockResolvedValueOnce(undefined)
-        .mockResolvedValueOnce(undefined)
-        .mockResolvedValueOnce({
-          resume: 'Updated bio',
-          sex: 1
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId`, () => {
+          return HttpResponse.json({ resume: 'Updated bio', sex: 1 })
         })
+      )
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.updateOwnExtendedProfile({ resume: 'Updated bio', sex: 1 })).resolves.toEqual({
         resume: 'Updated bio',
         sex: 1
       })
-      expect(mockClient.http.authedRequest).toHaveBeenNthCalledWith(
+      expect(authedRequestImpl).toHaveBeenNthCalledWith(
         1,
         'PUT',
         '/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/resume',
@@ -265,7 +305,7 @@ describe('ProfileService', () => {
         'Updated bio',
         { prefix: '/_matrix/client/unstable' }
       )
-      expect(mockClient.http.authedRequest).toHaveBeenNthCalledWith(
+      expect(authedRequestImpl).toHaveBeenNthCalledWith(
         2,
         'PUT',
         '/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/sex',
@@ -276,14 +316,22 @@ describe('ProfileService', () => {
     })
 
     it('should treat unrecognized extended profile reads as unsupported and return empty object', async () => {
-      mockClient.http.authedRequest.mockRejectedValueOnce({ errcode: 'M_UNRECOGNIZED' })
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId`, () => {
+          return HttpResponse.json({ errcode: 'M_UNRECOGNIZED' }, { status: 400 })
+        })
+      )
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual({})
     })
 
     it('should throw ExtendedProfileUnsupportedError on unsupported extended profile writes', async () => {
-      mockClient.http.authedRequest.mockRejectedValueOnce({ errcode: 'M_UNRECOGNIZED' })
+      server.use(
+        http.put(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId/:field`, () => {
+          return HttpResponse.json({ errcode: 'M_UNRECOGNIZED' }, { status: 400 })
+        })
+      )
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.updateOwnExtendedProfile({ resume: 'unsupported' })).rejects.toBeInstanceOf(
