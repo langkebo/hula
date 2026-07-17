@@ -50,6 +50,12 @@ function getAuthHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+function chunkEndpoint(path: string, params?: URLSearchParams): string {
+  const url = new URL(`/_matrix/media/v1/upload/chunk${path}`, getBaseUrl())
+  if (params) url.search = params.toString()
+  return url.toString()
+}
+
 class ChunkUploadService {
   private uploads: Map<string, ChunkUploadContext> = new Map()
 
@@ -125,8 +131,7 @@ class ChunkUploadService {
     totalSize: number,
     totalChunks: number
   ): Promise<{ upload_id: string; chunk_size_limit: number; max_file_size: number }> {
-    const baseUrl = getBaseUrl()
-    const resp = await fetch(`${baseUrl}_matrix/media/v1/upload/chunk/start`, {
+    const resp = await fetch(chunkEndpoint('/start'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -153,6 +158,10 @@ class ChunkUploadService {
 
     const processNext = async () => {
       while (!context.aborted) {
+        if (context.paused) {
+          await new Promise((resolve) => setTimeout(resolve, 200))
+          continue
+        }
         const chunk = context.chunks.find((c) => c.status === 'pending')
         if (!chunk) break
 
@@ -166,8 +175,10 @@ class ChunkUploadService {
           chunk.retryCount++
           if (chunk.retryCount >= context.maxRetries) {
             chunk.status = 'failed'
+            context.aborted = true
             throw err
           }
+          await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** (chunk.retryCount - 1)))
           chunk.status = 'pending'
         }
       }
@@ -191,7 +202,6 @@ class ChunkUploadService {
     const slice = context.file.slice(chunk.start, chunk.end)
     const buffer = await slice.arrayBuffer()
 
-    const baseUrl = getBaseUrl()
     const params = new URLSearchParams({
       upload_id: context.id,
       chunk_index: chunk.index.toString(),
@@ -223,7 +233,7 @@ class ChunkUploadService {
 
       xhr.onerror = () => reject(new Error('Network error'))
 
-      xhr.open('POST', `${baseUrl}_matrix/media/v1/upload/chunk?${params.toString()}`)
+      xhr.open('POST', chunkEndpoint('', params))
 
       // Set auth header
       const token = getMatrixAccessToken()
@@ -260,8 +270,7 @@ class ChunkUploadService {
 
   /** Call POST /_matrix/media/v1/upload/chunk/complete to finalize the upload */
   private async completeUpload(context: ChunkUploadContext): Promise<UploadResult> {
-    const baseUrl = getBaseUrl()
-    const resp = await fetch(`${baseUrl}_matrix/media/v1/upload/chunk/complete`, {
+    const resp = await fetch(chunkEndpoint('/complete'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -287,8 +296,7 @@ class ChunkUploadService {
 
   /** Call POST /_matrix/media/v1/upload/chunk/cancel to cancel an in-progress upload */
   private async cancelUpload(uploadId: string): Promise<void> {
-    const baseUrl = getBaseUrl()
-    const resp = await fetch(`${baseUrl}_matrix/media/v1/upload/chunk/cancel`, {
+    const resp = await fetch(chunkEndpoint('/cancel'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -311,13 +319,9 @@ class ChunkUploadService {
     total_size: number | null
     status: string
   } | null> {
-    const baseUrl = getBaseUrl()
-    const resp = await fetch(
-      `${baseUrl}_matrix/media/v1/upload/chunk/progress?upload_id=${encodeURIComponent(uploadId)}`,
-      {
-        headers: getAuthHeaders()
-      }
-    )
+    const resp = await fetch(chunkEndpoint('/progress', new URLSearchParams({ upload_id: uploadId })), {
+      headers: getAuthHeaders()
+    })
 
     if (!resp.ok) return null
     return resp.json()
