@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 const {
   mockRecallMessage,
@@ -345,6 +346,44 @@ describe('useMessageMultiSelect', () => {
       resolveDelete!()
       await promise
       expect(ms.processing.value).toBe(false)
+    })
+
+    it('batchDelete 进行中切换房间仍按开始时的 roomId 删除', async () => {
+      const roomIdRef = ref('!a:hs')
+      mockChatMessageListByRoomId.mockReturnValue([{ message: { id: '$m1' } }, { message: { id: '$m2' } }] as any[])
+      let releaseFirst!: () => void
+      mockRecallMessage
+        .mockImplementationOnce(() => new Promise<void>((r) => (releaseFirst = r)))
+        .mockResolvedValue(undefined)
+
+      const ms = useMessageMultiSelect({ roomId: roomIdRef })
+      ms.toggleSelect('$m1')
+      ms.toggleSelect('$m2')
+
+      const deleting = ms.batchDelete()
+      roomIdRef.value = '!b:hs'
+      releaseFirst()
+      await deleting
+
+      expect(mockRecallMessage).toHaveBeenNthCalledWith(1, '!a:hs', '$m1')
+      expect(mockRecallMessage).toHaveBeenNthCalledWith(2, '!a:hs', '$m2')
+    })
+
+    it('batchDelete 双击只执行一轮', async () => {
+      mockChatMessageListByRoomId.mockReturnValue([{ message: { id: '$m1' } }] as any[])
+      let release!: () => void
+      mockRecallMessage.mockImplementationOnce(() => new Promise<void>((r) => (release = r)))
+
+      const ms = useMessageMultiSelect({ roomId: '!a:hs' })
+      ms.toggleSelect('$m1')
+
+      const first = ms.batchDelete()
+      const second = await ms.batchDelete()
+      release()
+      await first
+
+      expect(second).toBe(0)
+      expect(mockRecallMessage).toHaveBeenCalledTimes(1)
     })
   })
 
