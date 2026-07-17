@@ -44,7 +44,7 @@ describe('MatrixRoomAccountDataService', () => {
       expect(await service.getRoomAccountData('!r:e', 'm.fully_read')).toEqual({ foo: 1 })
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v3/user/${encodeURIComponent('@me:e')}/rooms/${encodeURIComponent('!r:e')}/account_data/${encodeURIComponent('m.fully_read')}`
+        `/user/${encodeURIComponent('@me:e')}/rooms/${encodeURIComponent('!r:e')}/account_data/${encodeURIComponent('m.fully_read')}`
       )
     })
 
@@ -65,7 +65,7 @@ describe('MatrixRoomAccountDataService', () => {
       await service.setRoomAccountData('!r', 'm.x', { a: 1 })
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'PUT',
-        `/_matrix/client/v3/user/${encodeURIComponent('@me:e')}/rooms/${encodeURIComponent('!r')}/account_data/${encodeURIComponent('m.x')}`,
+        `/user/${encodeURIComponent('@me:e')}/rooms/${encodeURIComponent('!r')}/account_data/${encodeURIComponent('m.x')}`,
         undefined,
         { a: 1 }
       )
@@ -109,7 +109,7 @@ describe('MatrixRoomAccountDataService', () => {
       await service.setReadLifetime('!r', 5000)
       expect(client.http.authedRequest).toHaveBeenCalledWith(
         'PUT',
-        `/_matrix/client/v3/rooms/${encodeURIComponent('!r')}/burn`,
+        `/rooms/${encodeURIComponent('!r')}/burn`,
         undefined,
         { enabled: true, burn_after_ms: 5000 }
       )

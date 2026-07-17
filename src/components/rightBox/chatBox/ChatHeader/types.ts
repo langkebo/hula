@@ -1,5 +1,3 @@
-import type { UserItem } from '@/services/types'
-import type { MessageType } from '@/stores/domains/chat/chat'
 import type { RoomActEnum } from '@/enums'
 
 export interface ChatHeaderState {

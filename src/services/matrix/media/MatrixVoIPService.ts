@@ -538,7 +538,7 @@ class MatrixVoIPService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/voip/turnServer')
+      const result = await client.http.authedRequest('GET', '/voip/turnServer')
       const r = result as Record<string, unknown>
       logger.info('[VoIP] 获取 TURN 服务器配置成功')
       return {
@@ -574,7 +574,7 @@ class MatrixVoIPService extends BaseMatrixService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/voip/turnServer')
+      const result = await client.http.authedRequest('GET', '/voip/turnServer')
       const r = result as Record<string, unknown>
       const uris = (r.uris as string[]) ?? []
 

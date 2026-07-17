@@ -71,6 +71,7 @@
     "receipt_event_id_missing": "Event ID does not exist",
     "event_not_found": "Event not found: {eventId}",
     "emoji_not_found": "Emoji not found: {emojiId}",
+    "emoji_pack_not_found": "Emoji pack not found: {packId}",
     "unsupported_image_format": "Unsupported image format: {type}, supported formats: PNG, GIF, WebP",
     "message_not_found": "Message not found: {eventId}",
     "original_message_not_found": "Original message not found: {originalEventId}",

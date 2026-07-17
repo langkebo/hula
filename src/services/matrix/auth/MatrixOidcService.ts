@@ -202,7 +202,7 @@ class MatrixOidcService {
       logger.info(`[MatrixOidcService] Logging out via OIDC`)
 
       const client = await matrixClientService.waitForClientReady()
-      await client.http.authedRequest('POST', '/_matrix/client/v3/oidc/logout')
+      await client.http.authedRequest('POST', '/oidc/logout')
 
       logger.info(`[MatrixOidcService] OIDC logout successful`)
       return true

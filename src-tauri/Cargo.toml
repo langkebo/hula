@@ -1,6 +1,6 @@
 [package]
 name = "hula"
-version = "3.0.9"
+version = "3.0.10"
 description = "hula"
 authors = ["龙卷风 <656042408@qq.com>"]
 license = ""

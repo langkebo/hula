@@ -71,6 +71,7 @@
     "receipt_event_id_missing": "事件 ID 不存在",
     "event_not_found": "事件不存在: {eventId}",
     "emoji_not_found": "表情不存在: {emojiId}",
+    "emoji_pack_not_found": "表情包不存在: {packId}",
     "unsupported_image_format": "不支持的图片格式: {type}，支持的格式: PNG、GIF、WebP",
     "message_not_found": "消息不存在: {eventId}",
     "original_message_not_found": "原始消息不存在: {originalEventId}",

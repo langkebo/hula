@@ -63,7 +63,7 @@ describe('MatrixPushService', () => {
       expect(mockHttp.authedRequest).toHaveBeenCalled()
       const call = mockHttp.authedRequest.mock.calls[0]
       expect(call[0]).toBe('POST')
-      expect(call[1]).toBe('/_matrix/client/v3/pushers/set')
+      expect(call[1]).toBe('/pushers/set')
     })
   })
 
@@ -81,7 +81,7 @@ describe('MatrixPushService', () => {
       expect(mockHttp.authedRequest).toHaveBeenCalled()
       const call = mockHttp.authedRequest.mock.calls[0]
       expect(call[0]).toBe('POST')
-      expect(call[1]).toBe('/_matrix/client/v3/pushers/set')
+      expect(call[1]).toBe('/pushers/set')
     })
   })
 

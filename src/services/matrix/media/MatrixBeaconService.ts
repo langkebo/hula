@@ -134,7 +134,7 @@ class MatrixBeaconService {
       const event = await client.getRoomEvent(roomId, eventId)
       const content = event.getContent() as BeaconEventContent
 
-      if (!content || !content.beacon_info) return null
+      if (!content?.beacon_info) return null
 
       return {
         event_id: eventId,
@@ -301,7 +301,7 @@ class MatrixBeaconService {
       const event = await client.getRoomEvent(roomId, beaconInfoEventId)
       const content = event.getContent() as BeaconEventContent
 
-      if (!content || !content.beacon_info) return false
+      if (!content?.beacon_info) return false
 
       const updatedContent = {
         ...content,

@@ -207,7 +207,8 @@
         "register": "注册",
         "next": "下一步",
         "send_email_code": "发送验证码",
-        "resend_in": "{seconds}秒后重试"
+        "resend_in": "{seconds}秒后重试",
+        "skip_email": "跳过邮箱，直接注册"
       },
       "pass_validate_info": {
         "minlength": "至少 {len} 个字符",

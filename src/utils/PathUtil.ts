@@ -454,4 +454,4 @@ export async function getFilesMeta<T>(filesPath: string[]) {
   })
 }
 
-export { getPathCache, getUserVideosDir, getUserEmojiDir, getImageCache }
+export { getImageCache, getPathCache, getUserEmojiDir, getUserVideosDir }

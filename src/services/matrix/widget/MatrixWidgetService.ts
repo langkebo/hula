@@ -455,7 +455,7 @@ class MatrixWidgetService {
     try {
       const result = (await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/capabilities`
+        `/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/capabilities`
       )) as WidgetCapabilitiesResponse
       return result
     } catch (err) {
@@ -489,7 +489,7 @@ class MatrixWidgetService {
     try {
       const result = (await client.http.authedRequest(
         'PUT',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/capabilities`,
+        `/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/capabilities`,
         undefined,
         { capabilities }
       )) as WidgetCapabilitiesResponse
@@ -526,7 +526,7 @@ class MatrixWidgetService {
     try {
       const result = (await client.http.authedRequest(
         'POST',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/send`,
+        `/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/send`,
         undefined,
         message
       )) as SendWidgetMessageResponse

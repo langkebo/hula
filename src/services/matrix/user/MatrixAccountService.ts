@@ -391,7 +391,7 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/thirdparty/protocols')
+      const result = await client.http.authedRequest('GET', '/thirdparty/protocols')
       logger.info('[MatrixAccount] 获取第三方协议成功')
       return result as Record<string, unknown>
     } catch (err) {
@@ -411,7 +411,7 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/my_rooms')
+      const result = await client.http.authedRequest('GET', '/my_rooms')
       return (result as { room_ids?: string[] }).room_ids ?? []
     } catch (err) {
       // 如果返回 404，说明该非标准端点在后端不存在，降级到标准 Matrix API
@@ -437,7 +437,7 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const queryParams: Record<string, string> = { timeout: String(timeout) }
       if (from) queryParams.from = from
-      const result = await client.http.authedRequest('GET', '/_matrix/client/v3/events', queryParams)
+      const result = await client.http.authedRequest('GET', '/events', queryParams)
       return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixAccount] 获取事件流失败: ${err}`)

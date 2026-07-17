@@ -207,7 +207,8 @@
         "register": "Register",
         "next": "Next",
         "send_email_code": "Send code",
-        "resend_in": "Resend in {seconds}s"
+        "resend_in": "Resend in {seconds}s",
+        "skip_email": "Skip email, register directly"
       },
       "pass_validate_info": {
         "minlength": "At least {len} characters",
