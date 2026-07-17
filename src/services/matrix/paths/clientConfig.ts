@@ -1,3 +1,5 @@
+import { PREFIX_V1 } from './prefixes'
+
 export const CLIENT_CONFIG = {
-  CLIENT: '/_matrix/client/v1/config/client'
+  CLIENT: PREFIX_V1 + '/config/client'
 } as const

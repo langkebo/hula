@@ -1,3 +1,5 @@
+import { PREFIX_V1 } from './prefixes'
+
 export const ROOM = {
   /** @deprecated Use CreationService.createRoom() instead */
   CREATE: '/createRoom',
@@ -48,9 +50,9 @@ export const ROOM = {
   SUMMARY_STATS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary/stats`,
   /** @deprecated Unused - will be removed in a future version */
   EPHEMERAL: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/ephemeral`,
-  TIMESTAMP_TO_EVENT: (roomId: string) => `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`,
+  TIMESTAMP_TO_EVENT: (roomId: string) => `${PREFIX_V1}/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`,
   REPORT_SCANNER_INFO: (roomId: string, eventId: string) =>
-    `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/scanner_info`,
+    `${PREFIX_V1}/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/scanner_info`,
   NOTIFICATIONS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/notifications`,
   /** @deprecated Unused - will be removed in a future version */
   UNREAD_COUNT: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/unread_count`,

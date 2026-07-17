@@ -1,7 +1,9 @@
+import { PREFIX_V1 } from './prefixes'
+
 export const SPACE = {
-  HIERARCHY: (spaceId: string) => `/_matrix/client/v1/spaces/${encodeURIComponent(spaceId)}/hierarchy`,
-  HIERARCHY_V1: (spaceId: string) => `/_matrix/client/v1/spaces/${encodeURIComponent(spaceId)}/hierarchy/v1`,
-  ROOM_HIERARCHY: (spaceId: string) => `/_matrix/client/v1/rooms/${encodeURIComponent(spaceId)}/hierarchy`,
+  HIERARCHY: (spaceId: string) => `${PREFIX_V1}/spaces/${encodeURIComponent(spaceId)}/hierarchy`,
+  HIERARCHY_V1: (spaceId: string) => `${PREFIX_V1}/spaces/${encodeURIComponent(spaceId)}/hierarchy/v1`,
+  ROOM_HIERARCHY: (spaceId: string) => `${PREFIX_V1}/rooms/${encodeURIComponent(spaceId)}/hierarchy`,
   /** @deprecated Use MatrixSpaceService.createSpace() instead */
   CREATE: '/spaces',
   /** @deprecated Use MatrixSpaceService.getSpace() instead */
