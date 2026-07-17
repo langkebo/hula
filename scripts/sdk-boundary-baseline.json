@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-17T23:09:21.846Z",
-  "count": 341,
+  "generatedAt": "2026-07-17T23:32:03.849Z",
+  "count": 336,
   "violations": [
     "src/composables/chat/useChatContextMenu.ts::matrix-js-sdk::dynamic",
     "src/composables/messaging/useMessageForward.ts::matrix-js-sdk",
@@ -334,11 +334,6 @@
     "src/types/matrix-extensions.d.ts::matrix-js-sdk/device-keys::dynamic",
     "src/types/matrix-extensions.d.ts::matrix-js-sdk/key-backup::dynamic",
     "src/types/matrix-extensions.d.ts::matrix-js-sdk/key-verification::dynamic",
-    "src/typings/global.d.ts::matrix-js-sdk/src/client",
-    "src/typings/global.d.ts::matrix-js-sdk/src/matrix-client-extensions.d",
-    "src/typings/matrix-sdk-extensions.d.ts::matrix-js-sdk/src/client",
-    "src/typings/matrix-sdk-extensions.d.ts::matrix-js-sdk/src/matrix-client-extensions.d",
-    "src/typings/matrix-sdk-extensions.d.ts::matrix-js-sdk/src/room/RoomManager",
     "src/workers/matrixSdk.worker.ts::matrix-js-sdk::dynamic",
     "src/workers/matrixSdk.worker.ts::matrix-js-sdk::dynamic",
     "src/workers/matrixSdk.worker.ts::matrix-js-sdk::dynamic",
