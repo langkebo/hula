@@ -39,8 +39,9 @@ describe('MatrixRoomTimelineService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
-      async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const url = new URL(`${TEST_BASE_URL}${path}`)
+      async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+        const prefix = opts?.prefix ?? ''
+        const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
             url.searchParams.set(key, value)
@@ -171,14 +172,18 @@ describe('MatrixRoomTimelineService', () => {
       await service.timestampToEvent('!r:e', 42, 'f')
       expect(authedRequestImpl).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v1/rooms/${encodeURIComponent('!r:e')}/timestamp_to_event`,
-        { ts: '42', dir: 'f' }
+        `/rooms/${encodeURIComponent('!r:e')}/timestamp_to_event`,
+        { ts: '42', dir: 'f' },
+        undefined,
+        { prefix: '/_matrix/client/v1' }
       )
     })
 
     it('defaults dir to "b" when omitted', async () => {
       await service.timestampToEvent('!r', 10)
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', expect.any(String), { ts: '10', dir: 'b' })
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', expect.any(String), { ts: '10', dir: 'b' }, undefined, {
+        prefix: '/_matrix/client/v1'
+      })
     })
 
     it('swallows errors and returns null', async () => {

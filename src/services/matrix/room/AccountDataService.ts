@@ -1,6 +1,7 @@
 import { createLogger } from '@/utils/Logger'
 import { type AIConnectionInfo, type McpTool, matrixAIConnectionService } from '../ai/MatrixAIConnectionService'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 import { matrixRoomSummaryService, type RoomSummary } from './MatrixRoomSummaryService'
 
@@ -51,7 +52,11 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getReportScannerInfo(roomId: string, eventId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId))
+      const result = await authedRequestWithPath<Record<string, unknown>>(
+        client,
+        'GET',
+        MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId)
+      )
       return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取内容扫描信息失败: ${err}`)

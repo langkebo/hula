@@ -6,6 +6,7 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import { stripMatrixPrefix } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('UrlPreview')
@@ -85,16 +86,23 @@ class MatrixUrlPreviewService {
     }
 
     try {
-      const api = client.getMediaApiUrl('')
-      let previewUrl = `${api}${MATRIX_PATHS.MEDIA.PREVIEW_URL}?url=${encodeURIComponent(url)}`
-
+      // MATRIX_PATHS.MEDIA.PREVIEW_URL 含完整媒体前缀 (/_matrix/media/r0/preview_url)，
+      // 直接传入 authedRequest 会被 SDK 再次拼接 /_matrix/client/v3 前缀导致 404。
+      // 使用 stripMatrixPrefix 剥离媒体前缀，通过 opts.prefix 显式传递。
+      const { path: previewPath, prefix: mediaPrefix } = stripMatrixPrefix(MATRIX_PATHS.MEDIA.PREVIEW_URL)
+      const queryParams: Record<string, string> = { url }
       if (timestamp) {
-        previewUrl += `&ts=${timestamp}`
+        queryParams.ts = String(timestamp)
       }
 
-      const response = (await this.client.http.authedRequest({}, 'GET', previewUrl.replace(api, ''), undefined, {
-        global: false
-      })) as Record<string, unknown>
+      const response = (await this.client.http.authedRequest(
+        { prefix: mediaPrefix },
+        'GET',
+        previewPath,
+        queryParams,
+        undefined,
+        { global: false }
+      )) as Record<string, unknown>
 
       if (!response || !Object.keys(response).length) {
         return null

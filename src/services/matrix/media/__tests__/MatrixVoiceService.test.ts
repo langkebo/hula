@@ -35,21 +35,24 @@ const endpointCheckMock = vi.fn()
 
 const authedRequestMock = vi
   .fn()
-  .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-    const url = `${TEST_BASE_URL}${path}`
-    const headers: Record<string, string> = {
-      Authorization: 'Bearer test-access-token'
+  .mockImplementation(
+    async (method: string, path: string, _queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+      const prefix = opts?.prefix ?? ''
+      const url = `${TEST_BASE_URL}${prefix}${path}`
+      const headers: Record<string, string> = {
+        Authorization: 'Bearer test-access-token'
+      }
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      return response.json()
     }
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined
-    })
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-    return response.json()
-  })
+  )
 
 const mockClient = {
   http: {
@@ -81,12 +84,9 @@ describe('MatrixVoiceService', () => {
       httpUrl: 'https://cdn.example.com/example.org/media'
     })
     expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/client/v1/voice/upload')
-    expect(authedRequestMock).toHaveBeenCalledWith(
-      'POST',
-      '/_matrix/client/v1/voice/upload',
-      undefined,
-      expect.any(FormData)
-    )
+    expect(authedRequestMock).toHaveBeenCalledWith('POST', '/voice/upload', undefined, expect.any(FormData), {
+      prefix: '/_matrix/client/v1'
+    })
   })
 
   it('should resolve playback urls from room event content', async () => {
@@ -133,9 +133,13 @@ describe('MatrixVoiceService', () => {
       language: 'en'
     })
     expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/client/v1/voice/transcription')
-    expect(authedRequestMock).toHaveBeenCalledWith('POST', '/_matrix/client/v1/voice/transcription', undefined, {
-      message_id: '$voice-event'
-    })
+    expect(authedRequestMock).toHaveBeenCalledWith(
+      'POST',
+      '/voice/transcription',
+      undefined,
+      { message_id: '$voice-event' },
+      { prefix: '/_matrix/client/v1' }
+    )
   })
 
   it('returns endpoint-unavailable error when upload api is disabled', async () => {

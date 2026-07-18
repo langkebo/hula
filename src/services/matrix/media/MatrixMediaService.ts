@@ -12,6 +12,7 @@ import { compressImage, formatFileSize, isImageFile } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixMediaService')
@@ -431,9 +432,13 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   async getMediaConfig(): Promise<{ 'm.upload.size'?: number; [key: string]: unknown }> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.CONFIG)
+      const result = await authedRequestWithPath<{ 'm.upload.size'?: number; [key: string]: unknown }>(
+        client,
+        'GET',
+        MATRIX_PATHS.MEDIA.CONFIG
+      )
       logger.info('[MatrixMedia] 获取上传配置成功')
-      return result as { 'm.upload.size'?: number; [key: string]: unknown }
+      return result
     } catch (err) {
       logger.error(`[MatrixMedia] 获取上传配置失败: ${err}`)
       throw err
@@ -443,7 +448,8 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   async deleteMedia(serverName: string, mediaId: string): Promise<boolean> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest(
+      await authedRequestWithPath<void>(
+        client,
         'POST',
         MATRIX_PATHS.MEDIA.DELETE(encodeURIComponent(serverName), encodeURIComponent(mediaId))
       )
@@ -458,9 +464,13 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   async getQuotaAlerts(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.QUOTA_ALERTS)
+      const result = await authedRequestWithPath<{ alerts?: Array<Record<string, unknown>> }>(
+        client,
+        'GET',
+        MATRIX_PATHS.MEDIA.QUOTA_ALERTS
+      )
       logger.info('[MatrixMedia] 获取配额告警成功')
-      return (result as { alerts?: Array<Record<string, unknown>> }).alerts ?? []
+      return result.alerts ?? []
     } catch (err) {
       logger.error(`[MatrixMedia] 获取配额告警失败: ${err}`)
       return []
@@ -470,7 +480,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   async checkQuota(): Promise<{ limit: number; used: number; remaining: number } | null> {
     const client = this.getClient()
     try {
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.QUOTA_CHECK)) as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', MATRIX_PATHS.MEDIA.QUOTA_CHECK)
       return {
         limit: (result.limit as number) ?? 0,
         used: (result.used as number) ?? 0,
@@ -489,7 +499,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   } | null> {
     const client = this.getClient()
     try {
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.QUOTA_STATS)) as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', MATRIX_PATHS.MEDIA.QUOTA_STATS)
       return {
         storageBytes: (result.storage_bytes as number) ?? 0,
         mediaCount: (result.media_count as number) ?? 0,
@@ -507,10 +517,11 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   } | null> {
     const client = this.getClient()
     try {
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.MEDIA.CLIENT_MEDIA_CONFIG)) as Record<
-        string,
-        unknown
-      >
+      const result = (await authedRequestWithPath<Record<string, unknown>>(
+        client,
+        'GET',
+        MATRIX_PATHS.MEDIA.CLIENT_MEDIA_CONFIG
+      )) as Record<string, unknown>
       logger.info('[MatrixMedia] 获取认证媒体配置成功')
       return {
         authenticated_media: (result.authenticated_media as boolean) ?? false,

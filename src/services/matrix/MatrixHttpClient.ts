@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { type AppError, toAppError } from '@/common/errors'
 import { err, ok, type Result } from '@/common/result'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
@@ -68,6 +69,27 @@ export function stripMatrixPrefix(requestPath: string): { path: string; prefix?:
     }
   }
   return { path: requestPath }
+}
+
+/**
+ * 使用 stripMatrixPrefix 包装 client.http.authedRequest。
+ *
+ * 用于 path 含完整前缀（如 MATRIX_PATHS.SPACE.HIERARCHY = '/_matrix/client/v1/...'）
+ * 的场景：剥离已知前缀后以 { prefix } 选项传递，避免 SDK 再次拼接 /_matrix/client/v3
+ * 导致 URL 翻倍（/_matrix/client/v3/_matrix/client/v1/... → 404）。
+ *
+ * 对于短路径（不含前缀），stripMatrixPrefix 原样返回，行为等价于直接调用 authedRequest。
+ */
+export async function authedRequestWithPath<T>(
+  client: MatrixClient,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  fullPath: string,
+  queryParams?: Record<string, string>,
+  body?: object
+): Promise<T> {
+  const { path, prefix } = stripMatrixPrefix(fullPath)
+  const opts = prefix ? { prefix } : undefined
+  return (await client.http.authedRequest(method, path, queryParams, body, opts)) as T
 }
 
 const AI_EXTENSION_ENABLED = import.meta.env.VITE_AI_EXTENSION_ENABLED === 'true'

@@ -16,6 +16,7 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 import { matrixRoomActionFacade } from '../room/ActionFacade'
 import {
@@ -894,10 +895,11 @@ class MatrixFriendService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.FRIENDS.STATUS(userId))) as Record<
-        string,
-        unknown
-      >
+      const result = (await authedRequestWithPath<Record<string, unknown>>(
+        client,
+        'GET',
+        MATRIX_PATHS.FRIENDS.STATUS(userId)
+      )) as Record<string, unknown>
       return result
     } catch (err) {
       logger.error(`[MatrixFriend] 获取好友状态详情失败: ${userId}, ${err}`)

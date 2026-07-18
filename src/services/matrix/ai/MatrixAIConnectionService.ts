@@ -1,6 +1,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixAIConnectionService')
@@ -58,8 +59,11 @@ class MatrixAIConnectionService {
   async listConnections(): Promise<AIConnectionInfo[]> {
     const client = this.ensureClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.AI.CONNECTIONS)
-      const response = result as AIConnectionsListResponse
+      const response = await authedRequestWithPath<AIConnectionsListResponse>(
+        client,
+        'GET',
+        MATRIX_PATHS.AI.CONNECTIONS
+      )
       logger.info(`[AIConnection] 获取 AI 连接列表: ${response.connections?.length ?? 0} 个`)
       return response.connections ?? []
     } catch (err) {
@@ -71,8 +75,13 @@ class MatrixAIConnectionService {
   async createConnection(request: CreateAIConnectionRequest): Promise<string> {
     const client = this.ensureClient()
     try {
-      const result = await client.http.authedRequest('POST', MATRIX_PATHS.AI.CONNECTIONS, undefined, request)
-      const response = result as CreateAIConnectionResponse
+      const response = await authedRequestWithPath<CreateAIConnectionResponse>(
+        client,
+        'POST',
+        MATRIX_PATHS.AI.CONNECTIONS,
+        undefined,
+        request
+      )
       logger.info(`[AIConnection] 创建 AI 连接成功: ${response.id}`)
       return response.id
     } catch (err) {
@@ -84,8 +93,11 @@ class MatrixAIConnectionService {
   async getConnection(id: string): Promise<AIConnectionInfo> {
     const client = this.ensureClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.AI.CONNECTION_BY_ID(id))
-      const response = result as AIConnectionInfo
+      const response = await authedRequestWithPath<AIConnectionInfo>(
+        client,
+        'GET',
+        MATRIX_PATHS.AI.CONNECTION_BY_ID(id)
+      )
       logger.info(`[AIConnection] 获取 AI 连接: ${response.name ?? id}`)
       return response
     } catch (err) {
@@ -97,7 +109,7 @@ class MatrixAIConnectionService {
   async deleteConnection(id: string): Promise<void> {
     const client = this.ensureClient()
     try {
-      await client.http.authedRequest('DELETE', MATRIX_PATHS.AI.CONNECTION_BY_ID(id))
+      await authedRequestWithPath<void>(client, 'DELETE', MATRIX_PATHS.AI.CONNECTION_BY_ID(id))
       logger.info(`[AIConnection] 删除 AI 连接成功: ${id}`)
     } catch (err) {
       logger.error(`[AIConnection] 删除连接失败: ${err}`)
@@ -108,8 +120,7 @@ class MatrixAIConnectionService {
   async listMcpTools(): Promise<McpTool[]> {
     const client = this.ensureClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.AI.MCP_TOOLS)
-      const response = result as McpToolsResponse
+      const response = await authedRequestWithPath<McpToolsResponse>(client, 'GET', MATRIX_PATHS.AI.MCP_TOOLS)
       logger.info(`[AIConnection] 获取 MCP 工具列表: ${response.tools?.length ?? 0} 个`)
       return response.tools ?? []
     } catch (err) {
@@ -121,8 +132,13 @@ class MatrixAIConnectionService {
   async callMcpTool(request: CallMcpToolRequest): Promise<Record<string, unknown>> {
     const client = this.ensureClient()
     try {
-      const result = await client.http.authedRequest('POST', MATRIX_PATHS.AI.MCP_TOOLS_CALL, undefined, request)
-      const response = result as CallMcpToolResponse
+      const response = await authedRequestWithPath<CallMcpToolResponse>(
+        client,
+        'POST',
+        MATRIX_PATHS.AI.MCP_TOOLS_CALL,
+        undefined,
+        request
+      )
       logger.info(`[AIConnection] 调用 MCP 工具成功: ${request.tool}`)
       return response.result
     } catch (err) {

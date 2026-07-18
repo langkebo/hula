@@ -46,8 +46,9 @@ describe('MatrixMediaService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
-      async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-        const url = `${TEST_BASE_URL}${path}`
+      async (method: string, path: string, _queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+        const prefix = opts?.prefix ?? ''
+        const url = `${TEST_BASE_URL}${prefix}${path}`
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
           Authorization: 'Bearer test-access-token'
@@ -295,7 +296,9 @@ describe('MatrixMediaService', () => {
       const result = await matrixMediaService.getMediaConfig()
 
       expect(result['m.upload.size']).toBe(52428800)
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_matrix/media/v3/config')
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/config', undefined, undefined, {
+        prefix: '/_matrix/media/v3'
+      })
     })
 
     it('should throw on error', async () => {
@@ -318,7 +321,9 @@ describe('MatrixMediaService', () => {
       const result = await matrixMediaService.deleteMedia('matrix.org', 'media123')
 
       expect(result).toBe(true)
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/_matrix/media/v3/delete/matrix.org/media123')
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/delete/matrix.org/media123', undefined, undefined, {
+        prefix: '/_matrix/media/v3'
+      })
     })
 
     it('should throw on delete error', async () => {
@@ -341,7 +346,9 @@ describe('MatrixMediaService', () => {
       const result = await matrixMediaService.getQuotaAlerts()
 
       expect(result).toHaveLength(1)
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_matrix/media/v1/quota/alerts')
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/quota/alerts', undefined, undefined, {
+        prefix: '/_matrix/media/v1'
+      })
     })
 
     it('should return empty array on error', async () => {
