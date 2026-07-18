@@ -74,9 +74,9 @@ export function stripMatrixPrefix(requestPath: string): { path: string; prefix?:
 /**
  * 使用 stripMatrixPrefix 包装 client.http.authedRequest。
  *
- * 用于 path 含完整前缀（如 MATRIX_PATHS.SPACE.HIERARCHY = '/_matrix/client/v1/...'）
- * 的场景：剥离已知前缀后以 { prefix } 选项传递，避免 SDK 再次拼接 /_matrix/client/v3
- * 导致 URL 翻倍（/_matrix/client/v3/_matrix/client/v1/... → 404）。
+ * 用于 path 含完整前缀（如 MATRIX_PATHS.SPACE.HIERARCHY，含 PREFIX_V1）的场景：
+ * 剥离已知前缀后以 { prefix } 选项传递，避免 SDK 再次拼接默认 client 前缀
+ * 导致 URL 翻倍（双前缀 → 404）。
  *
  * 对于短路径（不含前缀），stripMatrixPrefix 原样返回，行为等价于直接调用 authedRequest。
  */
