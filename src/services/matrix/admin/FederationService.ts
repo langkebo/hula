@@ -23,9 +23,10 @@ export class AdminFederationService {
     const client = this.getClient()
     return client.http.authedRequest(
       method,
-      `${MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE}${path}`,
+      path,
       undefined,
-      method === 'GET' || method === 'DELETE' ? undefined : body
+      method === 'GET' || method === 'DELETE' ? undefined : body,
+      { prefix: MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE }
     ) as Promise<TResponse>
   }
 

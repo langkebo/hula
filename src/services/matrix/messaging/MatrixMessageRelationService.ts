@@ -539,7 +539,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
       if (options?.dir) queryParams.dir = options.dir
       const result = (await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}`,
+        `/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}`,
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )) as RelationsResponse
       logger.info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${result.chunk?.length ?? 0}`)
@@ -566,7 +566,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
       if (options?.dir) queryParams.dir = options.dir
       const result = (await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`,
+        `/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`,
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )) as RelationsResponse
       logger.info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${result.chunk?.length ?? 0}`)
@@ -583,7 +583,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     try {
       const result = (await client.http.authedRequest(
         'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/aggregations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`
+        `/rooms/${encodeURIComponent(roomId)}/aggregations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`
       )) as AggregationsResponse
       logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
       return result
@@ -609,7 +609,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
       const txnId = `txn_${Date.now()}`
       const result = (await client.http.authedRequest(
         'PUT',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}/${encodeURIComponent(txnId)}`,
+        `/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}/${encodeURIComponent(txnId)}`,
         undefined,
         { ...body, type: eventType }
       )) as SendRelationResponse

@@ -46,8 +46,9 @@ describe('AdminFederationService', () => {
     vi.clearAllMocks()
     blacklistResponse = {}
     authedRequestImpl.mockImplementation(
-      async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const url = new URL(`${TEST_BASE_URL}${path}`)
+      async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+        const prefix = opts?.prefix ?? '/_matrix/client/v3'
+        const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
             url.searchParams.set(key, value)
@@ -118,12 +119,9 @@ describe('AdminFederationService', () => {
     await expect(service.getFederationBlacklist()).resolves.toEqual([
       { domain: 'evil.hs', reason: 'spam', addedBy: '@admin:hs', addedAt: 100 }
     ])
-    expect(authedRequestImpl).toHaveBeenCalledWith(
-      'GET',
-      '/_synapse/admin/v1/federation/blacklist',
-      undefined,
-      undefined
-    )
+    expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/federation/blacklist', undefined, undefined, {
+      prefix: '/_synapse/admin/v1'
+    })
 
     blacklistResponse = { servers: [{ server_name: 'bad.hs' }] }
     await expect(service.getFederationBlacklist()).resolves.toEqual([{ domain: 'bad.hs' }])
@@ -133,9 +131,10 @@ describe('AdminFederationService', () => {
     await expect(service.addToFederationBlacklist('evil.hs/x', 'spam')).resolves.toBe(true)
     expect(authedRequestImpl).toHaveBeenCalledWith(
       'POST',
-      '/_synapse/admin/v1/federation/blacklist/evil.hs%2Fx',
+      '/federation/blacklist/evil.hs%2Fx',
       undefined,
-      { reason: 'spam' }
+      { reason: 'spam' },
+      { prefix: '/_synapse/admin/v1' }
     )
 
     server.use(
@@ -148,12 +147,9 @@ describe('AdminFederationService', () => {
 
   it('removeFromFederationBlacklist 使用 DELETE 且失败时返回 false', async () => {
     await expect(service.removeFromFederationBlacklist('evil.hs')).resolves.toBe(true)
-    expect(authedRequestImpl).toHaveBeenCalledWith(
-      'DELETE',
-      '/_synapse/admin/v1/federation/blacklist/evil.hs',
-      undefined,
-      undefined
-    )
+    expect(authedRequestImpl).toHaveBeenCalledWith('DELETE', '/federation/blacklist/evil.hs', undefined, undefined, {
+      prefix: '/_synapse/admin/v1'
+    })
 
     server.use(
       http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/federation/blacklist/:domain`, () => {

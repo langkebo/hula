@@ -1,5 +1,6 @@
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+import { stripMatrixPrefix } from '../MatrixHttpClient'
 
 const logger = createLogger('MediaService')
 
@@ -78,10 +79,17 @@ export class AdminMediaService {
     }
 
     try {
-      const result = await client.http.authedRequest('POST', '/_matrix/client/v1/admin/purge_remote_media', undefined, {
-        before_ts: beforeTs,
-        include_profiles: includeProfiles
-      })
+      const { path, prefix } = stripMatrixPrefix('/_matrix/client/v1/admin/purge_remote_media')
+      const result = await client.http.authedRequest(
+        'POST',
+        path,
+        undefined,
+        {
+          before_ts: beforeTs,
+          include_profiles: includeProfiles
+        },
+        { prefix }
+      )
       logger.info(`[AdminMedia] 清理远程媒体成功: ${(result as { deleted?: number }).deleted ?? 0} 个`)
       return { deleted: (result as { deleted?: number }).deleted ?? 0 }
     } catch (err) {

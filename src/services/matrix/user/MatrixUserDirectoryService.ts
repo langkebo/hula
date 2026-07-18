@@ -118,7 +118,7 @@ class UserDirectoryService extends BaseMatrixService {
           avatar_url?: string
         }>
         next_batch?: string
-      }>('POST', '/_matrix/client/v3/user_directory/list', undefined, {
+      }>('POST', '/user_directory/list', undefined, {
         limit,
         from: from || undefined
       })
@@ -140,7 +140,7 @@ class UserDirectoryService extends BaseMatrixService {
       const result = await client.http.authedRequest<{
         display_name?: string
         avatar_url?: string
-      }>('GET', `/_matrix/client/v3/user_directory/profiles/${encodeURIComponent(userId)}`)
+      }>('GET', `/user_directory/profiles/${encodeURIComponent(userId)}`)
       return {
         userId,
         displayName: result.display_name,
