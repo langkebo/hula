@@ -1,6 +1,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
+import { stripMatrixPrefix } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 import type { AdminReport, ReportRequest, ReportRoomResponse, ScannerInfo } from './AdminTypes'
 
@@ -14,6 +15,22 @@ export class AdminReportService {
     readonly _sdkAdmin: ReportDomainSdkGetter,
     private readonly getClient: ReportDomainClientGetter
   ) {}
+
+  /**
+   * 调用 authedRequest 前先用 stripMatrixPrefix 剥离已知前缀，
+   * 避免 SDK 默认 ClientPrefix.V3 与路径中的前缀重复拼接。
+   */
+  private async prefixedAuthedRequest<T>(
+    client: MatrixClient,
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    fullPath: string,
+    queryParams?: Record<string, string>,
+    body?: Record<string, unknown>
+  ): Promise<T> {
+    const { path, prefix } = stripMatrixPrefix(fullPath)
+    const opts = prefix ? { prefix } : undefined
+    return (await client.http.authedRequest(method, path, queryParams, body, opts)) as T
+  }
 
   async reportEvent(request: ReportRequest): Promise<void> {
     const client = this.getClient()
@@ -108,10 +125,11 @@ export class AdminReportService {
   async getScannerInfo(roomId: string, eventId: string): Promise<ScannerInfo | null> {
     const client = this.getClient()
     try {
-      const result = (await client.http.authedRequest(
+      const result = await this.prefixedAuthedRequest<ScannerInfo>(
+        client,
         'GET',
         MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId)
-      )) as ScannerInfo
+      )
       return result
     } catch (err) {
       logger.error(`[Admin] 获取扫描器信息失败: ${err}`)
@@ -129,7 +147,12 @@ export class AdminReportService {
       const queryParams: Record<string, string> = { limit: String(limit) }
       if (roomId) queryParams.room_id = roomId
       if (from) queryParams.from = from
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ADMIN.REPORTS, queryParams)
+      const result = await this.prefixedAuthedRequest<{ reports?: AdminReport[]; next_batch?: string }>(
+        client,
+        'GET',
+        MATRIX_PATHS.ADMIN.REPORTS,
+        queryParams
+      )
       return {
         reports: (result as { reports?: AdminReport[] }).reports ?? [],
         next_batch: (result as { next_batch?: string }).next_batch
@@ -143,7 +166,11 @@ export class AdminReportService {
   async getAdminReport(reportId: string): Promise<AdminReport | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
+      const result = await this.prefixedAuthedRequest<AdminReport>(
+        client,
+        'GET',
+        MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId)
+      )
       return result as AdminReport
     } catch (err) {
       logger.error(`[Admin] 获取报表详情失败: ${err}`)
@@ -154,7 +181,7 @@ export class AdminReportService {
   async dismissReport(reportId: string): Promise<boolean> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('DELETE', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
+      await this.prefixedAuthedRequest<void>(client, 'DELETE', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
       logger.info(`[Admin] 驳回报表成功: ${reportId}`)
       return true
     } catch (err) {

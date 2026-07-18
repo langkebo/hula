@@ -8,10 +8,10 @@ import { AdminReportService } from '../ReportService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 
 const server = setupMswServer(
-  http.post(`${TEST_BASE_URL}/rooms/:roomId/report`, () => {
+  http.post(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/report`, () => {
     return HttpResponse.json({ report_id: 'rep-1' })
   }),
-  http.put(`${TEST_BASE_URL}/rooms/:roomId/report/:eventId/score`, () => {
+  http.put(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/report/:eventId/score`, () => {
     return HttpResponse.json({})
   }),
   http.get(`${TEST_BASE_URL}/_synapse/admin/v1/reports`, () => {
@@ -49,8 +49,9 @@ describe('AdminReportService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
-      async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const url = new URL(`${TEST_BASE_URL}${path}`)
+      async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+        const prefix = opts?.prefix ?? '/_matrix/client/v3'
+        const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
             url.searchParams.set(key, value)
@@ -93,7 +94,7 @@ describe('AdminReportService', () => {
 
   it('reportRoom v3 失败时回退到首条时间线事件举报', async () => {
     server.use(
-      http.post(`${TEST_BASE_URL}/rooms/:roomId/report`, () => {
+      http.post(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/report`, () => {
         return HttpResponse.json({ errcode: 'M_UNRECOGNIZED' }, { status: 400 })
       })
     )
@@ -122,11 +123,17 @@ describe('AdminReportService', () => {
       reports: [{ id: 'rep-1' }],
       next_batch: 'nb'
     })
-    expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_synapse/admin/v1/reports', {
-      limit: '25',
-      room_id: '!r:hs',
-      from: 'from-1'
-    })
+    expect(authedRequestImpl).toHaveBeenCalledWith(
+      'GET',
+      '/reports',
+      {
+        limit: '25',
+        room_id: '!r:hs',
+        from: 'from-1'
+      },
+      undefined,
+      { prefix: '/_synapse/admin/v1' }
+    )
   })
 
   it('getAdminReports 出错时降级为空列表', async () => {
@@ -140,7 +147,9 @@ describe('AdminReportService', () => {
 
   it('dismissReport 使用 DELETE 且失败时返回 false', async () => {
     await expect(service.dismissReport('rep-1')).resolves.toBe(true)
-    expect(authedRequestImpl).toHaveBeenCalledWith('DELETE', '/_synapse/admin/v1/reports/rep-1')
+    expect(authedRequestImpl).toHaveBeenCalledWith('DELETE', '/reports/rep-1', undefined, undefined, {
+      prefix: '/_synapse/admin/v1'
+    })
 
     server.use(
       http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/reports/:reportId`, () => {

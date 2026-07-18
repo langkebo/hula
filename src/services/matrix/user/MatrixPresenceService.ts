@@ -139,15 +139,10 @@ class MatrixPresenceService extends BaseMatrixService {
         await presenceManager.setPresence(presence, statusMsg ?? '')
         logger.info(`[Presence] 设置在线状态成功: ${presence}`)
       } else {
-        await client.http.authedRequest(
-          'PUT',
-          `/_matrix/client/v3/presence/${encodeURIComponent(userId)}/status`,
-          undefined,
-          {
-            presence,
-            status_msg: statusMsg
-          }
-        )
+        await client.http.authedRequest('PUT', `/presence/${encodeURIComponent(userId)}/status`, undefined, {
+          presence,
+          status_msg: statusMsg
+        })
         logger.info(`[Presence] 设置在线状态成功: ${presence}`)
       }
     } catch (err) {
@@ -178,7 +173,7 @@ class MatrixPresenceService extends BaseMatrixService {
       } else {
         const response = (await client.http.authedRequest(
           'GET',
-          `/_matrix/client/v3/presence/${encodeURIComponent(userId)}/status`
+          `/presence/${encodeURIComponent(userId)}/status`
         )) as Omit<PresenceInfo, 'user_id'>
         return {
           user_id: userId,
@@ -245,7 +240,7 @@ class MatrixPresenceService extends BaseMatrixService {
       } else {
         const response = (await client.http.authedRequest(
           'POST',
-          '/_matrix/client/v3/presence/list',
+          '/presence/list',
           undefined,
           payload
         )) as PresenceListResponse
@@ -274,7 +269,7 @@ class MatrixPresenceService extends BaseMatrixService {
         await presenceManager.unsubscribeFromPresence(userIds)
         logger.info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
       } else {
-        await client.http.authedRequest('POST', '/_matrix/client/v3/presence/list', undefined, { unsubscribe: userIds })
+        await client.http.authedRequest('POST', '/presence/list', undefined, { unsubscribe: userIds })
         logger.info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
       }
     } catch (err) {
@@ -305,7 +300,7 @@ class MatrixPresenceService extends BaseMatrixService {
       } else {
         const response = (await client.http.authedRequest(
           'GET',
-          `/_matrix/client/v3/presence/list/${encodeURIComponent(targetUserId)}`
+          `/presence/list/${encodeURIComponent(targetUserId)}`
         )) as PresenceListResponse
         logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
         return response

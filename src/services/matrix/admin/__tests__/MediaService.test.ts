@@ -34,8 +34,9 @@ describe('AdminMediaService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
-      async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const url = new URL(`${TEST_BASE_URL}${path}`)
+      async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+        const prefix = opts?.prefix ?? '/_matrix/client/v3'
+        const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
             url.searchParams.set(key, value)
@@ -117,10 +118,16 @@ describe('AdminMediaService', () => {
     vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
 
     await expect(service.purgeRemoteMedia(1700000000000, true)).resolves.toEqual({ deleted: 3 })
-    expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/_matrix/client/v1/admin/purge_remote_media', undefined, {
-      before_ts: 1700000000000,
-      include_profiles: true
-    })
+    expect(authedRequestImpl).toHaveBeenCalledWith(
+      'POST',
+      '/admin/purge_remote_media',
+      undefined,
+      {
+        before_ts: 1700000000000,
+        include_profiles: true
+      },
+      { prefix: '/_matrix/client/v1' }
+    )
   })
 
   it('purgeRemoteMedia 客户端未初始化时抛错', async () => {

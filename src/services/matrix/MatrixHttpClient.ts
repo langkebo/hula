@@ -27,8 +27,47 @@ interface MatrixAuthedRequestInvoker {
     path: string,
     queryParams?: Record<string, string>,
     body?: Record<string, unknown>,
-    options?: { headers?: Record<string, string> }
+    options?: { headers?: Record<string, string>; prefix?: string }
   ): Promise<unknown>
+}
+
+/**
+ * 已知的 Matrix SDK 前缀列表（长前缀优先匹配，避免短前缀误匹配）。
+ * SDK authedRequest 默认使用 ClientPrefix.V3 (/_matrix/client/v3)，会自动拼接到 path 前。
+ * 若调用方传入的 path 已含完整前缀，会导致 URL 翻倍（如 /_matrix/client/v3/_matrix/client/v3/...）。
+ * 此函数检测并剥离已知前缀，返回短路径和需要显式设置的 prefix（仅非默认前缀需要）。
+ */
+const MATRIX_PREFIXES = [
+  '/_matrix/client/v3',
+  '/_matrix/client/v1',
+  '/_matrix/client/r0',
+  '/_matrix/client/unstable',
+  '/_matrix/media/v3',
+  '/_matrix/media/v1',
+  '/_matrix/media/r0',
+  '/_synapse/admin/v1',
+  '/_synapse/admin/v2',
+  '/_matrix/admin/v1'
+] as const
+
+const SDK_DEFAULT_PREFIX = '/_matrix/client/v3'
+
+/**
+ * 剥离 path 中的已知 Matrix 前缀，避免 SDK authedRequest 再次拼接导致 URL 翻倍。
+ * @returns { path: 短路径, prefix: 需显式设置的 prefix（undefined 表示用 SDK 默认） }
+ */
+export function stripMatrixPrefix(requestPath: string): { path: string; prefix?: string } {
+  for (const prefix of MATRIX_PREFIXES) {
+    if (requestPath === prefix || requestPath.startsWith(`${prefix}/`)) {
+      const stripped = requestPath.slice(prefix.length) || '/'
+      // SDK 默认前缀无需显式传递
+      if (prefix === SDK_DEFAULT_PREFIX) {
+        return { path: stripped }
+      }
+      return { path: stripped, prefix }
+    }
+  }
+  return { path: requestPath }
 }
 
 const AI_EXTENSION_ENABLED = import.meta.env.VITE_AI_EXTENSION_ENABLED === 'true'
@@ -199,18 +238,20 @@ class MatrixHttpClient {
 
     if (client) {
       // client.http.authedRequest 内部会自动处理 accessToken 和 baseUrl
+      // stripMatrixPrefix 剥离已知前缀，避免 SDK 再次拼接导致 URL 翻倍
+      const { path: strippedPath, prefix: strippedPrefix } = stripMatrixPrefix(requestPath)
       const http = client.http as unknown as MatrixAuthedRequestInvoker
-      if (requestOptions.headers) {
-        return (await http.authedRequest(method, requestPath, queryParams, requestOptions.body, {
-          headers: requestOptions.headers
-        })) as T
-      }
+      const opts: { headers?: Record<string, string>; prefix?: string } = {}
+      if (requestOptions.headers) opts.headers = requestOptions.headers
+      if (strippedPrefix) opts.prefix = strippedPrefix
 
+      if (Object.keys(opts).length > 0) {
+        return (await http.authedRequest(method, strippedPath, queryParams, requestOptions.body, opts)) as T
+      }
       if (requestOptions.body !== undefined) {
-        return (await http.authedRequest(method, requestPath, queryParams, requestOptions.body)) as T
+        return (await http.authedRequest(method, strippedPath, queryParams, requestOptions.body)) as T
       }
-
-      return (await http.authedRequest(method, requestPath, queryParams)) as T
+      return (await http.authedRequest(method, strippedPath, queryParams)) as T
     }
 
     // 回退到手动 fetch (用于 client 尚未初始化或非 authed 请求)

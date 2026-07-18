@@ -651,11 +651,11 @@ class MatrixMessageService extends BaseMatrixService {
     dir: 'b' | 'f'
   ): Promise<MatrixEvent[]> {
     try {
-      const response = (await client.http.authedRequest(
-        'GET',
-        `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`,
-        { from: fromToken, limit: String(limit), dir }
-      )) as Record<string, unknown>
+      const response = (await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/messages`, {
+        from: fromToken,
+        limit: String(limit),
+        dir
+      })) as Record<string, unknown>
       const chunk = response.chunk
       return Array.isArray(chunk) ? (chunk as MatrixEvent[]) : []
     } catch (err) {
