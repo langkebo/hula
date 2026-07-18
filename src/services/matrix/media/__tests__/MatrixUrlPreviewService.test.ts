@@ -21,18 +21,31 @@ const server = setupMswServer(
 )
 
 // Spy on getClient to return a client whose authedRequest calls real fetch.
-// The MatrixUrlPreviewService calls: authedRequest({}, 'GET', path, undefined, { global: false })
-// which has the method/path arguments swapped. The mock handles both correct and buggy order.
+// The MatrixUrlPreviewService uses stripMatrixPrefix and calls the second overload:
+//   authedRequest({ prefix }, 'GET', path, queryParams, undefined, { global: false })
+// The mock reconstructs the full URL from prefix + path + queryParams and hits MSW.
 vi.spyOn(matrixUrlPreviewService as any, 'client', 'get').mockReturnValue({
   getUserId: () => '@test:example.com',
   getMediaApiUrl: () => TEST_BASE_URL,
   http: {
-    authedRequest: async (arg1: unknown, arg2: unknown, arg3?: unknown, _arg4?: unknown) => {
-      // Detect argument order: if arg1 is a string method, use correct order.
-      // If arg1 is an object, the real method is arg2 and the real path is arg3 (buggy order).
-      const method = typeof arg1 === 'string' ? arg1 : (arg2 as string)
-      const path = typeof arg1 === 'string' ? (arg2 as string) : (arg3 as string)
-      const url = `${TEST_BASE_URL}${path}`
+    authedRequest: async (
+      arg1: unknown,
+      arg2: unknown,
+      arg3?: unknown,
+      arg4?: unknown,
+      _arg5?: unknown,
+      _arg6?: unknown
+    ) => {
+      // Detect overload: first overload has method (string) as arg1;
+      // second overload has opts (object) as arg1.
+      const isSecondOverload = typeof arg1 === 'object' && arg1 !== null
+      const method = isSecondOverload ? (arg2 as string) : (arg1 as string)
+      const path = isSecondOverload ? (arg3 as string) : (arg2 as string)
+      const queryParams = (isSecondOverload ? (arg4 as Record<string, string> | undefined) : undefined) ?? {}
+      const opts = (isSecondOverload ? (arg1 as { prefix?: string }) : undefined) ?? {}
+      const prefix = opts.prefix ?? ''
+      const queryString = Object.keys(queryParams).length ? '?' + new URLSearchParams(queryParams).toString() : ''
+      const url = `${TEST_BASE_URL}${prefix}${path}${queryString}`
       const response = await fetch(url, {
         method,
         headers: {

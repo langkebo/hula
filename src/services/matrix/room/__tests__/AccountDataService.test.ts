@@ -41,8 +41,9 @@ describe('MatrixRoomAccountDataService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
-      async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-        const url = `${TEST_BASE_URL}${path}`
+      async (method: string, path: string, _queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+        const prefix = opts?.prefix ?? ''
+        const url = `${TEST_BASE_URL}${prefix}${path}`
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
           Authorization: 'Bearer test-access-token'
@@ -124,7 +125,10 @@ describe('MatrixRoomAccountDataService', () => {
       expect(await service.getReportScannerInfo('!r', '$e')).toEqual({ clean: true })
       expect(authedRequestImpl).toHaveBeenCalledWith(
         'GET',
-        `/_matrix/client/v1/rooms/${encodeURIComponent('!r')}/report/${encodeURIComponent('$e')}/scanner_info`
+        `/rooms/${encodeURIComponent('!r')}/report/${encodeURIComponent('$e')}/scanner_info`,
+        undefined,
+        undefined,
+        { prefix: '/_matrix/client/v1' }
       )
     })
 

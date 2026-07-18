@@ -2,6 +2,7 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import matrixClientService from '../MatrixClientService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 interface VoiceTranscriptionParams {
@@ -124,12 +125,7 @@ class MatrixVoiceService extends BaseMatrixService {
       formData.append('file', file, filename)
       if (roomId) formData.append('roomId', roomId)
 
-      const result = (await client.http.authedRequest(
-        'POST',
-        path,
-        undefined,
-        formData as unknown as Record<string, unknown>
-      )) as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'POST', path, undefined, formData)
 
       const mxcUrl = (result.url as string) ?? (result.content_uri as string)
       return {
@@ -209,7 +205,7 @@ class MatrixVoiceService extends BaseMatrixService {
         return { totalDuration: 0, totalMessages: 0, averageDuration: 0 }
       }
 
-      const result = (await client.http.authedRequest('GET', path)) as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path)
       return {
         totalDuration: (result.total_duration as number) ?? 0,
         totalMessages: (result.total_messages as number) ?? 0,
@@ -238,7 +234,7 @@ class MatrixVoiceService extends BaseMatrixService {
         return { totalDuration: 0, totalMessages: 0 }
       }
 
-      const result = (await client.http.authedRequest('GET', path)) as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path)
       return {
         totalDuration: (result.total_duration as number) ?? 0,
         totalMessages: (result.total_messages as number) ?? 0
@@ -264,7 +260,7 @@ class MatrixVoiceService extends BaseMatrixService {
       if (!available) {
         return { maxDuration: 300, allowedFormats: ['audio/webm', 'audio/ogg', 'audio/mp4'], autoTranscribe: false }
       }
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.VOICE.CONFIG)) as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', MATRIX_PATHS.VOICE.CONFIG)
       return {
         maxDuration: (result.max_duration as number) ?? 300,
         allowedFormats: (result.allowed_formats as string[]) ?? ['audio/webm', 'audio/ogg', 'audio/mp4'],
@@ -288,7 +284,7 @@ class MatrixVoiceService extends BaseMatrixService {
         logger.warn('[MatrixVoiceService] 语音删除端点不可用')
         return
       }
-      await client.http.authedRequest('DELETE', path)
+      await authedRequestWithPath<void>(client, 'DELETE', path)
     } catch (err) {
       logger.error(`[MatrixVoiceService] 删除语音失败: ${messageId} ${err}`)
       throw err
@@ -314,10 +310,10 @@ class MatrixVoiceService extends BaseMatrixService {
       if (!available) {
         return { voices: [], total: 0 }
       }
-      const result = (await client.http.authedRequest('GET', `${path}?limit=${limit}&offset=${offset}`)) as Record<
-        string,
-        unknown
-      >
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path, {
+        limit: String(limit),
+        offset: String(offset)
+      })
       return {
         voices:
           (result.voices as Array<{ event_id: string; sender: string; duration: number; timestamp: number }>) ?? [],
@@ -348,10 +344,10 @@ class MatrixVoiceService extends BaseMatrixService {
       if (!available) {
         return { voices: [], total: 0 }
       }
-      const result = (await client.http.authedRequest('GET', `${path}?limit=${limit}&offset=${offset}`)) as Record<
-        string,
-        unknown
-      >
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path, {
+        limit: String(limit),
+        offset: String(offset)
+      })
       return {
         voices:
           (result.voices as Array<{ event_id: string; room_id: string; duration: number; timestamp: number }>) ?? [],
@@ -375,8 +371,8 @@ class MatrixVoiceService extends BaseMatrixService {
       if (!available) {
         return null
       }
-      const result = await client.http.authedRequest('GET', path)
-      return result as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path)
+      return result
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getVoiceContent failed: ${err}`)
       return null
@@ -396,10 +392,16 @@ class MatrixVoiceService extends BaseMatrixService {
         return null
       }
 
-      const result = (await client.http.authedRequest('POST', MATRIX_PATHS.VOICE.CONVERT, undefined, {
-        message_id: messageId,
-        target_format: targetFormat
-      })) as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(
+        client,
+        'POST',
+        MATRIX_PATHS.VOICE.CONVERT,
+        undefined,
+        {
+          message_id: messageId,
+          target_format: targetFormat
+        }
+      )
       return { url: (result.url as string) ?? '', format: (result.format as string) ?? targetFormat }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] convertVoice failed: ${err}`)
@@ -427,10 +429,13 @@ class MatrixVoiceService extends BaseMatrixService {
       if (options?.bitrate) body.bitrate = options.bitrate
       if (options?.sample_rate) body.sample_rate = options.sample_rate
 
-      const result = (await client.http.authedRequest('POST', MATRIX_PATHS.VOICE.OPTIMIZE, undefined, body)) as Record<
-        string,
-        unknown
-      >
+      const result = await authedRequestWithPath<Record<string, unknown>>(
+        client,
+        'POST',
+        MATRIX_PATHS.VOICE.OPTIMIZE,
+        undefined,
+        body
+      )
       return { url: (result.url as string) ?? '', size: (result.size as number) ?? 0 }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] optimizeVoice failed: ${err}`)
@@ -457,12 +462,13 @@ class MatrixVoiceService extends BaseMatrixService {
       const body: Record<string, unknown> = { message_id: messageId }
       if (lang) body.lang = lang
 
-      const result = (await client.http.authedRequest(
+      const result = await authedRequestWithPath<Record<string, unknown>>(
+        client,
         'POST',
         MATRIX_PATHS.VOICE.TRANSCRIPTION,
         undefined,
         body
-      )) as Record<string, unknown>
+      )
       return {
         text: (result.text as string) ?? '',
         language: result.language as string | undefined,

@@ -1,5 +1,6 @@
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('TimelineService')
@@ -90,10 +91,15 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   ): Promise<{ event_id: string; origin_server_ts: number } | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.TIMESTAMP_TO_EVENT(roomId), {
-        ts: String(timestamp),
-        dir
-      })
+      const result = await authedRequestWithPath<{ event_id: string; origin_server_ts: number }>(
+        client,
+        'GET',
+        MATRIX_PATHS.ROOM.TIMESTAMP_TO_EVENT(roomId),
+        {
+          ts: String(timestamp),
+          dir
+        }
+      )
       return result as { event_id: string; origin_server_ts: number }
     } catch (err) {
       logger.error(`[MatrixRoom] 时间戳反查事件失败: ${err}`)

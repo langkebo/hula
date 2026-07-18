@@ -4,6 +4,7 @@ import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixClientService } from '../MatrixClientService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 import type {
   Space as SdkSpace,
@@ -768,12 +769,13 @@ class SpaceService extends BaseMatrixService {
         if (options?.maxDepth) queryParams.max_depth = String(options.maxDepth)
         if (options?.suggestedOnly) queryParams.suggested_only = String(options.suggestedOnly)
 
-        const result = await client.http.authedRequest(
+        const result = await authedRequestWithPath<{ rooms: Array<Record<string, unknown>>; next_batch?: string }>(
+          client,
           'GET',
           MATRIX_PATHS.SPACE.HIERARCHY(spaceId),
           Object.keys(queryParams).length > 0 ? queryParams : undefined
         )
-        return result as { rooms: Array<Record<string, unknown>>; next_batch?: string }
+        return result
       } catch (fallbackErr) {
         logger.error(`[Space] 回退获取空间层级也失败: ${spaceId}, ${fallbackErr}`)
         return { rooms: [] }
@@ -807,12 +809,13 @@ class SpaceService extends BaseMatrixService {
         if (options?.maxDepth) queryParams.max_depth = String(options.maxDepth)
         if (options?.suggestedOnly) queryParams.suggested_only = String(options.suggestedOnly)
 
-        const result = await client.http.authedRequest(
+        const result = await authedRequestWithPath<{ rooms: Array<Record<string, unknown>>; next_batch?: string }>(
+          client,
           'GET',
           MATRIX_PATHS.SPACE.HIERARCHY_V1(spaceId),
           Object.keys(queryParams).length > 0 ? queryParams : undefined
         )
-        return result as { rooms: Array<Record<string, unknown>>; next_batch?: string }
+        return result
       } catch (fallbackErr) {
         logger.error(`[Space] 回退获取空间层级v1也失败: ${spaceId}, ${fallbackErr}`)
         return { rooms: [] }
@@ -1052,7 +1055,7 @@ class SpaceService extends BaseMatrixService {
     }
 
     try {
-      await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.ROOM_HIERARCHY(spaceId), {
+      await authedRequestWithPath(client, 'GET', MATRIX_PATHS.SPACE.ROOM_HIERARCHY(spaceId), {
         max_depth: '1'
       })
       return { requiresAuth: false, accessible: true }
@@ -1122,12 +1125,13 @@ class SpaceService extends BaseMatrixService {
       if (options?.maxDepth) queryParams.max_depth = String(options.maxDepth)
       if (options?.suggestedOnly) queryParams.suggested_only = String(options.suggestedOnly)
 
-      const result = await client.http.authedRequest(
+      const result = await authedRequestWithPath<{ rooms: Array<Record<string, unknown>>; next_batch?: string }>(
+        client,
         'GET',
         MATRIX_PATHS.SPACE.ROOM_HIERARCHY(spaceId),
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )
-      return result as { rooms: Array<Record<string, unknown>>; next_batch?: string }
+      return result
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       if (errMsg.includes('M_UNAUTHORIZED') || errMsg.includes('401')) {

@@ -59,8 +59,9 @@ describe('MatrixSpaceService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
-      async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const url = new URL(`${TEST_BASE_URL}${path}`)
+      async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+        const prefix = opts?.prefix ?? ''
+        const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
             url.searchParams.set(key, value)
@@ -250,10 +251,16 @@ describe('MatrixSpaceService', () => {
 
       expect(result.rooms).toHaveLength(1)
       expect(result.next_batch).toBe('batch_token')
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_matrix/client/v1/spaces/!space%3Aserver/hierarchy', {
-        limit: '10',
-        max_depth: '3'
-      })
+      expect(authedRequestImpl).toHaveBeenCalledWith(
+        'GET',
+        '/spaces/!space%3Aserver/hierarchy',
+        {
+          limit: '10',
+          max_depth: '3'
+        },
+        undefined,
+        { prefix: '/_matrix/client/v1' }
+      )
     })
 
     it('should return empty rooms on error', async () => {
