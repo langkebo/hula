@@ -25,6 +25,7 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+import { PushRuleActionName, TweakName } from 'matrix-js-sdk'
 import type { IPushRules } from '@/types/matrix-services'
 import { buildActions, inferActionType, usePushRuleEditor } from '../usePushRuleEditor'
 
@@ -37,13 +38,13 @@ function buildRules(): IPushRules {
           rule_id: '.m.rule.master',
           default: true,
           enabled: false,
-          actions: ['dont_notify']
+          actions: [PushRuleActionName.DontNotify]
         },
         {
           rule_id: '.m.rule.invite_for_me',
           default: true,
           enabled: true,
-          actions: ['notify', { set_tweak: { tweak: 'highlight' as any, value: false } }]
+          actions: [PushRuleActionName.Notify, { set_tweak: TweakName.Highlight, value: false }]
         }
       ],
       content: [
@@ -51,7 +52,7 @@ function buildRules(): IPushRules {
           rule_id: '.m.rule.contains_user_name',
           default: true,
           enabled: true,
-          actions: ['notify', { set_tweak: { tweak: 'sound' as any, value: 'default' } }],
+          actions: [PushRuleActionName.Notify, { set_tweak: TweakName.Sound, value: 'default' }],
           pattern: 'alice'
         }
       ],
@@ -60,7 +61,7 @@ function buildRules(): IPushRules {
           rule_id: '!roomA:server',
           default: false,
           enabled: true,
-          actions: ['dont_notify']
+          actions: [PushRuleActionName.DontNotify]
         }
       ],
       sender: [],
@@ -69,7 +70,7 @@ function buildRules(): IPushRules {
           rule_id: '.m.rule.call',
           default: true,
           enabled: true,
-          actions: ['notify', { set_tweak: { tweak: 'sound' as any, value: 'ringtone' } }]
+          actions: [PushRuleActionName.Notify, { set_tweak: TweakName.Sound, value: 'ringtone' }]
         }
       ]
     }
@@ -167,7 +168,7 @@ describe('usePushRuleEditor', () => {
       const editor = usePushRuleEditor()
       await editor.load()
 
-      const result = await editor.updateRule('.m.rule.master', ['notify'])
+      const result = await editor.updateRule('.m.rule.master', [PushRuleActionName.Notify])
 
       expect(result).toBe(true)
       expect(mockSetPushRuleActions).toHaveBeenCalledWith('global', 'override', '.m.rule.master', ['notify'])
@@ -185,7 +186,7 @@ describe('usePushRuleEditor', () => {
       const editor = usePushRuleEditor()
       await editor.load()
 
-      const result = await editor.updateRule('.m.rule.master', ['notify'])
+      const result = await editor.updateRule('.m.rule.master', [PushRuleActionName.Notify])
 
       expect(result).toBe(false)
       expect(editor.updating.value).toBe(false)
@@ -199,7 +200,7 @@ describe('usePushRuleEditor', () => {
       const editor = usePushRuleEditor()
       await editor.load()
 
-      const result = await editor.updateRule('.nonexistent.rule', ['notify'])
+      const result = await editor.updateRule('.nonexistent.rule', [PushRuleActionName.Notify])
 
       expect(result).toBe(false)
       expect(mockSetPushRuleActions).not.toHaveBeenCalled()
@@ -214,7 +215,7 @@ describe('usePushRuleEditor', () => {
       const editor = usePushRuleEditor()
       await editor.load()
 
-      const promise = editor.updateRule('.m.rule.master', ['notify'])
+      const promise = editor.updateRule('.m.rule.master', [PushRuleActionName.Notify])
       expect(editor.updating.value).toBe(true)
 
       resolveUpdate()
@@ -244,31 +245,33 @@ describe('usePushRuleEditor', () => {
 
   describe('inferActionType / buildActions', () => {
     it('inferActionType 识别 dont_notify', () => {
-      expect(inferActionType(['dont_notify'])).toBe('dont_notify')
+      expect(inferActionType([PushRuleActionName.DontNotify])).toBe('dont_notify')
     })
 
     it('inferActionType 识别 notify', () => {
-      expect(inferActionType(['notify', { set_tweak: { tweak: 'sound' as any, value: 'default' } }])).toBe('notify')
+      expect(inferActionType([PushRuleActionName.Notify, { set_tweak: TweakName.Sound, value: 'default' }])).toBe(
+        'notify'
+      )
     })
 
     it('inferActionType 识别 coalesce', () => {
-      expect(inferActionType(['notify', 'coalesce'])).toBe('coalesce')
+      expect(inferActionType([PushRuleActionName.Notify, PushRuleActionName.Coalesce])).toBe('coalesce')
     })
 
     it('inferActionType 在无已知动作时默认 dont_notify', () => {
-      expect(inferActionType([{ set_tweak: { tweak: 'sound' as any, value: 'default' } }])).toBe('dont_notify')
+      expect(inferActionType([{ set_tweak: TweakName.Sound, value: 'default' }])).toBe('dont_notify')
     })
 
     it('buildActions 为 dont_notify 返回单元素数组', () => {
-      expect(buildActions('dont_notify')).toEqual(['dont_notify'])
+      expect(buildActions('dont_notify')).toEqual([PushRuleActionName.DontNotify])
     })
 
     it('buildActions 为 notify 返回单元素数组', () => {
-      expect(buildActions('notify')).toEqual(['notify'])
+      expect(buildActions('notify')).toEqual([PushRuleActionName.Notify])
     })
 
     it('buildActions 为 coalesce 返回 notify + coalesce', () => {
-      expect(buildActions('coalesce')).toEqual(['notify', 'coalesce'])
+      expect(buildActions('coalesce')).toEqual([PushRuleActionName.Notify, PushRuleActionName.Coalesce])
     })
   })
 })

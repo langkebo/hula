@@ -378,7 +378,7 @@ export interface SecureBackupInfo {
   backup_id: string
   algorithm: string
   auth_data: Record<string, unknown>
-  created_ts: number
+  created_ts?: number
   key_count?: number
   version?: string
 }

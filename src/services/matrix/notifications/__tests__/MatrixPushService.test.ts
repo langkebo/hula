@@ -1,4 +1,5 @@
 import type { IPusher } from 'matrix-js-sdk'
+import { PushRuleActionName } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
@@ -167,7 +168,7 @@ describe('MatrixPushService', () => {
 
   describe('addPushRule / deletePushRule', () => {
     it('should add push rule', async () => {
-      await matrixPushService.addPushRule('global', 'room', '!room:server', ['notify'])
+      await matrixPushService.addPushRule('global', 'room', '!room:server', [PushRuleActionName.Notify])
       expect(mockAuthedRequest).toHaveBeenCalled()
       const call = mockAuthedRequest.mock.calls[0]
       expect(call[0]).toBe('PUT')
@@ -193,7 +194,7 @@ describe('MatrixPushService', () => {
     })
 
     it('should set push rule actions', async () => {
-      await matrixPushService.setPushRuleActions('global', 'room', '!room:server', ['dont_notify'])
+      await matrixPushService.setPushRuleActions('global', 'room', '!room:server', [PushRuleActionName.DontNotify])
       expect(mockAuthedRequest).toHaveBeenCalled()
       const call = mockAuthedRequest.mock.calls[0]
       expect(call[0]).toBe('PUT')

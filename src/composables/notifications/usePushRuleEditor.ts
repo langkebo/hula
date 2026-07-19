@@ -1,4 +1,4 @@
-import type { PushRuleAction } from 'matrix-js-sdk'
+import { type PushRuleAction, PushRuleActionName } from 'matrix-js-sdk'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -31,9 +31,9 @@ const RULE_KINDS: PushRuleKindValue[] = ['override', 'content', 'room', 'sender'
  * - 默认 -> dont_notify
  */
 export function inferActionType(actions: PushRuleAction[]): PushActionType {
-  if (actions.includes('dont_notify')) return 'dont_notify'
-  if (actions.includes('coalesce')) return 'coalesce'
-  if (actions.includes('notify')) return 'notify'
+  if (actions.includes(PushRuleActionName.DontNotify)) return 'dont_notify'
+  if (actions.includes(PushRuleActionName.Coalesce)) return 'coalesce'
+  if (actions.includes(PushRuleActionName.Notify)) return 'notify'
   return 'dont_notify'
 }
 
@@ -42,9 +42,9 @@ export function inferActionType(actions: PushRuleAction[]): PushActionType {
  * coalesce 在 Matrix 协议中需要同时携带 notify 才能生效
  */
 export function buildActions(actionType: PushActionType): PushRuleAction[] {
-  if (actionType === 'dont_notify') return ['dont_notify']
-  if (actionType === 'coalesce') return ['notify', 'coalesce']
-  return ['notify']
+  if (actionType === 'dont_notify') return [PushRuleActionName.DontNotify]
+  if (actionType === 'coalesce') return [PushRuleActionName.Notify, PushRuleActionName.Coalesce]
+  return [PushRuleActionName.Notify]
 }
 
 /**

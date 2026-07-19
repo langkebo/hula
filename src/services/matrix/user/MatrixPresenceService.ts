@@ -163,6 +163,15 @@ class MatrixPresenceService extends BaseMatrixService {
 
       if (presenceManager) {
         const presence = await presenceManager.getPresence(userId)
+        if (!presence) {
+          return {
+            user_id: userId,
+            presence: 'offline' as PresenceState,
+            status_msg: null,
+            last_active_ago: undefined,
+            currently_active: undefined
+          }
+        }
         return {
           user_id: userId,
           presence: (presence.presence || 'offline') as PresenceState,
@@ -236,7 +245,7 @@ class MatrixPresenceService extends BaseMatrixService {
         logger.info(
           `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
         )
-        return result as PresenceListResponse
+        return result as unknown as PresenceListResponse
       } else {
         const response = (await client.http.authedRequest(
           'POST',
@@ -296,7 +305,7 @@ class MatrixPresenceService extends BaseMatrixService {
       if (presenceManager) {
         const result = await presenceManager.getPresenceList(targetUserId)
         logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
-        return result as PresenceListResponse
+        return result as unknown as PresenceListResponse
       } else {
         const response = (await client.http.authedRequest(
           'GET',

@@ -33,7 +33,7 @@ class MatrixTypingService extends BaseMatrixService {
       this.cachedManager = client.getTypingManager()
     }
 
-    return this.cachedManager
+    return this.cachedManager!
   }
 
   async sendTypingNotification(roomId: string, isTyping: boolean, timeout?: number): Promise<void> {

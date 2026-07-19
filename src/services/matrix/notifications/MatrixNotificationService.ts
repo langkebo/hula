@@ -1,4 +1,4 @@
-import type { IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleKind } from 'matrix-js-sdk'
+import { type IPusherRequest, type IPushRule, type IPushRules, type MatrixClient, PushRuleKind } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { safeJsonParse, validateObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -230,7 +230,13 @@ class MatrixNotificationService extends BaseMatrixService {
   private async findPushRuleKind(client: MatrixClient, ruleId: string): Promise<PushRuleKind> {
     try {
       const rules = await client.getPushRules()
-      const kinds: PushRuleKind[] = ['override', 'content', 'room', 'sender', 'underride']
+      const kinds: PushRuleKind[] = [
+        PushRuleKind.Override,
+        PushRuleKind.ContentSpecific,
+        PushRuleKind.RoomSpecific,
+        PushRuleKind.SenderSpecific,
+        PushRuleKind.Underride
+      ]
       for (const kind of kinds) {
         const ruleList = ((rules as unknown as Record<string, unknown>)?.[kind] ?? undefined) as unknown as
           | IPushRule[]
@@ -242,7 +248,7 @@ class MatrixNotificationService extends BaseMatrixService {
     } catch (err) {
       logger.warn('Notification operation failed:', err)
     }
-    return 'override'
+    return PushRuleKind.Override
   }
 
   async setPusher(pusher: IPusherRequest): Promise<void> {

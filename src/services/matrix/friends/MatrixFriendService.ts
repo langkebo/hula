@@ -410,7 +410,8 @@ class MatrixFriendService {
     try {
       if (manager) {
         if (typeof manager.checkFriendship === 'function') {
-          return await manager.checkFriendship(userId)
+          const result = await manager.checkFriendship(userId)
+          return result.is_friend || result.are_friends
         }
         const friends = await manager.getFriends()
         return friends.some((f: Friend) => this.getFriendUserId(f) === userId)

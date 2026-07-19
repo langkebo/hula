@@ -208,6 +208,7 @@ import { useSpace, useSpaceMembers, useSpaceRooms, useSpaces } from '@/composabl
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
+import { Visibility } from '@/services/matrix/sdk'
 
 const { t } = useI18n()
 
@@ -228,7 +229,7 @@ const selectedSpace = ref<SpaceInfo | null>(null)
 const formData = reactive<SpaceOptions>({
   name: '',
   topic: '',
-  visibility: 'private'
+  visibility: Visibility.Private
 })
 
 const inviteForm = reactive({ userId: '' })
@@ -248,7 +249,7 @@ const handleCreate = async () => {
     showCreateSheet.value = false
     formData.name = ''
     formData.topic = ''
-    formData.visibility = 'private'
+    formData.visibility = Visibility.Private
   } else {
     showToast(t('space.create_failed'))
   }

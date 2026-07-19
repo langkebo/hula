@@ -137,7 +137,7 @@ export function useMessageForward(options: UseMessageForwardOptions) {
         // 单房间转发,直接调用 forwardEvent
         const targetRoomId = roomIds[0]
         try {
-          await matrixForwardService.forwardEvent(event, targetRoomId)
+          await matrixForwardService.forwardEvent(event as unknown as MatrixEvent, targetRoomId)
           successCount = 1
           logger.info(`[forward] 转发成功: ${event.getId()} -> ${targetRoomId}`)
         } catch (err) {
@@ -145,7 +145,7 @@ export function useMessageForward(options: UseMessageForwardOptions) {
         }
       } else {
         // 多房间转发,调用 forwardEventToMultipleRooms
-        const results = await matrixForwardService.forwardEventToMultipleRooms(event, roomIds)
+        const results = await matrixForwardService.forwardEventToMultipleRooms(event as unknown as MatrixEvent, roomIds)
         successCount = results.filter((r) => r.success).length
       }
 

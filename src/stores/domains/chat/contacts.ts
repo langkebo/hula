@@ -12,7 +12,7 @@ import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { matrixRoomQueryFacade } from '@/services/matrix/room/QueryFacade'
-import { EventType } from '@/services/matrix/sdk'
+import { Direction, EventType } from '@/services/matrix/sdk'
 import { profileService } from '@/services/matrix/user/MatrixProfileService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
@@ -565,7 +565,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       for (const room of rooms) {
         const membership = (room as { getMyMembership?: () => string | undefined }).getMyMembership?.()
         if (membership === 'invite') {
-          const inviteState = room.getLiveTimeline()?.getState('f')
+          const inviteState = room.getLiveTimeline()?.getState(Direction.Forward)
           const inviteFrom = inviteState?.getStateEvents(EventType.RoomMember, currentUserId)?.getSender()
 
           invites.push({

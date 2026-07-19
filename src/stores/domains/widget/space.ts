@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { matrixSpaceService, type SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
+import type { Visibility } from '@/services/matrix/sdk'
 
 export const useSpaceStore = defineStore('space', () => {
   const spaces = ref<SpaceInfo[]>([])
@@ -26,12 +27,7 @@ export const useSpaceStore = defineStore('space', () => {
     spaces.value = [...nextSpaces]
   }
 
-  async function createSpace(options: {
-    name: string
-    topic?: string
-    visibility?: 'public' | 'private'
-    avatarUrl?: string
-  }) {
+  async function createSpace(options: { name: string; topic?: string; visibility?: Visibility; avatarUrl?: string }) {
     const space = await matrixSpaceService.createSpace(options)
     if (space) {
       spaces.value.push(space)

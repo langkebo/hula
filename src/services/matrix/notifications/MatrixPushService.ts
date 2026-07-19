@@ -1,5 +1,5 @@
 import type { IPusher, IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
-import { PushRuleKind, type TweakName } from 'matrix-js-sdk'
+import { PushRuleKind, TweakName } from 'matrix-js-sdk'
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -125,7 +125,9 @@ class MatrixPushService extends BaseMatrixService {
 
       if (pushManager) {
         // 使用 SDK PushManager（SDK-7: device_id 必填化）
-        const pusherRequest: IPusherRequest = {
+        // SDK 的 IPusherRequest 通过 Omit 移除了 device_id 字段（由 SDK 自动注入当前 device_id），
+        // 但 hula 需要显式控制 device_id，因此扩展类型以允许该字段
+        const pusherRequest = {
           pushkey: pusher.pushkey,
           kind: pusher.kind,
           app_id: pusher.app_id,
@@ -134,7 +136,7 @@ class MatrixPushService extends BaseMatrixService {
           lang: pusher.lang,
           data: pusher.data,
           device_id: (pusherData.device_id as string) || deviceId || undefined
-        }
+        } as IPusherRequest & { device_id?: string }
         if (pusherData.profile_tag) {
           pusherRequest.profile_tag = pusherData.profile_tag as string
         }
@@ -233,7 +235,7 @@ class MatrixPushService extends BaseMatrixService {
 
   async setRoomSoundEnabled(ruleId: string, enabled: boolean): Promise<void> {
     await this.setPushRuleActions('global', PushRuleKind.RoomSpecific, ruleId, [
-      { set_tweak: { tweak: 'sound' as TweakName, value: enabled ? 'default' : 'none' } }
+      { set_tweak: TweakName.Sound, value: enabled ? 'default' : 'none' }
     ])
   }
 

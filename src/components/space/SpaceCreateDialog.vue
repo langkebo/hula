@@ -46,6 +46,7 @@ import { reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSpaces } from '@/composables/space'
+import { Visibility } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SpaceCreateDialog')
@@ -68,7 +69,7 @@ const loading = ref(false)
 const formData = reactive({
   name: '',
   topic: '',
-  visibility: 'private' as 'public' | 'private'
+  visibility: Visibility.Private
 })
 
 const rules = {
@@ -81,7 +82,7 @@ const rules = {
 const resetForm = () => {
   formData.name = ''
   formData.topic = ''
-  formData.visibility = 'private'
+  formData.visibility = Visibility.Private
 }
 
 const handleSubmit = async () => {
