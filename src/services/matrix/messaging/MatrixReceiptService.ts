@@ -147,7 +147,7 @@ class MatrixReceiptService extends BaseMatrixService {
       this.cachedManager = client.getReadReceiptsManager()
     }
 
-    return this.cachedManager
+    return this.cachedManager!
   }
 
   async sendReadReceipt(roomId: string, event: MatrixEvent): Promise<string | undefined> {

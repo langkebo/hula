@@ -239,7 +239,7 @@ describe('MatrixPresenceService', () => {
         ...mockClient,
         on: vi.fn(),
         off: vi.fn()
-      } as MatrixClient
+      } as unknown as MatrixClient
 
       vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       vi.mocked(matrixClientService.waitForClientReady).mockResolvedValue(readyClient)

@@ -463,9 +463,7 @@ class MatrixClientService {
       })
 
       this.connectionState = 'CONNECTED'
-      const expiresInMs =
-        (loginResponse as { expires_in_ms?: number }).expires_in_ms ??
-        (loginResponse.expires_in ? loginResponse.expires_in * 1000 : 0)
+      const expiresInMs = loginResponse.expires_in_ms ?? 0
       if (loginResponse.refresh_token && expiresInMs > 0) {
         this.tokenManager.schedule(this.client!, loginResponse.refresh_token, expiresInMs)
       }
@@ -541,9 +539,7 @@ class MatrixClientService {
       })
 
       this.connectionState = 'CONNECTED'
-      const expiresInMs =
-        (loginResponse as { expires_in_ms?: number }).expires_in_ms ??
-        (loginResponse.expires_in ? loginResponse.expires_in * 1000 : 0)
+      const expiresInMs = loginResponse.expires_in_ms ?? 0
       if (loginResponse.refresh_token && expiresInMs > 0) {
         this.tokenManager.schedule(this.client!, loginResponse.refresh_token, expiresInMs)
       }

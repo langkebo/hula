@@ -110,7 +110,7 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const response = await client.getDevice(deviceId)
+      const response = (await client.getDevice(deviceId)) as DeviceResponse
       const userId = client.getUserId()
       logger.info(`[MatrixAccount] 获取设备信息成功: ${deviceId}`)
       return {

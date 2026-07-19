@@ -1,4 +1,4 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import { type MatrixClient, Visibility } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
@@ -102,7 +102,7 @@ describe('MatrixSpaceService', () => {
     const result = await matrixSpaceService.createSpace({
       name: 'Team Space',
       topic: 'For team',
-      visibility: 'private'
+      visibility: Visibility.Private
     })
 
     expect(result).toEqual({

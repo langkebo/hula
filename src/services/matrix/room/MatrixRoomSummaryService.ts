@@ -155,7 +155,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
       return room.getMembers().map((member) => ({
         userId: member.userId,
         displayName: member.name || member.userId,
-        membership: member.membership,
+        membership: member.membership ?? 'leave',
         avatarUrl: member.getMxcAvatarUrl() || ''
       }))
     } catch (err) {

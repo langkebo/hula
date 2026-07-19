@@ -1,4 +1,4 @@
-import type { MatrixClient, Room } from 'matrix-js-sdk'
+import { JoinRule, type MatrixClient, type Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoomSummary as SynapseRoomSummary } from '../../SynapseRustExtensionsService'
 
@@ -30,7 +30,7 @@ const makeRoom = (overrides: Partial<Room> = {}): Room =>
     topic: 'topic',
     getMxcAvatarUrl: () => 'mxc://e/a',
     getJoinedMembers: () => [{}, {}, {}],
-    getJoinRule: () => 'invite',
+    getJoinRule: () => JoinRule.Invite,
     getCanonicalAlias: () => '#alias:e',
     currentState: {
       getStateEvents: vi.fn((type: string) => {
@@ -58,7 +58,7 @@ describe('MatrixRoomSummaryAggregateService', () => {
 
   describe('toLocalRoomSummary', () => {
     it('maps Room fields 1:1 with joinRule normalization and isPublic derivation', () => {
-      const room = makeRoom({ getJoinRule: () => 'public' })
+      const room = makeRoom({ getJoinRule: () => JoinRule.Public })
       const s = service.toLocalRoomSummary(room)
       expect(s).toEqual({
         roomId: '!r:e',
@@ -76,7 +76,7 @@ describe('MatrixRoomSummaryAggregateService', () => {
     })
 
     it('normalizeJoinRule returns null for unknown join rules', () => {
-      const room = makeRoom({ getJoinRule: () => 'restricted' })
+      const room = makeRoom({ getJoinRule: () => JoinRule.Restricted })
       expect(service.toLocalRoomSummary(room).joinRule).toBeNull()
     })
 
@@ -171,7 +171,7 @@ describe('MatrixRoomSummaryAggregateService', () => {
     })
 
     it('falls back to room.getJoinRule when summary join_rule is absent', () => {
-      const room = makeRoom({ getJoinRule: () => 'knock' })
+      const room = makeRoom({ getJoinRule: () => JoinRule.Knock })
       const summary: SynapseRoomSummary = {
         room_id: '!r',
         name: undefined,

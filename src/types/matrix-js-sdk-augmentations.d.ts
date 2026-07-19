@@ -4,119 +4,79 @@
  */
 /// <reference types="vite/client" />
 
+// `export {}` makes this file a module (rather than a script), which causes
+// `declare module 'matrix-js-sdk'` below to be treated as a module AUGMENTATION
+// (adding to the SDK's existing exports) rather than a module DECLARATION
+// (which would shadow/replace the SDK's exports).
+export {}
+
+import type { IHttpOpts, QueryDict, Body, IRequestOpts } from 'matrix-js-sdk'
+
 declare module 'matrix-js-sdk' {
+  // ==================== MatrixHttpApi 方法重载 ====================
+  // SDK 的 authedRequest/request 签名使用 Method enum（nominal 类型，不接受字符串字面量）。
+  // 此处添加 method: string 的方法重载，让 hula 代码可以用 'GET'/'POST' 等字符串字面量调用。
+  // Declaration merging 对方法是追加重载，与 SDK 已有的 Method 签名并存。
+  interface MatrixHttpApi<O extends IHttpOpts> {
+    authedRequest<T = unknown>(
+      method: string,
+      path: string,
+      queryParams?: QueryDict,
+      body?: Body,
+      paramOpts?: IRequestOpts
+    ): Promise<T>
+    request<T = unknown>(
+      method: string,
+      path: string,
+      queryParams?: QueryDict,
+      body?: Body,
+      opts?: IRequestOpts
+    ): Promise<T>
+  }
+
+  // ==================== MSC3575RoomData 扩展 ====================
+  // hula 的 MatrixSlidingSyncService 期望 roomData 有 state/summary 字段（hula 自定义扩展）。
+  // SDK 的 MSC3575RoomData 没有这两个字段，此处通过 interface augmentation 添加。
+  interface MSC3575RoomData {
+    state?: Record<string, unknown>
+    summary?: Record<string, unknown>
+  }
+
+  // ==================== SlidingSync 方法扩展 ====================
+  // hula 的 MatrixSlidingSyncService 使用 getList/subscribeToRoom/unsubscribeFromRoom/getSyncToken
+  // 等方法，这些是 hula 自定义的 SlidingSync 扩展（SDK 的 SlidingSync class 没有这些方法）。
+  interface SlidingSync {
+    getList(
+      listName: string
+    ):
+      | {
+          rooms: string[]
+          setSort: (sort: string[]) => void
+          setFilters: (filters: Record<string, unknown>) => void
+        }
+      | undefined
+    subscribeToRoom(roomId: string, opts?: { timelineLimit?: number; invite?: boolean }): void
+    unsubscribeFromRoom(roomId: string): void
+    getSyncToken(): string | null
+  }
+
+  // ==================== Room 属性扩展 ====================
+  // hula 代码直接访问 room.topic（SDK 的 Room class 没有此属性，需通过 currentState 获取）。
+  // 此处添加 topic 属性扩展，避免大量代码重构。
+  interface Room {
+    topic?: string
+  }
+
   // ==================== 补充 SDK 缺失的类型 ====================
 
-  export const PendingEventOrdering: {
-    readonly PendingFirst: 'pending_first'
-    readonly Chronological: 'chronological'
-    readonly Detached: 'detached'
-  }
-
-  export enum Method {
-    Get = 'GET',
-    Put = 'PUT',
-    Post = 'POST',
-    Delete = 'DELETE',
-    Options = 'OPTIONS'
-  }
-
-  export enum ClientPrefix {
-    V1 = '/_matrix/client/v1',
-    V3 = '/_matrix/client/v3',
-    R0 = '/_matrix/client/r0'
-  }
 
   // Note: These types exist in matrix-js-sdk/@types/partials.ts but are not exported from main index
   // We re-export them here for convenience
-  export const Visibility: {
-    readonly Public: 'public'
-    readonly Private: 'private'
-  }
-  export type Visibility = 'public' | 'private'
 
-  export enum Preset {
-    PrivateChat = 'private_chat',
-    PublicChat = 'public_chat',
-    TrustedPrivateChat = 'trusted_private_chat'
-  }
-
-  export const ReceiptType: {
-    readonly Read: 'm.read'
-    readonly ReadPrivate: 'm.read.private'
-  }
-  export type ReceiptType = 'm.read' | 'm.read.private'
-
-  export const PushRuleKind: {
-    readonly Override: 'override'
-    readonly ContentSpecific: 'content'
-    readonly RoomSpecific: 'room'
-    readonly SenderSpecific: 'sender'
-    readonly Underride: 'underride'
-  }
-  export type PushRuleKind = 'override' | 'content' | 'room' | 'sender' | 'underride'
-
-  export enum NotificationCountType {
-    Highlight = 'highlight',
-    Total = 'total'
-  }
-
-  export enum RoomType {
-    Space = 'm.space'
-  }
-
-  export enum Direction {
-    Backward = 'b',
-    Forward = 'f'
-  }
-
-  export enum EventType {
-    RoomName = 'm.room.name',
-    RoomTopic = 'm.room.topic',
-    RoomAvatar = 'm.room.avatar',
-    RoomMember = 'm.room.member',
-    RoomMessage = 'm.room.message',
-    Sticker = 'm.sticker',
-    CallInvite = 'm.call.invite',
-    CallAnswer = 'm.call.answer',
-    CallHangup = 'm.call.hangup',
-    RoomCreate = 'm.room.create',
-    RoomJoinRules = 'm.room.join_rules',
-    RoomPowerLevels = 'm.room.power_levels',
-    RoomCanonicalAlias = 'm.room.canonical_alias',
-    RoomGuestAccess = 'm.room.guest_access',
-    RoomHistoryVisibility = 'm.room.history_visibility',
-    RoomServerAcl = 'm.room.server_acl',
-    RoomTombstone = 'm.room.tombstone',
-    RoomPinnedEvents = 'm.room.pinned_events'
-  }
-
-  export enum TweakName {
-    Highlight = 'highlight',
-    Sound = 'sound'
-  }
-
-  export type PushRuleAction = string | { set_tweak: { tweak: TweakName; value: unknown } }
-  export type EmptyObject = Record<string, never>
 
   // ==================== 接口补充 ====================
   // Note: ICreateRoomOpts exists in matrix-js-sdk/@types/requests.ts but is not exported from main index
   // We re-export it here for convenience
-  export interface ICreateRoomOpts {
-    room_alias_name?: string
-    name?: string
-    topic?: string
-    visibility?: Visibility
-    preset?: Preset
-    creation_content?: Record<string, unknown>
-    initial_state?: unknown[]
-    invite?: string[]
-    invite_3pid?: unknown[]
-    is_direct?: boolean
-    room_version?: string
-    power_level_content_override?: Record<string, unknown>
-    room_types?: string[]
-  }
 
   export interface IPublicRoomsOpts {
     limit?: number
@@ -130,35 +90,6 @@ declare module 'matrix-js-sdk' {
     third_party_instance_id?: string
   }
 
-  export interface IPublicRoomsResponse {
-    chunk: Array<{
-      room_id: string
-      name?: string
-      topic?: string
-      avatar_url?: string
-      joined_members: number
-      world_readable: boolean
-      guest_can_join: boolean
-      canonical_alias?: string
-    }>
-    next_batch?: string
-    prev_batch?: string
-    total_room_count_estimate?: number
-  }
-
-  export interface MSC3575RoomData {
-    name?: string
-    notification_count?: number
-    highlight_count?: number
-    initial?: boolean
-    limited?: boolean
-    is_dm?: boolean
-    prev_batch?: string | null
-    timeline?: unknown[]
-    state?: Record<string, unknown>
-    summary?: Record<string, unknown>
-    [key: string]: unknown
-  }
 
   export interface SlidingSyncList {
     ranges: number[][]
@@ -172,99 +103,9 @@ declare module 'matrix-js-sdk' {
     required_state: Array<[string, string]>
   }
 
-  export class SlidingSync {
-    constructor(
-      proxyBaseUrl: string,
-      lists: Map<string, SlidingSyncList>,
-      roomSubscriptionInfo: SlidingSyncRoomSubscription,
-      client: MatrixClient,
-      timeoutMS: number
-    )
-    start(): void
-    stop(): void
-    registerExtension(extension: unknown): void
-    on(
-      event: 'SlidingSync.Lifecycle',
-      callback: (state: SlidingSyncState, resp: MSC3575SlidingSyncResponse | null, err?: Error) => void
-    ): void
-    on(event: 'SlidingSync.RoomData', callback: (roomId: string, roomData: MSC3575RoomData) => void): void
-    on(event: string, callback: (...args: unknown[]) => void): void
-    off(
-      event: 'SlidingSync.Lifecycle',
-      callback: (state: SlidingSyncState, resp: MSC3575SlidingSyncResponse | null, err?: Error) => void
-    ): void
-    off(event: 'SlidingSync.RoomData', callback: (roomId: string, roomData: MSC3575RoomData) => void): void
-    off(event: string, callback: (...args: unknown[]) => void): void
-    setListRanges(listName: string, ranges: number[][]): void
-    getList(
-      listName: string
-    ):
-      | { rooms: string[]; setSort: (sort: string[]) => void; setFilters: (filters: Record<string, unknown>) => void }
-      | undefined
-    subscribeToRoom(roomId: string, opts?: { timelineLimit?: number; invite?: boolean }): void
-    unsubscribeFromRoom(roomId: string): void
-    getSyncToken(): string | null
-    getRoom(roomId: string): MSC3575RoomData | null
-  }
-
-  export interface ICreateClientOpts {
-    baseUrl: string
-    idBaseUrl?: string
-    accessToken?: string
-    userId?: string
-    deviceId?: string
-    fetchFn?: typeof globalThis.fetch
-    store?: unknown
-    scheduler?: unknown
-    cryptoStore?: unknown
-    sessionStore?: unknown
-    presence?: boolean
-    useAuthorizationHeader?: boolean
-    cryptoCallbacks?: unknown
-    localTimeoutMs?: number
-    useLazyLoading?: boolean
-    allowInsecureHttp?: boolean
-    pendingEventOrdering?: PendingEventOrdering
-    unstableClientRelationAggregation?: boolean
-    verificationCallbacks?: unknown
-    deviceToVerify?: unknown
-    slidingSync?: SlidingSync
-  }
-
-  export interface LoginResponse {
-    user_id: string
-    access_token: string
-    device_id: string
-    home_server?: string
-    refresh_token?: string
-    expires_in?: number
-  }
-
-  export interface RegisterResponse {
-    user_id: string
-    access_token?: string
-    device_id?: string
-    refresh_token?: string
-    expires_in_ms?: number
-  }
-
-  export interface IRequestTokenResponse {
-    sid: string
-    submit_url?: string
-    expires_in?: number
-  }
-
-  export interface IEventRelation {
-    rel_type: string
-    event_id: string
-    include_threads?: boolean
-  }
 
   // Note: ISendEventResponse exists in matrix-js-sdk/@types/requests.ts but is not exported from main index
   // We re-export it here for convenience
-  export interface ISendEventResponse {
-    event_id: string
-  }
 
   export interface ILoginRequest {
     type: string
@@ -286,30 +127,11 @@ declare module 'matrix-js-sdk' {
     [key: string]: unknown
   }
 
-  export interface MatrixCall {
-    callId: string
-    roomId: string
-    isVideo: boolean
-    peerConn?: RTCPeerConnection
-    on(event: string, callback: (...args: unknown[]) => void): void
-    off(event: string, callback: (...args: unknown[]) => void): void
-    hangup(reason?: string): void
-    answer(stream?: MediaStream, video?: boolean): void
-    placeCall(stream: MediaStream, video?: boolean): Promise<void>
-    setLocalVideoMuted(muted: boolean): void
-    setLocalAudioMuted(muted: boolean): void
-    setScreensharingEnabled(enabled: boolean, opts?: { audio: boolean }): Promise<boolean>
-  }
 
   export interface VoIPHandler {
     calls: Record<string, MatrixCall>
   }
 
-  export interface IContent {
-    body: string
-    msgtype?: string
-    [key: string]: unknown
-  }
 
   export interface IMemberEvent {
     membership?: string
@@ -318,198 +140,33 @@ declare module 'matrix-js-sdk' {
   }
 
   // ==================== OIDC ====================
-  export function generateOidcAuthorizationUrl(config: unknown): Promise<{ url: string; state: string }>
-  export function discoverAndValidateOIDCIssuerWellKnown(url: string): Promise<unknown>
-  export function completeAuthorizationCodeGrant(code: string, redirectUri: string): Promise<{ access_token: string }>
-  export interface OidcClientConfig {
-    issuer: string
-    clientId: string
-    redirectUri: string
-  }
-  export function generateScope(scopes: string[]): string
 
   // ==================== Push ====================
   // 这些类型在 SDK `@types/PushRules` 中已有规范定义，此处显式重声明以
   // 保证在本 augmentation 场景下（declare module 'matrix-js-sdk' 覆盖了
   // 主入口 export * 的部分解析）能被 `import { IPushRule } from 'matrix-js-sdk'`
   // 找到。字段形状与 SDK canonical（`default: boolean` required）保持一致。
-  export type PushRuleSet = {
-    [k in PushRuleKind]?: IPushRule[]
-  }
 
-  export interface IPushRuleCondition {
-    kind: string
-    key?: string
-    pattern?: string
-    is?: string
-  }
 
   // Note: Push types exist in matrix-js-sdk/@types/PushRules.ts but are not exported from main index
   // We re-export them here for convenience
-  export interface IPushRule {
-    rule_id: string
-    default: boolean
-    enabled: boolean
-    actions: PushRuleAction[]
-    conditions?: IPushRuleCondition[]
-    pattern?: string
-  }
 
-  export interface IPushRules {
-    global: PushRuleSet
-    device?: PushRuleSet
-  }
-
-  export interface IPusher {
-    app_display_name: string
-    app_id: string
-    data: {
-      format?: string
-      url?: string
-      brand?: string
-      [key: string]: unknown
-    }
-    device_display_name: string
-    kind: 'http' | string
-    lang: string
-    profile_tag?: string
-    pushkey: string
-    enabled?: boolean | null
-    device_id?: string | null
-  }
-
-  export interface IPusherRequest extends Omit<IPusher, 'device_id'> {
-    append?: boolean
-    device_id?: string // SDK-7: required for pusher authentication (P2 #32)
-  }
 
   // ==================== Event 和 Timeline 类型 ====================
   // 这些类型已在 SDK 中正确定义，此处提供补充
-  export class TimelineWindow {
-    constructor(client: MatrixClient, timelineSet: EventTimelineSet, opts?: unknown)
-    paginate(direction: string, limit: number): Promise<boolean>
-    getEvents(): MatrixEvent[]
-  }
 
-  export interface EventTimeline {
-    getEvents(): MatrixEvent[]
-    getState(direction: 'f' | 'b'): RoomState | undefined
-    getPaginationToken(direction: 'f' | 'b'): string | null
-    getNeighboringTimeline(direction: 'f' | 'b'): EventTimeline | null
-    getTimelineSet(): EventTimelineSet
-  }
-
-  export interface TimelineWindow {
-    load(limit: number, direction: string): Promise<boolean>
-    paginate(dir: string, limit: number): Promise<boolean>
-    getEvents(): MatrixEvent[]
-  }
 
   // synapse-rust 特有：输入状态管理器扩展
   // 官方 matrix-js-sdk 不包含此管理器接口
-  export interface TypingManager {
-    startTyping(roomId: string, options?: { timeout?: number }): Promise<void>
-    stopTyping(roomId: string): Promise<void>
-    getTypingUsers(roomId: string): Promise<Array<{ userId: string; timeout: number }>>
-    isUserTyping(roomId: string, userId: string): Promise<boolean>
-    clearAllTimers(): void
-    start(): void
-    stop(): void
-  }
 
   // synapse-rust 特有：已读回执管理器扩展
   // 官方 matrix-js-sdk 不包含此管理器接口
-  export interface ReadReceiptsManager {
-    sendReadReceipt(
-      event: MatrixEvent | null,
-      receiptType?: ReceiptType,
-      unthreaded?: boolean
-    ): Promise<Record<string, unknown> | undefined>
-    sendReadReceiptByEventId(roomId: string, eventId: string): Promise<void>
-    setReadMarkers(roomId: string, eventId: string, fullyReadEventId?: string): Promise<void>
-    setReadMarker(roomId: string, eventId: string): Promise<void>
-    getReceipt(
-      roomId: string,
-      eventId: string
-    ): Array<{ eventId: string; ts: number; userId: string; data?: Record<string, unknown> }>
-    getReadMarkers(roomId: string): {
-      m_read?: string
-      m_fully_read?: string
-    }
-  }
 
   // ==================== 错误和存储 ====================
-  export class MatrixError extends Error {
-    errcode?: string
-    httpStatus?: number
-    data: Record<string, unknown>
-  }
-  export enum SlidingSyncState {
-    RequestFinished = 'FINISHED',
-    Complete = 'COMPLETE'
-  }
-  export enum SlidingSyncEvent {
-    RoomData = 'SlidingSync.RoomData',
-    Lifecycle = 'SlidingSync.Lifecycle'
-  }
-  export interface MSC3575SlidingSyncResponse {
-    pos: string
-    lists: Record<string, unknown>
-    rooms: Record<string, MSC3575RoomData>
-    extensions: Record<string, unknown>
-  }
-  export class IndexedDBStore {
-    constructor(opts: { indexedDB: IDBFactory; dbName: string; localStorage?: Storage })
-    startup(): Promise<void>
-  }
-  export class MemoryStore {
-    constructor(opts: { localStorage?: Storage })
-  }
-  export class LocalStorageCryptoStore {
-    constructor(localStorage: Storage)
-  }
-  export function createClient(opts: ICreateClientOpts): MatrixClient
-  export function initializeManagerExtensions(): Promise<void>
   // MatrixClient 接口扩展
   interface MatrixClient {
     readonly deviceId: string | null
     readonly baseUrl: string
-    getHttp(): {
-      authedRequest<T = unknown>(
-        method: string,
-        path: string,
-        queryParams?: Record<string, string | string[] | undefined>,
-        body?: object,
-        paramOpts?: { prefix?: string; baseUrl?: string; headers?: Record<string, string>; localTimeoutMs?: number }
-      ): Promise<T>
-    }
-    http: {
-      authedRequest<T = unknown>(
-        method: string,
-        path: string,
-        queryParams?: Record<string, string>,
-        body?: object,
-        paramOpts?: { prefix?: string; baseUrl?: string; headers?: Record<string, string>; localTimeoutMs?: number }
-      ): Promise<T>
-      authedRequest<T = unknown>(
-        opts: Record<string, unknown>,
-        method: string,
-        path: string,
-        queryParams?: Record<string, unknown>,
-        data?: unknown,
-        paramOpts?: Record<string, unknown>
-      ): Promise<T>
-      request<T = unknown>(
-        method: string,
-        path: string,
-        queryParams?: Record<string, unknown>,
-        data?: unknown,
-        opts?: {
-          prefix?: string
-          headers?: Record<string, string>
-        }
-      ): Promise<T>
-    }
     loginRequest(opts: ILoginRequest): Promise<LoginResponse>
     registerRequest(opts: IRegisterRequest): Promise<RegisterResponse>
     requestRegisterEmailToken(
@@ -840,115 +497,9 @@ declare module 'matrix-js-sdk' {
   }
 
   // MatrixEvent 方法扩展
-  export class MatrixEvent {
-    getId(): string | null
-    getType(): string
-    getSender(): string | null
-    getTs(): number
-    getRoomId(): string
-    getOriginServerTs(): number
-    getContent(): Record<string, any>
-    getWireContent(): Record<string, unknown>
-    getRaw(): Record<string, unknown>
-    getStateKey(): string | null
-    isState(): boolean
-    isEncrypted(): boolean
-    sender: RoomMember | null
-    getAge(): number
-    getTarget(): MatrixEvent
-    reply(event: MatrixEvent, content: IContent): Promise<string>
-    remove(): Promise<void>
-    retry(): Promise<void>
-    getRelation(): { rel_type?: string; event_id?: string } | undefined
-    getAssociatedId(): string | null
-    status: unknown
-    localTimestamp: number
-    direction: unknown
-  }
 
   // Room 方法扩展
-  export interface EventTimelineSet {
-    getLiveTimeline(): EventTimeline
-    getEvents(): MatrixEvent[]
-  }
 
-  export interface Room {
-    roomId: string
-    name: string
-    topic: string
-    currentState: RoomState
-    getUnfilteredTimelineSet(): EventTimelineSet
-    timeline: MatrixEvent[]
-    liveTimeline: EventTimeline | null
-    oldState: RoomState
-    newState: RoomState
-    summary: unknown
-    storageToken: string | null
-    accountData: Map<string, MatrixEvent>
-    tags: Map<string, unknown>
-    getMember(userId: string): RoomMember | null
-    getMembers(): RoomMember[]
-    getJoinedMembers(): RoomMember[]
-    getMembersWithMembership(membership: string): RoomMember[]
-    getName(): string
-    getAvatarUrl(baseUrl?: string, width?: number, height?: number, resizeMethod?: string): string
-    getMxcAvatarUrl(): string | null
-    getCanonicalAlias(): string | null
-    getAltAliases(): string[]
-    getHistoryVisibility(): string
-    getGuestAccess(): string
-    getJoinRule(): string
-    getLastActiveTimestamp(): number
-    getMemberCount(): number
-    isSpaceRoom(): boolean
-    isDirect(): boolean
-    isEncrypted(): boolean
-    isFederated(): boolean
-    getTypingUsers(): string[]
-    getInvitedMemberCount(): number
-    getJoinedMemberCount(): number
-    canInvite(userId: string): boolean
-    getThread(eventId: string): unknown
-    getThreads(): unknown[]
-    getLiveTimeline(): EventTimeline
-    getPendingEvents(): MatrixEvent[]
-    getUser(userId: string): User | null
-    getAccountData(type: string): MatrixEvent | null
-    setAccountData(type: string, content: unknown): Promise<void>
-    addEventsToTimeline(eventIds: string[], options: { forward: boolean; roomState: boolean }): void
-    applyEvent(event: MatrixEvent): void
-    addEvent(event: MatrixEvent, forward: boolean): void
-    removeEvent(eventId: string): void
-    findEventById(eventId: string): MatrixEvent | null
-    getEventTimeline(timelineSet: unknown, eventId: string): Promise<unknown>
-    getMessages(options: { before?: string; after?: string; limit: number; direction: string }): Promise<unknown>
-    createRoom(options: unknown): Promise<{ room_id: string }>
-    sendMessage(content: IContent): Promise<ISendEventResponse>
-    sendTextMessage(text: string): Promise<ISendEventResponse>
-    sendEvent(eventType: string, content: unknown): Promise<ISendEventResponse>
-    leave(): Promise<void>
-    invite(userId: string): Promise<void>
-    kick(userId: string, reason?: string): Promise<void>
-    ban(userId: string, reason?: string): Promise<void>
-    unban(userId: string): Promise<void>
-    updateBaseIcons(icon: string | null): Promise<void>
-    setName(name: string): Promise<void>
-    setAvatar(avatar: string): Promise<void>
-    setTopic(topic: string): Promise<void>
-    setPowerLevels(powerLevels: unknown): Promise<void>
-    updateMyMembership(membership: string): void
-    getMyMembership(): string
-    recalc(): void
-    getEventReadUpTo(userId: string, unthreaded?: boolean): string | null
-    hasUserReadEvent(userId: string, eventId: string): boolean
-    getUnreadNotificationCount(type?: NotificationCountType): number | undefined
-    getUnreadCountForEventContext(type: NotificationCountType | undefined, event: MatrixEvent): number
-    getRoomUnreadNotificationCount(type?: NotificationCountType): number
-    getThreadUnreadNotificationCount(threadId: string, type?: NotificationCountType): number
-    setThreadUnreadNotificationCount(threadId: string, type: NotificationCountType, count: number): void
-    setUnreadNotificationCount(type: NotificationCountType, count: number): void
-    setUnread(type: NotificationCountType, count: number): void
-  }
 
   // RoomMember 方法扩展
   interface RoomMember {
@@ -995,54 +546,11 @@ declare module 'matrix-js-sdk' {
 
   // synapse-rust 特有：阅后即焚功能管理器
   // 官方 matrix-js-sdk 不包含此功能
-  export interface BurnAfterReadManager {
-    enableBurn(roomId: string, burnAfterMs?: number): Promise<{ enabled: boolean; burn_after_ms: number }>
-    disableBurn(roomId: string): Promise<{ enabled: boolean; burn_after_ms: number }>
-    getBurnSettings(roomId: string): Promise<{ enabled: boolean; burn_after_ms: number }>
-    isBurnEnabled(roomId: string): Promise<boolean>
-    getPendingBurns(roomId: string): Promise<Array<{ event_id: string; created_at: number; delete_at: number }>>
-    markBurnRead(roomId: string, eventId: string): Promise<{ event_id: string; marked: boolean }>
-    cancelBurn(roomId: string, eventId: string): Promise<{ event_id: string; cancelled: boolean }>
-    setBurnConfig(defaultBurnMs: number): Promise<{ default_burn_ms: number }>
-    getBurnStats(): Promise<{ total_burned: number; total_pending: number; rooms_with_burn_enabled: number }>
-    sendMessage(params: Record<string, unknown>): Promise<{ event_id: string; expires_in: number; expires_at: number }>
-    burnMessage(eventId: string): Promise<void>
-    extendBurnTime(eventId: string, additionalTime: number): Promise<void>
-    on(event: string, listener: (...args: unknown[]) => void): void
-    off(event: string, listener: (...args: unknown[]) => void): void
-    start(): void
-    stop(): void
-  }
 
   // synapse-rust 特有：在线状态管理器扩展
   // 官方 matrix-js-sdk 不包含此管理器接口
-  export interface PresenceManager {
-    setPresence(userId: string, presence: string, statusMsg?: string): Promise<void>
-    getPresence(
-      userId: string
-    ): Promise<{ presence: string; status_msg?: string; last_active_ago?: number; currently_active?: boolean }>
-    subscribeToPresence(userIds: string[]): Promise<unknown>
-    unsubscribeFromPresence(userIds: string[]): Promise<void>
-    getPresenceList(userId: string): Promise<unknown>
-  }
 
   // RoomState 类型
-  export class RoomState {
-    roomId: string
-    name: string
-    avatarUrl: string | null
-    getMember(userId: string): RoomMember | null
-    getMembers(): RoomMember[]
-    getJoinRule(): string
-    getGuestAccess(): string
-    getHistoryVisibility(): string
-    getCanonicalAlias(): string | null
-    getAltAliases(): string[]
-    getPowerLevels(): unknown
-    getLiveTimeline(): unknown
-    getStateEvents(eventType: string): MatrixEvent[]
-    getStateEvents(eventType: string, stateKey: string): MatrixEvent | null
-  }
 
   // ==================== 搜索类型 ====================
   export interface SearchParams {
@@ -1059,18 +567,6 @@ declare module 'matrix-js-sdk' {
     next_batch?: string
   }
 
-  export interface SearchResult {
-    rank: number
-    result: MatrixEvent
-    context?: {
-      before_limit: number
-      after_limit: number
-      event_id: string
-      room_id: string
-      start?: string
-      end?: string
-    }
-  }
 
   // ==================== 同步类型 ====================
   export interface SyncParams {
@@ -1155,21 +651,8 @@ declare module 'matrix-js-sdk' {
     unread_thread_notifications?: Record<string, UnreadNotifications>
   }
 
-  export interface RoomSummary {
-    'm.joined_member_count'?: number
-    'm.invited_member_count'?: number
-    'm.heroes'?: string[]
-    'm.joined_member_count'?: number
-    'm.skipped_state_events'?: number
-  }
 
   // ==================== 分页类型 ====================
-  export interface PaginationParams {
-    dir: 'b' | 'f'
-    limit?: number
-    from?: string
-    filter?: Filter
-  }
 
   export interface PaginatedMessages {
     chunk: MatrixEvent[]
@@ -1179,88 +662,7 @@ declare module 'matrix-js-sdk' {
   }
 
   // ==================== 过滤器类型 ====================
-  export interface Filter {
-    limit?: number
-    not_senders?: string[]
-    not_types?: string[]
-    senders?: string[]
-    types?: string[]
-    rooms?: string[]
-    not_rooms?: string[]
-    contains_lazy_loadable_terms?: boolean
-    include_redundant_members?: boolean
-    use_lazy_load_members?: boolean
-    event_format?: 'client' | ' federation'
-    presence?: FilterPresence
-    account_data?: FilterAccountData
-    room?: FilterRoom
-  }
 
-  export interface FilterPresence {
-    limit?: number
-    not_senders?: string[]
-    not_types?: string[]
-    senders?: string[]
-    types?: string[]
-  }
-
-  export interface FilterAccountData {
-    limit?: number
-    not_send_types?: string[]
-    not_types?: string[]
-    send_types?: string[]
-    types?: string[]
-  }
-
-  export interface FilterRoom {
-    limit?: number
-    not_senders?: string[]
-    not_types?: string[]
-    senders?: string[]
-    types?: string[]
-    rooms?: string[]
-    not_rooms?: string[]
-    account_data?: FilterRoomAccountData
-    ephemeral?: FilterRoomEphemeral
-    include_default_filters?: boolean
-    state?: FilterRoomState
-    timeline?: FilterRoomTimeline
-  }
-
-  export interface FilterRoomAccountData {
-    limit?: number
-    not_send_types?: string[]
-    not_types?: string[]
-    send_types?: string[]
-    types?: string[]
-  }
-
-  export interface FilterRoomEphemeral {
-    limit?: number
-    not_send_types?: string[]
-    not_types?: string[]
-    send_types?: string[]
-    types?: string[]
-  }
-
-  export interface FilterRoomState {
-    lazy_load_members?: boolean
-    include_redundant_members?: boolean
-    not_senders?: string[]
-    not_types?: string[]
-    senders?: string[]
-    types?: string[]
-  }
-
-  export interface FilterRoomTimeline {
-    limit?: number
-    not_senders?: string[]
-    not_types?: string[]
-    senders?: string[]
-    types?: string[]
-    include?: string[]
-    raw_types?: string[]
-  }
 
   // ==================== 事件关系类型 ====================
   export interface EventRelation {
@@ -1324,41 +726,11 @@ declare module 'matrix-js-sdk' {
   }
 
   // ==================== 密钥备份类型 ====================
-  export interface KeyBackupSession {
-    first_message_index: number
-    forwarded_count: number
-    is_verified: boolean
-    message_count: number
-    olm_key: string
-  }
 
-  export interface KeyBackupRoomSessions {
-    sessions: Record<string, KeyBackupSession>
-  }
-
-  export interface KeyBackupInfo {
-    version: string
-    algorithm: string
-    auth_data: unknown
-    count?: number
-    etag?: string
-  }
 
   // ==================== 设备管理类型 ====================
-  export interface Device {
-    device_id: string
-    user_id: string
-    display_name?: string
-    last_seen_ip?: string
-    last_seen_ts?: number
-    last_seen_user_agent?: string
-    known_at?: number
-  }
 
   // SDK-9: 设备更新请求（display_name ≤100 字符）
-  export interface IDeviceUpdateRequest {
-    display_name?: string
-  }
 
   export interface DeviceUpdate {
     device_id: string
@@ -1444,430 +816,3 @@ declare module 'matrix-js-sdk' {
 // 这些增强块全是死代码。其中 credentials/message/profile/sending 4 个子路径
 // 在 SDK package.json exports 中不存在，属于幻影声明；其余 6 个（account/auth/
 // capabilities/room/media/presence）SDK 已提供真实类型，删除增强后 TS 自动回退。
-
-declare module 'matrix-js-sdk/device-keys' {
-  export interface DeviceKeys {
-    user_id: string
-    device_id: string
-    algorithms: string[]
-    keys: Record<string, string>
-    signatures: Record<string, Record<string, string>>
-    unsigned?: Record<string, unknown>
-  }
-  export interface OneTimeKeys {
-    [keyId: string]: {
-      key: string
-      signatures?: Record<string, Record<string, string>>
-    }
-  }
-  export interface UploadKeysResponse {
-    one_time_key_counts?: Record<string, number>
-  }
-  export interface FallbackKeys {
-    [keyId: string]: {
-      key: string
-      signatures?: Record<string, Record<string, string>>
-    }
-  }
-  export interface UploadKeysOptions {
-    deviceKeys?: DeviceKeys
-    oneTimeKeys?: OneTimeKeys
-    fallbackKeys?: FallbackKeys
-  }
-  export interface QueryKeysRequest {
-    device_keys?: Record<string, string[]>
-    token?: string
-  }
-  export interface CrossSigningKey {
-    user_id: string
-    usage: string[]
-    keys: Record<string, string>
-    signatures?: Record<string, Record<string, string>>
-  }
-  export interface QueryKeysResponse {
-    device_keys?: Record<string, Record<string, DeviceKeys>>
-    master_keys?: Record<string, CrossSigningKey>
-    self_signing_keys?: Record<string, CrossSigningKey>
-    user_signing_keys?: Record<string, CrossSigningKey>
-    failures?: Record<string, Record<string, string>>
-  }
-  export interface ClaimKeysRequest {
-    one_time_keys: Record<string, Record<string, string>>
-  }
-  export interface ClaimKeysResponse {
-    one_time_keys?: Record<string, Record<string, { key: string; signatures?: Record<string, Record<string, string>> }>>
-    failures?: Record<string, Record<string, string>>
-  }
-  export interface KeyChangesResponse {
-    changed?: string[]
-    left?: string[]
-  }
-  export interface SendToDeviceMessage {
-    [userId: string]: {
-      [deviceId: string]: Record<string, unknown>
-    }
-  }
-  export interface SignaturesUploadResponse {
-    failures?: Record<string, Record<string, string>>
-  }
-  export class DeviceKeysManager {
-    uploadKeys(options: UploadKeysOptions): Promise<UploadKeysResponse>
-    queryKeys(request: QueryKeysRequest): Promise<QueryKeysResponse>
-    claimKeys(request: ClaimKeysRequest): Promise<ClaimKeysResponse>
-    getKeyChanges(from: string, to?: string): Promise<KeyChangesResponse>
-    sendToDevice(eventType: string, transactionId: string, messages: SendToDeviceMessage): Promise<void>
-    uploadSignatures(
-      signatures: Record<string, Record<string, Record<string, string>>>
-    ): Promise<SignaturesUploadResponse>
-    uploadDeviceSigning(keys: {
-      master_key?: CrossSigningKey
-      self_signing_key?: CrossSigningKey
-      user_signing_key?: CrossSigningKey
-    }): Promise<void>
-    createRoomKeyRequest(request: {
-      room_id: string
-      session_id: string
-      algorithm: string
-      request_type?: string
-      request_id?: string
-    }): Promise<{ request_id: string }>
-  }
-}
-
-declare module 'matrix-js-sdk/key-backup' {
-  export interface EncryptedData {
-    ciphertext: string
-    ephemeral: string
-    mac: string
-  }
-  export interface AuthData {
-    public_key: string
-    signatures?: Record<string, Record<string, string>>
-  }
-  export interface SessionData {
-    first_message_index: number
-    forwarded_count: number
-    is_verified: boolean
-    session_data: EncryptedData | Record<string, unknown>
-  }
-  export interface BackupVersionInfo {
-    version: string
-    algorithm: string
-    auth_data: AuthData | Record<string, unknown>
-    count?: number
-    etag?: string
-  }
-  export interface RoomSessions {
-    sessions: Record<string, SessionData>
-  }
-  export interface RoomKeyBackup {
-    rooms: Record<string, RoomSessions>
-    etag?: string
-  }
-  export interface UploadKeysResult {
-    count: number
-    etag: string
-  }
-  export interface PutRoomKeysBody {
-    rooms: Record<string, RoomSessions>
-  }
-  export interface PutRoomSessionsBody {
-    sessions: Record<string, SessionData>
-  }
-  export interface RecoverKeysResult {
-    rooms: Record<string, RoomSessions>
-    total_keys: number
-    recovered_keys: number
-  }
-  export interface RecoveryProgress {
-    user_id: string
-    version: string
-    total_keys: number
-    recovered_keys: number
-    status: string
-    started_ts: number
-    updated_ts: number
-  }
-  export interface BatchRecoverResult {
-    rooms: Record<string, RoomSessions>
-    total_sessions: number
-    has_more: boolean
-    next_batch?: string
-  }
-  export interface ExportResult {
-    room_keys: Array<{
-      room_id: string
-      session_id: string
-      session_data: EncryptedData | Record<string, unknown>
-      first_message_index: number
-      forwarded_count: number
-      is_verified: boolean
-    }>
-    version: string
-  }
-  export interface ImportResult {
-    count: number
-    failed: number
-    total: number
-  }
-  export interface VerifyResult {
-    valid: boolean
-    algorithm: string
-    auth_data: AuthData | Record<string, unknown>
-    key_count: number
-    signatures?: Record<string, Record<string, string>>
-  }
-  export interface RecoverRoomKeysResult {
-    room_id: string
-    sessions: SessionData[]
-  }
-  export interface RecoverSessionKeyResult {
-    room_id: string
-    session_id: string
-    session_data: EncryptedData | Record<string, unknown>
-  }
-  export class KeyBackupManager {
-    getLatestBackupVersion(forceRefresh?: boolean): Promise<BackupVersionInfo>
-    getBackupVersions(forceRefresh?: boolean): Promise<{ versions: BackupVersionInfo[] }>
-    createBackupVersion(
-      algorithm?: string,
-      authData?: AuthData | Record<string, unknown>,
-      auth?: Record<string, unknown>
-    ): Promise<{ version: string }>
-    getBackupVersion(version: string, forceRefresh?: boolean): Promise<BackupVersionInfo>
-    updateBackupVersion(version: string, authData: AuthData | Record<string, unknown>): Promise<{ version: string }>
-    deleteBackupVersion(version: string): Promise<{ deleted: boolean; version: string }>
-    getAllRoomKeys(version: string): Promise<RoomKeyBackup>
-    putAllRoomKeys(version: string, body: PutRoomKeysBody): Promise<UploadKeysResult>
-    getRoomKeys(version: string, roomId: string): Promise<{ sessions: Record<string, SessionData> }>
-    putRoomKeys(version: string, roomId: string, body: PutRoomSessionsBody): Promise<UploadKeysResult>
-    deleteAllRoomKeys(version: string): Promise<UploadKeysResult>
-    deleteRoomKeys(version: string, roomId: string): Promise<UploadKeysResult>
-    getSessionKey(version: string, roomId: string, sessionId: string): Promise<EncryptedData | Record<string, unknown>>
-    putSessionKey(
-      version: string,
-      roomId: string,
-      sessionId: string,
-      sessionData: SessionData
-    ): Promise<UploadKeysResult>
-    deleteSessionKey(version: string, roomId: string, sessionId: string): Promise<UploadKeysResult>
-    recoverKeys(version: string, rooms?: string[]): Promise<RecoverKeysResult>
-    getRecoveryProgress(version: string): Promise<RecoveryProgress>
-    verifyBackup(version: string): Promise<VerifyResult>
-    batchRecover(version: string, roomIds: string[], sessionLimit?: number): Promise<BatchRecoverResult>
-    recoverRoomKeys(version: string, roomId: string): Promise<RecoverRoomKeysResult>
-    recoverSessionKey(version: string, roomId: string, sessionId: string): Promise<RecoverSessionKeyResult>
-    exportKeys(version?: string): Promise<ExportResult>
-    importKeys(roomKeys: ExportResult['room_keys'], version?: string): Promise<ImportResult>
-  }
-}
-
-declare module 'matrix-js-sdk/key-verification' {
-  export class KeyVerificationManager {
-    startDeviceSigningVerification(request: Record<string, unknown>, version?: string): Promise<Record<string, unknown>>
-    acceptDeviceSigningVerification(
-      request: Record<string, unknown>,
-      version?: string
-    ): Promise<Record<string, unknown>>
-    sendDeviceSigningVerificationKeyAgreement(
-      request: Record<string, unknown>,
-      version?: string
-    ): Promise<Record<string, unknown>>
-    confirmDeviceSigningVerificationMac(
-      request: Record<string, unknown>,
-      version?: string
-    ): Promise<Record<string, unknown>>
-    completeDeviceSigningVerification(
-      request: Record<string, unknown>,
-      version?: string
-    ): Promise<Record<string, unknown>>
-    cancelDeviceSigningVerification(
-      request: Record<string, unknown>,
-      version?: string
-    ): Promise<Record<string, unknown>>
-    getVerificationRequestsHttp(version?: string): Promise<Record<string, unknown>>
-    showQrCodeHttp(version?: string): Promise<Record<string, unknown>>
-    scanQrCodeHttp(request: Record<string, unknown>, version?: string): Promise<Record<string, unknown>>
-  }
-}
-
-declare module 'matrix-js-sdk/crypto-keys' {
-  export class CryptoKeysManager {
-    uploadKeys(content: Record<string, unknown>): Promise<{ one_time_key_counts: Record<string, number> }>
-    queryKeys(userIds: string[], opts?: { token?: string; timeout?: number }): Promise<Record<string, unknown>>
-    claimKeys(devices: [string, string][], keyAlgorithm?: string, timeout?: number): Promise<Record<string, unknown>>
-    getKeysChanges(from: string, to: string): Promise<{ changed: string[]; left: string[] }>
-    uploadKeySignatures(signatures: Record<string, unknown>): Promise<Record<string, unknown>>
-    uploadDeviceSigning(masterKey?: Record<string, unknown>, selfSigningKey?: Record<string, unknown>): Promise<void>
-  }
-}
-
-declare module 'matrix-js-sdk/telemetry' {
-  export interface TelemetryEvent {
-    event: string
-    timestamp: number
-    data?: Record<string, unknown>
-  }
-
-  export interface TelemetryConfig {
-    enabled: boolean
-    endpoint?: string
-    sampleRate?: number
-  }
-
-  export interface UsageStats {
-    messagesSent: number
-    messagesReceived: number
-    roomsJoined: number
-    callsMade: number
-    mediaUploaded: number
-    lastActive: number
-  }
-
-  export class TelemetryManager {
-    configure(config: Partial<TelemetryConfig>): void
-    enable(): void
-    disable(): void
-    isEnabled(): boolean
-    track(event: string, data?: Record<string, unknown>): void
-    trackMessageSent(roomId: string, type: string): void
-    trackMessageReceived(roomId: string, type: string): void
-    trackRoomJoined(roomId: string): void
-    trackCall(type: 'voice' | 'video'): void
-    trackMediaUploaded(size: number, type: string): void
-    trackError(error: Error, context?: Record<string, unknown>): void
-    getUsageStats(): UsageStats
-    getSessionDuration(): number
-    flush(): void
-    start(): void
-    stop(): void
-  }
-}
-
-declare module 'matrix-js-sdk/dm' {
-  export interface CreateDmOptions {
-    userIds: string[]
-    invite?: boolean
-    name?: string
-    topic?: string
-    isEncrypted?: boolean
-  }
-
-  export interface DmRoomInfo {
-    roomId: string
-    inviter?: string
-    invitees: string[]
-    name?: string
-    avatarUrl?: string
-    lastMessage?: {
-      content: string
-      timestamp: number
-      sender: string
-    }
-    unreadCount?: number
-  }
-
-  export interface DmPartnerResponse {
-    room_id: string
-    user_id: string
-    display_name: string
-    avatar_url: string
-  }
-
-  export interface IDirectRoomsMap {
-    [userId: string]: string[]
-  }
-
-  export class DirectMessageManager {
-    createDm(options: CreateDmOptions | string[]): Promise<string>
-    getDMRooms(): Promise<DmRoomInfo[]>
-    getDmForUser(userId: string): Promise<string | null>
-    leaveDm(roomId: string): Promise<void>
-    getDirectRoomsByUser(): Promise<IDirectRoomsMap>
-    setDmRoom(roomId: string, userId: string): Promise<void>
-    removeDmRoom(roomId: string, userId: string): Promise<void>
-    getDmRoomInfo(roomId: string): Promise<DmRoomInfo | null>
-    markDmAsRead(roomId: string): Promise<void>
-    sendDmMessage(roomId: string, content: string | Record<string, unknown>): Promise<string>
-    checkRoomIsDm(roomId: string): Promise<boolean>
-    getDmPartner(roomId: string): Promise<string | null>
-    getDirectRoomsFromServer(): Promise<IDirectRoomsMap>
-    updateDirectRoom(roomId: string, userIds: string[]): Promise<void>
-    isDmRoomFromServer(roomId: string, throwOnError?: boolean): Promise<boolean>
-    getDmPartnerFromServer(roomId: string, throwOnError?: boolean): Promise<DmPartnerResponse | null>
-    start(): Promise<void>
-    stop(): void
-  }
-}
-
-declare module 'matrix-js-sdk/friend' {
-  export enum FriendEvent {
-    Invited = 'Invited',
-    Accepted = 'Accepted',
-    Rejected = 'Rejected',
-    Cancelled = 'Cancelled',
-    Removed = 'Removed',
-    RequestReceived = 'RequestReceived',
-    ListUpdated = 'ListUpdated',
-    SyncComplete = 'SyncComplete',
-    FriendAdded = 'FriendAdded',
-    FriendRemoved = 'FriendRemoved',
-    FriendUpdated = 'FriendUpdated',
-    RequestSent = 'RequestSent',
-    RequestAccepted = 'RequestAccepted',
-    RequestRejected = 'RequestRejected',
-    RequestCancelled = 'RequestCancelled'
-  }
-
-  export interface Friend {
-    user_id: string
-    reason?: string
-    since?: number
-    display_name?: string
-    avatar_url?: string
-    note?: string
-    status?: 'favorite' | 'normal' | 'blocked' | 'hidden' | string
-    dm_room_id?: string
-  }
-
-  export interface FriendRequest {
-    user_id: string
-    reason?: string
-    status: 'pending' | 'accepted' | 'rejected' | 'cancelled'
-    timestamp?: number
-    display_name?: string
-    avatar_url?: string
-    message?: string
-    direction?: 'incoming' | 'outgoing'
-  }
-
-  export class FriendManager {
-    sendFriendRequest(userId: string, reason?: string): Promise<void>
-    acceptFriendRequest(userId: string): Promise<void>
-    rejectFriendRequest(userId: string): Promise<void>
-    cancelFriendRequest(userId: string): Promise<void>
-    removeFriend(userId: string): Promise<void>
-    getFriends(): Promise<Friend[]>
-    getIncomingRequests(): Promise<FriendRequest[]>
-    getOutgoingRequests(): Promise<FriendRequest[]>
-    getFriendSuggestions(limit?: number): Promise<Friend[]>
-    isFriend(userId: string): Promise<boolean>
-    checkFriendship(userId: string): Promise<boolean>
-    getFriendGroups(): Promise<Record<string, { name: string; users: string[] }>>
-    createFriendGroup(name: string): Promise<string>
-    addToFriendGroup(groupId: string, userId: string): Promise<void>
-    removeFromFriendGroup(groupId: string, userId: string): Promise<void>
-    deleteFriendGroup(groupId: string): Promise<void>
-    setFriendDisplayName(userId: string, displayName: string): Promise<void>
-    updateFriendNote(userId: string, note: string): Promise<void>
-    getFriendStatus(userId: string): Promise<string>
-    updateFriendStatus(userId: string, status: string): Promise<void>
-    getFriendInfo(userId: string, throwOnError?: boolean): Promise<Friend | null>
-    getCachedFriends(): Friend[]
-    // biome-ignore lint/suspicious/noExplicitAny: generic event emitter signature requires `any[]` to allow narrowly-typed handler callbacks (contravariance)
-    on(event: string, handler: (...args: any[]) => void): void
-    removeAllListeners(event?: string): void
-    start(): Promise<void>
-    stop(): void
-  }
-}

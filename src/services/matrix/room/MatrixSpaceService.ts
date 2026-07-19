@@ -1,4 +1,4 @@
-import type { Room, Visibility } from 'matrix-js-sdk'
+import type { IPublicRoomsChunkRoom, Room, Visibility } from 'matrix-js-sdk'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
@@ -586,12 +586,12 @@ class SpaceService extends BaseMatrixService {
       const client = this.getClient()
       try {
         const result = await client.publicRooms({ limit, filter: { room_types: ['m.space'] } })
-        return (result.chunk ?? []).map((room) => ({
+        return (result.chunk ?? []).map((room: IPublicRoomsChunkRoom) => ({
           spaceId: room.room_id,
           name: room.name || '',
           topic: room.topic || undefined,
           avatarUrl: room.avatar_url || undefined,
-          memberCount: room.joined_members ?? 0,
+          memberCount: room.num_joined_members ?? 0,
           childCount: 0
         }))
       } catch (fallbackErr) {

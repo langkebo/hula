@@ -1,3 +1,4 @@
+import type { RoomMember } from 'matrix-js-sdk'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -44,14 +45,7 @@ export function useRoomListManagement(options: UseRoomListManagementOptions) {
   const allowlistCount = computed(() => allowlist.value.length)
   const denylistCount = computed(() => denylist.value.length)
 
-  const toListMember = (m: {
-    userId: string
-    name?: string | null
-    rawDisplayName?: string | null
-    avatarUrl?: string | null
-    events?: { sender?: string }[]
-    membership?: string
-  }): ListMember => {
+  const toListMember = (m: RoomMember): ListMember => {
     const banEvent = (
       m as unknown as { events?: { sender?: string; replacedByUser?: string; content?: { reason?: string } }[] }
     ).events

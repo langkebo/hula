@@ -83,7 +83,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async getDevices(): Promise<Device[]> {
     try {
       const client = this.getClient()
-      const extendedClient = client as MatrixClientExtended
+      const extendedClient = client as unknown as MatrixClientExtended
       const deviceManager = extendedClient.getDeviceManager?.()
 
       if (deviceManager) {
@@ -112,7 +112,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async getDevice(deviceId: string): Promise<Device> {
     try {
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (deviceManager) {
         // 使用 DeviceManager
@@ -157,7 +157,7 @@ class MatrixDeviceService extends BaseMatrixService {
       }
 
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (deviceManager) {
         // 使用 DeviceManager（SDK-9: 适配 IDeviceUpdateRequest 对象签名）
@@ -195,7 +195,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async deleteDevice(deviceId: string, auth?: AuthDict): Promise<void> {
     try {
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (deviceManager) {
         // 使用 DeviceManager（会自动保护当前设备）
@@ -226,7 +226,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async deleteDevices(deviceIds: string[], auth?: AuthDict): Promise<void> {
     try {
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (deviceManager) {
         // 使用 DeviceManager
@@ -255,7 +255,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async getDeviceListUpdates(request: DeviceListUpdatesRequest): Promise<DeviceListUpdatesResponse> {
     try {
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (deviceManager) {
         // 使用 DeviceManager

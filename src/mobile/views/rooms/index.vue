@@ -200,7 +200,7 @@ function mapRoomToItem(room: Room): RoomItem {
     roomId: room.roomId,
     name: room.name || t('mobile_rooms.unnamed_room'),
     avatarUrl: room.getMxcAvatarUrl?.() ?? '',
-    topic: room.currentState?.getStateEvents?.('m.room.topic', '')?.getContent?.()?.topic ?? '',
+    topic: (room.currentState?.getStateEvents?.('m.room.topic', '')?.getContent?.()?.topic as string | undefined) ?? '',
     memberCount: room.getJoinedMemberCount?.() ?? 0,
     joinRule: room.getJoinRule?.() ?? 'invite',
     isEncrypted: room.currentState?.getStateEvents?.('m.room.encryption', '') !== null

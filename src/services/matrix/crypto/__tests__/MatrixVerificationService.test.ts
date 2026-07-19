@@ -79,7 +79,7 @@ describe('MatrixVerificationService', () => {
     })
 
     it('应该在加密未启用时抛出错误', async () => {
-      mockClient.getCrypto = vi.fn(() => null)
+      mockClient.getCrypto = vi.fn(() => undefined)
 
       await expect(matrixVerificationService.startSasVerification('@user:example.com', 'DEVICE123')).rejects.toThrow(
         '加密未启用'
@@ -188,7 +188,7 @@ describe('MatrixVerificationService', () => {
     })
 
     it('应该在加密未启用时返回 false', async () => {
-      mockClient.getCrypto = vi.fn(() => null)
+      mockClient.getCrypto = vi.fn(() => undefined)
 
       const result = await matrixVerificationService.isDeviceVerified('@user:example.com', 'DEVICE123')
 

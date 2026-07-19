@@ -80,7 +80,29 @@ for (const mod of augSource.getModules()) {
 }
 
 if (augmentedEnums.size === 0) {
-  fail('No enums found inside `declare module "matrix-js-sdk"`. Augmentation file may have changed shape.')
+  // 清单 D 已移除 augmentation 中所有与 SDK 重复的 enum 声明，augmentation 不再包含任何 enum。
+  // 这种状态下没有 enum drift 可检测，直接 emit 空报告并退出。
+  if (emitJson) {
+    console.log(
+      JSON.stringify(
+        {
+          augmentedEnumCount: 0,
+          canonicalEnumCount: 0,
+          errors: [],
+          warnings: [],
+          note: 'No enums found inside `declare module "matrix-js-sdk"` — augmentation cleanup (清单 D) removed all duplicate enum declarations.'
+        },
+        null,
+        2
+      )
+    )
+  } else {
+    console.log(
+      '[check-sdk-augmentations] No enums found inside `declare module "matrix-js-sdk"`. ' +
+        'Augmentation no longer duplicates SDK enums (清单 D cleanup). Nothing to check.'
+    )
+  }
+  process.exit(0)
 }
 
 // ----- 2. Walk SDK source and index canonical enum declarations by name -----

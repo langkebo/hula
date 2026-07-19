@@ -605,9 +605,9 @@ class MatrixCryptoService extends BaseMatrixService {
       const result = await manager.getBackupVersions()
       const versions = result.versions
       if (!Array.isArray(versions) && versions && typeof versions === 'object') {
-        return [versions as KeyBackupVersionInfo]
+        return [versions as unknown as KeyBackupVersionInfo]
       }
-      return versions as KeyBackupVersionInfo[]
+      return versions as unknown as KeyBackupVersionInfo[]
     } catch (err) {
       logger.error(`[MatrixCrypto] 获取备份版本列表失败: ${err}`)
       return []
@@ -623,7 +623,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.createBackupVersion(
         algorithm,
-        authData as Parameters<typeof manager.createBackupVersion>[1],
+        authData as unknown as Parameters<typeof manager.createBackupVersion>[1],
         auth as Parameters<typeof manager.createBackupVersion>[2]
       )
       return { version: result.version, algorithm, auth_data: authData } as KeyBackupVersionInfo
@@ -647,7 +647,10 @@ class MatrixCryptoService extends BaseMatrixService {
   async updateBackupVersion(version: string, _algorithm: string, authData: Record<string, unknown>): Promise<void> {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
-      await manager.updateBackupVersion(version, authData as Parameters<typeof manager.updateBackupVersion>[1])
+      await manager.updateBackupVersion(
+        version,
+        authData as unknown as Parameters<typeof manager.updateBackupVersion>[1]
+      )
       logger.info(`[MatrixCrypto] 更新备份版本成功: ${version}`)
     } catch (err) {
       logger.error(`[MatrixCrypto] 更新备份版本失败: ${err}`)

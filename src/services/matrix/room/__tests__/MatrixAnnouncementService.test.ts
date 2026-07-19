@@ -33,7 +33,7 @@ vi.mock('../../MatrixClientService', () => {
 const matrixClientService = (await import('../../MatrixClientService')).default
 const { matrixAnnouncementService } = await import('../MatrixAnnouncementService')
 
-interface MockStateEvent extends Partial<MatrixEvent> {
+interface MockStateEvent {
   getContent: () => Record<string, unknown>
 }
 
