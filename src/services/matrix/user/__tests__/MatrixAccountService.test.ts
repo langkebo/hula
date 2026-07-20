@@ -6,18 +6,19 @@ import matrixClientService from '../../MatrixClientService'
 import { matrixAccountService } from '../MatrixAccountService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/capabilities`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/capabilities`, () => {
     return HttpResponse.json({ capabilities: { 'm.room.tombstone': { enabled: true } } })
   }),
-  http.get(`${TEST_BASE_URL}/thirdparty/protocols`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/thirdparty/protocols`, () => {
     return HttpResponse.json({ irc: { fields: ['network'] } })
   }),
-  http.get(`${TEST_BASE_URL}/my_rooms`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/my_rooms`, () => {
     return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
   }),
-  http.get(`${TEST_BASE_URL}/events`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/events`, () => {
     return HttpResponse.json({ chunk: [], end: 'token1' })
   })
 )
@@ -31,7 +32,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 const mockAuthedRequest = vi
   .fn()
   .mockImplementation(async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-    const url = new URL(`${TEST_BASE_URL}${path}`)
+    const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
+    const url = new URL(`${TEST_BASE_URL}${defaultPrefix}${path}`)
     if (queryParams && typeof queryParams === 'object') {
       for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
         url.searchParams.set(key, value)
@@ -127,7 +129,7 @@ describe('MatrixAccountService', () => {
     it('should get capabilities', async () => {
       const mockCaps = { capabilities: { 'm.room.tombstone': { enabled: true } } }
       server.use(
-        http.get(`${TEST_BASE_URL}/capabilities`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/capabilities`, () => {
           return HttpResponse.json(mockCaps)
         })
       )
@@ -139,7 +141,7 @@ describe('MatrixAccountService', () => {
 
     it('should return empty object on error', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/capabilities`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/capabilities`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
@@ -152,7 +154,7 @@ describe('MatrixAccountService', () => {
     it('should get third party protocols', async () => {
       const mockProtocols = { irc: { fields: ['network'] } }
       server.use(
-        http.get(`${TEST_BASE_URL}/thirdparty/protocols`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/thirdparty/protocols`, () => {
           return HttpResponse.json(mockProtocols)
         })
       )
@@ -165,7 +167,7 @@ describe('MatrixAccountService', () => {
   describe('getMyRooms', () => {
     it('should get my rooms', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/my_rooms`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/my_rooms`, () => {
           return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
         })
       )
@@ -176,7 +178,7 @@ describe('MatrixAccountService', () => {
 
     it('should return empty array on error', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/my_rooms`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/my_rooms`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
@@ -189,7 +191,7 @@ describe('MatrixAccountService', () => {
     it('should get event stream with params', async () => {
       const mockEvents = { chunk: [], end: 'token1' }
       server.use(
-        http.get(`${TEST_BASE_URL}/events`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/events`, () => {
           return HttpResponse.json(mockEvents)
         })
       )
@@ -204,7 +206,7 @@ describe('MatrixAccountService', () => {
 
     it('should return empty object on error', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/events`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/events`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )

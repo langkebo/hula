@@ -6,6 +6,7 @@ import matrixClientService from '../../MatrixClientService'
 import { matrixPresenceService } from '../MatrixPresenceService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const _server = setupMswServer(
   http.put(`${TEST_BASE_URL}/_matrix/client/v3/presence/:userId/status`, async ({ request }) => {
@@ -44,7 +45,7 @@ describe('MatrixPresenceService', () => {
   const authedRequestImpl = vi
     .fn()
     .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-      const prefixedPath = path.startsWith('/_matrix') ? path : `/_matrix/client/v3${path}`
+      const prefixedPath = path.startsWith('/_') ? path : `${PREFIX_V3}${path}`
       const url = `${TEST_BASE_URL}${prefixedPath}`
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
