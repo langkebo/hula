@@ -3,22 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixRoomQueryService } from '../QueryService'
 
-vi.mock('../../MatrixClientService', () => {
-  const mockServiceInstance = {
-    getClient: vi.fn()
-  }
-  return {
-    default: mockServiceInstance,
-    matrixClientService: mockServiceInstance
-  }
-})
-
-vi.mock('@tauri-apps/plugin-log', () => ({
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn()
-}))
-
 function mockRoom(overrides: Partial<Room> = {}): Room {
   return {
     roomId: '!default:server',
@@ -31,6 +15,7 @@ function mockRoom(overrides: Partial<Room> = {}): Room {
 describe('MatrixRoomQueryService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
   })
 
   describe('searchGroup', () => {
@@ -45,8 +30,6 @@ describe('MatrixRoomQueryService', () => {
     })
 
     it('should return empty array when client throws (not initialized)', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
-
       const result = await matrixRoomQueryService.searchGroup('test')
       expect(result).toEqual([])
     })

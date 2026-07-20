@@ -9,16 +9,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => {
-  const mockService = {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  }
-  return {
-    default: mockService,
-    matrixClientService: mockService
-  }
-})
-
 const mockTypingManager = {
   startTyping: vi.fn(),
   stopTyping: vi.fn(),
@@ -46,6 +36,7 @@ const mockClient = {
 describe('MatrixTypingService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     vi.useFakeTimers()
     matrixTypingService.cleanup()
   })

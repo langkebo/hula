@@ -1,18 +1,8 @@
 import type { MatrixClient, Room } from 'matrix-js-sdk'
 import type { DirectMessageManager } from 'matrix-js-sdk/dm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-vi.mock('@tauri-apps/plugin-log', () => ({
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn()
-}))
-
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  }
-}))
+import matrixClientService from '../../MatrixClientService'
+import { matrixDirectMessageService } from '../MatrixDirectMessageService'
 
 const mockDmManager = {
   createDm: vi.fn(),
@@ -33,13 +23,10 @@ const mockClient = {
   getRoom: vi.fn(() => null as Room | null)
 }
 
-const { default: matrixClientService } = await import('../../MatrixClientService')
-const { matrixDirectMessageService } = await import('../MatrixDirectMessageService')
-
 describe('MatrixDirectMessageService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
     matrixDirectMessageService.stop()
   })
 

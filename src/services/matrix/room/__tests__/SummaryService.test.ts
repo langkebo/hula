@@ -1,12 +1,8 @@
-import { JoinRule, type MatrixClient, type Room } from 'matrix-js-sdk'
+import { JoinRule, type Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import matrixClientService from '../../MatrixClientService'
 import type { RoomSummary as SynapseRoomSummary } from '../../SynapseRustExtensionsService'
-
-vi.mock('@tauri-apps/plugin-log', () => ({
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn()
-}))
+import { MatrixRoomSummaryAggregateService } from '../SummaryService'
 
 const synapseGetRoomSummaryMock = vi.fn()
 vi.mock('../../SynapseRustExtensionsService', () => ({
@@ -14,14 +10,6 @@ vi.mock('../../SynapseRustExtensionsService', () => ({
     getRoomSummary: (...args: unknown[]) => synapseGetRoomSummaryMock(...args)
   }
 }))
-
-const getClientMock = vi.fn()
-vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() as MatrixClient },
-  matrixClientService: { getClient: () => getClientMock() as MatrixClient }
-}))
-
-const { MatrixRoomSummaryAggregateService } = await import('../SummaryService')
 
 const makeRoom = (overrides: Partial<Room> = {}): Room =>
   ({
@@ -52,7 +40,8 @@ describe('MatrixRoomSummaryAggregateService', () => {
 
   beforeEach(() => {
     service = new MatrixRoomSummaryAggregateService()
-    getClientMock.mockReset()
+    vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     synapseGetRoomSummaryMock.mockReset()
   })
 
@@ -193,13 +182,12 @@ describe('MatrixRoomSummaryAggregateService', () => {
 
   describe('getRoomSummary', () => {
     it('throws when client is not initialized', async () => {
-      getClientMock.mockReturnValueOnce(null)
       await expect(service.getRoomSummary('!r')).rejects.toThrow('客户端未初始化')
     })
 
     it('uses server summary path when synapse returns data', async () => {
       const room = makeRoom()
-      getClientMock.mockReturnValue({ getRoom: () => room })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => room } as never)
       synapseGetRoomSummaryMock.mockResolvedValueOnce({
         room_id: '!r:e',
         name: 'Server',
@@ -217,34 +205,34 @@ describe('MatrixRoomSummaryAggregateService', () => {
 
     it('falls back to local Room when synapse returns null', async () => {
       const room = makeRoom()
-      getClientMock.mockReturnValue({ getRoom: () => room })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => room } as never)
       synapseGetRoomSummaryMock.mockResolvedValueOnce(null)
       const s = await service.getRoomSummary('!r:e')
       expect(s?.name).toBe('Room')
     })
 
     it('returns null when synapse returns null and room is missing', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       synapseGetRoomSummaryMock.mockResolvedValueOnce(null)
       expect(await service.getRoomSummary('!r')).toBeNull()
     })
 
     it('re-throws synapse errors when throwOnError=true (default)', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       synapseGetRoomSummaryMock.mockRejectedValueOnce(new Error('500'))
       await expect(service.getRoomSummary('!r')).rejects.toThrow('500')
     })
 
     it('swallows synapse errors and falls back to local Room when throwOnError=false', async () => {
       const room = makeRoom()
-      getClientMock.mockReturnValue({ getRoom: () => room })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => room } as never)
       synapseGetRoomSummaryMock.mockRejectedValueOnce(new Error('500'))
       const s = await service.getRoomSummary('!r', false)
       expect(s?.name).toBe('Room')
     })
 
     it('returns null on error fallback when room is missing and throwOnError=false', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       synapseGetRoomSummaryMock.mockRejectedValueOnce(new Error('500'))
       expect(await service.getRoomSummary('!r', false)).toBeNull()
     })
@@ -252,13 +240,14 @@ describe('MatrixRoomSummaryAggregateService', () => {
 
   describe('getRoomSummaries', () => {
     it('throws when client is not initialized', async () => {
-      getClientMock.mockReturnValueOnce(null)
       await expect(service.getRoomSummaries(['!r'])).rejects.toThrow('客户端未初始化')
     })
 
     it('returns a Map keyed by roomId with lite summaries from local Room', async () => {
       const room = makeRoom()
-      getClientMock.mockReturnValue({ getRoom: (id: string) => (id === '!r:e' ? room : null) })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoom: (id: string) => (id === '!r:e' ? room : null)
+      } as never)
       const out = await service.getRoomSummaries(['!r:e', '!missing:e'])
       expect(out.get('!r:e')).toEqual({
         name: 'Room',
@@ -270,7 +259,7 @@ describe('MatrixRoomSummaryAggregateService', () => {
     })
 
     it('returns an empty Map when no roomIds resolve', async () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       expect(await service.getRoomSummaries(['!a', '!b'])).toEqual(new Map())
     })
   })
