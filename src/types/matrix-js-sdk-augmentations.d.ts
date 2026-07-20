@@ -4,12 +4,6 @@
  */
 /// <reference types="vite/client" />
 
-// `export {}` makes this file a module (rather than a script), which causes
-// `declare module 'matrix-js-sdk'` below to be treated as a module AUGMENTATION
-// (adding to the SDK's existing exports) rather than a module DECLARATION
-// (which would shadow/replace the SDK's exports).
-export {}
-
 import type { IHttpOpts, QueryDict, Body, IRequestOpts } from 'matrix-js-sdk'
 
 declare module 'matrix-js-sdk' {
@@ -69,10 +63,8 @@ declare module 'matrix-js-sdk' {
 
   // ==================== 补充 SDK 缺失的类型 ====================
 
-
   // Note: These types exist in matrix-js-sdk/@types/partials.ts but are not exported from main index
   // We re-export them here for convenience
-
 
   // ==================== 接口补充 ====================
   // Note: ICreateRoomOpts exists in matrix-js-sdk/@types/requests.ts but is not exported from main index
@@ -90,7 +82,6 @@ declare module 'matrix-js-sdk' {
     third_party_instance_id?: string
   }
 
-
   export interface SlidingSyncList {
     ranges: number[][]
     sort: string[]
@@ -102,7 +93,6 @@ declare module 'matrix-js-sdk' {
     timeline_limit: number
     required_state: Array<[string, string]>
   }
-
 
   // Note: ISendEventResponse exists in matrix-js-sdk/@types/requests.ts but is not exported from main index
   // We re-export it here for convenience
@@ -127,11 +117,9 @@ declare module 'matrix-js-sdk' {
     [key: string]: unknown
   }
 
-
   export interface VoIPHandler {
     calls: Record<string, MatrixCall>
   }
-
 
   export interface IMemberEvent {
     membership?: string
@@ -147,14 +135,11 @@ declare module 'matrix-js-sdk' {
   // 主入口 export * 的部分解析）能被 `import { IPushRule } from 'matrix-js-sdk'`
   // 找到。字段形状与 SDK canonical（`default: boolean` required）保持一致。
 
-
   // Note: Push types exist in matrix-js-sdk/@types/PushRules.ts but are not exported from main index
   // We re-export them here for convenience
 
-
   // ==================== Event 和 Timeline 类型 ====================
   // 这些类型已在 SDK 中正确定义，此处提供补充
-
 
   // synapse-rust 特有：输入状态管理器扩展
   // 官方 matrix-js-sdk 不包含此管理器接口
@@ -500,7 +485,6 @@ declare module 'matrix-js-sdk' {
 
   // Room 方法扩展
 
-
   // RoomMember 方法扩展
   interface RoomMember {
     userId: string
@@ -566,7 +550,6 @@ declare module 'matrix-js-sdk' {
     count: number
     next_batch?: string
   }
-
 
   // ==================== 同步类型 ====================
   export interface SyncParams {
@@ -651,7 +634,6 @@ declare module 'matrix-js-sdk' {
     unread_thread_notifications?: Record<string, UnreadNotifications>
   }
 
-
   // ==================== 分页类型 ====================
 
   export interface PaginatedMessages {
@@ -662,7 +644,6 @@ declare module 'matrix-js-sdk' {
   }
 
   // ==================== 过滤器类型 ====================
-
 
   // ==================== 事件关系类型 ====================
   export interface EventRelation {
@@ -726,7 +707,6 @@ declare module 'matrix-js-sdk' {
   }
 
   // ==================== 密钥备份类型 ====================
-
 
   // ==================== 设备管理类型 ====================
 
