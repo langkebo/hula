@@ -66,6 +66,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { shouldBypassAuthForE2E } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
 import FileUtil from '@/utils/FileUtil'
 import { createLogger } from '@/utils/Logger'
@@ -161,6 +162,11 @@ const runInitWithMode = (_block: boolean) => {
 // 确保初始化流程只触发一次
 const ensureInitStarted = (blockInit: boolean) => {
   if (!initPromise) {
+    if (shouldBypassAuthForE2E()) {
+      logger.info('E2E mock-auth mode detected, skipping Matrix bootstrap')
+      initPromise = Promise.resolve()
+      return initPromise
+    }
     initPromise = runInitWithMode(blockInit)
   }
   return initPromise
