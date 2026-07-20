@@ -4,7 +4,7 @@
  */
 /// <reference types="vite/client" />
 
-import type { IHttpOpts, QueryDict, Body, IRequestOpts } from 'matrix-js-sdk'
+import type { Body, IHttpOpts, IRequestOpts, QueryDict } from 'matrix-js-sdk'
 
 declare module 'matrix-js-sdk' {
   // ==================== MatrixHttpApi 方法重载 ====================
@@ -40,9 +40,7 @@ declare module 'matrix-js-sdk' {
   // hula 的 MatrixSlidingSyncService 使用 getList/subscribeToRoom/unsubscribeFromRoom/getSyncToken
   // 等方法，这些是 hula 自定义的 SlidingSync 扩展（SDK 的 SlidingSync class 没有这些方法）。
   interface SlidingSync {
-    getList(
-      listName: string
-    ):
+    getList(listName: string):
       | {
           rooms: string[]
           setSort: (sort: string[]) => void

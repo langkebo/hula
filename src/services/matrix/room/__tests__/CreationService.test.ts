@@ -1,4 +1,4 @@
-import type { ICreateRoomOpts, Room } from 'matrix-js-sdk'
+import type { Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 
@@ -24,10 +24,6 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
 
 const { MatrixRoomCreationService } = await import('../CreationService')
 const { Preset, Visibility, NotificationCountType } = await import('matrix-js-sdk')
-
-type CreateOptsWithState = ICreateRoomOpts & {
-  initial_state: Array<{ type: string; state_key: string; content: Record<string, unknown> }>
-}
 
 type RoomWithSyncData = Room & {
   syncData?: {
