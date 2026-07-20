@@ -78,6 +78,11 @@ export function cspNoncePlugin(): Plugin {
               return `img-src ${imgSrc}`
             })
 
+            updated = updated.replace(/media-src\s+([^;]+)/, (_directive: string, values: string) => {
+              const mediaSrc = values.replace(/http:/g, '').replace(/\s+/g, ' ').trim()
+              return `media-src ${mediaSrc}`
+            })
+
             return `<meta http-equiv="Content-Security-Policy" content="${updated}"`
           }
         )

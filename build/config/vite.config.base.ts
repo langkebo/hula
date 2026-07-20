@@ -8,6 +8,7 @@ import type { UserConfig } from 'vite'
 import compression from 'vite-plugin-compression'
 import VueSetupExtend from 'vite-plugin-vue-setup-extend'
 import packageJson from '../../package.json'
+import { cspNoncePlugin } from '../plugins/vite-plugin-csp-nonce'
 import { createManualChunks } from './chunks'
 
 const dependencies = Object.keys(packageJson.dependencies || {})
@@ -113,7 +114,8 @@ export const baseConfig: UserConfig = {
       ext: '.gz',
       threshold: 1024,
       deleteOriginFile: false
-    })
+    }),
+    cspNoncePlugin()
   ],
   worker: {
     format: 'es'
