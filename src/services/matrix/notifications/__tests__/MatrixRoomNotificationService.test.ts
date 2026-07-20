@@ -1,12 +1,17 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
 import { NotificationTypeEnum } from '@/enums'
+import matrixClientService from '../../MatrixClientService'
 
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  }
-}))
+const TEST_BASE_URL = 'https://matrix.test'
+
+const server = setupMswServer(
+  http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/unread_count`, () => {
+    return HttpResponse.json({ notification_count: 5, highlight_count: 2 })
+  })
+)
 
 vi.mock('../MatrixPushService', () => ({
   matrixPushService: {
@@ -21,10 +26,25 @@ vi.mock('../../MatrixRequestDeduper', () => ({
   }
 }))
 
+const buildRoomPathImpl = vi.fn((roomId: string, suffix: string) => {
+  return `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/${suffix}`
+})
+
+const getImpl = vi.fn(async (path: string) => {
+  const url = `${TEST_BASE_URL}${path}`
+  const response = await fetch(url)
+  if (!response.ok) {
+    const err = new Error(`HTTP ${response.status}`) as Error & { httpStatus: number }
+    err.httpStatus = response.status
+    throw err
+  }
+  return response.json()
+})
+
 vi.mock('../../MatrixHttpClient', () => ({
   matrixHttpClient: {
-    buildRoomPath: vi.fn((roomId: string, suffix: string) => `/_matrix/client/v3/rooms/${roomId}/${suffix}`),
-    get: vi.fn()
+    buildRoomPath: buildRoomPathImpl,
+    get: getImpl
   }
 }))
 
@@ -39,17 +59,20 @@ vi.mock('@/utils/Logger', () => ({
 }))
 
 describe('MatrixRoomNotificationService', () => {
-  let matrixClientService: typeof import('../../MatrixClientService').matrixClientService
   let matrixPushService: typeof import('../MatrixPushService').matrixPushService
-  let matrixHttpClient: typeof import('../../MatrixHttpClient').matrixHttpClient
   let matrixRoomNotificationService: typeof import('../MatrixRoomNotificationService').matrixRoomNotificationService
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    matrixClientService = (await import('../../MatrixClientService')).matrixClientService
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     matrixPushService = (await import('../MatrixPushService')).matrixPushService
-    matrixHttpClient = (await import('../../MatrixHttpClient')).matrixHttpClient
     matrixRoomNotificationService = (await import('../MatrixRoomNotificationService')).matrixRoomNotificationService
+    ;(
+      matrixRoomNotificationService as unknown as {
+        isUnreadCountSupported: boolean
+        hasLoggedUnreadCountFallback: boolean
+      }
+    ).isUnreadCountSupported = true
   })
 
   describe('setRoomNotification', () => {
@@ -100,17 +123,19 @@ describe('MatrixRoomNotificationService', () => {
 
   describe('fetchUnreadCount', () => {
     it('returns notification + highlight from /unread_count', async () => {
-      vi.mocked(matrixHttpClient.get).mockResolvedValue({ notification_count: 5, highlight_count: 2 })
-
       const result = await matrixRoomNotificationService.fetchUnreadCount('!u:server')
 
-      expect(matrixHttpClient.buildRoomPath).toHaveBeenCalledWith('!u:server', 'unread_count')
-      expect(matrixHttpClient.get).toHaveBeenCalledTimes(1)
+      expect(buildRoomPathImpl).toHaveBeenCalledWith('!u:server', 'unread_count')
+      expect(getImpl).toHaveBeenCalledTimes(1)
       expect(result).toEqual({ notification_count: 5, highlight_count: 2 })
     })
 
     it('coerces missing fields to zero', async () => {
-      vi.mocked(matrixHttpClient.get).mockResolvedValue({})
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/unread_count`, () => {
+          return HttpResponse.json({})
+        })
+      )
 
       const result = await matrixRoomNotificationService.fetchUnreadCount('!z:server')
 
@@ -118,14 +143,18 @@ describe('MatrixRoomNotificationService', () => {
     })
 
     it('returns null when unread_count is not supported', async () => {
-      vi.mocked(matrixHttpClient.get).mockRejectedValue({ httpStatus: 404 })
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/unread_count`, () => {
+          return new HttpResponse(null, { status: 404 })
+        })
+      )
 
       const firstResult = await matrixRoomNotificationService.fetchUnreadCount('!n:server')
       const secondResult = await matrixRoomNotificationService.fetchUnreadCount('!n:server')
 
       expect(firstResult).toBeNull()
       expect(secondResult).toBeNull()
-      expect(matrixHttpClient.get).toHaveBeenCalledTimes(1)
+      expect(getImpl).toHaveBeenCalledTimes(1)
     })
 
     it('returns null when roomId is empty', async () => {
