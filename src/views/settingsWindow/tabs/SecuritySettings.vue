@@ -460,7 +460,7 @@ async function handleSaveSecretChat() {
 
   try {
     savingSecretChat.value = true
-    settingStore.setSecretChatPassword(secretChatForm.password)
+    await settingStore.setSecretChatPassword(secretChatForm.password)
     showSecretChatDialog.value = false
     showFeedback(t('setting.private_chat.password_set_success'), 'success')
   } catch (error) {
