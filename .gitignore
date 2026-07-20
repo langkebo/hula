@@ -33,6 +33,7 @@ dist/bundle-metrics.json
 
 # Temporary optimization artifacts
 tsc*.log
+test_output*.log
 tmp-dynamic.png
 
 target
@@ -67,3 +68,9 @@ preview/
 
 # Vitest full report (large, regenerated on demand)
 vitest-full-report.json
+
+# Build config generated output
+build/config/*.d.ts
+build/config/*.js
+vite.config.d.ts
+vite.config.js
