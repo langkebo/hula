@@ -8,14 +8,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => {
-  const getClient = vi.fn(() => null as MatrixClient | null)
-  return {
-    default: { getClient },
-    matrixClientService: { getClient }
-  }
-})
-
 vi.mock('@/services/offline/OfflineQueueService', () => ({
   offlineQueueService: {
     enqueue: vi.fn()
@@ -60,6 +52,7 @@ describe('MatrixReceiptService', () => {
     })
     pendingTasks?.clear()
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     vi.useRealTimers()
 
     mockReceiptManager = {

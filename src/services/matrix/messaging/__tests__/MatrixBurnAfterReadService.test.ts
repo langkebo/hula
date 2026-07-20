@@ -21,19 +21,15 @@ const mockManager = {
   extendBurnTime: vi.fn()
 }
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: () => ({
-      getBurnAfterReadManager: () => mockManager
-    })
-  }
-}))
-
+import matrixClientService from '../../MatrixClientService'
 import { matrixBurnAfterReadService } from '../MatrixBurnAfterReadService'
 
 describe('MatrixBurnAfterReadService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+      getBurnAfterReadManager: () => mockManager
+    } as never)
     mockManager.enableBurn.mockResolvedValue({ enabled: true, burn_after_ms: 60000 })
     mockManager.disableBurn.mockResolvedValue({ enabled: false, burn_after_ms: 60000 })
     mockManager.getBurnSettings.mockResolvedValue({ enabled: true, burn_after_ms: 60000 })
