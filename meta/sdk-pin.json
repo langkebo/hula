@@ -6,8 +6,8 @@
   "sdk_commit": "cd30fc71363a9804817f20cc801b9de0aeebf276",
   "sdk_mode": "link",
   "ledger_schema": "1",
-  "synapse_rust_commit": "ae53a5bded134040d1ec10e58f90dad09d1169af",
+  "synapse_rust_commit": "4b04ea8943cb5fce614c002b2e934cd91ac8dabe",
   "tarball_sha256": "",
-  "pinned_at": "2026-07-20T11:00:00.000Z",
+  "pinned_at": "2026-07-20T07:50:00.000Z",
   "pinned_by": "ljf"
 }
