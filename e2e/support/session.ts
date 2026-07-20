@@ -88,6 +88,9 @@ export const clearMockSession = async (page: Page): Promise<void> => {
     for (const key of Object.values(keys)) {
       window.localStorage.removeItem(key)
     }
+    // Keep E2E mode enabled so the app knows it's running in a test environment.
+    // This skips driver.js onboarding overlays that would block clicks.
+    window.localStorage.setItem(keys.enabled, '1')
   }, STORAGE_KEYS)
 }
 

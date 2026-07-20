@@ -5,9 +5,9 @@ test.describe('Tauri 原生行为测试', () => {
     // 检查页面标题
     await expect(tauriPage).toHaveTitle(/HuLa/)
 
-    // 检查登录表单是否存在
-    const loginForm = tauriPage.locator('form')
-    await expect(loginForm).toBeVisible()
+    // Check login form is rendered (uses Vue components, not HTML <form>)
+    const loginForm = tauriPage.locator('.login-box')
+    await expect(loginForm).toBeVisible({ timeout: 10000 })
   })
 
   test('窗口标题应该包含版本号', async ({ tauriPage }) => {
