@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { ClientEvent, RoomEvent, RoomStateEvent } from '@/services/matrix/sdk'
 import { WsResponseMessageType } from '@/services/wsType'
 
@@ -30,12 +31,6 @@ const fakeClient = {
   })
 }
 
-vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: () => fakeClient
-  }
-}))
-
 const fire = (event: unknown, ...args: unknown[]) => {
   for (const cb of handlers.get(event) ?? []) cb(...args)
 }
@@ -44,6 +39,7 @@ describe('MatrixWsBridge', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     handlers.clear()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(fakeClient as never)
   })
 
   it('registers listeners on start and removes them on stop', async () => {

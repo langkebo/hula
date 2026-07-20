@@ -1,5 +1,6 @@
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import matrixClientService from '../../MatrixClientService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn()
@@ -20,17 +21,6 @@ vi.mock('../../messaging/MatrixMessageService', () => ({
   }
 }))
 
-vi.mock('../../MatrixClientService', () => {
-  const mockService = {
-    getClient: vi.fn()
-  }
-  return {
-    default: mockService,
-    matrixClientService: mockService
-  }
-})
-
-const matrixClientService = (await import('../../MatrixClientService')).default
 const { matrixAnnouncementService } = await import('../MatrixAnnouncementService')
 
 interface MockStateEvent {
@@ -71,6 +61,7 @@ function createRoom(options?: {
 describe('MatrixAnnouncementService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
   })
 
   it('should create pinned topic announcement via state event', async () => {

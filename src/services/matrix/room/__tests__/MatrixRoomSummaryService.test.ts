@@ -3,16 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixRoomSummaryService, type RoomSummary } from '../MatrixRoomSummaryService'
 
-vi.mock('../../MatrixClientService', () => {
-  const mockService = {
-    getClient: vi.fn()
-  }
-  return {
-    default: mockService,
-    matrixClientService: mockService
-  }
-})
-
 vi.mock('../MatrixRoomStoreAdapter', () => {
   type SlidingSyncCounts = {
     notificationCount?: number
@@ -113,7 +103,8 @@ describe('MatrixRoomSummaryService', () => {
       isRoomEncrypted: vi.fn(() => false)
     }
 
-    vi.mocked(matrixClientService.getClient).mockReset()
+    vi.restoreAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     matrixRoomSummaryService.initialize(mockClient as MatrixClient)
   })
 

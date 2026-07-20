@@ -1,16 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-const { getClientMock } = vi.hoisted(() => ({
-  getClientMock: vi.fn()
-}))
-
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: getClientMock
-  }
-}))
-
 import type { MatrixClient } from 'matrix-js-sdk'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { matrixClientService } from '../../MatrixClientService'
 import { cryptoSDKAdapter } from '../CryptoSDKAdapter'
 
 type MockFn = ReturnType<typeof vi.fn>
@@ -62,8 +52,8 @@ describe('CryptoSDKAdapter', () => {
 
   beforeEach(() => {
     mockClient = createMockExtendedClient()
-    vi.mocked(getClientMock).mockReset()
-    vi.mocked(getClientMock).mockReturnValue(mockClient as unknown as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReset()
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
     cryptoSDKAdapter.invalidateCryptoCache()
   })
 
