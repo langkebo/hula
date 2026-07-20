@@ -1,19 +1,14 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
+import matrixClientService from '../../MatrixClientService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
 }))
-
-vi.mock('../../MatrixClientService', () => {
-  const getClient = vi.fn(() => null as MatrixClient | null)
-  return {
-    default: { getClient },
-    matrixClientService: { getClient }
-  }
-})
 
 vi.mock('../MatrixSpecialFriendService', () => ({
   matrixSpecialFriendService: {
@@ -66,8 +61,43 @@ vi.mock('matrix-js-sdk/friend', () => ({
   }
 }))
 
+const TEST_BASE_URL = 'https://matrix.example.com'
+
+const _server = setupMswServer(
+  // Friend endpoints use /_matrix/client/v1/ prefix
+  http.get(`${TEST_BASE_URL}/_matrix/client/v1/friends`, () => {
+    return HttpResponse.json({ friends: [] })
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v1/friends/:userId/status`, () => {
+    return HttpResponse.json({ status: 'friends' })
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v1/friends/search`, () => {
+    return HttpResponse.json({ results: [] })
+  }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v1/friends/requests/incoming`, () => {
+    return HttpResponse.json({ requests: [] })
+  })
+)
+
+// Bridge: mock authedRequestWithPath to route through MSW.
+// Friend service paths use PREFIX_V1 ('/_matrix/client/v1') — these are full
+// paths starting with '/_', so the bridge correctly passes them through to
+// fetch without adding a PREFIX_V3.
+vi.mock('@/services/matrix/MatrixHttpClient', async () => {
+  const actual = await vi.importActual('@/services/matrix/MatrixHttpClient')
+  return {
+    ...actual,
+    authedRequestWithPath: vi.fn(async (_client: unknown, method: string, path: string, body?: unknown) => {
+      const url = `${TEST_BASE_URL}${path}`
+      const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' }
+      const response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      return response.json()
+    })
+  }
+})
+
 const { default: matrixFriendService } = await import('../MatrixFriendService')
-const { default: matrixClientService } = await import('../../MatrixClientService')
 const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
 const { synapseRustExtensionsService } = await import('../../SynapseRustExtensionsService')
 
@@ -75,11 +105,11 @@ describe('MatrixFriendService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     matrixFriendService.stop()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
   })
 
   afterEach(() => {
-    vi.resetAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('initial state', () => {
