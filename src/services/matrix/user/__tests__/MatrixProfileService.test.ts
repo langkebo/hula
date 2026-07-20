@@ -5,6 +5,7 @@ import { setupMswServer } from '@/../tests/msw'
 import { ExtendedProfileUnsupportedError, profileService, useProfile } from '../MatrixProfileService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
   http.get(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId`, () => {
@@ -44,7 +45,8 @@ describe('ProfileService', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
-        const prefix = opts?.prefix ?? ''
+        const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
+        const prefix = opts?.prefix ?? defaultPrefix
         const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
