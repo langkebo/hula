@@ -5,18 +5,19 @@ import matrixClientService from '../../MatrixClientService'
 import { MatrixRoomAccountDataService } from '../AccountDataService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/user/:userId/rooms/:roomId/account_data/:eventType`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/user/:userId/rooms/:roomId/account_data/:eventType`, () => {
     return HttpResponse.json({ foo: 1 })
   }),
-  http.put(`${TEST_BASE_URL}/user/:userId/rooms/:roomId/account_data/:eventType`, async () => {
+  http.put(`${TEST_BASE_URL}${PREFIX_V3}/user/:userId/rooms/:roomId/account_data/:eventType`, async () => {
     return HttpResponse.json({})
   }),
   http.get(`${TEST_BASE_URL}/_matrix/client/v1/rooms/:roomId/report/:eventId/scanner_info`, () => {
     return HttpResponse.json({ clean: true })
   }),
-  http.put(`${TEST_BASE_URL}/rooms/:roomId/burn`, async () => {
+  http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/burn`, async () => {
     return HttpResponse.json({})
   }),
   http.get(`${TEST_BASE_URL}/_synapse/admin/v1/external_services`, () => {
@@ -42,7 +43,8 @@ describe('MatrixRoomAccountDataService', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, _queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
-        const prefix = opts?.prefix ?? ''
+        const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
+        const prefix = opts?.prefix ?? defaultPrefix
         const url = `${TEST_BASE_URL}${prefix}${path}`
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
@@ -87,7 +89,7 @@ describe('MatrixRoomAccountDataService', () => {
 
     it('swallows backend errors and returns null', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/user/:userId/rooms/:roomId/account_data/:eventType`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/user/:userId/rooms/:roomId/account_data/:eventType`, () => {
           return new HttpResponse(null, { status: 404 })
         })
       )
@@ -110,7 +112,7 @@ describe('MatrixRoomAccountDataService', () => {
 
     it('re-throws backend errors', async () => {
       server.use(
-        http.put(`${TEST_BASE_URL}/user/:userId/rooms/:roomId/account_data/:eventType`, () => {
+        http.put(`${TEST_BASE_URL}${PREFIX_V3}/user/:userId/rooms/:roomId/account_data/:eventType`, () => {
           return new HttpResponse(null, { status: 403 })
         })
       )
@@ -155,7 +157,7 @@ describe('MatrixRoomAccountDataService', () => {
 
     it('re-throws backend errors', async () => {
       server.use(
-        http.put(`${TEST_BASE_URL}/rooms/:roomId/burn`, () => {
+        http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/burn`, () => {
           return new HttpResponse(null, { status: 403 })
         })
       )

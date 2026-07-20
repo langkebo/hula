@@ -31,7 +31,7 @@ describe('MatrixRoomMembershipService', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const prefixedPath = path.startsWith('/_matrix') ? path : `${PREFIX_V3}${path}`
+        const prefixedPath = path.startsWith('/_') ? path : `${PREFIX_V3}${path}`
         const url = new URL(`${TEST_BASE_URL}${prefixedPath}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
