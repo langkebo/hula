@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import matrixClientService from '../../MatrixClientService'
 import { matrixDehydratedDeviceService } from '../MatrixDehydratedDeviceService'
 
 const mockManager = {
@@ -11,18 +12,13 @@ const mockManager = {
   getDeviceEvent: vi.fn()
 }
 
-vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: vi.fn(() => ({
-      getUserId: vi.fn(() => '@test:example.com'),
-      getDehydratedDeviceManager: vi.fn(() => mockManager)
-    }))
-  }
-}))
-
 describe('MatrixDehydratedDeviceService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+      getUserId: vi.fn(() => '@test:example.com'),
+      getDehydratedDeviceManager: vi.fn(() => mockManager)
+    } as never)
   })
 
   describe('createDevice', () => {

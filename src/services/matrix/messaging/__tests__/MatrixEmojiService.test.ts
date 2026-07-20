@@ -4,19 +4,6 @@ import matrixClientService from '../../MatrixClientService'
 import { matrixMediaService } from '../../media/MatrixMediaService'
 import { matrixEmojiService } from '../MatrixEmojiService'
 
-const { getClientMock } = vi.hoisted(() => ({
-  getClientMock: vi.fn()
-}))
-
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: getClientMock
-  },
-  matrixClientService: {
-    getClient: getClientMock
-  }
-}))
-
 vi.mock('../../media/MatrixMediaService', () => ({
   matrixMediaService: {
     uploadFile: vi.fn().mockResolvedValue({ contentUri: 'mxc://server/emoji123', mimetype: 'image/png' }),
@@ -37,7 +24,7 @@ describe('MatrixEmojiService', () => {
   beforeEach(() => {
     getAccountDataFromServer = vi.fn().mockResolvedValue({ packs: {} })
     setAccountData = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(matrixClientService.getClient).mockReturnValue({
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
       getUserId: vi.fn(() => '@user:server'),
       getAccountDataFromServer,
       setAccountData

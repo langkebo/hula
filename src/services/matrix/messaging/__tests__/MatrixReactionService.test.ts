@@ -4,12 +4,6 @@ import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import matrixClientService from '../../MatrixClientService'
 import { matrixReactionService } from '../MatrixReactionService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn()
-  }
-}))
-
 vi.mock('@/services/offline/OfflineQueueService', () => ({
   offlineQueueService: {
     enqueue: vi.fn(() => 'offline_id')
@@ -27,8 +21,7 @@ describe('MatrixReactionService', () => {
       getUserId: vi.fn(() => '@user:example.com')
     }
 
-    vi.mocked(matrixClientService.getClient).mockReset()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as MatrixClient)
   })
 
   describe('addReaction', () => {

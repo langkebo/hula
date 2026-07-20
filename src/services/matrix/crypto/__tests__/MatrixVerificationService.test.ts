@@ -3,16 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixVerificationService } from '../MatrixVerificationService'
 
-vi.mock('../../MatrixClientService', () => {
-  const service = {
-    getClient: vi.fn()
-  }
-  return {
-    default: service,
-    matrixClientService: service
-  }
-})
-
 describe('MatrixVerificationService', () => {
   let mockClient: Partial<MatrixClient>
   let mockCrypto: {
@@ -37,14 +27,13 @@ describe('MatrixVerificationService', () => {
 
     mockClient = {
       getCrypto: vi.fn(() => mockCrypto as unknown as MatrixClient['crypto']),
-      on: vi.fn(), // 添加 on 方法用于事件监听
+      on: vi.fn(),
       off: vi.fn(),
       getUserId: vi.fn(() => '@test:example.com'),
       getDeviceId: vi.fn(() => 'TEST_DEVICE')
     }
 
-    vi.mocked(matrixClientService.getClient).mockReset()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as MatrixClient)
     matrixVerificationService.initialize()
     ;(matrixVerificationService as unknown as { pendingRequests: Map<string, unknown> }).pendingRequests.clear()
     ;(matrixVerificationService as unknown as { observedClient: unknown }).observedClient = mockClient
