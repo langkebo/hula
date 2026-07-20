@@ -11,7 +11,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { hasTauriRuntime } from '@/utils/AppHarness'
+import { hasTauriRuntime, isE2EMode } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMac } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -267,7 +267,7 @@ export function useLoginOrchestrator() {
   }
 
   const mount = async () => {
-    if (!isGuideCompleted.value) {
+    if (!isGuideCompleted.value && !isE2EMode()) {
       startTour()
     }
 

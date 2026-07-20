@@ -5,6 +5,7 @@ const liveHomeserverUrl = process.env.MATRIX_LIVE_HOMESERVER_URL?.trim()
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: '**/__tests__/**',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
