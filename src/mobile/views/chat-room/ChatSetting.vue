@@ -227,10 +227,7 @@
             <div
               v-if="isGroup && listMgmt.canManage.value"
               class="flex justify-between p-15px items-center cursor-pointer"
-              @click="
-                listManagementTab = 'allowlist'
-                showListManagement = true
-              ">
+              @click="openListManagement('allowlist')">
               <div class="text-14px">{{ t('room_advanced.allowlist.title') }}</div>
               <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
                 <span>{{ listMgmt.allowlistCount.value }}</span>
@@ -243,10 +240,7 @@
             <div
               v-if="isGroup && listMgmt.canManage.value"
               class="flex justify-between p-15px items-center cursor-pointer"
-              @click="
-                listManagementTab = 'denylist'
-                showListManagement = true
-              ">
+              @click="openListManagement('denylist')">
               <div class="text-14px">{{ t('room_advanced.denylist.title') }}</div>
               <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
                 <span>{{ listMgmt.denylistCount.value }}</span>
@@ -364,6 +358,11 @@ const listMgmt = useRoomListManagement({
   roomId: currentSessionRoomId.value,
   canManage: isAdmin.value
 })
+
+const openListManagement = (tab: 'allowlist' | 'denylist') => {
+  listManagementTab.value = tab
+  showListManagement.value = true
+}
 
 const groupMemberListSliced = computed(() => {
   const list = groupStore.memberList.slice(0, 9)
