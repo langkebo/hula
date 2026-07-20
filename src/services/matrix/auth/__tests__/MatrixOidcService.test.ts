@@ -1,7 +1,46 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { matrixClientService } from '../../MatrixClientService'
+import { setupMswServer } from '@/../tests/msw'
+import matrixClientService from '../../MatrixClientService'
 import { matrixOidcService } from '../MatrixOidcService'
+
+const TEST_BASE_URL = 'https://hs.example.com'
+
+const _server = setupMswServer(
+  http.get(`${TEST_BASE_URL}/.well-known/openid-configuration`, () => {
+    return HttpResponse.json({
+      issuer: 'https://issuer.example.com',
+      authorization_endpoint: 'https://issuer.example.com/auth',
+      token_endpoint: 'https://issuer.example.com/token',
+      userinfo_endpoint: 'https://issuer.example.com/userinfo',
+      jwks_uri: 'https://issuer.example.com/jwks',
+      response_types_supported: ['code'],
+      subject_types_supported: ['public']
+    })
+  }),
+  http.post(`${TEST_BASE_URL}/_matrix/client/v3/oidc/token`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, string>
+    if (body?.grant_type === 'urn:matrix:oidc:grant-type:token-exchange') {
+      return HttpResponse.json({
+        user_id: '@oidc:example.com',
+        access_token: 'matrix-token',
+        device_id: 'oidc-device',
+        refresh_token: 'matrix-refresh'
+      })
+    }
+    return HttpResponse.json({
+      access_token: 'oidc-token',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      refresh_token: 'oidc-refresh-token'
+    })
+  })
+)
+
+vi.mock('@tauri-apps/plugin-log', () => ({
+  info: vi.fn(),
+  error: vi.fn()
+}))
 
 const resetOidcServiceState = () => {
   const service = matrixOidcService as unknown as {
@@ -12,24 +51,10 @@ const resetOidcServiceState = () => {
   service.homeserverUrl = ''
 }
 
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  },
-  default: {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  }
-}))
-
-vi.mock('@tauri-apps/plugin-log', () => ({
-  info: vi.fn(),
-  error: vi.fn()
-}))
-
 describe('MatrixOidcService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.unstubAllGlobals()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     sessionStorage.clear()
     resetOidcServiceState()
   })
@@ -43,23 +68,7 @@ describe('MatrixOidcService', () => {
   })
 
   it('should discover oidc and generate authorization url', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          issuer: 'https://issuer.example.com',
-          authorization_endpoint: 'https://issuer.example.com/auth',
-          token_endpoint: 'https://issuer.example.com/token',
-          userinfo_endpoint: 'https://issuer.example.com/userinfo',
-          jwks_uri: 'https://issuer.example.com/jwks',
-          response_types_supported: ['code'],
-          subject_types_supported: ['public']
-        })
-      })
-    )
-
-    const discovered = await matrixOidcService.discoverOidc('https://hs.example.com')
+    const discovered = await matrixOidcService.discoverOidc(TEST_BASE_URL)
     const url = await matrixOidcService.getAuthorizationUrl({
       redirectUri: 'http://localhost/oidc/callback',
       state: 'fixed-state'
@@ -80,52 +89,17 @@ describe('MatrixOidcService', () => {
   })
 
   it('should restore homeserver url from session storage during callback', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        access_token: 'oidc-token',
-        token_type: 'Bearer',
-        expires_in: 3600,
-        refresh_token: 'oidc-refresh-token'
-      })
-    })
-    vi.stubGlobal('fetch', fetchMock)
-
     sessionStorage.setItem('oidc_state', 'expected-state')
     sessionStorage.setItem('oidc_code_verifier', 'verifier')
-    sessionStorage.setItem('oidc_homeserver_url', 'https://hs.example.com')
+    sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
 
     const result = await matrixOidcService.handleCallback('code-123', 'expected-state')
 
     expect(result?.access_token).toBe('oidc-token')
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://hs.example.com/_matrix/client/v3/oidc/token',
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-    )
   })
 
   it('should return null user info when runtime client missing', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          issuer: 'https://issuer.example.com',
-          authorization_endpoint: 'https://issuer.example.com/auth',
-          token_endpoint: 'https://issuer.example.com/token',
-          userinfo_endpoint: 'https://issuer.example.com/userinfo',
-          jwks_uri: 'https://issuer.example.com/jwks',
-          response_types_supported: ['code'],
-          subject_types_supported: ['public']
-        })
-      })
-    )
-    await matrixOidcService.discoverOidc('https://hs.example.com')
+    await matrixOidcService.discoverOidc(TEST_BASE_URL)
     vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
     const userInfo = await matrixOidcService.getUserInfo()
