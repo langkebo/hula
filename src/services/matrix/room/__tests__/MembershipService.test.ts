@@ -5,12 +5,13 @@ import matrixClientService from '../../MatrixClientService'
 import { MatrixRoomMembershipService } from '../MembershipService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
-  http.post(`${TEST_BASE_URL}/knock/:roomId`, () => {
+  http.post(`${TEST_BASE_URL}${PREFIX_V3}/knock/:roomId`, () => {
     return HttpResponse.json({ room_id: '!r' })
   }),
-  http.post(`${TEST_BASE_URL}/join/:alias`, () => {
+  http.post(`${TEST_BASE_URL}${PREFIX_V3}/join/:alias`, () => {
     return HttpResponse.json({ room_id: '!joined:e' })
   })
 )
@@ -30,7 +31,8 @@ describe('MatrixRoomMembershipService', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const url = new URL(`${TEST_BASE_URL}${path}`)
+        const prefixedPath = path.startsWith('/_matrix') ? path : `${PREFIX_V3}${path}`
+        const url = new URL(`${TEST_BASE_URL}${prefixedPath}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
             url.searchParams.set(key, value)
@@ -171,7 +173,7 @@ describe('MatrixRoomMembershipService', () => {
 
     it('knockRoom re-throws backend errors', async () => {
       server.use(
-        http.post(`${TEST_BASE_URL}/knock/:roomId`, () => {
+        http.post(`${TEST_BASE_URL}${PREFIX_V3}/knock/:roomId`, () => {
           return new HttpResponse(null, { status: 403 })
         })
       )
