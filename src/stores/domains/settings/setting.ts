@@ -117,7 +117,9 @@ const stripLegacyThemeVariant = (themes: STO.Setting['themes']) => {
   }
 }
 
-const hashPassword = (password: string): string => {
+const SHA256_PREFIX = 'sha256:'
+
+const legacyHashPassword = (password: string): string => {
   let hash = 0
   for (let i = 0; i < password.length; i++) {
     const char = password.charCodeAt(i)
@@ -125,6 +127,31 @@ const hashPassword = (password: string): string => {
     hash = hash & hash
   }
   return hash.toString(16)
+}
+
+async function hashPasswordWithSHA256(password: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+  return `${SHA256_PREFIX}${hashHex}`
+}
+
+async function verifyPasswordHash(
+  password: string,
+  storedHash: string
+): Promise<{ valid: boolean; upgradedHash?: string }> {
+  if (storedHash.startsWith(SHA256_PREFIX)) {
+    const expectedHash = await hashPasswordWithSHA256(password)
+    return { valid: storedHash === expectedHash }
+  }
+  // Legacy DJB2 hash — verify and upgrade
+  if (storedHash === legacyHashPassword(password)) {
+    const upgradedHash = await hashPasswordWithSHA256(password)
+    return { valid: true, upgradedHash }
+  }
+  return { valid: false }
 }
 
 // 缓存方案：使用 Pinia + localStorage 分账号存储
@@ -637,10 +664,10 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.secretChat.lockTimeout = Math.max(1, Math.round(this.secretChat.lockTimeout ?? 5))
     },
     /** 设置私密聊天密码 */
-    setSecretChatPassword(password: string) {
+    async setSecretChatPassword(password: string) {
       this.ensureSecretChatSettings()
       this.secretChat.enabled = true
-      this.secretChat.passwordHash = hashPassword(password)
+      this.secretChat.passwordHash = await hashPasswordWithSHA256(password)
     },
     setSecretChatEnabled(enabled: boolean) {
       this.ensureSecretChatSettings()
@@ -666,12 +693,16 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.secretChat.lockTimeout = Math.max(1, Math.round(minutes))
     },
     /** 验证私密聊天密码 */
-    verifySecretChatPassword(password: string): boolean {
+    async verifySecretChatPassword(password: string): Promise<boolean> {
       this.ensureSecretChatSettings()
       if (!this.secretChat.enabled) {
         return false
       }
-      return this.secretChat.passwordHash === hashPassword(password)
+      const result = await verifyPasswordHash(password, this.secretChat.passwordHash)
+      if (result.upgradedHash) {
+        this.secretChat.passwordHash = result.upgradedHash
+      }
+      return result.valid
     },
     /** 清除私密聊天密码 */
     clearSecretChatPassword() {

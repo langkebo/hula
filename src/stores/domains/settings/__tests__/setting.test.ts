@@ -500,34 +500,34 @@ describe('SettingStore', () => {
   })
 
   describe('secret chat', () => {
-    it('setSecretChatPassword enables and sets hash', () => {
+    it('setSecretChatPassword enables and sets hash', async () => {
       const store = useSettingStore()
-      store.setSecretChatPassword('mypassword')
+      await store.setSecretChatPassword('mypassword')
       expect(store.secretChatEnabled).toBe(true)
       expect(store.isSecretChatConfigured()).toBe(true)
-      expect(store.verifySecretChatPassword('mypassword')).toBe(true)
+      expect(await store.verifySecretChatPassword('mypassword')).toBe(true)
     })
 
-    it('verifySecretChatPassword returns true for correct password', () => {
+    it('verifySecretChatPassword returns true for correct password', async () => {
       const store = useSettingStore()
-      store.setSecretChatPassword('secret123')
-      expect(store.verifySecretChatPassword('secret123')).toBe(true)
+      await store.setSecretChatPassword('secret123')
+      expect(await store.verifySecretChatPassword('secret123')).toBe(true)
     })
 
-    it('verifySecretChatPassword returns false for wrong password', () => {
+    it('verifySecretChatPassword returns false for wrong password', async () => {
       const store = useSettingStore()
-      store.setSecretChatPassword('secret123')
-      expect(store.verifySecretChatPassword('wrong')).toBe(false)
+      await store.setSecretChatPassword('secret123')
+      expect(await store.verifySecretChatPassword('wrong')).toBe(false)
     })
 
-    it('verifySecretChatPassword returns false when not enabled', () => {
+    it('verifySecretChatPassword returns false when not enabled', async () => {
       const store = useSettingStore()
-      expect(store.verifySecretChatPassword('anything')).toBe(false)
+      expect(await store.verifySecretChatPassword('anything')).toBe(false)
     })
 
-    it('clearSecretChatPassword resets state', () => {
+    it('clearSecretChatPassword resets state', async () => {
       const store = useSettingStore()
-      store.setSecretChatPassword('secret')
+      await store.setSecretChatPassword('secret')
       store.setSecretChatHideSessions(true)
       store.setSecretChatAutoLock(true)
       store.setSecretChatLockTimeout(15)
@@ -539,10 +539,10 @@ describe('SettingStore', () => {
       expect(store.isSecretChatConfigured()).toBe(false)
     })
 
-    it('isSecretChatConfigured reflects state', () => {
+    it('isSecretChatConfigured reflects state', async () => {
       const store = useSettingStore()
       expect(store.isSecretChatConfigured()).toBe(false)
-      store.setSecretChatPassword('pass')
+      await store.setSecretChatPassword('pass')
       expect(store.isSecretChatConfigured()).toBe(true)
     })
 
@@ -558,9 +558,9 @@ describe('SettingStore', () => {
       expect(store.secretChatLockTimeout).toBe(30)
     })
 
-    it('disabling secret chat clears lock and hide flags', () => {
+    it('disabling secret chat clears lock and hide flags', async () => {
       const store = useSettingStore()
-      store.setSecretChatPassword('pass')
+      await store.setSecretChatPassword('pass')
       store.setSecretChatHideSessions(true)
       store.setSecretChatAutoLock(true)
       store.setSecretChatEnabled(false)
