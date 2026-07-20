@@ -6,6 +6,7 @@ import { setupMswServer } from '@/../tests/msw'
 import { matrixPushService } from '../MatrixPushService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
   // getPushers
@@ -47,7 +48,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 const mockAuthedRequest = vi
   .fn()
   .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-    const prefixedPath = path.startsWith('/_matrix') ? path : `/_matrix/client/v3${path}`
+    const prefixedPath = path.startsWith('/_') ? path : `${PREFIX_V3}${path}`
     const url = `${TEST_BASE_URL}${prefixedPath}`
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
