@@ -6,17 +6,18 @@ import matrixClientService from '../../MatrixClientService'
 import { matrixSpaceService } from '../MatrixSpaceService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/spaces/search`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/search`, () => {
     return HttpResponse.json({
       spaces: [{ space_id: '!space1:server', name: 'Space 1', member_count: 5, child_count: 2 }]
     })
   }),
-  http.get(`${TEST_BASE_URL}/spaces/statistics`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/statistics`, () => {
     return HttpResponse.json({ total_spaces: 10, total_members: 50 })
   }),
-  http.get(`${TEST_BASE_URL}/spaces/user`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/user`, () => {
     return HttpResponse.json({
       spaces: [{ space_id: '!s1:server', name: 'S1', member_count: 3, child_count: 1 }]
     })
@@ -27,13 +28,13 @@ const server = setupMswServer(
       next_batch: 'batch_token'
     })
   }),
-  http.get(`${TEST_BASE_URL}/spaces/:spaceId/summary/with_children`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/:spaceId/summary/with_children`, () => {
     return HttpResponse.json({
       space: { space_id: '!space:server', name: 'Main Space', member_count: 10, child_count: 3 },
       children: [{ room_id: '!child1:server', name: 'Child 1' }]
     })
   }),
-  http.get(`${TEST_BASE_URL}/spaces/:spaceId/tree_path`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/:spaceId/tree_path`, () => {
     return HttpResponse.json({
       path: [
         { space_id: '!root:server', name: 'Root' },
@@ -41,7 +42,7 @@ const server = setupMswServer(
       ]
     })
   }),
-  http.get(`${TEST_BASE_URL}/spaces/room/:roomId/parents`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/room/:roomId/parents`, () => {
     return HttpResponse.json([{ space_id: '!parent:server', name: 'Parent Space', member_count: 8, child_count: 2 }])
   })
 )
@@ -60,7 +61,8 @@ describe('MatrixSpaceService', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
-        const prefix = opts?.prefix ?? ''
+        const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
+        const prefix = opts?.prefix ?? defaultPrefix
         const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
@@ -185,7 +187,7 @@ describe('MatrixSpaceService', () => {
 
     it('should return empty array on error', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/spaces/search`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/search`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
@@ -213,7 +215,7 @@ describe('MatrixSpaceService', () => {
 
     it('should return empty object on error', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/spaces/statistics`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/statistics`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
@@ -294,7 +296,7 @@ describe('MatrixSpaceService', () => {
 
     it('should return null when space data missing', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/spaces/:spaceId/summary/with_children`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/:spaceId/summary/with_children`, () => {
           return HttpResponse.json({})
         })
       )
@@ -323,10 +325,10 @@ describe('MatrixSpaceService', () => {
 
     it('should return empty array when tree_path fails', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/spaces/:spaceId/tree_path`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/:spaceId/tree_path`, () => {
           return new HttpResponse(null, { status: 500 })
         }),
-        http.get(`${TEST_BASE_URL}/spaces/room/:roomId/parents`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/room/:roomId/parents`, () => {
           return HttpResponse.json([])
         })
       )
