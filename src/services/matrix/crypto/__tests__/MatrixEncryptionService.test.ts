@@ -3,19 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixEncryptionService } from '../MatrixEncryptionService'
 
-const { getClientMock } = vi.hoisted(() => ({
-  getClientMock: vi.fn()
-}))
-
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: getClientMock
-  },
-  default: {
-    getClient: getClientMock
-  }
-}))
-
 describe('MatrixEncryptionService', () => {
   let mockClient: Partial<MatrixClient>
 
@@ -41,8 +28,7 @@ describe('MatrixEncryptionService', () => {
       }))
     }
 
-    vi.mocked(matrixClientService.getClient).mockReset()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as MatrixClient)
   })
 
   describe('getEncryptionSettings', () => {

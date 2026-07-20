@@ -4,21 +4,14 @@ import type { BackupInfo, KeyBackupManager, SecureBackupManager } from '@/types/
 import matrixClientService from '../../MatrixClientService'
 import { matrixKeyBackupService } from '../MatrixKeyBackupService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn()
-  },
-  matrixClientService: {
-    getClient: vi.fn()
-  }
-}))
-
 describe('MatrixKeyBackupService', () => {
   let mockClient: Partial<MatrixClient>
   let mockKeyBackupManager: Partial<KeyBackupManager>
   let mockSecureBackupManager: Partial<SecureBackupManager>
 
   beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient')
     mockKeyBackupManager = {
       checkKeyBackup: vi.fn(),
       prepareKeyBackupVersion: vi.fn(),

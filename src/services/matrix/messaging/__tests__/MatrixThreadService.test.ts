@@ -59,12 +59,6 @@ interface ThreadingManagerCompat {
   getLegacyRoomThreadList?: (roomId: string) => Promise<unknown[]>
 }
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn()
-  }
-}))
-
 vi.mock('../../MatrixReceiptService', () => ({
   matrixReceiptService: {
     sendReadReceipt: vi.fn()
@@ -134,8 +128,7 @@ describe('MatrixThreadService - REST API Methods', () => {
       getRooms: vi.fn(() => [])
     } as unknown as MatrixClient
 
-    vi.mocked(matrixClientService.getClient).mockReset()
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
   })
 
   describe('getGlobalThreadListViaApi', () => {

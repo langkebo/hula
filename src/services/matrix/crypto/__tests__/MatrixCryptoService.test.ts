@@ -4,14 +4,6 @@ import matrixClientService from '../../MatrixClientService'
 import { cryptoSDKAdapter } from '../CryptoSDKAdapter'
 import { matrixCryptoService } from '../MatrixCryptoService'
 
-vi.mock('../../MatrixClientService', () => {
-  const getClient = vi.fn(() => null as MatrixClient | null)
-  return {
-    default: { getClient },
-    matrixClientService: { getClient }
-  }
-})
-
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
@@ -21,6 +13,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 describe('MatrixCryptoService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient')
     cryptoSDKAdapter.invalidateCryptoCache()
   })
 
