@@ -1,9 +1,6 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-const mockClientService = {
-  getClient: vi.fn(),
-  getUserId: vi.fn()
-}
+import matrixClientService from '../../MatrixClientService'
 
 const mockDirectMessageService = {
   getOrCreateDmRoom: vi.fn(),
@@ -32,10 +29,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
-}))
-
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: mockClientService
 }))
 
 vi.mock('../../room/MatrixDirectMessageService', () => ({
@@ -67,7 +60,8 @@ const { matrixContactService } = await import('../MatrixContactService')
 describe('MatrixContactService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockClientService.getUserId.mockReturnValue('@testuser:test.com') // Add default mock value
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+    vi.spyOn(matrixClientService, 'getUserId').mockReturnValue('@testuser:test.com')
   })
 
   afterEach(() => {
@@ -84,7 +78,6 @@ describe('MatrixContactService', () => {
   })
 
   it('searchUsers returns an empty list when matrix client is not initialized', async () => {
-    mockClientService.getClient.mockReturnValue(null)
     mockSynapseExtensionsService.searchFriends.mockResolvedValue([])
 
     await expect(matrixContactService.searchUsers('alice')).resolves.toEqual([])
@@ -92,9 +85,9 @@ describe('MatrixContactService', () => {
   })
 
   it('searchUsers prefers friends/search exact mode and returns mapped profile', async () => {
-    mockClientService.getClient.mockReturnValue({
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
       getUserId: vi.fn(() => '@self:matrix.test')
-    })
+    } as unknown as MatrixClient)
     mockSynapseExtensionsService.searchFriends
       .mockResolvedValueOnce([
         {
@@ -136,9 +129,9 @@ describe('MatrixContactService', () => {
   it('sendAddFriendRequest delegates to friend service without creating a dm', async () => {
     mockFriendService.sendFriendRequest.mockResolvedValueOnce(undefined)
     mockDirectMessageService.getDmForUser.mockResolvedValueOnce(null)
-    mockClientService.getClient.mockReturnValue({
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
       getUserId: vi.fn(() => '@self:matrix.test')
-    })
+    } as unknown as MatrixClient)
 
     const result = await matrixContactService.sendAddFriendRequest('alice', 'hello')
 
@@ -173,13 +166,13 @@ describe('MatrixContactService', () => {
       displayName: 'Cached User',
       avatarUrl: 'mxc://cached/avatar'
     }
-    mockClientService.getClient.mockReturnValue({
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
       getUser: vi.fn().mockImplementation((userId: string) => (userId === '@cached:example.com' ? cachedUser : null)),
       getUserProfile: vi.fn().mockResolvedValue({
         displayname: 'Fetched User',
         avatar_url: 'mxc://fetched/avatar'
       })
-    })
+    } as unknown as MatrixClient)
 
     const result = await matrixContactService.getUserByIds(['@cached:example.com', '@fetched:example.com'])
 
@@ -202,10 +195,10 @@ describe('MatrixContactService', () => {
   })
 
   it('getUserByIds skips users whose profile lookup fails', async () => {
-    mockClientService.getClient.mockReturnValue({
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
       getUser: vi.fn(() => null),
       getUserProfile: vi.fn().mockRejectedValue(new Error('not found'))
-    })
+    } as unknown as MatrixClient)
 
     const result = await matrixContactService.getUserByIds(['@missing:example.com'])
 
@@ -213,8 +206,6 @@ describe('MatrixContactService', () => {
   })
 
   it('getUserByIds returns an empty list when matrix client is not initialized', async () => {
-    mockClientService.getClient.mockReturnValue(null)
-
     await expect(matrixContactService.getUserByIds(['@missing:example.com'])).resolves.toEqual([])
   })
 })
