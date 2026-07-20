@@ -56,7 +56,8 @@ describe('RoomOperations', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const url = new URL(`${TEST_BASE_URL}${path}`)
+        const prefixedPath = path.startsWith('/_matrix') ? path : `/_matrix/client/v3${path}`
+        const url = new URL(`${TEST_BASE_URL}${prefixedPath}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
             url.searchParams.set(key, value)
@@ -476,14 +477,9 @@ describe('RoomOperations', () => {
     it('POSTs blocklist via client.http', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       await ops.setInviteBlocklist('!r', ['@bad:e'])
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'POST',
-        '/_matrix/client/v3/rooms/!r/invite_blocklist',
-        undefined,
-        {
-          blocked: ['@bad:e']
-        }
-      )
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/rooms/!r/invite_blocklist', undefined, {
+        blocked: ['@bad:e']
+      })
     })
   })
 
@@ -508,7 +504,7 @@ describe('RoomOperations', () => {
     it('POSTs sticky events via client.http', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       await ops.setStickyEvents('!r', { key: 'value' })
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/_matrix/client/v3/rooms/!r/sticky_events', undefined, {
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/rooms/!r/sticky_events', undefined, {
         key: 'value'
       })
     })

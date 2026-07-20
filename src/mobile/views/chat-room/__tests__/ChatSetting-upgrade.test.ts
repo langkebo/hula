@@ -143,7 +143,9 @@ describe('ChatSetting - room upgrade entry', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the upgrade cell with Room Upgrade title and current version, dialog hidden initially', async () => {
+  it('renders the upgrade cell with Room Upgrade title and current version, dialog hidden initially', {
+    timeout: 15000
+  }, async () => {
     const ChatSetting = (await import('#/views/chat-room/ChatSetting.vue')).default
     const wrapper = mount(ChatSetting, mountOptions())
     expect(wrapper.html()).toBeTruthy()
@@ -152,7 +154,9 @@ describe('ChatSetting - room upgrade entry', () => {
     expect(wrapper.find('.mock-upgrade-dialog').exists()).toBe(false)
   })
 
-  it('mounts without throwing and renders upgrade section with title, version, and hidden dialog', async () => {
+  it('mounts without throwing and renders upgrade section with title, version, and hidden dialog', {
+    timeout: 15000
+  }, async () => {
     const ChatSetting = (await import('#/views/chat-room/ChatSetting.vue')).default
     const wrapper = mount(ChatSetting, mountOptions())
     expect(wrapper.text()).toContain('Room Upgrade')

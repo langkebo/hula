@@ -37,8 +37,9 @@ export class RoomOperations extends BaseMatrixService {
     try {
       const result = await client.getRoomTags(roomId)
       return result.tags ?? {}
-    } catch (e: any) {
-      if (e?.errcode === 'M_UNRECOGNIZED' || e?.errcode === 'M_NOT_FOUND' || e?.httpStatus === 404) {
+    } catch (e) {
+      const err = e as Record<string, unknown>
+      if (err.errcode === 'M_UNRECOGNIZED' || err.errcode === 'M_NOT_FOUND' || err.httpStatus === 404) {
         this.tagsUnsupported = true
         if (!this.unsupportedLogged) {
           this.unsupportedLogged = true
@@ -303,6 +304,7 @@ export class RoomOperations extends BaseMatrixService {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`
     const response = await fetch(url)
     if (!response.ok) throw new Error(`翻译请求失败: ${response.status}`)
+    // biome-ignore lint/suspicious/noExplicitAny: Google Translate API response shape is unstructured
     const data = (await response.json()) as any
     if (data?.[0]) return data[0].map((item: unknown[]) => item[0]).join('')
     return text

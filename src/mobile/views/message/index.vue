@@ -722,9 +722,9 @@ async function beforeCloseNewChat(action: string): Promise<boolean> {
     await chatStore.getSessionList(true)
     router.push(`/mobile/chatRoom/chatMain/${roomId}`)
     return true
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Create DM failed:', e)
-    showFailToast(e?.message || t('mobile_home.new_chat_failed'))
+    showFailToast(e instanceof Error ? e.message : String(e) || t('mobile_home.new_chat_failed'))
     return false
   }
 }
@@ -766,9 +766,9 @@ async function beforeCloseCreateGroup(action: string): Promise<boolean> {
       router.push(`/mobile/chatRoom/chatMain/${room.roomId}`)
     }
     return true
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Create group chat failed:', e)
-    showFailToast(e?.message || t('mobile_home.create_group_failed'))
+    showFailToast(e instanceof Error ? e.message : String(e) || t('mobile_home.create_group_failed'))
     return false
   }
 }

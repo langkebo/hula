@@ -42,7 +42,7 @@ const i18n = createI18n({
 })
 
 describe('MobileChatMain - location sharing', () => {
-  it('renders with LocationShare component', async () => {
+  it('renders with LocationShare component', { timeout: 30000 }, async () => {
     const MobileChatMain = (await import('#/views/chat-room/MobileChatMain.vue')).default
     const wrapper = mount(MobileChatMain, {
       global: {

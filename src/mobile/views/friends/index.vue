@@ -408,6 +408,12 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
+interface UserSearchResult {
+  userId: string
+  avatarUrl?: string
+  displayName?: string
+}
+
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const logger = createLogger('FriendsIndex')
@@ -430,7 +436,7 @@ const activeGroupCollapseNames = ref(['1'])
 
 // User search state
 const searchKeyword = ref('')
-const userSearchResults = ref<any[]>([])
+const userSearchResults = ref<UserSearchResult[]>([])
 const userSearchLoading = ref(false)
 const hasUserSearched = ref(false)
 const addingFriend = ref<string | null>(null)
@@ -541,9 +547,9 @@ const onUserSearch = useDebounceFn(async (value: string) => {
   try {
     const results = await userDirectoryService.searchUsers(value.trim(), 20)
     userSearchResults.value = results
-  } catch (e: any) {
+  } catch (e) {
     logger.error('User search failed:', e)
-    showFailToast(e?.message || t('mobile_contact.search_failed'))
+    showFailToast(e instanceof Error ? e.message : String(e) || t('mobile_contact.search_failed'))
     userSearchResults.value = []
   } finally {
     userSearchLoading.value = false
@@ -556,9 +562,9 @@ async function handleAddFriendBySearch(userId: string) {
   try {
     await matrixFriendService.sendFriendRequest(userId)
     showToast({ type: 'success', message: t('mobile_contact.add_friend_success') })
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Send friend request failed:', e)
-    showFailToast(e?.message || t('mobile_contact.add_friend_failed'))
+    showFailToast(e instanceof Error ? e.message : String(e) || t('mobile_contact.add_friend_failed'))
   } finally {
     addingFriend.value = null
   }
@@ -575,10 +581,10 @@ async function handleDeleteContact(uid: string) {
     await matrixFriendService.removeFriend(uid)
     showToast({ type: 'success', message: t('mobile_contact.delete_friend_success') })
     await contactStore.getContactList(true)
-  } catch (e: any) {
-    if (e !== 'cancel') {
+  } catch (e) {
+    if (String(e) !== 'cancel') {
       logger.error('Delete friend failed:', e)
-      showFailToast(e?.message || t('mobile_contact.delete_friend_failed'))
+      showFailToast(e instanceof Error ? e.message : String(e) || t('mobile_contact.delete_friend_failed'))
     }
   }
 }

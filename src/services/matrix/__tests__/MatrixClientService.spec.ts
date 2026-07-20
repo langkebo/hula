@@ -28,6 +28,7 @@ vi.mock('matrix-js-sdk/friend', () => ({
 vi.mock('matrix-js-sdk', () => {
   const mockClient = {
     login: vi.fn(),
+    loginRequest: vi.fn(),
     loginWithPassword: vi.fn(),
     logout: vi.fn(),
     startClient: vi.fn(),
@@ -42,6 +43,7 @@ vi.mock('matrix-js-sdk', () => {
 
   return {
     createClient: vi.fn(() => mockClient),
+    initializeManagerExtensions: vi.fn().mockResolvedValue(undefined),
     SlidingSync: class {
       start = vi.fn()
       stop = vi.fn()
@@ -57,6 +59,7 @@ describe('MatrixClientService', () => {
 
   type LoginCapableClient = MatrixClient & {
     login: ReturnType<typeof vi.fn>
+    loginRequest: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
@@ -91,7 +94,7 @@ describe('MatrixClientService', () => {
 
   it('should handle login successfully', async () => {
     const mockClient = sdk.createClient({ baseUrl: '' }) as LoginCapableClient
-    mockClient.login.mockResolvedValue({
+    mockClient.loginRequest.mockResolvedValue({
       user_id: '@user:example.com',
       device_id: 'DEV1',
       access_token: 'token123'
@@ -108,7 +111,7 @@ describe('MatrixClientService', () => {
 
   it('should handle login failure', async () => {
     const mockClient = sdk.createClient({ baseUrl: '' }) as LoginCapableClient
-    mockClient.login.mockRejectedValue(new Error('Invalid password'))
+    mockClient.loginRequest.mockRejectedValue(new Error('Invalid password'))
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -129,7 +132,7 @@ describe('MatrixClientService', () => {
 
   it('should fallback to http login when sdk login fails to fetch', async () => {
     const mockClient = sdk.createClient({ baseUrl: '' }) as LoginCapableClient
-    mockClient.login.mockRejectedValue(new Error('fetch failed: Load failed'))
+    mockClient.loginRequest.mockRejectedValue(new Error('fetch failed: Load failed'))
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -159,7 +162,7 @@ describe('MatrixClientService', () => {
   it('should fallback to browser fetch in tauri runtime when native fetch cannot send request', async () => {
     vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
     const mockClient = sdk.createClient({ baseUrl: '' }) as LoginCapableClient
-    mockClient.login.mockRejectedValue(new Error('fetch failed: error sending request for url'))
+    mockClient.loginRequest.mockRejectedValue(new Error('fetch failed: error sending request for url'))
     ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
       new Error('error sending request for url (https://matrix.test/_matrix/client/v3/login)')
     )

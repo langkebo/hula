@@ -44,7 +44,8 @@ describe('MatrixPresenceService', () => {
   const authedRequestImpl = vi
     .fn()
     .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-      const url = `${TEST_BASE_URL}${path}`
+      const prefixedPath = path.startsWith('/_matrix') ? path : `/_matrix/client/v3${path}`
+      const url = `${TEST_BASE_URL}${prefixedPath}`
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         Authorization: 'Bearer test-access-token'
@@ -101,12 +102,10 @@ describe('MatrixPresenceService', () => {
 
       await matrixPresenceService.setPresence('unavailable', 'Busy')
 
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'PUT',
-        '/_matrix/client/v3/presence/%40user%3Aexample.com/status',
-        undefined,
-        { presence: 'unavailable', status_msg: 'Busy' }
-      )
+      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', '/presence/%40user%3Aexample.com/status', undefined, {
+        presence: 'unavailable',
+        status_msg: 'Busy'
+      })
     })
 
     it('should throw when client is not initialized', async () => {
@@ -180,7 +179,7 @@ describe('MatrixPresenceService', () => {
 
       await matrixPresenceService.subscribeToPresence(['@a:example.com'])
 
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/_matrix/client/v3/presence/list', undefined, {
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/presence/list', undefined, {
         subscribe: ['@a:example.com']
       })
     })
