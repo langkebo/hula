@@ -1,19 +1,35 @@
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
 import { matrixMessageRelationService } from '../MatrixMessageRelationService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  }
-}))
+const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
+
+const _server = setupMswServer(
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/relations/:eventId`, () => {
+    return HttpResponse.json({ chunk: [], original_event: {} })
+  }),
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/relations/:eventId/:relType`, () => {
+    return HttpResponse.json({ chunk: [], original_event: {} })
+  }),
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/aggregations/:eventId/:relType`, () => {
+    return HttpResponse.json({ chunk: [] })
+  }),
+  http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/relations/:eventId/:relType/:txnId`, () => {
+    return HttpResponse.json({})
+  })
+)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
 }))
+
+const authedRequestImpl = vi.fn()
 
 function createMockEvent(id: string, sender: string, content: Record<string, unknown>, ts = Date.now()) {
   return {
@@ -27,6 +43,21 @@ function createMockEvent(id: string, sender: string, content: Record<string, unk
 describe('MatrixMessageRelationService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    authedRequestImpl.mockImplementation(
+      async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
+        const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
+        const prefixedPath = `${defaultPrefix}${path}`
+        const url = `${TEST_BASE_URL}${prefixedPath}`
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-access-token'
+        }
+        const response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        return response.json()
+      }
+    )
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
   })
 
   describe('isEdited', () => {
