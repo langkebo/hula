@@ -123,7 +123,7 @@
     "vue": "^3.5.39",
     "vue-cropper": "1.1.4",
     "vue-i18n": "^11.4.6",
-    "vue-router": "^4.6.4",
+    "vue-router": "^5.2.0",
     "vue-virtual-scroller": "3.0.4"
   },
   "devDependencies": {
