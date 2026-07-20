@@ -1,21 +1,13 @@
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import matrixClientService from '../../MatrixClientService'
+import { matrixSpecialFriendService } from '../MatrixSpecialFriendService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
 }))
-
-vi.mock('../../MatrixClientService', () => {
-  const mockService = {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  }
-  return {
-    default: mockService,
-    matrixClientService: mockService
-  }
-})
 
 const createAccountDataEvent = (specialFriends: string[]) =>
   ({
@@ -24,13 +16,12 @@ const createAccountDataEvent = (specialFriends: string[]) =>
     })
   }) as unknown as MatrixEvent
 
-const { default: matrixClientService } = await import('../../MatrixClientService')
-const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
 const { info, error } = await import('@tauri-apps/plugin-log')
 
 describe('MatrixSpecialFriendService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     matrixSpecialFriendService.clearCache()
     ;(matrixSpecialFriendService as unknown as { observedClient: unknown }).observedClient = null
   })
