@@ -46,7 +46,7 @@ describe('MatrixRoomMetadataService', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-        const prefixedPath = path.startsWith('/_matrix') ? path : `${PREFIX_V3}${path}`
+        const prefixedPath = path.startsWith('/_') ? path : `${PREFIX_V3}${path}`
         const url = `${TEST_BASE_URL}${prefixedPath}`
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
