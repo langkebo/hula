@@ -3,14 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixEncryptionContextService } from '../MatrixEncryptionContextService'
 
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn(() => null as MatrixClient | null),
-    getUserId: vi.fn(() => null as string | null),
-    getDeviceId: vi.fn(() => null as string | null)
-  }
-}))
-
 describe('MatrixEncryptionContextService', () => {
   let mockCrypto: {
     getOwnDeviceKeys: ReturnType<typeof vi.fn>
@@ -39,12 +31,12 @@ describe('MatrixEncryptionContextService', () => {
       getStoredDevice: vi.fn()
     }
 
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
-    vi.mocked(matrixClientService.getUserId).mockReturnValue('@alice:example.com')
-    vi.mocked(matrixClientService.getDeviceId).mockReturnValue('DEVICE123')
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
+    vi.spyOn(matrixClientService, 'getUserId').mockReturnValue('@alice:example.com')
+    vi.spyOn(matrixClientService, 'getDeviceId').mockReturnValue('DEVICE123')
   })
 
-  it('返回当前会话上下文', () => {
+  it('returns current session context', () => {
     expect(matrixEncryptionContextService.getCurrentSessionContext()).toEqual({
       userId: '@alice:example.com',
       deviceId: 'DEVICE123',
@@ -52,7 +44,7 @@ describe('MatrixEncryptionContextService', () => {
     })
   })
 
-  it('在加密不可用时返回禁用上下文', () => {
+  it('returns disabled context when encryption is unavailable', () => {
     mockClient.getCrypto.mockReturnValue(null)
 
     expect(matrixEncryptionContextService.getCurrentSessionContext()).toEqual({
@@ -62,7 +54,7 @@ describe('MatrixEncryptionContextService', () => {
     })
   })
 
-  it('返回当前设备指纹', async () => {
+  it('returns current device fingerprint', async () => {
     mockCrypto.getOwnDeviceKeys.mockResolvedValue({
       ed25519: 'abcdef123456',
       curve25519: 'curve-key'
@@ -71,13 +63,13 @@ describe('MatrixEncryptionContextService', () => {
     await expect(matrixEncryptionContextService.getCurrentDeviceFingerprint()).resolves.toBe('abcdef123456')
   })
 
-  it('在获取指纹失败时返回 null', async () => {
+  it('returns null when fingerprint fetch fails', async () => {
     mockCrypto.getOwnDeviceKeys.mockRejectedValue(new Error('fingerprint failed'))
 
     await expect(matrixEncryptionContextService.getCurrentDeviceFingerprint()).resolves.toBeNull()
   })
 
-  it('优先返回当前设备指纹', async () => {
+  it('prefers current device fingerprint when target device is self', async () => {
     mockCrypto.getOwnDeviceKeys.mockResolvedValue({
       ed25519: 'self-fingerprint'
     })
@@ -88,7 +80,7 @@ describe('MatrixEncryptionContextService', () => {
     expect(mockClient.getStoredDevice).not.toHaveBeenCalled()
   })
 
-  it('在目标设备不是当前设备时返回存储设备指纹', async () => {
+  it('fetches stored device fingerprint when target device is not self', async () => {
     mockClient.getStoredDevice.mockResolvedValue({
       getFingerprint: () => 'other-fingerprint'
     })
@@ -98,7 +90,7 @@ describe('MatrixEncryptionContextService', () => {
     ).resolves.toBe('other-fingerprint')
   })
 
-  it('在设备上下文缺失或获取失败时返回 null', async () => {
+  it('returns null when device context is missing or fetch fails', async () => {
     vi.mocked(matrixClientService.getUserId).mockReturnValue(null)
     vi.mocked(matrixClientService.getDeviceId).mockReturnValue(null)
 
@@ -113,7 +105,7 @@ describe('MatrixEncryptionContextService', () => {
     ).resolves.toBeNull()
   })
 
-  it('优先使用 KeyBackupManager 准备备份版本', async () => {
+  it('prefers KeyBackupManager to prepare backup version', async () => {
     const prepared = {
       algorithm: 'm.megolm.backup.v1',
       auth_data: { public_key: 'pk' },
@@ -129,7 +121,7 @@ describe('MatrixEncryptionContextService', () => {
     expect(mockCrypto.prepareKeyBackupVersion).not.toHaveBeenCalled()
   })
 
-  it('在 KeyBackupManager 不可用时回退到 crypto.prepareKeyBackupVersion', async () => {
+  it('falls back to crypto.prepareKeyBackupVersion when KeyBackupManager is unavailable', async () => {
     mockClient.getKeyBackupManager.mockReturnValue(null)
     mockCrypto.prepareKeyBackupVersion.mockResolvedValue({
       algorithm: 'm.megolm.backup.v1',
@@ -144,7 +136,7 @@ describe('MatrixEncryptionContextService', () => {
     })
   })
 
-  it('在无法准备备份版本时返回 null', async () => {
+  it('returns null when backup version cannot be prepared', async () => {
     mockClient.getKeyBackupManager.mockReturnValue(null)
     mockCrypto.prepareKeyBackupVersion.mockResolvedValue(undefined)
 

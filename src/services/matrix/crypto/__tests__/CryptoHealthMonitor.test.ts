@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { matrixClientService } from '../../MatrixClientService'
 import { CryptoHealthMonitor } from '../CryptoHealthMonitor'
 
 vi.mock('@/utils/Logger', () => ({
@@ -8,25 +9,6 @@ vi.mock('@/utils/Logger', () => ({
     error: vi.fn(),
     debug: vi.fn()
   })
-}))
-
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: {
-    getClient: vi.fn(() => ({
-      getUserId: () => '@test:example.com',
-      getRooms: () => [
-        {
-          roomId: '!room1:example.com',
-          timeline: [
-            {
-              getContent: () => ({ msgtype: 'm.text', body: 'hello' }),
-              getWireContent: () => ({})
-            }
-          ]
-        }
-      ]
-    }))
-  }
 }))
 
 vi.mock('../MatrixKeyBackupService', () => ({
@@ -49,6 +31,20 @@ describe('CryptoHealthMonitor', () => {
   let monitor: CryptoHealthMonitor
 
   beforeEach(() => {
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+      getUserId: () => '@test:example.com',
+      getRooms: () => [
+        {
+          roomId: '!room1:example.com',
+          timeline: [
+            {
+              getContent: () => ({ msgtype: 'm.text', body: 'hello' }),
+              getWireContent: () => ({})
+            }
+          ]
+        }
+      ]
+    } as never)
     monitor = new CryptoHealthMonitor()
   })
 
@@ -89,7 +85,6 @@ describe('CryptoHealthMonitor', () => {
   })
 
   it('performCheck returns default status when no client', async () => {
-    const { matrixClientService } = await import('../../MatrixClientService')
     vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
     const status = await monitor.performCheck()
@@ -108,7 +103,6 @@ describe('CryptoHealthMonitor', () => {
   })
 
   it('triggers onKeyRequestTriggered for undecryptable messages', async () => {
-    const { matrixClientService } = await import('../../MatrixClientService')
     vi.mocked(matrixClientService.getClient).mockReturnValue({
       getUserId: () => '@test:example.com',
       getRooms: () => [

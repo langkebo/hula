@@ -9,15 +9,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('../MatrixClientService', () => {
-  const getClient = vi.fn(() => null as MatrixClient | null)
-  const isLoggedIn = vi.fn(() => false)
-  return {
-    default: { getClient, isLoggedIn },
-    matrixClientService: { getClient, isLoggedIn }
-  }
-})
-
 vi.mock('../messaging/MatrixReceiptService', () => ({
   matrixReceiptService: {
     sendReadReceiptByEventId: vi.fn()
@@ -52,6 +43,7 @@ import { matrixReceiptService } from '../messaging/MatrixReceiptService'
 describe('MatrixEventService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
   })
 
   afterEach(() => {
@@ -298,16 +290,16 @@ describe('MatrixEventService', () => {
 
   describe('reactToEvent', () => {
     it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.reactToEvent('!room:id', '$event:id', '👍')).rejects.toThrow('客户端未初始化')
+      await expect(matrixEventService.reactToEvent('!room:id', '$event:id', 'icon')).rejects.toThrow('客户端未初始化')
     })
 
     it('should delegate reactions to MatrixReactionService', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
       vi.mocked(matrixReactionService.addReaction).mockResolvedValue('$reaction')
 
-      const result = await matrixEventService.reactToEvent('!room:id', '$event:id', '👍')
+      const result = await matrixEventService.reactToEvent('!room:id', '$event:id', 'icon')
 
-      expect(matrixReactionService.addReaction).toHaveBeenCalledWith('!room:id', '$event:id', '👍')
+      expect(matrixReactionService.addReaction).toHaveBeenCalledWith('!room:id', '$event:id', 'icon')
       expect(result).toBe('$reaction')
     })
   })

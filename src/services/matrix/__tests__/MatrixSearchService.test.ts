@@ -4,11 +4,7 @@ import matrixClientService from '../MatrixClientService'
 import { matrixSearchService } from '../MatrixSearchService'
 import matrixWorkerHost from '../MatrixWorkerHost'
 
-vi.mock('../MatrixClientService', () => ({
-  default: {
-    getClient: vi.fn()
-  }
-}))
+vi.spyOn(matrixClientService, 'getClient')
 
 vi.mock('../MatrixWorkerHost', () => ({
   default: {

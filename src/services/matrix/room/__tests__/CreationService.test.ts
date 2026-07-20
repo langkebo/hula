@@ -1,19 +1,11 @@
-import type { ICreateRoomOpts, MatrixClient, Room } from 'matrix-js-sdk'
+import type { ICreateRoomOpts, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import matrixClientService from '../../MatrixClientService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
-}))
-
-const createRoomMock = vi.fn()
-const getClientMock = vi.fn()
-vi.mock('../../MatrixClientService', () => ({
-  default: {
-    createRoom: (opts: ICreateRoomOpts) => createRoomMock(opts),
-    getClient: () => getClientMock() as MatrixClient
-  }
 }))
 
 const joinRoomMock = vi.fn()
@@ -70,7 +62,7 @@ const makeRoom = (overrides: unknown = {}): Room =>
     ...(overrides as Record<string, unknown>)
   }) as unknown as Room
 
-function hasStateEventType(value: unknown, type: string): boolean {
+function _hasStateEventType(value: unknown, type: string): boolean {
   return typeof value === 'object' && value !== null && 'type' in value && (value as { type?: string }).type === type
 }
 
@@ -79,21 +71,21 @@ describe('MatrixRoomCreationService', () => {
 
   beforeEach(() => {
     service = new MatrixRoomCreationService()
-    createRoomMock.mockReset()
-    getClientMock.mockReset()
+    vi.spyOn(matrixClientService, 'createRoom').mockResolvedValue(undefined as never)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     joinRoomMock.mockReset()
   })
 
   describe('createRoom', () => {
     it('delegates to matrixClientService.createRoom', async () => {
       const room = makeRoom()
-      createRoomMock.mockResolvedValueOnce(room)
+      vi.mocked(matrixClientService.createRoom).mockResolvedValueOnce(room as never)
       expect(await service.createRoom({ name: 'R' })).toBe(room)
-      expect(createRoomMock).toHaveBeenCalledWith({ name: 'R' })
+      expect(matrixClientService.createRoom).toHaveBeenCalledWith({ name: 'R' })
     })
 
     it('re-throws on failure', async () => {
-      createRoomMock.mockRejectedValueOnce(new Error('boom'))
+      vi.mocked(matrixClientService.createRoom).mockRejectedValueOnce(new Error('boom'))
       await expect(service.createRoom({ name: 'R' })).rejects.toThrow('boom')
     })
 
@@ -112,9 +104,9 @@ describe('MatrixRoomCreationService', () => {
 
   describe('createGroupRoom', () => {
     it('uses Public visibility + PublicChat preset when isPublic=true', async () => {
-      createRoomMock.mockResolvedValueOnce(makeRoom())
+      vi.mocked(matrixClientService.createRoom).mockResolvedValueOnce(makeRoom() as never)
       await service.createGroupRoom({ name: 'G', isPublic: true, alias: 'g' })
-      expect(createRoomMock).toHaveBeenCalledWith(
+      expect(matrixClientService.createRoom).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'G',
           visibility: Visibility.Public,
@@ -126,63 +118,87 @@ describe('MatrixRoomCreationService', () => {
     })
 
     it('uses Private visibility + PrivateChat preset by default; empty alias → undefined', async () => {
-      createRoomMock.mockResolvedValueOnce(makeRoom())
+      vi.mocked(matrixClientService.createRoom).mockResolvedValueOnce(makeRoom() as never)
       await service.createGroupRoom({ name: 'G', alias: '' })
-      const opts = createRoomMock.mock.calls[0][0]
-      expect(opts.visibility).toBe(Visibility.Private)
-      expect(opts.preset).toBe(Preset.PrivateChat)
-      expect(opts.room_alias_name).toBeUndefined()
+      expect(matrixClientService.createRoom).toHaveBeenCalledWith(
+        expect.objectContaining({
+          visibility: Visibility.Private,
+          preset: Preset.PrivateChat
+        })
+      )
+      expect(matrixClientService.createRoom).toHaveBeenCalledWith(
+        expect.objectContaining({ room_alias_name: undefined })
+      )
     })
 
     it('pushes m.room.avatar into initial_state when avatarUrl is provided', async () => {
-      createRoomMock.mockResolvedValueOnce(makeRoom())
+      vi.mocked(matrixClientService.createRoom).mockResolvedValueOnce(makeRoom() as never)
       await service.createGroupRoom({ name: 'G', avatarUrl: 'mxc://x/y' })
-      const opts = createRoomMock.mock.calls[0][0]
-      expect(opts.initial_state).toContainEqual({
-        type: 'm.room.avatar',
-        state_key: '',
-        content: { url: 'mxc://x/y' }
-      })
+      expect(matrixClientService.createRoom).toHaveBeenCalledWith(
+        expect.objectContaining({
+          initial_state: expect.arrayContaining([
+            {
+              type: 'm.room.avatar',
+              state_key: '',
+              content: { url: 'mxc://x/y' }
+            }
+          ])
+        })
+      )
     })
 
     it('pushes m.room.encryption only when isEncrypted && !isPublic', async () => {
-      createRoomMock.mockResolvedValueOnce(makeRoom())
+      vi.mocked(matrixClientService.createRoom).mockResolvedValueOnce(makeRoom() as never)
       await service.createGroupRoom({ name: 'G', isEncrypted: true, isPublic: true })
-      const publicOpts = createRoomMock.mock.calls[0][0] as CreateOptsWithState
-      expect(publicOpts.initial_state.find((entry) => hasStateEventType(entry, 'm.room.encryption'))).toBeUndefined()
+      expect(matrixClientService.createRoom).toHaveBeenCalledWith(
+        expect.objectContaining({
+          initial_state: []
+        })
+      )
 
-      createRoomMock.mockResolvedValueOnce(makeRoom())
+      vi.mocked(matrixClientService.createRoom).mockResolvedValueOnce(makeRoom() as never)
       await service.createGroupRoom({ name: 'G', isEncrypted: true })
-      const privateOpts = createRoomMock.mock.calls[1][0]
-      expect(privateOpts.initial_state).toContainEqual({
-        type: 'm.room.encryption',
-        state_key: '',
-        content: { algorithm: 'm.megolm.v1.aes-sha2' }
-      })
+      expect(matrixClientService.createRoom).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          initial_state: expect.arrayContaining([
+            {
+              type: 'm.room.encryption',
+              state_key: '',
+              content: { algorithm: 'm.megolm.v1.aes-sha2' }
+            }
+          ])
+        })
+      )
     })
 
     it('pushes m.room.history_visibility only when non-"shared"', async () => {
-      createRoomMock.mockResolvedValueOnce(makeRoom())
+      vi.mocked(matrixClientService.createRoom).mockResolvedValueOnce(makeRoom() as never)
       await service.createGroupRoom({ name: 'G', historyVisibility: 'shared' })
-      const sharedOpts = createRoomMock.mock.calls[0][0] as CreateOptsWithState
-      expect(
-        sharedOpts.initial_state.find((entry) => hasStateEventType(entry, 'm.room.history_visibility'))
-      ).toBeUndefined()
+      expect(matrixClientService.createRoom).toHaveBeenCalledWith(
+        expect.objectContaining({
+          initial_state: []
+        })
+      )
 
-      createRoomMock.mockResolvedValueOnce(makeRoom())
+      vi.mocked(matrixClientService.createRoom).mockResolvedValueOnce(makeRoom() as never)
       await service.createGroupRoom({ name: 'G', historyVisibility: 'world_readable' })
-      const wrOpts = createRoomMock.mock.calls[1][0]
-      expect(wrOpts.initial_state).toContainEqual({
-        type: 'm.room.history_visibility',
-        state_key: '',
-        content: { history_visibility: 'world_readable' }
-      })
+      expect(matrixClientService.createRoom).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          initial_state: expect.arrayContaining([
+            {
+              type: 'm.room.history_visibility',
+              state_key: '',
+              content: { history_visibility: 'world_readable' }
+            }
+          ])
+        })
+      )
     })
   })
 
   describe('convertRoomToRoomInfo', () => {
     beforeEach(() => {
-      getClientMock.mockReturnValue({ isRoomEncrypted: () => false })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ isRoomEncrypted: () => false } as never)
     })
 
     it('maps basic fields and derives isDirect from member count when no DMInviter', () => {
@@ -308,14 +324,14 @@ describe('MatrixRoomCreationService', () => {
     })
 
     it('returns isEncrypted=true when client.isRoomEncrypted returns true', () => {
-      getClientMock.mockReturnValue({ isRoomEncrypted: () => true })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ isRoomEncrypted: () => true } as never)
       expect(service.convertRoomToRoomInfo(makeRoom()).isEncrypted).toBe(true)
     })
   })
 
   describe('joinRoomAndGetInfo', () => {
     it('joins the room via MembershipService then converts to RoomInfo', async () => {
-      getClientMock.mockReturnValue({ isRoomEncrypted: () => false })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ isRoomEncrypted: () => false } as never)
       const room = makeRoom()
       joinRoomMock.mockResolvedValueOnce(room)
       const info = await service.joinRoomAndGetInfo('!r:e')

@@ -1,15 +1,11 @@
-import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
+import type { MatrixEvent, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import matrixClientService from '../../MatrixClientService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
-}))
-
-const getClientMock = vi.fn()
-vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: () => getClientMock() as MatrixClient }
 }))
 
 const convertEventToMessageTypeMock = vi.fn()
@@ -60,8 +56,8 @@ describe('MatrixRoomRealtimeService', () => {
   let service: InstanceType<typeof MatrixRoomRealtimeService>
 
   beforeEach(() => {
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     service = new MatrixRoomRealtimeService()
-    getClientMock.mockReset()
     convertEventToMessageTypeMock.mockReset()
     convertEventToMessageMock.mockReset()
     applySlidingSyncUnreadCountsMock.mockReset()
@@ -108,12 +104,12 @@ describe('MatrixRoomRealtimeService', () => {
     const setupClient = () => {
       const on = vi.fn()
       const getRoom = vi.fn()
-      getClientMock.mockReturnValue({ on, getRoom })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ on, getRoom } as never)
       return { on, getRoom }
     }
 
     it('onTimelineEvent bails out when client is null', () => {
-      getClientMock.mockReturnValueOnce(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce(null)
       expect(() => service.onTimelineEvent(() => {})).not.toThrow()
     })
 
@@ -242,19 +238,19 @@ describe('MatrixRoomRealtimeService', () => {
 
   describe('getRoomName / getRoomAvatarUrl', () => {
     it('returns null when client is missing', () => {
-      getClientMock.mockReturnValue(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       expect(service.getRoomName('!r')).toBeNull()
       expect(service.getRoomAvatarUrl('!r')).toBeNull()
     })
 
     it('returns null when room is missing', () => {
-      getClientMock.mockReturnValue({ getRoom: () => null })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
       expect(service.getRoomName('!r')).toBeNull()
       expect(service.getRoomAvatarUrl('!r')).toBeNull()
     })
 
     it('returns name/avatar when present', () => {
-      getClientMock.mockReturnValue({ getRoom: () => makeRoom() })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => makeRoom() } as never)
       expect(service.getRoomName('!r')).toBe('Room')
       expect(service.getRoomAvatarUrl('!r')).toBe('mxc://a')
     })
@@ -262,7 +258,7 @@ describe('MatrixRoomRealtimeService', () => {
 
   describe('getVisibleRoomSessions', () => {
     it('returns [] when client is missing', () => {
-      getClientMock.mockReturnValueOnce(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce(null)
       expect(service.getVisibleRoomSessions([])).toEqual([])
     })
 
@@ -272,10 +268,10 @@ describe('MatrixRoomRealtimeService', () => {
         getJoinedMembers: () =>
           [{ userId: '@me:e' }, { userId: '@fav:e' }] as unknown as ReturnType<Room['getJoinedMembers']>
       })
-      getClientMock.mockReturnValueOnce({
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce({
         getUserId: () => '@me:e',
         getVisibleRooms: () => [room]
-      })
+      } as never)
       const out = service.getVisibleRoomSessions(['@fav:e'])
       expect(out).toHaveLength(1)
       expect(out[0].isFavorite).toBe(true)
@@ -287,24 +283,24 @@ describe('MatrixRoomRealtimeService', () => {
         getJoinedMembers: () =>
           [{ userId: '@me:e' }, { userId: '@nope:e' }] as unknown as ReturnType<Room['getJoinedMembers']>
       })
-      getClientMock.mockReturnValueOnce({
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce({
         getUserId: () => '@me:e',
         getVisibleRooms: () => [room]
-      })
+      } as never)
       expect(service.getVisibleRoomSessions(['@fav:e'])[0].isFavorite).toBe(false)
     })
   })
 
   describe('getAllRoomInfos', () => {
     it('returns [] when client is missing', () => {
-      getClientMock.mockReturnValueOnce(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce(null)
       expect(service.getAllRoomInfos()).toEqual([])
       expect(applySlidingSyncUnreadCountsMock).not.toHaveBeenCalled()
     })
 
     it('converts all rooms and passes them through slidingSync', () => {
       const rooms = [makeRoom(), makeRoom({ roomId: '!r2:e' })]
-      getClientMock.mockReturnValueOnce({ getRooms: () => rooms })
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce({ getRooms: () => rooms } as never)
       convertRoomToRoomInfoMock.mockImplementation((r: Room) => ({ roomId: r.roomId }))
       const out = service.getAllRoomInfos()
       expect(out).toEqual([{ roomId: '!r:e' }, { roomId: '!r2:e' }])

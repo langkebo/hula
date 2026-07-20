@@ -1,14 +1,11 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { matrixClientService } from '../MatrixClientService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
-}))
-
-vi.mock('../MatrixClientService', () => ({
-  matrixClientService: { getClient: vi.fn(() => null) }
 }))
 
 vi.mock('../user/MatrixAccountService', () => ({
@@ -29,6 +26,7 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     // Register the store resolver so the service can access the store
     // (resets the cached store instance from previous tests)
     registerCapabilityStoreResolver(() => useCapabilityStore())
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
   })
 
   it('canUseSlidingSync reflects synapse-rust feature flags and compatibility aliases', () => {
