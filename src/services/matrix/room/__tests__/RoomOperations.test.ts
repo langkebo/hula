@@ -5,6 +5,7 @@ import matrixClientService from '../../MatrixClientService'
 import { RoomOperations } from '../RoomOperations'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
   http.post(`${TEST_BASE_URL}/_matrix/client/v3/translate`, () => {
@@ -56,7 +57,8 @@ describe('RoomOperations', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const prefixedPath = path.startsWith('/_matrix') ? path : `/_matrix/client/v3${path}`
+        const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
+        const prefixedPath = `${defaultPrefix}${path}`
         const url = new URL(`${TEST_BASE_URL}${prefixedPath}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {

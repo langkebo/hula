@@ -5,21 +5,22 @@ import matrixClientService from '../../MatrixClientService'
 import { MatrixRoomTimelineService } from '../TimelineService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/rooms/:roomId/timeline`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/timeline`, () => {
     return HttpResponse.json({ chunk: [], start: '', end: '' })
   }),
-  http.get(`${TEST_BASE_URL}/rooms/:roomId/unread_count`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
     return HttpResponse.json({ unread_notifications: 0, unread_highlighted: 0 })
   }),
   http.get(`${TEST_BASE_URL}/_matrix/client/v1/rooms/:roomId/timestamp_to_event`, () => {
     return HttpResponse.json({ event_id: '$e', origin_server_ts: 42 })
   }),
-  http.get(`${TEST_BASE_URL}/rooms/:roomId/notifications`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/notifications`, () => {
     return HttpResponse.json({ notifications: [] })
   }),
-  http.get(`${TEST_BASE_URL}/rooms/:roomId/call/:callId`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/call/:callId`, () => {
     return HttpResponse.json({ state: 'ringing' })
   })
 )
@@ -40,7 +41,8 @@ describe('MatrixRoomTimelineService', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
-        const prefix = opts?.prefix ?? ''
+        const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
+        const prefix = opts?.prefix ?? defaultPrefix
         const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
         if (queryParams && typeof queryParams === 'object') {
           for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
@@ -121,7 +123,7 @@ describe('MatrixRoomTimelineService', () => {
 
     it('swallows backend errors and returns empty-chunk shape', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/rooms/:roomId/timeline`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/timeline`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
@@ -132,7 +134,7 @@ describe('MatrixRoomTimelineService', () => {
   describe('getRoomUnreadCount', () => {
     it('GETs /unread_count and defaults missing counters to 0', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/rooms/:roomId/unread_count`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
           return HttpResponse.json({ unread_notifications: 3 })
         })
       )
@@ -144,7 +146,7 @@ describe('MatrixRoomTimelineService', () => {
 
     it('accepts synapse-rust notification_count/highlight_count fields', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/rooms/:roomId/unread_count`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
           return HttpResponse.json({ notification_count: 7, highlight_count: 2 })
         })
       )
@@ -156,7 +158,7 @@ describe('MatrixRoomTimelineService', () => {
 
     it('returns zeros when backend throws', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/rooms/:roomId/unread_count`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
@@ -207,7 +209,7 @@ describe('MatrixRoomTimelineService', () => {
 
     it('swallows errors and returns null', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/rooms/:roomId/call/:callId`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/call/:callId`, () => {
           return new HttpResponse(null, { status: 404 })
         })
       )
