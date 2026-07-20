@@ -5,6 +5,7 @@ export const PUBLIC_ROUTE_PREFIXES = [
   '/capture',
   '/checkupdate',
   '/register',
+  '/qrCode',
   '/forgetPassword',
   '/mobile/login',
   '/mobile/splashscreen',

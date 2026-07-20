@@ -94,8 +94,12 @@ test.describe('Login Flow', () => {
       await page.goto('/')
       await page.waitForSelector('#app', { state: 'visible' })
 
-      // Click register link
-      const registerLink = page.getByText(/注册|register/i)
+      // "Register" is inside a popover triggered by "More Opt..."
+      const moreLink = page.getByText(/More Opt|more/i)
+      await moreLink.click()
+      await page.waitForTimeout(500)
+
+      const registerLink = page.getByText(/register/i)
       await registerLink.click()
 
       await expect(page).toHaveURL(/\/register/, { timeout: 10000 })
