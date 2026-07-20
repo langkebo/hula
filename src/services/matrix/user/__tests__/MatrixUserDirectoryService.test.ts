@@ -1,27 +1,17 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-const { mockClientService } = vi.hoisted(() => ({
-  mockClientService: {
-    getClient: vi.fn(() => null as MatrixClient | null)
-  }
-}))
+import matrixClientService from '../../MatrixClientService'
+import { userDirectoryService } from '../MatrixUserDirectoryService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn()
 }))
 
-vi.mock('../../MatrixClientService', () => ({
-  matrixClientService: mockClientService
-}))
-
-const { userDirectoryService } = await import('../MatrixUserDirectoryService')
-
 describe('MatrixUserDirectoryService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockClientService.getClient.mockReturnValue(null)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
   })
 
   it('falls back to matrixClientService client when searching users', async () => {
@@ -36,7 +26,7 @@ describe('MatrixUserDirectoryService', () => {
         ]
       })
     }
-    mockClientService.getClient.mockReturnValue(client as unknown as MatrixClient)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client as unknown as MatrixClient)
 
     const result = await userDirectoryService.searchUsers('alice', 5)
 
@@ -67,7 +57,7 @@ describe('MatrixUserDirectoryService', () => {
         ]
       })
     }
-    mockClientService.getClient.mockReturnValue(newClient as unknown as MatrixClient)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(newClient as unknown as MatrixClient)
 
     userDirectoryService.initialize(oldClient as unknown as MatrixClient)
     const result = await userDirectoryService.searchUsers('bob')
