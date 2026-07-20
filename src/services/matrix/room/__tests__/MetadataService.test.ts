@@ -5,21 +5,22 @@ import matrixClientService from '../../MatrixClientService'
 import { MatrixRoomMetadataService } from '../MetadataService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
+const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/rooms/:roomId/capabilities`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/capabilities`, () => {
     return HttpResponse.json({ 'm.room_versions': { default: '11' } })
   }),
-  http.get(`${TEST_BASE_URL}/rooms/:roomId/metadata`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/metadata`, () => {
     return HttpResponse.json({ a: 1 })
   }),
-  http.get(`${TEST_BASE_URL}/rooms/:roomId/turn_server`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/turn_server`, () => {
     return HttpResponse.json({ uris: ['turn:e'] })
   }),
-  http.get(`${TEST_BASE_URL}/rooms/:roomId/sync`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/sync`, () => {
     return HttpResponse.json({ timeline: [] })
   }),
-  http.get(`${TEST_BASE_URL}/rooms/:roomId/permissions`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/permissions`, () => {
     return HttpResponse.json({ read: true })
   })
 )
@@ -45,7 +46,8 @@ describe('MatrixRoomMetadataService', () => {
     vi.clearAllMocks()
     authedRequestImpl.mockImplementation(
       async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-        const url = `${TEST_BASE_URL}${path}`
+        const prefixedPath = path.startsWith('/_matrix') ? path : `${PREFIX_V3}${path}`
+        const url = `${TEST_BASE_URL}${prefixedPath}`
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
           Authorization: 'Bearer test-access-token'
@@ -116,7 +118,7 @@ describe('MatrixRoomMetadataService', () => {
 
     it('swallows errors and returns {}', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/rooms/:roomId/capabilities`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/capabilities`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
@@ -146,13 +148,13 @@ describe('MatrixRoomMetadataService', () => {
 
     it('all three swallow errors and return {}', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/rooms/:roomId/metadata`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/metadata`, () => {
           return new HttpResponse(null, { status: 500 })
         }),
-        http.get(`${TEST_BASE_URL}/rooms/:roomId/turn_server`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/turn_server`, () => {
           return new HttpResponse(null, { status: 500 })
         }),
-        http.get(`${TEST_BASE_URL}/rooms/:roomId/sync`, () => {
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/sync`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
