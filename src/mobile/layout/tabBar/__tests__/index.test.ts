@@ -18,7 +18,8 @@ vi.mock('vue-i18n', () => ({
       ({
         'mobile_tabbar.items.messages': '消息',
         'mobile_tabbar.items.contacts': '联系人',
-        'mobile_tabbar.items.community': '社区',
+        'mobile_tabbar.items.rooms': '房间',
+        'mobile_tabbar.items.spaces': '空间',
         'mobile_tabbar.items.me': '我的'
       })[key] ?? key
   })
@@ -48,13 +49,14 @@ describe('Mobile TabBar', () => {
     })
 
     const links = wrapper.findAll('[data-to]')
-    expect(links).toHaveLength(4)
+    expect(links).toHaveLength(5)
     expect(links.map((node) => node.attributes('data-to'))).toEqual([
       '/mobile/message',
       '/mobile/friends',
+      '/mobile/rooms',
       '/mobile/dynamic',
       '/mobile/my'
     ])
-    expect(wrapper.text()).toContain('社区')
+    expect(wrapper.text()).toContain('空间')
   })
 })

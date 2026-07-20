@@ -173,6 +173,13 @@ interface RoomItem {
   isEncrypted: boolean
 }
 
+interface PublicRoomResult {
+  roomId: string
+  roomName?: string
+  avatarUrl?: string
+  memberCount?: number
+}
+
 const { t } = useI18n()
 const router = useRouter()
 
@@ -186,7 +193,7 @@ const showJoinDialog = ref(false)
 const joinRoomId = ref('')
 const showPublicSearchDialog = ref(false)
 const publicSearchQuery = ref('')
-const publicSearchResults = ref<any[]>([])
+const publicSearchResults = ref<PublicRoomResult[]>([])
 const publicSearchLoading = ref(false)
 
 const createActions = computed(() => [
@@ -286,10 +293,13 @@ async function handleCreateRoom() {
     await matrixRoomCreationService.createRoom({})
     showToast({ type: 'success', message: t('mobile_rooms.create_success') })
     await fetchRooms()
-  } catch (e: any) {
-    if (e !== 'cancel') {
+  } catch (e) {
+    if (String(e) !== 'cancel') {
       logger.error('Create room failed:', e)
-      showToast({ type: 'fail', message: e?.message || t('mobile_rooms.create_failed') })
+      showToast({
+        type: 'fail',
+        message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.create_failed')
+      })
     }
   }
 }
@@ -313,9 +323,9 @@ async function beforeCloseJoinRoom(action: string): Promise<boolean> {
     showJoinDialog.value = false
     await fetchRooms()
     return true
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Join room failed:', e)
-    showToast({ type: 'fail', message: e?.message || t('mobile_rooms.join_failed') })
+    showToast({ type: 'fail', message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.join_failed') })
     return false
   }
 }
@@ -335,9 +345,9 @@ async function beforeClosePublicSearch(action: string): Promise<boolean> {
   try {
     const result = await matrixSearchService.searchPublicRooms(query)
     publicSearchResults.value = result || []
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Public room search failed:', e)
-    showToast({ type: 'fail', message: e?.message || t('mobile_rooms.search_failed') })
+    showToast({ type: 'fail', message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.search_failed') })
   } finally {
     publicSearchLoading.value = false
   }
@@ -351,9 +361,9 @@ async function joinPublicRoom(roomId: string) {
     showToast({ type: 'success', message: t('mobile_rooms.join_success') })
     showPublicSearchDialog.value = false
     await fetchRooms()
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Join public room failed:', e)
-    showToast({ type: 'fail', message: e?.message || t('mobile_rooms.join_failed') })
+    showToast({ type: 'fail', message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.join_failed') })
   }
 }
 
@@ -367,10 +377,10 @@ async function handleLeaveRoom(roomId: string) {
     await matrixRoomMembershipService.leaveRoom(roomId)
     showToast({ type: 'success', message: t('mobile_rooms.leave_success') })
     await fetchRooms()
-  } catch (e: any) {
+  } catch (e) {
     if (e !== 'cancel') {
       logger.error('Leave room failed:', e)
-      showToast({ type: 'fail', message: e?.message || t('mobile_rooms.leave_failed') })
+      showToast({ type: 'fail', message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.leave_failed') })
     }
   }
 }

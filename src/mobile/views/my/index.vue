@@ -85,9 +85,9 @@ async function handleSaveDisplayName() {
     if (userStore.userInfo) {
       userStore.userInfo.name = newName
     }
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Failed to save display name:', e)
-    showFailToast(e?.message || t('mobile_my.save_display_name_failed'))
+    showFailToast(e instanceof Error ? e.message : String(e) || t('mobile_my.save_display_name_failed'))
   } finally {
     savingDisplayName.value = false
   }
@@ -113,9 +113,9 @@ async function handleLogout() {
     settingStore.toggleLogin(false, false)
     showToast({ type: 'success', message: t('mobile_setting.logout_success') })
     await router.push('/mobile/login')
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Logout failed:', e)
-    showFailToast(e?.message || t('mobile_setting.logout_failed'))
+    showFailToast(e instanceof Error ? e.message : String(e) || t('mobile_setting.logout_failed'))
   } finally {
     isLoggingOut.value = false
   }

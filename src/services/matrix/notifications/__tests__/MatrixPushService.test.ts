@@ -47,7 +47,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 const mockAuthedRequest = vi
   .fn()
   .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-    const url = `${TEST_BASE_URL}${path}`
+    const prefixedPath = path.startsWith('/_matrix') ? path : `/_matrix/client/v3${path}`
+    const url = `${TEST_BASE_URL}${prefixedPath}`
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Authorization: 'Bearer test-access-token'
@@ -114,7 +115,7 @@ describe('MatrixPushService', () => {
       expect(mockAuthedRequest).toHaveBeenCalled()
       const call = mockAuthedRequest.mock.calls[0]
       expect(call[0]).toBe('POST')
-      expect(call[1]).toBe('/_matrix/client/v3/pushers/set')
+      expect(call[1]).toBe('/pushers/set')
     })
   })
 
@@ -132,7 +133,7 @@ describe('MatrixPushService', () => {
       expect(mockAuthedRequest).toHaveBeenCalled()
       const call = mockAuthedRequest.mock.calls[0]
       expect(call[0]).toBe('POST')
-      expect(call[1]).toBe('/_matrix/client/v3/pushers/set')
+      expect(call[1]).toBe('/pushers/set')
     })
   })
 

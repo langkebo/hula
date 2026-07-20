@@ -148,13 +148,28 @@ import NavBar from '#/layout/navBar/index.vue'
 import { matrixSpaceService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
+interface SpaceItem {
+  spaceId: string
+  roomId: string
+  name?: string
+  topic?: string
+  avatarUrl?: string
+}
+
+interface SpaceMemberItem {
+  userId?: string
+  uid?: string
+  avatarUrl?: string
+  displayName?: string
+}
+
 const logger = createLogger('MobileSpaces')
 const { t } = useI18n()
 
 const spaceLoading = ref(true)
-const spaceList = ref<any[]>([])
+const spaceList = ref<SpaceItem[]>([])
 const expandedSpaceId = ref<string | null>(null)
-const spaceMemberMap = ref<Record<string, any[]>>({})
+const spaceMemberMap = ref<Record<string, SpaceMemberItem[]>>({})
 const memberLoadingMap = ref<Record<string, boolean>>({})
 
 const MEMBER_DISPLAY_LIMIT = 50
@@ -173,22 +188,22 @@ const newSpaceTopic = ref('')
 // Invite member dialog
 const showInviteMemberDialog = ref(false)
 const inviteUserId = ref('')
-const inviteTargetSpace = ref<any>(null)
+const inviteTargetSpace = ref<SpaceItem | null>(null)
 
 async function fetchSpaces() {
   spaceLoading.value = true
   try {
     const spaces = await matrixSpaceService.getUserSpaces()
-    spaceList.value = spaces || []
-  } catch (e: any) {
+    spaceList.value = (spaces || []) as unknown as SpaceItem[]
+  } catch (e) {
     logger.error('Failed to fetch spaces:', e)
-    showFailToast(e?.message || t('space.load_failed'))
+    showFailToast(e instanceof Error ? e.message : String(e) || t('space.load_failed'))
   } finally {
     spaceLoading.value = false
   }
 }
 
-async function toggleSpaceDetail(sp: any) {
+async function toggleSpaceDetail(sp: SpaceItem) {
   const spaceId = sp.spaceId || sp.roomId
   if (expandedSpaceId.value === spaceId) {
     expandedSpaceId.value = null
@@ -201,10 +216,10 @@ async function toggleSpaceDetail(sp: any) {
     memberLoadingMap.value[spaceId] = true
     try {
       const members = await matrixSpaceService.getSpaceMembers(spaceId)
-      spaceMemberMap.value[spaceId] = members || []
-    } catch (e: any) {
+      spaceMemberMap.value[spaceId] = (members || []) as SpaceMemberItem[]
+    } catch (e) {
       logger.error('Failed to fetch space members:', e)
-      showFailToast(e?.message || t('space.load_failed'))
+      showFailToast(e instanceof Error ? e.message : String(e) || t('space.load_failed'))
       spaceMemberMap.value[spaceId] = []
     } finally {
       memberLoadingMap.value[spaceId] = false
@@ -212,7 +227,7 @@ async function toggleSpaceDetail(sp: any) {
   }
 }
 
-function showInviteDialog(sp: any) {
+function showInviteDialog(sp: SpaceItem) {
   inviteTargetSpace.value = sp
   inviteUserId.value = ''
   showInviteMemberDialog.value = true
@@ -242,9 +257,9 @@ async function beforeCloseCreateSpace(action: string): Promise<boolean> {
     newSpaceTopic.value = ''
     await fetchSpaces()
     return true
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Create space failed:', e)
-    showFailToast(e?.message || t('space.create_failed'))
+    showFailToast(e instanceof Error ? e.message : String(e) || t('space.create_failed'))
     return false
   }
 }
@@ -273,16 +288,16 @@ async function beforeCloseInviteMember(action: string): Promise<boolean> {
     memberLoadingMap.value[spaceId] = true
     try {
       const members = await matrixSpaceService.getSpaceMembers(spaceId)
-      spaceMemberMap.value[spaceId] = members || []
-    } catch (e: any) {
+      spaceMemberMap.value[spaceId] = (members || []) as SpaceMemberItem[]
+    } catch (e) {
       logger.error('Failed to refresh space members:', e)
     } finally {
       memberLoadingMap.value[spaceId] = false
     }
     return true
-  } catch (e: any) {
+  } catch (e) {
     logger.error('Invite to space failed:', e)
-    showFailToast(e?.message || t('space.invite_failed'))
+    showFailToast(e instanceof Error ? e.message : String(e) || t('space.invite_failed'))
     return false
   }
 }

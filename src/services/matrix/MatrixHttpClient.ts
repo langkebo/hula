@@ -58,17 +58,28 @@ const SDK_DEFAULT_PREFIX = '/_matrix/client/v3'
  * @returns { path: 短路径, prefix: 需显式设置的 prefix（undefined 表示用 SDK 默认） }
  */
 export function stripMatrixPrefix(requestPath: string): { path: string; prefix?: string } {
-  for (const prefix of MATRIX_PREFIXES) {
-    if (requestPath === prefix || requestPath.startsWith(`${prefix}/`)) {
-      const stripped = requestPath.slice(prefix.length) || '/'
-      // SDK 默认前缀无需显式传递
-      if (prefix === SDK_DEFAULT_PREFIX) {
-        return { path: stripped }
+  let current = requestPath
+  let lastNonDefaultPrefix: string | undefined
+
+  for (;;) {
+    let found = false
+    for (const prefix of MATRIX_PREFIXES) {
+      if (current === prefix || current.startsWith(`${prefix}/`)) {
+        current = current.slice(prefix.length) || '/'
+        if (prefix !== SDK_DEFAULT_PREFIX) {
+          lastNonDefaultPrefix = prefix
+        }
+        found = true
+        break
       }
-      return { path: stripped, prefix }
     }
+    if (!found) break
   }
-  return { path: requestPath }
+
+  if (lastNonDefaultPrefix) {
+    return { path: current, prefix: lastNonDefaultPrefix }
+  }
+  return { path: current }
 }
 
 /**

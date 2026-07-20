@@ -73,7 +73,8 @@ describe('MatrixDeviceService', () => {
   const authedRequestImpl = vi
     .fn()
     .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-      const url = `${TEST_BASE_URL}${path}`
+      const prefixedPath = path.startsWith('/_matrix') ? path : `/_matrix/client/v3${path}`
+      const url = `${TEST_BASE_URL}${prefixedPath}`
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         Authorization: 'Bearer test-access-token'
@@ -150,7 +151,7 @@ describe('MatrixDeviceService', () => {
         { device_id: 'DEVICE1', display_name: 'Device 1' },
         { device_id: 'DEVICE2', display_name: 'Device 2' }
       ])
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_matrix/client/v3/devices')
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/devices')
     })
 
     it('应该处理获取失败', async () => {
@@ -209,7 +210,7 @@ describe('MatrixDeviceService', () => {
 
       expect(result.device_id).toBe('DEVICE1')
       expect(result.display_name).toBe('New Name')
-      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', '/_matrix/client/v3/devices/DEVICE1', undefined, {
+      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', '/devices/DEVICE1', undefined, {
         display_name: 'New Name'
       })
     })
@@ -259,7 +260,7 @@ describe('MatrixDeviceService', () => {
 
       await matrixDeviceService.deleteDevices(deviceIds, auth)
 
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/_matrix/client/v3/delete_devices', undefined, {
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/delete_devices', undefined, {
         device_ids: deviceIds,
         auth
       })

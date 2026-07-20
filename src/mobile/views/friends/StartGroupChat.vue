@@ -174,7 +174,9 @@ const createGroup = async () => {
     const room = await matrixRoomCreationService.createRoom({
       invite: selectedList.value,
       is_direct: false,
+      // biome-ignore lint/suspicious/noExplicitAny: SDK type doesn't include these value literals
       preset: 'private_chat' as any,
+      // biome-ignore lint/suspicious/noExplicitAny: SDK type doesn't include these value literals
       visibility: 'private' as any
     })
 
