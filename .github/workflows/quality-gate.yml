@@ -96,6 +96,9 @@ jobs:
           pnpm check:doc-coverage
           pnpm check:sdk-boundary
 
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium --with-deps
+
       - name: Unit Tests
         run: pnpm test:unit
 
