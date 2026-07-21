@@ -14,24 +14,16 @@
  * Covers: burn stats/toggle, anti-screenshot toggle, invite blocklist/allowlist,
  * sticky events, room summary (members/state/stats), ephemeral, captcha.
  */
+import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
+import { matrixClientService } from '../MatrixClientService'
 import { synapseRustExtensionsService } from '../SynapseRustExtensionsService'
 
 const HOMESERVER = 'https://hs.synapserust-rooms-contract.test'
 const ACCESS_TOKEN = 'rooms-contract-at'
 const seenUrls: { method: string; url: string; body?: string }[] = []
-
-vi.mock('../MatrixClientService', () => {
-  const instance = {
-    getClient: () => null,
-    getHomeserverUrl: () => HOMESERVER,
-    getAccessToken: () => ACCESS_TOKEN,
-    waitForClientReady: () => Promise.resolve(null)
-  }
-  return { default: instance, matrixClientService: instance }
-})
 
 vi.mock('@/services/i18n', () => ({
   useI18nGlobal: () => ({ t: (key: string) => key })
@@ -149,9 +141,14 @@ const server = setupMswServer(
 describe('SynapseRustExtensionsService rooms + captcha URL construction contract (real fetch + msw)', () => {
   beforeEach(() => {
     seenUrls.length = 0
+    vi.spyOn(matrixClientService, 'getHomeserverUrl').mockReturnValue(HOMESERVER)
+    vi.spyOn(matrixClientService, 'getAccessToken').mockReturnValue(ACCESS_TOKEN)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null as unknown as MatrixClient)
+    vi.spyOn(matrixClientService, 'waitForClientReady').mockResolvedValue(null as unknown as MatrixClient)
     synapseRustExtensionsService.clear()
     ;(synapseRustExtensionsService as unknown as { baseUrl: string }).baseUrl = HOMESERVER
     ;(synapseRustExtensionsService as unknown as { accessToken: string }).accessToken = ACCESS_TOKEN
+    ;(synapseRustExtensionsService as unknown as { friendEndpointAvailable: null }).friendEndpointAvailable = null
   })
 
   afterEach(() => {
