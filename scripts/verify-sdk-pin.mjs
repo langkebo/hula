@@ -151,18 +151,35 @@ function main() {
     let actualSdkCommit = ''
     if (fs.existsSync(sdkPkgPath)) {
       const sdkPkg = readJson(sdkPkgPath)
+      const sdkRoot = path.dirname(sdkPkgPath)
       if (pin.sdk_version && sdkPkg.version !== pin.sdk_version) {
         die(
           1,
           `sdk_version mismatch: pin='${pin.sdk_version}' but ../matrix-js-sdk/package.json version is '${sdkPkg.version}'`,
         )
       }
-      actualSdkCommit = gitCommit(path.dirname(sdkPkgPath))
+      actualSdkCommit = gitCommit(sdkRoot)
       if (pin.sdk_commit && actualSdkCommit && !actualSdkCommit.startsWith(pin.sdk_commit)) {
         die(
           1,
           `sdk_commit mismatch: pin='${pin.sdk_commit}' but ../matrix-js-sdk HEAD is '${actualSdkCommit}'`,
         )
+      }
+
+      // Verify contract chain: pin's synapse_rust_commit MUST match the
+      // backend commit that the SDK's contract artifacts were generated from.
+      // This catches the case where contract:sync ran but the regenerated
+      // files were never committed before the pin was set.
+      const sdkContractIndex = path.join(sdkRoot, 'docs', 'api-contract', 'generated', 'index.json')
+      if (pin.synapse_rust_commit && fs.existsSync(sdkContractIndex)) {
+        const contract = readJson(sdkContractIndex)
+        if (contract.synapse_rust_commit && contract.synapse_rust_commit !== pin.synapse_rust_commit) {
+          die(
+            1,
+            `synapse_rust_commit mismatch: pin='${pin.synapse_rust_commit}' but SDK contract was generated from '${contract.synapse_rust_commit}'. ` +
+              `Run \`pnpm contract:sync\` in matrix-js-sdk, commit the regenerated files, then update meta/sdk-pin.json.`,
+          )
+        }
       }
     }
   }
