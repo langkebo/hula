@@ -15,22 +15,12 @@ import { createClient, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixMessageService } from '../MatrixMessageService'
 
 const HOMESERVER = 'https://hs.message-contract.test'
 const seenUrls: { method: string; url: string }[] = []
 let realClient: MatrixClient
-
-vi.mock('../../MatrixClientService', () => {
-  // BaseMatrixService imports the named `matrixClientService` export —
-  // provide it with lazy getters so vi.mock hoisting is safe.
-  const instance = {
-    getClient: (): MatrixClient => realClient,
-    getHomeserverUrl: () => HOMESERVER,
-    waitForClientReady: () => Promise.resolve(realClient)
-  }
-  return { default: instance, matrixClientService: instance }
-})
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -71,6 +61,9 @@ setupMswServer(
 describe('Message service URL construction contract (real SDK + msw)', () => {
   beforeEach(() => {
     seenUrls.length = 0
+    vi.spyOn(matrixClientService, 'getHomeserverUrl').mockReturnValue(HOMESERVER)
+    vi.spyOn(matrixClientService, 'getClient').mockImplementation(() => realClient)
+    vi.spyOn(matrixClientService, 'waitForClientReady').mockImplementation(() => Promise.resolve(realClient))
     realClient = createClient({
       baseUrl: HOMESERVER,
       accessToken: 'contract-at',
