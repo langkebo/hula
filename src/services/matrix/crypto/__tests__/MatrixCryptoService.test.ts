@@ -4,10 +4,13 @@ import matrixClientService from '../../MatrixClientService'
 import { cryptoSDKAdapter } from '../CryptoSDKAdapter'
 import { matrixCryptoService } from '../MatrixCryptoService'
 
-vi.mock('@tauri-apps/plugin-log', () => ({
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn()
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  })
 }))
 
 describe('MatrixCryptoService', () => {

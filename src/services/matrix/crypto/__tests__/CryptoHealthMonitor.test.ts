@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '../../MatrixClientService'
 import { CryptoHealthMonitor } from '../CryptoHealthMonitor'
+import { cryptoSDKAdapter } from '../CryptoSDKAdapter'
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
@@ -11,40 +12,43 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
-vi.mock('../MatrixKeyBackupService', () => ({
-  matrixKeyBackupService: {
-    getBackupVersions: vi.fn(async () => [{ version: '1' }])
-  }
-}))
-
-vi.mock('../MatrixCryptoService', () => ({
-  matrixCryptoService: {
-    getDevices: vi.fn(async () => [
-      { deviceId: 'dev1', userId: '@test:example.com', isVerified: true },
-      { deviceId: 'dev2', userId: '@test:example.com', isVerified: false }
+function createDefaultMockClient() {
+  return {
+    getUserId: () => '@test:example.com',
+    getRooms: () => [
+      {
+        roomId: '!room1:example.com',
+        timeline: [
+          {
+            getContent: () => ({ msgtype: 'm.text', body: 'hello' }),
+            getWireContent: () => ({})
+          }
+        ]
+      }
+    ],
+    getStoredDevicesForUser: vi.fn().mockResolvedValue([
+      { deviceId: 'dev1', userId: '@test:example.com', displayName: 'Device 1', isVerified: () => true },
+      { deviceId: 'dev2', userId: '@test:example.com', displayName: 'Device 2', isVerified: () => false }
     ]),
-    createRoomKeyRequest: vi.fn()
+    getKeyBackupManager: vi.fn(() => ({
+      getLatestBackupVersion: vi.fn().mockResolvedValue({ version: '1', algorithm: 'test', auth_data: {} })
+    })),
+    getCrypto: vi.fn(() => ({
+      isCrossSigningReady: vi.fn().mockResolvedValue(true)
+    })),
+    getDeviceKeysManager: vi.fn(() => ({
+      createRoomKeyRequest: vi.fn().mockResolvedValue(undefined)
+    }))
   }
-}))
+}
 
 describe('CryptoHealthMonitor', () => {
   let monitor: CryptoHealthMonitor
 
   beforeEach(() => {
-    vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
-      getUserId: () => '@test:example.com',
-      getRooms: () => [
-        {
-          roomId: '!room1:example.com',
-          timeline: [
-            {
-              getContent: () => ({ msgtype: 'm.text', body: 'hello' }),
-              getWireContent: () => ({})
-            }
-          ]
-        }
-      ]
-    } as never)
+    vi.clearAllMocks()
+    cryptoSDKAdapter.invalidateCryptoCache()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(createDefaultMockClient() as never)
     monitor = new CryptoHealthMonitor()
   })
 
@@ -115,7 +119,10 @@ describe('CryptoHealthMonitor', () => {
             }
           ]
         }
-      ]
+      ],
+      getDeviceKeysManager: vi.fn(() => ({
+        createRoomKeyRequest: vi.fn().mockResolvedValue(undefined)
+      }))
     } as never)
 
     const onKeyRequestTriggered = vi.fn()
