@@ -32,15 +32,7 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true
   },
-  "include": [
-    "scripts/**/*",
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
-    "src/**/*.test.ts",
-    "build/config/chunks.ts"
-  ],
+  "include": ["scripts/**/*", "src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.test.ts"],
   "exclude": ["src/mobile/components/my/community.vue"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
