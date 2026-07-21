@@ -1,0 +1,33 @@
+name: 'Setup matrix-js-sdk'
+description: 'Checkout and build matrix-js-sdk at the pinned commit so link:../matrix-js-sdk resolves in CI'
+inputs:
+  sdk-repo:
+    description: 'matrix-js-sdk repository slug (owner/repo)'
+    required: false
+    default: 'langkebo/matrix-js-sdk'
+runs:
+  using: composite
+  steps:
+    - name: Read SDK pin
+      id: sdk-pin
+      shell: bash
+      run: echo "commit=$(jq -r .sdk_commit meta/sdk-pin.json)" >> "$GITHUB_OUTPUT"
+
+    - name: Checkout matrix-js-sdk at pinned commit
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      with:
+        repository: ${{ inputs.sdk-repo }}
+        ref: ${{ steps.sdk-pin.outputs.commit }}
+        path: matrix-js-sdk
+
+    - name: Create sibling symlink
+      shell: bash
+      run: ln -sf "$PWD/matrix-js-sdk" "$PWD/../matrix-js-sdk"
+
+    - name: Install SDK dependencies
+      shell: bash
+      run: pnpm --dir matrix-js-sdk install --frozen-lockfile
+
+    - name: Build SDK
+      shell: bash
+      run: pnpm --dir matrix-js-sdk build
