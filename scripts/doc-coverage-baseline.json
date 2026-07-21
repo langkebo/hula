@@ -149,7 +149,6 @@
     "src/services/matrix/SynapseRustExtensionsService.ts::setStickyEvent",
     "src/services/matrix/SynapseRustExtensionsService.ts::stop",
     "src/services/matrix/SynapseRustExtensionsService.ts::verifyCaptcha",
-    "src/services/matrix/__test_helpers__/stubMatrixClientProvider.ts::createStubMatrixClientProvider",
     "src/services/matrix/admin/AdminFacadeService.ts::addContentFilter",
     "src/services/matrix/admin/AdminFacadeService.ts::addToFederationBlacklist",
     "src/services/matrix/admin/AdminFacadeService.ts::adminDeleteSpace",
