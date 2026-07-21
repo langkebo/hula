@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# matrix-js-sdk sibling checkout (CI composite action creates this directory)
+/matrix-js-sdk
+
 # Editor directories and files
 .DS_Store
 *.suo
