@@ -11,7 +11,7 @@ describe('MatrixEncryptionService', () => {
       getUserId: vi.fn(() => '@user:example.com'),
       deviceId: 'DEVICE_1',
       getRoom: vi.fn(),
-      getKeyRotationManager: vi.fn(() => ({
+      getKeyRotationManager: vi.fn((() => ({
         postCheck: vi.fn().mockResolvedValue({
           enabled: true,
           interval_ms: 604800000,
@@ -25,7 +25,7 @@ describe('MatrixEncryptionService', () => {
         getRotationHistory: vi.fn().mockResolvedValue({ rotations: [] }),
         revokeKey: vi.fn().mockResolvedValue({ revoked: 1 }),
         updateConfig: vi.fn().mockResolvedValue({})
-      }))
+      })) as unknown as MatrixClient['getKeyRotationManager'])
     }
 
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as MatrixClient)
