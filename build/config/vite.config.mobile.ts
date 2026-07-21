@@ -6,7 +6,7 @@ import { getComponentsDirs, getComponentsDtsPath, getComponentsGlobs } from './c
 import { getLocalIP } from './utils'
 import { baseConfig } from './vite.config.base'
 
-export function createMobileConfig(platform: string, _env: Record<string, string>): UserConfig {
+export function createMobileConfig(platform: string, _env?: Record<string, string>): UserConfig {
   const rawIP = getLocalIP() || '127.0.0.1'
   const serverPort = 5210
 
