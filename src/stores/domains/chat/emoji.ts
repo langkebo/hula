@@ -127,9 +127,8 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
 
   const createUploadFileFromUrl = async (url: string) => {
     const buffer = await HttpClient.downloadBytes(url)
-    const blob = new Blob([buffer])
-
-    const mimeType = await resolveEmojiMimeType(url, blob.type)
+    const mimeType = await resolveEmojiMimeType(url)
+    const blob = new Blob([buffer], { type: mimeType })
     const ext = Object.entries(MIME_TYPE_BY_EXTENSION).find(([, value]) => value === mimeType)?.[0] || 'png'
     return new File([blob], `custom_emoji.${ext}`, { type: mimeType })
   }
