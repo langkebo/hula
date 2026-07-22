@@ -7,6 +7,7 @@
  */
 
 import { ref } from 'vue'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SiliconFlow')
@@ -236,6 +237,41 @@ class SiliconFlowClient {
     }
   }
 
+  async testConnection(baseUrl: string, apiKey: string): Promise<boolean> {
+    try {
+      await HttpClient.get(`${baseUrl}/v1/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` }
+      })
+      return true
+    } catch (err) {
+      logger.error('Connection test failed', err)
+      return false
+    }
+  }
+
+  async chatStream(
+    model: string,
+    messages: SiliconFlowMessage[],
+    config: { baseUrl: string; apiKey: string; temperature?: number; maxTokens?: number }
+  ): Promise<Response> {
+    const body: Record<string, unknown> = {
+      model,
+      messages,
+      stream: true
+    }
+    if (config.temperature !== undefined) {
+      body.temperature = config.temperature
+    }
+    if (config.maxTokens !== undefined) {
+      body.max_tokens = config.maxTokens
+    }
+    return HttpClient.streamResponse(`${config.baseUrl}/v1/chat/completions`, body, {
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`
+      }
+    })
+  }
+
   disconnect() {
     this.updateConnectionState({
       connected: false,
@@ -257,6 +293,8 @@ class SiliconFlowClient {
 // ============ 导出单例 ============
 
 export const siliconFlowClient = new SiliconFlowClient()
+
+export const siliconFlowService = siliconFlowClient
 
 // ============ Vue Composable ============
 

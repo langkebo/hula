@@ -258,6 +258,7 @@ import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { siliconFlowService } from '@/services/siliconflow/SiliconFlowService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiAssistant')
@@ -602,12 +603,8 @@ async function testConnection() {
     return
   }
   try {
-    const response = await fetch(`${apiKeySettings.value.baseUrl}/v1/models`, {
-      headers: {
-        Authorization: `Bearer ${apiKeySettings.value.apiKey}`
-      }
-    })
-    if (response.ok) {
+    const ok = await siliconFlowService.testConnection(apiKeySettings.value.baseUrl, apiKeySettings.value.apiKey)
+    if (ok) {
       showToast(t('ai_assistant.connection_success'))
       showApiKeySettings.value = false
     } else {
@@ -680,22 +677,14 @@ async function handleSend() {
       .map((m) => ({ role: m.role, content: m.content }))
     messagesForApi.push(...chatHistory)
 
-    const response = await fetch(`${apiKeySettings.value.baseUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKeySettings.value.apiKey}`
-      },
-      body: JSON.stringify({
-        model: selectedModel.value?.id,
-        messages: messagesForApi,
-        stream: true
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`)
-    }
+    const response = await siliconFlowService.chatStream(
+      selectedModel.value?.id ?? 'deepseek-ai/DeepSeek-V2.5',
+      messagesForApi as Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
+      {
+        baseUrl: apiKeySettings.value.baseUrl,
+        apiKey: apiKeySettings.value.apiKey
+      }
+    )
 
     const reader = response.body?.getReader()
     const decoder = new TextDecoder()
