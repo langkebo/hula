@@ -118,6 +118,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindow } from '@/composables/common/useWindow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { handRelativeTime } from '@/utils/ComputedTime'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler.ts'
@@ -167,13 +168,8 @@ const mapCommitType = (commitMessage: string) => {
 //let lastVersion: string | null = null
 
 const getCommitLog = async (url: string, isNew = false) => {
-  fetch(url).then((res) => {
-    if (!res.ok) {
-      commitLog.value = [{ message: t('message.check_update.fetch_log_failed'), icon: 'cloudError' }]
-      loading.value = false
-      return
-    }
-    res.json().then(async (data) => {
+  HttpClient.get<{ created_at: string; body: string }>(url)
+    .then(async (data) => {
       isNew ? (newVersionTime.value = data.created_at) : (versionTime.value = data.created_at)
       await nextTick(() => {
         // 使用正则表达式提取 * 号后面的内容
@@ -197,7 +193,10 @@ const getCommitLog = async (url: string, isNew = false) => {
         loading.value = false
       })
     })
-  })
+    .catch(() => {
+      commitLog.value = [{ message: t('message.check_update.fetch_log_failed'), icon: 'cloudError' }]
+      loading.value = false
+    })
 }
 
 const doUpdate = async () => {

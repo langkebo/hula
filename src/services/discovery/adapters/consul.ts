@@ -1,4 +1,4 @@
-import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import type { DiscoveryOptions, Registry, ServiceInstance } from '../types'
 
@@ -28,16 +28,10 @@ export class ConsulRegistry implements Registry {
   }
 
   async discover(options: DiscoveryOptions): Promise<ServiceInstance[]> {
-    const fetch = getRuntimeAwareFetch()
     const url = `${this.baseUrl}/v1/health/service/${options.serviceName}?passing=${options.passingOnly !== false}`
 
     try {
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`Consul error: ${response.statusText}`)
-      }
-
-      const data = await response.json()
+      const data = await HttpClient.get<ConsulServiceEntry[]>(url)
       return data.map((entry: ConsulServiceEntry) => ({
         id: entry.Service.ID,
         serviceName: entry.Service.Service,

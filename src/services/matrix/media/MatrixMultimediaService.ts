@@ -1,3 +1,4 @@
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
@@ -280,12 +281,8 @@ class MatrixMultimediaService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.media.invalid_mxc_url'))
       }
 
-      const response = await fetch(httpUrl)
-      if (!response.ok) {
-        throw new Error(`[Multimedia] 下载失败: ${response.status}`)
-      }
-
-      const blob = await response.blob()
+      const buffer = await HttpClient.downloadBytes(httpUrl)
+      const blob = new Blob([buffer])
       logger.info(`[Multimedia] 下载媒体成功: ${filename}`)
       return blob
     } catch (err) {

@@ -260,6 +260,7 @@ function uninstallSecurityListeners() {
 const requestIOSNetworkPermission = async () => {
   if (!isIOS()) return
   try {
+    // Browser favicon reachability check — intentionally uses native fetch with no-cors
     await fetch('https://www.apple.com/favicon.ico', {
       method: 'HEAD',
       cache: 'no-cache'

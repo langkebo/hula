@@ -126,6 +126,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { usePlatform } from '@/composables/usePlatform'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('HelpSettings')
@@ -173,18 +174,15 @@ async function loadVersionInfo() {
     }
 
     try {
-      const response = await fetch('/package.json')
-      if (response.ok) {
-        const pkg = await response.json()
-        if (pkg.version) {
-          appVersion.value = pkg.version
-        }
-        if (pkg.dependencies?.['matrix-js-sdk']) {
-          sdkVersion.value = pkg.dependencies['matrix-js-sdk'].replace('^', '')
-        }
-        if (pkg.dependencies?.['vue']) {
-          vueVersion.value = pkg.dependencies['vue'].replace('^', '')
-        }
+      const pkg = await HttpClient.get<{ version: string; dependencies?: Record<string, string> }>('/package.json')
+      if (pkg.version) {
+        appVersion.value = pkg.version
+      }
+      if (pkg.dependencies?.['matrix-js-sdk']) {
+        sdkVersion.value = pkg.dependencies['matrix-js-sdk'].replace('^', '')
+      }
+      if (pkg.dependencies?.['vue']) {
+        vueVersion.value = pkg.dependencies['vue'].replace('^', '')
       }
     } catch {
       logger.debug('Failed to load package.json')

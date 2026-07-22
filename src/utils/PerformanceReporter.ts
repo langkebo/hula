@@ -4,6 +4,7 @@
  * 严格对齐文档 SLA 告警阈值
  */
 
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PerformanceReporter')
@@ -427,18 +428,10 @@ class PerformanceReporter {
       }
     }
 
-    const response = await fetch(this.config.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain'
-      },
-      body: payload,
-      keepalive: true
+    // Send as Blob to preserve text/plain content type (HttpClient.post JSON-stringifies plain strings)
+    await HttpClient.post(this.config.endpoint, new Blob([payload], { type: 'text/plain' }), {
+      headers: { 'Content-Type': 'text/plain' }
     })
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
   }
 
   async forceFlush(): Promise<void> {
