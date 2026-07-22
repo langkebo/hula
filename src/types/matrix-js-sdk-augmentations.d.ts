@@ -365,8 +365,8 @@ declare module 'matrix-js-sdk' {
     syncOnce(opts?: Record<string, unknown>): Promise<void>
     getBurnAfterReadManager(): BurnAfterReadManager
     getSpaceManager(): import('matrix-js-sdk/space').SpaceManager
-    getKeyRotationManager(): import('matrix-js-sdk/src/key-rotation/index').KeyRotationManager
-    getDehydratedDeviceManager(): import('matrix-js-sdk/src/dehydrated-device/index').DehydratedDeviceManager
+    getKeyRotationManager(): import('matrix-js-sdk/key-rotation').KeyRotationManager
+    getDehydratedDeviceManager(): import('matrix-js-sdk/dehydrated-device').DehydratedDeviceManager
     oidcUserInfo(): Promise<Record<string, unknown>>
     isCrossSigningReady(): Promise<boolean>
     isSecretStorageReady(): Promise<boolean>
