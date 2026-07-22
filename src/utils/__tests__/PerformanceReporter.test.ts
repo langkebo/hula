@@ -211,7 +211,8 @@ describe('PerformanceReporter', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
 
-      const payload = mockFetch.mock.calls[0]?.[1]?.body
+      const rawBody = mockFetch.mock.calls[0]?.[1]?.body
+      const payload = rawBody instanceof Blob ? await rawBody.text() : rawBody
       expect(payload).toContain('hula_sdk_manager_requests_total{')
       expect(payload).toContain('manager="voice"')
       expect(payload).toContain('platform="desktop"')
