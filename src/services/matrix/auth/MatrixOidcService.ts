@@ -1,3 +1,4 @@
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
@@ -138,26 +139,17 @@ class MatrixOidcService {
     try {
       logger.info(`[MatrixOidcService] Exchanging authorization code for tokens`)
 
-      const response = await fetch(`${homeserverUrl}/_matrix/client/v3/oidc/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          grant_type: 'authorization_code',
-          code: code,
-          redirect_uri: `${window.location.origin}/oidc/callback`,
-          code_verifier: codeVerifier
-        })
+      const client = this.getClient()
+      if (!client) return null
+
+      const oidcManager = client.getOidcManager()
+      const tokenResponse = await oidcManager.token({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: `${window.location.origin}/oidc/callback`,
+        code_verifier: codeVerifier
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        logger.error(`[MatrixOidcService] Token exchange failed: ${response.status} - ${errorText}`)
-        return null
-      }
-
-      const tokenResponse: OidcTokenResponse = await response.json()
       logger.info(`[MatrixOidcService] Token exchange successful`)
 
       sessionStorage.removeItem('oidc_state')
@@ -261,25 +253,17 @@ class MatrixOidcService {
     try {
       logger.info(`[MatrixOidcService] Exchanging OIDC token for Matrix token`)
 
-      const response = await fetch(`${homeserverUrl}/_matrix/client/v3/oidc/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
-          oidc_access_token: oidcAccessToken,
-          oidc_refresh_token: oidcRefreshToken
-        })
+      const result = await HttpClient.post<{
+        user_id: string
+        access_token: string
+        device_id: string
+        refresh_token?: string
+      }>(`${homeserverUrl}/_matrix/client/v3/oidc/token`, {
+        grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
+        oidc_access_token: oidcAccessToken,
+        oidc_refresh_token: oidcRefreshToken
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        logger.error(`[MatrixOidcService] Token exchange failed: ${response.status} - ${errorText}`)
-        return null
-      }
-
-      const result = await response.json()
       logger.info(`[MatrixOidcService] OIDC to Matrix token exchange successful`)
       return result
     } catch (err) {
