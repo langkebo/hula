@@ -8,6 +8,7 @@ import {
   matrixAttachmentEncryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { chunkUploadService } from '@/services/performance/ChunkUploadService'
+import { HttpClient, HttpClientError } from '@/utils/HttpClient'
 import { compressImage, formatFileSize, isImageFile } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -136,49 +137,40 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
     const accessToken = client.getAccessToken()
     if (accessToken && downloadUrl.startsWith(client.getHomeserverUrl())) {
-      // 优先使用 Bearer 认证头下载
-      // 注：当前后端 v3 媒体下载端点不校验 Bearer token，
-      // 该认证头对 v3 端点实际是冗余的，但保留用于前向兼容（未来后端可能启用校验）。
-      let response = await fetch(downloadUrl, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      })
-      // 如果 Bearer 认证失败，尝试认证媒体下载端点 (MSC3916)
-      if (!response.ok && response.status === 404) {
-        try {
+      try {
+        const buffer = await HttpClient.downloadBytes(downloadUrl, {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
+        })
+        return new Uint8Array(buffer)
+      } catch (err) {
+        if (err instanceof HttpClientError && err.status === 404 && accessToken) {
+          // Fallback: try authenticated download endpoint (MSC3916)
           const mxcMatch = mediaUrl.match(/^mxc:\/\/([^/]+)\/(.+)$/)
           if (mxcMatch) {
             const serverName = mxcMatch[1]
             const mediaId = mxcMatch[2]
             const authDownloadUrl = `${client.getHomeserverUrl()}_matrix/client/v1/media/download/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`
-            response = await fetch(authDownloadUrl, {
-              headers: { Authorization: `Bearer ${accessToken}` }
-            })
+            try {
+              const buffer = await HttpClient.downloadBytes(authDownloadUrl, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+              })
+              return new Uint8Array(buffer)
+            } catch {
+              // fall through to error
+            }
           }
-        } catch {
-          // 认证下载端点不可用，继续尝试其他方式
+          // Last fallback: access_token in query (only if all else fails)
+          const separator = downloadUrl.includes('?') ? '&' : '?'
+          const queryUrl = `${downloadUrl}${separator}access_token=${encodeURIComponent(accessToken)}`
+          const buffer = await HttpClient.downloadBytes(queryUrl)
+          return new Uint8Array(buffer)
         }
+        throw err
       }
-      // 最后尝试 access_token 查询参数
-      if (!response.ok) {
-        const separator = downloadUrl.includes('?') ? '&' : '?'
-        response = await fetch(`${downloadUrl}${separator}access_token=${encodeURIComponent(accessToken)}`)
-      }
-      if (!response.ok) {
-        throw new Error(
-          this.t('matrix_error.media.download_failed', { status: response.status, statusText: response.statusText })
-        )
-      }
-      return new Uint8Array(await response.arrayBuffer())
     }
 
-    const response = await fetch(downloadUrl)
-    if (!response.ok) {
-      throw new Error(
-        this.t('matrix_error.media.download_failed', { status: response.status, statusText: response.statusText })
-      )
-    }
-
-    return new Uint8Array(await response.arrayBuffer())
+    const buffer = await HttpClient.downloadBytes(downloadUrl)
+    return new Uint8Array(buffer)
   }
 
   async downloadEncryptedFileBytes(encryptedFile: MatrixEncryptedAttachmentLike): Promise<Uint8Array> {
@@ -402,20 +394,12 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       const uploadUrl = `${client.getHomeserverUrl()}${uploadPath}`
       const accessToken = client.getAccessToken()
 
-      const response = await fetch(uploadUrl, {
-        method: 'PUT',
+      const data = await HttpClient.put<{ content_uri: string }>(uploadUrl, file, {
         headers: {
           'Content-Type': resolvedMimetype,
           Authorization: `Bearer ${accessToken}`
-        },
-        body: file
+        }
       })
-
-      if (!response.ok) {
-        throw new Error(`媒体上传失败: HTTP ${response.status} ${response.statusText}`)
-      }
-
-      const data = await response.json()
       const contentUri = typeof data === 'string' ? data : (data as { content_uri: string }).content_uri
       logger.info(`[MatrixMedia] 具名上传成功: ${contentUri}`)
       return {
