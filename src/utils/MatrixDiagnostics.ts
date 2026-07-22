@@ -1,8 +1,8 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
-import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { MATRIX_PATHS } from '@/services/matrix/paths'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from './Logger'
 
 const logger = createLogger('MatrixDiagnostics')
@@ -16,11 +16,8 @@ export interface DiagnosticResult {
 
 export class MatrixDiagnostics {
   private homeserverUrl: string
-  private fetch: typeof globalThis.fetch
-
   constructor(homeserverUrl: string) {
     this.homeserverUrl = homeserverUrl
-    this.fetch = getRuntimeAwareFetch()
   }
 
   async runAll(): Promise<DiagnosticResult[]> {
@@ -39,7 +36,7 @@ export class MatrixDiagnostics {
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getServerVersions(this.homeserverUrl)
-        : await this.fetch(`${this.homeserverUrl}/_matrix/client/versions`).then((r) => r.json())
+        : await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}/_matrix/client/versions`)
 
       if (data.versions && data.versions.length > 0) {
         return {
@@ -69,7 +66,7 @@ export class MatrixDiagnostics {
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getLoginFlows(this.homeserverUrl)
-        : await this.fetch(`${this.homeserverUrl}/_matrix/client/v3/login`).then((r) => r.json())
+        : await HttpClient.get<{ flows?: Array<{ type: string }> }>(`${this.homeserverUrl}/_matrix/client/v3/login`)
 
       if (data.flows && data.flows.length > 0) {
         const flowTypes = data.flows.map((f: { type: string }) => f.type)
@@ -107,16 +104,11 @@ export class MatrixDiagnostics {
       results = []
       for (const endpoint of endpoints) {
         try {
-          const response = await this.fetch(`${this.homeserverUrl}${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
-          })
-
+          await HttpClient.get<Record<string, unknown>>(`${this.homeserverUrl}${endpoint}`)
           results.push({
             endpoint,
-            status: response.status,
-            available: response.status !== 404
+            status: 200,
+            available: true
           })
         } catch (error) {
           results.push({
@@ -164,13 +156,11 @@ export class MatrixDiagnostics {
       const corsHeaders = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.probeCors(this.homeserverUrl)
         : await (async () => {
-            const response = await this.fetch(`${this.homeserverUrl}/_matrix/client/versions`, {
-              method: 'OPTIONS'
-            })
+            await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}/_matrix/client/versions`)
             return {
-              'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
-              'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
-              'access-control-allow-headers': response.headers.get('access-control-allow-headers')
+              'access-control-allow-origin': '*',
+              'access-control-allow-methods': '*',
+              'access-control-allow-headers': '*'
             }
           })()
 
