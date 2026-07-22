@@ -93,9 +93,23 @@ export class HttpClient {
     return response.json() as Promise<T>
   }
 
+  private static isRawBody(
+    body: unknown
+  ): body is Blob | File | ArrayBuffer | ArrayBufferView | FormData | ReadableStream {
+    return (
+      body instanceof Blob ||
+      body instanceof File ||
+      body instanceof ArrayBuffer ||
+      ArrayBuffer.isView(body) ||
+      (typeof FormData !== 'undefined' && body instanceof FormData) ||
+      (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream)
+    )
+  }
+
   static async post<T = unknown>(url: string, body?: unknown, config?: HttpClientConfig): Promise<T> {
+    const rawBody = body !== undefined && body !== null && HttpClient.isRawBody(body)
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      'Content-Type': rawBody ? (config?.headers?.['Content-Type'] ?? 'application/octet-stream') : 'application/json',
       ...config?.headers
     }
     const response = await fetchWithTimeout(
@@ -103,13 +117,35 @@ export class HttpClient {
       {
         method: 'POST',
         headers,
-        body: body !== undefined ? JSON.stringify(body) : undefined
+        body: rawBody ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined
       },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal
     )
     if (!response.ok) {
       throw await toHttpClientError(response, 'POST', url)
+    }
+    return response.json() as Promise<T>
+  }
+
+  static async put<T = unknown>(url: string, body?: unknown, config?: HttpClientConfig): Promise<T> {
+    const rawBody = body !== undefined && body !== null && HttpClient.isRawBody(body)
+    const headers: Record<string, string> = {
+      'Content-Type': rawBody ? (config?.headers?.['Content-Type'] ?? 'application/octet-stream') : 'application/json',
+      ...config?.headers
+    }
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: 'PUT',
+        headers,
+        body: rawBody ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined
+      },
+      config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      config?.signal
+    )
+    if (!response.ok) {
+      throw await toHttpClientError(response, 'PUT', url)
     }
     return response.json() as Promise<T>
   }
@@ -130,7 +166,7 @@ export class HttpClient {
   static async downloadBytes(url: string, config?: HttpClientConfig): Promise<ArrayBuffer> {
     const response = await fetchWithTimeout(
       url,
-      { method: 'GET' },
+      { method: 'GET', headers: mergeHeaders(config) },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal
     )

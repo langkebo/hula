@@ -195,7 +195,8 @@ describe('MatrixMediaService', () => {
         url: 'https://example.com/encrypted.bin'
       })
 
-      expect(fetchMock).toHaveBeenCalledWith('https://example.com/encrypted.bin')
+      expect(fetchMock).toHaveBeenCalled()
+      expect(fetchMock.mock.calls[0]?.[0]).toBe('https://example.com/encrypted.bin')
       expect(new TextDecoder().decode(result)).toBe('secret-content')
     })
   })
