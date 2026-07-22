@@ -16,13 +16,10 @@ export interface HttpClientConfig {
   timeoutMs?: number
   signal?: AbortSignal
   headers?: Record<string, string>
+  keepalive?: boolean
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000
-
-function mergeHeaders(config?: HttpClientConfig): Record<string, string> | undefined {
-  return config?.headers
-}
 
 async function fetchWithTimeout(
   url: string,
@@ -83,7 +80,7 @@ export class HttpClient {
   static async get<T = unknown>(url: string, config?: HttpClientConfig): Promise<T> {
     const response = await fetchWithTimeout(
       url,
-      { method: 'GET', headers: mergeHeaders(config) },
+      { method: 'GET', headers: config?.headers, keepalive: config?.keepalive },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal
     )
@@ -117,7 +114,8 @@ export class HttpClient {
       {
         method: 'POST',
         headers,
-        body: rawBody ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined
+        body: rawBody ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined,
+        keepalive: config?.keepalive
       },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal
@@ -139,7 +137,8 @@ export class HttpClient {
       {
         method: 'PUT',
         headers,
-        body: rawBody ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined
+        body: rawBody ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined,
+        keepalive: config?.keepalive
       },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal
@@ -153,7 +152,7 @@ export class HttpClient {
   static async head(url: string, config?: HttpClientConfig): Promise<Response> {
     const response = await fetchWithTimeout(
       url,
-      { method: 'HEAD' },
+      { method: 'HEAD', headers: config?.headers, keepalive: config?.keepalive },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal
     )
@@ -166,7 +165,7 @@ export class HttpClient {
   static async downloadBytes(url: string, config?: HttpClientConfig): Promise<ArrayBuffer> {
     const response = await fetchWithTimeout(
       url,
-      { method: 'GET', headers: mergeHeaders(config) },
+      { method: 'GET', headers: config?.headers, keepalive: config?.keepalive },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal
     )
@@ -186,7 +185,8 @@ export class HttpClient {
       {
         method: 'POST',
         headers,
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        keepalive: config?.keepalive
       },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal

@@ -5,6 +5,32 @@ import matrixClientService from '../MatrixClientService'
 
 const logger = createLogger('MatrixMultimediaService')
 
+const MIME_EXT_MAP: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  bmp: 'image/bmp',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  ogv: 'video/ogg',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  flac: 'audio/flac',
+  aac: 'audio/aac',
+  pdf: 'application/pdf',
+  zip: 'application/zip',
+  json: 'application/json',
+  txt: 'text/plain',
+  html: 'text/html',
+  css: 'text/css',
+  js: 'application/javascript',
+  wasm: 'application/wasm'
+}
+
 export interface VoiceMessageConfig {
   maxDuration: number
   sampleRate: number
@@ -282,7 +308,9 @@ class MatrixMultimediaService extends BaseMatrixService {
       }
 
       const buffer = await HttpClient.downloadBytes(httpUrl)
-      const blob = new Blob([buffer])
+      const mimeHint = filename.split('.').pop()?.toLowerCase()
+      const mimeType = mimeHint && MIME_EXT_MAP[mimeHint] ? MIME_EXT_MAP[mimeHint] : 'application/octet-stream'
+      const blob = new Blob([buffer], { type: mimeType })
       logger.info(`[Multimedia] 下载媒体成功: ${filename}`)
       return blob
     } catch (err) {

@@ -430,7 +430,8 @@ class PerformanceReporter {
 
     // Send as Blob to preserve text/plain content type (HttpClient.post JSON-stringifies plain strings)
     await HttpClient.post(this.config.endpoint, new Blob([payload], { type: 'text/plain' }), {
-      headers: { 'Content-Type': 'text/plain' }
+      headers: { 'Content-Type': 'text/plain' },
+      keepalive: true
     })
   }
 
