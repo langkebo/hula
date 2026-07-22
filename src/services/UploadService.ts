@@ -1,5 +1,6 @@
 import type { UploadSceneEnum } from '@/enums'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
+import { HttpClient, HttpClientError } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('UploadService')
@@ -42,28 +43,15 @@ class UploadService {
     content_type?: string
   }): Promise<OssTokenResponse | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/_matrix/client/v3/upload/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(params)
-      })
-
-      if (response.status === 404) {
+      const data = await HttpClient.post<OssTokenResponse>(`${this.baseUrl}/_matrix/client/v3/upload/token`, params)
+      logger.info('[Upload] 获取上传令牌成功')
+      return data
+    } catch (err) {
+      if (err instanceof HttpClientError && err.status === 404) {
         // upload/token 端点不可用，降级到标准 Matrix 上传方式
         logger.info('[Upload] upload/token 端点不可用(404)，将使用默认上传方式')
         return null
       }
-
-      if (!response.ok) {
-        throw new Error(`获取上传令牌失败: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      logger.info('[Upload] 获取上传令牌成功')
-      return data
-    } catch (err) {
       logger.error(`[Upload] 获取上传令牌失败: ${err}`)
       return null
     }
@@ -75,18 +63,7 @@ class UploadService {
    */
   async getUploadProvider(): Promise<UploadProviderResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/_matrix/client/v3/upload/provider`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`获取上传提供商失败: ${response.statusText}`)
-      }
-
-      const data = await response.json()
+      const data = await HttpClient.get<UploadProviderResponse>(`${this.baseUrl}/_matrix/client/v3/upload/provider`)
       logger.info('[Upload] 获取上传提供商成功')
       return data
     } catch (err) {
