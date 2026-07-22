@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('TrendRadarService')
@@ -96,26 +97,10 @@ class TrendRadarService {
       id
     }
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT)
-
     try {
-      const response = await fetch(this.mcpEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(request),
-        signal: controller.signal
+      const data = await HttpClient.post<McpRpcResponse<T>>(this.mcpEndpoint, request, {
+        timeoutMs: DEFAULT_TIMEOUT
       })
-
-      clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
-
-      const data = (await response.json()) as McpRpcResponse<T>
 
       if (data.error) {
         throw new Error(`MCP Error ${data.error.code}: ${data.error.message}`)
@@ -123,9 +108,7 @@ class TrendRadarService {
 
       return data.result as T
     } catch (err) {
-      clearTimeout(timeoutId)
-
-      if (err instanceof Error && err.name === 'AbortError') {
+      if (err instanceof Error && err.message.includes('timeout')) {
         logger.warn('[TrendRadar] MCP request timeout')
         throw new Error('请求超时，请检查 TrendRadar 服务是否正常运行')
       }

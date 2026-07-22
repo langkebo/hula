@@ -5,11 +5,8 @@ const ALLOWLIST = new Set([
   'src/workers/matrixSdk.worker.ts',                // worker bridge needs raw fetch for SDK proxying
   'src/App.vue',                                     // apple.com favicon reachability check (no-cors)
   'src/strategy/strategies/video.ts',                // blob: URL requires browser-native fetch
-  'src/services/matrix/auth/MatrixOidcService.ts',   // discoverOidc() at line 62 (not in scope of Task 2 migration)
-  'src/services/siliconflow/SiliconFlowService.ts',  // pre-existing ping/sendChatCompletion (not in scope of Task 6)
-  'src/views/openclaw/OpenClawView.vue',             // OpenClawService doesn't exist (noted in Task 6)
-  'src/services/trendradar/TrendRadarService.ts',    // was never in the migration plan
-  'src/services/matrix/room/RoomCapabilitiesService.ts', // was never in the migration plan
+  'src/views/openclaw/OpenClawView.vue',             // OpenClawService doesn't exist yet — needs new service
+  'src/services/matrix/room/RoomCapabilitiesService.ts', // false positive — `fetch` is a method name, not globalThis.fetch
 ]);
 
 const output = execSync(

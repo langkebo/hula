@@ -1,6 +1,7 @@
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
+import { HttpClient } from '@/utils/HttpClient'
 import matrixClientService from '../../MatrixClientService'
 import { matrixOidcService } from '../MatrixOidcService'
 
@@ -95,6 +96,16 @@ describe('MatrixOidcService', () => {
   })
 
   it('should discover oidc and generate authorization url', async () => {
+    vi.mocked(HttpClient.get).mockResolvedValue({
+      issuer: 'https://issuer.example.com',
+      authorization_endpoint: 'https://issuer.example.com/auth',
+      token_endpoint: 'https://issuer.example.com/token',
+      userinfo_endpoint: 'https://issuer.example.com/userinfo',
+      jwks_uri: 'https://issuer.example.com/jwks',
+      response_types_supported: ['code'],
+      subject_types_supported: ['public']
+    })
+
     const discovered = await matrixOidcService.discoverOidc(TEST_BASE_URL)
     const url = await matrixOidcService.getAuthorizationUrl({
       redirectUri: 'http://localhost/oidc/callback',

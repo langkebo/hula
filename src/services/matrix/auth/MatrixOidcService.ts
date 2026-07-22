@@ -59,13 +59,7 @@ class MatrixOidcService {
 
       const url = `${homeserverUrl}${MATRIX_PATHS.WELL_KNOWN.OIDC_DISCOVERY}`
 
-      const response = await fetch(url)
-      if (!response.ok) {
-        logger.error(`[MatrixOidcService] OIDC discovery failed: ${response.status}`)
-        return null
-      }
-
-      const discovery: OidcDiscoveryDocument = await response.json()
+      const discovery = await HttpClient.get<OidcDiscoveryDocument>(url)
       this.discovery = discovery
       logger.info(`[MatrixOidcService] OIDC discovered successfully. Issuer: ${discovery.issuer}`)
       return discovery

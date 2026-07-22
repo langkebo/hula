@@ -7,7 +7,7 @@
  */
 
 import { ref } from 'vue'
-import { HttpClient } from '@/utils/HttpClient'
+import { HttpClient, HttpClientError } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SiliconFlow')
@@ -119,30 +119,22 @@ class SiliconFlowClient {
 
   async ping(): Promise<boolean> {
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-      const response = await fetch(`${this.config.baseUrl}/v1/models`, {
-        method: 'GET',
+      await HttpClient.get(`${this.config.baseUrl}/v1/models`, {
+        timeoutMs: 5000,
         headers: {
           Authorization: `Bearer ${this.config.apiKey}`
-        },
-        signal: controller.signal
+        }
       })
 
-      clearTimeout(timeoutId)
-
-      if (response.ok) {
-        this.updateConnectionState({
-          connected: true,
-          connecting: false,
-          error: null,
-          lastConnectedAt: Date.now()
-        })
-        return true
-      }
-
-      if (response.status === 401) {
+      this.updateConnectionState({
+        connected: true,
+        connecting: false,
+        error: null,
+        lastConnectedAt: Date.now()
+      })
+      return true
+    } catch (error) {
+      if (error instanceof HttpClientError && error.status === 401) {
         this.updateConnectionState({
           connected: false,
           error: 'API Key 无效'
@@ -150,8 +142,6 @@ class SiliconFlowClient {
         return false
       }
 
-      return false
-    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '连接失败'
       this.updateConnectionState({
         connected: false,
@@ -182,19 +172,11 @@ class SiliconFlowClient {
       stream: true
     }
 
-    const response = await fetch(`${this.config.baseUrl}/v1/chat/completions`, {
-      method: 'POST',
+    const response = await HttpClient.streamResponse(`${this.config.baseUrl}/v1/chat/completions`, requestBody, {
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${this.config.apiKey}`
-      },
-      body: JSON.stringify(requestBody)
+      }
     })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`请求失败: ${response.status} - ${errorText}`)
-    }
 
     const reader = response.body?.getReader()
     if (!reader) {
