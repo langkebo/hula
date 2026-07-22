@@ -60,6 +60,7 @@
     "check:sdk-boundary": "node scripts/check-sdk-boundary.mjs",
     "check:ratchet": "node scripts/check-ratchet.mjs",
     "verify:sdk-pin": "node scripts/verify-sdk-pin.mjs",
+    "quality:no-raw-fetch": "node scripts/check-no-raw-fetch.mjs",
     "lint": "biome check",
     "typecheck": "vue-tsc --noEmit",
     "test:unit": "node scripts/run-vitest.js run",
