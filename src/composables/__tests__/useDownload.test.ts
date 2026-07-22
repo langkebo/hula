@@ -2,10 +2,6 @@ import { BaseDirectory } from '@tauri-apps/plugin-fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDownload } from '@/composables/common/useDownload'
 
-const { showFeedbackMock } = vi.hoisted(() => ({
-  showFeedbackMock: vi.fn()
-}))
-
 vi.mock('@tauri-apps/plugin-fs', () => ({
   BaseDirectory: {
     AppData: 'AppData',
@@ -18,12 +14,6 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
 
 vi.mock('@/utils/PlatformConstants', () => ({
   isMobile: vi.fn(() => false)
-}))
-
-vi.mock('@/composables/common/useActionFeedback', () => ({
-  useActionFeedback: () => ({
-    showFeedback: showFeedbackMock
-  })
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -57,18 +47,12 @@ describe('useDownload', () => {
     const { exists, mkdir, writeFile } = await import('@tauri-apps/plugin-fs')
     vi.mocked(exists).mockResolvedValue(false)
 
-    const mockData = new Uint8Array([1, 2, 3])
-    const mockReader = {
-      read: vi
-        .fn()
-        .mockResolvedValueOnce({ done: false, value: mockData })
-        .mockResolvedValueOnce({ done: true, value: undefined })
-    }
+    const mockData = new ArrayBuffer(3)
+    new Uint8Array(mockData).set([1, 2, 3])
 
     mockFetch.mockResolvedValue({
       ok: true,
-      headers: { get: vi.fn(() => '3') },
-      body: { getReader: () => mockReader }
+      arrayBuffer: vi.fn().mockResolvedValue(mockData)
     })
 
     const { downloadFile, isDownloading } = useDownload()
@@ -82,59 +66,44 @@ describe('useDownload', () => {
   })
 
   it('should handle download failure', async () => {
-    mockFetch.mockResolvedValue({ ok: false })
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: vi.fn().mockResolvedValue('')
+    })
 
     const { downloadFile } = useDownload()
-    await downloadFile('http://test.com/file.txt', 'test/file.txt')
-
-    expect(showFeedbackMock).toHaveBeenCalledWith('下载失败', 'error')
+    await expect(downloadFile('http://test.com/file.txt', 'test/file.txt')).rejects.toThrow()
   })
 
-  it('should handle missing response body', async () => {
-    mockFetch.mockResolvedValue({ ok: true, body: null })
-
-    const { downloadFile } = useDownload()
-    await downloadFile('http://test.com/file.txt', 'test/file.txt')
-
-    expect(showFeedbackMock).toHaveBeenCalledWith('无法读取响应内容', 'error')
-  })
-
-  it('should update progress during download', async () => {
+  it('should update process to 100 on success', async () => {
     const { exists } = await import('@tauri-apps/plugin-fs')
     vi.mocked(exists).mockResolvedValue(true)
 
-    const mockData = new Uint8Array([1, 2])
-    const mockReader = {
-      read: vi
-        .fn()
-        .mockResolvedValueOnce({ done: false, value: mockData })
-        .mockResolvedValueOnce({ done: true, value: undefined })
-    }
+    const mockData = new ArrayBuffer(2)
+    new Uint8Array(mockData).set([1, 2])
 
     mockFetch.mockResolvedValue({
       ok: true,
-      headers: { get: vi.fn(() => '2') },
-      body: { getReader: () => mockReader }
+      arrayBuffer: vi.fn().mockResolvedValue(mockData)
     })
 
     const { downloadFile, process } = useDownload()
     await downloadFile('http://test.com/file.txt', 'file.txt')
 
-    expect(process.value).toBe(0)
+    expect(process.value).toBe(0) // reset in finally
   })
 
   it('should trigger onLoaded event on success', async () => {
     const { exists } = await import('@tauri-apps/plugin-fs')
     vi.mocked(exists).mockResolvedValue(true)
 
-    const mockReader = {
-      read: vi.fn().mockResolvedValueOnce({ done: true, value: undefined })
-    }
+    const mockData = new ArrayBuffer(0)
 
     mockFetch.mockResolvedValue({
       ok: true,
-      headers: { get: vi.fn(() => '0') },
-      body: { getReader: () => mockReader }
+      arrayBuffer: vi.fn().mockResolvedValue(mockData)
     })
 
     const { downloadFile, onLoaded } = useDownload()

@@ -1,5 +1,6 @@
 // biome-ignore-all lint/suspicious/noConsole: Worker download logging is intentionally kept in this worker.
 /// <reference lib="webworker" />
+import { HttpClient } from '@/utils/HttpClient'
 import { createWorkerLogger } from './workerLogger'
 
 const logger = createWorkerLogger('ImageWorker')
@@ -17,12 +18,7 @@ self.addEventListener('message', async (event: MessageEvent<DownloadRequest>) =>
   }
 
   try {
-    const response = await fetch(url)
-    if (!response.ok || !response.body) {
-      throw new Error(`下载失败: ${response.status} ${response.statusText}`)
-    }
-
-    const buffer = await response.arrayBuffer()
+    const buffer = await HttpClient.downloadBytes(url)
     logger.info(`文件下载成功: ${url}`)
     self.postMessage({ success: true, url, buffer }, [buffer])
   } catch (error) {

@@ -1,6 +1,5 @@
 import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
 import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
-import { sumBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { StoresEnum } from '@/enums'
@@ -8,6 +7,7 @@ import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/Mat
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { FilesMeta } from '@/services/types'
 import { useUserStore } from '@/stores/domains/user/user'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { getFilesMeta } from '@/utils/PathUtil'
 import { isMobile } from '../../../utils/PlatformConstants'
@@ -238,48 +238,8 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
       const filePath = await join(downloadsDir, fileName)
 
       // 下载文件
-      const response = await fetch(fileUrl)
-      if (!response.ok) {
-        throw new Error(`下载失败: ${response.status} ${response.statusText}`)
-      }
-
-      const contentLength = response.headers.get('content-length')
-      const total = contentLength ? parseInt(contentLength, 10) : 0
-      let downloaded = 0
-
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error('无法读取响应流')
-      }
-
-      const chunks: Uint8Array[] = []
-
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        chunks.push(value)
-        downloaded += value.length
-
-        // 更新下载进度
-        if (total > 0) {
-          const progress = Math.round((downloaded / total) * 100)
-          updateFileStatus(fileUrl, {
-            status: 'downloading',
-            progress
-          })
-        }
-      }
-
-      // 合并所有数据块
-      const totalLength = sumBy(chunks, (chunk) => chunk.length)
-      const fileData = new Uint8Array(totalLength)
-      let offset = 0
-
-      for (const chunk of chunks) {
-        fileData.set(chunk, offset)
-        offset += chunk.length
-      }
+      const buffer = await HttpClient.downloadBytes(fileUrl)
+      const fileData = new Uint8Array(buffer)
 
       // 写入文件
       const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource

@@ -8,6 +8,7 @@ import { StoresEnum } from '@/enums'
 import { matrixEmojiService } from '@/services/matrix/messaging/MatrixEmojiService'
 import type { EmojiItem as EmojiItemType } from '@/services/types'
 import { useUserStore } from '@/stores/domains/user/user'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { md5FromString } from '@/utils/Md5Util'
 import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
@@ -63,11 +64,8 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
   const downloadEmoji = async (url: string) => {
     const worker = getEmojiWorker()
     if (!worker) {
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`下载表情失败: ${response.status} ${response.statusText}`)
-      }
-      return new Uint8Array(await response.arrayBuffer())
+      const buffer = await HttpClient.downloadBytes(url)
+      return new Uint8Array(buffer)
     }
 
     return await new Promise<Uint8Array>((resolve, reject) => {
@@ -96,7 +94,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
   }
 
   const resolveEmojiExt = async (url: string) => {
-    const match = url.match(/\\.([a-zA-Z0-9]+)(?:\\?|$)/)
+    const match = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/)
     if (match?.[1]) {
       return match[1].toLowerCase()
     }
@@ -128,13 +126,10 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
   }
 
   const createUploadFileFromUrl = async (url: string) => {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`下载表情失败: ${response.status} ${response.statusText}`)
-    }
+    const buffer = await HttpClient.downloadBytes(url)
+    const blob = new Blob([buffer])
 
-    const blob = await response.blob()
-    const mimeType = await resolveEmojiMimeType(url, blob.type || response.headers.get('content-type'))
+    const mimeType = await resolveEmojiMimeType(url, blob.type)
     const ext = Object.entries(MIME_TYPE_BY_EXTENSION).find(([, value]) => value === mimeType)?.[0] || 'png'
     return new File([blob], `custom_emoji.${ext}`, { type: mimeType })
   }

@@ -87,6 +87,7 @@ describe('EmojiStore', () => {
         ok: true,
         status: 200,
         statusText: 'OK',
+        arrayBuffer: vi.fn().mockResolvedValue(new TextEncoder().encode('emoji').buffer),
         blob: vi.fn().mockResolvedValue(new Blob(['emoji'], { type: 'image/webp' })),
         headers: {
           get: vi.fn(() => 'image/webp')
@@ -101,7 +102,7 @@ describe('EmojiStore', () => {
     const result = await store.addEmoji('https://example.com/emoji.webp')
 
     expect(result).toBe(true)
-    expect(fetch).toHaveBeenCalledWith('https://example.com/emoji.webp')
+    expect(fetch).toHaveBeenCalledWith('https://example.com/emoji.webp', expect.any(Object))
     expect(emojiUpload).toHaveBeenCalledTimes(1)
     const [file, name] = emojiUpload.mock.calls[0]
     expect(file).toBeInstanceOf(File)

@@ -81,6 +81,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import type { VoiceBody } from '@/services/types'
 import { useUserStore } from '@/stores/domains/user/user'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('VoiceMessageEnhanced')
@@ -240,8 +241,7 @@ const handleDownload = async () => {
     const voice = await matrixVoiceService.getVoice(props.roomId, props.messageId)
     const downloadableUrl = voice?.httpUrl || voice?.mxcUrl
     if (downloadableUrl) {
-      const response = await fetch(downloadableUrl)
-      const blob = await response.blob()
+      const buffer = await HttpClient.downloadBytes(downloadableUrl)
 
       const filePath = await save({
         defaultPath: `voice_${props.messageId}.mp3`,
@@ -249,7 +249,6 @@ const handleDownload = async () => {
       })
 
       if (filePath) {
-        const buffer = await blob.arrayBuffer()
         await writeFile(filePath, new Uint8Array(buffer))
         showFeedback(t('voice.download_success'), 'success')
       }
