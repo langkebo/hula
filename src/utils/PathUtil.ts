@@ -3,6 +3,7 @@ import { BaseDirectory, exists, mkdir, readFile, writeFile } from '@tauri-apps/p
 import { type FileTypeResult, fileTypeFromBuffer } from 'file-type'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { FilesMeta } from '@/services/types'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { isMobile } from './PlatformConstants'
@@ -291,11 +292,7 @@ export const ensureModelFile = async (fileName: string, remoteUrl: string): Prom
   const modelExists = await exists(modelRelativePath, { baseDir })
 
   if (!modelExists) {
-    const response = await fetch(remoteUrl)
-    if (!response.ok) {
-      throw new Error(`下载模型失败: ${response.status} ${response.statusText}`)
-    }
-    const buffer = await response.arrayBuffer()
+    const buffer = await HttpClient.downloadBytes(remoteUrl)
     await writeFile(modelRelativePath, new Uint8Array(buffer), {
       baseDir
     })
@@ -334,11 +331,12 @@ export async function detectRemoteFileType(options: {
       const { url, byteLength = 4100 } = options
 
       // 1. 先发送 HEAD 请求，检查文件是否存在及大小
-      const headResponse = await fetch(url, { method: 'HEAD' })
-
-      if (!headResponse.ok) {
+      let headResponse: Response
+      try {
+        headResponse = await HttpClient.head(url)
+      } catch (e) {
         showFeedback('找不到文件', 'error')
-        throw new Error(`文件不存在, 状态: ${headResponse.status}`)
+        throw e
       }
 
       const contentLengthHeader = headResponse.headers.get('content-length')
@@ -369,13 +367,9 @@ export async function detectRemoteFileType(options: {
       const shouldUseRange = resolvedFileSize === null || resolvedFileSize >= byteLength
       const rangeEnd = shouldUseRange ? byteLength - 1 : void 0
 
-      const response = await fetch(url, shouldUseRange ? { headers: { Range: `bytes=0-${rangeEnd}` } } : void 0)
-
-      if (!response.ok) {
-        throw new Error(`获取文件数据失败, 状态: ${response.status}`)
-      }
-
-      const buffer = await response.arrayBuffer()
+      const buffer = await HttpClient.downloadBytes(url, {
+        headers: shouldUseRange ? { Range: `bytes=0-${rangeEnd}` } : undefined
+      })
 
       // 4. 如果 buffer 有数据，尝试解析文件类型
       return buffer.byteLength > 0 ? await fileTypeFromBuffer(buffer) : void 0
@@ -412,10 +406,7 @@ export async function getFile(absolutePath: string) {
 
 export async function getRemoteFileSize(url: string): Promise<number | null> {
   try {
-    const response = await fetch(url, { method: 'HEAD' })
-    if (!response.ok) {
-      return null
-    }
+    const response = await HttpClient.head(url)
     const length = response.headers.get('content-length')
     return length ? Number(length) : null
   } catch (error) {

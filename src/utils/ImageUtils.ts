@@ -1,3 +1,5 @@
+import { HttpClient } from '@/utils/HttpClient'
+
 /**
  * 图片处理工具类
  * 提供图片格式检测、转换、处理等功能
@@ -283,7 +285,7 @@ export const getImageDimensions = async (
         if (includeSize && typeof input === 'string') {
           try {
             // 获取远程图片大小
-            const response = await fetch(input, { method: 'HEAD' })
+            const response = await HttpClient.head(input)
             result.size = parseInt(response.headers.get('content-length') || '0', 10)
           } catch {
             // 如果无法获取大小，使用默认值

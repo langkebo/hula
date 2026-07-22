@@ -1,5 +1,6 @@
 import { Preset, Visibility } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { HttpClient } from '@/utils/HttpClient'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
@@ -302,10 +303,8 @@ export class RoomOperations extends BaseMatrixService {
 
   private async translateViaFallback(text: string, targetLang: string): Promise<string> {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`
-    const response = await fetch(url)
-    if (!response.ok) throw new Error(`翻译请求失败: ${response.status}`)
     // biome-ignore lint/suspicious/noExplicitAny: Google Translate API response shape is unstructured
-    const data = (await response.json()) as any
+    const data = await HttpClient.get<any>(url)
     if (data?.[0]) return data[0].map((item: unknown[]) => item[0]).join('')
     return text
   }

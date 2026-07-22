@@ -27,6 +27,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 import { TimerManager } from '@/utils/TimerManager'
@@ -177,13 +178,8 @@ export const CheckUpdate = defineComponent(() => {
   //let lastVersion: string | null = null
 
   const getCommitLog = async (url: string, isNew = false) => {
-    fetch(url).then((res) => {
-      if (!res.ok) {
-        commitLog.value = [{ message: t('message.check_update.fetch_log_failed'), icon: 'cloudError' }]
-        loading.value = false
-        return
-      }
-      res.json().then(async (data) => {
+    HttpClient.get<{ created_at: string; body: string }>(url)
+      .then(async (data) => {
         isNew ? (newVersionTime.value = data.created_at) : (versionTime.value = data.created_at)
         await nextTick(() => {
           // 使用正则表达式提取 * 号后面的内容
@@ -207,7 +203,10 @@ export const CheckUpdate = defineComponent(() => {
           loading.value = false
         })
       })
-    })
+      .catch(() => {
+        commitLog.value = [{ message: t('message.check_update.fetch_log_failed'), icon: 'cloudError' }]
+        loading.value = false
+      })
   }
 
   const doUpdate = async () => {
