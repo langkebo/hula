@@ -1,8 +1,7 @@
 {
   "generatedAt": "2026-07-20T02:29:19.447Z",
-  "count": 317,
+  "count": 316,
   "violations": [
-    "src/composables/chat/useChatContextMenu.ts::matrix-js-sdk::dynamic",
     "src/composables/messaging/useMessageForward.ts::matrix-js-sdk",
     "src/composables/messaging/useMessageForward.ts::unknown-as-MatrixEvent#1",
     "src/composables/messaging/useMessageForward.ts::unknown-as-MatrixEvent#2",
