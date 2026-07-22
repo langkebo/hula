@@ -18,6 +18,7 @@ const _server = setupMswServer(
       subject_types_supported: ['public']
     })
   }),
+  // MSW handler for exchangeOidcForMatrixToken — still used via HttpClient.post()
   http.post(`${TEST_BASE_URL}/_matrix/client/v3/oidc/token`, async ({ request }) => {
     const body = (await request.json()) as Record<string, string>
     if (body?.grant_type === 'urn:matrix:oidc:grant-type:token-exchange') {
@@ -28,6 +29,8 @@ const _server = setupMswServer(
         refresh_token: 'matrix-refresh'
       })
     }
+    // authorization_code is now handled via SDK OidcManager.token() — this branch
+    // should not be hit in tests that mock the client properly
     return HttpResponse.json({
       access_token: 'oidc-token',
       token_type: 'Bearer',
@@ -40,6 +43,30 @@ const _server = setupMswServer(
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn()
+}))
+
+// Mock HttpClient for exchangeOidcForMatrixToken verification
+const mockHttpClientPost = vi.fn()
+vi.mock('@/utils/HttpClient', () => ({
+  HttpClient: {
+    post: (...args: unknown[]) => mockHttpClientPost(...args),
+    get: vi.fn(),
+    head: vi.fn(),
+    downloadBytes: vi.fn(),
+    streamResponse: vi.fn()
+  },
+  HttpClientError: class extends Error {
+    status: number
+    statusText: string
+    body: string
+    constructor(message: string, status: number, statusText: string, body: string) {
+      super(message)
+      this.name = 'HttpClientError'
+      this.status = status
+      this.statusText = statusText
+      this.body = body
+    }
+  }
 }))
 
 const resetOidcServiceState = () => {
@@ -88,14 +115,15 @@ describe('MatrixOidcService', () => {
     expect(result).toBeNull()
   })
 
-  it('should restore homeserver url from session storage during callback', async () => {
+  it('should return null when getClient returns null', async () => {
     sessionStorage.setItem('oidc_state', 'expected-state')
     sessionStorage.setItem('oidc_code_verifier', 'verifier')
     sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
 
+    // getClient already returns null from beforeEach
     const result = await matrixOidcService.handleCallback('code-123', 'expected-state')
 
-    expect(result?.access_token).toBe('oidc-token')
+    expect(result).toBeNull()
   })
 
   it('should return null user info when runtime client missing', async () => {
@@ -105,5 +133,124 @@ describe('MatrixOidcService', () => {
     const userInfo = await matrixOidcService.getUserInfo()
 
     expect(userInfo).toBeNull()
+  })
+})
+
+describe('MatrixOidcService — handleCallback migrated to SDK OidcManager.token()', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sessionStorage.clear()
+    resetOidcServiceState()
+  })
+
+  it('should call SDK OidcManager.token() with correct authorization_code params', async () => {
+    sessionStorage.setItem('oidc_state', 'test-state')
+    sessionStorage.setItem('oidc_code_verifier', 'test-verifier')
+    sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
+
+    const mockToken = vi.fn().mockResolvedValue({
+      access_token: 'sdk-oidc-token',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      refresh_token: 'sdk-refresh-token'
+    })
+    const mockClient = {
+      getOidcManager: () => ({ token: mockToken })
+    }
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as any)
+
+    const result = await matrixOidcService.handleCallback('code-123', 'test-state')
+
+    expect(mockToken).toHaveBeenCalledWith({
+      grant_type: 'authorization_code',
+      code: 'code-123',
+      redirect_uri: expect.stringContaining('/oidc/callback'),
+      code_verifier: 'test-verifier'
+    })
+    expect(result?.access_token).toBe('sdk-oidc-token')
+    expect(result?.token_type).toBe('Bearer')
+    expect(result?.expires_in).toBe(3600)
+    expect(result?.refresh_token).toBe('sdk-refresh-token')
+  })
+
+  it('should clear session storage after successful token exchange', async () => {
+    sessionStorage.setItem('oidc_state', 'test-state')
+    sessionStorage.setItem('oidc_code_verifier', 'test-verifier')
+    sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
+
+    const mockToken = vi.fn().mockResolvedValue({
+      access_token: 'sdk-oidc-token',
+      token_type: 'Bearer',
+      expires_in: 3600
+    })
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
+      getOidcManager: () => ({ token: mockToken })
+    } as any)
+
+    await matrixOidcService.handleCallback('code-123', 'test-state')
+
+    expect(sessionStorage.getItem('oidc_state')).toBeNull()
+    expect(sessionStorage.getItem('oidc_code_verifier')).toBeNull()
+  })
+
+  it('should return null when OidcManager.token() throws', async () => {
+    sessionStorage.setItem('oidc_state', 'test-state')
+    sessionStorage.setItem('oidc_code_verifier', 'test-verifier')
+    sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
+
+    const mockToken = vi.fn().mockRejectedValue(new Error('Token exchange failed'))
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
+      getOidcManager: () => ({ token: mockToken })
+    } as any)
+
+    const result = await matrixOidcService.handleCallback('code-123', 'test-state')
+
+    expect(result).toBeNull()
+  })
+})
+
+describe('MatrixOidcService — exchangeOidcForMatrixToken migrated to HttpClient.post()', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sessionStorage.clear()
+    resetOidcServiceState()
+    // Reset HttpClient mock for each test
+    vi.mocked(mockHttpClientPost).mockReset()
+  })
+
+  it('should call HttpClient.post() with correct token-exchange params', async () => {
+    sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
+
+    mockHttpClientPost.mockResolvedValue({
+      user_id: '@oidc:example.com',
+      access_token: 'matrix-abc',
+      device_id: 'DEVICE-XYZ',
+      refresh_token: 'matrix-refresh-xyz'
+    })
+
+    const result = await matrixOidcService.exchangeOidcForMatrixToken(
+      'oidc-access-token-value',
+      'oidc-refresh-token-value'
+    )
+
+    expect(mockHttpClientPost).toHaveBeenCalledWith(`${TEST_BASE_URL}/_matrix/client/v3/oidc/token`, {
+      grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
+      oidc_access_token: 'oidc-access-token-value',
+      oidc_refresh_token: 'oidc-refresh-token-value'
+    })
+    expect(result?.user_id).toBe('@oidc:example.com')
+    expect(result?.access_token).toBe('matrix-abc')
+    expect(result?.device_id).toBe('DEVICE-XYZ')
+    expect(result?.refresh_token).toBe('matrix-refresh-xyz')
+  })
+
+  it('should handle HttpClientError from token exchange gracefully', async () => {
+    sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
+
+    mockHttpClientPost.mockRejectedValue(new Error('Network error'))
+
+    const result = await matrixOidcService.exchangeOidcForMatrixToken('oidc-access-token-value')
+
+    expect(result).toBeNull()
   })
 })
