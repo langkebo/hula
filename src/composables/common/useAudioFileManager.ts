@@ -3,6 +3,7 @@ import { join } from '@tauri-apps/api/path'
 import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import type { Ref } from 'vue'
 import type { FilesMeta } from '@/services/types'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { getFilesMeta, getImageCache } from '@/utils/PathUtil'
 import { isMac, isMobile } from '@/utils/PlatformConstants'
@@ -135,8 +136,7 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
    * @returns 下载的 ArrayBuffer 数据
    */
   const fetchAndDownloadAudioFile = async (cachePath: string, fileName: string, url: string): Promise<ArrayBuffer> => {
-    const response = await fetch(url)
-    const arrayBuffer = await response.arrayBuffer()
+    const buffer = await HttpClient.downloadBytes(url)
     const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
     const dirExists = await exists(cachePath, { baseDir })
 
@@ -148,10 +148,10 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
     // 拼接完整路径并保存文件
     const fullPath = await join(cachePath, fileName)
     const file = await create(fullPath, { baseDir })
-    await file.write(new Uint8Array(arrayBuffer))
+    await file.write(new Uint8Array(buffer))
     await file.close()
 
-    return arrayBuffer
+    return buffer
   }
 
   /**

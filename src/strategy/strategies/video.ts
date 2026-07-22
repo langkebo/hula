@@ -139,6 +139,7 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
       const blobUrl = blobUrlMatch[1]
 
       // 3. 使用 fetch 获取 Blob 数据
+      // blob: URL requires browser-native fetch
       try {
         const response = await fetch(blobUrl)
         const blob = await response.blob()

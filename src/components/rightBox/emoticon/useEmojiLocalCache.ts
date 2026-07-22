@@ -7,6 +7,7 @@ import { type ComputedRef, type Ref, ref, watch } from 'vue'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
 import type { useEmojiStore } from '@/stores/domains/chat/emoji'
 import type { useUserStore } from '@/stores/domains/user/user'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { md5FromString } from '@/utils/Md5Util'
 import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
@@ -159,11 +160,8 @@ export const useEmojiLocalCache = ({ isFavoritesView, emojiStore, userStore }: U
   const downloadEmojiFile = async (url: string) => {
     const worker = getEmojiWorker()
     if (!worker) {
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`下载表情失败: ${response.status} ${response.statusText}`)
-      }
-      return new Uint8Array(await response.arrayBuffer())
+      const buffer = await HttpClient.downloadBytes(url)
+      return new Uint8Array(buffer)
     }
 
     return await new Promise<Uint8Array>((resolve, reject) => {
