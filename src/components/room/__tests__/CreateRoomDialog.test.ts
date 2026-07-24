@@ -3,15 +3,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import CreateRoomDialog from '../CreateRoomDialog.vue'
 
-const { validateMock, createGroupRoomMock, getServerDomainMock, uploadFileMock, loggerErrorMock, showFeedbackMock } =
-  vi.hoisted(() => ({
-    validateMock: vi.fn(),
-    createGroupRoomMock: vi.fn(),
-    getServerDomainMock: vi.fn(),
-    uploadFileMock: vi.fn(),
-    loggerErrorMock: vi.fn(),
-    showFeedbackMock: vi.fn()
-  }))
+const {
+  validateMock,
+  createGroupRoomMock,
+  getServerDomainMock,
+  uploadFileMock,
+  loggerErrorMock,
+  showFeedbackMock,
+  inviteUserMock
+} = vi.hoisted(() => ({
+  validateMock: vi.fn(),
+  createGroupRoomMock: vi.fn(),
+  getServerDomainMock: vi.fn(),
+  uploadFileMock: vi.fn(),
+  loggerErrorMock: vi.fn(),
+  showFeedbackMock: vi.fn(),
+  inviteUserMock: vi.fn()
+}))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -41,7 +49,8 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 
 vi.mock('@/services/matrix/room/ActionFacade', () => ({
   matrixRoomActionFacade: {
-    createGroupRoom: createGroupRoomMock
+    createGroupRoom: createGroupRoomMock,
+    inviteUser: inviteUserMock
   }
 }))
 
@@ -253,6 +262,7 @@ type DialogVM = {
     joinRule: string
   }
   creating: boolean
+  stage: 'create' | 'invite'
 }
 
 const getVm = (wrapper: ReturnType<typeof mountDialog>) => wrapper.vm as unknown as DialogVM
@@ -273,50 +283,40 @@ describe('CreateRoomDialog', () => {
     createGroupRoomMock.mockResolvedValue({ roomId: '!new:example.com' })
     getServerDomainMock.mockResolvedValue('example.com')
     uploadFileMock.mockResolvedValue({ contentUri: 'mxc://server/avatar' })
+    inviteUserMock.mockResolvedValue(undefined)
   })
 
-  it('显示公开房间别名时使用服务层提供的 homeserver 域名', async () => {
-    const wrapper = mountDialog()
+  it('打开弹窗时加载 homeserver 域名', async () => {
+    mountDialog()
 
     await flushPromises()
 
-    getVm(wrapper).formData.roomType = 'room'
-    await nextTick()
-
     expect(getServerDomainMock).toHaveBeenCalledTimes(1)
-    expect(wrapper.text()).toContain(':example.com')
   })
 
-  it('支持通过表单事件更新公开房间相关字段并响应弹窗显隐事件', async () => {
+  it('支持通过表单事件更新名称和主题并响应弹窗显隐事件', async () => {
     const wrapper = mountDialog()
 
     await flushPromises()
 
     const inputs = wrapper.findAll('[data-test="n-input"]')
+    await inputs[0].setValue('Room Name')
     await inputs[1].setValue('Updated Topic')
-    await inputs[2].setValue('updated-alias')
-    await wrapper.get('[data-test="history-select"]').trigger('click')
     await wrapper.get('[data-test="modal-update-show"]').trigger('click')
     await nextTick()
 
-    expect(getVm(wrapper).formData.roomType).toBe('room')
+    expect(getVm(wrapper).formData.name).toBe('Room Name')
     expect(getVm(wrapper).formData.topic).toBe('Updated Topic')
-    expect(getVm(wrapper).formData.alias).toBe('updated-alias')
-    expect(getVm(wrapper).formData.historyVisibility).toBe('joined')
     expect(wrapper.emitted('update:visible')).toEqual([[false]])
   })
 
   it('获取 homeserver 域名失败时回退到 matrix.org', async () => {
     getServerDomainMock.mockRejectedValueOnce(new Error('domain failed'))
-    const wrapper = mountDialog()
+    mountDialog()
 
     await flushPromises()
 
-    getVm(wrapper).formData.roomType = 'room'
-    await nextTick()
-
     expect(loggerErrorMock).toHaveBeenCalled()
-    expect(wrapper.text()).toContain(':matrix.org')
   })
 
   it('上传头像成功后写入 avatarUrl', async () => {
@@ -342,7 +342,7 @@ describe('CreateRoomDialog', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('room.create.avatar_upload_failed', 'error')
   })
 
-  it('创建公开加密房间时通过服务层组装参数并在成功后重置表单', async () => {
+  it('创建公开加密房间时通过服务层组装参数并在成功后切换到邀请阶段', async () => {
     const wrapper = mountDialog()
 
     await flushPromises()
@@ -373,11 +373,47 @@ describe('CreateRoomDialog', () => {
     })
     expect(showFeedbackMock).toHaveBeenCalledWith('room.create.success', 'success')
     expect(wrapper.emitted('created')).toEqual([['!new:example.com']])
+    // 创建后切换到邀请阶段，不立即关闭弹窗
+    expect(getVm(wrapper).stage).toBe('invite')
+  })
+
+  it('默认加密开启且房间类型为私密', async () => {
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    expect(getVm(wrapper).formData.isEncrypted).toBe(true)
+    expect(getVm(wrapper).formData.roomType).toBe('private_room')
+  })
+
+  it('邀请阶段可以跳过并关闭弹窗', async () => {
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    getVm(wrapper).formData.name = 'Test Room'
+    await nextTick()
+
+    await getCreateButton(wrapper).trigger('click')
+    await flushPromises()
+
+    expect(getVm(wrapper).stage).toBe('invite')
+
+    const skipButton = wrapper.findAll('button').find((btn) => btn.text().includes('room.create.invite_skip'))
+    expect(skipButton).toBeTruthy()
+    await skipButton!.trigger('click')
+
     expect(wrapper.emitted('update:visible')).toEqual([[false]])
     expect(getVm(wrapper).formData.name).toBe('')
-    expect(getVm(wrapper).formData.alias).toBe('')
-    expect(getVm(wrapper).formData.isEncrypted).toBe(false)
-    expect(getVm(wrapper).formData.historyVisibility).toBe('shared')
+    expect(getVm(wrapper).stage).toBe('create')
+  })
+
+  it('创建阶段不显示高级设置（加密/历史/加入规则）', async () => {
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    // 高级设置字段不应在创建阶段显示
+    const text = wrapper.text()
+    expect(text).not.toContain('room.create.history')
+    expect(text).not.toContain('room.create.join_rule')
   })
 
   it('表单校验失败时不会调用创建接口', async () => {
@@ -427,6 +463,7 @@ describe('CreateRoomDialog', () => {
 
     expect(getVm(wrapper).formData.name).toBe('')
     expect(getVm(wrapper).formData.alias).toBe('')
-    expect(getVm(wrapper).formData.roomType).toBe('room')
+    expect(getVm(wrapper).formData.roomType).toBe('private_room')
+    expect(getVm(wrapper).stage).toBe('create')
   })
 })

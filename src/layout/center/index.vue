@@ -7,7 +7,11 @@
     class="resizable select-none flex flex-col border-r-(1px solid [--hula-border-layout-divider])"
     :style="centerStyle">
     <!-- 分隔条 -->
-    <div v-show="!shrinkStatus" class="resize-handle transition-all duration-600 ease-in-out" @mousedown="initDrag">
+    <div
+      v-show="!shrinkStatus"
+      class="resize-handle transition-all duration-600 ease-in-out"
+      style="touch-action: none"
+      @pointerdown="initDrag">
       <div :class="{ 'opacity-100': isDragging }" class="transition-all duration-600 ease-in-out opacity-0 drag-icon">
         <div
           style="border-radius: 8px 0 0 8px"
@@ -49,12 +53,14 @@ const timerManager = useTimerManager()
 
 const settingStore = useSettingStore()
 const appWindow = WebviewWindow.getCurrent()
-/** 设置最小宽度 */
+/** 布局最小宽度（用于 shrink 阈值判断） */
 const minWidth = 160
+/** 拖拽最小宽度（符合 UI-UX 方案要求 240-360px） */
+const DRAG_MIN_WIDTH = 240
 /** 设置最大宽度 */
-const maxWidth = 300
-/** 初始化宽度 */
-const initWidth = ref(250)
+const maxWidth = 360
+/** 初始化宽度（从 settingStore 恢复，跨重启保持） */
+const initWidth = ref(settingStore.panelWidth)
 /**! 使用(vueUse函数获取)视口宽度 */
 const { width } = useWindowSize()
 /** 是否拖拽 */
@@ -159,15 +165,16 @@ watchEffect(() => {
   }
 })
 
-/** 定义一个函数，在鼠标拖动时调用 */
-const doDrag = (e: MouseEvent) => {
+/** 定义一个函数，在指针拖动时调用（兼容鼠标和触摸） */
+const doDrag = (e: PointerEvent) => {
   // 使用 requestAnimationFrame 来处理动画，确保动画在下一帧渲染前执行
   requestAnimationFrame(() => {
     // 计算新的宽度
     const newWidth = startWidth.value + e.clientX - startX.value
     // 如果新宽度不等于最大宽度，则更新宽度值
     if (newWidth !== maxWidth) {
-      initWidth.value = clamp(newWidth, minWidth, maxWidth) // 使用 clamp 函数限制宽度值在最小值和最大值之间
+      // 拖拽范围限制为 240-360px（符合 UI-UX 方案要求）
+      initWidth.value = clamp(newWidth, DRAG_MIN_WIDTH, maxWidth)
     }
   })
 }
@@ -177,24 +184,29 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max) // 使用 Math.min 和 Math.max 函数来限制数值范围
 }
 
-const initDrag = (e: MouseEvent) => {
+const initDrag = (e: PointerEvent) => {
   if (!isDrag.value) return
   startX.value = e.clientX
   startWidth.value = initWidth.value
   isDragging.value = true
-  document.addEventListener('mousemove', doDrag, false)
-  document.addEventListener('mouseup', stopDrag, false)
+  document.addEventListener('pointermove', doDrag, false)
+  document.addEventListener('pointerup', stopDrag, false)
   // 防止拖拽时选中文本
   document.body.style.userSelect = 'none'
+  // 拖拽时全局 cursor 样式（符合 UI-UX 方案要求）
+  document.body.style.cursor = 'col-resize'
   e.preventDefault()
 }
 
 const stopDrag = () => {
-  // 恢复文本选择功能
+  // 恢复文本选择功能和 cursor 样式
   document.body.style.userSelect = ''
-  document.removeEventListener('mousemove', doDrag, false)
-  document.removeEventListener('mouseup', stopDrag, false)
+  document.body.style.cursor = ''
+  document.removeEventListener('pointermove', doDrag, false)
+  document.removeEventListener('pointerup', stopDrag, false)
   isDragging.value = false
+  // 持久化宽度到 settingStore（跨重启保持）
+  settingStore.setPanelWidth(initWidth.value)
   timerManager.setTimeout(() => {
     // 移除 hover 样式
     const resizeHandle = document.querySelector('.resize-handle') as HTMLElement
@@ -211,9 +223,10 @@ onMounted(async () => {
 onUnmounted(() => {
   // 清理拖拽相关的事件监听器和样式
   if (isDragging.value) {
-    document.removeEventListener('mousemove', doDrag, false)
-    document.removeEventListener('mouseup', stopDrag, false)
+    document.removeEventListener('pointermove', doDrag, false)
+    document.removeEventListener('pointerup', stopDrag, false)
     document.body.style.userSelect = ''
+    document.body.style.cursor = ''
     isDragging.value = false
   }
   timerManager.clearAll()

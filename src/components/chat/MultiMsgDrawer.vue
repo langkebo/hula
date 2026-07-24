@@ -179,7 +179,7 @@ watch(
   transition: background-color 0.2s ease;
 
   &:hover {
-    background: color-mix(in srgb, #6366f1 5%, var(--hula-surface-panel-muted));
+    background: color-mix(in srgb, var(--hula-color-indigo-500) 5%, var(--hula-surface-panel-muted));
   }
 }
 </style>

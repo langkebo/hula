@@ -55,7 +55,7 @@ const props = withDefaults(
     showHistory: true,
     placeholder: '',
     dir: 'ltr',
-    debounceMs: 240
+    debounceMs: 300
   }
 )
 

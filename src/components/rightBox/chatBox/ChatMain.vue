@@ -70,21 +70,12 @@
           </div>
 
           <!-- 空状态 -->
-          <div
+          <EmptyState
             v-if="isMainViewReady && chatStore.chatMessageList.length === 0"
-            class="flex-center flex-col flex-1 gap-16px py-60px select-none">
-            <n-icon size="64" color="var(--hula-text-tertiary)">
-              <svg><use href="#chat" /></svg>
-            </n-icon>
-            <n-flex vertical align="center" :size="8">
-              <span class="text-[var(--text-base)] text-[--hula-text-secondary]">
-                {{ t('home.chat_main.empty_title') }}
-              </span>
-              <span class="text-[var(--text-sm)] text-[--hula-text-tertiary]">
-                {{ t('home.chat_main.empty_desc') }}
-              </span>
-            </n-flex>
-          </div>
+            illustration="no-conversations"
+            :title="t('home.chat_main.empty_title')"
+            :description="t('home.chat_main.empty_desc')"
+            class="flex-1 py-60px" />
           <DynamicScroller
             v-if="isMainViewReady"
             class="scroller flex-1"
@@ -293,6 +284,7 @@ const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/Threa
 const EventReportDialog = defineAsyncComponent(() => import('@/components/moderation/EventReportDialog.vue'))
 
 import E2EEBanner from '@/components/chat/E2EEBanner.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { usePopover } from '@/composables/common/usePopover'

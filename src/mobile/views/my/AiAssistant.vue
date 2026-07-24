@@ -392,7 +392,7 @@ const suggestions = [
     title: 'ai_assistant.suggestions.code',
     desc: 'ai_assistant.suggestions.code_desc',
     icon: 'mdi:code-tags',
-    color: '#722ed1',
+    color: 'var(--hula-color-purple-500)',
     prompt: t('ai_assistant.suggestions.code_prompt')
   },
   {
@@ -400,7 +400,7 @@ const suggestions = [
     title: 'ai_assistant.suggestions.chat',
     desc: 'ai_assistant.suggestions.chat_desc',
     icon: 'mdi:chat-outline',
-    color: '#fa8c16',
+    color: 'var(--hula-color-warning-500)',
     prompt: t('ai_assistant.suggestions.chat_prompt')
   }
 ]

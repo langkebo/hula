@@ -139,23 +139,37 @@
 
       <n-divider style="margin: 0" />
 
-      <n-spin :show="isCapabilityLoading || isLoading">
+      <n-spin :show="isCapabilityLoading">
         <n-scrollbar style="height: calc(100vh - 200px)">
-          <n-empty v-if="showSearchEmptyState && !isLoading" :description="searchEmptyDescription" class="mt-40px">
-            <template #extra>
-              <n-flex vertical align="center" :size="12">
-                <span class="friend-list-view__state-title">{{ t('friend.search.empty_title') }}</span>
-                <n-button size="small" @click="handleClearActiveSearch">
-                  {{ t('friend.search.clear_current') }}
-                </n-button>
-              </n-flex>
+          <SkeletonFriendList v-if="isLoading" :rows="6" />
+          <EmptyState
+            v-else-if="showSearchEmptyState"
+            illustration="no-results"
+            :title="t('friend.search.empty_title')"
+            :description="searchEmptyDescription"
+            class="mt-40px">
+            <template #actions>
+              <n-button size="small" @click="handleClearActiveSearch">
+                {{ t('friend.search.clear_current') }}
+              </n-button>
             </template>
-          </n-empty>
-          <n-empty v-else-if="showEmptyState && !isLoading" :description="t('friend.list.empty')" class="mt-40px" />
+          </EmptyState>
+          <EmptyState
+            v-else-if="showEmptyState"
+            illustration="no-friends"
+            :title="t('friend.list.empty')"
+            class="mt-40px">
+            <template #actions>
+              <n-button size="small" type="primary" @click="showAddFriend = true">
+                {{ t('menu.add_contact') }}
+              </n-button>
+            </template>
+          </EmptyState>
           <div v-else class="friend-items" role="list" :aria-label="t('friend.list.friend_list_label')">
             <button
               v-for="friend in filteredFriends"
               :key="friend.userId"
+              v-ripple
               type="button"
               role="listitem"
               class="friend-item"
@@ -172,7 +186,10 @@
                 </n-badge>
                 <n-flex vertical :size="4" class="flex-1 truncate">
                   <span class="text-[var(--text-sm)] truncate">
-                    {{ friend.remark || friend.displayName || friend.name }}
+                    <template v-for="(seg, i) in getHighlightSegments(friend)" :key="i">
+                      <mark v-if="seg.matched" class="friend-item__highlight">{{ seg.text }}</mark>
+                      <template v-else>{{ seg.text }}</template>
+                    </template>
                   </span>
                   <n-flex align="center" :size="4">
                     <n-badge
@@ -208,6 +225,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import ContextMenu from '@/components/common/ContextMenu.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import SkeletonFriendList from '@/components/common/SkeletonFriendList.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
@@ -225,6 +244,7 @@ import FriendDetailDrawer from './FriendDetailDrawer.vue'
 import FriendRequestDialog from './FriendRequestDialog.vue'
 import FriendSearchBar from './FriendSearchBar.vue'
 import { resolveFriendListViewState } from './friendListViewState'
+import { highlightSearchMatch } from './highlightSearchMatch'
 
 const FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'hula-friend-search-history'
 
@@ -430,6 +450,11 @@ const getLastSeenText = (friend: MatrixContact): string => {
   }
   return t('friend.list.offline')
 }
+
+const getFriendDisplayName = (friend: MatrixContact): string => friend.remark || friend.displayName || friend.name
+
+const getHighlightSegments = (friend: MatrixContact) =>
+  highlightSearchMatch(getFriendDisplayName(friend), appliedSearchValue.value)
 
 const handleFilterChange = (filter: FriendStatus | 'all') => {
   currentFilter.value = filter
@@ -696,6 +721,8 @@ onMounted(async () => {
   text-align: left;
   color: inherit;
   font-family: inherit;
+  position: relative;
+  overflow: hidden;
 
   &:hover {
     background: var(--hula-surface-list-hover);
@@ -708,5 +735,13 @@ onMounted(async () => {
 
 .friend-item__presence-text {
   color: var(--hula-text-tertiary);
+}
+
+.friend-item__highlight {
+  background: var(--hula-color-primary-100);
+  color: var(--hula-color-primary-600);
+  border-radius: 2px;
+  padding: 0 1px;
+  font-weight: var(--hula-font-weight-medium);
 }
 </style>

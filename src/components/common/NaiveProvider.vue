@@ -350,6 +350,22 @@ const NaiveProviderContent = defineComponent({
 
 .n-message {
   zoom: var(--page-scale, 1);
+  /* 统一使用品牌动效令牌 */
+  --n-bezier: var(--hula-motion-ease-standard);
+}
+
+/* P1-3.3: 统一 Toast 出场动画为品牌动效（280ms + 品牌缓动） */
+.n-message-wrapper.fade-in-height-expand-transition-enter-active,
+.n-message-wrapper.fade-in-height-expand-transition-leave-active {
+  transition-duration: var(--hula-motion-duration-overlay);
+}
+
+.n-message-wrapper.fade-in-height-expand-transition-enter-active {
+  transition-timing-function: var(--hula-motion-ease-enter);
+}
+
+.n-message-wrapper.fade-in-height-expand-transition-leave-active {
+  transition-timing-function: var(--hula-motion-ease-exit);
 }
 
 .n-date-picker-panel {

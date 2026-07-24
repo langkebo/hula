@@ -175,7 +175,7 @@
                             class="grayscale"
                             :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE }"
                             :size="26"
-                            :color="'#ffffff'"
+                            :color="'var(--hula-text-inverse)'"
                             :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                             :src="AvatarUtils.getAvatarUrl(item.avatar)"
                             @load="userLoadedMap[item.uid] = true"

@@ -40,7 +40,7 @@ describe('FriendSearchBar', () => {
 
     const input = wrapper.find('input')
     await input.setValue('alice')
-    vi.advanceTimersByTime(240)
+    vi.advanceTimersByTime(300)
 
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['alice'])
     expect(wrapper.emitted('search')?.[0]).toEqual(['alice'])
@@ -124,7 +124,30 @@ describe('FriendSearchBar', () => {
 
     expect(wrapper.emitted('search')).toEqual([['alice']])
 
-    vi.advanceTimersByTime(240)
+    vi.advanceTimersByTime(300)
     expect(wrapper.emitted('search')).toEqual([['alice']])
+  })
+
+  it('默认防抖 300ms：240ms 时不触发，300ms 后触发 search', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(FriendSearchBar, {
+      props: {
+        modelValue: '',
+        placeholder: 'Search friends'
+      },
+      global: {
+        stubs: globalStubs
+      }
+    })
+
+    const input = wrapper.find('input')
+    await input.setValue('alice')
+    vi.advanceTimersByTime(240)
+
+    expect(wrapper.emitted('search')).toBeUndefined()
+
+    vi.advanceTimersByTime(60)
+
+    expect(wrapper.emitted('search')?.[0]).toEqual(['alice'])
   })
 })

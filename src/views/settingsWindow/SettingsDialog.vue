@@ -23,7 +23,8 @@
             :placeholder="t('setting.dialog.search_placeholder')"
             :aria-label="t('setting.dialog.search_aria_label')"
             size="small"
-            class="settings-search">
+            class="settings-search"
+            @keydown.enter="handleSearchEnter">
             <template #prefix>
               <n-icon :size="16">
                 <Icon icon="mdi:magnify" />
@@ -67,7 +68,7 @@ import {
   createSettingsDirtyRegistry,
   provideSettingsDirtyRegistry
 } from '@/composables/settings/useSettingsDirtyRegistry'
-import { useSettingsShell } from '@/composables/settings/useSettingsShell'
+import { findFirstMatchingSettingsTab, useSettingsShell } from '@/composables/settings/useSettingsShell'
 import { usePlatform } from '@/composables/usePlatform'
 import {
   getSettingsTabLabel,
@@ -170,6 +171,29 @@ async function handleClose() {
   settingsDialogStore.closeDialog()
 }
 
+async function handleSearchEnter() {
+  const matchId = findFirstMatchingSettingsTab(searchQuery.value, isDesktop, t, resolveSearchKeywords)
+  if (!matchId) return
+  await handleTabChange(matchId)
+}
+
+function focusSettingsSearch() {
+  const el = document.querySelector('.settings-search') as HTMLElement | null
+  if (!el) return
+  if (el.tagName === 'INPUT') {
+    el.focus()
+  } else {
+    el.querySelector('input')?.focus()
+  }
+}
+
+function handleShortcutKey(event: KeyboardEvent) {
+  if (event.ctrlKey && event.key === ',') {
+    event.preventDefault()
+    focusSettingsSearch()
+  }
+}
+
 function handleBeforeUnload(event: BeforeUnloadEvent) {
   if (!hasDirtyTabs.value) return
   event.preventDefault()
@@ -178,10 +202,12 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
 
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)
+  window.addEventListener('keydown', handleShortcutKey)
 })
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  window.removeEventListener('keydown', handleShortcutKey)
 })
 </script>
 

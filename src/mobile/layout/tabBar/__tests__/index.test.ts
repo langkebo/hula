@@ -31,22 +31,26 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-describe('Mobile TabBar', () => {
-  it('registers dynamic as a formal mobile navigation entry', () => {
-    const wrapper = mount(TabBar, {
-      global: {
-        stubs: {
-          RouterLink: {
-            props: ['to'],
-            template: '<a :data-to="to"><slot /></a>'
-          },
-          'van-badge': {
-            props: ['content', 'max', 'offset', 'color'],
-            template: '<div><slot /></div>'
-          }
+const mountTabBar = (props: Record<string, unknown> = {}) =>
+  mount(TabBar, {
+    props,
+    global: {
+      stubs: {
+        RouterLink: {
+          props: ['to'],
+          template: '<a :data-to="to"><slot /></a>'
+        },
+        'van-badge': {
+          props: ['content', 'max', 'offset', 'color'],
+          template: '<div><slot /></div>'
         }
       }
-    })
+    }
+  })
+
+describe('Mobile TabBar', () => {
+  it('registers dynamic as a formal mobile navigation entry', () => {
+    const wrapper = mountTabBar()
 
     const links = wrapper.findAll('[data-to]')
     expect(links).toHaveLength(5)
@@ -58,5 +62,21 @@ describe('Mobile TabBar', () => {
       '/mobile/my'
     ])
     expect(wrapper.text()).toContain('空间')
+  })
+
+  it('renders horizontal layout by default (portrait)', () => {
+    const wrapper = mountTabBar()
+    const wrap = wrapper.find('.tab-bar-wrap')
+    expect(wrap.classes()).not.toContain('tab-bar-wrap--vertical')
+    const nav = wrapper.find('.tab-bar')
+    expect(nav.classes()).not.toContain('flex-col')
+  })
+
+  it('renders vertical layout when vertical prop is true (landscape)', () => {
+    const wrapper = mountTabBar({ vertical: true })
+    const wrap = wrapper.find('.tab-bar-wrap')
+    expect(wrap.classes()).toContain('tab-bar-wrap--vertical')
+    const nav = wrapper.find('.tab-bar')
+    expect(nav.classes()).toContain('flex-col')
   })
 })

@@ -1,7 +1,69 @@
 <template>
   <div class="empty-state" :class="[variantClass, { 'empty-state--compact': compact }]" role="status">
     <div class="empty-state__icon" :class="{ 'empty-state__icon--compact': compact }">
-      <Icon :icon="icon" />
+      <!-- 内联 SVG 插图（优先于 iconify 图标） -->
+      <svg
+        v-if="illustration === 'no-conversations'"
+        data-illustration="no-conversations"
+        width="48"
+        height="48"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="var(--hula-text-quaternary)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M8 10h32a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H20l-8 6v-6H8a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2z" />
+        <path d="M16 20h16M16 26h10" />
+      </svg>
+      <svg
+        v-else-if="illustration === 'no-friends'"
+        data-illustration="no-friends"
+        width="48"
+        height="48"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="var(--hula-text-quaternary)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
+        <circle cx="18" cy="16" r="6" />
+        <path d="M8 38c0-6 4.5-10 10-10s10 4 10 10" />
+        <circle cx="34" cy="18" r="5" />
+        <path d="M30 33c3-1.5 5-4 5-7" />
+      </svg>
+      <svg
+        v-else-if="illustration === 'no-spaces'"
+        data-illustration="no-spaces"
+        width="48"
+        height="48"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="var(--hula-text-quaternary)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
+        <rect x="6" y="6" width="14" height="14" rx="2" />
+        <rect x="28" y="6" width="14" height="14" rx="2" />
+        <rect x="6" y="28" width="14" height="14" rx="2" />
+        <rect x="28" y="28" width="14" height="14" rx="2" />
+      </svg>
+      <svg
+        v-else-if="illustration === 'no-results'"
+        data-illustration="no-results"
+        width="48"
+        height="48"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="var(--hula-text-quaternary)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
+        <circle cx="20" cy="20" r="12" />
+        <line x1="29" y1="29" x2="40" y2="40" />
+        <path d="M15 20h10M20 15v10" />
+      </svg>
+      <Icon v-else :icon="icon" />
     </div>
     <p v-if="title" class="empty-state__title">{{ title }}</p>
     <p v-if="description" class="empty-state__description">{{ description }}</p>
@@ -23,13 +85,16 @@ const props = withDefaults(
     description?: string
     compact?: boolean
     variant?: 'default' | 'welcome' | 'subtle'
+    /** 内联 SVG 插图类型（优先于 icon 属性） */
+    illustration?: 'no-conversations' | 'no-friends' | 'no-spaces' | 'no-results'
   }>(),
   {
     icon: 'mdi:inbox-outline',
     title: '',
     description: '',
     compact: false,
-    variant: 'default'
+    variant: 'default',
+    illustration: undefined
   }
 )
 

@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { useSettingsTabDirty } from '@/composables/settings/useSettingsDirtyRegistry'
 import { useSettingsDialogStore } from '@/stores/domains/settings/settingsDialog'
@@ -92,7 +92,8 @@ vi.mock('vue-i18n', () => ({
         return `${params?.label || '当前设置'}存在未保存的更改，继续后这些内容将会丢失。`
       }
       return translationMap[key] ?? key
-    }
+    },
+    tm: () => []
   })
 }))
 
@@ -169,6 +170,10 @@ describe('SettingsDialog', () => {
     vi.clearAllMocks()
   })
 
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
   function mountDialog() {
     const pinia = createPinia()
     setActivePinia(pinia)
@@ -177,6 +182,7 @@ describe('SettingsDialog', () => {
     store.openDialog('account')
 
     const wrapper = mount(SettingsDialog, {
+      attachTo: document.body,
       global: {
         plugins: [pinia]
       }
@@ -335,5 +341,35 @@ describe('SettingsDialog', () => {
     expect(beforeUnloadEvent.returnValue).toBe('')
 
     wrapper.unmount()
+  })
+
+  it('Enter key in search jumps to the first matching tab', async () => {
+    const { wrapper, store } = mountDialog()
+
+    await flushPromises()
+
+    const searchInput = wrapper.find('.n-input')
+    await searchInput.setValue('通知')
+    await searchInput.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    // account tab is dirty → confirm the switch
+    dialogWarningMock.mock.calls[0][0].onPositiveClick()
+    await flushPromises()
+
+    expect(store.activeTab).toBe('notifications')
+  })
+
+  it('Ctrl+, focuses the search input', async () => {
+    const { wrapper } = mountDialog()
+
+    await flushPromises()
+
+    const searchInput = wrapper.find('.n-input').element as HTMLInputElement
+    expect(searchInput).toBeTruthy()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true }))
+
+    expect(document.activeElement).toBe(searchInput)
   })
 })

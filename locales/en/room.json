@@ -33,7 +33,14 @@
     "join_rule_restricted": "Restricted",
     "success": "Room created successfully",
     "failed": "Failed to create room",
-    "creating": "Creating..."
+    "creating": "Creating...",
+    "invite_title": "Invite Members",
+    "invite_desc": "Enter user IDs to invite members to this room, or skip this step",
+    "invite_placeholder": "Enter user IDs, separated by commas",
+    "invite_skip": "Skip",
+    "invite_send": "Invite",
+    "invite_success": "Invitations sent successfully",
+    "invite_failed": "Failed to invite members"
   },
   "join": {
     "title": "Join Room",
