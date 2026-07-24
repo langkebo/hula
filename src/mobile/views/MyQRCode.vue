@@ -72,12 +72,15 @@ onMounted(async () => {
   if (qrCanvasRef.value) {
     try {
       const QRCode = (await import('qrcode')).default
+      const rootStyle = getComputedStyle(document.documentElement)
+      const darkColor = rootStyle.getPropertyValue('--hula-brand').trim() || '#14997E'
+      const lightColor = rootStyle.getPropertyValue('--hula-text-inverse').trim() || '#FFFFFF'
       await QRCode.toCanvas(qrCanvasRef.value, qrCodeValue, {
         width: 250,
         margin: 2,
         color: {
-          dark: '#14997E',
-          light: '#FFFFFF'
+          dark: darkColor,
+          light: lightColor
         }
       })
     } catch (err) {

@@ -1,7 +1,11 @@
 <template>
   <mobile-layout :title="t('admin.logs.title')" show-back>
     <div class="mobile-admin-server-logs">
-      <van-notice-bar :scrollable="false" mode="closeable" color="#2a5f9e" background="#eef6ff">
+      <van-notice-bar
+        :scrollable="false"
+        mode="closeable"
+        color="var(--hula-admin-notice-text)"
+        background="var(--hula-admin-notice-bg)">
         服务器日志页已改为状态面板，直接展示后端已实现的服务状态数据。
       </van-notice-bar>
 

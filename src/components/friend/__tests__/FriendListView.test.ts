@@ -357,8 +357,55 @@ describe('FriendListView', () => {
     await wrapper.get('[data-test="friend-search-submit"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.get('[data-test="NEmpty"]').attributes('data-description')).toBe('friend.search.empty_description')
+    expect(wrapper.find('[data-illustration="no-results"]').exists()).toBe(true)
+    expect(wrapper.find('.empty-state__description').text()).toBe('friend.search.empty_description')
     expect(wrapper.text()).toContain('friend.search.empty_title')
+  })
+
+  it('搜索结果中匹配文本被高亮标记', async () => {
+    const wrapper = mount(FriendListView)
+    await flushPromises()
+
+    expect(wrapper.find('.friend-item__highlight').exists()).toBe(false)
+
+    await wrapper.get('[data-test="friend-search-input"]').setValue('Ali')
+    await wrapper.get('[data-test="friend-search-submit"]').trigger('click')
+    await flushPromises()
+
+    const highlight = wrapper.find('.friend-item__highlight')
+    expect(highlight.exists()).toBe(true)
+    expect(highlight.text()).toBe('Ali')
+  })
+
+  it('清空搜索框后恢复完整好友列表', async () => {
+    const wrapper = mount(FriendListView)
+    await flushPromises()
+
+    expect(wrapper.findAll('[role="listitem"]')).toHaveLength(2)
+
+    await wrapper.get('[data-test="friend-search-input"]').setValue('Bob')
+    await wrapper.get('[data-test="friend-search-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('[role="listitem"]')).toHaveLength(1)
+
+    await wrapper.get('[data-test="friend-search-input"]').setValue('')
+    await wrapper.get('[data-test="friend-search-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('[role="listitem"]')).toHaveLength(2)
+    expect(wrapper.find('.friend-item__highlight').exists()).toBe(false)
+  })
+
+  it('loading 状态下显示骨架屏替代 spinner', async () => {
+    contactStoreMock.isLoading = true
+    const wrapper = mount(FriendListView)
+    await flushPromises()
+
+    expect(wrapper.findComponent({ name: 'SkeletonFriendList' }).exists()).toBe(true)
+    expect(wrapper.findAll('[role="listitem"]')).toHaveLength(0)
+
+    contactStoreMock.isLoading = false
   })
 
   it('announces search progress and result feedback through live region', async () => {

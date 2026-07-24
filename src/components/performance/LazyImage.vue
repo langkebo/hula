@@ -20,7 +20,7 @@
       @click="handlePreview" />
 
     <div v-if="error" class="image-error">
-      <n-icon size="24" color="#e74c3c">
+      <n-icon size="24" color="var(--hula-color-danger-500)">
         <svg><use href="#error" /></svg>
       </n-icon>
       <span>{{ t('image.load_failed') }}</span>

@@ -7,6 +7,7 @@ import App from '@/App.vue'
 import { AppException } from '@/common/exception.ts'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import vResize from '@/directives/v-resize'
+import vRipple from '@/directives/v-ripple'
 import { vSafeHtml } from '@/directives/v-safe-html'
 import vSlide from '@/directives/v-slide.ts'
 import router from '@/router'
@@ -114,6 +115,7 @@ app
   .directive('resize', vResize)
   .directive('slide', vSlide)
   .directive('safe-html', vSafeHtml)
+  .directive('ripple', vRipple)
 
 // Expose pinia for E2E tests and mark readiness
 window.pinia = pinia
