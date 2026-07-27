@@ -18,19 +18,11 @@ import { matrixCryptoService } from './MatrixCryptoService'
 
 const logger = createLogger('E2EEManager')
 
-export interface E2EEStatus {
+interface E2EEStatus {
   isInitialized: boolean
   isCryptoEnabled: boolean
   isCrossSigningReady: boolean
   isKeyBackupEnabled: boolean
-}
-
-export interface E2EEDetailedStatus {
-  isInitialized: boolean
-  cryptoStatus: { crossSigningReady: boolean; keyBackupEnabled: boolean } | null
-  crossSigningStatus: CrossSigningStatusResult
-  encryptionAvailable: boolean
-  healthStatus: CryptoHealthStatus
 }
 
 class MatrixE2EEManager {
@@ -208,5 +200,4 @@ class MatrixE2EEManager {
 }
 
 export const matrixE2EEBootstrapService = new MatrixE2EEManager()
-export const matrixE2EEManager = matrixE2EEBootstrapService
-export default matrixE2EEBootstrapService
+const _matrixE2EEManager = matrixE2EEBootstrapService

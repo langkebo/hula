@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import type { useSessionStore } from './session'
 import { type MessageType, pageSize } from './types'
@@ -151,7 +152,8 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
   }
 
   const changeRoom = async () => {
-    const currentWindowLabel = WebviewWindow.getCurrent()
+    const currentWindowLabel = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+    if (!currentWindowLabel) return
     if (currentWindowLabel.label !== 'home' && currentWindowLabel.label !== 'mobile-home') {
       return
     }

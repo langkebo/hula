@@ -30,7 +30,7 @@ export interface AdminFeatureFlagInput {
   targets?: AdminFeatureFlagTarget[]
 }
 
-export interface UseAdminMaintenanceResult {
+interface UseAdminMaintenanceResult {
   backups: Ref<Array<Record<string, unknown>>>
   experimentalFeatures: Ref<Record<string, unknown>>
   featureFlags: Ref<AdminFeatureFlag[]>

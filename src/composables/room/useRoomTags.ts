@@ -12,12 +12,12 @@ const MAX_TAG_LENGTH = 32
 /** 推荐标签快捷选项,在 UI 中显示作为快捷添加入口 */
 export const SUGGESTED_TAGS: string[] = ['favorite', 'work', 'personal', 'todo', 'important']
 
-export interface RoomTag {
+interface RoomTag {
   name: string
   order?: number
 }
 
-export interface UseRoomTagsOptions {
+interface UseRoomTagsOptions {
   /** 房间 ID,支持 ref / getter / 字符串 */
   roomId: MaybeRefOrGetter<string | null>
 }

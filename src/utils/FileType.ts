@@ -23,12 +23,12 @@ export const isPathUploadFile = (file: UploadFile): file is PathUploadFile => {
 /**
  * 支持的视频扩展名（统一定义）
  */
-export const SUPPORTED_VIDEO_EXTENSIONS = ['mp4', 'mov', 'avi', 'wmv', 'mkv', 'flv', 'webm', 'm4v'] as const
+const SUPPORTED_VIDEO_EXTENSIONS = ['mp4', 'mov', 'avi', 'wmv', 'mkv', 'flv', 'webm', 'm4v'] as const
 
 /**
  * 支持的音频扩展名
  */
-export const SUPPORTED_AUDIO_EXTENSIONS = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'] as const
+const SUPPORTED_AUDIO_EXTENSIONS = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'] as const
 
 /**
  * 支持的图片扩展名
@@ -38,7 +38,7 @@ export const SUPPORTED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 
 /**
  * 视频MIME类型映射
  */
-export const VIDEO_MIME_TYPE_MAP: Record<string, string> = {
+const VIDEO_MIME_TYPE_MAP: Record<string, string> = {
   mp4: 'video/mp4',
   mov: 'video/quicktime',
   avi: 'video/x-msvideo',
@@ -52,7 +52,7 @@ export const VIDEO_MIME_TYPE_MAP: Record<string, string> = {
 /**
  * 音频MIME类型映射
  */
-export const AUDIO_MIME_TYPE_MAP: Record<string, string> = {
+const AUDIO_MIME_TYPE_MAP: Record<string, string> = {
   mp3: 'audio/mpeg',
   wav: 'audio/wav',
   m4a: 'audio/mp4',
@@ -64,7 +64,7 @@ export const AUDIO_MIME_TYPE_MAP: Record<string, string> = {
 /**
  * 图片MIME类型映射
  */
-export const IMAGE_MIME_TYPE_MAP: Record<string, string> = {
+const IMAGE_MIME_TYPE_MAP: Record<string, string> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   png: 'image/png',

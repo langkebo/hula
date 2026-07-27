@@ -1,7 +1,7 @@
 import type { Room, RoomMember } from 'matrix-js-sdk'
 import { matrixRoomQueryService } from './QueryService'
 
-export interface MatrixRoomQueryFacade {
+interface MatrixRoomQueryFacade {
   getRooms(): Promise<Room[]>
   getRoom(roomId: string): Promise<Room>
   getRoom(roomId: string, throwOnError: true): Promise<Room>

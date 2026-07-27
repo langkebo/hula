@@ -118,6 +118,7 @@ import { useImageViewer as useImageViewerHook } from '@/composables/common/useIm
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useImageViewer as useImageViewerStore } from '@/stores/domains/widget/imageViewer'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { saveFileAttachmentAs } from '@/utils/AttachmentSaver'
 import { extractFileName } from '@/utils/Formatting'
 
@@ -127,12 +128,12 @@ const { downloadFile } = useDownload()
 const imageViewerStore = useImageViewerStore()
 const chatStore = useChatStore()
 const { downloadOriginalByIndex } = useImageViewerHook()
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 
 // 初始化数据
 const imageList = ref<string[]>([])
 
-const currentLabel = WebviewWindow.getCurrent().label
+const currentLabel = hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''
 const currentIndex = ref(0)
 const scale = ref(1)
 const rotation = ref(0)
@@ -367,7 +368,7 @@ const handleKeydown = (e: KeyboardEvent) => {
       }
       break
     case 'Escape':
-      appWindow.close()
+      appWindow?.close()
       break
   }
 }
@@ -386,16 +387,18 @@ onMounted(async () => {
   // 显示窗口
   await getCurrentWebviewWindow().show()
 
-  await addListener(
-    appWindow.listen<{ index: number }>('update-image', (event) => {
-      const { index } = event.payload
-      imageList.value = imageViewerStore.imageList
-      syncCurrentIndex(index)
-      // 重置图片状态
-      resetImage(true)
-    }),
-    'update-image'
-  )
+  if (appWindow) {
+    await addListener(
+      appWindow.listen<{ index: number }>('update-image', (event) => {
+        const { index } = event.payload
+        imageList.value = imageViewerStore.imageList
+        syncCurrentIndex(index)
+        // 重置图片状态
+        resetImage(true)
+      }),
+      'update-image'
+    )
+  }
 
   if (imageViewerStore.isSingleMode) {
     // 单图模式下不需要设置 imageList 和 currentIndex

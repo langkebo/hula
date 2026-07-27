@@ -22,6 +22,16 @@ vi.mock('matrix-js-sdk', () => ({
   SlidingSync: class {
     start = vi.fn()
     stop = vi.fn()
+    on = vi.fn()
+    off = vi.fn()
+  },
+  SlidingSyncEvent: {
+    RoomData: 'SlidingSync.RoomData',
+    Lifecycle: 'SlidingSync.Lifecycle'
+  },
+  SlidingSyncState: {
+    RequestFinished: 'FINISHED',
+    Complete: 'COMPLETE'
   },
   PendingEventOrdering: {
     Detached: 'detached'
@@ -60,7 +70,7 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
   }
 
   type MatrixClientServiceInternals = {
-    client: MatrixClient | null
+    connectionManager: { setClient: (c: unknown) => void; getClient: () => unknown }
     slidingSyncInstance: SlidingSync | null
     config: MatrixClientConfig | null
     observedClient: MatrixClient | null
@@ -77,7 +87,7 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(matrixClientService as unknown as MatrixClientServiceInternals).client = null
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).connectionManager.setClient(null)
     ;(matrixClientService as unknown as MatrixClientServiceInternals).slidingSyncInstance = null
     ;(matrixClientService as unknown as MatrixClientServiceInternals).config = null
     ;(matrixClientService as unknown as MatrixClientServiceInternals).observedClient = null

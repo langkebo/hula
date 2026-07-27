@@ -5,7 +5,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('UploadService')
 
-export interface OssTokenResponse {
+interface OssTokenResponse {
   uploadUrl: string
   downloadUrl: string
   objectKey?: string // 添加 objectKey 属性
@@ -16,7 +16,7 @@ export interface OssTokenResponse {
   region?: string
 }
 
-export interface UploadProviderResponse {
+interface UploadProviderResponse {
   provider: 'default' | 'minio'
 }
 
@@ -75,4 +75,3 @@ class UploadService {
 }
 
 export const uploadService = new UploadService()
-export default uploadService

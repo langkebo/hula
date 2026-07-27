@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-export interface MatrixSessionSnapshot {
+interface MatrixSessionSnapshot {
   userId: string | null
   deviceId: string | null
   accessToken: string | null
@@ -12,7 +12,7 @@ const deviceId = ref<string | null>(null)
 const accessToken = ref<string | null>(null)
 const homeserverUrl = ref<string | null>(null)
 
-export function useMatrixSessionState() {
+function _useMatrixSessionState() {
   return {
     userId,
     deviceId,
@@ -47,7 +47,7 @@ export function patchMatrixSessionSnapshot(snapshot: Partial<MatrixSessionSnapsh
   return getMatrixSessionSnapshot()
 }
 
-export function resetMatrixSessionSnapshotForTests(): void {
+function _resetMatrixSessionSnapshotForTests(): void {
   userId.value = null
   deviceId.value = null
   accessToken.value = null

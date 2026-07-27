@@ -129,18 +129,16 @@ import { useWindow } from '@/composables/common/useWindow'
 import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { TauriCommand } from '@/enums'
 import router from '@/router'
-import { saveMatrixSessionEndpointConfig } from '@/services/backend/config'
+import { resolveMatrixRuntimeEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { getEnhancedFingerprint } from '@/services/fingerprint'
 import {
-  matrixQrLoginBridgeService,
-  type QrCodeResult,
-  type QrLoginStatusResult
-} from '@/services/matrix/auth/MatrixQrLoginBridgeService'
-import { matrixQrLoginService, type QRLoginResult } from '@/services/matrix/auth/MatrixQrLoginService'
+  matrixQrLoginSdkService,
+  type NewDeviceLoginResult,
+  type QrLoginStatus
+} from '@/services/matrix/auth/MatrixQrLoginSdkService'
 import { loginCommand } from '@/services/tauriCommand'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useTimerManager } from '@/utils/TimerManager'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
 
 const globalStore = useGlobalStore()
@@ -158,20 +156,14 @@ const loadText = computed(() => t(`login.qr.load_text.${loadTextKey.value}`))
 const loading = ref(true)
 const refreshing = ref(false) // 是否正在刷新
 const qrCodeValue = ref('')
-const qrCodeResp = ref()
-const bridgeQrData = ref<QrCodeResult | null>(null)
-const useBridge = ref(false)
 const qrCodeColor = ref('var(--hula-text-primary)')
 const qrCodeBgColor = ref('var(--hula-surface-panel)')
 const qrCodeType = ref('canvas' as const)
 const qrCodeIcon = ref('/logo.png')
 const qrErrorCorrectionLevel = ref('H' as const)
-const timerManager = useTimerManager()
-const pollInterval = ref<number | null>(null)
-const pollStartAt = ref<number | null>(null)
-const MAX_POLL_DURATION = 5 * 60 * 1000 // 5分钟超时，防止长时间占用内存
-const pollingRequesting = ref(false)
 const confirmedHandled = ref(false)
+/** Active reciprocation task — awaited to detect login completion. */
+let loginTask: Promise<NewDeviceLoginResult> | null = null
 
 const scanStatus = ref<{
   status: 'error' | 'success' | 'auth'
@@ -191,6 +183,35 @@ const loginContext: ThirdPartyLoginContext = {
 }
 const thirdPartyExtraDisabled = computed(() => loading.value)
 
+// Subscribe to MSC4108 status changes for UI updates.
+matrixQrLoginSdkService.onStatusChange((status: QrLoginStatus) => {
+  if (confirmedHandled.value) return
+  switch (status) {
+    case 'waiting_scan':
+      loadTextKey.value = 'scan_hint'
+      loading.value = false
+      refreshing.value = false
+      break
+    case 'waiting_confirm':
+      handleAuth()
+      break
+    case 'success':
+      // handled by handleConfirmed() after the Promise resolves
+      break
+    case 'expired':
+      handleError('expired')
+      break
+    case 'failed':
+      handleError('general_error')
+      break
+    case 'cancelled':
+      handleError('general_error')
+      break
+    default:
+      break
+  }
+})
+
 /** 刷新二维码 */
 const refreshQRCode = () => {
   if (scanStatus.value.status !== 'error' && scanStatus.value.status !== 'auth') {
@@ -207,52 +228,31 @@ const refreshQRCode = () => {
     show: false
   }
 
-  // 先清除之前的轮询
-  if (pollInterval.value) {
-    clearInterval(pollInterval.value)
-    pollInterval.value = null
-  }
-  pollStartAt.value = null
-  pollingRequesting.value = false
   confirmedHandled.value = false
   // 重新生成二维码
   handleQRCodeLogin()
 }
 
-const clearPolling = () => {
-  if (pollInterval.value) {
-    timerManager.clearInterval(pollInterval.value)
-    pollInterval.value = null
-  }
-  pollStartAt.value = null
-}
-
-const handleConfirmed = async (res: QRLoginResult) => {
+const handleConfirmed = async (result: NewDeviceLoginResult) => {
   if (confirmedHandled.value) {
     return
   }
   confirmedHandled.value = true
-  clearPolling()
   try {
-    if (!res.data) {
-      throw new Error('missing data in QR login result')
-    }
     await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
       req: {
-        uid: res.data.uid,
-        token: res.data.token,
-        refreshToken: res.data.refreshToken || ''
+        uid: result.user_id,
+        token: result.access_token,
+        refreshToken: result.refresh_token || ''
       }
     })
 
-    if (res.data.homeserverUrl) {
-      saveMatrixSessionEndpointConfig({
-        homeserverUrl: res.data.homeserverUrl,
-        identityServerUrl: res.data.identityServerUrl || ''
-      })
-    }
+    saveMatrixSessionEndpointConfig({
+      homeserverUrl: result.homeserver_url,
+      identityServerUrl: ''
+    })
 
-    await loginCommand({ uid: res.data.uid }).then(() => {
+    await loginCommand({ uid: result.user_id }).then(() => {
       scanStatus.value = {
         status: 'success',
         icon: 'success',
@@ -262,100 +262,23 @@ const handleConfirmed = async (res: QRLoginResult) => {
       loadTextKey.value = 'login'
     })
   } catch (error) {
-    logger.error('获取用户详情失败:', error)
+    logger.error('QR 登录失败:', error)
     confirmedHandled.value = false
     handleError('fetch_failed')
   }
 }
 
-const startPolling = () => {
-  if (pollInterval.value) {
-    timerManager.clearInterval(pollInterval.value)
-  }
-  pollStartAt.value = Date.now()
-  pollInterval.value = timerManager.setInterval(async () => {
-    if (pollStartAt.value && Date.now() - pollStartAt.value > MAX_POLL_DURATION) {
-      clearPolling()
-      handleError('expired')
-      return
-    }
-
-    if (pollingRequesting.value || confirmedHandled.value) {
-      return
-    }
-    pollingRequesting.value = true
-    try {
-      if (useBridge.value && bridgeQrData.value) {
-        const res = await matrixQrLoginBridgeService.getQrStatus(bridgeQrData.value.transactionId)
-        switch (res.status) {
-          case 'pending':
-            break
-          case 'confirmed':
-            await handleBridgeConfirmed(res)
-            break
-          case 'expired':
-          case 'invalidated':
-            clearPolling()
-            handleError('expired')
-            break
-          default:
-            break
-        }
-      } else {
-        const res = await matrixQrLoginService.checkStatus()
-        if (!res) {
-          return
-        }
-        switch (res.status) {
-          case 'PENDING':
-            break
-          case 'SCANNED':
-            handleAuth()
-            break
-          case 'CONFIRMED':
-            await handleConfirmed(res)
-            break
-          case 'EXPIRED':
-            clearPolling()
-            handleError('expired')
-            break
-          default:
-            break
-        }
-      }
-    } catch (error) {
-      if (!confirmedHandled.value) {
-        handleQRCodeLogin()
-      }
-    } finally {
-      if (!confirmedHandled.value) {
-        pollingRequesting.value = false
-      }
-    }
-  }, 2000)
-}
-
-/** 处理二维码显示和刷新 */
+/** 处理二维码显示和刷新 — MSC4108 Login 模式 */
 const handleQRCodeLogin = async () => {
   try {
-    // 优先尝试 Bridge Service（SDK 后端交互）
-    try {
-      const qrResult = await matrixQrLoginBridgeService.getQrCode()
-      await matrixQrLoginBridgeService.startQrLogin(qrResult.transactionId)
-      bridgeQrData.value = qrResult
-      useBridge.value = true
-      qrCodeValue.value = JSON.stringify({
-        type: 'login',
-        transactionId: qrResult.transactionId,
-        challenge: qrResult.challenge
-      })
-    } catch {
-      // Bridge 不可用时降级到 localStorage 模式
-      useBridge.value = false
-      bridgeQrData.value = null
-      qrCodeResp.value = await matrixQrLoginService.generateQR()
-      qrCodeValue.value = JSON.stringify({ type: 'login', qrId: qrCodeResp.value.qrId })
+    const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
+    if (!homeserverUrl) {
+      throw new Error('Homeserver URL not configured')
     }
+
+    // Step 1-3: Generate QR code via MSC4108 (new device / Login mode).
+    const qrData = await matrixQrLoginSdkService.generateQrCodeAsNewDevice(homeserverUrl)
+    qrCodeValue.value = qrData.qrCodeBase64
 
     loadTextKey.value = 'scan_hint'
     loading.value = false
@@ -366,12 +289,16 @@ const handleQRCodeLogin = async () => {
       scanStatus.value.textKey = ''
     }
 
-    // 启动轮询
-    confirmedHandled.value = false
-    pollingRequesting.value = false
-    startPolling()
+    // Step 5-17: Wait for existing device to scan + reciprocate.
+    // This Promise resolves on successful login; intermediate UI updates
+    // arrive via the status listener registered above.
+    loginTask = matrixQrLoginSdkService.waitForReciprocationAndLogin('HuLa Desktop')
+    const result = await loginTask
+    await handleConfirmed(result)
   } catch (error) {
-    handleError('generate_fail')
+    if (scanStatus.value.status !== 'auth') {
+      handleError('generate_fail')
+    }
   }
 }
 
@@ -388,38 +315,11 @@ const handleError = (key: ScanStatusTextKey = 'general_error') => {
 }
 
 onUnmounted(() => {
-  // 组件卸载时清除轮询
-  clearPolling()
+  // Cancel any in-flight MSC4108 session when the component unmounts.
+  matrixQrLoginSdkService.cancel().catch((err) => {
+    logger.warn('Failed to cancel MSC4108 session on unmount', err)
+  })
 })
-
-/** Bridge Service 确认处理 */
-const handleBridgeConfirmed = async (res: QrLoginStatusResult) => {
-  if (confirmedHandled.value) {
-    return
-  }
-  confirmedHandled.value = true
-  clearPolling()
-  try {
-    if (!res.userId) {
-      throw new Error('missing userId in QR login result')
-    }
-
-    const uid = res.userId
-    await loginCommand({ uid }).then(() => {
-      scanStatus.value = {
-        status: 'success',
-        icon: 'success',
-        textKey: 'success',
-        show: true
-      }
-      loadTextKey.value = 'login'
-    })
-  } catch (error) {
-    logger.error('Bridge QR 登录失败:', error)
-    confirmedHandled.value = false
-    handleError('fetch_failed')
-  }
-}
 
 /** 处理授权场景 */
 const handleAuth = () => {

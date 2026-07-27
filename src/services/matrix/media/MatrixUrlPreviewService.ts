@@ -52,7 +52,7 @@ export function getDomain(url: string): string {
   }
 }
 
-export interface UrlPreviewParams {
+interface UrlPreviewParams {
   url: string
   timestamp?: number
 }

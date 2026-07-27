@@ -2,18 +2,16 @@ import { type Ref, ref } from 'vue'
 import { matrixWidgetService, type Widget } from '@/services/matrix/widget/MatrixWidgetService'
 import { createLogger } from '@/utils/Logger'
 
-export type { Widget } from '@/services/matrix/widget/MatrixWidgetService'
-
 const logger = createLogger('useWidgets')
 
-export interface CreateWidgetInput {
+interface CreateWidgetInput {
   widgetType: string
   url: string
   name: string
   data?: Record<string, unknown>
 }
 
-export interface UseWidgetsResult {
+interface UseWidgetsResult {
   widgets: Ref<Widget[]>
   loading: Ref<boolean>
   mutating: Ref<boolean>

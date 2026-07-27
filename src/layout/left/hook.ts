@@ -163,6 +163,12 @@ export const leftHook = () => {
           <number>size?.minWidth,
           <number>size?.minHeight
         )
+        // 非 Tauri 环境下 createWebviewWindow 返回 null，回退到路由跳转
+        if (!webview) {
+          activeUrl.value = url
+          router.push(`/${url}`)
+          return
+        }
         openWindowsList.value.add(url)
 
         const unlisten = await webview?.onCloseRequested(() => {

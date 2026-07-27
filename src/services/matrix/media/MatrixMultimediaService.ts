@@ -31,28 +31,13 @@ const MIME_EXT_MAP: Record<string, string> = {
   wasm: 'application/wasm'
 }
 
-export interface VoiceMessageConfig {
+interface VoiceMessageConfig {
   maxDuration: number
   sampleRate: number
   mimeType: string
 }
 
-export interface RecordingState {
-  isRecording: boolean
-  duration: number
-  audioLevel: number
-}
-
-export interface MediaDownload {
-  mxcUrl: string
-  filename: string
-  mimetype: string
-  size: number
-  progress: number
-  status: 'pending' | 'downloading' | 'completed' | 'error'
-}
-
-export interface ImageThumbnail {
+interface ImageThumbnail {
   url: string
   width: number
   height: number
@@ -472,4 +457,3 @@ class MatrixMultimediaService extends BaseMatrixService {
 }
 
 export const matrixMultimediaService = new MatrixMultimediaService()
-export default matrixMultimediaService

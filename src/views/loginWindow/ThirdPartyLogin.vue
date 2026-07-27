@@ -8,10 +8,14 @@
     <div
       v-for="item in visibleSsoOptions"
       :key="item.key"
+      role="button"
+      tabindex="0"
       :title="item.label"
       :aria-label="item.label"
+      :aria-disabled="ssoDisabled"
       :disabled="ssoDisabled"
-      @click="item.action()">
+      @click="item.action()"
+      @keydown.enter="item.action()">
       <n-tooltip trigger="hover" :delay="200">
         <template #trigger>
           <div class="size-22px flex-center cursor-pointer rounded-4px" :class="item.style">

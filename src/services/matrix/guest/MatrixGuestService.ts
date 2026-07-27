@@ -237,5 +237,4 @@ class MatrixGuestService extends BaseMatrixService {
   }
 }
 
-export const matrixGuestService = new MatrixGuestService()
-export default matrixGuestService
+const _matrixGuestService = new MatrixGuestService()

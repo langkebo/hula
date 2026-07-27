@@ -35,12 +35,12 @@ interface PersistedIntegrationState {
   availableIds: string[]
 }
 
-export interface IntegrationCatalog {
+interface IntegrationCatalog {
   installed: Integration[]
   available: IntegrationCatalogItem[]
 }
 
-export interface UseIntegrationsResult {
+interface UseIntegrationsResult {
   loading: Ref<boolean>
   integrationsEnabled: Ref<boolean>
   searchQuery: Ref<string>
@@ -57,7 +57,7 @@ export interface UseIntegrationsResult {
   searchAvailableIntegrations: (query?: string) => number
 }
 
-export interface CreateDefaultIntegrationsCatalogOptions {
+interface CreateDefaultIntegrationsCatalogOptions {
   translate?: (key: string) => string
 }
 

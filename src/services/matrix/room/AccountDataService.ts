@@ -7,8 +7,8 @@ import { matrixRoomSummaryService, type RoomSummary } from './MatrixRoomSummaryS
 
 const logger = createLogger('AccountDataService')
 
-export type AIConnection = AIConnectionInfo
-export type MCPTool = McpTool
+type AIConnection = AIConnectionInfo
+type MCPTool = McpTool
 
 /**
  * Room account-data / reporting / retention domain service.
@@ -24,7 +24,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest(
         'GET',
-        `/user/${encodeURIComponent(client.getUserId()!)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+        MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA(client.getUserId()!, roomId, eventType)
       )
       return result as Record<string, unknown>
     } catch (err) {
@@ -38,7 +38,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       await client.http.authedRequest(
         'PUT',
-        `/user/${encodeURIComponent(client.getUserId()!)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`,
+        MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA(client.getUserId()!, roomId, eventType),
         undefined,
         content
       )

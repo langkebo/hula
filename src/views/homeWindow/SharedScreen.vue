@@ -1,6 +1,6 @@
 <template>
   <div class="size-full bg-[--right-bg-color]">
-    <ActionBar :shrink="false" :current-label="WebviewWindow.getCurrent().label" />
+    <ActionBar :shrink="false" :current-label="currentWindowLabel" />
 
     <div class="flex flex-col gap-4 text-center">
       <div>
@@ -13,11 +13,13 @@
 import { emit } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useTauriListener } from '@/composables/common/useTauriListener'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SharedScreen')
 
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+const currentWindowLabel = computed(() => appWindow?.label ?? '')
 const { addListener } = useTauriListener()
 const video = ref<HTMLVideoElement>()
 const peerConnection = new RTCPeerConnection()
@@ -35,6 +37,7 @@ onBeforeUnmount(async () => {
 })
 
 onMounted(async () => {
+  if (!appWindow) return
   await addListener(
     appWindow.listen('offer', async (event) => {
       logger.debug('offer payload', event.payload)

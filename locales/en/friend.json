@@ -109,6 +109,7 @@
     "send_message": "Send Message",
     "encrypted_chat": "Encrypted Chat",
     "secret_chat": "Set as Secret Friend",
+    "open_in_new_window": "Open in New Window",
     "set_note": "Set Note",
     "set_display_name": "Set Display Name",
     "set_favorite": "Set as Favorite",

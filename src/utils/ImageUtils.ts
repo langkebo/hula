@@ -120,7 +120,7 @@ export const imageUrlToUint8Array = async (imageUrl: string): Promise<Uint8Array
  * @param height 图片高度
  * @param filename 文件名（可选）
  */
-export const rgbaToFile = async (
+const rgbaToFile = async (
   imageData: Uint8Array,
   width: number,
   height: number,
@@ -182,7 +182,7 @@ export const rgbaToFile = async (
  * @param width 图片宽度
  * @param height 图片高度
  */
-export const rgbaToUint8Array = async (imageData: Uint8Array, width: number, height: number): Promise<Uint8Array> => {
+const _rgbaToUint8Array = async (imageData: Uint8Array, width: number, height: number): Promise<Uint8Array> => {
   return new Promise((resolve, reject) => {
     try {
       // 创建 Canvas
@@ -356,7 +356,7 @@ export const processClipboardImage = async (clipboardImage: ClipboardImage): Pro
 /**
  * 压缩选项
  */
-export interface CompressOptions {
+interface CompressOptions {
   maxWidth?: number
   maxHeight?: number
   quality?: number
@@ -366,7 +366,7 @@ export interface CompressOptions {
 /**
  * 压缩结果
  */
-export interface CompressResult {
+interface CompressResult {
   blob: Blob
   width: number
   height: number

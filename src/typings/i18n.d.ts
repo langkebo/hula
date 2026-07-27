@@ -999,7 +999,8 @@ export type I18nKeys = {
       "start_meeting": "发起会议",
       "screen_share": "屏幕共享",
       "group_qr_code": "群二维码",
-      "more_options": "更多选项"
+      "more_options": "更多选项",
+      "open_in_new_window": "在新窗口打开"
     },
     "burn": {
       "message_destroyed": "此消息已销毁",
@@ -1078,6 +1079,9 @@ export type I18nKeys = {
     "no_more_data": "没有更多数据了",
     "notFound": "页面不存在或已被移除",
     "goHome": "返回首页",
+    "draft_restored": "已恢复上次编辑内容",
+    "just_now": "刚刚",
+    "minutes_ago": "{count} 分钟前",
     "thread": {
       "title": "消息线程",
       "replies": "条回复",
@@ -1861,6 +1865,12 @@ export type I18nKeys = {
         "enabled": "取消置顶",
         "disabled": "置顶"
       },
+      "proxy_settings": "代理设置",
+      "close": "关闭",
+      "minimize": "最小化",
+      "maximize": "最大化",
+      "restore": "恢复",
+      "shrink": "收缩",
       "close_prompt": {
         "title": "最小化还是直接退出程序?",
         "hide_to_tray": "最小化到系统托盘",
@@ -1912,6 +1922,7 @@ export type I18nKeys = {
     "offline": "网络已断开，请检查网络连接",
     "reconnecting": "正在重新连接...",
     "reconnecting_attempt": "正在重新连接 ({count}/{max})...",
+    "syncing": "正在同步历史消息...",
     "failed": "连接失败，请重试",
     "retry": "重试",
     "diagnose": "运行自检",
@@ -2566,6 +2577,7 @@ export type I18nKeys = {
       "send_message": "发消息",
       "encrypted_chat": "加密聊天",
       "secret_chat": "设为私密好友",
+      "open_in_new_window": "在新窗口打开",
       "set_note": "设置备注",
       "set_display_name": "设置显示名",
       "set_favorite": "设为收藏",
@@ -2746,6 +2758,8 @@ export type I18nKeys = {
         "copy": "复制",
         "copy_success": "复制成功 {account}",
         "info_missing": "无法获取群聊信息",
+        "name_label": "房间名称",
+        "edit_name": "编辑房间名称",
         "remark": {
           "label": "群备注",
           "placeholder": "请输入群聊备注",
@@ -2771,7 +2785,7 @@ export type I18nKeys = {
         }
       },
       "actions": {
-        "message": "发信息"
+        "message": "进入聊天"
       },
       "window": {
         "image_viewer": "图片查看"
@@ -2984,6 +2998,10 @@ export type I18nKeys = {
       "roles": {
         "owner": "群主",
         "admin": "管理员"
+      },
+      "empty": {
+        "no_chat_selected": "未选择会话",
+        "select_to_start": "选择一个会话或发起新聊天"
       }
     },
     "about": {
@@ -3307,7 +3325,10 @@ export type I18nKeys = {
     "status": {
       "logging_in": "登录中...",
       "success_redirect": "登录成功，正在跳转...",
-      "service_disconnected": "服务异常断开"
+      "service_disconnected": "服务异常断开",
+      "timeout": "登录超时，请检查网络后重试",
+      "failed": "登录失败",
+      "retry": "重试登录"
     },
     "qr": {
       "overlay": {
@@ -4009,6 +4030,7 @@ export type I18nKeys = {
       "delete_success": "已删除选中消息",
       "forward_success": "消息转发成功",
       "forward_failed": "消息转发失败",
+      "forward_partial_failed": "{failed}/{total} 个目标转发失败",
       "non_text_message": "［非文本消息］"
     },
     "forward": {
@@ -5195,6 +5217,16 @@ export type I18nKeys = {
     "failed": "举报失败，请重试"
   },
   "room": {
+    "context": {
+      "enter_chat": "进入聊天",
+      "video_call": "视频通话",
+      "open_in_new_window": "在新窗口打开",
+      "invite_members": "邀请成员",
+      "edit_room": "修改房间信息",
+      "set_visibility": "设置可见性",
+      "leave_room": "离开房间",
+      "forget_room": "忘记房间"
+    },
     "create": {
       "title": "创建房间",
       "create": "创建房间",
@@ -5229,7 +5261,14 @@ export type I18nKeys = {
       "join_rule_restricted": "受限加入",
       "success": "创建成功",
       "failed": "创建失败",
-      "creating": "正在创建..."
+      "creating": "正在创建...",
+      "invite_title": "邀请成员",
+      "invite_desc": "输入用户 ID 邀请成员加入房间，或跳过此步骤",
+      "invite_placeholder": "输入用户 ID，多个用逗号分隔",
+      "invite_skip": "跳过",
+      "invite_send": "邀请",
+      "invite_success": "邀请已发送",
+      "invite_failed": "邀请失败"
     },
     "join": {
       "title": "加入房间",
@@ -5272,7 +5311,49 @@ export type I18nKeys = {
       "update_success": "房间设置已更新",
       "update_failed": "房间设置更新失败",
       "parent_spaces": "所属空间",
-      "no_parent_spaces": "不在任何空间中"
+      "no_parent_spaces": "不在任何空间中",
+      "name_placeholder": "输入房间名称",
+      "name_saved": "房间名称已更新",
+      "name_error": "房间名称更新失败",
+      "members_title": "成员列表",
+      "no_members": "暂无成员",
+      "invite_placeholder": "输入用户 ID，例如 @user:server",
+      "invite_button": "邀请",
+      "invite_user_required": "请输入用户 ID",
+      "invite_success": "邀请已发送",
+      "invite_failed": "邀请失败",
+      "kick_member": "踢出成员",
+      "kick_confirm": "确定要将该成员踢出房间吗？",
+      "kick_success": "已踢出成员",
+      "kick_failed": "踢出成员失败",
+      "ban_member": "封禁成员",
+      "ban_confirm": "确定要封禁该成员吗？封禁后该用户将无法重新加入房间。",
+      "ban_success": "已封禁成员",
+      "ban_failed": "封禁成员失败",
+      "unban_member": "解封成员",
+      "unban_success": "已解封成员",
+      "unban_failed": "解封成员失败",
+      "role_creator": "创建者",
+      "role_moderator": "管理员",
+      "status_banned": "已封禁",
+      "banned_members": "已封禁成员",
+      "visibility_label": "房间可见性",
+      "visibility_public": "公开",
+      "visibility_private": "私密",
+      "visibility_updated": "可见性已更新",
+      "visibility_update_failed": "可见性更新失败",
+      "avatar_updated": "房间头像已更新",
+      "avatar_update_failed": "房间头像更新失败",
+      "leave_room": "离开房间",
+      "forget_room": "忘记房间",
+      "leave_confirm_title": "离开房间",
+      "leave_confirm_content": "确定要离开该房间吗？离开后你将不再接收该房间的消息。",
+      "forget_confirm_title": "忘记房间",
+      "forget_confirm_content": "确定要忘记该房间吗？此操作将从历史记录中移除该房间。",
+      "leave_success": "已离开房间",
+      "leave_failed": "离开房间失败",
+      "forget_success": "已忘记房间",
+      "forget_failed": "忘记房间失败"
     },
     "invitation": {
       "accept": "接受",
@@ -5444,15 +5525,29 @@ export type I18nKeys = {
     "load_failed": "加载标签失败"
   },
   "search": {
-    "title": "搜索",
-    "placeholder": "搜索消息、房间或用户...",
+    "title": "全局搜索",
+    "placeholder": "搜索好友、房间、消息",
     "all": "全部",
     "messages": "消息",
     "rooms": "房间",
     "users": "用户",
-    "no_results": "未找到相关结果",
+    "no_results": "未找到 \"{query}\" 相关结果",
     "recent": "最近搜索",
-    "clear": "清除"
+    "clear": "清除",
+    "searching": "搜索中...",
+    "result_count": "共 {count} 条结果",
+    "empty_hint": "输入关键词开始搜索",
+    "error": "搜索失败，请重试",
+    "section_users": "好友/用户",
+    "section_rooms": "房间",
+    "section_messages": "消息",
+    "section_spaces": "空间",
+    "room_members": "{count} 人",
+    "space_members": "{count} 人",
+    "space_children": "{count} 个房间",
+    "join_space": "加入",
+    "join_success": "已加入空间",
+    "join_failed": "加入空间失败"
   },
   "server_notifications": {
     "title": "服务器通知",
@@ -7110,6 +7205,15 @@ export type I18nKeys = {
   "space": {
     "title": "空间",
     "space_selected": "已选择空间：{name}",
+    "context": {
+      "enter_chat": "进入聊天",
+      "open_in_new_window": "在新窗口打开",
+      "edit_space": "编辑空间",
+      "invite_members": "邀请成员",
+      "manage_children": "管理子房间",
+      "leave_space": "离开空间",
+      "delete_space": "删除空间"
+    },
     "create": "创建空间",
     "create_route_hint": "创建完成后会自动回到工作台，并定位到新空间。",
     "search_sessions_placeholder": "搜索会话",
@@ -7117,6 +7221,10 @@ export type I18nKeys = {
     "filter_all": "全部",
     "filter_group": "群聊",
     "filter_single": "单聊",
+    "filter_my": "我的",
+    "filter_public": "公开",
+    "section_my_spaces": "我的空间",
+    "section_public_spaces": "公开空间",
     "engagement_label": "参与状态",
     "engagement_all": "全部",
     "engagement_unread": "未读",
@@ -7128,8 +7236,22 @@ export type I18nKeys = {
     "sort_summary_recent": "当前排序：置顶优先 · 最近活跃",
     "sort_summary_name": "当前排序：置顶优先 · 名称",
     "details_title": "详情概览",
-    "details_empty_title": "选择一个会话查看详情",
-    "details_empty_description": "从左侧列表选择会话后，这里会显示当前会话和空间的摘要信息。",
+    "details_empty_title": "选择一个空间查看详情",
+    "details_empty_description": "从左侧列表选择空间后，这里会显示空间的详细信息和操作。",
+    "enter_chat": "进入聊天",
+    "enter_space": "进入空间",
+    "edit_space": "编辑空间",
+    "view_all_members": "查看全部成员",
+    "view_all_rooms": "查看全部房间",
+    "child_rooms": "子房间",
+    "member_count_value": "{count} 成员",
+    "room_count_value": "{count} 房间",
+    "no_spaces_yet": "还没有空间，去创建吧",
+    "space_overview": "空间概览",
+    "space_actions": "空间操作",
+    "danger_zone": "危险操作",
+    "create_space_action": "创建空间",
+    "discover_spaces_action": "发现空间",
     "detail_session": "当前会话",
     "detail_space": "当前空间",
     "detail_scope": "查看范围",
@@ -7171,6 +7293,7 @@ export type I18nKeys = {
     "detail_total_sessions": "总会话数",
     "all_sessions": "全部会话",
     "empty": "暂无空间，点击右上角创建",
+    "empty_spaces": "暂无空间",
     "empty_sessions": "暂无会话",
     "empty_filtered_sessions": "当前筛选条件下暂无会话",
     "name": "名称",
@@ -7196,6 +7319,18 @@ export type I18nKeys = {
     "invite_user_required": "请输入用户 ID",
     "invite_success": "邀请成功",
     "invite_failed": "邀请失败",
+    "invite_button": "邀请",
+    "members_title": "成员列表",
+    "membership_join": "已加入",
+    "membership_leave": "已离开",
+    "membership_ban": "已封禁",
+    "membership_invite": "待邀请",
+    "hierarchy_title": "空间层级",
+    "hierarchy_hint": "查看此空间的子空间层级结构",
+    "view_hierarchy": "查看层级",
+    "join_space": "加入空间",
+    "join_space_success": "加入空间成功",
+    "join_space_failed": "加入空间失败",
     "add_room_title": "添加子房间",
     "add_room_placeholder": "请输入房间 ID，如 !room:example.com",
     "add_room_required": "请输入房间 ID",
@@ -7227,6 +7362,14 @@ export type I18nKeys = {
     "pin_space": "置顶",
     "unpin_space": "取消置顶",
     "discover": "发现空间",
+    "leave_space": "离开空间",
+    "delete_space": "删除空间",
+    "leave_space_confirm": "确定要离开空间「{name}」吗？离开后将不再接收此空间的消息。",
+    "delete_space_confirm": "确定要删除空间「{name}」吗？此操作不可撤销，所有子房间和成员关系将被移除。",
+    "leave_space_success": "已离开空间",
+    "leave_space_failed": "离开空间失败",
+    "delete_space_success": "已删除空间",
+    "delete_space_failed": "删除空间失败",
     "discovery": {
       "title": "发现空间",
       "search_placeholder": "搜索空间名称...",

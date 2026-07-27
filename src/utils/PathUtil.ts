@@ -123,7 +123,7 @@ const ensureUserDataRoot = async (): Promise<void> => {
  * @param subFolder 子目录名
  * @param userUid 当前用户ID
  */
-const getPathCache = async (subFolder: string, userUid: string): Promise<string> => {
+const _getPathCache = async (subFolder: string, userUid: string): Promise<string> => {
   const cacheDir = await appCacheDir()
   return await join(cacheDir, String(userUid), subFolder)
 }
@@ -179,7 +179,7 @@ const getUserEmojiDir = async (userUid: string): Promise<string> => {
  * 获取用户表情包目录的绝对路径
  * @param userUid 用户ID
  */
-export const getUserAbsoluteEmojiDir = async (userUid: string): Promise<string> => {
+const _getUserAbsoluteEmojiDir = async (userUid: string): Promise<string> => {
   const emojiDir = await getUserEmojiDir(userUid)
   const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
   return await join(baseDirPath, emojiDir)
@@ -445,4 +445,4 @@ export async function getFilesMeta<T>(filesPath: string[]) {
   })
 }
 
-export { getImageCache, getPathCache, getUserEmojiDir, getUserVideosDir }
+export { getImageCache, getUserEmojiDir, getUserVideosDir }

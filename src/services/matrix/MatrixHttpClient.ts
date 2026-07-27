@@ -6,7 +6,7 @@ import { createLogger } from '@/utils/Logger'
 import { getMatrixAccessToken, getMatrixClient, getMatrixHomeserverUrl } from './matrixClientAccessor'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
 
-export interface MatrixHttpRequestOptions {
+interface MatrixHttpRequestOptions {
   queryParams?: Record<string, string | number>
   body?: Record<string, unknown>
   headers?: Record<string, string>
@@ -150,7 +150,7 @@ const AI_EXTENSION_ENDPOINTS = new Set<string>([
   'chatRoleDelete'
 ])
 
-export class AIExtensionDisabledError extends Error {
+class AIExtensionDisabledError extends Error {
   constructor(endpoint: string) {
     super(`AI extension endpoint disabled: ${endpoint}`)
     this.name = 'AIExtensionDisabledError'

@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
 import { normalizeSettingsTab, SETTINGS_TABS, type SettingsTabInput, type SettingsTabType } from './settingsSchema'
 
-export type { LegacySettingsTabType, SettingsTab, SettingsTabInput, SettingsTabType } from './settingsSchema'
+export type { SettingsTab, SettingsTabInput, SettingsTabType } from './settingsSchema'
 export { getSettingsTabLabel, normalizeSettingsTab, SETTINGS_TABS } from './settingsSchema'
 
 export const useSettingsDialogStore = defineStore(StoresEnum.SETTINGS_DIALOG, () => {
@@ -49,5 +49,3 @@ export const useSettingsDialogStore = defineStore(StoresEnum.SETTINGS_DIALOG, ()
     resetToDefault
   }
 })
-
-export type SettingsDialogStore = ReturnType<typeof useSettingsDialogStore>

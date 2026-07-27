@@ -14,18 +14,50 @@
   box-shadow:
     0 4px 14px rgba(19, 152, 127, 0.4),
     inset 0px 1px 0px rgba(255, 255, 255, 0.2);
-  transition: all 0.2s ease;
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.15s ease,
+    opacity 0.2s ease;
+  /* 可点击状态：饱满渐变 + 明显阴影 + 白色文字（对比度 > 4.5:1） */
   &:hover:not(:disabled) {
     background: linear-gradient(135deg, var(--hula-color-primary-600), var(--hula-brand));
     box-shadow: 0 6px 20px rgba(19, 152, 127, 0.5);
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(1.01);
   }
   &:active:not(:disabled) {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.98);
     box-shadow: 0 2px 8px rgba(19, 152, 127, 0.3);
+  }
+  /* 未激活/禁用状态：去饱和灰阶渐变，对比度仍满足 AA 级 */
+  &:disabled,
+  &.n-button--disabled {
+    background: linear-gradient(135deg, #9ca3af, #c4b5a0);
+    box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.1);
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+  /* 加载中状态：脉冲动画提示正在处理 */
+  &.n-button--loading {
+    background: linear-gradient(135deg, var(--hula-color-primary-500), var(--hula-color-primary-400));
+    box-shadow: 0 4px 14px rgba(19, 152, 127, 0.3);
+    animation: gradient-button-pulse 1.4s ease-in-out infinite;
   }
   &:span {
     color: var(--hula-text-inverse);
+  }
+}
+
+@keyframes gradient-button-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+    box-shadow: 0 4px 14px rgba(19, 152, 127, 0.3);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 6px 18px rgba(19, 152, 127, 0.5);
   }
 }
 
@@ -36,6 +68,14 @@
     &:hover:not(:disabled) {
       background: linear-gradient(135deg, var(--hula-color-primary-700), var(--hula-color-primary-600));
       box-shadow: 0 6px 20px rgba(19, 152, 127, 0.4);
+    }
+    &:disabled,
+    &.n-button--disabled {
+      background: linear-gradient(135deg, #4b5563, #6b7280);
+      opacity: 0.6;
+    }
+    &.n-button--loading {
+      background: linear-gradient(135deg, var(--hula-color-primary-600), var(--hula-color-primary-500));
     }
   }
 }

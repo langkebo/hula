@@ -5,7 +5,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('BadgeService')
 
-export interface Badge {
+interface Badge {
   id: string
   img: string
   describe: string
@@ -95,4 +95,3 @@ class BadgeService {
 }
 
 export const badgeService = new BadgeService()
-export default badgeService

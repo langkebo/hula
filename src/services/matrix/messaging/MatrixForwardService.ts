@@ -5,7 +5,7 @@ import { matrixMessageService } from './MatrixMessageService'
 
 const logger = createLogger('MatrixForwardService')
 
-export interface ForwardResult {
+interface ForwardResult {
   roomId: string
   success: boolean
   eventId?: string
@@ -90,5 +90,3 @@ class MatrixForwardService {
 }
 
 export const matrixForwardService = new MatrixForwardService()
-
-export default matrixForwardService

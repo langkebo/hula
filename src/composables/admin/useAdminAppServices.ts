@@ -12,7 +12,7 @@ export interface AppServiceInfo {
   [key: string]: unknown
 }
 
-export interface AppServiceDetail {
+interface AppServiceDetail {
   id: string
   url?: string
   asToken?: string
@@ -28,7 +28,7 @@ export interface AppServiceDetail {
   [key: string]: unknown
 }
 
-export interface UseAdminAppServicesResult {
+interface UseAdminAppServicesResult {
   services: Ref<AppServiceInfo[]>
   servicesLoading: Ref<boolean>
   selectedService: Ref<AppServiceDetail | null>

@@ -1,5 +1,5 @@
 // src/services/mobile/MobilePushRelayService.ts
-export interface PushPayload {
+interface PushPayload {
   id: string
   title: string
   body: string

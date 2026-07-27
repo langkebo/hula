@@ -28,7 +28,7 @@ type SdkAdminManager = {
   deleteRegistrationToken(token: string): Promise<void>
 }
 
-export type SdkAdminGetter = () => Promise<SdkAdminManager>
+type SdkAdminGetter = () => Promise<SdkAdminManager>
 
 /**
  * Admin Registration Tokens domain service.

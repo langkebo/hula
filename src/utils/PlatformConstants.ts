@@ -1,4 +1,5 @@
 import { type, version } from '@tauri-apps/plugin-os'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PlatformConstants')
@@ -28,6 +29,18 @@ class PlatformDetector {
    */
   static initialize(): void {
     if (PlatformDetector._initialized) return
+
+    // 浏览器/E2E 环境没有 Tauri runtime，跳过 OS 检测，直接使用默认值（desktop）
+    if (!hasTauriRuntime()) {
+      PlatformDetector._osType = 'windows'
+      PlatformDetector._platformType = 'desktop'
+      PlatformDetector._isWindows10 = false
+      if (import.meta.env.DEV) {
+        logger.debug('Tauri runtime unavailable, using desktop defaults (browser/E2E)')
+      }
+      PlatformDetector._initialized = true
+      return
+    }
 
     try {
       const detectedType = type()

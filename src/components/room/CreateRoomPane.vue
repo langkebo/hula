@@ -1,247 +1,329 @@
 <template>
-  <div class="create-room-pane">
-    <div class="pane-header">
-      <span class="pane-title">{{ t('room.create.title') }}</span>
-      <n-button text size="small" @click="emit('close')">
-        <template #icon>
-          <svg class="size-14px"><use href="#close"></use></svg>
-        </template>
-      </n-button>
-    </div>
+  <div class="create-room-pane flex-1 min-h-0 flex flex-col">
+    <!-- 草稿恢复提示 -->
+    <Transition name="hint-fade">
+      <div v-if="showRestoredHint" class="create-room-pane__hint" role="status" aria-live="polite">
+        <svg class="size-14px"><use href="#info"></use></svg>
+        <span>{{ t('common.draft_restored', '已恢复上次编辑内容') }}</span>
+      </div>
+    </Transition>
 
-    <div class="pane-body">
-      <n-form ref="formRef" :model="form" :rules="rules" label-placement="top" require-mark-placement="left">
-        <div class="avatar-section">
-          <div class="avatar-preview" @click="triggerAvatarUpload">
-            <img v-if="form.avatarUrl" :src="form.avatarUrl" alt="avatar" class="avatar-img" />
-            <svg v-else class="avatar-placeholder size-24px"><use href="#camera"></use></svg>
-            <div class="avatar-hint">
-              <svg class="size-12px"><use href="#camera"></use></svg>
-            </div>
-          </div>
-          <span class="avatar-label">{{ t('room.create.avatar') }}</span>
-        </div>
-
+    <!-- 阶段 1: 创建房间 -->
+    <n-scrollbar v-if="stage === 'create'" class="flex-1 min-h-0">
+      <n-form
+        ref="formRef"
+        :model="formData"
+        :rules="rules"
+        label-placement="left"
+        label-width="80"
+        class="px-20px py-16px">
         <n-form-item :label="t('room.create.name')" path="name">
-          <n-input
-            v-model:value="form.name"
-            :placeholder="t('room.create.name_placeholder')"
-            :maxlength="100"
-            show-count
-            clearable />
+          <n-input v-model:value="formData.name" :placeholder="t('room.create.name_placeholder')" />
         </n-form-item>
 
         <n-form-item :label="t('room.create.topic')" path="topic">
           <n-input
-            v-model:value="form.topic"
+            v-model:value="formData.topic"
             type="textarea"
-            :placeholder="t('room.create.topic_placeholder')"
-            :maxlength="500"
-            show-count
             :autosize="{ minRows: 2, maxRows: 4 }"
-            clearable />
+            :placeholder="t('room.create.topic_placeholder')" />
         </n-form-item>
 
-        <n-form-item :label="t('room.create.alias')" path="alias">
-          <n-input v-model:value="form.alias" :placeholder="t('room.create.alias_placeholder')" clearable />
+        <n-form-item :label="t('room.create.avatar')" path="avatarUrl">
+          <n-upload :max="1" accept="image/*" :custom-request="handleAvatarUpload" :show-file-list="false">
+            <n-avatar round :size="64" :src="formData.avatarUrl || defaultAvatar" class="cursor-pointer" />
+          </n-upload>
         </n-form-item>
 
-        <n-form-item :label="t('room.create.visibility')" path="isPublic">
-          <n-radio-group v-model:value="form.isPublic" name="visibility">
-            <n-radio :value="false">
-              {{ t('room.create.private') }}
-            </n-radio>
-            <n-radio :value="true">
-              {{ t('room.create.public') }}
-            </n-radio>
+        <n-form-item :label="t('room.create.type')" path="roomType">
+          <n-radio-group v-model:value="formData.roomType">
+            <n-radio value="room">{{ t('room.create.public') }}</n-radio>
+            <n-radio value="private_room">{{ t('room.create.private') }}</n-radio>
+            <n-radio value="space">{{ t('room.create.space') }}</n-radio>
           </n-radio-group>
         </n-form-item>
-
-        <n-form-item :label="t('room.create.history_visibility')" path="historyVisibility">
-          <n-select
-            v-model:value="form.historyVisibility"
-            :options="historyVisibilityOptions"
-            :placeholder="t('room.create.history_visibility_placeholder')" />
-        </n-form-item>
+        <div class="text-12px color-[--hula-text-tertiary] mb-16px">{{ t('room.create.room_type_hint') }}</div>
 
         <n-form-item :label="t('room.create.encryption')" path="isEncrypted">
-          <n-switch v-model:value="form.isEncrypted" />
-          <span class="switch-label">
-            {{ form.isEncrypted ? t('room.create.encrypted') : t('room.create.not_encrypted') }}
-          </span>
+          <n-switch v-model:value="formData.isEncrypted" />
+          <span class="text-12px color-[--hula-text-tertiary] ml-12px">{{ t('room.create.encryption_hint') }}</span>
+        </n-form-item>
+
+        <n-form-item :label="t('room.create.history')" path="historyVisibility">
+          <n-select
+            v-model:value="formData.historyVisibility"
+            :options="historyVisibilityOptions"
+            :placeholder="t('room.create.history_placeholder')" />
+        </n-form-item>
+
+        <n-form-item :label="t('room.create.join_rule')" path="joinRule">
+          <n-select
+            v-model:value="formData.joinRule"
+            :options="joinRuleOptions"
+            :placeholder="t('room.create.join_rule_placeholder')" />
         </n-form-item>
       </n-form>
+    </n-scrollbar>
+
+    <!-- 阶段 2: 邀请成员（可选） -->
+    <div v-else-if="stage === 'invite'" class="flex-1 min-h-0 flex flex-col px-20px py-16px">
+      <p class="text-14px color-[--hula-text-secondary] mb-16px">{{ t('room.create.invite_desc') }}</p>
+      <n-input
+        v-model:value="inviteInput"
+        :placeholder="t('room.create.invite_placeholder')"
+        type="textarea"
+        :autosize="{ minRows: 4, maxRows: 8 }" />
     </div>
 
-    <div class="pane-footer">
-      <n-button @click="emit('close')">{{ t('common.cancel') }}</n-button>
-      <n-button type="primary" :loading="submitting" @click="handleSubmit">
-        {{ t('room.create.submit') }}
-      </n-button>
+    <!-- 底部操作栏 -->
+    <div
+      class="create-room-pane__footer flex items-center justify-end gap-12px px-20px py-12px border-t border-[--hula-border-layout-divider]">
+      <template v-if="stage === 'create'">
+        <n-button type="primary" :loading="creating" @click="handleCreate">
+          {{ t('room.create.create') }}
+        </n-button>
+      </template>
+      <template v-else>
+        <n-button @click="handleSkipInvite">{{ t('room.create.invite_skip') }}</n-button>
+        <n-button type="primary" :loading="inviting" @click="handleInvite">
+          {{ t('room.create.invite_send') }}
+        </n-button>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { FormInst, FormRules } from 'naive-ui'
+import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { openMsgSession } from '@/composables/chat/openMsgSession'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { RoomTypeEnum } from '@/enums'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
+import { useRightViewDraftStore } from '@/stores/domains/widget/rightViewDraft'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('CreateRoomPane')
+const RESTORED_HINT_DURATION = 3000
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const draftStore = useRightViewDraftStore()
+const formRef = ref<FormInst>()
+const creating = ref(false)
+const inviting = ref(false)
+const defaultAvatar = '/logoD.png'
+const serverDomain = ref('matrix.org')
 
-const props = defineProps<{
-  submitting: boolean
-}>()
+/** 流程阶段：create（创建） → invite（邀请成员，可选） */
+const stage = ref<'create' | 'invite'>('create')
+/** 已创建的房间 ID（邀请阶段使用） */
+const createdRoomId = ref('')
+/** 邀请输入（用户 ID 或房间别名，逗号分隔） */
+const inviteInput = ref('')
 
-const emit = defineEmits<{
-  close: []
-  submit: [
-    data: {
-      name: string
-      topic: string
-      avatarUrl: string
-      isPublic: boolean
-      alias: string
-      isEncrypted: boolean
-      historyVisibility: string
-    }
-  ]
-}>()
+const showRestoredHint = ref(false)
 
-const formRef = ref<FormInst | null>(null)
-
-const form = reactive({
+const formData = reactive({
   name: '',
   topic: '',
   avatarUrl: '',
-  isPublic: false,
+  roomType: 'private_room' as 'room' | 'private_room' | 'space',
   alias: '',
-  isEncrypted: false,
-  historyVisibility: 'shared'
+  isEncrypted: true,
+  historyVisibility: 'shared' as 'shared' | 'invited' | 'joined' | 'world_readable',
+  joinRule: 'invite' as 'invite' | 'knock' | 'public' | 'restricted'
 })
-
-const historyVisibilityOptions = [
-  { label: t('room.create.history_shared'), value: 'shared' },
-  { label: t('room.create.history_invited'), value: 'invited' },
-  { label: t('room.create.history_joined'), value: 'joined' },
-  { label: t('room.create.history_world_readable'), value: 'world_readable' }
-]
 
 const rules: FormRules = {
   name: [
     { required: true, message: t('room.create.name_required'), trigger: 'blur' },
-    { min: 1, max: 100, message: t('room.create.name_length'), trigger: 'blur' }
+    { min: 2, max: 100, message: t('room.create.name_length'), trigger: 'blur' }
   ]
 }
 
-const triggerAvatarUpload = () => {
-  // TODO: integrate avatar upload
+const historyVisibilityOptions = computed(() => [
+  { label: t('room.create.history_shared'), value: 'shared' },
+  { label: t('room.create.history_invited'), value: 'invited' },
+  { label: t('room.create.history_joined'), value: 'joined' },
+  { label: t('room.create.history_world_readable'), value: 'world_readable' }
+])
+
+const joinRuleOptions = computed(() => [
+  { label: t('room.create.join_rule_invite'), value: 'invite' },
+  { label: t('room.create.join_rule_knock'), value: 'knock' },
+  { label: t('room.create.join_rule_public'), value: 'public' },
+  { label: t('room.create.join_rule_restricted'), value: 'restricted' }
+])
+
+const loadServerDomain = async () => {
+  try {
+    serverDomain.value = await matrixRoomReadFacade.getServerDomain()
+  } catch (error) {
+    logger.error('获取 homeserver 域名失败:', error)
+    serverDomain.value = 'matrix.org'
+  }
 }
 
-const handleSubmit = async () => {
+const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
+  try {
+    const uploadFile = file.file
+    if (!uploadFile) return
+
+    const result = await matrixMediaService.uploadFile(uploadFile)
+    formData.avatarUrl = result.contentUri
+  } catch (error) {
+    logger.error('上传头像失败:', error)
+    showFeedback(t('room.create.avatar_upload_failed'), 'error')
+  }
+}
+
+const handleCreate = async () => {
   try {
     await formRef.value?.validate()
   } catch {
     return
   }
 
-  emit('submit', { ...form })
-}
-</script>
+  creating.value = true
+  try {
+    const room = await matrixRoomActionFacade.createGroupRoom({
+      name: formData.name,
+      topic: formData.topic,
+      avatarUrl: formData.avatarUrl || undefined,
+      isPublic: formData.roomType === 'room',
+      alias: formData.alias || undefined,
+      isEncrypted: formData.isEncrypted,
+      historyVisibility: formData.historyVisibility,
+      joinRule: formData.joinRule
+    })
 
-<style lang="scss" scoped>
-.create-room-pane {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: var(--hula-surface-panel);
-}
-
-.pane-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--hula-border-default);
-  flex-shrink: 0;
-}
-
-.pane-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--hula-text-primary);
-}
-
-.pane-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.avatar-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.avatar-preview {
-  position: relative;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 1px solid var(--hula-border-default);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  overflow: hidden;
-  background: var(--hula-surface-raised);
-
-  &:hover .avatar-hint {
-    opacity: 1;
+    showFeedback(t('room.create.success'), 'success')
+    createdRoomId.value = room?.roomId || ''
+    // 创建成功后清除草稿
+    draftStore.clearCreateRoom()
+    // 切换到邀请阶段（可选步骤）
+    stage.value = 'invite'
+  } catch (error) {
+    logger.error('创建房间失败:', error instanceof Error ? error.message : String(error))
+    showFeedback(t('room.create.failed'), 'error')
+  } finally {
+    creating.value = false
   }
 }
 
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+const handleSkipInvite = async () => {
+  // 直接进入刚创建的房间
+  if (createdRoomId.value) {
+    await openMsgSession(createdRoomId.value, RoomTypeEnum.GROUP)
+  }
+  const { default: router } = await import('@/router')
+  void router.back()
 }
 
-.avatar-placeholder {
-  color: var(--hula-text-tertiary);
+const handleInvite = async () => {
+  const userIds = inviteInput.value
+    .split(/[,\n\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  if (userIds.length === 0) {
+    await handleSkipInvite()
+    return
+  }
+
+  inviting.value = true
+  try {
+    for (const userId of userIds) {
+      await matrixRoomActionFacade.inviteUser(createdRoomId.value, userId)
+    }
+    showFeedback(t('room.create.invite_success'), 'success')
+  } catch (error) {
+    logger.error('邀请成员失败:', error instanceof Error ? error.message : String(error))
+    showFeedback(t('room.create.invite_failed'), 'error')
+  } finally {
+    inviting.value = false
+    // 邀请结束后进入房间
+    if (createdRoomId.value) {
+      await openMsgSession(createdRoomId.value, RoomTypeEnum.GROUP)
+    }
+    const { default: router } = await import('@/router')
+    void router.back()
+  }
 }
 
-.avatar-hint {
-  position: absolute;
-  inset: 0;
+// 自动同步草稿
+watch(
+  formData,
+  (value) => {
+    draftStore.saveCreateRoom({ ...value })
+  },
+  { deep: true }
+)
+
+onMounted(() => {
+  const draft = draftStore.createRoom
+  const hasDraft =
+    draft.name.trim().length > 0 ||
+    draft.topic.trim().length > 0 ||
+    draft.avatarUrl.length > 0 ||
+    draft.roomType !== 'private_room' ||
+    draft.alias.length > 0 ||
+    !draft.isEncrypted ||
+    draft.historyVisibility !== 'shared' ||
+    draft.joinRule !== 'invite'
+
+  if (hasDraft) {
+    formData.name = draft.name
+    formData.topic = draft.topic
+    formData.avatarUrl = draft.avatarUrl
+    formData.roomType = draft.roomType
+    formData.alias = draft.alias
+    formData.isEncrypted = draft.isEncrypted
+    formData.historyVisibility = draft.historyVisibility
+    formData.joinRule = draft.joinRule
+    showRestoredHint.value = true
+    draftStore.setRestoredHint('createRoom')
+    setTimeout(() => {
+      showRestoredHint.value = false
+      if (draftStore.restoredHint === 'createRoom') {
+        draftStore.setRestoredHint(null)
+      }
+    }, RESTORED_HINT_DURATION)
+  }
+
+  void loadServerDomain()
+})
+</script>
+
+<style scoped lang="scss">
+.create-room-pane {
+  background: var(--hula-surface-panel);
+}
+
+.create-room-pane__hint {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: var(--hula-overlay-mask-default);
-  color: var(--hula-text-inverse);
+  gap: 6px;
+  padding: 8px 20px;
+  background: var(--hula-color-primary-50, rgba(59, 130, 246, 0.08));
+  color: var(--hula-color-primary-600, var(--hula-color-primary-500));
+  font-size: 12px;
+  border-bottom: 1px solid var(--hula-color-primary-100, rgba(59, 130, 246, 0.15));
+}
+
+.hint-fade-enter-active,
+.hint-fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.hint-fade-enter-from,
+.hint-fade-leave-to {
   opacity: 0;
-  transition: opacity 0.15s;
-  border-radius: 50%;
-}
-
-.avatar-label {
-  font-size: 13px;
-  color: var(--hula-text-secondary);
-}
-
-.switch-label {
-  margin-left: 8px;
-  font-size: 13px;
-  color: var(--hula-text-tertiary);
-}
-
-.pane-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--hula-border-default);
-  flex-shrink: 0;
+  transform: translateY(-4px);
 }
 </style>

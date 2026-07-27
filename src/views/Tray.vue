@@ -78,6 +78,7 @@ import type { UserState } from '@/services/types'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isWindows } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -85,7 +86,7 @@ import { useTimerManager } from '@/utils/TimerManager'
 const logger = createLogger('Tray')
 const timerManager = useTimerManager()
 
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const { checkWinExist, createWebviewWindow, resizeWindow } = useWindow()
 const userStatusStore = useUserStatusStore()
 const settingStore = useSettingStore()
@@ -133,15 +134,15 @@ const handleExit = () => {
 const toggleStatus = async (item: UserState) => {
   try {
     await userStatusStore.changeCurrentUserState(item)
-    appWindow.hide()
+    appWindow?.hide()
   } catch (error) {
     logger.error('更新状态失败:', error)
-    appWindow.hide()
+    appWindow?.hide()
   }
 }
 
 const toggleMessageSound = () => {
-  appWindow.hide()
+  appWindow?.hide()
   nextTick(() => {
     messageSound.value = !messageSound.value
   })
@@ -195,7 +196,7 @@ onMounted(async () => {
   window.addEventListener('resize-needed', handleTrayResize)
   await syncTrayMenuState()
 
-  if (isWindows()) {
+  if (isWindows() && appWindow) {
     appWindow.listen<boolean>('tray_state_sync', async (event) => {
       await syncTrayMenuState(event.payload)
     })

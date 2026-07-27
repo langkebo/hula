@@ -14,7 +14,7 @@ const ROOM_EVENTS = {
   Member: 'Room.member'
 } as const
 
-export interface RoomSession {
+interface RoomSession {
   roomId: string
   name: string
   avatar: string
@@ -23,7 +23,7 @@ export interface RoomSession {
   activeTime: number
 }
 
-export interface VisibleRoomSession extends RoomSession {
+interface VisibleRoomSession extends RoomSession {
   isFavorite: boolean
 }
 

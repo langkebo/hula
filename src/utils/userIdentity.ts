@@ -32,7 +32,7 @@ export function toLocalpart(mxid?: string | null): string {
  * - `@hulatest:matrix.test` → `matrix.test`
  * - `hulatest`              → `''`
  */
-export function toServerName(mxid?: string | null): string {
+function toServerName(mxid?: string | null): string {
   if (!mxid) return ''
   const colonIdx = mxid.indexOf(':')
   return colonIdx === -1 ? '' : mxid.slice(colonIdx + 1)
@@ -41,7 +41,7 @@ export function toServerName(mxid?: string | null): string {
 /**
  * 校验是否为合法 MXID。
  */
-export function isMatrixUserId(value?: string | null): boolean {
+function isMatrixUserId(value?: string | null): boolean {
   if (!value) return false
   return /^@[^:]+:[^:]+$/.test(value.trim())
 }

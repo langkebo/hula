@@ -56,43 +56,6 @@ import { AdminUserService } from './UserService'
 
 const logger = createLogger('AdminFacadeService')
 
-export type {
-  AdminReport,
-  ContentFilter,
-  CreateContentFilterRequest,
-  FederationBlacklistEntry,
-  FederationDestination,
-  QuotaAlert,
-  QuotaConfig,
-  QuotaStats,
-  QuotaStatus,
-  RateLimit,
-  RegistrationToken,
-  Report,
-  ReportFilters,
-  ReportReason,
-  ReportRequest,
-  ReportRoomResponse,
-  ResolveReportRequest,
-  RetentionPolicy,
-  RoomInfo,
-  RoomRetention,
-  RoomState,
-  ScannerInfo,
-  ServerHealth,
-  ServerNoticeInfo,
-  ServerNoticeResult,
-  ServerQuota,
-  ServerStats,
-  ServerStatus,
-  ServerVersion,
-  ShadowBanStatus,
-  ShutdownRoomResult,
-  UserDevice,
-  UserInfo,
-  UserReputation
-} from './AdminTypes'
-
 class AdminFacadeService extends BaseMatrixService {
   private adminVerifiedAt = 0
   private readonly ADMIN_VERIFY_INTERVAL = 2 * 60 * 1000
@@ -1145,7 +1108,7 @@ class AdminFacadeService extends BaseMatrixService {
 
 export const adminService = new AdminFacadeService()
 
-export function useAdmin() {
+function _useAdmin() {
   const stats = ref<ServerStats | null>(null)
   const users = ref<UserInfo[]>([])
   const rooms = ref<RoomInfo[]>([])
@@ -1186,5 +1149,3 @@ export function useAdmin() {
 
   return { stats, users, rooms, isLoading, initialize, loadStats, loadUsers, loadRooms }
 }
-
-export default adminService

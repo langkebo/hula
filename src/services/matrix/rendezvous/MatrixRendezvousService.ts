@@ -259,4 +259,3 @@ class MatrixRendezvousService {
 }
 
 export const matrixRendezvousService = new MatrixRendezvousService()
-export default matrixRendezvousService

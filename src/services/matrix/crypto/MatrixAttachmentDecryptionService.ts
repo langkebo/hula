@@ -124,6 +124,55 @@ class MatrixAttachmentDecryptionService {
 
     return new Uint8Array(plaintext)
   }
+
+  /**
+   * §9.4.4 批量并行解密加密附件
+   *
+   * 使用并发限制（默认 4）并行解密多个附件，单个失败不影响其他项。
+   * 结果顺序与输入一致，每项携带 index + ok 标志。
+   *
+   * @param items 待解密附件列表（source + fileLike）
+   * @param concurrency 最大并发数，默认 4
+   */
+  async decryptBatch(
+    items: { source: ArrayBuffer | Uint8Array; fileLike: MatrixEncryptedAttachmentLike }[],
+    concurrency = 4
+  ): Promise<DecryptBatchResult[]> {
+    const results: DecryptBatchResult[] = new Array(items.length)
+    if (items.length === 0) return results
+
+    const limit = Math.max(1, concurrency)
+    let cursor = 0
+
+    const worker = async (): Promise<void> => {
+      while (cursor < items.length) {
+        const index = cursor
+        cursor++
+        const item = items[index]
+        try {
+          const data = await this.decryptAttachment(item.source, item.fileLike)
+          results[index] = { index, ok: true, data }
+        } catch (err) {
+          results[index] = {
+            index,
+            ok: false,
+            error: err instanceof Error ? err : new Error(String(err))
+          }
+        }
+      }
+    }
+
+    const workers = Array.from({ length: Math.min(limit, items.length) }, () => worker())
+    await Promise.all(workers)
+    return results
+  }
+}
+
+interface DecryptBatchResult {
+  index: number
+  ok: boolean
+  data?: Uint8Array
+  error?: Error
 }
 
 export const matrixAttachmentDecryptionService = new MatrixAttachmentDecryptionService()

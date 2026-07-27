@@ -22,29 +22,6 @@ export interface VerificationRequest {
   timestamp: number
 }
 
-export interface SasVerification {
-  transactionId: string
-  userId: string
-  deviceId: string
-  emoji?: Array<{ emoji: string; name: string }>
-  decimal?: number[]
-}
-
-export type VerificationState =
-  | 'requested'
-  | 'ready'
-  | 'started'
-  | 'keys_exchanged'
-  | 'mac_sent'
-  | 'accepted'
-  | 'cancelled'
-  | 'done'
-
-export interface VerificationCancelReason {
-  code: string
-  reason: string
-}
-
 class VerificationService extends BaseMatrixService {
   private observedClient: MatrixClient | null = null
   private pendingRequests: Map<string, VerificationRequest> = new Map()

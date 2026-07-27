@@ -21,7 +21,7 @@ export function useSendOptions() {
   ])
 }
 
-export function useTranslateOptions() {
+function _useTranslateOptions() {
   const { t } = useI18n()
   return computed(() => [
     {
@@ -35,7 +35,7 @@ export function useTranslateOptions() {
   ])
 }
 
-export function useFontOptions() {
+function _useFontOptions() {
   const { t } = useI18n()
   return computed(() => [
     {

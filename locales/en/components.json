@@ -8,6 +8,12 @@
       "enabled": "Disable always-on-top",
       "disabled": "Pin to top"
     },
+    "proxy_settings": "Proxy settings",
+    "close": "Close",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "shrink": "Shrink",
     "close_prompt": {
       "title": "Minimize to tray or exit the app?",
       "hide_to_tray": "Minimize to system tray",

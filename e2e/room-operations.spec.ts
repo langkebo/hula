@@ -1,57 +1,6 @@
-import { expect, type Page, test } from '@playwright/test'
-
-type RuntimeIssueCollector = {
-  componentResolveErrors: string[]
-  lazyLoadErrors: string[]
-}
-
-const bootstrapDesktopHarness = async (page: Page) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('hula:e2e:enabled', '1')
-    window.localStorage.setItem('hula:e2e:mock-auth', '1')
-    window.localStorage.setItem('hula:e2e:platform', 'desktop')
-    // Mock Tauri runtime internals so the app doesn't crash in browser context.
-    ;((window as unknown as { __TAURI_INTERNALS__?: Record<string, unknown> }).__TAURI_INTERNALS__ ??= {}).metadata = {
-      currentWindow: { label: 'main' },
-      currentWebview: { windowLabel: 'main', label: 'main' }
-    }
-  })
-}
-
-const createRuntimeIssueCollector = (page: Page): RuntimeIssueCollector => {
-  const collector: RuntimeIssueCollector = {
-    componentResolveErrors: [],
-    lazyLoadErrors: []
-  }
-
-  page.on('console', (message) => {
-    const text = message.text()
-    if (text.includes('Failed to resolve component')) {
-      collector.componentResolveErrors.push(text)
-    }
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  page.on('pageerror', (error) => {
-    const text = String(error)
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  return collector
-}
-
-const expectNoRuntimeIssues = (collector: RuntimeIssueCollector) => {
-  expect(collector.componentResolveErrors, '页面不应出现组件解析失败').toEqual([])
-  expect(collector.lazyLoadErrors, '页面不应出现懒加载 chunk 拉取失败').toEqual([])
-}
+import { expect, test } from '@playwright/test'
+import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
+import { bootstrapDesktopHarness } from './support/session'
 
 test.describe('Room Operations', () => {
   test.beforeEach(async ({ page }) => {

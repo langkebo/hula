@@ -583,7 +583,7 @@ onUnmounted(() => {
 })
 
 // 类型定义
-export type VirtualListExpose = {
+type VirtualListExpose = {
   scrollTo: (options: { index?: number; position?: 'top' | 'bottom'; behavior?: ScrollBehavior }) => void
   getContainer: () => HTMLElement | null
 }

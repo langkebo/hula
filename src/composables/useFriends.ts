@@ -21,8 +21,8 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 // Types
 // ============================================================================
 
-export type FriendSearchType = 'recommend' | 'user' | 'group'
-export type FriendSearchAction = 'edit-profile' | 'message' | 'add'
+type FriendSearchType = 'recommend' | 'user' | 'group'
+type FriendSearchAction = 'edit-profile' | 'message' | 'add'
 
 type BaseSearchResult = {
   account: string

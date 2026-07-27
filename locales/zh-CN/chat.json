@@ -15,7 +15,8 @@
     "start_meeting": "发起会议",
     "screen_share": "屏幕共享",
     "group_qr_code": "群二维码",
-    "more_options": "更多选项"
+    "more_options": "更多选项",
+    "open_in_new_window": "在新窗口打开"
   },
   "burn": {
     "message_destroyed": "此消息已销毁",

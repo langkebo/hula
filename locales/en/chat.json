@@ -15,7 +15,8 @@
     "start_meeting": "Start Meeting",
     "screen_share": "Screen Share",
     "group_qr_code": "Group QR Code",
-    "more_options": "More Options"
+    "more_options": "More Options",
+    "open_in_new_window": "Open in New Window"
   },
   "burn": {
     "message_destroyed": "This message has been destroyed",

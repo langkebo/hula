@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 import { AppException } from '@/common/exception.ts'
 import { MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
-import { AbstractMessageStrategy } from './base'
+import { AbstractMessageStrategy, type MessageAction, type MessageActionContext } from './base'
 
 export class UnsupportedMessageStrategyImpl extends AbstractMessageStrategy {
   constructor() {
@@ -24,5 +24,10 @@ export class UnsupportedMessageStrategyImpl extends AbstractMessageStrategy {
     _userUid: Ref<string>
   ): MessageType {
     throw new AppException('方法暂未实现')
+  }
+
+  /** 不支持的消息类型：无任何上下文操作 */
+  getAllowedActions(_context: MessageActionContext): MessageAction[] {
+    return []
   }
 }

@@ -31,26 +31,20 @@
         :get-item-classes="getItemClasses"
         :visible-menu="visibleMenu"
         :visible-special-menu="visibleSpecialMenu"
-        :on-msg-click="handleMsgClick"
-        :on-msg-dblclick="handleMsgDblclick"
+        :on-msg-click="handleRoomSelect"
+        :on-msg-dblclick="handleRoomDblClick"
         :on-menu-show="handleMenuShow"
         :on-retry-network="retrySessions" />
     </template>
   </ListWorkbenchShell>
-
-  <CreateRoomDialog v-model:visible="showCreateRoomDialog" @created="handleRoomCreated" />
-
-  <JoinRoomDialog v-model:visible="showJoinRoomDialog" @joined="handleRoomJoined" />
 </template>
 <script lang="ts" setup name="roomList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
-import CreateRoomDialog from '@/components/room/CreateRoomDialog.vue'
-import JoinRoomDialog from '@/components/room/JoinRoomDialog.vue'
+import { useRouter } from 'vue-router'
 import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
 import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
 import type RoomSessionList from '@/components/workbench/RoomSessionList.vue'
-import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useMessage } from '@/composables/chat/useMessage'
 import { useMitt } from '@/composables/common/useMitt'
 import { useTauriListener } from '@/composables/common/useTauriListener'
@@ -60,9 +54,12 @@ import { useSessionPageSync } from '@/composables/workbench/useSessionPageSync'
 import { useWorkbenchSessionQuerySync } from '@/composables/workbench/useWorkbenchSessionQuerySync'
 import { MittEnum, RoomTypeEnum } from '@/enums'
 import { WORKBENCH_SESSION_ENGAGEMENT_FILTERS, WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
+import type { SessionItem } from '@/stores/domains/chat/chat'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 
 const { t } = useI18n()
-const appWindow = WebviewWindow.getCurrent()
+const router = useRouter()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const { addListener } = useTauriListener()
 const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visibleSpecialMenu } = useMessage()
 const {
@@ -91,9 +88,7 @@ const {
   setSessionSort
 } = useMessageSessionFilters(roomSessionList)
 const sessionListRef = ref<InstanceType<typeof RoomSessionList> | null>(null)
-const ROOM_LIST_ROUTE_NAME = 'roomList'
-const showCreateRoomDialog = ref(false)
-const showJoinRoomDialog = ref(false)
+const ROOM_LIST_ROUTE_NAME = 'room'
 
 const emptyDescription = computed(() => {
   if (
@@ -107,7 +102,17 @@ const emptyDescription = computed(() => {
   return t('space.empty_sessions')
 })
 
-useSessionPageSync({ activePath: '/roomList', handleMsgClick })
+/** 单击房间项时在右侧栏展示房间详情，双击直接打开聊天 */
+const handleRoomSelect = (item: SessionItem) => {
+  // 阶段 2：路由驱动详情视图，跳转后由 useRightView 派生 details 视图
+  void router.push({ name: 'room-details', params: { roomId: item.roomId } })
+}
+
+const handleRoomDblClick = (item: SessionItem) => {
+  void handleMsgClick(item)
+}
+
+useSessionPageSync({ activePath: '/room', handleMsgClick })
 useWorkbenchSessionQuerySync({
   routeName: ROOM_LIST_ROUTE_NAME,
   searchKeyword,
@@ -120,24 +125,13 @@ useWorkbenchSessionQuerySync({
   setSessionSort
 })
 
+// 阶段 4：创建/加入房间通过路由跳转，由右侧栏 createRoom/joinRoom 视图承载
 const handleCreateRoom = () => {
-  showCreateRoomDialog.value = true
+  void router.push({ name: 'room-create' })
 }
 
 const handleJoinRoom = () => {
-  showJoinRoomDialog.value = true
-}
-
-const handleRoomCreated = (roomId: string) => {
-  if (roomId) {
-    openMsgSession(roomId, RoomTypeEnum.GROUP)
-  }
-}
-
-const handleRoomJoined = (roomId: string) => {
-  if (roomId) {
-    openMsgSession(roomId, RoomTypeEnum.GROUP)
-  }
+  void router.push({ name: 'room-join' })
 }
 
 onBeforeMount(async () => {
@@ -145,10 +139,12 @@ onBeforeMount(async () => {
 })
 
 onMounted(async () => {
-  if (appWindow.label === 'home') {
+  if (appWindow && appWindow.label === 'home') {
     await addListener(
       appWindow.listen('search_to_msg', (event: { payload: { uid: string; roomType: number } }) => {
-        openMsgSession(event.payload.uid, event.payload.roomType)
+        void import('@/composables/chat/openMsgSession').then(({ openMsgSession }) => {
+          openMsgSession(event.payload.uid, event.payload.roomType)
+        })
       }),
       'search_to_msg'
     )

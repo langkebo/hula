@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
 
-export type SafeArea = {
+type SafeArea = {
   bottom: number
   left: number
   right: number

@@ -18,17 +18,17 @@ import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixMediaService')
 
-export interface UploadResult {
+interface UploadResult {
   contentUri: string
   size: number
   mimetype: string
 }
 
-export interface EncryptedUploadResult extends UploadResult {
+interface EncryptedUploadResult extends UploadResult {
   encryptedFile: EncryptedAttachmentFile
 }
 
-export interface MediaInfo {
+interface MediaInfo {
   size: number
   mimetype: string
   width?: number
@@ -36,7 +36,7 @@ export interface MediaInfo {
   duration?: number
 }
 
-export interface CompressOptions {
+interface CompressOptions {
   quality?: number
   maxWidth?: number
   maxHeight?: number
@@ -204,6 +204,35 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       }
     } catch (err) {
       logger.error(`[MatrixMedia] 文件上传失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 主动分块上传大文件 (§9.4.1)
+   * 阈值：文件 ≥ 10MB 时应优先调用此方法，避免触发 413 后再回退。
+   * 复用 ChunkUploadService 现有的 413 自动半分重试机制。
+   */
+  async uploadLargeFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
+    try {
+      const result = await chunkUploadService.upload({
+        file,
+        onProgress: (p) => onProgress?.(p.percentage)
+      })
+      logger.info(`[MatrixMedia] 大文件分块上传成功: ${result.mxcUrl}`)
+
+      const telemetry = matrixClientService.getTelemetry()
+      if (telemetry) {
+        telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
+      }
+
+      return {
+        contentUri: result.mxcUrl,
+        size: file.size,
+        mimetype: file.type || 'application/octet-stream'
+      }
+    } catch (err) {
+      logger.error(`[MatrixMedia] 大文件分块上传失败: ${err}`)
       throw err
     }
   }
@@ -595,4 +624,3 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 }
 
 export const matrixMediaService = new MatrixMediaServiceClass()
-export default matrixMediaService

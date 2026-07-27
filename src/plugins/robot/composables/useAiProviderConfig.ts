@@ -12,7 +12,7 @@ const STORAGE_KEYS = {
   TRENDRADAR_CONFIG: 'hula-chat-trendradar-config'
 }
 
-export interface UseAiProviderConfigOptions {
+interface UseAiProviderConfigOptions {
   fetchModelList: () => Promise<void>
   modelList: { value: unknown[] }
 }

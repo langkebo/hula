@@ -4,7 +4,7 @@ import { computed, nextTick, onUnmounted, ref, watch, watchPostEffect } from 'vu
 import { useAutoScrollGuard } from '@/composables/chat/useAutoScrollGuard'
 import { ScrollIntentEnum } from '@/enums'
 
-export interface UseChatScrollManagerOptions {
+interface UseChatScrollManagerOptions {
   scrollContainer: Ref<HTMLElement | null>
   messageListRef?: Ref<HTMLElement | null>
   bottomThreshold?: number
@@ -18,7 +18,7 @@ export interface UseChatScrollManagerOptions {
   newMessageCountSource?: ComputedRef<number>
 }
 
-export interface UseChatScrollManagerReturn {
+interface UseChatScrollManagerReturn {
   isAtBottom: Ref<boolean>
   isLoadingMore: Ref<boolean>
   scrollIntent: Ref<string>

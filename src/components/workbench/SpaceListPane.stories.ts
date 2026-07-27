@@ -13,6 +13,7 @@ const baseSpaces = [
     memberCount: 42,
     unreadCount: 8,
     isPinned: true,
+    isPublic: false,
     statusText: '重点关注',
     statusTone: 'info' as const,
     visibilityText: '公开'
@@ -23,24 +24,25 @@ const baseSpaces = [
     childCount: 2,
     memberCount: 12,
     topic: 'Private coordination',
+    isPublic: false,
     statusText: '需审批',
     statusTone: 'warning' as const,
     visibilityText: '私有'
   },
   {
-    spaceId: '!space-invite:example.com',
-    name: 'Partner Launch',
-    childCount: 3,
-    memberCount: 18,
-    statusText: '邀请制',
-    statusTone: 'neutral' as const,
-    visibilityText: '受限'
+    spaceId: '!space-public:example.com',
+    name: 'Open Source Community',
+    childCount: 12,
+    memberCount: 128,
+    isPublic: true,
+    visibilityText: '公开'
   },
   {
     spaceId: '!space-archive:example.com',
     name: 'Archive',
     childCount: 1,
     memberCount: 5,
+    isPublic: false,
     isLowPriority: true,
     visibilityText: '只读'
   }
@@ -55,10 +57,7 @@ const meta = {
   args: {
     spaces: baseSpaces,
     selectedSpaceId: '!space-design:example.com',
-    loading: false,
-    totalCount: 28,
-    compact: false,
-    narrow: false
+    loading: false
   },
   render: (args) =>
     defineComponent({
@@ -85,11 +84,11 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const PinnedSpaces: Story = {}
+export const Default: Story = {}
 
-export const PublicInviteOnly: Story = {
+export const PublicSpaceSelected: Story = {
   args: {
-    selectedSpaceId: '!space-invite:example.com'
+    selectedSpaceId: '!space-public:example.com'
   }
 }
 
@@ -97,13 +96,12 @@ export const EmptyResults: Story = {
   args: {
     spaces: [],
     selectedSpaceId: '',
-    totalCount: 0
+    loading: false
   }
 }
 
-export const RailMode: Story = {
+export const Loading: Story = {
   args: {
-    narrow: true,
-    selectedSpaceId: '!space-private:example.com'
+    loading: true
   }
 }

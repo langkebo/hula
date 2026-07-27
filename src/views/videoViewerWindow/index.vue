@@ -98,13 +98,14 @@ import { useI18n } from 'vue-i18n'
 import ActionBar from '@/components/windows/ActionBar.vue'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useVideoViewer } from '@/stores/domains/widget/videoViewer'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const { t } = useI18n()
 const logger = createLogger('VideoViewer')
 const { addListener } = useTauriListener()
 const videoViewerStore = useVideoViewer()
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 
 type VideoUpdatedPayload = {
   list: string[]
@@ -118,7 +119,7 @@ const supportedVideoExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv'
 // 初始化数据
 const videoList = ref<string[]>([])
 
-const currentLabel = WebviewWindow.getCurrent().label
+const currentLabel = hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''
 const currentIndex = ref(0)
 const isPlaying = ref(false)
 const isMuted = ref(false)
@@ -381,23 +382,25 @@ onMounted(async () => {
   await getCurrentWebviewWindow().show()
 
   // 修改事件名称与发送端保持一致
-  await addListener(
-    appWindow.listen<VideoUpdatedPayload>('video-updated', (event) => {
-      const { list, index } = event.payload
-      videoList.value = list
-      currentIndex.value = index
-      nextTick(() => {
-        if (videoRef.value) {
-          videoRef.value.load()
-          videoRef.value.play().catch((error) => {
-            logger.warn('视频播放失败:', error)
-            isPlaying.value = false
-          })
-        }
-      })
-    }),
-    'video-updated'
-  )
+  if (appWindow) {
+    await addListener(
+      appWindow.listen<VideoUpdatedPayload>('video-updated', (event) => {
+        const { list, index } = event.payload
+        videoList.value = list
+        currentIndex.value = index
+        nextTick(() => {
+          if (videoRef.value) {
+            videoRef.value.load()
+            videoRef.value.play().catch((error) => {
+              logger.warn('视频播放失败:', error)
+              isPlaying.value = false
+            })
+          }
+        })
+      }),
+      'video-updated'
+    )
+  }
 
   // 统一使用列表模式初始化
   const validIndex = Math.min(Math.max(videoViewerStore.currentVideoIndex, 0), videoViewerStore.videoList.length - 1)

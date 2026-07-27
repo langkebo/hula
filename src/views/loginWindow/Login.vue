@@ -9,7 +9,10 @@
       :loading="loading"
       :login-disabled="loginDisabled"
       :login-text="loginText"
+      :login-status="loginStatus"
+      :last-login-error="lastLoginError"
       @login="normalLogin('PC', true, false)"
+      @retry="retryLogin"
       @open-service-agreement="openServiceAgreement"
       @open-privacy-agreement="openPrivacyAgreement" />
 
@@ -64,9 +67,12 @@ const { createWebviewWindow } = useWindow()
 
 const {
   normalLogin,
+  retryLogin,
   loading,
   loginText,
   loginDisabled,
+  loginStatus,
+  lastLoginError,
   loginInfo,
   uiState,
   protocol,

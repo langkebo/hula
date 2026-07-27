@@ -7,12 +7,12 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useLocationShare')
 
-export interface UseLocationShareOptions {
+interface UseLocationShareOptions {
   roomId: string | null
 }
 
 /** 实时共享默认时长:1 小时 */
-export const DEFAULT_BEACON_TIMEOUT = 3600000
+const DEFAULT_BEACON_TIMEOUT = 3600000
 
 /**
  * 跨端位置共享 composable

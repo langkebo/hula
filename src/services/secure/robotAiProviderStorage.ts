@@ -11,13 +11,13 @@ const STORAGE_KEYS = {
   TRENDRADAR_API_KEY_SECURE: 'hula-chat-trendradar-api-key'
 } as const
 
-export type RobotAiProvider = 'hula' | 'siliconflow' | 'trendradar'
-export interface StoredTrendRadarConfig {
+type RobotAiProvider = 'hula' | 'siliconflow' | 'trendradar'
+interface StoredTrendRadarConfig {
   apiUrl: string
   apiKey: string
 }
 
-export interface RobotStorageScopeOptions {
+interface RobotStorageScopeOptions {
   userId?: string | null
 }
 

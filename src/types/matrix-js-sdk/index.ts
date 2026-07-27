@@ -4,32 +4,11 @@
  */
 /// <reference types="vite/client" />
 
-export type {
-  EmptyObject,
-  ICreateClientOpts,
-  ICreateRoomOpts,
-  IEventRelation,
-  IRequestTokenResponse,
-  ISendEventResponse,
-  LoginResponse,
-  MSC3575RoomData,
-  MSC3575SlidingSyncResponse,
-  PushRuleAction,
-  RegisterResponse,
-  SlidingSync
-} from 'matrix-js-sdk'
+export type { ICreateClientOpts, MSC3575RoomData, MSC3575SlidingSyncResponse, SlidingSync } from 'matrix-js-sdk'
 export {
-  ClientPrefix,
-  EventType,
-  Method,
   NotificationCountType,
   PendingEventOrdering,
-  Preset,
-  PushRuleKind,
   ReceiptType,
-  RoomType,
   SlidingSyncEvent,
-  SlidingSyncState,
-  TweakName,
-  Visibility
+  SlidingSyncState
 } from 'matrix-js-sdk'

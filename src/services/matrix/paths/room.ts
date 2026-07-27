@@ -32,31 +32,14 @@ export const ROOM = {
     `/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(eventId)}`,
   /** @deprecated Use TagsService methods instead */
   TAGS: (roomId: string) => `/user/{userId}/rooms/${encodeURIComponent(roomId)}/tags`,
-  /** @deprecated Unused - will be removed in a future version */
-  INVITE_BLOCKLIST: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/invite_blocklist`,
-  /** @deprecated Unused - will be removed in a future version */
-  INVITE_ALLOWLIST: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/invite_allowlist`,
-  /** @deprecated Unused - will be removed in a future version */
-  STICKY_EVENTS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/sticky_events`,
-  /** @deprecated Unused - will be removed in a future version */
-  STICKY_EVENT_BY_TYPE: (roomId: string, eventType: string) =>
-    `/rooms/${encodeURIComponent(roomId)}/sticky_events/${encodeURIComponent(eventType)}`,
   ANTI_SCREENSHOT: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/anti_screenshot`,
-  /** @deprecated Unused - will be removed in a future version */
-  SUMMARY: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary`,
   SUMMARY_MEMBERS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary/members`,
   SUMMARY_STATE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary/state`,
-  /** @deprecated Unused - will be removed in a future version */
-  SUMMARY_STATS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary/stats`,
-  /** @deprecated Unused - will be removed in a future version */
-  EPHEMERAL: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/ephemeral`,
   TIMESTAMP_TO_EVENT: (roomId: string) => `${PREFIX_V1}/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`,
   REPORT_SCANNER_INFO: (roomId: string, eventId: string) =>
     `${PREFIX_V1}/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/scanner_info`,
   NOTIFICATIONS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/notifications`,
-  /** @deprecated Unused - will be removed in a future version */
   UNREAD_COUNT: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/unread_count`,
-  /** @deprecated Unused - will be removed in a future version */
   TIMELINE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/timeline`,
   /** @deprecated Use PinsService methods instead */
   PINNED_EVENTS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/pinned_events`,
@@ -68,8 +51,6 @@ export const ROOM = {
   PERMISSIONS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/permissions`,
   /** @deprecated Use AliasesService methods instead */
   ALIASES: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/aliases`,
-  /** @deprecated Unused - will be removed in a future version */
-  VERSION: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/version`,
   /** @deprecated Use LifecycleService.upgradeRoom() instead */
   UPGRADE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/upgrade`,
   /** @deprecated Use MembershipService.knock() instead */

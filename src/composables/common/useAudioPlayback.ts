@@ -4,7 +4,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AudioPlayback')
 
-export type AudioPlaybackReturn = {
+type AudioPlaybackReturn = {
   // 状态
   isPlaying: Ref<boolean>
   loading: Ref<boolean>

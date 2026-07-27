@@ -1,10 +1,10 @@
 import { type as getOsType } from '@tauri-apps/plugin-os'
 import { performanceReporter } from '@/utils/PerformanceReporter'
 
-export type AppPlatform = 'desktop' | 'mobile'
-export type RenderSampleStatus = 'pass' | 'warn'
+type AppPlatform = 'desktop' | 'mobile'
+type RenderSampleStatus = 'pass' | 'warn'
 
-export interface RenderSampleRecord {
+interface RenderSampleRecord {
   name: string
   route: string
   startedAt: number
@@ -125,10 +125,7 @@ export const startRenderSample = (name: string, options: RenderSampleStartOption
   })
 }
 
-export const completeRenderSample = (
-  name: string,
-  options: RenderSampleCompleteOptions = {}
-): RenderSampleRecord | null => {
+const completeRenderSample = (name: string, options: RenderSampleCompleteOptions = {}): RenderSampleRecord | null => {
   if (typeof performance === 'undefined') return null
 
   const activeSample = activeSamples.get(name)
@@ -170,7 +167,7 @@ export const completeRenderSampleOnNextFrame = (name: string, options: RenderSam
   })
 }
 
-export const resetRenderSamples = (): void => {
+const _resetRenderSamples = (): void => {
   activeSamples.clear()
   const samples = ensureRenderSampleStore()
   if (samples) {

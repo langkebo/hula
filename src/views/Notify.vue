@@ -64,6 +64,7 @@ import { RoomTypeEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import { isWindows } from '@/utils/PlatformConstants'
@@ -97,7 +98,7 @@ type NotifyEnterPayload = {
   }
 }
 
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const { checkWinExist, resizeWindow } = useWindow()
 // const { addListener } = useTauriListener()
 const { checkMessageAtMe } = useReplaceMsg()
@@ -170,7 +171,7 @@ const debouncedHandleTip = useDebounceFn(handleTip, 100)
 // 处理窗口显示和隐藏的逻辑
 const showWindow = async (event: Event<NotifyEnterPayload>) => {
   if (tipVisible.value) {
-    const notifyWindow = WebviewWindow.getCurrent()
+    const notifyWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
     const outerSize = await notifyWindow?.outerSize()
     if (outerSize) {
       await notifyWindow?.setPosition(
@@ -228,7 +229,7 @@ onMounted(async () => {
   // 初始化窗口高度
   resizeWindow('notify', 280, 140)
 
-  if (isWindows()) {
+  if (isWindows() && appWindow) {
     appWindow.listen<NotifyEnterPayload>('notify_enter', async (event) => {
       logger.info('监听到enter事件，打开notify窗口')
       await showWindow(event)

@@ -2,7 +2,7 @@ import { ref } from 'vue'
 
 const isTrayMenuShow = ref<boolean>(false)
 
-export function useGlobalUiState() {
+function _useGlobalUiState() {
   return {
     isTrayMenuShow
   }
@@ -13,10 +13,10 @@ export function setTrayMenuShow(visible: boolean): boolean {
   return isTrayMenuShow.value
 }
 
-export function getTrayMenuShow(): boolean {
+function _getTrayMenuShow(): boolean {
   return isTrayMenuShow.value
 }
 
-export function resetGlobalUiStateForTests(): void {
+function _resetGlobalUiStateForTests(): void {
   isTrayMenuShow.value = false
 }

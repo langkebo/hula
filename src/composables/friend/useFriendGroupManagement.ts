@@ -7,14 +7,14 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useFriendGroupManagement')
 
-export interface UseFriendGroupManagementOptions {
+interface UseFriendGroupManagementOptions {
   /** 是否启用(默认启用) */
   enabled?: boolean
 }
 
 /**
  * 跨端好友分组管理 composable
- * PC 端 FriendGroupDialog.vue 与移动端 MobileFriendGroupManager.vue 共用此逻辑
+ * 移动端 MobileFriendGroupManager.vue 等组件共用此逻辑
  *
  * 能力:
  * - 加载分组列表

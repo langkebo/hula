@@ -47,6 +47,7 @@
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import RenderMessage from '@/components/rightBox/renderMessage/index.vue'
 import { useChatMain } from '@/composables/chat/useChatMain'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useImageViewer } from '@/composables/common/useImageViewer'
 import { useVideoViewer } from '@/composables/common/useVideoViewer'
 import { useWindow } from '@/composables/common/useWindow'
@@ -57,11 +58,13 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import type { MessageType } from '@/stores/domains/chat/message'
 import { useUserStore } from '@/stores/domains/user/user'
 import type { UserItem } from '@/types/matrix-services'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatTimestamp } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MultiMsgWindow')
+const feedback = useActionFeedback()
 
 type Msg = {
   msgId: string
@@ -151,7 +154,12 @@ const handleVideoClick = async (videoUrl: string) => {
 
 const getAllMsg = async () => {
   const msgIds = choosedMsgs.value.map((msg) => msg.msgId)
-  msgs.value = (await matrixMessageService.getMsgListByIds({ msgIds })) as unknown as MessageType[]
+  try {
+    msgs.value = (await matrixMessageService.getMsgListByIds({ msgIds })) as unknown as MessageType[]
+  } catch (err) {
+    logger.error('Failed to load messages by ids', err)
+    feedback.showError(err as Error)
+  }
 }
 
 const getAllUserInfo = async () => {
@@ -160,7 +168,9 @@ const getAllUserInfo = async () => {
 }
 
 onMounted(async () => {
-  await getCurrentWebviewWindow().show()
+  if (hasTauriRuntime()) {
+    await getCurrentWebviewWindow().show()
+  }
   getWindowPayload<Msg[]>(route.query.key as string)
     .then(async (data) => {
       choosedMsgs.value = data

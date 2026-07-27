@@ -1,4 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
+import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
+import { bootstrapMobileHarness } from './support/session'
 
 type RenderSample = {
   name: string
@@ -8,53 +10,8 @@ type RenderSample = {
   status: 'pass' | 'warn'
 }
 
-type RuntimeIssueCollector = {
-  componentResolveErrors: string[]
-  lazyLoadErrors: string[]
-}
-
-const bootstrapMobileHarness = async (page: Page) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('hula:e2e:enabled', '1')
-    window.localStorage.setItem('hula:e2e:mock-auth', '1')
-    window.localStorage.setItem('hula:e2e:platform', 'mobile')
-    ;(window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__ = []
-  })
-}
-
-const createRuntimeIssueCollector = (page: Page): RuntimeIssueCollector => {
-  const collector: RuntimeIssueCollector = {
-    componentResolveErrors: [],
-    lazyLoadErrors: []
-  }
-
-  page.on('console', (message) => {
-    const text = message.text()
-    if (text.includes('Failed to resolve component')) {
-      collector.componentResolveErrors.push(text)
-    }
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  page.on('pageerror', (error) => {
-    const text = String(error)
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  return collector
-}
-
-const expectNoRouteRuntimeIssues = (collector: RuntimeIssueCollector) => {
-  expect(collector.componentResolveErrors, '页面不应出现移动端组件解析失败').toEqual([])
-  expect(collector.lazyLoadErrors, '页面不应出现懒加载 chunk 拉取失败').toEqual([])
+const MOBILE_RUNTIME_ISSUE_OPTIONS = {
+  componentResolveErrorMessage: '页面不应出现移动端组件解析失败'
 }
 
 const resetSamples = async (page: Page) => {
@@ -88,7 +45,7 @@ test.describe('Dynamic Mobile Flow', () => {
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveURL(/\/mobile\/dynamic$/)
-    expectNoRouteRuntimeIssues(runtimeIssues)
+    expectNoRuntimeIssues(runtimeIssues, MOBILE_RUNTIME_ISSUE_OPTIONS)
 
     // Render samples are recorded via tab bar clicks, not direct navigation.
     // Verify the page renders without errors; timing assertions are optional.
@@ -116,7 +73,7 @@ test.describe('Dynamic Mobile Flow', () => {
           const samples = (window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__
           return samples?.find((item) => item.name === 'mobile-dynamic-detail') ?? null
         })
-        expectNoRouteRuntimeIssues(runtimeIssues)
+        expectNoRuntimeIssues(runtimeIssues, MOBILE_RUNTIME_ISSUE_OPTIONS)
 
         await testInfo.attach('dynamic-render-samples.json', {
           body: JSON.stringify(detailSample ? [indexSample, detailSample] : [indexSample], null, 2),

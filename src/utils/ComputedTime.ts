@@ -79,7 +79,7 @@ export const isDiffNow = ({ time, unit, diff }: { unit: OpUnitType; time: Config
  * @param {ConfigType} time 输入时间
  * @returns boolean 输入时间是否间隔 now 间隔值以上。
  */
-export const isDiffNow10Min = (time: ConfigType): boolean => {
+const _isDiffNow10Min = (time: ConfigType): boolean => {
   return isDiffNow({ time, unit: 'minute', diff: 10 })
 }
 
@@ -110,4 +110,63 @@ export const handRelativeTime = (time: string) => {
 /** 获取指定日期的星期 */
 export const getWeekday = (time: string) => {
   return dayjs(time).format('ddd')
+}
+
+/**
+ * 消息时间戳智能格式化（需求文档 6.5 节规范）
+ *
+ * 规则：
+ * - < 1 分钟：刚刚
+ * - < 1 小时：X 分钟前
+ * - 今天：HH:mm
+ * - 昨天：昨天 HH:mm
+ * - 本周（昨天之后 7 天内）：星期几 HH:mm
+ * - 更早：YYYY-MM-DD HH:mm
+ *
+ * @param timestamp 毫秒时间戳
+ * @returns 格式化后的时间字符串
+ */
+export const formatMessageTime = (timestamp: number): string => {
+  const ts = Number(timestamp)
+  if (!Number.isFinite(ts) || ts <= 0) return ''
+
+  const now = Date.now()
+  const diff = now - ts
+  const date = dayjs(ts)
+  const i18n = useI18nGlobal()
+
+  // 容错：未来时间直接显示绝对时间
+  if (diff < 0) {
+    return date.format('YYYY-MM-DD HH:mm')
+  }
+
+  // < 1 分钟：刚刚
+  if (diff < 60_000) {
+    return i18n.t('common.just_now')
+  }
+
+  // < 1 小时：X 分钟前
+  if (diff < 3_600_000) {
+    const minutes = Math.floor(diff / 60_000)
+    return i18n.t('common.minutes_ago', { count: minutes })
+  }
+
+  const nowDate = dayjs()
+  // 今天：HH:mm
+  if (nowDate.isSame(date, 'day')) {
+    return date.format('HH:mm')
+  }
+
+  // 昨天：昨天 HH:mm
+  if (nowDate.subtract(1, 'day').isSame(date, 'day')) {
+    return `${i18n.t('menu.yesterday')} ${date.format('HH:mm')}`
+  }
+
+  // 本周（昨天之后 7 天内）：星期几 HH:mm
+  if (diff < 7 * 86_400_000) {
+    return date.format('dddd HH:mm')
+  }
+
+  // 更早：YYYY-MM-DD HH:mm
+  return date.format('YYYY-MM-DD HH:mm')
 }

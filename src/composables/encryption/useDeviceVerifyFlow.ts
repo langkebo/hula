@@ -6,7 +6,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useDeviceVerifyFlow')
 
-export type VerificationStep =
+type VerificationStep =
   | 'intro'
   | 'pending'
   | 'showKey'
@@ -17,7 +17,7 @@ export type VerificationStep =
   | 'cancelled'
   | 'failed'
 
-export interface PendingRequest {
+interface PendingRequest {
   transactionId: string
   userId: string
   deviceId: string
@@ -25,7 +25,7 @@ export interface PendingRequest {
   timestamp: number
 }
 
-export interface UseDeviceVerifyFlowOptions {
+interface UseDeviceVerifyFlowOptions {
   userId?: string
   deviceId?: string
   transactionId?: string

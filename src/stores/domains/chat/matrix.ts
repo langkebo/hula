@@ -233,7 +233,9 @@ export const useMatrixStore = defineStore(
   },
   {
     persist: {
-      pick: ['userId', 'deviceId', 'homeserverUrl']
+      // accessToken 需要持久化以便 WEB 端页面刷新后恢复会话
+      // 桌面端通过 Tauri SQLite 安全存储，WEB 端使用 localStorage（开发环境）
+      pick: ['userId', 'deviceId', 'homeserverUrl', 'accessToken']
     }
   }
 )

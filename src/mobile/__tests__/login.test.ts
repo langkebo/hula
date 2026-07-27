@@ -27,6 +27,11 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: invokeMock
 }))
 
+// invokeSilently 内部会先检查 hasTauriRuntime()，未 mock 时会 short-circuit 返回
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 vi.mock('@vueuse/core', () => ({
   useDebounceFn: (fn: (...args: unknown[]) => unknown) => fn
 }))

@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import router from '@/router'
 
-export interface HeaderBarProps {
+interface HeaderBarProps {
   msgCount?: number
   isOfficial?: boolean
   hiddenRight?: boolean

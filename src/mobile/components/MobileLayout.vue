@@ -33,6 +33,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
 import { createLogger } from '@/utils/Logger'
 import { isMobile, isWindows } from '@/utils/PlatformConstants'
@@ -188,7 +189,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
     if (session && session.muteNotification !== NotificationTypeEnum.NOT_DISTURB) {
       let shouldPlaySound = isMobile()
 
-      if (!isMobile()) {
+      if (!isMobile() && hasTauriRuntime()) {
         try {
           const home = await WebviewWindow.getByLabel('mobile-home')
 
@@ -222,7 +223,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
         globalStore.setTipVisible(true)
       }
 
-      if (!isMobile()) {
+      if (!isMobile() && hasTauriRuntime()) {
         const currentWindow = WebviewWindow.getCurrent()
 
         if (currentWindow.label === 'mobile-home') {

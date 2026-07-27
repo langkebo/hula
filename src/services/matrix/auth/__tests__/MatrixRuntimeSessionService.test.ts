@@ -93,6 +93,10 @@ vi.mock('@/utils/AppStateReady', () => ({
   ensureAppStateReady: mockEnsureAppStateReady
 }))
 
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     resizeWindow: mockResizeWindow,
@@ -170,7 +174,13 @@ vi.mock('@/services/matrix/MatrixClientService', () => {
   const stub = {
     getClient: vi.fn(() => null),
     getConnectionState: vi.fn(() => 'CONNECTED'),
-    on: vi.fn(),
+    waitForClientReady: vi.fn().mockResolvedValue(undefined),
+    on: vi.fn((event: string, cb: (data: unknown) => void) => {
+      // 模拟 sync 事件立即触发，避免 waitSyncPrepared 超时
+      if (event === 'sync') {
+        Promise.resolve().then(() => cb({ state: 'PREPARED' }))
+      }
+    }),
     off: vi.fn()
   }
   return { matrixClientService: stub, default: stub }

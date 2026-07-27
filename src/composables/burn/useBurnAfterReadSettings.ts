@@ -8,7 +8,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('useBurnAfterReadSettings')
 
 /** 可选的焚毁时长预设(毫秒) */
-export const BURN_DURATION_PRESETS_MS = [
+const _BURN_DURATION_PRESETS_MS = [
   30 * 1000, // 30 秒
   60 * 1000, // 1 分钟
   5 * 60 * 1000, // 5 分钟
@@ -16,7 +16,7 @@ export const BURN_DURATION_PRESETS_MS = [
   24 * 60 * 60 * 1000 // 1 天
 ] as const
 
-export interface UseBurnAfterReadSettingsOptions {
+interface UseBurnAfterReadSettingsOptions {
   /** 当前房间 ID,提供后则针对该房间操作;留空则仅做全局操作 */
   roomId?: string
 }

@@ -1,6 +1,6 @@
 import { roomOperations } from './RoomOperations'
 
-export interface MatrixRoomMemberFacade {
+interface MatrixRoomMemberFacade {
   setMemberDisplayName(roomId: string, displayName: string): Promise<void>
   getMemberDisplayName(roomId: string, userId: string): Promise<string | null>
   setMemberPowerLevel(roomId: string, userId: string, powerLevel: number): Promise<void>

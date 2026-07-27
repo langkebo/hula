@@ -9,7 +9,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('usePerformanceMonitor')
 
-export interface PerformanceSnapshot {
+interface PerformanceSnapshot {
   fps: number
   memoryMB: number | null
   jsHeapSizeLimitMB: number | null

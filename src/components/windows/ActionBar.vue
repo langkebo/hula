@@ -13,19 +13,24 @@
 
         <div class="flex items-center">
           <!--  登录窗口的代理按钮  -->
-          <div
-            v-if="proxy"
-            @click="router.push('/network')"
-            :class="{ network: isWindows() }"
-            role="button"
-            :aria-label="t('components.actionBar.proxy_settings')"
-            class="w-30px h-24px flex-center hover-box">
-            <svg
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
-              class="size-16px cursor-pointer">
-              <use href="#settings"></use>
-            </svg>
-          </div>
+          <n-tooltip v-if="proxy" trigger="hover" :delay="200">
+            <template #trigger>
+              <div
+                @click="router.push('/network')"
+                :class="{ network: isWindows() }"
+                role="button"
+                :title="t('components.actionBar.proxy_settings')"
+                :aria-label="t('components.actionBar.proxy_settings')"
+                class="w-30px h-24px flex-center hover-box">
+                <svg
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  class="size-16px cursor-pointer">
+                  <use href="#settings"></use>
+                </svg>
+              </div>
+            </template>
+            {{ t('components.actionBar.proxy_settings') }}
+          </n-tooltip>
           <!--  固定在最顶层  -->
           <div
             v-if="topWinLabel !== void 0"
@@ -57,65 +62,85 @@
             </n-popover>
           </div>
           <!-- 收缩页面 -->
-          <div
-            v-if="shrink"
-            @click="shrinkWindow"
-            class="hover-box"
-            role="button"
-            :aria-label="t('components.actionBar.shrink')">
-            <svg
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
-              class="size-16px cursor-pointer">
-              <use href="#left-bar"></use>
-            </svg>
-          </div>
+          <n-tooltip v-if="shrink" trigger="hover" :delay="200">
+            <template #trigger>
+              <div
+                @click="shrinkWindow"
+                class="hover-box"
+                role="button"
+                :title="t('components.actionBar.shrink')"
+                :aria-label="t('components.actionBar.shrink')">
+                <svg
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  class="size-16px cursor-pointer">
+                  <use href="#left-bar"></use>
+                </svg>
+              </div>
+            </template>
+            {{ t('components.actionBar.shrink') }}
+          </n-tooltip>
           <!-- 最小化 -->
-          <div
-            v-if="showMinimizeButton"
-            @click="handleMinimize"
-            class="hover-box"
-            role="button"
-            :aria-label="t('components.actionBar.minimize')">
-            <svg
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
-              class="size-24px opacity-66 cursor-pointer">
-              <use href="#maximize"></use>
-            </svg>
-          </div>
+          <n-tooltip v-if="showMinimizeButton" trigger="hover" :delay="200">
+            <template #trigger>
+              <div
+                @click="handleMinimize"
+                class="hover-box"
+                role="button"
+                :title="t('components.actionBar.minimize')"
+                :aria-label="t('components.actionBar.minimize')">
+                <svg
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  class="size-24px opacity-66 cursor-pointer">
+                  <use href="#maximize"></use>
+                </svg>
+              </div>
+            </template>
+            {{ t('components.actionBar.minimize') }}
+          </n-tooltip>
           <!-- 最大化 -->
-          <div
-            v-if="maxW"
-            @click="restoreWindow"
-            class="hover-box"
-            role="button"
-            :aria-label="windowMaximized ? t('components.actionBar.restore') : t('components.actionBar.maximize')">
-            <svg
-              v-show="!windowMaximized"
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
-              class="size-18px cursor-pointer">
-              <use href="#rectangle-small"></use>
-            </svg>
-            <svg
-              v-show="windowMaximized"
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
-              class="size-16px cursor-pointer">
-              <use href="#internal-reduction"></use>
-            </svg>
-          </div>
+          <n-tooltip v-if="maxW" trigger="hover" :delay="200">
+            <template #trigger>
+              <div
+                @click="restoreWindow"
+                class="hover-box"
+                role="button"
+                :title="windowMaximized ? t('components.actionBar.restore') : t('components.actionBar.maximize')"
+                :aria-label="windowMaximized ? t('components.actionBar.restore') : t('components.actionBar.maximize')">
+                <svg
+                  v-show="!windowMaximized"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  class="size-18px cursor-pointer">
+                  <use href="#rectangle-small"></use>
+                </svg>
+                <svg
+                  v-show="windowMaximized"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  class="size-16px cursor-pointer">
+                  <use href="#internal-reduction"></use>
+                </svg>
+              </div>
+            </template>
+            {{ windowMaximized ? t('components.actionBar.restore') : t('components.actionBar.maximize') }}
+          </n-tooltip>
           <!-- 关闭窗口 -->
-          <div
-            v-if="closeW"
-            @click="handleCloseWin"
-            :class="{ windowMaximized: 'rounded-rt-8px' }"
-            role="button"
-            :aria-label="t('components.actionBar.close')"
-            class="action-close">
-            <svg
-              :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
-              class="size-14px cursor-pointer">
-              <use href="#close"></use>
-            </svg>
-          </div>
+          <n-tooltip v-if="closeW" trigger="hover" :delay="200">
+            <template #trigger>
+              <div
+                @click="handleCloseWin"
+                :class="{ windowMaximized: 'rounded-rt-8px' }"
+                role="button"
+                :title="t('components.actionBar.close')"
+                :aria-label="t('components.actionBar.close')"
+                class="action-close">
+                <svg
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  class="size-14px cursor-pointer">
+                  <use href="#close"></use>
+                </svg>
+              </div>
+            </template>
+            {{ t('components.actionBar.close') }}
+          </n-tooltip>
         </div>
       </div>
     </template>
@@ -134,6 +159,7 @@
           @click="tipsRef.show = false"
           class="size-12px ml-a cursor-pointer select-none"
           role="button"
+          :title="t('components.actionBar.close')"
           :aria-label="t('components.actionBar.close')">
           <use href="#close"></use>
         </svg>

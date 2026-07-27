@@ -14,7 +14,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useRetryStrategy')
 
-export interface RetryConfig {
+interface RetryConfig {
   maxAttempts?: number
   baseDelayMs?: number
   maxDelayMs?: number

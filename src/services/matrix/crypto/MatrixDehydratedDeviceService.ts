@@ -22,11 +22,6 @@ export interface CreateDehydratedDeviceParams {
   deviceData?: Record<string, unknown>
 }
 
-export interface ClaimDehydratedDeviceParams {
-  deviceId: string
-  accessToken: string
-}
-
 class MatrixDehydratedDeviceService {
   private getClient() {
     const client = matrixClientService.getClient()

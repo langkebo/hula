@@ -9,7 +9,7 @@
  * 任务 ID 类型为 `number`（来自后端 task id），不与会话 id 混用。
  */
 
-export interface PollingTaskMeta {
+interface PollingTaskMeta {
   timerId: number
   conversationId: string
   startedAt: number

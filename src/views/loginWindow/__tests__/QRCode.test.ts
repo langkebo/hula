@@ -4,22 +4,26 @@ import { ref } from 'vue'
 
 const {
   invokeMock,
+  invokeWithErrorHandlerMock,
   saveMatrixSessionEndpointConfigMock,
   getEnhancedFingerprintMock,
-  generateQRMock,
-  checkStatusMock,
-  loginCommandMock,
-  setIntervalMock,
-  clearIntervalMock
+  resolveMatrixRuntimeEndpointConfigMock,
+  generateQrCodeAsNewDeviceMock,
+  waitForReciprocationAndLoginMock,
+  onStatusChangeMock,
+  cancelMock,
+  loginCommandMock
 } = vi.hoisted(() => ({
   invokeMock: vi.fn(),
+  invokeWithErrorHandlerMock: vi.fn(),
   saveMatrixSessionEndpointConfigMock: vi.fn(),
   getEnhancedFingerprintMock: vi.fn(),
-  generateQRMock: vi.fn(),
-  checkStatusMock: vi.fn(),
-  loginCommandMock: vi.fn(),
-  setIntervalMock: vi.fn(),
-  clearIntervalMock: vi.fn()
+  resolveMatrixRuntimeEndpointConfigMock: vi.fn(),
+  generateQrCodeAsNewDeviceMock: vi.fn(),
+  waitForReciprocationAndLoginMock: vi.fn(),
+  onStatusChangeMock: vi.fn(),
+  cancelMock: vi.fn(),
+  loginCommandMock: vi.fn()
 }))
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -49,35 +53,12 @@ vi.mock('pinia', async (importOriginal) => {
   const actual = (await importOriginal()) as any
   return {
     ...actual,
-    storeToRefs: (store: Record<string, unknown>) =>
-      Object.fromEntries(Object.entries(store).map(([key, value]) => [key, ref(value)]))
+    storeToRefs: () => ({ isTrayMenuShow: ref(false) })
   }
 })
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) =>
-      (
-        ({
-          'login.qr.load_text.loading': '加载中...',
-          'login.qr.load_text.scan_hint': '请扫码登录',
-          'login.qr.load_text.login': '登录中...',
-          'login.qr.actions.account_login': '账密登录',
-          'login.qr.actions.register': '注册',
-          'login.qr.actions.register_title': '注册',
-          'login.qr.overlay.success': '登录成功'
-        }) as Record<string, string>
-      )[key] || key
-  })
-}))
-
-vi.mock('@/utils/Logger', () => ({
-  createLogger: () => ({
-    error: vi.fn(),
-    warn: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn()
-  })
+vi.mock('@iconify/vue', () => ({
+  Icon: { name: 'Icon', template: '<svg />' }
 }))
 
 vi.mock('@/enums', async (importOriginal) => {
@@ -110,6 +91,7 @@ vi.mock('@/router', () => ({
 }))
 
 vi.mock('@/services/backend/config', () => ({
+  resolveMatrixRuntimeEndpointConfig: resolveMatrixRuntimeEndpointConfigMock,
   saveMatrixSessionEndpointConfig: saveMatrixSessionEndpointConfigMock
 }))
 
@@ -117,10 +99,16 @@ vi.mock('@/services/fingerprint', () => ({
   getEnhancedFingerprint: getEnhancedFingerprintMock
 }))
 
-vi.mock('@/services/matrix/auth/MatrixQrLoginService', () => ({
-  matrixQrLoginService: {
-    generateQR: generateQRMock,
-    checkStatus: checkStatusMock
+vi.mock('@/utils/TauriInvokeHandler', () => ({
+  invokeWithErrorHandler: invokeWithErrorHandlerMock
+}))
+
+vi.mock('@/services/matrix/auth/MatrixQrLoginSdkService', () => ({
+  matrixQrLoginSdkService: {
+    generateQrCodeAsNewDevice: generateQrCodeAsNewDeviceMock,
+    waitForReciprocationAndLogin: waitForReciprocationAndLoginMock,
+    onStatusChange: onStatusChangeMock,
+    cancel: cancelMock
   }
 }))
 
@@ -140,11 +128,8 @@ vi.mock('@/stores/domains/widget/global', () => ({
   })
 }))
 
-vi.mock('@/utils/TimerManager', () => ({
-  useTimerManager: () => ({
-    setInterval: setIntervalMock,
-    clearInterval: clearIntervalMock
-  })
+vi.mock('@/components/rendezvous/RendezvousSessionManager.vue', () => ({
+  default: { name: 'RendezvousSessionManager', template: '<div />' }
 }))
 
 vi.mock('./ThirdPartyLogin.vue', () => ({
@@ -167,31 +152,37 @@ describe('QRCode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getEnhancedFingerprintMock.mockResolvedValue('fingerprint-id')
-    generateQRMock.mockResolvedValue({ qrId: 'qr-id' })
-    checkStatusMock.mockResolvedValue({
-      status: 'CONFIRMED',
-      data: {
-        uid: '@alice:example.com',
-        token: 'access-token',
-        refreshToken: 'refresh-token',
-        homeserverUrl: 'https://resolved.example.com',
-        identityServerUrl: 'https://identity.example.com'
-      }
+    resolveMatrixRuntimeEndpointConfigMock.mockReturnValue({
+      homeserverUrl: 'https://matrix.example.com'
     })
+    generateQrCodeAsNewDeviceMock.mockResolvedValue({
+      qrCodeBase64: 'base64-qr-data',
+      checkCode: '123456',
+      rendezvousUrl: 'https://matrix.example.com/_matrix/client/unstable/org.matrix.msc4108/rendezvous/session-123'
+    })
+    waitForReciprocationAndLoginMock.mockResolvedValue({
+      user_id: '@alice:example.com',
+      access_token: 'access-token',
+      device_id: 'NEWDEVICE',
+      refresh_token: 'refresh-token',
+      expires_in: 3600000,
+      homeserver_url: 'https://resolved.example.com'
+    })
+    onStatusChangeMock.mockReturnValue(() => {})
+    cancelMock.mockResolvedValue(undefined)
     loginCommandMock.mockResolvedValue(undefined)
     invokeMock.mockResolvedValue(undefined)
-    setIntervalMock.mockImplementation(async (callback: () => Promise<void>) => {
-      await callback()
-      return 1
-    })
+    invokeWithErrorHandlerMock.mockResolvedValue(undefined)
   })
 
   it('saves session endpoint before completing qr login command', async () => {
     shallowMount(QRCode)
 
     await flushPromises()
+    await flushPromises()
 
-    expect(invokeMock).toHaveBeenCalledWith('update_token', {
+    expect(generateQrCodeAsNewDeviceMock).toHaveBeenCalledWith('https://matrix.example.com')
+    expect(invokeWithErrorHandlerMock).toHaveBeenCalledWith('update_token', {
       req: {
         uid: '@alice:example.com',
         token: 'access-token',
@@ -200,11 +191,29 @@ describe('QRCode', () => {
     })
     expect(saveMatrixSessionEndpointConfigMock).toHaveBeenCalledWith({
       homeserverUrl: 'https://resolved.example.com',
-      identityServerUrl: 'https://identity.example.com'
+      identityServerUrl: ''
     })
     expect(loginCommandMock).toHaveBeenCalledWith({ uid: '@alice:example.com' })
     expect(saveMatrixSessionEndpointConfigMock.mock.invocationCallOrder[0]).toBeLessThan(
       loginCommandMock.mock.invocationCallOrder[0]
     )
+  })
+
+  it('registers a status listener for UI updates', async () => {
+    shallowMount(QRCode)
+
+    await flushPromises()
+
+    expect(onStatusChangeMock).toHaveBeenCalledOnce()
+    expect(typeof onStatusChangeMock.mock.calls[0][0]).toBe('function')
+  })
+
+  it('cancels the MSC4108 session on unmount', async () => {
+    const wrapper = shallowMount(QRCode)
+    await flushPromises()
+
+    wrapper.unmount()
+
+    expect(cancelMock).toHaveBeenCalled()
   })
 })

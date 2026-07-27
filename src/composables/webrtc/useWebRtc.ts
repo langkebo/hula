@@ -5,6 +5,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { CallTypeEnum, RTCCallStatus } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
 import { useUserStore } from '@/stores/domains/user/user'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
 import { TimerManager } from '@/utils/TimerManager'
@@ -17,8 +18,6 @@ import { useCallTimer } from './useCallTimer'
 import { useCameraSwitch } from './useCameraSwitch'
 import { useMediaDevices } from './useMediaDevices'
 import { useScreenShare } from './useScreenShare'
-
-export { SignalTypeEnum, type WSRtcCallMsg } from './types'
 
 const logger = createLogger('WebRtc')
 
@@ -90,6 +89,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
 
   // 接通后确保窗口聚焦显示
   const focusCurrentWindow = async () => {
+    if (!hasTauriRuntime()) return
     try {
       const currentWindow = getCurrentWebviewWindow()
       const visible = await currentWindow.isVisible()
@@ -142,7 +142,7 @@ export const useWebRtc = (roomId: string, remoteUserId: string, callType: CallTy
     try {
       logger.info('[收到通知] 结束通话')
       // 移动端router 回退
-      if (!isMobile()) {
+      if (!isMobile() && hasTauriRuntime()) {
         await getCurrentWebviewWindow().close()
       } else {
         router.back()

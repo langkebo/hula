@@ -146,7 +146,14 @@ class MatrixPresenceService extends BaseMatrixService {
         logger.info(`[Presence] 设置在线状态成功: ${presence}`)
       }
     } catch (err) {
-      logger.error(`[Presence] 设置在线状态失败 [${presence}]: ${formatMatrixError(err)}`)
+      // 页面关闭/登出时 client 可能已销毁，此时设置 unavailable 失败是预期行为，降级为 warn 避免噪音
+      const isClientNotReady = err instanceof Error && err.message === '客户端未初始化'
+      const isFetchFailed = err instanceof Error && err.message.includes('Failed to fetch')
+      if (isClientNotReady || isFetchFailed) {
+        logger.warn(`[Presence] 设置在线状态跳过 [${presence}]: ${formatMatrixError(err)}`)
+      } else {
+        logger.error(`[Presence] 设置在线状态失败 [${presence}]: ${formatMatrixError(err)}`)
+      }
       throw err
     }
   }

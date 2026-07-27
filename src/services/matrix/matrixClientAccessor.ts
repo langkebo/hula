@@ -2,7 +2,7 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 import { createLogger } from '@/utils/Logger'
 
-export interface MatrixClientAccessor {
+interface MatrixClientAccessor {
   getClient(): MatrixClient | null
   getAccessToken?(): string | null
   getHomeserverUrl?(): string | null
@@ -31,7 +31,7 @@ function warnLegacyFallbackOnce(method: string): void {
   }
 
   hasWarnedLegacyFallback = true
-  logger.warn(`"${method}" 在 accessor 注册前被调用，请检查 MatrixClientService 初始化顺序`)
+  logger.debug(`"${method}" 在 accessor 注册前被调用，请检查 MatrixClientService 初始化顺序`)
 }
 
 export function setMatrixClientAccessor(accessor: MatrixClientAccessor): void {
@@ -47,7 +47,7 @@ export function resetMatrixClientAccessorForTests(): void {
   hasWarnedLegacyFallback = false
 }
 
-export function getMatrixClientAccessor(): MatrixClientAccessor | null {
+function getMatrixClientAccessor(): MatrixClientAccessor | null {
   return readRuntimeAccessor()
 }
 
@@ -66,7 +66,7 @@ export function getMatrixHomeserverUrl(): string | null {
   return getMatrixClientAccessor()?.getHomeserverUrl?.() ?? null
 }
 
-export function getMatrixTelemetry(): TelemetryManager | null {
+function _getMatrixTelemetry(): TelemetryManager | null {
   warnLegacyFallbackOnce('getTelemetry')
   return getMatrixClientAccessor()?.getTelemetry?.() ?? null
 }

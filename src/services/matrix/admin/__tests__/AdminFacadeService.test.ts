@@ -14,6 +14,11 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
+// 让 invokeWithResult 调用 mock 的 invoke 而不是 short-circuit 返回
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 describe('adminService facade', () => {
   let mockAdminManager: Record<string, ReturnType<typeof vi.fn>>
 

@@ -23,7 +23,7 @@ type AitMentionData = { name?: string; text?: string; label?: string; uid?: stri
 type ReplyData = { accountName: string; content: string; avatar: string; name?: string }
 type InsertNodeData = AitMentionData | ReplyData | string
 
-export type ReplyState = {
+type ReplyState = {
   avatar: string
   accountName: string
   content: string
@@ -31,7 +31,7 @@ export type ReplyState = {
   imgCount: number
 }
 
-export type UseEditorDomOptions = {
+type UseEditorDomOptions = {
   reply: Ref<ReplyState>
 }
 

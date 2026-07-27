@@ -32,5 +32,7 @@ export const ADMIN = {
   APPSERVICE_BY_ID: (id: string) => `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`,
   /** @deprecated Use AdminFacadeService methods instead */
   MATRIX_WHOAMI: '/_matrix/admin/v1/whoami',
-  MATRIX_EXTERNAL_SERVICES: '/_matrix/admin/v1/external_services'
+  MATRIX_EXTERNAL_SERVICES: '/_matrix/admin/v1/external_services',
+  /** Purge remote media cache (admin) — used by AdminMediaService.purgeRemoteMedia */
+  PURGE_REMOTE_MEDIA: '/_matrix/client/v1/admin/purge_remote_media'
 } as const

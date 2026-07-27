@@ -5,10 +5,22 @@
       clearable
       :placeholder="placeholder"
       :aria-label="ariaLabel"
+      class="friend-search-bar__input"
       @update:value="handleValueChange"
-      @keydown.enter="handleEnterSearch">
+      @keydown.enter="handleEnterSearch"
+      @keydown.esc="handleEsc">
       <template #prefix>
-        <svg class="size-14px"><use href="#search" /></svg>
+        <svg class="size-16px color-[--hula-text-tertiary]"><use href="#search" /></svg>
+      </template>
+      <template v-if="showGlobalSearchAction" #suffix>
+        <button
+          type="button"
+          class="friend-search-bar__global"
+          :aria-label="t('search.title')"
+          :title="t('search.title')"
+          @click="$emit('global-search', modelValue)">
+          <svg class="size-16px"><use href="#expand" /></svg>
+        </button>
       </template>
     </n-input>
 
@@ -49,13 +61,16 @@ const props = withDefaults(
     placeholder?: string
     dir?: 'ltr' | 'rtl'
     debounceMs?: number
+    /** 阶段 3：是否显示全局搜索触发按钮 */
+    showGlobalSearchAction?: boolean
   }>(),
   {
     history: () => [],
     showHistory: true,
     placeholder: '',
     dir: 'ltr',
-    debounceMs: 300
+    debounceMs: 300,
+    showGlobalSearchAction: false
   }
 )
 
@@ -64,6 +79,8 @@ const emit = defineEmits<{
   search: [value: string]
   'select-history': [value: string]
   'clear-history': []
+  /** 阶段 3：点击全局搜索按钮时触发 */
+  'global-search': [value: string]
 }>()
 
 const { t } = useI18n()
@@ -79,6 +96,12 @@ const handleValueChange = (value: string) => {
 const handleEnterSearch = () => {
   emit('search', props.modelValue)
 }
+
+// 阶段 9：Esc 清空搜索框并失焦（需求文档 3.3.6）
+const handleEsc = () => {
+  emit('update:modelValue', '')
+  emit('search', '')
+}
 </script>
 
 <style scoped lang="scss">
@@ -86,6 +109,20 @@ const handleEnterSearch = () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* 阶段 9：搜索栏规范（需求文档 3.3.6）—— 高度 40px，圆角 8px，背景 --hula-surface-search */
+.friend-search-bar__input {
+  :deep(.n-input) {
+    --n-height: 40px;
+    --n-font-size: 14px;
+    --n-border-radius: 8px;
+    background: var(--hula-surface-search);
+  }
+
+  :deep(.n-input__input-el) {
+    font-size: 14px;
+  }
 }
 
 .friend-search-bar__history {
@@ -117,6 +154,26 @@ const handleEnterSearch = () => {
 
   &:hover {
     color: var(--hula-color-primary-600);
+  }
+}
+
+.friend-search-bar__global {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--hula-text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  transition:
+    background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard),
+    color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+
+  &:hover {
+    background: var(--hula-surface-list-hover);
+    color: var(--hula-text-primary);
   }
 }
 

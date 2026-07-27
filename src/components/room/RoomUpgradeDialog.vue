@@ -47,11 +47,7 @@
     <template #footer>
       <div class="dialog-footer">
         <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
-        <n-button
-          type="primary"
-          :loading="flow.upgrading.value"
-          :disabled="!canSubmit"
-          @click="handleSubmit">
+        <n-button type="primary" :loading="flow.upgrading.value" :disabled="!canSubmit" @click="handleSubmit">
           {{ t('room_advanced.room_upgrade.submit') }}
         </n-button>
       </div>

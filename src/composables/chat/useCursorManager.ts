@@ -1,6 +1,6 @@
 import type { SelectionRange } from '../common/useCommon'
 
-export interface CursorManager {
+interface CursorManager {
   getCursorSelectionRange: () => SelectionRange | null
   updateSelectionRange: (sr: SelectionRange | null) => void
   focusOn: (editor: HTMLElement) => void

@@ -10,7 +10,7 @@ const logger = createLogger('RoomCapabilitiesService')
  * capabilities 稳定字段 - knock, restricted, threading, read_receipts, typing_notifications
  * features 稳定字段 - encryption, federation, guest_access
  */
-export interface RoomCapabilitiesPayload {
+interface RoomCapabilitiesPayload {
   room_id: string
   room_version?: string
   capabilities?: Record<string, { enabled?: boolean }>
@@ -29,8 +29,8 @@ const STABLE_CAPABILITIES = ['knock', 'restricted', 'threading', 'read_receipts'
 
 const STABLE_FEATURES = ['encryption', 'federation', 'guest_access'] as const
 
-export type StableRoomCapabilityName = (typeof STABLE_CAPABILITIES)[number]
-export type StableRoomFeatureName = (typeof STABLE_FEATURES)[number]
+type StableRoomCapabilityName = (typeof STABLE_CAPABILITIES)[number]
+type StableRoomFeatureName = (typeof STABLE_FEATURES)[number]
 
 class RoomCapabilitiesService {
   private cache = new Map<string, CacheEntry>()
@@ -115,9 +115,7 @@ class RoomCapabilitiesService {
 
 export const roomCapabilitiesService = new RoomCapabilitiesService()
 export const ROOM_CAPABILITY_NAMES = STABLE_CAPABILITIES
-export const ROOM_FEATURE_NAMES = STABLE_FEATURES
-
-export type { CacheEntry as RoomCapabilitiesCacheEntry }
+const _ROOM_FEATURE_NAMES = STABLE_FEATURES
 
 // 测试 / 诊断辅助导出
 export const __ROOM_CAPABILITIES_TTL_MS__ = CAPABILITY_TTL_MS

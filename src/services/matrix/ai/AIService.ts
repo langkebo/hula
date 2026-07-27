@@ -31,7 +31,7 @@ export interface AIConversation {
   updatedAt?: number
 }
 
-export interface AIMessage {
+interface AIMessage {
   id: string
   conversationId: string
   role: 'user' | 'assistant' | 'system'
@@ -46,7 +46,7 @@ export interface AIMessage {
   reasoningContent?: string
 }
 
-export interface ImageGenerationRequest {
+interface ImageGenerationRequest {
   modelId: string
   prompt: string
   width?: number
@@ -56,13 +56,13 @@ export interface ImageGenerationRequest {
   [key: string]: unknown
 }
 
-export interface ImageGenerationResult {
+interface ImageGenerationResult {
   id: string
   url?: string
   status?: number
 }
 
-export interface AIModelRemainingUsageResponse {
+interface AIModelRemainingUsageResponse {
   remainingUsage: number
 }
 
@@ -77,7 +77,7 @@ export interface VideoGenerationRequest {
   [key: string]: unknown
 }
 
-export interface AudioGenerationRequest {
+interface AudioGenerationRequest {
   modelId?: string | number
   prompt: string
   conversationId?: string
@@ -87,7 +87,7 @@ export interface AudioGenerationRequest {
 
 export type AIAsyncGenerationResponse = number | string | { id?: number | string; url?: string; status?: number }
 
-export interface StreamCallbacks {
+interface StreamCallbacks {
   onChunk?: (chunk: string) => void
   onDone?: (fullContent: string) => void
   onError?: (error: string) => void
@@ -559,4 +559,3 @@ class MatrixAIService {
 }
 
 export const aiService = new MatrixAIService()
-export default aiService

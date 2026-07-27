@@ -5,7 +5,7 @@
       class="absolute right-0 w-full z-999"
       :shrink="false"
       :max-w="false"
-      :current-label="WebviewWindow.getCurrent().label" />
+      :current-label="currentWindowLabel" />
 
     <!-- 标题 -->
     <p
@@ -56,9 +56,12 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { countGraphemes } from '@/composables/common/useCommon'
 import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 import { useUserStore } from '@/stores/domains/user/user'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AddGroupVerify')
+
+const currentWindowLabel = computed(() => (hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''))
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -73,14 +76,18 @@ const addFriend = async () => {
   if (!submitted) return
   showFeedback(t('message.group_verify.toast_success'), 'success')
   setTimeout(async () => {
-    await getCurrentWebviewWindow().close()
+    if (hasTauriRuntime()) {
+      await getCurrentWebviewWindow().close()
+    }
   }, 2000)
 }
 
 onMounted(async () => {
   logger.debug('userInfo', userInfo.value)
 
-  await getCurrentWebviewWindow().show()
+  if (hasTauriRuntime()) {
+    await getCurrentWebviewWindow().show()
+  }
   syncDefaultMessage()
 })
 </script>

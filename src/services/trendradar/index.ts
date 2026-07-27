@@ -1,11 +1,2 @@
-export type {
-  McpRpcRequest,
-  McpRpcResponse,
-  TrendRadarAnalysisResult,
-  TrendRadarNews,
-  TrendRadarRssArticle,
-  TrendRadarSearchResult,
-  TrendRadarTool,
-  TrendRadarTopic
-} from './TrendRadarService'
-export { TrendRadarService, trendRadarClient, useTrendRadar } from './TrendRadarService'
+export type { TrendRadarNews, TrendRadarRssArticle, TrendRadarTopic } from './TrendRadarService'
+export { useTrendRadar } from './TrendRadarService'

@@ -615,8 +615,10 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     {
       label: () => t('menu.add_friend'),
       icon: 'people-plus',
-      click: (item: ContextMenuItem) => {
-        useMitt.emit(MittEnum.OPEN_ADD_FRIEND_DIALOG, { uid: item.uid || item.fromUser.uid })
+      click: async (item: ContextMenuItem) => {
+        const uid = item.uid || item.fromUser.uid
+        const { default: router } = await import('@/router')
+        void router.push({ name: 'friend-add', query: { uid } })
       },
       visible: (item: ContextMenuItem) => !checkFriendRelation(item.uid || item.fromUser.uid, 'all')
     },
@@ -936,5 +938,5 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   }
 }
 
-export type UseChatMainContext = ReturnType<typeof useChatMain>
+type UseChatMainContext = ReturnType<typeof useChatMain>
 export const chatMainInjectionKey = Symbol('chatMainInjectionKey') as InjectionKey<UseChatMainContext>

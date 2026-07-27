@@ -11,7 +11,7 @@ import { parseStoredProxySettings } from '@/utils/proxySettings'
 
 const logger = createLogger('Bootstrap')
 
-export type BootstrapState = 'idle' | 'initializing' | 'ready' | 'error'
+type BootstrapState = 'idle' | 'initializing' | 'ready' | 'error'
 
 const BOOTSTRAP_TIMEOUT_MS = 15_000
 
@@ -164,5 +164,3 @@ const useSharedBootstrap = createSharedComposable(() => {
 export function useBootstrap() {
   return useSharedBootstrap()
 }
-
-export default useBootstrap

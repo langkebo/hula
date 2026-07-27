@@ -7,10 +7,10 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useSecureBackupFlow')
 
-export type SecureBackupPhase = 'status' | 'create' | 'restore' | 'success' | 'error'
-export type SecureBackupStatus = 'active' | 'inactive' | 'incomplete' | 'unknown'
+type SecureBackupPhase = 'status' | 'create' | 'restore' | 'success' | 'error'
+type SecureBackupStatus = 'active' | 'inactive' | 'incomplete' | 'unknown'
 
-export interface CryptoStatus {
+interface CryptoStatus {
   crossSigningReady?: boolean
   keyBackupEnabled?: boolean
   keyBackupVersion?: string | null

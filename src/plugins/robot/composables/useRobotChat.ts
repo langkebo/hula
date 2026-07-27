@@ -85,7 +85,7 @@ export interface PaginationState {
   total: number
 }
 
-export interface UseRobotChatOptions {
+interface UseRobotChatOptions {
   msgInputRef: Ref<{ clearInput?: () => void } | undefined>
 }
 

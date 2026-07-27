@@ -9,7 +9,7 @@ const logger = createLogger('useEmojiPackManager')
 /**
  * 新增表情数据(用于上传到指定表情包)
  */
-export interface NewEmojiData {
+interface NewEmojiData {
   /** 表情图片文件,支持 PNG / GIF / WebP */
   file: File
   /** 表情名称 */

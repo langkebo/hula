@@ -190,4 +190,3 @@ class MatrixSpecialFriendService extends BaseMatrixService {
 }
 
 export const matrixSpecialFriendService = new MatrixSpecialFriendService()
-export default matrixSpecialFriendService

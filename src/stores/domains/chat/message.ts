@@ -5,18 +5,9 @@ import { computed } from 'vue'
 import { StoresEnum } from '@/enums'
 import { useChatStore } from './chat/message'
 import { getTimerWorker } from './chat/timerWorker'
-import {
-  type CustomForwardTask,
-  type MessageBody,
-  type MessageType,
-  pageSize,
-  RECALL_EXPIRATION_TIME,
-  type RecalledMessage,
-  ROOM_MESSAGE_CACHE_LIMIT
-} from './chat/types'
+import type { MessageBody, MessageType } from './chat/types'
 
-export type { CustomForwardTask, MessageBody, MessageType, RecalledMessage }
-export { pageSize, RECALL_EXPIRATION_TIME, ROOM_MESSAGE_CACHE_LIMIT }
+export type { MessageBody, MessageType }
 
 /**
  * @deprecated 请使用 useChatStore 替代。本 store 仅作为 useChatStore 的透传代理，

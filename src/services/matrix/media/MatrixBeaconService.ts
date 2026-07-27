@@ -37,7 +37,7 @@ type BeaconEventContent = {
   [key: string]: unknown
 }
 
-export interface BeaconInfo {
+interface BeaconInfo {
   event_id: string
   room_id: string
   user_id: string
@@ -47,7 +47,7 @@ export interface BeaconInfo {
   last_updated: number
 }
 
-export interface BeaconLocation {
+interface BeaconLocation {
   event_id: string
   beacon_info_id: string
   timestamp: number
@@ -59,13 +59,13 @@ export interface BeaconLocation {
   bearing?: number
 }
 
-export interface CreateBeaconParams {
+interface CreateBeaconParams {
   roomId: string
   description?: string
   timeout?: number
 }
 
-export interface UpdateBeaconLocationParams {
+interface UpdateBeaconLocationParams {
   roomId: string
   beaconInfoEventId: string
   latitude: number

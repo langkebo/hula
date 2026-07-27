@@ -5,7 +5,7 @@ const logger = createLogger('MatrixErrorTranslator')
 /**
  * @deprecated Use `AppError` from `@/common/errors` instead. This interface will be removed in a future version.
  */
-export interface TranslatedError {
+interface TranslatedError {
   userMessage: string
   level: 'toast' | 'dialog' | 'page'
   recoverable: boolean
@@ -13,7 +13,7 @@ export interface TranslatedError {
   retryAfterMs?: number
 }
 
-export type MatrixErrorTranslationContext = 'default' | 'login'
+type MatrixErrorTranslationContext = 'default' | 'login'
 
 const ERROR_MAP: Record<string, TranslatedError> = {
   M_FORBIDDEN: {

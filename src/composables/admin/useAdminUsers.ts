@@ -11,7 +11,7 @@ export interface UserSession {
   lastSeenTs?: number
 }
 
-export interface UserStats {
+interface UserStats {
   joined_rooms?: number
   joinedRooms?: number
   messages_sent?: number
@@ -23,7 +23,7 @@ export interface UserStats {
   [key: string]: unknown
 }
 
-export interface UseAdminUsersResult {
+interface UseAdminUsersResult {
   // state
   users: Ref<UserInfo[]>
   filteredUsers: Ref<UserInfo[]>

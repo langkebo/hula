@@ -12,7 +12,7 @@ export class HttpClientError extends Error {
   }
 }
 
-export interface HttpClientConfig {
+interface HttpClientConfig {
   timeoutMs?: number
   signal?: AbortSignal
   headers?: Record<string, string>

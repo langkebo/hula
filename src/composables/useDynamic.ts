@@ -2,7 +2,7 @@ import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 
 export type DynamicRoadmapStatus = 'planned' | 'in-progress' | 'blocked'
 
-export interface DynamicRoadmapItem {
+interface DynamicRoadmapItem {
   id: string
   title: string
   description: string

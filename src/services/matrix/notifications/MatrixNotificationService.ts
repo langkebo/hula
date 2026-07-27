@@ -11,7 +11,7 @@ let ackEndpointAvailableCache: boolean | null = null
 let ackCheckTimestamp = 0
 const ACK_CHECK_TTL = 5 * 60 * 1000
 
-export interface NotificationRule {
+interface NotificationRule {
   ruleId: string
   kind: 'override' | 'content' | 'room' | 'sender' | 'underride'
   roomId?: string
@@ -20,7 +20,7 @@ export interface NotificationRule {
   enabled?: boolean
 }
 
-export interface NotificationConfig {
+interface NotificationConfig {
   enableDesktop: boolean
   enableSound: boolean
   enableVibrate: boolean
@@ -510,4 +510,3 @@ class MatrixNotificationService extends BaseMatrixService {
 }
 
 export const matrixNotificationService = new MatrixNotificationService()
-export default matrixNotificationService

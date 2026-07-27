@@ -19,7 +19,6 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
 import router from '@/router'
-import { matrixQrLoginService } from '@/services/matrix/auth/MatrixQrLoginService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -36,29 +35,25 @@ interface ScanData {
   [key: string]: unknown // 允许有其他任意字段
 }
 
+/**
+ * 处理扫码登录 — MSC4108 协议
+ *
+ * 桌面端（新设备）通过 `matrixQrLoginSdkService.generateQrCodeAsNewDevice()`
+ * 生成 base64 编码的 MSC4108 二维码。手机端扫描后，二维码内容为 base64 字符串。
+ * 扫码器将其作为 `qrData` 字段传入，本函数将其透传到 ConfirmQRLogin 页面，
+ * 由该页面调用 `matrixQrLoginSdkService.scanQrCode()` 建立安全通道。
+ */
 const handleScanLogin = async (data: ScanData) => {
-  if (!Object.hasOwn(data, 'qrId')) {
-    showFeedback('登录二维码不存在qrId', 'warning')
-    throw new Error(`登录二维码不存在qrId: ${JSON.stringify(data)}`)
-  }
-
-  const { qrId } = data
-
-  const qrResult = await matrixQrLoginService.handleScan(qrId as string)
-  if (!qrResult) {
-    showFeedback('登录二维码已失效', 'warning')
-    throw new Error('二维码登录会话不存在或已失效')
+  // MSC4108 flow: scanned QR is a base64 string passed as `qrData`
+  const qrData = data.qrData as string
+  if (!qrData || typeof qrData !== 'string') {
+    showFeedback('登录二维码格式不正确', 'warning')
+    throw new Error(`MSC4108 QR data missing or invalid: ${JSON.stringify(data)}`)
   }
 
   router.push({
     name: 'mobileConfirmQRLogin',
-    params: {
-      ip: qrResult?.ip || '',
-      expireTime: qrResult?.expireTime || '',
-      deviceType: qrResult?.deviceType || '',
-      locPlace: qrResult?.locPlace || '',
-      qrId: qrId as string
-    }
+    query: { qr_data: qrData }
   })
 }
 

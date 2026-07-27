@@ -29,7 +29,7 @@ interface ConversationLike {
   id: string
 }
 
-export interface UseAiMediaCacheOptions {
+interface UseAiMediaCacheOptions {
   messageList: Ref<MessageLike[]>
   currentChat: Ref<ConversationLike>
   userUid: Ref<string | undefined>

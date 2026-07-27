@@ -3,7 +3,7 @@
     <div v-if="showBanner" class="connection-status-banner" :class="`connection-status-banner--${state}`">
       <div class="connection-status-banner__content">
         <div class="connection-status-banner__icon">
-          <n-spin v-if="state === 'reconnecting' || state === 'connecting'" :size="14" />
+          <n-spin v-if="state === 'reconnecting' || state === 'connecting' || state === 'syncing'" :size="14" />
           <svg
             v-else-if="state === 'offline'"
             width="14"
@@ -94,6 +94,8 @@ const statusText = computed(() => {
         return t('connection.reconnecting_attempt', { count: props.retryCount, max: props.maxRetries })
       }
       return t('connection.reconnecting')
+    case 'syncing':
+      return t('connection.syncing')
     case 'error':
       return t('connection.failed')
     default:
@@ -159,6 +161,11 @@ const onDiagnose = async () => {
 }
 
 .connection-status-banner--reconnecting {
+  background: var(--hula-color-info-500);
+  color: var(--hula-text-inverse);
+}
+
+.connection-status-banner--syncing {
   background: var(--hula-color-info-500);
   color: var(--hula-text-inverse);
 }

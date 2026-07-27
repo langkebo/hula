@@ -14,17 +14,17 @@ export interface AIConnectionInfo {
   config?: Record<string, unknown>
 }
 
-export interface AIConnectionsListResponse {
+interface AIConnectionsListResponse {
   connections: AIConnectionInfo[]
 }
 
-export interface CreateAIConnectionRequest {
+interface CreateAIConnectionRequest {
   name: string
   type: string
   config: Record<string, unknown>
 }
 
-export interface CreateAIConnectionResponse {
+interface CreateAIConnectionResponse {
   id: string
 }
 
@@ -34,16 +34,16 @@ export interface McpTool {
   parameters: Record<string, unknown>
 }
 
-export interface McpToolsResponse {
+interface McpToolsResponse {
   tools: McpTool[]
 }
 
-export interface CallMcpToolRequest {
+interface CallMcpToolRequest {
   tool: string
   parameters: Record<string, unknown>
 }
 
-export interface CallMcpToolResponse {
+interface CallMcpToolResponse {
   result: Record<string, unknown>
 }
 
@@ -149,4 +149,3 @@ class MatrixAIConnectionService {
 }
 
 export const matrixAIConnectionService = new MatrixAIConnectionService()
-export default matrixAIConnectionService

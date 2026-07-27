@@ -9,7 +9,7 @@ export interface PermissionRow {
   permissions: string[]
 }
 
-export interface UseWidgetPermissionsResult {
+interface UseWidgetPermissionsResult {
   rows: Ref<PermissionRow[]>
   loading: Ref<boolean>
   mutating: Ref<boolean>

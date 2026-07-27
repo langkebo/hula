@@ -4,13 +4,13 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ConfigService')
 
-export interface IceServerConfig {
+interface IceServerConfig {
   urls: string[]
   username?: string
   credential?: string
 }
 
-export interface AppConfig {
+interface AppConfig {
   iceServer?: IceServerConfig
   default_hs_url?: string
   default_is_url?: string
@@ -98,4 +98,3 @@ class ConfigService {
 }
 
 export const configService = new ConfigService()
-export default configService

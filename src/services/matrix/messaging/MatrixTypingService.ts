@@ -151,4 +151,3 @@ class MatrixTypingService extends BaseMatrixService {
 }
 
 export const matrixTypingService = new MatrixTypingService()
-export default matrixTypingService

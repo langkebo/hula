@@ -13,8 +13,8 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useKeyBackupFlow')
 
-export type KeyBackupStep = 'intro' | 'create' | 'showKey' | 'verify' | 'restore' | 'success' | 'error'
-export type KeyBackupMode = 'setup' | 'restore'
+type KeyBackupStep = 'intro' | 'create' | 'showKey' | 'verify' | 'restore' | 'success' | 'error'
+type KeyBackupMode = 'setup' | 'restore'
 
 interface BackupInfoLike {
   version?: string
@@ -23,7 +23,7 @@ interface BackupInfoLike {
   etag?: string
 }
 
-export interface UseKeyBackupFlowOptions {
+interface UseKeyBackupFlowOptions {
   mode?: KeyBackupMode
 }
 

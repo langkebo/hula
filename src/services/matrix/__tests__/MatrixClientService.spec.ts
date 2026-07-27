@@ -53,7 +53,7 @@ vi.mock('matrix-js-sdk', () => {
 
 describe('MatrixClientService', () => {
   type MatrixClientServiceInternals = {
-    client: MatrixClient | null
+    connectionManager: { setClient: (c: unknown) => void; getClient: () => unknown }
     connectionState: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'ERROR'
   }
 
@@ -65,7 +65,7 @@ describe('MatrixClientService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.unstubAllGlobals()
-    ;(matrixClientService as unknown as MatrixClientServiceInternals).client = null
+    ;(matrixClientService as unknown as MatrixClientServiceInternals).connectionManager.setClient(null)
     ;(matrixClientService as unknown as MatrixClientServiceInternals).connectionState = 'DISCONNECTED'
   })
 

@@ -11,7 +11,7 @@ export interface ErrorContext {
   [key: string]: unknown
 }
 
-export interface TrackedError {
+interface TrackedError {
   type: 'unhandled' | 'promise' | 'vue' | 'manual'
   message: string
   stack?: string

@@ -2,7 +2,7 @@ import { readonly, ref } from 'vue'
 
 const currentSessionRoomId = ref('')
 
-export function useCurrentSessionRoomState() {
+function _useCurrentSessionRoomState() {
   return {
     currentSessionRoomId: readonly(currentSessionRoomId)
   }
@@ -17,6 +17,6 @@ export function setCurrentSessionRoomId(roomId: string): string {
   return currentSessionRoomId.value
 }
 
-export function resetCurrentSessionRoomStateForTests(): void {
+function _resetCurrentSessionRoomStateForTests(): void {
   currentSessionRoomId.value = ''
 }

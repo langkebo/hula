@@ -273,6 +273,7 @@
     "delete_success": "Selected messages deleted",
     "forward_success": "Messages forwarded",
     "forward_failed": "Failed to forward",
+    "forward_partial_failed": "{failed}/{total} target(s) failed to forward",
     "non_text_message": "[Non-text message]"
   },
   "forward": {

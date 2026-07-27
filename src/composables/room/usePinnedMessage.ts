@@ -9,7 +9,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('usePinnedMessage')
 
 /** 置顶消息摘要(纯文本展示用) */
-export interface PinnedMessageInfo {
+interface PinnedMessageInfo {
   eventId: string
   sender: string
   body: string
@@ -17,7 +17,7 @@ export interface PinnedMessageInfo {
   msgtype: string
 }
 
-export interface UsePinnedMessageOptions {
+interface UsePinnedMessageOptions {
   /** 房间 ID,支持 ref / getter / 字符串 */
   roomId: MaybeRefOrGetter<string | null | undefined>
 }

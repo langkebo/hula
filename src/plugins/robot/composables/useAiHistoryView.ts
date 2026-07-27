@@ -19,7 +19,7 @@ import type { HistoryItem, PaginationState, PreviewItem } from './useRobotChat'
 
 const logger = createLogger('AiHistoryView')
 
-export interface UseAiHistoryViewOptions {
+interface UseAiHistoryViewOptions {
   selectedModel: Ref<AIModel | null>
 }
 

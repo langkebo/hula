@@ -1,12 +1,9 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
-import { useSettingStore } from '@/stores/domains/settings/setting'
+import { defineComponent, h, nextTick, type Ref, ref } from 'vue'
 
-const mockWebviewWindow = {
-  label: 'home'
-}
+const mockWebviewWindow = { label: 'home' }
 
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
   WebviewWindow: {
@@ -14,10 +11,18 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
   }
 }))
 
-vi.mock('@vueuse/core', () => ({
-  useWindowSize: () => ({
-    width: { value: 1920 },
-    height: { value: 1080 }
+// Step 2.3：mock useResponsiveBreakpoint，提供可变的 mode/centerWidth/isShrink
+const modeRef = ref<'wide' | 'normal' | 'shrink'>('wide') as Ref<'wide' | 'normal' | 'shrink'>
+const centerWidthRef = ref(280)
+const isShrinkRef = ref(false)
+const isRightPaneFullscreenRef = ref(false)
+
+vi.mock('@/composables/layout/useResponsiveBreakpoint', () => ({
+  useResponsiveBreakpoint: () => ({
+    mode: modeRef,
+    centerWidth: centerWidthRef,
+    isShrink: isShrinkRef,
+    isRightPaneFullscreen: isRightPaneFullscreenRef
   })
 }))
 
@@ -49,18 +54,6 @@ vi.mock('@/components/windows/ActionBar.vue', () => ({
   })
 }))
 
-const timerManagerMock = {
-  setTimeout: vi.fn((cb: () => void, _delay: number) => {
-    cb()
-    return 0
-  }),
-  clearTimeout: vi.fn(),
-  clearAll: vi.fn()
-}
-vi.mock('@/utils/TimerManager', () => ({
-  useTimerManager: () => timerManagerMock
-}))
-
 vi.mock('vue-router', () => ({
   RouterView: defineComponent({
     name: 'RouterView',
@@ -70,43 +63,18 @@ vi.mock('vue-router', () => ({
 
 import CenterLayout from '../index.vue'
 
-// jsdom 不做真实布局，getBoundingClientRect 返回 0
-// 需要 mock 为合理的布局尺寸，避免组件进入 shrink 模式
-function setupLayoutDOM() {
-  const layout = document.createElement('div')
-  layout.id = 'layout'
-  layout.style.width = '1920px'
-
-  const left = document.createElement('div')
-  left.className = 'left'
-  left.style.width = '64px'
-
-  layout.appendChild(left)
-  document.body.appendChild(layout)
-
-  // Mock getBoundingClientRect for layout and left elements
-  const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect
-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-    if (this.id === 'layout') {
-      return { width: 1920, height: 1080, x: 0, y: 0, top: 0, left: 0, right: 1920, bottom: 1080, toJSON: () => ({}) }
-    }
-    if (this.classList?.contains('left')) {
-      return { width: 64, height: 1080, x: 0, y: 0, top: 0, left: 0, right: 64, bottom: 1080, toJSON: () => ({}) }
-    }
-    return originalGetBoundingClientRect.call(this)
-  })
-}
-
-describe('CenterLayout — 中间栏宽度持久化', () => {
+describe('CenterLayout — Step 2.3 响应式断点', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mittHandlers.clear()
     setActivePinia(createPinia())
-    setupLayoutDOM()
+    modeRef.value = 'wide'
+    centerWidthRef.value = 280
+    isShrinkRef.value = false
+    isRightPaneFullscreenRef.value = false
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     document.body.innerHTML = ''
     document.body.style.cursor = ''
     document.body.style.userSelect = ''
@@ -115,8 +83,6 @@ describe('CenterLayout — 中间栏宽度持久化', () => {
   async function mountCenter() {
     const pinia = createPinia()
     setActivePinia(pinia)
-    const store = useSettingStore()
-
     const wrapper = mount(CenterLayout, {
       attachTo: document.body,
       global: {
@@ -126,115 +92,81 @@ describe('CenterLayout — 中间栏宽度持久化', () => {
         }
       }
     })
-
     await nextTick()
-    return { wrapper, store }
+    return wrapper
   }
 
-  it('从 settingStore 恢复持久化的宽度', async () => {
-    const pinia = createPinia()
-    setActivePinia(pinia)
-    const store = useSettingStore()
-    store.setPanelWidth(320)
-
-    const wrapper = mount(CenterLayout, {
-      attachTo: document.body,
-      global: {
-        plugins: [pinia],
-        stubs: { RouterView: true }
-      }
-    })
-    await nextTick()
-
+  it('wide 模式中间栏宽度为 280px', async () => {
+    centerWidthRef.value = 280
+    const wrapper = await mountCenter()
     const center = wrapper.find('#center')
     expect(center.exists()).toBe(true)
-    // centerStyle 的 width 应基于 store 中持久化的 320px
     const style = center.attributes('style') || ''
-    expect(style).toContain('320px')
-
+    expect(style).toContain('280px')
     wrapper.unmount()
   })
 
-  it('pointerdown 在 resize-handle 上启动拖拽并设置 cursor', async () => {
-    const { wrapper } = await mountCenter()
-
-    const handle = wrapper.find('.resize-handle')
-    expect(handle.exists()).toBe(true)
-
-    await handle.trigger('pointerdown', { clientX: 500, clientY: 100 })
-
-    expect(document.body.style.cursor).toBe('col-resize')
-    expect(document.body.style.userSelect).toBe('none')
-
-    wrapper.unmount()
-  })
-
-  it('pointermove 拖拽时宽度被限制在 240-360px 范围内', async () => {
-    const { wrapper } = await mountCenter()
-
-    const handle = wrapper.find('.resize-handle')
-    await handle.trigger('pointerdown', { clientX: 500, clientY: 100 })
-
-    // 模拟向左大幅拖拽（起始宽度 280，向左移动 500px → 应被限制到 240）
-    const moveEvent = new PointerEvent('pointermove', { clientX: 0, clientY: 100 })
-    document.dispatchEvent(moveEvent)
-    await nextTick()
-    // 等待 requestAnimationFrame 回调
-    await new Promise((resolve) => requestAnimationFrame(resolve))
-    await nextTick()
-
+  it('normal 模式中间栏宽度为 240px', async () => {
+    centerWidthRef.value = 240
+    const wrapper = await mountCenter()
     const center = wrapper.find('#center')
     const style = center.attributes('style') || ''
-    // 宽度不应低于 240
     expect(style).toContain('240px')
-
     wrapper.unmount()
   })
 
-  it('pointerup 结束拖拽时持久化宽度到 store', async () => {
-    const { wrapper, store } = await mountCenter()
-    const initialWidth = store.panelWidth
-
-    const handle = wrapper.find('.resize-handle')
-    await handle.trigger('pointerdown', { clientX: 500, clientY: 100 })
-
-    // 模拟拖拽到 300px 位置（从 280 起始，向右移动 20px → 300）
-    const moveEvent = new PointerEvent('pointermove', { clientX: 520, clientY: 100 })
-    document.dispatchEvent(moveEvent)
-    await new Promise((resolve) => requestAnimationFrame(resolve))
-    await nextTick()
-
-    // 结束拖拽
-    const upEvent = new PointerEvent('pointerup')
-    document.dispatchEvent(upEvent)
-    await nextTick()
-
-    // store 应被更新（宽度从 280 变为 300）
-    expect(store.panelWidth).not.toBe(initialWidth)
-    expect(store.panelWidth).toBeGreaterThanOrEqual(240)
-    expect(store.panelWidth).toBeLessThanOrEqual(360)
-
+  it('shrink 模式中间栏宽度为 64px', async () => {
+    isShrinkRef.value = true
+    const wrapper = await mountCenter()
+    const center = wrapper.find('#center')
+    const style = center.attributes('style') || ''
+    expect(style).toContain('64px')
     wrapper.unmount()
   })
 
-  it('pointerup 结束后清除 cursor 样式', async () => {
-    const { wrapper } = await mountCenter()
+  it('shrink 模式下显示 ActionBar', async () => {
+    isShrinkRef.value = true
+    const wrapper = await mountCenter()
+    const actionBar = wrapper.find('.action-bar-stub')
+    expect(actionBar.exists()).toBe(true)
+    wrapper.unmount()
+  })
 
+  it('非 shrink 模式下显示 resize-handle', async () => {
+    isShrinkRef.value = false
+    const wrapper = await mountCenter()
     const handle = wrapper.find('.resize-handle')
-    await handle.trigger('pointerdown', { clientX: 500, clientY: 100 })
-    expect(document.body.style.cursor).toBe('col-resize')
+    expect(handle.exists()).toBe(true)
+    wrapper.unmount()
+  })
 
-    const upEvent = new PointerEvent('pointerup')
-    document.dispatchEvent(upEvent)
+  it('shrink 模式下隐藏 resize-handle', async () => {
+    isShrinkRef.value = true
+    const wrapper = await mountCenter()
+    const handle = wrapper.find('.resize-handle')
+    expect(handle.attributes('style')).toContain('display: none')
+    wrapper.unmount()
+  })
+
+  it('断点变化时中间栏宽度跟随更新', async () => {
+    centerWidthRef.value = 280
+    const wrapper = await mountCenter()
+    expect(wrapper.find('#center').attributes('style') || '').toContain('280px')
+
+    centerWidthRef.value = 240
     await nextTick()
+    expect(wrapper.find('#center').attributes('style') || '').toContain('240px')
 
-    expect(document.body.style.cursor).toBe('')
+    isShrinkRef.value = true
+    await nextTick()
+    expect(wrapper.find('#center').attributes('style') || '').toContain('64px')
 
     wrapper.unmount()
   })
 
   it('resize-handle 有 touch-action: none 样式（兼容触摸）', async () => {
-    const { wrapper } = await mountCenter()
+    isShrinkRef.value = false
+    const wrapper = await mountCenter()
     const handle = wrapper.find('.resize-handle')
     expect(handle.attributes('style')).toContain('touch-action: none')
     wrapper.unmount()

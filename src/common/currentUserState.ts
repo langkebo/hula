@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { UserInfoType } from '@/services/types'
 
-export interface MatrixUserProfile {
+interface MatrixUserProfile {
   userId: string
   displayName: string | null
   avatarUrl: string | null
@@ -12,7 +12,7 @@ export interface MatrixUserProfile {
 const userInfo = ref<UserInfoType | undefined>()
 const matrixProfile = ref<MatrixUserProfile | null>(null)
 
-export function useCurrentUserState() {
+function _useCurrentUserState() {
   return {
     userInfo,
     matrixProfile
@@ -43,7 +43,7 @@ export function patchCurrentUserInfoFields(
   return userInfo.value
 }
 
-export function setCurrentMatrixProfile(profile: MatrixUserProfile | null): MatrixUserProfile | null {
+function _setCurrentMatrixProfile(profile: MatrixUserProfile | null): MatrixUserProfile | null {
   matrixProfile.value = profile
   return matrixProfile.value
 }
@@ -53,6 +53,6 @@ export function clearCurrentUserState(): void {
   matrixProfile.value = null
 }
 
-export function resetCurrentUserStateForTests(): void {
+function _resetCurrentUserStateForTests(): void {
   clearCurrentUserState()
 }

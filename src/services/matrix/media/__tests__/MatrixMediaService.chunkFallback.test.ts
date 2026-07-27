@@ -67,3 +67,45 @@ describe('MatrixMediaService 413 分片回退', () => {
     expect(chunkUploadMock).not.toHaveBeenCalled()
   })
 })
+
+describe('MatrixMediaService uploadLargeFile 主动分块上传 (§9.4.1)', () => {
+  beforeEach(() => {
+    uploadContentMock.mockReset()
+    chunkUploadMock.mockReset()
+  })
+
+  it('uploadLargeFile 直接调用分块上传服务，不走 client.uploadContent', async () => {
+    chunkUploadMock.mockResolvedValueOnce({
+      mxcUrl: 'mxc://hs/large-file',
+      filename: 'large.bin',
+      size: 15 * 1024 * 1024,
+      mimeType: 'application/octet-stream'
+    })
+
+    const largeFile = new File([new Uint8Array(16)], 'large.bin', { type: 'application/octet-stream' })
+    const result = await matrixMediaService.uploadLargeFile(largeFile)
+
+    expect(chunkUploadMock).toHaveBeenCalledTimes(1)
+    expect(uploadContentMock).not.toHaveBeenCalled()
+    expect(result.contentUri).toBe('mxc://hs/large-file')
+    expect(result.size).toBe(largeFile.size)
+  })
+
+  it('uploadLargeFile 透传进度回调', async () => {
+    chunkUploadMock.mockImplementationOnce(async (opts) => {
+      opts.onProgress?.({ percentage: 42 } as never)
+      return {
+        mxcUrl: 'mxc://hs/large-file-2',
+        filename: 'large.bin',
+        size: 12 * 1024 * 1024,
+        mimeType: 'application/octet-stream'
+      }
+    })
+
+    const onProgress = vi.fn()
+    const largeFile = new File([new Uint8Array(16)], 'large.bin', { type: 'application/octet-stream' })
+    await matrixMediaService.uploadLargeFile(largeFile, onProgress)
+
+    expect(onProgress).toHaveBeenCalledWith(42)
+  })
+})

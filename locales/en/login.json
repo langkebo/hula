@@ -82,7 +82,10 @@
   "status": {
     "logging_in": "Logging in...",
     "success_redirect": "Redirecting...",
-    "service_disconnected": "Service disconnected"
+    "service_disconnected": "Service disconnected",
+    "timeout": "Login timed out, please check your network and retry",
+    "failed": "Login failed",
+    "retry": "Retry login"
   },
   "qr": {
     "overlay": {

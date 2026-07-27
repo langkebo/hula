@@ -14,7 +14,7 @@ export interface SearchResultItem {
   score?: number
 }
 
-export interface SearchFilters {
+interface SearchFilters {
   roomIds?: string[]
   senderIds?: string[]
   types?: ('room' | 'message' | 'user')[]

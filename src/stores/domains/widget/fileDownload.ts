@@ -14,7 +14,7 @@ import { isMobile } from '../../../utils/PlatformConstants'
 
 const logger = createLogger('FileDownloadStore')
 
-export interface FileDownloadStatus {
+interface FileDownloadStatus {
   /** 文件是否已下载 */
   isDownloaded: boolean
   /** 本地文件相对路径 (相对于 Resource 目录) */

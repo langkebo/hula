@@ -20,7 +20,7 @@ interface GroupStoreLike {
   getUserInfo: (uid: string) => { name?: string; avatar?: string } | null
 }
 
-export interface UseMsgInputEventsOptions {
+interface UseMsgInputEventsOptions {
   messageInputDom: Ref<HTMLElement>
   msgInput: Ref<string>
   reply: Ref<ReplyState>

@@ -1,6 +1,6 @@
 <template>
   <div class="size-full rounded-8px bg-[--right-bg-color] flex flex-col">
-    <ActionBar :shrink="false" :current-label="WebviewWindow.getCurrent().label" />
+    <ActionBar :shrink="false" :current-label="currentWindowLabel" />
 
     <!-- 主内容区域 -->
     <div class="flex-1 flex overflow-hidden">
@@ -29,9 +29,12 @@ import {
   getNavigationItems,
   queryFiles
 } from '@/services/tauriCommand'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('FileManager')
+
+const currentWindowLabel = computed(() => (hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''))
 
 // 定义文件管理的响应式状态
 const activeNavigation = ref('myFiles')
@@ -134,7 +137,9 @@ provide('fileManagerState', {
 })
 
 onMounted(async () => {
-  await getCurrentWebviewWindow().show()
+  if (hasTauriRuntime()) {
+    await getCurrentWebviewWindow().show()
+  }
   await getNavigationItemsAction()
   await queryFilesAction()
 })

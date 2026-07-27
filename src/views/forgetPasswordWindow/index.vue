@@ -203,6 +203,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
@@ -517,7 +518,9 @@ timerWorker.onerror = (error) => {
 
 // 页面加载时获取验证码
 onMounted(async () => {
-  await getCurrentWebviewWindow().show()
+  if (hasTauriRuntime()) {
+    await getCurrentWebviewWindow().show()
+  }
   getCaptchaImage()
 })
 

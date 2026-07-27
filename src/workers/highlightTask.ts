@@ -197,5 +197,3 @@ function escapeHtml(str: string): string {
 }
 
 registerTask(highlightTask)
-
-export { highlightTask }

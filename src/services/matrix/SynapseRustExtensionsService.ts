@@ -48,12 +48,12 @@ export interface SynapseFriendRequest {
   created_ts: number
 }
 
-export interface SynapsePendingRequests {
+interface SynapsePendingRequests {
   incoming: SynapseFriendRequest[]
   outgoing: SynapseFriendRequest[]
 }
 
-export interface SynapseFriendSearchResult {
+interface SynapseFriendSearchResult {
   user_id: string
   username?: string
   displayname?: string
@@ -67,7 +67,7 @@ export interface SynapseFriendSearchResult {
   match_type?: string
 }
 
-export interface SynapseCreateDmResult {
+interface SynapseCreateDmResult {
   room_id: string
   created: boolean
 }
@@ -77,33 +77,29 @@ export interface SynapseDmInfo {
   exists: boolean
 }
 
-export interface SynapseCheckFriendshipResult {
+interface SynapseCheckFriendshipResult {
   are_friends: boolean
 }
 
-export interface SynapseFriendNoteResult {
-  status: string
-}
-
-export interface BurnStats {
+interface BurnStats {
   total_burned: number
   total_pending: number
   rooms_with_burn_enabled: number
 }
 
-export interface InviteBlocklist {
+interface InviteBlocklist {
   blocked_users: string[]
   updated_ts: number
 }
 
-export interface InviteAllowlist {
+interface InviteAllowlist {
   allowed_users: string[]
   updated_ts: number
 }
 
 type RoomEphemeralEvent = Record<string, unknown>
 
-export interface StickyEvent {
+interface StickyEvent {
   event_id: string
   event_type: string
   content: Record<string, unknown>
@@ -149,7 +145,7 @@ export interface RoomSummaryStats {
   storage_size: number
 }
 
-export interface RoomSummaryState {
+interface RoomSummaryState {
   event_type: string
   state_key: string
   event_id: string
@@ -1070,4 +1066,3 @@ class SynapseRustExtensionsService extends BaseMatrixService {
 }
 
 export const synapseRustExtensionsService = new SynapseRustExtensionsService()
-export default synapseRustExtensionsService

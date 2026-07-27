@@ -5,9 +5,7 @@ import {
   matrixDehydratedDeviceService
 } from '@/services/matrix/crypto/MatrixDehydratedDeviceService'
 
-export type { CreateDehydratedDeviceParams, DehydratedDevice }
-
-export interface UseDehydratedDeviceResult {
+interface UseDehydratedDeviceResult {
   devices: Ref<DehydratedDevice[]>
   loading: Ref<boolean>
   loadDehydratedDevices: () => Promise<DehydratedDevice[]>

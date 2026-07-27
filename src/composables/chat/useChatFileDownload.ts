@@ -16,7 +16,7 @@ import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('ChatFileDownload')
 
-export interface UseChatFileDownloadOptions {
+interface UseChatFileDownloadOptions {
   t: (key: string) => string
   downloadFile: (url: string, savePath: string, baseDir?: BaseDirectory) => Promise<unknown>
   getLocalVideoPath: (url: string) => Promise<string>

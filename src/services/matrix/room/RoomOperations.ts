@@ -100,6 +100,25 @@ export class RoomOperations extends BaseMatrixService {
     await client.sendStateEvent(roomId, 'm.room.avatar', { url: avatarUrl }, '')
   }
 
+  /**
+   * 设置房间在房间目录中的可见性（公开/私密）
+   * 对应 Matrix API: PUT /_matrix/client/v3/directory/list/room/{roomId}
+   */
+  async setRoomVisibility(roomId: string, visibility: 'public' | 'private'): Promise<void> {
+    const client = this.getClient()
+    await client.getDiscoveryManager().setRoomVisibility(roomId, visibility)
+  }
+
+  /**
+   * 获取房间在房间目录中的可见性
+   * 对应 Matrix API: GET /_matrix/client/v3/directory/list/room/{roomId}
+   */
+  async getRoomVisibility(roomId: string): Promise<'public' | 'private'> {
+    const client = this.getClient()
+    const result = await client.getDiscoveryManager().getRoomVisibility(roomId)
+    return result?.visibility === 'public' ? 'public' : 'private'
+  }
+
   async getRoomState(roomId: string): Promise<unknown[]> {
     const client = this.getClient()
     const room = client.getRoom(roomId)

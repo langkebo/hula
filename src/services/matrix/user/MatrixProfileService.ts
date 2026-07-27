@@ -8,13 +8,13 @@ import type { Ref } from 'vue'
 import { ref } from 'vue'
 import { BaseMatrixService } from '../BaseMatrixService'
 
-export interface MatrixProfile {
+interface MatrixProfile {
   userId: string
   displayname?: string
   avatarUrl?: string
 }
 
-export interface MatrixExtendedProfile {
+interface MatrixExtendedProfile {
   sex?: number
   resume?: string
   region?: string

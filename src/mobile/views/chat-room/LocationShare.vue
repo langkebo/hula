@@ -18,7 +18,12 @@
         <van-cell :title="t('location_share.my_location')">
           <template #value>
             <span v-if="location.currentLocation.value" class="coords">
-              {{ t('location_share.lat_lng', { lat: location.currentLocation.value.latitude, lng: location.currentLocation.value.longitude }) }}
+              {{
+                t('location_share.lat_lng', {
+                  lat: location.currentLocation.value.latitude,
+                  lng: location.currentLocation.value.longitude
+                })
+              }}
             </span>
             <span v-else class="placeholder">{{ t('location_share.no_sharing') }}</span>
           </template>
@@ -50,10 +55,7 @@
 
       <!-- 操作按钮 -->
       <div class="actions">
-        <van-button
-          block
-          :loading="location.loading.value"
-          @click="handleGetCurrentPosition">
+        <van-button block :loading="location.loading.value" @click="handleGetCurrentPosition">
           {{ t('location_share.my_location') }}
         </van-button>
 
@@ -66,20 +68,10 @@
           {{ t('location_share.share_once') }}
         </van-button>
 
-        <van-button
-          v-if="!location.sharing.value"
-          block
-          type="success"
-          :loading="starting"
-          @click="handleStartBeacon">
+        <van-button v-if="!location.sharing.value" block type="success" :loading="starting" @click="handleStartBeacon">
           {{ t('location_share.start_share') }}
         </van-button>
-        <van-button
-          v-else
-          block
-          type="danger"
-          :loading="stopping"
-          @click="handleStopBeacon">
+        <van-button v-else block type="danger" :loading="stopping" @click="handleStopBeacon">
           {{ t('location_share.stop_share') }}
         </van-button>
       </div>

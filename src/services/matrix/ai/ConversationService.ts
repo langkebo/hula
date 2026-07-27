@@ -15,7 +15,7 @@ export interface Conversation {
   updatedAt?: number
 }
 
-export interface Message {
+interface Message {
   id: string
   conversationId: string
   role: 'user' | 'assistant' | 'system'

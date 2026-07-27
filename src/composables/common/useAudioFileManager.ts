@@ -13,7 +13,7 @@ const logger = createLogger('AudioFileManager')
 /**
  * 单个文件元数据接口
  */
-export type FileMetaItem = {
+type FileMetaItem = {
   name: string
   path: string
   file_type: string
@@ -24,7 +24,7 @@ export type FileMetaItem = {
 /**
  * 本地音频文件信息接口
  */
-export type LocalAudioFile = {
+type LocalAudioFile = {
   fileBuffer: ArrayBuffer
   cachePath: string
   fullPath: string
@@ -34,7 +34,7 @@ export type LocalAudioFile = {
 /**
  * 音频存在性检查结果接口
  */
-export type AudioExistsResult = {
+type AudioExistsResult = {
   exists: boolean
   fullPath: string
   fileMeta: FileMetaItem
@@ -43,7 +43,7 @@ export type AudioExistsResult = {
 /**
  * 音频文件管理器返回接口
  */
-export type AudioFileManagerReturn = {
+type AudioFileManagerReturn = {
   // 状态
   isFileReady: Ref<boolean>
   audioBuffer: Ref<ArrayBuffer | null>

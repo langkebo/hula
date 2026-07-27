@@ -53,6 +53,7 @@ import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
 import { useMitt } from '@/composables/common/useMitt'
 import { useOverlayController } from '@/composables/common/useOverlayController'
 import { useWindow } from '@/composables/common/useWindow'
+import { useSearchShortcut } from '@/composables/search/useSearchShortcut'
 import { usePrivacyProtection } from '@/composables/usePrivacyProtection'
 import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { MittEnum, MsgEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
@@ -66,7 +67,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { shouldBypassAuthForE2E } from '@/utils/AppHarness'
+import { hasTauriRuntime, shouldBypassAuthForE2E } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
 import FileUtil from '@/utils/FileUtil'
 import { createLogger } from '@/utils/Logger'
@@ -89,11 +90,13 @@ const settingStore = useSettingStore()
 const initialSyncStore = useInitialSyncStore()
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const hasCachedSessions = computed(() => chatStore.sessionList.length > 0)
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const loadingPercentage = ref(10)
 const loadingText = ref(t('home.loading.app'))
 const { logout, init } = useLoginFlow()
 const { ensureNotifyWindow } = useWindow()
+// 阶段 3：注册全局搜索快捷键（Ctrl+F 聚焦中间栏搜索框，Ctrl+Shift+F 全局搜索）
+useSearchShortcut()
 // 是否需要阻塞首屏并做初始化同步
 const requiresInitialSync = ref(true)
 const shouldBlockInitialRender = computed(() => requiresInitialSync.value && !hasCachedSessions.value)
@@ -252,7 +255,7 @@ timerWorker.onmessage = (e) => {
 }
 
 watch(
-  () => appWindow.label === 'home',
+  () => appWindow?.label === 'home',
   (newValue) => {
     if (newValue) {
       // 窗口就绪
@@ -359,7 +362,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
 
   chatStore.pushMsg(data, {
     // 只有当用户在消息页面且正在查看这个会话时才算 isActiveChatView
-    isActiveChatView: route.path === '/message' && globalStore.currentSessionRoomId === data.message.roomId,
+    isActiveChatView: route.path.startsWith('/message') && globalStore.currentSessionRoomId === data.message.roomId,
     activeRoomId: globalStore.currentSessionRoomId || ''
   })
 
@@ -382,28 +385,33 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
     // 只有非免打扰的会话才发送通知和触发图标闪烁
     if (session && session.muteNotification !== NotificationTypeEnum.NOT_DISTURB) {
       // 检查 home 窗口状态
-      const home = await WebviewWindow.getByLabel('home')
       let shouldPlaySound = false
 
-      if (home) {
-        try {
-          const isVisible = await home.isVisible()
-          const isMinimized = await home.isMinimized()
-          const isFocused = await home.isFocused()
+      if (hasTauriRuntime()) {
+        const home = await WebviewWindow.getByLabel('home')
+        if (home) {
+          try {
+            const isVisible = await home.isVisible()
+            const isMinimized = await home.isMinimized()
+            const isFocused = await home.isFocused()
 
-          // 如果窗口不可见、被最小化或未聚焦，则播放音效
-          shouldPlaySound = !isVisible || isMinimized || !isFocused
+            // 如果窗口不可见、被最小化或未聚焦，则播放音效
+            shouldPlaySound = !isVisible || isMinimized || !isFocused
 
-          // 在Windows系统下，如果窗口最小化或未聚焦时请求用户注意
-          if (isWindows() && (isMinimized || !isFocused)) {
-            await home.requestUserAttention(UserAttentionType.Critical)
+            // 在Windows系统下，如果窗口最小化或未聚焦时请求用户注意
+            if (isWindows() && (isMinimized || !isFocused)) {
+              await home.requestUserAttention(UserAttentionType.Critical)
+            }
+          } catch (error) {
+            logger.warn('检查窗口状态失败:', error)
+            shouldPlaySound = true
           }
-        } catch (error) {
-          logger.warn('检查窗口状态失败:', error)
+        } else {
+          // 如果找不到 home 窗口，播放音效
           shouldPlaySound = true
         }
       } else {
-        // 如果找不到 home 窗口，播放音效
+        // 浏览器环境总是播放音效
         shouldPlaySound = true
       }
 
@@ -417,7 +425,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
         globalStore.setTipVisible(true)
       }
 
-      if (WebviewWindow.getCurrent().label === 'home') {
+      if (hasTauriRuntime() && WebviewWindow.getCurrent().label === 'home') {
         await ensureNotifyWindow()
         await emitTo('notify', 'notify_content', data)
       }
@@ -463,6 +471,7 @@ const handleNativeFileDrop = async (paths: string[]) => {
 }
 
 const setupNativeFileDropListeners = async () => {
+  if (!hasTauriRuntime() || !appWindow) return
   try {
     const unlisten = await appWindow.onDragDropEvent((event) => {
       // 只有选中会话时才响应拖拽事件
@@ -488,10 +497,12 @@ const setupNativeFileDropListeners = async () => {
   }
 }
 
-listen('relogin', async () => {
-  logger.info('收到重新登录事件')
-  await logout()
-})
+if (hasTauriRuntime()) {
+  listen('relogin', async () => {
+    logger.info('收到重新登录事件')
+    await logout()
+  })
+}
 
 onBeforeMount(async () => {
   // 获取最新的未读数
@@ -521,33 +532,35 @@ onMounted(async () => {
     duration: CHECK_UPDATE_TIME
   })
 
-  // 监听home窗口被聚焦的事件，当窗口被聚焦时自动关闭状态栏通知
-  const homeWindow = await WebviewWindow.getByLabel('home')
-  if (homeWindow) {
-    // 监听窗口聚焦事件，聚焦时停止tray闪烁
-    if (isWindows()) {
-      homeWindow.listen('tauri://focus', async () => {
-        globalStore.setTipVisible(false)
-        try {
-          await emitTo('tray', 'home_focus', {})
-          await emitTo('notify', 'home_focus', {})
-        } catch (error) {
-          logger.warn('向其他窗口广播聚焦事件失败:', error)
-        }
-      })
+  if (hasTauriRuntime()) {
+    // 监听home窗口被聚焦的事件，当窗口被聚焦时自动关闭状态栏通知
+    const homeWindow = await WebviewWindow.getByLabel('home')
+    if (homeWindow) {
+      // 监听窗口聚焦事件，聚焦时停止tray闪烁
+      if (isWindows()) {
+        homeWindow.listen('tauri://focus', async () => {
+          globalStore.setTipVisible(false)
+          try {
+            await emitTo('tray', 'home_focus', {})
+            await emitTo('notify', 'home_focus', {})
+          } catch (error) {
+            logger.warn('向其他窗口广播聚焦事件失败:', error)
+          }
+        })
 
-      homeWindow.listen('tauri://blur', async () => {
-        try {
-          await emitTo('tray', 'home_blur', {})
-          await emitTo('notify', 'home_blur', {})
-        } catch (error) {
-          logger.warn('向其他窗口广播失焦事件失败:', error)
-        }
-      })
+        homeWindow.listen('tauri://blur', async () => {
+          try {
+            await emitTo('tray', 'home_blur', {})
+            await emitTo('notify', 'home_blur', {})
+          } catch (error) {
+            logger.warn('向其他窗口广播失焦事件失败:', error)
+          }
+        })
+      }
+      // 居中
+      await homeWindow.center()
+      await homeWindow.show()
     }
-    // 居中
-    await homeWindow.center()
-    await homeWindow.show()
   }
 
   await setupNativeFileDropListeners()

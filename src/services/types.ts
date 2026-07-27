@@ -22,41 +22,7 @@ import type {
 } from '@/enums'
 import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 
-/**响应请求体*/
-export type ServiceResponse<T = unknown> = {
-  /** 成功标识true or false */
-  success: boolean
-  /** 状态码 */
-  code: number
-  /** 错误消息 */
-  msg: string
-  /** 数据 */
-  data: T
-  /** 版本号 */
-  version: string
-}
-
-export type PageInfo<T> = {
-  total: number
-  size: number
-  current: number
-  records: T[]
-}
-
 /* ======================================================== */
-
-export type LoginUserReq = {
-  /** 账号 */
-  account: string
-  /** 密码 */
-  password: string
-  /** 登录方式 PC/MOBILE */
-  deviceType: 'PC' | 'MOBILE'
-  systemType: number
-  grantType: 'CAPTCHA' | 'REFRESH_TOKEN' | 'PASSWORD' | 'MOBILE'
-  key?: string
-  code?: string
-}
 
 export type RegisterUserReq = {
   /** 默认随机头像 */
@@ -74,110 +40,6 @@ export type RegisterUserReq = {
   key?: string
   confirmPassword: string
   systemType: number
-}
-
-/** 分页翻页 */
-export type PageResponse<T> = {
-  /** 总数 */
-  total: string
-  /** 总页数 */
-  pages: string
-  /** 当前页 */
-  current: string
-  /** 每页大小 */
-  size: string
-  /** 数据 */
-  records: T[]
-}
-
-/** 游标翻页 */
-export type ListResponse<T> = {
-  /** 游标（下次翻页带上这参数）*/
-  cursor: string
-  /** 当前页数 */
-  pageNo?: number
-  /** 是否最后一页 */
-  isLast: boolean
-  list: T[]
-}
-
-export type CacheBadgeReq = {
-  /** 最后更新时间 更新超过 10 分钟异步去更新。 */
-  lastModifyTime?: number
-  /** 徽章 ID */
-  itemId: string
-}
-
-export type GroupDetailReq = {
-  /** 群头像 */
-  avatar: string
-  /** 群名称 */
-  groupName: string
-  /** 成员角色 1群主 2管理员 3普通成员 4踢出群聊 */
-  roleId: number
-  /** 房间id */
-  roomId: string
-  /** 群号 */
-  account: string
-  /** 群成员数 */
-  memberNum: number
-  /** 群备注 */
-  remark: string
-  /** 我的群昵称 */
-  myName: string
-  allowScanEnter: boolean
-}
-
-export type GroupListReq = {
-  /** 群聊id */
-  groupId: string
-  /** 房间id */
-  roomId: string
-  /** 群名称 */
-  roomName: string
-  /** 群头像 */
-  avatar: string
-  /** 群备注 */
-  remark?: string
-}
-
-export type CacheBadgeItem = {
-  /** 是否需要更新数据源。 */
-  needRefresh?: boolean
-  /** 最后更新时间 更新超过 10 分钟异步去更新。 */
-  lastModifyTime: number
-  /** 徽章说明 */
-  describe: string
-  /** 徽章图标 */
-  img: string
-  /** 徽章 ID */
-  itemId: string
-}
-
-export type CacheUserReq = {
-  /** 最后更新时间 更新超过 10 分钟异步去更新。 */
-  lastModifyTime?: number
-  /** uid */
-  uid: string
-}
-
-export type CacheUserItem = {
-  /** 是否需要更新数据源。 */
-  needRefresh?: boolean
-  /** 最后更新时间 更新超过 10 分钟异步去更新。 */
-  lastModifyTime: number
-  /** 头像 */
-  avatar: string
-  /** 最后一次上下线时间 */
-  lastOptTime: number
-  /** 用户名称 */
-  name: string
-  /** uid */
-  uid: string
-  /** 用户状态 */
-  userStateId: string
-  /** 账号 */
-  account: string
 }
 
 export type UserItem = {
@@ -205,33 +67,6 @@ export type UserItem = {
   linkedGithub?: boolean
   /** 已绑定的 OAuth 提供商 */
   oauthProviders?: ('gitee' | 'github')[]
-}
-
-export type GroupStatisticType = {
-  /** 总人数 */
-  totalNum: number
-}
-
-export type MessageReplyType = {
-  /** 是否可消息跳转 0否 1是 */
-  canCallback: number
-  /** 是否可消息跳转 0否 1是 */
-  content: string
-  /** 跳转间隔的消息条数 */
-  gapCount: number
-  /** 消息id */
-  id: string
-  /** 用户名称 */
-  username: string
-}
-
-export type MarkMsgReq = {
-  // actType	动作类型 1确认 2取消
-  actType: ActEnum
-  // 标记类型 1点赞 2举报
-  markType: MarkEnum
-  // 消息 ID
-  msgId: string
 }
 
 export type UserInfoType = {
@@ -322,43 +157,6 @@ export type EmojiItem = {
 }
 
 // -------------------- ⬇消息体类型定义⬇ ----------------
-
-/**
- * 消息返回体
- */
-export type MessageType = {
-  /** 发送者信息 */
-  fromUser: MsgUserType
-  /** 消息主体 */
-  message: MsgType
-  /** 发送时间 */
-  sendTime: number
-  /** 时间段（可选） */
-  timeBlock?: number
-  /** 是否加载中 */
-  loading?: boolean
-  uploadProgress?: number
-  isCheck?: boolean
-}
-
-/**
- * 消息中用户信息
- */
-export type MsgUserType = {
-  /** 用户ID */
-  uid: string
-  /** 用户名 */
-  username: string
-  /** 头像 */
-  avatar: string
-  /** 徽章 */
-  badge?: {
-    /** 徽章地址 */
-    img: string
-    /** 描述 */
-    describe: string // 描述
-  }
-}
 
 /**
  * 消息互动信息
@@ -561,24 +359,6 @@ export type ReplyType = {
   gapCount: number
 }
 
-/**
- * 发送消息载体
- */
-export type MessageReq = {
-  /** 会话id */
-  roomId: string
-  /** 消息类型 */
-  msgType: MsgEnum
-  /** 消息体 */
-  body: {
-    /** 文本消息内容 */
-    content?: string
-    /** 回复的消息id */
-    replyMsgId?: number
-    [key: string]: unknown
-  }
-}
-
 /** 通知状态 */
 export enum RequestNoticeAgreeStatus {
   /** 待审批 */
@@ -609,26 +389,6 @@ export enum NoticeType {
   GROUP_SET_ADMIN = 8,
   /** 取消群管理员 */
   GROUP_RECALL_ADMIN = 9
-}
-
-/** 请求添加好友的列表项 */
-export type RequestFriendItem = {
-  /** 申请id */
-  applyId: string
-  /** 申请信息 */
-  msg: string
-  /** 申请状态 1待审批 2同意 3拒绝 4忽略 */
-  status: RequestNoticeAgreeStatus
-  /** 申请类型 1加好友 */
-  type: number
-  /** 申请人uid */
-  uid: string
-  /** 被申请人id */
-  targetId: string
-  /** 申请时间 */
-  createTime: number
-  /** 会话 ID */
-  roomId: string
 }
 
 export interface NoticeItem {
@@ -729,19 +489,6 @@ export type SessionItem = {
   allowScanEnter: boolean
 }
 
-/** 消息已读未读数列表项 */
-export type MsgReadUnReadCountType = {
-  /** 消息 ID */
-  msgId: string
-  /** 已读数 */
-  readCount: number
-  /** 未读数 */
-  unReadCount: number | null
-}
-
-/** 支持的翻译服务提供商类型  */
-export type TranslateProvider = 'youdao' | 'tencent'
-
 /** AI模型 */
 export type AIModel = {
   uid: string
@@ -762,16 +509,6 @@ export type ModifyUserInfoType = {
   modifyNameChance: number
 }
 
-/** 登录 */
-export type Login = {
-  /** token */
-  token: string
-  /** 刷新token，可选 */
-  refreshToken?: string
-  /** 客户端 */
-  client: string
-}
-
 /** 用户状态 */
 export type UserState = {
   /** id */
@@ -784,70 +521,7 @@ export type UserState = {
   bgColor?: string
 }
 
-/** 搜索好友 */
-export type SearchFriend = {
-  /** 用户ID */
-  uid: string
-  /** 用户名 */
-  name: string
-  /** 头像 */
-  avatar: string
-  /** 账号 */
-  account: string
-}
-
-/** 搜索群 */
-export type SearchGroup = {
-  /** 群ID */
-  roomId: string
-  /** 群名称 */
-  name: string
-  /** 头像 */
-  avatar: string
-  /** 账号 */
-  account: string
-  /** 额外信息 */
-  extJson: string
-  /** 是否删除 */
-  deleteStatus: IsYesEnum
-}
-
-/** 配置 */
-export type ConfigType = {
-  /** logo */
-  logo: string
-  /** 系统名称 */
-  name: string
-  /** 大群ID */
-  roomGroupId: string
-}
-
-/** 群组公告 */
-export type AnnouncementItem = {
-  /** 公告ID */
-  id: string
-  /** 房间ID */
-  roomId: string
-  /** 发布者ID */
-  uid: string
-  /** 公告内容 */
-  content: string
-  /** 创建时间 */
-  createdTime: number
-  /** 是否置顶 */
-  top: boolean
-}
-
 /* ======================================================== */
-/**! 模拟信息数据的类型 */
-export type MockItem = {
-  key: number
-  type: RoomTypeEnum
-  avatar: string
-  accountId: number
-  accountName: string
-}
-
 export type FilesMeta = {
   name: string
   path: string
@@ -898,25 +572,6 @@ export type DetailsContent =
       uid: string
     }
 
-/**
- * 媒体类型枚举
- */
-export enum MediaType {
-  TEXT = 0, // 纯文本
-  IMAGE = 1, // 图片
-  VIDEO = 2 // 视频
-}
-
-/**
- * 朋友圈权限枚举
- */
-export enum FeedPermission {
-  PRIVACY = 'privacy',
-  OPEN = 'open',
-  PART_VISIBLE = 'partVisible',
-  NOT_ANYONE = 'notAnyone'
-}
-
 export interface RoomMemberInfo {
   userId: string
   name: string
@@ -935,12 +590,6 @@ export interface RoomDetail {
   avatarUrl: string | null
   createdTs: number | null
   isPublic: boolean | null
-}
-
-export interface UnreadCount {
-  notificationCount: number
-  highlightCount: number
-  totalCount: number
 }
 
 export interface RoomInfo {

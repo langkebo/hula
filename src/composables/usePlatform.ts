@@ -1,9 +1,9 @@
 import { computed, ref } from 'vue'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 
-export type Platform = 'desktop' | 'mobile'
+type Platform = 'desktop' | 'mobile'
 
-export interface PlatformInfo {
+interface PlatformInfo {
   isDesktop: boolean
   isMobile: boolean
   platform: Platform
@@ -77,7 +77,7 @@ export function usePlatform(): PlatformInfo {
   }
 }
 
-export function usePlatformAsync(): {
+function _usePlatformAsync(): {
   platform: PlatformInfo
   isReady: boolean
 } {
@@ -94,7 +94,7 @@ export function usePlatformAsync(): {
   }
 }
 
-export function getPlatform(): Platform {
+function _getPlatform(): Platform {
   return detectPlatform().platform
 }
 
@@ -102,6 +102,6 @@ export function isDesktop(): boolean {
   return detectPlatform().isDesktop
 }
 
-export function isMobile(): boolean {
+function _isMobile(): boolean {
   return detectPlatform().isMobile
 }

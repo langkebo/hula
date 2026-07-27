@@ -19,8 +19,6 @@ export interface Registry {
   // 未来扩展: register, deregister, watch
 }
 
-export type LoadBalancerStrategy = 'round-robin' | 'random' | 'least-connections' | 'consistent-hash'
-
 export interface LoadBalancer {
   select(instances: ServiceInstance[], key?: string): ServiceInstance | null
 }

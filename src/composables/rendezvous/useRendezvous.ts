@@ -12,21 +12,9 @@ import {
   type UpdateSessionResponse
 } from '@/services/matrix/rendezvous/MatrixRendezvousService'
 
-export type {
-  CreateSessionResponse,
-  GetMessagesResponse,
-  RendezvousMessage,
-  RendezvousSession,
-  RendezvousSessionIntent,
-  RendezvousSessionStatus,
-  RendezvousSessionTransport,
-  SendMessageResponse,
-  UpdateSessionResponse
-} from '@/services/matrix/rendezvous/MatrixRendezvousService'
-
 export type SessionPhase = 'idle' | 'creating' | 'active' | 'completed' | 'failed'
 
-export interface UseRendezvousResult {
+interface UseRendezvousResult {
   loading: Ref<boolean>
   error: Ref<string | null>
   currentSession: Ref<RendezvousSession | null>

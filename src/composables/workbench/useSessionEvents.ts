@@ -3,7 +3,7 @@ import { onBeforeMount, onUnmounted, toValue } from 'vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
 
-export interface UseSessionEventsOptions {
+interface UseSessionEventsOptions {
   currentSessionRoomId: MaybeRefOrGetter<string | null | undefined>
   invalidateSessionCache: (roomId?: string) => unknown
   handleSessionDelete: (roomId: string) => unknown

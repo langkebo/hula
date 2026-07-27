@@ -69,7 +69,7 @@ interface VoiceUploadResult {
   encryptedFile?: EncryptedAttachmentFile
 }
 
-export interface UseMsgInputSendOptions {
+interface UseMsgInputSendOptions {
   messageInputDom: Ref<HTMLElement>
   msgInput: Ref<string>
   reply: Ref<ReplyState>

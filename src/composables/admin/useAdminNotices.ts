@@ -4,7 +4,7 @@ import type { ServerNoticeInfo } from '@/services/matrix/admin/AdminTypes'
 
 export type { ServerNoticeInfo } from '@/services/matrix/admin/AdminTypes'
 
-export interface UseAdminNoticesResult {
+interface UseAdminNoticesResult {
   notices: Ref<ServerNoticeInfo[]>
   loading: Ref<boolean>
   sending: Ref<boolean>

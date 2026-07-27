@@ -109,6 +109,7 @@ import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatDateGroupLabel } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
@@ -357,7 +358,9 @@ watch(
 )
 
 onMounted(async () => {
-  await getCurrentWebviewWindow().show()
+  if (hasTauriRuntime()) {
+    await getCurrentWebviewWindow().show()
+  }
   if (roomId.value) {
     loadMessages()
   }

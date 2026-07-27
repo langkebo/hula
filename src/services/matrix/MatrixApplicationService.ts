@@ -4,12 +4,12 @@ import { MATRIX_PATHS } from './paths'
 
 const logger = createLogger('MatrixApplicationService')
 
-export interface ApplicationServiceNamespace {
+interface ApplicationServiceNamespace {
   exclusive: boolean
   pattern: string
 }
 
-export interface ApplicationServiceRegistration {
+interface ApplicationServiceRegistration {
   id?: string
   url: string
   as_token: string
@@ -21,7 +21,7 @@ export interface ApplicationServiceRegistration {
   }
 }
 
-export interface RegisteredApplicationService {
+interface RegisteredApplicationService {
   id: string
   url: string
 }
@@ -86,5 +86,4 @@ class MatrixApplicationService extends BaseMatrixService {
   }
 }
 
-export const matrixApplicationService = new MatrixApplicationService()
-export default matrixApplicationService
+const _matrixApplicationService = new MatrixApplicationService()

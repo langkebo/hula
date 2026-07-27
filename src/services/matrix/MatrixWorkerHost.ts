@@ -27,7 +27,7 @@ const logger = createLogger('MatrixWorkerHost')
 
 type WorkerLike = Pick<Worker, 'postMessage' | 'terminate' | 'addEventListener' | 'removeEventListener'>
 
-export type WorkerFactory = () => WorkerLike
+type WorkerFactory = () => WorkerLike
 
 interface PendingRequest {
   resolve: (value: unknown) => void

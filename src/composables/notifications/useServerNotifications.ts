@@ -8,7 +8,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useServerNotifications')
 
-export interface UseServerNotificationsResult {
+interface UseServerNotificationsResult {
   notifications: Ref<ServerNotification[]>
   loading: Ref<boolean>
   updating: Ref<boolean>

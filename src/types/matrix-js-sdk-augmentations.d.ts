@@ -39,6 +39,8 @@ declare module 'matrix-js-sdk' {
   // ==================== SlidingSync 方法扩展 ====================
   // hula 的 MatrixSlidingSyncService 使用 getList/subscribeToRoom/unsubscribeFromRoom/getSyncToken
   // 等方法，这些是 hula 自定义的 SlidingSync 扩展（SDK 的 SlidingSync class 没有这些方法）。
+  // setInitialPos 是 SDK 源码中存在的 public 方法（sliding-sync.ts:334），但部分 SDK 构建的
+  // .d.ts 未导出该方法，此处补充类型声明以支持 MatrixSyncManager 的增量 sync pos 持久化。
   interface SlidingSync {
     getList(listName: string):
       | {
@@ -50,6 +52,8 @@ declare module 'matrix-js-sdk' {
     subscribeToRoom(roomId: string, opts?: { timelineLimit?: number; invite?: boolean }): void
     unsubscribeFromRoom(roomId: string): void
     getSyncToken(): string | null
+    /** 设置初始 pos，用于重启后增量 sync。必须在 start() 之前调用。SDK: sliding-sync.ts:334 */
+    setInitialPos(pos: string): void
   }
 
   // ==================== Room 属性扩展 ====================

@@ -77,7 +77,7 @@
       v-if="!isMobileDevice"
       ref="actionBarRef"
       class="relative z-10"
-      :top-win-label="WebviewWindow.getCurrent().label"
+      :top-win-label="currentWindowLabel"
       :shrink="false" />
 
     <!-- 主要内容区域 -->
@@ -393,6 +393,7 @@ import { useWebRtc } from '@/composables/webrtc/useWebRtc'
 import { CallTypeEnum, RTCCallStatus } from '@/enums'
 import router from '@/router'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { cssVar } from '@/utils/CssUtils'
 import { createLogger } from '@/utils/Logger'
@@ -403,6 +404,8 @@ import { CallResponseStatus } from '../../services/wsType'
 const { t } = useI18n()
 const logger = createLogger('CallWindow')
 const route = useRoute()
+
+const currentWindowLabel = computed(() => (hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''))
 
 const resolveCallType = (value?: string | null): CallTypeEnum => {
   const numeric = Number(value)
@@ -677,7 +680,8 @@ const acceptCall = async () => {
 
   // 调整窗口大小为正常通话大小
   try {
-    const currentWindow = WebviewWindow.getCurrent()
+    const currentWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+    if (!currentWindow) return
     const isVideo = callType === CallTypeEnum.VIDEO
     await currentWindow.setSize(createSize(isVideo ? 850 : 500, isVideo ? 580 : 650))
     await currentWindow.center()
@@ -739,7 +743,8 @@ onMounted(async () => {
     return
   }
 
-  const currentWindow = WebviewWindow.getCurrent()
+  const currentWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+  if (!currentWindow) return
 
   // 监听窗口关闭事件，确保关闭窗口时挂断通话
   const unlistenCloseRequested = await currentWindow.onCloseRequested(async (_event) => {

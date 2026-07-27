@@ -7,9 +7,7 @@
     :style="{ height: '70%' }"
     @update:show="$emit('update:visible', $event)">
     <div class="list-management">
-      <div class="header">
-        {{ t('room_advanced.allowlist.title') }} / {{ t('room_advanced.denylist.title') }}
-      </div>
+      <div class="header">{{ t('room_advanced.allowlist.title') }} / {{ t('room_advanced.denylist.title') }}</div>
 
       <van-tabs v-model:active="activeTab" sticky>
         <!-- 邀请白名单 -->
@@ -20,11 +18,7 @@
               :placeholder="t('room_advanced.allowlist.input_placeholder')"
               :disabled="flow.adding.value"
               class="add-input" />
-            <van-button
-              size="small"
-              type="primary"
-              :loading="flow.adding.value"
-              @click="handleAddAllowlist">
+            <van-button size="small" type="primary" :loading="flow.adding.value" @click="handleAddAllowlist">
               {{ t('room_advanced.allowlist.add_user') }}
             </van-button>
           </div>
@@ -68,11 +62,7 @@
               :placeholder="t('room_advanced.denylist.reason_placeholder')"
               :disabled="flow.adding.value"
               class="reason-input" />
-            <van-button
-              size="small"
-              type="primary"
-              :loading="flow.adding.value"
-              @click="handleAddDenylist">
+            <van-button size="small" type="primary" :loading="flow.adding.value" @click="handleAddDenylist">
               {{ t('room_advanced.denylist.add_user') }}
             </van-button>
           </div>

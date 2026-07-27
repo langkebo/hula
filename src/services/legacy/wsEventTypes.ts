@@ -17,7 +17,7 @@ export type WsTokenExpire = {
   client: string
 }
 
-export enum CallResponseStatus {
+enum CallResponseStatus {
   TIMEOUT = -1,
   REJECTED = 0,
   ACCEPTED = 1,
@@ -25,7 +25,7 @@ export enum CallResponseStatus {
   CANCEL = 3
 }
 
-export const CallResponseStatusDesc: Record<CallResponseStatus, string> = {
+const CallResponseStatusDesc: Record<CallResponseStatus, string> = {
   [CallResponseStatus.TIMEOUT]: '超时未接听',
   [CallResponseStatus.REJECTED]: '已拒绝',
   [CallResponseStatus.ACCEPTED]: '已接听',
@@ -33,11 +33,11 @@ export const CallResponseStatusDesc: Record<CallResponseStatus, string> = {
   [CallResponseStatus.CANCEL]: '已取消'
 }
 
-export function getCallResponseStatus(code: number): CallResponseStatus | undefined {
+function getCallResponseStatus(code: number): CallResponseStatus | undefined {
   return Object.values(CallResponseStatus).includes(code) ? (code as CallResponseStatus) : undefined
 }
 
-export function getCallResponseStatusDesc(code: number): string {
+function _getCallResponseStatusDesc(code: number): string {
   const status = getCallResponseStatus(code)
   return status !== undefined ? CallResponseStatusDesc[status] : '未知状态'
 }

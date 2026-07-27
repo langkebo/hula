@@ -1,10 +1,11 @@
 import { useI18nGlobal } from '@/services/i18n'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useMatrixStore } from '../stores/domains/chat/matrix'
 import { useUserStore } from '../stores/domains/user/user'
 
-export type Settings = {
+type Settings = {
   database: {
     sqlite_file: string
   }
@@ -36,12 +37,12 @@ export type Settings = {
   }
 }
 
-export type UpdateSettingsParams = {
+type UpdateSettingsParams = {
   baseUrl: string
   wsUrl: string
 }
 
-export const getSettings = async (): Promise<Settings> => {
+const _getSettings = async (): Promise<Settings> => {
   return await invokeWithErrorHandler('get_settings')
 }
 
@@ -54,8 +55,14 @@ export const updateSettings = async (settings: UpdateSettingsParams) => {
  * 切换用户数据库
  * 根据用户ID切换到对应的数据库文件，如果数据库不存在则创建
  * @param uid 用户ID
+ *
+ * 浏览器环境（非 Tauri）下此操作为 no-op：浏览器模式通过 Pinia store + localStorage
+ * 持久化用户状态，无需 SQLite 数据库切换。
  */
 export const switchUserDatabase = async (uid: string): Promise<void> => {
+  if (!hasTauriRuntime()) {
+    return
+  }
   await ensureAppStateReady()
   return await invokeWithErrorHandler('switch_user_database', { uid })
 }
@@ -106,7 +113,7 @@ export type FileManagerNavigationItem = {
   [key: string]: unknown
 }
 
-export type FileManagerQueryResponse = {
+type FileManagerQueryResponse = {
   timeGroupedFiles: FileManagerTimeGroup[]
   userList: FileManagerUser[]
 }

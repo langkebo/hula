@@ -1,9 +1,4 @@
-import type {
-  MatrixCaptchaResult,
-  MatrixLoginResult,
-  MatrixRegisterResult,
-  MatrixRequestedEmailTokenResult
-} from '@/services/matrix/auth/MatrixAuthService'
+import type { MatrixRegisterResult, MatrixRequestedEmailTokenResult } from '@/services/matrix/auth/MatrixAuthService'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import type {
   OidcAuthorizationUrlParams,
@@ -13,17 +8,6 @@ import type {
 } from '@/services/matrix/auth/MatrixOidcService'
 import { matrixOidcService } from '@/services/matrix/auth/MatrixOidcService'
 import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
-
-export type {
-  MatrixCaptchaResult,
-  MatrixLoginResult,
-  MatrixRegisterResult,
-  MatrixRequestedEmailTokenResult,
-  OidcAuthorizationUrlParams,
-  OidcDiscoveryDocument,
-  OidcTokenResponse,
-  OidcUserInfo
-}
 
 export function useSessionActions() {
   const loginWithPassword = (options: Parameters<typeof sessionOrchestrator.loginWithPassword>[0]) => {

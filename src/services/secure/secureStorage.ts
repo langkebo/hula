@@ -25,7 +25,7 @@ async function resolveSecureStorageAvailability(): Promise<boolean> {
   }
 }
 
-export async function isSecureStorageAvailable(): Promise<boolean> {
+async function isSecureStorageAvailable(): Promise<boolean> {
   availabilityPromise ??= resolveSecureStorageAvailability()
   return availabilityPromise
 }

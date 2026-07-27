@@ -1,188 +1,185 @@
 <template>
   <nav
     class="space-list-pane border-r border-[--hula-border-default]"
-    :aria-label="t('space.title')"
-    :class="{
-      'space-list-pane--compact': compact,
-      'space-list-pane--narrow': narrow,
-      'space-list-pane--rail': narrow
-    }">
-    <div class="space-list-pane__header px-12px py-10px" :class="{ 'space-list-pane__header--rail': narrow }">
+    data-test="space-list-pane"
+    :aria-label="t('space.title')">
+    <!-- 搜索栏 -->
+    <div class="space-list-pane__search-bar px-12px py-10px">
       <n-input
-        v-model:value="searchQuery"
-        size="small"
+        v-model:value="searchInputValue"
         :placeholder="t('space.search_placeholder')"
+        :aria-label="t('space.search_placeholder')"
         clearable
-        round
         class="space-list-pane__search"
-        :input-props="narrow ? { 'aria-label': t('space.search_placeholder') } : undefined">
+        @update:value="handleSearchChange"
+        @keydown.esc="handleSearchEsc">
         <template #prefix>
-          <svg class="size-14px"><use href="#search" /></svg>
+          <svg class="size-16px color-[--hula-text-tertiary]"><use href="#search" /></svg>
+        </template>
+        <template #suffix>
+          <button
+            type="button"
+            class="space-list-pane__search-global"
+            :aria-label="t('search.title')"
+            :title="t('search.title')"
+            @click="handleGlobalSearch">
+            <svg class="size-16px"><use href="#expand" /></svg>
+          </button>
         </template>
       </n-input>
     </div>
 
-    <n-spin :show="loading" class="flex-1 min-h-0">
-      <n-scrollbar class="h-full">
-        <div class="space-list-pane__body p-8px" role="list" :aria-label="t('space.title')">
-          <button
-            type="button"
-            class="space-item"
-            :class="{ 'space-item--active': !selectedSpaceId && !highlightedSpaceId, 'space-item--rail': narrow }"
-            :title="t('space.all_sessions')"
-            :aria-pressed="!selectedSpaceId && !highlightedSpaceId"
-            @click="emit('selectSpace', '')">
-            <div class="space-item__icon space-item__icon--global">
-              <svg class="size-16px"><use href="#grid" /></svg>
-            </div>
-            <div class="space-item__content">
-              <span class="space-item__name">{{ t('space.all_sessions') }}</span>
-              <span v-if="!narrow" class="space-item__meta">{{ totalCount }} {{ t('space.sessions') }}</span>
-            </div>
-          </button>
+    <!-- 筛选条 -->
+    <div class="space-list-pane__filter-bar px-12px pb-8px">
+      <div class="space-list-pane__filter-tabs" role="tablist">
+        <button
+          v-for="opt in filterOptions"
+          :key="opt.value"
+          type="button"
+          role="tab"
+          :aria-selected="activeFilter === opt.value"
+          :class="[
+            'space-list-pane__filter-tab',
+            { 'space-list-pane__filter-tab--active': activeFilter === opt.value }
+          ]"
+          @click="activeFilter = opt.value">
+          {{ opt.label }}
+        </button>
+      </div>
+    </div>
 
-          <div v-if="pinnedSpaces.length" class="space-section">
-            <button
-              :id="getSectionButtonId('pinned')"
-              type="button"
-              class="space-section__header"
-              :title="t('space.pinned')"
-              :aria-controls="getSectionPanelId('pinned')"
-              :aria-expanded="expandedSections.pinned"
-              @click="toggleSection('pinned')">
-              <svg
-                class="size-12px space-section__chevron"
-                :class="{ 'space-section__chevron--collapsed': !expandedSections.pinned }"
-                viewBox="0 0 12 12"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M3 4.5L6 7.5L9 4.5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-              <span class="space-section__title">{{ t('space.pinned') }}</span>
-              <span v-if="!narrow" class="space-section__count">{{ pinnedSpaces.length }}</span>
-            </button>
-            <div
-              v-show="expandedSections.pinned"
-              :id="getSectionPanelId('pinned')"
-              class="space-section__items"
-              role="group"
-              :aria-labelledby="getSectionButtonId('pinned')">
-              <SpaceCard
-                v-for="space in pinnedSpaces"
-                :key="space.spaceId"
-                :space="space"
-                :active="selectedSpaceId === space.spaceId || highlightedSpaceId === space.spaceId"
-                :compact="compact || narrow"
-                @click="emit('selectSpace', space.spaceId)"
-                @pin="emit('pinSpace', $event)"
-                @settings="emit('spaceSettings', $event)" />
+    <!-- 空间列表 -->
+    <n-scrollbar class="space-list-pane__list flex-1 min-h-0">
+      <div class="space-list-pane__list-area p-8px" role="list" :aria-label="t('space.title')">
+        <Transition name="space-fade" mode="out-in">
+          <!-- 1. loading 骨架屏 -->
+          <n-flex v-if="loading" vertical :size="8" class="space-list-pane__skeleton" key="skeleton">
+            <div v-for="i in 4" :key="i" class="space-list-pane__skeleton-item">
+              <n-skeleton circle :width="36" :height="36" :sharp="false" />
+              <n-flex vertical :size="4" class="flex-1 min-w-0">
+                <n-skeleton height="13px" width="70%" :sharp="false" style="border-radius: 4px" />
+                <n-skeleton height="11px" width="40%" :sharp="false" style="border-radius: 4px" />
+              </n-flex>
             </div>
+          </n-flex>
+
+          <!-- 2. 列表状态 -->
+          <div v-else-if="hasVisibleSpaces" class="space-list-pane__sections" key="list">
+            <!-- 性能优化：空间列表超过 100 项时启用虚拟滚动（需求文档 16.1） -->
+            <template v-if="allFilteredSpaces.length > VIRTUAL_SCROLL_THRESHOLD">
+              <RecycleScroller
+                class="space-list-pane__virtual-scroller"
+                :items="allFilteredSpaces"
+                :item-size="64"
+                key-field="spaceId"
+                role="list"
+                :aria-label="t('space.title')"
+                v-slot="{ item }">
+                <SpaceListItemCard
+                  :space="item"
+                  :active="selectedSpaceId === item.spaceId"
+                  @click="emit('selectSpace', item.spaceId)"
+                  @pin="emit('pinSpace', $event)"
+                  @settings="emit('spaceSettings', $event)"
+                  @leave="emit('leaveSpace', $event)"
+                  @delete="emit('deleteSpace', $event)" />
+              </RecycleScroller>
+            </template>
+            <!-- 列表项 ≤ 100 时使用普通 v-for，保留分组结构 -->
+            <template v-else>
+              <!-- 我的空间分组 -->
+              <div v-if="mySpaces.length" class="space-section">
+                <div class="space-section__header">
+                  <span class="space-section__title">{{ t('space.section_my_spaces') }}</span>
+                  <span class="space-section__count">{{ mySpaces.length }}</span>
+                </div>
+                <div class="space-section__items" role="group">
+                  <TransitionGroup name="space-item-enter">
+                    <SpaceListItemCard
+                      v-for="space in mySpaces"
+                      :key="space.spaceId"
+                      :space="space"
+                      :active="selectedSpaceId === space.spaceId"
+                      @click="emit('selectSpace', space.spaceId)"
+                      @pin="emit('pinSpace', $event)"
+                      @settings="emit('spaceSettings', $event)"
+                      @leave="emit('leaveSpace', $event)"
+                      @delete="emit('deleteSpace', $event)" />
+                  </TransitionGroup>
+                </div>
+              </div>
+
+              <!-- 公开空间分组 -->
+              <div v-if="publicSpaces.length" class="space-section">
+                <div class="space-section__header">
+                  <span class="space-section__title">{{ t('space.section_public_spaces') }}</span>
+                  <span class="space-section__count">{{ publicSpaces.length }}</span>
+                </div>
+                <div class="space-section__items" role="group">
+                  <TransitionGroup name="space-item-enter">
+                    <SpaceListItemCard
+                      v-for="space in publicSpaces"
+                      :key="space.spaceId"
+                      :space="space"
+                      :active="selectedSpaceId === space.spaceId"
+                      @click="emit('selectSpace', space.spaceId)"
+                      @pin="emit('pinSpace', $event)"
+                      @settings="emit('spaceSettings', $event)"
+                      @leave="emit('leaveSpace', $event)"
+                      @delete="emit('deleteSpace', $event)" />
+                  </TransitionGroup>
+                </div>
+              </div>
+            </template>
           </div>
 
-          <div v-if="joinedSpaces.length" class="space-section">
-            <button
-              :id="getSectionButtonId('joined')"
-              type="button"
-              class="space-section__header"
-              :title="t('space.joined')"
-              :aria-controls="getSectionPanelId('joined')"
-              :aria-expanded="expandedSections.joined"
-              @click="toggleSection('joined')">
-              <svg
-                class="size-12px space-section__chevron"
-                :class="{ 'space-section__chevron--collapsed': !expandedSections.joined }"
-                viewBox="0 0 12 12"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M3 4.5L6 7.5L9 4.5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-              <span class="space-section__title">{{ t('space.joined') }}</span>
-              <span v-if="!narrow" class="space-section__count">{{ joinedSpaces.length }}</span>
-            </button>
-            <div
-              v-show="expandedSections.joined"
-              :id="getSectionPanelId('joined')"
-              class="space-section__items"
-              role="group"
-              :aria-labelledby="getSectionButtonId('joined')">
-              <SpaceCard
-                v-for="space in joinedSpaces"
-                :key="space.spaceId"
-                :space="space"
-                :active="selectedSpaceId === space.spaceId || highlightedSpaceId === space.spaceId"
-                :compact="compact || narrow"
-                @click="emit('selectSpace', space.spaceId)"
-                @pin="emit('pinSpace', $event)"
-                @settings="emit('spaceSettings', $event)" />
-            </div>
+          <!-- 3. 空状态 / 搜索无结果 -->
+          <div v-else class="space-list-pane__empty" key="empty">
+            <n-empty :description="emptyDescription" size="large">
+              <template #icon>
+                <svg class="size-48px opacity-50 color-[--hula-text-quaternary]">
+                  <use href="#grid" />
+                </svg>
+              </template>
+              <template v-if="!searchQuery.trim()" #extra>
+                <n-button size="small" type="primary" @click="emit('createSpace')">
+                  {{ t('space.create_space_action') }}
+                </n-button>
+              </template>
+            </n-empty>
           </div>
+        </Transition>
+      </div>
+    </n-scrollbar>
 
-          <div v-if="lowPrioritySpaces.length" class="space-section">
-            <button
-              :id="getSectionButtonId('lowPriority')"
-              type="button"
-              class="space-section__header"
-              :title="t('space.low_priority')"
-              :aria-controls="getSectionPanelId('lowPriority')"
-              :aria-expanded="expandedSections.lowPriority"
-              @click="toggleSection('lowPriority')">
-              <svg
-                class="size-12px space-section__chevron"
-                :class="{ 'space-section__chevron--collapsed': !expandedSections.lowPriority }"
-                viewBox="0 0 12 12"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M3 4.5L6 7.5L9 4.5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-              <span class="space-section__title">{{ t('space.low_priority') }}</span>
-              <span v-if="!narrow" class="space-section__count">{{ lowPrioritySpaces.length }}</span>
-            </button>
-            <div
-              v-show="expandedSections.lowPriority"
-              :id="getSectionPanelId('lowPriority')"
-              class="space-section__items"
-              role="group"
-              :aria-labelledby="getSectionButtonId('lowPriority')">
-              <SpaceCard
-                v-for="space in lowPrioritySpaces"
-                :key="space.spaceId"
-                :space="space"
-                :active="selectedSpaceId === space.spaceId || highlightedSpaceId === space.spaceId"
-                :compact="compact || narrow"
-                @click="emit('selectSpace', space.spaceId)"
-                @pin="emit('pinSpace', $event)"
-                @settings="emit('spaceSettings', $event)" />
-            </div>
-          </div>
-
-          <div v-if="!loading && filteredSpaces.length === 0 && searchQuery" class="space-list-pane__empty">
-            <span class="text-12px color-[--hula-text-tertiary]">{{ t('space.no_results') }}</span>
-          </div>
-        </div>
-      </n-scrollbar>
-    </n-spin>
+    <!-- 底部快捷操作 -->
+    <div class="space-list-pane__footer px-12px py-10px">
+      <n-flex :size="8">
+        <n-button size="small" type="primary" block class="space-list-pane__footer-btn" @click="emit('createSpace')">
+          <template #icon>
+            <svg class="size-14px"><use href="#add" /></svg>
+          </template>
+          {{ t('space.create_space_action') }}
+        </n-button>
+        <n-button size="small" block class="space-list-pane__footer-btn" @click="handleDiscoverSpaces">
+          <template #icon>
+            <svg class="size-14px"><use href="#search" /></svg>
+          </template>
+          {{ t('space.discover_spaces_action') }}
+        </n-button>
+      </n-flex>
+    </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import SpaceCard from './SpaceListItemCard.vue'
+import { useRouter } from 'vue-router'
+import { RecycleScroller } from 'vue-virtual-scroller'
+import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
+import SpaceListItemCard from './SpaceListItemCard.vue'
 
 export type SpaceListItem = {
   spaceId: string
@@ -193,191 +190,235 @@ export type SpaceListItem = {
   memberCount?: number
   isPinned?: boolean
   isLowPriority?: boolean
+  isPublic?: boolean
   unreadCount?: number
   statusText?: string
   statusTone?: 'neutral' | 'info' | 'warning'
   visibilityText?: string
 }
 
+type SpaceFilter = 'all' | 'my' | 'public'
+
+/** 列表项超过此阈值时启用虚拟滚动（需求文档 16.1） */
+const VIRTUAL_SCROLL_THRESHOLD = 100
+
 const props = defineProps<{
   spaces: SpaceListItem[]
   selectedSpaceId: string
-  highlightedSpaceId?: string
   loading: boolean
-  totalCount: number
-  compact?: boolean
-  narrow?: boolean
 }>()
 
 const emit = defineEmits<{
   selectSpace: [spaceId: string]
   pinSpace: [spaceId: string]
   spaceSettings: [spaceId: string]
+  leaveSpace: [spaceId: string]
+  deleteSpace: [spaceId: string]
+  createSpace: []
 }>()
 
 const { t } = useI18n()
+const router = useRouter()
+// 阶段 9：分离 searchInputValue（即时显示）和 searchQuery（防抖后用于过滤）
+const searchInputValue = ref('')
 const searchQuery = ref('')
-const expandedSections = reactive({
-  pinned: true,
-  joined: true,
-  lowPriority: false
-})
+const activeFilter = ref<SpaceFilter>('all')
 
-const toggleSection = (section: keyof typeof expandedSections) => {
-  expandedSections[section] = !expandedSections[section]
+// Step 2.4：发现空间改为路由跳转右侧栏 search 视图（type=space）
+const handleDiscoverSpaces = () => {
+  void router.push('/search?type=space')
 }
 
-const getSectionButtonId = (section: keyof typeof expandedSections) => `space-section-${section}-trigger`
-const getSectionPanelId = (section: keyof typeof expandedSections) => `space-section-${section}-panel`
+// 阶段 9：300ms 防抖触发内联过滤（需求文档 3.3.6）
+const debouncedApplySearch = useDebounceFn((value: string) => {
+  searchQuery.value = value
+}, 300)
+
+const handleSearchChange = (value: string) => {
+  debouncedApplySearch(value)
+}
+
+// 阶段 9：Esc 清空搜索框并失焦
+const handleSearchEsc = () => {
+  searchInputValue.value = ''
+  searchQuery.value = ''
+}
+
+// 阶段 9：点击全局搜索按钮，携带当前关键词跳转 /search
+const handleGlobalSearch = () => {
+  triggerGlobalSearch(searchInputValue.value)
+}
+
+const filterOptions = computed(() => [
+  { value: 'all' as const, label: t('space.filter_all') },
+  { value: 'my' as const, label: t('space.filter_my') },
+  { value: 'public' as const, label: t('space.filter_public') }
+])
 
 const filteredSpaces = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return props.spaces
-  return props.spaces.filter(
-    (s: SpaceListItem) => s.name.toLowerCase().includes(q) || s.spaceId.toLowerCase().includes(q)
-  )
+  let list = props.spaces
+
+  // 按筛选条件过滤
+  if (activeFilter.value === 'my') {
+    list = list.filter((s) => !s.isPublic)
+  } else if (activeFilter.value === 'public') {
+    list = list.filter((s) => s.isPublic)
+  }
+
+  // 按搜索关键词过滤
+  if (!q) return list
+  return list.filter((s: SpaceListItem) => s.name.toLowerCase().includes(q) || s.spaceId.toLowerCase().includes(q))
 })
 
-const pinnedSpaces = computed(() => filteredSpaces.value.filter((s: SpaceListItem) => s.isPinned))
-const joinedSpaces = computed(() => filteredSpaces.value.filter((s: SpaceListItem) => !s.isPinned && !s.isLowPriority))
-const lowPrioritySpaces = computed(() => filteredSpaces.value.filter((s: SpaceListItem) => s.isLowPriority))
+const mySpaces = computed(() => filteredSpaces.value.filter((s: SpaceListItem) => !s.isPublic))
+const publicSpaces = computed(() => filteredSpaces.value.filter((s: SpaceListItem) => s.isPublic))
+/** 虚拟滚动用：所有筛选后的空间（合并 my + public） */
+const allFilteredSpaces = computed(() => [...mySpaces.value, ...publicSpaces.value])
+
+const hasVisibleSpaces = computed(() => {
+  if (activeFilter.value === 'my') return mySpaces.value.length > 0
+  if (activeFilter.value === 'public') return publicSpaces.value.length > 0
+  return filteredSpaces.value.length > 0
+})
+
+const emptyDescription = computed(() => {
+  if (searchQuery.value.trim()) return t('space.no_results')
+  if (activeFilter.value === 'my') return t('space.no_spaces_yet')
+  if (activeFilter.value === 'public') return t('space.empty_spaces')
+  return t('space.no_spaces_yet')
+})
 </script>
 
 <style scoped lang="scss">
 .space-list-pane {
-  width: 220px;
-  min-width: 220px;
+  width: 280px;
+  min-width: 240px;
+  max-width: 360px;
   height: 100%;
   background: var(--hula-surface-panel);
   display: flex;
   flex-direction: column;
 }
 
-.space-list-pane--compact {
-  width: 188px;
-  min-width: 188px;
+/* 搜索栏 */
+.space-list-pane__search-bar {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--hula-border-default);
 }
 
-.space-list-pane--narrow {
-  width: 132px;
-  min-width: 132px;
-}
-
+/* 阶段 9：搜索栏规范（需求文档 3.3.6）—— 高度 40px，圆角 8px，背景 --hula-surface-search */
 .space-list-pane__search {
   :deep(.n-input) {
-    --n-height: 30px;
-    --n-font-size: 12px;
+    --n-height: 40px;
+    --n-font-size: 14px;
     --n-border-radius: 8px;
     background: var(--hula-surface-search);
   }
+
+  :deep(.n-input__input-el) {
+    font-size: 14px;
+  }
 }
 
-.space-list-pane__body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.space-item {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 10px;
-  border: 0;
-  border-radius: 10px;
+.space-list-pane__search-global {
   background: transparent;
-  padding: 10px 12px;
-  text-align: left;
-  color: var(--hula-text-primary);
+  border: 0;
+  border-radius: 4px;
+  color: var(--hula-text-tertiary);
   cursor: pointer;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background: var(--hula-surface-list-hover);
-  }
-
-  &--active {
-    background: var(--hula-surface-session-active);
-    box-shadow: var(--hula-surface-session-active-shadow);
-    color: var(--hula-text-inverse);
-
-    .space-item__meta {
-      color: color-mix(in srgb, var(--hula-text-inverse) 72%, transparent);
-    }
-  }
-}
-
-.space-item__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  background: var(--hula-surface-search);
-  color: var(--hula-text-tertiary);
+  padding: 2px;
+  transition:
+    background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard),
+    color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
 
-  &--global {
-    background: var(--hula-color-primary-100);
-    color: var(--hula-color-primary-500);
+  &:hover {
+    background: var(--hula-surface-list-hover);
+    color: var(--hula-text-primary);
   }
 }
 
-.space-item__content {
+/* 筛选条 */
+.space-list-pane__filter-bar {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--hula-border-default);
+}
+
+.space-list-pane__filter-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--hula-surface-search);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.space-list-pane__filter-tab {
   flex: 1;
-  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hula-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--hula-text-primary);
+  }
+
+  &--active {
+    background: var(--hula-surface-panel);
+    color: var(--hula-color-primary-500);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* 列表区 */
+.space-list-pane__list {
+  min-height: 0;
+}
+
+.space-list-pane__list-area {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
 }
 
-.space-item__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 500;
+.space-list-pane__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.space-item__meta {
-  font-size: 11px;
-  color: var(--hula-text-tertiary);
+.space-list-pane__virtual-scroller {
+  height: 100%;
+  min-height: 200px;
 }
 
+/* 分组 */
 .space-section {
-  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .space-section__header {
   display: flex;
   align-items: center;
-  width: 100%;
-  gap: 4px;
-  border: 0;
-  background: transparent;
-  padding: 6px 12px;
-  cursor: pointer;
-  user-select: none;
-  border-radius: 6px;
-  text-align: left;
-  transition: background-color 0.15s ease;
-
-  &:hover {
-    background: var(--hula-surface-list-hover);
-  }
-}
-
-.space-section__chevron {
-  transition: transform 0.2s ease;
-
-  &--collapsed {
-    transform: rotate(-90deg);
-  }
+  justify-content: space-between;
+  padding: 6px 8px 4px;
 }
 
 .space-section__title {
-  flex: 1;
   font-size: 11px;
   font-weight: 600;
   color: var(--hula-text-tertiary);
@@ -394,76 +435,67 @@ const lowPrioritySpaces = computed(() => filteredSpaces.value.filter((s: SpaceLi
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-left: 4px;
 }
 
+/* 骨架屏 */
+.space-list-pane__skeleton {
+  padding: 8px;
+}
+
+.space-list-pane__skeleton-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+}
+
+/* 空状态 */
 .space-list-pane__empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 12px;
+  padding: 40px 16px;
 }
 
-.space-list-pane--compact .space-list-pane__header {
-  padding: 10px;
+/* 底部快捷操作 */
+.space-list-pane__footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--hula-border-default);
+  background: var(--hula-surface-panel);
 }
 
-.space-list-pane--compact .space-list-pane__body {
-  gap: 4px;
-  padding: 6px;
-}
-
-.space-list-pane--compact .space-item {
-  padding: 9px 10px;
-}
-
-.space-list-pane--narrow .space-item {
-  padding: 8px 10px;
-}
-
-.space-list-pane--rail .space-list-pane__header {
-  padding: 8px;
-}
-
-.space-list-pane--rail .space-list-pane__search {
-  :deep(.n-input__input-el) {
-    display: none;
-  }
-
-  :deep(.n-input__placeholder) {
-    display: none;
+.space-list-pane__footer-btn {
+  :deep(.n-button__content) {
+    font-weight: 500;
   }
 }
 
-.space-list-pane--rail .space-item__content,
-.space-list-pane--rail .space-section__count {
-  display: none;
+/* 过渡动画 */
+.space-fade-enter-active,
+.space-fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.space-list-pane--rail .space-item,
-.space-list-pane--rail .space-section__header {
-  justify-content: center;
+.space-fade-enter-from,
+.space-fade-leave-to {
+  opacity: 0;
 }
 
-.space-list-pane--rail .space-item--rail {
-  padding-inline: 8px;
+.space-item-enter-enter-active {
+  transition: all 0.25s ease;
 }
 
-.space-list-pane--rail .space-section__title {
-  font-size: 10px;
-  text-align: center;
+.space-item-enter-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
 }
 
-.space-list-pane--rail .space-section__items {
-  padding-left: 0;
+.space-item-enter-leave-active {
+  transition: all 0.2s ease;
 }
 
-.space-list-pane--narrow .space-item__name {
-  font-size: 12px;
-}
-
-.space-list-pane--narrow .space-item__icon {
-  width: 28px;
-  height: 28px;
+.space-item-enter-leave-to {
+  opacity: 0;
+  transform: translateX(-8px);
 }
 </style>

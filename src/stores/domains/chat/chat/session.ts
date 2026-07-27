@@ -13,7 +13,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SessionStore')
 
-export interface UnreadDetail {
+interface UnreadDetail {
   total: number
   highlight: number
   silent: boolean

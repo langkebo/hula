@@ -21,6 +21,9 @@
   "no_more_data": "No more data",
   "notFound": "Page not found or has been removed",
   "goHome": "Go Home",
+  "draft_restored": "Restored last edit",
+  "just_now": "just now",
+  "minutes_ago": "{count} min ago",
   "thread": {
     "title": "Message Thread",
     "replies": "replies",

@@ -12,14 +12,6 @@ export interface LocationData {
   timestamp: number
 }
 
-export interface LiveLocationShare {
-  roomId: string
-  userId: string
-  location: LocationData
-  expiresAt?: number
-  lastUpdated: number
-}
-
 interface LocationContent extends IContent {
   msgtype?: string
   body: string
@@ -198,4 +190,3 @@ class MatrixLocationService {
 }
 
 export const matrixLocationService = new MatrixLocationService()
-export default matrixLocationService

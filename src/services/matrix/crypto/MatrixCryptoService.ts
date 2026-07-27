@@ -13,7 +13,7 @@ import { cryptoSDKAdapter } from './CryptoSDKAdapter'
 
 const logger = createLogger('MatrixCryptoService')
 
-export interface DeviceInfo {
+interface DeviceInfo {
   deviceId: string
   userId: string
   displayName?: string
@@ -22,20 +22,20 @@ export interface DeviceInfo {
   isVerified?: boolean
 }
 
-export interface VerificationStatus {
+interface VerificationStatus {
   verified: boolean
   crossSigningVerified: boolean
   devicesCrossSigningVerified: boolean
 }
 
-export interface CrossSigningStatus {
+interface CrossSigningStatus {
   privateKeysCached: boolean
   crossSigningVerified: boolean
 }
 
 export type EncryptionAlgorithm = 'm.megolm.v1.aes-sha2' | 'm.olm.v1.curve25519-aes-sha2'
 
-export interface KeyBackupData {
+interface KeyBackupVersionInfo {
   version: string
   algorithm: string
   auth_data: Record<string, unknown>
@@ -43,20 +43,12 @@ export interface KeyBackupData {
   etag?: string
 }
 
-export interface KeyBackupVersionInfo {
-  version: string
-  algorithm: string
-  auth_data: Record<string, unknown>
-  count?: number
-  etag?: string
-}
-
-export interface KeyBackupWriteResult {
+interface KeyBackupWriteResult {
   etag: string
   count: number
 }
 
-export interface RoomKeysResponse {
+interface RoomKeysResponse {
   rooms: Record<
     string,
     {
@@ -65,11 +57,11 @@ export interface RoomKeysResponse {
   >
 }
 
-export interface RoomKeySessionsResponse {
+interface RoomKeySessionsResponse {
   sessions: Record<string, SessionKeyData>
 }
 
-export interface SessionKeyData {
+interface SessionKeyData {
   first_message_index: number
   forwarded_count: number
   is_verified: boolean
@@ -80,27 +72,27 @@ export interface SessionKeyData {
   }
 }
 
-export interface RecoveryProgress {
+interface RecoveryProgress {
   total: number
   recovered: number
   failed: number
   percentage: number
 }
 
-export interface BackupVerifyResult {
+interface BackupVerifyResult {
   valid: boolean
   mismatch_count?: number
   message?: string
 }
 
-export interface BatchRecoverResult {
+interface BatchRecoverResult {
   total: number
   recovered: number
   failed: number
   errors?: Array<{ room_id: string; session_id: string; error: string }>
 }
 
-export interface SasVerificationStartResponse {
+interface SasVerificationStartResponse {
   transaction_id: string
   method: string
   key_agreement_protocol: string
@@ -108,7 +100,7 @@ export interface SasVerificationStartResponse {
   short_authentication_string: string[]
 }
 
-export interface SasVerificationAcceptResponse {
+interface SasVerificationAcceptResponse {
   transaction_id: string
   method: string
   key_agreement_protocol: string
@@ -117,34 +109,34 @@ export interface SasVerificationAcceptResponse {
   commitment?: string
 }
 
-export interface SasKeyAgreementResponse {
+interface SasKeyAgreementResponse {
   transaction_id: string
   confirmed: boolean
   short_authentication_string: Record<string, unknown>
 }
 
-export interface SasMacResponse {
+interface SasMacResponse {
   transaction_id: string
   verified: boolean
 }
 
-export interface SasDoneResponse {
+interface SasDoneResponse {
   transaction_id: string
 }
 
-export interface SasCancelResponse {
+interface SasCancelResponse {
   transaction_id: string
   cancelled: boolean
 }
 
-export interface PendingVerificationRequest {
+interface PendingVerificationRequest {
   transaction_id: string
   from_device: string
   methods: string[]
   timestamp?: number
 }
 
-export interface QrCodeShowResponse {
+interface QrCodeShowResponse {
   transaction_id: string
   server_name: string
   user_id: string
@@ -153,7 +145,7 @@ export interface QrCodeShowResponse {
   device_curve25519_key: string
 }
 
-export interface QrCodeScanResponse {
+interface QrCodeScanResponse {
   transaction_id: string
   state: string
 }

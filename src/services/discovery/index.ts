@@ -31,11 +31,11 @@ export class ServiceDiscoverySDK {
 // 导出单例或工厂
 let instance: ServiceDiscoverySDK | null = null
 
-export function initServiceDiscovery(registry: Registry) {
+function _initServiceDiscovery(registry: Registry) {
   instance = new ServiceDiscoverySDK(registry)
 }
 
-export function getServiceDiscovery(): ServiceDiscoverySDK {
+function _getServiceDiscovery(): ServiceDiscoverySDK {
   if (!instance) {
     throw new Error('Service Discovery SDK not initialized')
   }

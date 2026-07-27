@@ -75,6 +75,7 @@ import {
   type SettingsTabType,
   useSettingsDialogStore
 } from '@/stores/domains/settings/settingsDialog'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import SettingsTabNav from './SettingsTabNav.vue'
 import { SETTINGS_TAB_COMPONENT_LOADERS } from './tabComponentLoaders'
 
@@ -165,7 +166,9 @@ async function handleClose() {
 
   dirtyRegistry.clearDirtyTabs()
   if (props.standalone) {
-    await WebviewWindow.getCurrent().close()
+    if (hasTauriRuntime()) {
+      await WebviewWindow.getCurrent().close()
+    }
     return
   }
   settingsDialogStore.closeDialog()

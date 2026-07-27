@@ -3,7 +3,7 @@ import { MessageStatusEnum, MsgEnum } from '@/enums'
 import type { FileBody, ImageBody, MessageBody, TextBody, VideoBody, VoiceBody } from '@/services/types'
 import type { MessageType } from '@/types/message'
 
-export interface MatrixMessageAdapter {
+interface MatrixMessageAdapter {
   convertMatrixEventToMessageType(event: MatrixEvent, roomId: string): MessageType
   getMsgTypeFromMatrixEvent(event: MatrixEvent): MsgEnum
   getMsgTypeFromEventLike(eventType: string, content: Record<string, unknown>): MsgEnum

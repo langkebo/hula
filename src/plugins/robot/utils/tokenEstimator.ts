@@ -1,4 +1,4 @@
-export interface TokenEstimable {
+interface TokenEstimable {
   content?: string
   reasoningContent?: string
 }

@@ -4,7 +4,7 @@ import type { RoomInfo, RoomState } from '@/services/matrix/admin/AdminTypes'
 
 export type { RoomInfo } from '@/services/matrix/admin/AdminTypes'
 
-export interface RoomMessage {
+interface RoomMessage {
   eventId: string
   sender: string
   content: string
@@ -12,7 +12,7 @@ export interface RoomMessage {
   timestamp: number
 }
 
-export interface UseAdminRoomsResult {
+interface UseAdminRoomsResult {
   rooms: Ref<RoomInfo[]>
   filteredRooms: Ref<RoomInfo[]>
   loading: Ref<boolean>

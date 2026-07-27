@@ -1,5 +1,4 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { buildSpaceWorkbenchRoute, SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
 
 const FriendsList = () => import('@/views/homeWindow/FriendsList.vue')
 const Message = () => import('@/views/homeWindow/message/index.vue')
@@ -12,26 +11,33 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     name: 'home',
     component: () => import('@/layout/index.vue'),
     children: [
-      {
-        path: '/message',
-        name: 'message',
-        component: Message
-      },
-      {
-        path: '/friendsList',
-        name: 'friendsList',
-        component: FriendsList
-      },
-      {
-        path: '/roomList',
-        name: 'roomList',
-        component: RoomList
-      },
-      {
-        path: '/spaceList',
-        name: SPACE_ROUTE_NAMES.workbench,
-        component: SpaceList
-      }
+      // /friend 系列 - 中间栏始终渲染 FriendsList，右侧栏根据子路由切换
+      { path: '/friend', name: 'friend', component: FriendsList },
+      { path: '/friend/add', name: 'friend-add', component: FriendsList },
+      { path: '/friend/requests', name: 'friend-requests', component: FriendsList },
+      { path: '/friend/:userId', name: 'friend-details', component: FriendsList },
+
+      // /room 系列 - 中间栏始终渲染 RoomList
+      { path: '/room', name: 'room', component: RoomList },
+      { path: '/room/create', name: 'room-create', component: RoomList },
+      { path: '/room/join', name: 'room-join', component: RoomList },
+      { path: '/room/:roomId', name: 'room-details', component: RoomList },
+
+      // /space 系列 - 中间栏始终渲染 SpaceList
+      { path: '/space', name: 'space', component: SpaceList },
+      { path: '/space/create', name: 'space-create', component: SpaceList },
+      { path: '/space/:spaceId', name: 'space-details', component: SpaceList },
+
+      // /message 系列 - 渲染消息列表，:roomId 可选
+      { path: '/message/:roomId?', name: 'message', component: Message },
+
+      // /search - 全局搜索（阶段 9 替换为独立 SearchView）
+      { path: '/search', name: 'search', component: FriendsList },
+
+      // 旧路径 redirect（向后兼容）
+      { path: '/friendsList', redirect: '/friend' },
+      { path: '/roomList', redirect: '/room' },
+      { path: '/spaceList', redirect: '/space' }
     ]
   },
   {
@@ -100,16 +106,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     path: '/sharedScreen',
     name: 'sharedScreen',
     component: () => import('@/views/homeWindow/SharedScreen.vue')
-  },
-  {
-    path: '/space/create',
-    name: SPACE_ROUTE_NAMES.create,
-    component: () => import('@/views/homeWindow/SpaceView.vue')
-  },
-  {
-    path: '/space/:roomId?',
-    name: SPACE_ROUTE_NAMES.legacy,
-    redirect: (to) => buildSpaceWorkbenchRoute(to.params.roomId, to.query)
   },
   {
     path: '/settings',
@@ -200,6 +196,12 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     path: '/multiMsg',
     name: 'multiMsg',
     component: () => import('@/views/multiMsgWindow/index.vue')
+  },
+  // 附录 C.5：独立聊天窗口路由，与主窗口路由隔离
+  {
+    path: '/window/chat/:roomId',
+    name: 'windowChat',
+    component: () => import('@/views/windowChat/index.vue')
   },
   {
     path: '/addGroupVerify',

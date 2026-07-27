@@ -18,6 +18,7 @@ import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceServ
 import { switchUserDatabase } from '@/services/tauriCommand'
 import type { RoomInfo, UserInfoType } from '@/services/types'
 import type { MessageType } from '@/types/message'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
@@ -29,12 +30,12 @@ import type { SearchEventDoc, SearchRoomDoc } from '@/workers/matrixWorkerTypes'
 
 const logger = createLogger('MatrixRuntimeSessionService')
 
-export interface StoredMatrixTokens {
+interface StoredMatrixTokens {
   token: string | null
   refreshToken?: string | null
 }
 
-export interface RestoreMatrixRuntimeSessionOptions {
+interface RestoreMatrixRuntimeSessionOptions {
   uid: string
   accessToken: string
   refreshToken?: string
@@ -48,14 +49,14 @@ export interface RestoreMatrixRuntimeSessionOptions {
   bootstrapAfterRestore?: boolean
 }
 
-export interface MatrixPostLoginBootstrapOptions {
+interface MatrixPostLoginBootstrapOptions {
   account?: string
   displayName?: string
   avatar?: string
   client?: 'PC' | 'MOBILE'
 }
 
-export interface MatrixPasswordLoginOptions extends MatrixPostLoginBootstrapOptions {
+interface MatrixPasswordLoginOptions extends MatrixPostLoginBootstrapOptions {
   username: string
   password: string
   homeserverUrl: string
@@ -66,18 +67,18 @@ export interface MatrixPasswordLoginOptions extends MatrixPostLoginBootstrapOpti
   switchDatabase?: boolean
 }
 
-export interface MatrixSsoLoginOptions extends MatrixPostLoginBootstrapOptions {
+interface MatrixSsoLoginOptions extends MatrixPostLoginBootstrapOptions {
   loginToken: string
   persistTokens?: boolean
   persistUserInfo?: boolean
   switchDatabase?: boolean
 }
 
-export interface ResetMatrixRuntimeSessionOptions {
+interface ResetMatrixRuntimeSessionOptions {
   preserveTokens?: boolean
 }
 
-export interface LogoutMatrixRuntimeSessionOptions extends ResetMatrixRuntimeSessionOptions {
+interface LogoutMatrixRuntimeSessionOptions extends ResetMatrixRuntimeSessionOptions {
   resetLocalState?: boolean
 }
 
@@ -219,6 +220,16 @@ class MatrixRuntimeSessionService {
    * @throws Never throws (returns null tokens on error).
    */
   async getStoredTokens(): Promise<StoredMatrixTokens> {
+    // 浏览器/E2E 环境：从 Pinia store（localStorage 持久化）读取 token
+    if (!hasTauriRuntime()) {
+      const token = this.port.matrix.getAccessToken()
+      if (token) {
+        logger.debug('从 Pinia store 恢复 WEB 端 token')
+        return { token, refreshToken: null }
+      }
+      logger.debug('WEB 端无存储的 token')
+      return { token: null, refreshToken: null }
+    }
     await ensureAppStateReady()
     const result = await invokeWithResult<StoredMatrixTokens>(TauriCommand.GET_USER_TOKENS)
     if (result.isErr()) {
@@ -284,7 +295,7 @@ class MatrixRuntimeSessionService {
         await switchUserDatabase(uid)
       }
 
-      if (persistTokens) {
+      if (persistTokens && hasTauriRuntime()) {
         await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
           req: {
             uid,
@@ -316,7 +327,7 @@ class MatrixRuntimeSessionService {
       const resolvedDisplayName = this.resolveDisplayName(uid, displayName, account)
       this.port.user.initUserInfo(uid, resolvedDisplayName)
 
-      if (persistUserInfo) {
+      if (persistUserInfo && hasTauriRuntime()) {
         await invokeWithErrorHandler(TauriCommand.SAVE_USER_INFO, {
           userInfo: {
             uid
@@ -393,7 +404,7 @@ class MatrixRuntimeSessionService {
         await switchUserDatabase(uid)
       }
 
-      if (persistTokens) {
+      if (persistTokens && hasTauriRuntime()) {
         await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
           req: {
             uid,
@@ -403,7 +414,7 @@ class MatrixRuntimeSessionService {
         })
       }
 
-      if (persistUserInfo) {
+      if (persistUserInfo && hasTauriRuntime()) {
         await invokeWithErrorHandler(TauriCommand.SAVE_USER_INFO, {
           userInfo: {
             uid
@@ -483,7 +494,7 @@ class MatrixRuntimeSessionService {
         await switchUserDatabase(uid)
       }
 
-      if (persistTokens) {
+      if (persistTokens && hasTauriRuntime()) {
         await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
           req: {
             uid,
@@ -493,7 +504,7 @@ class MatrixRuntimeSessionService {
         })
       }
 
-      if (persistUserInfo) {
+      if (persistUserInfo && hasTauriRuntime()) {
         await invokeWithErrorHandler(TauriCommand.SAVE_USER_INFO, {
           userInfo: {
             uid
@@ -527,14 +538,15 @@ class MatrixRuntimeSessionService {
           if (settled) return
           settled = true
           matrixClientService.off('sync', off as never)
+          logger.info(`waitSyncPrepared: sync 状态 ${state}，继续 bootstrap`)
           resolve()
         }
       }
-      const current = matrixClientService.getConnectionState()
-      if (current === 'CONNECTED') {
-        resolve()
-        return
-      }
+      // 注意：不能通过 getConnectionState() 提前返回，因为 login()/loginWithToken()
+      // 会在 startClient() 之前就把 connectionState 设为 'CONNECTED'，
+      // 这并不代表 sync 真正进入 PREPARED/SYNCING 状态。
+      // 必须等待 SDK 的 sync 事件确认 sync 已就绪，否则后续 loadRooms/getSessionList
+      // 会在 sync 未完成时执行，导致空数据或卡住。
       matrixClientService.on('sync', off as never)
       setTimeout(() => {
         if (settled) return
@@ -562,6 +574,8 @@ class MatrixRuntimeSessionService {
     }
 
     try {
+      // 确保 client 就绪后再设置 presence，避免登录时序竞态导致 "客户端未初始化"
+      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
       await matrixPresenceService.setPresence('online')
     } catch (err) {
       logger.warn(`setPresence(online) 失败：${err}`)
@@ -654,6 +668,27 @@ class MatrixRuntimeSessionService {
    * @throws {Error} if the user id is missing or any sub-step fails.
    */
   async bootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
+    const BOOTSTRAP_TIMEOUT_MS = 30_000
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined
+
+    const bootstrapTask = this.doBootstrapPostLoginState(options)
+
+    // 整体超时保护：防止单个步骤（如 worker 请求、sync 等待）卡住导致登录流程永不返回
+    const timeoutPromise = new Promise<void>((resolve) => {
+      timeoutHandle = setTimeout(() => {
+        logger.warn(`bootstrapPostLoginState 整体超时 ${BOOTSTRAP_TIMEOUT_MS}ms，强制完成（部分功能可能在后台继续）`)
+        resolve()
+      }, BOOTSTRAP_TIMEOUT_MS)
+    })
+
+    try {
+      await Promise.race([bootstrapTask, timeoutPromise])
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle)
+    }
+  }
+
+  private async doBootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions): Promise<void> {
     try {
       const uid = this.port.matrix.getUserId() ?? this.port.user.getUserInfo()?.uid ?? ''
 
@@ -761,7 +796,7 @@ class MatrixRuntimeSessionService {
 
   async applyDesktopLoginState(): Promise<void> {
     try {
-      if (!isDesktop()) {
+      if (!isDesktop() || !hasTauriRuntime()) {
         return
       }
 
@@ -776,7 +811,7 @@ class MatrixRuntimeSessionService {
 
   async openDesktopHomeWindow(): Promise<void> {
     try {
-      if (!isDesktop()) {
+      if (!isDesktop() || !hasTauriRuntime()) {
         return
       }
 
@@ -788,7 +823,8 @@ class MatrixRuntimeSessionService {
         })
       }
 
-      await createWebviewWindow('HuLa', 'home', 960, 720, 'login', true, 330, 480, undefined, false)
+      // Step 2.3：窗口最小宽度 1024px，配合响应式断点（wide≥1440 / normal 1024-1439 / shrink<1024）
+      await createWebviewWindow('HuLa', 'home', 1280, 800, 'login', true, 1024, 600, undefined, false)
     } catch (err) {
       logger.error(`打开桌面端主窗口失败: ${err}`)
     }

@@ -9,9 +9,9 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PerformanceReporter')
 
-export type MetricName = 'CLS' | 'FID' | 'INP' | 'LCP' | 'TTFB' | 'FCP' | 'longtask'
+type MetricName = 'CLS' | 'FID' | 'INP' | 'LCP' | 'TTFB' | 'FCP' | 'longtask'
 
-export interface LongtaskMetric {
+interface LongtaskMetric {
   type: 'longtask'
   name: 'longtask'
   startTime: number
@@ -19,7 +19,7 @@ export interface LongtaskMetric {
   attribution?: Record<string, unknown>
 }
 
-export interface WebVitalMetric {
+interface WebVitalMetric {
   type: 'web-vital'
   name: MetricName
   value: number
@@ -29,7 +29,7 @@ export interface WebVitalMetric {
   entries: PerformanceEntry[]
 }
 
-export interface PageRenderMetric {
+interface PageRenderMetric {
   type: 'page-render'
   name: 'page-render'
   page: string
@@ -40,7 +40,7 @@ export interface PageRenderMetric {
   meta?: Record<string, string>
 }
 
-export interface SdkRequestMetric {
+interface SdkRequestMetric {
   type: 'sdk-request'
   name: 'sdk-request'
   manager: string
@@ -51,9 +51,9 @@ export interface SdkRequestMetric {
   meta?: Record<string, string>
 }
 
-export type PerformanceMetric = LongtaskMetric | WebVitalMetric | PageRenderMetric | SdkRequestMetric
+type PerformanceMetric = LongtaskMetric | WebVitalMetric | PageRenderMetric | SdkRequestMetric
 
-export interface ReporterConfig {
+interface ReporterConfig {
   endpoint: string
   batchSize?: number
   flushInterval?: number

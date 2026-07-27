@@ -57,7 +57,7 @@ const createHarness = async (options: {
     routes: [
       { path: '/', redirect: '/other' },
       { path: '/message', name: 'message', component: defineComponent({ template: '<div />' }) },
-      { path: '/spaceList', name: 'spaceList', component: defineComponent({ template: '<div />' }) },
+      { path: '/space', name: 'space', component: defineComponent({ template: '<div />' }) },
       { path: '/other', name: 'other', component: defineComponent({ template: '<div />' }) }
     ]
   })
@@ -104,7 +104,7 @@ describe('useSessionPageSync', () => {
     const handleMsgClick = vi.fn(async () => undefined)
     const beforeHandleSession = vi.fn()
     const { wrapper } = await createHarness({
-      activePath: '/spaceList',
+      activePath: '/space',
       handleMsgClick,
       beforeHandleSession
     })

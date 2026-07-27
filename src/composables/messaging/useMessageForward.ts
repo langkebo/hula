@@ -10,14 +10,14 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('useMessageForward')
 
 /** 可转发的目标会话条目 */
-export interface ForwardableRoom {
+interface ForwardableRoom {
   roomId: string
   name: string
   avatar: string
   activeTime: number
 }
 
-export interface UseMessageForwardOptions {
+interface UseMessageForwardOptions {
   /** 源消息事件,可能由父组件异步加载完成后注入 */
   sourceEvent: MatrixEvent | null
 }

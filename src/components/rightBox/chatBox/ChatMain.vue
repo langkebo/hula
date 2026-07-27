@@ -111,11 +111,12 @@
                 <div
                   @mouseenter="hoverId = item.message.id"
                   :class="[
-                    'w-full box-border',
+                    'w-full box-border message-row',
                     item.message.type === MsgEnum.RECALL ? 'min-h-22px' : 'min-h-62px',
                     isGroup ? 'p-[14px_10px_14px_20px]' : 'chat-single p-[4px_10px_10px_20px]',
                     { 'active-reply': activeReply === item.message.id },
-                    { 'bg-[--hula-text-tertiary]20': computeMsgHover(item) }
+                    { 'message-row--multi-select': computeMsgHover(item) },
+                    { 'message-row--hoverable': !chatStore.isMsgMultiChoose }
                   ]"
                   @click="
                     () => {
@@ -295,6 +296,7 @@ import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
 import { timeToStr } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
@@ -320,7 +322,7 @@ type SessionChangedPayload = {
 
 // Store 实例
 const announcementStore = useAnnouncementStore()
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
 const userStore = useUserStore()
@@ -765,6 +767,7 @@ onMounted(() => {
   useMitt.on(MittEnum.SESSION_CHANGED, handleSessionChanged)
   // 初始化监听器
   const initListeners = async () => {
+    if (!appWindow) return
     try {
       // 监听公告更新
       announcementUpdatedListener = await appWindow.listen<{ roomId: string }>('announcementUpdated', async (event) => {
@@ -870,6 +873,20 @@ onUnmounted(() => {
 .message-item {
   contain: layout style;
   will-change: auto;
+}
+
+// Discord 式消息行 hover 高亮（需求文档 6.5 节）
+.message-row {
+  transition: background-color 0.1s ease;
+  border-radius: 4px;
+}
+
+.message-row--hoverable:hover:not(.active-reply):not(.message-row--multi-select) {
+  background: color-mix(in srgb, var(--hula-text-primary) 4%, transparent);
+}
+
+.message-row--multi-select {
+  background: color-mix(in srgb, var(--hula-text-tertiary) 20%, transparent);
 }
 
 .message-list-placeholder {

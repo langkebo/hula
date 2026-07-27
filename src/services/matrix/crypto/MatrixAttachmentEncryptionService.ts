@@ -12,7 +12,7 @@ export interface EncryptedAttachmentFile {
   v: string
 }
 
-export interface EncryptedAttachmentPayload {
+interface EncryptedAttachmentPayload {
   encryptedData: Blob
   encryptedFile: Omit<EncryptedAttachmentFile, 'url'>
 }
@@ -83,4 +83,3 @@ class MatrixAttachmentEncryptionService {
 }
 
 export const matrixAttachmentEncryptionService = new MatrixAttachmentEncryptionService()
-export default matrixAttachmentEncryptionService

@@ -206,8 +206,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       hideSessions: false,
       autoLock: false,
       lockTimeout: 5
-    },
-    panelWidth: 280
+    }
   }),
   persist: {
     omit: ['lockScreen.password', 'secretChat.passwordHash']
@@ -335,9 +334,6 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     },
     setAutoStartup(autoStartup: boolean) {
       this.login.autoStartup = autoStartup
-    },
-    setPanelWidth(width: number) {
-      this.panelWidth = Math.min(360, Math.max(240, Math.round(width)))
     },
     ensurePreferenceSettings() {
       const defaults = getDefaultPreferenceSettings()

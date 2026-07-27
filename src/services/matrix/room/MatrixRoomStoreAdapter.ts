@@ -4,7 +4,7 @@ import type { MessageType } from '@/types/message'
 import matrixMessageAdapter from '../messaging/MatrixMessageAdapter'
 import { getMessagePreviewByType, getRoomTimelinePreview } from './roomPreviewText'
 
-export interface SlidingSyncUnreadCounts {
+interface SlidingSyncUnreadCounts {
   notificationCount?: number
   highlightCount?: number
 }
@@ -160,7 +160,7 @@ function convertTimelineEventToMessage(roomId: string, event: Record<string, unk
   }
 }
 
-export const matrixRoomStoreAdapter = {
+const matrixRoomStoreAdapter = {
   getTimelineEventPreview: getRoomTimelinePreview,
   getMessagePreview: (message: MessageType) =>
     getMessagePreviewByType(message.message.type, message.message.body as Record<string, unknown>),

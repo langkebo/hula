@@ -14,7 +14,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 /**
  * 用户目录搜索结果
  */
-export interface UserDirectorySearchResult {
+interface UserDirectorySearchResult {
   /** 用户 ID */
   userId: string
   /** 显示名 */
@@ -163,7 +163,7 @@ export const userDirectoryService = new UserDirectoryService()
  */
 import { ref } from 'vue'
 
-export function useUserDirectory() {
+function _useUserDirectory() {
   const results = ref<UserDirectorySearchResult[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -192,5 +192,3 @@ export function useUserDirectory() {
     clearResults
   }
 }
-
-export default userDirectoryService

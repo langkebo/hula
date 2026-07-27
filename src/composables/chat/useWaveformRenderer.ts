@@ -7,7 +7,7 @@ const logger = createLogger('WaveformRenderer')
 /**
  * 波形颜色配置接口
  */
-export type WaveformColors = {
+type WaveformColors = {
   playedColor: string
   unplayedColor: string
 }
@@ -15,7 +15,7 @@ export type WaveformColors = {
 /**
  * 波形渲染器返回接口
  */
-export type WaveformRendererReturn = {
+type WaveformRendererReturn = {
   // 状态
   waveformData: Ref<number[]>
   waveformCanvas: Ref<HTMLCanvasElement | null>

@@ -7,6 +7,10 @@ const osMock = vi.hoisted(() => ({
 
 vi.mock('@tauri-apps/plugin-os', () => osMock)
 
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 import {
   getOSType,
   getOSVersion,

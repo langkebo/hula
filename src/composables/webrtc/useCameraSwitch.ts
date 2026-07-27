@@ -12,7 +12,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WebRtc:CameraSwitch')
 
-export type UseCameraSwitchOptions = {
+type UseCameraSwitchOptions = {
   localStream: Ref<MediaStream | null>
   peerConnection: Ref<RTCPeerConnection | null>
   selectedAudioDevice: Ref<string | null | undefined>

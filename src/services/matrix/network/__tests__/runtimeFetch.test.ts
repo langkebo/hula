@@ -36,7 +36,7 @@ describe('runtimeFetch', () => {
     expect(browserFetch).toHaveBeenCalledWith('http://localhost:28008/_matrix/client/v3/login', {
       credentials: 'omit'
     })
-    expect(getRuntimeAwareFetchFn()).toBeUndefined()
+    expect(getRuntimeAwareFetchFn()).toBeTypeOf('function')
   })
 
   it('uses tauri native fetch in tauri runtime', async () => {

@@ -7,7 +7,7 @@
  * @param name 变量名，例如 '--hula-color-primary-500'
  * @returns 变量值字符串
  */
-export const getCssVar = (name: string): string => {
+const getCssVar = (name: string): string => {
   if (typeof window === 'undefined') return ''
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }

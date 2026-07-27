@@ -10,7 +10,7 @@ export interface SpaceChildRoom {
   avatarUrl?: string
 }
 
-export interface UseSpaceRoomsResult {
+interface UseSpaceRoomsResult {
   rooms: Ref<SpaceChildRoom[]>
   loading: Ref<boolean>
   mutating: Ref<boolean>

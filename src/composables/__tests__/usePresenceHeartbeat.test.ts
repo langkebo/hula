@@ -26,6 +26,13 @@ vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
   }
 }))
 
+// pushOnline 会先检查 matrixClientService.getClient()，未 mock 时会直接 return
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    getClient: () => ({ getUserId: () => '@user:server.com' })
+  }
+}))
+
 const userStoreMock = reactive<{ userInfo: { activeStatus?: OnlineEnum; lastOptTime?: number } }>({
   userInfo: { activeStatus: OnlineEnum.OFFLINE, lastOptTime: 0 }
 })
