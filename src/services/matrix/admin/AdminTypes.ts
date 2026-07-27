@@ -17,12 +17,6 @@ export interface ServerHealth {
   checks?: Record<string, unknown>
 }
 
-export interface ServerInfo {
-  serverName?: string
-  version?: string
-  federationEnabled?: boolean
-}
-
 export interface ServerVersion {
   serverVersion: string
   pythonVersion?: string
@@ -112,17 +106,6 @@ export interface RegistrationToken {
   pending: number
   completed: number
   expiryTime?: number
-}
-
-export enum ReportReason {
-  Sexual = 'sexual',
-  Violence = 'violence',
-  HateSpeech = 'hate_speech',
-  SelfHarm = 'self_harm',
-  Terrorism = 'terrorism',
-  Spam = 'spam',
-  Violation = 'violation',
-  Other = 'other'
 }
 
 export interface ReportRequest {

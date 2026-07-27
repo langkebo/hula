@@ -96,39 +96,46 @@
         <span class="action-bar-name">{{ selectedMember.displayName || selectedMember.userId }}</span>
       </div>
       <div class="action-bar-buttons">
-        <n-button size="tiny" quaternary @click="handleSendMessage(selectedMember)">
-          <template #icon>
-            <svg class="size-14px"><use href="#message"></use></svg>
+        <n-tooltip placement="top">
+          <template #trigger>
+            <n-button size="tiny" quaternary @click="handleSendMessage(selectedMember)">
+              <template #icon>
+                <svg class="size-14px"><use href="#message"></use></svg>
+              </template>
+            </n-button>
           </template>
-        </n-button>
-        <n-button
-          v-if="canKickBan && selectedMember.membership !== 'ban'"
-          size="tiny"
-          quaternary
-          @click="handleKickAction(selectedMember)">
-          <template #icon>
-            <svg class="size-14px"><use href="#logout"></use></svg>
+          {{ t('room.members.send_message') }}
+        </n-tooltip>
+        <n-tooltip v-if="canKickBan && selectedMember.membership !== 'ban'" placement="top">
+          <template #trigger>
+            <n-button size="tiny" quaternary @click="handleKickAction(selectedMember)">
+              <template #icon>
+                <svg class="size-14px"><use href="#logout"></use></svg>
+              </template>
+            </n-button>
           </template>
-        </n-button>
-        <n-button
-          v-if="canKickBan && selectedMember.membership !== 'ban'"
-          size="tiny"
-          quaternary
-          type="error"
-          @click="handleBanAction(selectedMember)">
-          <template #icon>
-            <svg class="size-14px"><use href="#forbid"></use></svg>
+          {{ t('room.members.kick') }}
+        </n-tooltip>
+        <n-tooltip v-if="canKickBan && selectedMember.membership !== 'ban'" placement="top">
+          <template #trigger>
+            <n-button size="tiny" quaternary type="error" @click="handleBanAction(selectedMember)">
+              <template #icon>
+                <svg class="size-14px"><use href="#forbid"></use></svg>
+              </template>
+            </n-button>
           </template>
-        </n-button>
-        <n-button
-          v-if="canKickBan && selectedMember.membership === 'ban'"
-          size="tiny"
-          quaternary
-          @click="handleUnbanAction(selectedMember)">
-          <template #icon>
-            <svg class="size-14px"><use href="#lock-open"></use></svg>
+          {{ t('room.members.ban') }}
+        </n-tooltip>
+        <n-tooltip v-if="canKickBan && selectedMember.membership === 'ban'" placement="top">
+          <template #trigger>
+            <n-button size="tiny" quaternary @click="handleUnbanAction(selectedMember)">
+              <template #icon>
+                <svg class="size-14px"><use href="#lock-open"></use></svg>
+              </template>
+            </n-button>
           </template>
-        </n-button>
+          {{ t('room.members.unban') }}
+        </n-tooltip>
       </div>
     </div>
 
@@ -208,7 +215,7 @@ import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipSe
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
-export interface RoomMember {
+interface RoomMember {
   userId: string
   displayName?: string
   avatarUrl?: string

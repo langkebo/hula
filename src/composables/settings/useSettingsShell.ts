@@ -8,14 +8,14 @@ import {
 } from '@/stores/domains/settings/settingsSchema'
 import { matchesSettingsSearch, type SettingsSearchKeywordResolver } from './settingsSearchIndex'
 
-export interface UseSettingsShellOptions {
+interface UseSettingsShellOptions {
   isDesktop?: boolean
   initialQuery?: string
   translate?: SettingsTabTranslator
   resolveSearchKeywords?: SettingsSearchKeywordResolver
 }
 
-export interface UseSettingsShellResult {
+interface UseSettingsShellResult {
   searchQuery: Ref<string>
   visibleTabs: ComputedRef<SettingsTab[]>
   filteredTabs: ComputedRef<SettingsTab[]>

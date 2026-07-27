@@ -29,15 +29,25 @@
       <n-input
         :value="searchKeyword"
         clearable
-        size="small"
-        class="toolbar-search flex-1 min-w-0 bg-[--hula-surface-search] border-none"
+        class="toolbar-search flex-1 min-w-0"
         :placeholder="t('space.search_sessions_placeholder')"
         :aria-label="t('space.search_sessions_placeholder')"
-        @update:value="emit('update:searchKeyword', $event)">
+        @update:value="handleSearchChange"
+        @keydown.esc="handleSearchEsc">
         <template #prefix>
-          <svg class="size-14px color-[--hula-text-tertiary]">
+          <svg class="size-16px color-[--hula-text-tertiary]">
             <use href="#search"></use>
           </svg>
+        </template>
+        <template #suffix>
+          <button
+            type="button"
+            class="toolbar-search__global"
+            :aria-label="t('search.title')"
+            :title="t('search.title')"
+            @click="handleGlobalSearch">
+            <svg class="size-16px"><use href="#expand" /></svg>
+          </button>
         </template>
       </n-input>
 
@@ -60,8 +70,10 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import {
   WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
   type WorkbenchSessionEngagementFilter,
@@ -112,6 +124,23 @@ const resolvedTitle = computed(() => props.title || t('home.action.message_short
 const showSummaryBadge = computed(() => {
   return props.totalCount > 0 && props.filteredCount !== props.totalCount
 })
+
+// 阶段 9：300ms 防抖触发内联过滤（需求文档 3.3.6）
+const debouncedEmitSearch = useDebounceFn((value: string) => emit('update:searchKeyword', value), 300)
+
+const handleSearchChange = (value: string) => {
+  debouncedEmitSearch(value)
+}
+
+// 阶段 9：Esc 清空搜索框并失焦
+const handleSearchEsc = () => {
+  emit('update:searchKeyword', '')
+}
+
+// 阶段 9：点击全局搜索按钮，携带当前关键词跳转 /search
+const handleGlobalSearch = () => {
+  triggerGlobalSearch(props.searchKeyword)
+}
 </script>
 
 <style scoped lang="scss">
@@ -134,8 +163,40 @@ const showSummaryBadge = computed(() => {
   color: var(--hula-text-tertiary);
 }
 
+/* 阶段 9：搜索栏规范（需求文档 3.3.6）—— 高度 40px，圆角 8px，背景 --hula-surface-search */
 .toolbar-search {
-  border-radius: 12px;
+  border-radius: 8px;
+
+  :deep(.n-input) {
+    --n-height: 40px;
+    --n-font-size: 14px;
+    --n-border-radius: 8px;
+    background: var(--hula-surface-search);
+  }
+
+  :deep(.n-input__input-el) {
+    font-size: 14px;
+  }
+}
+
+.toolbar-search__global {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--hula-text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  transition:
+    background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard),
+    color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+
+  &:hover {
+    background: var(--hula-surface-list-hover);
+    color: var(--hula-text-primary);
+  }
 }
 
 .message-session-toolbar__filter {

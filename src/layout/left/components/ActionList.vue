@@ -303,12 +303,13 @@ import { useMenuTopStore } from '@/stores/domains/settings/menuTop'
 import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useItemsBottom, useMoreList } from '../config.tsx'
 import { leftHook } from '../hook.ts'
 import DefinePlugins from './definePlugins/index.vue'
 
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const { addListener } = useTauriListener()
 const globalStore = useGlobalStore()
 const pluginsStore = usePluginsStore()
@@ -429,12 +430,14 @@ onMounted(async () => {
   startResize()
 
   // 监听自定义事件，处理设置中菜单显示模式切换和添加插件后，导致高度变化，需重新调整插件菜单显示
-  await addListener(
-    appWindow.listen('startResize', () => {
-      startResize()
-    }),
-    'startResize'
-  )
+  if (appWindow) {
+    await addListener(
+      appWindow.listen('startResize', () => {
+        startResize()
+      }),
+      'startResize'
+    )
+  }
 
   if (tipShow.value) {
     menuTop.value.filter((item) => {

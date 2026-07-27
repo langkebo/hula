@@ -13,7 +13,7 @@ import { useGlobalStore } from '../widget/global'
 
 const logger = createLogger('user')
 
-export interface MatrixUserProfile {
+interface MatrixUserProfile {
   userId: string
   displayName: string | null
   avatarUrl: string | null

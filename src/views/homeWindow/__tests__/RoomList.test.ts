@@ -6,6 +6,7 @@ import RoomListView from '../RoomList.vue'
 
 const {
   routerReplaceMock,
+  routerPushMock,
   addListenerMock,
   handleMsgClickMock,
   handleMsgDblclickMock,
@@ -14,6 +15,7 @@ const {
   scrollToIndexMock
 } = vi.hoisted(() => ({
   routerReplaceMock: vi.fn(),
+  routerPushMock: vi.fn(),
   addListenerMock: vi.fn(async () => {}),
   handleMsgClickMock: vi.fn(),
   handleMsgDblclickMock: vi.fn(),
@@ -23,8 +25,9 @@ const {
 }))
 
 const route = reactive({
-  path: '/roomList',
-  name: 'roomList',
+  path: '/room',
+  name: 'room',
+  params: {} as Record<string, unknown>,
   query: {} as Record<string, unknown>
 })
 
@@ -87,7 +90,8 @@ vi.mock('@vueuse/core', () => ({
 vi.mock('vue-router', () => ({
   useRoute: () => route,
   useRouter: () => ({
-    replace: routerReplaceMock
+    replace: routerReplaceMock,
+    push: routerPushMock
   })
 }))
 
@@ -204,8 +208,9 @@ describe('RoomListView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     route.query = {}
-    route.path = '/roomList'
-    route.name = 'roomList'
+    route.params = {}
+    route.path = '/room'
+    route.name = 'room'
     globalStore.currentSessionRoomId = '!alpha:server'
   })
 
@@ -229,8 +234,21 @@ describe('RoomListView', () => {
 
     const list = wrapper.getComponent({ name: 'RoomSessionListStub' })
     expect(list.props('sessionList')).toHaveLength(1)
-    expect(list.props('onMsgClick')).toBe(handleMsgClickMock)
-    expect(list.props('onMsgDblclick')).toBe(handleMsgDblclickMock)
+    // 单击房间项时通过 router.push 跳转到房间详情路由，双击直接调用 handleMsgClick
+    expect(typeof list.props('onMsgClick')).toBe('function')
+    expect(typeof list.props('onMsgDblclick')).toBe('function')
+
+    // 阶段 2：验证单击触发 router.push 跳转到房间详情路由
+    const sampleSession = list.props('sessionList')[0]
+    await list.props('onMsgClick')(sampleSession)
+    expect(routerPushMock).toHaveBeenCalledWith({
+      name: 'room-details',
+      params: { roomId: sampleSession.roomId }
+    })
+
+    // 验证双击调用 handleMsgClick
+    await list.props('onMsgDblclick')(sampleSession)
+    expect(handleMsgClickMock).toHaveBeenCalledWith(sampleSession)
   })
 
   it('syncs the search keyword back to the roomList route query', async () => {
@@ -241,7 +259,7 @@ describe('RoomListView', () => {
     await flushPromises()
 
     expect(routerReplaceMock).toHaveBeenCalledWith({
-      name: 'roomList',
+      name: 'room',
       query: {
         search: 'beta',
         type: undefined,

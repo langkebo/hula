@@ -4,7 +4,7 @@ import type { RegistrationToken } from '@/services/matrix/admin/AdminTypes'
 
 export type { RegistrationToken } from '@/services/matrix/admin/AdminTypes'
 
-export interface UseAdminRegistrationTokensResult {
+interface UseAdminRegistrationTokensResult {
   tokens: Ref<RegistrationToken[]>
   loading: Ref<boolean>
   creating: Ref<boolean>

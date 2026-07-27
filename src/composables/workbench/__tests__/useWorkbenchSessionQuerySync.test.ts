@@ -22,7 +22,7 @@ const createHarness = async (routeName = 'message') => {
     routes: [
       { path: '/', redirect: '/other' },
       { path: '/message', name: 'message', component: defineComponent({ template: '<div />' }) },
-      { path: '/roomList', name: 'roomList', component: defineComponent({ template: '<div />' }) },
+      { path: '/room', name: 'room', component: defineComponent({ template: '<div />' }) },
       { path: '/other', name: 'other', component: defineComponent({ template: '<div />' }) }
     ]
   })
@@ -145,7 +145,7 @@ describe('useWorkbenchSessionQuerySync', () => {
   })
 
   it('does not write query changes when the route name does not match', async () => {
-    const { wrapper, router } = await createHarness('roomList')
+    const { wrapper, router } = await createHarness('room')
     const replaceSpy = vi.spyOn(router, 'replace')
 
     await router.push('/message')

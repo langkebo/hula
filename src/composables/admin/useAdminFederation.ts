@@ -11,7 +11,7 @@ export interface FederationBlacklistView {
   addedAt?: number
 }
 
-export interface UseAdminFederationResult {
+interface UseAdminFederationResult {
   destinations: Ref<FederationDestination[]>
   destinationsLoading: Ref<boolean>
   selectedDestination: Ref<FederationDestination | null>

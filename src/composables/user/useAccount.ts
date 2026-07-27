@@ -1,6 +1,4 @@
-import { type DeviceInfo, matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
-
-export type { DeviceInfo }
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 
 interface AuthData {
   type?: string

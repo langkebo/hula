@@ -15,7 +15,7 @@ interface SessionTagContent {
   tags?: Record<string, unknown>
 }
 
-export interface SessionInfo {
+interface SessionInfo {
   id?: string
   roomId: string
   name: string
@@ -33,9 +33,9 @@ export interface SessionInfo {
   isFavorite?: boolean
 }
 
-export interface SessionDetail extends SessionInfo {}
+interface SessionDetail extends SessionInfo {}
 
-export interface SessionDetailQuery {
+interface SessionDetailQuery {
   id: string
   roomType?: number
 }
@@ -279,4 +279,3 @@ class MatrixSessionService extends BaseMatrixService {
 }
 
 export const matrixSessionService = new MatrixSessionService()
-export default matrixSessionService

@@ -48,6 +48,7 @@ import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useCanvasTool } from '@/composables/common/useCanvasTool'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 import { ErrorType, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler.ts'
@@ -58,7 +59,7 @@ import type { DrawToolType, ScreenConfig } from './types'
 const logger = createLogger('Screenshot')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 
 const imgCanvas = ref<HTMLCanvasElement | null>(null)
 const imgCtx = ref<CanvasRenderingContext2D | null>(null)
@@ -705,9 +706,9 @@ const resetScreenshot = async () => {
 
     magnifierRef.value?.hideMagnifier()
 
-    await appWindow.hide()
+    await appWindow?.hide()
   } catch (error) {
-    await appWindow.hide()
+    await appWindow?.hide()
   }
 }
 
@@ -843,19 +844,19 @@ const initCanvas = async () => {
 
 const handleScreenshot = () => {
   resetDrawTools()
-  appWindow.show()
+  appWindow?.show()
   initCanvas()
   magnifierRef.value?.initMagnifier()
 }
 
 onMounted(async () => {
-  appWindow.listen('capture', () => {
+  appWindow?.listen('capture', () => {
     resetDrawTools()
     initCanvas()
     magnifierRef.value?.initMagnifier()
   })
 
-  appWindow.listen('capture-reset', () => {
+  appWindow?.listen('capture-reset', () => {
     resetDrawTools()
     resetScreenshot()
   })

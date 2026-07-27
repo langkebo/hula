@@ -4,7 +4,7 @@ import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixServerNotificationService')
 
-export interface ServerNotificationPayload {
+interface ServerNotificationPayload {
   title: string
   content: string
   level?: string
@@ -18,7 +18,7 @@ export interface ServerNotification extends ServerNotificationPayload {
   dismissed?: boolean
 }
 
-export interface NotificationTemplate {
+interface NotificationTemplate {
   id: string
   title: string
   content: string
@@ -84,4 +84,3 @@ class MatrixServerNotificationService extends BaseMatrixService {
 }
 
 export const matrixServerNotificationService = new MatrixServerNotificationService()
-export default matrixServerNotificationService

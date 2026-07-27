@@ -28,7 +28,7 @@ export interface RoomSummary {
   unreadCount: number
 }
 
-export interface RoomStats {
+interface RoomStats {
   roomId: string
   totalMessages: number
   totalMembers: number
@@ -36,21 +36,21 @@ export interface RoomStats {
   createdAt: number | null
 }
 
-export interface RoomMemberSummary {
+interface RoomMemberSummary {
   userId: string
   displayName: string
   membership: string
   avatarUrl: string
 }
 
-export interface RoomListMemberSummary {
+interface RoomListMemberSummary {
   userId: string
   name: string
   avatarUrl?: string
   powerLevel?: number
 }
 
-export interface RoomListSnapshot {
+interface RoomListSnapshot {
   roomId: string
   name: string
   avatarUrl: string | null
@@ -63,10 +63,6 @@ export interface RoomListSnapshot {
   lastMessageTime: number | null
   members: RoomListMemberSummary[]
 }
-
-export type MatrixRoomSummaryInfo = RoomSummary
-export type MatrixRoomStats = RoomStats
-export type MatrixRoomMemberInfo = RoomMemberSummary
 
 class MatrixRoomSummaryService extends BaseMatrixService {
   initialize(client: MatrixClient): void {

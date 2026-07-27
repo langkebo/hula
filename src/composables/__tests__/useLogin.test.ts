@@ -122,6 +122,11 @@ vi.mock('@/utils/PlatformConstants', () => ({
   isMobile: () => false
 }))
 
+// useLoginFlow 在登录成功后仅当 isDesktop() && hasTauriRuntime() 才调用 completeDesktopLoginTransition
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 vi.mock('@/utils/AppStateReady', () => ({
   ensureAppStateReady: mockEnsureAppStateReady
 }))
@@ -134,6 +139,10 @@ vi.mock('../../services/i18n', () => ({
 
 vi.mock('@/services/backend', () => ({
   resolveMatrixEndpointConfig: () => ({
+    homeserverUrl: 'https://matrix.example.com',
+    identityServerUrl: 'https://identity.example.com'
+  }),
+  resolveMatrixRuntimeEndpointConfig: () => ({
     homeserverUrl: 'https://matrix.example.com',
     identityServerUrl: 'https://identity.example.com'
   })

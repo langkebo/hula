@@ -3,7 +3,7 @@
   <div
     data-tauri-drag-region
     class="login-box overflow-y-hidden rounded-8px select-none absolute top-0 left-0 w-full h-full z-9999 transition-all duration-300 ease-in-out">
-    <ActionBar class="absolute top-0 right-0 z-99999" :current-label="appWindow.label" :shrink="false" />
+    <ActionBar class="absolute top-0 right-0 z-99999" :current-label="currentWindowLabel" :shrink="false" />
 
     <Transition name="slide-fade" appear>
       <!--  壁纸界面  -->
@@ -119,11 +119,13 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { getWeekday } from '@/utils/ComputedTime'
 import { useTimerManager } from '@/utils/TimerManager'
 
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+const currentWindowLabel = computed(() => appWindow?.label ?? '')
 const settingStore = useSettingStore()
 const userStore = useUserStore()
 const { lockScreen } = storeToRefs(settingStore)

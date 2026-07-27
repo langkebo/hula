@@ -53,7 +53,7 @@ export interface Thread {
   participants: string[]
 }
 
-export interface ThreadMessage {
+interface ThreadMessage {
   eventId: string
   sender: string
   content: IContent
@@ -71,13 +71,13 @@ export interface ThreadDisplayMessage {
   inReplyTo?: string
 }
 
-export interface ThreadViewData {
+interface ThreadViewData {
   thread: Thread | null
   rootMessage: ThreadDisplayMessage | null
   replies: ThreadDisplayMessage[]
 }
 
-export interface ThreadListItem {
+interface ThreadListItem {
   id: string
   roomId: string
   threadId: string
@@ -96,7 +96,7 @@ export interface ThreadListItem {
   updatedTs?: number
 }
 
-export interface ThreadStatistics {
+interface ThreadStatistics {
   totalReplies: number
   totalParticipants: number
   totalEdits: number
@@ -106,7 +106,7 @@ export interface ThreadStatistics {
   avgReplyTimeMs?: number
 }
 
-export interface ThreadSubscription {
+interface ThreadSubscription {
   notificationLevel: string
   isMuted: boolean
   subscribedTs?: number
@@ -946,4 +946,3 @@ class MatrixThreadService extends BaseMatrixService {
 }
 
 export const matrixThreadService = new MatrixThreadService()
-export default matrixThreadService

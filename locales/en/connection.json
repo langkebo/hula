@@ -2,6 +2,7 @@
   "offline": "Network disconnected, please check your connection",
   "reconnecting": "Reconnecting...",
   "reconnecting_attempt": "Reconnecting ({count}/{max})...",
+  "syncing": "Syncing history...",
   "failed": "Connection failed, please retry",
   "retry": "Retry",
   "diagnose": "Run self-check",

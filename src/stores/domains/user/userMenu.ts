@@ -46,5 +46,3 @@ export const useUserMenuStore = defineStore(StoresEnum.USER_MENU, () => {
     toggleMenu
   }
 })
-
-export type UserMenuStore = ReturnType<typeof useUserMenuStore>

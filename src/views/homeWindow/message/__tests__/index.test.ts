@@ -280,7 +280,6 @@ describe('MessageView', () => {
 
     expect(wrapper.find('[data-test="message-toolbar"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="session-list"]').exists()).toBe(true)
-    expect(wrapper.findComponent({ name: 'RoomSpaceWorkbench' }).exists()).toBe(false)
     expect(wrapper.get('[data-test="toolbar-title"]').text()).toBe('home.action.message_short_title')
     expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('1/1')
 

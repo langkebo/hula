@@ -8,6 +8,12 @@
       "enabled": "取消置顶",
       "disabled": "置顶"
     },
+    "proxy_settings": "代理设置",
+    "close": "关闭",
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "恢复",
+    "shrink": "收缩",
     "close_prompt": {
       "title": "最小化还是直接退出程序?",
       "hide_to_tray": "最小化到系统托盘",

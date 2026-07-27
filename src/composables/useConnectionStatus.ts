@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
-export type ConnectionState = 'online' | 'offline' | 'connecting' | 'reconnecting' | 'error' | 'idle'
+export type ConnectionState = 'online' | 'offline' | 'connecting' | 'reconnecting' | 'syncing' | 'error' | 'idle'
 
 export function useConnectionStatus() {
   const matrixStore = useMatrixStore()
@@ -13,9 +13,17 @@ export function useConnectionStatus() {
       case 'CONNECTED':
         return 'online'
       case 'CONNECTING':
+        // 未初始化时为首次登录，不应显示"正在重新连接"横幅
+        if (!matrixStore.isInitialized) {
+          return 'idle'
+        }
         return 'connecting'
       case 'RECONNECTING':
         return 'reconnecting'
+      case 'CATCHUP':
+        // CATCHUP 是 SDK 从断开恢复后同步历史消息的瞬态
+        // UI 显示"正在同步历史消息"提示（非阻塞，带 spinner）
+        return 'syncing'
       case 'ERROR':
         return 'error'
       case 'DISCONNECTED':

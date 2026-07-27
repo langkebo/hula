@@ -9,6 +9,7 @@
           round
           :size="110"
           :color="'var(--login-avatar-bg)'"
+          alt="HuLa Logo"
           :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           :src="AvatarUtils.getAvatarUrl(userInfo?.avatar ?? '')" />
       </n-flex>

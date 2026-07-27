@@ -1,4 +1,4 @@
-export type FriendListViewState = 'capability' | 'empty' | 'error' | 'normal'
+type FriendListViewState = 'capability' | 'empty' | 'error' | 'normal'
 
 type ResolveFriendListViewStateOptions = {
   isCapabilityReady: boolean

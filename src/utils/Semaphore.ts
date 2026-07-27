@@ -72,7 +72,7 @@ export const SemaphoreLimits = {
   aiStreaming: 2
 } as const
 
-export type SemaphoreName = keyof typeof SemaphoreLimits | (string & {})
+type SemaphoreName = keyof typeof SemaphoreLimits | (string & {})
 
 export function getSemaphore(name: SemaphoreName, capacity?: number): Semaphore {
   let sem = registry.get(name)

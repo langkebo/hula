@@ -25,7 +25,7 @@ export interface DriverStepConfig extends Omit<DriveStep, 'popover'> {
 /**
  * Driver.js 配置选项接口
  */
-export interface DriverConfig extends Omit<Config, 'steps'> {
+interface DriverConfig extends Omit<Config, 'steps'> {
   nextBtnText?: string
   prevBtnText?: string
   doneBtnText?: string
@@ -41,7 +41,7 @@ export interface DriverConfig extends Omit<Config, 'steps'> {
 /**
  * useDriver hooks 返回值接口
  */
-export interface UseDriverReturn {
+interface UseDriverReturn {
   /** Driver 实例 */
   driverInstance: Driver | null
   /** 开始引导 */

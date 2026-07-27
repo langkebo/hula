@@ -124,5 +124,5 @@ class EndpointCapabilityService {
   }
 }
 
-export const endpointCapabilityService = new EndpointCapabilityService()
+const endpointCapabilityService = new EndpointCapabilityService()
 export default endpointCapabilityService

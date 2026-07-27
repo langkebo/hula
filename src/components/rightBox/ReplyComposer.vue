@@ -55,7 +55,7 @@ import type { MsgEnum } from '@/enums'
 import { MsgEnum as MsgEnumValue } from '@/enums'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
-export interface ReplyToInfo {
+interface ReplyToInfo {
   eventId: string
   senderId: string
   senderName: string

@@ -21,8 +21,27 @@ function calculateDelay(attempt: number, retryAfterMs?: number): number {
   return Math.min(delay + jitter, MAX_DELAY_MS)
 }
 
+/**
+ * Sync 路径后端已有 token bucket 限流（sync.rs: rate_limit_token_bucket_take），
+ * 且 SDK SlidingSync 自带 429 退避（safeGetRetryAfterMs + 指数退避）。
+ * 客户端拦截器对 /sync 重试会导致双重限流，因此对这些路径直接放行。
+ */
+const SYNC_PATH_PATTERNS: readonly RegExp[] = [
+  /\/_matrix\/client\/unstable\/org\.matrix\.simplified_msc3575\/sync/,
+  /\/_matrix\/client\/r0\/sync/,
+  /\/_matrix\/client\/v3\/sync/
+]
+
+export function shouldApplyClientRateLimit(input: RequestInfo | URL): boolean {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+  return !SYNC_PATH_PATTERNS.some((pattern) => pattern.test(url))
+}
+
 export function createRateLimitedFetch(baseFetch: typeof fetch): typeof fetch {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (!shouldApplyClientRateLimit(input)) {
+      return baseFetch(input, init)
+    }
     return fetchWithRetry(baseFetch, input, init, 0)
   }
 }

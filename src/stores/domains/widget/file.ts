@@ -12,7 +12,7 @@ const logger = createLogger('FileStore')
 /**
  * 文件信息接口
  */
-export interface FileInfo {
+interface FileInfo {
   /** 文件ID（消息ID） */
   id: string
   /** 房间ID */

@@ -27,7 +27,7 @@ const getCreateI18n = () => {
 
 const createI18nFn = getCreateI18n()
 
-export const i18n = createI18nFn
+const i18n = createI18nFn
   ? createI18nFn({
       legacy: false,
       locale: 'zh-CN'
@@ -141,10 +141,10 @@ const locales = Object.entries(import.meta.glob('../../locales/**/*.json'))
     {} as Record<Locale, Record<string, LoadLocale>>
   )
 
-export const availableLocales = Object.keys(locales)
+const availableLocales = Object.keys(locales)
 
 const loadedLanguages: Locale[] = []
-export type LanguagePreference = Locale | 'AUTO' | string
+type LanguagePreference = Locale | 'AUTO' | string
 
 // Obtain language prefix
 function getLangPrefix(lang: string) {
@@ -186,7 +186,7 @@ const normalizeLang = (lang: string): Locale => {
 }
 
 // 应用语言到 i18n 和 html 标签
-export function setI18nLanguage(lang: LanguagePreference) {
+function setI18nLanguage(lang: LanguagePreference) {
   const resolved = normalizeLang(lang)
   getGlobalComposer().locale.value = resolved
   setDayjsLocale(resolved)

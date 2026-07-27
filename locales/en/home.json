@@ -117,6 +117,8 @@
       "copy": "Copy",
       "copy_success": "Copied {account}",
       "info_missing": "Unable to load group info",
+      "name_label": "Room Name",
+      "edit_name": "Edit room name",
       "remark": {
         "label": "Group remark",
         "placeholder": "Enter a remark",
@@ -142,7 +144,7 @@
       }
     },
     "actions": {
-      "message": "Message"
+      "message": "Enter Chat"
     },
     "window": {
       "image_viewer": "Image viewer"
@@ -371,6 +373,10 @@
     "roles": {
       "owner": "Owner",
       "admin": "Admin"
+    },
+    "empty": {
+      "no_chat_selected": "No chat selected",
+      "select_to_start": "Select a conversation or start a new chat"
     }
   },
   "about": {

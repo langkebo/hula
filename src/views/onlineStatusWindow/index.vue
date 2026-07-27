@@ -56,6 +56,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OnlineStatusWindow')
@@ -104,7 +105,9 @@ const handleActive = async (item: UserState) => {
 }
 
 onMounted(async () => {
-  await getCurrentWebviewWindow().show()
+  if (hasTauriRuntime()) {
+    await getCurrentWebviewWindow().show()
+  }
   if (!currentState.value) return
   const matched = stateList.value.find((item: { title: string }) => item.title === currentState.value?.title)
   currentState.value.id = matched?.id || '1'

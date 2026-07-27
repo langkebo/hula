@@ -1,30 +1,46 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, reactive } from 'vue'
 import { OnlineEnum } from '@/enums'
 import FriendListView from '../FriendListView.vue'
 
-const { contactStoreMock, capabilityState, announceMock, addSpecialFriendMock, showFeedbackMock } = vi.hoisted(() => ({
-  contactStoreMock: {
-    contactsList: [] as Array<Record<string, unknown>>,
-    requestFriendsList: [] as Array<Record<string, unknown>>,
-    isLoading: false,
-    incomingRequestsCount: 0,
-    lastFriendError: null as { message: string } | null,
-    initialize: vi.fn(),
-    startDirectRoom: vi.fn(),
-    setFriendStatus: vi.fn(),
-    removeFromContacts: vi.fn(),
-    setFriendNote: vi.fn(),
-    setFriendDisplayName: vi.fn()
-  },
-  capabilityState: {
-    isLoaded: { value: true },
-    canUseFriendList: { value: true }
-  },
-  announceMock: vi.fn(),
-  addSpecialFriendMock: vi.fn(),
-  showFeedbackMock: vi.fn()
+const { routerPushMock, contactStoreMock, capabilityState, announceMock, addSpecialFriendMock, showFeedbackMock } =
+  vi.hoisted(() => ({
+    routerPushMock: vi.fn(),
+    contactStoreMock: {
+      contactsList: [] as Array<Record<string, unknown>>,
+      requestFriendsList: [] as Array<Record<string, unknown>>,
+      isLoading: false,
+      incomingRequestsCount: 0,
+      lastFriendError: null as { message: string } | null,
+      initialize: vi.fn(),
+      startDirectRoom: vi.fn(),
+      setFriendStatus: vi.fn(),
+      removeFromContacts: vi.fn(),
+      setFriendNote: vi.fn(),
+      setFriendDisplayName: vi.fn()
+    },
+    capabilityState: {
+      isLoaded: { value: true },
+      canUseFriendList: { value: true }
+    },
+    announceMock: vi.fn(),
+    addSpecialFriendMock: vi.fn(),
+    showFeedbackMock: vi.fn()
+  }))
+
+const route = reactive({
+  path: '/friend',
+  name: 'friend',
+  params: {} as Record<string, unknown>,
+  query: {} as Record<string, unknown>
+})
+
+vi.mock('vue-router', () => ({
+  useRoute: () => route,
+  useRouter: () => ({
+    push: routerPushMock
+  })
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -43,6 +59,19 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({
     showFeedback: showFeedbackMock
   })
+}))
+
+vi.mock('@/composables/common/useMitt', () => ({
+  useMitt: {
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn()
+  }
+}))
+
+vi.mock('@/composables/search/useSearchShortcut', () => ({
+  useSearchShortcut: () => {},
+  triggerGlobalSearch: vi.fn()
 }))
 
 vi.mock('@/stores/domains/chat/contacts', () => ({
@@ -71,24 +100,6 @@ vi.mock('@/utils/AvatarUtils', () => ({
   }
 }))
 
-vi.mock('@/components/friend/AddFriendDialog.vue', () => ({
-  default: defineComponent({
-    name: 'AddFriendDialogStub',
-    setup() {
-      return () => h('div', { 'data-test': 'add-friend-dialog-stub' })
-    }
-  })
-}))
-
-vi.mock('@/components/friend/FriendRequestDialog.vue', () => ({
-  default: defineComponent({
-    name: 'FriendRequestDialogStub',
-    setup() {
-      return () => h('div', { 'data-test': 'friend-request-dialog-stub' })
-    }
-  })
-}))
-
 vi.mock('@/components/friend/FriendSearchBar.vue', () => ({
   default: defineComponent({
     name: 'FriendSearchBarStub',
@@ -104,9 +115,13 @@ vi.mock('@/components/friend/FriendSearchBar.vue', () => ({
       showHistory: {
         type: Boolean,
         default: false
+      },
+      showGlobalSearchAction: {
+        type: Boolean,
+        default: false
       }
     },
-    emits: ['update:modelValue', 'search', 'select-history', 'clear-history'],
+    emits: ['update:modelValue', 'search', 'select-history', 'clear-history', 'global-search'],
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'friend-search-bar-stub' }, [
@@ -143,32 +158,17 @@ vi.mock('@/components/friend/FriendSearchBar.vue', () => ({
               onClick: () => emit('clear-history')
             },
             'clear-history'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'friend-search-global',
+              onClick: () => emit('global-search', props.modelValue)
+            },
+            'global-search'
           )
         ])
-    }
-  })
-}))
-
-vi.mock('@/components/friend/FriendDetailDrawer.vue', () => ({
-  default: defineComponent({
-    name: 'FriendDetailDrawerStub',
-    props: {
-      show: {
-        type: Boolean,
-        default: false
-      },
-      userId: {
-        type: String,
-        default: ''
-      }
-    },
-    setup(props) {
-      return () =>
-        h('div', {
-          'data-test': 'friend-detail-drawer-stub',
-          'data-show': String(props.show),
-          'data-user-id': props.userId
-        })
     }
   })
 }))
@@ -283,6 +283,11 @@ describe('FriendListView', () => {
     localStorage.clear()
     capabilityState.isLoaded.value = true
     capabilityState.canUseFriendList.value = true
+    // 阶段 2：重置路由状态到默认的 /friend
+    route.path = '/friend'
+    route.name = 'friend'
+    route.params = {}
+    route.query = {}
     contactStoreMock.contactsList = [
       {
         userId: '@alice:example.com',
@@ -324,9 +329,19 @@ describe('FriendListView', () => {
 
     await items[0]!.trigger('click')
 
-    expect(items[0]?.attributes('aria-current')).toBe('true')
-    expect(wrapper.get('[data-test="friend-detail-drawer-stub"]').attributes('data-show')).toBe('true')
-    expect(wrapper.get('[data-test="friend-detail-drawer-stub"]').attributes('data-user-id')).toBe('@alice:example.com')
+    // 阶段 2：单击好友项触发 router.push 跳转到好友详情路由
+    expect(routerPushMock).toHaveBeenCalledWith({
+      name: 'friend-details',
+      params: { userId: '@alice:example.com' }
+    })
+
+    // 模拟路由变化后，选中标记应通过 route.params.userId 派生
+    route.path = '/friend/@alice:example.com'
+    route.name = 'friend-details'
+    route.params = { userId: '@alice:example.com' }
+    await flushPromises()
+
+    expect(wrapper.findAll('[role="listitem"]')[0]?.attributes('aria-current')).toBe('true')
   })
 
   it('restores search history and updates it after a new search', async () => {

@@ -10,13 +10,14 @@ import { useRouter } from 'vue-router'
 import { translateMatrixError } from '@/common/matrixErrorTranslator'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MittEnum } from '@/enums'
-import { resolveMatrixEndpointConfig } from '@/services/backend'
+import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
 import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import type { UserInfoType } from '@/services/types'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMobile } from '@/utils/PlatformConstants'
@@ -44,7 +45,14 @@ export const useLoginFlow = () => {
   const loading = ref(false)
   const loginText = ref(isOnline.value ? t('login.button.login.default') : t('login.button.login.network_error'))
   const loginDisabled = ref(!isOnline.value)
-  const matrixEndpointConfig = resolveMatrixEndpointConfig()
+  /** 登录状态：idle（空闲）/ connecting（连接中）/ success（成功）/ failed（失败） */
+  const loginStatus = ref<'idle' | 'connecting' | 'success' | 'failed'>('idle')
+  /** 最近一次登录错误信息，用于失败时展示重试选项 */
+  const lastLoginError = ref<string | null>(null)
+  /** 登录整体超时句柄，防止 SDK 卡住导致按钮永远显示"登录中" */
+  let loginTimeoutHandle: ReturnType<typeof setTimeout> | undefined
+  const LOGIN_TIMEOUT_MS = 30_000
+  const matrixEndpointConfig = resolveMatrixRuntimeEndpointConfig()
   const info = ref({
     account: '',
     password: '',
@@ -79,8 +87,12 @@ export const useLoginFlow = () => {
   }
 
   const routerOrOpenHomeWindow = async () => {
-    if (isDesktop()) {
+    if (isDesktop() && hasTauriRuntime()) {
       await sessionOrchestrator.completeDesktopLoginTransition()
+    } else if (isDesktop()) {
+      // 浏览器环境（非 Tauri）下 isDesktop() 也为 true，但无法打开 Tauri 窗口，
+      // 需通过路由跳转到 PC 端主页。
+      router?.push('/home')
     } else {
       router?.push('/mobile/home')
     }
@@ -94,6 +106,23 @@ export const useLoginFlow = () => {
     loading.value = true
     loginText.value = t('login.status.logging_in')
     loginDisabled.value = true
+    loginStatus.value = 'connecting'
+    lastLoginError.value = null
+
+    // 整体超时保护：防止 SDK login/startClient 卡住导致按钮永远显示"登录中"
+    if (loginTimeoutHandle) clearTimeout(loginTimeoutHandle)
+    loginTimeoutHandle = setTimeout(() => {
+      if (loginStatus.value === 'connecting') {
+        logger.warn(`登录整体超时 ${LOGIN_TIMEOUT_MS}ms，强制复位为失败状态`)
+        loading.value = false
+        loginDisabled.value = false
+        loginText.value = t('login.button.login.default')
+        loginStatus.value = 'failed'
+        lastLoginError.value = t('login.status.timeout')
+        matrixStore.connectionState = 'DISCONNECTED'
+        showFeedback(t('login.status.timeout'), 'error')
+      }
+    }, LOGIN_TIMEOUT_MS)
     const loginInfo = auto && userStore.userInfo ? (userStore.userInfo as UserInfoType) : info.value
     const account = loginInfo?.account
     const password = loginInfo?.password ?? info.value.password
@@ -174,6 +203,11 @@ export const useLoginFlow = () => {
       loginDisabled.value = true
       loading.value = false
       loginText.value = t('login.status.success_redirect')
+      loginStatus.value = 'success'
+      if (loginTimeoutHandle) {
+        clearTimeout(loginTimeoutHandle)
+        loginTimeoutHandle = undefined
+      }
 
       if (!auto && isMobile()) {
         settingStore.setAutoLogin(true)
@@ -185,7 +219,7 @@ export const useLoginFlow = () => {
 
       useMitt.emit(MittEnum.MSG_INIT)
 
-      if (isDesktop()) {
+      if (isDesktop() && hasTauriRuntime()) {
         await sessionOrchestrator.completeDesktopLoginTransition()
       } else {
         await routerOrOpenHomeWindow()
@@ -194,12 +228,22 @@ export const useLoginFlow = () => {
       loading.value = false
       loginDisabled.value = false
       loginText.value = t('login.button.login.default')
+      loginStatus.value = 'failed'
+      if (loginTimeoutHandle) {
+        clearTimeout(loginTimeoutHandle)
+        loginTimeoutHandle = undefined
+      }
+      // 登录失败时重置连接状态，避免 ConnectionStatusBanner 一直显示"正在重新连接"
+      // matrixStore.connectionState 可能在 login()/startClient() 过程中被设为
+      // 'CONNECTING' 或因 SDK sync 事件变为 'RECONNECTING'，失败后必须复位
+      matrixStore.connectionState = 'DISCONNECTED'
       const matrixErr = err as Error & { errcode?: string; httpStatus?: number; message?: string }
       const translated = translateMatrixError(matrixErr, { context: 'login' })
       const userMessage =
         translated.userMessage !== 'error.matrix.unknown'
           ? t(translated.userMessage)
           : matrixErr.message || t('matrix_error.auth.login_failed_check_network')
+      lastLoginError.value = userMessage
       showFeedback(userMessage, 'error')
       if (auto) {
         uiState.value = 'manual'
@@ -218,12 +262,23 @@ export const useLoginFlow = () => {
     }
   }
 
+  /** 重试最近一次失败的登录 */
+  const retryLogin = async () => {
+    if (loginStatus.value !== 'failed') return
+    loginStatus.value = 'idle'
+    lastLoginError.value = null
+    await normalLogin('PC', true, false)
+  }
+
   return {
     logout,
     normalLogin,
+    retryLogin,
     loading,
     loginText,
     loginDisabled,
+    loginStatus,
+    lastLoginError,
     info,
     uiState,
     init,

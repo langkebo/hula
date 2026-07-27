@@ -1,9 +1,30 @@
 import { invoke } from '@tauri-apps/api/core'
 import { AppException, ErrorType } from '@/common/exception'
 import { err, ok, type Result } from '@/common/result'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('TauriInvokeHandler')
+
+/**
+ * Check if Tauri invoke is available. Returns false in browser/E2E environments
+ * where __TAURI_INTERNALS__ is not defined.
+ */
+function isInvokeAvailable(): boolean {
+  return hasTauriRuntime()
+}
+
+/**
+ * Create a graceful "not available" error for non-Tauri environments.
+ */
+function createNotAvailableError(command: string): AppException {
+  return new AppException(`Tauri runtime not available (command: ${command})`, {
+    type: ErrorType.Unknown,
+    showError: false,
+    isRetryError: false,
+    details: { command, reason: 'non-tauri-environment' }
+  })
+}
 
 /**
  * Tauri invoke 调用的统一错误处理包装器，返回 Result 模型
@@ -27,6 +48,11 @@ export async function invokeWithResult<T = unknown>(
   }
 ): Promise<Result<T, AppException>> {
   const { showError = true, customErrorMessage, isRetryError = false, errorType = ErrorType.Unknown } = options || {}
+
+  // Short-circuit in non-Tauri environments (browser/E2E) to avoid TypeError
+  if (!isInvokeAvailable()) {
+    return err(createNotAvailableError(command))
+  }
 
   try {
     const result = await invoke<T>(command, args)
@@ -81,6 +107,11 @@ export async function invokeWithErrorHandler<T = unknown>(
 ): Promise<T> {
   const { showError = true, customErrorMessage, isRetryError = false, errorType = ErrorType.Unknown } = options || {}
 
+  // Short-circuit in non-Tauri environments (browser/E2E) to avoid TypeError
+  if (!isInvokeAvailable()) {
+    throw createNotAvailableError(command)
+  }
+
   try {
     const result = await invoke<T>(command, args)
     return result
@@ -134,7 +165,7 @@ export async function invokeSilently<T = unknown>(command: string, args?: Record
  * @param options 重试选项
  * @returns Promise<T>
  */
-export async function invokeWithRetry<T = unknown>(
+async function _invokeWithRetry<T = unknown>(
   command: string,
   args?: Record<string, unknown>,
   options?: {

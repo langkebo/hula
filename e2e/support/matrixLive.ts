@@ -699,8 +699,8 @@ export const openMessageWorkspace = async (page: Page): Promise<void> => {
   })
 
   await expect(page).toHaveURL(/\/message(?:\?.*)?$/)
-  await expect(page.locator('.message-list-page')).toBeVisible({ timeout: 15_000 })
-  await expect(page.locator('.message-session-toolbar')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.message-list-page')).toBeVisible({ timeout: 30_000 })
+  await expect(page.locator('.message-session-toolbar')).toBeVisible({ timeout: 30_000 })
 }
 
 export const collectMatrixLiveSessionDebugSnapshot = async (

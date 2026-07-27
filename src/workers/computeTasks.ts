@@ -26,5 +26,3 @@ const sanitizeTask = createTask<SanitizeInput, SanitizeOutput>('sanitize-html', 
 })
 
 registerTask(sanitizeTask)
-
-export { sanitizeTask }

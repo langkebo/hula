@@ -7,7 +7,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useRoomListManagement')
 
-export interface ListMember {
+interface ListMember {
   userId: string
   name?: string
   avatarUrl?: string
@@ -15,9 +15,7 @@ export interface ListMember {
   membership: string
 }
 
-export type ListType = 'allowlist' | 'denylist'
-
-export interface UseRoomListManagementOptions {
+interface UseRoomListManagementOptions {
   roomId: string | null
   /** 是否具备管理权限 */
   canManage?: boolean

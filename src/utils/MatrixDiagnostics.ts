@@ -189,7 +189,7 @@ export class MatrixDiagnostics {
   }
 }
 
-export async function runMatrixDiagnostics(homeserverUrl: string): Promise<void> {
+async function runMatrixDiagnostics(homeserverUrl: string): Promise<void> {
   const diagnostics = new MatrixDiagnostics(homeserverUrl)
   const results = await diagnostics.runAll()
 

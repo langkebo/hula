@@ -8,7 +8,7 @@ interface GroupStoreLike {
   getUserInfo: (uid: string) => { myName?: string; name?: string; avatar?: string } | null
 }
 
-export interface UseMsgInputMentionActionsOptions {
+interface UseMsgInputMentionActionsOptions {
   messageInputDom: Ref<HTMLElement>
   isChinese: Ref<boolean>
   ait: Ref<boolean>

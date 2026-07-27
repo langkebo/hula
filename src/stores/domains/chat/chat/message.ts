@@ -7,18 +7,9 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useSessionStore } from './session'
 import { getTimerWorker } from './timerWorker'
-import {
-  type CustomForwardTask,
-  type MessageBody,
-  type MessageType,
-  pageSize,
-  RECALL_EXPIRATION_TIME,
-  type RecalledMessage,
-  ROOM_MESSAGE_CACHE_LIMIT
-} from './types'
+import type { CustomForwardTask, MessageBody, MessageType, RecalledMessage } from './types'
 
-export type { CustomForwardTask, MessageBody, MessageType, RecalledMessage }
-export { pageSize, RECALL_EXPIRATION_TIME, ROOM_MESSAGE_CACHE_LIMIT }
+export type { MessageBody, MessageType }
 
 import { createMessageLoading } from './messageLoading'
 import { createMessageMutations } from './messageMutations'

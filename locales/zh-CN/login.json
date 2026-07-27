@@ -82,7 +82,10 @@
   "status": {
     "logging_in": "登录中...",
     "success_redirect": "登录成功，正在跳转...",
-    "service_disconnected": "服务异常断开"
+    "service_disconnected": "服务异常断开",
+    "timeout": "登录超时，请检查网络后重试",
+    "failed": "登录失败",
+    "retry": "重试登录"
   },
   "qr": {
     "overlay": {

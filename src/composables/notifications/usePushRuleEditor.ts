@@ -15,7 +15,7 @@ export type PushRuleKindValue = 'override' | 'content' | 'room' | 'sender' | 'un
 export type PushActionType = 'notify' | 'dont_notify' | 'coalesce'
 
 /** 扁平化后的规则条目,携带所属类别 */
-export interface FlatPushRule {
+interface FlatPushRule {
   kind: PushRuleKindValue
   rule: IPushRule
 }

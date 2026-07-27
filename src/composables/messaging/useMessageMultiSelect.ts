@@ -11,12 +11,12 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useMessageMultiSelect')
 
-export interface UseMessageMultiSelectOptions {
+interface UseMessageMultiSelectOptions {
   /** 当前房间 ID,支持 ref 或字符串 */
   roomId: MaybeRef<string>
 }
 
-export interface BatchForwardTarget {
+interface BatchForwardTarget {
   /** 第一条已选消息的 eventId */
   eventId: string
   /** 所在房间 ID */

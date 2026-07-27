@@ -7,7 +7,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useVoIPCallFlow')
 
-export interface UseVoIPCallFlowOptions {
+interface UseVoIPCallFlowOptions {
   initialCallId?: string
   initialRoomId?: string
 }

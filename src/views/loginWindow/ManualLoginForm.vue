@@ -4,6 +4,7 @@
       <n-avatar
         class="welcome size-80px rounded-50% border-(2px solid [--login-avatar-border])"
         :color="'var(--login-avatar-bg)'"
+        alt="HuLa Logo"
         :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
         :src="AvatarUtils.getAvatarUrl(loginInfo.avatar)" />
     </n-flex>
@@ -77,7 +78,7 @@
         clearable />
 
       <n-flex align="center" justify="center" :size="6">
-        <n-checkbox v-model:checked="protocol" />
+        <n-checkbox v-model:checked="protocol" :aria-label="t('login.term.checkout.text1')" />
         <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px agreement">
           <span>{{ t('login.term.checkout.text1') }}</span>
           <span class="color-[--color-primary] cursor-pointer" @click.stop="emit('open-service-agreement')">
@@ -99,6 +100,13 @@
         @click="emit('login')">
         <span>{{ loginText }}</span>
       </n-button>
+
+      <div v-if="loginStatus === 'failed' && lastLoginError" class="login-error-retry">
+        <p class="login-error-retry__message">{{ lastLoginError }}</p>
+        <n-button size="small" type="primary" tertiary @click="emit('retry')">
+          {{ t('login.status.retry') }}
+        </n-button>
+      </div>
     </n-flex>
   </n-flex>
 </template>
@@ -116,10 +124,13 @@ const props = defineProps<{
   loading: boolean
   loginDisabled: boolean
   loginText: string
+  loginStatus?: 'idle' | 'connecting' | 'success' | 'failed'
+  lastLoginError?: string | null
 }>()
 
 const emit = defineEmits<{
   login: []
+  retry: []
   'open-service-agreement': []
   'open-privacy-agreement': []
 }>()
@@ -198,3 +209,25 @@ onUnmounted(() => {
   window.removeEventListener('click', closeMenu, true)
 })
 </script>
+
+<style scoped>
+.login-error-retry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-top: 4px;
+  background: var(--hula-color-danger-50, rgba(239, 68, 68, 0.08));
+  border: 1px solid var(--hula-color-danger-200, rgba(239, 68, 68, 0.2));
+  border-radius: 6px;
+}
+
+.login-error-retry__message {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--hula-color-danger-600, #dc2626);
+  text-align: center;
+  margin: 0;
+}
+</style>

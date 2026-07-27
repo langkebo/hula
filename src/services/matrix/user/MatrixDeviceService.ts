@@ -27,14 +27,14 @@ export interface Device {
 /**
  * 设备列表响应
  */
-export interface DevicesResponse {
+interface DevicesResponse {
   devices: Device[]
 }
 
 /**
  * 设备详情响应
  */
-export interface DeviceDetailResponse {
+interface DeviceDetailResponse {
   device_id: string
   display_name?: string
   last_seen_ts?: number
@@ -45,7 +45,7 @@ export interface DeviceDetailResponse {
 /**
  * 设备更新响应
  */
-export interface DeviceUpdateResponse {
+interface DeviceUpdateResponse {
   device_id: string
   display_name: string
   updated_ts: number
@@ -54,7 +54,7 @@ export interface DeviceUpdateResponse {
 /**
  * 设备列表变更响应
  */
-export interface DeviceListUpdatesResponse {
+interface DeviceListUpdatesResponse {
   changed: string[]
   left: string[]
   deleted?: string[]
@@ -64,7 +64,7 @@ export interface DeviceListUpdatesResponse {
 /**
  * 设备列表变更请求
  */
-export interface DeviceListUpdatesRequest {
+interface DeviceListUpdatesRequest {
   users: string[]
   since?: string | number
   from?: string | number
@@ -340,5 +340,3 @@ class MatrixDeviceService extends BaseMatrixService {
  * 单例实例
  */
 export const matrixDeviceService = new MatrixDeviceService()
-
-export default matrixDeviceService

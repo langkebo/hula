@@ -1,4 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
+import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
+import { bootstrapDesktopHarness } from './support/session'
 
 type RenderSample = {
   name: string
@@ -8,53 +10,8 @@ type RenderSample = {
   status: 'pass' | 'warn'
 }
 
-type RuntimeIssueCollector = {
-  componentResolveErrors: string[]
-  lazyLoadErrors: string[]
-}
-
-const bootstrapDesktopHarness = async (page: Page) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('hula:e2e:enabled', '1')
-    window.localStorage.setItem('hula:e2e:mock-auth', '1')
-    window.localStorage.setItem('hula:e2e:platform', 'desktop')
-    ;(window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__ = []
-  })
-}
-
-const createRuntimeIssueCollector = (page: Page): RuntimeIssueCollector => {
-  const collector: RuntimeIssueCollector = {
-    componentResolveErrors: [],
-    lazyLoadErrors: []
-  }
-
-  page.on('console', (message) => {
-    const text = message.text()
-    if (text.includes('Failed to resolve component')) {
-      collector.componentResolveErrors.push(text)
-    }
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  page.on('pageerror', (error) => {
-    const text = String(error)
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  return collector
-}
-
-const expectNoRouteRuntimeIssues = (collector: RuntimeIssueCollector) => {
-  expect(collector.componentResolveErrors, '页面不应出现桌面端组件解析失败').toEqual([])
-  expect(collector.lazyLoadErrors, '页面不应出现懒加载 chunk 拉取失败').toEqual([])
+const DESKTOP_RUNTIME_ISSUE_OPTIONS = {
+  componentResolveErrorMessage: '页面不应出现桌面端组件解析失败'
 }
 
 const waitForSample = async (page: Page, name: string): Promise<RenderSample> => {
@@ -93,7 +50,7 @@ test.describe('Desktop Key Flows', () => {
     await expect(page).toHaveURL(/\/settings\?tab=securityPrivacy$/)
     await expect(page.locator('#settings-tab-securityPrivacy')).toHaveAttribute('aria-selected', 'true')
 
-    expectNoRouteRuntimeIssues(runtimeIssues)
+    expectNoRuntimeIssues(runtimeIssues, DESKTOP_RUNTIME_ISSUE_OPTIONS)
   })
 
   test('supports desktop settings navigation and search', async ({ page }) => {
@@ -120,7 +77,7 @@ test.describe('Desktop Key Flows', () => {
     await expect(page.locator('#settings-tab-notifications')).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('#settings-tab-preferences')).toHaveAttribute('aria-selected', 'false')
 
-    expectNoRouteRuntimeIssues(runtimeIssues)
+    expectNoRuntimeIssues(runtimeIssues, DESKTOP_RUNTIME_ISSUE_OPTIONS)
   })
 
   test('collects desktop dynamic render samples under 800ms', async ({ page }, testInfo) => {
@@ -143,7 +100,7 @@ test.describe('Desktop Key Flows', () => {
 
     const detailSample = await waitForSample(page, 'desktop-dynamic-detail')
     expect(detailSample.duration).toBeLessThan(detailSample.thresholdMs)
-    expectNoRouteRuntimeIssues(runtimeIssues)
+    expectNoRuntimeIssues(runtimeIssues, DESKTOP_RUNTIME_ISSUE_OPTIONS)
 
     await testInfo.attach('desktop-dynamic-render-samples.json', {
       body: JSON.stringify([indexSample, detailSample], null, 2),

@@ -182,7 +182,8 @@ export const useTauriListener = () => {
   const setupWindowCloseListener = async () => {
     if (!runtimeAvailable) return
     try {
-      const appWindow = WebviewWindow.getCurrent()
+      const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+      if (!appWindow) return
       const currentWindowLabel = appWindow.label
 
       // 检查是否已经为该窗口设置过监听器

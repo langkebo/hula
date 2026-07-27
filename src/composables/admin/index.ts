@@ -7,36 +7,31 @@
  * is structural rather than copy-pasted.
  */
 
-export type { AppServiceDetail, AppServiceInfo, UseAdminAppServicesResult } from './useAdminAppServices'
+export type { AppServiceInfo } from './useAdminAppServices'
 export { useAdminAppServices } from './useAdminAppServices'
-export type { AuditEntryView, UseAdminAuditResult } from './useAdminAudit'
+export type { AuditEntryView } from './useAdminAudit'
 export { useAdminAudit } from './useAdminAudit'
-export type { FederationBlacklistView, FederationDestination, UseAdminFederationResult } from './useAdminFederation'
+export type { FederationBlacklistView, FederationDestination } from './useAdminFederation'
 export { useAdminFederation } from './useAdminFederation'
-export type {
-  AdminFeatureFlag,
-  AdminFeatureFlagInput,
-  AdminFeatureFlagTarget,
-  UseAdminMaintenanceResult
-} from './useAdminMaintenance'
+export type { AdminFeatureFlag, AdminFeatureFlagInput } from './useAdminMaintenance'
 export { useAdminMaintenance } from './useAdminMaintenance'
-export type { ServerNoticeInfo, UseAdminNoticesResult } from './useAdminNotices'
+export type { ServerNoticeInfo } from './useAdminNotices'
 export { useAdminNotices } from './useAdminNotices'
-export type { UseAdminNotificationsResult } from './useAdminNotifications'
+
 export { useAdminNotifications } from './useAdminNotifications'
-export type { RegistrationToken, UseAdminRegistrationTokensResult } from './useAdminRegistrationTokens'
+export type { RegistrationToken } from './useAdminRegistrationTokens'
 export { useAdminRegistrationTokens } from './useAdminRegistrationTokens'
-export type { RetentionPolicyView, UseAdminRetentionResult } from './useAdminRetention'
+export type { RetentionPolicyView } from './useAdminRetention'
 export { useAdminRetention } from './useAdminRetention'
-export type { RoomInfo, RoomMessage, UseAdminRoomsResult } from './useAdminRooms'
+export type { RoomInfo } from './useAdminRooms'
 export { useAdminRooms } from './useAdminRooms'
-export type { SamlMapping, UseAdminSamlResult } from './useAdminSaml'
+
 export { useAdminSaml } from './useAdminSaml'
-export type { UseAdminSecurityResult } from './useAdminSecurity'
+
 export { useAdminSecurity } from './useAdminSecurity'
-export type { UseAdminServerLogsResult } from './useAdminServerLogs'
+
 export { useAdminServerLogs } from './useAdminServerLogs'
-export type { SpaceDetail, SpaceInfo, SpaceStats, UseAdminSpacesResult } from './useAdminSpaces'
+export type { SpaceInfo, SpaceStats } from './useAdminSpaces'
 export { useAdminSpaces } from './useAdminSpaces'
-export type { UseAdminUsersResult, UserDevice, UserInfo, UserSession } from './useAdminUsers'
+export type { UserDevice, UserInfo, UserSession } from './useAdminUsers'
 export { useAdminUsers } from './useAdminUsers'

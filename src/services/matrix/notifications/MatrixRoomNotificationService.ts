@@ -12,7 +12,7 @@ const ROOM_NOTIFICATION_SETTINGS_EVENT = 'hula.room.notification_settings'
  * 契约: GET /_matrix/client/v3/rooms/{room_id}/unread_count
  * 顶层稳定字段 - notification_count, highlight_count
  */
-export interface RoomUnreadCountPayload {
+interface RoomUnreadCountPayload {
   notification_count: number
   highlight_count: number
 }

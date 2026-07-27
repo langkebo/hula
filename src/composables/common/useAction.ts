@@ -1,12 +1,12 @@
 import { type Ref, ref } from 'vue'
 
-export interface ActionState<T = unknown> {
+interface ActionState<T = unknown> {
   loading: Ref<boolean>
   error: Ref<string | null>
   execute: (...args: unknown[]) => Promise<T | undefined>
 }
 
-export interface UseActionOptions {
+interface UseActionOptions {
   /** Error message to show on failure (default: generic error). */
   errorMessage?: string
   /** Callback on success. Receives the return value of the action. */

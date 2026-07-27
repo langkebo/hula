@@ -21,8 +21,6 @@ import { useMsgInputMentionActions } from './useMsgInputMentionActions'
 import { useMsgInputSend } from './useMsgInputSend'
 import { useVoiceInput } from './useVoiceInput'
 
-export { useCursorManager } from './useCursorManager'
-
 const logger = createLogger('MsgInput')
 
 export const useMsgInput = (messageInputDom: Ref) => {

@@ -1,6 +1,6 @@
 import type { DiscoveryOptions, Registry, ServiceInstance } from '../types'
 
-export interface StaticConfig {
+interface StaticConfig {
   [serviceName: string]: ServiceInstance[]
 }
 

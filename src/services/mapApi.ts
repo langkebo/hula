@@ -37,7 +37,7 @@ type ReverseGeocodeResult = {
 // 使用后端代理，不再需要 JSONP
 
 // 坐标系转换（WGS84 -> GCJ-02）
-export const transformCoordinates = async (lat: number, lng: number): Promise<TransformedCoordinate> => {
+const _transformCoordinates = async (lat: number, lng: number): Promise<TransformedCoordinate> => {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new Error('坐标范围无效')
   try {
     const data = await matrixHttpClient.requestResult<{ lat: number; lng: number }>({

@@ -8,6 +8,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isCompatibility, isDesktop, isMac, isWindows, isWindows10 } from '@/utils/PlatformConstants'
 import { invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
@@ -170,6 +171,12 @@ export const useWindow = () => {
   ) => {
     // 移动端不支持窗口管理，直接返回空对象
     if (!isDesktop()) {
+      return null
+    }
+    // 浏览器环境（非 Tauri）无法创建原生窗口，直接返回 null
+    // 调用方应通过 router.push 跳转而非创建新窗口
+    if (!hasTauriRuntime()) {
+      logger.info(`非 Tauri 环境，跳过窗口创建: ${label}`)
       return null
     }
     const originalLabel = label
@@ -642,7 +649,7 @@ export const useWindow = () => {
   }
 }
 
-export async function createWebviewWindow(
+async function _createWebviewWindow(
   title: string,
   label: string,
   width: number,
@@ -664,12 +671,12 @@ export async function ensureCaptureWindow() {
   return _ensure()
 }
 
-export async function ensureCheckUpdateWindow() {
+async function _ensureCheckUpdateWindow() {
   const { ensureCheckUpdateWindow: _ensure } = useWindow()
   return _ensure()
 }
 
-export async function ensureNotifyWindow() {
+async function _ensureNotifyWindow() {
   const { ensureNotifyWindow: _ensure } = useWindow()
   return _ensure()
 }

@@ -50,7 +50,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
   { id: 'aiConnection', label: 'AI Connection', icon: 'robot' }
 ]
 
-export const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {
+const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {
   account: 'setting.dialog.tabs.account',
   sessions: 'setting.dialog.tabs.sessions',
   appearance: 'setting.dialog.tabs.appearance',

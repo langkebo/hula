@@ -4,7 +4,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminSecurity')
 
-export interface UseAdminSecurityResult {
+interface UseAdminSecurityResult {
   auditLogs: Ref<Array<Record<string, unknown>>>
   loading: Ref<boolean>
   nextBatch: Ref<string | undefined>

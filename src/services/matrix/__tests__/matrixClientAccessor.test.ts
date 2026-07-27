@@ -1,20 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as accessorModule from '../matrixClientAccessor'
 
-const { warnMock } = vi.hoisted(() => ({
-  warnMock: vi.fn()
+const { debugMock } = vi.hoisted(() => ({
+  debugMock: vi.fn()
 }))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
-  warn: warnMock,
+  warn: vi.fn(),
   error: vi.fn()
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => ({
+    warn: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: debugMock
+  })
 }))
 
 describe('matrixClientAccessor', () => {
   beforeEach(() => {
     accessorModule.resetMatrixClientAccessorForTests()
-    warnMock.mockClear()
+    debugMock.mockClear()
   })
 
   it('prefers explicitly registered accessor', async () => {
@@ -38,6 +47,6 @@ describe('matrixClientAccessor', () => {
     expect(accessorModule.getMatrixHomeserverUrl()).toBeNull()
     expect(accessorModule.getMatrixClient()).toBeNull()
     await expect(accessorModule.waitForMatrixClientReady()).rejects.toThrow('Matrix client accessor is not registered')
-    expect(warnMock).toHaveBeenCalledTimes(1)
+    expect(debugMock).toHaveBeenCalledTimes(1)
   })
 })

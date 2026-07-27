@@ -4,19 +4,7 @@ import { strategyLogger } from './base'
 import { TextMessageStrategyImpl } from './text'
 import { UnsupportedMessageStrategyImpl } from './unsupported'
 
-export { AudioCallMessageStrategyImpl } from './audioCall'
 export * from './base'
-export { BeaconMessageStrategyImpl } from './beacon'
-export { EmojiMessageStrategyImpl } from './emoji'
-export { FileMessageStrategyImpl } from './file'
-export { ImageMessageStrategyImpl } from './image'
-export { LinkPreviewMessageStrategyImpl } from './linkPreview'
-export { LocationMessageStrategyImpl } from './location'
-export { TextMessageStrategyImpl } from './text'
-export { UnsupportedMessageStrategyImpl } from './unsupported'
-export { VideoMessageStrategyImpl } from './video'
-export { VideoCallMessageStrategyImpl } from './videoCall'
-export { VoiceMessageStrategyImpl } from './voice'
 
 const strategyCache = new Map<MsgEnum, MessageStrategy>()
 
@@ -87,7 +75,7 @@ export async function getStrategy(type: MsgEnum): Promise<MessageStrategy> {
   return s
 }
 
-export const messageStrategyMap: Record<MsgEnum, MessageStrategy> = new Proxy({} as Record<MsgEnum, MessageStrategy>, {
+const _messageStrategyMap: Record<MsgEnum, MessageStrategy> = new Proxy({} as Record<MsgEnum, MessageStrategy>, {
   get(_target, prop: string) {
     const key = Number(prop) as MsgEnum
     const cached = strategyCache.get(key)

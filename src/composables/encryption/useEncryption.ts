@@ -17,21 +17,10 @@ import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackup
 import { matrixVerificationService, type VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
 
 export type { CryptoHealthStatus } from '@/services/matrix/crypto/CryptoHealthMonitor'
-export type {
-  MatrixEncryptionSessionContext,
-  PreparedKeyBackupVersion
-} from '@/services/matrix/crypto/MatrixEncryptionContextService'
-export type {
-  CrossSigningInfo,
-  EncryptionSettings,
-  KeyBackupInfo,
-  KeyRotationRecord,
-  KeyRotationStatus,
-  SetupKeyBackupOptions
-} from '@/services/matrix/crypto/MatrixEncryptionService'
-export type { VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
 
-export interface UseEncryptionResult {
+export type { KeyRotationRecord } from '@/services/matrix/crypto/MatrixEncryptionService'
+
+interface UseEncryptionResult {
   isEncryptionEnabled: Ref<boolean>
   isCrossSigningReady: Ref<boolean>
 

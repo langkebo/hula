@@ -1,7 +1,7 @@
 import { computed, reactive, readonly } from 'vue'
 import type { UploadFile } from '@/utils/FileType'
 
-export type FileUploadItem = {
+type FileUploadItem = {
   id: string
   name: string
   size: number
@@ -12,7 +12,7 @@ export type FileUploadItem = {
   endTime?: number
 }
 
-export type FileUploadQueue = {
+type FileUploadQueue = {
   items: FileUploadItem[]
   totalFiles: number
   completedFiles: number
@@ -25,7 +25,7 @@ export type FileUploadQueue = {
 /**
  * 文件上传队列状态管理
  */
-export const useFileUploadQueue = () => {
+const useFileUploadQueue = () => {
   // 队列状态
   const queue = reactive<FileUploadQueue>({
     items: [],

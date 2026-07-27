@@ -207,22 +207,30 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
 
       sessionStore.updateSession(msg.message.roomId, updateData)
     } else {
-      const room = await matrixRoomQueryService.getRoom(msg.message.roomId, false)
-      if (room) {
-        const newSession = {
-          roomId: room.roomId,
-          name: room.name || room.roomId,
-          avatar: room.getMxcAvatarUrl() || '',
-          type: room.getJoinedMemberCount() === 2 ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP,
-          unreadCount: 0,
-          activeTime: Date.now()
+      try {
+        const room = await matrixRoomQueryService.getRoom(msg.message.roomId, false)
+        if (room) {
+          const newSession = {
+            roomId: room.roomId,
+            name: room.name || room.roomId,
+            avatar: room.getMxcAvatarUrl() || '',
+            type: room.getJoinedMemberCount() === 2 ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP,
+            unreadCount: 0,
+            activeTime: Date.now()
+          }
+          sessionStore.addSession(newSession)
+          const isSelfMessage = msg.fromUser?.uid === userStore.userInfo?.uid
+          const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
+          if (shouldIncreaseUnread) {
+            sessionStore.updateSession(msg.message.roomId, { unreadCount: 1 })
+          }
         }
-        sessionStore.addSession(newSession)
-        const isSelfMessage = msg.fromUser?.uid === userStore.userInfo?.uid
-        const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
-        if (shouldIncreaseUnread) {
-          sessionStore.updateSession(msg.message.roomId, { unreadCount: 1 })
-        }
+      } catch (err) {
+        logger.error(
+          'Failed to fetch room for new session, message received but session not created:',
+          msg.message.roomId,
+          err
+        )
       }
     }
 

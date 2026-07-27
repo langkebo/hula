@@ -53,6 +53,7 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
@@ -60,7 +61,7 @@ const timerManager = useTimerManager()
 const route = useRoute()
 const MESSAGE_ROUTE_NAME = 'message'
 
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
@@ -204,7 +205,7 @@ onMounted(async () => {
   // SysNTF 通知处理
 
   // 会话切换已通过 openMsgSession 中的防抖优化
-  if (appWindow.label === 'home') {
+  if (appWindow && appWindow.label === 'home') {
     await addListener(
       appWindow.listen('search_to_msg', (event: { payload: { uid: string; roomType: number } }) => {
         openMsgSession(event.payload.uid, event.payload.roomType)

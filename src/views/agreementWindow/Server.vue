@@ -1,12 +1,7 @@
 <template>
   <div class="agreement-container">
     <!-- 顶部操作栏 -->
-    <ActionBar
-      :isDrag="false"
-      :max-w="false"
-      :min-w="false"
-      :shrink="false"
-      :current-label="WebviewWindow.getCurrent().label" />
+    <ActionBar :isDrag="false" :max-w="false" :min-w="false" :shrink="false" :current-label="currentWindowLabel" />
 
     <!-- 协议内容 -->
     <div class="agreement-content">
@@ -32,6 +27,7 @@
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 
 type AgreementSection = {
   title: string
@@ -45,11 +41,14 @@ type AgreementHeader = {
 
 const { tm } = useI18n()
 
+const currentWindowLabel = computed(() => (hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''))
 const serverHeader = computed(() => tm('agreement.server.header') as AgreementHeader)
 const serverSections = computed(() => tm('agreement.server.sections') as AgreementSection[])
 
 onMounted(async () => {
-  await getCurrentWebviewWindow().show()
+  if (hasTauriRuntime()) {
+    await getCurrentWebviewWindow().show()
+  }
 })
 </script>
 

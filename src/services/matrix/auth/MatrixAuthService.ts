@@ -5,11 +5,11 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
-import { MATRIX_PATHS, PREFIX_V1, PREFIX_V3 } from '../paths'
+import { MATRIX_PATHS, PREFIX_V3 } from '../paths'
 
 const logger = createLogger('MatrixAuth')
 
-export interface MatrixLoginResult {
+interface MatrixLoginResult {
   user_id: string
   access_token: string
   device_id: string
@@ -26,7 +26,7 @@ export interface MatrixRegisterResult {
   expires_in?: number
 }
 
-export interface MatrixEmailTokenResult {
+interface MatrixEmailTokenResult {
   sid: string
   submit_url?: string
   expires_in?: number
@@ -36,7 +36,7 @@ export interface MatrixRequestedEmailTokenResult extends MatrixEmailTokenResult 
   client_secret: string
 }
 
-export interface MatrixCaptchaResult {
+interface MatrixCaptchaResult {
   session: string
   api_path: string
   mxc_url: string
@@ -801,27 +801,6 @@ export class MatrixAuthService {
     }
   }
 
-  static async invalidateQrLogin(qrId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.http.authedRequest(
-        'POST',
-        '/login/qr/invalidate',
-        undefined,
-        {
-          qr_id: qrId
-        },
-        { prefix: PREFIX_V1 }
-      )
-    } catch (err) {
-      throw normalizeSdkMatrixError(err, '二维码失效操作失败')
-    }
-  }
-
   static async getSamlRedirect(idpId?: string, redirectUrl?: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -962,4 +941,4 @@ export class MatrixAuthService {
   }
 }
 
-export const matrixAuthService = MatrixAuthService
+const _matrixAuthService = MatrixAuthService

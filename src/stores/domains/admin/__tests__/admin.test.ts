@@ -18,6 +18,11 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   trace: vi.fn()
 }))
 
+// 让 invokeWithResult 调用 mock 的 invoke 而不是 short-circuit 返回
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     getUser: getUserMock,

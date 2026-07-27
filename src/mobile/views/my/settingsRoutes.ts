@@ -3,7 +3,7 @@ import {
   SETTINGS_LABS_CHILD_ROUTE_SEGMENTS
 } from '@/stores/domains/settings/settingsSchema'
 
-export const MOBILE_SETTINGS_BASE_PATH = '/mobile/mobileMy'
+const MOBILE_SETTINGS_BASE_PATH = '/mobile/mobileMy'
 
 export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   labs: SETTINGS_CANONICAL_ROUTE_SEGMENTS.labs,

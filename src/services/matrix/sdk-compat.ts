@@ -13,26 +13,17 @@
 // `@types/partials` holds SDK enums like `JoinRule` that never flow through the
 // package's main entry. Routing them here keeps consumer services off the
 // bare `matrix-js-sdk/@types/*` subpath.
-export type { JoinRule } from 'matrix-js-sdk/@types/partials'
-export type {
-  CreateDmOptions,
-  DirectMessageManager,
-  DmPartnerResponse,
-  DmRoomInfo,
-  IDirectRoomsMap
-} from 'matrix-js-sdk/dm'
-export type { Space, SpaceChild, SpaceManager, SpaceMember, SpaceQueryOptions } from 'matrix-js-sdk/space'
-export { IndexedDBStoreWorker } from 'matrix-js-sdk/store/worker'
-export type { TelemetryManager } from 'matrix-js-sdk/telemetry'
+
+export type { Space, SpaceChild, SpaceManager, SpaceMember } from 'matrix-js-sdk/space'
 
 let compatInitialized = false
 
-export function ensureMatrixSdkCompat(): void {
+function _ensureMatrixSdkCompat(): void {
   // Import side effects above install custom manager extensions exactly once
   // per module graph. This function gives callers an explicit boundary hook.
   compatInitialized = true
 }
 
-export function isMatrixSdkCompatReady(): boolean {
+function _isMatrixSdkCompatReady(): boolean {
   return compatInitialized
 }

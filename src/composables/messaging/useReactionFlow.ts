@@ -22,7 +22,7 @@ export const QUICK_EMOJIS: QuickEmoji[] = [
   { key: 'angry', emoji: '😡', label: 'angry' }
 ]
 
-export interface UseReactionFlowOptions {
+interface UseReactionFlowOptions {
   roomId: () => string
   eventId: () => string
 }

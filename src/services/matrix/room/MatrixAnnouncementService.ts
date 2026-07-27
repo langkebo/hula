@@ -14,14 +14,14 @@ export interface Announcement {
   createdAt: number
 }
 
-export interface AnnouncementContent {
+interface AnnouncementContent {
   content: string
   isPinned: boolean
 }
 
-export interface AnnouncementCreateOptions extends AnnouncementContent {}
+interface AnnouncementCreateOptions extends AnnouncementContent {}
 
-export interface AnnouncementUpdateOptions extends AnnouncementContent {
+interface AnnouncementUpdateOptions extends AnnouncementContent {
   id: string
 }
 
@@ -178,5 +178,3 @@ class MatrixAnnouncementService {
 }
 
 export const matrixAnnouncementService = new MatrixAnnouncementService()
-
-export default matrixAnnouncementService

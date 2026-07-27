@@ -7,7 +7,7 @@ import {
   type ServerVersion
 } from '@/services/matrix/admin'
 
-export interface UseAdminServerLogsResult {
+interface UseAdminServerLogsResult {
   loading: Ref<boolean>
   status: Ref<ServerStatus | null>
   health: Ref<ServerHealth | null>

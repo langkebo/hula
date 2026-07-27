@@ -10,7 +10,7 @@ const logger = createLogger('InputShortcuts')
  * `useInputShortcuts` 的聚合依赖：集中注入所有需要读写的 store / hook / DOM 引用，
  * 保持此 hook 对 Pinia 与 Vue 组件树无直接耦合，便于单测。
  */
-export interface InputShortcutsOptions {
+interface InputShortcutsOptions {
   messageInputDom: Ref<HTMLElement | null | undefined> | Ref<HTMLElement>
   msgInput: Ref<string>
   /** 来自 `useSettingStore` 的发送消息快捷键引用 */
@@ -33,7 +33,7 @@ export interface InputShortcutsOptions {
   triggerInputEvent: (dom: HTMLElement) => void
 }
 
-export interface InputShortcutsHook {
+interface InputShortcutsHook {
   /** 与发送消息快捷键双向同步的本地 ref */
   chatKey: Ref<string>
   /** 防抖后的 input 事件处理器 */

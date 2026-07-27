@@ -3,8 +3,6 @@ import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
 import type { MatrixCapabilities } from '@/types/message'
 
-export type { MatrixCapabilities } from '@/types/message'
-
 export const useCapabilityStore = defineStore(StoresEnum.CAPABILITY, () => {
   const unstableFeatures = ref<Record<string, boolean>>({})
   const capabilities = ref<Record<string, unknown>>({})

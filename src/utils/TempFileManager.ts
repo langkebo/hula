@@ -4,7 +4,7 @@ import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('TempFileManager')
 
-export type RemoveTempFileOptions = {
+type RemoveTempFileOptions = {
   /**
    * 指定基础目录；不传则根据平台自动选择 AppData / AppCache。
    * 传入 null 则按绝对路径删除。

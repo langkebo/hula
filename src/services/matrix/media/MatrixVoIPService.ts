@@ -65,7 +65,7 @@ export interface CallOptions {
   screenshare?: boolean
 }
 
-export interface CallStats {
+interface CallStats {
   bytesReceived: number
   bytesSent: number
   packetsLost: number
@@ -647,4 +647,3 @@ class MatrixVoIPService extends BaseMatrixService {
 }
 
 export const matrixVoIPService = new MatrixVoIPService()
-export default matrixVoIPService

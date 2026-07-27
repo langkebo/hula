@@ -9,7 +9,7 @@ const logger = createLogger('MenuConfig')
 
 type MenuTranslator = (key: string, named?: Record<string, unknown>) => string
 
-export interface MenuItem {
+interface MenuItem {
   id: string
   label: string
   labelKey?: string
@@ -25,7 +25,7 @@ export interface MenuItem {
   requireUserSelection?: boolean
 }
 
-export interface MenuSection {
+interface MenuSection {
   id: string
   title?: string
   titleKey?: string
@@ -39,7 +39,7 @@ export function setLogoutCallback(callback: () => Promise<void>): void {
   logoutCallback = callback
 }
 
-export function getLogoutCallback(): (() => Promise<void>) | null {
+function _getLogoutCallback(): (() => Promise<void>) | null {
   return logoutCallback
 }
 
@@ -140,7 +140,7 @@ async function handleStartEncryptedChat(): Promise<void> {
   })
 }
 
-export const MENU_SECTIONS: MenuSection[] = [
+const MENU_SECTIONS: MenuSection[] = [
   {
     id: 'quick-actions',
     title: 'Quick Actions',
@@ -303,7 +303,7 @@ export const MENU_SECTIONS: MenuSection[] = [
   }
 ]
 
-export function getAllMenuItems(): MenuItem[] {
+function _getAllMenuItems(): MenuItem[] {
   const items: MenuItem[] = []
   for (const section of MENU_SECTIONS) {
     items.push(...section.items.filter((item) => !item.divider))
@@ -311,7 +311,7 @@ export function getAllMenuItems(): MenuItem[] {
   return items
 }
 
-export function getMenuSections(): MenuSection[] {
+function _getMenuSections(): MenuSection[] {
   return MENU_SECTIONS
 }
 
@@ -355,7 +355,7 @@ export function findMenuItemById(id: string): MenuItem | undefined {
   return undefined
 }
 
-export function getFilteredMenuItems(isDesktop: boolean, t: MenuTranslator = translateMenu): MenuItem[] {
+function _getFilteredMenuItems(isDesktop: boolean, t: MenuTranslator = translateMenu): MenuItem[] {
   const sections = getFilteredSections(isDesktop, t)
   const items: MenuItem[] = []
   for (const section of sections) {

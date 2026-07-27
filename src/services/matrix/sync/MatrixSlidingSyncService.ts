@@ -13,13 +13,13 @@ export interface SlidingSyncUnreadUpdate {
   notificationCount: number
 }
 
-export interface SlidingSyncCallbacks {
+interface SlidingSyncCallbacks {
   onUnreadCountsUpdate?: (updates: SlidingSyncUnreadUpdate[]) => void
   onRoomUpdate?: (roomId: string) => void
   onRoomListRefresh?: () => void
 }
 
-export interface SlidingSyncRoomUpdate {
+interface SlidingSyncRoomUpdate {
   roomId: string
   timeline: unknown[]
   state: Record<string, unknown>
@@ -27,7 +27,7 @@ export interface SlidingSyncRoomUpdate {
   highlightCount: number
 }
 
-export class MatrixSlidingSyncService {
+class MatrixSlidingSyncService {
   private slidingSync: SlidingSync | null = null
   private _isInitialized: boolean = false
   private callbacks: SlidingSyncCallbacks = {}
@@ -322,5 +322,5 @@ export class MatrixSlidingSyncService {
   }
 }
 
-export const matrixSlidingSyncService = new MatrixSlidingSyncService()
+const matrixSlidingSyncService = new MatrixSlidingSyncService()
 export default matrixSlidingSyncService

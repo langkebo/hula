@@ -11,7 +11,7 @@ export interface SamlMapping {
   [key: string]: unknown
 }
 
-export interface UseAdminSamlResult {
+interface UseAdminSamlResult {
   idpMetadata: Ref<Record<string, unknown>>
   spMetadata: Ref<string | null>
   samlConfig: Ref<Record<string, unknown>>

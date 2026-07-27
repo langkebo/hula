@@ -1,9 +1,4 @@
-export interface WorkerTask<I = unknown, O = unknown> {
-  name: string
-  execute(input: I): Promise<O> | O
-}
-
-export interface WorkerTaskDefinition<I = unknown, O = unknown> {
+interface WorkerTaskDefinition<I = unknown, O = unknown> {
   name: string
   handler: (input: I) => Promise<O> | O
 }
@@ -20,7 +15,7 @@ export function getTask(name: string): WorkerTaskDefinition | undefined {
   return taskRegistry.get(name)
 }
 
-export async function executeTask<I, O>(name: string, input: I): Promise<O> {
+async function _executeTask<I, O>(name: string, input: I): Promise<O> {
   const task = taskRegistry.get(name)
   if (!task) {
     throw new Error(`[WorkerRegistry] 未注册的任务: ${name}`)
@@ -28,11 +23,11 @@ export async function executeTask<I, O>(name: string, input: I): Promise<O> {
   return task.handler(input) as Promise<O>
 }
 
-export function listTasks(): string[] {
+function _listTasks(): string[] {
   return Array.from(taskRegistry.keys())
 }
 
-export function clearTasks(): void {
+function _clearTasks(): void {
   taskRegistry.clear()
 }
 

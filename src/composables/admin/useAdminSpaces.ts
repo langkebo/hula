@@ -11,7 +11,7 @@ export interface SpaceInfo {
   [key: string]: unknown
 }
 
-export interface SpaceDetail {
+interface SpaceDetail {
   name?: string
   topic?: string
   creator?: string
@@ -28,7 +28,7 @@ export interface SpaceStats {
   [key: string]: unknown
 }
 
-export interface UseAdminSpacesResult {
+interface UseAdminSpacesResult {
   spaces: Ref<SpaceInfo[]>
   spacesLoading: Ref<boolean>
   selectedSpace: Ref<SpaceDetail | null>

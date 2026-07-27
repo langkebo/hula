@@ -5,11 +5,12 @@
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { createSharedComposable, tryOnScopeDispose, useOnline } from '@vueuse/core'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('NetworkStatus')
 
-export type ConnectionStatus = 'unknown' | 'connected' | 'connecting' | 'disconnected' | 'error'
+type ConnectionStatus = 'unknown' | 'connected' | 'connecting' | 'disconnected' | 'error'
 
 const useSharedNetworkStatus = createSharedComposable(() => {
   const browserOnline = useOnline()
@@ -58,6 +59,10 @@ const useSharedNetworkStatus = createSharedComposable(() => {
   let unlistenNetwork: UnlistenFn | null = null
 
   const initListeners = async () => {
+    // 浏览器/E2E 环境没有 Tauri runtime，跳过事件监听
+    if (!hasTauriRuntime()) {
+      return
+    }
     try {
       unlistenNetwork = await listen('network-status-changed', (event) => {
         logger.debug('网络状态变化:', event.payload)
@@ -87,4 +92,3 @@ const useSharedNetworkStatus = createSharedComposable(() => {
 })
 
 export const useNetworkStatus = useSharedNetworkStatus
-export default useNetworkStatus

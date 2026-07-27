@@ -11,8 +11,6 @@ export interface MatrixClientConfig {
   allowInsecureHttp?: boolean
 }
 
-export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'ERROR'
-
 export interface LoginResult {
   success: boolean
   userId?: string
@@ -42,8 +40,6 @@ export interface WorkerResponse {
   data?: unknown
   error?: string
 }
-
-export type WorkerRequestHandler = (message: WorkerMessage) => Promise<WorkerResponse>
 
 export interface SearchRoomDoc {
   roomId: string

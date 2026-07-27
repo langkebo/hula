@@ -34,7 +34,7 @@ export function toMessageBody(body: unknown): MessageBody {
 /**
  * 安全的 body 类型（用于需要明确类型的场景）
  */
-export interface SafeBody {
+interface SafeBody {
   content?: string
   body?: string
   url?: string
@@ -91,7 +91,7 @@ export function getBodyUrl(body: unknown): string {
 /**
  * 安全获取 body.text
  */
-export function getBodyText(body: unknown): string {
+function _getBodyText(body: unknown): string {
   const msgBody = toMessageBody(body)
   return msgBody.text || ''
 }
@@ -99,7 +99,7 @@ export function getBodyText(body: unknown): string {
 /**
  * 安全获取 body.fileName
  */
-export function getBodyFileName(body: unknown): string {
+function _getBodyFileName(body: unknown): string {
   const msgBody = toMessageBody(body)
   return msgBody.fileName || ''
 }
@@ -107,7 +107,7 @@ export function getBodyFileName(body: unknown): string {
 /**
  * 安全获取 body.size
  */
-export function getBodySize(body: unknown): number {
+function _getBodySize(body: unknown): number {
   const msgBody = toMessageBody(body)
   return msgBody.size || 0
 }
@@ -115,7 +115,7 @@ export function getBodySize(body: unknown): number {
 /**
  * 安全获取 body.width
  */
-export function getBodyWidth(body: unknown): number {
+function _getBodyWidth(body: unknown): number {
   const msgBody = toMessageBody(body)
   return Number(msgBody.w || msgBody.width || 0)
 }
@@ -123,7 +123,7 @@ export function getBodyWidth(body: unknown): number {
 /**
  * 安全获取 body.height
  */
-export function getBodyHeight(body: unknown): number {
+function _getBodyHeight(body: unknown): number {
   const msgBody = toMessageBody(body)
   return Number(msgBody.h || msgBody.height || 0)
 }
@@ -131,7 +131,7 @@ export function getBodyHeight(body: unknown): number {
 /**
  * 安全获取 body.mimetype
  */
-export function getBodyMimeType(body: unknown): string {
+function _getBodyMimeType(body: unknown): string {
   const msgBody = toMessageBody(body)
   return msgBody.mimetype || ''
 }

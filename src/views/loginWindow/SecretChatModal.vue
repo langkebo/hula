@@ -57,6 +57,7 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import { darkTheme, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 
@@ -116,6 +117,7 @@ const handleCancel = async () => {
 }
 
 onMounted(async () => {
+  if (!hasTauriRuntime()) return
   currentWindow = await getCurrentWebviewWindow()
   parentWindow = await WebviewWindow.getByLabel('home')
   await currentWindow.show()

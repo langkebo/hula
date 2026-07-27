@@ -14,12 +14,12 @@ const logger = createLogger('SiliconFlow')
 
 // ============ 类型定义 ============
 
-export interface SiliconFlowMessage {
+interface SiliconFlowMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
 }
 
-export interface SiliconFlowConfig {
+interface SiliconFlowConfig {
   apiKey: string
   baseUrl: string
   model: string
@@ -27,20 +27,20 @@ export interface SiliconFlowConfig {
   maxTokens?: number
 }
 
-export interface StreamChunk {
+interface StreamChunk {
   choices?: { delta: { content: string } }[]
   done?: boolean
   content: string
 }
 
-export interface ConnectionState {
+interface ConnectionState {
   connected: boolean
   connecting: boolean
   error: string | null
   lastConnectedAt: number | null
 }
 
-export interface ModelInfo {
+interface ModelInfo {
   id: string
   name: string
   provider?: string
@@ -48,11 +48,11 @@ export interface ModelInfo {
 
 // ============ 常量 ============
 
-export const DEFAULT_BASE_URL = 'https://api.siliconflow.cn'
-export const DEFAULT_MODEL = 'deepseek-ai/DeepSeek-V3'
+const DEFAULT_BASE_URL = 'https://api.siliconflow.cn'
+const DEFAULT_MODEL = 'deepseek-ai/DeepSeek-V3'
 
 // SiliconFlow 支持的模型列表
-export const AVAILABLE_MODELS: ModelInfo[] = [
+const AVAILABLE_MODELS: ModelInfo[] = [
   { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3', provider: 'DeepSeek' },
   { id: 'deepseek-ai/DeepSeek-R1', name: 'DeepSeek R1', provider: 'DeepSeek' },
   { id: 'Qwen/Qwen2.5-7B-Instruct', name: 'Qwen 2.5 7B', provider: 'Qwen' },
@@ -274,7 +274,7 @@ class SiliconFlowClient {
 
 // ============ 导出单例 ============
 
-export const siliconFlowClient = new SiliconFlowClient()
+const siliconFlowClient = new SiliconFlowClient()
 
 export const siliconFlowService = siliconFlowClient
 

@@ -582,37 +582,4 @@ describe('SettingStore', () => {
       expect(store.secretChatLockTimeout).toBe(5)
     })
   })
-
-  describe('panelWidth', () => {
-    it('默认值为 280', () => {
-      const store = useSettingStore()
-      expect(store.panelWidth).toBe(280)
-    })
-
-    it('setPanelWidth 设置有效宽度', () => {
-      const store = useSettingStore()
-      store.setPanelWidth(320)
-      expect(store.panelWidth).toBe(320)
-    })
-
-    it('setPanelWidth 低于 240 时限制为 240', () => {
-      const store = useSettingStore()
-      store.setPanelWidth(100)
-      expect(store.panelWidth).toBe(240)
-    })
-
-    it('setPanelWidth 高于 360 时限制为 360', () => {
-      const store = useSettingStore()
-      store.setPanelWidth(500)
-      expect(store.panelWidth).toBe(360)
-    })
-
-    it('panelWidth 不在 persist omit 列表中（可持久化）', () => {
-      const store = useSettingStore()
-      store.setPanelWidth(300)
-
-      expect(store.$state.panelWidth).toBe(300)
-      expect(store.$state.panelWidth).not.toBe(280)
-    })
-  })
 })

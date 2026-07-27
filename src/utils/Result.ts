@@ -6,7 +6,7 @@
 /**
  * Result 类型 - 表示操作的成功或失败结果
  */
-export type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E }
+type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E }
 
 /**
  * 创建成功结果

@@ -288,6 +288,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 import { createLogger } from '@/utils/Logger'
@@ -295,7 +296,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ChatSidebar')
 
 const { t } = useI18n()
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const emit = defineEmits<(e: 'ready') => void>()
 const { createWebviewWindow } = useWindow()
 const groupStore = useGroupStore()
@@ -468,7 +469,7 @@ const translateStateTitle = (title?: string) => {
   return translated === key ? title : translated
 }
 
-appWindow.listen<{ hasAnnouncements?: boolean }>('announcementUpdated', async (event) => {
+appWindow?.listen<{ hasAnnouncements?: boolean }>('announcementUpdated', async (event) => {
   if (event.payload) {
     const { hasAnnouncements } = event.payload
     if (hasAnnouncements) {
@@ -493,7 +494,7 @@ onMounted(async () => {
     showAnnouncementPanel.value = true
   })
 
-  appWindow.listen('announcementClear', async () => {
+  appWindow?.listen('announcementClear', async () => {
     clearAnnouncements()
   })
 

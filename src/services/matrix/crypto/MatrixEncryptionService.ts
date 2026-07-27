@@ -265,4 +265,3 @@ class MatrixEncryptionService extends BaseMatrixService {
 }
 
 export const matrixEncryptionService = new MatrixEncryptionService()
-export default matrixEncryptionService

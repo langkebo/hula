@@ -14,6 +14,7 @@
  */
 
 import { OnlineEnum } from '@/enums'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
@@ -30,6 +31,8 @@ let activityListenerRegistered = false
 let visibilityListenerRegistered = false
 
 async function pushOnline(): Promise<void> {
+  // client 未初始化时静默跳过，避免登录时序竞态产生噪音日志
+  if (!matrixClientService.getClient()) return
   try {
     await matrixPresenceService.setPresence('online')
     const userStore = useUserStore()
@@ -38,7 +41,14 @@ async function pushOnline(): Promise<void> {
       userStore.userInfo.lastOptTime = Date.now()
     }
   } catch (err) {
-    logger.error(`[PresenceHeartbeat] setPresence(online) 失败: ${err}`)
+    // 请求被中止（页面关闭/导航）或 client 未就绪，降级为 warn 避免噪音
+    const errMsg = err instanceof Error ? err.message : String(err)
+    const isAbort = errMsg.includes('Failed to fetch') || errMsg.includes('Abort')
+    if (isAbort) {
+      logger.warn(`[PresenceHeartbeat] setPresence(online) 中止: ${errMsg}`)
+    } else {
+      logger.error(`[PresenceHeartbeat] setPresence(online) 失败: ${err}`)
+    }
   }
 }
 

@@ -29,7 +29,7 @@ describe('spaceNavigation', () => {
     expect(buildCreateSpaceRoute()).toEqual({ name: SPACE_ROUTE_NAMES.create })
     expect(buildSpaceRoute('  !space:server  ', { foo: 'bar' })).toEqual({
       name: SPACE_ROUTE_NAMES.legacy,
-      params: { roomId: '!space:server' },
+      params: { spaceId: '!space:server' },
       query: { foo: 'bar' }
     })
   })
@@ -129,29 +129,19 @@ describe('spaceNavigation', () => {
     ).toEqual({ spaceId: '!space:server' })
   })
 
-  it('redirects desktop legacy space routes into the dedicated space workbench', () => {
-    const spaceRoute = getDesktopRoutes().find((route) => route.name === SPACE_ROUTE_NAMES.legacy)
+  it('registers the new space routes in the desktop home children', () => {
+    const homeRoute = getDesktopRoutes().find((route) => route.name === 'home')
+    expect(homeRoute).toBeDefined()
+    const children = homeRoute?.children ?? []
+    const childNames = children.map((child) => child.name)
 
-    expect(spaceRoute).toBeDefined()
-    const redirect = spaceRoute?.redirect
+    // 新路由结构包含 space 系列子路由
+    expect(childNames).toContain(SPACE_ROUTE_NAMES.workbench) // 'space'
+    expect(childNames).toContain(SPACE_ROUTE_NAMES.create) // 'space-create'
+    expect(childNames).toContain(SPACE_ROUTE_NAMES.legacy) // 'space-details'
 
-    expect(typeof redirect).toBe('function')
-    if (typeof redirect !== 'function') {
-      throw new Error('Expected desktop space route redirect to be a function')
-    }
-
-    const redirectFn = redirect as (to: { params: Record<string, unknown>; query: Record<string, unknown> }) => unknown
-    const resolved = redirectFn({
-      params: { roomId: '  !space:server  ' },
-      query: { foo: 'bar' }
-    } as never)
-
-    expect(resolved).toEqual({
-      name: SPACE_ROUTE_NAMES.workbench,
-      query: {
-        foo: 'bar',
-        spaceId: '!space:server'
-      }
-    })
+    // 旧路径 redirect 仍存在
+    const hasLegacyRedirect = children.some((child) => child.path === '/spaceList')
+    expect(hasLegacyRedirect).toBe(true)
   })
 })

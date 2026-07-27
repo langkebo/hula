@@ -12,16 +12,16 @@ import {
 } from 'vue'
 import type { SettingsTabType } from '@/stores/domains/settings/settingsSchema'
 
-export interface SettingsDirtyConfirmOptions {
+interface SettingsDirtyConfirmOptions {
   scope: 'close' | 'switch'
   tabId?: SettingsTabType
   currentTabLabel?: string
   dirtyTabs: SettingsTabType[]
 }
 
-export type SettingsDirtyConfirmHandler = (options: SettingsDirtyConfirmOptions) => Promise<boolean>
+type SettingsDirtyConfirmHandler = (options: SettingsDirtyConfirmOptions) => Promise<boolean>
 
-export interface SettingsDirtyRegistry {
+interface SettingsDirtyRegistry {
   dirtyTabs: ComputedRef<SettingsTabType[]>
   hasDirtyTabs: ComputedRef<boolean>
   isTabDirty: (tabId: SettingsTabType) => boolean
@@ -110,7 +110,7 @@ export function provideSettingsDirtyRegistry(registry: SettingsDirtyRegistry) {
   provide(SETTINGS_DIRTY_REGISTRY_KEY, registry)
 }
 
-export function useSettingsDirtyRegistry(): SettingsDirtyRegistry {
+function useSettingsDirtyRegistry(): SettingsDirtyRegistry {
   return inject(SETTINGS_DIRTY_REGISTRY_KEY, NOOP_SETTINGS_DIRTY_REGISTRY)
 }
 

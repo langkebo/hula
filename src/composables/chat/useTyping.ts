@@ -7,8 +7,6 @@ import {
   type TypingUser
 } from '@/services/matrix/messaging/MatrixTypingService'
 
-export type { BatchTypingResult, TypingUser }
-
 const typingVersions = reactive<Record<string, number>>({})
 
 let globalListenerAttached = false
@@ -78,7 +76,7 @@ export function useTyping() {
   }
 }
 
-export function useTypingReactive(roomId: Ref<string | undefined>) {
+function _useTypingReactive(roomId: Ref<string | undefined>) {
   ensureGlobalListener()
 
   const typingUsers = ref<TypingUser[]>([])

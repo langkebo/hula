@@ -18,6 +18,8 @@ export interface MatrixRoomActionFacade {
   setRoomName(roomId: string, name: string): Promise<void>
   setRoomTopic(roomId: string, topic: string): Promise<void>
   setRoomAvatar(roomId: string, avatarUrl: string): Promise<void>
+  setRoomVisibility(roomId: string, visibility: 'public' | 'private'): Promise<void>
+  getRoomVisibility(roomId: string): Promise<'public' | 'private'>
   setPushRule(roomId: string, enabled: boolean): Promise<void>
   setRoomAlias(roomId: string, alias: string): Promise<void>
   deleteRoomAlias(alias: string): Promise<void>
@@ -60,6 +62,8 @@ export const matrixRoomActionFacade: MatrixRoomActionFacade = {
   setRoomName: (roomId, name) => roomOperations.setRoomName(roomId, name),
   setRoomTopic: (roomId, topic) => roomOperations.setRoomTopic(roomId, topic),
   setRoomAvatar: (roomId, avatarUrl) => roomOperations.setRoomAvatar(roomId, avatarUrl),
+  setRoomVisibility: (roomId, visibility) => roomOperations.setRoomVisibility(roomId, visibility),
+  getRoomVisibility: (roomId) => roomOperations.getRoomVisibility(roomId),
   setPushRule: (roomId, enabled) => roomOperations.setPushRule(roomId, enabled),
   setRoomAlias: (roomId, alias) => roomOperations.setAlias(roomId, alias),
   deleteRoomAlias: (alias) => roomOperations.deleteAlias(alias),

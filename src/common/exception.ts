@@ -14,7 +14,7 @@ export enum ErrorType {
   NotFound = 'NotFound'
 }
 
-export interface ErrorDetails {
+interface ErrorDetails {
   type: ErrorType
   code?: number
   details?: Record<string, unknown>

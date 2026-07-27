@@ -30,7 +30,7 @@ export interface EmojiPack {
 /**
  * 上传自定义表情结果
  */
-export interface EmojiUploadResult {
+interface EmojiUploadResult {
   id: string
   name: string
   url: string
@@ -40,7 +40,7 @@ export interface EmojiUploadResult {
 /**
  * 获取表情包列表选项
  */
-export interface GetEmojiPacksOptions {
+interface GetEmojiPacksOptions {
   userId?: string
   packId?: string
 }
@@ -459,4 +459,3 @@ class MatrixEmojiService extends BaseMatrixService {
 }
 
 export const matrixEmojiService = new MatrixEmojiService()
-export default matrixEmojiService

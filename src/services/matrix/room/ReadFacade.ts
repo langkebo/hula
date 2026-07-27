@@ -7,7 +7,7 @@ import type { MatrixRoomLiteSummary, MatrixRoomSummary } from './SummaryService'
 import { matrixRoomSummaryAggregateService } from './SummaryService'
 import { matrixRoomTimelineService } from './TimelineService'
 
-export interface MatrixRoomReadFacade {
+interface MatrixRoomReadFacade {
   // --- Delegated to RoomOperations (absorbed) ---
   getRoomState(roomId: string): Promise<unknown[]>
   getRoomAliases(roomId: string): Promise<string[]>

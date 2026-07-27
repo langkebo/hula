@@ -146,10 +146,11 @@ import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { PluginEnum } from '@/enums'
 import { usePluginsList } from '@/layout/left/config.tsx'
 import { usePluginsStore } from '@/stores/domains/settings/plugins'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const { t } = useI18n()
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const pluginsStore = usePluginsStore()
 const pluginsList = usePluginsList()
 const timerManager = useTimerManager()
@@ -202,7 +203,7 @@ const handleDelete = (p: STO.Plugins<PluginEnum>) => {
     timerManager.setTimeout(() => {
       pluginsStore.updatePlugin({ ...plugin, isAdd: false })
       p.isAdd = false
-      emitTo(appWindow.label, 'startResize')
+      if (appWindow) emitTo(appWindow.label, 'startResize')
     }, 300)
   }
 }
@@ -213,7 +214,7 @@ const handleAdd = (p: STO.Plugins<PluginEnum>) => {
     timerManager.setTimeout(() => {
       pluginsStore.updatePlugin({ ...plugin, isAdd: true })
       p.isAdd = true
-      emitTo(appWindow.label, 'startResize')
+      if (appWindow) emitTo(appWindow.label, 'startResize')
     }, 300)
   }
 }

@@ -6,7 +6,8 @@
     :aria-label="ariaLabel"
     tabindex="0"
     @click="$emit('select', friend)"
-    @keydown.enter="$emit('select', friend)">
+    @keydown.enter="$emit('select', friend)"
+    @contextmenu="$emit('contextmenu', { friend, event: $event })">
     <div class="friend-list-item__avatar-wrap">
       <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
         <n-avatar
@@ -104,6 +105,7 @@ defineEmits<{
   'send-message': [friend: MatrixContact]
   remove: [friend: MatrixContact]
   more: [payload: { friend: MatrixContact; event: MouseEvent }]
+  contextmenu: [payload: { friend: MatrixContact; event: MouseEvent }]
 }>()
 
 const { t } = useI18n()

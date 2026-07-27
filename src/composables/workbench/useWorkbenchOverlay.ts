@@ -1,6 +1,6 @@
-export type WorkbenchOverlayMode = 'create-room' | 'create-space' | 'forward' | 'search' | 'history' | 'merged-msg'
+type WorkbenchOverlayMode = 'create-room' | 'create-space' | 'forward' | 'search' | 'history' | 'merged-msg'
 
-export interface WorkbenchOverlayState<OverlayMode extends string = WorkbenchOverlayMode> {
+interface WorkbenchOverlayState<OverlayMode extends string = WorkbenchOverlayMode> {
   mode: OverlayMode | null
   forwardEventId: string
   forwardRoomId: string

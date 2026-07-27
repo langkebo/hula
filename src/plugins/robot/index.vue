@@ -17,6 +17,7 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useMitt } from '@/composables/common/useMitt'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import ChatRoleManagement from './components/ChatRoleManagement.vue'
 import ModelManagement from './components/ModelManagement.vue'
@@ -55,6 +56,8 @@ const handleModelManagementRefresh = () => {
 }
 
 onMounted(async () => {
-  await getCurrentWebviewWindow().show()
+  if (hasTauriRuntime()) {
+    await getCurrentWebviewWindow().show()
+  }
 })
 </script>

@@ -8,12 +8,12 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useRoomUpgradeFlow')
 
-export interface RoomVersionInfo {
+interface RoomVersionInfo {
   version: string
   status?: string
 }
 
-export interface UseRoomUpgradeFlowOptions {
+interface UseRoomUpgradeFlowOptions {
   roomId: string | null
   /** 是否可升级(由调用方传入权限判断) */
   canUpgrade?: boolean

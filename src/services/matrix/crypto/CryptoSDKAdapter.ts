@@ -744,4 +744,3 @@ class CryptoSDKAdapter {
 }
 
 export const cryptoSDKAdapter = new CryptoSDKAdapter()
-export default cryptoSDKAdapter

@@ -10,7 +10,7 @@ import {
   type SettingsTabType
 } from '@/stores/domains/settings/settingsSchema'
 
-export interface SettingsSearchEntry {
+interface SettingsSearchEntry {
   id: SettingsTabType
   terms: string[]
 }
@@ -75,7 +75,7 @@ function buildSettingsSearchIndex(
   }))
 }
 
-export const SETTINGS_SEARCH_INDEX = buildSettingsSearchIndex(SETTINGS_TABS)
+const SETTINGS_SEARCH_INDEX = buildSettingsSearchIndex(SETTINGS_TABS)
 
 export function matchesSettingsSearch(
   tabId: SettingsTabType,

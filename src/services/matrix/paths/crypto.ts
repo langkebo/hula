@@ -8,16 +8,6 @@ export const CRYPTO = {
   DEVICE_SIGNING_UPLOAD: '/keys/device_signing/upload',
   SIGNATURES_UPLOAD: '/keys/signatures/upload',
   SEND_TO_DEVICE: (eventType: string, txnId: string) => `/sendToDevice/${eventType}/${txnId}`,
-  /** @deprecated Unused - will be removed in a future version */
-  SECURE_BACKUP: '/keys/backup/secure',
-  /** @deprecated Unused - will be removed in a future version */
-  SECURE_BACKUP_BY_ID: (backupId: string) => `/keys/backup/secure/${backupId}`,
-  /** @deprecated Unused - will be removed in a future version */
-  SECURE_BACKUP_KEYS: (backupId: string) => `/keys/backup/secure/${backupId}/keys`,
-  /** @deprecated Unused - will be removed in a future version */
-  SECURE_BACKUP_RESTORE: (backupId: string) => `/keys/backup/secure/${backupId}/restore`,
-  /** @deprecated Unused - will be removed in a future version */
-  SECURE_BACKUP_VERIFY: (backupId: string) => `/keys/backup/secure/${backupId}/verify`,
   ROOM_KEYS_VERSION: '/room_keys/version',
   ROOM_KEYS_VERSION_BY_ID: (version: string) => `/room_keys/version/${version}`,
   ROOM_KEYS_KEYS: '/room_keys/keys',
@@ -42,8 +32,6 @@ export const CRYPTO = {
   VERIFY_REQUESTS: PREFIX_V1 + '/keys/device_signing/requests',
   QR_CODE_SHOW: PREFIX_V1 + '/keys/qr_code/show',
   QR_CODE_SCAN: PREFIX_V1 + '/keys/qr_code/scan',
-  /** @deprecated Unused - will be removed in a future version */
-  KEY_ROTATION_STATUS: PREFIX_V1 + '/keys/rotation/status',
   KEY_ROTATION_CHECK: PREFIX_V1 + '/keys/rotation/check',
   KEY_ROTATION_ROTATE: PREFIX_V1 + '/keys/rotation/rotate',
   KEY_ROTATION_HISTORY: (deviceId: string) => `${PREFIX_V1}/keys/rotation/history/${encodeURIComponent(deviceId)}`,

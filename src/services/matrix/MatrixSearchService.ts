@@ -29,6 +29,7 @@ export interface RoomSearchResult {
   avatarUrl?: string
   memberCount: number
   isJoined: boolean
+  isDirect: boolean
 }
 
 interface MatrixSearchEventResult {
@@ -54,9 +55,9 @@ interface MatrixSearchResponse {
   }
 }
 
-export type SearchSource = 'remote' | 'local' | 'hybrid'
+type SearchSource = 'remote' | 'local' | 'hybrid'
 
-export interface SearchMessagesOptions {
+interface SearchMessagesOptions {
   roomId?: string
   limit?: number
   beforeLimit?: number
@@ -145,7 +146,9 @@ class MatrixSearchService {
       roomName: room.name || room.room_id,
       avatarUrl: room.avatar_url,
       memberCount: room.joined_members,
-      isJoined: false
+      isJoined: false,
+      // 公共房间搜索无 DM 信息，默认非单聊
+      isDirect: false
     }))
   }
 
@@ -268,12 +271,19 @@ class MatrixSearchService {
       })
       .map((room) => {
         const member = room.getMember(myUserId || '')
+        const isSpaceRoom = typeof room.isSpaceRoom === 'function' ? (room.isSpaceRoom() as boolean) : false
+        const dmInviter =
+          typeof (room as unknown as Record<string, unknown>).getDMInviter === 'function'
+            ? ((room as unknown as { getDMInviter: () => string | undefined }).getDMInviter() as string | undefined)
+            : undefined
         return {
           roomId: room.roomId,
           roomName: room.name || room.roomId,
           avatarUrl: room.getMxcAvatarUrl() || undefined,
           memberCount: room.getJoinedMemberCount(),
-          isJoined: member?.membership === 'join'
+          isJoined: member?.membership === 'join',
+          // 与 MatrixRoomStoreAdapter 一致的 DM 判定：优先用 dmInviter，回退到成员数
+          isDirect: isSpaceRoom ? false : dmInviter !== undefined || room.getJoinedMembers().length <= 2
         }
       })
       .sort((a, b) => a.roomName.localeCompare(b.roomName))
@@ -373,4 +383,3 @@ class MatrixSearchService {
 }
 
 export const matrixSearchService = new MatrixSearchService()
-export default matrixSearchService

@@ -11,7 +11,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WebRtc:ScreenShare')
 
-export type UseScreenShareOptions = {
+type UseScreenShareOptions = {
   localStream: Ref<MediaStream | null>
   peerConnection: Ref<RTCPeerConnection | null>
   selectedVideoDevice: Ref<string | null | undefined>

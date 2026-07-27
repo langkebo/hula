@@ -1,6 +1,6 @@
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 
-export const PUBLIC_ROUTE_PREFIXES = [
+const PUBLIC_ROUTE_PREFIXES = [
   '/login',
   '/capture',
   '/checkupdate',
@@ -15,12 +15,12 @@ export const PUBLIC_ROUTE_PREFIXES = [
   '/oidc/callback'
 ]
 
-export interface AuthGuardLogger {
+interface AuthGuardLogger {
   warn(message: string): void
   error(message: string, error?: unknown): void
 }
 
-export interface CreateAuthGuardOptions {
+interface CreateAuthGuardOptions {
   isMobile: boolean
   hasAuthenticatedSession: () => Promise<boolean>
   verifyAdminAccess: () => Promise<boolean>

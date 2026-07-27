@@ -1,6 +1,6 @@
 <template>
-  <div class="friend-list-view">
-    <div v-if="showStatePanel" class="friend-list-view__state">
+  <nav class="friend-list-view" :aria-label="t('friend.list.title')">
+    <div v-if="showStatePanel" class="friend-list-view__state" role="status" :aria-busy="isCapabilityLoading">
       <n-spin :show="isCapabilityLoading" class="h-full">
         <n-empty
           v-if="viewState === 'capability'"
@@ -26,87 +26,99 @@
     </div>
 
     <template v-else>
-      <n-flex vertical :size="12" class="p-12px">
-        <n-flex align="center" justify="space-between">
-          <n-flex align="center" :size="8">
-            <span class="text-[var(--text-base)] font-semibold">{{ t('friend.list.title') }}</span>
-            <n-badge :value="incomingRequestsCount" :max="99" :show="incomingRequestsCount > 0" />
-          </n-flex>
-          <n-flex :size="8">
-            <n-button quaternary circle size="small" @click="showAddFriend = true">
-              <template #icon>
-                <n-icon>
-                  <svg><use href="#plus" /></svg>
-                </n-icon>
-              </template>
-            </n-button>
-            <n-button quaternary circle size="small" @click="showFriendRequest = true">
-              <template #icon>
-                <n-icon>
-                  <svg><use href="#bell" /></svg>
-                </n-icon>
-              </template>
-            </n-button>
-          </n-flex>
-        </n-flex>
-
-        <!-- 待处理好友请求预览区域 -->
-        <div v-if="incomingRequestsCount > 0" class="friend-request-preview">
-          <n-flex align="center" justify="space-between" class="mb-8px">
-            <n-flex align="center" :size="6">
-              <svg class="size-14px color-[--hula-color-primary-500]"><use href="#bell" /></svg>
-              <span class="text-[var(--text-sm)] font-medium color-[--hula-color-primary-500]">
-                {{ t('friend.list.pending_requests', { count: incomingRequestsCount }) }}
-              </span>
+      <header class="friend-list-view__header p-12px">
+        <n-flex vertical :size="12">
+          <n-flex align="center" justify="space-between">
+            <n-flex align="center" :size="8">
+              <span class="text-[var(--text-base)] font-semibold">{{ t('friend.list.title') }}</span>
+              <n-badge :value="incomingRequestsCount" :max="99" :show="incomingRequestsCount > 0" />
             </n-flex>
-            <n-button text size="tiny" type="primary" @click="showFriendRequest = true">
-              {{ t('friend.list.view_all') }}
-            </n-button>
+            <n-flex :size="8">
+              <n-button quaternary circle size="small" :aria-label="t('menu.add_contact')" @click="handleAddFriend">
+                <template #icon>
+                  <n-icon>
+                    <svg><use href="#plus" /></svg>
+                  </n-icon>
+                </template>
+              </n-button>
+              <n-button
+                quaternary
+                circle
+                size="small"
+                :aria-label="t('friend.list.pending_requests', { count: incomingRequestsCount })"
+                @click="handleViewFriendRequests">
+                <template #icon>
+                  <n-icon>
+                    <svg><use href="#bell" /></svg>
+                  </n-icon>
+                </template>
+              </n-button>
+            </n-flex>
           </n-flex>
-          <div class="friend-request-preview__list">
-            <div v-for="request in previewIncomingRequests" :key="request.userId" class="friend-request-preview__item">
-              <n-flex align="center" :size="8" class="flex-1 min-w-0">
-                <n-avatar
-                  :size="32"
-                  :src="AvatarUtils.getAvatarUrl(request.avatarUrl)"
-                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                  round />
-                <div class="flex flex-col min-w-0 flex-1">
-                  <span class="text-[var(--text-sm)] truncate">{{ request.displayName || request.userId }}</span>
-                  <span v-if="request.message" class="text-[var(--text-xs)] text-[--hula-text-quaternary] truncate">
-                    {{ request.message }}
-                  </span>
-                </div>
+
+          <!-- 待处理好友请求预览区域 -->
+          <div v-if="incomingRequestsCount > 0" class="friend-request-preview">
+            <n-flex align="center" justify="space-between" class="mb-8px">
+              <n-flex align="center" :size="6">
+                <svg class="size-14px color-[--hula-color-primary-500]"><use href="#bell" /></svg>
+                <span class="text-[var(--text-sm)] font-medium color-[--hula-color-primary-500]">
+                  {{ t('friend.list.pending_requests', { count: incomingRequestsCount }) }}
+                </span>
               </n-flex>
-              <n-flex :size="6" shrink-0>
-                <n-button
-                  type="primary"
-                  size="tiny"
-                  :loading="processingRequest === request.userId"
-                  @click="handleQuickAccept(request)">
-                  {{ t('friend.request.accept') }}
-                </n-button>
-                <n-button
-                  size="tiny"
-                  :loading="processingRequest === request.userId"
-                  @click="handleQuickReject(request)">
-                  {{ t('friend.request.reject') }}
-                </n-button>
-              </n-flex>
+              <n-button text size="tiny" type="primary" @click="handleViewFriendRequests">
+                {{ t('friend.list.view_all') }}
+              </n-button>
+            </n-flex>
+            <div class="friend-request-preview__list">
+              <div
+                v-for="request in previewIncomingRequests"
+                :key="request.userId"
+                class="friend-request-preview__item">
+                <n-flex align="center" :size="8" class="flex-1 min-w-0">
+                  <n-avatar
+                    :size="32"
+                    :src="AvatarUtils.getAvatarUrl(request.avatarUrl)"
+                    :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                    round />
+                  <div class="flex flex-col min-w-0 flex-1">
+                    <span class="text-[var(--text-sm)] truncate">{{ request.displayName || request.userId }}</span>
+                    <span v-if="request.message" class="text-[var(--text-xs)] text-[--hula-text-quaternary] truncate">
+                      {{ request.message }}
+                    </span>
+                  </div>
+                </n-flex>
+                <n-flex :size="6" shrink-0>
+                  <n-button
+                    type="primary"
+                    size="tiny"
+                    :loading="processingRequest === request.userId"
+                    @click="handleQuickAccept(request)">
+                    {{ t('friend.request.accept') }}
+                  </n-button>
+                  <n-button
+                    size="tiny"
+                    :loading="processingRequest === request.userId"
+                    @click="handleQuickReject(request)">
+                    {{ t('friend.request.reject') }}
+                  </n-button>
+                </n-flex>
+              </div>
             </div>
           </div>
-        </div>
 
-        <FriendSearchBar
-          v-model="searchValue"
-          :history="searchHistory"
-          :show-history="showSearchHistory"
-          :placeholder="t('friend.list.search')"
-          @search="handleSearch"
-          @select-history="handleSelectSearchHistory"
-          @clear-history="handleClearSearchHistory" />
+          <FriendSearchBar
+            v-model="searchValue"
+            :history="searchHistory"
+            :show-history="showSearchHistory"
+            :show-global-search-action="true"
+            :placeholder="t('friend.list.search')"
+            @search="handleSearch"
+            @select-history="handleSelectSearchHistory"
+            @clear-history="handleClearSearchHistory"
+            @global-search="handleGlobalSearch" />
+        </n-flex>
 
-        <div v-if="showSearchSummary" class="friend-list-view__search-summary">
+        <div v-if="showSearchSummary" class="friend-list-view__search-summary" aria-live="polite">
           <span>{{ searchSummaryText }}</span>
           <button
             v-if="showSearchClearAction"
@@ -117,13 +129,14 @@
           </button>
         </div>
 
-        <n-flex :size="4">
+        <n-flex :size="4" class="mt-12px">
           <n-button
             v-for="filter in filterOptions"
             :key="filter.value"
             :type="currentFilter === filter.value ? 'primary' : 'default'"
             size="tiny"
             quaternary
+            :aria-pressed="currentFilter === filter.value"
             @click="handleFilterChange(filter.value)">
             {{ filter.label }}
             <n-badge
@@ -135,95 +148,146 @@
               class="ml-4px" />
           </n-button>
         </n-flex>
-      </n-flex>
+      </header>
 
       <n-divider style="margin: 0" />
 
-      <n-spin :show="isCapabilityLoading">
-        <n-scrollbar style="height: calc(100vh - 200px)">
-          <SkeletonFriendList v-if="isLoading" :rows="6" />
-          <EmptyState
-            v-else-if="showSearchEmptyState"
-            illustration="no-results"
-            :title="t('friend.search.empty_title')"
-            :description="searchEmptyDescription"
-            class="mt-40px">
-            <template #actions>
-              <n-button size="small" @click="handleClearActiveSearch">
-                {{ t('friend.search.clear_current') }}
-              </n-button>
-            </template>
-          </EmptyState>
-          <EmptyState
-            v-else-if="showEmptyState"
-            illustration="no-friends"
-            :title="t('friend.list.empty')"
-            class="mt-40px">
-            <template #actions>
-              <n-button size="small" type="primary" @click="showAddFriend = true">
-                {{ t('menu.add_contact') }}
-              </n-button>
-            </template>
-          </EmptyState>
-          <div v-else class="friend-items" role="list" :aria-label="t('friend.list.friend_list_label')">
-            <button
-              v-for="friend in filteredFriends"
-              :key="friend.userId"
-              v-ripple
-              type="button"
-              role="listitem"
-              class="friend-item"
-              :aria-current="selectedUserId === friend.userId ? 'true' : undefined"
-              @click="handleSelectFriend(friend)"
-              @contextmenu="handleContextMenu($event, friend)">
-              <n-flex align="center" :size="12">
-                <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
-                  <n-avatar
-                    :size="44"
-                    :src="AvatarUtils.getAvatarUrl(friend.avatarUrl)"
-                    :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                    round />
-                </n-badge>
-                <n-flex vertical :size="4" class="flex-1 truncate">
-                  <span class="text-[var(--text-sm)] truncate">
-                    <template v-for="(seg, i) in getHighlightSegments(friend)" :key="i">
-                      <mark v-if="seg.matched" class="friend-item__highlight">{{ seg.text }}</mark>
-                      <template v-else>{{ seg.text }}</template>
-                    </template>
-                  </span>
-                  <n-flex align="center" :size="4">
-                    <n-badge
-                      :color="
-                        friend.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
-                      "
-                      dot />
-                    <span class="friend-item__presence-text text-[var(--text-xs)]">
-                      {{
-                        friend.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(friend)
-                      }}
+      <main class="friend-list-view__main" :aria-busy="isCapabilityLoading">
+        <n-spin :show="isCapabilityLoading">
+          <n-scrollbar style="height: calc(100vh - 200px)">
+            <SkeletonFriendList v-if="isLoading" :rows="6" />
+            <EmptyState
+              v-else-if="showSearchEmptyState"
+              illustration="no-results"
+              :title="t('friend.search.empty_title')"
+              :description="searchEmptyDescription"
+              class="mt-40px">
+              <template #actions>
+                <n-button size="small" @click="handleClearActiveSearch">
+                  {{ t('friend.search.clear_current') }}
+                </n-button>
+              </template>
+            </EmptyState>
+            <EmptyState
+              v-else-if="showEmptyState"
+              illustration="no-friends"
+              :title="t('friend.list.empty')"
+              class="mt-40px">
+              <template #actions>
+                <n-button size="small" type="primary" @click="handleAddFriend">
+                  {{ t('menu.add_contact') }}
+                </n-button>
+              </template>
+            </EmptyState>
+            <!-- 性能优化：列表项超过 100 时使用 RecycleScroller 虚拟滚动（需求文档 16.1） -->
+            <RecycleScroller
+              v-else-if="filteredFriends.length > VIRTUAL_SCROLL_THRESHOLD"
+              class="friend-items friend-items--virtual"
+              :items="filteredFriends"
+              :item-size="68"
+              key-field="userId"
+              role="list"
+              :aria-label="t('friend.list.friend_list_label')"
+              v-slot="{ item }">
+              <button
+                v-ripple
+                type="button"
+                role="listitem"
+                class="friend-item"
+                :aria-current="selectedUserId === item.userId ? 'true' : undefined"
+                @click="handleSelectFriend(item)"
+                @contextmenu="handleContextMenu($event, item)">
+                <n-flex align="center" :size="12">
+                  <n-badge :dot="item.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
+                    <n-avatar
+                      :size="44"
+                      :src="AvatarUtils.getAvatarUrl(item.avatarUrl)"
+                      :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                      round />
+                  </n-badge>
+                  <n-flex vertical :size="4" class="flex-1 truncate">
+                    <span class="text-[var(--text-sm)] truncate">
+                      <template v-for="(seg, i) in getHighlightSegments(item)" :key="i">
+                        <mark v-if="seg.matched" class="friend-item__highlight">{{ seg.text }}</mark>
+                        <template v-else>{{ seg.text }}</template>
+                      </template>
                     </span>
-                    <n-tag v-if="friend.friendStatus === 'blocked'" type="error" size="tiny">
-                      {{ t('friend.status.blocked') }}
-                    </n-tag>
+                    <n-flex align="center" :size="4">
+                      <n-badge
+                        :color="
+                          item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
+                        "
+                        dot />
+                      <span class="friend-item__presence-text text-[var(--text-xs)]">
+                        {{ item.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(item) }}
+                      </span>
+                      <n-tag v-if="item.friendStatus === 'blocked'" type="error" size="tiny">
+                        {{ t('friend.status.blocked') }}
+                      </n-tag>
+                    </n-flex>
                   </n-flex>
                 </n-flex>
-              </n-flex>
-            </button>
-          </div>
-        </n-scrollbar>
-      </n-spin>
+              </button>
+            </RecycleScroller>
+            <!-- 列表项 ≤ 100 时使用普通 v-for，避免虚拟滚动开销 -->
+            <div v-else class="friend-items" role="list" :aria-label="t('friend.list.friend_list_label')">
+              <button
+                v-for="friend in filteredFriends"
+                :key="friend.userId"
+                v-ripple
+                type="button"
+                role="listitem"
+                class="friend-item"
+                :aria-current="selectedUserId === friend.userId ? 'true' : undefined"
+                @click="handleSelectFriend(friend)"
+                @contextmenu="handleContextMenu($event, friend)">
+                <n-flex align="center" :size="12">
+                  <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
+                    <n-avatar
+                      :size="44"
+                      :src="AvatarUtils.getAvatarUrl(friend.avatarUrl)"
+                      :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                      round />
+                  </n-badge>
+                  <n-flex vertical :size="4" class="flex-1 truncate">
+                    <span class="text-[var(--text-sm)] truncate">
+                      <template v-for="(seg, i) in getHighlightSegments(friend)" :key="i">
+                        <mark v-if="seg.matched" class="friend-item__highlight">{{ seg.text }}</mark>
+                        <template v-else>{{ seg.text }}</template>
+                      </template>
+                    </span>
+                    <n-flex align="center" :size="4">
+                      <n-badge
+                        :color="
+                          friend.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
+                        "
+                        dot />
+                      <span class="friend-item__presence-text text-[var(--text-xs)]">
+                        {{
+                          friend.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(friend)
+                        }}
+                      </span>
+                      <n-tag v-if="friend.friendStatus === 'blocked'" type="error" size="tiny">
+                        {{ t('friend.status.blocked') }}
+                      </n-tag>
+                    </n-flex>
+                  </n-flex>
+                </n-flex>
+              </button>
+            </div>
+          </n-scrollbar>
+        </n-spin>
+      </main>
     </template>
 
     <ContextMenu ref="contextMenuRef" :menu="contextMenuItems" @select="handleContextMenuSelect" />
-
-    <FriendRequestDialog v-model:show="showFriendRequest" />
-    <AddFriendDialog v-model:show="showAddFriend" />
-    <FriendDetailDrawer v-model:show="showDetail" v-model:user-id="selectedUserId" />
-  </div>
+  </nav>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+import { RecycleScroller } from 'vue-virtual-scroller'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import SkeletonFriendList from '@/components/common/SkeletonFriendList.vue'
@@ -231,6 +295,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
 import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedbackSummary'
+import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import { OnlineEnum, ThemeEnum } from '@/enums'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
@@ -239,16 +304,17 @@ import { type FriendRequestItem, type MatrixContact, useContactStore } from '@/s
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { FriendStatus } from '@/types/matrix-services'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import AddFriendDialog from './AddFriendDialog.vue'
-import FriendDetailDrawer from './FriendDetailDrawer.vue'
-import FriendRequestDialog from './FriendRequestDialog.vue'
 import FriendSearchBar from './FriendSearchBar.vue'
 import { resolveFriendListViewState } from './friendListViewState'
 import { highlightSearchMatch } from './highlightSearchMatch'
 
 const FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'hula-friend-search-history'
+/** 列表项超过此阈值时启用虚拟滚动（需求文档 16.1） */
+const VIRTUAL_SCROLL_THRESHOLD = 100
 
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 const { announce } = useAriaLive()
 const { showFeedback } = useActionFeedback()
 const contactStore = useContactStore()
@@ -264,10 +330,6 @@ const searchValue = ref('')
 const appliedSearchValue = ref('')
 const isSearchPending = ref(false)
 const currentFilter = ref<FriendStatus | 'all'>('all')
-const showFriendRequest = ref(false)
-const showAddFriend = ref(false)
-const showDetail = ref(false)
-const selectedUserId = ref('')
 const contextMenuRef = ref()
 const selectedFriend = ref<MatrixContact | null>(null)
 const processingRequest = ref<string | null>(null)
@@ -497,9 +559,26 @@ const handleRetryFriendList = async () => {
   await contactStore.initialize()
 }
 
+// 阶段 2：路由驱动详情视图，selectedUserId 从路由参数派生
+const selectedUserId = computed(() => (route.params.userId as string | undefined) ?? '')
+
 const handleSelectFriend = (friend: MatrixContact) => {
-  selectedUserId.value = friend.userId
-  showDetail.value = true
+  // 路由跳转后由 useRightView 派生 details 视图
+  void router.push({ name: 'friend-details', params: { userId: friend.userId } })
+}
+
+// 阶段 4：触发添加好友 / 好友申请列表，路由驱动右侧栏视图
+const handleAddFriend = () => {
+  void router.push({ name: 'friend-add' })
+}
+
+const handleViewFriendRequests = () => {
+  void router.push({ name: 'friend-requests' })
+}
+
+// 阶段 3：点击搜索栏全局搜索按钮，携带当前关键词跳转到 /search
+const handleGlobalSearch = (value: string) => {
+  triggerGlobalSearch(value)
 }
 
 const contextMenuItems = computed(() => {
@@ -651,6 +730,15 @@ onMounted(async () => {
   flex-direction: column;
 }
 
+.friend-list-view__header {
+  flex-shrink: 0;
+}
+
+.friend-list-view__main {
+  flex: 1;
+  min-height: 0;
+}
+
 .friend-list-view__state {
   height: 100%;
   display: flex;
@@ -671,6 +759,7 @@ onMounted(async () => {
   gap: 8px;
   font-size: 12px;
   color: var(--hula-text-tertiary);
+  margin-top: 8px;
 }
 
 .friend-list-view__search-clear {
@@ -692,6 +781,9 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .friend-request-preview__item {
@@ -707,6 +799,18 @@ onMounted(async () => {
 
 .friend-items {
   padding: 8px;
+  margin: 0;
+  list-style: none;
+}
+
+.friend-items--virtual {
+  height: 100%;
+}
+
+.friend-item-wrapper {
+  display: block;
+  margin: 0;
+  padding: 0;
 }
 
 .friend-item {
@@ -738,8 +842,8 @@ onMounted(async () => {
 }
 
 .friend-item__highlight {
-  background: var(--hula-color-primary-100);
-  color: var(--hula-color-primary-600);
+  background: var(--hula-color-warning-100);
+  color: var(--hula-text-primary);
   border-radius: 2px;
   padding: 0 1px;
   font-weight: var(--hula-font-weight-medium);

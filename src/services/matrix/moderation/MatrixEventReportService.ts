@@ -305,4 +305,3 @@ class MatrixEventReportService extends BaseMatrixService {
 }
 
 export const matrixEventReportService = new MatrixEventReportService()
-export default matrixEventReportService

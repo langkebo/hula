@@ -314,6 +314,18 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     }
   }
 
+  async function unbanUser(roomId: string, userId: string): Promise<boolean> {
+    try {
+      await matrixRoomActionFacade.unbanUser(roomId, userId)
+      await loadRoomMembers(roomId, true)
+      logger.info(`[GroupStore] 解封用户成功: ${userId} <- ${roomId}`)
+      return true
+    } catch (err) {
+      logger.error(`[GroupStore] 解封用户失败: ${err}`)
+      return false
+    }
+  }
+
   async function leaveRoom(roomId: string): Promise<boolean> {
     try {
       await matrixRoomActionFacade.leaveRoom(roomId)
@@ -323,6 +335,19 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
       return true
     } catch (err) {
       logger.error(`[GroupStore] 离开房间失败: ${err}`)
+      return false
+    }
+  }
+
+  async function forgetRoom(roomId: string): Promise<boolean> {
+    try {
+      await matrixRoomActionFacade.forgetRoom(roomId)
+      delete membersMap[roomId]
+      delete groupInfoMap[roomId]
+      logger.info(`[GroupStore] 忘记房间成功: ${roomId}`)
+      return true
+    } catch (err) {
+      logger.error(`[GroupStore] 忘记房间失败: ${err}`)
       return false
     }
   }
@@ -352,6 +377,40 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     } catch (err) {
       logger.error(`[GroupStore] 设置房间主题失败: ${err}`)
       return false
+    }
+  }
+
+  async function setRoomAvatar(roomId: string, avatarUrl: string): Promise<boolean> {
+    try {
+      await matrixRoomActionFacade.setRoomAvatar(roomId, avatarUrl)
+      if (groupInfoMap[roomId]) {
+        groupInfoMap[roomId] = { ...groupInfoMap[roomId], avatar: avatarUrl }
+      }
+      logger.info(`[GroupStore] 设置房间头像成功`)
+      return true
+    } catch (err) {
+      logger.error(`[GroupStore] 设置房间头像失败: ${err}`)
+      return false
+    }
+  }
+
+  async function setVisibility(roomId: string, visibility: 'public' | 'private'): Promise<boolean> {
+    try {
+      await matrixRoomActionFacade.setRoomVisibility(roomId, visibility)
+      logger.info(`[GroupStore] 设置房间可见性成功: ${visibility}`)
+      return true
+    } catch (err) {
+      logger.error(`[GroupStore] 设置房间可见性失败: ${err}`)
+      return false
+    }
+  }
+
+  async function getVisibility(roomId: string): Promise<'public' | 'private'> {
+    try {
+      return await matrixRoomActionFacade.getRoomVisibility(roomId)
+    } catch (err) {
+      logger.error(`[GroupStore] 获取房间可见性失败: ${err}`)
+      return 'private'
     }
   }
 
@@ -631,9 +690,14 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     inviteUser,
     kickUser,
     banUser,
+    unbanUser,
     leaveRoom,
+    forgetRoom,
     setRoomName,
     setRoomTopic,
+    setRoomAvatar,
+    setVisibility,
+    getVisibility,
     setPowerLevel,
     getMemberByUserId,
     getMembersByRoomId,

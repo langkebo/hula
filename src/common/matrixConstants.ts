@@ -50,13 +50,13 @@ export const MatrixFormat = {
   HTML: 'org.matrix.custom.html'
 } as const
 
-export const MatrixPresence = {
+const _MatrixPresence = {
   ONLINE: 'online',
   UNAVAILABLE: 'unavailable',
   OFFLINE: 'offline'
 } as const
 
-export const MatrixPowerLevel = {
+const _MatrixPowerLevel = {
   ADMIN: 100,
   MODERATOR: 50,
   DEFAULT: 0
@@ -70,27 +70,27 @@ export const MatrixBurnDuration = {
   DEFAULT_MS: 60000
 } as const
 
-export const MatrixSync = {
+const _MatrixSync = {
   SLIDING_SYNC_RANGE_END: 20,
   TIMELINE_LIMIT: 10,
   POLL_TIMEOUT_MS: 30000,
   INITIAL_SYNC_LIMIT: 20
 } as const
 
-export const MatrixCache = {
+const _MatrixCache = {
   DEFAULT_TTL_MS: 30000,
   ROOM_DETAIL_MAX_SIZE: 50,
   MESSAGE_CACHE_MAX_ROOMS: 20
 } as const
 
-export const MatrixMedia = {
+const _MatrixMedia = {
   DEFAULT_IMAGE_QUALITY: 0.8,
   DEFAULT_MAX_WIDTH: 1920,
   DEFAULT_MAX_HEIGHT: 1920,
   DEFAULT_MAX_SIZE_KB: 1024
 } as const
 
-export const ERROR_CLIENT_NOT_INITIALIZED = '客户端未初始化'
+const _ERROR_CLIENT_NOT_INITIALIZED = '客户端未初始化'
 export const ERROR_CLIENT_NOT_INITIALIZED_EN = 'Matrix client not initialized'
 
 export function isMessageEventType(eventType: string): boolean {

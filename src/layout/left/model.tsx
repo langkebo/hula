@@ -26,6 +26,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
@@ -40,7 +41,7 @@ const formValue = ref({
   lockPassword: ''
 })
 export const modalShow = ref(false)
-export const lock = ref({
+const lock = ref({
   loading: false,
   rules: {
     lockPassword: {
@@ -59,7 +60,9 @@ export const lock = ref({
       lockScreen.value.enable = true
       timerManager.setTimeout(async () => {
         /** 发送锁屏事件，当打开的窗口接受到后会自动锁屏 */
-        await emit(EventEnum.LOCK_SCREEN)
+        if (hasTauriRuntime()) {
+          await emit(EventEnum.LOCK_SCREEN)
+        }
         lock.value.loading = false
         modalShow.value = false
         formValue.value.lockPassword = ''

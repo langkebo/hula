@@ -105,6 +105,11 @@ vi.mock('@/utils/PlatformConstants', () => ({
   isWindows10: vi.fn(() => false)
 }))
 
+// createWebviewWindow 会先检查 hasTauriRuntime()，未 mock 时返回 null
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     debug: vi.fn(),

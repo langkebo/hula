@@ -3,6 +3,7 @@ import { PushRuleKind, TweakName } from 'matrix-js-sdk'
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { shouldNotifyForEventType } from './pushRules'
 
 const logger = createLogger('MatrixPushService')
 
@@ -250,8 +251,16 @@ class MatrixPushService extends BaseMatrixService {
   getRoomRules(rules: IPushRules): IPushRule[] {
     return rules.global?.room ?? []
   }
+
+  /**
+   * §9.2.5 判断事件类型是否应触发推送通知
+   *
+   * 覆盖 Matrix 核心事件 + HuLa 扩展事件（好友请求/Widget/AI 工具结果）。
+   */
+  shouldNotify(eventType: string): boolean {
+    return shouldNotifyForEventType(eventType)
+  }
 }
 
 export type { IPusher, IPushRule, IPushRules } from 'matrix-js-sdk'
 export const matrixPushService = new MatrixPushService()
-export default matrixPushService

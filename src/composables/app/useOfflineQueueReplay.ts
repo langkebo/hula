@@ -19,6 +19,7 @@ interface ReceiptServiceDeps {
 
 interface ReactionServiceDeps {
   addReaction(roomId: string, eventId: string, emoji: string): Promise<string>
+  removeReaction(roomId: string, reactionEventId: string): Promise<void>
 }
 
 interface RoomServiceDeps {
@@ -46,6 +47,25 @@ interface RoomOperationsDeps {
   setStickyEvents(roomId: string, events: Record<string, unknown>): Promise<void>
 }
 
+interface FriendServiceDeps {
+  acceptFriendRequest(userId: string): Promise<void>
+  rejectFriendRequest(userId: string): Promise<void>
+  cancelFriendRequest(userId: string): Promise<void>
+}
+
+interface BurnAfterReadServiceDeps {
+  enableBurn(roomId: string, burnAfterMs?: number): Promise<unknown>
+  disableBurn(roomId: string): Promise<unknown>
+}
+
+interface WidgetServiceDeps {
+  createWidget(
+    roomId: string,
+    body: { widgetType: string; url: string; name: string; data?: Record<string, unknown> }
+  ): Promise<unknown>
+  deleteWidget(widgetId: string): Promise<unknown>
+}
+
 export function useOfflineQueueReplay(deps: {
   getMatrixClientService: () => Promise<ClientServiceDeps>
   getMatrixMessageService: () => Promise<MessageServiceDeps>
@@ -54,6 +74,9 @@ export function useOfflineQueueReplay(deps: {
   getMatrixRoomService: () => Promise<RoomServiceDeps>
   getMatrixRoomCreationService: () => Promise<RoomCreationServiceDeps>
   getRoomOperations: () => Promise<RoomOperationsDeps>
+  getMatrixFriendService?: () => Promise<FriendServiceDeps>
+  getMatrixBurnAfterReadService?: () => Promise<BurnAfterReadServiceDeps>
+  getMatrixWidgetService?: () => Promise<WidgetServiceDeps>
 }) {
   const initOfflineQueue = async () => {
     const { offlineQueueService } = await import('@/services/offline/OfflineQueueService')
@@ -65,6 +88,9 @@ export function useOfflineQueueReplay(deps: {
       const roomService = await deps.getMatrixRoomService()
       const roomCreationService = await deps.getMatrixRoomCreationService()
       const roomOps = await deps.getRoomOperations()
+      const friendService = deps.getMatrixFriendService ? await deps.getMatrixFriendService() : null
+      const burnService = deps.getMatrixBurnAfterReadService ? await deps.getMatrixBurnAfterReadService() : null
+      const widgetService = deps.getMatrixWidgetService ? await deps.getMatrixWidgetService() : null
 
       switch (op.type) {
         case 'message': {
@@ -98,6 +124,11 @@ export function useOfflineQueueReplay(deps: {
         case 'reaction': {
           const { roomId, eventId, emoji } = op.payload as { roomId: string; eventId: string; emoji: string }
           await reactionService.addReaction(roomId, eventId, emoji)
+          break
+        }
+        case 'reaction_remove': {
+          const { roomId, reactionEventId } = op.payload as { roomId: string; reactionEventId: string }
+          await reactionService.removeReaction(roomId, reactionEventId)
           break
         }
         case 'state': {
@@ -188,6 +219,61 @@ export function useOfflineQueueReplay(deps: {
             await roomOps.setPinnedEvents(payload.roomId, payload.eventIds)
           } else if (payload.type === 'sticky' && payload.events) {
             await roomOps.setStickyEvents(payload.roomId, payload.events)
+          }
+          break
+        }
+        case 'friend_accept': {
+          const { userId } = op.payload as { userId: string }
+          if (friendService) {
+            await friendService.acceptFriendRequest(userId)
+          }
+          break
+        }
+        case 'friend_reject': {
+          const { userId } = op.payload as { userId: string }
+          if (friendService) {
+            await friendService.rejectFriendRequest(userId)
+          }
+          break
+        }
+        case 'friend_cancel': {
+          const { userId } = op.payload as { userId: string }
+          if (friendService) {
+            await friendService.cancelFriendRequest(userId)
+          }
+          break
+        }
+        case 'burn_enable': {
+          const { roomId, burnAfterMs } = op.payload as { roomId: string; burnAfterMs?: number }
+          if (burnService) {
+            await burnService.enableBurn(roomId, burnAfterMs)
+          }
+          break
+        }
+        case 'burn_disable': {
+          const { roomId } = op.payload as { roomId: string }
+          if (burnService) {
+            await burnService.disableBurn(roomId)
+          }
+          break
+        }
+        case 'widget_create': {
+          const { roomId, widgetType, url, name, data } = op.payload as {
+            roomId: string
+            widgetType: string
+            url: string
+            name: string
+            data?: Record<string, unknown>
+          }
+          if (widgetService) {
+            await widgetService.createWidget(roomId, { widgetType, url, name, data })
+          }
+          break
+        }
+        case 'widget_delete': {
+          const { widgetId } = op.payload as { widgetId: string }
+          if (widgetService) {
+            await widgetService.deleteWidget(widgetId)
           }
           break
         }

@@ -1,7 +1,7 @@
 import { type ComputedRef, computed, type Ref, ref, watchEffect } from 'vue'
 import type { UserItem } from '@/services/types.ts'
 
-export interface MentionState {
+interface MentionState {
   /** 弹窗是否展示 */
   ait: Ref<boolean>
   /** 当前 `@` 后用户输入的关键字（由上层在 compositionend / trigger 中写入） */

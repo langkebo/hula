@@ -275,7 +275,6 @@
   </div>
 </template>
 <script setup lang="ts">
-import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { onKeyStroke } from '@vueuse/core'
 import type { VirtualListInst } from 'naive-ui'
@@ -294,6 +293,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import type { LocationData } from '@/types/common'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { UploadFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
@@ -318,7 +318,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const settingStore = useSettingStore()
 const { handlePaste, processFiles } = useCommon()
 const sendOptions = useSendOptions()
@@ -826,8 +826,7 @@ onMounted(async () => {
       handleAitKeyChange(1, groupedAIModels, virtualListInstAI.value!, selectedAIKey)
     }
   })
-  // 独立窗口聊天功能已关闭
-  emit('aloneWin')
+  // 独立窗口聊天功能已关闭，不再 emit aloneWin 事件
   nextTick(() => {
     // 移动端不自动聚焦
     if (!isMobile()) {
@@ -858,7 +857,7 @@ onMounted(async () => {
       isVoiceMode.value = false
     }
   })
-  appWindow.listen<{ buffer: number[]; mimeType: string }>('screenshot', async (e) => {
+  appWindow?.listen<{ buffer: number[]; mimeType: string }>('screenshot', async (e) => {
     // 确保输入框获得焦点
     if (messageInputDom.value) {
       messageInputDom.value.focus()

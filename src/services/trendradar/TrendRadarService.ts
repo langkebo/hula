@@ -4,7 +4,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('TrendRadarService')
 
-export interface TrendRadarTool {
+interface TrendRadarTool {
   name: string
   description: string
   inputSchema: Record<string, unknown>
@@ -18,7 +18,7 @@ export interface TrendRadarNews {
   summary?: string
 }
 
-export interface TrendRadarSearchResult {
+interface TrendRadarSearchResult {
   news: TrendRadarNews[]
   total: number
 }
@@ -35,9 +35,9 @@ export interface TrendRadarTopic {
 
 export type TrendRadarRssArticle = TrendRadarNews & Record<string, unknown>
 
-export type TrendRadarAnalysisResult = string | Record<string, unknown> | unknown[]
+type TrendRadarAnalysisResult = string | Record<string, unknown> | unknown[]
 
-export interface McpRpcRequest {
+interface McpRpcRequest {
   jsonrpc: '2.0'
   method: string
   params?: {
@@ -47,7 +47,7 @@ export interface McpRpcRequest {
   id: number | string
 }
 
-export interface McpRpcResponse<T = unknown> {
+interface McpRpcResponse<T = unknown> {
   jsonrpc: '2.0'
   result?: T
   error?: {
@@ -273,6 +273,3 @@ export function useTrendRadar() {
     getEndpoint: trendRadarClient.getEndpoint.bind(trendRadarClient)
   }
 }
-
-export { TrendRadarService, trendRadarClient }
-export default useTrendRadar

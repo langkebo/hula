@@ -1,9 +1,6 @@
-import { expect, type Page, test } from '@playwright/test'
-
-type RuntimeIssueCollector = {
-  componentResolveErrors: string[]
-  lazyLoadErrors: string[]
-}
+import { expect, test } from '@playwright/test'
+import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
+import { bootstrapMobileHarness } from './support/session'
 
 type MobileEntryCase = {
   name: string
@@ -45,47 +42,8 @@ const mobileEntryCases: MobileEntryCase[] = [
   }
 ]
 
-const bootstrapMobileHarness = async (page: Page) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('hula:e2e:enabled', '1')
-    window.localStorage.setItem('hula:e2e:mock-auth', '1')
-    window.localStorage.setItem('hula:e2e:platform', 'mobile')
-  })
-}
-
-const createRuntimeIssueCollector = (page: Page): RuntimeIssueCollector => {
-  const collector: RuntimeIssueCollector = {
-    componentResolveErrors: [],
-    lazyLoadErrors: []
-  }
-
-  page.on('console', (message) => {
-    const text = message.text()
-    if (text.includes('Failed to resolve component')) {
-      collector.componentResolveErrors.push(text)
-    }
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  page.on('pageerror', (error) => {
-    const text = String(error)
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  return collector
-}
-
-const expectNoRouteRuntimeIssues = (collector: RuntimeIssueCollector) => {
-  expect(collector.componentResolveErrors, '入口页不应出现移动端组件解析失败').toEqual([])
-  expect(collector.lazyLoadErrors, '入口页不应出现懒加载 chunk 拉取失败').toEqual([])
+const ENTRY_RUNTIME_ISSUE_OPTIONS = {
+  componentResolveErrorMessage: '入口页不应出现移动端组件解析失败'
 }
 
 test.describe('Mobile Auto-Registered Entry Smoke', () => {
@@ -99,7 +57,7 @@ test.describe('Mobile Auto-Registered Entry Smoke', () => {
 
       await expect(page).toHaveURL(new RegExp(entryCase.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
       await expect(page.locator('body')).toContainText(entryCase.readyPattern)
-      expectNoRouteRuntimeIssues(runtimeIssues)
+      expectNoRuntimeIssues(runtimeIssues, ENTRY_RUNTIME_ISSUE_OPTIONS)
     })
   }
 })

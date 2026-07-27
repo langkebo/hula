@@ -16,6 +16,7 @@ import { useI18nGlobal } from '@/services/i18n'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithErrorHandler } from '../../utils/TauriInvokeHandler'
 
@@ -51,12 +52,29 @@ async function focusSessionRoom(roomId: string) {
 
   globalStore.updateCurrentSessionRoomId(roomId)
 
-  const label = WebviewWindow.getCurrent().label
-  if (router.currentRoute.value.path !== '/message' && label === 'home') {
-    await router.push('/message')
+  // 跳转条件：当前不在 /message 路由时跳转
+  // Tauri 环境下检查窗口 label：仅在 'message' 独立聊天窗口中不重复跳转
+  // 其他窗口（home、contact、friend 等）都应跳转到 /message
+  const currentPath = router.currentRoute.value.path
+  if (currentPath !== '/message') {
+    if (hasTauriRuntime()) {
+      try {
+        const label = WebviewWindow.getCurrent().label
+        // 'message' 窗口本身就是聊天窗口，无需跳转；其他窗口都需要跳转
+        if (label !== 'message') {
+          await router.push('/message')
+        }
+      } catch {
+        // WebviewWindow.getCurrent() 失败时也跳转
+        await router.push('/message')
+      }
+    } else {
+      await router.push('/message')
+    }
   }
 
-  useMitt.emit(MittEnum.DETAILS_SHOW, { detailsShow: false, context: undefined })
+  // 阶段 2：路由驱动后，跳转到 /message 自动隐藏右侧栏详情视图，
+  // 无需再通过 mitt 事件显式关闭 DETAILS_SHOW。
   chatStore.markSessionRead?.(roomId)
   useMitt.emit(MittEnum.LOCATE_SESSION, { roomId })
   useMitt.emit(MittEnum.TO_SEND_MSG, { url: 'message' })
@@ -85,10 +103,15 @@ export const openMsgSession = async (uid: string, type: number = 2) => {
     return
   }
 
-  try {
-    await invokeWithErrorHandler('hide_contact_command', { data: { roomId: res.roomId, hide: false } })
-  } catch {
-    showFeedback(t('hooks.session.show_failed'), 'error')
+  // 仅在 Tauri 环境下调用 hide_contact_command（本地数据库操作）
+  // 非 Tauri 环境下跳过此步骤，不影响后续会话打开流程
+  if (hasTauriRuntime()) {
+    try {
+      await invokeWithErrorHandler('hide_contact_command', { data: { roomId: res.roomId, hide: false } })
+    } catch {
+      // hide_contact_command 失败不阻止会话打开，降级为 warn
+      logger.warn(`hide_contact_command 失败，但不影响会话打开: ${res.roomId}`)
+    }
   }
 
   const chatStore = useChatStore()

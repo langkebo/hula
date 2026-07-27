@@ -4,13 +4,13 @@ import matrixClientService from '../MatrixClientService'
 
 const logger = createLogger('MatrixEncryptionContextService')
 
-export interface MatrixEncryptionSessionContext {
+interface MatrixEncryptionSessionContext {
   userId: string | null
   deviceId: string | null
   isCryptoEnabled: boolean
 }
 
-export interface PreparedKeyBackupVersion {
+interface PreparedKeyBackupVersion {
   algorithm: string
   authData: Record<string, unknown>
   privateKey: Uint8Array
@@ -112,5 +112,3 @@ class MatrixEncryptionContextService {
 }
 
 export const matrixEncryptionContextService = new MatrixEncryptionContextService()
-
-export default matrixEncryptionContextService

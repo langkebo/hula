@@ -46,6 +46,11 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
   }
 }))
 
+// changeRoom 仅在 hasTauriRuntime() 为 true 时才调用 getPagedRoomMessages
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn()
 }))

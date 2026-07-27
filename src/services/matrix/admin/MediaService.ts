@@ -1,6 +1,7 @@
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { stripMatrixPrefix } from '../MatrixHttpClient'
+import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MediaService')
 
@@ -79,7 +80,7 @@ export class AdminMediaService {
     }
 
     try {
-      const { path, prefix } = stripMatrixPrefix('/_matrix/client/v1/admin/purge_remote_media')
+      const { path, prefix } = stripMatrixPrefix(MATRIX_PATHS.ADMIN.PURGE_REMOTE_MEDIA)
       const result = await client.http.authedRequest(
         'POST',
         path,

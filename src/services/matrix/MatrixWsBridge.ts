@@ -106,4 +106,3 @@ class MatrixWsBridge {
 }
 
 export const matrixWsBridge = new MatrixWsBridge()
-export default matrixWsBridge

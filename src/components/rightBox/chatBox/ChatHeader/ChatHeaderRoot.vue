@@ -21,7 +21,8 @@
       @start-meeting="handleStartMeeting"
       @screen-share="handleScreenShare"
       @show-qr-code="handleShowQRCode"
-      @toggle-sidebar="handleSidebarShow" />
+      @toggle-sidebar="handleSidebarShow"
+      @open-in-new-window="handleOpenInNewWindow" />
 
     <ChatHeaderSidebar
       v-model:visible="sidebarShow"
@@ -74,12 +75,12 @@
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useIndependentChatWindow } from '@/composables/chat/useIndependentChatWindow'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { RoomActEnum, RoomTypeEnum } from '@/enums'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
-import syncService from '@/services/matrix/sync/MatrixSyncService'
 import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -300,6 +301,16 @@ const handleStartVoiceCall = async () => {
 
 const handleScreenShare = () => {
   logger.debug('屏幕共享')
+}
+
+// 附录 C.6：在新窗口打开当前聊天
+const handleOpenInNewWindow = async () => {
+  if (!currentSessionRoomId.value) {
+    logger.warn('无法在新窗口打开：currentSessionRoomId 为空')
+    return
+  }
+  const { openInNewWindow } = useIndependentChatWindow()
+  await openInNewWindow(currentSessionRoomId.value)
 }
 
 /**

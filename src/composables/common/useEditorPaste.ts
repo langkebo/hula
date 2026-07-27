@@ -21,7 +21,7 @@ type AitMentionData = { name?: string; text?: string; label?: string; uid?: stri
 type ReplyData = { accountName: string; content: string; avatar: string; name?: string }
 type InsertNodeData = AitMentionData | ReplyData | string
 
-export type UseEditorPasteOptions = {
+type UseEditorPasteOptions = {
   userUid: Ref<string | undefined>
   triggerInputEvent: (element: HTMLElement) => void
   insertNode: (type: MsgEnum, dom: InsertNodeData, target: HTMLElement) => void

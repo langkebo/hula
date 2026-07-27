@@ -1,6 +1,6 @@
 import { MOBILE_SETTINGS_LABS_PATH } from './settingsRoutes'
 
-export interface MobileSettingsNavItem {
+interface MobileSettingsNavItem {
   titleKey: string
   path: string
   icon: string

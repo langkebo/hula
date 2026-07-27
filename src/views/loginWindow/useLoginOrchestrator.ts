@@ -20,14 +20,6 @@ import { useSsoCallback } from './hooks/useSsoCallback'
 
 const logger = createLogger('LoginOrchestrator')
 
-export type LoginInfo = {
-  account: string
-  password: string
-  avatar: string
-  name: string
-  uid: string
-}
-
 export function useLoginOrchestrator() {
   const { t } = useI18n()
   const timerManager = useTimerManager()
@@ -45,9 +37,12 @@ export function useLoginOrchestrator() {
 
   const {
     normalLogin,
+    retryLogin,
     loading,
     loginText,
     loginDisabled,
+    loginStatus,
+    lastLoginError,
     info: loginInfo,
     uiState,
     homeserverUrl,
@@ -125,7 +120,7 @@ export function useLoginOrchestrator() {
   }
 
   const handlePendingRemoteLoginPayload = async () => {
-    if (!isDesktop()) {
+    if (!isDesktop() || !hasTauriRuntime()) {
       return
     }
     try {
@@ -319,9 +314,12 @@ export function useLoginOrchestrator() {
 
   return {
     normalLogin,
+    retryLogin,
     loading,
     loginText,
     loginDisabled,
+    loginStatus,
+    lastLoginError,
     loginInfo,
     uiState,
     protocol,

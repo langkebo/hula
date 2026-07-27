@@ -5,7 +5,7 @@ import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
 
 type VoiceUploadResult = Awaited<ReturnType<typeof matrixVoiceService.uploadVoice>>
 
-export interface VoiceInputHook {
+interface VoiceInputHook {
   /**
    * 读取本地语音文件后交给 `matrixVoiceService.uploadVoice` 或加密上传。
    */

@@ -45,16 +45,19 @@
   --hula-text-inverse: #ffffff;
 
   --hula-surface-app: #fafafa;
+  /* 阶段 9：三栏亮度渐进（需求文档 3.1.1）—— L0 最深 → L1 中等 → L2 最浅 */
   --hula-surface-panel: #ffffff;
+  --hula-surface-list: #f7f7f7;
+  --hula-surface-sidebar: #f3f3f3;
   --hula-surface-panel-muted: #f5f5f5;
   --hula-surface-subtle: #f1f1f1;
   --hula-surface-elevated: #fdfdfd;
   --hula-surface-search: #eaeaea;
-  --hula-surface-sidebar: var(--hula-brand-sidebar);
-  --hula-surface-sidebar-hover: rgba(255, 255, 255, 0.2);
-  --hula-surface-sidebar-active: rgba(222, 222, 222, 0.2);
-  --hula-surface-sidebar-selected: rgba(222, 222, 222, 0.2);
-  --hula-surface-list-hover: color-mix(in srgb, var(--hula-text-secondary) 12%, transparent);
+  --hula-surface-sidebar-hover: rgba(0, 0, 0, 0.05);
+  --hula-surface-sidebar-active: rgba(0, 0, 0, 0.08);
+  --hula-surface-sidebar-selected: rgba(0, 0, 0, 0.08);
+  --hula-surface-list-hover: color-mix(in srgb, var(--hula-text-secondary) 8%, transparent);
+  --hula-surface-list-selected: color-mix(in srgb, var(--hula-color-primary-500) 12%, transparent);
   --hula-surface-session-active: linear-gradient(135deg, #4ecdc4 0%, #3db8a8 100%);
   --hula-surface-session-active-shadow: 0 2px 10px rgba(78, 205, 196, 0.3);
   --hula-overlay: rgba(255, 255, 255, 0.65);
@@ -484,16 +487,19 @@ html[data-theme='dark'] {
   --hula-text-disabled: #434343;
 
   --hula-surface-app: #161616;
-  --hula-surface-panel: #1b1b1b;
+  /* 阶段 9：三栏亮度渐进（需求文档 3.1.1）—— L0 最深 → L1 中等 → L2 最浅 */
+  --hula-surface-panel: #313338;
+  --hula-surface-list: #2b2d31;
+  --hula-surface-sidebar: #1e1f22;
   --hula-surface-panel-muted: #262626;
   --hula-surface-subtle: #303030;
   --hula-surface-elevated: #303030;
-  --hula-surface-search: #282828;
-  --hula-surface-sidebar: rgba(62, 101, 100, 0.8);
-  --hula-surface-sidebar-hover: rgba(222, 222, 222, 0.1);
-  --hula-surface-sidebar-active: #444444;
-  --hula-surface-sidebar-selected: rgba(222, 222, 222, 0.1);
-  --hula-surface-list-hover: color-mix(in srgb, var(--hula-text-inverse) 10%, transparent);
+  --hula-surface-search: #383a40;
+  --hula-surface-sidebar-hover: rgba(255, 255, 255, 0.05);
+  --hula-surface-sidebar-active: rgba(255, 255, 255, 0.08);
+  --hula-surface-sidebar-selected: rgba(255, 255, 255, 0.08);
+  --hula-surface-list-hover: rgba(255, 255, 255, 0.05);
+  --hula-surface-list-selected: rgba(19, 152, 127, 0.18);
   --hula-surface-session-active: linear-gradient(135deg, #3db8a8 0%, #2d9a8c 100%);
   --hula-surface-session-active-shadow: 0 2px 10px rgba(61, 184, 168, 0.25);
   --hula-surface-overlay: rgba(33, 33, 33, 0.95);

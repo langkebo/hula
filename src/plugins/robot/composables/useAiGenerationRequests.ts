@@ -1,18 +1,18 @@
 import type { VideoGenerationRequest } from '@/services/matrix/ai/AIService'
 
-export interface ParsedGenerationSize {
+interface ParsedGenerationSize {
   width: number
   height: number
 }
 
-export interface BuildImageGenerationRequestOptions {
+interface BuildImageGenerationRequestOptions {
   modelId: string
   prompt: string
   size: string
   conversationId: string
 }
 
-export interface BuildVideoGenerationRequestOptions {
+interface BuildVideoGenerationRequestOptions {
   modelId: string
   prompt: string
   size: string
@@ -21,7 +21,7 @@ export interface BuildVideoGenerationRequestOptions {
   image?: string | null
 }
 
-export interface BuildAudioGenerationRequestOptions {
+interface BuildAudioGenerationRequestOptions {
   modelId: string
   prompt: string
   conversationId: string

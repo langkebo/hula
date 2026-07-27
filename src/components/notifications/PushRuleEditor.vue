@@ -44,11 +44,7 @@
                         <n-tag v-if="item.rule.pattern" size="tiny" :bordered="false">
                           {{ t('setting.push.rules_by_kind.pattern') }}: {{ item.rule.pattern }}
                         </n-tag>
-                        <n-tag
-                          v-if="!item.rule.enabled"
-                          size="tiny"
-                          :bordered="false"
-                          type="warning">
+                        <n-tag v-if="!item.rule.enabled" size="tiny" :bordered="false" type="warning">
                           {{ t('setting.push.editor.disabled') }}
                         </n-tag>
                       </div>

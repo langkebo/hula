@@ -1,6 +1,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixWidgetService')
 
@@ -455,7 +456,7 @@ class MatrixWidgetService {
     try {
       const result = (await client.http.authedRequest(
         'GET',
-        `/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/capabilities`
+        MATRIX_PATHS.WIDGET.CAPABILITIES(roomId, widgetId)
       )) as WidgetCapabilitiesResponse
       return result
     } catch (err) {
@@ -489,7 +490,7 @@ class MatrixWidgetService {
     try {
       const result = (await client.http.authedRequest(
         'PUT',
-        `/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/capabilities`,
+        MATRIX_PATHS.WIDGET.CAPABILITIES(roomId, widgetId),
         undefined,
         { capabilities }
       )) as WidgetCapabilitiesResponse
@@ -526,7 +527,7 @@ class MatrixWidgetService {
     try {
       const result = (await client.http.authedRequest(
         'POST',
-        `/rooms/${encodeURIComponent(roomId)}/widgets/${encodeURIComponent(widgetId)}/send`,
+        MATRIX_PATHS.WIDGET.SEND(roomId, widgetId),
         undefined,
         message
       )) as SendWidgetMessageResponse

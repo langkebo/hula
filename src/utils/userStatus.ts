@@ -1,6 +1,6 @@
 import type { UserState } from '@/services/types'
 
-export type MatrixPresence = 'online' | 'offline' | 'unavailable'
+type MatrixPresence = 'online' | 'offline' | 'unavailable'
 
 export function mapUserStateToPresence(state: Pick<UserState, 'id' | 'title'>): MatrixPresence {
   const normalizedTitle = state.title.trim().toLowerCase()

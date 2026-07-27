@@ -1,45 +1,6 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
 import { clearMockSession, seedMockSession } from './support/session'
-
-type RuntimeIssueCollector = {
-  componentResolveErrors: string[]
-  lazyLoadErrors: string[]
-}
-
-const createRuntimeIssueCollector = (page: Page): RuntimeIssueCollector => {
-  const collector: RuntimeIssueCollector = {
-    componentResolveErrors: [],
-    lazyLoadErrors: []
-  }
-
-  page.on('console', (message) => {
-    const text = message.text()
-    if (text.includes('Failed to resolve component')) {
-      collector.componentResolveErrors.push(text)
-    }
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  page.on('pageerror', (error) => {
-    const text = String(error)
-    if (
-      /Failed to fetch dynamically imported module|ChunkLoadError|error loading dynamically imported module/i.test(text)
-    ) {
-      collector.lazyLoadErrors.push(text)
-    }
-  })
-
-  return collector
-}
-
-const expectNoRuntimeIssues = (collector: RuntimeIssueCollector) => {
-  expect(collector.componentResolveErrors, '页面不应出现组件解析失败').toEqual([])
-  expect(collector.lazyLoadErrors, '页面不应出现懒加载 chunk 拉取失败').toEqual([])
-}
 
 test.describe('Login Flow', () => {
   test.describe('Login Page Rendering', () => {

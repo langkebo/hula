@@ -109,6 +109,7 @@
     "send_message": "发消息",
     "encrypted_chat": "加密聊天",
     "secret_chat": "设为私密好友",
+    "open_in_new_window": "在新窗口打开",
     "set_note": "设置备注",
     "set_display_name": "设置显示名",
     "set_favorite": "设为收藏",

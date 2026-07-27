@@ -19,7 +19,7 @@ export interface BackupVersion {
   etag?: string
 }
 
-export interface RoomKeyBackup {
+interface RoomKeyBackup {
   rooms: Record<
     string,
     {
@@ -37,7 +37,7 @@ export interface RoomKeyBackup {
   etag: string
 }
 
-export interface RecoveryProgress {
+interface RecoveryProgress {
   user_id: string
   version: string
   total_keys: number
@@ -47,7 +47,7 @@ export interface RecoveryProgress {
   updated_ts: number
 }
 
-export interface BatchRecoverResult {
+interface BatchRecoverResult {
   rooms: Record<string, unknown>
   total_sessions: number
   has_more: boolean
@@ -524,5 +524,3 @@ class MatrixKeyBackupService extends BaseMatrixService {
 }
 
 export const matrixKeyBackupService = new MatrixKeyBackupService()
-
-export default matrixKeyBackupService

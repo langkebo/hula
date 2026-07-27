@@ -7,7 +7,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ClipboardPaste')
 
-export interface ClipboardPasteOptions {
+interface ClipboardPasteOptions {
   /** 输入框 DOM 引用 */
   messageInputDom: Ref<HTMLElement | null | undefined> | Ref<HTMLElement>
   /** 将剪贴板图片以 File 对象形式写入输入框（走 `useCommon.imgPaste`） */

@@ -4,9 +4,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useSpaceMembers')
 
-export type { SpaceMember }
-
-export interface UseSpaceMembersResult {
+interface UseSpaceMembersResult {
   members: Ref<SpaceMember[]>
   loading: Ref<boolean>
   mutating: Ref<boolean>

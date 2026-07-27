@@ -21,6 +21,11 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
   }
 }))
 
+// markSessionRead 仅在 hasTauriRuntime() 为 true 时调用
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn()
 }))

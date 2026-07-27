@@ -7,7 +7,7 @@ export interface RetentionPolicyView {
   maxLifetime?: number
 }
 
-export interface UseAdminRetentionResult {
+interface UseAdminRetentionResult {
   policies: Ref<RetentionPolicyView[]>
   retentionStatus: Ref<Record<string, unknown> | null>
   loading: Ref<boolean>

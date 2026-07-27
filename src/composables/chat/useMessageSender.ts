@@ -6,7 +6,7 @@ import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageS
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 
-export type SendWithTrackingOptions = {
+type SendWithTrackingOptions = {
   tempMsgId: string
   payload: SendMessagePayload
   /** 是否在发送成功后更新会话最近活跃时间，默认 true */

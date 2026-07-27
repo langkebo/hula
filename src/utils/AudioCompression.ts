@@ -6,7 +6,7 @@ const logger = createLogger('AudioCompression')
 /**
  * 音频压缩配置接口
  */
-export interface AudioCompressionConfig {
+interface AudioCompressionConfig {
   /** 声道数：1为单声道，2为立体声 */
   channels?: number
   /** 采样率 (Hz) */

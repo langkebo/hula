@@ -447,4 +447,3 @@ class MatrixAccountService extends BaseMatrixService {
 }
 
 export const matrixAccountService = new MatrixAccountService()
-export default matrixAccountService

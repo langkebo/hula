@@ -12,7 +12,7 @@ import matrixClientService from '../MatrixClientService'
 
 const logger = createLogger('MatrixDirectMessageService')
 
-export type { CreateDmOptions, DmPartnerResponse, DmRoomInfo, IDirectRoomsMap }
+export type { DmRoomInfo }
 
 class MatrixDirectMessageService extends BaseMatrixService {
   private dmManager: DirectMessageManager | null = null
@@ -383,4 +383,3 @@ class MatrixDirectMessageService extends BaseMatrixService {
 }
 
 export const matrixDirectMessageService = new MatrixDirectMessageService()
-export default matrixDirectMessageService

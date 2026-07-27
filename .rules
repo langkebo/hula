@@ -117,7 +117,7 @@ If `pnpm install` fails with SDK linking errors, verify the `matrix-js-sdk` dire
     - **`widget/`**: Widget stores.
   - **`services/`**: Service layer.
     - **`matrix/`**: Matrix protocol services (organized by subdomain):
-      - **`auth/`**: `MatrixAuthService`, `MatrixOidcService`, `MatrixQrLoginService`, `MatrixSessionService`, `MatrixRuntimeSessionService`.
+      - **`auth/`**: `MatrixAuthService`, `MatrixOidcService`, `MatrixQrLoginSdkService`, `MatrixSessionService`, `MatrixRuntimeSessionService`.
       - **`room/`**: `MatrixRoomService`, `MatrixGroupService`, `MatrixDirectMessageService`, `MatrixSpaceService`, `MatrixRoomSummaryService`, timeline, lifecycle, membership, metadata, moderation, pins, tags, state, aliases, translation services.
       - **`messaging/`**: `MatrixMessageService`, `MatrixThreadService`, `MatrixReactionService`, `MatrixTypingService`, `MatrixReceiptService`, `MatrixForwardService`, `MatrixEmojiService`, `MatrixBurnAfterReadService`, `MatrixMessageRelationService`, `MatrixMessageAdapter`.
       - **`media/`**: `MatrixMediaService`, `MatrixVoiceService`, `MatrixMultimediaService`, `MatrixVoIPService`, `MatrixLocationService`, `MatrixBeaconService`, `MatrixUrlPreviewService`.

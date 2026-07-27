@@ -80,6 +80,40 @@ export const seedMockSession = async (page: Page, options: MockSessionOptions = 
 }
 
 /**
+ * Mock Tauri runtime internals on `window` so the app doesn't crash in the
+ * browser-only Playwright environment. Without this, `WebviewWindow.getCurrent()`
+ * → `getCurrentWindow()` accesses `window.__TAURI_INTERNALS__.metadata` →
+ * `undefined` → crash.
+ */
+export const installTauriRuntimeMock = async (page: Page): Promise<void> => {
+  await page.addInitScript(() => {
+    ;((window as unknown as { __TAURI_INTERNALS__?: Record<string, unknown> }).__TAURI_INTERNALS__ ??= {}).metadata = {
+      currentWindow: { label: 'main' },
+      currentWebview: { windowLabel: 'main', label: 'main' }
+    }
+  })
+}
+
+/**
+ * Bootstrap a desktop E2E harness: seeds mock-auth session flags and installs
+ * the Tauri runtime mock. Centralized so spec files don't re-implement the
+ * same `bootstrapDesktopHarness` helper.
+ */
+export const bootstrapDesktopHarness = async (page: Page, options: MockSessionOptions = {}): Promise<void> => {
+  await seedMockSession(page, { ...options, platform: 'desktop' })
+  await installTauriRuntimeMock(page)
+}
+
+/**
+ * Bootstrap a mobile E2E harness: seeds mock-auth session flags with the
+ * mobile platform marker. Centralized so spec files don't re-implement the
+ * same `bootstrapMobileHarness` helper.
+ */
+export const bootstrapMobileHarness = async (page: Page, options: MockSessionOptions = {}): Promise<void> => {
+  await seedMockSession(page, { ...options, platform: 'mobile' })
+}
+
+/**
  * Removes any seeded mock-session flags. Useful for specs that need to assert
  * the un-bypassed login redirect after exercising a logout flow.
  */

@@ -1,6 +1,6 @@
 let wasmMd5Instance: { digest_u8: (data: Uint8Array) => Promise<string> } | null = null
 
-export const getWasmMd5 = async () => {
+const getWasmMd5 = async () => {
   if (!wasmMd5Instance) {
     const module = await import('digest-wasm')
     wasmMd5Instance = module.Md5

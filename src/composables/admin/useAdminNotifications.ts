@@ -1,7 +1,7 @@
 import { type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
 
-export interface UseAdminNotificationsResult {
+interface UseAdminNotificationsResult {
   notificationSettings: Ref<Record<string, unknown> | null>
   settingsLoading: Ref<boolean>
   pushers: Ref<Array<Record<string, unknown>>>

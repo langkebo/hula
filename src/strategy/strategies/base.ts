@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import { AppException } from '@/common/exception.ts'
 import type { UploadOptions, UploadProviderEnum } from '@/composables/common/useUpload'
-import { MessageStatusEnum, type MsgEnum } from '@/enums'
+import { MessageStatusEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { createLogger } from '@/utils/Logger'
@@ -28,6 +28,16 @@ export interface CallInfo {
   isGroup: boolean
 }
 
+/** 消息上下文菜单支持的动作 */
+export type MessageAction = 'recall' | 'edit' | 'reply' | 'forward' | 'mark' | 'pin' | 'copy' | 'delete'
+
+/** 动作可见性上下文 */
+export interface MessageActionContext {
+  isMe: boolean
+  canModerate: boolean
+  isPinned: boolean
+}
+
 export interface MessageStrategy {
   getMsg: (
     msgInputValue: string,
@@ -52,6 +62,8 @@ export interface MessageStrategy {
   ) => Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }>
   doUploadThumbnail?: (thumbnailFile: File, uploadUrl: string, options?: UploadOptions) => Promise<string | void>
   getUploadProgress?: () => { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void }
+  /** 返回该消息类型在给定上下文下可见的菜单动作列表 */
+  getAllowedActions?: (context: MessageActionContext) => MessageAction[]
 }
 
 /**
@@ -112,5 +124,40 @@ export abstract class AbstractMessageStrategy implements MessageStrategy {
   doUpload(path: string, uploadUrl: string, options?: UploadOptions): Promise<string | void> {
     strategyLogger.debug('Base doUpload method called with:', path, uploadUrl, options)
     throw new AppException('该消息类型不支持文件上传')
+  }
+
+  /**
+   * 默认动作集：可被具体策略覆盖。
+   * - 系统/撤回/未知消息：返回空数组（无任何操作）
+   * - 文本：可复制（EMOJI 仅有 url，无可复制文本，故排除）
+   * - 其他媒体类型：不可复制
+   * - 编辑/撤回：仅 own 消息（撤回还需 canModerate）
+   * - 置顶/删除：仅 canModerate
+   * - 回复/转发/标记：所有可见消息
+   */
+  getAllowedActions(context: MessageActionContext): MessageAction[] {
+    const actions: MessageAction[] = ['reply', 'forward', 'mark']
+
+    // 可复制类型：仅 TEXT（EMOJI body 仅含 url，无可复制文本）
+    if (this.msgType === MsgEnum.TEXT) {
+      actions.push('copy')
+    }
+
+    // 仅自己消息可编辑
+    if (context.isMe) {
+      actions.push('edit')
+      // 撤回需要管理权限（防止普通用户撤回他人消息；自己的消息也走此通道）
+      if (context.canModerate) {
+        actions.push('recall')
+      }
+    }
+
+    // 置顶/删除需要管理权限
+    if (context.canModerate) {
+      actions.push('pin')
+      actions.push('delete')
+    }
+
+    return actions
   }
 }

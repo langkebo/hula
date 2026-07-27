@@ -8,7 +8,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AvatarUpload')
 
-export interface AvatarUploadOptions {
+interface AvatarUploadOptions {
   // 上传成功后的回调函数，参数为 mxc:// URI
   onSuccess?: (mxcUrl: string) => void
   // 文件大小限制（KB），默认为 5MB（与 Matrix 上传限制一致）

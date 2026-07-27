@@ -260,8 +260,8 @@ import { MsgEnum, NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import { matrixDirectMessageService, matrixRoomCreationService } from '@/services/matrix'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
-import { syncService } from '@/services/matrix/sync/MatrixSyncService'
 import { IsAllUserEnum } from '@/services/types.ts'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -546,13 +546,13 @@ const handleTimelineEvent = () => {
 
 onMounted(async () => {
   await contactStore.getContactList(true)
-  syncService.onSync('sync', handleSyncEvent as (...args: unknown[]) => void)
-  syncService.onSync('timeline', handleTimelineEvent as (...args: unknown[]) => void)
+  matrixClientService.on('sync', handleSyncEvent as (...args: unknown[]) => void)
+  matrixClientService.on('timeline', handleTimelineEvent as (...args: unknown[]) => void)
 })
 
 onUnmounted(() => {
-  syncService.offSync('sync')
-  syncService.offSync('timeline')
+  matrixClientService.off('sync', handleSyncEvent as (...args: unknown[]) => void)
+  matrixClientService.off('timeline', handleTimelineEvent as (...args: unknown[]) => void)
 })
 
 const showMask = ref(false)

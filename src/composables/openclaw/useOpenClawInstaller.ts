@@ -4,14 +4,14 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OpenClawInstaller')
 
-export interface OpenClawStatus {
+interface OpenClawStatus {
   installed: boolean
   path: string | null
   version: string | null
   osType: string
 }
 
-export type InstallStep = 'checking' | 'not-installed' | 'installing' | 'configuring' | 'ready'
+type InstallStep = 'checking' | 'not-installed' | 'installing' | 'configuring' | 'ready'
 
 const OPENCLAW_DOWNLOAD_URLS: Record<string, { url: string; label: string }> = {
   macos: {

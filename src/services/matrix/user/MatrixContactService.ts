@@ -26,7 +26,7 @@ export interface UserItem {
   lastOptTime: number
 }
 
-export interface DirectChatResult {
+interface DirectChatResult {
   roomId: string
 }
 

@@ -9,6 +9,7 @@ import {
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixMessageRelationService')
 
@@ -23,7 +24,7 @@ type RelationContent = Record<string, unknown> & {
   'm.new_content'?: Record<string, unknown>
 }
 
-export interface MessageEdit {
+interface MessageEdit {
   eventId: string
   originalContent: Record<string, unknown>
   newContent: Record<string, unknown>
@@ -31,7 +32,7 @@ export interface MessageEdit {
   sender: string
 }
 
-export interface ReplyChain {
+interface ReplyChain {
   eventId: string
   content: Record<string, unknown>
   sender: string
@@ -39,36 +40,7 @@ export interface ReplyChain {
   inReplyTo?: ReplyChain
 }
 
-export interface ReplyContent {
-  msgtype: string
-  body: string
-  format?: string
-  formatted_body?: string
-  [MatrixContentField.RELATES_TO]: {
-    'm.in_reply_to': {
-      event_id: string
-    }
-  }
-}
-
-export interface RichContent {
-  msgtype: string
-  body: string
-  format?: string
-  formatted_body?: string
-  'm.new_content'?: {
-    msgtype: string
-    body: string
-    format?: string
-    formatted_body?: string
-  }
-  'm.relates_to'?: {
-    rel_type: string
-    event_id: string
-  }
-}
-
-export interface ThreadInfo {
+interface ThreadInfo {
   threadId: string
   rootEventId: string
   replyCount: number
@@ -80,23 +52,23 @@ export interface ThreadInfo {
   }
 }
 
-export interface RelationsResponse {
+interface RelationsResponse {
   chunk: Array<Record<string, unknown>>
   next_batch?: string
   prev_batch?: string
 }
 
-export interface AggregationItem {
+interface AggregationItem {
   type: string
   key: string
   count: number
 }
 
-export interface AggregationsResponse {
+interface AggregationsResponse {
   chunk: AggregationItem[]
 }
 
-export interface SendRelationResponse {
+interface SendRelationResponse {
   event_id: string
   room_id: string
   relates_to: {
@@ -539,7 +511,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
       if (options?.dir) queryParams.dir = options.dir
       const result = (await client.http.authedRequest(
         'GET',
-        `/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}`,
+        MATRIX_PATHS.RELATIONS.BASE(roomId, eventId),
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )) as RelationsResponse
       logger.info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${result.chunk?.length ?? 0}`)
@@ -566,7 +538,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
       if (options?.dir) queryParams.dir = options.dir
       const result = (await client.http.authedRequest(
         'GET',
-        `/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`,
+        MATRIX_PATHS.RELATIONS.BY_TYPE(roomId, eventId, relType),
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )) as RelationsResponse
       logger.info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${result.chunk?.length ?? 0}`)
@@ -583,7 +555,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     try {
       const result = (await client.http.authedRequest(
         'GET',
-        `/rooms/${encodeURIComponent(roomId)}/aggregations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}`
+        MATRIX_PATHS.RELATIONS.AGGREGATIONS(roomId, eventId, relType)
       )) as AggregationsResponse
       logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
       return result
@@ -609,7 +581,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
       const txnId = `txn_${Date.now()}`
       const result = (await client.http.authedRequest(
         'PUT',
-        `/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}/${encodeURIComponent(relType)}/${encodeURIComponent(txnId)}`,
+        MATRIX_PATHS.RELATIONS.SEND(roomId, eventId, relType, txnId),
         undefined,
         { ...body, type: eventType }
       )) as SendRelationResponse
@@ -635,4 +607,3 @@ class MatrixMessageRelationService extends BaseMatrixService {
 }
 
 export const matrixMessageRelationService = new MatrixMessageRelationService()
-export default matrixMessageRelationService

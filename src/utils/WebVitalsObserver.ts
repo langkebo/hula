@@ -159,10 +159,8 @@ export const startWebVitalObserver = (
   logger.info('[WebVitals] 性能监控已启动')
 }
 
-export const stopWebVitalObserver = (): void => {
+const _stopWebVitalObserver = (): void => {
   hasStarted = false
   stopSdkRequestStatsObserver()
   performanceReporter.terminate()
 }
-
-export { performanceReporter }

@@ -13,9 +13,9 @@ import { computed, ref } from 'vue'
  * 60 s reopen on probe failure.
  */
 
-export type CircuitState = 'closed' | 'open' | 'half-open'
+type CircuitState = 'closed' | 'open' | 'half-open'
 
-export interface CircuitBreakerOptions {
+interface CircuitBreakerOptions {
   failureThreshold?: number
   failureWindowMs?: number
   openMs?: number
@@ -124,7 +124,7 @@ function createCircuitBreaker(name: string, options: CircuitBreakerOptions = {})
   }
 }
 
-export type CircuitBreaker = ReturnType<typeof createCircuitBreaker>
+type CircuitBreaker = ReturnType<typeof createCircuitBreaker>
 
 /**
  * Returns the shared breaker for a service name (singleton per name).

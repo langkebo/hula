@@ -260,8 +260,9 @@ const handleCopy = () => {
   }
 }
 
-const addFriend = () => {
-  useMitt.emit(MittEnum.OPEN_ADD_FRIEND_DIALOG, { uid })
+const addFriend = async () => {
+  const { default: router } = await import('@/router')
+  void router.push({ name: 'friend-add', query: { uid } })
 }
 
 let enableScroll = () => {}

@@ -8,7 +8,7 @@ const logger = createLogger('VoiceDragControl')
 /**
  * 拖拽控制器返回接口
  */
-export type VoiceDragControlReturn = {
+type VoiceDragControlReturn = {
   // 状态
   isDragging: Ref<boolean>
   previewTime: Ref<number>

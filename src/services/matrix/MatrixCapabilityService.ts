@@ -114,7 +114,7 @@ function tryGetStore() {
   }
 }
 
-export class MatrixCapabilityService {
+class MatrixCapabilityService {
   hasCapability(capability: HulaCapability): boolean {
     const store = tryGetStore()
     if (!store) return false

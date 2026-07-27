@@ -194,16 +194,19 @@ export const baseConfig: UserConfig = {
     },
     proxy: {
       '/_matrix': {
-        target: 'http://localhost:8008',
-        changeOrigin: true
+        target: process.env.VITE_HOMESERVER_URL || 'http://localhost:8008',
+        changeOrigin: true,
+        secure: false
       },
       '/_synapse': {
-        target: 'http://localhost:8008',
-        changeOrigin: true
+        target: process.env.VITE_HOMESERVER_URL || 'http://localhost:8008',
+        changeOrigin: true,
+        secure: false
       },
       '/.well-known/matrix': {
-        target: 'http://localhost:8008',
-        changeOrigin: true
+        target: process.env.VITE_HOMESERVER_URL || 'http://localhost:8008',
+        changeOrigin: true,
+        secure: false
       }
     },
     watch: {

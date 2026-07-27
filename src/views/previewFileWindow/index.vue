@@ -1,6 +1,6 @@
 <template>
   <div class="size-full bg-[--right-bg-color]">
-    <ActionBar :shrink="false" :current-label="WebviewWindow.getCurrent().label" />
+    <ActionBar :shrink="false" :current-label="currentWindowLabel" />
     <n-scrollbar
       style="max-height: calc(100vh)"
       class="w-full box-border bg-[--hula-surface-panel] rounded-b-8px border-(solid 1px [--hula-border-default])">
@@ -27,10 +27,13 @@ import type { FileTypeResult } from 'file-type'
 import { defineAsyncComponent } from 'vue'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useWindow } from '@/composables/common/useWindow'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { getFile } from '@/utils/PathUtil'
 
 const logger = createLogger('PreviewFile')
+
+const currentWindowLabel = computed(() => (hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''))
 
 const VueOfficeDocx = defineAsyncComponent(async () => {
   await import('@vue-office/docx/lib/v3/index.css')
@@ -145,6 +148,7 @@ const { getWindowPayload } = useWindow()
 const { addListener } = useTauriListener()
 
 onMounted(async () => {
+  if (!hasTauriRuntime()) return
   const webviewWindow = getCurrentWebviewWindow()
   const label = webviewWindow.label
 

@@ -29,7 +29,10 @@
           <n-popover trigger="hover" :delay="300" :duration="300" placement="bottom">
             <template #trigger>
               <div class="avatar-wrapper relative" @click="openAvatarCropper">
-                <n-avatar :size="80" :src="AvatarUtils.getAvatarUrl(editInfo.content.avatar!)" round />
+                <n-avatar
+                  :size="80"
+                  :src="editInfo.content?.avatar ? AvatarUtils.getAvatarUrl(editInfo.content.avatar) : undefined"
+                  round />
                 <div class="avatar-hover absolute size-full rounded-50% flex-center">
                   <span class="text-[var(--text-sm)] color-[--hula-text-secondary]">
                     {{ t('home.profile_edit.avatar.change') }}
@@ -159,10 +162,11 @@ import { badgeService } from '@/services/BadgeService'
 import type { ModifyUserInfoType } from '@/services/types'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
-const appWindow = WebviewWindow.getCurrent()
+const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const { updateAvatar } = useAccount()
@@ -211,8 +215,8 @@ const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith
 
 const openEditInfo = () => {
   editInfo.value.show = true
-  editInfo.value.content = userStore.userInfo!
-  localUserInfo.value = { ...userStore.userInfo! }
+  editInfo.value.content = userStore.userInfo ?? {}
+  localUserInfo.value = { ...(userStore.userInfo ?? {}) }
   /** 获取徽章列表 */
   badgeService.getBadgeList().then((res) => {
     editInfo.value.badgeList = res as unknown as typeof editInfo.value.badgeList
@@ -220,12 +224,14 @@ const openEditInfo = () => {
 }
 
 onMounted(async () => {
-  await addListener(
-    appWindow.listen('open_edit_info', async () => {
-      openEditInfo()
-    }),
-    'open_edit_info'
-  )
+  if (appWindow) {
+    await addListener(
+      appWindow.listen('open_edit_info', async () => {
+        openEditInfo()
+      }),
+      'open_edit_info'
+    )
+  }
   useMitt.on(MittEnum.OPEN_EDIT_INFO, () => {
     useMitt.emit(MittEnum.CLOSE_INFO_SHOW)
     openEditInfo()

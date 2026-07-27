@@ -5,7 +5,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChunkUploadService')
 
-export interface ChunkUploadOptions {
+interface ChunkUploadOptions {
   file: File
   chunkSize?: number
   maxRetries?: number
@@ -16,7 +16,7 @@ export interface ChunkUploadOptions {
   onError?: (error: Error) => void
 }
 
-export interface UploadProgress {
+interface UploadProgress {
   loaded: number
   total: number
   percentage: number
@@ -25,14 +25,14 @@ export interface UploadProgress {
   chunkProgress: number[]
 }
 
-export interface UploadResult {
+interface UploadResult {
   mxcUrl: string
   filename: string
   size: number
   mimeType: string
 }
 
-export interface ChunkInfo {
+interface ChunkInfo {
   index: number
   start: number
   end: number

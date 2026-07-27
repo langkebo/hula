@@ -1,14 +1,6 @@
-export type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
-export { type UseSpaceResult, useSpace } from './useSpace'
-export { type UseSpaceDiscoveryResult, useSpaceDiscovery } from './useSpaceDiscovery'
-export {
-  type UseSpaceManagementResult,
-  useSpaceManagement
-} from './useSpaceManagement'
-export { type UseSpaceMembersResult, useSpaceMembers } from './useSpaceMembers'
-export {
-  type SpaceChildRoom,
-  type UseSpaceRoomsResult,
-  useSpaceRooms
-} from './useSpaceRooms'
-export { type UseSpacesResult, useSpaces } from './useSpaces'
+export type { SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
+export { useSpace } from './useSpace'
+
+export { useSpaceMembers } from './useSpaceMembers'
+export { useSpaceRooms } from './useSpaceRooms'
+export { useSpaces } from './useSpaces'

@@ -4,19 +4,20 @@ import { defineStore } from 'pinia'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, StoresEnum } from '@/enums'
 import { type SessionItem, useChatStore } from '@/stores/domains/chat/chat'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { unreadCountManager } from '@/utils/UnreadCountManager'
 
 const logger = createLogger('GlobalStore')
 
-export interface FriendItem {
+interface FriendItem {
   uid: string
   name?: string
   avatar?: string
   remark?: string
 }
 
-export interface RequestFriendItem {
+interface RequestFriendItem {
   uid: string
   name?: string
   avatar?: string
@@ -282,8 +283,11 @@ export const useGlobalStore = defineStore(StoresEnum.GLOBAL, () => {
       return
     }
 
-    const webviewWindowLabel = WebviewWindow.getCurrent()
-    if (webviewWindowLabel.label !== 'home' && webviewWindowLabel.label !== '/mobile/message') {
+    const webviewWindowLabel = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+    if (
+      !webviewWindowLabel ||
+      (webviewWindowLabel.label !== 'home' && webviewWindowLabel.label !== '/mobile/message')
+    ) {
       useMitt.emit(MittEnum.SESSION_CHANGED, {
         roomId: val,
         oldRoomId: oldVal ?? null

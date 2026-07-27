@@ -1,9 +1,9 @@
 import type { LocationQuery, LocationQueryRaw, RouteLocationRaw } from 'vue-router'
 
 export const SPACE_ROUTE_NAMES = {
-  workbench: 'spaceList',
-  legacy: 'space',
-  create: 'create-space'
+  workbench: 'space',
+  legacy: 'space-details',
+  create: 'space-create'
 } as const
 
 export const WORKBENCH_SESSION_TYPE_FILTERS = {
@@ -138,7 +138,7 @@ export const buildSpaceRoute = (spaceId?: unknown, query: LocationQuery | Locati
 
   return {
     name: SPACE_ROUTE_NAMES.legacy,
-    ...(nextSpaceId ? { params: { roomId: nextSpaceId } } : {}),
+    ...(nextSpaceId ? { params: { spaceId: nextSpaceId } } : {}),
     query
   }
 }

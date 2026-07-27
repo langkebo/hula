@@ -26,25 +26,9 @@ export enum WsResponseMessageType {
   ROOM_INFO_CHANGE = 'roomInfoChange',
   MY_ROOM_INFO_CHANGE = 'myRoomInfoChange',
   ROOM_DISSOLUTION = 'roomDissolution',
-  JoinVideo = 'JoinVideo',
   ROOM_GROUP_NOTICE_MSG = 'roomGroupNoticeMsg',
   ROOM_EDIT_GROUP_NOTICE_MSG = 'roomEditGroupNoticeMsg',
-  ROOM_GROUP_NOTICE_READ_MSG = 'roomGroupNoticeReadMsg',
-  VideoCallRequest = 'VideoCallRequest',
-  CallAccepted = 'CallAccepted',
-  CallRejected = 'CallRejected',
-  RoomClosed = 'RoomClosed',
-  MediaControl = 'MediaControl',
-  TIMEOUT = 'TIMEOUT',
-  DROPPED = 'DROPPED',
-  LeaveVideo = 'LeaveVideo',
-  ScreenSharingStarted = 'ScreenSharingStarted',
-  ScreenSharingStopped = 'ScreenSharingStopped',
-  NetworkPoor = 'NetworkPoor',
-  UserKicked = 'UserKicked',
-  WEBRTC_SIGNAL = 'WEBRTC_SIGNAL',
-  AllMuted = 'AllMuted',
-  CANCEL = 'CANCEL'
+  VideoCallRequest = 'VideoCallRequest'
 }
 
 /** tauri原生跨窗口通信时传输的类型 */
@@ -52,7 +36,6 @@ export enum EventEnum {
   /** 窗口关闭 */
   WIN_CLOSE = 'winClose',
   /** 窗口显示 */
-  WIN_SHOW = 'winShow',
   /** 退出程序 */
   EXIT = 'exit',
   /** 退出账号 */
@@ -60,7 +43,6 @@ export enum EventEnum {
   /** 独立窗口 */
   ALONE = 'alone',
   /** 共享屏幕 */
-  SHARE_SCREEN = 'shareScreen',
   /** 锁屏 */
   LOCK_SCREEN = 'lockScreen',
   /** 多窗口 */
@@ -139,11 +121,26 @@ export enum MittEnum {
   AI_STOP_STREAMING = 'ai_stop_streaming',
   /** 打开公告面板 (MW-ANNOUNCEMENT-002) */
   OPEN_ANNOUNCEMENT_PANEL = 'openAnnouncementPanel',
-  OPEN_ADD_FRIEND_DIALOG = 'openAddFriendDialog',
   ROOM_TYPING_CHANGED = 'roomTypingChanged',
   ROOM_RECEIPT_CHANGED = 'roomReceiptChanged',
   /** 打开事件举报对话框 */
-  OPEN_EVENT_REPORT = 'openEventReport'
+  OPEN_EVENT_REPORT = 'openEventReport',
+  /** 好友请求收到 */
+  FRIEND_REQUEST_RECEIVED = 'friendRequestReceived',
+  /** 好友请求被接受 */
+  FRIEND_REQUEST_ACCEPTED = 'friendRequestAccepted',
+  /** 好友被移除 */
+  FRIEND_REMOVED = 'friendRemoved',
+  /** 阅后即焚消息已读 */
+  BURN_MESSAGE_READ = 'burnMessageRead',
+  /** 阅后即焚消息已焚毁 */
+  BURN_MESSAGE_BURNED = 'burnMessageBurned',
+  /** 阅后即焚设置变更 */
+  BURN_SETTINGS_CHANGED = 'burnSettingsChanged',
+  /** Widget 已创建 */
+  WIDGET_CREATED = 'widgetCreated',
+  /** Widget 已删除 */
+  WIDGET_DELETED = 'widgetDeleted'
 }
 
 /** 主题类型 */
@@ -165,15 +162,12 @@ export enum StoresEnum {
   /** 历史内容 */
   HISTORY = 'history',
   /** 聊天列表 */
-  CHAT_LIST = 'chatList',
   /** 插件列表 */
   PLUGINS = 'plugins',
   /** 侧边栏头部菜单栏 */
   MENUTOP = 'menuTop',
   /** 账号账号历史记录列表 */
   LOGIN_HISTORY = 'loginHistory',
-  /** 好友列表 */
-  NOTICE = 'notice',
   /** 图片查看器数据 */
   IMAGEVIEWER = 'imageViewer',
   /** 用户状态 */
@@ -198,7 +192,6 @@ export enum StoresEnum {
   /** 会话未读缓存 */
   SESSION_UNREAD = 'sessionUnread',
   /** 缓存 */
-  CACHED = 'cached',
   /** 视频查看器数据 */
   VIDEOVIEWER = 'videoViewer',
   /** 文件下载管理 */
@@ -228,13 +221,9 @@ export enum StoresEnum {
   /** 全局搜索 */
   SPOTLIGHT = 'spotlight',
   /** 线程 */
-  THREAD = 'thread',
   /** 空间 */
-  SPACE = 'space',
   /** 通话 */
-  CALL = 'call',
   /** Widget */
-  WIDGET = 'widget',
   /** 徽章 */
   BADGE = 'badge',
   /** 配额 */
@@ -244,7 +233,6 @@ export enum StoresEnum {
   /** 服务端能力探测 */
   CAPABILITY = 'capability',
   /** 消息多选 */
-  MESSAGE_SELECTION = 'messageSelection',
   /** 加密状态 */
   ENCRYPTION = 'encryption'
 }
@@ -346,7 +334,6 @@ export enum SexEnum {
 /** 权限状态 */
 export enum PowerEnum {
   /** 用户 */
-  USER,
   /** 管理员 */
   ADMIN
 }
@@ -397,9 +384,8 @@ export enum RoleEnum {
   /** 2管理员 */
   ADMIN,
   /** 3普通成员 */
-  NORMAL,
+  NORMAL
   /** 4踢出群聊 */
-  REMOVED
 }
 
 /** 房间类型 1群聊 2单聊 */
@@ -452,20 +438,6 @@ export enum LimitEnum {
   COM_COUNT = 5
 }
 
-/** ws响应类型 */
-export enum WorkerMsgEnum {
-  /** open */
-  OPEN = 'open',
-  /** message */
-  MESSAGE = 'message',
-  /** close */
-  CLOSE = 'close',
-  /** error */
-  ERROR = 'error',
-  /** ws_error */
-  WS_ERROR = 'wsError'
-}
-
 /** 左边菜单弹出框类型 */
 export enum ModalEnum {
   /** 锁屏弹窗 */
@@ -477,16 +449,12 @@ export enum ModalEnum {
 /** MacOS键盘映射 */
 export enum MacOsKeyEnum {
   '⌘' = '⌘',
-  '⌥' = '⌥',
-  '⇧' = '⇧',
-  '^' = '^'
+  '⇧' = '⇧'
 }
 
 /** Windows键盘映射 */
 export enum WinKeyEnum {
   CTRL = 'Ctrl',
-  WIN = 'Win',
-  ALT = 'Alt',
   SHIFT = 'Shift'
 }
 
@@ -529,14 +497,6 @@ export enum TriggerEnum {
   MENTION = '@',
   AI = '/',
   TOPIC = '#'
-}
-
-/** 连接状态枚举 */
-export enum ConnectionState {
-  CONNECTING = 'connecting',
-  CONNECTED = 'connected',
-  DISCONNECTED = 'disconnected',
-  RECONNECTING = 'reconnecting'
 }
 
 /** 上传scene值状态 */
@@ -586,28 +546,19 @@ export enum NotificationTypeEnum {
 /** Tauri 命令 */
 export enum TauriCommand {
   /** 更新我的群聊信息 */
-  UPDATE_MY_ROOM_INFO = 'update_my_room_info',
-  CURSOR_PAGE_ROOM_MEMBERS = 'cursor_page_room_members',
   /** 列出所有会话列表 */
-  LIST_CONTACTS = 'list_contacts_command',
   /** 分页查询会话消息 */
-  PAGE_MSG = 'page_msg',
   /** 保存用户信息 */
   SAVE_USER_INFO = 'save_user_info',
   /** 更新用户最后操作时间 */
-  UPDATE_USER_LAST_OPT_TIME = 'update_user_last_opt_time',
   /** 发送消息 */
-  SEND_MSG = 'send_msg',
   /** 保存消息 */
   SAVE_MSG = 'save_msg',
   /** 保存消息标记 */
-  SAVE_MESSAGE_MARK = 'save_message_mark',
   /** 删除单条聊天消息 */
   DELETE_MESSAGE = 'delete_message',
   /** 删除房间内的所有聊天记录 */
-  DELETE_ROOM_MESSAGES = 'delete_room_messages',
   /** 更新消息撤回状态 */
-  UPDATE_MESSAGE_RECALL_STATUS = 'update_message_recall_status',
   /** 获取用户 tokens */
   GET_USER_TOKENS = 'get_user_tokens',
   /** 更新 token */
@@ -617,9 +568,7 @@ export enum TauriCommand {
   /** 查询聊天历史记录 */
   QUERY_CHAT_HISTORY = 'query_chat_history',
   /** AI 消息流式发送 */
-  AI_MESSAGE_SEND_STREAM = 'ai_message_send_stream',
   /** 生成 MinIO 预签名 URL */
-  GENERATE_MINIO_PRESIGNED_URL = 'generate_minio_presigned_url',
   /** 通过 Rust 端 PUT 上传本地文件 */
   UPLOAD_FILE_PUT = 'upload_file_put',
   /** 检查管理员状态 */
@@ -652,8 +601,7 @@ export enum ScrollIntentEnum {
 }
 
 export enum MergeMessageType {
-  SINGLE = 1,
-  MERGE = 2
+  SINGLE = 1
 }
 
 // 用户类型

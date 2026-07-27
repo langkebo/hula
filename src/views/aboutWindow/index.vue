@@ -39,6 +39,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { arch, version } from '@tauri-apps/plugin-os'
 import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { getOSType, isWindows } from '@/utils/PlatformConstants'
 import pkg from '~/package.json'
 
@@ -82,7 +83,9 @@ const handleMouseLeave = () => {
 }
 
 onMounted(async () => {
-  await getCurrentWebviewWindow().show()
+  if (hasTauriRuntime()) {
+    await getCurrentWebviewWindow().show()
+  }
   osType.value = getOSType()
   osArch.value = arch()
   osVersion.value = version()

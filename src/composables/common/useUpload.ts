@@ -17,7 +17,7 @@ import { removeTempFile } from '@/utils/TempFileManager'
 const logger = createLogger('Upload')
 
 /** 文件信息类型 */
-export type FileInfoType = {
+type FileInfoType = {
   name: string
   type: string
   size: number

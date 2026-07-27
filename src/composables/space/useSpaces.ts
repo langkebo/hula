@@ -3,11 +3,9 @@ import type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpace
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
 import { createLogger } from '@/utils/Logger'
 
-export type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
-
 const logger = createLogger('useSpaces')
 
-export interface UseSpacesResult {
+interface UseSpacesResult {
   spaces: Ref<SpaceInfo[]>
   loading: Ref<boolean>
   mutating: Ref<boolean>

@@ -99,7 +99,6 @@
     "src/services/matrix/auth/MatrixAuthService.ts::authedRequest#9",
     "src/services/matrix/auth/MatrixAuthService.ts::matrix-js-sdk",
     "src/services/matrix/auth/MatrixOidcService.ts::authedRequest#1",
-    "src/services/matrix/auth/MatrixQrLoginBridgeService.ts::matrix-js-sdk",
     "src/services/matrix/auth/MatrixSessionService.ts::matrix-js-sdk",
     "src/services/matrix/auth/__tests__/MatrixAuthService.test.ts::matrix-js-sdk",
     "src/services/matrix/auth/__tests__/MatrixAuthService.test.ts::matrix-js-sdk",

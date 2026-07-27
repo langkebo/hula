@@ -51,7 +51,7 @@ export const ShowChatSidebar: Story = {
   }
 }
 
-export const ShowWorkbenchDetailPane: Story = {
+export const ShowGroupDetails: Story = {
   loaders: [
     async () => {
       resetStorybookMocks()

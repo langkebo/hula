@@ -4,7 +4,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LinkSegments')
 
-export type LinkSegment = {
+type LinkSegment = {
   text: string
   isLink: boolean
 }

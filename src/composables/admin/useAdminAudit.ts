@@ -10,7 +10,7 @@ export interface AuditEntryView {
   details?: Record<string, unknown>
 }
 
-export interface UseAdminAuditResult {
+interface UseAdminAuditResult {
   logs: Ref<AuditEntryView[]>
   loading: Ref<boolean>
   selected: Ref<AuditEntryView | null>
