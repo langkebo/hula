@@ -23,7 +23,11 @@ export default defineConfig(
             // 约定：.test.ts 用于单元测试和契约测试（src/**/__tests__/、src/**/*.test.ts），
             //       .spec.ts 用于集成测试和 E2E 场景（tests/、e2e/）。
             //       两种模式均被 vitest 发现执行，无功能差异，仅命名约定区分用途。
-            include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}', 'tests/lint/**/*.test.ts']
+            include: [
+              'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+              'tests/unit/**/*.test.ts',
+              'tests/lint/**/*.test.ts'
+            ]
           }
         },
         {
