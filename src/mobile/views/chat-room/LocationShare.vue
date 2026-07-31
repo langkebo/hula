@@ -184,7 +184,7 @@ const handleStopBeacon = async () => {
 <style lang="scss" scoped>
 .location-share {
   padding: 16px 12px 20px;
-  background-color: var(--hula-surface-panel, #fff);
+  background-color: var(--hula-surface-panel);
 }
 
 .header {
@@ -196,23 +196,23 @@ const handleStopBeacon = async () => {
   .title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--hula-text-primary, #1f1f1f);
+    color: var(--hula-text-primary);
   }
 
   .description {
     margin-top: 4px;
     font-size: 12px;
-    color: var(--hula-text-tertiary, #999);
+    color: var(--hula-text-tertiary);
   }
 }
 
 .coords {
-  color: var(--hula-text-primary, #1f1f1f);
+  color: var(--hula-text-primary);
   font-size: 13px;
 }
 
 .placeholder {
-  color: var(--hula-text-tertiary, #999);
+  color: var(--hula-text-tertiary);
   font-size: 13px;
 }
 
@@ -221,7 +221,7 @@ const handleStopBeacon = async () => {
   padding: 2px 8px;
   border-radius: 10px;
   background-color: var(--hula-color-success-bg, rgba(7, 193, 96, 0.12));
-  color: var(--hula-color-success-text, #07c160);
+  color: var(--hula-color-success-500);
   font-size: 12px;
 }
 
@@ -230,7 +230,7 @@ const handleStopBeacon = async () => {
 
   .duration-label {
     font-size: 13px;
-    color: var(--hula-text-secondary, #666);
+    color: var(--hula-text-secondary);
     margin-bottom: 8px;
   }
 
@@ -252,6 +252,6 @@ const handleStopBeacon = async () => {
   margin-top: 8px;
   padding: 0 4px;
   font-size: 12px;
-  color: var(--hula-color-danger-500, #ee0a24);
+  color: var(--hula-color-danger-500);
 }
 </style>

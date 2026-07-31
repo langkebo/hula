@@ -169,13 +169,13 @@ watch(
   background: var(--hula-color-warning-bg, rgba(255, 196, 0, 0.1));
   border-radius: 6px;
   font-size: 12px;
-  color: var(--hula-color-warning-text, #b88600);
+  color: var(--hula-color-warning-600);
   line-height: 1.5;
 }
 
 .error-text {
   margin-top: 8px;
   font-size: 12px;
-  color: var(--hula-color-danger-500, #ee0a24);
+  color: var(--hula-color-danger-500);
 }
 </style>

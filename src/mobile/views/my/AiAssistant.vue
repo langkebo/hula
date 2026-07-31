@@ -78,7 +78,7 @@
             <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full gap-16px">
               <div
                 class="w-80px h-80px rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center">
-                <Icon icon="mdi:robot" :width="40" color="#fff" />
+                <Icon icon="mdi:robot" :width="40" color="var(--hula-text-inverse)" />
               </div>
               <div class="text-16px font-bold text-[--hula-text-primary]">{{ t('ai_assistant.welcome') }}</div>
               <div class="text-14px text-[--hula-text-tertiary] text-center px-20px">
@@ -112,7 +112,7 @@
                       ? 'bg-[--hula-color-primary-500]'
                       : 'bg-gradient-to-br from-purple-400 to-blue-500'
                   ]">
-                  <Icon :icon="message.role === 'user' ? 'mdi:account' : 'mdi:robot'" :width="20" color="#fff" />
+                  <Icon :icon="message.role === 'user' ? 'mdi:account' : 'mdi:robot'" :width="20" color="var(--hula-text-inverse)" />
                 </div>
                 <div
                   :class="[

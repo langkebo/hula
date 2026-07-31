@@ -245,6 +245,6 @@ watch(
 .error-text {
   padding: 8px 16px;
   font-size: 12px;
-  color: var(--hula-color-danger-500, #ee0a24);
+  color: var(--hula-color-danger-500);
 }
 </style>
