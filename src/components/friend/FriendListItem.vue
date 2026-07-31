@@ -132,8 +132,8 @@ const highlightText = (value?: string | null) => {
 .friend-list-item {
   --friend-card-bg: var(--hula-surface-panel);
   --friend-card-border: var(--hula-border-default);
-  --friend-card-text: var(--hula-text-primary, #18181c);
-  --friend-card-subtle: var(--hula-text-tertiary, #909090);
+  --friend-card-text: var(--hula-text-primary);
+  --friend-card-subtle: var(--hula-text-tertiary);
   align-items: center;
   background: var(--friend-card-bg);
   border: 1px solid transparent;

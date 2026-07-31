@@ -782,7 +782,7 @@ const handleForgetRoom = () => {
 }
 
 .single-details__action-icon--encrypted {
-  background: var(--hula-color-success-500, #16a34a);
+  background: var(--hula-color-success-500);
 }
 
 .single-details__management {

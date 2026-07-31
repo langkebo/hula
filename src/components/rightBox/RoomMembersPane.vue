@@ -375,17 +375,17 @@ const handleUnban = async (userId: string) => {
 
   &--warning:hover {
     background: var(--hula-color-warning-100, rgba(245, 158, 11, 0.1));
-    color: var(--hula-color-warning-500, #f59e0b);
+    color: var(--hula-color-warning-500);
   }
 
   &--danger:hover {
     background: var(--hula-color-error-100, rgba(239, 68, 68, 0.1));
-    color: var(--hula-color-error-500, #ef4444);
+    color: var(--hula-color-danger-500);
   }
 
   &--success:hover {
     background: var(--hula-color-success-100, rgba(34, 197, 94, 0.1));
-    color: var(--hula-color-success-500, #22c55e);
+    color: var(--hula-color-success-500);
   }
 }
 

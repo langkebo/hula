@@ -203,7 +203,7 @@ const handleSubmit = async () => {
 
 .btn--primary {
   background: var(--hula-color-primary-500);
-  color: #fff;
+  color: var(--hula-text-inverse);
 
   &:hover:not(:disabled) {
     background: var(--hula-color-primary-600, var(--hula-color-primary-500));
