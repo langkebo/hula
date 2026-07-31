@@ -2,7 +2,7 @@
   <div ref="containerRef" class="lazy-image-container" :style="containerStyle">
     <div v-if="loading || !loaded" class="image-placeholder">
       <n-spin v-if="loading" size="small" />
-      <n-icon v-else size="24" color="#ccc">
+      <n-icon v-else size="24" color="var(--hula-text-quaternary)">
         <svg><use href="#image" /></svg>
       </n-icon>
     </div>

@@ -9,7 +9,8 @@
 }
 
 .gradient-button {
-  @apply text-#fff border-none;
+  @apply border-none;
+  color: var(--hula-text-inverse);
   background: linear-gradient(135deg, var(--hula-brand), var(--hula-color-primary-400));
   box-shadow:
     0 4px 14px rgba(19, 152, 127, 0.4),
@@ -18,6 +19,7 @@
     background 0.25s ease,
     box-shadow 0.25s ease,
     transform 0.15s ease,
+    filter 0.15s ease,
     opacity 0.2s ease;
   /* 可点击状态：饱满渐变 + 明显阴影 + 白色文字（对比度 > 4.5:1） */
   &:hover:not(:disabled) {
@@ -26,17 +28,23 @@
     transform: translateY(-1px) scale(1.01);
   }
   &:active:not(:disabled) {
-    transform: translateY(0) scale(0.98);
-    box-shadow: 0 2px 8px rgba(19, 152, 127, 0.3);
+    /* 按下态：明显变暗 + 亮度降低，与默认/hover 清晰区分 */
+    background: linear-gradient(135deg, var(--hula-color-primary-700), var(--hula-color-primary-600));
+    transform: translateY(0) scale(0.97);
+    box-shadow:
+      0 2px 8px rgba(19, 152, 127, 0.3),
+      inset 0px 2px 4px rgba(0, 0, 0, 0.15);
+    filter: brightness(0.88);
   }
   /* 未激活/禁用状态：去饱和灰阶渐变，对比度仍满足 AA 级 */
   &:disabled,
   &.n-button--disabled {
-    background: linear-gradient(135deg, #9ca3af, #c4b5a0);
+    background: linear-gradient(135deg, var(--hula-text-disabled), var(--hula-border-strong));
     box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.1);
     opacity: 0.7;
     cursor: not-allowed;
     transform: none;
+    filter: none;
   }
   /* 加载中状态：脉冲动画提示正在处理 */
   &.n-button--loading {
@@ -44,7 +52,8 @@
     box-shadow: 0 4px 14px rgba(19, 152, 127, 0.3);
     animation: gradient-button-pulse 1.4s ease-in-out infinite;
   }
-  &:span {
+  /* 修正：原 `&:span` 是无效选择器，改为后代选择器确保白色文字生效 */
+  span {
     color: var(--hula-text-inverse);
   }
 }
@@ -69,9 +78,13 @@
       background: linear-gradient(135deg, var(--hula-color-primary-700), var(--hula-color-primary-600));
       box-shadow: 0 6px 20px rgba(19, 152, 127, 0.4);
     }
+    &:active:not(:disabled) {
+      background: linear-gradient(135deg, var(--hula-color-primary-700), var(--hula-color-primary-700));
+      filter: brightness(0.82);
+    }
     &:disabled,
     &.n-button--disabled {
-      background: linear-gradient(135deg, #4b5563, #6b7280);
+      background: linear-gradient(135deg, var(--hula-text-tertiary), var(--hula-text-quaternary));
       opacity: 0.6;
     }
     &.n-button--loading {

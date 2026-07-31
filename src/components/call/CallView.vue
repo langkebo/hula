@@ -271,7 +271,7 @@ onUnmounted(() => {
   @apply flex flex-col h-full bg-[--bg-color];
 
   &.is-video {
-    background: var(--call-video-bg, #000);
+    background: var(--hula-surface-media-preview);
   }
 }
 

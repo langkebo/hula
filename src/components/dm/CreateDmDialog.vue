@@ -58,7 +58,7 @@
         <n-empty v-else-if="hasSearched" :description="t('dm.create.not_found')" />
 
         <div v-else class="search-hint">
-          <n-icon size="48" color="#ccc">
+          <n-icon size="48" color="var(--hula-text-quaternary)">
             <svg><use href="#search" /></svg>
           </n-icon>
           <span class="text-14px text-gray-400">{{ t('dm.create.hint') }}</span>

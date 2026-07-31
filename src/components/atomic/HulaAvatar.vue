@@ -79,7 +79,7 @@ const handleError = () => {
 .hula-avatar {
   display: inline-block;
   overflow: hidden;
-  background: var(--hula-surface-panel, #ccc);
+  background: var(--hula-surface-panel);
   flex-shrink: 0;
 
   &--round {
