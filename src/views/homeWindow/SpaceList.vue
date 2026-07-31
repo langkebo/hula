@@ -1,7 +1,9 @@
 <template>
   <div class="space-list-page h-full flex">
     <!-- 中间栏：空间列表（右侧栏由 layout/right/index.vue 渲染 SpaceChildrenPane） -->
+    <SkeletonSpaceTree v-if="isLoading" :rows="6" />
     <SpaceListPane
+      v-else
       :spaces="spaceItems"
       :selected-space-id="selectedSpaceId"
       :loading="spaceLoading"
@@ -16,6 +18,7 @@
 
 <script lang="ts" setup name="spaceList">
 import { useI18n } from 'vue-i18n'
+import SkeletonSpaceTree from '@/components/common/SkeletonSpaceTree.vue'
 import type { SpaceListItem } from '@/components/workbench/SpaceListPane.vue'
 import SpaceListPane from '@/components/workbench/SpaceListPane.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -25,6 +28,8 @@ import { buildCreateSpaceRoute, buildSpaceRoute } from '@/router/spaceNavigation
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 
+const props = defineProps<{ loading?: boolean }>()
+
 const { t } = useI18n()
 const { announce } = useAriaLive()
 const { showFeedback } = useActionFeedback()
@@ -33,6 +38,9 @@ const roomStore = useRoomStore()
 
 // 空间列表数据
 const { spaces, loading: spaceLoading, load: reloadSpaces } = useSpaces()
+
+// loading prop 优先于内部 spaceLoading（用于外部强制显示骨架屏）
+const isLoading = computed(() => props.loading || spaceLoading.value)
 
 // 选中空间 ID：从路由参数派生（路由为单一真相源）
 const route = useRoute()
