@@ -5,7 +5,7 @@
  * 参考 API 契约: presence.md
  */
 
-import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
+import type { MatrixClient } from 'matrix-js-sdk'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -219,33 +219,11 @@ class MatrixPresenceService extends BaseMatrixService {
   async subscribeToPresence(userIds: string[], unsubscribeUserIds?: string[]): Promise<PresenceListResponse> {
     try {
       const client = this.getClient()
-      const presenceManager = client.getPresenceManager() as PresenceManager | null
-
-      const payload: Record<string, string[]> = { subscribe: userIds }
-      if (unsubscribeUserIds && unsubscribeUserIds.length > 0) {
-        payload.unsubscribe = unsubscribeUserIds
-      }
-
-      if (presenceManager) {
-        const result = await presenceManager.subscribeToPresence(userIds)
-        logger.info(
-          `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
-        )
-        return result as unknown as PresenceListResponse
-      } else {
-        // 未迁移到 SDK Manager：PresenceManager.subscribeToPresence 不支持 unsubscribe 参数（仅发送 subscribe），
-        // 且返回 Promise<void>（不含 presences），与 HTTP 端点返回 PresenceListResponse 契约不匹配。
-        const response = (await client.http.authedRequest(
-          'POST',
-          '/presence/list',
-          undefined,
-          payload
-        )) as PresenceListResponse
-        logger.info(
-          `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
-        )
-        return response
-      }
+      const response = await client.getPresenceManager().updatePresenceList(userIds, unsubscribeUserIds)
+      logger.info(
+        `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
+      )
+      return response as unknown as PresenceListResponse
     } catch (err) {
       logger.error(`[Presence] 订阅在线状态失败: ${formatMatrixError(err)}`)
       throw err

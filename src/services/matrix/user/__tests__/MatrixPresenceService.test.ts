@@ -38,6 +38,7 @@ describe('MatrixPresenceService', () => {
     setPresence: ReturnType<typeof vi.fn>
     getPresence: ReturnType<typeof vi.fn>
     subscribeToPresence: ReturnType<typeof vi.fn>
+    updatePresenceList: ReturnType<typeof vi.fn>
     unsubscribeFromPresence: ReturnType<typeof vi.fn>
     getPresenceList: ReturnType<typeof vi.fn>
   }
@@ -69,6 +70,7 @@ describe('MatrixPresenceService', () => {
       setPresence: vi.fn(),
       getPresence: vi.fn(),
       subscribeToPresence: vi.fn(),
+      updatePresenceList: vi.fn(),
       unsubscribeFromPresence: vi.fn(),
       getPresenceList: vi.fn()
     }
@@ -163,24 +165,28 @@ describe('MatrixPresenceService', () => {
   })
 
   describe('subscribeToPresence', () => {
-    it('should subscribe using presenceManager', async () => {
+    it('should subscribe using updatePresenceList', async () => {
       const mockResponse = { presences: [] }
-      mockPresenceManager.subscribeToPresence.mockResolvedValue(mockResponse)
+      mockPresenceManager.updatePresenceList.mockResolvedValue(mockResponse)
 
       const result = await matrixPresenceService.subscribeToPresence(['@a:example.com', '@b:example.com'])
 
-      expect(mockPresenceManager.subscribeToPresence).toHaveBeenCalledWith(['@a:example.com', '@b:example.com'])
+      expect(mockPresenceManager.updatePresenceList).toHaveBeenCalledWith(['@a:example.com', '@b:example.com'], undefined)
       expect(result).toEqual(mockResponse)
     })
 
-    it('should fallback to HTTP API', async () => {
-      mockClient.getPresenceManager = vi.fn(() => null)
+    it('should pass unsubscribe ids to updatePresenceList', async () => {
+      mockPresenceManager.updatePresenceList.mockResolvedValue({ presences: [] })
 
-      await matrixPresenceService.subscribeToPresence(['@a:example.com'])
+      await matrixPresenceService.subscribeToPresence(['@alice:server'], ['@bob:server'])
 
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/presence/list', undefined, {
-        subscribe: ['@a:example.com']
-      })
+      expect(mockPresenceManager.updatePresenceList).toHaveBeenCalledWith(['@alice:server'], ['@bob:server'])
+    })
+
+    it('should propagate errors from updatePresenceList', async () => {
+      mockPresenceManager.updatePresenceList.mockRejectedValue(new Error('Network error'))
+
+      await expect(matrixPresenceService.subscribeToPresence(['@a:example.com'])).rejects.toThrow('Network error')
     })
   })
 
