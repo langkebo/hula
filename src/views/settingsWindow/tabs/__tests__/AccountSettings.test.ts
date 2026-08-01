@@ -54,6 +54,7 @@ const {
 vi.mock('naive-ui', () => ({
   NAvatar: { name: 'NAvatar', template: '<div class="n-avatar" />', props: ['round', 'size', 'src', 'fallbackSrc'] },
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['size', 'type', 'loading'] },
+  NCard: { template: '<div><slot /></div>' },
   NCheckbox: { name: 'NCheckbox', template: '<label><slot /></label>', props: ['checked'] },
   NForm: { name: 'NForm', template: '<form><slot /></form>', props: ['model', 'labelPlacement', 'labelWidth'] },
   NFormItem: { name: 'NFormItem', template: '<div><slot /></div>', props: ['label', 'path'] },
@@ -173,13 +174,13 @@ describe('AccountSettings', () => {
   })
 
   it('renders correctly', () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     expect(wrapper.find('.account-settings').exists()).toBe(true)
     expect(wrapper.text()).toContain('个人资料')
   })
 
   it('loads extended profile fields on mount', async () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     await flushPromises()
 
     expect(getExtendedProfileMock).toHaveBeenCalledWith('@test:localhost')
@@ -190,31 +191,31 @@ describe('AccountSettings', () => {
   })
 
   it('displays user ID', () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     expect((wrapper.vm as any).userId).toBe('@test:localhost')
   })
 
   it('displays display name from store', () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     expect((wrapper.vm as any).formData.displayName).toBe('TestUser')
   })
 
   it('has empty password form by default', () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     expect((wrapper.vm as any).passwordForm.oldPassword).toBe('')
     expect((wrapper.vm as any).passwordForm.newPassword).toBe('')
     expect((wrapper.vm as any).passwordForm.confirmPassword).toBe('')
   })
 
   it('warns when password fields are empty', async () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     const vm = wrapper.vm as any
     await vm.handlePasswordChange()
     expect(messageWarningMock).toHaveBeenCalledWith('请填写完整密码信息')
   })
 
   it('warns when passwords do not match', async () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     const vm = wrapper.vm as any
     vm.passwordForm.oldPassword = 'oldpass'
     vm.passwordForm.newPassword = 'newpass1'
@@ -225,7 +226,7 @@ describe('AccountSettings', () => {
 
   it('calls changePassword when form is valid', async () => {
     changePasswordMock.mockResolvedValue(undefined)
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     const vm = wrapper.vm as any
     vm.passwordForm.oldPassword = 'oldpass'
     vm.passwordForm.newPassword = 'Newpass1!'
@@ -236,7 +237,7 @@ describe('AccountSettings', () => {
 
   it('clears password form after successful change', async () => {
     changePasswordMock.mockResolvedValue(undefined)
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     const vm = wrapper.vm as any
     vm.passwordForm.oldPassword = 'oldpass'
     vm.passwordForm.newPassword = 'Newpass1!'
@@ -249,7 +250,7 @@ describe('AccountSettings', () => {
 
   it('shows error on password change failure', async () => {
     changePasswordMock.mockRejectedValue(new Error('fail'))
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     const vm = wrapper.vm as any
     vm.passwordForm.oldPassword = 'oldpass'
     vm.passwordForm.newPassword = 'Newpass1!'
@@ -259,7 +260,7 @@ describe('AccountSettings', () => {
   })
 
   it('does not call updateDisplayName when name unchanged', async () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     const vm = wrapper.vm as any
     vm.formData.displayName = 'TestUser'
     await vm.handleDisplayNameChange()
@@ -268,7 +269,7 @@ describe('AccountSettings', () => {
 
   it('calls updateDisplayName when name changed', async () => {
     updateDisplayNameMock.mockResolvedValue(undefined)
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     const vm = wrapper.vm as any
     vm.formData.displayName = 'NewName'
     await vm.handleDisplayNameChange()
@@ -276,7 +277,7 @@ describe('AccountSettings', () => {
   })
 
   it('saves about field through extended profile API', async () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     await flushPromises()
     const vm = wrapper.vm as any
 
@@ -288,7 +289,7 @@ describe('AccountSettings', () => {
   })
 
   it('saves gender field through extended profile API', async () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     await flushPromises()
     const vm = wrapper.vm as any
 
@@ -299,7 +300,7 @@ describe('AccountSettings', () => {
 
   it('shows hint and blocks extended profile updates when server does not support MSC4133', async () => {
     hasUnstableMock.mockReturnValue(false)
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     await flushPromises()
 
     expect(getExtendedProfileMock).not.toHaveBeenCalled()
@@ -321,19 +322,19 @@ describe('AccountSettings', () => {
   })
 
   it('shows deactivate account dialog', () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     const vm = wrapper.vm as any
     vm.handleDeactivateAccount()
     expect(dialogWarningMock).toHaveBeenCalledWith(expect.objectContaining({ title: '确认停用账户' }))
   })
 
   it('avatar uploading is false by default', () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     expect((wrapper.vm as any).avatarUploading).toBe(false)
   })
 
   it('password loading is false by default', () => {
-    const wrapper = mount(AccountSettings)
+    const wrapper = mount(AccountSettings, { global: { stubs: { ThreepidManager: true } } })
     expect((wrapper.vm as any).passwordLoading).toBe(false)
   })
 })
