@@ -145,7 +145,7 @@ export class AdminBackgroundUpdateService {
         from: params.from
       })
       return {
-        updates: (result?.updates as unknown as BackgroundUpdate[]) ?? [],
+        updates: (result?.updates ?? []) as BackgroundUpdate[],
         next_batch: result?.next_batch ?? undefined
       }
     } catch (err) {
@@ -160,7 +160,7 @@ export class AdminBackgroundUpdateService {
   async getUpdate(jobName: string): Promise<BackgroundUpdate | null> {
     try {
       const result = await this.manager().getUpdate(jobName)
-      return result as unknown as BackgroundUpdate
+      return result as BackgroundUpdate
     } catch (err) {
       const status = (err as { httpStatus?: number }).httpStatus
       if (status === 404) {
@@ -177,7 +177,7 @@ export class AdminBackgroundUpdateService {
   async createUpdate(request: CreateBackgroundUpdateRequest): Promise<BackgroundUpdate> {
     const result = await this.manager().createBackgroundUpdate(request as never)
     logger.info(`[AdminBackgroundUpdate] 创建任务: ${request.job_name}`)
-    return result as unknown as BackgroundUpdate
+    return result as BackgroundUpdate
   }
 
   /**
@@ -186,7 +186,7 @@ export class AdminBackgroundUpdateService {
   async startUpdate(jobName: string): Promise<BackgroundUpdate> {
     const result = await this.manager().startUpdate(jobName)
     logger.info(`[AdminBackgroundUpdate] 启动任务: ${jobName}`)
-    return result as unknown as BackgroundUpdate
+    return result as BackgroundUpdate
   }
 
   /**
@@ -195,7 +195,7 @@ export class AdminBackgroundUpdateService {
   async cancelUpdate(jobName: string): Promise<BackgroundUpdate> {
     const result = await this.manager().cancelUpdate(jobName)
     logger.info(`[AdminBackgroundUpdate] 取消任务: ${jobName}`)
-    return result as unknown as BackgroundUpdate
+    return result as BackgroundUpdate
   }
 
   /**
@@ -204,7 +204,7 @@ export class AdminBackgroundUpdateService {
   async completeUpdate(jobName: string): Promise<BackgroundUpdate> {
     const result = await this.manager().completeUpdate(jobName)
     logger.info(`[AdminBackgroundUpdate] 完成任务: ${jobName}`)
-    return result as unknown as BackgroundUpdate
+    return result as BackgroundUpdate
   }
 
   /**
@@ -213,7 +213,7 @@ export class AdminBackgroundUpdateService {
   async failUpdate(jobName: string, errorMessage: string): Promise<BackgroundUpdate> {
     const result = await this.manager().failUpdate(jobName, { error_message: errorMessage })
     logger.warn(`[AdminBackgroundUpdate] 任务失败: ${jobName} -> ${errorMessage}`)
-    return result as unknown as BackgroundUpdate
+    return result as BackgroundUpdate
   }
 
   /**
@@ -249,7 +249,7 @@ export class AdminBackgroundUpdateService {
     try {
       const result = await this.manager().getStatus()
       return (
-        (result as unknown as BackgroundUpdateStatusSummary) ?? {
+        (result as BackgroundUpdateStatusSummary) ?? {
           pending_count: 0,
           running_count: 0,
           completed_count: 0,
@@ -277,7 +277,7 @@ export class AdminBackgroundUpdateService {
   async getHistory(jobName: string, params: GetHistoryParams = {}): Promise<BackgroundUpdateHistory[]> {
     try {
       const result = await this.manager().getHistory(jobName, { limit: params.limit ?? 100 })
-      return (result as unknown as BackgroundUpdateHistory[]) ?? []
+      return (result as BackgroundUpdateHistory[]) ?? []
     } catch (err) {
       logger.error(`[AdminBackgroundUpdate] getHistory 失败: ${err}`)
       return []
@@ -290,7 +290,7 @@ export class AdminBackgroundUpdateService {
   async getStats(params: GetStatsParams = {}): Promise<BackgroundUpdateStats[]> {
     try {
       const result = await this.manager().getStats(params.limit ?? 30)
-      return (result as unknown as BackgroundUpdateStats[]) ?? []
+      return (result as BackgroundUpdateStats[]) ?? []
     } catch (err) {
       logger.error(`[AdminBackgroundUpdate] getStats 失败: ${err}`)
       return []

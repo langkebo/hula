@@ -1,6 +1,5 @@
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from './BaseMatrixService'
-import { MATRIX_PATHS } from './paths'
 
 const logger = createLogger('MatrixApplicationService')
 
@@ -29,7 +28,9 @@ interface RegisteredApplicationService {
 class MatrixApplicationService extends BaseMatrixService {
   async register(payload: ApplicationServiceRegistration): Promise<boolean> {
     try {
-      await this.getClient().http.authedRequest('POST', MATRIX_PATHS.ADMIN.APPSERVICES, undefined, payload)
+      await this.getClient()
+        .getAdminManager()
+        .server.registerAppService(payload as unknown as Record<string, unknown>)
       return true
     } catch (err) {
       logger.error(`[MatrixApplicationService] 注册失败: ${err}`)
@@ -39,9 +40,7 @@ class MatrixApplicationService extends BaseMatrixService {
 
   async list(): Promise<RegisteredApplicationService[]> {
     try {
-      const response = (await this.getClient().http.authedRequest('GET', MATRIX_PATHS.ADMIN.APPSERVICES)) as {
-        services?: unknown
-      }
+      const response = await this.getClient().getAdminManager().server.listAppServices()
       return Array.isArray(response.services) ? (response.services as RegisteredApplicationService[]) : []
     } catch (err) {
       logger.error(`[MatrixApplicationService] 获取列表失败: ${err}`)
@@ -51,9 +50,7 @@ class MatrixApplicationService extends BaseMatrixService {
 
   async setEnabled(id: string, enabled: boolean): Promise<boolean> {
     try {
-      await this.getClient().http.authedRequest('PUT', MATRIX_PATHS.ADMIN.APPSERVICE_BY_ID(id), undefined, {
-        enabled
-      })
+      await this.getClient().getAdminManager().server.setAppServiceEnabled(id, enabled)
       return true
     } catch (err) {
       logger.error(`[MatrixApplicationService] 设置启用状态失败: ${err}`)
@@ -71,7 +68,7 @@ class MatrixApplicationService extends BaseMatrixService {
 
   private async getNamespace(id: string, key: 'users' | 'rooms'): Promise<ApplicationServiceNamespace[]> {
     try {
-      const response = (await this.getClient().http.authedRequest('GET', MATRIX_PATHS.ADMIN.APPSERVICE_BY_ID(id))) as {
+      const response = (await this.getClient().getAdminManager().server.getAppService(id)) as {
         namespaces?: {
           users?: unknown
           rooms?: unknown

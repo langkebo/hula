@@ -15,43 +15,16 @@ import type {
 } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import type {
+  CrossSigningStatusResult,
+  DeviceVerificationResult,
+  KeyBackupRestoreResult,
+  KeyBackupSetupResult,
+  KeyExportResult,
+  KeyImportResult
+} from './types'
 
 const logger = createLogger('CryptoSDKAdapter')
-
-export interface DeviceVerificationResult {
-  verified: boolean
-  crossSigningVerified: boolean
-  devicesCrossSigningVerified: boolean
-}
-
-export interface CrossSigningStatusResult {
-  privateKeysCached: boolean
-  crossSigningVerified: boolean
-  isSetup: boolean
-  masterPublicKey?: string
-  selfSigningPublicKey?: string
-  userSigningPublicKey?: string
-}
-
-export interface KeyBackupSetupResult {
-  success: boolean
-  recoveryKey?: string
-}
-
-export interface KeyBackupRestoreResult {
-  imported: number
-  total: number
-}
-
-export interface KeyExportResult {
-  data: string
-  count: number
-}
-
-export interface KeyImportResult {
-  imported: number
-  total: number
-}
 
 class CryptoSDKAdapter {
   private cryptoCache: CryptoApi | null = null

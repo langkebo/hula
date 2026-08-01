@@ -10,145 +10,29 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import { MATRIX_PATHS } from '../paths'
 import { cryptoSDKAdapter } from './CryptoSDKAdapter'
+import type {
+  BackupVerifyResult,
+  BatchRecoverResult,
+  CrossSigningStatus,
+  DeviceInfo,
+  EncryptionAlgorithm,
+  KeyBackupVersionInfo,
+  KeyBackupWriteResult,
+  PendingVerificationRequest,
+  QrCodeScanResponse,
+  QrCodeShowResponse,
+  RecoveryProgress,
+  SasCancelResponse,
+  SasDoneResponse,
+  SasKeyAgreementResponse,
+  SasMacResponse,
+  SasVerificationAcceptResponse,
+  SasVerificationStartResponse,
+  SessionKeyData,
+  VerificationStatus
+} from './types'
 
 const logger = createLogger('MatrixCryptoService')
-
-interface DeviceInfo {
-  deviceId: string
-  userId: string
-  displayName?: string
-  lastSeenTs?: number
-  lastSeenIp?: string
-  isVerified?: boolean
-}
-
-interface VerificationStatus {
-  verified: boolean
-  crossSigningVerified: boolean
-  devicesCrossSigningVerified: boolean
-}
-
-interface CrossSigningStatus {
-  privateKeysCached: boolean
-  crossSigningVerified: boolean
-}
-
-export type EncryptionAlgorithm = 'm.megolm.v1.aes-sha2' | 'm.olm.v1.curve25519-aes-sha2'
-
-interface KeyBackupVersionInfo {
-  version: string
-  algorithm: string
-  auth_data: Record<string, unknown>
-  count?: number
-  etag?: string
-}
-
-interface KeyBackupWriteResult {
-  etag: string
-  count: number
-}
-
-interface RoomKeysResponse {
-  rooms: Record<
-    string,
-    {
-      sessions: Record<string, SessionKeyData>
-    }
-  >
-}
-
-interface RoomKeySessionsResponse {
-  sessions: Record<string, SessionKeyData>
-}
-
-interface SessionKeyData {
-  first_message_index: number
-  forwarded_count: number
-  is_verified: boolean
-  session_data: {
-    ciphertext?: string
-    mac?: string
-    ephemeral?: string
-  }
-}
-
-interface RecoveryProgress {
-  total: number
-  recovered: number
-  failed: number
-  percentage: number
-}
-
-interface BackupVerifyResult {
-  valid: boolean
-  mismatch_count?: number
-  message?: string
-}
-
-interface BatchRecoverResult {
-  total: number
-  recovered: number
-  failed: number
-  errors?: Array<{ room_id: string; session_id: string; error: string }>
-}
-
-interface SasVerificationStartResponse {
-  transaction_id: string
-  method: string
-  key_agreement_protocol: string
-  hash: string
-  short_authentication_string: string[]
-}
-
-interface SasVerificationAcceptResponse {
-  transaction_id: string
-  method: string
-  key_agreement_protocol: string
-  hash: string
-  short_authentication_string: string[]
-  commitment?: string
-}
-
-interface SasKeyAgreementResponse {
-  transaction_id: string
-  confirmed: boolean
-  short_authentication_string: Record<string, unknown>
-}
-
-interface SasMacResponse {
-  transaction_id: string
-  verified: boolean
-}
-
-interface SasDoneResponse {
-  transaction_id: string
-}
-
-interface SasCancelResponse {
-  transaction_id: string
-  cancelled: boolean
-}
-
-interface PendingVerificationRequest {
-  transaction_id: string
-  from_device: string
-  methods: string[]
-  timestamp?: number
-}
-
-interface QrCodeShowResponse {
-  transaction_id: string
-  server_name: string
-  user_id: string
-  device_id: string
-  device_ed25519_key: string
-  device_curve25519_key: string
-}
-
-interface QrCodeScanResponse {
-  transaction_id: string
-  state: string
-}
 
 class MatrixCryptoService extends BaseMatrixService {
   async initializeCrypto(): Promise<void> {
@@ -395,9 +279,9 @@ class MatrixCryptoService extends BaseMatrixService {
       return versions.map((v) => ({
         backup_id: v.version,
         algorithm: v.algorithm,
-        auth_data: v.auth_data,
+        auth_data: v.auth_data as unknown as Record<string, unknown>,
         created_ts: 0,
-        key_count: v.count,
+        key_count: (v as unknown as { count?: number }).count,
         version: v.version
       }))
     } catch (err) {
@@ -595,11 +479,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getBackupVersions()
-      const versions = result.versions
-      if (!Array.isArray(versions) && versions && typeof versions === 'object') {
-        return [versions as unknown as KeyBackupVersionInfo]
-      }
-      return versions as unknown as KeyBackupVersionInfo[]
+      return result.versions
     } catch (err) {
       logger.error(`[MatrixCrypto] 获取备份版本列表失败: ${err}`)
       return []
@@ -629,8 +509,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getBackupVersion(version)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as KeyBackupVersionInfo
+      return result as KeyBackupVersionInfo
     } catch (err) {
       logger.error(`[MatrixCrypto] 获取备份版本失败: ${err}`)
       return null
@@ -666,8 +545,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getAllRoomKeys(version)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as RoomKeysResponse
+      return result as RoomKeysResponse
     } catch (err) {
       logger.error(`[MatrixCrypto] 获取所有房间密钥失败: ${err}`)
       return null
@@ -679,8 +557,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.putAllRoomKeys(version, { rooms } as Parameters<typeof manager.putAllRoomKeys>[1])
       logger.info(`[MatrixCrypto] 添加所有房间密钥成功: etag=${result.etag}, count=${result.count}`)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as KeyBackupWriteResult
+      return result as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 添加所有房间密钥失败: ${err}`)
       throw err
@@ -692,8 +569,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.deleteAllRoomKeys(version)
       logger.info(`[MatrixCrypto] 删除所有房间密钥成功: etag=${result.etag}`)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as KeyBackupWriteResult
+      return result as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 删除所有房间密钥失败: ${err}`)
       throw err
@@ -704,8 +580,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getRoomKeys(version, roomId)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as RoomKeySessionsResponse
+      return result as RoomKeySessionsResponse
     } catch {
       logger.error(`[MatrixCrypto] 获取房间密钥失败: ${roomId}`)
       return null
@@ -723,8 +598,7 @@ class MatrixCryptoService extends BaseMatrixService {
         typeof manager.putRoomKeys
       >[2])
       logger.info(`[MatrixCrypto] 添加房间密钥成功: ${roomId}, count=${result.count}`)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as KeyBackupWriteResult
+      return result as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 添加房间密钥失败: ${roomId}`)
       throw err
@@ -736,8 +610,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.deleteRoomKeys(version, roomId)
       logger.info(`[MatrixCrypto] 删除房间密钥成功: ${roomId}`)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as KeyBackupWriteResult
+      return result as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 删除房间密钥失败: ${roomId}`)
       throw err
@@ -771,8 +644,7 @@ class MatrixCryptoService extends BaseMatrixService {
         sessionData as Parameters<typeof manager.putSessionKey>[3]
       )
       logger.info(`[MatrixCrypto] 添加会话密钥成功: ${roomId}/${sessionId}`)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as KeyBackupWriteResult
+      return result as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 添加会话密钥失败: ${roomId}/${sessionId}`)
       throw err
@@ -784,8 +656,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.deleteSessionKey(version, roomId, sessionId)
       logger.info(`[MatrixCrypto] 删除会话密钥成功: ${roomId}/${sessionId}`)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as KeyBackupWriteResult
+      return result as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 删除会话密钥失败: ${roomId}/${sessionId}`)
       throw err

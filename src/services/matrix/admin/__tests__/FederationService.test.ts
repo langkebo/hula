@@ -19,7 +19,10 @@ function makeAdmin() {
     resetFederationConnection: vi.fn(),
     getFederationBlacklist: vi.fn(),
     addToFederationBlacklist: vi.fn(),
-    removeFromFederationBlacklist: vi.fn()
+    removeFromFederationBlacklist: vi.fn(),
+    federation: {
+      getFederationStatus: vi.fn()
+    }
   }
 }
 
@@ -115,33 +118,17 @@ describe('AdminFederationService', () => {
     await expect(service.removeFromFederationBlacklist('evil.hs')).resolves.toBe(false)
   })
 
-  it('getFederationStatus 仍走直连 HTTP（SDK 未实现）', async () => {
-    const authedRequestImpl = vi.fn().mockResolvedValue({ ok: true })
-    const serviceWithHttp = new AdminFederationService(
-      async () => admin as unknown as AdminManager,
-      () =>
-        ({
-          http: { authedRequest: authedRequestImpl }
-        }) as never
-    )
+  it('getFederationStatus 通过 SDK 获取联邦状态', async () => {
+    admin.federation.getFederationStatus.mockResolvedValueOnce({ ok: true })
 
-    const result = await serviceWithHttp.getFederationStatus()
+    const result = await service.getFederationStatus()
     expect(result).toEqual({ ok: true })
-    expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/federation/status', undefined, undefined, {
-      prefix: '/_synapse/admin/v1'
-    })
+    expect(admin.federation.getFederationStatus).toHaveBeenCalledTimes(1)
   })
 
-  it('getFederationStatus HTTP 报错时降级为空对象', async () => {
-    const authedRequestImpl = vi.fn().mockRejectedValue(new Error('http-fail'))
-    const serviceWithHttp = new AdminFederationService(
-      async () => admin as unknown as AdminManager,
-      () =>
-        ({
-          http: { authedRequest: authedRequestImpl }
-        }) as never
-    )
+  it('getFederationStatus SDK 报错时降级为空对象', async () => {
+    admin.federation.getFederationStatus.mockRejectedValueOnce(new Error('sdk-fail'))
 
-    await expect(serviceWithHttp.getFederationStatus()).resolves.toEqual({})
+    await expect(service.getFederationStatus()).resolves.toEqual({})
   })
 })

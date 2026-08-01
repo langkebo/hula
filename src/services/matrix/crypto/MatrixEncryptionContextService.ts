@@ -1,32 +1,14 @@
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+import type {
+  CryptoKeyBackupPreparer,
+  MatrixEncryptionSessionContext,
+  PreparedKeyBackupVersion,
+  StoredDeviceLike
+} from './types'
 
 const logger = createLogger('MatrixEncryptionContextService')
-
-interface MatrixEncryptionSessionContext {
-  userId: string | null
-  deviceId: string | null
-  isCryptoEnabled: boolean
-}
-
-interface PreparedKeyBackupVersion {
-  algorithm: string
-  authData: Record<string, unknown>
-  privateKey: Uint8Array
-}
-
-interface CryptoKeyBackupPreparer {
-  prepareKeyBackupVersion?(key?: Uint8Array): Promise<{
-    algorithm: string
-    auth_data: Record<string, unknown>
-    privateKey: Uint8Array
-  }>
-}
-
-interface StoredDeviceLike {
-  getFingerprint?(): string | undefined
-}
 
 class MatrixEncryptionContextService {
   private getExtendedClient(): MatrixClientExtended | null {

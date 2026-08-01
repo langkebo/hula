@@ -1,71 +1,9 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import type { EncryptionSettings, KeyRotationRecord, KeyRotationStatus } from './types'
 
 const logger = createLogger('MatrixEncryptionService')
-
-export interface EncryptionSettings {
-  algorithm: string
-  rotationPeriodMs: number
-  rotationPeriodMsgs: number
-}
-
-/**
- * @deprecated Use `CryptoSDKAdapter.CrossSigningStatusResult` from './CryptoSDKAdapter' instead.
- */
-export interface CrossSigningInfo {
-  isSetup: boolean
-  masterPublicKey?: string
-  selfSigningPublicKey?: string
-  userSigningPublicKey?: string
-}
-
-/**
- * @deprecated Use `KeyBackupVersionInfo` from './MatrixCryptoService' or `KeyBackupManager` APIs instead.
- */
-export interface KeyBackupInfo {
-  version: string | null
-  algorithm: string | null
-  authData: Record<string, unknown>
-  count: number
-  etag: string
-}
-
-/**
- * @deprecated Use `VerificationRequest` from '@/types/matrix-extensions' or `matrixVerificationService` instead.
- */
-export interface VerificationRequest {
-  requestId: string
-  phase: string
-  methods: string[]
-  otherParty: {
-    userId: string
-    deviceId: string
-  }
-}
-
-export interface KeyRotationStatus {
-  enabled: boolean
-  intervalMs: number
-  lastRotation?: number
-  needsRotation: boolean
-}
-
-export interface KeyRotationRecord {
-  keyId: string
-  rotatedAt: number
-  deviceId: string
-}
-
-/**
- * @deprecated Use `cryptoSDKAdapter.setupKeyBackupWithOptions()` from './CryptoSDKAdapter' instead.
- */
-export interface SetupKeyBackupOptions {
-  recoveryKey?: string
-  password?: string
-  authData?: import('@/types/matrix-extensions').MatrixAuthData
-  generatedKey?: import('@/types/matrix-extensions').GeneratedSecretStorageKey | null
-}
 
 /**
  * @remarks 密钥轮换需要管理员权限，普通用户调用将降级处理

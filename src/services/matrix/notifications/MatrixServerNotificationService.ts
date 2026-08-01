@@ -35,27 +35,45 @@ class MatrixServerNotificationService extends BaseMatrixService {
   }
 
   async createNotification(payload: ServerNotificationPayload): Promise<ServerNotification | null> {
-    return this.request<ServerNotification>('POST', MATRIX_PATHS.ADMIN.SERVER_NOTIFICATIONS, payload)
+    try {
+      const result = await this.getClient()
+        .getAdminManager()
+        .server.createServerNotification(payload as unknown as Record<string, unknown>)
+      return result as unknown as ServerNotification
+    } catch (err) {
+      logger.error(`[MatrixServerNotificationService] 请求失败: ${err}`)
+      return null
+    }
   }
 
   async getNotification(id: number): Promise<ServerNotification | null> {
-    return this.request<ServerNotification>('GET', MATRIX_PATHS.ADMIN.SERVER_NOTIFICATION_BY_ID(String(id)))
+    try {
+      const result = await this.getClient().getAdminManager().server.getServerNotification(String(id))
+      return result as unknown as ServerNotification
+    } catch (err) {
+      logger.error(`[MatrixServerNotificationService] 请求失败: ${err}`)
+      return null
+    }
   }
 
   async listActive(): Promise<ServerNotification[]> {
-    const response = await this.request<{ notifications?: unknown }>(
-      'GET',
-      MATRIX_PATHS.ADMIN.SERVER_NOTIFICATIONS_ACTIVE
-    )
-    return response && Array.isArray(response.notifications) ? (response.notifications as ServerNotification[]) : []
+    try {
+      const response = await this.getClient().getAdminManager().server.listActiveServerNotifications()
+      return Array.isArray(response.notifications) ? (response.notifications as ServerNotification[]) : []
+    } catch (err) {
+      logger.error(`[MatrixServerNotificationService] 请求失败: ${err}`)
+      return []
+    }
   }
 
   async markAsRead(id: number): Promise<boolean> {
-    const response = await this.request<Record<string, unknown>>(
-      'POST',
-      MATRIX_PATHS.ADMIN.SERVER_NOTIFICATION_READ(String(id))
-    )
-    return response !== null
+    try {
+      await this.getClient().getAdminManager().server.markServerNotificationAsRead(String(id))
+      return true
+    } catch (err) {
+      logger.error(`[MatrixServerNotificationService] 请求失败: ${err}`)
+      return false
+    }
   }
 
   async dismiss(id: number): Promise<boolean> {

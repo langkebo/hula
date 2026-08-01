@@ -285,8 +285,7 @@ export class AdminRoomService {
           ...stat,
           room_id: stat.room_id,
           name: stat.name,
-          member_count: stat.member_count,
-          local_users: stat.local_users,
+          member_count: stat.member_count
         })),
         nextToken: undefined
       }
@@ -300,7 +299,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomStatsByRoom(roomId)
-      return result as Record<string, unknown>
+      return { ...result } as Record<string, unknown>
     } catch (err) {
       logger.error(`[Admin] 获取单房间统计失败: ${err}`)
       return null
@@ -311,7 +310,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomListings(roomId)
-      return result as Record<string, unknown>
+      return { ...result } as Record<string, unknown>
     } catch (err) {
       logger.error(`[Admin] 获取房间公开列表项失败: ${err}`)
       return null
@@ -333,7 +332,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomEventContext(roomId, eventId)
-      return result as Record<string, unknown>
+      return { ...result } as Record<string, unknown>
     } catch (err) {
       logger.error(`[Admin] 获取事件上下文失败: ${err}`)
       return null
@@ -356,7 +355,7 @@ export class AdminRoomService {
           ...e,
           event_id: e.event_id,
           sender: e.sender,
-          content: e.content as Record<string, unknown>,
+          content: e.content as Record<string, unknown>
         })),
         nextBatch: result.next_batch
       }
@@ -378,10 +377,7 @@ export class AdminRoomService {
       const result = await admin.searchRooms({ search_term: searchTerm })
       return {
         rooms: result.results.map((e) => ({
-          room_id: e.room_id,
-          name: e.name,
-          canonical_alias: e.canonical_alias,
-          joined_members: e.joined_members,
+          ...e
         })),
         nextBatch: result.next_batch
       }
@@ -395,11 +391,10 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomForwardExtremities(roomId)
-      if (Array.isArray(result)) return result.map((e) => ({
-        event_id: e.event_id,
-        type: e.type,
-        sender: e.sender,
-      }))
+      if (Array.isArray(result))
+        return result.map((e) => ({
+          ...e
+        }))
       return []
     } catch (err) {
       logger.error(`[Admin] 获取房间前向极值失败: ${err}`)

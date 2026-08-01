@@ -5,22 +5,9 @@
 
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import type { CreateDehydratedDeviceParams, DehydratedDevice } from './types'
 
 const logger = createLogger('DehydratedDevice')
-
-export interface DehydratedDevice {
-  deviceId: string
-  userId: string
-  initialDeviceDisplayName?: string
-  deviceData?: Record<string, unknown>
-  createdAt: number
-  expiresAt?: number
-}
-
-export interface CreateDehydratedDeviceParams {
-  initialDeviceDisplayName?: string
-  deviceData?: Record<string, unknown>
-}
 
 class MatrixDehydratedDeviceService {
   private getClient() {

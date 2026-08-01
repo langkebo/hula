@@ -129,7 +129,7 @@ export class AdminTelemetryService {
     try {
       const client = this.getClient()
       const result = await client.getTelemetryManager().getServerStatus()
-      return (result as unknown as TelemetryStatus) ?? null
+      return (result as TelemetryStatus) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getStatus 失败: ${err}`)
       return null
@@ -143,7 +143,7 @@ export class AdminTelemetryService {
     try {
       const client = this.getClient()
       const result = await client.getTelemetryManager().getServerAttributes()
-      return (result as unknown as TelemetryResourceAttributes) ?? { attributes: {} }
+      return (result as TelemetryResourceAttributes) ?? { attributes: {} }
     } catch (err) {
       logger.error(`[AdminTelemetry] getResourceAttributes 失败: ${err}`)
       return { attributes: {} }
@@ -157,7 +157,7 @@ export class AdminTelemetryService {
     try {
       const client = this.getClient()
       const result = await client.getTelemetryManager().getServerMetricsSummary()
-      return (result as unknown as TelemetryMetricsSummary) ?? null
+      return (result as TelemetryMetricsSummary) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getMetricsSummary 失败: ${err}`)
       return null
@@ -175,7 +175,7 @@ export class AdminTelemetryService {
         severity: params.severity,
         refresh: params.refresh ?? true
       })
-      return (result?.alerts as unknown as TelemetryAlert[]) ?? []
+      return (result?.alerts as TelemetryAlert[]) ?? []
     } catch (err) {
       logger.error(`[AdminTelemetry] listAlerts 失败: ${err}`)
       return []
@@ -189,7 +189,7 @@ export class AdminTelemetryService {
     const client = this.getClient()
     const result = await client.getTelemetryManager().acknowledgeServerAlert(alertId)
     logger.info(`[AdminTelemetry] 已确认告警: ${alertId}`)
-    return result as unknown as TelemetryAlert
+    return result as TelemetryAlert
   }
 
   /**
@@ -199,7 +199,7 @@ export class AdminTelemetryService {
     try {
       const client = this.getClient()
       const result = await client.getTelemetryManager().getServerHealth()
-      return (result as unknown as TelemetryHealthCheck) ?? null
+      return (result as TelemetryHealthCheck) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getHealth 失败: ${err}`)
       return null

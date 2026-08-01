@@ -301,8 +301,8 @@ class MatrixQrLoginSdkService {
       })
       const channel = new MSC4108SecureChannel(session, undefined, onFailure)
 
-      this.session = session as unknown as RendezvousSessionInstance
-      this.channel = channel as unknown as SecureChannelInstance
+      this.session = session as RendezvousSessionInstance
+      this.channel = channel as SecureChannelInstance
 
       // Create the rendezvous session on the server.
       await session.send('')
@@ -439,17 +439,16 @@ class MatrixQrLoginSdkService {
 
       // Existing device passes `client` so the SDK can negotiate the rendezvous
       // endpoint via `doesServerSupportUnstableFeature("org.matrix.msc4108")`.
-      // 本地 SDK 链接的 MatrixClient（lib/）与 rendezvous 模块期望的 MatrixClient（src/）
-      // 存在细微类型差异（manager 属性），使用 unknown 双重断言绕过。
+      // biome-ignore lint/suspicious/noExplicitAny: SDK rendezvous expects MatrixClient with manager property
       const session = new MSC4108RendezvousSession({
         client,
         fetchFn: getRuntimeAwareFetch(),
         onFailure
-      } as unknown as ConstructorParameters<typeof MSC4108RendezvousSession>[0])
+      } as ConstructorParameters<typeof MSC4108RendezvousSession>[0])
       const channel = new MSC4108SecureChannel(session, undefined, onFailure)
 
-      this.session = session as unknown as RendezvousSessionInstance
-      this.channel = channel as unknown as SecureChannelInstance
+      this.session = session as RendezvousSessionInstance
+      this.channel = channel as SecureChannelInstance
 
       // Create the rendezvous session on the server (POST /rendezvous).
       // The send() with empty body triggers session creation per MSC4108 transport.
@@ -539,8 +538,8 @@ class MatrixQrLoginSdkService {
       )
 
       const homeserverUrl = client.getHomeserverUrl()
-      const userId = (client as unknown as { getUserId(): string }).getUserId()
-      const deviceId = (client as unknown as { getDeviceId(): string | null }).getDeviceId() ?? ''
+      const userId = (client as { getUserId(): string }).getUserId()
+      const deviceId = (client as { getDeviceId(): string | null }).getDeviceId() ?? ''
 
       // Step 12: Deliver login token + homeserver info to new device.
       await this.channel.secureSend<LoginTokenPayload>({
@@ -634,8 +633,8 @@ class MatrixQrLoginSdkService {
       })
       const channel = new MSC4108SecureChannel(session, theirPublicKey, onFailure)
 
-      this.session = session as unknown as RendezvousSessionInstance
-      this.channel = channel as unknown as SecureChannelInstance
+      this.session = session as RendezvousSessionInstance
+      this.channel = channel as SecureChannelInstance
 
       // Step 6: Establish secure channel (new device sends LoginInitiateMessage).
       await channel.connect()

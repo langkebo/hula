@@ -9,18 +9,9 @@ import type {
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import type { VerificationMethod, VerificationRequest } from './types'
 
 const logger = createLogger('MatrixVerificationService')
-
-export type VerificationMethod = 'm.sas.v1' | 'm.qr_code.show.v1' | 'm.reciprocate.v1'
-
-export interface VerificationRequest {
-  transactionId: string
-  userId: string
-  deviceId: string
-  methods: VerificationMethod[]
-  timestamp: number
-}
 
 class VerificationService extends BaseMatrixService {
   private observedClient: MatrixClient | null = null

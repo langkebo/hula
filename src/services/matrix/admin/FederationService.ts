@@ -1,7 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import { MATRIX_PATHS } from '../paths'
 import type { FederationBlacklistEntry, FederationDestination } from './AdminTypes'
 
 const logger = createLogger('FederationService')
@@ -12,26 +11,8 @@ type GetClientGetter = () => MatrixClient
 export class AdminFederationService {
   constructor(
     private readonly sdkAdmin: SdkAdminGetter,
-    private readonly getClient: GetClientGetter
+    readonly _getClient: GetClientGetter
   ) {}
-
-  private async adminRequest<TResponse>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    body?: Record<string, unknown>
-  ): Promise<TResponse> {
-    // 仅 getFederationStatus 仍走直连 HTTP：SDK AdminFederationManager 未提供该方法。
-    // 黑名单 GET/POST/DELETE 已迁移至 admin.getFederationBlacklist /
-    // admin.addToFederationBlacklist / admin.removeFromFederationBlacklist。
-    const client = this.getClient()
-    return client.http.authedRequest(
-      method,
-      path,
-      undefined,
-      method === 'GET' || method === 'DELETE' ? undefined : body,
-      { prefix: MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE }
-    ) as Promise<TResponse>
-  }
 
   async getFederationDestinations(): Promise<FederationDestination[]> {
     try {
@@ -105,7 +86,8 @@ export class AdminFederationService {
 
   async getFederationStatus(): Promise<Record<string, unknown>> {
     try {
-      const response = await this.adminRequest<Record<string, unknown>>('GET', '/federation/status')
+      const admin = await this.sdkAdmin()
+      const response = await admin.federation.getFederationStatus()
       logger.info('[AdminFederation] 获取联邦状态成功')
       return response
     } catch (err) {

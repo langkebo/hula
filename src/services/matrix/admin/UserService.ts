@@ -285,10 +285,10 @@ export class AdminUserService {
       const admin = await this.sdkAdmin()
       if (userId) {
         const result = await admin.getRateLimitOverride(userId, false)
-        return (result as unknown as Record<string, unknown>) ?? {}
+        return { ...result } as Record<string, unknown>
       }
       const result = await admin.getServerConfig(false)
-      return (result as unknown as Record<string, unknown>) ?? {}
+      return { ...result } as Record<string, unknown>
     } catch (err) {
       logger.error(`[Admin] 获取限速配置失败: ${err}`)
       return {}
@@ -310,7 +310,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRateLimit(userId, false)
-      return (result as unknown as Record<string, unknown>) ?? null
+      return result ? ({ ...result } as Record<string, unknown>) : null
     } catch (err) {
       logger.error(`[Admin] 获取用户限速失败: ${err}`)
       return null
@@ -343,7 +343,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.whois(userId)
-      return result as unknown as Record<string, unknown> | null
+      return result ? ({ ...result } as Record<string, unknown>) : null
     } catch (err) {
       logger.error(`[Admin] 获取 Whois 失败: ${err}`)
       return null
@@ -402,7 +402,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserStats(userId)
-      return (result as unknown as Record<string, unknown>) ?? null
+      return result ? ({ ...result } as Record<string, unknown>) : null
     } catch (err) {
       logger.error(`[Admin] 获取用户统计失败: ${err}`)
       return null
@@ -417,7 +417,7 @@ export class AdminUserService {
       const admin = await this.sdkAdmin()
       const result = await admin.listUserStats(from, limit)
       return {
-        stats: [result as unknown as Record<string, unknown>],
+        stats: [{ ...result } as Record<string, unknown>],
         nextToken: undefined
       }
     } catch (err) {
@@ -512,7 +512,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserSession(userId)
-      return [result as unknown as Record<string, unknown>]
+      return [{ ...result } as Record<string, unknown>]
     } catch (err) {
       logger.error(`[Admin] 获取用户会话失败: ${err}`)
       return []
@@ -534,7 +534,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getAccountDetails(userId)
-      return (result as unknown as Record<string, unknown>) ?? null
+      return result ? ({ ...result } as Record<string, unknown>) : null
     } catch (err) {
       logger.error(`[Admin] 获取账户详情失败: ${err}`)
       return null

@@ -2,90 +2,20 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import type { BackupInfo, KeyBackupManager, MatrixClientExtended, SecureBackupManager } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import type {
+  BackupVersion,
+  BackupVersionInfo,
+  BatchRecoverResult,
+  CreateKeyBackupVersionRequest,
+  ExportResult,
+  ImportResult,
+  RecoveryProgress,
+  RestoreBackupResult,
+  RoomKeyBackup,
+  VerifyResult
+} from './types'
 
 const logger = createLogger('MatrixKeyBackupService')
-
-export interface BackupVersionInfo {
-  version: string
-  algorithm: string
-  auth_data: Record<string, unknown>
-}
-
-export interface BackupVersion {
-  version: string
-  algorithm: string
-  auth_data: Record<string, unknown>
-  count?: number
-  etag?: string
-}
-
-interface RoomKeyBackup {
-  rooms: Record<
-    string,
-    {
-      sessions: Record<
-        string,
-        {
-          first_message_index: number
-          forwarded_count: number
-          is_verified: boolean
-          session_data: Record<string, unknown>
-        }
-      >
-    }
-  >
-  etag: string
-}
-
-interface RecoveryProgress {
-  user_id: string
-  version: string
-  total_keys: number
-  recovered_keys: number
-  status: string
-  started_ts: number
-  updated_ts: number
-}
-
-interface BatchRecoverResult {
-  rooms: Record<string, unknown>
-  total_sessions: number
-  has_more: boolean
-  next_batch?: string
-}
-
-export interface ExportResult {
-  room_keys: Array<{
-    room_id: string
-    session_id: string
-    session_data: Record<string, unknown>
-  }>
-  version: string
-}
-
-export interface ImportResult {
-  count: number
-  failed: number
-  total: number
-}
-
-export interface VerifyResult {
-  valid: boolean
-  algorithm: string
-  auth_data: Record<string, unknown>
-  key_count: number
-  signatures?: Record<string, unknown>
-}
-
-interface RestoreBackupResult {
-  total: number
-  imported: number
-}
-
-interface CreateKeyBackupVersionRequest {
-  algorithm: string
-  auth_data: Record<string, unknown>
-}
 
 type MatrixHttpErrorLike = {
   httpStatus?: number

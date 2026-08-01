@@ -2,22 +2,9 @@ import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixCryptoService } from './MatrixCryptoService'
 import { matrixKeyBackupService } from './MatrixKeyBackupService'
+import type { CryptoHealthCallbacks, CryptoHealthStatus } from './types'
 
 const logger = createLogger('CryptoHealthMonitor')
-
-export interface CryptoHealthStatus {
-  hasUnverifiedDevices: boolean
-  isKeyBackupSynced: boolean
-  undecryptableMessageCount: number
-  crossSigningReady: boolean
-  lastCheckTime: number
-}
-
-export interface CryptoHealthCallbacks {
-  onHealthStatusChange?: (status: CryptoHealthStatus) => void
-  onKeyRequestTriggered?: (roomId: string, sessionId: string) => void
-  onBackupNeeded?: () => void
-}
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000
 

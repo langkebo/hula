@@ -2,28 +2,21 @@ import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import type { VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
-import type { CryptoHealthCallbacks, CryptoHealthStatus } from './CryptoHealthMonitor'
 import { CryptoHealthMonitor } from './CryptoHealthMonitor'
+import type { CryptoHealthCallbacks, CryptoHealthStatus, E2EEStatus } from './types'
 import type {
   CrossSigningStatusResult,
   DeviceVerificationResult,
   KeyBackupRestoreResult,
   KeyBackupSetupResult,
   KeyExportResult,
-  KeyImportResult
+  KeyImportResult,
 } from './CryptoSDKAdapter'
 import { cryptoSDKAdapter } from './CryptoSDKAdapter'
-import type { EncryptionAlgorithm } from './MatrixCryptoService'
+import type { EncryptionAlgorithm } from './types'
 import { matrixCryptoService } from './MatrixCryptoService'
 
 const logger = createLogger('E2EEManager')
-
-interface E2EEStatus {
-  isInitialized: boolean
-  isCryptoEnabled: boolean
-  isCrossSigningReady: boolean
-  isKeyBackupEnabled: boolean
-}
 
 class MatrixE2EEManager {
   private isInitialized = false
