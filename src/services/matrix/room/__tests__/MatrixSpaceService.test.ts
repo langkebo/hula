@@ -67,7 +67,8 @@ const mockSpaceManager = {
   getUserSpaces: vi.fn(),
   getRoomParentSpaces: vi.fn(),
   getSpaceHierarchyPage: vi.fn(),
-  getSpaceHierarchyV1: vi.fn()
+  getSpaceHierarchyV1: vi.fn(),
+  getRoomStateEventsRaw: vi.fn()
 }
 
 const asManagerClient = (overrides: Record<string, unknown> = {}) =>
@@ -355,6 +356,29 @@ describe('MatrixSpaceService', () => {
       expect(result).toHaveLength(1)
       expect(result[0].spaceId).toBe('!parent:server')
       expect(mockSpaceManager.getRoomParentSpaces).toHaveBeenCalledWith('!room:server')
+    })
+  })
+
+  describe('getSpaceRoomsViaApi fallback', () => {
+    it('uses SpaceManager.getRoomStateEventsRaw when v3/spaces and hierarchy fail', async () => {
+      // Mock getSpaceRooms to fail with M_NOT_FOUND
+      mockSpaceManager.getSpaceRooms.mockRejectedValueOnce(new Error('M_NOT_FOUND: not found'))
+      // Mock getRoomStateEventsRaw to return child events
+      mockSpaceManager.getRoomStateEventsRaw.mockResolvedValueOnce([
+        { type: 'm.space.child', state_key: '!child:server', content: { via: ['server'] } }
+      ])
+      vi.mocked(matrixClientService.getClient).mockReturnValue(asManagerClient())
+
+      // Spy on getSpaceHierarchy to also fail (triggers the final fallback)
+      vi.spyOn(matrixSpaceService, 'getSpaceHierarchy').mockRejectedValueOnce(new Error('hierarchy failed'))
+
+      const result = await matrixSpaceService.getSpaceRoomsViaApi('!space:server')
+
+      expect(mockSpaceManager.getRoomStateEventsRaw).toHaveBeenCalledWith('!space:server')
+      expect(result).toHaveLength(1)
+      expect(result[0].room_id).toBe('!child:server')
+
+      vi.restoreAllMocks()
     })
   })
 })

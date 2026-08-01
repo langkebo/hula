@@ -657,15 +657,8 @@ class SpaceService extends BaseMatrixService {
           return hierarchy.rooms.filter((r) => r.room_id !== spaceId)
         } catch (hierarchyErr) {
           logger.info(`[Space] hierarchy 也失败，回退到标准 /state 端点: ${hierarchyErr}`)
-          // Not migrated to SpaceManager.getSpaceState(): SDK calls
-          // /spaces/{spaceId}/state whereas this fallback needs the standard
-          // Matrix /rooms/{spaceId}/state endpoint (different contract).
           try {
-            const client = this.getClient()
-            const stateEvents = (await client.http.authedRequest(
-              'GET',
-              `/rooms/${encodeURIComponent(spaceId)}/state`
-            )) as Array<Record<string, unknown>>
+            const stateEvents = await this.getClient().getSpaceManager().getRoomStateEventsRaw(spaceId)
             return stateEvents
               .filter((e) => e.type === 'm.space.child' && e.state_key)
               .map((e) => ({ room_id: e.state_key, via: (e.content as Record<string, unknown>)?.via ?? [] }))
