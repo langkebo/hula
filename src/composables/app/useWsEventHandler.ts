@@ -603,4 +603,3 @@ export async function subscribeManagerEvents(): Promise<() => void> {
   logger.info('[subscribeManagerEvents] Manager 事件订阅已注册（Friend / BurnAfterRead / Widget）')
   return cleanup
 }
-
