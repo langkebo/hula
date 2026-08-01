@@ -649,16 +649,6 @@ async fn start_homeserver_health_check(app_handle: AppHandle) {
                 }
             };
 
-            // dev 模式下 .test 域名无法直连（无 HTTPS 443 服务），改用本地后端
-            #[cfg(debug_assertions)]
-            let hs_url = {
-                if hs_url.contains(".test") {
-                    "http://localhost:8008".to_string()
-                } else {
-                    hs_url
-                }
-            };
-
             let health_url = format!("{}/_matrix/client/versions", hs_url.trim_end_matches('/'));
 
             match client.get(&health_url).send().await {
