@@ -1197,6 +1197,19 @@
     "open_logs_failed": "Unable to open the log directory",
     "open_logs_unsupported": "This feature is not available in the web version"
   },
+  "diagnostics": {
+    "title": "Diagnostics",
+    "reset": "Reset Metrics",
+    "api_avg_latency": "API Avg Latency",
+    "api_p95_latency": "API P95 Latency",
+    "api_total_calls": "API Total Calls",
+    "sync_count": "Sliding Sync Count",
+    "sync_avg_duration": "Sync Avg Duration",
+    "replay_success_rate": "Replay Success Rate",
+    "retry_rate": "Retry Rate",
+    "retry_rate_abnormal_title": "Retry Rate Abnormal",
+    "retry_rate_abnormal_desc": "Network instability detected, current retry rate is {rate}%"
+  },
   "unknow": "Unknown",
   "encryption": {
     "title": "Encryption Settings",
