@@ -35,6 +35,7 @@
       <svg
         v-else-if="illustration === 'no-spaces'"
         data-illustration="no-spaces"
+        data-testid="illustration-no-spaces"
         width="48"
         height="48"
         viewBox="0 0 48 48"
@@ -67,7 +68,15 @@
     </div>
     <p v-if="title" class="empty-state__title">{{ title }}</p>
     <p v-if="description" class="empty-state__description">{{ description }}</p>
-    <div v-if="$slots.actions" class="empty-state__actions">
+    <div v-if="actionText || $slots.actions" class="empty-state__actions">
+      <button
+        v-if="actionText"
+        type="button"
+        class="empty-state__action-btn"
+        data-testid="empty-action"
+        @click="emit('action')">
+        {{ actionText }}
+      </button>
       <slot name="actions" />
     </div>
   </div>
@@ -78,6 +87,11 @@ import { Icon } from '@iconify/vue'
 
 defineOptions({ name: 'EmptyState' })
 
+const emit = defineEmits<{
+  /** 点击 actionText 渲染的引导按钮时触发 */
+  action: []
+}>()
+
 const props = withDefaults(
   defineProps<{
     icon?: string
@@ -87,6 +101,8 @@ const props = withDefaults(
     variant?: 'default' | 'welcome' | 'subtle'
     /** 内联 SVG 插图类型（优先于 icon 属性） */
     illustration?: 'no-conversations' | 'no-friends' | 'no-spaces' | 'no-results'
+    /** 引导按钮文案，提供时渲染按钮并在点击时 emit action */
+    actionText?: string
   }>(),
   {
     icon: 'mdi:inbox-outline',
@@ -94,7 +110,8 @@ const props = withDefaults(
     description: '',
     compact: false,
     variant: 'default',
-    illustration: undefined
+    illustration: undefined,
+    actionText: ''
   }
 )
 
@@ -155,6 +172,29 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
   margin-top: 12px;
   display: flex;
   gap: 8px;
+}
+
+.empty-state__action-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--hula-text-inverse);
+  background: var(--hula-color-primary-500);
+  cursor: pointer;
+  transition:
+    background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard),
+    transform var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+
+  &:hover {
+    background: var(--hula-color-primary-600);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .empty-state--welcome .empty-state__icon {

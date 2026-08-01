@@ -135,18 +135,11 @@
 
           <!-- 3. 空状态 / 搜索无结果 -->
           <div v-else class="space-list-pane__empty" key="empty">
-            <n-empty :description="emptyDescription" size="large">
-              <template #icon>
-                <svg class="size-48px opacity-50 color-[--hula-text-quaternary]">
-                  <use href="#grid" />
-                </svg>
-              </template>
-              <template v-if="!searchQuery.trim()" #extra>
-                <n-button size="small" type="primary" @click="emit('createSpace')">
-                  {{ t('space.create_space_action') }}
-                </n-button>
-              </template>
-            </n-empty>
+            <EmptyState
+              :illustration="searchQuery.trim() ? 'no-results' : 'no-spaces'"
+              :title="emptyDescription"
+              :action-text="searchQuery.trim() ? '' : t('space.create_space_action')"
+              @action="emit('createSpace')" />
           </div>
         </Transition>
       </div>
@@ -179,6 +172,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
 import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
+import EmptyState from '@/components/common/EmptyState.vue'
 import SpaceListItemCard from './SpaceListItemCard.vue'
 
 export type SpaceListItem = {
