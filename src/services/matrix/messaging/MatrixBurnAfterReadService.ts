@@ -1,5 +1,6 @@
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+import { withErrorHandling } from '../utils/withErrorHandling'
 
 const logger = createLogger('BurnAfterRead')
 
@@ -37,54 +38,66 @@ class MatrixBurnAfterReadService {
   }
 
   async enableBurn(roomId: string, burnAfterMs?: number, throwOnError = false): Promise<BurnSettings | null> {
-    try {
-      const manager = this.getManager()
-      if (!manager) return null
+    const result = await withErrorHandling(
+      async () => {
+        const manager = this.getManager()
+        if (!manager) return null
 
-      const settings = await manager.enableBurn(roomId, burnAfterMs)
-      logger.info(`阅后即焚已启用: roomId=${roomId}, burnAfterMs=${settings.burn_after_ms}`)
-      return {
-        enabled: settings.enabled,
-        burnAfterMs: settings.burn_after_ms
-      }
-    } catch (error) {
-      logger.error(`启用阅后即焚失败: ${error}`)
-      if (throwOnError) throw error
+        const settings = await manager.enableBurn(roomId, burnAfterMs)
+        logger.info(`阅后即焚已启用: roomId=${roomId}, burnAfterMs=${settings.burn_after_ms}`)
+        return {
+          enabled: settings.enabled,
+          burnAfterMs: settings.burn_after_ms
+        }
+      },
+      { feature: 'burn.enable', feedback: throwOnError ? 'silent' : 'toast' }
+    )
+    if (result === undefined) {
+      if (throwOnError) throw new Error(`启用阅后即焚失败: roomId=${roomId}`)
       return null
     }
+    return result
   }
 
   async disableBurn(roomId: string, throwOnError = false): Promise<BurnSettings | null> {
-    try {
-      const manager = this.getManager()
-      if (!manager) return null
-      const settings = await manager.disableBurn(roomId)
-      logger.info(`阅后即焚已禁用: roomId=${roomId}`)
-      return {
-        enabled: settings.enabled,
-        burnAfterMs: settings.burn_after_ms
-      }
-    } catch (error) {
-      logger.error(`禁用阅后即焚失败: ${error}`)
-      if (throwOnError) throw error
+    const result = await withErrorHandling(
+      async () => {
+        const manager = this.getManager()
+        if (!manager) return null
+        const settings = await manager.disableBurn(roomId)
+        logger.info(`阅后即焚已禁用: roomId=${roomId}`)
+        return {
+          enabled: settings.enabled,
+          burnAfterMs: settings.burn_after_ms
+        }
+      },
+      { feature: 'burn.disable', feedback: throwOnError ? 'silent' : 'toast' }
+    )
+    if (result === undefined) {
+      if (throwOnError) throw new Error(`禁用阅后即焚失败: roomId=${roomId}`)
       return null
     }
+    return result
   }
 
   async getBurnSettings(roomId: string, throwOnError = false): Promise<BurnSettings | null> {
-    try {
-      const manager = this.getManager()
-      if (!manager) return null
-      const settings = await manager.getBurnSettings(roomId)
-      return {
-        enabled: settings.enabled,
-        burnAfterMs: settings.burn_after_ms
-      }
-    } catch (error) {
-      logger.error(`获取阅后即焚设置失败: ${error}`)
-      if (throwOnError) throw error
+    const result = await withErrorHandling(
+      async () => {
+        const manager = this.getManager()
+        if (!manager) return null
+        const settings = await manager.getBurnSettings(roomId)
+        return {
+          enabled: settings.enabled,
+          burnAfterMs: settings.burn_after_ms
+        }
+      },
+      { feature: 'burn.status', feedback: 'silent' }
+    )
+    if (result === undefined) {
+      if (throwOnError) throw new Error(`获取阅后即焚设置失败: roomId=${roomId}`)
       return null
     }
+    return result
   }
 
   async isBurnEnabled(roomId: string): Promise<boolean> {

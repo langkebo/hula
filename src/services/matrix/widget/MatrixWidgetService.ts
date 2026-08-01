@@ -2,6 +2,7 @@ import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
+import { withErrorHandling } from '../utils/withErrorHandling'
 
 const logger = createLogger('MatrixWidgetService')
 
@@ -154,21 +155,28 @@ class MatrixWidgetService {
    * 列出房间内的 widgets；SDK 失败时回退到房间 state。
    */
   async getWidgets(roomId: string, throwOnError = true): Promise<Widget[]> {
-    const manager = this.getManager()
-    if (manager) {
-      try {
-        const response = await manager.listRoomWidgets(roomId)
-        return (response?.widgets ?? []).map((w) => this.toFacade(w))
-      } catch (err) {
-        logger.error(`[MatrixWidgetService] listRoomWidgets failed for ${roomId}: ${err}`)
-        if (throwOnError) throw err
+    const result = await withErrorHandling(
+      async () => {
+        const manager = this.getManager()
+        if (manager) {
+          try {
+            const response = await manager.listRoomWidgets(roomId)
+            return (response?.widgets ?? []).map((w) => this.toFacade(w))
+          } catch (err) {
+            logger.error(`[MatrixWidgetService] listRoomWidgets failed for ${roomId}: ${err}`)
+            if (throwOnError) throw err
+            return this.getWidgetsFromRoomState(roomId)
+          }
+        }
         return this.getWidgetsFromRoomState(roomId)
-      }
-    }
-    if (throwOnError) {
+      },
+      { feature: 'widget.list', feedback: 'silent' }
+    )
+    if (result === undefined) {
+      if (throwOnError) throw new Error(`Failed to list widgets for room ${roomId}`)
       return this.getWidgetsFromRoomState(roomId)
     }
-    return this.getWidgetsFromRoomState(roomId)
+    return result
   }
 
   async getRoomWidgets(roomId: string, throwOnError = true): Promise<Widget[]> {
@@ -185,21 +193,25 @@ class MatrixWidgetService {
       if (!throwOnError) return null
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
-    try {
-      const response = await manager.createWidget({
-        room_id: roomId,
-        widget_type: body.widgetType,
-        url: body.url,
-        name: body.name,
-        data: body.data
-      })
-      logger.info(`[MatrixWidgetService] Created widget ${response.widget.widget_id} in room ${roomId}`)
-      return this.toFacade(response.widget)
-    } catch (err) {
-      logger.error(`[MatrixWidgetService] Failed to create widget: ${err}`)
-      if (throwOnError) throw err
+    const result = await withErrorHandling(
+      async () => {
+        const response = await manager.createWidget({
+          room_id: roomId,
+          widget_type: body.widgetType,
+          url: body.url,
+          name: body.name,
+          data: body.data
+        })
+        logger.info(`[MatrixWidgetService] Created widget ${response.widget.widget_id} in room ${roomId}`)
+        return this.toFacade(response.widget)
+      },
+      { feature: 'widget.create', feedback: throwOnError ? 'silent' : 'toast' }
+    )
+    if (result === undefined) {
+      if (throwOnError) throw new Error(`Failed to create widget in room ${roomId}`)
       return null
     }
+    return result
   }
 
   /**
@@ -226,15 +238,19 @@ class MatrixWidgetService {
       if (!throwOnError) return false
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
-    try {
-      await manager.deleteWidget(widgetId)
-      logger.info(`[MatrixWidgetService] Deleted widget ${widgetId}`)
-      return true
-    } catch (err) {
-      logger.error(`[MatrixWidgetService] Failed to delete widget ${widgetId}: ${err}`)
-      if (throwOnError) throw err
+    const result = await withErrorHandling(
+      async () => {
+        await manager.deleteWidget(widgetId)
+        logger.info(`[MatrixWidgetService] Deleted widget ${widgetId}`)
+        return true
+      },
+      { feature: 'widget.delete', feedback: throwOnError ? 'silent' : 'toast' }
+    )
+    if (result === undefined) {
+      if (throwOnError) throw new Error(`Failed to delete widget ${widgetId}`)
       return false
     }
+    return result
   }
 
   /**

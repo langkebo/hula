@@ -25,6 +25,7 @@ import {
   type SynapseFriendRequest,
   synapseRustExtensionsService
 } from '../SynapseRustExtensionsService'
+import { withErrorHandling } from '../utils/withErrorHandling'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
 
 const logger = createLogger('MatrixFriendService')
@@ -492,71 +493,81 @@ class MatrixFriendService {
   }
 
   async sendFriendRequest(userId: string, reason?: string): Promise<void> {
-    const manager = await this.ensureFriendManager(false)
+    return withErrorHandling(
+      async () => {
+        const manager = await this.ensureFriendManager(false)
 
-    try {
-      if (manager) {
-        await manager.sendFriendRequest(userId, reason)
-      } else {
-        await synapseRustExtensionsService.sendFriendRequest(userId, reason)
-      }
-      logger.info(`[MatrixFriend] 发送好友请求成功: ${userId}`)
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err)
-
-      // 409 已存在待处理的好友请求，属于正常业务场景，不应作为错误
-      if (errMsg.includes('already exists') || errMsg.includes('M_USER_IN_USE') || errMsg.includes('409')) {
-        logger.info(`[MatrixFriend] 好友请求已存在: ${userId}`)
-        return
-      }
-
-      // FriendManager 失败时降级到 REST API
-      if (manager) {
         try {
-          await synapseRustExtensionsService.sendFriendRequest(userId, reason)
-          logger.info(`[MatrixFriend] 发送好友请求成功(REST降级): ${userId}`)
-          return
-        } catch (restErr) {
-          const restErrMsg = restErr instanceof Error ? restErr.message : String(restErr)
-          // REST 降级也返回 409，同样属于正常场景
-          if (
-            restErrMsg.includes('already exists') ||
-            restErrMsg.includes('M_USER_IN_USE') ||
-            restErrMsg.includes('409')
-          ) {
-            logger.info(`[MatrixFriend] 好友请求已存在(REST): ${userId}`)
+          if (manager) {
+            await manager.sendFriendRequest(userId, reason)
+          } else {
+            await synapseRustExtensionsService.sendFriendRequest(userId, reason)
+          }
+          logger.info(`[MatrixFriend] 发送好友请求成功: ${userId}`)
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err)
+
+          // 409 已存在待处理的好友请求，属于正常业务场景，不应作为错误
+          if (errMsg.includes('already exists') || errMsg.includes('M_USER_IN_USE') || errMsg.includes('409')) {
+            logger.info(`[MatrixFriend] 好友请求已存在: ${userId}`)
             return
           }
-          logger.error(`[MatrixFriend] REST API 发送好友请求也失败: ${restErr}`)
-        }
-      }
 
-      // 好友端点不可用时，回退到创建 DM 房间作为添加好友的替代方案
-      if (errMsg.includes('不可用') || errMsg.includes('unavailable') || errMsg.includes('404')) {
-        logger.info(`[MatrixFriend] 好友端点不可用，回退到创建 DM 房间: ${userId}`)
-        try {
-          await matrixRoomActionFacade.createDirectRoom(userId)
-          logger.info(`[MatrixFriend] 已创建 DM 房间作为好友替代: ${userId}`)
-          return
-        } catch (dmErr) {
-          logger.error(`[MatrixFriend] 创建 DM 房间也失败: ${dmErr}`)
-        }
-      }
+          // FriendManager 失败时降级到 REST API
+          if (manager) {
+            try {
+              await synapseRustExtensionsService.sendFriendRequest(userId, reason)
+              logger.info(`[MatrixFriend] 发送好友请求成功(REST降级): ${userId}`)
+              return
+            } catch (restErr) {
+              const restErrMsg = restErr instanceof Error ? restErr.message : String(restErr)
+              // REST 降级也返回 409，同样属于正常场景
+              if (
+                restErrMsg.includes('already exists') ||
+                restErrMsg.includes('M_USER_IN_USE') ||
+                restErrMsg.includes('409')
+              ) {
+                logger.info(`[MatrixFriend] 好友请求已存在(REST): ${userId}`)
+                return
+              }
+              logger.error(`[MatrixFriend] REST API 发送好友请求也失败: ${restErr}`)
+            }
+          }
 
-      logger.error(`[MatrixFriend] 发送好友请求失败: ${err}`)
-      throw err
-    }
+          // 好友端点不可用时，回退到创建 DM 房间作为添加好友的替代方案
+          if (errMsg.includes('不可用') || errMsg.includes('unavailable') || errMsg.includes('404')) {
+            logger.info(`[MatrixFriend] 好友端点不可用，回退到创建 DM 房间: ${userId}`)
+            try {
+              await matrixRoomActionFacade.createDirectRoom(userId)
+              logger.info(`[MatrixFriend] 已创建 DM 房间作为好友替代: ${userId}`)
+              return
+            } catch (dmErr) {
+              logger.error(`[MatrixFriend] 创建 DM 房间也失败: ${dmErr}`)
+            }
+          }
+
+          logger.error(`[MatrixFriend] 发送好友请求失败: ${err}`)
+          throw err
+        }
+      },
+      { feature: 'friend.add', feedback: 'toast' }
+    ) as Promise<void>
   }
 
   async acceptFriendRequest(userId: string): Promise<void> {
-    try {
-      const manager = await this.requireFriendManager()
-      await manager.acceptFriendRequest(userId)
-      logger.info(`[MatrixFriend] 接受好友请求成功: ${userId}`)
-    } catch {
-      await synapseRustExtensionsService.acceptFriendRequest(userId)
-      logger.info(`[MatrixFriend] 接受好友请求成功(REST降级): ${userId}`)
-    }
+    return withErrorHandling(
+      async () => {
+        try {
+          const manager = await this.requireFriendManager()
+          await manager.acceptFriendRequest(userId)
+          logger.info(`[MatrixFriend] 接受好友请求成功: ${userId}`)
+        } catch {
+          await synapseRustExtensionsService.acceptFriendRequest(userId)
+          logger.info(`[MatrixFriend] 接受好友请求成功(REST降级): ${userId}`)
+        }
+      },
+      { feature: 'friend.accept', feedback: 'toast' }
+    ) as Promise<void>
   }
 
   async cancelFriendRequest(userId: string): Promise<void> {
@@ -583,25 +594,35 @@ class MatrixFriendService {
   }
 
   async rejectFriendRequest(userId: string): Promise<void> {
-    try {
-      const manager = await this.requireFriendManager()
-      await manager.rejectFriendRequest(userId)
-      logger.info(`[MatrixFriend] 拒绝好友请求成功: ${userId}`)
-    } catch {
-      await synapseRustExtensionsService.declineFriendRequest(userId)
-      logger.info(`[MatrixFriend] 拒绝好友请求成功(REST降级): ${userId}`)
-    }
+    return withErrorHandling(
+      async () => {
+        try {
+          const manager = await this.requireFriendManager()
+          await manager.rejectFriendRequest(userId)
+          logger.info(`[MatrixFriend] 拒绝好友请求成功: ${userId}`)
+        } catch {
+          await synapseRustExtensionsService.declineFriendRequest(userId)
+          logger.info(`[MatrixFriend] 拒绝好友请求成功(REST降级): ${userId}`)
+        }
+      },
+      { feature: 'friend.reject', feedback: 'toast' }
+    ) as Promise<void>
   }
 
   async removeFriend(userId: string): Promise<void> {
-    try {
-      const manager = await this.requireFriendManager()
-      await manager.removeFriend(userId)
-      logger.info(`[MatrixFriend] 删除好友成功: ${userId}`)
-    } catch {
-      await synapseRustExtensionsService.removeFriend(userId)
-      logger.info(`[MatrixFriend] 删除好友成功(REST降级): ${userId}`)
-    }
+    return withErrorHandling(
+      async () => {
+        try {
+          const manager = await this.requireFriendManager()
+          await manager.removeFriend(userId)
+          logger.info(`[MatrixFriend] 删除好友成功: ${userId}`)
+        } catch {
+          await synapseRustExtensionsService.removeFriend(userId)
+          logger.info(`[MatrixFriend] 删除好友成功(REST降级): ${userId}`)
+        }
+      },
+      { feature: 'friend.remove', feedback: 'toast' }
+    ) as Promise<void>
   }
 
   async setFriendDisplayName(userId: string, displayName: string): Promise<void> {
