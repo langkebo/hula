@@ -1,11 +1,4 @@
-import {
-  type IPusherRequest,
-  type IPushRule,
-  type IPushRules,
-  type IUpdatePushRuleRequest,
-  type MatrixClient,
-  PushRuleKind
-} from 'matrix-js-sdk'
+import { type IPusherRequest, type IPushRule, type IPushRules, type MatrixClient, PushRuleKind } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { safeJsonParse, validateObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -373,7 +366,7 @@ class MatrixNotificationService extends BaseMatrixService {
       const pushManager = client.getPushManager()
       const result = await pushManager.getNotifications({ from, limit })
       return {
-        notifications: result.notifications as Array<Record<string, unknown>>,
+        notifications: result.notifications as unknown as Array<Record<string, unknown>>,
         next_token: result.next_token
       }
     } catch (err) {
@@ -461,7 +454,12 @@ class MatrixNotificationService extends BaseMatrixService {
     const client = this.getNotificationClient()
     try {
       const pushManager = client.getPushManager()
-      await pushManager.updatePushRule(scope, kind as PushRuleKind, ruleId, body as IUpdatePushRuleRequest)
+      await pushManager.updatePushRule(
+        scope,
+        kind as PushRuleKind,
+        ruleId,
+        body as unknown as Parameters<typeof pushManager.updatePushRule>[3]
+      )
       logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
@@ -492,7 +490,7 @@ class MatrixNotificationService extends BaseMatrixService {
     try {
       const pushManager = client.getPushManager()
       const pushers = await pushManager.getPushers()
-      return pushers as Array<Record<string, unknown>>
+      return pushers as unknown as Array<Record<string, unknown>>
     } catch (err) {
       logger.error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
       throw err
@@ -506,7 +504,7 @@ class MatrixNotificationService extends BaseMatrixService {
     const client = this.getNotificationClient()
     try {
       const pushManager = client.getPushManager()
-      await pushManager.setPusher(pusher as IPusherRequest)
+      await pushManager.setPusher(pusher as unknown as IPusherRequest)
       logger.info('[MatrixNotification] 设置推送设备成功')
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送设备失败: ${err}`)
