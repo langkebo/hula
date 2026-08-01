@@ -403,18 +403,16 @@ class MatrixAccountService extends BaseMatrixService {
   /**
    * 获取当前用户已加入的房间列表。
    *
-   * 注意：`/_matrix/client/v3/my_rooms` 并非标准 Matrix Spec 端点，
-   * 在某些后端（如 synapse-rust）上可能返回 404。
-   * 当该端点不可用时，自动降级为 SDK 的标准 `getJoinedRooms()` 方法。
+   * 通过 SDK AccountManager.getMyRooms() 调用 GET /_matrix/client/v3/my_rooms。
+   * 后端返回 { rooms: [{ room_id, name? }], total }，提取 room_id 数组。
+   * 当该端点不可用（404）时，自动降级为 SDK 的标准 getJoinedRooms() 方法。
    */
   async getMyRooms(): Promise<string[]> {
     const client = this.getClient()
 
     try {
-      // 未迁移到 SDK Manager：RoomListManager.getMyRooms() 使用本地缓存而非 HTTP /my_rooms 端点，
-      // 返回类型也不同（{ rooms, total } vs { room_ids }），契约不匹配。
-      const result = await client.http.authedRequest('GET', '/my_rooms')
-      return (result as { room_ids?: string[] }).room_ids ?? []
+      const result = await client.getAccountManager().getMyRooms()
+      return (result.rooms ?? []).map((entry) => entry.room_id)
     } catch (err) {
       // 如果返回 404，说明该非标准端点在后端不存在，降级到标准 Matrix API
       const statusCode = (err as { httpStatus?: number }).httpStatus
@@ -433,15 +431,17 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取事件流（长轮询）。
+   *
+   * 通过 SDK AccountManager.getEventStream() 调用 GET /_matrix/client/v3/events?from=...&timeout=...
+   */
   async getEventStream(from?: string, timeout: number = 30000): Promise<Record<string, unknown>> {
     const client = this.getClient()
 
     try {
-      const queryParams: Record<string, string> = { timeout: String(timeout) }
-      if (from) queryParams.from = from
-      // 未迁移到 SDK Manager：可用 Manager 列表中无匹配 /events 端点的方法。
-      const result = await client.http.authedRequest('GET', '/events', queryParams)
-      return result as Record<string, unknown>
+      const result = await client.getAccountManager().getEventStream(from, timeout)
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixAccount] 获取事件流失败: ${err}`)
       return {}

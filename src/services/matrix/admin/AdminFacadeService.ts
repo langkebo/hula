@@ -103,7 +103,18 @@ class AdminFacadeService extends BaseMatrixService {
 
   async checkAdminApiAvailability(): Promise<boolean> {
     try {
-      await this.adminRequest('GET', '/whoami')
+      // 使用 SDK AdminManager.whoami() 替代直连 HTTP GET /whoami
+      // 注意：此处不经过 sdkAdmin() 权限验证，因为这是一个可用性探测
+      const client = this.getClient() as MatrixClient & {
+        getAdminManager?: () => import('matrix-js-sdk/admin').AdminManager
+      }
+      const manager = client.getAdminManager?.()
+      if (!manager) {
+        // SDK AdminManager 不可用时回退到直连 HTTP
+        await this.adminRequest('GET', '/whoami')
+      } else {
+        await manager.whoami()
+      }
       return true
     } catch {
       return false
@@ -131,10 +142,29 @@ class AdminFacadeService extends BaseMatrixService {
         return this.cachedAdminStatus
       }
 
-      // 浏览器 dev 模式（无 Tauri runtime）：回退到 HTTP 调用 admin 用户接口验证身份
+      // 浏览器 dev 模式（无 Tauri runtime）：通过 SDK AdminManager 验证管理员身份
       // C-1 反馈回路修复：避免浏览器模式下因 Tauri 命令不可用而拒绝所有管理员操作
       if (!hasTauriRuntime()) {
         try {
+          const adminClient = client as MatrixClient & {
+            getAdminManager?: () => import('matrix-js-sdk/admin').AdminManager
+          }
+          const manager = adminClient.getAdminManager?.()
+          if (manager) {
+            // 使用 SDK AdminManager.getUserById() 替代直连 HTTP GET /users/{userId}
+            const userInfo = await manager.getUserById(userId, false)
+            const isAdmin = Boolean(
+              (userInfo as unknown as { admin?: boolean })?.admin ??
+                (userInfo as unknown as { is_admin?: boolean })?.is_admin
+            )
+            this.cachedAdminStatus = isAdmin
+            this.adminVerifiedAt = now
+            if (!isAdmin) {
+              logger.warn(`[Admin] 服务端权限验证失败: userId=${userId}, isAdmin=false (browser mode)`)
+            }
+            return isAdmin
+          }
+          // SDK AdminManager 不可用时回退到直连 HTTP
           const userInfo = await client.http.authedRequest<{ name?: string; admin?: boolean }>(
             'GET',
             `/users/${encodeURIComponent(userId)}`,
@@ -201,8 +231,8 @@ class AdminFacadeService extends BaseMatrixService {
     path: string,
     body?: Record<string, unknown>
   ): Promise<TResponse> {
-    // Not migrated to SDK: no manager method exists for the admin
-    // GET /_synapse/admin/v1/whoami availability probe. Left as direct HTTP.
+    // 仅供 checkAdminApiAvailability 的 SDK AdminManager 不可用回退路径使用。
+    // whoami() 已迁移至 SDK AdminManager.whoami()，getUserById() 已迁移至 SDK AdminManager.getUserById()。
     const client = this.getClient()
     return client.http.authedRequest(
       method,

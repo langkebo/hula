@@ -14,12 +14,6 @@ const server = setupMswServer(
   }),
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/thirdparty/protocols`, () => {
     return HttpResponse.json({ irc: { fields: ['network'] } })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/my_rooms`, () => {
-    return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/events`, () => {
-    return HttpResponse.json({ chunk: [], end: 'token1' })
   })
 )
 
@@ -28,31 +22,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn(),
   warn: vi.fn()
 }))
-
-const mockAuthedRequest = vi
-  .fn()
-  .mockImplementation(async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-    const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
-    const url = new URL(`${TEST_BASE_URL}${defaultPrefix}${path}`)
-    if (queryParams && typeof queryParams === 'object') {
-      for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
-        url.searchParams.set(key, value)
-      }
-    }
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer test-access-token'
-    }
-    const response = await fetch(url.toString(), {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined
-    })
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-    return response.json()
-  })
 
 describe('MatrixAccountService', () => {
   let mockClient: {
@@ -70,7 +39,8 @@ describe('MatrixAccountService', () => {
     setAccountData: ReturnType<typeof vi.fn>
     getCapabilitiesManager: ReturnType<typeof vi.fn>
     getThirdPartyManager: ReturnType<typeof vi.fn>
-    http: { authedRequest: ReturnType<typeof vi.fn> }
+    getAccountManager: ReturnType<typeof vi.fn>
+    getJoinedRooms: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
@@ -97,7 +67,14 @@ describe('MatrixAccountService', () => {
       getThirdPartyManager: vi.fn().mockReturnValue({
         getThirdpartyProtocols: vi.fn().mockResolvedValue({})
       }),
-      http: { authedRequest: mockAuthedRequest }
+      getAccountManager: vi.fn().mockReturnValue({
+        getMyRooms: vi.fn().mockResolvedValue({
+          rooms: [{ room_id: '!room1:server' }, { room_id: '!room2:server' }],
+          total: 2
+        }),
+        getEventStream: vi.fn().mockResolvedValue({ chunk: [], end: 'token1' })
+      }),
+      getJoinedRooms: vi.fn().mockResolvedValue([{ roomId: '!fallback:server' }])
     }
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
   })
@@ -168,51 +145,46 @@ describe('MatrixAccountService', () => {
   })
 
   describe('getMyRooms', () => {
-    it('should get my rooms', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/my_rooms`, () => {
-          return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
-        })
-      )
-
+    it('should get my rooms via SDK AccountManager', async () => {
       const result = await matrixAccountService.getMyRooms()
       expect(result).toEqual(['!room1:server', '!room2:server'])
+      expect(mockClient.getAccountManager().getMyRooms).toHaveBeenCalledTimes(1)
     })
 
-    it('should return empty array on error', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/my_rooms`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+    it('should fallback to getJoinedRooms on 404', async () => {
+      const notFoundErr = new Error('HTTP 404') as Error & { httpStatus: number }
+      notFoundErr.httpStatus = 404
+      mockClient.getAccountManager = vi.fn().mockReturnValue({
+        getMyRooms: vi.fn().mockRejectedValue(notFoundErr)
+      })
+
+      const result = await matrixAccountService.getMyRooms()
+      expect(result).toEqual(['!fallback:server'])
+      expect(mockClient.getJoinedRooms).toHaveBeenCalledTimes(1)
+    })
+
+    it('should return empty array on non-404 error', async () => {
+      mockClient.getAccountManager = vi.fn().mockReturnValue({
+        getMyRooms: vi.fn().mockRejectedValue(new Error('HTTP 500'))
+      })
+
       const result = await matrixAccountService.getMyRooms()
       expect(result).toEqual([])
     })
   })
 
   describe('getEventStream', () => {
-    it('should get event stream with params', async () => {
-      const mockEvents = { chunk: [], end: 'token1' }
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/events`, () => {
-          return HttpResponse.json(mockEvents)
-        })
-      )
-
+    it('should get event stream via SDK AccountManager with params', async () => {
       const result = await matrixAccountService.getEventStream('from_token', 15000)
-      expect(result).toEqual(mockEvents)
-      expect(mockAuthedRequest).toHaveBeenCalledWith('GET', '/events', {
-        timeout: '15000',
-        from: 'from_token'
-      })
+      expect(result).toEqual({ chunk: [], end: 'token1' })
+      expect(mockClient.getAccountManager().getEventStream).toHaveBeenCalledWith('from_token', 15000)
     })
 
     it('should return empty object on error', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/events`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      mockClient.getAccountManager = vi.fn().mockReturnValue({
+        getEventStream: vi.fn().mockRejectedValue(new Error('HTTP 500'))
+      })
+
       const result = await matrixAccountService.getEventStream()
       expect(result).toEqual({})
     })

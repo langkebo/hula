@@ -175,10 +175,12 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomMessages(roomId, { limit, from, dir })
       return {
-        // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-        chunk: (result?.chunk ?? []).map((msg) => msg as unknown as Record<string, unknown>),
-        start: result?.start,
-        end: result?.end
+        chunk: result.chunk.map((msg) => ({
+          ...msg,
+          content: msg.content as Record<string, unknown>
+        })),
+        start: result.start,
+        end: result.end
       }
     } catch (err) {
       logger.error(`[Admin] 获取房间消息失败: ${err}`)
@@ -279,8 +281,13 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomStats(from, limit)
       return {
-        // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-        stats: (result ?? []) as unknown as Array<Record<string, unknown>>,
+        stats: result.map((stat) => ({
+          ...stat,
+          room_id: stat.room_id,
+          name: stat.name,
+          member_count: stat.member_count,
+          local_users: stat.local_users,
+        })),
         nextToken: undefined
       }
     } catch (err) {
@@ -293,8 +300,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomStatsByRoom(roomId)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as Record<string, unknown>
+      return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[Admin] 获取单房间统计失败: ${err}`)
       return null
@@ -305,8 +311,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomListings(roomId)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as Record<string, unknown>
+      return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[Admin] 获取房间公开列表项失败: ${err}`)
       return null
@@ -328,8 +333,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomEventContext(roomId, eventId)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as Record<string, unknown>
+      return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[Admin] 获取事件上下文失败: ${err}`)
       return null
@@ -348,9 +352,13 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.searchRoomEvents(roomId, { search_term: searchTerm, limit })
       return {
-        // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-        results: (result?.results ?? []).map((e) => e as unknown as Record<string, unknown>),
-        nextBatch: result?.next_batch
+        results: result.results.map((e) => ({
+          ...e,
+          event_id: e.event_id,
+          sender: e.sender,
+          content: e.content as Record<string, unknown>,
+        })),
+        nextBatch: result.next_batch
       }
     } catch (err) {
       logger.error(`[Admin] 房间内搜索失败: ${err}`)
@@ -369,9 +377,13 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.searchRooms({ search_term: searchTerm })
       return {
-        // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-        rooms: (result?.results ?? []).map((e) => e as unknown as Record<string, unknown>),
-        nextBatch: result?.next_batch
+        rooms: result.results.map((e) => ({
+          room_id: e.room_id,
+          name: e.name,
+          canonical_alias: e.canonical_alias,
+          joined_members: e.joined_members,
+        })),
+        nextBatch: result.next_batch
       }
     } catch (err) {
       logger.error(`[Admin] 全局房间搜索失败: ${err}`)
@@ -383,8 +395,11 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomForwardExtremities(roomId)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      if (Array.isArray(result)) return result as unknown as Array<Record<string, unknown>>
+      if (Array.isArray(result)) return result.map((e) => ({
+        event_id: e.event_id,
+        type: e.type,
+        sender: e.sender,
+      }))
       return []
     } catch (err) {
       logger.error(`[Admin] 获取房间前向极值失败: ${err}`)
