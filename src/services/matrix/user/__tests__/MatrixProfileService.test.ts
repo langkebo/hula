@@ -36,7 +36,9 @@ const mockClient = {
   uploadContent: vi.fn(),
   getUserId: vi.fn(() => '@self:matrix.org'),
   getProfileManager: vi.fn().mockReturnValue({
-    getExtendedProfile: vi.fn()
+    getExtendedProfile: vi.fn(),
+    setExtendedProfilePropertyForUser: vi.fn().mockResolvedValue(undefined),
+    deleteExtendedProfilePropertyForUser: vi.fn().mockResolvedValue(undefined)
   }),
   http: {
     authedRequest: authedRequestImpl
@@ -287,13 +289,11 @@ describe('ProfileService', () => {
     })
 
     it('should update own extended profile fields', async () => {
-      server.use(
-        http.put(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId/:field`, () => {
-          return HttpResponse.json({})
-        })
-      )
+      const setExtendedProfilePropertyForUser = vi.fn().mockResolvedValue(undefined)
       mockClient.getProfileManager.mockReturnValue({
-        getExtendedProfile: vi.fn().mockResolvedValue({ resume: 'Updated bio', sex: 1 })
+        getExtendedProfile: vi.fn().mockResolvedValue({ resume: 'Updated bio', sex: 1 }),
+        setExtendedProfilePropertyForUser,
+        deleteExtendedProfilePropertyForUser: vi.fn().mockResolvedValue(undefined)
       })
       profileService.initialize(mockClient as unknown as MatrixClient)
 
@@ -301,22 +301,8 @@ describe('ProfileService', () => {
         resume: 'Updated bio',
         sex: 1
       })
-      expect(authedRequestImpl).toHaveBeenNthCalledWith(
-        1,
-        'PUT',
-        '/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/resume',
-        undefined,
-        'Updated bio',
-        { prefix: '/_matrix/client/unstable' }
-      )
-      expect(authedRequestImpl).toHaveBeenNthCalledWith(
-        2,
-        'PUT',
-        '/uk.tcpip.msc4133/profile/%40self%3Amatrix.org/sex',
-        undefined,
-        1,
-        { prefix: '/_matrix/client/unstable' }
-      )
+      expect(setExtendedProfilePropertyForUser).toHaveBeenNthCalledWith(1, '@self:matrix.org', 'resume', 'Updated bio')
+      expect(setExtendedProfilePropertyForUser).toHaveBeenNthCalledWith(2, '@self:matrix.org', 'sex', 1)
     })
 
     it('should treat unrecognized extended profile reads as unsupported and return empty object', async () => {
@@ -329,16 +315,54 @@ describe('ProfileService', () => {
     })
 
     it('should throw ExtendedProfileUnsupportedError on unsupported extended profile writes', async () => {
-      server.use(
-        http.put(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId/:field`, () => {
-          return HttpResponse.json({ errcode: 'M_UNRECOGNIZED' }, { status: 400 })
-        })
-      )
+      const unsupportedError = new Error('M_UNRECOGNIZED') as Error & { errcode?: string; httpStatus?: number }
+      unsupportedError.errcode = 'M_UNRECOGNIZED'
+      unsupportedError.httpStatus = 400
+      mockClient.getProfileManager.mockReturnValue({
+        getExtendedProfile: vi.fn(),
+        setExtendedProfilePropertyForUser: vi.fn().mockRejectedValue(unsupportedError),
+        deleteExtendedProfilePropertyForUser: vi.fn().mockResolvedValue(undefined)
+      })
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.updateOwnExtendedProfile({ resume: 'unsupported' })).rejects.toBeInstanceOf(
         ExtendedProfileUnsupportedError
       )
+    })
+
+    it('setExtendedProfileField delegates to ProfileManager.setExtendedProfilePropertyForUser', async () => {
+      const setExtendedProfilePropertyForUser = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getProfileManager: () => ({ setExtendedProfilePropertyForUser })
+      } as never)
+
+      await profileService.setExtendedProfileField('@bob:server', 'custom_field', 'value')
+
+      expect(setExtendedProfilePropertyForUser).toHaveBeenCalledWith('@bob:server', 'custom_field', 'value')
+    })
+
+    it('deleteExtendedProfileField delegates to ProfileManager.deleteExtendedProfilePropertyForUser', async () => {
+      const deleteExtendedProfilePropertyForUser = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getProfileManager: () => ({ deleteExtendedProfilePropertyForUser })
+      } as never)
+
+      await profileService.deleteExtendedProfileField('@bob:server', 'custom_field')
+
+      expect(deleteExtendedProfilePropertyForUser).toHaveBeenCalledWith('@bob:server', 'custom_field')
+    })
+
+    it('deleteExtendedProfileField swallows missing-profile errors and returns', async () => {
+      const missingError = new Error('Not found') as Error & { httpStatus?: number; errcode?: string }
+      missingError.httpStatus = 404
+      missingError.errcode = 'M_NOT_FOUND'
+      const deleteExtendedProfilePropertyForUser = vi.fn().mockRejectedValue(missingError)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getProfileManager: () => ({ deleteExtendedProfilePropertyForUser })
+      } as never)
+
+      await expect(profileService.deleteExtendedProfileField('@bob:server', 'missing_field')).resolves.toBeUndefined()
+      expect(deleteExtendedProfilePropertyForUser).toHaveBeenCalledWith('@bob:server', 'missing_field')
     })
   })
 
