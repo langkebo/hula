@@ -459,45 +459,73 @@ describe('RoomOperations', () => {
   // === Moderation methods ===
 
   describe('getInviteBlocklist', () => {
-    it('GETs invite blocklist via client.http', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+    it('delegates to InviteBlocklistManager.getBlocklist', async () => {
+      const getBlocklist = vi.fn().mockResolvedValue(['@bad:e'])
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getInviteBlocklistManager: () => ({ getBlocklist })
+      } as never)
       expect(await ops.getInviteBlocklist('!r')).toEqual(['@bad:e'])
+      expect(getBlocklist).toHaveBeenCalledWith('!r')
     })
 
-    it('returns empty array on error', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_blocklist`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+    it('returns empty array when manager returns empty', async () => {
+      const getBlocklist = vi.fn().mockResolvedValue([])
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getInviteBlocklistManager: () => ({ getBlocklist })
+      } as never)
       expect(await ops.getInviteBlocklist('!r')).toEqual([])
     })
   })
 
   describe('setInviteBlocklist', () => {
-    it('POSTs blocklist via client.http', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+    it('delegates to InviteBlocklistManager.setBlocklist', async () => {
+      const setBlocklist = vi.fn().mockResolvedValue({ success: true, blocklist: ['@bad:e'] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getInviteBlocklistManager: () => ({ setBlocklist })
+      } as never)
       await ops.setInviteBlocklist('!r', ['@bad:e'])
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/rooms/!r/invite_blocklist', undefined, {
-        blocked: ['@bad:e']
-      })
+      expect(setBlocklist).toHaveBeenCalledWith('!r', ['@bad:e'])
+    })
+  })
+
+  describe('getInviteAllowlist', () => {
+    it('delegates to InviteBlocklistManager.getAllowlist', async () => {
+      const getAllowlist = vi.fn().mockResolvedValue(['@ok:e'])
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getInviteBlocklistManager: () => ({ getAllowlist })
+      } as never)
+      expect(await ops.getInviteAllowlist('!r')).toEqual(['@ok:e'])
+      expect(getAllowlist).toHaveBeenCalledWith('!r')
+    })
+  })
+
+  describe('setInviteAllowlist', () => {
+    it('delegates to InviteBlocklistManager.setAllowlist', async () => {
+      const setAllowlist = vi.fn().mockResolvedValue({ success: true, allowlist: ['@ok:e'] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getInviteBlocklistManager: () => ({ setAllowlist })
+      } as never)
+      await ops.setInviteAllowlist('!r', ['@ok:e'])
+      expect(setAllowlist).toHaveBeenCalledWith('!r', ['@ok:e'])
     })
   })
 
   describe('getStickyEvents', () => {
-    it('GETs sticky events via client.http', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
-      expect(await ops.getStickyEvents('!r')).toEqual({ key: 'value' })
+    it('delegates to RoomSummaryManager.getStickyEvents', async () => {
+      const stickyResult = [{ event_type: 'm.message', content: { body: 'hi' } }]
+      const getStickyEvents = vi.fn().mockResolvedValue(stickyResult)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoomSummaryManager: () => ({ getStickyEvents })
+      } as never)
+      expect(await ops.getStickyEvents('!r')).toEqual(stickyResult)
+      expect(getStickyEvents).toHaveBeenCalledWith('!r')
     })
 
     it('returns empty object on error', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/sticky_events`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      const getStickyEvents = vi.fn().mockRejectedValue(new Error('500'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoomSummaryManager: () => ({ getStickyEvents })
+      } as never)
       expect(await ops.getStickyEvents('!r')).toEqual({})
     })
   })

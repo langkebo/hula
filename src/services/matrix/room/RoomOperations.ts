@@ -204,36 +204,22 @@ export class RoomOperations extends BaseMatrixService {
 
   async getInviteBlocklist(roomId: string): Promise<string[]> {
     const client = this.getClient()
-    try {
-      const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/invite_blocklist`)
-      return (result as { blocked?: string[] }).blocked ?? []
-    } catch {
-      return []
-    }
+    return client.getInviteBlocklistManager().getBlocklist(roomId)
   }
 
   async setInviteBlocklist(roomId: string, blocked: string[]): Promise<void> {
     const client = this.getClient()
-    await client.http.authedRequest('POST', `/rooms/${encodeURIComponent(roomId)}/invite_blocklist`, undefined, {
-      blocked
-    })
+    await client.getInviteBlocklistManager().setBlocklist(roomId, blocked)
   }
 
   async getInviteAllowlist(roomId: string): Promise<string[]> {
     const client = this.getClient()
-    try {
-      const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/invite_allowlist`)
-      return (result as { allowed?: string[] }).allowed ?? []
-    } catch {
-      return []
-    }
+    return client.getInviteBlocklistManager().getAllowlist(roomId)
   }
 
   async setInviteAllowlist(roomId: string, allowed: string[]): Promise<void> {
     const client = this.getClient()
-    await client.http.authedRequest('POST', `/rooms/${encodeURIComponent(roomId)}/invite_allowlist`, undefined, {
-      allowed
-    })
+    await client.getInviteBlocklistManager().setAllowlist(roomId, allowed)
   }
 
   // --- Lifecycle (was LifecycleService) ---
@@ -373,8 +359,8 @@ export class RoomOperations extends BaseMatrixService {
   async getStickyEvents(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/sticky_events`)
-      return result as Record<string, unknown>
+      const result = await client.getRoomSummaryManager().getStickyEvents(roomId)
+      return result as unknown as Record<string, unknown>
     } catch {
       return {}
     }
