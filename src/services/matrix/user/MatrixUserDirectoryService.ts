@@ -111,20 +111,8 @@ class UserDirectoryService extends BaseMatrixService {
   }> {
     const client = this.getClient()
     try {
-      // 未迁移到 SDK Manager：UserDirectoryManager.listUserDirectory() 不支持分页参数（limit/from），
-      // 且后端期望 `since`（非 `from`）游标、返回 `users`（非 `results`），契约不匹配。
-      const result = await client.http.authedRequest<{
-        results?: Array<{
-          user_id: string
-          display_name?: string
-          avatar_url?: string
-        }>
-        next_batch?: string
-      }>('POST', '/user_directory/list', undefined, {
-        limit,
-        from: from || undefined
-      })
-      const users = (result.results ?? []).map((u) => ({
+      const result = await client.getUserDirectoryManager().listUserDirectoryPaginated(limit, from)
+      const users = (result.users ?? []).map((u) => ({
         userId: u.user_id,
         displayName: u.display_name,
         avatarUrl: u.avatar_url

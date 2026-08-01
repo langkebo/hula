@@ -69,4 +69,44 @@ describe('MatrixUserDirectoryService', () => {
     })
     expect(result[0].userId).toBe('@bob:example.com')
   })
+
+  it('listUserDirectory delegates to UserDirectoryManager.listUserDirectoryPaginated', async () => {
+    const listUserDirectoryPaginated = vi.fn().mockResolvedValue({
+      users: [
+        {
+          user_id: '@alice:server',
+          display_name: 'Alice',
+          avatar_url: 'mxc://example/avatar'
+        }
+      ],
+      next_batch: 'next123'
+    })
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
+      getUserDirectoryManager: () => ({ listUserDirectoryPaginated })
+    } as unknown as MatrixClient)
+
+    const result = await userDirectoryService.listUserDirectory(50, 'cursor123')
+
+    expect(listUserDirectoryPaginated).toHaveBeenCalledWith(50, 'cursor123')
+    expect(result.users).toHaveLength(1)
+    expect(result.users[0]).toEqual({
+      userId: '@alice:server',
+      displayName: 'Alice',
+      avatarUrl: 'mxc://example/avatar'
+    })
+    expect(result.next_batch).toBe('next123')
+  })
+
+  it('listUserDirectory returns empty users when manager throws', async () => {
+    const listUserDirectoryPaginated = vi.fn().mockRejectedValue(new Error('network down'))
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
+      getUserDirectoryManager: () => ({ listUserDirectoryPaginated })
+    } as unknown as MatrixClient)
+
+    const result = await userDirectoryService.listUserDirectory(50)
+
+    expect(listUserDirectoryPaginated).toHaveBeenCalledWith(50, undefined)
+    expect(result.users).toEqual([])
+    expect(result.next_batch).toBeUndefined()
+  })
 })
