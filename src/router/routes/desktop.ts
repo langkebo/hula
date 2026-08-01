@@ -332,6 +332,12 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         name: 'adminModeration',
         component: () => import('@/views/admin/ModerationPanel.vue'),
         meta: { requiresAdmin: true }
+      },
+      {
+        path: '/admin/modules',
+        name: 'AdminModules',
+        component: () => import('@/views/admin/AdminModules.vue'),
+        meta: { title: '功能模块', requiresAdmin: true }
       }
     ]
   }
