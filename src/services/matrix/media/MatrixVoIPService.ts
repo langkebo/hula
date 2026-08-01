@@ -14,6 +14,7 @@ interface VoIPCall {
   isVideo: boolean
   on(event: string, callback: (...args: unknown[]) => void): void
   off(event: string, callback: (...args: unknown[]) => void): void
+  removeAllListeners?(event?: string): void
   hangup(reason?: string): void
   answer(stream?: MediaStream, video?: boolean): void
   setLocalVideoMuted(muted: boolean): void
@@ -354,6 +355,20 @@ class MatrixVoIPService extends BaseMatrixService {
     if (callInfo) {
       callInfo.state = 'ended'
       this.notifyCallUpdate(callId)
+    }
+
+    // 移除 call 对象上的事件监听器，防止内存泄漏
+    try {
+      const client = this.getClient()
+      const call = this.getCallById(callId, client)
+      if (call) {
+        call.removeAllListeners?.('feeds_changed')
+        call.removeAllListeners?.('hangup')
+        call.removeAllListeners?.('error')
+        call.removeAllListeners?.('state')
+      }
+    } catch {
+      // 客户端已销毁时跳过监听器清理
     }
 
     if (this.localStream) {
