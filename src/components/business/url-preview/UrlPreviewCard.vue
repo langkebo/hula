@@ -102,7 +102,7 @@ const handleClick = () => {
     width: 16px;
     height: 16px;
     border: 2px solid var(--hula-border-default);
-    border-top-color: var(--color-primary);
+    border-top-color: var(--hula-color-primary-500);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -125,7 +125,7 @@ const handleClick = () => {
   }
 
   .url-text {
-    color: var(--color-primary);
+    color: var(--hula-color-primary-500);
     word-break: break-all;
   }
 }

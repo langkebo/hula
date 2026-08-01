@@ -933,7 +933,7 @@ onMounted(() => {
 
   &.selected {
     background: var(--hula-surface-list-hover);
-    border: 1px solid var(--color-primary);
+    border: 1px solid var(--hula-color-primary-500);
   }
 
   .widget-info {
@@ -943,7 +943,7 @@ onMounted(() => {
     flex: 1;
 
     .widget-icon {
-      color: var(--color-primary);
+      color: var(--hula-color-primary-500);
     }
 
     .widget-details {

@@ -404,7 +404,6 @@ onUnmounted(cleanup)
   }
   --fgColor-default: var(--hula-text-primary);
   --fgColor-muted: var(--hula-text-secondary);
-  --fgColor-accent: var(--hula-color-primary-500);
   --fgColor-attention: var(--hula-color-primary-500);
   --fgColor-success: var(--hula-color-success-500);
   --fgColor-danger: var(--hula-color-danger-500);
@@ -563,7 +562,7 @@ onUnmounted(cleanup)
     box-sizing: border-box;
     padding: 8px 12px;
     margin: 12px 0;
-    border-left: 3px solid var(--fgColor-accent);
+    border-left: 3px solid var(--hula-color-primary-500);
     background: var(--bgColor-attention-muted);
   }
 

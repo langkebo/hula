@@ -224,7 +224,7 @@ onUnmounted(() => {
     font-weight: 500;
 
     .n-icon {
-      color: var(--color-primary);
+      color: var(--hula-color-primary-500);
     }
   }
 

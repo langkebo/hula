@@ -65,7 +65,7 @@
     </div>
 
     <div v-if="transcription && showTranscription" class="voice-transcription">
-      <n-icon size="14" color="var(--color-primary)">
+      <n-icon size="14" color="var(--hula-color-primary-500)">
         <svg><use href="#text" /></svg>
       </n-icon>
       <span>{{ transcription }}</span>

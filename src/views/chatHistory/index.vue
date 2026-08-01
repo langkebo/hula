@@ -412,7 +412,7 @@ onMounted(async () => {
 </style>
 <style lang="scss">
 .n-date-panel .n-date-panel-dates .n-date-panel-date.n-date-panel-date--selected::after {
-  background-color: var(--color-primary);
+  background-color: var(--hula-color-primary-500);
 }
 .n-date-panel.n-date-panel--daterange {
   border-radius: 14px;
@@ -421,6 +421,6 @@ onMounted(async () => {
 .n-date-panel-actions .n-button {
   background-color: var(--color-primary-light) !important;
   border: none !important;
-  color: var(--color-primary) !important;
+  color: var(--hula-color-primary-500) !important;
 }
 </style>

@@ -355,13 +355,6 @@ const handleBatchToggle = () => {
   color: var(--hula-color-primary-500);
 }
 
-.hula-room-list-item--selected {
-  .hula-room-list-item__name {
-    font-weight: 600;
-    color: var(--hula-text-primary);
-  }
-}
-
 @keyframes burn-pulse {
   0%,
   100% {

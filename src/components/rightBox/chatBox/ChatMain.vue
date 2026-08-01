@@ -60,9 +60,7 @@
         @click="togglePrivateMode">
         <span class="private-toggle-btn__letter">S</span>
       </button>
-      <span v-if="privateModeActive" class="text-[var(--text-sm)] text-[--hula-color-danger-500]">
-        私密模式已开启
-      </span>
+      <span v-if="privateModeActive" class="text-[var(--text-sm)] text-[--hula-color-danger-500]">私密模式已开启</span>
     </div>
 
     <!-- 粘性事件横幅 -->
@@ -174,7 +172,7 @@
       :style="{ bottom: '24px', right: '50px' }">
       <div class="float-box" :class="{ max: currentNewMsgCount?.count > 99 }" @click="handleFloatButtonClick">
         <n-flex justify="space-between" align="center">
-          <n-icon :color="currentNewMsgCount?.count > 99 ? 'var(--color-danger)' : 'var(--color-primary)'">
+          <n-icon :color="currentNewMsgCount?.count > 99 ? 'var(--color-danger)' : 'var(--hula-color-primary-500)'">
             <svg>
               <use href="#double-down"></use>
             </svg>

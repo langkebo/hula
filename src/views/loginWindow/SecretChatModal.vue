@@ -35,7 +35,7 @@
           <n-button
             style="color: var(--hula-text-inverse)"
             class="w-full"
-            color="var(--color-primary)"
+            color="var(--hula-color-primary-500)"
             size="large"
             @click="handleConfirm"
             :loading="loading"

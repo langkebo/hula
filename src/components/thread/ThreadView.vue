@@ -174,7 +174,7 @@ watch(
     font-weight: 500;
 
     .thread-icon {
-      color: var(--color-primary);
+      color: var(--hula-color-primary-500);
     }
   }
 }

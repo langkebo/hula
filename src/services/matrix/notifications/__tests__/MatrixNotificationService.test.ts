@@ -15,16 +15,31 @@ vi.mock('../../MatrixClientService', () => ({
   }
 }))
 
+const mockPushManager = {
+  getNotifications: vi.fn(),
+  ackNotification: vi.fn(),
+  getPushRules: vi.fn(),
+  updatePushRule: vi.fn(),
+  deletePushRule: vi.fn(),
+  getPushers: vi.fn(),
+  setPusher: vi.fn()
+}
+
 const mockClient = {
+  getPushManager: vi.fn(() => mockPushManager),
   getPushRules: vi.fn(),
   setPushRule: vi.fn(),
   deletePushRule: vi.fn(),
-  setPusher: vi.fn()
+  setPusher: vi.fn(),
+  http: {
+    authedRequest: vi.fn()
+  }
 }
 
 describe('MatrixNotificationService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    matrixNotificationService.clearAckCache()
   })
 
   afterEach(() => {
@@ -251,6 +266,139 @@ describe('MatrixNotificationService', () => {
 
       await matrixNotificationService.setPusher(pusher)
       expect(mockClient.setPusher).toHaveBeenCalledWith(pusher)
+    })
+  })
+
+  describe('SDK PushManager migrated methods', () => {
+    beforeEach(() => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+    })
+
+    describe('getNotifications', () => {
+      it('should fetch notifications via PushManager', async () => {
+        mockPushManager.getNotifications.mockResolvedValueOnce({
+          notifications: [{ event_id: 'evt1', room_id: '!r1' }],
+          next_token: 'tok2'
+        })
+
+        const result = await matrixNotificationService.getNotifications('tok1', 10)
+
+        expect(mockClient.getPushManager).toHaveBeenCalled()
+        expect(mockPushManager.getNotifications).toHaveBeenCalledWith({ from: 'tok1', limit: 10 })
+        expect(result.notifications).toHaveLength(1)
+        expect(result.next_token).toBe('tok2')
+      })
+
+      it('should return empty array on error', async () => {
+        mockPushManager.getNotifications.mockRejectedValueOnce(new Error('network error'))
+
+        const result = await matrixNotificationService.getNotifications()
+
+        expect(result.notifications).toEqual([])
+        expect(result.next_token).toBeUndefined()
+      })
+    })
+
+    describe('ackNotification', () => {
+      it('should ack notification via PushManager', async () => {
+        mockPushManager.ackNotification.mockResolvedValueOnce(undefined)
+
+        const result = await matrixNotificationService.ackNotification('notif-123')
+
+        expect(mockClient.getPushManager).toHaveBeenCalled()
+        expect(mockPushManager.ackNotification).toHaveBeenCalledWith('notif-123')
+        expect(result).toBe(true)
+      })
+
+      it('should return false on error', async () => {
+        mockPushManager.ackNotification.mockRejectedValueOnce(new Error('not found'))
+
+        const result = await matrixNotificationService.ackNotification('notif-123')
+
+        expect(result).toBe(false)
+      })
+    })
+
+    describe('fetchPushRules', () => {
+      it('should fetch push rules via PushManager', async () => {
+        const rules = { global: { override: [{ rule_id: 'r1' }] } }
+        mockPushManager.getPushRules.mockResolvedValueOnce(rules)
+
+        const result = await matrixNotificationService.fetchPushRules()
+
+        expect(mockClient.getPushManager).toHaveBeenCalled()
+        expect(mockPushManager.getPushRules).toHaveBeenCalled()
+        expect(result).toEqual(rules)
+      })
+    })
+
+    describe('setPushRuleByScope', () => {
+      it('should update push rule via PushManager', async () => {
+        mockPushManager.updatePushRule.mockResolvedValueOnce(undefined)
+
+        const body = { actions: ['notify'] }
+        await matrixNotificationService.setPushRuleByScope('global', 'override', 'rule1', body)
+
+        expect(mockClient.getPushManager).toHaveBeenCalled()
+        expect(mockPushManager.updatePushRule).toHaveBeenCalledWith('global', 'override', 'rule1', body)
+      })
+    })
+
+    describe('deletePushRuleByScope', () => {
+      it('should delete push rule via PushManager', async () => {
+        mockPushManager.deletePushRule.mockResolvedValueOnce(undefined)
+
+        await matrixNotificationService.deletePushRuleByScope('global', 'override', 'rule1')
+
+        expect(mockClient.getPushManager).toHaveBeenCalled()
+        expect(mockPushManager.deletePushRule).toHaveBeenCalledWith('global', 'override', 'rule1')
+      })
+    })
+
+    describe('fetchPushers', () => {
+      it('should fetch pushers via PushManager', async () => {
+        const pushers = [{ pushkey: 'pk1', app_id: 'app1' }]
+        mockPushManager.getPushers.mockResolvedValueOnce(pushers)
+
+        const result = await matrixNotificationService.fetchPushers()
+
+        expect(mockClient.getPushManager).toHaveBeenCalled()
+        expect(mockPushManager.getPushers).toHaveBeenCalled()
+        expect(result).toEqual(pushers)
+      })
+    })
+
+    describe('setPusherByBody', () => {
+      it('should set pusher via PushManager', async () => {
+        mockPushManager.setPusher.mockResolvedValueOnce(undefined)
+
+        const pusher = { pushkey: 'pk1', app_id: 'app1' }
+        await matrixNotificationService.setPusherByBody(pusher)
+
+        expect(mockClient.getPushManager).toHaveBeenCalled()
+        expect(mockPushManager.setPusher).toHaveBeenCalledWith(pusher)
+      })
+    })
+
+    describe('ackNotificationWithFallback', () => {
+      it('should use ack when endpoint is available', async () => {
+        mockPushManager.ackNotification.mockResolvedValueOnce(undefined)
+
+        const result = await matrixNotificationService.ackNotificationWithFallback('n1', '!room', 'evt1')
+
+        expect(result.success).toBe(true)
+        expect(result.method).toBe('ack')
+      })
+
+      it('should fallback to receipt when ack fails', async () => {
+        mockPushManager.ackNotification.mockRejectedValueOnce(new Error('404'))
+        mockClient.http.authedRequest.mockResolvedValueOnce({})
+
+        const result = await matrixNotificationService.ackNotificationWithFallback('n1', '!room', 'evt1')
+
+        expect(result.success).toBe(true)
+        expect(result.method).toBe('receipt')
+      })
     })
   })
 })

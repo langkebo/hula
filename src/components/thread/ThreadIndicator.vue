@@ -67,22 +67,22 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:hover {
-    background: var(--color-primary);
+    background: var(--hula-color-primary-500);
     transform: translateX(2px);
   }
 
   .thread-icon {
-    color: var(--color-primary);
+    color: var(--hula-color-primary-500);
   }
 
   .reply-count {
     font-size: 13px;
     font-weight: 500;
-    color: var(--color-primary);
+    color: var(--hula-color-primary-500);
   }
 
   .arrow-icon {
-    color: var(--color-primary);
+    color: var(--hula-color-primary-500);
   }
 }
 
@@ -91,7 +91,7 @@ onMounted(() => {
   color: var(--hula-text-secondary);
 
   &:hover {
-    color: var(--color-primary);
+    color: var(--hula-color-primary-500);
   }
 }
 </style>

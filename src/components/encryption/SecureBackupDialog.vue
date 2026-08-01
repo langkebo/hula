@@ -599,7 +599,7 @@ async function handleDelete() {
   display: flex;
   justify-content: center;
   margin-bottom: 16px;
-  color: var(--color-primary);
+  color: var(--hula-color-primary-500);
 }
 
 .intro-text {

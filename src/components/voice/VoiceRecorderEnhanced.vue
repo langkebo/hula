@@ -433,7 +433,7 @@ onUnmounted(() => {
     transition: height 0.1s;
 
     &.active {
-      background: var(--color-primary);
+      background: var(--hula-color-primary-500);
       height: 16px;
     }
   }

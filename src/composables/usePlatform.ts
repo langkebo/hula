@@ -9,6 +9,7 @@ interface PlatformInfo {
   platform: Platform
   isTauri: boolean
   isWeb: boolean
+  isLandscape: boolean
 }
 
 const platformCache = ref<PlatformInfo | null>(null)
@@ -53,12 +54,18 @@ function detectPlatform(): PlatformInfo {
   const isDesktop = platform === 'desktop'
   const isMobile = platform === 'mobile'
 
+  const isLandscape =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(orientation: landscape)').matches
+      : isDesktop
+
   const info: PlatformInfo = {
     isDesktop,
     isMobile,
     platform,
     isTauri,
-    isWeb: !isTauri
+    isWeb: !isTauri,
+    isLandscape
   }
 
   platformCache.value = info
@@ -73,7 +80,8 @@ export function usePlatform(): PlatformInfo {
     isMobile: computed(() => info.isMobile).value,
     platform: computed(() => info.platform).value,
     isTauri: computed(() => info.isTauri).value,
-    isWeb: computed(() => info.isWeb).value
+    isWeb: computed(() => info.isWeb).value,
+    isLandscape: computed(() => info.isLandscape).value
   }
 }
 

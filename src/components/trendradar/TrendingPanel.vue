@@ -85,7 +85,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 .trending-panel__icon {
   width: 18px;
   height: 18px;
-  color: var(--color-primary);
+  color: var(--hula-color-primary-500);
 }
 
 .trending-panel__title {
@@ -160,7 +160,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 
 .trending-panel__category {
   font-size: 11px;
-  color: var(--color-primary);
+  color: var(--hula-color-primary-500);
   background: var(--color-primary-active);
   padding: 1px 6px;
   border-radius: 4px;

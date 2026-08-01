@@ -20,7 +20,7 @@
                       <span
                         v-if="item.isTop"
                         class="text-[--color-primary] rounded-15px px-7px py-5px text-12px"
-                        style="border: 1px solid; border-color: var(--color-primary)">
+                        style="border: 1px solid; border-color: var(--hula-color-primary-500)">
                         {{ t('mobile_chat.notice.pinned') }}
                       </span>
                     </div>

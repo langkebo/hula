@@ -394,7 +394,7 @@ onMounted(() => {
 
 .trendradar-view__nav-item--active {
   background: var(--color-primary-active);
-  color: var(--color-primary);
+  color: var(--hula-color-primary-500);
 }
 
 .trendradar-view__nav-icon {

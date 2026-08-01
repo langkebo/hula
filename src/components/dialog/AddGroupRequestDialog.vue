@@ -32,7 +32,7 @@
         type="textarea"
         :placeholder="t('message.group_verify.placeholder')" />
 
-      <n-button class="mt-10px" color="var(--color-primary)" @click="addGroupRequest">
+      <n-button class="mt-10px" color="var(--hula-color-primary-500)" @click="addGroupRequest">
         {{ t('message.group_verify.send_btn') }}
       </n-button>
     </n-flex>

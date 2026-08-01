@@ -44,6 +44,12 @@
           </div>
           <div
             class="text-14px cursor-pointer hover:bg-[--hula-text-tertiary]30 hover:rounded-6px p-8px"
+            data-test="guest-login-btn"
+            @click="emit('guest-login')">
+            {{ t('login.guest') }}
+          </div>
+          <div
+            class="text-14px cursor-pointer hover:bg-[--hula-text-tertiary]30 hover:rounded-6px p-8px"
             @click="emit('open-forget-password')">
             {{ t('login.option.items.forget') }}
           </div>
@@ -76,6 +82,7 @@ const emit = defineEmits<{
   'open-register': []
   'open-forget-password': []
   'open-server-config': []
+  'guest-login': []
 }>()
 
 const { t } = useI18n()

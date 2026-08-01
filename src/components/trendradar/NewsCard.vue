@@ -83,7 +83,7 @@ const handleClick = () => {
 .news-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--hula-shadow-md);
-  border-color: var(--color-primary);
+  border-color: var(--hula-color-primary-500);
 }
 
 .news-card__header {
@@ -141,7 +141,7 @@ const handleClick = () => {
   align-items: center;
   gap: 4px;
   margin-left: auto;
-  color: var(--color-primary);
+  color: var(--hula-color-primary-500);
   font-size: 12px;
 }
 

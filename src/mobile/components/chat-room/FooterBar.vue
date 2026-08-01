@@ -89,7 +89,7 @@ defineExpose({ root })
   position: relative;
 
   svg {
-    color: var(--color-primary);
+    color: var(--hula-color-primary-500);
     transition: color 0.3s ease;
   }
 
@@ -102,7 +102,7 @@ defineExpose({ root })
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background-color: var(--color-primary);
+    background-color: var(--hula-color-primary-500);
     animation: pulse 1.5s infinite;
   }
 }

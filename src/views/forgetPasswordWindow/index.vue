@@ -80,7 +80,7 @@
                 autoCapitalize="off"
                 maxlength="6" />
               <n-button
-                color="var(--color-primary)"
+                color="var(--hula-color-primary-500)"
                 ghost
                 :disabled="sendBtnDisabled"
                 :loading="sendingEmailCode"

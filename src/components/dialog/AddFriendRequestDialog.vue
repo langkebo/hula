@@ -32,7 +32,7 @@
         type="textarea"
         :placeholder="t('message.friend_verify.placeholder')" />
 
-      <n-button class="mt-10px" color="var(--color-primary)" @click="addFriend">
+      <n-button class="mt-10px" color="var(--hula-color-primary-500)" @click="addFriend">
         {{ t('message.friend_verify.send_btn') }}
       </n-button>
     </n-flex>

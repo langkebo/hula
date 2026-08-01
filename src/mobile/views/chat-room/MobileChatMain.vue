@@ -352,7 +352,7 @@ const handleLocationClick = () => {
   border: 1px solid var(--hula-border-default);
 
   &.active {
-    color: var(--color-primary);
+    color: var(--hula-color-primary-500);
     background: color-mix(in srgb, var(--hula-color-primary-500) 16%, transparent);
   }
 }

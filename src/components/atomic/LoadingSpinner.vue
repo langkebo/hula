@@ -7,11 +7,11 @@
       <n-progress
         type="line"
         :show-indicator="false"
-        :color="'var(--color-primary)'"
+        :color="'var(--hula-color-primary-500)'"
         :rail-color="'var(--hula-color-primary-300-alpha)'"
         :percentage="percentage" />
       <n-flex justify="center" align="center" :gap="12">
-        <n-spin :size="12" :color="'var(--color-primary)'" />
+        <n-spin :size="12" :color="'var(--hula-color-primary-500)'" />
         <span class="text-14px text-[--hula-text-secondary]">{{ loadingText }}</span>
       </n-flex>
     </n-flex>

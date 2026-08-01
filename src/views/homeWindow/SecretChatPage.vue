@@ -148,7 +148,7 @@ const handleClose = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary);
+  background: var(--hula-color-primary-500);
   color: var(--hula-text-inverse);
   font-size: 18px;
   font-weight: 500;

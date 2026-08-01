@@ -251,7 +251,7 @@ defineExpose({
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: var(--color-primary);
+  background: var(--hula-color-primary-500);
   color: var(--hula-text-inverse);
   border-radius: 16px;
   font-size: 13px;
