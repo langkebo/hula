@@ -226,14 +226,11 @@ export function useEncryption(): UseEncryptionResult {
   }
 
   async function requestDeviceVerification(userId: string, deviceId: string, _methods?: string[]) {
-    return matrixCryptoService.requestDeviceVerification(
-      userId,
-      deviceId
-    ) as unknown as Promise<CryptoVerificationRequest>
+    return matrixCryptoService.requestDeviceVerification(userId, deviceId) as unknown as Promise<VerificationRequest>
   }
 
   async function requestUserVerification(userId: string, _methods?: string[]) {
-    return matrixVerificationService.startSasVerification(userId, '') as unknown as Promise<CryptoVerificationRequest>
+    return matrixVerificationService.startSasVerification(userId, '') as unknown as Promise<VerificationRequest>
   }
 
   async function exportRoomKeys() {

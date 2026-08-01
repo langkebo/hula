@@ -454,3 +454,17 @@ class MatrixKeyBackupService extends BaseMatrixService {
 }
 
 export const matrixKeyBackupService = new MatrixKeyBackupService()
+
+// Re-export types for backward compatibility
+export type {
+  BackupVersion,
+  BackupVersionInfo,
+  BatchRecoverResult,
+  CreateKeyBackupVersionRequest,
+  ExportResult,
+  ImportResult,
+  RecoveryProgress,
+  RestoreBackupResult,
+  RoomKeyBackup,
+  VerifyResult
+} from './types'

@@ -67,7 +67,7 @@ export interface BackupVersionInfo extends SDKBackupVersionInfo {}
 export interface BackupVersion {
   version: string
   algorithm: string
-  auth_data: Record<string, unknown>
+  auth_data: Record<string, unknown> | AuthData | Aes256AuthData
   count?: number
   etag?: string
 }

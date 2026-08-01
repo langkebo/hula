@@ -309,3 +309,6 @@ class VerificationService extends BaseMatrixService {
 }
 
 export const matrixVerificationService = new VerificationService()
+
+// Re-export types for backward compatibility
+export type { VerificationMethod, VerificationRequest } from './types'

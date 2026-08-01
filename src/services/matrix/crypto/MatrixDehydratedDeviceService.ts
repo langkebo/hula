@@ -176,3 +176,6 @@ class MatrixDehydratedDeviceService {
 }
 
 export const matrixDehydratedDeviceService = new MatrixDehydratedDeviceService()
+
+// Re-export types for backward compatibility
+export type { CreateDehydratedDeviceParams, DehydratedDevice } from './types'
