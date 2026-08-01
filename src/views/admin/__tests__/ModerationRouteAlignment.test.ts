@@ -29,7 +29,8 @@ describe('Moderation route alignment', () => {
     expect(moderationRoute).toBeTruthy()
     expect(moderationRoute?.name).toBe('adminModeration')
     expect(typeof moderationRoute?.component).toBe('function')
-    const mod = await (moderationRoute!.component as () => Promise<{ default: { name?: string } }>))()
+    const componentFn = moderationRoute!.component as () => Promise<{ default: { name?: string } }>
+    const mod = await componentFn()
     expect(mod.default?.name).toBe('ModerationPanel')
   })
 })
