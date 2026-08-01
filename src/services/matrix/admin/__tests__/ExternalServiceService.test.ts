@@ -12,20 +12,30 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const makeClient = () => {
-  const authedRequest = vi.fn()
+/** 构造一个 mock 的 AdminExternalServiceManager（SDK 子 Manager）。 */
+const makeExternalServiceManager = () => ({
+  listServices: vi.fn(),
+  registerService: vi.fn(),
+  updateService: vi.fn(),
+  deleteService: vi.fn(),
+  getAllHealth: vi.fn(),
+  getServiceHealth: vi.fn(),
+  checkServiceHealth: vi.fn()
+})
+
+type ExternalServiceManagerMock = ReturnType<typeof makeExternalServiceManager>
+
+const makeClient = (manager: ExternalServiceManagerMock) => {
   return {
-    authedRequest,
-    http: { authedRequest }
-  } as unknown as MatrixClient & {
-    http: { authedRequest: typeof authedRequest }
-  }
+    getAdminManager: () => ({ externalService: manager })
+  } as unknown as MatrixClient
 }
 
 const makeService = () => {
-  const client = makeClient()
+  const manager = makeExternalServiceManager()
+  const client = makeClient(manager)
   const service = new AdminExternalServiceService(() => client)
-  return { service, client }
+  return { service, client, manager }
 }
 
 const sampleService: ExternalService = {
@@ -53,155 +63,112 @@ describe('AdminExternalServiceService — P1-3 外部服务管理', () => {
     vi.clearAllMocks()
   })
 
-  it('listServices 使用 GET /external_services', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue([sampleService])
+  it('listServices 委托到 AdminExternalServiceManager.listServices（无过滤）', async () => {
+    const { service, manager } = makeService()
+    manager.listServices.mockResolvedValue([sampleService])
 
     const result = await service.listServices()
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/external_services',
-      undefined,
-      undefined,
-      expect.objectContaining({ prefix: '/_synapse/admin/v1' })
-    )
+    expect(manager.listServices).toHaveBeenCalledWith(undefined)
     expect(result).toHaveLength(1)
     expect(result[0].as_id).toBe('trendradar_news-bot')
   })
 
   it('listServices 支持按 service_type 过滤', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue([sampleService])
+    const { service, manager } = makeService()
+    manager.listServices.mockResolvedValue([sampleService])
 
     await service.listServices({ serviceType: 'trendradar' })
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/external_services',
-      { service_type: 'trendradar' },
-      undefined,
-      expect.any(Object)
-    )
+    expect(manager.listServices).toHaveBeenCalledWith('trendradar')
   })
 
   it('listServices 在出错时降级为空数组', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockRejectedValue(new Error('boom'))
+    const { service, manager } = makeService()
+    manager.listServices.mockRejectedValue(new Error('boom'))
     const result = await service.listServices()
     expect(result).toEqual([])
   })
 
-  it('registerService 使用 POST /external_services', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue(sampleService)
+  it('registerService 委托到 AdminExternalServiceManager.registerService', async () => {
+    const { service, manager } = makeService()
+    manager.registerService.mockResolvedValue(sampleService)
 
-    const result = await service.registerService({
+    const payload = {
       service_type: 'trendradar',
       service_id: 'news-bot',
       display_name: 'News Bot',
       webhook_url: 'https://example.com/webhook'
-    })
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'POST',
-      '/external_services',
-      undefined,
-      expect.objectContaining({
-        service_type: 'trendradar',
-        service_id: 'news-bot',
-        display_name: 'News Bot'
-      }),
-      expect.any(Object)
-    )
+    }
+    const result = await service.registerService(payload)
+    expect(manager.registerService).toHaveBeenCalledWith(payload)
     expect(result.as_id).toBe('trendradar_news-bot')
   })
 
-  it('updateService 使用 PUT /external_services/{as_id}', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({ ...sampleService, is_enabled: false })
+  it('updateService 委托到 AdminExternalServiceManager.updateService', async () => {
+    const { service, manager } = makeService()
+    manager.updateService.mockResolvedValue({ ...sampleService, is_enabled: false })
 
     const result = await service.updateService('trendradar_news-bot', { is_enabled: false })
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'PUT',
-      '/external_services/trendradar_news-bot',
-      undefined,
-      expect.objectContaining({ is_enabled: false }),
-      expect.any(Object)
-    )
+    expect(manager.updateService).toHaveBeenCalledWith('trendradar_news-bot', { is_enabled: false })
     expect(result.is_enabled).toBe(false)
   })
 
-  it('deleteService 使用 DELETE /external_services/{as_id}', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue(undefined)
+  it('deleteService 委托到 AdminExternalServiceManager.deleteService', async () => {
+    const { service, manager } = makeService()
+    manager.deleteService.mockResolvedValue(undefined)
 
     await service.deleteService('trendradar_news-bot')
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'DELETE',
-      '/external_services/trendradar_news-bot',
-      undefined,
-      undefined,
-      expect.any(Object)
-    )
+    expect(manager.deleteService).toHaveBeenCalledWith('trendradar_news-bot')
   })
 
-  it('getAllHealth 使用 GET /external_services/health', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue([sampleHealth])
+  it('getAllHealth 委托到 AdminExternalServiceManager.getAllHealth', async () => {
+    const { service, manager } = makeService()
+    manager.getAllHealth.mockResolvedValue([sampleHealth])
 
     const result = await service.getAllHealth()
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/external_services/health',
-      undefined,
-      undefined,
-      expect.any(Object)
-    )
+    expect(manager.getAllHealth).toHaveBeenCalledWith()
     expect(result).toHaveLength(1)
     expect(result[0].is_healthy).toBe(true)
   })
 
   it('getAllHealth 在出错时降级为空数组', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockRejectedValue(new Error('boom'))
+    const { service, manager } = makeService()
+    manager.getAllHealth.mockRejectedValue(new Error('boom'))
     const result = await service.getAllHealth()
     expect(result).toEqual([])
   })
 
-  it('getServiceHealth 使用 GET /external_services/{as_id}/health', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue(sampleHealth)
+  it('getServiceHealth 委托到 AdminExternalServiceManager.getServiceHealth', async () => {
+    const { service, manager } = makeService()
+    manager.getServiceHealth.mockResolvedValue(sampleHealth)
 
     const result = await service.getServiceHealth('trendradar_news-bot')
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/external_services/trendradar_news-bot/health',
-      undefined,
-      undefined,
-      expect.any(Object)
-    )
+    expect(manager.getServiceHealth).toHaveBeenCalledWith('trendradar_news-bot')
     expect(result?.is_healthy).toBe(true)
   })
 
-  it('getServiceHealth 404 时返回 null', async () => {
-    const { service, client } = makeService()
-    const err = Object.assign(new Error('not found'), { httpStatus: 404 })
-    client.http.authedRequest.mockRejectedValue(err)
+  it('getServiceHealth 404 时返回 null（由 SDK 处理 404）', async () => {
+    const { service, manager } = makeService()
+    // SDK 已经在 404 时返回 null
+    manager.getServiceHealth.mockResolvedValue(null)
 
     const result = await service.getServiceHealth('unknown_service')
     expect(result).toBeNull()
   })
 
-  it('checkServiceHealth 使用 POST /external_services/{as_id}/health/check', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({ as_id: 'trendradar_news-bot', is_healthy: true })
+  it('getServiceHealth 其他错误时返回 null 并记录日志', async () => {
+    const { service, manager } = makeService()
+    manager.getServiceHealth.mockRejectedValue(new Error('server error'))
+
+    const result = await service.getServiceHealth('trendradar_news-bot')
+    expect(result).toBeNull()
+  })
+
+  it('checkServiceHealth 委托到 AdminExternalServiceManager.checkServiceHealth', async () => {
+    const { service, manager } = makeService()
+    manager.checkServiceHealth.mockResolvedValue({ as_id: 'trendradar_news-bot', is_healthy: true })
 
     const result = await service.checkServiceHealth('trendradar_news-bot')
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'POST',
-      '/external_services/trendradar_news-bot/health/check',
-      undefined,
-      undefined,
-      expect.any(Object)
-    )
+    expect(manager.checkServiceHealth).toHaveBeenCalledWith('trendradar_news-bot')
     expect(result.is_healthy).toBe(true)
   })
 })
