@@ -30,7 +30,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
   async getRoomCapabilities(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.CAPABILITIES(roomId))
+      const result = await client.getRoomManager().getRoomCapabilities(roomId)
       return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间能力失败: ${err}`)
@@ -41,7 +41,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
   async getRoomMetadata(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.METADATA(roomId))
+      const result = await client.getRoomManager().getRoomMetadata(roomId)
       return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间元数据失败: ${err}`)
