@@ -56,6 +56,22 @@ function shouldUseBrowserFallback(input: URL | RequestInfo): boolean {
   return /^https?:\/\//i.test(url) && typeof globalThis.fetch === 'function'
 }
 
+/**
+ * dev 模式下 .test/.localhost/.local 域名的 _matrix/_synapse 请求直接走浏览器 fetch
+ * （经 Vite proxy 转发到后端），跳过 nativeFetch 避免无效尝试和 WARN 噪音。
+ */
+function shouldUseBrowserFetchDirectly(input: URL | RequestInfo): boolean {
+  if (!import.meta.env.DEV) return false
+  try {
+    const parsed = new URL(resolveRequestUrl(input))
+    const isDevDomain = RELAXED_TLS_HOST_SUFFIXES.some((s) => parsed.hostname.endsWith(s))
+    const isProxiedPath = parsed.pathname.startsWith('/_matrix/') || parsed.pathname.startsWith('/_synapse/')
+    return isDevDomain && isProxiedPath
+  } catch {
+    return false
+  }
+}
+
 function rewriteToDevProxyUrl(url: string): string {
   // Tauri 桌面端 dev 模式下 nativeFetch 偶发失败（resource id invalid），
   // 回退到浏览器 fetch 时需要走 Vite proxy 避免 CORS/自签名证书问题
@@ -124,8 +140,16 @@ async function fetchWithRetry(
 
 function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
   return (async (input: URL | RequestInfo, init?: RequestInit) => {
-    const normalizedInit = withTauriClientOptions(input, init)
     const url = resolveRequestUrl(input)
+
+    // dev 模式下 .test 域名的 _matrix/_synapse 请求直接走浏览器 fetch（经 Vite proxy），
+    // 跳过 nativeFetch 避免无效尝试和 WARN 噪音
+    if (shouldUseBrowserFetchDirectly(input)) {
+      const proxyUrl = rewriteToDevProxyUrl(url)
+      return await fetchWithRetry(globalThis.fetch, proxyUrl, withOmittedCredentials(init))
+    }
+
+    const normalizedInit = withTauriClientOptions(input, init)
 
     try {
       const response = await nativeFetch(input as URL | Request | string, normalizedInit)
