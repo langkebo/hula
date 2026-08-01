@@ -7,10 +7,16 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
     getClient: vi.fn().mockReturnValue({
       getFriendManager: vi.fn().mockReturnValue({
-        on: vi.fn(() => () => {})
+        on: vi.fn(() => () => {}),
+        off: vi.fn()
       }),
       getBurnAfterReadManager: vi.fn().mockReturnValue({
-        on: vi.fn(() => () => {})
+        on: vi.fn(() => () => {}),
+        off: vi.fn()
+      }),
+      getWidgetManager: vi.fn().mockReturnValue({
+        on: vi.fn(() => () => {}),
+        off: vi.fn()
       })
     }),
     waitForClientReady: vi.fn().mockResolvedValue(undefined)
@@ -45,5 +51,21 @@ describe('Manager event subscription', () => {
     const unsub = await mod.subscribeManagerEvents()
     expect(typeof unsub).toBe('function')
     unsub()
+  })
+
+  it('subscribeManagerEvents subscribes to WidgetManager', async () => {
+    const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
+    const client = matrixClientService.getClient() as {
+      getWidgetManager: () => { on: ReturnType<typeof vi.fn>; off: ReturnType<typeof vi.fn> }
+    }
+    const widgetMgr = client.getWidgetManager()
+    widgetMgr.on.mockClear()
+    widgetMgr.off.mockClear()
+
+    const mod = await import('../useWsEventHandler')
+    const unsub = await mod.subscribeManagerEvents()
+    expect(widgetMgr.on).toHaveBeenCalled()
+    unsub()
+    expect(widgetMgr.off).toHaveBeenCalled()
   })
 })
