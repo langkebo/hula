@@ -38,6 +38,7 @@
  *   - synapse-rust/src/web/routes/auth_compat.rs (m.login.token 处理)
  */
 
+import { MSC4108SignInWithQR } from 'matrix-js-sdk'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
@@ -523,19 +524,11 @@ class MatrixQrLoginSdkService {
 
       this.setStatus('waiting_confirm')
 
-      // Step 11: Generate short-lived login token via POST /v1/login/qr_token.
+      // Step 11: Generate short-lived login token via SDK MSC4108SignInWithQR.generateQrLoginToken().
       // This is an authenticated request — the existing device's credentials
       // authorize issuance of a token bound to its user_id.
-      // Not migrated to SDK: no manager method exists for POST /login/qr_token
-      // (RendezvousManager only covers /rendezvous/* routes, MSC4108SignInWithQR
-      // has no qr_token helper). Left as direct HTTP.
-      const tokenResponse = await client.http.authedRequest<{ login_token: string; expires_in_ms: number }>(
-        'POST',
-        '/login/qr_token',
-        undefined,
-        undefined,
-        { prefix: '/_matrix/client/v1' }
-      )
+      const qrHelper = new MSC4108SignInWithQR(null as never, true, client)
+      const tokenResponse = await qrHelper.generateQrLoginToken()
 
       const homeserverUrl = client.getHomeserverUrl()
       const userId = (client as { getUserId(): string }).getUserId()
