@@ -135,6 +135,68 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     }
   }
 
+  // ==================== Event Signature / Verification ====================
+
+  async signEvent(roomId: string, eventId: string): Promise<{ signature: string; signed_by: string }> {
+    const client = this.getClient()
+    try {
+      const result = await client.http.authedRequest<Record<string, unknown>>(
+        'PUT',
+        MATRIX_PATHS.ROOM.SIGN(roomId, eventId)
+      )
+      logger.info(`[MatrixRoom] 事件签名成功: ${roomId}/${eventId}`)
+      return result as { signature: string; signed_by: string }
+    } catch (err) {
+      logger.error(`[MatrixRoom] 事件签名失败: ${err}`)
+      throw err
+    }
+  }
+
+  async verifyEvent(roomId: string, eventId: string): Promise<{ valid: boolean; verifier: string }> {
+    const client = this.getClient()
+    try {
+      const result = await client.http.authedRequest<Record<string, unknown>>(
+        'POST',
+        MATRIX_PATHS.ROOM.VERIFY(roomId, eventId)
+      )
+      logger.info(`[MatrixRoom] 事件验签成功: ${roomId}/${eventId}`)
+      return result as { valid: boolean; verifier: string }
+    } catch (err) {
+      logger.error(`[MatrixRoom] 事件验签失败: ${err}`)
+      throw err
+    }
+  }
+
+  // ==================== Message Queue / Encrypted Events ====================
+
+  async getMessageQueue(roomId: string): Promise<Record<string, unknown>> {
+    const client = this.getClient()
+    try {
+      const result = await client.http.authedRequest<Record<string, unknown>>(
+        'GET',
+        MATRIX_PATHS.ROOM.MESSAGE_QUEUE(roomId)
+      )
+      return (result as Record<string, unknown>) ?? {}
+    } catch (err) {
+      logger.error(`[MatrixRoom] 获取消息队列失败: ${err}`)
+      return {}
+    }
+  }
+
+  async getEncryptedEvents(roomId: string): Promise<Record<string, unknown>> {
+    const client = this.getClient()
+    try {
+      const result = await client.http.authedRequest<Record<string, unknown>>(
+        'GET',
+        MATRIX_PATHS.ROOM.ENCRYPTED_EVENTS(roomId)
+      )
+      return (result as Record<string, unknown>) ?? {}
+    } catch (err) {
+      logger.error(`[MatrixRoom] 获取加密事件列表失败: ${err}`)
+      return {}
+    }
+  }
+
   // ==================== Room Summary REST API ====================
 
   async getRoomSummary(roomId: string): Promise<RoomSummary | null> {

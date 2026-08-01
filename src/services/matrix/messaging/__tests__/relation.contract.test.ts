@@ -1,16 +1,18 @@
 /**
  * Message-relation service contract tests.
  *
- * fetchRelations, fetchRelationsByType, getAggregations now delegate to SDK
- * RelationsManager — tests verify the manager is called with correct args.
+ * fetchRelations, fetchRelationsByType, getAggregations delegate to the SDK
+ * RelationsManager — tests verify the manager is called with correct args
+ * (manager is stubbed).
  *
- * sendRelation still uses client.http.authedRequest directly (body structure
- * mismatch with SDK: frontend spreads content at top level, SDK/backend expect
- * nested `content` field) — tested via MSW at the HTTP boundary.
+ * sendRelation delegates to SDK RelationsManager.sendRelationViaSendRelation,
+ * which issues a PUT through client.http.authedRequest — tested via MSW at the
+ * HTTP boundary using the real manager (prototype method registered by
+ * extendMatrixClientWithManagers).
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, extendMatrixClientWithManagers, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixClientService } from '../../MatrixClientService'
 import { matrixMessageRelationService } from '../MatrixMessageRelationService'
@@ -46,6 +48,14 @@ describe('Message-relation service contract', () => {
     fetchRelations: ReturnType<typeof vi.fn>
     getAggregations: ReturnType<typeof vi.fn>
   }
+
+  beforeAll(async () => {
+    // Register getRelationsManager (and all other manager getters) on
+    // MatrixClient.prototype. Required for the sendRelation test, which
+    // exercises the real SDK RelationsManager.sendRelationViaSendRelation
+    // path through authedRequest → MSW.
+    await extendMatrixClientWithManagers()
+  })
 
   beforeEach(() => {
     seenUrls.length = 0
@@ -108,6 +118,12 @@ describe('Message-relation service contract', () => {
   })
 
   it('sendRelation hits /_matrix/client/v3/rooms/{roomId}/relations/{eventId}/{relType}/{txnId} with PUT (no duplication)', async () => {
+    // beforeEach installed a stub getRelationsManager on the instance (for the
+    // delegation tests). Remove it so the real prototype method registered by
+    // extendMatrixClientWithManagers is used — sendRelationViaSendRelation
+    // then flows through client.http.authedRequest to MSW.
+    delete (realClient as unknown as Record<string, unknown>).getRelationsManager
+
     const before = Date.now()
     const result = await matrixMessageRelationService.sendRelation(
       '!r:hs',

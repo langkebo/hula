@@ -219,6 +219,13 @@ export class MatrixEventRouter {
       this.detach(this.observedClient, syncManager)
     }
 
+    // 针对 client 实例设置监听器上限，避免多房间场景下触发内存泄漏警告。
+    // SDK 的 MatrixClient 继承自 EventEmitter，默认 maxListeners=10。
+    // Room/RoomState 的监听器（每房间 2 个）在 50 个房间时即达 100，远超默认值。
+    // 实例级设置仅影响当前 client，不污染全局。
+    const clientAny = client as MatrixClient & { setMaxListeners?: (n: number) => void }
+    clientAny.setMaxListeners?.(50)
+
     client.on('sync', this.syncListener)
     client.on('room', this.roomListener)
     client.on('room_timeline', this.roomTimelineListener)

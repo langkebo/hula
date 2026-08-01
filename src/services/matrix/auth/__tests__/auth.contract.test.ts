@@ -10,9 +10,10 @@
  * producing /_matrix/client/v3/_matrix/client/v3/... — the MSW handler
  * won't match and the test will FAIL.
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, extendMatrixClientWithManagers, type MatrixClient } from 'matrix-js-sdk'
+import { extendMatrixClient as extendSaml } from 'matrix-js-sdk/saml'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { MatrixAuthService } from '../MatrixAuthService'
 
@@ -56,13 +57,24 @@ setupMswServer(
     seenUrls.push(request.url)
     return HttpResponse.json({})
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/login/saml/metadata`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/client/r0/saml/metadata`, ({ request }) => {
     seenUrls.push(request.url)
     return HttpResponse.json({ enabled: true })
   })
 )
 
 describe('MatrixAuthService URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    // Register manager getters (getCapabilitiesManager, getAccountManager,
+    // getAuthManager, ...) on MatrixClient.prototype. Without this, createClient()
+    // returns a bare client with no manager methods (under Vitest the SDK skips
+    // its async auto-init, so the registration must be explicit).
+    await extendMatrixClientWithManagers()
+    // The saml module is not wired into extendMatrixClientWithManagers() in the
+    // current SDK build, so register getSamlAuthManager explicitly here.
+    extendSaml()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     realClient = createClient({
@@ -101,11 +113,11 @@ describe('MatrixAuthService URL construction contract (real SDK + msw)', () => {
     expect(logoutCalls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/logout`)
   })
 
-  it('getSamlMetadata hits /_matrix/client/v3/login/saml/metadata exactly once (no duplication)', async () => {
+  it('getSamlMetadata hits /_matrix/client/r0/saml/metadata exactly once (no duplication)', async () => {
     await MatrixAuthService.getSamlMetadata()
 
     const samlCalls = seenUrls.filter((u) => u.includes('/saml/metadata'))
     expect(samlCalls).toHaveLength(1)
-    expect(samlCalls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/login/saml/metadata`)
+    expect(samlCalls[0]).toBe(`${HOMESERVER}/_matrix/client/r0/saml/metadata`)
   })
 })

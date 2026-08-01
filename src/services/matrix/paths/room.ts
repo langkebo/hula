@@ -62,5 +62,11 @@ export const ROOM = {
   METADATA: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/metadata`,
   TURN_SERVER: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/turn_server`,
   ROOM_SYNC: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/sync`,
-  CALL: (roomId: string, callId: string) => `/rooms/${encodeURIComponent(roomId)}/call/${encodeURIComponent(callId)}`
+  CALL: (roomId: string, callId: string) => `/rooms/${encodeURIComponent(roomId)}/call/${encodeURIComponent(callId)}`,
+  SIGN: (roomId: string, eventId: string) =>
+    `/rooms/${encodeURIComponent(roomId)}/sign/${encodeURIComponent(eventId)}`,
+  VERIFY: (roomId: string, eventId: string) =>
+    `/rooms/${encodeURIComponent(roomId)}/verify/${encodeURIComponent(eventId)}`,
+  MESSAGE_QUEUE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/message_queue`,
+  ENCRYPTED_EVENTS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/encrypted_events`
 } as const

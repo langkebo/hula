@@ -547,11 +547,24 @@ class SpaceService extends BaseMatrixService {
   }
 
   async getUserSpaces(): Promise<SpaceInfo[]> {
+    // 浏览器 dev 模式下 SDK 可能等待 sync 导致 manager.getUserSpaces() 长时间挂起，
+    // 这里加 3s 超时保护，超时后 fallback 到本地房间列表，避免 UI 永久 loading。
+    const USER_SPACES_TIMEOUT_MS = 3000
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
     try {
       const manager = this.getSpaceManager()
-      const spaces = await manager.getUserSpaces()
+      const spacesPromise = manager.getUserSpaces()
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error('getUserSpaces timeout')),
+          USER_SPACES_TIMEOUT_MS
+        )
+      })
+      const spaces = await Promise.race([spacesPromise, timeoutPromise])
+      if (timeoutId) clearTimeout(timeoutId)
       return spaces.map((s) => this.sdkSpaceToSpaceInfo(s))
     } catch (err) {
+      if (timeoutId) clearTimeout(timeoutId)
       // 客户端未就绪时静默返回空列表，不输出错误日志
       const client = matrixClientService.getClient()
       if (!client) {

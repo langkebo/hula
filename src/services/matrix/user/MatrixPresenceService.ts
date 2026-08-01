@@ -333,7 +333,8 @@ class MatrixPresenceService extends BaseMatrixService {
           const client = this.getClient()
           client.off('User.presence' as never, this.clientPresenceListener as never)
         } catch (err) {
-          logger.warn('Presence update failed (client may be gone):', err)
+          // 页面切换/登出时 client 可能已销毁，这是预期行为，降级为 debug 避免噪音
+          logger.debug('Presence 清理跳过（client 可能已销毁）:', err)
         }
         this.clientPresenceListener = null
       }

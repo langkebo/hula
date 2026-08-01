@@ -44,7 +44,11 @@ setupMswServer(
   }),
   http.get(`${HOMESERVER}/_matrix/client/v3/my_rooms`, ({ request }) => {
     seenUrls.push(request.url)
-    return HttpResponse.json({ room_ids: ['!room1:test', '!room2:test'] })
+    // SDK MyRoomsResponse shape: { rooms: [{ room_id, name? }], total }
+    return HttpResponse.json({
+      rooms: [{ room_id: '!room1:test' }, { room_id: '!room2:test' }],
+      total: 2
+    })
   }),
   http.get(`${HOMESERVER}/_matrix/client/v3/events`, ({ request }) => {
     seenUrls.push(request.url)

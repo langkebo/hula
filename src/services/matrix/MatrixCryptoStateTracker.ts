@@ -123,6 +123,14 @@ export class MatrixCryptoStateTracker {
       return
     }
 
+    // H1 修复：检查 localStorage 中的 userId:deviceId，换设备/换用户时主动清理旧 crypto store。
+    // 旧版本仅存储 userId（无冒号），也视为需要清理（向后兼容）。
+    const cryptoUserKey = `${userId}:${deviceId}`
+    const storedKey = localStorage.getItem('hula.lastCryptoUserId')
+    if (storedKey !== cryptoUserKey) {
+      await clearStaleCryptoStores(userId)
+    }
+
     const useIndexedDB = typeof globalThis.indexedDB !== 'undefined'
     this.rustCryptoDebugState = {
       attempted: true,
@@ -143,6 +151,8 @@ export class MatrixCryptoStateTracker {
         error: null,
         usedIndexedDB: useIndexedDB
       }
+      // H1 修复：成功初始化后存储 userId:deviceId，下次启动时检测设备变更
+      localStorage.setItem('hula.lastCryptoUserId', cryptoUserKey)
       logger.info(`Rust Crypto 初始化完成: ${userId}/${deviceId}`)
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
@@ -160,6 +170,7 @@ export class MatrixCryptoStateTracker {
             error: null,
             usedIndexedDB: useIndexedDB
           }
+          localStorage.setItem('hula.lastCryptoUserId', cryptoUserKey)
           logger.info(`Rust Crypto 重试初始化完成: ${userId}/${deviceId}`)
           return
         } catch (retryErr) {
@@ -227,6 +238,15 @@ export class MatrixCryptoStateTracker {
       lastError: null
     }
   }
+
+  /**
+   * 登出时清除 crypto store 记录。
+   * 删除 IndexedDB 中的旧 crypto 数据库，并清除 localStorage 中的 userId:deviceId 记录。
+   */
+  async clearCryptoStoreForLogout(userId: string): Promise<void> {
+    await clearStaleCryptoStores(userId)
+    localStorage.removeItem('hula.lastCryptoUserId')
+  }
 }
 
 /**
@@ -244,21 +264,33 @@ async function clearStaleCryptoStores(userId: string): Promise<void> {
   )
     .databases?.()
     .catch(() => [] as IDBDatabaseInfo[])
-  if (!databases) return
   const cryptoDbPrefix = 'matrix-js-sdk:crypto'
   const userSuffix = userId.replace(/[^a-zA-Z0-9]/g, '_')
+
+  // 收集需要删除的数据库名称
+  const dbNames = new Set<string>()
+
+  // 从 databases() 列表中筛选匹配的数据库
+  if (databases) {
+    for (const db of databases) {
+      if (db.name?.startsWith(cryptoDbPrefix) && db.name.includes(userSuffix)) {
+        dbNames.add(db.name)
+      }
+    }
+  }
+
+  // 也尝试已知的 crypto DB 名称模式（兜底：databases() 不可用或返回空时）
+  dbNames.add(`${cryptoDbPrefix}:${userSuffix}`)
+
   await Promise.all(
-    databases
-      .filter((db: IDBDatabaseInfo) => db.name?.startsWith(cryptoDbPrefix) && db.name.includes(userSuffix))
-      .map(
-        (db: IDBDatabaseInfo) =>
-          new Promise<void>((resolve) => {
-            if (!db.name) return resolve()
-            const req = globalThis.indexedDB.deleteDatabase(db.name)
-            req.onsuccess = () => resolve()
-            req.onerror = () => resolve()
-            req.onblocked = () => resolve()
-          })
-      )
+    [...dbNames].map(
+      (dbName: string) =>
+        new Promise<void>((resolve) => {
+          const req = globalThis.indexedDB.deleteDatabase(dbName)
+          req.onsuccess = () => resolve()
+          req.onerror = () => resolve()
+          req.onblocked = () => resolve()
+        })
+    )
   )
 }

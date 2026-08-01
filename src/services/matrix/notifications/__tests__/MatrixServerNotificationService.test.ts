@@ -49,26 +49,41 @@ const server = setupMswServer(
 )
 
 // Mock getClient() to return a client whose authedRequest calls real fetch (MSW-interceptable)
+// and whose getAdminManager().server.* also routes through fetch so MSW handlers apply.
+const authedRequestImpl = async (method: string, path: string, _queryParams?: any, body?: any) => {
+  const url = `${TEST_BASE_URL}${path}`
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: 'Bearer test-access-token'
+  }
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined
+  })
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+  return response.json()
+}
+
 vi.spyOn(matrixServerNotificationService as any, 'getClient').mockReturnValue({
   getUserId: () => '@test:example.com',
   http: {
-    authedRequest: async (method: string, path: string, _queryParams?: any, body?: any) => {
-      const url = `${TEST_BASE_URL}${path}`
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer test-access-token'
-      }
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      return response.json()
+    authedRequest: authedRequestImpl
+  },
+  getAdminManager: () => ({
+    server: {
+      createServerNotification: (payload: Record<string, unknown>) =>
+        authedRequestImpl('POST', '/_synapse/admin/v1/server_notifications', undefined, payload),
+      getServerNotification: (id: string) =>
+        authedRequestImpl('GET', `/_synapse/admin/v1/server_notifications/${id}`),
+      listActiveServerNotifications: () =>
+        authedRequestImpl('GET', '/_synapse/admin/v1/server_notifications/active'),
+      markServerNotificationAsRead: (id: string) =>
+        authedRequestImpl('POST', `/_synapse/admin/v1/server_notifications/${id}/read`)
     }
-  }
+  })
 })
 
 describe('MatrixServerNotificationService', () => {

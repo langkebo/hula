@@ -479,6 +479,18 @@ class MatrixVoiceService extends BaseMatrixService {
       return null
     }
   }
+
+  async getRtcTransports(): Promise<{ transports?: Array<{ transport: string; version: string }> }> {
+    try {
+      return (await this.getClient().http.authedRequest(
+        'GET',
+        '/_matrix/client/unstable/org.matrix.msc4143/rtc/transports'
+      )) as { transports?: Array<{ transport: string; version: string }> }
+    } catch (err) {
+      logger.warn(`[MatrixVoiceService] getRtcTransports failed: ${err}`)
+      return {}
+    }
+  }
 }
 
 export const matrixVoiceService = new MatrixVoiceService()

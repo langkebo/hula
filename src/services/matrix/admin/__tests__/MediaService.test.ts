@@ -116,20 +116,14 @@ describe('AdminMediaService', () => {
     await expect(service.getMediaStats()).resolves.toBeNull()
   })
 
-  it('purgeRemoteMedia 通过 admin HTTP 端点发送 before_ts 与 include_profiles', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+  it('purgeRemoteMedia 通过 admin SDK manager 发送 before_ts 与 include_profiles', async () => {
+    const purgeRemoteMedia = vi.fn().mockResolvedValue({ deleted: 3 })
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
+      getAdminManager: () => ({ media: { purgeRemoteMedia } })
+    } as never)
 
     await expect(service.purgeRemoteMedia(1700000000000, true)).resolves.toEqual({ deleted: 3 })
-    expect(authedRequestImpl).toHaveBeenCalledWith(
-      'POST',
-      '/admin/purge_remote_media',
-      undefined,
-      {
-        before_ts: 1700000000000,
-        include_profiles: true
-      },
-      { prefix: '/_matrix/client/v1' }
-    )
+    expect(purgeRemoteMedia).toHaveBeenCalledWith(1700000000000, true)
   })
 
   it('purgeRemoteMedia 客户端未初始化时抛错', async () => {
