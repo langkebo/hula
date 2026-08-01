@@ -4,9 +4,9 @@
  * Tests URL construction for MatrixAccountService, MatrixDeviceService,
  * and MatrixPresenceService.
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, extendMatrixClientWithManagers, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixAccountService } from '../MatrixAccountService'
 import { matrixDeviceService } from '../MatrixDeviceService'
@@ -35,6 +35,9 @@ vi.mock('@/services/i18n', () => ({
 }))
 
 setupMswServer(
+  http.get(`${HOMESERVER}/_matrix/client/versions`, () => {
+    return HttpResponse.json({ versions: ['v3'], unstable_features: {} })
+  }),
   http.get(`${HOMESERVER}/_matrix/client/v3/thirdparty/protocols`, ({ request }) => {
     seenUrls.push(request.url)
     return HttpResponse.json({ protocols: {} })
@@ -66,6 +69,10 @@ setupMswServer(
 )
 
 describe('User service URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    await extendMatrixClientWithManagers()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     realClient = createClient({
@@ -125,12 +132,17 @@ describe('User service URL construction contract (real SDK + msw)', () => {
     expect(calls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/delete_devices`)
   })
 
-  it('getRoomKeyRequests hits /_matrix/client/v3/room_keys/request (no duplication)', async () => {
+  it('getRoomKeyRequests delegates to RoomKeysManager.getRoomKeyRequests', async () => {
+    // room-keys module is not in the default SDK extensions; mock the manager
+    // to verify delegation (URL construction is covered by SDK unit tests)
+    const mockGetRoomKeyRequests = vi.fn().mockResolvedValue({ requests: [] })
+    ;(realClient as unknown as Record<string, unknown>).getRoomKeysManager = () => ({
+      getRoomKeyRequests: mockGetRoomKeyRequests
+    })
+
     await matrixDeviceService.getRoomKeyRequests()
 
-    const calls = seenUrls.filter((u) => u.includes('/room_keys/request'))
-    expect(calls).toHaveLength(1)
-    expect(calls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/room_keys/request`)
+    expect(mockGetRoomKeyRequests).toHaveBeenCalledOnce()
   })
 
   // --- MatrixPresenceService ---

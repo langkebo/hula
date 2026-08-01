@@ -1,6 +1,6 @@
-import type { IPusher, IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
+import type { IPusher, IPusherRequest, IPushRule, IPushRules, PushRuleAction } from 'matrix-js-sdk'
 import { PushRuleKind, TweakName } from 'matrix-js-sdk'
-import type { MatrixClientExtended } from '@/types/matrix-extensions'
+import type { MatrixClient } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { shouldNotifyForEventType } from './pushRules'
@@ -13,15 +13,7 @@ class MatrixPushService extends BaseMatrixService {
   async getPushers(): Promise<IPusher[]> {
     const client = this.getClient()
     try {
-      const pushManager = (
-        client as unknown as { getPushManager?: () => { getPushers: () => Promise<IPusher[]> } }
-      ).getPushManager?.()
-      if (pushManager) {
-        return await pushManager.getPushers()
-      }
-      // Fallback to direct HTTP
-      const response = (await client.http.authedRequest('GET', '/pushers')) as { pushers?: unknown }
-      return Array.isArray(response.pushers) ? (response.pushers as IPusher[]) : []
+      return await client.getPushManager().getPushers()
     } catch (err) {
       logger.error(`[MatrixPush] 获取 pushers 失败: ${err}`)
       throw err
@@ -40,23 +32,11 @@ class MatrixPushService extends BaseMatrixService {
 
   async unregisterPusher(pushkey: string, appId: string): Promise<void> {
     const client = this.getClient()
-    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      const pushManager = extendedClient.getPushManager?.()
       const deviceId = client.getDeviceId()
-
-      if (pushManager) {
-        // 使用 SDK PushManager.removePusher（SDK-7: 支持 deviceId 参数）
-        await pushManager.removePusher(pushkey, appId, deviceId || undefined)
-        logger.info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
-      } else {
-        await client.http.authedRequest('POST', '/pushers/set', undefined, {
-          pushkey,
-          app_id: appId,
-          kind: null
-        })
-        logger.info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
-      }
+      // SDK PushManager.removePusher（SDK-7: 支持 deviceId 参数）
+      await client.getPushManager().removePusher(pushkey, appId, deviceId || undefined)
+      logger.info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
     } catch (err) {
       logger.error(`[MatrixPush] 注销 pusher 失败: ${err}`)
       throw err
@@ -66,28 +46,7 @@ class MatrixPushService extends BaseMatrixService {
   async setPushRuleEnabled(scope: PushRuleScope, kind: PushRuleKind | string, ruleId: string, enabled: boolean) {
     const client = this.getClient()
     try {
-      const pushManager = (
-        client as unknown as {
-          getPushManager?: () => {
-            setPushRuleEnabled: (
-              scope: string,
-              kind: PushRuleKind | string,
-              ruleId: string,
-              enabled: boolean
-            ) => Promise<void>
-          }
-        }
-      ).getPushManager?.()
-      if (pushManager) {
-        await pushManager.setPushRuleEnabled(scope, kind, ruleId, enabled)
-        logger.info(`[MatrixPush] 设置规则 enabled 成功: ${scope}/${String(kind)}/${ruleId} -> ${enabled}`)
-        return
-      }
-      // Fallback to direct HTTP
-      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
-        ruleId
-      )}/enabled`
-      await client.http.authedRequest('PUT', path, undefined, { enabled })
+      await client.getPushManager().setPushRuleEnabled(scope, kind as PushRuleKind, ruleId, enabled)
       logger.info(`[MatrixPush] 设置规则 enabled 成功: ${scope}/${String(kind)}/${ruleId} -> ${enabled}`)
     } catch (err) {
       logger.error(`[MatrixPush] 设置规则 enabled 失败: ${err}`)
@@ -103,28 +62,7 @@ class MatrixPushService extends BaseMatrixService {
   ) {
     const client = this.getClient()
     try {
-      const pushManager = (
-        client as unknown as {
-          getPushManager?: () => {
-            setPushRuleActions: (
-              scope: string,
-              kind: PushRuleKind | string,
-              ruleId: string,
-              actions: PushRuleAction[]
-            ) => Promise<void>
-          }
-        }
-      ).getPushManager?.()
-      if (pushManager) {
-        await pushManager.setPushRuleActions(scope, kind, ruleId, actions)
-        logger.info(`[MatrixPush] 设置规则 actions 成功: ${scope}/${String(kind)}/${ruleId}`)
-        return
-      }
-      // Fallback to direct HTTP
-      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
-        ruleId
-      )}/actions`
-      await client.http.authedRequest('PUT', path, undefined, { actions })
+      await client.getPushManager().setPushRuleActions(scope, kind as PushRuleKind, ruleId, actions)
       logger.info(`[MatrixPush] 设置规则 actions 成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 设置规则 actions 失败: ${err}`)
@@ -135,20 +73,7 @@ class MatrixPushService extends BaseMatrixService {
   async muteRoom(roomId: string): Promise<void> {
     const client = this.getClient()
     try {
-      const pushManager = (
-        client as unknown as { getPushManager?: () => { muteRoom: (roomId: string) => Promise<void> } }
-      ).getPushManager?.()
-      if (pushManager) {
-        await pushManager.muteRoom(roomId)
-        logger.info(`[MatrixPush] 房间静音成功: ${roomId}`)
-        return
-      }
-      // Fallback to direct HTTP
-      const path = `/pushrules/global/room/${encodeURIComponent(roomId)}`
-      await client.http.authedRequest('PUT', path, undefined, {
-        actions: ['dont_notify'],
-        enabled: true
-      })
+      await client.getPushManager().muteRoom(roomId)
       logger.info(`[MatrixPush] 房间静音成功: ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 房间静音失败: ${err}`)
@@ -159,17 +84,7 @@ class MatrixPushService extends BaseMatrixService {
   async unmuteRoom(roomId: string): Promise<void> {
     const client = this.getClient()
     try {
-      const pushManager = (
-        client as unknown as { getPushManager?: () => { unmuteRoom: (roomId: string) => Promise<void> } }
-      ).getPushManager?.()
-      if (pushManager) {
-        await pushManager.unmuteRoom(roomId)
-        logger.info(`[MatrixPush] 取消房间静音成功: ${roomId}`)
-        return
-      }
-      // Fallback to direct HTTP
-      const path = `/pushrules/global/room/${encodeURIComponent(roomId)}`
-      await client.http.authedRequest('DELETE', path)
+      await client.getPushManager().unmuteRoom(roomId)
       logger.info(`[MatrixPush] 取消房间静音成功: ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 取消房间静音失败: ${err}`)
@@ -179,47 +94,27 @@ class MatrixPushService extends BaseMatrixService {
 
   async registerPusher(pusher: IPusher): Promise<void> {
     const client = this.getClient()
-    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      const pushManager = extendedClient.getPushManager?.()
       const deviceId = client.getDeviceId()
       const pusherData = pusher as unknown as Record<string, unknown>
-
-      if (pushManager) {
-        // 使用 SDK PushManager（SDK-7: device_id 必填化）
-        // SDK 的 IPusherRequest 通过 Omit 移除了 device_id 字段（由 SDK 自动注入当前 device_id），
-        // 但 hula 需要显式控制 device_id，因此扩展类型以允许该字段
-        const pusherRequest = {
-          pushkey: pusher.pushkey,
-          kind: pusher.kind,
-          app_id: pusher.app_id,
-          app_display_name: pusher.app_display_name,
-          device_display_name: pusher.device_display_name,
-          lang: pusher.lang,
-          data: pusher.data,
-          device_id: (pusherData.device_id as string) || deviceId || undefined
-        } as IPusherRequest & { device_id?: string }
-        if (pusherData.profile_tag) {
-          pusherRequest.profile_tag = pusherData.profile_tag as string
-        }
-        await pushManager.setPusher(pusherRequest)
-        logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
-      } else {
-        // 降级到直接 HTTP 调用（同时确保 device_id 必填，SDK-7）
-        const body: Record<string, unknown> = {
-          pushkey: pusher.pushkey,
-          kind: pusher.kind,
-          app_id: pusher.app_id,
-          app_display_name: pusher.app_display_name,
-          device_display_name: pusher.device_display_name,
-          lang: pusher.lang,
-          data: pusher.data,
-          device_id: pusherData.device_id || deviceId
-        }
-        if (pusherData.profile_tag) body.profile_tag = pusherData.profile_tag
-        await client.http.authedRequest('POST', '/pushers/set', undefined, body)
-        logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
+      // 使用 SDK PushManager（SDK-7: device_id 必填化）
+      // SDK 的 IPusherRequest 通过 Omit 移除了 device_id 字段（由 SDK 自动注入当前 device_id），
+      // 但 hula 需要显式控制 device_id，因此扩展类型以允许该字段
+      const pusherRequest = {
+        pushkey: pusher.pushkey,
+        kind: pusher.kind,
+        app_id: pusher.app_id,
+        app_display_name: pusher.app_display_name,
+        device_display_name: pusher.device_display_name,
+        lang: pusher.lang,
+        data: pusher.data,
+        device_id: (pusherData.device_id as string) || deviceId || undefined
+      } as IPusherRequest & { device_id?: string }
+      if (pusherData.profile_tag) {
+        pusherRequest.profile_tag = pusherData.profile_tag as string
       }
+      await client.getPushManager().setPusher(pusherRequest)
+      logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
     } catch (err) {
       logger.error(`[MatrixPush] 注册 pusher 失败: ${err}`)
       throw err
@@ -236,29 +131,11 @@ class MatrixPushService extends BaseMatrixService {
   ): Promise<void> {
     const client = this.getClient()
     try {
-      const pushManager = (
-        client as unknown as {
-          getPushManager?: () => {
-            createPushRule: (
-              scope: string,
-              kind: PushRuleKind | string,
-              ruleId: string,
-              rule: { actions: PushRuleAction[]; conditions?: Record<string, unknown>[]; pattern?: string }
-            ) => Promise<void>
-          }
-        }
-      ).getPushManager?.()
-      if (pushManager) {
-        await pushManager.createPushRule(scope, kind, ruleId, { actions, conditions, pattern })
-        logger.info(`[MatrixPush] 创建推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
-        return
-      }
-      // Fallback to direct HTTP
-      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
-      const body: Record<string, unknown> = { actions }
-      if (conditions) body.conditions = conditions
-      if (pattern) body.pattern = pattern
-      await client.http.authedRequest('PUT', path, undefined, body)
+      await client.getPushManager().createPushRule(scope, kind as PushRuleKind, ruleId, {
+        actions,
+        conditions,
+        pattern
+      })
       logger.info(`[MatrixPush] 创建推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 创建推送规则失败: ${err}`)
@@ -269,21 +146,7 @@ class MatrixPushService extends BaseMatrixService {
   async deletePushRule(scope: PushRuleScope, kind: PushRuleKind | string, ruleId: string): Promise<void> {
     const client = this.getClient()
     try {
-      const pushManager = (
-        client as unknown as {
-          getPushManager?: () => {
-            deletePushRule: (scope: string, kind: PushRuleKind | string, ruleId: string) => Promise<void>
-          }
-        }
-      ).getPushManager?.()
-      if (pushManager) {
-        await pushManager.deletePushRule(scope, kind, ruleId)
-        logger.info(`[MatrixPush] 删除推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
-        return
-      }
-      // Fallback to direct HTTP
-      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
-      await client.http.authedRequest('DELETE', path)
+      await client.getPushManager().deletePushRule(scope, kind as PushRuleKind, ruleId)
       logger.info(`[MatrixPush] 删除推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 删除推送规则失败: ${err}`)

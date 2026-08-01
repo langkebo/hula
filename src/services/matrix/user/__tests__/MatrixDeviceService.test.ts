@@ -1,7 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { setupMswServer } from '@/../tests/msw'
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import matrixClientService from '../../MatrixClientService'
 import type { Device } from '../MatrixDeviceService'
@@ -9,15 +7,6 @@ import { matrixDeviceService } from '../MatrixDeviceService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
-
-const _server = setupMswServer(
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/room_keys/request`, () => {
-    return HttpResponse.json({ requests: [] })
-  }),
-  http.delete(`${TEST_BASE_URL}${PREFIX_V3}/room_keys/request/:requestId`, () => {
-    return HttpResponse.json({})
-  })
-)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -34,6 +23,10 @@ describe('MatrixDeviceService', () => {
     deleteDevice: ReturnType<typeof vi.fn>
     deleteDevices: ReturnType<typeof vi.fn>
     getDeviceListUpdates: ReturnType<typeof vi.fn>
+  }
+  let mockRoomKeysManager: {
+    getRoomKeyRequests: ReturnType<typeof vi.fn>
+    deleteRoomKeyRequest: ReturnType<typeof vi.fn>
   }
   let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
 
@@ -69,6 +62,11 @@ describe('MatrixDeviceService', () => {
       getDeviceListUpdates: vi.fn()
     }
 
+    mockRoomKeysManager = {
+      getRoomKeyRequests: vi.fn(),
+      deleteRoomKeyRequest: vi.fn()
+    }
+
     mockHttp = { authedRequest: authedRequestImpl }
 
     mockClient = {
@@ -76,6 +74,7 @@ describe('MatrixDeviceService', () => {
       getDeviceManager: vi.fn(
         () => mockDeviceManager as unknown as MatrixClientExtended['getDeviceManager'] extends () => infer T ? T : never
       ),
+      getRoomKeysManager: vi.fn(() => mockRoomKeysManager),
       getDeviceId: vi.fn(() => 'CURRENT_DEVICE')
     }
 
@@ -277,20 +276,40 @@ describe('MatrixDeviceService', () => {
   })
 
   describe('getRoomKeyRequests', () => {
-    it('应该通过 HTTP 获取密钥请求列表', async () => {
+    it('应该通过 RoomKeysManager 获取密钥请求列表', async () => {
+      mockRoomKeysManager.getRoomKeyRequests.mockResolvedValue({ requests: [{ request_id: 'REQ1' }] })
+
+      const requests = await matrixDeviceService.getRoomKeyRequests()
+
+      expect(requests).toEqual([{ request_id: 'REQ1' }])
+      expect(mockRoomKeysManager.getRoomKeyRequests).toHaveBeenCalled()
+    })
+
+    it('应该在失败时返回空数组', async () => {
+      mockRoomKeysManager.getRoomKeyRequests.mockRejectedValue(new Error('network error'))
+
       const requests = await matrixDeviceService.getRoomKeyRequests()
 
       expect(requests).toEqual([])
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/room_keys/request')
     })
   })
 
   describe('deleteRoomKeyRequest', () => {
-    it('应该通过 HTTP 删除密钥请求', async () => {
+    it('应该通过 RoomKeysManager 删除密钥请求', async () => {
+      mockRoomKeysManager.deleteRoomKeyRequest.mockResolvedValue(undefined)
+
       const result = await matrixDeviceService.deleteRoomKeyRequest('REQ1')
 
       expect(result).toBe(true)
-      expect(authedRequestImpl).toHaveBeenCalledWith('DELETE', '/room_keys/request/REQ1')
+      expect(mockRoomKeysManager.deleteRoomKeyRequest).toHaveBeenCalledWith('REQ1')
+    })
+
+    it('应该在失败时返回 false', async () => {
+      mockRoomKeysManager.deleteRoomKeyRequest.mockRejectedValue(new Error('network error'))
+
+      const result = await matrixDeviceService.deleteRoomKeyRequest('REQ1')
+
+      expect(result).toBe(false)
     })
   })
 })

@@ -99,6 +99,13 @@ export class AdminExternalServiceService {
     queryParams?: Record<string, string | number | boolean | string[] | undefined>,
     body?: Record<string, unknown>
   ): Promise<TResponse> {
+    // Not migrated to client.getExternalServiceManager():
+    // SDK ExternalServiceManager uses field names { id, type, url, enabled, status }
+    // and listServices() returns { services: [...] } with no service_type filter,
+    // but the backend ExternalServiceResponse (external_service.rs) returns
+    // { as_id, service_type, service_id, display_name, is_enabled, is_healthy, created_ts }
+    // and accepts a service_type query filter. The service interface matches the
+    // backend; the SDK contract does not. Contract mismatch — left as direct HTTP.
     const client = this.getClient()
     return client.http.authedRequest(
       method,

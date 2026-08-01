@@ -36,12 +36,21 @@ const sdkAdmin = async () => ({}) as unknown as AdminManager
 
 const authedRequestImpl = vi.fn()
 
-const makeClient = () => ({
-  reportEvent: vi.fn(),
-  getRooms: vi.fn(() => []),
-  getRoom: vi.fn(),
-  http: { authedRequest: authedRequestImpl }
-})
+const makeClient = () => {
+  const reportingManager = {
+    scoreReport: vi.fn().mockResolvedValue(undefined),
+    getScannerInfo: vi
+      .fn()
+      .mockResolvedValue({ scanner_id: 's1', scan_result: 'clean', confidence: 0.9, scanned_at: 1 })
+  }
+  return {
+    reportEvent: vi.fn(),
+    getRooms: vi.fn(() => []),
+    getRoom: vi.fn(),
+    http: { authedRequest: authedRequestImpl },
+    getReportingManager: () => reportingManager
+  }
+}
 
 describe('AdminReportService', () => {
   let client: ReturnType<typeof makeClient>
@@ -112,12 +121,21 @@ describe('AdminReportService', () => {
   it('scoreReport 校验分值范围（-100~0），越界不发请求', async () => {
     await expect(service.scoreReport('!r:hs', '$e1', 5)).rejects.toThrow('matrix_error.admin.score_range_invalid')
     await expect(service.scoreReport('!r:hs', '$e1', -101)).rejects.toThrow('matrix_error.admin.score_range_invalid')
-    expect(authedRequestImpl).not.toHaveBeenCalled()
+    expect(client.getReportingManager().scoreReport).not.toHaveBeenCalled()
 
     await service.scoreReport('!r:hs', '$e1', -50)
-    expect(authedRequestImpl).toHaveBeenCalledWith('PUT', '/rooms/!r%3Ahs/report/%24e1/score', undefined, {
-      score: -50
-    })
+    expect(client.getReportingManager().scoreReport).toHaveBeenCalledWith('!r:hs', '$e1', -50)
+  })
+
+  it('getScannerInfo 委托 ReportingManager 并映射结果', async () => {
+    const result = await service.getScannerInfo('!r:hs', '$e1')
+    expect(client.getReportingManager().getScannerInfo).toHaveBeenCalledWith('!r:hs', '$e1')
+    expect(result).toEqual({ scanner_id: 's1', scan_result: 'clean', confidence: 0.9, scanned_at: 1 })
+  })
+
+  it('getScannerInfo 出错时降级为 null', async () => {
+    client.getReportingManager().getScannerInfo.mockRejectedValueOnce(new Error('boom'))
+    await expect(service.getScannerInfo('!r:hs', '$e1')).resolves.toBeNull()
   })
 
   it('getAdminReports 组装查询参数并映射响应', async () => {

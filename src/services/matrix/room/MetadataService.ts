@@ -52,8 +52,8 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
   async getRoomTurnServer(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.TURN_SERVER(roomId))
-      return result as Record<string, unknown>
+      const result = await client.getRoomSummaryManager().getRoomTurnServer(roomId)
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间 TURN 服务器失败: ${err}`)
       return {}
@@ -63,8 +63,8 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
   async getRoomSync(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.ROOM_SYNC(roomId))
-      return result as Record<string, unknown>
+      const result = await client.getRoomSummaryManager().getRoomSync(roomId)
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间级同步失败: ${err}`)
       return {}
@@ -74,8 +74,8 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
   async getRoomPermissions(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.PERMISSIONS(roomId))
-      return result as Record<string, unknown>
+      const result = await client.getRoomSummaryManager().getRoomPermissions(roomId)
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间权限失败: ${err}`)
       return {}

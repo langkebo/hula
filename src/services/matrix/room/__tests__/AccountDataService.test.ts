@@ -16,15 +16,6 @@ const server = setupMswServer(
   }),
   http.get(`${TEST_BASE_URL}/_matrix/client/v1/rooms/:roomId/report/:eventId/scanner_info`, () => {
     return HttpResponse.json({ clean: true })
-  }),
-  http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/burn`, async () => {
-    return HttpResponse.json({})
-  }),
-  http.get(`${TEST_BASE_URL}/_synapse/admin/v1/external_services`, () => {
-    return HttpResponse.json({ services: [{ id: 'a' }] })
-  }),
-  http.get(`${TEST_BASE_URL}/_matrix/admin/v1/external_services`, () => {
-    return new HttpResponse(null, { status: 500 })
   })
 )
 
@@ -65,7 +56,7 @@ describe('MatrixRoomAccountDataService', () => {
     service = new MatrixRoomAccountDataService()
   })
 
-  const makeClient = (userId: string) => ({
+  const makeClient = (userId: string, managers: Record<string, Record<string, unknown>> = {}) => ({
     getUserId: () => userId,
     http: {
       authedRequest: authedRequestImpl
@@ -83,7 +74,10 @@ describe('MatrixRoomAccountDataService', () => {
         const path = `/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
         return authedRequestImpl('PUT', path, undefined, content)
       })
-    })
+    }),
+    getBurnAfterReadManager: () => managers.burnAfterRead ?? {},
+    getExternalServiceManager: () => managers.externalService ?? {},
+    getRoomSummaryManager: () => managers.roomSummary ?? {}
   })
 
   describe('getRoomAccountData', () => {
@@ -160,50 +154,60 @@ describe('MatrixRoomAccountDataService', () => {
   })
 
   describe('setReadLifetime', () => {
-    it('PUTs burn config to /burn', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+    it('enables burn via BurnAfterReadManager', async () => {
+      const enableBurn = vi.fn().mockResolvedValue({ enabled: true, burn_after_ms: 5000 })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        makeClient('@me:e', { burnAfterRead: { enableBurn } }) as never
+      )
       await service.setReadLifetime('!r', 5000)
-      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', `/rooms/${encodeURIComponent('!r')}/burn`, undefined, {
-        enabled: true,
-        burn_after_ms: 5000
-      })
+      expect(enableBurn).toHaveBeenCalledWith('!r', 5000)
     })
 
-    it('re-throws backend errors', async () => {
-      server.use(
-        http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/burn`, () => {
-          return new HttpResponse(null, { status: 403 })
-        })
+    it('re-throws manager errors', async () => {
+      const enableBurn = vi.fn().mockRejectedValue(new Error('manager error'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        makeClient('@me:e', { burnAfterRead: { enableBurn } }) as never
       )
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
-      await expect(service.setReadLifetime('!r', 1000)).rejects.toThrow('403')
+      await expect(service.setReadLifetime('!r', 1000)).rejects.toThrow('manager error')
     })
   })
 
   describe('getExternalServices', () => {
-    it('unwraps `services` array from the response', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+    it('lists services via ExternalServiceManager (synapse_admin first)', async () => {
+      const listServices = vi.fn().mockResolvedValue({ services: [{ id: 'a' }] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        makeClient('@me:e', { externalService: { listServices } }) as never
+      )
       expect(await service.getExternalServices()).toEqual([{ id: 'a' }])
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_synapse/admin/v1/external_services')
+      expect(listServices).toHaveBeenCalledWith('synapse_admin')
     })
 
-    it('returns [] when backend omits `services`', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/external_services`, () => {
-          return HttpResponse.json({})
-        })
+    it('falls back to matrix_admin when synapse_admin fails', async () => {
+      const listServices = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('synapse admin unavailable'))
+        .mockResolvedValueOnce({ services: [{ id: 'b' }] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        makeClient('@me:e', { externalService: { listServices } }) as never
       )
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      expect(await service.getExternalServices()).toEqual([{ id: 'b' }])
+      expect(listServices).toHaveBeenNthCalledWith(1, 'synapse_admin')
+      expect(listServices).toHaveBeenNthCalledWith(2, 'matrix_admin')
+    })
+
+    it('returns [] when both prefixes fail', async () => {
+      const listServices = vi.fn().mockRejectedValue(new Error('unavailable'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        makeClient('@me:e', { externalService: { listServices } }) as never
+      )
       expect(await service.getExternalServices()).toEqual([])
     })
 
-    it('swallows backend errors and returns []', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/external_services`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
+    it('returns [] when services is missing', async () => {
+      const listServices = vi.fn().mockResolvedValue({})
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        makeClient('@me:e', { externalService: { listServices } }) as never
       )
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       expect(await service.getExternalServices()).toEqual([])
     })
   })

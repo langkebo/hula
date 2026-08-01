@@ -280,6 +280,7 @@ class VerificationService extends BaseMatrixService {
       if (!manager) throw new Error('KeyVerificationManager not available')
       const result = await manager.getVerificationRequestsHttp()
       logger.info('[Verification] 获取验证请求列表成功')
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return (result.requests ?? []) as unknown as Array<Record<string, unknown>>
     } catch (err) {
       logger.error(`[Verification] 获取验证请求列表失败: ${err}`)
@@ -293,6 +294,7 @@ class VerificationService extends BaseMatrixService {
       if (!manager) throw new Error('KeyVerificationManager not available')
       const result = await manager.showQrCodeHttp()
       logger.info('[Verification] 获取二维码成功')
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as { qr_code: string; transaction_id: string }
     } catch (err) {
       logger.error(`[Verification] 获取二维码失败: ${err}`)

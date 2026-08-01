@@ -20,6 +20,11 @@ export class AdminFederationService {
     path: string,
     body?: Record<string, unknown>
   ): Promise<TResponse> {
+    // Not migrated to client.getAdminFederationManager():
+    // addFederationBlacklistEntry uses POST /federation/blacklist (server_name in body)
+    // but this service uses POST /federation/blacklist/{domain} (domain in URL).
+    // getFederationStatus has no matching manager method.
+    // Contract mismatch — left as direct HTTP.
     const client = this.getClient()
     return client.http.authedRequest(
       method,

@@ -527,6 +527,9 @@ class MatrixQrLoginSdkService {
       // Step 11: Generate short-lived login token via POST /v1/login/qr_token.
       // This is an authenticated request — the existing device's credentials
       // authorize issuance of a token bound to its user_id.
+      // Not migrated to SDK: no manager method exists for POST /login/qr_token
+      // (RendezvousManager only covers /rendezvous/* routes, MSC4108SignInWithQR
+      // has no qr_token helper). Left as direct HTTP.
       const tokenResponse = await client.http.authedRequest<{ login_token: string; expires_in_ms: number }>(
         'POST',
         '/login/qr_token',

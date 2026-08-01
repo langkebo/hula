@@ -378,9 +378,9 @@ class MatrixAccountService extends BaseMatrixService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/capabilities')
+      const result = await client.getCapabilitiesManager().getCapabilities()
       logger.info('[MatrixAccount] 获取能力声明成功')
-      return result as Record<string, unknown>
+      return (result as Record<string, unknown>) ?? {}
     } catch (err) {
       logger.error(`[MatrixAccount] 获取能力声明失败: ${err}`)
       return {}
@@ -391,9 +391,9 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const result = await client.http.authedRequest('GET', '/thirdparty/protocols')
+      const result = await client.getThirdPartyManager().getThirdpartyProtocols()
       logger.info('[MatrixAccount] 获取第三方协议成功')
-      return result as Record<string, unknown>
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixAccount] 获取第三方协议失败: ${err}`)
       return {}
@@ -411,6 +411,8 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
+      // 未迁移到 SDK Manager：RoomListManager.getMyRooms() 使用本地缓存而非 HTTP /my_rooms 端点，
+      // 返回类型也不同（{ rooms, total } vs { room_ids }），契约不匹配。
       const result = await client.http.authedRequest('GET', '/my_rooms')
       return (result as { room_ids?: string[] }).room_ids ?? []
     } catch (err) {
@@ -437,6 +439,7 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const queryParams: Record<string, string> = { timeout: String(timeout) }
       if (from) queryParams.from = from
+      // 未迁移到 SDK Manager：可用 Manager 列表中无匹配 /events 端点的方法。
       const result = await client.http.authedRequest('GET', '/events', queryParams)
       return result as Record<string, unknown>
     } catch (err) {

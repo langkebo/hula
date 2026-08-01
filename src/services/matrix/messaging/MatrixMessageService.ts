@@ -651,13 +651,9 @@ class MatrixMessageService extends BaseMatrixService {
     dir: 'b' | 'f'
   ): Promise<MatrixEvent[]> {
     try {
-      const response = (await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/messages`, {
-        from: fromToken,
-        limit: String(limit),
-        dir
-      })) as Record<string, unknown>
+      const response = await client.getRoomEventsManager().getMessages(roomId, dir, limit, fromToken)
       const chunk = response.chunk
-      return Array.isArray(chunk) ? (chunk as MatrixEvent[]) : []
+      return Array.isArray(chunk) ? (chunk as unknown as MatrixEvent[]) : []
     } catch (err) {
       logger.error(`[MatrixMessage] Failed to fetch server messages: ${err}`)
       return []

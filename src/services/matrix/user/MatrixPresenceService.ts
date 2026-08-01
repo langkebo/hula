@@ -128,23 +128,14 @@ class MatrixPresenceService extends BaseMatrixService {
   async setPresence(presence: PresenceState, statusMsg?: string): Promise<void> {
     try {
       const client = this.getClient()
-      const presenceManager = client.getPresenceManager() as PresenceManager | null
       const userId = client.getUserId()
 
       if (!userId) {
         throw new Error(this.t('matrix_error.common.user_id_not_found'))
       }
 
-      if (presenceManager) {
-        await presenceManager.setPresence(presence, statusMsg ?? '')
-        logger.info(`[Presence] 设置在线状态成功: ${presence}`)
-      } else {
-        await client.http.authedRequest('PUT', `/presence/${encodeURIComponent(userId)}/status`, undefined, {
-          presence,
-          status_msg: statusMsg
-        })
-        logger.info(`[Presence] 设置在线状态成功: ${presence}`)
-      }
+      await client.getPresenceManager().setPresence(presence, statusMsg ?? '')
+      logger.info(`[Presence] 设置在线状态成功: ${presence}`)
     } catch (err) {
       // 页面关闭/登出时 client 可能已销毁，此时设置 unavailable 失败是预期行为，降级为 warn 避免噪音
       const isClientNotReady = err instanceof Error && err.message === '客户端未初始化'
@@ -166,35 +157,23 @@ class MatrixPresenceService extends BaseMatrixService {
   async getPresence(userId: string): Promise<PresenceInfo> {
     try {
       const client = this.getClient()
-      const presenceManager = client.getPresenceManager() as PresenceManager | null
+      const presence = await client.getPresenceManager().getPresence(userId)
 
-      if (presenceManager) {
-        const presence = await presenceManager.getPresence(userId)
-        if (!presence) {
-          return {
-            user_id: userId,
-            presence: 'offline' as PresenceState,
-            status_msg: null,
-            last_active_ago: undefined,
-            currently_active: undefined
-          }
-        }
+      if (!presence) {
         return {
           user_id: userId,
-          presence: (presence.presence || 'offline') as PresenceState,
-          status_msg: presence.status_msg,
-          last_active_ago: presence.last_active_ago,
-          currently_active: presence.currently_active
+          presence: 'offline' as PresenceState,
+          status_msg: null,
+          last_active_ago: undefined,
+          currently_active: undefined
         }
-      } else {
-        const response = (await client.http.authedRequest(
-          'GET',
-          `/presence/${encodeURIComponent(userId)}/status`
-        )) as Omit<PresenceInfo, 'user_id'>
-        return {
-          user_id: userId,
-          ...response
-        }
+      }
+      return {
+        user_id: userId,
+        presence: (presence.presence || 'offline') as PresenceState,
+        status_msg: presence.status_msg,
+        last_active_ago: presence.last_active_ago,
+        currently_active: presence.currently_active
       }
     } catch (err) {
       const isForbidden = this.isForbiddenError(err)
@@ -254,6 +233,8 @@ class MatrixPresenceService extends BaseMatrixService {
         )
         return result as unknown as PresenceListResponse
       } else {
+        // 未迁移到 SDK Manager：PresenceManager.subscribeToPresence 不支持 unsubscribe 参数（仅发送 subscribe），
+        // 且返回 Promise<void>（不含 presences），与 HTTP 端点返回 PresenceListResponse 契约不匹配。
         const response = (await client.http.authedRequest(
           'POST',
           '/presence/list',
@@ -279,15 +260,9 @@ class MatrixPresenceService extends BaseMatrixService {
   async unsubscribeFromPresence(userIds: string[]): Promise<void> {
     try {
       const client = this.getClient()
-      const presenceManager = client.getPresenceManager() as PresenceManager | null
 
-      if (presenceManager) {
-        await presenceManager.unsubscribeFromPresence(userIds)
-        logger.info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
-      } else {
-        await client.http.authedRequest('POST', '/presence/list', undefined, { unsubscribe: userIds })
-        logger.info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
-      }
+      await client.getPresenceManager().unsubscribeFromPresence(userIds)
+      logger.info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
     } catch (err) {
       logger.error(`[Presence] 取消订阅在线状态失败: ${formatMatrixError(err)}`)
       throw err
@@ -302,25 +277,15 @@ class MatrixPresenceService extends BaseMatrixService {
   async getPresenceList(userId?: string): Promise<PresenceListResponse> {
     try {
       const client = this.getClient()
-      const presenceManager = client.getPresenceManager() as PresenceManager | null
       const targetUserId = userId || client.getUserId()
 
       if (!targetUserId) {
         throw new Error(this.t('matrix_error.common.user_id_not_found'))
       }
 
-      if (presenceManager) {
-        const result = await presenceManager.getPresenceList(targetUserId)
-        logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
-        return result as unknown as PresenceListResponse
-      } else {
-        const response = (await client.http.authedRequest(
-          'GET',
-          `/presence/list/${encodeURIComponent(targetUserId)}`
-        )) as PresenceListResponse
-        logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
-        return response
-      }
+      const result = await client.getPresenceManager().getPresenceList(targetUserId)
+      logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
+      return result as unknown as PresenceListResponse
     } catch (err) {
       logger.error(`[Presence] 获取在线状态列表失败: ${formatMatrixError(err)}`)
       throw err

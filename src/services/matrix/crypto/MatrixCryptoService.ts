@@ -489,7 +489,7 @@ class MatrixCryptoService extends BaseMatrixService {
         device_keys: deviceKeys
       })
       logger.info(`[MatrixCrypto] 查询密钥成功: ${userIds.length} 个用户`)
-      return result as unknown as Record<string, unknown>
+      return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixCrypto] 查询密钥失败: ${err}`)
       throw err
@@ -501,7 +501,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKDeviceKeysManager()
       const result = await manager.claimKeys({ one_time_keys: claims })
       logger.info('[MatrixCrypto] 声明密钥成功')
-      return result as unknown as Record<string, unknown>
+      return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixCrypto] 声明密钥失败: ${err}`)
       throw err
@@ -629,6 +629,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getBackupVersion(version)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as KeyBackupVersionInfo
     } catch (err) {
       logger.error(`[MatrixCrypto] 获取备份版本失败: ${err}`)
@@ -665,6 +666,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getAllRoomKeys(version)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as RoomKeysResponse
     } catch (err) {
       logger.error(`[MatrixCrypto] 获取所有房间密钥失败: ${err}`)
@@ -677,6 +679,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.putAllRoomKeys(version, { rooms } as Parameters<typeof manager.putAllRoomKeys>[1])
       logger.info(`[MatrixCrypto] 添加所有房间密钥成功: etag=${result.etag}, count=${result.count}`)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 添加所有房间密钥失败: ${err}`)
@@ -689,6 +692,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.deleteAllRoomKeys(version)
       logger.info(`[MatrixCrypto] 删除所有房间密钥成功: etag=${result.etag}`)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 删除所有房间密钥失败: ${err}`)
@@ -700,6 +704,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getRoomKeys(version, roomId)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as RoomKeySessionsResponse
     } catch {
       logger.error(`[MatrixCrypto] 获取房间密钥失败: ${roomId}`)
@@ -718,6 +723,7 @@ class MatrixCryptoService extends BaseMatrixService {
         typeof manager.putRoomKeys
       >[2])
       logger.info(`[MatrixCrypto] 添加房间密钥成功: ${roomId}, count=${result.count}`)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 添加房间密钥失败: ${roomId}`)
@@ -730,6 +736,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.deleteRoomKeys(version, roomId)
       logger.info(`[MatrixCrypto] 删除房间密钥成功: ${roomId}`)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 删除房间密钥失败: ${roomId}`)
@@ -741,6 +748,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getSessionKey(version, roomId, sessionId)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as SessionKeyData
     } catch {
       logger.error(`[MatrixCrypto] 获取会话密钥失败: ${roomId}/${sessionId}`)
@@ -763,6 +771,7 @@ class MatrixCryptoService extends BaseMatrixService {
         sessionData as Parameters<typeof manager.putSessionKey>[3]
       )
       logger.info(`[MatrixCrypto] 添加会话密钥成功: ${roomId}/${sessionId}`)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 添加会话密钥失败: ${roomId}/${sessionId}`)
@@ -775,6 +784,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.deleteSessionKey(version, roomId, sessionId)
       logger.info(`[MatrixCrypto] 删除会话密钥成功: ${roomId}/${sessionId}`)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as KeyBackupWriteResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 删除会话密钥失败: ${roomId}/${sessionId}`)
@@ -798,6 +808,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.recoverKeys(version, roomId ? [roomId] : undefined)
       logger.info(`[MatrixCrypto] 恢复密钥成功: ${roomId}/${sessionId}`)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixCrypto] 恢复密钥失败: ${err}`)
@@ -809,6 +820,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getRecoveryProgress(version)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as RecoveryProgress
     } catch (err) {
       logger.error(`[MatrixCrypto] 获取恢复进度失败: ${err}`)
@@ -821,6 +833,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.verifyBackup(version)
       logger.info(`[MatrixCrypto] 验证备份版本: ${version}, valid=${result.valid}`)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as BackupVerifyResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 验证备份版本失败: ${err}`)
@@ -837,6 +850,7 @@ class MatrixCryptoService extends BaseMatrixService {
       const roomIds = [...new Set(sessions.map((s) => s.room_id))]
       const result = await manager.batchRecover(version, roomIds)
       logger.info(`[MatrixCrypto] 批量恢复密钥: ${result.total_sessions} 个会话`)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as BatchRecoverResult
     } catch (err) {
       logger.error(`[MatrixCrypto] 批量恢复密钥失败: ${err}`)
@@ -848,6 +862,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.recoverRoomKeys(version, roomId)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as Record<string, unknown>
     } catch {
       logger.error(`[MatrixCrypto] 恢复房间密钥失败: ${roomId}`)
@@ -859,6 +874,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.recoverSessionKey(version, roomId, sessionId)
+      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
       return result as unknown as Record<string, unknown>
     } catch {
       logger.error(`[MatrixCrypto] 恢复会话密钥失败: ${roomId}/${sessionId}`)

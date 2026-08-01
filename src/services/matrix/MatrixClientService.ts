@@ -333,16 +333,36 @@ class MatrixClientService {
         userId: userId
       })
 
-      let resolvedDeviceId = this.connectionManager.getClient()?.getDeviceId?.() ?? undefined
-      if (!resolvedDeviceId) {
-        resolvedDeviceId = await this.resolveTokenLoginDeviceId(userId)
-        if (resolvedDeviceId) {
-          await this.initialize({
-            ...this.connectionManager.getConfig()!,
-            accessToken: token,
-            userId,
-            deviceId: resolvedDeviceId
-          })
+      // 验证 token 有效性：调用 whoami 确认 token 未过期
+      // 如果 token 无效（401/M_UNKNOWN_TOKEN），立即返回失败，
+      // 让调用方（自动登录流程）降级为密码登录
+      const client = this.connectionManager.getClient()
+      if (!client) {
+        return { success: false, error: '客户端未初始化' }
+      }
+
+      let resolvedDeviceId = client.getDeviceId?.() ?? undefined
+      const whoamiCapableClient = client as WhoamiCapableClient
+      if (typeof whoamiCapableClient.whoami === 'function') {
+        try {
+          const whoamiResponse = await whoamiCapableClient.whoami()
+          if (!resolvedDeviceId && whoamiResponse.device_id) {
+            resolvedDeviceId = whoamiResponse.device_id
+            await this.initialize({
+              ...this.connectionManager.getConfig()!,
+              accessToken: token,
+              userId,
+              deviceId: resolvedDeviceId
+            })
+          }
+        } catch (err) {
+          const httpStatus = (err as { httpStatus?: number })?.httpStatus
+          const errcode = (err as { errcode?: string })?.errcode
+          if (httpStatus === 401 || errcode === 'M_UNKNOWN_TOKEN') {
+            logger.warn(`Token 登录验证失败 (401)，token 已过期或无效: ${userId}`)
+            return { success: false, error: 'Token 已过期或无效' }
+          }
+          logger.warn(`Token 登录 whoami 失败 (非 401，继续): ${userId}`, err)
         }
       }
 
@@ -420,37 +440,6 @@ class MatrixClientService {
   }
 
   // ---- Lifecycle --------------------------------------------------------------
-
-  private async resolveTokenLoginDeviceId(userId: string): Promise<string | undefined> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      return undefined
-    }
-
-    const currentDeviceId = client.getDeviceId?.() ?? undefined
-    if (currentDeviceId) {
-      return currentDeviceId
-    }
-
-    const whoamiCapableClient = client as WhoamiCapableClient
-    if (typeof whoamiCapableClient.whoami !== 'function') {
-      return undefined
-    }
-
-    try {
-      const response = await whoamiCapableClient.whoami()
-      const resolvedDeviceId = response.device_id ?? undefined
-      if (resolvedDeviceId) {
-        logger.info(`Token 登录通过 whoami 回填 deviceId: ${userId}/${resolvedDeviceId}`)
-      } else {
-        logger.warn(`Token 登录 whoami 未返回 deviceId: ${userId}`)
-      }
-      return resolvedDeviceId
-    } catch (err) {
-      logger.warn(`Token 登录回填 deviceId 失败: ${userId}`, err)
-      return undefined
-    }
-  }
 
   async startClient(): Promise<void> {
     const client = this.connectionManager.getClient()

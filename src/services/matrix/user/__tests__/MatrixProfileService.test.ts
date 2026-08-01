@@ -35,6 +35,9 @@ const mockClient = {
   setAvatarUrl: vi.fn(),
   uploadContent: vi.fn(),
   getUserId: vi.fn(() => '@self:matrix.org'),
+  getProfileManager: vi.fn().mockReturnValue({
+    getExtendedProfile: vi.fn()
+  }),
   http: {
     authedRequest: authedRequestImpl
   }
@@ -260,39 +263,38 @@ describe('ProfileService', () => {
 
   describe('extended profile', () => {
     it('should return empty object when extended profile does not exist', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId`, () => {
-          return new HttpResponse(null, { status: 404 })
-        })
-      )
+      const notFoundError = new Error('Not found') as Error & { httpStatus: number; errcode?: string }
+      notFoundError.httpStatus = 404
+      notFoundError.errcode = 'M_NOT_FOUND'
+      mockClient.getProfileManager.mockReturnValue({
+        getExtendedProfile: vi.fn().mockRejectedValue(notFoundError)
+      })
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual({})
     })
 
     it('should return extended profile payload', async () => {
+      const mockPayload = { resume: 'Hello world', sex: 2, region: 'Shanghai' }
+      const getExtendedProfileMock = vi.fn().mockResolvedValue(mockPayload)
+      mockClient.getProfileManager.mockReturnValue({
+        getExtendedProfile: getExtendedProfileMock
+      })
       profileService.initialize(mockClient as unknown as MatrixClient)
 
-      await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual({
-        resume: 'Hello world',
-        sex: 2,
-        region: 'Shanghai'
-      })
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'GET',
-        '/uk.tcpip.msc4133/profile/%40user%3Amatrix.org',
-        undefined,
-        undefined,
-        { prefix: '/_matrix/client/unstable' }
-      )
+      await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual(mockPayload)
+      expect(getExtendedProfileMock).toHaveBeenCalledWith('@user:matrix.org')
     })
 
     it('should update own extended profile fields', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId`, () => {
-          return HttpResponse.json({ resume: 'Updated bio', sex: 1 })
+        http.put(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId/:field`, () => {
+          return HttpResponse.json({})
         })
       )
+      mockClient.getProfileManager.mockReturnValue({
+        getExtendedProfile: vi.fn().mockResolvedValue({ resume: 'Updated bio', sex: 1 })
+      })
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.updateOwnExtendedProfile({ resume: 'Updated bio', sex: 1 })).resolves.toEqual({
@@ -318,11 +320,9 @@ describe('ProfileService', () => {
     })
 
     it('should treat unrecognized extended profile reads as unsupported and return empty object', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId`, () => {
-          return HttpResponse.json({ errcode: 'M_UNRECOGNIZED' }, { status: 400 })
-        })
-      )
+      mockClient.getProfileManager.mockReturnValue({
+        getExtendedProfile: vi.fn().mockRejectedValue(new Error('Server does not support extended profiles'))
+      })
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       await expect(profileService.getExtendedProfile('@user:matrix.org')).resolves.toEqual({})

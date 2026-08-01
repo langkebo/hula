@@ -74,6 +74,8 @@ export class AdminMediaService {
   }
 
   async purgeRemoteMedia(beforeTs: number, includeProfiles: boolean = false): Promise<{ deleted: number }> {
+    // Not migrated to SDK: no manager method exists for
+    // POST /_matrix/client/v1/admin/purge_remote_media. Left as direct HTTP.
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error('[AdminMedia] 客户端未初始化')

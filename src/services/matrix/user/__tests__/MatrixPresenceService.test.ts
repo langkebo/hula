@@ -98,15 +98,10 @@ describe('MatrixPresenceService', () => {
       expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('online', 'Working')
     })
 
-    it('should fallback to HTTP API when presenceManager is unavailable', async () => {
-      mockClient.getPresenceManager = vi.fn(() => null)
+    it('should throw when presenceManager throws', async () => {
+      mockPresenceManager.setPresence.mockRejectedValue(new Error('Network error'))
 
-      await matrixPresenceService.setPresence('unavailable', 'Busy')
-
-      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', '/presence/%40user%3Aexample.com/status', undefined, {
-        presence: 'unavailable',
-        status_msg: 'Busy'
-      })
+      await expect(matrixPresenceService.setPresence('unavailable', 'Busy')).rejects.toThrow('Network error')
     })
 
     it('should throw when client is not initialized', async () => {
@@ -139,8 +134,11 @@ describe('MatrixPresenceService', () => {
       })
     })
 
-    it('should fallback to HTTP API when presenceManager is unavailable', async () => {
-      mockClient.getPresenceManager = vi.fn(() => null)
+    it('should return offline when presence is forbidden', async () => {
+      const forbiddenError = new Error('Forbidden') as Error & { httpStatus: number; errcode?: string }
+      forbiddenError.httpStatus = 403
+      forbiddenError.errcode = 'M_FORBIDDEN'
+      mockPresenceManager.getPresence.mockRejectedValue(forbiddenError)
 
       const result = await matrixPresenceService.getPresence('@other:example.com')
 

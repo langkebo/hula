@@ -1020,7 +1020,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
     try {
       const client = matrixClientService.getClient()
       if (!client) return {}
-      const result = await client.http.authedRequest('GET', '/thirdparty/protocols')
+      const result = await client.getThirdPartyManager().getThirdpartyProtocols()
       return (result as Record<string, unknown>) || {}
     } catch (err) {
       logger.error(`[SynapseRust] 获取第三方协议失败: ${err}`)
@@ -1035,12 +1035,8 @@ class SynapseRustExtensionsService extends BaseMatrixService {
     try {
       const client = matrixClientService.getClient()
       if (!client) return []
-      const result = await client.http.authedRequest(
-        'GET',
-        `/thirdparty/location/${encodeURIComponent(protocol)}`,
-        params
-      )
-      return (result as Array<Record<string, unknown>>) || []
+      const result = await client.getThirdPartyManager().getThirdpartyLocation(protocol, params as never)
+      return (result as unknown as Array<Record<string, unknown>>) || []
     } catch (err) {
       logger.error(`[SynapseRust] 获取第三方位置失败: ${err}`)
       return []
@@ -1051,8 +1047,8 @@ class SynapseRustExtensionsService extends BaseMatrixService {
     try {
       const client = matrixClientService.getClient()
       if (!client) return []
-      const result = await client.http.authedRequest('GET', `/thirdparty/user/${encodeURIComponent(protocol)}`, params)
-      return (result as Array<Record<string, unknown>>) || []
+      const result = await client.getThirdPartyManager().getThirdpartyUser(protocol, params as never)
+      return (result as unknown as Array<Record<string, unknown>>) || []
     } catch (err) {
       logger.error(`[SynapseRust] 获取第三方用户失败: ${err}`)
       return []

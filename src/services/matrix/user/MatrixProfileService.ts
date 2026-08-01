@@ -51,6 +51,7 @@ class MatrixProfileService extends BaseMatrixService {
       errcode === 'M_UNRECOGNIZED' ||
       message.includes('M_UNRECOGNIZED') ||
       message.includes('Unrecognized request') ||
+      message.includes('Server does not support extended profiles') ||
       httpStatus === 501
     )
   }
@@ -135,9 +136,7 @@ class MatrixProfileService extends BaseMatrixService {
   async getExtendedProfile(userId: string): Promise<MatrixExtendedProfile> {
     try {
       const client = this.getClient()
-      const response = await client.http.authedRequest('GET', USER.EXTENDED_PROFILE(userId), undefined, undefined, {
-        prefix: '/_matrix/client/unstable'
-      })
+      const response = await client.getProfileManager().getExtendedProfile(userId)
       if (!response || typeof response !== 'object' || Array.isArray(response)) {
         return {}
       }
@@ -159,6 +158,8 @@ class MatrixProfileService extends BaseMatrixService {
   async setExtendedProfileField(userId: string, keyName: string, value: unknown): Promise<void> {
     try {
       const client = this.getClient()
+      // 未迁移到 SDK Manager：ProfileManager.setExtendedProfileProperty 将 body 包装为 { [key]: value }，
+      // 而后端 put_extended_profile_field 期望请求体为原始值，body 契约不匹配。
       await client.http.authedRequest(
         'PUT',
         USER.EXTENDED_PROFILE_FIELD(userId, keyName),
@@ -179,6 +180,8 @@ class MatrixProfileService extends BaseMatrixService {
   async deleteExtendedProfileField(userId: string, keyName: string): Promise<void> {
     try {
       const client = this.getClient()
+      // 未迁移到 SDK Manager：ProfileManager.deleteExtendedProfileProperty 不接受 userId 参数，
+      // 内部使用 client.getUserId()（当前用户），与本方法传入任意 userId 的契约不匹配。
       await client.http.authedRequest('DELETE', USER.EXTENDED_PROFILE_FIELD(userId, keyName), undefined, undefined, {
         prefix: '/_matrix/client/unstable'
       })

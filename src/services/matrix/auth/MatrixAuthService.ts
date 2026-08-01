@@ -626,6 +626,10 @@ export class MatrixAuthService {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
     try {
+      // Not migrated to client.getCaptchaManager().getCaptchaStatus():
+      // SDK uses query param `captcha_id` and returns a CaptchaStatusResponse
+      // (captcha_id, status, attempt_count, ...), but this service uses `session`
+      // and expects `{ verified: boolean }`. Contract mismatch — left as direct HTTP.
       const result = await client.http.authedRequest('GET', '/register/captcha/status', { session })
       return result as { verified: boolean }
     } catch (_err) {
@@ -779,8 +783,9 @@ export class MatrixAuthService {
     }
 
     try {
-      // logoutAll not available in type augmentations, use direct HTTP
-      await client.http.authedRequest('POST', '/logout/all')
+      // logoutAll exists on AccountManager at runtime but is missing from the
+      // client-side type augmentation (matrix-js-sdk-augmentations.d.ts).
+      await (client.getAccountManager() as unknown as { logoutAll: () => Promise<unknown> }).logoutAll()
     } catch (err) {
       throw normalizeSdkMatrixError(err, '全局登出失败')
     }

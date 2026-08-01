@@ -175,6 +175,7 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomMessages(roomId, { limit, from, dir })
       return {
+        // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
         chunk: (result?.chunk ?? []).map((msg) => msg as unknown as Record<string, unknown>),
         start: result?.start,
         end: result?.end

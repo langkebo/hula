@@ -8,17 +8,8 @@ const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/timeline`, () => {
-    return HttpResponse.json({ chunk: [], start: '', end: '' })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
-    return HttpResponse.json({ unread_notifications: 0, unread_highlighted: 0 })
-  }),
   http.get(`${TEST_BASE_URL}/_matrix/client/v1/rooms/:roomId/timestamp_to_event`, () => {
     return HttpResponse.json({ event_id: '$e', origin_server_ts: 42 })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/notifications`, () => {
-    return HttpResponse.json({ notifications: [] })
   }),
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/call/:callId`, () => {
     return HttpResponse.json({ state: 'ringing' })
@@ -35,7 +26,16 @@ const authedRequestImpl = vi.fn()
 
 describe('MatrixRoomTimelineService', () => {
   let service: InstanceType<typeof MatrixRoomTimelineService>
-  let mockClient: { http: { authedRequest: typeof authedRequestImpl }; getEventContext: ReturnType<typeof vi.fn> }
+  let eventOps: {
+    getRoomTimeline: ReturnType<typeof vi.fn>
+    getRoomUnreadCount: ReturnType<typeof vi.fn>
+    getRoomNotifications: ReturnType<typeof vi.fn>
+  }
+  let mockClient: {
+    http: { authedRequest: typeof authedRequestImpl }
+    getEventContext: ReturnType<typeof vi.fn>
+    getRoomSummaryManager: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -65,9 +65,16 @@ describe('MatrixRoomTimelineService', () => {
       }
     )
 
+    eventOps = {
+      getRoomTimeline: vi.fn(),
+      getRoomUnreadCount: vi.fn(),
+      getRoomNotifications: vi.fn()
+    }
+
     mockClient = {
       http: { authedRequest: authedRequestImpl },
-      getEventContext: vi.fn()
+      getEventContext: vi.fn(),
+      getRoomSummaryManager: vi.fn(() => ({ eventOps }))
     }
 
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as never)
@@ -102,42 +109,33 @@ describe('MatrixRoomTimelineService', () => {
   })
 
   describe('getRoomTimeline', () => {
-    it('builds URL without query params when no options are passed', async () => {
+    it('forwards roomId and undefined options to SDK eventOps.getRoomTimeline', async () => {
+      eventOps.getRoomTimeline.mockResolvedValue({ chunk: [], start: '', end: '' })
       await service.getRoomTimeline('!r:e')
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', `/rooms/${encodeURIComponent('!r:e')}/timeline`, undefined)
+      expect(eventOps.getRoomTimeline).toHaveBeenCalledWith('!r:e', undefined)
     })
 
-    it('forwards from/limit/dir as query params', async () => {
+    it('forwards from/limit/dir options to SDK', async () => {
+      eventOps.getRoomTimeline.mockResolvedValue({ chunk: [], start: '', end: '' })
       await service.getRoomTimeline('!r', { from: 'tok', limit: 20, dir: 'b' })
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', `/rooms/${encodeURIComponent('!r')}/timeline`, {
-        from: 'tok',
-        limit: '20',
-        dir: 'b'
-      })
+      expect(eventOps.getRoomTimeline).toHaveBeenCalledWith('!r', { from: 'tok', limit: 20, dir: 'b' })
     })
 
-    it('only includes truthy query params', async () => {
+    it('forwards only truthy options', async () => {
+      eventOps.getRoomTimeline.mockResolvedValue({ chunk: [], start: '', end: '' })
       await service.getRoomTimeline('!r', { dir: 'f' })
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', expect.any(String), { dir: 'f' })
+      expect(eventOps.getRoomTimeline).toHaveBeenCalledWith('!r', { dir: 'f' })
     })
 
     it('swallows backend errors and returns empty-chunk shape', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/timeline`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      eventOps.getRoomTimeline.mockRejectedValue(new Error('500'))
       expect(await service.getRoomTimeline('!r')).toEqual({ chunk: [], start: '', end: '' })
     })
   })
 
   describe('getRoomUnreadCount', () => {
-    it('GETs /unread_count and defaults missing counters to 0', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
-          return HttpResponse.json({ unread_notifications: 3 })
-        })
-      )
+    it('returns unread_notifications and defaults missing highlight to 0', async () => {
+      eventOps.getRoomUnreadCount.mockResolvedValue({ unread_notifications: 3, notification_count: 0, highlight_count: 0 })
       expect(await service.getRoomUnreadCount('!r')).toEqual({
         unread_notifications: 3,
         unread_highlighted: 0
@@ -145,11 +143,7 @@ describe('MatrixRoomTimelineService', () => {
     })
 
     it('accepts synapse-rust notification_count/highlight_count fields', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
-          return HttpResponse.json({ notification_count: 7, highlight_count: 2 })
-        })
-      )
+      eventOps.getRoomUnreadCount.mockResolvedValue({ notification_count: 7, highlight_count: 2 })
       expect(await service.getRoomUnreadCount('!r')).toEqual({
         unread_notifications: 7,
         unread_highlighted: 2
@@ -157,11 +151,7 @@ describe('MatrixRoomTimelineService', () => {
     })
 
     it('returns zeros when backend throws', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      eventOps.getRoomUnreadCount.mockRejectedValue(new Error('500'))
       expect(await service.getRoomUnreadCount('!r')).toEqual({
         unread_notifications: 0,
         unread_highlighted: 0

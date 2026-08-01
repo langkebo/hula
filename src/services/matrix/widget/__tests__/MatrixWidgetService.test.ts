@@ -27,7 +27,10 @@ const mockWidgetsManager = {
   createWidgetSession: vi.fn(),
   listWidgetSessions: vi.fn(),
   getWidgetSession: vi.fn(),
-  terminateWidgetSession: vi.fn()
+  terminateWidgetSession: vi.fn(),
+  getWidgetCapabilities: vi.fn(),
+  updateWidgetCapabilities: vi.fn(),
+  sendWidgetMessage: vi.fn()
 }
 
 type WidgetsManagerLike = typeof mockWidgetsManager
@@ -286,5 +289,82 @@ describe('MatrixWidgetService', () => {
 
     await expect(matrixWidgetService.getWidgetConfig('widget-1')).resolves.toEqual({ url: 'https://example.com' })
     expect(mockWidgetsManager.getWidgetConfig).toHaveBeenCalledWith('widget-1')
+  })
+
+  it('getWidgetCapabilities delegates to the SDK manager', async () => {
+    mockWidgetsManager.getWidgetCapabilities.mockResolvedValueOnce({
+      widget_id: 'widget-1',
+      room_id: '!room:example.com',
+      capabilities: ['read', 'write']
+    })
+
+    const result = await matrixWidgetService.getWidgetCapabilities('!room:example.com', 'widget-1')
+
+    expect(result).toEqual({
+      widget_id: 'widget-1',
+      room_id: '!room:example.com',
+      capabilities: ['read', 'write']
+    })
+    expect(mockWidgetsManager.getWidgetCapabilities).toHaveBeenCalledWith('!room:example.com', 'widget-1')
+  })
+
+  it('getWidgetCapabilities returns null when the manager is unavailable', async () => {
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+    await expect(matrixWidgetService.getWidgetCapabilities('!room:example.com', 'widget-1', false)).resolves.toBeNull()
+  })
+
+  it('setWidgetCapabilities maps to updateWidgetCapabilities on the SDK', async () => {
+    mockWidgetsManager.updateWidgetCapabilities.mockResolvedValueOnce({
+      widget_id: 'widget-1',
+      room_id: '!room:example.com',
+      capabilities: ['read']
+    })
+
+    const result = await matrixWidgetService.setWidgetCapabilities('!room:example.com', 'widget-1', ['read'])
+
+    expect(result).toEqual({
+      widget_id: 'widget-1',
+      room_id: '!room:example.com',
+      capabilities: ['read']
+    })
+    expect(mockWidgetsManager.updateWidgetCapabilities).toHaveBeenCalledWith('!room:example.com', 'widget-1', {
+      capabilities: ['read']
+    })
+  })
+
+  it('sendWidgetMessage delegates to the SDK manager and returns the response', async () => {
+    mockWidgetsManager.sendWidgetMessage.mockResolvedValueOnce({
+      event_id: '$evt:example.com',
+      widget_id: 'widget-1',
+      room_id: '!room:example.com',
+      type: 'm.custom',
+      content: { foo: 'bar' }
+    })
+
+    const result = await matrixWidgetService.sendWidgetMessage('!room:example.com', 'widget-1', {
+      type: 'm.custom',
+      content: { foo: 'bar' }
+    })
+
+    expect(result).toEqual({
+      event_id: '$evt:example.com',
+      widget_id: 'widget-1',
+      room_id: '!room:example.com',
+      type: 'm.custom',
+      content: { foo: 'bar' }
+    })
+    expect(mockWidgetsManager.sendWidgetMessage).toHaveBeenCalledWith('!room:example.com', 'widget-1', {
+      type: 'm.custom',
+      content: { foo: 'bar' }
+    })
+  })
+
+  it('sendWidgetMessage returns null when the manager is unavailable', async () => {
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+    await expect(
+      matrixWidgetService.sendWidgetMessage('!room:example.com', 'widget-1', { type: 'm.custom', content: {} }, false)
+    ).resolves.toBeNull()
   })
 })

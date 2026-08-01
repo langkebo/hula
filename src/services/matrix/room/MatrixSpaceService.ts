@@ -644,12 +644,10 @@ class SpaceService extends BaseMatrixService {
   }
 
   async getSpaceRoomsViaApi(spaceId: string): Promise<Array<Record<string, unknown>>> {
-    const client = this.getClient()
     try {
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.ROOMS(spaceId))) as {
-        rooms?: Array<Record<string, unknown>>
-      }
-      return result.rooms ?? []
+      const manager = this.getSpaceManager()
+      const spaces = await manager.getSpaceRooms(spaceId)
+      return spaces as unknown as Array<Record<string, unknown>>
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
@@ -659,7 +657,11 @@ class SpaceService extends BaseMatrixService {
           return hierarchy.rooms.filter((r) => r.room_id !== spaceId)
         } catch (hierarchyErr) {
           logger.info(`[Space] hierarchy 也失败，回退到标准 /state 端点: ${hierarchyErr}`)
+          // Not migrated to SpaceManager.getSpaceState(): SDK calls
+          // /spaces/{spaceId}/state whereas this fallback needs the standard
+          // Matrix /rooms/{spaceId}/state endpoint (different contract).
           try {
+            const client = this.getClient()
             const stateEvents = (await client.http.authedRequest(
               'GET',
               `/rooms/${encodeURIComponent(spaceId)}/state`
@@ -846,33 +848,8 @@ class SpaceService extends BaseMatrixService {
         children: (result.children as Array<Record<string, unknown>>) ?? []
       }
     } catch (err) {
-      logger.error(`[Space] SpaceManager 获取空间摘要含子级失败，回退: ${spaceId}, ${err}`)
-      // Fallback to raw HTTP
-      const client = this.getClient()
-      try {
-        const result = (await client.http.authedRequest(
-          'GET',
-          MATRIX_PATHS.SPACE.SUMMARY_WITH_CHILDREN(spaceId)
-        )) as Record<string, unknown>
-
-        const spaceData = result.space as Record<string, unknown> | undefined
-        if (!spaceData) return null
-
-        return {
-          space: {
-            spaceId: spaceData.space_id as string,
-            name: (spaceData.name as string) || '',
-            topic: (spaceData.topic as string) || undefined,
-            avatarUrl: (spaceData.avatar_url as string) || undefined,
-            memberCount: (spaceData.member_count as number) ?? 0,
-            childCount: (spaceData.child_count as number) ?? 0
-          },
-          children: (result.children as Array<Record<string, unknown>>) ?? []
-        }
-      } catch (fallbackErr) {
-        logger.error(`[Space] 回退获取空间摘要含子级也失败: ${spaceId}, ${fallbackErr}`)
-        return null
-      }
+      logger.error(`[Space] SpaceManager 获取空间摘要含子级失败: ${spaceId}, ${err}`)
+      return null
     }
   }
 
@@ -882,18 +859,8 @@ class SpaceService extends BaseMatrixService {
       const result = (await manager.getSpaceTreePath(spaceId)) as { path?: Array<{ space_id: string; name: string }> }
       return this.normalizeSpaceTreePathItems(result.path ?? [])
     } catch (err) {
-      logger.info(`[Space] SpaceManager tree_path 失败，回退: ${spaceId}, ${err}`)
-      // Fallback to raw HTTP
-      const client = this.getClient()
-      try {
-        const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.TREE_PATH(spaceId))) as {
-          path?: Array<{ space_id: string; name: string }>
-        }
-        return this.normalizeSpaceTreePathItems(result.path ?? [])
-      } catch (httpErr) {
-        logger.info(`[Space] HTTP tree_path 也不可用，回退到 parents 链路: ${spaceId}, ${httpErr}`)
-        return await this.getSpaceTreePathViaParents(spaceId)
-      }
+      logger.info(`[Space] SpaceManager tree_path 失败，回退到 parents 链路: ${spaceId}, ${err}`)
+      return await this.getSpaceTreePathViaParents(spaceId)
     }
   }
 
@@ -902,16 +869,15 @@ class SpaceService extends BaseMatrixService {
   // ---------------------------------------------------------------------------
 
   async getSpaceMembersViaApi(spaceId: string): Promise<Array<Record<string, unknown>>> {
-    const client = this.getClient()
     try {
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.MEMBERS(spaceId))) as {
-        members?: Array<Record<string, unknown>>
-      }
-      return result.members ?? []
+      const manager = this.getSpaceManager()
+      const members = await manager.getSpaceMembers(spaceId)
+      return members as unknown as Array<Record<string, unknown>>
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
         logger.info(`[Space] v3/spaces/members API 不可用，回退到 SDK 本地数据: ${spaceId}`)
+        const client = this.getClient()
         const room = client.getRoom(spaceId)
         if (room) {
           return room.getJoinedMembers().map((m) => ({ user_id: m.userId, displayname: m.name || m.userId }))

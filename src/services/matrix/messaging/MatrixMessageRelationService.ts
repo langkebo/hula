@@ -504,16 +504,13 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const queryParams: Record<string, string> = {}
-      if (options?.from) queryParams.from = options.from
-      if (options?.to) queryParams.to = options.to
-      if (options?.limit) queryParams.limit = String(options.limit)
-      if (options?.dir) queryParams.dir = options.dir
-      const result = (await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.RELATIONS.BASE(roomId, eventId),
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )) as RelationsResponse
+      const result = (await client.getRelationsManager().fetchRelations(
+        roomId,
+        eventId,
+        null,
+        null,
+        options as never
+      )) as unknown as RelationsResponse
       logger.info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${result.chunk?.length ?? 0}`)
       return result
     } catch (err) {
@@ -531,16 +528,13 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const queryParams: Record<string, string> = {}
-      if (options?.from) queryParams.from = options.from
-      if (options?.to) queryParams.to = options.to
-      if (options?.limit) queryParams.limit = String(options.limit)
-      if (options?.dir) queryParams.dir = options.dir
-      const result = (await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.RELATIONS.BY_TYPE(roomId, eventId, relType),
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )) as RelationsResponse
+      const result = (await client.getRelationsManager().fetchRelations(
+        roomId,
+        eventId,
+        relType,
+        null,
+        options as never
+      )) as unknown as RelationsResponse
       logger.info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${result.chunk?.length ?? 0}`)
       return result
     } catch (err) {
@@ -553,10 +547,11 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const result = (await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.RELATIONS.AGGREGATIONS(roomId, eventId, relType)
-      )) as AggregationsResponse
+      const result = (await client.getRelationsManager().getAggregations(
+        roomId,
+        eventId,
+        relType
+      )) as unknown as AggregationsResponse
       logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
       return result
     } catch (err) {
@@ -579,6 +574,10 @@ class MatrixMessageRelationService extends BaseMatrixService {
       const body: Record<string, unknown> = { ...content }
       if (key) body.key = key
       const txnId = `txn_${Date.now()}`
+      // Not migrated to SDK RelationsManager.sendRelation(): the frontend spreads
+      // `content` at the top level of the request body, while the SDK/backend
+      // expect a nested `content` field (backend reads body.get("content")).
+      // Migrating would change the request body structure.
       const result = (await client.http.authedRequest(
         'PUT',
         MATRIX_PATHS.RELATIONS.SEND(roomId, eventId, relType, txnId),

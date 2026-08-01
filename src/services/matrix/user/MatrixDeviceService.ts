@@ -260,15 +260,13 @@ class MatrixDeviceService extends BaseMatrixService {
 
   /**
    * 获取房间密钥请求列表
-   *
-   * 注意：此端点不在标准 DeviceManager 中，使用直接 HTTP 调用
    */
   async getRoomKeyRequests(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', '/room_keys/request')
+      const result = await client.getRoomKeysManager().getRoomKeyRequests()
       logger.info('[DeviceService] 获取密钥请求列表成功')
-      return (result as { requests?: Array<Record<string, unknown>> }).requests ?? []
+      return (result?.requests ?? []) as Array<Record<string, unknown>>
     } catch (err) {
       logger.error(`[DeviceService] 获取密钥请求列表失败: ${err}`)
       return []
@@ -277,13 +275,11 @@ class MatrixDeviceService extends BaseMatrixService {
 
   /**
    * 删除房间密钥请求
-   *
-   * 注意：此端点不在标准 DeviceManager 中，使用直接 HTTP 调用
    */
   async deleteRoomKeyRequest(requestId: string): Promise<boolean> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('DELETE', `/room_keys/request/${encodeURIComponent(requestId)}`)
+      await client.getRoomKeysManager().deleteRoomKeyRequest(requestId)
       logger.info(`[DeviceService] 删除密钥请求成功: ${requestId}`)
       return true
     } catch (err) {

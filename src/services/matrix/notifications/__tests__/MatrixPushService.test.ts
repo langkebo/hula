@@ -16,10 +16,11 @@ const mockGetPushRules = vi.fn().mockResolvedValue({
   global: { room: [{ rule_id: '!room:server', enabled: true }] }
 })
 
+// Safety net: the migrated service must never fall back to direct HTTP.
+// If an authedRequest call leaks back in, this mock throws and fails the test.
 const mockAuthedRequest = vi
   .fn()
   .mockImplementation(async (method: string, path: string, _queryParams?: unknown, _body?: unknown) => {
-    // Fallback HTTP mock - should not be called when PushManager is available
     throw new Error(`Unexpected HTTP fallback call: ${method} ${path}`)
   })
 
@@ -175,76 +176,6 @@ describe('MatrixPushService', () => {
         PushRuleActionName.DontNotify
       ])
       expect(mockAuthedRequest).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('fallback to HTTP when PushManager is unavailable', () => {
-    beforeEach(() => {
-      vi.clearAllMocks()
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue({
-        http: { authedRequest: mockAuthedRequest },
-        getPushRules: mockGetPushRules,
-        getDeviceId: () => 'TEST_DEVICE_ID',
-        getPushManager: () => undefined
-      })
-    })
-
-    it('getPushers should fallback to HTTP when no PushManager', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({ pushers: [{ pushkey: 'pk2', app_id: 'app2' }] })
-      const result = await matrixPushService.getPushers()
-      expect(result).toHaveLength(1)
-      expect(mockAuthedRequest).toHaveBeenCalledWith('GET', '/pushers')
-    })
-
-    it('setPushRuleEnabled should fallback to HTTP when no PushManager', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
-      await matrixPushService.setPushRuleEnabled('global', 'room', '!room:server', false)
-      expect(mockAuthedRequest).toHaveBeenCalledWith(
-        'PUT',
-        '/pushrules/global/room/!room%3Aserver/enabled',
-        undefined,
-        { enabled: false }
-      )
-    })
-
-    it('setPushRuleActions should fallback to HTTP when no PushManager', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
-      await matrixPushService.setPushRuleActions('global', 'room', '!room:server', [PushRuleActionName.DontNotify])
-      expect(mockAuthedRequest).toHaveBeenCalledWith(
-        'PUT',
-        '/pushrules/global/room/!room%3Aserver/actions',
-        undefined,
-        { actions: [PushRuleActionName.DontNotify] }
-      )
-    })
-
-    it('muteRoom should fallback to HTTP when no PushManager', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
-      await matrixPushService.muteRoom('!room:server')
-      expect(mockAuthedRequest).toHaveBeenCalledWith('PUT', '/pushrules/global/room/!room%3Aserver', undefined, {
-        actions: ['dont_notify'],
-        enabled: true
-      })
-    })
-
-    it('unmuteRoom should fallback to HTTP when no PushManager', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
-      await matrixPushService.unmuteRoom('!room:server')
-      expect(mockAuthedRequest).toHaveBeenCalledWith('DELETE', '/pushrules/global/room/!room%3Aserver')
-    })
-
-    it('addPushRule should fallback to HTTP when no PushManager', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
-      await matrixPushService.addPushRule('global', 'room', '!room:server', [PushRuleActionName.Notify])
-      expect(mockAuthedRequest).toHaveBeenCalledWith('PUT', '/pushrules/global/room/!room%3Aserver', undefined, {
-        actions: [PushRuleActionName.Notify]
-      })
-    })
-
-    it('deletePushRule should fallback to HTTP when no PushManager', async () => {
-      mockAuthedRequest.mockResolvedValueOnce({})
-      await matrixPushService.deletePushRule('global', 'room', '!room:server')
-      expect(mockAuthedRequest).toHaveBeenCalledWith('DELETE', '/pushrules/global/room/!room%3Aserver')
     })
   })
 })

@@ -44,16 +44,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   }> {
     const client = this.getClient()
     try {
-      const queryParams: Record<string, string> = {}
-      if (options?.from) queryParams.from = options.from
-      if (options?.limit) queryParams.limit = String(options.limit)
-      if (options?.dir) queryParams.dir = options.dir
-
-      const result = await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.ROOM.TIMELINE(roomId),
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )
+      const result = await client.getRoomSummaryManager().eventOps.getRoomTimeline(roomId, options as never)
       return result as { chunk: unknown[]; start: string; end: string }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间时间线失败: ${err}`)
@@ -67,16 +58,10 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   }> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.UNREAD_COUNT(roomId))
-      const unreadCountResult = result as {
-        unread_notifications?: number
-        unread_highlighted?: number
-        notification_count?: number
-        highlight_count?: number
-      }
+      const result = await client.getRoomSummaryManager().eventOps.getRoomUnreadCount(roomId)
       return {
-        unread_notifications: unreadCountResult.unread_notifications ?? unreadCountResult.notification_count ?? 0,
-        unread_highlighted: unreadCountResult.unread_highlighted ?? unreadCountResult.highlight_count ?? 0
+        unread_notifications: result.unread_notifications ?? result.notification_count ?? 0,
+        unread_highlighted: result.unread_highlight_count ?? result.highlight_count ?? 0
       }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取未读计数失败: ${err}`)
@@ -113,16 +98,11 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   ): Promise<{ notifications: Array<Record<string, unknown>>; next_token?: string }> {
     const client = this.getClient()
     try {
-      const queryParams: Record<string, string> = {}
-      if (params?.from) queryParams.from = params.from
-      if (params?.limit) queryParams.limit = String(params.limit)
-
-      const result = await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.ROOM.NOTIFICATIONS(roomId),
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )
-      return result as { notifications: Array<Record<string, unknown>>; next_token?: string }
+      const result = await client.getRoomSummaryManager().eventOps.getRoomNotifications(roomId, params as never)
+      return {
+        notifications: result.notifications as unknown as Array<Record<string, unknown>>,
+        next_token: result.next_batch ?? result.next_token ?? undefined
+      }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间通知失败: ${err}`)
       return { notifications: [] }
@@ -143,6 +123,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   async getRoomCall(roomId: string, callId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {
+      // Not migrated to SDK: no SDK manager method available for /rooms/{roomId}/call/{callId}.
       const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.CALL(roomId, callId))
       return result as Record<string, unknown>
     } catch (err) {

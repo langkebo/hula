@@ -3,9 +3,9 @@
  *
  * Tests URL construction for MatrixVoIPService.
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, extendMatrixClientWithManagers, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixVoIPService } from '../MatrixVoIPService'
 
@@ -44,6 +44,13 @@ setupMswServer(
 )
 
 describe('VoIP service URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    // SDK skips async manager extension init under Vitest (shouldSkipAsyncManagerInit).
+    // TurnServerManager is registered via extendMatrixClient(), so we must
+    // initialize extensions explicitly for the contract test to use a real client.
+    await extendMatrixClientWithManagers()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     realClient = createClient({

@@ -423,6 +423,10 @@ class MatrixNotificationService extends BaseMatrixService {
   private async sendReadReceipt(roomId: string, eventId: string): Promise<boolean> {
     const client = this.getNotificationClient()
     try {
+      // 未迁移到 SDK ReadReceiptsManager：getReadReceiptsManager().sendReadReceiptByEventId(roomId, eventId)
+      // 要求事件已加载到本地 room store，若未找到则静默 no-op（不发送任何请求）。
+      // 本方法是 ack 端点不可用时的回退路径，传入的 (roomId, eventId) 来源于通知列表，
+      // 事件未必已加载到本地，使用 SDK 方法会静默失败并误报成功。故保留直接 HTTP 调用以保证无条件发送。
       await client.http.authedRequest('POST', MATRIX_PATHS.ROOM.RECEIPT(roomId, 'm.read', eventId), undefined, {})
       logger.info(`[MatrixNotification] 已读回执发送成功: ${roomId}/${eventId}`)
       return true

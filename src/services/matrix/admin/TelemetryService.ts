@@ -14,7 +14,6 @@
  */
 import type { MatrixClient } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('AdminTelemetry')
 
@@ -120,34 +119,17 @@ export interface TelemetryHealthCheck {
   alerts: TelemetryAlert[]
 }
 
-const SYNAPSE_ADMIN_BASE = MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE
-
 export class AdminTelemetryService {
   constructor(private readonly getClient: GetClientGetter) {}
-
-  private async adminRequest<TResponse>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    queryParams?: Record<string, string | number | boolean | string[] | undefined>,
-    body?: Record<string, unknown>
-  ): Promise<TResponse> {
-    const client = this.getClient()
-    return client.http.authedRequest(
-      method,
-      path,
-      queryParams,
-      method === 'GET' || method === 'DELETE' ? undefined : body,
-      { prefix: SYNAPSE_ADMIN_BASE }
-    ) as Promise<TResponse>
-  }
 
   /**
    * 获取遥测状态（启用情况、采样率、导出配置）。
    */
   async getStatus(): Promise<TelemetryStatus | null> {
     try {
-      const result = await this.adminRequest<TelemetryStatus>('GET', '/telemetry/status')
-      return result ?? null
+      const client = this.getClient()
+      const result = await client.getTelemetryManager().getServerStatus()
+      return (result as unknown as TelemetryStatus) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getStatus 失败: ${err}`)
       return null
@@ -159,8 +141,9 @@ export class AdminTelemetryService {
    */
   async getResourceAttributes(): Promise<TelemetryResourceAttributes> {
     try {
-      const result = await this.adminRequest<TelemetryResourceAttributes>('GET', '/telemetry/attributes')
-      return result ?? { attributes: {} }
+      const client = this.getClient()
+      const result = await client.getTelemetryManager().getServerAttributes()
+      return (result as unknown as TelemetryResourceAttributes) ?? { attributes: {} }
     } catch (err) {
       logger.error(`[AdminTelemetry] getResourceAttributes 失败: ${err}`)
       return { attributes: {} }
@@ -172,8 +155,9 @@ export class AdminTelemetryService {
    */
   async getMetricsSummary(): Promise<TelemetryMetricsSummary | null> {
     try {
-      const result = await this.adminRequest<TelemetryMetricsSummary>('GET', '/telemetry/metrics')
-      return result ?? null
+      const client = this.getClient()
+      const result = await client.getTelemetryManager().getServerMetricsSummary()
+      return (result as unknown as TelemetryMetricsSummary) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getMetricsSummary 失败: ${err}`)
       return null
@@ -185,14 +169,13 @@ export class AdminTelemetryService {
    */
   async listAlerts(params: TelemetryAlertQueryParams = {}): Promise<TelemetryAlert[]> {
     try {
-      const queryParams: Record<string, string | number | boolean | string[] | undefined> = {
+      const client = this.getClient()
+      const result = await client.getTelemetryManager().getServerAlerts({
+        status: params.status,
+        severity: params.severity,
         refresh: params.refresh ?? true
-      }
-      if (params.status) queryParams.status = params.status
-      if (params.severity) queryParams.severity = params.severity
-
-      const result = await this.adminRequest<TelemetryAlertsResponse>('GET', '/telemetry/alerts', queryParams)
-      return result?.alerts ?? []
+      })
+      return (result?.alerts as unknown as TelemetryAlert[]) ?? []
     } catch (err) {
       logger.error(`[AdminTelemetry] listAlerts 失败: ${err}`)
       return []
@@ -203,12 +186,10 @@ export class AdminTelemetryService {
    * 确认单条告警。
    */
   async acknowledgeAlert(alertId: string): Promise<TelemetryAlert> {
-    const result = await this.adminRequest<TelemetryAlert>(
-      'POST',
-      `/telemetry/alerts/${encodeURIComponent(alertId)}/ack`
-    )
+    const client = this.getClient()
+    const result = await client.getTelemetryManager().acknowledgeServerAlert(alertId)
     logger.info(`[AdminTelemetry] 已确认告警: ${alertId}`)
-    return result
+    return result as unknown as TelemetryAlert
   }
 
   /**
@@ -216,8 +197,9 @@ export class AdminTelemetryService {
    */
   async getHealth(): Promise<TelemetryHealthCheck | null> {
     try {
-      const result = await this.adminRequest<TelemetryHealthCheck>('GET', '/telemetry/health')
-      return result ?? null
+      const client = this.getClient()
+      const result = await client.getTelemetryManager().getServerHealth()
+      return (result as unknown as TelemetryHealthCheck) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getHealth 失败: ${err}`)
       return null

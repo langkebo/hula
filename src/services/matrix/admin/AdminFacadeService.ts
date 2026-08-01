@@ -1,6 +1,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { ref } from 'vue'
 import { TauriCommand } from '@/enums'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -130,6 +131,30 @@ class AdminFacadeService extends BaseMatrixService {
         return this.cachedAdminStatus
       }
 
+      // 浏览器 dev 模式（无 Tauri runtime）：回退到 HTTP 调用 admin 用户接口验证身份
+      // C-1 反馈回路修复：避免浏览器模式下因 Tauri 命令不可用而拒绝所有管理员操作
+      if (!hasTauriRuntime()) {
+        try {
+          const userInfo = await client.http.authedRequest<{ name?: string; admin?: boolean }>(
+            'GET',
+            `/users/${encodeURIComponent(userId)}`,
+            undefined,
+            undefined,
+            { prefix: MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE }
+          )
+          const isAdmin = Boolean(userInfo?.admin)
+          this.cachedAdminStatus = isAdmin
+          this.adminVerifiedAt = now
+          if (!isAdmin) {
+            logger.warn(`[Admin] 服务端权限验证失败: userId=${userId}, isAdmin=false (browser mode)`)
+          }
+          return isAdmin
+        } catch (err) {
+          logger.error(`[Admin] 服务端权限验证异常 (browser mode): ${err}`)
+          return false
+        }
+      }
+
       const result = await invokeWithResult<{ is_admin: boolean; user_id: string }>(TauriCommand.CHECK_ADMIN_STATUS, {
         userId,
         accessToken,
@@ -176,6 +201,8 @@ class AdminFacadeService extends BaseMatrixService {
     path: string,
     body?: Record<string, unknown>
   ): Promise<TResponse> {
+    // Not migrated to SDK: no manager method exists for the admin
+    // GET /_synapse/admin/v1/whoami availability probe. Left as direct HTTP.
     const client = this.getClient()
     return client.http.authedRequest(
       method,

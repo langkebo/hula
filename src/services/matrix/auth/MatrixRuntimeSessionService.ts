@@ -11,6 +11,7 @@ import {
 import { useI18nGlobal } from '@/services/i18n'
 import type { MatrixClientConfig } from '@/services/matrix/MatrixClientService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
 import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
@@ -697,6 +698,18 @@ class MatrixRuntimeSessionService {
       }
 
       await this.ensureClientReadyForBootstrap(options)
+
+      // 合并原 settlePostLoginStartup 逻辑：启动客户端同步 + 刷新 capabilities
+      // 与 waitSyncPrepared 在同一个 30s 超时内执行，避免 15s + 30s 双超时叠加
+      try {
+        await matrixClientService.startClient()
+      } catch (error) {
+        logger.error('Matrix startClient 失败，同步将不可用:', error)
+      }
+      void matrixCapabilityService.refreshCapabilities().catch((err) => {
+        logger.warn('刷新 capabilities 失败:', err)
+      })
+
       await this.waitSyncPrepared()
 
       this.clearUserLocalStorage()

@@ -111,6 +111,8 @@ class UserDirectoryService extends BaseMatrixService {
   }> {
     const client = this.getClient()
     try {
+      // 未迁移到 SDK Manager：UserDirectoryManager.listUserDirectory() 不支持分页参数（limit/from），
+      // 且后端期望 `since`（非 `from`）游标、返回 `users`（非 `results`），契约不匹配。
       const result = await client.http.authedRequest<{
         results?: Array<{
           user_id: string
@@ -137,13 +139,10 @@ class UserDirectoryService extends BaseMatrixService {
   async getUserDirectoryProfile(userId: string): Promise<UserDirectorySearchResult | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest<{
-        display_name?: string
-        avatar_url?: string
-      }>('GET', `/user_directory/profiles/${encodeURIComponent(userId)}`)
+      const result = await client.getUserDirectoryManager().getProfile(userId)
       return {
         userId,
-        displayName: result.display_name,
+        displayName: result.displayname,
         avatarUrl: result.avatar_url
       }
     } catch (err) {

@@ -19,6 +19,12 @@ export class AdminReportService {
   /**
    * 调用 authedRequest 前先用 stripMatrixPrefix 剥离已知前缀，
    * 避免 SDK 默认 ClientPrefix.V3 与路径中的前缀重复拼接。
+   *
+   * Not migrated to client.getEventReportManager():
+   * EventReportManager uses /event_reports/* paths, but the admin report
+   * endpoints here use /_synapse/admin/v1/reports/* (legacy Synapse admin
+   * reports: GET /reports, GET /reports/{id}, DELETE /reports/{id}).
+   * Contract mismatch — left as direct HTTP.
    */
   private async prefixedAuthedRequest<T>(
     client: MatrixClient,
@@ -72,6 +78,9 @@ export class AdminReportService {
   }
 
   async reportRoom(roomId: string, reason: string, description?: string): Promise<ReportRoomResponse | null> {
+    // Not migrated to client.getReportingManager().reportRoom():
+    // SDK sends only { reason } and returns EmptyObject, but this service sends
+    // { reason, description } and expects { report_id }. Contract mismatch — left as direct HTTP.
     const client = this.getClient()
     try {
       const result = (await client.http.authedRequest(
@@ -109,12 +118,7 @@ export class AdminReportService {
       throw new Error('matrix_error.admin.score_range_invalid')
     }
     try {
-      await client.http.authedRequest(
-        'PUT',
-        `/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/score`,
-        undefined,
-        { score }
-      )
+      await client.getReportingManager().scoreReport(roomId, eventId, score)
       logger.info(`[Admin] 举报评分成功: ${roomId}/${eventId}, score=${score}`)
     } catch (err) {
       logger.error(`[Admin] 举报评分失败: ${err}`)
@@ -125,12 +129,8 @@ export class AdminReportService {
   async getScannerInfo(roomId: string, eventId: string): Promise<ScannerInfo | null> {
     const client = this.getClient()
     try {
-      const result = await this.prefixedAuthedRequest<ScannerInfo>(
-        client,
-        'GET',
-        MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId)
-      )
-      return result
+      const result = await client.getReportingManager().getScannerInfo(roomId, eventId)
+      return result as unknown as ScannerInfo
     } catch (err) {
       logger.error(`[Admin] 获取扫描器信息失败: ${err}`)
       return null
