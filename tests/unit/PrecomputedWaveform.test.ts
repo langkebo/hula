@@ -20,14 +20,23 @@ describe('Precomputed waveform (audio_waveform field)', () => {
     window: saveDescriptor(window, 'AudioContext')
   }
 
+  // 跨测试共享的 spy：decodeAudioData 调用计数与构造计数
+  let decodeSpy: ReturnType<typeof vi.fn>
+  let ctorCalls: number
+
   beforeEach(() => {
+    ctorCalls = 0
     // 为 generateWaveformData fallback 测试提供 AudioContext mock。
     // 预计算路径不会用到它，但统一设置保持环境一致。
     const channelData = new Float32Array(100).fill(1)
     const mockBuffer = { getChannelData: (_ch: number) => channelData }
-    const MockAudioContext = vi.fn().mockImplementation(() => ({
-      decodeAudioData: vi.fn().mockResolvedValue(mockBuffer)
-    }))
+    decodeSpy = vi.fn().mockResolvedValue(mockBuffer)
+    // 使用普通函数构造器：`new MockAudioContext()` 返回带 decodeAudioData 的实例。
+    // （vi.fn().mockImplementation 在 `new` 下不会返回实现返回的对象，会导致 decodeAudioData 为 undefined）
+    function MockAudioContext(this: unknown) {
+      ctorCalls++
+      return { decodeAudioData: decodeSpy }
+    }
     // happy-dom 可能将 AudioContext 定义为只读/原型属性，使用 defineProperty 强制覆盖
     const define = (obj: object) =>
       Object.defineProperty(obj, 'AudioContext', {
@@ -157,24 +166,19 @@ describe('Precomputed waveform (audio_waveform field)', () => {
     const r = makeRenderer()
     await r.generateWaveformData(new ArrayBuffer(8))
     // duration=10 → width=50 → samples=25
-    // eslint-disable-next-line no-console
-    console.log('DEBUG waveformData:', JSON.stringify(r.waveformData.value.slice(0, 5)), 'len=', r.waveformData.value.length)
-    const ctor = (window as { AudioContext?: { mock?: { calls: unknown[] } } }).AudioContext as unknown as
-      | { mock?: { calls: unknown[] } }
-      | undefined
-    // eslint-disable-next-line no-console
-    console.log('DEBUG AudioContext ctor calls:', ctor?.mock?.calls?.length)
     expect(r.waveformData.value.length).toBe(25)
     // channelData 全为 1 → rms=1, max=1, intensity=min(1, 1)=1
     expect(r.waveformData.value.every((v) => v === 1)).toBe(true)
+    // 确认走了 AudioContext.decodeAudioData 路径
+    expect(decodeSpy).toHaveBeenCalledTimes(1)
   })
 
   it('预计算路径跳过 AudioContext.decodeAudioData', () => {
     const r = makeRenderer()
-    const ctxSpy = (window as { AudioContext?: unknown }).AudioContext as unknown as ReturnType<typeof vi.fn>
     r.loadPrecomputedWaveform([10, 50, 80, 30, 90])
-    // 预计算路径不应构造 AudioContext
-    expect(ctxSpy).not.toHaveBeenCalled()
+    // 预计算路径不应构造 AudioContext，也不应调用 decodeAudioData
+    expect(ctorCalls).toBe(0)
+    expect(decodeSpy).not.toHaveBeenCalled()
     expect(r.waveformData.value.length).toBe(5)
   })
 })
