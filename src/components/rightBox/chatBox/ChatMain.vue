@@ -60,8 +60,17 @@
         @click="togglePrivateMode">
         <span class="private-toggle-btn__letter">S</span>
       </button>
-      <span v-if="privateModeActive" class="text-[var(--text-sm)] text-[--hula-color-danger-500]">私密模式已开启</span>
+      <span v-if="privateModeActive" class="text-[var(--text-sm)] text-[--hula-color-danger-500]">
+        私密模式已开启
+      </span>
     </div>
+
+    <!-- 粘性事件横幅 -->
+    <StickyEventBanner
+      :events="stickyEvents"
+      :can-set-sticky="canSetSticky"
+      @set-sticky="handleSetSticky"
+      @view="handleViewStickyEvent" />
 
     <!-- 聊天内容 -->
     <div class="flex flex-col flex-1 min-h-0">
@@ -328,6 +337,7 @@ const EventReportDialog = defineAsyncComponent(() => import('@/components/modera
 import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
 import E2EEBanner from '@/components/chat/E2EEBanner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import StickyEventBanner from '@/components/rightBox/renderMessage/StickyEventBanner.vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { usePopover } from '@/composables/common/usePopover'
@@ -401,7 +411,32 @@ const threadOriginalMessage = ref<{
   timestamp: number
 } | null>(null)
 
-defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId })
+// ===== 粘性事件 =====
+interface StickyEventItem {
+  eventId: string
+  sender: string
+  body: string
+  timestamp: number
+}
+
+const stickyEvents = ref<StickyEventItem[]>([])
+const canSetSticky = computed(() => {
+  // TODO: 根据 power_levels 判断是否有权限设置粘性事件
+  return false
+})
+
+function handleSetSticky() {
+  // TODO: 打开消息选择器或使用最近选中消息
+  logger.info('Set sticky event requested')
+}
+
+function handleViewStickyEvent(eventId: string) {
+  // 滚动到对应消息
+  logger.info('View sticky event:', eventId)
+  jumpToReplyMsg(eventId)
+}
+
+defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId, stickyEvents, canSetSticky })
 
 // ===== 私密模式 =====
 const privateModeActive = ref(false)

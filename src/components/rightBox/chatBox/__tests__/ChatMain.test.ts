@@ -423,3 +423,72 @@ describe('ChatMain private mode', () => {
     expect(vm.privateModeActive).toBe(false)
   })
 })
+
+describe('ChatMain sticky events', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    globalStore = reactive({
+      currentSessionRoomId: '!room:example.com'
+    })
+    userStore = reactive({
+      userInfo: {
+        uid: '@me:example.com'
+      }
+    })
+
+    chatStore = reactive({
+      isGroup: false,
+      shouldShowNoMoreMessage: false,
+      chatMessageList: [],
+      currentSessionInfo: { roomId: '!room:example.com' },
+      currentMessageOptions: {
+        hasLoadedOnce: true,
+        isLast: false,
+        isLoading: false
+      },
+      currentNewMsgCount: null,
+      isMsgMultiChoose: false,
+      msgMultiChooseMode: 'default',
+      newMsgCount: {},
+      loadMore: vi.fn(async () => undefined),
+      getMsgIndex: vi.fn(() => -1),
+      clearNewMsgCount: vi.fn(),
+      clearRedundantMessages: vi.fn(),
+      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined)
+    })
+
+    appWindowListenMock.mockResolvedValue(vi.fn())
+    getGroupAnnouncementListMock.mockResolvedValue({
+      records: []
+    })
+  })
+
+  it('renders StickyEventBanner component', () => {
+    const wrapper = mountComponent()
+    expect(wrapper.findComponent({ name: 'StickyEventBanner' }).exists()).toBe(true)
+  })
+
+  it('passes stickyEvents prop to StickyEventBanner', () => {
+    const wrapper = mountComponent()
+    const banner = wrapper.findComponent({ name: 'StickyEventBanner' })
+    expect(banner.props('events')).toEqual([])
+  })
+
+  it('passes canSetSticky prop as false by default', () => {
+    const wrapper = mountComponent()
+    const banner = wrapper.findComponent({ name: 'StickyEventBanner' })
+    expect(banner.props('canSetSticky')).toBe(false)
+  })
+
+  it('updates stickyEvents when set via expose', async () => {
+    const wrapper = mountComponent()
+    const vm = wrapper.vm as unknown as {
+      stickyEvents: { eventId: string; sender: string; body: string; timestamp: number }[]
+    }
+    vm.stickyEvents = [{ eventId: '$evt1', sender: '@alice:server', body: 'Hello', timestamp: Date.now() }]
+    await flushPromises()
+    const banner = wrapper.findComponent({ name: 'StickyEventBanner' })
+    expect(banner.props('events')).toHaveLength(1)
+  })
+})
