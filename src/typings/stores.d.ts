@@ -133,6 +133,13 @@ declare namespace STO {
       /** 自动锁定超时，单位分钟 */
       lockTimeout: number
     }
+    /** 面板宽度设置（拖拽调整后持久化） */
+    panelWidth: {
+      /** 中间栏宽度 */
+      left: number
+      /** 右侧栏宽度 */
+      right: number
+    }
   }
 
   /**

@@ -206,6 +206,10 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       hideSessions: false,
       autoLock: false,
       lockTimeout: 5
+    },
+    panelWidth: {
+      left: 280,
+      right: 320
     }
   }),
   persist: {
@@ -717,6 +721,13 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     isSecretChatConfigured(): boolean {
       this.ensureSecretChatSettings()
       return this.secretChat.enabled && !!this.secretChat.passwordHash
+    },
+    /** 设置面板宽度（钳制到 200-600） */
+    setPanelWidth(side: 'left' | 'right', width: number) {
+      const min = 200
+      const max = 600
+      const clamped = Math.min(max, Math.max(min, Math.round(width)))
+      this.panelWidth[side] = clamped
     }
   }
 })

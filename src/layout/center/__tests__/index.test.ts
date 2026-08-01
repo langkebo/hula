@@ -61,6 +61,7 @@ vi.mock('vue-router', () => ({
   })
 }))
 
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import CenterLayout from '../index.vue'
 
 describe('CenterLayout — Step 2.3 响应式断点', () => {
@@ -97,7 +98,6 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
   }
 
   it('wide 模式中间栏宽度为 280px', async () => {
-    centerWidthRef.value = 280
     const wrapper = await mountCenter()
     const center = wrapper.find('#center')
     expect(center.exists()).toBe(true)
@@ -107,8 +107,10 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
   })
 
   it('normal 模式中间栏宽度为 240px', async () => {
-    centerWidthRef.value = 240
     const wrapper = await mountCenter()
+    const store = useSettingStore()
+    store.setPanelWidth('left', 240)
+    await nextTick()
     const center = wrapper.find('#center')
     const style = center.attributes('style') || ''
     expect(style).toContain('240px')
@@ -135,7 +137,7 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
   it('非 shrink 模式下显示 resize-handle', async () => {
     isShrinkRef.value = false
     const wrapper = await mountCenter()
-    const handle = wrapper.find('.resize-handle')
+    const handle = wrapper.find('[data-testid="panel-resize-handle"]')
     expect(handle.exists()).toBe(true)
     wrapper.unmount()
   })
@@ -143,17 +145,17 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
   it('shrink 模式下隐藏 resize-handle', async () => {
     isShrinkRef.value = true
     const wrapper = await mountCenter()
-    const handle = wrapper.find('.resize-handle')
+    const handle = wrapper.find('[data-testid="panel-resize-handle"]')
     expect(handle.attributes('style')).toContain('display: none')
     wrapper.unmount()
   })
 
-  it('断点变化时中间栏宽度跟随更新', async () => {
-    centerWidthRef.value = 280
+  it('面板宽度变化时中间栏宽度跟随更新', async () => {
     const wrapper = await mountCenter()
     expect(wrapper.find('#center').attributes('style') || '').toContain('280px')
 
-    centerWidthRef.value = 240
+    const store = useSettingStore()
+    store.setPanelWidth('left', 240)
     await nextTick()
     expect(wrapper.find('#center').attributes('style') || '').toContain('240px')
 
@@ -167,7 +169,7 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
   it('resize-handle 有 touch-action: none 样式（兼容触摸）', async () => {
     isShrinkRef.value = false
     const wrapper = await mountCenter()
-    const handle = wrapper.find('.resize-handle')
+    const handle = wrapper.find('[data-testid="panel-resize-handle"]')
     expect(handle.attributes('style')).toContain('touch-action: none')
     wrapper.unmount()
   })
