@@ -367,7 +367,7 @@ declare module 'matrix-js-sdk' {
     redact(roomId: string, eventId: string, txnId?: string, opts?: { reason?: string }): Promise<{ event_id: string }>
     getVisibleRooms(): Room[]
     syncOnce(opts?: Record<string, unknown>): Promise<void>
-    getBurnAfterReadManager(): BurnAfterReadManager
+    // getBurnAfterReadManager now available in SDK (matrix-js-sdk@40.2.0+)
     getSpaceManager(): import('matrix-js-sdk/space').SpaceManager
     getKeyRotationManager(): import('matrix-js-sdk/key-rotation').KeyRotationManager
     getDehydratedDeviceManager(): import('matrix-js-sdk/dehydrated-device').DehydratedDeviceManager

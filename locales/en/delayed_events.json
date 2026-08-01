@@ -1,0 +1,33 @@
+{
+  "title": "Delayed Events",
+  "scheduled": "Scheduled",
+  "finalised": "Finalised",
+  "empty": "No delayed events",
+  "load_failed": "Failed to load delayed events",
+  "fields": {
+    "delay_id": "Delay ID",
+    "type": "Event Type",
+    "delay": "Delay (ms)",
+    "running_since": "Running Since"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "restart": "Restart",
+    "send": "Send Now"
+  },
+  "outcome": {
+    "send": "Sent",
+    "cancel": "Cancelled"
+  },
+  "reason": {
+    "delay": "Delay triggered",
+    "error": "Error",
+    "action": "Action triggered"
+  },
+  "cancel_success": "Delayed event cancelled",
+  "cancel_failed": "Failed to cancel delayed event",
+  "restart_success": "Delayed event restarted",
+  "restart_failed": "Failed to restart delayed event",
+  "send_success": "Delayed event sent immediately",
+  "send_failed": "Failed to send delayed event"
+}

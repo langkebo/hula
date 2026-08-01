@@ -1,0 +1,64 @@
+{
+  "title": "后台更新管理",
+  "subtitle": "查看和管理数据库迁移、索引重建等后台任务",
+  "status": {
+    "title": "汇总状态",
+    "pending": "待处理",
+    "running": "执行中",
+    "completed": "已完成",
+    "failed": "已失败",
+    "total": "总计",
+    "current": "当前任务"
+  },
+  "list": {
+    "title": "任务列表",
+    "empty": "暂无后台更新任务",
+    "job_name": "任务名称",
+    "job_type": "任务类型",
+    "description": "描述",
+    "status": "状态",
+    "progress": "进度",
+    "total_items": "总条目",
+    "processed_items": "已处理",
+    "created_ts": "创建时间",
+    "started_ts": "开始时间",
+    "completed_ts": "完成时间",
+    "error_message": "错误信息",
+    "retry_count": "重试次数",
+    "actions": "操作"
+  },
+  "actions": {
+    "start": "启动",
+    "cancel": "取消",
+    "complete": "完成",
+    "fail": "标记失败",
+    "delete": "删除",
+    "retry_failed": "重试所有失败",
+    "cleanup_locks": "清理过期锁",
+    "refresh": "刷新"
+  },
+  "dialog": {
+    "fail_title": "标记任务失败",
+    "fail_message_label": "错误信息",
+    "fail_message_placeholder": "请输入失败原因",
+    "fail_confirm": "确定",
+    "fail_cancel": "取消"
+  },
+  "feedback": {
+    "start_success": "任务已启动",
+    "start_failed": "启动任务失败",
+    "cancel_success": "任务已取消",
+    "cancel_failed": "取消任务失败",
+    "complete_success": "任务已完成",
+    "complete_failed": "完成任务失败",
+    "fail_success": "任务已标记失败",
+    "fail_failed": "标记任务失败失败",
+    "delete_success": "任务已删除",
+    "delete_failed": "删除任务失败",
+    "retry_success": "已重试 {count} 个失败任务",
+    "retry_failed": "重试失败任务失败",
+    "cleanup_success": "已清理 {count} 个过期锁",
+    "cleanup_failed": "清理过期锁失败",
+    "load_failed": "加载后台更新信息失败"
+  }
+}

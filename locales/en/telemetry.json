@@ -1,0 +1,77 @@
+{
+  "title": "Telemetry",
+  "subtitle": "View runtime metrics, Prometheus configuration, and alerts",
+  "common": {
+    "yes": "Yes",
+    "no": "No"
+  },
+  "status": {
+    "title": "Telemetry Status",
+    "empty": "No telemetry config available",
+    "enabled": "Enabled",
+    "trace_enabled": "Trace Enabled",
+    "metrics_enabled": "Metrics Enabled",
+    "service_name": "Service Name",
+    "service_version": "Service Version",
+    "sampling_ratio": "Sampling Ratio",
+    "otlp_endpoint": "OTLP Endpoint",
+    "prometheus_port": "Prometheus Port",
+    "batch_export": "Batch Export"
+  },
+  "metrics": {
+    "title": "Metrics Summary",
+    "empty": "No metrics data available",
+    "total_metrics": "Total Metrics",
+    "total_counters": "Counters",
+    "total_gauges": "Gauges",
+    "total_histograms": "Histograms",
+    "rendered_bytes": "Rendered Bytes",
+    "snapshot_ts": "Snapshot Time"
+  },
+  "scheduler": {
+    "title": "Appservice Scheduler",
+    "total_services": "Total Services",
+    "available_services": "Available",
+    "in_backoff": "In Backoff",
+    "capacity_limited": "Capacity Limited",
+    "pending_events": "Pending Events",
+    "pending_transactions": "Pending Transactions",
+    "success_count": "Success Count",
+    "failure_count": "Failure Count",
+    "in_flight": "In Flight"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "empty": "No alerts",
+    "count": "{count} alert(s)",
+    "severity": "Severity",
+    "rule_name": "Rule Name",
+    "status": "Status",
+    "message": "Message",
+    "trigger_count": "Trigger Count",
+    "triggered_at": "Triggered At",
+    "last_seen_ts": "Last Seen",
+    "actions": "Actions",
+    "acknowledge": "Acknowledge",
+    "status_firing": "Firing",
+    "status_acknowledged": "Acknowledged",
+    "status_recovered": "Recovered",
+    "status_closed": "Closed",
+    "severity_info": "Info",
+    "severity_warning": "Warning",
+    "severity_high": "High",
+    "severity_critical": "Critical"
+  },
+  "filters": {
+    "status_placeholder": "Filter by status",
+    "severity_placeholder": "Filter by severity"
+  },
+  "actions": {
+    "refresh": "Refresh"
+  },
+  "feedback": {
+    "ack_success": "Alert acknowledged",
+    "ack_failed": "Failed to acknowledge alert",
+    "load_failed": "Failed to load telemetry data"
+  }
+}
