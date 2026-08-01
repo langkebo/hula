@@ -69,7 +69,21 @@ describe('MatrixRoomAccountDataService', () => {
     getUserId: () => userId,
     http: {
       authedRequest: authedRequestImpl
-    }
+    },
+    getAccountDataManager: () => ({
+      getRoomAccountDataFromServer: vi.fn().mockImplementation(async (roomId: string, eventType: string) => {
+        // Simulate the SDK behavior: make an HTTP request and return a MatrixEvent-like object
+        const path = `/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+        const response = await authedRequestImpl('GET', path)
+        return {
+          getContent: () => response
+        }
+      }),
+      setRoomAccountData: vi.fn().mockImplementation(async (roomId: string, eventType: string, content: unknown) => {
+        const path = `/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+        return authedRequestImpl('PUT', path, undefined, content)
+      })
+    })
   })
 
   describe('getRoomAccountData', () => {

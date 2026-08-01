@@ -23,7 +23,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.getAccountDataManager().getRoomAccountDataFromServer(roomId, eventType)
-      return result as Record<string, unknown>
+      return (result?.getContent() as Record<string, unknown>) ?? null
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间 account data 失败: ${err}`)
       return null
