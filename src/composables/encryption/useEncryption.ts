@@ -10,15 +10,15 @@ import {
   type KeyBackupInfo,
   type KeyRotationRecord,
   type KeyRotationStatus,
-  matrixEncryptionService,
   type SetupKeyBackupOptions
-} from '@/services/matrix/crypto/MatrixEncryptionService'
+} from '@/services/matrix/crypto/types'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { matrixVerificationService, type VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
 
-export type { CryptoHealthStatus } from '@/services/matrix/crypto/CryptoHealthMonitor'
+export type { CryptoHealthStatus } from '@/services/matrix/crypto/types'
 
-export type { KeyRotationRecord } from '@/services/matrix/crypto/MatrixEncryptionService'
+export type { KeyRotationRecord } from '@/services/matrix/crypto/types'
 
 interface UseEncryptionResult {
   isEncryptionEnabled: Ref<boolean>

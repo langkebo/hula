@@ -25,8 +25,13 @@ const mockPushManager = {
   setPusher: vi.fn()
 }
 
+const mockReadReceiptsManager = {
+  sendReceiptForce: vi.fn()
+}
+
 const mockClient = {
   getPushManager: vi.fn(() => mockPushManager),
+  getReadReceiptsManager: vi.fn(() => mockReadReceiptsManager),
   getPushRules: vi.fn(),
   setPushRule: vi.fn(),
   deletePushRule: vi.fn(),
@@ -392,13 +397,34 @@ describe('MatrixNotificationService', () => {
 
       it('should fallback to receipt when ack fails', async () => {
         mockPushManager.ackNotification.mockRejectedValueOnce(new Error('404'))
-        mockClient.http.authedRequest.mockResolvedValueOnce({})
+        mockReadReceiptsManager.sendReceiptForce.mockResolvedValueOnce(undefined)
 
         const result = await matrixNotificationService.ackNotificationWithFallback('n1', '!room', 'evt1')
 
         expect(result.success).toBe(true)
         expect(result.method).toBe('receipt')
       })
+    })
+  })
+
+  describe('sendReadReceipt (private, migrated to SDK)', () => {
+    it('delegates to ReadReceiptsManager.sendReceiptForce', async () => {
+      const sendReceiptForce = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getReadReceiptsManager: () => ({ sendReceiptForce })
+      } as never)
+      const result = await matrixNotificationService['sendReadReceipt']('!room:server', '$evt:server')
+      expect(sendReceiptForce).toHaveBeenCalledWith('!room:server', 'm.read', '$evt:server')
+      expect(result).toBe(true)
+    })
+
+    it('returns false on error', async () => {
+      const sendReceiptForce = vi.fn().mockRejectedValue(new Error('network'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getReadReceiptsManager: () => ({ sendReceiptForce })
+      } as never)
+      const result = await matrixNotificationService['sendReadReceipt']('!room:server', '$evt:server')
+      expect(result).toBe(false)
     })
   })
 })

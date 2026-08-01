@@ -353,3 +353,32 @@ export interface E2EEStatus {
 // ============================================
 
 export type { GeneratedSecretStorageKey, SecureBackupInfo, SecureBackupRestoreResponse }
+
+// ============================================
+// Legacy/Deprecated Types (for backward compatibility)
+// ============================================
+
+/**
+ * @deprecated Use CrossSigningStatusResult instead
+ */
+export interface CrossSigningInfo {
+  publicKey: string
+  signatures: Record<string, Record<string, string>>
+}
+
+/**
+ * @deprecated Use BackupVersionInfo instead
+ */
+export interface KeyBackupInfo {
+  version: string
+  algorithm: string
+  authData: Record<string, unknown>
+}
+
+/**
+ * @deprecated Use KeyBackupSetupResult instead
+ */
+export interface SetupKeyBackupOptions {
+  createNewBackup?: boolean
+  recoveryKey?: string
+}
