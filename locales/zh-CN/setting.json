@@ -1197,6 +1197,19 @@
     "open_logs_failed": "无法打开日志目录",
     "open_logs_unsupported": "Web 版本暂不支持此功能"
   },
+  "diagnostics": {
+    "title": "诊断信息",
+    "reset": "重置指标",
+    "api_avg_latency": "API 平均延迟",
+    "api_p95_latency": "API P95 延迟",
+    "api_total_calls": "API 调用总数",
+    "sync_count": "Sliding Sync 次数",
+    "sync_avg_duration": "同步平均耗时",
+    "replay_success_rate": "离线回放成功率",
+    "retry_rate": "重试触发率",
+    "retry_rate_abnormal_title": "重试率异常",
+    "retry_rate_abnormal_desc": "网络不稳定，当前重试率为 {rate}%"
+  },
   "unknow": "未知",
   "encryption": {
     "title": "加密设置",
