@@ -13,6 +13,11 @@ class MatrixPushService extends BaseMatrixService {
   async getPushers(): Promise<IPusher[]> {
     const client = this.getClient()
     try {
+      const pushManager = (client as unknown as { getPushManager?: () => { getPushers: () => Promise<IPusher[]> } }).getPushManager?.()
+      if (pushManager) {
+        return await pushManager.getPushers()
+      }
+      // Fallback to direct HTTP
       const response = (await client.http.authedRequest('GET', '/pushers')) as { pushers?: unknown }
       return Array.isArray(response.pushers) ? (response.pushers as IPusher[]) : []
     } catch (err) {
