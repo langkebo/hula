@@ -157,6 +157,13 @@ describe('Precomputed waveform (audio_waveform field)', () => {
     const r = makeRenderer()
     await r.generateWaveformData(new ArrayBuffer(8))
     // duration=10 → width=50 → samples=25
+    // eslint-disable-next-line no-console
+    console.log('DEBUG waveformData:', JSON.stringify(r.waveformData.value.slice(0, 5)), 'len=', r.waveformData.value.length)
+    const ctor = (window as { AudioContext?: { mock?: { calls: unknown[] } } }).AudioContext as unknown as
+      | { mock?: { calls: unknown[] } }
+      | undefined
+    // eslint-disable-next-line no-console
+    console.log('DEBUG AudioContext ctor calls:', ctor?.mock?.calls?.length)
     expect(r.waveformData.value.length).toBe(25)
     // channelData 全为 1 → rms=1, max=1, intensity=min(1, 1)=1
     expect(r.waveformData.value.every((v) => v === 1)).toBe(true)
