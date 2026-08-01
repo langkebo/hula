@@ -11,44 +11,10 @@ const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
 const _server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/_matrix/client/v3/devices`, () => {
-    return HttpResponse.json({
-      devices: [
-        { device_id: 'DEVICE1', display_name: 'Device 1' },
-        { device_id: 'DEVICE2', display_name: 'Device 2' }
-      ]
-    })
-  }),
-  http.get(`${TEST_BASE_URL}/_matrix/client/v3/devices/:deviceId`, () => {
-    return HttpResponse.json({
-      device_id: 'DEVICE1',
-      display_name: 'My Device',
-      device: {
-        device_id: 'DEVICE1',
-        display_name: 'My Device',
-        last_seen_ts: 1000000
-      }
-    })
-  }),
-  http.put(`${TEST_BASE_URL}/_matrix/client/v3/devices/:deviceId`, async ({ request }) => {
-    const body = await request.json()
-    return HttpResponse.json({
-      device_id: 'DEVICE1',
-      display_name: (body as Record<string, unknown>)?.display_name ?? 'New Name',
-      updated_ts: Date.now()
-    })
-  }),
-  http.delete(`${TEST_BASE_URL}/_matrix/client/v3/devices/:deviceId`, () => {
-    return HttpResponse.json({})
-  }),
-  http.post(`${TEST_BASE_URL}/_matrix/client/v3/delete_devices`, async ({ request }) => {
-    const body = await request.json()
-    return HttpResponse.json(body as Record<string, unknown>)
-  }),
-  http.get(`${TEST_BASE_URL}/_matrix/client/v3/room_keys/request`, () => {
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/room_keys/request`, () => {
     return HttpResponse.json({ requests: [] })
   }),
-  http.delete(`${TEST_BASE_URL}/_matrix/client/v3/room_keys/request/:requestId`, () => {
+  http.delete(`${TEST_BASE_URL}${PREFIX_V3}/room_keys/request/:requestId`, () => {
     return HttpResponse.json({})
   })
 )
@@ -117,18 +83,6 @@ describe('MatrixDeviceService', () => {
   })
 
   describe('getDevices', () => {
-    it('应该在未调用 initialize 时回退到 matrixClientService', async () => {
-      const mockDevices: Device[] = [{ device_id: 'DEVICE1', display_name: 'Device 1', verified: true }]
-      mockDeviceManager.getDevices.mockResolvedValue(mockDevices)
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
-
-      const service = new (matrixDeviceService.constructor as unknown as new () => typeof matrixDeviceService)()
-      const devices = await service.getDevices()
-
-      expect(matrixClientService.getClient).toHaveBeenCalled()
-      expect(devices).toEqual(mockDevices)
-    })
-
     it('应该通过 DeviceManager 获取设备列表', async () => {
       const mockDevices: Device[] = [
         { device_id: 'DEVICE1', display_name: 'Device 1', verified: true },
@@ -143,16 +97,10 @@ describe('MatrixDeviceService', () => {
       expect(mockDeviceManager.getDevices).toHaveBeenCalled()
     })
 
-    it('应该降级到 HTTP 调用', async () => {
+    it('应该在 DeviceManager 不可用时抛出错误', async () => {
       mockClient.getDeviceManager = vi.fn(() => null)
 
-      const devices = await matrixDeviceService.getDevices()
-
-      expect(devices).toEqual([
-        { device_id: 'DEVICE1', display_name: 'Device 1' },
-        { device_id: 'DEVICE2', display_name: 'Device 2' }
-      ])
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/devices')
+      await expect(matrixDeviceService.getDevices()).rejects.toThrow('DeviceManager not available')
     })
 
     it('应该处理获取失败', async () => {
@@ -180,16 +128,10 @@ describe('MatrixDeviceService', () => {
       expect(mockDeviceManager.getDevice).toHaveBeenCalledWith('DEVICE1')
     })
 
-    it('应该处理嵌套的 device 对象', async () => {
+    it('应该在 DeviceManager 不可用时抛出错误', async () => {
       mockClient.getDeviceManager = vi.fn(() => null)
 
-      const device = await matrixDeviceService.getDevice('DEVICE1')
-
-      expect(device).toEqual({
-        device_id: 'DEVICE1',
-        display_name: 'My Device',
-        last_seen_ts: 1000000
-      })
+      await expect(matrixDeviceService.getDevice('DEVICE1')).rejects.toThrow('DeviceManager not available')
     })
   })
 
@@ -204,16 +146,18 @@ describe('MatrixDeviceService', () => {
       expect(mockDeviceManager.updateDevice).toHaveBeenCalledWith('DEVICE1', { display_name: 'New Name' })
     })
 
-    it('应该通过 HTTP 更新设备', async () => {
+    it('应该在 DeviceManager 不可用时抛出错误', async () => {
       mockClient.getDeviceManager = vi.fn(() => null)
 
-      const result = await matrixDeviceService.updateDevice('DEVICE1', 'New Name')
+      await expect(matrixDeviceService.updateDevice('DEVICE1', 'New Name')).rejects.toThrow(
+        'DeviceManager not available'
+      )
+    })
 
-      expect(result.device_id).toBe('DEVICE1')
-      expect(result.display_name).toBe('New Name')
-      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', '/devices/DEVICE1', undefined, {
-        display_name: 'New Name'
-      })
+    it('应该拒绝超过 100 字符的设备名称', async () => {
+      const longName = 'a'.repeat(101)
+
+      await expect(matrixDeviceService.updateDevice('DEVICE1', longName)).rejects.toThrow('设备名称不能超过 100 个字符')
     })
   })
 
@@ -235,6 +179,12 @@ describe('MatrixDeviceService', () => {
       expect(mockDeviceManager.deleteDevice).toHaveBeenCalledWith('DEVICE1', auth)
     })
 
+    it('应该在 DeviceManager 不可用时抛出错误', async () => {
+      mockClient.getDeviceManager = vi.fn(() => null)
+
+      await expect(matrixDeviceService.deleteDevice('DEVICE1')).rejects.toThrow('DeviceManager not available')
+    })
+
     it('应该防止删除当前设备', () => {
       const currentDeviceId = 'CURRENT_DEVICE'
 
@@ -254,17 +204,21 @@ describe('MatrixDeviceService', () => {
       expect(mockDeviceManager.deleteDevices).toHaveBeenCalledWith(deviceIds, undefined)
     })
 
-    it('应该通过 HTTP 批量删除', async () => {
-      mockClient.getDeviceManager = vi.fn(() => null)
+    it('应该使用认证信息批量删除设备', async () => {
       const deviceIds = ['DEVICE1', 'DEVICE2']
       const auth = { type: 'm.login.password', password: 'secret' }
 
+      mockDeviceManager.deleteDevices.mockResolvedValue(undefined)
+
       await matrixDeviceService.deleteDevices(deviceIds, auth)
 
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/delete_devices', undefined, {
-        device_ids: deviceIds,
-        auth
-      })
+      expect(mockDeviceManager.deleteDevices).toHaveBeenCalledWith(deviceIds, auth)
+    })
+
+    it('应该在 DeviceManager 不可用时抛出错误', async () => {
+      mockClient.getDeviceManager = vi.fn(() => null)
+
+      await expect(matrixDeviceService.deleteDevices(['DEVICE1'])).rejects.toThrow('DeviceManager not available')
     })
   })
 
@@ -310,6 +264,33 @@ describe('MatrixDeviceService', () => {
 
       expect(updates).toEqual(mockResponse)
       expect(mockDeviceManager.getDeviceListUpdates).toHaveBeenCalledWith(request.users, request.since)
+    })
+
+    it('应该在 DeviceManager 不可用时抛出错误', async () => {
+      mockClient.getDeviceManager = vi.fn(() => null)
+      const request = {
+        users: ['@user1:example.com']
+      }
+
+      await expect(matrixDeviceService.getDeviceListUpdates(request)).rejects.toThrow('DeviceManager not available')
+    })
+  })
+
+  describe('getRoomKeyRequests', () => {
+    it('应该通过 HTTP 获取密钥请求列表', async () => {
+      const requests = await matrixDeviceService.getRoomKeyRequests()
+
+      expect(requests).toEqual([])
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/room_keys/request')
+    })
+  })
+
+  describe('deleteRoomKeyRequest', () => {
+    it('应该通过 HTTP 删除密钥请求', async () => {
+      const result = await matrixDeviceService.deleteRoomKeyRequest('REQ1')
+
+      expect(result).toBe(true)
+      expect(authedRequestImpl).toHaveBeenCalledWith('DELETE', '/room_keys/request/REQ1')
     })
   })
 })

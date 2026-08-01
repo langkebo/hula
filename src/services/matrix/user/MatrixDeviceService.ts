@@ -86,17 +86,13 @@ class MatrixDeviceService extends BaseMatrixService {
       const extendedClient = client as unknown as MatrixClientExtended
       const deviceManager = extendedClient.getDeviceManager?.()
 
-      if (deviceManager) {
-        // 使用 DeviceManager
-        const devices = await deviceManager.getDevices()
-        logger.info(`[DeviceService] 获取设备列表成功: ${devices.length} 个设备`)
-        return devices
-      } else {
-        // 降级到直接 HTTP 调用
-        const response = (await client.http.authedRequest('GET', '/devices')) as DevicesResponse
-        logger.info(`[DeviceService] 获取设备列表成功: ${response.devices.length} 个设备`)
-        return response.devices
+      if (!deviceManager) {
+        throw new Error('DeviceManager not available')
       }
+
+      const devices = await deviceManager.getDevices()
+      logger.info(`[DeviceService] 获取设备列表成功: ${devices.length} 个设备`)
+      return devices
     } catch (err) {
       logger.error(`[DeviceService] 获取设备列表失败: ${err}`)
       throw err
@@ -114,28 +110,13 @@ class MatrixDeviceService extends BaseMatrixService {
       const client = this.getClient()
       const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
-      if (deviceManager) {
-        // 使用 DeviceManager
-        const device = await deviceManager.getDevice(deviceId)
-        logger.info(`[DeviceService] 获取设备详情成功: ${deviceId}`)
-        return device
-      } else {
-        // 降级到直接 HTTP 调用
-        const response = (await client.http.authedRequest(
-          'GET',
-          `/devices/${encodeURIComponent(deviceId)}`
-        )) as DeviceDetailResponse
-        logger.info(`[DeviceService] 获取设备详情成功: ${deviceId}`)
-        // 返回嵌套的 device 对象或扁平字段
-        return (
-          response.device || {
-            device_id: response.device_id,
-            display_name: response.display_name,
-            last_seen_ts: response.last_seen_ts,
-            last_seen_ip: response.last_seen_ip
-          }
-        )
+      if (!deviceManager) {
+        throw new Error('DeviceManager not available')
       }
+
+      const device = await deviceManager.getDevice(deviceId)
+      logger.info(`[DeviceService] 获取设备详情成功: ${deviceId}`)
+      return device
     } catch (err) {
       logger.error(`[DeviceService] 获取设备详情失败: ${deviceId}, ${err}`)
       throw err
@@ -159,26 +140,18 @@ class MatrixDeviceService extends BaseMatrixService {
       const client = this.getClient()
       const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
-      if (deviceManager) {
-        // 使用 DeviceManager（SDK-9: 适配 IDeviceUpdateRequest 对象签名）
-        const updates: IDeviceUpdateRequest = { display_name: displayName }
-        await deviceManager.updateDevice(deviceId, updates)
-        logger.info(`[DeviceService] 更新设备成功: ${deviceId}`)
-        return {
-          device_id: deviceId,
-          display_name: displayName,
-          updated_ts: Date.now()
-        }
-      } else {
-        // 降级到直接 HTTP 调用
-        const response = (await client.http.authedRequest(
-          'PUT',
-          `/devices/${encodeURIComponent(deviceId)}`,
-          undefined,
-          { display_name: displayName }
-        )) as DeviceUpdateResponse
-        logger.info(`[DeviceService] 更新设备成功: ${deviceId}`)
-        return response
+      if (!deviceManager) {
+        throw new Error('DeviceManager not available')
+      }
+
+      // 使用 DeviceManager（SDK-9: 适配 IDeviceUpdateRequest 对象签名）
+      const updates: IDeviceUpdateRequest = { display_name: displayName }
+      await deviceManager.updateDevice(deviceId, updates)
+      logger.info(`[DeviceService] 更新设备成功: ${deviceId}`)
+      return {
+        device_id: deviceId,
+        display_name: displayName,
+        updated_ts: Date.now()
       }
     } catch (err) {
       logger.error(`[DeviceService] 更新设备失败: ${deviceId}, ${err}`)
@@ -197,20 +170,13 @@ class MatrixDeviceService extends BaseMatrixService {
       const client = this.getClient()
       const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
-      if (deviceManager) {
-        // 使用 DeviceManager（会自动保护当前设备）
-        await deviceManager.deleteDevice(deviceId, auth)
-        logger.info(`[DeviceService] 删除设备成功: ${deviceId}`)
-      } else {
-        // 降级到直接 HTTP 调用
-        await client.http.authedRequest(
-          'DELETE',
-          `/devices/${encodeURIComponent(deviceId)}`,
-          undefined,
-          auth ? { auth } : undefined
-        )
-        logger.info(`[DeviceService] 删除设备成功: ${deviceId}`)
+      if (!deviceManager) {
+        throw new Error('DeviceManager not available')
       }
+
+      // 使用 DeviceManager（会自动保护当前设备）
+      await deviceManager.deleteDevice(deviceId, auth)
+      logger.info(`[DeviceService] 删除设备成功: ${deviceId}`)
     } catch (err) {
       logger.error(`[DeviceService] 删除设备失败: ${deviceId}, ${err}`)
       throw err
@@ -228,18 +194,12 @@ class MatrixDeviceService extends BaseMatrixService {
       const client = this.getClient()
       const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
-      if (deviceManager) {
-        // 使用 DeviceManager
-        await deviceManager.deleteDevices(deviceIds, auth)
-        logger.info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)
-      } else {
-        // 降级到直接 HTTP 调用
-        await client.http.authedRequest('POST', '/delete_devices', undefined, {
-          device_ids: deviceIds,
-          auth
-        })
-        logger.info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)
+      if (!deviceManager) {
+        throw new Error('DeviceManager not available')
       }
+
+      await deviceManager.deleteDevices(deviceIds, auth)
+      logger.info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)
     } catch (err) {
       logger.error(`[DeviceService] 批量删除设备失败: ${err}`)
       throw err
@@ -257,28 +217,15 @@ class MatrixDeviceService extends BaseMatrixService {
       const client = this.getClient()
       const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
-      if (deviceManager) {
-        // 使用 DeviceManager
-        const sinceToken =
-          typeof request.since === 'string'
-            ? request.since
-            : typeof request.from === 'string'
-              ? request.from
-              : undefined
-        const updates = await deviceManager.getDeviceListUpdates(request.users, sinceToken)
-        logger.info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
-        return updates
-      } else {
-        // 降级到直接 HTTP 调用
-        const response = (await client.http.authedRequest(
-          'POST',
-          '/keys/device_list_updates',
-          undefined,
-          request
-        )) as DeviceListUpdatesResponse
-        logger.info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
-        return response
+      if (!deviceManager) {
+        throw new Error('DeviceManager not available')
       }
+
+      const sinceToken =
+        typeof request.since === 'string' ? request.since : typeof request.from === 'string' ? request.from : undefined
+      const updates = await deviceManager.getDeviceListUpdates(request.users, sinceToken)
+      logger.info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
+      return updates
     } catch (err) {
       logger.error(`[DeviceService] 获取设备变更失败: ${err}`)
       throw err
@@ -311,6 +258,11 @@ class MatrixDeviceService extends BaseMatrixService {
     return currentDeviceId === deviceId
   }
 
+  /**
+   * 获取房间密钥请求列表
+   *
+   * 注意：此端点不在标准 DeviceManager 中，使用直接 HTTP 调用
+   */
   async getRoomKeyRequests(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
     try {
@@ -323,6 +275,11 @@ class MatrixDeviceService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 删除房间密钥请求
+   *
+   * 注意：此端点不在标准 DeviceManager 中，使用直接 HTTP 调用
+   */
   async deleteRoomKeyRequest(requestId: string): Promise<boolean> {
     const client = this.getClient()
     try {
