@@ -180,57 +180,75 @@ const ensureInitStarted = (blockInit: boolean) => {
 // 修改异步组件的加载配置
 const AsyncLeft = defineAsyncComponent({
   loader: async () => {
-    const blockInit = shouldBlockInitialRender.value
-    const initTask = ensureInitStarted(blockInit)
-    await maybeDelayForInitialRender()
-    loadingText.value = t('home.loading.left_panel')
-    const comp = await import('./left/index.vue')
-    loadingPercentage.value = 33
-    if (blockInit) {
-      await initTask
+    try {
+      const blockInit = shouldBlockInitialRender.value
+      const initTask = ensureInitStarted(blockInit)
+      await maybeDelayForInitialRender()
+      loadingText.value = t('home.loading.left_panel')
+      const comp = await import('./left/index.vue')
+      loadingPercentage.value = 33
+      if (blockInit) {
+        await initTask
+      }
+      return comp
+    } catch (err) {
+      logger.error('AsyncLeft 加载失败:', err)
+      throw err
+    } finally {
+      markAsyncLoaded()
     }
-    markAsyncLoaded()
-    return comp
   }
 })
 
 const AsyncCenter = defineAsyncComponent({
   loader: async () => {
-    const blockInit = shouldBlockInitialRender.value
-    const initTask = ensureInitStarted(blockInit)
-    await import('./left/index.vue')
-    loadingText.value = t('home.loading.data')
-    const comp = await import('./center/index.vue')
-    loadingPercentage.value = 66
-    if (blockInit) {
-      await initTask
+    try {
+      const blockInit = shouldBlockInitialRender.value
+      const initTask = ensureInitStarted(blockInit)
+      await import('./left/index.vue')
+      loadingText.value = t('home.loading.data')
+      const comp = await import('./center/index.vue')
+      loadingPercentage.value = 66
+      if (blockInit) {
+        await initTask
+      }
+      return comp
+    } catch (err) {
+      logger.error('AsyncCenter 加载失败:', err)
+      throw err
+    } finally {
+      markAsyncLoaded()
     }
-    markAsyncLoaded()
-    return comp
   }
 })
 
 const AsyncRight = defineAsyncComponent({
   loader: async () => {
-    const blockInit = shouldBlockInitialRender.value
-    const initTask = ensureInitStarted(blockInit)
-    await maybeDelayForInitialRender()
-    await import('./center/index.vue')
-    loadingText.value = t('home.loading.right_panel')
-    const comp = await import('./right/index.vue')
-    loadingPercentage.value = 100
-    if (blockInit) {
-      await initTask
+    try {
+      const blockInit = shouldBlockInitialRender.value
+      const initTask = ensureInitStarted(blockInit)
+      await maybeDelayForInitialRender()
+      await import('./center/index.vue')
+      loadingText.value = t('home.loading.right_panel')
+      const comp = await import('./right/index.vue')
+      loadingPercentage.value = 100
+      if (blockInit) {
+        await initTask
+      }
+
+      // 在组件加载完成后，使用nextTick等待DOM更新
+      nextTick(() => {
+        // 发送事件通知聊天框组件滚动到底部
+        useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
+      })
+
+      return comp
+    } catch (err) {
+      logger.error('AsyncRight 加载失败:', err)
+      throw err
+    } finally {
+      markAsyncLoaded()
     }
-    markAsyncLoaded()
-
-    // 在组件加载完成后，使用nextTick等待DOM更新
-    nextTick(() => {
-      // 发送事件通知聊天框组件滚动到底部
-      useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
-    })
-
-    return comp
   }
 })
 

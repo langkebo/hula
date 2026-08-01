@@ -816,7 +816,13 @@ class MatrixRuntimeSessionService {
       const { resizeWindow } = useWindow()
 
       this.port.global.setTrayMenuShow(true)
-      await resizeWindow('tray', 130, 356)
+
+      // 3s 超时保护：防止 resizeWindow 永久阻塞导致 init() 无法完成
+      const RESIZE_TIMEOUT_MS = 3_000
+      await Promise.race([
+        resizeWindow('tray', 130, 356),
+        new Promise<void>((resolve) => setTimeout(resolve, RESIZE_TIMEOUT_MS))
+      ])
     } catch (err) {
       logger.error(`应用桌面端登录状态失败: ${err}`)
     }
