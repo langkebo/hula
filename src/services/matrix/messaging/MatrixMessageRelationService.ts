@@ -9,7 +9,6 @@ import {
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixMessageRelationService')
 
@@ -504,13 +503,9 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const result = (await client.getRelationsManager().fetchRelations(
-        roomId,
-        eventId,
-        null,
-        null,
-        options as never
-      )) as unknown as RelationsResponse
+      const result = (await client
+        .getRelationsManager()
+        .fetchRelations(roomId, eventId, null, null, options as never)) as unknown as RelationsResponse
       logger.info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${result.chunk?.length ?? 0}`)
       return result
     } catch (err) {
@@ -528,13 +523,9 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const result = (await client.getRelationsManager().fetchRelations(
-        roomId,
-        eventId,
-        relType,
-        null,
-        options as never
-      )) as unknown as RelationsResponse
+      const result = (await client
+        .getRelationsManager()
+        .fetchRelations(roomId, eventId, relType, null, options as never)) as unknown as RelationsResponse
       logger.info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${result.chunk?.length ?? 0}`)
       return result
     } catch (err) {
@@ -547,11 +538,9 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const result = (await client.getRelationsManager().getAggregations(
-        roomId,
-        eventId,
-        relType
-      )) as unknown as AggregationsResponse
+      const result = (await client
+        .getRelationsManager()
+        .getAggregations(roomId, eventId, relType)) as unknown as AggregationsResponse
       logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
       return result
     } catch (err) {
@@ -571,21 +560,12 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const body: Record<string, unknown> = { ...content }
-      if (key) body.key = key
       const txnId = `txn_${Date.now()}`
-      // Not migrated to SDK RelationsManager.sendRelation(): the frontend spreads
-      // `content` at the top level of the request body, while the SDK/backend
-      // expect a nested `content` field (backend reads body.get("content")).
-      // Migrating would change the request body structure.
-      const result = (await client.http.authedRequest(
-        'PUT',
-        MATRIX_PATHS.RELATIONS.SEND(roomId, eventId, relType, txnId),
-        undefined,
-        { ...body, type: eventType }
-      )) as SendRelationResponse
+      const result = await client
+        .getRelationsManager()
+        .sendRelationViaSendRelation(roomId, eventId, relType, txnId, eventType, content, key)
       logger.info(`[MessageRelation] 发送关系事件成功: ${result.event_id}`)
-      return result
+      return result as SendRelationResponse
     } catch (err) {
       logger.error(`[MessageRelation] 发送关系事件失败: ${err}`)
       return null

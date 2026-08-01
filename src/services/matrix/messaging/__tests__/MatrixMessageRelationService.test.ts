@@ -253,4 +253,35 @@ describe('MatrixMessageRelationService', () => {
       expect(result[0].eventId).toBe('$edit1')
     })
   })
+
+  describe('sendRelation', () => {
+    it('delegates to RelationsManager.sendRelationViaSendRelation', async () => {
+      const sendRelationViaSendRelation = vi.fn().mockResolvedValue({ event_id: '$evt123' })
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+        getRelationsManager: () => ({ sendRelationViaSendRelation })
+      } as never)
+      const result = await matrixMessageRelationService.sendRelation(
+        '!room:server',
+        '$parent:server',
+        'm.annotation',
+        'm.reaction',
+        { 'm.relates_to': { key: '👍' } },
+        '👍'
+      )
+      expect(sendRelationViaSendRelation).toHaveBeenCalled()
+      expect(result?.event_id).toBe('$evt123')
+    })
+
+    it('returns null when client not initialized', async () => {
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+      const result = await matrixMessageRelationService.sendRelation(
+        '!room:server',
+        '$parent:server',
+        'm.annotation',
+        'm.reaction',
+        {}
+      )
+      expect(result).toBeNull()
+    })
+  })
 })
