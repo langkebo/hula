@@ -341,3 +341,85 @@ describe('ChatMain', () => {
     expect(wrapper.exists()).toBe(true)
   })
 })
+
+describe('ChatMain private mode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    globalStore = reactive({
+      currentSessionRoomId: '!room:example.com'
+    })
+    userStore = reactive({
+      userInfo: {
+        uid: '@me:example.com'
+      }
+    })
+
+    chatStore = reactive({
+      isGroup: false,
+      shouldShowNoMoreMessage: false,
+      chatMessageList: [],
+      currentSessionInfo: { roomId: '!room:example.com' },
+      currentMessageOptions: {
+        hasLoadedOnce: true,
+        isLast: false,
+        isLoading: false
+      },
+      currentNewMsgCount: null,
+      isMsgMultiChoose: false,
+      msgMultiChooseMode: 'default',
+      newMsgCount: {},
+      loadMore: vi.fn(async () => undefined),
+      getMsgIndex: vi.fn(() => -1),
+      clearNewMsgCount: vi.fn(),
+      clearRedundantMessages: vi.fn(),
+      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined)
+    })
+
+    appWindowListenMock.mockResolvedValue(vi.fn())
+    getGroupAnnouncementListMock.mockResolvedValue({
+      records: []
+    })
+  })
+
+  it('renders S private toggle button for non-group chat', () => {
+    const wrapper = mountComponent()
+    expect(wrapper.find('[data-testid="private-toggle-btn"]').exists()).toBe(true)
+  })
+
+  it('does not render S button for group chat', () => {
+    chatStore.isGroup = true
+    const wrapper = mountComponent()
+    expect(wrapper.find('[data-testid="private-toggle-btn"]').exists()).toBe(false)
+  })
+
+  it('shows confirmation dialog when activating private mode', async () => {
+    const wrapper = mountComponent()
+    await wrapper.find('[data-testid="private-toggle-btn"]').trigger('click')
+    expect((wrapper.vm as unknown as { showPrivateConfirm: boolean }).showPrivateConfirm).toBe(true)
+  })
+
+  it('activates private mode after confirmation and renders BurnAfterReadToggle', async () => {
+    const wrapper = mountComponent()
+    await wrapper.find('[data-testid="private-toggle-btn"]').trigger('click')
+    ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
+    await flushPromises()
+    expect((wrapper.vm as unknown as { privateModeActive: boolean }).privateModeActive).toBe(true)
+    expect(wrapper.findComponent({ name: 'BurnAfterReadToggle' }).exists()).toBe(true)
+  })
+
+  it('deactivates private mode on second S button click', async () => {
+    const wrapper = mountComponent()
+    const vm = wrapper.vm as unknown as {
+      privateModeActive: boolean
+      confirmPrivateMode: () => void
+      togglePrivateMode: () => void
+    }
+    vm.confirmPrivateMode()
+    await flushPromises()
+    expect(vm.privateModeActive).toBe(true)
+    vm.togglePrivateMode()
+    await flushPromises()
+    expect(vm.privateModeActive).toBe(false)
+  })
+})
