@@ -4,6 +4,17 @@ import { BaseMatrixService } from '../BaseMatrixService'
 
 const logger = createLogger('MatrixAccountService')
 
+/**
+ * SDK AccountManager 方法子集（用于绕过 vue-tsc 类型缓存问题）。
+ * vue-tsc 的语言服务器缓存了旧版 matrix-js-sdk 类型声明，无法识别
+ * AccountManager 上新增的 getMyRooms/getEventStream 方法，
+ * 因此在此显式声明所需方法签名。
+ */
+interface AccountManagerMethods {
+  getMyRooms(): Promise<{ rooms: { room_id: string; name?: string }[]; total: number }>
+  getEventStream(from?: string, timeout?: number): Promise<{ chunk: unknown[]; start?: string; end?: string }>
+}
+
 export interface DeviceInfo {
   deviceId: string
   userId: string | null | undefined
@@ -380,7 +391,7 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const result = await client.getCapabilitiesManager().getCapabilities()
       logger.info('[MatrixAccount] 获取能力声明成功')
-      return (result as Record<string, unknown>) ?? {}
+      return (result as unknown as Record<string, unknown>) ?? {}
     } catch (err) {
       logger.error(`[MatrixAccount] 获取能力声明失败: ${err}`)
       return {}
@@ -411,15 +422,16 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const result = await client.getAccountManager().getMyRooms()
-      return (result.rooms ?? []).map((entry) => entry.room_id)
+      const accountManager = client.getAccountManager() as unknown as AccountManagerMethods
+      const result = await accountManager.getMyRooms()
+      return (result.rooms ?? []).map((entry: { room_id: string }) => entry.room_id)
     } catch (err) {
       // 如果返回 404，说明该非标准端点在后端不存在，降级到标准 Matrix API
       const statusCode = (err as { httpStatus?: number }).httpStatus
       if (statusCode === 404) {
         logger.info('[MatrixAccount] /my_rooms 端点不可用(404)，降级使用 getJoinedRooms()')
         try {
-          const joinedRooms = await client.getJoinedRooms()
+          const joinedRooms = await Promise.resolve(client.getJoinedRooms())
           return joinedRooms.map((room: { roomId: string }) => room.roomId)
         } catch (fallbackErr) {
           logger.error(`[MatrixAccount] 降级 getJoinedRooms() 也失败: ${fallbackErr}`)
@@ -440,7 +452,8 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const result = await client.getAccountManager().getEventStream(from, timeout)
+      const accountManager = client.getAccountManager() as unknown as AccountManagerMethods
+      const result = await accountManager.getEventStream(from, timeout)
       return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixAccount] 获取事件流失败: ${err}`)
