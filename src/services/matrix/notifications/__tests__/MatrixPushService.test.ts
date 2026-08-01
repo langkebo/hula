@@ -1,43 +1,39 @@
 import type { IPusher } from 'matrix-js-sdk'
 import { PushRuleActionName } from 'matrix-js-sdk'
-import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { setupMswServer } from '@/../tests/msw'
 import { matrixPushService } from '../MatrixPushService'
 
-const TEST_BASE_URL = 'https://matrix.example.com'
-const PREFIX_V3 = '/_matrix/client/v3'
+const mockGetPushers = vi.fn().mockResolvedValue([{ pushkey: 'pk1', app_id: 'app' }])
+const mockRemovePusher = vi.fn().mockResolvedValue(undefined)
+const mockSetPusher = vi.fn().mockResolvedValue(undefined)
+const mockSetPushRuleEnabled = vi.fn().mockResolvedValue(undefined)
+const mockSetPushRuleActions = vi.fn().mockResolvedValue(undefined)
+const mockCreatePushRule = vi.fn().mockResolvedValue(undefined)
+const mockDeletePushRule = vi.fn().mockResolvedValue(undefined)
+const mockMuteRoom = vi.fn().mockResolvedValue(undefined)
+const mockUnmuteRoom = vi.fn().mockResolvedValue(undefined)
+const mockGetPushRules = vi.fn().mockResolvedValue({
+  global: { room: [{ rule_id: '!room:server', enabled: true }] }
+})
 
-const server = setupMswServer(
-  // getPushers
-  http.get(`${TEST_BASE_URL}/_matrix/client/v3/pushers`, () => {
-    return HttpResponse.json({ pushers: [{ pushkey: 'pk1', app_id: 'app' }] })
-  }),
-  // unregisterPusher / registerPusher
-  http.post(`${TEST_BASE_URL}/_matrix/client/v3/pushers/set`, async ({ request }) => {
-    const body = await request.json()
-    return HttpResponse.json(body as Record<string, unknown>)
-  }),
-  // muteRoom / addPushRule (general scope/kind/ruleId pattern)
-  http.put(`${TEST_BASE_URL}/_matrix/client/v3/pushrules/:scope/:kind/:ruleId`, async ({ request }) => {
-    const body = await request.json()
-    return HttpResponse.json(body as Record<string, unknown>)
-  }),
-  // unmuteRoom / deletePushRule
-  http.delete(`${TEST_BASE_URL}/_matrix/client/v3/pushrules/:scope/:kind/:ruleId`, () => {
-    return HttpResponse.json({})
-  }),
-  // setPushRuleEnabled
-  http.put(`${TEST_BASE_URL}/_matrix/client/v3/pushrules/:scope/:kind/:ruleId/enabled`, async ({ request }) => {
-    const body = await request.json()
-    return HttpResponse.json(body as Record<string, unknown>)
-  }),
-  // setPushRuleActions
-  http.put(`${TEST_BASE_URL}/_matrix/client/v3/pushrules/:scope/:kind/:ruleId/actions`, async ({ request }) => {
-    const body = await request.json()
-    return HttpResponse.json(body as Record<string, unknown>)
+const mockAuthedRequest = vi
+  .fn()
+  .mockImplementation(async (method: string, path: string, _queryParams?: unknown, _body?: unknown) => {
+    // Fallback HTTP mock - should not be called when PushManager is available
+    throw new Error(`Unexpected HTTP fallback call: ${method} ${path}`)
   })
-)
+
+const mockPushManager = {
+  getPushers: mockGetPushers,
+  removePusher: mockRemovePusher,
+  setPusher: mockSetPusher,
+  setPushRuleEnabled: mockSetPushRuleEnabled,
+  setPushRuleActions: mockSetPushRuleActions,
+  createPushRule: mockCreatePushRule,
+  deletePushRule: mockDeletePushRule,
+  muteRoom: mockMuteRoom,
+  unmuteRoom: mockUnmuteRoom
+}
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -45,83 +41,57 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const mockAuthedRequest = vi
-  .fn()
-  .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-    const prefixedPath = path.startsWith('/_') ? path : `${PREFIX_V3}${path}`
-    const url = `${TEST_BASE_URL}${prefixedPath}`
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer test-access-token'
-    }
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined
-    })
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-    return response.json()
-  })
-
 describe('MatrixPushService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue({
       http: { authedRequest: mockAuthedRequest },
-      getPushRules: vi.fn().mockResolvedValue({
-        global: { room: [{ rule_id: '!room:server', enabled: true }] }
-      }),
-      getDeviceId: () => 'TEST_DEVICE_ID'
+      getPushRules: mockGetPushRules,
+      getDeviceId: () => 'TEST_DEVICE_ID',
+      getPushManager: () => mockPushManager
     })
   })
 
   describe('getPushers', () => {
-    it('should get pushers list', async () => {
+    it('should get pushers list via PushManager', async () => {
       const result = await matrixPushService.getPushers()
       expect(result).toHaveLength(1)
+      expect(mockGetPushers).toHaveBeenCalledTimes(1)
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
 
     it('should return empty array when no pushers', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/v3/pushers`, () => {
-          return HttpResponse.json({})
-        })
-      )
+      mockGetPushers.mockResolvedValueOnce([])
       const result = await matrixPushService.getPushers()
       expect(result).toEqual([])
+      expect(mockGetPushers).toHaveBeenCalledTimes(1)
     })
 
     it('should throw on error', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/v3/pushers`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
-      await expect(matrixPushService.getPushers()).rejects.toThrow('HTTP 500')
+      mockGetPushers.mockRejectedValueOnce(new Error('PushManager error'))
+      await expect(matrixPushService.getPushers()).rejects.toThrow('PushManager error')
     })
   })
 
   describe('getPushRules', () => {
-    it('should get push rules', async () => {
+    it('should get push rules via client.getPushRules', async () => {
       const result = await matrixPushService.getPushRules()
       expect(result.global.room).toHaveLength(1)
+      expect(mockGetPushRules).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('unregisterPusher', () => {
-    it('should unregister pusher', async () => {
+    it('should unregister pusher via PushManager.removePusher', async () => {
       await matrixPushService.unregisterPusher('pk1', 'app')
-      expect(mockAuthedRequest).toHaveBeenCalled()
-      const call = mockAuthedRequest.mock.calls[0]
-      expect(call[0]).toBe('POST')
-      expect(call[1]).toBe('/pushers/set')
+      expect(mockRemovePusher).toHaveBeenCalledTimes(1)
+      expect(mockRemovePusher).toHaveBeenCalledWith('pk1', 'app', 'TEST_DEVICE_ID')
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
   })
 
   describe('registerPusher', () => {
-    it('should register pusher', async () => {
+    it('should register pusher via PushManager.setPusher', async () => {
       await matrixPushService.registerPusher({
         pushkey: 'pk1',
         kind: 'http',
@@ -131,28 +101,32 @@ describe('MatrixPushService', () => {
         lang: 'en',
         data: { url: 'https://push.example.com' }
       } as IPusher)
-      expect(mockAuthedRequest).toHaveBeenCalled()
-      const call = mockAuthedRequest.mock.calls[0]
-      expect(call[0]).toBe('POST')
-      expect(call[1]).toBe('/pushers/set')
+      expect(mockSetPusher).toHaveBeenCalledTimes(1)
+      expect(mockSetPusher).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pushkey: 'pk1',
+          kind: 'http',
+          app_id: 'app',
+          device_id: 'TEST_DEVICE_ID'
+        })
+      )
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
   })
 
   describe('muteRoom / unmuteRoom', () => {
-    it('should mute room', async () => {
+    it('should mute room via PushManager.muteRoom', async () => {
       await matrixPushService.muteRoom('!room:server')
-      expect(mockAuthedRequest).toHaveBeenCalled()
-      const call = mockAuthedRequest.mock.calls[0]
-      expect(call[0]).toBe('PUT')
-      expect(call[1]).toContain('pushrules/global/room/')
+      expect(mockMuteRoom).toHaveBeenCalledTimes(1)
+      expect(mockMuteRoom).toHaveBeenCalledWith('!room:server')
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
 
-    it('should unmute room', async () => {
+    it('should unmute room via PushManager.unmuteRoom', async () => {
       await matrixPushService.unmuteRoom('!room:server')
-      expect(mockAuthedRequest).toHaveBeenCalled()
-      const call = mockAuthedRequest.mock.calls[0]
-      expect(call[0]).toBe('DELETE')
-      expect(call[1]).toContain('pushrules/global/room/')
+      expect(mockUnmuteRoom).toHaveBeenCalledTimes(1)
+      expect(mockUnmuteRoom).toHaveBeenCalledWith('!room:server')
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
   })
 
@@ -169,38 +143,108 @@ describe('MatrixPushService', () => {
   })
 
   describe('addPushRule / deletePushRule', () => {
-    it('should add push rule', async () => {
+    it('should add push rule via PushManager.createPushRule', async () => {
       await matrixPushService.addPushRule('global', 'room', '!room:server', [PushRuleActionName.Notify])
-      expect(mockAuthedRequest).toHaveBeenCalled()
-      const call = mockAuthedRequest.mock.calls[0]
-      expect(call[0]).toBe('PUT')
-      expect(call[1]).toContain('pushrules/global/room/')
+      expect(mockCreatePushRule).toHaveBeenCalledTimes(1)
+      expect(mockCreatePushRule).toHaveBeenCalledWith('global', 'room', '!room:server', {
+        actions: [PushRuleActionName.Notify]
+      })
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
 
-    it('should delete push rule', async () => {
+    it('should delete push rule via PushManager.deletePushRule', async () => {
       await matrixPushService.deletePushRule('global', 'room', '!room:server')
-      expect(mockAuthedRequest).toHaveBeenCalled()
-      const call = mockAuthedRequest.mock.calls[0]
-      expect(call[0]).toBe('DELETE')
-      expect(call[1]).toContain('pushrules/global/room/')
+      expect(mockDeletePushRule).toHaveBeenCalledTimes(1)
+      expect(mockDeletePushRule).toHaveBeenCalledWith('global', 'room', '!room:server')
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
   })
 
   describe('setPushRuleEnabled / setPushRuleActions', () => {
-    it('should set push rule enabled', async () => {
+    it('should set push rule enabled via PushManager.setPushRuleEnabled', async () => {
       await matrixPushService.setPushRuleEnabled('global', 'room', '!room:server', false)
-      expect(mockAuthedRequest).toHaveBeenCalled()
-      const call = mockAuthedRequest.mock.calls[0]
-      expect(call[0]).toBe('PUT')
-      expect(call[1]).toContain('/enabled')
+      expect(mockSetPushRuleEnabled).toHaveBeenCalledTimes(1)
+      expect(mockSetPushRuleEnabled).toHaveBeenCalledWith('global', 'room', '!room:server', false)
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
 
-    it('should set push rule actions', async () => {
+    it('should set push rule actions via PushManager.setPushRuleActions', async () => {
       await matrixPushService.setPushRuleActions('global', 'room', '!room:server', [PushRuleActionName.DontNotify])
-      expect(mockAuthedRequest).toHaveBeenCalled()
-      const call = mockAuthedRequest.mock.calls[0]
-      expect(call[0]).toBe('PUT')
-      expect(call[1]).toContain('/actions')
+      expect(mockSetPushRuleActions).toHaveBeenCalledTimes(1)
+      expect(mockSetPushRuleActions).toHaveBeenCalledWith('global', 'room', '!room:server', [
+        PushRuleActionName.DontNotify
+      ])
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('fallback to HTTP when PushManager is unavailable', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue({
+        http: { authedRequest: mockAuthedRequest },
+        getPushRules: mockGetPushRules,
+        getDeviceId: () => 'TEST_DEVICE_ID',
+        getPushManager: () => undefined
+      })
+    })
+
+    it('getPushers should fallback to HTTP when no PushManager', async () => {
+      mockAuthedRequest.mockResolvedValueOnce({ pushers: [{ pushkey: 'pk2', app_id: 'app2' }] })
+      const result = await matrixPushService.getPushers()
+      expect(result).toHaveLength(1)
+      expect(mockAuthedRequest).toHaveBeenCalledWith('GET', '/pushers')
+    })
+
+    it('setPushRuleEnabled should fallback to HTTP when no PushManager', async () => {
+      mockAuthedRequest.mockResolvedValueOnce({})
+      await matrixPushService.setPushRuleEnabled('global', 'room', '!room:server', false)
+      expect(mockAuthedRequest).toHaveBeenCalledWith(
+        'PUT',
+        '/pushrules/global/room/!room%3Aserver/enabled',
+        undefined,
+        { enabled: false }
+      )
+    })
+
+    it('setPushRuleActions should fallback to HTTP when no PushManager', async () => {
+      mockAuthedRequest.mockResolvedValueOnce({})
+      await matrixPushService.setPushRuleActions('global', 'room', '!room:server', [PushRuleActionName.DontNotify])
+      expect(mockAuthedRequest).toHaveBeenCalledWith(
+        'PUT',
+        '/pushrules/global/room/!room%3Aserver/actions',
+        undefined,
+        { actions: [PushRuleActionName.DontNotify] }
+      )
+    })
+
+    it('muteRoom should fallback to HTTP when no PushManager', async () => {
+      mockAuthedRequest.mockResolvedValueOnce({})
+      await matrixPushService.muteRoom('!room:server')
+      expect(mockAuthedRequest).toHaveBeenCalledWith('PUT', '/pushrules/global/room/!room%3Aserver', undefined, {
+        actions: ['dont_notify'],
+        enabled: true
+      })
+    })
+
+    it('unmuteRoom should fallback to HTTP when no PushManager', async () => {
+      mockAuthedRequest.mockResolvedValueOnce({})
+      await matrixPushService.unmuteRoom('!room:server')
+      expect(mockAuthedRequest).toHaveBeenCalledWith('DELETE', '/pushrules/global/room/!room%3Aserver')
+    })
+
+    it('addPushRule should fallback to HTTP when no PushManager', async () => {
+      mockAuthedRequest.mockResolvedValueOnce({})
+      await matrixPushService.addPushRule('global', 'room', '!room:server', [PushRuleActionName.Notify])
+      expect(mockAuthedRequest).toHaveBeenCalledWith('PUT', '/pushrules/global/room/!room%3Aserver', undefined, {
+        actions: [PushRuleActionName.Notify]
+      })
+    })
+
+    it('deletePushRule should fallback to HTTP when no PushManager', async () => {
+      mockAuthedRequest.mockResolvedValueOnce({})
+      await matrixPushService.deletePushRule('global', 'room', '!room:server')
+      expect(mockAuthedRequest).toHaveBeenCalledWith('DELETE', '/pushrules/global/room/!room%3Aserver')
     })
   })
 })
