@@ -139,6 +139,8 @@ export enum MittEnum {
   BURN_SETTINGS_CHANGED = 'burnSettingsChanged',
   /** Widget 已创建 */
   WIDGET_CREATED = 'widgetCreated',
+  /** Widget 已更新 */
+  WIDGET_UPDATED = 'widgetUpdated',
   /** Widget 已删除 */
   WIDGET_DELETED = 'widgetDeleted'
 }
