@@ -5,9 +5,6 @@ import matrixClientService from '../../MatrixClientService'
 import type { Device } from '../MatrixDeviceService'
 import { matrixDeviceService } from '../MatrixDeviceService'
 
-const TEST_BASE_URL = 'https://matrix.example.com'
-const PREFIX_V3 = '/_matrix/client/v3'
-
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
@@ -28,27 +25,6 @@ describe('MatrixDeviceService', () => {
     getRoomKeyRequests: ReturnType<typeof vi.fn>
     deleteRoomKeyRequest: ReturnType<typeof vi.fn>
   }
-  let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
-
-  const authedRequestImpl = vi
-    .fn()
-    .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
-      const prefixedPath = path.startsWith('/_') ? path : `${PREFIX_V3}${path}`
-      const url = `${TEST_BASE_URL}${prefixedPath}`
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer test-access-token'
-      }
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      return response.json()
-    })
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -67,10 +43,8 @@ describe('MatrixDeviceService', () => {
       deleteRoomKeyRequest: vi.fn()
     }
 
-    mockHttp = { authedRequest: authedRequestImpl }
-
     mockClient = {
-      http: mockHttp as unknown as MatrixClient['http'],
+      http: { authedRequest: vi.fn() } as unknown as MatrixClient['http'],
       getDeviceManager: vi.fn(
         () => mockDeviceManager as unknown as MatrixClientExtended['getDeviceManager'] extends () => infer T ? T : never
       ),

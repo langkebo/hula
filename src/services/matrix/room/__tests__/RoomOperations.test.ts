@@ -531,12 +531,13 @@ describe('RoomOperations', () => {
   })
 
   describe('setStickyEvents', () => {
-    it('POSTs sticky events via client.http', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+    it('calls RoomSummaryManager.setStickyEvent with sticky events', async () => {
+      const setStickyEvent = vi.fn().mockResolvedValue({})
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoomSummaryManager: () => ({ setStickyEvent })
+      } as never)
       await ops.setStickyEvents('!r', { key: 'value' })
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/rooms/!r/sticky_events', undefined, {
-        key: 'value'
-      })
+      expect(setStickyEvent).toHaveBeenCalledWith('!r', 'm.sticky_events', { key: 'value' })
     })
 
     it('enqueues with pin type and sticky subtype when offline', async () => {

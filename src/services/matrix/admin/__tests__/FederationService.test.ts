@@ -1,29 +1,6 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from 'matrix-js-sdk/admin'
-import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { setupMswServer } from '@/../tests/msw'
 import { AdminFederationService } from '../FederationService'
-
-const TEST_BASE_URL = 'https://matrix.example.com'
-const PREFIX_V3 = '/_matrix/client/v3'
-
-let blacklistResponse: Record<string, unknown> = {}
-
-const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/_synapse/admin/v1/federation/blacklist`, () => {
-    return HttpResponse.json(blacklistResponse)
-  }),
-  http.post(`${TEST_BASE_URL}/_synapse/admin/v1/federation/blacklist/:domain`, async () => {
-    return HttpResponse.json({})
-  }),
-  http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/federation/blacklist/:domain`, () => {
-    return HttpResponse.json({})
-  }),
-  http.get(`${TEST_BASE_URL}/_synapse/admin/v1/federation/status`, () => {
-    return HttpResponse.json({})
-  })
-)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -31,13 +8,20 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const authedRequestImpl = vi.fn()
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() })
+}))
 
-const makeAdmin = () => ({
-  getFederationDestinations: vi.fn(),
-  getFederationDestination: vi.fn(),
-  resetFederationConnection: vi.fn()
-})
+function makeAdmin() {
+  return {
+    getFederationDestinations: vi.fn(),
+    getFederationDestination: vi.fn(),
+    resetFederationConnection: vi.fn(),
+    getFederationBlacklist: vi.fn(),
+    addToFederationBlacklist: vi.fn(),
+    removeFromFederationBlacklist: vi.fn()
+  }
+}
 
 describe('AdminFederationService', () => {
   let admin: ReturnType<typeof makeAdmin>
@@ -45,37 +29,10 @@ describe('AdminFederationService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    blacklistResponse = {}
-    authedRequestImpl.mockImplementation(
-      async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
-        const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
-        const prefix = opts?.prefix ?? defaultPrefix
-        const url = new URL(`${TEST_BASE_URL}${prefix}${path}`)
-        if (queryParams && typeof queryParams === 'object') {
-          for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
-            url.searchParams.set(key, value)
-          }
-        }
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer test-access-token'
-        }
-        const response = await fetch(url.toString(), {
-          method,
-          headers,
-          body: body ? JSON.stringify(body) : undefined
-        })
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-        return response.json()
-      }
-    )
     admin = makeAdmin()
-    const client = { http: { authedRequest: authedRequestImpl } } as unknown as MatrixClient
     service = new AdminFederationService(
       async () => admin as unknown as AdminManager,
-      () => client
+      () => ({}) as never
     )
   })
 
@@ -113,60 +70,78 @@ describe('AdminFederationService', () => {
     await expect(service.resetFederationConnection('remote.hs')).rejects.toThrow('reset-fail')
   })
 
-  it('getFederationBlacklist 通过 synapse admin 端点并兼容 blacklist/servers 两种响应', async () => {
-    blacklistResponse = {
-      blacklist: [{ domain: 'evil.hs', reason: 'spam', added_by: '@admin:hs', added_at: 100 }, { not_a_domain: true }]
-    }
+  it('getFederationBlacklist 通过 SDK 获取并映射 server_name → domain', async () => {
+    admin.getFederationBlacklist.mockResolvedValueOnce([
+      { server_name: 'evil.hs', reason: 'spam', added_ts: 100 },
+      { not_a_server_name: true }
+    ])
 
     await expect(service.getFederationBlacklist()).resolves.toEqual([
-      { domain: 'evil.hs', reason: 'spam', addedBy: '@admin:hs', addedAt: 100 }
+      { domain: 'evil.hs', reason: 'spam', addedBy: undefined, addedAt: 100 }
     ])
-    expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/federation/blacklist', undefined, undefined, {
-      prefix: '/_synapse/admin/v1'
-    })
-
-    blacklistResponse = { servers: [{ server_name: 'bad.hs' }] }
-    await expect(service.getFederationBlacklist()).resolves.toEqual([{ domain: 'bad.hs' }])
+    expect(admin.getFederationBlacklist).toHaveBeenCalledTimes(1)
   })
 
-  it('addToFederationBlacklist 对域名 URL 编码并返回布尔结果', async () => {
-    await expect(service.addToFederationBlacklist('evil.hs/x', 'spam')).resolves.toBe(true)
-    expect(authedRequestImpl).toHaveBeenCalledWith(
-      'POST',
-      '/federation/blacklist/evil.hs%2Fx',
-      undefined,
-      { reason: 'spam' },
-      { prefix: '/_synapse/admin/v1' }
-    )
+  it('getFederationBlacklist 兼容 legacy domain 字段', async () => {
+    admin.getFederationBlacklist.mockResolvedValueOnce([{ domain: 'legacy.hs', added_by: '@admin:hs' }])
 
-    server.use(
-      http.post(`${TEST_BASE_URL}/_synapse/admin/v1/federation/blacklist/:domain`, () => {
-        return new HttpResponse(null, { status: 500 })
-      })
-    )
+    await expect(service.getFederationBlacklist()).resolves.toEqual([
+      { domain: 'legacy.hs', reason: undefined, addedBy: '@admin:hs', addedAt: undefined }
+    ])
+  })
+
+  it('getFederationBlacklist SDK 报错时降级为空数组', async () => {
+    admin.getFederationBlacklist.mockRejectedValueOnce(new Error('boom'))
+    await expect(service.getFederationBlacklist()).resolves.toEqual([])
+  })
+
+  it('addToFederationBlacklist 通过 SDK 添加并返回 true', async () => {
+    await expect(service.addToFederationBlacklist('evil.hs', 'spam')).resolves.toBe(true)
+    expect(admin.addToFederationBlacklist).toHaveBeenCalledWith('evil.hs', 'spam')
+  })
+
+  it('addToFederationBlacklist SDK 报错时返回 false', async () => {
+    admin.addToFederationBlacklist.mockRejectedValueOnce(new Error('add-fail'))
     await expect(service.addToFederationBlacklist('evil.hs')).resolves.toBe(false)
   })
 
-  it('removeFromFederationBlacklist 使用 DELETE 且失败时返回 false', async () => {
+  it('removeFromFederationBlacklist 通过 SDK 删除并返回 true', async () => {
     await expect(service.removeFromFederationBlacklist('evil.hs')).resolves.toBe(true)
-    expect(authedRequestImpl).toHaveBeenCalledWith('DELETE', '/federation/blacklist/evil.hs', undefined, undefined, {
-      prefix: '/_synapse/admin/v1'
-    })
+    expect(admin.removeFromFederationBlacklist).toHaveBeenCalledWith('evil.hs')
+  })
 
-    server.use(
-      http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/federation/blacklist/:domain`, () => {
-        return new HttpResponse(null, { status: 500 })
-      })
-    )
+  it('removeFromFederationBlacklist SDK 报错时返回 false', async () => {
+    admin.removeFromFederationBlacklist.mockRejectedValueOnce(new Error('del-fail'))
     await expect(service.removeFromFederationBlacklist('evil.hs')).resolves.toBe(false)
   })
 
-  it('getFederationStatus 出错时降级为空对象', async () => {
-    server.use(
-      http.get(`${TEST_BASE_URL}/_synapse/admin/v1/federation/status`, () => {
-        return new HttpResponse(null, { status: 500 })
-      })
+  it('getFederationStatus 仍走直连 HTTP（SDK 未实现）', async () => {
+    const authedRequestImpl = vi.fn().mockResolvedValue({ ok: true })
+    const serviceWithHttp = new AdminFederationService(
+      async () => admin as unknown as AdminManager,
+      () =>
+        ({
+          http: { authedRequest: authedRequestImpl }
+        }) as never
     )
-    await expect(service.getFederationStatus()).resolves.toEqual({})
+
+    const result = await serviceWithHttp.getFederationStatus()
+    expect(result).toEqual({ ok: true })
+    expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/federation/status', undefined, undefined, {
+      prefix: '/_synapse/admin/v1'
+    })
+  })
+
+  it('getFederationStatus HTTP 报错时降级为空对象', async () => {
+    const authedRequestImpl = vi.fn().mockRejectedValue(new Error('http-fail'))
+    const serviceWithHttp = new AdminFederationService(
+      async () => admin as unknown as AdminManager,
+      () =>
+        ({
+          http: { authedRequest: authedRequestImpl }
+        }) as never
+    )
+
+    await expect(serviceWithHttp.getFederationStatus()).resolves.toEqual({})
   })
 })

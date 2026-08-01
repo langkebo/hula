@@ -771,6 +771,9 @@ class SpaceService extends BaseMatrixService {
         if (options?.maxDepth) queryParams.max_depth = String(options.maxDepth)
         if (options?.suggestedOnly) queryParams.suggested_only = String(options.suggestedOnly)
 
+        // 未迁移到 SDK SpaceManager.hierarchy.getSpaceHierarchyPage：前端路径使用
+        // /_matrix/client/v1 前缀 (MATRIX_PATHS.SPACE.HIERARCHY)，而 SDK 使用
+        // /_matrix/client/v3 前缀，路径不匹配，故保留 HTTP 调用。
         const result = await authedRequestWithPath<{ rooms: Array<Record<string, unknown>>; next_batch?: string }>(
           client,
           'GET',
@@ -811,6 +814,9 @@ class SpaceService extends BaseMatrixService {
         if (options?.maxDepth) queryParams.max_depth = String(options.maxDepth)
         if (options?.suggestedOnly) queryParams.suggested_only = String(options.suggestedOnly)
 
+        // 未迁移到 SDK SpaceManager.hierarchy.getSpaceHierarchyV1：前端路径使用
+        // /_matrix/client/v1 前缀 (MATRIX_PATHS.SPACE.HIERARCHY_V1)，而 SDK 使用
+        // /_matrix/client/v3 前缀，路径不匹配，故保留 HTTP 调用。
         const result = await authedRequestWithPath<{ rooms: Array<Record<string, unknown>>; next_batch?: string }>(
           client,
           'GET',
@@ -961,6 +967,9 @@ class SpaceService extends BaseMatrixService {
     }
 
     try {
+      // 未迁移到 SDK SpaceManager.hierarchy：前端路径为 /_matrix/client/v1/rooms/{id}/hierarchy
+      // (ROOM_HIERARCHY)，而 SDK getSpaceHierarchyPage 为 /_matrix/client/v3/spaces/{id}/hierarchy，
+      // 前缀与路径段均不匹配，故保留 HTTP 调用。
       await authedRequestWithPath(client, 'GET', MATRIX_PATHS.SPACE.ROOM_HIERARCHY(spaceId), {
         max_depth: '1'
       })
@@ -1031,6 +1040,9 @@ class SpaceService extends BaseMatrixService {
       if (options?.maxDepth) queryParams.max_depth = String(options.maxDepth)
       if (options?.suggestedOnly) queryParams.suggested_only = String(options.suggestedOnly)
 
+      // 未迁移到 SDK SpaceManager.hierarchy.getSpaceHierarchyPage：前端路径为
+      // /_matrix/client/v1/rooms/{id}/hierarchy (ROOM_HIERARCHY)，而 SDK 为
+      // /_matrix/client/v3/spaces/{id}/hierarchy，前缀与路径段均不匹配，故保留 HTTP 调用。
       const result = await authedRequestWithPath<{ rooms: Array<Record<string, unknown>>; next_batch?: string }>(
         client,
         'GET',

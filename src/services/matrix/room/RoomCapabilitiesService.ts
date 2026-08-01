@@ -1,5 +1,5 @@
 import { createLogger } from '@/utils/Logger'
-import { matrixHttpClient } from '../MatrixHttpClient'
+import matrixClientService from '../MatrixClientService'
 import { MatrixRequestDeduper } from '../MatrixRequestDeduper'
 
 const logger = createLogger('RoomCapabilitiesService')
@@ -49,23 +49,26 @@ class RoomCapabilitiesService {
     }
 
     return MatrixRequestDeduper.dedupe(`room-capabilities:${roomId}`, async () => {
-      const path = matrixHttpClient.buildRoomPath(roomId, 'capabilities')
-      const result = await matrixHttpClient.get<RoomCapabilitiesPayload>(path, {
-        logPrefix: 'RoomCapabilities'
-      })
-      if (!result) {
+      try {
+        const client = matrixClientService.getClient()
+        if (!client) {
+          logger.info(`[RoomCapabilities] 客户端未初始化: ${roomId}`)
+          return this.cache.get(roomId)?.payload ?? null
+        }
+        const result = await client.getRoomSummaryManager().getRoomCapabilities(roomId)
+        const payload: RoomCapabilitiesPayload = {
+          room_id: result.room_id ?? roomId,
+          room_version: result.room_version,
+          capabilities: result.capabilities as unknown as RoomCapabilitiesPayload['capabilities'],
+          features: (result as unknown as RoomCapabilitiesPayload).features,
+          join_rule: (result as unknown as RoomCapabilitiesPayload).join_rule
+        }
+        this.cache.set(roomId, { payload, expiresAt: Date.now() + CAPABILITY_TTL_MS })
+        return payload
+      } catch {
         logger.info(`[RoomCapabilities] ${roomId} 拉取失败, 沿用既有缓存`)
         return this.cache.get(roomId)?.payload ?? null
       }
-      const payload: RoomCapabilitiesPayload = {
-        room_id: result.room_id ?? roomId,
-        room_version: result.room_version,
-        capabilities: result.capabilities ?? {},
-        features: result.features ?? {},
-        join_rule: result.join_rule
-      }
-      this.cache.set(roomId, { payload, expiresAt: Date.now() + CAPABILITY_TTL_MS })
-      return payload
     })
   }
 

@@ -85,14 +85,12 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   }
 
   // ==================== Anti-Screenshot ====================
-  // NOTE: No SDK manager exists for anti-screenshot; kept as direct HTTP calls.
+  // Migrated to SDK: RoomSummaryManager.getAntiScreenshot() / setAntiScreenshot()
 
   async getAntiScreenshot(roomId: string): Promise<{ enabled: boolean }> {
-    const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.ANTI_SCREENSHOT(roomId))
-      const data = result as { enabled?: boolean }
-      return { enabled: data.enabled ?? false }
+      const manager = this.getClient().getRoomSummaryManager()
+      return await manager.getAntiScreenshot(roomId)
     } catch (err) {
       logger.error(`[MatrixRoom] 获取防截屏设置失败: ${err}`)
       return { enabled: false }
@@ -100,9 +98,9 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   }
 
   async setAntiScreenshot(roomId: string, enabled: boolean): Promise<void> {
-    const client = this.getClient()
     try {
-      await client.http.authedRequest('PUT', MATRIX_PATHS.ROOM.ANTI_SCREENSHOT(roomId), undefined, { enabled })
+      const manager = this.getClient().getRoomSummaryManager()
+      await manager.setAntiScreenshot(roomId, enabled)
       logger.info(`[MatrixRoom] 设置防截屏成功: ${roomId} (enabled=${enabled})`)
     } catch (err) {
       logger.error(`[MatrixRoom] 设置防截屏失败: ${err}`)

@@ -1,5 +1,4 @@
 import { NotificationTypeEnum } from '@/enums'
-import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 import { MatrixRequestDeduper } from '@/services/matrix/MatrixRequestDeduper'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -75,16 +74,10 @@ class MatrixRoomNotificationService extends BaseMatrixService {
     if (!roomId || !this.isUnreadCountSupported) return null
 
     return MatrixRequestDeduper.dedupe(`room-unread-count:${roomId}`, async () => {
-      const path = matrixHttpClient.buildRoomPath(roomId, 'unread_count')
-
       try {
-        const result = await matrixHttpClient.get<Partial<RoomUnreadCountPayload>>(path, {
-          logPrefix: 'RoomUnreadCount',
-          throwOnError: true,
-          quiet: true
-        })
+        const client = this.getClient()
+        const result = await client.getRoomSummaryManager().getRoomUnreadCount(roomId)
 
-        if (!result) return null
         return {
           notification_count: Number(result.notification_count ?? 0) || 0,
           highlight_count: Number(result.highlight_count ?? 0) || 0

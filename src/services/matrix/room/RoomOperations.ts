@@ -372,7 +372,7 @@ export class RoomOperations extends BaseMatrixService {
       return
     }
     const client = this.getClient()
-    await client.http.authedRequest('POST', `/rooms/${encodeURIComponent(roomId)}/sticky_events`, undefined, events)
+    await client.getRoomSummaryManager().setStickyEvent(roomId, 'm.sticky_events', events as never)
   }
 
   // --- MemberProfile (was MemberProfileService) ---

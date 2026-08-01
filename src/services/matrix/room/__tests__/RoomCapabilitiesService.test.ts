@@ -1,45 +1,55 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@tauri-apps/plugin-log', () => ({
-  info: vi.fn(),
-  error: vi.fn()
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() })
 }))
 
-const mockAuthedRequest = vi.fn()
-const mockAccessorClient = {
-  http: {
-    authedRequest: mockAuthedRequest
+vi.mock('../../MatrixRequestDeduper', () => ({
+  MatrixRequestDeduper: {
+    dedupe: vi.fn(async (_key: string, task: () => Promise<unknown>) => task())
   }
-}
-
-vi.mock('../../matrixClientAccessor', () => ({
-  getMatrixClient: vi.fn(() => mockAccessorClient),
-  getMatrixAccessToken: vi.fn(() => 'mock-token'),
-  getMatrixHomeserverUrl: vi.fn(() => 'https://matrix.org'),
-  getMatrixTelemetry: vi.fn(() => null),
-  waitForMatrixClientReady: vi.fn(),
-  setMatrixClientAccessor: vi.fn(),
-  hasRegisteredMatrixClientAccessor: vi.fn(() => true),
-  getMatrixClientAccessor: vi.fn(() => ({
-    getClient: vi.fn(() => mockAccessorClient),
-    getAccessToken: vi.fn(() => 'mock-token'),
-    getHomeserverUrl: vi.fn(() => 'https://matrix.org')
-  })),
-  resetMatrixClientAccessorForTests: vi.fn()
 }))
 
-const { roomCapabilitiesService, ROOM_CAPABILITY_NAMES, __ROOM_CAPABILITIES_TTL_MS__ } = await import(
-  '../RoomCapabilitiesService'
-)
+import matrixClientService from '../../MatrixClientService'
+import {
+  __ROOM_CAPABILITIES_TTL_MS__,
+  ROOM_CAPABILITY_NAMES,
+  roomCapabilitiesService
+} from '../RoomCapabilitiesService'
+
+function mockClientWithCapabilities(
+  result:
+    | {
+        room_id?: string
+        room_version?: string
+        capabilities?: Record<string, { enabled?: boolean }>
+        features?: Record<string, { enabled?: boolean }>
+        join_rule?: string
+      }
+    | Error
+) {
+  const getRoomCapabilities = vi.fn()
+  if (result instanceof Error) {
+    getRoomCapabilities.mockRejectedValue(result)
+  } else {
+    getRoomCapabilities.mockResolvedValue(result)
+  }
+  vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+    getRoomSummaryManager: () => ({ getRoomCapabilities })
+  } as unknown as MatrixClient)
+  return getRoomCapabilities
+}
 
 describe('RoomCapabilitiesService', () => {
   beforeEach(() => {
-    mockAuthedRequest.mockReset()
+    vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     roomCapabilitiesService.invalidate()
   })
 
-  it('returns capability payload from network on first fetch', async () => {
-    mockAuthedRequest.mockResolvedValueOnce({
+  it('returns capability payload from SDK on first fetch', async () => {
+    const getRoomCapabilities = mockClientWithCapabilities({
       room_id: '!a:server',
       room_version: '11',
       capabilities: { knock: { enabled: true }, threading: { enabled: false } },
@@ -48,13 +58,14 @@ describe('RoomCapabilitiesService', () => {
 
     const result = await roomCapabilitiesService.fetch('!a:server')
 
+    expect(getRoomCapabilities).toHaveBeenCalledWith('!a:server')
     expect(result?.room_version).toBe('11')
     expect(result?.capabilities?.threading?.enabled).toBe(false)
-    expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
+    expect(getRoomCapabilities).toHaveBeenCalledTimes(1)
   })
 
   it('serves later calls from cache within TTL', async () => {
-    mockAuthedRequest.mockResolvedValueOnce({
+    const getRoomCapabilities = mockClientWithCapabilities({
       room_id: '!cache:server',
       capabilities: { knock: { enabled: true } }
     })
@@ -63,12 +74,11 @@ describe('RoomCapabilitiesService', () => {
     const second = await roomCapabilitiesService.fetch('!cache:server')
 
     expect(first).toBe(second)
-    expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
+    expect(getRoomCapabilities).toHaveBeenCalledTimes(1)
   })
 
   it('refetches when force=true', async () => {
-    mockAuthedRequest.mockResolvedValueOnce({ room_id: '!f:server', capabilities: {} })
-    mockAuthedRequest.mockResolvedValueOnce({
+    const getRoomCapabilities = mockClientWithCapabilities({
       room_id: '!f:server',
       capabilities: { restricted: { enabled: false } }
     })
@@ -77,21 +87,24 @@ describe('RoomCapabilitiesService', () => {
     const refreshed = await roomCapabilitiesService.fetch('!f:server', { force: true })
 
     expect(refreshed?.capabilities?.restricted?.enabled).toBe(false)
-    expect(mockAuthedRequest).toHaveBeenCalledTimes(2)
+    expect(getRoomCapabilities).toHaveBeenCalledTimes(2)
   })
 
-  it('falls back to last cached payload on network failure', async () => {
-    mockAuthedRequest.mockResolvedValueOnce({ room_id: '!fb:server', capabilities: { knock: { enabled: true } } })
+  it('falls back to last cached payload on SDK failure', async () => {
+    mockClientWithCapabilities({
+      room_id: '!fb:server',
+      capabilities: { knock: { enabled: true } }
+    })
     await roomCapabilitiesService.fetch('!fb:server')
 
-    mockAuthedRequest.mockRejectedValueOnce(new Error('boom'))
+    mockClientWithCapabilities(new Error('boom'))
     const refreshed = await roomCapabilitiesService.fetch('!fb:server', { force: true })
 
     expect(refreshed?.capabilities?.knock?.enabled).toBe(true)
   })
 
   it('invalidate(roomId) drops only that entry', async () => {
-    mockAuthedRequest.mockResolvedValue({ room_id: '!x', capabilities: {} })
+    mockClientWithCapabilities({ room_id: '!x', capabilities: {} })
     await roomCapabilitiesService.fetch('!a:server')
     await roomCapabilitiesService.fetch('!b:server')
 
@@ -117,5 +130,16 @@ describe('RoomCapabilitiesService', () => {
 
   it('exposes TTL constant for diagnostics', () => {
     expect(__ROOM_CAPABILITIES_TTL_MS__).toBeGreaterThan(0)
+  })
+
+  it('returns null when roomId is empty', async () => {
+    const result = await roomCapabilitiesService.fetch('')
+    expect(result).toBeNull()
+  })
+
+  it('falls back to cache when client is null', async () => {
+    roomCapabilitiesService.__test__setCache('!null:server', { room_id: '!null:server' })
+    const result = await roomCapabilitiesService.fetch('!null:server')
+    expect(result?.room_id).toBe('!null:server')
   })
 })

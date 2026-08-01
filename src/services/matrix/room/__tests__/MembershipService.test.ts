@@ -1,20 +1,6 @@
-import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
 import { MatrixRoomMembershipService } from '../MembershipService'
-
-const TEST_BASE_URL = 'https://matrix.example.com'
-const PREFIX_V3 = '/_matrix/client/v3'
-
-const server = setupMswServer(
-  http.post(`${TEST_BASE_URL}${PREFIX_V3}/knock/:roomId`, () => {
-    return HttpResponse.json({ room_id: '!r' })
-  }),
-  http.post(`${TEST_BASE_URL}${PREFIX_V3}/join/:alias`, () => {
-    return HttpResponse.json({ room_id: '!joined:e' })
-  })
-)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -22,37 +8,11 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const authedRequestImpl = vi.fn()
-
 describe('MatrixRoomMembershipService', () => {
   let service: InstanceType<typeof MatrixRoomMembershipService>
 
   beforeEach(() => {
     vi.clearAllMocks()
-    authedRequestImpl.mockImplementation(
-      async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-        const prefixedPath = path.startsWith('/_') ? path : `${PREFIX_V3}${path}`
-        const url = new URL(`${TEST_BASE_URL}${prefixedPath}`)
-        if (queryParams && typeof queryParams === 'object') {
-          for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
-            url.searchParams.set(key, value)
-          }
-        }
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer test-access-token'
-        }
-        const response = await fetch(url.toString(), {
-          method,
-          headers,
-          body: body ? JSON.stringify(body) : undefined
-        })
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-        return response.json()
-      }
-    )
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     vi.spyOn(matrixClientService, 'joinRoom')
     vi.spyOn(matrixClientService, 'leaveRoom')
