@@ -11,13 +11,10 @@ import { FRIENDS } from './friends'
 import { GUEST } from './guest'
 import { MEDIA } from './media'
 import { MODERATION } from './moderation'
-import { NOTIFICATION } from './notification'
-import { RELATIONS } from './relations'
 import { RENDEZVOUS } from './rendezvous'
 import { ROOM } from './room'
 import { SPACE } from './space'
 import { SYNC } from './sync'
-import { USER } from './user'
 import { VOICE } from './voice'
 import { WELL_KNOWN } from './wellKnown'
 import { WIDGET } from './widget'
@@ -46,9 +43,7 @@ export const MATRIX_PATHS = {
   SPACE,
   AI,
   SYNC,
-  NOTIFICATION,
   MEDIA,
-  USER,
   ADMIN,
   RENDEZVOUS,
   VOICE,
@@ -56,7 +51,6 @@ export const MATRIX_PATHS = {
   CLIENT_CONFIG,
   GUEST,
   ACCOUNT_DATA,
-  RELATIONS,
   WIDGET,
   DM,
   MODERATION,
