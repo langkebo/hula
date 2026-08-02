@@ -161,7 +161,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
   state: (): STO.Setting => ({
     themes: {
       content: ThemeEnum.DARK,
-      pattern: ThemeEnum.OS
+      pattern: ThemeEnum.DARK
     },
     escClose: true,
     showMode: ShowModeEnum.ICON,

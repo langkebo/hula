@@ -151,6 +151,11 @@ export interface SessionStorePort {
 class MatrixRuntimeSessionService {
   constructor(private readonly port: SessionStorePort) {}
 
+  /** bootstrap 是否正在执行（防止并发重复执行） */
+  private isBootstrapping = false
+  /** bootstrap 是否已完成（防止重复执行清理+重载逻辑） */
+  private hasBootstrapped = false
+
   private getCurrentClientDeviceId(): string | null {
     const client = this.port.matrix.getClient() as { getDeviceId?: () => string | null } | null
     return client?.getDeviceId?.() ?? null
@@ -533,6 +538,16 @@ class MatrixRuntimeSessionService {
   private waitSyncPrepared(timeoutMs = 8000): Promise<void> {
     return new Promise((resolve) => {
       let settled = false
+
+      // 先检查当前 sync 状态：如果已经是 PREPARED/SYNCING，直接返回，避免错过事件
+      const client = matrixClientService.getClient() as { getSyncState?: () => string | null } | null
+      const currentSyncState = client?.getSyncState?.() ?? null
+      if (currentSyncState === 'PREPARED' || currentSyncState === 'SYNCING') {
+        logger.info(`waitSyncPrepared: 当前 sync 状态已是 ${currentSyncState}，立即继续 bootstrap`)
+        resolve()
+        return
+      }
+
       const off = (data: unknown) => {
         const state = (data as { state?: string })?.state
         if (state === 'PREPARED' || state === 'SYNCING') {
@@ -666,9 +681,34 @@ class MatrixRuntimeSessionService {
   /**
    * Bootstrap post-login state: sync, presence, search index, and UI.
    *
+   * 幂等性保护：
+   * - 如果 bootstrap 正在执行，直接返回进行中的 Promise（避免并发执行）
+   * - 如果 bootstrap 已完成，跳过清理+重载逻辑，仅刷新必要数据
+   *
    * @throws {Error} if the user id is missing or any sub-step fails.
    */
   async bootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
+    // 幂等性：如果已完成，仅刷新会话列表（避免清空已加载数据）
+    if (this.hasBootstrapped) {
+      logger.info('[bootstrap] 已完成过 bootstrap，跳过清理逻辑，仅刷新会话数据')
+      try {
+        await this.port.chat.getSessionList(true)
+      } catch (err) {
+        logger.warn('[bootstrap] 刷新会话列表失败:', err)
+      }
+      return
+    }
+
+    // 幂等性：如果正在执行，等待其完成
+    if (this.isBootstrapping) {
+      logger.info('[bootstrap] 检测到正在执行中，等待完成')
+      if (this.bootstrapInFlight) {
+        await this.bootstrapInFlight
+      }
+      return
+    }
+
+    this.isBootstrapping = true
     const BOOTSTRAP_TIMEOUT_MS = 30_000
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined
 
@@ -682,11 +722,30 @@ class MatrixRuntimeSessionService {
       }, BOOTSTRAP_TIMEOUT_MS)
     })
 
-    try {
-      await Promise.race([bootstrapTask, timeoutPromise])
-    } finally {
-      if (timeoutHandle) clearTimeout(timeoutHandle)
-    }
+    this.bootstrapInFlight = (async () => {
+      try {
+        await Promise.race([bootstrapTask, timeoutPromise])
+        this.hasBootstrapped = true
+      } finally {
+        if (timeoutHandle) clearTimeout(timeoutHandle)
+        this.isBootstrapping = false
+        this.bootstrapInFlight = null
+      }
+    })()
+
+    await this.bootstrapInFlight
+  }
+
+  /** 进行中的 bootstrap Promise（供并发调用等待） */
+  private bootstrapInFlight: Promise<void> | null = null
+
+  /**
+   * 重置 bootstrap 状态（登出时调用，允许下次登录重新执行完整 bootstrap）
+   */
+  resetBootstrapState(): void {
+    this.isBootstrapping = false
+    this.hasBootstrapped = false
+    this.bootstrapInFlight = null
   }
 
   private async doBootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions): Promise<void> {
@@ -866,6 +925,9 @@ class MatrixRuntimeSessionService {
   async logoutCurrentSession(options: LogoutMatrixRuntimeSessionOptions = {}): Promise<void> {
     const { resetLocalState = true, preserveTokens = false } = options
     const { resizeWindow, createWebviewWindow } = useWindow()
+
+    // 重置 bootstrap 状态，允许下次登录重新执行完整 bootstrap
+    this.resetBootstrapState()
 
     stopPresenceHeartbeat()
     matrixWsBridge.stop()

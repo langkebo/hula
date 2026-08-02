@@ -5,7 +5,7 @@
     id="center"
     :class="{ 'rounded-r-8px': isShrink }"
     class="resizable select-none flex flex-col min-h-0"
-    style="background: var(--hula-bg-deep); border-right: 1px solid #000"
+    style="background: var(--hula-bg-deep); border-right: 1px solid var(--hula-border-layout-divider)"
     :style="centerStyle">
     <!-- 分隔条（shrink 模式下隐藏） -->
     <PanelResizeHandle v-show="!isShrink" side="left" style="touch-action: none" />
@@ -16,6 +16,42 @@
       :shrink-status="!isShrink"
       :max-w="false"
       :current-label="appWindow?.label" />
+
+    <!-- Center panel header -->
+    <div class="list-header">
+      <h2>{{ title }}</h2>
+      <div class="list-actions">
+        <div class="icon-btn">
+          <svg><use href="#i-plus" /></svg>
+        </div>
+        <div class="icon-btn">
+          <svg><use href="#i-more" /></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Space shortcuts -->
+    <div class="space-shortcuts">
+      <div v-for="space in spaces" :key="space.id" class="space-shortcut" :title="space.name">
+        <svg><use :href="space.icon" /></svg>
+      </div>
+      <div class="space-shortcut add">
+        <svg><use href="#i-plus" /></svg>
+      </div>
+    </div>
+
+    <!-- Session filter tabs -->
+    <div class="session-filter">
+      <button
+        v-for="tab in tabs"
+        :key="tab.key"
+        class="session-filter-tab"
+        :class="{ active: activeTab === tab.key }"
+        @click="activeTab = tab.key">
+        {{ tab.label }}
+        <span v-if="tab.badge" class="filter-badge show">{{ tab.badge }}</span>
+      </button>
+    </div>
 
     <!-- 列表 -->
     <div id="centerList" class="h-full" :class="{ 'shadow-inner': settingStore.pageShadowEnabled }">
@@ -38,6 +74,20 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 const settingStore = useSettingStore()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const centerEl = shallowRef<HTMLElement | null>(null)
+
+// Center panel structural data
+const title = ref('消息')
+const activeTab = ref('all')
+const tabs = ref([
+  { key: 'all', label: '全部', badge: 0 },
+  { key: 'unread', label: '未读', badge: 3 },
+  { key: 'mentions', label: '提及', badge: 0 },
+  { key: 'spaces', label: '空间', badge: 0 }
+])
+const spaces = ref([
+  { id: '1', name: '工作空间', icon: '#i-work' },
+  { id: '2', name: '家庭', icon: '#i-home' }
+])
 
 // Step 2.3：响应式断点派生收缩状态；非 shrink 模式宽度由 store 持久化
 const { isShrink } = useResponsiveBreakpoint()

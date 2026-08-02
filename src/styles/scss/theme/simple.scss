@@ -48,8 +48,8 @@
 
 html[data-theme='dark'] {
   .simple {
-    // 侧边栏样式
-    --left-bg-color: var(--hula-surface-sidebar);
+    // 侧边栏样式（对齐 prototype：#161616 深色背景）
+    --left-bg-color: var(--hula-surface-deepest);
     --left-active-bg-color: var(--hula-surface-sidebar-selected);
     --left-text-color: var(--hula-border-default);
     --left-icon-color: var(--hula-border-default);
@@ -68,8 +68,8 @@ html[data-theme='dark'] {
     // 包含边框的选中样式
     --border-active-color: var(--hula-color-primary-500);
 
-    // 右边布局内容背景
-    --right-theme-bg-color: var(--hula-surface-sidebar);
+    // 右边布局内容背景（对齐 prototype：#161616 深色）
+    --right-theme-bg-color: var(--hula-surface-deepest);
 
     // 聊天框主体样式
     --right-chat-reply-color: var(--hula-surface-subtle);

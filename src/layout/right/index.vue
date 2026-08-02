@@ -20,6 +20,28 @@
       class="flex-1 flex flex-col min-h-0">
       <ActionBar :current-label="appWindow?.label" />
 
+      <!-- Chat header -->
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <div class="chat-header-info">
+            <div class="chat-header-name">
+              {{ roomName }}
+              <n-tag v-if="isEncrypted" size="small" type="success" :bordered="false">E2EE</n-tag>
+            </div>
+            <div class="chat-header-status">
+              <span v-if="isGroup">{{ memberCount }} 成员</span>
+              <span v-else-if="isOnline" class="typing-indicator">在线</span>
+              <span v-else>离线</span>
+            </div>
+          </div>
+        </div>
+        <div class="chat-header-actions">
+          <div class="chat-action-btn" v-for="action in actions" :key="action.icon" @click="action.handler">
+            <svg><use :href="action.icon" /></svg>
+          </div>
+        </div>
+      </div>
+
       <!-- 阶段 2/4：右侧栏视图状态机，路由为单一真相源 -->
       <div class="flex-1 min-h-0 flex flex-col">
         <ChatBox v-if="shouldShowChat" />
@@ -109,6 +131,19 @@ const prefers = matchMedia('(prefers-color-scheme: dark)')
 
 // Step 2.3：响应式断点（shrink 模式下右侧栏全屏）
 const { isRightPaneFullscreen, isShrink } = useResponsiveBreakpoint()
+
+// Chat header structural data
+const roomName = ref('会话名称')
+const isEncrypted = ref(false)
+const isGroup = ref(false)
+const memberCount = ref(0)
+const isOnline = ref(false)
+const actions = ref([
+  { icon: '#i-phone', handler: () => {} },
+  { icon: '#i-video', handler: () => {} },
+  { icon: '#i-search', handler: () => {} },
+  { icon: '#i-more', handler: () => {} }
+])
 
 // Step 2.3：视图驱动动态宽度 + 拖拽 + localStorage 持久化
 const { width: paneWidth, isDragging, transitionEnabled, startDrag } = useRightPaneWidth({ rightView })
@@ -220,6 +255,73 @@ useMitt.on(MittEnum.DETAILS_SHOW, () => {
 </script>
 
 <style scoped lang="scss">
+/* Chat header */
+.chat-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--hula-bg-deep);
+  flex-shrink: 0;
+}
+
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header-name {
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hula-text-primary);
+}
+
+.chat-header-status {
+  font-size: 11px;
+  color: var(--hula-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.typing-indicator {
+  color: var(--hula-accent);
+}
+
+.chat-header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.chat-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--hula-text-secondary);
+  font-size: 16px;
+  transition: all 0.15s;
+}
+
+.chat-action-btn:hover {
+  background: var(--hula-bg-mid);
+  color: var(--hula-text-primary);
+}
+
 /* Step 2.3：视图驱动动态宽度过渡动画 */
 .right-pane-animated {
   transition:

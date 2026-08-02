@@ -88,12 +88,10 @@ export class MatrixConnectionManager {
       this.config = config
       this.connectionState = 'CONNECTING'
 
-      try {
-        await initializeManagerExtensions()
-        logger.info('Manager 扩展注册完成')
-      } catch (extErr) {
-        logger.error('Manager 扩展注册失败:', extErr)
-      }
+      // Manager 扩展注册：重试一次，失败时记录详细警告但不中断流程
+      // 因为 FriendManager/ProfileManager 等是 synapse-rust 扩展功能，
+      // 缺失会导致好友列表、用户资料等功能降级，但基础 sync 仍可工作
+      await this.initializeManagerExtensionsWithRetry()
 
       // Runtime resolve: https://matrix.test → dev proxy origin
       const runtimeHomeserverUrl = resolveMatrixRuntimeHomeserverUrl(config.homeserverUrl)
@@ -134,6 +132,33 @@ export class MatrixConnectionManager {
       this.connectionState = 'ERROR'
       logger.error('客户端初始化失败:', err)
       throw err
+    }
+  }
+
+  /**
+   * 初始化 Manager 扩展，带重试机制
+   *
+   * Manager 扩展（FriendManager/ProfileManager 等）是 synapse-rust 特有功能，
+   * 注册失败会导致好友列表、用户资料等功能降级，但基础 sync 仍可工作。
+   * 因此失败时不抛出异常，仅记录详细警告。
+   */
+  private async initializeManagerExtensionsWithRetry(maxRetries = 1): Promise<void> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        await initializeManagerExtensions()
+        logger.info('Manager 扩展注册完成')
+        return
+      } catch (extErr) {
+        if (attempt < maxRetries) {
+          logger.warn(`Manager 扩展注册失败 (尝试 ${attempt + 1}/${maxRetries + 1})，重试中:`, extErr)
+          await new Promise((resolve) => setTimeout(resolve, 200))
+          continue
+        }
+        logger.error('Manager 扩展注册最终失败（好友/资料等功能将降级）:', extErr)
+        logger.warn(
+          '影响范围: FriendManager 未注册 → 好友列表/特别好友标识不可用；ProfileManager 未注册 → 用户资料查询降级'
+        )
+      }
     }
   }
 

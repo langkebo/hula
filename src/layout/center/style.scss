@@ -1,1 +1,119 @@
+.list-header {
+  padding: 14px 16px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
+.list-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--hula-text-primary);
+}
+
+.list-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.icon-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hula-radius-xs);
+  cursor: pointer;
+  color: var(--hula-text-secondary);
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.icon-btn:hover {
+  background: var(--hula-bg-mid);
+  color: var(--hula-text-primary);
+}
+
+.space-shortcuts {
+  padding: 0 12px 8px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  border-bottom: 1px solid #000;
+  padding-bottom: 10px;
+}
+
+.space-shortcut {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--hula-radius-sm);
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+
+.space-shortcut:hover {
+  border-color: var(--hula-accent);
+}
+
+.space-shortcut.add {
+  background: var(--hula-bg-mid);
+  color: var(--hula-text-secondary);
+}
+
+.session-filter {
+  display: flex;
+  gap: 2px;
+  padding: 6px 8px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+
+.session-filter-tab {
+  background: transparent;
+  border: none;
+  color: var(--hula-text-secondary);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--hula-radius-xs);
+  cursor: pointer;
+  transition: all 0.12s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-family);
+}
+
+.session-filter-tab:hover {
+  background: var(--hula-bg-mid);
+  color: var(--hula-text-primary);
+}
+
+.session-filter-tab.active {
+  background: var(--hula-bg-light);
+  color: var(--hula-text-primary);
+  font-weight: 500;
+}
+
+.filter-badge {
+  background: var(--hula-color-danger-500);
+  color: #fff;
+  font-size: 10px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.filter-badge.show {
+  display: flex;
+}

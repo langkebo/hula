@@ -651,8 +651,9 @@ html[data-theme='dark'] {
   --left-active-hover: rgba(26, 178, 146, 0.8);
   --left-active-icon-color: #1ab292;
   --left-win-icon-color: #1ab292;
-  --center-bg-color: var(--hula-surface-panel);
-  --right-bg-color: var(--hula-surface-sidebar);
+  --left-bg-color: var(--hula-surface-deepest);
+  --center-bg-color: var(--hula-surface-dark-mid);
+  --right-bg-color: var(--hula-surface-deepest);
   --text-color: var(--hula-text-primary);
   --icon-color: var(--hula-text-secondary);
   --action-bar-icon-color: var(--hula-text-secondary);
@@ -731,8 +732,8 @@ html[data-theme='dark'] {
   --bg-offline-avatar-overlay: color-mix(in srgb, var(--hula-text-tertiary) 60%, transparent);
   --bg-long-press-menu: var(--hula-surface-subtle);
 
-  /* 暗色右侧面板主题渐变背景 */
-  --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.2) 0%, rgba(130, 193, 187, 0.2) 150%);
+  /* 暗色右侧面板主题背景（对齐 prototype：纯深色 #161616） */
+  --right-theme-bg-color: var(--hula-surface-deepest);
   --border-active-color: var(--hula-brand-sidebar);
   --msg-active-color: rgba(19, 152, 127, 0.4);
 }
