@@ -401,10 +401,11 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background-color: var(--hula-surface-panel);
+  padding: 12px 18px;
+  background: var(--hula-surface-panel);
   border-bottom: 1px solid var(--hula-border-layout-divider);
-  min-height: 60px;
+  min-height: 56px;
+  flex-shrink: 0;
 }
 
 .qr-code-container {
