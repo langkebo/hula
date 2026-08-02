@@ -5,7 +5,7 @@
     id="center"
     :class="{ 'rounded-r-8px': isShrink }"
     class="resizable select-none flex flex-col min-h-0"
-    style="background: var(--center-bg-color); border-right: 1px solid var(--hula-border-layout-divider)"
+    style="background: var(--hula-bg-deep); border-right: 1px solid #000"
     :style="centerStyle">
     <!-- 分隔条（shrink 模式下隐藏） -->
     <PanelResizeHandle v-show="!isShrink" side="left" style="touch-action: none" />
@@ -42,7 +42,7 @@ const centerEl = shallowRef<HTMLElement | null>(null)
 // Step 2.3：响应式断点派生收缩状态；非 shrink 模式宽度由 store 持久化
 const { isShrink } = useResponsiveBreakpoint()
 
-// 中间栏样式：shrink 模式下 flex 自适应，否则按 store 持久化的面板宽度
+// 中间栏样式：shrink 模式下 flex 自适应，否则固定 300px
 const centerStyle = computed(() => {
   if (isShrink.value) {
     return {
@@ -52,12 +52,11 @@ const centerStyle = computed(() => {
       maxWidth: '64px'
     }
   }
-  const w = settingStore.panelWidth.left
   return {
     flex: '0 0 auto',
-    width: `${w}px`,
-    minWidth: `${w}px`,
-    maxWidth: `${w}px`
+    width: '300px',
+    minWidth: '300px',
+    maxWidth: '300px'
   }
 })
 

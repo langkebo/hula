@@ -1,14 +1,6 @@
 <template>
   <!-- Step 2.3：视图驱动动态宽度 + 拖拽调整 + 响应式断点全屏 -->
-  <main
-    data-tauri-drag-region
-    class="flex flex-col min-h-0 relative"
-    :class="{
-      'right-pane-animated': transitionEnabled,
-      'flex-1 w-full': isRightPaneFullscreen || isChatFlexMode
-    }"
-    style="background: var(--right-bg-color); border-left: 1px solid var(--hula-border-layout-divider)"
-    :style="isRightPaneFullscreen || isChatFlexMode ? undefined : { width: `${paneWidth}px`, flex: '0 0 auto' }">
+  <main data-tauri-drag-region class="flex flex-col min-h-0 relative flex-1" style="background: var(--hula-bg-deepest)">
     <!-- Step 2.3：左边缘拖拽分隔条（14px，hover 显示拖拽图标） -->
     <div
       v-if="!isRightPaneFullscreen && !isChatFlexMode"

@@ -15,16 +15,10 @@
       :watermark-text="watermarkText"
       :show-block-message="true" />
     <div class="flex flex-1 min-h-0">
-      <!-- 使用keep-alive包裹异步组件 -->
-      <keep-alive>
-        <AsyncLeft />
-      </keep-alive>
-      <keep-alive>
-        <AsyncCenter />
-      </keep-alive>
-      <keep-alive>
-        <AsyncRight v-if="!shrinkStatus" />
-      </keep-alive>
+      <!-- 移除 keep-alive：异步组件与 keep-alive 结合会导致 deactivate 函数错误 -->
+      <AsyncLeft />
+      <AsyncCenter />
+      <AsyncRight v-if="!shrinkStatus" />
     </div>
     <div v-if="overlayVisible" class="absolute inset-0 z-10 flex items-center justify-center bg-[--right-bg-color]">
       <LoadingSpinner :percentage="loadingPercentage" :loading-text="loadingText" />
@@ -64,6 +58,7 @@ import { useSearchShortcut } from '@/composables/search/useSearchShortcut'
 import { usePrivacyProtection } from '@/composables/usePrivacyProtection'
 import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { MittEnum, MsgEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { FilesMeta } from '@/services/types'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -185,56 +180,56 @@ const ensureInitStarted = (blockInit: boolean) => {
 // 修改异步组件的加载配置
 const AsyncLeft = defineAsyncComponent({
   loader: async () => {
+    const blockInit = shouldBlockInitialRender.value
+    const initTask = ensureInitStarted(blockInit)
+    await maybeDelayForInitialRender()
+    loadingText.value = t('home.loading.left_panel')
     try {
-      const blockInit = shouldBlockInitialRender.value
-      const initTask = ensureInitStarted(blockInit)
-      await maybeDelayForInitialRender()
-      loadingText.value = t('home.loading.left_panel')
       const comp = await import('./left/index.vue')
       loadingPercentage.value = 33
       if (blockInit) {
         await initTask
       }
+      markAsyncLoaded()
       return comp
     } catch (err) {
       logger.error('AsyncLeft 加载失败:', err)
-      throw err
-    } finally {
       markAsyncLoaded()
+      throw err
     }
   }
 })
 
 const AsyncCenter = defineAsyncComponent({
   loader: async () => {
+    const blockInit = shouldBlockInitialRender.value
+    const initTask = ensureInitStarted(blockInit)
+    await import('./left/index.vue')
+    loadingText.value = t('home.loading.data')
     try {
-      const blockInit = shouldBlockInitialRender.value
-      const initTask = ensureInitStarted(blockInit)
-      await import('./left/index.vue')
-      loadingText.value = t('home.loading.data')
       const comp = await import('./center/index.vue')
       loadingPercentage.value = 66
       if (blockInit) {
         await initTask
       }
+      markAsyncLoaded()
       return comp
     } catch (err) {
       logger.error('AsyncCenter 加载失败:', err)
-      throw err
-    } finally {
       markAsyncLoaded()
+      throw err
     }
   }
 })
 
 const AsyncRight = defineAsyncComponent({
   loader: async () => {
+    const blockInit = shouldBlockInitialRender.value
+    const initTask = ensureInitStarted(blockInit)
+    await maybeDelayForInitialRender()
+    await import('./center/index.vue')
+    loadingText.value = t('home.loading.right_panel')
     try {
-      const blockInit = shouldBlockInitialRender.value
-      const initTask = ensureInitStarted(blockInit)
-      await maybeDelayForInitialRender()
-      await import('./center/index.vue')
-      loadingText.value = t('home.loading.right_panel')
       const comp = await import('./right/index.vue')
       loadingPercentage.value = 100
       if (blockInit) {
@@ -247,12 +242,12 @@ const AsyncRight = defineAsyncComponent({
         useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
       })
 
+      markAsyncLoaded()
       return comp
     } catch (err) {
       logger.error('AsyncRight 加载失败:', err)
-      throw err
-    } finally {
       markAsyncLoaded()
+      throw err
     }
   }
 })
@@ -532,12 +527,28 @@ if (hasTauriRuntime()) {
 }
 
 onBeforeMount(async () => {
-  // 获取最新的未读数
-  await contactStore.getApplyUnReadCount()
-  // 刷新好友申请列表
-  await contactStore.getApplyPage('friend', true)
-  // 刷新好友列表
-  await contactStore.getContactList(true)
+  // 等待 MatrixClient 就绪后再加载依赖 client 的数据
+  // 避免在 init() 完成前调用 contactStore 方法导致空数据或错误
+  const loadContactData = async () => {
+    try {
+      // 获取最新的未读数
+      await contactStore.getApplyUnReadCount()
+      // 刷新好友申请列表
+      await contactStore.getApplyPage('friend', true)
+      // 刷新好友列表
+      await contactStore.getContactList(true)
+    } catch (err) {
+      logger.warn('加载联系人数据失败:', err)
+    }
+  }
+
+  // 如果 client 已就绪，立即加载；否则延迟到 init 完成后
+  if (matrixClientService.getClient()) {
+    await loadContactData()
+  } else {
+    // 延迟加载，等待 init 完成
+    void ensureInitStarted(false).then(loadContactData)
+  }
 
   // 页面刷新时，如果用户已登录且有当前会话，刷新群成员列表以获取最新的在线状态
   if (userStore.userInfo?.uid && globalStore.currentSessionRoomId) {

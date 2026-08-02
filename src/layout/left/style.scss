@@ -1,6 +1,19 @@
 @use '@/styles/scss/global/variable.scss' as *;
 @use '@/styles/scss/global/responsive.scss' as responsive;
 
+/* TJG Left Sidebar - 64px width, teal background */
+.left {
+  width: 64px;
+  background: var(--hula-bg-deep);
+  border-right: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 0;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 @mixin action() {
   &:not(.active):hover {
     background: var(--hula-surface-sidebar-hover);
@@ -10,9 +23,85 @@
   }
 }
 
-.left {
-  background: var(--left-bg-color);
-  border-right: 1px solid var(--hula-border-layout-divider);
+.nav-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-bottom: 8px;
+  position: relative;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.nav-avatar.online::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--hula-color-success-500);
+  border: 2px solid var(--hula-bg-deep);
+}
+
+.nav-divider {
+  width: 28px;
+  height: 1px;
+  background: #3f3f46;
+  margin: 4px 0;
+}
+
+.nav-icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hula-radius-sm);
+  cursor: pointer;
+  color: var(--hula-text-secondary);
+  font-size: 20px;
+  position: relative;
+  transition: all 0.15s;
+}
+
+.nav-icon:hover {
+  background: var(--hula-bg-mid);
+  color: var(--hula-text-primary);
+}
+
+.nav-icon.active {
+  background: var(--hula-accent);
+  color: var(--hula-text-primary);
+}
+
+.nav-icon.active::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  width: 3px;
+  height: 22px;
+  background: var(--hula-accent);
+  border-radius: 0 3px 3px 0;
+}
+
+.nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--hula-color-danger-500);
+  color: var(--hula-text-primary);
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
 }
 
 .top-action,
