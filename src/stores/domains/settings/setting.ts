@@ -160,7 +160,7 @@ async function verifyPasswordHash(
 export const useSettingStore = defineStore(StoresEnum.SETTING, {
   state: (): STO.Setting => ({
     themes: {
-      content: ThemeEnum.LIGHT,
+      content: ThemeEnum.DARK,
       pattern: ThemeEnum.OS
     },
     escClose: true,
