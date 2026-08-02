@@ -13,10 +13,11 @@ import {
   toDate,
   toDisplayString,
   toEnumValue,
-  toISODateString,
   toInteger,
+  toISODateString,
   toMap,
   toNumber,
+  toObject,
   toQueryString,
   toSet,
   toString,
@@ -24,8 +25,7 @@ import {
   toTypedArray,
   toURL,
   toURLString,
-  toObject,
-  tryConvert,
+  tryConvert
 } from '../type-conversions'
 
 describe('基础类型转换', () => {
@@ -172,11 +172,9 @@ describe('数组转换', () => {
     })
 
     it('应该保留 null 当 filterNull 为 false', () => {
-      const result = toTypedArray(
-        [1, null, 3],
-        (item) => (item === null ? null : (item as number) * 2),
-        { filterNull: false }
-      )
+      const result = toTypedArray([1, null, 3], (item) => (item === null ? null : (item as number) * 2), {
+        filterNull: false
+      })
       expect(result).toEqual([2, null, 6])
     })
 
@@ -207,7 +205,7 @@ describe('对象转换', () => {
     it('应该将对象转换为键值对数组', () => {
       expect(objectToEntries({ a: 1, b: 2 })).toEqual([
         ['a', 1],
-        ['b', 2],
+        ['b', 2]
       ])
     })
   })
@@ -217,7 +215,7 @@ describe('对象转换', () => {
       expect(
         entriesToObject<string, number>([
           ['a', 1],
-          ['b', 2],
+          ['b', 2]
         ])
       ).toEqual({ a: 1, b: 2 })
     })
@@ -310,7 +308,7 @@ describe('枚举转换', () => {
   enum TestEnum {
     A = 'a',
     B = 'b',
-    C = 'c',
+    C = 'c'
   }
 
   describe('toEnumValue', () => {
@@ -350,7 +348,7 @@ describe('集合转换', () => {
     it('应该将数组转换为 Map', () => {
       const result = toMap([
         ['a', 1],
-        ['b', 2],
+        ['b', 2]
       ])
       expect(result.get('a')).toBe(1)
       expect(result.get('b')).toBe(2)
@@ -439,13 +437,13 @@ describe('安全转换', () => {
       const result = convertProperties(source, {
         name: (v) => String(v),
         age: (v) => Number(v),
-        active: (v) => Boolean(v),
+        active: (v) => Boolean(v)
       })
 
       expect(result).toEqual({
         name: 'John',
         age: 30,
-        active: true,
+        active: true
       })
     })
   })

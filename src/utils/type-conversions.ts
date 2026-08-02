@@ -5,15 +5,7 @@
 // 与 typeGuard.ts 配合使用，形成完整的类型处理工具链
 // =============================================================================
 
-import {
-  isArray,
-  isBoolean,
-  isEmpty,
-  isNullOrUndefined,
-  isNumber,
-  isObject,
-  isString,
-} from './typeGuard'
+import { isArray, isBoolean, isEmpty, isNullOrUndefined, isNumber, isObject, isString } from './typeGuard'
 
 // =============================================================================
 // 基础类型转换
@@ -144,10 +136,7 @@ export function toTypedArray<T>(
  * @param defaultValue - 转换失败时的默认值
  * @returns 转换后的对象
  */
-export function toObject<T extends Record<string, unknown>>(
-  value: unknown,
-  defaultValue: T | null = null
-): T | null {
+export function toObject<T extends Record<string, unknown>>(value: unknown, defaultValue: T | null = null): T | null {
   if (isObject(value)) return value as T
 
   if (isString(value)) {
@@ -379,7 +368,7 @@ export function bytesToHumanReadable(bytes: number, decimals = 2): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   const index = Math.min(i, sizes.length - 1)
 
-  return `${parseFloat((bytes / Math.pow(k, index)).toFixed(decimals))} ${sizes[index]}`
+  return `${parseFloat((bytes / k ** index).toFixed(decimals))} ${sizes[index]}`
 }
 
 /**
@@ -388,10 +377,7 @@ export function bytesToHumanReadable(bytes: number, decimals = 2): string {
  * @param options - 格式化选项
  * @returns 格式化后的时间字符串
  */
-export function msToHumanReadable(
-  ms: number,
-  options: { includeMs?: boolean; compact?: boolean } = {}
-): string {
+export function msToHumanReadable(ms: number, options: { includeMs?: boolean; compact?: boolean } = {}): string {
   const { includeMs = false, compact = false } = options
 
   if (!isNumber(ms) || ms < 0) return compact ? '0s' : '0 seconds'

@@ -20,7 +20,7 @@
           round />
 
         <div
-          class="bg-[--left-bg-color] text-[var(--text-xs)] rounded-50% size-12px absolute bottom--2px right--2px border-(2px solid [--left-bg-color])"
+          class="bg-[--hula-surface-panel] text-[var(--text-xs)] rounded-50% size-12px absolute bottom--2px right--2px border-(2px solid [--hula-surface-panel])"
           @click.stop="openContent(t('home.profile_card.online_status'), 'onlineStatus', 320, 480)">
           <img :src="statusIcon" :alt="statusTitle" class="rounded-50% size-full" />
         </div>

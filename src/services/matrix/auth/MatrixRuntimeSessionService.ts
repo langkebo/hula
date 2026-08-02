@@ -9,9 +9,9 @@ import {
   saveMatrixSessionEndpointConfig
 } from '@/services/backend/config'
 import { useI18nGlobal } from '@/services/i18n'
+import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import type { MatrixClientConfig } from '@/services/matrix/MatrixClientService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
 import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'

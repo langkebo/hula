@@ -957,6 +957,70 @@ export type I18nKeys = {
       }
     }
   },
+  "background_updates": {
+    "title": "后台更新管理",
+    "subtitle": "查看和管理数据库迁移、索引重建等后台任务",
+    "status": {
+      "title": "汇总状态",
+      "pending": "待处理",
+      "running": "执行中",
+      "completed": "已完成",
+      "failed": "已失败",
+      "total": "总计",
+      "current": "当前任务"
+    },
+    "list": {
+      "title": "任务列表",
+      "empty": "暂无后台更新任务",
+      "job_name": "任务名称",
+      "job_type": "任务类型",
+      "description": "描述",
+      "status": "状态",
+      "progress": "进度",
+      "total_items": "总条目",
+      "processed_items": "已处理",
+      "created_ts": "创建时间",
+      "started_ts": "开始时间",
+      "completed_ts": "完成时间",
+      "error_message": "错误信息",
+      "retry_count": "重试次数",
+      "actions": "操作"
+    },
+    "actions": {
+      "start": "启动",
+      "cancel": "取消",
+      "complete": "完成",
+      "fail": "标记失败",
+      "delete": "删除",
+      "retry_failed": "重试所有失败",
+      "cleanup_locks": "清理过期锁",
+      "refresh": "刷新"
+    },
+    "dialog": {
+      "fail_title": "标记任务失败",
+      "fail_message_label": "错误信息",
+      "fail_message_placeholder": "请输入失败原因",
+      "fail_confirm": "确定",
+      "fail_cancel": "取消"
+    },
+    "feedback": {
+      "start_success": "任务已启动",
+      "start_failed": "启动任务失败",
+      "cancel_success": "任务已取消",
+      "cancel_failed": "取消任务失败",
+      "complete_success": "任务已完成",
+      "complete_failed": "完成任务失败",
+      "fail_success": "任务已标记失败",
+      "fail_failed": "标记任务失败失败",
+      "delete_success": "任务已删除",
+      "delete_failed": "删除任务失败",
+      "retry_success": "已重试 {count} 个失败任务",
+      "retry_failed": "重试失败任务失败",
+      "cleanup_success": "已清理 {count} 个过期锁",
+      "cleanup_failed": "清理过期锁失败",
+      "load_failed": "加载后台更新信息失败"
+    }
+  },
   "captcha": {
     "title": "人机验证",
     "description": "请完成下方验证以继续注册",
@@ -1931,6 +1995,39 @@ export type I18nKeys = {
     "diagnose_no_homeserver": "未配置 Homeserver，无法自检",
     "diagnose_failed": "自检执行失败：{message}"
   },
+  "delayed_events": {
+    "title": "延迟事件管理",
+    "scheduled": "待处理",
+    "finalised": "已完成",
+    "empty": "暂无延迟事件",
+    "load_failed": "加载延迟事件失败",
+    "fields": {
+      "delay_id": "延迟ID",
+      "type": "事件类型",
+      "delay": "延迟(ms)",
+      "running_since": "开始时间"
+    },
+    "actions": {
+      "cancel": "取消",
+      "restart": "重启",
+      "send": "立即发送"
+    },
+    "outcome": {
+      "send": "已发送",
+      "cancel": "已取消"
+    },
+    "reason": {
+      "delay": "延迟触发",
+      "error": "错误",
+      "action": "操作触发"
+    },
+    "cancel_success": "已取消延迟事件",
+    "cancel_failed": "取消延迟事件失败",
+    "restart_success": "已重启延迟事件",
+    "restart_failed": "重启延迟事件失败",
+    "send_success": "已立即发送延迟事件",
+    "send_failed": "立即发送失败"
+  },
   "diagnostics": {
     "versions_supported": "支持的版本: {versions}",
     "versions_not_found": "未找到支持的 API 版本",
@@ -2375,6 +2472,87 @@ export type I18nKeys = {
       "retry": "重试",
       "reload": "重新加载",
       "details": "错误详情"
+    }
+  },
+  "external_services": {
+    "title": "外部服务管理",
+    "subtitle": "管理 TrendRadar、OpenClaw、Webhook 等外部服务集成",
+    "actions": {
+      "refresh": "刷新",
+      "register": "注册服务",
+      "check_health": "健康检查",
+      "check_all_health": "检查全部健康",
+      "edit": "编辑",
+      "delete": "删除",
+      "enable": "启用",
+      "disable": "禁用"
+    },
+    "filters": {
+      "service_type": "服务类型",
+      "service_type_placeholder": "全部类型",
+      "service_type_all": "全部"
+    },
+    "list": {
+      "title": "服务列表",
+      "empty": "暂无外部服务",
+      "as_id": "服务 ID",
+      "service_type": "类型",
+      "service_id": "标识",
+      "display_name": "名称",
+      "is_enabled": "启用",
+      "is_healthy": "健康",
+      "created_ts": "创建时间",
+      "actions": "操作"
+    },
+    "health": {
+      "title": "健康状态",
+      "empty": "暂无健康数据",
+      "healthy": "健康",
+      "unhealthy": "异常",
+      "last_check_ts": "最近检查",
+      "last_success_ts": "最近成功",
+      "last_error": "最近错误",
+      "consecutive_failures": "连续失败次数"
+    },
+    "register": {
+      "title": "注册外部服务",
+      "service_type": "服务类型",
+      "service_type_placeholder": "如 trendradar / webhook / custom",
+      "service_id": "服务标识",
+      "service_id_placeholder": "如 news-bot",
+      "display_name": "显示名称",
+      "display_name_placeholder": "如 新闻机器人",
+      "webhook_url": "Webhook URL",
+      "webhook_url_placeholder": "https://example.com/webhook",
+      "api_key": "API Key",
+      "api_key_placeholder": "可选",
+      "config": "配置 (JSON)",
+      "config_placeholder": "{}"
+    },
+    "edit": {
+      "title": "编辑外部服务",
+      "webhook_url": "Webhook URL",
+      "api_key": "API Key",
+      "config": "配置 (JSON)",
+      "is_enabled": "启用服务"
+    },
+    "feedback": {
+      "register_success": "服务注册成功",
+      "register_failed": "服务注册失败",
+      "update_success": "服务更新成功",
+      "update_failed": "服务更新失败",
+      "delete_success": "服务删除成功",
+      "delete_failed": "服务删除失败",
+      "health_check_success": "健康检查完成",
+      "health_check_failed": "健康检查失败",
+      "delete_confirm": "确定要删除该外部服务吗？此操作不可撤销。"
+    },
+    "common": {
+      "yes": "是",
+      "no": "否",
+      "cancel": "取消",
+      "confirm": "确认",
+      "save": "保存"
     }
   },
   "fileManager": {
@@ -6874,6 +7052,19 @@ export type I18nKeys = {
       "open_logs_failed": "无法打开日志目录",
       "open_logs_unsupported": "Web 版本暂不支持此功能"
     },
+    "diagnostics": {
+      "title": "诊断信息",
+      "reset": "重置指标",
+      "api_avg_latency": "API 平均延迟",
+      "api_p95_latency": "API P95 延迟",
+      "api_total_calls": "API 调用总数",
+      "sync_count": "Sliding Sync 次数",
+      "sync_avg_duration": "同步平均耗时",
+      "replay_success_rate": "离线回放成功率",
+      "retry_rate": "重试触发率",
+      "retry_rate_abnormal_title": "重试率异常",
+      "retry_rate_abnormal_desc": "网络不稳定，当前重试率为 {rate}%"
+    },
     "unknow": "未知",
     "encryption": {
       "title": "加密设置",
@@ -7432,6 +7623,100 @@ export type I18nKeys = {
       "delete_failed": "删除空间失败",
       "load_failed": "加载失败"
     }
+  },
+  "telemetry": {
+    "title": "遥测监控",
+    "subtitle": "查看服务器运行时指标、Prometheus 配置和告警",
+    "common": {
+      "yes": "是",
+      "no": "否"
+    },
+    "status": {
+      "title": "遥测状态",
+      "empty": "暂无遥测配置",
+      "enabled": "已启用",
+      "trace_enabled": "Trace 启用",
+      "metrics_enabled": "Metrics 启用",
+      "service_name": "服务名",
+      "service_version": "服务版本",
+      "sampling_ratio": "采样率",
+      "otlp_endpoint": "OTLP 端点",
+      "prometheus_port": "Prometheus 端口",
+      "batch_export": "批量导出"
+    },
+    "metrics": {
+      "title": "指标摘要",
+      "empty": "暂无指标数据",
+      "total_metrics": "指标总数",
+      "total_counters": "Counter 数",
+      "total_gauges": "Gauge 数",
+      "total_histograms": "Histogram 数",
+      "rendered_bytes": "渲染字节数",
+      "snapshot_ts": "快照时间"
+    },
+    "scheduler": {
+      "title": "Appservice 调度器",
+      "total_services": "服务总数",
+      "available_services": "可用服务",
+      "in_backoff": "退避中",
+      "capacity_limited": "容量受限",
+      "pending_events": "待处理事件",
+      "pending_transactions": "待处理事务",
+      "success_count": "成功总数",
+      "failure_count": "失败总数",
+      "in_flight": "进行中"
+    },
+    "alerts": {
+      "title": "告警列表",
+      "empty": "暂无告警",
+      "count": "{count} 条告警",
+      "severity": "严重程度",
+      "rule_name": "规则名",
+      "status": "状态",
+      "message": "消息",
+      "trigger_count": "触发次数",
+      "triggered_at": "触发时间",
+      "last_seen_ts": "最近触发",
+      "actions": "操作",
+      "acknowledge": "确认",
+      "status_firing": "触发中",
+      "status_acknowledged": "已确认",
+      "status_recovered": "已恢复",
+      "status_closed": "已关闭",
+      "severity_info": "信息",
+      "severity_warning": "警告",
+      "severity_high": "高",
+      "severity_critical": "严重"
+    },
+    "filters": {
+      "status_placeholder": "按状态过滤",
+      "severity_placeholder": "按严重程度过滤"
+    },
+    "actions": {
+      "refresh": "刷新"
+    },
+    "feedback": {
+      "ack_success": "告警已确认",
+      "ack_failed": "确认告警失败",
+      "load_failed": "加载遥测数据失败"
+    }
+  },
+  "thirdparty": {
+    "title": "第三方协议浏览",
+    "subtitle": "浏览通过第三方协议桥接的用户和位置",
+    "protocol_select": "选择协议",
+    "protocol_placeholder": "请选择协议",
+    "query_section": "查询",
+    "query_field": "查询字段",
+    "query_value": "查询值",
+    "query_value_placeholder": "输入查询值（可选）",
+    "query_location": "查询位置",
+    "query_user": "查询用户",
+    "location_results": "位置结果",
+    "user_results": "用户结果",
+    "empty_protocols": "暂无第三方协议",
+    "empty_results": "暂无结果",
+    "load_failed": "加载失败"
   },
   "thread": {
     "title": "消息线程",

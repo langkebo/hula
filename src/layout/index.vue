@@ -1,8 +1,13 @@
 <template>
   <div
     id="layout"
-    class="relative flex min-w-310px bg-[--right-bg-color] h-full"
-    :class="{ 'is-dragging-files': isDraggingFiles }">
+    class="relative flex min-w-310px h-full overflow-hidden"
+    :class="{ 'is-dragging-files': isDraggingFiles }"
+    style="
+      background: var(--hula-surface-deepest);
+      border-radius: var(--hula-radius-xl);
+      box-shadow: var(--hula-shadow-panel);
+    ">
     <GuestModeBanner :visible="isGuestMode" :guest-user-id="guestUserId" />
     <PrivacyOverlay
       v-if="isPrivacyMode"

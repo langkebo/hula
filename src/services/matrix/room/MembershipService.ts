@@ -2,7 +2,6 @@ import type { Room, RoomMember } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MembershipService')
 

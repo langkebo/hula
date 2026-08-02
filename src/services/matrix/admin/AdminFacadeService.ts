@@ -154,8 +154,7 @@ class AdminFacadeService extends BaseMatrixService {
             // 使用 SDK AdminManager.getUserById() 替代直连 HTTP GET /users/{userId}
             const userInfo = await manager.getUserById(userId, false)
             const isAdmin = Boolean(
-              (userInfo as unknown as { admin?: boolean })?.admin ??
-                (userInfo as unknown as { is_admin?: boolean })?.is_admin
+              (userInfo as { admin?: boolean })?.admin ?? (userInfo as { is_admin?: boolean })?.is_admin
             )
             this.cachedAdminStatus = isAdmin
             this.adminVerifiedAt = now

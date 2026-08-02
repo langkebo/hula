@@ -3,22 +3,20 @@ import { cryptoHealthMonitor } from '@/services/matrix/crypto/CryptoHealthMonito
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
-import {
-  type CrossSigningInfo,
-  type VerificationRequest as CryptoVerificationRequest,
-  type EncryptionSettings,
-  type KeyBackupInfo,
-  type KeyRotationRecord,
-  type KeyRotationStatus,
-  type SetupKeyBackupOptions
-} from '@/services/matrix/crypto/types'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { matrixVerificationService, type VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
+import type {
+  CrossSigningInfo,
+  VerificationRequest as CryptoVerificationRequest,
+  EncryptionSettings,
+  KeyBackupInfo,
+  KeyRotationRecord,
+  KeyRotationStatus,
+  SetupKeyBackupOptions
+} from '@/services/matrix/crypto/types'
 
-export type { CryptoHealthStatus } from '@/services/matrix/crypto/types'
-
-export type { KeyRotationRecord } from '@/services/matrix/crypto/types'
+export type { CryptoHealthStatus, KeyRotationRecord } from '@/services/matrix/crypto/types'
 
 interface UseEncryptionResult {
   isEncryptionEnabled: Ref<boolean>

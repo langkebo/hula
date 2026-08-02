@@ -194,9 +194,7 @@ describe('AdminBackgroundUpdateService — P1-1 后台更新管理', () => {
 
   it('getStats 委托 manager.getStats 并透传 limit', async () => {
     const { service, backgroundUpdateManager } = makeService()
-    backgroundUpdateManager.getStats.mockResolvedValue([
-      { job_name: 'job-1', total_updates: 10, completed_updates: 8 }
-    ])
+    backgroundUpdateManager.getStats.mockResolvedValue([{ job_name: 'job-1', total_updates: 10, completed_updates: 8 }])
 
     const result = await service.getStats({ limit: 30 })
     expect(backgroundUpdateManager.getStats).toHaveBeenCalledWith(30)

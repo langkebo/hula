@@ -21,7 +21,7 @@ export class AdminRetentionService {
       const admin = await this.sdkAdmin()
       const policy = await admin.getRetentionPolicy()
       return {
-        policies: policy ? [policy as unknown as Record<string, unknown>] : [],
+        policies: policy ? [{ ...policy } as Record<string, unknown>] : [],
         nextToken: undefined
       }
     } catch (err) {
@@ -34,7 +34,7 @@ export class AdminRetentionService {
     try {
       const admin = await this.sdkAdmin()
       const policy = await admin.getRoomRetentionPolicy(roomId)
-      return (policy as unknown as Record<string, unknown>) ?? null
+      return policy ? ({ ...policy } as Record<string, unknown>) : null
     } catch (err) {
       logger.error(`[AdminRetention] 获取房间保留策略失败: ${err}`)
       return null
@@ -74,7 +74,7 @@ export class AdminRetentionService {
     try {
       const admin = await this.sdkAdmin()
       const status = await admin.getRetentionStatus()
-      return (status as unknown as Record<string, unknown>) ?? {}
+      return status ? ({ ...status } as Record<string, unknown>) : {}
     } catch (err) {
       logger.error(`[AdminRetention] 获取保留策略状态失败: ${err}`)
       return {}

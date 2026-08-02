@@ -171,7 +171,10 @@ describe('MatrixPresenceService', () => {
 
       const result = await matrixPresenceService.subscribeToPresence(['@a:example.com', '@b:example.com'])
 
-      expect(mockPresenceManager.updatePresenceList).toHaveBeenCalledWith(['@a:example.com', '@b:example.com'], undefined)
+      expect(mockPresenceManager.updatePresenceList).toHaveBeenCalledWith(
+        ['@a:example.com', '@b:example.com'],
+        undefined
+      )
       expect(result).toEqual(mockResponse)
     })
 

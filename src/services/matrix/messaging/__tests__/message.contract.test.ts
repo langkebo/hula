@@ -65,7 +65,8 @@ describe('Message service contract (SDK RoomEventsManager)', () => {
     }
     // Directly assign getRoomEventsManager since extendMatrixClientWithManagers()
     // is not called in the test environment, so the prototype method is absent.
-    ;(realClient as unknown as { getRoomEventsManager: () => typeof mockRoomEventsManager }).getRoomEventsManager = () => mockRoomEventsManager
+    ;(realClient as unknown as { getRoomEventsManager: () => typeof mockRoomEventsManager }).getRoomEventsManager =
+      () => mockRoomEventsManager
     vi.spyOn(matrixClientService, 'getClient').mockImplementation(() => realClient)
 
     // The real SDK client has no rooms loaded (no /sync), so getRoom returns

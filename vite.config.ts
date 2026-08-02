@@ -25,7 +25,8 @@ export default defineConfig(({ mode }: ConfigEnv) => {
   //    例：VITE_HOMESERVER_URL=https://matrix.test 时，自动走代理 + 关掉 TLS 校验。
   //    Tauri 运行时由 runtimeFetch.ts 的 .test 域名白名单处理；这里只影响浏览器 dev。
   //    如果有独立代理目标（如 nginx 未启动时直连后端），用 VITE_PROXY_TARGET 覆盖。
-  const homeserverTarget = config.VITE_PROXY_TARGET?.trim() || config.VITE_HOMESERVER_URL?.trim() || 'http://localhost:8008'
+  const homeserverTarget =
+    config.VITE_PROXY_TARGET?.trim() || config.VITE_HOMESERVER_URL?.trim() || 'http://localhost:8008'
   const isHttps = homeserverTarget.startsWith('https://')
   viteConfig = mergeConfig(viteConfig, {
     server: {

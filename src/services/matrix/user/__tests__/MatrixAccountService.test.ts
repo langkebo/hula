@@ -8,7 +8,7 @@ import { matrixAccountService } from '../MatrixAccountService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const server = setupMswServer(
+const _server = setupMswServer(
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/capabilities`, () => {
     return HttpResponse.json({ capabilities: { 'm.room.tombstone': { enabled: true } } })
   }),

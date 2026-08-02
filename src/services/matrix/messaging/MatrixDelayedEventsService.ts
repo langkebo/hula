@@ -97,7 +97,7 @@ class MatrixDelayedEventsService {
     txnId?: string
   ): Promise<SendDelayedEventResponse> {
     const client = this.requireClient()
-    const result = await (client as unknown as DelayedEventClient)._unstable_sendDelayedEvent(
+    const result = await (client as DelayedEventClient)._unstable_sendDelayedEvent(
       roomId,
       delayOpts,
       threadId,
@@ -126,7 +126,7 @@ class MatrixDelayedEventsService {
     stateKey = ''
   ): Promise<SendDelayedEventResponse> {
     const client = this.requireClient()
-    const result = await (client as unknown as DelayedEventClient)._unstable_sendDelayedStateEvent(
+    const result = await (client as DelayedEventClient)._unstable_sendDelayedStateEvent(
       roomId,
       delayOpts,
       eventType,
@@ -160,7 +160,7 @@ class MatrixDelayedEventsService {
     txnId?: string
   ): Promise<SendDelayedEventResponse> {
     const client = this.requireClient()
-    const result = await (client as unknown as DelayedEventClient)._unstable_sendStickyDelayedEvent(
+    const result = await (client as DelayedEventClient)._unstable_sendStickyDelayedEvent(
       roomId,
       stickDuration,
       delayOpts,

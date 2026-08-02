@@ -21,10 +21,10 @@
         @click.stop />
       <n-badge :dot="isFavorite" color="var(--color-warning)" :offset="[-4, 4]">
         <n-avatar
-          :size="44"
+          :size="42"
           :src="AvatarUtils.getAvatarUrl(avatarSrc)"
           :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-          round />
+          style="border-radius: var(--hula-radius-sm)" />
       </n-badge>
       <n-flex vertical :size="4" class="flex-1 min-w-0">
         <n-flex align="center" justify="space-between" :gap="8">
@@ -240,17 +240,33 @@ const handleBatchToggle = () => {
 
 <style lang="scss" scoped>
 .hula-room-list-item {
-  min-height: 76px;
-  padding: 12px;
+  min-height: 68px;
+  padding: 10px;
   cursor: pointer;
   transition:
-    background-color 0.2s var(--hula-motion-ease-standard),
-    box-shadow 0.2s var(--hula-motion-ease-standard),
-    opacity 0.2s var(--hula-motion-ease-standard);
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
   user-select: none;
-  border-radius: 12px;
+  border-radius: var(--hula-radius-sm);
   margin: 0 8px 4px;
   border: 1px solid transparent;
+  display: flex;
+  gap: 10px;
+  position: relative;
+
+  &:hover {
+    background: var(--hula-surface-list-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--hula-color-primary-500);
+    outline-offset: 2px;
+  }
+
+  &:active {
+    background: var(--hula-surface-list-selected);
+  }
 
   &:hover {
     background: var(--hula-surface-list-hover);
@@ -268,6 +284,46 @@ const handleBatchToggle = () => {
   &--selected {
     background: var(--hula-surface-session-active);
     box-shadow: var(--hula-surface-session-active-shadow);
+    border: 1px solid transparent;
+    position: relative;
+
+    // TJG 原型：选中态左侧品牌色指示条
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      background: var(--hula-color-primary-500);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .hula-room-list-item__name {
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .hula-room-list-item__time {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .hula-room-list-item__preview {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .hula-room-list-item__placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .hula-room-list-item__typing {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .n-icon {
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
   }
 
   &--batch {
@@ -330,9 +386,9 @@ const handleBatchToggle = () => {
 }
 
 .hula-room-list-item__time {
-  font-size: 12px;
+  font-size: 11px;
   line-height: 18px;
-  color: var(--hula-text-tertiary);
+  color: var(--hula-text-muted);
 }
 
 .hula-room-list-item__preview,

@@ -11,7 +11,6 @@ import type {
 } from 'matrix-js-sdk/guest'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixGuestService')
 
@@ -233,4 +232,5 @@ class MatrixGuestService extends BaseMatrixService {
 }
 
 const _matrixGuestService = new MatrixGuestService()
+
 export { _matrixGuestService as matrixGuestService }

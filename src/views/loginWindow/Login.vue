@@ -1,5 +1,8 @@
 <template>
-  <n-config-provider :theme="naiveTheme" data-tauri-drag-region class="login-box size-full rounded-8px select-none">
+  <n-config-provider
+    :theme="naiveTheme"
+    data-tauri-drag-region
+    class="login-box size-full rounded-8px select-none login-bg-animated">
     <ActionBar :max-w="false" :shrink="false" proxy />
 
     <ManualLoginForm

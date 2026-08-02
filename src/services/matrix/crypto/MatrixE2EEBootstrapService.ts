@@ -3,18 +3,17 @@ import type { VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { CryptoHealthMonitor } from './CryptoHealthMonitor'
-import type { CryptoHealthCallbacks, CryptoHealthStatus, E2EEStatus } from './types'
 import type {
   CrossSigningStatusResult,
   DeviceVerificationResult,
   KeyBackupRestoreResult,
   KeyBackupSetupResult,
   KeyExportResult,
-  KeyImportResult,
+  KeyImportResult
 } from './CryptoSDKAdapter'
 import { cryptoSDKAdapter } from './CryptoSDKAdapter'
-import type { EncryptionAlgorithm } from './types'
 import { matrixCryptoService } from './MatrixCryptoService'
+import type { CryptoHealthCallbacks, CryptoHealthStatus, E2EEStatus, EncryptionAlgorithm } from './types'
 
 const logger = createLogger('E2EEManager')
 

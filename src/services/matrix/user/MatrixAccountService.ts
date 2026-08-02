@@ -282,7 +282,7 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const result = await client.requestAdd3pidMsisdnToken(clientSecret, countryCode, phoneNumber, sendAttempt)
       logger.info(`[MatrixAccount] 请求 3PID 手机验证令牌成功: ${countryCode}${phoneNumber}`)
-      const extra = result as unknown as Record<string, unknown>
+      const extra = { ...result } as Record<string, unknown>
       return {
         sid: result.sid,
         msisdn: extra.msisdn as string,
@@ -391,7 +391,7 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const result = await client.getCapabilitiesManager().getCapabilities()
       logger.info('[MatrixAccount] 获取能力声明成功')
-      return (result as unknown as Record<string, unknown>) ?? {}
+      return result ? ({ ...result } as Record<string, unknown>) : {}
     } catch (err) {
       logger.error(`[MatrixAccount] 获取能力声明失败: ${err}`)
       return {}
@@ -404,7 +404,7 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const result = await client.getThirdPartyManager().getThirdpartyProtocols()
       logger.info('[MatrixAccount] 获取第三方协议成功')
-      return result as unknown as Record<string, unknown>
+      return { ...result } as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixAccount] 获取第三方协议失败: ${err}`)
       return {}
@@ -454,7 +454,7 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const accountManager = client.getAccountManager() as unknown as AccountManagerMethods
       const result = await accountManager.getEventStream(from, timeout)
-      return result as unknown as Record<string, unknown>
+      return { ...result } as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixAccount] 获取事件流失败: ${err}`)
       return {}

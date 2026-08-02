@@ -555,10 +555,7 @@ class SpaceService extends BaseMatrixService {
       const manager = this.getSpaceManager()
       const spacesPromise = manager.getUserSpaces()
       const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(
-          () => reject(new Error('getUserSpaces timeout')),
-          USER_SPACES_TIMEOUT_MS
-        )
+        timeoutId = setTimeout(() => reject(new Error('getUserSpaces timeout')), USER_SPACES_TIMEOUT_MS)
       })
       const spaces = await Promise.race([spacesPromise, timeoutPromise])
       if (timeoutId) clearTimeout(timeoutId)

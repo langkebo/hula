@@ -413,8 +413,7 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.listSpaces(from, limit)
       return {
-        // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-        spaces: (result?.spaces ?? []).map((s) => s as unknown as Record<string, unknown>),
+        spaces: (result?.spaces ?? []).map((s) => ({ ...s }) as Record<string, unknown>),
         next_batch: result?.next_batch
       }
     } catch (err) {
@@ -438,8 +437,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpace(spaceId)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK 返回类型与本地接口不完全匹配
-      return result as unknown as Record<string, unknown>
+      return result ? ({ ...result } as Record<string, unknown>) : null
     } catch (err) {
       logger.error(`[Admin] 获取空间详情失败: ${err}`)
       return null
@@ -450,7 +448,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpaceUsers(spaceId)
-      return (result?.users ?? []) as unknown as Array<Record<string, unknown>>
+      return (result?.users ?? []).map((u) => ({ ...u }) as Record<string, unknown>)
     } catch (err) {
       logger.error(`[Admin] 获取空间用户失败: ${err}`)
       return []
@@ -461,7 +459,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpaceRooms(spaceId)
-      return (result?.rooms ?? []) as unknown as Array<Record<string, unknown>>
+      return (result?.rooms ?? []).map((r) => ({ ...r }) as Record<string, unknown>)
     } catch (err) {
       logger.error(`[Admin] 获取空间房间失败: ${err}`)
       return []
@@ -472,7 +470,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpaceStats(spaceId)
-      return result as unknown as Record<string, unknown>
+      return result ? ({ ...result } as Record<string, unknown>) : null
     } catch (err) {
       logger.error(`[Admin] 获取空间统计失败: ${err}`)
       return null

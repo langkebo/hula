@@ -1,6 +1,5 @@
-import type { IPusher, IPusherRequest, IPushRule, IPushRules, PushRuleAction } from 'matrix-js-sdk'
+import type { IPusher, IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
 import { PushRuleKind, TweakName } from 'matrix-js-sdk'
-import type { MatrixClient } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { shouldNotifyForEventType } from './pushRules'

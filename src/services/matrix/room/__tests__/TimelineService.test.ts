@@ -135,7 +135,11 @@ describe('MatrixRoomTimelineService', () => {
 
   describe('getRoomUnreadCount', () => {
     it('returns unread_notifications and defaults missing highlight to 0', async () => {
-      eventOps.getRoomUnreadCount.mockResolvedValue({ unread_notifications: 3, notification_count: 0, highlight_count: 0 })
+      eventOps.getRoomUnreadCount.mockResolvedValue({
+        unread_notifications: 3,
+        notification_count: 0,
+        highlight_count: 0
+      })
       expect(await service.getRoomUnreadCount('!r')).toEqual({
         unread_notifications: 3,
         unread_highlighted: 0

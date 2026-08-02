@@ -77,13 +77,30 @@ export const useLoginFlow = () => {
   }
 
   const init = async () => {
-    await sessionOrchestrator.bootstrapPostLoginState({
-      account: info.value.account || userStore.userInfo?.account || userStore.userInfo?.email,
-      displayName: info.value.name || userStore.userInfo?.name,
-      avatar: info.value.avatar || userStore.userInfo?.avatar,
-      client: isDesktop() ? 'PC' : 'MOBILE'
-    })
-    await setLoginState()
+    try {
+      await sessionOrchestrator.bootstrapPostLoginState({
+        account: info.value.account || userStore.userInfo?.account || userStore.userInfo?.email,
+        displayName: info.value.name || userStore.userInfo?.name,
+        avatar: info.value.avatar || userStore.userInfo?.avatar,
+        client: isDesktop() ? 'PC' : 'MOBILE'
+      })
+      await setLoginState()
+    } catch (err) {
+      logger.error('初始化失败:', err)
+      // token 过期/无效时清除本地会话并跳转登录页，避免组件加载失败导致白屏
+      try {
+        await sessionOrchestrator.resetLocalSessionState()
+      } catch (resetErr) {
+        logger.warn('清除本地会话状态失败:', resetErr)
+      }
+      settingStore.setAutoLogin(false)
+      const loginPath = isMobile() ? '/mobile/login' : '/login'
+      if (router) {
+        await router.replace(loginPath)
+      } else if (typeof window !== 'undefined') {
+        window.location.href = loginPath
+      }
+    }
   }
 
   const routerOrOpenHomeWindow = async () => {

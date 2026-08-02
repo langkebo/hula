@@ -303,7 +303,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         logger.warn('[SynapseRust] 响应 status=ok 但缺少 data 字段，尝试将整个响应作为数据返回')
         const { data: _, status: __, code: ___, message: ____, ...rest } = wrapped as Record<string, unknown>
         if (Object.keys(rest).length > 0) {
-          return rest as unknown as T
+          return rest as T
         }
         return undefined
       }
@@ -1036,7 +1036,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const client = matrixClientService.getClient()
       if (!client) return []
       const result = await client.getThirdPartyManager().getThirdpartyLocation(protocol, params as never)
-      return (result as unknown as Array<Record<string, unknown>>) || []
+      return (result as Array<Record<string, unknown>>) || []
     } catch (err) {
       logger.error(`[SynapseRust] 获取第三方位置失败: ${err}`)
       return []
@@ -1048,7 +1048,7 @@ class SynapseRustExtensionsService extends BaseMatrixService {
       const client = matrixClientService.getClient()
       if (!client) return []
       const result = await client.getThirdPartyManager().getThirdpartyUser(protocol, params as never)
-      return (result as unknown as Array<Record<string, unknown>>) || []
+      return (result as Array<Record<string, unknown>>) || []
     } catch (err) {
       logger.error(`[SynapseRust] 获取第三方用户失败: ${err}`)
       return []

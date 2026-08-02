@@ -10,7 +10,7 @@ describe('panelWidth persistence', () => {
 
   it('has default panelWidth values', () => {
     const store = useSettingStore()
-    expect(store.panelWidth).toEqual({ left: 280, right: 320 })
+    expect(store.panelWidth).toEqual({ left: 320, right: 360 })
   })
 
   it('setPanelWidth updates left panel width with clamp', () => {

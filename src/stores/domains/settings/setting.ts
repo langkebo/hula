@@ -208,8 +208,8 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       lockTimeout: 5
     },
     panelWidth: {
-      left: 280,
-      right: 320
+      left: 320,
+      right: 360
     }
   }),
   persist: {

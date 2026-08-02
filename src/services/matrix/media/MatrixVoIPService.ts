@@ -297,7 +297,7 @@ class MatrixVoIPService extends BaseMatrixService {
   }
 
   private getCallById(callId: string, client: MatrixClient): VoIPCall | undefined {
-    const calls = (client as unknown as { getCallHandler?: () => VoIPCallHandler }).getCallHandler?.()?.calls || {}
+    const calls = (client as { getCallHandler?: () => VoIPCallHandler }).getCallHandler?.()?.calls || {}
     return calls[callId]
   }
 
@@ -553,7 +553,7 @@ class MatrixVoIPService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const r = (await client.getTurnServerManager().getTurnServerConfig()) as unknown as Record<string, unknown>
+      const r = { ...(await client.getTurnServerManager().getTurnServerConfig()) } as Record<string, unknown>
       logger.info('[VoIP] 获取 TURN 服务器配置成功')
       return {
         username: (r.username as string) ?? '',
@@ -588,7 +588,7 @@ class MatrixVoIPService extends BaseMatrixService {
     }
 
     try {
-      const r = (await client.getTurnServerManager().getTurnServerConfig()) as unknown as Record<string, unknown>
+      const r = { ...(await client.getTurnServerManager().getTurnServerConfig()) } as Record<string, unknown>
       const uris = (r.uris as string[]) ?? []
 
       if (uris.length === 0) {

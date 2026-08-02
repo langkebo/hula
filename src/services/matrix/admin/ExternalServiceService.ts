@@ -91,8 +91,7 @@ export class AdminExternalServiceService {
    */
   async listServices(params: ListServicesParams = {}): Promise<ExternalService[]> {
     try {
-      const serviceType =
-        params.serviceType && params.serviceType !== 'all' ? params.serviceType : undefined
+      const serviceType = params.serviceType && params.serviceType !== 'all' ? params.serviceType : undefined
       return await this.getClient().getAdminManager().externalService.listServices(serviceType)
     } catch (err) {
       logger.error(`[AdminExternalService] listServices 失败: ${err}`)
@@ -113,9 +112,7 @@ export class AdminExternalServiceService {
    * 更新外部服务配置。
    */
   async updateService(asId: string, request: UpdateExternalServiceRequest): Promise<ExternalService> {
-    const result = await this.getClient()
-      .getAdminManager()
-      .externalService.updateService(asId, request)
+    const result = await this.getClient().getAdminManager().externalService.updateService(asId, request)
     logger.info(`[AdminExternalService] 更新外部服务成功: ${asId}`)
     return result
   }
@@ -158,9 +155,7 @@ export class AdminExternalServiceService {
    * 触发一次健康检查并返回最新状态。
    */
   async checkServiceHealth(asId: string): Promise<HealthCheckResult> {
-    const result = await this.getClient()
-      .getAdminManager()
-      .externalService.checkServiceHealth(asId)
+    const result = await this.getClient().getAdminManager().externalService.checkServiceHealth(asId)
     logger.info(`[AdminExternalService] 健康检查完成: ${asId} healthy=${result?.is_healthy}`)
     return result
   }

@@ -76,10 +76,8 @@ vi.spyOn(matrixServerNotificationService as any, 'getClient').mockReturnValue({
     server: {
       createServerNotification: (payload: Record<string, unknown>) =>
         authedRequestImpl('POST', '/_synapse/admin/v1/server_notifications', undefined, payload),
-      getServerNotification: (id: string) =>
-        authedRequestImpl('GET', `/_synapse/admin/v1/server_notifications/${id}`),
-      listActiveServerNotifications: () =>
-        authedRequestImpl('GET', '/_synapse/admin/v1/server_notifications/active'),
+      getServerNotification: (id: string) => authedRequestImpl('GET', `/_synapse/admin/v1/server_notifications/${id}`),
+      listActiveServerNotifications: () => authedRequestImpl('GET', '/_synapse/admin/v1/server_notifications/active'),
       markServerNotificationAsRead: (id: string) =>
         authedRequestImpl('POST', `/_synapse/admin/v1/server_notifications/${id}/read`)
     }

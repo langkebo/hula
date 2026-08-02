@@ -6,7 +6,7 @@
  */
 import { createClient, extendMatrixClientWithManagers, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixAccountService } from '../MatrixAccountService'
 import { matrixDeviceService } from '../MatrixDeviceService'

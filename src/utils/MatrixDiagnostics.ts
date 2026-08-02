@@ -104,11 +104,18 @@ export class MatrixDiagnostics {
       results = []
       for (const endpoint of endpoints) {
         try {
-          await HttpClient.get<Record<string, unknown>>(`${this.homeserverUrl}${endpoint}`)
+          // Sliding Sync 协议要求 POST 请求（GET 返回 405 Method Not Allowed）。
+          // 无认证 POST 返回 401 表示端点可用；404 表示端点不存在。
+          // 与 worker 内 handleProbeSlidingSyncEndpoints 逻辑保持一致。
+          const response = await fetch(`${this.homeserverUrl}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          })
           results.push({
             endpoint,
-            status: 200,
-            available: true
+            status: response.status,
+            available: response.status !== 404
           })
         } catch (error) {
           results.push({

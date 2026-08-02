@@ -48,14 +48,14 @@
   /* 阶段 9：三栏亮度渐进（需求文档 3.1.1）—— L0 最深 → L1 中等 → L2 最浅 */
   --hula-surface-panel: #ffffff;
   --hula-surface-list: #f7f7f7;
-  --hula-surface-sidebar: #f3f3f3;
+  --hula-surface-sidebar: #64a29c;
   --hula-surface-panel-muted: #f5f5f5;
   --hula-surface-subtle: #f1f1f1;
   --hula-surface-elevated: #fdfdfd;
   --hula-surface-search: #eaeaea;
-  --hula-surface-sidebar-hover: rgba(0, 0, 0, 0.05);
-  --hula-surface-sidebar-active: rgba(0, 0, 0, 0.08);
-  --hula-surface-sidebar-selected: rgba(0, 0, 0, 0.08);
+  --hula-surface-sidebar-hover: rgba(255, 255, 255, 0.1);
+  --hula-surface-sidebar-active: rgba(255, 255, 255, 0.15);
+  --hula-surface-sidebar-selected: rgba(255, 255, 255, 0.15);
   --hula-surface-list-hover: color-mix(in srgb, var(--hula-text-secondary) 8%, transparent);
   --hula-surface-list-selected: color-mix(in srgb, var(--hula-color-primary-500) 12%, transparent);
   --hula-surface-session-active: linear-gradient(135deg, #4ecdc4 0%, #3db8a8 100%);
@@ -72,6 +72,20 @@
   --hula-border-contrast: rgba(255, 255, 255, 0.08);
   --hula-border-inverse-muted: rgba(255, 255, 255, 0.6);
   --hula-border-layout-divider: var(--hula-border-default);
+
+  /* === TJG 原型新增 Token (Light) === */
+  --hula-radius-xl: 16px;
+  --hula-radius-2xl: 20px;
+  --hula-shadow-panel: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --hula-shadow-bubble: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --hula-surface-deepest: #fafafa;
+  --hula-surface-dark-mid: #f7f7f7;
+  --hula-surface-dark-hover: #f0f0f0;
+  --hula-surface-popover: #ffffff;
+  --hula-surface-search-dark: #f0f0f0;
+  --hula-accent-dim: #0f7a66;
+  --hula-accent-soft: rgba(19, 152, 127, 0.1);
+  --hula-accent-active: rgba(19, 152, 127, 0.25);
 
   --hula-status-online: #52c41a;
   --hula-status-offline: #909090;
@@ -348,11 +362,11 @@
   --app-bg-color: var(--hula-surface-app);
   --left-bg-color: var(--hula-surface-sidebar);
   --left-active-bg-color: var(--hula-surface-sidebar-selected);
-  --left-text-color: #e3e3e3;
-  --left-icon-color: #e3e3e3;
-  --left-active-hover: #f1f1f1;
+  --left-text-color: #ffffff;
+  --left-icon-color: #ffffff;
+  --left-active-hover: #ffffff;
   --left-bg-hover: var(--hula-surface-sidebar-hover);
-  --left-active-icon-color: #f1f1f1;
+  --left-active-icon-color: #ffffff;
   --left-win-icon-color: rgba(255, 255, 255, 0.4);
   --center-bg-color: var(--hula-surface-panel);
   --right-bg-color: var(--hula-surface-subtle);
@@ -490,14 +504,14 @@ html[data-theme='dark'] {
   /* 阶段 9：三栏亮度渐进（需求文档 3.1.1）—— L0 最深 → L1 中等 → L2 最浅 */
   --hula-surface-panel: #313338;
   --hula-surface-list: #2b2d31;
-  --hula-surface-sidebar: #1e1f22;
+  --hula-surface-sidebar: #3e6564;
   --hula-surface-panel-muted: #262626;
   --hula-surface-subtle: #303030;
   --hula-surface-elevated: #303030;
   --hula-surface-search: #383a40;
-  --hula-surface-sidebar-hover: rgba(255, 255, 255, 0.05);
-  --hula-surface-sidebar-active: rgba(255, 255, 255, 0.08);
-  --hula-surface-sidebar-selected: rgba(255, 255, 255, 0.08);
+  --hula-surface-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --hula-surface-sidebar-active: rgba(255, 255, 255, 0.12);
+  --hula-surface-sidebar-selected: rgba(255, 255, 255, 0.12);
   --hula-surface-list-hover: rgba(255, 255, 255, 0.05);
   --hula-surface-list-selected: rgba(19, 152, 127, 0.18);
   --hula-surface-session-active: linear-gradient(135deg, #3db8a8 0%, #2d9a8c 100%);
@@ -517,6 +531,20 @@ html[data-theme='dark'] {
   --hula-border-contrast: rgba(255, 255, 255, 0.06);
   --hula-border-inverse-muted: rgba(255, 255, 255, 0.6);
   --hula-border-layout-divider: #000000;
+
+  /* === TJG 原型新增 Token (Dark) === */
+  --hula-radius-xl: 16px;
+  --hula-radius-2xl: 20px;
+  --hula-shadow-panel: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --hula-shadow-bubble: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --hula-surface-deepest: #161616;
+  --hula-surface-dark-mid: #1b1b1b;
+  --hula-surface-dark-hover: #323232;
+  --hula-surface-popover: #303030;
+  --hula-surface-search-dark: #282828;
+  --hula-accent-dim: #10806a;
+  --hula-accent-soft: rgba(19, 152, 127, 0.15);
+  --hula-accent-active: rgba(19, 152, 127, 0.6);
 
   --hula-status-online: #73d13d;
   --hula-status-offline: #595959;
@@ -707,4 +735,46 @@ html[data-theme='dark'] {
   --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.2) 0%, rgba(130, 193, 187, 0.2) 150%);
   --border-active-color: var(--hula-brand-sidebar);
   --msg-active-color: rgba(19, 152, 127, 0.4);
+}
+
+/* === TJG 原型全局动画 === */
+@keyframes msgIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+@keyframes authBgMove {
+  0%, 100% {
+    background-size: 130vmax 130vmax, 80vmax 80vmax, 90vmax 90vmax, 110vmax 110vmax, 90vmax 90vmax;
+    background-position: -80vmax -80vmax, 60vmax -30vmax, 10vmax 10vmax, -30vmax -10vmax, 50vmax 50vmax;
+  }
+  25% {
+    background-size: 100vmax 100vmax, 90vmax 90vmax, 100vmax 100vmax, 90vmax 90vmax, 60vmax 60vmax;
+    background-position: -60vmax -90vmax, 50vmax -40vmax, 0vmax -20vmax, -40vmax -20vmax, 40vmax 60vmax;
+  }
+  50% {
+    background-size: 80vmax 80vmax, 110vmax 110vmax, 80vmax 80vmax, 60vmax 60vmax, 80vmax 80vmax;
+    background-position: -50vmax -70vmax, 40vmax -30vmax, 10vmax 0vmax, 20vmax 10vmax, 30vmax 70vmax;
+  }
+  75% {
+    background-size: 90vmax 90vmax, 90vmax 90vmax, 100vmax 100vmax, 90vmax 90vmax, 70vmax 70vmax;
+    background-position: -50vmax -40vmax, 50vmax -30vmax, 20vmax 0vmax, -10vmax 10vmax, 40vmax 60vmax;
+  }
 }

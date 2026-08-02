@@ -1,6 +1,6 @@
-import { mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import LoginBottomBar from '../LoginBottomBar.vue'
 
@@ -14,10 +14,7 @@ vi.mock('@/utils/PlatformConstants', () => ({
 }))
 
 // 读取组件源码用于验证模板内容（NPopover 在测试环境中不渲染默认 slot）
-const componentSource = readFileSync(
-  resolve(__dirname, '../LoginBottomBar.vue'),
-  'utf-8'
-)
+const componentSource = readFileSync(resolve(__dirname, '../LoginBottomBar.vue'), 'utf-8')
 
 describe('LoginBottomBar guest entry', () => {
   it('template contains guest-login button', () => {

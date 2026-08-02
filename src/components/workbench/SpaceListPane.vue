@@ -171,8 +171,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
-import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import SpaceListItemCard from './SpaceListItemCard.vue'
 
 export type SpaceListItem = {

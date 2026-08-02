@@ -202,9 +202,28 @@ export const leftHook = () => {
     }
   }
 
+  /** 将路由路径映射回导航项 url，用于页面刷新时恢复 activeUrl 高亮状态 */
+  const pathToWorkbenchUrl = (path: string): string | null => {
+    if (path.startsWith('/message')) return 'message'
+    if (path.startsWith('/friend')) return 'friendsList'
+    if (path.startsWith('/room')) return 'roomList'
+    if (path.startsWith('/space')) return 'space'
+    if (path.startsWith('/search')) return 'search'
+    return null
+  }
+
   onMounted(async () => {
-    /** 页面加载的时候默认显示消息列表 */
-    pageJumps(activeUrl.value)
+    /**
+     * 页面加载时：若已在工作台路由则保留当前路由（仅更新 activeUrl 高亮），
+     * 否则跳转到默认的消息列表。避免页面刷新时强制回退到 /message。
+     */
+    const currentPath = router.currentRoute.value.path
+    const workbenchUrl = pathToWorkbenchUrl(currentPath)
+    if (workbenchUrl) {
+      activeUrl.value = workbenchUrl
+    } else {
+      pageJumps(activeUrl.value)
+    }
     window.addEventListener('click', closeMenu, true)
 
     useMitt.on(MittEnum.SHRINK_WINDOW, (event: boolean) => {

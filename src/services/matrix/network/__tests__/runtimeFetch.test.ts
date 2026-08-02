@@ -126,10 +126,10 @@ describe('runtimeFetch', () => {
     // nativeFetch 不应被调用
     expect(nativeFetch).not.toHaveBeenCalled()
     // 浏览器 fetch 应通过 Vite proxy URL 调用
-    expect(browserFetch).toHaveBeenCalledWith(
-      'http://localhost:6130/_matrix/client/v3/login',
-      { credentials: 'omit', method: 'POST' }
-    )
+    expect(browserFetch).toHaveBeenCalledWith('http://localhost:6130/_matrix/client/v3/login', {
+      credentials: 'omit',
+      method: 'POST'
+    })
     // 不应有 warn 日志
     expect(warnMock).not.toHaveBeenCalled()
   })

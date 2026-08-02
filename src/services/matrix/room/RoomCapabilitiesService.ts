@@ -59,9 +59,10 @@ class RoomCapabilitiesService {
         const payload: RoomCapabilitiesPayload = {
           room_id: result.room_id ?? roomId,
           room_version: result.room_version,
-          capabilities: result.capabilities as unknown as RoomCapabilitiesPayload['capabilities'],
-          features: (result as unknown as RoomCapabilitiesPayload).features,
-          join_rule: (result as unknown as RoomCapabilitiesPayload).join_rule
+          // SDK 的 RoomCapabilities 与本地契约字段兼容，直接展开避免 as unknown
+          capabilities: result.capabilities as RoomCapabilitiesPayload['capabilities'],
+          features: result.features as RoomCapabilitiesPayload['features'],
+          join_rule: result.join_rule
         }
         this.cache.set(roomId, { payload, expiresAt: Date.now() + CAPABILITY_TTL_MS })
         return payload

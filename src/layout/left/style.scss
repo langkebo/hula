@@ -3,28 +3,39 @@
 
 @mixin action() {
   &:not(.active):hover {
-    background: var(--left-bg-hover);
-    border-radius: 8px;
-    color: var(--left-active-hover);
+    background: var(--hula-surface-sidebar-hover);
+    border-radius: var(--hula-radius-sm);
+    color: var(--left-text-color);
     cursor: pointer;
-    animation: linearAnimation 3s linear forwards;
   }
 }
 
 .left {
   background: var(--left-bg-color);
+  border-right: 1px solid var(--hula-border-layout-divider);
 }
 
 .top-action,
 .bottom-action,
 .more {
   position: relative;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hula-radius-sm);
+  transition: all 0.15s ease;
   @include action;
 }
 
-/* 激活项左侧指示条 — 对齐原型设计 */
+/* 激活态左侧指示条 — 原型 nav-icon.active::before */
 .top-action.active,
 .bottom-action.active {
+  background: var(--hula-surface-sidebar-selected);
+  color: var(--left-active-icon-color);
+  border-radius: var(--hula-radius-sm);
+
   &::before {
     content: '';
     position: absolute;

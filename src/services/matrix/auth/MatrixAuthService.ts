@@ -591,7 +591,7 @@ export class MatrixAuthService {
   }> {
     try {
       const result = await createTemporaryMatrixClient().registerRequest({})
-      const r = result as unknown as {
+      const r = result as {
         session?: string
         flows?: Array<{ type: string; stages?: string[] }>
       }
@@ -742,10 +742,7 @@ export class MatrixAuthService {
   static async getRegisterFlows(): Promise<Array<{ type: string; stages?: string[]; [key: string]: unknown }>> {
     try {
       const result = await createTemporaryMatrixClient().registerRequest({})
-      return (
-        (result as unknown as { flows?: Array<{ type: string; stages?: string[]; [key: string]: unknown }> }).flows ??
-        []
-      )
+      return (result as { flows?: Array<{ type: string; stages?: string[]; [key: string]: unknown }> }).flows ?? []
     } catch (err) {
       const matrixErr = err as {
         errcode?: string

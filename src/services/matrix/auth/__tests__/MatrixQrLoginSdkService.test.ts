@@ -9,9 +9,7 @@ vi.mock('matrix-js-sdk', async (importOriginal) => {
   const actual = await importOriginal<typeof import('matrix-js-sdk')>()
   return {
     ...actual,
-    MSC4108SignInWithQR: vi.fn().mockImplementation(function () {
-      return { generateQrLoginToken: mockGenerateQrLoginToken }
-    })
+    MSC4108SignInWithQR: vi.fn().mockImplementation(() => ({ generateQrLoginToken: mockGenerateQrLoginToken }))
   }
 })
 

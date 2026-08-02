@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 const props = defineProps<{
   userId: string

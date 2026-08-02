@@ -39,7 +39,7 @@ export class MatrixRoomCreationService {
         getLiveTimeline: () => ({ getEvents: () => [] }),
         getMember: () => null,
         getJoinedMembers: () => []
-      } as unknown as Room
+      } as Room
     }
     try {
       return await matrixClientService.createRoom(options)
@@ -128,10 +128,8 @@ export class MatrixRoomCreationService {
     const client = matrixClientService.getClient()
     const isEncrypted = client?.isRoomEncrypted?.(room.roomId) ?? false
 
-    const roomAsRecord = room as unknown as Record<string, unknown>
-    const isSpaceRoom = typeof roomAsRecord.isSpaceRoom === 'function' ? (roomAsRecord.isSpaceRoom() as boolean) : false
-    const dmInviter =
-      typeof roomAsRecord.getDMInviter === 'function' ? (roomAsRecord.getDMInviter() as string | undefined) : undefined
+    const isSpaceRoom = (room as { isSpaceRoom?: () => boolean }).isSpaceRoom?.() ?? false
+    const dmInviter = (room as { getDMInviter?: () => string | undefined }).getDMInviter?.()
 
     let unreadNotificationCount = 0
     let highlightNotificationCount = 0

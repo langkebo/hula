@@ -7,7 +7,7 @@ import { ExtendedProfileUnsupportedError, profileService, useProfile } from '../
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const server = setupMswServer(
+const _server = setupMswServer(
   http.get(`${TEST_BASE_URL}/_matrix/client/unstable/uk.tcpip.msc4133/profile/:userId`, () => {
     return HttpResponse.json({ resume: 'Hello world', sex: 2, region: 'Shanghai' })
   }),

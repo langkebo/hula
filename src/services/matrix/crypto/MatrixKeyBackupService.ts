@@ -29,12 +29,14 @@ class MatrixKeyBackupService extends BaseMatrixService {
   }
 
   private getKeyBackupManager(): KeyBackupManager | null {
-    const client = this.getClient() as unknown as MatrixClientExtended
+    // MatrixClientExtended 扩展了 MatrixClient 并添加了 manager getter
+    // SDK 的 matrix-client-extensions.d.ts 已声明这些方法
+    const client = this.getClient() as MatrixClientExtended
     return client.getKeyBackupManager?.() ?? null
   }
 
   private getSecureBackupManager(): SecureBackupManager | null {
-    const client = this.getClient() as unknown as MatrixClientExtended
+    const client = this.getClient() as MatrixClientExtended
     return client.getSecureBackupManager?.() ?? null
   }
 
@@ -111,9 +113,9 @@ class MatrixKeyBackupService extends BaseMatrixService {
     }
     if (
       'scheduleKeyBackupSend' in keyBackupManager &&
-      typeof (keyBackupManager as unknown as Record<string, unknown>).scheduleKeyBackupSend === 'function'
+      typeof (keyBackupManager as Record<string, unknown>).scheduleKeyBackupSend === 'function'
     ) {
-      ;(keyBackupManager as unknown as Record<string, () => void>).scheduleKeyBackupSend()
+      ;(keyBackupManager as { scheduleKeyBackupSend(): void }).scheduleKeyBackupSend()
     } else {
       logger.warn('[KeyBackup] KeyBackupManager 不支持 scheduleKeyBackupSend，跳过调度')
     }
@@ -387,7 +389,9 @@ class MatrixKeyBackupService extends BaseMatrixService {
       const secureBackupManager = this.getSecureBackupManager()
       if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
       const result = await secureBackupManager.getSecureBackup(backupId)
-      return result as unknown as Record<string, unknown>
+      // SecureBackupManager.getSecureBackup() 返回 SecureBackupInfo，
+      // 但服务层允许返回 null 表示"未找到"，所以用对象展开转换
+      return { ...result } as Record<string, unknown>
     } catch (err) {
       logger.error(`[KeyBackup] 获取安全备份失败: ${backupId}, ${err}`)
       return null

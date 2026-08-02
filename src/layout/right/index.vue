@@ -2,15 +2,16 @@
   <!-- Step 2.3：视图驱动动态宽度 + 拖拽调整 + 响应式断点全屏 -->
   <main
     data-tauri-drag-region
-    class="bg-[--right-bg-color] flex flex-col min-h-0 border-l border-[--hula-border-layout-divider] relative"
+    class="flex flex-col min-h-0 relative"
     :class="{
       'right-pane-animated': transitionEnabled,
-      'flex-1 w-full': isRightPaneFullscreen
+      'flex-1 w-full': isRightPaneFullscreen || isChatFlexMode
     }"
-    :style="isRightPaneFullscreen ? undefined : { width: `${paneWidth}px`, flex: '0 0 auto' }">
+    style="background: var(--right-bg-color); border-left: 1px solid var(--hula-border-layout-divider)"
+    :style="isRightPaneFullscreen || isChatFlexMode ? undefined : { width: `${paneWidth}px`, flex: '0 0 auto' }">
     <!-- Step 2.3：左边缘拖拽分隔条（14px，hover 显示拖拽图标） -->
     <div
-      v-if="!isRightPaneFullscreen"
+      v-if="!isRightPaneFullscreen && !isChatFlexMode"
       class="right-pane-drag-handle"
       data-test="right-pane-drag-handle"
       @pointerdown="startDrag">
@@ -127,6 +128,9 @@ watchEffect(() => {
 
 // 只要路由在消息页且选中了会话（即便会话详情尚未同步），就展示 ChatBox
 const shouldShowChat = computed(() => rightView.value === 'chat' && !!currentSessionRoomId.value)
+
+// 聊天视图使用 flex-1 自适应剩余空间（匹配截图三栏布局）
+const isChatFlexMode = computed(() => shouldShowChat.value && !isShrink.value)
 
 // 详情视图：好友详情或房间详情（路由参数派生 content）
 const showDetails = computed(() => rightView.value === 'details')

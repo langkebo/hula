@@ -505,7 +505,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     try {
       const result = (await client
         .getRelationsManager()
-        .fetchRelations(roomId, eventId, null, null, options as never)) as unknown as RelationsResponse
+        .fetchRelations(roomId, eventId, null, null, options as never)) as RelationsResponse
       logger.info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${result.chunk?.length ?? 0}`)
       return result
     } catch (err) {
@@ -525,7 +525,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     try {
       const result = (await client
         .getRelationsManager()
-        .fetchRelations(roomId, eventId, relType, null, options as never)) as unknown as RelationsResponse
+        .fetchRelations(roomId, eventId, relType, null, options as never)) as RelationsResponse
       logger.info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${result.chunk?.length ?? 0}`)
       return result
     } catch (err) {
@@ -540,7 +540,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     try {
       const result = (await client
         .getRelationsManager()
-        .getAggregations(roomId, eventId, relType)) as unknown as AggregationsResponse
+        .getAggregations(roomId, eventId, relType)) as AggregationsResponse
       logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
       return result
     } catch (err) {

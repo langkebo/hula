@@ -61,6 +61,17 @@ declare module 'matrix-js-sdk' {
   // 此处添加 topic 属性扩展，避免大量代码重构。
   interface Room {
     topic?: string
+    /**
+     * Sliding Sync 返回的原始未读通知数据。
+     * 当 Sliding Sync 提供 unread_notifications 时，优先使用此字段；
+     * 否则回退到 getUnreadNotificationCount() 方法。
+     */
+    syncData?: {
+      unread_notifications?: {
+        notification_count?: number
+        highlight_count?: number
+      }
+    }
   }
 
   // ==================== 补充 SDK 缺失的类型 ====================

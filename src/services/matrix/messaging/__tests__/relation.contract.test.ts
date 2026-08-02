@@ -74,7 +74,8 @@ describe('Message-relation service contract', () => {
     }
     // Directly assign getRelationsManager since extendMatrixClientWithManagers()
     // is not called in the test environment, so the prototype method is absent.
-    ;(realClient as unknown as { getRelationsManager: () => typeof mockRelationsManager }).getRelationsManager = () => mockRelationsManager
+    ;(realClient as unknown as { getRelationsManager: () => typeof mockRelationsManager }).getRelationsManager = () =>
+      mockRelationsManager
     vi.spyOn(matrixClientService, 'getClient').mockImplementation(() => realClient)
   })
 
