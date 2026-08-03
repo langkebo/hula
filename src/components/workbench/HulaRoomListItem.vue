@@ -68,7 +68,12 @@
           <span v-if="isMuted || isShielded" class="mute-icon">
             <svg class="size-11px"><use href="#volume-off" /></svg>
           </span>
-          <span v-if="unreadCount > 0" class="unread-badge" :class="{ mention: hasMention }">
+          <RoomInviteActions
+            v-if="isInvite"
+            :room-id="roomId"
+            @accepted="handleAcceptInvite"
+            @rejected="handleRejectInvite" />
+          <span v-else-if="unreadCount > 0" class="unread-badge" :class="{ mention: hasMention }">
             {{ unreadCount > 99 ? '99+' : unreadCount }}
           </span>
         </div>
@@ -80,6 +85,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import RoomInviteActions from '@/components/room/RoomInviteActions.vue'
 import { useTyping } from '@/composables/chat/useTyping'
 import { RoomTypeEnum, ThemeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
@@ -238,6 +244,14 @@ const handleContextMenu = (event: MouseEvent) => {
 
 const handleBatchToggle = () => {
   emit('batch-toggle', roomId.value)
+}
+
+const handleAcceptInvite = () => {
+  emit('accept-invite', props.item)
+}
+
+const handleRejectInvite = () => {
+  emit('reject-invite', props.item)
 }
 
 const handleAvatarError = (event: Event) => {
