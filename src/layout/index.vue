@@ -10,16 +10,9 @@
       :watermark-text="watermarkText"
       :show-block-message="true" />
     <div class="flex flex-1 min-h-0">
-      <!-- 使用keep-alive包裹异步组件 -->
-      <keep-alive>
-        <AsyncLeft />
-      </keep-alive>
-      <keep-alive>
-        <AsyncCenter />
-      </keep-alive>
-      <keep-alive>
-        <AsyncRight v-if="!shrinkStatus" />
-      </keep-alive>
+      <AsyncLeft />
+      <AsyncCenter />
+      <AsyncRight v-if="!shrinkStatus" />
     </div>
     <div v-if="overlayVisible" class="absolute inset-0 z-10 flex items-center justify-center bg-[--right-bg-color]">
       <LoadingSpinner :percentage="loadingPercentage" :loading-text="loadingText" />
