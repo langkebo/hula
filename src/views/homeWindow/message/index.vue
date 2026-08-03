@@ -26,7 +26,7 @@
         :get-item-classes="getItemClasses"
         :visible-menu="visibleMenu"
         :visible-special-menu="visibleSpecialMenu"
-        :on-msg-click="handleMsgClick"
+        :on-msg-click="onMsgClick"
         :on-msg-dblclick="handleMsgDblclick"
         :on-menu-show="handleMenuShow"
         :on-retry-network="retrySessions" />
@@ -59,6 +59,7 @@ import { useTimerManager } from '@/utils/TimerManager'
 const { t } = useI18n()
 const timerManager = useTimerManager()
 const route = useRoute()
+const router = useRouter()
 const MESSAGE_ROUTE_NAME = 'message'
 
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
@@ -68,6 +69,15 @@ const groupStore = useGroupStore()
 const roomStore = useRoomStore()
 const { addListener } = useTauriListener()
 const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visibleSpecialMenu } = useMessage()
+
+// 包装 handleMsgClick：更新会话状态后跳转路由到 /message/:roomId，
+// 使右侧栏 rightView 从 'empty' 切换到 'chat'
+const onMsgClick = async (item: SessionItem) => {
+  await handleMsgClick(item)
+  if (route.params.roomId !== item.roomId) {
+    await router.push({ name: MESSAGE_ROUTE_NAME, params: { roomId: item.roomId } }).catch(() => {})
+  }
+}
 
 const {
   sessionList,
@@ -145,11 +155,11 @@ watch(
           remark: groupStore.countInfo?.remark,
           myName: groupStore.countInfo?.myName
         }
-        handleMsgClick(sessionItem)
+        onMsgClick(sessionItem)
       } else {
         // 非群聊直接传递原始信息
         const sessionItem = newVal as SessionItem
-        handleMsgClick(sessionItem)
+        onMsgClick(sessionItem)
       }
     }
   },
