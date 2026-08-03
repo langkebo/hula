@@ -363,15 +363,15 @@
 
 <style scoped>
 .custom-rounded {
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
+  border-top-left-radius: var(--hula-radius-2xl);
+  border-top-right-radius: var(--hula-radius-2xl);
   overflow: hidden;
 }
 
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
-  border-radius: 6px;
-  background: var(--hula-overlay-mobile-sheet);
+  border-radius: var(--hula-radius-sm);
+  background: var(--hula-surface-search-dark);
 }
 
 :deep(.van-cell.van-field::after) {
@@ -383,8 +383,67 @@
 }
 
 :deep(.van-tabs__nav--card) {
-  border-radius: 8px;
+  border-radius: var(--hula-radius-sm);
   overflow: hidden;
+  background: var(--hula-surface-search-dark);
+  border: 1px solid var(--hula-border-contrast);
+}\n
+:deep(.van-tab--active) {
+  background: var(--hula-accent-soft);
+  color: var(--hula-color-primary-500);
+}
+
+/* TJG Mobile Friend Item Styles */
+.item-box {
+  padding: 9px 16px;
+  border-radius: var(--hula-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.item-box:active {
+  background: var(--hula-surface-dark-hover);
+}
+
+.item-box.active {
+  background: var(--hula-accent-active);
+}
+
+/* Avatar with online indicator */
+.friend-avatar-wrapper {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.friend-avatar-wrapper.is-online::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--hula-status-online);
+  border: 1.5px solid var(--hula-surface-deepest);
+}
+
+/* Status dot for inline indicators */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.online {
+  background: var(--hula-status-online);
+}
+
+.status-dot.offline {
+  background: var(--hula-status-offline);
 }
 </style>
 

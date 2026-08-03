@@ -26,14 +26,14 @@
     </div>
 
     <template v-else>
-      <header class="friend-list-view__header p-12px">
+      <header class="friend-list-view__header">
         <n-flex vertical :size="12">
           <n-flex align="center" justify="space-between">
             <n-flex align="center" :size="8">
-              <span class="text-[var(--text-base)] font-semibold">{{ t('friend.list.title') }}</span>
+              <span class="friend-list-view__title">{{ t('friend.list.title') }}</span>
               <n-badge :value="incomingRequestsCount" :max="99" :show="incomingRequestsCount > 0" />
             </n-flex>
-            <n-flex :size="8">
+            <n-flex :size="6">
               <n-button quaternary circle size="small" :aria-label="t('menu.add_contact')" @click="handleAddFriend">
                 <template #icon>
                   <n-icon>
@@ -61,7 +61,7 @@
             <n-flex align="center" justify="space-between" class="mb-8px">
               <n-flex align="center" :size="6">
                 <svg class="size-14px color-[--hula-color-primary-500]"><use href="#bell" /></svg>
-                <span class="text-[var(--text-sm)] font-medium color-[--hula-color-primary-500]">
+                <span class="friend-request-preview__label">
                   {{ t('friend.list.pending_requests', { count: incomingRequestsCount }) }}
                 </span>
               </n-flex>
@@ -81,8 +81,8 @@
                     :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                     round />
                   <div class="flex flex-col min-w-0 flex-1">
-                    <span class="text-[var(--text-sm)] truncate">{{ request.displayName || request.userId }}</span>
-                    <span v-if="request.message" class="text-[var(--text-xs)] text-[--hula-text-quaternary] truncate">
+                    <span class="friend-request-preview__name truncate">{{ request.displayName || request.userId }}</span>
+                    <span v-if="request.message" class="friend-request-preview__message truncate">
                       {{ request.message }}
                     </span>
                   </div>
@@ -194,31 +194,31 @@
                 type="button"
                 role="listitem"
                 class="friend-item"
+                :class="{ 'friend-item--active': selectedUserId === item.userId }"
                 :aria-current="selectedUserId === item.userId ? 'true' : undefined"
                 @click="handleSelectFriend(item)"
                 @contextmenu="handleContextMenu($event, item)">
                 <n-flex align="center" :size="12">
-                  <n-badge :dot="item.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
+                  <div class="friend-item__avatar-wrapper" :class="{ 'is-online': item.activeStatus === OnlineEnum.ONLINE }">
                     <n-avatar
-                      :size="44"
+                      :size="40"
                       :src="AvatarUtils.getAvatarUrl(item.avatarUrl)"
                       :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                       round />
-                  </n-badge>
-                  <n-flex vertical :size="4" class="flex-1 truncate">
-                    <span class="text-[var(--text-sm)] truncate">
+                  </div>
+                  <n-flex vertical :size="2" class="flex-1 truncate">
+                    <span class="friend-item__name truncate">
                       <template v-for="(seg, i) in getHighlightSegments(item)" :key="i">
                         <mark v-if="seg.matched" class="friend-item__highlight">{{ seg.text }}</mark>
                         <template v-else>{{ seg.text }}</template>
                       </template>
                     </span>
                     <n-flex align="center" :size="4">
-                      <n-badge
-                        :color="
-                          item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
-                        "
-                        dot />
-                      <span class="friend-item__presence-text text-[var(--text-xs)]">
+                      <span
+                        class="friend-item__status-dot"
+                        :class="item.activeStatus === OnlineEnum.ONLINE ? 'is-online' : 'is-offline'"
+                      ></span>
+                      <span class="friend-item__status-text">
                         {{ item.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(item) }}
                       </span>
                       <n-tag v-if="item.friendStatus === 'blocked'" type="error" size="tiny">
@@ -238,31 +238,31 @@
                 type="button"
                 role="listitem"
                 class="friend-item"
+                :class="{ 'friend-item--active': selectedUserId === friend.userId }"
                 :aria-current="selectedUserId === friend.userId ? 'true' : undefined"
                 @click="handleSelectFriend(friend)"
                 @contextmenu="handleContextMenu($event, friend)">
                 <n-flex align="center" :size="12">
-                  <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
+                  <div class="friend-item__avatar-wrapper" :class="{ 'is-online': friend.activeStatus === OnlineEnum.ONLINE }">
                     <n-avatar
-                      :size="44"
+                      :size="40"
                       :src="AvatarUtils.getAvatarUrl(friend.avatarUrl)"
                       :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                       round />
-                  </n-badge>
-                  <n-flex vertical :size="4" class="flex-1 truncate">
-                    <span class="text-[var(--text-sm)] truncate">
+                  </div>
+                  <n-flex vertical :size="2" class="flex-1 truncate">
+                    <span class="friend-item__name truncate">
                       <template v-for="(seg, i) in getHighlightSegments(friend)" :key="i">
                         <mark v-if="seg.matched" class="friend-item__highlight">{{ seg.text }}</mark>
                         <template v-else>{{ seg.text }}</template>
                       </template>
                     </span>
                     <n-flex align="center" :size="4">
-                      <n-badge
-                        :color="
-                          friend.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
-                        "
-                        dot />
-                      <span class="friend-item__presence-text text-[var(--text-xs)]">
+                      <span
+                        class="friend-item__status-dot"
+                        :class="friend.activeStatus === OnlineEnum.ONLINE ? 'is-online' : 'is-offline'"
+                      ></span>
+                      <span class="friend-item__status-text">
                         {{
                           friend.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(friend)
                         }}
@@ -732,6 +732,14 @@ onMounted(async () => {
 
 .friend-list-view__header {
   flex-shrink: 0;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--hula-border-layout-divider);
+}
+
+.friend-list-view__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--hula-text-primary);
 }
 
 .friend-list-view__main {
@@ -772,9 +780,25 @@ onMounted(async () => {
 
 .friend-request-preview {
   padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--hula-color-primary-50, rgba(59, 130, 246, 0.08));
-  border: 1px solid var(--hula-color-primary-100, rgba(59, 130, 246, 0.15));
+  border-radius: var(--hula-radius-sm);
+  background: var(--hula-accent-soft);
+  border: 1px solid var(--hula-accent-soft);
+}
+
+.friend-request-preview__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--hula-color-primary-500);
+}
+
+.friend-request-preview__name {
+  font-size: 13px;
+  color: var(--hula-text-primary);
+}
+
+.friend-request-preview__message {
+  font-size: 11px;
+  color: var(--hula-text-quaternary);
 }
 
 .friend-request-preview__list {
@@ -792,13 +816,13 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 8px;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--hula-radius-xs);
   background: var(--hula-surface-panel);
   border: 1px solid var(--hula-border-default);
 }
 
 .friend-items {
-  padding: 8px;
+  padding: 6px 8px;
   margin: 0;
   list-style: none;
 }
@@ -816,10 +840,10 @@ onMounted(async () => {
 .friend-item {
   display: block;
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 8px 12px;
+  border-radius: var(--hula-radius-sm);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s ease;
   border: none;
   background: none;
   text-align: left;
@@ -833,8 +857,63 @@ onMounted(async () => {
   }
 
   &:active {
-    background: var(--hula-surface-session-active);
+    background: var(--hula-accent-active);
   }
+
+  &--active {
+    background: var(--hula-surface-list-selected);
+  }
+}
+
+.friend-item__avatar-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+
+  &.is-online::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--hula-status-online);
+    border: 2px solid var(--hula-surface-panel);
+  }
+}
+
+.friend-item__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--hula-text-primary);
+}
+
+.friend-item__status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &.is-online {
+    background: var(--hula-status-online);
+  }
+
+  &.is-offline {
+    background: var(--hula-status-offline);
+  }
+}
+
+.friend-item__status-text {
+  font-size: 12px;
+  color: var(--hula-text-secondary);
 }
 
 .friend-item__presence-text {
