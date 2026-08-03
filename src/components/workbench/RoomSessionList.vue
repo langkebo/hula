@@ -32,7 +32,7 @@
       <RecycleScroller
         class="scroller h-full"
         :items="sessionList"
-        :item-size="80"
+        :item-size="84"
         key-field="roomId"
         v-slot="{ item }">
         <HulaRoomListItem
@@ -138,7 +138,7 @@ const scrollToIndex = async (index: number) => {
 
   await nextTick()
   msgScrollbar.value?.scrollTo({
-    top: index * (75 + 5) - 264,
+    top: index * (76 + 8) - 264,
     behavior: 'smooth'
   })
 }
