@@ -7,7 +7,7 @@
       'right-pane-animated': transitionEnabled,
       'flex-1 w-full': isRightPaneFullscreen
     }"
-    :style="isRightPaneFullscreen ? undefined : { width: `${paneWidth}px`, flex: '0 0 auto' }">
+    :style="isRightPaneFullscreen ? undefined : { minWidth: `${paneWidth}px`, flex: '1 1 auto' }">
     <!-- Step 2.3：左边缘拖拽分隔条（14px，hover 显示拖拽图标） -->
     <div
       v-if="!isRightPaneFullscreen"
