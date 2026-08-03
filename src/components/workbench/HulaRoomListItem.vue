@@ -161,7 +161,7 @@ const isBurnAfterRead = computed(() => props.item.isBurnAfterRead ?? false)
 const isInvite = computed(() => props.item.membership === 'invite')
 const isBatchMode = computed(() => props.batchMode ?? false)
 const isBatchSelected = computed(() => props.batchSelected ?? false)
-const isActive = computed(() => props.classes?.selected ?? false)
+const isActive = computed(() => globalStore.currentSessionRoomId === roomId.value)
 
 const timeText = computed(() => {
   if (!activeTime.value) return ''
@@ -196,7 +196,7 @@ const typingText = computed(() => {
 })
 
 const itemClasses = computed(() => ({
-  'hula-room-list-item--selected': props.classes?.selected ?? false,
+  'hula-room-list-item--selected': isActive.value,
   'hula-room-list-item--batch': isBatchMode.value,
   'hula-room-list-item--batch-selected': isBatchSelected.value,
   'hula-room-list-item--top': isTop.value,
@@ -249,7 +249,7 @@ const handleBatchToggle = () => {
     opacity 0.2s var(--hula-motion-ease-standard);
   user-select: none;
   border-radius: 12px;
-  margin: 0 8px 4px;
+  margin: 0 8px 8px;
   border: 1px solid transparent;
 
   &:hover {

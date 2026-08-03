@@ -5,7 +5,8 @@ import HulaRoomListItem from '../HulaRoomListItem.vue'
 
 const { globalStoreMock, roomStoreMock, sessionStoreMock, groupStoreMock, settingStoreMock } = vi.hoisted(() => ({
   globalStoreMock: {
-    unreadReady: true
+    unreadReady: true,
+    currentSessionRoomId: '!room:example.com'
   },
   roomStoreMock: {
     getTagsForRoom: vi.fn(() => ({}))
