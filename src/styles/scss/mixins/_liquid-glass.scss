@@ -21,8 +21,9 @@
 /// @param {Number} $saturate 饱和度倍数（默认 1.8）
 @mixin liquid-glass($blur: 20px, $opacity: 0.85, $saturate: 1.8) {
   background: color-mix(in srgb, var(--hula-surface-panel) #{$opacity * 100%}, transparent);
-  backdrop-filter: blur(#{$blur}) saturate(#{$saturate * 100%});
-  -webkit-backdrop-filter: blur(#{$blur}) saturate(#{$saturate * 100%});
+  // sass 1.102+ 将 saturate() 解析为颜色函数，用字符串插值避免冲突
+  backdrop-filter: blur(#{$blur}) #{'saturate(' + ($saturate * 100%) + ')'};
+  -webkit-backdrop-filter: blur(#{$blur}) #{'saturate(' + ($saturate * 100%) + ')'};
   border: 1px solid color-mix(in srgb, var(--hula-border-layout-divider) 50%, transparent);
 
   // 深色模式调整：降低不透明度以增强通透感
