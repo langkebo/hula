@@ -1,10 +1,111 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full relative">
-    <img
-      src="@/assets/mobile/chat-home/background.webp"
-      class="absolute fixed top-0 l-0 w-full h-full z-0 dark:opacity-20" />
+  <div class="mobile">
+    <!-- iOS Status Bar -->
+    <div class="ios-statusbar">
+      <span>9:41</span>
+      <div class="dynamic-island"></div>
+      <div class="statusbar-right">
+        <span>5G</span>
+        <span>100%</span>
+      </div>
+    </div>
 
-    <!-- 页面蒙板 -->
+    <!-- Mobile Header -->
+    <div class="m-header">
+      <div class="m-header-row">
+        <h1 class="m-title">消息</h1>
+        <div class="m-header-actions">
+          <div class="icon-btn" @click="handleNewChat">
+            <svg class="w-20px h-20px"><use href="#i-plus"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="m-search" @click="focusSearch">
+        <svg class="w-16px h-16px"><use href="#i-search"/></svg>
+        <span>{{ t('mobile_home.input.search') }}</span>
+      </div>
+    </div>
+
+    <!-- Mobile Content -->
+    <div class="m-content">
+      <van-pull-refresh
+        :pull-distance="100"
+        :disabled="!isEnablePullRefresh"
+        v-model="loading"
+        @refresh="onRefresh">
+        <SmartVirtualList
+          class="mobile-session-list"
+          :items="filteredSessionList"
+          :item-height="72"
+          :buffer="6"
+          key-field="roomId"
+          @scroll="onScroll">
+          <template #default="{ item }">
+            <van-swipe-cell
+              @open="handleSwipeOpen"
+              @close="handleSwipeClose"
+              v-on-long-press="[(e: PointerEvent) => handleLongPress(e, item), longPressOption]">
+              <div
+                class="m-room-item"
+                :class="{ swiped: swipedRoom === item.roomId }"
+                @click="intoRoom(item)">
+                <div class="m-room-avatar" :class="{ 'is-online': item.activeStatus === 1 }">
+                  <img v-if="item.avatar" :src="AvatarUtils.getAvatarUrl(item.avatar)" @error="($event.target as HTMLImageElement).src = '/logo.png'">
+                  <span v-else>{{ item.name?.charAt(0) || '?' }}</span>
+                  <div v-if="item.isAtMe" class="at-badge">@</div>
+                </div>
+                <div class="m-room-info">
+                  <div class="m-room-top">
+                    <div class="m-room-name">
+                      {{ item.name }}
+                      <span v-if="item.isEncrypted" class="encrypted-tag">
+                        <svg class="w-12px h-12px"><use href="#i-lock"/></svg>
+                      </span>
+                    </div>
+                    <div class="m-room-time">{{ formatTimestamp(item.activeTime) }}</div>
+                  </div>
+                  <div class="m-room-bottom">
+                    <div class="m-room-preview">{{ item.lastMsg }}</div>
+                    <div v-if="item.unreadCount > 0" class="m-room-badge">{{ item.unreadCount > 99 ? '99+' : item.unreadCount }}</div>
+                  </div>
+                </div>
+              </div>
+              <template #right>
+                <div class="m-room-actions">
+                  <div class="m-action-btn pin" @click="handleToggleTop(item)">
+                    {{ item.top ? t('mobile_home.chat.unpin') : t('mobile_home.chat.pintop') }}
+                  </div>
+                  <div class="m-action-btn delete" @click="handleDelete(item)">
+                    {{ t('mobile_home.chat.delete') }}
+                  </div>
+                </div>
+              </template>
+            </van-swipe-cell>
+          </template>
+        </SmartVirtualList>
+      </van-pull-refresh>
+    </div>
+
+    <!-- Mobile Tab Bar -->
+    <div class="m-tabbar">
+      <div
+        v-for="tab in tabs"
+        :key="tab.key"
+        class="m-tab"
+        :class="{ active: activeTab === tab.key }"
+        @click="onTabClick(tab)">
+        <div class="m-tab-icon">
+          <svg class="w-24px h-24px"><use :href="tab.icon"/></svg>
+          <span v-if="tab.badge" class="m-tab-badge">{{ tab.badge }}</span>
+        </div>
+        <span>{{ tab.label }}</span>
+      </div>
+    </div>
+
+    <!-- Home Indicator -->
+    <div class="home-indicator"></div>
+
+    <!-- Page Mask -->
     <div
       v-if="showMask"
       @touchend="maskHandler.close"
@@ -16,178 +117,7 @@
       ]"
       class="fixed inset-0 z-[999]"></div>
 
-    <NavBar>
-      <template #left>
-        <div @click="toSimpleBio" class="flex items-center gap-6px w-full">
-          <img
-            class="size-38px rounded-full object-cover"
-            :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ? userStore.userInfo.avatar : '/logoD.png')"
-            alt="用户头像"
-            @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-
-          <div class="flex flex-col justify-center gap-6px">
-            <p
-              style="
-                font-weight: bold !important;
-                font-family:
-                  system-ui,
-                  -apple-system,
-                  sans-serif;
-              "
-              class="text-(16px [--hula-text-primary])">
-              {{ userStore.userInfo?.name ? userStore.userInfo.name : t('mobile_home.noname') }}
-            </p>
-            <p class="text-(10px [--hula-text-primary])">
-              {{ t('mobile_home.china') }}
-            </p>
-          </div>
-        </div>
-      </template>
-
-      <template #right>
-        <van-popover
-          v-model:show="showAddPopover"
-          :actions="addActions"
-          @select="onAddActionSelect"
-          placement="bottom-end">
-          <template #reference>
-            <van-button round plain size="small">
-              <svg class="w-16px h-16px"><use href="#plus"></use></svg>
-            </van-button>
-          </template>
-        </van-popover>
-      </template>
-    </NavBar>
-
-    <div class="px-16px mt-5px">
-      <div class="py-5px shrink-0">
-        <van-field
-          id="search"
-          class="search-field rounded-8px w-full relative text-13px"
-          maxlength="20"
-          clearable
-          autocomplete="off"
-          :spellcheck="false"
-          autocorrect="off"
-          autocapitalize="off"
-          v-model="searchText"
-          :placeholder="t('mobile_home.input.search')"
-          @focus="lockScroll"
-          @blur="unlockScroll">
-          <template #left-icon>
-            <svg class="w-14px h-14px color-[--hula-text-tertiary]">
-              <use href="#search"></use>
-            </svg>
-          </template>
-        </van-field>
-      </div>
-      <div class="m-0 p-0 mt-10px border-b border-[--hula-border-layout-divider]"></div>
-    </div>
-
-    <van-pull-refresh
-      class="flex-1"
-      :pull-distance="100"
-      :disabled="!isEnablePullRefresh"
-      v-model="loading"
-      @refresh="onRefresh">
-      <div class="flex flex-col h-full">
-        <SmartVirtualList
-          class="mobile-session-list flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
-          :items="filteredSessionList"
-          :item-height="72"
-          :buffer="6"
-          key-field="roomId"
-          @scroll="onScroll">
-          <template #default="{ item }">
-            <van-swipe-cell
-              @open="handleSwipeOpen"
-              @close="handleSwipeClose"
-              v-on-long-press="[(e: PointerEvent) => handleLongPress(e, item), longPressOption]"
-              class="text-black"
-              :class="item.top ? 'w-full bg-[--hula-color-primary-100]' : ''">
-              <!-- 长按项 -->
-              <div
-                @click.stop="intoRoom(item)"
-                class="grid grid-cols-[48px_1fr_max-content] items-center px-4 py-2.5 gap-3">
-                <div class="flex-shrink-0">
-                  <van-badge
-                    :offset="[-6, 6]"
-                    :color="
-                      item.muteNotification === NotificationTypeEnum.NOT_DISTURB
-                        ? 'grey'
-                        : 'var(--hula-color-danger-500)'
-                    "
-                    :content="item.unreadCount"
-                    :max="99">
-                    <img
-                      class="size-48px rounded-8px object-cover"
-                      :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                      @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-                  </van-badge>
-                </div>
-                <!-- 中间：两行内容 -->
-                <div class="truncate flex gap-10px leading-tight flex-col min-w-0">
-                  <span class="text-15px font-medium flex-1 truncate text-[--hula-text-primary]">{{ item.name }}</span>
-                  <div class="text-13px text-[--hula-text-secondary] dark:text-[--hula-text-tertiary] truncate">
-                    {{ item.lastMsg }}
-                  </div>
-                </div>
-
-                <!-- 时间：靠顶 -->
-                <div
-                  class="text-11px text-right flex flex-col gap-1 items-end justify-center text-[--hula-text-tertiary]">
-                  <div class="flex items-center gap-1">
-                    <span v-if="item.hotFlag === IsAllUserEnum.Yes">
-                      <svg class="size-14px select-none outline-none cursor-pointer color-[--color-primary]">
-                        <use href="#auth"></use>
-                      </svg>
-                    </span>
-                    <span v-if="item.isFavorite">
-                      <svg class="size-14px select-none outline-none cursor-pointer color-[--color-warning]">
-                        <use href="#star"></use>
-                      </svg>
-                    </span>
-                    <span class="whitespace-nowrap">
-                      {{ formatTimestamp(item?.activeTime) }}
-                    </span>
-                  </div>
-                  <div v-if="item.muteNotification === NotificationTypeEnum.NOT_DISTURB">
-                    <svg class="size-14px z-100 color-[--hula-text-tertiary]">
-                      <use href="#close-remind"></use>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              <template #right>
-                <div class="flex w-auto flex-wrap h-full">
-                  <div
-                    class="h-full text-14px w-80px bg-[--color-primary] text-white flex items-center justify-center"
-                    @click="handleToggleTop(item)">
-                    {{ item.top ? t('mobile_home.chat.unpin') : t('mobile_home.chat.pintop') }}
-                  </div>
-                  <div
-                    :class="(item?.unreadCount ?? 0) > 0 ? 'bg-[--hula-text-tertiary]' : 'bg-[--color-warning]'"
-                    class="h-full text-14px w-80px text-white flex items-center justify-center"
-                    @click="handleToggleReadStatus((item?.unreadCount ?? 0) > 0, item)">
-                    {{
-                      (item?.unreadCount ?? 0) > 0
-                        ? t('mobile_home.chat.mark_as_read')
-                        : t('mobile_home.chat.mark_as_unread')
-                    }}
-                  </div>
-                  <div
-                    class="h-full text-14px w-80px bg-[--color-danger] text-white flex items-center justify-center"
-                    @click="handleDelete(item)">
-                    {{ t('mobile_home.chat.delete') }}
-                  </div>
-                </div>
-              </template>
-            </van-swipe-cell>
-          </template>
-        </SmartVirtualList>
-      </div>
-    </van-pull-refresh>
-
+    <!-- Long Press Menu -->
     <teleport to="body">
       <div
         v-if="longPressState.showLongPressMenu"
@@ -200,9 +130,7 @@
             {{ currentLongPressItem?.top ? t('mobile_home.menu.unpin') : t('mobile_home.menu.pintop') }}
           </div>
           <div class="text-white" @click="handleToggleReadStatus((currentLongPressItem?.unreadCount ?? 0) > 0)">
-            {{
-              (currentLongPressItem?.unreadCount ?? 0) > 0 ? t('mobile_home.menu.read') : t('mobile_home.menu.unread')
-            }}
+            {{ (currentLongPressItem?.unreadCount ?? 0) > 0 ? t('mobile_home.menu.read') : t('mobile_home.menu.unread') }}
           </div>
         </div>
         <div class="flex w-full justify-center h-15px">
@@ -252,7 +180,6 @@ import { vOnLongPress } from '@vueuse/components'
 import { useDebounceFn, useThrottleFn } from '@vueuse/core'
 import { showFailToast, showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
-import NavBar from '#/layout/navBar/index.vue'
 import { useMessage } from '@/composables/chat/useMessage'
 import { useReplaceMsg } from '@/composables/chat/useReplaceMsg'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -290,27 +217,16 @@ const globalStore = useGlobalStore()
 const contactStore = useContactStore()
 const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
 
-const showAddPopover = ref(false)
-const addActions = [
-  { text: t('mobile_home.menu.new_chat'), value: 'newChat' },
-  { text: t('mobile_home.menu.create_group_chat'), value: 'createGroupChat' },
-  { text: t('menu.add_contact'), value: '/mobile/mobileFriends/addFriends' }
-]
-
-const onAddActionSelect = async (action: { text: string; value: string }) => {
-  showAddPopover.value = false
-  maskHandler.close()
-
-  if (action.value === 'newChat') {
-    await handleNewChat()
-  } else if (action.value === 'createGroupChat') {
-    await handleCreateGroupChat()
-  } else {
-    router.push(action.value)
-  }
-}
-
 const searchText = ref('')
+
+const activeTab = ref('message')
+const tabs = [
+  { key: 'message', label: '消息', icon: '#i-message', badge: 0 },
+  { key: 'contacts', label: '联系人', icon: '#i-contacts', badge: 0 },
+  { key: 'space', label: '空间', icon: '#i-space', badge: 0 },
+  { key: 'widgets', label: '工具', icon: '#i-widgets', badge: 0 },
+  { key: 'profile', label: '我的', icon: '#i-profile', badge: 0 }
+]
 
 type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
 
@@ -420,7 +336,6 @@ const sessionList = computed(() => {
         avatar: latestAvatar,
         name: displayName,
         lastMsg: displayMsg || t('message.message_list.default_last_msg'),
-        lastMsgTime: formatTimestamp(item?.activeTime),
         isAtMe
       }
     })
@@ -623,25 +538,34 @@ const intoRoom = (item: SessionItem) => {
     }
   }, 0)
 }
-const toSimpleBio = () => {
-  router.push('/mobile/mobileMy/simpleBio')
+
+const focusSearch = () => {
+  // Implement search focus functionality
+  logger.debug('Search focused')
 }
 
-const lockScroll = () => {
-  logger.debug('锁定触发')
-  const scrollEl = document.querySelector('.mobile-session-list') as HTMLElement
-  if (scrollEl) {
-    scrollEl.style.overflow = 'hidden'
+const onTabClick = (tab: { key: string; label: string; icon: string }) => {
+  activeTab.value = tab.key
+  switch (tab.key) {
+    case 'message':
+      // Already on message page
+      break
+    case 'contacts':
+      router.push('/mobile/mobileFriends')
+      break
+    case 'space':
+      router.push('/mobile/space')
+      break
+    case 'widgets':
+      router.push('/mobile/widgets')
+      break
+    case 'profile':
+      router.push('/mobile/mobileMy')
+      break
   }
 }
 
-const unlockScroll = () => {
-  logger.debug('锁定解除')
-  const scrollEl = document.querySelector('.mobile-session-list') as HTMLElement
-  if (scrollEl) {
-    scrollEl.style.overflow = 'auto'
-  }
-}
+const swipedRoom = ref('')
 
 const longPressOption = ref({
   delay: 200,
@@ -675,7 +599,7 @@ const handleLongPress = (e: PointerEvent, item: SessionItem) => {
       return
     }
 
-    const currentTarget = target.closest('.grid')
+    const currentTarget = target.closest('.m-room-item')
 
     if (!currentTarget) {
       return
@@ -775,6 +699,339 @@ async function beforeCloseCreateGroup(action: string): Promise<boolean> {
 </script>
 
 <style scoped lang="scss">
+.mobile {
+  width: 100%;
+  height: 100%;
+  background: var(--hula-surface-deepest);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  @media (min-width: 376px) {
+    width: 375px;
+    height: 812px;
+    border-radius: 42px;
+    box-shadow: var(--hula-shadow-panel), 0 0 0 11px #1a1a1a, 0 0 0 12px #2a2a2a;
+    margin: 0 auto;
+  }
+}
+
+.ios-statusbar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: var(--hula-surface-dark-mid);
+  color: var(--hula-text-primary);
+  position: relative;
+}
+
+.dynamic-island {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 32px;
+  background: #000;
+  border-radius: 18px;
+  z-index: 100;
+}
+
+.m-header {
+  padding: 8px 16px 10px;
+  background: var(--hula-surface-dark-mid);
+  border-bottom: 1px solid var(--hula-border-default);
+  flex-shrink: 0;
+}
+
+.m-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.m-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--hula-text-primary);
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--hula-radius-sm);
+  color: var(--hula-text-primary);
+  transition: background 0.15s;
+}
+
+.icon-btn:hover {
+  background: var(--hula-surface-list-hover);
+}
+
+.m-search {
+  margin-top: 10px;
+  background: var(--hula-surface-search);
+  border-radius: var(--hula-radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--hula-text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.m-search:hover {
+  background: var(--hula-surface-subtle);
+}
+
+.m-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-session-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.m-room-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.15s;
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+.m-room-item:active {
+  background: var(--hula-surface-list-hover);
+}
+
+.m-room-item.swiped {
+  transform: translateX(-120px);
+}
+
+.m-room-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--hula-radius-sm);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  position: relative;
+  background: var(--hula-surface-subtle);
+  overflow: hidden;
+}
+
+.m-room-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.m-room-avatar.is-online::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--hula-status-online);
+  border-radius: 50%;
+  border: 2px solid var(--hula-surface-panel);
+}
+
+.at-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--hula-color-danger-500);
+  color: var(--hula-text-inverse);
+  font-size: 10px;
+  font-weight: 600;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.m-room-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.m-room-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.m-room-name {
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--hula-text-primary);
+}
+
+.encrypted-tag {
+  display: flex;
+  align-items: center;
+  color: var(--hula-color-primary-500);
+}
+
+.m-room-time {
+  font-size: 11px;
+  color: var(--hula-text-tertiary);
+}
+
+.m-room-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.m-room-preview {
+  font-size: 13px;
+  color: var(--hula-text-secondary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.m-room-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--hula-color-danger-500);
+  color: var(--hula-text-inverse);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+}
+
+.m-room-actions {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.m-action-btn {
+  width: 60px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.m-action-btn.pin {
+  background: var(--hula-color-warning-500);
+}
+
+.m-action-btn.delete {
+  background: var(--hula-color-danger-500);
+}
+
+.m-tabbar {
+  height: 62px;
+  background: var(--hula-surface-dark-mid);
+  border-top: 1px solid var(--hula-border-default);
+  display: flex;
+  flex-shrink: 0;
+  padding-bottom: 10px;
+}
+
+.m-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  color: var(--hula-text-tertiary);
+  font-size: 10px;
+  position: relative;
+  transition: color 0.15s;
+}
+
+.m-tab.active {
+  color: var(--hula-brand);
+}
+
+.m-tab-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.m-tab-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background: var(--hula-color-danger-500);
+  color: var(--hula-text-inverse);
+  font-size: 9px;
+  font-weight: 600;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.home-indicator {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 130px;
+  height: 4px;
+  background: #fff;
+  border-radius: 2px;
+  opacity: 0.4;
+  z-index: 50;
+}
+
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
   border-radius: 8px;
@@ -791,8 +1048,20 @@ async function beforeCloseCreateGroup(action: string): Promise<boolean> {
   display: none;
 }
 
-::deep(#search) {
-  position: relative;
-  z-index: 1500;
+:deep(.van-pull-refresh) {
+  flex: 1;
+  overflow: hidden;
+}
+
+:deep(.van-pull-refresh__track) {
+  height: 100%;
+}
+
+:deep(.van-swipe-cell__wrapper) {
+  display: flex;
+}
+
+:deep(.van-swipe-cell__right) {
+  display: flex;
 }
 </style>
