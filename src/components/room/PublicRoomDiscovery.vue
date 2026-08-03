@@ -64,6 +64,7 @@
             </n-button>
           </div>
         </n-card>
+        <div ref="sentinelEl" class="room-list__sentinel" data-testid="load-more-sentinel" />
       </div>
       <n-empty v-else :description="t('room.discovery.empty')" data-testid="empty-state" />
     </n-spin>
@@ -71,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 interface PublicRoom {
@@ -82,7 +83,7 @@ interface PublicRoom {
   avatarUrl?: string
 }
 
-defineProps<{
+const props = defineProps<{
   rooms: PublicRoom[]
   loading: boolean
 }>()
@@ -90,6 +91,7 @@ defineProps<{
 const emit = defineEmits<{
   search: [query: string]
   join: [roomId: string]
+  loadMore: [nextBatch: string | null]
 }>()
 
 const { t } = useI18n()
@@ -107,6 +109,31 @@ const handleJoin = (roomId: string) => {
   emit('join', roomId)
 }
 
+const nextBatch = ref<string | null>(null)
+const sentinelEl = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
+const loadMore = () => {
+  if (props.loading) {
+    return
+  }
+  emit('loadMore', nextBatch.value)
+}
+
+const setupObserver = () => {
+  if (typeof IntersectionObserver === 'undefined' || !sentinelEl.value) {
+    return
+  }
+  observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        loadMore()
+      }
+    }
+  })
+  observer.observe(sentinelEl.value)
+}
+
 watch(searchQuery, (value) => {
   if (debounceTimer) {
     clearTimeout(debounceTimer)
@@ -116,11 +143,19 @@ watch(searchQuery, (value) => {
   }, DEBOUNCE_MS)
 })
 
+onMounted(() => {
+  setupObserver()
+})
+
 onUnmounted(() => {
   if (debounceTimer) {
     clearTimeout(debounceTimer)
   }
+  observer?.disconnect()
+  observer = null
 })
+
+defineExpose({ nextBatch, loadMore })
 </script>
 
 <style scoped lang="scss">
@@ -143,6 +178,11 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.room-list__sentinel {
+  height: 1px;
+  width: 100%;
 }
 
 .room-card {

@@ -1,0 +1,81 @@
+{
+  "title": "外部服务管理",
+  "subtitle": "管理 TrendRadar、OpenClaw、Webhook 等外部服务集成",
+  "actions": {
+    "refresh": "刷新",
+    "register": "注册服务",
+    "check_health": "健康检查",
+    "check_all_health": "检查全部健康",
+    "edit": "编辑",
+    "delete": "删除",
+    "enable": "启用",
+    "disable": "禁用"
+  },
+  "filters": {
+    "service_type": "服务类型",
+    "service_type_placeholder": "全部类型",
+    "service_type_all": "全部"
+  },
+  "list": {
+    "title": "服务列表",
+    "empty": "暂无外部服务",
+    "as_id": "服务 ID",
+    "service_type": "类型",
+    "service_id": "标识",
+    "display_name": "名称",
+    "is_enabled": "启用",
+    "is_healthy": "健康",
+    "created_ts": "创建时间",
+    "actions": "操作"
+  },
+  "health": {
+    "title": "健康状态",
+    "empty": "暂无健康数据",
+    "healthy": "健康",
+    "unhealthy": "异常",
+    "last_check_ts": "最近检查",
+    "last_success_ts": "最近成功",
+    "last_error": "最近错误",
+    "consecutive_failures": "连续失败次数"
+  },
+  "register": {
+    "title": "注册外部服务",
+    "service_type": "服务类型",
+    "service_type_placeholder": "如 trendradar / webhook / custom",
+    "service_id": "服务标识",
+    "service_id_placeholder": "如 news-bot",
+    "display_name": "显示名称",
+    "display_name_placeholder": "如 新闻机器人",
+    "webhook_url": "Webhook URL",
+    "webhook_url_placeholder": "https://example.com/webhook",
+    "api_key": "API Key",
+    "api_key_placeholder": "可选",
+    "config": "配置 (JSON)",
+    "config_placeholder": "{}"
+  },
+  "edit": {
+    "title": "编辑外部服务",
+    "webhook_url": "Webhook URL",
+    "api_key": "API Key",
+    "config": "配置 (JSON)",
+    "is_enabled": "启用服务"
+  },
+  "feedback": {
+    "register_success": "服务注册成功",
+    "register_failed": "服务注册失败",
+    "update_success": "服务更新成功",
+    "update_failed": "服务更新失败",
+    "delete_success": "服务删除成功",
+    "delete_failed": "服务删除失败",
+    "health_check_success": "健康检查完成",
+    "health_check_failed": "健康检查失败",
+    "delete_confirm": "确定要删除该外部服务吗？此操作不可撤销。"
+  },
+  "common": {
+    "yes": "是",
+    "no": "否",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存"
+  }
+}

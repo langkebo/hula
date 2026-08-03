@@ -3,6 +3,7 @@
     id="layout"
     class="relative flex min-w-310px bg-[--right-bg-color] h-full"
     :class="{ 'is-dragging-files': isDraggingFiles }">
+    <GuestModeBanner :visible="isGuestMode" :guest-user-id="guestUserId" />
     <PrivacyOverlay
       v-if="isPrivacyMode"
       :visible="isPrivacyMode"
@@ -47,6 +48,7 @@ import { UserAttentionType } from '@tauri-apps/api/window'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
+import GuestModeBanner from '@/components/common/GuestModeBanner.vue'
 import PrivacyOverlay from '@/components/privacy/PrivacyOverlay.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
@@ -237,6 +239,8 @@ const contactStore = useContactStore()
 const { checkUpdate, CHECK_UPDATE_TIME } = useCheckUpdate()
 const shrinkStatus = ref(false)
 const isDraggingFiles = ref(false)
+const isGuestMode = ref(false)
+const guestUserId = ref<string | null>(null)
 const tauriFileDropUnlisteners: UnlistenFn[] = []
 
 // 导入Web Worker

@@ -1,0 +1,17 @@
+{
+  "title": "第三方协议浏览",
+  "subtitle": "浏览通过第三方协议桥接的用户和位置",
+  "protocol_select": "选择协议",
+  "protocol_placeholder": "请选择协议",
+  "query_section": "查询",
+  "query_field": "查询字段",
+  "query_value": "查询值",
+  "query_value_placeholder": "输入查询值（可选）",
+  "query_location": "查询位置",
+  "query_user": "查询用户",
+  "location_results": "位置结果",
+  "user_results": "用户结果",
+  "empty_protocols": "暂无第三方协议",
+  "empty_results": "暂无结果",
+  "load_failed": "加载失败"
+}

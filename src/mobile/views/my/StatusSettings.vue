@@ -20,7 +20,7 @@
                 <div
                   class="w-24px h-24px rounded-full mr-12px flex items-center justify-center"
                   :style="{ backgroundColor: status.color }">
-                  <Icon :icon="status.icon" :width="14" color="#fff" />
+                  <Icon :icon="status.icon" :width="14" color="var(--hula-text-inverse)" />
                 </div>
               </template>
               <template #right-icon>

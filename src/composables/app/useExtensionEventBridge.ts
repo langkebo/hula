@@ -65,6 +65,7 @@ export function useExtensionEventBridge(client: ClientLike) {
 
   // Widget events
   bridge(client.getWidgetManager, 'WidgetCreated', MittEnum.WIDGET_CREATED)
+  bridge(client.getWidgetManager, 'WidgetUpdated', MittEnum.WIDGET_UPDATED)
   bridge(client.getWidgetManager, 'WidgetDeleted', MittEnum.WIDGET_DELETED)
 
   logger.info('扩展 Manager 事件桥接已注册')

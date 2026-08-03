@@ -40,6 +40,7 @@ import { computed } from 'vue'
 import defaultAvatarImg from '@/assets/img/win.png'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import { useUserMenu } from './useUserMenu'
 
@@ -54,7 +55,7 @@ const settingStore = useSettingStore()
 
 const { isOpen, menuSections, handleMenuItemClick } = useUserMenu()
 
-const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
+const userAvatar = computed(() => AvatarUtils.getAvatarUrl(userStore.currentUserAvatarUrl))
 const defaultAvatar = computed(() => defaultAvatarImg)
 
 const showOnlineStatus = computed(() => settingStore.themePattern !== 'os')
@@ -126,14 +127,14 @@ function handleTouchClick() {
 
 .menu-divider {
   height: 1px;
-  background-color: var(--van-border-color, #ebedf0);
+  background-color: var(--hula-border-default);
   margin: 8px 0;
 }
 
 .menu-section-title {
   padding: 8px 16px 4px;
   font-size: 12px;
-  color: var(--van-text-color-secondary, #969799);
+  color: var(--hula-text-secondary);
   font-weight: 500;
 }
 

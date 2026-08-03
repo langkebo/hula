@@ -242,7 +242,8 @@ describe('SpaceListPane', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.findAll('[data-test="space-card"]')).toHaveLength(0)
-    expect(wrapper.find('.n-empty').exists()).toBe(true)
+    expect(wrapper.find('.empty-state').exists()).toBe(true)
+    expect(wrapper.find('[data-illustration="no-results"]').exists()).toBe(true)
   })
 
   // (c) 选中空间 emit

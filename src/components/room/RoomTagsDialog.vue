@@ -197,7 +197,7 @@ watch(
 
 .error-text {
   font-size: 12px;
-  color: var(--hula-color-danger-500, #f56c6c);
+  color: var(--hula-color-danger-500);
   padding: 4px 0;
 }
 

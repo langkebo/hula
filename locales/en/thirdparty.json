@@ -1,0 +1,17 @@
+{
+  "title": "Third-party Protocol Browser",
+  "subtitle": "Browse users and locations bridged via third-party protocols",
+  "protocol_select": "Select Protocol",
+  "protocol_placeholder": "Select a protocol",
+  "query_section": "Query",
+  "query_field": "Query Field",
+  "query_value": "Query Value",
+  "query_value_placeholder": "Enter query value (optional)",
+  "query_location": "Query Location",
+  "query_user": "Query User",
+  "location_results": "Location Results",
+  "user_results": "User Results",
+  "empty_protocols": "No third-party protocols",
+  "empty_results": "No results",
+  "load_failed": "Failed to load"
+}

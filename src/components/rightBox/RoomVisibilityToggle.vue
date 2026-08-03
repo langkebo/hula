@@ -116,8 +116,8 @@ watch(() => props.roomId, loadVisibility)
 
   &--public {
     background: var(--hula-color-success-100, rgba(34, 197, 94, 0.1));
-    border-color: var(--hula-color-success-500, #22c55e);
-    color: var(--hula-color-success-500, #22c55e);
+    border-color: var(--hula-color-success-500);
+    color: var(--hula-color-success-500);
   }
 
   &--private {

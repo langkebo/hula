@@ -1,0 +1,64 @@
+{
+  "title": "Background Updates",
+  "subtitle": "Manage database migrations, index rebuilds, and other background tasks",
+  "status": {
+    "title": "Summary",
+    "pending": "Pending",
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed",
+    "total": "Total",
+    "current": "Current"
+  },
+  "list": {
+    "title": "Tasks",
+    "empty": "No background updates",
+    "job_name": "Job Name",
+    "job_type": "Type",
+    "description": "Description",
+    "status": "Status",
+    "progress": "Progress",
+    "total_items": "Total Items",
+    "processed_items": "Processed",
+    "created_ts": "Created",
+    "started_ts": "Started",
+    "completed_ts": "Completed",
+    "error_message": "Error",
+    "retry_count": "Retries",
+    "actions": "Actions"
+  },
+  "actions": {
+    "start": "Start",
+    "cancel": "Cancel",
+    "complete": "Complete",
+    "fail": "Mark Failed",
+    "delete": "Delete",
+    "retry_failed": "Retry Failed",
+    "cleanup_locks": "Cleanup Locks",
+    "refresh": "Refresh"
+  },
+  "dialog": {
+    "fail_title": "Mark Task as Failed",
+    "fail_message_label": "Error Message",
+    "fail_message_placeholder": "Enter the failure reason",
+    "fail_confirm": "Confirm",
+    "fail_cancel": "Cancel"
+  },
+  "feedback": {
+    "start_success": "Task started",
+    "start_failed": "Failed to start task",
+    "cancel_success": "Task cancelled",
+    "cancel_failed": "Failed to cancel task",
+    "complete_success": "Task completed",
+    "complete_failed": "Failed to complete task",
+    "fail_success": "Task marked as failed",
+    "fail_failed": "Failed to mark task as failed",
+    "delete_success": "Task deleted",
+    "delete_failed": "Failed to delete task",
+    "retry_success": "Retried {count} failed tasks",
+    "retry_failed": "Failed to retry tasks",
+    "cleanup_success": "Cleaned up {count} expired locks",
+    "cleanup_failed": "Failed to cleanup locks",
+    "load_failed": "Failed to load background updates"
+  }
+}

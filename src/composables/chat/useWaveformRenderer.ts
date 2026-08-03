@@ -28,6 +28,8 @@ type WaveformRendererReturn = {
 
   // 方法
   generateWaveformData: (audioBuffer: ArrayBuffer | Uint8Array | SharedArrayBuffer) => Promise<void>
+  loadPrecomputedWaveform: (waveform: number[]) => void
+  loadFromEvent: (event: { content?: Record<string, unknown> }) => boolean
   drawWaveform: () => void
   drawWaveformThrottled: () => void
   drawWaveformImmediate: () => void
@@ -171,6 +173,49 @@ export const useWaveformRenderer = (
       shouldUpdateCache.value = true
       drawWaveform()
     }
+  }
+
+  /**
+   * 加载预计算的波形数据（来自 MSC3245 `org.matrix.msc3245.voice.audio_waveform` 字段）。
+   * 直接使用预计算值，跳过昂贵的 `AudioContext.decodeAudioData` 实时计算。
+   *
+   * 归一化策略：MSC3245 的 audio_waveform 通常为 0-1024 整数范围，而 waveformData
+   * 使用 0-1 浮点范围。若最大值 > 1，除以 max(1024, 最大值)；若数据已处于 0-1
+   * 范围（预归一化），保持不变。
+   *
+   * @param waveform 预计算波形数组（通常为 0-1024 整数）
+   */
+  const loadPrecomputedWaveform = (waveform: number[]) => {
+    if (!Array.isArray(waveform) || waveform.length === 0) return
+
+    let maxValue = 0
+    for (let i = 0; i < waveform.length; i++) {
+      if (waveform[i] > maxValue) maxValue = waveform[i]
+    }
+
+    // max > 1：按 max(1024, maxValue) 归一化；否则视为已归一化，保持不变
+    const divisor = maxValue > 1 ? Math.max(1024, maxValue) : 1
+    waveformData.value = waveform.map((v) => v / divisor)
+
+    shouldUpdateCache.value = true
+    drawWaveform()
+  }
+
+  /**
+   * 从 Matrix 语音消息事件中加载预计算波形。
+   * 提取 `event.content['org.matrix.msc3245.voice'].audio_waveform`，若存在且为
+   * 非空数字数组则加载并返回 true；否则返回 false，调用方应回退到 generateWaveformData。
+   *
+   * @param event Matrix 语音消息事件
+   * @returns true 表示已加载预计算波形；false 表示无可用预计算波形
+   */
+  const loadFromEvent = (event: { content?: Record<string, unknown> }): boolean => {
+    const voice = event.content?.['org.matrix.msc3245.voice'] as { audio_waveform?: unknown } | undefined
+    const waveform = voice?.audio_waveform
+    if (!Array.isArray(waveform) || waveform.length === 0) return false
+    if (!waveform.every((v) => typeof v === 'number' && !Number.isNaN(v))) return false
+    loadPrecomputedWaveform(waveform as number[])
+    return true
   }
 
   /**
@@ -341,6 +386,8 @@ export const useWaveformRenderer = (
 
     // 方法
     generateWaveformData,
+    loadPrecomputedWaveform,
+    loadFromEvent,
     drawWaveform,
     drawWaveformThrottled,
     drawWaveformImmediate,

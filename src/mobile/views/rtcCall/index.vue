@@ -275,7 +275,7 @@ onUnmounted(() => {
   padding-bottom: env(safe-area-inset-bottom);
 
   &.is-video {
-    background: #000;
+    background: var(--hula-surface-media-preview);
   }
 }
 
@@ -288,7 +288,7 @@ onUnmounted(() => {
   @apply flex flex-col items-center gap-12px;
 
   .caller-avatar {
-    border: 2px solid var(--hula-color-primary-500, #1677ff);
+    border: 2px solid var(--hula-color-primary-500);
   }
 
   .caller-name {
@@ -309,7 +309,7 @@ onUnmounted(() => {
   .btn-decline {
     @apply size-64px;
     background: var(--hula-color-danger-500);
-    color: #fff;
+    color: var(--hula-text-inverse);
     border: none;
   }
 
@@ -323,7 +323,7 @@ onUnmounted(() => {
   .btn-cancel {
     @apply size-64px;
     background: var(--hula-color-danger-500);
-    color: #fff;
+    color: var(--hula-text-inverse);
     border: none;
   }
 }
@@ -381,7 +381,7 @@ onUnmounted(() => {
   .btn-active-toggled {
     @apply size-48px;
     background: rgba(255, 59, 48, 0.6);
-    color: #fff;
+    color: var(--hula-text-inverse);
     border: none;
   }
 
