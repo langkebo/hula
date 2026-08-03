@@ -149,19 +149,19 @@ const handleOpenInNewWindow = () => emit('open-in-new-window')
 .chat-header-toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--hula-space-1);
 
   :deep(.n-button) {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
+    border-radius: var(--hula-radius-full);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--hula-text-tertiary);
-    font-size: 16px;
-    transition: all 0.15s ease;
+    font-size: var(--hula-font-size-lg);
+    transition: all var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
 
     &:hover {
       background: var(--hula-surface-panel-muted);

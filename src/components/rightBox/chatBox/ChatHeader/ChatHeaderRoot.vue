@@ -401,7 +401,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
+  padding: var(--hula-space-3) var(--hula-space-4);
   background: var(--hula-surface-panel);
   border-bottom: 1px solid var(--hula-border-layout-divider);
   min-height: 56px;

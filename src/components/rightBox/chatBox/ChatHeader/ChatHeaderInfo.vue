@@ -116,14 +116,14 @@ const handleClick = () => {
 .chat-header-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--hula-space-3);
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 8px;
-  transition: background-color 0.2s;
+  padding: var(--hula-space-1) var(--hula-space-2);
+  border-radius: var(--hula-radius-sm);
+  transition: background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
 
   &:hover {
-    background-color: color-mix(in srgb, var(--hula-text-primary) 5%, transparent);
+    background-color: var(--hula-surface-list-hover);
   }
 }
 
@@ -134,19 +134,19 @@ const handleClick = () => {
 .info-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--hula-space-0);
   min-width: 0;
 }
 
 .name-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .name {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: var(--hula-font-size-lg);
+  font-weight: var(--hula-font-weight-medium);
   color: var(--hula-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -157,20 +157,20 @@ const handleClick = () => {
 .status-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--hula-space-2);
   flex-wrap: wrap;
 }
 
 .member-count,
 .status {
-  font-size: 12px;
+  font-size: var(--hula-font-size-sm);
   color: var(--hula-text-tertiary);
 }
 
 .status {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--hula-space-1);
 
   &.online {
     color: var(--hula-color-success-500);
@@ -189,15 +189,15 @@ const handleClick = () => {
 .typing-indicator {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: var(--hula-space-1);
+  font-size: var(--hula-font-size-sm);
   color: var(--hula-color-primary-500);
 }
 
 .typing-dot {
   width: 4px;
   height: 4px;
-  border-radius: 50%;
+  border-radius: var(--hula-radius-full);
   background: var(--hula-color-primary-500);
   animation: typing-bounce 1.4s infinite ease-in-out both;
 }

@@ -328,7 +328,7 @@ const handleLocationClick = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 12px;
+  padding: var(--hula-space-3);
   box-sizing: border-box;
 }
 
@@ -336,24 +336,24 @@ const handleLocationClick = () => {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 12px;
-  padding-bottom: 12px;
+  gap: var(--hula-space-3);
+  padding-bottom: var(--hula-space-3);
 }
 
 .mobile-assistant-select {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--hula-surface-panel) 88%, transparent);
+  gap: var(--hula-space-1);
+  padding: var(--hula-space-1) var(--hula-space-3);
+  border-radius: var(--hula-radius-sm);
+  background: var(--hula-surface-panel-muted);
   color: var(--hula-text-primary);
-  font-size: 13px;
+  font-size: var(--hula-font-size-sm);
   border: 1px solid var(--hula-border-default);
 
   &.active {
     color: var(--hula-color-primary-500);
-    background: color-mix(in srgb, var(--hula-color-primary-500) 16%, transparent);
+    background: var(--hula-accent-soft);
   }
 }
 

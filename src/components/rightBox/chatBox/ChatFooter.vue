@@ -825,6 +825,7 @@ onUnmounted(() => {
     width: 22px;
     height: 22px;
     cursor: pointer;
+    transition: color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
 
     &:hover {
       color: var(--hula-color-primary-500);
@@ -832,7 +833,7 @@ onUnmounted(() => {
   }
 
   .dropdown-arrow {
-    transition: transform 0.3s ease;
+    transition: transform var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
 
     &:hover {
       transform: rotate(180deg);
@@ -844,9 +845,9 @@ onUnmounted(() => {
   width: 40px;
   height: 3px;
   background: var(--hula-text-tertiary);
-  border-radius: 2px;
+  border-radius: var(--hula-radius-xs);
   opacity: 0.3;
-  transition: all 0.2s ease;
+  transition: all var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
   position: relative;
 
   &::before {
@@ -858,7 +859,7 @@ onUnmounted(() => {
     width: 20px;
     height: 1px;
     background: var(--hula-text-secondary);
-    border-radius: 1px;
+    border-radius: var(--hula-radius-xs);
     opacity: 0.5;
   }
 
@@ -871,7 +872,7 @@ onUnmounted(() => {
     width: 20px;
     height: 1px;
     background: var(--hula-text-secondary);
-    border-radius: 1px;
+    border-radius: var(--hula-radius-xs);
     opacity: 0.5;
   }
 }
@@ -881,8 +882,8 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 6px 8px;
+  gap: var(--hula-space-1);
+  padding: var(--hula-space-1) var(--hula-space-2);
   min-width: 160px;
   box-sizing: border-box;
   width: fit-content;
@@ -890,11 +891,11 @@ onUnmounted(() => {
   user-select: none;
 
   .group {
-    padding: 4px 6px;
-    border-radius: 4px;
+    padding: var(--hula-space-1) var(--hula-space-1);
+    border-radius: var(--hula-radius-xs);
 
     &:hover {
-      background-color: var(--hula-fill-hover);
+      background-color: var(--hula-surface-panel-muted);
 
       svg {
         animation: twinkle 0.3s ease-in-out;
@@ -916,7 +917,7 @@ onUnmounted(() => {
   background-color: var(--hula-surface-panel-muted);
   display: flex;
   flex-direction: column;
-  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: height var(--hula-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .panel-container--fixed {
@@ -926,7 +927,7 @@ onUnmounted(() => {
 /* 使用 transform 实现高性能动画 - 从下往上滑出 */
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--hula-motion-duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: bottom;
 }
 
@@ -953,8 +954,8 @@ onUnmounted(() => {
 .panel-content-enter-active,
 .panel-content-leave-active {
   transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
+    opacity var(--hula-motion-duration-normal) var(--hula-motion-ease-standard),
+    transform var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
 }
 
 .panel-content-enter-from,

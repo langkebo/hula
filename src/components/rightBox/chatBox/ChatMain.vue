@@ -19,7 +19,10 @@
           <n-spin :size="20" />
         </div>
       </div>
-      <div v-else-if="isGroup && topAnnouncement" key="announcement" class="p-[6px_12px_0_12px]">
+      <div
+        v-else-if="isGroup && topAnnouncement"
+        key="announcement"
+        class="p-[var(--hula-space-2)_var(--hula-space-3)_0_var(--hula-space-3)]">
         <div
           class="custom-announcement"
           :class="{ 'announcement-hover': isAnnouncementHover }"
@@ -27,15 +30,16 @@
           @mouseleave="isAnnouncementHover = false">
           <n-flex :wrap="false" class="w-full" align="center" justify="space-between">
             <n-flex :wrap="false" align="center" class="pl-12px select-none flex-1" :size="6">
-              <svg class="size-16px flex-shrink-0">
+              <svg class="size-16px flex-shrink-0" style="color: var(--hula-color-primary-500)">
                 <use href="#Loudspeaker"></use>
               </svg>
-              <div class="flex-1 min-w-0 line-clamp-1 text-[var(--text-sm)] text-[--hula-text-tertiary]">
+              <div class="flex-1 min-w-0 line-clamp-1 text-[var(--hula-font-size-sm)] text-[--hula-text-tertiary]">
                 {{ topAnnouncement.content }}
               </div>
             </n-flex>
             <div class="flex-shrink-0 w-60px select-none" @click="handleViewAnnouncement">
-              <p class="text-[var(--text-sm)] text-[--hula-color-primary-500] cursor-pointer">
+              <p
+                class="text-[var(--hula-font-size-sm)] text-[--hula-color-primary-500] cursor-pointer hover:text-[--hula-color-primary-400] transition-colors">
                 {{ t('home.chat_main.announcement.view_all') }}
               </p>
             </div>
@@ -86,8 +90,8 @@
           <!-- 没有更多消息提示 -->
           <div
             v-show="isMainViewReady && chatStore.shouldShowNoMoreMessage"
-            class="flex-center gap-6px h-32px flex-shrink-0 cursor-default select-none">
-            <p class="text-[var(--text-sm)] text-[--hula-text-tertiary]">{{ t('home.chat_main.no_more') }}</p>
+            class="flex-center gap-[var(--hula-space-2)] h-32px flex-shrink-0 cursor-default select-none">
+            <p class="text-[var(--hula-font-size-sm)] text-[--hula-text-tertiary]">{{ t('home.chat_main.no_more') }}</p>
           </div>
 
           <!-- 空状态 -->
@@ -123,7 +127,7 @@
                 :data-message-index="index">
                 <!-- 信息间隔时间 -->
                 <span
-                  class="text-[var(--text-sm)] text-[--hula-text-tertiary] select-none p-4px"
+                  class="text-[var(--hula-font-size-sm)] text-[--hula-text-tertiary] select-none p-[var(--hula-space-1)]"
                   v-if="item.timeBlock"
                   @click.stop>
                   {{ timeToStr(item.message.sendTime) }}
@@ -134,7 +138,9 @@
                   :class="[
                     'w-full box-border message-row',
                     item.message.type === MsgEnum.RECALL ? 'min-h-22px' : 'min-h-62px',
-                    isGroup ? 'p-[14px_10px_14px_20px]' : 'chat-single p-[4px_10px_10px_20px]',
+                    isGroup
+                      ? 'p-[var(--hula-space-3)_var(--hula-space-2)_var(--hula-space-3)_var(--hula-space-5)]'
+                      : 'chat-single p-[var(--hula-space-1)_var(--hula-space-2)_var(--hula-space-2)_var(--hula-space-5)]',
                     { 'active-reply': activeReply === item.message.id },
                     { 'message-row--multi-select': computeMsgHover(item) },
                     { 'message-row--hoverable': !chatStore.isMsgMultiChoose }
@@ -913,25 +919,25 @@ onUnmounted(() => {
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: var(--hula-radius-full, 50%);
+  border-radius: var(--hula-radius-full);
   background: transparent;
   color: var(--hula-text-tertiary);
   cursor: pointer;
-  font-size: var(--hula-font-size-sm, 14px);
-  font-weight: var(--hula-font-weight-semibold, 600);
-  transition: all var(--hula-motion-duration-fast, 0.15s) var(--hula-motion-ease-standard, ease);
+  font-size: var(--hula-font-size-sm);
+  font-weight: var(--hula-font-weight-semibold);
+  transition: all var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
 
   &:hover {
-    background: var(--hula-surface-panel-muted, rgba(0, 0, 0, 0.04));
+    background: var(--hula-surface-panel-muted);
     color: var(--hula-text-primary);
   }
 
   &--active {
     color: var(--hula-color-danger-500);
-    background: var(--hula-color-danger-100, rgba(255, 77, 79, 0.1));
+    background: var(--hula-color-danger-100);
 
     &:hover {
-      background: var(--hula-color-danger-200, rgba(255, 77, 79, 0.2));
+      background: var(--hula-color-danger-200);
     }
   }
 
@@ -1009,39 +1015,39 @@ onUnmounted(() => {
   will-change: auto;
 }
 
-// Discord 式消息行 hover 高亮（需求文档 6.5 节）
+// TJG 原型消息行 hover 高亮（对齐 TJG 原型消息区域样式）
 .message-row {
-  transition: background-color 0.1s ease;
-  border-radius: 4px;
+  transition: background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+  border-radius: var(--hula-radius-xs);
 }
 
 .message-row--hoverable:hover:not(.active-reply):not(.message-row--multi-select) {
-  background: color-mix(in srgb, var(--hula-text-primary) 4%, transparent);
+  background: var(--hula-surface-list-hover);
 }
 
 .message-row--multi-select {
-  background: color-mix(in srgb, var(--hula-text-tertiary) 20%, transparent);
+  background: var(--hula-surface-list-selected);
 }
 
 .message-list-placeholder {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px 20px 28px;
+  gap: var(--hula-space-4);
+  padding: var(--hula-space-5) var(--hula-space-5) var(--hula-space-6);
 }
 
 .message-skeleton {
   height: 48px;
-  border-radius: 14px;
+  border-radius: var(--hula-radius-lg);
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--hula-surface-panel) 88%, var(--hula-text-tertiary) 12%) 0%,
-    color-mix(in srgb, var(--hula-surface-panel) 78%, var(--hula-text-tertiary) 22%) 50%,
-    color-mix(in srgb, var(--hula-surface-panel) 88%, var(--hula-text-tertiary) 12%) 100%
+    var(--hula-surface-panel-muted) 0%,
+    color-mix(in srgb, var(--hula-surface-panel-muted) 85%, var(--hula-text-tertiary)) 50%,
+    var(--hula-surface-panel-muted) 100%
   );
   background-size: 200% 100%;
-  animation: chat-skeleton-shimmer 1.2s ease-in-out infinite;
+  animation: chat-skeleton-shimmer var(--hula-motion-duration-slow) ease-in-out infinite;
 }
 
 .message-skeleton--left {

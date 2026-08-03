@@ -221,27 +221,27 @@ const handleDeleteRoom = () => emit('delete-room')
 
 <style scoped lang="scss">
 .sidebar-content {
-  padding: 0 4px;
+  padding: 0 var(--hula-space-1);
 }
 
 .info-item {
-  margin-bottom: 16px;
+  margin-bottom: var(--hula-space-4);
 
   .label {
     display: block;
-    font-size: 12px;
+    font-size: var(--hula-font-size-sm);
     color: var(--hula-text-tertiary);
-    margin-bottom: 8px;
+    margin-bottom: var(--hula-space-2);
   }
 
   .value-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--hula-space-2);
 
     .value {
       flex: 1;
-      font-size: 14px;
+      font-size: var(--hula-font-size-base);
       cursor: pointer;
 
       &:hover {
@@ -254,7 +254,7 @@ const handleDeleteRoom = () => emit('delete-room')
 .member-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--hula-space-2);
 }
 
 .settings-section {
@@ -262,7 +262,7 @@ const handleDeleteRoom = () => emit('delete-room')
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 0;
+    padding: var(--hula-space-3) 0;
     cursor: pointer;
 
     &:not(:last-child) {
@@ -274,7 +274,7 @@ const handleDeleteRoom = () => emit('delete-room')
     }
 
     .setting-label {
-      font-size: 14px;
+      font-size: var(--hula-font-size-base);
     }
   }
 }
@@ -282,6 +282,6 @@ const handleDeleteRoom = () => emit('delete-room')
 .actions-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--hula-space-3);
 }
 </style>
