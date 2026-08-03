@@ -40,7 +40,15 @@ export class MatrixRoomRealtimeService {
   convertRoomToSession(room: Room): RoomSession {
     const name = room.name || 'Unknown Room'
     const avatar = room.getMxcAvatarUrl() || ''
-    const type = room.getJoinedMemberCount() === 2 ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP
+    // 判断是否为单聊：优先检查 m.direct account data（DM 标记），
+    // 回退到 getJoinedMemberCount() === 2（成员数判断）
+    const client = matrixClientService.getClient()
+    const directAccount = client?.getAccountData('m.direct')
+    const directMap = directAccount?.getContent() as Record<string, { room_id: string }[]> | undefined
+    const isDm = directMap
+      ? Object.values(directMap).some((rooms) => rooms?.some((r) => r?.room_id === room.roomId))
+      : false
+    const type = isDm || room.getJoinedMemberCount() === 2 ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP
     const unreadCount = matrixReceiptService.getUnreadCount(room.roomId)
     const lastEvent = room.getLiveTimeline().getEvents().slice(-1)[0]
     const activeTime = lastEvent?.getTs?.() || 0
