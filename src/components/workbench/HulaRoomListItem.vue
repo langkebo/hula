@@ -6,88 +6,79 @@
     :aria-label="ariaLabel"
     :aria-current="isActive ? 'true' : undefined"
     :aria-pressed="isBatchMode ? isBatchSelected : undefined"
-    class="hula-room-list-item"
+    class="room-item"
     :class="itemClasses"
     @click="handleClick"
+    @dblclick="handleDblClick"
     @keydown.enter.prevent="handleClick"
     @keydown.space.prevent="handleClick"
     @contextmenu="handleContextMenu">
-    <n-flex align="center" :size="12">
-      <n-checkbox
-        v-if="isBatchMode"
-        :checked="isBatchSelected"
-        class="hula-room-list-item__checkbox"
-        @update:checked="handleBatchToggle"
-        @click.stop />
-      <n-badge :dot="isFavorite" color="var(--color-warning)" :offset="[-4, 4]">
-        <n-avatar
-          :size="42"
-          :src="AvatarUtils.getAvatarUrl(avatarSrc)"
-          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-          style="border-radius: var(--hula-radius-sm)" />
-      </n-badge>
-      <n-flex vertical :size="4" class="flex-1 min-w-0">
-        <n-flex align="center" justify="space-between" :gap="8">
-          <span class="hula-room-list-item__name truncate flex-1">{{ displayName }}</span>
-          <n-flex align="center" :size="4" shrink="0">
-            <n-icon v-if="isEncrypted" size="14" class="text-[--hula-text-tertiary]">
-              <svg><use href="#lock" /></svg>
-            </n-icon>
-            <n-icon v-if="isBurnAfterRead" size="14" class="text-[--hula-color-danger-500]">
-              <svg><use href="#fire" /></svg>
-            </n-icon>
-            <span class="hula-room-list-item__time whitespace-nowrap">{{ timeText }}</span>
-          </n-flex>
-        </n-flex>
-        <n-flex align="center" justify="space-between" :gap="8">
-          <n-flex align="center" :gap="4" class="min-w-0 flex-1">
-            <n-tag v-if="hasMention" size="tiny" round :bordered="false" type="error" class="shrink-0">
-              {{ t('message.message_list.mention_tag') }}
-            </n-tag>
-            <n-tag v-if="hasFavoriteTag" size="tiny" round :bordered="false" class="shrink-0">
+    <!-- Left indicator bar when active -->
+    <div v-if="isActive" class="active-indicator"></div>
+
+    <!-- Batch mode checkbox -->
+    <n-checkbox
+      v-if="isBatchMode"
+      :checked="isBatchSelected"
+      class="room-checkbox"
+      @update:checked="handleBatchToggle"
+      @click.stop />
+
+    <!-- Room avatar -->
+    <div class="room-avatar" :class="{ 'is-online': isOnline }">
+      <img v-if="avatarSrc" :src="AvatarUtils.getAvatarUrl(avatarSrc)" alt="" @error="handleAvatarError" />
+      <span v-else class="room-avatar__initial">{{ roomInitial }}</span>
+      <!-- Favorite star badge -->
+      <div v-if="isFavorite" class="favorite-badge"></div>
+    </div>
+
+    <!-- Room info -->
+    <div class="room-info">
+      <div class="room-top">
+        <div class="room-name">
+          <span class="truncate">{{ displayName }}</span>
+          <n-tag v-if="isEncrypted" size="small" type="success" :bordered="false" class="room-tag">E2EE</n-tag>
+          <n-tag v-if="isBurnAfterRead" size="small" type="error" :bordered="false" class="room-tag">
+            <svg class="size-12px"><use href="#fire" /></svg>
+          </n-tag>
+        </div>
+        <div class="room-time">{{ timeText }}</div>
+      </div>
+      <div class="room-bottom">
+        <div class="room-preview" :class="{ mention: hasMention }">
+          <template v-if="typingText">
+            <span class="typing-indicator">{{ typingText }}</span>
+          </template>
+          <template v-else-if="lastMessageText">
+            <n-tag v-if="hasMention" size="tiny" round :bordered="false" type="error" class="preview-tag">@</n-tag>
+            <n-tag v-if="hasFavoriteTag" size="tiny" round :bordered="false" class="preview-tag">
               {{ t('message.message_list.favorite_tag') }}
             </n-tag>
-            <n-tag v-if="hasLowPriorityTag" size="tiny" round :bordered="false" class="shrink-0">
+            <n-tag v-if="hasLowPriorityTag" size="tiny" round :bordered="false" class="preview-tag">
               {{ t('message.message_list.low_priority_tag') }}
             </n-tag>
-            <span v-if="typingText" class="hula-room-list-item__typing truncate flex-1">
-              {{ typingText }}
-            </span>
-            <span v-else-if="lastMessageText" class="hula-room-list-item__preview truncate flex-1">
-              {{ lastMessageText }}
-            </span>
-            <span v-else class="hula-room-list-item__placeholder truncate flex-1">--</span>
-          </n-flex>
-          <n-flex align="center" :gap="4" shrink="0">
-            <n-tag
-              v-if="(isMuted || isShielded) && !isBurnAfterRead"
-              size="tiny"
-              round
-              :bordered="false"
-              class="shrink-0">
-              {{ t('home.plugins.room_detail.mute') }}
-            </n-tag>
-            <n-badge
-              v-if="!isInvite"
-              :value="badgeCount"
-              :max="99"
-              :show="badgeCount > 0"
-              :color="hasMention ? 'var(--hula-room-highlight-badge-bg)' : 'var(--hula-room-unread-badge-bg)'"
-              class="shrink-0" />
-            <RoomInviteActions
-              v-if="isInvite"
-              :room-id="roomId"
-              @accepted="handleAcceptInvite"
-              @rejected="handleRejectInvite" />
-          </n-flex>
-        </n-flex>
-      </n-flex>
-    </n-flex>
+            <span class="truncate">{{ lastMessageText }}</span>
+          </template>
+          <span v-else class="room-preview__placeholder">--</span>
+        </div>
+        <div class="room-meta">
+          <span v-if="isTop" class="pin-icon">
+            <svg class="size-11px"><use href="#pin-filled" /></svg>
+          </span>
+          <span v-if="isMuted || isShielded" class="mute-icon">
+            <svg class="size-11px"><use href="#volume-off" /></svg>
+          </span>
+          <span v-if="unreadCount > 0" class="unread-badge" :class="{ mention: hasMention }">
+            {{ unreadCount > 99 ? '99+' : unreadCount }}
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTyping } from '@/composables/chat/useTyping'
 import { RoomTypeEnum, ThemeEnum } from '@/enums'
@@ -137,7 +128,10 @@ const settingStore = useSettingStore()
 const roomId = computed(() => props.item.roomId)
 const displayName = computed(() => props.item.name)
 const avatarSrc = computed(() => props.item.avatar ?? '')
-const unreadCount = computed(() => props.item.unreadCount ?? 0)
+const unreadCount = computed(() => {
+  const detail = sessionStore.getUnreadDetail(roomId.value)
+  return detail?.total ?? props.item.notificationCount ?? props.item.unreadCount ?? 0
+})
 const activeTime = computed(() => props.item.activeTime ?? 0)
 const lastMessage = computed(() => props.item.lastMsg ?? props.item.text ?? '')
 const isTop = computed(() => !!props.item.top)
@@ -148,12 +142,10 @@ const isShielded = computed(() => !!props.item.shield)
 const roomTags = computed(() => roomStore.getTagsForRoom(roomId.value))
 const hasFavoriteTag = computed(() => !!props.item.isFavorite || 'm.favourite' in roomTags.value)
 const hasLowPriorityTag = computed(() => 'm.lowpriority' in roomTags.value)
-const unreadDetail = computed(() => {
-  if (!globalStore.unreadReady || !roomId.value) return null
-  return sessionStore.getUnreadDetail(roomId.value)
+const hasMention = computed(() => {
+  const detail = sessionStore.getUnreadDetail(roomId.value)
+  return (detail?.highlight ?? props.item.highlightCount ?? 0) > 0
 })
-const badgeCount = computed(() => unreadDetail.value?.total ?? props.item.notificationCount ?? unreadCount.value)
-const hasMention = computed(() => (unreadDetail.value?.highlight ?? props.item.highlightCount ?? 0) > 0)
 const isFavorite = computed(() => hasFavoriteTag.value)
 const isDm = computed(() => props.item.type === RoomTypeEnum.SINGLE)
 const isEncrypted = computed(() => props.item.isEncrypted ?? false)
@@ -162,6 +154,20 @@ const isInvite = computed(() => props.item.membership === 'invite')
 const isBatchMode = computed(() => props.batchMode ?? false)
 const isBatchSelected = computed(() => props.batchSelected ?? false)
 const isActive = computed(() => props.classes?.selected ?? false)
+const isOnline = computed(() => {
+  // For DMs, check if the other user is online
+  if (!isDm.value) return false
+  // This would need to be connected to presence data
+  return false // Placeholder - should be derived from presence store
+})
+
+const roomInitial = computed(() => {
+  const name = displayName.value
+  if (!name) return '?'
+  // Get first character, handling multi-byte characters
+  const firstChar = name.charAt(0)
+  return firstChar.toUpperCase()
+})
 
 const timeText = computed(() => {
   if (!activeTime.value) return ''
@@ -196,20 +202,21 @@ const typingText = computed(() => {
 })
 
 const itemClasses = computed(() => ({
-  'hula-room-list-item--selected': props.classes?.selected ?? false,
-  'hula-room-list-item--batch': isBatchMode.value,
-  'hula-room-list-item--batch-selected': isBatchSelected.value,
-  'hula-room-list-item--top': isTop.value,
-  'hula-room-list-item--muted': props.classes?.muted ?? false,
-  'hula-room-list-item--dm': isDm.value,
-  'hula-room-list-item--encrypted': isEncrypted.value,
-  'hula-room-list-item--burn': isBurnAfterRead.value
+  active: isActive.value,
+  'batch-mode': isBatchMode.value,
+  'batch-selected': isBatchSelected.value,
+  top: isTop.value,
+  muted: props.classes?.muted ?? false,
+  dm: isDm.value,
+  encrypted: isEncrypted.value,
+  burn: isBurnAfterRead.value,
+  invite: isInvite.value
 }))
 
 const ariaLabel = computed(() => {
   const parts: string[] = [displayName.value]
   if (lastMessageText.value) parts.push(lastMessageText.value)
-  if (badgeCount.value > 0) parts.push(`${badgeCount.value}`)
+  if (unreadCount.value > 0) parts.push(`${unreadCount.value}`)
   return parts.join('，')
 })
 
@@ -221,39 +228,46 @@ const handleClick = () => {
   emit('click', props.item)
 }
 
+const handleDblClick = () => {
+  emit('dblclick', props.item)
+}
+
 const handleContextMenu = (event: MouseEvent) => {
   event.preventDefault()
-}
-
-const handleAcceptInvite = () => {
-  emit('accept-invite', props.item)
-}
-
-const handleRejectInvite = () => {
-  emit('reject-invite', props.item)
 }
 
 const handleBatchToggle = () => {
   emit('batch-toggle', roomId.value)
 }
+
+const handleAvatarError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  target.style.display = 'none'
+  // Show the initial instead
+  const parent = target.parentElement
+  if (parent) {
+    const initialSpan = parent.querySelector('.room-avatar__initial') as HTMLElement | null
+    if (initialSpan) {
+      initialSpan.style.display = 'flex'
+    }
+  }
+}
 </script>
 
 <style lang="scss" scoped>
-.hula-room-list-item {
-  min-height: 68px;
-  padding: 10px;
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    box-shadow 0.15s ease,
-    opacity 0.15s ease;
-  user-select: none;
-  border-radius: var(--hula-radius-sm);
-  margin: 0 8px 4px;
-  border: 1px solid transparent;
+.room-item {
   display: flex;
+  align-items: center;
   gap: 10px;
+  padding: 10px;
+  border-radius: var(--hula-radius-sm);
+  cursor: pointer;
   position: relative;
+  transition: background 0.15s ease;
+  height: 68px;
+  min-height: 68px;
+  user-select: none;
+  margin: 0 8px 2px;
 
   &:hover {
     background: var(--hula-surface-list-hover);
@@ -264,151 +278,250 @@ const handleBatchToggle = () => {
     outline-offset: 2px;
   }
 
-  &:active {
-    background: var(--hula-surface-list-selected);
-  }
-
-  &:hover {
-    background: var(--hula-surface-list-hover);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--hula-color-primary-500);
-    outline-offset: 2px;
-  }
-
-  &:active {
-    background: var(--hula-surface-session-active);
-  }
-
-  &--selected {
+  &.active {
     background: var(--hula-surface-session-active);
     box-shadow: var(--hula-surface-session-active-shadow);
-    border: 1px solid transparent;
-    position: relative;
 
-    // TJG 原型：选中态左侧品牌色指示条
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 10px;
-      bottom: 10px;
-      width: 3px;
-      background: var(--hula-color-primary-500);
-      border-radius: 0 3px 3px 0;
-    }
-
-    .hula-room-list-item__name {
-      color: #ffffff;
-      font-size: 15px;
+    .room-name {
+      color: var(--hula-text-inverse);
       font-weight: 600;
     }
 
-    .hula-room-list-item__time {
+    .room-time {
       color: rgba(255, 255, 255, 0.8);
     }
 
-    .hula-room-list-item__preview {
+    .room-preview {
       color: rgba(255, 255, 255, 0.7);
     }
 
-    .hula-room-list-item__placeholder {
+    .room-preview__placeholder {
       color: rgba(255, 255, 255, 0.5);
     }
 
-    .hula-room-list-item__typing {
+    .typing-indicator {
       color: rgba(255, 255, 255, 0.9);
-    }
-
-    .n-icon {
-      color: rgba(255, 255, 255, 0.7) !important;
     }
   }
 
-  &--batch {
+  &.batch-mode {
     padding-left: 12px;
   }
 
-  &--batch-selected {
+  &.batch-selected {
     background: var(--hula-color-primary-100);
     box-shadow: inset 0 0 0 1px var(--hula-color-primary-300-alpha);
   }
 
-  &--top {
+  &.top {
     border-left: 3px solid var(--hula-color-primary-500);
     padding-left: 9px;
   }
 
-  &--muted {
+  &.muted {
     opacity: 0.65;
   }
 
-  &--dm {
-    .n-avatar {
-      border: 2px solid transparent;
-
-      .n-badge__dot {
-        width: 10px !important;
-        height: 10px !important;
-        right: -1px !important;
-        bottom: -1px !important;
-      }
-    }
-  }
-
-  &--burn {
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 8px;
-      left: 52px;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--hula-color-danger-500);
-      animation: burn-pulse 2s infinite;
-    }
+  &.invite {
+    background: var(--hula-room-invite-bg);
   }
 }
 
-.hula-room-list-item__checkbox {
+.active-indicator {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  background: var(--hula-color-primary-500);
+  border-radius: 0 3px 3px 0;
+}
+
+.room-checkbox {
   flex-shrink: 0;
 }
 
-.hula-room-list-item__name {
+.room-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--hula-radius-sm);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  position: relative;
+  background: var(--hula-surface-subtle);
+  overflow: hidden;
+  color: var(--hula-text-secondary);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__initial {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--hula-color-primary-100);
+    color: var(--hula-color-primary-500);
+  }
+}
+
+.favorite-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hula-color-warning-500);
+  border: 2px solid var(--hula-surface-panel);
+  z-index: 2;
+}
+
+.room-avatar.is-online::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hula-color-success-500);
+  border: 2px solid var(--hula-surface-panel);
+}
+
+.room-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.room-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.room-name {
   font-size: 14px;
-  line-height: 20px;
   font-weight: 500;
   color: var(--hula-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
-.hula-room-list-item__time {
+.room-tag {
+  flex-shrink: 0;
+}
+
+.room-time {
   font-size: 11px;
-  line-height: 18px;
-  color: var(--hula-text-muted);
-}
-
-.hula-room-list-item__preview,
-.hula-room-list-item__placeholder {
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.hula-room-list-item__preview {
-  color: var(--hula-text-secondary);
-}
-
-.hula-room-list-item__placeholder {
   color: var(--hula-text-tertiary);
+  flex-shrink: 0;
 }
 
-.hula-room-list-item__typing {
+.room-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.room-preview {
   font-size: 12px;
-  line-height: 18px;
+  color: var(--hula-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &.mention {
+    color: var(--hula-accent);
+  }
+
+  &__placeholder {
+    color: var(--hula-text-tertiary);
+  }
+}
+
+.preview-tag {
+  flex-shrink: 0;
+}
+
+.typing-indicator {
   color: var(--hula-color-primary-500);
+}
+
+.room-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.unread-badge {
+  background: var(--hula-room-unread-badge-bg);
+  color: var(--hula-text-inverse);
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+
+  &.mention {
+    background: var(--hula-room-highlight-badge-bg);
+  }
+}
+
+.pin-icon,
+.mute-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hula-text-tertiary);
+
+  svg {
+    width: 11px;
+    height: 11px;
+    fill: currentColor;
+  }
+}
+
+.burn::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 52px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hula-color-danger-500);
+  animation: burn-pulse 2s infinite;
 }
 
 @keyframes burn-pulse {
@@ -424,7 +537,7 @@ const handleBatchToggle = () => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hula-room-list-item--burn::after {
+  .burn::after {
     animation: none;
   }
 }

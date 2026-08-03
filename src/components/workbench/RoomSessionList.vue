@@ -32,7 +32,7 @@
       <RecycleScroller
         class="scroller h-full"
         :items="sessionList"
-        :item-size="80"
+        :item-size="70"
         key-field="roomId"
         v-slot="{ item }">
         <HulaRoomListItem
