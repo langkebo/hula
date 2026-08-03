@@ -74,7 +74,7 @@ const handleUpdateShow = (value: boolean): void => {
   display: flex;
   flex-direction: column;
   padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
-  background: var(--hula-surface-panel, #fff);
+  background: var(--hula-surface-panel);
 
   &__item {
     display: flex;
@@ -84,10 +84,10 @@ const handleUpdateShow = (value: boolean): void => {
     height: 48px;
     padding: 0;
     border: none;
-    border-bottom: 1px solid var(--hula-border-default, #eee);
+    border-bottom: 1px solid var(--hula-border-default);
     background: transparent;
     font-size: 16px;
-    color: var(--hula-text-primary, #333);
+    color: var(--hula-text-primary);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 
@@ -96,11 +96,11 @@ const handleUpdateShow = (value: boolean): void => {
     }
 
     &:active {
-      background: var(--hula-fill-default, #f5f5f5);
+      background: var(--hula-surface-panel-muted);
     }
 
     &--danger {
-      color: var(--hula-color-danger-500, #ee0a24);
+      color: var(--hula-color-danger-500);
     }
   }
 

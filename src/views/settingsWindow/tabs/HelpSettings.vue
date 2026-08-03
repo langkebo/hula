@@ -115,6 +115,13 @@
         </div>
       </div>
     </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.diagnostics.title') }}</h3>
+      <DiagnosticsPanel />
+    </div>
   </div>
 </template>
 
@@ -126,6 +133,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { usePlatform } from '@/composables/usePlatform'
+import DiagnosticsPanel from '@/components/settings/DiagnosticsPanel.vue'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 

@@ -923,22 +923,12 @@ class SpaceService extends BaseMatrixService {
   }
 
   async searchSpacesViaApi(query: string, limit = 10): Promise<SpaceInfo[]> {
-    const client = this.getClient()
     try {
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.SEARCH, {
-        search_term: query,
-        limit: String(limit)
-      })) as { spaces?: Array<Record<string, unknown>> }
-      return (result.spaces ?? []).map((space) => ({
-        spaceId: space.space_id as string,
-        name: (space.name as string) || '',
-        topic: (space.topic as string) || undefined,
-        avatarUrl: (space.avatar_url as string) || undefined,
-        memberCount: (space.member_count as number) ?? 0,
-        childCount: (space.child_count as number) ?? 0
-      }))
+      const manager = this.getSpaceManager()
+      const spaces = await manager.searchSpaces(query, limit)
+      return spaces.map((space) => this.sdkSpaceToSpaceInfo(space))
     } catch (err) {
-      logger.error(`[Space] 搜索空间失败: ${err}`)
+      logger.error(`[Space] SpaceManager 搜索空间失败: ${err}`)
       return []
     }
   }
@@ -948,34 +938,18 @@ class SpaceService extends BaseMatrixService {
       const manager = this.getSpaceManager()
       return (await manager.getSpaceStatistics()) as Record<string, unknown>
     } catch (err) {
-      logger.error(`[Space] SpaceManager 获取空间统计失败，回退: ${err}`)
-      const client = this.getClient()
-      try {
-        const result = await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.STATISTICS)
-        return result as Record<string, unknown>
-      } catch (fallbackErr) {
-        logger.error(`[Space] 回退获取空间统计也失败: ${fallbackErr}`)
-        return {}
-      }
+      logger.error(`[Space] SpaceManager 获取空间统计失败: ${err}`)
+      return {}
     }
   }
 
   async getUserSpacesViaApi(): Promise<SpaceInfo[]> {
-    const client = this.getClient()
     try {
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.USER)) as {
-        spaces?: Array<Record<string, unknown>>
-      }
-      return (result.spaces ?? []).map((space) => ({
-        spaceId: space.space_id as string,
-        name: (space.name as string) || '',
-        topic: (space.topic as string) || undefined,
-        avatarUrl: (space.avatar_url as string) || undefined,
-        memberCount: (space.member_count as number) ?? 0,
-        childCount: (space.child_count as number) ?? 0
-      }))
+      const manager = this.getSpaceManager()
+      const spaces = await manager.getUserSpaces()
+      return spaces.map((space) => this.sdkSpaceToSpaceInfo(space))
     } catch (err) {
-      logger.error(`[Space] 获取用户空间列表失败: ${err}`)
+      logger.error(`[Space] SpaceManager 获取用户空间列表失败: ${err}`)
       return []
     }
   }
@@ -986,24 +960,8 @@ class SpaceService extends BaseMatrixService {
       const spaces = await manager.getRoomParentSpaces(roomId)
       return spaces.map((s) => this.sdkSpaceToSpaceInfo(s))
     } catch (err) {
-      logger.error(`[Space] SpaceManager 获取房间所属空间失败，回退: ${roomId}, ${err}`)
-      const client = this.getClient()
-      try {
-        const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.PARENTS(roomId))) as Array<
-          Record<string, unknown>
-        >
-        return result.map((space) => ({
-          spaceId: space.space_id as string,
-          name: (space.name as string) || '',
-          topic: (space.topic as string) || undefined,
-          avatarUrl: (space.avatar_url as string) || undefined,
-          memberCount: (space.member_count as number) ?? 0,
-          childCount: (space.child_count as number) ?? 0
-        }))
-      } catch (fallbackErr) {
-        logger.error(`[Space] 回退获取房间所属空间也失败: ${roomId}, ${fallbackErr}`)
-        return []
-      }
+      logger.error(`[Space] SpaceManager 获取房间所属空间失败: ${roomId}, ${err}`)
+      return []
     }
   }
 
@@ -1017,26 +975,8 @@ class SpaceService extends BaseMatrixService {
       if (errMsg.includes('M_NOT_FOUND') || errMsg.includes('404')) {
         return null
       }
-      logger.error(`[Space] SpaceManager 获取房间空间信息失败，回退: ${roomId}, ${err}`)
-      const client = this.getClient()
-      try {
-        const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.BY_ROOM(roomId))) as Record<
-          string,
-          unknown
-        >
-        if (!result?.space_id) return null
-        return {
-          spaceId: result.space_id as string,
-          name: (result.name as string) || '',
-          topic: (result.topic as string) || undefined,
-          avatarUrl: (result.avatar_url as string) || undefined,
-          memberCount: (result.member_count as number) ?? 0,
-          childCount: (result.child_count as number) ?? 0
-        }
-      } catch (fallbackErr) {
-        logger.error(`[Space] 回退获取房间空间信息也失败: ${roomId}, ${fallbackErr}`)
-        return null
-      }
+      logger.error(`[Space] SpaceManager 获取房间空间信息失败: ${roomId}, ${err}`)
+      return null
     }
   }
 

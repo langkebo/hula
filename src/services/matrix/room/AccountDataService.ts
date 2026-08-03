@@ -22,10 +22,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getRoomAccountData(roomId: string, eventType: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA(client.getUserId()!, roomId, eventType)
-      )
+      const result = await client.getAccountDataManager().getRoomAccountDataFromServer(roomId, eventType)
       return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间 account data 失败: ${err}`)
@@ -36,12 +33,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async setRoomAccountData(roomId: string, eventType: string, content: Record<string, unknown>): Promise<void> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest(
-        'PUT',
-        MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA(client.getUserId()!, roomId, eventType),
-        undefined,
-        content
-      )
+      await client.getAccountDataManager().setRoomAccountData(roomId, eventType, content)
       logger.info(`[MatrixRoom] 设置房间 account data 成功: ${roomId}/${eventType}`)
     } catch (err) {
       logger.error(`[MatrixRoom] 设置房间 account data 失败: ${err}`)

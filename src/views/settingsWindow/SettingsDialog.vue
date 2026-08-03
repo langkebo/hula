@@ -1,5 +1,6 @@
 <template>
-  <div v-if="visible" class="settings-dialog">
+  <SkeletonSettings v-if="loading" />
+  <div v-else-if="visible" class="settings-dialog">
     <div class="settings-sidebar">
       <SettingsTabNav
         v-if="filteredTabs.length > 0"
@@ -33,10 +34,9 @@
           </n-input>
         </div>
         <n-button
-          quaternary
           circle
-          size="small"
           :aria-label="t('setting.dialog.close_aria_label')"
+          class="settings-close-btn"
           @click="handleClose">
           <template #icon>
             <n-icon :size="20">
@@ -64,6 +64,8 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { NButton, NIcon, NInput, useDialog } from 'naive-ui'
 import { computed, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import SkeletonSettings from '@/components/common/SkeletonSettings.vue'
 import {
   createSettingsDirtyRegistry,
   provideSettingsDirtyRegistry
@@ -86,15 +88,18 @@ defineOptions({
 const props = withDefaults(
   defineProps<{
     standalone?: boolean
+    loading?: boolean
   }>(),
   {
-    standalone: false
+    standalone: false,
+    loading: false
   }
 )
 
 const settingsDialogStore = useSettingsDialogStore()
 const { isDesktop } = usePlatform()
 const { t, tm } = useI18n()
+const router = useRouter()
 const resolveSearchKeywords = (tabId: SettingsTabType): string[] => {
   const value = tm(`setting.dialog.search_terms.${tabId}`) as unknown
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
@@ -168,6 +173,9 @@ async function handleClose() {
   if (props.standalone) {
     if (hasTauriRuntime()) {
       await WebviewWindow.getCurrent().close()
+    } else {
+      // 浏览器 dev 模式下无法关闭窗口，回退到路由返回
+      router.back()
     }
     return
   }
@@ -264,6 +272,8 @@ onUnmounted(() => {
 }
 
 .settings-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -272,6 +282,20 @@ onUnmounted(() => {
   padding: var(--hula-space-4) var(--hula-space-5);
   background: color-mix(in srgb, var(--hula-surface-panel) 88%, transparent);
   border-bottom: 1px solid var(--hula-border-default);
+}
+
+.settings-close-btn {
+  flex-shrink: 0;
+  color: var(--hula-text-secondary);
+  background-color: var(--hula-surface-subtle);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.settings-close-btn:hover {
+  color: var(--hula-text-primary);
+  background-color: var(--hula-surface-sidebar-hover);
 }
 
 .settings-header-main {

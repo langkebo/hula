@@ -1,0 +1,81 @@
+{
+  "title": "External Services",
+  "subtitle": "Manage TrendRadar, OpenClaw, Webhook and other external service integrations",
+  "actions": {
+    "refresh": "Refresh",
+    "register": "Register Service",
+    "check_health": "Health Check",
+    "check_all_health": "Check All Health",
+    "edit": "Edit",
+    "delete": "Delete",
+    "enable": "Enable",
+    "disable": "Disable"
+  },
+  "filters": {
+    "service_type": "Service Type",
+    "service_type_placeholder": "All types",
+    "service_type_all": "All"
+  },
+  "list": {
+    "title": "Service List",
+    "empty": "No external services",
+    "as_id": "Service ID",
+    "service_type": "Type",
+    "service_id": "Identifier",
+    "display_name": "Name",
+    "is_enabled": "Enabled",
+    "is_healthy": "Healthy",
+    "created_ts": "Created",
+    "actions": "Actions"
+  },
+  "health": {
+    "title": "Health Status",
+    "empty": "No health data",
+    "healthy": "Healthy",
+    "unhealthy": "Unhealthy",
+    "last_check_ts": "Last Check",
+    "last_success_ts": "Last Success",
+    "last_error": "Last Error",
+    "consecutive_failures": "Consecutive Failures"
+  },
+  "register": {
+    "title": "Register External Service",
+    "service_type": "Service Type",
+    "service_type_placeholder": "e.g. trendradar / webhook / custom",
+    "service_id": "Service ID",
+    "service_id_placeholder": "e.g. news-bot",
+    "display_name": "Display Name",
+    "display_name_placeholder": "e.g. News Bot",
+    "webhook_url": "Webhook URL",
+    "webhook_url_placeholder": "https://example.com/webhook",
+    "api_key": "API Key",
+    "api_key_placeholder": "optional",
+    "config": "Config (JSON)",
+    "config_placeholder": "{}"
+  },
+  "edit": {
+    "title": "Edit External Service",
+    "webhook_url": "Webhook URL",
+    "api_key": "API Key",
+    "config": "Config (JSON)",
+    "is_enabled": "Enabled"
+  },
+  "feedback": {
+    "register_success": "Service registered",
+    "register_failed": "Failed to register service",
+    "update_success": "Service updated",
+    "update_failed": "Failed to update service",
+    "delete_success": "Service deleted",
+    "delete_failed": "Failed to delete service",
+    "health_check_success": "Health check completed",
+    "health_check_failed": "Health check failed",
+    "delete_confirm": "Are you sure you want to delete this external service? This action cannot be undone."
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save"
+  }
+}

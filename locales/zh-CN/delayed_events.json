@@ -1,0 +1,33 @@
+{
+  "title": "延迟事件管理",
+  "scheduled": "待处理",
+  "finalised": "已完成",
+  "empty": "暂无延迟事件",
+  "load_failed": "加载延迟事件失败",
+  "fields": {
+    "delay_id": "延迟ID",
+    "type": "事件类型",
+    "delay": "延迟(ms)",
+    "running_since": "开始时间"
+  },
+  "actions": {
+    "cancel": "取消",
+    "restart": "重启",
+    "send": "立即发送"
+  },
+  "outcome": {
+    "send": "已发送",
+    "cancel": "已取消"
+  },
+  "reason": {
+    "delay": "延迟触发",
+    "error": "错误",
+    "action": "操作触发"
+  },
+  "cancel_success": "已取消延迟事件",
+  "cancel_failed": "取消延迟事件失败",
+  "restart_success": "已重启延迟事件",
+  "restart_failed": "重启延迟事件失败",
+  "send_success": "已立即发送延迟事件",
+  "send_failed": "立即发送失败"
+}

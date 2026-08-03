@@ -163,6 +163,10 @@
       </div>
     </div>
 
+    <n-card title="邀请权限管理" class="settings-card">
+      <InvitePermissionPanel />
+    </n-card>
+
     <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupSuccess" />
 
     <SecureBackupDialog v-model:show="showSecureBackupDialog" />
@@ -331,6 +335,7 @@ import { Icon } from '@iconify/vue'
 import {
   NAlert,
   NButton,
+  NCard,
   NDivider,
   NEmpty,
   NForm,
@@ -347,6 +352,7 @@ import { useI18n } from 'vue-i18n'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
+import InvitePermissionPanel from '@/components/settings/InvitePermissionPanel.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAccount } from '@/composables/user/useAccount'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'

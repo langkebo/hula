@@ -49,6 +49,29 @@
       :key="globalStore.currentSessionRoomId"
       :room-id="globalStore.currentSessionRoomId" />
 
+    <!-- 私密模式切换按钮（仅单聊） -->
+    <div v-if="!isGroup" class="private-mode-bar flex-shrink-0 px-12px py-4px flex items-center gap-8px">
+      <button
+        data-testid="private-toggle-btn"
+        type="button"
+        class="private-toggle-btn"
+        :class="{ 'private-toggle-btn--active': privateModeActive }"
+        :title="privateModeActive ? '退出私密模式' : '进入私密模式'"
+        @click="togglePrivateMode">
+        <span class="private-toggle-btn__letter">S</span>
+      </button>
+      <span v-if="privateModeActive" class="text-[var(--text-sm)] text-[--hula-color-danger-500]">
+        私密模式已开启
+      </span>
+    </div>
+
+    <!-- 粘性事件横幅 -->
+    <StickyEventBanner
+      :events="stickyEvents"
+      :can-set-sticky="canSetSticky"
+      @set-sticky="handleSetSticky"
+      @view="handleViewStickyEvent" />
+
     <!-- 聊天内容 -->
     <div class="flex flex-col flex-1 min-h-0">
       <div
@@ -168,6 +191,19 @@
 
     <!-- 文件上传进度条 -->
     <FileUploadProgress />
+
+    <!-- 阅后即焚切换（私密模式激活时） -->
+    <div
+      v-if="privateModeActive"
+      class="flex-shrink-0 px-12px py-4px flex items-center gap-8px border-t border-[--hula-border-default]">
+      <BurnAfterReadToggle
+        :enabled="burnEnabled"
+        @update:enabled="burnEnabled = $event"
+        @select-duration="burnDuration = $event" />
+      <span class="text-[var(--text-sm)] text-[--hula-text-tertiary]">
+        {{ burnEnabled ? `阅后即焚已开启` : '点击图标开启阅后即焚' }}
+      </span>
+    </div>
   </div>
 
   <!-- 弹出框 -->
@@ -254,6 +290,20 @@
     :event-id="eventReportData.eventId"
     :room-id="eventReportData.roomId"
     :event-content="eventReportData.eventContent" />
+
+  <!-- 私密模式确认对话框 -->
+  <n-modal v-model:show="showPrivateConfirm" class="w-360px border-rd-8px">
+    <div class="bg-[--hula-surface-panel] w-360px p-24px box-border flex flex-col gap-16px">
+      <span class="text-[var(--text-base)] text-[--hula-text-primary] font-500">进入私密模式</span>
+      <p class="text-[var(--text-sm)] text-[--hula-text-secondary]">
+        私密模式下，消息可以设置为阅后即焚，发送后对方阅读将自动销毁。确定要进入私密模式吗？
+      </p>
+      <n-flex justify="end" :size="12">
+        <n-button @click="cancelPrivateMode" secondary>取消</n-button>
+        <n-button type="primary" @click="confirmPrivateMode">确认</n-button>
+      </n-flex>
+    </div>
+  </n-modal>
 </template>
 
 <script setup lang="ts">
@@ -284,8 +334,10 @@ const FileUploadProgress = defineAsyncComponent(() => import('@/components/right
 const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/ThreadPanel.vue'))
 const EventReportDialog = defineAsyncComponent(() => import('@/components/moderation/EventReportDialog.vue'))
 
+import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
 import E2EEBanner from '@/components/chat/E2EEBanner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import StickyEventBanner from '@/components/rightBox/renderMessage/StickyEventBanner.vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { usePopover } from '@/composables/common/usePopover'
@@ -359,7 +411,56 @@ const threadOriginalMessage = ref<{
   timestamp: number
 } | null>(null)
 
-defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId })
+// ===== 粘性事件 =====
+interface StickyEventItem {
+  eventId: string
+  sender: string
+  body: string
+  timestamp: number
+}
+
+const stickyEvents = ref<StickyEventItem[]>([])
+const canSetSticky = computed(() => {
+  // TODO: 根据 power_levels 判断是否有权限设置粘性事件
+  return false
+})
+
+function handleSetSticky() {
+  // TODO: 打开消息选择器或使用最近选中消息
+  logger.info('Set sticky event requested')
+}
+
+function handleViewStickyEvent(eventId: string) {
+  // 滚动到对应消息
+  logger.info('View sticky event:', eventId)
+  jumpToReplyMsg(eventId)
+}
+
+defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId, stickyEvents, canSetSticky })
+
+// ===== 私密模式 =====
+const privateModeActive = ref(false)
+const showPrivateConfirm = ref(false)
+const burnEnabled = ref(false)
+const burnDuration = ref(60)
+
+function togglePrivateMode() {
+  if (privateModeActive.value) {
+    privateModeActive.value = false
+    burnEnabled.value = false
+  } else {
+    showPrivateConfirm.value = true
+  }
+}
+
+function confirmPrivateMode() {
+  privateModeActive.value = true
+  showPrivateConfirm.value = false
+}
+
+function cancelPrivateMode() {
+  showPrivateConfirm.value = false
+}
 
 const handleOpenThread = ({ eventId }: { eventId: string; roomId?: string }) => {
   activeThreadId.value = eventId
@@ -806,6 +907,41 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+// 私密模式 S 按钮
+.private-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--hula-radius-full, 50%);
+  background: transparent;
+  color: var(--hula-text-tertiary);
+  cursor: pointer;
+  font-size: var(--hula-font-size-sm, 14px);
+  font-weight: var(--hula-font-weight-semibold, 600);
+  transition: all var(--hula-motion-duration-fast, 0.15s) var(--hula-motion-ease-standard, ease);
+
+  &:hover {
+    background: var(--hula-surface-panel-muted, rgba(0, 0, 0, 0.04));
+    color: var(--hula-text-primary);
+  }
+
+  &--active {
+    color: var(--hula-color-danger-500);
+    background: var(--hula-color-danger-100, rgba(255, 77, 79, 0.1));
+
+    &:hover {
+      background: var(--hula-color-danger-200, rgba(255, 77, 79, 0.2));
+    }
+  }
+
+  &__letter {
+    pointer-events: none;
+  }
+}
+
 // 悬浮按钮样式
 .float-footer-button {
   position: absolute;

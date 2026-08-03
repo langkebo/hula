@@ -7,17 +7,7 @@
     class="resizable select-none flex flex-col border-r-(1px solid [--hula-border-layout-divider])"
     :style="centerStyle">
     <!-- 分隔条（shrink 模式下隐藏） -->
-    <div v-show="!isShrink" class="resize-handle" style="touch-action: none">
-      <div class="drag-icon opacity-0 transition-all duration-600 ease-in-out">
-        <div
-          style="border-radius: 8px 0 0 8px"
-          class="h-60px w-14px absolute top-50% -translate-y-1/2 right-0 drag-icon bg-[--hula-surface-sidebar-selected]">
-          <svg class="size-16px absolute top-1/2 right--2px transform -translate-y-1/2 color-[--hula-text-tertiary]">
-            <use href="#sliding"></use>
-          </svg>
-        </div>
-      </div>
-    </div>
+    <PanelResizeHandle v-show="!isShrink" side="left" style="touch-action: none" />
 
     <ActionBar
       class="absolute right-0 w-full"
@@ -39,6 +29,7 @@
 
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import PanelResizeHandle from '@/components/common/PanelResizeHandle.vue'
 import { useResponsiveBreakpoint } from '@/composables/layout/useResponsiveBreakpoint'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -47,10 +38,10 @@ const settingStore = useSettingStore()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const centerEl = shallowRef<HTMLElement | null>(null)
 
-// Step 2.3：响应式断点派生中间栏宽度与收缩状态
-const { centerWidth, isShrink } = useResponsiveBreakpoint()
+// Step 2.3：响应式断点派生收缩状态；非 shrink 模式宽度由 store 持久化
+const { isShrink } = useResponsiveBreakpoint()
 
-// 中间栏样式：shrink 模式下 flex 自适应，否则按断点宽度
+// 中间栏样式：shrink 模式下 flex 自适应，否则按 store 持久化的面板宽度
 const centerStyle = computed(() => {
   if (isShrink.value) {
     return {
@@ -60,11 +51,12 @@ const centerStyle = computed(() => {
       maxWidth: '64px'
     }
   }
+  const w = settingStore.panelWidth.left
   return {
     flex: '0 0 auto',
-    width: `${centerWidth.value}px`,
-    minWidth: `${centerWidth.value}px`,
-    maxWidth: `${centerWidth.value}px`
+    width: `${w}px`,
+    minWidth: `${w}px`,
+    maxWidth: `${w}px`
   }
 })
 

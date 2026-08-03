@@ -97,6 +97,7 @@ type SecuritySettingsVm = ComponentPublicInstance & {
 
 vi.mock('naive-ui', () => ({
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['size', 'type', 'loading'] },
+  NCard: { template: '<div><slot /></div>' },
   NDivider: { name: 'NDivider', template: '<hr />' },
   NSpin: { name: 'NSpin', template: '<div class="n-spin"><slot /></div>', props: ['show'] },
   NEmpty: { name: 'NEmpty', template: '<div class="n-empty" />', props: ['description'] },
@@ -193,14 +194,14 @@ describe('SecuritySettings', () => {
   })
 
   it('renders correctly', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     expect(wrapper.find('.security-settings').exists()).toBe(true)
     expect(wrapper.text()).toContain('加密状态')
   })
 
   it('shows encryption disabled state by default', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     expect(getVm(wrapper).encryptionEnabled).toBe(false)
     expect(wrapper.text()).toContain('端到端加密未启用')
@@ -209,21 +210,21 @@ describe('SecuritySettings', () => {
   it('shows encryption enabled state', async () => {
     isEncryptionAvailableMock.mockResolvedValue(true)
     _encryptionEnabled = true
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     expect(getVm(wrapper).encryptionEnabled).toBe(true)
   })
 
   it('loads ignored users on mount', async () => {
     getIgnoredUsersMock.mockResolvedValue(['@user1:test.com', '@user2:test.com'])
-    mount(SecuritySettings)
+    mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     expect(getIgnoredUsersMock).toHaveBeenCalled()
   })
 
   it('loads blocked users from localStorage', async () => {
     localStorage.setItem('hula-blocked-users', JSON.stringify(['@blocked:test.com']))
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     expect(getVm(wrapper).blockedUsers).toContain('@blocked:test.com')
   })
@@ -231,7 +232,7 @@ describe('SecuritySettings', () => {
   it('loads invite lists from localStorage', async () => {
     localStorage.setItem('hula-invite-blocklist', JSON.stringify(['@block:test.com']))
     localStorage.setItem('hula-invite-allowlist', JSON.stringify(['@allow:test.com']))
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     expect(vm.inviteBlocklist).toContain('@block:test.com')
@@ -242,7 +243,7 @@ describe('SecuritySettings', () => {
     localStorage.setItem('hula-show-online', 'false')
     localStorage.setItem('hula-show-typing', 'false')
     localStorage.setItem('hula-send-receipts', 'false')
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     expect(vm.showOnlineStatus).toBe(false)
@@ -251,7 +252,7 @@ describe('SecuritySettings', () => {
   })
 
   it('saves online status to localStorage', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.handleOnlineStatusChange(false)
@@ -260,7 +261,7 @@ describe('SecuritySettings', () => {
   })
 
   it('saves typing status to localStorage', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.handleTypingStatusChange(false)
@@ -268,7 +269,7 @@ describe('SecuritySettings', () => {
   })
 
   it('adds blocked user and saves to localStorage', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.newBlockedUser = '@newblocked:test.com'
@@ -280,7 +281,7 @@ describe('SecuritySettings', () => {
 
   it('rejects duplicate blocked user', async () => {
     localStorage.setItem('hula-blocked-users', JSON.stringify(['@dup:test.com']))
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.newBlockedUser = '@dup:test.com'
@@ -290,7 +291,7 @@ describe('SecuritySettings', () => {
 
   it('removes blocked user', async () => {
     localStorage.setItem('hula-blocked-users', JSON.stringify(['@rm:test.com', '@keep:test.com']))
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.handleUnblock('@rm:test.com')
@@ -299,7 +300,7 @@ describe('SecuritySettings', () => {
   })
 
   it('adds user to invite blocklist', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.newBlocklistUser = '@blockuser:test.com'
@@ -310,7 +311,7 @@ describe('SecuritySettings', () => {
 
   it('removes user from invite allowlist', async () => {
     localStorage.setItem('hula-invite-allowlist', JSON.stringify(['@rm:test.com', '@keep:test.com']))
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.handleRemoveInviteAllowlist('@rm:test.com')
@@ -318,7 +319,7 @@ describe('SecuritySettings', () => {
   })
 
   it('clears secret chat triggers dialog', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.handleClearSecretChat()
@@ -327,7 +328,7 @@ describe('SecuritySettings', () => {
 
   it('saves secret chat password', async () => {
     isSecretChatConfiguredMock.mockReturnValue(true)
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.secretChatForm.password = '1234'
@@ -337,7 +338,7 @@ describe('SecuritySettings', () => {
   })
 
   it('rejects mismatched secret chat passwords', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.secretChatForm.password = '1234'
@@ -347,7 +348,7 @@ describe('SecuritySettings', () => {
   })
 
   it('rejects short secret chat password', async () => {
-    const wrapper = mount(SecuritySettings)
+    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.secretChatForm.password = '12'

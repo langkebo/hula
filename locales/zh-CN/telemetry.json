@@ -1,0 +1,77 @@
+{
+  "title": "遥测监控",
+  "subtitle": "查看服务器运行时指标、Prometheus 配置和告警",
+  "common": {
+    "yes": "是",
+    "no": "否"
+  },
+  "status": {
+    "title": "遥测状态",
+    "empty": "暂无遥测配置",
+    "enabled": "已启用",
+    "trace_enabled": "Trace 启用",
+    "metrics_enabled": "Metrics 启用",
+    "service_name": "服务名",
+    "service_version": "服务版本",
+    "sampling_ratio": "采样率",
+    "otlp_endpoint": "OTLP 端点",
+    "prometheus_port": "Prometheus 端口",
+    "batch_export": "批量导出"
+  },
+  "metrics": {
+    "title": "指标摘要",
+    "empty": "暂无指标数据",
+    "total_metrics": "指标总数",
+    "total_counters": "Counter 数",
+    "total_gauges": "Gauge 数",
+    "total_histograms": "Histogram 数",
+    "rendered_bytes": "渲染字节数",
+    "snapshot_ts": "快照时间"
+  },
+  "scheduler": {
+    "title": "Appservice 调度器",
+    "total_services": "服务总数",
+    "available_services": "可用服务",
+    "in_backoff": "退避中",
+    "capacity_limited": "容量受限",
+    "pending_events": "待处理事件",
+    "pending_transactions": "待处理事务",
+    "success_count": "成功总数",
+    "failure_count": "失败总数",
+    "in_flight": "进行中"
+  },
+  "alerts": {
+    "title": "告警列表",
+    "empty": "暂无告警",
+    "count": "{count} 条告警",
+    "severity": "严重程度",
+    "rule_name": "规则名",
+    "status": "状态",
+    "message": "消息",
+    "trigger_count": "触发次数",
+    "triggered_at": "触发时间",
+    "last_seen_ts": "最近触发",
+    "actions": "操作",
+    "acknowledge": "确认",
+    "status_firing": "触发中",
+    "status_acknowledged": "已确认",
+    "status_recovered": "已恢复",
+    "status_closed": "已关闭",
+    "severity_info": "信息",
+    "severity_warning": "警告",
+    "severity_high": "高",
+    "severity_critical": "严重"
+  },
+  "filters": {
+    "status_placeholder": "按状态过滤",
+    "severity_placeholder": "按严重程度过滤"
+  },
+  "actions": {
+    "refresh": "刷新"
+  },
+  "feedback": {
+    "ack_success": "告警已确认",
+    "ack_failed": "确认告警失败",
+    "load_failed": "加载遥测数据失败"
+  }
+}

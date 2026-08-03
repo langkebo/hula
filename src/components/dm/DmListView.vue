@@ -23,48 +23,47 @@
 
     <n-divider style="margin: 0" />
 
-    <n-spin :show="loading">
-      <n-scrollbar style="height: calc(100vh - 200px)">
-        <n-empty v-if="filteredDmRooms.length === 0" :description="t('dm.list.empty')" class="mt-40px" />
-        <div v-else class="dm-items">
-          <div
-            v-for="dmRoom in filteredDmRooms"
-            :key="dmRoom.roomId"
-            class="dm-item"
-            :class="{ active: activeRoomId === dmRoom.roomId }"
-            @click="handleSelectRoom(dmRoom)"
-            @contextmenu="handleContextMenu($event, dmRoom)">
-            <n-flex align="center" :size="12">
-              <n-badge :dot="false" color="var(--color-warning)" :offset="[-4, 4]">
-                <n-avatar
-                  :size="44"
-                  :src="AvatarUtils.getAvatarUrl(dmRoom.avatarUrl)"
-                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                  round />
-              </n-badge>
-              <n-flex vertical :size="4" class="flex-1 truncate">
-                <n-flex align="center" justify="space-between">
-                  <span class="text-14px truncate">
-                    {{ dmRoom.name || dmRoom.roomId }}
-                  </span>
-                  <span class="text-12px text-[--hula-text-tertiary]">
-                    {{ formatTime(dmRoom.lastMessage?.timestamp) }}
-                  </span>
-                </n-flex>
-                <n-flex align="center" justify="space-between">
-                  <span class="text-12px text-[--hula-text-quaternary] truncate flex-1">
-                    {{ dmRoom.lastMessage?.content || t('dm.list.no_message') }}
-                  </span>
-                  <n-flex align="center" :size="4">
-                    <n-badge v-if="(dmRoom.unreadCount || 0) > 0" :value="dmRoom.unreadCount" :max="99" type="info" />
-                  </n-flex>
+    <SkeletonDmList v-if="isLoading" :rows="6" />
+    <n-scrollbar v-else style="height: calc(100vh - 200px)">
+      <n-empty v-if="filteredDmRooms.length === 0" :description="t('dm.list.empty')" class="mt-40px" />
+      <div v-else class="dm-items">
+        <div
+          v-for="dmRoom in filteredDmRooms"
+          :key="dmRoom.roomId"
+          class="dm-item"
+          :class="{ active: activeRoomId === dmRoom.roomId }"
+          @click="handleSelectRoom(dmRoom)"
+          @contextmenu="handleContextMenu($event, dmRoom)">
+          <n-flex align="center" :size="12">
+            <n-badge :dot="false" color="var(--color-warning)" :offset="[-4, 4]">
+              <n-avatar
+                :size="44"
+                :src="AvatarUtils.getAvatarUrl(dmRoom.avatarUrl)"
+                :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                round />
+            </n-badge>
+            <n-flex vertical :size="4" class="flex-1 truncate">
+              <n-flex align="center" justify="space-between">
+                <span class="text-14px truncate">
+                  {{ dmRoom.name || dmRoom.roomId }}
+                </span>
+                <span class="text-12px text-[--hula-text-tertiary]">
+                  {{ formatTime(dmRoom.lastMessage?.timestamp) }}
+                </span>
+              </n-flex>
+              <n-flex align="center" justify="space-between">
+                <span class="text-12px text-[--hula-text-quaternary] truncate flex-1">
+                  {{ dmRoom.lastMessage?.content || t('dm.list.no_message') }}
+                </span>
+                <n-flex align="center" :size="4">
+                  <n-badge v-if="(dmRoom.unreadCount || 0) > 0" :value="dmRoom.unreadCount" :max="99" type="info" />
                 </n-flex>
               </n-flex>
             </n-flex>
-          </div>
+          </n-flex>
         </div>
-      </n-scrollbar>
-    </n-spin>
+      </div>
+    </n-scrollbar>
 
     <ContextMenu ref="contextMenuRef" :menu="contextMenuItems" @select="handleContextMenuSelect" />
 
@@ -76,6 +75,7 @@
 import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import ContextMenu from '@/components/common/ContextMenu.vue'
+import SkeletonDmList from '@/components/common/SkeletonDmList.vue'
 import { ThemeEnum } from '@/enums'
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -84,19 +84,24 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import CreateDmDialog from './CreateDmDialog.vue'
 
+const props = defineProps<{ loading?: boolean }>()
+
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 
 const searchValue = ref('')
-const loading = ref(false)
+const internalLoading = ref(false)
 const showCreateDm = ref(false)
 const activeRoomId = ref('')
 const contextMenuRef = ref()
 const selectedRoom = ref<DmRoomInfo | null>(null)
 const dmRooms = ref<DmRoomInfo[]>([])
 const pinnedRooms = ref<Set<string>>(new Set())
+
+// loading prop 优先于内部 internalLoading（用于外部强制显示骨架屏）
+const isLoading = computed(() => props.loading ?? internalLoading.value)
 
 const filteredDmRooms = computed(() => {
   let rooms = dmRooms.value
@@ -119,12 +124,12 @@ const formatTime = (timestamp?: number) => {
 }
 
 const loadDmRooms = async () => {
-  loading.value = true
+  internalLoading.value = true
   try {
     const rooms = await matrixDirectMessageService.getDmRoomInfos(false)
     dmRooms.value = rooms
   } finally {
-    loading.value = false
+    internalLoading.value = false
   }
 }
 

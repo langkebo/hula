@@ -109,8 +109,8 @@ const {
   reset
 } = useKeyBackupFlow({ mode: props.mode })
 
-const successColor = 'var(--success-color, #22c55e)'
-const dangerColor = 'var(--danger-color, #ef4444)'
+const successColor = 'var(--hula-color-success-500)'
+const dangerColor = 'var(--hula-color-danger-500)'
 
 const isSetup = computed(() => props.mode === 'setup')
 

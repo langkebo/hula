@@ -221,7 +221,7 @@ defineExpose({
   justify-content: center;
   align-items: center;
   padding: 12px;
-  color: var(--hula-text-tertiary, #909090);
+  color: var(--hula-text-tertiary);
   font-size: 12px;
 }
 
@@ -241,7 +241,7 @@ defineExpose({
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  background: var(--color-primary, var(--hula-brand));
+  background: var(--hula-color-primary-500, var(--hula-brand));
   color: var(--hula-text-inverse);
   border-radius: 20px;
   font-size: 12px;

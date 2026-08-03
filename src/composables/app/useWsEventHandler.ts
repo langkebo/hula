@@ -4,6 +4,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useExtensionEventBridge } from '@/composables/app/useExtensionEventBridge'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
 import { CallTypeEnum, ChangeTypeEnum, MittEnum, OnlineEnum, RoomTypeEnum, WsResponseMessageType } from '@/enums'
@@ -510,6 +511,40 @@ export function useWsEventHandler() {
       }
     })
 
+    // ===== Manager 事件 → store 联动（由 subscribeManagerEvents 桥接的 mitt 事件）=====
+    useMitt.on(MittEnum.FRIEND_REQUEST_RECEIVED, async () => {
+      logger.debug('[ManagerEvent] 收到好友请求')
+      await contactStore.getApplyPage('friend', true)
+      globalStore.refreshUnreadBadge()
+    })
+
+    useMitt.on(MittEnum.FRIEND_REQUEST_ACCEPTED, async () => {
+      logger.debug('[ManagerEvent] 好友请求被接受')
+      await contactStore.getContactList(true)
+    })
+
+    useMitt.on(MittEnum.FRIEND_REMOVED, async () => {
+      logger.debug('[ManagerEvent] 好友被移除')
+      await contactStore.getContactList(true)
+    })
+
+    useMitt.on<{ eventId: string; burnedAt: number }>(MittEnum.BURN_MESSAGE_BURNED, (payload) => {
+      logger.debug('[ManagerEvent] 阅后即焚消息已焚毁', payload)
+      if (payload?.eventId) {
+        chatStore.deleteMsg(payload.eventId)
+      }
+    })
+
+    useMitt.on(MittEnum.WIDGET_CREATED, (widget: unknown) => {
+      logger.info('[ManagerEvent] Widget 已创建', widget)
+    })
+    useMitt.on(MittEnum.WIDGET_UPDATED, (widget: unknown) => {
+      logger.info('[ManagerEvent] Widget 已更新', widget)
+    })
+    useMitt.on(MittEnum.WIDGET_DELETED, (widgetId: unknown) => {
+      logger.info('[ManagerEvent] Widget 已删除', widgetId)
+    })
+
     if (hasTauriRuntime()) {
       listen('websocket-event', handleWebsocketEvent).then((unlisten) => {
         wsEventUnlisten = unlisten
@@ -546,3 +581,26 @@ export function useWsEventHandler() {
 
   return { registerHandlers, cleanup }
 }
+
+/**
+ * 订阅 Matrix SDK Manager 事件（Friend / BurnAfterRead / Widget）并桥接到 mitt。
+ *
+ * 通过 `useExtensionEventBridge` 将三个 Manager 的 SDK 事件转发为 mitt 事件，
+ * 供 `registerHandlers` 中的 store 联动监听器消费。
+ *
+ * @returns 取消订阅函数，调用后清理所有 Manager 事件订阅
+ */
+export async function subscribeManagerEvents(): Promise<() => void> {
+  const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
+  await matrixClientService.waitForClientReady({ timeoutMs: 5000 })
+  const client = matrixClientService.getClient()
+  if (!client) {
+    logger.warn('[subscribeManagerEvents] Matrix 客户端未就绪，跳过 Manager 事件订阅')
+    return () => {}
+  }
+
+  const { cleanup } = useExtensionEventBridge(client as Parameters<typeof useExtensionEventBridge>[0])
+  logger.info('[subscribeManagerEvents] Manager 事件订阅已注册（Friend / BurnAfterRead / Widget）')
+  return cleanup
+}
+

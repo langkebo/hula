@@ -367,27 +367,16 @@ declare module 'matrix-js-sdk' {
     redact(roomId: string, eventId: string, txnId?: string, opts?: { reason?: string }): Promise<{ event_id: string }>
     getVisibleRooms(): Room[]
     syncOnce(opts?: Record<string, unknown>): Promise<void>
-    getBurnAfterReadManager(): BurnAfterReadManager
-    getSpaceManager(): import('matrix-js-sdk/space').SpaceManager
-    getKeyRotationManager(): import('matrix-js-sdk/key-rotation').KeyRotationManager
-    getDehydratedDeviceManager(): import('matrix-js-sdk/dehydrated-device').DehydratedDeviceManager
-    oidcUserInfo(): Promise<Record<string, unknown>>
-    isCrossSigningReady(): Promise<boolean>
-    isSecretStorageReady(): Promise<boolean>
-    requestVerificationDM(userId: string, deviceId: string, methods?: string[]): Promise<unknown>
-    requestVerification(userId: string, methods?: string[]): Promise<unknown>
-    getVerificationRequestsToDevice(userId: string): unknown[]
-    setDeviceVerified(userId: string, deviceId: string, verified?: boolean): Promise<void>
-    setDeviceBlocked(userId: string, deviceId: string, blocked: boolean): Promise<void>
-    checkKeyBackup(): Promise<unknown>
-    isKeyBackupKeyBackupEnabled(): Promise<boolean>
-    getKeyBackupInfo(): Promise<unknown>
-    getPresenceManager(): PresenceManager | null
-    checkDeviceTrust(userId: string, deviceId: string): Promise<unknown>
-    getStoredDevicesForUser(userId: string): Promise<unknown[]>
-    getRoomStateEvent(roomId: string, eventType: string, stateKey: string): Promise<Record<string, unknown>>
-    sync(options: Record<string, unknown>): Promise<void>
-    on(event: 'sync', listener: (state: string) => void): void
+    // getBurnAfterReadManager now available in SDK (matrix-js-sdk@40.2.0+)
+    // getSpaceManager now available in SDK
+    // getKeyRotationManager now available in SDK
+    // getDehydratedDeviceManager now available in SDK
+    // getPresenceManager now available in SDK
+    // getDeviceKeysManager now available in SDK
+    // getCryptoKeysManager now available in SDK
+    // getKeyVerificationManager now available in SDK
+    // getTypingManager now available in SDK
+    // getReadReceiptsManager now available in SDK
     on(event: 'room', listener: (room: Room) => void): void
     on(event: 'Room.timeline', listener: (event: MatrixEvent, room: Room | undefined) => void): void
     on(event: 'Room.name', listener: (room: Room) => void): void

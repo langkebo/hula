@@ -20,7 +20,14 @@ export default defineConfig(
             environment: 'happy-dom',
             globals: true,
             setupFiles: ['./tests/setup.ts'],
-            include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}']
+            // 约定：.test.ts 用于单元测试和契约测试（src/**/__tests__/、src/**/*.test.ts），
+            //       .spec.ts 用于集成测试和 E2E 场景（tests/、e2e/）。
+            //       两种模式均被 vitest 发现执行，无功能差异，仅命名约定区分用途。
+            include: [
+              'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+              'tests/unit/**/*.test.ts',
+              'tests/lint/**/*.test.ts'
+            ]
           }
         },
         {
@@ -45,6 +52,8 @@ export default defineConfig(
               'src/components/friend/FriendDetailDrawer.stories.ts',
               'src/components/friend/FriendListView.stories.ts',
               'src/components/friend/FriendRequestDialog.stories.ts',
+              'src/components/friend/FriendListItem.stories.ts',
+              'src/components/friend/FriendRequestCard.stories.ts',
               'src/components/rightBox/Details.stories.ts',
               'src/components/rightBox/chatBox/ChatSidebar.stories.ts',
               'src/components/room/RoomDetailPane.stories.ts',
@@ -52,6 +61,7 @@ export default defineConfig(
               'src/components/workbench/RoomSpaceWorkbench.stories.ts',
               'src/components/workbench/WorkbenchDetailPane.stories.ts',
               'src/components/workbench/HulaSpaceTree.stories.ts',
+              'src/components/workbench/SpaceListPane.stories.ts',
               'src/components/rightBox/MsgInput.stories.ts',
               'src/components/rightBox/renderMessage/HulaMessageMeta.stories.ts'
             ],

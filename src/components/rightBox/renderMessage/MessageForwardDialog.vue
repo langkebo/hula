@@ -368,7 +368,7 @@ watch(
   height: 16px;
   border: 1px solid var(--hula-border-contrast);
   border-radius: 4px;
-  color: #fff;
+  color: var(--hula-text-inverse);
   flex-shrink: 0;
 
   &--checked {
@@ -439,7 +439,7 @@ watch(
 
 .btn--primary {
   background: var(--hula-color-primary-500);
-  color: #fff;
+  color: var(--hula-text-inverse);
 
   &:hover:not(:disabled) {
     background: var(--hula-color-primary-600, var(--hula-color-primary-500));
