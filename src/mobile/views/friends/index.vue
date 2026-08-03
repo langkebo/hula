@@ -60,11 +60,13 @@
           v-for="result in userSearchResults"
           :key="result.userId"
           class="flex items-center gap-10px p-10px rounded-10px bg-[--hula-surface-panel]">
-          <img
-            class="size-40px rounded-full object-cover"
-            :src="AvatarUtils.getAvatarUrl(result.avatarUrl || '')"
-            alt="头像"
-            @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+          <div class="friend-avatar-wrapper">
+            <img
+              class="size-40px rounded-full object-cover"
+              :src="AvatarUtils.getAvatarUrl(result.avatarUrl || '')"
+              alt="头像"
+              @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+          </div>
           <div class="flex-1 min-w-0">
             <div class="text-14px font-medium truncate text-[--hula-text-primary]">
               {{ result.displayName || result.userId }}
@@ -175,19 +177,22 @@
                       @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
                       :class="{ active: activeItem === item.uid }"
                       class="item-box w-full h-75px mb-5px flex items-center gap-10px">
-                      <img
-                        class="size-44px rounded-full object-cover grayscale"
-                        :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
-                        style="border: 1px solid var(--avatar-border-color)"
-                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                        alt="用户头像"
-                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                      <div
+                        class="friend-avatar-wrapper"
+                        :class="{ 'is-online': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }">
+                        <img
+                          class="size-44px rounded-full object-cover"
+                          :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
+                          style="border: 1px solid var(--avatar-border-color)"
+                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                          alt="用户头像"
+                          @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                      </div>
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
                           {{ groupStore.getUserInfo(item.uid)?.name }}
                         </span>
                         <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
-                          [
                           <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
                           <template v-else-if="getUserState(item.uid)">
                             <img
@@ -198,20 +203,14 @@
                           </template>
                           <template v-else>
                             <span
-                              class="inline-block size-8px rounded-full"
-                              :style="{
-                                backgroundColor:
-                                  item.activeStatus === OnlineEnum.ONLINE
-                                    ? 'var(--color-online)'
-                                    : 'var(--color-offline)'
-                              }"></span>
+                              class="status-dot"
+                              :class="item.activeStatus === OnlineEnum.ONLINE ? 'online' : 'offline'"></span>
                             {{
                               item.activeStatus === OnlineEnum.ONLINE
                                 ? t('mobile_contact.status.online') || '在线'
                                 : t('mobile_contact.status.offline') || '离线'
                             }}
                           </template>
-                          ]
                         </div>
                       </div>
                     </div>
@@ -239,19 +238,22 @@
                         @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
                         :class="{ active: activeItem === item.uid }"
                         class="item-box w-full h-75px mb-5px flex items-center gap-10px">
-                        <img
-                          class="size-44px rounded-full object-cover grayscale"
-                          :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
-                          style="border: 1px solid var(--avatar-border-color)"
-                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                          alt="用户头像"
-                          @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                        <div
+                          class="friend-avatar-wrapper"
+                          :class="{ 'is-online': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }">
+                          <img
+                            class="size-44px rounded-full object-cover"
+                            :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
+                            style="border: 1px solid var(--avatar-border-color)"
+                            :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                            alt="用户头像"
+                            @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                        </div>
                         <div class="flex flex-col justify-between h-fit flex-1 truncate">
                           <span class="text-14px leading-tight flex-1 truncate">
                             {{ groupStore.getUserInfo(item.uid)?.name }}
                           </span>
                           <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
-                            [
                             <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
                             <template v-else-if="getUserState(item.uid)">
                               <img
@@ -262,20 +264,14 @@
                             </template>
                             <template v-else>
                               <span
-                                class="inline-block size-8px rounded-full"
-                                :style="{
-                                  backgroundColor:
-                                    item.activeStatus === OnlineEnum.ONLINE
-                                      ? 'var(--color-online)'
-                                      : 'var(--color-offline)'
-                                }"></span>
+                                class="status-dot"
+                                :class="item.activeStatus === OnlineEnum.ONLINE ? 'online' : 'offline'"></span>
                               {{
                                 item.activeStatus === OnlineEnum.ONLINE
                                   ? t('mobile_contact.status.online') || '在线'
                                   : t('mobile_contact.status.offline') || '离线'
                               }}
                             </template>
-                            ]
                           </div>
                         </div>
                       </div>
@@ -308,18 +304,20 @@
                       @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
                       :class="{ active: activeItem === item.uid }"
                       class="item-box w-full h-75px mb-5px opacity-60 flex items-center gap-10px">
-                      <img
-                        class="size-44px rounded-full object-cover grayscale"
-                        style="border: 1px solid var(--avatar-border-color)"
-                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                        alt="用户头像"
-                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                      <div class="friend-avatar-wrapper">
+                        <img
+                          class="size-44px rounded-full object-cover grayscale"
+                          style="border: 1px solid var(--avatar-border-color)"
+                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                          alt="用户头像"
+                          @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                      </div>
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
                           {{ groupStore.getUserInfo(item.uid)?.name }}
                         </span>
                         <div class="text leading-tight text-12px text-[--hula-text-tertiary]">
-                          [{{ t('mobile_contact.status.blocked') || '已屏蔽' }}]
+                          {{ t('mobile_contact.status.blocked') || '已屏蔽' }}
                         </div>
                       </div>
                     </div>
@@ -387,8 +385,8 @@
   overflow: hidden;
   background: var(--hula-surface-search-dark);
   border: 1px solid var(--hula-border-contrast);
-}\n
-:deep(.van-tab--active) {
+}
+\n :deep(.van-tab--active) {
   background: var(--hula-accent-soft);
   color: var(--hula-color-primary-500);
 }
