@@ -46,6 +46,7 @@ import { UserAttentionType } from '@tauri-apps/api/window'
 
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import { useWindowSize } from '@vueuse/core'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import GuestModeBanner from '@/components/common/GuestModeBanner.vue'
 import PrivacyOverlay from '@/components/privacy/PrivacyOverlay.vue'
@@ -255,11 +256,13 @@ const AsyncRight = defineAsyncComponent({
 const globalStore = useGlobalStore()
 const contactStore = useContactStore()
 const { checkUpdate, CHECK_UPDATE_TIME } = useCheckUpdate()
-const shrinkStatus = ref(false)
 const isDraggingFiles = ref(false)
 const isGuestMode = ref(false)
 const guestUserId = ref<string | null>(null)
 const tauriFileDropUnlisteners: UnlistenFn[] = []
+
+// 使用响应式断点 composable
+const { isShrink: shrinkStatus } = useResponsiveBreakpoint()
 
 // 导入Web Worker
 const timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url), { type: 'module' })
@@ -295,6 +298,15 @@ watch(shrinkStatus, (newValue) => {
     })
   }
 })
+
+// 监听窗口大小变化，同步 shrinkStatus
+const { width: windowWidth } = useWindowSize()
+watch(windowWidth, (newWidth) => {
+  const isShrinkNow = newWidth < 1024
+  if (shrinkStatus.value !== isShrinkNow) {
+    shrinkStatus.value = isShrinkNow
+  }
+}, { immediate: true })
 
 /**
  * event默认如果没有传递值就为true，所以shrinkStatus的值为false就会发生值的变化
