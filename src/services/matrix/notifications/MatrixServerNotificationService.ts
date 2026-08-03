@@ -38,7 +38,7 @@ class MatrixServerNotificationService extends BaseMatrixService {
     try {
       const result = await this.getClient()
         .getAdminManager()
-        .server.createServerNotification(payload as unknown as Record<string, unknown>)
+        .server.createNotification(payload as unknown as Record<string, unknown>)
       return result as unknown as ServerNotification
     } catch (err) {
       logger.error(`[MatrixServerNotificationService] 请求失败: ${err}`)
@@ -48,7 +48,7 @@ class MatrixServerNotificationService extends BaseMatrixService {
 
   async getNotification(id: number): Promise<ServerNotification | null> {
     try {
-      const result = await this.getClient().getAdminManager().server.getServerNotification(String(id))
+      const result = await this.getClient().getAdminManager().server.getNotification(String(id))
       return result as unknown as ServerNotification
     } catch (err) {
       logger.error(`[MatrixServerNotificationService] 请求失败: ${err}`)
@@ -58,8 +58,8 @@ class MatrixServerNotificationService extends BaseMatrixService {
 
   async listActive(): Promise<ServerNotification[]> {
     try {
-      const response = await this.getClient().getAdminManager().server.listActiveServerNotifications()
-      return Array.isArray(response.notifications) ? (response.notifications as ServerNotification[]) : []
+      const response = await this.getClient().getAdminManager().server.listActiveNotifications()
+      return Array.isArray(response) ? (response as unknown as ServerNotification[]) : []
     } catch (err) {
       logger.error(`[MatrixServerNotificationService] 请求失败: ${err}`)
       return []
@@ -68,7 +68,7 @@ class MatrixServerNotificationService extends BaseMatrixService {
 
   async markAsRead(id: number): Promise<boolean> {
     try {
-      await this.getClient().getAdminManager().server.markServerNotificationAsRead(String(id))
+      await this.getClient().getAdminManager().server.deactivateNotification(String(id))
       return true
     } catch (err) {
       logger.error(`[MatrixServerNotificationService] 请求失败: ${err}`)

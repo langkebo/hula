@@ -41,6 +41,14 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     }
   }
 
+  async getVaultData(roomId: string): Promise<Record<string, unknown>> {
+    return (await this.getRoomAccountData(roomId, 'im.hula.vault')) ?? {}
+  }
+
+  async setVaultData(roomId: string, data: Record<string, unknown>): Promise<void> {
+    await this.setRoomAccountData(roomId, 'im.hula.vault', data)
+  }
+
   async getReportScannerInfo(roomId: string, eventId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {
@@ -75,7 +83,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
       try {
         const result = await manager.listServices(prefix)
         const services = result?.services
-        return Array.isArray(services) ? (services as Array<Record<string, unknown>>) : []
+        return Array.isArray(services) ? (services as unknown as Array<Record<string, unknown>>) : []
       } catch (err) {
         logger.warn('Account data operation failed:', err)
       }

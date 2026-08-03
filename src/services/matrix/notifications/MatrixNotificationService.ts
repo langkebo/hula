@@ -241,7 +241,7 @@ class MatrixNotificationService extends BaseMatrixService {
         // IPushRules.global 是 PushRuleSet（{ [PushRuleKind]?: IPushRule[] }）
         // 使用类型守卫安全访问
         const ruleList = rules.global[kind]
-        if (ruleList?.some((r) => r.rule_id === ruleId)) {
+        if (ruleList?.some((r: IPushRule) => r.rule_id === ruleId)) {
           return kind
         }
       }
@@ -367,7 +367,7 @@ class MatrixNotificationService extends BaseMatrixService {
       const result = await pushManager.getNotifications({ from, limit })
       return {
         // INotification 满足 Record<string, unknown> 结构要求
-        notifications: result.notifications as Array<Record<string, unknown>>,
+        notifications: result.notifications as unknown as Array<Record<string, unknown>>,
         next_token: result.next_token
       }
     } catch (err) {
@@ -460,7 +460,7 @@ class MatrixNotificationService extends BaseMatrixService {
         kind as PushRuleKind,
         ruleId,
         // 使用对象展开确保满足 IUpdatePushRuleRequest 结构
-        { ...body } as Parameters<typeof pushManager.updatePushRule>[3]
+        { ...body } as unknown as Parameters<typeof pushManager.updatePushRule>[3]
       )
       logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
@@ -493,7 +493,7 @@ class MatrixNotificationService extends BaseMatrixService {
       const pushManager = client.getPushManager()
       const pushers = await pushManager.getPushers()
       // IPusher 满足 Record<string, unknown> 结构要求
-      return pushers as Array<Record<string, unknown>>
+      return pushers as unknown as Array<Record<string, unknown>>
     } catch (err) {
       logger.error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
       throw err
@@ -507,7 +507,7 @@ class MatrixNotificationService extends BaseMatrixService {
     const client = this.getNotificationClient()
     try {
       const pushManager = client.getPushManager()
-      await pushManager.setPusher({ ...pusher } as IPusherRequest)
+      await pushManager.setPusher({ ...pusher } as unknown as IPusherRequest)
       logger.info('[MatrixNotification] 设置推送设备成功')
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送设备失败: ${err}`)

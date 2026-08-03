@@ -82,20 +82,33 @@
       <!-- 下行：主题/状态 + 元信息 -->
       <div class="space-card__desc-row">
         <n-flex align="center" :gap="4" class="min-w-0 flex-1">
+          <!-- TJG: 公开/私有状态标签 -->
           <span
             v-if="space.statusText"
             class="space-card__status-pill"
             :class="[
               space.statusTone ? `space-card__status-pill--${space.statusTone}` : 'space-card__status-pill--neutral'
             ]">
+            <svg v-if="space.isPublic" class="space-card__status-icon"><use href="#i-public" /></svg>
+            <svg v-else class="space-card__status-icon"><use href="#i-lock" /></svg>
             {{ space.statusText }}
           </span>
-          <span v-if="!compact && space.topic" class="space-card__topic">{{ space.topic }}</span>
-          <span v-else-if="space.visibilityText" class="space-card__visibility">{{ space.visibilityText }}</span>
-          <span v-else-if="!compact && space.childCount" class="space-card__meta">
-            {{ space.childCount }} {{ t('space.rooms') }}
+          <!-- TJG: 成员数 -->
+          <span v-if="!compact && space.memberCount" class="space-card__meta">
+            <svg class="space-card__meta-icon"><use href="#i-friends" /></svg>
+            {{ space.memberCount }}
           </span>
-          <span v-else class="space-card__placeholder">--</span>
+          <!-- TJG: 子房间数 -->
+          <span v-if="!compact && space.childCount" class="space-card__meta">
+            <svg class="space-card__meta-icon"><use href="#i-chat" /></svg>
+            {{ space.childCount }}
+          </span>
+          <span v-if="!compact && space.topic" class="space-card__topic">{{ space.topic }}</span>
+          <span
+            v-else-if="!space.statusText && !space.memberCount && !space.childCount"
+            class="space-card__placeholder">
+            --
+          </span>
         </n-flex>
       </div>
     </div>
@@ -375,6 +388,21 @@ const avatarColor = computed(() => {
   color: var(--hula-text-tertiary);
   line-height: 18px;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.space-card__meta-icon {
+  width: 12px;
+  height: 12px;
+  color: currentColor;
+}
+
+.space-card__status-icon {
+  width: 10px;
+  height: 10px;
+  color: currentColor;
 }
 
 .space-card__placeholder {

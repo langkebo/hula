@@ -56,7 +56,7 @@ import { Icon } from '@iconify/vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { synapseRustExtensionsService } from '@/services/matrix/SynapseRustExtensionsService'
+import { adminService } from '@/services/matrix/admin/AdminFacadeService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('UserReportDialog')
@@ -121,7 +121,7 @@ async function handleSubmit() {
   }
   submitting.value = true
   try {
-    await synapseRustExtensionsService.reportUser(props.userId, form.reason)
+    await adminService.reportUser(props.userId, form.reason)
     showFeedback(t('moderation.report_user.success'), 'success')
     visible.value = false
     emit('reported')

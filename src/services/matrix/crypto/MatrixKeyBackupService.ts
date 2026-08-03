@@ -31,12 +31,12 @@ class MatrixKeyBackupService extends BaseMatrixService {
   private getKeyBackupManager(): KeyBackupManager | null {
     // MatrixClientExtended 扩展了 MatrixClient 并添加了 manager getter
     // SDK 的 matrix-client-extensions.d.ts 已声明这些方法
-    const client = this.getClient() as MatrixClientExtended
+    const client = this.getClient() as unknown as MatrixClientExtended
     return client.getKeyBackupManager?.() ?? null
   }
 
   private getSecureBackupManager(): SecureBackupManager | null {
-    const client = this.getClient() as MatrixClientExtended
+    const client = this.getClient() as unknown as MatrixClientExtended
     return client.getSecureBackupManager?.() ?? null
   }
 
@@ -113,7 +113,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
     }
     if (
       'scheduleKeyBackupSend' in keyBackupManager &&
-      typeof (keyBackupManager as Record<string, unknown>).scheduleKeyBackupSend === 'function'
+      typeof (keyBackupManager as unknown as Record<string, unknown>).scheduleKeyBackupSend === 'function'
     ) {
       ;(keyBackupManager as { scheduleKeyBackupSend(): void }).scheduleKeyBackupSend()
     } else {
@@ -123,7 +123,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
 
   async getBackupVersions(): Promise<BackupVersionInfo[]> {
     const backupInfo = await this.checkKeyBackup()
-    return backupInfo ? [backupInfo] : []
+    return backupInfo ? [backupInfo as unknown as BackupVersionInfo] : []
   }
 
   async createBackupVersion(algorithm: string, authData: Record<string, unknown>): Promise<BackupVersion> {
@@ -210,7 +210,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.getRecoveryProgress(version)
       logger.info(`[KeyBackup] 获取恢复进度成功: ${version}`)
-      return result as RecoveryProgress
+      return result as unknown as RecoveryProgress
     } catch (err) {
       logger.error(`[KeyBackup] 获取恢复进度失败: ${version}, ${err}`)
       throw err
@@ -311,7 +311,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.batchRecover(version, options?.rooms ?? [], options?.limit)
       logger.info(`[KeyBackup] 批量恢复成功: ${version}`)
-      return result as BatchRecoverResult
+      return result as unknown as BatchRecoverResult
     } catch (err) {
       logger.error(`[KeyBackup] 批量恢复失败: ${err}`)
       throw err

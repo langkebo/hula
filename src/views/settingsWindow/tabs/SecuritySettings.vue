@@ -164,7 +164,11 @@
     </div>
 
     <n-card title="邀请权限管理" class="settings-card">
-      <InvitePermissionPanel />
+      <InvitePermissionPanel
+        :visible="true"
+        mode="allow_all"
+        :blocklist="inviteBlocklist"
+        :allowlist="inviteAllowlist" />
     </n-card>
 
     <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupSuccess" />
@@ -741,12 +745,12 @@ function handleRemoveInviteAllowlist(userId: string) {
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--hula-space-6);
 }
 
 .section-title {
   font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
+  font-weight: var(--hula-font-weight-semibold);
   margin-bottom: var(--hula-space-4);
   color: var(--hula-text-primary);
 }
@@ -786,7 +790,7 @@ function handleRemoveInviteAllowlist(userId: string) {
 
 .status-title {
   font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
+  font-weight: var(--hula-font-weight-semibold);
   color: var(--hula-text-primary);
 }
 

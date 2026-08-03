@@ -225,12 +225,12 @@ onUnmounted(() => {
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--hula-space-6);
 }
 
 .section-title {
   font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
+  font-weight: var(--hula-font-weight-semibold);
   margin-bottom: var(--hula-space-4);
   color: var(--hula-text-primary);
 }
@@ -304,7 +304,7 @@ onUnmounted(() => {
   padding: 0 var(--hula-space-2);
   font-size: var(--hula-font-size-sm);
   font-family: monospace;
-  background-color: var(--hula-surface-panel);
+  background-color: var(--hula-surface-dark-hover);
   border: 1px solid var(--hula-border-default);
   border-radius: var(--hula-radius-xs);
   box-shadow: var(--hula-shadow-sm);

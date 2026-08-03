@@ -58,18 +58,15 @@ describe('VideoCallMessageStrategyImpl', () => {
   })
 
   it('buildMessageBody mirrors all call fields', () => {
-    const body = strategy.buildMessageBody(
-      {
-        type: MsgEnum.VIDEO_CALL,
-        duration: 45,
-        reason: 'missed',
-        startTime: 7000,
-        endTime: 7045,
-        creator: '@frank:matrix.test',
-        isGroup: true
-      },
-      null
-    )
+    const body = strategy.buildMessageBody({
+      type: MsgEnum.VIDEO_CALL,
+      duration: 45,
+      reason: 'missed',
+      startTime: 7000,
+      endTime: 7045,
+      creator: '@frank:matrix.test',
+      isGroup: true
+    })
     expect(body).toEqual({
       duration: 45,
       reason: 'missed',
@@ -81,25 +78,21 @@ describe('VideoCallMessageStrategyImpl', () => {
   })
 
   it('buildMessageBody ignores reply parameter', () => {
-    const reply = makeReply('evt-2', 'hi', 'alice')
-    const body = strategy.buildMessageBody(
-      {
-        type: MsgEnum.VIDEO_CALL,
-        duration: 10,
-        reason: 'declined',
-        startTime: 0,
-        endTime: 10,
-        creator: 'c',
-        isGroup: false
-      },
-      reply
-    )
+    const body = strategy.buildMessageBody({
+      type: MsgEnum.VIDEO_CALL,
+      duration: 10,
+      reason: 'declined',
+      startTime: 0,
+      endTime: 10,
+      creator: 'c',
+      isGroup: false
+    })
     expect(body).not.toHaveProperty('reply')
     expect(body).not.toHaveProperty('replyMsgId')
   })
 
   it('uploadFile returns empty urls', async () => {
-    const result = await strategy.uploadFile('/path/to/file')
+    const result = await strategy.uploadFile()
     expect(result.uploadUrl).toBe('')
     expect(result.downloadUrl).toBe('')
   })

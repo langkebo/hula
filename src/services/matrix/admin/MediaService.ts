@@ -79,7 +79,11 @@ export class AdminMediaService {
 
     try {
       const admin = client.getAdminManager()
-      const result = await admin.media.purgeRemoteMedia(beforeTs, includeProfiles)
+      const result = await (
+        admin.media as unknown as {
+          purgeRemoteMedia: (beforeTs?: number, includeProfiles?: boolean) => Promise<{ deleted: number }>
+        }
+      ).purgeRemoteMedia(beforeTs, includeProfiles)
       logger.info(`[AdminMedia] 清理远程媒体成功: ${result.deleted} 个`)
       return { deleted: result.deleted }
     } catch (err) {

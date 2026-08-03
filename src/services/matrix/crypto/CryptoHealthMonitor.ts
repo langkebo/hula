@@ -4,6 +4,9 @@ import { matrixCryptoService } from './MatrixCryptoService'
 import { matrixKeyBackupService } from './MatrixKeyBackupService'
 import type { CryptoHealthCallbacks, CryptoHealthStatus } from './types'
 
+// Re-export types for consumers that import from this module
+export type { CryptoHealthCallbacks, CryptoHealthStatus } from './types'
+
 const logger = createLogger('CryptoHealthMonitor')
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000

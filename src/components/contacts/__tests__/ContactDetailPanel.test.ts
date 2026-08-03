@@ -21,6 +21,18 @@ vi.mock('@/stores/domains/widget/global', () => ({
   })
 }))
 
+const reportUserMock = vi.fn()
+vi.mock('@/services/matrix/admin/AdminFacadeService', () => ({
+  adminService: {
+    reportUser: (...args: unknown[]) => reportUserMock(...args)
+  }
+}))
+
+const showFeedbackMock = vi.fn()
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({ showFeedback: (...args: unknown[]) => showFeedbackMock(...args) })
+}))
+
 const naiveStubs = {
   Drawer: {
     template: '<div class="n-drawer-stub" v-if="show"><slot /><slot name="header" /></div>',

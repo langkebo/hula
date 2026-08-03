@@ -274,7 +274,7 @@ export class AdminSecurityService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.listBackups()
-      return (result?.backups ?? []) as Array<Record<string, unknown>>
+      return (result?.backups ?? []) as unknown as Array<Record<string, unknown>>
     } catch (err) {
       logger.error(`[Admin] 获取备份信息失败: ${err}`)
       return []
@@ -285,7 +285,7 @@ export class AdminSecurityService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getFederationDestination(serverName, false)
-      return (result as Record<string, unknown>) ?? null
+      return (result as unknown as Record<string, unknown>) ?? null
     } catch (err) {
       logger.error(`[Admin] 获取联邦服务器状态失败: ${err}`)
       return null

@@ -5,7 +5,13 @@
  * All types previously defined inline in individual services are consolidated here.
  */
 
-import type { RoomSessions, BackupVersionInfo as SDKBackupVersionInfo, SessionData } from 'matrix-js-sdk/key-backup'
+import type { Aes256AuthData } from 'matrix-js-sdk/crypto'
+import type {
+  AuthData,
+  RoomSessions,
+  BackupVersionInfo as SDKBackupVersionInfo,
+  SessionData
+} from 'matrix-js-sdk/key-backup'
 import type {
   GeneratedSecretStorageKey,
   SecureBackupInfo,
@@ -362,8 +368,12 @@ export type { GeneratedSecretStorageKey, SecureBackupInfo, SecureBackupRestoreRe
  * @deprecated Use CrossSigningStatusResult instead
  */
 export interface CrossSigningInfo {
-  publicKey: string
-  signatures: Record<string, Record<string, string>>
+  publicKey?: string
+  signatures?: Record<string, Record<string, string>>
+  isSetup: boolean
+  masterPublicKey?: string
+  selfSigningPublicKey?: string
+  userSigningPublicKey?: string
 }
 
 /**
@@ -373,6 +383,8 @@ export interface KeyBackupInfo {
   version: string
   algorithm: string
   authData: Record<string, unknown>
+  count?: number
+  etag?: string
 }
 
 /**
@@ -381,4 +393,6 @@ export interface KeyBackupInfo {
 export interface SetupKeyBackupOptions {
   createNewBackup?: boolean
   recoveryKey?: string
+  password?: string
+  generatedKey?: GeneratedSecretStorageKey
 }

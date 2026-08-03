@@ -39,6 +39,8 @@ export interface MessageActionContext {
 }
 
 export interface MessageStrategy {
+  /** 该策略对应的 MsgEnum 类型 */
+  msgType: MsgEnum
   getMsg: (
     msgInputValue: string,
     replyValue: MessageType | null,

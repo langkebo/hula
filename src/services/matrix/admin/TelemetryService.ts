@@ -199,7 +199,7 @@ export class AdminTelemetryService {
     try {
       const client = this.getClient()
       const result = await client.getTelemetryManager().getServerHealth()
-      return (result as TelemetryHealthCheck) ?? null
+      return (result as unknown as TelemetryHealthCheck) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getHealth 失败: ${err}`)
       return null

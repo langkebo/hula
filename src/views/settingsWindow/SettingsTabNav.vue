@@ -144,15 +144,15 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 
 .tab-item:hover,
 .tab-item:focus-visible {
-  background-color: var(--hula-surface-sidebar-hover);
+  background-color: var(--hula-surface-dark-hover);
   color: var(--hula-text-primary);
   outline: none;
 }
 
 .tab-item-active {
-  background-color: var(--hula-color-primary-100);
-  color: var(--hula-color-primary-500);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hula-color-primary-500) 10%, transparent);
+  background-color: var(--hula-accent-soft);
+  color: var(--hula-brand);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hula-brand) 10%, transparent);
 }
 
 .tab-icon {

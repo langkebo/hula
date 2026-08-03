@@ -224,12 +224,12 @@ function handleLogoutAllDevices() {
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--hula-space-6);
 }
 
 .section-title {
   font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
+  font-weight: var(--hula-font-weight-semibold);
   margin-bottom: var(--hula-space-4);
   color: var(--hula-text-primary);
 }
@@ -239,7 +239,7 @@ function handleLogoutAllDevices() {
   align-items: center;
   justify-content: space-between;
   padding: var(--hula-space-4);
-  background-color: var(--hula-color-info-100);
+  background-color: var(--hula-settings-card-bg);
   border-radius: var(--hula-radius-sm);
 }
 

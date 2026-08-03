@@ -375,6 +375,23 @@ export class RoomOperations extends BaseMatrixService {
     await client.getRoomSummaryManager().setStickyEvent(roomId, 'm.sticky_events', events as never)
   }
 
+  // --- Retention ---
+
+  async getRetentionPolicy(roomId: string): Promise<{ content: Record<string, unknown> } | null> {
+    const client = this.getClient()
+    try {
+      const content = await client.getRoomStateEvent(roomId, 'm.room.retention', '')
+      return content ? { content: content as Record<string, unknown> } : null
+    } catch {
+      return null
+    }
+  }
+
+  async setRetentionPolicy(roomId: string, content: Record<string, unknown>): Promise<void> {
+    const client = this.getClient()
+    await client.sendStateEvent(roomId, 'm.room.retention', content, '')
+  }
+
   // --- MemberProfile (was MemberProfileService) ---
 
   async setMemberDisplayName(roomId: string, displayName: string): Promise<void> {

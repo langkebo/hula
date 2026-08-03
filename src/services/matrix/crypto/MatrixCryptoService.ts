@@ -22,6 +22,8 @@ import type {
   QrCodeScanResponse,
   QrCodeShowResponse,
   RecoveryProgress,
+  RoomKeySessionsResponse,
+  RoomKeysResponse,
   SasCancelResponse,
   SasDoneResponse,
   SasKeyAgreementResponse,
@@ -31,6 +33,9 @@ import type {
   SessionKeyData,
   VerificationStatus
 } from './types'
+
+// Re-export types for consumers that import from this module
+export type { EncryptionAlgorithm } from './types'
 
 const logger = createLogger('MatrixCryptoService')
 
@@ -498,7 +503,7 @@ class MatrixCryptoService extends BaseMatrixService {
         authData as unknown as Parameters<typeof manager.createBackupVersion>[1],
         auth as Parameters<typeof manager.createBackupVersion>[2]
       )
-      return { version: result.version, algorithm, auth_data: authData } as KeyBackupVersionInfo
+      return { version: result.version, algorithm, auth_data: authData } as unknown as KeyBackupVersionInfo
     } catch (err) {
       logger.error(`[MatrixCrypto] 创建备份版本失败: ${err}`)
       throw err
@@ -545,7 +550,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
       const result = await manager.getAllRoomKeys(version)
-      return result as RoomKeysResponse
+      return result as unknown as RoomKeysResponse
     } catch (err) {
       logger.error(`[MatrixCrypto] 获取所有房间密钥失败: ${err}`)
       return null
@@ -555,7 +560,9 @@ class MatrixCryptoService extends BaseMatrixService {
   async addAllRoomKeys(version: string, rooms: RoomKeysResponse['rooms']): Promise<KeyBackupWriteResult> {
     try {
       const manager = cryptoSDKAdapter.requireSDKKeyBackupManager()
-      const result = await manager.putAllRoomKeys(version, { rooms } as Parameters<typeof manager.putAllRoomKeys>[1])
+      const result = await manager.putAllRoomKeys(version, { rooms } as unknown as Parameters<
+        typeof manager.putAllRoomKeys
+      >[1])
       logger.info(`[MatrixCrypto] 添加所有房间密钥成功: etag=${result.etag}, count=${result.count}`)
       return result as KeyBackupWriteResult
     } catch (err) {

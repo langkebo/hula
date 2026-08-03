@@ -257,12 +257,12 @@ function handleResetLabs() {
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--hula-space-6);
 }
 
 .section-title {
   font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
+  font-weight: var(--hula-font-weight-semibold);
   margin: 0 0 var(--hula-space-2) 0;
   color: var(--hula-text-primary);
 }

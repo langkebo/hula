@@ -83,7 +83,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async getDevices(): Promise<Device[]> {
     try {
       const client = this.getClient()
-      const extendedClient = client as MatrixClientExtended
+      const extendedClient = client as unknown as MatrixClientExtended
       const deviceManager = extendedClient.getDeviceManager?.()
 
       if (!deviceManager) {
@@ -108,7 +108,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async getDevice(deviceId: string): Promise<Device> {
     try {
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (!deviceManager) {
         throw new Error('DeviceManager not available')
@@ -138,7 +138,7 @@ class MatrixDeviceService extends BaseMatrixService {
       }
 
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (!deviceManager) {
         throw new Error('DeviceManager not available')
@@ -168,7 +168,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async deleteDevice(deviceId: string, auth?: AuthDict): Promise<void> {
     try {
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (!deviceManager) {
         throw new Error('DeviceManager not available')
@@ -192,7 +192,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async deleteDevices(deviceIds: string[], auth?: AuthDict): Promise<void> {
     try {
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (!deviceManager) {
         throw new Error('DeviceManager not available')
@@ -215,7 +215,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async getDeviceListUpdates(request: DeviceListUpdatesRequest): Promise<DeviceListUpdatesResponse> {
     try {
       const client = this.getClient()
-      const deviceManager = (client as MatrixClientExtended).getDeviceManager?.()
+      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
 
       if (!deviceManager) {
         throw new Error('DeviceManager not available')
@@ -266,7 +266,7 @@ class MatrixDeviceService extends BaseMatrixService {
     try {
       const result = await client.getRoomKeysManager().getRoomKeyRequests()
       logger.info('[DeviceService] 获取密钥请求列表成功')
-      return (result?.requests ?? []) as Array<Record<string, unknown>>
+      return (result?.requests ?? []) as unknown as Array<Record<string, unknown>>
     } catch (err) {
       logger.error(`[DeviceService] 获取密钥请求列表失败: ${err}`)
       return []

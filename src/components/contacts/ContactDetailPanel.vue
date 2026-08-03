@@ -25,10 +25,19 @@
             </template>
             {{ t('contacts.detail.message') }}
           </n-button>
+          <n-button block secondary data-testid="contact-report-btn" @click="showReportDialog = true">
+            {{ t('moderation.report_user.title') }}
+          </n-button>
         </div>
       </template>
 
       <n-empty v-else :description="t('contacts.detail.not_found')" />
+
+      <UserReportDialog
+        v-if="profile"
+        v-model:show="showReportDialog"
+        :user-id="profile.userId"
+        :user-display-name="profile.displayName" />
     </n-drawer-content>
   </n-drawer>
 </template>
@@ -36,6 +45,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import SkeletonBase from '@/components/common/SkeletonBase.vue'
+import UserReportDialog from '@/components/moderation/UserReportDialog.vue'
 import profileService from '@/services/matrix/user/MatrixProfileService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
@@ -62,6 +72,7 @@ const panelVisible = computed({
 const profile = ref<{ userId: string; displayName: string; avatarUrl?: string } | null>(null)
 const devices = ref<Record<string, unknown>[]>([])
 const loading = ref(false)
+const showReportDialog = ref(false)
 
 watch(
   () => props.userId,

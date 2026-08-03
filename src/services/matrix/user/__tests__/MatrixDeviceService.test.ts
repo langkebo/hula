@@ -48,7 +48,7 @@ describe('MatrixDeviceService', () => {
       getDeviceManager: vi.fn(
         () => mockDeviceManager as unknown as MatrixClientExtended['getDeviceManager'] extends () => infer T ? T : never
       ),
-      getRoomKeysManager: vi.fn(() => mockRoomKeysManager),
+      getRoomKeysManager: vi.fn(() => mockRoomKeysManager) as unknown as MatrixClient['getRoomKeysManager'],
       getDeviceId: vi.fn(() => 'CURRENT_DEVICE')
     }
 

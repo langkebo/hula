@@ -11,8 +11,8 @@ vi.mock('@iconify/vue', () => ({
 }))
 
 const reportUserMock = vi.fn()
-vi.mock('@/services/matrix/SynapseRustExtensionsService', () => ({
-  synapseRustExtensionsService: {
+vi.mock('@/services/matrix/admin/AdminFacadeService', () => ({
+  adminService: {
     reportUser: (...args: unknown[]) => reportUserMock(...args)
   }
 }))

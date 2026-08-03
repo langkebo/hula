@@ -87,7 +87,11 @@ export class AdminFederationService {
   async getFederationStatus(): Promise<Record<string, unknown>> {
     try {
       const admin = await this.sdkAdmin()
-      const response = await admin.federation.getFederationStatus()
+      const response = await (
+        admin.federation as unknown as {
+          getFederationStatus: () => Promise<Record<string, unknown>>
+        }
+      ).getFederationStatus()
       logger.info('[AdminFederation] 获取联邦状态成功')
       return response
     } catch (err) {

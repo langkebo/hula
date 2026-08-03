@@ -445,7 +445,7 @@ class MatrixQrLoginSdkService {
         client,
         fetchFn: getRuntimeAwareFetch(),
         onFailure
-      } as ConstructorParameters<typeof MSC4108RendezvousSession>[0])
+      } as unknown as ConstructorParameters<typeof MSC4108RendezvousSession>[0])
       const channel = new MSC4108SecureChannel(session, undefined, onFailure)
 
       this.session = session as RendezvousSessionInstance

@@ -1,4 +1,12 @@
-import type { IPusher, IPusherRequest, IPushRule, IPushRules, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
+import type {
+  IPusher,
+  IPusherRequest,
+  IPushRule,
+  IPushRules,
+  MatrixClient,
+  PushRuleAction,
+  PushRuleCondition
+} from 'matrix-js-sdk'
 import { PushRuleKind, TweakName } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -12,7 +20,7 @@ class MatrixPushService extends BaseMatrixService {
   async getPushers(): Promise<IPusher[]> {
     const client = this.getClient()
     try {
-      return await client.getPushManager().getPushers()
+      return (await client.getPushManager().getPushers()) as unknown as IPusher[]
     } catch (err) {
       logger.error(`[MatrixPush] 获取 pushers 失败: ${err}`)
       throw err
@@ -132,7 +140,7 @@ class MatrixPushService extends BaseMatrixService {
     try {
       await client.getPushManager().createPushRule(scope, kind as PushRuleKind, ruleId, {
         actions,
-        conditions,
+        conditions: conditions as unknown as PushRuleCondition[],
         pattern
       })
       logger.info(`[MatrixPush] 创建推送规则成功: ${scope}/${String(kind)}/${ruleId}`)

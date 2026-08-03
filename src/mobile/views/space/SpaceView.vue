@@ -6,9 +6,15 @@
 
     <template #container>
       <div class="space-view">
-        <!-- 创建按钮 -->
+        <!-- 搜索栏（TJG 风格） -->
+        <div class="m-search" @click="focusSearch">
+          <svg class="w-16px h-16px"><use href="#i-search" /></svg>
+          <span>{{ t('space.search_placeholder') }}</span>
+        </div>
+
+        <!-- 创建按钮（TJG 风格） -->
         <div class="create-button">
-          <van-button type="primary" block @click="showCreateSheet = true">
+          <van-button type="primary" block round class="tjg-create-btn" @click="showCreateSheet = true">
             <template #icon>
               <van-icon name="plus" />
             </template>
@@ -21,26 +27,34 @@
           <div v-if="spaces.length === 0 && !loading" class="empty-state">
             <van-empty :description="t('space.empty')" />
           </div>
-          <div v-else class="space-grid">
-            <div v-for="space in spaces" :key="space.spaceId" class="space-card" @click="handleSpaceClick(space)">
-              <div class="space-cover">
+          <div v-else class="space-list">
+            <div v-for="space in spaces" :key="space.spaceId" class="space-item" @click="handleSpaceClick(space)">
+              <div class="space-avatar">
                 <img v-if="space.avatarUrl" :src="space.avatarUrl" :alt="space.name + '的头像'" />
-                <div v-else class="default-cover">
-                  <van-icon name="cluster-o" size="40" />
+                <span v-else>{{ space.name?.charAt(0) || '?' }}</span>
+                <!-- 公开/私有标识 -->
+                <div v-if="space.isPublic" class="space-badge public">
+                  <van-icon name="eye-o" />
                 </div>
               </div>
               <div class="space-info">
-                <div class="space-name">{{ space.name }}</div>
-                <div v-if="space.topic" class="space-topic">{{ space.topic }}</div>
-                <div class="space-stats">
-                  <span>
-                    <van-icon name="friends-o" />
-                    {{ space.memberCount }}
-                  </span>
-                  <span>
-                    <van-icon name="chat-o" />
-                    {{ space.childCount }}
-                  </span>
+                <div class="space-top">
+                  <div class="space-name">
+                    {{ space.name }}
+                    <span v-if="space.isPublic" class="public-tag">{{ t('space.public') }}</span>
+                    <span v-else class="private-tag">{{ t('space.private') }}</span>
+                  </div>
+                  <div class="space-count">{{ space.memberCount || 0 }} {{ t('space.members') }}</div>
+                </div>
+                <div class="space-bottom">
+                  <div v-if="space.topic" class="space-topic">{{ space.topic }}</div>
+                  <div v-else class="space-topic placeholder">{{ t('space.detail_space_topic_empty') }}</div>
+                  <div class="space-stats">
+                    <span>
+                      <van-icon name="chat-o" />
+                      {{ space.childCount || 0 }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -94,6 +108,10 @@
             </div>
             <div class="detail-info">
               <div class="detail-name">{{ selectedSpace.name }}</div>
+              <div class="detail-tags">
+                <span v-if="selectedSpace.isPublic" class="tag public">{{ t('space.public') }}</span>
+                <span v-else class="tag private">{{ t('space.private') }}</span>
+              </div>
               <div v-if="selectedSpace.topic" class="detail-topic">{{ selectedSpace.topic }}</div>
               <div class="detail-stats">
                 <span>
@@ -341,6 +359,10 @@ const handleSaveSettings = async () => {
   }
 }
 
+const focusSearch = () => {
+  // Implement search focus functionality
+}
+
 onMounted(() => {
   loadSpaces()
 })
@@ -349,81 +371,182 @@ onMounted(() => {
 <style scoped lang="scss">
 .space-view {
   min-height: 100vh;
-  background: var(--van-background-2);
-  padding: 16px;
-}
-
-.create-button {
-  margin-bottom: 16px;
-}
-
-.space-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  background: var(--hula-surface-deepest);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
-.space-card {
-  background: var(--van-background);
-  border-radius: 8px;
+/* TJG: 搜索栏（对齐 mobile message 风格） */
+.m-search {
+  background: var(--hula-surface-search);
+  border-radius: var(--hula-radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--hula-text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.m-search:hover {
+  background: var(--hula-surface-subtle);
+}
+
+/* TJG: 创建按钮 */
+.create-button {
+  margin-bottom: 4px;
+}
+
+.tjg-create-btn {
+  border-radius: var(--hula-radius-sm);
+}
+
+/* TJG: 空间列表（对齐 mobile message list 风格） */
+.space-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.space-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
   overflow: hidden;
-  box-shadow: var(--hula-shadow-card);
+  background: transparent;
+  border-radius: var(--hula-radius-sm);
+}
 
-  .space-cover {
-    width: 100%;
-    aspect-ratio: 16/9;
-    background: var(--van-gray-2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.space-item:active {
+  background: var(--hula-surface-list-hover);
+}
 
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+.space-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--hula-radius-sm);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  position: relative;
+  background: var(--hula-surface-subtle);
+  overflow: hidden;
+  color: var(--hula-text-secondary);
+}
 
-    .default-cover {
-      color: var(--van-gray-5);
-    }
-  }
+.space-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-  .space-info {
-    padding: 12px;
+/* TJG: 公开/私有角标 */
+.space-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  border: 2px solid var(--hula-surface-deepest);
+}
 
-    .space-name {
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 4px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+.space-badge.public {
+  background: var(--hula-color-success-100);
+  color: var(--hula-color-success-500);
+}
 
-    .space-topic {
-      font-size: 12px;
-      color: var(--van-text-color-2);
-      margin-bottom: 8px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
+.space-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 
-    .space-stats {
-      display: flex;
-      gap: 12px;
-      font-size: 12px;
-      color: var(--van-text-color-3);
+.space-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
 
-      span {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-    }
-  }
+.space-name {
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hula-text-primary);
+}
+
+/* TJG: 公开/私有标签 */
+.public-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--hula-color-primary-100);
+  color: var(--hula-color-primary-500);
+  flex-shrink: 0;
+}
+
+.private-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--hula-surface-search);
+  color: var(--hula-text-tertiary);
+  flex-shrink: 0;
+}
+
+.space-count {
+  font-size: 11px;
+  color: var(--hula-text-tertiary);
+  flex-shrink: 0;
+}
+
+.space-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.space-topic {
+  font-size: 13px;
+  color: var(--hula-text-secondary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.space-topic.placeholder {
+  color: var(--hula-text-tertiary);
+}
+
+.space-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--hula-text-tertiary);
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .empty-state {
@@ -438,6 +561,7 @@ onMounted(() => {
   }
 }
 
+/* TJG: 详情面板样式 */
 .space-detail {
   padding: 16px;
 
@@ -446,12 +570,12 @@ onMounted(() => {
     gap: 16px;
 
     .detail-cover {
-      width: 100px;
-      height: 100px;
+      width: 80px;
+      height: 80px;
       flex-shrink: 0;
-      border-radius: 8px;
+      border-radius: var(--hula-radius-sm);
       overflow: hidden;
-      background: var(--van-gray-2);
+      background: var(--hula-surface-subtle);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -463,7 +587,7 @@ onMounted(() => {
       }
 
       .default-cover {
-        color: var(--van-gray-5);
+        color: var(--hula-text-tertiary);
       }
     }
 
@@ -471,23 +595,46 @@ onMounted(() => {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
 
       .detail-name {
         font-size: 16px;
+        font-weight: 600;
+        color: var(--hula-text-primary);
+      }
+
+      .detail-tags {
+        display: flex;
+        gap: 6px;
+      }
+
+      .tag {
+        font-size: 11px;
         font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+
+      .tag.public {
+        background: var(--hula-color-primary-100);
+        color: var(--hula-color-primary-500);
+      }
+
+      .tag.private {
+        background: var(--hula-surface-search);
+        color: var(--hula-text-tertiary);
       }
 
       .detail-topic {
-        font-size: 14px;
-        color: var(--van-text-color-2);
+        font-size: 13px;
+        color: var(--hula-text-secondary);
       }
 
       .detail-stats {
         display: flex;
-        gap: 16px;
-        font-size: 14px;
-        color: var(--van-text-color-3);
+        gap: 12px;
+        font-size: 12px;
+        color: var(--hula-text-tertiary);
 
         span {
           display: flex;
@@ -501,7 +648,16 @@ onMounted(() => {
   .detail-actions {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
+}
+
+:deep(.van-pull-refresh) {
+  flex: 1;
+  overflow: hidden;
+}
+
+:deep(.van-pull-refresh__track) {
+  height: 100%;
 }
 </style>

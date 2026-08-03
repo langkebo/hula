@@ -39,7 +39,7 @@ export class MatrixRoomCreationService {
         getLiveTimeline: () => ({ getEvents: () => [] }),
         getMember: () => null,
         getJoinedMembers: () => []
-      } as Room
+      } as unknown as Room
     }
     try {
       return await matrixClientService.createRoom(options)

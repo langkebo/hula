@@ -133,7 +133,7 @@ class MatrixBurnAfterReadService {
       if (!manager) return false
       const result = await manager.markBurnRead(roomId, eventId)
       logger.info(`消息已标记已读，触发焚毁: eventId=${eventId}`)
-      return result.marked
+      return !!result.marked
     } catch (error) {
       logger.error(`标记已读失败: ${error}`)
       if (throwOnError) throw error
@@ -147,7 +147,7 @@ class MatrixBurnAfterReadService {
       if (!manager) return false
       const result = await manager.cancelBurn(roomId, eventId)
       logger.info(`已取消焚毁: eventId=${eventId}`)
-      return result.cancelled
+      return !!result.cancelled
     } catch (error) {
       logger.error(`取消焚毁失败: ${error}`)
       if (throwOnError) throw error

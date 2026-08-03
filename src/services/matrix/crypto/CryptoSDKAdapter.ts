@@ -717,3 +717,13 @@ class CryptoSDKAdapter {
 }
 
 export const cryptoSDKAdapter = new CryptoSDKAdapter()
+
+// Re-export types for consumers that import from this module
+export type {
+  CrossSigningStatusResult,
+  DeviceVerificationResult,
+  KeyBackupRestoreResult,
+  KeyBackupSetupResult,
+  KeyExportResult,
+  KeyImportResult
+} from './types'

@@ -29,6 +29,7 @@ export interface SpaceInfo {
   avatarUrl?: string
   memberCount: number
   childCount: number
+  isPublic?: boolean
 }
 
 export type { SdkSpaceChild as SpaceChild, SdkSpaceMember as SpaceMember }
@@ -49,7 +50,8 @@ class SpaceService extends BaseMatrixService {
       topic: space.topic || undefined,
       avatarUrl: space.avatar_url || undefined,
       memberCount: 0,
-      childCount: 0
+      childCount: 0,
+      isPublic: (space as unknown as Record<string, unknown>).is_public === true
     }
   }
 

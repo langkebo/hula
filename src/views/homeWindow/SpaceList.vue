@@ -46,7 +46,7 @@ const isLoading = computed(() => props.loading || spaceLoading.value)
 const route = useRoute()
 const selectedSpaceId = computed(() => (route.params.spaceId as string) || '')
 
-// 转换为 SpaceListItem 列表（带 isPublic 标记）
+// 转换为 SpaceListItem 列表（带 isPublic 标记和 visibilityText）
 const spaceItems = computed<SpaceListItem[]>(() => {
   return spaces.value.map((space) => ({
     spaceId: space.spaceId,
@@ -56,7 +56,10 @@ const spaceItems = computed<SpaceListItem[]>(() => {
     topic: space.topic,
     memberCount: space.memberCount,
     isPinned: roomStore.hasTag(space.spaceId, 'm.favourite'),
-    isPublic: false // 默认为私有空间，后续可根据空间可见性扩展
+    isPublic: space.isPublic ?? false,
+    visibilityText: space.isPublic ? t('space.public') : t('space.private'),
+    statusText: space.isPublic ? t('space.public') : t('space.private'),
+    statusTone: space.isPublic ? 'info' : 'neutral'
   }))
 })
 

@@ -30,7 +30,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.getRoomManager().getRoomCapabilities(roomId)
-      return result as Record<string, unknown>
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间能力失败: ${err}`)
       return {}
@@ -41,7 +41,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.getRoomManager().getRoomMetadata(roomId)
-      return result as Record<string, unknown>
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间元数据失败: ${err}`)
       return {}
@@ -53,7 +53,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     try {
       const result = await client.getRoomSummaryManager().getRoomTurnServer(roomId)
       // TurnServerConfig from SDK: { uris, username?, password?, ttl? }
-      return result as Record<string, unknown>
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间 TURN 服务器失败: ${err}`)
       return {}
@@ -65,7 +65,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     try {
       const result = await client.getRoomSummaryManager().getRoomSync(roomId)
       // RoomSyncResult from SDK: { room_id, state?, timeline?, ephemeral?, account_data? }
-      return result as Record<string, unknown>
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间级同步失败: ${err}`)
       return {}
@@ -77,7 +77,7 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     try {
       const result = await client.getRoomSummaryManager().getRoomPermissions(roomId)
       // RoomPermissionsResult from SDK: { room_id, permissions: [...] }
-      return result as Record<string, unknown>
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间权限失败: ${err}`)
       return {}

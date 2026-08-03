@@ -151,6 +151,16 @@ declare module 'matrix-js-sdk' {
   // Note: Push types exist in matrix-js-sdk/@types/PushRules.ts but are not exported from main index
   // We re-export them here for convenience
 
+  // ==================== Burn After Read ====================
+  // SDK 的 IMarkBurnReadResponse 仅包含 success/will_delete_at，
+  // hula 代码访问 result.marked，此处通过 interface augmentation 补充可选字段。
+  interface IMarkBurnReadResponse {
+    marked?: boolean
+  }
+  interface ICancelBurnResponse {
+    cancelled?: boolean
+  }
+
   // ==================== Event 和 Timeline 类型 ====================
   // 这些类型已在 SDK 中正确定义，此处提供补充
 

@@ -59,18 +59,15 @@ describe('AudioCallMessageStrategyImpl', () => {
   })
 
   it('buildMessageBody mirrors all call fields', () => {
-    const body = strategy.buildMessageBody(
-      {
-        type: MsgEnum.AUDIO_CALL,
-        duration: 60,
-        reason: 'busy',
-        startTime: 2000,
-        endTime: 2060,
-        creator: '@carol:matrix.test',
-        isGroup: true
-      },
-      null
-    )
+    const body = strategy.buildMessageBody({
+      type: MsgEnum.AUDIO_CALL,
+      duration: 60,
+      reason: 'busy',
+      startTime: 2000,
+      endTime: 2060,
+      creator: '@carol:matrix.test',
+      isGroup: true
+    })
     expect(body).toEqual({
       duration: 60,
       reason: 'busy',
@@ -82,26 +79,22 @@ describe('AudioCallMessageStrategyImpl', () => {
   })
 
   it('buildMessageBody ignores reply parameter', () => {
-    const reply = makeReply('evt-1', 'hi', 'bob')
-    const body = strategy.buildMessageBody(
-      {
-        type: MsgEnum.AUDIO_CALL,
-        duration: 30,
-        reason: 'x',
-        startTime: 0,
-        endTime: 30,
-        creator: 'c',
-        isGroup: false
-      },
-      reply
-    )
+    const body = strategy.buildMessageBody({
+      type: MsgEnum.AUDIO_CALL,
+      duration: 30,
+      reason: 'x',
+      startTime: 0,
+      endTime: 30,
+      creator: 'c',
+      isGroup: false
+    })
     // reply 参数被忽略
     expect(body).not.toHaveProperty('reply')
     expect(body).not.toHaveProperty('replyMsgId')
   })
 
   it('uploadFile returns empty urls', async () => {
-    const result = await strategy.uploadFile('/some/path')
+    const result = await strategy.uploadFile()
     expect(result.uploadUrl).toBe('')
     expect(result.downloadUrl).toBe('')
   })

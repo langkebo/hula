@@ -91,7 +91,7 @@ class MatrixFriendService {
 
   private getFriendManager(client: MatrixClient): FriendManager | null {
     // 优先使用 SDK 注册的 getFriendManager() 方法
-    const clientWithMethods = client as Record<string, unknown>
+    const clientWithMethods = client as unknown as Record<string, unknown>
     if (typeof clientWithMethods.getFriendManager === 'function') {
       try {
         const manager = clientWithMethods.getFriendManager()
@@ -744,7 +744,7 @@ class MatrixFriendService {
         }
       ).getFriendGroups?.()
       logger.info(`[MatrixFriend] 获取好友分组成功: ${groups?.length ?? 0} 个`)
-      return groups ?? []
+      return (groups as unknown as FriendGroup[] | undefined) ?? []
     } catch (err) {
       logger.error(`[MatrixFriend] 获取好友分组失败: ${err}`)
       throw err

@@ -194,12 +194,12 @@ function handleBubbleStyleChange(value: boolean) {
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--hula-space-6);
 }
 
 .section-title {
   font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
+  font-weight: var(--hula-font-weight-semibold);
   margin-bottom: var(--hula-space-4);
   color: var(--hula-text-primary);
 }
@@ -221,11 +221,11 @@ function handleBubbleStyleChange(value: boolean) {
 }
 
 .theme-option:hover {
-  border-color: color-mix(in srgb, var(--hula-color-info-500) 30%, transparent);
+  border-color: color-mix(in srgb, var(--hula-brand) 30%, transparent);
 }
 
 .theme-option-active {
-  border-color: var(--hula-color-info-500);
+  border-color: var(--hula-brand);
 }
 
 .theme-preview {

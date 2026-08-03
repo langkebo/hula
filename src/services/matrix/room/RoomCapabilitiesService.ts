@@ -60,8 +60,8 @@ class RoomCapabilitiesService {
           room_id: result.room_id ?? roomId,
           room_version: result.room_version,
           // SDK 的 RoomCapabilities 与本地契约字段兼容，直接展开避免 as unknown
-          capabilities: result.capabilities as RoomCapabilitiesPayload['capabilities'],
-          features: result.features as RoomCapabilitiesPayload['features'],
+          capabilities: result.capabilities as unknown as RoomCapabilitiesPayload['capabilities'],
+          features: result.features as unknown as RoomCapabilitiesPayload['features'],
           join_rule: result.join_rule
         }
         this.cache.set(roomId, { payload, expiresAt: Date.now() + CAPABILITY_TTL_MS })

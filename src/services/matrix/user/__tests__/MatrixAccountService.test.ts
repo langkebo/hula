@@ -39,7 +39,10 @@ describe('MatrixAccountService', () => {
     setAccountData: ReturnType<typeof vi.fn>
     getCapabilitiesManager: ReturnType<typeof vi.fn>
     getThirdPartyManager: ReturnType<typeof vi.fn>
-    getAccountManager: ReturnType<typeof vi.fn>
+    getAccountManager: () => {
+      getMyRooms: ReturnType<typeof vi.fn>
+      getEventStream: ReturnType<typeof vi.fn>
+    }
     getJoinedRooms: ReturnType<typeof vi.fn>
   }
 

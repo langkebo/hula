@@ -230,10 +230,10 @@ onUnmounted(() => {
   height: 100%;
   min-height: 0;
   color: var(--hula-text-primary);
-  background: linear-gradient(180deg, var(--hula-surface-panel) 0%, var(--hula-surface-panel-muted) 100%);
+  background: var(--hula-surface-dark-mid);
   border: 1px solid var(--hula-border-default);
   border-radius: var(--hula-radius-lg);
-  box-shadow: var(--hula-shadow-border), var(--hula-shadow-md);
+  box-shadow: var(--hula-shadow-panel);
   overflow: hidden;
 
   @include responsive.respond-to-max('md') {
@@ -244,9 +244,10 @@ onUnmounted(() => {
 .settings-sidebar {
   width: var(--hula-settings-sidebar-width);
   flex-shrink: 0;
-  background: color-mix(in srgb, var(--hula-surface-panel) 78%, var(--hula-surface-subtle) 22%);
+  background: var(--hula-surface-deepest);
   border-right: 1px solid var(--hula-border-default);
   overflow-y: auto;
+  padding: var(--hula-space-3) 0;
 
   @include responsive.respond-to-max('md') {
     width: 100%;
@@ -280,22 +281,22 @@ onUnmounted(() => {
   gap: var(--hula-space-4);
   min-height: var(--hula-settings-header-height);
   padding: var(--hula-space-4) var(--hula-space-5);
-  background: color-mix(in srgb, var(--hula-surface-panel) 88%, transparent);
+  background: var(--hula-surface-dark-mid);
   border-bottom: 1px solid var(--hula-border-default);
 }
 
 .settings-close-btn {
   flex-shrink: 0;
   color: var(--hula-text-secondary);
-  background-color: var(--hula-surface-subtle);
+  background-color: var(--hula-surface-dark-hover);
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--hula-motion-duration-normal) var(--hula-motion-ease-standard),
+    color var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
 }
 
 .settings-close-btn:hover {
   color: var(--hula-text-primary);
-  background-color: var(--hula-surface-sidebar-hover);
+  background-color: var(--hula-surface-dark-hover);
 }
 
 .settings-header-main {
@@ -339,7 +340,7 @@ onUnmounted(() => {
   min-height: 0;
   overflow-y: auto;
   padding: var(--hula-space-5);
-  background: var(--hula-surface-panel);
+  background: var(--hula-surface-dark-mid);
 
   @include responsive.respond-to-max('md') {
     padding: var(--hula-space-4);

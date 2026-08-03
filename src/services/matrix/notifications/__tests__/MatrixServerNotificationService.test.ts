@@ -23,12 +23,10 @@ const server = setupMswServer(
   }),
 
   http.get(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/active`, () => {
-    return HttpResponse.json({
-      notifications: [
-        { id: 1, title: 'Test 1', content: 'Content 1' },
-        { id: 2, title: 'Test 2', content: 'Content 2' }
-      ]
-    })
+    return HttpResponse.json([
+      { id: 1, title: 'Test 1', content: 'Content 1' },
+      { id: 2, title: 'Test 2', content: 'Content 2' }
+    ])
   }),
 
   http.post(`${TEST_BASE_URL}/_synapse/admin/v1/server_notifications/1/read`, () => {
@@ -74,11 +72,11 @@ vi.spyOn(matrixServerNotificationService as any, 'getClient').mockReturnValue({
   },
   getAdminManager: () => ({
     server: {
-      createServerNotification: (payload: Record<string, unknown>) =>
+      createNotification: (payload: Record<string, unknown>) =>
         authedRequestImpl('POST', '/_synapse/admin/v1/server_notifications', undefined, payload),
-      getServerNotification: (id: string) => authedRequestImpl('GET', `/_synapse/admin/v1/server_notifications/${id}`),
-      listActiveServerNotifications: () => authedRequestImpl('GET', '/_synapse/admin/v1/server_notifications/active'),
-      markServerNotificationAsRead: (id: string) =>
+      getNotification: (id: string) => authedRequestImpl('GET', `/_synapse/admin/v1/server_notifications/${id}`),
+      listActiveNotifications: () => authedRequestImpl('GET', '/_synapse/admin/v1/server_notifications/active'),
+      deactivateNotification: (id: string) =>
         authedRequestImpl('POST', `/_synapse/admin/v1/server_notifications/${id}/read`)
     }
   })

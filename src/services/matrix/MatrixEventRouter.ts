@@ -226,7 +226,7 @@ export class MatrixEventRouter {
     const clientAny = client as MatrixClient & { setMaxListeners?: (n: number) => void }
     clientAny.setMaxListeners?.(50)
 
-    client.on('sync', this.syncListener)
+    client.on('sync', this.syncListener as never)
     client.on('room', this.roomListener)
     client.on('room_timeline', this.roomTimelineListener)
     client.on('Event.redaction', this.redactionListener)
