@@ -17,7 +17,7 @@
     <div class="flex flex-1 min-h-0">
       <!-- 移除 keep-alive：异步组件与 keep-alive 结合会导致 deactivate 函数错误 -->
       <AsyncLeft />
-      <AsyncCenter />
+      <AsyncCenter :shrink-status="shrinkStatus" />
       <AsyncRight v-if="!shrinkStatus" />
     </div>
     <div v-if="overlayVisible" class="absolute inset-0 z-10 flex items-center justify-center bg-[--right-bg-color]">

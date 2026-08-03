@@ -89,8 +89,15 @@ const spaces = ref([
   { id: '2', name: '家庭', icon: '#i-home' }
 ])
 
+const props = defineProps<{
+  shrinkStatus?: boolean
+}>()
+
 // Step 2.3：响应式断点派生收缩状态；非 shrink 模式宽度由 store 持久化
-const { isShrink } = useResponsiveBreakpoint()
+const { isShrink: responsiveShrink } = useResponsiveBreakpoint()
+
+// 使用 prop 传入的 shrinkStatus（如果有），否则使用响应式的
+const isShrink = computed(() => props.shrinkStatus ?? responsiveShrink.value)
 
 // 中间栏样式：shrink 模式下 flex 自适应，否则固定 300px
 const centerStyle = computed(() => {
