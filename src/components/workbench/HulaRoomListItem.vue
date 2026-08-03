@@ -292,29 +292,29 @@ const handleAvatarError = (event: Event) => {
     outline-offset: 2px;
   }
 
+  /* TJG 原型：激活态使用 bg-light (#2d2d2d) + accent 左侧指示条 */
   &.active {
-    background: var(--hula-surface-session-active);
-    box-shadow: var(--hula-surface-session-active-shadow);
+    background: var(--hula-surface-list-selected);
 
     .room-name {
-      color: var(--hula-text-inverse);
+      color: var(--hula-text-primary);
       font-weight: 600;
     }
 
     .room-time {
-      color: rgba(255, 255, 255, 0.8);
+      color: var(--hula-text-tertiary);
     }
 
     .room-preview {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--hula-text-secondary);
     }
 
     .room-preview__placeholder {
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--hula-text-tertiary);
     }
 
     .typing-indicator {
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--hula-color-primary-500);
     }
   }
 
@@ -341,6 +341,7 @@ const handleAvatarError = (event: Event) => {
   }
 }
 
+/* TJG 原型：激活态左侧 accent 指示条（3px，圆角右侧） */
 .active-indicator {
   position: absolute;
   left: 0;
@@ -387,6 +388,19 @@ const handleAvatarError = (event: Event) => {
   }
 }
 
+/* TJG 原型：提及红点使用 danger-500 */
+.mention-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hula-color-danger-500);
+  border: 2px solid var(--center-bg-color);
+  z-index: 2;
+}
+
 .favorite-badge {
   position: absolute;
   top: -2px;
@@ -399,6 +413,7 @@ const handleAvatarError = (event: Event) => {
   z-index: 2;
 }
 
+/* TJG 原型：在线状态点使用 success-500，边框对齐 center-bg-color */
 .room-avatar.is-online::after {
   content: '';
   position: absolute;
@@ -408,7 +423,7 @@ const handleAvatarError = (event: Event) => {
   height: 10px;
   border-radius: 50%;
   background: var(--hula-color-success-500);
-  border: 2px solid var(--hula-surface-panel);
+  border: 2px solid var(--center-bg-color);
 }
 
 .room-info {
@@ -459,6 +474,7 @@ const handleAvatarError = (event: Event) => {
   gap: 8px;
 }
 
+/* TJG 原型：预览文字使用 text-secondary，提及态使用 accent */
 .room-preview {
   font-size: 12px;
   color: var(--hula-text-secondary);
@@ -471,7 +487,7 @@ const handleAvatarError = (event: Event) => {
   gap: 4px;
 
   &.mention {
-    color: var(--hula-accent);
+    color: var(--hula-color-primary-500);
   }
 
   &__placeholder {
@@ -494,8 +510,9 @@ const handleAvatarError = (event: Event) => {
   flex-shrink: 0;
 }
 
+/* TJG 原型：未读徽章使用 danger-500 背景，提及态也用 danger-500 */
 .unread-badge {
-  background: var(--hula-room-unread-badge-bg);
+  background: var(--hula-color-danger-500);
   color: var(--hula-text-inverse);
   font-size: 10px;
   font-weight: 600;
@@ -508,7 +525,7 @@ const handleAvatarError = (event: Event) => {
   padding: 0 5px;
 
   &.mention {
-    background: var(--hula-room-highlight-badge-bg);
+    background: var(--hula-color-danger-500);
   }
 }
 

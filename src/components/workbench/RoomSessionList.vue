@@ -155,6 +155,7 @@ defineExpose({
   padding: 8px 8px 0;
 }
 
+/* TJG 原型：网络横幅使用 center-bg-color 保持一致 */
 .room-session-list__network-banner {
   margin: 8px 12px 0;
   border: 1px solid var(--hula-color-danger-500);

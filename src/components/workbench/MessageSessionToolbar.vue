@@ -144,8 +144,9 @@ const handleGlobalSearch = () => {
 </script>
 
 <style scoped lang="scss">
+/* TJG 原型：工具栏背景对齐 center-bg-color */
 .message-session-toolbar {
-  background: var(--hula-surface-panel);
+  background: var(--center-bg-color);
 }
 
 .message-session-toolbar__content {

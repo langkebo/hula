@@ -168,8 +168,9 @@ onMounted(async () => {
 <style lang="scss" scoped>
 @use '@/styles/scss/message';
 
+/* TJG 原型规范：房间列表面板使用 center-bg-color (#1b1b1b in dark) */
 .room-list-page {
-  background: var(--hula-surface-panel);
+  background: var(--center-bg-color);
 }
 
 #image-no-data {

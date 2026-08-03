@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col h-full bg-[--center-bg-color]">
+  <div class="flex flex-col h-full" style="background: var(--center-bg-color)">
+    <!-- TJG 原型：移动端导航栏 -->
     <NavBar :title="t('mobile_tabbar.items.rooms')">
       <template #right>
         <van-icon
@@ -11,8 +12,8 @@
       </template>
     </NavBar>
 
-    <!-- 搜索栏 -->
-    <div class="px-16px py-8px">
+    <!-- TJG 原型：搜索栏使用 bg-mid (#262626) 背景 -->
+    <div class="px-16px py-8px" style="background: var(--hula-surface-subtle)">
       <van-search
         v-model="searchText"
         :placeholder="t('mobile_rooms.search_placeholder')"
@@ -38,8 +39,13 @@
       </van-button>
     </van-empty>
 
-    <!-- 房间列表 -->
-    <van-pull-refresh v-else v-model="refreshing" @refresh="onRefresh" class="flex-1 min-h-0">
+    <!-- TJG 原型：房间列表使用 bg-deepest 背景 -->
+    <van-pull-refresh
+      v-else
+      v-model="refreshing"
+      @refresh="onRefresh"
+      class="flex-1 min-h-0"
+      style="background: var(--hula-surface-deepest)">
       <SmartVirtualList
         class="h-full overflow-y-auto overflow-x-hidden"
         :items="roomList"
@@ -48,9 +54,11 @@
         key-field="roomId">
         <template #default="{ item: room }">
           <van-swipe-cell>
+            <!-- TJG 原型：移动端房间项使用 bg-deep 背景，按压态 bg-mid -->
             <div
               :data-testid="`mobile-room-item-${room.roomId}`"
               class="flex items-center gap-12px px-16px py-12px tap-highlight"
+              style="background: var(--center-bg-color)"
               @click="enterRoom(room.roomId)">
               <img
                 class="size-48px rounded-12px object-cover flex-shrink-0"
@@ -389,12 +397,13 @@ fetchRooms()
 </script>
 
 <style scoped lang="scss">
+/* TJG 原型：移动端按压态使用 bg-mid (#262626) */
 .tap-highlight {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 
   &:active {
-    background-color: var(--hula-bg-pressed);
+    background-color: var(--hula-surface-subtle) !important;
   }
 }
 </style>

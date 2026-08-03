@@ -14,6 +14,7 @@
 
 <style scoped lang="scss">
 .list-workbench-shell {
-  background: var(--hula-surface-panel);
+  /* TJG 原型：房间列表面板背景对齐 center-bg-color */
+  background: var(--center-bg-color);
 }
 </style>
