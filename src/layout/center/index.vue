@@ -83,7 +83,3 @@ onUnmounted(() => {
   window.removeEventListener('search:focus', focusActiveSearchInput)
 })
 </script>
-
-<style scoped lang="scss">
-@use 'style';
-</style>
