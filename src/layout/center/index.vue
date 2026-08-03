@@ -94,12 +94,12 @@ const props = defineProps<{
 }>()
 
 // Step 2.3：响应式断点派生收缩状态；非 shrink 模式宽度由 store 持久化
-const { isShrink: responsiveShrink } = useResponsiveBreakpoint()
+const { isShrink: responsiveShrink, centerWidth } = useResponsiveBreakpoint()
 
 // 使用 prop 传入的 shrinkStatus（如果有），否则使用响应式的
 const isShrink = computed(() => props.shrinkStatus ?? responsiveShrink.value)
 
-// 中间栏样式：shrink 模式下 flex 自适应，否则固定 300px
+// 中间栏样式：shrink 模式下 flex 自适应，否则使用响应式断点宽度
 const centerStyle = computed(() => {
   if (isShrink.value) {
     return {
@@ -111,9 +111,9 @@ const centerStyle = computed(() => {
   }
   return {
     flex: '0 0 auto',
-    width: '300px',
-    minWidth: '300px',
-    maxWidth: '300px'
+    width: `${centerWidth.value}px`,
+    minWidth: `${centerWidth.value}px`,
+    maxWidth: `${centerWidth.value}px`
   }
 })
 
