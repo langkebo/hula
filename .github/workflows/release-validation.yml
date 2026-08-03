@@ -54,7 +54,7 @@ jobs:
           echo "synapse_repo=$SYNAPSE_REPO" >> "$GITHUB_OUTPUT"
 
       - name: Checkout hula
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: hula
 
@@ -74,7 +74,7 @@ jobs:
           echo "Pinned synapse-rust commit:  ${SYNAPSE_COMMIT:-(none)}"
 
       - name: Checkout matrix-js-sdk at pinned commit
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ steps.repos.outputs.sdk_repo }}
           ref: ${{ steps.pin.outputs.sdk_commit }}
@@ -82,7 +82,7 @@ jobs:
 
       - name: Checkout synapse-rust at pinned commit (informational)
         if: steps.pin.outputs.synapse_commit != ''
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ steps.repos.outputs.synapse_repo }}
           ref: ${{ steps.pin.outputs.synapse_commit }}
