@@ -4,7 +4,7 @@
     data-tauri-drag-region
     id="center"
     :class="{ 'rounded-r-8px': isShrink }"
-    class="resizable select-none flex flex-col border-r-(1px solid [--hula-border-layout-divider])"
+    class="resizable relative select-none flex flex-col border-r-(1px solid [--hula-border-layout-divider])"
     :style="centerStyle">
     <!-- 分隔条（shrink 模式下隐藏） -->
     <PanelResizeHandle v-show="!isShrink" side="left" style="touch-action: none" />
