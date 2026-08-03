@@ -44,7 +44,17 @@
 
       <!-- 阶段 2/4：右侧栏视图状态机，路由为单一真相源 -->
       <div class="flex-1 min-h-0 flex flex-col">
-        <ChatBox v-if="shouldShowChat" />
+        <template v-if="shouldShowChat">
+          <!-- Messages area -->
+          <div class="messages-area">
+            <ChatBox />
+          </div>
+
+          <!-- Input area -->
+          <div class="input-area">
+            <!-- Input area placeholder for ChatBox input toolbar integration -->
+          </div>
+        </template>
 
         <template v-else-if="needsActionBar">
           <!-- 阶段 2/4：视图 ActionBar（48px），非 empty/chat/search 视图显示返回按钮 + 标题 -->
@@ -258,7 +268,7 @@ useMitt.on(MittEnum.DETAILS_SHOW, () => {
 /* Chat header */
 .chat-header {
   padding: 12px 18px;
-  border-bottom: 1px solid #000;
+  border-bottom: 1px solid var(--hula-border-layout-divider);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -320,6 +330,22 @@ useMitt.on(MittEnum.DETAILS_SHOW, () => {
 .chat-action-btn:hover {
   background: var(--hula-bg-mid);
   color: var(--hula-text-primary);
+}
+
+/* Messages area */
+.messages-area {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Input area */
+.input-area {
+  padding: 12px 18px 14px;
+  background: var(--hula-bg-deep);
+  border-top: 1px solid var(--hula-border-layout-divider);
+  flex-shrink: 0;
 }
 
 /* Step 2.3：视图驱动动态宽度过渡动画 */
