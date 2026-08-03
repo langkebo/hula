@@ -55,8 +55,8 @@ const centerStyle = computed(() => {
   return {
     flex: '0 0 auto',
     width: `${w}px`,
-    minWidth: `${w}px`,
-    maxWidth: `${w}px`
+    minWidth: '200px',
+    maxWidth: '600px'
   }
 })
 
