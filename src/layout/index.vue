@@ -17,7 +17,7 @@
     <div class="flex flex-1 min-h-0">
       <!-- 移除 keep-alive：异步组件与 keep-alive 结合会导致 deactivate 函数错误 -->
       <AsyncLeft />
-      <AsyncCenter :shrink-status="shrinkStatus" />
+      <AsyncCenter />
       <AsyncRight v-if="!shrinkStatus" />
     </div>
     <div v-if="overlayVisible" class="absolute inset-0 z-10 flex items-center justify-center bg-[--right-bg-color]">
@@ -43,10 +43,9 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { UserAttentionType } from '@tauri-apps/api/window'
-
+import { useWindowSize } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { useWindowSize } from '@vueuse/core'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import GuestModeBanner from '@/components/common/GuestModeBanner.vue'
 import PrivacyOverlay from '@/components/privacy/PrivacyOverlay.vue'
@@ -55,8 +54,8 @@ import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
 import { useMitt } from '@/composables/common/useMitt'
 import { useOverlayController } from '@/composables/common/useOverlayController'
 import { useWindow } from '@/composables/common/useWindow'
-import { useSearchShortcut } from '@/composables/search/useSearchShortcut'
 import { useResponsiveBreakpoint } from '@/composables/layout/useResponsiveBreakpoint'
+import { useSearchShortcut } from '@/composables/search/useSearchShortcut'
 import { usePrivacyProtection } from '@/composables/usePrivacyProtection'
 import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { MittEnum, MsgEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
@@ -304,7 +303,7 @@ watch(shrinkStatus, (newValue) => {
  * event默认如果没有传递值就为true，所以shrinkStatus的值为false就会发生值的变化
  * 因为shrinkStatus的值为false，所以v-if="!shrinkStatus" 否则right组件刚开始渲染的时候不会显示
  * */
-useMitt.on(MittEnum.SHRINK_WINDOW, (event: boolean) => {
+useMitt.on(MittEnum.SHRINK_WINDOW, (_event: boolean) => {
   // 不再手动设置 shrinkStatus，因为 useResponsiveBreakpoint 已经内部处理了窗口大小监听
   // shrinkStatus.value = event
 })

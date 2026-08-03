@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, type Ref, ref } from 'vue'
+import { defineComponent, h, nextTick, type Ref } from 'vue'
 
 const mockWebviewWindow = { label: 'home' }
 
@@ -12,10 +12,17 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
 }))
 
 // Step 2.3：mock useResponsiveBreakpoint，提供可变的 mode/centerWidth/isShrink
-const modeRef = ref<'wide' | 'normal' | 'shrink'>('wide') as Ref<'wide' | 'normal' | 'shrink'>
-const centerWidthRef = ref(280)
-const isShrinkRef = ref(false)
-const isRightPaneFullscreenRef = ref(false)
+// 使用 vi.hoisted 确保变量在 vi.mock 提升时已初始化
+const { modeRef, centerWidthRef, isShrinkRef, isRightPaneFullscreenRef } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ref } = require('vue') as typeof import('vue')
+  return {
+    modeRef: ref<'wide' | 'normal' | 'shrink'>('wide') as Ref<'wide' | 'normal' | 'shrink'>,
+    centerWidthRef: ref(280),
+    isShrinkRef: ref(false),
+    isRightPaneFullscreenRef: ref(false)
+  }
+})
 
 vi.mock('@/composables/layout/useResponsiveBreakpoint', () => ({
   useResponsiveBreakpoint: () => ({
@@ -97,12 +104,12 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
     return wrapper
   }
 
-  it('wide 模式中间栏宽度为 280px', async () => {
+  it('wide 模式中间栏宽度为默认 panelWidth.left', async () => {
     const wrapper = await mountCenter()
     const center = wrapper.find('#center')
     expect(center.exists()).toBe(true)
     const style = center.attributes('style') || ''
-    expect(style).toContain('280px')
+    expect(style).toContain('320px')
     wrapper.unmount()
   })
 
@@ -152,7 +159,7 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
 
   it('面板宽度变化时中间栏宽度跟随更新', async () => {
     const wrapper = await mountCenter()
-    expect(wrapper.find('#center').attributes('style') || '').toContain('280px')
+    expect(wrapper.find('#center').attributes('style') || '').toContain('320px')
 
     const store = useSettingStore()
     store.setPanelWidth('left', 240)

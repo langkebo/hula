@@ -3,8 +3,7 @@
     data-testid="panel-resize-handle"
     class="panel-resize-handle"
     :style="{ cursor: 'col-resize' }"
-    @pointerdown="onPointerDown"
-  />
+    @pointerdown="onPointerDown" />
 </template>
 
 <script setup lang="ts">
@@ -17,13 +16,18 @@ let dragging = false
 
 function onPointerDown(e: PointerEvent) {
   e.preventDefault()
+  e.stopPropagation()
   dragging = true
   document.body.style.cursor = 'col-resize'
   document.body.style.userSelect = 'none'
 
+  const startX = e.clientX
+  const startWidth = settingStore.panelWidth[props.side]
+
   const onMove = (ev: PointerEvent) => {
     if (!dragging) return
-    settingStore.setPanelWidth(props.side, ev.clientX)
+    const delta = ev.clientX - startX
+    settingStore.setPanelWidth(props.side, startWidth + delta)
   }
   const onUp = () => {
     dragging = false
@@ -39,10 +43,14 @@ function onPointerDown(e: PointerEvent) {
 
 <style scoped>
 .panel-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
   width: 4px;
   height: 100%;
   background: var(--hula-border-muted);
-  flex-shrink: 0;
+  z-index: 10;
+  cursor: col-resize;
   transition: background var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
 }
 .panel-resize-handle:hover {

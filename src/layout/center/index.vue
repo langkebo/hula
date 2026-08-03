@@ -4,7 +4,7 @@
     data-tauri-drag-region
     id="center"
     :class="{ 'rounded-r-8px': isShrink }"
-    class="resizable select-none flex flex-col min-h-0"
+    class="resizable select-none flex flex-col min-h-0 relative"
     style="background: var(--hula-bg-deep); border-right: 1px solid var(--hula-border-layout-divider)"
     :style="centerStyle">
     <!-- 分隔条（shrink 模式下隐藏） -->
@@ -16,29 +16,6 @@
       :shrink-status="!isShrink"
       :max-w="false"
       :current-label="appWindow?.label" />
-
-    <!-- Center panel header -->
-    <div class="list-header">
-      <h2>{{ title }}</h2>
-      <div class="list-actions">
-        <div class="icon-btn">
-          <svg><use href="#i-plus" /></svg>
-        </div>
-        <div class="icon-btn">
-          <svg><use href="#i-more" /></svg>
-        </div>
-      </div>
-    </div>
-
-    <!-- Space shortcuts -->
-    <div class="space-shortcuts">
-      <div v-for="space in spaces" :key="space.id" class="space-shortcut" :title="space.name">
-        <svg><use :href="space.icon" /></svg>
-      </div>
-      <div class="space-shortcut add">
-        <svg><use href="#i-plus" /></svg>
-      </div>
-    </div>
 
     <!-- Session filter tabs -->
     <div class="session-filter">
@@ -76,7 +53,6 @@ const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const centerEl = shallowRef<HTMLElement | null>(null)
 
 // Center panel structural data
-const title = ref('消息')
 const activeTab = ref('all')
 const tabs = ref([
   { key: 'all', label: '全部', badge: 0 },
@@ -84,22 +60,14 @@ const tabs = ref([
   { key: 'mentions', label: '提及', badge: 0 },
   { key: 'spaces', label: '空间', badge: 0 }
 ])
-const spaces = ref([
-  { id: '1', name: '工作空间', icon: '#i-work' },
-  { id: '2', name: '家庭', icon: '#i-home' }
-])
-
-const props = defineProps<{
-  shrinkStatus?: boolean
-}>()
 
 // Step 2.3：响应式断点派生收缩状态；非 shrink 模式宽度由 store 持久化
-const { isShrink: responsiveShrink, centerWidth } = useResponsiveBreakpoint()
+// 注意：shrinkStatus 曾作为 prop 传入，但 Boolean prop 未传时运行时默认 false，
+// 导致 `props.shrinkStatus ?? responsiveShrink.value` 永远返回 false（shrink 模式失效）。
+// 父组件 layout/index.vue 传入的值本身也来自 useResponsiveBreakpoint，故直接使用响应式断点。
+const { isShrink } = useResponsiveBreakpoint()
 
-// 使用 prop 传入的 shrinkStatus（如果有），否则使用响应式的
-const isShrink = computed(() => props.shrinkStatus ?? responsiveShrink.value)
-
-// 中间栏样式：shrink 模式下 flex 自适应，否则使用响应式断点宽度
+// 中间栏样式：shrink 模式下 flex 自适应，否则按 store 持久化的面板宽度
 const centerStyle = computed(() => {
   if (isShrink.value) {
     return {
@@ -109,11 +77,12 @@ const centerStyle = computed(() => {
       maxWidth: '64px'
     }
   }
+  const w = settingStore.panelWidth.left
   return {
     flex: '0 0 auto',
-    width: `${centerWidth.value}px`,
-    minWidth: `${centerWidth.value}px`,
-    maxWidth: `${centerWidth.value}px`
+    width: `${w}px`,
+    minWidth: '200px',
+    maxWidth: '600px'
   }
 })
 
