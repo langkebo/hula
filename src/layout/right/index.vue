@@ -97,22 +97,18 @@ import SpaceChildrenPane from '@/components/space/SpaceChildrenPane.vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { useResponsiveBreakpoint } from '@/composables/layout/useResponsiveBreakpoint'
 import { useRightPaneWidth } from '@/composables/layout/useRightPaneWidth'
-import { MittEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
+import { MittEnum, RoomTypeEnum } from '@/enums'
 import { useRightView } from '@/layout/right/useRightView'
 import router from '@/router'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 
 const { t } = useI18n()
 const route = useRoute()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
-const settingStore = useSettingStore()
 const globalStore = useGlobalStore()
 const { currentSessionRoomId } = storeToRefs(globalStore)
 const { rightView } = useRightView()
-const imgTheme = ref<ThemeEnum>(settingStore.themeContent)
-const prefers = matchMedia('(prefers-color-scheme: dark)')
 
 // Step 2.3：响应式断点（shrink 模式下右侧栏全屏）
 const { isRightPaneFullscreen, isShrink } = useResponsiveBreakpoint()
@@ -195,21 +191,6 @@ const handleBack = () => {
     void router.push(fallback)
   }
 }
-
-/** 跟随系统主题模式切换主题 */
-const followOS = () => {
-  imgTheme.value = prefers.matches ? ThemeEnum.DARK : ThemeEnum.LIGHT
-}
-
-watchEffect(() => {
-  if (settingStore.themePattern === ThemeEnum.OS) {
-    followOS()
-    prefers.addEventListener('change', followOS)
-  } else {
-    imgTheme.value = settingStore.themeContent || ThemeEnum.LIGHT
-    prefers.removeEventListener('change', followOS)
-  }
-})
 
 // 兼容历史：移动端好友列表仍可能 emit DETAILS_SHOW 关闭事件，统一转为 router.back
 useMitt.on(MittEnum.DETAILS_SHOW, () => {
