@@ -276,6 +276,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import AnnouncementPanel from '@/components/room/AnnouncementPanel.vue'
 import { useChatMain } from '@/composables/chat/useChatMain'
+import { useRoomType } from '@/composables/chat/useRoomType'
 import { useLinkSegments } from '@/composables/common/useLinkSegments'
 import { useMitt } from '@/composables/common/useMitt'
 import { usePopover } from '@/composables/common/usePopover'
@@ -313,7 +314,7 @@ const onlineCountDisplay = computed(
     groupStore.onlineCountMap[globalStore.currentSessionRoomId] ??
     groupStore.userList.filter((m) => m.activeStatus === OnlineEnum.ONLINE).length
 )
-const isGroup = computed(() => globalStore.currentSession?.type === RoomTypeEnum.GROUP)
+const isGroup = useRoomType().isGroup
 // 公告相关计算属性
 const { announcementContent, announNum, announError, isAddAnnoun } = storeToRefs(announcementStore)
 const { segments: announcementSegments, openLink: openAnnouncementLink } = useLinkSegments(announcementContent)
