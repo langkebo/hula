@@ -1,248 +1,192 @@
 <template>
-  <van-config-provider :theme="settingStore.themeContent === ThemeEnum.DARK ? 'dark' : 'light'" class="h-full">
-    <div
-      class="h-full flex flex-col box-border"
-      :class="{
-        'bg-cover bg-center bg-no-repeat': props.backgroundImage
-      }"
-      :style="mergedStyle">
-      <!-- 顶部安全区域 -->
-      <div :class="[{ 'safe-area-top': safeAreaTop }, props.topSafeAreaClass]" />
+  <div class="mobile-layout">
+    <div class="mobile-container" :class="{ 'with-background': props.backgroundImage }">
+      <!-- iOS Status Bar -->
+      <div class="ios-statusbar">
+        <span class="status-time">9:41</span>
+        <div class="dynamic-island"></div>
+        <div class="statusbar-right">
+          <svg class="w-16px h-16px signal-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M2 18h2v2H2v-2zm4-4h2v6H6v-6zm4-4h2v10h-2V10zm4-4h2v14h-2V6zm4-2h2v18h-2V4z" fill="currentColor" />
+          </svg>
+          <span>5G</span>
+          <div class="battery">
+            <div class="battery-body">
+              <div class="battery-level" style="width: 100%"></div>
+            </div>
+            <div class="battery-cap"></div>
+          </div>
+        </div>
+      </div>
 
-      <!-- 内容区域 -->
-      <div class="flex-1 min-h-0">
+      <!-- Header Slot -->
+      <div v-if="$slots.header" class="mobile-header">
+        <slot name="header"></slot>
+      </div>
+
+      <!-- Content Slot -->
+      <div class="mobile-content">
         <slot></slot>
       </div>
 
-      <!-- 底部安全区域 -->
-      <div :class="[{ 'safe-area-bottom': safeAreaBottom }, props.bottomSafeAreaClass]" />
+      <!-- Footer Slot -->
+      <div v-if="$slots.footer" class="mobile-footer">
+        <slot name="footer"></slot>
+      </div>
+
+      <!-- Home Indicator -->
+      <div class="home-indicator"></div>
     </div>
-  </van-config-provider>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { emitTo } from '@tauri-apps/api/event'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useRoute } from 'vue-router'
-import { useMitt } from '@/composables/common/useMitt'
-import { useWindow } from '@/composables/common/useWindow'
-import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum, WsResponseMessageType } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat'
-import { useChatStore } from '@/stores/domains/chat/chat'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
-import { useFileStore } from '@/stores/domains/widget/file'
-import { useGlobalStore } from '@/stores/domains/widget/global'
-import { hasTauriRuntime } from '@/utils/AppHarness'
-import { audioManager } from '@/utils/AudioManager'
-import { createLogger } from '@/utils/Logger'
-import { isMobile, isWindows } from '@/utils/PlatformConstants'
-import { invokeSilently } from '@/utils/TauriInvokeHandler'
-
-const logger = createLogger('MobileLayout')
 interface MobileLayoutProps {
-  /** 是否应用顶部安全区域 */
-  safeAreaTop?: boolean
-  /** 是否应用底部安全区域 */
-  safeAreaBottom?: boolean
   /** 背景图片URL */
   backgroundImage?: string
-  /** 顶部安全区域的自定义 CSS class */
-  topSafeAreaClass?: string
-  /** 底部安全区域的自定义 CSS class */
-  bottomSafeAreaClass?: string
-}
-
-const route = useRoute()
-const chatStore = useChatStore()
-const fileStore = useFileStore()
-const userStore = useUserStore()
-const globalStore = useGlobalStore()
-const settingStore = useSettingStore()
-const { ensureNotifyWindow } = useWindow()
-const userUid = computed(() => userStore.userInfo?.uid ?? '')
-const playMessageSound = async () => {
-  // 检查是否开启了消息提示音
-  if (!settingStore.notification?.messageSound) {
-    return
-  }
-
-  try {
-    const audio = new Audio('/sound/message.mp3')
-    const volume = settingStore.notification?.volume ?? 80
-    audio.volume = Math.min(1, Math.max(0, volume / 100))
-    await audioManager.play(audio, 'message-notification')
-  } catch (error) {
-    logger.warn('播放消息音效失败:', error)
-  }
 }
 
 const props = withDefaults(defineProps<MobileLayoutProps>(), {
-  safeAreaTop: true,
-  safeAreaBottom: true,
-  backgroundImage: '',
-  topSafeAreaClass: '',
-  bottomSafeAreaClass: ''
-})
-
-// 计算背景图样式
-const backgroundImageStyle = computed(() => {
-  const styles: Record<string, string> = {}
-
-  // 设置背景图片
-  if (props.backgroundImage) {
-    // 处理路径别名 @/ 转换为 /src/
-    let imagePath = props.backgroundImage
-    if (imagePath.startsWith('@/')) {
-      imagePath = imagePath.replace('@/', '/src/')
-    }
-    styles.backgroundImage = `url(${imagePath})`
-  }
-  return styles
-})
-
-const mergedStyle = computed(() => ({
-  backgroundColor: 'var(--center-bg-color)',
-  ...backgroundImageStyle.value
-}))
-
-/**
- * 从消息中提取文件信息并添加到 file store
- */
-const addFileToStore = (data: MessageType) => {
-  const { message } = data
-  const { type, body, roomId, id } = message
-
-  // 只处理图片和视频类型
-  if (type !== MsgEnum.IMAGE && type !== MsgEnum.VIDEO) {
-    return
-  }
-
-  // 提取文件信息
-  const fileUrl = body.url
-  if (!fileUrl) {
-    return
-  }
-
-  // 从 URL 中提取文件名
-  let fileName = ''
-  try {
-    const urlObj = new URL(fileUrl)
-    const pathname = urlObj.pathname
-    fileName = pathname.substring(pathname.lastIndexOf('/') + 1)
-  } catch (e) {
-    // 如果不是有效的 URL，直接使用消息 ID 作为文件名
-    fileName = `${id}.${type === MsgEnum.IMAGE ? 'jpg' : 'mp4'}`
-  }
-
-  // 从文件名中提取后缀
-  const suffix = fileName.includes('.')
-    ? fileName.substring(fileName.lastIndexOf('.') + 1)
-    : type === MsgEnum.IMAGE
-      ? 'jpg'
-      : 'mp4'
-
-  // 确定 MIME 类型
-  let mimeType = ''
-  if (type === MsgEnum.IMAGE) {
-    mimeType = `image/${suffix === 'jpg' ? 'jpeg' : suffix}`
-  } else if (type === MsgEnum.VIDEO) {
-    mimeType = `video/${suffix}`
-  }
-
-  // 添加到 file store
-  fileStore.addFile({
-    id,
-    roomId,
-    fileName,
-    type: type === MsgEnum.IMAGE ? 'image' : 'video',
-    url: fileUrl,
-    suffix,
-    mimeType
-  })
-}
-
-/** 处理收到的消息 */
-useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
-  if (chatStore.checkMsgExist(data.message.roomId, data.message.id)) {
-    return
-  }
-  logger.debug('[mobile/layout] 收到的消息：', data)
-  // 只有在聊天室页面且当前选中的会话就是消息来源的会话时，才不增加未读数
-  chatStore.pushMsg(data, {
-    isActiveChatView:
-      route.path.startsWith('/mobile/chatRoom') && globalStore.currentSessionRoomId === data.message.roomId,
-    activeRoomId: globalStore.currentSessionRoomId || ''
-  })
-  data.message.sendTime = new Date(data.message.sendTime).getTime()
-  await invokeSilently(TauriCommand.SAVE_MSG, {
-    data
-  })
-
-  // 如果是图片或视频消息，添加到 file store
-  addFileToStore(data)
-  if (data.fromUser.uid !== userUid.value) {
-    // 获取该消息的会话信息
-    const session = chatStore.sessionList.find((s) => s.roomId === data.message.roomId)
-
-    // 只有非免打扰的会话才发送通知和触发图标闪烁
-    if (session && session.muteNotification !== NotificationTypeEnum.NOT_DISTURB) {
-      let shouldPlaySound = isMobile()
-
-      if (!isMobile() && hasTauriRuntime()) {
-        try {
-          const home = await WebviewWindow.getByLabel('mobile-home')
-
-          if (home) {
-            const isVisible = await home.isVisible()
-            const isMinimized = await home.isMinimized()
-            const isFocused = await home.isFocused()
-
-            // 如果窗口不可见、被最小化或未聚焦，则播放音效
-            shouldPlaySound = !isVisible || isMinimized || !isFocused
-          } else {
-            // 如果找不到home 窗口，播放音效
-            shouldPlaySound = true
-          }
-        } catch (error) {
-          logger.warn('检查窗口状态失败:', error)
-          shouldPlaySound = true
-        }
-      }
-
-      // 播放消息音效
-      if (shouldPlaySound) {
-        await playMessageSound()
-      }
-
-      // 设置图标闪烁
-      // useMitt.emit(MittEnum.MESSAGE_ANIMATION, data)
-      // session.unreadCount++
-      // 在windows系统下才发送通知
-      if (!isMobile() && isWindows()) {
-        globalStore.setTipVisible(true)
-      }
-
-      if (!isMobile() && hasTauriRuntime()) {
-        const currentWindow = WebviewWindow.getCurrent()
-
-        if (currentWindow.label === 'mobile-home') {
-          await ensureNotifyWindow()
-          await emitTo('notify', 'notify_content', data)
-        }
-      }
-    }
-  }
-
-  await globalStore.updateGlobalUnreadCount()
+  backgroundImage: ''
 })
 </script>
 
 <style scoped lang="scss">
-.safe-area-top {
-  padding-top: var(--safe-area-inset-top);
+.mobile-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: var(--hula-surface-app);
 }
-.safe-area-bottom {
-  padding-bottom: var(--safe-area-inset-bottom);
+
+.mobile-container {
+  width: 375px;
+  height: 812px;
+  background: var(--hula-surface-deepest);
+  border-radius: 42px;
+  overflow: hidden;
+  box-shadow:
+    var(--hula-shadow-panel),
+    0 0 0 11px #1a1a1a,
+    0 0 0 12px #2a2a2a;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.ios-statusbar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: var(--hula-surface-dark-mid);
+  color: var(--hula-text-primary);
+  position: relative;
+}
+
+.status-time {
+  min-width: 36px;
+}
+
+.dynamic-island {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 32px;
+  background: #000;
+  border-radius: 18px;
+  z-index: 100;
+}
+
+.statusbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.signal-icon {
+  color: var(--hula-text-primary);
+}
+
+.battery {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.battery-body {
+  width: 22px;
+  height: 11px;
+  border: 1px solid var(--hula-text-primary);
+  border-radius: 2px;
+  padding: 1px;
+  position: relative;
+}
+
+.battery-level {
+  height: 100%;
+  background: var(--hula-text-primary);
+  border-radius: 1px;
+}
+
+.battery-cap {
+  width: 2px;
+  height: 5px;
+  background: var(--hula-text-primary);
+  border-radius: 0 1px 1px 0;
+}
+
+.mobile-header {
+  flex-shrink: 0;
+}
+
+.mobile-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-footer {
+  flex-shrink: 0;
+}
+
+.home-indicator {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 130px;
+  height: 4px;
+  background: #fff;
+  border-radius: 2px;
+  opacity: 0.4;
+  z-index: 50;
+}
+
+/* Mobile responsive: full width on actual mobile devices */
+@media (max-width: 375px) {
+  .mobile-layout {
+    padding: 0;
+  }
+
+  .mobile-container {
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .home-indicator {
+    display: none;
+  }
 }
 </style>

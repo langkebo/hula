@@ -16,23 +16,19 @@
         <h1 class="m-title">消息</h1>
         <div class="m-header-actions">
           <div class="icon-btn" @click="handleNewChat">
-            <svg class="w-20px h-20px"><use href="#i-plus"/></svg>
+            <svg class="w-20px h-20px"><use href="#i-plus" /></svg>
           </div>
         </div>
       </div>
       <div class="m-search" @click="focusSearch">
-        <svg class="w-16px h-16px"><use href="#i-search"/></svg>
+        <svg class="w-16px h-16px"><use href="#i-search" /></svg>
         <span>{{ t('mobile_home.input.search') }}</span>
       </div>
     </div>
 
     <!-- Mobile Content -->
     <div class="m-content">
-      <van-pull-refresh
-        :pull-distance="100"
-        :disabled="!isEnablePullRefresh"
-        v-model="loading"
-        @refresh="onRefresh">
+      <van-pull-refresh :pull-distance="100" :disabled="!isEnablePullRefresh" v-model="loading" @refresh="onRefresh">
         <SmartVirtualList
           class="mobile-session-list"
           :items="filteredSessionList"
@@ -45,12 +41,12 @@
               @open="handleSwipeOpen"
               @close="handleSwipeClose"
               v-on-long-press="[(e: PointerEvent) => handleLongPress(e, item), longPressOption]">
-              <div
-                class="m-room-item"
-                :class="{ swiped: swipedRoom === item.roomId }"
-                @click="intoRoom(item)">
-                <div class="m-room-avatar" :class="{ 'is-online': item.activeStatus === 1 }">
-                  <img v-if="item.avatar" :src="AvatarUtils.getAvatarUrl(item.avatar)" @error="($event.target as HTMLImageElement).src = '/logo.png'">
+              <div class="m-room-item" :class="{ swiped: swipedRoom === item.roomId }" @click="intoRoom(item)">
+                <div class="m-room-avatar">
+                  <img
+                    v-if="item.avatar"
+                    :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                    @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                   <span v-else>{{ item.name?.charAt(0) || '?' }}</span>
                   <div v-if="item.isAtMe" class="at-badge">@</div>
                 </div>
@@ -58,15 +54,17 @@
                   <div class="m-room-top">
                     <div class="m-room-name">
                       {{ item.name }}
-                      <span v-if="item.isEncrypted" class="encrypted-tag">
-                        <svg class="w-12px h-12px"><use href="#i-lock"/></svg>
+                      <span v-if="item.hotFlag === IsAllUserEnum.Yes" class="encrypted-tag">
+                        <svg class="w-12px h-12px"><use href="#i-auth" /></svg>
                       </span>
                     </div>
                     <div class="m-room-time">{{ formatTimestamp(item.activeTime) }}</div>
                   </div>
                   <div class="m-room-bottom">
                     <div class="m-room-preview">{{ item.lastMsg }}</div>
-                    <div v-if="item.unreadCount > 0" class="m-room-badge">{{ item.unreadCount > 99 ? '99+' : item.unreadCount }}</div>
+                    <div v-if="item.unreadCount > 0" class="m-room-badge">
+                      {{ item.unreadCount > 99 ? '99+' : item.unreadCount }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -95,7 +93,7 @@
         :class="{ active: activeTab === tab.key }"
         @click="onTabClick(tab)">
         <div class="m-tab-icon">
-          <svg class="w-24px h-24px"><use :href="tab.icon"/></svg>
+          <svg class="w-24px h-24px"><use :href="tab.icon" /></svg>
           <span v-if="tab.badge" class="m-tab-badge">{{ tab.badge }}</span>
         </div>
         <span>{{ tab.label }}</span>
@@ -130,7 +128,9 @@
             {{ currentLongPressItem?.top ? t('mobile_home.menu.unpin') : t('mobile_home.menu.pintop') }}
           </div>
           <div class="text-white" @click="handleToggleReadStatus((currentLongPressItem?.unreadCount ?? 0) > 0)">
-            {{ (currentLongPressItem?.unreadCount ?? 0) > 0 ? t('mobile_home.menu.read') : t('mobile_home.menu.unread') }}
+            {{
+              (currentLongPressItem?.unreadCount ?? 0) > 0 ? t('mobile_home.menu.read') : t('mobile_home.menu.unread')
+            }}
           </div>
         </div>
         <div class="flex w-full justify-center h-15px">
@@ -712,7 +712,10 @@ async function beforeCloseCreateGroup(action: string): Promise<boolean> {
     width: 375px;
     height: 812px;
     border-radius: 42px;
-    box-shadow: var(--hula-shadow-panel), 0 0 0 11px #1a1a1a, 0 0 0 12px #2a2a2a;
+    box-shadow:
+      var(--hula-shadow-panel),
+      0 0 0 11px #1a1a1a,
+      0 0 0 12px #2a2a2a;
     margin: 0 auto;
   }
 }
@@ -814,7 +817,9 @@ async function beforeCloseCreateGroup(action: string): Promise<boolean> {
   gap: 12px;
   padding: 10px 16px;
   cursor: pointer;
-  transition: transform 0.2s, background 0.15s;
+  transition:
+    transform 0.2s,
+    background 0.15s;
   position: relative;
   overflow: hidden;
   background: transparent;
