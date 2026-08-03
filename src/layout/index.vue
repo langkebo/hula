@@ -300,21 +300,13 @@ watch(shrinkStatus, (newValue) => {
   }
 })
 
-// 监听窗口大小变化，同步 shrinkStatus
-const { width: windowWidth } = useWindowSize()
-watch(windowWidth, (newWidth) => {
-  const isShrinkNow = newWidth < 1024
-  if (shrinkStatus.value !== isShrinkNow) {
-    shrinkStatus.value = isShrinkNow
-  }
-}, { immediate: true })
-
 /**
  * event默认如果没有传递值就为true，所以shrinkStatus的值为false就会发生值的变化
  * 因为shrinkStatus的值为false，所以v-if="!shrinkStatus" 否则right组件刚开始渲染的时候不会显示
  * */
 useMitt.on(MittEnum.SHRINK_WINDOW, (event: boolean) => {
-  shrinkStatus.value = event
+  // 不再手动设置 shrinkStatus，因为 useResponsiveBreakpoint 已经内部处理了窗口大小监听
+  // shrinkStatus.value = event
 })
 
 // 播放消息音效
