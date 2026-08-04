@@ -26,103 +26,32 @@
     </div>
 
     <template v-else>
-      <header class="friend-list-view__header p-12px">
-        <n-flex vertical :size="12">
-          <n-flex align="center" justify="space-between">
-            <n-flex align="center" :size="8">
-              <span class="text-[var(--text-base)] font-semibold">{{ t('friend.list.title') }}</span>
-              <n-badge :value="incomingRequestsCount" :max="99" :show="incomingRequestsCount > 0" />
-            </n-flex>
-            <n-flex :size="8">
-              <n-button quaternary circle size="small" :aria-label="t('menu.add_contact')" @click="handleAddFriend">
-                <template #icon>
-                  <n-icon>
-                    <svg><use href="#plus" /></svg>
-                  </n-icon>
-                </template>
-              </n-button>
-              <n-button
-                quaternary
-                circle
-                size="small"
-                :aria-label="t('friend.list.pending_requests', { count: incomingRequestsCount })"
-                @click="handleViewFriendRequests">
-                <template #icon>
-                  <n-icon>
-                    <svg><use href="#bell" /></svg>
-                  </n-icon>
-                </template>
-              </n-button>
-            </n-flex>
-          </n-flex>
-
-          <!-- 待处理好友请求预览区域 -->
-          <div v-if="incomingRequestsCount > 0" class="friend-request-preview">
-            <n-flex align="center" justify="space-between" class="mb-8px">
-              <n-flex align="center" :size="6">
-                <svg class="size-14px color-[--tjg-color-primary-500]"><use href="#bell" /></svg>
-                <span class="text-[var(--text-sm)] font-medium color-[--tjg-color-primary-500]">
-                  {{ t('friend.list.pending_requests', { count: incomingRequestsCount }) }}
-                </span>
-              </n-flex>
-              <n-button text size="tiny" type="primary" @click="handleViewFriendRequests">
-                {{ t('friend.list.view_all') }}
-              </n-button>
-            </n-flex>
-            <div class="friend-request-preview__list">
-              <FriendRequestCard
-                v-for="request in previewIncomingRequests"
-                :key="request.userId"
-                :request="request"
-                :processing="processingRequest === request.userId"
-                @accept="handleQuickAccept"
-                @reject="handleQuickReject" />
-            </div>
-          </div>
-
-          <FriendSearchBar
-            v-model="searchValue"
-            :history="searchHistory"
-            :show-history="showSearchHistory"
-            :show-global-search-action="true"
-            :placeholder="t('friend.list.search')"
-            @search="handleSearch"
-            @select-history="handleSelectSearchHistory"
-            @clear-history="handleClearSearchHistory"
-            @global-search="handleGlobalSearch" />
-        </n-flex>
-
-        <div v-if="showSearchSummary" class="friend-list-view__search-summary" aria-live="polite">
-          <span>{{ searchSummaryText }}</span>
-          <button
-            v-if="showSearchClearAction"
-            type="button"
-            class="friend-list-view__search-clear"
-            @click="handleClearActiveSearch">
-            {{ t('friend.search.clear_current') }}
-          </button>
-        </div>
-
-        <n-flex :size="4" class="mt-12px">
-          <n-button
-            v-for="filter in filterOptions"
-            :key="filter.value"
-            :type="currentFilter === filter.value ? 'primary' : 'default'"
-            size="tiny"
-            quaternary
-            :aria-pressed="currentFilter === filter.value"
-            @click="handleFilterChange(filter.value)">
-            {{ filter.label }}
-            <n-badge
-              v-if="filter.value !== 'all'"
-              :value="getFilterCount(filter.value)"
-              :max="99"
-              :show="getFilterCount(filter.value) > 0"
-              type="info"
-              class="ml-4px" />
-          </n-button>
-        </n-flex>
-      </header>
+      <FriendListHeader
+        :title="t('friend.list.title')"
+        :request-count="incomingRequestsCount"
+        :search-value="searchValue"
+        :search-history="searchHistory"
+        :show-search-history="showSearchHistory"
+        :search-placeholder="t('friend.list.search')"
+        :filter-value="currentFilter"
+        :filter-options="filterOptions"
+        :preview-requests="previewIncomingRequests"
+        :processing-request="processingRequest"
+        :show-search-summary="showSearchSummary"
+        :search-summary-text="searchSummaryText"
+        :show-search-clear-action="showSearchClearAction"
+        :get-filter-count="getFilterCount"
+        @update:search-value="searchValue = $event"
+        @update:filter-value="handleFilterChange"
+        @click:add="handleAddFriend"
+        @click:requests="handleViewFriendRequests"
+        @search="handleSearch"
+        @select-history="handleSelectSearchHistory"
+        @clear-history="handleClearSearchHistory"
+        @global-search="handleGlobalSearch"
+        @clear-active-search="handleClearActiveSearch"
+        @quick-accept="handleQuickAccept"
+        @quick-reject="handleQuickReject" />
 
       <n-divider style="margin: 0" />
 
@@ -226,9 +155,8 @@ import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpec
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { type FriendRequestItem, type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 import type { FriendStatus } from '@/types/matrix-services'
+import FriendListHeader from './FriendListHeader.vue'
 import FriendListItem from './FriendListItem.vue'
-import FriendRequestCard from './FriendRequestCard.vue'
-import FriendSearchBar from './FriendSearchBar.vue'
 import { resolveFriendListViewState } from './friendListViewState'
 
 const FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'tjg-friend-search-history'
@@ -346,7 +274,8 @@ const filteredFriends = computed(() => {
   })
 })
 
-const getFilterCount = (status: FriendStatus) => {
+const getFilterCount = (status: FriendStatus | 'all') => {
+  if (status === 'all') return contactStore.contactsList.length
   return contactStore.contactsList.filter((f) => normalizeFriendStatus(f.friendStatus) === status).length
 }
 
@@ -648,10 +577,6 @@ onMounted(async () => {
   flex-direction: column;
 }
 
-.friend-list-view__header {
-  flex-shrink: 0;
-}
-
 .friend-list-view__main {
   flex: 1;
   min-height: 0;
@@ -668,40 +593,6 @@ onMounted(async () => {
 .friend-list-view__state-title {
   font-size: 14px;
   color: var(--tjg-text-primary);
-}
-
-.friend-list-view__search-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--tjg-text-tertiary);
-  margin-top: 8px;
-}
-
-.friend-list-view__search-clear {
-  border: none;
-  background: transparent;
-  color: var(--tjg-color-primary-500);
-  cursor: pointer;
-  padding: 0;
-}
-
-.friend-request-preview {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--tjg-color-primary-50);
-  border: 1px solid var(--tjg-color-primary-100);
-}
-
-.friend-request-preview__list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
 }
 
 .friend-items {
