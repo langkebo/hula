@@ -65,9 +65,7 @@ interface UseAdminRoomsResult {
  * Admin rooms composable.
  *
  * Owns state + orchestration for the admin room-management surface so that
- * desktop (`src/views/admin/AdminRooms.vue`) and mobile
- * (`src/mobile/views/admin/AdminRooms.vue`, pending) render the same business
- * logic.
+ * desktop (`src/views/admin/AdminRooms.vue`) renders business logic.
  */
 export function useAdminRooms(): UseAdminRoomsResult {
   const rooms = ref<RoomInfo[]>([])

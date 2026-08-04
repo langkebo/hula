@@ -82,8 +82,7 @@ interface UseAdminUsersResult {
  * Admin users composable.
  *
  * Owns state + orchestration for the admin user-management surface so that
- * desktop (`src/views/admin/AdminUsers.vue`) and mobile
- * (`src/mobile/views/admin/AdminUsers.vue`) render the same business logic.
+ * desktop (`src/views/admin/AdminUsers.vue`) renders business logic.
  *
  * Views should be declarative: bind to the refs, call the actions, render UI.
  * Do not duplicate fetch/mutation logic inside `.vue` files.
