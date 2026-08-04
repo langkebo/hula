@@ -46,7 +46,7 @@
   <E2EEBanner v-if="currentRoomId" :key="currentRoomId" :room-id="currentRoomId" />
 
   <!-- 私密模式切换按钮（仅单聊） -->
-  <div v-if="!isMobile() && !isGroup" class="private-mode-bar flex-shrink-0 px-12px py-4px flex items-center gap-8px">
+  <div v-if="!isMobileRef && !isGroup" class="private-mode-bar flex-shrink-0 px-12px py-4px flex items-center gap-8px">
     <button
       data-testid="private-toggle-btn"
       type="button"
@@ -96,6 +96,8 @@ void BurnAfterReadToggle
 
 const { t } = useI18n()
 const isAnnouncementHover = ref<boolean>(false)
+
+const isMobileRef = computed(() => isMobile())
 
 interface StickyEventItem {
   eventId: string

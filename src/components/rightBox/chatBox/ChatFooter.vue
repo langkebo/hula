@@ -2,7 +2,7 @@
   <!-- 底部栏 -->
   <main
     :class="[
-      isMobile() ? 'flex-col w-full' : 'border-t-(1px solid [--tjg-border-default])',
+      isMobileRef ? 'flex-col w-full' : 'border-t-(1px solid [--tjg-border-default])',
       { 'private-mode-footer': privateModeActive }
     ]"
     class="h-full flex flex-col relative">
@@ -20,7 +20,7 @@
     <div v-if="!chatStore.isMsgMultiChoose" class="color-[--tjg-text-secondary] flex flex-col flex-1 min-h-0">
       <!-- 桌面端工具栏 -->
       <FooterToolbar
-        v-if="!isMobile()"
+        v-if="!isMobileRef"
         v-model:emoji-show="emojiShow"
         v-model:recently-tip="recentlyTip"
         v-model:is-conceal="isConceal"
@@ -40,7 +40,7 @@
         @open-chat-history="openChatHistory" />
 
       <!-- 输入框区域 -->
-      <div :class="[isMobile() ? '' : 'pl-20px ']" class="flex flex-1 min-h-0">
+      <div :class="[isMobileRef ? '' : 'pl-20px ']" class="flex flex-1 min-h-0">
         <MsgInput
           ref="MsgInputRef"
           @clickMore="handleMoreClick"
@@ -59,7 +59,7 @@
 
     <!-- 移动端面板 -->
     <MobilePanel
-      v-if="isMobile()"
+      v-if="isMobileRef"
       :is-panel-visible="isPanelVisible"
       :mobile-panel-state="mobilePanelState"
       @emoji-handle="emojiHandle"
@@ -103,6 +103,8 @@ import MobilePanel from './MobilePanel.vue'
 const logger = createLogger('ChatFooter')
 const privateModeActive = ref(false)
 const { t } = useI18n()
+
+const isMobileRef = computed(() => isMobile())
 const { showFeedback } = useActionFeedback()
 
 const props = withDefaults(

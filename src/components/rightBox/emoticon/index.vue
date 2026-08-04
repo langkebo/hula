@@ -2,7 +2,7 @@
   <n-scrollbar
     ref="panelScrollbarRef"
     style="max-height: 290px"
-    :class="[isMobile() ? 'h-15rem w-auto' : 'h-290px w-460px', isSeriesView ? 'emoji-panel-series' : '']"
+    :class="[isMobileRef ? 'h-15rem w-auto' : 'h-290px w-460px', isSeriesView ? 'emoji-panel-series' : '']"
     class="p-[14px_14px_0_14px] box-border select-none"
     :size="isSeriesView ? 0 : undefined"
     :trigger="isSeriesView ? 'none' : undefined"
@@ -15,7 +15,7 @@
             <span v-if="!checkIsUrl(emojiRef.historyList[0])" class="text-12px text-[--tjg-text-primary]">
               {{ t('emoticon.recent.title') }}
             </span>
-            <n-flex align="center" :class="isMobile() ? 'emoji-grid-mobile mt-12px mb-12px' : 'mt-12px mb-12px'">
+            <n-flex align="center" :class="isMobileRef ? 'emoji-grid-mobile mt-12px mb-12px' : 'mt-12px mb-12px'">
               <n-flex
                 align="center"
                 justify="center"
@@ -32,7 +32,7 @@
           <div v-for="items in emojiObj" :key="items?.name">
             <template v-if="items?.name && items.value?.length">
               <span class="text-12px text-[--tjg-text-primary]">{{ items.name }}</span>
-              <n-flex align="center" :class="isMobile() ? 'emoji-grid-mobile my-12px' : 'my-12px'">
+              <n-flex align="center" :class="isMobileRef ? 'emoji-grid-mobile my-12px' : 'my-12px'">
                 <n-flex
                   align="center"
                   justify="center"
@@ -63,7 +63,7 @@
                   class="emoji-pack-row"
                   :style="{
                     gridTemplateColumns: `repeat(${packColumns}, 1fr)`,
-                    gap: isMobile() ? '8px' : '12px'
+                    gap: isMobileRef ? '8px' : '12px'
                   }">
                   <div
                     class="emoji-item emoji-item--image"
@@ -96,7 +96,7 @@
         <div v-else>
           <div v-if="emojiStore.emojiList?.length > 0">
             <span class="text-12px text-[--tjg-text-primary]">{{ t('emoticon.favorites.title') }}</span>
-            <n-flex align="center" :class="isMobile() ? 'emoji-pack-grid-mobile mx-6px my-12px' : 'mx-6px my-12px'">
+            <n-flex align="center" :class="isMobileRef ? 'emoji-pack-grid-mobile mx-6px my-12px' : 'mx-6px my-12px'">
               <n-flex
                 align="center"
                 justify="center"
@@ -195,6 +195,8 @@ import { useEmojiLocalCache } from './useEmojiLocalCache'
 import { useEmojiPagination } from './useEmojiPagination'
 
 const logger = createLogger('Emoticon')
+
+const isMobileRef = computed(() => isMobile())
 
 type TabItem = {
   id: number
