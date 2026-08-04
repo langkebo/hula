@@ -91,7 +91,7 @@ const useMoreList = () => {
       if (hasAdminApi && adminStore.canAccessAdmin) {
         items.push({
           label: t('menu.admin_panel'),
-          icon: 'shield',
+          icon: 'hammer-and-wrench',
           click: async () => {
             const { useRouter } = await import('vue-router')
             const router = useRouter()

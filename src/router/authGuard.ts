@@ -1,4 +1,5 @@
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
+import { useI18nGlobal } from '@/services/i18n'
 
 const PUBLIC_ROUTE_PREFIXES = [
   '/login',
@@ -63,7 +64,9 @@ export const createAuthGuard = ({
         const isAdmin = await verifyAdminAccess()
         if (!isAdmin) {
           logger.warn(`非管理员尝试访问受限路径: ${to.path}`)
-          return next('/404')
+          const i18n = useI18nGlobal()
+          window.$message?.warning(i18n.t('error.matrix.forbidden'))
+          return next('/')
         }
       }
 
