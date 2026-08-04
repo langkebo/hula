@@ -35,7 +35,7 @@
           @click="handleSelectRoom(dmRoom)"
           @contextmenu="handleContextMenu($event, dmRoom)">
           <n-flex align="center" :size="12">
-            <n-badge :dot="false" color="var(--color-warning)" :offset="[-4, 4]">
+            <n-badge :dot="false" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
               <n-avatar
                 :size="44"
                 :src="AvatarUtils.getAvatarUrl(dmRoom.avatarUrl)"

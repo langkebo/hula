@@ -372,7 +372,7 @@ onMounted(async () => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-left-menu);
+  background: var(--tjg-surface-subtle);
 }
 
 .search-section {
@@ -419,7 +419,7 @@ onMounted(async () => {
 }
 
 .n-date-panel-actions .n-button {
-  background-color: var(--color-primary-light) !important;
+  background-color: var(--tjg-color-primary-400) !important;
   border: none !important;
   color: var(--tjg-color-primary-500) !important;
 }

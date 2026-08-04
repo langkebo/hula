@@ -61,7 +61,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: var(--color-primary-hover);
+  background: var(--tjg-color-primary-200);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;

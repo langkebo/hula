@@ -124,7 +124,8 @@
       :style="{ bottom: '24px', right: '50px' }">
       <div class="float-box" :class="{ max: currentNewMsgCount?.count > 99 }" @click="handleFloatButtonClick">
         <n-flex justify="space-between" align="center">
-          <n-icon :color="currentNewMsgCount?.count > 99 ? 'var(--color-danger)' : 'var(--tjg-color-primary-500)'">
+          <n-icon
+            :color="currentNewMsgCount?.count > 99 ? 'var(--tjg-color-danger-500)' : 'var(--tjg-color-primary-500)'">
             <svg>
               <use href="#double-down"></use>
             </svg>

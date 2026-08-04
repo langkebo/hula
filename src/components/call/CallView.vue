@@ -268,7 +268,7 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .call-view {
-  @apply flex flex-col h-full bg-[--bg-color];
+  @apply flex flex-col h-full bg-[--tjg-surface-app];
 
   &.is-video {
     background: var(--tjg-surface-media-preview);
@@ -295,20 +295,20 @@ onUnmounted(() => {
   @apply flex items-center gap-6px;
 
   &.ringing .status-indicator {
-    @apply w-8px h-8px rounded-full bg-[--color-warning] animate-pulse;
+    @apply w-8px h-8px rounded-full bg-[--tjg-color-warning-500] animate-pulse;
   }
 
   &.connecting .status-indicator {
-    @apply w-8px h-8px rounded-full bg-[--color-info] animate-pulse;
+    @apply w-8px h-8px rounded-full bg-[--tjg-color-info-500] animate-pulse;
   }
 
   &.connected .status-indicator {
-    @apply w-8px h-8px rounded-full bg-[--color-success];
+    @apply w-8px h-8px rounded-full bg-[--tjg-color-success-500];
   }
 
   &.ended .status-indicator,
   &.error .status-indicator {
-    @apply w-8px h-8px rounded-full bg-[--color-danger];
+    @apply w-8px h-8px rounded-full bg-[--tjg-color-danger-500];
   }
 }
 

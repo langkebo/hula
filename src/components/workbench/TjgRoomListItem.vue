@@ -19,7 +19,7 @@
         class="tjg-room-list-item__checkbox"
         @update:checked="handleBatchToggle"
         @click.stop />
-      <n-badge :dot="isFavorite" color="var(--color-warning)" :offset="[-4, 4]">
+      <n-badge :dot="isFavorite" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
         <n-avatar
           :size="44"
           :src="AvatarUtils.getAvatarUrl(avatarSrc)"

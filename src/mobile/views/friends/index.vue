@@ -95,7 +95,7 @@
         <div class="flex items-center gap-8px" @click="toMessage">
           <span
             v-if="contactUnreadCount > 0"
-            class="px-4px py-4px rounded-999px bg-[--color-danger] text-white text-12px font-600 min-w-20px text-center">
+            class="px-4px py-4px rounded-999px bg-[--tjg-color-danger-500] text-white text-12px font-600 min-w-20px text-center">
             {{ contactUnreadCount > 99 ? '99+' : contactUnreadCount }}
           </span>
           <img src="@/assets/mobile/friend/right-arrow.webp" class="block h-20px dark:invert" alt="" />
@@ -158,7 +158,7 @@
               <van-collapse-item v-if="specialContacts.length > 0" name="special">
                 <template #title>
                   <div class="flex items-center gap-8px">
-                    <svg class="size-14px color-[--color-warning]"><use href="#star-fill"></use></svg>
+                    <svg class="size-14px color-[--tjg-color-warning-500]"><use href="#star-fill"></use></svg>
                     <span>{{ t('mobile_contact.group.special') || '特别关心' }}</span>
                   </div>
                 </template>
@@ -202,8 +202,8 @@
                               :style="{
                                 backgroundColor:
                                   item.activeStatus === OnlineEnum.ONLINE
-                                    ? 'var(--color-online)'
-                                    : 'var(--color-offline)'
+                                    ? 'var(--tjg-status-online)'
+                                    : 'var(--tjg-status-offline)'
                               }"></span>
                             {{
                               item.activeStatus === OnlineEnum.ONLINE
@@ -266,8 +266,8 @@
                                 :style="{
                                   backgroundColor:
                                     item.activeStatus === OnlineEnum.ONLINE
-                                      ? 'var(--color-online)'
-                                      : 'var(--color-offline)'
+                                      ? 'var(--tjg-status-online)'
+                                      : 'var(--tjg-status-offline)'
                                 }"></span>
                               {{
                                 item.activeStatus === OnlineEnum.ONLINE
@@ -293,7 +293,7 @@
               <van-collapse-item v-if="blockedContacts.length > 0" name="blocked">
                 <template #title>
                   <div class="flex items-center gap-8px">
-                    <svg class="size-14px color-[--color-text-quaternary]"><use href="#forbidden"></use></svg>
+                    <svg class="size-14px color-[--tjg-text-tertiary]"><use href="#forbidden"></use></svg>
                     <span>{{ t('mobile_contact.group.blocked') || '已屏蔽' }}</span>
                   </div>
                 </template>

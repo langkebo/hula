@@ -68,7 +68,9 @@
                           class="inline-block size-8px rounded-full"
                           :style="{
                             backgroundColor:
-                              item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
+                              item.activeStatus === OnlineEnum.ONLINE
+                                ? 'var(--tjg-status-online)'
+                                : 'var(--tjg-status-offline)'
                           }"></span>
                         {{ item.activeStatus === OnlineEnum.ONLINE ? '在线' : '离线' }}
                       </div>

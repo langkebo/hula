@@ -8,7 +8,7 @@
               <div class="py-15px flex gap-10px w-full items-center justify-end">
                 <div
                   class="bg-[--tjg-color-primary-100] flex flex-wrap ps-2 items-center rounded-full gap-1 h-24px px-2">
-                  <span class="w-12px h-12px rounded-15px bg-[--color-online]"></span>
+                  <span class="w-12px h-12px rounded-15px bg-[--tjg-status-online]"></span>
                   <span style="font-size: 12px">
                     {{ t('mobile_my.online') }}
                   </span>

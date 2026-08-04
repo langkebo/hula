@@ -62,7 +62,9 @@
                       <div class="text-12px text-gray-500 flex items-center gap-4px truncate">
                         <n-badge
                           :color="
-                            item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
+                            item.activeStatus === OnlineEnum.ONLINE
+                              ? 'var(--tjg-status-online)'
+                              : 'var(--tjg-status-offline)'
                           "
                           dot />
                         {{
@@ -152,7 +154,9 @@
                     <div class="text-11px text-[--tjg-text-secondary] flex items-center gap-4px truncate">
                       <n-badge
                         :color="
-                          item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
+                          item.activeStatus === OnlineEnum.ONLINE
+                            ? 'var(--tjg-status-online)'
+                            : 'var(--tjg-status-offline)'
                         "
                         dot />
                       {{

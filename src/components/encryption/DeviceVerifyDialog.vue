@@ -767,7 +767,7 @@ async function handleReject() {
 }
 
 .info-label {
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
   font-size: 14px;
 }
 
@@ -783,7 +783,7 @@ async function handleReject() {
 
 .key-label {
   font-size: 14px;
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
   margin-bottom: 12px;
 }
 
@@ -814,7 +814,7 @@ async function handleReject() {
   justify-content: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
 }
 
 .verification-question {
@@ -841,11 +841,11 @@ async function handleReject() {
 }
 
 .success-color {
-  color: var(--color-success);
+  color: var(--tjg-color-success-500);
 }
 
 .error-color {
-  color: var(--color-danger);
+  color: var(--tjg-color-danger-500);
 }
 
 .success-text,
@@ -861,11 +861,11 @@ async function handleReject() {
 .success-text p,
 .error-text p {
   margin: 0;
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
 }
 
 .warning-text {
-  color: var(--color-warning) !important;
+  color: var(--tjg-color-warning-500) !important;
   margin-top: 8px !important;
 }
 </style>

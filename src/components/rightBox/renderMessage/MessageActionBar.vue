@@ -108,7 +108,7 @@ function isCopyable(type: number): boolean {
   gap: 2px;
   padding: 4px;
   border-radius: 8px;
-  background: var(--bg-popover, var(--tjg-surface-elevated));
+  background: var(--tjg-surface-elevated, var(--tjg-surface-elevated));
   box-shadow: var(--tjg-shadow-floating-menu);
   border: 1px solid var(--tjg-border-contrast, rgba(255, 255, 255, 0.06));
   z-index: 10;

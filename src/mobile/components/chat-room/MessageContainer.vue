@@ -194,7 +194,7 @@ defineExpose({
 <style scoped>
 .message-container {
   position: relative;
-  background-color: var(--color-bg-primary, var(--tjg-surface-panel));
+  background-color: var(--tjg-surface-panel, var(--tjg-surface-panel));
 }
 
 .message-scroll-container {

@@ -355,7 +355,7 @@ async function verifyKey() {
 }
 
 .warning-text {
-  color: var(--color-warning) !important;
+  color: var(--tjg-color-warning-500) !important;
   font-weight: 500;
 }
 
@@ -392,7 +392,7 @@ async function verifyKey() {
 
 .key-label {
   font-size: 14px;
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
   margin-bottom: 8px;
 }
 
@@ -423,10 +423,10 @@ async function verifyKey() {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background-color: var(--color-warning-light);
+  background-color: var(--tjg-color-warning-400);
   border-radius: 8px;
   margin-bottom: 16px;
-  color: var(--color-warning);
+  color: var(--tjg-color-warning-500);
 }
 
 .key-checkbox {
@@ -455,7 +455,7 @@ async function verifyKey() {
 }
 
 .success-color {
-  color: var(--color-success);
+  color: var(--tjg-color-success-500);
 }
 
 .success-text {

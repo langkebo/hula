@@ -444,7 +444,7 @@ async function handleSessionRecover() {
 }
 
 .hint-text {
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
   font-size: 13px;
 }
 
@@ -472,7 +472,7 @@ async function handleSessionRecover() {
 }
 
 .file-icon {
-  color: var(--color-success);
+  color: var(--tjg-color-success-500);
   flex-shrink: 0;
 }
 
@@ -498,7 +498,7 @@ async function handleSessionRecover() {
   text-align: center;
   margin-top: 8px;
   font-size: 13px;
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
 }
 
 .result-section {
@@ -511,13 +511,13 @@ async function handleSessionRecover() {
 }
 
 .result-section.success {
-  background-color: var(--color-success-light);
-  color: var(--color-success);
+  background-color: var(--tjg-color-success-400);
+  color: var(--tjg-color-success-500);
 }
 
 .result-section.error {
-  background-color: var(--color-danger-hover);
-  color: var(--color-danger);
+  background-color: var(--tjg-color-danger-200);
+  color: var(--tjg-color-danger-500);
 }
 
 .advanced-section {

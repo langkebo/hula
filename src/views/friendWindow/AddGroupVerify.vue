@@ -15,7 +15,7 @@
     </p>
 
     <!-- 内容区域 -->
-    <div class="bg-[--bg-edit] w-380px h-full box-border flex flex-col">
+    <div class="bg-[--tjg-border-muted] w-380px h-full box-border flex flex-col">
       <n-flex vertical justify="center" :size="20" class="p-[55px_20px]" data-tauri-drag-region>
         <n-flex align="center" justify="center" :size="20" data-tauri-drag-region>
           <n-avatar round size="large" :src="userInfo.avatar" />

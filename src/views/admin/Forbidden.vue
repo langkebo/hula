@@ -57,7 +57,7 @@ const goHome = () => router.push('/message')
 .forbidden-title {
   font-size: 24px;
   font-weight: 600;
-  color: var(--color-danger);
+  color: var(--tjg-color-danger-500);
   margin: 0;
 }
 

@@ -15,7 +15,7 @@
         <div class="truncate whitespace-nowrap overflow-hidden text-foreground text-ellipsis w-full text-center">
           {{ props.roomName }}
         </div>
-        <svg v-if="props.isOfficial" class="w-18px h-18px iconpark-icon text-[--color-primary]">
+        <svg v-if="props.isOfficial" class="w-18px h-18px iconpark-icon text-[--tjg-color-primary-500]">
           <use href="#auth"></use>
         </svg>
       </div>

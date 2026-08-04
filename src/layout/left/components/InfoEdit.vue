@@ -1,6 +1,6 @@
 <template>
   <n-modal v-model:show="editInfo.show" :mask-closable="false" class="rounded-8px" transform-origin="center">
-    <div class="bg-[--bg-edit] w-480px h-fit box-border flex flex-col">
+    <div class="bg-[--tjg-border-muted] w-480px h-fit box-border flex flex-col">
       <n-flex :size="6" vertical>
         <MacCloseButton
           v-if="isMac()"

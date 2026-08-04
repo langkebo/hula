@@ -24,7 +24,7 @@
             <span class="max-w-150px truncate text-(12px [--tjg-text-primary])">
               <template v-if="group.isAtMe">
                 <span class="text flex-1 leading-tight text-12px truncate">
-                  <span class="text-[--color-danger] mr-4px">{{ t('message.message_list.mention_tag') }}</span>
+                  <span class="text-[--tjg-color-danger-500] mr-4px">{{ t('message.message_list.mention_tag') }}</span>
                   <span>{{ group.latestContent.replace(':', '：') }}</span>
                 </span>
               </template>

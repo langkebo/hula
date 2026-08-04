@@ -81,11 +81,11 @@
         <n-checkbox v-model:checked="protocol" :aria-label="t('login.term.checkout.text1')" />
         <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px agreement">
           <span>{{ t('login.term.checkout.text1') }}</span>
-          <span class="color-[--color-primary] cursor-pointer" @click.stop="emit('open-service-agreement')">
+          <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="emit('open-service-agreement')">
             {{ t('login.term.checkout.text2') }}
           </span>
           <span>{{ t('login.term.checkout.text3') }}</span>
-          <span class="color-[--color-primary] cursor-pointer" @click.stop="emit('open-privacy-agreement')">
+          <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="emit('open-privacy-agreement')">
             {{ t('login.term.checkout.text4') }}
           </span>
         </div>

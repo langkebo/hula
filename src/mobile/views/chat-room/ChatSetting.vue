@@ -44,7 +44,7 @@
                   {{ activeItem?.name || '' }}
                 </span>
                 <span v-if="activeItem?.hotFlag === 1">
-                  <svg class="w-18px h-18px iconpark-icon text-[--color-primary]">
+                  <svg class="w-18px h-18px iconpark-icon text-[--tjg-color-primary-500]">
                     <use href="#auth"></use>
                   </svg>
                 </span>
@@ -61,7 +61,7 @@
                 class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
                 <i18n-t keypath="mobile_chat_setting.member_count">
                   <template #count>
-                    <span class="text-[--color-primary]">{{ groupStore.countInfo?.memberNum || 0 }}</span>
+                    <span class="text-[--tjg-color-primary-500]">{{ groupStore.countInfo?.memberNum || 0 }}</span>
                   </template>
                 </i18n-t>
                 <div>

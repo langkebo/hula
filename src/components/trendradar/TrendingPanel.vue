@@ -161,7 +161,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 .trending-panel__category {
   font-size: 11px;
   color: var(--tjg-color-primary-500);
-  background: var(--color-primary-active);
+  background: var(--tjg-color-primary-300-alpha);
   padding: 1px 6px;
   border-radius: 4px;
 }
