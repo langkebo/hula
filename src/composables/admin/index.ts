@@ -1,10 +1,10 @@
 /**
- * Admin composables — business logic for the admin surface, shared by
- * desktop (`src/views/admin/**`) and mobile (`src/mobile/views/admin/**`).
+ * Admin composables — business logic for the admin surface, used by
+ * desktop (`src/views/admin/**`) only.
  *
  * Goal: views are declarative and render-only; all fetching, mutation
- * orchestration, and state management live here so multi-platform parity
- * is structural rather than copy-pasted.
+ * orchestration, and state management live here so the desktop admin
+ * surface stays structural rather than copy-pasted.
  */
 
 export type { AppServiceInfo } from './useAdminAppServices'
