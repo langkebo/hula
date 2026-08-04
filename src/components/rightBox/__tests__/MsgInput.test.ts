@@ -196,6 +196,8 @@ const mountComponent = () =>
   mount(MsgInput, {
     global: {
       stubs: {
+        MsgInputToolbar: true,
+        MsgInputMobileControls: true,
         ContextMenu: {
           template: '<div><slot /></div>'
         },

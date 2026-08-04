@@ -204,6 +204,7 @@ vi.mock('@/composables/common/useWindow', () => ({
 
 vi.mock('@/stores/domains/chat/announcement', () => ({
   useAnnouncementStore: () => ({
+    isLoading: false,
     getGroupAnnouncementList: getGroupAnnouncementListMock
   })
 }))
@@ -263,6 +264,8 @@ const mountComponent = () =>
         FileUploadProgress: true,
         ThreadPanel: true,
         Transition: false,
+        ChatBanners: false,
+        ChatModals: false,
         'n-flex': true,
         'n-icon': true,
         'n-modal': true,
@@ -407,25 +410,27 @@ describe('ChatMain private mode', () => {
 
   it('renders S private toggle button for non-group chat', () => {
     const wrapper = mountComponent()
-    expect(wrapper.find('[data-testid="private-toggle-btn"]').exists()).toBe(true)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.exists()).toBe(true)
+    expect(banners.props('isGroup')).toBe(false)
   })
 
   it('does not render S button for group chat', () => {
     chatStore.isGroup = true
     const wrapper = mountComponent()
-    expect(wrapper.find('[data-testid="private-toggle-btn"]').exists()).toBe(false)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('isGroup')).toBe(true)
   })
 
   it('shows confirmation dialog when activating private mode', async () => {
     const wrapper = mountComponent()
-    await wrapper.find('[data-testid="private-toggle-btn"]').trigger('click')
+    ;(wrapper.vm as unknown as { togglePrivateMode: () => void }).togglePrivateMode()
+    await flushPromises()
     expect((wrapper.vm as unknown as { showPrivateConfirm: boolean }).showPrivateConfirm).toBe(true)
   })
 
-  it('shows 4 privacy feature descriptions in confirmation dialog', async () => {
+  it('shows 4 privacy feature descriptions in confirmation dialog', () => {
     const wrapper = mountComponent()
-    await wrapper.find('[data-testid="private-toggle-btn"]').trigger('click')
-    await flushPromises()
     const vm = wrapper.vm as unknown as {
       privateModeFeatures: Array<{ title: string; description: string }>
     }
@@ -439,7 +444,6 @@ describe('ChatMain private mode', () => {
 
   it('activates private mode after confirmation and renders BurnAfterReadToggle', async () => {
     const wrapper = mountComponent()
-    await wrapper.find('[data-testid="private-toggle-btn"]').trigger('click')
     ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
     await flushPromises()
     expect((wrapper.vm as unknown as { privateModeActive: boolean }).privateModeActive).toBe(true)
@@ -450,24 +454,28 @@ describe('ChatMain private mode', () => {
     const wrapper = mountComponent()
     ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
     await flushPromises()
-    expect(wrapper.findComponent({ name: "PrivateModeBanner" }).exists()).toBe(true)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('privateModeActive')).toBe(true)
   })
 
   it("does not render PrivateModeBanner when private mode is inactive", () => {
     const wrapper = mountComponent()
-    expect(wrapper.findComponent({ name: "PrivateModeBanner" }).exists()).toBe(false)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('privateModeActive')).toBe(false)
   })
 
   it("renders ScreenshotWatermark when private mode is active", async () => {
     const wrapper = mountComponent()
     ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
     await flushPromises()
-    expect(wrapper.findComponent({ name: "ScreenshotWatermark" }).exists()).toBe(true)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('privateModeActive')).toBe(true)
   })
 
   it("does not render ScreenshotWatermark when private mode is inactive", () => {
     const wrapper = mountComponent()
-    expect(wrapper.findComponent({ name: "ScreenshotWatermark" }).exists()).toBe(false)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('privateModeActive')).toBe(false)
   })
   it('deactivates private mode on second S button click', async () => {
     const wrapper = mountComponent()
@@ -489,12 +497,14 @@ describe('ChatMain private mode', () => {
     const vm = wrapper.vm as unknown as { confirmPrivateMode: () => void }
     vm.confirmPrivateMode()
     await flushPromises()
-    expect(wrapper.find('[data-testid="private-lock-icon"]').exists()).toBe(true)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('privateModeActive')).toBe(true)
   })
 
   it('does not show lock icon when private mode is inactive', () => {
     const wrapper = mountComponent()
-    expect(wrapper.find('[data-testid="private-lock-icon"]').exists()).toBe(false)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('privateModeActive')).toBe(false)
   })
 
   it('adds private-mode-active class to message list when private mode is active', async () => {
@@ -555,19 +565,21 @@ describe('ChatMain sticky events', () => {
 
   it('renders StickyEventBanner component', () => {
     const wrapper = mountComponent()
-    expect(wrapper.findComponent({ name: 'StickyEventBanner' }).exists()).toBe(true)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.exists()).toBe(true)
+    expect(banners.props('stickyEvents')).toEqual([])
   })
 
   it('passes stickyEvents prop to StickyEventBanner', () => {
     const wrapper = mountComponent()
-    const banner = wrapper.findComponent({ name: 'StickyEventBanner' })
-    expect(banner.props('events')).toEqual([])
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('stickyEvents')).toEqual([])
   })
 
   it('passes canSetSticky prop as false by default', () => {
     const wrapper = mountComponent()
-    const banner = wrapper.findComponent({ name: 'StickyEventBanner' })
-    expect(banner.props('canSetSticky')).toBe(false)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('canSetSticky')).toBe(false)
   })
 
   it('updates stickyEvents when set via expose', async () => {
@@ -577,7 +589,7 @@ describe('ChatMain sticky events', () => {
     }
     vm.stickyEvents = [{ eventId: '$evt1', sender: '@alice:server', body: 'Hello', timestamp: Date.now() }]
     await flushPromises()
-    const banner = wrapper.findComponent({ name: 'StickyEventBanner' })
-    expect(banner.props('events')).toHaveLength(1)
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('stickyEvents')).toHaveLength(1)
   })
 })
