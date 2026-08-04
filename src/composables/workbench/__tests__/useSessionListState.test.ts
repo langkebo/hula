@@ -70,7 +70,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('@/utils/ComputedTime.ts', () => ({
-  formatTimestamp: (value: number) => `ts-${value}`
+  formatChatTime: (value: number) => `ts-${value}`
 }))
 
 const { useSessionListState } = await import('../useSessionListState')

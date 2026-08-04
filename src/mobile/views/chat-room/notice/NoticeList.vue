@@ -30,7 +30,7 @@
 
                     <div class="flex items-center justify-between text-12px">
                       <span class="flex gap-5px text-[--tjg-text-secondary]">
-                        {{ formatTimestamp(item.createTime) }}
+                        {{ formatChatTime(item.createTime) }}
                       </span>
                       <span class="text-[--color-primary]">
                         {{ t('mobile_chat.notice.read_count', { count: 128 }) }}
@@ -62,7 +62,7 @@ import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { formatChatTime } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 
 const { t } = useI18n()

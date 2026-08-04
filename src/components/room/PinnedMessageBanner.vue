@@ -30,7 +30,7 @@
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
-import { timeToStr } from '@/utils/ComputedTime'
+import { formatChatTime } from '@/utils/ComputedTime'
 
 const props = defineProps<{
   roomId: string | null | undefined
@@ -61,7 +61,7 @@ const summary = computed(() => {
 const meta = computed(() => {
   const msg = latestPinnedMessage.value
   if (!msg) return ''
-  const time = timeToStr(msg.timestamp)
+  const time = formatChatTime(msg.timestamp)
   return t('pinned_message.pinned_by', { name: msg.sender }) + ' · ' + time
 })
 

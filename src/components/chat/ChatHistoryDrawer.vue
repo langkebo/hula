@@ -58,7 +58,7 @@
               <div v-for="(group, date) in groupedMessages" :key="date">
                 <div class="sticky top-0 z-10 py-8px bg-[--tjg-surface-panel]">
                   <n-tag :bordered="false" type="warning" size="small" class="rounded-8px">
-                    {{ formatDateGroupLabel(group.timestamp) }}
+                    {{ formatDateLabel(group.timestamp) }}
                   </n-tag>
                 </div>
 
@@ -75,7 +75,7 @@
                           {{ getUserDisplayName(item.fromUser.uid, item.fromUser.username) }}
                         </span>
                         <span class="text-11px color-[--tjg-text-quaternary] flex-shrink-0">
-                          {{ formatTimestamp(item.message.sendTime ?? 0) }}
+                          {{ formatChatTime(item.message.sendTime ?? 0) }}
                         </span>
                       </div>
                       <div class="history-message-body">
@@ -114,7 +114,7 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatDateGroupLabel, formatTimestamp } from '@/utils/ComputedTime'
+import { formatChatTime, formatDateLabel } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 

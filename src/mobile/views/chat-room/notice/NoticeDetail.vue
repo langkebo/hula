@@ -25,7 +25,7 @@
                 {{ t('mobile_chat.notice.publisher') }} {{ publisherName }}
               </span>
               <span class="text-12px text-[--tjg-text-tertiary]">
-                {{ formatTimestamp(announcement.createdAt) }}
+                {{ formatChatTime(announcement.createdAt) }}
               </span>
             </div>
 
@@ -54,7 +54,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { type Announcement, matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { formatChatTime } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 
 const { t } = useI18n()

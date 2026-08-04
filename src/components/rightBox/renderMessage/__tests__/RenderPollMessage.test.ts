@@ -16,7 +16,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('@/utils/ComputedTime', () => ({
-  formatTimestamp: vi.fn(() => '2026-07-17 10:00')
+  formatChatTime: vi.fn(() => '2026-07-17 10:00')
 }))
 
 const basePoll = {

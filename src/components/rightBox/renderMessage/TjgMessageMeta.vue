@@ -52,7 +52,7 @@ import { MessageStatusEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
-import { formatMessageTime } from '@/utils/ComputedTime'
+import { formatChatTime } from '@/utils/ComputedTime'
 
 interface ReceiptInfo {
   userId: string
@@ -73,7 +73,7 @@ const emit = defineEmits<{ retry: [] }>()
 
 const { t } = useI18n()
 
-const formattedTime = computed(() => formatMessageTime(props.timestamp))
+const formattedTime = computed(() => formatChatTime(props.timestamp))
 
 const isSending = computed(
   () => props.isMe && (props.status === MessageStatusEnum.PENDING || props.status === MessageStatusEnum.SENDING)

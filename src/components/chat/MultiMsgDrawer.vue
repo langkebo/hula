@@ -26,7 +26,7 @@
                   <p class="text-12px color-[--tjg-text-tertiary]">
                     {{ getUserDisplayName(item.fromUser.uid, item.fromUser.username) }}
                   </p>
-                  <p class="text-11px color-[--tjg-text-quaternary]">{{ formatTimestamp(item.message.sendTime) }}</p>
+                  <p class="text-11px color-[--tjg-text-quaternary]">{{ formatChatTime(item.message.sendTime) }}</p>
                 </div>
               </div>
 
@@ -64,7 +64,7 @@ import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatTimestamp } from '@/utils/ComputedTime'
+import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MultiMsgDrawer')
