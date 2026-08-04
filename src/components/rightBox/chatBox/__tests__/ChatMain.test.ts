@@ -222,12 +222,26 @@ vi.mock('@/stores/domains/chat/chat', () => ({
   useChatStore: () => chatStore
 }))
 
+vi.mock('@/stores/domains/chat/group', () => ({
+  useGroupStore: () => ({
+    getUserInfo: vi.fn(() => null)
+  })
+}))
+
 vi.mock('@/stores/domains/user/user', () => ({
   useUserStore: () => userStore
 }))
 
 vi.mock('@/stores/domains/widget/global', () => ({
   useGlobalStore: () => globalStore
+}))
+
+vi.mock('@/utils/AvatarUtils', () => ({
+  AvatarUtils: {
+    batchResolve: vi.fn(),
+    getAvatarUrl: vi.fn((src: string) => src || '/logoD.png'),
+    clearCache: vi.fn()
+  }
 }))
 
 vi.mock('@/utils/AudioManager', () => ({
