@@ -119,6 +119,31 @@ describe('mxc:// URL handling', () => {
     AvatarUtils.getAvatarUrl('mxc://example.org/recheck')
     expect(callCount).toBe(2)
   })
+
+  it('clearCache(avatar) clears size-variant entries too', () => {
+    let callCount = 0
+    AvatarUtils.setMxcResolver((url) => {
+      callCount++
+      return `https://cdn/${url}`
+    })
+    AvatarUtils.getAvatarUrl('mxc://example.org/variant', 96)
+    AvatarUtils.getAvatarUrl('mxc://example.org/variant')       // base key
+    AvatarUtils.clearCache('mxc://example.org/variant')        // Should clear both keys
+    AvatarUtils.getAvatarUrl('mxc://example.org/variant', 96)
+    AvatarUtils.getAvatarUrl('mxc://example.org/variant')
+    expect(callCount).toBe(4)                                   // Both keys re-resolved
+  })
+
+  it('clears entire cache when a new resolver is registered', () => {
+    let callCount = 0
+    const r1 = (url: string) => { callCount++; return `https://cdn1/${url}` }
+    const r2 = (url: string) => { callCount++; return `https://cdn2/${url}` }
+    AvatarUtils.setMxcResolver(r1)
+    AvatarUtils.getAvatarUrl('mxc://example.org/invalidate')
+    AvatarUtils.setMxcResolver(r2)        // Should clear entire cache
+    AvatarUtils.getAvatarUrl('mxc://example.org/invalidate')
+    expect(callCount).toBe(2)             // r1 + r2 each called once
+  })
 })
 
 describe('getAvatarUrl with size parameter', () => {
