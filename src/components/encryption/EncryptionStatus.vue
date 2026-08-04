@@ -66,19 +66,19 @@ const tooltipText = computed(() => {
   min-width: 0;
 
   &.encrypted {
-    color: var(--hula-color-success-600);
+    color: var(--tjg-color-success-600);
   }
 
   &.unencrypted {
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 
   &.error {
-    color: var(--hula-color-error-600);
+    color: var(--tjg-color-error-600);
   }
 
   &.unknown {
-    color: var(--hula-color-warning-600);
+    color: var(--tjg-color-warning-600);
   }
 }
 
@@ -107,8 +107,8 @@ const tooltipText = computed(() => {
   border-radius: 999px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--hula-text-tertiary);
-  background-color: color-mix(in srgb, var(--hula-text-primary) 8%, transparent);
+  color: var(--tjg-text-tertiary);
+  background-color: color-mix(in srgb, var(--tjg-text-primary) 8%, transparent);
   cursor: help;
 }
 </style>

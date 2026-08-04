@@ -25,17 +25,29 @@
             </template>
             {{ t('contacts.detail.message') }}
           </n-button>
+          <n-button data-testid="contact-report-btn" block @click="showReportDialog = true">
+            <template #icon>
+              <svg class="size-16px"><use href="#report"></use></svg>
+            </template>
+            {{ t('contacts.detail.report') }}
+          </n-button>
         </div>
       </template>
 
       <n-empty v-else :description="t('contacts.detail.not_found')" />
     </n-drawer-content>
+
+    <UserReportDialog
+      v-model:show="showReportDialog"
+      :user-id="userId"
+      :user-display-name="profile?.displayName" />
   </n-drawer>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import SkeletonBase from '@/components/common/SkeletonBase.vue'
+import UserReportDialog from '@/components/moderation/UserReportDialog.vue'
 import profileService from '@/services/matrix/user/MatrixProfileService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
@@ -62,6 +74,7 @@ const panelVisible = computed({
 const profile = ref<{ userId: string; displayName: string; avatarUrl?: string } | null>(null)
 const devices = ref<Record<string, unknown>[]>([])
 const loading = ref(false)
+const showReportDialog = ref(false)
 
 watch(
   () => props.userId,
@@ -126,12 +139,12 @@ function startChat() {
 .contact-display-name {
   font-size: 16px;
   font-weight: 500;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .contact-mxid {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-family: monospace;
 }
 
@@ -151,7 +164,7 @@ function startChat() {
 .contact-section-title {
   font-size: 13px;
   font-weight: 500;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin-bottom: 4px;
 }
 
@@ -161,10 +174,10 @@ function startChat() {
   gap: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--hula-fill-default);
+  background: var(--tjg-fill-default);
 
   &:hover {
-    background: var(--hula-fill-hover);
+    background: var(--tjg-fill-hover);
   }
 }
 
@@ -175,13 +188,13 @@ function startChat() {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: var(--hula-fill-hover);
-  color: var(--hula-text-secondary);
+  background: var(--tjg-fill-hover);
+  color: var(--tjg-text-secondary);
   flex-shrink: 0;
 }
 
 .device-icon--primary {
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .device-info {
@@ -195,7 +208,7 @@ function startChat() {
 .device-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -203,7 +216,7 @@ function startChat() {
 
 .device-id {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-family: monospace;
 }
 

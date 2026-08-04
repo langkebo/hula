@@ -1,6 +1,6 @@
 <template>
   <n-flex vertical class="select-none">
-    <n-flex align="center" justify="space-between" class="color-[--hula-text-primary] px-20px py-10px">
+    <n-flex align="center" justify="space-between" class="color-[--tjg-text-primary] px-20px py-10px">
       <p class="text-16px">
         {{ t(props.type === 'friend' ? 'home.apply_list.friend_notice' : 'home.apply_list.group_notice') }}
       </p>
@@ -19,7 +19,7 @@
             align="center"
             justify="space-between"
             :size="10"
-            class="bg-[--hula-surface-panel] rounded-10px p-20px box-border border-(1px solid [--hula-border-default])">
+            class="bg-[--tjg-surface-panel] rounded-10px p-20px box-border border-(1px solid [--tjg-border-default])">
             <n-flex align="center" :size="10" class="min-w-0 flex-1">
               <n-avatar
                 round
@@ -36,7 +36,7 @@
                     @click="
                       isCurrentUser(item.senderId) ? (currentUserId = item.operateId) : (currentUserId = item.senderId)
                     "
-                    class="text-(14px --hula-color-primary-500) cursor-pointer shrink-0 max-w-150px truncate">
+                    class="text-(14px --tjg-color-primary-500) cursor-pointer shrink-0 max-w-150px truncate">
                     {{
                       item.eventType === NoticeType.GROUP_MEMBER_DELETE && item.operateId == item.receiverId
                         ? t('home.apply_list.you')
@@ -45,11 +45,11 @@
                   </p>
 
                   <div class="flex items-center min-w-0 flex-1 gap-6px">
-                    <p class="text-(14px [--hula-text-primary]) min-w-0 truncate whitespace-nowrap">
+                    <p class="text-(14px [--tjg-text-primary]) min-w-0 truncate whitespace-nowrap">
                       {{ applyMsg(item) }}
                     </p>
 
-                    <p class="text-(12px --hula-text-tertiary) shrink-0 whitespace-nowrap">
+                    <p class="text-(12px --tjg-text-tertiary) shrink-0 whitespace-nowrap">
                       {{ formatTimestamp(item.createTime) }}
                     </p>
                   </div>
@@ -57,10 +57,10 @@
                 <p
                   :title="t('home.apply_list.message_label') + item.content"
                   v-if="isFriendApplyOrGroupInvite(item)"
-                  class="text-(12px [--hula-text-primary]) cursor-default w-340px truncate">
+                  class="text-(12px [--tjg-text-primary]) cursor-default w-340px truncate">
                   {{ t('home.apply_list.message_label') }}{{ item.content }}
                 </p>
-                <p v-else class="text-(12px [--hula-text-primary])">
+                <p v-else class="text-(12px [--tjg-text-primary])">
                   {{
                     t('home.apply_list.handler_label', {
                       name: groupStore.getUserInfo(item.senderId)?.name || t('home.apply_list.unknown_user')
@@ -84,30 +84,30 @@
                   :options="dropdownOptions"
                   @select="(key: string) => handleFriendAction(key, item.applyId)">
                   <n-icon class="cursor-pointer px-6px">
-                    <svg class="size-16px color-[--hula-text-primary]">
+                    <svg class="size-16px color-[--tjg-text-primary]">
                       <use href="#more"></use>
                     </svg>
                   </n-icon>
                 </n-dropdown>
               </n-flex>
               <span
-                class="text-(12px [--hula-color-primary-500])"
+                class="text-(12px [--tjg-color-primary-500])"
                 v-else-if="item.status === RequestNoticeAgreeStatus.ACCEPTED">
                 {{ t('home.apply_list.status.accepted') }}
               </span>
               <span
-                class="text-(12px [--hula-color-danger-500])"
+                class="text-(12px [--tjg-color-danger-500])"
                 v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
                 {{ t('home.apply_list.status.rejected') }}
               </span>
               <span
-                class="text-(12px --hula-text-tertiary)"
+                class="text-(12px --tjg-text-tertiary)"
                 v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
                 {{ t('home.apply_list.status.ignored') }}
               </span>
               <span
-                class="text-(12px [--hula-color-primary-500])"
-                :class="{ 'text-(12px [--hula-color-danger-500])': item.status === RequestNoticeAgreeStatus.REJECTED }"
+                class="text-(12px [--tjg-color-primary-500])"
+                :class="{ 'text-(12px [--tjg-color-danger-500])': item.status === RequestNoticeAgreeStatus.REJECTED }"
                 v-else-if="isCurrentUser(item.senderId)">
                 {{
                   isAccepted(item)

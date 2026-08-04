@@ -34,7 +34,7 @@ export * from './sdk-paths'
  * 提供具名键与函数式路径构建器，SDK 的路由数组无法直接表达。
  * 各模块路径常量必须与 `SDK_PATHS` 保持一致；模块级逐路径对齐由
  * `__tests__/friends.contract.test.ts` 等契约测试强制校验，
- * 跨模块校验可使用 `validateHulaPath()`。后端路径变更时契约测试会失败，
+ * 跨模块校验可使用 `validateTjgPath()`。后端路径变更时契约测试会失败，
  * 强制开发者同步前端路径常量。
  */
 export const MATRIX_PATHS = {
@@ -65,7 +65,7 @@ export const MATRIX_PATHS = {
 
 /**
  * 前端特有的非 SDK 路径（非 Matrix API 路由），如后端扩展端点名。
- * 这些路径不存在于 SDK route-table 中，是前端独有定制，不参与 `validateHulaPath` 校验。
+ * 这些路径不存在于 SDK route-table 中，是前端独有定制，不参与 `validateTjgPath` 校验。
  */
 export const CUSTOM_PATHS = {
   EXTENSIONS: matrixExtensionEndpoints

@@ -5,7 +5,7 @@
 
     <!-- 显示名称编辑 -->
     <div class="px-16px mt-16px z-1">
-      <div class="text-14px font-500 text-[--hula-text-secondary] mb-8px">
+      <div class="text-14px font-500 text-[--tjg-text-secondary] mb-8px">
         {{ t('mobile_my.edit_display_name') }}
       </div>
       <div class="flex items-center gap-10px">

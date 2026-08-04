@@ -84,7 +84,7 @@ function calculateWatermarkCount() {
 .privacy-overlay__watermark-text {
   font-size: 14px;
   font-weight: 500;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   white-space: nowrap;
   user-select: none;
 }
@@ -99,16 +99,16 @@ function calculateWatermarkCount() {
   align-items: center;
   gap: 12px;
   padding: 24px 32px;
-  background: var(--hula-overlay-inverse-strong);
+  background: var(--tjg-overlay-inverse-strong);
   border-radius: 12px;
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
   pointer-events: none;
 }
 
 .privacy-overlay__icon {
   width: 48px;
   height: 48px;
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 
 .privacy-overlay__block-message span {

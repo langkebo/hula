@@ -245,7 +245,7 @@ watch(
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--hula-border-default);
+    border-top: 1px solid var(--tjg-border-default);
   }
 }
 
@@ -254,7 +254,7 @@ watch(
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -284,7 +284,7 @@ watch(
 
 .status-desc {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin-top: 4px;
 }
 
@@ -300,7 +300,7 @@ watch(
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--hula-surface-panel-muted);
+    background: var(--tjg-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -327,7 +327,7 @@ watch(
   .key-value {
     font-size: 11px;
     font-family: monospace;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     margin-top: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -340,7 +340,7 @@ watch(
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--hula-surface-panel-muted);
+    background: var(--tjg-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -363,7 +363,7 @@ watch(
 
   .action-desc {
     font-size: 12px;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     margin-top: 2px;
   }
 }

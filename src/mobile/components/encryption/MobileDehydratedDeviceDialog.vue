@@ -111,7 +111,7 @@ const handleConfirm = () => {
 
   .description {
     font-size: 14px;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     margin-bottom: 12px;
     line-height: 1.5;
   }
@@ -125,7 +125,7 @@ const handleConfirm = () => {
   .empty-state {
     text-align: center;
     padding: 24px;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     font-size: 14px;
   }
 

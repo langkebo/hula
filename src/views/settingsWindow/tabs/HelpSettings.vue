@@ -7,7 +7,7 @@
           <img src="@/assets/img/win.png" alt="Logo" width="64" height="64" />
         </div>
         <div class="app-info">
-          <div class="app-name">HuLa</div>
+          <div class="app-name">Tjg</div>
           <div class="app-version">{{ t('setting.help_about.version') }} {{ appVersion }}</div>
           <div class="sdk-version">{{ t('setting.help_about.matrix_sdk_version') }} v{{ sdkVersion }}</div>
         </div>
@@ -130,10 +130,10 @@ import { Icon } from '@iconify/vue'
 import { NButton, NDivider } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DiagnosticsPanel from '@/components/settings/DiagnosticsPanel.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { usePlatform } from '@/composables/usePlatform'
-import DiagnosticsPanel from '@/components/settings/DiagnosticsPanel.vue'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 
@@ -250,27 +250,27 @@ async function handleOpenLogs() {
 
 <style scoped>
 .help-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-4);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-4);
+  color: var(--tjg-text-primary);
 }
 
 .about-info {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-4);
-  padding: var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  gap: var(--tjg-space-4);
+  padding: var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .app-logo img {
@@ -288,14 +288,14 @@ async function handleOpenLogs() {
 }
 
 .app-version {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-secondary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-secondary);
+  margin-top: var(--tjg-space-1);
 }
 
 .sdk-version {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
   margin-top: 2px;
 }
 
@@ -303,8 +303,8 @@ async function handleOpenLogs() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -313,70 +313,70 @@ async function handleOpenLogs() {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .update-info {
-  margin-top: var(--hula-space-3);
-  padding: var(--hula-space-3);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  margin-top: var(--tjg-space-3);
+  padding: var(--tjg-space-3);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .update-available {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
-  color: var(--hula-color-info-500);
+  gap: var(--tjg-space-2);
+  color: var(--tjg-color-info-500);
 }
 
 .update-latest {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
-  color: var(--hula-color-success-500);
+  gap: var(--tjg-space-2);
+  color: var(--tjg-color-success-500);
 }
 
 .link-list {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .link-item {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-3);
-  padding: var(--hula-space-3) var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  gap: var(--tjg-space-3);
+  padding: var(--tjg-space-3) var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
   cursor: pointer;
-  transition: background-color var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
+  transition: background-color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
 }
 
 .link-item:hover {
-  background-color: var(--hula-settings-card-bg-hover);
+  background-color: var(--tjg-settings-card-bg-hover);
 }
 
 .link-arrow {
   margin-left: auto;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 
 .tech-info {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
-  padding: var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  gap: var(--tjg-space-2);
+  padding: var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .tech-item {
@@ -385,13 +385,13 @@ async function handleOpenLogs() {
 }
 
 .tech-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-secondary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-secondary);
 }
 
 .tech-value {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 </style>

@@ -1,16 +1,16 @@
 <template>
   <main class="multi-msg" @click.stop="openMultiMsgWindow">
-    <p class="text-(14px [--hula-text-primary]) select-none pb-12px truncate">{{ chatRecordTitle }}</p>
+    <p class="text-(14px [--tjg-text-primary]) select-none pb-12px truncate">{{ chatRecordTitle }}</p>
 
     <div class="max-h-90px overflow-hidden mx-6px select-none">
-      <p v-for="content in processedContentList" class="text-(12px [--hula-text-tertiary]) leading-22px truncate">
+      <p v-for="content in processedContentList" class="text-(12px [--tjg-text-tertiary]) leading-22px truncate">
         {{ content }}
       </p>
     </div>
 
-    <p class="w-full h-1px bg-[--hula-border-default] my-6px select-none"></p>
+    <p class="w-full h-1px bg-[--tjg-border-default] my-6px select-none"></p>
 
-    <p class="text-(10px [--hula-text-tertiary]) ml-4px select-none">
+    <p class="text-(10px [--tjg-text-tertiary]) ml-4px select-none">
       {{ t('chat.multi_msg.view_forwarded', { count: msgIds.length }) }}
     </p>
   </main>
@@ -123,9 +123,9 @@ const openMultiMsgWindow = async () => {
 <style scoped lang="scss">
 .multi-msg {
   cursor: default;
-  @apply: w-230px flex flex-col h-fit bg-[--hula-surface-panel-muted]
-  border-(1px solid [--hula-border-default])
-  hover:bg-[--hula-surface-panel] rounded-8px p-8px box-border
+  @apply: w-230px flex flex-col h-fit bg-[--tjg-surface-panel-muted]
+  border-(1px solid [--tjg-border-default])
+  hover:bg-[--tjg-surface-panel] rounded-8px p-8px box-border
   custom-shadow transition-colors duration-200;
 }
 </style>

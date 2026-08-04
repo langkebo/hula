@@ -87,14 +87,14 @@ const defaultAvatar = computed(() => defaultAvatarImg)
 const currentStatusId = ref(userStatusStore.stateId || 'online')
 
 const statusOptions = computed(() => [
-  { id: 'online', label: t('menu.user_menu.status.online'), icon: 'mdi:circle', color: 'var(--hula-status-online)' },
-  { id: 'away', label: t('menu.user_menu.status.away'), icon: 'mdi:circle', color: 'var(--hula-status-away)' },
-  { id: 'busy', label: t('menu.user_menu.status.busy'), icon: 'mdi:circle', color: 'var(--hula-status-busy)' },
+  { id: 'online', label: t('menu.user_menu.status.online'), icon: 'mdi:circle', color: 'var(--tjg-status-online)' },
+  { id: 'away', label: t('menu.user_menu.status.away'), icon: 'mdi:circle', color: 'var(--tjg-status-away)' },
+  { id: 'busy', label: t('menu.user_menu.status.busy'), icon: 'mdi:circle', color: 'var(--tjg-status-busy)' },
   {
     id: 'offline',
     label: t('menu.user_menu.status.offline'),
     icon: 'mdi:circle-outline',
-    color: 'var(--hula-status-offline)'
+    color: 'var(--tjg-status-offline)'
   }
 ])
 
@@ -110,7 +110,7 @@ const statusClass = computed(() => {
 const statusStyle = computed(() => {
   const status = statusOptions.value.find((s) => s.id === currentStatusId.value)
   return {
-    backgroundColor: status?.color || 'var(--hula-status-online)'
+    backgroundColor: status?.color || 'var(--tjg-status-online)'
   }
 })
 
@@ -197,7 +197,7 @@ async function handleStatusChange(statusId: string) {
 .user-name {
   font-size: 16px;
   font-weight: 500;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -205,7 +205,7 @@ async function handleStatusChange(statusId: string) {
 
 .user-id {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -227,7 +227,7 @@ async function handleStatusChange(statusId: string) {
 .status-menu-title {
   padding: 4px 12px;
   font-size: 12px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   margin-bottom: 4px;
 }
 
@@ -241,10 +241,10 @@ async function handleStatusChange(statusId: string) {
 }
 
 .status-option:hover {
-  background-color: var(--hula-surface-list-hover);
+  background-color: var(--tjg-surface-list-hover);
 }
 
 .status-option.active {
-  background-color: var(--hula-color-info-100);
+  background-color: var(--tjg-color-info-100);
 }
 </style>

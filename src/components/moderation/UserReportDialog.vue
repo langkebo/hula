@@ -139,7 +139,7 @@ async function handleSubmit() {
   .user-preview {
     .preview-label {
       font-size: 13px;
-      color: var(--hula-text-secondary);
+      color: var(--tjg-text-secondary);
       margin-bottom: 6px;
     }
 
@@ -155,11 +155,11 @@ async function handleSubmit() {
 
     .preview-name {
       font-weight: 500;
-      color: var(--hula-text-primary);
+      color: var(--tjg-text-primary);
     }
 
     .preview-userid {
-      color: var(--hula-text-tertiary);
+      color: var(--tjg-text-tertiary);
       font-family: monospace;
       font-size: 12px;
     }

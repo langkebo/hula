@@ -13,11 +13,11 @@
               <Transition mode="out-in">
                 <svg
                   v-if="plugin.state === PluginEnum.NOT_INSTALLED || plugin.state === PluginEnum.DOWNLOADING"
-                  class="size-34px color-[--hula-text-quaternary]">
+                  class="size-34px color-[--tjg-text-quaternary]">
                   <use :href="`#${plugin.icon}`"></use>
                 </svg>
                 <template v-else>
-                  <svg class="size-34px color-[--hula-text-secondary]">
+                  <svg class="size-34px color-[--tjg-text-secondary]">
                     <use :href="`#${plugin.iconAction || plugin.icon}`"></use>
                   </svg>
                 </template>
@@ -26,12 +26,12 @@
 
             <n-flex vertical :size="10">
               <n-flex align="center" :size="6">
-                <p class="text-[var(--text-sm)] text-[--hula-text-secondary] pl-4px">{{ plugin.title }}</p>
+                <p class="text-[var(--text-sm)] text-[--tjg-text-secondary] pl-4px">{{ plugin.title }}</p>
 
                 <Transition>
                   <svg
                     v-if="plugin.isAdd && plugin.state !== PluginEnum.BUILTIN"
-                    class="color-[--hula-text-secondary] size-14px">
+                    class="color-[--tjg-text-secondary] size-14px">
                     <use href="#notOnTop"></use>
                   </svg>
                 </Transition>
@@ -41,7 +41,7 @@
                 <n-flex
                   v-if="plugin.state === PluginEnum.UNINSTALLING"
                   class="relative rounded-22px bg-[--tag-danger-bg] size-fit p-[4px_8px]">
-                  <p class="text-[var(--text-xs)] text-[--hula-color-danger-500] text-center">
+                  <p class="text-[var(--text-xs)] text-[--tjg-color-danger-500] text-center">
                     {{ t('home.plugins.status.uninstalling') }}
                   </p>
                 </n-flex>
@@ -49,13 +49,13 @@
                 <n-flex
                   v-else-if="plugin.state === PluginEnum.BUILTIN"
                   class="relative rounded-22px bg-[--tag-neutral-bg] size-fit p-[4px_8px]">
-                  <p class="text-[var(--text-xs)] text-[--hula-text-tertiary] text-center">
+                  <p class="text-[var(--text-xs)] text-[--tjg-text-tertiary] text-center">
                     {{ t('home.plugins.status.builtin') }}
                   </p>
                 </n-flex>
 
                 <n-flex v-else class="relative rounded-22px bg-[--tag-info-bg] size-fit p-[4px_8px]">
-                  <p class="text-[var(--text-xs)] text-[--hula-color-info-500] text-center">{{ plugin.version }}</p>
+                  <p class="text-[var(--text-xs)] text-[--tjg-color-info-500] text-center">{{ plugin.version }}</p>
                 </n-flex>
               </Transition>
             </n-flex>
@@ -68,7 +68,7 @@
             justify="center"
             align="center"
             :size="8"
-            class="box bg-[--hula-surface-subtle]">
+            class="box bg-[--tjg-surface-subtle]">
             <!-- 在下载中进度条 -->
             <n-flex
               @click="handleState(plugin)"
@@ -90,7 +90,7 @@
                 </p>
               </div>
 
-              <p v-else class="text-[var(--text-xs)] text-[--hula-text-secondary] text-center w-full">
+              <p v-else class="text-[var(--text-xs)] text-[--tjg-text-secondary] text-center w-full">
                 {{ t('home.plugins.actions.install') }}
               </p>
             </n-flex>
@@ -116,7 +116,7 @@
             <div class="action-item">
               <div class="menu-list">
                 <div v-if="!plugin.isAdd" @click="handleAdd(plugin)" class="menu-item">
-                  <svg class="text-[--hula-color-info-500]"><use href="#add"></use></svg>
+                  <svg class="text-[--tjg-color-info-500]"><use href="#add"></use></svg>
                   <p class="text-[--color-info]">{{ t('home.plugins.actions.pin') }}</p>
                 </div>
                 <div v-else @click="handleDelete(plugin)" class="menu-item">

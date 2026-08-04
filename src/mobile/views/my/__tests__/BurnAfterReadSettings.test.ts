@@ -126,7 +126,7 @@ describe('BurnAfterReadSettings', () => {
 
   it('loads burn rooms from localStorage', () => {
     localStorage.setItem(
-      'hula-burn-rooms',
+      'tjg-burn-rooms',
       JSON.stringify([{ roomId: 'r1', name: 'Room 1', duration: 60, enabled: true }])
     )
     const wrapper = mount(BurnAfterReadSettings)
@@ -135,7 +135,7 @@ describe('BurnAfterReadSettings', () => {
   })
 
   it('loads burn stats from localStorage', () => {
-    localStorage.setItem('hula-burn-stats', JSON.stringify({ totalBurned: 42, activeRooms: 3 }))
+    localStorage.setItem('tjg-burn-stats', JSON.stringify({ totalBurned: 42, activeRooms: 3 }))
     const wrapper = mount(BurnAfterReadSettings)
     expect((wrapper.vm as any).burnStats.totalBurned).toBe(42)
     expect((wrapper.vm as any).burnStats.activeRooms).toBe(3)
@@ -143,14 +143,14 @@ describe('BurnAfterReadSettings', () => {
 
   it('saves room toggle', () => {
     localStorage.setItem(
-      'hula-burn-rooms',
+      'tjg-burn-rooms',
       JSON.stringify([{ roomId: 'r1', name: 'Room 1', duration: 60, enabled: true }])
     )
     const wrapper = mount(BurnAfterReadSettings)
     const room = (wrapper.vm as any).burnRooms[0]
     ;(wrapper.vm as any).handleRoomToggle(room, false)
     expect(room.enabled).toBe(false)
-    const saved = JSON.parse(localStorage.getItem('hula-burn-rooms')!)
+    const saved = JSON.parse(localStorage.getItem('tjg-burn-rooms')!)
     expect(saved[0].enabled).toBe(false)
   })
 

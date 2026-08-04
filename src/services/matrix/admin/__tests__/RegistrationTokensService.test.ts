@@ -78,11 +78,7 @@ describe('AdminRegistrationTokensService', () => {
   it('create omits undefined fields from the body', async () => {
     admin.createRegistrationToken.mockResolvedValueOnce({ token: 'auto' })
     await service.create()
-    expect(admin.createRegistrationToken).toHaveBeenCalledWith(
-      expect.stringMatching(/^hula_\d+$/),
-      undefined,
-      undefined
-    )
+    expect(admin.createRegistrationToken).toHaveBeenCalledWith(expect.stringMatching(/^tjg_\d+$/), undefined, undefined)
   })
 
   it('create returns null on backend error', async () => {

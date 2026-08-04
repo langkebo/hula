@@ -202,46 +202,46 @@ const friendRequestNotify = ref(true)
 const friendAcceptNotify = ref(true)
 
 onMounted(() => {
-  const savedDesktopNotification = localStorage.getItem('hula-desktop-notification')
+  const savedDesktopNotification = localStorage.getItem('tjg-desktop-notification')
   if (savedDesktopNotification !== null) {
     desktopNotification.value = savedDesktopNotification === 'true'
   }
 
-  const savedShowContent = localStorage.getItem('hula-show-content')
+  const savedShowContent = localStorage.getItem('tjg-show-content')
   if (savedShowContent !== null) {
     showMessageContent.value = savedShowContent === 'true'
   }
 
-  const savedShowSender = localStorage.getItem('hula-show-sender')
+  const savedShowSender = localStorage.getItem('tjg-show-sender')
   if (savedShowSender !== null) {
     showSenderName.value = savedShowSender === 'true'
   }
 
-  const savedKeywords = localStorage.getItem('hula-keywords')
+  const savedKeywords = localStorage.getItem('tjg-keywords')
   if (savedKeywords) {
     keywords.value = JSON.parse(savedKeywords)
   }
 
-  const savedKeywordNotification = localStorage.getItem('hula-keyword-notification')
+  const savedKeywordNotification = localStorage.getItem('tjg-keyword-notification')
   if (savedKeywordNotification !== null) {
     keywordNotification.value = savedKeywordNotification === 'true'
   }
 
-  const savedThreadReply = localStorage.getItem('hula-thread-reply-notify')
+  const savedThreadReply = localStorage.getItem('tjg-thread-reply-notify')
   if (savedThreadReply !== null) threadReplyNotify.value = savedThreadReply === 'true'
-  const savedThreadParticipate = localStorage.getItem('hula-thread-participate-notify')
+  const savedThreadParticipate = localStorage.getItem('tjg-thread-participate-notify')
   if (savedThreadParticipate !== null) threadParticipateNotify.value = savedThreadParticipate === 'true'
-  const savedThreadMention = localStorage.getItem('hula-thread-mention-notify')
+  const savedThreadMention = localStorage.getItem('tjg-thread-mention-notify')
   if (savedThreadMention !== null) threadMentionNotify.value = savedThreadMention === 'true'
 
-  const savedSpaceNewRoom = localStorage.getItem('hula-space-new-room-notify')
+  const savedSpaceNewRoom = localStorage.getItem('tjg-space-new-room-notify')
   if (savedSpaceNewRoom !== null) spaceNewRoomNotify.value = savedSpaceNewRoom === 'true'
-  const savedSpaceMember = localStorage.getItem('hula-space-member-change-notify')
+  const savedSpaceMember = localStorage.getItem('tjg-space-member-change-notify')
   if (savedSpaceMember !== null) spaceMemberChangeNotify.value = savedSpaceMember === 'true'
 
-  const savedFriendRequest = localStorage.getItem('hula-friend-request-notify')
+  const savedFriendRequest = localStorage.getItem('tjg-friend-request-notify')
   if (savedFriendRequest !== null) friendRequestNotify.value = savedFriendRequest === 'true'
-  const savedFriendAccept = localStorage.getItem('hula-friend-accept-notify')
+  const savedFriendAccept = localStorage.getItem('tjg-friend-accept-notify')
   if (savedFriendAccept !== null) friendAcceptNotify.value = savedFriendAccept === 'true'
 })
 
@@ -254,7 +254,7 @@ async function handleNotificationChange(value: boolean) {
       return
     }
   }
-  localStorage.setItem('hula-desktop-notification', value.toString())
+  localStorage.setItem('tjg-desktop-notification', value.toString())
   showFeedback(
     t('setting.notification.feedback.desktop', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -278,7 +278,7 @@ function handleVolumeChange(value: number) {
 }
 
 function handleContentChange(value: boolean) {
-  localStorage.setItem('hula-show-content', value.toString())
+  localStorage.setItem('tjg-show-content', value.toString())
   showFeedback(
     t('setting.notification.feedback.message_content', {
       state: t(value ? 'setting.notification.common.shown' : 'setting.notification.common.hidden')
@@ -288,7 +288,7 @@ function handleContentChange(value: boolean) {
 }
 
 function handleSenderChange(value: boolean) {
-  localStorage.setItem('hula-show-sender', value.toString())
+  localStorage.setItem('tjg-show-sender', value.toString())
   showFeedback(
     t('setting.notification.feedback.sender_name', {
       state: t(value ? 'setting.notification.common.shown' : 'setting.notification.common.hidden')
@@ -298,7 +298,7 @@ function handleSenderChange(value: boolean) {
 }
 
 function handleKeywordToggle(value: boolean) {
-  localStorage.setItem('hula-keyword-notification', value.toString())
+  localStorage.setItem('tjg-keyword-notification', value.toString())
   showFeedback(
     t('setting.notification.feedback.keyword', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -311,7 +311,7 @@ function addKeyword() {
   const keyword = newKeyword.value.trim()
   if (keyword && !keywords.value.includes(keyword)) {
     keywords.value.push(keyword)
-    localStorage.setItem('hula-keywords', JSON.stringify(keywords.value))
+    localStorage.setItem('tjg-keywords', JSON.stringify(keywords.value))
     newKeyword.value = ''
     showFeedback(t('setting.notification.feedback.keyword_added', { keyword }), 'success')
   }
@@ -319,12 +319,12 @@ function addKeyword() {
 
 function removeKeyword(keyword: string) {
   keywords.value = keywords.value.filter((k) => k !== keyword)
-  localStorage.setItem('hula-keywords', JSON.stringify(keywords.value))
+  localStorage.setItem('tjg-keywords', JSON.stringify(keywords.value))
   showFeedback(t('setting.notification.feedback.keyword_removed', { keyword }), 'success')
 }
 
 function handleThreadReplyNotify(value: boolean) {
-  localStorage.setItem('hula-thread-reply-notify', value.toString())
+  localStorage.setItem('tjg-thread-reply-notify', value.toString())
   showFeedback(
     t('setting.notification.feedback.thread_reply', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -334,7 +334,7 @@ function handleThreadReplyNotify(value: boolean) {
 }
 
 function handleThreadParticipateNotify(value: boolean) {
-  localStorage.setItem('hula-thread-participate-notify', value.toString())
+  localStorage.setItem('tjg-thread-participate-notify', value.toString())
   showFeedback(
     t('setting.notification.feedback.thread_participate', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -344,7 +344,7 @@ function handleThreadParticipateNotify(value: boolean) {
 }
 
 function handleThreadMentionNotify(value: boolean) {
-  localStorage.setItem('hula-thread-mention-notify', value.toString())
+  localStorage.setItem('tjg-thread-mention-notify', value.toString())
   showFeedback(
     t('setting.notification.feedback.thread_mention', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -354,7 +354,7 @@ function handleThreadMentionNotify(value: boolean) {
 }
 
 function handleSpaceNewRoomNotify(value: boolean) {
-  localStorage.setItem('hula-space-new-room-notify', value.toString())
+  localStorage.setItem('tjg-space-new-room-notify', value.toString())
   showFeedback(
     t('setting.notification.feedback.space_new_room', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -364,7 +364,7 @@ function handleSpaceNewRoomNotify(value: boolean) {
 }
 
 function handleSpaceMemberChangeNotify(value: boolean) {
-  localStorage.setItem('hula-space-member-change-notify', value.toString())
+  localStorage.setItem('tjg-space-member-change-notify', value.toString())
   showFeedback(
     t('setting.notification.feedback.space_member_change', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -374,7 +374,7 @@ function handleSpaceMemberChangeNotify(value: boolean) {
 }
 
 function handleFriendRequestNotify(value: boolean) {
-  localStorage.setItem('hula-friend-request-notify', value.toString())
+  localStorage.setItem('tjg-friend-request-notify', value.toString())
   showFeedback(
     t('setting.notification.feedback.friend_request', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -384,7 +384,7 @@ function handleFriendRequestNotify(value: boolean) {
 }
 
 function handleFriendAcceptNotify(value: boolean) {
-  localStorage.setItem('hula-friend-accept-notify', value.toString())
+  localStorage.setItem('tjg-friend-accept-notify', value.toString())
   showFeedback(
     t('setting.notification.feedback.friend_accept', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -396,26 +396,26 @@ function handleFriendAcceptNotify(value: boolean) {
 
 <style scoped>
 .notification-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-4);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-4);
+  color: var(--tjg-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -424,47 +424,47 @@ function handleFriendAcceptNotify(value: boolean) {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .volume-control {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .volume-value {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
   min-width: 36px;
 }
 
 .keywords-section {
-  margin-top: var(--hula-space-3);
+  margin-top: var(--tjg-space-3);
 }
 
 .keywords-control {
   display: flex;
-  gap: var(--hula-space-2);
-  margin-bottom: var(--hula-space-3);
+  gap: var(--tjg-space-2);
+  margin-bottom: var(--tjg-space-3);
 }
 
 .keywords-list {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .section-desc {
-  margin: calc(var(--hula-space-2) * -1) 0 var(--hula-space-4);
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  margin: calc(var(--tjg-space-2) * -1) 0 var(--tjg-space-4);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 </style>

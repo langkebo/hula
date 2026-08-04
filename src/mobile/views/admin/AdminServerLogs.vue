@@ -4,8 +4,8 @@
       <van-notice-bar
         :scrollable="false"
         mode="closeable"
-        color="var(--hula-admin-notice-text)"
-        background="var(--hula-admin-notice-bg)">
+        color="var(--tjg-admin-notice-text)"
+        background="var(--tjg-admin-notice-bg)">
         服务器日志页已改为状态面板，直接展示后端已实现的服务状态数据。
       </van-notice-bar>
 

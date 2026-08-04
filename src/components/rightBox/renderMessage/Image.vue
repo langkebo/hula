@@ -28,7 +28,7 @@
             :style="{
               width: `${imageStyle.width}`,
               height: `${imageStyle.height}`,
-              backgroundColor: 'var(--hula-surface-sidebar-selected)'
+              backgroundColor: 'var(--tjg-surface-sidebar-selected)'
             }"
             class="rounded-10px">
             <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
@@ -39,8 +39,8 @@
             v-if="isError"
             align="center"
             justify="center"
-            class="w-200px h-150px rounded-10px bg-[--hula-surface-sidebar-selected]">
-            <svg class="size-34px color-[--hula-text-tertiary]">
+            class="w-200px h-150px rounded-10px bg-[--tjg-surface-sidebar-selected]">
+            <svg class="size-34px color-[--tjg-text-tertiary]">
               <use href="#error-picture"></use>
             </svg>
           </n-flex>
@@ -53,7 +53,7 @@
         :style="{
           width: '100%',
           height: '100%',
-          backgroundColor: 'var(--hula-surface-sidebar-selected)'
+          backgroundColor: 'var(--tjg-surface-sidebar-selected)'
         }">
         <img class="size-24px select-none" src="@/assets/img/loading.svg" alt="loading" />
       </n-flex>

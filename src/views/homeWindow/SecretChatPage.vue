@@ -16,10 +16,10 @@
 
     <div class="secret-chat-content">
       <div v-if="hiddenSessions.length === 0" class="empty-state">
-        <svg class="size-48px text-[--hula-text-disabled]" viewBox="0 0 24 24" fill="currentColor">
+        <svg class="size-48px text-[--tjg-text-disabled]" viewBox="0 0 24 24" fill="currentColor">
           <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
         </svg>
-        <span class="text-(14px [--hula-text-disabled]) mt-10px">暂无隐藏会话</span>
+        <span class="text-(14px [--tjg-text-disabled]) mt-10px">暂无隐藏会话</span>
       </div>
 
       <div v-else class="session-list">
@@ -79,7 +79,7 @@ const handleClose = () => {
 .secret-chat-page {
   display: flex;
   flex-direction: column;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
 }
 
 .secret-chat-header {
@@ -87,7 +87,7 @@ const handleClose = () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
 }
 
 .header-title {
@@ -125,7 +125,7 @@ const handleClose = () => {
 }
 
 .session-item:hover {
-  background: var(--hula-surface-list-hover);
+  background: var(--tjg-surface-list-hover);
 }
 
 .session-avatar {
@@ -148,8 +148,8 @@ const handleClose = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-primary-500);
+  color: var(--tjg-text-inverse);
   font-size: 18px;
   font-weight: 500;
 }
@@ -163,7 +163,7 @@ const handleClose = () => {
 .session-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -171,7 +171,7 @@ const handleClose = () => {
 
 .session-preview {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -192,7 +192,7 @@ const handleClose = () => {
   padding: 0 6px;
   border-radius: 10px;
   background: var(--error-color);
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
   font-size: 12px;
 }
 </style>

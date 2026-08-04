@@ -42,7 +42,7 @@
 
       <!-- showQr: Display QR code placeholder -->
       <div v-else-if="step === 'showQr'" class="flex flex-col items-center gap-3">
-        <div class="w-48 h-48 bg-[var(--hula-surface-panel)] flex items-center justify-center rounded-lg">
+        <div class="w-48 h-48 bg-[var(--tjg-surface-panel)] flex items-center justify-center rounded-lg">
           <van-icon name="qr" size="64" color="var(--van-gray-5)" />
         </div>
         <span class="text-sm text-[--text-secondary]">{{ $t('verification.qr.show_desc') }}</span>
@@ -115,8 +115,8 @@ const visible = computed({
   set: (v) => emit('update:modelValue', v)
 })
 
-const successColor = 'var(--hula-color-success-500)'
-const dangerColor = 'var(--hula-color-danger-500)'
+const successColor = 'var(--tjg-color-success-500)'
+const dangerColor = 'var(--tjg-color-danger-500)'
 
 const {
   step,

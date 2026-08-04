@@ -173,13 +173,13 @@ describe('AdminModules', () => {
     const wrapper = mountComponent()
 
     const loadedDot = wrapper.find('[data-status="loaded"] .status-dot')
-    expect(loadedDot.attributes('style')).toContain('--hula-status-online')
+    expect(loadedDot.attributes('style')).toContain('--tjg-status-online')
 
     const unloadedDot = wrapper.find('[data-status="unloaded"] .status-dot')
-    expect(unloadedDot.attributes('style')).toContain('--hula-status-busy')
+    expect(unloadedDot.attributes('style')).toContain('--tjg-status-busy')
 
     const failedDot = wrapper.find('[data-status="failed"] .status-dot')
-    expect(failedDot.attributes('style')).toContain('--hula-status-offline')
+    expect(failedDot.attributes('style')).toContain('--tjg-status-offline')
   })
 
   it('点击模块项触发 view-detail 事件', async () => {

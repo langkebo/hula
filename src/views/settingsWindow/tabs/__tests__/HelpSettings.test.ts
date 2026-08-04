@@ -68,6 +68,31 @@ vi.mock('naive-ui', () => ({
     template: '<button><slot /><slot name="icon" /></button>',
     props: ['size', 'type', 'loading']
   },
+  NCard: {
+    name: 'NCard',
+    template: '<div class="n-card"><slot /><slot name="header" /><slot name="header-extra" /></div>',
+    props: ['title', 'bordered', 'size']
+  },
+  NAlert: {
+    name: 'NAlert',
+    template: '<div class="n-alert"><slot /></div>',
+    props: ['type', 'title', 'showIcon']
+  },
+  NGrid: {
+    name: 'NGrid',
+    template: '<div class="n-grid"><slot /></div>',
+    props: ['cols', 'xGap', 'yGap', 'responsive']
+  },
+  NGi: {
+    name: 'NGi',
+    template: '<div class="n-gi"><slot /></div>',
+    props: ['span']
+  },
+  NStatistic: {
+    name: 'NStatistic',
+    template: '<div class="n-statistic"><slot /></div>',
+    props: ['label', 'value']
+  },
   NDivider: { name: 'NDivider', template: '<hr />' },
   NModal: {
     name: 'NModal',

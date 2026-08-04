@@ -373,27 +373,27 @@ describe('PathUtil', () => {
       existsMock.mockResolvedValue(false)
       const buffer = new ArrayBuffer(8)
       downloadBytesMock.mockResolvedValue(buffer)
-      const result = await ensureModelFile('hula.glb', 'https://example.com/hula.glb')
+      const result = await ensureModelFile('tjg.glb', 'https://example.com/hula.glb')
       expect(downloadBytesMock).toHaveBeenCalledWith('https://example.com/hula.glb')
-      expect(writeFileMock).toHaveBeenCalledWith('userData/models/hula.glb', expect.any(Uint8Array), {
+      expect(writeFileMock).toHaveBeenCalledWith('userData/models/tjg.glb', expect.any(Uint8Array), {
         baseDir: 'Resource'
       })
-      expect(result).toBe('/resource/userData/models/hula.glb')
+      expect(result).toBe('/resource/userData/models/tjg.glb')
     })
 
     it('returns existing model path without downloading', async () => {
       existsMock.mockResolvedValue(true)
-      const result = await ensureModelFile('hula.glb', 'https://example.com/hula.glb')
+      const result = await ensureModelFile('tjg.glb', 'https://example.com/hula.glb')
       expect(downloadBytesMock).not.toHaveBeenCalled()
       expect(writeFileMock).not.toHaveBeenCalled()
-      expect(result).toBe('/resource/userData/models/hula.glb')
+      expect(result).toBe('/resource/userData/models/tjg.glb')
     })
 
     it('uses AppData on mobile', async () => {
       isMobileMock.mockReturnValue(true)
       existsMock.mockResolvedValue(true)
-      const result = await ensureModelFile('hula.glb', 'https://example.com/hula.glb')
-      expect(result).toBe('/app-data/userData/models/hula.glb')
+      const result = await ensureModelFile('tjg.glb', 'https://example.com/hula.glb')
+      expect(result).toBe('/app-data/userData/models/tjg.glb')
     })
   })
 

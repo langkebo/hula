@@ -39,7 +39,7 @@
 
     <!-- 底部操作栏 -->
     <div
-      class="join-room-pane__footer flex items-center justify-end gap-12px px-20px py-12px border-t border-[--hula-border-layout-divider]">
+      class="join-room-pane__footer flex items-center justify-end gap-12px px-20px py-12px border-t border-[--tjg-border-layout-divider]">
       <n-button type="primary" :loading="joining" @click="handleJoin">
         {{ t('room.join.join') }}
       </n-button>
@@ -144,7 +144,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .join-room-pane {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .join-room-pane__hint {
@@ -152,10 +152,10 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 20px;
-  background: var(--hula-color-primary-50, rgba(59, 130, 246, 0.08));
-  color: var(--hula-color-primary-600, var(--hula-color-primary-500));
+  background: var(--tjg-color-primary-50, rgba(59, 130, 246, 0.08));
+  color: var(--tjg-color-primary-600, var(--tjg-color-primary-500));
   font-size: 12px;
-  border-bottom: 1px solid var(--hula-color-primary-100, rgba(59, 130, 246, 0.15));
+  border-bottom: 1px solid var(--tjg-color-primary-100, rgba(59, 130, 246, 0.15));
 }
 
 .hint-fade-enter-active,

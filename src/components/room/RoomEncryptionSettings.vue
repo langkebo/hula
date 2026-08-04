@@ -10,7 +10,7 @@
     <n-spin :show="loading" size="small">
       <template v-if="!isEncrypted">
         <n-flex vertical :size="12" align="center">
-          <Icon icon="mdi:shield-off-outline" class="text-32px color-[--hula-text-tertiary]" />
+          <Icon icon="mdi:shield-off-outline" class="text-32px color-[--tjg-text-tertiary]" />
           <span class="text-13px text-gray-500">{{ t('encryption.room_settings.not_encrypted') }}</span>
           <n-button type="primary" size="small" :loading="enabling" @click="handleEnableEncryption">
             <template #icon>

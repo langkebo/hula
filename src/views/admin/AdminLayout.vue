@@ -249,7 +249,7 @@ const goHome = () => {
 .admin-sidebar {
   width: 220px;
   background: var(--admin-sidebar-bg);
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -309,13 +309,13 @@ const goHome = () => {
   white-space: nowrap;
 
   &:hover {
-    color: var(--hula-text-inverse);
+    color: var(--tjg-text-inverse);
     background: var(--admin-sidebar-hover);
   }
 
   &--active {
-    color: var(--hula-text-inverse);
-    background: var(--hula-color-primary-300-alpha);
+    color: var(--tjg-text-inverse);
+    background: var(--tjg-color-primary-300-alpha);
   }
 }
 
@@ -340,7 +340,7 @@ const goHome = () => {
   white-space: nowrap;
 
   &:hover {
-    color: var(--hula-text-inverse);
+    color: var(--tjg-text-inverse);
     background: var(--admin-sidebar-hover);
   }
 }
@@ -383,7 +383,7 @@ const goHome = () => {
   transition: all 0.2s;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -404,7 +404,7 @@ const goHome = () => {
   display: none;
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, var(--hula-surface-media-preview) 40%, transparent);
+  background: color-mix(in srgb, var(--tjg-surface-media-preview) 40%, transparent);
   z-index: 99;
 }
 

@@ -49,11 +49,11 @@ function onPointerDown(e: PointerEvent) {
   right: -2px;
   width: 4px;
   height: 100%;
-  background: var(--hula-border-muted);
+  background: var(--tjg-border-muted);
   z-index: 10;
-  transition: background var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+  transition: background var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 }
 .panel-resize-handle:hover {
-  background: var(--hula-color-primary-300);
+  background: var(--tjg-color-primary-300);
 }
 </style>

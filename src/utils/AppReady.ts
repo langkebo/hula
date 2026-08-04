@@ -1,44 +1,44 @@
-type HulaAppReadyPhase = 'booting' | 'mounted' | 'router-ready'
+type TjgAppReadyPhase = 'booting' | 'mounted' | 'router-ready'
 
-type HulaAppReadyWindow = Window & {
-  __HULA_APP_READY__?: boolean
-  __HULA_APP_READY_PHASE__?: HulaAppReadyPhase
+type TjgAppReadyWindow = Window & {
+  __TJG_APP_READY__?: boolean
+  __TJG_APP_READY_PHASE__?: TjgAppReadyPhase
 }
 
-let currentPhase: HulaAppReadyPhase = 'booting'
+let currentPhase: TjgAppReadyPhase = 'booting'
 
-function getReadyWindow(): HulaAppReadyWindow | null {
+function getReadyWindow(): TjgAppReadyWindow | null {
   if (typeof window === 'undefined') {
     return null
   }
-  return window as HulaAppReadyWindow
+  return window as TjgAppReadyWindow
 }
 
-export function markHulaAppReady(phase: HulaAppReadyPhase = 'router-ready'): HulaAppReadyPhase {
+export function markTjgAppReady(phase: TjgAppReadyPhase = 'router-ready'): TjgAppReadyPhase {
   currentPhase = phase
   const readyWindow = getReadyWindow()
   if (readyWindow) {
-    readyWindow.__HULA_APP_READY__ = phase === 'router-ready'
-    readyWindow.__HULA_APP_READY_PHASE__ = phase
+    readyWindow.__TJG_APP_READY__ = phase === 'router-ready'
+    readyWindow.__TJG_APP_READY_PHASE__ = phase
   }
   return currentPhase
 }
 
-export function getHulaAppReadyPhase(): HulaAppReadyPhase {
+export function getTjgAppReadyPhase(): TjgAppReadyPhase {
   const readyWindow = getReadyWindow()
-  return readyWindow?.__HULA_APP_READY_PHASE__ ?? currentPhase
+  return readyWindow?.__TJG_APP_READY_PHASE__ ?? currentPhase
 }
 
-export function isHulaAppReady(): boolean {
+export function isTjgAppReady(): boolean {
   const readyWindow = getReadyWindow()
-  return readyWindow?.__HULA_APP_READY__ ?? currentPhase === 'router-ready'
+  return readyWindow?.__TJG_APP_READY__ ?? currentPhase === 'router-ready'
 }
 
-export function resetHulaAppReadyForTests(): void {
+export function resetTjgAppReadyForTests(): void {
   currentPhase = 'booting'
   const readyWindow = getReadyWindow()
   if (readyWindow) {
-    delete readyWindow.__HULA_APP_READY__
-    delete readyWindow.__HULA_APP_READY_PHASE__
+    delete readyWindow.__TJG_APP_READY__
+    delete readyWindow.__TJG_APP_READY_PHASE__
   }
 }

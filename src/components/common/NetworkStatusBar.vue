@@ -45,8 +45,8 @@ const isOffline = computed(() => state.value === 'offline')
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: var(--hula-color-warning-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-warning-500);
+  color: var(--tjg-text-inverse);
   font-size: 12px;
   font-weight: 500;
 }

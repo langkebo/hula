@@ -10,40 +10,6 @@ export interface EncryptionSettings {
   rotationPeriodMsgs: number
 }
 
-/**
- * @deprecated Use `CryptoSDKAdapter.CrossSigningStatusResult` from './CryptoSDKAdapter' instead.
- */
-export interface CrossSigningInfo {
-  isSetup: boolean
-  masterPublicKey?: string
-  selfSigningPublicKey?: string
-  userSigningPublicKey?: string
-}
-
-/**
- * @deprecated Use `KeyBackupVersionInfo` from './MatrixCryptoService' or `KeyBackupManager` APIs instead.
- */
-export interface KeyBackupInfo {
-  version: string | null
-  algorithm: string | null
-  authData: Record<string, unknown>
-  count: number
-  etag: string
-}
-
-/**
- * @deprecated Use `VerificationRequest` from '@/types/matrix-extensions' or `matrixVerificationService` instead.
- */
-export interface VerificationRequest {
-  requestId: string
-  phase: string
-  methods: string[]
-  otherParty: {
-    userId: string
-    deviceId: string
-  }
-}
-
 export interface KeyRotationStatus {
   enabled: boolean
   intervalMs: number
@@ -55,16 +21,6 @@ export interface KeyRotationRecord {
   keyId: string
   rotatedAt: number
   deviceId: string
-}
-
-/**
- * @deprecated Use `cryptoSDKAdapter.setupKeyBackupWithOptions()` from './CryptoSDKAdapter' instead.
- */
-export interface SetupKeyBackupOptions {
-  recoveryKey?: string
-  password?: string
-  authData?: import('@/types/matrix-extensions').MatrixAuthData
-  generatedKey?: import('@/types/matrix-extensions').GeneratedSecretStorageKey | null
 }
 
 /**

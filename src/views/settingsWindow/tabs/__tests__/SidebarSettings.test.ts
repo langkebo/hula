@@ -81,7 +81,7 @@ describe('SidebarSettings', () => {
 
   it('loads settings from localStorage', () => {
     localStorage.setItem(
-      'hula-sidebar-settings',
+      'tjg-sidebar-settings',
       JSON.stringify({
         showSpaces: true,
         showRooms: true,
@@ -105,7 +105,7 @@ describe('SidebarSettings', () => {
     const vm = getVm(wrapper)
     vm.showSpaces = false
     vm.saveSettings()
-    const saved = JSON.parse(localStorage.getItem('hula-sidebar-settings')!)
+    const saved = JSON.parse(localStorage.getItem('tjg-sidebar-settings')!)
     expect(saved.showSpaces).toBe(false)
   })
 

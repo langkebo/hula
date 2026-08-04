@@ -60,7 +60,7 @@ const onlineClass = computed(() => {
 }
 
 .avatar-container:hover {
-  background-color: var(--hula-surface-list-hover);
+  background-color: var(--tjg-surface-list-hover);
 }
 
 .online-indicator {
@@ -74,18 +74,18 @@ const onlineClass = computed(() => {
 }
 
 .online-indicator.online {
-  background-color: var(--hula-status-online);
+  background-color: var(--tjg-status-online);
 }
 
 .online-indicator.offline {
-  background-color: var(--hula-status-offline);
+  background-color: var(--tjg-status-offline);
 }
 
 .online-indicator.busy {
-  background-color: var(--hula-status-busy);
+  background-color: var(--tjg-status-busy);
 }
 
 .online-indicator.away {
-  background-color: var(--hula-status-away);
+  background-color: var(--tjg-status-away);
 }
 </style>

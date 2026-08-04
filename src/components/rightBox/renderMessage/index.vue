@@ -40,7 +40,7 @@
         <!-- 回复消息提示的箭头 -->
         <svg
           v-if="activeReply === message.message.id"
-          class="size-16px pt-4px color-[--hula-text-tertiary]"
+          class="size-16px pt-4px color-[--tjg-text-tertiary]"
           :class="isMe ? 'ml-8px' : 'mr-8px'">
           <use :href="isMe ? `#corner-down-left` : `#corner-down-right`"></use>
         </svg>
@@ -51,7 +51,7 @@
           trigger="click"
           placement="right"
           :show-arrow="false"
-          style="padding: 0; background: var(--hula-surface-panel)">
+          style="padding: 0; background: var(--tjg-surface-panel)">
           <template #trigger>
             <ContextMenu
               @select="$event.click(message, 'Main')"
@@ -64,7 +64,7 @@
                 :size="34"
                 @click="handleAvatarClick(senderUid, message.message.id)"
                 class="select-none"
-                color="var(--hula-surface-panel)"
+                color="var(--tjg-surface-panel)"
                 :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                 :src="getAvatarSrc(senderUid)"
                 :class="isMe ? '' : 'mr-10px'" />
@@ -74,7 +74,7 @@
           <InfoPopover v-if="selectKey === message.message.id && senderUid" :uid="senderUid" />
         </n-popover>
 
-        <n-flex vertical :size="6" class="color-[--hula-text-primary] flex-1" :class="isMe ? 'items-end mr-10px' : ''">
+        <n-flex vertical :size="6" class="color-[--tjg-text-primary] flex-1" :class="isMe ? 'items-end mr-10px' : ''">
           <n-flex :size="6" align="center" :style="isMe ? 'flex-direction: row-reverse' : ''">
             <ContextMenu
               @select="$event.click(message, 'Main')"
@@ -90,8 +90,8 @@
                 <!-- 用户名 -->
                 <span
                   :class="[
-                    'text-12px select-none color-[--hula-text-tertiary] inline-block align-top',
-                    !isMe ? 'cursor-pointer hover:color-[--hula-color-primary-500] transition-colors' : ''
+                    'text-12px select-none color-[--tjg-text-tertiary] inline-block align-top',
+                    !isMe ? 'cursor-pointer hover:color-[--tjg-color-primary-500] transition-colors' : ''
                   ]"
                   @click.stop="handleMentionUser">
                   {{ senderDisplayName }}
@@ -101,14 +101,14 @@
             <!-- 群主 -->
             <div
               v-if="senderUid && groupStore.isCurrentLord(senderUid)"
-              class="flex px-4px py-3px rounded-4px bg-[--hula-color-danger-500]30 size-fit select-none">
-              <span class="text-(9px [--hula-color-danger-500])">{{ t('home.chat_sidebar.roles.owner') }}</span>
+              class="flex px-4px py-3px rounded-4px bg-[--tjg-color-danger-500]30 size-fit select-none">
+              <span class="text-(9px [--tjg-color-danger-500])">{{ t('home.chat_sidebar.roles.owner') }}</span>
             </div>
             <!-- 管理员 -->
             <div
               v-if="senderUid && groupStore.isAdmin(senderUid)"
-              class="flex px-4px py-3px rounded-4px bg-[--hula-color-primary-100] size-fit select-none">
-              <span class="text-(9px [--hula-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</span>
+              class="flex px-4px py-3px rounded-4px bg-[--tjg-color-primary-100] size-fit select-none">
+              <span class="text-(9px [--tjg-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</span>
             </div>
           </n-flex>
           <!--  气泡样式  -->
@@ -226,7 +226,7 @@
               <div v-if="messageBody.translatedText" class="translated-text cursor-default flex flex-col">
                 <n-flex align="center" justify="space-between" class="mb-6px">
                   <n-flex align="center" :size="4">
-                    <span class="text-(12px --hula-text-tertiary)">
+                    <span class="text-(12px --tjg-text-tertiary)">
                       {{ messageBody.translatedText.provider }}
                     </span>
                     <svg class="size-12px">
@@ -236,7 +236,7 @@
                     <n-tooltip trigger="hover">
                       <template #trigger>
                         <svg
-                          class="pl-6px size-10px cursor-pointer hover:color-[--hula-text-tertiary] hover:transition-colors"
+                          class="pl-6px size-10px cursor-pointer hover:color-[--tjg-text-tertiary] hover:transition-colors"
                           @click="handleCopyTranslation(messageBody.translatedText.text)">
                           <use href="#copy"></use>
                         </svg>
@@ -259,7 +259,7 @@
             :size="6"
             v-if="messageBody.reply"
             @click="emit('jump2Reply', messageBody.reply.id)"
-            :class="isMobile() ? 'bg-[--hula-surface-app] text-13px' : 'bg-[--hula-surface-subtle] text-12px'"
+            :class="isMobile() ? 'bg-[--tjg-surface-app] text-13px' : 'bg-[--tjg-surface-subtle] text-12px'"
             class="reply-bubble relative w-fit custom-shadow select-none chat-message-max-width"
             :style="{ 'max-width': bubbleMaxWidth }">
             <svg class="size-14px">
@@ -269,7 +269,7 @@
               class="reply-avatar"
               round
               :size="20"
-              color="var(--hula-surface-panel)"
+              color="var(--tjg-surface-panel)"
               :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
               :src="getAvatarSrc(messageBody.reply.uid ?? '')" />
             <span>{{ `${messageBody.reply.username}: ` }}</span>
@@ -297,8 +297,8 @@
                   <span
                     :class="
                       hasUserMarkedEmoji(message, emoji.value)
-                        ? 'text-[--hula-color-warning-400]'
-                        : 'text-(12px [--hula-text-inverse])'
+                        ? 'text-[--tjg-color-warning-400]'
+                        : 'text-(12px [--tjg-text-inverse])'
                     ">
                     {{ message ? getEmojiCount(message, emoji.value) : 0 }}
                   </span>
@@ -315,7 +315,7 @@
             :event-id="message.message.id"
             @open-thread="handleOpenThread" />
 
-          <HulaMessageMeta
+          <TjgMessageMeta
             v-if="!historyMode"
             :message-id="message.message.id"
             :room-id="message.message.roomId"
@@ -351,13 +351,13 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMobile } from '@/utils/PlatformConstants'
 import Emoji from './Emoji.vue'
-import HulaMessageMeta from './HulaMessageMeta.vue'
 import Image from './Image.vue'
 import MessageActionBar from './MessageActionBar.vue'
 import ReactionPicker from './ReactionPicker.vue'
 import RecallMessage from './special/RecallMessage.vue'
 import SystemMessage from './special/SystemMessage.vue'
 import Text from './Text.vue'
+import TjgMessageMeta from './TjgMessageMeta.vue'
 import { useMessageActions } from './useMessageActions'
 import { useMessageContextMenu } from './useMessageContextMenu'
 import { useMessageUser } from './useMessageUser'

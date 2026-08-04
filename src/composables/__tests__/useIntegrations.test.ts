@@ -13,9 +13,9 @@ describe('useIntegrations', () => {
   })
 
   it('uses default catalog and legacy storage on first load', () => {
-    localStorage.setItem('hula-integrations-enabled', 'false')
+    localStorage.setItem('tjg-integrations-enabled', 'false')
     localStorage.setItem(
-      'hula-integrations-permissions',
+      'tjg-integrations-permissions',
       JSON.stringify({ userInfo: false, roomList: true, sendMessage: true })
     )
 
@@ -34,7 +34,7 @@ describe('useIntegrations', () => {
     state.setPermission('roomList', true)
     state.setIntegrationEnabled('giphy', true)
 
-    const persisted = JSON.parse(localStorage.getItem('hula-integrations-state') || '{}')
+    const persisted = JSON.parse(localStorage.getItem('tjg-integrations-state') || '{}')
     expect(persisted.enabled).toBe(false)
     expect(persisted.permissions.roomList).toBe(true)
     expect(persisted.installed).toEqual([
@@ -66,7 +66,7 @@ describe('useIntegrations', () => {
 
   it('hydrates from shared persisted state for multi-end sync', () => {
     localStorage.setItem(
-      'hula-integrations-state',
+      'tjg-integrations-state',
       JSON.stringify({
         version: 1,
         enabled: true,
@@ -107,7 +107,7 @@ describe('useIntegrations', () => {
     const state = useIntegrations(createDefaultIntegrationsCatalog())
 
     localStorage.setItem(
-      'hula-integrations-state',
+      'tjg-integrations-state',
       JSON.stringify({
         version: 1,
         enabled: false,
@@ -118,8 +118,8 @@ describe('useIntegrations', () => {
     )
     window.dispatchEvent(
       new StorageEvent('storage', {
-        key: 'hula-integrations-state',
-        newValue: localStorage.getItem('hula-integrations-state'),
+        key: 'tjg-integrations-state',
+        newValue: localStorage.getItem('tjg-integrations-state'),
         storageArea: localStorage
       })
     )

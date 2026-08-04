@@ -12,7 +12,7 @@ const meta: Meta<typeof RoomDetailPane> = {
   decorators: [
     () => ({
       template:
-        '<div style="width: 320px; height: 100vh; border-right: 1px solid var(--hula-border-default);"><story /></div>'
+        '<div style="width: 320px; height: 100vh; border-right: 1px solid var(--tjg-border-default);"><story /></div>'
     })
   ]
 }

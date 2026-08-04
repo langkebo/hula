@@ -9,12 +9,13 @@ interface PlatformInfo {
   platform: Platform
   isTauri: boolean
   isWeb: boolean
+  isLandscape: boolean
 }
 
 const platformCache = ref<PlatformInfo | null>(null)
 
 const PLATFORM_QUERY_KEY = 'platform'
-const PLATFORM_STORAGE_KEY = 'hula:e2e:platform'
+const PLATFORM_STORAGE_KEY = 'tjg:e2e:platform'
 
 function readRequestedPlatform(): Platform | null {
   if (typeof window === 'undefined') return null
@@ -52,13 +53,18 @@ function detectPlatform(): PlatformInfo {
     requestedPlatform ?? tauriPlatform ?? (isTauri ? 'desktop' : isMobileUserAgent ? 'mobile' : 'desktop')
   const isDesktop = platform === 'desktop'
   const isMobile = platform === 'mobile'
+  const isLandscape =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(orientation: landscape)').matches
+      : false
 
   const info: PlatformInfo = {
     isDesktop,
     isMobile,
     platform,
     isTauri,
-    isWeb: !isTauri
+    isWeb: !isTauri,
+    isLandscape
   }
 
   platformCache.value = info
@@ -73,7 +79,8 @@ export function usePlatform(): PlatformInfo {
     isMobile: computed(() => info.isMobile).value,
     platform: computed(() => info.platform).value,
     isTauri: computed(() => info.isTauri).value,
-    isWeb: computed(() => info.isWeb).value
+    isWeb: computed(() => info.isWeb).value,
+    isLandscape: computed(() => info.isLandscape).value
   }
 }
 

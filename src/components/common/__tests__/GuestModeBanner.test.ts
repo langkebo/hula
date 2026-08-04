@@ -60,6 +60,6 @@ describe('GuestModeBanner — 访客模式横幅 (§8.6)', () => {
       props: { visible: true }
     })
     const banner = wrapper.find('.guest-mode-banner')
-    expect(banner.attributes('style') ?? '').toContain('--hula-color-warning-100')
+    expect(banner.attributes('style') ?? '').toContain('--tjg-color-warning-100')
   })
 })

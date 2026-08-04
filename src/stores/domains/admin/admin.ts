@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { TauriCommand } from '@/enums'
 import { adminService } from '@/services/matrix/admin'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { useMatrixStore } from '../chat/matrix'
@@ -86,8 +87,17 @@ export const useAdminStore = defineStore('admin', () => {
 
     isCheckingAdmin.value = true
     try {
-      const backendResult = await checkAdminViaBackend()
       const frontendResult = await checkAdminViaFrontend()
+
+      // 浏览器 dev 模式（无 Tauri runtime）下跳过后端校验，仅依赖前端校验
+      if (!hasTauriRuntime()) {
+        isAdmin.value = frontendResult
+        lastCheckedAt.value = Date.now()
+        logger.info(`管理员状态检查(浏览器模式): userId=${matrixStore.userId}, isAdmin=${isAdmin.value}`)
+        return isAdmin.value
+      }
+
+      const backendResult = await checkAdminViaBackend()
 
       isAdmin.value = backendResult && frontendResult
 

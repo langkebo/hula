@@ -108,15 +108,15 @@ function isCopyable(type: number): boolean {
   gap: 2px;
   padding: 4px;
   border-radius: 8px;
-  background: var(--bg-popover, var(--hula-surface-elevated));
-  box-shadow: var(--hula-shadow-floating-menu);
-  border: 1px solid var(--hula-border-contrast, rgba(255, 255, 255, 0.06));
+  background: var(--bg-popover, var(--tjg-surface-elevated));
+  box-shadow: var(--tjg-shadow-floating-menu);
+  border: 1px solid var(--tjg-border-contrast, rgba(255, 255, 255, 0.06));
   z-index: 10;
   opacity: 0;
   transform: translateY(4px);
   transition:
-    opacity 150ms var(--hula-motion-ease-enter),
-    transform 150ms var(--hula-motion-ease-enter);
+    opacity 150ms var(--tjg-motion-ease-enter),
+    transform 150ms var(--tjg-motion-ease-enter);
 }
 
 .message-action-bar.action-bar--left {
@@ -152,7 +152,7 @@ function isCopyable(type: number): boolean {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   cursor: pointer;
   transition:
     background-color 120ms ease,
@@ -160,17 +160,17 @@ function isCopyable(type: number): boolean {
 }
 
 .action-btn:hover {
-  background: var(--hula-surface-list-hover);
-  color: var(--hula-text-primary);
+  background: var(--tjg-surface-list-hover);
+  color: var(--tjg-text-primary);
 }
 
 .action-btn--danger:hover {
-  background: var(--hula-color-danger-100);
-  color: var(--hula-color-danger-500);
+  background: var(--tjg-color-danger-100);
+  color: var(--tjg-color-danger-500);
 }
 
 .action-btn:focus-visible {
-  outline: 2px solid var(--hula-color-primary-500);
+  outline: 2px solid var(--tjg-color-primary-500);
   outline-offset: -2px;
 }
 

@@ -1,6 +1,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { ref } from 'vue'
 import { TauriCommand } from '@/enums'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -128,6 +129,29 @@ class AdminFacadeService extends BaseMatrixService {
       const now = Date.now()
       if (now - this.adminVerifiedAt < this.ADMIN_VERIFY_INTERVAL) {
         return this.cachedAdminStatus
+      }
+
+      // 浏览器 dev 模式（无 Tauri runtime）：直接走 HTTP admin API 验证
+      if (!hasTauriRuntime()) {
+        try {
+          const userInfo = await client.http.authedRequest(
+            'GET',
+            `/users/${encodeURIComponent(userId)}`,
+            undefined,
+            undefined,
+            { prefix: MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE }
+          )
+          const isAdmin = Boolean((userInfo as { admin?: boolean }).admin)
+          this.cachedAdminStatus = isAdmin
+          this.adminVerifiedAt = now
+          if (!isAdmin) {
+            logger.warn(`[Admin] 浏览器模式权限验证失败: userId=${userId}, isAdmin=false`)
+          }
+          return isAdmin
+        } catch (err) {
+          logger.error(`[Admin] 浏览器模式权限验证异常: ${err}`)
+          return false
+        }
       }
 
       const result = await invokeWithResult<{ is_admin: boolean; user_id: string }>(TauriCommand.CHECK_ADMIN_STATUS, {

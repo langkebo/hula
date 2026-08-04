@@ -35,7 +35,7 @@ interface QueuedOperation {
   status: 'pending' | 'processing' | 'failed'
 }
 
-const STORAGE_KEY = 'hula-offline-queue'
+const STORAGE_KEY = 'tjg-offline-queue'
 const MAX_RETRIES = 3
 const BASE_DELAY = 1000
 const MAX_DELAY = 30000

@@ -29,9 +29,9 @@ type MatrixCapabilitiesResponse = {
  * - The `useServerCapability()` composable bridges service + store at the
  *   consumption layer (no circular import at the service definition level).
  */
-export type HulaCapability = 'sliding-sync' | 'e2ee' | 'voip' | 'friend-list' | 'admin-api'
+export type TjgCapability = 'sliding-sync' | 'e2ee' | 'voip' | 'friend-list' | 'admin-api'
 
-const HULA_CAPABILITY_ALIASES: Record<HulaCapability, { unstable: string[]; capabilities: string[] }> = {
+const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capabilities: string[] }> = {
   'sliding-sync': {
     unstable: ['org.matrix.msc3886.sliding_sync', 'org.matrix.msc3575', 'org.matrix.simplified_msc3575'],
     capabilities: ['io.hula.sliding_sync']
@@ -115,7 +115,7 @@ function tryGetStore() {
 }
 
 class MatrixCapabilityService {
-  hasCapability(capability: HulaCapability): boolean {
+  hasCapability(capability: TjgCapability): boolean {
     const store = tryGetStore()
     if (!store) return false
     const aliases = HULA_CAPABILITY_ALIASES[capability]
@@ -159,7 +159,7 @@ class MatrixCapabilityService {
     )
   }
 
-  requireCapability(capability: HulaCapability): void {
+  requireCapability(capability: TjgCapability): void {
     if (!this.hasCapability(capability)) {
       throw new CapabilityUnavailableError(capability)
     }

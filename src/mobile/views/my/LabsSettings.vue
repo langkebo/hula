@@ -7,7 +7,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-[var(--hula-text-secondary)] mb-8px">{{ t('mobile_labs.description') }}</div>
+          <div class="text-14px text-[var(--tjg-text-secondary)] mb-8px">{{ t('mobile_labs.description') }}</div>
 
           <van-cell-group inset>
             <van-cell
@@ -17,8 +17,8 @@
               @click="openIntegrationsSettings">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-warning-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:puzzle" :width="20" color="var(--hula-color-warning-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:puzzle" :width="20" color="var(--tjg-color-warning-500)" />
                 </div>
               </template>
               <template #value>
@@ -35,8 +35,8 @@
               :label="feature.description">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon :icon="feature.icon || 'mdi:flask'" :width="20" color="var(--hula-color-primary-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon :icon="feature.icon || 'mdi:flask'" :width="20" color="var(--tjg-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -50,14 +50,14 @@
             </van-cell>
           </van-cell-group>
 
-          <div v-if="featureWarning" class="px-16px py-12px bg-[var(--hula-color-warning-100)] rounded-lg">
-            <div class="flex items-center gap-8px text-[var(--hula-color-warning-500)] text-13px">
+          <div v-if="featureWarning" class="px-16px py-12px bg-[var(--tjg-color-warning-100)] rounded-lg">
+            <div class="flex items-center gap-8px text-[var(--tjg-color-warning-500)] text-13px">
               <Icon icon="mdi:alert-circle" :width="16" />
               <span>{{ featureWarning }}</span>
             </div>
           </div>
 
-          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+          <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
             {{ t('mobile_labs.developer_section') }}
           </div>
 
@@ -65,12 +65,12 @@
             <van-cell :title="t('mobile_labs.debug_mode')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-bg-secondary)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:bug" :width="20" color="var(--hula-text-secondary)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-bg-secondary)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:bug" :width="20" color="var(--tjg-text-secondary)" />
                 </div>
               </template>
               <template #label>
-                <span class="text-12px text-[var(--hula-text-quaternary)]">{{ t('mobile_labs.debug_mode_desc') }}</span>
+                <span class="text-12px text-[var(--tjg-text-quaternary)]">{{ t('mobile_labs.debug_mode_desc') }}</span>
               </template>
               <template #right-icon>
                 <van-switch v-model="debugMode" @change="handleDebugModeChange" />
@@ -80,12 +80,12 @@
             <van-cell :title="t('mobile_labs.show_performance')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:speedometer" :width="20" color="var(--hula-color-info-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:speedometer" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
               <template #label>
-                <span class="text-12px text-[var(--hula-text-quaternary)]">
+                <span class="text-12px text-[var(--tjg-text-quaternary)]">
                   {{ t('mobile_labs.show_performance_desc') }}
                 </span>
               </template>
@@ -211,7 +211,7 @@ onMounted(() => {
 })
 
 function loadSavedSettings() {
-  const savedFeatures = localStorage.getItem('hula-lab-features')
+  const savedFeatures = localStorage.getItem('tjg-lab-features')
   if (savedFeatures) {
     try {
       const enabledIds = JSON.parse(savedFeatures) as string[]
@@ -223,16 +223,16 @@ function loadSavedSettings() {
     }
   }
 
-  const savedDebug = localStorage.getItem('hula-debug-mode')
+  const savedDebug = localStorage.getItem('tjg-debug-mode')
   if (savedDebug) debugMode.value = savedDebug === 'true'
 
-  const savedPerformance = localStorage.getItem('hula-show-performance')
+  const savedPerformance = localStorage.getItem('tjg-show-performance')
   if (savedPerformance) showPerformanceMetrics.value = savedPerformance === 'true'
 }
 
 function saveFeatures() {
   const enabledIds = labFeatures.value.filter((f) => f.enabled).map((f) => f.id)
-  localStorage.setItem('hula-lab-features', JSON.stringify(enabledIds))
+  localStorage.setItem('tjg-lab-features', JSON.stringify(enabledIds))
 }
 
 function handleToggleFeature(feature: LabFeature) {
@@ -247,7 +247,7 @@ function handleToggleFeature(feature: LabFeature) {
 }
 
 function handleDebugModeChange(value: boolean) {
-  localStorage.setItem('hula-debug-mode', value.toString())
+  localStorage.setItem('tjg-debug-mode', value.toString())
   showToast({
     type: 'success',
     message: value ? t('mobile_labs.debug_enabled') : t('mobile_labs.debug_disabled')
@@ -255,7 +255,7 @@ function handleDebugModeChange(value: boolean) {
 }
 
 function handlePerformanceChange(value: boolean) {
-  localStorage.setItem('hula-show-performance', value.toString())
+  localStorage.setItem('tjg-show-performance', value.toString())
   showToast({
     type: 'success',
     message: value ? t('mobile_labs.performance_enabled') : t('mobile_labs.performance_disabled')

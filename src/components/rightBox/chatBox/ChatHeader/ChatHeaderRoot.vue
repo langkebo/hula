@@ -332,9 +332,7 @@ const handleStartMeeting = async () => {
     } | null
     const domain = config?.domain || 'meet.jit.si'
     const confId =
-      config?.conf_id ||
-      config?.conferenceId ||
-      `hula-${roomId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 24) || Date.now()}`
+      config?.conf_id || config?.conferenceId || `tjg-${roomId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 24) || Date.now()}`
     const meetingUrl = `https://${domain}/${encodeURIComponent(confId)}`
 
     await matrixWidgetService.createWidget(
@@ -402,8 +400,8 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background-color: var(--hula-surface-panel);
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  background-color: var(--tjg-surface-panel);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
   min-height: 60px;
 }
 

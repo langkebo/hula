@@ -2,7 +2,7 @@
   <!-- 通知样式窗口 (接收方且未接听) -->
   <div
     v-if="isReceiver && !isCallAccepted"
-    class="w-360px h-full bg-[--hula-surface-panel] dark:bg-[--hula-surface-panel] flex-y-center px-12px select-none">
+    class="w-360px h-full bg-[--tjg-surface-panel] dark:bg-[--tjg-surface-panel] flex-y-center px-12px select-none">
     <!-- 用户头像 -->
     <div class="relative mr-12px">
       <n-avatar
@@ -13,8 +13,8 @@
         class="rounded-12px shadow-md" />
       <!-- 通话类型指示器 -->
       <div
-        class="absolute -bottom-2px -right-2px w-20px h-20px rounded-full bg-[--hula-color-primary-500] flex-center shadow-lg">
-        <svg class="size-14px text-[--hula-text-inverse]">
+        class="absolute -bottom-2px -right-2px w-20px h-20px rounded-full bg-[--tjg-color-primary-500] flex-center shadow-lg">
+        <svg class="size-14px text-[--tjg-text-inverse]">
           <use :href="callType === CallTypeEnum.VIDEO ? '#video-one' : '#phone-telephone'"></use>
         </svg>
       </div>
@@ -22,11 +22,11 @@
 
     <!-- 用户信息和状态 -->
     <div class="flex-1 min-w-0">
-      <div class="text-15px font-semibold text-[--hula-text-primary] dark:text-white mb-12px truncate">
+      <div class="text-15px font-semibold text-[--tjg-text-primary] dark:text-white mb-12px truncate">
         {{ remoteUserInfo?.name || t('message.call_window.unknown_user') }}
       </div>
-      <div class="text-12px text-[--hula-text-tertiary] dark:text-[--hula-text-tertiary] flex items-center">
-        <div class="w-6px h-6px rounded-full bg-[--hula-color-primary-500] mr-6px animate-pulse"></div>
+      <div class="text-12px text-[--tjg-text-tertiary] dark:text-[--tjg-text-tertiary] flex items-center">
+        <div class="w-6px h-6px rounded-full bg-[--tjg-color-primary-500] mr-6px animate-pulse"></div>
         {{ t('message.call_window.incoming') }} ·
         {{
           callType === CallTypeEnum.VIDEO ? t('message.call_window.video_call') : t('message.call_window.voice_call')
@@ -39,16 +39,16 @@
       <!-- 拒绝按钮 -->
       <div
         @click="hangUp(CallResponseStatus.REJECTED)"
-        class="size-40px rounded-full bg-[--hula-color-danger-500] hover:bg-[--hula-color-danger-500] flex-center cursor-pointer shadow-lg">
-        <svg class="text-[--hula-text-inverse] size-20px">
+        class="size-40px rounded-full bg-[--tjg-color-danger-500] hover:bg-[--tjg-color-danger-500] flex-center cursor-pointer shadow-lg">
+        <svg class="text-[--tjg-text-inverse] size-20px">
           <use href="#PhoneHangup"></use>
         </svg>
       </div>
       <!-- 接听按钮 -->
       <div
         @click="acceptCall"
-        class="size-40px rounded-full bg-[--hula-color-primary-500] hover:bg-[--hula-color-primary-500] flex-center cursor-pointer shadow-lg">
-        <svg class="text-[--hula-text-inverse] size-20px">
+        class="size-40px rounded-full bg-[--tjg-color-primary-500] hover:bg-[--tjg-color-primary-500] flex-center cursor-pointer shadow-lg">
+        <svg class="text-[--tjg-text-inverse] size-20px">
           <use href="#phone-telephone-entity"></use>
         </svg>
       </div>
@@ -59,7 +59,7 @@
   <div
     v-else
     data-tauri-drag-region
-    class="h-full flex flex-col select-none relative bg-[--hula-surface-media-preview]">
+    class="h-full flex flex-col select-none relative bg-[--tjg-surface-media-preview]">
     <!-- 背景羽化模糊层 -->
     <div
       :style="{
@@ -120,7 +120,7 @@
           <!-- 切换提示 -->
           <div
             class="absolute inset-0 flex-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-30 rounded-8px pointer-events-none">
-            <svg class="text-[--hula-text-inverse] size-20px">
+            <svg class="text-[--tjg-text-inverse] size-20px">
               <use href="#switch"></use>
             </svg>
           </div>
@@ -136,7 +136,7 @@
           }">
           <!-- 通话时长 -->
           <div v-if="connectionStatus === RTCCallStatus.ACCEPT" class="pb-16px text-center pointer-events-none">
-            <div class="inline-block rounded-full bg-black/50 px-16px py-6px text-14px text-[--hula-text-inverse]">
+            <div class="inline-block rounded-full bg-black/50 px-16px py-6px text-14px text-[--tjg-text-inverse]">
               {{ formattedCallDuration }}
             </div>
           </div>
@@ -149,10 +149,10 @@
                 class="size-44px rounded-full flex-center cursor-pointer"
                 :class="
                   !isMuted
-                    ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
-                    : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+                    ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
+                    : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
                 ">
-                <svg class="size-16px text-[--hula-text-inverse]">
+                <svg class="size-16px text-[--tjg-text-inverse]">
                   <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
                 </svg>
               </div>
@@ -165,10 +165,10 @@
                 class="size-44px rounded-full flex-center cursor-pointer"
                 :class="
                   isSpeakerOn
-                    ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
-                    : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+                    ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
+                    : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
                 ">
-                <svg class="size-16px text-[--hula-text-inverse]">
+                <svg class="size-16px text-[--tjg-text-inverse]">
                   <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
                 </svg>
               </div>
@@ -178,8 +178,8 @@
             <div v-if="callType === CallTypeEnum.VIDEO" class="flex-center">
               <div
                 @click="switchCameraFacing"
-                class="size-44px rounded-full flex-center cursor-pointer bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]">
-                <svg class="size-16px text-[--hula-text-inverse]">
+                class="size-44px rounded-full flex-center cursor-pointer bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]">
+                <svg class="size-16px text-[--tjg-text-inverse]">
                   <use href="#refresh"></use>
                 </svg>
               </div>
@@ -192,10 +192,10 @@
                 class="size-44px rounded-full flex-center cursor-pointer"
                 :class="
                   isVideoEnabled
-                    ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
-                    : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+                    ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
+                    : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
                 ">
-                <svg class="size-16px text-[--hula-text-inverse]">
+                <svg class="size-16px text-[--tjg-text-inverse]">
                   <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
                 </svg>
               </div>
@@ -205,8 +205,8 @@
             <div class="flex-center">
               <div
                 @click="hangUp()"
-                class="size-44px rounded-full bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80 flex-center cursor-pointer">
-                <svg class="size-16px text-[--hula-text-inverse]">
+                class="size-44px rounded-full bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80 flex-center cursor-pointer">
+                <svg class="size-16px text-[--tjg-text-inverse]">
                   <use href="#PhoneHangup"></use>
                 </svg>
               </div>
@@ -255,14 +255,14 @@
             class="size-44px rounded-full flex-center cursor-pointer"
             :class="
               !isMuted
-                ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
-                : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+                ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
+                : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
             ">
-            <svg class="size-16px text-[--hula-text-inverse]">
+            <svg class="size-16px text-[--tjg-text-inverse]">
               <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
             </svg>
           </div>
-          <div class="text-12px text-[--hula-text-quaternary] text-center">
+          <div class="text-12px text-[--tjg-text-quaternary] text-center">
             {{ !isMuted ? t('message.call_window.mic_on') : t('message.call_window.mic_off') }}
           </div>
         </div>
@@ -274,14 +274,14 @@
             class="size-44px rounded-full flex-center cursor-pointer"
             :class="
               isSpeakerOn
-                ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
-                : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+                ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
+                : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
             ">
-            <svg class="size-16px text-[--hula-text-inverse]">
+            <svg class="size-16px text-[--tjg-text-inverse]">
               <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
             </svg>
           </div>
-          <div class="text-12px text-[--hula-text-quaternary] text-center">
+          <div class="text-12px text-[--tjg-text-quaternary] text-center">
             {{ isSpeakerOn ? t('message.call_window.speaker_on') : t('message.call_window.speaker_off') }}
           </div>
         </div>
@@ -293,14 +293,14 @@
             class="size-44px rounded-full flex-center cursor-pointer"
             :class="
               isVideoEnabled
-                ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
-                : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+                ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
+                : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
             ">
-            <svg class="size-16px text-[--hula-text-inverse]">
+            <svg class="size-16px text-[--tjg-text-inverse]">
               <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
             </svg>
           </div>
-          <div class="text-12px text-[--hula-text-quaternary] text-center">
+          <div class="text-12px text-[--tjg-text-quaternary] text-center">
             {{ isVideoEnabled ? t('message.call_window.camera_disable') : t('message.call_window.camera_enable') }}
           </div>
         </div>
@@ -309,12 +309,12 @@
         <div class="flex-col-x-center gap-8px w-80px">
           <div
             @click="hangUp()"
-            class="size-44px rounded-full bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80 flex-center cursor-pointer">
-            <svg class="size-16px text-[--hula-text-inverse]">
+            class="size-44px rounded-full bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80 flex-center cursor-pointer">
+            <svg class="size-16px text-[--tjg-text-inverse]">
               <use href="#PhoneHangup"></use>
             </svg>
           </div>
-          <div class="text-12px text-[--hula-text-quaternary] text-center">{{ t('message.call_window.hangup') }}</div>
+          <div class="text-12px text-[--tjg-text-quaternary] text-center">{{ t('message.call_window.hangup') }}</div>
         </div>
       </div>
     </div>
@@ -331,14 +331,14 @@
               class="size-44px rounded-full flex-center cursor-pointer"
               :class="
                 !isMuted
-                  ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
-                  : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+                  ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
+                  : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
               ">
-              <svg class="size-16px text-[--hula-text-inverse]">
+              <svg class="size-16px text-[--tjg-text-inverse]">
                 <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
               </svg>
             </div>
-            <div v-if="!isMobileDevice" class="text-12px text-[--hula-text-quaternary] text-center">
+            <div v-if="!isMobileDevice" class="text-12px text-[--tjg-text-quaternary] text-center">
               {{ !isMuted ? t('message.call_window.mic_on') : t('message.call_window.mic_off') }}
             </div>
           </div>
@@ -350,14 +350,14 @@
               class="size-44px rounded-full flex-center cursor-pointer"
               :class="
                 isSpeakerOn
-                  ? 'bg-[--hula-surface-subtle] hover:bg-[--hula-surface-list-hover]'
-                  : 'bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80'
+                  ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
+                  : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
               ">
-              <svg class="size-16px text-[--hula-text-inverse]">
+              <svg class="size-16px text-[--tjg-text-inverse]">
                 <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
               </svg>
             </div>
-            <div v-if="!isMobileDevice" class="text-12px text-[--hula-text-quaternary] text-center">
+            <div v-if="!isMobileDevice" class="text-12px text-[--tjg-text-quaternary] text-center">
               {{ isSpeakerOn ? t('message.call_window.speaker_on') : t('message.call_window.speaker_off') }}
             </div>
           </div>
@@ -367,8 +367,8 @@
         <div class="flex-x-center">
           <div
             @click="hangUp()"
-            class="size-66px rounded-full bg-[--hula-color-danger-500]/60 hover:bg-[--hula-color-danger-500]/80 flex-center cursor-pointer">
-            <svg class="size-24px text-[--hula-text-inverse]">
+            class="size-66px rounded-full bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80 flex-center cursor-pointer">
+            <svg class="size-24px text-[--tjg-text-inverse]">
               <use href="#PhoneHangup"></use>
             </svg>
           </div>

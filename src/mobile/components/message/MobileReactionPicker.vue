@@ -106,12 +106,12 @@ watch(
   flex-direction: column;
   gap: 12px;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 
   &__hint {
     margin: 0;
     font-size: 13px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
     text-align: center;
   }
 
@@ -129,7 +129,7 @@ watch(
     height: 44px;
     border-radius: 50%;
     border: 1px solid transparent;
-    background: var(--hula-surface-panel-muted);
+    background: var(--tjg-surface-panel-muted);
     cursor: pointer;
     padding: 0;
     transition: all 0.15s ease;
@@ -140,8 +140,8 @@ watch(
     }
 
     &--active {
-      background: color-mix(in srgb, var(--hula-color-primary-500) 16%, transparent);
-      border-color: var(--hula-color-primary-400);
+      background: color-mix(in srgb, var(--tjg-color-primary-500) 16%, transparent);
+      border-color: var(--tjg-color-primary-400);
     }
 
     &--pending {
@@ -159,7 +159,7 @@ watch(
   }
 
   &__more {
-    border-top: 1px solid var(--hula-border-default);
+    border-top: 1px solid var(--tjg-border-default);
     padding-top: 8px;
   }
 }

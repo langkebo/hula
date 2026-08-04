@@ -357,7 +357,7 @@ onMounted(() => {
   grid-template-columns: 1.5fr 1fr 0.8fr 1fr 1.2fr 1.2fr 1.5fr 0.6fr 2.5fr;
   gap: 8px;
   padding: 8px 4px;
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
   align-items: center;
 }
 
@@ -367,8 +367,8 @@ onMounted(() => {
 
 .table-header {
   font-weight: 600;
-  color: var(--hula-text-secondary);
-  border-bottom: 2px solid var(--hula-border-layout-divider);
+  color: var(--tjg-text-secondary);
+  border-bottom: 2px solid var(--tjg-border-layout-divider);
 }
 
 .table-cell {

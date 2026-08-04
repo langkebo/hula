@@ -11,8 +11,8 @@
       <n-flex align="center" justify="center" :size="20">
         <n-avatar round size="large" :src="userInfo.avatar" />
         <n-flex vertical :size="10">
-          <p class="text-[--hula-text-primary]">{{ userInfo.name }}</p>
-          <p class="text-(12px [--hula-text-primary])">
+          <p class="text-[--tjg-text-primary]">{{ userInfo.name }}</p>
+          <p class="text-(12px [--tjg-text-primary])">
             {{ t('message.group_verify.account', { account: userInfo.account }) }}
           </p>
         </n-flex>
@@ -32,7 +32,7 @@
         type="textarea"
         :placeholder="t('message.group_verify.placeholder')" />
 
-      <n-button class="mt-10px" color="var(--color-primary)" @click="addGroupRequest">
+      <n-button class="mt-10px" color="var(--tjg-color-primary-500)" @click="addGroupRequest">
         {{ t('message.group_verify.send_btn') }}
       </n-button>
     </n-flex>

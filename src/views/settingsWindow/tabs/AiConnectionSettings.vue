@@ -209,7 +209,7 @@ onMounted(async () => {
 
 <style scoped>
 .ai-connection-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
@@ -220,12 +220,12 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .section-desc {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin-bottom: 16px;
 }
 
@@ -241,8 +241,8 @@ onMounted(async () => {
   justify-content: space-between;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid var(--hula-border-color);
-  background: var(--hula-bg-color);
+  border: 1px solid var(--tjg-border-color);
+  background: var(--tjg-bg-color);
 }
 
 .connection-info {
@@ -260,7 +260,7 @@ onMounted(async () => {
 .connection-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .connection-meta {
@@ -268,7 +268,7 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .tool-list {
@@ -282,8 +282,8 @@ onMounted(async () => {
   align-items: center;
   padding: 8px 12px;
   border-radius: 6px;
-  border: 1px solid var(--hula-border-color);
-  background: var(--hula-bg-color);
+  border: 1px solid var(--tjg-border-color);
+  background: var(--tjg-bg-color);
 }
 
 .tool-info {
@@ -295,11 +295,11 @@ onMounted(async () => {
 .tool-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .tool-desc {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 </style>

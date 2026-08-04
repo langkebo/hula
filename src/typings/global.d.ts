@@ -6,16 +6,16 @@ declare global {
     $loadingBar: import('naive-ui').LoadingBarApi
     $modal: import('naive-ui').ModalApi
     $invoke: (channel: string, payload?: unknown) => Promise<unknown>
-    __HULA_RENDER_SAMPLES__?: import('@/utils/AppHarness').RenderSampleRecord[]
-    hulaChatStore: any
-    hulaGlobalStore: any
-    hulaUserStore: any
-    hulaRouter: any
+    __TJG_RENDER_SAMPLES__?: import('@/utils/AppHarness').RenderSampleRecord[]
+    tjgChatStore: any
+    tjgGlobalStore: any
+    tjgUserStore: any
+    tjgRouter: any
     pinia: any
-    __HULA_APP_READY__?: boolean
-    __HULA_APP_READY_PHASE__?: 'booting' | 'mounted' | 'router-ready'
-    __HULA_PINIA_READY__?: boolean
-    __hula_cache_stats?: { size: number; maxSize: number; hitRate: number; hits: number; misses: number }
+    __TJG_APP_READY__?: boolean
+    __TJG_APP_READY_PHASE__?: 'booting' | 'mounted' | 'router-ready'
+    __TJG_PINIA_READY__?: boolean
+    __tjg_cache_stats?: { size: number; maxSize: number; hitRate: number; hits: number; misses: number }
   }
 }
 

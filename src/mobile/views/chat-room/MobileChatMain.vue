@@ -27,7 +27,7 @@
             {{ t('mobile_chat.import_model') }}
           </van-button>
         </div>
-        <HuLaAssistant :active="true" :custom-model="customModelPath" class="mobile-assistant-view" />
+        <TjgAssistant :active="true" :custom-model="customModelPath" class="mobile-assistant-view" />
       </div>
       <div v-else @click="handleChatMainClick" class="h-full overflow-y-auto">
         <ChatMain @scroll="handleScroll" />
@@ -73,7 +73,7 @@ import router from '@/router'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
-const HuLaAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/HuLaAssistant.vue'))
+const TjgAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/TjgAssistant.vue'))
 
 import MobileBatchToolbar from '#/components/message/MobileBatchToolbar.vue'
 import LocationShare from '#/views/chat-room/LocationShare.vue'
@@ -346,14 +346,14 @@ const handleLocationClick = () => {
   gap: 6px;
   padding: 6px 14px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--hula-surface-panel) 88%, transparent);
-  color: var(--hula-text-primary);
+  background: color-mix(in srgb, var(--tjg-surface-panel) 88%, transparent);
+  color: var(--tjg-text-primary);
   font-size: 13px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
 
   &.active {
-    color: var(--color-primary);
-    background: color-mix(in srgb, var(--hula-color-primary-500) 16%, transparent);
+    color: var(--tjg-color-primary-500);
+    background: color-mix(in srgb, var(--tjg-color-primary-500) 16%, transparent);
   }
 }
 

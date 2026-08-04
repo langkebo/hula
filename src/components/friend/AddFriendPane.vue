@@ -49,14 +49,14 @@
                 round />
               <n-flex vertical :size="4" class="flex-1">
                 <span class="text-16px font-medium">{{ searchResult.displayName || searchResult.userId }}</span>
-                <span class="text-12px text-[--hula-text-secondary]">{{ searchResult.userId }}</span>
+                <span class="text-12px text-[--tjg-text-secondary]">{{ searchResult.userId }}</span>
               </n-flex>
             </n-flex>
 
             <n-divider style="margin: 12px 0" />
 
             <n-flex vertical :size="8">
-              <span class="text-12px text-[--hula-text-tertiary]">{{ t('friend.add.message_label') }}</span>
+              <span class="text-12px text-[--tjg-text-tertiary]">{{ t('friend.add.message_label') }}</span>
               <n-input
                 v-model:value="requestMessage"
                 type="textarea"
@@ -78,7 +78,7 @@
             :description="hasSearchKeyword ? searchEmptyDescription : t('friend.add.not_found')" />
 
           <div v-else-if="suggestions.length > 0" class="suggestions-section">
-            <span class="text-12px text-[--hula-text-tertiary] mb-8px">{{ t('friend.add.suggestions') }}</span>
+            <span class="text-12px text-[--tjg-text-tertiary] mb-8px">{{ t('friend.add.suggestions') }}</span>
             <div class="suggestion-list">
               <div
                 v-for="suggestion in suggestions"
@@ -93,7 +93,7 @@
                     round />
                   <n-flex vertical :size="2" class="flex-1">
                     <span class="text-13px">{{ suggestion.display_name || suggestion.user_id }}</span>
-                    <span class="text-11px text-[--hula-text-tertiary]">{{ suggestion.user_id }}</span>
+                    <span class="text-11px text-[--tjg-text-tertiary]">{{ suggestion.user_id }}</span>
                   </n-flex>
                   <n-button size="tiny" type="primary" ghost>
                     {{ t('friend.add.send') }}
@@ -104,10 +104,10 @@
           </div>
 
           <div v-else class="search-hint">
-            <n-icon size="48" color="var(--hula-text-tertiary)">
+            <n-icon size="48" color="var(--tjg-text-tertiary)">
               <svg><use href="#search" /></svg>
             </n-icon>
-            <span class="text-14px text-[--hula-text-tertiary]">{{ t('friend.add.hint') }}</span>
+            <span class="text-14px text-[--tjg-text-tertiary]">{{ t('friend.add.hint') }}</span>
           </div>
         </n-spin>
       </div>
@@ -131,7 +131,7 @@ import { useRightViewDraftStore } from '@/stores/domains/widget/rightViewDraft'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import FriendSearchBar from './FriendSearchBar.vue'
 
-const ADD_FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'hula-add-friend-search-history'
+const ADD_FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'tjg-add-friend-search-history'
 const RESTORED_HINT_DURATION = 3000
 
 const { t } = useI18n()
@@ -399,7 +399,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .add-friend-pane {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .add-friend-pane__hint {
@@ -407,10 +407,10 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 20px;
-  background: var(--hula-color-primary-50, rgba(59, 130, 246, 0.08));
-  color: var(--hula-color-primary-600, var(--hula-color-primary-500));
+  background: var(--tjg-color-primary-50, rgba(59, 130, 246, 0.08));
+  color: var(--tjg-color-primary-600, var(--tjg-color-primary-500));
   font-size: 12px;
-  border-bottom: 1px solid var(--hula-color-primary-100, rgba(59, 130, 246, 0.15));
+  border-bottom: 1px solid var(--tjg-color-primary-100, rgba(59, 130, 246, 0.15));
 }
 
 .hint-fade-enter-active,
@@ -429,8 +429,8 @@ onMounted(() => {
 .search-result {
   padding: 12px;
   border-radius: 8px;
-  background: var(--hula-surface-panel);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-panel);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .add-friend-pane__search-summary {
@@ -439,14 +439,14 @@ onMounted(() => {
   justify-content: space-between;
   gap: 8px;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   margin-top: 8px;
 }
 
 .add-friend-pane__search-clear {
   border: none;
   background: transparent;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   cursor: pointer;
   padding: 0;
 }
@@ -469,7 +469,7 @@ onMounted(() => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 

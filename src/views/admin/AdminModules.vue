@@ -85,11 +85,11 @@ const filteredModules = computed(() => {
 function statusColor(status: ModuleStatus): string {
   switch (status) {
     case 'loaded':
-      return 'var(--hula-status-online)'
+      return 'var(--tjg-status-online)'
     case 'unloaded':
-      return 'var(--hula-status-busy)'
+      return 'var(--tjg-status-busy)'
     case 'failed':
-      return 'var(--hula-status-offline)'
+      return 'var(--tjg-status-offline)'
   }
 }
 
@@ -124,7 +124,7 @@ function handleViewDetail(moduleName: string) {
 .admin-modules {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-4);
+  gap: var(--tjg-space-4);
   max-width: 1200px;
 }
 
@@ -132,22 +132,22 @@ function handleViewDetail(moduleName: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
 }
 
 .section-title {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
   margin: 0;
-  font-size: var(--hula-font-size-lg, 15px);
-  font-weight: var(--hula-font-weight-medium, 600);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg, 15px);
+  font-weight: var(--tjg-font-weight-medium, 600);
+  color: var(--tjg-text-primary);
 }
 
 .section-icon {
   flex-shrink: 0;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .status-filter {
@@ -160,40 +160,40 @@ function handleViewDetail(moduleName: string) {
   transition: background-color 0.2s ease;
 
   &:hover {
-    background-color: var(--hula-bg-secondary);
+    background-color: var(--tjg-bg-secondary);
   }
 }
 
 .module-info {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-1, 4px);
+  gap: var(--tjg-space-1, 4px);
   width: 100%;
 }
 
 .module-row {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
   flex-wrap: wrap;
 }
 
 .module-name {
-  font-size: var(--hula-font-size-base, 14px);
-  font-weight: var(--hula-font-weight-medium, 500);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base, 14px);
+  font-weight: var(--tjg-font-weight-medium, 500);
+  color: var(--tjg-text-primary);
 }
 
 .module-version {
-  font-size: var(--hula-font-size-sm, 12px);
-  color: var(--hula-text-secondary);
-  font-family: var(--hula-font-family-mono, monospace);
+  font-size: var(--tjg-font-size-sm, 12px);
+  color: var(--tjg-text-secondary);
+  font-family: var(--tjg-font-family-mono, monospace);
 }
 
 .module-description {
   margin: 0;
-  font-size: var(--hula-font-size-sm, 12px);
-  color: var(--hula-text-tertiary);
+  font-size: var(--tjg-font-size-sm, 12px);
+  color: var(--tjg-text-tertiary);
   line-height: 1.5;
 }
 

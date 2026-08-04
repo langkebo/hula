@@ -7,7 +7,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-[--hula-text-secondary]">{{ t('emoticon.packs.description') }}</div>
+          <div class="text-14px text-[--tjg-text-secondary]">{{ t('emoticon.packs.description') }}</div>
 
           <div v-if="loading" class="flex justify-center py-20px">
             <van-loading size="24px" />
@@ -23,14 +23,14 @@
                     class="w-40px h-40px rounded-full mr-12px flex items-center justify-center overflow-hidden"
                     :style="iconShellStyles.pack">
                     <img v-if="pack.iconUrl" :src="pack.iconUrl" class="w-full h-full object-cover" />
-                    <Icon v-else icon="mdi:emoticon" :width="20" color="var(--hula-color-beta-500)" />
+                    <Icon v-else icon="mdi:emoticon" :width="20" color="var(--tjg-color-beta-500)" />
                   </div>
                 </template>
                 <template #title>
                   <span class="text-14px">{{ pack.name }}</span>
                 </template>
                 <template #value>
-                  <span class="text-12px text-[--hula-text-secondary]">
+                  <span class="text-12px text-[--tjg-text-secondary]">
                     {{ t('emoticon.packs.pack_count', { count: pack.items.length }) }}
                   </span>
                 </template>
@@ -71,9 +71,9 @@
       <!-- 表情包详情 -->
       <van-popup v-model:show="showDetailPopup" position="bottom" round :style="{ height: '70%' }">
         <div class="flex flex-col h-full">
-          <div class="flex items-center justify-between px-16px py-12px border-b border-[--hula-border-layout-divider]">
+          <div class="flex items-center justify-between px-16px py-12px border-b border-[--tjg-border-layout-divider]">
             <span class="text-16px font-500">{{ detailPack?.name }}</span>
-            <span class="text-12px text-[--hula-text-secondary]">
+            <span class="text-12px text-[--tjg-text-secondary]">
               {{ t('emoticon.packs.pack_count', { count: detailPack?.items.length ?? 0 }) }}
             </span>
           </div>
@@ -85,7 +85,7 @@
               <div v-for="emoji in detailPack.items" :key="emoji.id" class="relative">
                 <van-swipe-cell>
                   <div
-                    class="aspect-square flex items-center justify-center bg-[--hula-surface-panel] rounded-8px overflow-hidden">
+                    class="aspect-square flex items-center justify-center bg-[--tjg-surface-panel] rounded-8px overflow-hidden">
                     <img
                       :src="emoji.url"
                       :alt="emoji.name"
@@ -101,12 +101,12 @@
                       @click="handleRemoveEmoji(emoji.id)" />
                   </template>
                 </van-swipe-cell>
-                <div class="text-center text-10px text-[--hula-text-secondary] mt-4px truncate">{{ emoji.name }}</div>
+                <div class="text-center text-10px text-[--tjg-text-secondary] mt-4px truncate">{{ emoji.name }}</div>
               </div>
             </div>
           </div>
 
-          <div class="p-12px border-t border-[--hula-border-layout-divider]">
+          <div class="p-12px border-t border-[--tjg-border-layout-divider]">
             <van-uploader
               :after-read="handleAfterRead"
               :preview-image="false"
@@ -138,7 +138,7 @@ const { packs, loading, creating, load, createPack, deletePack, renamePack, addE
   useEmojiPackManager()
 
 const iconShellStyles = {
-  pack: { backgroundColor: 'var(--hula-color-beta-100)' }
+  pack: { backgroundColor: 'var(--tjg-color-beta-100)' }
 } as const
 
 // 创建 / 重命名 表单
@@ -242,11 +242,11 @@ onMounted(() => {
 }
 
 :deep(.van-cell) {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 :deep(.van-cell::after) {
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
 }
 
 :deep(.van-swipe-cell__right .van-button) {

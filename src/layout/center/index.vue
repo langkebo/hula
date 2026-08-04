@@ -4,7 +4,7 @@
     data-tauri-drag-region
     id="center"
     :class="{ 'rounded-r-8px': isShrink }"
-    class="resizable relative select-none flex flex-col border-r-(1px solid [--hula-border-layout-divider])"
+    class="resizable relative select-none flex flex-col border-r-(1px solid [--tjg-border-layout-divider])"
     :style="centerStyle">
     <!-- 分隔条（shrink 模式下隐藏） -->
     <PanelResizeHandle v-show="!isShrink" side="left" style="touch-action: none" />
@@ -34,6 +34,28 @@ import { useResponsiveBreakpoint } from '@/composables/layout/useResponsiveBreak
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 
+const MIN_CENTER_WIDTH = 280
+const MAX_CENTER_WIDTH = 400
+const DEFAULT_CENTER_WIDTH = MIN_CENTER_WIDTH
+const CENTER_WIDTH_STORAGE_KEY = 'tjg-center-panel-width'
+
+function loadStoredWidth(): number {
+  if (typeof localStorage === 'undefined') return DEFAULT_CENTER_WIDTH
+  const raw = localStorage.getItem(CENTER_WIDTH_STORAGE_KEY)
+  if (!raw) return DEFAULT_CENTER_WIDTH
+  const num = Number.parseInt(raw, 10)
+  if (!Number.isFinite(num)) {
+    localStorage.removeItem(CENTER_WIDTH_STORAGE_KEY)
+    return DEFAULT_CENTER_WIDTH
+  }
+  // 旧值迁移：存储值低于新 MIN_CENTER_WIDTH 时清除并回退默认值
+  if (num < MIN_CENTER_WIDTH) {
+    localStorage.removeItem(CENTER_WIDTH_STORAGE_KEY)
+    return DEFAULT_CENTER_WIDTH
+  }
+  return Math.min(MAX_CENTER_WIDTH, num)
+}
+
 const settingStore = useSettingStore()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const centerEl = shallowRef<HTMLElement | null>(null)
@@ -55,12 +77,20 @@ const centerStyle = computed(() => {
   return {
     flex: '0 0 auto',
     width: `${w}px`,
-    minWidth: '200px',
-    maxWidth: '600px'
+    minWidth: `${MIN_CENTER_WIDTH}px`,
+    maxWidth: `${MAX_CENTER_WIDTH}px`
   }
 })
 
 onMounted(() => {
+  // 迁移旧的中间栏宽度值（< MIN_CENTER_WIDTH 时重置为默认）
+  const migrated = loadStoredWidth()
+  if (migrated !== settingStore.panelWidth.left) {
+    settingStore.setPanelWidth('left', migrated)
+  }
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(CENTER_WIDTH_STORAGE_KEY, String(settingStore.panelWidth.left))
+  }
   // 阶段 3：监听全局搜索快捷键 Ctrl+F，聚焦当前中间栏搜索框
   window.addEventListener('search:focus', focusActiveSearchInput)
 })

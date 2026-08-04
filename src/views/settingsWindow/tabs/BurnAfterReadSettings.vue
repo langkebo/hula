@@ -199,7 +199,7 @@ const burnDurationOptions = computed(() => [
   { label: t('setting.burn_after_read.durations.24_hours'), value: 86400 }
 ])
 
-const STORAGE_KEY = 'hula-burn-after-read-settings'
+const STORAGE_KEY = 'tjg-burn-after-read-settings'
 
 onMounted(() => {
   loadSettings()
@@ -346,26 +346,26 @@ async function handleDisableRoomBurn(room: BurnRoom) {
 
 <style scoped>
 .burn-after-read-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-3);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-3);
+  color: var(--tjg-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -374,29 +374,29 @@ async function handleDisableRoomBurn(room: BurnRoom) {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .room-list {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .room-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px var(--hula-space-3);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: 10px var(--tjg-space-3);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .room-info {
@@ -407,65 +407,65 @@ async function handleDisableRoomBurn(room: BurnRoom) {
 }
 
 .room-name {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
   word-break: break-all;
 }
 
 .room-burn-status {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
-  margin-top: var(--hula-space-1);
+  gap: var(--tjg-space-2);
+  margin-top: var(--tjg-space-1);
 }
 
 .room-duration {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
 }
 
 .room-actions {
   display: flex;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
   flex-shrink: 0;
-  margin-left: var(--hula-space-3);
+  margin-left: var(--tjg-space-3);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
 }
 
 .stat-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .stat-label {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .empty-list {
-  padding: var(--hula-space-4);
+  padding: var(--tjg-space-4);
   text-align: center;
 }
 
 .empty-text {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 </style>

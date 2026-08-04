@@ -22,7 +22,9 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getRoomAccountData(roomId: string, eventType: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {
-      const result = await client.getAccountDataManager().getRoomAccountDataFromServer(roomId, eventType)
+      const userId = client.getUserId()
+      const path = `/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+      const result = await client.http.authedRequest('GET', path)
       return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间 account data 失败: ${err}`)
@@ -33,7 +35,9 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async setRoomAccountData(roomId: string, eventType: string, content: Record<string, unknown>): Promise<void> {
     const client = this.getClient()
     try {
-      await client.getAccountDataManager().setRoomAccountData(roomId, eventType, content)
+      const userId = client.getUserId()
+      const path = `/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+      await client.http.authedRequest('PUT', path, undefined, content)
       logger.info(`[MatrixRoom] 设置房间 account data 成功: ${roomId}/${eventType}`)
     } catch (err) {
       logger.error(`[MatrixRoom] 设置房间 account data 失败: ${err}`)
@@ -221,6 +225,62 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     } catch (err) {
       logger.error(`[MatrixRoom] 调用 MCP 工具失败: ${err}`)
       throw err
+    }
+  }
+
+  // === P2-8 事件签名与验证 ===
+
+  async signEvent(roomId: string, eventId: string): Promise<{ signature: string; signed_by: string }> {
+    const client = this.getClient()
+    const path = `/rooms/${encodeURIComponent(roomId)}/sign/${encodeURIComponent(eventId)}`
+    try {
+      const result = await client.http.authedRequest('PUT', path)
+      logger.info(`[MatrixRoom] 事件签名成功: ${roomId}/${eventId}`)
+      return result as { signature: string; signed_by: string }
+    } catch (err) {
+      logger.error(`[MatrixRoom] 事件签名失败: ${err}`)
+      throw err
+    }
+  }
+
+  async verifyEvent(roomId: string, eventId: string): Promise<{ valid: boolean; verifier: string }> {
+    const client = this.getClient()
+    const path = `/rooms/${encodeURIComponent(roomId)}/verify/${encodeURIComponent(eventId)}`
+    try {
+      const result = await client.http.authedRequest('POST', path)
+      logger.info(`[MatrixRoom] 事件验证成功: ${roomId}/${eventId}`)
+      return result as { valid: boolean; verifier: string }
+    } catch (err) {
+      logger.error(`[MatrixRoom] 事件验证失败: ${err}`)
+      throw err
+    }
+  }
+
+  // === P2-6 消息队列状态 ===
+
+  async getMessageQueue(roomId: string): Promise<{ queue?: Array<{ event_id: string; type: string }> }> {
+    const client = this.getClient()
+    const path = `/rooms/${encodeURIComponent(roomId)}/message_queue`
+    try {
+      const result = await client.http.authedRequest('GET', path)
+      return result as { queue?: Array<{ event_id: string; type: string }> }
+    } catch (err) {
+      logger.error(`[MatrixRoom] 获取消息队列失败: ${err}`)
+      return {}
+    }
+  }
+
+  // === P2-9 加密事件列表扩展 ===
+
+  async getEncryptedEvents(roomId: string): Promise<{ events?: Array<Record<string, unknown>> }> {
+    const client = this.getClient()
+    const path = `/rooms/${encodeURIComponent(roomId)}/encrypted_events`
+    try {
+      const result = await client.http.authedRequest('GET', path)
+      return result as { events?: Array<Record<string, unknown>> }
+    } catch (err) {
+      logger.error(`[MatrixRoom] 获取加密事件列表失败: ${err}`)
+      return {}
     }
   }
 }

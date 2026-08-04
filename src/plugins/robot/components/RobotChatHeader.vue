@@ -6,7 +6,7 @@
       <p
         v-if="!isEdit"
         @click="emit('edit')"
-        class="leading-6 text-(18px [--hula-text-primary]) truncate font-500 hover:underline cursor-pointer">
+        class="leading-6 text-(18px [--tjg-text-primary]) truncate font-500 hover:underline cursor-pointer">
         {{ chatTitle || t('ai_assistant.robot.new_conversation_title') }}
       </p>
       <n-input
@@ -34,8 +34,8 @@
           style="width: 120px"
           @update:value="handleProviderSelect" />
 
-        <div v-if="aiProvider === 'hula'" class="flex items-center gap-6px">
-          <span class="text-(11px [--hula-text-tertiary])">{{ t('ai_assistant.robot.current_model') }}</span>
+        <div v-if="aiProvider === 'tjg'" class="flex items-center gap-6px">
+          <span class="text-(11px [--tjg-text-tertiary])">{{ t('ai_assistant.robot.current_model') }}</span>
           <n-tag
             v-if="selectedModel"
             size="small"
@@ -89,7 +89,7 @@
           </n-tag>
         </div>
 
-        <p class="text-(11px [--hula-text-tertiary])">
+        <p class="text-(11px [--tjg-text-tertiary])">
           {{ t('ai_assistant.robot.conversation_count', { count: messageCount }) }}
         </p>
       </n-flex>
@@ -127,16 +127,16 @@
           </div>
         </template>
         <n-flex vertical :size="12">
-          <p class="text-(14px [--hula-text-primary]) font-500">
+          <p class="text-(14px [--tjg-text-primary]) font-500">
             {{ t('ai_assistant.robot.confirm_delete_conversation') }}
           </p>
-          <p class="text-(12px [--hula-color-danger-500])">{{ t('ai_assistant.robot.irreversible_warning') }}</p>
+          <p class="text-(12px [--tjg-color-danger-500])">{{ t('ai_assistant.robot.irreversible_warning') }}</p>
 
           <n-checkbox
             :checked="deleteWithMessages"
             size="small"
             @update:checked="emit('update:delete-with-messages', $event)">
-            <span class="text-(12px [--hula-text-primary])">{{ t('ai_assistant.robot.delete_with_messages') }}</span>
+            <span class="text-(12px [--tjg-text-primary])">{{ t('ai_assistant.robot.delete_with_messages') }}</span>
           </n-checkbox>
 
           <n-flex justify="end" :size="8">
@@ -200,7 +200,7 @@ const emit = defineEmits<{
 }>()
 
 const providerOptions: Array<{ label: string; value: AIProvider }> = [
-  { label: t('ai_assistant.robot.hula_backend'), value: 'hula' },
+  { label: t('ai_assistant.robot.tjg_backend'), value: 'tjg' },
   { label: 'SiliconFlow', value: 'siliconflow' },
   { label: 'TrendRadar', value: 'trendradar' }
 ]
@@ -231,7 +231,7 @@ watch(
 }
 
 .right-btn {
-  @apply size-fit border-(1px solid [--hula-border-default]) cursor-pointer bg-[--chat-bt-color] color-[--hula-text-primary] rounded-8px custom-shadow p-[10px_11px];
+  @apply size-fit border-(1px solid [--tjg-border-default]) cursor-pointer bg-[--chat-bt-color] color-[--tjg-text-primary] rounded-8px custom-shadow p-[10px_11px];
   transition: all 0.2s ease;
 
   svg {

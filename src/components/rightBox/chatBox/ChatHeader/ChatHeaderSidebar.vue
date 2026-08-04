@@ -230,7 +230,7 @@ const handleDeleteRoom = () => emit('delete-room')
   .label {
     display: block;
     font-size: 12px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
     margin-bottom: 8px;
   }
 
@@ -245,7 +245,7 @@ const handleDeleteRoom = () => emit('delete-room')
       cursor: pointer;
 
       &:hover {
-        color: var(--hula-color-primary-500);
+        color: var(--tjg-color-primary-500);
       }
     }
   }
@@ -266,11 +266,11 @@ const handleDeleteRoom = () => emit('delete-room')
     cursor: pointer;
 
     &:not(:last-child) {
-      border-bottom: 1px solid var(--hula-border-default);
+      border-bottom: 1px solid var(--tjg-border-default);
     }
 
     &.danger {
-      color: var(--hula-color-danger-500);
+      color: var(--tjg-color-danger-500);
     }
 
     .setting-label {

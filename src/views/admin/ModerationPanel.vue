@@ -52,6 +52,49 @@
             </n-list>
           </n-space>
         </n-tab-pane>
+
+        <n-tab-pane name="event-reports" :tab="t('moderation.event_reports.title')">
+          <n-space vertical size="large">
+            <n-space>
+              <n-statistic
+                data-testid="event-report-stat-total"
+                :label="t('moderation.event_reports.stats.total')"
+                :value="eventReportStats.total" />
+              <n-statistic
+                :label="t('moderation.event_reports.stats.open')"
+                :value="eventReportStats.open" />
+              <n-statistic
+                :label="t('moderation.event_reports.stats.resolved')"
+                :value="eventReportStats.resolved" />
+              <n-statistic
+                :label="t('moderation.event_reports.stats.dismissed')"
+                :value="eventReportStats.dismissed" />
+            </n-space>
+
+            <n-space>
+              <n-select
+                :value="eventReportStatusFilter"
+                data-testid="event-report-status-filter"
+                :options="eventReportStatusOptions"
+                :placeholder="t('moderation.filterByStatus')"
+                style="width: 150px"
+                @update:value="handleEventReportFilterChange" />
+              <n-button data-testid="event-report-refresh-btn" @click="loadEventReports">
+                <template #icon>
+                  <Icon icon="ion:refresh-outline" />
+                </template>
+                {{ t('common.refresh') }}
+              </n-button>
+            </n-space>
+
+            <n-data-table
+              :columns="eventReportColumns"
+              :data="eventReports"
+              :loading="eventReportLoading"
+              :row-key="(row: EventReport) => row.id" />
+          </n-space>
+        </n-tab-pane>
+
       </n-tabs>
     </n-card>
 
@@ -74,6 +117,40 @@
         </n-space>
       </template>
     </n-modal>
+
+    <n-modal :show="actionDialog.show" preset="dialog" :title="actionDialogTitle">
+      <n-input
+        data-testid="event-report-action-reason"
+        v-model:value="actionDialog.reason"
+        type="textarea"
+        :rows="3"
+        :placeholder="t('moderation.event_reports.dialog.reasonPlaceholder')" />
+      <template #action>
+        <n-space>
+          <n-button data-testid="event-report-action-cancel" @click="closeActionDialog">
+            {{ t('common.cancel') }}
+          </n-button>
+          <n-button data-testid="event-report-action-confirm" type="primary" @click="confirmAction">
+            {{ t('common.confirm') }}
+          </n-button>
+        </n-space>
+      </template>
+    </n-modal>
+
+    <n-modal :show="historyDialog.show" preset="dialog" :title="t('moderation.event_reports.history.title')">
+      <n-list bordered>
+        <n-list-item v-for="item in historyDialog.history" :key="item.id">
+          <n-thing :title="item.action" :description="item.reason || ''">
+            <template #header-extra>
+              {{ item.actor_user_id }}
+            </template>
+          </n-thing>
+        </n-list-item>
+      </n-list>
+      <template #action>
+        <n-button @click="historyDialog.show = false">{{ t('common.close') }}</n-button>
+      </template>
+    </n-modal>
   </div>
 </template>
 
@@ -92,6 +169,7 @@ import {
   NModal,
   NSelect,
   NSpace,
+  NStatistic,
   NTabPane,
   NTabs,
   NTag,
@@ -101,6 +179,8 @@ import { storeToRefs } from 'pinia'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { adminService } from '@/services/matrix/admin'
+import type { EventReport, EventReportHistory } from '@/services/matrix/admin/AdminTypes'
 import { useModerationStore } from '@/stores/domains/chat/moderation'
 import type { Report } from '@/types/matrix-services'
 
@@ -216,9 +296,187 @@ async function handleRemoveFilter(filterId: string) {
   }
 }
 
+// === Event Reports (P1-4 事件举报管理) ===
+const eventReports = ref<EventReport[]>([])
+const eventReportStats = ref({ total: 0, open: 0, resolved: 0, dismissed: 0 })
+const eventReportStatusFilter = ref<string | null>(null)
+const eventReportLoading = ref(false)
+const actionDialog = ref({ show: false, type: 'resolve' as 'resolve' | 'dismiss', reportId: 0, reason: '' })
+const historyDialog = ref({ show: false, history: [] as EventReportHistory[] })
+
+const eventReportStatusOptions = computed(() => [
+  { label: t('moderation.status.open'), value: 'open' },
+  { label: t('moderation.status.resolved'), value: 'resolved' },
+  { label: t('moderation.status.dismissed'), value: 'dismissed' }
+])
+
+const actionDialogTitle = computed(() =>
+  actionDialog.value.type === 'resolve'
+    ? t('moderation.event_reports.dialog.resolveTitle')
+    : t('moderation.event_reports.dialog.dismissTitle')
+)
+
+const eventReportColumns = computed<DataTableColumns<EventReport>>(() => [
+  { title: 'ID', key: 'id', width: 80 },
+  { title: t('moderation.event_reports.table.event_id'), key: 'event_id', width: 200 },
+  { title: t('moderation.event_reports.table.reporter'), key: 'reporter_user_id', width: 150 },
+  { title: t('moderation.event_reports.table.reported_user'), key: 'reported_user_id', width: 150 },
+  { title: t('moderation.event_reports.table.reason'), key: 'reason' },
+  { title: t('moderation.event_reports.table.status'), key: 'status', width: 100 },
+  {
+    title: t('moderation.event_reports.table.actions'),
+    key: 'actions',
+    width: 320,
+    render: (row) =>
+      h(NSpace, null, {
+        default: () => [
+          h(
+            NButton,
+            {
+              size: 'small',
+              type: 'warning',
+              'data-testid': 'event-report-action-escalate',
+              onClick: () => handleEscalate(row.id)
+            },
+            { default: () => t('moderation.event_reports.actions.escalate') }
+          ),
+          h(
+            NButton,
+            {
+              size: 'small',
+              type: 'error',
+              'data-testid': 'event-report-action-delete',
+              onClick: () => handleDelete(row.id)
+            },
+            { default: () => t('moderation.event_reports.actions.delete') }
+          ),
+          h(
+            NButton,
+            {
+              size: 'small',
+              type: 'info',
+              'data-testid': 'event-report-action-resolve',
+              disabled: row.status === 'resolved',
+              onClick: () => openActionDialog('resolve', row.id)
+            },
+            { default: () => t('moderation.event_reports.actions.resolve') }
+          ),
+          h(
+            NButton,
+            {
+              size: 'small',
+              'data-testid': 'event-report-action-dismiss',
+              onClick: () => openActionDialog('dismiss', row.id)
+            },
+            { default: () => t('moderation.event_reports.actions.dismiss') }
+          ),
+          h(
+            NButton,
+            {
+              size: 'small',
+              'data-testid': 'event-report-action-history',
+              onClick: () => handleHistory(row.id)
+            },
+            { default: () => t('moderation.event_reports.actions.history') }
+          )
+        ]
+      })
+  }
+])
+
+async function loadEventReports() {
+  eventReportLoading.value = true
+  try {
+    if (eventReportStatusFilter.value) {
+      eventReports.value = await adminService.reports.listEventReportsByStatus(eventReportStatusFilter.value, {
+        limit: 100
+      })
+    } else {
+      eventReports.value = await adminService.reports.listEventReports({ limit: 100 })
+    }
+  } catch {
+    showFeedback(t('moderation.event_reports.loadFailed'), 'error')
+    eventReports.value = []
+  } finally {
+    eventReportLoading.value = false
+  }
+}
+
+async function loadEventReportStats() {
+  const [total, open, resolved, dismissed] = await Promise.all([
+    adminService.reports.countAllEventReports(),
+    adminService.reports.countEventReportsByStatus('open'),
+    adminService.reports.countEventReportsByStatus('resolved'),
+    adminService.reports.countEventReportsByStatus('dismissed')
+  ])
+  eventReportStats.value = { total, open, resolved, dismissed }
+}
+
+function handleEventReportFilterChange(value: string) {
+  eventReportStatusFilter.value = value
+  loadEventReports()
+}
+
+async function handleEscalate(id: number) {
+  const result = await adminService.reports.escalateEventReport(id)
+  if (result) {
+    showFeedback(t('moderation.event_reports.toast.escalateSuccess'), 'success')
+    loadEventReports()
+  } else {
+    showFeedback(t('moderation.event_reports.toast.escalateFailed'), 'error')
+  }
+}
+
+async function handleDelete(id: number) {
+  if (!window.confirm(t('moderation.event_reports.dialog.deleteConfirm'))) return
+  const result = await adminService.reports.deleteEventReport(id)
+  if (result) {
+    showFeedback(t('moderation.event_reports.toast.deleteSuccess'), 'success')
+    loadEventReports()
+  }
+}
+
+function openActionDialog(type: 'resolve' | 'dismiss', reportId: number) {
+  actionDialog.value = { show: true, type, reportId, reason: '' }
+}
+
+function closeActionDialog() {
+  actionDialog.value = { ...actionDialog.value, show: false }
+}
+
+async function confirmAction() {
+  if (!actionDialog.value.reason) {
+    showFeedback(t('moderation.event_reports.dialog.reasonRequired'), 'error')
+    return
+  }
+  const { type, reportId, reason } = actionDialog.value
+  if (type === 'resolve') {
+    const result = await adminService.reports.resolveEventReport(reportId, { reason })
+    if (result) {
+      showFeedback(t('moderation.event_reports.toast.resolveSuccess'), 'success')
+      actionDialog.value = { ...actionDialog.value, show: false }
+      loadEventReports()
+    }
+  } else {
+    const result = await adminService.reports.dismissEventReport(reportId, { reason })
+    if (result) {
+      showFeedback(t('moderation.event_reports.toast.dismissSuccess'), 'success')
+      actionDialog.value = { ...actionDialog.value, show: false }
+      loadEventReports()
+    }
+  }
+}
+
+async function handleHistory(id: number) {
+  const history = await adminService.reports.getEventReportHistory(id)
+  historyDialog.value = { show: true, history }
+}
+
 onMounted(() => {
   fetchReports()
   moderationStore.fetchContentFilters()
+  loadEventReports()
+  loadEventReportStats()
 })
 </script>
 

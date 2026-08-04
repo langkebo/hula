@@ -178,7 +178,7 @@ watch(
 
 .section-label {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .suggested-list {
@@ -197,7 +197,7 @@ watch(
 
 .error-text {
   font-size: 12px;
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
   padding: 4px 0;
 }
 

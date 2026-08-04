@@ -271,7 +271,7 @@ onUnmounted(() => {
   @apply flex flex-col h-full bg-[--bg-color];
 
   &.is-video {
-    background: var(--hula-surface-media-preview);
+    background: var(--tjg-surface-media-preview);
   }
 }
 
@@ -288,7 +288,7 @@ onUnmounted(() => {
 }
 
 .call-duration {
-  @apply text-14px color-[--hula-text-tertiary];
+  @apply text-14px color-[--tjg-text-tertiary];
 }
 
 .call-status {
@@ -313,7 +313,7 @@ onUnmounted(() => {
 }
 
 .status-text {
-  @apply text-12px color-[--hula-text-tertiary];
+  @apply text-12px color-[--tjg-text-tertiary];
 }
 
 .call-content {

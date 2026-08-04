@@ -269,7 +269,7 @@ class MatrixSessionService extends BaseMatrixService {
   }
 
   private getRoomNotificationSettings(room: Room): RoomNotificationSettings {
-    const accountData = room.getAccountData?.('hula.room.notification_settings')
+    const accountData = room.getAccountData?.('tjg.room.notification_settings')
     const content = accountData?.getContent()
     if (!content || typeof content !== 'object') {
       return {}

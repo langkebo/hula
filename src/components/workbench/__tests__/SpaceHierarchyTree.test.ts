@@ -36,13 +36,13 @@ vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({ themeContent: 'light' })
 }))
 
-// Stub HulaSpaceTree to isolate SpaceHierarchyTree panel chrome
-vi.mock('../HulaSpaceTree.vue', () => ({
+// Stub TjgSpaceTree to isolate SpaceHierarchyTree panel chrome
+vi.mock('../TjgSpaceTree.vue', () => ({
   default: {
-    name: 'HulaSpaceTree',
+    name: 'TjgSpaceTree',
     props: ['spaceId', 'selectedSpaceId', 'suggestedOnly'],
     emits: ['select'],
-    template: '<div data-test="hula-space-tree-stub"><slot /></div>'
+    template: '<div data-test="tjg-space-tree-stub"><slot /></div>'
   }
 }))
 
@@ -71,20 +71,20 @@ describe('SpaceHierarchyTree', () => {
     expect(wrapper.emitted('back')).toHaveLength(1)
   })
 
-  it('renders HulaSpaceTree with correct spaceId', () => {
+  it('renders TjgSpaceTree with correct spaceId', () => {
     const wrapper = mount(SpaceHierarchyTree, {
       props: { spaceId: '!parent:server' }
     })
-    const tree = wrapper.find('[data-test="hula-space-tree-stub"]')
+    const tree = wrapper.find('[data-test="tjg-space-tree-stub"]')
     expect(tree.exists()).toBe(true)
   })
 
-  it('forwards select event from HulaSpaceTree', async () => {
+  it('forwards select event from TjgSpaceTree', async () => {
     const wrapper = mount(SpaceHierarchyTree, {
       props: { spaceId: '!parent:server' }
     })
     // 通过 stub 组件直接触发 select 事件
-    const treeStub = wrapper.findComponent({ name: 'HulaSpaceTree' })
+    const treeStub = wrapper.findComponent({ name: 'TjgSpaceTree' })
     treeStub.vm.$emit('select', { spaceId: '!child-1:server', name: 'Child Space 1' })
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted('select')).toBeTruthy()
@@ -97,7 +97,7 @@ describe('SpaceHierarchyTree', () => {
       props: { spaceId: '!parent:server' }
     })
     await flushPromises()
-    // 无子节点时仍渲染面板（HulaSpaceTree 内部处理空态）
+    // 无子节点时仍渲染面板（TjgSpaceTree 内部处理空态）
     // 这里仅验证不抛错
   })
 })

@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { StoresEnum } from '@/enums'
 import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { EventType } from '@/services/matrix/sdk'
@@ -22,7 +21,6 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
   const userStore = useUserStore()
-  const { showFeedback } = useActionFeedback()
 
   const announList = ref<Announcement[]>([])
   const announNum = ref(0)
@@ -114,7 +112,6 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
       announError.value = false
     } catch (error) {
       logger.error('加载群公告失败:', error)
-      showFeedback('加载群公告失败', 'error')
       if (targetRoomId === globalStore.currentSessionRoomId) {
         announError.value = true
       }

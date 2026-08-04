@@ -2,7 +2,7 @@
   <div ref="containerRef" class="lazy-image-container" :style="containerStyle">
     <div v-if="loading || !loaded" class="image-placeholder">
       <n-spin v-if="loading" size="small" />
-      <n-icon v-else size="24" color="var(--hula-text-quaternary)">
+      <n-icon v-else size="24" color="var(--tjg-text-quaternary)">
         <svg><use href="#image" /></svg>
       </n-icon>
     </div>
@@ -20,7 +20,7 @@
       @click="handlePreview" />
 
     <div v-if="error" class="image-error">
-      <n-icon size="24" color="var(--hula-color-danger-500)">
+      <n-icon size="24" color="var(--tjg-color-danger-500)">
         <svg><use href="#error" /></svg>
       </n-icon>
       <span>{{ t('image.load_failed') }}</span>
@@ -161,7 +161,7 @@ if (props.lazy) {
   position: relative;
   display: inline-block;
   overflow: hidden;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
   border-radius: 8px;
 }
 
@@ -171,7 +171,7 @@ if (props.lazy) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
 }
 
 .lazy-image {
@@ -198,9 +198,9 @@ if (props.lazy) {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .loading-progress {
@@ -209,6 +209,6 @@ if (props.lazy) {
   left: 0;
   right: 0;
   padding: 4px;
-  background: linear-gradient(transparent, var(--hula-overlay-mask-default));
+  background: linear-gradient(transparent, var(--tjg-overlay-mask-default));
 }
 </style>

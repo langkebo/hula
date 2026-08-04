@@ -34,10 +34,10 @@
                   -apple-system,
                   sans-serif;
               "
-              class="text-(16px [--hula-text-primary])">
+              class="text-(16px [--tjg-text-primary])">
               {{ userStore.userInfo?.name ? userStore.userInfo.name : t('mobile_home.noname') }}
             </p>
-            <p class="text-(10px [--hula-text-primary])">
+            <p class="text-(10px [--tjg-text-primary])">
               {{ t('mobile_home.china') }}
             </p>
           </div>
@@ -75,13 +75,13 @@
           @focus="lockScroll"
           @blur="unlockScroll">
           <template #left-icon>
-            <svg class="w-14px h-14px color-[--hula-text-tertiary]">
+            <svg class="w-14px h-14px color-[--tjg-text-tertiary]">
               <use href="#search"></use>
             </svg>
           </template>
         </van-field>
       </div>
-      <div class="m-0 p-0 mt-10px border-b border-[--hula-border-layout-divider]"></div>
+      <div class="m-0 p-0 mt-10px border-b border-[--tjg-border-layout-divider]"></div>
     </div>
 
     <van-pull-refresh
@@ -104,7 +104,7 @@
               @close="handleSwipeClose"
               v-on-long-press="[(e: PointerEvent) => handleLongPress(e, item), longPressOption]"
               class="text-black"
-              :class="item.top ? 'w-full bg-[--hula-color-primary-100]' : ''">
+              :class="item.top ? 'w-full bg-[--tjg-color-primary-100]' : ''">
               <!-- 长按项 -->
               <div
                 @click.stop="intoRoom(item)"
@@ -115,7 +115,7 @@
                     :color="
                       item.muteNotification === NotificationTypeEnum.NOT_DISTURB
                         ? 'grey'
-                        : 'var(--hula-color-danger-500)'
+                        : 'var(--tjg-color-danger-500)'
                     "
                     :content="item.unreadCount"
                     :max="99">
@@ -127,15 +127,15 @@
                 </div>
                 <!-- 中间：两行内容 -->
                 <div class="truncate flex gap-10px leading-tight flex-col min-w-0">
-                  <span class="text-15px font-medium flex-1 truncate text-[--hula-text-primary]">{{ item.name }}</span>
-                  <div class="text-13px text-[--hula-text-secondary] dark:text-[--hula-text-tertiary] truncate">
+                  <span class="text-15px font-medium flex-1 truncate text-[--tjg-text-primary]">{{ item.name }}</span>
+                  <div class="text-13px text-[--tjg-text-secondary] dark:text-[--tjg-text-tertiary] truncate">
                     {{ item.lastMsg }}
                   </div>
                 </div>
 
                 <!-- 时间：靠顶 -->
                 <div
-                  class="text-11px text-right flex flex-col gap-1 items-end justify-center text-[--hula-text-tertiary]">
+                  class="text-11px text-right flex flex-col gap-1 items-end justify-center text-[--tjg-text-tertiary]">
                   <div class="flex items-center gap-1">
                     <span v-if="item.hotFlag === IsAllUserEnum.Yes">
                       <svg class="size-14px select-none outline-none cursor-pointer color-[--color-primary]">
@@ -152,7 +152,7 @@
                     </span>
                   </div>
                   <div v-if="item.muteNotification === NotificationTypeEnum.NOT_DISTURB">
-                    <svg class="size-14px z-100 color-[--hula-text-tertiary]">
+                    <svg class="size-14px z-100 color-[--tjg-text-tertiary]">
                       <use href="#close-remind"></use>
                     </svg>
                   </div>
@@ -166,7 +166,7 @@
                     {{ item.top ? t('mobile_home.chat.unpin') : t('mobile_home.chat.pintop') }}
                   </div>
                   <div
-                    :class="(item?.unreadCount ?? 0) > 0 ? 'bg-[--hula-text-tertiary]' : 'bg-[--color-warning]'"
+                    :class="(item?.unreadCount ?? 0) > 0 ? 'bg-[--tjg-text-tertiary]' : 'bg-[--color-warning]'"
                     class="h-full text-14px w-80px text-white flex items-center justify-center"
                     @click="handleToggleReadStatus((item?.unreadCount ?? 0) > 0, item)">
                     {{
@@ -778,13 +778,13 @@ async function beforeCloseCreateGroup(action: string): Promise<boolean> {
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
   border-radius: 8px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   border: 1px solid transparent;
   transition: border-color 0.15s ease;
 }
 
 :deep(.van-cell.van-field:focus-within) {
-  border-color: var(--hula-color-primary-500);
+  border-color: var(--tjg-color-primary-500);
 }
 
 :deep(.van-cell.van-field::after) {

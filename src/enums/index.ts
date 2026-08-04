@@ -390,12 +390,14 @@ export enum RoleEnum {
   /** 4踢出群聊 */
 }
 
-/** 房间类型 1群聊 2单聊 */
+/** 房间类型 1群聊 2单聊 3空间 */
 export enum RoomTypeEnum {
   /** 1群聊 */
   GROUP = 1,
   /** 2单聊 */
-  SINGLE = 2
+  SINGLE = 2,
+  /** 3空间 */
+  SPACE = 3
 }
 
 /** 房间操作 */

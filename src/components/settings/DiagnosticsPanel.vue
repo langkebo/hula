@@ -109,21 +109,21 @@ function handleReset() {
 
 <style scoped>
 .diagnostics-panel {
-  margin-top: var(--hula-space-4);
+  margin-top: var(--tjg-space-4);
 }
 
 .diagnostics-card {
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .diagnostics-alert {
-  margin-top: var(--hula-space-4);
+  margin-top: var(--tjg-space-4);
 }
 
 .diagnostics-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: var(--hula-space-4);
+  margin-top: var(--tjg-space-4);
 }
 </style>

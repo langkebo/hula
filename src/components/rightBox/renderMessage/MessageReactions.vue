@@ -64,23 +64,23 @@ const reactionList = computed(() => {
   align-items: center;
   gap: 3px;
   padding: 2px 7px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 10px;
-  background: var(--hula-fill-default);
+  background: var(--tjg-fill-default);
   cursor: pointer;
   transition: all 0.15s ease;
   font-size: 11px;
   line-height: 1.4;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 
   &:hover {
-    background: var(--hula-fill-hover);
-    border-color: var(--hula-color-primary-400);
+    background: var(--tjg-fill-hover);
+    border-color: var(--tjg-color-primary-400);
   }
 
   &--active {
-    background: color-mix(in srgb, var(--hula-color-primary-500) 12%, transparent);
-    border-color: var(--hula-color-primary-400);
+    background: color-mix(in srgb, var(--tjg-color-primary-500) 12%, transparent);
+    border-color: var(--tjg-color-primary-400);
   }
 
   &__emoji {

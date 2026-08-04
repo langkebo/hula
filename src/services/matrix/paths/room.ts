@@ -31,7 +31,8 @@ export const ROOM = {
   CONTEXT: (roomId: string, eventId: string) =>
     `/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(eventId)}`,
   /** @deprecated Use TagsService methods instead */
-  TAGS: (roomId: string) => `/user/{userId}/rooms/${encodeURIComponent(roomId)}/tags`,
+  TAGS: (roomId: string, userId: string) =>
+    `/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/tags`,
   ANTI_SCREENSHOT: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/anti_screenshot`,
   SUMMARY_MEMBERS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary/members`,
   SUMMARY_STATE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary/state`,

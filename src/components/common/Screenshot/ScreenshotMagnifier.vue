@@ -22,7 +22,7 @@ const magnifierRef = ref<HTMLDivElement | null>(null)
 const magnifierCanvas = ref<HTMLCanvasElement | null>(null)
 const magnifierCtx = ref<CanvasRenderingContext2D | null>(null)
 const selectionBorderColor = getComputedStyle(document.documentElement)
-  .getPropertyValue('--hula-color-primary-500')
+  .getPropertyValue('--tjg-color-primary-500')
   .trim()
 
 const defaultConfig: MagnifierConfig = {
@@ -152,12 +152,12 @@ defineExpose({
   pointer-events: none;
   width: 120px;
   height: 120px;
-  border: 1px solid var(--hula-border-strong);
+  border: 1px solid var(--tjg-border-strong);
   border-radius: 12px;
   overflow: hidden;
   display: none;
-  background: var(--hula-surface-panel);
-  box-shadow: var(--hula-shadow-md);
+  background: var(--tjg-surface-panel);
+  box-shadow: var(--tjg-shadow-md);
 
   canvas {
     display: block;

@@ -13,8 +13,8 @@
           :highlight-style="{
             padding: '0 4px',
             borderRadius: '6px',
-            color: 'var(--hula-text-inverse)',
-            background: 'var(--hula-color-primary-500)'
+            color: 'var(--tjg-text-inverse)',
+            background: 'var(--tjg-color-primary-500)'
           }" />
         <template v-else>
           {{ truncateFileName(body?.fileName || fallbackFileName) }}
@@ -46,7 +46,7 @@
             <svg class="progress-ring" width="24" height="24">
               <circle
                 class="progress-ring-circle"
-                stroke="color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent)"
+                stroke="color-mix(in srgb, var(--tjg-color-primary-500) 40%, transparent)"
                 stroke-width="2"
                 fill="transparent"
                 r="10"
@@ -54,7 +54,7 @@
                 cy="12" />
               <circle
                 class="progress-ring-circle progress-ring-fill"
-                stroke="var(--hula-color-primary-500)"
+                stroke="var(--tjg-color-primary-500)"
                 stroke-width="2"
                 fill="transparent"
                 r="10"
@@ -73,7 +73,7 @@
             <svg class="progress-ring" width="24" height="24">
               <circle
                 class="progress-ring-circle"
-                stroke="color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)"
+                stroke="color-mix(in srgb, var(--tjg-text-inverse) 30%, transparent)"
                 stroke-width="2"
                 fill="transparent"
                 r="10"
@@ -81,7 +81,7 @@
                 cy="12" />
               <circle
                 class="progress-ring-circle progress-ring-fill"
-                stroke="var(--hula-text-inverse)"
+                stroke="var(--tjg-text-inverse)"
                 stroke-width="2"
                 fill="transparent"
                 r="10"
@@ -470,7 +470,7 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .file-container {
-  @apply relative custom-shadow bg-[--hula-surface-panel-muted] w-225px h-70px rounded-8px px-14px py-4px flex-y-center;
+  @apply relative custom-shadow bg-[--tjg-surface-panel-muted] w-225px h-70px rounded-8px px-14px py-4px flex-y-center;
   cursor: default !important;
   user-select: none !important;
   transition: all 0.2s ease;
@@ -492,7 +492,7 @@ onMounted(async () => {
 
 .file-name {
   font-size: 14px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   line-height: 1.2;
   margin-bottom: 8px;
   white-space: nowrap;
@@ -504,7 +504,7 @@ onMounted(async () => {
 
 .file-size {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -514,12 +514,12 @@ onMounted(async () => {
   font-size: 10px;
   padding: 2px 4px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--hula-text-tertiary) 16%, transparent);
-  color: var(--hula-text-tertiary);
+  background: color-mix(in srgb, var(--tjg-text-tertiary) 16%, transparent);
+  color: var(--tjg-text-tertiary);
 
   &.downloaded {
-    background: color-mix(in srgb, var(--hula-color-primary-500) 30%, transparent);
-    color: var(--hula-color-primary-500);
+    background: color-mix(in srgb, var(--tjg-color-primary-500) 30%, transparent);
+    color: var(--tjg-color-primary-500);
   }
 }
 
@@ -542,7 +542,7 @@ onMounted(async () => {
 }
 
 .file-overlay {
-  background: var(--hula-overlay-inverse-strong);
+  background: var(--tjg-overlay-inverse-strong);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -564,18 +564,18 @@ onMounted(async () => {
 .download-circle {
   width: 22px;
   height: 22px;
-  background: var(--hula-overlay-inverse-strong);
+  background: var(--tjg-overlay-inverse-strong);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--hula-border-inverse-muted);
+  border: 2px solid var(--tjg-border-inverse-muted);
 }
 
 .download-circle .download-btn-icon {
   width: 14px;
   height: 14px;
-  color: color-mix(in srgb, var(--hula-text-inverse) 80%, transparent);
+  color: color-mix(in srgb, var(--tjg-text-inverse) 80%, transparent);
 }
 
 .progress-circle {
@@ -595,23 +595,23 @@ onMounted(async () => {
 
 .progress-text {
   font-size: 8px;
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
   text-align: center;
   font-weight: 500;
-  text-shadow: 0 1px 2px color-mix(in srgb, var(--hula-surface-media-preview) 50%, transparent);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--tjg-surface-media-preview) 50%, transparent);
 }
 
 .loading-icon {
   width: 20px;
   height: 20px;
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
   animation: spin 1s linear infinite;
 }
 
 .download-btn-icon {
   width: 16px;
   height: 16px;
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
 }
 
 @keyframes spin {

@@ -81,7 +81,7 @@ onMounted(async () => {
 .panel-subtitle {
   margin: 0 0 12px 0;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   line-height: 1.5;
 }
 </style>

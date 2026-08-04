@@ -139,76 +139,76 @@ function kindTagType(kind: PushRuleKindValue): 'default' | 'success' | 'warning'
 .editor-header {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .editor-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .editor-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 
 .editor-error {
   display: flex;
   justify-content: center;
-  padding: var(--hula-space-4) 0;
+  padding: var(--tjg-space-4) 0;
 }
 
 .rule-groups {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-4);
+  gap: var(--tjg-space-4);
 }
 
 .rule-kind-group {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .rule-kind-header {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .rule-kind-count {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 
 .rule-list {
-  border-radius: var(--hula-radius-sm);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .rule-item {
-  padding: var(--hula-space-2) var(--hula-space-3) !important;
+  padding: var(--tjg-space-2) var(--tjg-space-3) !important;
 }
 
 .rule-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
   width: 100%;
 }
 
 .rule-info {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
   min-width: 0;
   flex: 1;
 }
 
 .rule-id {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
   font-family: monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -218,7 +218,7 @@ function kindTagType(kind: PushRuleKindValue): 'default' | 'success' | 'warning'
 .rule-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
 }
 
 .rule-action {

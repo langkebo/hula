@@ -366,7 +366,7 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
   border-radius: 12px;
   min-width: 280px;
 }
@@ -387,7 +387,7 @@ onUnmounted(() => {
 }
 
 .hint-text {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-size: 14px;
 }
 
@@ -428,12 +428,12 @@ onUnmounted(() => {
   .volume-bar {
     width: 4px;
     height: 4px;
-    background: var(--hula-text-disabled);
+    background: var(--tjg-text-disabled);
     border-radius: 2px;
     transition: height 0.1s;
 
     &.active {
-      background: var(--color-primary);
+      background: var(--tjg-color-primary-500);
       height: 16px;
     }
   }
@@ -447,7 +447,7 @@ onUnmounted(() => {
 
 .preview-duration {
   font-size: 14px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .controls {

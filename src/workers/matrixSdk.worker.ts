@@ -496,7 +496,7 @@ async function handleLogin(payload: { username: string; password: string; device
   const loginResponse = await client.login('m.login.password', {
     user: payload.username,
     password: payload.password,
-    initial_device_display_name: payload.deviceName || 'HuLa Client'
+    initial_device_display_name: payload.deviceName || 'Tjg Client'
   })
 
   const loginResult: LoginResult = {
@@ -569,6 +569,8 @@ async function handleGetServerVersions(payload: GetServerVersionsPayload): Promi
   if (payload.accessToken) {
     headers.Authorization = `Bearer ${payload.accessToken}`
   }
+  // 保留 fetch 原因：SDK 客户端尚未初始化，无法使用 client.http.authedRequest。
+  // 该接口用于登录前/重连时探测 homeserver 协议版本，需在 worker 内独立线程发起请求避免阻塞主线程。
   const response = await fetch(url, { method: 'GET', headers })
   if (!response.ok) {
     throw new Error(`getVersions HTTP ${response.status}`)
@@ -599,6 +601,9 @@ async function handleGetLoginFlows(payload: GetLoginFlowsPayload): Promise<Login
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
   const url = `${trimmed}/_matrix/client/v3/login`
+  // 保留 fetch 原因：SDK 客户端尚未初始化，无法使用 client.http.authedRequest。
+  // 该接口用于登录前查询 homeserver 支持的登录流程（m.login.password / m.login.sso 等），
+  // 走独立线程保证预登录场景不阻塞主线程。
   const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
   if (!response.ok) {
     throw new Error(`getLoginFlows HTTP ${response.status}`)
@@ -634,6 +639,9 @@ async function handleProbeSlidingSyncEndpoints(payload: ProbeSlidingSyncPayload)
   return Promise.all(
     endpoints.map(async (endpoint): Promise<SlidingSyncProbeResult> => {
       try {
+        // 保留 fetch 原因：SDK 客户端尚未初始化，无法使用 client.http.authedRequest。
+        // 该接口用于登录前并行探测一组 Sliding Sync 候选端点是否可用（依 status 是否 404 判定），
+        // 必须直接发原始 POST 以同时获取 HTTP 状态码，并避免依赖 SDK 客户端实例。
         const response = await fetch(`${trimmed}${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -671,6 +679,9 @@ async function handleProbeCors(payload: ProbeCorsPayload): Promise<CorsProbeResu
     throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
+  // 保留 fetch 原因：SDK 客户端尚未初始化，无法使用 client.http.authedRequest。
+  // 该接口用于登录前对 /_matrix/client/versions 发 OPTIONS 探测 CORS 响应头，
+  // 必须使用原生 fetch 以读取 access-control-allow-* 响应头（SDK 不暴露 OPTIONS 请求）。
   const response = await fetch(`${trimmed}/_matrix/client/versions`, { method: 'OPTIONS' })
   return {
     'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
@@ -693,6 +704,9 @@ async function handleGetCapabilities(payload: GetCapabilitiesPayload): Promise<R
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
   const url = `${trimmed}/_matrix/client/v3/capabilities`
+  // 保留 fetch 原因：诊断工具（MatrixDiagnostics）调用，需独立于 worker 内 SDK 客户端实例运行。
+  // 虽为登录后 API 且携带 access token，但当客户端处于异常/未就绪状态时仍需查询服务器能力，
+  // 因此不能依赖 client.http.authedRequest；同时与 getServerVersions 并发执行以减少墙钟时间。
   const response = await fetch(url, {
     method: 'GET',
     headers: {

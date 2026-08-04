@@ -22,7 +22,7 @@ import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { MatrixCacheManager } from '@/services/matrix/MatrixCacheManager'
-import { markHulaAppReady } from '@/utils/AppReady'
+import { markTjgAppReady } from '@/utils/AppReady'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Main')
@@ -33,7 +33,7 @@ if (isMobile() && hasTauriRuntime()) {
   invokeSilently('hide_splash_screen').catch(() => {})
 }
 
-performance.mark('hula-init-start')
+performance.mark('tjg-init-start')
 
 initializePlatform()
 startWebVitalObserver({
@@ -42,7 +42,7 @@ startWebVitalObserver({
 })
 errorTracker.initialize()
 
-performance.mark('hula-platform-ready')
+performance.mark('tjg-platform-ready')
 
 if (isIOS() && hasTauriRuntime()) {
   invokeSilently('request_ios_badge_authorization')
@@ -55,20 +55,20 @@ if (process.env.NODE_ENV === 'development') {
 
   // Expose stores for performance testing
   import('@/stores/domains/chat/chat/message').then((module) => {
-    window.hulaChatStore = module.useChatStore()
+    window.tjgChatStore = module.useChatStore()
   })
   import('@/stores/domains/widget/global').then((module) => {
-    window.hulaGlobalStore = module.useGlobalStore()
+    window.tjgGlobalStore = module.useGlobalStore()
   })
   import('@/stores/domains/user/user').then((module) => {
-    window.hulaUserStore = module.useUserStore()
+    window.tjgUserStore = module.useUserStore()
   })
   import('@/router/index').then((module) => {
-    window.hulaRouter = module.default
+    window.tjgRouter = module.default
   })
   window.pinia = pinia
 
-  Object.defineProperty(window, '__hula_cache_stats', {
+  Object.defineProperty(window, '__tjg_cache_stats', {
     get: () => MatrixCacheManager.getStats()
   })
   MatrixCacheManager.enableStatsReporting()
@@ -103,11 +103,11 @@ async function setup() {
   await invokeSilently('set_complete', { task: 'frontend' })
 }
 
-performance.mark('hula-app-create-start')
+performance.mark('tjg-app-create-start')
 const app = createApp(App)
-performance.mark('hula-app-create-end')
+performance.mark('tjg-app-create-end')
 
-performance.mark('hula-plugin-install-start')
+performance.mark('tjg-plugin-install-start')
 app
   .use(router)
   .use(pinia)
@@ -119,17 +119,17 @@ app
 
 // Expose pinia for E2E tests and mark readiness
 window.pinia = pinia
-window.__HULA_PINIA_READY__ = true
+window.__TJG_PINIA_READY__ = true
 
 // Register capability store resolver to break circular dependency
 // (must be called after pinia is installed)
 registerCapabilityStoreResolver(() => useCapabilityStore())
-performance.mark('hula-plugin-install-end')
+performance.mark('tjg-plugin-install-end')
 
-performance.mark('hula-mount-start')
+performance.mark('tjg-mount-start')
 app.mount('#app')
-performance.mark('hula-mount-end')
-markHulaAppReady('mounted')
+performance.mark('tjg-mount-end')
+markTjgAppReady('mounted')
 
 app.config.errorHandler = (err, instance, info) => {
   if (err instanceof Error) {
@@ -147,12 +147,12 @@ app.config.errorHandler = (err, instance, info) => {
 }
 
 router.isReady().then(() => {
-  markHulaAppReady('router-ready')
-  performance.mark('hula-router-ready')
-  performance.measure('hula-total-boot', 'hula-init-start', 'hula-router-ready')
-  performance.measure('hula-app-creation', 'hula-app-create-start', 'hula-app-create-end')
-  performance.measure('hula-plugin-install', 'hula-plugin-install-start', 'hula-plugin-install-end')
-  performance.measure('hula-mount-to-ready', 'hula-mount-start', 'hula-router-ready')
+  markTjgAppReady('router-ready')
+  performance.mark('tjg-router-ready')
+  performance.measure('tjg-total-boot', 'tjg-init-start', 'tjg-router-ready')
+  performance.measure('tjg-app-creation', 'tjg-app-create-start', 'tjg-app-create-end')
+  performance.measure('tjg-plugin-install', 'tjg-plugin-install-start', 'tjg-plugin-install-end')
+  performance.measure('tjg-mount-to-ready', 'tjg-mount-start', 'tjg-router-ready')
 
   const measures = performance.getEntriesByType('measure')
   if (import.meta.env.DEV) {

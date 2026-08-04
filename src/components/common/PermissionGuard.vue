@@ -9,7 +9,7 @@
   -->
   <slot v-if="granted" />
   <template v-else-if="mode === 'gray'">
-    <div class="hula-permission-gate" :aria-disabled="true" @click.capture.stop="handleDenied">
+    <div class="tjg-permission-gate" :aria-disabled="true" @click.capture.stop="handleDenied">
       <slot :denied="true" />
     </div>
   </template>
@@ -20,27 +20,27 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
-import { type HulaCapability, useServerCapability } from '@/services/matrix/MatrixCapabilityService'
+import { type TjgCapability, useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 
 const props = withDefaults(
   defineProps<{
-    require: HulaCapability | HulaCapability[]
+    require: TjgCapability | TjgCapability[]
     mode?: 'gray' | 'hide'
   }>(),
   { mode: 'gray' }
 )
 
 const emit = defineEmits<{
-  (e: 'denied', missing: HulaCapability[]): void
+  (e: 'denied', missing: TjgCapability[]): void
   (e: 'granted'): void
 }>()
 
 const cap = useServerCapability()
 
-const requiredList = computed<HulaCapability[]>(() => (Array.isArray(props.require) ? props.require : [props.require]))
+const requiredList = computed<TjgCapability[]>(() => (Array.isArray(props.require) ? props.require : [props.require]))
 
-const missing = computed<HulaCapability[]>(() => {
-  const getters: Record<HulaCapability, boolean> = {
+const missing = computed<TjgCapability[]>(() => {
+  const getters: Record<TjgCapability, boolean> = {
     'sliding-sync': cap.canUseSlidingSync.value,
     e2ee: cap.canUseE2EE.value,
     voip: cap.canUseVoip.value,
@@ -69,7 +69,7 @@ watch(granted, (value) => {
 </script>
 
 <style scoped lang="scss">
-.hula-permission-gate {
+.tjg-permission-gate {
   opacity: 0.45;
   cursor: not-allowed;
   pointer-events: auto;

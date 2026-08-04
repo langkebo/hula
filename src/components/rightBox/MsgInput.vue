@@ -19,7 +19,7 @@
         <div v-if="isMobile()" class="flex items-center justify-center w-6 ms-5px h-2.5rem">
           <svg
             @click="handleVoiceClick"
-            :class="mobilePanelState === MobilePanelStateEnum.VOICE ? 'text-[--hula-color-primary-500]' : ''"
+            :class="mobilePanelState === MobilePanelStateEnum.VOICE ? 'text-[--tjg-color-primary-500]' : ''"
             class="w-25px h-25px mt-2px outline-none">
             <use href="#voice"></use>
           </svg>
@@ -51,8 +51,8 @@
               class="n-input"
               :class="
                 isMobile()
-                  ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--hula-text-tertiary]) p-2 min-h-2rem ps-10px! text-14px! rounded-10px! max-h-8rem! flex items-center'
-                  : 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--hula-text-tertiary]) p-2'
+                  ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) p-2 min-h-2rem ps-10px! text-14px! rounded-10px! max-h-8rem! flex items-center'
+                  : 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) p-2'
               "></div>
           </n-scrollbar>
         </ContextMenu>
@@ -60,7 +60,7 @@
         <!-- 工具栏 -->
         <div
           v-if="!isMobile()"
-          class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-[--hula-border-layout-divider]">
+          class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-[--tjg-border-layout-divider]">
           <!-- 位置共享 -->
           <n-tooltip trigger="hover">
             <template #trigger>
@@ -107,7 +107,7 @@
         <!-- 发送按钮 -->
         <div
           v-if="!isMobile()"
-          class="flex-shrink-0 max-h-52px p-4px pr-12px border-t border-[--hula-border-layout-divider] flex justify-end mb-4px">
+          class="flex-shrink-0 max-h-52px p-4px pr-12px border-t border-[--tjg-border-layout-divider] flex justify-end mb-4px">
           <n-button-group size="small">
             <n-button
               type="primary"
@@ -135,7 +135,7 @@
                       justify="center"
                       align="center"
                       :size="4"
-                      class="text-(12px [--hula-text-tertiary]) cursor-default tracking-1 select-none">
+                      class="text-(12px [--tjg-text-tertiary]) cursor-default tracking-1 select-none">
                       <i18n-t keypath="editor.send_or_newline">
                         <template #send>
                           <span v-if="chatKey !== 'Enter'">
@@ -184,7 +184,7 @@
                   round
                   :size="22"
                   :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                  color="var(--hula-surface-panel)"
+                  color="var(--tjg-surface-panel)"
                   :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   :render-placeholder="() => null"
                   :intersection-observer-options="{
@@ -216,12 +216,12 @@
                 <n-flex align="center" justify="space-between" class="w-full pr-6px">
                   <n-flex align="center">
                     <img class="size-18px object-contain" :src="item.avatar" :alt="item.name + '的头像'" />
-                    <p class="text-(14px [--hula-text-primary])">{{ item.name }}</p>
+                    <p class="text-(14px [--tjg-text-primary])">{{ item.name }}</p>
                   </n-flex>
 
                   <n-flex align="center" :size="6">
                     <div
-                      class="ml-6px p-[4px_8px] size-fit bg-[--hula-color-beta-100] rounded-6px text-(11px [--hula-color-beta-500] center)">
+                      class="ml-6px p-[4px_8px] size-fit bg-[--tjg-color-beta-100] rounded-6px text-(11px [--tjg-color-beta-500] center)">
                       Beta
                     </div>
                     <n-tag size="small" class="text-10px" :bordered="false" type="success">128k</n-tag>
@@ -243,7 +243,7 @@
           </div>
           <div
             v-if="msgInput"
-            class="flex-shrink-0 max-h-62px h-full border-t border-[--hula-border-default] flex items-center justify-end">
+            class="flex-shrink-0 max-h-62px h-full border-t border-[--tjg-border-default] flex items-center justify-end">
             <n-button-group size="small" :class="isMobile() ? 'h-full' : 'pr-20px'">
               <n-button
                 type="primary"

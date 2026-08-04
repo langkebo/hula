@@ -16,7 +16,7 @@ function createRipple(el: HTMLElement, e: PointerEvent) {
     top: ${e.clientY - rect.top - size / 2}px;
     border-radius: 50%; background: currentColor; opacity: 0.3;
     transform: scale(0); pointer-events: none;
-    transition: transform 300ms var(--hula-motion-ease-standard);
+    transition: transform 300ms var(--tjg-motion-ease-standard);
   `
   el.appendChild(ripple)
   requestAnimationFrame(() => {

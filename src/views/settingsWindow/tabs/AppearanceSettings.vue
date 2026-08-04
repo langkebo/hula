@@ -128,13 +128,13 @@ const blurEffect = ref(settingStore.pageBlurEnabled)
 const bubbleStyle = ref(true)
 
 onMounted(() => {
-  const savedFontSize = localStorage.getItem('hula-font-size')
+  const savedFontSize = localStorage.getItem('tjg-font-size')
   if (savedFontSize) {
     fontSize.value = parseInt(savedFontSize, 10)
     applyFontSize(fontSize.value)
   }
 
-  const savedBubbleStyle = localStorage.getItem('hula-bubble-style')
+  const savedBubbleStyle = localStorage.getItem('tjg-bubble-style')
   if (savedBubbleStyle !== null) {
     bubbleStyle.value = savedBubbleStyle === 'true'
   }
@@ -153,7 +153,7 @@ function handleFontChange(value: string) {
 
 function handleFontSizeChange(value: number) {
   applyFontSize(value)
-  localStorage.setItem('hula-font-size', value.toString())
+  localStorage.setItem('tjg-font-size', value.toString())
   showFeedback(t('setting.appearance.feedback.font_size_changed', { size: String(value) }), 'success')
 }
 
@@ -180,7 +180,7 @@ function handleBlurChange(value: boolean) {
 }
 
 function handleBubbleStyleChange(value: boolean) {
-  localStorage.setItem('hula-bubble-style', value.toString())
+  localStorage.setItem('tjg-bubble-style', value.toString())
   showFeedback(
     value ? t('setting.appearance.feedback.bubble_rounded') : t('setting.appearance.feedback.bubble_square'),
     'success'
@@ -190,23 +190,23 @@ function handleBubbleStyleChange(value: boolean) {
 
 <style scoped>
 .appearance-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-4);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-4);
+  color: var(--tjg-text-primary);
 }
 
 .theme-options {
   display: flex;
-  gap: var(--hula-space-4);
+  gap: var(--tjg-space-4);
 }
 
 .theme-option {
@@ -214,58 +214,58 @@ function handleBubbleStyleChange(value: boolean) {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  padding: var(--hula-space-2);
-  border-radius: var(--hula-radius-sm);
+  padding: var(--tjg-space-2);
+  border-radius: var(--tjg-radius-sm);
   border: 2px solid transparent;
-  transition: border-color var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
+  transition: border-color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
 }
 
 .theme-option:hover {
-  border-color: color-mix(in srgb, var(--hula-color-info-500) 30%, transparent);
+  border-color: color-mix(in srgb, var(--tjg-color-info-500) 30%, transparent);
 }
 
 .theme-option-active {
-  border-color: var(--hula-color-info-500);
+  border-color: var(--tjg-color-info-500);
 }
 
 .theme-preview {
   width: 80px;
   height: 60px;
-  border-radius: var(--hula-radius-sm);
+  border-radius: var(--tjg-radius-sm);
   display: flex;
   overflow: hidden;
-  margin-bottom: var(--hula-space-2);
+  margin-bottom: var(--tjg-space-2);
 }
 
 .preview-light {
-  background-color: var(--hula-settings-preview-light-shell);
+  background-color: var(--tjg-settings-preview-light-shell);
 }
 
 .preview-light .preview-sidebar {
-  background-color: var(--hula-settings-preview-light-sidebar);
+  background-color: var(--tjg-settings-preview-light-sidebar);
 }
 
 .preview-light .preview-content {
-  background-color: var(--hula-settings-preview-light-content);
+  background-color: var(--tjg-settings-preview-light-content);
 }
 
 .preview-dark {
-  background-color: var(--hula-settings-preview-dark-shell);
+  background-color: var(--tjg-settings-preview-dark-shell);
 }
 
 .preview-dark .preview-sidebar {
-  background-color: var(--hula-settings-preview-dark-sidebar);
+  background-color: var(--tjg-settings-preview-dark-sidebar);
 }
 
 .preview-dark .preview-content {
-  background-color: var(--hula-settings-preview-dark-content);
+  background-color: var(--tjg-settings-preview-dark-content);
 }
 
 .preview-auto {
   background: linear-gradient(
     135deg,
-    var(--hula-settings-preview-light-shell) 50%,
-    var(--hula-settings-preview-dark-shell) 50%
+    var(--tjg-settings-preview-light-shell) 50%,
+    var(--tjg-settings-preview-dark-shell) 50%
   );
 }
 
@@ -276,21 +276,21 @@ function handleBubbleStyleChange(value: boolean) {
 
 .preview-content {
   flex: 1;
-  margin: var(--hula-space-1);
-  border-radius: var(--hula-radius-xs);
+  margin: var(--tjg-space-1);
+  border-radius: var(--tjg-radius-xs);
 }
 
 .theme-label {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -299,25 +299,25 @@ function handleBubbleStyleChange(value: boolean) {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .font-size-control {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
 }
 
 .font-value {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
   min-width: 36px;
 }
 </style>

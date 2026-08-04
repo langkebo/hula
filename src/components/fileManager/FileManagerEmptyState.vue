@@ -4,7 +4,7 @@
       <Icon :icon="resolvedIcon" class="empty-icon mb-16px" :width="58" />
 
       <!-- 标题 -->
-      <h3 v-if="title" class="empty-title text-15px font-500 text-[--hula-text-primary] mb-8px m-0">
+      <h3 v-if="title" class="empty-title text-15px font-500 text-[--tjg-text-primary] mb-8px m-0">
         {{ title }}
       </h3>
 
@@ -52,7 +52,7 @@ const resolvedIcon = computed(() => iconMap[props.icon] || props.icon)
 }
 
 .empty-icon {
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   opacity: 0.3;
   transition: opacity 0.3s ease;
 }

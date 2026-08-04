@@ -107,6 +107,6 @@ const handleReset = () => {
 
 <style scoped lang="scss">
 .openclaw-settings-modal {
-  font-family: var(--hula-font-family);
+  font-family: var(--tjg-font-family);
 }
 </style>

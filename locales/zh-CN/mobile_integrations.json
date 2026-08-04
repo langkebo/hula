@@ -1,6 +1,6 @@
 {
   "title": "集成管理",
-  "description": "管理第三方集成和小部件，扩展 HuLa 的功能。",
+  "description": "管理第三方集成和小部件，扩展 Tjg 的功能。",
   "enable_integrations": "启用集成",
   "installed_section": "已安装的集成",
   "available_section": "可用集成",

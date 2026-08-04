@@ -20,7 +20,7 @@
       <div v-if="modelList.length === 0" class="empty-container">
         <n-empty :description="t('ai_assistant.robot.no_models')" size="large">
           <template #icon>
-            <Icon icon="mdi:package-variant-closed" class="text-48px color-[--hula-text-tertiary]" />
+            <Icon icon="mdi:package-variant-closed" class="text-48px color-[--tjg-text-tertiary]" />
           </template>
           <template #extra>
             <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_model') }}</n-button>
@@ -183,7 +183,7 @@
                 </template>
                 {{ formData.avatar ? t('ai_assistant.robot.change_avatar') : t('ai_assistant.robot.upload_avatar') }}
               </n-button>
-              <span v-if="formData.avatar" class="text-(12px [--hula-text-tertiary])">
+              <span v-if="formData.avatar" class="text-(12px [--tjg-text-tertiary])">
                 {{ t('ai_assistant.robot.uploaded') }}
                 <n-button text type="error" size="tiny" @click="formData.avatar = ''">
                   {{ t('ai_assistant.robot.clear') }}
@@ -853,14 +853,14 @@ onMounted(() => {
 }
 
 .model-card {
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 8px;
   padding: 16px;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   transition: all 0.3s;
 
   &:hover {
-    box-shadow: var(--hula-shadow-card);
+    box-shadow: var(--tjg-shadow-card);
   }
 
   .model-card-header {
@@ -872,7 +872,7 @@ onMounted(() => {
     .model-name {
       font-size: 16px;
       font-weight: 500;
-      color: var(--hula-text-primary);
+      color: var(--tjg-text-primary);
     }
 
     .model-meta {
@@ -882,7 +882,7 @@ onMounted(() => {
 
       .meta-item {
         font-size: 12px;
-        color: var(--hula-text-tertiary);
+        color: var(--tjg-text-tertiary);
       }
     }
   }

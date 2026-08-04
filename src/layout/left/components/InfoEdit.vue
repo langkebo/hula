@@ -5,13 +5,13 @@
         <div
           v-if="isMac()"
           @click="editInfo.show = false"
-          class="mac-close size-13px shadow-inner bg-[--hula-color-primary-500] rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-[--hula-text-inverse] select-none absolute top-3px left-3px">
+          class="mac-close size-13px shadow-inner bg-[--tjg-color-primary-500] rounded-50% mt-6px select-none absolute left-6px">
+          <svg class="hidden size-7px color-[--tjg-text-inverse] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
 
-        <n-flex class="text-[var(--text-sm)] text-[--hula-text-primary] select-none pt-6px" justify="center">
+        <n-flex class="text-[var(--text-sm)] text-[--tjg-text-primary] select-none pt-6px" justify="center">
           {{ t('home.profile_edit.title') }}
         </n-flex>
 
@@ -21,7 +21,7 @@
           @click="editInfo.show = false">
           <use href="#close"></use>
         </svg>
-        <span class="h-1px w-full bg-[--hula-border-default]"></span>
+        <span class="h-1px w-full bg-[--tjg-border-default]"></span>
       </n-flex>
       <n-flex :size="20" class="p-22px select-none" vertical>
         <!-- 头像 -->
@@ -34,20 +34,20 @@
                   :src="editInfo.content?.avatar ? AvatarUtils.getAvatarUrl(editInfo.content.avatar) : undefined"
                   round />
                 <div class="avatar-hover absolute size-full rounded-50% flex-center">
-                  <span class="text-[var(--text-sm)] color-[--hula-text-secondary]">
+                  <span class="text-[var(--text-sm)] color-[--tjg-text-secondary]">
                     {{ t('home.profile_edit.avatar.change') }}
                   </span>
                 </div>
               </div>
             </template>
-            <p class="text-[var(--text-sm)] text-[--hula-text-secondary] w-280px leading-5 p-4px">
+            <p class="text-[var(--text-sm)] text-[--tjg-text-secondary] w-280px leading-5 p-4px">
               {{ t('home.profile_edit.avatar.tips') }}
             </p>
           </n-popover>
         </n-flex>
         <!-- 当前佩戴的徽章 -->
         <n-flex v-if="currentBadge" align="center" justify="center">
-          <span class="text-[var(--text-sm)] text-[--hula-text-secondary]">
+          <span class="text-[var(--text-sm)] text-[--tjg-text-secondary]">
             {{ t('home.profile_edit.badge.current') }}
           </span>
           <n-popover trigger="hover">
@@ -79,7 +79,7 @@
               show-count
               type="text">
               <template #prefix>
-                <span class="pr-6px text-[--hula-text-tertiary]">
+                <span class="pr-6px text-[--tjg-text-tertiary]">
                   {{ t('home.profile_edit.form.nickname.label') }}
                 </span>
               </template>
@@ -106,7 +106,7 @@
               <div class="tip">
                 <template v-if="item.obtain === IsYesEnum.YES">
                   <n-button
-                    style="color: var(--hula-text-inverse)"
+                    style="color: var(--tjg-text-inverse)"
                     v-if="item.wearing === IsYesEnum.NO"
                     type="primary"
                     @click="toggleWarningBadge(item)">
@@ -128,7 +128,7 @@
       </n-flex>
       <n-flex class="p-12px" align="center" justify="center">
         <n-button
-          style="color: var(--hula-text-inverse)"
+          style="color: var(--tjg-text-inverse)"
           :disabled="editInfo.content.name === localUserInfo.name"
           type="primary"
           @click="saveEditInfo(localUserInfo as ModifyUserInfoType)">
@@ -245,7 +245,7 @@ onMounted(async () => {
     @apply absolute top-0 left-0 w-full h-full flex-center gap-4px z-999 opacity-0;
   }
 
-  @apply bg-[--hula-text-disabled] relative rounded-50% size-fit p-4px cursor-pointer;
+  @apply bg-[--tjg-text-disabled] relative rounded-50% size-fit p-4px cursor-pointer;
 
   &:hover .tip {
     @apply opacity-100;

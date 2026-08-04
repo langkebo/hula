@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-center cursor-default gap-12px text-12px color-[--hula-text-tertiary]">
+  <div class="flex-center cursor-default gap-12px text-12px color-[--tjg-text-tertiary]">
     <span class="h-px w-60px bg-[--login-third-party-divider-color]"></span>
     <span>{{ ssoLabel }}</span>
     <span class="h-px w-60px bg-[--login-third-party-divider-color]"></span>
@@ -238,7 +238,7 @@ const ssoOptions = computed(() => [
     key: 'saml',
     label: t('login.sso.saml'),
     icon: 'SAML',
-    style: 'text-[--hula-text-primary]',
+    style: 'text-[--tjg-text-primary]',
     action: handleSamlLogin,
     available: isSsoFlowAvailable('saml')
   },
@@ -262,7 +262,7 @@ const ssoOptions = computed(() => [
     key: 'github',
     label: t('login.third_party.github'),
     icon: '#github-login',
-    style: 'text-[--hula-text-primary]',
+    style: 'text-[--tjg-text-primary]',
     action: resolvedContext.githubLogin || noop,
     available: true
   }

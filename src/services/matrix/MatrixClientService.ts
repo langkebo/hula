@@ -97,7 +97,7 @@ class MatrixClientService {
       type: 'm.login.password',
       user: username,
       password,
-      initial_device_display_name: deviceName || 'HuLa Client'
+      initial_device_display_name: deviceName || 'Tjg Client'
     })
     return this.loginRequestWithRetry(url, body)
   }
@@ -196,7 +196,7 @@ class MatrixClientService {
           type: 'm.login.password',
           identifier: { type: 'm.id.user', user: username },
           password,
-          initial_device_display_name: deviceName || 'HuLa Client'
+          initial_device_display_name: deviceName || 'Tjg Client'
         })
       } catch (error) {
         const errInfo = error instanceof Error ? error.message : String(error)
@@ -250,7 +250,7 @@ class MatrixClientService {
         throw new Error(useI18nGlobal().t('matrix_error.auth.sso_not_supported'))
       }
 
-      const ssoUrl = client.getSsoLoginUrl(window.location.href, 'HuLa Client', identityProviderId)
+      const ssoUrl = client.getSsoLoginUrl(window.location.href, 'Tjg Client', identityProviderId)
 
       logger.info('获取 SSO 登录 URL 成功')
       return ssoUrl
@@ -353,14 +353,13 @@ class MatrixClientService {
         try {
           const client = this.connectionManager.getClient()
           if (client) {
-            const refreshResult = (await client.http.request('POST', '/refresh', undefined, {
-              refresh_token: refreshToken
-            })) as Record<string, unknown>
+            const refreshResult = await client.refreshToken(refreshToken)
 
-            const newAccessToken = refreshResult.access_token as string | undefined
-            const newRefreshToken = refreshResult.refresh_token as string | undefined
-            let newExpiresInMs = refreshResult.expires_in_ms as number | undefined
-            const expiresInSec = refreshResult.expires_in as number | undefined
+            const newAccessToken = refreshResult.access_token
+            const newRefreshToken = refreshResult.refresh_token
+            let newExpiresInMs = refreshResult.expires_in_ms
+            // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
+            const expiresInSec = (refreshResult as Record<string, unknown>).expires_in as number | undefined
             if (!newExpiresInMs && expiresInSec) {
               newExpiresInMs = expiresInSec * 1000
             }
@@ -594,6 +593,14 @@ class MatrixClientService {
 
   getRustCryptoDebugState(): RustCryptoDebugState {
     return this.cryptoTracker.getRustCryptoDebugState()
+  }
+
+  /**
+   * 检查 Rust Crypto 是否已成功初始化。
+   * 用于在登录后判断加密功能是否可用，若不可用则在加密房间无法发送消息。
+   */
+  isCryptoReady(): boolean {
+    return this.cryptoTracker.getRustCryptoDebugState().initialized
   }
 
   getEventDecryptedDebugState(): EventDecryptedDebugState {

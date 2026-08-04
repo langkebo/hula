@@ -180,13 +180,13 @@ describe('ExternalServiceManager', () => {
     const wrapper = mountComponent()
 
     const activeDot = wrapper.find('[data-service-id="srv-translation"] .status-dot')
-    expect(activeDot.attributes('style')).toContain('--hula-status-online')
+    expect(activeDot.attributes('style')).toContain('--tjg-status-online')
 
     const inactiveDot = wrapper.find('[data-service-id="srv-push"] .status-dot')
-    expect(inactiveDot.attributes('style')).toContain('--hula-status-offline')
+    expect(inactiveDot.attributes('style')).toContain('--tjg-status-offline')
 
     const connectingDot = wrapper.find('[data-service-id="srv-auth"] .status-dot')
-    expect(connectingDot.attributes('style')).toContain('--hula-status-busy')
+    expect(connectingDot.attributes('style')).toContain('--tjg-status-busy')
   })
 
   it('组件有 role=region 可访问性属性', () => {

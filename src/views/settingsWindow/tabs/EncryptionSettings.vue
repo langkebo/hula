@@ -391,7 +391,7 @@ function handleBackupToggle(value: boolean) {
     return
   }
 
-  localStorage.setItem('hula-backup-enabled', value.toString())
+  localStorage.setItem('tjg-backup-enabled', value.toString())
   if (value) {
     showBackupDialog.value = true
   } else {
@@ -503,35 +503,35 @@ function handleE2EEBootstrapSkip() {
 
 <style scoped>
 .encryption-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-4);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-4);
+  color: var(--tjg-text-primary);
 }
 
 .key-status {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-3);
-  padding: var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  gap: var(--tjg-space-3);
+  padding: var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .key-status-active {
-  background-color: var(--hula-color-success-100);
+  background-color: var(--tjg-color-success-100);
 }
 
 .key-status-inactive {
-  background-color: var(--hula-color-warning-100);
+  background-color: var(--tjg-color-warning-100);
 }
 
 .key-info {
@@ -540,23 +540,23 @@ function handleE2EEBootstrapSkip() {
 }
 
 .key-name {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .key-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -565,23 +565,23 @@ function handleE2EEBootstrapSkip() {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .encryption-info {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-3);
-  padding: var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  gap: var(--tjg-space-3);
+  padding: var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .info-item {
@@ -591,55 +591,55 @@ function handleE2EEBootstrapSkip() {
 }
 
 .info-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-secondary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-secondary);
 }
 
 .info-value {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .device-key-display {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--hula-space-4);
+  gap: var(--tjg-space-4);
 }
 
 .fingerprint {
   font-family: monospace;
-  font-size: var(--hula-font-size-lg);
+  font-size: var(--tjg-font-size-lg);
   letter-spacing: 2px;
-  padding: var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
   word-break: break-all;
   text-align: center;
 }
 
 .fingerprint-hint {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
   text-align: center;
-  margin-top: var(--hula-space-2);
+  margin-top: var(--tjg-space-2);
 }
 
 .e2ee-onboarding-hint {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
-  margin-top: var(--hula-space-3);
-  padding: var(--hula-space-3);
-  background-color: var(--hula-color-warning-100);
-  border-radius: var(--hula-radius-sm);
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
+  gap: var(--tjg-space-2);
+  margin-top: var(--tjg-space-3);
+  padding: var(--tjg-space-3);
+  background-color: var(--tjg-color-warning-100);
+  border-radius: var(--tjg-radius-sm);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
 }
 
 .e2ee-bootstrap-action {
-  margin-top: var(--hula-space-3);
+  margin-top: var(--tjg-space-3);
   display: flex;
   justify-content: center;
 }
@@ -647,33 +647,33 @@ function handleE2EEBootstrapSkip() {
 .pending-verifications {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
-  padding: var(--hula-space-3) 0;
+  gap: var(--tjg-space-2);
+  padding: var(--tjg-space-3) 0;
 }
 
 .pending-title {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
 }
 
 .pending-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--hula-space-3);
-  padding: var(--hula-space-3);
-  border: 1px solid var(--hula-settings-divider);
-  border-radius: var(--hula-radius-sm);
+  gap: var(--tjg-space-3);
+  padding: var(--tjg-space-3);
+  border: 1px solid var(--tjg-settings-divider);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .pending-device {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .pending-user {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 </style>

@@ -54,7 +54,7 @@ describe('MjolnirSettings', () => {
 
   it('loads ban lists from localStorage', () => {
     localStorage.setItem(
-      'hula-mjolnir-ban-lists',
+      'tjg-mjolnir-ban-lists',
       JSON.stringify({
         room: [{ entity: '#room:test.com', reason: 'spam' }],
         user: [{ entity: '@user:test.com', reason: 'abuse' }],
@@ -75,7 +75,7 @@ describe('MjolnirSettings', () => {
     expect((wrapper.vm as any).roomBans).toHaveLength(1)
     expect((wrapper.vm as any).roomBans[0].entity).toBe('#bad:test.com')
     expect((wrapper.vm as any).roomBans[0].reason).toBe('spam')
-    const saved = JSON.parse(localStorage.getItem('hula-mjolnir-ban-lists')!)
+    const saved = JSON.parse(localStorage.getItem('tjg-mjolnir-ban-lists')!)
     expect(saved.room).toHaveLength(1)
   })
 
@@ -105,7 +105,7 @@ describe('MjolnirSettings', () => {
 
   it('removes ban with confirmation', async () => {
     localStorage.setItem(
-      'hula-mjolnir-ban-lists',
+      'tjg-mjolnir-ban-lists',
       JSON.stringify({
         room: [
           { entity: '#r1:test.com', reason: '' },

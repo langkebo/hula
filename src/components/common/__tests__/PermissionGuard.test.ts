@@ -37,7 +37,7 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
     await flushPromises()
 
     expect(wrapper.find('.real').exists()).toBe(true)
-    expect(wrapper.find('.hula-permission-gate').exists()).toBe(false)
+    expect(wrapper.find('.tjg-permission-gate').exists()).toBe(false)
     expect(wrapper.emitted('granted')).toBeTruthy()
   })
 
@@ -48,7 +48,7 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
     })
     await flushPromises()
 
-    expect(wrapper.find('.hula-permission-gate').exists()).toBe(true)
+    expect(wrapper.find('.tjg-permission-gate').exists()).toBe(true)
     expect(wrapper.find('.real').exists()).toBe(true) // still present, but grayed
     expect(wrapper.emitted('denied')?.[0]).toEqual([['voip']])
   })
@@ -61,7 +61,7 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
     await flushPromises()
 
     expect(wrapper.find('.real').exists()).toBe(false)
-    expect(wrapper.find('.hula-permission-gate').exists()).toBe(false)
+    expect(wrapper.find('.tjg-permission-gate').exists()).toBe(false)
     expect(wrapper.emitted('denied')?.[0]).toEqual([['admin-api']])
   })
 
@@ -72,7 +72,7 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
     })
     await flushPromises()
 
-    const gate = wrapper.find('.hula-permission-gate')
+    const gate = wrapper.find('.tjg-permission-gate')
     await gate.trigger('click')
     // the second `denied` event fires from the click handler
     const events = wrapper.emitted('denied') || []
@@ -91,6 +91,6 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
 
     // admin-api granted but friend-list missing → denied
     expect(wrapper.emitted('denied')?.[0]).toEqual([['friend-list']])
-    expect(wrapper.find('.hula-permission-gate').exists()).toBe(true)
+    expect(wrapper.find('.tjg-permission-gate').exists()).toBe(true)
   })
 })

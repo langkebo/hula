@@ -399,7 +399,7 @@ describe('MatrixStore', () => {
       matrixClientServiceMock.startClient.mockResolvedValue(undefined)
       matrixCapabilityServiceMock.refreshCapabilities.mockReturnValue(new Promise(() => {}))
 
-      const loginPromise = store.login('alice', 'pw', 'HuLa Test Device')
+      const loginPromise = store.login('alice', 'pw', 'Tjg Test Device')
       await vi.advanceTimersByTimeAsync(15_000)
 
       await expect(loginPromise).resolves.toBe(true)

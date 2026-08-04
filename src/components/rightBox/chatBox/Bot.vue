@@ -44,7 +44,7 @@
               @click="openLocalModel">
               {{ t('ai_assistant.bot.import_model') }}
             </n-button>
-            <n-badge class="mr-14px" value="Beta" :color="'var(--hula-color-beta-500)'">
+            <n-badge class="mr-14px" value="Beta" :color="'var(--tjg-color-beta-500)'">
               <div :class="['assistant-btn', { active: isAssistantView }]" @click="showAssistant()">
                 {{ t('ai_assistant.bot.preview_3d') }}
               </div>
@@ -75,8 +75,8 @@
 
     <div class="bot-content">
       <n-loading-bar-provider ref="loadingBarRef" :to="false" :container-style="loadingBarContainerStyle">
-        <!-- HuLa 小管家 3D 模型 -->
-        <HuLaAssistant
+        <!-- Tjg 小管家 3D 模型 -->
+        <TjgAssistant
           v-if="isAssistantView"
           :active="isAssistantView"
           :custom-model="customModelPath"
@@ -108,7 +108,7 @@ import { useBotView } from './useBotView'
 
 const { t } = useI18n()
 
-const HuLaAssistant = defineAsyncComponent(() => import('./HuLaAssistant.vue'))
+const TjgAssistant = defineAsyncComponent(() => import('./TjgAssistant.vue'))
 
 const loadingBarRef = ref<LoadingBarProviderInst | null>(null)
 
@@ -172,7 +172,7 @@ onUnmounted(cleanup)
   width: 100%;
   max-width: 100%;
   overflow: hidden;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .language-switcher {
@@ -180,8 +180,8 @@ onUnmounted(cleanup)
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--hula-border-default);
-  background: var(--hula-surface-panel);
+  border-bottom: 1px solid var(--tjg-border-default);
+  background: var(--tjg-surface-panel);
   max-width: 100%;
   overflow: hidden;
   box-sizing: border-box;
@@ -201,8 +201,8 @@ onUnmounted(cleanup)
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--hula-text-primary);
-    background: var(--hula-surface-panel-muted);
+    color: var(--tjg-text-primary);
+    background: var(--tjg-surface-panel-muted);
     transition: all 0.2s ease;
     user-select: none;
     -webkit-user-select: none;
@@ -213,15 +213,15 @@ onUnmounted(cleanup)
     }
 
     &:hover {
-      background: color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent);
-      color: var(--hula-color-primary-500);
+      background: color-mix(in srgb, var(--tjg-color-primary-500) 40%, transparent);
+      color: var(--tjg-color-primary-500);
     }
   }
 
   .page-title {
     flex: 1;
     font-size: 13px;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -229,7 +229,7 @@ onUnmounted(cleanup)
     padding: 0 12px;
     &:hover {
       text-decoration-line: underline;
-      color: var(--hula-color-primary-500);
+      color: var(--tjg-color-primary-500);
     }
   }
 
@@ -241,8 +241,8 @@ onUnmounted(cleanup)
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--hula-text-primary);
-    background: var(--hula-surface-panel-muted);
+    color: var(--tjg-text-primary);
+    background: var(--tjg-surface-panel-muted);
     transition: all 0.2s ease;
     user-select: none;
     -webkit-user-select: none;
@@ -254,8 +254,8 @@ onUnmounted(cleanup)
     }
 
     &:hover {
-      background: color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent);
-      color: var(--hula-color-primary-500);
+      background: color-mix(in srgb, var(--tjg-color-primary-500) 40%, transparent);
+      color: var(--tjg-color-primary-500);
     }
   }
 
@@ -264,28 +264,28 @@ onUnmounted(cleanup)
     border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--hula-color-primary-500) 32%, transparent),
-      var(--hula-color-primary-400)
+      color-mix(in srgb, var(--tjg-color-primary-500) 32%, transparent),
+      var(--tjg-color-primary-400)
     );
     transition: all 0.2s ease-in-out;
     user-select: none;
     -webkit-user-select: none;
 
     &:hover {
-      color: var(--hula-color-primary-500);
+      color: var(--tjg-color-primary-500);
     }
 
     &.active {
-      color: var(--hula-text-inverse);
+      color: var(--tjg-text-inverse);
       background: linear-gradient(
         135deg,
-        var(--hula-color-primary-600),
-        color-mix(in srgb, var(--hula-color-primary-500) 50%, transparent)
+        var(--tjg-color-primary-600),
+        color-mix(in srgb, var(--tjg-color-primary-500) 50%, transparent)
       );
-      border-color: color-mix(in srgb, var(--hula-color-primary-500) 40%, transparent);
+      border-color: color-mix(in srgb, var(--tjg-color-primary-500) 40%, transparent);
     }
   }
 
@@ -298,20 +298,20 @@ onUnmounted(cleanup)
     border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--hula-text-primary);
-    background: var(--hula-surface-panel-muted);
+    color: var(--tjg-text-primary);
+    background: var(--tjg-surface-panel-muted);
     transition: all 0.2s ease-in-out;
     user-select: none;
     -webkit-user-select: none;
 
     &:hover {
-      color: var(--hula-color-primary-500);
+      color: var(--tjg-color-primary-500);
     }
 
     &.active {
-      color: var(--hula-color-primary-500);
-      background: color-mix(in srgb, var(--hula-color-primary-500) 18%, transparent);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hula-color-primary-500) 25%, transparent);
+      color: var(--tjg-color-primary-500);
+      background: color-mix(in srgb, var(--tjg-color-primary-500) 18%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tjg-color-primary-500) 25%, transparent);
     }
   }
 
@@ -328,21 +328,21 @@ onUnmounted(cleanup)
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    color: var(--hula-text-primary);
-    background: var(--hula-surface-panel-muted);
+    color: var(--tjg-text-primary);
+    background: var(--tjg-surface-panel-muted);
     transition: all 0.2s ease;
     user-select: none;
     -webkit-user-select: none;
 
     &:hover {
-      background: color-mix(in srgb, var(--hula-color-primary-100) 85%, var(--hula-surface-panel));
-      color: var(--hula-color-primary-500);
+      background: color-mix(in srgb, var(--tjg-color-primary-100) 85%, var(--tjg-surface-panel));
+      color: var(--tjg-color-primary-500);
     }
 
     &.active {
-      background: color-mix(in srgb, var(--hula-color-primary-100) 85%, var(--hula-surface-panel));
-      color: var(--hula-color-primary-500);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hula-color-primary-500) 60%, transparent);
+      background: color-mix(in srgb, var(--tjg-color-primary-100) 85%, var(--tjg-surface-panel));
+      color: var(--tjg-color-primary-500);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tjg-color-primary-500) 60%, transparent);
     }
   }
 
@@ -375,7 +375,7 @@ onUnmounted(cleanup)
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-size: 14px;
   padding: 16px;
   text-align: center;
@@ -391,7 +391,7 @@ onUnmounted(cleanup)
   overflow-x: hidden;
   padding: 20px;
   background-color: transparent;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   box-sizing: border-box;
   font-size: 14px;
   line-height: 1.7;
@@ -402,20 +402,19 @@ onUnmounted(cleanup)
   > * {
     max-width: 100%;
   }
-  --fgColor-default: var(--hula-text-primary);
-  --fgColor-muted: var(--hula-text-secondary);
-  --fgColor-accent: var(--hula-color-primary-500);
-  --fgColor-attention: var(--hula-color-primary-500);
-  --fgColor-success: var(--hula-color-success-500);
-  --fgColor-danger: var(--hula-color-danger-500);
-  --bgColor-default: var(--hula-surface-panel);
-  --bgColor-muted: var(--hula-surface-panel-muted);
-  --bgColor-neutral-muted: color-mix(in srgb, var(--hula-text-tertiary) 15%, transparent);
-  --bgColor-attention-muted: color-mix(in srgb, var(--hula-color-primary-500) 16%, transparent);
-  --borderColor-default: var(--hula-border-default);
-  --borderColor-muted: var(--hula-border-default);
-  --borderColor-neutral-muted: color-mix(in srgb, var(--hula-text-tertiary) 20%, transparent);
-  --borderColor-accent-emphasis: var(--hula-color-primary-500);
+  --fgColor-default: var(--tjg-text-primary);
+  --fgColor-muted: var(--tjg-text-secondary);
+  --fgColor-attention: var(--tjg-color-primary-500);
+  --fgColor-success: var(--tjg-color-success-500);
+  --fgColor-danger: var(--tjg-color-danger-500);
+  --bgColor-default: var(--tjg-surface-panel);
+  --bgColor-muted: var(--tjg-surface-panel-muted);
+  --bgColor-neutral-muted: color-mix(in srgb, var(--tjg-text-tertiary) 15%, transparent);
+  --bgColor-attention-muted: color-mix(in srgb, var(--tjg-color-primary-500) 16%, transparent);
+  --borderColor-default: var(--tjg-border-default);
+  --borderColor-muted: var(--tjg-border-default);
+  --borderColor-neutral-muted: color-mix(in srgb, var(--tjg-text-tertiary) 20%, transparent);
+  --borderColor-accent-emphasis: var(--tjg-color-primary-500);
 
   // 通用表格处理
   :deep(table) {
@@ -490,7 +489,7 @@ onUnmounted(cleanup)
 
   // 长 URL 和文本处理
   :deep(a) {
-    color: var(--hula-color-primary-500);
+    color: var(--tjg-color-primary-500);
     word-break: break-word;
     overflow-wrap: break-word;
     text-decoration: none;
@@ -563,7 +562,7 @@ onUnmounted(cleanup)
     box-sizing: border-box;
     padding: 8px 12px;
     margin: 12px 0;
-    border-left: 3px solid var(--fgColor-accent);
+    border-left: 3px solid var(--tjg-color-primary-500);
     background: var(--bgColor-attention-muted);
   }
 
@@ -583,11 +582,11 @@ onUnmounted(cleanup)
   }
 
   &::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent);
+    background: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
     border-radius: 3px;
 
     &:hover {
-      background: color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent);
+      background: color-mix(in srgb, var(--tjg-text-tertiary) 50%, transparent);
     }
   }
 }

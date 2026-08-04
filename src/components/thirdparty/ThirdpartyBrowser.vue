@@ -152,7 +152,7 @@ async function handleQueryUser(): Promise<void> {
 .panel-subtitle {
   margin: 0 0 12px 0;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   line-height: 1.5;
 }
 
@@ -165,7 +165,7 @@ async function handleQueryUser(): Promise<void> {
 
 .field-label {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .action-row {
@@ -181,7 +181,7 @@ async function handleQueryUser(): Promise<void> {
 .section-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin-bottom: 8px;
 }
 
@@ -194,6 +194,6 @@ async function handleQueryUser(): Promise<void> {
 .result-item {
   padding: 4px 8px;
   border-radius: 4px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
 }
 </style>

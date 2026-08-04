@@ -377,7 +377,7 @@ watch(visible, async (val) => {
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--hula-border-default);
+    border-top: 1px solid var(--tjg-border-default);
   }
 }
 
@@ -392,7 +392,7 @@ watch(visible, async (val) => {
   align-items: center;
   justify-content: space-between;
   padding: 12px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
   gap: 12px;
 }
@@ -409,7 +409,7 @@ watch(visible, async (val) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .device-text {
@@ -421,7 +421,7 @@ watch(visible, async (val) => {
 .device-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   display: flex;
   align-items: center;
 }
@@ -429,7 +429,7 @@ watch(visible, async (val) => {
 .device-id {
   font-size: 12px;
   font-family: monospace;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -438,7 +438,7 @@ watch(visible, async (val) => {
 
 .device-meta {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   margin-top: 4px;
   display: flex;
   align-items: center;
@@ -458,7 +458,7 @@ watch(visible, async (val) => {
   font-size: 13px;
   font-weight: 500;
   margin-bottom: 8px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .unverified-section {

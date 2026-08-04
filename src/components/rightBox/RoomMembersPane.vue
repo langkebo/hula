@@ -232,13 +232,13 @@ const handleUnban = async (userId: string) => {
 .room-members-pane__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .room-members-pane__count {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
-  background: var(--hula-surface-panel-muted);
+  color: var(--tjg-text-tertiary);
+  background: var(--tjg-surface-panel-muted);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -247,7 +247,7 @@ const handleUnban = async (userId: string) => {
   display: flex;
   gap: 8px;
   padding: 8px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -256,16 +256,16 @@ const handleUnban = async (userId: string) => {
   min-width: 0;
   height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 6px;
-  background: var(--hula-surface-panel);
-  color: var(--hula-text-primary);
+  background: var(--tjg-surface-panel);
+  color: var(--tjg-text-primary);
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s ease;
 
   &:focus-within {
-    border-color: var(--hula-color-primary-500);
+    border-color: var(--tjg-color-primary-500);
   }
 }
 
@@ -275,8 +275,8 @@ const handleUnban = async (userId: string) => {
   padding: 0 14px;
   border: 0;
   border-radius: 6px;
-  background: var(--hula-color-primary-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-primary-500);
+  color: var(--tjg-text-inverse);
   font-size: 13px;
   cursor: pointer;
   transition: opacity 0.15s ease;
@@ -295,7 +295,7 @@ const handleUnban = async (userId: string) => {
   padding: 32px 16px;
   text-align: center;
   font-size: 13px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .room-members-pane__list {
@@ -316,7 +316,7 @@ const handleUnban = async (userId: string) => {
   transition: background 0.1s ease;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -339,7 +339,7 @@ const handleUnban = async (userId: string) => {
 
 .room-members-pane__item-name {
   font-size: 13px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -347,12 +347,12 @@ const handleUnban = async (userId: string) => {
 
 .room-members-pane__item-role {
   font-size: 11px;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .room-members-pane__item-status {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .room-members-pane__item-actions {
@@ -374,18 +374,18 @@ const handleUnban = async (userId: string) => {
   transition: all 0.15s ease;
 
   &--warning:hover {
-    background: var(--hula-color-warning-100, rgba(245, 158, 11, 0.1));
-    color: var(--hula-color-warning-500);
+    background: var(--tjg-color-warning-100, rgba(245, 158, 11, 0.1));
+    color: var(--tjg-color-warning-500);
   }
 
   &--danger:hover {
-    background: var(--hula-color-danger-100, rgba(239, 68, 68, 0.1));
-    color: var(--hula-color-danger-500);
+    background: var(--tjg-color-danger-100, rgba(239, 68, 68, 0.1));
+    color: var(--tjg-color-danger-500);
   }
 
   &--success:hover {
-    background: var(--hula-color-success-100, rgba(34, 197, 94, 0.1));
-    color: var(--hula-color-success-500);
+    background: var(--tjg-color-success-100, rgba(34, 197, 94, 0.1));
+    color: var(--tjg-color-success-500);
   }
 }
 
@@ -393,8 +393,8 @@ const handleUnban = async (userId: string) => {
   padding: 8px 4px 4px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--hula-text-tertiary);
-  border-top: 1px solid var(--hula-border-default);
+  color: var(--tjg-text-tertiary);
+  border-top: 1px solid var(--tjg-border-default);
   margin-top: 4px;
 }
 </style>

@@ -62,21 +62,21 @@ describe('useRightPaneWidth', () => {
   })
 
   it('loads persisted width from localStorage', () => {
-    storage.set('hula.rightPaneWidth', JSON.stringify({ chat: 700 }))
+    storage.set('tjg.rightPaneWidth', JSON.stringify({ chat: 700 }))
     const rightView = ref<RightViewType>('chat')
     const { width } = useRightPaneWidth({ rightView })
     expect(width.value).toBe(700)
   })
 
   it('clamps persisted width to min/max range', () => {
-    storage.set('hula.rightPaneWidth', JSON.stringify({ chat: 9999 }))
+    storage.set('tjg.rightPaneWidth', JSON.stringify({ chat: 9999 }))
     const rightView = ref<RightViewType>('chat')
     const { width } = useRightPaneWidth({ rightView })
     expect(width.value).toBe(800) // max
   })
 
   it('clamps persisted width to min', () => {
-    storage.set('hula.rightPaneWidth', JSON.stringify({ chat: 100 }))
+    storage.set('tjg.rightPaneWidth', JSON.stringify({ chat: 100 }))
     const rightView = ref<RightViewType>('chat')
     const { width } = useRightPaneWidth({ rightView })
     expect(width.value).toBe(360) // min
@@ -149,7 +149,7 @@ describe('useRightPaneWidth', () => {
       .mock.calls.find(([event]) => event === 'pointerup')?.[1] as () => void
     upHandler()
 
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('hula.rightPaneWidth', JSON.stringify({ chat: 720 }))
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('tjg.rightPaneWidth', JSON.stringify({ chat: 720 }))
   })
 
   it('re-enables transition after drag ends', () => {
@@ -170,7 +170,7 @@ describe('useRightPaneWidth', () => {
   })
 
   it('resetWidth restores default width and clears persisted value', () => {
-    storage.set('hula.rightPaneWidth', JSON.stringify({ chat: 700 }))
+    storage.set('tjg.rightPaneWidth', JSON.stringify({ chat: 700 }))
     const rightView = ref<RightViewType>('chat')
     const { width, resetWidth } = useRightPaneWidth({ rightView })
 
@@ -178,7 +178,7 @@ describe('useRightPaneWidth', () => {
 
     resetWidth()
     expect(width.value).toBe(620) // default
-    expect(storage.get('hula.rightPaneWidth')).toBeUndefined()
+    expect(storage.get('tjg.rightPaneWidth')).toBeUndefined()
   })
 
   it('uses custom storage key when provided', () => {
@@ -189,24 +189,24 @@ describe('useRightPaneWidth', () => {
   })
 
   it('handles corrupted localStorage gracefully', () => {
-    storage.set('hula.rightPaneWidth', 'not-json')
+    storage.set('tjg.rightPaneWidth', 'not-json')
     const rightView = ref<RightViewType>('empty')
     const { width } = useRightPaneWidth({ rightView })
     expect(width.value).toBe(360) // 回退到默认
   })
 
   it('removes storage key when all persisted widths are cleared', () => {
-    storage.set('hula.rightPaneWidth', JSON.stringify({ chat: 700, empty: 400 }))
+    storage.set('tjg.rightPaneWidth', JSON.stringify({ chat: 700, empty: 400 }))
     const rightView = ref<RightViewType>('chat')
     const { resetWidth } = useRightPaneWidth({ rightView })
 
     // 清除 chat 后还有 empty
     resetWidth()
-    expect(storage.get('hula.rightPaneWidth')).toBe(JSON.stringify({ empty: 400 }))
+    expect(storage.get('tjg.rightPaneWidth')).toBe(JSON.stringify({ empty: 400 }))
 
     // 切换到 empty 并清除
     rightView.value = 'empty'
     resetWidth()
-    expect(storage.get('hula.rightPaneWidth')).toBeUndefined()
+    expect(storage.get('tjg.rightPaneWidth')).toBeUndefined()
   })
 })

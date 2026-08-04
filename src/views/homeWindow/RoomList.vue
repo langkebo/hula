@@ -169,10 +169,10 @@ onMounted(async () => {
 @use '@/styles/scss/message';
 
 .room-list-page {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 #image-no-data {
-  @apply size-full mt-60px text-[--hula-text-primary] text-14px;
+  @apply size-full mt-60px text-[--tjg-text-primary] text-14px;
 }
 </style>

@@ -4,7 +4,7 @@
     <ActionBar :max-w="false" :shrink="false" proxy data-tauri-drag-region />
 
     <n-flex justify="center" class="mt-15px" data-tauri-drag-region>
-      <img src="/hula.png" class="w-100px h-40px drop-shadow-xl" alt="HuLa" data-tauri-drag-region />
+      <img src="/tjg.png" class="w-100px h-40px drop-shadow-xl" alt="Tjg" data-tauri-drag-region />
     </n-flex>
 
     <!-- 登录模式切换 -->
@@ -55,7 +55,7 @@
             <svg class="size-42px animate-pulse">
               <use :href="`#${scanStatus.icon}`"></use>
             </svg>
-            <span class="text-(14px [--hula-text-quaternary])">{{ scanStatusText }}</span>
+            <span class="text-(14px [--tjg-text-quaternary])">{{ scanStatusText }}</span>
           </n-flex>
 
           <n-flex
@@ -66,12 +66,12 @@
             class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
             style="pointer-events: none">
             <n-spin size="small" />
-            <span class="text-(16px [--hula-text-quaternary])">{{ t('login.qr.overlay.refreshing') }}</span>
+            <span class="text-(16px [--tjg-text-quaternary])">{{ t('login.qr.overlay.refreshing') }}</span>
           </n-flex>
         </div>
       </n-flex>
 
-      <n-flex justify="center" class="mt-15px text-(14px [--hula-text-tertiary])">
+      <n-flex justify="center" class="mt-15px text-(14px [--tjg-text-tertiary])">
         {{ loadText }}
       </n-flex>
     </template>
@@ -81,10 +81,10 @@
       <n-flex justify="center" class="mt-15px" data-tauri-drag-region>
         <div class="text-center">
           <div
-            class="mb-12px text-[var(--hula-color-primary-500)] bg-[var(--hula-surface-search)] p-16px rounded-full inline-flex">
+            class="mb-12px text-[var(--tjg-color-primary-500)] bg-[var(--tjg-surface-search)] p-16px rounded-full inline-flex">
             <Icon icon="mdi:qrcode-plus" :width="48" />
           </div>
-          <p class="text-(14px [--hula-text-tertiary])">{{ t('login.qr.rendezvous_hint') }}</p>
+          <p class="text-(14px [--tjg-text-tertiary])">{{ t('login.qr.rendezvous_hint') }}</p>
           <n-button type="primary" class="mt-12px" @click="showRendezvousManager = true">
             {{ t('login.qr.open_rendezvous') }}
           </n-button>
@@ -99,12 +99,12 @@
 
     <!-- 底部操作栏 -->
     <n-flex justify="center" class="text-14px" data-tauri-drag-region>
-      <div class="color-[--hula-color-primary-500] cursor-pointer" @click="router.push('/login')">
+      <div class="color-[--tjg-color-primary-500] cursor-pointer" @click="router.push('/login')">
         {{ t('login.qr.actions.account_login') }}
       </div>
       <div class="w-1px h-14px bg-[--login-divider-color]"></div>
       <div
-        class="color-[--hula-color-primary-500] cursor-pointer"
+        class="color-[--tjg-color-primary-500] cursor-pointer"
         @click="createWebviewWindow(t('login.qr.actions.register_title'), 'register', 600, 600)">
         {{ t('login.qr.actions.register') }}
       </div>
@@ -156,8 +156,8 @@ const loadText = computed(() => t(`login.qr.load_text.${loadTextKey.value}`))
 const loading = ref(true)
 const refreshing = ref(false) // 是否正在刷新
 const qrCodeValue = ref('')
-const qrCodeColor = ref('var(--hula-text-primary)')
-const qrCodeBgColor = ref('var(--hula-surface-panel)')
+const qrCodeColor = ref('var(--tjg-text-primary)')
+const qrCodeBgColor = ref('var(--tjg-surface-panel)')
 const qrCodeType = ref('canvas' as const)
 const qrCodeIcon = ref('/logo.png')
 const qrErrorCorrectionLevel = ref('H' as const)
@@ -292,7 +292,7 @@ const handleQRCodeLogin = async () => {
     // Step 5-17: Wait for existing device to scan + reciprocate.
     // This Promise resolves on successful login; intermediate UI updates
     // arrive via the status listener registered above.
-    loginTask = matrixQrLoginSdkService.waitForReciprocationAndLogin('HuLa Desktop')
+    loginTask = matrixQrLoginSdkService.waitForReciprocationAndLogin('Tjg Desktop')
     const result = await loginTask
     await handleConfirmed(result)
   } catch (error) {

@@ -99,9 +99,9 @@ defineExpose({ load })
   padding: 0 12px;
   margin: 6px 12px 0;
   border-radius: 10px;
-  border: 1px solid var(--hula-border-default);
-  background: var(--hula-surface-panel);
-  color: var(--hula-text-primary);
+  border: 1px solid var(--tjg-border-default);
+  background: var(--tjg-surface-panel);
+  color: var(--tjg-text-primary);
   flex-shrink: 0;
 }
 
@@ -117,7 +117,7 @@ defineExpose({ load })
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .pinned-banner__text {
@@ -130,7 +130,7 @@ defineExpose({ load })
 
 .pinned-banner__summary {
   font-size: 13px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -138,7 +138,7 @@ defineExpose({ load })
 
 .pinned-banner__meta {
   font-size: 11px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -165,25 +165,25 @@ defineExpose({ load })
 
 .pinned-banner__btn--view {
   font-size: 12px;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   padding: 4px 8px;
   border-radius: 6px;
 }
 
 .pinned-banner__btn--view:hover {
-  background: color-mix(in srgb, var(--hula-color-primary-500) 12%, transparent);
+  background: color-mix(in srgb, var(--tjg-color-primary-500) 12%, transparent);
 }
 
 .pinned-banner__btn--close {
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .pinned-banner__btn--close:hover {
-  background: color-mix(in srgb, var(--hula-text-tertiary) 12%, transparent);
-  color: var(--hula-text-primary);
+  background: color-mix(in srgb, var(--tjg-text-tertiary) 12%, transparent);
+  color: var(--tjg-text-primary);
 }
 
 .pinned-banner__close-icon {

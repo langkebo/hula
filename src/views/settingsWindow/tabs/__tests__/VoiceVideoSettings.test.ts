@@ -159,14 +159,14 @@ describe('VoiceVideoSettings', () => {
   })
 
   it('restores saved device and call settings from localStorage', async () => {
-    localStorage.setItem('hula-audio-input', 'saved-audio-input')
-    localStorage.setItem('hula-audio-output', 'saved-audio-output')
-    localStorage.setItem('hula-video-input', 'saved-video-input')
-    localStorage.setItem('hula-input-volume', '80')
-    localStorage.setItem('hula-output-volume', '60')
-    localStorage.setItem('hula-echo-cancellation', 'false')
-    localStorage.setItem('hula-noise-suppression', 'false')
-    localStorage.setItem('hula-auto-gain', 'false')
+    localStorage.setItem('tjg-audio-input', 'saved-audio-input')
+    localStorage.setItem('tjg-audio-output', 'saved-audio-output')
+    localStorage.setItem('tjg-video-input', 'saved-video-input')
+    localStorage.setItem('tjg-input-volume', '80')
+    localStorage.setItem('tjg-output-volume', '60')
+    localStorage.setItem('tjg-echo-cancellation', 'false')
+    localStorage.setItem('tjg-noise-suppression', 'false')
+    localStorage.setItem('tjg-auto-gain', 'false')
 
     const wrapper = mount(VoiceVideoSettings)
     await flushPromises()

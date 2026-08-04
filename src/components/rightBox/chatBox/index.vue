@@ -3,6 +3,16 @@
     <!-- 头部 -->
     <ChatHeader />
 
+    <!-- 加密不可用警告条：crypto 未初始化且当前房间为加密房间时显示 -->
+    <div
+      v-if="showCryptoWarning"
+      class="crypto-unavailable-banner flex items-center gap-8px px-12px py-6px bg-[--tjg-color-warning-100] border-b border-[--tjg-color-warning-500] text-[var(--text-xs)] color-[--tjg-color-warning-500]">
+      <svg class="size-14px flex-shrink-0">
+        <use href="#remind"></use>
+      </svg>
+      <span class="flex-1 truncate">{{ t('chat.crypto_unavailable.message') }}</span>
+    </div>
+
     <div class="flex-1 flex min-h-0">
       <div class="flex-1 min-h-0">
         <!-- bot用户时显示Bot组件 -->
@@ -33,14 +43,32 @@
 </template>
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import { UserType } from '@/enums'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
+const { t } = useI18n()
 const globalStore = useGlobalStore()
+const encryptionStore = useEncryptionStore()
 const { currentSession } = storeToRefs(globalStore)
 
 // 是否为bot用户
 const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
+
+// 加密不可用警告：crypto 初始化失败且当前房间为加密房间时显示
+const showCryptoWarning = computed(() => {
+  if (!encryptionStore.cryptoInitFailed) return false
+  const roomId = globalStore.currentSessionRoomId
+  if (!roomId) return false
+  return matrixClientService.isRoomEncrypted(roomId)
+})
+
+onMounted(() => {
+  // 登录后检查 crypto 初始化状态（startClient 中 ensureCrypto 已完成）
+  encryptionStore.loadCryptoInitStatus()
+})
 </script>
 <style scoped lang="scss">
 :deep(.n-split .n-split__resize-trigger) {
@@ -61,7 +89,7 @@ const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
     position: absolute;
     width: 40px;
     height: 3px;
-    background: var(--hula-text-tertiary);
+    background: var(--tjg-text-tertiary);
     border-radius: 2px;
     opacity: 0;
     transition: all 0.2s ease;
@@ -78,8 +106,8 @@ const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
     transition: all 0.2s ease;
     opacity: 0;
     box-shadow:
-      0 -3px 0 0 color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent),
-      0 3px 0 0 color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent);
+      0 -3px 0 0 color-mix(in srgb, var(--tjg-text-tertiary) 50%, transparent),
+      0 3px 0 0 color-mix(in srgb, var(--tjg-text-tertiary) 50%, transparent);
     pointer-events: none;
   }
 
@@ -93,8 +121,8 @@ const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
     &::after {
       opacity: 1;
       box-shadow:
-        0 -3px 0 0 color-mix(in srgb, var(--hula-text-tertiary) 80%, transparent),
-        0 3px 0 0 color-mix(in srgb, var(--hula-text-tertiary) 80%, transparent);
+        0 -3px 0 0 color-mix(in srgb, var(--tjg-text-tertiary) 80%, transparent),
+        0 3px 0 0 color-mix(in srgb, var(--tjg-text-tertiary) 80%, transparent);
     }
   }
 
@@ -103,14 +131,14 @@ const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
     &::before {
       opacity: 1;
       transform: scaleY(1.2);
-      background: color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent);
+      background: color-mix(in srgb, var(--tjg-color-primary-500) 80%, transparent);
     }
 
     &::after {
       opacity: 1;
       box-shadow:
-        0 -3px 0 0 color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent),
-        0 3px 0 0 color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent);
+        0 -3px 0 0 color-mix(in srgb, var(--tjg-color-primary-500) 80%, transparent),
+        0 3px 0 0 color-mix(in srgb, var(--tjg-color-primary-500) 80%, transparent);
     }
   }
 }

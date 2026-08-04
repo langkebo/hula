@@ -96,8 +96,8 @@
   <div v-else class="flex w-full flex-col h-full">
     <!-- PC端头部 -->
     <div class="flex-shrink-0">
-      <div class="flex items-center justify-between px-20px py-16px border-b border-[--hula-border-default]">
-        <h2 class="text-16px font-medium text-[--hula-text-primary]">{{ t('home.manage_group_member.title') }}</h2>
+      <div class="flex items-center justify-between px-20px py-16px border-b border-[--tjg-border-default]">
+        <h2 class="text-16px font-medium text-[--tjg-text-primary]">{{ t('home.manage_group_member.title') }}</h2>
       </div>
     </div>
 
@@ -110,7 +110,7 @@
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
-          class="border-(solid 1px [--hula-border-default]) rounded-8px"
+          class="border-(solid 1px [--tjg-border-default]) rounded-8px"
           :placeholder="t('home.manage_group_member.search_placeholder_pc')">
           <template #prefix>
             <svg class="w-12px h-12px"><use href="#search"></use></svg>
@@ -126,14 +126,14 @@
           <div
             v-for="item in filteredMembers"
             :key="item.uid"
-            class="rounded-8px border border-[--hula-border-default] overflow-hidden">
+            class="rounded-8px border border-[--tjg-border-default] overflow-hidden">
             <n-checkbox
               :value="item.uid"
               size="large"
               class="w-full flex items-center px-12px"
               :class="[
                 'cursor-pointer select-none transition-colors duration-150',
-                selectedList.includes(item.uid) ? 'bg-[--hula-color-primary-100]' : ''
+                selectedList.includes(item.uid) ? 'bg-[--tjg-color-primary-100]' : ''
               ]">
               <template #default>
                 <div class="flex items-center gap-10px px-8px py-10px">
@@ -146,10 +146,10 @@
                     style="border: 1px solid var(--avatar-border-color)" />
                   <!-- 文字信息 -->
                   <div class="flex flex-col leading-tight truncate">
-                    <span class="text-13px font-medium truncate text-[--hula-text-primary]">
+                    <span class="text-13px font-medium truncate text-[--tjg-text-primary]">
                       {{ groupStore.getUserInfo(item.uid)?.name }}
                     </span>
-                    <div class="text-11px text-[--hula-text-secondary] flex items-center gap-4px truncate">
+                    <div class="text-11px text-[--tjg-text-secondary] flex items-center gap-4px truncate">
                       <n-badge
                         :color="
                           item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
@@ -172,8 +172,8 @@
 
     <!-- 底部操作栏 -->
     <div
-      class="px-20px py-12px bg-[--hula-surface-elevated] border-t border-[--hula-border-default] flex justify-between items-center">
-      <span class="text-13px text-[--hula-text-primary]">
+      class="px-20px py-12px bg-[--tjg-surface-elevated] border-t border-[--tjg-border-default] flex justify-between items-center">
+      <span class="text-13px text-[--tjg-text-primary]">
         {{ t('home.manage_group_member.selected_count', { count: selectedList.length }) }}
       </span>
       <n-popconfirm v-model:show="showDeleteConfirm">

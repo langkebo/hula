@@ -67,92 +67,92 @@ export default defineConfig({
       'card-foreground': 'var(--card-foreground)',
       input: 'var(--input)',
       // 品牌色
-      'hula-brand': 'var(--hula-brand)',
-      'hula-primary': {
-        100: 'var(--hula-color-primary-100)',
-        200: 'var(--hula-color-primary-200)',
-        300: 'var(--hula-color-primary-300)',
-        400: 'var(--hula-color-primary-400)',
-        500: 'var(--hula-color-primary-500)',
-        600: 'var(--hula-color-primary-600)',
-        700: 'var(--hula-color-primary-700)'
+      'tjg-brand': 'var(--tjg-brand)',
+      'tjg-primary': {
+        100: 'var(--tjg-color-primary-100)',
+        200: 'var(--tjg-color-primary-200)',
+        300: 'var(--tjg-color-primary-300)',
+        400: 'var(--tjg-color-primary-400)',
+        500: 'var(--tjg-color-primary-500)',
+        600: 'var(--tjg-color-primary-600)',
+        700: 'var(--tjg-color-primary-700)'
       },
       // 功能色
-      'hula-success': {
-        100: 'var(--hula-color-success-100)',
-        400: 'var(--hula-color-success-400)',
-        500: 'var(--hula-color-success-500)',
-        600: 'var(--hula-color-success-600)'
+      'tjg-success': {
+        100: 'var(--tjg-color-success-100)',
+        400: 'var(--tjg-color-success-400)',
+        500: 'var(--tjg-color-success-500)',
+        600: 'var(--tjg-color-success-600)'
       },
-      'hula-warning': {
-        100: 'var(--hula-color-warning-100)',
-        400: 'var(--hula-color-warning-400)',
-        500: 'var(--hula-color-warning-500)',
-        600: 'var(--hula-color-warning-600)'
+      'tjg-warning': {
+        100: 'var(--tjg-color-warning-100)',
+        400: 'var(--tjg-color-warning-400)',
+        500: 'var(--tjg-color-warning-500)',
+        600: 'var(--tjg-color-warning-600)'
       },
-      'hula-danger': {
-        100: 'var(--hula-color-danger-100)',
-        200: 'var(--hula-color-danger-200)',
-        400: 'var(--hula-color-danger-400)',
-        500: 'var(--hula-color-danger-500)',
-        600: 'var(--hula-color-danger-600)'
+      'tjg-danger': {
+        100: 'var(--tjg-color-danger-100)',
+        200: 'var(--tjg-color-danger-200)',
+        400: 'var(--tjg-color-danger-400)',
+        500: 'var(--tjg-color-danger-500)',
+        600: 'var(--tjg-color-danger-600)'
       },
-      'hula-info': {
-        100: 'var(--hula-color-info-100)',
-        400: 'var(--hula-color-info-400)',
-        500: 'var(--hula-color-info-500)',
-        600: 'var(--hula-color-info-600)'
+      'tjg-info': {
+        100: 'var(--tjg-color-info-100)',
+        400: 'var(--tjg-color-info-400)',
+        500: 'var(--tjg-color-info-500)',
+        600: 'var(--tjg-color-info-600)'
       },
       // 文本色
-      'hula-text': {
-        primary: 'var(--hula-text-primary)',
-        secondary: 'var(--hula-text-secondary)',
-        tertiary: 'var(--hula-text-tertiary)',
-        quaternary: 'var(--hula-text-quaternary)',
-        disabled: 'var(--hula-text-disabled)',
-        inverse: 'var(--hula-text-inverse)'
+      'tjg-text': {
+        primary: 'var(--tjg-text-primary)',
+        secondary: 'var(--tjg-text-secondary)',
+        tertiary: 'var(--tjg-text-tertiary)',
+        quaternary: 'var(--tjg-text-quaternary)',
+        disabled: 'var(--tjg-text-disabled)',
+        inverse: 'var(--tjg-text-inverse)'
       },
       // 表面色
-      'hula-surface': {
-        app: 'var(--hula-surface-app)',
-        panel: 'var(--hula-surface-panel)',
-        'panel-muted': 'var(--hula-surface-panel-muted)',
-        subtle: 'var(--hula-surface-subtle)',
-        elevated: 'var(--hula-surface-elevated)',
-        search: 'var(--hula-surface-search)',
-        sidebar: 'var(--hula-surface-sidebar)'
+      'tjg-surface': {
+        app: 'var(--tjg-surface-app)',
+        panel: 'var(--tjg-surface-panel)',
+        'panel-muted': 'var(--tjg-surface-panel-muted)',
+        subtle: 'var(--tjg-surface-subtle)',
+        elevated: 'var(--tjg-surface-elevated)',
+        search: 'var(--tjg-surface-search)',
+        sidebar: 'var(--tjg-surface-sidebar)'
       },
       // 边框色
-      'hula-border': {
-        default: 'var(--hula-border-default)',
-        muted: 'var(--hula-border-muted)',
-        strong: 'var(--hula-border-strong)'
+      'tjg-border': {
+        default: 'var(--tjg-border-default)',
+        muted: 'var(--tjg-border-muted)',
+        strong: 'var(--tjg-border-strong)'
       },
       // 状态色
-      'hula-status': {
-        online: 'var(--hula-status-online)',
-        offline: 'var(--hula-status-offline)',
-        busy: 'var(--hula-status-busy)',
-        away: 'var(--hula-status-away)'
+      'tjg-status': {
+        online: 'var(--tjg-status-online)',
+        offline: 'var(--tjg-status-offline)',
+        busy: 'var(--tjg-status-busy)',
+        away: 'var(--tjg-status-away)'
       }
     },
     fontSize: {
-      'hula-xs': 'var(--hula-font-size-xs)',
-      'hula-sm': 'var(--hula-font-size-sm)',
-      'hula-base': 'var(--hula-font-size-base)',
-      'hula-lg': 'var(--hula-font-size-lg)',
-      'hula-xl': 'var(--hula-font-size-xl)',
-      'hula-2xl': 'var(--hula-font-size-2xl)',
-      'hula-3xl': 'var(--hula-font-size-3xl)'
+      'tjg-xs': 'var(--tjg-font-size-xs)',
+      'tjg-sm': 'var(--tjg-font-size-sm)',
+      'tjg-base': 'var(--tjg-font-size-base)',
+      'tjg-lg': 'var(--tjg-font-size-lg)',
+      'tjg-xl': 'var(--tjg-font-size-xl)',
+      'tjg-2xl': 'var(--tjg-font-size-2xl)',
+      'tjg-3xl': 'var(--tjg-font-size-3xl)'
     },
     borderRadius: {
-      'hula-xs': 'var(--hula-radius-xs)',
-      'hula-sm': 'var(--hula-radius-sm)',
-      'hula-md': 'var(--hula-radius-md)',
-      'hula-lg': 'var(--hula-radius-lg)',
-      'hula-xl': 'var(--hula-radius-xl)',
-      'hula-2xl': 'var(--hula-radius-2xl)',
-      'hula-full': 'var(--hula-radius-full)'
+      'tjg-xs': 'var(--tjg-radius-xs)',
+      'tjg-sm': 'var(--tjg-radius-sm)',
+      'tjg-md': 'var(--tjg-radius-md)',
+      'tjg-lg': 'var(--tjg-radius-lg)',
+      'tjg-xl': 'var(--tjg-radius-xl)',
+      'tjg-2xl': 'var(--tjg-radius-2xl)',
+      'tjg-full': 'var(--tjg-radius-full)'
     },
     // 统一断点：与 SCSS respond-to mixin 保持一致
     breakpoints: {

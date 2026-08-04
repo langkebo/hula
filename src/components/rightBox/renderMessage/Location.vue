@@ -3,24 +3,24 @@
     <!-- 位置图标和标题 -->
     <n-flex align="center" justify="space-between" class="pb-8px">
       <div class="flex-y-center gap-8px">
-        <svg class="size-14px color-[--hula-color-primary-500]">
+        <svg class="size-14px color-[--tjg-color-primary-500]">
           <use href="#local"></use>
         </svg>
-        <p class="text-14px font-medium color-[--hula-text-primary]">{{ t('chat.location.title') }}</p>
+        <p class="text-14px font-medium color-[--tjg-text-primary]">{{ t('chat.location.title') }}</p>
       </div>
 
-      <div class="text-(10px --hula-color-primary-500) p-4px rounded-4px border-(1px solid --hula-color-primary-500)">
+      <div class="text-(10px --tjg-color-primary-500) p-4px rounded-4px border-(1px solid --tjg-color-primary-500)">
         <p v-if="body?.precision">{{ body.precision }}</p>
       </div>
     </n-flex>
 
     <!-- 地址信息 -->
-    <div class="text-(12px [--hula-text-tertiary]) pb-8px leading-5 line-clamp-2">
+    <div class="text-(12px [--tjg-text-tertiary]) pb-8px leading-5 line-clamp-2">
       {{ body?.address || '位置出错' }}
     </div>
 
     <!-- 地图预览区域 -->
-    <div class="relative rounded-6px overflow-hidden bg-[--hula-surface-app] h-120px flex-center">
+    <div class="relative rounded-6px overflow-hidden bg-[--tjg-surface-app] h-120px flex-center">
       <StaticProxyMap
         v-if="body"
         :location="locationData"
@@ -29,10 +29,10 @@
         :draggable="false"
         :controls="false" />
       <div v-else class="flex-col-center gap-8px">
-        <svg class="size-32px color-[--hula-text-quaternary]">
+        <svg class="size-32px color-[--tjg-text-quaternary]">
           <use href="#cloudError"></use>
         </svg>
-        <span class="text-12px color-[--hula-text-quaternary]">{{ t('chat.location.cannot_display') }}</span>
+        <span class="text-12px color-[--tjg-text-quaternary]">{{ t('chat.location.cannot_display') }}</span>
       </div>
     </div>
   </main>
@@ -93,9 +93,9 @@ watch(
 .location-message {
   cursor: default;
   user-select: none;
-  @apply: w-260px flex flex-col h-fit bg-[--hula-surface-muted]
-  border-(1px solid [--hula-border-default])
-  hover:bg-[--hula-fill-hover] rounded-8px p-8px box-border
+  @apply: w-260px flex flex-col h-fit bg-[--tjg-surface-muted]
+  border-(1px solid [--tjg-border-default])
+  hover:bg-[--tjg-fill-hover] rounded-8px p-8px box-border
   custom-shadow transition-colors duration-200;
 }
 </style>

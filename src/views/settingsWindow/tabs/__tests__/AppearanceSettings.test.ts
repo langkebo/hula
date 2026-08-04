@@ -163,8 +163,8 @@ describe('AppearanceSettings', () => {
   })
 
   it('loads saved font size and bubble style on mount', () => {
-    localStorage.setItem('hula-font-size', '18')
-    localStorage.setItem('hula-bubble-style', 'false')
+    localStorage.setItem('tjg-font-size', '18')
+    localStorage.setItem('tjg-bubble-style', 'false')
 
     const wrapper = mount(AppearanceSettings)
     const vm = getVm(wrapper)
@@ -201,7 +201,7 @@ describe('AppearanceSettings', () => {
 
     vm.handleFontSizeChange(16)
 
-    expect(localStorage.getItem('hula-font-size')).toBe('16')
+    expect(localStorage.getItem('tjg-font-size')).toBe('16')
     expect(document.documentElement.style.getPropertyValue('--font-size-base')).toBe('16px')
     expect(messageSuccessMock).toHaveBeenCalledWith('字体大小已调整为 16px')
   })
@@ -225,7 +225,7 @@ describe('AppearanceSettings', () => {
 
     vm.handleBubbleStyleChange(false)
 
-    expect(localStorage.getItem('hula-bubble-style')).toBe('false')
+    expect(localStorage.getItem('tjg-bubble-style')).toBe('false')
     expect(messageSuccessMock).toHaveBeenCalledWith('方角气泡')
   })
 })

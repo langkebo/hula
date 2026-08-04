@@ -25,7 +25,7 @@ type Task = {
 }
 
 /** localStorage 元数据持久化键 */
-const METADATA_STORAGE_KEY = 'hula:thumbnail-cache-metadata'
+const METADATA_STORAGE_KEY = 'tjg:thumbnail-cache-metadata'
 /** 每多少次入队触发一次 TTL 清理 */
 const CLEANUP_INTERVAL = 100
 

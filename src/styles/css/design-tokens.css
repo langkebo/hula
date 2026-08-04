@@ -1,178 +1,178 @@
 :root {
-  /* ==================== Hula Design Tokens ==================== */
+  /* ==================== Tjg Design Tokens ==================== */
 
   /* 品牌色 */
-  --hula-brand: #13987f;
-  --hula-brand-light: #cef9ec;
-  --hula-brand-sidebar: #64a29c;
-  --hula-color-primary-500: var(--hula-brand);
-  --hula-color-primary-400: #1ab292;
-  --hula-color-primary-300: #64c9b3;
-  --hula-color-primary-600: #0f7a66;
-  --hula-color-primary-700: #0a5c4d;
-  --hula-color-primary-100: rgba(19, 152, 127, 0.1);
-  --hula-color-primary-200: rgba(19, 152, 127, 0.2);
-  --hula-color-primary-300-alpha: rgba(19, 152, 127, 0.3);
+  --tjg-brand: #13987f;
+  --tjg-brand-light: #cef9ec;
+  --tjg-brand-sidebar: #64a29c;
+  --tjg-color-primary-500: var(--tjg-brand);
+  --tjg-color-primary-400: #1ab292;
+  --tjg-color-primary-300: #64c9b3;
+  --tjg-color-primary-600: #0f7a66;
+  --tjg-color-primary-700: #0a5c4d;
+  --tjg-color-primary-100: rgba(19, 152, 127, 0.1);
+  --tjg-color-primary-200: rgba(19, 152, 127, 0.2);
+  --tjg-color-primary-300-alpha: rgba(19, 152, 127, 0.3);
 
   /* 功能色 */
-  --hula-color-success-500: #52c41a;
-  --hula-color-success-400: #73d13d;
-  --hula-color-success-600: #389e0d;
-  --hula-color-success-100: rgba(82, 196, 26, 0.1);
+  --tjg-color-success-500: #52c41a;
+  --tjg-color-success-400: #73d13d;
+  --tjg-color-success-600: #389e0d;
+  --tjg-color-success-100: rgba(82, 196, 26, 0.1);
 
-  --hula-color-warning-500: #faad14;
-  --hula-color-warning-400: #ffa940;
-  --hula-color-warning-600: #d46b08;
-  --hula-color-warning-100: rgba(250, 173, 20, 0.12);
+  --tjg-color-warning-500: #faad14;
+  --tjg-color-warning-400: #ffa940;
+  --tjg-color-warning-600: #d46b08;
+  --tjg-color-warning-100: rgba(250, 173, 20, 0.12);
 
-  --hula-color-danger-500: #ff4d4f;
-  --hula-color-danger-400: #ff7875;
-  --hula-color-danger-600: #cf1322;
-  --hula-color-danger-100: rgba(255, 77, 79, 0.05);
-  --hula-color-danger-200: rgba(255, 77, 79, 0.1);
+  --tjg-color-danger-500: #ff4d4f;
+  --tjg-color-danger-400: #ff7875;
+  --tjg-color-danger-600: #cf1322;
+  --tjg-color-danger-100: rgba(255, 77, 79, 0.05);
+  --tjg-color-danger-200: rgba(255, 77, 79, 0.1);
 
-  --hula-color-info-500: #1890ff;
-  --hula-color-info-400: #40a9ff;
-  --hula-color-info-600: #096dd9;
-  --hula-color-info-100: rgba(24, 144, 255, 0.12);
+  --tjg-color-info-500: #1890ff;
+  --tjg-color-info-400: #40a9ff;
+  --tjg-color-info-600: #096dd9;
+  --tjg-color-info-100: rgba(24, 144, 255, 0.12);
 
   /* 中性色 */
-  --hula-text-primary: #18181c;
-  --hula-text-secondary: #505050;
-  --hula-text-tertiary: #909090;
-  --hula-text-quaternary: #999999;
-  --hula-text-disabled: #bfbfbf;
-  --hula-text-inverse: #ffffff;
+  --tjg-text-primary: #18181c;
+  --tjg-text-secondary: #505050;
+  --tjg-text-tertiary: #909090;
+  --tjg-text-quaternary: #999999;
+  --tjg-text-disabled: #bfbfbf;
+  --tjg-text-inverse: #ffffff;
 
-  --hula-surface-app: #fafafa;
-  /* 阶段 9：三栏亮度渐进（需求文档 3.1.1）—— L0 最深 → L1 中等 → L2 最浅 */
-  --hula-surface-panel: #ffffff;
-  --hula-surface-list: #f7f7f7;
-  --hula-surface-sidebar: #f3f3f3;
-  --hula-surface-panel-muted: #f5f5f5;
-  --hula-surface-subtle: #f1f1f1;
-  --hula-surface-elevated: #fdfdfd;
-  --hula-surface-search: #eaeaea;
-  --hula-surface-sidebar-hover: rgba(0, 0, 0, 0.05);
-  --hula-surface-sidebar-active: rgba(0, 0, 0, 0.08);
-  --hula-surface-sidebar-selected: rgba(0, 0, 0, 0.08);
-  --hula-surface-list-hover: color-mix(in srgb, var(--hula-text-secondary) 8%, transparent);
-  --hula-surface-list-selected: color-mix(in srgb, var(--hula-color-primary-500) 12%, transparent);
-  --hula-surface-session-active: linear-gradient(135deg, #4ecdc4 0%, #3db8a8 100%);
-  --hula-surface-session-active-shadow: 0 2px 10px rgba(78, 205, 196, 0.3);
-  --hula-overlay: rgba(255, 255, 255, 0.65);
-  --hula-surface-inverse-hover: rgba(255, 255, 255, 0.15);
-  --hula-overlay-mask-default: rgba(0, 0, 0, 0.4);
-  --hula-overlay-mask-subtle: rgba(0, 0, 0, 0.2);
-  --hula-overlay-inverse-strong: rgba(0, 0, 0, 0.8);
+  --tjg-surface-app: #fafafa;
+  /* 阶段 9：三栏亮度渐进（详见 CONTEXT.md「三栏亮度渐进」术语）—— L0 最深 → L1 中等 → L2 最浅 */
+  --tjg-surface-panel: #ffffff;
+  --tjg-surface-list: #f7f7f7;
+  --tjg-surface-sidebar: #f3f3f3;
+  --tjg-surface-panel-muted: #f5f5f5;
+  --tjg-surface-subtle: #f1f1f1;
+  --tjg-surface-elevated: #fdfdfd;
+  --tjg-surface-search: #eaeaea;
+  --tjg-surface-sidebar-hover: rgba(0, 0, 0, 0.05);
+  --tjg-surface-sidebar-active: rgba(0, 0, 0, 0.08);
+  --tjg-surface-sidebar-selected: rgba(0, 0, 0, 0.08);
+  --tjg-surface-list-hover: color-mix(in srgb, var(--tjg-text-secondary) 8%, transparent);
+  --tjg-surface-list-selected: color-mix(in srgb, var(--tjg-color-primary-500) 12%, transparent);
+  --tjg-surface-session-active: linear-gradient(135deg, #4ecdc4 0%, #3db8a8 100%);
+  --tjg-surface-session-active-shadow: 0 2px 10px rgba(78, 205, 196, 0.3);
+  --tjg-overlay: rgba(255, 255, 255, 0.65);
+  --tjg-surface-inverse-hover: rgba(255, 255, 255, 0.15);
+  --tjg-overlay-mask-default: rgba(0, 0, 0, 0.4);
+  --tjg-overlay-mask-subtle: rgba(0, 0, 0, 0.2);
+  --tjg-overlay-inverse-strong: rgba(0, 0, 0, 0.8);
 
-  --hula-border-default: #e3e3e3;
-  --hula-border-muted: #f0f0f0;
-  --hula-border-strong: #d9d9d9;
-  --hula-border-contrast: rgba(255, 255, 255, 0.08);
-  --hula-border-inverse-muted: rgba(255, 255, 255, 0.6);
-  --hula-border-layout-divider: var(--hula-border-default);
+  --tjg-border-default: #e3e3e3;
+  --tjg-border-muted: #f0f0f0;
+  --tjg-border-strong: #d9d9d9;
+  --tjg-border-contrast: rgba(255, 255, 255, 0.08);
+  --tjg-border-inverse-muted: rgba(255, 255, 255, 0.6);
+  --tjg-border-layout-divider: var(--tjg-border-default);
 
-  --hula-status-online: #52c41a;
-  --hula-status-offline: #909090;
-  --hula-status-busy: #ff4d4f;
-  --hula-status-away: #faad14;
+  --tjg-status-online: #52c41a;
+  --tjg-status-offline: #909090;
+  --tjg-status-busy: #ff4d4f;
+  --tjg-status-away: #faad14;
 
   /* 字体 */
-  --hula-font-family:
+  --tjg-font-family:
     'PingFang',
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
     Roboto,
     sans-serif;
-  --hula-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  --tjg-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
 
-  --hula-font-size-xs: 10px;
-  --hula-font-size-sm: 12px;
-  --hula-font-size-base: 14px;
-  --hula-font-size-lg: 16px;
-  --hula-font-size-xl: 18px;
-  --hula-font-size-2xl: 20px;
-  --hula-font-size-3xl: 24px;
+  --tjg-font-size-xs: 10px;
+  --tjg-font-size-sm: 12px;
+  --tjg-font-size-base: 14px;
+  --tjg-font-size-lg: 16px;
+  --tjg-font-size-xl: 18px;
+  --tjg-font-size-2xl: 20px;
+  --tjg-font-size-3xl: 24px;
 
-  --hula-font-weight-normal: 400;
-  --hula-font-weight-medium: 500;
-  --hula-font-weight-semibold: 600;
-  --hula-font-weight-bold: 700;
+  --tjg-font-weight-normal: 400;
+  --tjg-font-weight-medium: 500;
+  --tjg-font-weight-semibold: 600;
+  --tjg-font-weight-bold: 700;
 
-  --hula-line-height-tight: 1.25;
-  --hula-line-height-normal: 1.5;
-  --hula-line-height-relaxed: 1.75;
+  --tjg-line-height-tight: 1.25;
+  --tjg-line-height-normal: 1.5;
+  --tjg-line-height-relaxed: 1.75;
 
   /* 间距 */
-  --hula-space-0: 0;
-  --hula-space-1: 4px;
-  --hula-space-2: 8px;
-  --hula-space-3: 12px;
-  --hula-space-4: 16px;
-  --hula-space-5: 20px;
-  --hula-space-6: 24px;
-  --hula-space-8: 32px;
-  --hula-space-10: 40px;
+  --tjg-space-0: 0;
+  --tjg-space-1: 4px;
+  --tjg-space-2: 8px;
+  --tjg-space-3: 12px;
+  --tjg-space-4: 16px;
+  --tjg-space-5: 20px;
+  --tjg-space-6: 24px;
+  --tjg-space-8: 32px;
+  --tjg-space-10: 40px;
 
   /* 圆角 */
-  --hula-radius-none: 0;
-  --hula-radius-xs: 4px;
-  --hula-radius-sm: 8px;
-  --hula-radius-md: 10px;
-  --hula-radius-lg: 12px;
-  --hula-radius-xl: 16px;
-  --hula-radius-2xl: 20px;
-  --hula-radius-full: 9999px;
+  --tjg-radius-none: 0;
+  --tjg-radius-xs: 4px;
+  --tjg-radius-sm: 8px;
+  --tjg-radius-md: 10px;
+  --tjg-radius-lg: 12px;
+  --tjg-radius-xl: 16px;
+  --tjg-radius-2xl: 20px;
+  --tjg-radius-full: 9999px;
 
   /* 阴影 */
-  --hula-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --hula-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --hula-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
-  --hula-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
-  --hula-shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.04);
-  --hula-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --hula-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.15);
-  --hula-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
-  --hula-shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.2);
-  --hula-shadow-top-bar: 0 -3px 6px -4px rgba(0, 0, 0, 0.1);
+  --tjg-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --tjg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --tjg-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --tjg-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --tjg-shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --tjg-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --tjg-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --tjg-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --tjg-shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --tjg-shadow-top-bar: 0 -3px 6px -4px rgba(0, 0, 0, 0.1);
 
   /* 动效 */
-  --hula-motion-duration-fast: 120ms;
-  --hula-motion-duration-normal: 180ms;
-  --hula-motion-duration-slow: 240ms;
-  --hula-motion-duration-overlay: 280ms;
-  --hula-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --hula-motion-ease-enter: cubic-bezier(0, 0, 0, 1);
-  --hula-motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --tjg-motion-duration-fast: 120ms;
+  --tjg-motion-duration-normal: 180ms;
+  --tjg-motion-duration-slow: 240ms;
+  --tjg-motion-duration-overlay: 280ms;
+  --tjg-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --tjg-motion-ease-enter: cubic-bezier(0, 0, 0, 1);
+  --tjg-motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
 
   /* 设置壳层 */
-  --hula-settings-sidebar-width: 240px;
-  --hula-settings-content-max-width: 960px;
-  --hula-settings-header-height: 88px;
-  --hula-settings-divider: rgba(0, 0, 0, 0.05);
-  --hula-settings-card-bg: rgba(0, 0, 0, 0.02);
-  --hula-settings-card-bg-hover: rgba(0, 0, 0, 0.03);
-  --hula-settings-meter-bg: rgba(0, 0, 0, 0.1);
-  --hula-settings-warning-bg: var(--hula-color-warning-100);
-  --hula-surface-media-preview: #000000;
-  --hula-settings-preview-light-shell: #f5f5f5;
-  --hula-settings-preview-light-sidebar: #e8e8e8;
-  --hula-settings-preview-light-content: #ffffff;
-  --hula-settings-preview-dark-shell: #1a1a1a;
-  --hula-settings-preview-dark-sidebar: #2a2a2a;
-  --hula-settings-preview-dark-content: #333333;
+  --tjg-settings-sidebar-width: 240px;
+  --tjg-settings-content-max-width: 960px;
+  --tjg-settings-header-height: 88px;
+  --tjg-settings-divider: rgba(0, 0, 0, 0.05);
+  --tjg-settings-card-bg: rgba(0, 0, 0, 0.02);
+  --tjg-settings-card-bg-hover: rgba(0, 0, 0, 0.03);
+  --tjg-settings-meter-bg: rgba(0, 0, 0, 0.1);
+  --tjg-settings-warning-bg: var(--tjg-color-warning-100);
+  --tjg-surface-media-preview: #000000;
+  --tjg-settings-preview-light-shell: #f5f5f5;
+  --tjg-settings-preview-light-sidebar: #e8e8e8;
+  --tjg-settings-preview-light-content: #ffffff;
+  --tjg-settings-preview-dark-shell: #1a1a1a;
+  --tjg-settings-preview-dark-sidebar: #2a2a2a;
+  --tjg-settings-preview-dark-content: #333333;
 
   /* 菜单与浮层 */
-  --hula-menu-bg: linear-gradient(
+  --tjg-menu-bg: linear-gradient(
     45deg,
-    color-mix(in srgb, var(--hula-surface-panel) 45%, transparent) 40%,
-    color-mix(in srgb, var(--hula-surface-panel) 65%, transparent) 60%
+    color-mix(in srgb, var(--tjg-surface-panel) 45%, transparent) 40%,
+    color-mix(in srgb, var(--tjg-surface-panel) 65%, transparent) 60%
   );
-  --hula-menu-hover: color-mix(in srgb, var(--hula-text-primary) 10%, transparent);
-  --hula-shadow-floating-menu:
-    0 0 0 1px var(--hula-border-contrast),
+  --tjg-menu-hover: color-mix(in srgb, var(--tjg-text-primary) 10%, transparent);
+  --tjg-shadow-floating-menu:
+    0 0 0 1px var(--tjg-border-contrast),
     0 2px 2px rgb(0 0 0 / 3%),
     0 4px 4px rgb(0 0 0 / 4%),
     0 10px 8px rgb(0 0 0 / 5%),
@@ -181,140 +181,140 @@
     0 70px 65px rgb(0 0 0 / 9%);
 
   /* 业务辅助色 */
-  --hula-color-beta-500: #a789d9;
-  --hula-color-beta-100: #d9ccf7;
+  --tjg-color-beta-500: #a789d9;
+  --tjg-color-beta-100: #d9ccf7;
 
   /* 业务语义色 */
-  --hula-room-unread-badge-bg: var(--hula-color-primary-500);
-  --hula-room-highlight-badge-bg: var(--hula-color-danger-500);
-  --hula-room-invite-bg: var(--hula-color-primary-100);
-  --hula-room-tombstoned-text: var(--hula-text-disabled);
-  --hula-space-public-badge-bg: var(--hula-color-success-100);
-  --hula-space-invite-badge-bg: var(--hula-color-warning-100);
-  --hula-friend-favorite-badge-bg: var(--hula-color-warning-100);
-  --hula-friend-blocked-badge-bg: var(--hula-color-danger-100);
-  --hula-sync-recovering-bg: var(--hula-color-warning-100);
+  --tjg-room-unread-badge-bg: var(--tjg-color-primary-500);
+  --tjg-room-highlight-badge-bg: var(--tjg-color-danger-500);
+  --tjg-room-invite-bg: var(--tjg-color-primary-100);
+  --tjg-room-tombstoned-text: var(--tjg-text-disabled);
+  --tjg-space-public-badge-bg: var(--tjg-color-success-100);
+  --tjg-space-invite-badge-bg: var(--tjg-color-warning-100);
+  --tjg-friend-favorite-badge-bg: var(--tjg-color-warning-100);
+  --tjg-friend-blocked-badge-bg: var(--tjg-color-danger-100);
+  --tjg-sync-recovering-bg: var(--tjg-color-warning-100);
 
   /* 管理后台 */
-  --hula-admin-sidebar-bg: #1a1a2e;
-  --hula-admin-sidebar-text: color-mix(in srgb, var(--hula-text-inverse) 65%, transparent);
-  --hula-admin-sidebar-border: var(--hula-border-contrast);
-  --hula-admin-sidebar-hover: color-mix(in srgb, var(--hula-text-inverse) 8%, transparent);
-  --hula-admin-bg: #f0f2f5;
-  --hula-admin-card-bg: var(--hula-surface-panel);
-  --hula-admin-card-shadow: 0 1px 3px rgb(0 0 0 / 6%);
-  --hula-admin-card-shadow-hover: 0 4px 12px rgb(0 0 0 / 10%);
-  --hula-admin-header-border: #e8e8e8;
-  --hula-admin-title-color: #333333;
-  --hula-admin-stat-value-color: #333333;
-  --hula-admin-health-ok-bg: #e8f5e9;
-  --hula-admin-health-ok-text: #2e7d32;
-  --hula-admin-health-err-bg: #ffebee;
-  --hula-admin-health-err-text: #c62828;
+  --tjg-admin-sidebar-bg: #1a1a2e;
+  --tjg-admin-sidebar-text: color-mix(in srgb, var(--tjg-text-inverse) 65%, transparent);
+  --tjg-admin-sidebar-border: var(--tjg-border-contrast);
+  --tjg-admin-sidebar-hover: color-mix(in srgb, var(--tjg-text-inverse) 8%, transparent);
+  --tjg-admin-bg: #f0f2f5;
+  --tjg-admin-card-bg: var(--tjg-surface-panel);
+  --tjg-admin-card-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+  --tjg-admin-card-shadow-hover: 0 4px 12px rgb(0 0 0 / 10%);
+  --tjg-admin-header-border: #e8e8e8;
+  --tjg-admin-title-color: #333333;
+  --tjg-admin-stat-value-color: #333333;
+  --tjg-admin-health-ok-bg: #e8f5e9;
+  --tjg-admin-health-ok-text: #2e7d32;
+  --tjg-admin-health-err-bg: #ffebee;
+  --tjg-admin-health-err-text: #c62828;
 
-  --hula-encryption-surface-subtle: rgba(0, 0, 0, 0.02);
-  --hula-encryption-surface-dark: rgba(255, 255, 255, 0.05);
-  --hula-overlay-mobile-sheet: rgba(255, 255, 255, 0.85);
-  --hula-color-indigo-500: #6366f1;
-  --hula-color-indigo-100: rgba(99, 102, 241, 0.14);
-  --hula-color-purple-500: #722ed1;
-  --hula-color-purple-100: rgba(114, 46, 209, 0.14);
-  --hula-admin-notice-text: #2a5f9e;
-  --hula-admin-notice-bg: #eef6ff;
+  --tjg-encryption-surface-subtle: rgba(0, 0, 0, 0.02);
+  --tjg-encryption-surface-dark: rgba(255, 255, 255, 0.05);
+  --tjg-overlay-mobile-sheet: rgba(255, 255, 255, 0.85);
+  --tjg-color-indigo-500: #6366f1;
+  --tjg-color-indigo-100: rgba(99, 102, 241, 0.14);
+  --tjg-color-purple-500: #722ed1;
+  --tjg-color-purple-100: rgba(114, 46, 209, 0.14);
+  --tjg-admin-notice-text: #2a5f9e;
+  --tjg-admin-notice-bg: #eef6ff;
 
   /* ==================== Backward-Compatible Aliases ==================== */
 
-  --color-primary: var(--hula-color-primary-500);
-  --color-primary-light: var(--hula-color-primary-400);
-  --color-primary-lighter: var(--hula-color-primary-300);
-  --color-primary-dark: var(--hula-color-primary-600);
-  --color-primary-darker: var(--hula-color-primary-700);
+  --color-primary: var(--tjg-color-primary-500);
+  --color-primary-light: var(--tjg-color-primary-400);
+  --color-primary-lighter: var(--tjg-color-primary-300);
+  --color-primary-dark: var(--tjg-color-primary-600);
+  --color-primary-darker: var(--tjg-color-primary-700);
 
-  --color-success: var(--hula-color-success-500);
-  --color-success-light: var(--hula-color-success-400);
-  --color-success-dark: var(--hula-color-success-600);
+  --color-success: var(--tjg-color-success-500);
+  --color-success-light: var(--tjg-color-success-400);
+  --color-success-dark: var(--tjg-color-success-600);
 
-  --color-warning: var(--hula-color-warning-500);
-  --color-warning-light: var(--hula-color-warning-400);
-  --color-warning-dark: var(--hula-color-warning-600);
+  --color-warning: var(--tjg-color-warning-500);
+  --color-warning-light: var(--tjg-color-warning-400);
+  --color-warning-dark: var(--tjg-color-warning-600);
 
-  --color-danger: var(--hula-color-danger-500);
-  --color-danger-light: var(--hula-color-danger-400);
-  --color-danger-dark: var(--hula-color-danger-600);
+  --color-danger: var(--tjg-color-danger-500);
+  --color-danger-light: var(--tjg-color-danger-400);
+  --color-danger-dark: var(--tjg-color-danger-600);
 
-  --color-info: var(--hula-color-info-500);
-  --color-info-light: var(--hula-color-info-400);
-  --color-info-dark: var(--hula-color-info-600);
+  --color-info: var(--tjg-color-info-500);
+  --color-info-light: var(--tjg-color-info-400);
+  --color-info-dark: var(--tjg-color-info-600);
 
-  --color-text-primary: var(--hula-text-primary);
-  --color-text-secondary: var(--hula-text-secondary);
-  --color-text-tertiary: var(--hula-text-tertiary);
-  --color-text-quaternary: var(--hula-text-tertiary);
-  --color-text-disabled: var(--hula-text-disabled);
-  --color-text-white: var(--hula-text-inverse);
+  --color-text-primary: var(--tjg-text-primary);
+  --color-text-secondary: var(--tjg-text-secondary);
+  --color-text-tertiary: var(--tjg-text-tertiary);
+  --color-text-quaternary: var(--tjg-text-tertiary);
+  --color-text-disabled: var(--tjg-text-disabled);
+  --color-text-white: var(--tjg-text-inverse);
 
-  --color-bg-primary: var(--hula-surface-panel);
-  --color-bg-secondary: var(--hula-surface-panel-muted);
+  --color-bg-primary: var(--tjg-surface-panel);
+  --color-bg-secondary: var(--tjg-surface-panel-muted);
   --color-bg-tertiary: #e8e8e8;
-  --color-bg-quaternary: var(--hula-border-strong);
+  --color-bg-quaternary: var(--tjg-border-strong);
   --color-bg-hover: rgba(0, 0, 0, 0.04);
   --color-bg-active: rgba(0, 0, 0, 0.08);
 
-  --color-border-primary: var(--hula-border-strong);
+  --color-border-primary: var(--tjg-border-strong);
   --color-border-secondary: #e8e8e8;
-  --color-border-tertiary: var(--hula-border-muted);
+  --color-border-tertiary: var(--tjg-border-muted);
 
-  --color-online: var(--hula-status-online);
-  --color-offline: var(--hula-status-offline);
-  --color-busy: var(--hula-status-busy);
-  --color-away: var(--hula-status-away);
+  --color-online: var(--tjg-status-online);
+  --color-offline: var(--tjg-status-offline);
+  --color-busy: var(--tjg-status-busy);
+  --color-away: var(--tjg-status-away);
 
-  --font-family: var(--hula-font-family);
-  --font-family-mono: var(--hula-font-family-mono);
+  --font-family: var(--tjg-font-family);
+  --font-family-mono: var(--tjg-font-family-mono);
 
-  --font-size-xs: var(--hula-font-size-xs);
-  --font-size-sm: var(--hula-font-size-sm);
-  --font-size-base: var(--hula-font-size-base);
-  --font-size-lg: var(--hula-font-size-lg);
-  --font-size-xl: var(--hula-font-size-xl);
-  --font-size-2xl: var(--hula-font-size-2xl);
-  --font-size-3xl: var(--hula-font-size-3xl);
+  --font-size-xs: var(--tjg-font-size-xs);
+  --font-size-sm: var(--tjg-font-size-sm);
+  --font-size-base: var(--tjg-font-size-base);
+  --font-size-lg: var(--tjg-font-size-lg);
+  --font-size-xl: var(--tjg-font-size-xl);
+  --font-size-2xl: var(--tjg-font-size-2xl);
+  --font-size-3xl: var(--tjg-font-size-3xl);
 
-  --font-weight-normal: var(--hula-font-weight-normal);
-  --font-weight-medium: var(--hula-font-weight-medium);
-  --font-weight-semibold: var(--hula-font-weight-semibold);
-  --font-weight-bold: var(--hula-font-weight-bold);
+  --font-weight-normal: var(--tjg-font-weight-normal);
+  --font-weight-medium: var(--tjg-font-weight-medium);
+  --font-weight-semibold: var(--tjg-font-weight-semibold);
+  --font-weight-bold: var(--tjg-font-weight-bold);
 
-  --line-height-tight: var(--hula-line-height-tight);
-  --line-height-normal: var(--hula-line-height-normal);
-  --line-height-relaxed: var(--hula-line-height-relaxed);
+  --line-height-tight: var(--tjg-line-height-tight);
+  --line-height-normal: var(--tjg-line-height-normal);
+  --line-height-relaxed: var(--tjg-line-height-relaxed);
 
-  --spacing-0: var(--hula-space-0);
-  --spacing-xs: var(--hula-space-1);
-  --spacing-sm: var(--hula-space-2);
-  --spacing-md: var(--hula-space-3);
-  --spacing-lg: var(--hula-space-4);
-  --spacing-xl: var(--hula-space-5);
-  --spacing-2xl: var(--hula-space-6);
-  --spacing-3xl: var(--hula-space-8);
-  --spacing-4xl: var(--hula-space-10);
+  --spacing-0: var(--tjg-space-0);
+  --spacing-xs: var(--tjg-space-1);
+  --spacing-sm: var(--tjg-space-2);
+  --spacing-md: var(--tjg-space-3);
+  --spacing-lg: var(--tjg-space-4);
+  --spacing-xl: var(--tjg-space-5);
+  --spacing-2xl: var(--tjg-space-6);
+  --spacing-3xl: var(--tjg-space-8);
+  --spacing-4xl: var(--tjg-space-10);
 
-  --radius-none: var(--hula-radius-none);
-  --radius-sm: var(--hula-radius-xs);
-  --radius-md: var(--hula-radius-sm);
-  --radius-lg: var(--hula-radius-lg);
-  --radius-xl: var(--hula-radius-xl);
-  --radius-2xl: var(--hula-radius-2xl);
-  --radius-full: var(--hula-radius-full);
+  --radius-none: var(--tjg-radius-none);
+  --radius-sm: var(--tjg-radius-xs);
+  --radius-md: var(--tjg-radius-sm);
+  --radius-lg: var(--tjg-radius-lg);
+  --radius-xl: var(--tjg-radius-xl);
+  --radius-2xl: var(--tjg-radius-2xl);
+  --radius-full: var(--tjg-radius-full);
 
-  --shadow-sm: var(--hula-shadow-sm);
-  --shadow-md: var(--hula-shadow-md);
-  --shadow-lg: var(--hula-shadow-lg);
-  --shadow-xl: var(--hula-shadow-xl);
+  --shadow-sm: var(--tjg-shadow-sm);
+  --shadow-md: var(--tjg-shadow-md);
+  --shadow-lg: var(--tjg-shadow-lg);
+  --shadow-xl: var(--tjg-shadow-xl);
 
-  --transition-fast: var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
-  --transition-normal: var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
-  --transition-slow: var(--hula-motion-duration-slow) var(--hula-motion-ease-standard);
+  --transition-fast: var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+  --transition-normal: var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
+  --transition-slow: var(--tjg-motion-duration-slow) var(--tjg-motion-ease-standard);
 
   --z-index-dropdown: 1000;
   --z-index-sticky: 1020;
@@ -329,293 +329,293 @@
   --shadow-enabled: 1;
   --font-family: 'PingFang';
   --blur-enabled: 1;
-  --color-primary: var(--hula-color-primary-500);
-  --color-primary-light: var(--hula-color-primary-100);
-  --color-primary-hover: var(--hula-color-primary-200);
-  --color-primary-active: var(--hula-color-primary-300-alpha);
-  --color-success: var(--hula-color-success-500);
-  --color-success-light: var(--hula-color-success-100);
-  --color-warning: var(--hula-color-warning-500);
-  --color-warning-light: var(--hula-color-warning-100);
-  --color-danger: var(--hula-color-danger-500);
-  --color-danger-light: var(--hula-color-danger-100);
-  --color-danger-hover: var(--hula-color-danger-200);
-  --color-info: var(--hula-color-info-500);
-  --color-info-light: var(--hula-color-info-100);
-  --color-text-tertiary: var(--hula-text-tertiary);
-  --color-text-quaternary: var(--hula-text-quaternary);
-  --color-text-secondary: var(--hula-text-secondary);
-  --app-bg-color: var(--hula-surface-app);
-  --left-bg-color: var(--hula-surface-sidebar);
-  --left-active-bg-color: var(--hula-surface-sidebar-selected);
+  --color-primary: var(--tjg-color-primary-500);
+  --color-primary-light: var(--tjg-color-primary-100);
+  --color-primary-hover: var(--tjg-color-primary-200);
+  --color-primary-active: var(--tjg-color-primary-300-alpha);
+  --color-success: var(--tjg-color-success-500);
+  --color-success-light: var(--tjg-color-success-100);
+  --color-warning: var(--tjg-color-warning-500);
+  --color-warning-light: var(--tjg-color-warning-100);
+  --color-danger: var(--tjg-color-danger-500);
+  --color-danger-light: var(--tjg-color-danger-100);
+  --color-danger-hover: var(--tjg-color-danger-200);
+  --color-info: var(--tjg-color-info-500);
+  --color-info-light: var(--tjg-color-info-100);
+  --color-text-tertiary: var(--tjg-text-tertiary);
+  --color-text-quaternary: var(--tjg-text-quaternary);
+  --color-text-secondary: var(--tjg-text-secondary);
+  --app-bg-color: var(--tjg-surface-app);
+  --left-bg-color: var(--tjg-surface-sidebar);
+  --left-active-bg-color: var(--tjg-surface-sidebar-selected);
   --left-text-color: #e3e3e3;
   --left-icon-color: #e3e3e3;
   --left-active-hover: #f1f1f1;
-  --left-bg-hover: var(--hula-surface-sidebar-hover);
+  --left-bg-hover: var(--tjg-surface-sidebar-hover);
   --left-active-icon-color: #f1f1f1;
   --left-win-icon-color: rgba(255, 255, 255, 0.4);
-  --center-bg-color: var(--hula-surface-panel);
-  --right-bg-color: var(--hula-surface-subtle);
-  --text-color: var(--hula-text-primary);
-  --icon-color: var(--hula-text-primary);
-  --action-bar-icon-color: var(--hula-text-secondary);
-  --action-bar-icon-hover: var(--hula-surface-search);
-  --search-bg-color: var(--hula-surface-search);
-  --bg-msg-first-child: var(--hula-surface-search);
-  --bg-msg-hover: var(--hula-surface-panel-muted);
-  --bg-active-msg: var(--hula-color-primary-500);
-  --bg-chat-drawer: var(--hula-surface-panel-muted);
-  --bg-setting-item: var(--hula-surface-elevated);
-  --setting-item-line: var(--hula-surface-subtle);
-  --bg-popover: var(--hula-surface-elevated);
-  --bg-menu: var(--hula-menu-bg);
-  --bg-menu-hover: var(--hula-menu-hover);
-  --line-color: var(--hula-border-default);
-  --bg-left-menu: var(--hula-surface-subtle);
-  --bg-left-menu-hover: color-mix(in srgb, var(--hula-text-secondary) 10%, transparent);
-  --bg-left-active: var(--hula-surface-sidebar-active);
-  --button-bg-color: var(--hula-surface-subtle);
-  --disabled-color: var(--hula-text-disabled);
-  --bg-bubble: var(--hula-surface-elevated);
-  --bg-bubble-active: var(--hula-surface-subtle);
-  --bg-translate-bubble: color-mix(in srgb, var(--hula-text-tertiary) 25%, transparent);
-  --bg-avatar: var(--hula-surface-subtle);
-  --info-hover: color-mix(in srgb, var(--hula-surface-subtle) 45%, transparent);
-  --info-text-color: var(--hula-text-primary);
-  --tray-hover: var(--hula-surface-search);
-  --tray-hover-e: color-mix(in srgb, var(--hula-color-danger-100) 85%, var(--hula-surface-panel));
-  --bg-info: var(--hula-surface-panel);
-  --bg-emoji: var(--hula-surface-overlay);
-  --reply-color: var(--hula-text-tertiary);
-  --reply-hover: var(--hula-text-secondary);
-  --bg-reply-img-count: var(--hula-border-default);
-  --bg-edit: var(--hula-border-muted);
-  --time-color: var(--hula-border-default);
-  --chat-bt-color: var(--hula-text-inverse);
-  --chat-left-bg: color-mix(in srgb, var(--hula-color-primary-200) 65%, var(--hula-surface-panel));
-  --chat-right-bg: var(--hula-surface-subtle);
-  --chat-text-color: var(--hula-text-secondary);
-  --chat-hover-color: var(--hula-border-default);
-  --search-color: var(--hula-surface-search);
-  --bate-color: var(--hula-color-beta-500);
-  --bate-bg: var(--hula-color-beta-100);
-  --card-bg: var(--hula-color-primary-300-alpha);
-  --progress-bg: color-mix(in srgb, var(--hula-color-primary-100) 80%, var(--hula-surface-panel));
-  --reply-bg: color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent);
-  --danger-text: var(--hula-color-danger-500);
-  --danger-bg: var(--hula-color-danger-100);
-  --warning-text: var(--hula-color-warning-500);
-  --warning-bg: var(--hula-color-warning-100);
-  --avatar-border-color: var(--hula-surface-panel);
-  --avatar-hover-bg: color-mix(in srgb, var(--hula-surface-panel) 70%, transparent);
-  --plugin-bg-color: var(--hula-surface-search);
-  --float-block-hover-color: var(--hula-text-tertiary);
-  --float-hover-bg-color: color-mix(in srgb, var(--hula-color-primary-100) 80%, var(--hula-surface-panel));
-  --group-notice-list-bg: color-mix(in srgb, var(--hula-surface-panel) 72%, transparent);
-  --file-bg-color: var(--hula-surface-elevated);
-  --van-dialog-confirm-button-text-color: var(--hula-color-primary-500);
-  --admin-sidebar-bg: var(--hula-admin-sidebar-bg);
-  --admin-sidebar-text: var(--hula-admin-sidebar-text);
-  --admin-sidebar-border: var(--hula-admin-sidebar-border);
-  --admin-sidebar-hover: var(--hula-admin-sidebar-hover);
-  --admin-bg: var(--hula-admin-bg);
-  --admin-card-bg: var(--hula-admin-card-bg);
-  --admin-card-shadow: var(--hula-admin-card-shadow);
-  --admin-card-shadow-hover: var(--hula-admin-card-shadow-hover);
-  --admin-header-border: var(--hula-admin-header-border);
-  --admin-title-color: var(--hula-admin-title-color);
-  --admin-stat-value-color: var(--hula-admin-stat-value-color);
-  --admin-health-ok-bg: var(--hula-admin-health-ok-bg);
-  --admin-health-ok-text: var(--hula-admin-health-ok-text);
-  --admin-health-err-bg: var(--hula-admin-health-err-bg);
-  --admin-health-err-text: var(--hula-admin-health-err-text);
-  --login-avatar-border: var(--hula-surface-panel);
-  --login-avatar-bg: var(--hula-surface-panel);
+  --center-bg-color: var(--tjg-surface-panel);
+  --right-bg-color: var(--tjg-surface-subtle);
+  --text-color: var(--tjg-text-primary);
+  --icon-color: var(--tjg-text-primary);
+  --action-bar-icon-color: var(--tjg-text-secondary);
+  --action-bar-icon-hover: var(--tjg-surface-search);
+  --search-bg-color: var(--tjg-surface-search);
+  --bg-msg-first-child: var(--tjg-surface-search);
+  --bg-msg-hover: var(--tjg-surface-panel-muted);
+  --bg-active-msg: var(--tjg-color-primary-500);
+  --bg-chat-drawer: var(--tjg-surface-panel-muted);
+  --bg-setting-item: var(--tjg-surface-elevated);
+  --setting-item-line: var(--tjg-surface-subtle);
+  --bg-popover: var(--tjg-surface-elevated);
+  --bg-menu: var(--tjg-menu-bg);
+  --bg-menu-hover: var(--tjg-menu-hover);
+  --line-color: var(--tjg-border-default);
+  --bg-left-menu: var(--tjg-surface-subtle);
+  --bg-left-menu-hover: color-mix(in srgb, var(--tjg-text-secondary) 10%, transparent);
+  --bg-left-active: var(--tjg-surface-sidebar-active);
+  --button-bg-color: var(--tjg-surface-subtle);
+  --disabled-color: var(--tjg-text-disabled);
+  --bg-bubble: var(--tjg-surface-elevated);
+  --bg-bubble-active: var(--tjg-surface-subtle);
+  --bg-translate-bubble: color-mix(in srgb, var(--tjg-text-tertiary) 25%, transparent);
+  --bg-avatar: var(--tjg-surface-subtle);
+  --info-hover: color-mix(in srgb, var(--tjg-surface-subtle) 45%, transparent);
+  --info-text-color: var(--tjg-text-primary);
+  --tray-hover: var(--tjg-surface-search);
+  --tray-hover-e: color-mix(in srgb, var(--tjg-color-danger-100) 85%, var(--tjg-surface-panel));
+  --bg-info: var(--tjg-surface-panel);
+  --bg-emoji: var(--tjg-surface-overlay);
+  --reply-color: var(--tjg-text-tertiary);
+  --reply-hover: var(--tjg-text-secondary);
+  --bg-reply-img-count: var(--tjg-border-default);
+  --bg-edit: var(--tjg-border-muted);
+  --time-color: var(--tjg-border-default);
+  --chat-bt-color: var(--tjg-text-inverse);
+  --chat-left-bg: color-mix(in srgb, var(--tjg-color-primary-200) 65%, var(--tjg-surface-panel));
+  --chat-right-bg: var(--tjg-surface-subtle);
+  --chat-text-color: var(--tjg-text-secondary);
+  --chat-hover-color: var(--tjg-border-default);
+  --search-color: var(--tjg-surface-search);
+  --bate-color: var(--tjg-color-beta-500);
+  --bate-bg: var(--tjg-color-beta-100);
+  --card-bg: var(--tjg-color-primary-300-alpha);
+  --progress-bg: color-mix(in srgb, var(--tjg-color-primary-100) 80%, var(--tjg-surface-panel));
+  --reply-bg: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
+  --danger-text: var(--tjg-color-danger-500);
+  --danger-bg: var(--tjg-color-danger-100);
+  --warning-text: var(--tjg-color-warning-500);
+  --warning-bg: var(--tjg-color-warning-100);
+  --avatar-border-color: var(--tjg-surface-panel);
+  --avatar-hover-bg: color-mix(in srgb, var(--tjg-surface-panel) 70%, transparent);
+  --plugin-bg-color: var(--tjg-surface-search);
+  --float-block-hover-color: var(--tjg-text-tertiary);
+  --float-hover-bg-color: color-mix(in srgb, var(--tjg-color-primary-100) 80%, var(--tjg-surface-panel));
+  --group-notice-list-bg: color-mix(in srgb, var(--tjg-surface-panel) 72%, transparent);
+  --file-bg-color: var(--tjg-surface-elevated);
+  --van-dialog-confirm-button-text-color: var(--tjg-color-primary-500);
+  --admin-sidebar-bg: var(--tjg-admin-sidebar-bg);
+  --admin-sidebar-text: var(--tjg-admin-sidebar-text);
+  --admin-sidebar-border: var(--tjg-admin-sidebar-border);
+  --admin-sidebar-hover: var(--tjg-admin-sidebar-hover);
+  --admin-bg: var(--tjg-admin-bg);
+  --admin-card-bg: var(--tjg-admin-card-bg);
+  --admin-card-shadow: var(--tjg-admin-card-shadow);
+  --admin-card-shadow-hover: var(--tjg-admin-card-shadow-hover);
+  --admin-header-border: var(--tjg-admin-header-border);
+  --admin-title-color: var(--tjg-admin-title-color);
+  --admin-stat-value-color: var(--tjg-admin-stat-value-color);
+  --admin-health-ok-bg: var(--tjg-admin-health-ok-bg);
+  --admin-health-ok-text: var(--tjg-admin-health-ok-text);
+  --admin-health-err-bg: var(--tjg-admin-health-err-bg);
+  --admin-health-err-text: var(--tjg-admin-health-err-text);
+  --login-avatar-border: var(--tjg-surface-panel);
+  --login-avatar-bg: var(--tjg-surface-panel);
   --login-dropdown-bg: rgba(253, 253, 253, 0.6);
   --login-dropdown-border: rgba(70, 70, 70, 0.1);
-  --login-divider-color: var(--hula-border-default);
-  --login-third-party-divider-color: var(--hula-border-muted);
-  --login-surface-bg: var(--hula-surface-panel);
-  --avatar-fallback-color: var(--hula-text-inverse);
+  --login-divider-color: var(--tjg-border-default);
+  --login-third-party-divider-color: var(--tjg-border-muted);
+  --login-surface-bg: var(--tjg-surface-panel);
+  --avatar-fallback-color: var(--tjg-text-inverse);
   --avatar-fallback-src: /logoD.png;
-  --voice-icon-color-other: var(--hula-text-primary);
+  --voice-icon-color-other: var(--tjg-text-primary);
   --action-close-hover-bg: #c22b1c;
-  --action-close-hover-icon: var(--hula-text-inverse);
-  --plugin-icon-bg: color-mix(in srgb, var(--hula-text-quaternary) 6%, transparent);
-  --plugin-downloading-bg: color-mix(in srgb, var(--hula-color-info-500) 55%, var(--hula-surface-panel));
-  --plugin-downloading-text: var(--hula-color-info-500);
-  --tag-danger-bg: color-mix(in srgb, var(--hula-color-danger-500) 12%, var(--hula-surface-panel));
-  --tag-neutral-bg: var(--hula-surface-subtle);
-  --tag-info-bg: var(--hula-color-info-100);
-  --time-group-bg: color-mix(in srgb, var(--hula-surface-subtle) 50%, transparent);
-  --pin-input-bg: var(--hula-surface-elevated);
-  --badge-danger-bg: var(--hula-color-danger-500);
-  --badge-danger-text: var(--hula-text-inverse);
-  --bg-offline-avatar-overlay: color-mix(in srgb, var(--hula-text-tertiary) 70%, transparent);
-  --bg-long-press-menu: var(--hula-surface-subtle);
+  --action-close-hover-icon: var(--tjg-text-inverse);
+  --plugin-icon-bg: color-mix(in srgb, var(--tjg-text-quaternary) 6%, transparent);
+  --plugin-downloading-bg: color-mix(in srgb, var(--tjg-color-info-500) 55%, var(--tjg-surface-panel));
+  --plugin-downloading-text: var(--tjg-color-info-500);
+  --tag-danger-bg: color-mix(in srgb, var(--tjg-color-danger-500) 12%, var(--tjg-surface-panel));
+  --tag-neutral-bg: var(--tjg-surface-subtle);
+  --tag-info-bg: var(--tjg-color-info-100);
+  --time-group-bg: color-mix(in srgb, var(--tjg-surface-subtle) 50%, transparent);
+  --pin-input-bg: var(--tjg-surface-elevated);
+  --badge-danger-bg: var(--tjg-color-danger-500);
+  --badge-danger-text: var(--tjg-text-inverse);
+  --bg-offline-avatar-overlay: color-mix(in srgb, var(--tjg-text-tertiary) 70%, transparent);
+  --bg-long-press-menu: var(--tjg-surface-subtle);
 
   /* 右侧面板主题渐变背景 */
   --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.3) 20%, rgba(130, 193, 187, 0.3) 100%);
   /* 选中边框品牌色 */
-  --border-active-color: var(--hula-brand-sidebar);
+  --border-active-color: var(--tjg-brand-sidebar);
   /* 消息激活色 */
-  --msg-active-color: var(--hula-brand);
+  --msg-active-color: var(--tjg-brand);
 }
 
 /* 暗色主题 */
 html[data-theme='dark'] {
-  --hula-color-primary-100: rgba(19, 152, 127, 0.15);
-  --hula-color-primary-200: rgba(19, 152, 127, 0.25);
-  --hula-color-primary-300-alpha: rgba(19, 152, 127, 0.35);
+  --tjg-color-primary-100: rgba(19, 152, 127, 0.15);
+  --tjg-color-primary-200: rgba(19, 152, 127, 0.25);
+  --tjg-color-primary-300-alpha: rgba(19, 152, 127, 0.35);
 
-  --hula-color-success-500: #73d13d;
-  --hula-color-success-100: rgba(82, 196, 26, 0.15);
-  --hula-color-warning-500: #ffa940;
-  --hula-color-warning-100: rgba(250, 173, 20, 0.15);
-  --hula-color-danger-500: #ff7875;
-  --hula-color-danger-100: rgba(255, 77, 79, 0.08);
-  --hula-color-danger-200: rgba(255, 77, 79, 0.15);
-  --hula-color-info-500: #40a9ff;
-  --hula-color-info-100: rgba(24, 144, 255, 0.15);
-  --hula-color-purple-500: #9254de;
-  --hula-color-purple-100: rgba(146, 84, 222, 0.15);
+  --tjg-color-success-500: #73d13d;
+  --tjg-color-success-100: rgba(82, 196, 26, 0.15);
+  --tjg-color-warning-500: #ffa940;
+  --tjg-color-warning-100: rgba(250, 173, 20, 0.15);
+  --tjg-color-danger-500: #ff7875;
+  --tjg-color-danger-100: rgba(255, 77, 79, 0.08);
+  --tjg-color-danger-200: rgba(255, 77, 79, 0.15);
+  --tjg-color-info-500: #40a9ff;
+  --tjg-color-info-100: rgba(24, 144, 255, 0.15);
+  --tjg-color-purple-500: #9254de;
+  --tjg-color-purple-100: rgba(146, 84, 222, 0.15);
 
-  --hula-text-primary: #ffffff;
-  --hula-text-secondary: #909090;
-  --hula-text-tertiary: #707070;
-  --hula-text-quaternary: #595959;
-  --hula-text-disabled: #434343;
+  --tjg-text-primary: #ffffff;
+  --tjg-text-secondary: #909090;
+  --tjg-text-tertiary: #707070;
+  --tjg-text-quaternary: #595959;
+  --tjg-text-disabled: #434343;
 
-  --hula-surface-app: #161616;
-  /* 阶段 9：三栏亮度渐进（需求文档 3.1.1）—— L0 最深 → L1 中等 → L2 最浅 */
-  --hula-surface-panel: #313338;
-  --hula-surface-list: #2b2d31;
-  --hula-surface-sidebar: #1e1f22;
-  --hula-surface-panel-muted: #262626;
-  --hula-surface-subtle: #303030;
-  --hula-surface-elevated: #303030;
-  --hula-surface-search: #383a40;
-  --hula-surface-sidebar-hover: rgba(255, 255, 255, 0.05);
-  --hula-surface-sidebar-active: rgba(255, 255, 255, 0.08);
-  --hula-surface-sidebar-selected: rgba(255, 255, 255, 0.08);
-  --hula-surface-list-hover: rgba(255, 255, 255, 0.05);
-  --hula-surface-list-selected: rgba(19, 152, 127, 0.18);
-  --hula-surface-session-active: linear-gradient(135deg, #3db8a8 0%, #2d9a8c 100%);
-  --hula-surface-session-active-shadow: 0 2px 10px rgba(61, 184, 168, 0.25);
-  --hula-surface-overlay: rgba(33, 33, 33, 0.95);
-  --hula-surface-inverse-hover: rgba(255, 255, 255, 0.15);
-  --hula-surface-darkest: #161616;
-  --hula-surface-dark: #1a1a1a;
-  --hula-surface-dark-mid: #222222;
-  --hula-overlay-mask-default: rgba(0, 0, 0, 0.4);
-  --hula-overlay-mask-subtle: rgba(0, 0, 0, 0.2);
-  --hula-overlay-inverse-strong: rgba(0, 0, 0, 0.8);
+  --tjg-surface-app: #161616;
+  /* 阶段 9：三栏亮度渐进（详见 CONTEXT.md「三栏亮度渐进」术语）—— L0 最深 → L1 中等 → L2 最浅 */
+  --tjg-surface-panel: #313338;
+  --tjg-surface-list: #2b2d31;
+  --tjg-surface-sidebar: #1e1f22;
+  --tjg-surface-panel-muted: #262626;
+  --tjg-surface-subtle: #303030;
+  --tjg-surface-elevated: #303030;
+  --tjg-surface-search: #383a40;
+  --tjg-surface-sidebar-hover: rgba(255, 255, 255, 0.05);
+  --tjg-surface-sidebar-active: rgba(255, 255, 255, 0.08);
+  --tjg-surface-sidebar-selected: rgba(255, 255, 255, 0.08);
+  --tjg-surface-list-hover: rgba(255, 255, 255, 0.05);
+  --tjg-surface-list-selected: rgba(19, 152, 127, 0.18);
+  --tjg-surface-session-active: linear-gradient(135deg, #3db8a8 0%, #2d9a8c 100%);
+  --tjg-surface-session-active-shadow: 0 2px 10px rgba(61, 184, 168, 0.25);
+  --tjg-surface-overlay: rgba(33, 33, 33, 0.95);
+  --tjg-surface-inverse-hover: rgba(255, 255, 255, 0.15);
+  --tjg-surface-darkest: #161616;
+  --tjg-surface-dark: #1a1a1a;
+  --tjg-surface-dark-mid: #222222;
+  --tjg-overlay-mask-default: rgba(0, 0, 0, 0.4);
+  --tjg-overlay-mask-subtle: rgba(0, 0, 0, 0.2);
+  --tjg-overlay-inverse-strong: rgba(0, 0, 0, 0.8);
 
-  --hula-border-default: #404040;
-  --hula-border-muted: #262626;
-  --hula-border-strong: #434343;
-  --hula-border-contrast: rgba(255, 255, 255, 0.06);
-  --hula-border-inverse-muted: rgba(255, 255, 255, 0.6);
-  --hula-border-layout-divider: #000000;
+  --tjg-border-default: #404040;
+  --tjg-border-muted: #262626;
+  --tjg-border-strong: #434343;
+  --tjg-border-contrast: rgba(255, 255, 255, 0.06);
+  --tjg-border-inverse-muted: rgba(255, 255, 255, 0.6);
+  --tjg-border-layout-divider: #000000;
 
-  --hula-status-online: #73d13d;
-  --hula-status-offline: #595959;
-  --hula-status-busy: #ff7875;
-  --hula-status-away: #ffa940;
+  --tjg-status-online: #73d13d;
+  --tjg-status-offline: #595959;
+  --tjg-status-busy: #ff7875;
+  --tjg-status-away: #ffa940;
 
-  --hula-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --hula-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.24);
-  --hula-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.32);
-  --hula-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
-  --hula-shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --hula-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.24);
-  --hula-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.36);
-  --hula-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.36);
-  --hula-shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.48);
-  --hula-shadow-top-bar: 0 -3px 6px -4px rgba(0, 0, 0, 0.24);
-  --hula-settings-divider: rgba(255, 255, 255, 0.05);
-  --hula-settings-card-bg: rgba(255, 255, 255, 0.05);
-  --hula-settings-card-bg-hover: rgba(255, 255, 255, 0.1);
-  --hula-settings-meter-bg: rgba(255, 255, 255, 0.1);
-  --hula-menu-bg: linear-gradient(
+  --tjg-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --tjg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.24);
+  --tjg-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.32);
+  --tjg-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+  --tjg-shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --tjg-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.24);
+  --tjg-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.36);
+  --tjg-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.36);
+  --tjg-shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.48);
+  --tjg-shadow-top-bar: 0 -3px 6px -4px rgba(0, 0, 0, 0.24);
+  --tjg-settings-divider: rgba(255, 255, 255, 0.05);
+  --tjg-settings-card-bg: rgba(255, 255, 255, 0.05);
+  --tjg-settings-card-bg-hover: rgba(255, 255, 255, 0.1);
+  --tjg-settings-meter-bg: rgba(255, 255, 255, 0.1);
+  --tjg-menu-bg: linear-gradient(
     45deg,
-    color-mix(in srgb, var(--hula-surface-panel) 65%, transparent) 60%,
-    color-mix(in srgb, var(--hula-surface-overlay) 100%, transparent) 90%
+    color-mix(in srgb, var(--tjg-surface-panel) 65%, transparent) 60%,
+    color-mix(in srgb, var(--tjg-surface-overlay) 100%, transparent) 90%
   );
-  --hula-menu-hover: var(--hula-surface-subtle);
-  --hula-shadow-floating-menu:
-    0 0 0 1px var(--hula-border-contrast),
+  --tjg-menu-hover: var(--tjg-surface-subtle);
+  --tjg-shadow-floating-menu:
+    0 0 0 1px var(--tjg-border-contrast),
     0 2px 2px rgb(0 0 0 / 12%),
     0 4px 4px rgb(0 0 0 / 16%),
     0 10px 8px rgb(0 0 0 / 20%),
     0 15px 15px rgb(0 0 0 / 24%),
     0 30px 30px rgb(0 0 0 / 28%),
     0 70px 65px rgb(0 0 0 / 36%);
-  --hula-color-beta-500: #a789d9;
-  --hula-color-beta-100: #403555;
+  --tjg-color-beta-500: #a789d9;
+  --tjg-color-beta-100: #403555;
 
-  --hula-room-unread-badge-bg: var(--hula-color-primary-400);
-  --hula-room-highlight-badge-bg: var(--hula-color-danger-500);
-  --hula-room-invite-bg: rgba(19, 152, 127, 0.15);
-  --hula-room-tombstoned-text: #595959;
-  --hula-space-public-badge-bg: rgba(82, 196, 26, 0.15);
-  --hula-space-invite-badge-bg: rgba(250, 173, 20, 0.15);
-  --hula-friend-favorite-badge-bg: rgba(250, 173, 20, 0.15);
-  --hula-friend-blocked-badge-bg: rgba(255, 77, 79, 0.08);
-  --hula-sync-recovering-bg: rgba(250, 173, 20, 0.15);
-  --hula-admin-sidebar-bg: #141422;
-  --hula-admin-sidebar-text: color-mix(in srgb, var(--hula-text-inverse) 55%, transparent);
-  --hula-admin-sidebar-border: var(--hula-border-contrast);
-  --hula-admin-sidebar-hover: color-mix(in srgb, var(--hula-text-inverse) 10%, transparent);
-  --hula-admin-bg: var(--hula-surface-app);
-  --hula-admin-card-bg: #1e1e1e;
-  --hula-admin-card-shadow: 0 1px 3px rgb(0 0 0 / 20%);
-  --hula-admin-card-shadow-hover: 0 4px 12px rgb(0 0 0 / 30%);
-  --hula-admin-header-border: #333333;
-  --hula-admin-title-color: #e0e0e0;
-  --hula-admin-stat-value-color: #e0e0e0;
-  --hula-admin-health-ok-bg: rgba(46, 125, 50, 0.15);
-  --hula-admin-health-ok-text: #66bb6a;
-  --hula-admin-health-err-bg: rgba(198, 40, 40, 0.15);
-  --hula-admin-health-err-text: #ef5350;
+  --tjg-room-unread-badge-bg: var(--tjg-color-primary-400);
+  --tjg-room-highlight-badge-bg: var(--tjg-color-danger-500);
+  --tjg-room-invite-bg: rgba(19, 152, 127, 0.15);
+  --tjg-room-tombstoned-text: #595959;
+  --tjg-space-public-badge-bg: rgba(82, 196, 26, 0.15);
+  --tjg-space-invite-badge-bg: rgba(250, 173, 20, 0.15);
+  --tjg-friend-favorite-badge-bg: rgba(250, 173, 20, 0.15);
+  --tjg-friend-blocked-badge-bg: rgba(255, 77, 79, 0.08);
+  --tjg-sync-recovering-bg: rgba(250, 173, 20, 0.15);
+  --tjg-admin-sidebar-bg: #141422;
+  --tjg-admin-sidebar-text: color-mix(in srgb, var(--tjg-text-inverse) 55%, transparent);
+  --tjg-admin-sidebar-border: var(--tjg-border-contrast);
+  --tjg-admin-sidebar-hover: color-mix(in srgb, var(--tjg-text-inverse) 10%, transparent);
+  --tjg-admin-bg: var(--tjg-surface-app);
+  --tjg-admin-card-bg: #1e1e1e;
+  --tjg-admin-card-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+  --tjg-admin-card-shadow-hover: 0 4px 12px rgb(0 0 0 / 30%);
+  --tjg-admin-header-border: #333333;
+  --tjg-admin-title-color: #e0e0e0;
+  --tjg-admin-stat-value-color: #e0e0e0;
+  --tjg-admin-health-ok-bg: rgba(46, 125, 50, 0.15);
+  --tjg-admin-health-ok-text: #66bb6a;
+  --tjg-admin-health-err-bg: rgba(198, 40, 40, 0.15);
+  --tjg-admin-health-err-text: #ef5350;
 
-  --hula-encryption-surface-subtle: rgba(255, 255, 255, 0.05);
-  --hula-encryption-surface-dark: rgba(0, 0, 0, 0.02);
-  --hula-overlay-mobile-sheet: rgba(33, 33, 33, 0.95);
-  --hula-admin-notice-text: #40a9ff;
-  --hula-admin-notice-bg: rgba(24, 144, 255, 0.12);
+  --tjg-encryption-surface-subtle: rgba(255, 255, 255, 0.05);
+  --tjg-encryption-surface-dark: rgba(0, 0, 0, 0.02);
+  --tjg-overlay-mobile-sheet: rgba(33, 33, 33, 0.95);
+  --tjg-admin-notice-text: #40a9ff;
+  --tjg-admin-notice-bg: rgba(24, 144, 255, 0.12);
 
-  --color-success: var(--hula-color-success-500);
-  --color-warning: var(--hula-color-warning-500);
-  --color-danger: var(--hula-color-danger-500);
-  --color-info: var(--hula-color-info-500);
+  --color-success: var(--tjg-color-success-500);
+  --color-warning: var(--tjg-color-warning-500);
+  --color-danger: var(--tjg-color-danger-500);
+  --color-info: var(--tjg-color-info-500);
 
-  --color-text-primary: var(--hula-text-primary);
-  --color-text-secondary: var(--hula-text-secondary);
-  --color-text-tertiary: var(--hula-text-tertiary);
-  --color-text-quaternary: var(--hula-text-quaternary);
-  --color-text-disabled: var(--hula-text-disabled);
+  --color-text-primary: var(--tjg-text-primary);
+  --color-text-secondary: var(--tjg-text-secondary);
+  --color-text-tertiary: var(--tjg-text-tertiary);
+  --color-text-quaternary: var(--tjg-text-quaternary);
+  --color-text-disabled: var(--tjg-text-disabled);
 
-  --color-bg-primary: var(--hula-surface-panel);
-  --color-bg-secondary: var(--hula-surface-panel-muted);
-  --color-bg-tertiary: var(--hula-surface-subtle);
+  --color-bg-primary: var(--tjg-surface-panel);
+  --color-bg-secondary: var(--tjg-surface-panel-muted);
+  --color-bg-tertiary: var(--tjg-surface-subtle);
   --color-bg-quaternary: #3a3a3a;
   --color-bg-hover: rgba(255, 255, 255, 0.08);
   --color-bg-active: rgba(255, 255, 255, 0.12);
 
-  --color-border-primary: var(--hula-border-strong);
-  --color-border-secondary: var(--hula-surface-subtle);
-  --color-border-tertiary: var(--hula-border-muted);
+  --color-border-primary: var(--tjg-border-strong);
+  --color-border-secondary: var(--tjg-surface-subtle);
+  --color-border-tertiary: var(--tjg-border-muted);
 
-  --color-online: var(--hula-status-online);
-  --color-offline: var(--hula-status-offline);
-  --color-busy: var(--hula-status-busy);
-  --color-away: var(--hula-status-away);
+  --color-online: var(--tjg-status-online);
+  --color-offline: var(--tjg-status-offline);
+  --color-busy: var(--tjg-status-busy);
+  --color-away: var(--tjg-status-away);
 
-  --shadow-sm: var(--hula-shadow-sm);
-  --shadow-md: var(--hula-shadow-md);
-  --shadow-lg: var(--hula-shadow-lg);
-  --shadow-xl: var(--hula-shadow-xl);
+  --shadow-sm: var(--tjg-shadow-sm);
+  --shadow-md: var(--tjg-shadow-md);
+  --shadow-lg: var(--tjg-shadow-lg);
+  --shadow-xl: var(--tjg-shadow-xl);
 
   /* ==================== Dark Theme Semantic Overrides ==================== */
   --left-text-color: #ccc;
@@ -623,88 +623,88 @@ html[data-theme='dark'] {
   --left-active-hover: rgba(26, 178, 146, 0.8);
   --left-active-icon-color: #1ab292;
   --left-win-icon-color: #1ab292;
-  --center-bg-color: var(--hula-surface-panel);
-  --right-bg-color: var(--hula-surface-sidebar);
-  --text-color: var(--hula-text-primary);
-  --icon-color: var(--hula-text-secondary);
-  --action-bar-icon-color: var(--hula-text-secondary);
-  --action-bar-icon-hover: var(--hula-surface-search);
-  --search-bg-color: var(--hula-surface-search);
-  --bg-msg-first-child: var(--hula-surface-search);
-  --bg-msg-hover: var(--hula-surface-subtle);
-  --bg-active-msg: var(--hula-color-primary-200);
-  --bg-chat-drawer: var(--hula-surface-panel);
-  --bg-setting-item: var(--hula-surface-panel-muted);
-  --setting-item-line: var(--hula-surface-subtle);
-  --bg-popover: var(--hula-surface-elevated);
-  --bg-menu: var(--hula-menu-bg);
-  --bg-menu-hover: var(--hula-menu-hover);
-  --line-color: var(--hula-border-default);
-  --bg-left-menu: var(--hula-surface-sidebar);
-  --bg-left-menu-hover: var(--hula-surface-sidebar-hover);
-  --bg-left-active: var(--hula-surface-sidebar-active);
-  --button-bg-color: var(--hula-surface-subtle);
-  --disabled-color: var(--hula-text-disabled);
-  --bg-bubble: var(--hula-surface-panel-muted);
-  --bg-bubble-active: color-mix(in srgb, var(--hula-surface-subtle) 80%, transparent);
-  --bg-translate-bubble: color-mix(in srgb, var(--hula-text-tertiary) 22%, transparent);
-  --bg-avatar: var(--hula-surface-sidebar);
-  --info-hover: color-mix(in srgb, var(--hula-surface-subtle) 38%, transparent);
-  --info-text-color: var(--hula-text-primary);
-  --tray-hover: var(--hula-surface-subtle);
-  --tray-hover-e: color-mix(in srgb, var(--hula-color-danger-200) 70%, var(--hula-surface-panel));
-  --bg-info: var(--hula-surface-panel);
-  --bg-emoji: color-mix(in srgb, var(--hula-surface-panel) 80%, transparent);
-  --reply-color: var(--hula-text-tertiary);
-  --reply-hover: var(--hula-text-secondary);
-  --bg-reply-img-count: var(--hula-text-secondary);
-  --bg-edit: var(--hula-surface-panel-muted);
-  --time-color: var(--hula-surface-subtle);
-  --chat-bt-color: var(--hula-surface-subtle);
-  --chat-left-bg: var(--hula-color-primary-500);
-  --chat-right-bg: var(--hula-surface-sidebar);
-  --chat-text-color: var(--hula-text-secondary);
-  --chat-hover-color: var(--hula-surface-panel-muted);
-  --search-color: var(--hula-surface-search);
-  --card-bg: var(--hula-color-primary-100);
+  --center-bg-color: var(--tjg-surface-panel);
+  --right-bg-color: var(--tjg-surface-sidebar);
+  --text-color: var(--tjg-text-primary);
+  --icon-color: var(--tjg-text-secondary);
+  --action-bar-icon-color: var(--tjg-text-secondary);
+  --action-bar-icon-hover: var(--tjg-surface-search);
+  --search-bg-color: var(--tjg-surface-search);
+  --bg-msg-first-child: var(--tjg-surface-search);
+  --bg-msg-hover: var(--tjg-surface-subtle);
+  --bg-active-msg: var(--tjg-color-primary-200);
+  --bg-chat-drawer: var(--tjg-surface-panel);
+  --bg-setting-item: var(--tjg-surface-panel-muted);
+  --setting-item-line: var(--tjg-surface-subtle);
+  --bg-popover: var(--tjg-surface-elevated);
+  --bg-menu: var(--tjg-menu-bg);
+  --bg-menu-hover: var(--tjg-menu-hover);
+  --line-color: var(--tjg-border-default);
+  --bg-left-menu: var(--tjg-surface-sidebar);
+  --bg-left-menu-hover: var(--tjg-surface-sidebar-hover);
+  --bg-left-active: var(--tjg-surface-sidebar-active);
+  --button-bg-color: var(--tjg-surface-subtle);
+  --disabled-color: var(--tjg-text-disabled);
+  --bg-bubble: var(--tjg-surface-panel-muted);
+  --bg-bubble-active: color-mix(in srgb, var(--tjg-surface-subtle) 80%, transparent);
+  --bg-translate-bubble: color-mix(in srgb, var(--tjg-text-tertiary) 22%, transparent);
+  --bg-avatar: var(--tjg-surface-sidebar);
+  --info-hover: color-mix(in srgb, var(--tjg-surface-subtle) 38%, transparent);
+  --info-text-color: var(--tjg-text-primary);
+  --tray-hover: var(--tjg-surface-subtle);
+  --tray-hover-e: color-mix(in srgb, var(--tjg-color-danger-200) 70%, var(--tjg-surface-panel));
+  --bg-info: var(--tjg-surface-panel);
+  --bg-emoji: color-mix(in srgb, var(--tjg-surface-panel) 80%, transparent);
+  --reply-color: var(--tjg-text-tertiary);
+  --reply-hover: var(--tjg-text-secondary);
+  --bg-reply-img-count: var(--tjg-text-secondary);
+  --bg-edit: var(--tjg-surface-panel-muted);
+  --time-color: var(--tjg-surface-subtle);
+  --chat-bt-color: var(--tjg-surface-subtle);
+  --chat-left-bg: var(--tjg-color-primary-500);
+  --chat-right-bg: var(--tjg-surface-sidebar);
+  --chat-text-color: var(--tjg-text-secondary);
+  --chat-hover-color: var(--tjg-surface-panel-muted);
+  --search-color: var(--tjg-surface-search);
+  --card-bg: var(--tjg-color-primary-100);
   --progress-bg: transparent;
-  --reply-bg: color-mix(in srgb, var(--hula-surface-panel) 70%, transparent);
-  --danger-text: var(--hula-color-danger-500);
-  --danger-bg: var(--hula-color-danger-100);
-  --warning-text: var(--hula-color-warning-500);
-  --warning-bg: var(--hula-color-warning-100);
-  --avatar-border-color: var(--hula-surface-panel);
-  --avatar-hover-bg: color-mix(in srgb, var(--hula-surface-panel) 70%, transparent);
-  --plugin-bg-color: var(--hula-surface-subtle);
-  --float-block-hover-color: var(--hula-text-inverse);
-  --float-hover-bg-color: color-mix(in srgb, var(--hula-color-primary-200) 45%, var(--hula-surface-panel));
-  --group-notice-list-bg: var(--hula-surface-panel-muted);
-  --file-bg-color: var(--hula-surface-elevated);
-  --login-avatar-border: var(--hula-border-default);
-  --login-avatar-bg: var(--hula-surface-search);
+  --reply-bg: color-mix(in srgb, var(--tjg-surface-panel) 70%, transparent);
+  --danger-text: var(--tjg-color-danger-500);
+  --danger-bg: var(--tjg-color-danger-100);
+  --warning-text: var(--tjg-color-warning-500);
+  --warning-bg: var(--tjg-color-warning-100);
+  --avatar-border-color: var(--tjg-surface-panel);
+  --avatar-hover-bg: color-mix(in srgb, var(--tjg-surface-panel) 70%, transparent);
+  --plugin-bg-color: var(--tjg-surface-subtle);
+  --float-block-hover-color: var(--tjg-text-inverse);
+  --float-hover-bg-color: color-mix(in srgb, var(--tjg-color-primary-200) 45%, var(--tjg-surface-panel));
+  --group-notice-list-bg: var(--tjg-surface-panel-muted);
+  --file-bg-color: var(--tjg-surface-elevated);
+  --login-avatar-border: var(--tjg-border-default);
+  --login-avatar-bg: var(--tjg-surface-search);
   --login-dropdown-bg: rgba(72, 72, 78, 0.6);
   --login-dropdown-border: rgba(255, 255, 255, 0.1);
-  --login-divider-color: var(--hula-border-default);
-  --login-third-party-divider-color: var(--hula-border-muted);
-  --login-surface-bg: var(--hula-surface-panel);
+  --login-divider-color: var(--tjg-border-default);
+  --login-third-party-divider-color: var(--tjg-border-muted);
+  --login-surface-bg: var(--tjg-surface-panel);
   --avatar-fallback-color: transparent;
   --avatar-fallback-src: /logoL.png;
-  --voice-icon-color-other: var(--hula-text-inverse);
-  --plugin-icon-bg: color-mix(in srgb, var(--hula-text-quaternary) 10%, transparent);
-  --plugin-downloading-bg: color-mix(in srgb, var(--hula-color-info-500) 45%, var(--hula-surface-panel));
-  --plugin-downloading-text: var(--hula-color-info-500);
-  --tag-danger-bg: color-mix(in srgb, var(--hula-color-danger-500) 15%, var(--hula-surface-panel));
-  --tag-neutral-bg: var(--hula-surface-panel-muted);
-  --tag-info-bg: var(--hula-color-info-100);
-  --time-group-bg: color-mix(in srgb, var(--hula-surface-panel) 50%, transparent);
-  --pin-input-bg: var(--hula-surface-elevated);
-  --badge-danger-bg: var(--hula-color-danger-500);
-  --badge-danger-text: var(--hula-text-inverse);
-  --bg-offline-avatar-overlay: color-mix(in srgb, var(--hula-text-tertiary) 60%, transparent);
-  --bg-long-press-menu: var(--hula-surface-subtle);
+  --voice-icon-color-other: var(--tjg-text-inverse);
+  --plugin-icon-bg: color-mix(in srgb, var(--tjg-text-quaternary) 10%, transparent);
+  --plugin-downloading-bg: color-mix(in srgb, var(--tjg-color-info-500) 45%, var(--tjg-surface-panel));
+  --plugin-downloading-text: var(--tjg-color-info-500);
+  --tag-danger-bg: color-mix(in srgb, var(--tjg-color-danger-500) 15%, var(--tjg-surface-panel));
+  --tag-neutral-bg: var(--tjg-surface-panel-muted);
+  --tag-info-bg: var(--tjg-color-info-100);
+  --time-group-bg: color-mix(in srgb, var(--tjg-surface-panel) 50%, transparent);
+  --pin-input-bg: var(--tjg-surface-elevated);
+  --badge-danger-bg: var(--tjg-color-danger-500);
+  --badge-danger-text: var(--tjg-text-inverse);
+  --bg-offline-avatar-overlay: color-mix(in srgb, var(--tjg-text-tertiary) 60%, transparent);
+  --bg-long-press-menu: var(--tjg-surface-subtle);
 
   /* 暗色右侧面板主题渐变背景 */
   --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.2) 0%, rgba(130, 193, 187, 0.2) 150%);
-  --border-active-color: var(--hula-brand-sidebar);
+  --border-active-color: var(--tjg-brand-sidebar);
   --msg-active-color: rgba(19, 152, 127, 0.4);
 }

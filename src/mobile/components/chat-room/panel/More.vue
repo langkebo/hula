@@ -1,6 +1,6 @@
 <template>
   <div class="h-15rem w-full">
-    <van-swipe class="h-full" :loop="false" :show-indicators="true" indicator-color="var(--hula-text-tertiary)">
+    <van-swipe class="h-full" :loop="false" :show-indicators="true" indicator-color="var(--tjg-text-tertiary)">
       <van-swipe-item v-for="(page, pageIndex) in pages" :key="pageIndex">
         <div class="px-15px pt-15px pb-30px grid grid-cols-4 gap-3 auto-rows-18">
           <div

@@ -17,7 +17,7 @@
         :stroke="strokeColor"
         d="m16 24 6 6 12-12" />
     </svg>
-    <p :class="['text-12px', { 'color-[--hula-text-primary]': isValid, 'color-[--hula-text-tertiary]': !isValid }]">
+    <p :class="['text-12px', { 'color-[--tjg-text-primary]': isValid, 'color-[--tjg-text-tertiary]': !isValid }]">
       {{ message }}
     </p>
   </n-flex>
@@ -30,10 +30,10 @@ const props = defineProps<{
   validator?: (value: string) => boolean
 }>()
 
-const successStrokeColor = 'var(--hula-color-primary-500)'
-const neutralStrokeColor = 'var(--hula-text-tertiary)'
-const successFillColor = 'var(--hula-color-primary-100)'
-const neutralFillColor = 'var(--hula-surface-panel)'
+const successStrokeColor = 'var(--tjg-color-primary-500)'
+const neutralStrokeColor = 'var(--tjg-text-tertiary)'
+const successFillColor = 'var(--tjg-color-primary-100)'
+const neutralFillColor = 'var(--tjg-surface-panel)'
 
 const isValid = computed(() => (props.validator ? props.validator(props.value) : true))
 const strokeColor = computed(() => (isValid.value ? successStrokeColor : neutralStrokeColor))

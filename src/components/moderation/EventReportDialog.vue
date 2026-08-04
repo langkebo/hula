@@ -134,7 +134,7 @@ async function handleSubmit() {
   .event-preview {
     .preview-label {
       font-size: 13px;
-      color: var(--hula-text-secondary);
+      color: var(--tjg-text-secondary);
       margin-bottom: 6px;
     }
 

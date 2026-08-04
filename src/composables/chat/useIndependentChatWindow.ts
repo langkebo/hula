@@ -99,7 +99,7 @@ export const useIndependentChatWindow = () => {
 
       // 创建独立窗口，使用专用路由 /window/chat/:roomId
       const webview = new WebviewWindow(label, {
-        title: 'HuLa Chat',
+        title: 'Tjg Chat',
         url: `/window/chat/${encodeURIComponent(roomId)}`,
         width: DEFAULT_WIDTH,
         height: DEFAULT_HEIGHT,

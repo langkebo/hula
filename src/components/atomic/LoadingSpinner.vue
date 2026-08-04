@@ -2,17 +2,17 @@
   <div data-tauri-drag-region class="flex-col-center gap-30px size-full">
     <n-flex vertical justify="center" :size="20">
       <div class="logo-container">
-        <img src="/hula.png" class="logo-image" alt="HuLa Logo" loading="eager" />
+        <img src="/tjg.png" class="logo-image" alt="Tjg Logo" loading="eager" />
       </div>
       <n-progress
         type="line"
         :show-indicator="false"
-        :color="'var(--color-primary)'"
-        :rail-color="'var(--hula-color-primary-300-alpha)'"
+        :color="'var(--tjg-color-primary-500)'"
+        :rail-color="'var(--tjg-color-primary-300-alpha)'"
         :percentage="percentage" />
       <n-flex justify="center" align="center" :gap="12">
-        <n-spin :size="12" :color="'var(--color-primary)'" />
-        <span class="text-14px text-[--hula-text-secondary]">{{ loadingText }}</span>
+        <n-spin :size="12" :color="'var(--tjg-color-primary-500)'" />
+        <span class="text-14px text-[--tjg-text-secondary]">{{ loadingText }}</span>
       </n-flex>
     </n-flex>
   </div>

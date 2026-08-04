@@ -190,7 +190,7 @@ async function handleDelete(deviceId: string): Promise<void> {
   align-items: center;
   gap: 12px;
   padding: 32px 0;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 
   p {
     margin: 0;
@@ -204,7 +204,7 @@ async function handleDelete(deviceId: string): Promise<void> {
   align-items: flex-start;
   gap: 16px;
   padding: 12px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 

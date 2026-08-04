@@ -5,7 +5,7 @@
       isGroup
         ? isCollapsed
           ? 'w-0 border-none'
-          : 'w-240px border-l border-[--hula-border-default] bg-[--hula-surface-panel] shadow-sm'
+          : 'w-240px border-l border-[--tjg-border-default] bg-[--tjg-surface-panel] shadow-sm'
         : 'w-0 border-none',
       'relative'
     ]">
@@ -13,10 +13,10 @@
     <div
       v-show="isGroup"
       @click.stop="isCollapsed = !isCollapsed"
-      class="absolute top-1/2 -left-14px -translate-y-1/2 cursor-pointer bg-[--hula-surface-sidebar-selected] h-48px w-14px rounded-l-12px flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10 shadow-sm border border-r-0 border-[--hula-border-default]">
+      class="absolute top-1/2 -left-14px -translate-y-1/2 cursor-pointer bg-[--tjg-surface-sidebar-selected] h-48px w-14px rounded-l-12px flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10 shadow-sm border border-r-0 border-[--tjg-border-default]">
       <svg
         :class="isCollapsed ? 'rotate-0' : 'rotate-180'"
-        class="size-14px color-[--hula-text-tertiary] transition-transform">
+        class="size-14px color-[--tjg-text-tertiary] transition-transform">
         <use href="#left-arrow"></use>
       </svg>
     </div>
@@ -30,18 +30,18 @@
         v-if="!showAnnouncementPanel"
         vertical
         :size="10"
-        class="p-12px border-b border-[--hula-border-default] shrink-0 bg-[--hula-surface-panel]">
+        class="p-12px border-b border-[--tjg-border-default] shrink-0 bg-[--tjg-surface-panel]">
         <n-flex
           align="center"
           justify="space-between"
           :size="8"
           class="cursor-pointer"
           @click="handleOpenAnnoun(announNum === 0 && isAddAnnoun)">
-          <span class="text-[var(--text-sm)] font-medium color-[--hula-text-primary] truncate flex-1 min-w-0">
+          <span class="text-[var(--text-sm)] font-medium color-[--tjg-text-primary] truncate flex-1 min-w-0">
             {{ t('home.chat_sidebar.announcement.title') }}
           </span>
           <svg
-            class="size-14px color-[--hula-text-secondary] shrink-0 transition-transform hover:color-[--hula-text-primary]">
+            class="size-14px color-[--tjg-text-secondary] shrink-0 transition-transform hover:color-[--tjg-text-primary]">
             <use v-if="announNum === 0 && isAddAnnoun" href="#plus"></use>
             <use v-else href="#right"></use>
           </svg>
@@ -50,11 +50,11 @@
         <!-- 公告加载失败提示 -->
         <n-flex
           v-if="announError"
-          class="h-60px bg-[--hula-surface-search] rounded-8px"
+          class="h-60px bg-[--tjg-surface-search] rounded-8px"
           align="center"
           justify="center">
           <div class="text-center">
-            <p class="text-[var(--text-xs)] color-[--hula-color-danger-500] mb-6px">
+            <p class="text-[var(--text-xs)] color-[--tjg-color-danger-500] mb-6px">
               {{ t('home.chat_sidebar.announcement.load_failed') }}
             </p>
             <n-button size="tiny" tertiary type="error" @click="announcementStore.loadGroupAnnouncements()">
@@ -65,7 +65,7 @@
 
         <!-- 公告内容 -->
         <div v-else class="max-h-68px overflow-hidden relative">
-          <p class="text-[var(--text-xs)] color-[--hula-text-secondary] leading-relaxed line-clamp-3">
+          <p class="text-[var(--text-xs)] color-[--tjg-text-secondary] leading-relaxed line-clamp-3">
             <template v-if="announNum === 0">
               {{ t('home.chat_sidebar.announcement.default') }}
             </template>
@@ -73,7 +73,7 @@
               <template v-for="(segment, index) in announcementSegments" :key="index">
                 <span
                   v-if="segment.isLink"
-                  class="cursor-pointer hover:underline text-[--hula-color-primary-500]"
+                  class="cursor-pointer hover:underline text-[--tjg-color-primary-500]"
                   @click.stop="openAnnouncementLink(segment.text)">
                   {{ segment.text }}
                 </span>
@@ -106,8 +106,8 @@
         <n-flex
           align="center"
           justify="space-between"
-          class="px-12px py-8px shrink-0 border-b border-[--hula-border-default]">
-          <span v-if="!isSearch" class="text-[var(--text-xs)] font-medium color-[--hula-text-tertiary]">
+          class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
+          <span v-if="!isSearch" class="text-[var(--text-xs)] font-medium color-[--tjg-text-tertiary]">
             {{ t('home.chat_sidebar.online_members', { count: onlineCountDisplay }) }}
           </span>
           <n-input
@@ -122,16 +122,16 @@
             size="small"
             spellCheck="false"
             autoComplete="off"
-            class="flex-1 bg-[--hula-surface-search] border-none rounded-6px text-[var(--text-xs)]">
+            class="flex-1 bg-[--tjg-surface-search] border-none rounded-6px text-[var(--text-xs)]">
             <template #prefix>
-              <svg class="size-12px color-[--hula-text-tertiary]">
+              <svg class="size-12px color-[--tjg-text-tertiary]">
                 <use href="#search"></use>
               </svg>
             </template>
           </n-input>
           <n-button v-if="!isSearch" size="tiny" quaternary circle @click="handleSelect">
             <template #icon>
-              <svg class="size-14px color-[--hula-text-secondary]">
+              <svg class="size-14px color-[--tjg-text-secondary]">
                 <use href="#search"></use>
               </svg>
             </template>
@@ -154,7 +154,7 @@
                 trigger="click"
                 placement="left"
                 :show-arrow="false"
-                style="padding: 0; background: var(--hula-surface-panel)">
+                style="padding: 0; background: var(--tjg-surface-panel)">
                 <template #trigger>
                   <ContextMenu
                     :content="item"
@@ -175,7 +175,7 @@
                             class="grayscale"
                             :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE }"
                             :size="26"
-                            :color="'var(--hula-text-inverse)'"
+                            :color="'var(--tjg-text-inverse)'"
                             :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                             :src="AvatarUtils.getAvatarUrl(item.avatar)"
                             @load="userLoadedMap[item.uid] = true"
@@ -184,7 +184,7 @@
                         <n-flex vertical :size="2" class="flex-1 truncate">
                           <p
                             :title="item.name"
-                            class="text-[var(--text-xs)] truncate flex-1 leading-tight color-[--hula-text-primary]">
+                            class="text-[var(--text-xs)] truncate flex-1 leading-tight color-[--tjg-text-primary]">
                             {{ item.myName ? item.myName : item.name }}
                           </p>
                           <n-flex
@@ -197,7 +197,7 @@
                               :src="getUserState(item.userStateId)?.url"
                               :alt="translateStateTitle(getUserState(item.userStateId)?.title)" />
                             <span
-                              class="text-[10px] text-[--hula-text-tertiary] flex-1 min-w-0 truncate"
+                              class="text-[10px] text-[--tjg-text-tertiary] flex-1 min-w-0 truncate"
                               :title="translateStateTitle(getUserState(item.userStateId)?.title)">
                               {{ translateStateTitle(getUserState(item.userStateId)?.title) }}
                             </span>
@@ -207,13 +207,13 @@
 
                       <div
                         v-if="item.roleId === RoleEnum.LORD"
-                        class="flex px-4px bg-[--hula-color-danger-500]30 py-3px rounded-4px size-fit select-none">
-                        <p class="text-(10px [--hula-color-danger-500])">{{ t('home.chat_sidebar.roles.owner') }}</p>
+                        class="flex px-4px bg-[--tjg-color-danger-500]30 py-3px rounded-4px size-fit select-none">
+                        <p class="text-(10px [--tjg-color-danger-500])">{{ t('home.chat_sidebar.roles.owner') }}</p>
                       </div>
                       <div
                         v-if="item.roleId === RoleEnum.ADMIN"
-                        class="flex px-4px bg-[--hula-color-primary-100] py-3px rounded-4px size-fit select-none">
-                        <p class="text-(10px [--hula-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</p>
+                        class="flex px-4px bg-[--tjg-color-primary-100] py-3px rounded-4px size-fit select-none">
+                        <p class="text-(10px [--tjg-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</p>
                       </div>
                     </n-flex>
                   </ContextMenu>
@@ -232,28 +232,28 @@
         <n-flex
           align="center"
           justify="space-between"
-          class="px-12px py-8px shrink-0 border-b border-[--hula-border-default]">
-          <span class="text-[var(--text-xs)] font-medium color-[--hula-text-tertiary]">
+          class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
+          <span class="text-[var(--text-xs)] font-medium color-[--tjg-text-tertiary]">
             {{ t('home.chat_sidebar.quota.title', '空间配额') }}
           </span>
-          <span class="text-[var(--text-xs)] color-[--hula-color-primary-500]">
+          <span class="text-[var(--text-xs)] color-[--tjg-color-primary-500]">
             {{ '1.2 GB / 5.0 GB' }}
           </span>
         </n-flex>
         <!-- 进度条占位 -->
-        <div class="px-12px py-8px shrink-0 border-b border-[--hula-border-default]">
+        <div class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
           <n-progress
             type="line"
             :percentage="24"
             :height="4"
             :show-indicator="false"
-            color="var(--hula-color-primary-500)" />
+            color="var(--tjg-color-primary-500)" />
         </div>
 
         <div class="flex-1 flex items-center justify-center">
           <n-empty :description="t('home.chat_sidebar.empty.files', '暂无群文件')">
             <template #icon>
-              <svg class="size-48px opacity-50 color-[--hula-text-quaternary]">
+              <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
                 <use href="#folder"></use>
               </svg>
             </template>

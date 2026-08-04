@@ -9,27 +9,27 @@
         <div class="flex flex-col flex-1 gap-15px py-15px px-20px">
           <RecycleScroller :items="announList" :item-size="120" key-field="id" class="flex flex-col">
             <template #default="{ item }">
-              <div class="bg-[--hula-surface-panel] rounded-10px p-15px">
+              <div class="bg-[--tjg-surface-panel] rounded-10px p-15px">
                 <div @click="goToNoticeDetail(item.id)">
                   <div class="flex flex-col w-full gap-10px">
                     <div class="flex items-center justify-between text-14px">
                       <span class="flex gap-5px">
-                        <span class="text-[--hula-text-secondary]">{{ t('mobile_chat.notice.publisher') }}</span>
+                        <span class="text-[--tjg-text-secondary]">{{ t('mobile_chat.notice.publisher') }}</span>
                         <span class="text-black dark:text-white/80">{{ groupStore.getUserInfo(item.uid)?.name }}</span>
                       </span>
                       <span
                         v-if="item.isTop"
                         class="text-[--color-primary] rounded-15px px-7px py-5px text-12px"
-                        style="border: 1px solid; border-color: var(--color-primary)">
+                        style="border: 1px solid; border-color: var(--tjg-color-primary-500)">
                         {{ t('mobile_chat.notice.pinned') }}
                       </span>
                     </div>
-                    <div class="text-14px line-clamp-3 line-height-20px text-[--hula-text-secondary] max-h-60px">
+                    <div class="text-14px line-clamp-3 line-height-20px text-[--tjg-text-secondary] max-h-60px">
                       {{ item.content }}
                     </div>
 
                     <div class="flex items-center justify-between text-12px">
-                      <span class="flex gap-5px text-[--hula-text-secondary]">
+                      <span class="flex gap-5px text-[--tjg-text-secondary]">
                         {{ formatTimestamp(item.createTime) }}
                       </span>
                       <span class="text-[--color-primary]">

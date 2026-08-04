@@ -193,7 +193,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
   border-radius: 8px;
   overflow: hidden;
 
@@ -214,7 +214,7 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 12px 16px;
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
 
   .widget-title {
     display: flex;
@@ -224,7 +224,7 @@ onUnmounted(() => {
     font-weight: 500;
 
     .n-icon {
-      color: var(--color-primary);
+      color: var(--tjg-color-primary-500);
     }
   }
 

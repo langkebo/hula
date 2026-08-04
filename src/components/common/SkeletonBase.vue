@@ -36,7 +36,7 @@ const skeletonStyle = computed(() => ({
 .skeleton-base {
   position: relative;
   overflow: hidden;
-  background: color-mix(in srgb, var(--hula-text-tertiary) 12%, transparent);
+  background: color-mix(in srgb, var(--tjg-text-tertiary) 12%, transparent);
   border-radius: 4px;
 
   &::after {
@@ -46,8 +46,8 @@ const skeletonStyle = computed(() => ({
     background: linear-gradient(
       90deg,
       transparent 0%,
-      color-mix(in srgb, var(--hula-text-tertiary) 8%, transparent) 40%,
-      color-mix(in srgb, var(--hula-text-tertiary) 12%, transparent) 60%,
+      color-mix(in srgb, var(--tjg-text-tertiary) 8%, transparent) 40%,
+      color-mix(in srgb, var(--tjg-text-tertiary) 12%, transparent) 60%,
       transparent 100%
     );
     animation: skeleton-shimmer 1.8s ease-in-out infinite;

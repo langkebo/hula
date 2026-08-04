@@ -159,7 +159,7 @@ onMounted(() => {
 })
 
 function loadSavedSettings() {
-  const savedFeatures = localStorage.getItem('hula-lab-features')
+  const savedFeatures = localStorage.getItem('tjg-lab-features')
   if (savedFeatures) {
     try {
       const enabledIds = JSON.parse(savedFeatures) as string[]
@@ -171,17 +171,17 @@ function loadSavedSettings() {
     }
   }
 
-  const savedDebug = localStorage.getItem('hula-debug-mode')
+  const savedDebug = localStorage.getItem('tjg-debug-mode')
   if (savedDebug) {
     debugMode.value = savedDebug === 'true'
   }
 
-  const savedPerformance = localStorage.getItem('hula-show-performance')
+  const savedPerformance = localStorage.getItem('tjg-show-performance')
   if (savedPerformance) {
     showPerformanceMetrics.value = savedPerformance === 'true'
   }
 
-  const savedDevTools = localStorage.getItem('hula-enable-devtools')
+  const savedDevTools = localStorage.getItem('tjg-enable-devtools')
   if (savedDevTools) {
     enableDevTools.value = savedDevTools === 'true'
   }
@@ -189,7 +189,7 @@ function loadSavedSettings() {
 
 function saveFeatures() {
   const enabledIds = labFeatureStates.value.filter((f) => f.enabled).map((f) => f.id)
-  localStorage.setItem('hula-lab-features', JSON.stringify(enabledIds))
+  localStorage.setItem('tjg-lab-features', JSON.stringify(enabledIds))
 }
 
 function getFeatureName(featureId: string) {
@@ -211,7 +211,7 @@ function handleToggleFeature(featureId: string, value: boolean) {
 }
 
 function handleDebugModeChange(value: boolean) {
-  localStorage.setItem('hula-debug-mode', value.toString())
+  localStorage.setItem('tjg-debug-mode', value.toString())
   showFeedback(
     t(value ? 'setting.labs.feedback.debug_mode_enabled' : 'setting.labs.feedback.debug_mode_disabled'),
     'success'
@@ -219,7 +219,7 @@ function handleDebugModeChange(value: boolean) {
 }
 
 function handlePerformanceChange(value: boolean) {
-  localStorage.setItem('hula-show-performance', value.toString())
+  localStorage.setItem('tjg-show-performance', value.toString())
   showFeedback(
     t(value ? 'setting.labs.feedback.performance_metrics_shown' : 'setting.labs.feedback.performance_metrics_hidden'),
     'success'
@@ -227,7 +227,7 @@ function handlePerformanceChange(value: boolean) {
 }
 
 function handleDevToolsChange(value: boolean) {
-  localStorage.setItem('hula-enable-devtools', value.toString())
+  localStorage.setItem('tjg-enable-devtools', value.toString())
   showFeedback(
     t(value ? 'setting.labs.feedback.devtools_enabled' : 'setting.labs.feedback.devtools_disabled'),
     'success'
@@ -253,63 +253,63 @@ function handleResetLabs() {
 
 <style scoped>
 .labs-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin: 0 0 var(--hula-space-2) 0;
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin: 0 0 var(--tjg-space-2) 0;
+  color: var(--tjg-text-primary);
 }
 
 .section-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
   margin: 0;
 }
 
 .labs-list {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-4);
+  gap: var(--tjg-space-4);
 }
 
 .lab-item {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: var(--hula-space-3);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: var(--tjg-space-3);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .lab-info {
   flex: 1;
   min-width: 0;
-  margin-right: var(--hula-space-4);
+  margin-right: var(--tjg-space-4);
 }
 
 .lab-header {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
-  margin-bottom: var(--hula-space-1);
+  gap: var(--tjg-space-2);
+  margin-bottom: var(--tjg-space-1);
 }
 
 .lab-name {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .lab-desc {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   line-height: 1.5;
 }
 
@@ -317,20 +317,20 @@ function handleResetLabs() {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: var(--hula-space-2);
-  padding: var(--hula-space-2);
-  background-color: var(--hula-settings-warning-bg);
-  border-radius: var(--hula-radius-xs);
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-color-warning-500);
+  margin-top: var(--tjg-space-2);
+  padding: var(--tjg-space-2);
+  background-color: var(--tjg-settings-warning-bg);
+  border-radius: var(--tjg-radius-xs);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-color-warning-500);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -340,14 +340,14 @@ function handleResetLabs() {
 
 .setting-label {
   display: block;
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
   display: block;
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 </style>

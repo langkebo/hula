@@ -462,7 +462,7 @@ async function handleSessionRecover() {
   gap: 6px;
   margin-top: 8px;
   padding: 6px 10px;
-  background-color: var(--hula-surface-subtle);
+  background-color: var(--tjg-surface-subtle);
   border-radius: 6px;
   font-size: 13px;
 }
@@ -486,12 +486,12 @@ async function handleSessionRecover() {
 .progress-section {
   margin-top: 16px;
   padding: 12px;
-  background-color: var(--hula-encryption-surface-subtle);
+  background-color: var(--tjg-encryption-surface-subtle);
   border-radius: 8px;
 }
 
 :deep(.dark) .progress-section {
-  background-color: var(--hula-encryption-surface-dark);
+  background-color: var(--tjg-encryption-surface-dark);
 }
 
 .progress-text {

@@ -58,8 +58,8 @@ describe('AppHarness', () => {
   })
 
   describe('isE2EMode', () => {
-    it('returns true when localStorage has hula:e2e:enabled=1', () => {
-      localStorage.setItem('hula:e2e:enabled', '1')
+    it('returns true when localStorage has tjg:e2e:enabled=1', () => {
+      localStorage.setItem('tjg:e2e:enabled', '1')
       expect(isE2EMode()).toBe(true)
     })
 
@@ -75,20 +75,20 @@ describe('AppHarness', () => {
 
   describe('shouldBypassAuthForE2E', () => {
     it('returns true when DEV + E2E + mockAuth are all satisfied', () => {
-      localStorage.setItem('hula:e2e:enabled', '1')
-      localStorage.setItem('hula:e2e:mock-auth', '1')
+      localStorage.setItem('tjg:e2e:enabled', '1')
+      localStorage.setItem('tjg:e2e:mock-auth', '1')
       expect(shouldBypassAuthForE2E()).toBe(true)
     })
 
     it('returns false in non-DEV mode', () => {
       vi.stubEnv('DEV', false)
-      localStorage.setItem('hula:e2e:enabled', '1')
-      localStorage.setItem('hula:e2e:mock-auth', '1')
+      localStorage.setItem('tjg:e2e:enabled', '1')
+      localStorage.setItem('tjg:e2e:mock-auth', '1')
       expect(shouldBypassAuthForE2E()).toBe(false)
     })
 
     it('returns false when mockAuth flag is missing', () => {
-      localStorage.setItem('hula:e2e:enabled', '1')
+      localStorage.setItem('tjg:e2e:enabled', '1')
       expect(shouldBypassAuthForE2E()).toBe(false)
     })
   })

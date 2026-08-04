@@ -544,17 +544,17 @@ async function loadIgnoredUsers() {
 }
 
 function loadPrivacySettings() {
-  const savedOnline = localStorage.getItem('hula-show-online')
+  const savedOnline = localStorage.getItem('tjg-show-online')
   if (savedOnline !== null) {
     showOnlineStatus.value = savedOnline === 'true'
   }
 
-  const savedTyping = localStorage.getItem('hula-show-typing')
+  const savedTyping = localStorage.getItem('tjg-show-typing')
   if (savedTyping !== null) {
     showTypingStatus.value = savedTyping === 'true'
   }
 
-  const savedReceipts = localStorage.getItem('hula-send-receipts')
+  const savedReceipts = localStorage.getItem('tjg-send-receipts')
   if (savedReceipts !== null) {
     sendReadReceipts.value = savedReceipts === 'true'
   }
@@ -584,7 +584,7 @@ async function handleExportKey() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `hula-keys-backup-${Date.now()}.json`
+    a.download = `tjg-keys-backup-${Date.now()}.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -600,7 +600,7 @@ async function handleExportKey() {
 }
 
 function handleOnlineStatusChange(value: boolean) {
-  localStorage.setItem('hula-show-online', value.toString())
+  localStorage.setItem('tjg-show-online', value.toString())
   showFeedback(
     value ? t('setting.security.online_status_shown') : t('setting.security.online_status_hidden'),
     'success'
@@ -608,7 +608,7 @@ function handleOnlineStatusChange(value: boolean) {
 }
 
 function handleTypingStatusChange(value: boolean) {
-  localStorage.setItem('hula-show-typing', value.toString())
+  localStorage.setItem('tjg-show-typing', value.toString())
   showFeedback(
     value ? t('setting.security.typing_status_shown') : t('setting.security.typing_status_hidden'),
     'success'
@@ -616,7 +616,7 @@ function handleTypingStatusChange(value: boolean) {
 }
 
 function handleReadReceiptsChange(value: boolean) {
-  localStorage.setItem('hula-send-receipts', value.toString())
+  localStorage.setItem('tjg-send-receipts', value.toString())
   showFeedback(
     value ? t('setting.security.read_receipts_enabled') : t('setting.security.read_receipts_disabled'),
     'success'
@@ -637,7 +637,7 @@ async function handleUnignore(userId: string) {
 async function loadBlockedUsers() {
   loadingBlocked.value = true
   try {
-    const saved = localStorage.getItem('hula-blocked-users')
+    const saved = localStorage.getItem('tjg-blocked-users')
     if (saved) {
       blockedUsers.value = JSON.parse(saved)
     }
@@ -649,7 +649,7 @@ async function loadBlockedUsers() {
 }
 
 function saveBlockedUsers() {
-  localStorage.setItem('hula-blocked-users', JSON.stringify(blockedUsers.value))
+  localStorage.setItem('tjg-blocked-users', JSON.stringify(blockedUsers.value))
 }
 
 function handleAddBlocked() {
@@ -675,9 +675,9 @@ function handleUnblock(userId: string) {
 
 function loadInviteLists() {
   try {
-    const savedBlock = localStorage.getItem('hula-invite-blocklist')
+    const savedBlock = localStorage.getItem('tjg-invite-blocklist')
     if (savedBlock) inviteBlocklist.value = JSON.parse(savedBlock)
-    const savedAllow = localStorage.getItem('hula-invite-allowlist')
+    const savedAllow = localStorage.getItem('tjg-invite-allowlist')
     if (savedAllow) inviteAllowlist.value = JSON.parse(savedAllow)
   } catch {
     // ignore
@@ -685,11 +685,11 @@ function loadInviteLists() {
 }
 
 function saveInviteBlocklist() {
-  localStorage.setItem('hula-invite-blocklist', JSON.stringify(inviteBlocklist.value))
+  localStorage.setItem('tjg-invite-blocklist', JSON.stringify(inviteBlocklist.value))
 }
 
 function saveInviteAllowlist() {
-  localStorage.setItem('hula-invite-allowlist', JSON.stringify(inviteAllowlist.value))
+  localStorage.setItem('tjg-invite-allowlist', JSON.stringify(inviteAllowlist.value))
 }
 
 function handleAddInviteBlocklist() {
@@ -737,32 +737,32 @@ function handleRemoveInviteAllowlist(userId: string) {
 
 <style scoped>
 .security-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-4);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-4);
+  color: var(--tjg-text-primary);
 }
 
 .invite-lists-alert {
-  margin-bottom: var(--hula-space-3);
-  font-size: var(--hula-font-size-sm);
+  margin-bottom: var(--tjg-space-3);
+  font-size: var(--tjg-font-size-sm);
 }
 
 .encryption-status {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-4);
-  padding: var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  gap: var(--tjg-space-4);
+  padding: var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .status-icon {
@@ -772,11 +772,11 @@ function handleRemoveInviteAllowlist(userId: string) {
 }
 
 .status-secure {
-  color: var(--hula-color-success-500);
+  color: var(--tjg-color-success-500);
 }
 
 .status-insecure {
-  color: var(--hula-color-warning-500);
+  color: var(--tjg-color-warning-500);
 }
 
 .status-info {
@@ -785,23 +785,23 @@ function handleRemoveInviteAllowlist(userId: string) {
 }
 
 .status-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .status-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -810,30 +810,30 @@ function handleRemoveInviteAllowlist(userId: string) {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .ignored-list {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .ignored-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-2) var(--hula-space-3);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-xs);
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  padding: var(--tjg-space-2) var(--tjg-space-3);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-xs);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 </style>

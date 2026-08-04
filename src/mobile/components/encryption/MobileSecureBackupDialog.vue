@@ -62,14 +62,14 @@
 
       <!-- SUCCESS -->
       <div v-else-if="phase === 'success'" class="flex flex-col items-center gap-3 py-4">
-        <van-icon name="success" size="48" color="var(--hula-color-success-500)" />
+        <van-icon name="success" size="48" color="var(--tjg-color-success-500)" />
         <span>{{ successMessage }}</span>
         <van-button block @click="handleDone">{{ t('common.done') }}</van-button>
       </div>
 
       <!-- ERROR -->
       <div v-else-if="phase === 'error'" class="flex flex-col items-center gap-3 py-4">
-        <van-icon name="warning" size="48" color="var(--hula-color-danger-500)" />
+        <van-icon name="warning" size="48" color="var(--tjg-color-danger-500)" />
         <span class="text-center">{{ displayError }}</span>
         <van-button block @click="handleRetry">{{ t('common.retry') }}</van-button>
       </div>

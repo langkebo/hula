@@ -79,15 +79,15 @@ const handleClick = () => {
 
 <style scoped lang="scss">
 .url-preview-card {
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   transition: box-shadow 0.2s;
 
   &:hover {
-    box-shadow: var(--hula-shadow-card);
+    box-shadow: var(--tjg-shadow-card);
   }
 }
 
@@ -96,13 +96,13 @@ const handleClick = () => {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 
   .loading-spinner {
     width: 16px;
     height: 16px;
-    border: 2px solid var(--hula-border-default);
-    border-top-color: var(--color-primary);
+    border: 2px solid var(--tjg-border-default);
+    border-top-color: var(--tjg-color-primary-500);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -125,7 +125,7 @@ const handleClick = () => {
   }
 
   .url-text {
-    color: var(--color-primary);
+    color: var(--tjg-color-primary-500);
     word-break: break-all;
   }
 }
@@ -148,14 +148,14 @@ const handleClick = () => {
 
 .site-name {
   font-size: 12px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   margin-bottom: 4px;
 }
 
 .preview-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   margin-bottom: 4px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -165,7 +165,7 @@ const handleClick = () => {
 
 .preview-description {
   font-size: 13px;
-  color: var(--text-secondary, var(--hula-text-secondary));
+  color: var(--text-secondary, var(--tjg-text-secondary));
   margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -175,6 +175,6 @@ const handleClick = () => {
 
 .preview-url {
   font-size: 12px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 </style>

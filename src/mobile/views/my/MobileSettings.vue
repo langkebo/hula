@@ -7,7 +7,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-[--hula-text-secondary] mb-8px">{{ t('mobile_setting.account_section') }}</div>
+          <div class="text-14px text-[--tjg-text-secondary] mb-8px">{{ t('mobile_setting.account_section') }}</div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_setting.status')" is-link @click="router.push('/mobile/mobileMy/status')">
@@ -31,7 +31,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.profile">
-                  <Icon icon="mdi:account-edit" :width="20" color="var(--hula-color-info-500)" />
+                  <Icon icon="mdi:account-edit" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
             </van-cell>
@@ -44,13 +44,13 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.security">
-                  <Icon icon="mdi:shield-lock" :width="20" color="var(--hula-color-danger-500)" />
+                  <Icon icon="mdi:shield-lock" :width="20" color="var(--tjg-color-danger-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.notification_section') }}
           </div>
 
@@ -63,13 +63,13 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.notification">
-                  <Icon icon="mdi:bell" :width="20" color="var(--hula-color-warning-500)" />
+                  <Icon icon="mdi:bell" :width="20" color="var(--tjg-color-warning-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.appearance_section') }}
           </div>
 
@@ -79,7 +79,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.theme">
-                  <Icon icon="mdi:palette" :width="20" color="var(--hula-color-beta-500)" />
+                  <Icon icon="mdi:palette" :width="20" color="var(--tjg-color-beta-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -95,7 +95,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.language">
-                  <Icon icon="mdi:translate" :width="20" color="var(--hula-color-info-500)" />
+                  <Icon icon="mdi:translate" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -107,7 +107,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.privacy_section') }}
           </div>
 
@@ -120,7 +120,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.preferences">
-                  <Icon icon="mdi:tune" :width="20" color="var(--hula-color-info-500)" />
+                  <Icon icon="mdi:tune" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
             </van-cell>
@@ -133,7 +133,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.burnAfterRead">
-                  <Icon icon="mdi:timer-outline" :width="20" color="var(--hula-color-warning-500)" />
+                  <Icon icon="mdi:timer-outline" :width="20" color="var(--tjg-color-warning-500)" />
                 </div>
               </template>
             </van-cell>
@@ -143,13 +143,13 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.mjolnir">
-                  <Icon icon="mdi:block-helper" :width="20" color="var(--hula-color-danger-500)" />
+                  <Icon icon="mdi:block-helper" :width="20" color="var(--tjg-color-danger-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.help_section') }}
           </div>
 
@@ -162,13 +162,13 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.help">
-                  <Icon icon="mdi:help-circle" :width="20" color="var(--hula-color-info-500)" />
+                  <Icon icon="mdi:help-circle" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.advanced_section') }}
           </div>
 
@@ -195,7 +195,7 @@
             </van-button>
           </div>
 
-          <div class="text-center text-12px text-[--hula-text-quaternary] mt-16px">
+          <div class="text-center text-12px text-[--tjg-text-quaternary] mt-16px">
             {{ t('mobile_setting.version') }}: v1.0.0
           </div>
         </div>
@@ -242,16 +242,16 @@ const languageValue = computed({
 const currentStatusId = computed(() => userStatusStore.stateId || 'online')
 
 const iconShellStyles = {
-  status: { backgroundColor: 'var(--hula-color-success-100)' },
-  profile: { backgroundColor: 'var(--hula-color-info-100)' },
-  security: { backgroundColor: 'var(--hula-color-danger-100)' },
-  notification: { backgroundColor: 'var(--hula-color-warning-100)' },
-  theme: { backgroundColor: 'var(--hula-color-beta-100)' },
-  language: { backgroundColor: 'var(--hula-color-info-100)' },
-  preferences: { backgroundColor: 'var(--hula-color-info-100)' },
-  burnAfterRead: { backgroundColor: 'var(--hula-color-warning-100)' },
-  mjolnir: { backgroundColor: 'var(--hula-color-danger-100)' },
-  help: { backgroundColor: 'var(--hula-color-info-100)' }
+  status: { backgroundColor: 'var(--tjg-color-success-100)' },
+  profile: { backgroundColor: 'var(--tjg-color-info-100)' },
+  security: { backgroundColor: 'var(--tjg-color-danger-100)' },
+  notification: { backgroundColor: 'var(--tjg-color-warning-100)' },
+  theme: { backgroundColor: 'var(--tjg-color-beta-100)' },
+  language: { backgroundColor: 'var(--tjg-color-info-100)' },
+  preferences: { backgroundColor: 'var(--tjg-color-info-100)' },
+  burnAfterRead: { backgroundColor: 'var(--tjg-color-warning-100)' },
+  mjolnir: { backgroundColor: 'var(--tjg-color-danger-100)' },
+  help: { backgroundColor: 'var(--tjg-color-info-100)' }
 } as const
 
 const statusOptions = [
@@ -259,25 +259,25 @@ const statusOptions = [
     id: 'online',
     label: t('mobile_setting.status_online'),
     icon: 'mdi:circle',
-    color: 'var(--hula-color-success-500)'
+    color: 'var(--tjg-color-success-500)'
   },
   {
     id: 'away',
     label: t('mobile_setting.status_away'),
     icon: 'mdi:circle',
-    color: 'var(--hula-color-warning-500)'
+    color: 'var(--tjg-color-warning-500)'
   },
   {
     id: 'busy',
     label: t('mobile_setting.status_busy'),
     icon: 'mdi:circle',
-    color: 'var(--hula-color-danger-500)'
+    color: 'var(--tjg-color-danger-500)'
   },
   {
     id: 'offline',
     label: t('mobile_setting.status_offline'),
     icon: 'mdi:circle-outline',
-    color: 'var(--hula-text-quaternary)'
+    color: 'var(--tjg-text-quaternary)'
   }
 ]
 
@@ -342,11 +342,11 @@ async function handleLogout() {
 }
 
 :deep(.van-cell) {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 :deep(.van-cell::after) {
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
 }
 
 :deep(.van-cell:last-child::after) {

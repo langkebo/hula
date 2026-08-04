@@ -5,13 +5,15 @@
     :show-arrow="false"
     style="
       padding: 0;
-      background: color-mix(in srgb, var(--hula-surface-elevated) 20%, transparent);
+      background: color-mix(in srgb, var(--tjg-surface-elevated) 20%, transparent);
       backdrop-filter: blur(10px);
     "
     trigger="click">
     <template #trigger>
       <!-- 头像 -->
-      <div class="relative size-34px rounded-50% cursor-pointer">
+      <div
+        class="relative size-34px rounded-50% cursor-pointer"
+        @contextmenu="handleAvatarContextMenu">
         <n-avatar
           :size="34"
           :src="avatarSrc"
@@ -42,7 +44,7 @@
             :fallback-src="cssVar('--avatar-fallback-src')"
             class="size-68px text-[var(--text-xl)] select-none cursor-default" />
 
-          <n-flex :size="10" class="text-[--hula-text-primary]" justify="center" vertical>
+          <n-flex :size="10" class="text-[--tjg-text-primary]" justify="center" vertical>
             <span class="text-[var(--text-lg)]">{{ userStore.userInfo?.name }}</span>
             <span class="text-[var(--text-sm)] text-[--info-text-color]">
               {{ t('home.profile_card.labels.account') }} {{ userStore.userInfo?.account }}
@@ -122,7 +124,12 @@ const currentUserLocation = computed(() => {
 const { shrinkStatus, infoShow, themeColor, openContent, handleEditing } = leftHook()
 const { statusIcon, statusTitle, statusBgColor } = useOnlineStatus()
 
-const { isOpen: isMenuOpen, position: menuPosition, closeMenu, handleMenuItemClick } = useUserMenu()
+const { isOpen: isMenuOpen, position: menuPosition, openMenu, closeMenu, handleMenuItemClick } = useUserMenu()
+
+function handleAvatarContextMenu(event: MouseEvent) {
+  event.preventDefault()
+  openMenu({ x: event.clientX, y: event.clientY }, 'right')
+}
 </script>
 <style lang="scss" scoped>
 @use '../style';

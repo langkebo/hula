@@ -1,7 +1,7 @@
 <template>
   <div
     v-show="shouldShowUserList"
-    class="w-240px flex-shrink-0 flex flex-col bg-[--hula-surface-panel] border-r border-solid border-[--hula-border-default]">
+    class="w-240px flex-shrink-0 flex flex-col bg-[--tjg-surface-panel] border-r border-solid border-[--tjg-border-default]">
     <!-- 搜索栏 -->
     <div class="p-16px pb-12px">
       <n-input
@@ -13,10 +13,10 @@
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        class="rounded-6px border-(solid 1px [--hula-border-default]) w-full relative text-12px"
+        class="rounded-6px border-(solid 1px [--tjg-border-default]) w-full relative text-12px"
         size="small">
         <template #prefix>
-          <svg class="size-16px text-[--hula-text-secondary] opacity-60">
+          <svg class="size-16px text-[--tjg-text-secondary] opacity-60">
             <use href="#search"></use>
           </svg>
         </template>
@@ -26,7 +26,7 @@
     <!-- 动态内容区域 -->
     <div class="flex-1 px-8px overflow-hidden">
       <div class="pl-4px mb-12px">
-        <span class="text-14px font-500 text-[--hula-text-primary]">{{ getSectionTitle() }}</span>
+        <span class="text-14px font-500 text-[--tjg-text-primary]">{{ getSectionTitle() }}</span>
       </div>
 
       <n-scrollbar style="height: calc(100vh / var(--page-scale, 1) - 110px)">
@@ -53,17 +53,17 @@
           <!-- 空状态 -->
           <div v-if="filteredList.length === 0 && searchKeyword && !loading" class="flex-center h-200px">
             <div class="flex-col-center">
-              <svg class="size-48px text-[--hula-text-primary] opacity-30 mb-12px">
+              <svg class="size-48px text-[--tjg-text-primary] opacity-30 mb-12px">
                 <use href="#search"></use>
               </svg>
-              <p class="text-14px text-[--hula-text-secondary] opacity-60 m-0">{{ getEmptyMessage() }}</p>
+              <p class="text-14px text-[--tjg-text-secondary] opacity-60 m-0">{{ getEmptyMessage() }}</p>
             </div>
           </div>
 
           <!-- 加载状态 -->
           <div v-if="loading" class="flex-center h-200px">
             <n-spin size="small" />
-            <span class="ml-8px text-14px text-[--hula-text-secondary] opacity-60">
+            <span class="ml-8px text-14px text-[--tjg-text-secondary] opacity-60">
               {{ t('fileManager.common.loading') }}
             </span>
           </div>

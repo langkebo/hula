@@ -437,7 +437,7 @@ function downloadKey() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `hula-secure-backup-key-${Date.now()}.txt`
+  a.download = `tjg-secure-backup-key-${Date.now()}.txt`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -536,7 +536,7 @@ async function handleDelete() {
   justify-content: center;
   gap: 8px;
   padding: 32px 0;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 
 .backup-status {
@@ -568,7 +568,7 @@ async function handleDelete() {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--hula-color-error);
+  color: var(--tjg-color-error);
   font-size: 14px;
   font-weight: 500;
 }
@@ -583,11 +583,11 @@ async function handleDelete() {
 }
 
 .no-backup-icon {
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 
 .no-backup p {
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   margin: 0;
 }
 
@@ -599,7 +599,7 @@ async function handleDelete() {
   display: flex;
   justify-content: center;
   margin-bottom: 16px;
-  color: var(--color-primary);
+  color: var(--tjg-color-primary-500);
 }
 
 .intro-text {
@@ -609,7 +609,7 @@ async function handleDelete() {
 
 .intro-text p {
   margin: 8px 0;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .warning-text {
@@ -624,14 +624,14 @@ async function handleDelete() {
 }
 
 .key-display {
-  background-color: var(--hula-encryption-surface-subtle);
+  background-color: var(--tjg-encryption-surface-subtle);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
 }
 
 :deep(.dark) .key-display {
-  background-color: var(--hula-encryption-surface-dark);
+  background-color: var(--tjg-encryption-surface-dark);
 }
 
 .key-label {
@@ -646,13 +646,13 @@ async function handleDelete() {
   word-break: break-all;
   line-height: 1.6;
   padding: 12px;
-  background-color: var(--hula-encryption-surface-subtle);
+  background-color: var(--tjg-encryption-surface-subtle);
   border-radius: 4px;
   margin-bottom: 12px;
 }
 
 :deep(.dark) .key-value {
-  background-color: var(--hula-encryption-surface-dark);
+  background-color: var(--tjg-encryption-surface-dark);
 }
 
 .key-actions {

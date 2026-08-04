@@ -149,6 +149,6 @@ onMounted(async () => {
 .space-list-page {
   width: 100%;
   height: 100%;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 </style>

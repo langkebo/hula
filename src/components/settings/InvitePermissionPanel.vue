@@ -121,39 +121,39 @@ function handleRemoveUser(listType: 'blocklist' | 'allowlist', userId: string) {
 .invite-permission-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-3);
-  padding: var(--hula-space-3);
+  gap: var(--tjg-space-3);
+  padding: var(--tjg-space-3);
 
   &__header {
     display: flex;
     align-items: center;
-    gap: var(--hula-space-2);
+    gap: var(--tjg-space-2);
   }
 
   &__icon {
     width: 16px;
     height: 16px;
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 
   &__title {
-    font-size: var(--hula-font-size-base);
-    font-weight: var(--hula-font-weight-medium);
-    color: var(--hula-text-primary);
+    font-size: var(--tjg-font-size-base);
+    font-weight: var(--tjg-font-weight-medium);
+    color: var(--tjg-text-primary);
   }
 
   &__modes {
     display: flex;
     flex-direction: column;
-    gap: var(--hula-space-2);
+    gap: var(--tjg-space-2);
   }
 
   &__list {
     display: flex;
     flex-direction: column;
-    gap: var(--hula-space-2);
-    padding: var(--hula-space-2);
-    border-top: 1px solid var(--hula-border-muted);
+    gap: var(--tjg-space-2);
+    padding: var(--tjg-space-2);
+    border-top: 1px solid var(--tjg-border-muted);
   }
 
   &__list-header {
@@ -163,27 +163,27 @@ function handleRemoveUser(listType: 'blocklist' | 'allowlist', userId: string) {
   }
 
   &__list-title {
-    font-size: var(--hula-font-size-sm);
-    font-weight: var(--hula-font-weight-medium);
-    color: var(--hula-text-secondary);
+    font-size: var(--tjg-font-size-sm);
+    font-weight: var(--tjg-font-weight-medium);
+    color: var(--tjg-text-secondary);
   }
 
   &__list-item {
-    padding: var(--hula-space-1) var(--hula-space-2) !important;
+    padding: var(--tjg-space-1) var(--tjg-space-2) !important;
   }
 
   &__user-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--hula-space-2);
+    gap: var(--tjg-space-2);
     width: 100%;
   }
 
   &__remove-icon {
     width: 12px;
     height: 12px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 }
 </style>

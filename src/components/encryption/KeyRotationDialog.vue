@@ -393,13 +393,13 @@ watch(visible, (val) => {
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--hula-border-default);
+    border-top: 1px solid var(--tjg-border-default);
   }
 }
 
 .rotation-status {
   padding: 12px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -429,18 +429,18 @@ watch(visible, (val) => {
 
 .status-desc {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin-top: 2px;
 }
 
 .last-rotation {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--hula-border-default);
+  border-top: 1px solid var(--tjg-border-default);
   font-size: 12px;
 
   .label {
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
   }
 
   .value {
@@ -460,7 +460,7 @@ watch(visible, (val) => {
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--hula-surface-panel-muted);
+    background: var(--tjg-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -482,7 +482,7 @@ watch(visible, (val) => {
 
   .action-desc {
     font-size: 12px;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
   }
 }
 
@@ -494,7 +494,7 @@ watch(visible, (val) => {
 }
 
 .history-time {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-size: 12px;
 }
 
@@ -520,7 +520,7 @@ watch(visible, (val) => {
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--hula-surface-panel-muted);
+    background: var(--tjg-surface-panel-muted);
     border-radius: 8px;
     margin-bottom: 8px;
   }
@@ -536,7 +536,7 @@ watch(visible, (val) => {
 
   .config-desc {
     font-size: 12px;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     margin-top: 2px;
   }
 }

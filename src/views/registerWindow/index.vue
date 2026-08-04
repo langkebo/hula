@@ -13,7 +13,7 @@
         <div class="w-full max-w-260px pointer-events-auto flex flex-col gap-16px text-center">
           <div class="flex justify-center items-center gap-12px">
             <span class="text-24px color-[--color-primary] textFont">{{ t('auth.register.title') }}</span>
-            <img class="w-100px h-40px" src="/hula.png" alt="HuLa" />
+            <img class="w-100px h-40px" src="/tjg.png" alt="Tjg" />
           </div>
 
           <div class="w-full">
@@ -151,7 +151,7 @@
                 <!-- 协议 -->
                 <n-flex align="center" justify="center" :size="6" class="mt-10px">
                   <n-checkbox v-model:checked="protocol" />
-                  <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px">
+                  <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
                     <span>{{ t('login.term.checkout.text1') }}</span>
                     <span class="color-[--color-primary] cursor-pointer" @click.stop="openServiceAgreement">
                       {{ t('login.term.checkout.text2') }}
@@ -186,18 +186,18 @@
 
     <!-- 底部栏 -->
     <div
-      class="text-(12px --hula-text-tertiary) w-full absolute bottom-20px left-0 text-center pointer-events-none z-0">
+      class="text-(12px --tjg-text-tertiary) w-full absolute bottom-20px left-0 text-center pointer-events-none z-0">
       <span>Copyright {{ currentYear - 1 }}-{{ currentYear }} 龙卷风 All Rights Reserved.</span>
     </div>
 
     <!-- 邮箱验证码输入弹窗 -->
     <n-modal v-model:show="emailCodeModal" :mask-closable="false" class="rounded-8px" transform-origin="center">
-      <div class="bg-[--hula-surface-elevated] w-380px h-fit box-border flex flex-col">
+      <div class="bg-[--tjg-surface-elevated] w-380px h-fit box-border flex flex-col">
         <div
           v-if="isMac()"
           @click="emailCodeModal = false"
-          class="mac-close z-999 size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none absolute top-3px left-4px">
-          <svg class="hidden size-7px text-[--hula-text-primary] select-none absolute top-3px left-3px">
+          class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute top-3px left-4px">
+          <svg class="hidden size-7px text-[--tjg-text-primary] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
@@ -210,8 +210,8 @@
         </svg>
         <n-flex vertical class="w-full h-fit">
           <n-flex vertical :size="10" class="p-24px">
-            <p class="text-(16px [--hula-text-primary]) mb-10px">{{ t('auth.register.email_modal.title') }}</p>
-            <p class="text-(12px [--hula-text-tertiary]) leading-5 mb-10px">
+            <p class="text-(16px [--tjg-text-primary]) mb-10px">{{ t('auth.register.email_modal.title') }}</p>
+            <p class="text-(12px [--tjg-text-tertiary]) leading-5 mb-10px">
               {{ t('auth.register.email_modal.desc', { email: info.email }) }}
             </p>
 
@@ -224,7 +224,7 @@
               :loading="registerLoading"
               :disabled="!isEmailCodeComplete"
               tertiary
-              style="color: var(--hula-text-inverse)"
+              style="color: var(--tjg-text-inverse)"
               class="w-full gradient-button"
               @click="register">
               {{ t('auth.register.actions.submit') }}
@@ -542,7 +542,7 @@ const finishRegistrationAndEnterHome = async (registerResult: Awaited<ReturnType
       password: info.password,
       homeserverUrl: matrixEndpointConfig.homeserverUrl,
       identityServerUrl: matrixEndpointConfig.identityServerUrl,
-      deviceName: 'HuLa Client',
+      deviceName: 'Tjg Client',
       account,
       displayName,
       avatar: info.avatar,

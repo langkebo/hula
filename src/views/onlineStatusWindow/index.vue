@@ -1,11 +1,11 @@
 <template>
-  <main class="size-full bg-[--hula-surface-panel] select-none">
+  <main class="size-full bg-[--tjg-surface-panel] select-none">
     <ActionBar class="absolute right-0 w-full" :shrink="false" :max-w="false" :min-w="false" />
 
     <n-flex
       vertical
       :size="130"
-      :style="`background: linear-gradient(to bottom, ${RGBA} 0%, var(--hula-surface-subtle) 100%)`"
+      :style="`background: linear-gradient(to bottom, ${RGBA} 0%, var(--tjg-surface-subtle) 100%)`"
       class="size-full p-20px box-border"
       data-tauri-drag-region>
       <!-- 当前选中的状态 -->
@@ -136,7 +136,7 @@ onMounted(async () => {
     white-space: normal;
   }
   &:not(.active):hover {
-    background: var(--hula-text-disabled);
+    background: var(--tjg-text-disabled);
     cursor: pointer;
   }
 }
@@ -146,13 +146,13 @@ onMounted(async () => {
   border-radius: 8px;
   cursor: pointer;
   span {
-    color: var(--hula-text-inverse);
+    color: var(--tjg-text-inverse);
   }
 }
 
 :deep(.action-close) {
   svg {
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
   }
 }
 /** 隐藏naive UI的滚动条 */

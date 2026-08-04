@@ -1,23 +1,12 @@
-import { PREFIX_V1 } from './prefixes'
+import { PREFIX_UNSTABLE } from './prefixes'
 
+/**
+ * Sliding Sync 候选端点列表（用于连通性诊断）。
+ *
+ * 仅保留非废弃的常量。原 SYNC_FILTER / SYNC_TIMEOUT / SLIDING_SYNC / SLIDING_SYNC_LIST /
+ * SLIDING_SYNC_WINDOW 等已废弃，请使用 MatrixSyncService / MatrixSlidingSyncService 的方法。
+ */
 export const SYNC = {
-  /** @deprecated Use MatrixSyncService methods instead */
-  SYNC: '/sync',
-  /** @deprecated Use MatrixSyncService filter methods instead */
-  FILTER: (userId: string) => `/user/${encodeURIComponent(userId)}/filter`,
-  /** @deprecated Use MatrixSyncService filter methods instead */
-  FILTER_BY_ID: (userId: string, filterId: string) =>
-    `/user/${encodeURIComponent(userId)}/filter/${encodeURIComponent(filterId)}`,
-  /** @deprecated Use MatrixSlidingSyncService methods instead */
-  SLIDING_SYNC: PREFIX_V1 + '/sync',
-  /** @deprecated Use MatrixSlidingSyncService methods instead */
-  SLIDING_SYNC_UNSTABLE: '/_matrix/client/unstable/org.matrix.msc3575/sync',
-  /** @deprecated Use MatrixSlidingSyncService methods instead */
-  SLIDING_SYNC_SIMPLIFIED_UNSTABLE: '/_matrix/client/unstable/org.matrix.simplified_msc3575/sync',
-  /** @deprecated Use MatrixSlidingSyncService methods instead */
-  SLIDING_SYNC_CANDIDATES: [
-    PREFIX_V1 + '/sync',
-    '/_matrix/client/unstable/org.matrix.msc3575/sync',
-    '/_matrix/client/unstable/org.matrix.simplified_msc3575/sync'
-  ]
+  /** Sliding Sync 候选端点（用于 /utils/MatrixDiagnostics 连通性检查） */
+  SLIDING_SYNC_CANDIDATES: [`${PREFIX_UNSTABLE}/org.matrix.simplified_msc3575/sync`, `/_matrix/client/v4/sync`]
 } as const

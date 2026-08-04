@@ -7,18 +7,18 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="flex items-start gap-8px p-12px bg-[var(--hula-color-warning-100)] rounded-8px mb-4px">
+          <div class="flex items-start gap-8px p-12px bg-[var(--tjg-color-warning-100)] rounded-8px mb-4px">
             <Icon
               icon="mdi:alert-circle-outline"
               :width="16"
-              color="var(--hula-color-warning-500)"
+              color="var(--tjg-color-warning-500)"
               class="flex-shrink-0 mt-2px" />
-            <span class="text-12px text-[var(--hula-color-warning-500)]">
+            <span class="text-12px text-[var(--tjg-color-warning-500)]">
               {{ t('mobile_integrations.beta_warning') }}
             </span>
           </div>
 
-          <div class="text-14px text-[var(--hula-text-secondary)] mb-8px">
+          <div class="text-14px text-[var(--tjg-text-secondary)] mb-8px">
             {{ t('mobile_integrations.description') }}
           </div>
 
@@ -26,8 +26,8 @@
             <van-cell :title="t('mobile_integrations.enable_integrations')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:puzzle" :width="20" color="var(--hula-color-primary-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:puzzle" :width="20" color="var(--tjg-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -37,7 +37,7 @@
           </van-cell-group>
 
           <template v-if="integrationsEnabled">
-            <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
               {{ t('mobile_integrations.installed_section') }}
             </div>
 
@@ -49,13 +49,13 @@
                 :label="integration.description">
                 <template #icon>
                   <div
-                    class="w-40px h-40px rounded-full bg-[var(--hula-bg-secondary)] mr-12px flex items-center justify-center">
-                    <Icon :icon="integration.icon || 'mdi:puzzle'" :width="20" color="var(--hula-text-secondary)" />
+                    class="w-40px h-40px rounded-full bg-[var(--tjg-bg-secondary)] mr-12px flex items-center justify-center">
+                    <Icon :icon="integration.icon || 'mdi:puzzle'" :width="20" color="var(--tjg-text-secondary)" />
                   </div>
                 </template>
                 <template #value>
                   <div class="flex items-center gap-8px">
-                    <span class="text-12px text-[var(--hula-text-quaternary)]">v{{ integration.version }}</span>
+                    <span class="text-12px text-[var(--tjg-text-quaternary)]">v{{ integration.version }}</span>
                     <van-tag :type="integration.enabled ? 'success' : 'default'" size="medium">
                       {{ integration.enabled ? t('mobile_integrations.enabled') : t('mobile_integrations.disabled') }}
                     </van-tag>
@@ -70,7 +70,7 @@
               </van-cell>
             </van-cell-group>
 
-            <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
               {{ t('mobile_integrations.available_section') }}
             </div>
 
@@ -82,8 +82,8 @@
                 :label="integration.description">
                 <template #icon>
                   <div
-                    class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
-                    <Icon :icon="integration.icon || 'mdi:puzzle'" :width="20" color="var(--hula-color-info-500)" />
+                    class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
+                    <Icon :icon="integration.icon || 'mdi:puzzle'" :width="20" color="var(--tjg-color-info-500)" />
                   </div>
                 </template>
                 <template #right-icon>
@@ -94,7 +94,7 @@
               </van-cell>
             </van-cell-group>
 
-            <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+            <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
               {{ t('mobile_integrations.permissions_section') }}
             </div>
 

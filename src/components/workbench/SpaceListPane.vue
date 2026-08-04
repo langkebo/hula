@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="space-list-pane border-r border-[--hula-border-default]"
+    class="space-list-pane border-r border-[--tjg-border-default]"
     data-test="space-list-pane"
     :aria-label="t('space.title')">
     <!-- 搜索栏 -->
@@ -14,7 +14,7 @@
         @update:value="handleSearchChange"
         @keydown.esc="handleSearchEsc">
         <template #prefix>
-          <svg class="size-16px color-[--hula-text-tertiary]"><use href="#search" /></svg>
+          <svg class="size-16px color-[--tjg-text-tertiary]"><use href="#search" /></svg>
         </template>
         <template #suffix>
           <button
@@ -171,8 +171,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
-import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import SpaceListItemCard from './SpaceListItemCard.vue'
 
 export type SpaceListItem = {
@@ -290,7 +290,7 @@ const emptyDescription = computed(() => {
   min-width: 240px;
   max-width: 360px;
   height: 100%;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   display: flex;
   flex-direction: column;
 }
@@ -298,16 +298,16 @@ const emptyDescription = computed(() => {
 /* 搜索栏 */
 .space-list-pane__search-bar {
   flex-shrink: 0;
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
 }
 
-/* 阶段 9：搜索栏规范（需求文档 3.3.6）—— 高度 40px，圆角 8px，背景 --hula-surface-search */
+/* 阶段 9：搜索栏规范（需求文档 3.3.6）—— 高度 40px，圆角 8px，背景 --tjg-surface-search */
 .space-list-pane__search {
   :deep(.n-input) {
     --n-height: 40px;
     --n-font-size: 14px;
     --n-border-radius: 8px;
-    background: var(--hula-surface-search);
+    background: var(--tjg-surface-search);
   }
 
   :deep(.n-input__input-el) {
@@ -319,32 +319,32 @@ const emptyDescription = computed(() => {
   background: transparent;
   border: 0;
   border-radius: 4px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2px;
   transition:
-    background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard),
-    color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {
-    background: var(--hula-surface-list-hover);
-    color: var(--hula-text-primary);
+    background: var(--tjg-surface-list-hover);
+    color: var(--tjg-text-primary);
   }
 }
 
 /* 筛选条 */
 .space-list-pane__filter-bar {
   flex-shrink: 0;
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
 }
 
 .space-list-pane__filter-tabs {
   display: flex;
   gap: 4px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   border-radius: 8px;
   padding: 3px;
 }
@@ -359,19 +359,19 @@ const emptyDescription = computed(() => {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 
   &--active {
-    background: var(--hula-surface-panel);
-    color: var(--hula-color-primary-500);
+    background: var(--tjg-surface-panel);
+    color: var(--tjg-color-primary-500);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   }
 }
@@ -415,14 +415,14 @@ const emptyDescription = computed(() => {
 .space-section__title {
   font-size: 11px;
   font-weight: 600;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .space-section__count {
   font-size: 11px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 
 .space-section__items {
@@ -454,8 +454,8 @@ const emptyDescription = computed(() => {
 /* 底部快捷操作 */
 .space-list-pane__footer {
   flex-shrink: 0;
-  border-top: 1px solid var(--hula-border-default);
-  background: var(--hula-surface-panel);
+  border-top: 1px solid var(--tjg-border-default);
+  background: var(--tjg-surface-panel);
 }
 
 .space-list-pane__footer-btn {

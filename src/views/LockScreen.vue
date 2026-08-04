@@ -10,8 +10,8 @@
       <div v-if="!isUnlockPage" @click.stop="isUnlockPage = true" class="size-full rounded-8px">
         <n-flex vertical align="center" :size="120" class="size-full mt-10%">
           <n-flex vertical align="center" :size="20" class="will-change-auto will-change-contents">
-            <p class="text-(100px [--hula-text-secondary]) font-500">{{ currentTime }}</p>
-            <n-flex align="center" :size="30" class="text-(30px [--hula-text-secondary])">
+            <p class="text-(100px [--tjg-text-secondary]) font-500">{{ currentTime }}</p>
+            <n-flex align="center" :size="30" class="text-(30px [--tjg-text-secondary])">
               <p>{{ currentMonthAndDate }}</p>
               <p>{{ currentWeekday }}</p>
             </n-flex>
@@ -19,7 +19,7 @@
 
           <n-flex vertical justify="center" align="center" :size="20" class="tips">
             <svg><use href="#search"></use></svg>
-            <p class="text-(16px [--hula-text-secondary]) text-center leading-24px">
+            <p class="text-(16px [--tjg-text-secondary]) text-center leading-24px">
               {{ t('message.lock_screen.tip_description') }}
             </p>
           </n-flex>
@@ -38,10 +38,10 @@
         <n-flex vertical align="center" justify="center" :size="30" class="mt--75px">
           <n-avatar
             round
-            style="border: 2px solid var(--lock-border-color, var(--hula-surface-subtle))"
+            style="border: 2px solid var(--lock-border-color, var(--tjg-surface-subtle))"
             :size="120"
             :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')" />
-          <p class="text-(24px [--hula-text-secondary]) font-500">{{ userStore.userInfo?.name ?? '' }}</p>
+          <p class="text-(24px [--tjg-text-secondary]) font-500">{{ userStore.userInfo?.name ?? '' }}</p>
 
           <!-- 密码输入框 -->
           <n-input
@@ -51,8 +51,8 @@
               width: 320px;
               border: 2px solid rgba(255, 255, 255, 0.1);
               border-bottom-color: rgba(19, 152, 127, 1);
-              background-color: var(--lock-input-bg, var(--hula-surface-panel-muted));
-              color: var(--lock-input-color, var(--hula-text-inverse));
+              background-color: var(--lock-input-bg, var(--tjg-surface-panel-muted));
+              color: var(--lock-input-color, var(--tjg-text-inverse));
             "
             spellCheck="false"
             autoComplete="off"
@@ -68,7 +68,7 @@
                 <template #trigger>
                   <svg
                     @click.stop="unlock"
-                    class="size-16px text-[--hula-text-secondary] mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-all duration-300 ease-in-out hover:bg-[--hula-color-primary-600]">
+                    class="size-16px text-[--tjg-text-secondary] mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-all duration-300 ease-in-out hover:bg-[--tjg-color-primary-600]">
                     <use href="#arrow-right"></use>
                   </svg>
                 </template>
@@ -80,15 +80,15 @@
           <!-- 登录时显示的文字 -->
           <n-flex vertical align="center" justify="center" :size="30" v-if="isLogining && !isWrongPassword">
             <img class="size-42px" src="@/assets/img/loading-one.svg" alt="加载中" />
-            <p class="text-(20px [--hula-text-secondary])">{{ t('message.lock_screen.unlocking') }}</p>
+            <p class="text-(20px [--tjg-text-secondary])">{{ t('message.lock_screen.unlocking') }}</p>
           </n-flex>
 
           <!-- 密码不正常时显示 -->
           <n-flex v-if="isWrongPassword" vertical justify="center" align="center" :size="30">
-            <p class="text-(18px [--hula-text-secondary])">{{ t('message.lock_screen.wrong_password') }}</p>
+            <p class="text-(18px [--tjg-text-secondary])">{{ t('message.lock_screen.wrong_password') }}</p>
             <p
               @click="init"
-              class="w-120px bg-[--hula-surface-inverse-hover] backdrop-blur-xl cursor-pointer p-10px rounded-8px text-(14px var(--hula-text-primary) center) font-500">
+              class="w-120px bg-[--tjg-surface-inverse-hover] backdrop-blur-xl cursor-pointer p-10px rounded-8px text-(14px var(--tjg-text-primary) center) font-500">
               {{ t('message.lock_screen.confirm_button') }}
             </p>
           </n-flex>
@@ -99,7 +99,7 @@
           justify="space-around"
           align="center"
           :size="0"
-          class="options text-(14px [--hula-text-secondary])">
+          class="options text-(14px [--tjg-text-secondary])">
           <p @click="isUnlockPage = false">{{ t('message.lock_screen.return_action') }}</p>
           <p @click="logout">{{ t('message.lock_screen.logout_action') }}</p>
           <p>{{ t('message.lock_screen.forgot_password') }}</p>
@@ -271,7 +271,7 @@ onUnmounted(() => {
   @apply cursor-pointer w-240px p-12px rounded-8px transition-all duration-300 ease-in-out;
   svg {
     @apply size-24px p-4px rounded-8px;
-    color: var(--lock-icon-color, var(--hula-surface-subtle));
+    color: var(--lock-icon-color, var(--tjg-surface-subtle));
     background-color: var(--lock-icon-bg, rgba(128, 128, 128, 0.5));
   }
 }
@@ -279,16 +279,16 @@ onUnmounted(() => {
 :deep(.hover-box),
 :deep(.action-close) {
   svg {
-    color: var(--lock-action-color, var(--hula-text-inverse));
+    color: var(--lock-action-color, var(--tjg-text-inverse));
   }
 }
 :deep(.hover-box) {
   &:hover {
-    background-color: var(--lock-hover-bg, var(--hula-surface-sidebar-active));
+    background-color: var(--lock-hover-bg, var(--tjg-surface-sidebar-active));
   }
 }
 :deep(.n-input .n-input__input-el, .n-input .n-input__textarea-el) {
-  color: var(--lock-input-color, var(--hula-text-inverse));
+  color: var(--lock-input-color, var(--tjg-text-inverse));
 }
 
 /*

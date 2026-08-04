@@ -23,7 +23,7 @@
                 :aria-label="t('components.actionBar.proxy_settings')"
                 class="w-30px h-24px flex-center hover-box">
                 <svg
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
                   class="size-16px cursor-pointer">
                   <use href="#settings"></use>
                 </svg>
@@ -46,13 +46,13 @@
               <template #trigger>
                 <svg
                   v-if="alwaysOnTopStatus"
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
                   class="size-14px outline-none cursor-pointer">
                   <use href="#onTop"></use>
                 </svg>
                 <svg
                   v-else
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
                   class="size-16px outline-none cursor-pointer">
                   <use href="#notOnTop"></use>
                 </svg>
@@ -71,7 +71,7 @@
                 :title="t('components.actionBar.shrink')"
                 :aria-label="t('components.actionBar.shrink')">
                 <svg
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
                   class="size-16px cursor-pointer">
                   <use href="#left-bar"></use>
                 </svg>
@@ -89,7 +89,7 @@
                 :title="t('components.actionBar.minimize')"
                 :aria-label="t('components.actionBar.minimize')">
                 <svg
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
                   class="size-24px opacity-66 cursor-pointer">
                   <use href="#maximize"></use>
                 </svg>
@@ -108,13 +108,13 @@
                 :aria-label="windowMaximized ? t('components.actionBar.restore') : t('components.actionBar.maximize')">
                 <svg
                   v-show="!windowMaximized"
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
                   class="size-18px cursor-pointer">
                   <use href="#rectangle-small"></use>
                 </svg>
                 <svg
                   v-show="windowMaximized"
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
                   class="size-16px cursor-pointer">
                   <use href="#internal-reduction"></use>
                 </svg>
@@ -133,7 +133,7 @@
                 :aria-label="t('components.actionBar.close')"
                 class="action-close">
                 <svg
-                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--hula-text-secondary]']"
+                  :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
                   class="size-14px cursor-pointer">
                   <use href="#close"></use>
                 </svg>
@@ -154,7 +154,7 @@
     </template>
     <!-- 是否退到托盘提示框 -->
     <n-modal v-if="!tips.notTips" v-model:show="tipsRef.show" class="rounded-8px">
-      <div class="bg-[--hula-surface-elevated] w-290px h-full p-6px box-border flex flex-col">
+      <div class="bg-[--tjg-surface-elevated] w-290px h-full p-6px box-border flex flex-col">
         <svg
           @click="tipsRef.show = false"
           class="size-12px ml-a cursor-pointer select-none"
@@ -165,21 +165,21 @@
         </svg>
         <n-flex vertical :size="20" class="p-[22px_10px_10px_22px] select-none">
           <span class="text-16px">{{ t('components.actionBar.close_prompt.title') }}</span>
-          <label class="text-(14px [--hula-text-secondary]) flex gap-6px lh-16px items-center">
+          <label class="text-(14px [--tjg-text-secondary]) flex gap-6px lh-16px items-center">
             <n-radio :checked="tipsRef.type === CloseBxEnum.HIDE" @change="tipsRef.type = CloseBxEnum.HIDE" />
             <span>{{ t('components.actionBar.close_prompt.hide_to_tray') }}</span>
           </label>
-          <label class="text-(14px [--hula-text-secondary]) flex gap-6px lh-16px items-center">
+          <label class="text-(14px [--tjg-text-secondary]) flex gap-6px lh-16px items-center">
             <n-radio :checked="tipsRef.type === CloseBxEnum.CLOSE" @change="tipsRef.type = CloseBxEnum.CLOSE" />
             <span>{{ t('components.actionBar.close_prompt.exit_app') }}</span>
           </label>
-          <label class="text-(12px --hula-text-tertiary) flex gap-6px justify-end items-center">
+          <label class="text-(12px --tjg-text-tertiary) flex gap-6px justify-end items-center">
             <n-checkbox size="small" v-model:checked="tipsRef.notTips" />
             <span>{{ t('components.actionBar.close_prompt.no_prompt') }}</span>
           </label>
 
           <n-flex justify="end">
-            <n-button @click="handleConfirm" class="w-78px" color="var(--color-primary)">
+            <n-button @click="handleConfirm" class="w-78px" color="var(--tjg-color-primary-500)">
               {{ t('components.common.confirm') }}
             </n-button>
             <n-button @click="tipsRef.show = false" class="w-78px" secondary>

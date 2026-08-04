@@ -67,31 +67,31 @@ onMounted(() => {
   transition: all 0.2s;
 
   &:hover {
-    background: var(--color-primary);
+    background: var(--tjg-color-primary-500);
     transform: translateX(2px);
   }
 
   .thread-icon {
-    color: var(--color-primary);
+    color: var(--tjg-color-primary-500);
   }
 
   .reply-count {
     font-size: 13px;
     font-weight: 500;
-    color: var(--color-primary);
+    color: var(--tjg-color-primary-500);
   }
 
   .arrow-icon {
-    color: var(--color-primary);
+    color: var(--tjg-color-primary-500);
   }
 }
 
 .start-thread-btn {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 
   &:hover {
-    color: var(--color-primary);
+    color: var(--tjg-color-primary-500);
   }
 }
 </style>

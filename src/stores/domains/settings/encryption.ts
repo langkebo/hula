@@ -6,6 +6,7 @@ import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoServic
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('EncryptionStore')
@@ -22,6 +23,9 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
   const needsRotation = ref(false)
   const loading = ref(false)
   const loaded = ref(false)
+  // Rust Crypto 初始化失败状态（登录后检查）
+  const cryptoInitFailed = ref(false)
+  const cryptoInitError = ref<string | null>(null)
 
   // === Getters ===
   const e2eeFullySetup = computed(
@@ -145,6 +149,28 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
     deviceVerified.value = true
   }
 
+  /**
+   * 检查 Rust Crypto 初始化状态（登录后调用）。
+   * 若 crypto 未成功初始化，则 cryptoInitFailed=true，加密房间将无法发送消息。
+   */
+  function loadCryptoInitStatus() {
+    try {
+      const state = matrixClientService.getRustCryptoDebugState()
+      // 仅当尝试过初始化（attempted=true）但未成功（initialized=false）时判定为失败，
+      // 排除"未登录"（skippedReason='missing-client-or-access-token'）等正常跳过情况
+      const failed = state.attempted && !state.initialized
+      cryptoInitFailed.value = failed
+      cryptoInitError.value = failed ? (state.error ?? state.skippedReason ?? 'unknown') : null
+      if (failed) {
+        logger.warn(`[EncryptionStore] Crypto 初始化失败，加密房间将无法发送消息: ${cryptoInitError.value}`)
+      }
+    } catch (err) {
+      logger.error('[EncryptionStore] 加载 Crypto 初始化状态失败:', err)
+      cryptoInitFailed.value = false
+      cryptoInitError.value = null
+    }
+  }
+
   return {
     // State
     encryptionEnabled,
@@ -157,6 +183,8 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
     needsRotation,
     loading,
     loaded,
+    cryptoInitFailed,
+    cryptoInitError,
     // Getters
     e2eeFullySetup,
     setupProgress,
@@ -167,6 +195,7 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
     loadBackupStatus,
     loadRotationStatus,
     loadDeviceVerification,
+    loadCryptoInitStatus,
     markSecurityKeyConfigured,
     markCrossSigningSetup,
     markBackupEnabled,

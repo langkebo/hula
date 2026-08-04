@@ -71,6 +71,17 @@ const MESSAGE_SEND_MAX_RETRIES = 3
 const MESSAGE_SEND_RETRY_DELAY_MS = 1000
 const MESSAGE_SEND_RETRY_BACKOFF = 2
 
+/**
+ * 不可重试错误特征：这些错误重试也不会成功，应立即失败。
+ * - "does not support encryption": 客户端 crypto 未初始化，重试无效
+ * - "Event blocked by other events not yet sent": SDK 发送队列被前一个失败事件阻塞，重试只会累积更多阻塞
+ */
+const NON_RETRYABLE_ERROR_PATTERNS = ['does not support encryption', 'Event blocked by other events not yet sent']
+
+function isNonRetryableError(error: Error): boolean {
+  return NON_RETRYABLE_ERROR_PATTERNS.some((pattern) => error.message.includes(pattern))
+}
+
 class MatrixMessageService extends BaseMatrixService {
   private localToRemoteEventIdMap: Map<string, string> = new Map()
 
@@ -254,6 +265,12 @@ class MatrixMessageService extends BaseMatrixService {
         return await sendFn()
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err))
+
+        // 不可重试错误（如 crypto 未初始化、发送队列阻塞）立即失败，避免无效重试
+        if (isNonRetryableError(lastError)) {
+          logger.error(`[MatrixMessage] ${operationName} failed (non-retryable): ${lastError.message}`)
+          throw lastError
+        }
 
         if (attempt < MESSAGE_SEND_MAX_RETRIES) {
           logger.error(
@@ -783,13 +800,6 @@ class MatrixMessageService extends BaseMatrixService {
       logger.error(`[MatrixMessage] Failed to mark messages as read: ${err}`)
       throw err
     }
-  }
-
-  /**
-   * @deprecated 使用 {@link sendMessageStream} 代替，该方法将在未来版本中移除。
-   */
-  async messageSendStream(roomId: string, content: string, txId?: string): Promise<ISendEventResponse> {
-    return this.sendMessageStream(roomId, content, txId)
   }
 }
 

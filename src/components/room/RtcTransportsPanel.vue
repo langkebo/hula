@@ -85,7 +85,7 @@ onMounted(loadTransports)
 .panel-subtitle {
   margin: 0 0 12px 0;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   line-height: 1.5;
 }
 
@@ -97,7 +97,7 @@ onMounted(loadTransports)
 
 .rtc-transport-item {
   padding: 8px 12px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   border-radius: 6px;
   font-size: 12px;
 }
@@ -114,12 +114,12 @@ onMounted(loadTransports)
 }
 
 .transport-label {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   flex-shrink: 0;
 }
 
 .transport-value {
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   word-break: break-word;
 }
 </style>

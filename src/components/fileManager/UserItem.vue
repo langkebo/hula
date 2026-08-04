@@ -130,12 +130,12 @@ const handleAvatarError = (event: Event) => {
   user-select: none;
 
   &:hover:not(&--selected) {
-    background-color: var(--hula-surface-list-hover);
+    background-color: var(--tjg-surface-list-hover);
   }
 
   &--selected {
-    background-color: var(--hula-color-primary-100);
-    box-shadow: inset 0 0 0 1px var(--color-primary);
+    background-color: var(--tjg-color-primary-100);
+    box-shadow: inset 0 0 0 1px var(--tjg-color-primary-500);
   }
 }
 
@@ -159,9 +159,9 @@ const handleAvatarError = (event: Event) => {
   right: 2px;
   width: 8px;
   height: 8px;
-  background-color: var(--color-primary);
+  background-color: var(--tjg-color-primary-500);
   border-radius: 50%;
-  border: 2px solid var(--hula-surface-panel);
+  border: 2px solid var(--tjg-surface-panel);
 }
 
 .user-info {
@@ -171,7 +171,7 @@ const handleAvatarError = (event: Event) => {
 
 .user-name {
   font-size: 14px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -180,7 +180,7 @@ const handleAvatarError = (event: Event) => {
 
 .user-subtitle {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   opacity: 0.6;
   white-space: nowrap;
   overflow: hidden;
@@ -192,12 +192,12 @@ const handleAvatarError = (event: Event) => {
 html[data-theme='dark'] {
   .user-item {
     &:hover:not(&--selected) {
-      background-color: var(--hula-surface-list-hover);
+      background-color: var(--tjg-surface-list-hover);
     }
 
     &--selected {
       background-color: var(--color-primary-hover);
-      border-color: var(--color-primary);
+      border-color: var(--tjg-color-primary-500);
     }
   }
 }

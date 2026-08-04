@@ -2,7 +2,7 @@
   <div class="room-detail-pane" :class="{ 'is-empty': !roomId }">
     <template v-if="!roomId">
       <div class="pane-empty">
-        <svg class="size-40px color-[--hula-text-tertiary]"><use href="#view-grid-card"></use></svg>
+        <svg class="size-40px color-[--tjg-text-tertiary]"><use href="#view-grid-card"></use></svg>
         <p class="empty-text">{{ t('room.detail.no_selection') }}</p>
       </div>
     </template>
@@ -18,7 +18,7 @@
             <div class="header-avatar" :class="{ 'is-uploading': avatarUploading }" @click="handleAvatarClick">
               <img v-if="roomDetail.avatar" :src="roomDetail.avatar" alt="room avatar" class="avatar-img" />
               <div v-else class="avatar-fallback">
-                <svg class="size-24px color-[--hula-text-tertiary]"><use href="#view-grid-card"></use></svg>
+                <svg class="size-24px color-[--tjg-text-tertiary]"><use href="#view-grid-card"></use></svg>
               </div>
               <n-spin v-if="avatarUploading" size="small" class="avatar-spin" />
               <div class="avatar-overlay" v-else-if="roomDetail.canEdit">
@@ -393,7 +393,7 @@ watch(
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 
   &.is-empty {
     justify-content: center;
@@ -410,7 +410,7 @@ watch(
 
 .empty-text {
   font-size: 13px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   margin: 0;
 }
 
@@ -439,8 +439,8 @@ watch(
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-  background: var(--hula-surface-raised);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-raised);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .avatar-img {
@@ -455,7 +455,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--hula-surface-list-hover);
+  background: var(--tjg-surface-list-hover);
 }
 
 .avatar-overlay {
@@ -464,10 +464,10 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--hula-overlay-mask-default);
+  background: var(--tjg-overlay-mask-default);
   opacity: 0;
   transition: opacity 0.15s;
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
 }
 
 .header-avatar:hover .avatar-overlay {
@@ -484,7 +484,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--hula-overlay-mask-default);
+  background: var(--tjg-overlay-mask-default);
 }
 
 .header-info {
@@ -495,7 +495,7 @@ watch(
 .room-name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -511,13 +511,13 @@ watch(
 
 .room-id-label {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   flex-shrink: 0;
 }
 
 .room-id-value {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-family: monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -526,12 +526,12 @@ watch(
 
 .copy-btn {
   flex-shrink: 0;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .pane-divider {
   height: 1px;
-  background: var(--hula-border-default);
+  background: var(--tjg-border-default);
   margin: 0 16px;
 }
 
@@ -542,7 +542,7 @@ watch(
 .section-title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -562,20 +562,20 @@ watch(
 
 .info-label {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .info-value {
   font-size: 13px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 
   &.is-empty {
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
     font-style: italic;
   }
 
   &.online {
-    color: var(--hula-color-success-500);
+    color: var(--tjg-color-success-500);
   }
 }
 
@@ -587,7 +587,7 @@ watch(
 
 .announcement-content {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
@@ -600,7 +600,7 @@ watch(
   justify-content: center;
   height: 100%;
   gap: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-size: 13px;
 }
 

@@ -2,7 +2,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SessionCrypto')
 
-const ENCRYPTION_KEY_MATERIAL = 'hula-session-encryption-key-v1'
+const ENCRYPTION_KEY_MATERIAL = 'tjg-session-encryption-key-v1'
 const ALGORITHM = 'AES-GCM'
 const IV_LENGTH = 12
 

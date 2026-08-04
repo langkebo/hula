@@ -5,6 +5,7 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS, PREFIX_V3 } from '../paths'
 
 const logger = createLogger('MatrixAuth')
@@ -335,7 +336,7 @@ async function matrixRegister(
       session,
       username,
       password,
-      initial_device_display_name: 'HuLa Desktop',
+      initial_device_display_name: 'Tjg Desktop',
       auth
     },
     '注册失败'
@@ -506,7 +507,7 @@ export class MatrixAuthService {
           session,
           username,
           password,
-          initial_device_display_name: 'HuLa Desktop',
+          initial_device_display_name: 'Tjg Desktop',
           auth
         }),
       () => matrixRegister(username, password, session, authType, authToken, clientSecret),
@@ -626,8 +627,10 @@ export class MatrixAuthService {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
     try {
-      const result = await client.http.authedRequest('GET', '/register/captcha/status', { session })
-      return result as { verified: boolean }
+      const result = await authedRequestWithPath<{ verified: boolean }>(client, 'GET', '/register/captcha/status', {
+        session
+      })
+      return result
     } catch (_err) {
       throw new Error(useI18nGlobal().t('matrix_error.auth.query_code_status_failed'))
     }
@@ -645,11 +648,10 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/account/whoami')
-      const r = result as Record<string, unknown>
+      const result = await client.whoami()
       return {
-        userId: (r.user_id as string) ?? '',
-        deviceId: r.device_id as string | undefined
+        userId: result.user_id ?? '',
+        deviceId: result.device_id
       }
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取账户信息失败')
@@ -663,9 +665,14 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('DELETE', '/register/captcha/clean', undefined, {})
-      const r = result as Record<string, unknown>
-      return { cleaned: (r.cleaned as number) ?? 0 }
+      const result = await authedRequestWithPath<{ cleaned?: number }>(
+        client,
+        'DELETE',
+        '/register/captcha/clean',
+        undefined,
+        {}
+      )
+      return { cleaned: result.cleaned ?? 0 }
     } catch (err) {
       throw normalizeSdkMatrixError(err, '清理过期验证码失败')
     }
@@ -781,8 +788,7 @@ export class MatrixAuthService {
     }
 
     try {
-      // logoutAll not available in SDK AuthManager, use direct HTTP
-      await client.http.authedRequest('POST', '/logout/all')
+      await authedRequestWithPath(client, 'POST', '/logout/all')
     } catch (err) {
       throw normalizeSdkMatrixError(err, '全局登出失败')
     }
@@ -795,8 +801,8 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/capabilities')
-      return result as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/capabilities')
+      return result
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取能力声明失败')
     }
@@ -812,12 +818,13 @@ export class MatrixAuthService {
       const queryParams: Record<string, string> = {}
       if (idpId) queryParams.idp_id = idpId
       if (redirectUrl) queryParams.redirectUrl = redirectUrl
-      const result = await client.http.authedRequest(
+      const result = await authedRequestWithPath<{ redirect_url?: string }>(
+        client,
         'GET',
         '/login/saml/redirect',
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )
-      return (result as { redirect_url?: string }).redirect_url ?? ''
+      return result.redirect_url ?? ''
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取 SAML 重定向失败')
     }
@@ -843,8 +850,13 @@ export class MatrixAuthService {
 
     try {
       const queryParams = redirectUrl ? { redirectUrl } : undefined
-      const result = await client.http.authedRequest('POST', '/login/saml/logout', queryParams)
-      return (result as { redirect_url?: string }).redirect_url ?? null
+      const result = await authedRequestWithPath<{ redirect_url?: string }>(
+        client,
+        'POST',
+        '/login/saml/logout',
+        queryParams
+      )
+      return result.redirect_url ?? null
     } catch (err) {
       throw normalizeSdkMatrixError(err, 'SAML 登出失败')
     }
@@ -857,8 +869,8 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/login/saml/metadata')
-      return result as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/login/saml/metadata')
+      return result
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取 SAML 元数据失败')
     }
@@ -888,13 +900,10 @@ export class MatrixAuthService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/versions', undefined, undefined, {
-        prefix: '/_matrix/client'
-      })
-      const r = result as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/_matrix/client/versions')
       return {
-        versions: (r.versions as string[]) ?? [],
-        unstableFeatures: (r.unstable_features as Record<string, boolean>) ?? {}
+        versions: (result.versions as string[]) ?? [],
+        unstableFeatures: (result.unstable_features as Record<string, boolean>) ?? {}
       }
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取服务器版本失败')
@@ -930,12 +939,13 @@ export class MatrixAuthService {
       const queryParams: Record<string, string> = {}
       if (idpId) queryParams.idp_id = idpId
       if (redirectUrl) queryParams.redirectUrl = redirectUrl
-      const result = await client.http.authedRequest(
+      const result = await authedRequestWithPath<{ redirect_url?: string }>(
+        client,
         'GET',
         '/login/sso/redirect',
         Object.keys(queryParams).length > 0 ? queryParams : undefined
       )
-      return (result as { redirect_url?: string }).redirect_url ?? ''
+      return result.redirect_url ?? ''
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取 SSO 登录URL失败')
     }

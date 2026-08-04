@@ -6,7 +6,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixPushService } from './MatrixPushService'
 
 const logger = createLogger('MatrixRoomNotification')
-const ROOM_NOTIFICATION_SETTINGS_EVENT = 'hula.room.notification_settings'
+const ROOM_NOTIFICATION_SETTINGS_EVENT = 'tjg.room.notification_settings'
 
 /**
  * 契约: GET /_matrix/client/v3/rooms/{room_id}/unread_count

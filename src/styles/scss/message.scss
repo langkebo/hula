@@ -5,39 +5,39 @@
     background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
     color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   transform: translateZ(0);
   @apply cursor-pointer;
 
   &.context-menu-active {
-    box-shadow: inset 0 0 0 1px var(--hula-color-primary-500);
+    box-shadow: inset 0 0 0 1px var(--tjg-color-primary-500);
 
     &-shield {
-      box-shadow: inset 0 0 0 1px var(--hula-color-danger-500);
+      box-shadow: inset 0 0 0 1px var(--tjg-color-danger-500);
     }
   }
 
   &.active-context-menu {
-    box-shadow: inset 0 0 0 1px var(--hula-text-tertiary);
+    box-shadow: inset 0 0 0 1px var(--tjg-text-tertiary);
   }
 
   .text {
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
     transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &:not(.active):hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
     border-radius: 12px;
     cursor: pointer;
   }
 }
 
 .active {
-  background: var(--hula-surface-session-active);
+  background: var(--tjg-surface-session-active);
   border-radius: 12px;
   transform: translateZ(0);
-  box-shadow: var(--hula-surface-session-active-shadow);
+  box-shadow: var(--tjg-surface-session-active-shadow);
 
   /* 激活项左侧指示条 — 对齐原型设计 */
   &.msg-box::before {
@@ -47,27 +47,27 @@
     top: 10px;
     bottom: 10px;
     width: 3px;
-    background: var(--hula-color-primary-500);
+    background: var(--tjg-color-primary-500);
     border-radius: 0 3px 3px 0;
   }
 
   .text {
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 }
 
 /** 助手样式 */
 .active-bot {
-  background: linear-gradient(135deg, var(--hula-color-primary-500) 0%, var(--hula-color-primary-600) 100%) !important;
-  color: var(--hula-text-inverse) !important;
-  box-shadow: 0 2px 10px var(--hula-color-primary-300-alpha) !important;
+  background: linear-gradient(135deg, var(--tjg-color-primary-500) 0%, var(--tjg-color-primary-600) 100%) !important;
+  color: var(--tjg-text-inverse) !important;
+  box-shadow: 0 2px 10px var(--tjg-color-primary-300-alpha) !important;
 }
 
 /** 屏蔽会话样式 */
 .active-shield {
-  background: linear-gradient(135deg, var(--hula-color-danger-500) 0%, var(--hula-color-danger-600) 100%) !important;
-  color: var(--hula-text-inverse) !important;
-  box-shadow: 0 2px 10px var(--hula-color-danger-100) !important;
+  background: linear-gradient(135deg, var(--tjg-color-danger-500) 0%, var(--tjg-color-danger-600) 100%) !important;
+  color: var(--tjg-text-inverse) !important;
+  box-shadow: 0 2px 10px var(--tjg-color-danger-100) !important;
 }
 
 :deep(.n-badge .n-badge-sup) {

@@ -35,7 +35,7 @@
         @update:value="handleSearchChange"
         @keydown.esc="handleSearchEsc">
         <template #prefix>
-          <svg class="size-16px color-[--hula-text-tertiary]">
+          <svg class="size-16px color-[--tjg-text-tertiary]">
             <use href="#search"></use>
           </svg>
         </template>
@@ -145,7 +145,7 @@ const handleGlobalSearch = () => {
 
 <style scoped lang="scss">
 .message-session-toolbar {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .message-session-toolbar__content {
@@ -155,15 +155,15 @@ const handleGlobalSearch = () => {
 .message-session-toolbar__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .message-session-toolbar__summary {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
-/* 阶段 9：搜索栏规范（需求文档 3.3.6）—— 高度 40px，圆角 8px，背景 --hula-surface-search */
+/* 阶段 9：搜索栏规范（需求文档 3.3.6）—— 高度 40px，圆角 8px，背景 --tjg-surface-search */
 .toolbar-search {
   border-radius: 8px;
 
@@ -171,7 +171,7 @@ const handleGlobalSearch = () => {
     --n-height: 40px;
     --n-font-size: 14px;
     --n-border-radius: 8px;
-    background: var(--hula-surface-search);
+    background: var(--tjg-surface-search);
   }
 
   :deep(.n-input__input-el) {
@@ -183,19 +183,19 @@ const handleGlobalSearch = () => {
   background: transparent;
   border: 0;
   border-radius: 4px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2px;
   transition:
-    background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard),
-    color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {
-    background: var(--hula-surface-list-hover);
-    color: var(--hula-text-primary);
+    background: var(--tjg-surface-list-hover);
+    color: var(--tjg-text-primary);
   }
 }
 

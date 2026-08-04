@@ -109,7 +109,7 @@ watch(
 .panel-subtitle {
   margin: 0 0 12px 0;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   line-height: 1.5;
 }
 
@@ -121,7 +121,7 @@ watch(
 
 .queue-item {
   padding: 8px 12px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   border-radius: 6px;
   font-size: 12px;
 }
@@ -138,17 +138,17 @@ watch(
 }
 
 .queue-item-label {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   flex-shrink: 0;
 }
 
 .queue-item-value {
   font-family: monospace;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .queue-item-content {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   word-break: break-word;
 }
 </style>

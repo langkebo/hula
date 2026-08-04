@@ -928,12 +928,12 @@ onMounted(() => {
   cursor: pointer;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 
   &.selected {
-    background: var(--hula-surface-list-hover);
-    border: 1px solid var(--color-primary);
+    background: var(--tjg-surface-list-hover);
+    border: 1px solid var(--tjg-color-primary-500);
   }
 
   .widget-info {
@@ -943,7 +943,7 @@ onMounted(() => {
     flex: 1;
 
     .widget-icon {
-      color: var(--color-primary);
+      color: var(--tjg-color-primary-500);
     }
 
     .widget-details {
@@ -957,13 +957,13 @@ onMounted(() => {
 
       .widget-type {
         font-size: 12px;
-        color: var(--hula-text-secondary);
+        color: var(--tjg-text-secondary);
         margin-bottom: 2px;
       }
 
       .widget-url {
         font-size: 11px;
-        color: var(--hula-text-tertiary);
+        color: var(--tjg-text-tertiary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1035,7 +1035,7 @@ onMounted(() => {
       font-size: 13px;
 
       .session-label {
-        color: var(--hula-text-secondary);
+        color: var(--tjg-text-secondary);
         min-width: 80px;
       }
 
@@ -1063,7 +1063,7 @@ onMounted(() => {
       gap: 8px;
       padding: 6px 0;
       font-size: 13px;
-      border-bottom: 1px solid var(--hula-border-default);
+      border-bottom: 1px solid var(--tjg-border-default);
 
       &:last-child {
         border-bottom: none;
@@ -1074,7 +1074,7 @@ onMounted(() => {
       }
 
       .msg-type {
-        color: var(--hula-text-secondary);
+        color: var(--tjg-text-secondary);
         font-size: 12px;
         min-width: 60px;
       }
@@ -1087,7 +1087,7 @@ onMounted(() => {
       }
 
       .msg-time {
-        color: var(--hula-text-tertiary);
+        color: var(--tjg-text-tertiary);
         font-size: 11px;
         flex-shrink: 0;
       }

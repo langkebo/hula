@@ -77,7 +77,7 @@
     "sync_loading": "Syncing messages",
     "sync_complete": "Message sync complete",
     "official_popover": "Official group authentication",
-    "bot_popover": "HuLa Assistant",
+    "bot_popover": "Tjg Assistant",
     "mention_tag": "[Mentioned me]",
     "favorite_tag": "Pinned",
     "low_priority_tag": "Low priority",
@@ -86,7 +86,7 @@
     "shield_user": "User muted",
     "empty_description": "Start chatting with friends!",
     "empty_action": "Find friends",
-    "default_last_msg": "Welcome to HuLa"
+    "default_last_msg": "Welcome to Tjg"
   },
   "message_menu": {
     "pin_success": "Pinned",

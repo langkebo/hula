@@ -16,11 +16,11 @@ body {
 /* 统一全局空状态 UI */
 .n-empty {
   .n-empty__icon {
-    color: var(--hula-text-quaternary);
+    color: var(--tjg-text-quaternary);
     opacity: 0.6;
   }
   .n-empty__description {
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
     font-size: var(--text-xs);
   }
 }

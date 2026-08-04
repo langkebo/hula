@@ -17,7 +17,7 @@ const meta = {
     (story) => ({
       components: { story },
       template:
-        '<div style="padding: 20px; background: var(--hula-surface-canvas); min-height: 200px; display: flex; flex-direction: column;"><story /></div>'
+        '<div style="padding: 20px; background: var(--tjg-surface-canvas); min-height: 200px; display: flex; flex-direction: column;"><story /></div>'
     })
   ]
 } satisfies Meta<typeof MsgInput>
@@ -82,18 +82,18 @@ const StateOverlayWrapper = defineComponent({
     return { overlayContent, footerHeight, t }
   },
   template: `
-    <div class="relative flex flex-col w-full h-full border-t border-[--hula-border-default]">
+    <div class="relative flex flex-col w-full h-full border-t border-[--tjg-border-default]">
       <!-- 状态遮罩层 (模拟 ChatFooter 逻辑) -->
       <div
         v-if="overlayContent"
         :style="{ height: footerHeight + 'px' }"
-        class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]"
+        class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--tjg-surface-overlay]"
       >
         <div class="flex flex-col items-center justify-center pb-20px">
-          <svg v-if="overlayContent.icon" class="size-24px mb-8px text-[--hula-text-tertiary]">
+          <svg v-if="overlayContent.icon" class="size-24px mb-8px text-[--tjg-text-tertiary]">
             <use :href="overlayContent.icon"></use>
           </svg>
-          <span class="text-(14px [--hula-text-tertiary])">{{ overlayContent.text }}</span>
+          <span class="text-(14px [--tjg-text-tertiary])">{{ overlayContent.text }}</span>
         </div>
       </div>
 

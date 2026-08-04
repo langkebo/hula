@@ -1,11 +1,11 @@
 <template>
   <n-config-provider :theme="naiveTheme" class="secret-chat-modal size-full select-none">
     <div class="w-350px h-360px border-rd-8px select-none cursor-default">
-      <div class="bg-[--hula-surface-elevated] size-full p-6px box-border flex flex-col">
+      <div class="bg-[--tjg-surface-elevated] size-full p-6px box-border flex flex-col">
         <svg
           v-if="!isMac()"
           @click="handleCancel"
-          class="w-12px h-12px ml-a cursor-pointer select-none text-[--hula-text-primary]">
+          class="w-12px h-12px ml-a cursor-pointer select-none text-[--tjg-text-primary]">
           <use href="#close"></use>
         </svg>
         <div class="flex flex-col gap-10px p-10px select-none">
@@ -13,8 +13,8 @@
             <svg class="size-48px text-[--primary-color]">
               <use href="#lock"></use>
             </svg>
-            <span class="text-(14px [--hula-text-primary]) font-bold">{{ t('login.secret_chat.title') }}</span>
-            <div class="text-(13px [--hula-text-tertiary]) text-center px-8px leading-relaxed">
+            <span class="text-(14px [--tjg-text-primary]) font-bold">{{ t('login.secret_chat.title') }}</span>
+            <div class="text-(13px [--tjg-text-tertiary]) text-center px-8px leading-relaxed">
               {{ t('login.secret_chat.description') }}
             </div>
           </n-flex>
@@ -33,9 +33,9 @@
           </n-form>
 
           <n-button
-            style="color: var(--hula-text-inverse)"
+            style="color: var(--tjg-text-inverse)"
             class="w-full"
-            color="var(--color-primary)"
+            color="var(--tjg-color-primary-500)"
             size="large"
             @click="handleConfirm"
             :loading="loading"
@@ -43,7 +43,7 @@
             {{ t('login.secret_chat.confirm') }}
           </n-button>
 
-          <div v-if="errorMsg" class="text-(12px [--hula-color-danger-500]) text-center">
+          <div v-if="errorMsg" class="text-(12px [--tjg-color-danger-500]) text-center">
             {{ errorMsg }}
           </div>
         </div>

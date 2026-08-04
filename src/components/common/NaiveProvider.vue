@@ -165,7 +165,7 @@ const commonTheme: GlobalThemeOverrides = {
     borderChecked: `1px solid ${primaryColors[500]}`,
     borderFocus: `1px solid ${primaryColors[500]}`,
     boxShadowFocus: `0 0 0 2px ${primaryColors[200]}`,
-    checkMarkColor: 'var(--hula-text-inverse)'
+    checkMarkColor: 'var(--tjg-text-inverse)'
   },
   Tag: {
     borderRadius: '4px'
@@ -186,7 +186,7 @@ const commonTheme: GlobalThemeOverrides = {
     textColorGhostPrimary: primaryColors[500]
   },
   Tabs: {
-    tabTextColorSegment: 'var(--hula-text-secondary)',
+    tabTextColorSegment: 'var(--tjg-text-secondary)',
     tabPaddingMediumSegment: '4px',
     tabTextColorActiveLine: primaryColors[500],
     tabTextColorHoverLine: primaryColors[500],
@@ -202,7 +202,7 @@ const commonTheme: GlobalThemeOverrides = {
     borderRadius: '8px'
   },
   Avatar: {
-    border: '1px solid var(--hula-surface-panel)'
+    border: '1px solid var(--tjg-surface-panel)'
   },
   Switch: {
     railColorActive: primaryColors[500],
@@ -235,9 +235,9 @@ const commonTheme: GlobalThemeOverrides = {
   Steps: {
     indicatorBorderColorProcess: primaryColors[500],
     indicatorColorProcess: primaryColors[500],
-    indicatorTextColorProcess: 'var(--hula-text-inverse)',
+    indicatorTextColorProcess: 'var(--tjg-text-inverse)',
     stepHeaderTextColorProcess: primaryColors[500],
-    indicatorIconColorProcess: 'var(--hula-text-inverse)'
+    indicatorIconColorProcess: 'var(--tjg-text-inverse)'
   },
   LoadingBar: {
     colorLoading: primaryColors[500]
@@ -248,12 +248,12 @@ const commonTheme: GlobalThemeOverrides = {
 const lightThemeOverrides: GlobalThemeOverrides = {
   ...commonTheme,
   Scrollbar: {
-    color: 'var(--hula-border-strong)',
-    colorHover: 'var(--hula-border-default)'
+    color: 'var(--tjg-border-strong)',
+    colorHover: 'var(--tjg-border-default)'
   },
   Skeleton: {
-    color: 'color-mix(in srgb, var(--hula-border-strong) 60%, transparent)',
-    colorEnd: 'color-mix(in srgb, var(--hula-border-default) 20%, transparent)'
+    color: 'color-mix(in srgb, var(--tjg-border-strong) 60%, transparent)',
+    colorEnd: 'color-mix(in srgb, var(--tjg-border-default) 20%, transparent)'
   }
 }
 
@@ -264,12 +264,12 @@ const darkThemeOverrides: GlobalThemeOverrides = {
     color: '#ff7875'
   },
   Scrollbar: {
-    color: 'color-mix(in srgb, var(--hula-text-inverse) 20%, transparent)',
-    colorHover: 'color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)'
+    color: 'color-mix(in srgb, var(--tjg-text-inverse) 20%, transparent)',
+    colorHover: 'color-mix(in srgb, var(--tjg-text-inverse) 30%, transparent)'
   },
   Skeleton: {
-    color: 'color-mix(in srgb, var(--hula-border-strong) 40%, transparent)',
-    colorEnd: 'color-mix(in srgb, var(--hula-border-default) 15%, transparent)'
+    color: 'color-mix(in srgb, var(--tjg-border-strong) 40%, transparent)',
+    colorEnd: 'color-mix(in srgb, var(--tjg-border-default) 15%, transparent)'
   }
 }
 
@@ -351,21 +351,21 @@ const NaiveProviderContent = defineComponent({
 .n-message {
   zoom: var(--page-scale, 1);
   /* 统一使用品牌动效令牌 */
-  --n-bezier: var(--hula-motion-ease-standard);
+  --n-bezier: var(--tjg-motion-ease-standard);
 }
 
 /* P1-3.3: 统一 Toast 出场动画为品牌动效（280ms + 品牌缓动） */
 .n-message-wrapper.fade-in-height-expand-transition-enter-active,
 .n-message-wrapper.fade-in-height-expand-transition-leave-active {
-  transition-duration: var(--hula-motion-duration-overlay);
+  transition-duration: var(--tjg-motion-duration-overlay);
 }
 
 .n-message-wrapper.fade-in-height-expand-transition-enter-active {
-  transition-timing-function: var(--hula-motion-ease-enter);
+  transition-timing-function: var(--tjg-motion-ease-enter);
 }
 
 .n-message-wrapper.fade-in-height-expand-transition-leave-active {
-  transition-timing-function: var(--hula-motion-ease-exit);
+  transition-timing-function: var(--tjg-motion-ease-exit);
 }
 
 .n-date-picker-panel {

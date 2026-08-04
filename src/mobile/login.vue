@@ -2,8 +2,8 @@
   <MobileLayout :backgroundImage="'/login_bg.png'" :safeAreaTop="false" :safeAreaBottom="false">
     <div class="h-full flex-col-center gap-40px">
       <div class="flex-center absolute top-13vh left-36px">
-        <p class="text-(20px [--hula-text-primary])">{{ t('login.mobile.welcome_title') }}</p>
-        <img src="@/assets/mobile/2.svg" alt="HuLa" class="w-80px h-20px" />
+        <p class="text-(20px [--tjg-text-primary])">{{ t('login.mobile.welcome_title') }}</p>
+        <img src="@/assets/mobile/2.svg" alt="Tjg" class="w-80px h-20px" />
       </div>
 
       <!-- 选项卡导航 -->
@@ -14,7 +14,7 @@
             @click="activeTab = 'login'"
             :class="[
               'z-999 w-100px text-center transition-all duration-300 ease-out',
-              activeTab === 'login' ? 'text-(18px [--hula-text-primary])' : 'text-(16px [--hula-text-secondary])'
+              activeTab === 'login' ? 'text-(18px [--tjg-text-primary])' : 'text-(16px [--tjg-text-secondary])'
             ]">
             {{ t('login.mobile.tabs.login') }}
           </div>
@@ -22,14 +22,14 @@
             @click="activeTab = 'register'"
             :class="[
               'z-999 w-100px text-center transition-all duration-300 ease-out',
-              activeTab === 'register' ? 'text-(18px [--hula-text-primary])' : 'text-(16px [--hula-text-secondary])'
+              activeTab === 'register' ? 'text-(18px [--tjg-text-primary])' : 'text-(16px [--tjg-text-secondary])'
             ]">
             {{ t('login.mobile.tabs.register') }}
           </div>
           <div
             style="border-radius: 24px 42px 4px 24px"
             :class="[
-              'z-10 absolute bottom--4px h-6px w-34px bg-[--hula-color-primary-500] transition-all duration-300 ease-out',
+              'z-10 absolute bottom--4px h-6px w-34px bg-[--tjg-color-primary-500] transition-all duration-300 ease-out',
               activeTab === 'login' ? 'left-[33px]' : 'left-[133px]'
             ]"></div>
         </div>
@@ -68,7 +68,7 @@
         <div
           style="border: 1px solid rgba(70, 70, 70, 0.1)"
           v-if="loginHistories.length > 0 && arrowStatus"
-          class="account-box absolute w-80% max-h-140px bg-[--hula-surface-elevated] mt-45px z-99 rounded-8px p-8px box-border">
+          class="account-box absolute w-80% max-h-140px bg-[--tjg-surface-elevated] mt-45px z-99 rounded-8px p-8px box-border">
           <div style="max-height: 120px; overflow-y: auto">
             <div
               v-for="item in loginHistories"
@@ -79,7 +79,7 @@
                 <img
                   :src="AvatarUtils.getAvatarUrl(item.avatar)"
                   alt="用户头像"
-                  class="size-28px bg-[--hula-text-disabled] rounded-50% object-cover" />
+                  class="size-28px bg-[--tjg-text-disabled] rounded-50% object-cover" />
                 <p class="text-14px color-[--chat-text-color]">{{ item.account }}</p>
                 <svg @click.stop="delAccount(item)" class="w-12px h-12px">
                   <use href="#close"></use>
@@ -123,13 +123,13 @@
         <!-- 协议 -->
         <div class="flex items-center justify-center gap-6px absolute bottom-0 w-[80%]" :style="agreementStyle">
           <van-checkbox v-model="protocol" shape="square" icon-size="16px" />
-          <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px">
+          <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
             <span>{{ t('login.term.checkout.text1') }}</span>
-            <span @click.stop="toServiceAgreement" class="color-[--hula-color-primary-500] cursor-pointer">
+            <span @click.stop="toServiceAgreement" class="color-[--tjg-color-primary-500] cursor-pointer">
               {{ t('login.term.checkout.text2') }}
             </span>
             <span>{{ t('login.term.checkout.text3') }}</span>
-            <span @click.stop="toPrivacyAgreement" class="color-[--hula-color-primary-500] cursor-pointer">
+            <span @click.stop="toPrivacyAgreement" class="color-[--tjg-color-primary-500] cursor-pointer">
               {{ t('login.term.checkout.text4') }}
             </span>
           </div>
@@ -205,13 +205,13 @@
         <!-- 协议 -->
         <div class="flex items-center justify-center gap-6px mt-10px">
           <van-checkbox v-model="registerProtocol" shape="square" icon-size="16px" />
-          <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px">
+          <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
             <span>{{ t('login.term.checkout.text1') }}</span>
-            <span @click.stop="toServiceAgreement" class="color-[--hula-color-primary-500] cursor-pointer">
+            <span @click.stop="toServiceAgreement" class="color-[--tjg-color-primary-500] cursor-pointer">
               {{ t('login.term.checkout.text2') }}
             </span>
             <span>{{ t('login.term.checkout.text3') }}</span>
-            <span @click.stop="toPrivacyAgreement" class="color-[--hula-color-primary-500] cursor-pointer">
+            <span @click.stop="toPrivacyAgreement" class="color-[--tjg-color-primary-500] cursor-pointer">
               {{ t('login.term.checkout.text4') }}
             </span>
           </div>
@@ -245,7 +245,7 @@
         <div
           v-if="showEmailSuggestions"
           style="border: 1px solid rgba(70, 70, 70, 0.1)"
-          class="absolute w-80% bg-[--hula-surface-elevated] z-99 rounded-8px p-4px box-border">
+          class="absolute w-80% bg-[--tjg-surface-elevated] z-99 rounded-8px p-4px box-border">
           <div
             v-for="option in commonEmailDomains"
             :key="option.value"
@@ -784,7 +784,7 @@ onUnmounted(() => {
 
 :deep(.van-cell.van-field) {
   padding: 10px 16px;
-  background: var(--hula-overlay-mobile-sheet);
+  background: var(--tjg-overlay-mobile-sheet);
   border-radius: 8px;
 }
 
@@ -797,11 +797,11 @@ onUnmounted(() => {
 }
 
 :deep(.van-field__right-icon) {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   cursor: pointer;
 }
 
 :deep(.van-field__clear) {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 </style>

@@ -14,7 +14,7 @@ interface Badge {
 const KNOWN_BADGES: Record<string, Badge> = {
   '6': {
     id: '6',
-    img: '/hula.png',
+    img: '/tjg.png',
     describe: '频道徽章'
   }
 }

@@ -61,14 +61,14 @@
                         " />
                       <div class="flex flex-col justify-center gap-10px flex-1">
                         <div class="flex items-center gap-10px">
-                          <span class="text-(14px [--hula-text-primary])">{{ item.name }}</span>
+                          <span class="text-(14px [--tjg-text-primary])">{{ item.name }}</span>
                         </div>
                         <div class="flex items-center gap-10px">
-                          <span class="text-(12px [--hula-text-secondary])">
+                          <span class="text-(12px [--tjg-text-secondary])">
                             {{ t('mobile_contact.account_label', { account: item.account }) }}
                           </span>
                           <svg
-                            class="size-12px hover:color-[--hula-text-tertiary] hover:transition-colors cursor-pointer"
+                            class="size-12px hover:color-[--tjg-text-tertiary] hover:transition-colors cursor-pointer"
                             @click="handleCopy(item.account)">
                             <use href="#copy"></use>
                           </svg>
@@ -260,7 +260,7 @@ onMounted(async () => {
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
   border-radius: 20px;
-  background: var(--hula-overlay-mobile-sheet);
+  background: var(--tjg-overlay-mobile-sheet);
 }
 
 :deep(.van-cell.van-field::after) {

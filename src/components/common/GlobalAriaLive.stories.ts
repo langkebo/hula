@@ -45,7 +45,7 @@ const render: Story['render'] = () =>
     template: `
       <div style="width: 420px; display: grid; gap: 12px;">
         <GlobalAriaLive />
-        <p style="margin: 0; font-size: 14px; color: var(--hula-text-secondary);">
+        <p style="margin: 0; font-size: 14px; color: var(--tjg-text-secondary);">
           使用下方按钮模拟 polite / assertive 异步播报，便于在 Storybook 中人工验证 live region 承载层。
         </p>
         <div style="display: flex; gap: 12px; flex-wrap: wrap;">

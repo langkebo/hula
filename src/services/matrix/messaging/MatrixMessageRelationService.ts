@@ -1,4 +1,4 @@
-import type { MatrixEvent } from 'matrix-js-sdk'
+import { Direction, type MatrixEvent } from 'matrix-js-sdk'
 import {
   MatrixContentField,
   MatrixEventType,
@@ -9,6 +9,7 @@ import {
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixMessageRelationService')
@@ -504,18 +505,20 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const queryParams: Record<string, string> = {}
-      if (options?.from) queryParams.from = options.from
-      if (options?.to) queryParams.to = options.to
-      if (options?.limit) queryParams.limit = String(options.limit)
-      if (options?.dir) queryParams.dir = options.dir
-      const result = (await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.RELATIONS.BASE(roomId, eventId),
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )) as RelationsResponse
-      logger.info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${result.chunk?.length ?? 0}`)
-      return result
+      const opts: { from?: string; to?: string; limit?: number; dir?: Direction } = {}
+      if (options?.from) opts.from = options.from
+      if (options?.to) opts.to = options.to
+      if (options?.limit) opts.limit = options.limit
+      if (options?.dir === 'b') opts.dir = Direction.Backward
+      else if (options?.dir === 'f') opts.dir = Direction.Forward
+      const result = await client.relations(roomId, eventId, null, null, opts)
+      const response: RelationsResponse = {
+        chunk: result.events.map((e) => e.event as unknown as Record<string, unknown>)
+      }
+      if (result.nextBatch) response.next_batch = result.nextBatch
+      if (result.prevBatch) response.prev_batch = result.prevBatch
+      logger.info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${response.chunk.length}`)
+      return response
     } catch (err) {
       logger.error(`[MessageRelation] 获取关系列表失败: ${err}`)
       return null
@@ -531,18 +534,20 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const queryParams: Record<string, string> = {}
-      if (options?.from) queryParams.from = options.from
-      if (options?.to) queryParams.to = options.to
-      if (options?.limit) queryParams.limit = String(options.limit)
-      if (options?.dir) queryParams.dir = options.dir
-      const result = (await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.RELATIONS.BY_TYPE(roomId, eventId, relType),
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )) as RelationsResponse
-      logger.info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${result.chunk?.length ?? 0}`)
-      return result
+      const opts: { from?: string; to?: string; limit?: number; dir?: Direction } = {}
+      if (options?.from) opts.from = options.from
+      if (options?.to) opts.to = options.to
+      if (options?.limit) opts.limit = options.limit
+      if (options?.dir === 'b') opts.dir = Direction.Backward
+      else if (options?.dir === 'f') opts.dir = Direction.Forward
+      const result = await client.relations(roomId, eventId, relType, null, opts)
+      const response: RelationsResponse = {
+        chunk: result.events.map((e) => e.event as unknown as Record<string, unknown>)
+      }
+      if (result.nextBatch) response.next_batch = result.nextBatch
+      if (result.prevBatch) response.prev_batch = result.prevBatch
+      logger.info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${response.chunk.length}`)
+      return response
     } catch (err) {
       logger.error(`[MessageRelation] 获取类型关系列表失败: ${err}`)
       return null
@@ -553,10 +558,11 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const result = (await client.http.authedRequest(
+      const result = await authedRequestWithPath<AggregationsResponse>(
+        client,
         'GET',
         MATRIX_PATHS.RELATIONS.AGGREGATIONS(roomId, eventId, relType)
-      )) as AggregationsResponse
+      )
       logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
       return result
     } catch (err) {
@@ -579,14 +585,17 @@ class MatrixMessageRelationService extends BaseMatrixService {
       const body: Record<string, unknown> = { ...content }
       if (key) body.key = key
       const txnId = `txn_${Date.now()}`
-      const result = (await client.http.authedRequest(
-        'PUT',
-        MATRIX_PATHS.RELATIONS.SEND(roomId, eventId, relType, txnId),
-        undefined,
-        { ...body, type: eventType }
-      )) as SendRelationResponse
-      logger.info(`[MessageRelation] 发送关系事件成功: ${result.event_id}`)
-      return result
+      const result = await client.sendEvent(roomId, eventType, body, txnId)
+      const response: SendRelationResponse = {
+        event_id: result.event_id,
+        room_id: roomId,
+        relates_to: {
+          event_id: eventId,
+          rel_type: relType
+        }
+      }
+      logger.info(`[MessageRelation] 发送关系事件成功: ${response.event_id}`)
+      return response
     } catch (err) {
       logger.error(`[MessageRelation] 发送关系事件失败: ${err}`)
       return null

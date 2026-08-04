@@ -8,7 +8,7 @@
   "camera_permission_required": "Camera permission is required. Please enable it in system settings.",
   "permission_missing": "Permission missing",
   "scan_error": "An error occurred while scanning",
-  "login_hula": "Log in to HULA on {device}",
+  "login_tjg": "Log in to Tjg on {device}",
   "login_ip": "Login IP",
   "login_address": "Login Address",
   "login_time": "Login Time",

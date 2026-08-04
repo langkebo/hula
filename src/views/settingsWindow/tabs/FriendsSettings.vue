@@ -178,7 +178,7 @@ const newGroupName = ref('')
 const editGroupName = ref('')
 const editingGroupId = ref('')
 
-const STORAGE_KEY = 'hula-friend-settings'
+const STORAGE_KEY = 'tjg-friend-settings'
 
 onMounted(() => {
   loadSettings()
@@ -343,33 +343,33 @@ async function handleCancelRequest(req: FriendRequest) {
 
 <style scoped>
 .friends-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-3);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-3);
+  color: var(--tjg-text-primary);
 }
 
 .subsection-title {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  margin: 0 0 var(--hula-space-2) 0;
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  margin: 0 0 var(--tjg-space-2) 0;
+  color: var(--tjg-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -378,64 +378,64 @@ async function handleCancelRequest(req: FriendRequest) {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .group-list {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .group-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px var(--hula-space-3);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: 10px var(--tjg-space-3);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .group-info {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .group-name {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .group-count {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 
 .group-actions {
   display: flex;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
 }
 
 .request-section {
-  margin-bottom: var(--hula-space-2);
+  margin-bottom: var(--tjg-space-2);
 }
 
 .request-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px var(--hula-space-3);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: 10px var(--tjg-space-3);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
   margin-bottom: 6px;
 }
 
@@ -447,37 +447,37 @@ async function handleCancelRequest(req: FriendRequest) {
 }
 
 .request-user {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
   word-break: break-all;
 }
 
 .request-message {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
+  margin-top: var(--tjg-space-1);
 }
 
 .request-status {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-color-warning-500);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-color-warning-500);
+  margin-top: var(--tjg-space-1);
 }
 
 .request-actions {
   display: flex;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
   flex-shrink: 0;
-  margin-left: var(--hula-space-3);
+  margin-left: var(--tjg-space-3);
 }
 
 .empty-list {
-  padding: var(--hula-space-4);
+  padding: var(--tjg-space-4);
   text-align: center;
 }
 
 .empty-text {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 </style>

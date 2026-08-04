@@ -14,7 +14,7 @@ fn build_log_plugin<R: Runtime>() -> TauriPlugin<R> {
         .level_for("sqlx", tracing::log::LevelFilter::Warn)
         .level_for("sqlx::query", tracing::log::LevelFilter::Warn)
         .level_for("sea_orm", tracing::log::LevelFilter::Warn)
-        .level_for("hula_app_lib", tracing::log::LevelFilter::Debug)
+        .level_for("tjg_app_lib", tracing::log::LevelFilter::Debug)
         // 过滤掉无用的 tauri 内部日志
         .level_for("tauri", tracing::log::LevelFilter::Warn)
         .level_for("tauri::manager", tracing::log::LevelFilter::Warn)

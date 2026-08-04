@@ -5,14 +5,14 @@
       <div class="flex flex-col w-full flex-1 flex-col rounded-15px bg-white pt-15% items-center gap-20px">
         <div class="flex flex-col items-center gap-15px">
           <img class="w-100px h-100px" :src="qrCodeIcon" alt="二维码" />
-          <div class="text-20px font-bold text-[--hula-text-primary]">
+          <div class="text-20px font-bold text-[--tjg-text-primary]">
             登录
-            <span class="text-[--hula-color-primary-500]">{{ serverName || 'HULA' }}</span>
+            <span class="text-[--tjg-color-primary-500]">{{ serverName || 'HULA' }}</span>
             &nbsp;的HULA
           </div>
-          <div v-if="checkCode" class="text-14px text-[--hula-text-tertiary]">
+          <div v-if="checkCode" class="text-14px text-[--tjg-text-tertiary]">
             校验码:
-            <span class="font-mono font-bold text-[--hula-color-primary-500]">{{ checkCode }}</span>
+            <span class="font-mono font-bold text-[--tjg-color-primary-500]">{{ checkCode }}</span>
           </div>
         </div>
 

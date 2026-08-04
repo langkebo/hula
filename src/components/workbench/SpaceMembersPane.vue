@@ -112,7 +112,7 @@ void load()
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .space-members-pane__header {
@@ -120,7 +120,7 @@ void load()
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
   flex-shrink: 0;
 }
 
@@ -133,12 +133,12 @@ void load()
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   cursor: pointer;
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -146,22 +146,22 @@ void load()
   flex: 1;
   font-size: 15px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .space-members-pane__count {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   padding: 2px 8px;
   border-radius: 10px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
 }
 
 .space-members-pane__invite {
   display: flex;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
   flex-shrink: 0;
 }
 
@@ -169,14 +169,14 @@ void load()
   flex: 1;
   height: 36px;
   padding: 0 12px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 8px;
-  background: var(--hula-surface-search);
-  color: var(--hula-text-primary);
+  background: var(--tjg-surface-search);
+  color: var(--tjg-text-primary);
   font-size: 13px;
 
   &:focus {
-    border-color: var(--hula-color-primary-500);
+    border-color: var(--tjg-color-primary-500);
     outline: none;
   }
 }
@@ -186,14 +186,14 @@ void load()
   padding: 0 16px;
   border: 0;
   border-radius: 8px;
-  background: var(--hula-color-primary-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-primary-500);
+  color: var(--tjg-text-inverse);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: var(--hula-color-primary-600);
+    background: var(--tjg-color-primary-600);
   }
 
   &:disabled {
@@ -219,7 +219,7 @@ void load()
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -227,13 +227,13 @@ void load()
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   flex-shrink: 0;
 }
 
@@ -247,7 +247,7 @@ void load()
 
 .space-members-pane__name {
   font-size: 13px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -255,13 +255,13 @@ void load()
 
 .space-members-pane__status {
   font-size: 11px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 
 .space-members-pane__empty {
   padding: 40px 16px;
   text-align: center;
   font-size: 13px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 </style>

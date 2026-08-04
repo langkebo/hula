@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 const props = defineProps<{
   userId: string
@@ -68,7 +68,7 @@ const watermarkText = computed(() => `${props.userName} · ${props.userId}`)
   pointer-events: none;
   z-index: 9999;
   overflow: hidden;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .screenshot-watermark__pattern {

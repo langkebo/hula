@@ -248,3 +248,30 @@ export interface RoomRetention {
   roomId: string
   policy?: RetentionPolicy
 }
+
+export interface EventReport {
+  id: number
+  event_id: string
+  room_id: string
+  reporter_user_id: string
+  reported_user_id: string
+  reason: string
+  description: string | null
+  status: 'open' | 'resolved' | 'dismissed' | 'escalated'
+  score: number
+  received_ts: number
+  resolved_ts: number | null
+  resolved_by: string | null
+  resolution_reason: string | null
+}
+
+export interface EventReportHistory {
+  id: number
+  report_id: number
+  action: string
+  actor_user_id: string
+  old_status: string | null
+  new_status: string
+  reason: string | null
+  created_ts: number
+}

@@ -5,7 +5,7 @@
     </template>
 
     <template #container>
-      <div class="h-full overflow-auto bg-[--hula-page-bg-color] px-16px py-12px">
+      <div class="h-full overflow-auto bg-[--tjg-page-bg-color] px-16px py-12px">
         <div v-if="loading" class="notice-detail__state">
           <van-loading size="24px" />
         </div>
@@ -14,17 +14,17 @@
           <div class="flex items-start justify-between gap-12px">
             <div class="flex flex-col gap-8px">
               <div class="flex items-center gap-8px">
-                <span class="text-15px font-600 text-[--hula-text-primary]">
+                <span class="text-15px font-600 text-[--tjg-text-primary]">
                   {{ t('mobile_chat.notice.detail_title') }}
                 </span>
                 <span v-if="announcement.isPinned" class="notice-detail__pinned">
                   {{ t('mobile_chat.notice.pinned') }}
                 </span>
               </div>
-              <span class="text-12px text-[--hula-text-secondary]">
+              <span class="text-12px text-[--tjg-text-secondary]">
                 {{ t('mobile_chat.notice.publisher') }} {{ publisherName }}
               </span>
-              <span class="text-12px text-[--hula-text-tertiary]">
+              <span class="text-12px text-[--tjg-text-tertiary]">
                 {{ formatTimestamp(announcement.createdAt) }}
               </span>
             </div>
@@ -130,16 +130,16 @@ onMounted(() => {
   flex-direction: column;
   gap: 16px;
   padding: 16px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 12px;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .notice-detail__pinned {
   padding: 2px 8px;
-  border: 1px solid var(--hula-color-primary-500);
+  border: 1px solid var(--tjg-color-primary-500);
   border-radius: 999px;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   font-size: 12px;
   line-height: 18px;
 }
@@ -147,7 +147,7 @@ onMounted(() => {
 .notice-detail__content {
   white-space: pre-wrap;
   word-break: break-word;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   font-size: 14px;
   line-height: 1.7;
 }

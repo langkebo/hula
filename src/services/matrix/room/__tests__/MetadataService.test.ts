@@ -4,10 +4,10 @@ import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
 import { MatrixRoomMetadataService } from '../MetadataService'
 
-const TEST_BASE_URL = 'https://matrix.example.com'
+const TEST_BASE_URL = import.meta.env.VITE_HOMESERVER_URL || 'https://matrix.test'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const server = setupMswServer(
+const _server = setupMswServer(
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/capabilities`, () => {
     return HttpResponse.json({ 'm.room_versions': { default: '11' } })
   }),

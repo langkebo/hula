@@ -5,7 +5,7 @@
       <div v-if="!activeSpace" class="space-details-pane__empty">
         <n-empty :description="t('space.details_empty_description')" size="large">
           <template #icon>
-            <svg class="size-56px opacity-40 color-[--hula-text-quaternary]">
+            <svg class="size-56px opacity-40 color-[--tjg-text-quaternary]">
               <use href="#grid" />
             </svg>
           </template>
@@ -372,7 +372,7 @@ const getInitials = (text: string) => {
   flex: 1;
   min-width: 0;
   height: 100%;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   display: flex;
   flex-direction: column;
 }
@@ -427,27 +427,27 @@ const getInitials = (text: string) => {
   justify-content: center;
   font-size: 32px;
   font-weight: 600;
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
 }
 
 .space-details-pane__name {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   text-align: center;
 }
 
 .space-details-pane__topic {
   margin: 0;
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   text-align: center;
   max-width: 480px;
   line-height: 1.5;
 
   &--empty {
-    color: var(--hula-text-quaternary);
+    color: var(--tjg-text-quaternary);
     font-style: italic;
   }
 }
@@ -463,10 +463,10 @@ const getInitials = (text: string) => {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 
   svg {
-    color: var(--hula-text-quaternary);
+    color: var(--tjg-text-quaternary);
   }
 }
 
@@ -485,19 +485,19 @@ const getInitials = (text: string) => {
   gap: 6px;
   height: 72px;
   padding: 8px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 10px;
-  background: var(--hula-surface-panel);
-  color: var(--hula-text-primary);
+  background: var(--tjg-surface-panel);
+  color: var(--tjg-text-primary);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: var(--hula-color-primary-300);
-    background: var(--hula-color-primary-50, color-mix(in srgb, var(--hula-color-primary-500) 6%, transparent));
-    color: var(--hula-color-primary-500);
+    border-color: var(--tjg-color-primary-300);
+    background: var(--tjg-color-primary-50, color-mix(in srgb, var(--tjg-color-primary-500) 6%, transparent));
+    color: var(--tjg-color-primary-500);
   }
 
   &:active {
@@ -505,14 +505,14 @@ const getInitials = (text: string) => {
   }
 
   &--primary {
-    background: var(--hula-color-primary-500);
-    border-color: var(--hula-color-primary-500);
-    color: var(--hula-text-inverse);
+    background: var(--tjg-color-primary-500);
+    border-color: var(--tjg-color-primary-500);
+    color: var(--tjg-text-inverse);
 
     &:hover {
-      background: var(--hula-color-primary-600);
-      border-color: var(--hula-color-primary-600);
-      color: var(--hula-text-inverse);
+      background: var(--tjg-color-primary-600);
+      border-color: var(--tjg-color-primary-600);
+      color: var(--tjg-text-inverse);
     }
   }
 }
@@ -520,9 +520,9 @@ const getInitials = (text: string) => {
 /* 管理表单 */
 .space-details-pane__manage {
   padding: 16px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 10px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -531,7 +531,7 @@ const getInitials = (text: string) => {
 .space-details-pane__manage-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .space-details-pane__manage-form {
@@ -561,13 +561,13 @@ const getInitials = (text: string) => {
 .space-details-pane__section-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .space-details-pane__link-btn {
   border: 0;
   background: transparent;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   font-size: 12px;
   cursor: pointer;
   padding: 0;
@@ -586,7 +586,7 @@ const getInitials = (text: string) => {
 .space-details-pane__hint {
   margin: 0;
   font-size: 12px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   padding: 8px 0;
 }
 
@@ -605,7 +605,7 @@ const getInitials = (text: string) => {
   cursor: pointer;
 
   &:hover .space-details-pane__member-name {
-    color: var(--hula-color-primary-500);
+    color: var(--tjg-color-primary-500);
   }
 }
 
@@ -613,18 +613,18 @@ const getInitials = (text: string) => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .space-details-pane__member-name {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   text-align: center;
   max-width: 72px;
   overflow: hidden;
@@ -650,7 +650,7 @@ const getInitials = (text: string) => {
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -658,25 +658,25 @@ const getInitials = (text: string) => {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 
 .space-details-pane__room-name {
   flex: 1;
   min-width: 0;
   font-size: 13px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .space-details-pane__room-arrow {
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   flex-shrink: 0;
 }
 
@@ -689,23 +689,23 @@ const getInitials = (text: string) => {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s ease;
 
   &:hover {
-    background: var(--hula-color-danger-100, color-mix(in srgb, var(--hula-color-danger-500) 12%, transparent));
-    color: var(--hula-color-danger-500);
+    background: var(--tjg-color-danger-100, color-mix(in srgb, var(--tjg-color-danger-500) 12%, transparent));
+    color: var(--tjg-color-danger-500);
   }
 }
 
 /* 危险操作区 */
 .space-details-pane__danger-zone {
   padding: 16px;
-  border: 1px solid var(--hula-color-danger-200, color-mix(in srgb, var(--hula-color-danger-500) 20%, transparent));
+  border: 1px solid var(--tjg-color-danger-200, color-mix(in srgb, var(--tjg-color-danger-500) 20%, transparent));
   border-radius: 10px;
-  background: color-mix(in srgb, var(--hula-color-danger-500) 4%, transparent);
+  background: color-mix(in srgb, var(--tjg-color-danger-500) 4%, transparent);
   display: flex;
   flex-direction: column;
   gap: 12px;

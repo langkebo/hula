@@ -156,7 +156,7 @@ watch(
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
 }
 
 .thread-header {
@@ -164,7 +164,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
 
   .thread-title {
     display: flex;
@@ -174,7 +174,7 @@ watch(
     font-weight: 500;
 
     .thread-icon {
-      color: var(--color-primary);
+      color: var(--tjg-color-primary-500);
     }
   }
 }
@@ -201,7 +201,7 @@ watch(
 
       .timestamp {
         font-size: 12px;
-        color: var(--hula-text-secondary);
+        color: var(--tjg-text-secondary);
       }
     }
   }
@@ -209,7 +209,7 @@ watch(
   .message-content {
     font-size: 14px;
     line-height: 1.5;
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 }
 
@@ -250,14 +250,14 @@ watch(
 
         .timestamp {
           font-size: 11px;
-          color: var(--hula-text-secondary);
+          color: var(--tjg-text-secondary);
         }
       }
 
       .message-content {
         font-size: 14px;
         line-height: 1.5;
-        color: var(--hula-text-primary);
+        color: var(--tjg-text-primary);
       }
     }
   }
@@ -265,7 +265,7 @@ watch(
 
 .thread-reply {
   padding: 16px;
-  border-top: 1px solid var(--hula-border-default);
+  border-top: 1px solid var(--tjg-border-default);
 
   .reply-actions {
     display: flex;

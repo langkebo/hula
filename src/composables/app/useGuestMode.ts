@@ -32,7 +32,7 @@ export function useGuestMode(guestService: GuestServiceLike) {
 
   async function loginAsGuest(deviceId?: string): Promise<GuestLoginResponse> {
     try {
-      const result = await guestService.loginGuest(deviceId, 'HuLa Guest')
+      const result = await guestService.loginGuest(deviceId, 'Tjg Guest')
       isGuestMode.value = true
       guestUserId.value = result.user_id
       logger.info(`访客登录成功: ${result.user_id}`)

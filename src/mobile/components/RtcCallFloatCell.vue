@@ -14,13 +14,13 @@
 
           <div class="flex items-center gap-18px">
             <div class="rtc-action-button reject" @click="handleReject">
-              <svg class="size-20px color-#fff">
+              <svg class="size-20px color-[--tjg-text-inverse]">
                 <use href="#PhoneHangup"></use>
               </svg>
             </div>
 
             <div class="rtc-action-button accept" @click="handleAccept">
-              <svg class="size-20px color-#fff">
+              <svg class="size-20px color-[--tjg-text-inverse]">
                 <use href="#phone-telephone-entity"></use>
               </svg>
             </div>

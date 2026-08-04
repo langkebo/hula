@@ -427,7 +427,7 @@ watch(
 }
 
 .intro-icon {
-  color: var(--color-primary);
+  color: var(--tjg-color-primary-500);
 }
 
 .intro-text {
@@ -441,7 +441,7 @@ watch(
 
   p {
     margin: 0;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     font-size: 14px;
     line-height: 1.6;
   }
@@ -459,7 +459,7 @@ watch(
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -475,7 +475,7 @@ watch(
 
 .intro-step-desc {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin-top: 2px;
 }
 
@@ -505,7 +505,7 @@ watch(
   gap: 8px;
   padding: 32px 0;
   font-size: 14px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .spin-icon {

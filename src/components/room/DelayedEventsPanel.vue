@@ -244,7 +244,7 @@ watch(
     .panel-title {
       font-size: 14px;
       font-weight: 500;
-      color: var(--hula-text-primary);
+      color: var(--tjg-text-primary);
     }
   }
 
@@ -262,7 +262,7 @@ watch(
     align-items: center;
     gap: 8px;
     padding: 16px 0;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     font-size: 12px;
   }
 
@@ -280,7 +280,7 @@ watch(
     .section-title {
       font-size: 12px;
       font-weight: 500;
-      color: var(--hula-text-secondary);
+      color: var(--tjg-text-secondary);
       padding: 4px 0;
     }
   }
@@ -291,8 +291,8 @@ watch(
     gap: 6px;
     padding: 8px;
     border-radius: 6px;
-    background-color: var(--hula-surface-app);
-    border: 1px solid var(--hula-border-layout-divider);
+    background-color: var(--tjg-surface-app);
+    border: 1px solid var(--tjg-border-layout-divider);
 
     &.finalised {
       opacity: 0.7;
@@ -311,13 +311,13 @@ watch(
         line-height: 1.4;
 
         .meta-label {
-          color: var(--hula-text-tertiary);
+          color: var(--tjg-text-tertiary);
           flex-shrink: 0;
           min-width: 64px;
         }
 
         .meta-value {
-          color: var(--hula-text-primary);
+          color: var(--tjg-text-primary);
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;

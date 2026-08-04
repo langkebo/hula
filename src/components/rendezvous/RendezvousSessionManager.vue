@@ -36,10 +36,10 @@
 
         <!-- Phase: Idle - 创建会话 -->
         <div v-if="sessionStatus === 'idle'" class="flex flex-col items-center text-center">
-          <div class="mb-16px text-[var(--hula-color-primary-500)] bg-[var(--hula-surface-search)] p-16px rounded-full">
+          <div class="mb-16px text-[var(--tjg-color-primary-500)] bg-[var(--tjg-surface-search)] p-16px rounded-full">
             <Icon icon="mdi:qrcode-plus" :width="48" />
           </div>
-          <p class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-24px">
+          <p class="text-[var(--text-sm)] color-[var(--tjg-text-secondary)] mb-24px">
             {{ t('rendezvous.create_hint') }}
           </p>
           <n-button type="primary" :loading="loading" @click="handleCreateSession">
@@ -50,7 +50,7 @@
         <!-- Phase: Creating -->
         <div v-else-if="sessionStatus === 'creating'" class="flex flex-col items-center text-center py-24px">
           <n-spin size="large" />
-          <p class="mt-16px text-[var(--text-sm)] color-[var(--hula-text-secondary)]">
+          <p class="mt-16px text-[var(--text-sm)] color-[var(--tjg-text-secondary)]">
             {{ t('rendezvous.creating') }}
           </p>
         </div>
@@ -71,7 +71,7 @@
 
           <!-- QR 码展示 -->
           <div v-if="qrCodeValue" class="qr-section mb-16px">
-            <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)] mb-8px text-center">
+            <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)] mb-8px text-center">
               {{ t('rendezvous.qr_hint') }}
             </div>
             <div class="flex justify-center">
@@ -79,8 +79,8 @@
                 :size="200"
                 class="rounded-12px"
                 :value="qrCodeValue"
-                color="var(--hula-text-primary)"
-                bg-color="var(--hula-surface-panel)"
+                color="var(--tjg-text-primary)"
+                bg-color="var(--tjg-surface-panel)"
                 type="canvas"
                 icon-src="/logo.png"
                 :icon-size="36"
@@ -92,22 +92,22 @@
           <!-- 消息列表 -->
           <div class="messages-section mb-16px">
             <div class="section-header">
-              <Icon icon="mdi:message-text" :width="18" class="color-[var(--hula-color-primary-500)]" />
+              <Icon icon="mdi:message-text" :width="18" class="color-[var(--tjg-color-primary-500)]" />
               <span class="section-title">{{ t('rendezvous.messages') }}</span>
               <n-button text size="small" @click="handleRefreshMessages">
                 <Icon icon="mdi:refresh" :width="16" />
               </n-button>
             </div>
             <div v-if="messages.length === 0" class="empty-messages">
-              <span class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+              <span class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
                 {{ t('rendezvous.no_messages') }}
               </span>
             </div>
             <n-list v-else size="small" bordered class="max-h-200px overflow-y-auto">
               <n-list-item v-for="(msg, index) in messages" :key="index">
                 <div class="message-item">
-                  <Icon icon="mdi:email-outline" :width="16" class="color-[var(--hula-text-tertiary)]" />
-                  <span class="text-[var(--text-xs)] color-[var(--hula-text-primary)] truncate flex-1">
+                  <Icon icon="mdi:email-outline" :width="16" class="color-[var(--tjg-text-tertiary)]" />
+                  <span class="text-[var(--text-xs)] color-[var(--tjg-text-primary)] truncate flex-1">
                     {{ formatMessage(msg) }}
                   </span>
                 </div>
@@ -142,13 +142,13 @@
 
         <!-- Phase: Completed -->
         <div v-else-if="sessionStatus === 'completed'" class="flex flex-col items-center text-center py-24px">
-          <div class="mb-16px text-[var(--hula-color-success-500)]">
+          <div class="mb-16px text-[var(--tjg-color-success-500)]">
             <Icon icon="mdi:check-circle" :width="64" />
           </div>
-          <h3 class="text-[var(--text-lg)] font-medium color-[var(--hula-text-primary)] mb-8px">
+          <h3 class="text-[var(--text-lg)] font-medium color-[var(--tjg-text-primary)] mb-8px">
             {{ t('rendezvous.completed_title') }}
           </h3>
-          <p class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-24px">
+          <p class="text-[var(--text-sm)] color-[var(--tjg-text-secondary)] mb-24px">
             {{ t('rendezvous.completed_desc') }}
           </p>
           <n-button type="primary" @click="handleReset">{{ t('common.close') }}</n-button>
@@ -156,13 +156,13 @@
 
         <!-- Phase: Failed -->
         <div v-else-if="sessionStatus === 'failed'" class="flex flex-col items-center text-center py-24px">
-          <div class="mb-16px text-[var(--hula-color-danger-500)]">
+          <div class="mb-16px text-[var(--tjg-color-danger-500)]">
             <Icon icon="mdi:alert-circle" :width="64" />
           </div>
-          <h3 class="text-[var(--text-lg)] font-medium color-[var(--hula-text-primary)] mb-8px">
+          <h3 class="text-[var(--text-lg)] font-medium color-[var(--tjg-text-primary)] mb-8px">
             {{ t('rendezvous.failed_title') }}
           </h3>
-          <p class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-24px">
+          <p class="text-[var(--text-sm)] color-[var(--tjg-text-secondary)] mb-24px">
             {{ t('rendezvous.failed_desc') }}
           </p>
           <div class="flex gap-12px">
@@ -405,7 +405,7 @@ watch(visible, (val) => {
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--hula-border-default);
+    border-top: 1px solid var(--tjg-border-default);
   }
 }
 
@@ -414,7 +414,7 @@ watch(visible, (val) => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -425,23 +425,23 @@ watch(visible, (val) => {
 }
 
 .status-idle {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .status-creating {
-  color: var(--hula-color-warning-500);
+  color: var(--tjg-color-warning-500);
 }
 
 .status-active {
-  color: var(--hula-color-success-500);
+  color: var(--tjg-color-success-500);
 }
 
 .status-completed {
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .status-failed {
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 
 .status-info {
@@ -456,12 +456,12 @@ watch(visible, (val) => {
 
 .status-desc {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin-top: 2px;
 }
 
 .session-info-card {
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
   padding: 12px 16px;
 }
@@ -474,13 +474,13 @@ watch(visible, (val) => {
 }
 
 .info-row:not(:last-child) {
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
   margin-bottom: 4px;
 }
 
 .info-label {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   flex-shrink: 0;
   margin-right: 12px;
 }
@@ -493,7 +493,7 @@ watch(visible, (val) => {
 }
 
 .qr-section {
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
   padding: 16px;
 }
@@ -516,7 +516,7 @@ watch(visible, (val) => {
 .empty-messages {
   text-align: center;
   padding: 16px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 

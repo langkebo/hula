@@ -23,7 +23,7 @@
         @model-click="handleModelClick"
         @create-new-chat="handleCreateNewChat"
         @delete-chat="handleDeleteChat" />
-      <div class="h-1px bg-[--hula-border-default]"></div>
+      <div class="h-1px bg-[--tjg-border-default]"></div>
 
       <!-- 聊天信息框 -->
       <RobotChatMessageList
@@ -40,7 +40,7 @@
         :is-likely-media-url="isLikelyMediaUrl"
         @preview-image="handleImagePreview"
         @delete-message="handleDeleteMessage" />
-      <div class="h-1px bg-[--hula-border-default]"></div>
+      <div class="h-1px bg-[--tjg-border-default]"></div>
       <RobotChatInputPanel
         ref="MsgInputRef"
         :show-role-popover="showRolePopover"
@@ -134,11 +134,11 @@
                 @click="handlePreviewImage(item)" />
               <div v-else-if="item.status === 10" class="preview-placeholder">
                 <n-spin size="large" />
-                <p class="text-12px text-[--hula-text-tertiary] mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
+                <p class="text-12px text-[--tjg-text-tertiary] mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
               </div>
               <div v-else class="preview-placeholder error">
-                <Icon icon="mdi:alert-circle-outline" class="text-48px text-[--hula-color-danger-500]" />
-                <p class="text-12px text-[--hula-color-danger-500] mt-8px">
+                <Icon icon="mdi:alert-circle-outline" class="text-48px text-[--tjg-color-danger-500]" />
+                <p class="text-12px text-[--tjg-color-danger-500] mt-8px">
                   {{ t('ai_assistant.robot.generation_failed') }}
                 </p>
               </div>
@@ -147,16 +147,16 @@
             <!-- 音频预览 -->
             <div v-else-if="historyType === 'audio'" class="media-preview">
               <div v-if="item.status === 20 && item.audioUrl" class="audio-preview">
-                <Icon icon="mdi:music-circle" class="text-64px text-[--hula-color-info-500]" />
-                <p class="text-12px text-[--hula-color-info-500] mt-8px">{{ t('ai_assistant.robot.click_to_play') }}</p>
+                <Icon icon="mdi:music-circle" class="text-64px text-[--tjg-color-info-500]" />
+                <p class="text-12px text-[--tjg-color-info-500] mt-8px">{{ t('ai_assistant.robot.click_to_play') }}</p>
               </div>
               <div v-else-if="item.status === 10" class="preview-placeholder">
                 <n-spin size="large" />
-                <p class="text-12px text-[--hula-text-tertiary] mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
+                <p class="text-12px text-[--tjg-text-tertiary] mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
               </div>
               <div v-else class="preview-placeholder error">
-                <Icon icon="mdi:alert-circle-outline" class="text-48px text-[--hula-color-danger-500]" />
-                <p class="text-12px text-[--hula-color-danger-500] mt-8px">
+                <Icon icon="mdi:alert-circle-outline" class="text-48px text-[--tjg-color-danger-500]" />
+                <p class="text-12px text-[--tjg-color-danger-500] mt-8px">
                   {{ t('ai_assistant.robot.generation_failed') }}
                 </p>
               </div>
@@ -170,11 +170,11 @@
               </div>
               <div v-else-if="item.status === 10" class="preview-placeholder">
                 <n-spin size="large" />
-                <p class="text-12px text-[--hula-text-tertiary] mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
+                <p class="text-12px text-[--tjg-text-tertiary] mt-8px">{{ t('ai_assistant.robot.generating') }}</p>
               </div>
               <div v-else class="preview-placeholder error">
-                <Icon icon="mdi:alert-circle-outline" class="text-48px text-[--hula-color-danger-500]" />
-                <p class="text-12px text-[--hula-color-danger-500] mt-8px">
+                <Icon icon="mdi:alert-circle-outline" class="text-48px text-[--tjg-color-danger-500]" />
+                <p class="text-12px text-[--tjg-color-danger-500] mt-8px">
                   {{ t('ai_assistant.robot.generation_failed') }}
                 </p>
               </div>
@@ -183,7 +183,7 @@
             <!-- 信息 -->
             <div class="history-info">
               <p class="prompt" :title="item.prompt">{{ item.prompt }}</p>
-              <p class="text-11px text-[--hula-text-tertiary] mt-4px">{{ item.width }} × {{ item.height }}</p>
+              <p class="text-11px text-[--tjg-text-tertiary] mt-4px">{{ item.width }} × {{ item.height }}</p>
             </div>
           </div>
         </div>
@@ -214,7 +214,7 @@
           <strong>{{ t('ai_assistant.robot.prompt_label') }}</strong>
           {{ previewItem.prompt }}
         </p>
-        <p class="text-12px text-[--hula-text-tertiary] mt-8px">
+        <p class="text-12px text-[--tjg-text-tertiary] mt-8px">
           <strong>{{ t('ai_assistant.robot.size_label') }}</strong>
           {{ previewItem.width }} × {{ previewItem.height }}
         </p>
@@ -235,7 +235,7 @@
           <strong>{{ t('ai_assistant.robot.prompt_label') }}</strong>
           {{ previewItem.prompt }}
         </p>
-        <p class="text-12px text-[--hula-text-tertiary] mt-8px">
+        <p class="text-12px text-[--tjg-text-tertiary] mt-8px">
           <strong>{{ t('ai_assistant.robot.size_label') }}</strong>
           {{ previewItem.width }} × {{ previewItem.height }}
         </p>
@@ -369,13 +369,13 @@ const {
 }
 
 .history-item {
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s;
 
   &:hover {
-    box-shadow: var(--hula-shadow-card);
+    box-shadow: var(--tjg-shadow-card);
   }
 }
 
@@ -390,7 +390,7 @@ const {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   cursor: pointer;
   position: relative;
 
@@ -407,7 +407,7 @@ const {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--hula-color-primary-400) 0%, var(--hula-color-primary-600) 100%);
+    background: linear-gradient(135deg, var(--tjg-color-primary-400) 0%, var(--tjg-color-primary-600) 100%);
   }
 
   .preview-placeholder {
@@ -419,7 +419,7 @@ const {
     justify-content: center;
 
     &.error {
-      background: var(--hula-color-danger-100);
+      background: var(--tjg-color-danger-100);
     }
   }
 }
@@ -429,7 +429,7 @@ const {
 
   .prompt {
     font-size: 13px;
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -450,7 +450,7 @@ const {
 
   .preview-info {
     padding: 16px;
-    background: var(--hula-surface-panel);
+    background: var(--tjg-surface-panel);
     border-radius: 8px;
   }
 }

@@ -2,8 +2,8 @@
   <div class="captcha-verify-mobile w-full">
     <!-- 已通过状态 -->
     <div v-if="internalVerified" class="flex items-center gap-8px py-6px">
-      <svg class="size-16px color-[--hula-color-success-500]"><use href="#success"></use></svg>
-      <span class="text-13px color-[--hula-color-success-500]">{{ t('captcha.verify_success') }}</span>
+      <svg class="size-16px color-[--tjg-color-success-500]"><use href="#success"></use></svg>
+      <span class="text-13px color-[--tjg-color-success-500]">{{ t('captcha.verify_success') }}</span>
     </div>
 
     <!-- 验证输入区 -->
@@ -36,12 +36,12 @@
             height="36" />
           <div
             v-else-if="loading"
-            class="size-full flex items-center justify-center bg-[--hula-overlay-mobile-sheet] text-12px color-[--hula-text-tertiary]">
+            class="size-full flex items-center justify-center bg-[--tjg-overlay-mobile-sheet] text-12px color-[--tjg-text-tertiary]">
             ...
           </div>
           <div
             v-else
-            class="size-full flex items-center justify-center bg-[--hula-overlay-mobile-sheet] text-12px color-[--hula-text-tertiary]">
+            class="size-full flex items-center justify-center bg-[--tjg-overlay-mobile-sheet] text-12px color-[--tjg-text-tertiary]">
             {{ t('captcha.not_verified') }}
           </div>
         </div>
@@ -68,7 +68,7 @@
         </van-button>
       </div>
 
-      <p v-if="errorMessage" class="text-12px color-[--hula-color-danger-500] m-0">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="text-12px color-[--tjg-color-danger-500] m-0">{{ errorMessage }}</p>
     </div>
   </div>
 </template>
@@ -131,7 +131,7 @@ onMounted(() => {
 <style scoped lang="scss">
 :deep(.captcha-input.van-cell.van-field) {
   padding: 8px 12px;
-  background: var(--hula-overlay-mobile-sheet);
+  background: var(--tjg-overlay-mobile-sheet);
   border-radius: 8px;
 }
 

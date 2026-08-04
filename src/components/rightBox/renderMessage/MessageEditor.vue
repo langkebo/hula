@@ -106,7 +106,7 @@ const handleSave = useDebounceFn(async () => {
 
 <style scoped lang="scss">
 .message-editor {
-  @apply flex flex-col gap-8px p-8px bg-[--hula-surface-panel] rounded-8px border-1px border-solid border-[--hula-border-default];
+  @apply flex flex-col gap-8px p-8px bg-[--tjg-surface-panel] rounded-8px border-1px border-solid border-[--tjg-border-default];
 }
 
 .editor-header {
@@ -114,7 +114,7 @@ const handleSave = useDebounceFn(async () => {
 }
 
 .edit-label {
-  @apply text-12px color-[--hula-text-tertiary];
+  @apply text-12px color-[--tjg-text-tertiary];
 }
 
 .editor-content {

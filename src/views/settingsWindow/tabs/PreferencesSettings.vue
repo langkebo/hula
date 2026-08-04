@@ -552,26 +552,26 @@ function handleTypingToggle(value: boolean) {
 
 <style scoped>
 .preferences-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-4);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-4);
+  color: var(--tjg-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -580,25 +580,25 @@ function handleTypingToggle(value: boolean) {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .storage-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-3);
-  margin-top: var(--hula-space-3);
-  padding: var(--hula-space-4);
-  border: 1px solid var(--hula-settings-divider);
-  border-radius: var(--hula-radius-md);
-  background: var(--hula-settings-card-bg);
+  gap: var(--tjg-space-3);
+  margin-top: var(--tjg-space-3);
+  padding: var(--tjg-space-4);
+  border: 1px solid var(--tjg-settings-divider);
+  border-radius: var(--tjg-radius-md);
+  background: var(--tjg-settings-card-bg);
 }
 
 .storage-panel-header,
@@ -607,21 +607,21 @@ function handleTypingToggle(value: boolean) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
 }
 
 .storage-stats {
   flex-wrap: wrap;
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 
 .storage-directory {
-  padding: 10px var(--hula-space-3);
-  border-radius: var(--hula-radius-sm);
-  background: var(--hula-settings-card-bg-hover);
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
+  padding: 10px var(--tjg-space-3);
+  border-radius: var(--tjg-radius-sm);
+  background: var(--tjg-settings-card-bg-hover);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
   word-break: break-all;
 }
 </style>

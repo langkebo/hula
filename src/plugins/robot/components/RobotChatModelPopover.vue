@@ -9,7 +9,7 @@
     <template #trigger>
       <div class="flex items-center gap-6px cursor-pointer">
         <svg><use href="#model"></use></svg>
-        <span class="text-(12px [--hula-text-primary])">
+        <span class="text-(12px [--tjg-text-primary])">
           {{ selectedModel ? selectedModel.name : t('ai_assistant.robot.select_model') }}
         </span>
       </div>
@@ -32,7 +32,7 @@
             style="width: 140px"
             @update:value="emit('update:model-search', $event)">
             <template #prefix>
-              <Icon icon="mdi:magnify" class="text-16px color-[--hula-text-tertiary]" />
+              <Icon icon="mdi:magnify" class="text-16px color-[--tjg-text-tertiary]" />
             </template>
           </n-input>
         </n-flex>
@@ -47,7 +47,7 @@
         <div v-else-if="filteredModels.length === 0" class="empty-container">
           <n-empty :description="t('ai_assistant.robot.no_model_data')" size="small">
             <template #icon>
-              <Icon icon="mdi:package-variant-closed" class="text-24px color-[--hula-text-tertiary]" />
+              <Icon icon="mdi:package-variant-closed" class="text-24px color-[--tjg-text-tertiary]" />
             </template>
           </n-empty>
         </div>

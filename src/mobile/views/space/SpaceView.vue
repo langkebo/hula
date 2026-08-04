@@ -367,7 +367,7 @@ onMounted(() => {
   background: var(--van-background);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: var(--hula-shadow-card);
+  box-shadow: var(--tjg-shadow-card);
 
   .space-cover {
     width: 100%;

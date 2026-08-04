@@ -52,56 +52,56 @@
     {
       "identifier": "fs:write-files",
       "allow": [
-        { "path": "$APPDATA/hula/**" },
-        { "path": "$CACHE/hula/**" },
-        { "path": "$TEMP/hula/**" },
-        { "path": "$DOWNLOAD/hula/**" },
+        { "path": "$APPDATA/tjg/**" },
+        { "path": "$CACHE/tjg/**" },
+        { "path": "$TEMP/tjg/**" },
+        { "path": "$DOWNLOAD/tjg/**" },
         { "path": "$RESOURCE/**" }
       ]
     },
     {
       "identifier": "fs:allow-mkdir",
       "allow": [
-        { "path": "$APPDATA/hula/**" },
-        { "path": "$CACHE/hula/**" },
-        { "path": "$TEMP/hula/**" },
-        { "path": "$DOWNLOAD/hula/**" }
+        { "path": "$APPDATA/tjg/**" },
+        { "path": "$CACHE/tjg/**" },
+        { "path": "$TEMP/tjg/**" },
+        { "path": "$DOWNLOAD/tjg/**" }
       ]
     },
     {
       "identifier": "fs:read-dirs",
       "allow": [
-        { "path": "$APPDATA/hula/**" },
-        { "path": "$CACHE/hula/**" },
+        { "path": "$APPDATA/tjg/**" },
+        { "path": "$CACHE/tjg/**" },
         { "path": "$RESOURCE/**" },
-        { "path": "$DOWNLOAD/hula/**" }
+        { "path": "$DOWNLOAD/tjg/**" }
       ]
     },
     {
       "identifier": "fs:read-files",
       "allow": [
-        { "path": "$APPDATA/hula/**" },
-        { "path": "$CACHE/hula/**" },
+        { "path": "$APPDATA/tjg/**" },
+        { "path": "$CACHE/tjg/**" },
         { "path": "$RESOURCE/**" },
-        { "path": "$DOWNLOAD/hula/**" }
+        { "path": "$DOWNLOAD/tjg/**" }
       ]
     },
     {
       "identifier": "fs:allow-copy-file",
       "allow": [
-        { "path": "$APPDATA/hula/**" },
-        { "path": "$CACHE/hula/**" },
-        { "path": "$TEMP/hula/**" },
-        { "path": "$DOWNLOAD/hula/**" }
+        { "path": "$APPDATA/tjg/**" },
+        { "path": "$CACHE/tjg/**" },
+        { "path": "$TEMP/tjg/**" },
+        { "path": "$DOWNLOAD/tjg/**" }
       ]
     },
     {
       "identifier": "fs:allow-read-text-file",
       "allow": [
-        { "path": "$APPDATA/hula/**" },
-        { "path": "$CACHE/hula/**" },
+        { "path": "$APPDATA/tjg/**" },
+        { "path": "$CACHE/tjg/**" },
         { "path": "$RESOURCE/**" },
-        { "path": "$DOWNLOAD/hula/**" }
+        { "path": "$DOWNLOAD/tjg/**" }
       ]
     },
     {

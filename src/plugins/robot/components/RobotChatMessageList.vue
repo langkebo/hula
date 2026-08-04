@@ -14,7 +14,7 @@
             :src="getModelAvatar(selectedModel)"
             :fallback-src="getDefaultAvatar()" />
           <n-flex vertical justify="space-between">
-            <p class="text-(12px [--hula-text-primary])">
+            <p class="text-(12px [--tjg-text-primary])">
               {{ selectedModel ? selectedModel.name : 'GPT-4' }}
               <n-tag
                 v-if="selectedModel"
@@ -32,7 +32,7 @@
           </n-flex>
         </div>
 
-        <div v-if="loadingMessages" class="flex justify-center items-center py-20px text-(12px [--hula-text-tertiary])">
+        <div v-if="loadingMessages" class="flex justify-center items-center py-20px text-(12px [--tjg-text-tertiary])">
           <n-spin size="small" />
           <span class="ml-10px">{{ t('ai_assistant.robot.loading_messages') }}</span>
         </div>
@@ -62,7 +62,7 @@
               <n-flex
                 align="center"
                 :size="8"
-                class="select-none text-(12px [--hula-text-tertiary])"
+                class="select-none text-(12px [--tjg-text-tertiary])"
                 :class="message.type === 'user' ? 'flex-row-reverse' : ''">
                 <p>
                   {{ message.type === 'user' ? t('ai_assistant.robot.me') : selectedModel ? selectedModel.name : 'AI' }}
@@ -131,10 +131,10 @@
                     <div class="flex flex-col gap-8px">
                       <div
                         v-if="message.reasoningContent"
-                        class="reasoning-content p-12px rounded-8px bg-[--hula-surface-panel-muted] dark:bg-[--hula-surface-subtle] border-(1px solid [--hula-border-default])">
+                        class="reasoning-content p-12px rounded-8px bg-[--tjg-surface-panel-muted] dark:bg-[--tjg-surface-subtle] border-(1px solid [--tjg-border-default])">
                         <div class="flex items-center gap-6px mb-8px">
-                          <Icon icon="mdi:brain" class="text-16px text-[--hula-color-info-500]" />
-                          <span class="text-12px text-[--hula-text-tertiary] font-500">
+                          <Icon icon="mdi:brain" class="text-16px text-[--tjg-color-info-500]" />
+                          <span class="text-12px text-[--tjg-text-tertiary] font-500">
                             {{ t('ai_assistant.robot.thinking_process') }}
                           </span>
                         </div>
@@ -320,7 +320,7 @@ useResizeObserver(messageContentRef, () => {
 <style scoped lang="scss">
 :deep(.link-node),
 :deep(.footnote-link) {
-  --link-color: var(--hula-color-primary-500);
-  color: var(--hula-color-primary-500);
+  --link-color: var(--tjg-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 </style>

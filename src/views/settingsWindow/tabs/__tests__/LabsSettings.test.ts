@@ -142,7 +142,7 @@ describe('LabsSettings', () => {
     const wrapper = mount(LabsSettings)
     const vm = wrapper.vm as any
     vm.handleToggleFeature('threads', true)
-    const saved = localStorage.getItem('hula-lab-features')
+    const saved = localStorage.getItem('tjg-lab-features')
     expect(saved).toBeTruthy()
     const parsed = JSON.parse(saved!)
     expect(parsed).toContain('threads')
@@ -150,7 +150,7 @@ describe('LabsSettings', () => {
   })
 
   it('loads feature states from localStorage', () => {
-    localStorage.setItem('hula-lab-features', JSON.stringify(['threads', 'custom-status']))
+    localStorage.setItem('tjg-lab-features', JSON.stringify(['threads', 'custom-status']))
     const wrapper = mount(LabsSettings)
     const customStatus = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'custom-status')
     const spaces = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'spaces')
@@ -180,7 +180,7 @@ describe('LabsSettings', () => {
     const wrapper = mount(LabsSettings)
     const vm = wrapper.vm as any
     vm.handleDebugModeChange(true)
-    expect(localStorage.getItem('hula-debug-mode')).toBe('true')
+    expect(localStorage.getItem('tjg-debug-mode')).toBe('true')
     expect(messageSuccessMock).toHaveBeenCalledWith('调试模式已启用')
   })
 })

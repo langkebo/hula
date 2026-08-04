@@ -7,14 +7,14 @@ export type I18nKeys = {
   "agreement": {
     "privacy": {
       "header": {
-        "title": "HuLa隐私保护指引",
+        "title": "Tjg隐私保护指引",
         "updatedAt": "更新时间：2025年9月3日"
       },
       "sections": [
         {
           "title": "引言",
           "paragraphs": [
-            "HuLa（以下简称“我们”）深知个人信息对您的重要性，并会尽全力保护您的个人信息安全可靠。我们致力于维持您对我们的信任，恪守以下原则，保护您的个人信息：权责一致原则、目的明确原则、选择同意原则、最少够用原则、确保安全原则、主体参与原则、公开透明原则等。同时，我们承诺，我们将按业界成熟的安全标准，采取相应的安全保护措施来保护您的个人信息。",
+            "Tjg（以下简称“我们”）深知个人信息对您的重要性，并会尽全力保护您的个人信息安全可靠。我们致力于维持您对我们的信任，恪守以下原则，保护您的个人信息：权责一致原则、目的明确原则、选择同意原则、最少够用原则、确保安全原则、主体参与原则、公开透明原则等。同时，我们承诺，我们将按业界成熟的安全标准，采取相应的安全保护措施来保护您的个人信息。",
             "请在使用我们的产品（或服务）前，仔细阅读并了解本《隐私保护指引》。"
           ]
         },
@@ -27,9 +27,9 @@ export type I18nKeys = {
             {
               "subtitle": "1.1 我们收集您个人信息的情形",
               "paragraphs": [
-                "（1）账号注册：当您注册HuLa账号时，我们需要收集您的手机号码、邮箱地址等信息，以便为您创建账号。",
+                "（1）账号注册：当您注册Tjg账号时，我们需要收集您的手机号码、邮箱地址等信息，以便为您创建账号。",
                 "（2）身份验证：为了确保账号安全，我们可能需要您提供身份证明文件进行实名认证。",
-                "（3）服务使用：在您使用HuLa服务过程中，我们会收集您的聊天记录、好友关系、群组信息等。",
+                "（3）服务使用：在您使用Tjg服务过程中，我们会收集您的聊天记录、好友关系、群组信息等。",
                 "（4）设备信息：我们会收集您的设备型号、操作系统版本、设备标识符等信息，以便为您提供更好的服务体验。"
               ]
             },
@@ -57,10 +57,10 @@ export type I18nKeys = {
             {
               "subtitle": "3.1 共享",
               "paragraphs": [
-                "我们不会与HuLa以外的公司、组织和个人共享您的个人信息，但以下情况除外：",
+                "我们不会与Tjg以外的公司、组织和个人共享您的个人信息，但以下情况除外：",
                 "（1）事先获得您明确的同意或授权；",
                 "（2）根据适用的法律法规、法律程序的要求、强制性的政府要求或司法裁定；",
-                "（3）在法律要求或允许的范围内，为了保护HuLa、HuLa用户或公众的权利、财产或安全免遭损害；",
+                "（3）在法律要求或允许的范围内，为了保护Tjg、Tjg用户或公众的权利、财产或安全免遭损害；",
                 "（4）与我们的关联公司共享：我们可能会与我们的关联公司共享您的个人信息。"
               ]
             },
@@ -168,20 +168,20 @@ export type I18nKeys = {
     },
     "server": {
       "header": {
-        "title": "HuLa服务协议",
+        "title": "Tjg服务协议",
         "updatedAt": "更新时间：2025年9月3日"
       },
       "sections": [
         {
           "title": "1. 服务条款的确认和接纳",
           "paragraphs": [
-            "欢迎使用HuLa即时通讯软件！HuLa的各项电子服务的所有权和运作权归HuLa所有。用户必须完全同意所有服务条款并完成注册程序，才能成为HuLa的正式用户。"
+            "欢迎使用Tjg即时通讯软件！Tjg的各项电子服务的所有权和运作权归Tjg所有。用户必须完全同意所有服务条款并完成注册程序，才能成为Tjg的正式用户。"
           ]
         },
         {
           "title": "2. 服务简介",
           "paragraphs": [
-            "HuLa是一款免费的即时通讯软件，用户可以通过HuLa与好友进行文字、语音、视频聊天，分享图片、文件等。HuLa致力于为用户提供安全、稳定、便捷的通讯服务。"
+            "Tjg是一款免费的即时通讯软件，用户可以通过Tjg与好友进行文字、语音、视频聊天，分享图片、文件等。Tjg致力于为用户提供安全、稳定、便捷的通讯服务。"
           ]
         },
         {
@@ -189,14 +189,14 @@ export type I18nKeys = {
           "paragraphs": [
             "3.1 用户注册时必须提供真实、准确、完整的个人资料。",
             "3.2 用户有义务保证密码和账号的安全，用户利用该密码和账号所进行的一切活动引起的任何损失或损害，由用户自行承担全部责任。",
-            "3.3 用户同意接收来自HuLa的信息，包括但不限于产品信息、服务信息、特别优惠信息等。"
+            "3.3 用户同意接收来自Tjg的信息，包括但不限于产品信息、服务信息、特别优惠信息等。"
           ]
         },
         {
           "title": "4. 用户行为规范",
           "paragraphs": [
-            "4.1 用户在使用HuLa服务时，必须遵守中华人民共和国相关法律法规。",
-            "4.2 禁止利用HuLa服务进行任何违法犯罪活动。",
+            "4.1 用户在使用Tjg服务时，必须遵守中华人民共和国相关法律法规。",
+            "4.2 禁止利用Tjg服务进行任何违法犯罪活动。",
             "4.3 禁止发布、传播任何违法、有害、威胁、辱骂、骚扰、侵权、中伤、粗俗、猥亵或其他道德上令人反感的内容。",
             "4.4 禁止发布、传播任何侵犯他人知识产权或其他合法权益的内容。",
             "4.5 禁止恶意传播病毒、木马等恶意程序。"
@@ -205,46 +205,46 @@ export type I18nKeys = {
         {
           "title": "5. 隐私保护",
           "paragraphs": [
-            "5.1 HuLa非常重视用户隐私的保护。除法律法规另有规定外，未经用户同意，HuLa不会向第三方披露、转让用户个人信息。",
-            "5.2 HuLa采用行业标准的安全措施保护用户个人信息，防止数据的未经授权访问、使用或披露。",
-            "5.3 用户理解并同意，为了向用户提供更好的服务，HuLa可能会收集、使用用户的相关信息。"
+            "5.1 Tjg非常重视用户隐私的保护。除法律法规另有规定外，未经用户同意，Tjg不会向第三方披露、转让用户个人信息。",
+            "5.2 Tjg采用行业标准的安全措施保护用户个人信息，防止数据的未经授权访问、使用或披露。",
+            "5.3 用户理解并同意，为了向用户提供更好的服务，Tjg可能会收集、使用用户的相关信息。"
           ]
         },
         {
           "title": "6. 知识产权",
           "paragraphs": [
-            "6.1 HuLa软件及其相关技术、商标、版权等知识产权均归HuLa所有。",
-            "6.2 未经HuLa书面许可，用户不得对HuLa软件进行反向工程、反汇编、反编译等。",
-            "6.3 用户通过HuLa发布的内容，用户保留其知识产权，但同时授予HuLa在全球范围内免费的、非独占的使用许可。"
+            "6.1 Tjg软件及其相关技术、商标、版权等知识产权均归Tjg所有。",
+            "6.2 未经Tjg书面许可，用户不得对Tjg软件进行反向工程、反汇编、反编译等。",
+            "6.3 用户通过Tjg发布的内容，用户保留其知识产权，但同时授予Tjg在全球范围内免费的、非独占的使用许可。"
           ]
         },
         {
           "title": "7. 免责声明",
           "paragraphs": [
-            "7.1 用户明确同意其使用HuLa服务所存在的风险将完全由其自己承担。",
-            "7.2 HuLa不保证服务一定能满足用户的要求，也不保证服务不会中断。",
-            "7.3 对于因不可抗力或HuLa不能控制的原因造成的网络服务中断或其它缺陷，HuLa不承担任何责任。"
+            "7.1 用户明确同意其使用Tjg服务所存在的风险将完全由其自己承担。",
+            "7.2 Tjg不保证服务一定能满足用户的要求，也不保证服务不会中断。",
+            "7.3 对于因不可抗力或Tjg不能控制的原因造成的网络服务中断或其它缺陷，Tjg不承担任何责任。"
           ]
         },
         {
           "title": "8. 服务变更、中断或终止",
           "paragraphs": [
-            "8.1 HuLa有权根据业务发展需要，变更、中断或终止部分或全部服务。",
-            "8.2 如因系统维护或升级的需要而需暂停网络服务，HuLa将尽可能事先进行通告。",
-            "8.3 如用户违反本协议的任何条款，HuLa有权终止向该用户提供服务。"
+            "8.1 Tjg有权根据业务发展需要，变更、中断或终止部分或全部服务。",
+            "8.2 如因系统维护或升级的需要而需暂停网络服务，Tjg将尽可能事先进行通告。",
+            "8.3 如用户违反本协议的任何条款，Tjg有权终止向该用户提供服务。"
           ]
         },
         {
           "title": "9. 协议修改",
           "paragraphs": [
-            "HuLa有权随时修改本协议的任何条款，一旦本协议的内容发生变动，HuLa将会通过适当方式向用户提示修改内容。如果不同意HuLa对本协议相关条款所做的修改，用户有权停止使用网络服务。如果用户继续使用网络服务，则视为用户接受HuLa对本协议相关条款所做的修改。"
+            "Tjg有权随时修改本协议的任何条款，一旦本协议的内容发生变动，Tjg将会通过适当方式向用户提示修改内容。如果不同意Tjg对本协议相关条款所做的修改，用户有权停止使用网络服务。如果用户继续使用网络服务，则视为用户接受Tjg对本协议相关条款所做的修改。"
           ]
         },
         {
           "title": "10. 法律适用及争议解决",
           "paragraphs": [
             "10.1 本协议的订立、执行和解释及争议的解决均应适用中华人民共和国法律。",
-            "10.2 如双方就本协议内容或其执行发生任何争议，双方应尽量友好协商解决；协商不成时，任何一方均可向HuLa所在地的人民法院起诉。"
+            "10.2 如双方就本协议内容或其执行发生任何争议，双方应尽量友好协商解决；协商不成时，任何一方均可向Tjg所在地的人民法院起诉。"
           ]
         },
         {
@@ -285,13 +285,13 @@ export type I18nKeys = {
       "install": {
         "checking": "正在检测 OpenClaw 安装状态...",
         "title": "安装 OpenClaw 以使用 AI 助手",
-        "description": "OpenClaw 是一个本地 AI 网关服务，用于连接各种 AI 模型。安装后即可在 HuLa 中使用 AI 对话功能。",
+        "description": "OpenClaw 是一个本地 AI 网关服务，用于连接各种 AI 模型。安装后即可在 Tjg 中使用 AI 对话功能。",
         "step1_title": "下载安装",
         "step1_desc": "点击下方按钮下载适用于当前系统的 OpenClaw 安装包",
         "step2_title": "启动服务",
         "step2_desc": "安装完成后启动 OpenClaw，默认将在本地 8080 端口运行",
         "step3_title": "配置连接",
-        "step3_desc": "在 HuLa 设置中填入 API 地址和密钥，完成连接配置",
+        "step3_desc": "在 Tjg 设置中填入 API 地址和密钥，完成连接配置",
         "recheck": "重新检测",
         "installing_title": "请完成 OpenClaw 安装",
         "installing_desc": "安装完成后，点击「重新检测」按钮验证安装状态。如果已安装，请直接点击重新检测。",
@@ -666,7 +666,7 @@ export type I18nKeys = {
       "delete_with_messages": "同时删除会话中的所有消息",
       "confirm_delete_btn": "确定删除",
       "share": "分享",
-      "hula_backend": "HuLa 后端",
+      "tjg_backend": "Tjg 后端",
       "search_model": "搜索模型...",
       "no_model_data": "暂无模型数据",
       "official_models": "官方模型",
@@ -851,9 +851,9 @@ export type I18nKeys = {
         "email": "邮箱"
       },
       "placeholders": {
-        "nickname": "输入HuLa昵称",
+        "nickname": "输入Tjg昵称",
         "email": "输入邮箱",
-        "password": "输入HuLa密码",
+        "password": "输入Tjg密码",
         "confirm_placeholder": "二次确认密码"
       },
       "password_hints": {
@@ -957,6 +957,70 @@ export type I18nKeys = {
       }
     }
   },
+  "background_updates": {
+    "title": "后台更新管理",
+    "subtitle": "查看和管理数据库迁移、索引重建等后台任务",
+    "status": {
+      "title": "汇总状态",
+      "pending": "待处理",
+      "running": "执行中",
+      "completed": "已完成",
+      "failed": "已失败",
+      "total": "总计",
+      "current": "当前任务"
+    },
+    "list": {
+      "title": "任务列表",
+      "empty": "暂无后台更新任务",
+      "job_name": "任务名称",
+      "job_type": "任务类型",
+      "description": "描述",
+      "status": "状态",
+      "progress": "进度",
+      "total_items": "总条目",
+      "processed_items": "已处理",
+      "created_ts": "创建时间",
+      "started_ts": "开始时间",
+      "completed_ts": "完成时间",
+      "error_message": "错误信息",
+      "retry_count": "重试次数",
+      "actions": "操作"
+    },
+    "actions": {
+      "start": "启动",
+      "cancel": "取消",
+      "complete": "完成",
+      "fail": "标记失败",
+      "delete": "删除",
+      "retry_failed": "重试所有失败",
+      "cleanup_locks": "清理过期锁",
+      "refresh": "刷新"
+    },
+    "dialog": {
+      "fail_title": "标记任务失败",
+      "fail_message_label": "错误信息",
+      "fail_message_placeholder": "请输入失败原因",
+      "fail_confirm": "确定",
+      "fail_cancel": "取消"
+    },
+    "feedback": {
+      "start_success": "任务已启动",
+      "start_failed": "启动任务失败",
+      "cancel_success": "任务已取消",
+      "cancel_failed": "取消任务失败",
+      "complete_success": "任务已完成",
+      "complete_failed": "完成任务失败",
+      "fail_success": "任务已标记失败",
+      "fail_failed": "标记任务失败失败",
+      "delete_success": "任务已删除",
+      "delete_failed": "删除任务失败",
+      "retry_success": "已重试 {count} 个失败任务",
+      "retry_failed": "重试失败任务失败",
+      "cleanup_success": "已清理 {count} 个过期锁",
+      "cleanup_failed": "清理过期锁失败",
+      "load_failed": "加载后台更新信息失败"
+    }
+  },
   "captcha": {
     "title": "人机验证",
     "description": "请完成下方验证以继续注册",
@@ -1035,6 +1099,9 @@ export type I18nKeys = {
     },
     "url_preview": {
       "loading": "加载预览..."
+    },
+    "crypto_unavailable": {
+      "message": "加密功能未就绪，此房间的消息无法发送。请重新登录或联系管理员。"
     }
   },
   "chatHistory": {
@@ -1931,6 +1998,39 @@ export type I18nKeys = {
     "diagnose_no_homeserver": "未配置 Homeserver，无法自检",
     "diagnose_failed": "自检执行失败：{message}"
   },
+  "delayed_events": {
+    "title": "延迟事件管理",
+    "scheduled": "待处理",
+    "finalised": "已完成",
+    "empty": "暂无延迟事件",
+    "load_failed": "加载延迟事件失败",
+    "fields": {
+      "delay_id": "延迟ID",
+      "type": "事件类型",
+      "delay": "延迟(ms)",
+      "running_since": "开始时间"
+    },
+    "actions": {
+      "cancel": "取消",
+      "restart": "重启",
+      "send": "立即发送"
+    },
+    "outcome": {
+      "send": "已发送",
+      "cancel": "已取消"
+    },
+    "reason": {
+      "delay": "延迟触发",
+      "error": "错误",
+      "action": "操作触发"
+    },
+    "cancel_success": "已取消延迟事件",
+    "cancel_failed": "取消延迟事件失败",
+    "restart_success": "已重启延迟事件",
+    "restart_failed": "重启延迟事件失败",
+    "send_success": "已立即发送延迟事件",
+    "send_failed": "立即发送失败"
+  },
   "diagnostics": {
     "versions_supported": "支持的版本: {versions}",
     "versions_not_found": "未找到支持的 API 版本",
@@ -2375,6 +2475,87 @@ export type I18nKeys = {
       "retry": "重试",
       "reload": "重新加载",
       "details": "错误详情"
+    }
+  },
+  "external_services": {
+    "title": "外部服务管理",
+    "subtitle": "管理 TrendRadar、OpenClaw、Webhook 等外部服务集成",
+    "actions": {
+      "refresh": "刷新",
+      "register": "注册服务",
+      "check_health": "健康检查",
+      "check_all_health": "检查全部健康",
+      "edit": "编辑",
+      "delete": "删除",
+      "enable": "启用",
+      "disable": "禁用"
+    },
+    "filters": {
+      "service_type": "服务类型",
+      "service_type_placeholder": "全部类型",
+      "service_type_all": "全部"
+    },
+    "list": {
+      "title": "服务列表",
+      "empty": "暂无外部服务",
+      "as_id": "服务 ID",
+      "service_type": "类型",
+      "service_id": "标识",
+      "display_name": "名称",
+      "is_enabled": "启用",
+      "is_healthy": "健康",
+      "created_ts": "创建时间",
+      "actions": "操作"
+    },
+    "health": {
+      "title": "健康状态",
+      "empty": "暂无健康数据",
+      "healthy": "健康",
+      "unhealthy": "异常",
+      "last_check_ts": "最近检查",
+      "last_success_ts": "最近成功",
+      "last_error": "最近错误",
+      "consecutive_failures": "连续失败次数"
+    },
+    "register": {
+      "title": "注册外部服务",
+      "service_type": "服务类型",
+      "service_type_placeholder": "如 trendradar / webhook / custom",
+      "service_id": "服务标识",
+      "service_id_placeholder": "如 news-bot",
+      "display_name": "显示名称",
+      "display_name_placeholder": "如 新闻机器人",
+      "webhook_url": "Webhook URL",
+      "webhook_url_placeholder": "https://example.com/webhook",
+      "api_key": "API Key",
+      "api_key_placeholder": "可选",
+      "config": "配置 (JSON)",
+      "config_placeholder": "{}"
+    },
+    "edit": {
+      "title": "编辑外部服务",
+      "webhook_url": "Webhook URL",
+      "api_key": "API Key",
+      "config": "配置 (JSON)",
+      "is_enabled": "启用服务"
+    },
+    "feedback": {
+      "register_success": "服务注册成功",
+      "register_failed": "服务注册失败",
+      "update_success": "服务更新成功",
+      "update_failed": "服务更新失败",
+      "delete_success": "服务删除成功",
+      "delete_failed": "服务删除失败",
+      "health_check_success": "健康检查完成",
+      "health_check_failed": "健康检查失败",
+      "delete_confirm": "确定要删除该外部服务吗？此操作不可撤销。"
+    },
+    "common": {
+      "yes": "是",
+      "no": "否",
+      "cancel": "取消",
+      "confirm": "确认",
+      "save": "保存"
     }
   },
   "fileManager": {
@@ -2939,7 +3120,7 @@ export type I18nKeys = {
       "modal": {
         "add_friend": "申请加好友"
       },
-      "developer_badge": "HuLa开发工程师"
+      "developer_badge": "Tjg开发工程师"
     },
     "profile_edit": {
       "title": "编辑资料",
@@ -3253,10 +3434,10 @@ export type I18nKeys = {
     },
     "input": {
       "account": {
-        "placeholder": "邮箱/HuLa账号"
+        "placeholder": "邮箱/Tjg账号"
       },
       "pass": {
-        "placeholder": "输入 HuLa 密码"
+        "placeholder": "输入 Tjg 密码"
       }
     },
     "option": {
@@ -3271,7 +3452,7 @@ export type I18nKeys = {
         "text1": "已阅读并同意",
         "text2": "服务协议",
         "text3": "和",
-        "text4": "HuLa隐私保护指引"
+        "text4": "Tjg隐私保护指引"
       }
     },
     "auth_way": {
@@ -3313,7 +3494,7 @@ export type I18nKeys = {
     },
     "qr_code_expired": "二维码已过期",
     "qr_code_expired_hint": "请稍后再试",
-    "qr_code_scan_hint": "请使用 HuLa App 扫码登录",
+    "qr_code_scan_hint": "请使用 Tjg App 扫码登录",
     "qr_code_gen_fail_hint": "生成二维码失败",
     "qr_code_scan_success_hint": "扫码成功，等待授权",
     "wait_auth_hint": "等待授权...",
@@ -3344,7 +3525,7 @@ export type I18nKeys = {
       "load_text": {
         "loading": "加载中...",
         "refreshing": "刷新中...",
-        "scan_hint": "请使用 HuLa App 扫码登录",
+        "scan_hint": "请使用 Tjg App 扫码登录",
         "login": "登录中...",
         "retry": "请稍后再试",
         "auth_pending": "等待授权..."
@@ -3363,19 +3544,19 @@ export type I18nKeys = {
     },
     "guide": {
       "welcome": {
-        "title": "🎉 欢迎使用 HuLa",
-        "desc": "HuLa 基于 Tauri 构建，支持 Windows、macOS、Linux、iOS、Android"
+        "title": "🎉 欢迎使用 Tjg",
+        "desc": "Tjg 基于 Tauri 构建，支持 Windows、macOS、Linux、iOS、Android"
       },
       "privacy": {
         "title": "🤔 隐私条款与服务协议",
-        "desc": "请先阅读 HuLa 的隐私条款与服务协议"
+        "desc": "请先阅读 Tjg 的隐私条款与服务协议"
       },
       "network": {
         "title": "⚙️ 网络设置",
-        "desc": "HuLa 支持自定义服务地址，可替换官方入口"
+        "desc": "Tjg 支持自定义服务地址，可替换官方入口"
       },
       "register": {
-        "title": "🤓 如何登录 HuLa",
+        "title": "🤓 如何登录 Tjg",
         "desc": "使用前请先注册并完善账号信息"
       },
       "actions": {
@@ -3834,7 +4015,7 @@ export type I18nKeys = {
       "sync_loading": "正在同步消息",
       "sync_complete": "消息同步完成",
       "official_popover": "官方群聊认证",
-      "bot_popover": "HuLa助手",
+      "bot_popover": "Tjg助手",
       "mention_tag": "[有人@我]",
       "favorite_tag": "已置顶",
       "low_priority_tag": "低优先级",
@@ -3843,7 +4024,7 @@ export type I18nKeys = {
       "shield_user": "您已屏蔽此人",
       "empty_description": "快和朋友聊天吧！",
       "empty_action": "寻找好友",
-      "default_last_msg": "欢迎使用HuLa"
+      "default_last_msg": "欢迎使用Tjg"
     },
     "message_menu": {
       "pin_success": "已置顶",
@@ -4454,7 +4635,7 @@ export type I18nKeys = {
     "report_bug": "报告问题",
     "feature_request": "功能建议",
     "contact_support": "联系客服",
-    "about_hula": "关于 HuLa",
+    "about_tjg": "关于 Tjg",
     "check_update": "检查更新",
     "latest_version": "已是最新版本",
     "bug_title": "问题标题",
@@ -4469,8 +4650,8 @@ export type I18nKeys = {
     "submit_success": "提交成功",
     "submit_failed": "提交失败，请稍后重试",
     "title_required": "请输入标题",
-    "about_description": "HuLa 是一个基于 Matrix 协议的跨平台通讯应用",
-    "copyright": "© 2024 HuLa Team. All rights reserved."
+    "about_description": "Tjg 是一个基于 Matrix 协议的跨平台通讯应用",
+    "copyright": "© 2024 Tjg Team. All rights reserved."
   },
   "mobile_home": {
     "menu": {
@@ -4518,7 +4699,7 @@ export type I18nKeys = {
   },
   "mobile_integrations": {
     "title": "集成管理",
-    "description": "管理第三方集成和小部件，扩展 HuLa 的功能。",
+    "description": "管理第三方集成和小部件，扩展 Tjg 的功能。",
     "enable_integrations": "启用集成",
     "installed_section": "已安装的集成",
     "available_section": "可用集成",
@@ -4797,7 +4978,7 @@ export type I18nKeys = {
     "camera_permission_required": "没有相机权限，请在系统设置中开启权限",
     "permission_missing": "缺少权限",
     "scan_error": "扫码过程中发生错误",
-    "login_hula": "登录{device}的HULA",
+    "login_tjg": "登录{device}的HULA",
     "login_ip": "登录IP",
     "login_address": "登录地址",
     "login_time": "登录时间",
@@ -5594,7 +5775,7 @@ export type I18nKeys = {
   "setting": {
     "common": {
       "provider_label": "提供者",
-      "provider_name": "HuLa",
+      "provider_name": "Tjg",
       "tag_new": "新",
       "cancel": "取消",
       "save": "保存",
@@ -6027,7 +6208,7 @@ export type I18nKeys = {
       "file_scan_progress": "扫描文件中",
       "usage": "扫描文件占比",
       "used_space": "已用空间",
-      "app_used_space": "HuLa 数据",
+      "app_used_space": "Tjg 数据",
       "free_space": "可用空间",
       "directory": "目录",
       "curr_dir": "当前目录",
@@ -6098,9 +6279,9 @@ export type I18nKeys = {
         "title": "添加推送设备",
         "kind_label": "设备类型",
         "app_id_label": "应用 ID",
-        "app_id_placeholder": "例如: com.hula.desktop",
+        "app_id_placeholder": "例如: com.tjg.desktop",
         "app_display_name_label": "应用名称",
-        "app_display_name_placeholder": "例如: HuLa 桌面端",
+        "app_display_name_placeholder": "例如: Tjg 桌面端",
         "device_display_name_label": "设备名称",
         "device_display_name_placeholder": "例如: 我的 Mac",
         "pushkey_label": "推送密钥",
@@ -6827,7 +7008,7 @@ export type I18nKeys = {
     },
     "help_about": {
       "title": "帮助与关于",
-      "about": "关于 HuLa",
+      "about": "关于 Tjg",
       "version": "版本",
       "matrix_sdk_version": "Matrix SDK",
       "check_update": "检查更新",
@@ -6873,6 +7054,19 @@ export type I18nKeys = {
       "check_update_failed": "检查更新失败",
       "open_logs_failed": "无法打开日志目录",
       "open_logs_unsupported": "Web 版本暂不支持此功能"
+    },
+    "diagnostics": {
+      "title": "诊断信息",
+      "reset": "重置指标",
+      "api_avg_latency": "API 平均延迟",
+      "api_p95_latency": "API P95 延迟",
+      "api_total_calls": "API 调用总数",
+      "sync_count": "Sliding Sync 次数",
+      "sync_avg_duration": "同步平均耗时",
+      "replay_success_rate": "离线回放成功率",
+      "retry_rate": "重试触发率",
+      "retry_rate_abnormal_title": "重试率异常",
+      "retry_rate_abnormal_desc": "网络不稳定，当前重试率为 {rate}%"
     },
     "unknow": "未知",
     "encryption": {
@@ -7432,6 +7626,100 @@ export type I18nKeys = {
       "delete_failed": "删除空间失败",
       "load_failed": "加载失败"
     }
+  },
+  "telemetry": {
+    "title": "遥测监控",
+    "subtitle": "查看服务器运行时指标、Prometheus 配置和告警",
+    "common": {
+      "yes": "是",
+      "no": "否"
+    },
+    "status": {
+      "title": "遥测状态",
+      "empty": "暂无遥测配置",
+      "enabled": "已启用",
+      "trace_enabled": "Trace 启用",
+      "metrics_enabled": "Metrics 启用",
+      "service_name": "服务名",
+      "service_version": "服务版本",
+      "sampling_ratio": "采样率",
+      "otlp_endpoint": "OTLP 端点",
+      "prometheus_port": "Prometheus 端口",
+      "batch_export": "批量导出"
+    },
+    "metrics": {
+      "title": "指标摘要",
+      "empty": "暂无指标数据",
+      "total_metrics": "指标总数",
+      "total_counters": "Counter 数",
+      "total_gauges": "Gauge 数",
+      "total_histograms": "Histogram 数",
+      "rendered_bytes": "渲染字节数",
+      "snapshot_ts": "快照时间"
+    },
+    "scheduler": {
+      "title": "Appservice 调度器",
+      "total_services": "服务总数",
+      "available_services": "可用服务",
+      "in_backoff": "退避中",
+      "capacity_limited": "容量受限",
+      "pending_events": "待处理事件",
+      "pending_transactions": "待处理事务",
+      "success_count": "成功总数",
+      "failure_count": "失败总数",
+      "in_flight": "进行中"
+    },
+    "alerts": {
+      "title": "告警列表",
+      "empty": "暂无告警",
+      "count": "{count} 条告警",
+      "severity": "严重程度",
+      "rule_name": "规则名",
+      "status": "状态",
+      "message": "消息",
+      "trigger_count": "触发次数",
+      "triggered_at": "触发时间",
+      "last_seen_ts": "最近触发",
+      "actions": "操作",
+      "acknowledge": "确认",
+      "status_firing": "触发中",
+      "status_acknowledged": "已确认",
+      "status_recovered": "已恢复",
+      "status_closed": "已关闭",
+      "severity_info": "信息",
+      "severity_warning": "警告",
+      "severity_high": "高",
+      "severity_critical": "严重"
+    },
+    "filters": {
+      "status_placeholder": "按状态过滤",
+      "severity_placeholder": "按严重程度过滤"
+    },
+    "actions": {
+      "refresh": "刷新"
+    },
+    "feedback": {
+      "ack_success": "告警已确认",
+      "ack_failed": "确认告警失败",
+      "load_failed": "加载遥测数据失败"
+    }
+  },
+  "thirdparty": {
+    "title": "第三方协议浏览",
+    "subtitle": "浏览通过第三方协议桥接的用户和位置",
+    "protocol_select": "选择协议",
+    "protocol_placeholder": "请选择协议",
+    "query_section": "查询",
+    "query_field": "查询字段",
+    "query_value": "查询值",
+    "query_value_placeholder": "输入查询值（可选）",
+    "query_location": "查询位置",
+    "query_user": "查询用户",
+    "location_results": "位置结果",
+    "user_results": "用户结果",
+    "empty_protocols": "暂无第三方协议",
+    "empty_results": "暂无结果",
+    "load_failed": "加载失败"
   },
   "thread": {
     "title": "消息线程",

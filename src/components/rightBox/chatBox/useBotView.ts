@@ -216,7 +216,7 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
   }
 
   const handleAssistantError = async (error: unknown) => {
-    logger.error('加载 HuLa 小管家失败:', error)
+    logger.error('加载 Tjg 小管家失败:', error)
     customModelPath.value = null
     selectedModelKey.value = null
     applyFirstPreset({ force: true })

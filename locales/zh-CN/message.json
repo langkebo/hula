@@ -77,7 +77,7 @@
     "sync_loading": "正在同步消息",
     "sync_complete": "消息同步完成",
     "official_popover": "官方群聊认证",
-    "bot_popover": "HuLa助手",
+    "bot_popover": "Tjg助手",
     "mention_tag": "[有人@我]",
     "favorite_tag": "已置顶",
     "low_priority_tag": "低优先级",
@@ -86,7 +86,7 @@
     "shield_user": "您已屏蔽此人",
     "empty_description": "快和朋友聊天吧！",
     "empty_action": "寻找好友",
-    "default_last_msg": "欢迎使用HuLa"
+    "default_last_msg": "欢迎使用Tjg"
   },
   "message_menu": {
     "pin_success": "已置顶",

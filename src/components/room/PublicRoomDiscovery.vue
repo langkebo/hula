@@ -171,7 +171,7 @@ defineExpose({ nextBatch, loadMore })
 }
 
 .search-icon {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .room-list {
@@ -208,7 +208,7 @@ defineExpose({ nextBatch, loadMore })
   height: 40px;
   overflow: hidden;
   border-radius: 50%;
-  background: var(--hula-bg-secondary);
+  background: var(--tjg-bg-secondary);
 }
 
 .room-card__avatar-img {
@@ -220,7 +220,7 @@ defineExpose({ nextBatch, loadMore })
 .room-card__avatar-placeholder {
   font-size: 16px;
   font-weight: 500;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .room-card__info {
@@ -231,7 +231,7 @@ defineExpose({ nextBatch, loadMore })
 .room-card__name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -249,12 +249,12 @@ defineExpose({ nextBatch, loadMore })
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .room-card__topic {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -12,7 +12,7 @@
           </svg>
         </div>
 
-        <n-flex class="text-(14px [--hula-text-primary]) select-none pt-6px" justify="center">{{ modalTitle }}</n-flex>
+        <n-flex class="text-(14px [--tjg-text-primary]) select-none pt-6px" justify="center">{{ modalTitle }}</n-flex>
 
         <svg
           v-if="isWindows()"
@@ -20,7 +20,7 @@
           @click="modalVisible = false">
           <use href="#close"></use>
         </svg>
-        <span class="h-1px w-full bg-[--hula-border-default]"></span>
+        <span class="h-1px w-full bg-[--tjg-border-default]"></span>
       </n-flex>
 
       <!-- 地图加载错误 -->
@@ -65,7 +65,7 @@
           <!-- 地图加载中 -->
           <div v-if="locationState.loading || mapLoading" class="flex-col-center gap-42px">
             <n-spin :size="42" />
-            <p class="text-(14px [--hula-text-secondary])">
+            <p class="text-(14px [--tjg-text-secondary])">
               {{
                 locationState.loading
                   ? t('message.location.modal.loading.locating')
@@ -91,10 +91,10 @@
         <div v-if="selectedLocation" class="location-modal__info rounded-6px p-12px">
           <n-flex vertical :size="8">
             <span class="text-14px font-medium">{{ t('message.location.modal.info.current') }}</span>
-            <div class="text-(12px [--hula-text-secondary])">
+            <div class="text-(12px [--tjg-text-secondary])">
               {{ selectedLocation.address || t('message.location.modal.info.fetching_address') }}
             </div>
-            <div class="text-(11px [--hula-text-tertiary])">
+            <div class="text-(11px [--tjg-text-tertiary])">
               {{
                 t('message.location.modal.info.coordinate', {
                   lat: selectedLocation.latitude.toFixed(6),
@@ -281,18 +281,18 @@ const handleConfirm = async () => {
 
 <style scoped lang="scss">
 .location-modal {
-  background-color: var(--hula-surface-panel-muted);
+  background-color: var(--tjg-surface-panel-muted);
 }
 
 .location-modal__mac-close {
-  background-color: color-mix(in srgb, var(--hula-color-danger-500) 72%, transparent);
+  background-color: color-mix(in srgb, var(--tjg-color-danger-500) 72%, transparent);
 }
 
 .location-modal__mac-close-icon {
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .location-modal__info {
-  background-color: var(--hula-surface-elevated);
+  background-color: var(--tjg-surface-elevated);
 }
 </style>

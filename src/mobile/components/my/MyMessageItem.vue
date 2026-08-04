@@ -10,8 +10,8 @@
           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
       </div>
       <div class="flex flex-col gap-10px">
-        <div class="text-14px text-[--hula-text-primary] font-bold">{{ t('mobile_mymessage.unknown_user') }}</div>
-        <div class="text-12px text-[--hula-text-tertiary]">
+        <div class="text-14px text-[--tjg-text-primary] font-bold">{{ t('mobile_mymessage.unknown_user') }}</div>
+        <div class="text-12px text-[--tjg-text-tertiary]">
           {{ t('mobile_mymessage.message_content') }}{{ props.message.content }}
         </div>
       </div>
@@ -25,7 +25,7 @@
       class="mt-5px flex justify-end pb-10px"
       :class="props.message.type === 'reply' || props.message.type === 'comment' ? ['custom-border-b-1'] : ['']"
       v-if="props.message.type === 'reply' || props.message.type === 'comment'">
-      <div class="bg-[--hula-color-primary-100] text-14px rounded-25px w-82px line-height-32px text-center">回复</div>
+      <div class="bg-[--tjg-color-primary-100] text-14px rounded-25px w-82px line-height-32px text-center">回复</div>
     </div>
   </div>
 </template>
@@ -50,6 +50,6 @@ const props = defineProps({
 <style lang="scss" scoped>
 .custom-border-b-1 {
   border-bottom: 1px solid;
-  border-color: var(--hula-border-default);
+  border-color: var(--tjg-border-default);
 }
 </style>

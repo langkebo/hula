@@ -221,26 +221,26 @@ onUnmounted(() => {
 
 <style scoped>
 .keyboard-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-4);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-4);
+  color: var(--tjg-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -249,29 +249,29 @@ onUnmounted(() => {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .shortcut-list {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .shortcut-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: var(--tjg-space-3) var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .shortcut-info {
@@ -280,19 +280,19 @@ onUnmounted(() => {
 }
 
 .shortcut-action {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .shortcut-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
   margin-top: 2px;
 }
 
 .shortcut-keys {
   display: flex;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
 }
 
 .key {
@@ -301,29 +301,29 @@ onUnmounted(() => {
   justify-content: center;
   min-width: 28px;
   height: 24px;
-  padding: 0 var(--hula-space-2);
-  font-size: var(--hula-font-size-sm);
+  padding: 0 var(--tjg-space-2);
+  font-size: var(--tjg-font-size-sm);
   font-family: monospace;
-  background-color: var(--hula-surface-panel);
-  border: 1px solid var(--hula-border-default);
-  border-radius: var(--hula-radius-xs);
-  box-shadow: var(--hula-shadow-sm);
+  background-color: var(--tjg-surface-panel);
+  border: 1px solid var(--tjg-border-default);
+  border-radius: var(--tjg-radius-xs);
+  box-shadow: var(--tjg-shadow-sm);
 }
 
 .reset-section {
-  margin-top: var(--hula-space-4);
+  margin-top: var(--tjg-space-4);
 }
 
 .shortcut-editor {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--hula-space-4);
+  gap: var(--tjg-space-4);
   padding: 20px;
 }
 
 .current-keys {
   display: flex;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 </style>

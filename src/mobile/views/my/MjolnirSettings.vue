@@ -151,7 +151,7 @@ onMounted(() => {
 
 function loadBanLists() {
   try {
-    const saved = localStorage.getItem('hula-mjolnir-ban-lists')
+    const saved = localStorage.getItem('tjg-mjolnir-ban-lists')
     if (saved) {
       const parsed = JSON.parse(saved)
       roomBans.value = parsed.room || []
@@ -165,7 +165,7 @@ function loadBanLists() {
 
 function saveBanLists() {
   localStorage.setItem(
-    'hula-mjolnir-ban-lists',
+    'tjg-mjolnir-ban-lists',
     JSON.stringify({
       room: roomBans.value,
       user: userBans.value,

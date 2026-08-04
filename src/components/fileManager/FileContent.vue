@@ -1,13 +1,13 @@
 <template>
   <div class="min-w-0 cursor-default select-none flex-1 flex flex-col bg-[--right-bg-color] overflow-hidden">
     <!-- 内容头部 -->
-    <div class="flex-shrink-0 px-20px py-16px border-b border-solid border-[--hula-border-default]">
+    <div class="flex-shrink-0 px-20px py-16px border-b border-solid border-[--tjg-border-default]">
       <div class="flex items-center justify-between gap-32px">
         <n-flex vertical class="flex-shrink-0">
-          <h2 class="text-18px font-600 text-[--hula-text-primary] m-0">
+          <h2 class="text-18px font-600 text-[--tjg-text-primary] m-0">
             {{ getContentTitle() }}
           </h2>
-          <p class="text-14px text-[--hula-text-secondary] opacity-60 m-0 mt-4px">
+          <p class="text-14px text-[--tjg-text-secondary] opacity-60 m-0 mt-4px">
             {{ getContentSubtitle() }}
           </p>
         </n-flex>
@@ -23,10 +23,10 @@
           autoCorrect="off"
           autoCapitalize="off"
           style="width: 200px"
-          class="rounded-6px border-(solid 1px [--hula-border-default])"
+          class="rounded-6px border-(solid 1px [--tjg-border-default])"
           size="small">
           <template #prefix>
-            <svg class="size-16px text-[--hula-text-secondary] opacity-60">
+            <svg class="size-16px text-[--tjg-text-secondary] opacity-60">
               <use href="#search"></use>
             </svg>
           </template>
@@ -76,7 +76,7 @@
             {{ t('fileManager.search.clear') }}
           </n-button>
 
-          <n-button v-if="selectedUser" @click="clearUserFilter" ghost color="var(--color-primary)" size="small">
+          <n-button v-if="selectedUser" @click="clearUserFilter" ghost color="var(--tjg-color-primary-500)" size="small">
             {{ t('fileManager.search.showAllUsers') }}
           </n-button>
         </template>
@@ -367,7 +367,7 @@ const convertToFileBody = (file: FileItem): FileBody => {
 
 <style scoped lang="scss">
 .time-group {
-  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-6px text-[--hula-text-primary] bg-[--time-group-bg] backdrop-blur-md;
+  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-6px text-[--tjg-text-primary] bg-[--time-group-bg] backdrop-blur-md;
 }
 
 .file-meta-info {
@@ -376,11 +376,11 @@ const convertToFileBody = (file: FileItem): FileBody => {
   align-items: center;
   padding: 0 4px;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .file-sender {
-  color: var(--color-primary);
+  color: var(--tjg-color-primary-500);
   cursor: pointer;
 
   &:hover {

@@ -9,7 +9,7 @@
         height="48"
         viewBox="0 0 48 48"
         fill="none"
-        stroke="var(--hula-text-quaternary)"
+        stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round">
@@ -23,7 +23,7 @@
         height="48"
         viewBox="0 0 48 48"
         fill="none"
-        stroke="var(--hula-text-quaternary)"
+        stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round">
@@ -40,7 +40,7 @@
         height="48"
         viewBox="0 0 48 48"
         fill="none"
-        stroke="var(--hula-text-quaternary)"
+        stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round">
@@ -56,7 +56,7 @@
         height="48"
         viewBox="0 0 48 48"
         fill="none"
-        stroke="var(--hula-text-quaternary)"
+        stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round">
@@ -142,9 +142,9 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
   width: 56px;
   height: 56px;
   font-size: 40px;
-  color: color-mix(in srgb, var(--hula-text-tertiary) 70%, transparent);
+  color: color-mix(in srgb, var(--tjg-text-tertiary) 70%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--hula-text-tertiary) 8%, transparent);
+  background: color-mix(in srgb, var(--tjg-text-tertiary) 8%, transparent);
 }
 
 .empty-state__icon--compact {
@@ -156,14 +156,14 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
 .empty-state__title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin: 4px 0 0;
 }
 
 .empty-state__description {
   font-size: 13px;
   line-height: 1.55;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   max-width: 320px;
   margin: 0;
 }
@@ -181,15 +181,15 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
   padding: 6px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--hula-text-inverse);
-  background: var(--hula-color-primary-500);
+  color: var(--tjg-text-inverse);
+  background: var(--tjg-color-primary-500);
   cursor: pointer;
   transition:
-    background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard),
-    transform var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    transform var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {
-    background: var(--hula-color-primary-600);
+    background: var(--tjg-color-primary-600);
   }
 
   &:active {
@@ -198,12 +198,12 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
 }
 
 .empty-state--welcome .empty-state__icon {
-  color: var(--hula-color-primary-500);
-  background: var(--hula-color-primary-100);
+  color: var(--tjg-color-primary-500);
+  background: var(--tjg-color-primary-100);
 }
 
 .empty-state--welcome .empty-state__title {
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   font-size: 16px;
 }
 
@@ -212,7 +212,7 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
 }
 
 .empty-state__enter-active {
-  animation: empty-fade-in 240ms var(--hula-motion-ease-enter);
+  animation: empty-fade-in 240ms var(--tjg-motion-ease-enter);
 }
 
 @keyframes empty-fade-in {

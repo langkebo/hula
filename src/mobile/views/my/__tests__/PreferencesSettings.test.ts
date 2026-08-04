@@ -158,7 +158,7 @@ describe('PreferencesSettings', () => {
   })
 
   it('loads sendKey from localStorage', () => {
-    localStorage.setItem('hula-send-key', 'Ctrl+Enter')
+    localStorage.setItem('tjg-send-key', 'Ctrl+Enter')
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).sendKey).toBe('Ctrl+Enter')
   })
@@ -167,7 +167,7 @@ describe('PreferencesSettings', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = wrapper.vm as any
     vm.handleSendKeyConfirm({ selectedValues: ['Ctrl+Enter'] })
-    expect(localStorage.getItem('hula-send-key')).toBe('Ctrl+Enter')
+    expect(localStorage.getItem('tjg-send-key')).toBe('Ctrl+Enter')
     expect(setSendMessageShortcutMock).toHaveBeenCalledWith('Ctrl+Enter')
     expect((wrapper.vm as any).showSendKeyPicker).toBe(false)
   })

@@ -59,17 +59,17 @@
         <div
           v-for="result in userSearchResults"
           :key="result.userId"
-          class="flex items-center gap-10px p-10px rounded-10px bg-[--hula-surface-panel]">
+          class="flex items-center gap-10px p-10px rounded-10px bg-[--tjg-surface-panel]">
           <img
             class="size-40px rounded-full object-cover"
             :src="AvatarUtils.getAvatarUrl(result.avatarUrl || '')"
             alt="头像"
             @error="($event.target as HTMLImageElement).src = '/logo.png'" />
           <div class="flex-1 min-w-0">
-            <div class="text-14px font-medium truncate text-[--hula-text-primary]">
+            <div class="text-14px font-medium truncate text-[--tjg-text-primary]">
               {{ result.displayName || result.userId }}
             </div>
-            <div class="text-12px text-[--hula-text-tertiary] truncate">
+            <div class="text-12px text-[--tjg-text-tertiary] truncate">
               {{ result.userId }}
             </div>
           </div>
@@ -83,14 +83,14 @@
           </van-button>
         </div>
       </div>
-      <div v-else-if="hasUserSearched" class="py-20px text-center text-13px text-[--hula-text-tertiary]">
+      <div v-else-if="hasUserSearched" class="py-20px text-center text-13px text-[--tjg-text-tertiary]">
         {{ t('mobile_contact.search_no_result') }}
       </div>
     </div>
 
-    <div class="custom-rounded flex-1 bg-[--hula-surface-panel]">
+    <div class="custom-rounded flex-1 bg-[--tjg-surface-panel]">
       <!-- 卡片头部 -->
-      <div class="flex items-center justify-between py-15px px-16px text-14px border-b border-[--hula-border-default]">
+      <div class="flex items-center justify-between py-15px px-16px text-14px border-b border-[--tjg-border-default]">
         <span class="font-medium">{{ t('mobile_contact.my_chat') }}</span>
         <div class="flex items-center gap-8px" @click="toMessage">
           <span
@@ -107,7 +107,7 @@
         <van-tab :title="t('mobile_contact.tab.contacts')">
           <div
             v-if="isMobileFriendStateLoading"
-            class="flex items-center justify-center text-[--hula-text-secondary]"
+            class="flex items-center justify-center text-[--tjg-text-secondary]"
             style="min-height: 240px">
             <van-loading size="24px" />
           </div>
@@ -117,10 +117,10 @@
             style="min-height: 240px">
             <van-empty :description="t('friend.list.capability_unavailable_description')">
               <template #image>
-                <svg class="size-40px color-[--hula-text-tertiary]"><use href="#friends"></use></svg>
+                <svg class="size-40px color-[--tjg-text-tertiary]"><use href="#friends"></use></svg>
               </template>
               <template #bottom>
-                <div class="mt-8px text-14px font-600 text-[--hula-text-primary]">
+                <div class="mt-8px text-14px font-600 text-[--tjg-text-primary]">
                   {{ t('friend.list.capability_unavailable_title') }}
                 </div>
               </template>
@@ -132,11 +132,11 @@
             style="min-height: 240px">
             <van-empty :description="mobileFriendErrorMessage">
               <template #image>
-                <svg class="size-40px color-[--hula-text-tertiary]"><use href="#warning"></use></svg>
+                <svg class="size-40px color-[--tjg-text-tertiary]"><use href="#warning"></use></svg>
               </template>
               <template #bottom>
                 <div class="mt-8px flex flex-col items-center gap-12px">
-                  <div class="text-14px font-600 text-[--hula-text-primary]">
+                  <div class="text-14px font-600 text-[--tjg-text-primary]">
                     {{ t('common.error') }}
                   </div>
                   <van-button size="small" type="primary" plain @click="handleRetryMobileFriends">
@@ -163,7 +163,7 @@
                   </div>
                 </template>
                 <template #value>
-                  <span class="text-(10px [--hula-text-secondary])">
+                  <span class="text-(10px [--tjg-text-secondary])">
                     {{ specialOnlineCount }}/{{ specialContacts.length }}
                   </span>
                 </template>
@@ -223,12 +223,12 @@
               <van-collapse-item name="normal">
                 <template #title>
                   <div class="flex items-center gap-8px">
-                    <svg class="size-14px color-[--hula-text-secondary]"><use href="#friends"></use></svg>
+                    <svg class="size-14px color-[--tjg-text-secondary]"><use href="#friends"></use></svg>
                     <span>{{ t('mobile_contact.group.normal') || '我的好友' }}</span>
                   </div>
                 </template>
                 <template #value>
-                  <span class="text-(10px [--hula-text-secondary])">
+                  <span class="text-(10px [--tjg-text-secondary])">
                     {{ normalOnlineCount }}/{{ normalContacts.length }}
                   </span>
                 </template>
@@ -298,7 +298,7 @@
                   </div>
                 </template>
                 <template #value>
-                  <span class="text-(10px [--hula-text-secondary])">{{ blockedContacts.length }}</span>
+                  <span class="text-(10px [--tjg-text-secondary])">{{ blockedContacts.length }}</span>
                 </template>
                 <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
                   <div @contextmenu.stop="$event.preventDefault()">
@@ -318,7 +318,7 @@
                         <span class="text-14px leading-tight flex-1 truncate">
                           {{ groupStore.getUserInfo(item.uid)?.name }}
                         </span>
-                        <div class="text leading-tight text-12px text-[--hula-text-tertiary]">
+                        <div class="text leading-tight text-12px text-[--tjg-text-tertiary]">
                           [{{ t('mobile_contact.status.blocked') || '已屏蔽' }}]
                         </div>
                       </div>
@@ -333,7 +333,7 @@
           <van-collapse v-model="activeGroupCollapseNames">
             <van-collapse-item :title="t('mobile_contact.group.title')" name="1">
               <template #value>
-                <span class="text-(10px [--hula-text-secondary])">{{ groupChatList.length }}</span>
+                <span class="text-(10px [--tjg-text-secondary])">{{ groupChatList.length }}</span>
               </template>
               <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
                 <div
@@ -371,7 +371,7 @@
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
   border-radius: 6px;
-  background: var(--hula-overlay-mobile-sheet);
+  background: var(--tjg-overlay-mobile-sheet);
 }
 
 :deep(.van-cell.van-field::after) {

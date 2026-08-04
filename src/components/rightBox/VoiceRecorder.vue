@@ -5,9 +5,9 @@
       <!-- 录音状态文字 -->
       <div class="voice-status">
         <div v-if="!isRecording && !audioBlob && !isProcessing">
-          <span class="text-[--hula-text-tertiary] flex-y-center gap-6px select-none">
+          <span class="text-[--tjg-text-tertiary] flex-y-center gap-6px select-none">
             {{ t('message.voice_recorder.tap_prefix') }}
-            <svg class="size-14px color-[--hula-color-primary-500]"><use href="#voice"></use></svg>
+            <svg class="size-14px color-[--tjg-color-primary-500]"><use href="#voice"></use></svg>
             {{ t('message.voice_recorder.tap_suffix') }}
           </span>
         </div>
@@ -332,7 +332,7 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 @mixin base-control-button($dark-bg, $bg) {
-  @apply flex-center size-36px text-[--hula-text-inverse] cursor-pointer rounded-full;
+  @apply flex-center size-36px text-[--tjg-text-inverse] cursor-pointer rounded-full;
   background-color: $bg;
   [data-theme='dark'] & {
     background-color: $dark-bg;
@@ -340,7 +340,7 @@ onUnmounted(() => {
 }
 
 .voice-recorder-container {
-  @apply flex flex-col relative w-full h-110px bg-[--hula-surface-panel] rounded-8px;
+  @apply flex flex-col relative w-full h-110px bg-[--tjg-surface-panel] rounded-8px;
 }
 
 .voice-recorder-main {
@@ -348,29 +348,29 @@ onUnmounted(() => {
 }
 
 .voice-status {
-  @apply text-(14px [--hula-text-primary] center) max-h-24px;
+  @apply text-(14px [--tjg-text-primary] center) max-h-24px;
 
   .status-recording {
-    @apply flex-y-center gap-8px text-[--hula-color-primary-500] select-none;
+    @apply flex-y-center gap-8px text-[--tjg-color-primary-500] select-none;
 
     .recording-animation {
       position: relative;
       .pulse-dot {
-        @apply size-8px bg-[--hula-color-primary-500] rounded-full;
+        @apply size-8px bg-[--tjg-color-primary-500] rounded-full;
         animation: pulse 1.5s infinite;
       }
     }
   }
 
   .status-processing {
-    @apply flex-y-center gap-8px text-[--hula-text-secondary] select-none;
+    @apply flex-y-center gap-8px text-[--tjg-text-secondary] select-none;
 
     .processing-animation {
       position: relative;
       .loading-spinner {
         @apply size-12px rounded-full;
         border: 2px solid transparent;
-        border-top: 2px solid var(--hula-text-secondary);
+        border-top: 2px solid var(--tjg-text-secondary);
         animation: spin 1s linear infinite;
       }
     }
@@ -381,7 +381,7 @@ onUnmounted(() => {
       @apply flex-y-center gap-8px;
 
       .play-btn {
-        @apply flex-center size-30px bg-inherit border-none cursor-pointer text-[--hula-color-primary-500];
+        @apply flex-center size-30px bg-inherit border-none cursor-pointer text-[--tjg-color-primary-500];
 
         svg {
           @apply size-16px;
@@ -416,29 +416,29 @@ onUnmounted(() => {
 
   .record-btn {
     @include base-control-button(
-      color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent),
-      var(--hula-color-primary-500)
+      color-mix(in srgb, var(--tjg-color-primary-500) 80%, transparent),
+      var(--tjg-color-primary-500)
     );
   }
 
   .stop-btn {
     @include base-control-button(
-      color-mix(in srgb, var(--hula-color-danger-500) 72%, transparent),
-      var(--hula-color-danger-500)
+      color-mix(in srgb, var(--tjg-color-danger-500) 72%, transparent),
+      var(--tjg-color-danger-500)
     );
   }
 
   .refresh-btn {
     @include base-control-button(
-      color-mix(in srgb, var(--hula-color-warning-500) 72%, transparent),
-      var(--hula-color-warning-500)
+      color-mix(in srgb, var(--tjg-color-warning-500) 72%, transparent),
+      var(--tjg-color-warning-500)
     );
   }
 
   .send-btn {
     @include base-control-button(
-      color-mix(in srgb, var(--hula-color-primary-500) 80%, transparent),
-      var(--hula-color-primary-500)
+      color-mix(in srgb, var(--tjg-color-primary-500) 80%, transparent),
+      var(--tjg-color-primary-500)
     );
 
     .loading-spinner {
@@ -452,8 +452,8 @@ onUnmounted(() => {
   .cancel-btn,
   .cancel-record-btn {
     @include base-control-button(
-      color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent),
-      color-mix(in srgb, var(--hula-text-tertiary) 60%, transparent)
+      color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent),
+      color-mix(in srgb, var(--tjg-text-tertiary) 60%, transparent)
     );
   }
 }

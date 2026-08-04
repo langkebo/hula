@@ -23,10 +23,10 @@
                   fallback-src="/default-avatar.png" />
 
                 <div class="flex-y-center gap-12px h-fit">
-                  <p class="text-12px color-[--hula-text-tertiary]">
+                  <p class="text-12px color-[--tjg-text-tertiary]">
                     {{ getUserDisplayName(item.fromUser.uid, item.fromUser.username) }}
                   </p>
-                  <p class="text-11px color-[--hula-text-quaternary]">{{ formatTimestamp(item.message.sendTime) }}</p>
+                  <p class="text-11px color-[--tjg-text-quaternary]">{{ formatTimestamp(item.message.sendTime) }}</p>
                 </div>
               </div>
 
@@ -166,20 +166,20 @@ watch(
 
 <style scoped lang="scss">
 .multi-msg-drawer-content {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .bubble {
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   padding: 8px 12px;
   border-radius: 12px;
   width: fit-content;
   max-width: 100%;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   transition: background-color 0.2s ease;
 
   &:hover {
-    background: color-mix(in srgb, var(--hula-color-indigo-500) 5%, var(--hula-surface-panel-muted));
+    background: color-mix(in srgb, var(--tjg-color-indigo-500) 5%, var(--tjg-surface-panel-muted));
   }
 }
 </style>

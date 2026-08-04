@@ -2,13 +2,13 @@
   <div class="forbidden-page">
     <div class="forbidden-content">
       <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r="55" stroke="var(--hula-color-danger-500)" stroke-width="4" fill="none" />
+        <circle cx="60" cy="60" r="55" stroke="var(--tjg-color-danger-500)" stroke-width="4" fill="none" />
         <line
           x1="30"
           y1="30"
           x2="90"
           y2="90"
-          stroke="var(--hula-color-danger-500)"
+          stroke="var(--tjg-color-danger-500)"
           stroke-width="4"
           stroke-linecap="round" />
         <line
@@ -16,7 +16,7 @@
           y1="30"
           x2="30"
           y2="90"
-          stroke="var(--hula-color-danger-500)"
+          stroke="var(--tjg-color-danger-500)"
           stroke-width="4"
           stroke-linecap="round" />
       </svg>
@@ -43,7 +43,7 @@ const goHome = () => router.push('/message')
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: linear-gradient(135deg, var(--hula-surface-panel-muted) 0%, var(--hula-surface-subtle) 100%);
+  background: linear-gradient(135deg, var(--tjg-surface-panel-muted) 0%, var(--tjg-surface-subtle) 100%);
 }
 
 .forbidden-content {
@@ -63,7 +63,7 @@ const goHome = () => router.push('/message')
 
 .forbidden-desc {
   font-size: 14px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin: 0;
 }
 </style>

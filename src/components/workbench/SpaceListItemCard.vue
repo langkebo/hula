@@ -151,7 +151,7 @@ const avatarColor = computed(() => {
   background: transparent;
   padding: 12px;
   text-align: left;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   cursor: pointer;
   min-height: 68px;
   transition:
@@ -159,29 +159,29 @@ const avatarColor = computed(() => {
     box-shadow 0.2s ease;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--hula-color-primary-500);
+    outline: 2px solid var(--tjg-color-primary-500);
     outline-offset: 2px;
   }
 
   &--active {
-    background: var(--hula-surface-session-active);
-    box-shadow: var(--hula-surface-session-active-shadow);
-    color: var(--hula-text-inverse);
+    background: var(--tjg-surface-session-active);
+    box-shadow: var(--tjg-surface-session-active-shadow);
+    color: var(--tjg-text-inverse);
 
     .space-card__topic,
     .space-card__meta,
     .space-card__member-count,
     .space-card__visibility,
     .space-card__placeholder {
-      color: color-mix(in srgb, var(--hula-text-inverse) 72%, transparent);
+      color: color-mix(in srgb, var(--tjg-text-inverse) 72%, transparent);
     }
 
     .space-card__unread-badge {
-      border-color: var(--hula-color-primary-500);
+      border-color: var(--tjg-color-primary-500);
     }
   }
 
@@ -211,7 +211,7 @@ const avatarColor = computed(() => {
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
 }
 
 .space-card--compact .space-card__initials {
@@ -229,9 +229,9 @@ const avatarColor = computed(() => {
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background: var(--hula-color-danger-500);
-  border: 2px solid var(--hula-surface-panel);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-danger-500);
+  border: 2px solid var(--tjg-surface-panel);
+  color: var(--tjg-text-inverse);
   font-size: 11px;
   font-weight: 700;
   line-height: 14px;
@@ -263,7 +263,7 @@ const avatarColor = computed(() => {
   line-height: 20px;
   flex: 1;
   min-width: 0;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .space-card--active .space-card__name {
@@ -272,7 +272,7 @@ const avatarColor = computed(() => {
 
 .space-card__member-count {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   line-height: 18px;
   white-space: nowrap;
   flex-shrink: 0;
@@ -290,34 +290,34 @@ const avatarColor = computed(() => {
   height: 24px;
   border: 0;
   border-radius: 6px;
-  background: var(--hula-surface-search);
-  color: var(--hula-text-tertiary);
+  background: var(--tjg-surface-search);
+  color: var(--tjg-text-tertiary);
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
-    background: var(--hula-color-primary-100);
-    color: var(--hula-color-primary-500);
+    background: var(--tjg-color-primary-100);
+    color: var(--tjg-color-primary-500);
   }
 
   &--danger:hover {
-    background: var(--hula-color-danger-100);
-    color: var(--hula-color-danger-500);
+    background: var(--tjg-color-danger-100);
+    color: var(--tjg-color-danger-500);
   }
 }
 
 .space-card--active .space-card__action-btn {
-  background: color-mix(in srgb, var(--hula-text-inverse) 15%, transparent);
-  color: color-mix(in srgb, var(--hula-text-inverse) 80%, transparent);
+  background: color-mix(in srgb, var(--tjg-text-inverse) 15%, transparent);
+  color: color-mix(in srgb, var(--tjg-text-inverse) 80%, transparent);
 
   &:hover {
-    background: color-mix(in srgb, var(--hula-text-inverse) 25%, transparent);
-    color: var(--hula-text-inverse);
+    background: color-mix(in srgb, var(--tjg-text-inverse) 25%, transparent);
+    color: var(--tjg-text-inverse);
   }
 
   &--danger:hover {
-    background: color-mix(in srgb, var(--hula-color-danger-500) 30%, transparent);
-    color: var(--hula-text-inverse);
+    background: color-mix(in srgb, var(--tjg-color-danger-500) 30%, transparent);
+    color: var(--tjg-text-inverse);
   }
 }
 
@@ -332,7 +332,7 @@ const avatarColor = computed(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   line-height: 18px;
 }
 
@@ -349,37 +349,37 @@ const avatarColor = computed(() => {
 }
 
 .space-card__status-pill--neutral {
-  background: var(--hula-surface-search);
-  color: var(--hula-text-tertiary);
+  background: var(--tjg-surface-search);
+  color: var(--tjg-text-tertiary);
 }
 
 .space-card__status-pill--info {
-  background: var(--hula-color-primary-100);
-  color: var(--hula-color-primary-500);
+  background: var(--tjg-color-primary-100);
+  color: var(--tjg-color-primary-500);
 }
 
 .space-card__status-pill--warning {
-  background: color-mix(in srgb, var(--hula-color-warning-500) 16%, transparent);
-  color: var(--hula-color-warning-500);
+  background: color-mix(in srgb, var(--tjg-color-warning-500) 16%, transparent);
+  color: var(--tjg-color-warning-500);
 }
 
 .space-card__visibility {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   white-space: nowrap;
   line-height: 18px;
 }
 
 .space-card__meta {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   line-height: 18px;
   white-space: nowrap;
 }
 
 .space-card__placeholder {
   font-size: 12px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   line-height: 18px;
 }
 </style>

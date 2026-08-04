@@ -1,5 +1,5 @@
-use hula::configuration;
-use hula::error;
+use tjg_app_lib::configuration;
+use tjg_app_lib::error;
 
 /// 测试 CommonError 的 Display 实现
 #[test]
@@ -177,7 +177,7 @@ fn test_settings_serialization() {
 }
 
 // =================== Crypto Tests ===================
-use hula::utils::crypto;
+use tjg_app_lib::utils::crypto;
 
 #[test]
 fn test_encrypt_decrypt_roundtrip() {

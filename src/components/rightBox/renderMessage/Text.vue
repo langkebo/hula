@@ -5,13 +5,13 @@
         trigger="click"
         placement="left"
         :show-arrow="false"
-        style="padding: 0; background: var(--hula-surface-panel)"
+        style="padding: 0; background: var(--tjg-surface-panel)"
         v-if="mentionTokenSet.has(item) && !props.historyMode">
         <template #trigger>
           <span
             :key="item"
             style="-webkit-user-select: text !important; user-select: text !important"
-            class="text-[--hula-color-warning-400] cursor-pointer">
+            class="text-[--tjg-color-warning-400] cursor-pointer">
             {{ item }}
           </span>
         </template>
@@ -21,7 +21,7 @@
         v-else-if="mentionTokenSet.has(item)"
         :key="item"
         style="-webkit-user-select: text !important; user-select: text !important"
-        class="text-[--hula-color-warning-400] cursor-text">
+        class="text-[--tjg-color-warning-400] cursor-text">
         {{ item }}
       </span>
       <template v-else-if="item.startsWith('http')">
@@ -43,8 +43,8 @@
                 userSelect: 'text',
                 padding: '2px 4px',
                 borderRadius: '6px',
-                color: 'var(--hula-text-inverse)',
-                background: 'var(--hula-color-primary-500)'
+                color: 'var(--tjg-text-inverse)',
+                background: 'var(--tjg-color-primary-500)'
               }" />
             <p v-else style="margin: 0">{{ item }}</p>
           </div>
@@ -58,8 +58,8 @@
           userSelect: 'text',
           padding: '2px 4px',
           borderRadius: '6px',
-          color: 'var(--hula-text-inverse)',
-          background: 'var(--hula-color-primary-500)'
+          color: 'var(--tjg-text-inverse)',
+          background: 'var(--tjg-color-primary-500)'
         }" />
       <template v-else>{{ item }}</template>
       <div
@@ -74,7 +74,7 @@
         </div>
         <div class="text-card-link-content">
           <span class="text-14px line-clamp-1">{{ urlMap[item].title }}</span>
-          <span class="text-(12px [--hula-text-tertiary]) mt-4px line-clamp-2">{{ urlMap[item].description }}</span>
+          <span class="text-(12px [--tjg-text-tertiary]) mt-4px line-clamp-2">{{ urlMap[item].description }}</span>
         </div>
       </div>
     </template>
@@ -269,14 +269,14 @@ const onImageLoadError = (e: Event) => {
   margin: 8px 0;
   padding: 12px;
   border-radius: 8px;
-  background-color: color-mix(in srgb, var(--hula-text-primary) 3%, transparent);
+  background-color: color-mix(in srgb, var(--tjg-text-primary) 3%, transparent);
   cursor: pointer;
   user-select: none;
   transition: background-color 0.2s ease;
 }
 
 .text-card:hover {
-  background-color: color-mix(in srgb, var(--hula-text-primary) 8%, transparent);
+  background-color: color-mix(in srgb, var(--tjg-text-primary) 8%, transparent);
 }
 
 .text-card-image-wrapper {

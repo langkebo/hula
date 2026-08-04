@@ -13,7 +13,9 @@ class MatrixPushService extends BaseMatrixService {
   async getPushers(): Promise<IPusher[]> {
     const client = this.getClient()
     try {
-      const pushManager = (client as unknown as { getPushManager?: () => { getPushers: () => Promise<IPusher[]> } }).getPushManager?.()
+      const pushManager = (
+        client as unknown as { getPushManager?: () => { getPushers: () => Promise<IPusher[]> } }
+      ).getPushManager?.()
       if (pushManager) {
         return await pushManager.getPushers()
       }
@@ -132,7 +134,7 @@ class MatrixPushService extends BaseMatrixService {
       if (pushManager) {
         // 使用 SDK PushManager（SDK-7: device_id 必填化）
         // SDK 的 IPusherRequest 通过 Omit 移除了 device_id 字段（由 SDK 自动注入当前 device_id），
-        // 但 hula 需要显式控制 device_id，因此扩展类型以允许该字段
+        // 但 tjg 需要显式控制 device_id，因此扩展类型以允许该字段
         const pusherRequest = {
           pushkey: pusher.pushkey,
           kind: pusher.kind,
@@ -260,7 +262,7 @@ class MatrixPushService extends BaseMatrixService {
   /**
    * §9.2.5 判断事件类型是否应触发推送通知
    *
-   * 覆盖 Matrix 核心事件 + HuLa 扩展事件（好友请求/Widget/AI 工具结果）。
+   * 覆盖 Matrix 核心事件 + Tjg 扩展事件（好友请求/Widget/AI 工具结果）。
    */
   shouldNotify(eventType: string): boolean {
     return shouldNotifyForEventType(eventType)

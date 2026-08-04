@@ -177,8 +177,8 @@ watch(
   padding: 0 16px 12px;
   font-size: 16px;
   font-weight: 600;
-  color: var(--hula-text-primary);
-  border-bottom: 1px solid var(--hula-border-default);
+  color: var(--tjg-text-primary);
+  border-bottom: 1px solid var(--tjg-border-default);
 }
 
 .add-row {
@@ -211,7 +211,7 @@ watch(
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
 }
 
 .member-info {
@@ -221,7 +221,7 @@ watch(
 
 .member-name {
   font-size: 14px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -229,7 +229,7 @@ watch(
 
 .member-id {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-family: monospace;
   margin-top: 2px;
   overflow: hidden;
@@ -238,13 +238,13 @@ watch(
 }
 
 .member-reason {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-style: italic;
 }
 
 .error-text {
   padding: 8px 16px;
   font-size: 12px;
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 </style>

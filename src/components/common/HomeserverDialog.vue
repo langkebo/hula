@@ -124,19 +124,19 @@ async function handleSave() {
 
 .config-label {
   font-size: 14px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   margin-bottom: 8px;
 }
 
 .config-hint {
   font-size: 12px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   line-height: 1.6;
 }
 
 .config-hint .example {
   margin-top: 4px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .modal-footer {

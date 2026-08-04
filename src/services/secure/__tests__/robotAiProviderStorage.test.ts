@@ -41,8 +41,8 @@ describe('robotAiProviderStorage', () => {
       apiUrl: 'http://127.0.0.1:3333/mcp',
       apiKey: 'trendradar-key'
     })
-    expect(window.localStorage.getItem('hula-chat-trendradar-config')).toBe('{"apiUrl":"http://127.0.0.1:3333/mcp"}')
-    const storedApiKey = window.sessionStorage.getItem('hula-chat-trendradar-api-key-session')
+    expect(window.localStorage.getItem('tjg-chat-trendradar-config')).toBe('{"apiUrl":"http://127.0.0.1:3333/mcp"}')
+    const storedApiKey = window.sessionStorage.getItem('tjg-chat-trendradar-api-key-session')
     expect(storedApiKey).toBeTruthy()
     expect(storedApiKey).not.toBe('trendradar-key')
 
@@ -66,9 +66,9 @@ describe('robotAiProviderStorage', () => {
   it('stores provider in a user-scoped namespace', () => {
     const scope = { userId: '@alice:hula.im' }
 
-    saveRobotAiProvider('hula', scope)
+    saveRobotAiProvider('tjg', scope)
 
-    expect(loadRobotAiProvider(scope)).toBe('hula')
-    expect(window.localStorage.getItem('hula-chat-ai-provider::@alice:hula.im')).toBe('hula')
+    expect(loadRobotAiProvider(scope)).toBe('tjg')
+    expect(window.localStorage.getItem('tjg-chat-ai-provider::@alice:hula.im')).toBe('tjg')
   })
 })

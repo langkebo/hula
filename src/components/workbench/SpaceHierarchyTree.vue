@@ -13,9 +13,9 @@
       <span class="space-hierarchy-tree__title">{{ t('space.hierarchy_title') }}</span>
     </header>
 
-    <!-- 树形主体：复用 HulaSpaceTree -->
+    <!-- 树形主体：复用 TjgSpaceTree -->
     <div class="space-hierarchy-tree__body">
-      <HulaSpaceTree :space-id="spaceId" @select="handleSelect" />
+      <TjgSpaceTree :space-id="spaceId" @select="handleSelect" />
     </div>
   </div>
 </template>
@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { SpaceInfo } from '@/composables/space'
-import HulaSpaceTree from './HulaSpaceTree.vue'
+import TjgSpaceTree from './TjgSpaceTree.vue'
 
 const props = defineProps<{
   spaceId: string
@@ -46,7 +46,7 @@ const handleSelect = (space: SpaceInfo) => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .space-hierarchy-tree__header {
@@ -54,7 +54,7 @@ const handleSelect = (space: SpaceInfo) => {
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
   flex-shrink: 0;
 }
 
@@ -67,12 +67,12 @@ const handleSelect = (space: SpaceInfo) => {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   cursor: pointer;
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -80,7 +80,7 @@ const handleSelect = (space: SpaceInfo) => {
   flex: 1;
   font-size: 15px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .space-hierarchy-tree__body {

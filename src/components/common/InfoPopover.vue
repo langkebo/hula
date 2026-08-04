@@ -36,8 +36,8 @@
                 class="z-30 absolute top-72px left-72px border-(6px solid [--avatar-border-color]) rounded-full size-18px"
                 :class="[
                   displayActiveStatus === OnlineEnum.ONLINE
-                    ? 'bg-[--hula-color-primary-500]'
-                    : 'bg-[--hula-text-tertiary]',
+                    ? 'bg-[--tjg-color-primary-500]'
+                    : 'bg-[--tjg-text-tertiary]',
                   isCurrentUserUid ? 'cursor-pointer' : 'cursor-default'
                 ]"></div>
             </template>
@@ -74,7 +74,7 @@
 
         <n-flex align="center" :size="8">
           <p
-            class="text-(18px [--hula-text-secondary]) w-fit"
+            class="text-(18px [--tjg-text-secondary]) w-fit"
             :class="{ 'cursor-pointer text-underline': isCurrentUserUid }"
             @click="openEditInfo"
             style="
@@ -86,7 +86,7 @@
             ">
             {{ displayName }}
           </p>
-          <span v-if="groupNickname && groupNickname !== displayName" class="text-(13px [--hula-text-secondary])">
+          <span v-if="groupNickname && groupNickname !== displayName" class="text-(13px [--tjg-text-secondary])">
             ({{ groupNickname }})
           </span>
         </n-flex>
@@ -95,12 +95,12 @@
         <n-flex align="center" :size="10">
           <n-flex align="center" :size="12">
             <p class="text-[--info-text-color]">{{ t('home.profile_card.labels.account') }}</p>
-            <span class="text-(12px [--hula-text-secondary])">{{ displayAccount }}</span>
+            <span class="text-(12px [--tjg-text-secondary])">{{ displayAccount }}</span>
 
             <n-tooltip trigger="hover">
               <template #trigger>
                 <svg
-                  class="size-12px cursor-pointer hover:color-[--hula-text-tertiary] hover:transition-colors"
+                  class="size-12px cursor-pointer hover:color-[--tjg-text-tertiary] hover:transition-colors"
                   @click="handleCopy">
                   <use href="#copy"></use>
                 </svg>
@@ -151,7 +151,7 @@ const { uid, activeStatus } = defineProps<{
   activeStatus?: OnlineEnum
 }>()
 const settingStore = useSettingStore()
-const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--hula-text-inverse)'))
+const avatarColor = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '' : 'var(--tjg-text-inverse)'))
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
@@ -289,7 +289,7 @@ onMounted(() => {
     .avatar-hover {
       opacity: 0;
       transition: opacity 0.4s ease-in-out;
-      background: var(--hula-overlay-mask-subtle);
+      background: var(--tjg-overlay-mask-subtle);
       cursor: pointer;
     }
   }
@@ -301,11 +301,11 @@ onMounted(() => {
 
 .text-underline {
   &:hover {
-    @apply cursor-pointer underline underline-offset-3 decoration-2 decoration-[--hula-text-secondary];
+    @apply cursor-pointer underline underline-offset-3 decoration-2 decoration-[--tjg-text-secondary];
   }
 }
 
 .developer-cover {
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
 }
 </style>

@@ -11,13 +11,13 @@
         <div
           v-if="isMac()"
           @click="closeWindow"
-          class="mac-close size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
+          class="mac-close size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% mt-6px select-none absolute left-6px">
+          <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
 
-        <n-flex class="text-(14px [--hula-text-primary]) select-none pt-6px" justify="center">
+        <n-flex class="text-(14px [--tjg-text-primary]) select-none pt-6px" justify="center">
           {{ t('components.avatarCropper.title') }}
         </n-flex>
 
@@ -27,7 +27,7 @@
           @click="closeWindow">
           <use href="#close"></use>
         </svg>
-        <span class="h-1px w-full bg-[--hula-border-default]"></span>
+        <span class="h-1px w-full bg-[--tjg-border-default]"></span>
       </n-flex>
 
       <!-- 主体内容 - 仅在模态框可见且有图片时渲染 VueCropperComp -->
@@ -54,7 +54,7 @@
         <n-flex vertical class="px-20px">
           <!-- 圆形预览 -->
           <div class="mb-20px">
-            <div class="text-14px text-[--hula-text-primary] mb-8px">
+            <div class="text-14px text-[--tjg-text-primary] mb-8px">
               {{ t('components.avatarCropper.preview.round') }}
             </div>
             <div class="preview-wrapper preview-round">
@@ -77,7 +77,7 @@
 
           <!-- 方形预览 -->
           <div>
-            <div class="text-14px text-[--hula-text-primary] mb-8px w-120px">
+            <div class="text-14px text-[--tjg-text-primary] mb-8px w-120px">
               {{ t('components.avatarCropper.preview.square') }}
             </div>
             <div class="preview-wrapper preview-square">

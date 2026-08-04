@@ -4,7 +4,7 @@
  * 传递链路：后端路由清单 → SDK `__generated__/route-table` → 本文件 → 前端 `MATRIX_PATHS`。
  *
  * 前端 `MATRIX_PATHS`（见 `./index.ts`）是对 SDK 路由的 ergonomic 视图，二者必须保持一致；
- * `__tests__/friends.contract.test.ts` 等契约测试会强制校验，`validateHulaPath` 提供运行时校验能力。
+ * `__tests__/friends.contract.test.ts` 等契约测试会强制校验，`validateTjgPath` 提供运行时校验能力。
  *
  * 注：SDK `package.json` exports 未暴露 `__generated__/route-table`，这里通过相对路径深度导入
  * （与既有 `__tests__/friends.contract.test.ts` 一致），在 vite 构建与 vitest 中均可解析。
@@ -35,7 +35,7 @@ export interface SdkRoute {
 
 /**
  * 聚合的 SDK 路由表（跨模块），作为前端路径校验的权威来源。
- * 任何前端 API 路径都应能在此找到匹配（`validateHulaPath`）。
+ * 任何前端 API 路径都应能在此找到匹配（`validateTjgPath`）。
  */
 export const SDK_PATHS: readonly SdkRoute[] = [
   ...BURN_AFTER_READ_ROUTES,
@@ -60,9 +60,9 @@ const SDK_PATH_MATCHERS = SDK_PATHS.map((r) => buildPathMatcher(r.path))
  * 用于运行时或测试时确认前端路径常量与 SDK 路由保持一致。
  *
  * @example
- * validateHulaPath('/_matrix/client/v1/friends') // true
- * validateHulaPath('/_matrix/client/v1/nonexistent') // false
+ * validateTjgPath('/_matrix/client/v1/friends') // true
+ * validateTjgPath('/_matrix/client/v1/nonexistent') // false
  */
-export function validateHulaPath(hulaPath: string): boolean {
-  return SDK_PATH_MATCHERS.some((matcher) => matcher.test(hulaPath))
+export function validateTjgPath(tjgPath: string): boolean {
+  return SDK_PATH_MATCHERS.some((matcher) => matcher.test(tjgPath))
 }

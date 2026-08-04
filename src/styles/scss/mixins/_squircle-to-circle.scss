@@ -10,14 +10,14 @@
 // 使用示例：
 //   @use '@/styles/scss/mixins/squircle-to-circle' as *;
 //   .nav-icon { @include squircle-to-circle(40px); }
-//   .list-action-icon { @include squircle-to-circle(28px, var(--hula-surface-list-hover)); }
-//   .msg-action-icon { @include squircle-to-circle(32px, var(--hula-surface-list-hover)); }
+//   .list-action-icon { @include squircle-to-circle(28px, var(--tjg-surface-list-hover)); }
+//   .msg-action-icon { @include squircle-to-circle(32px, var(--tjg-surface-list-hover)); }
 // ============================================================================
 
 /// 图标 hover 变形 mixin
 /// @param {Number} $size 图标容器尺寸（默认 40px）
-/// @param {Color} $bg-hover hover 时的背景色（默认 var(--hula-color-primary)）
-@mixin squircle-to-circle($size: 40px, $bg-hover: var(--hula-color-primary-500)) {
+/// @param {Color} $bg-hover hover 时的背景色（默认 var(--tjg-color-primary)）
+@mixin squircle-to-circle($size: 40px, $bg-hover: var(--tjg-color-primary-500)) {
   width: $size;
   height: $size;
   border-radius: 25%; // 默认: 圆角方形 (squircle)
@@ -38,7 +38,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--hula-color-primary-500);
+    outline: 2px solid var(--tjg-color-primary-500);
     outline-offset: 2px;
   }
 
@@ -51,7 +51,7 @@
 
 /// 导航栏图标（24px svg，40px 容器）
 @mixin nav-icon {
-  @include squircle-to-circle(40px, var(--hula-color-primary-500));
+  @include squircle-to-circle(40px, var(--tjg-color-primary-500));
 
   svg {
     width: 24px;
@@ -61,7 +61,7 @@
 
 /// 列表项操作图标（16px svg，28px 容器）
 @mixin list-action-icon {
-  @include squircle-to-circle(28px, var(--hula-surface-list-hover));
+  @include squircle-to-circle(28px, var(--tjg-surface-list-hover));
 
   svg {
     width: 16px;
@@ -71,7 +71,7 @@
 
 /// 消息操作图标（20px svg，32px 容器）
 @mixin msg-action-icon {
-  @include squircle-to-circle(32px, var(--hula-surface-list-hover));
+  @include squircle-to-circle(32px, var(--tjg-surface-list-hover));
 
   svg {
     width: 20px;

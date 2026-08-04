@@ -4,9 +4,9 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('useIntegrations')
 
 const STORAGE_KEYS = {
-  state: 'hula-integrations-state',
-  enabled: 'hula-integrations-enabled',
-  permissions: 'hula-integrations-permissions'
+  state: 'tjg-integrations-state',
+  enabled: 'tjg-integrations-enabled',
+  permissions: 'tjg-integrations-permissions'
 } as const
 
 export interface IntegrationCatalogItem {

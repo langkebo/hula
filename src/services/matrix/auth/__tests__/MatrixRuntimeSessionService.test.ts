@@ -264,7 +264,7 @@ describe('MatrixRuntimeSessionService', () => {
       password: 'secret',
       homeserverUrl: 'https://matrix.example.com',
       identityServerUrl: 'https://identity.example.com',
-      deviceName: 'HuLa Client',
+      deviceName: 'Tjg Client',
       account: 'alice',
       displayName: 'Alice',
       avatar: 'mxc://avatar',
@@ -276,7 +276,7 @@ describe('MatrixRuntimeSessionService', () => {
       identityServerUrl: 'https://identity.example.com',
       allowInsecureHttp: false
     })
-    expect(mockPort.matrix.login).toHaveBeenCalledWith('alice', 'secret', 'HuLa Client')
+    expect(mockPort.matrix.login).toHaveBeenCalledWith('alice', 'secret', 'Tjg Client')
     expect(mockInvoke).toHaveBeenCalledWith('switch_user_database', { uid: '@alice:example.com' })
     expect(mockInvoke).toHaveBeenCalledWith('update_token', {
       req: {

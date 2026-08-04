@@ -345,7 +345,7 @@ describe('FriendListView', () => {
   })
 
   it('restores search history and updates it after a new search', async () => {
-    localStorage.setItem('hula-friend-search-history', JSON.stringify(['Alice']))
+    localStorage.setItem('tjg-friend-search-history', JSON.stringify(['Alice']))
 
     const wrapper = mount(FriendListView)
     await flushPromises()
@@ -358,9 +358,7 @@ describe('FriendListView', () => {
     await flushPromises()
 
     expect(
-      JSON.parse(localStorage.getItem('hula-friend-search-history') || '[]').map(
-        (item: { value: string }) => item.value
-      )
+      JSON.parse(localStorage.getItem('tjg-friend-search-history') || '[]').map((item: { value: string }) => item.value)
     ).toEqual(['Bob', 'Alice'])
   })
 

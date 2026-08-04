@@ -123,7 +123,7 @@ vi.mock('../useEmojiPagination', () => ({
   })
 }))
 
-vi.mock('hula-emojis', () => ({
+vi.mock('tjg-emojis', () => ({
   default: {
     MihoyoBbs: {
       series: []

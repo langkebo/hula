@@ -5,25 +5,25 @@
     <n-flex vertical align="center" :size="20" class="size-full pt-100px" data-tauri-drag-region>
       <div @mousemove="handleMouseMove" @mouseleave="handleMouseLeave" class="box" data-tauri-drag-region>
         <div id="computer" class="computer" v-once>
-          <img class="w-224px h-158px relative" src="../../assets/img/win.png" alt="HuLa" />
+          <img class="w-224px h-158px relative" src="../../assets/img/win.png" alt="Tjg" />
           <div
             style="background: rgba(111, 111, 111, 0.1)"
             class="w-170px h-113px absolute top-9% left-51% transform -translate-x-51% -translate-y-9%"></div>
           <img
             class="drop-shadow-md absolute top-30% left-1/2 transform -translate-x-1/2 -translate-y-30% w-140px h-60px"
-            src="/hula.png"
-            alt="HuLa" />
+            src="/tjg.png"
+            alt="Tjg" />
         </div>
       </div>
 
       <n-flex vertical align="center" :size="20" class="cursor-default" data-tauri-drag-region>
-        <span class="text-(15px [--hula-text-tertiary])">
+        <span class="text-(15px [--tjg-text-tertiary])">
           {{ t('home.about.version', { version: _pkg.version, arch: osArch || '' }) }}
         </span>
-        <span class="text-(15px [--hula-text-tertiary])">
+        <span class="text-(15px [--tjg-text-tertiary])">
           {{ t('home.about.device', { type: osType || '', version: osVersion || '' }) }}
         </span>
-        <n-flex vertical class="text-(12px --hula-text-tertiary)" :size="8" align="center">
+        <n-flex vertical class="text-(12px --tjg-text-tertiary)" :size="8" align="center">
           <span>
             {{ t('home.about.copyright', { start: currentYear - 1, end: currentYear }) }}
           </span>

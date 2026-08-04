@@ -5,7 +5,7 @@
         <van-icon
           name="add-o"
           size="22"
-          class="color-[--hula-text-primary]"
+          class="color-[--tjg-text-primary]"
           :data-testid="'mobile-rooms-add'"
           @click="showCreateMenu = true" />
       </template>
@@ -61,27 +61,27 @@
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-6px">
-                  <span class="text-15px font-500 text-[--hula-text-primary] truncate">{{ room.name }}</span>
+                  <span class="text-15px font-500 text-[--tjg-text-primary] truncate">{{ room.name }}</span>
                   <span
                     v-if="room.isEncrypted"
-                    class="text-12px color-[--hula-color-success-500]"
+                    class="text-12px color-[--tjg-color-success-500]"
                     :aria-label="t('mobile_rooms.encrypted')">
                     &#x1F512;
                   </span>
                 </div>
-                <div class="text-12px text-[--hula-text-tertiary] truncate mt-2px">
+                <div class="text-12px text-[--tjg-text-tertiary] truncate mt-2px">
                   {{ room.topic || t('mobile_rooms.no_topic') }}
                 </div>
               </div>
               <div class="flex flex-col items-end gap-4px flex-shrink-0">
-                <span class="text-11px text-[--hula-text-tertiary]">
+                <span class="text-11px text-[--tjg-text-tertiary]">
                   {{ room.memberCount }} {{ t('mobile_rooms.members') }}
                 </span>
                 <van-icon
                   v-if="room.joinRule === 'public'"
                   name="friends-o"
                   size="14"
-                  class="color-[--hula-text-tertiary]"
+                  class="color-[--tjg-text-tertiary]"
                   :aria-label="t('mobile_rooms.public_room')" />
               </div>
             </div>
@@ -135,10 +135,10 @@
         <div
           v-for="result in publicSearchResults"
           :key="result.roomId"
-          class="flex items-center gap-8px py-8px border-b border-[--hula-border-default]">
+          class="flex items-center gap-8px py-8px border-b border-[--tjg-border-default]">
           <div class="flex-1 min-w-0">
             <div class="text-14px font-medium truncate">{{ result.roomName || result.roomId }}</div>
-            <div class="text-12px text-[--hula-text-tertiary] truncate">{{ result.roomId }}</div>
+            <div class="text-12px text-[--tjg-text-tertiary] truncate">{{ result.roomId }}</div>
           </div>
           <van-button size="small" type="primary" plain @click="joinPublicRoom(result.roomId)">
             {{ t('mobile_rooms.join_room') }}
@@ -394,7 +394,7 @@ fetchRooms()
   touch-action: manipulation;
 
   &:active {
-    background-color: var(--hula-bg-pressed);
+    background-color: var(--tjg-bg-pressed);
   }
 }
 </style>

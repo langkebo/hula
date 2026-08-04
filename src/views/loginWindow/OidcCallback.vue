@@ -1,8 +1,8 @@
 <template>
-  <div class="oidc-callback size-full flex-center flex-col gap-24px bg-[--hula-surface-elevated]">
+  <div class="oidc-callback size-full flex-center flex-col gap-24px bg-[--tjg-surface-elevated]">
     <div v-if="status === 'loading'" class="flex-col-center gap-16px">
       <n-spin size="large" />
-      <span class="text-14px text-[--hula-text-secondary]">{{ t('login.oidc.processing') }}</span>
+      <span class="text-14px text-[--tjg-text-secondary]">{{ t('login.oidc.processing') }}</span>
     </div>
 
     <div v-else-if="status === 'error'" class="flex-col-center gap-16px">

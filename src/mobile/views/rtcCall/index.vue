@@ -270,12 +270,12 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .rtc-call-mobile {
-  @apply flex flex-col items-center justify-center h-full w-full bg-[--hula-surface-page];
+  @apply flex flex-col items-center justify-center h-full w-full bg-[--tjg-surface-page];
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 
   &.is-video {
-    background: var(--hula-surface-media-preview);
+    background: var(--tjg-surface-media-preview);
   }
 }
 
@@ -288,18 +288,18 @@ onUnmounted(() => {
   @apply flex flex-col items-center gap-12px;
 
   .caller-avatar {
-    border: 2px solid var(--hula-color-primary-500);
+    border: 2px solid var(--tjg-color-primary-500);
   }
 
   .caller-name {
     @apply text-20px font-semibold;
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 
   .call-type-label,
   .call-state-text {
     @apply text-14px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 }
 
@@ -308,8 +308,8 @@ onUnmounted(() => {
 
   .btn-decline {
     @apply size-64px;
-    background: var(--hula-color-danger-500);
-    color: var(--hula-text-inverse);
+    background: var(--tjg-color-danger-500);
+    color: var(--tjg-text-inverse);
     border: none;
   }
 
@@ -322,8 +322,8 @@ onUnmounted(() => {
 .outgoing-actions {
   .btn-cancel {
     @apply size-64px;
-    background: var(--hula-color-danger-500);
-    color: var(--hula-text-inverse);
+    background: var(--tjg-color-danger-500);
+    color: var(--tjg-text-inverse);
     border: none;
   }
 }
@@ -350,12 +350,12 @@ onUnmounted(() => {
 
   .user-name {
     @apply text-20px font-medium;
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 
   .call-status {
     @apply text-14px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 }
 
@@ -373,15 +373,15 @@ onUnmounted(() => {
 
   .btn-control {
     @apply size-48px;
-    background: var(--hula-surface-subtle);
-    color: var(--hula-text-primary);
+    background: var(--tjg-surface-subtle);
+    color: var(--tjg-text-primary);
     border: none;
   }
 
   .btn-active-toggled {
     @apply size-48px;
     background: rgba(255, 59, 48, 0.6);
-    color: var(--hula-text-inverse);
+    color: var(--tjg-text-inverse);
     border: none;
   }
 

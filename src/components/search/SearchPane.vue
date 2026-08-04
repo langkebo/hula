@@ -1,7 +1,7 @@
 <template>
   <div class="search-pane flex-1 min-h-0 flex flex-col">
     <!-- 搜索输入区 -->
-    <div class="search-pane__input-area px-20px py-16px border-b border-[--hula-border-layout-divider]">
+    <div class="search-pane__input-area px-20px py-16px border-b border-[--tjg-border-layout-divider]">
       <n-input
         ref="inputRef"
         :value="query"
@@ -12,10 +12,10 @@
         @update:value="handleInput"
         @keydown.esc="handleEsc">
         <template #prefix>
-          <svg class="size-16px color-[--hula-text-tertiary]"><use href="#search" /></svg>
+          <svg class="size-16px color-[--tjg-text-tertiary]"><use href="#search" /></svg>
         </template>
       </n-input>
-      <p v-if="appliedQuery" class="search-pane__meta text-(12px --hula-text-tertiary) mt-8px">
+      <p v-if="appliedQuery" class="search-pane__meta text-(12px --tjg-text-tertiary) mt-8px">
         {{ isLoading ? t('search.searching') : t('search.result_count', { count: totalCount }) }}
       </p>
     </div>
@@ -24,8 +24,8 @@
     <n-scrollbar class="search-pane__results flex-1 min-h-0">
       <!-- 空状态 -->
       <div v-if="!hasQuery" class="search-pane__empty flex-center flex-col gap-16px py-60px">
-        <svg class="size-48px opacity-40 color-[--hula-text-quaternary]"><use href="#search" /></svg>
-        <p class="text-(13px --hula-text-tertiary)">{{ t('search.empty_hint') }}</p>
+        <svg class="size-48px opacity-40 color-[--tjg-text-quaternary]"><use href="#search" /></svg>
+        <p class="text-(13px --tjg-text-tertiary)">{{ t('search.empty_hint') }}</p>
       </div>
 
       <!-- 加载骨架 -->
@@ -35,14 +35,14 @@
 
       <!-- 错误状态 -->
       <div v-else-if="status === 'error'" class="search-pane__error flex-center flex-col gap-12px py-60px">
-        <svg class="size-40px color-[--hula-color-danger-500]"><use href="#warning" /></svg>
-        <p class="text-(13px --hula-color-danger-500)">{{ t('search.error') }}</p>
+        <svg class="size-40px color-[--tjg-color-danger-500]"><use href="#warning" /></svg>
+        <p class="text-(13px --tjg-color-danger-500)">{{ t('search.error') }}</p>
       </div>
 
       <!-- 无结果 -->
       <div v-else-if="!hasResults" class="search-pane__no-results flex-center flex-col gap-12px py-60px">
-        <svg class="size-40px opacity-40 color-[--hula-text-quaternary]"><use href="#search" /></svg>
-        <p class="text-(13px --hula-text-tertiary)">{{ t('search.no_results', { query: appliedQuery }) }}</p>
+        <svg class="size-40px opacity-40 color-[--tjg-text-quaternary]"><use href="#search" /></svg>
+        <p class="text-(13px --tjg-text-tertiary)">{{ t('search.no_results', { query: appliedQuery }) }}</p>
       </div>
 
       <!-- 分组结果 -->
@@ -57,13 +57,13 @@
             <li v-for="space in spaces" :key="space.spaceId" class="search-pane__item" role="listitem">
               <n-avatar :size="36" :src="AvatarUtils.getAvatarUrl(space.avatarUrl || '')" />
               <div class="search-pane__item-info min-w-0 flex-1">
-                <p class="search-pane__item-name text-(14px --hula-text-primary) truncate">
+                <p class="search-pane__item-name text-(14px --tjg-text-primary) truncate">
                   <template v-for="(seg, i) in highlightSegments(space.name)" :key="i">
                     <mark v-if="seg.matched" class="search-pane__mark">{{ seg.text }}</mark>
                     <template v-else>{{ seg.text }}</template>
                   </template>
                 </p>
-                <p class="search-pane__item-sub text-(12px --hula-text-tertiary) truncate">
+                <p class="search-pane__item-sub text-(12px --tjg-text-tertiary) truncate">
                   {{ t('search.space_members', { count: space.memberCount }) }}
                 </p>
               </div>
@@ -91,15 +91,15 @@
               @keydown.enter="handleUserClick(user)">
               <n-avatar round :size="36" :src="AvatarUtils.getAvatarUrl(user.avatarUrl || '')" />
               <div class="search-pane__item-info min-w-0 flex-1">
-                <p class="search-pane__item-name text-(14px --hula-text-primary) truncate">
+                <p class="search-pane__item-name text-(14px --tjg-text-primary) truncate">
                   <template v-for="(seg, i) in highlightSegments(user.displayName || user.userId)" :key="i">
                     <mark v-if="seg.matched" class="search-pane__mark">{{ seg.text }}</mark>
                     <template v-else>{{ seg.text }}</template>
                   </template>
                 </p>
-                <p class="search-pane__item-sub text-(12px --hula-text-tertiary) truncate">{{ user.userId }}</p>
+                <p class="search-pane__item-sub text-(12px --tjg-text-tertiary) truncate">{{ user.userId }}</p>
               </div>
-              <svg class="search-pane__item-icon size-16px color-[--hula-text-quaternary]">
+              <svg class="search-pane__item-icon size-16px color-[--tjg-text-quaternary]">
                 <use href="#right-bar" />
               </svg>
             </li>
@@ -123,17 +123,17 @@
               @keydown.enter="handleRoomClick(room)">
               <n-avatar :size="36" :src="AvatarUtils.getAvatarUrl(room.avatarUrl || '')" />
               <div class="search-pane__item-info min-w-0 flex-1">
-                <p class="search-pane__item-name text-(14px --hula-text-primary) truncate">
+                <p class="search-pane__item-name text-(14px --tjg-text-primary) truncate">
                   <template v-for="(seg, i) in highlightSegments(room.roomName)" :key="i">
                     <mark v-if="seg.matched" class="search-pane__mark">{{ seg.text }}</mark>
                     <template v-else>{{ seg.text }}</template>
                   </template>
                 </p>
-                <p class="search-pane__item-sub text-(12px --hula-text-tertiary) truncate">
+                <p class="search-pane__item-sub text-(12px --tjg-text-tertiary) truncate">
                   {{ t('search.room_members', { count: room.memberCount }) }}
                 </p>
               </div>
-              <svg class="search-pane__item-icon size-16px color-[--hula-text-quaternary]">
+              <svg class="search-pane__item-icon size-16px color-[--tjg-text-quaternary]">
                 <use href="#right-bar" />
               </svg>
             </li>
@@ -155,18 +155,18 @@
               tabindex="0"
               @click="handleMessageClick(msg)"
               @keydown.enter="handleMessageClick(msg)">
-              <div class="search-pane__msg-avatar flex-center size-36px rounded-8px bg-[--hula-surface-list-hover]">
-                <svg class="size-16px color-[--hula-text-tertiary]"><use href="#message" /></svg>
+              <div class="search-pane__msg-avatar flex-center size-36px rounded-8px bg-[--tjg-surface-list-hover]">
+                <svg class="size-16px color-[--tjg-text-tertiary]"><use href="#message" /></svg>
               </div>
               <div class="search-pane__item-info min-w-0 flex-1">
-                <p class="search-pane__item-name text-(13px --hula-text-primary) truncate">
+                <p class="search-pane__item-name text-(13px --tjg-text-primary) truncate">
                   {{ msg.roomName || msg.roomId }}
                 </p>
-                <p class="search-pane__item-sub text-(12px --hula-text-tertiary) truncate">
+                <p class="search-pane__item-sub text-(12px --tjg-text-tertiary) truncate">
                   {{ extractMessagePreview(msg) }}
                 </p>
               </div>
-              <span class="search-pane__item-time text-(11px --hula-text-quaternary) shrink-0">
+              <span class="search-pane__item-time text-(11px --tjg-text-quaternary) shrink-0">
                 {{ formatMessageTime(msg.timestamp) }}
               </span>
             </li>
@@ -383,7 +383,7 @@ onMounted(() => {
     // 阶段 9：玻璃质感（需求文档 3.4.5b）—— 搜索结果面板使用 16px / 90% / 150%
     @include liquid-glass(16px, 0.9, 1.5);
     border-radius: 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--hula-border-layout-divider) 50%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--tjg-border-layout-divider) 50%, transparent);
   }
 
   &__input {
@@ -398,7 +398,7 @@ onMounted(() => {
 
   &__section-title {
     align-items: center;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     display: flex;
     font-size: 12px;
     font-weight: 600;
@@ -410,9 +410,9 @@ onMounted(() => {
   }
 
   &__section-count {
-    background: var(--hula-surface-list-hover);
-    border-radius: var(--hula-radius-full);
-    color: var(--hula-text-tertiary);
+    background: var(--tjg-surface-list-hover);
+    border-radius: var(--tjg-radius-full);
+    color: var(--tjg-text-tertiary);
     font-size: 11px;
     font-weight: 500;
     min-width: 20px;
@@ -437,7 +437,7 @@ onMounted(() => {
 
     &:hover,
     &:focus-visible {
-      background: var(--hula-surface-list-hover);
+      background: var(--tjg-surface-list-hover);
       outline: none;
     }
   }
@@ -449,7 +449,7 @@ onMounted(() => {
   }
 
   &__mark {
-    background: var(--hula-color-warning-100);
+    background: var(--tjg-color-warning-100);
     border-radius: 2px;
     color: inherit;
     padding: 0 1px;

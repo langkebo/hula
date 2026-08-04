@@ -14,6 +14,6 @@
 
 <style scoped lang="scss">
 .list-workbench-shell {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 </style>

@@ -18,7 +18,7 @@ export const SETTINGS_TAB_IDS = [
 ] as const
 
 export type SettingsTabType = (typeof SETTINGS_TAB_IDS)[number]
-export type LegacySettingsTabType = 'security' | 'help'
+export type LegacySettingsTabType = 'security' | 'help' | 'general' | 'privacy' | 'shortcuts' | 'about'
 export type SettingsTabInput = SettingsTabType | LegacySettingsTabType
 
 export interface SettingsTab {
@@ -71,7 +71,11 @@ const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {
 
 export const SETTINGS_LEGACY_TAB_MAP: Record<LegacySettingsTabType, SettingsTabType> = {
   security: 'securityPrivacy',
-  help: 'helpAbout'
+  help: 'helpAbout',
+  general: 'preferences',
+  privacy: 'securityPrivacy',
+  shortcuts: 'keyboard',
+  about: 'helpAbout'
 }
 
 export const SETTINGS_CANONICAL_ROUTE_SEGMENTS = {
@@ -106,5 +110,14 @@ export function normalizeSettingsTab(tab?: SettingsTabInput): SettingsTabType | 
     return undefined
   }
 
-  return SETTINGS_LEGACY_TAB_MAP[tab as LegacySettingsTabType] ?? tab
+  const legacyMapped = SETTINGS_LEGACY_TAB_MAP[tab as LegacySettingsTabType]
+  if (legacyMapped) {
+    return legacyMapped
+  }
+
+  if ((SETTINGS_TAB_IDS as readonly string[]).includes(tab)) {
+    return tab as SettingsTabType
+  }
+
+  return undefined
 }

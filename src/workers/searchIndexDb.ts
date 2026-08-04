@@ -3,7 +3,7 @@ import type { SearchEventDoc, SearchRoomDoc } from './matrixWorkerTypes'
 
 const logger = createLogger('SearchIndexDB')
 
-const DB_NAME = 'hula-worker-cache'
+const DB_NAME = 'tjg-worker-cache'
 const DB_VERSION = 1
 const ROOMS_STORE = 'search-rooms'
 const EVENTS_STORE = 'search-events'

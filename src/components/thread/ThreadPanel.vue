@@ -134,9 +134,9 @@ const loadThreadReplies = async () => {
 
 .original-message {
   padding: 12px;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
   border-radius: 8px;
-  border-left: 3px solid var(--color-primary);
+  border-left: 3px solid var(--tjg-color-primary-500);
 
   .message-header {
     display: flex;
@@ -152,7 +152,7 @@ const loadThreadReplies = async () => {
 
   .message-time {
     font-size: 12px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 
   .message-body {
@@ -184,13 +184,13 @@ const loadThreadReplies = async () => {
 
   .message-time {
     font-size: 11px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 
   .reply-content {
     font-size: 13px;
     line-height: 1.4;
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 }
 </style>

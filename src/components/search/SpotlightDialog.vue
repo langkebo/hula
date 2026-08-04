@@ -105,7 +105,7 @@
             </div>
 
             <div v-if="!hasResults" class="empty-state">
-              <svg class="size-48px color-[--hula-text-tertiary]">
+              <svg class="size-48px color-[--tjg-text-tertiary]">
                 <use href="#search"></use>
               </svg>
               <span class="empty-text">{{ t('search.no_results') }}</span>
@@ -291,8 +291,8 @@ watch(
 
 <style scoped lang="scss">
 .spotlight-dialog {
-  @apply flex flex-col bg-[--hula-surface-panel] rounded-12px overflow-hidden;
-  box-shadow: var(--hula-shadow-dialog);
+  @apply flex flex-col bg-[--tjg-surface-panel] rounded-12px overflow-hidden;
+  box-shadow: var(--tjg-shadow-dialog);
 }
 
 .search-header {
@@ -320,18 +320,18 @@ watch(
 }
 
 .section-title {
-  @apply text-12px font-medium color-[--hula-text-tertiary];
+  @apply text-12px font-medium color-[--tjg-text-tertiary];
 }
 
 .section-count {
-  @apply text-12px color-[--hula-text-tertiary];
+  @apply text-12px color-[--tjg-text-tertiary];
 }
 
 .result-item {
   @apply flex items-center gap-12px px-16px py-10px cursor-pointer transition-all;
 
   &:hover {
-    background: var(--hula-menu-hover);
+    background: var(--tjg-menu-hover);
   }
 }
 
@@ -352,11 +352,11 @@ watch(
 }
 
 .result-room {
-  @apply text-12px color-[--hula-text-tertiary] truncate;
+  @apply text-12px color-[--tjg-text-tertiary] truncate;
 }
 
 .result-preview {
-  @apply text-12px color-[--hula-text-tertiary] truncate;
+  @apply text-12px color-[--tjg-text-tertiary] truncate;
 
   :deep(mark) {
     background: var(--color-primary-active);
@@ -365,7 +365,7 @@ watch(
 }
 
 .result-time {
-  @apply text-12px color-[--hula-text-tertiary] flex-shrink-0;
+  @apply text-12px color-[--tjg-text-tertiary] flex-shrink-0;
 }
 
 .encrypted-badge {
@@ -373,7 +373,7 @@ watch(
 }
 
 .result-userId {
-  @apply text-12px color-[--hula-text-tertiary];
+  @apply text-12px color-[--tjg-text-tertiary];
 }
 
 .empty-state {
@@ -381,7 +381,7 @@ watch(
 }
 
 .empty-text {
-  @apply text-14px color-[--hula-text-tertiary];
+  @apply text-14px color-[--tjg-text-tertiary];
 }
 
 .recent-searches {
@@ -392,7 +392,7 @@ watch(
   @apply cursor-pointer;
 
   &:hover {
-    background: var(--hula-menu-hover);
+    background: var(--tjg-menu-hover);
   }
 }
 </style>

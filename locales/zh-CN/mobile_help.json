@@ -10,7 +10,7 @@
   "report_bug": "报告问题",
   "feature_request": "功能建议",
   "contact_support": "联系客服",
-  "about_hula": "关于 HuLa",
+  "about_tjg": "关于 Tjg",
   "check_update": "检查更新",
   "latest_version": "已是最新版本",
   "bug_title": "问题标题",
@@ -25,6 +25,6 @@
   "submit_success": "提交成功",
   "submit_failed": "提交失败，请稍后重试",
   "title_required": "请输入标题",
-  "about_description": "HuLa 是一个基于 Matrix 协议的跨平台通讯应用",
-  "copyright": "© 2024 HuLa Team. All rights reserved."
+  "about_description": "Tjg 是一个基于 Matrix 协议的跨平台通讯应用",
+  "copyright": "© 2024 Tjg Team. All rights reserved."
 }

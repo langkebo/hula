@@ -108,7 +108,7 @@ const messageSound = computed({
 })
 
 const division = () => {
-  return <div class={'h-1px bg-[--hula-border-default] w-full'}></div>
+  return <div class={'h-1px bg-[--tjg-border-default] w-full'}></div>
 }
 
 const syncTrayMenuState = async (loggedIn?: boolean) => {
@@ -228,6 +228,6 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .tray {
-  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--hula-text-primary] text-12px;
+  @apply bg-[--tjg-surface-panel] size-full p-8px box-border select-none text-[--tjg-text-primary] text-12px;
 }
 </style>

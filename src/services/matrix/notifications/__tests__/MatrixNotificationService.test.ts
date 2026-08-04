@@ -244,7 +244,7 @@ describe('MatrixNotificationService', () => {
       mockClient.setPusher.mockResolvedValueOnce(undefined)
 
       const pusher = {
-        app_id: 'hula',
+        app_id: 'tjg',
         pushkey: 'device-token',
         kind: 'http'
       } as IPusherRequest
