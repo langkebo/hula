@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#161616">
+<meta name="theme-color" content="#1b1b1b">
 <title>TJG — Matrix IM 高保真原型</title>
 <style>
 /* ============================================================
@@ -12,32 +12,68 @@
    ============================================================ */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust:100%; }
 :root{
-  /* 背景层级（对齐 TJG 实际深色主题） */
-  --bg-deepest:#161616;   /* 右侧聊天背景 right-bg-color */
-  --bg-deep:#1b1b1b;      /* 中心背景 center-bg-color */
-  --bg-mid:#262626;       /* 设置项/卡片背景 */
-  --bg-light:#2d2d2d;     /* 列表 hover bg-msg-hover */
-  --bg-hover:#323232;     /* 菜单 hover */
-  --bg-popover:#303030;   /* 弹出框 */
-  --bg-left-menu:#161616; /* 左侧菜单 */
-  --bg-left-hover:#3b3b3b;
-  --bg-search:#282828;    /* 搜索框背景 */
-  /* 强调色（TJG 标志色 #13987f） */
-  --accent:#13987f;
-  --accent-dim:#10806a;
-  --accent-soft:rgba(19,152,127,0.15);
-  --accent-active:rgba(19,152,127,0.6);
-  /* 文字（对齐 TJG：#fff / #909090 / #707070） */
-  --text-primary:#ffffff;
-  --text-secondary:#909090;
-  --text-muted:#707070;
-  --icon-color:#c1c1c1;
-  --line-color:#404040;
-  /* 语义色 */
-  --error:#ef4444;
-  --warn:#f59e0b;
-  --info:#3b82f6;
-  --success:#10b981;
+  /* ============================================================
+     背景层级（对齐 HuLa 深色主题 variable.scss dark）
+     ============================================================ */
+  --bg-black:#000000;         /* 纯黑底色 */
+  --bg-deepest:#161616;       /* 右侧聊天背景（HuLa --right-bg-color） */
+  --bg-deep:#1b1b1b;          /* 中心背景（HuLa --center-bg-color） */
+  --bg-mid:#262626;           /* 设置项/卡片/气泡背景（HuLa --bg-setting-item / --bg-bubble） */
+  --bg-light:#2d2d2d;         /* 列表 hover（HuLa --bg-msg-hover） */
+  --bg-hover:#323232;         /* 菜单 hover（HuLa --bg-menu-hover） */
+  --bg-popover:#303030;       /* 弹出框（HuLa --bg-popover） */
+  --bg-left-menu:#161616;     /* 左侧菜单（HuLa --bg-left-menu） */
+  --bg-left-hover:#3b3b3b;    /* 左侧菜单 hover（HuLa --bg-left-menu-hover） */
+  --bg-search:#282828;        /* 搜索框背景（HuLa --search-bg-color） */
+  --bg-button:#3f3f3f;        /* 通用按钮背景（HuLa --button-bg-color） */
+  --bg-disabled:#575757;      /* 禁用状态（HuLa --disabled-color） */
+
+  /* ============================================================
+     强调色（HuLa 标志色 #13987f）
+     ============================================================ */
+  --accent:#13987f;           /* 品牌色 — 图标、边框、大号文字（深底对比度 5.0:1 AA） */
+  --accent-strong:#0f7a65;    /* 深强调色 — 按钮/徽章背景白字（对比度 5.3:1 AA） */
+  --accent-dim:#10806a;       /* 暗强调色 — hover 态 */
+  --accent-soft:rgba(19,152,127,0.15);  /* 半透明强调 — 软背景 */
+  --accent-active:rgba(19,152,127,0.6); /* 激活态半透明 */
+
+  /* ============================================================
+     文字（对齐 HuLa：#fff / #b1b1b1 / #909090）
+     ============================================================ */
+  --text-primary:#ffffff;     /* 主文字（HuLa --text-color） */
+  --text-secondary:#b1b1b1;   /* 次要文字（HuLa --chat-text-color）— 对比度 8.5:1 */
+  --text-muted:#909090;       /* 弱化文字（HuLa --reply-color light）— 对比度 5.7:1 AA */
+  --text-faint:#858585;       /* 极弱文字 — 对比度 4.6:1 AA（原 #707070 仅 3.3:1 不达标） */
+  --icon-color:#c1c1c1;       /* 图标色（HuLa --icon-color） */
+  --line-color:#404040;       /* 分隔线（HuLa --line-color） */
+
+  /* ============================================================
+     聊天气泡（对齐 HuLa chat 模块 dark）
+     ============================================================ */
+  --bubble-received:#355b55;  /* 接收消息气泡（HuLa --chat-left-bg dark） */
+  --bubble-sent:#0f7a65;      /* 发送消息气泡（accent-strong，白字 AA 达标） */
+  --bubble-text:#b1b1b1;      /* 气泡文字（HuLa --chat-text-color） */
+  --bubble-translate:rgba(144,144,144,0.2); /* 翻译气泡（HuLa --bg-translate-bubble） */
+
+  /* ============================================================
+     语义色（对齐 HuLa，降低饱和度提升深色可读性）
+     ============================================================ */
+  --error:#da8583;            /* 危险色（HuLa --danger-text dark）— 对比度 5.5:1 AA */
+  --error-bg:#37292c;         /* 危险背景（HuLa --danger-bg dark） */
+  --warn:#f4c375;             /* 警告色（HuLa --warning-text dark）— 对比度 8.2:1 AAA */
+  --warn-bg:#402f1d;          /* 警告背景（HuLa --warning-bg dark） */
+  --info:#6ba3f8;             /* 信息色 — 对比度 6.0:1 AA（原 #3b82f6 仅 4.3:1） */
+  --info-bg:#1e3a5f;          /* 信息背景 */
+  --success:#10b981;          /* 成功色 — 对比度 4.8:1 AA */
+  --success-bg:#0d3328;       /* 成功背景 */
+
+  /* ============================================================
+     特殊色
+     ============================================================ */
+  --beta:#a789d9;             /* Beta 紫色（HuLa --bate-color dark） */
+  --beta-bg:#403555;          /* Beta 背景（HuLa --bate-bg dark） */
+  --fed-blue:#6ba3f8;         /* 联邦蓝（对齐 --info） */
+
   /* 圆角 */
   --r-lg:16px;
   --r-md:12px;
@@ -46,6 +82,9 @@
   /* 阴影 */
   --shadow-panel:0 4px 24px rgba(0,0,0,0.4);
   --shadow-bubble:0 1px 2px rgba(0,0,0,0.2);
+  /* 滚动条 */
+  --scrollbar-thumb:#3f3f3f;  /* 对齐 HuLa --button-bg-color */
+  --scrollbar-hover:#525252;
   /* 字体 */
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
   /* 补全未定义变量别名 */
@@ -53,7 +92,6 @@
   --border:var(--line-color);
   --bg:var(--bg-deep);
   --accent-hover:var(--accent-dim);
-  --fed-blue:#3b82f6;
 }
 html,body{
   background:#000;
@@ -72,8 +110,8 @@ html,body{
   padding:32px;
   align-items:flex-start;
   background:
-    radial-gradient(circle at 20% 0%, #15201c 0%, transparent 50%),
-    radial-gradient(circle at 80% 100%, #1a1410 0%, transparent 50%),
+    radial-gradient(circle at 20% 0%, #0f1f1a 0%, transparent 50%),
+    radial-gradient(circle at 80% 100%, #1a1510 0%, transparent 50%),
     #050505;
   min-height:100vh;
 }
@@ -96,8 +134,8 @@ html,body{
    ============================================================ */
 ::-webkit-scrollbar{ width:6px; height:6px; }
 ::-webkit-scrollbar-track{ background:transparent; }
-::-webkit-scrollbar-thumb{ background:#3f3f46; border-radius:3px; }
-::-webkit-scrollbar-thumb:hover{ background:#52525b; }
+::-webkit-scrollbar-thumb{ background:var(--scrollbar-thumb); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover{ background:var(--scrollbar-hover); }
 
 /* ============================================================
    PC 端容器（1200px）
@@ -164,7 +202,7 @@ html,body{
 .federation-dot{ width:7px; height:7px; border-radius:50%; background:var(--success); box-shadow:0 0 6px var(--success); }
 .tb-avatar{
   width:22px; height:22px; border-radius:50%;
-  background:linear-gradient(135deg,#10b981,#3b82f6);
+  background:linear-gradient(135deg,#10b981,#6ba3f8);
 }
 
 /* —— PC 四栏布局 —— */
@@ -189,7 +227,7 @@ html,body{
 }
 .nav-avatar{
   width:40px; height:40px; border-radius:50%;
-  background:linear-gradient(135deg,#f59e0b,#ef4444);
+  background:linear-gradient(135deg,#f4c375,#da8583);
   margin-bottom:8px;
   position:relative;
   cursor:pointer;
@@ -202,7 +240,7 @@ html,body{
   background:var(--success);
   border:2px solid var(--bg-deep);
 }
-.nav-divider{ width:28px; height:1px; background:#3f3f46; margin:4px 0; }
+.nav-divider{ width:28px; height:1px; background:var(--bg-button); margin:4px 0; }
 .nav-icon{
   width:42px; height:42px;
   display:flex; align-items:center; justify-content:center;
@@ -214,7 +252,7 @@ html,body{
   transition:all .15s;
 }
 .nav-icon:hover{ background:var(--bg-mid); color:var(--text-primary); }
-.nav-icon.active{ background:var(--accent); color:var(--text-primary); }
+.nav-icon.active{ background:var(--accent-strong); color:var(--text-primary); }
 .nav-icon.active::before{
   content:''; position:absolute; left:-14px;
   width:3px; height:22px; background:var(--accent); border-radius:0 3px 3px 0;
@@ -419,7 +457,7 @@ html,body{
   display:flex; align-items:center; justify-content:center;
   padding:0 5px;
 }
-.unread-badge.mention{ background:var(--accent); }
+.unread-badge.mention{ background:var(--accent-strong); }
 .room-icon-tag{ font-size:11px; color:var(--accent); }
 .mute-icon{ font-size:11px; color:var(--text-muted); }
 .pin-icon{ font-size:10px; color:var(--text-muted); }
@@ -496,7 +534,7 @@ html,body{
 }
 .date-divider.legacy{ gap:10px; }
 .date-divider.legacy::before, .date-divider.legacy::after{
-  content:''; flex:1; height:1px; background:#262626;
+  content:''; flex:1; height:1px; background:var(--bg-mid);
 }
 .date-divider.legacy span{ background:transparent; padding:0; }
 .load-more-indicator{
@@ -532,12 +570,12 @@ html,body{
   position:relative;
 }
 .msg-row.others .msg-bubble{
-  background:var(--bg-light);
+  background:var(--bubble-received);
   border-top-left-radius:4px;
   color:var(--text-primary);
 }
 .msg-row.self .msg-bubble{
-  background:var(--accent);
+  background:var(--bubble-sent);
   border-top-right-radius:4px;
   color:var(--text-primary);
 }
@@ -558,7 +596,7 @@ html,body{
 .msg-image{
   width:220px; height:140px;
   border-radius:var(--r-md);
-  background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  background:linear-gradient(135deg,#6ba3f8,#a789d9);
   display:flex; align-items:center; justify-content:center;
   font-size:32px;
   cursor:pointer;
@@ -571,7 +609,7 @@ html,body{
   position:relative;
   width:240px; height:150px;
   border-radius:var(--r-md);
-  background:linear-gradient(135deg,#1f2937,#374151);
+  background:linear-gradient(135deg,#1b1b1b,#2d2d2d);
   display:flex; align-items:center; justify-content:center;
   cursor:pointer;
   overflow:hidden;
@@ -580,7 +618,7 @@ html,body{
 .msg-row.others .msg-video{ border-top-left-radius:4px; }
 .msg-video .video-thumb{
   position:absolute; inset:0;
-  background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  background:linear-gradient(135deg,#6ba3f8,#a789d9);
   opacity:0.55;
 }
 .msg-video .video-play{
@@ -659,9 +697,9 @@ html,body{
 .msg-location .loc-map{
   height:110px;
   background:
-    radial-gradient(circle at 30% 40%, rgba(59,130,246,0.35), transparent 50%),
-    radial-gradient(circle at 70% 60%, rgba(139,92,246,0.3), transparent 50%),
-    linear-gradient(135deg,#1f2937,#111827);
+    radial-gradient(circle at 30% 40%, rgba(107,163,248,0.35), transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(167,137,217,0.3), transparent 50%),
+    linear-gradient(135deg,#1b1b1b,#0d0d0d);
   position:relative;
   display:flex; align-items:center; justify-content:center;
 }
@@ -695,8 +733,8 @@ html,body{
 .msg-encrypted{
   display:flex; align-items:center; gap:8px;
   padding:9px 13px;
-  background:rgba(239,68,68,0.08);
-  border:1px dashed rgba(239,68,68,0.4);
+  background:rgba(218,133,131,0.08);
+  border:1px dashed rgba(218,133,131,0.4);
   border-radius:var(--r-md);
   font-size:12px;
   color:var(--error);
@@ -863,7 +901,7 @@ html,body{
 }
 .vr-btn.cancel{ background:var(--bg-mid); color:var(--text-muted); }
 .vr-btn.cancel:hover{ color:var(--error); }
-.vr-btn.send{ background:var(--accent); color:#fff; }
+.vr-btn.send{ background:var(--accent-strong); color:var(--text-primary); }
 .vr-btn.send:hover{ opacity:.85; }
 
 /* —— G7 快捷键弹窗 —— */
@@ -886,8 +924,8 @@ html,body{
   flex-shrink:0;
 }
 .preflight-icon.ok{ background:rgba(16,185,129,0.15); color:var(--success); }
-.preflight-icon.warn{ background:rgba(245,158,11,0.15); color:var(--warn); }
-.preflight-icon.err{ background:rgba(239,68,68,0.15); color:var(--error); }
+.preflight-icon.warn{ background:rgba(244,195,117,0.15); color:var(--warn); }
+.preflight-icon.err{ background:rgba(218,133,131,0.15); color:var(--error); }
 .preflight-info{ flex:1; }
 .preflight-name{ font-size:12px; color:var(--text-primary); }
 .preflight-desc{ font-size:10px; color:var(--text-muted); margin-top:1px; }
@@ -1100,7 +1138,7 @@ html,body{
   cursor:pointer; color:var(--text-muted);
   padding:2px; border-radius:var(--r-xs);
 }
-.widget-item-remove:hover{ color:var(--error); background:rgba(239,68,68,0.1); }
+.widget-item-remove:hover{ color:var(--error); background:rgba(218,133,131,0.1); }
 
 /* —— 小部件对话框 —— */
 .widget-type-grid{
@@ -1135,7 +1173,7 @@ html,body{
   background:var(--bg-deepest);
   border-radius:42px;
   overflow:hidden;
-  box-shadow:var(--shadow-panel), 0 0 0 11px #1a1a1a, 0 0 0 12px #2a2a2a;
+  box-shadow:var(--shadow-panel), 0 0 0 11px var(--bg-deep), 0 0 0 12px var(--bg-mid);
   position:relative;
   display:flex;
   flex-direction:column;
@@ -1402,7 +1440,7 @@ html,body{
 }
 .m-profile-avatar{
   width:64px; height:64px; border-radius:50%;
-  background:linear-gradient(135deg,#f59e0b,#ef4444);
+  background:linear-gradient(135deg,#f4c375,#da8583);
   display:flex; align-items:center; justify-content:center;
   font-size:24px;
   position:relative;
@@ -1925,7 +1963,7 @@ html,body{
   font-size:14px; font-weight:600;
   border:none; cursor:pointer;
 }
-.m-btn-primary{ background:var(--accent); color:#fff; }
+.m-btn-primary{ background:var(--accent-strong); color:var(--text-primary); }
 .m-btn-primary:active{ background:var(--accent-hover); }
 .m-btn-secondary{ background:var(--bg-mid); color:var(--text-secondary); border:1px solid var(--line-color); }
 .m-create-step{ padding:16px; }
@@ -2026,7 +2064,7 @@ html,body{
   position:absolute;
   top:60px; right:240px;
   width:200px; height:140px;
-  background:linear-gradient(135deg,#1a1a1a,#000);
+  background:linear-gradient(135deg,#1b1b1b,#000);
   border-radius:var(--r-md);
   border:1px solid var(--bg-light);
   box-shadow:var(--shadow-panel);
@@ -2049,7 +2087,7 @@ html,body{
 }
 .vc-pip-avatar{
   width:50px; height:50px; border-radius:50%;
-  background:linear-gradient(135deg,#f59e0b,#ef4444);
+  background:linear-gradient(135deg,#f4c375,#da8583);
   display:flex; align-items:center; justify-content:center;
   font-size:20px;
 }
@@ -2165,7 +2203,7 @@ html,body{
   flex-shrink:0;
 }
 .notice-icon.friend{ background:rgba(19,152,127,0.15); color:var(--accent); }
-.notice-icon.group{ background:rgba(59,130,246,0.15); color:var(--fed-blue); }
+.notice-icon.group{ background:rgba(107,163,248,0.15); color:var(--fed-blue); }
 .notice-text{ flex:1; min-width:0; }
 .notice-title{ font-size:13px; }
 .notice-count{ font-size:11px; color:var(--text-secondary); margin-top:2px; }
@@ -2209,7 +2247,7 @@ html,body{
 .contact-group-badge{
   display:inline-block; font-size:9px;
   padding:1px 5px; border-radius:3px;
-  background:rgba(59,130,246,0.15); color:var(--accent);
+  background:rgba(107,163,248,0.15); color:var(--accent);
   margin-left:4px; vertical-align:middle;
 }
 /* C6: 好友分组管理项 */
@@ -2306,7 +2344,7 @@ html,body{
 .gv-btn-accept{ background:rgba(19,152,127,0.2); color:var(--accent); }
 .gv-btn-accept:hover{ background:rgba(19,152,127,0.36); }
 .gv-btn-decline{ background:var(--bg-deep); color:var(--text-secondary); }
-.gv-btn-decline:hover{ background:rgba(239,68,68,0.15); color:var(--error); }
+.gv-btn-decline:hover{ background:rgba(218,133,131,0.15); color:var(--error); }
 .gv-empty{
   padding:40px 20px; text-align:center;
   color:var(--text-muted); font-size:13px;
@@ -2411,7 +2449,7 @@ html,body{
   color:var(--text-secondary);
 }
 .room-tag.encrypted{ background:rgba(19,152,127,0.15); color:var(--accent); }
-.room-tag.federation{ background:rgba(59,130,246,0.15); color:var(--fed-blue); }
+.room-tag.federation{ background:rgba(107,163,248,0.15); color:var(--fed-blue); }
 .room-card-actions{
   display:flex; gap:6px; margin-top:10px;
   padding-top:10px; border-top:1px solid var(--border);
@@ -2637,8 +2675,8 @@ html,body{
   display:inline-flex; align-items:center; gap:4px;
   padding:4px 8px; font-size:11px;
   border-radius:var(--r-sm);
-  background:rgba(59,130,246,0.12); color:var(--accent);
-  border:1px solid rgba(59,130,246,0.25);
+  background:rgba(107,163,248,0.12); color:var(--accent);
+  border:1px solid rgba(107,163,248,0.25);
 }
 .rs-tag-chip .rs-tag-remove{
   cursor:pointer; opacity:.6; margin-left:2px;
@@ -2652,7 +2690,7 @@ html,body{
   color:var(--text-secondary); cursor:pointer;
 }
 .rs-tag-filter-chip:hover{ border-color:var(--accent); color:var(--accent); }
-.rs-tag-filter-chip.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.rs-tag-filter-chip.active{ background:var(--accent-strong); color:var(--text-primary); border-color:var(--accent); }
 
 /* —— R7 粘性事件 —— */
 .rs-sticky-item{
@@ -2860,7 +2898,7 @@ html,body{
   transition:opacity .1s, background .1s, color .1s;
 }
 .gs-history-item:hover .gs-history-del{ opacity:1; }
-.gs-history-del:hover{ background:rgba(239,68,68,0.15); color:var(--error); }
+.gs-history-del:hover{ background:rgba(218,133,131,0.15); color:var(--error); }
 
 /* —— F2: 房间内搜索面板 —— */
 .in-room-search-panel{
@@ -3305,11 +3343,11 @@ html,body{
   font-size:10px;
   padding:1px 6px;
   border-radius:var(--r-xs);
-  background:rgba(59,130,246,0.15);
+  background:rgba(107,163,248,0.15);
   color:var(--fed-blue);
 }
 .fed-tag.green{ background:rgba(16,185,129,0.15); color:var(--accent); }
-.fed-tag.orange{ background:rgba(245,158,11,0.15); color:var(--warn); }
+.fed-tag.orange{ background:rgba(244,195,117,0.15); color:var(--warn); }
 
 /* ============================================================
    认证视图（登录 / 注册）—— 覆盖层
@@ -3324,8 +3362,8 @@ html,body{
   align-items:flex-start;
   justify-content:center;
   background:
-    radial-gradient(circle at 20% 0%, #15201c 0%, transparent 50%),
-    radial-gradient(circle at 80% 100%, #1a1410 0%, transparent 50%),
+    radial-gradient(circle at 20% 0%, #0f1f1a 0%, transparent 50%),
+    radial-gradient(circle at 80% 100%, #1a1510 0%, transparent 50%),
     #050505;
   transition:opacity .4s ease, visibility .4s;
 }
@@ -3389,7 +3427,7 @@ html,body{
   width:375px;
   height:812px;
   border-radius:42px;
-  box-shadow:var(--shadow-panel), 0 0 0 11px #1a1a1a, 0 0 0 12px #2a2a2a;
+  box-shadow:var(--shadow-panel), 0 0 0 11px var(--bg-deep), 0 0 0 12px var(--bg-mid);
 }
 
 /* 认证窗口顶部操作栏 */
@@ -3454,7 +3492,7 @@ html,body{
 .auth-avatar{
   width:80px; height:80px;
   border-radius:50%;
-  background:linear-gradient(135deg,#f59e0b,#ef4444);
+  background:linear-gradient(135deg,#f4c375,#da8583);
   border:3px solid rgba(255,255,255,0.9);
   margin:8px 0 20px;
   display:flex; align-items:center; justify-content:center;
@@ -4189,7 +4227,7 @@ textarea.form-input{
 .sr-action.add{ background:var(--accent); color:var(--text-primary); }
 .sr-action.add:hover{ background:var(--accent-dim); }
 .sr-action.added{ background:var(--bg-light); color:var(--text-muted); cursor:default; }
-.sr-action.pending{ background:rgba(245,158,11,0.15); color:var(--warn); cursor:default; }
+.sr-action.pending{ background:rgba(244,195,117,0.15); color:var(--warn); cursor:default; }
 
 /* —— 步骤指示器 —— */
 .dialog-steps{
@@ -4342,7 +4380,7 @@ textarea.form-input{
   display:flex; align-items:center; justify-content:center;
   border-radius:4px;
 }
-.child-room-tag .crt-remove:hover{ color:var(--error); background:rgba(239,68,68,0.1); }
+.child-room-tag .crt-remove:hover{ color:var(--error); background:rgba(218,133,131,0.1); }
 
 /* —— 成员选择空提示 —— */
 .member-picker-empty{ font-size:12px; color:var(--text-muted); padding:6px 0; }
@@ -4706,7 +4744,7 @@ textarea.form-input{
   border-radius:4px;
   background:rgba(19,152,127,0.15); color:var(--accent);
 }
-.device-status.unverified{ background:rgba(245,158,11,0.15); color:var(--warn); }
+.device-status.unverified{ background:rgba(244,195,117,0.15); color:var(--warn); }
 
 /* ============================================================
    设置页：新增 row type 样式（参考 hula 设置页面）
@@ -4774,10 +4812,10 @@ textarea.form-input{
   border-radius:4px;
   background:rgba(19,152,127,0.15); color:var(--accent);
 }
-.threepid-badge.unverified{ background:rgba(245,158,11,0.15); color:var(--warn); }
+.threepid-badge.unverified{ background:rgba(244,195,117,0.15); color:var(--warn); }
 
 /* 危险操作行 */
-.setting-row.danger:hover{ background:rgba(239,68,68,0.08); }
+.setting-row.danger:hover{ background:rgba(218,133,131,0.08); }
 .setting-row.danger .setting-row-label{ color:var(--error); }
 
 /* 加密密钥状态卡 */
@@ -4796,7 +4834,7 @@ textarea.form-input{
   color:var(--accent);
   flex-shrink:0;
 }
-.key-status-card.inactive .key-status-icon{ background:rgba(245,158,11,0.15); color:var(--warn); }
+.key-status-card.inactive .key-status-icon{ background:rgba(244,195,117,0.15); color:var(--warn); }
 .key-status-label{ font-size:14px; font-weight:500; color:var(--text-primary); }
 .key-status-desc{ font-size:12px; color:var(--text-muted); margin-top:3px; }
 
@@ -4810,7 +4848,7 @@ textarea.form-input{
 }
 .burn-room-icon{
   width:32px; height:32px; border-radius:8px;
-  background:rgba(245,158,11,0.15);
+  background:rgba(244,195,117,0.15);
   display:flex; align-items:center; justify-content:center;
   color:var(--warn);
   flex-shrink:0;
@@ -4839,7 +4877,7 @@ textarea.form-input{
   border-radius:var(--r-sm);
   font-size:12px; line-height:1.6;
 }
-.setting-alert.warning{ background:rgba(245,158,11,0.1); color:#fbbf24; border:1px solid rgba(245,158,11,0.2); }
+.setting-alert.warning{ background:rgba(244,195,117,0.1); color:var(--warn); border:1px solid rgba(244,195,117,0.2); }
 .setting-alert svg{ flex-shrink:0; margin-top:2px; }
 
 /* 实验室功能行 */
@@ -4859,9 +4897,9 @@ textarea.form-input{
   padding:1px 6px; border-radius:4px;
   text-transform:uppercase;
 }
-.lab-tag.beta{ background:rgba(59,130,246,0.15); color:#60a5fa; }
-.lab-tag.alpha{ background:rgba(239,68,68,0.15); color:#f87171; }
-.lab-tag.experimental{ background:rgba(139,92,246,0.15); color:#a78bfa; }
+.lab-tag.beta{ background:rgba(107,163,248,0.15); color:#60a5fa; }
+.lab-tag.alpha{ background:rgba(218,133,131,0.15); color:var(--error); }
+.lab-tag.experimental{ background:rgba(167,137,217,0.15); color:#a78bfa; }
 .lab-desc{ font-size:11px; color:var(--text-muted); margin-top:4px; }
 
 /* AI 连接行 */
@@ -5082,7 +5120,7 @@ textarea.form-input{
   cursor:pointer; color:var(--text-muted);
   padding:2px; border-radius:var(--r-xs);
 }
-.pinned-item-remove:hover{ color:var(--error); background:rgba(239,68,68,0.1); }
+.pinned-item-remove:hover{ color:var(--error); background:rgba(218,133,131,0.1); }
 .pinned-shortcut{
   background:var(--accent-soft) !important;
   color:var(--accent);
@@ -5117,9 +5155,9 @@ textarea.form-input{
 .pinned-stat-chip.total .stat-num{ color:var(--accent); }
 .pinned-stat-chip.export{
   margin-left:auto; cursor:pointer; color:var(--info);
-  border-color:rgba(59,130,246,0.3);
+  border-color:rgba(107,163,248,0.3);
 }
-.pinned-stat-chip.export:hover{ background:rgba(59,130,246,0.1); }
+.pinned-stat-chip.export:hover{ background:rgba(107,163,248,0.1); }
 .pinned-item-text mark{
   background:rgba(250,204,21,0.3); color:inherit;
   padding:0 2px; border-radius:2px;
@@ -5149,7 +5187,7 @@ textarea.form-input{
 .ms-btn:hover{ background:var(--bg-mid); color:var(--text-primary); }
 .ms-btn.danger:hover{ color:var(--error); }
 .ms-close{ margin-left:auto; cursor:pointer; color:var(--text-muted); }
-.msg-row.multi-selected{ background:rgba(59,130,246,0.08); }
+.msg-row.multi-selected{ background:rgba(107,163,248,0.08); }
 .msg-check{
   display:none; width:18px; height:18px;
   border:2px solid var(--text-muted); border-radius:3px;
@@ -5173,7 +5211,7 @@ textarea.form-input{
   transition:all .15s;
 }
 .burn-toggle:hover{ background:var(--bg-mid); }
-.burn-toggle.active{ background:rgba(245,158,11,0.2); color:var(--warn); }
+.burn-toggle.active{ background:rgba(244,195,117,0.2); color:var(--warn); }
 .burn-toggle svg{ width:14px; height:14px; }
 
 /* ============================================================
@@ -5576,7 +5614,7 @@ button:focus-visible, .icon-btn:focus-visible, .chat-action-btn:focus-visible,
   box-shadow:0 6px 16px rgba(0,0,0,.3);
 }
 .ic-btn-circle.accept{ background:linear-gradient(135deg, #22c55e, #16a34a); }
-.ic-btn-circle.reject{ background:linear-gradient(135deg, #ef4444, #dc2626); }
+.ic-btn-circle.reject{ background:linear-gradient(135deg, #da8583, #b56663); }
 .ic-btn-circle.message{ background:linear-gradient(135deg, #6b7280, #4b5563); }
 .ic-btn-label{ font-size:11px; color:var(--text-secondary); }
 /* 骨架屏 shimmer（Phase 5.2 备用） */
@@ -5654,14 +5692,14 @@ button:focus-visible, .icon-btn:focus-visible, .chat-action-btn:focus-visible,
   padding:0 16px;
   font-size:12px;
   color:var(--text-primary);
-  background:rgba(245,158,11,0.16);
-  border-bottom:1px solid rgba(245,158,11,0.4);
+  background:rgba(244,195,117,0.16);
+  border-bottom:1px solid rgba(244,195,117,0.4);
   backdrop-filter:blur(8px);
   transform:translateY(-100%);
   transition:transform .2s ease, background .2s ease;
 }
 .conn-banner.show{ display:flex; transform:translateY(0); }
-.conn-banner.is-error{ background:rgba(239,68,68,0.18); border-bottom-color:rgba(239,68,68,0.45); }
+.conn-banner.is-error{ background:rgba(218,133,131,0.18); border-bottom-color:rgba(218,133,131,0.45); }
 .conn-banner.is-offline{ background:rgba(112,112,112,0.2); border-bottom-color:rgba(112,112,112,0.4); }
 .conn-banner .conn-icon{ flex-shrink:0; }
 .conn-banner .conn-icon svg{ width:14px; height:14px; }
@@ -5671,17 +5709,17 @@ button:focus-visible, .icon-btn:focus-visible, .chat-action-btn:focus-visible,
 .conn-banner.is-offline .conn-icon{ color:var(--text-secondary); }
 .conn-banner .conn-text{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .conn-banner .conn-spinner{
-  width:12px; height:12px; border:2px solid rgba(245,158,11,0.3);
+  width:12px; height:12px; border:2px solid rgba(244,195,117,0.3);
   border-top-color:var(--warn); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0;
 }
-.conn-banner.is-error .conn-spinner{ border-color:rgba(239,68,68,0.3); border-top-color:var(--error); }
+.conn-banner.is-error .conn-spinner{ border-color:rgba(218,133,131,0.3); border-top-color:var(--error); }
 .conn-banner .conn-retry{
   flex-shrink:0; height:22px; padding:0 10px; border-radius:var(--r-xs);
-  background:rgba(239,68,68,0.25); color:#fff; font-size:11px; cursor:pointer;
-  display:none; align-items:center; gap:4px; border:1px solid rgba(239,68,68,0.5);
+  background:rgba(218,133,131,0.25); color:#fff; font-size:11px; cursor:pointer;
+  display:none; align-items:center; gap:4px; border:1px solid rgba(218,133,131,0.5);
 }
 .conn-banner .conn-retry svg{ width:11px; height:11px; }
-.conn-banner .conn-retry:hover{ background:rgba(239,68,68,0.4); }
+.conn-banner .conn-retry:hover{ background:rgba(218,133,131,0.4); }
 .conn-banner.has-retry{ height:48px; }
 .conn-banner.has-retry .conn-retry{ display:inline-flex; }
 .conn-banner .conn-close{ color:var(--text-secondary); cursor:pointer; padding:2px; flex-shrink:0; }
@@ -5700,32 +5738,32 @@ button:focus-visible, .icon-btn:focus-visible, .chat-action-btn:focus-visible,
 }
 .priv-btn:hover{ background:var(--bg-mid); color:var(--text-secondary); }
 .priv-btn.active{
-  color:#fff; background:rgba(239,68,68,0.18);
-  box-shadow:0 0 0 3px rgba(239,68,68,0.12);
+  color:#fff; background:rgba(218,133,131,0.18);
+  box-shadow:0 0 0 3px rgba(218,133,131,0.12);
 }
 .priv-btn.active::after{
   content:''; position:absolute; top:-2px; right:-2px; width:8px; height:8px;
   border-radius:50%; background:var(--error); border:2px solid var(--bg-deep);
 }
 /* 私密模式激活态：聊天区视觉变化 */
-.chat-panel.priv-on .chat-header{ background:rgba(239,68,68,0.06); }
+.chat-panel.priv-on .chat-header{ background:rgba(218,133,131,0.06); }
 .chat-panel.priv-on .chat-header-name::before{
-  content:'🔒'; margin-right:6px; filter:drop-shadow(0 0 4px rgba(239,68,68,0.5));
+  content:'🔒'; margin-right:6px; filter:drop-shadow(0 0 4px rgba(218,133,131,0.5));
 }
 .priv-tip-bar{
   display:none; align-items:center; gap:8px; height:32px; padding:0 16px;
   font-size:12px; color:var(--error);
-  background:rgba(239,68,68,0.1); border-bottom:1px solid rgba(239,68,68,0.3);
+  background:rgba(218,133,131,0.1); border-bottom:1px solid rgba(218,133,131,0.3);
 }
 .chat-panel.priv-on .priv-tip-bar{ display:flex; }
 .priv-tip-bar .priv-tip-close{ margin-left:auto; color:var(--text-muted); cursor:pointer; padding:2px; }
 .priv-tip-bar .priv-tip-close:hover{ color:var(--text-primary); }
 /* 私密消息气泡 */
 .msg-row.priv .msg-bubble.out{
-  background:linear-gradient(135deg,#c0332d 0%,#ef4444 100%);
+  background:linear-gradient(135deg,#c0332d 0%,#da8583 100%);
   border:none;
 }
-.msg-row.priv .msg-bubble.in{ border:1px solid rgba(239,68,68,0.5); }
+.msg-row.priv .msg-bubble.in{ border:1px solid rgba(218,133,131,0.5); }
 .msg-row.priv .msg-priv-tag{
   display:inline-flex; align-items:center; gap:3px; margin-top:4px;
   font-size:10px; color:var(--error); opacity:.85;
@@ -5771,7 +5809,7 @@ button:focus-visible, .icon-btn:focus-visible, .chat-action-btn:focus-visible,
 .priv-dialog-foot .btn-confirm:hover{ filter:brightness(1.1); }
 /* 移动端私密按钮 */
 .m-chat-actions .priv-btn{ width:28px; height:28px; font-size:13px; }
-.m-chat-header.priv-on{ background:linear-gradient(90deg,rgba(239,68,68,0.12),transparent); }
+.m-chat-header.priv-on{ background:linear-gradient(90deg,rgba(218,133,131,0.12),transparent); }
 .m-chat-header.priv-on .m-chat-name::before{ content:'🔒 '; }
 
 /* ============================================================
@@ -5820,7 +5858,7 @@ button:focus-visible, .icon-btn:focus-visible, .chat-action-btn:focus-visible,
   display:inline-flex; align-items:center; gap:6px;
 }
 .admin-btn:hover{ background:var(--bg-light); color:var(--text-primary); }
-.admin-btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.admin-btn.primary{ background:var(--accent-strong); border-color:var(--accent); color:var(--text-primary); }
 .admin-btn.primary:hover{ background:var(--accent-dim); }
 .admin-btn svg{ width:13px; height:13px; }
 /* 仪表盘统计卡片 */
@@ -5950,16 +5988,16 @@ button:focus-visible, .icon-btn:focus-visible, .chat-action-btn:focus-visible,
   padding:2px 8px; border-radius:10px;
   font-size:11px; font-weight:500;
 }
-.fed-status.active{ background:rgba(34,197,94,0.15); color:var(--success); }
-.fed-status.error{ background:rgba(239,68,68,0.15); color:var(--error); }
-.fed-status.pending{ background:rgba(245,158,11,0.15); color:var(--warn); }
+.fed-status.active{ background:rgba(16,185,129,0.15); color:var(--success); }
+.fed-status.error{ background:rgba(218,133,131,0.15); color:var(--error); }
+.fed-status.pending{ background:rgba(244,195,117,0.15); color:var(--warn); }
 .fed-status.banned{ background:rgba(107,114,128,0.2); color:var(--text-muted); }
 .token-status{
   display:inline-block; padding:2px 8px; border-radius:10px;
   font-size:11px;
 }
-.token-status.active{ background:rgba(34,197,94,0.15); color:var(--success); }
-.token-status.expired{ background:rgba(239,68,68,0.15); color:var(--error); }
+.token-status.active{ background:rgba(16,185,129,0.15); color:var(--success); }
+.token-status.expired{ background:rgba(218,133,131,0.15); color:var(--error); }
 .token-status.consumed{ background:rgba(107,114,128,0.2); color:var(--text-muted); }
 .cfg-section{
   background:var(--bg-mid);
@@ -6065,9 +6103,9 @@ label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(
   display:inline-block; padding:2px 8px; border-radius:10px;
   font-size:10px; font-weight:500;
 }
-.notif-type.system{ background:rgba(59,130,246,0.15); color:#3b82f6; }
-.notif-type.maintenance{ background:rgba(245,158,11,0.15); color:#f59e0b; }
-.notif-type.security{ background:rgba(239,68,68,0.15); color:#ef4444; }
+.notif-type.system{ background:rgba(107,163,248,0.15); color:var(--info); }
+.notif-type.maintenance{ background:rgba(244,195,117,0.15); color:var(--warn); }
+.notif-type.security{ background:rgba(218,133,131,0.15); color:var(--error); }
 .notif-status{ display:inline-flex; align-items:center; gap:4px; font-size:11px; }
 .notif-status.sent{ color:var(--success); }
 .notif-status.pending{ color:var(--warn); }
@@ -6096,7 +6134,7 @@ label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(
   display:inline-flex; align-items:center; gap:4px;
   padding:2px 8px; border-radius:10px; font-size:11px;
 }
-.token-toggle.on{ background:rgba(34,197,94,0.15); color:var(--success); }
+.token-toggle.on{ background:rgba(16,185,129,0.15); color:var(--success); }
 .token-toggle.off{ background:rgba(107,114,128,0.2); color:var(--text-muted); }
 
 /* A8 数据保留 */
@@ -6189,17 +6227,17 @@ label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(
   display:inline-block; padding:2px 8px; border-radius:10px;
   font-size:10px; font-weight:500;
 }
-.reports-table .rpt-status.pending{ background:rgba(245,158,11,0.15); color:#f59e0b; }
-.reports-table .rpt-status.processing{ background:rgba(59,130,246,0.15); color:#3b82f6; }
-.reports-table .rpt-status.resolved{ background:rgba(34,197,94,0.15); color:#22c55e; }
+.reports-table .rpt-status.pending{ background:rgba(244,195,117,0.15); color:var(--warn); }
+.reports-table .rpt-status.processing{ background:rgba(107,163,248,0.15); color:var(--info); }
+.reports-table .rpt-status.resolved{ background:rgba(16,185,129,0.15); color:var(--success); }
 .reports-table .rpt-status.dismissed{ background:rgba(107,114,128,0.15); color:#6b7280; }
 .reports-table .rpt-severity{
   display:inline-block; padding:2px 8px; border-radius:3px;
   font-size:10px; font-weight:500;
 }
-.reports-table .rpt-severity.low{ background:rgba(34,197,94,0.15); color:#22c55e; }
-.reports-table .rpt-severity.medium{ background:rgba(245,158,11,0.15); color:#f59e0b; }
-.reports-table .rpt-severity.high{ background:rgba(239,68,68,0.15); color:#ef4444; }
+.reports-table .rpt-severity.low{ background:rgba(16,185,129,0.15); color:var(--success); }
+.reports-table .rpt-severity.medium{ background:rgba(244,195,117,0.15); color:var(--warn); }
+.reports-table .rpt-severity.high{ background:rgba(218,133,131,0.15); color:var(--error); }
 .reports-table .rpt-severity.critical{ background:rgba(220,38,38,0.25); color:#fca5a5; font-weight:600; }
 .reports-table .rpt-type-tag{
   display:inline-block; padding:2px 6px; border-radius:3px;
@@ -6376,7 +6414,7 @@ label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(
   padding:6px 10px; border-radius:var(--r-sm); word-break:break-word;
 }
 .fcw-msg.others .fcw-bubble{ background:var(--bg-mid); color:var(--text-primary); border-top-left-radius:2px; }
-.fcw-msg.self .fcw-bubble{ background:var(--accent); color:#fff; border-top-right-radius:2px; }
+.fcw-msg.self .fcw-bubble{ background:var(--bubble-sent); color:var(--text-primary); border-top-right-radius:2px; }
 .fcw-msg .fcw-time{ font-size:10px; color:var(--text-muted); margin-top:2px; }
 .fcw-msg.system{
   align-self:center; font-size:11px; color:var(--text-muted);
@@ -6392,7 +6430,7 @@ label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(
 }
 .fcw-input input:focus{ border-color:var(--accent-dim); }
 .fcw-input button{
-  padding:6px 14px; background:var(--accent); color:#fff; border:none;
+  padding:6px 14px; background:var(--accent-strong); color:var(--text-primary); border:none;
   border-radius:var(--r-sm); font-size:12px; cursor:pointer; transition:background .12s; font-family:var(--font);
 }
 .fcw-input button:hover{ background:var(--accent-dim); }
@@ -8491,7 +8529,7 @@ mozilla.org</textarea></div>
                 <div class="cfg-section">
                   <div class="cfg-section-title"><svg class="icon-sm"><use href="#i-bridge"/></svg> 桥接服务 (Bridges)</div>
                   <div class="bridge-card">
-                    <div class="bridge-icon" style="background:rgba(34,197,94,0.15);color:var(--success);"><svg><use href="#i-bridge"/></svg></div>
+                    <div class="bridge-icon" style="background:rgba(16,185,129,0.15);color:var(--success);"><svg><use href="#i-bridge"/></svg></div>
                     <div class="bridge-body">
                       <div class="bridge-name">Telegram Bridge <span class="fed-status active">运行中</span></div>
                       <div class="bridge-desc">连接 Telegram 与 TJG，支持双向消息同步、群组映射、媒体转发</div>
@@ -8507,7 +8545,7 @@ mozilla.org</textarea></div>
                     </div>
                   </div>
                   <div class="bridge-card">
-                    <div class="bridge-icon" style="background:rgba(59,130,246,0.15);color:var(--info);"><svg><use href="#i-bridge"/></svg></div>
+                    <div class="bridge-icon" style="background:rgba(107,163,248,0.15);color:var(--info);"><svg><use href="#i-bridge"/></svg></div>
                     <div class="bridge-body">
                       <div class="bridge-name">Discord Bridge <span class="fed-status active">运行中</span></div>
                       <div class="bridge-desc">连接 Discord 服务器，支持频道映射、角色同步、表情互通</div>
@@ -8523,7 +8561,7 @@ mozilla.org</textarea></div>
                     </div>
                   </div>
                   <div class="bridge-card">
-                    <div class="bridge-icon" style="background:rgba(239,68,68,0.15);color:var(--error);"><svg><use href="#i-bridge"/></svg></div>
+                    <div class="bridge-icon" style="background:rgba(218,133,131,0.15);color:var(--error);"><svg><use href="#i-bridge"/></svg></div>
                     <div class="bridge-body">
                       <div class="bridge-name">WhatsApp Bridge <span class="fed-status error">异常</span></div>
                       <div class="bridge-desc">连接 WhatsApp 账号，最后心跳 5 分钟前丢失，已自动重试 3 次</div>
@@ -9210,15 +9248,15 @@ m.reaction</textarea></div>
                 <span>扫一扫</span>
               </div>
               <div class="m-quick-item" onclick="showToast('我的钱包功能开发中', 'info')">
-                <div class="m-quick-icon" style="background:rgba(245,158,11,0.15);color:var(--warn);"><svg><use href="#i-gift"/></svg></div>
+                <div class="m-quick-icon" style="background:rgba(244,195,117,0.15);color:var(--warn);"><svg><use href="#i-gift"/></svg></div>
                 <span>钱包</span>
               </div>
               <div class="m-quick-item" onclick="showToast('收藏功能开发中', 'info')">
-                <div class="m-quick-icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;"><svg><use href="#i-star"/></svg></div>
+                <div class="m-quick-icon" style="background:rgba(167,137,217,0.15);color:#a78bfa;"><svg><use href="#i-star"/></svg></div>
                 <span>收藏</span>
               </div>
               <div class="m-quick-item" onclick="showToast('文件管理开发中', 'info')">
-                <div class="m-quick-icon" style="background:rgba(59,130,246,0.15);color:var(--fed-blue);"><svg><use href="#i-file"/></svg></div>
+                <div class="m-quick-icon" style="background:rgba(107,163,248,0.15);color:var(--fed-blue);"><svg><use href="#i-file"/></svg></div>
                 <span>文件</span>
               </div>
               <div class="m-quick-item" onclick="openShake()">
@@ -9242,13 +9280,13 @@ m.reaction</textarea></div>
                   <div class="m-setting-arrow"><svg style="width:14px;height:14px;"><use href="#i-chevron-right"/></svg></div>
                 </div>
                 <div class="m-setting-item">
-                  <div class="m-setting-icon" style="background:rgba(59,130,246,0.15);color:var(--fed-blue);"><svg><use href="#i-device"/></svg></div>
+                  <div class="m-setting-icon" style="background:rgba(107,163,248,0.15);color:var(--fed-blue);"><svg><use href="#i-device"/></svg></div>
                   <div class="m-setting-label">设备管理</div>
                   <div class="m-setting-value">3 台</div>
                   <div class="m-setting-arrow"><svg style="width:14px;height:14px;"><use href="#i-chevron-right"/></svg></div>
                 </div>
                 <div class="m-setting-item">
-                  <div class="m-setting-icon" style="background:rgba(245,158,11,0.15);color:var(--warn);"><svg><use href="#i-globe"/></svg></div>
+                  <div class="m-setting-icon" style="background:rgba(244,195,117,0.15);color:var(--warn);"><svg><use href="#i-globe"/></svg></div>
                   <div class="m-setting-label">联邦服务器</div>
                   <div class="m-setting-value">3 已连接</div>
                   <div class="m-setting-arrow"><svg style="width:14px;height:14px;"><use href="#i-chevron-right"/></svg></div>
@@ -9257,7 +9295,7 @@ m.reaction</textarea></div>
 
               <div class="m-setting-group">
                 <div class="m-setting-item">
-                  <div class="m-setting-icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;"><svg><use href="#i-bell"/></svg></div>
+                  <div class="m-setting-icon" style="background:rgba(167,137,217,0.15);color:#a78bfa;"><svg><use href="#i-bell"/></svg></div>
                   <div class="m-setting-label">通知偏好</div>
                   <div class="m-setting-arrow"><svg style="width:14px;height:14px;"><use href="#i-chevron-right"/></svg></div>
                 </div>
@@ -9273,7 +9311,7 @@ m.reaction</textarea></div>
                   <div class="m-setting-arrow"><svg style="width:14px;height:14px;"><use href="#i-chevron-right"/></svg></div>
                 </div>
                 <div class="m-setting-item">
-                  <div class="m-setting-icon" style="background:rgba(59,130,246,0.15);color:var(--fed-blue);"><svg><use href="#i-mic"/></svg></div>
+                  <div class="m-setting-icon" style="background:rgba(107,163,248,0.15);color:var(--fed-blue);"><svg><use href="#i-mic"/></svg></div>
                   <div class="m-setting-label">语音视频</div>
                   <div class="m-setting-arrow"><svg style="width:14px;height:14px;"><use href="#i-chevron-right"/></svg></div>
                 </div>
@@ -9283,7 +9321,7 @@ m.reaction</textarea></div>
                   <div class="m-setting-arrow"><svg style="width:14px;height:14px;"><use href="#i-chevron-right"/></svg></div>
                 </div>
                 <div class="m-setting-item">
-                  <div class="m-setting-icon" style="background:rgba(245,158,11,0.15);color:var(--warn);"><svg><use href="#i-flame"/></svg></div>
+                  <div class="m-setting-icon" style="background:rgba(244,195,117,0.15);color:var(--warn);"><svg><use href="#i-flame"/></svg></div>
                   <div class="m-setting-label">阅后即焚</div>
                   <div class="m-setting-value">关闭</div>
                   <div class="m-setting-arrow"><svg style="width:14px;height:14px;"><use href="#i-chevron-right"/></svg></div>
@@ -9292,7 +9330,7 @@ m.reaction</textarea></div>
 
               <div class="m-setting-group">
                 <div class="m-setting-item">
-                  <div class="m-setting-icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;"><svg><use href="#i-flask"/></svg></div>
+                  <div class="m-setting-icon" style="background:rgba(167,137,217,0.15);color:#a78bfa;"><svg><use href="#i-flask"/></svg></div>
                   <div class="m-setting-label">实验室</div>
                   <div class="m-setting-arrow"><svg style="width:14px;height:14px;"><use href="#i-chevron-right"/></svg></div>
                 </div>
@@ -9347,15 +9385,15 @@ m.reaction</textarea></div>
             <div class="m-toolbar-extra" id="mToolbarExtra">
               <div class="m-extra-grid">
                 <div class="m-extra-item" data-mact="image">
-                  <div class="m-extra-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;"><svg><use href="#i-image"/></svg></div>
+                  <div class="m-extra-icon" style="background:rgba(107,163,248,0.15);color:#6ba3f8;"><svg><use href="#i-image"/></svg></div>
                   <span>图片</span>
                 </div>
                 <div class="m-extra-item" data-mact="file">
-                  <div class="m-extra-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;"><svg><use href="#i-file"/></svg></div>
+                  <div class="m-extra-icon" style="background:rgba(244,195,117,0.15);color:#f4c375;"><svg><use href="#i-file"/></svg></div>
                   <span>文件</span>
                 </div>
                 <div class="m-extra-item" data-mact="voice">
-                  <div class="m-extra-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;"><svg><use href="#i-mic"/></svg></div>
+                  <div class="m-extra-icon" style="background:rgba(167,137,217,0.15);color:#8b5cf6;"><svg><use href="#i-mic"/></svg></div>
                   <span>语音</span>
                 </div>
                 <div class="m-extra-item" data-mact="video">
@@ -9363,7 +9401,7 @@ m.reaction</textarea></div>
                   <span>视频</span>
                 </div>
                 <div class="m-extra-item" data-mact="location">
-                  <div class="m-extra-icon" style="background:rgba(34,197,94,0.15);color:#22c55e;"><svg><use href="#i-map"/></svg></div>
+                  <div class="m-extra-icon" style="background:rgba(16,185,129,0.15);color:#10b981;"><svg><use href="#i-map"/></svg></div>
                   <span>位置</span>
                 </div>
                 <div class="m-extra-item" data-mact="camera">
@@ -9375,7 +9413,7 @@ m.reaction</textarea></div>
                   <span>名片</span>
                 </div>
                 <div class="m-extra-item" data-mact="redpacket">
-                  <div class="m-extra-icon" style="background:rgba(239,68,68,0.15);color:#ef4444;"><svg><use href="#i-gift"/></svg></div>
+                  <div class="m-extra-icon" style="background:rgba(218,133,131,0.15);color:#da8583;"><svg><use href="#i-gift"/></svg></div>
                   <span>红包</span>
                 </div>
               </div>
@@ -15298,8 +15336,8 @@ function renderFederation(){
           <div class="federation-server-name">
             <span class="federation-status-dot ${s.status}"></span>
             ${s.name}
-            ${s.status === 'degraded' ? '<span class="room-tag" style="background:rgba(245,158,11,0.15);color:var(--warn);">降级</span>' : ''}
-            ${s.status === 'offline' ? '<span class="room-tag" style="background:rgba(239,68,68,0.15);color:var(--error);">离线</span>' : ''}
+            ${s.status === 'degraded' ? '<span class="room-tag" style="background:rgba(244,195,117,0.15);color:var(--warn);">降级</span>' : ''}
+            ${s.status === 'offline' ? '<span class="room-tag" style="background:rgba(218,133,131,0.15);color:var(--error);">离线</span>' : ''}
           </div>
           <div class="federation-server-meta">
             <span><svg style="width:12px;height:12px;"><use href="#i-globe"/></svg>${s.baseUrl}</span>
