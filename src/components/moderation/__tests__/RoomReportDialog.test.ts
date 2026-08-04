@@ -11,8 +11,8 @@ vi.mock('@iconify/vue', () => ({
 }))
 
 const reportRoomMock = vi.fn()
-vi.mock('@/services/matrix/SynapseRustExtensionsService', () => ({
-  synapseRustExtensionsService: {
+vi.mock('@/services/matrix/admin/AdminFacadeService', () => ({
+  adminService: {
     reportRoom: (...args: unknown[]) => reportRoomMock(...args)
   }
 }))
@@ -84,7 +84,7 @@ describe('RoomReportDialog — 举报房间弹窗 (P0-3)', () => {
     expect(wrapper.find('[data-testid="room-report-submit"]').attributes('disabled')).toBeUndefined()
   })
 
-  it('提交时调用 synapseRustExtensionsService.reportRoom 并 emit reported', async () => {
+  it('提交时调用 adminService.reportRoom 并 emit reported', async () => {
     reportRoomMock.mockResolvedValueOnce({ report_id: 1, room_id: '!room:hs', status: 'submitted' })
     const wrapper = mountDialog()
     await wrapper.find('[data-testid="room-report-reason"]').setValue('abuse')

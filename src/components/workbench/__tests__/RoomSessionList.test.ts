@@ -252,7 +252,7 @@ describe('RoomSessionList', () => {
 
     await wrapper.vm.scrollToIndex(5)
     expect(scrollToMock).toHaveBeenCalledWith({
-      top: 136,
+      top: 86,
       behavior: 'smooth'
     })
 

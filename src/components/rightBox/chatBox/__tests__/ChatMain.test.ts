@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive, ref } from 'vue'
 import ChatMain from '../ChatMain.vue'
 
-vi.mock("@/utils/AppHarness", () => ({
-  detectAppPlatform: () => "desktop",
+vi.mock('@/utils/AppHarness', () => ({
+  detectAppPlatform: () => 'desktop',
   isBrowser: () => true,
   isE2EMode: () => false,
   hasTauriRuntime: () => false,
@@ -16,11 +16,19 @@ if (!globalThis.localStorage) {
   const store: Record<string, string> = {}
   globalThis.localStorage = {
     getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value },
-    removeItem: (key: string) => { delete store[key] },
-    clear: () => { Object.keys(store).forEach((k) => delete store[k]) },
+    setItem: (key: string, value: string) => {
+      store[key] = value
+    },
+    removeItem: (key: string) => {
+      delete store[key]
+    },
+    clear: () => {
+      Object.keys(store).forEach((k) => delete store[k])
+    },
     key: (index: number) => Object.keys(store)[index] ?? null,
-    get length() { return Object.keys(store).length }
+    get length() {
+      return Object.keys(store).length
+    }
   } as Storage
 }
 
@@ -231,7 +239,7 @@ vi.mock('@/utils/ComputedTime', () => ({
   timeToStr: () => 'now'
 }))
 
-vi.mock("@/utils/Logger", () => ({
+vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     error: loggerErrorMock,
     warn: vi.fn(),
@@ -450,7 +458,7 @@ describe('ChatMain private mode', () => {
     expect(wrapper.findComponent({ name: 'BurnAfterReadToggle' }).exists()).toBe(true)
   })
 
-  it("renders PrivateModeBanner when private mode is active", async () => {
+  it('renders PrivateModeBanner when private mode is active', async () => {
     const wrapper = mountComponent()
     ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
     await flushPromises()
@@ -458,13 +466,13 @@ describe('ChatMain private mode', () => {
     expect(banners.props('privateModeActive')).toBe(true)
   })
 
-  it("does not render PrivateModeBanner when private mode is inactive", () => {
+  it('does not render PrivateModeBanner when private mode is inactive', () => {
     const wrapper = mountComponent()
     const banners = wrapper.findComponent({ name: 'ChatBanners' })
     expect(banners.props('privateModeActive')).toBe(false)
   })
 
-  it("renders ScreenshotWatermark when private mode is active", async () => {
+  it('renders ScreenshotWatermark when private mode is active', async () => {
     const wrapper = mountComponent()
     ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
     await flushPromises()
@@ -472,7 +480,7 @@ describe('ChatMain private mode', () => {
     expect(banners.props('privateModeActive')).toBe(true)
   })
 
-  it("does not render ScreenshotWatermark when private mode is inactive", () => {
+  it('does not render ScreenshotWatermark when private mode is inactive', () => {
     const wrapper = mountComponent()
     const banners = wrapper.findComponent({ name: 'ChatBanners' })
     expect(banners.props('privateModeActive')).toBe(false)

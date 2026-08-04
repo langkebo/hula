@@ -11,8 +11,8 @@ vi.mock('@iconify/vue', () => ({
 }))
 
 const reportUserMock = vi.fn()
-vi.mock('@/services/matrix/SynapseRustExtensionsService', () => ({
-  synapseRustExtensionsService: {
+vi.mock('@/services/matrix/admin/AdminFacadeService', () => ({
+  adminService: {
     reportUser: (...args: unknown[]) => reportUserMock(...args)
   }
 }))
@@ -87,7 +87,7 @@ describe('UserReportDialog — 举报用户弹窗 (P0-2 MSC4260)', () => {
     expect(submitBtn.attributes('disabled')).toBeUndefined()
   })
 
-  it('提交时调用 synapseRustExtensionsService.reportUser 并 emit reported', async () => {
+  it('提交时调用 adminService.reportUser 并 emit reported', async () => {
     reportUserMock.mockResolvedValueOnce(undefined)
     const wrapper = mountDialog()
     await wrapper.find('[data-testid="user-report-reason"]').setValue('abuse')

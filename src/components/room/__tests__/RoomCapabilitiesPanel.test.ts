@@ -11,7 +11,7 @@ const getPermissionsMock = vi.fn()
 
 vi.mock('@/services/matrix/room/RoomCapabilitiesService', () => ({
   roomCapabilitiesService: {
-    fetch: (...args: unknown[]) => fetchCapabilitiesMock(...args)
+    getCapabilities: (...args: unknown[]) => fetchCapabilitiesMock(...args)
   }
 }))
 
