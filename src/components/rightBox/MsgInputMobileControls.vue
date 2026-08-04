@@ -10,9 +10,7 @@
   </div>
 
   <!-- 移动端底部操作栏 -->
-  <div
-    class="grid gap-2 h-2.5rem items-center"
-    :class="hasInput ? 'grid-cols-[2rem_3rem]' : 'grid-cols-[2rem_2rem]'">
+  <div class="grid gap-2 h-2.5rem items-center" :class="hasInput ? 'grid-cols-[2rem_3rem]' : 'grid-cols-[2rem_2rem]'">
     <div class="w-full flex-center h-full">
       <svg @click="$emit('handleEmojiClick')" class="w-25px h-25px mt-2px outline-none iconpark-icon">
         <use :href="mobilePanelState === MobilePanelStateEnum.EMOJI ? '#face' : '#smiling-face'"></use>
@@ -44,6 +42,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+// biome-ignore lint/style/useImportType: MobilePanelStateEnum 是 enum，在模板中作为值使用
 import { MobilePanelStateEnum } from '@/enums'
 
 defineProps<{

@@ -174,8 +174,8 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { UploadFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
-import MsgInputToolbar from './MsgInputToolbar.vue'
 import MsgInputMobileControls from './MsgInputMobileControls.vue'
+import MsgInputToolbar from './MsgInputToolbar.vue'
 
 // 异步加载重型组件
 const LocationModal = defineAsyncComponent(() => import('./location/LocationModal.vue'))
@@ -229,7 +229,30 @@ const inputClass = computed(() =>
     : 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) p-2'
 )
 
-const { inputKeyDown, handleAit, handleAI, handleInput, msgInput, send, sendLocationDirect, sendFilesDirect, sendVoiceDirect, sendEmojiDirect, personList, disabledSend, ait, aiDialogVisible, selectedAIKey, chatKey, menuList, selectedAitKey, groupedAIModels, updateSelectionRange, focusOn, getCursorSelectionRange } = useMsgInput(messageInputDom)
+const {
+  inputKeyDown,
+  handleAit,
+  handleAI,
+  handleInput,
+  msgInput,
+  send,
+  sendLocationDirect,
+  sendFilesDirect,
+  sendVoiceDirect,
+  sendEmojiDirect,
+  personList,
+  disabledSend,
+  ait,
+  aiDialogVisible,
+  selectedAIKey,
+  chatKey,
+  menuList,
+  selectedAitKey,
+  groupedAIModels,
+  updateSelectionRange,
+  focusOn,
+  getCursorSelectionRange
+} = useMsgInput(messageInputDom)
 
 const { startTyping, stopTyping } = useTyping()
 

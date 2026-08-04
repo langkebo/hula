@@ -359,7 +359,7 @@ class MatrixClientService {
             const newRefreshToken = refreshResult.refresh_token
             let newExpiresInMs = refreshResult.expires_in_ms
             // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
-            const expiresInSec = (refreshResult as Record<string, unknown>).expires_in as number | undefined
+            const expiresInSec = (refreshResult as unknown as Record<string, unknown>).expires_in as number | undefined
             if (!newExpiresInMs && expiresInSec) {
               newExpiresInMs = expiresInSec * 1000
             }

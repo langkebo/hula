@@ -78,12 +78,20 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { InvitePermissionMode } from '@/composables/app/useInvitePermissionFilter'
 
-defineProps<{
-  visible: boolean
-  mode: InvitePermissionMode
-  blocklist: string[]
-  allowlist: string[]
-}>()
+withDefaults(
+  defineProps<{
+    visible?: boolean
+    mode?: InvitePermissionMode
+    blocklist?: string[]
+    allowlist?: string[]
+  }>(),
+  {
+    visible: true,
+    mode: 'allow_all',
+    blocklist: () => [],
+    allowlist: () => []
+  }
+)
 
 const emit = defineEmits<{
   'mode-change': [mode: InvitePermissionMode]

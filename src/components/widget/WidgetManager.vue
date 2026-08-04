@@ -132,7 +132,9 @@ import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { type PermissionRow, useWidgetPermissions, useWidgets, type Widget } from '@/composables/widget'
 import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
 import { createLogger } from '@/utils/Logger'
+// biome-ignore lint/style/useImportType: Vue 组件在模板中作为值使用
 import WidgetDetailPanel from './WidgetDetailPanel.vue'
+// biome-ignore lint/style/useImportType: Vue 组件在模板中作为值使用
 import WidgetDialogs from './WidgetDialogs.vue'
 
 const logger = createLogger('WidgetManager')
@@ -350,12 +352,7 @@ async function handleSaveCapabilities(caps: string[]) {
   if (!selectedWidget.value) return
   savingCapabilities.value = true
   try {
-    const result = await matrixWidgetService.setWidgetCapabilities(
-      props.roomId,
-      selectedWidget.value.id,
-      caps,
-      true
-    )
+    const result = await matrixWidgetService.setWidgetCapabilities(props.roomId, selectedWidget.value.id, caps, true)
     if (result) {
       showFeedback(t('widget.capabilities_saved'), 'success')
       showCapabilitiesDialog.value = false

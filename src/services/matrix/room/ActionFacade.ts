@@ -26,6 +26,8 @@ export interface MatrixRoomActionFacade {
   setPinnedEvents(roomId: string, eventIds: string[]): Promise<void>
   pinEvent(roomId: string, eventId: string): Promise<void>
   unpinEvent(roomId: string, eventId: string): Promise<void>
+  getRetentionPolicy(roomId: string): Promise<{ content: Record<string, unknown> } | null>
+  setRetentionPolicy(roomId: string, content: Record<string, unknown>): Promise<void>
   setStickyEvents(roomId: string, events: Record<string, unknown>): Promise<void>
   setTag(roomId: string, tag: string, order?: number): Promise<void>
   removeTag(roomId: string, tag: string): Promise<void>
@@ -70,6 +72,8 @@ export const matrixRoomActionFacade: MatrixRoomActionFacade = {
   setPinnedEvents: (roomId, eventIds) => roomOperations.setPinnedEvents(roomId, eventIds),
   pinEvent: (roomId, eventId) => roomOperations.pinEvent(roomId, eventId),
   unpinEvent: (roomId, eventId) => roomOperations.unpinEvent(roomId, eventId),
+  getRetentionPolicy: (roomId) => roomOperations.getRetentionPolicy(roomId),
+  setRetentionPolicy: (roomId, content) => roomOperations.setRetentionPolicy(roomId, content),
   setStickyEvents: (roomId, events) => roomOperations.setStickyEvents(roomId, events),
   setTag: (roomId, tag, order?) => roomOperations.setTag(roomId, tag, order),
   removeTag: (roomId, tag) => roomOperations.removeTag(roomId, tag),

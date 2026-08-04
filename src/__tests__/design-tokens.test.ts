@@ -7,7 +7,7 @@
  * 对应重构优化方案 P0 任务 2.1.1-2.1.3
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -71,10 +71,7 @@ describe('Design Tokens 完整性守卫', () => {
     })
 
     it('design-tokens.css 应定义 --tjg-color-danger-50', () => {
-      expect(
-        tokensContent,
-        '--tjg-color-danger-50 未在 design-tokens.css 中定义'
-      ).toContain('--tjg-color-danger-50:')
+      expect(tokensContent, '--tjg-color-danger-50 未在 design-tokens.css 中定义').toContain('--tjg-color-danger-50:')
     })
   })
 
@@ -161,38 +158,34 @@ describe('Design Tokens 完整性守卫', () => {
   })
 })
 
-  describe('2.1.4 — 禁止硬编码品牌绿色（#13987f / rgba(19,152,127) / rgba(29,163,134)）', () => {
-    // 排除：design-tokens.css（权威来源）、NaiveProvider.vue（JS 主题配置）、Console.ts（console.log 不支持 CSS 变量）、测试文件
-    const EXCLUDE_FILES = ['design-tokens.css', 'NaiveProvider.vue', 'Console.ts']
-    const BRAND_GREEN_PATTERNS = [
-      /#13987f/i,
-      /rgba?\(\s*19\s*,\s*152\s*,\s*127/,
-      /rgba?\(\s*29\s*,\s*163\s*,\s*134/,
-    ]
+describe('2.1.4 — 禁止硬编码品牌绿色（#13987f / rgba(19,152,127) / rgba(29,163,134)）', () => {
+  // 排除：design-tokens.css（权威来源）、NaiveProvider.vue（JS 主题配置）、Console.ts（console.log 不支持 CSS 变量）、测试文件
+  const EXCLUDE_FILES = ['design-tokens.css', 'NaiveProvider.vue', 'Console.ts']
+  const BRAND_GREEN_PATTERNS = [/#13987f/i, /rgba?\(\s*19\s*,\s*152\s*,\s*127/, /rgba?\(\s*29\s*,\s*163\s*,\s*134/]
 
-    it('src/ 的 .vue/.scss/.css 文件中不应硬编码品牌绿色', () => {
-      const files = walkDir(SRC_DIR).filter(
-        (f) => !EXCLUDE_FILES.some((ex) => f.endsWith(ex)) && !TEST_FILE_PATTERNS.some((p) => p.test(f))
-      )
-      const violations: { file: string; line: number; text: string }[] = []
+  it('src/ 的 .vue/.scss/.css 文件中不应硬编码品牌绿色', () => {
+    const files = walkDir(SRC_DIR).filter(
+      (f) => !EXCLUDE_FILES.some((ex) => f.endsWith(ex)) && !TEST_FILE_PATTERNS.some((p) => p.test(f))
+    )
+    const violations: { file: string; line: number; text: string }[] = []
 
-      for (const file of files) {
-        const source = readFileSync(file, 'utf-8')
-        const lines = source.split('\n')
-        for (let i = 0; i < lines.length; i++) {
-          if (BRAND_GREEN_PATTERNS.some((p) => p.test(lines[i]))) {
-            violations.push({
-              file: relative(ROOT, file),
-              line: i + 1,
-              text: lines[i].trim(),
-            })
-          }
+    for (const file of files) {
+      const source = readFileSync(file, 'utf-8')
+      const lines = source.split('\n')
+      for (let i = 0; i < lines.length; i++) {
+        if (BRAND_GREEN_PATTERNS.some((p) => p.test(lines[i]))) {
+          violations.push({
+            file: relative(ROOT, file),
+            line: i + 1,
+            text: lines[i].trim()
+          })
         }
       }
+    }
 
-      expect(
-        violations,
-        `发现 ${violations.length} 处硬编码品牌绿色，应改用 --tjg-color-primary-* token\n${violations.map((v) => `  ${v.file}:${v.line}`).join('\n')}`
-      ).toEqual([])
-    })
+    expect(
+      violations,
+      `发现 ${violations.length} 处硬编码品牌绿色，应改用 --tjg-color-primary-* token\n${violations.map((v) => `  ${v.file}:${v.line}`).join('\n')}`
+    ).toEqual([])
   })
+})

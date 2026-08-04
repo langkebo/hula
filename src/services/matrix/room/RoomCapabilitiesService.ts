@@ -38,7 +38,7 @@ class RoomCapabilitiesService {
   /**
    * 获取房间能力, 默认 5 分钟缓存; force=true 时绕过缓存重新拉取
    */
-  async fetch(roomId: string, options: { force?: boolean } = {}): Promise<RoomCapabilitiesPayload | null> {
+  async getCapabilities(roomId: string, options: { force?: boolean } = {}): Promise<RoomCapabilitiesPayload | null> {
     if (!roomId) return null
 
     if (!options.force) {

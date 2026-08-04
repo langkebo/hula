@@ -1,6 +1,11 @@
 <template>
   <!-- 添加 Widget 对话框 -->
-  <n-modal :show="showAddDialog" preset="card" :title="t('widget.add')" style="width: 600px" @update:show="emit('update:showAddDialog', $event)">
+  <n-modal
+    :show="showAddDialog"
+    preset="card"
+    :title="t('widget.add')"
+    style="width: 600px"
+    @update:show="emit('update:showAddDialog', $event)">
     <n-form ref="formRef" :model="formData" :rules="rules">
       <n-form-item :label="t('widget.name')" path="name">
         <n-input v-model:value="formData.name" :placeholder="t('widget.name_placeholder')" />
@@ -23,7 +28,12 @@
   </n-modal>
 
   <!-- Widget 权限对话框 -->
-  <n-modal :show="showPermissionsDialog" preset="card" :title="t('widget.permissions')" style="width: 560px" @update:show="emit('update:showPermissionsDialog', $event)">
+  <n-modal
+    :show="showPermissionsDialog"
+    preset="card"
+    :title="t('widget.permissions')"
+    style="width: 560px"
+    @update:show="emit('update:showPermissionsDialog', $event)">
     <div v-if="selectedWidget" class="permissions-content">
       <div class="widget-info-header">
         <strong>{{ selectedWidget.name || selectedWidget.id }}</strong>
@@ -126,7 +136,12 @@
   </n-modal>
 
   <!-- 编辑 Config 对话框 -->
-  <n-modal :show="showConfigDialog" preset="card" :title="t('widget.edit_config')" style="width: 600px" @update:show="emit('update:showConfigDialog', $event)">
+  <n-modal
+    :show="showConfigDialog"
+    preset="card"
+    :title="t('widget.edit_config')"
+    style="width: 600px"
+    @update:show="emit('update:showConfigDialog', $event)">
     <div v-if="selectedWidget" class="config-dialog-content">
       <n-spin :show="savingConfig">
         <n-form :model="configFormData">
@@ -155,10 +170,10 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { type FormInst } from 'naive-ui'
+import type { FormInst } from 'naive-ui'
 import { reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type PermissionRow, type Widget } from '@/composables/widget'
+import type { PermissionRow, Widget } from '@/composables/widget'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('WidgetDialogs')

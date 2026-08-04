@@ -1,4 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import type { GeneratedSecretStorageKey } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 
@@ -21,6 +22,36 @@ export interface KeyRotationRecord {
   keyId: string
   rotatedAt: number
   deviceId: string
+}
+
+/** 交叉签名信息（由 useEncryption 聚合返回） */
+export interface CrossSigningInfo {
+  isSetup: boolean
+  masterPublicKey?: string | null
+  selfSigningPublicKey?: string | null
+  userSigningPublicKey?: string | null
+}
+
+/** 密钥备份设置选项 */
+export interface SetupKeyBackupOptions {
+  recoveryKey?: string
+  password?: string
+  authData?: unknown
+  generatedKey?: GeneratedSecretStorageKey | null
+}
+
+/** 密钥备份信息 */
+export interface KeyBackupInfo {
+  version: string
+  algorithm: string
+  authData?: unknown
+  count?: number
+  etag?: string
+}
+
+/** 通用验证请求句柄（默认透传，调用方无需关注具体实现） */
+export interface VerificationRequest {
+  [key: string]: unknown
 }
 
 /**

@@ -450,7 +450,6 @@ declare module 'matrix-js-sdk' {
     getDeviceKeysManager?(): import('matrix-js-sdk/device-keys').DeviceKeysManager
     getCryptoKeysManager?(): import('matrix-js-sdk/crypto-keys').CryptoKeysManager
     getKeyVerificationManager?(): import('matrix-js-sdk/key-verification').KeyVerificationManager
-    getPushers?(): Promise<unknown>
     // Upload
     uploadContent(
       file: Blob | File,

@@ -52,9 +52,9 @@ export class MatrixEventRouter {
 
   // ---- SDK 事件监听器（箭头函数绑定 this）-----------------------------------------
 
-  private readonly syncListener = (state: string, prevState?: string, data?: unknown) => {
+  private readonly syncListener = (state: unknown, prevState?: unknown, data?: unknown) => {
     this.emit('sync', { state, prevState, data })
-    this.syncStateHandler?.(state, prevState, data)
+    this.syncStateHandler?.(state as string, prevState as string | undefined, data)
   }
 
   private readonly roomListener = (room: Room) => {

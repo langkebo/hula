@@ -1,6 +1,6 @@
 import { reactive, ref } from 'vue'
-import { MittEnum } from '@/enums'
 import { useMitt } from '@/composables/common/useMitt'
+import { MittEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { createLogger } from '@/utils/Logger'
@@ -15,7 +15,7 @@ interface ThreadOriginalMessage {
 }
 
 export function useChatDialogs(getMessageSenderUid: (msg: MessageType) => string) {
-  const logger = createLogger('useChatDialogs')
+  const _logger = createLogger('useChatDialogs')
   const chatStore = useChatStore()
 
   // Thread panel state

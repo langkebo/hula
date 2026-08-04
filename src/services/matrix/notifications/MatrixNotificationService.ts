@@ -475,7 +475,7 @@ class MatrixNotificationService extends BaseMatrixService {
     const client = this.getNotificationClient()
     try {
       const result = await client.getPushers()
-      return (result.pushers ?? []) as Array<Record<string, unknown>>
+      return (result.pushers ?? []) as unknown as Array<Record<string, unknown>>
     } catch (err) {
       logger.error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
       throw err
@@ -488,7 +488,7 @@ class MatrixNotificationService extends BaseMatrixService {
   async setPusherByBody(pusher: Record<string, unknown>): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      await client.setPusher(pusher as IPusherRequest)
+      await client.setPusher(pusher as unknown as IPusherRequest)
       logger.info('[MatrixNotification] 设置推送设备成功')
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送设备失败: ${err}`)

@@ -100,6 +100,22 @@ export class RoomOperations extends BaseMatrixService {
     await client.sendStateEvent(roomId, 'm.room.avatar', { url: avatarUrl }, '')
   }
 
+  /** 获取房间消息保留策略（m.room.retention 状态事件） */
+  async getRetentionPolicy(roomId: string): Promise<{ content: Record<string, unknown> } | null> {
+    const client = this.getClient()
+    const room = client.getRoom(roomId)
+    if (!room) return null
+    const event = room.currentState.getStateEvents('m.room.retention', '')
+    if (!event) return null
+    return { content: event.getContent() as Record<string, unknown> }
+  }
+
+  /** 设置房间消息保留策略（m.room.retention 状态事件） */
+  async setRetentionPolicy(roomId: string, content: Record<string, unknown>): Promise<void> {
+    const client = this.getClient()
+    await client.sendStateEvent(roomId, 'm.room.retention', content, '')
+  }
+
   /**
    * 设置房间在房间目录中的可见性（公开/私密）
    * 对应 Matrix API: PUT /_matrix/client/v3/directory/list/room/{roomId}
