@@ -43,7 +43,7 @@
         </div>
         <!-- 普通右键菜单 -->
         <div
-          v-if="!isMobile() && showMenu && !(emoji && emoji.length > 0 && showAllEmojis)"
+          v-if="!isMobileRef && showMenu && !(emoji && emoji.length > 0 && showAllEmojis)"
           ref="menuRef"
           class="context-menu select-none"
           tabindex="0"
@@ -118,7 +118,7 @@
 
         <!-- 移动端菜单 -->
         <div
-          v-if="isMobile() && showMenu && !(emoji && emoji.length > 0 && showAllEmojis)"
+          v-if="isMobileRef && showMenu && !(emoji && emoji.length > 0 && showAllEmojis)"
           class="context-menu select-none"
           :style="{
             left: `${pos.posX}px`,
@@ -203,6 +203,8 @@ type Props = {
   specialMenu?: ContextMenuItem[]
 }
 const { t } = useI18n()
+
+const isMobileRef = computed(() => isMobile())
 
 const props = withDefaults(defineProps<Props>(), {
   content: () => ({}),

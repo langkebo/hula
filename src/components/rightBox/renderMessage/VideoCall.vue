@@ -7,7 +7,7 @@
     </svg>
 
     <!-- 消息内容 -->
-    <div class="select-none cursor-default" :class="isMobile() ? 'text-16px' : 'text-14px'">
+    <div class="select-none cursor-default" :class="isMobileRef ? 'text-16px' : 'text-14px'">
       {{ body }}
     </div>
   </div>
@@ -23,6 +23,8 @@ const props = defineProps<{
 }>()
 
 const userStore = useUserStore()
+
+const isMobileRef = computed(() => isMobile())
 
 // 判断是否是当前用户发送的消息
 const isCurrentUser = computed(() => {

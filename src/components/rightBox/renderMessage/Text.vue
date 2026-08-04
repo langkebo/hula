@@ -1,5 +1,5 @@
 <template>
-  <div :class="isMobile() ? 'text-16px' : 'text-14px'">
+  <div :class="isMobileRef ? 'text-16px' : 'text-14px'">
     <template v-for="(item, index) in fragments" :key="index">
       <n-popover
         trigger="click"
@@ -87,6 +87,8 @@ import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import type { TextBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { isMobile } from '@/utils/PlatformConstants'
+
+const isMobileRef = computed(() => isMobile())
 
 // 标记结构用于描述需特殊渲染的片段区间
 type ContentMarker = {

@@ -119,7 +119,7 @@
             @contextmenu="handleContextMenuSelection"
             class="relative flex flex-col chat-message-max-width"
             :data-key="isMe ? `U${message.message.id}` : `Q${message.message.id}`"
-            :class="[isMe ? 'items-end' : 'items-start', isMobile() ? 'w-full max-w-full' : '']"
+            :class="[isMe ? 'items-end' : 'items-start', isMobileRef ? 'w-full max-w-full' : '']"
             :style="{ '--bubble-max-width': bubbleMaxWidth }"
             @select="$event.click(message, 'Main')"
             :menu="handleItemType(message.message.type)"
@@ -154,7 +154,7 @@
                       activeBubble === message.message.id &&
                       !isSpecialMsgType(message.message.type) &&
                       message.message.type !== MsgEnum.VOICE &&
-                      !isMobile()
+                      !isMobileRef
                   }
                 ]"
                 :is="componentMap[message.message.type]"
@@ -188,7 +188,7 @@
                     activeBubble === message.message.id &&
                     !isSpecialMsgType(message.message.type) &&
                     message.message.type !== MsgEnum.VOICE &&
-                    !isMobile()
+                    !isMobileRef
                 }
               ]"
               :is="componentMap[message.message.type]"
@@ -259,7 +259,7 @@
             :size="6"
             v-if="messageBody.reply"
             @click="emit('jump2Reply', messageBody.reply.id)"
-            :class="isMobile() ? 'bg-[--tjg-surface-app] text-13px' : 'bg-[--tjg-surface-subtle] text-12px'"
+            :class="isMobileRef ? 'bg-[--tjg-surface-app] text-13px' : 'bg-[--tjg-surface-subtle] text-12px'"
             class="reply-bubble relative w-fit custom-shadow select-none chat-message-max-width"
             :style="{ 'max-width': bubbleMaxWidth }">
             <svg class="size-14px">
@@ -383,6 +383,8 @@ const isShowablePopover = (value: unknown): value is ShowablePopover => {
 }
 
 const ThreadIndicator = computed(() => (isMobile() ? ThreadIndicatorMobile : ThreadIndicatorDesktop))
+
+const isMobileRef = computed(() => isMobile())
 
 const props = withDefaults(
   defineProps<{
