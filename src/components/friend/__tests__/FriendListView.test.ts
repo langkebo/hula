@@ -4,6 +4,25 @@ import { defineComponent, h, reactive } from 'vue'
 import { OnlineEnum } from '@/enums'
 import FriendListView from '../FriendListView.vue'
 
+// FriendListItem 使用 v-safe-html 渲染高亮文本，测试中注册一个简单 stub 直接设置 innerHTML
+const safeHtmlDirective = {
+  mounted(el: HTMLElement, binding: { value?: string }) {
+    el.innerHTML = binding.value ?? ''
+  },
+  updated(el: HTMLElement, binding: { value?: string }) {
+    el.innerHTML = binding.value ?? ''
+  }
+}
+
+const mountView = () =>
+  mount(FriendListView, {
+    global: {
+      directives: {
+        'safe-html': safeHtmlDirective
+      }
+    }
+  })
+
 const { routerPushMock, contactStoreMock, capabilityState, announceMock, addSpecialFriendMock, showFeedbackMock } =
   vi.hoisted(() => ({
     routerPushMock: vi.fn(),
@@ -316,16 +335,16 @@ describe('FriendListView', () => {
   })
 
   it('renders friend list semantics and marks selected friend after click', async () => {
-    const wrapper = mount(FriendListView)
+    const wrapper = mountView()
 
     await flushPromises()
 
     const list = wrapper.get('[role="list"]')
-    const items = wrapper.findAll('[role="listitem"]')
+    const items = wrapper.findAll('.friend-list-item')
 
     expect(list.attributes('aria-label')).toBe('friend.list.friend_list_label')
     expect(items).toHaveLength(2)
-    expect(items[0]?.attributes('aria-current')).toBeUndefined()
+    expect(items[0]?.classes('friend-list-item--selected')).toBe(false)
 
     await items[0]!.trigger('click')
 
@@ -341,13 +360,13 @@ describe('FriendListView', () => {
     route.params = { userId: '@alice:example.com' }
     await flushPromises()
 
-    expect(wrapper.findAll('[role="listitem"]')[0]?.attributes('aria-current')).toBe('true')
+    expect(wrapper.findAll('.friend-list-item')[0]?.classes('friend-list-item--selected')).toBe(true)
   })
 
   it('restores search history and updates it after a new search', async () => {
     localStorage.setItem('tjg-friend-search-history', JSON.stringify(['Alice']))
 
-    const wrapper = mount(FriendListView)
+    const wrapper = mountView()
     await flushPromises()
 
     expect(wrapper.get('[data-test="friend-search-history-count"]').text()).toBe('1')
@@ -363,7 +382,7 @@ describe('FriendListView', () => {
   })
 
   it('shows a dedicated empty state when search has no results', async () => {
-    const wrapper = mount(FriendListView)
+    const wrapper = mountView()
     await flushPromises()
 
     await wrapper.get('[data-test="friend-search-input"]').setValue('Charlie')
@@ -376,53 +395,53 @@ describe('FriendListView', () => {
   })
 
   it('搜索结果中匹配文本被高亮标记', async () => {
-    const wrapper = mount(FriendListView)
+    const wrapper = mountView()
     await flushPromises()
 
-    expect(wrapper.find('.friend-item__highlight').exists()).toBe(false)
+    expect(wrapper.find('mark').exists()).toBe(false)
 
     await wrapper.get('[data-test="friend-search-input"]').setValue('Ali')
     await wrapper.get('[data-test="friend-search-submit"]').trigger('click')
     await flushPromises()
 
-    const highlight = wrapper.find('.friend-item__highlight')
+    const highlight = wrapper.find('mark')
     expect(highlight.exists()).toBe(true)
     expect(highlight.text()).toBe('Ali')
   })
 
   it('清空搜索框后恢复完整好友列表', async () => {
-    const wrapper = mount(FriendListView)
+    const wrapper = mountView()
     await flushPromises()
 
-    expect(wrapper.findAll('[role="listitem"]')).toHaveLength(2)
+    expect(wrapper.findAll('.friend-list-item')).toHaveLength(2)
 
     await wrapper.get('[data-test="friend-search-input"]').setValue('Bob')
     await wrapper.get('[data-test="friend-search-submit"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.findAll('[role="listitem"]')).toHaveLength(1)
+    expect(wrapper.findAll('.friend-list-item')).toHaveLength(1)
 
     await wrapper.get('[data-test="friend-search-input"]').setValue('')
     await wrapper.get('[data-test="friend-search-submit"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.findAll('[role="listitem"]')).toHaveLength(2)
-    expect(wrapper.find('.friend-item__highlight').exists()).toBe(false)
+    expect(wrapper.findAll('.friend-list-item')).toHaveLength(2)
+    expect(wrapper.find('mark').exists()).toBe(false)
   })
 
   it('loading 状态下显示骨架屏替代 spinner', async () => {
     contactStoreMock.isLoading = true
-    const wrapper = mount(FriendListView)
+    const wrapper = mountView()
     await flushPromises()
 
     expect(wrapper.findComponent({ name: 'SkeletonFriendList' }).exists()).toBe(true)
-    expect(wrapper.findAll('[role="listitem"]')).toHaveLength(0)
+    expect(wrapper.findAll('.friend-list-item')).toHaveLength(0)
 
     contactStoreMock.isLoading = false
   })
 
   it('announces search progress and result feedback through live region', async () => {
-    const wrapper = mount(FriendListView)
+    const wrapper = mountView()
     await flushPromises()
 
     await wrapper.get('[data-test="friend-search-input"]').setValue('Alice')
@@ -437,11 +456,11 @@ describe('FriendListView', () => {
   })
 
   it('announces secret-friend action results through live region', async () => {
-    const wrapper = mount(FriendListView)
+    const wrapper = mountView()
 
     await flushPromises()
 
-    const firstItem = wrapper.findAll('[role="listitem"]')[0]
+    const firstItem = wrapper.findAll('.friend-list-item')[0]
     expect(firstItem).toBeTruthy()
 
     await firstItem!.trigger('contextmenu')

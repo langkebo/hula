@@ -223,6 +223,18 @@ const stubs = {
   })
 }
 
+// FriendListItem 使用 v-safe-html 渲染高亮文本，测试中注册一个简单 stub 直接设置 innerHTML
+const safeHtmlDirective = {
+  mounted(el: HTMLElement, binding: { value?: string }) {
+    el.innerHTML = binding.value ?? ''
+  },
+  updated(el: HTMLElement, binding: { value?: string }) {
+    el.innerHTML = binding.value ?? ''
+  }
+}
+
+const globalConfig = { stubs, directives: { 'safe-html': safeHtmlDirective } }
+
 import FriendListView from '../FriendListView.vue'
 
 describe('N-1: 好友搜索过滤逻辑', () => {
@@ -231,12 +243,12 @@ describe('N-1: 好友搜索过滤逻辑', () => {
   })
 
   it('搜索 "test1" 应匹配 userId 包含 test1 的好友', async () => {
-    const wrapper = mount(FriendListView, { global: { stubs } })
+    const wrapper = mount(FriendListView, { global: globalConfig })
     await flushPromises()
     await nextTick()
 
     // 确认初始列表有 3 个好友
-    const items = wrapper.findAll('.friend-item')
+    const items = wrapper.findAll('.friend-list-item')
     expect(items.length).toBe(3)
 
     // 输入搜索关键词
@@ -249,7 +261,7 @@ describe('N-1: 好友搜索过滤逻辑', () => {
     await flushPromises()
 
     // 应显示 test1（userId @test1:matrix.test 包含 "test1"）
-    const filteredItems = wrapper.findAll('.friend-item')
+    const filteredItems = wrapper.findAll('.friend-list-item')
     expect(filteredItems.length).toBe(1)
   })
 
@@ -257,7 +269,7 @@ describe('N-1: 好友搜索过滤逻辑', () => {
     // 注意：所有 userId 都以 @username:matrix.test 结尾，
     // 所以搜索 "test" 会匹配 "matrix.test" 中的 "test"，返回全部 3 个好友。
     // 这是预期的 filter 行为（userId.includes(query)）。
-    const wrapper = mount(FriendListView, { global: { stubs } })
+    const wrapper = mount(FriendListView, { global: globalConfig })
     await flushPromises()
     await nextTick()
 
@@ -267,12 +279,12 @@ describe('N-1: 好友搜索过滤逻辑', () => {
     await nextTick()
     await flushPromises()
 
-    const filteredItems = wrapper.findAll('.friend-item')
+    const filteredItems = wrapper.findAll('.friend-list-item')
     expect(filteredItems.length).toBe(3) // 所有 userId 都包含 "matrix.test"
   })
 
   it('搜索 "alice" 应匹配 displayName 和 remark', async () => {
-    const wrapper = mount(FriendListView, { global: { stubs } })
+    const wrapper = mount(FriendListView, { global: globalConfig })
     await flushPromises()
     await nextTick()
 
@@ -282,12 +294,12 @@ describe('N-1: 好友搜索过滤逻辑', () => {
     await nextTick()
     await flushPromises()
 
-    const filteredItems = wrapper.findAll('.friend-item')
+    const filteredItems = wrapper.findAll('.friend-list-item')
     expect(filteredItems.length).toBe(1)
   })
 
   it('搜索 "Remark" 应匹配 remark 字段（不区分大小写）', async () => {
-    const wrapper = mount(FriendListView, { global: { stubs } })
+    const wrapper = mount(FriendListView, { global: globalConfig })
     await flushPromises()
     await nextTick()
 
@@ -297,12 +309,12 @@ describe('N-1: 好友搜索过滤逻辑', () => {
     await nextTick()
     await flushPromises()
 
-    const filteredItems = wrapper.findAll('.friend-item')
+    const filteredItems = wrapper.findAll('.friend-list-item')
     expect(filteredItems.length).toBe(1) // Alice has remark "Alice Remark"
   })
 
   it('搜索不存在的好友应返回空', async () => {
-    const wrapper = mount(FriendListView, { global: { stubs } })
+    const wrapper = mount(FriendListView, { global: globalConfig })
     await flushPromises()
     await nextTick()
 
@@ -312,12 +324,12 @@ describe('N-1: 好友搜索过滤逻辑', () => {
     await nextTick()
     await flushPromises()
 
-    const filteredItems = wrapper.findAll('.friend-item')
+    const filteredItems = wrapper.findAll('.friend-list-item')
     expect(filteredItems.length).toBe(0)
   })
 
   it('清除搜索后应显示全部好友', async () => {
-    const wrapper = mount(FriendListView, { global: { stubs } })
+    const wrapper = mount(FriendListView, { global: globalConfig })
     await flushPromises()
     await nextTick()
 
@@ -327,7 +339,7 @@ describe('N-1: 好友搜索过滤逻辑', () => {
     await wrapper.find('.search-trigger').trigger('click')
     await nextTick()
     await flushPromises()
-    expect(wrapper.findAll('.friend-item').length).toBe(1)
+    expect(wrapper.findAll('.friend-list-item').length).toBe(1)
 
     // 清除搜索
     await input.setValue('')
@@ -336,6 +348,6 @@ describe('N-1: 好友搜索过滤逻辑', () => {
     await flushPromises()
 
     // 应显示全部
-    expect(wrapper.findAll('.friend-item').length).toBe(3)
+    expect(wrapper.findAll('.friend-list-item').length).toBe(3)
   })
 })
