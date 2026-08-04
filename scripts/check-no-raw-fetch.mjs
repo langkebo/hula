@@ -6,7 +6,6 @@ const ALLOWLIST = new Set([
   'src/App.vue',                                     // apple.com favicon reachability check (no-cors)
   'src/strategy/strategies/video.ts',                // blob: URL requires browser-native fetch
   'src/views/openclaw/OpenClawView.vue',             // OpenClawService doesn't exist yet — needs new service
-  'src/services/matrix/room/RoomCapabilitiesService.ts', // false positive — `fetch` is a method name, not globalThis.fetch
 ]);
 
 const output = execSync(
