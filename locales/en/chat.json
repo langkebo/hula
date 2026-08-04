@@ -41,7 +41,8 @@
     "copy_url": "Copy URL"
   },
   "privacy": {
-    "screenshot_protected": "This chat is protected, screenshots are prohibited"
+    "screenshot_protected": "This chat is protected, screenshots are prohibited",
+    "screenshot_detected_notice": "Screenshot activity has been recorded"
   },
   "recall": {
     "cannot_recall": "Cannot recall"

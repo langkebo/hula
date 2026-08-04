@@ -1,6 +1,7 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive, ref } from 'vue'
+import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import ChatMain from '../ChatMain.vue'
 
 vi.mock('@/utils/AppHarness', () => ({
@@ -379,6 +380,14 @@ describe('ChatMain', () => {
 describe('ChatMain private mode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // usePrivateMode is a module-level singleton; reset shared state between tests
+    // so assertions about "inactive" state are not polluted by prior tests.
+    const { privateModeActive, showPrivateConfirm, burnEnabled, currentRoomId } = usePrivateMode()
+    privateModeActive.value = false
+    showPrivateConfirm.value = false
+    burnEnabled.value = false
+    currentRoomId.value = ''
 
     globalStore = reactive({
       currentSessionRoomId: '!room:example.com'
