@@ -15,70 +15,98 @@ export class AvatarUtils {
   /** Memoization cache: avatar input -> resolved URL */
   private static readonly cache = new Map<string, string>()
 
+  /** Pluggable mxc:// resolver — registered by MatrixClientService at app startup */
+  private static mxcResolver: ((mxcUrl: string, width?: number, height?: number) => string | null) | null = null
+
+  /**
+   * 注册 mxc:// URL 解析器（由 MatrixClientService 在客户端初始化后调用）
+   * @param resolver - 将 mxc:// URL 转换为 HTTPS URL 的函数，返回 null 表示解析失败
+   */
+  static setMxcResolver(resolver: ((mxcUrl: string, width?: number, height?: number) => string | null) | null): void {
+    AvatarUtils.mxcResolver = resolver
+    AvatarUtils.cache.clear()
+  }
+
   /**
    * 检查头像字符串是否为默认头像 (001-022)
-   * @param avatar - 要检查的头像字符串
-   * @returns 布尔值指示是否是默认头像
    */
   public static isDefaultAvatar(avatar: string): boolean {
-    // 快速判断：如果为空或长度不是3，直接返回false
     if (avatar?.length !== 3) return false
-
-    // 检查是否全是数字
     const num = parseInt(avatar, 10)
     if (isNaN(num)) return false
-
-    // 数字范围检查 (001-021)
     return num >= AvatarUtils.RANGE_START && num <= AvatarUtils.RANGE_END
   }
 
   /**
    * 根据头像值获取头像URL（带 memoization 缓存）
-   * @param avatar - 头像字符串或URL
-   * @returns 头像字符串或URL
+   * @param avatar - 头像字符串、URL 或 mxc:// URI
+   * @param size - 可选尺寸（像素），用于生成缩略图 URL
    */
-  public static getAvatarUrl(avatar: string | null | undefined): string {
+  public static getAvatarUrl(avatar: string | null | undefined, size?: number): string {
     if (!avatar) return AvatarUtils.DEFAULT
     const rawAvatar = avatar.trim()
 
-    const cached = AvatarUtils.cache.get(rawAvatar)
+    const cacheKey = size ? `${rawAvatar}:${size}` : rawAvatar
+    const cached = AvatarUtils.cache.get(cacheKey)
     if (cached !== undefined) return cached
 
-    const result = AvatarUtils.resolveAvatarUrl(rawAvatar)
-    AvatarUtils.cache.set(rawAvatar, result)
+    const result = AvatarUtils.resolveAvatarUrl(rawAvatar, size)
+    AvatarUtils.cache.set(cacheKey, result)
     return result
   }
 
   /**
-   * 批量预解析头像 URL，适用于列表渲染前调用
-   * 避免渲染时逐个调用 getAvatarUrl 导致的重复计算
-   * @param avatars - 头像字符串数组
+   * 批量预解析头像 URL
    */
-  public static batchResolve(avatars: (string | null | undefined)[]): void {
+  public static batchResolve(avatars: (string | null | undefined)[], size?: number): void {
     for (const avatar of avatars) {
       if (avatar) {
         const rawAvatar = avatar.trim()
-        if (!AvatarUtils.cache.has(rawAvatar)) {
-          AvatarUtils.cache.set(rawAvatar, AvatarUtils.resolveAvatarUrl(rawAvatar))
+        const cacheKey = size ? `${rawAvatar}:${size}` : rawAvatar
+        if (!AvatarUtils.cache.has(cacheKey)) {
+          AvatarUtils.cache.set(cacheKey, AvatarUtils.resolveAvatarUrl(rawAvatar, size))
         }
       }
     }
   }
 
   /**
-   * 清除缓存（通常不需要调用，仅在头像更新时使用）
+   * 清除缓存
    */
   public static clearCache(avatar?: string): void {
     if (avatar) {
-      AvatarUtils.cache.delete(avatar.trim())
+      const rawAvatar = avatar.trim()
+      AvatarUtils.cache.delete(rawAvatar)
+      for (const key of AvatarUtils.cache.keys()) {
+        if (key.startsWith(`${rawAvatar}:`)) {
+          AvatarUtils.cache.delete(key)
+        }
+      }
     } else {
       AvatarUtils.cache.clear()
     }
   }
 
-  private static resolveAvatarUrl(avatar: string): string {
+  /**
+   * 从本地头像库中随机选取一个默认头像编号 (001-022)
+   */
+  public static getRandomDefaultAvatar(): string {
+    const range = AvatarUtils.RANGE_END - AvatarUtils.RANGE_START + 1
+    const num = Math.floor(Math.random() * range) + AvatarUtils.RANGE_START
+    return String(num).padStart(3, '0')
+  }
+
+  private static resolveAvatarUrl(avatar: string, size?: number): string {
     if (AvatarUtils.isDefaultAvatar(avatar)) {
       return `/avatar/${avatar}.webp`
+    }
+
+    if (avatar.startsWith('mxc://')) {
+      if (AvatarUtils.mxcResolver) {
+        const httpUrl = size ? AvatarUtils.mxcResolver(avatar, size, size) : AvatarUtils.mxcResolver(avatar)
+        if (httpUrl) return httpUrl
+      }
+      return AvatarUtils.DEFAULT
     }
 
     try {
@@ -87,11 +115,11 @@ export class AvatarUtils {
         return parsed.toString()
       }
     } catch {
-      // 如果是自家预置文件名，可进一步做白名单/正则校验
       if (/^[a-z0-9_-]+$/i.test(avatar)) {
         return `/avatar/${avatar}.webp`
       }
     }
+
     return AvatarUtils.DEFAULT
   }
 }
