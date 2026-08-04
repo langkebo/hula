@@ -3,42 +3,45 @@ import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
 import { useScreenshotDetection } from './useScreenshotDetection'
 
+// 模块级单例状态：所有 usePrivateMode() 调用者共享同一份响应式状态
+// 与同一个截屏检测实例，避免多实例导致状态不一致或重复注册监听器。
+const privateModeActive = ref(false)
+const showPrivateConfirm = ref(false)
+const burnEnabled = ref(false)
+const burnDuration = ref(60)
+const currentRoomId = ref<string>('')
+
+// 截屏检测实例仅在模块加载时创建一次，确保全局唯一。
+const { startWatch, stopWatch } = useScreenshotDetection()
+
+const privateModeFeatures = computed(() => [
+  {
+    title: '端到端加密',
+    description: '消息在发送端加密，仅收件人可解密',
+    icon: '#lock',
+    iconClass: 'text-[--tjg-color-primary-500]'
+  },
+  {
+    title: '阅后即焚',
+    description: '消息可设为自动销毁，阅读后即删除',
+    icon: '#fire',
+    iconClass: 'text-[--tjg-color-danger-500]'
+  },
+  {
+    title: '防截屏',
+    description: '启用截屏水印与防截屏保护',
+    icon: '#shield',
+    iconClass: 'text-[--tjg-color-warning-500]'
+  },
+  {
+    title: '不留存',
+    description: '服务器不存储消息内容，仅传输',
+    icon: '#delete',
+    iconClass: 'text-[--tjg-text-tertiary]'
+  }
+])
+
 export function usePrivateMode() {
-  const privateModeActive = ref(false)
-  const showPrivateConfirm = ref(false)
-  const burnEnabled = ref(false)
-  const burnDuration = ref(60)
-  const currentRoomId = ref<string>('')
-
-  const { startWatch, stopWatch } = useScreenshotDetection()
-
-  const privateModeFeatures = computed(() => [
-    {
-      title: '端到端加密',
-      description: '消息在发送端加密，仅收件人可解密',
-      icon: '#lock',
-      iconClass: 'text-[--tjg-color-primary-500]'
-    },
-    {
-      title: '阅后即焚',
-      description: '消息可设为自动销毁，阅读后即删除',
-      icon: '#fire',
-      iconClass: 'text-[--tjg-color-danger-500]'
-    },
-    {
-      title: '防截屏',
-      description: '启用截屏水印与防截屏保护',
-      icon: '#shield',
-      iconClass: 'text-[--tjg-color-warning-500]'
-    },
-    {
-      title: '不留存',
-      description: '服务器不存储消息内容，仅传输',
-      icon: '#delete',
-      iconClass: 'text-[--tjg-text-tertiary]'
-    }
-  ])
-
   function setRoomId(roomId: string) {
     currentRoomId.value = roomId
   }

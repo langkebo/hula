@@ -1089,7 +1089,8 @@ export type I18nKeys = {
       "copy_url": "复制网址"
     },
     "privacy": {
-      "screenshot_protected": "此聊天受保护，禁止截图"
+      "screenshot_protected": "此聊天受保护，禁止截图",
+      "screenshot_detected_notice": "截屏行为已被记录"
     },
     "recall": {
       "cannot_recall": "无法撤回"
