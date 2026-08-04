@@ -23,30 +23,40 @@ const mountView = () =>
     }
   })
 
-const { routerPushMock, contactStoreMock, capabilityState, announceMock, addSpecialFriendMock, showFeedbackMock } =
-  vi.hoisted(() => ({
-    routerPushMock: vi.fn(),
-    contactStoreMock: {
-      contactsList: [] as Array<Record<string, unknown>>,
-      requestFriendsList: [] as Array<Record<string, unknown>>,
-      isLoading: false,
-      incomingRequestsCount: 0,
-      lastFriendError: null as { message: string } | null,
-      initialize: vi.fn(),
-      startDirectRoom: vi.fn(),
-      setFriendStatus: vi.fn(),
-      removeFromContacts: vi.fn(),
-      setFriendNote: vi.fn(),
-      setFriendDisplayName: vi.fn()
-    },
-    capabilityState: {
-      isLoaded: { value: true },
-      canUseFriendList: { value: true }
-    },
-    announceMock: vi.fn(),
-    addSpecialFriendMock: vi.fn(),
-    showFeedbackMock: vi.fn()
-  }))
+const {
+  routerPushMock,
+  contactStoreMock,
+  capabilityState,
+  announceMock,
+  addSpecialFriendMock,
+  showFeedbackMock,
+  getFriendDmRoomMock,
+  openMsgSessionByRoomIdMock
+} = vi.hoisted(() => ({
+  routerPushMock: vi.fn(),
+  contactStoreMock: {
+    contactsList: [] as Array<Record<string, unknown>>,
+    requestFriendsList: [] as Array<Record<string, unknown>>,
+    isLoading: false,
+    incomingRequestsCount: 0,
+    lastFriendError: null as { message: string } | null,
+    initialize: vi.fn(),
+    startDirectRoom: vi.fn(),
+    setFriendStatus: vi.fn(),
+    removeFromContacts: vi.fn(),
+    setFriendNote: vi.fn(),
+    setFriendDisplayName: vi.fn()
+  },
+  capabilityState: {
+    isLoaded: { value: true },
+    canUseFriendList: { value: true }
+  },
+  announceMock: vi.fn(),
+  addSpecialFriendMock: vi.fn(),
+  showFeedbackMock: vi.fn(),
+  getFriendDmRoomMock: vi.fn(),
+  openMsgSessionByRoomIdMock: vi.fn()
+}))
 
 const route = reactive({
   path: '/friend',
@@ -111,6 +121,16 @@ vi.mock('@/services/matrix/friends/MatrixSpecialFriendService', () => ({
   matrixSpecialFriendService: {
     addSpecialFriend: addSpecialFriendMock
   }
+}))
+
+vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
+  matrixFriendService: {
+    getFriendDmRoom: getFriendDmRoomMock
+  }
+}))
+
+vi.mock('@/composables/chat/openMsgSession', () => ({
+  openMsgSessionByRoomId: openMsgSessionByRoomIdMock
 }))
 
 vi.mock('@/utils/AvatarUtils', () => ({
@@ -207,10 +227,28 @@ vi.mock('@/components/common/ContextMenu.vue', () => ({
             'button',
             {
               type: 'button',
+              'data-test': 'context-menu-send-message',
+              onClick: () => emit('select', { label: 'friend.context.send_message' })
+            },
+            'send-message'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
               'data-test': 'context-menu-secret-chat',
               onClick: () => emit('select', { label: 'friend.context.secret_chat' })
             },
             'secret-chat'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'context-menu-remove',
+              onClick: () => emit('select', { label: 'friend.context.remove' })
+            },
+            'remove'
           )
         ])
     }
@@ -257,7 +295,7 @@ vi.mock('naive-ui', () => {
             {
               type: 'button',
               'data-test': 'NButton',
-              onClick: () => emit('click')
+              onClick: (event: Event) => emit('click', event)
             },
             [...(slots.icon?.() ?? []), ...(slots.default?.() ?? [])]
           )
@@ -332,6 +370,9 @@ describe('FriendListView', () => {
     contactStoreMock.isLoading = false
     contactStoreMock.incomingRequestsCount = 1
     contactStoreMock.lastFriendError = null
+    // 默认：未找到已有 DM 房间，startDirectRoom 返回新房间 ID
+    getFriendDmRoomMock.mockResolvedValue({ room_id: '', exists: false })
+    contactStoreMock.startDirectRoom.mockResolvedValue('@new-room:example.com')
   })
 
   it('renders friend list semantics and marks selected friend after click', async () => {
@@ -476,5 +517,88 @@ describe('FriendListView', () => {
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('Error: secret friend failed', 'error')
+  })
+
+  it('clicking send-message action button starts a direct room with the correct user id', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    const firstItem = wrapper.findAll('.friend-list-item')[0]
+    expect(firstItem).toBeTruthy()
+    // FriendListItem 渲染三个动作按钮：send-message / remove / more
+    const actionButtons = firstItem!.findAll('button')
+    await actionButtons[0]!.trigger('click')
+    await flushPromises()
+
+    expect(getFriendDmRoomMock).toHaveBeenCalledWith('@alice:example.com')
+    expect(contactStoreMock.startDirectRoom).toHaveBeenCalledWith('@alice:example.com', false)
+    expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@new-room:example.com')
+  })
+
+  it('clicking send-message action button opens existing DM room without creating a new one', async () => {
+    getFriendDmRoomMock.mockResolvedValue({ room_id: '@existing-dm:example.com', exists: true })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    const firstItem = wrapper.findAll('.friend-list-item')[0]
+    expect(firstItem).toBeTruthy()
+    const actionButtons = firstItem!.findAll('button')
+    await actionButtons[0]!.trigger('click')
+    await flushPromises()
+
+    expect(getFriendDmRoomMock).toHaveBeenCalledWith('@alice:example.com')
+    expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@existing-dm:example.com')
+    expect(contactStoreMock.startDirectRoom).not.toHaveBeenCalled()
+  })
+
+  it('clicking remove action button removes the correct user from contacts', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    const firstItem = wrapper.findAll('.friend-list-item')[0]
+    expect(firstItem).toBeTruthy()
+    const actionButtons = firstItem!.findAll('button')
+    // 第二个动作按钮为 remove
+    await actionButtons[1]!.trigger('click')
+    await flushPromises()
+
+    expect(contactStoreMock.removeFromContacts).toHaveBeenCalledWith('@alice:example.com')
+    // send-message 路径不应被触发
+    expect(getFriendDmRoomMock).not.toHaveBeenCalled()
+    expect(contactStoreMock.startDirectRoom).not.toHaveBeenCalled()
+  })
+
+  it('context menu send_message action reuses the same shared helper as the action button', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    const firstItem = wrapper.findAll('.friend-list-item')[0]
+    expect(firstItem).toBeTruthy()
+
+    await firstItem!.trigger('contextmenu')
+    await wrapper.get('[data-test="context-menu-send-message"]').trigger('click')
+    await flushPromises()
+
+    expect(getFriendDmRoomMock).toHaveBeenCalledWith('@alice:example.com')
+    expect(contactStoreMock.startDirectRoom).toHaveBeenCalledWith('@alice:example.com', false)
+    expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@new-room:example.com')
+  })
+
+  it('context menu remove action reuses the same shared helper as the action button', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    const firstItem = wrapper.findAll('.friend-list-item')[0]
+    expect(firstItem).toBeTruthy()
+
+    await firstItem!.trigger('contextmenu')
+    await wrapper.get('[data-test="context-menu-remove"]').trigger('click')
+    await flushPromises()
+
+    expect(contactStoreMock.removeFromContacts).toHaveBeenCalledWith('@alice:example.com')
+    // send-message 路径不应被触发
+    expect(getFriendDmRoomMock).not.toHaveBeenCalled()
+    expect(contactStoreMock.startDirectRoom).not.toHaveBeenCalled()
   })
 })
