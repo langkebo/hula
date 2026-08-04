@@ -213,6 +213,10 @@ const showFileModal = ref(false)
 const pendingFiles = ref<UploadFile[]>([])
 const showLocationModal = ref(false)
 const isBeaconActive = ref(false)
+const privateModeActive = ref(false)
+const onPrivateModeChanged = (isActive: boolean) => {
+  privateModeActive.value = isActive
+}
 
 // ===== 移动端检测（消除模板内 isMobile() 调用） =====
 const isMobileRef = computed(() => isMobile())
@@ -223,11 +227,12 @@ const containerClass = computed(() =>
 )
 const inputMinHeight = computed(() => (isMobileRef.value ? '2rem' : '36px'))
 const inputLineHeight = computed(() => (isMobileRef.value && !msgInput.value ? '2rem' : '20px'))
-const inputClass = computed(() =>
-  isMobileRef.value
+const inputClass = computed(() => {
+  const base = isMobileRef.value
     ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) p-2 min-h-2rem ps-10px! text-14px! rounded-10px! max-h-8rem! flex items-center'
     : 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) p-2'
-)
+  return privateModeActive.value ? `${base} private-mode-input` : base
+})
 
 const {
   inputKeyDown,
@@ -576,6 +581,13 @@ defineExpose({
   handleLocationSelected
 })
 
+onMounted(() => {
+  useMitt.on(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
+})
+onUnmounted(() => {
+  useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
+})
+
 onMounted(async () => {
   useMitt.on(MittEnum.GLOBAL_FILES_DROP, handleGlobalFilesDrop)
   if (isMobileRef.value) {
@@ -662,5 +674,8 @@ watch(
 @use '@/styles/scss/msg-input';
 .msg-input-container {
   display: contents;
+}
+.private-mode-input {
+  border: 1px dashed var(--tjg-color-danger-500);
 }
 </style>

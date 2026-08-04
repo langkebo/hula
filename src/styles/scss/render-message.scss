@@ -277,3 +277,15 @@
   user-select: text;
   -webkit-user-select: text;
 }
+
+// 私密模式样式（.private-mode-active 类由 ChatMain.vue 在 .message-list 上添加）
+.private-mode-active {
+  // 发送方气泡红色背景
+  .bubble-oneself {
+    background-color: var(--tjg-color-danger-500);
+  }
+  // 接收方气泡红色边框
+  .bubble {
+    border: 1px solid var(--tjg-color-danger-500);
+  }
+}
