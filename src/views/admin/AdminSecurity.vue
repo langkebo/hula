@@ -93,6 +93,87 @@
             striped />
         </n-spin>
       </n-tab-pane>
+
+      <!-- 注册控制 Tab -->
+      <n-tab-pane name="registration" :tab="t('admin.security.registration_tab')">
+        <n-spin :show="registrationLoading">
+          <n-form label-placement="left" :label-width="160">
+            <n-form-item :label="t('admin.security.registration_policy')">
+              <n-radio-group v-model:value="registrationPolicy">
+                <n-radio value="open">{{ t('admin.security.registration_open') }}</n-radio>
+                <n-radio value="closed">{{ t('admin.security.registration_closed') }}</n-radio>
+                <n-radio value="approval">{{ t('admin.security.registration_approval') }}</n-radio>
+              </n-radio-group>
+            </n-form-item>
+            <n-form-item :label="' '">
+              <n-button type="primary" :loading="registrationSaving" @click="saveRegistrationPolicy">
+                {{ t('admin.common.save') }}
+              </n-button>
+            </n-form-item>
+          </n-form>
+        </n-spin>
+      </n-tab-pane>
+
+      <!-- 联邦控制 Tab -->
+      <n-tab-pane name="federation" :tab="t('admin.security.federation_tab')">
+        <n-spin :show="federationLoading">
+          <n-form label-placement="left" :label-width="160">
+            <n-form-item :label="t('admin.security.federation_enabled')">
+              <n-switch v-model:value="federationEnabled" />
+            </n-form-item>
+            <n-form-item :label="t('admin.security.federation_deny_list')">
+              <n-input
+                v-model:value="federationDenyList"
+                type="textarea"
+                :rows="4"
+                :placeholder="t('admin.security.federation_blacklist')" />
+            </n-form-item>
+            <n-form-item :label="t('admin.security.federation_allow_list')">
+              <n-input
+                v-model:value="federationAllowList"
+                type="textarea"
+                :rows="4"
+                :placeholder="t('admin.security.federation_whitelist')" />
+            </n-form-item>
+            <n-form-item :label="' '">
+              <n-button type="primary" :loading="federationSaving" @click="saveFederationPolicy">
+                {{ t('admin.common.save') }}
+              </n-button>
+            </n-form-item>
+          </n-form>
+        </n-spin>
+      </n-tab-pane>
+
+      <!-- 密码策略 Tab -->
+      <n-tab-pane name="password" :tab="t('admin.security.password_tab')">
+        <n-spin :show="passwordLoading">
+          <n-form label-placement="left" :label-width="180">
+            <n-form-item :label="t('admin.security.password_min_length')">
+              <n-input-number v-model:value="passwordPolicy.minLength" :min="1" :max="128" />
+            </n-form-item>
+            <n-form-item :label="t('admin.security.password_require_uppercase')">
+              <n-switch v-model:value="passwordPolicy.requireUppercase" />
+            </n-form-item>
+            <n-form-item :label="t('admin.security.password_require_lowercase')">
+              <n-switch v-model:value="passwordPolicy.requireLowercase" />
+            </n-form-item>
+            <n-form-item :label="t('admin.security.password_require_digit')">
+              <n-switch v-model:value="passwordPolicy.requireDigit" />
+            </n-form-item>
+            <n-form-item :label="t('admin.security.password_require_symbol')">
+              <n-switch v-model:value="passwordPolicy.requireSymbol" />
+            </n-form-item>
+            <n-form-item :label="t('admin.security.password_expiry_days')">
+              <n-input-number v-model:value="passwordPolicy.expiryDays" :min="0" :max="365" />
+            </n-form-item>
+            <n-form-item :label="' '">
+              <n-button type="primary" :loading="passwordSaving" @click="savePasswordPolicy">
+                {{ t('admin.common.save') }}
+              </n-button>
+            </n-form-item>
+          </n-form>
+        </n-spin>
+      </n-tab-pane>
     </n-tabs>
 
     <!-- 封禁 IP 对话框 -->
@@ -134,12 +215,16 @@ import {
   NFormItem,
   NIcon,
   NInput,
+  NInputNumber,
   NModal,
   NPageHeader,
   NPopconfirm,
+  NRadio,
+  NRadioGroup,
   NSelect,
   NSpace,
   NSpin,
+  NSwitch,
   NTabPane,
   NTabs,
   NTag
@@ -455,6 +540,164 @@ async function loadLoginFailures() {
   }
 }
 
+// ===== 注册控制 =====
+const registrationLoading = ref(false)
+const registrationSaving = ref(false)
+const registrationPolicy = ref<'open' | 'closed' | 'approval'>('closed')
+
+async function loadRegistrationPolicy() {
+  registrationLoading.value = true
+  try {
+    const config = await adminService.getServerConfig()
+    const cfg = config as Record<string, unknown>
+    const enabled = Boolean(cfg?.registrations_enabled)
+    const approval = Boolean(cfg?.registration_requires_approval)
+    if (enabled && approval) registrationPolicy.value = 'approval'
+    else if (enabled) registrationPolicy.value = 'open'
+    else registrationPolicy.value = 'closed'
+  } catch (e) {
+    logger.error('加载注册策略失败', e)
+  } finally {
+    registrationLoading.value = false
+  }
+}
+
+async function saveRegistrationPolicy() {
+  registrationSaving.value = true
+  try {
+    const enabled = registrationPolicy.value !== 'closed'
+    const approval = registrationPolicy.value === 'approval'
+    await adminService.updateServerConfig({
+      registrations_enabled: enabled,
+      registration_requires_approval: approval
+    })
+    showFeedback(t('admin.security.registration_policy_saved'), 'success')
+  } catch (e) {
+    logger.error('保存注册策略失败', e)
+    showFeedback(t('admin.security.registration_policy_failed'), 'error')
+  } finally {
+    registrationSaving.value = false
+  }
+}
+
+// ===== 联邦控制 =====
+const federationLoading = ref(false)
+const federationSaving = ref(false)
+const federationEnabled = ref(false)
+const federationDenyList = ref('')
+const federationAllowList = ref('')
+
+async function loadFederationPolicy() {
+  federationLoading.value = true
+  try {
+    const [config, blacklist] = await Promise.all([
+      adminService.getServerConfig(),
+      adminService.getFederationBlacklist()
+    ])
+    const cfg = config as Record<string, unknown>
+    federationEnabled.value = Boolean(cfg?.federation_enabled ?? true)
+    federationDenyList.value = (blacklist ?? []).map((b) => b.domain).join('\n')
+    const allow = cfg?.federation_allow_list
+    federationAllowList.value = Array.isArray(allow) ? (allow as string[]).join('\n') : ''
+  } catch (e) {
+    logger.error('加载联邦策略失败', e)
+  } finally {
+    federationLoading.value = false
+  }
+}
+
+async function saveFederationPolicy() {
+  federationSaving.value = true
+  try {
+    const allowList = federationAllowList.value
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    await adminService.updateServerConfig({
+      federation_enabled: federationEnabled.value,
+      federation_allow_list: allowList
+    })
+    // Sync blacklist: diff current vs desired
+    const currentBlacklist = await adminService.getFederationBlacklist()
+    const currentDomains = new Set((currentBlacklist ?? []).map((b) => b.domain))
+    const desiredDomains = new Set(
+      federationDenyList.value
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+    for (const domain of desiredDomains) {
+      if (!currentDomains.has(domain)) {
+        await adminService.addToFederationBlacklist(domain)
+      }
+    }
+    for (const domain of currentDomains) {
+      if (!desiredDomains.has(domain)) {
+        await adminService.removeFromFederationBlacklist(domain)
+      }
+    }
+    showFeedback(t('admin.security.federation_policy_saved'), 'success')
+  } catch (e) {
+    logger.error('保存联邦策略失败', e)
+    showFeedback(t('admin.security.federation_policy_failed'), 'error')
+  } finally {
+    federationSaving.value = false
+  }
+}
+
+// ===== 密码策略 =====
+const passwordLoading = ref(false)
+const passwordSaving = ref(false)
+const passwordPolicy = reactive({
+  minLength: 8,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireDigit: false,
+  requireSymbol: false,
+  expiryDays: 0
+})
+
+async function loadPasswordPolicy() {
+  passwordLoading.value = true
+  try {
+    const config = await adminService.getServerConfig()
+    const cfg = config as Record<string, unknown>
+    const policy = (cfg?.password_policy ?? {}) as Record<string, unknown>
+    passwordPolicy.minLength = Number(policy.minimum_length ?? 8)
+    passwordPolicy.requireUppercase = Boolean(policy.require_uppercase)
+    passwordPolicy.requireLowercase = Boolean(policy.require_lowercase)
+    passwordPolicy.requireDigit = Boolean(policy.require_digit)
+    passwordPolicy.requireSymbol = Boolean(policy.require_symbol)
+    passwordPolicy.expiryDays = Number(policy.expiry_days ?? 0)
+  } catch (e) {
+    logger.error('加载密码策略失败', e)
+  } finally {
+    passwordLoading.value = false
+  }
+}
+
+async function savePasswordPolicy() {
+  passwordSaving.value = true
+  try {
+    await adminService.updateServerConfig({
+      password_policy: {
+        minimum_length: passwordPolicy.minLength,
+        require_uppercase: passwordPolicy.requireUppercase,
+        require_lowercase: passwordPolicy.requireLowercase,
+        require_digit: passwordPolicy.requireDigit,
+        require_symbol: passwordPolicy.requireSymbol,
+        expiry_days: passwordPolicy.expiryDays
+      }
+    })
+    showFeedback(t('admin.security.password_policy_saved'), 'success')
+  } catch (e) {
+    logger.error('保存密码策略失败', e)
+    showFeedback(t('admin.security.password_policy_failed'), 'error')
+  } finally {
+    passwordSaving.value = false
+  }
+}
+
 // ===== Tab 切换 =====
 function handleTabChange(tab: string) {
   if (tab === 'ip_blocks') {
@@ -463,6 +706,12 @@ function handleTabChange(tab: string) {
     loadSecurityEvents()
   } else if (tab === 'login_failures') {
     loadLoginFailures()
+  } else if (tab === 'registration') {
+    loadRegistrationPolicy()
+  } else if (tab === 'federation') {
+    loadFederationPolicy()
+  } else if (tab === 'password') {
+    loadPasswordPolicy()
   }
 }
 
@@ -475,6 +724,12 @@ function refreshCurrentTab() {
     loadSecurityEvents()
   } else if (activeTab.value === 'login_failures') {
     loadLoginFailures()
+  } else if (activeTab.value === 'registration') {
+    loadRegistrationPolicy()
+  } else if (activeTab.value === 'federation') {
+    loadFederationPolicy()
+  } else if (activeTab.value === 'password') {
+    loadPasswordPolicy()
   }
 }
 

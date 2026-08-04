@@ -53,6 +53,46 @@ describe('useAdminUsers', () => {
     expect(c.filteredUsers.value[0].userId).toBe('@alice:s')
   })
 
+  it('filterRole narrows to admin or user role', async () => {
+    vi.mocked(adminService.getUsers).mockResolvedValueOnce({
+      users: [
+        { userId: '@admin:s', admin: true },
+        { userId: '@user1:s', admin: false },
+        { userId: '@user2:s', admin: false }
+      ]
+    })
+    const c = useAdminUsers()
+    await c.loadUsers()
+    expect(c.filterRole.value).toBe('all')
+    c.filterRole.value = 'admin'
+    expect(c.filteredUsers.value).toHaveLength(1)
+    expect(c.filteredUsers.value[0].userId).toBe('@admin:s')
+    c.filterRole.value = 'user'
+    expect(c.filteredUsers.value).toHaveLength(2)
+    c.filterRole.value = 'all'
+    expect(c.filteredUsers.value).toHaveLength(3)
+  })
+
+  it('filterStatus narrows to active or deactivated', async () => {
+    vi.mocked(adminService.getUsers).mockResolvedValueOnce({
+      users: [
+        { userId: '@active:s', deactivated: false },
+        { userId: '@deact:s', deactivated: true }
+      ]
+    })
+    const c = useAdminUsers()
+    await c.loadUsers()
+    expect(c.filterStatus.value).toBe('all')
+    c.filterStatus.value = 'active'
+    expect(c.filteredUsers.value).toHaveLength(1)
+    expect(c.filteredUsers.value[0].userId).toBe('@active:s')
+    c.filterStatus.value = 'deactivated'
+    expect(c.filteredUsers.value).toHaveLength(1)
+    expect(c.filteredUsers.value[0].userId).toBe('@deact:s')
+    c.filterStatus.value = 'all'
+    expect(c.filteredUsers.value).toHaveLength(2)
+  })
+
   it('selectUser triggers concurrent detail loads', async () => {
     const c = useAdminUsers()
     await c.selectUser({ userId: '@x:s' })

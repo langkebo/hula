@@ -29,6 +29,8 @@ interface UseAdminUsersResult {
   filteredUsers: Ref<UserInfo[]>
   loading: Ref<boolean>
   searchQuery: Ref<string>
+  filterRole: Ref<'all' | 'admin' | 'user'>
+  filterStatus: Ref<'all' | 'active' | 'deactivated'>
 
   // selected user detail state
   selectedUser: Ref<UserInfo | null>
@@ -91,6 +93,8 @@ export function useAdminUsers(): UseAdminUsersResult {
   const users = ref<UserInfo[]>([])
   const loading = ref(false)
   const searchQuery = ref('')
+  const filterRole = ref<'all' | 'admin' | 'user'>('all')
+  const filterStatus = ref<'all' | 'active' | 'deactivated'>('all')
 
   const selectedUser = ref<UserInfo | null>(null)
   const userDevices = ref<UserDevice[]>([])
@@ -109,13 +113,22 @@ export function useAdminUsers(): UseAdminUsersResult {
 
   const filteredUsers = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
-    if (!q) return users.value
     return users.value.filter((u) => {
-      return (
-        u.userId.toLowerCase().includes(q) ||
-        (u.displayname ?? '').toLowerCase().includes(q) ||
-        (u.name ?? '').toLowerCase().includes(q)
-      )
+      // search filter
+      if (q) {
+        const matches =
+          u.userId.toLowerCase().includes(q) ||
+          (u.displayname ?? '').toLowerCase().includes(q) ||
+          (u.name ?? '').toLowerCase().includes(q)
+        if (!matches) return false
+      }
+      // role filter
+      if (filterRole.value === 'admin' && !u.admin) return false
+      if (filterRole.value === 'user' && u.admin) return false
+      // status filter
+      if (filterStatus.value === 'active' && u.deactivated) return false
+      if (filterStatus.value === 'deactivated' && !u.deactivated) return false
+      return true
     })
   })
 
@@ -305,6 +318,8 @@ export function useAdminUsers(): UseAdminUsersResult {
     filteredUsers,
     loading,
     searchQuery,
+    filterRole,
+    filterStatus,
     selectedUser,
     userDevices,
     devicesLoading,

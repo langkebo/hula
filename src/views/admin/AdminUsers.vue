@@ -1,14 +1,32 @@
 <template>
   <div class="admin-users">
     <div class="admin-users-header">
-      <n-input v-model:value="searchQuery" :placeholder="t('admin.users.search')" clearable style="width: 300px">
-        <template #prefix>
-          <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
-        </template>
-      </n-input>
+      <n-space align="center" :size="12">
+        <n-input v-model:value="searchQuery" :placeholder="t('admin.users.search')" clearable style="width: 300px">
+          <template #prefix>
+            <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+          </template>
+        </n-input>
+        <n-select
+          v-model:value="filterRole"
+          :options="[
+            { label: t('admin.users.allRoles'), value: 'all' },
+            { label: t('admin.users.adminRole'), value: 'admin' },
+            { label: t('admin.users.userRole'), value: 'user' }
+          ]"
+          style="width: 140px" />
+        <n-select
+          v-model:value="filterStatus"
+          :options="[
+            { label: t('admin.users.allStatuses'), value: 'all' },
+            { label: t('admin.users.active'), value: 'active' },
+            { label: t('admin.users.deactivated'), value: 'deactivated' }
+          ]"
+          style="width: 140px" />
+      </n-space>
       <n-space>
         <n-button type="primary" @click="showCreateDialog = true">
           {{ t('admin.users.createUser') }}
@@ -272,6 +290,8 @@ const settingRateLimit = ref(false)
 const users = admin.users
 const loading = admin.loading
 const searchQuery = admin.searchQuery
+const filterRole = admin.filterRole
+const filterStatus = admin.filterStatus
 const filteredUsers = admin.filteredUsers
 const selectedUser = admin.selectedUser
 const userDevices = admin.userDevices
