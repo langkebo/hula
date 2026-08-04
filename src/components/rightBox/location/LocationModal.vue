@@ -285,10 +285,6 @@ const handleConfirm = async () => {
   background-color: color-mix(in srgb, var(--tjg-color-danger-500) 72%, transparent);
 }
 
-.location-modal__mac-close-icon {
-  color: var(--tjg-text-primary);
-}
-
 .location-modal__info {
   background-color: var(--tjg-surface-elevated);
 }

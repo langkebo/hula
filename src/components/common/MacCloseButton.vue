@@ -28,7 +28,7 @@ const colorClass = computed(() => `mac-close-button--${props.color}`)
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 0 0 1px var(--tjg-border-contrast);
   cursor: pointer;
   user-select: none;
   display: flex;

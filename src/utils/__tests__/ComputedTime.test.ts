@@ -73,6 +73,24 @@ describe('formatChatTime', () => {
     expect(formatChatTime(ts)).toBe('2026-07-01 10:30')
   })
 
+  it('handles boundary between "刚刚" and "X 分钟前" (exactly 60 seconds)', () => {
+    vi.setSystemTime(new Date('2026-08-05T12:01:00'))
+    const ts = new Date('2026-08-05T12:00:00').getTime() // exactly 60 seconds ago
+    expect(formatChatTime(ts)).toBe('1 分钟前')
+  })
+
+  it('handles boundary between "X 分钟前" and "HH:mm" (exactly 60 minutes)', () => {
+    vi.setSystemTime(new Date('2026-08-05T13:00:00'))
+    const ts = new Date('2026-08-05T12:00:00').getTime() // exactly 60 minutes ago
+    expect(formatChatTime(ts)).toBe('12:00')
+  })
+
+  it('shows "昨天 HH:mm" for yesterday even when cross-year', () => {
+    vi.setSystemTime(new Date('2026-01-01T12:00:00'))
+    const ts = new Date('2025-12-31T10:30:00').getTime() // yesterday but cross-year
+    expect(formatChatTime(ts)).toBe('昨天 10:30')
+  })
+
   it('detail mode shows full date-time for today', () => {
     vi.setSystemTime(new Date('2026-08-05T12:00:00'))
     const ts = new Date('2026-08-05T10:30:00').getTime()
