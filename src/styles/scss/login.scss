@@ -13,7 +13,7 @@
   color: var(--tjg-text-inverse);
   background: linear-gradient(135deg, var(--tjg-brand), var(--tjg-color-primary-400));
   box-shadow:
-    0 4px 14px rgba(19, 152, 127, 0.4),
+    0 4px 14px color-mix(in srgb, var(--tjg-brand) 40%, transparent),
     inset 0px 1px 0px rgba(255, 255, 255, 0.2);
   transition:
     background 0.25s ease,
@@ -24,7 +24,7 @@
   /* 可点击状态：饱满渐变 + 明显阴影 + 白色文字（对比度 > 4.5:1） */
   &:hover:not(:disabled) {
     background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-brand));
-    box-shadow: 0 6px 20px rgba(19, 152, 127, 0.5);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--tjg-brand) 50%, transparent);
     transform: translateY(-1px) scale(1.01);
   }
   &:active:not(:disabled) {
@@ -32,7 +32,7 @@
     background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-600));
     transform: translateY(0) scale(0.97);
     box-shadow:
-      0 2px 8px rgba(19, 152, 127, 0.3),
+      0 2px 8px var(--tjg-color-primary-300-alpha),
       inset 0px 2px 4px rgba(0, 0, 0, 0.15);
     filter: brightness(0.88);
   }
@@ -49,7 +49,7 @@
   /* 加载中状态：脉冲动画提示正在处理 */
   &.n-button--loading {
     background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-400));
-    box-shadow: 0 4px 14px rgba(19, 152, 127, 0.3);
+    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha);
     animation: gradient-button-pulse 1.4s ease-in-out infinite;
   }
   /* 修正：原 `&:span` 是无效选择器，改为后代选择器确保白色文字生效 */
@@ -62,21 +62,21 @@
   0%,
   100% {
     opacity: 0.85;
-    box-shadow: 0 4px 14px rgba(19, 152, 127, 0.3);
+    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha);
   }
   50% {
     opacity: 1;
-    box-shadow: 0 6px 18px rgba(19, 152, 127, 0.5);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--tjg-brand) 50%, transparent);
   }
 }
 
 [data-theme='dark'] {
   .gradient-button {
     background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-brand));
-    box-shadow: 0 4px 14px rgba(19, 152, 127, 0.3);
+    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha);
     &:hover:not(:disabled) {
       background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-600));
-      box-shadow: 0 6px 20px rgba(19, 152, 127, 0.4);
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--tjg-brand) 40%, transparent);
     }
     &:active:not(:disabled) {
       background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700));

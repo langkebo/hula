@@ -7,7 +7,7 @@
         :height="6"
         :stroke-width="10"
         :color="'var(--tjg-color-primary-500)'"
-        :rail-color="'rgba(19, 152, 127, 0.3)'"
+        :rail-color="var(--tjg-color-primary-300-alpha)"
         class="assistant-view__progress"
         type="line" />
       <span class="assistant-view__placeholder-text">

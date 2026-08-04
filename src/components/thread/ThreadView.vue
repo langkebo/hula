@@ -181,7 +181,7 @@ watch(
 
 .root-message {
   padding: 16px;
-  background: var(--bg-secondary);
+  background: var(--tjg-surface-panel-muted);
 
   .message-header {
     display: flex;

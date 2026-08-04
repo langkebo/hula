@@ -218,8 +218,8 @@ onUnmounted(() => {
   gap: 8px;
   padding: 10px 12px;
   margin-top: 4px;
-  background: var(--tjg-color-danger-50, rgba(239, 68, 68, 0.08));
-  border: 1px solid var(--tjg-color-danger-200, rgba(239, 68, 68, 0.2));
+  background: var(--tjg-color-danger-50);
+  border: 1px solid var(--tjg-color-danger-200);
   border-radius: 6px;
 }
 

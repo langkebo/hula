@@ -752,7 +752,7 @@ const handleForgetRoom = () => {
 
 .single-details__action:hover .single-details__action-icon {
   transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(29, 163, 134, 0.22);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--tjg-color-primary-500) 22%, transparent);
 }
 
 .single-details__action-icon {

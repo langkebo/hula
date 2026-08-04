@@ -50,7 +50,7 @@
             style="
               width: 320px;
               border: 2px solid rgba(255, 255, 255, 0.1);
-              border-bottom-color: rgba(19, 152, 127, 1);
+              border-bottom-color: var(--tjg-color-primary-500);
               background-color: var(--lock-input-bg, var(--tjg-surface-panel-muted));
               color: var(--lock-input-color, var(--tjg-text-inverse));
             "

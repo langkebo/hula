@@ -194,7 +194,7 @@ watch(
   transition: background 0.15s;
 
   &:hover {
-    background: var(--tjg-color-primary-50, rgba(59, 130, 246, 0.08));
+    background: var(--tjg-color-primary-50);
   }
 
   &:disabled {
@@ -248,7 +248,7 @@ watch(
 
   &:focus {
     border-color: var(--tjg-color-primary-500);
-    box-shadow: 0 0 0 2px var(--tjg-color-primary-100, rgba(59, 130, 246, 0.15));
+    box-shadow: 0 0 0 2px var(--tjg-color-primary-100);
   }
 
   &:disabled {

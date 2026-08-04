@@ -201,7 +201,7 @@ export const useEditorDom = (options: UseEditorDomOptions) => {
       line-height: 1.5;
       font-size: 12px;
       padding: 0 4px;
-      color: rgba(19, 152, 127);
+      color: var(--tjg-color-primary-500);
       cursor: default;
       user-select: none;
       pointer-events: none;
@@ -321,7 +321,7 @@ export const useEditorDom = (options: UseEditorDomOptions) => {
       line-height: 1.5;
       font-size: 12px;
       padding: 0 4px;
-      color: rgba(19, 152, 127);
+      color: var(--tjg-color-primary-500);
       cursor: default;
       user-select: none;
       pointer-events: none;

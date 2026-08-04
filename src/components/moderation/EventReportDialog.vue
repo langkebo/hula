@@ -140,7 +140,7 @@ async function handleSubmit() {
 
     .preview-content {
       padding: 10px 12px;
-      background: var(--bg-secondary);
+      background: var(--tjg-surface-panel-muted);
       border-radius: 6px;
       font-size: 13px;
       max-height: 120px;
