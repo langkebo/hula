@@ -32,6 +32,8 @@ use desktops::directory_scanner;
 #[cfg(desktop)]
 use desktops::init;
 #[cfg(desktop)]
+use desktops::screenshot_watch;
+#[cfg(desktop)]
 use desktops::tray;
 #[cfg(desktop)]
 use desktops::video_thumbnail::get_video_thumbnail;
@@ -556,6 +558,10 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         push_window_payload,
         #[cfg(desktop)]
         get_window_payload,
+        #[cfg(desktop)]
+        screenshot_watch::start_screenshot_watch,
+        #[cfg(desktop)]
+        screenshot_watch::stop_screenshot_watch,
         get_files_meta,
         #[cfg(desktop)]
         get_directory_usage_info_with_progress,
