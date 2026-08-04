@@ -8,14 +8,7 @@
     <div class="bg-[--bg-edit] w-560px h-480px box-border flex flex-col items-center justify-between">
       <!-- 标题栏 -->
       <n-flex :size="6" vertical class="w-full">
-        <div
-          v-if="isMac()"
-          @click="closeWindow"
-          class="mac-close size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
-            <use href="#close"></use>
-          </svg>
-        </div>
+        <MacCloseButton v-if="isMac()" class="mt-6px absolute left-6px" @click="closeWindow" />
 
         <n-flex class="text-(14px [--tjg-text-primary]) select-none pt-6px" justify="center">
           {{ t('components.avatarCropper.title') }}
@@ -113,6 +106,7 @@ import type { CSSProperties } from 'vue'
 import { VueCropper as VueCropperComp } from 'vue-cropper'
 import { useI18n } from 'vue-i18n'
 import 'vue-cropper/dist/index.css'
+import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
 const { t } = useI18n()
@@ -224,10 +218,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.mac-close:hover svg {
-  display: block;
-}
-
 /* 修改裁剪框样式 */
 :deep(.cropper-view-box) {
   border-radius: 50%;

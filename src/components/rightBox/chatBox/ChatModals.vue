@@ -2,14 +2,7 @@
   <!-- 弹出框 -->
   <n-modal v-model:show="modalShow" class="w-350px border-rd-8px">
     <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
-      <div
-        v-if="isMac()"
-        @click="modalShow = false"
-        class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
-          <use href="#close"></use>
-        </svg>
-      </div>
+      <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="modalShow = false" />
 
       <svg v-if="isWindows()" @click="modalShow = false" class="w-12px h-12px ml-a cursor-pointer select-none">
         <use href="#close"></use>
@@ -29,14 +22,7 @@
 
   <n-modal v-model:show="groupNicknameModalVisible" class="w-360px border-rd-8px" :mask-closable="false">
     <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
-      <div
-        v-if="isMac()"
-        @click="groupNicknameModalVisible = false"
-        class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
-          <use href="#close"></use>
-        </svg>
-      </div>
+      <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="groupNicknameModalVisible = false" />
 
       <svg
         v-if="isWindows()"
@@ -113,6 +99,7 @@ import { useI18n } from 'vue-i18n'
 const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/ThreadPanel.vue'))
 const EventReportDialog = defineAsyncComponent(() => import('@/components/moderation/EventReportDialog.vue'))
 
+import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
 const { t } = useI18n()

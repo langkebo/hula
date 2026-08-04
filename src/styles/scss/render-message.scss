@@ -80,11 +80,6 @@
     background-color: color-mix(in srgb, var(--tjg-color-primary-200) 45%, var(--tjg-surface-panel));
   }
 }
-.mac-close:hover {
-  svg {
-    display: block;
-  }
-}
 /** 浮标达到最大值时候的样式 */
 .max:hover {
   background-color: var(--tjg-color-danger-100);
