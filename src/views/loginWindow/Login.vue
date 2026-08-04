@@ -90,8 +90,6 @@ const {
 } = useLoginOrchestrator()
 
 const loginContext: ThirdPartyLoginContext = {
-  giteeLogin: () => {},
-  githubLogin: () => {},
   homeserverUrl: homeserverUrl as Ref<string>,
   identityServerUrl: identityServerUrl as Ref<string>,
   loading,
