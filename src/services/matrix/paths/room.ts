@@ -62,5 +62,6 @@ export const ROOM = {
   METADATA: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/metadata`,
   TURN_SERVER: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/turn_server`,
   ROOM_SYNC: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/sync`,
-  CALL: (roomId: string, callId: string) => `/rooms/${encodeURIComponent(roomId)}/call/${encodeURIComponent(callId)}`
+  CALL: (roomId: string, callId: string) => `/rooms/${encodeURIComponent(roomId)}/call/${encodeURIComponent(callId)}`,
+  VAULT_DATA: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/vault_data`
 } as const

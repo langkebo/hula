@@ -23,7 +23,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const userId = client.getUserId()
-      const path = `/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+      const path = `/user/${encodeURIComponent(userId ?? '')}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
       const result = await client.http.authedRequest('GET', path)
       return result as Record<string, unknown>
     } catch (err) {
@@ -36,7 +36,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const userId = client.getUserId()
-      const path = `/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+      const path = `/user/${encodeURIComponent(userId ?? '')}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
       await client.http.authedRequest('PUT', path, undefined, content)
       logger.info(`[MatrixRoom] 设置房间 account data 成功: ${roomId}/${eventType}`)
     } catch (err) {
@@ -57,6 +57,30 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     } catch (err) {
       logger.error(`[MatrixRoom] 获取内容扫描信息失败: ${err}`)
       return null
+    }
+  }
+
+  // ==================== Vault (安全保险库) ====================
+
+  async getVaultData(roomId: string): Promise<Record<string, unknown>> {
+    const client = this.getClient()
+    try {
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.VAULT_DATA(roomId))
+      return result as Record<string, unknown>
+    } catch (err) {
+      logger.error(`[MatrixRoom] 获取保险库数据失败: ${err}`)
+      return {}
+    }
+  }
+
+  async setVaultData(roomId: string, content: Record<string, unknown>): Promise<void> {
+    const client = this.getClient()
+    try {
+      await client.http.authedRequest('PUT', MATRIX_PATHS.ROOM.VAULT_DATA(roomId), undefined, content)
+      logger.info(`[MatrixRoom] 更新保险库数据成功: ${roomId}`)
+    } catch (err) {
+      logger.error(`[MatrixRoom] 更新保险库数据失败: ${err}`)
+      throw err
     }
   }
 

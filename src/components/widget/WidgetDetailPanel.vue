@@ -145,7 +145,7 @@ import { Icon } from '@iconify/vue'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { type Widget } from '@/composables/widget'
+import type { Widget } from '@/composables/widget'
 import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
 import { createLogger } from '@/utils/Logger'
 

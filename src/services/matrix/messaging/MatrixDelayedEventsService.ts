@@ -21,6 +21,9 @@
  * @see https://github.com/matrix-org/matrix-spec-proposals/pull/4140
  */
 import type { DelayedEventInfo, SendDelayedEventRequestOpts, SendDelayedEventResponse } from 'matrix-js-sdk'
+
+export type { DelayedEventInfoItem } from 'matrix-js-sdk'
+
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 

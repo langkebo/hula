@@ -94,7 +94,7 @@ onMounted(async () => {
   loading.value = true
   try {
     const [caps, perms] = await Promise.all([
-      roomCapabilitiesService.fetch(props.roomId).catch(() => null),
+      roomCapabilitiesService.getCapabilities(props.roomId).catch(() => null),
       matrixRoomMetadataService.getRoomPermissions(props.roomId).catch(() => ({}))
     ])
     capabilities.value = caps as RoomCapabilitiesPayload | null

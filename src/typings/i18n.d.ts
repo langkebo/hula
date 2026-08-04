@@ -4978,7 +4978,7 @@ export type I18nKeys = {
     "camera_permission_required": "没有相机权限，请在系统设置中开启权限",
     "permission_missing": "缺少权限",
     "scan_error": "扫码过程中发生错误",
-    "login_tjg": "登录{device}的HULA",
+    "login_tjg": "登录{device}的Tjg",
     "login_ip": "登录IP",
     "login_address": "登录地址",
     "login_time": "登录时间",

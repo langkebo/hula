@@ -43,6 +43,8 @@ import type {
   UserReputation
 } from './AdminTypes'
 import { AdminApplicationService } from './ApplicationService'
+import { AdminBackgroundUpdateService } from './BackgroundUpdateService'
+import { AdminExternalServiceService } from './ExternalServiceService'
 import { AdminFederationService } from './FederationService'
 import { AdminMediaService } from './MediaService'
 import { AdminNotificationService } from './NotificationService'
@@ -53,6 +55,7 @@ import { AdminRetentionService } from './RetentionService'
 import { AdminRoomService } from './RoomService'
 import { type AdminFeatureFlag, type AdminFeatureFlagInput, AdminSecurityService } from './SecurityService'
 import { AdminServerService } from './ServerService'
+import { AdminTelemetryService } from './TelemetryService'
 import { AdminUserService } from './UserService'
 
 const logger = createLogger('AdminFacadeService')
@@ -96,6 +99,9 @@ class AdminFacadeService extends BaseMatrixService {
     () => this.getClient()
   )
   readonly moderation = new AdminModerationService(() => this.getClient())
+  readonly backgroundUpdates = new AdminBackgroundUpdateService(() => this.getClient())
+  readonly externalServices = new AdminExternalServiceService(() => this.getClient())
+  readonly telemetry = new AdminTelemetryService(() => this.getClient())
 
   initialize(): void {
     logger.info('[Admin] 服务已初始化')

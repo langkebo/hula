@@ -18,8 +18,9 @@
 
 <script setup lang="ts">
 import type { VoiceRecordPayload } from '@/components/rightBox/VoiceRecorder.vue'
-import { MobilePanelStateEnum } from '@/enums'
 import type { EmojiUrlPayload } from '@/composables/chat/useFooterEmoji'
+// biome-ignore lint/style/useImportType: MobilePanelStateEnum 是 enum，在模板中作为值使用
+import { MobilePanelStateEnum } from '@/enums'
 
 const Emoticon = defineAsyncComponent(() => import('@/components/rightBox/emoticon/index.vue'))
 const More = defineAsyncComponent(() => import('@/mobile/components/chat-room/panel/More.vue'))

@@ -180,8 +180,8 @@
 </template>
 
 <script setup lang="ts">
+import type { HulaEmojiData } from 'hula-emojis'
 import type { ScrollbarInst, VirtualListInst } from 'naive-ui'
-import type { TjgEmojiData } from 'tjg-emojis'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
@@ -236,7 +236,7 @@ const emojiStore = useEmojiStore()
 const userStore = useUserStore()
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
-const emojisBbs = shallowRef<TjgEmojiData>()
+const emojisBbs = shallowRef<HulaEmojiData>()
 const activeIndex = ref(lastEmojiTabIndex.value)
 const isFavoritesView = computed(() => activeIndex.value === -1)
 const isSeriesView = computed(() => activeIndex.value > 0)
@@ -443,8 +443,8 @@ const selectSeries = (index: number) => {
 }
 
 onMounted(async () => {
-  const { default: TjgEmojis } = await import('tjg-emojis')
-  emojisBbs.value = TjgEmojis.MihoyoBbs
+  const { default: HulaEmojis } = await import('hula-emojis')
+  emojisBbs.value = HulaEmojis.MihoyoBbs
   await emojiStore.getEmojiList()
   scheduleHydrateFavorites()
 })

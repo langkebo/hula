@@ -93,10 +93,16 @@ interface Threepid {
   addedAt?: number
 }
 
-defineProps<{
-  emails: Threepid[]
-  phones: Threepid[]
-}>()
+withDefaults(
+  defineProps<{
+    emails?: Threepid[]
+    phones?: Threepid[]
+  }>(),
+  {
+    emails: () => [],
+    phones: () => []
+  }
+)
 
 const emit = defineEmits<{
   (e: 'add-email', email: string): void

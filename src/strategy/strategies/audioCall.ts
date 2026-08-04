@@ -1,3 +1,4 @@
+import type { UploadOptions, UploadProviderEnum } from '@/composables/common/useUpload'
 import { MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { AbstractMessageStrategy, type CallInfo } from './base'
@@ -20,7 +21,7 @@ export class AudioCallMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: Record<string, unknown>): Record<string, unknown> {
+  buildMessageBody(msg: Record<string, unknown>, _reply?: MessageType | null): Record<string, unknown> {
     return {
       duration: msg.duration,
       reason: msg.reason,
@@ -31,14 +32,17 @@ export class AudioCallMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  async uploadFile(): Promise<{ uploadUrl: string; downloadUrl: string }> {
+  async uploadFile(
+    _path: string,
+    _options?: { provider?: UploadProviderEnum }
+  ): Promise<{ uploadUrl: string; downloadUrl: string }> {
     return {
       uploadUrl: '',
       downloadUrl: ''
     }
   }
 
-  async doUpload(): Promise<void> {
+  async doUpload(_path: string, _uploadUrl: string, _options?: UploadOptions): Promise<void> {
     return Promise.resolve()
   }
 }
