@@ -327,10 +327,10 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 20px;
-  background: var(--tjg-color-primary-50, rgba(59, 130, 246, 0.08));
+  background: var(--tjg-color-primary-50);
   color: var(--tjg-color-primary-600, var(--tjg-color-primary-500));
   font-size: 12px;
-  border-bottom: 1px solid var(--tjg-color-primary-100, rgba(59, 130, 246, 0.15));
+  border-bottom: 1px solid var(--tjg-color-primary-100);
 }
 
 .hint-fade-enter-active,

@@ -213,7 +213,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: var(--bg-secondary);
+  background: var(--tjg-surface-panel-muted);
   border-bottom: 1px solid var(--tjg-border-default);
 
   .widget-title {

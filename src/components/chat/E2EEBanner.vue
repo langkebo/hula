@@ -80,8 +80,8 @@ watch(
   padding: 8px 14px;
   margin: 0 12px 8px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(19, 152, 127, 0.12) 0%, rgba(19, 152, 127, 0.06) 100%);
-  border: 1px solid rgba(19, 152, 127, 0.2);
+  background: linear-gradient(135deg, var(--tjg-color-primary-100) 0%, var(--tjg-color-primary-50) 100%);
+  border: 1px solid var(--tjg-color-primary-200);
 }
 
 .e2ee-banner__content {
@@ -130,7 +130,7 @@ watch(
 }
 
 .e2ee-banner__close:hover {
-  background: rgba(19, 152, 127, 0.12);
+  background: var(--tjg-color-primary-100);
   color: var(--tjg-text-primary);
 }
 

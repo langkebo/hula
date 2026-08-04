@@ -308,7 +308,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-main);
+  background: var(--tjg-surface-app);
 }
 
 .trendradar-view__header {

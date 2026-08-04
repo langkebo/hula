@@ -922,7 +922,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  background: var(--bg-secondary);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
   transition: all 0.2s;
   cursor: pointer;
@@ -1022,7 +1022,7 @@ onMounted(() => {
   justify-content: space-between;
   gap: 12px;
   padding: 12px;
-  background: var(--bg-secondary);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 6px;
 
   .session-info {
@@ -1054,7 +1054,7 @@ onMounted(() => {
     overflow-y: auto;
     margin-bottom: 12px;
     padding: 8px;
-    background: var(--bg-secondary);
+    background: var(--tjg-surface-panel-muted);
     border-radius: 6px;
 
     .message-item {
@@ -1128,7 +1128,7 @@ onMounted(() => {
     align-items: center;
     gap: 12px;
     padding: 8px 12px;
-    background: var(--bg-secondary);
+    background: var(--tjg-surface-panel-muted);
     border-radius: 6px;
 
     .permission-user {

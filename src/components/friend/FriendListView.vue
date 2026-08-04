@@ -773,8 +773,8 @@ onMounted(async () => {
 .friend-request-preview {
   padding: 10px 12px;
   border-radius: 8px;
-  background: var(--tjg-color-primary-50, rgba(59, 130, 246, 0.08));
-  border: 1px solid var(--tjg-color-primary-100, rgba(59, 130, 246, 0.15));
+  background: var(--tjg-color-primary-50);
+  border: 1px solid var(--tjg-color-primary-100);
 }
 
 .friend-request-preview__list {

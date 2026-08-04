@@ -245,8 +245,8 @@ useMitt.on('RoomClosed', handleCallEnd)
   }
 
   &.accept {
-    background: rgba(19, 152, 127, 0.68);
-    box-shadow: 0 12px 26px rgba(19, 152, 127, 0.3);
+    background: color-mix(in srgb, var(--tjg-color-primary-500) 68%, transparent);
+    box-shadow: 0 12px 26px var(--tjg-color-primary-300-alpha);
   }
 }
 

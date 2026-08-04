@@ -379,7 +379,7 @@ const handleUnban = async (userId: string) => {
   }
 
   &--danger:hover {
-    background: var(--tjg-color-danger-100, rgba(239, 68, 68, 0.1));
+    background: var(--tjg-color-danger-100);
     color: var(--tjg-color-danger-500);
   }
 
