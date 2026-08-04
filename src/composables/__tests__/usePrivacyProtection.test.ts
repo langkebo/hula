@@ -30,41 +30,63 @@ describe('usePrivacyProtection', () => {
   })
 
   describe('isPrivacyMode', () => {
-    it('isPrivacyMode 始终返回 false（当前实现为桩函数）', () => {
+    it('初始状态为 false', () => {
       const { isPrivacyMode } = usePrivacyProtection()
       expect(isPrivacyMode.value).toBe(false)
     })
 
-    it('多次访问 isPrivacyMode 结果稳定', () => {
-      const { isPrivacyMode } = usePrivacyProtection()
+    it('enterPrivateChat 后 isPrivacyMode 变为 true', () => {
+      const { isPrivacyMode, enterPrivateChat } = usePrivacyProtection()
       expect(isPrivacyMode.value).toBe(false)
+      enterPrivateChat()
+      expect(isPrivacyMode.value).toBe(true)
+    })
+
+    it('leavePrivateChat 后 isPrivacyMode 变回 false', () => {
+      const { isPrivacyMode, enterPrivateChat, leavePrivateChat } = usePrivacyProtection()
+      enterPrivateChat()
+      expect(isPrivacyMode.value).toBe(true)
+      leavePrivateChat()
       expect(isPrivacyMode.value).toBe(false)
+    })
+
+    it('交替调用 enter/leave 时 isPrivacyMode 正确切换', () => {
+      const { isPrivacyMode, enterPrivateChat, leavePrivateChat } = usePrivacyProtection()
+      enterPrivateChat()
+      expect(isPrivacyMode.value).toBe(true)
+      leavePrivateChat()
+      expect(isPrivacyMode.value).toBe(false)
+      enterPrivateChat()
+      expect(isPrivacyMode.value).toBe(true)
     })
   })
 
   describe('settings', () => {
-    it('返回默认设置，watermarkEnabled 为 true', () => {
+    it('非私密模式下 watermarkEnabled 为 false', () => {
       const { settings } = usePrivacyProtection()
+      expect(settings.value.watermarkEnabled).toBe(false)
+    })
+
+    it('私密模式下 watermarkEnabled 为 true', () => {
+      const { settings, enterPrivateChat } = usePrivacyProtection()
+      enterPrivateChat()
       expect(settings.value.watermarkEnabled).toBe(true)
     })
 
-    it('返回默认设置，blurEffect 为 false', () => {
-      const { settings } = usePrivacyProtection()
-      expect(settings.value.blurEffect).toBe(false)
-    })
-
-    it('返回默认设置，blockScreenshot 为 false', () => {
+    it('非私密模式下 blockScreenshot 为 false', () => {
       const { settings } = usePrivacyProtection()
       expect(settings.value.blockScreenshot).toBe(false)
     })
 
-    it('settings 计算属性返回完整对象', () => {
+    it('私密模式下 blockScreenshot 为 true', () => {
+      const { settings, enterPrivateChat } = usePrivacyProtection()
+      enterPrivateChat()
+      expect(settings.value.blockScreenshot).toBe(true)
+    })
+
+    it('非私密模式下 blurEffect 为 false', () => {
       const { settings } = usePrivacyProtection()
-      expect(settings.value).toEqual({
-        watermarkEnabled: true,
-        blurEffect: false,
-        blockScreenshot: false
-      })
+      expect(settings.value.blurEffect).toBe(false)
     })
   })
 
@@ -139,7 +161,6 @@ describe('usePrivacyProtection', () => {
       const { generateWatermark } = usePrivacyProtection()
       const watermark = generateWatermark()
       expect(watermark).toContain('(@user:server)')
-      // name 为空 -> "(@user:server) timestamp"
       expect(watermark.startsWith('(@user:server)')).toBe(true)
     })
 
@@ -154,8 +175,6 @@ describe('usePrivacyProtection', () => {
       userStoreMock.userInfo = { name: 'Alice', uid: '@alice:server' }
       const { generateWatermark } = usePrivacyProtection()
       const watermark = generateWatermark()
-      // 固定时间 2026-01-15T10:30:00.000Z，toLocaleString 输出因环境而异
-      // 但应包含某种本地化日期/时间表示
       expect(watermark.length).toBeGreaterThan('Alice(@alice:server) '.length)
     })
 

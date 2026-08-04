@@ -60,10 +60,22 @@
         @click="togglePrivateMode">
         <span class="private-toggle-btn__letter">S</span>
       </button>
-      <span v-if="privateModeActive" class="text-[var(--text-sm)] text-[--tjg-color-danger-500]">
-        私密模式已开启
-      </span>
+      <PrivateModeBanner v-if="privateModeActive" :burn-enabled="burnEnabled" />
+      <svg
+        v-if="privateModeActive"
+        data-testid="private-lock-icon"
+        class="size-16px flex-shrink-0 text-[--tjg-color-danger-500]"
+        aria-label="私密模式">
+        <use href="#lock"></use>
+      </svg>
     </div>
+
+    <!-- ScreenshotWatermark (private mode) -->
+    <ScreenshotWatermark
+      v-if="privateModeActive"
+      :user-id="currentUserId"
+      :user-name="currentUserName"
+      :enabled="privateModeActive" />
 
     <!-- 粘性事件横幅 -->
     <StickyEventBanner
@@ -84,7 +96,7 @@
         @mouseenter="showScrollbar = true"
         @mouseleave="showScrollbar = false">
         <!-- 消息列表 -->
-        <div ref="messageListRef" role="log" aria-live="polite" class="message-list min-h-full flex flex-col">
+        <div ref="messageListRef" role="log" aria-live="polite" class="message-list min-h-full flex flex-col" :class="{ 'private-mode-active': privateModeActive }">
           <!-- 没有更多消息提示 -->
           <div
             v-show="isMainViewReady && chatStore.shouldShowNoMoreMessage"
@@ -295,9 +307,16 @@
   <n-modal v-model:show="showPrivateConfirm" class="w-360px border-rd-8px">
     <div class="bg-[--tjg-surface-panel] w-360px p-24px box-border flex flex-col gap-16px">
       <span class="text-[var(--text-base)] text-[--tjg-text-primary] font-500">进入私密模式</span>
-      <p class="text-[var(--text-sm)] text-[--tjg-text-secondary]">
-        私密模式下，消息可以设置为阅后即焚，发送后对方阅读将自动销毁。确定要进入私密模式吗？
-      </p>
+      <div class="flex flex-col gap-8px" data-testid="private-confirm-features">
+        <div
+          v-for="feature in privateModeFeatures"
+          :key="feature.title"
+          class="flex items-center gap-8px text-[var(--text-sm)] text-[--tjg-text-secondary]">
+          <svg class="size-16px flex-shrink-0" :class="feature.iconClass"><use :href="feature.icon"></use></svg>
+          <span>{{ feature.title }}：{{ feature.description }}</span>
+        </div>
+      </div>
+      <p class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">确定要进入私密模式吗？</p>
       <n-flex justify="end" :size="12">
         <n-button @click="cancelPrivateMode" secondary>取消</n-button>
         <n-button type="primary" @click="confirmPrivateMode">确认</n-button>
@@ -337,6 +356,7 @@ const EventReportDialog = defineAsyncComponent(() => import('@/components/modera
 import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
 import E2EEBanner from '@/components/chat/E2EEBanner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import ScreenshotWatermark from '@/components/common/ScreenshotWatermark.vue'
 import StickyEventBanner from '@/components/rightBox/renderMessage/StickyEventBanner.vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
@@ -444,10 +464,18 @@ const showPrivateConfirm = ref(false)
 const burnEnabled = ref(false)
 const burnDuration = ref(60)
 
+const privateModeFeatures = computed(() => [
+  { title: '端到端加密', description: '消息在发送端加密，仅收件人可解密', icon: '#lock', iconClass: 'text-[--tjg-color-primary-500]' },
+  { title: '阅后即焚', description: '消息可设为自动销毁，阅读后即删除', icon: '#fire', iconClass: 'text-[--tjg-color-danger-500]' },
+  { title: '防截屏', description: '启用截屏水印与防截屏保护', icon: '#shield', iconClass: 'text-[--tjg-color-warning-500]' },
+  { title: '不留存', description: '服务器不存储消息内容，仅传输', icon: '#delete', iconClass: 'text-[--tjg-text-tertiary]' }
+])
+
 function togglePrivateMode() {
   if (privateModeActive.value) {
     privateModeActive.value = false
     burnEnabled.value = false
+    useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, false)
   } else {
     showPrivateConfirm.value = true
   }
@@ -456,6 +484,7 @@ function togglePrivateMode() {
 function confirmPrivateMode() {
   privateModeActive.value = true
   showPrivateConfirm.value = false
+  useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, true)
 }
 
 function cancelPrivateMode() {
@@ -508,6 +537,8 @@ provide('popoverControls', { enableScroll })
 
 const isGroup = computed<boolean>(() => chatStore.isGroup)
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
+const currentUserId = computed(() => userStore.userInfo?.uid ?? '')
+const currentUserName = computed(() => userStore.userInfo?.name ?? '')
 const currentNewMsgCount = computed(() => chatStore.currentNewMsgCount || null)
 const newMsgCountLabel = computed(() => {
   if (!currentNewMsgCount.value?.count || currentNewMsgCount.value.count <= 0) return '0'
@@ -1072,5 +1103,12 @@ onUnmounted(() => {
 // 拖拽时禁用鼠标事件，避免不必要的监听损耗
 :global(body.dragging-resize) .scrollbar-container {
   pointer-events: none;
+}
+
+// 私密模式样式
+.private-mode-active {
+  .message-row {
+    border-left: 2px solid var(--tjg-color-danger-500);
+  }
 }
 </style>
