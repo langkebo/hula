@@ -470,8 +470,8 @@ const handleSelectFriend = (friend: MatrixContact) => {
   void router.push({ name: 'friend-details', params: { userId: friend.userId } })
 }
 
-// FriendListItem 发送消息按钮：复用 handleContextMenuSelect 中的发送消息逻辑
-const handleSendMessage = async (friend: MatrixContact) => {
+// 共享：发起直接消息会话（FriendListItem 发送消息按钮与右键菜单 send_message 复用同一逻辑）
+const performSendMessage = async (friend: MatrixContact) => {
   const dmInfo = await matrixFriendService.getFriendDmRoom(friend.userId)
   if (dmInfo.room_id) {
     const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
@@ -485,10 +485,16 @@ const handleSendMessage = async (friend: MatrixContact) => {
   }
 }
 
-// FriendListItem 移除好友按钮：复用 handleContextMenuSelect 中的移除逻辑
-const handleRemoveFriend = async (friend: MatrixContact) => {
+// 共享：移除好友（FriendListItem 移除按钮与右键菜单 remove 复用同一逻辑）
+const performRemoveFriend = async (friend: MatrixContact) => {
   await contactStore.removeFromContacts(friend.userId)
 }
+
+// FriendListItem 发送消息按钮
+const handleSendMessage = (friend: MatrixContact) => performSendMessage(friend)
+
+// FriendListItem 移除好友按钮
+const handleRemoveFriend = (friend: MatrixContact) => performRemoveFriend(friend)
 
 // 阶段 4：触发添加好友 / 好友申请列表，路由驱动右侧栏视图
 const handleAddFriend = () => {
@@ -534,20 +540,9 @@ const handleContextMenuSelect = async (item: { label: string }) => {
   const friend = selectedFriend.value
 
   switch (item.label) {
-    case t('friend.context.send_message'): {
-      const dmInfo = await matrixFriendService.getFriendDmRoom(friend.userId)
-      if (dmInfo.room_id) {
-        const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
-        await openMsgSessionByRoomId(dmInfo.room_id)
-      } else {
-        const roomId = await contactStore.startDirectRoom(friend.userId, false)
-        if (roomId) {
-          const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
-          await openMsgSessionByRoomId(roomId)
-        }
-      }
+    case t('friend.context.send_message'):
+      await performSendMessage(friend)
       break
-    }
     case t('friend.context.encrypted_chat'): {
       const roomId = await contactStore.startDirectRoom(friend.userId, true)
       if (roomId) {
@@ -575,7 +570,7 @@ const handleContextMenuSelect = async (item: { label: string }) => {
       await contactStore.setFriendStatus(friend.userId, 'blocked')
       break
     case t('friend.context.remove'):
-      await contactStore.removeFromContacts(friend.userId)
+      await performRemoveFriend(friend)
       break
   }
 
