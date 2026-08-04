@@ -265,11 +265,11 @@ watch(
 }
 
 .status-active {
-  color: var(--color-success);
+  color: var(--tjg-color-success-500);
 }
 
 .status-inactive {
-  color: var(--color-warning);
+  color: var(--tjg-color-warning-500);
 }
 
 .status-info {

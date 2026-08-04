@@ -410,7 +410,7 @@ watch(
 
 .key-label {
   font-size: 14px;
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
   margin-bottom: 8px;
 }
 
@@ -440,10 +440,10 @@ watch(
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background-color: var(--color-warning-light);
+  background-color: var(--tjg-color-warning-400);
   border-radius: 8px;
   margin-bottom: 16px;
-  color: var(--color-warning);
+  color: var(--tjg-color-warning-500);
   font-size: 13px;
 }
 
@@ -500,7 +500,7 @@ watch(
 }
 
 .success-color {
-  color: var(--color-success);
+  color: var(--tjg-color-success-500);
 }
 
 .error-text {
@@ -510,11 +510,11 @@ watch(
   gap: 8px;
   padding: 24px 0;
   font-size: 14px;
-  color: var(--color-danger);
+  color: var(--tjg-color-danger-500);
 }
 
 .error-color {
-  color: var(--color-danger);
+  color: var(--tjg-color-danger-500);
 }
 
 .dialog-footer {

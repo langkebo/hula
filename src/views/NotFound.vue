@@ -56,7 +56,7 @@ const goHome = () => {
 .not-found-title {
   font-size: 72px;
   font-weight: 700;
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
   margin: 0;
   line-height: 1;
 }

@@ -12,7 +12,7 @@
         <!-- 注册菜单 -->
         <div class="w-full max-w-260px pointer-events-auto flex flex-col gap-16px text-center">
           <div class="flex justify-center items-center gap-12px">
-            <span class="text-24px color-[--color-primary] textFont">{{ t('auth.register.title') }}</span>
+            <span class="text-24px color-[--tjg-color-primary-500] textFont">{{ t('auth.register.title') }}</span>
             <img class="w-100px h-40px" src="/tjg.png" alt="Tjg" />
           </div>
 
@@ -40,7 +40,7 @@
                       clearable></n-input>
                     <div
                       v-if="showNamePrefix || info.nickName"
-                      class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
+                      class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--tjg-color-primary-500] pointer-events-none z-10"
                       :class="{ 'top-8px transform-none text-10px': showNamePrefix }">
                       {{ t('auth.register.labels.nickname') }}
                     </div>
@@ -68,7 +68,7 @@
                       clearable></n-input>
                     <div
                       v-if="showPasswordPrefix || info.password"
-                      class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
+                      class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--tjg-color-primary-500] pointer-events-none z-10"
                       :class="{ 'top-8px transform-none text-10px': showPasswordPrefix }">
                       {{ t('auth.register.labels.password') }}
                     </div>
@@ -96,7 +96,7 @@
                       clearable></n-input>
                     <div
                       v-if="showConfirmPasswordPrefix || confirmPassword"
-                      class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
+                      class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--tjg-color-primary-500] pointer-events-none z-10"
                       :class="{ 'top-8px transform-none text-10px': showConfirmPasswordPrefix }">
                       {{ t('auth.register.labels.confirm') }}
                     </div>
@@ -123,7 +123,7 @@
                       @blur="handleInputState($event, 'email')"></n-auto-complete>
                     <div
                       v-if="showemailPrefix || info.email"
-                      class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--color-primary] pointer-events-none z-10"
+                      class="absolute left-12px top-1/2 transform -translate-y-1/2 text-12px color-[--tjg-color-primary-500] pointer-events-none z-10"
                       :class="{ 'top-8px transform-none text-10px': showemailPrefix }">
                       {{ t('auth.register.labels.email') }}
                     </div>
@@ -153,11 +153,11 @@
                   <n-checkbox v-model:checked="protocol" />
                   <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
                     <span>{{ t('login.term.checkout.text1') }}</span>
-                    <span class="color-[--color-primary] cursor-pointer" @click.stop="openServiceAgreement">
+                    <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="openServiceAgreement">
                       {{ t('login.term.checkout.text2') }}
                     </span>
                     <span>{{ t('login.term.checkout.text3') }}</span>
-                    <span class="color-[--color-primary] cursor-pointer" @click.stop="openPrivacyAgreement">
+                    <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="openPrivacyAgreement">
                       {{ t('login.term.checkout.text4') }}
                     </span>
                   </div>

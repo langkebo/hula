@@ -121,7 +121,7 @@
     </div>
 
     <div v-if="error" class="error-message">
-      <n-icon color="var(--color-danger)">
+      <n-icon color="var(--tjg-color-danger-500)">
         <svg><use href="#warning" /></svg>
       </n-icon>
       <span>{{ error }}</span>
@@ -399,7 +399,7 @@ onUnmounted(() => {
   .pulse-ring {
     position: absolute;
     inset: -4px;
-    border: 2px solid var(--color-danger);
+    border: 2px solid var(--tjg-color-danger-500);
     border-radius: 50%;
     animation: pulse-ring 1.5s infinite;
   }
@@ -407,7 +407,7 @@ onUnmounted(() => {
   .pulse-dot {
     position: absolute;
     inset: 2px;
-    background: var(--color-danger);
+    background: var(--tjg-color-danger-500);
     border-radius: 50%;
   }
 }
@@ -415,7 +415,7 @@ onUnmounted(() => {
 .recording-time {
   font-size: 18px;
   font-weight: 600;
-  color: var(--color-danger);
+  color: var(--tjg-color-danger-500);
   font-variant-numeric: tabular-nums;
 }
 
@@ -460,7 +460,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--color-danger);
+  color: var(--tjg-color-danger-500);
   font-size: 13px;
 }
 

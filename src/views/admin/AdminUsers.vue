@@ -739,12 +739,12 @@ onMounted(loadUsers)
 
 .ban-time {
   font-size: 13px;
-  color: var(--color-text-quaternary);
+  color: var(--tjg-text-tertiary);
 }
 
 .account-detail {
   font-size: 13px;
-  color: var(--color-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 @media (max-width: 768px) {

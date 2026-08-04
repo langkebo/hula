@@ -285,7 +285,7 @@ onUnmounted(() => {
   min-width: 200px;
 
   &.is-current-user {
-    background: var(--color-primary-hover);
+    background: var(--tjg-color-primary-200);
   }
 }
 

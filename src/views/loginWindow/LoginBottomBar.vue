@@ -4,14 +4,14 @@
     class="text-14px grid grid-cols-[1fr_auto_1fr] items-center gap-x-12px w-full"
     id="bottomBar">
     <div
-      class="color-[--color-primary] cursor-pointer justify-self-end text-right"
+      class="color-[--tjg-color-primary-500] cursor-pointer justify-self-end text-right"
       :title="cancelLoginTitle"
       @click="emit('cancel-auto-login')">
       {{ cancelLoginLabel }}
     </div>
     <div class="w-1px h-14px bg-[--login-divider-color] justify-self-center"></div>
     <div
-      class="color-[--color-primary] cursor-pointer justify-self-start text-left"
+      class="color-[--tjg-color-primary-500] cursor-pointer justify-self-start text-left"
       :title="removeAccountTitle"
       @click="emit('remove-account')">
       {{ removeAccountLabel }}
@@ -19,7 +19,7 @@
   </div>
   <div v-else class="text-14px grid grid-cols-[1fr_auto_1fr] items-center gap-x-12px w-full" id="bottomBar">
     <div
-      class="color-[--color-primary] cursor-pointer justify-self-end text-right"
+      class="color-[--tjg-color-primary-500] cursor-pointer justify-self-end text-right"
       :title="qrCodeTitle"
       @click="emit('switch-to-qr')">
       {{ qrCodeLabel }}
@@ -34,7 +34,7 @@
         :show-checkmark="false"
         :show-arrow="false">
         <template #trigger>
-          <div class="color-[--color-primary] cursor-pointer" :title="moreTitle">{{ moreLabel }}</div>
+          <div class="color-[--tjg-color-primary-500] cursor-pointer" :title="moreTitle">{{ moreLabel }}</div>
         </template>
         <n-flex vertical :size="2">
           <div

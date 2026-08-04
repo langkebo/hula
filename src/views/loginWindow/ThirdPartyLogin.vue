@@ -230,7 +230,7 @@ const ssoOptions = computed(() => [
     key: 'oidc',
     label: t('login.sso.oidc'),
     icon: 'OIDC',
-    style: 'color-[--color-primary] dark:color-[--color-primary]80',
+    style: 'color-[--tjg-color-primary-500] dark:color-[--tjg-color-primary-500]80',
     action: handleOidcLogin,
     available: isSsoFlowAvailable('oidc')
   },
@@ -246,7 +246,7 @@ const ssoOptions = computed(() => [
     key: 'cas',
     label: t('login.sso.cas'),
     icon: 'CAS',
-    style: 'color-[--color-danger] dark:color-[--color-danger]80',
+    style: 'color-[--tjg-color-danger-500] dark:color-[--tjg-color-danger-500]80',
     action: handleCasLogin,
     available: isSsoFlowAvailable('cas')
   },
@@ -254,7 +254,7 @@ const ssoOptions = computed(() => [
     key: 'gitee',
     label: t('login.third_party.gitee'),
     icon: '#gitee-login',
-    style: 'color-[--color-danger] dark:color-[--color-danger]80',
+    style: 'color-[--tjg-color-danger-500] dark:color-[--tjg-color-danger-500]80',
     action: resolvedContext.giteeLogin || noop,
     available: true
   },

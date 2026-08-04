@@ -138,12 +138,12 @@
                   class="text-11px text-right flex flex-col gap-1 items-end justify-center text-[--tjg-text-tertiary]">
                   <div class="flex items-center gap-1">
                     <span v-if="item.hotFlag === IsAllUserEnum.Yes">
-                      <svg class="size-14px select-none outline-none cursor-pointer color-[--color-primary]">
+                      <svg class="size-14px select-none outline-none cursor-pointer color-[--tjg-color-primary-500]">
                         <use href="#auth"></use>
                       </svg>
                     </span>
                     <span v-if="item.isFavorite">
-                      <svg class="size-14px select-none outline-none cursor-pointer color-[--color-warning]">
+                      <svg class="size-14px select-none outline-none cursor-pointer color-[--tjg-color-warning-500]">
                         <use href="#star"></use>
                       </svg>
                     </span>
@@ -161,12 +161,12 @@
               <template #right>
                 <div class="flex w-auto flex-wrap h-full">
                   <div
-                    class="h-full text-14px w-80px bg-[--color-primary] text-white flex items-center justify-center"
+                    class="h-full text-14px w-80px bg-[--tjg-color-primary-500] text-white flex items-center justify-center"
                     @click="handleToggleTop(item)">
                     {{ item.top ? t('mobile_home.chat.unpin') : t('mobile_home.chat.pintop') }}
                   </div>
                   <div
-                    :class="(item?.unreadCount ?? 0) > 0 ? 'bg-[--tjg-text-tertiary]' : 'bg-[--color-warning]'"
+                    :class="(item?.unreadCount ?? 0) > 0 ? 'bg-[--tjg-text-tertiary]' : 'bg-[--tjg-color-warning-500]'"
                     class="h-full text-14px w-80px text-white flex items-center justify-center"
                     @click="handleToggleReadStatus((item?.unreadCount ?? 0) > 0, item)">
                     {{
@@ -176,7 +176,7 @@
                     }}
                   </div>
                   <div
-                    class="h-full text-14px w-80px bg-[--color-danger] text-white flex items-center justify-center"
+                    class="h-full text-14px w-80px bg-[--tjg-color-danger-500] text-white flex items-center justify-center"
                     @click="handleDelete(item)">
                     {{ t('mobile_home.chat.delete') }}
                   </div>
@@ -207,7 +207,7 @@
         </div>
         <div class="flex w-full justify-center h-15px">
           <svg width="34" height="13" viewBox="0 0 35 13">
-            <path d="M0 0 L35 0 L17.5 13 Z" fill="var(--bg-long-press-menu)" />
+            <path d="M0 0 L35 0 L17.5 13 Z" fill="var(--tjg-surface-subtle)" />
           </svg>
         </div>
       </div>

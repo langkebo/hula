@@ -10,7 +10,7 @@
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
     @contextmenu="emit('contextmenu', { space, event: $event })">
-    <n-badge :dot="space.isPinned" color="var(--color-warning)" :offset="[-4, 4]">
+    <n-badge :dot="space.isPinned" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
       <div class="space-card__avatar">
         <n-avatar
           v-if="space.avatarUrl"

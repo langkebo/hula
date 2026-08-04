@@ -359,7 +359,7 @@ watch(
   @apply text-12px color-[--tjg-text-tertiary] truncate;
 
   :deep(mark) {
-    background: var(--color-primary-active);
+    background: var(--tjg-color-primary-300-alpha);
     color: inherit;
   }
 }
@@ -369,7 +369,7 @@ watch(
 }
 
 .encrypted-badge {
-  @apply flex-center color-[--color-primary];
+  @apply flex-center color-[--tjg-color-primary-500];
 }
 
 .result-userId {

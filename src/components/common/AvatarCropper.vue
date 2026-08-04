@@ -5,7 +5,7 @@
     :mask-closable="false"
     class="rounded-8px"
     transform-origin="center">
-    <div class="bg-[--bg-edit] w-560px h-480px box-border flex flex-col items-center justify-between">
+    <div class="bg-[--tjg-border-muted] w-560px h-480px box-border flex flex-col items-center justify-between">
       <!-- 标题栏 -->
       <n-flex :size="6" vertical class="w-full">
         <MacCloseButton v-if="isMac()" class="mt-6px absolute left-6px" @click="closeWindow" />

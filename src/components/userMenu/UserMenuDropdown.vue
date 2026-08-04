@@ -156,7 +156,7 @@ onUnmounted(() => {
 .user-menu-dropdown {
   position: absolute;
   width: 240px;
-  background-color: var(--bg-color, var(--tjg-surface-panel));
+  background-color: var(--tjg-surface-panel);
   border-radius: 8px;
   box-shadow: var(--tjg-shadow-dropdown);
   overflow: hidden;

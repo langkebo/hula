@@ -20,7 +20,7 @@
         <n-card size="small">
           <n-statistic :label="t('admin.federation_monitor.online_servers')">
             <template #default>
-              <span class="text-[--color-success]">{{ onlineCount }}</span>
+              <span class="text-[--tjg-color-success-500]">{{ onlineCount }}</span>
             </template>
           </n-statistic>
         </n-card>
@@ -29,7 +29,7 @@
         <n-card size="small">
           <n-statistic :label="t('admin.federation_monitor.offline_servers')">
             <template #default>
-              <span class="text-[--color-danger]">{{ offlineCount }}</span>
+              <span class="text-[--tjg-color-danger-500]">{{ offlineCount }}</span>
             </template>
           </n-statistic>
         </n-card>

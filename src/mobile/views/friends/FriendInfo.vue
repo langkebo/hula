@@ -13,7 +13,7 @@
       <div class="flex flex-col overflow-auto h-full">
         <PersonalInfo :is-my-page="isMyPage" :is-show="isShow"></PersonalInfo>
 
-        <div class="top-0 flex-1 flex w-full border-[--color-primary] border-1">
+        <div class="top-0 flex-1 flex w-full border-[--tjg-color-primary-500] border-1">
           <div ref="measureRef" class="h-full w-full absolute top-0 z-0"></div>
 
           <div

@@ -19,7 +19,7 @@
                       </span>
                       <span
                         v-if="item.isTop"
-                        class="text-[--color-primary] rounded-15px px-7px py-5px text-12px"
+                        class="text-[--tjg-color-primary-500] rounded-15px px-7px py-5px text-12px"
                         style="border: 1px solid; border-color: var(--tjg-color-primary-500)">
                         {{ t('mobile_chat.notice.pinned') }}
                       </span>
@@ -32,7 +32,7 @@
                       <span class="flex gap-5px text-[--tjg-text-secondary]">
                         {{ formatChatTime(item.createTime) }}
                       </span>
-                      <span class="text-[--color-primary]">
+                      <span class="text-[--tjg-color-primary-500]">
                         {{ t('mobile_chat.notice.read_count', { count: 128 }) }}
                       </span>
                     </div>

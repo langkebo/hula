@@ -153,7 +153,7 @@
       <div
         :class="showMode === ShowModeEnum.ICON ? 'top-action p-[6px_8px]' : 'top-action w-46px py-4px flex-col-center'">
         <n-popover
-          style="padding: 8px; margin-left: 4px; background: var(--bg-setting-item)"
+          style="padding: 8px; margin-left: 4px; background: var(--tjg-surface-elevated)"
           :show-arrow="false"
           trigger="hover"
           placement="right">

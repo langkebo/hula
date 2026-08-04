@@ -74,7 +74,7 @@
               v-for="item in loginHistories"
               :key="item.account"
               @click="giveAccount(item)"
-              class="p-8px hover:bg-[--bg-msg-hover] hover:rounded-6px">
+              class="p-8px hover:bg-[--tjg-surface-panel-muted] hover:rounded-6px">
               <div class="flex-between-center">
                 <img
                   :src="AvatarUtils.getAvatarUrl(item.avatar)"
@@ -250,7 +250,7 @@
             v-for="option in commonEmailDomains"
             :key="option.value"
             @click="selectEmailSuggestion(option.value)"
-            class="p-8px hover:bg-[--bg-msg-hover] hover:rounded-6px text-14px color-[--chat-text-color] text-left cursor-pointer">
+            class="p-8px hover:bg-[--tjg-surface-panel-muted] hover:rounded-6px text-14px color-[--chat-text-color] text-left cursor-pointer">
             {{ option.label }}
           </div>
         </div>

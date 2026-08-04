@@ -188,7 +188,7 @@ onMounted(async () => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-left-menu);
+  background: var(--tjg-surface-subtle);
 }
 
 .user-select-text {

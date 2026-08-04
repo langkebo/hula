@@ -30,7 +30,7 @@
         </NCarouselItem>
       </NCarousel>
 
-      <p class="cursor-default color-[--color-primary] text-center text-sm mt-4" data-tauri-drag-region>
+      <p class="cursor-default color-[--tjg-color-primary-500] text-center text-sm mt-4" data-tauri-drag-region>
         {{ t('message.update_window.updating') }} {{ percentage }}%
       </p>
     </div>

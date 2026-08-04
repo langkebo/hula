@@ -22,7 +22,7 @@
         <n-scrollbar style="max-height: 215px">
           <n-flex align="center" :size="10">
             <n-flex @click="handleResetState" vertical justify="center" align="center" :size="8" class="status-item">
-              <svg class="size-24px color-[--color-danger]">
+              <svg class="size-24px color-[--tjg-color-danger-500]">
                 <use href="#forbid"></use>
               </svg>
               <span class="text-11px" :title="t('auth.onlineStatus.reset_title')">

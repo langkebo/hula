@@ -410,11 +410,11 @@ watch(visible, (val) => {
 }
 
 .status-warning {
-  color: var(--color-warning);
+  color: var(--tjg-color-warning-500);
 }
 
 .status-ok {
-  color: var(--color-success);
+  color: var(--tjg-color-success-500);
 }
 
 .status-info {

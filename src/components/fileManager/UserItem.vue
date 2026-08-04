@@ -196,7 +196,7 @@ html[data-theme='dark'] {
     }
 
     &--selected {
-      background-color: var(--color-primary-hover);
+      background-color: var(--tjg-color-primary-200);
       border-color: var(--tjg-color-primary-500);
     }
   }

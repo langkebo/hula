@@ -9,7 +9,7 @@
     @keydown.enter="$emit('select', friend)"
     @contextmenu="$emit('contextmenu', { friend, event: $event })">
     <div class="friend-list-item__avatar-wrap">
-      <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
+      <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
         <n-avatar
           :size="44"
           round

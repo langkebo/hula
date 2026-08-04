@@ -393,7 +393,7 @@ onMounted(() => {
 }
 
 .trendradar-view__nav-item--active {
-  background: var(--color-primary-active);
+  background: var(--tjg-color-primary-300-alpha);
   color: var(--tjg-color-primary-500);
 }
 
