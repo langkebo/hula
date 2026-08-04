@@ -20,6 +20,7 @@ import { listen } from '@tauri-apps/api/event'
 import { cancel, Format, scan } from '@tauri-apps/plugin-barcode-scanner'
 import { useI18n } from 'vue-i18n'
 import { useMitt } from '@/composables/common/useMitt'
+import { usePlatformClose } from '@/composables/common/usePlatformClose'
 import { MittEnum } from '@/enums'
 import router from '@/router'
 import { createLogger } from '@/utils/Logger'
@@ -28,6 +29,7 @@ import { useTimerManager } from '@/utils/TimerManager'
 const logger = createLogger('MobileQRCode')
 const timerManager = useTimerManager()
 const { t } = useI18n()
+const { closeCurrentWindow } = usePlatformClose()
 
 const result = ref<string | null>(null)
 const isActive = ref(true)
@@ -71,7 +73,7 @@ const startScan = async () => {
       if (window.history.length > 1) {
         window.history.back()
       } else {
-        window.close()
+        await closeCurrentWindow()
       }
       result.value = res.content
     } else if (typeof res === 'string') {
@@ -79,7 +81,7 @@ const startScan = async () => {
       useMitt.emit(MittEnum.QR_SCAN_EVENT, { raw: res })
       result.value = res
       if (window.history.length > 1) window.history.back()
-      else window.close()
+      else await closeCurrentWindow()
     } else {
       result.value = t('mobile_qrcode.scan_failed_or_cancelled')
     }

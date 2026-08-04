@@ -198,6 +198,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { exit } from '@tauri-apps/plugin-process'
 import { useI18n } from 'vue-i18n'
 import { useMitt } from '@/composables/common/useMitt'
+import { usePlatformClose } from '@/composables/common/usePlatformClose'
 import { useWindow } from '@/composables/common/useWindow'
 import { CloseBxEnum, EventEnum, MittEnum } from '@/enums'
 import router from '@/router'
@@ -238,6 +239,7 @@ const { getWindowTop, setWindowTop } = useAlwaysOnTopStore()
 const settingStore = useSettingStore()
 const { tips, escClose } = storeToRefs(settingStore)
 const { resizeWindow } = useWindow()
+const { closeCurrentWindow } = usePlatformClose()
 const tipsRef = reactive({
   type: tips.value.type,
   notTips: tips.value.notTips,
@@ -371,7 +373,7 @@ const handleCloseWin = async () => {
       await need?.setFocus()
     }
     await emit(EventEnum.WIN_CLOSE, appWindow.label)
-    await appWindow.close()
+    await closeCurrentWindow()
   }
 }
 
