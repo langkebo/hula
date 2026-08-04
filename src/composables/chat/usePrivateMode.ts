@@ -1,12 +1,16 @@
 import { computed, ref } from 'vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
+import { useScreenshotDetection } from './useScreenshotDetection'
 
 export function usePrivateMode() {
   const privateModeActive = ref(false)
   const showPrivateConfirm = ref(false)
   const burnEnabled = ref(false)
   const burnDuration = ref(60)
+  const currentRoomId = ref<string>('')
+
+  const { startWatch, stopWatch } = useScreenshotDetection()
 
   const privateModeFeatures = computed(() => [
     {
@@ -35,11 +39,16 @@ export function usePrivateMode() {
     }
   ])
 
+  function setRoomId(roomId: string) {
+    currentRoomId.value = roomId
+  }
+
   function togglePrivateMode() {
     if (privateModeActive.value) {
       privateModeActive.value = false
       burnEnabled.value = false
       useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, false)
+      stopWatch()
     } else {
       showPrivateConfirm.value = true
     }
@@ -49,6 +58,9 @@ export function usePrivateMode() {
     privateModeActive.value = true
     showPrivateConfirm.value = false
     useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, true)
+    if (currentRoomId.value) {
+      startWatch(currentRoomId.value)
+    }
   }
 
   function cancelPrivateMode() {
@@ -61,6 +73,8 @@ export function usePrivateMode() {
     burnEnabled,
     burnDuration,
     privateModeFeatures,
+    currentRoomId,
+    setRoomId,
     togglePrivateMode,
     confirmPrivateMode,
     cancelPrivateMode
