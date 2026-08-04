@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 
@@ -10,19 +10,21 @@ export function usePrivacyProtection(options?: PrivacyProtectionOptions) {
   const userStore = useUserStore()
   const _settingStore = useSettingStore()
 
-  const isPrivacyMode = computed(() => false)
+  const isPrivacyMode = ref(false)
 
   const settings = computed(() => ({
-    watermarkEnabled: true,
+    watermarkEnabled: isPrivacyMode.value,
     blurEffect: false,
-    blockScreenshot: false
+    blockScreenshot: isPrivacyMode.value
   }))
 
   const enterPrivateChat = () => {
+    isPrivacyMode.value = true
     options?.onPrivacyChange?.(true)
   }
 
   const leavePrivateChat = () => {
+    isPrivacyMode.value = false
     options?.onPrivacyChange?.(false)
   }
 

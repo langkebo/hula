@@ -1,7 +1,10 @@
 <template>
   <!-- 底部栏 -->
   <main
-    :class="[isMobile() ? 'flex-col w-full' : 'border-t-(1px solid [--tjg-border-default])']"
+    :class="[
+      isMobile() ? 'flex-col w-full' : 'border-t-(1px solid [--tjg-border-default])',
+      { 'private-mode-footer': privateModeActive }
+    ]"
     class="h-full flex flex-col relative">
     <!-- 添加遮罩层 -->
     <div
@@ -290,6 +293,7 @@ import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('ChatFooter')
+const privateModeActive = ref(false)
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 // 移动端组件条件导入
@@ -781,6 +785,9 @@ const listenMobilePanelHandler = () => {
  */
 const listenMobileClosePanel = () => {
   useMitt.on(MittEnum.MOBILE_CLOSE_PANEL, listenMobilePanelHandler)
+  useMitt.on(MittEnum.PRIVATE_MODE_CHANGED, (isActive: boolean) => {
+    privateModeActive.value = isActive
+  })
 }
 
 /**
@@ -788,6 +795,7 @@ const listenMobileClosePanel = () => {
  */
 const removeMobileClosePanel = () => {
   useMitt.off(MittEnum.MOBILE_CLOSE_PANEL, listenMobilePanelHandler)
+  useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, () => {})
 }
 
 /**
@@ -967,5 +975,8 @@ onUnmounted(() => {
 .panel-content-leave-from {
   opacity: 1;
   transform: translateY(0);
+}
+.private-mode-footer {
+  border-top: 2px dashed var(--tjg-color-danger-500) !important;
 }
 </style>

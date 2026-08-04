@@ -3,6 +3,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive, ref } from 'vue'
 import ChatMain from '../ChatMain.vue'
 
+vi.mock("@/utils/AppHarness", () => ({
+  detectAppPlatform: () => "desktop",
+  isBrowser: () => true,
+  isE2EMode: () => false,
+  hasTauriRuntime: () => false,
+  getRequestedPlatform: () => null
+}))
+
+// Provide localStorage stub for Node v26 compatibility
+if (!globalThis.localStorage) {
+  const store: Record<string, string> = {}
+  globalThis.localStorage = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value },
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { Object.keys(store).forEach((k) => delete store[k]) },
+    key: (index: number) => Object.keys(store)[index] ?? null,
+    get length() { return Object.keys(store).length }
+  } as Storage
+}
+
 const {
   showFeedbackMock,
   scrollToIndexMock,
@@ -209,12 +230,14 @@ vi.mock('@/utils/ComputedTime', () => ({
   timeToStr: () => 'now'
 }))
 
-vi.mock('@/utils/Logger', () => ({
+vi.mock("@/utils/Logger", () => ({
   createLogger: () => ({
-    error: loggerErrorMock
+    error: loggerErrorMock,
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
   })
 }))
-
 vi.mock('@/utils/MessageSelect', () => ({
   isMessageMultiSelectEnabled: () => true
 }))
@@ -399,6 +422,21 @@ describe('ChatMain private mode', () => {
     expect((wrapper.vm as unknown as { showPrivateConfirm: boolean }).showPrivateConfirm).toBe(true)
   })
 
+  it('shows 4 privacy feature descriptions in confirmation dialog', async () => {
+    const wrapper = mountComponent()
+    await wrapper.find('[data-testid="private-toggle-btn"]').trigger('click')
+    await flushPromises()
+    const vm = wrapper.vm as unknown as {
+      privateModeFeatures: Array<{ title: string; description: string }>
+    }
+    expect(vm.privateModeFeatures).toHaveLength(4)
+    const titles = vm.privateModeFeatures.map((f) => f.title)
+    expect(titles).toContain('端到端加密')
+    expect(titles).toContain('阅后即焚')
+    expect(titles).toContain('防截屏')
+    expect(titles).toContain('不留存')
+  })
+
   it('activates private mode after confirmation and renders BurnAfterReadToggle', async () => {
     const wrapper = mountComponent()
     await wrapper.find('[data-testid="private-toggle-btn"]').trigger('click')
@@ -408,6 +446,29 @@ describe('ChatMain private mode', () => {
     expect(wrapper.findComponent({ name: 'BurnAfterReadToggle' }).exists()).toBe(true)
   })
 
+  it("renders PrivateModeBanner when private mode is active", async () => {
+    const wrapper = mountComponent()
+    ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
+    await flushPromises()
+    expect(wrapper.findComponent({ name: "PrivateModeBanner" }).exists()).toBe(true)
+  })
+
+  it("does not render PrivateModeBanner when private mode is inactive", () => {
+    const wrapper = mountComponent()
+    expect(wrapper.findComponent({ name: "PrivateModeBanner" }).exists()).toBe(false)
+  })
+
+  it("renders ScreenshotWatermark when private mode is active", async () => {
+    const wrapper = mountComponent()
+    ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
+    await flushPromises()
+    expect(wrapper.findComponent({ name: "ScreenshotWatermark" }).exists()).toBe(true)
+  })
+
+  it("does not render ScreenshotWatermark when private mode is inactive", () => {
+    const wrapper = mountComponent()
+    expect(wrapper.findComponent({ name: "ScreenshotWatermark" }).exists()).toBe(false)
+  })
   it('deactivates private mode on second S button click', async () => {
     const wrapper = mountComponent()
     const vm = wrapper.vm as unknown as {
@@ -421,6 +482,34 @@ describe('ChatMain private mode', () => {
     vm.togglePrivateMode()
     await flushPromises()
     expect(vm.privateModeActive).toBe(false)
+  })
+
+  it('shows lock icon when private mode is active', async () => {
+    const wrapper = mountComponent()
+    const vm = wrapper.vm as unknown as { confirmPrivateMode: () => void }
+    vm.confirmPrivateMode()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="private-lock-icon"]').exists()).toBe(true)
+  })
+
+  it('does not show lock icon when private mode is inactive', () => {
+    const wrapper = mountComponent()
+    expect(wrapper.find('[data-testid="private-lock-icon"]').exists()).toBe(false)
+  })
+
+  it('adds private-mode-active class to message list when private mode is active', async () => {
+    const wrapper = mountComponent()
+    const vm = wrapper.vm as unknown as { confirmPrivateMode: () => void }
+    vm.confirmPrivateMode()
+    await flushPromises()
+    const messageList = wrapper.find('.message-list')
+    expect(messageList.classes()).toContain('private-mode-active')
+  })
+
+  it('does not add private-mode-active class when private mode is inactive', () => {
+    const wrapper = mountComponent()
+    const messageList = wrapper.find('.message-list')
+    expect(messageList.classes()).not.toContain('private-mode-active')
   })
 })
 

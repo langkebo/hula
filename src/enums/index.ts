@@ -135,6 +135,8 @@ export enum MittEnum {
   BURN_MESSAGE_READ = 'burnMessageRead',
   /** 阅后即焚消息已焚毁 */
   BURN_MESSAGE_BURNED = 'burnMessageBurned',
+  /** 私密模式状态变更 */
+  PRIVATE_MODE_CHANGED = 'privateModeChanged',
   /** 阅后即焚设置变更 */
   BURN_SETTINGS_CHANGED = 'burnSettingsChanged',
   /** Widget 已创建 */
