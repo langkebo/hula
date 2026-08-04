@@ -328,3 +328,43 @@ HuLa integrates multiple AI providers via `src/services/ai-provider.ts`:
 - **Matrix AI** (`src/services/matrix/ai/`): AI features via Matrix protocol (conversations, models, roles, API keys)
 
 AI provider config is unified under `AIProviderType = ‘openclaw’ | ‘trendradar’ | ‘hula’`. The AI chat UI lives in `src/views/openclaw/OpenClawView.vue`.
+
+## Skill routing
+
+当用户请求匹配某个技能时，先通过 Skill 工具调用，再谈实现。
+
+关键路由规则：
+- 任何重构/新功能动手前 → writing-plans（先写方案）
+- 设计取舍/范围收敛 → brainstorming / grilling
+- 写实现代码前 → test-driven-development（先写失败测试）
+- 执行多任务计划 → subagent-driven-development 或 executing-plans
+- 声称"完成/修复/通过"前 → verification-before-completion（先跑命令取证）
+- 收到评审反馈 → receiving-code-review（先核实再采纳，不盲从）
+- 请人评审 → requesting-code-review（见下方质量门禁）
+- 需要隔离工作区 → using-git-worktrees
+- 出现 bug → systematic-debugging（先诊断再修）
+
+## UI 设计系统强制规范
+
+- 设计 token 唯一来源：`src/styles/css/design-tokens.css`（权威），`variable.scss` 仅作旧别名层。
+- 禁止硬编码颜色：新代码一律使用 `--tjg-*` token；不得出现 `#xxx`/`rgb()`/`rgba()` 新增值。
+- 图标必须使用 SVG：禁止 div-based 图标；图标用 `<svg>` / `<use>` / Iconify，线宽 1.5px。
+- 组件体量红线：任何 `.vue` 文件超过 800 行必须拆分（参照 workbench 层样板）。
+- 桌面/移动端策略：优先补全 `src/mobile/` 独立实现；`isMobile()` 内联分支只允许在临界候补组件，禁止新增。
+- 动效必须尊重 `prefers-reduced-motion`。
+- 语义色/状态色用 token（`--tjg-status-*`），不依赖颜色传达状态。
+
+## 重构验收命令
+
+每次改动后必须跑以下守门命令：
+
+| 命令 | 用途 |
+| :--- | :--- |
+| `pnpm vue-tsc --noEmit` | 类型检查，必须 0 错误 |
+| `pnpm test:run` | 单元测试全部通过 |
+| `pnpm check:ratchet` | 硬编码颜色/样式守护（ratchet） |
+| `pnpm check:doc-coverage` | 文档覆盖守护 |
+| `pnpm check:sdk-boundary` | SDK 边界守护 |
+| `pnpm quality:no-raw-fetch` | 禁止直接 fetch 守护 |
+| `pnpm check` | Biome lint + i18n 检查 |
+| `pnpm storybook` | 视觉回归（可选，涉及组件时） |
