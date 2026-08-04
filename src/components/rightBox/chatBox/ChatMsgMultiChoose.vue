@@ -21,14 +21,7 @@
 
   <n-modal v-model:show="showModal" class="w-70% rounded-8px">
     <div class="bg-[--tjg-surface-panel] h-full p-6px box-border flex flex-col">
-      <div
-        v-if="isMac()"
-        @click="showModal = false"
-        class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
-          <use href="#close"></use>
-        </svg>
-      </div>
+      <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="showModal = false" />
 
       <svg v-if="isWindows()" @click="showModal = false" class="size-12px ml-a cursor-pointer select-none">
         <use href="#close"></use>
@@ -116,14 +109,7 @@
 
   <n-modal v-model:show="showDeleteConfirm" class="w-350px border-rd-8px">
     <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
-      <div
-        v-if="isMac()"
-        @click="showDeleteConfirm = false"
-        class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
-          <use href="#close"></use>
-        </svg>
-      </div>
+      <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="showDeleteConfirm = false" />
 
       <svg v-if="isWindows()" @click="showDeleteConfirm = false" class="w-12px h-12px ml-a cursor-pointer select-none">
         <use href="#close"></use>
@@ -147,6 +133,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { ErrorType } from '@/common/exception'
+import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { useCustomForwardTask } from '@/composables/chat/useCustomForwardTask'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useImageViewer } from '@/composables/common/useImageViewer'

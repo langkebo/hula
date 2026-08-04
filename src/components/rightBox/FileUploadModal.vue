@@ -7,14 +7,7 @@
     transform-origin="center">
     <div class="bg-[--tjg-surface-panel] min-w-320px h-fit box-border flex flex-col select-none cursor-default">
       <n-flex :size="6" vertical>
-        <div
-          v-if="isMac()"
-          @click="visible = false"
-          class="mac-close size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
-            <use href="#close"></use>
-          </svg>
-        </div>
+        <MacCloseButton v-if="isMac()" class="mt-6px absolute left-6px" @click="visible = false" />
 
         <n-flex class="text-(14px [--tjg-text-primary]) select-none pt-6px" justify="center">
           {{ t('message.file_upload.title') }}
@@ -71,6 +64,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import type { UploadFile } from '@/utils/FileType'
 import { formatBytes } from '@/utils/Formatting'
 import { isMac, isWindows } from '@/utils/PlatformConstants'

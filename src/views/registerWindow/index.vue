@@ -185,22 +185,14 @@
     </div>
 
     <!-- 底部栏 -->
-    <div
-      class="text-(12px --tjg-text-tertiary) w-full absolute bottom-20px left-0 text-center pointer-events-none z-0">
+    <div class="text-(12px --tjg-text-tertiary) w-full absolute bottom-20px left-0 text-center pointer-events-none z-0">
       <span>Copyright {{ currentYear - 1 }}-{{ currentYear }} 龙卷风 All Rights Reserved.</span>
     </div>
 
     <!-- 邮箱验证码输入弹窗 -->
     <n-modal v-model:show="emailCodeModal" :mask-closable="false" class="rounded-8px" transform-origin="center">
       <div class="bg-[--tjg-surface-elevated] w-380px h-fit box-border flex flex-col">
-        <div
-          v-if="isMac()"
-          @click="emailCodeModal = false"
-          class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute top-3px left-4px">
-          <svg class="hidden size-7px text-[--tjg-text-primary] select-none absolute top-3px left-3px">
-            <use href="#close"></use>
-          </svg>
-        </div>
+        <MacCloseButton v-if="isMac()" class="z-999 absolute top-3px left-4px" @click="emailCodeModal = false" />
 
         <svg
           v-if="isWindows()"
@@ -258,6 +250,7 @@ const {
 } = useSessionActions()
 
 import PinInput from '@/components/atomic/PinInput.vue'
+import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import Validation from '@/components/common/Validation.vue'
 import { useWindow } from '@/composables/common/useWindow'
 import router from '@/router'

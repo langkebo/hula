@@ -13,14 +13,7 @@
           src="/img/dispersion-bg.png"
           alt="插件背景" />
 
-        <div
-          v-if="isMac()"
-          @click="isShow = false"
-          class="mac-close z-10 relative size-13px shadow-inner bg-[--tjg-color-primary-500] rounded-50% select-none">
-          <svg class="hidden size-7px color-[--tjg-text-inverse] select-none absolute top-3px left-3px">
-            <use href="#close"></use>
-          </svg>
-        </div>
+        <MacCloseButton v-if="isMac()" color="primary" class="z-10 relative" @click="isShow = false" />
 
         <svg
           v-if="isWindows()"
@@ -69,6 +62,7 @@
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import Card from './Card.vue'

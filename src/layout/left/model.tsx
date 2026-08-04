@@ -15,6 +15,7 @@ import {
   NTimeline,
   NTimelineItem
 } from 'naive-ui'
+import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { EventEnum } from '@/enums'
 import { handRelativeTime } from '@/utils/ComputedTime'
 import './style.scss'
@@ -82,13 +83,7 @@ export const LockScreen = defineComponent(() => {
     <NModal v-model:show={modalShow.value} maskClosable={false} class="w-350px border-rd-8px">
       <div class="bg-[--hula-surface-elevated] w-360px h-full p-6px box-border flex flex-col">
         {isMac() ? (
-          <div
-            onClick={() => (modalShow.value = false)}
-            class="mac-close relative size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none">
-            <svg class="hidden size-7px text-[--hula-text-primary] select-none absolute top-3px left-3px">
-              <use href="#close"></use>
-            </svg>
-          </div>
+          <MacCloseButton onClick={() => (modalShow.value = false)} class="relative" />
         ) : (
           <svg onClick={() => (modalShow.value = false)} class="w-12px h-12px ml-a cursor-pointer select-none">
             <use href="#close"></use>
@@ -294,13 +289,7 @@ export const CheckUpdate = defineComponent(() => {
     <NModal v-model:show={modalShow.value} maskClosable={false} class="w-350px border-rd-8px">
       <div class="bg-[--hula-surface-elevated] w-500px h-full p-6px box-border flex flex-col">
         {isMac() ? (
-          <div
-            onClick={() => (modalShow.value = false)}
-            class="mac-close relative size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none">
-            <svg class="hidden size-7px text-[--hula-text-primary]  select-none absolute top-3px left-3px">
-              <use href="#close"></use>
-            </svg>
-          </div>
+          <MacCloseButton onClick={() => (modalShow.value = false)} class="relative" />
         ) : (
           <svg onClick={() => (modalShow.value = false)} class="w-12px h-12px ml-a cursor-pointer select-none">
             <use href="#close"></use>

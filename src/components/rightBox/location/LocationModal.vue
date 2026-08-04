@@ -3,14 +3,10 @@
     <div class="location-modal h-full w-480px box-border flex flex-col items-center justify-between">
       <!-- 标题栏 -->
       <n-flex :size="6" vertical class="w-full">
-        <div
+        <MacCloseButton
           v-if="isMac()"
-          @click="modalVisible = false"
-          class="mac-close location-modal__mac-close size-13px shadow-inner rounded-50% mt-6px select-none absolute left-6px cursor-pointer z-10">
-          <svg class="hidden location-modal__mac-close-icon size-7px select-none absolute top-3px left-3px">
-            <use href="#close"></use>
-          </svg>
-        </div>
+          class="location-modal__mac-close mt-6px absolute left-6px z-10"
+          @click="modalVisible = false" />
 
         <n-flex class="text-(14px [--tjg-text-primary]) select-none pt-6px" justify="center">{{ modalTitle }}</n-flex>
 
@@ -118,6 +114,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { useGeolocation } from '@/composables/common/useGeolocation'
 import { reverseGeocode } from '@/services/mapApi'
 import type { LocationData } from '@/types/common'

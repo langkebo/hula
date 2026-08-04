@@ -2,14 +2,11 @@
   <n-modal v-model:show="editInfo.show" :mask-closable="false" class="rounded-8px" transform-origin="center">
     <div class="bg-[--bg-edit] w-480px h-fit box-border flex flex-col">
       <n-flex :size="6" vertical>
-        <div
+        <MacCloseButton
           v-if="isMac()"
-          @click="editInfo.show = false"
-          class="mac-close size-13px shadow-inner bg-[--tjg-color-primary-500] rounded-50% mt-6px select-none absolute left-6px">
-          <svg class="hidden size-7px color-[--tjg-text-inverse] select-none absolute top-3px left-3px">
-            <use href="#close"></use>
-          </svg>
-        </div>
+          color="primary"
+          class="mt-6px absolute left-6px"
+          @click="editInfo.show = false" />
 
         <n-flex class="text-[var(--text-sm)] text-[--tjg-text-primary] select-none pt-6px" justify="center">
           {{ t('home.profile_edit.title') }}
@@ -150,6 +147,7 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { countGraphemes } from '@/composables/common/useCommon'
 import { useMitt } from '@/composables/common/useMitt'
@@ -249,12 +247,6 @@ onMounted(async () => {
 
   &:hover .tip {
     @apply opacity-100;
-  }
-}
-
-.mac-close:hover {
-  svg {
-    display: block;
   }
 }
 
