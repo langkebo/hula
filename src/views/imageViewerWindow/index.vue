@@ -115,6 +115,7 @@ import { useI18n } from 'vue-i18n'
 import ActionBar from '@/components/windows/ActionBar.vue'
 import { useDownload } from '@/composables/common/useDownload'
 import { useImageViewer as useImageViewerHook } from '@/composables/common/useImageViewer'
+import { usePlatformClose } from '@/composables/common/usePlatformClose'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useImageViewer as useImageViewerStore } from '@/stores/domains/widget/imageViewer'
@@ -128,6 +129,7 @@ const { downloadFile } = useDownload()
 const imageViewerStore = useImageViewerStore()
 const chatStore = useChatStore()
 const { downloadOriginalByIndex } = useImageViewerHook()
+const { closeCurrentWindow } = usePlatformClose()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 
 // 初始化数据
@@ -340,7 +342,7 @@ const nextImage = () => {
 }
 
 // 添加键盘事件处理
-const handleKeydown = (e: KeyboardEvent) => {
+const handleKeydown = async (e: KeyboardEvent) => {
   switch (e.key) {
     case 'ArrowLeft':
       prevImage()
@@ -368,7 +370,7 @@ const handleKeydown = (e: KeyboardEvent) => {
       }
       break
     case 'Escape':
-      appWindow?.close()
+      await closeCurrentWindow()
       break
   }
 }

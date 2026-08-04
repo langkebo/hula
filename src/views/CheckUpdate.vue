@@ -115,6 +115,7 @@ import { confirm } from '@tauri-apps/plugin-dialog'
 import { check } from '@tauri-apps/plugin-updater'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { usePlatformClose } from '@/composables/common/usePlatformClose'
 import { useWindow } from '@/composables/common/useWindow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { handRelativeTime } from '@/utils/ComputedTime'
@@ -129,6 +130,7 @@ const settingStore = useSettingStore()
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const { createWebviewWindow, resizeWindow, setResizable } = useWindow()
+const { closeWindowByLabel } = usePlatformClose()
 /** 项目提交日志记录 */
 const commitLog = ref<{ message: string; icon: string }[]>([])
 const newCommitLog = ref<{ message: string; icon: string }[]>([])
@@ -204,12 +206,9 @@ const doUpdate = async () => {
     return
   }
   await createWebviewWindow('更新', 'update', 490, 335, '', false, 490, 335, false, true)
-  const windows = await WebviewWindow.getAll()
-  windows.forEach((window) => {
-    if (window.label === 'login' || window.label === 'home' || window.label === 'checkupdate') {
-      window.close()
-    }
-  })
+  for (const label of ['login', 'home', 'checkupdate']) {
+    await closeWindowByLabel(label)
+  }
 }
 
 const dismissUpdate = async () => {

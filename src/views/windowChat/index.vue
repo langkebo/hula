@@ -19,6 +19,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ChatBox from '@/components/rightBox/chatBox/index.vue'
 import { useIndependentChatWindow } from '@/composables/chat/useIndependentChatWindow'
+import { usePlatformClose } from '@/composables/common/usePlatformClose'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
@@ -35,6 +36,7 @@ const roomId = computed(() => {
 })
 
 const { notifyUnreadUpdate, listenChatClosed } = useIndependentChatWindow()
+const { closeCurrentWindow } = usePlatformClose()
 
 let unlistenClosed: (() => void) | null = null
 
@@ -49,10 +51,10 @@ onMounted(async () => {
   }
 
   // 监听主窗口发来的关闭信号
-  const unlisten = await listenChatClosed(({ roomId: closedRoomId }) => {
+  const unlisten = await listenChatClosed(async ({ roomId: closedRoomId }) => {
     if (closedRoomId === roomId.value) {
       logger.info('收到主窗口关闭通知，关闭独立窗口')
-      window.close()
+      await closeCurrentWindow()
     }
   })
   unlistenClosed = unlisten
