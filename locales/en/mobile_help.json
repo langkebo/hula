@@ -10,7 +10,7 @@
   "report_bug": "Report a Bug",
   "feature_request": "Feature Request",
   "contact_support": "Contact Support",
-  "about_hula": "About HuLa",
+  "about_tjg": "About Tjg",
   "check_update": "Check for Updates",
   "latest_version": "You're on the latest version",
   "bug_title": "Bug Title",
@@ -25,6 +25,6 @@
   "submit_success": "Submitted successfully",
   "submit_failed": "Submission failed, please try again later",
   "title_required": "Please enter a title",
-  "about_description": "HuLa is a cross-platform instant messaging app based on Matrix protocol",
-  "copyright": "© 2024 HuLa Team. All rights reserved."
+  "about_description": "Tjg is a cross-platform instant messaging app based on Matrix protocol",
+  "copyright": "© 2024 Tjg Team. All rights reserved."
 }

@@ -12,7 +12,7 @@ import { buildBadgeCatalog, useBadgeStore } from '../badge'
 describe('buildBadgeCatalog', () => {
   it('returns the known catalog entry for id "6"', () => {
     const list = buildBadgeCatalog(['6'])
-    expect(list).toEqual([{ id: '6', img: '/hula.png', describe: '频道徽章' }])
+    expect(list).toEqual([{ id: '6', img: '/tjg.png', describe: '频道徽章' }])
   })
 
   it('synthesizes a generic entry for unknown ids', () => {
@@ -49,7 +49,7 @@ describe('useBadgeStore', () => {
 
   it('badgeById returns existing badge', () => {
     const store = useBadgeStore()
-    expect(store.badgeById('6')?.img).toBe('/hula.png')
+    expect(store.badgeById('6')?.img).toBe('/tjg.png')
   })
 
   it('badgeById synthesizes a fallback for unknown ids', () => {

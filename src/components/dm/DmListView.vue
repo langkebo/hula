@@ -47,12 +47,12 @@
                 <span class="text-14px truncate">
                   {{ dmRoom.name || dmRoom.roomId }}
                 </span>
-                <span class="text-12px text-[--hula-text-tertiary]">
+                <span class="text-12px text-[--tjg-text-tertiary]">
                   {{ formatTime(dmRoom.lastMessage?.timestamp) }}
                 </span>
               </n-flex>
               <n-flex align="center" justify="space-between">
-                <span class="text-12px text-[--hula-text-quaternary] truncate flex-1">
+                <span class="text-12px text-[--tjg-text-quaternary] truncate flex-1">
                   {{ dmRoom.lastMessage?.content || t('dm.list.no_message') }}
                 </span>
                 <n-flex align="center" :size="4">
@@ -210,16 +210,16 @@ onMounted(async () => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 
   &.active {
-    background: var(--hula-surface-session-active);
-    color: var(--hula-text-inverse);
+    background: var(--tjg-surface-session-active);
+    color: var(--tjg-text-inverse);
   }
 
   &.pinned {
-    background: var(--hula-surface-panel);
+    background: var(--tjg-surface-panel);
   }
 }
 </style>

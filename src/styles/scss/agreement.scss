@@ -2,31 +2,31 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--hula-surface-panel);
-  color: var(--hula-text-primary);
+  background: var(--tjg-surface-panel);
+  color: var(--tjg-text-primary);
   user-select: none;
   -webkit-user-select: none;
   transition: background-color 0.3s ease, color 0.3s ease;
 
-  --agreement-heading-color: var(--hula-text-primary);
-  --agreement-subheading-color: var(--hula-text-primary);
-  --agreement-paragraph-color: var(--hula-text-secondary);
-  --agreement-muted-color: var(--hula-text-tertiary);
-  --agreement-accent-color: color-mix(in srgb, var(--hula-color-primary-500) 56%, transparent);
-  --agreement-scrollbar-track: var(--hula-surface-panel-muted);
-  --agreement-scrollbar-thumb: var(--hula-border-default);
-  --agreement-scrollbar-thumb-hover: var(--hula-text-quaternary);
+  --agreement-heading-color: var(--tjg-text-primary);
+  --agreement-subheading-color: var(--tjg-text-primary);
+  --agreement-paragraph-color: var(--tjg-text-secondary);
+  --agreement-muted-color: var(--tjg-text-tertiary);
+  --agreement-accent-color: color-mix(in srgb, var(--tjg-color-primary-500) 56%, transparent);
+  --agreement-scrollbar-track: var(--tjg-surface-panel-muted);
+  --agreement-scrollbar-thumb: var(--tjg-border-default);
+  --agreement-scrollbar-thumb-hover: var(--tjg-text-quaternary);
 }
 
 [data-theme='dark'] .agreement-container {
-  --agreement-heading-color: var(--hula-text-primary);
-  --agreement-subheading-color: var(--hula-text-primary);
-  --agreement-paragraph-color: var(--hula-text-secondary);
-  --agreement-muted-color: var(--hula-text-tertiary);
-  --agreement-accent-color: color-mix(in srgb, var(--hula-color-primary-500) 55%, transparent);
-  --agreement-scrollbar-track: var(--hula-surface-panel-muted);
-  --agreement-scrollbar-thumb: var(--hula-border-default);
-  --agreement-scrollbar-thumb-hover: var(--hula-text-quaternary);
+  --agreement-heading-color: var(--tjg-text-primary);
+  --agreement-subheading-color: var(--tjg-text-primary);
+  --agreement-paragraph-color: var(--tjg-text-secondary);
+  --agreement-muted-color: var(--tjg-text-tertiary);
+  --agreement-accent-color: color-mix(in srgb, var(--tjg-color-primary-500) 55%, transparent);
+  --agreement-scrollbar-track: var(--tjg-surface-panel-muted);
+  --agreement-scrollbar-thumb: var(--tjg-border-default);
+  --agreement-scrollbar-thumb-hover: var(--tjg-text-quaternary);
 }
 
 .agreement-content {
@@ -107,6 +107,6 @@
 
 :deep(.action-close) {
   svg {
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
   }
 }

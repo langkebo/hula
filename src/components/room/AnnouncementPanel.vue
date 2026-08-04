@@ -1,7 +1,7 @@
 <template>
   <div class="announcement-panel flex flex-col h-full">
     <n-flex align="center" justify="space-between" class="px-4px py-8px">
-      <span class="text-(14px [--hula-text-primary]) truncate flex-1 min-w-0">
+      <span class="text-(14px [--tjg-text-primary]) truncate flex-1 min-w-0">
         {{ isEditing ? t('announcement.title.create') : t('announcement.title.view') }}
       </span>
       <n-flex align="center" :size="4">
@@ -33,7 +33,7 @@
       <n-flex justify="space-between" align="center" class="py-8px">
         <n-flex align="center" :size="6">
           <n-switch v-model:value="isPinned" size="small" />
-          <span class="text-(12px [--hula-text-secondary])">{{ t('announcement.form.pinned') }}</span>
+          <span class="text-(12px [--tjg-text-secondary])">{{ t('announcement.form.pinned') }}</span>
         </n-flex>
         <n-flex align="center" :size="6">
           <n-button size="tiny" quaternary @click="cancelEdit">
@@ -64,17 +64,17 @@
           <div
             v-for="item in announcements"
             :key="item.id"
-            class="py-8px border-b-(1px solid [--hula-border-muted]) last:border-b-0">
+            class="py-8px border-b-(1px solid [--tjg-border-muted]) last:border-b-0">
             <n-flex align="center" justify="space-between" :size="6" class="mb-4px">
               <n-flex align="center" :size="6">
                 <n-avatar round :size="22" :src="getAvatar(item.author)" />
-                <span class="text-(11px [--hula-text-secondary])">{{ getUserName(item.author) }}</span>
-                <span class="text-(10px [--hula-text-tertiary])">{{ formatTime(item.timestamp) }}</span>
+                <span class="text-(11px [--tjg-text-secondary])">{{ getUserName(item.author) }}</span>
+                <span class="text-(10px [--tjg-text-tertiary])">{{ formatTime(item.timestamp) }}</span>
               </n-flex>
               <n-flex align="center" :size="4">
                 <span
                   v-if="item.top"
-                  class="px-4px py-1px bg-[--hula-color-primary-100] text-(10px [--hula-color-primary-600]) rounded-3px">
+                  class="px-4px py-1px bg-[--tjg-color-primary-100] text-(10px [--tjg-color-primary-600]) rounded-3px">
                   {{ t('announcement.form.pinned') }}
                 </span>
                 <n-button v-if="isAdmin" size="tiny" quaternary @click="startEdit(item)">
@@ -94,11 +94,11 @@
                 </n-popconfirm>
               </n-flex>
             </n-flex>
-            <p class="text-(12px [--hula-text-primary]) ws-pre-wrap line-height-tight break-words select-text">
+            <p class="text-(12px [--tjg-text-primary]) ws-pre-wrap line-height-tight break-words select-text">
               <template v-for="(seg, i) in extractSegments(item.content || '')" :key="i">
                 <span
                   v-if="seg.isLink"
-                  class="text-[--hula-color-primary-500] cursor-pointer hover:underline"
+                  class="text-[--tjg-color-primary-500] cursor-pointer hover:underline"
                   @click.stop="openUrl(seg.text)">
                   {{ seg.text }}
                 </span>

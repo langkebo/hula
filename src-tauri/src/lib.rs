@@ -107,7 +107,7 @@ pub struct AppData {
 pub(crate) static APP_STATE_READY: AtomicBool = AtomicBool::new(false);
 
 pub fn get_secure_storage_service_name() -> String {
-    if let Ok(profile_dir) = std::env::var("HULA_PROFILE_DIR")
+    if let Ok(profile_dir) = std::env::var("TJG_PROFILE_DIR")
         && !profile_dir.is_empty()
     {
         use std::collections::hash_map::DefaultHasher;
@@ -267,7 +267,7 @@ async fn initialize_app_data(
         }
     }
 
-    let profile_name = std::env::var("HULA_PROFILE_DIR").unwrap_or_default();
+    let profile_name = std::env::var("TJG_PROFILE_DIR").unwrap_or_default();
 
     let user_info = UserInfo {
         token: Default::default(),
@@ -444,7 +444,7 @@ fn common_setup(app_handle: AppHandle) -> Result<(), Box<dyn std::error::Error>>
     #[cfg(desktop)]
     setup_logout_listener(app_handle.clone());
 
-    let profile_dir = std::env::var("HULA_PROFILE_DIR").unwrap_or_default();
+    let profile_dir = std::env::var("TJG_PROFILE_DIR").unwrap_or_default();
     if !profile_dir.is_empty() {
         tracing::info!("[PROFILE] Running with profile directory: {}", profile_dir);
     } else {

@@ -143,8 +143,8 @@
             <div v-if="videoImagePreview" style="margin-bottom: 8px">
               <img :src="videoImagePreview" style="max-width: 100%; border-radius: 4px" alt="视频预览" />
             </div>
-            <div style="font-size: 12px; color: var(--hula-text-tertiary)">
-              <div v-if="isUploadingVideoImage" style="color: var(--hula-color-success-500)">
+            <div style="font-size: 12px; color: var(--tjg-text-tertiary)">
+              <div v-if="isUploadingVideoImage" style="color: var(--tjg-color-success-500)">
                 {{ t('ai_assistant.robot.uploading_reference_image') }}
               </div>
               <div v-else>
@@ -158,7 +158,7 @@
                 <br />
                 {{ t('ai_assistant.robot.max_size_10mb') }}
                 <br />
-                <span style="color: var(--hula-text-tertiary); font-size: 11px">
+                <span style="color: var(--tjg-text-tertiary); font-size: 11px">
                   {{ t('ai_assistant.robot.image_upload_to_storage') }}
                 </span>
               </div>
@@ -182,7 +182,7 @@
           <svg style="width: 22px; height: 22px; outline: none; cursor: pointer"><use href="#explosion"></use></svg>
           <n-popover trigger="hover" :show-arrow="false" placement="top">
             <template #trigger>
-              <p class="text-(12px [--hula-text-tertiary]) cursor-default select-none pr-6px">
+              <p class="text-(12px [--tjg-text-tertiary]) cursor-default select-none pr-6px">
                 {{ t('ai_assistant.robot.token_usage') }} {{ serverTokenUsage ?? conversationTokens }} /
                 {{ selectedModel?.maxTokens || 0 }}
               </p>
@@ -301,7 +301,7 @@ defineExpose({
 <style scoped lang="scss">
 .chat-input-container {
   flex-shrink: 0;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .options {

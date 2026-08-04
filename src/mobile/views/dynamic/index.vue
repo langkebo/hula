@@ -35,7 +35,7 @@
         v-for="sp in spaceList"
         :key="sp.spaceId || sp.roomId"
         :data-testid="`mobile-space-item-${sp.spaceId || sp.roomId}`"
-        class="rounded-12px bg-[--hula-surface-panel] overflow-hidden">
+        class="rounded-12px bg-[--tjg-surface-panel] overflow-hidden">
         <!-- 空间信息卡片 -->
         <div class="flex items-center gap-12px p-14px tap-highlight" @click="toggleSpaceDetail(sp)">
           <img
@@ -44,32 +44,32 @@
             :alt="sp.name"
             @error="($event.target as HTMLImageElement).src = '/logo.png'" />
           <div class="flex-1 min-w-0">
-            <div class="text-15px font-500 text-[--hula-text-primary] truncate">{{ sp.name }}</div>
-            <div class="text-12px text-[--hula-text-tertiary] truncate mt-2px">
+            <div class="text-15px font-500 text-[--tjg-text-primary] truncate">{{ sp.name }}</div>
+            <div class="text-12px text-[--tjg-text-tertiary] truncate mt-2px">
               {{ sp.topic || t('space.topic_placeholder') }}
             </div>
           </div>
           <van-icon
             :name="expandedSpaceId === (sp.spaceId || sp.roomId) ? 'arrow-up' : 'arrow-down'"
             size="16"
-            class="color-[--hula-text-tertiary] flex-shrink-0" />
+            class="color-[--tjg-text-tertiary] flex-shrink-0" />
         </div>
 
         <!-- 展开的成员列表 -->
-        <div v-if="expandedSpaceId === (sp.spaceId || sp.roomId)" class="border-t border-[--hula-border-default]">
+        <div v-if="expandedSpaceId === (sp.spaceId || sp.roomId)" class="border-t border-[--tjg-border-default]">
           <div v-if="memberLoadingMap[sp.spaceId || sp.roomId]" class="flex justify-center py-20px">
             <van-loading size="20px" />
           </div>
           <div
             v-else-if="spaceMemberMap[sp.spaceId || sp.roomId]?.length === 0"
-            class="py-20px text-center text-13px text-[--hula-text-tertiary]">
+            class="py-20px text-center text-13px text-[--tjg-text-tertiary]">
             {{ t('space.management.no_members') }}
           </div>
           <div v-else>
             <div
               v-for="member in visibleMembers(sp.spaceId || sp.roomId)"
               :key="member.userId || member.uid"
-              class="flex items-center gap-10px px-14px py-10px border-b border-[--hula-border-default] last:border-b-0">
+              class="flex items-center gap-10px px-14px py-10px border-b border-[--tjg-border-default] last:border-b-0">
               <img
                 class="size-36px rounded-full object-cover"
                 :src="member.avatarUrl || '/logo.png'"
@@ -78,7 +78,7 @@
                 decoding="async"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
               <div class="flex-1 min-w-0">
-                <div class="text-13px text-[--hula-text-primary] truncate">
+                <div class="text-13px text-[--tjg-text-primary] truncate">
                   {{ member.displayName || member.userId || member.uid }}
                 </div>
               </div>
@@ -88,7 +88,7 @@
                 !expandedMembers[sp.spaceId || sp.roomId] &&
                 (spaceMemberMap[sp.spaceId || sp.roomId] || []).length > MEMBER_DISPLAY_LIMIT
               "
-              class="py-10px text-center text-13px text-[--hula-color-primary] tap-highlight"
+              class="py-10px text-center text-13px text-[--tjg-color-primary] tap-highlight"
               @click="expandedMembers[sp.spaceId || sp.roomId] = true">
               {{
                 t('space.management.show_all_members', {
@@ -98,7 +98,7 @@
             </div>
           </div>
           <!-- 邀请按钮 -->
-          <div class="px-14px py-10px border-t border-[--hula-border-default]">
+          <div class="px-14px py-10px border-t border-[--tjg-border-default]">
             <van-button size="small" type="primary" plain block @click="showInviteDialog(sp)">
               {{ t('space.invite') }}
             </van-button>
@@ -311,13 +311,13 @@ fetchSpaces()
   touch-action: manipulation;
 
   &:active {
-    background-color: var(--hula-bg-pressed);
+    background-color: var(--tjg-bg-pressed);
   }
 }
 
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
   border-radius: 8px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
 }
 </style>

@@ -88,25 +88,25 @@ const statCards = computed(() => [
     label: t('admin.dashboard.totalUsers'),
     value: stats.value?.userCount ?? 0,
     icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
-    color: 'var(--hula-color-info-500)'
+    color: 'var(--tjg-color-info-500)'
   },
   {
     label: t('admin.dashboard.totalRooms'),
     value: stats.value?.roomCount ?? 0,
     icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
-    color: 'var(--hula-color-success-500)'
+    color: 'var(--tjg-color-success-500)'
   },
   {
     label: t('admin.dashboard.dailyActive'),
     value: stats.value?.dailyActiveUsers ?? 0,
     icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
-    color: 'var(--hula-color-warning-500)'
+    color: 'var(--tjg-color-warning-500)'
   },
   {
     label: t('admin.dashboard.monthlyActive'),
     value: stats.value?.monthlyActiveUsers ?? 0,
     icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
-    color: 'var(--hula-color-beta-500)'
+    color: 'var(--tjg-color-beta-500)'
   }
 ])
 
@@ -194,7 +194,7 @@ onMounted(loadData)
 
 .stat-label {
   font-size: 13px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   margin-top: 2px;
 }
 

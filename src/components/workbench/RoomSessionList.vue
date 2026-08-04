@@ -1,6 +1,6 @@
 <template>
   <n-scrollbar ref="msg-scrollbar" class="h-full">
-    <div v-if="syncLoading" class="flex-center gap-10px py-12px text-[var(--text-xs)] text-[--hula-text-primary]">
+    <div v-if="syncLoading" class="flex-center gap-10px py-12px text-[var(--text-xs)] text-[--tjg-text-primary]">
       <n-spin :size="14" />
       <span>{{ t('message.message_list.sync_loading') }}</span>
     </div>
@@ -16,7 +16,7 @@
       <button
         v-if="showRetryAction"
         type="button"
-        class="ml-auto rounded-full border border-[--hula-color-danger-500] bg-transparent px-10px py-2px text-[var(--text-xs)] leading-tight color-[--hula-color-danger-500] transition-opacity hover:opacity-80"
+        class="ml-auto rounded-full border border-[--tjg-color-danger-500] bg-transparent px-10px py-2px text-[var(--text-xs)] leading-tight color-[--tjg-color-danger-500] transition-opacity hover:opacity-80"
         data-test="network-retry"
         @click="onRetryNetwork">
         {{ t('common.retry') }}
@@ -32,10 +32,10 @@
       <RecycleScroller
         class="scroller h-full"
         :items="sessionList"
-        :item-size="84"
+        :item-size="58"
         key-field="roomId"
         v-slot="{ item }">
-        <HulaRoomListItem
+        <TjgRoomListItem
           :item="item"
           :classes="getItemClasses(item)"
           :menu="visibleMenu(item)"
@@ -65,10 +65,10 @@
       </div>
     </n-flex>
 
-    <div v-else class="h-full flex-center text-[var(--text-xs)] color-[--hula-text-tertiary]" role="status">
+    <div v-else class="h-full flex-center text-[var(--text-xs)] color-[--tjg-text-tertiary]" role="status">
       <n-empty :description="emptyDescription" size="large">
         <template #icon>
-          <svg class="size-48px opacity-50 color-[--hula-text-quaternary]">
+          <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
             <use href="#chat"></use>
           </svg>
         </template>
@@ -80,7 +80,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { RecycleScroller } from 'vue-virtual-scroller'
-import HulaRoomListItem from '@/components/workbench/HulaRoomListItem.vue'
+import TjgRoomListItem from '@/components/workbench/TjgRoomListItem.vue'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
@@ -138,7 +138,7 @@ const scrollToIndex = async (index: number) => {
 
   await nextTick()
   msgScrollbar.value?.scrollTo({
-    top: index * (76 + 8) - 264,
+    top: index * 58 - 204,
     behavior: 'smooth'
   })
 }
@@ -157,15 +157,15 @@ defineExpose({
 
 .room-session-list__network-banner {
   margin: 8px 12px 0;
-  border: 1px solid var(--hula-color-danger-500);
+  border: 1px solid var(--tjg-color-danger-500);
   display: flex;
   align-items: center;
   gap: 8px;
   border-radius: 12px;
-  background: var(--hula-color-danger-100);
+  background: var(--tjg-color-danger-100);
   padding: 10px 12px;
   font-size: 12px;
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 
 .room-session-list__skeleton {

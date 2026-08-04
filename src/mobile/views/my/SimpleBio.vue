@@ -7,7 +7,7 @@
             <div class="flex items-center">
               <div class="py-15px flex gap-10px w-full items-center justify-end">
                 <div
-                  class="bg-[--hula-color-primary-100] flex flex-wrap ps-2 items-center rounded-full gap-1 h-24px px-2">
+                  class="bg-[--tjg-color-primary-100] flex flex-wrap ps-2 items-center rounded-full gap-1 h-24px px-2">
                   <span class="w-12px h-12px rounded-15px bg-[--color-online]"></span>
                   <span style="font-size: 12px">
                     {{ t('mobile_my.online') }}
@@ -24,7 +24,7 @@
                 </svg>
               </div>
             </div>
-            <div class="bg-[--hula-surface-panel] rounded-lg p-15px flex gap-20px items-center">
+            <div class="bg-[--tjg-surface-panel] rounded-lg p-15px flex gap-20px items-center">
               <img
                 class="w-74px h-74px rounded-full object-cover flex-shrink-0"
                 :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')"
@@ -42,7 +42,7 @@
                 <svg @click="handleBack" class="w-24px text-gray h-24px iconpark-icon"><use href="#right"></use></svg>
               </div>
             </div>
-            <div class="bg-[--hula-surface-panel] rounded-lg p-15px flex flex-col w-full flex-1">
+            <div class="bg-[--tjg-surface-panel] rounded-lg p-15px flex flex-col w-full flex-1">
               <div
                 v-for="item in options"
                 :key="item.label"
@@ -136,6 +136,6 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 .text-bold-style {
   font-size: 14px;
   font-family: $font-family-system, $font-family-windows, $font-family-sans;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 </style>

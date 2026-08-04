@@ -4,7 +4,7 @@
 
 /**
  * 获取指定的 CSS 变量值
- * @param name 变量名，例如 '--hula-color-primary-500'
+ * @param name 变量名，例如 '--tjg-color-primary-500'
  * @returns 变量值字符串
  */
 const getCssVar = (name: string): string => {

@@ -167,7 +167,7 @@ describe('PushSettings', () => {
       {
         pushkey: 'push-key-1',
         app_id: 'app.id',
-        app_display_name: 'Hula Desktop',
+        app_display_name: 'Tjg Desktop',
         device_display_name: 'MacBook Pro',
         lang: 'zh-CN',
         kind: 'http',
@@ -212,9 +212,9 @@ describe('PushSettings', () => {
   })
 
   it('loads dnd settings from localStorage on mount', async () => {
-    localStorage.setItem('hula-push-dnd', 'true')
-    localStorage.setItem('hula-push-dnd-start', '3600000')
-    localStorage.setItem('hula-push-dnd-end', '7200000')
+    localStorage.setItem('tjg-push-dnd', 'true')
+    localStorage.setItem('tjg-push-dnd-start', '3600000')
+    localStorage.setItem('tjg-push-dnd-end', '7200000')
 
     const wrapper = mount(PushSettings)
     await flushPromises()
@@ -274,9 +274,9 @@ describe('PushSettings', () => {
     vm.dndEndTime = 64800000
     vm.handleDndTimeChange()
 
-    expect(localStorage.getItem('hula-push-dnd')).toBe('true')
-    expect(localStorage.getItem('hula-push-dnd-start')).toBe('28800000')
-    expect(localStorage.getItem('hula-push-dnd-end')).toBe('64800000')
+    expect(localStorage.getItem('tjg-push-dnd')).toBe('true')
+    expect(localStorage.getItem('tjg-push-dnd-start')).toBe('28800000')
+    expect(localStorage.getItem('tjg-push-dnd-end')).toBe('64800000')
     expect(messageSuccessMock).toHaveBeenCalledWith('已启用')
   })
 

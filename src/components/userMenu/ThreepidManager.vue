@@ -165,13 +165,13 @@ function handleAddPhone() {
 .threepid-manager {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-4);
+  gap: var(--tjg-space-4);
 }
 
 .threepid-section {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .section-header {
@@ -182,16 +182,16 @@ function handleAddPhone() {
 .section-title {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
   margin: 0;
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .section-icon {
   flex-shrink: 0;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .threepid-item {
@@ -199,12 +199,12 @@ function handleAddPhone() {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: var(--hula-space-2) 0;
+  padding: var(--tjg-space-2) 0;
 }
 
 .threepid-address {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -213,8 +213,8 @@ function handleAddPhone() {
 .add-form {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
-  margin-top: var(--hula-space-2);
+  gap: var(--tjg-space-2);
+  margin-top: var(--tjg-space-2);
 }
 
 .add-input {

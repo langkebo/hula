@@ -16,14 +16,14 @@
               fallback-src="/default-avatar.png" />
 
             <div class="flex-y-center gap-12px h-fit">
-              <p class="text-(12px --hula-text-tertiary)">{{ getUserDisplayName(item.fromUser.uid) }}</p>
-              <p class="text-(12px --hula-text-tertiary)">{{ formatTimestamp(item.message.sendTime) }}</p>
+              <p class="text-(12px --tjg-text-tertiary)">{{ getUserDisplayName(item.fromUser.uid) }}</p>
+              <p class="text-(12px --tjg-text-tertiary)">{{ formatTimestamp(item.message.sendTime) }}</p>
             </div>
           </div>
 
           <ContextMenu
             :content="item"
-            class="w-fit relative flex flex-col pl-44px text-(14px [--hula-text-primary]) leading-26px user-select-text"
+            class="w-fit relative flex flex-col pl-44px text-(14px [--tjg-text-primary]) leading-26px user-select-text"
             :data-key="item.fromUser.uid === userUid ? `U${item.message.id}` : `Q${item.message.id}`"
             :special-menu="specialMenuList(item.message.type)"
             @select="$event.click(item)">

@@ -27,7 +27,7 @@
                   'moderation-dashboard__report',
                   { 'moderation-dashboard__report--high': report.priority === 'high' }
                 ]"
-                :style="report.priority === 'high' ? { background: 'var(--hula-color-danger-100)' } : undefined">
+                :style="report.priority === 'high' ? { background: 'var(--tjg-color-danger-100)' } : undefined">
                 <div class="moderation-dashboard__report-header">
                   <n-tag :type="priorityTagType(report.priority)" size="small">
                     {{ t(`moderation.dashboard.priority_${report.priority}`) }}
@@ -231,29 +231,29 @@ function handleAction(reportId: string, action: ModerationAction) {
 .moderation-dashboard {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-3);
-  padding: var(--hula-space-4);
-  background: var(--hula-admin-card-bg);
-  border-radius: var(--hula-radius-lg);
-  box-shadow: var(--hula-admin-card-shadow);
+  gap: var(--tjg-space-3);
+  padding: var(--tjg-space-4);
+  background: var(--tjg-admin-card-bg);
+  border-radius: var(--tjg-radius-lg);
+  box-shadow: var(--tjg-admin-card-shadow);
 
   &__header {
     display: flex;
     align-items: center;
-    gap: var(--hula-space-2);
+    gap: var(--tjg-space-2);
   }
 
   &__title-icon {
     width: 18px;
     height: 18px;
-    color: var(--hula-color-danger-500);
+    color: var(--tjg-color-danger-500);
   }
 
   &__title {
     margin: 0;
-    font-size: var(--hula-font-size-lg);
-    font-weight: var(--hula-font-weight-semibold);
-    color: var(--hula-admin-title-color);
+    font-size: var(--tjg-font-size-lg);
+    font-weight: var(--tjg-font-weight-semibold);
+    color: var(--tjg-admin-title-color);
   }
 
   &__spin {
@@ -265,78 +265,78 @@ function handleAction(reportId: string, action: ModerationAction) {
   }
 
   &__list {
-    margin-top: var(--hula-space-2);
-    border-radius: var(--hula-radius-md);
+    margin-top: var(--tjg-space-2);
+    border-radius: var(--tjg-radius-md);
     overflow: hidden;
   }
 
   &__report {
     display: flex;
     flex-direction: column;
-    gap: var(--hula-space-2);
-    padding: var(--hula-space-3);
-    border-radius: var(--hula-radius-sm);
-    transition: background var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+    gap: var(--tjg-space-2);
+    padding: var(--tjg-space-3);
+    border-radius: var(--tjg-radius-sm);
+    transition: background var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
     &--high {
-      border-left: 3px solid var(--hula-color-danger-500);
+      border-left: 3px solid var(--tjg-color-danger-500);
     }
   }
 
   &__report-header {
     display: flex;
     align-items: center;
-    gap: var(--hula-space-2);
+    gap: var(--tjg-space-2);
     flex-wrap: wrap;
   }
 
   &__reporter {
     display: inline-flex;
     align-items: center;
-    gap: var(--hula-space-1);
-    font-size: var(--hula-font-size-sm);
-    color: var(--hula-text-primary);
-    font-weight: var(--hula-font-weight-medium);
+    gap: var(--tjg-space-1);
+    font-size: var(--tjg-font-size-sm);
+    color: var(--tjg-text-primary);
+    font-weight: var(--tjg-font-weight-medium);
   }
 
   &__time {
     margin-left: auto;
-    font-size: var(--hula-font-size-xs);
-    color: var(--hula-text-tertiary);
+    font-size: var(--tjg-font-size-xs);
+    color: var(--tjg-text-tertiary);
   }
 
   &__report-body {
     display: flex;
     flex-direction: column;
-    gap: var(--hula-space-1);
-    padding-left: var(--hula-space-1);
+    gap: var(--tjg-space-1);
+    padding-left: var(--tjg-space-1);
   }
 
   &__field {
     display: flex;
     align-items: center;
-    gap: var(--hula-space-2);
-    font-size: var(--hula-font-size-sm);
+    gap: var(--tjg-space-2);
+    font-size: var(--tjg-font-size-sm);
   }
 
   &__field-icon {
     flex-shrink: 0;
     width: 14px;
     height: 14px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 
   &__field-value {
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     word-break: break-all;
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: var(--hula-space-2);
+    gap: var(--tjg-space-2);
     flex-wrap: wrap;
-    padding-top: var(--hula-space-1);
+    padding-top: var(--tjg-space-1);
   }
 
   &__action-icon {

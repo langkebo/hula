@@ -1,28 +1,28 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { getHulaAppReadyPhase, isHulaAppReady, markHulaAppReady, resetHulaAppReadyForTests } from '../AppReady'
+import { getTjgAppReadyPhase, isTjgAppReady, markTjgAppReady, resetTjgAppReadyForTests } from '../AppReady'
 
 describe('AppReady', () => {
   afterEach(() => {
-    resetHulaAppReadyForTests()
+    resetTjgAppReadyForTests()
   })
 
   it('tracks boot phase as not ready by default', () => {
-    expect(getHulaAppReadyPhase()).toBe('booting')
-    expect(isHulaAppReady()).toBe(false)
+    expect(getTjgAppReadyPhase()).toBe('booting')
+    expect(isTjgAppReady()).toBe(false)
   })
 
   it('marks mounted phase without reporting router readiness', () => {
-    expect(markHulaAppReady('mounted')).toBe('mounted')
-    expect(getHulaAppReadyPhase()).toBe('mounted')
-    expect(isHulaAppReady()).toBe(false)
-    expect(window.__HULA_APP_READY__).toBe(false)
+    expect(markTjgAppReady('mounted')).toBe('mounted')
+    expect(getTjgAppReadyPhase()).toBe('mounted')
+    expect(isTjgAppReady()).toBe(false)
+    expect(window.__TJG_APP_READY__).toBe(false)
   })
 
   it('marks router-ready phase and exposes readiness on window', () => {
-    expect(markHulaAppReady('router-ready')).toBe('router-ready')
-    expect(getHulaAppReadyPhase()).toBe('router-ready')
-    expect(isHulaAppReady()).toBe(true)
-    expect(window.__HULA_APP_READY__).toBe(true)
-    expect(window.__HULA_APP_READY_PHASE__).toBe('router-ready')
+    expect(markTjgAppReady('router-ready')).toBe('router-ready')
+    expect(getTjgAppReadyPhase()).toBe('router-ready')
+    expect(isTjgAppReady()).toBe(true)
+    expect(window.__TJG_APP_READY__).toBe(true)
+    expect(window.__TJG_APP_READY_PHASE__).toBe('router-ready')
   })
 })

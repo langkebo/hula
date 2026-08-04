@@ -168,7 +168,7 @@ const newRoomBan = reactive({ entity: '', reason: '' })
 const newUserBan = reactive({ entity: '', reason: '' })
 const newServerBan = reactive({ entity: '', reason: '' })
 
-const STORAGE_KEY = 'hula-mjolnir-ban-lists'
+const STORAGE_KEY = 'tjg-mjolnir-ban-lists'
 
 onMounted(() => {
   loadBanLists()
@@ -284,41 +284,41 @@ function handleRemoveServerBan(item: BanItem) {
 
 <style scoped>
 .mjolnir-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-3);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-3);
+  color: var(--tjg-text-primary);
 }
 
 .mjolnir-alert {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .add-ban-button {
-  margin-top: var(--hula-space-2);
+  margin-top: var(--tjg-space-2);
 }
 
 .ban-list {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .ban-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px var(--hula-space-3);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: 10px var(--tjg-space-3);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .ban-info {
@@ -329,15 +329,15 @@ function handleRemoveServerBan(item: BanItem) {
 }
 
 .ban-entity {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
   word-break: break-all;
 }
 
 .ban-reason {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .empty-list {
@@ -346,7 +346,7 @@ function handleRemoveServerBan(item: BanItem) {
 }
 
 .empty-text {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 </style>

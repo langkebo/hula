@@ -10,6 +10,7 @@ import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixClientService } from '../MatrixClientService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 
 const logger = createLogger('MatrixPresenceService')
 
@@ -139,7 +140,7 @@ class MatrixPresenceService extends BaseMatrixService {
         await presenceManager.setPresence(presence, statusMsg ?? '')
         logger.info(`[Presence] 设置在线状态成功: ${presence}`)
       } else {
-        await client.http.authedRequest('PUT', `/presence/${encodeURIComponent(userId)}/status`, undefined, {
+        await authedRequestWithPath<void>(client, 'PUT', `/presence/${encodeURIComponent(userId)}/status`, undefined, {
           presence,
           status_msg: statusMsg
         })
@@ -187,10 +188,11 @@ class MatrixPresenceService extends BaseMatrixService {
           currently_active: presence.currently_active
         }
       } else {
-        const response = (await client.http.authedRequest(
+        const response = await authedRequestWithPath<Omit<PresenceInfo, 'user_id'>>(
+          client,
           'GET',
           `/presence/${encodeURIComponent(userId)}/status`
-        )) as Omit<PresenceInfo, 'user_id'>
+        )
         return {
           user_id: userId,
           ...response
@@ -254,12 +256,13 @@ class MatrixPresenceService extends BaseMatrixService {
         )
         return result as unknown as PresenceListResponse
       } else {
-        const response = (await client.http.authedRequest(
+        const response = await authedRequestWithPath<PresenceListResponse>(
+          client,
           'POST',
           '/presence/list',
           undefined,
           payload
-        )) as PresenceListResponse
+        )
         logger.info(
           `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
         )
@@ -285,7 +288,7 @@ class MatrixPresenceService extends BaseMatrixService {
         await presenceManager.unsubscribeFromPresence(userIds)
         logger.info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
       } else {
-        await client.http.authedRequest('POST', '/presence/list', undefined, { unsubscribe: userIds })
+        await authedRequestWithPath<void>(client, 'POST', '/presence/list', undefined, { unsubscribe: userIds })
         logger.info(`[Presence] 取消订阅在线状态成功: ${userIds.length} 个用户`)
       }
     } catch (err) {
@@ -314,10 +317,11 @@ class MatrixPresenceService extends BaseMatrixService {
         logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
         return result as unknown as PresenceListResponse
       } else {
-        const response = (await client.http.authedRequest(
+        const response = await authedRequestWithPath<PresenceListResponse>(
+          client,
           'GET',
           `/presence/list/${encodeURIComponent(targetUserId)}`
-        )) as PresenceListResponse
+        )
         logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
         return response
       }
@@ -390,7 +394,8 @@ class MatrixPresenceService extends BaseMatrixService {
           const client = this.getClient()
           client.off('User.presence' as never, this.clientPresenceListener as never)
         } catch (err) {
-          logger.warn('Presence update failed (client may be gone):', err)
+          // 客户端销毁/登出时的预期清理失败，降级为 debug 避免告警噪音
+          logger.debug('Presence update failed (client may be gone):', err)
         }
         this.clientPresenceListener = null
       }

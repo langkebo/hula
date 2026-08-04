@@ -73,7 +73,7 @@ describe('MjolnirSettings', () => {
 
   it('loads ban lists from localStorage', () => {
     localStorage.setItem(
-      'hula-mjolnir-ban-lists',
+      'tjg-mjolnir-ban-lists',
       JSON.stringify({
         rooms: [{ entity: '#room:example.com', reason: 'spam', type: 'room_id' }],
         users: [{ entity: '@user:example.com', reason: 'abuse', type: 'user_id' }],
@@ -92,7 +92,7 @@ describe('MjolnirSettings', () => {
     const vm = wrapper.vm as any
     vm.roomBanList = [{ entity: '#room:example.com', reason: 'spam', type: 'room_id' as const }]
     vm.saveBanLists()
-    const saved = JSON.parse(localStorage.getItem('hula-mjolnir-ban-lists')!)
+    const saved = JSON.parse(localStorage.getItem('tjg-mjolnir-ban-lists')!)
     expect(saved.rooms).toHaveLength(1)
   })
 

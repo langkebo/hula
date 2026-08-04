@@ -21,13 +21,13 @@
       }">
       <template v-if="isRefreshing">
         <img class="size-18px" src="@/assets/img/loading.svg" alt="加载中" />
-        <span class="ml-2 text-sm color-[--hula-text-secondary]">正在刷新...</span>
+        <span class="ml-2 text-sm color-[--tjg-text-secondary]">正在刷新...</span>
       </template>
       <template v-else>
         <div class="flex-center flex-col">
           <svg
             :class="[
-              'color-[--hula-text-secondary] size-14px transition-transform duration-300',
+              'color-[--tjg-text-secondary] size-14px transition-transform duration-300',
               { 'rotate-180': distance >= threshold }
             ]">
             <use href="#arrow-down"></use>

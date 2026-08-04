@@ -187,7 +187,7 @@ watch(
   transition: background 0.15s;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -201,7 +201,7 @@ watch(
 
 .member-name {
   font-size: 13px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -209,7 +209,7 @@ watch(
 
 .member-id {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-family: monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -217,13 +217,13 @@ watch(
 }
 
 .member-reason {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-style: italic;
 }
 
 .error-text {
   font-size: 12px;
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
   padding: 4px 0;
 }
 

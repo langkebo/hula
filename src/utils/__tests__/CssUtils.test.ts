@@ -9,7 +9,7 @@ describe('cssVar', () => {
 
   it('returns empty string in non-browser environment', () => {
     vi.stubGlobal('window', undefined)
-    expect(cssVar('--hula-color-primary-500')).toBe('')
+    expect(cssVar('--tjg-color-primary-500')).toBe('')
   })
 
   it('returns CSS variable value when present', () => {
@@ -17,7 +17,7 @@ describe('cssVar', () => {
       getPropertyValue: vi.fn(() => '#13987f')
     } as unknown as CSSStyleDeclaration)
 
-    expect(cssVar('--hula-color-primary-500')).toBe('#13987f')
+    expect(cssVar('--tjg-color-primary-500')).toBe('#13987f')
     expect(window.getComputedStyle).toHaveBeenCalledWith(document.documentElement)
   })
 
@@ -34,6 +34,6 @@ describe('cssVar', () => {
       getPropertyValue: vi.fn(() => '   #13987f   ')
     } as unknown as CSSStyleDeclaration)
 
-    expect(cssVar('--hula-color-primary-500')).toBe('#13987f')
+    expect(cssVar('--tjg-color-primary-500')).toBe('#13987f')
   })
 })

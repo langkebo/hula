@@ -121,7 +121,7 @@ describe('BurnAfterReadSettings', () => {
 
   it('loads settings from localStorage', () => {
     localStorage.setItem(
-      'hula-burn-after-read-settings',
+      'tjg-burn-after-read-settings',
       JSON.stringify({
         globalBurnEnabled: true,
         globalBurnDuration: 300,
@@ -142,7 +142,7 @@ describe('BurnAfterReadSettings', () => {
     const vm = wrapper.vm as any
     vm.globalBurnEnabled = true
     vm.saveSettings()
-    const saved = JSON.parse(localStorage.getItem('hula-burn-after-read-settings')!)
+    const saved = JSON.parse(localStorage.getItem('tjg-burn-after-read-settings')!)
     expect(saved.globalBurnEnabled).toBe(true)
   })
 

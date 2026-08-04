@@ -124,6 +124,24 @@ export class MatrixCryptoStateTracker {
     }
 
     const useIndexedDB = typeof globalThis.indexedDB !== 'undefined'
+
+    // H1 修复：检查 userId:deviceId 是否变化，变化时主动清理旧 crypto store
+    // 原 BUG：localStorage 仅存储 userId，同一用户换设备登录时
+    // lastCryptoUser === userId 为 true，主动清理未触发，
+    // 导致 initRustCrypto 报 "account in the store doesn't match" 错误，
+    // 登录耗时 51s（crypto 重试循环 + 超时等待）。
+    // 修复：localStorage 改为存储 userId:deviceId，换设备时触发清理。
+    const cryptoUserKey = `${userId}:${deviceId}`
+    const lastCryptoUser = this.readLastCryptoUser()
+    if (lastCryptoUser !== cryptoUserKey) {
+      if (useIndexedDB) {
+        logger.info(`检测到 crypto 用户/设备变化（${lastCryptoUser} → ${cryptoUserKey}），主动清理旧 crypto store`)
+        await clearStaleCryptoStores(userId)
+        await this.deleteCryptoDbForUser(userId)
+      }
+      this.writeLastCryptoUser(cryptoUserKey)
+    }
+
     this.rustCryptoDebugState = {
       attempted: true,
       initialized: false,
@@ -226,6 +244,57 @@ export class MatrixCryptoStateTracker {
       lastRoomId: null,
       lastError: null
     }
+  }
+
+  /**
+   * 登出时清除 crypto store 记录。
+   *
+   * 清除 localStorage 中的 lastCryptoUserId 记录，
+   * 并删除该用户的 crypto IndexedDB 数据库，确保下次登录时从干净状态开始。
+   *
+   * @param userId 登出用户的 userId
+   */
+  async clearCryptoStoreForLogout(userId: string): Promise<void> {
+    this.clearLastCryptoUser()
+    if (typeof globalThis.indexedDB !== 'undefined') {
+      await clearStaleCryptoStores(userId)
+      await this.deleteCryptoDbForUser(userId)
+    }
+    logger.info(`登出清理完成: ${userId}`)
+  }
+
+  /** 读取 localStorage 中的 lastCryptoUserId 记录 */
+  private readLastCryptoUser(): string | null {
+    if (typeof globalThis.localStorage === 'undefined') return null
+    return globalThis.localStorage.getItem('tjg.lastCryptoUserId')
+  }
+
+  /** 写入 localStorage 中的 lastCryptoUserId 记录 */
+  private writeLastCryptoUser(value: string): void {
+    if (typeof globalThis.localStorage === 'undefined') return
+    globalThis.localStorage.setItem('tjg.lastCryptoUserId', value)
+  }
+
+  /** 清除 localStorage 中的 lastCryptoUserId 记录 */
+  private clearLastCryptoUser(): void {
+    if (typeof globalThis.localStorage === 'undefined') return
+    globalThis.localStorage.removeItem('tjg.lastCryptoUserId')
+  }
+
+  /**
+   * 直接删除指定用户的 crypto IndexedDB 数据库。
+   * 不依赖 indexedDB.databases()（非标准 API），按命名约定直接删除。
+   */
+  private async deleteCryptoDbForUser(userId: string): Promise<void> {
+    if (typeof globalThis.indexedDB === 'undefined') return
+    const userSuffix = userId.replace(/[^a-zA-Z0-9]/g, '_')
+    const dbName = `matrix-js-sdk:crypto:${userSuffix}`
+    await new Promise<void>((resolve) => {
+      const req = globalThis.indexedDB.deleteDatabase(dbName)
+      req.onsuccess = () => resolve()
+      req.onerror = () => resolve()
+      req.onblocked = () => resolve()
+    })
   }
 }
 

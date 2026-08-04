@@ -11,7 +11,6 @@ import type {
 } from 'matrix-js-sdk/guest'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixGuestService')
 
@@ -131,14 +130,12 @@ class MatrixGuestService extends BaseMatrixService {
   }
 
   async getGuestInfoFromServer(): Promise<IServerGuestInfo> {
+    const manager = await this.requireGuestManager()
+    if (typeof manager.getGuestInfoFromServer !== 'function') {
+      throw new Error(this.t('matrix_error.guest.manager_not_initialized'))
+    }
     try {
-      const manager = await this.requireGuestManager()
-      if (typeof manager.getGuestInfoFromServer === 'function') {
-        return await manager.getGuestInfoFromServer()
-      }
-      // 回退到直接 HTTP 请求
-      const client = this.getClient()
-      const result = (await client.http.authedRequest('GET', MATRIX_PATHS.GUEST.INFO)) as IServerGuestInfo
+      const result = await manager.getGuestInfoFromServer()
       logger.info(`[MatrixGuest] 从服务端获取访客信息成功`)
       return result
     } catch (err) {
@@ -237,4 +234,4 @@ class MatrixGuestService extends BaseMatrixService {
   }
 }
 
-const _matrixGuestService = new MatrixGuestService()
+export const matrixGuestService = new MatrixGuestService()

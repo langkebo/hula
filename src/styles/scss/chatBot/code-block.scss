@@ -54,10 +54,10 @@
 }
 
 .code-block-dark {
-  --code-block-bg: var(--hula-surface-darkest);
+  --code-block-bg: var(--tjg-surface-darkest);
   --code-block-header-bg: rgba(44, 55, 66, 0.95);
   --code-block-border-color: rgba(255, 255, 255, 0.08);
-  --code-block-toolbar-color: var(--hula-text-primary);
+  --code-block-toolbar-color: var(--tjg-text-primary);
   --code-block-toolbar-hover-bg: rgba(148, 163, 184, 0.15);
   --code-block-toolbar-active-bg: rgba(148, 163, 184, 0.25);
   --code-block-toolbar-border-color: rgba(148, 163, 184, 0.35);
@@ -70,10 +70,10 @@
 }
 
 .code-block-light {
-  --code-block-bg: var(--hula-surface-list);
+  --code-block-bg: var(--tjg-surface-list);
   --code-block-header-bg: rgba(255, 255, 255, 0.95);
   --code-block-border-color: rgba(15, 23, 42, 0.08);
-  --code-block-toolbar-color: var(--hula-text-primary);
+  --code-block-toolbar-color: var(--tjg-text-primary);
   --code-block-toolbar-hover-bg: rgba(19, 152, 127, 0.08);
   --code-block-toolbar-active-bg: rgba(19, 152, 127, 0.14);
   --code-block-toolbar-border-color: rgba(19, 152, 127, 0.25);

@@ -135,7 +135,7 @@
           preview-disabled
           width="120"
           height="120"
-          style="border: 2px solid var(--hula-text-inverse)"
+          style="border: 2px solid var(--tjg-text-inverse)"
           class="rounded-12px select-none cursor-pointer"
           :src="AvatarUtils.getAvatarUrl(item.avatar)"
           alt="群头像" />
@@ -147,7 +147,7 @@
         preview-disabled
         width="120"
         height="120"
-        style="border: 2px solid var(--hula-text-inverse)"
+        style="border: 2px solid var(--tjg-text-inverse)"
         class="rounded-12px select-none cursor-pointer"
         :src="AvatarUtils.getAvatarUrl(item.avatar)"
         @dblclick="openImageViewer"
@@ -671,15 +671,15 @@ const handleForgetRoom = () => {
 }
 
 .single-details__avatar {
-  border: 3px solid var(--hula-overlay-mobile-sheet);
-  box-shadow: var(--hula-shadow-lg);
+  border: 3px solid var(--tjg-overlay-mobile-sheet);
+  box-shadow: var(--tjg-shadow-lg);
 }
 
 .single-details__name {
   margin: 0;
   font-size: 20px;
   line-height: 28px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   font-weight: 600;
 }
 
@@ -687,7 +687,7 @@ const handleForgetRoom = () => {
   margin: 0;
   font-size: 13px;
   line-height: 18px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .single-details__signature {
@@ -695,7 +695,7 @@ const handleForgetRoom = () => {
   max-width: 360px;
   font-size: 14px;
   line-height: 22px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .single-details__meta {
@@ -704,7 +704,7 @@ const handleForgetRoom = () => {
   gap: 22px;
   font-size: 14px;
   line-height: 20px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .single-details__status {
@@ -717,15 +717,15 @@ const handleForgetRoom = () => {
   gap: 6px;
   font-size: 12px;
   line-height: 18px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .single-details__last-seen-label {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .single-details__last-seen-value {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .single-details__actions {
@@ -747,7 +747,7 @@ const handleForgetRoom = () => {
   border: none;
   background: transparent;
   cursor: pointer;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .single-details__action:hover .single-details__action-icon {
@@ -762,8 +762,8 @@ const handleForgetRoom = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--hula-color-primary-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-primary-500);
+  color: var(--tjg-text-inverse);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -778,11 +778,11 @@ const handleForgetRoom = () => {
 .single-details__action-label {
   font-size: 12px;
   line-height: 16px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .single-details__action-icon--encrypted {
-  background: var(--hula-color-success-500);
+  background: var(--tjg-color-success-500);
 }
 
 .single-details__management {
@@ -799,7 +799,7 @@ const handleForgetRoom = () => {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -817,13 +817,13 @@ const handleForgetRoom = () => {
 
 .management-label {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-weight: 500;
 }
 
 .management-value {
   font-size: 13px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   line-height: 20px;
   word-break: break-all;
 }
@@ -852,7 +852,7 @@ const handleForgetRoom = () => {
 .announcement-container {
   width: 100%;
   padding: 12px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -865,7 +865,7 @@ const handleForgetRoom = () => {
 
 .announcement-content {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -881,7 +881,7 @@ const handleForgetRoom = () => {
 .member-header {
   margin-bottom: 12px;
   font-size: 14px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .member-item {
@@ -894,14 +894,14 @@ const handleForgetRoom = () => {
   transition: background 0.2s;
 
   &:hover {
-    background: var(--hula-surface-panel-muted);
+    background: var(--tjg-surface-panel-muted);
   }
 }
 
 .member-name {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   max-width: 60px;
   overflow: hidden;
   text-overflow: ellipsis;

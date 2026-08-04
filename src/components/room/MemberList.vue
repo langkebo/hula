@@ -297,13 +297,13 @@ const contextMenuOptions = computed(() => {
         label: t('room.members.kick'),
         key: 'kick',
         icon: () => h('svg', { class: 'size-16px' }, [h('use', { href: '#logout' })]),
-        props: { style: 'color: var(--hula-color-warning-500)' }
+        props: { style: 'color: var(--tjg-color-warning-500)' }
       })
       options.push({
         label: t('room.members.ban'),
         key: 'ban',
         icon: () => h('svg', { class: 'size-16px' }, [h('use', { href: '#forbid' })]),
-        props: { style: 'color: var(--hula-color-danger-500)' }
+        props: { style: 'color: var(--tjg-color-danger-500)' }
       })
     }
   }
@@ -471,7 +471,7 @@ async function confirmUnban() {
 }
 
 .member-count {
-  @apply text-12px color-[--hula-text-tertiary];
+  @apply text-12px color-[--tjg-text-tertiary];
 }
 
 .member-filter {
@@ -487,18 +487,18 @@ async function confirmUnban() {
 }
 
 .group-label {
-  @apply text-12px color-[--hula-text-tertiary] px-4px;
+  @apply text-12px color-[--tjg-text-tertiary] px-4px;
 }
 
 .member-item {
   @apply flex items-center gap-10px p-8px rounded-8px cursor-pointer transition-all;
 
   &:hover {
-    background: var(--hula-fill-hover);
+    background: var(--tjg-fill-hover);
   }
 
   &.is-selected {
-    background: var(--hula-fill-active);
+    background: var(--tjg-fill-active);
   }
 }
 
@@ -511,29 +511,29 @@ async function confirmUnban() {
 }
 
 .member-role {
-  @apply text-12px color-[--hula-color-primary-500];
+  @apply text-12px color-[--tjg-color-primary-500];
 }
 
 .member-status {
   @apply flex-center;
 
   &.join .status-dot {
-    @apply w-8px h-8px rounded-full bg-[--hula-color-success-500];
+    @apply w-8px h-8px rounded-full bg-[--tjg-color-success-500];
   }
 
   &.invite .status-dot {
-    @apply w-8px h-8px rounded-full bg-[--hula-color-warning-500];
+    @apply w-8px h-8px rounded-full bg-[--tjg-color-warning-500];
   }
 
   &.leave .status-dot,
   &.ban .status-dot {
-    @apply w-8px h-8px rounded-full bg-[--hula-text-tertiary];
+    @apply w-8px h-8px rounded-full bg-[--tjg-text-tertiary];
   }
 }
 
 .member-action-bar {
   @apply flex items-center justify-between p-8px rounded-8px;
-  background: var(--hula-fill-hover);
+  background: var(--tjg-fill-hover);
 }
 
 .action-bar-info {

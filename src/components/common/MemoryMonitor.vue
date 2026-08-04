@@ -13,7 +13,7 @@
       :title="t('memoryMonitor.minimize')"
       @click.stop="toggleMinimize(true)"
       @pointerdown.stop>
-      <svg class="size-16px color-[--hula-text-inverse] rotate-90"><use href="#right"></use></svg>
+      <svg class="size-16px color-[--tjg-text-inverse] rotate-90"><use href="#right"></use></svg>
     </button>
     <template v-if="!isMinimized">
       <div class="title">{{ t('memoryMonitor.title') }}</div>
@@ -27,11 +27,11 @@
         </template>
       </div>
       <div v-else class="section">
-        <div class="item color-[--hula-text-tertiary]">{{ t('memoryMonitor.expandHint') }}</div>
+        <div class="item color-[--tjg-text-tertiary]">{{ t('memoryMonitor.expandHint') }}</div>
       </div>
     </template>
 
-    <img v-else class="size-24px" :title="t('memoryMonitor.restore')" src="/logoL.png" alt="HuLa" />
+    <img v-else class="size-24px" :title="t('memoryMonitor.restore')" src="/logoL.png" alt="Tjg" />
   </div>
 </template>
 <script setup lang="ts">
@@ -314,15 +314,15 @@ const detachDragListeners = () => {
   position: fixed;
   left: 0;
   top: 0;
-  background: var(--hula-overlay-inverse-strong);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-overlay-inverse-strong);
+  color: var(--tjg-text-inverse);
   padding: 12px;
   border-radius: 8px;
   font-size: 11px;
   font-family: monospace;
   z-index: 99999;
   min-width: 220px;
-  box-shadow: var(--hula-shadow-lg);
+  box-shadow: var(--tjg-shadow-lg);
   cursor: grab;
 }
 .memory-monitor:active {
@@ -337,7 +337,7 @@ const detachDragListeners = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--hula-shadow-md);
+  box-shadow: var(--tjg-shadow-md);
 }
 .minimize-btn {
   position: absolute;
@@ -347,8 +347,8 @@ const detachDragListeners = () => {
   height: 20px;
   border-radius: 50%;
   border: none;
-  background: var(--hula-surface-inverse-hover);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-surface-inverse-hover);
+  color: var(--tjg-text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -357,26 +357,26 @@ const detachDragListeners = () => {
   padding: 0;
 }
 .minimize-btn:hover {
-  background: color-mix(in srgb, var(--hula-text-inverse) 20%, transparent);
+  background: color-mix(in srgb, var(--tjg-text-inverse) 20%, transparent);
 }
 .title {
   font-weight: bold;
   margin-bottom: 8px;
-  color: var(--hula-color-primary-500);
-  border-bottom: 1px solid color-mix(in srgb, var(--hula-text-inverse) 20%, transparent);
+  color: var(--tjg-color-primary-500);
+  border-bottom: 1px solid color-mix(in srgb, var(--tjg-text-inverse) 20%, transparent);
   padding-bottom: 4px;
 }
 .section {
   margin-top: 8px;
 }
 .label {
-  color: var(--hula-color-info-400);
+  color: var(--tjg-color-info-400);
   margin-bottom: 4px;
 }
 .item {
   padding: 2px 0;
 }
 .value {
-  color: var(--hula-color-warning-400);
+  color: var(--tjg-color-warning-400);
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full w-full bg-[--hula-surface-panel] select-none cursor-default">
+  <div class="h-full w-full bg-[--tjg-surface-panel] select-none cursor-default">
     <!-- 窗口头部 -->
     <ActionBar
       class="absolute right-0 w-full z-999"
@@ -9,7 +9,7 @@
 
     <!-- 标题 -->
     <p
-      class="absolute-x-center h-fit pt-6px text-(13px [--hula-text-primary]) select-none cursor-default"
+      class="absolute-x-center h-fit pt-6px text-(13px [--tjg-text-primary]) select-none cursor-default"
       data-tauri-drag-region>
       {{ t('message.group_verify.title') }}
     </p>
@@ -21,8 +21,8 @@
           <n-avatar round size="large" :src="userInfo.avatar" />
 
           <n-flex vertical :size="10">
-            <p class="text-[--hula-text-primary]">{{ userInfo.name }}</p>
-            <p class="text-(12px [--hula-text-primary])">
+            <p class="text-[--tjg-text-primary]">{{ userInfo.name }}</p>
+            <p class="text-(12px [--tjg-text-primary])">
               {{ t('message.group_verify.account', { account: userInfo.account }) }}
             </p>
           </n-flex>
@@ -42,7 +42,7 @@
           type="textarea"
           :placeholder="t('message.group_verify.placeholder')" />
 
-        <n-button class="mt-120px" color="var(--color-primary)" @click="addFriend">
+        <n-button class="mt-120px" color="var(--tjg-color-primary-500)" @click="addFriend">
           {{ t('message.group_verify.send_btn') }}
         </n-button>
       </n-flex>

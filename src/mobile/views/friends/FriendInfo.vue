@@ -27,11 +27,11 @@
                     <div class="py-20px">
                       <div class="rounded-8px overflow-hidden border border-gray-200">
                         <div class="flex items-center px-16px py-12px border-b border-gray-200">
-                          <span class="text-14px text-[--hula-text-secondary] w-80px">用户ID</span>
+                          <span class="text-14px text-[--tjg-text-secondary] w-80px">用户ID</span>
                           <span class="text-14px">{{ uid }}</span>
                         </div>
                         <div class="flex items-center px-16px py-12px">
-                          <span class="text-14px text-[--hula-text-secondary] w-80px">用户名</span>
+                          <span class="text-14px text-[--tjg-text-secondary] w-80px">用户名</span>
                           <span class="text-14px">{{ userInfo?.name || '未知' }}</span>
                         </div>
                       </div>
@@ -41,7 +41,7 @@
                     <div class="py-20px text-center">
                       <van-empty description="暂无动态内容">
                         <template #description>
-                          <span class="text-12px text-[--hula-text-tertiary]">Matrix 协议暂不支持朋友圈功能</span>
+                          <span class="text-12px text-[--tjg-text-tertiary]">Matrix 协议暂不支持朋友圈功能</span>
                         </template>
                       </van-empty>
                     </div>

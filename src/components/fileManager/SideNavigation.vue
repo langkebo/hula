@@ -1,9 +1,9 @@
 <template>
   <div
-    class="w-200px flex-shrink-0 flex flex-col bg-[--hula-surface-panel] border-r border-solid border-[--hula-border-default]">
+    class="w-200px flex-shrink-0 flex flex-col bg-[--tjg-surface-panel] border-r border-solid border-[--tjg-border-default]">
     <!-- 导航标题 -->
     <div class="navigation-header p-20px pb-16px">
-      <h2 class="text-16px font-600 text-[--hula-text-primary] m-0">
+      <h2 class="text-16px font-600 text-[--tjg-text-primary] m-0">
         {{ t('fileManager.navigation.title') }}
       </h2>
     </div>
@@ -68,7 +68,7 @@ const getNavigationLabel = (item: NavigationItem) => {
 
 <style scoped lang="scss">
 .navigation-header {
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
 }
 
 .navigation-item {
@@ -79,24 +79,24 @@ const getNavigationLabel = (item: NavigationItem) => {
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   user-select: none;
 
   &:hover:not(&--active) {
     background-color: var(--color-primary-light);
-    color: var(--color-primary);
+    color: var(--tjg-color-primary-500);
 
     .navigation-item__icon svg {
-      color: var(--color-primary);
+      color: var(--tjg-color-primary-500);
     }
   }
 
   &--active {
     background-color: var(--color-primary-hover);
-    color: var(--color-primary);
+    color: var(--tjg-color-primary-500);
 
     .navigation-item__icon svg {
-      color: var(--color-primary);
+      color: var(--tjg-color-primary-500);
     }
   }
 }

@@ -6,6 +6,7 @@ import matrixEventServiceLocal from '../MatrixEventService'
 import { matrixReceiptService } from '../messaging/MatrixReceiptService'
 import matrixSlidingSyncService from '../sync/MatrixSlidingSyncService'
 import { matrixRoomCreationService } from './CreationService'
+import { isDirectMessageRoomFromRoom } from './roomTypeUtils'
 
 const ROOM_EVENTS = {
   Timeline: 'Room.timeline',
@@ -43,11 +44,7 @@ export class MatrixRoomRealtimeService {
     // 判断是否为单聊：优先检查 m.direct account data（DM 标记），
     // 回退到 getJoinedMemberCount() === 2（成员数判断）
     const client = matrixClientService.getClient()
-    const directAccount = client?.getAccountData('m.direct')
-    const directMap = directAccount?.getContent() as Record<string, { room_id: string }[]> | undefined
-    const isDm = directMap
-      ? Object.values(directMap).some((rooms) => rooms?.some((r) => r?.room_id === room.roomId))
-      : false
+    const isDm = isDirectMessageRoomFromRoom(client, room)
     const type = isDm || room.getJoinedMemberCount() === 2 ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP
     const unreadCount = matrixReceiptService.getUnreadCount(room.roomId)
     const lastEvent = room.getLiveTimeline().getEvents().slice(-1)[0]

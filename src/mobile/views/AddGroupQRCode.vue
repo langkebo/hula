@@ -67,8 +67,8 @@ async function drawQRCode() {
   try {
     const QRCode = (await import('qrcode')).default
     const rootStyle = getComputedStyle(document.documentElement)
-    const darkColor = rootStyle.getPropertyValue('--hula-brand').trim()
-    const lightColor = rootStyle.getPropertyValue('--hula-text-inverse').trim()
+    const darkColor = rootStyle.getPropertyValue('--tjg-brand').trim()
+    const lightColor = rootStyle.getPropertyValue('--tjg-text-inverse').trim()
     await QRCode.toCanvas(qrCanvas.value, qrCodeValue, {
       width: 250,
       margin: 2,
@@ -82,9 +82,9 @@ async function drawQRCode() {
         const rootStyle = getComputedStyle(document.documentElement)
         qrCanvas.value.width = 250
         qrCanvas.value.height = 250
-        ctx.fillStyle = rootStyle.getPropertyValue('--hula-surface-panel-muted').trim()
+        ctx.fillStyle = rootStyle.getPropertyValue('--tjg-surface-panel-muted').trim()
         ctx.fillRect(0, 0, 250, 250)
-        ctx.fillStyle = rootStyle.getPropertyValue('--hula-text-tertiary').trim()
+        ctx.fillStyle = rootStyle.getPropertyValue('--tjg-text-tertiary').trim()
         ctx.font = '14px sans-serif'
         ctx.textAlign = 'center'
         ctx.fillText('QR Code', 125, 125)

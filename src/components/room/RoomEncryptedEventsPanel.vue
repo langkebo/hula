@@ -108,7 +108,7 @@ watch(
 .panel-subtitle {
   margin: 0 0 12px 0;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   line-height: 1.5;
 }
 
@@ -120,7 +120,7 @@ watch(
 
 .encrypted-event-item {
   padding: 8px 12px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   border-radius: 6px;
   font-size: 12px;
 }
@@ -137,13 +137,13 @@ watch(
 }
 
 .event-label {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   flex-shrink: 0;
 }
 
 .event-value {
   font-family: monospace;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -7,7 +7,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-[--hula-text-secondary] mb-8px">{{ t('mobile_help.help_section') }}</div>
+          <div class="text-14px text-[--tjg-text-secondary] mb-8px">{{ t('mobile_help.help_section') }}</div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_help.user_guide')" is-link @click="openLink('https://matrix.org/docs/guides')">
@@ -15,7 +15,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.guide">
-                  <Icon icon="mdi:book-open-variant" :width="20" color="var(--hula-color-info-500)" />
+                  <Icon icon="mdi:book-open-variant" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
             </van-cell>
@@ -25,7 +25,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.faq">
-                  <Icon icon="mdi:frequently-asked-questions" :width="20" color="var(--hula-color-success-500)" />
+                  <Icon icon="mdi:frequently-asked-questions" :width="20" color="var(--tjg-color-success-500)" />
                 </div>
               </template>
             </van-cell>
@@ -35,7 +35,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.privacy">
-                  <Icon icon="mdi:shield-account" :width="20" color="var(--hula-color-beta-500)" />
+                  <Icon icon="mdi:shield-account" :width="20" color="var(--tjg-color-beta-500)" />
                 </div>
               </template>
             </van-cell>
@@ -48,13 +48,13 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.terms">
-                  <Icon icon="mdi:file-document-outline" :width="20" color="var(--hula-color-warning-500)" />
+                  <Icon icon="mdi:file-document-outline" :width="20" color="var(--tjg-color-warning-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_help.feedback_section') }}
           </div>
 
@@ -64,7 +64,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.bug">
-                  <Icon icon="mdi:bug-outline" :width="20" color="var(--hula-color-danger-500)" />
+                  <Icon icon="mdi:bug-outline" :width="20" color="var(--tjg-color-danger-500)" />
                 </div>
               </template>
             </van-cell>
@@ -74,7 +74,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.feature">
-                  <Icon icon="mdi:lightbulb-outline" :width="20" color="var(--hula-color-info-500)" />
+                  <Icon icon="mdi:lightbulb-outline" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
             </van-cell>
@@ -84,21 +84,21 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.support">
-                  <Icon icon="mdi:headset" :width="20" color="var(--hula-color-info-500)" />
+                  <Icon icon="mdi:headset" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">{{ t('mobile_help.about_section') }}</div>
+          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">{{ t('mobile_help.about_section') }}</div>
 
           <van-cell-group inset>
-            <van-cell :title="t('mobile_help.about_hula')" :label="versionInfo" is-link @click="showAbout = true">
+            <van-cell :title="t('mobile_help.about_tjg')" :label="versionInfo" is-link @click="showAbout = true">
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.about">
-                  <Icon icon="mdi:information-outline" :width="20" color="var(--hula-text-secondary)" />
+                  <Icon icon="mdi:information-outline" :width="20" color="var(--tjg-text-secondary)" />
                 </div>
               </template>
             </van-cell>
@@ -108,7 +108,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.update">
-                  <Icon icon="mdi:update" :width="20" color="var(--hula-color-success-500)" />
+                  <Icon icon="mdi:update" :width="20" color="var(--tjg-color-success-500)" />
                 </div>
               </template>
             </van-cell>
@@ -162,11 +162,11 @@
 
       <van-popup v-model:show="showAbout" position="bottom" round :style="{ height: '50%' }">
         <div class="p-16px text-center">
-          <div class="text-16px font-bold mb-16px">{{ t('mobile_help.about_hula') }}</div>
-          <img src="/logo.png" class="w-80px h-80px mx-auto mb-16px" alt="HuLa Logo" />
-          <div class="text-14px text-[--hula-text-secondary] mb-8px">{{ t('mobile_help.about_description') }}</div>
-          <div class="text-12px text-[--hula-text-quaternary]">{{ versionInfo }}</div>
-          <div class="text-12px text-[--hula-text-quaternary] mt-8px">
+          <div class="text-16px font-bold mb-16px">{{ t('mobile_help.about_tjg') }}</div>
+          <img src="/logo.png" class="w-80px h-80px mx-auto mb-16px" alt="Tjg Logo" />
+          <div class="text-14px text-[--tjg-text-secondary] mb-8px">{{ t('mobile_help.about_description') }}</div>
+          <div class="text-12px text-[--tjg-text-quaternary]">{{ versionInfo }}</div>
+          <div class="text-12px text-[--tjg-text-quaternary] mt-8px">
             {{ t('mobile_help.copyright') }}
           </div>
         </div>
@@ -194,15 +194,15 @@ const showFeatureRequest = ref(false)
 const showAbout = ref(false)
 
 const iconShellStyles = {
-  guide: { backgroundColor: 'var(--hula-color-info-100)' },
-  faq: { backgroundColor: 'var(--hula-color-success-100)' },
-  privacy: { backgroundColor: 'var(--hula-color-beta-100)' },
-  terms: { backgroundColor: 'var(--hula-color-warning-100)' },
-  bug: { backgroundColor: 'var(--hula-color-danger-100)' },
-  feature: { backgroundColor: 'var(--hula-color-info-100)' },
-  support: { backgroundColor: 'var(--hula-color-info-100)' },
-  about: { backgroundColor: 'var(--hula-surface-subtle)' },
-  update: { backgroundColor: 'var(--hula-color-success-100)' }
+  guide: { backgroundColor: 'var(--tjg-color-info-100)' },
+  faq: { backgroundColor: 'var(--tjg-color-success-100)' },
+  privacy: { backgroundColor: 'var(--tjg-color-beta-100)' },
+  terms: { backgroundColor: 'var(--tjg-color-warning-100)' },
+  bug: { backgroundColor: 'var(--tjg-color-danger-100)' },
+  feature: { backgroundColor: 'var(--tjg-color-info-100)' },
+  support: { backgroundColor: 'var(--tjg-color-info-100)' },
+  about: { backgroundColor: 'var(--tjg-surface-subtle)' },
+  update: { backgroundColor: 'var(--tjg-color-success-100)' }
 } as const
 
 const versionInfo = ref('v1.0.0')
@@ -227,7 +227,7 @@ function loadVersion() {
     if (pkgVersion) {
       versionInfo.value = `v${pkgVersion}`
     } else {
-      const stored = localStorage.getItem('hula-app-version')
+      const stored = localStorage.getItem('tjg-app-version')
       if (stored) {
         versionInfo.value = stored
       }
@@ -258,13 +258,13 @@ async function submitBugReport() {
   }
 
   try {
-    const reports = JSON.parse(localStorage.getItem('hula-bug-reports') || '[]')
+    const reports = JSON.parse(localStorage.getItem('tjg-bug-reports') || '[]')
     reports.push({
       ...bugReport.value,
       timestamp: Date.now(),
       type: 'bug'
     })
-    localStorage.setItem('hula-bug-reports', JSON.stringify(reports))
+    localStorage.setItem('tjg-bug-reports', JSON.stringify(reports))
 
     showToast({
       type: 'success',
@@ -292,13 +292,13 @@ async function submitFeatureRequest() {
   }
 
   try {
-    const requests = JSON.parse(localStorage.getItem('hula-feature-requests') || '[]')
+    const requests = JSON.parse(localStorage.getItem('tjg-feature-requests') || '[]')
     requests.push({
       ...featureRequest.value,
       timestamp: Date.now(),
       type: 'feature'
     })
-    localStorage.setItem('hula-feature-requests', JSON.stringify(requests))
+    localStorage.setItem('tjg-feature-requests', JSON.stringify(requests))
 
     showToast({
       type: 'success',

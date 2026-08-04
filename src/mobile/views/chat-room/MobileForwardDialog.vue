@@ -229,20 +229,20 @@ watch(
   display: flex;
   flex-direction: column;
   max-height: 75vh;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 
   &__header {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 48px;
-    border-bottom: 1px solid var(--hula-border-default);
+    border-bottom: 1px solid var(--tjg-border-default);
   }
 
   &__title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 
   &__preview {
@@ -250,15 +250,15 @@ watch(
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    background: var(--hula-surface-panel-muted);
+    background: var(--tjg-surface-panel-muted);
     font-size: 13px;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     min-height: 40px;
   }
 
   &__preview-label {
     flex-shrink: 0;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 
   &__preview-text {
@@ -287,7 +287,7 @@ watch(
     justify-content: center;
     height: 200px;
     font-size: 14px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 
   &__checkbox {
@@ -302,7 +302,7 @@ watch(
 
   &__room-name {
     font-size: 14px;
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -313,12 +313,12 @@ watch(
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--hula-border-default);
+    border-top: 1px solid var(--tjg-border-default);
   }
 
   &__count {
     font-size: 13px;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
   }
 }
 </style>

@@ -136,16 +136,16 @@ const indicatorStatus = computed(() => {
 <style scoped>
 .burn-message {
   position: relative;
-  background: var(--hula-surface-elevated);
+  background: var(--tjg-surface-elevated);
   border-radius: 12px;
   padding: 12px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   transition: all 0.3s ease;
 }
 
 .burn-message--burning {
-  border-color: color-mix(in srgb, var(--hula-color-danger-500) 50%, transparent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--hula-color-danger-500) 20%, transparent);
+  border-color: color-mix(in srgb, var(--tjg-color-danger-500) 50%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tjg-color-danger-500) 20%, transparent);
 }
 
 .burn-message--burned {
@@ -171,7 +171,7 @@ const indicatorStatus = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--hula-surface-panel) 90%, transparent);
+  background: color-mix(in srgb, var(--tjg-surface-panel) 90%, transparent);
   backdrop-filter: blur(2px);
   border-radius: 12px;
   z-index: 10;
@@ -180,13 +180,13 @@ const indicatorStatus = computed(() => {
 .burn-message__burned-icon {
   width: 32px;
   height: 32px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   margin-bottom: 8px;
 }
 
 .burn-message__burned-text {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .burn-fade-enter-active,

@@ -1,20 +1,20 @@
 @use 'fonts';
 * {
   font-family: var(--font-family), sans-serif !important;
-  caret-color: var(--hula-color-primary-500) !important;
+  caret-color: var(--tjg-color-primary-500) !important;
 }
 
 :focus-visible {
-  outline: 2px solid var(--hula-color-primary-500);
+  outline: 2px solid var(--tjg-color-primary-500);
   outline-offset: 2px;
-  border-radius: var(--hula-radius-xs);
+  border-radius: var(--tjg-radius-xs);
 }
 
 html,
 body,
 svg {
   &::selection {
-    background: var(--hula-color-primary-300-alpha);
+    background: var(--tjg-color-primary-300-alpha);
   }
   &:focus:not(:focus-visible) {
     outline: none;
@@ -23,7 +23,7 @@ svg {
 }
 
 ::selection {
-  background: var(--hula-color-primary-300-alpha);
+  background: var(--tjg-color-primary-300-alpha);
 }
 
 /* 语义化变量已迁移到 design-tokens.css 全局加载，避免 scoped 导致 :root 失效 */
@@ -70,7 +70,7 @@ svg {
 html[data-blur='1'] {
   .n-modal-mask,
   .n-drawer-mask {
-    background-color: color-mix(in srgb, var(--hula-surface-panel) 10%, transparent);
+    background-color: color-mix(in srgb, var(--tjg-surface-panel) 10%, transparent);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
@@ -102,21 +102,21 @@ html[data-blur='1'] {
 
 /**! 修改naive-ui Popselect选中的样式 */
 .n-base-select-menu .n-base-select-option.n-base-select-option--selected {
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 .n-base-select-menu .n-base-select-option .n-base-select-option__check {
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 /**! 通用菜单项目样式 */
 @mixin menu-item-style($position: fixed) {
   position: $position;
   background: var(--bg-menu);
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   border-radius: 6px;
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  box-shadow: var(--hula-shadow-floating-menu);
+  box-shadow: var(--tjg-shadow-floating-menu);
   z-index: 999;
   width: fit-content;
   font-size: 14px;
@@ -154,9 +154,9 @@ html[data-blur='1'] {
 
 /** 修改默认的naive-ui的选择器样式 */
 :deep(.n-base-selection) {
-  --n-box-shadow-active: 0 0 0 2px var(--hula-color-primary-200) !important;
-  --n-border-active: 1px solid var(--hula-color-primary-500) !important;
-  --n-border-hover: 1px solid var(--hula-color-primary-500) !important;
+  --n-box-shadow-active: 0 0 0 2px var(--tjg-color-primary-200) !important;
+  --n-border-active: 1px solid var(--tjg-color-primary-500) !important;
+  --n-border-hover: 1px solid var(--tjg-color-primary-500) !important;
 }
 
 /* 自定义滚动条 — 对齐原型设计 */
@@ -169,11 +169,11 @@ html[data-theme='dark'] {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--hula-border-default);
+    background: var(--tjg-border-default);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--hula-text-quaternary);
+    background: var(--tjg-text-quaternary);
   }
 }
 

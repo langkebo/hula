@@ -1,3 +1,4 @@
+import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -378,7 +379,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/capabilities')
+      const result = await client.getCapabilities()
       logger.info('[MatrixAccount] 获取能力声明成功')
       return result as Record<string, unknown>
     } catch (err) {
@@ -391,7 +392,7 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const result = await client.http.authedRequest('GET', '/thirdparty/protocols')
+      const result = await client.getThirdpartyProtocols()
       logger.info('[MatrixAccount] 获取第三方协议成功')
       return result as Record<string, unknown>
     } catch (err) {
@@ -411,8 +412,8 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const result = await client.http.authedRequest('GET', '/my_rooms')
-      return (result as { room_ids?: string[] }).room_ids ?? []
+      const result = await authedRequestWithPath<{ room_ids?: string[] }>(client, 'GET', '/my_rooms')
+      return result.room_ids ?? []
     } catch (err) {
       // 如果返回 404，说明该非标准端点在后端不存在，降级到标准 Matrix API
       const statusCode = (err as { httpStatus?: number }).httpStatus
@@ -437,8 +438,8 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const queryParams: Record<string, string> = { timeout: String(timeout) }
       if (from) queryParams.from = from
-      const result = await client.http.authedRequest('GET', '/events', queryParams)
-      return result as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/events', queryParams)
+      return result
     } catch (err) {
       logger.error(`[MatrixAccount] 获取事件流失败: ${err}`)
       return {}

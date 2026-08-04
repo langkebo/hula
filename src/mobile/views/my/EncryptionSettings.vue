@@ -161,7 +161,7 @@
         show-cancel-button
         @confirm="handleRestoreConfirm">
         <div class="p-16px">
-          <div class="text-14px text-[--hula-text-secondary] mb-12px">
+          <div class="text-14px text-[--tjg-text-secondary] mb-12px">
             {{ t('setting.encryption.restore_backup_desc') }}
           </div>
           <van-field

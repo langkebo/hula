@@ -37,7 +37,7 @@ const { isRoomEncrypted } = useEncryption()
 const isEncrypted = ref(false)
 const dismissed = ref(false)
 
-const STORAGE_KEY = computed(() => `hula-e2ee-banner-dismissed-${props.roomId}`)
+const STORAGE_KEY = computed(() => `tjg-e2ee-banner-dismissed-${props.roomId}`)
 
 const showBanner = computed(() => isEncrypted.value && !dismissed.value)
 
@@ -65,7 +65,7 @@ watch(
       return
     }
     if (typeof localStorage !== 'undefined') {
-      dismissed.value = localStorage.getItem(`hula-e2ee-banner-dismissed-${newId}`) === '1'
+      dismissed.value = localStorage.getItem(`tjg-e2ee-banner-dismissed-${newId}`) === '1'
     }
     isEncrypted.value = await isRoomEncrypted(newId)
   }
@@ -94,7 +94,7 @@ watch(
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .e2ee-banner__text {
@@ -106,12 +106,12 @@ watch(
 .e2ee-banner__title {
   font-size: 13px;
   font-weight: 500;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .e2ee-banner__desc {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .e2ee-banner__close {
@@ -124,14 +124,14 @@ watch(
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .e2ee-banner__close:hover {
   background: rgba(19, 152, 127, 0.12);
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .e2ee-banner__close-icon {
@@ -148,7 +148,7 @@ watch(
 .e2ee-indicator__icon {
   width: 14px;
   height: 14px;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   opacity: 0.7;
 }
 </style>

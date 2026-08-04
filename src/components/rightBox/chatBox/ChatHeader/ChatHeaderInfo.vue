@@ -6,7 +6,7 @@
       :src="channelAvatar"
       :size="44"
       round
-      :style="{ border: '2px solid var(--hula-color-primary-500)' }" />
+      :style="{ border: '2px solid var(--tjg-color-primary-500)' }" />
     <n-avatar v-else-if="avatar" class="avatar" :src="avatar" :size="44" round :style="avatarStyle" />
     <n-avatar v-else class="avatar" :size="44" round :style="avatarStyle">
       {{ nameInitial }}
@@ -86,12 +86,12 @@ const nameInitial = computed(() => {
 
 const avatarStyle = computed(() => {
   if (isChannel.value) {
-    return { border: '2px solid var(--hula-color-primary-500)' }
+    return { border: '2px solid var(--tjg-color-primary-500)' }
   }
   if (props.isOnline) {
-    return { border: '2px solid var(--hula-color-success-500)' }
+    return { border: '2px solid var(--tjg-color-success-500)' }
   }
-  return { border: '2px solid var(--hula-border-strong)' }
+  return { border: '2px solid var(--tjg-border-strong)' }
 })
 
 const channelAvatar = computed(() => {
@@ -123,7 +123,7 @@ const handleClick = () => {
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: color-mix(in srgb, var(--hula-text-primary) 5%, transparent);
+    background-color: color-mix(in srgb, var(--tjg-text-primary) 5%, transparent);
   }
 }
 
@@ -147,7 +147,7 @@ const handleClick = () => {
 .name {
   font-size: 16px;
   font-weight: 500;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -164,7 +164,7 @@ const handleClick = () => {
 .member-count,
 .status {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .status {
@@ -173,7 +173,7 @@ const handleClick = () => {
   gap: 4px;
 
   &.online {
-    color: var(--hula-color-success-500);
+    color: var(--tjg-color-success-500);
   }
 }
 
@@ -191,14 +191,14 @@ const handleClick = () => {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .typing-dot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--hula-color-primary-500);
+  background: var(--tjg-color-primary-500);
   animation: typing-bounce 1.4s infinite ease-in-out both;
 }
 

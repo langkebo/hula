@@ -119,7 +119,7 @@ watch(
 
 .description {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   line-height: 1.5;
   margin: 0 0 12px;
 }
@@ -137,18 +137,18 @@ watch(
   align-items: center;
   padding: 8px 0;
   font-size: 13px;
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
 }
 
 .info-label {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .info-value {
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 
   &.is-empty {
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 }
 
@@ -166,16 +166,16 @@ watch(
 .hint {
   margin-top: 12px;
   padding: 8px 10px;
-  background: var(--hula-color-warning-bg, rgba(255, 196, 0, 0.1));
+  background: var(--tjg-color-warning-bg, rgba(255, 196, 0, 0.1));
   border-radius: 6px;
   font-size: 12px;
-  color: var(--hula-color-warning-600);
+  color: var(--tjg-color-warning-600);
   line-height: 1.5;
 }
 
 .error-text {
   margin-top: 8px;
   font-size: 12px;
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 </style>

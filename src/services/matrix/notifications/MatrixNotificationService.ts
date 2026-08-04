@@ -3,6 +3,7 @@ import { createLogger } from '@/utils/Logger'
 import { safeJsonParse, validateObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { matrixHttpClient } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixNotificationService')
@@ -41,7 +42,7 @@ class MatrixNotificationService extends BaseMatrixService {
     showMessageContent: true
   }
 
-  private static readonly CONFIG_STORAGE_KEY = 'hula-notification-config'
+  private static readonly CONFIG_STORAGE_KEY = 'tjg-notification-config'
   private static readonly ACCOUNT_DATA_TYPE = 'io.hula.notification_settings'
   private static readonly DND_ACCOUNT_DATA_TYPE = 'io.hula.dnd_settings'
 
@@ -363,10 +364,7 @@ class MatrixNotificationService extends BaseMatrixService {
   }> {
     const client = this.getNotificationClient()
     try {
-      const queryParams: Record<string, string> = { limit: String(limit) }
-      if (from) queryParams.from = from
-
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.NOTIFICATION.NOTIFICATIONS, queryParams)
+      const result = await client.getNotificationsManager().getNotifications({ from, limit })
       return result as { notifications: Array<Record<string, unknown>>; next_token?: string }
     } catch (err) {
       logger.error(`[MatrixNotification] 获取通知列表失败: ${err}`)
@@ -375,9 +373,8 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   async ackNotification(notificationId: string): Promise<boolean> {
-    const client = this.getNotificationClient()
     try {
-      await client.http.authedRequest('POST', MATRIX_PATHS.NOTIFICATION.NOTIFICATIONS_ACK(notificationId))
+      await matrixHttpClient.request('POST', MATRIX_PATHS.NOTIFICATION.NOTIFICATIONS_ACK(notificationId))
       logger.info(`[MatrixNotification] 通知确认成功: ${notificationId}`)
       return true
     } catch (err) {
@@ -421,7 +418,7 @@ class MatrixNotificationService extends BaseMatrixService {
   private async sendReadReceipt(roomId: string, eventId: string): Promise<boolean> {
     const client = this.getNotificationClient()
     try {
-      await client.http.authedRequest('POST', MATRIX_PATHS.ROOM.RECEIPT(roomId, 'm.read', eventId), undefined, {})
+      await client.getReadReceiptsManager().sendReceiptForce(roomId, 'm.read', eventId)
       logger.info(`[MatrixNotification] 已读回执发送成功: ${roomId}/${eventId}`)
       return true
     } catch (err) {
@@ -431,13 +428,12 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 从服务端获取完整推送规则 (async, 使用 MATRIX_PATHS)
+   * 从服务端获取完整推送规则 (async, 使用 SDK 高层方法)
    */
   async fetchPushRules(): Promise<IPushRules> {
     const client = this.getNotificationClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.NOTIFICATION.PUSH_RULES)
-      return result as IPushRules
+      return await client.getPushRules()
     } catch (err) {
       logger.error(`[MatrixNotification] 获取推送规则失败: ${err}`)
       throw err
@@ -445,13 +441,12 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 设置推送规则 (使用 MATRIX_PATHS)
+   * 设置推送规则 (SDK 无 addPushRule 实现，统一到 matrixHttpClient)
    */
   async setPushRuleByScope(scope: string, kind: string, ruleId: string, body: Record<string, unknown>): Promise<void> {
-    const client = this.getNotificationClient()
     try {
       const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
-      await client.http.authedRequest('PUT', path, undefined, body)
+      await matrixHttpClient.request('PUT', path, { body })
       logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
@@ -460,13 +455,12 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 删除推送规则 (使用 MATRIX_PATHS)
+   * 删除推送规则 (使用 SDK 高层方法)
    */
   async deletePushRuleByScope(scope: string, kind: string, ruleId: string): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
-      await client.http.authedRequest('DELETE', path)
+      await client.deletePushRule(scope, kind as PushRuleKind, ruleId)
       logger.info(`[MatrixNotification] 删除推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 删除推送规则失败: ${err}`)
@@ -475,14 +469,13 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 获取推送设备列表 (使用 MATRIX_PATHS)
+   * 获取推送设备列表 (使用 SDK 高层方法)
    */
   async fetchPushers(): Promise<Array<Record<string, unknown>>> {
     const client = this.getNotificationClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.NOTIFICATION.PUSHERS)
-      const response = result as { pushers?: Array<Record<string, unknown>> }
-      return response.pushers ?? []
+      const result = await client.getPushers()
+      return (result.pushers ?? []) as Array<Record<string, unknown>>
     } catch (err) {
       logger.error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
       throw err
@@ -490,12 +483,12 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 设置推送设备 (使用 MATRIX_PATHS)
+   * 设置推送设备 (使用 SDK 高层方法)
    */
   async setPusherByBody(pusher: Record<string, unknown>): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      await client.http.authedRequest('POST', MATRIX_PATHS.NOTIFICATION.PUSHERS + '/set', undefined, pusher)
+      await client.setPusher(pusher as IPusherRequest)
       logger.info('[MatrixNotification] 设置推送设备成功')
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送设备失败: ${err}`)

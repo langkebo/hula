@@ -250,57 +250,57 @@ async function loadDevices() {
 }
 
 function loadSavedSettings() {
-  const savedAudioInput = localStorage.getItem('hula-audio-input')
+  const savedAudioInput = localStorage.getItem('tjg-audio-input')
   if (savedAudioInput) {
     audioInputId.value = savedAudioInput
   }
 
-  const savedAudioOutput = localStorage.getItem('hula-audio-output')
+  const savedAudioOutput = localStorage.getItem('tjg-audio-output')
   if (savedAudioOutput) {
     audioOutputId.value = savedAudioOutput
   }
 
-  const savedVideoInput = localStorage.getItem('hula-video-input')
+  const savedVideoInput = localStorage.getItem('tjg-video-input')
   if (savedVideoInput) {
     videoInputId.value = savedVideoInput
   }
 
-  const savedInputVolume = localStorage.getItem('hula-input-volume')
+  const savedInputVolume = localStorage.getItem('tjg-input-volume')
   if (savedInputVolume) {
     inputVolume.value = parseInt(savedInputVolume, 10)
   }
 
-  const savedOutputVolume = localStorage.getItem('hula-output-volume')
+  const savedOutputVolume = localStorage.getItem('tjg-output-volume')
   if (savedOutputVolume) {
     outputVolume.value = parseInt(savedOutputVolume, 10)
   }
 
-  const savedEcho = localStorage.getItem('hula-echo-cancellation')
+  const savedEcho = localStorage.getItem('tjg-echo-cancellation')
   if (savedEcho) {
     echoCancellation.value = savedEcho === 'true'
   }
 
-  const savedNoise = localStorage.getItem('hula-noise-suppression')
+  const savedNoise = localStorage.getItem('tjg-noise-suppression')
   if (savedNoise) {
     noiseSuppression.value = savedNoise === 'true'
   }
 
-  const savedAutoGain = localStorage.getItem('hula-auto-gain')
+  const savedAutoGain = localStorage.getItem('tjg-auto-gain')
   if (savedAutoGain) {
     autoGainControl.value = savedAutoGain === 'true'
   }
 }
 
 function handleAudioInputChange(value: string) {
-  localStorage.setItem('hula-audio-input', value)
+  localStorage.setItem('tjg-audio-input', value)
 }
 
 function handleAudioOutputChange(value: string) {
-  localStorage.setItem('hula-audio-output', value)
+  localStorage.setItem('tjg-audio-output', value)
 }
 
 function handleVideoInputChange(value: string) {
-  localStorage.setItem('hula-video-input', value)
+  localStorage.setItem('tjg-video-input', value)
   if (isPreviewing.value) {
     stopPreview()
     startPreview()
@@ -308,23 +308,23 @@ function handleVideoInputChange(value: string) {
 }
 
 function handleInputVolumeChange(value: number) {
-  localStorage.setItem('hula-input-volume', value.toString())
+  localStorage.setItem('tjg-input-volume', value.toString())
 }
 
 function handleOutputVolumeChange(value: number) {
-  localStorage.setItem('hula-output-volume', value.toString())
+  localStorage.setItem('tjg-output-volume', value.toString())
 }
 
 function handleEchoCancellationChange(value: boolean) {
-  localStorage.setItem('hula-echo-cancellation', value.toString())
+  localStorage.setItem('tjg-echo-cancellation', value.toString())
 }
 
 function handleNoiseSuppressionChange(value: boolean) {
-  localStorage.setItem('hula-noise-suppression', value.toString())
+  localStorage.setItem('tjg-noise-suppression', value.toString())
 }
 
 function handleAutoGainChange(value: boolean) {
-  localStorage.setItem('hula-auto-gain', value.toString())
+  localStorage.setItem('tjg-auto-gain', value.toString())
 }
 
 async function handleTestAudio() {
@@ -441,26 +441,26 @@ function stopPreview() {
 
 <style scoped>
 .voice-video-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin: 0 0 var(--hula-space-4) 0;
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin: 0 0 var(--tjg-space-4) 0;
+  color: var(--tjg-text-primary);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -470,63 +470,63 @@ function stopPreview() {
 
 .setting-label {
   display: block;
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
   display: block;
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .volume-control {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
 }
 
 .volume-value {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
   min-width: 40px;
 }
 
 .audio-level-display {
-  margin-top: var(--hula-space-3);
-  padding: var(--hula-space-3);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  margin-top: var(--tjg-space-3);
+  padding: var(--tjg-space-3);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .level-bar {
   height: 8px;
-  background-color: var(--hula-settings-meter-bg);
-  border-radius: var(--hula-radius-xs);
+  background-color: var(--tjg-settings-meter-bg);
+  border-radius: var(--tjg-radius-xs);
   overflow: hidden;
 }
 
 .level-fill {
   height: 100%;
-  background-color: var(--hula-color-success-500);
-  border-radius: var(--hula-radius-xs);
+  background-color: var(--tjg-color-success-500);
+  border-radius: var(--tjg-radius-xs);
   transition: width 0.1s ease;
 }
 
 .level-text {
   display: block;
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-2);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-2);
   text-align: center;
 }
 
 .video-preview {
-  margin-top: var(--hula-space-4);
-  border-radius: var(--hula-radius-sm);
+  margin-top: var(--tjg-space-4);
+  border-radius: var(--tjg-radius-sm);
   overflow: hidden;
-  background-color: var(--hula-surface-media-preview);
+  background-color: var(--tjg-surface-media-preview);
 }
 
 .preview-video {

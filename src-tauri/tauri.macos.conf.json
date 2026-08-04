@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "HuLa",
+  "productName": "Tjg",
   "version": "3.0.10",
-  "identifier": "com.hula.pc",
+  "identifier": "com.tjg.pc",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build",

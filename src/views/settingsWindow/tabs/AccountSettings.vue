@@ -476,18 +476,18 @@ onMounted(async () => {
 
 <style scoped>
 .account-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-4);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-4);
+  color: var(--tjg-text-primary);
 }
 
 .profile-section {
@@ -499,19 +499,19 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
 }
 
 .danger-zone {
-  padding: var(--hula-space-4);
-  border: 1px solid var(--hula-color-danger-500);
-  border-radius: var(--hula-radius-sm);
-  background-color: var(--hula-color-danger-100);
+  padding: var(--tjg-space-4);
+  border: 1px solid var(--tjg-color-danger-500);
+  border-radius: var(--tjg-radius-sm);
+  background-color: var(--tjg-color-danger-100);
 }
 
 .extended-profile-hint {
-  margin-top: var(--hula-space-2);
-  color: var(--hula-text-secondary);
-  font-size: var(--hula-font-size-sm);
+  margin-top: var(--tjg-space-2);
+  color: var(--tjg-text-secondary);
+  font-size: var(--tjg-font-size-sm);
 }
 </style>

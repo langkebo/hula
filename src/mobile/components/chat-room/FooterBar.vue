@@ -14,7 +14,7 @@
         <chat-footer :detail-id="globalStore.currentSession?.detailId"></chat-footer>
       </div>
       <div
-        class="flex items-center justify-center py-4px border-t border-[--hula-border-default] bg-[--hula-surface-panel]">
+        class="flex items-center justify-center py-4px border-t border-[--tjg-border-default] bg-[--tjg-surface-panel]">
         <button class="footer-bar-action" data-testid="location-btn" @click="emit('location')">
           <svg class="w-22px h-22px iconpark-icon">
             <use href="#location"></use>
@@ -89,7 +89,7 @@ defineExpose({ root })
   position: relative;
 
   svg {
-    color: var(--color-primary);
+    color: var(--tjg-color-primary-500);
     transition: color 0.3s ease;
   }
 
@@ -102,7 +102,7 @@ defineExpose({ root })
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background-color: var(--color-primary);
+    background-color: var(--tjg-color-primary-500);
     animation: pulse 1.5s infinite;
   }
 }
@@ -121,7 +121,7 @@ defineExpose({ root })
 }
 
 .footer-bar-shadow {
-  box-shadow: var(--hula-shadow-top-bar);
+  box-shadow: var(--tjg-shadow-top-bar);
 }
 
 .footer-bar-action {

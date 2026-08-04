@@ -824,7 +824,7 @@ class MatrixRuntimeSessionService {
       }
 
       // Step 2.3：窗口最小宽度 1024px，配合响应式断点（wide≥1440 / normal 1024-1439 / shrink<1024）
-      await createWebviewWindow('HuLa', 'home', 1280, 800, 'login', true, 1024, 600, undefined, false)
+      await createWebviewWindow('Tjg', 'home', 1280, 800, 'login', true, 1024, 600, undefined, false)
     } catch (err) {
       logger.error(`打开桌面端主窗口失败: ${err}`)
     }

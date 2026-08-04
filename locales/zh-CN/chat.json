@@ -51,5 +51,8 @@
   },
   "url_preview": {
     "loading": "加载预览..."
+  },
+  "crypto_unavailable": {
+    "message": "加密功能未就绪，此房间的消息无法发送。请重新登录或联系管理员。"
   }
 }

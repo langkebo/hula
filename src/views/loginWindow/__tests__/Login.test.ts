@@ -69,8 +69,8 @@ vi.mock('vue-i18n', () => ({
           'login.option.more': '更多选项',
           'login.button.remove_account': '移除账号',
           'login.button.cancel_login': '取消登录',
-          'login.input.account.placeholder': '邮箱/HuLa账号',
-          'login.input.pass.placeholder': '输入 HuLa 密码'
+          'login.input.account.placeholder': '邮箱/Tjg账号',
+          'login.input.pass.placeholder': '输入 Tjg 密码'
         }) as Record<string, string>
       )[key] || key
   })

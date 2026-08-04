@@ -1,7 +1,7 @@
 <template>
   <n-flex vertical :size="29" data-tauri-drag-region>
     <n-flex justify="center" class="mt-15px">
-      <img src="/hula.png" class="w-140px h-60px" alt="HuLa" />
+      <img src="/tjg.png" class="w-140px h-60px" alt="Tjg" />
     </n-flex>
     <n-flex :size="30" vertical>
       <n-flex justify="center">
@@ -9,13 +9,13 @@
           round
           :size="110"
           :color="'var(--login-avatar-bg)'"
-          alt="HuLa Logo"
+          alt="Tjg Logo"
           :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           :src="AvatarUtils.getAvatarUrl(userInfo?.avatar ?? '')" />
       </n-flex>
 
       <n-flex justify="center">
-        <n-ellipsis style="max-width: 200px" class="text-(18px [--hula-text-secondary])">
+        <n-ellipsis style="max-width: 200px" class="text-(18px [--tjg-text-secondary])">
           {{ userInfo?.name || '' }}
         </n-ellipsis>
       </n-flex>
@@ -26,7 +26,7 @@
         :loading="loading"
         :disabled="loginDisabled"
         tertiary
-        style="color: var(--hula-text-inverse)"
+        style="color: var(--tjg-text-inverse)"
         class="gradient-button w-200px mt-12px mb-40px"
         @click="emit('login')">
         <span>{{ loginText }}</span>

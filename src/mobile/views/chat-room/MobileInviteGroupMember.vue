@@ -40,7 +40,7 @@
             <div
               v-for="item in filteredContacts"
               :key="item.uid"
-              class="rounded-10px border border-[--hula-border-default] overflow-hidden">
+              class="rounded-10px border border-[--tjg-border-default] overflow-hidden">
               <van-checkbox
                 :name="item.uid"
                 shape="square"
@@ -48,8 +48,8 @@
                 :class="[
                   'cursor-pointer select-none transition-colors duration-150',
                   selectedList.includes(item.uid)
-                    ? 'bg-[--hula-color-primary-100] text-[--hula-color-primary-600] dark:bg-[--hula-color-primary-100] dark:text-[--hula-color-primary-400]'
-                    : 'hover:bg-[--hula-color-primary-100] dark:hover:bg-[--hula-color-primary-100]'
+                    ? 'bg-[--tjg-color-primary-100] text-[--tjg-color-primary-600] dark:bg-[--tjg-color-primary-100] dark:text-[--tjg-color-primary-400]'
+                    : 'hover:bg-[--tjg-color-primary-100] dark:hover:bg-[--tjg-color-primary-100]'
                 ]">
                 <template #default>
                   <div class="flex items-center gap-10px px-8px py-10px">
@@ -63,7 +63,7 @@
                       <span class="text-14px font-medium truncate">
                         {{ groupStore.getUserInfo(item.uid)?.name }}
                       </span>
-                      <div class="text-12px text-[--hula-text-tertiary] flex items-center gap-4px truncate">
+                      <div class="text-12px text-[--tjg-text-tertiary] flex items-center gap-4px truncate">
                         <span
                           class="inline-block size-8px rounded-full"
                           :style="{
@@ -84,7 +84,7 @@
 
     <template #footer>
       <!-- 底部操作栏 -->
-      <div class="px-16px py-10px border-t border-[--hula-border-default] flex justify-between items-center">
+      <div class="px-16px py-10px border-t border-[--tjg-border-default] flex justify-between items-center">
         <span class="text-14px">{{ t('mobile_chat_setting.selected_count', { count: selectedList.length }) }}</span>
         <van-button type="primary" :disabled="selectedList.length === 0" :loading="isLoading" @click="handleInvite">
           {{ t('mobile_chat_setting.invite_button') }}
@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
   border-radius: 10px;
-  background: var(--hula-overlay-mobile-sheet);
+  background: var(--tjg-overlay-mobile-sheet);
 }
 
 :deep(.van-cell.van-field::after) {

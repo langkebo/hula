@@ -49,12 +49,12 @@
             @click="handleSelectGroup(group)"
             @contextmenu="handleContextMenu($event, group)">
             <n-flex align="center" :size="12">
-              <div class="w-44px h-44px rounded-8px bg-[--hula-surface-panel] flex items-center justify-center">
-                <svg class="size-24px text-[--hula-text-primary]"><use href="#folder" /></svg>
+              <div class="w-44px h-44px rounded-8px bg-[--tjg-surface-panel] flex items-center justify-center">
+                <svg class="size-24px text-[--tjg-text-primary]"><use href="#folder" /></svg>
               </div>
               <n-flex vertical :size="4" class="flex-1 truncate">
                 <span class="text-14px truncate">{{ group.name }}</span>
-                <span class="text-(12px [--hula-text-tertiary])">
+                <span class="text-(12px [--tjg-text-tertiary])">
                   {{ t('friend.group.member_count', { count: group.member_count ?? 0 }) }}
                 </span>
               </n-flex>
@@ -110,7 +110,7 @@ import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedback
 import { type FriendGroup, useFriends } from '@/composables/useFriends'
 import FriendSearchBar from './FriendSearchBar.vue'
 
-const FRIEND_GROUP_SEARCH_HISTORY_STORAGE_KEY = 'hula-friend-group-search-history'
+const FRIEND_GROUP_SEARCH_HISTORY_STORAGE_KEY = 'tjg-friend-group-search-history'
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const { announce } = useAriaLive()
@@ -304,13 +304,13 @@ onMounted(() => {
   justify-content: space-between;
   gap: 8px;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .friend-group-view__search-clear {
   border: none;
   background: transparent;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   cursor: pointer;
   padding: 0;
 }
@@ -322,6 +322,6 @@ onMounted(() => {
   transition: background-color 0.2s;
 }
 .group-item:hover {
-  background-color: var(--hula-fill-hover);
+  background-color: var(--tjg-fill-hover);
 }
 </style>

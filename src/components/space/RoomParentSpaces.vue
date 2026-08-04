@@ -76,7 +76,7 @@ watch(() => props.roomId, loadParentSpaces, { immediate: true })
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .parent-spaces-spin {
@@ -103,7 +103,7 @@ watch(() => props.roomId, loadParentSpaces, { immediate: true })
 
 .parent-spaces-empty {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-style: italic;
 }
 </style>

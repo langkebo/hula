@@ -24,10 +24,10 @@
 
         <div class="upload-image-container pt-10px">
           <div class="upload-trigger">
-            <svg class="size-24px text-[--hula-text-tertiary]">
+            <svg class="size-24px text-[--tjg-text-tertiary]">
               <use href="#plus"></use>
             </svg>
-            <span class="text-12px text-[--hula-text-tertiary] mt-5px">{{ t('mobile_chat.notice.click_upload') }}</span>
+            <span class="text-12px text-[--tjg-text-tertiary] mt-5px">{{ t('mobile_chat.notice.click_upload') }}</span>
           </div>
         </div>
 
@@ -172,9 +172,9 @@ onMounted(() => {
   justify-content: center;
   width: 100px;
   height: 100px;
-  border: 1px dashed var(--hula-border-default);
+  border: 1px dashed var(--tjg-border-default);
   border-radius: 8px;
-  background-color: var(--hula-surface-panel-muted);
+  background-color: var(--tjg-surface-panel-muted);
   cursor: not-allowed;
 }
 </style>

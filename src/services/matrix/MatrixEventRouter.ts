@@ -219,6 +219,11 @@ export class MatrixEventRouter {
       this.detach(this.observedClient, syncManager)
     }
 
+    // client EventEmitter 监听器累积超过默认上限 10（7 个本路由 + VoIP/Push/Presence/SpecialFriend 等），
+    // 提升实例级 maxListeners 至 50 以避免 MaxListenersExceededWarning。
+    const clientAny = client as unknown as { setMaxListeners?: (n: number) => void }
+    clientAny.setMaxListeners?.(50)
+
     client.on('sync', this.syncListener)
     client.on('room', this.roomListener)
     client.on('room_timeline', this.roomTimelineListener)

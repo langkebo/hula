@@ -17,7 +17,7 @@
 const route = useRoute()
 const computedBottomSafeAreaClass = computed(() => {
   if (route.name === 'mobileChatMain') {
-    return 'bg-[--hula-surface-panel-muted]'
+    return 'bg-[--tjg-surface-panel-muted]'
   }
   return ''
 })

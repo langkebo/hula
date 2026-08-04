@@ -7,7 +7,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-[--hula-text-secondary] mb-8px">{{ t('mobile_burn.global_section') }}</div>
+          <div class="text-14px text-[--tjg-text-secondary] mb-8px">{{ t('mobile_burn.global_section') }}</div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_burn.global_enable')">
@@ -15,7 +15,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.global">
-                  <Icon icon="mdi:timer-outline" :width="20" color="var(--hula-color-warning-500)" />
+                  <Icon icon="mdi:timer-outline" :width="20" color="var(--tjg-color-warning-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -33,7 +33,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.duration">
-                  <Icon icon="mdi:clock-outline" :width="20" color="var(--hula-color-info-500)" />
+                  <Icon icon="mdi:clock-outline" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
             </van-cell>
@@ -43,7 +43,7 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.countdown">
-                  <Icon icon="mdi:countdown" :width="20" color="var(--hula-color-success-500)" />
+                  <Icon icon="mdi:countdown" :width="20" color="var(--tjg-color-success-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -52,7 +52,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div v-if="globalEnabled" class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+          <div v-if="globalEnabled" class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_burn.room_section') }}
           </div>
 
@@ -70,7 +70,7 @@
                   <div
                     class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                     :style="iconShellStyles.room">
-                    <Icon icon="mdi:fire" :width="20" color="var(--hula-color-danger-500)" />
+                    <Icon icon="mdi:fire" :width="20" color="var(--tjg-color-danger-500)" />
                   </div>
                 </template>
                 <template #right-icon>
@@ -84,7 +84,7 @@
             <van-cell v-else :title="t('mobile_burn.no_rooms')" />
           </van-cell-group>
 
-          <div v-if="globalEnabled" class="text-14px text-[--hula-text-secondary] mt-16px mb-8px">
+          <div v-if="globalEnabled" class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_burn.stats_section') }}
           </div>
 
@@ -95,7 +95,7 @@
 
           <div
             v-if="globalEnabled"
-            class="flex items-start gap-8px p-12px rounded-8px mt-8px bg-[--hula-color-warning-100] text-[--hula-color-warning-500]">
+            class="flex items-start gap-8px p-12px rounded-8px mt-8px bg-[--tjg-color-warning-100] text-[--tjg-color-warning-500]">
             <Icon icon="mdi:alert-circle" :width="16" color="currentColor" class="flex-shrink-0 mt-2px" />
             <span class="text-12px">{{ t('mobile_burn.warning') }}</span>
           </div>
@@ -128,10 +128,10 @@ const showDurationPicker = ref(false)
 const loadingRooms = ref(false)
 
 const iconShellStyles = {
-  global: { backgroundColor: 'var(--hula-color-warning-100)' },
-  duration: { backgroundColor: 'var(--hula-color-info-100)' },
-  countdown: { backgroundColor: 'var(--hula-color-success-100)' },
-  room: { backgroundColor: 'var(--hula-color-danger-100)' }
+  global: { backgroundColor: 'var(--tjg-color-warning-100)' },
+  duration: { backgroundColor: 'var(--tjg-color-info-100)' },
+  countdown: { backgroundColor: 'var(--tjg-color-success-100)' },
+  room: { backgroundColor: 'var(--tjg-color-danger-100)' }
 } as const
 
 const burnRooms = ref<{ roomId: string; name: string; duration: number; enabled: boolean }[]>([])
@@ -167,7 +167,7 @@ onMounted(() => {
 function loadBurnRooms() {
   loadingRooms.value = true
   try {
-    const saved = localStorage.getItem('hula-burn-rooms')
+    const saved = localStorage.getItem('tjg-burn-rooms')
     if (saved) {
       burnRooms.value = JSON.parse(saved)
     }
@@ -180,7 +180,7 @@ function loadBurnRooms() {
 
 function loadBurnStats() {
   try {
-    const saved = localStorage.getItem('hula-burn-stats')
+    const saved = localStorage.getItem('tjg-burn-stats')
     if (saved) {
       burnStats.value = JSON.parse(saved)
     }
@@ -190,7 +190,7 @@ function loadBurnStats() {
 }
 
 function saveBurnRooms() {
-  localStorage.setItem('hula-burn-rooms', JSON.stringify(burnRooms.value))
+  localStorage.setItem('tjg-burn-rooms', JSON.stringify(burnRooms.value))
 }
 
 function handleGlobalToggle(val: boolean) {

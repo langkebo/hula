@@ -282,7 +282,7 @@ const ensureModelsDir = async (): Promise<string> => {
  * 确保指定模型文件已经缓存在本地。
  * 若不存在则从远程链接下载并写入 userData/models 目录。
  * 最终返回模型文件在资源目录下的绝对路径。
- * @param fileName 模型文件名，如 hula.glb
+ * @param fileName 模型文件名，如 tjg.glb
  * @param remoteUrl 模型远程下载地址
  */
 export const ensureModelFile = async (fileName: string, remoteUrl: string): Promise<string> => {

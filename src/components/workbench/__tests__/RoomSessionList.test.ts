@@ -66,15 +66,15 @@ vi.mock('@/components/common/ContextMenu.vue', () => ({
   }
 }))
 
-vi.mock('../HulaRoomListItem.vue', () => ({
+vi.mock('../TjgRoomListItem.vue', () => ({
   default: {
-    name: 'HulaRoomListItem',
+    name: 'TjgRoomListItem',
     props: ['item', 'batchMode', 'batchSelected', 'classes'],
     emits: ['batch-toggle', 'contextmenu'],
     template: `
       <button
         type="button"
-        data-test="HulaRoomListItem"
+        data-test="TjgRoomListItem"
         :data-batch-mode="String(batchMode)"
         :data-batch-selected="String(batchSelected)"
         :data-selected="String(Boolean(classes?.selected))"
@@ -270,7 +270,7 @@ describe('RoomSessionList', () => {
       batchSelectedIds: new Set(['!room:server'])
     })
 
-    const item = wrapper.get('[data-test="HulaRoomListItem"]')
+    const item = wrapper.get('[data-test="TjgRoomListItem"]')
     expect(item.attributes('data-batch-mode')).toBe('true')
     expect(item.attributes('data-batch-selected')).toBe('true')
 
@@ -298,7 +298,7 @@ describe('RoomSessionList', () => {
       getItemClasses: (item: SessionItem) => ({ selected: item.roomId === '!room:2' })
     })
 
-    const items = wrapper.findAll('[data-test="HulaRoomListItem"]')
+    const items = wrapper.findAll('[data-test="TjgRoomListItem"]')
     expect(items[0].attributes('data-selected')).toBe('false')
     expect(items[1].attributes('data-selected')).toBe('true')
   })

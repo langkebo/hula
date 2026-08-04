@@ -152,11 +152,11 @@ function statusLabel(status: ServiceStatus): string {
 function statusColorVar(status: ServiceStatus): string {
   switch (status) {
     case 'active':
-      return 'var(--hula-status-online)'
+      return 'var(--tjg-status-online)'
     case 'inactive':
-      return 'var(--hula-status-offline)'
+      return 'var(--tjg-status-offline)'
     case 'connecting':
-      return 'var(--hula-status-busy)'
+      return 'var(--tjg-status-busy)'
   }
 }
 
@@ -177,50 +177,50 @@ function handleAdd(): void {
 .external-service-manager {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-3);
-  padding: var(--hula-space-4);
-  background: var(--hula-surface-panel);
-  border-radius: var(--hula-radius-md);
+  gap: var(--tjg-space-3);
+  padding: var(--tjg-space-4);
+  background: var(--tjg-surface-panel);
+  border-radius: var(--tjg-radius-md);
 }
 
 .external-service-manager__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
 }
 
 .external-service-manager__title-wrap {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
-  color: var(--hula-text-primary);
+  gap: var(--tjg-space-2);
+  color: var(--tjg-text-primary);
 }
 
 .external-service-manager__icon {
   flex-shrink: 0;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .external-service-manager__title {
   margin: 0;
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-semibold);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-semibold);
+  color: var(--tjg-text-primary);
 }
 
 .external-service-manager__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
   width: 100%;
 }
 
 .external-service-manager__info {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
   min-width: 0;
   flex: 1;
 }
@@ -228,56 +228,56 @@ function handleAdd(): void {
 .external-service-manager__name-row {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
   flex-wrap: wrap;
 }
 
 .external-service-manager__name {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
   word-break: break-all;
 }
 
 .external-service-manager__status {
   display: inline-flex;
   align-items: center;
-  gap: var(--hula-space-1);
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
+  gap: var(--tjg-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
 }
 
 .external-service-manager__status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: var(--status-color, var(--hula-status-online));
+  background-color: var(--status-color, var(--tjg-status-online));
   flex-shrink: 0;
 }
 
 .external-service-manager__status--active .external-service-manager__status-dot {
-  background-color: var(--hula-status-online);
+  background-color: var(--tjg-status-online);
 }
 
 .external-service-manager__status--inactive .external-service-manager__status-dot {
-  background-color: var(--hula-status-offline);
+  background-color: var(--tjg-status-offline);
 }
 
 .external-service-manager__status--connecting .external-service-manager__status-dot {
-  background-color: var(--hula-status-busy);
+  background-color: var(--tjg-status-busy);
 }
 
 .external-service-manager__config {
   margin: 0;
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-tertiary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-tertiary);
   word-break: break-all;
 }
 
 .external-service-manager__ops {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
   flex-shrink: 0;
 }
 </style>

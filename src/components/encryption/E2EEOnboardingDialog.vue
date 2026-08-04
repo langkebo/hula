@@ -235,7 +235,7 @@ function downloadKey() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `hula-recovery-key-${Date.now()}.txt`
+  a.download = `tjg-recovery-key-${Date.now()}.txt`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -333,7 +333,7 @@ watch(
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--hula-border-default);
+    border-top: 1px solid var(--tjg-border-default);
   }
 }
 
@@ -345,7 +345,7 @@ watch(
   display: flex;
   justify-content: center;
   margin-bottom: 16px;
-  color: var(--color-primary);
+  color: var(--tjg-color-primary-500);
 }
 
 .welcome-text {
@@ -360,7 +360,7 @@ watch(
 
   p {
     margin: 0;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     font-size: 14px;
     line-height: 1.6;
   }
@@ -377,7 +377,7 @@ watch(
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 
@@ -393,19 +393,19 @@ watch(
 
 .step-item-desc {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin-top: 2px;
 }
 
 .key-display {
-  background-color: var(--hula-encryption-surface-subtle);
+  background-color: var(--tjg-encryption-surface-subtle);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
 }
 
 :deep(.dark) .key-display {
-  background-color: var(--hula-encryption-surface-dark);
+  background-color: var(--tjg-encryption-surface-dark);
 }
 
 .key-label {
@@ -420,13 +420,13 @@ watch(
   word-break: break-all;
   line-height: 1.6;
   padding: 12px;
-  background-color: var(--hula-encryption-surface-subtle);
+  background-color: var(--tjg-encryption-surface-subtle);
   border-radius: 4px;
   margin-bottom: 12px;
 }
 
 :deep(.dark) .key-value {
-  background-color: var(--hula-encryption-surface-dark);
+  background-color: var(--tjg-encryption-surface-dark);
 }
 
 .key-actions {
@@ -463,7 +463,7 @@ watch(
 }
 
 .password-hint {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -475,7 +475,7 @@ watch(
   gap: 8px;
   padding: 32px 0;
   font-size: 14px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .spin-icon {

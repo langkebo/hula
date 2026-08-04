@@ -319,36 +319,36 @@ class PerformanceReporter {
       const labels = this.formatLabels(this.buildLabels(metric))
 
       if (metric.type === 'longtask') {
-        lines.push(`hula_longtask_duration_seconds${labels} ${metric.duration / 1000} ${timestamp}`)
+        lines.push(`tjg_longtask_duration_seconds${labels} ${metric.duration / 1000} ${timestamp}`)
       } else if (metric.type === 'page-render') {
-        lines.push(`hula_page_render_duration_seconds${labels} ${metric.value / 1000} ${timestamp}`)
+        lines.push(`tjg_page_render_duration_seconds${labels} ${metric.value / 1000} ${timestamp}`)
       } else if (metric.type === 'sdk-request') {
         lines.push(
-          `hula_sdk_manager_requests_total${this.formatLabels({
+          `tjg_sdk_manager_requests_total${this.formatLabels({
             ...this.buildLabels(metric),
             kind: 'total'
           })} ${metric.total} ${timestamp}`
         )
         lines.push(
-          `hula_sdk_manager_requests_total${this.formatLabels({
+          `tjg_sdk_manager_requests_total${this.formatLabels({
             ...this.buildLabels(metric),
             kind: 'successful'
           })} ${metric.successful} ${timestamp}`
         )
         lines.push(
-          `hula_sdk_manager_requests_total${this.formatLabels({
+          `tjg_sdk_manager_requests_total${this.formatLabels({
             ...this.buildLabels(metric),
             kind: 'failed'
           })} ${metric.failed} ${timestamp}`
         )
         lines.push(
-          `hula_sdk_manager_requests_total${this.formatLabels({
+          `tjg_sdk_manager_requests_total${this.formatLabels({
             ...this.buildLabels(metric),
             kind: 'retried'
           })} ${metric.retried} ${timestamp}`
         )
       } else {
-        lines.push(`hula_webvital_${metric.name.toLowerCase()}_seconds${labels} ${metric.value / 1000} ${timestamp}`)
+        lines.push(`tjg_webvital_${metric.name.toLowerCase()}_seconds${labels} ${metric.value / 1000} ${timestamp}`)
       }
     }
 
@@ -365,7 +365,7 @@ class PerformanceReporter {
 
   private buildLabels(metric: PerformanceMetric): Record<string, string> {
     const labels: Record<string, string> = {
-      app: 'hula',
+      app: 'tjg',
       version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown'
     }
 

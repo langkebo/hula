@@ -1,4 +1,4 @@
-import type { MatrixEvent, Room } from 'matrix-js-sdk'
+import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { isMessageEventType, MatrixBurnDuration, MatrixEventType, MatrixFormat } from '@/common/matrixConstants'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
@@ -95,6 +95,16 @@ class MatrixEventService extends BaseMatrixService {
     }
 
     const client = this.getClient()
+
+    // 预检查：加密房间但 crypto 未初始化时提前失败，避免触发 SDK 发送队列阻塞
+    // （SDK 内部队列被失败事件阻塞后，后续所有发送都会报 "Event blocked by other events not yet sent"）
+    if (typeof client.isRoomEncrypted === 'function' && client.isRoomEncrypted(roomId)) {
+      const cryptoClient = client as MatrixClient & { getCrypto?: () => unknown }
+      if (typeof cryptoClient.getCrypto !== 'function' || !cryptoClient.getCrypto()) {
+        logger.error(`发送事件失败（加密房间但 crypto 未初始化）: ${roomId}/${eventType}`)
+        throw new Error('This room is configured to use encryption, but your client does not support encryption.')
+      }
+    }
 
     try {
       const response = await client.sendEvent(roomId, eventType, content)

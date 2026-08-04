@@ -68,6 +68,8 @@ describe('MatrixAccountService', () => {
     setPresence: ReturnType<typeof vi.fn>
     getAccountData: ReturnType<typeof vi.fn>
     setAccountData: ReturnType<typeof vi.fn>
+    getCapabilities: ReturnType<typeof vi.fn>
+    getThirdpartyProtocols: ReturnType<typeof vi.fn>
     http: { authedRequest: ReturnType<typeof vi.fn> }
   }
 
@@ -89,6 +91,8 @@ describe('MatrixAccountService', () => {
       setPresence: vi.fn().mockResolvedValue({}),
       getAccountData: vi.fn().mockReturnValue(null),
       setAccountData: vi.fn().mockResolvedValue(undefined),
+      getCapabilities: vi.fn().mockResolvedValue({ capabilities: { 'm.room.tombstone': { enabled: true } } }),
+      getThirdpartyProtocols: vi.fn().mockResolvedValue({ irc: { fields: ['network'] } }),
       http: { authedRequest: mockAuthedRequest }
     }
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
@@ -128,23 +132,15 @@ describe('MatrixAccountService', () => {
   describe('getCapabilities', () => {
     it('should get capabilities', async () => {
       const mockCaps = { capabilities: { 'm.room.tombstone': { enabled: true } } }
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/capabilities`, () => {
-          return HttpResponse.json(mockCaps)
-        })
-      )
+      mockClient.getCapabilities.mockResolvedValue(mockCaps)
 
       const result = await matrixAccountService.getCapabilities()
       expect(result).toEqual(mockCaps)
-      expect(mockAuthedRequest).toHaveBeenCalledWith('GET', '/capabilities')
+      expect(mockClient.getCapabilities).toHaveBeenCalled()
     })
 
     it('should return empty object on error', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/capabilities`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      mockClient.getCapabilities.mockRejectedValue(new Error('HTTP 500'))
       const result = await matrixAccountService.getCapabilities()
       expect(result).toEqual({})
     })
@@ -153,14 +149,17 @@ describe('MatrixAccountService', () => {
   describe('getThirdPartyProtocols', () => {
     it('should get third party protocols', async () => {
       const mockProtocols = { irc: { fields: ['network'] } }
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/thirdparty/protocols`, () => {
-          return HttpResponse.json(mockProtocols)
-        })
-      )
+      mockClient.getThirdpartyProtocols.mockResolvedValue(mockProtocols)
 
       const result = await matrixAccountService.getThirdPartyProtocols()
       expect(result).toEqual(mockProtocols)
+      expect(mockClient.getThirdpartyProtocols).toHaveBeenCalled()
+    })
+
+    it('should return empty object on error', async () => {
+      mockClient.getThirdpartyProtocols.mockRejectedValue(new Error('HTTP 500'))
+      const result = await matrixAccountService.getThirdPartyProtocols()
+      expect(result).toEqual({})
     })
   })
 
@@ -198,10 +197,16 @@ describe('MatrixAccountService', () => {
 
       const result = await matrixAccountService.getEventStream('from_token', 15000)
       expect(result).toEqual(mockEvents)
-      expect(mockAuthedRequest).toHaveBeenCalledWith('GET', '/events', {
-        timeout: '15000',
-        from: 'from_token'
-      })
+      expect(mockAuthedRequest).toHaveBeenCalledWith(
+        'GET',
+        '/events',
+        {
+          timeout: '15000',
+          from: 'from_token'
+        },
+        undefined,
+        undefined
+      )
     })
 
     it('should return empty object on error', async () => {

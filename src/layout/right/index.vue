@@ -2,7 +2,7 @@
   <!-- Step 2.3：视图驱动动态宽度 + 拖拽调整 + 响应式断点全屏 -->
   <main
     data-tauri-drag-region
-    class="bg-[--right-bg-color] flex flex-col min-h-0 border-l border-[--hula-border-layout-divider] relative"
+    class="bg-[--right-bg-color] flex flex-col min-h-0 border-l border-[--tjg-border-layout-divider] relative"
     :class="{
       'right-pane-animated': transitionEnabled,
       'flex-1 w-full': isRightPaneFullscreen
@@ -35,16 +35,16 @@
           <!-- 阶段 2/4：视图 ActionBar（48px），非 empty/chat/search 视图显示返回按钮 + 标题 -->
           <header
             data-tauri-drag-region
-            class="h-48px flex items-center gap-12px px-12px border-b border-[--hula-border-layout-divider] bg-[--hula-surface-panel]">
+            class="h-48px flex items-center gap-12px px-12px border-b border-[--tjg-border-layout-divider] bg-[--tjg-surface-panel]">
             <button
               type="button"
-              class="flex-center size-28px rounded-6px hover:bg-[--hula-surface-list-hover] color-[--hula-text-secondary] cursor-pointer"
+              class="flex-center size-28px rounded-6px hover:bg-[--tjg-surface-list-hover] color-[--tjg-text-secondary] cursor-pointer"
               :aria-label="t('common.back', '返回')"
               :title="t('common.back', '返回')"
               @click="handleBack">
               <svg class="size-16px"><use href="#left-bar"></use></svg>
             </button>
-            <span class="text-14px font-medium color-[--hula-text-primary] truncate">{{ viewTitle }}</span>
+            <span class="text-14px font-medium color-[--tjg-text-primary] truncate">{{ viewTitle }}</span>
           </header>
 
           <div class="flex-1 min-h-0 flex flex-col">
@@ -66,10 +66,10 @@
         <!-- 聊天界面背景图标 -->
         <div
           v-else
-          class="flex-center size-full select-none flex-col gap-16px text-[var(--text-xs)] color-[--hula-text-tertiary] bg-[--hula-surface-panel]">
+          class="flex-center size-full select-none flex-col gap-16px text-[var(--text-xs)] color-[--tjg-text-tertiary] bg-[--tjg-surface-panel]">
           <n-empty :description="t('home.chat_sidebar.empty.no_chat_selected', '未选择会话')" size="huge">
             <template #icon>
-              <svg class="size-60px opacity-50 color-[--hula-text-quaternary]">
+              <svg class="size-60px opacity-50 color-[--tjg-text-quaternary]">
                 <use href="#chat"></use>
               </svg>
             </template>
@@ -230,7 +230,7 @@ useMitt.on(MittEnum.DETAILS_SHOW, () => {
   .drag-icon {
     width: 14px;
     height: 60px;
-    background: var(--hula-surface-sidebar-selected);
+    background: var(--tjg-surface-sidebar-selected);
     border-radius: 8px 0 0 8px;
     display: flex;
     align-items: center;
@@ -239,7 +239,7 @@ useMitt.on(MittEnum.DETAILS_SHOW, () => {
     transition: opacity 0.2s ease;
 
     svg {
-      color: var(--hula-text-tertiary);
+      color: var(--tjg-text-tertiary);
       position: relative;
       right: -2px;
     }

@@ -2,8 +2,8 @@
   <div class="captcha-verify w-full">
     <!-- 已通过状态 -->
     <div v-if="internalVerified" class="flex items-center gap-8px py-6px">
-      <svg class="size-16px color-[--hula-color-success-500]"><use href="#success"></use></svg>
-      <span class="text-13px color-[--hula-color-success-500]">{{ t('captcha.verify_success') }}</span>
+      <svg class="size-16px color-[--tjg-color-success-500]"><use href="#success"></use></svg>
+      <span class="text-13px color-[--tjg-color-success-500]">{{ t('captcha.verify_success') }}</span>
     </div>
 
     <!-- 验证输入区 -->
@@ -11,7 +11,7 @@
       <div class="flex items-center gap-8px">
         <!-- 验证码图片 -->
         <div
-          class="captcha-img-wrap relative h-36px w-100px flex-shrink-0 cursor-pointer rounded-4px overflow-hidden border-(1px solid var(--hula-text-tertiary)/30)"
+          class="captcha-img-wrap relative h-36px w-100px flex-shrink-0 cursor-pointer rounded-4px overflow-hidden border-(1px solid var(--tjg-text-tertiary)/30)"
           :title="t('captcha.click_image_to_refresh')"
           @click="refresh">
           <n-image
@@ -24,12 +24,12 @@
             :img-props="{ style: 'width:100%;height:100%' }" />
           <div
             v-else-if="loading"
-            class="size-full flex items-center justify-center bg-[--hula-surface-sidebar-selected] text-12px color-[--hula-text-tertiary]">
+            class="size-full flex items-center justify-center bg-[--tjg-surface-sidebar-selected] text-12px color-[--tjg-text-tertiary]">
             ...
           </div>
           <div
             v-else
-            class="size-full flex items-center justify-center bg-[--hula-surface-sidebar-selected] text-12px color-[--hula-text-tertiary]">
+            class="size-full flex items-center justify-center bg-[--tjg-surface-sidebar-selected] text-12px color-[--tjg-text-tertiary]">
             {{ t('captcha.not_verified') }}
           </div>
         </div>
@@ -59,7 +59,7 @@
         </n-button>
       </div>
 
-      <p v-if="errorMessage" class="text-12px color-[--hula-color-danger-500] m-0">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="text-12px color-[--tjg-color-danger-500] m-0">{{ errorMessage }}</p>
     </div>
   </div>
 </template>

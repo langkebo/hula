@@ -81,13 +81,13 @@ watch(() => props.roomId, loadVisibility)
   justify-content: space-between;
   gap: 12px;
   padding: 12px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   border-radius: 8px;
 }
 
 .room-visibility-toggle__label {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-weight: 500;
 }
 
@@ -97,16 +97,16 @@ watch(() => props.roomId, loadVisibility)
   gap: 8px;
   height: 30px;
   padding: 0 12px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 16px;
-  background: var(--hula-surface-panel);
-  color: var(--hula-text-primary);
+  background: var(--tjg-surface-panel);
+  color: var(--tjg-text-primary);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover:not(:disabled) {
-    border-color: var(--hula-color-primary-500);
+    border-color: var(--tjg-color-primary-500);
   }
 
   &:disabled {
@@ -115,14 +115,14 @@ watch(() => props.roomId, loadVisibility)
   }
 
   &--public {
-    background: var(--hula-color-success-100, rgba(34, 197, 94, 0.1));
-    border-color: var(--hula-color-success-500);
-    color: var(--hula-color-success-500);
+    background: var(--tjg-color-success-100, rgba(34, 197, 94, 0.1));
+    border-color: var(--tjg-color-success-500);
+    color: var(--tjg-color-success-500);
   }
 
   &--private {
-    background: var(--hula-surface-panel);
-    color: var(--hula-text-tertiary);
+    background: var(--tjg-surface-panel);
+    color: var(--tjg-text-tertiary);
   }
 }
 

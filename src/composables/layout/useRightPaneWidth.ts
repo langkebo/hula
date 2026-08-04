@@ -21,12 +21,12 @@ export const VIEW_WIDTH_MAP: Record<RightViewType, number> = {
 /** 拖拽宽度范围 */
 const DEFAULT_MIN = 360
 const DEFAULT_MAX = 800
-const DEFAULT_STORAGE_KEY = 'hula.rightPaneWidth'
+const DEFAULT_STORAGE_KEY = 'tjg.rightPaneWidth'
 
 export interface UseRightPaneWidthOptions {
   /** 当前右侧栏视图（路由派生） */
   rightView: Ref<RightViewType>
-  /** localStorage 持久化 key，默认 'hula.rightPaneWidth' */
+  /** localStorage 持久化 key，默认 'tjg.rightPaneWidth' */
   storageKey?: string
   /** 最小宽度，默认 360 */
   min?: number
@@ -55,7 +55,7 @@ export interface UseRightPaneWidthReturn {
  * - 从 rightView 派生默认宽度（VIEW_WIDTH_MAP）
  * - 支持拖拽左边缘调整（min-max 范围内）
  * - 拖拽时禁用过渡动画，避免卡顿
- * - localStorage 按视图类型持久化（key=hula.rightPaneWidth.{viewType} 结构为 JSON 映射）
+ * - localStorage 按视图类型持久化（key=tjg.rightPaneWidth.{viewType} 结构为 JSON 映射）
  */
 export function useRightPaneWidth(options: UseRightPaneWidthOptions): UseRightPaneWidthReturn {
   const { rightView, storageKey = DEFAULT_STORAGE_KEY, min = DEFAULT_MIN, max = DEFAULT_MAX } = options

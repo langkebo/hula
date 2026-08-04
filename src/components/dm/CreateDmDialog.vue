@@ -58,7 +58,7 @@
         <n-empty v-else-if="hasSearched" :description="t('dm.create.not_found')" />
 
         <div v-else class="search-hint">
-          <n-icon size="48" color="var(--hula-text-quaternary)">
+          <n-icon size="48" color="var(--tjg-text-quaternary)">
             <svg><use href="#search" /></svg>
           </n-icon>
           <span class="text-14px text-gray-400">{{ t('dm.create.hint') }}</span>
@@ -196,8 +196,8 @@ watch(visible, (val) => {
 .search-result {
   padding: 12px;
   border-radius: 8px;
-  background: var(--hula-surface-panel);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-panel);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .search-hint {
@@ -222,7 +222,7 @@ watch(visible, (val) => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 </style>

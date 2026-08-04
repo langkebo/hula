@@ -61,7 +61,7 @@ export const useEditorDom = (options: UseEditorDomOptions) => {
       const spanNode = document.createElement('span')
       spanNode.id = 'aitSpan'
       spanNode.contentEditable = 'false'
-      spanNode.classList.add('text-[--hula-brand]')
+      spanNode.classList.add('text-[--tjg-brand]')
       spanNode.classList.add('select-none')
       spanNode.classList.add('cursor-default')
       spanNode.style.userSelect = 'text'
@@ -363,7 +363,7 @@ export const useEditorDom = (options: UseEditorDomOptions) => {
       contentBox = document.createElement('span')
       contentBox.style.cssText = `
       font-size: 12px;
-      color: var(--hula-text-primary);
+      color: var(--tjg-text-primary);
       cursor: default;
       width: fit-content;
       max-width: 350px;

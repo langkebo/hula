@@ -6,7 +6,7 @@
       </svg>
       <div
         v-show="props.msgCount ? (props.msgCount > 0 ? true : false) : false"
-        class="rounded-15px flex items-center bg-[--hula-color-primary-100] px-7px text-14px min-h-20px">
+        class="rounded-15px flex items-center bg-[--tjg-color-primary-100] px-7px text-14px min-h-20px">
         {{ formattedMsgCount }}
       </div>
     </div>
@@ -28,7 +28,7 @@
     </div>
   </div>
 
-  <div v-if="props.border" class="h-1px bg-[--hula-border-layout-divider]"></div>
+  <div v-if="props.border" class="h-1px bg-[--tjg-border-layout-divider]"></div>
 </template>
 
 <script setup lang="ts">

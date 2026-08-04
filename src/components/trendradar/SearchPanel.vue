@@ -80,7 +80,7 @@ const handleNewsClick = (news: TrendRadarNews) => {
 .search-panel__search-icon {
   width: 14px;
   height: 14px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .search-panel__results {
@@ -95,7 +95,7 @@ const handleNewsClick = (news: TrendRadarNews) => {
   justify-content: center;
   gap: 8px;
   padding: 40px 20px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-size: 13px;
 }
 

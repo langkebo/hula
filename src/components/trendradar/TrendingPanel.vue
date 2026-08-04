@@ -67,10 +67,10 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 
 <style scoped>
 .trending-panel {
-  background: var(--hula-surface-elevated);
+  background: var(--tjg-surface-elevated);
   border-radius: 8px;
   padding: 12px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .trending-panel__header {
@@ -79,19 +79,19 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   gap: 8px;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--hula-border-default);
+  border-bottom: 1px solid var(--tjg-border-default);
 }
 
 .trending-panel__icon {
   width: 18px;
   height: 18px;
-  color: var(--color-primary);
+  color: var(--tjg-color-primary-500);
 }
 
 .trending-panel__title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .trending-panel__list {
@@ -111,7 +111,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 }
 
 .trending-panel__item:hover {
-  background: var(--hula-surface-list-hover);
+  background: var(--tjg-surface-list-hover);
 }
 
 .trending-panel__rank {
@@ -122,15 +122,15 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: var(--hula-text-secondary);
-  background: var(--hula-surface-list-hover);
+  color: var(--tjg-text-secondary);
+  background: var(--tjg-surface-list-hover);
   border-radius: 4px;
   flex-shrink: 0;
 }
 
 .trending-panel__rank--hot {
-  background: linear-gradient(135deg, var(--hula-color-danger-400), var(--hula-color-danger-500));
-  color: var(--hula-text-inverse);
+  background: linear-gradient(135deg, var(--tjg-color-danger-400), var(--tjg-color-danger-500));
+  color: var(--tjg-text-inverse);
 }
 
 .trending-panel__content {
@@ -140,7 +140,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 
 .trending-panel__topic-name {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -155,12 +155,12 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 
 .trending-panel__hot-value {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .trending-panel__category {
   font-size: 11px;
-  color: var(--color-primary);
+  color: var(--tjg-color-primary-500);
   background: var(--color-primary-active);
   padding: 1px 6px;
   border-radius: 4px;
@@ -173,11 +173,11 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
 }
 
 .trending-panel__trend--up {
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 
 .trending-panel__trend--down {
-  color: var(--hula-color-success-500);
+  color: var(--tjg-color-success-500);
 }
 
 .trending-panel__loading,
@@ -187,7 +187,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   justify-content: center;
   gap: 8px;
   padding: 20px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-size: 12px;
 }
 

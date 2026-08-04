@@ -5,11 +5,11 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiProviderConfig')
 
-export type AIProvider = 'hula' | 'siliconflow' | 'trendradar'
+export type AIProvider = 'tjg' | 'siliconflow' | 'trendradar'
 
 const STORAGE_KEYS = {
-  AI_PROVIDER: 'hula-chat-ai-provider',
-  TRENDRADAR_CONFIG: 'hula-chat-trendradar-config'
+  AI_PROVIDER: 'tjg-chat-ai-provider',
+  TRENDRADAR_CONFIG: 'tjg-chat-trendradar-config'
 }
 
 interface UseAiProviderConfigOptions {
@@ -20,7 +20,7 @@ interface UseAiProviderConfigOptions {
 export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
   const { fetchModelList, modelList } = options
 
-  const aiProvider = ref<AIProvider>('hula')
+  const aiProvider = ref<AIProvider>('tjg')
 
   const siliconFlowConfig = ref({
     apiKey: '',
@@ -49,7 +49,7 @@ export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
   const loadSavedConfig = () => {
     try {
       const savedProvider = localStorage.getItem(STORAGE_KEYS.AI_PROVIDER)
-      if (savedProvider && ['hula', 'siliconflow', 'trendradar'].includes(savedProvider)) {
+      if (savedProvider && ['tjg', 'siliconflow', 'trendradar'].includes(savedProvider)) {
         aiProvider.value = savedProvider as AIProvider
       }
 

@@ -235,11 +235,11 @@ defineExpose({
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
   border-radius: 16px;
-  box-shadow: var(--hula-shadow-card);
+  box-shadow: var(--tjg-shadow-card);
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .new-message-badge {
@@ -251,12 +251,12 @@ defineExpose({
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: var(--color-primary);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-primary-500);
+  color: var(--tjg-text-inverse);
   border-radius: 16px;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: var(--hula-shadow-card-hover);
+  box-shadow: var(--tjg-shadow-card-hover);
   transition: transform 0.2s;
 
   &:hover {

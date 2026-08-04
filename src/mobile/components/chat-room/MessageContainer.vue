@@ -194,7 +194,7 @@ defineExpose({
 <style scoped>
 .message-container {
   position: relative;
-  background-color: var(--color-bg-primary, var(--hula-surface-panel));
+  background-color: var(--color-bg-primary, var(--tjg-surface-panel));
 }
 
 .message-scroll-container {
@@ -221,7 +221,7 @@ defineExpose({
   justify-content: center;
   align-items: center;
   padding: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   font-size: 12px;
 }
 
@@ -241,11 +241,11 @@ defineExpose({
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  background: var(--hula-color-primary-500, var(--hula-brand));
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-primary-500, var(--tjg-brand));
+  color: var(--tjg-text-inverse);
   border-radius: 20px;
   font-size: 12px;
-  box-shadow: var(--hula-shadow-card-hover);
+  box-shadow: var(--tjg-shadow-card-hover);
   cursor: pointer;
   z-index: 10;
 }

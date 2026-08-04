@@ -51,5 +51,8 @@
   },
   "url_preview": {
     "loading": "Loading preview..."
+  },
+  "crypto_unavailable": {
+    "message": "Encryption is not ready. Messages in this room cannot be sent. Please re-login or contact the administrator."
   }
 }

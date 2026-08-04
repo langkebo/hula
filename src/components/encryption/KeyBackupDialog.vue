@@ -23,7 +23,7 @@
               <n-flex align="center" :size="12">
                 <n-icon
                   size="24"
-                  :color="backupStatus.hasBackup ? 'var(--hula-color-success-500)' : 'var(--hula-color-warning-500)'">
+                  :color="backupStatus.hasBackup ? 'var(--tjg-color-success-500)' : 'var(--tjg-color-warning-500)'">
                   <svg><use :href="backupStatus.hasBackup ? '#check-circle' : '#warning'" /></svg>
                 </n-icon>
                 <n-flex vertical :size="4">
@@ -586,28 +586,28 @@ watch(visible, (val) => {
 
   :deep(.n-card__footer) {
     padding: 12px 20px;
-    border-top: 1px solid var(--hula-border-default);
+    border-top: 1px solid var(--tjg-border-default);
   }
 }
 
 .status-card {
   padding: 16px;
   border-radius: 8px;
-  background: var(--hula-surface-panel);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-panel);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .version-section {
   padding: 12px;
   border-radius: 8px;
-  background: var(--hula-surface-panel);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-panel);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .section-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -616,15 +616,15 @@ watch(visible, (val) => {
 .version-item {
   padding: 8px 10px;
   border-radius: 6px;
-  background: var(--hula-surface-raised);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-raised);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .recovery-key-display {
   padding: 12px 16px;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   border-radius: 8px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   word-break: break-all;
   font-family: monospace;
   font-size: 14px;

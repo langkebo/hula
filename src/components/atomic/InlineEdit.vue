@@ -180,13 +180,13 @@ watch(
 
 .inline-edit__label {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .inline-edit__toggle {
   background: transparent;
   border: none;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   font-size: 12px;
   cursor: pointer;
   padding: 2px 6px;
@@ -194,7 +194,7 @@ watch(
   transition: background 0.15s;
 
   &:hover {
-    background: var(--hula-color-primary-50, rgba(59, 130, 246, 0.08));
+    background: var(--tjg-color-primary-50, rgba(59, 130, 246, 0.08));
   }
 
   &:disabled {
@@ -205,9 +205,9 @@ watch(
 
 .inline-edit__value {
   font-size: 14px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   padding: 6px 8px;
-  background: var(--hula-surface-input, rgba(0, 0, 0, 0.04));
+  background: var(--tjg-surface-input, rgba(0, 0, 0, 0.04));
   border-radius: 6px;
   min-height: 32px;
   display: flex;
@@ -216,7 +216,7 @@ watch(
 }
 
 .inline-edit__value--placeholder {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .inline-edit__editor {
@@ -235,20 +235,20 @@ watch(
   height: 32px;
   padding: 0 10px;
   font-size: 14px;
-  color: var(--hula-text-primary);
-  background: var(--hula-surface-panel);
-  border: 1px solid var(--hula-color-primary-500);
+  color: var(--tjg-text-primary);
+  background: var(--tjg-surface-panel);
+  border: 1px solid var(--tjg-color-primary-500);
   border-radius: 6px;
   outline: none;
   transition: border-color 0.15s;
 
   &::placeholder {
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 
   &:focus {
-    border-color: var(--hula-color-primary-500);
-    box-shadow: 0 0 0 2px var(--hula-color-primary-100, rgba(59, 130, 246, 0.15));
+    border-color: var(--tjg-color-primary-500);
+    box-shadow: 0 0 0 2px var(--tjg-color-primary-100, rgba(59, 130, 246, 0.15));
   }
 
   &:disabled {
@@ -275,15 +275,15 @@ watch(
   height: 32px;
   padding: 0 12px;
   font-size: 12px;
-  color: var(--hula-text-inverse);
-  background: var(--hula-color-primary-500);
+  color: var(--tjg-text-inverse);
+  background: var(--tjg-color-primary-500);
   border: none;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s;
 
   &:hover:not(:disabled) {
-    background: var(--hula-color-primary-600, var(--hula-color-primary-500));
+    background: var(--tjg-color-primary-600, var(--tjg-color-primary-500));
   }
 
   &:disabled {

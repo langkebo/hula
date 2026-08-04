@@ -1,5 +1,14 @@
 <template>
   <div class="create-room-pane flex-1 min-h-0 flex flex-col">
+    <!-- 顶部标题栏 -->
+    <div
+      class="pane-header flex items-center justify-between px-20px py-12px border-b border-[--tjg-border-layout-divider]">
+      <span class="pane-title">{{ t('room.create.title') }}</span>
+      <n-button text @click="handleClose">
+        <svg class="size-16px"><use href="#close"></use></svg>
+      </n-button>
+    </div>
+
     <!-- 草稿恢复提示 -->
     <Transition name="hint-fade">
       <div v-if="showRestoredHint" class="create-room-pane__hint" role="status" aria-live="polite">
@@ -29,10 +38,13 @@
             :placeholder="t('room.create.topic_placeholder')" />
         </n-form-item>
 
-        <n-form-item :label="t('room.create.avatar')" path="avatarUrl">
-          <n-upload :max="1" accept="image/*" :custom-request="handleAvatarUpload" :show-file-list="false">
-            <n-avatar round :size="64" :src="formData.avatarUrl || defaultAvatar" class="cursor-pointer" />
-          </n-upload>
+        <n-form-item path="avatarUrl">
+          <span class="avatar-label">{{ t('room.create.avatar') }}</span>
+          <div class="avatar-preview">
+            <n-upload :max="1" accept="image/*" :custom-request="handleAvatarUpload" :show-file-list="false">
+              <n-avatar round :size="64" :src="formData.avatarUrl || defaultAvatar" class="cursor-pointer" />
+            </n-upload>
+          </div>
         </n-form-item>
 
         <n-form-item :label="t('room.create.type')" path="roomType">
@@ -42,11 +54,11 @@
             <n-radio value="space">{{ t('room.create.space') }}</n-radio>
           </n-radio-group>
         </n-form-item>
-        <div class="text-12px color-[--hula-text-tertiary] mb-16px">{{ t('room.create.room_type_hint') }}</div>
+        <div class="text-12px color-[--tjg-text-tertiary] mb-16px">{{ t('room.create.room_type_hint') }}</div>
 
         <n-form-item :label="t('room.create.encryption')" path="isEncrypted">
           <n-switch v-model:value="formData.isEncrypted" />
-          <span class="text-12px color-[--hula-text-tertiary] ml-12px">{{ t('room.create.encryption_hint') }}</span>
+          <span class="text-12px color-[--tjg-text-tertiary] ml-12px">{{ t('room.create.encryption_hint') }}</span>
         </n-form-item>
 
         <n-form-item :label="t('room.create.history')" path="historyVisibility">
@@ -67,7 +79,7 @@
 
     <!-- 阶段 2: 邀请成员（可选） -->
     <div v-else-if="stage === 'invite'" class="flex-1 min-h-0 flex flex-col px-20px py-16px">
-      <p class="text-14px color-[--hula-text-secondary] mb-16px">{{ t('room.create.invite_desc') }}</p>
+      <p class="text-14px color-[--tjg-text-secondary] mb-16px">{{ t('room.create.invite_desc') }}</p>
       <n-input
         v-model:value="inviteInput"
         :placeholder="t('room.create.invite_placeholder')"
@@ -77,8 +89,9 @@
 
     <!-- 底部操作栏 -->
     <div
-      class="create-room-pane__footer flex items-center justify-end gap-12px px-20px py-12px border-t border-[--hula-border-layout-divider]">
+      class="create-room-pane__footer flex items-center justify-end gap-12px px-20px py-12px border-t border-[--tjg-border-layout-divider]">
       <template v-if="stage === 'create'">
+        <n-button @click="handleClose">{{ t('room.create.cancel') }}</n-button>
         <n-button type="primary" :loading="creating" @click="handleCreate">
           {{ t('room.create.create') }}
         </n-button>
@@ -108,6 +121,8 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('CreateRoomPane')
 const RESTORED_HINT_DURATION = 3000
 
+const emit = defineEmits<(e: 'close') => void>()
+
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const draftStore = useRightViewDraftStore()
@@ -116,6 +131,10 @@ const creating = ref(false)
 const inviting = ref(false)
 const defaultAvatar = '/logoD.png'
 const serverDomain = ref('matrix.org')
+
+const handleClose = () => {
+  emit('close')
+}
 
 /** 流程阶段：create（创建） → invite（邀请成员，可选） */
 const stage = ref<'create' | 'invite'>('create')
@@ -300,7 +319,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .create-room-pane {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .create-room-pane__hint {
@@ -308,10 +327,10 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 20px;
-  background: var(--hula-color-primary-50, rgba(59, 130, 246, 0.08));
-  color: var(--hula-color-primary-600, var(--hula-color-primary-500));
+  background: var(--tjg-color-primary-50, rgba(59, 130, 246, 0.08));
+  color: var(--tjg-color-primary-600, var(--tjg-color-primary-500));
   font-size: 12px;
-  border-bottom: 1px solid var(--hula-color-primary-100, rgba(59, 130, 246, 0.15));
+  border-bottom: 1px solid var(--tjg-color-primary-100, rgba(59, 130, 246, 0.15));
 }
 
 .hint-fade-enter-active,

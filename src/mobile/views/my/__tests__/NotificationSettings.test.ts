@@ -131,21 +131,21 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     const vm = wrapper.vm as any
     vm.handlePushToggle(true)
-    expect(localStorage.getItem('hula-push-notifications')).toBe('true')
+    expect(localStorage.getItem('tjg-push-notifications')).toBe('true')
   })
 
   it('saves email notifications to localStorage', () => {
     const wrapper = mount(NotificationSettings)
     const vm = wrapper.vm as any
     vm.handleEmailToggle(true)
-    expect(localStorage.getItem('hula-email-notifications')).toBe('true')
+    expect(localStorage.getItem('tjg-email-notifications')).toBe('true')
   })
 
   it('saves encrypted room notifications to localStorage', () => {
     const wrapper = mount(NotificationSettings)
     const vm = wrapper.vm as any
     vm.handleEncryptedRoomToggle(true)
-    expect(localStorage.getItem('hula-encrypted-room-notifications')).toBe('true')
+    expect(localStorage.getItem('tjg-encrypted-room-notifications')).toBe('true')
   })
 
   it('saves push rules on handleSave', async () => {

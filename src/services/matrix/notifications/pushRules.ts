@@ -2,7 +2,7 @@
  * §9.2.5 推送规则扩展
  *
  * 判断事件类型是否应触发本地推送通知。覆盖 Matrix 核心事件类型
- * 以及 HuLa 扩展事件（好友请求、Widget 事件、AI 工具调用结果）。
+ * 以及 Tjg 扩展事件（好友请求、Widget 事件、AI 工具调用结果）。
  *
  * 纯函数实现，不依赖 MatrixClient，便于测试与复用。
  */
@@ -45,7 +45,7 @@ const NOTIFY_EVENT_TYPES = new Set<string>([...CORE_NOTIFY_EVENT_TYPES, ...EXTEN
  *
  * 大小写不敏感。
  *
- * @param eventType Matrix/HuLa 事件类型字符串
+ * @param eventType Matrix/Tjg 事件类型字符串
  */
 export function shouldNotifyForEventType(eventType: string): boolean {
   if (!eventType) return false

@@ -10,7 +10,7 @@ interface SlidingSyncUnreadCounts {
 }
 
 /**
- * 将 SDK 的 Room 对象转换为 Hula 内部的 RoomInfo 格式
+ * 将 SDK 的 Room 对象转换为 Tjg 内部的 RoomInfo 格式
  */
 function convertRoomToRoomInfo(room: Room, isEncrypted: boolean) {
   const timeline = room.getLiveTimeline().getEvents()
@@ -86,7 +86,7 @@ function isDisplayableMessageEvent(event: MatrixEvent): boolean {
 }
 
 /**
- * 将 SDK 的 MatrixEvent 转换为 Hula 内部的 MessageType 格式
+ * 将 SDK 的 MatrixEvent 转换为 Tjg 内部的 MessageType 格式
  */
 function convertMatrixEventToMessage(event: MatrixEvent): MessageType {
   const content = event.getContent()
@@ -120,14 +120,14 @@ function convertMatrixEventToMessage(event: MatrixEvent): MessageType {
 }
 
 /**
- * 将 SDK 的 MatrixEvent 数组转换为 Hula 内部的 MessageType 数组
+ * 将 SDK 的 MatrixEvent 数组转换为 Tjg 内部的 MessageType 数组
  */
 function convertMatrixEventsToMessages(events: MatrixEvent[]): MessageType[] {
   return events.filter(isDisplayableMessageEvent).map(convertMatrixEventToMessage)
 }
 
 /**
- * 将滑动同步的时间线事件转换为 Hula 内部的 MessageType 格式
+ * 将滑动同步的时间线事件转换为 Tjg 内部的 MessageType 格式
  */
 function convertTimelineEventToMessage(roomId: string, event: Record<string, unknown>): MessageType {
   const content = (event.content ?? {}) as Record<string, unknown>

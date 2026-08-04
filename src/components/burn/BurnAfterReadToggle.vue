@@ -77,18 +77,18 @@ function selectDuration(seconds: number) {
   border-radius: 6px;
   background: transparent;
   cursor: pointer;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   transition: all 0.2s;
 }
 
 .burn-toggle-btn:hover {
-  background: var(--hula-surface-list-hover);
-  color: var(--hula-text-primary);
+  background: var(--tjg-surface-list-hover);
+  color: var(--tjg-text-primary);
 }
 
 .burn-toggle-btn--active {
-  background: color-mix(in srgb, var(--hula-color-danger-500) 15%, transparent);
-  color: var(--hula-color-danger-500);
+  background: color-mix(in srgb, var(--tjg-color-danger-500) 15%, transparent);
+  color: var(--tjg-color-danger-500);
 }
 
 .burn-toggle-icon {
@@ -100,8 +100,8 @@ function selectDuration(seconds: number) {
   display: flex;
   gap: 2px;
   padding: 2px;
-  background: var(--hula-surface-elevated);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-elevated);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 6px;
 }
 
@@ -110,18 +110,18 @@ function selectDuration(seconds: number) {
   border: none;
   border-radius: 4px;
   background: transparent;
-  font-size: var(--hula-text-xs);
-  color: var(--hula-text-secondary);
+  font-size: var(--tjg-text-xs);
+  color: var(--tjg-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .burn-duration-btn:hover {
-  background: var(--hula-surface-list-hover);
+  background: var(--tjg-surface-list-hover);
 }
 
 .burn-duration-btn--selected {
-  background: var(--hula-color-primary-500);
+  background: var(--tjg-color-primary-500);
   color: white;
 }
 </style>

@@ -18,9 +18,7 @@ describe('MatrixTokenManager', () => {
     ({
       getUserId: () => '@user:example.com',
       setAccessToken: vi.fn(),
-      http: {
-        request: vi.fn()
-      },
+      refreshToken: vi.fn(),
       ...overrides
     }) as unknown as import('matrix-js-sdk').MatrixClient
 
@@ -70,13 +68,11 @@ describe('MatrixTokenManager', () => {
 
   it('persists refreshed token on success', async () => {
     const client = createMockClient({
-      http: {
-        request: vi.fn().mockResolvedValue({
-          access_token: 'at2',
-          refresh_token: 'rt2',
-          expires_in_ms: 7200000
-        })
-      }
+      refreshToken: vi.fn().mockResolvedValue({
+        access_token: 'at2',
+        refresh_token: 'rt2',
+        expires_in_ms: 7200000
+      })
     })
     manager.schedule(client, 'rt1', 120000)
 
@@ -86,13 +82,13 @@ describe('MatrixTokenManager', () => {
   })
 
   it('refresh 成功后更新活跃客户端的 access token', async () => {
-    const request = vi.fn().mockResolvedValue({
+    const refreshToken = vi.fn().mockResolvedValue({
       access_token: 'at-new',
       refresh_token: 'rt-new',
       expires_in_ms: 3600000
     })
     const setAccessToken = vi.fn()
-    const client = createMockClient({ http: { request }, setAccessToken })
+    const client = createMockClient({ refreshToken, setAccessToken })
 
     manager.schedule(client, 'rt-old', 120000)
     await vi.advanceTimersByTimeAsync(60000)
@@ -103,9 +99,7 @@ describe('MatrixTokenManager', () => {
 
   it('clears on 404 (server does not support refresh)', async () => {
     const client = createMockClient({
-      http: {
-        request: vi.fn().mockRejectedValue({ httpStatus: 404 })
-      }
+      refreshToken: vi.fn().mockRejectedValue({ httpStatus: 404 })
     })
     manager.schedule(client, 'rt1', 120000)
 
@@ -117,9 +111,7 @@ describe('MatrixTokenManager', () => {
 
   it('reschedules on 429 with 30s delay', async () => {
     const client = createMockClient({
-      http: {
-        request: vi.fn().mockRejectedValue({ httpStatus: 429 })
-      }
+      refreshToken: vi.fn().mockRejectedValue({ httpStatus: 429 })
     })
     manager.schedule(client, 'rt1', 120000)
 
@@ -135,9 +127,7 @@ describe('MatrixTokenManager', () => {
 
   it('triggers logout on fatal refresh errors', async () => {
     const client = createMockClient({
-      http: {
-        request: vi.fn().mockRejectedValue({ httpStatus: 401, errcode: 'M_UNKNOWN_TOKEN' })
-      }
+      refreshToken: vi.fn().mockRejectedValue({ httpStatus: 401, errcode: 'M_UNKNOWN_TOKEN' })
     })
     manager.schedule(client, 'rt1', 120000)
 
@@ -147,8 +137,8 @@ describe('MatrixTokenManager', () => {
   })
 
   it('网络错误(无 httpStatus)时安排 30s 重试且不登出', async () => {
-    const request = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
-    const client = createMockClient({ http: { request } })
+    const refreshToken = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const client = createMockClient({ refreshToken })
 
     manager.schedule(client, 'rt1', 120000)
     await vi.advanceTimersByTimeAsync(60000)
@@ -158,20 +148,20 @@ describe('MatrixTokenManager', () => {
   })
 
   it('schedule 只按毫秒解释 expiresInMs(不再把小值当秒)', async () => {
-    const request = vi.fn().mockResolvedValue({ access_token: 'x' })
-    const client = createMockClient({ http: { request }, setAccessToken: vi.fn() })
+    const refreshToken = vi.fn().mockResolvedValue({ access_token: 'x' })
+    const client = createMockClient({ refreshToken, setAccessToken: vi.fn() })
 
     // 600ms 的过期时间 → refreshAt = max(600-60000, 30000) = 30000
     manager.schedule(client, 'rt1', 600)
     await vi.advanceTimersByTimeAsync(29999)
-    expect(request).not.toHaveBeenCalled()
+    expect(refreshToken).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(1)
-    expect(request).toHaveBeenCalledTimes(1)
+    expect(refreshToken).toHaveBeenCalledTimes(1)
   })
 
   it('401(token 失效)仍触发登出清理', async () => {
-    const request = vi.fn().mockRejectedValue(Object.assign(new Error('unknown token'), { httpStatus: 401 }))
-    const client = createMockClient({ http: { request } })
+    const refreshToken = vi.fn().mockRejectedValue(Object.assign(new Error('unknown token'), { httpStatus: 401 }))
+    const client = createMockClient({ refreshToken })
 
     manager.schedule(client, 'rt1', 120000)
     await vi.advanceTimersByTimeAsync(60000)

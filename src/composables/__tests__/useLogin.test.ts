@@ -221,7 +221,7 @@ describe('useLoginFlow', () => {
       password: 'secret',
       homeserverUrl: 'https://matrix.example.com',
       identityServerUrl: 'https://identity.example.com',
-      deviceName: 'HuLa Client',
+      deviceName: 'Tjg Client',
       account: 'alice',
       displayName: 'Alice',
       avatar: 'mxc://avatar',

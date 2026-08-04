@@ -9,7 +9,7 @@
     <n-flex
       vertical
       :size="20"
-      :style="`background: linear-gradient(to bottom, ${statusBgColor} 0%, var(--hula-surface-panel) 100%)`"
+      :style="`background: linear-gradient(to bottom, ${statusBgColor} 0%, var(--tjg-surface-panel) 100%)`"
       class="p-20px box-border rounded-8px">
       <!-- 当前选中的状态 -->
       <n-flex justify="center" align="center" class="py-10px">
@@ -21,7 +21,7 @@
       <n-scrollbar style="max-height: 250px">
         <n-flex align="center" :size="10">
           <n-flex @click="handleResetState" vertical justify="center" align="center" :size="8" class="status-item">
-            <svg class="size-24px color-[--hula-color-danger-500]">
+            <svg class="size-24px color-[--tjg-color-danger-500]">
               <use href="#forbid"></use>
             </svg>
             <span class="text-11px">{{ t('auth.onlineStatus.reset_title') }}</span>
@@ -111,12 +111,12 @@ const handleActive = async (item: UserState) => {
   transition: all 0.2s;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 
   &.active {
-    background: var(--hula-surface-session-active);
-    color: var(--hula-text-inverse);
+    background: var(--tjg-surface-session-active);
+    color: var(--tjg-text-inverse);
   }
 }
 </style>

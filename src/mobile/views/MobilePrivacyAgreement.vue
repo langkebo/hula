@@ -11,7 +11,7 @@
       <!-- 协议内容 -->
       <div class="agreement-content">
         <div class="agreement-header">
-          <h1>HuLa隐私保护指引</h1>
+          <h1>Tjg隐私保护指引</h1>
           <p class="update-time">更新时间：2025年9月3日</p>
         </div>
 
@@ -19,7 +19,7 @@
           <section>
             <h2>引言</h2>
             <p>
-              HuLa（以下简称"我们"）深知个人信息对您的重要性，并会尽全力保护您的个人信息安全可靠。我们致力于维持您对我们的信任，恪守以下原则，保护您的个人信息：权责一致原则、目的明确原则、选择同意原则、最少够用原则、确保安全原则、主体参与原则、公开透明原则等。同时，我们承诺，我们将按业界成熟的安全标准，采取相应的安全保护措施来保护您的个人信息。
+              Tjg（以下简称"我们"）深知个人信息对您的重要性，并会尽全力保护您的个人信息安全可靠。我们致力于维持您对我们的信任，恪守以下原则，保护您的个人信息：权责一致原则、目的明确原则、选择同意原则、最少够用原则、确保安全原则、主体参与原则、公开透明原则等。同时，我们承诺，我们将按业界成熟的安全标准，采取相应的安全保护措施来保护您的个人信息。
             </p>
             <p>请在使用我们的产品（或服务）前，仔细阅读并了解本《隐私保护指引》。</p>
           </section>
@@ -31,9 +31,9 @@
             </p>
 
             <h3>1.1 我们收集您个人信息的情形</h3>
-            <p>（1）账号注册：当您注册HuLa账号时，我们需要收集您的手机号码、邮箱地址等信息，以便为您创建账号。</p>
+            <p>（1）账号注册：当您注册Tjg账号时，我们需要收集您的手机号码、邮箱地址等信息，以便为您创建账号。</p>
             <p>（2）身份验证：为了确保账号安全，我们可能需要您提供身份证明文件进行实名认证。</p>
-            <p>（3）服务使用：在您使用HuLa服务过程中，我们会收集您的聊天记录、好友关系、群组信息等。</p>
+            <p>（3）服务使用：在您使用Tjg服务过程中，我们会收集您的聊天记录、好友关系、群组信息等。</p>
             <p>（4）设备信息：我们会收集您的设备型号、操作系统版本、设备标识符等信息，以便为您提供更好的服务体验。</p>
 
             <h3>1.2 我们如何使用您的个人信息</h3>
@@ -57,10 +57,10 @@
             <h2>三、我们如何共享、转让、公开披露您的个人信息</h2>
 
             <h3>3.1 共享</h3>
-            <p>我们不会与HuLa以外的公司、组织和个人共享您的个人信息，但以下情况除外：</p>
+            <p>我们不会与Tjg以外的公司、组织和个人共享您的个人信息，但以下情况除外：</p>
             <p>（1）事先获得您明确的同意或授权；</p>
             <p>（2）根据适用的法律法规、法律程序的要求、强制性的政府要求或司法裁定；</p>
-            <p>（3）在法律要求或允许的范围内，为了保护HuLa、HuLa用户或公众的权利、财产或安全免遭损害；</p>
+            <p>（3）在法律要求或允许的范围内，为了保护Tjg、Tjg用户或公众的权利、财产或安全免遭损害；</p>
             <p>（4）与我们的关联公司共享：我们可能会与我们的关联公司共享您的个人信息。</p>
 
             <h3>3.2 转让</h3>
@@ -173,7 +173,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -190,13 +190,13 @@
     h1 {
       font-size: 24px;
       font-weight: bold;
-      color: var(--hula-text-primary);
+      color: var(--tjg-text-primary);
       margin-bottom: 10px;
     }
 
     .update-time {
       font-size: 14px;
-      color: var(--hula-text-secondary);
+      color: var(--tjg-text-secondary);
     }
   }
 
@@ -211,23 +211,23 @@
       h2 {
         font-size: 18px;
         font-weight: bold;
-        color: var(--hula-text-primary);
+        color: var(--tjg-text-primary);
         width: fit-content;
         margin-bottom: 15px;
-        border-bottom: 2px solid color-mix(in srgb, var(--hula-brand) 56%, transparent);
+        border-bottom: 2px solid color-mix(in srgb, var(--tjg-brand) 56%, transparent);
         padding-bottom: 5px;
       }
 
       h3 {
         font-size: 16px;
         font-weight: bold;
-        color: var(--hula-text-primary);
+        color: var(--tjg-text-primary);
         margin: 15px 0 10px 0;
       }
 
       p {
         font-size: 14px;
-        color: var(--hula-text-secondary);
+        color: var(--tjg-text-secondary);
         margin-bottom: 10px;
         text-indent: 2em;
       }
@@ -246,17 +246,17 @@
 }
 
 .agreement-content::-webkit-scrollbar-thumb {
-  background: var(--hula-text-disabled);
+  background: var(--tjg-text-disabled);
   border-radius: 3px;
 }
 
 .agreement-content::-webkit-scrollbar-thumb:hover {
-  background: var(--hula-text-tertiary);
+  background: var(--tjg-text-tertiary);
 }
 
 :deep(.action-close) {
   svg {
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 }
 </style>

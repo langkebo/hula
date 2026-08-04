@@ -3,30 +3,30 @@
     <!-- 位置图标和标题 -->
     <n-flex align="center" justify="space-between" class="pb-8px">
       <div class="flex-y-center gap-8px">
-        <svg class="size-14px color-[--hula-color-warning-400]">
+        <svg class="size-14px color-[--tjg-color-warning-400]">
           <use href="#local"></use>
         </svg>
-        <p class="text-14px font-medium color-[--hula-text-primary]">{{ t('chat.beacon.live_location') }}</p>
+        <p class="text-14px font-medium color-[--tjg-text-primary]">{{ t('chat.beacon.live_location') }}</p>
       </div>
 
       <div class="flex-y-center gap-4px">
         <span v-if="isActive" class="status-dot active"></span>
         <span v-else class="status-dot inactive"></span>
-        <p class="text-10px" :class="isActive ? 'color-[--hula-color-primary-500]' : 'color-[--hula-text-quaternary]'">
+        <p class="text-10px" :class="isActive ? 'color-[--tjg-color-primary-500]' : 'color-[--tjg-text-quaternary]'">
           {{ isActive ? '共享中' : '已结束' }}
         </p>
       </div>
     </n-flex>
 
     <!-- 描述信息 -->
-    <div class="text-(12px [--hula-text-tertiary]) pb-8px leading-5 line-clamp-2">
+    <div class="text-(12px [--tjg-text-tertiary]) pb-8px leading-5 line-clamp-2">
       {{ body?.description || '发起了位置共享' }}
     </div>
 
     <!-- 状态面板 -->
-    <div class="relative rounded-6px overflow-hidden bg-[--hula-surface-app] h-80px flex-col-center gap-8px">
+    <div class="relative rounded-6px overflow-hidden bg-[--tjg-surface-app] h-80px flex-col-center gap-8px">
       <template v-if="isActive">
-        <p class="text-12px color-[--hula-text-secondary]">
+        <p class="text-12px color-[--tjg-text-secondary]">
           {{ t('chat.beacon.remaining_time') }} {{ remainingTimeText }}
         </p>
         <n-button size="small" type="primary" secondary @click.stop="handleJoinClick">
@@ -34,10 +34,10 @@
         </n-button>
       </template>
       <template v-else>
-        <svg class="size-24px color-[--hula-text-quaternary]">
+        <svg class="size-24px color-[--tjg-text-quaternary]">
           <use href="#time-out"></use>
         </svg>
-        <span class="text-12px color-[--hula-text-quaternary]">{{ t('chat.beacon.ended') }}</span>
+        <span class="text-12px color-[--tjg-text-quaternary]">{{ t('chat.beacon.ended') }}</span>
       </template>
     </div>
   </main>
@@ -189,9 +189,9 @@ onUnmounted(() => {
 .beacon-message {
   cursor: default;
   user-select: none;
-  @apply: w-260px flex flex-col h-fit bg-[--hula-surface-muted]
-  border-(1px solid [--hula-border-default])
-  hover:bg-[--hula-fill-hover] rounded-8px p-8px box-border
+  @apply: w-260px flex flex-col h-fit bg-[--tjg-surface-muted]
+  border-(1px solid [--tjg-border-default])
+  hover:bg-[--tjg-fill-hover] rounded-8px p-8px box-border
   custom-shadow transition-colors duration-200;
 }
 
@@ -202,13 +202,13 @@ onUnmounted(() => {
   display: inline-block;
 
   &.active {
-    background-color: var(--hula-color-primary-500);
-    box-shadow: 0 0 4px var(--hula-color-primary-500);
+    background-color: var(--tjg-color-primary-500);
+    box-shadow: 0 0 4px var(--tjg-color-primary-500);
     animation: pulse 2s infinite;
   }
 
   &.inactive {
-    background-color: var(--hula-text-quaternary);
+    background-color: var(--tjg-text-quaternary);
   }
 }
 

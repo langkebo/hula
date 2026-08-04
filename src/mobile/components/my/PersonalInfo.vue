@@ -1,6 +1,6 @@
 <template>
   <!-- 个人信息区 -->
-  <div class="flex flex-col px-16px border-b border-[--hula-border-layout-divider] pb-16px">
+  <div class="flex flex-col px-16px border-b border-[--tjg-border-layout-divider] pb-16px">
     <!-- 头像基本信息 -->
     <div ref="avatarBox" class="grid grid-cols-[64px_1fr] z-1 items-start mt-6 gap-2" style="transform: translateZ(0)">
       <!-- 头像 -->
@@ -21,14 +21,14 @@
           <span class="font-semibold text-18px">{{ userDetailInfo?.name }}</span>
           <div
             v-show="hasUserOnlineState"
-            class="bg-[--hula-color-primary-100] flex flex-wrap ps-2 px-8px items-center rounded-full gap-1 h-24px">
+            class="bg-[--tjg-color-primary-100] flex flex-wrap ps-2 px-8px items-center rounded-full gap-1 h-24px">
             <span class="w-12px h-12px rounded-15px flex items-center">
               <img
                 :src="friendUserState?.url ? friendUserState.url : currentState?.url"
                 :alt="friendUserState?.title || currentState?.title || ''"
                 class="rounded-50% size-14px" />
             </span>
-            <span class="text-bold-style" style="font-size: 12px; color: var(--hula-text-secondary)">
+            <span class="text-bold-style" style="font-size: 12px; color: var(--tjg-text-secondary)">
               {{ friendUserState?.title ? friendUserState.title : currentState?.title || '' }}
             </span>
           </div>
@@ -88,7 +88,7 @@
           round
           size="small"
           @click="handleDelete"
-          color="var(--hula-color-danger-500)"
+          color="var(--tjg-color-danger-500)"
           v-if="!props.isMyPage && isMyFriendState && !isBotUser(uid)"
           class="px-5 py-10px font-bold text-center text-12px">
           {{ t('mobile_personal_info.remove_user') }}
@@ -418,7 +418,7 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 .text-bold-style {
   font-size: 14px;
   font-family: $font-family-system, $font-family-windows, $font-family-sans;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .medal-number {
@@ -439,7 +439,7 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   margin-top: 0.5rem;
   font-size: 13px;
   font-family: $font-family-system, $font-family-windows, $font-family-sans;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .custom-rounded {

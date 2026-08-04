@@ -37,7 +37,7 @@ export function useDehydratedDevice(): UseDehydratedDeviceResult {
     loading.value = true
     try {
       const result = await matrixDehydratedDeviceService.createDevice(
-        params || { initialDeviceDisplayName: 'Hula Dehydrated Device' }
+        params || { initialDeviceDisplayName: 'Tjg Dehydrated Device' }
       )
       if (result) {
         devices.value = [...devices.value, result]

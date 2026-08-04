@@ -202,7 +202,7 @@ describe('ModerationDashboard — 审核工作台 (§8.10)', () => {
     const item = wrapper.find('[data-test="report-item"]')
     expect(item.exists()).toBe(true)
     const style = item.attributes('style') ?? ''
-    expect(style).toContain('--hula-color-danger-100')
+    expect(style).toContain('--tjg-color-danger-100')
   })
 
   it('组件有 role=region 可访问性属性', () => {

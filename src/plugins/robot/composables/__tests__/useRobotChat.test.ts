@@ -75,7 +75,7 @@ const {
       handleVideoImageUpload: vi.fn()
     })),
     useAiProviderConfigMock: vi.fn(() => ({
-      aiProvider: ref('hula'),
+      aiProvider: ref('tjg'),
       siliconFlowConfig: ref({ apiKey: '', baseUrl: 'https://api.siliconflow.cn', model: '' }),
       trendRadarConfig: ref({ apiUrl: 'http://127.0.0.1:3333/mcp', apiKey: '' }),
       isSiliconFlowConnected: ref(false),

@@ -77,6 +77,6 @@ describe('EmptyState', () => {
       props: { illustration: 'no-conversations' }
     })
     const svg = wrapper.find('[data-illustration="no-conversations"]')
-    expect(svg.attributes('stroke')).toBe('var(--hula-text-quaternary)')
+    expect(svg.attributes('stroke')).toBe('var(--tjg-text-quaternary)')
   })
 })

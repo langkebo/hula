@@ -7,11 +7,11 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave">
     <n-flex v-if="!isLoadingMore && isLast" justify="center" class="box-border absolute-x-center pt-10px">
-      <span class="text-(12px [--hula-text-tertiary])">{{ t('virtualList.allMessagesLoaded') }}</span>
+      <span class="text-(12px [--tjg-text-tertiary])">{{ t('virtualList.allMessagesLoaded') }}</span>
     </n-flex>
     <n-flex v-if="isLoadingMore && !isLast" justify="center" class="box-border absolute-x-center pt-10px">
       <img class="size-16px" src="@/assets/img/loading.svg" alt="加载中" />
-      <span class="text-(12px [--hula-text-tertiary])">{{ t('virtualList.loading') }}</span>
+      <span class="text-(12px [--tjg-text-tertiary])">{{ t('virtualList.loading') }}</span>
     </n-flex>
     <div ref="phantomRef" class="virtual-list-phantom"></div>
     <div ref="contentRef" class="virtual-list-content">
@@ -678,7 +678,7 @@ defineExpose<VirtualListExpose>({
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent);
+    background-color: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
     border-radius: 3px;
     transition-property: opacity, background-color;
     transition-duration: 0.3s;
@@ -687,7 +687,7 @@ defineExpose<VirtualListExpose>({
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background-color: color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent);
+    background-color: color-mix(in srgb, var(--tjg-text-tertiary) 50%, transparent);
   }
 
   &::-webkit-scrollbar-track {

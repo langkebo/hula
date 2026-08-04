@@ -155,7 +155,7 @@ describe('FriendGroupView', () => {
 
   it('filters groups via the shared search bar and renders unified search summary feedback', async () => {
     localStorage.setItem(
-      'hula-friend-group-search-history',
+      'tjg-friend-group-search-history',
       JSON.stringify([{ value: 'Backend', updatedAt: Date.now() }])
     )
 

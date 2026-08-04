@@ -29,7 +29,14 @@ const logRetryError = (message: string, details?: Record<string, unknown>) => {
   })
 }
 
-const { showFeedback } = useActionFeedback()
+// 延迟初始化 showFeedback，避免模块加载阶段调用 composable 触发测试 mock TDZ 问题
+let _showFeedback: ((message: string, type: 'error') => void) | null = null
+function getShowFeedback() {
+  if (_showFeedback === null) {
+    _showFeedback = useActionFeedback().showFeedback as (message: string, type: 'error') => void
+  }
+  return _showFeedback
+}
 
 export class AppException extends Error {
   public readonly type: ErrorType
@@ -50,7 +57,7 @@ export class AppException extends Error {
       } else {
         // 先设置标志位再显示反馈，避免同一事件循环中重复弹窗的竞态条件
         AppException.hasShownError = true
-        showFeedback(message, 'error')
+        getShowFeedback()(message, 'error')
 
         // 2 秒内不再显示重复的错误消息
         setTimeout(() => {

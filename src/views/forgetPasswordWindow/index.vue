@@ -8,7 +8,7 @@
     <n-flex vertical class="w-full size-full">
       <!-- 标题 -->
       <n-flex justify="center" class="w-full">
-        <p class="text-(18px [--hula-text-primary]) select-none">{{ t('auth.forget.title') }}</p>
+        <p class="text-(18px [--tjg-text-primary]) select-none">{{ t('auth.forget.title') }}</p>
       </n-flex>
 
       <!-- 步骤条 -->
@@ -25,7 +25,7 @@
           <n-form-item path="email" :label="t('auth.forget.form.email_label')">
             <n-input
               :allow-input="noSideSpace"
-              class="border-(1px solid var(--hula-text-tertiary)/80) no-indent-input w-300px!"
+              class="border-(1px solid var(--tjg-text-tertiary)/80) no-indent-input w-300px!"
               v-model:value="formData.email"
               :placeholder="t('auth.forget.form.email_placeholder')"
               spellCheck="false"
@@ -40,7 +40,7 @@
             <n-flex :size="8" align="center">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid var(--hula-text-tertiary)/80) no-indent-input w-160px!"
+                class="border-(1px solid var(--tjg-text-tertiary)/80) no-indent-input w-160px!"
                 v-model:value="formData.captchaCode"
                 :placeholder="t('auth.forget.form.captcha_placeholder')"
                 spellCheck="false"
@@ -53,7 +53,7 @@
                   v-if="captchaImageUrl"
                   :src="captchaImageUrl"
                   :alt="t('auth.forget.form.captcha_label')"
-                  class="h-34px w-100px rounded-4px border-(1px solid var(--hula-text-tertiary)/30) object-cover" />
+                  class="h-34px w-100px rounded-4px border-(1px solid var(--tjg-text-tertiary)/30) object-cover" />
                 <n-button v-else size="small" quaternary :loading="captchaLoading">
                   {{ t('auth.forget.actions.refresh_captcha') }}
                 </n-button>
@@ -71,7 +71,7 @@
             <n-flex :size="8">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid var(--hula-text-tertiary)/80) no-indent-input w-300px!"
+                class="border-(1px solid var(--tjg-text-tertiary)/80) no-indent-input w-300px!"
                 v-model:value="formData.emailCode"
                 :placeholder="t('auth.forget.form.code_placeholder')"
                 spellCheck="false"
@@ -80,7 +80,7 @@
                 autoCapitalize="off"
                 maxlength="6" />
               <n-button
-                color="var(--color-primary)"
+                color="var(--tjg-color-primary-500)"
                 ghost
                 :disabled="sendBtnDisabled"
                 :loading="sendingEmailCode"
@@ -95,7 +95,7 @@
             :loading="verifyLoading"
             :disabled="nextDisabled"
             tertiary
-            style="color: var(--hula-text-inverse)"
+            style="color: var(--tjg-text-inverse)"
             @click="verifyEmail"
             class="mt-10px w-full gradient-button">
             {{ t('auth.forget.buttons.next') }}
@@ -111,7 +111,7 @@
             <n-flex vertical :size="8" class="w-full">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid var(--hula-text-tertiary)/80) w-full no-indent-input"
+                class="border-(1px solid var(--tjg-text-tertiary)/80) w-full no-indent-input"
                 v-model:value="passwordForm.password"
                 type="password"
                 show-password-on="click"
@@ -144,7 +144,7 @@
             <n-flex vertical :size="8" class="w-full">
               <n-input
                 :allow-input="noSideSpace"
-                class="border-(1px solid var(--hula-text-tertiary)/80) w-full no-indent-input"
+                class="border-(1px solid var(--tjg-text-tertiary)/80) w-full no-indent-input"
                 v-model:value="passwordForm.confirmPassword"
                 type="password"
                 show-password-on="click"
@@ -169,7 +169,7 @@
             <n-button
               :loading="submitLoading"
               tertiary
-              style="color: var(--hula-text-inverse)"
+              style="color: var(--tjg-text-inverse)"
               @click="submitNewPassword"
               class="flex-1 gradient-button">
               {{ t('auth.forget.buttons.submit') }}
@@ -188,7 +188,7 @@
         <img class="size-98px" src="/emoji/party-popper.webp" alt="庆祝" />
 
         <div class="mt-16px text-18px">{{ t('auth.forget.success.title') }}</div>
-        <div class="mt-16px text-14px text-[--hula-text-secondary]">{{ t('auth.forget.success.desc') }}</div>
+        <div class="mt-16px text-14px text-[--tjg-text-secondary]">{{ t('auth.forget.success.desc') }}</div>
       </div>
     </n-flex>
   </n-config-provider>

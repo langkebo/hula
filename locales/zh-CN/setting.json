@@ -1,7 +1,7 @@
 {
   "common": {
     "provider_label": "提供者",
-    "provider_name": "HuLa",
+    "provider_name": "Tjg",
     "tag_new": "新",
     "cancel": "取消",
     "save": "保存",
@@ -350,7 +350,7 @@
     "file_scan_progress": "扫描文件中",
     "usage": "扫描文件占比",
     "used_space": "已用空间",
-    "app_used_space": "HuLa 数据",
+    "app_used_space": "Tjg 数据",
     "free_space": "可用空间",
     "directory": "目录",
     "curr_dir": "当前目录",
@@ -421,9 +421,9 @@
       "title": "添加推送设备",
       "kind_label": "设备类型",
       "app_id_label": "应用 ID",
-      "app_id_placeholder": "例如: com.hula.desktop",
+      "app_id_placeholder": "例如: com.tjg.desktop",
       "app_display_name_label": "应用名称",
-      "app_display_name_placeholder": "例如: HuLa 桌面端",
+      "app_display_name_placeholder": "例如: Tjg 桌面端",
       "device_display_name_label": "设备名称",
       "device_display_name_placeholder": "例如: 我的 Mac",
       "pushkey_label": "推送密钥",
@@ -1150,7 +1150,7 @@
   },
   "help_about": {
     "title": "帮助与关于",
-    "about": "关于 HuLa",
+    "about": "关于 Tjg",
     "version": "版本",
     "matrix_sdk_version": "Matrix SDK",
     "check_update": "检查更新",

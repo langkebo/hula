@@ -42,21 +42,21 @@ const normalizeNotificationVolume = (volume?: number) => {
 }
 
 const LEGACY_PREFERENCE_STORAGE_KEYS = {
-  messageConfirm: 'hula-message-confirm',
-  linkPreview: 'hula-link-preview',
-  emojiConvert: 'hula-emoji-convert',
-  emojiSize: 'hula-emoji-size',
-  burnDefaultEnabled: 'hula-burn-default-enabled',
-  burnDefaultDuration: 'hula-burn-default-duration',
-  burnShowCountdown: 'hula-burn-show-countdown',
-  threadAutoSubscribe: 'hula-thread-auto-subscribe',
-  threadShowInRoom: 'hula-thread-show-in-room',
-  threadNotificationLevel: 'hula-thread-notification-level',
-  spaceAutoJoinRooms: 'hula-space-auto-join',
-  spaceShowSubspaces: 'hula-space-show-subspaces',
-  spaceDefaultNotification: 'hula-space-default-notification',
-  sendReadReceipts: 'hula-send-read-receipts',
-  sendTypingNotifications: 'hula-send-typing-notifications'
+  messageConfirm: 'tjg-message-confirm',
+  linkPreview: 'tjg-link-preview',
+  emojiConvert: 'tjg-emoji-convert',
+  emojiSize: 'tjg-emoji-size',
+  burnDefaultEnabled: 'tjg-burn-default-enabled',
+  burnDefaultDuration: 'tjg-burn-default-duration',
+  burnShowCountdown: 'tjg-burn-show-countdown',
+  threadAutoSubscribe: 'tjg-thread-auto-subscribe',
+  threadShowInRoom: 'tjg-thread-show-in-room',
+  threadNotificationLevel: 'tjg-thread-notification-level',
+  spaceAutoJoinRooms: 'tjg-space-auto-join',
+  spaceShowSubspaces: 'tjg-space-show-subspaces',
+  spaceDefaultNotification: 'tjg-space-default-notification',
+  sendReadReceipts: 'tjg-send-read-receipts',
+  sendTypingNotifications: 'tjg-send-typing-notifications'
 } as const
 
 const readLegacyBooleanPreference = (key: string) => {

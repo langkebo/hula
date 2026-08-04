@@ -126,7 +126,7 @@ async function handleVerify(): Promise<void> {
 .panel-subtitle {
   margin: 0 0 12px 0;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   line-height: 1.5;
 }
 
@@ -149,20 +149,20 @@ async function handleVerify(): Promise<void> {
 }
 
 .result-label {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .result-value {
   font-family: monospace;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   word-break: break-all;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
   padding: 2px 6px;
   border-radius: 4px;
 }
 
 .result-verifier {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-family: monospace;
 }
 </style>

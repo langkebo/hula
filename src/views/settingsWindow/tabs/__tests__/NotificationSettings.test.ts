@@ -114,31 +114,31 @@ describe('NotificationSettings', () => {
   })
 
   it('loads desktop notification from localStorage', () => {
-    localStorage.setItem('hula-desktop-notification', 'false')
+    localStorage.setItem('tjg-desktop-notification', 'false')
     const wrapper = mount(NotificationSettings)
     expect(getVm(wrapper).desktopNotification).toBe(false)
   })
 
   it('loads message content setting from localStorage', () => {
-    localStorage.setItem('hula-show-content', 'false')
+    localStorage.setItem('tjg-show-content', 'false')
     const wrapper = mount(NotificationSettings)
     expect(getVm(wrapper).showMessageContent).toBe(false)
   })
 
   it('loads sender name setting from localStorage', () => {
-    localStorage.setItem('hula-show-sender', 'false')
+    localStorage.setItem('tjg-show-sender', 'false')
     const wrapper = mount(NotificationSettings)
     expect(getVm(wrapper).showSenderName).toBe(false)
   })
 
   it('loads keywords from localStorage', () => {
-    localStorage.setItem('hula-keywords', JSON.stringify(['urgent', 'important']))
+    localStorage.setItem('tjg-keywords', JSON.stringify(['urgent', 'important']))
     const wrapper = mount(NotificationSettings)
     expect(getVm(wrapper).keywords).toEqual(['urgent', 'important'])
   })
 
   it('loads keyword notification from localStorage', () => {
-    localStorage.setItem('hula-keyword-notification', 'true')
+    localStorage.setItem('tjg-keyword-notification', 'true')
     const wrapper = mount(NotificationSettings)
     expect(getVm(wrapper).keywordNotification).toBe(true)
   })
@@ -149,7 +149,7 @@ describe('NotificationSettings', () => {
     vm.newKeyword = 'test-keyword'
     vm.addKeyword()
     expect(vm.keywords).toContain('test-keyword')
-    expect(JSON.parse(localStorage.getItem('hula-keywords')!)).toContain('test-keyword')
+    expect(JSON.parse(localStorage.getItem('tjg-keywords')!)).toContain('test-keyword')
     expect(vm.newKeyword).toBe('')
   })
 
@@ -163,7 +163,7 @@ describe('NotificationSettings', () => {
   })
 
   it('removes keyword and saves to localStorage', () => {
-    localStorage.setItem('hula-keywords', JSON.stringify(['a', 'b', 'c']))
+    localStorage.setItem('tjg-keywords', JSON.stringify(['a', 'b', 'c']))
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     vm.removeKeyword('b')
@@ -175,7 +175,7 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     vm.handleContentChange(false)
-    expect(localStorage.getItem('hula-show-content')).toBe('false')
+    expect(localStorage.getItem('tjg-show-content')).toBe('false')
     expect(messageSuccessMock).toHaveBeenCalled()
   })
 
@@ -183,14 +183,14 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     vm.handleSenderChange(false)
-    expect(localStorage.getItem('hula-show-sender')).toBe('false')
+    expect(localStorage.getItem('tjg-show-sender')).toBe('false')
   })
 
   it('saves keyword toggle to localStorage', () => {
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     vm.handleKeywordToggle(true)
-    expect(localStorage.getItem('hula-keyword-notification')).toBe('true')
+    expect(localStorage.getItem('tjg-keyword-notification')).toBe('true')
   })
 
   it('calls settingStore on sound change', () => {
@@ -208,9 +208,9 @@ describe('NotificationSettings', () => {
   })
 
   it('loads thread notification settings from localStorage', () => {
-    localStorage.setItem('hula-thread-reply-notify', 'false')
-    localStorage.setItem('hula-thread-participate-notify', 'false')
-    localStorage.setItem('hula-thread-mention-notify', 'false')
+    localStorage.setItem('tjg-thread-reply-notify', 'false')
+    localStorage.setItem('tjg-thread-participate-notify', 'false')
+    localStorage.setItem('tjg-thread-mention-notify', 'false')
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     expect(vm.threadReplyNotify).toBe(false)
@@ -222,16 +222,16 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     vm.handleThreadReplyNotify(false)
-    expect(localStorage.getItem('hula-thread-reply-notify')).toBe('false')
+    expect(localStorage.getItem('tjg-thread-reply-notify')).toBe('false')
     vm.handleThreadParticipateNotify(false)
-    expect(localStorage.getItem('hula-thread-participate-notify')).toBe('false')
+    expect(localStorage.getItem('tjg-thread-participate-notify')).toBe('false')
     vm.handleThreadMentionNotify(false)
-    expect(localStorage.getItem('hula-thread-mention-notify')).toBe('false')
+    expect(localStorage.getItem('tjg-thread-mention-notify')).toBe('false')
   })
 
   it('loads space notification settings from localStorage', () => {
-    localStorage.setItem('hula-space-new-room-notify', 'false')
-    localStorage.setItem('hula-space-member-change-notify', 'true')
+    localStorage.setItem('tjg-space-new-room-notify', 'false')
+    localStorage.setItem('tjg-space-member-change-notify', 'true')
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     expect(vm.spaceNewRoomNotify).toBe(false)
@@ -242,14 +242,14 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     vm.handleSpaceNewRoomNotify(false)
-    expect(localStorage.getItem('hula-space-new-room-notify')).toBe('false')
+    expect(localStorage.getItem('tjg-space-new-room-notify')).toBe('false')
     vm.handleSpaceMemberChangeNotify(true)
-    expect(localStorage.getItem('hula-space-member-change-notify')).toBe('true')
+    expect(localStorage.getItem('tjg-space-member-change-notify')).toBe('true')
   })
 
   it('loads friend notification settings from localStorage', () => {
-    localStorage.setItem('hula-friend-request-notify', 'false')
-    localStorage.setItem('hula-friend-accept-notify', 'false')
+    localStorage.setItem('tjg-friend-request-notify', 'false')
+    localStorage.setItem('tjg-friend-accept-notify', 'false')
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     expect(vm.friendRequestNotify).toBe(false)
@@ -260,8 +260,8 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     vm.handleFriendRequestNotify(false)
-    expect(localStorage.getItem('hula-friend-request-notify')).toBe('false')
+    expect(localStorage.getItem('tjg-friend-request-notify')).toBe('false')
     vm.handleFriendAcceptNotify(false)
-    expect(localStorage.getItem('hula-friend-accept-notify')).toBe('false')
+    expect(localStorage.getItem('tjg-friend-accept-notify')).toBe('false')
   })
 })

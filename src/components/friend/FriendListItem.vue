@@ -130,25 +130,25 @@ const highlightText = (value?: string | null) => {
 
 <style scoped lang="scss">
 .friend-list-item {
-  --friend-card-bg: var(--hula-surface-panel);
-  --friend-card-border: var(--hula-border-default);
-  --friend-card-text: var(--hula-text-primary);
-  --friend-card-subtle: var(--hula-text-tertiary);
+  --friend-card-bg: var(--tjg-surface-panel);
+  --friend-card-border: var(--tjg-border-default);
+  --friend-card-text: var(--tjg-text-primary);
+  --friend-card-subtle: var(--tjg-text-tertiary);
   align-items: center;
   background: var(--friend-card-bg);
   border: 1px solid transparent;
-  border-radius: var(--hula-radius-lg, 12px);
+  border-radius: var(--tjg-radius-lg, 12px);
   cursor: pointer;
   display: flex;
   gap: 12px;
   min-height: 76px;
   padding: 12px;
   transition:
-    background-color var(--hula-motion-duration-normal, 180ms) var(--hula-motion-ease-standard),
-    box-shadow var(--hula-motion-duration-normal, 180ms) var(--hula-motion-ease-standard);
+    background-color var(--tjg-motion-duration-normal, 180ms) var(--tjg-motion-ease-standard),
+    box-shadow var(--tjg-motion-duration-normal, 180ms) var(--tjg-motion-ease-standard);
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 
   &--rtl:hover {
@@ -156,27 +156,27 @@ const highlightText = (value?: string | null) => {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--hula-color-primary-500);
+    outline: 2px solid var(--tjg-color-primary-500);
     outline-offset: 2px;
   }
 }
 
 .friend-list-item--selected {
-  background: var(--hula-surface-session-active);
-  box-shadow: var(--hula-surface-session-active-shadow);
+  background: var(--tjg-surface-session-active);
+  box-shadow: var(--tjg-surface-session-active-shadow);
   border-color: transparent;
 
   .friend-list-item__name {
-    color: var(--hula-text-inverse);
+    color: var(--tjg-text-inverse);
     font-weight: 600;
   }
 
   .friend-list-item__meta {
-    color: color-mix(in srgb, var(--hula-text-inverse) 80%, transparent);
+    color: color-mix(in srgb, var(--tjg-text-inverse) 80%, transparent);
   }
 
   .friend-list-item__presence {
-    border-color: var(--hula-color-primary-500);
+    border-color: var(--tjg-color-primary-500);
   }
 }
 
@@ -190,7 +190,7 @@ const highlightText = (value?: string | null) => {
 }
 
 .friend-list-item__presence {
-  background: var(--hula-text-disabled);
+  background: var(--tjg-text-disabled);
   border: 2px solid var(--friend-card-bg);
   border-radius: 999px;
   bottom: -2px;
@@ -202,8 +202,8 @@ const highlightText = (value?: string | null) => {
 }
 
 .friend-list-item__presence--online {
-  background: var(--hula-color-success-500);
-  box-shadow: 0 0 4px color-mix(in srgb, var(--hula-color-success-500) 40%, transparent);
+  background: var(--tjg-color-success-500);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--tjg-color-success-500) 40%, transparent);
 }
 
 .friend-list-item__content {
@@ -267,7 +267,7 @@ const highlightText = (value?: string | null) => {
 }
 
 [data-theme='dark'] .friend-list-item--selected {
-  background: var(--hula-surface-session-active);
-  box-shadow: var(--hula-surface-session-active-shadow);
+  background: var(--tjg-surface-session-active);
+  box-shadow: var(--tjg-surface-session-active-shadow);
 }
 </style>

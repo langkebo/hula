@@ -8,7 +8,7 @@ static SERVICE_NAME: OnceLock<String> = OnceLock::new();
 
 fn get_service_name() -> &'static str {
     SERVICE_NAME.get_or_init(|| {
-        if let Ok(profile_dir) = std::env::var("HULA_PROFILE_DIR")
+        if let Ok(profile_dir) = std::env::var("TJG_PROFILE_DIR")
             && !profile_dir.is_empty()
         {
             let mut hasher = DefaultHasher::new();

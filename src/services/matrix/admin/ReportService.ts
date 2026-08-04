@@ -3,7 +3,14 @@ import type { AdminManager } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { stripMatrixPrefix } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
-import type { AdminReport, ReportRequest, ReportRoomResponse, ScannerInfo } from './AdminTypes'
+import type {
+  AdminReport,
+  EventReport,
+  EventReportHistory,
+  ReportRequest,
+  ReportRoomResponse,
+  ScannerInfo
+} from './AdminTypes'
 
 const logger = createLogger('ReportService')
 
@@ -187,6 +194,153 @@ export class AdminReportService {
     } catch (err) {
       logger.error(`[Admin] 驳回报表失败: ${err}`)
       return false
+    }
+  }
+
+  private eventReportPath(id?: number): string {
+    const base = `${MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE}/event_reports`
+    return id != null ? `${base}/${id}` : base
+  }
+
+  async listEventReports(params?: { limit?: number }): Promise<EventReport[]> {
+    const client = this.getClient()
+    try {
+      const queryParams: Record<string, string> = {}
+      if (params?.limit != null) queryParams.limit = String(params.limit)
+      const result = await this.prefixedAuthedRequest<{ event_reports?: EventReport[] }>(
+        client,
+        'GET',
+        this.eventReportPath(),
+        queryParams
+      )
+      return result.event_reports ?? []
+    } catch (err) {
+      logger.error(`[Admin] 获取事件举报列表失败: ${err}`)
+      throw err
+    }
+  }
+
+  async listEventReportsByStatus(status: string, params?: { limit?: number }): Promise<EventReport[]> {
+    const client = this.getClient()
+    try {
+      const queryParams: Record<string, string> = {}
+      if (params?.limit != null) queryParams.limit = String(params.limit)
+      const result = await this.prefixedAuthedRequest<{ event_reports?: EventReport[] }>(
+        client,
+        'GET',
+        `${this.eventReportPath()}/status/${encodeURIComponent(status)}`,
+        queryParams
+      )
+      return result.event_reports ?? []
+    } catch (err) {
+      logger.error(`[Admin] 按状态获取事件举报列表失败: ${err}`)
+      throw err
+    }
+  }
+
+  async countAllEventReports(): Promise<number> {
+    const client = this.getClient()
+    try {
+      const result = await this.prefixedAuthedRequest<{ count?: number }>(
+        client,
+        'GET',
+        `${this.eventReportPath()}/count`
+      )
+      return result.count ?? 0
+    } catch (err) {
+      logger.error(`[Admin] 获取事件举报总数失败: ${err}`)
+      return 0
+    }
+  }
+
+  async countEventReportsByStatus(status: string): Promise<number> {
+    const client = this.getClient()
+    try {
+      const result = await this.prefixedAuthedRequest<{ count?: number }>(
+        client,
+        'GET',
+        `${this.eventReportPath()}/count/${encodeURIComponent(status)}`
+      )
+      return result.count ?? 0
+    } catch (err) {
+      logger.error(`[Admin] 按状态获取事件举报数失败: ${err}`)
+      return 0
+    }
+  }
+
+  async resolveEventReport(id: number, params: { reason: string }): Promise<EventReport | null> {
+    const client = this.getClient()
+    try {
+      const result = await this.prefixedAuthedRequest<EventReport>(
+        client,
+        'POST',
+        `${this.eventReportPath(id)}/resolve`,
+        undefined,
+        { reason: params.reason }
+      )
+      return result
+    } catch (err) {
+      logger.error(`[Admin] 解决事件举报失败: ${err}`)
+      return null
+    }
+  }
+
+  async dismissEventReport(id: number, params: { reason: string }): Promise<EventReport | null> {
+    const client = this.getClient()
+    try {
+      const result = await this.prefixedAuthedRequest<EventReport>(
+        client,
+        'POST',
+        `${this.eventReportPath(id)}/dismiss`,
+        undefined,
+        { reason: params.reason }
+      )
+      return result
+    } catch (err) {
+      logger.error(`[Admin] 驳回事件举报失败: ${err}`)
+      return null
+    }
+  }
+
+  async escalateEventReport(id: number): Promise<EventReport | null> {
+    const client = this.getClient()
+    try {
+      const result = await this.prefixedAuthedRequest<EventReport>(
+        client,
+        'POST',
+        `${this.eventReportPath(id)}/escalate`
+      )
+      return result
+    } catch (err) {
+      logger.error(`[Admin] 升级事件举报失败: ${err}`)
+      return null
+    }
+  }
+
+  async deleteEventReport(id: number): Promise<boolean> {
+    const client = this.getClient()
+    try {
+      await this.prefixedAuthedRequest<void>(client, 'DELETE', this.eventReportPath(id))
+      logger.info(`[Admin] 删除事件举报成功: ${id}`)
+      return true
+    } catch (err) {
+      logger.error(`[Admin] 删除事件举报失败: ${err}`)
+      return false
+    }
+  }
+
+  async getEventReportHistory(id: number): Promise<EventReportHistory[]> {
+    const client = this.getClient()
+    try {
+      const result = await this.prefixedAuthedRequest<{ history?: EventReportHistory[] }>(
+        client,
+        'GET',
+        `${this.eventReportPath(id)}/history`
+      )
+      return result.history ?? []
+    } catch (err) {
+      logger.error(`[Admin] 获取事件举报历史失败: ${err}`)
+      return []
     }
   }
 }

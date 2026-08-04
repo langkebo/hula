@@ -10,7 +10,7 @@
       @keydown.enter="handleEnterSearch"
       @keydown.esc="handleEsc">
       <template #prefix>
-        <svg class="size-16px color-[--hula-text-tertiary]"><use href="#search" /></svg>
+        <svg class="size-16px color-[--tjg-text-tertiary]"><use href="#search" /></svg>
       </template>
       <template v-if="showGlobalSearchAction" #suffix>
         <button
@@ -111,13 +111,13 @@ const handleEsc = () => {
   gap: 8px;
 }
 
-/* 阶段 9：搜索栏规范（需求文档 3.3.6）—— 高度 40px，圆角 8px，背景 --hula-surface-search */
+/* 阶段 9：搜索栏规范（需求文档 3.3.6）—— 高度 40px，圆角 8px，背景 --tjg-surface-search */
 .friend-search-bar__input {
   :deep(.n-input) {
     --n-height: 40px;
     --n-font-size: 14px;
     --n-border-radius: 8px;
-    background: var(--hula-surface-search);
+    background: var(--tjg-surface-search);
   }
 
   :deep(.n-input__input-el) {
@@ -126,15 +126,15 @@ const handleEsc = () => {
 }
 
 .friend-search-bar__history {
-  background: color-mix(in srgb, var(--hula-color-primary-500) 5%, var(--hula-surface-panel));
-  border: 1px solid var(--hula-border-default);
+  background: color-mix(in srgb, var(--tjg-color-primary-500) 5%, var(--tjg-surface-panel));
+  border: 1px solid var(--tjg-border-default);
   border-radius: 12px;
   padding: 10px;
 }
 
 .friend-search-bar__history-header {
   align-items: center;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   display: flex;
   font-size: 12px;
   justify-content: space-between;
@@ -149,11 +149,11 @@ const handleEsc = () => {
 }
 
 .friend-search-bar__clear {
-  color: var(--hula-color-primary-500);
-  transition: color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+  color: var(--tjg-color-primary-500);
+  transition: color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {
-    color: var(--hula-color-primary-600);
+    color: var(--tjg-color-primary-600);
   }
 }
 
@@ -161,19 +161,19 @@ const handleEsc = () => {
   background: transparent;
   border: 0;
   border-radius: 4px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2px;
   transition:
-    background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard),
-    color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {
-    background: var(--hula-surface-list-hover);
-    color: var(--hula-text-primary);
+    background: var(--tjg-surface-list-hover);
+    color: var(--tjg-text-primary);
   }
 }
 
@@ -185,18 +185,18 @@ const handleEsc = () => {
 }
 
 .friend-search-bar__chip {
-  background: var(--hula-color-primary-100);
-  border-radius: var(--hula-radius-full);
-  color: var(--hula-text-secondary);
+  background: var(--tjg-color-primary-100);
+  border-radius: var(--tjg-radius-full);
+  color: var(--tjg-text-secondary);
   cursor: pointer;
   font-size: 12px;
   padding: 4px 10px;
   transition:
-    background-color var(--hula-motion-duration-fast) var(--hula-motion-ease-standard),
-    transform var(--hula-motion-duration-fast) var(--hula-motion-ease-standard);
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    transform var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {
-    background: var(--hula-color-primary-200);
+    background: var(--tjg-color-primary-200);
     transform: translateY(-1px);
   }
 }

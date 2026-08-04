@@ -20,7 +20,7 @@
       <div v-if="apiKeyList.length === 0" class="empty-container">
         <n-empty :description="t('ai_assistant.robot.no_api_keys')" size="large">
           <template #icon>
-            <Icon icon="mdi:key-variant" class="text-48px color-[--hula-text-tertiary]" />
+            <Icon icon="mdi:key-variant" class="text-48px color-[--tjg-text-tertiary]" />
           </template>
           <template #extra>
             <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_key') }}</n-button>
@@ -103,7 +103,7 @@
                   <span class="text-primary font-600 text-16px">
                     {{ balanceMap[apiKey.id].balanceInfos[0].totalBalance || '0' }}
                   </span>
-                  <span class="text-[--hula-text-tertiary]">
+                  <span class="text-[--tjg-text-tertiary]">
                     {{ balanceMap[apiKey.id].balanceInfos[0].currency || 'USD' }}
                   </span>
                 </n-flex>
@@ -431,14 +431,14 @@ onMounted(() => {
 }
 
 .api-key-card {
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 8px;
   padding: 16px;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   transition: all 0.3s;
 
   &:hover {
-    box-shadow: var(--hula-shadow-card);
+    box-shadow: var(--tjg-shadow-card);
   }
 
   .api-key-card-header {
@@ -449,7 +449,7 @@ onMounted(() => {
     .api-key-name {
       font-size: 16px;
       font-weight: 500;
-      color: var(--hula-text-primary);
+      color: var(--tjg-text-primary);
     }
 
     .api-key-meta {
@@ -459,7 +459,7 @@ onMounted(() => {
 
       .meta-item {
         font-size: 12px;
-        color: var(--hula-text-tertiary);
+        color: var(--tjg-text-tertiary);
       }
     }
   }

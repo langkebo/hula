@@ -33,9 +33,9 @@ interface ActiveRenderSample {
 const PLATFORM_QUERY_KEY = 'platform'
 const E2E_QUERY_KEY = 'e2e'
 const MOCK_AUTH_QUERY_KEY = 'mockAuth'
-const PLATFORM_STORAGE_KEY = 'hula:e2e:platform'
-const E2E_STORAGE_KEY = 'hula:e2e:enabled'
-const MOCK_AUTH_STORAGE_KEY = 'hula:e2e:mock-auth'
+const PLATFORM_STORAGE_KEY = 'tjg:e2e:platform'
+const E2E_STORAGE_KEY = 'tjg:e2e:enabled'
+const MOCK_AUTH_STORAGE_KEY = 'tjg:e2e:mock-auth'
 const DEFAULT_RENDER_THRESHOLD_MS = 800
 const activeSamples = new Map<string, ActiveRenderSample>()
 
@@ -76,8 +76,8 @@ const resolveFallbackRoute = (explicitRoute?: string): string => {
 
 const ensureRenderSampleStore = (): RenderSampleRecord[] | null => {
   if (!isBrowser()) return null
-  window.__HULA_RENDER_SAMPLES__ ??= []
-  return window.__HULA_RENDER_SAMPLES__
+  window.__TJG_RENDER_SAMPLES__ ??= []
+  return window.__TJG_RENDER_SAMPLES__
 }
 
 const toSampleStatus = (duration: number, thresholdMs: number): RenderSampleStatus => {

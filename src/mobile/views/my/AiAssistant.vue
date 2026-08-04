@@ -3,8 +3,8 @@
     <template #header>
       <HeaderBar
         :isOfficial="false"
-        class="bg-[--hula-surface-panel]"
-        style="border-bottom: 1px solid; border-color: var(--hula-border-default)"
+        class="bg-[--tjg-surface-panel]"
+        style="border-bottom: 1px solid; border-color: var(--tjg-border-default)"
         :hidden-right="true"
         :room-name="t('ai_assistant.title')" />
     </template>
@@ -13,7 +13,7 @@
       <div class="bg-cover bg-center flex flex-col overflow-hidden h-full">
         <div class="flex flex-col flex-1 overflow-hidden">
           <!-- 连接状态栏 -->
-          <div class="flex-shrink-0 bg-[--hula-surface-panel] border-b border-[--hula-border-default] px-12px py-8px">
+          <div class="flex-shrink-0 bg-[--tjg-surface-panel] border-b border-[--tjg-border-default] px-12px py-8px">
             <van-cell-group inset>
               <van-cell center>
                 <template #title>
@@ -36,7 +36,7 @@
 
           <!-- AI 模型选择栏 -->
           <div
-            class="flex-shrink-0 bg-[--hula-surface-panel] border-b border-[--hula-border-default] px-12px py-8px overflow-x-auto">
+            class="flex-shrink-0 bg-[--tjg-surface-panel] border-b border-[--tjg-border-default] px-12px py-8px overflow-x-auto">
             <div class="flex items-center gap-8px">
               <van-tag
                 v-for="model in filteredModels"
@@ -55,9 +55,9 @@
           <!-- 角色预设选择栏 -->
           <div
             v-if="characters.length > 0"
-            class="flex-shrink-0 bg-[--hula-surface-panel-muted] px-12px py-8px overflow-x-auto">
+            class="flex-shrink-0 bg-[--tjg-surface-panel-muted] px-12px py-8px overflow-x-auto">
             <div class="flex items-center gap-8px">
-              <span class="text-12px text-[--hula-text-tertiary] flex-shrink-0">
+              <span class="text-12px text-[--tjg-text-tertiary] flex-shrink-0">
                 {{ t('ai_assistant.character') }}:
               </span>
               <van-tag
@@ -78,10 +78,10 @@
             <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full gap-16px">
               <div
                 class="w-80px h-80px rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center">
-                <Icon icon="mdi:robot" :width="40" color="var(--hula-text-inverse)" />
+                <Icon icon="mdi:robot" :width="40" color="var(--tjg-text-inverse)" />
               </div>
-              <div class="text-16px font-bold text-[--hula-text-primary]">{{ t('ai_assistant.welcome') }}</div>
-              <div class="text-14px text-[--hula-text-tertiary] text-center px-20px">
+              <div class="text-16px font-bold text-[--tjg-text-primary]">{{ t('ai_assistant.welcome') }}</div>
+              <div class="text-14px text-[--tjg-text-tertiary] text-center px-20px">
                 {{ t('ai_assistant.welcome_desc') }}
               </div>
 
@@ -89,13 +89,13 @@
                 <div
                   v-for="suggestion in suggestions"
                   :key="suggestion.id"
-                  class="bg-[--hula-surface-panel] rounded-12px p-12px shadow-sm border border-[--hula-border-default] active:bg-[--hula-surface-list-hover]"
+                  class="bg-[--tjg-surface-panel] rounded-12px p-12px shadow-sm border border-[--tjg-border-default] active:bg-[--tjg-surface-list-hover]"
                   @click="handleSuggestionClick(suggestion)">
                   <div class="flex items-center gap-8px mb-8px">
                     <Icon :icon="suggestion.icon" :width="18" :color="suggestion.color" />
                     <span class="text-14px font-medium">{{ suggestion.title }}</span>
                   </div>
-                  <div class="text-12px text-[--hula-text-tertiary]">{{ suggestion.desc }}</div>
+                  <div class="text-12px text-[--tjg-text-tertiary]">{{ suggestion.desc }}</div>
                 </div>
               </div>
             </div>
@@ -109,17 +109,17 @@
                   :class="[
                     'w-36px h-36px rounded-full flex items-center justify-center flex-shrink-0',
                     message.role === 'user'
-                      ? 'bg-[--hula-color-primary-500]'
+                      ? 'bg-[--tjg-color-primary-500]'
                       : 'bg-gradient-to-br from-purple-400 to-blue-500'
                   ]">
-                  <Icon :icon="message.role === 'user' ? 'mdi:account' : 'mdi:robot'" :width="20" color="var(--hula-text-inverse)" />
+                  <Icon :icon="message.role === 'user' ? 'mdi:account' : 'mdi:robot'" :width="20" color="var(--tjg-text-inverse)" />
                 </div>
                 <div
                   :class="[
                     'max-w-75% rounded-16px p-12px text-14px',
                     message.role === 'user'
-                      ? 'bg-[--hula-color-primary-500] text-white'
-                      : 'bg-[--hula-surface-panel] border border-[--hula-border-default] text-[--hula-text-primary]'
+                      ? 'bg-[--tjg-color-primary-500] text-white'
+                      : 'bg-[--tjg-surface-panel] border border-[--tjg-border-default] text-[--tjg-text-primary]'
                   ]">
                   <div v-if="message.loading" class="flex items-center gap-8px">
                     <van-loading size="14" />
@@ -135,7 +135,7 @@
           </div>
 
           <!-- 输入区域 -->
-          <div class="flex-shrink-0 border-t border-[--hula-border-default] bg-[--hula-surface-panel] p-12px">
+          <div class="flex-shrink-0 border-t border-[--tjg-border-default] bg-[--tjg-surface-panel] p-12px">
             <div class="flex items-center gap-12px">
               <van-field
                 v-model="inputText"
@@ -143,7 +143,7 @@
                 autosize
                 type="textarea"
                 rows="1"
-                class="flex-1 bg-[--hula-surface-panel-muted] rounded-20px"
+                class="flex-1 bg-[--tjg-surface-panel-muted] rounded-20px"
                 @keydown.enter.prevent="handleSend" />
               <van-button
                 type="primary"
@@ -158,10 +158,10 @@
 
             <!-- API Key 管理入口 -->
             <div class="flex items-center justify-between mt-8px">
-              <span class="text-12px text-[--hula-text-tertiary]">
+              <span class="text-12px text-[--tjg-text-tertiary]">
                 {{ providerDisplayName }}
               </span>
-              <span class="text-12px text-[--hula-text-quaternary] cursor-pointer" @click="showApiKeySettings = true">
+              <span class="text-12px text-[--tjg-text-quaternary] cursor-pointer" @click="showApiKeySettings = true">
                 {{ t('ai_assistant.settings') }}
               </span>
             </div>
@@ -376,7 +376,7 @@ const suggestions = [
     title: 'ai_assistant.suggestions.translate',
     desc: 'ai_assistant.suggestions.translate_desc',
     icon: 'mdi:translate',
-    color: 'var(--hula-color-info-500)',
+    color: 'var(--tjg-color-info-500)',
     prompt: t('ai_assistant.suggestions.translate_prompt')
   },
   {
@@ -384,7 +384,7 @@ const suggestions = [
     title: 'ai_assistant.suggestions.summarize',
     desc: 'ai_assistant.suggestions.summarize_desc',
     icon: 'mdi:text-box-outline',
-    color: 'var(--hula-color-success-500)',
+    color: 'var(--tjg-color-success-500)',
     prompt: t('ai_assistant.suggestions.summarize_prompt')
   },
   {
@@ -392,7 +392,7 @@ const suggestions = [
     title: 'ai_assistant.suggestions.code',
     desc: 'ai_assistant.suggestions.code_desc',
     icon: 'mdi:code-tags',
-    color: 'var(--hula-color-purple-500)',
+    color: 'var(--tjg-color-purple-500)',
     prompt: t('ai_assistant.suggestions.code_prompt')
   },
   {
@@ -400,7 +400,7 @@ const suggestions = [
     title: 'ai_assistant.suggestions.chat',
     desc: 'ai_assistant.suggestions.chat_desc',
     icon: 'mdi:chat-outline',
-    color: 'var(--hula-color-warning-500)',
+    color: 'var(--tjg-color-warning-500)',
     prompt: t('ai_assistant.suggestions.chat_prompt')
   }
 ]

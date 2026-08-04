@@ -5,7 +5,7 @@
         <HeaderBar
           :isOfficial="false"
           class="bg-white"
-          style="border-bottom: 1px solid; border-color: var(--hula-border-default)"
+          style="border-bottom: 1px solid; border-color: var(--tjg-border-default)"
           :hidden-right="true"
           :room-name="t('mobile_photo.title')" />
       </template>

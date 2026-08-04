@@ -307,7 +307,7 @@ export const PerfUnreadPatch: Story = {
           <button
             type="button"
             data-test="perf-room-patch-trigger"
-            style="width: fit-content; border: 1px solid var(--hula-border-default); border-radius: 8px; padding: 8px 12px; background: var(--hula-surface-panel);"
+            style="width: fit-content; border: 1px solid var(--tjg-border-default); border-radius: 8px; padding: 8px 12px; background: var(--tjg-surface-panel);"
             @click="triggerUnreadPatch">
             模拟单条未读 patch
           </button>

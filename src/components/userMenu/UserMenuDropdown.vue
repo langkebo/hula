@@ -156,20 +156,20 @@ onUnmounted(() => {
 .user-menu-dropdown {
   position: absolute;
   width: 240px;
-  background-color: var(--bg-color, var(--hula-surface-panel));
+  background-color: var(--bg-color, var(--tjg-surface-panel));
   border-radius: 8px;
-  box-shadow: var(--hula-shadow-dropdown);
+  box-shadow: var(--tjg-shadow-dropdown);
   overflow: hidden;
 }
 
 :deep(.dark) .user-menu-dropdown {
-  background-color: var(--hula-surface-app);
-  box-shadow: var(--hula-shadow-dropdown);
+  background-color: var(--tjg-surface-app);
+  box-shadow: var(--tjg-shadow-dropdown);
 }
 
 .menu-divider {
   height: 1px;
-  background-color: var(--hula-surface-list-hover);
+  background-color: var(--tjg-surface-list-hover);
   margin: 4px 0;
 }
 
@@ -180,7 +180,7 @@ onUnmounted(() => {
 .menu-section-title {
   padding: 8px 16px 4px;
   font-size: 12px;
-  color: var(--text-secondary, var(--hula-text-tertiary));
+  color: var(--text-secondary, var(--tjg-text-tertiary));
   font-weight: 500;
 }
 
@@ -206,7 +206,7 @@ onUnmounted(() => {
 }
 
 .menu-item-danger {
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 
 .menu-item-disabled {

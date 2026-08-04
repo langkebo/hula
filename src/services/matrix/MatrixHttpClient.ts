@@ -43,6 +43,7 @@ const MATRIX_PREFIXES = [
   '/_matrix/client/v1',
   '/_matrix/client/r0',
   '/_matrix/client/unstable',
+  '/_matrix/client',
   '/_matrix/media/v3',
   '/_matrix/media/v1',
   '/_matrix/media/r0',

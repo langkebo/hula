@@ -20,7 +20,7 @@
             clearable
             @input="handleSearch">
             <template #prefix>
-              <svg class="w-14px h-14px color-[--hula-text-tertiary]"><use href="#search"></use></svg>
+              <svg class="w-14px h-14px color-[--tjg-text-tertiary]"><use href="#search"></use></svg>
             </template>
           </n-input>
         </div>
@@ -56,7 +56,7 @@
 
             <div v-else class="history-list">
               <div v-for="(group, date) in groupedMessages" :key="date">
-                <div class="sticky top-0 z-10 py-8px bg-[--hula-surface-panel]">
+                <div class="sticky top-0 z-10 py-8px bg-[--tjg-surface-panel]">
                   <n-tag :bordered="false" type="warning" size="small" class="rounded-8px">
                     {{ formatDateGroupLabel(group.timestamp) }}
                   </n-tag>
@@ -71,10 +71,10 @@
                       class="mr-10px flex-shrink-0" />
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center justify-between mb-4px">
-                        <span class="text-12px color-[--hula-text-tertiary] truncate">
+                        <span class="text-12px color-[--tjg-text-tertiary] truncate">
                           {{ getUserDisplayName(item.fromUser.uid, item.fromUser.username) }}
                         </span>
-                        <span class="text-11px color-[--hula-text-quaternary] flex-shrink-0">
+                        <span class="text-11px color-[--tjg-text-quaternary] flex-shrink-0">
                           {{ formatTimestamp(item.message.sendTime ?? 0) }}
                         </span>
                       </div>
@@ -238,7 +238,7 @@ watch(
 
 <style scoped lang="scss">
 .chat-history-drawer-content {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .history-list {
@@ -250,17 +250,17 @@ watch(
 
   &:hover {
     .history-message-body {
-      background: color-mix(in srgb, var(--hula-color-indigo-500) 5%, var(--hula-surface-panel-muted));
+      background: color-mix(in srgb, var(--tjg-color-indigo-500) 5%, var(--tjg-surface-panel-muted));
     }
   }
 }
 
 .history-message-body {
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
   padding: 8px 12px;
   border-radius: 12px;
   max-width: 100%;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   transition: background-color 0.2s ease;
 }
 

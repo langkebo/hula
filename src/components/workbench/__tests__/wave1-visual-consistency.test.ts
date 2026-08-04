@@ -17,7 +17,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const ROOT = resolve(__dirname, '..', '..', '..', '..')
-const ROOM_LIST_ITEM_PATH = resolve(ROOT, 'src/components/workbench/HulaRoomListItem.vue')
+const ROOM_LIST_ITEM_PATH = resolve(ROOT, 'src/components/workbench/TjgRoomListItem.vue')
 const CENTER_INDEX_PATH = resolve(ROOT, 'src/layout/center/index.vue')
 const DESIGN_TOKENS_PATH = resolve(ROOT, 'src/styles/css/design-tokens.css')
 
@@ -28,22 +28,22 @@ function readSource(p: string): string {
 describe('Wave 1 - 问题 1：会话列表选中项样式冲突', () => {
   const source = readSource(ROOM_LIST_ITEM_PATH)
 
-  it('不应在 --selected 规则中使用 var(--hula-color-primary-500) 作为 background（应为渐变层）', () => {
-    // 提取所有 .hula-room-list-item--selected { ... } 块（含嵌套）
-    const selectedRulePattern = /\.hula-room-list-item--selected\s*\{([\s\S]*?)\n\}/g
+  it('不应在 --selected 规则中使用 var(--tjg-color-primary-500) 作为 background（应为渐变层）', () => {
+    // 提取所有 .tjg-room-list-item--selected { ... } 块（含嵌套）
+    const selectedRulePattern = /\.tjg-room-list-item--selected\s*\{([\s\S]*?)\n\}/g
     const matches: string[] = []
     let m: RegExpExecArray | null
     while ((m = selectedRulePattern.exec(source)) !== null) {
       matches.push(m[1])
     }
-    // 每个 --selected 规则块内不应将 --hula-color-primary-500 用作 background
-    const violating = matches.filter((body) => /background\s*:\s*var\(--hula-color-primary-500\)/.test(body))
+    // 每个 --selected 规则块内不应将 --tjg-color-primary-500 用作 background
+    const violating = matches.filter((body) => /background\s*:\s*var\(--tjg-color-primary-500\)/.test(body))
     expect(violating).toEqual([])
   })
 
-  it('应只有一个 .hula-room-list-item--selected 规则块（无重复定义）', () => {
-    // 统计顶层 .hula-room-list-item--selected { 出现次数（不应有第二个覆盖规则）
-    const pattern = /\.hula-room-list-item--selected\s*\{/g
+  it('应只有一个 .tjg-room-list-item--selected 规则块（无重复定义）', () => {
+    // 统计顶层 .tjg-room-list-item--selected { 出现次数（不应有第二个覆盖规则）
+    const pattern = /\.tjg-room-list-item--selected\s*\{/g
     const count = (source.match(pattern) || []).length
     expect(count).toBe(0) // 0 表示仅通过 &--selected 嵌套定义，无顶层重复
   })
@@ -54,9 +54,9 @@ describe('Wave 1 - 问题 1：会话列表选中项样式冲突', () => {
     const match = source.match(nestedSelected)
     expect(match, '应存在 &--selected 嵌套规则').not.toBeNull()
     const block = match![1]
-    expect(block).toMatch(/\.hula-room-list-item__name\s*\{[^}]*color:\s*#ffffff/)
-    expect(block).toMatch(/\.hula-room-list-item__preview[^{]*\{[^}]*color:\s*rgba\(255,\s*255,\s*255,\s*0\.85\)/)
-    expect(block).toMatch(/\.hula-room-list-item__time\s*\{[^}]*color:\s*rgba\(255,\s*255,\s*255,\s*0\.75\)/)
+    expect(block).toMatch(/\.tjg-room-list-item__name\s*\{[^}]*color:\s*#ffffff/)
+    expect(block).toMatch(/\.tjg-room-list-item__preview[^{]*\{[^}]*color:\s*rgba\(255,\s*255,\s*255,\s*0\.85\)/)
+    expect(block).toMatch(/\.tjg-room-list-item__time\s*\{[^}]*color:\s*rgba\(255,\s*255,\s*255,\s*0\.75\)/)
   })
 })
 
@@ -101,7 +101,7 @@ describe('Wave 1 - 问题 3：置顶会话的左边框与圆角冲突', () => {
     const block = topRuleMatch![1]
     expect(block).toMatch(/&::before\s*\{/)
     expect(block).toMatch(/width:\s*3px/)
-    expect(block).toMatch(/background:\s*var\(--hula-color-primary-500\)/)
+    expect(block).toMatch(/background:\s*var\(--tjg-color-primary-500\)/)
   })
 })
 

@@ -51,7 +51,7 @@ const authGuard = createAuthGuard({
 router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
   const title = to.meta.title as string | undefined
   if (title) {
-    document.title = `${title} - HuLa`
+    document.title = `${title} - Tjg`
   }
   return authGuard(to, from, next)
 })

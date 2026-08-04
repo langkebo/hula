@@ -6,6 +6,7 @@ const logger = createLogger('MatrixProfile')
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
+import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { BaseMatrixService } from '../BaseMatrixService'
 
 interface MatrixProfile {
@@ -135,9 +136,11 @@ class MatrixProfileService extends BaseMatrixService {
   async getExtendedProfile(userId: string): Promise<MatrixExtendedProfile> {
     try {
       const client = this.getClient()
-      const response = await client.http.authedRequest('GET', USER.EXTENDED_PROFILE(userId), undefined, undefined, {
-        prefix: '/_matrix/client/unstable'
-      })
+      const response = await authedRequestWithPath<unknown>(
+        client,
+        'GET',
+        `/_matrix/client/unstable${USER.EXTENDED_PROFILE(userId)}`
+      )
       if (!response || typeof response !== 'object' || Array.isArray(response)) {
         return {}
       }
@@ -159,12 +162,12 @@ class MatrixProfileService extends BaseMatrixService {
   async setExtendedProfileField(userId: string, keyName: string, value: unknown): Promise<void> {
     try {
       const client = this.getClient()
-      await client.http.authedRequest(
+      await authedRequestWithPath<void>(
+        client,
         'PUT',
-        USER.EXTENDED_PROFILE_FIELD(userId, keyName),
+        `/_matrix/client/unstable${USER.EXTENDED_PROFILE_FIELD(userId, keyName)}`,
         undefined,
-        toMatrixJsonBody(value),
-        { prefix: '/_matrix/client/unstable' }
+        toMatrixJsonBody(value)
       )
       logger.info(`设置扩展资料字段成功: ${userId}/${keyName}`)
     } catch (err) {
@@ -179,9 +182,11 @@ class MatrixProfileService extends BaseMatrixService {
   async deleteExtendedProfileField(userId: string, keyName: string): Promise<void> {
     try {
       const client = this.getClient()
-      await client.http.authedRequest('DELETE', USER.EXTENDED_PROFILE_FIELD(userId, keyName), undefined, undefined, {
-        prefix: '/_matrix/client/unstable'
-      })
+      await authedRequestWithPath<void>(
+        client,
+        'DELETE',
+        `/_matrix/client/unstable${USER.EXTENDED_PROFILE_FIELD(userId, keyName)}`
+      )
       logger.info(`删除扩展资料字段成功: ${userId}/${keyName}`)
     } catch (err) {
       if (this.isUnsupportedExtendedProfileError(err)) {

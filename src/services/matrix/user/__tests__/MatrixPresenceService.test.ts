@@ -103,10 +103,16 @@ describe('MatrixPresenceService', () => {
 
       await matrixPresenceService.setPresence('unavailable', 'Busy')
 
-      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', '/presence/%40user%3Aexample.com/status', undefined, {
-        presence: 'unavailable',
-        status_msg: 'Busy'
-      })
+      expect(authedRequestImpl).toHaveBeenCalledWith(
+        'PUT',
+        '/presence/%40user%3Aexample.com/status',
+        undefined,
+        {
+          presence: 'unavailable',
+          status_msg: 'Busy'
+        },
+        undefined
+      )
     })
 
     it('should throw when client is not initialized', async () => {
@@ -180,9 +186,15 @@ describe('MatrixPresenceService', () => {
 
       await matrixPresenceService.subscribeToPresence(['@a:example.com'])
 
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/presence/list', undefined, {
-        subscribe: ['@a:example.com']
-      })
+      expect(authedRequestImpl).toHaveBeenCalledWith(
+        'POST',
+        '/presence/list',
+        undefined,
+        {
+          subscribe: ['@a:example.com']
+        },
+        undefined
+      )
     })
   })
 

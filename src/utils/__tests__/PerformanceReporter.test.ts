@@ -213,7 +213,7 @@ describe('PerformanceReporter', () => {
 
       const rawBody = mockFetch.mock.calls[0]?.[1]?.body
       const payload = rawBody instanceof Blob ? await rawBody.text() : rawBody
-      expect(payload).toContain('hula_sdk_manager_requests_total{')
+      expect(payload).toContain('tjg_sdk_manager_requests_total{')
       expect(payload).toContain('manager="voice"')
       expect(payload).toContain('platform="desktop"')
       expect(payload).toContain('kind="total"} 12 ')

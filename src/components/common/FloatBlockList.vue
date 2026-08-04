@@ -229,7 +229,7 @@ defineExpose({
   position: absolute;
   left: 0;
   width: 100%;
-  background: var(--hula-text-primary);
+  background: var(--tjg-text-primary);
   pointer-events: none;
   transition: top 0.2s ease-in-out;
   z-index: 0;

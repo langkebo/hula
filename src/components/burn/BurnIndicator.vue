@@ -69,27 +69,27 @@ const show = computed(() => {
   border-radius: 12px;
   font-size: 11px;
   font-weight: 500;
-  background: var(--hula-surface-list-hover);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-list-hover);
+  border: 1px solid var(--tjg-border-default);
   transition: all 0.3s ease;
 }
 
 .burn-indicator--burning {
-  background: color-mix(in srgb, var(--hula-color-danger-500) 10%, transparent);
-  border-color: color-mix(in srgb, var(--hula-color-danger-500) 30%, transparent);
-  color: var(--hula-color-danger-500);
+  background: color-mix(in srgb, var(--tjg-color-danger-500) 10%, transparent);
+  border-color: color-mix(in srgb, var(--tjg-color-danger-500) 30%, transparent);
+  color: var(--tjg-color-danger-500);
 }
 
 .burn-indicator--burned {
   background: rgba(108, 108, 108, 0.1);
   border-color: rgba(108, 108, 108, 0.3);
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .burn-indicator--waiting {
-  background: var(--hula-color-warning-100);
-  border-color: color-mix(in srgb, var(--hula-color-warning-500) 30%, transparent);
-  color: var(--hula-color-warning-500);
+  background: var(--tjg-color-warning-100);
+  border-color: color-mix(in srgb, var(--tjg-color-warning-500) 30%, transparent);
+  color: var(--tjg-color-warning-500);
 }
 
 .burn-indicator__icon {
@@ -148,7 +148,7 @@ const show = computed(() => {
 
 .burn-indicator__progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--hula-color-danger-500), var(--hula-color-danger-400));
+  background: linear-gradient(90deg, var(--tjg-color-danger-500), var(--tjg-color-danger-400));
   transition: width 1s linear;
 }
 </style>

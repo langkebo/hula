@@ -29,7 +29,7 @@ const sendMatrixVoipSignal = async (type: string, data: Record<string, unknown>)
 const MAX_TIME_OUT_SECONDS = 30
 
 // ICE 服务器通过 loadIceServers() 动态加载，支持从服务器配置获取
-const rtcCallBellUrl = '/sound/hula_bell.mp3'
+const rtcCallBellUrl = '/sound/tjg_bell.mp3'
 
 /**
  * webrtc 相关

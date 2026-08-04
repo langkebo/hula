@@ -9,15 +9,15 @@
       <n-flex justify="space-between" align="center" :size="0">
         <n-flex :size="4" vertical>
           <n-flex :size="0" align="center">
-            <p class="text-(20px [--hula-text-primary]) font-semibold select-none">HuLa-</p>
+            <p class="text-(20px [--tjg-text-primary]) font-semibold select-none">Tjg-</p>
             <p class="gpt-subtitle">ChatBot</p>
             <div class="ml-6px p-[4px_8px] size-fit bg-[--bate-bg] rounded-8px text-(12px [--bate-color] center)">
               Beta
             </div>
           </n-flex>
-          <p class="text-(12px [--hula-text-tertiary])">{{ t('ai_assistant.robot.subtitle_desc') }}</p>
+          <p class="text-(12px [--tjg-text-tertiary])">{{ t('ai_assistant.robot.subtitle_desc') }}</p>
         </n-flex>
-        <svg class="size-44px color-[--hula-color-primary-500] opacity-20"><use href="#GPT"></use></svg>
+        <svg class="size-44px color-[--tjg-color-primary-500] opacity-20"><use href="#GPT"></use></svg>
       </n-flex>
 
       <!-- 头像和插件 -->
@@ -25,8 +25,8 @@
         <n-flex align="center">
           <n-avatar bordered round :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')" :size="48" />
           <n-flex vertical>
-            <p class="text-(14px [--hula-text-primary]) font-500">{{ userStore.userInfo?.name ?? '' }}</p>
-            <p class="text-(12px [--hula-text-tertiary])">{{ t('ai_assistant.robot.expire_days', { days: 28 }) }}</p>
+            <p class="text-(14px [--tjg-text-primary]) font-500">{{ userStore.userInfo?.name ?? '' }}</p>
+            <p class="text-(12px [--tjg-text-tertiary])">{{ t('ai_assistant.robot.expire_days', { days: 28 }) }}</p>
           </n-flex>
         </n-flex>
 
@@ -44,13 +44,13 @@
         <!-- 加载状态 -->
         <div v-if="loading && pageNo === 1" class="flex justify-center items-center py-20px">
           <n-spin size="small" />
-          <span class="ml-10px text-(12px [--hula-text-tertiary])">{{ t('ai_assistant.robot.loading') }}</span>
+          <span class="ml-10px text-(12px [--tjg-text-tertiary])">{{ t('ai_assistant.robot.loading') }}</span>
         </div>
 
         <!-- 空状态 -->
         <div
           v-else-if="chatList.length === 0"
-          class="flex flex-col items-center justify-center py-20px text-(12px [--hula-text-tertiary])">
+          class="flex flex-col items-center justify-center py-20px text-(12px [--tjg-text-tertiary])">
           <svg class="size-40px mb-10px opacity-50"><use href="#empty"></use></svg>
           <p>{{ t('ai_assistant.robot.no_conversation') }}</p>
         </div>
@@ -76,7 +76,7 @@
                   <n-ellipsis
                     v-if="editingItemId !== item.id"
                     style="width: calc(100% - 20px)"
-                    class="text-(14px [--hula-text-primary]) truncate font-500 select-none">
+                    class="text-(14px [--tjg-text-primary]) truncate font-500 select-none">
                     {{ item.title || t('ai_assistant.robot.conversation_title', { index: index + 1 }) }}
                   </n-ellipsis>
                   <n-input
@@ -96,11 +96,11 @@
                     class="h-22px lh-22px rounded-6px"></n-input>
                   <svg
                     @click.stop="deleteChat(item)"
-                    class="color-[--hula-text-primary] size-20px opacity-0 absolute right-0px top-4px">
+                    class="color-[--tjg-text-primary] size-20px opacity-0 absolute right-0px top-4px">
                     <use href="#squareClose"></use>
                   </svg>
                 </n-flex>
-                <n-flex justify="space-between" align="center" :size="0" class="text-(12px [--hula-text-tertiary])">
+                <n-flex justify="space-between" align="center" :size="0" class="text-(12px [--tjg-text-tertiary])">
                   <p>{{ t('ai_assistant.robot.message_count', { count: item.messageCount || 0 }) }}</p>
                   <p>{{ formatTimestamp(item.createTime) }}</p>
                 </n-flex>
@@ -115,7 +115,7 @@
             {{ t('ai_assistant.robot.load_more') }}
           </n-button>
           <n-spin v-else size="small" />
-          <span v-if="loadingMore" class="ml-10px text-(12px [--hula-text-tertiary])">
+          <span v-if="loadingMore" class="ml-10px text-(12px [--tjg-text-tertiary])">
             {{ t('ai_assistant.robot.loading') }}
           </span>
         </div>
@@ -123,7 +123,7 @@
         <!-- 没有更多数据 -->
         <div
           v-else-if="chatList.length > 0"
-          class="flex justify-center items-center py-16px text-(12px [--hula-text-tertiary])">
+          class="flex justify-center items-center py-16px text-(12px [--tjg-text-tertiary])">
           <span>{{ t('ai_assistant.robot.no_more_conversations') }}</span>
         </div>
       </n-scrollbar>
@@ -136,12 +136,12 @@
         <n-flex :size="4" align="center">
           <div
             @click="jump"
-            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
+            class="bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) color-[--tjg-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
             <svg class="size-18px"><use href="#settings"></use></svg>
           </div>
           <div
             @click="openExternalUrl('https://gitee.com/llangkebo/hula/')"
-            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
+            class="bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) color-[--tjg-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
             <svg class="size-18px"><use href="#github"></use></svg>
           </div>
         </n-flex>
@@ -149,19 +149,19 @@
         <n-flex :size="4" align="center">
           <div
             @click="openHistory"
-            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
+            class="bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) color-[--tjg-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
             :title="t('ai_assistant.robot.generation_history')">
             <Icon icon="mdi:history" class="text-18px" />
           </div>
           <div
             @click="openModelManagement"
-            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
+            class="bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) color-[--tjg-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
             :title="t('ai_assistant.robot.manage_model')">
             <Icon icon="mdi:robot-outline" class="text-18px" />
           </div>
           <div
             @click="openRoleManagement"
-            class="bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) color-[--hula-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
+            class="bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) color-[--tjg-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer"
             :title="t('ai_assistant.robot.manage_role')">
             <Icon icon="mdi:account-cog" class="text-18px" />
           </div>
@@ -171,13 +171,13 @@
       <!-- 操作按钮行 -->
       <n-flex :size="4" align="center" justify="space-between">
         <!-- 提示信息或新建按钮 -->
-        <div v-if="!hasRoles" class="flex-1 text-(11px [--hula-color-danger-500]) text-center">
+        <div v-if="!hasRoles" class="flex-1 text-(11px [--tjg-color-danger-500]) text-center">
           {{ t('ai_assistant.robot.create_role_first') }}
         </div>
         <div
           v-else
           @click="add"
-          class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) select-none text-(12px [--hula-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
+          class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) select-none text-(12px [--tjg-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
           <svg class="size-15px pb-2px"><use href="#plus"></use></svg>
           <p>{{ t('ai_assistant.robot.new_chat') }}</p>
         </div>
@@ -196,7 +196,7 @@
           </template>
           <template #trigger>
             <div
-              class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) select-none text-(12px [--hula-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
+              class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) select-none text-(12px [--tjg-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
               <svg class="size-15px pb-2px"><use href="#delete"></use></svg>
               <p>{{ t('ai_assistant.robot.delete_all') }}</p>
             </div>
@@ -702,17 +702,17 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .gpt-subtitle {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-[--hula-color-primary-400] to-[--hula-color-primary-500] text-20px font-800;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[--tjg-color-primary-400] to-[--tjg-color-primary-500] text-20px font-800;
 }
 
 .plugins {
   @apply size-fit bg-[--chat-bt-color] rounded-8px custom-shadow p-[8px_14px]
   flex items-center gap-10px select-none cursor-pointer
-  text-14px color-[--hula-text-primary] border-(1px solid [--hula-border-default]);
+  text-14px color-[--tjg-text-primary] border-(1px solid [--tjg-border-default]);
 }
 
 .chat-item {
-  @apply relative bg-[--chat-bt-color] border-(1px solid [--hula-border-default]) cursor-pointer custom-shadow rounded-8px w-full h-65px;
+  @apply relative bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) cursor-pointer custom-shadow rounded-8px w-full h-65px;
   transition: all 0.2s ease;
 
   &:hover {
@@ -724,8 +724,8 @@ onMounted(async () => {
 }
 
 .chat-item-active {
-  border: 1px dashed var(--hula-color-primary-500);
-  box-shadow: 0 0 0 1px var(--hula-color-primary-100) inset;
+  border: 1px dashed var(--tjg-color-primary-500);
+  box-shadow: 0 0 0 1px var(--tjg-color-primary-100) inset;
 }
 
 .list-move, /* 对移动中的元素应用的过渡 */

@@ -96,7 +96,7 @@
               <!-- 分割线（只有当常规菜单存在时才显示） -->
               <div
                 v-if="visibleMenu && visibleMenu.length > 0"
-                class="h-1px bg-[--hula-border-default] m-[2px_8px]"></div>
+                class="h-1px bg-[--tjg-border-default] m-[2px_8px]"></div>
               <div
                 @click="handleClick(item)"
                 :id="`menu-item-${visibleMenu.length + index}`"
@@ -648,7 +648,7 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     align-items: center;
     &:hover,
     &.menu-item-focused {
-      background-color: var(--hula-menu-hover);
+      background-color: var(--tjg-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }
@@ -669,7 +669,7 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     display: flex;
     align-items: center;
     &:hover {
-      background-color: var(--hula-menu-hover);
+      background-color: var(--tjg-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }
@@ -690,7 +690,7 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     display: flex;
     align-items: center;
     &:hover {
-      background-color: var(--hula-menu-hover);
+      background-color: var(--tjg-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }
@@ -702,32 +702,32 @@ const shouldShowArrow = (item: ContextMenuItem) => {
   @include menu-item-style();
   .emoji-container {
     -webkit-backdrop-filter: blur(10px);
-    background: var(--hula-menu-bg);
+    background: var(--tjg-menu-bg);
     /* 允许放置表情符号，每个28px宽，加上间隔 */
     @apply flex flex-wrap max-w-180px px-6px select-none;
   }
 
   .emoji-item {
-    @apply flex-center size-28px rounded-4px text-16px cursor-pointer hover:bg-[--hula-menu-hover];
+    @apply flex-center size-28px rounded-4px text-16px cursor-pointer hover:bg-[--tjg-menu-hover];
   }
 
   .emoji-more-btn {
-    @apply flex-center size-28px px-4px rounded-4px text-12px cursor-pointer bg-[--hula-menu-hover] hover:bg-[--hula-menu-hover];
+    @apply flex-center size-28px px-4px rounded-4px text-12px cursor-pointer bg-[--tjg-menu-hover] hover:bg-[--tjg-menu-hover];
   }
   .menu-list {
     @include menu-list();
     width: max-content;
     .menu-item-disabled {
       @include menu-item();
-      color: var(--hula-text-disabled);
+      color: var(--tjg-text-disabled);
       svg {
-        color: var(--hula-text-disabled);
+        color: var(--tjg-text-disabled);
       }
     }
     .menu-item-danger {
-      color: var(--hula-color-danger-500);
+      color: var(--tjg-color-danger-500);
       svg {
-        color: var(--hula-color-danger-500);
+        color: var(--tjg-color-danger-500);
       }
     }
   }
@@ -739,15 +739,15 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     @include menu-list-wrap();
     .menu-item-disabled {
       @include menu-item-wrap();
-      color: var(--hula-text-disabled);
+      color: var(--tjg-text-disabled);
       svg {
-        color: var(--hula-text-disabled);
+        color: var(--tjg-text-disabled);
       }
     }
     .menu-item-danger {
-      color: var(--hula-color-danger-500);
+      color: var(--tjg-color-danger-500);
       svg {
-        color: var(--hula-color-danger-500);
+        color: var(--tjg-color-danger-500);
       }
     }
   }
@@ -762,9 +762,9 @@ const shouldShowArrow = (item: ContextMenuItem) => {
     @include menu-list();
     min-width: 120px;
     .menu-item-danger {
-      color: var(--hula-color-danger-500);
+      color: var(--tjg-color-danger-500);
       svg {
-        color: var(--hula-color-danger-500);
+        color: var(--tjg-color-danger-500);
       }
     }
   }
@@ -794,7 +794,7 @@ const shouldShowArrow = (item: ContextMenuItem) => {
       justify-self: end;
       width: 12px;
       height: 12px;
-      color: var(--hula-text-primary);
+      color: var(--tjg-text-primary);
     }
 
     .check-icon {

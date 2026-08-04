@@ -1,5 +1,5 @@
 .item-box {
-  @apply relative flex flex-col h-100vh box-border select-none text-[--hula-text-primary];
+  @apply relative flex flex-col h-100vh box-border select-none text-[--tjg-text-primary];
   .item {
     height: 46px;
     padding: 0 4px;
@@ -8,7 +8,7 @@
     border-radius: 6px;
     &:hover {
       cursor: pointer;
-      background-color: var(--hula-surface-list-hover);
+      background-color: var(--tjg-surface-list-hover);
     }
   }
   &:hover {

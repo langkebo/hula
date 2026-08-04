@@ -479,6 +479,26 @@ class MatrixVoiceService extends BaseMatrixService {
       return null
     }
   }
+
+  /**
+   * 获取 RTC 传输协议信息（MSC4143）
+   *
+   * 调用 GET /_matrix/client/unstable/org.matrix.msc4143/rtc/transports
+   * 失败时返回空对象，调用方按无 RTC 能力处理。
+   */
+  async getRtcTransports(): Promise<Record<string, unknown>> {
+    try {
+      const client = this.getClient()
+      const result = await client.http.authedRequest(
+        'GET',
+        '/_matrix/client/unstable/org.matrix.msc4143/rtc/transports'
+      )
+      return result as Record<string, unknown>
+    } catch (err) {
+      logger.warn(`[MatrixVoiceService] getRtcTransports failed: ${err}`)
+      return {}
+    }
+  }
 }
 
 export const matrixVoiceService = new MatrixVoiceService()

@@ -9,11 +9,11 @@
     <template #trigger>
       <div class="flex items-center gap-6px cursor-pointer" @click="emit('update:show', !show)">
         <n-avatar v-if="selectedRole" :src="selectedRole.avatar" :size="24" round :fallback-src="getDefaultAvatar()" />
-        <Icon v-else icon="mdi:account-circle" class="text-24px color-[--hula-text-tertiary]" />
-        <span class="text-(12px [--hula-text-primary])">
+        <Icon v-else icon="mdi:account-circle" class="text-24px color-[--tjg-text-tertiary]" />
+        <span class="text-(12px [--tjg-text-primary])">
           {{ selectedRole ? selectedRole.name : t('ai_assistant.robot.select_role') }}
         </span>
-        <Icon icon="mdi:chevron-down" class="text-16px color-[--hula-text-tertiary]" />
+        <Icon icon="mdi:chevron-down" class="text-16px color-[--tjg-text-tertiary]" />
       </div>
     </template>
     <div class="role-selector">
@@ -36,7 +36,7 @@
         <div v-else-if="roleList.length === 0" class="empty-container">
           <n-empty :description="t('ai_assistant.robot.no_role_data')" size="small">
             <template #icon>
-              <Icon icon="mdi:account-off" class="text-24px color-[--hula-text-tertiary]" />
+              <Icon icon="mdi:account-off" class="text-24px color-[--tjg-text-tertiary]" />
             </template>
           </n-empty>
         </div>

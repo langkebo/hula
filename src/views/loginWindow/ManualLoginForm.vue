@@ -4,7 +4,7 @@
       <n-avatar
         class="welcome size-80px rounded-50% border-(2px solid [--login-avatar-border])"
         :color="'var(--login-avatar-bg)'"
-        alt="HuLa Logo"
+        alt="Tjg Logo"
         :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
         :src="AvatarUtils.getAvatarUrl(loginInfo.avatar)" />
     </n-flex>
@@ -25,10 +25,10 @@
         clearable>
         <template #suffix>
           <n-flex v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
-            <svg v-if="!arrowStatus" class="down w-18px h-18px color-[--hula-text-secondary] cursor-pointer">
+            <svg v-if="!arrowStatus" class="down w-18px h-18px color-[--tjg-text-secondary] cursor-pointer">
               <use href="#down"></use>
             </svg>
-            <svg v-else class="down w-18px h-18px color-[--hula-text-secondary] cursor-pointer">
+            <svg v-else class="down w-18px h-18px color-[--tjg-text-secondary] cursor-pointer">
               <use href="#up"></use>
             </svg>
           </n-flex>
@@ -45,14 +45,14 @@
             v-for="item in loginHistories"
             :key="item.account"
             @click="giveAccount(item)"
-            class="p-8px cursor-pointer hover:bg-[--hula-text-tertiary]20 dark:hover:bg-[--hula-text-tertiary]30 hover:rounded-6px">
+            class="p-8px cursor-pointer hover:bg-[--tjg-text-tertiary]20 dark:hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px">
             <div class="flex-between-center">
               <n-avatar
                 :src="AvatarUtils.getAvatarUrl(item.avatar)"
                 :color="'var(--login-avatar-bg)'"
                 class="size-28px rounded-50%" />
-              <p class="text-14px color-[--hula-text-secondary]">{{ item.account }}</p>
-              <svg @click.stop="delAccount(item)" class="w-12px h-12px color-[--hula-text-secondary]">
+              <p class="text-14px color-[--tjg-text-secondary]">{{ item.account }}</p>
+              <svg @click.stop="delAccount(item)" class="w-12px h-12px color-[--tjg-text-secondary]">
                 <use href="#close"></use>
               </svg>
             </div>
@@ -79,7 +79,7 @@
 
       <n-flex align="center" justify="center" :size="6">
         <n-checkbox v-model:checked="protocol" :aria-label="t('login.term.checkout.text1')" />
-        <div class="text-12px color-[--hula-text-tertiary] cursor-default lh-14px agreement">
+        <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px agreement">
           <span>{{ t('login.term.checkout.text1') }}</span>
           <span class="color-[--color-primary] cursor-pointer" @click.stop="emit('open-service-agreement')">
             {{ t('login.term.checkout.text2') }}
@@ -95,7 +95,7 @@
         :loading="loading"
         :disabled="loginDisabled"
         tertiary
-        style="color: var(--hula-text-inverse)"
+        style="color: var(--tjg-text-inverse)"
         class="gradient-button w-full mt-8px mb-10px"
         @click="emit('login')">
         <span>{{ loginText }}</span>
@@ -218,15 +218,15 @@ onUnmounted(() => {
   gap: 8px;
   padding: 10px 12px;
   margin-top: 4px;
-  background: var(--hula-color-danger-50, rgba(239, 68, 68, 0.08));
-  border: 1px solid var(--hula-color-danger-200, rgba(239, 68, 68, 0.2));
+  background: var(--tjg-color-danger-50, rgba(239, 68, 68, 0.08));
+  border: 1px solid var(--tjg-color-danger-200, rgba(239, 68, 68, 0.2));
   border-radius: 6px;
 }
 
 .login-error-retry__message {
   font-size: 12px;
   line-height: 16px;
-  color: var(--hula-color-danger-600, #dc2626);
+  color: var(--tjg-color-danger-600, #dc2626);
   text-align: center;
   margin: 0;
 }

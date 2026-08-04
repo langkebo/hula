@@ -9,7 +9,7 @@ import type { Body, IHttpOpts, IRequestOpts, QueryDict } from 'matrix-js-sdk'
 declare module 'matrix-js-sdk' {
   // ==================== MatrixHttpApi 方法重载 ====================
   // SDK 的 authedRequest/request 签名使用 Method enum（nominal 类型，不接受字符串字面量）。
-  // 此处添加 method: string 的方法重载，让 hula 代码可以用 'GET'/'POST' 等字符串字面量调用。
+  // 此处添加 method: string 的方法重载，让 tjg 代码可以用 'GET'/'POST' 等字符串字面量调用。
   // Declaration merging 对方法是追加重载，与 SDK 已有的 Method 签名并存。
   interface MatrixHttpApi<O extends IHttpOpts> {
     authedRequest<T = unknown>(
@@ -29,7 +29,7 @@ declare module 'matrix-js-sdk' {
   }
 
   // ==================== MSC3575RoomData 扩展 ====================
-  // hula 的 MatrixSlidingSyncService 期望 roomData 有 state/summary 字段（hula 自定义扩展）。
+  // tjg 的 MatrixSlidingSyncService 期望 roomData 有 state/summary 字段（tjg 自定义扩展）。
   // SDK 的 MSC3575RoomData 没有这两个字段，此处通过 interface augmentation 添加。
   interface MSC3575RoomData {
     state?: Record<string, unknown>
@@ -37,8 +37,8 @@ declare module 'matrix-js-sdk' {
   }
 
   // ==================== SlidingSync 方法扩展 ====================
-  // hula 的 MatrixSlidingSyncService 使用 getList/subscribeToRoom/unsubscribeFromRoom/getSyncToken
-  // 等方法，这些是 hula 自定义的 SlidingSync 扩展（SDK 的 SlidingSync class 没有这些方法）。
+  // tjg 的 MatrixSlidingSyncService 使用 getList/subscribeToRoom/unsubscribeFromRoom/getSyncToken
+  // 等方法，这些是 tjg 自定义的 SlidingSync 扩展（SDK 的 SlidingSync class 没有这些方法）。
   // setInitialPos 是 SDK 源码中存在的 public 方法（sliding-sync.ts:334），但部分 SDK 构建的
   // .d.ts 未导出该方法，此处补充类型声明以支持 MatrixSyncManager 的增量 sync pos 持久化。
   interface SlidingSync {
@@ -57,7 +57,7 @@ declare module 'matrix-js-sdk' {
   }
 
   // ==================== Room 属性扩展 ====================
-  // hula 代码直接访问 room.topic（SDK 的 Room class 没有此属性，需通过 currentState 获取）。
+  // tjg 代码直接访问 room.topic（SDK 的 Room class 没有此属性，需通过 currentState 获取）。
   // 此处添加 topic 属性扩展，避免大量代码重构。
   interface Room {
     topic?: string
@@ -783,7 +783,7 @@ declare module 'matrix-js-sdk' {
 
 // ==================== SDK 子路径模块类型声明 ====================
 // 清单 D.3: 移除 10 个仅含 extendMatrixClient() 桩声明的 declare module 块。
-// extendMatrixClient 在 hula 生产代码中零引用（sdk-compat.ts 不导出该函数），
+// extendMatrixClient 在 tjg 生产代码中零引用（sdk-compat.ts 不导出该函数），
 // 这些增强块全是死代码。其中 credentials/message/profile/sending 4 个子路径
 // 在 SDK package.json exports 中不存在，属于幻影声明；其余 6 个（account/auth/
 // capabilities/room/media/presence）SDK 已提供真实类型，删除增强后 TS 自动回退。

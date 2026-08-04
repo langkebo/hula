@@ -76,7 +76,7 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   overflow: hidden;
 }
 
@@ -85,7 +85,7 @@ onUnmounted(() => {
   height: 32px;
   display: flex;
   align-items: center;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .window-chat-container__main {

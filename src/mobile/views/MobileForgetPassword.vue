@@ -134,7 +134,7 @@
       <div v-if="currentStep === 3" class="w-full max-w-300px mx-auto mt-100px text-center">
         <img class="size-98px" src="/emoji/party-popper.webp" alt="庆祝" />
         <div class="mt-16px text-18px">{{ t('mobile_forget_code.password_reset_success') }}</div>
-        <div class="mt-16px text-14px text-[--hula-text-secondary]">
+        <div class="mt-16px text-14px text-[--tjg-text-secondary]">
           {{ t('mobile_forget_code.password_reset_success_desc') }}
         </div>
       </div>
@@ -398,7 +398,7 @@ onBeforeUnmount(() => {
 
 :deep(.van-cell.van-field) {
   padding: 10px 16px;
-  background: var(--hula-overlay-mobile-sheet);
+  background: var(--tjg-overlay-mobile-sheet);
   border-radius: 8px;
   margin-bottom: 8px;
 }
@@ -412,12 +412,12 @@ onBeforeUnmount(() => {
 }
 
 :deep(.van-field__right-icon) {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   cursor: pointer;
 }
 
 :deep(.van-field__clear) {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 :deep(.van-steps) {

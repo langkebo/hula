@@ -83,7 +83,7 @@ export class AdminRegistrationTokensService {
           expiry_ts: options.expiryTime
         })
       } else {
-        result = await admin.createRegistrationToken(`hula_${Date.now()}`, options?.usesAllowed, options?.expiryTime)
+        result = await admin.createRegistrationToken(`tjg_${Date.now()}`, options?.usesAllowed, options?.expiryTime)
       }
       logger.info('[Admin] 注册令牌已创建')
       return {

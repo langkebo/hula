@@ -5,7 +5,7 @@
       v-if="networkBanner"
       align="center"
       justify="center"
-      class="z-999 w-full h-40px rounded-4px text-[var(--text-sm)] text-[--hula-color-danger-500] bg-[--hula-color-danger-100] flex-shrink-0">
+      class="z-999 w-full h-40px rounded-4px text-[var(--text-sm)] text-[--tjg-color-danger-500] bg-[--tjg-color-danger-100] flex-shrink-0">
       <svg class="size-16px">
         <use href="#cloudError"></use>
       </svg>
@@ -30,12 +30,12 @@
               <svg class="size-16px flex-shrink-0">
                 <use href="#Loudspeaker"></use>
               </svg>
-              <div class="flex-1 min-w-0 line-clamp-1 text-[var(--text-sm)] text-[--hula-text-tertiary]">
+              <div class="flex-1 min-w-0 line-clamp-1 text-[var(--text-sm)] text-[--tjg-text-tertiary]">
                 {{ topAnnouncement.content }}
               </div>
             </n-flex>
             <div class="flex-shrink-0 w-60px select-none" @click="handleViewAnnouncement">
-              <p class="text-[var(--text-sm)] text-[--hula-color-primary-500] cursor-pointer">
+              <p class="text-[var(--text-sm)] text-[--tjg-color-primary-500] cursor-pointer">
                 {{ t('home.chat_main.announcement.view_all') }}
               </p>
             </div>
@@ -60,7 +60,7 @@
         @click="togglePrivateMode">
         <span class="private-toggle-btn__letter">S</span>
       </button>
-      <span v-if="privateModeActive" class="text-[var(--text-sm)] text-[--hula-color-danger-500]">
+      <span v-if="privateModeActive" class="text-[var(--text-sm)] text-[--tjg-color-danger-500]">
         私密模式已开启
       </span>
     </div>
@@ -89,7 +89,7 @@
           <div
             v-show="isMainViewReady && chatStore.shouldShowNoMoreMessage"
             class="flex-center gap-6px h-32px flex-shrink-0 cursor-default select-none">
-            <p class="text-[var(--text-sm)] text-[--hula-text-tertiary]">{{ t('home.chat_main.no_more') }}</p>
+            <p class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">{{ t('home.chat_main.no_more') }}</p>
           </div>
 
           <!-- 空状态 -->
@@ -125,7 +125,7 @@
                 :data-message-index="index">
                 <!-- 信息间隔时间 -->
                 <span
-                  class="text-[var(--text-sm)] text-[--hula-text-tertiary] select-none p-4px"
+                  class="text-[var(--text-sm)] text-[--tjg-text-tertiary] select-none p-4px"
                   v-if="item.timeBlock"
                   @click.stop>
                   {{ timeToStr(item.message.sendTime) }}
@@ -174,7 +174,7 @@
       :style="{ bottom: '24px', right: '50px' }">
       <div class="float-box" :class="{ max: currentNewMsgCount?.count > 99 }" @click="handleFloatButtonClick">
         <n-flex justify="space-between" align="center">
-          <n-icon :color="currentNewMsgCount?.count > 99 ? 'var(--color-danger)' : 'var(--color-primary)'">
+          <n-icon :color="currentNewMsgCount?.count > 99 ? 'var(--color-danger)' : 'var(--tjg-color-primary-500)'">
             <svg>
               <use href="#double-down"></use>
             </svg>
@@ -182,7 +182,7 @@
           <span
             v-if="currentNewMsgCount?.count && currentNewMsgCount.count > 0"
             class="text-[var(--text-sm)]"
-            :class="{ 'color-[--hula-color-danger-500]': currentNewMsgCount?.count > 99 }">
+            :class="{ 'color-[--tjg-color-danger-500]': currentNewMsgCount?.count > 99 }">
             {{ t('home.chat_main.new_messages', { count: newMsgCountLabel }) }}
           </span>
         </n-flex>
@@ -195,12 +195,12 @@
     <!-- 阅后即焚切换（私密模式激活时） -->
     <div
       v-if="privateModeActive"
-      class="flex-shrink-0 px-12px py-4px flex items-center gap-8px border-t border-[--hula-border-default]">
+      class="flex-shrink-0 px-12px py-4px flex items-center gap-8px border-t border-[--tjg-border-default]">
       <BurnAfterReadToggle
         :enabled="burnEnabled"
         @update:enabled="burnEnabled = $event"
         @select-duration="burnDuration = $event" />
-      <span class="text-[var(--text-sm)] text-[--hula-text-tertiary]">
+      <span class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">
         {{ burnEnabled ? `阅后即焚已开启` : '点击图标开启阅后即焚' }}
       </span>
     </div>
@@ -208,12 +208,12 @@
 
   <!-- 弹出框 -->
   <n-modal v-model:show="modalShow" class="w-350px border-rd-8px">
-    <div class="bg-[--hula-surface-panel] w-360px h-full p-6px box-border flex flex-col">
+    <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <div
         v-if="isMac()"
         @click="modalShow = false"
-        class="mac-close z-999 size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
+        class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute left-6px">
+        <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
           <use href="#close"></use>
         </svg>
       </div>
@@ -235,12 +235,12 @@
   </n-modal>
 
   <n-modal v-model:show="groupNicknameModalVisible" class="w-360px border-rd-8px" :mask-closable="false">
-    <div class="bg-[--hula-surface-panel] w-360px h-full p-6px box-border flex flex-col">
+    <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <div
         v-if="isMac()"
         @click="groupNicknameModalVisible = false"
-        class="mac-close z-999 size-13px shadow-inner bg-[--hula-color-danger-500] rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-[--hula-surface-media-preview] select-none absolute top-3px left-3px">
+        class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute left-6px">
+        <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
           <use href="#close"></use>
         </svg>
       </div>
@@ -252,18 +252,18 @@
         <use href="#close"></use>
       </svg>
       <div class="flex flex-col gap-20px p-[22px_10px_10px_22px] select-none">
-        <span class="text-[var(--text-base)] text-[--hula-text-primary] font-500">
+        <span class="text-[var(--text-base)] text-[--tjg-text-primary] font-500">
           {{ t('home.chat_main.group_nickname.title') }}
         </span>
         <n-input
           v-model:value="groupNicknameValue"
           :placeholder="t('home.chat_main.group_nickname.placeholder')"
           :maxlength="12"
-          class="border-(1px solid color-mix(in srgb, var(--hula-text-tertiary) 80%, transparent))"
+          class="border-(1px solid color-mix(in srgb, var(--tjg-text-tertiary) 80%, transparent))"
           :disabled="groupNicknameSubmitting"
           clearable
           @keydown.enter.prevent="handleGroupNicknameConfirm" />
-        <p v-if="groupNicknameError" class="text-[var(--text-sm)] text-[--hula-color-danger-500]">
+        <p v-if="groupNicknameError" class="text-[var(--text-sm)] text-[--tjg-color-danger-500]">
           {{ groupNicknameError }}
         </p>
         <n-flex justify="end" :size="12">
@@ -293,9 +293,9 @@
 
   <!-- 私密模式确认对话框 -->
   <n-modal v-model:show="showPrivateConfirm" class="w-360px border-rd-8px">
-    <div class="bg-[--hula-surface-panel] w-360px p-24px box-border flex flex-col gap-16px">
-      <span class="text-[var(--text-base)] text-[--hula-text-primary] font-500">进入私密模式</span>
-      <p class="text-[var(--text-sm)] text-[--hula-text-secondary]">
+    <div class="bg-[--tjg-surface-panel] w-360px p-24px box-border flex flex-col gap-16px">
+      <span class="text-[var(--text-base)] text-[--tjg-text-primary] font-500">进入私密模式</span>
+      <p class="text-[var(--text-sm)] text-[--tjg-text-secondary]">
         私密模式下，消息可以设置为阅后即焚，发送后对方阅读将自动销毁。确定要进入私密模式吗？
       </p>
       <n-flex justify="end" :size="12">
@@ -915,25 +915,25 @@ onUnmounted(() => {
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: var(--hula-radius-full, 50%);
+  border-radius: var(--tjg-radius-full, 50%);
   background: transparent;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   cursor: pointer;
-  font-size: var(--hula-font-size-sm, 14px);
-  font-weight: var(--hula-font-weight-semibold, 600);
-  transition: all var(--hula-motion-duration-fast, 0.15s) var(--hula-motion-ease-standard, ease);
+  font-size: var(--tjg-font-size-sm, 14px);
+  font-weight: var(--tjg-font-weight-semibold, 600);
+  transition: all var(--tjg-motion-duration-fast, 0.15s) var(--tjg-motion-ease-standard, ease);
 
   &:hover {
-    background: var(--hula-surface-panel-muted, rgba(0, 0, 0, 0.04));
-    color: var(--hula-text-primary);
+    background: var(--tjg-surface-panel-muted, rgba(0, 0, 0, 0.04));
+    color: var(--tjg-text-primary);
   }
 
   &--active {
-    color: var(--hula-color-danger-500);
-    background: var(--hula-color-danger-100, rgba(255, 77, 79, 0.1));
+    color: var(--tjg-color-danger-500);
+    background: var(--tjg-color-danger-100, rgba(255, 77, 79, 0.1));
 
     &:hover {
-      background: var(--hula-color-danger-200, rgba(255, 77, 79, 0.2));
+      background: var(--tjg-color-danger-200, rgba(255, 77, 79, 0.2));
     }
   }
 
@@ -948,7 +948,7 @@ onUnmounted(() => {
   z-index: 10;
   width: fit-content;
   user-select: none;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   cursor: pointer;
 }
 
@@ -970,7 +970,7 @@ onUnmounted(() => {
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: color-mix(in srgb, var(--hula-text-tertiary) 30%, transparent);
+    background-color: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
     border-radius: 3px;
     transition-property: opacity, background-color;
     transition-duration: 0.3s;
@@ -980,7 +980,7 @@ onUnmounted(() => {
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background-color: color-mix(in srgb, var(--hula-text-tertiary) 50%, transparent);
+    background-color: color-mix(in srgb, var(--tjg-text-tertiary) 50%, transparent);
   }
 
   &::-webkit-scrollbar-track {
@@ -1018,11 +1018,11 @@ onUnmounted(() => {
 }
 
 .message-row--hoverable:hover:not(.active-reply):not(.message-row--multi-select) {
-  background: color-mix(in srgb, var(--hula-text-primary) 4%, transparent);
+  background: color-mix(in srgb, var(--tjg-text-primary) 4%, transparent);
 }
 
 .message-row--multi-select {
-  background: color-mix(in srgb, var(--hula-text-tertiary) 20%, transparent);
+  background: color-mix(in srgb, var(--tjg-text-tertiary) 20%, transparent);
 }
 
 .message-list-placeholder {
@@ -1038,9 +1038,9 @@ onUnmounted(() => {
   border-radius: 14px;
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--hula-surface-panel) 88%, var(--hula-text-tertiary) 12%) 0%,
-    color-mix(in srgb, var(--hula-surface-panel) 78%, var(--hula-text-tertiary) 22%) 50%,
-    color-mix(in srgb, var(--hula-surface-panel) 88%, var(--hula-text-tertiary) 12%) 100%
+    color-mix(in srgb, var(--tjg-surface-panel) 88%, var(--tjg-text-tertiary) 12%) 0%,
+    color-mix(in srgb, var(--tjg-surface-panel) 78%, var(--tjg-text-tertiary) 22%) 50%,
+    color-mix(in srgb, var(--tjg-surface-panel) 88%, var(--tjg-text-tertiary) 12%) 100%
   );
   background-size: 200% 100%;
   animation: chat-skeleton-shimmer 1.2s ease-in-out infinite;

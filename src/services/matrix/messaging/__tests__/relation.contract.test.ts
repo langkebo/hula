@@ -4,18 +4,27 @@
  * Uses a REAL SDK client so URL construction and prefix handling execute.
  * Catches URL double-prefix bugs that vi.mock tests miss.
  *
- * Covers the 4 public methods that call `client.http.authedRequest` directly
- * (no SDK Manager fallback): fetchRelations, fetchRelationsByType,
- * getAggregations, sendRelation.
+ * Covers the 4 public methods that previously called `client.http.authedRequest`
+ * directly: fetchRelations, fetchRelationsByType, getAggregations, sendRelation.
+ *
+ * After refactoring:
+ * - fetchRelations / fetchRelationsByType use `client.relations()` (SDK high-level,
+ *   hits /_matrix/client/v1/rooms/.../relations/...).
+ * - getAggregations uses `authedRequestWithPath` (wrapper around authedRequest,
+ *   hits /_matrix/client/v3/rooms/.../aggregations/...).
+ * - sendRelation uses `client.sendEvent()` (SDK high-level,
+ *   hits /_matrix/client/v3/rooms/.../send/...).
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, extendMatrixClientWithManagers, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixClientService } from '../../MatrixClientService'
 import { matrixMessageRelationService } from '../MatrixMessageRelationService'
 
 const HOMESERVER = 'https://hs.relation-contract.test'
+const PREFIX_V1 = '/_matrix/client/v1'
+const PREFIX_V3 = '/_matrix/client/v3'
 const seenUrls: { method: string; url: string }[] = []
 let realClient: MatrixClient
 
@@ -30,30 +39,40 @@ vi.mock('@/services/i18n', () => ({
 }))
 
 setupMswServer(
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/relations/:eventId`, ({ request }) => {
+  // client.relations() calls fetchRoomEvent in addition to fetchRelations
+  http.get(`${HOMESERVER}${PREFIX_V3}/rooms/:roomId/event/:eventId`, ({ request }) => {
+    seenUrls.push({ method: request.method, url: request.url })
+    return HttpResponse.json({ event_id: '$e1', type: 'm.room.message', content: { body: 'orig' } })
+  }),
+  // fetchRelations → client.relations() → SDK uses ClientPrefix.V1
+  http.get(`${HOMESERVER}${PREFIX_V1}/rooms/:roomId/relations/:eventId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ chunk: [{ event_id: '$rel-1' }], next_batch: 'nb' })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/relations/:eventId/:relType`, ({ request }) => {
+  // fetchRelationsByType → client.relations() → SDK uses ClientPrefix.V1
+  http.get(`${HOMESERVER}${PREFIX_V1}/rooms/:roomId/relations/:eventId/:relType`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ chunk: [{ event_id: '$rel-2' }] })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/aggregations/:eventId/:relType`, ({ request }) => {
+  // getAggregations → authedRequestWithPath → SDK default prefix V3
+  http.get(`${HOMESERVER}${PREFIX_V3}/rooms/:roomId/aggregations/:eventId/:relType`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ chunk: [{ type: 'm.annotation', key: '👍', count: 3 }] })
   }),
-  http.put(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/relations/:eventId/:relType/:txnId`, async ({ request }) => {
+  // sendRelation → client.sendEvent() → SDK send endpoint V3
+  http.put(`${HOMESERVER}${PREFIX_V3}/rooms/:roomId/send/:eventType/:txnId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
-    const body = (await request.json()) as Record<string, unknown>
-    return HttpResponse.json({
-      event_id: '$new-rel',
-      room_id: body.room_id ?? '!r:hs',
-      relates_to: { event_id: '$root', rel_type: 'm.annotation' }
-    })
+    return HttpResponse.json({ event_id: '$new-rel' })
   })
 )
 
 describe('Message-relation service URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    // In Vitest environment, SDK skips async manager init (shouldSkipAsyncManagerInit).
+    // Manually initialize so client.relations() / getRelationsManager() are available.
+    await extendMatrixClientWithManagers()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     vi.spyOn(matrixClientService, 'getHomeserverUrl').mockReturnValue(HOMESERVER)
@@ -71,32 +90,33 @@ describe('Message-relation service URL construction contract (real SDK + msw)', 
     vi.clearAllMocks()
   })
 
-  it('fetchRelations hits /_matrix/client/v3/rooms/{roomId}/relations/{eventId} (no duplication)', async () => {
-    const result = await matrixMessageRelationService.fetchRelations('!r:hs', '$e1', {
+  it('fetchRelations hits /_matrix/client/v1/rooms/{roomId}/relations/{eventId} (no duplication)', async () => {
+    await matrixMessageRelationService.fetchRelations('!r:hs', '$e1', {
       from: 'tok-1',
       limit: 10,
       dir: 'b'
     })
 
-    // seenUrls is reset in beforeEach, so exactly one GET should be recorded.
-    expect(seenUrls).toHaveLength(1)
-    expect(seenUrls[0].method).toBe('GET')
+    // client.relations() also calls fetchRoomEvent (GET .../event/$e1) — filter to relations URLs
+    const relationsUrls = seenUrls.filter((s) => s.url.includes('/relations/'))
+    expect(relationsUrls).toHaveLength(1)
+    expect(relationsUrls[0].method).toBe('GET')
     // encodeURIComponent('!r:hs') = '!r%3Ahs' ('!' is unreserved, not encoded)
     // encodeURIComponent('$e1')  = '%24e1'
-    expect(seenUrls[0].url).toBe(
-      `${HOMESERVER}/_matrix/client/v3/rooms/!r%3Ahs/relations/%24e1?from=tok-1&limit=10&dir=b`
+    expect(relationsUrls[0].url).toBe(
+      `${HOMESERVER}${PREFIX_V1}/rooms/!r%3Ahs/relations/%24e1?from=tok-1&limit=10&dir=b`
     )
-    expect(seenUrls[0].url).not.toMatch(/\/_matrix\/client\/v3\/_matrix\/client\/v3/)
-    expect(result?.chunk).toHaveLength(1)
+    expect(relationsUrls[0].url).not.toMatch(/\/_matrix\/client\/v1\/_matrix\/client\/v1/)
   })
 
-  it('fetchRelationsByType hits /_matrix/client/v3/rooms/{roomId}/relations/{eventId}/{relType} (no duplication)', async () => {
+  it('fetchRelationsByType hits /_matrix/client/v1/rooms/{roomId}/relations/{eventId}/{relType} (no duplication)', async () => {
     const result = await matrixMessageRelationService.fetchRelationsByType('!r:hs', '$e1', 'm.replace', { limit: 5 })
 
-    expect(seenUrls).toHaveLength(1)
-    expect(seenUrls[0].method).toBe('GET')
-    expect(seenUrls[0].url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!r%3Ahs/relations/%24e1/m.replace?limit=5`)
-    expect(seenUrls[0].url).not.toMatch(/\/_matrix\/client\/v3\/_matrix\/client\/v3/)
+    const relationsUrls = seenUrls.filter((s) => s.url.includes('/relations/'))
+    expect(relationsUrls).toHaveLength(1)
+    expect(relationsUrls[0].method).toBe('GET')
+    expect(relationsUrls[0].url).toBe(`${HOMESERVER}${PREFIX_V1}/rooms/!r%3Ahs/relations/%24e1/m.replace?limit=5`)
+    expect(relationsUrls[0].url).not.toMatch(/\/_matrix\/client\/v1\/_matrix\/client\/v1/)
     expect(result?.chunk).toHaveLength(1)
   })
 
@@ -105,12 +125,12 @@ describe('Message-relation service URL construction contract (real SDK + msw)', 
 
     expect(seenUrls).toHaveLength(1)
     expect(seenUrls[0].method).toBe('GET')
-    expect(seenUrls[0].url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!r%3Ahs/aggregations/%24e1/m.annotation`)
+    expect(seenUrls[0].url).toBe(`${HOMESERVER}${PREFIX_V3}/rooms/!r%3Ahs/aggregations/%24e1/m.annotation`)
     expect(seenUrls[0].url).not.toMatch(/\/_matrix\/client\/v3\/_matrix\/client\/v3/)
     expect(result?.chunk?.[0]?.count).toBe(3)
   })
 
-  it('sendRelation hits /_matrix/client/v3/rooms/{roomId}/relations/{eventId}/{relType}/{txnId} with PUT (no duplication)', async () => {
+  it('sendRelation hits /_matrix/client/v3/rooms/{roomId}/send/{eventType}/{txnId} with PUT (no duplication)', async () => {
     const before = Date.now()
     const result = await matrixMessageRelationService.sendRelation(
       '!r:hs',
@@ -127,7 +147,7 @@ describe('Message-relation service URL construction contract (real SDK + msw)', 
     expect(seenUrls[0].url).not.toMatch(/\/_matrix\/client\/v3\/_matrix\/client\/v3/)
 
     // txnId is generated as `txn_${Date.now()}` — extract and validate recency.
-    const match = seenUrls[0].url.match(/\/m\.annotation\/(txn_\d+)$/)
+    const match = seenUrls[0].url.match(/\/m\.reaction\/(txn_\d+)$/)
     expect(match).not.toBeNull()
     const txnTs = Number(match![1].replace('txn_', ''))
     expect(txnTs).toBeGreaterThanOrEqual(before)

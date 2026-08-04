@@ -3,7 +3,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('CallBell')
 
-const DEFAULT_BELL_URL = '/sound/hula_bell.mp3'
+const DEFAULT_BELL_URL = '/sound/tjg_bell.mp3'
 
 /**
  * 封装通话铃声：一个隐藏的 HTMLAudioElement + play/pause/stop 原语。

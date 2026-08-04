@@ -1,7 +1,7 @@
 <template>
   <div class="tab-bar-wrap" :class="{ 'tab-bar-wrap--vertical': vertical }">
-    <div v-if="!vertical" class="h-1px bg-[--hula-border-layout-divider]"></div>
-    <div v-else class="w-1px h-full bg-[--hula-border-layout-divider]"></div>
+    <div v-if="!vertical" class="h-1px bg-[--tjg-border-layout-divider]"></div>
+    <div v-else class="w-1px h-full bg-[--tjg-border-layout-divider]"></div>
     <nav
       class="tab-bar flex items-end"
       :class="vertical ? 'flex-col justify-around' : 'justify-around'"
@@ -16,13 +16,13 @@
         class="tab-item flex flex-col items-center no-underline relative min-h-48px justify-center"
         :class="[
           vertical ? 'w-full' : 'flex-1',
-          route.path === item.path ? 'color-[--hula-color-primary-500]' : 'text-[--hula-text-tertiary]'
+          route.path === item.path ? 'color-[--tjg-color-primary-500]' : 'text-[--tjg-text-tertiary]'
         ]"
         @click="handleNavigate(item.path)">
         <van-badge
           class="flex flex-col w-full flex-1 relative items-center justify-center"
           :offset="[-6, 6]"
-          color="var(--hula-color-danger-500)"
+          color="var(--tjg-color-danger-500)"
           :content="getUnReadCount(item.label) || ''"
           :max="99">
           <svg class="w-26px h-26px">

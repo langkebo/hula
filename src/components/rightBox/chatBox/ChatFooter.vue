@@ -1,43 +1,43 @@
 <template>
   <!-- 底部栏 -->
   <main
-    :class="[isMobile() ? 'flex-col w-full' : 'border-t-(1px solid [--hula-border-default])']"
+    :class="[isMobile() ? 'flex-col w-full' : 'border-t-(1px solid [--tjg-border-default])']"
     class="h-full flex flex-col relative">
     <!-- 添加遮罩层 -->
     <div
       v-if="isSingleChat && isSessionTargetPending"
       :style="{ height: `${footerHeight}px` }"
-      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]">
+      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--tjg-surface-overlay]">
       <n-flex align="center" justify="center" class="pb-60px">
-        <span class="text-(14px [--hula-text-tertiary])">{{ t('editor.preparing_session') }}</span>
+        <span class="text-(14px [--tjg-text-tertiary])">{{ t('editor.preparing_session') }}</span>
       </n-flex>
     </div>
     <div
       v-else-if="isSingleChat && !isFriend"
       :style="{ height: `${footerHeight}px` }"
-      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]">
+      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--tjg-surface-overlay]">
       <n-flex align="center" justify="center" class="pb-60px">
         <svg class="size-24px">
           <use href="#cloudError"></use>
         </svg>
-        <span class="text-(14px [--hula-text-tertiary])">{{ t('editor.relation.not_friends') }}</span>
+        <span class="text-(14px [--tjg-text-tertiary])">{{ t('editor.relation.not_friends') }}</span>
       </n-flex>
     </div>
     <div
       v-else-if="isRoomReadonly"
       :style="{ height: `${footerHeight}px` }"
-      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--hula-surface-overlay]">
+      class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--tjg-surface-overlay]">
       <n-flex align="center" justify="center" class="pb-60px">
         <svg class="size-24px">
           <use href="#lock"></use>
         </svg>
-        <span class="text-(14px [--hula-text-tertiary])">{{ t('editor.room_readonly') }}</span>
+        <span class="text-(14px [--tjg-text-tertiary])">{{ t('editor.room_readonly') }}</span>
       </n-flex>
     </div>
 
     <ChatMsgMultiChoose v-if="chatStore.isMsgMultiChoose" />
 
-    <div v-if="!chatStore.isMsgMultiChoose" class="color-[--hula-text-secondary] flex flex-col flex-1 min-h-0">
+    <div v-if="!chatStore.isMsgMultiChoose" class="color-[--tjg-text-secondary] flex flex-col flex-1 min-h-0">
       <!-- 输入框顶部选项栏 -->
       <n-flex
         v-if="!isMobile()"
@@ -54,11 +54,11 @@
             :disabled="chatStore.isMsgMultiChoose"
             style="
               padding: 0;
-              background: var(--hula-surface-panel);
+              background: var(--tjg-surface-panel);
               backdrop-filter: blur(10px);
               -webkit-backdrop-filter: blur(10px);
-              box-shadow: var(--hula-shadow-md);
-              border: 1px solid var(--hula-border-default);
+              box-shadow: var(--tjg-shadow-md);
+              border: 1px solid var(--tjg-border-default);
               width: auto;
             ">
             <template #trigger>
@@ -76,7 +76,7 @@
                   </svg>
                 </template>
                 <div v-if="recentEmojis.length > 0" class="p-4px">
-                  <div class="text-xs text-[--hula-text-tertiary] mb-4px">{{ t('editor.recently_used') }}</div>
+                  <div class="text-xs text-[--tjg-text-tertiary] mb-4px">{{ t('editor.recently_used') }}</div>
                   <div class="flex flex-wrap gap-8px max-w-212px">
                     <div
                       v-for="(emoji, index) in recentEmojis"
@@ -105,11 +105,11 @@
             <n-popover
               style="
                 padding: 0;
-                background: var(--hula-surface-panel);
+                background: var(--tjg-surface-panel);
                 backdrop-filter: blur(10px);
                 -webkit-backdrop-filter: blur(10px);
-                box-shadow: var(--hula-shadow-md);
-                border: 1px solid var(--hula-border-default);
+                box-shadow: var(--tjg-shadow-md);
+                border: 1px solid var(--tjg-border-default);
               "
               trigger="hover"
               :show-arrow="false"
@@ -132,7 +132,7 @@
                     </svg>
                     <p>{{ t('editor.screenshot') }}</p>
                   </n-flex>
-                  <p class="text-(12px --hula-text-tertiary)">{{ settingStore.screenshotShortcut }}</p>
+                  <p class="text-(12px --tjg-text-tertiary)">{{ settingStore.screenshotShortcut }}</p>
                 </n-flex>
 
                 <n-flex
@@ -141,7 +141,7 @@
                   justify="space-between"
                   @click="isConceal = !isConceal">
                   <n-checkbox v-model:checked="isConceal" @click.stop />
-                  <p class="text-(12px [--hula-text-primary])">{{ t('editor.screenshot_hide_curr_window') }}</p>
+                  <p class="text-(12px [--tjg-text-primary])">{{ t('editor.screenshot_hide_curr_window') }}</p>
                 </n-flex>
               </div>
             </n-popover>
@@ -196,7 +196,7 @@
           <n-popover trigger="hover" :show-arrow="false" placement="bottom">
             <template #trigger>
               <svg
-                :class="{ 'text-[--hula-color-primary-500]': burnAfterReadEnabled }"
+                :class="{ 'text-[--tjg-color-primary-500]': burnAfterReadEnabled }"
                 @click="toggleBurnAfterRead"
                 class="mr-18px cursor-pointer"
                 role="button"
@@ -827,7 +827,7 @@ onUnmounted(() => {
     cursor: pointer;
 
     &:hover {
-      color: var(--hula-color-primary-500);
+      color: var(--tjg-color-primary-500);
     }
   }
 
@@ -843,7 +843,7 @@ onUnmounted(() => {
 .resize-indicator {
   width: 40px;
   height: 3px;
-  background: var(--hula-text-tertiary);
+  background: var(--tjg-text-tertiary);
   border-radius: 2px;
   opacity: 0.3;
   transition: all 0.2s ease;
@@ -857,7 +857,7 @@ onUnmounted(() => {
     transform: translateX(-50%);
     width: 20px;
     height: 1px;
-    background: var(--hula-text-secondary);
+    background: var(--tjg-text-secondary);
     border-radius: 1px;
     opacity: 0.5;
   }
@@ -870,7 +870,7 @@ onUnmounted(() => {
     transform: translateX(-50%);
     width: 20px;
     height: 1px;
-    background: var(--hula-text-secondary);
+    background: var(--tjg-text-secondary);
     border-radius: 1px;
     opacity: 0.5;
   }
@@ -894,7 +894,7 @@ onUnmounted(() => {
     border-radius: 4px;
 
     &:hover {
-      background-color: var(--hula-fill-hover);
+      background-color: var(--tjg-fill-hover);
 
       svg {
         animation: twinkle 0.3s ease-in-out;
@@ -913,7 +913,7 @@ onUnmounted(() => {
 .panel-container {
   width: 100%;
   overflow: hidden;
-  background-color: var(--hula-surface-panel-muted);
+  background-color: var(--tjg-surface-panel-muted);
   display: flex;
   flex-direction: column;
   transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);

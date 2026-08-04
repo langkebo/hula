@@ -56,27 +56,27 @@ const statusText = computed(() => {
   border-radius: 12px;
   font-size: 11px;
   font-weight: 500;
-  background: var(--hula-surface-list-hover);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-list-hover);
+  border: 1px solid var(--tjg-border-default);
   transition: all 0.3s ease;
 }
 
 .sliding-sync-indicator--syncing {
-  background: var(--hula-color-info-100);
-  border-color: color-mix(in srgb, var(--hula-color-info-500) 30%, transparent);
-  color: var(--hula-color-info-500);
+  background: var(--tjg-color-info-100);
+  border-color: color-mix(in srgb, var(--tjg-color-info-500) 30%, transparent);
+  color: var(--tjg-color-info-500);
 }
 
 .sliding-sync-indicator--complete {
-  background: var(--hula-color-success-100);
-  border-color: color-mix(in srgb, var(--hula-color-success-500) 30%, transparent);
-  color: var(--hula-color-success-500);
+  background: var(--tjg-color-success-100);
+  border-color: color-mix(in srgb, var(--tjg-color-success-500) 30%, transparent);
+  color: var(--tjg-color-success-500);
 }
 
 .sliding-sync-indicator--error {
-  background: var(--hula-color-danger-100);
-  border-color: color-mix(in srgb, var(--hula-color-danger-500) 30%, transparent);
-  color: var(--hula-color-danger-500);
+  background: var(--tjg-color-danger-100);
+  border-color: color-mix(in srgb, var(--tjg-color-danger-500) 30%, transparent);
+  color: var(--tjg-color-danger-500);
 }
 
 .sliding-sync-indicator__icon {

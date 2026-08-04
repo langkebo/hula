@@ -11,7 +11,7 @@
       <!-- 协议内容 -->
       <div class="agreement-content">
         <div class="agreement-header">
-          <h1>HuLa服务协议</h1>
+          <h1>Tjg服务协议</h1>
           <p class="update-time">更新时间：2025年9月3日</p>
         </div>
 
@@ -19,13 +19,13 @@
           <section>
             <h2>1. 服务条款的确认和接纳</h2>
             <p>
-              欢迎使用HuLa软件！HuLa的各项电子服务的所有权和运作权归HuLa所有。用户必须完全同意所有服务条款并完成注册程序，才能成为HuLa的正式用户。
+              欢迎使用Tjg软件！Tjg的各项电子服务的所有权和运作权归Tjg所有。用户必须完全同意所有服务条款并完成注册程序，才能成为Tjg的正式用户。
             </p>
           </section>
           <section>
             <h2>2. 服务简介</h2>
             <p>
-              HuLa是一款免费的通讯软件，用户可以通过HuLa与好友进行文字、语音、视频聊天，分享图片、文件等。HuLa致力于为用户提供安全、稳定、便捷的通讯服务。
+              Tjg是一款免费的通讯软件，用户可以通过Tjg与好友进行文字、语音、视频聊天，分享图片、文件等。Tjg致力于为用户提供安全、稳定、便捷的通讯服务。
             </p>
           </section>
 
@@ -36,13 +36,13 @@
               3.2
               用户有义务保证密码和账号的安全，用户利用该密码和账号所进行的一切活动引起的任何损失或损害，由用户自行承担全部责任。
             </p>
-            <p>3.3 用户同意接收来自HuLa的信息，包括但不限于产品信息、服务信息、特别优惠信息等。</p>
+            <p>3.3 用户同意接收来自Tjg的信息，包括但不限于产品信息、服务信息、特别优惠信息等。</p>
           </section>
 
           <section>
             <h2>4. 用户行为规范</h2>
-            <p>4.1 用户在使用HuLa服务时，必须遵守中华人民共和国相关法律法规。</p>
-            <p>4.2 禁止利用HuLa服务进行任何违法犯罪活动。</p>
+            <p>4.1 用户在使用Tjg服务时，必须遵守中华人民共和国相关法律法规。</p>
+            <p>4.2 禁止利用Tjg服务进行任何违法犯罪活动。</p>
             <p>
               4.3 禁止发布、传播任何违法、有害、威胁、辱骂、骚扰、侵权、中伤、粗俗、猥亵或其他道德上令人反感的内容。
             </p>
@@ -54,37 +54,37 @@
             <h2>5. 隐私保护</h2>
             <p>
               5.1
-              HuLa非常重视用户隐私的保护。除法律法规另有规定外，未经用户同意，HuLa不会向第三方披露、转让用户个人信息。
+              Tjg非常重视用户隐私的保护。除法律法规另有规定外，未经用户同意，Tjg不会向第三方披露、转让用户个人信息。
             </p>
-            <p>5.2 HuLa采用行业标准的安全措施保护用户个人信息，防止数据的未经授权访问、使用或披露。</p>
-            <p>5.3 用户理解并同意，为了向用户提供更好的服务，HuLa可能会收集、使用用户的相关信息。</p>
+            <p>5.2 Tjg采用行业标准的安全措施保护用户个人信息，防止数据的未经授权访问、使用或披露。</p>
+            <p>5.3 用户理解并同意，为了向用户提供更好的服务，Tjg可能会收集、使用用户的相关信息。</p>
           </section>
 
           <section>
             <h2>6. 知识产权</h2>
-            <p>6.1 HuLa软件及其相关技术、商标、版权等知识产权均归HuLa所有。</p>
-            <p>6.2 未经HuLa书面许可，用户不得对HuLa软件进行反向工程、反汇编、反编译等。</p>
-            <p>6.3 用户通过HuLa发布的内容，用户保留其知识产权，但同时授予HuLa在全球范围内免费的、非独占的使用许可。</p>
+            <p>6.1 Tjg软件及其相关技术、商标、版权等知识产权均归Tjg所有。</p>
+            <p>6.2 未经Tjg书面许可，用户不得对Tjg软件进行反向工程、反汇编、反编译等。</p>
+            <p>6.3 用户通过Tjg发布的内容，用户保留其知识产权，但同时授予Tjg在全球范围内免费的、非独占的使用许可。</p>
           </section>
 
           <section>
             <h2>7. 免责声明</h2>
-            <p>7.1 用户明确同意其使用HuLa服务所存在的风险将完全由其自己承担。</p>
-            <p>7.2 HuLa不保证服务一定能满足用户的要求，也不保证服务不会中断。</p>
-            <p>7.3 对于因不可抗力或HuLa不能控制的原因造成的网络服务中断或其它缺陷，HuLa不承担任何责任。</p>
+            <p>7.1 用户明确同意其使用Tjg服务所存在的风险将完全由其自己承担。</p>
+            <p>7.2 Tjg不保证服务一定能满足用户的要求，也不保证服务不会中断。</p>
+            <p>7.3 对于因不可抗力或Tjg不能控制的原因造成的网络服务中断或其它缺陷，Tjg不承担任何责任。</p>
           </section>
 
           <section>
             <h2>8. 服务变更、中断或终止</h2>
-            <p>8.1 HuLa有权根据业务发展需要，变更、中断或终止部分或全部服务。</p>
-            <p>8.2 如因系统维护或升级的需要而需暂停网络服务，HuLa将尽可能事先进行通告。</p>
-            <p>8.3 如用户违反本协议的任何条款，HuLa有权终止向该用户提供服务。</p>
+            <p>8.1 Tjg有权根据业务发展需要，变更、中断或终止部分或全部服务。</p>
+            <p>8.2 如因系统维护或升级的需要而需暂停网络服务，Tjg将尽可能事先进行通告。</p>
+            <p>8.3 如用户违反本协议的任何条款，Tjg有权终止向该用户提供服务。</p>
           </section>
 
           <section>
             <h2>9. 协议修改</h2>
             <p>
-              HuLa有权随时修改本协议的任何条款，一旦本协议的内容发生变动，HuLa将会通过适当方式向用户提示修改内容。如果不同意HuLa对本协议相关条款所做的修改，用户有权停止使用网络服务。如果用户继续使用网络服务，则视为用户接受HuLa对本协议相关条款所做的修改。
+              Tjg有权随时修改本协议的任何条款，一旦本协议的内容发生变动，Tjg将会通过适当方式向用户提示修改内容。如果不同意Tjg对本协议相关条款所做的修改，用户有权停止使用网络服务。如果用户继续使用网络服务，则视为用户接受Tjg对本协议相关条款所做的修改。
             </p>
           </section>
 
@@ -93,7 +93,7 @@
             <p>10.1 本协议的订立、执行和解释及争议的解决均应适用中华人民共和国法律。</p>
             <p>
               10.2
-              如双方就本协议内容或其执行发生任何争议，双方应尽量友好协商解决；协商不成时，任何一方均可向HuLa所在地的人民法院起诉。
+              如双方就本协议内容或其执行发生任何争议，双方应尽量友好协商解决；协商不成时，任何一方均可向Tjg所在地的人民法院起诉。
             </p>
           </section>
 
@@ -131,7 +131,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -148,13 +148,13 @@
     h1 {
       font-size: 24px;
       font-weight: bold;
-      color: var(--hula-text-primary);
+      color: var(--tjg-text-primary);
       margin-bottom: 10px;
     }
 
     .update-time {
       font-size: 14px;
-      color: var(--hula-text-secondary);
+      color: var(--tjg-text-secondary);
     }
   }
 
@@ -169,16 +169,16 @@
       h2 {
         font-size: 18px;
         font-weight: bold;
-        color: var(--hula-text-primary);
+        color: var(--tjg-text-primary);
         width: fit-content;
         margin-bottom: 15px;
-        border-bottom: 2px solid color-mix(in srgb, var(--hula-brand) 56%, transparent);
+        border-bottom: 2px solid color-mix(in srgb, var(--tjg-brand) 56%, transparent);
         padding-bottom: 5px;
       }
 
       p {
         font-size: 14px;
-        color: var(--hula-text-secondary);
+        color: var(--tjg-text-secondary);
         margin-bottom: 10px;
         text-indent: 2em;
       }
@@ -197,17 +197,17 @@
 }
 
 .agreement-content::-webkit-scrollbar-thumb {
-  background: var(--hula-text-disabled);
+  background: var(--tjg-text-disabled);
   border-radius: 3px;
 }
 
 .agreement-content::-webkit-scrollbar-thumb:hover {
-  background: var(--hula-text-tertiary);
+  background: var(--tjg-text-tertiary);
 }
 
 :deep(.action-close) {
   svg {
-    color: var(--hula-text-primary);
+    color: var(--tjg-text-primary);
   }
 }
 </style>

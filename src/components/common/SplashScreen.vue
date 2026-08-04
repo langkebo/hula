@@ -3,13 +3,13 @@
     <div v-if="visible" class="splash-screen" :class="{ 'is-minimal': minimal }">
       <div class="splash-content">
         <div class="logo-container">
-          <img v-if="!minimal" src="/hula.png" class="logo-image" alt="HuLa Logo" />
+          <img v-if="!minimal" src="/tjg.png" class="logo-image" alt="Tjg Logo" />
           <div v-else class="minimal-logo">
             <svg class="w-48px h-48px" viewBox="0 0 100 100" fill="none">
-              <circle cx="50" cy="50" r="45" stroke="var(--hula-color-primary-500)" stroke-width="4" fill="none" />
+              <circle cx="50" cy="50" r="45" stroke="var(--tjg-color-primary-500)" stroke-width="4" fill="none" />
               <path
                 d="M30 50 L45 65 L70 35"
-                stroke="var(--hula-color-primary-500)"
+                stroke="var(--tjg-color-primary-500)"
                 stroke-width="4"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -22,11 +22,11 @@
           <n-progress
             type="line"
             :show-indicator="false"
-            :color="'var(--color-primary)'"
-            :rail-color="'var(--hula-color-primary-300-alpha)'"
+            :color="'var(--tjg-color-primary-500)'"
+            :rail-color="'var(--tjg-color-primary-300-alpha)'"
             :percentage="percentage" />
           <n-flex justify="center" align="center" :gap="12">
-            <n-spin :size="12" :color="'var(--color-primary)'" />
+            <n-spin :size="12" :color="'var(--tjg-color-primary-500)'" />
             <span class="loading-text">{{ loadingText }}</span>
           </n-flex>
         </div>
@@ -71,7 +71,7 @@ const { t } = useI18n()
   display: flex;
   justify-content: center;
   align-items: center;
-  background: var(--hula-surface-elevated);
+  background: var(--tjg-surface-elevated);
 }
 
 .splash-screen.is-minimal {
@@ -114,7 +114,7 @@ const { t } = useI18n()
 
 .loading-text {
   font-size: 14px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .error-section {

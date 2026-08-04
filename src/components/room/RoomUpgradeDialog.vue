@@ -130,7 +130,7 @@ watch(
 
 .description {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   line-height: 1.5;
   margin: 0;
 }
@@ -151,7 +151,7 @@ watch(
 
 .form-label {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   flex-shrink: 0;
 }
 
@@ -163,7 +163,7 @@ watch(
 
 .form-hint {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .warning {
@@ -172,7 +172,7 @@ watch(
 
 .error-text {
   font-size: 12px;
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 
 .dialog-footer {

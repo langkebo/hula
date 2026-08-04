@@ -11,18 +11,18 @@ interface MatrixClientAccessor {
 }
 
 type MatrixClientAccessorGlobal = typeof globalThis & {
-  __HULA_MATRIX_CLIENT_ACCESSOR__?: MatrixClientAccessor | null
+  __TJG_MATRIX_CLIENT_ACCESSOR__?: MatrixClientAccessor | null
 }
 
 let hasWarnedLegacyFallback = false
 const logger = createLogger('matrixClientAccessor')
 
 function readRuntimeAccessor(): MatrixClientAccessor | null {
-  return (globalThis as MatrixClientAccessorGlobal).__HULA_MATRIX_CLIENT_ACCESSOR__ ?? null
+  return (globalThis as MatrixClientAccessorGlobal).__TJG_MATRIX_CLIENT_ACCESSOR__ ?? null
 }
 
 function writeRuntimeAccessor(accessor: MatrixClientAccessor | null): void {
-  ;(globalThis as MatrixClientAccessorGlobal).__HULA_MATRIX_CLIENT_ACCESSOR__ = accessor
+  ;(globalThis as MatrixClientAccessorGlobal).__TJG_MATRIX_CLIENT_ACCESSOR__ = accessor
 }
 
 function warnLegacyFallbackOnce(method: string): void {

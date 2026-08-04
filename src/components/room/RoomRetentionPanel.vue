@@ -137,7 +137,7 @@ async function handleSave(): Promise<void> {
 .panel-subtitle {
   margin: 0 0 12px 0;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   line-height: 1.5;
 }
 
@@ -151,20 +151,20 @@ async function handleSave(): Promise<void> {
 
 .field-label {
   font-size: 13px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .field-hint {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .read-only-hint {
   margin-top: 12px;
   padding: 8px 12px;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
-  background: var(--hula-surface-search);
+  color: var(--tjg-text-tertiary);
+  background: var(--tjg-surface-search);
   border-radius: 6px;
 }
 

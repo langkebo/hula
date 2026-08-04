@@ -147,11 +147,11 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .static-proxy-map__zoom-btn {
-  @apply size-26px rounded-4px text-[--hula-text-primary];
-  background: color-mix(in srgb, var(--hula-surface-panel) 50%, transparent);
+  @apply size-26px rounded-4px text-[--tjg-text-primary];
+  background: color-mix(in srgb, var(--tjg-surface-panel) 50%, transparent);
 
   [data-theme='dark'] & {
-    background: color-mix(in srgb, var(--hula-surface-app) 40%, transparent);
+    background: color-mix(in srgb, var(--tjg-surface-app) 40%, transparent);
   }
 }
 </style>

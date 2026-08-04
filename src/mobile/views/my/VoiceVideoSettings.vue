@@ -7,7 +7,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-[var(--hula-text-secondary)] mb-8px">
+          <div class="text-14px text-[var(--tjg-text-secondary)] mb-8px">
             {{ t('mobile_voice_video.audio_section') }}
           </div>
 
@@ -15,8 +15,8 @@
             <van-cell :title="t('mobile_voice_video.audio_input')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:microphone" :width="20" color="var(--hula-color-info-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:microphone" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -29,8 +29,8 @@
             <van-cell :title="t('mobile_voice_video.audio_output')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-success-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:speaker" :width="20" color="var(--hula-color-success-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-success-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:speaker" :width="20" color="var(--tjg-color-success-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -43,14 +43,14 @@
             <van-cell :title="t('mobile_voice_video.input_volume')">
               <template #value>
                 <van-slider v-model="inputVolume" :min="0" :max="100" class="w-100px" />
-                <span class="ml-8px text-12px text-[var(--hula-text-secondary)]">{{ inputVolume }}%</span>
+                <span class="ml-8px text-12px text-[var(--tjg-text-secondary)]">{{ inputVolume }}%</span>
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_voice_video.output_volume')">
               <template #value>
                 <van-slider v-model="outputVolume" :min="0" :max="100" class="w-100px" />
-                <span class="ml-8px text-12px text-[var(--hula-text-secondary)]">{{ outputVolume }}%</span>
+                <span class="ml-8px text-12px text-[var(--tjg-text-secondary)]">{{ outputVolume }}%</span>
               </template>
             </van-cell>
           </van-cell-group>
@@ -70,17 +70,17 @@
           </van-cell-group>
 
           <div v-if="audioLevel > 0" class="px-16px">
-            <div class="h-8px bg-[var(--hula-border-color)] rounded-full overflow-hidden">
+            <div class="h-8px bg-[var(--tjg-border-color)] rounded-full overflow-hidden">
               <div
-                class="h-full bg-[var(--hula-color-success-500)] rounded-full transition-all duration-100"
+                class="h-full bg-[var(--tjg-color-success-500)] rounded-full transition-all duration-100"
                 :style="{ width: `${audioLevel}%` }"></div>
             </div>
-            <div class="text-12px text-[var(--hula-text-secondary)] text-center mt-4px">
+            <div class="text-12px text-[var(--tjg-text-secondary)] text-center mt-4px">
               {{ t('mobile_voice_video.level') }}: {{ Math.round(audioLevel) }}%
             </div>
           </div>
 
-          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+          <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
             {{ t('mobile_voice_video.video_section') }}
           </div>
 
@@ -88,8 +88,8 @@
             <van-cell :title="t('mobile_voice_video.video_input')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:video" :width="20" color="var(--hula-color-primary-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:video" :width="20" color="var(--tjg-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -110,7 +110,7 @@
             <video ref="videoPreviewRef" autoplay muted playsinline class="w-full rounded-lg bg-black"></video>
           </div>
 
-          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+          <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
             {{ t('mobile_voice_video.call_section') }}
           </div>
 
@@ -275,37 +275,37 @@ async function loadDevices() {
 }
 
 function loadSavedSettings() {
-  const savedInputVolume = localStorage.getItem('hula-input-volume')
+  const savedInputVolume = localStorage.getItem('tjg-input-volume')
   if (savedInputVolume) inputVolume.value = parseInt(savedInputVolume, 10)
 
-  const savedOutputVolume = localStorage.getItem('hula-output-volume')
+  const savedOutputVolume = localStorage.getItem('tjg-output-volume')
   if (savedOutputVolume) outputVolume.value = parseInt(savedOutputVolume, 10)
 
-  const savedEcho = localStorage.getItem('hula-echo-cancellation')
+  const savedEcho = localStorage.getItem('tjg-echo-cancellation')
   if (savedEcho) echoCancellation.value = savedEcho === 'true'
 
-  const savedNoise = localStorage.getItem('hula-noise-suppression')
+  const savedNoise = localStorage.getItem('tjg-noise-suppression')
   if (savedNoise) noiseSuppression.value = savedNoise === 'true'
 
-  const savedAutoGain = localStorage.getItem('hula-auto-gain')
+  const savedAutoGain = localStorage.getItem('tjg-auto-gain')
   if (savedAutoGain) autoGainControl.value = savedAutoGain === 'true'
 }
 
 function onAudioInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
   audioInputId.value = selectedOptions[0].value
-  localStorage.setItem('hula-audio-input', audioInputId.value!)
+  localStorage.setItem('tjg-audio-input', audioInputId.value!)
   showAudioInputPicker.value = false
 }
 
 function onAudioOutputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
   audioOutputId.value = selectedOptions[0].value
-  localStorage.setItem('hula-audio-output', audioOutputId.value!)
+  localStorage.setItem('tjg-audio-output', audioOutputId.value!)
   showAudioOutputPicker.value = false
 }
 
 function onVideoInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
   videoInputId.value = selectedOptions[0].value
-  localStorage.setItem('hula-video-input', videoInputId.value!)
+  localStorage.setItem('tjg-video-input', videoInputId.value!)
   showVideoInputPicker.value = false
   if (isPreviewing.value) {
     stopPreview()

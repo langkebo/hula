@@ -72,18 +72,18 @@ const handleClick = () => {
 
 <style scoped>
 .news-card {
-  background: var(--hula-surface-elevated);
+  background: var(--tjg-surface-elevated);
   border-radius: 8px;
   padding: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .news-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--hula-shadow-md);
-  border-color: var(--color-primary);
+  box-shadow: var(--tjg-shadow-md);
+  border-color: var(--tjg-color-primary-500);
 }
 
 .news-card__header {
@@ -99,13 +99,13 @@ const handleClick = () => {
 
 .news-card__time {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .news-card__title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin: 0 0 8px 0;
   line-height: 1.4;
   display: -webkit-box;
@@ -116,7 +116,7 @@ const handleClick = () => {
 
 .news-card__summary {
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin: 0 0 8px 0;
   line-height: 1.5;
   display: -webkit-box;
@@ -141,7 +141,7 @@ const handleClick = () => {
   align-items: center;
   gap: 4px;
   margin-left: auto;
-  color: var(--color-primary);
+  color: var(--tjg-color-primary-500);
   font-size: 12px;
 }
 

@@ -106,12 +106,12 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 @use '@/styles/scss/global/responsive.scss' as responsive;
 
 .settings-tab-nav {
-  padding: var(--hula-space-2) 0;
+  padding: var(--tjg-space-2) 0;
 
   @include responsive.respond-to-max('md') {
     display: flex;
-    gap: var(--hula-space-2);
-    padding: var(--hula-space-2);
+    gap: var(--tjg-space-2);
+    padding: var(--tjg-space-2);
     min-width: max-content;
   }
 }
@@ -119,16 +119,16 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 .tab-item {
   display: flex;
   align-items: center;
-  width: calc(100% - var(--hula-space-4));
+  width: calc(100% - var(--tjg-space-4));
   height: 40px;
-  padding: 0 var(--hula-space-4);
+  padding: 0 var(--tjg-space-4);
   cursor: pointer;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   transition:
-    background-color var(--hula-motion-duration-normal) var(--hula-motion-ease-standard),
-    color var(--hula-motion-duration-normal) var(--hula-motion-ease-standard);
-  border-radius: var(--hula-radius-sm);
-  margin: 2px var(--hula-space-2);
+    background-color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard),
+    color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
+  border-radius: var(--tjg-radius-sm);
+  margin: 2px var(--tjg-space-2);
   border: none;
   background: transparent;
   text-align: left;
@@ -138,21 +138,21 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
     width: auto;
     min-width: max-content;
     margin: 0;
-    padding: 0 var(--hula-space-4);
+    padding: 0 var(--tjg-space-4);
   }
 }
 
 .tab-item:hover,
 .tab-item:focus-visible {
-  background-color: var(--hula-surface-sidebar-hover);
-  color: var(--hula-text-primary);
+  background-color: var(--tjg-surface-sidebar-hover);
+  color: var(--tjg-text-primary);
   outline: none;
 }
 
 .tab-item-active {
-  background-color: var(--hula-color-primary-100);
-  color: var(--hula-color-primary-500);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hula-color-primary-500) 10%, transparent);
+  background-color: var(--tjg-color-primary-100);
+  color: var(--tjg-color-primary-500);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tjg-color-primary-500) 10%, transparent);
 }
 
 .tab-icon {
@@ -160,7 +160,7 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
   align-items: center;
   justify-content: center;
   width: 24px;
-  margin-right: var(--hula-space-2);
+  margin-right: var(--tjg-space-2);
 }
 
 .tab-label {

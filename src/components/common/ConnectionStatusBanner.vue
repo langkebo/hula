@@ -151,28 +151,28 @@ const onDiagnose = async () => {
 }
 
 .connection-status-banner--offline {
-  background: var(--hula-color-warning-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-warning-500);
+  color: var(--tjg-text-inverse);
 }
 
 .connection-status-banner--connecting {
-  background: var(--hula-color-info-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-info-500);
+  color: var(--tjg-text-inverse);
 }
 
 .connection-status-banner--reconnecting {
-  background: var(--hula-color-info-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-info-500);
+  color: var(--tjg-text-inverse);
 }
 
 .connection-status-banner--syncing {
-  background: var(--hula-color-info-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-info-500);
+  color: var(--tjg-text-inverse);
 }
 
 .connection-status-banner--error {
-  background: var(--hula-color-danger-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-danger-500);
+  color: var(--tjg-text-inverse);
 }
 
 .connection-status-banner__content {
@@ -193,17 +193,17 @@ const onDiagnose = async () => {
 
 .connection-status-banner__retry {
   padding: 2px 8px;
-  border: 1px solid var(--hula-border-inverse-muted);
+  border: 1px solid var(--tjg-border-inverse-muted);
   border-radius: 4px;
   background: transparent;
-  color: var(--hula-text-inverse);
+  color: var(--tjg-text-inverse);
   font-size: 11px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .connection-status-banner__retry:hover {
-  background: var(--hula-surface-inverse-hover);
+  background: var(--tjg-surface-inverse-hover);
 }
 
 .connection-status-banner__retry:disabled {

@@ -12,20 +12,20 @@
             :title="t('mobile_edit_brithday.select_date')"
             class="m-auto rounded-16px" />
 
-          <div class="px-15px flex flex-col w-full box-border rounded-16px bg-[--hula-surface-panel]">
+          <div class="px-15px flex flex-col w-full box-border rounded-16px bg-[--tjg-surface-panel]">
             <div class="flex w-full justify-between items-center py-15px">
               <span class="text-14px shrink-0">{{ t('mobile_edit_brithday.options.display_birthday_tag') }}</span>
               <van-switch class="shrink-0" v-model="showBirthdayTag" />
             </div>
           </div>
 
-          <div class="px-15px flex flex-col w-full box-border rounded-10px bg-[--hula-surface-panel]">
+          <div class="px-15px flex flex-col w-full box-border rounded-10px bg-[--tjg-surface-panel]">
             <div class="flex w-full justify-between items-center py-15px">
               <span class="text-14px shrink-0">{{ t('mobile_edit_brithday.options.displsy_age') }}</span>
               <van-switch class="shrink-0" v-model="showAge" />
             </div>
 
-            <div class="h-1px bg-[--hula-border-default]"></div>
+            <div class="h-1px bg-[--tjg-border-default]"></div>
 
             <div class="flex w-full justify-between items-center py-15px">
               <span class="text-14px shrink-0">

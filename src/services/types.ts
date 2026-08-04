@@ -444,7 +444,7 @@ export enum IsAllUserEnum {
 
 /** 会话列表项 */
 export type SessionItem = {
-  /** hula号 */
+  /** tjg号 */
   account: string
   /** 房间最后活跃时间(用来排序) */
   activeTime: number

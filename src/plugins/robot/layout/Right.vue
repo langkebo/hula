@@ -2,7 +2,7 @@
   <n-flex
     vertical
     :size="0"
-    class="flex-1 truncate border-l-(1px solid [--hula-border-default]) custom-shadow select-none text-[--hula-text-primary]">
+    class="flex-1 truncate border-l-(1px solid [--tjg-border-default]) custom-shadow select-none text-[--tjg-text-primary]">
     <!-- 右上角操作栏 -->
     <ActionBar :shrink="false" :current-label="currentWindowLabel" :top-win-label="currentWindowLabel" />
 

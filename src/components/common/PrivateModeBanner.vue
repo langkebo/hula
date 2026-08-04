@@ -41,10 +41,10 @@ const bannerText = computed(() => {
   gap: 6px;
   padding: 4px 12px;
   height: 32px;
-  background: color-mix(in srgb, var(--hula-color-danger-500) 8%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--hula-color-danger-500) 20%, transparent);
-  font-size: var(--hula-text-sm);
-  color: var(--hula-color-danger-500);
+  background: color-mix(in srgb, var(--tjg-color-danger-500) 8%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--tjg-color-danger-500) 20%, transparent);
+  font-size: var(--tjg-text-sm);
+  color: var(--tjg-color-danger-500);
 }
 
 .private-mode-banner__icon {

@@ -312,17 +312,17 @@ function updateUIFromRules(rules: IPushRules) {
 }
 
 function loadSavedSettings() {
-  const savedMaster = localStorage.getItem('hula-push-master')
+  const savedMaster = localStorage.getItem('tjg-push-master')
   if (savedMaster !== null) {
     masterEnabled.value = savedMaster === 'true'
   }
 
-  const savedMessagePush = localStorage.getItem('hula-push-message')
+  const savedMessagePush = localStorage.getItem('tjg-push-message')
   if (savedMessagePush !== null) {
     messagePushEnabled.value = savedMessagePush === 'true'
   }
 
-  const savedInvitePush = localStorage.getItem('hula-push-invite')
+  const savedInvitePush = localStorage.getItem('tjg-push-invite')
   if (savedInvitePush !== null) {
     invitePushEnabled.value = savedInvitePush === 'true'
   }
@@ -337,17 +337,17 @@ async function loadDndSettings() {
     return
   }
 
-  const savedDnd = localStorage.getItem('hula-push-dnd')
+  const savedDnd = localStorage.getItem('tjg-push-dnd')
   if (savedDnd !== null) {
     dndEnabled.value = savedDnd === 'true'
   }
 
-  const savedDndStart = localStorage.getItem('hula-push-dnd-start')
+  const savedDndStart = localStorage.getItem('tjg-push-dnd-start')
   if (savedDndStart) {
     dndStartTime.value = parseInt(savedDndStart, 10)
   }
 
-  const savedDndEnd = localStorage.getItem('hula-push-dnd-end')
+  const savedDndEnd = localStorage.getItem('tjg-push-dnd-end')
   if (savedDndEnd) {
     dndEndTime.value = parseInt(savedDndEnd, 10)
   }
@@ -518,7 +518,7 @@ async function handleInvitePushToggle(enabled: boolean) {
 }
 
 function handleDndToggle(enabled: boolean) {
-  localStorage.setItem('hula-push-dnd', enabled.toString())
+  localStorage.setItem('tjg-push-dnd', enabled.toString())
   matrixNotificationService.syncDndToAccountData({
     enabled,
     startTime: dndStartTime.value,
@@ -529,10 +529,10 @@ function handleDndToggle(enabled: boolean) {
 
 function handleDndTimeChange() {
   if (dndStartTime.value !== null) {
-    localStorage.setItem('hula-push-dnd-start', dndStartTime.value.toString())
+    localStorage.setItem('tjg-push-dnd-start', dndStartTime.value.toString())
   }
   if (dndEndTime.value !== null) {
-    localStorage.setItem('hula-push-dnd-end', dndEndTime.value.toString())
+    localStorage.setItem('tjg-push-dnd-end', dndEndTime.value.toString())
   }
   matrixNotificationService.syncDndToAccountData({
     enabled: dndEnabled.value,
@@ -544,7 +544,7 @@ function handleDndTimeChange() {
 
 <style scoped>
 .push-settings {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .push-settings--embedded {
@@ -552,41 +552,41 @@ function handleDndTimeChange() {
 }
 
 .settings-section {
-  margin-bottom: var(--hula-space-4);
+  margin-bottom: var(--tjg-space-4);
 }
 
 .section-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  margin-bottom: var(--hula-space-4);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  margin-bottom: var(--tjg-space-4);
+  color: var(--tjg-text-primary);
 }
 
 .section-desc {
-  margin: calc(var(--hula-space-2) * -1) 0 var(--hula-space-4);
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  margin: calc(var(--tjg-space-2) * -1) 0 var(--tjg-space-4);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 
 .device-list {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .device-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: var(--tjg-space-3) var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .device-info {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
 }
 
 .device-details {
@@ -595,45 +595,45 @@ function handleDndTimeChange() {
 }
 
 .device-name {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .device-meta {
   display: flex;
-  gap: var(--hula-space-3);
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  gap: var(--tjg-space-3);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 
 .device-type-badge {
-  padding: 0 var(--hula-space-1);
-  background-color: var(--hula-settings-divider);
-  border-radius: var(--hula-radius-sm);
-  font-size: var(--hula-font-size-xs);
+  padding: 0 var(--tjg-space-1);
+  background-color: var(--tjg-settings-divider);
+  border-radius: var(--tjg-radius-sm);
+  font-size: var(--tjg-font-size-xs);
 }
 
 .device-pushkey {
   font-family: monospace;
-  font-size: var(--hula-font-size-xs);
+  font-size: var(--tjg-font-size-xs);
 }
 
 .device-actions {
   display: flex;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .add-pusher-section {
-  margin-top: var(--hula-space-3);
+  margin-top: var(--tjg-space-3);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--hula-space-3) 0;
-  border-bottom: 1px solid var(--hula-settings-divider);
+  padding: var(--tjg-space-3) 0;
+  border-bottom: 1px solid var(--tjg-settings-divider);
 }
 
 .setting-info {
@@ -642,85 +642,85 @@ function handleDndTimeChange() {
 }
 
 .setting-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
 }
 
 .setting-desc {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  margin-top: var(--hula-space-1);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  margin-top: var(--tjg-space-1);
 }
 
 .rule-kind-group {
-  margin-bottom: var(--hula-space-3);
+  margin-bottom: var(--tjg-space-3);
 }
 
 .rule-kind-title {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-secondary);
-  margin-bottom: var(--hula-space-2);
-  padding: var(--hula-space-1) var(--hula-space-2);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-secondary);
+  margin-bottom: var(--tjg-space-2);
+  padding: var(--tjg-space-1) var(--tjg-space-2);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .rule-empty {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
-  padding: var(--hula-space-2) 0;
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+  padding: var(--tjg-space-2) 0;
 }
 
 .time-range {
   display: flex;
   gap: 24px;
-  margin-top: var(--hula-space-3);
-  padding: var(--hula-space-3) var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  margin-top: var(--tjg-space-3);
+  padding: var(--tjg-space-3) var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .time-item {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-3);
+  gap: var(--tjg-space-3);
 }
 
 .time-label {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-secondary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-secondary);
 }
 
 .notification-list {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .notification-item {
-  padding: var(--hula-space-3) var(--hula-space-4);
-  background-color: var(--hula-settings-card-bg);
-  border-radius: var(--hula-radius-sm);
+  padding: var(--tjg-space-3) var(--tjg-space-4);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
 }
 
 .notification-info {
   display: flex;
   flex-direction: column;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
 }
 
 .notification-content {
-  font-size: var(--hula-font-size-base);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
   word-break: break-word;
 }
 
 .notification-meta {
   display: flex;
-  gap: var(--hula-space-3);
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  gap: var(--tjg-space-3);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
 }
 
 .notification-room {

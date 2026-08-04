@@ -147,44 +147,44 @@ async function handleDelete(id: number): Promise<void> {
 
 <style scoped>
 .server-notifications-panel {
-  padding: 0 var(--hula-space-2);
+  padding: 0 var(--tjg-space-2);
 }
 
 .panel-card {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .panel-title-wrap {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .panel-title {
-  font-size: var(--hula-font-size-lg);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-lg);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
 }
 
 .panel-actions {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .panel-error {
-  padding: var(--hula-space-2) 0;
+  padding: var(--tjg-space-2) 0;
 }
 
 .notification-list {
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .notification-card {
@@ -197,21 +197,21 @@ async function handleDelete(id: number): Promise<void> {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
 }
 
 .notification-title-row {
   display: flex;
   align-items: center;
-  gap: var(--hula-space-2);
+  gap: var(--tjg-space-2);
   min-width: 0;
   flex: 1;
 }
 
 .notification-title {
-  font-size: var(--hula-font-size-base);
-  font-weight: var(--hula-font-weight-medium);
-  color: var(--hula-text-primary);
+  font-size: var(--tjg-font-size-base);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-primary);
   word-break: break-all;
 }
 
@@ -220,22 +220,22 @@ async function handleDelete(id: number): Promise<void> {
 }
 
 .notification-time {
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-quaternary);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
   flex-shrink: 0;
 }
 
 .notification-content {
-  margin: var(--hula-space-1) 0 var(--hula-space-2);
-  font-size: var(--hula-font-size-sm);
-  color: var(--hula-text-secondary);
+  margin: var(--tjg-space-1) 0 var(--tjg-space-2);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .notification-ops {
   display: flex;
-  gap: var(--hula-space-1);
+  gap: var(--tjg-space-1);
   flex-wrap: wrap;
 }
 </style>

@@ -3,8 +3,8 @@
     <div class="not-found-container">
       <div class="not-found-icon">
         <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
-          <circle cx="60" cy="60" r="55" stroke="var(--hula-text-disabled)" stroke-width="4" fill="none" />
-          <text x="60" y="68" text-anchor="middle" font-size="36" font-weight="700" fill="var(--hula-text-disabled)">
+          <circle cx="60" cy="60" r="55" stroke="var(--tjg-text-disabled)" stroke-width="4" fill="none" />
+          <text x="60" y="68" text-anchor="middle" font-size="36" font-weight="700" fill="var(--tjg-text-disabled)">
             ?
           </text>
         </svg>
@@ -36,7 +36,7 @@ const goHome = () => {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--hula-surface-panel-muted) 0%, var(--hula-surface-subtle) 100%);
+  background: linear-gradient(135deg, var(--tjg-surface-panel-muted) 0%, var(--tjg-surface-subtle) 100%);
 }
 
 .not-found-container {
@@ -44,7 +44,7 @@ const goHome = () => {
   padding: 60px 40px;
   background: white;
   border-radius: 16px;
-  box-shadow: var(--hula-shadow-md);
+  box-shadow: var(--tjg-shadow-md);
   max-width: 480px;
   width: 90%;
 }
@@ -63,7 +63,7 @@ const goHome = () => {
 
 .not-found-message {
   font-size: 18px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin: 16px 0 32px;
   line-height: 1.6;
 }

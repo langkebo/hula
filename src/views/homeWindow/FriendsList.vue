@@ -6,7 +6,7 @@
           <span class="friends-list-shell__shortcut-title">{{ t('home.secret_chat.title') }}</span>
           <span class="friends-list-shell__shortcut-desc">{{ t('home.secret_chat.desc') }}</span>
         </div>
-        <svg class="size-16px color-[--hula-text-primary]"><use href="#eye-close"></use></svg>
+        <svg class="size-16px color-[--tjg-text-primary]"><use href="#eye-close"></use></svg>
       </button>
     </div>
 
@@ -43,12 +43,12 @@ const handleOpenSecretChat = () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .friends-list-shell__header {
   padding: 30px 16px 12px;
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
 }
 
 .friends-list-shell__shortcut {
@@ -66,7 +66,7 @@ const handleOpenSecretChat = () => {
   transition: background-color 0.2s ease;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -80,11 +80,11 @@ const handleOpenSecretChat = () => {
 .friends-list-shell__shortcut-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .friends-list-shell__shortcut-desc {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 </style>

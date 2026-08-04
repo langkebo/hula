@@ -6,13 +6,13 @@
     <!-- 进度条头部信息 -->
     <div class="flex-y-center pb-10px">
       <div class="flex-center gap-8px">
-        <svg class="size-16px color-[--hula-text-primary]">
+        <svg class="size-16px color-[--tjg-text-primary]">
           <use href="#file2"></use>
         </svg>
-        <span class="text-(14px [--hula-text-primary]) max-w-200px truncate">
+        <span class="text-(14px [--tjg-text-primary]) max-w-200px truncate">
           {{ getStatusText() }}
         </span>
-        <span class="text-(12px [--hula-text-primary])">{{ queue.completedFiles }}/{{ queue.totalFiles }}</span>
+        <span class="text-(12px [--tjg-text-primary])">{{ queue.completedFiles }}/{{ queue.totalFiles }}</span>
       </div>
     </div>
 
@@ -23,8 +23,8 @@
       :show-indicator="false"
       :height="6"
       :border-radius="3"
-      :color="'var(--hula-color-primary-500)'"
-      :rail-color="'var(--hula-border-strong)'" />
+      :color="'var(--tjg-color-primary-500)'"
+      :rail-color="'var(--tjg-border-strong)'" />
   </div>
 </template>
 
@@ -61,9 +61,9 @@ const getStatusText = () => {
 <style scoped lang="scss">
 .file-upload-progress {
   @apply absolute w-fit max-w-260px bottom-10px left-20px z-1000 rounded-8px p-12px;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   border-radius: 8px;
-  box-shadow: var(--hula-shadow-md);
+  box-shadow: var(--tjg-shadow-md);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   transition: all 0.3s ease;

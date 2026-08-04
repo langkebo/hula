@@ -1,7 +1,7 @@
 /** 气泡样式 */
 @mixin bubble {
   @apply w-fit min-h-1em p-[8px_12px] line-height-22px rounded-[4px_12px_12px_12px] custom-shadow;
-  background-color: var(--hula-surface-elevated);
+  background-color: var(--tjg-surface-elevated);
   max-width: var(--bubble-max-width, 32vw); /** 默认为群聊宽度 */
   white-space: pre-wrap; /** 保留空白符号并正常换行，支持特殊字符 */
   word-break: break-word; /** 优先在单词边界换行，必要时在单词内换行 */
@@ -15,15 +15,15 @@
   line-height: 1.7;
   line-break: anywhere; /** 支持任意位置换行，包括特殊字符和符号 */
   &.active {
-    background-color: var(--hula-surface-subtle);
-    color: var(--hula-text-primary);
+    background-color: var(--tjg-surface-subtle);
+    color: var(--tjg-text-primary);
   }
 }
 @mixin float($position: top) {
   @if $position == bottom {
-    @apply fixed z-10 w-fit select-none text-[--hula-color-primary-500] cursor-pointer;
+    @apply fixed z-10 w-fit select-none text-[--tjg-color-primary-500] cursor-pointer;
   } @else {
-    @apply fixed z-10 top-80px w-fit select-none text-[--hula-color-primary-500] cursor-pointer;
+    @apply fixed z-10 top-80px w-fit select-none text-[--tjg-color-primary-500] cursor-pointer;
   }
 }
 .bubble {
@@ -31,18 +31,18 @@
 }
 .bubble-oneself {
   @include bubble;
-  @apply rounded-[12px_4px_12px_12px] color-[--hula-text-inverse];
-  background-color: var(--hula-color-primary-500);
+  @apply rounded-[12px_4px_12px_12px] color-[--tjg-text-inverse];
+  background-color: var(--tjg-color-primary-500);
 }
 
 /* 选中文本时的高亮颜色（包含根节点与后代，避免被全局 ::selection 覆盖） */
 .bubble::selection,
 .bubble *::selection {
-  background: color-mix(in srgb, var(--hula-color-primary-500) 30%, transparent);
+  background: color-mix(in srgb, var(--tjg-color-primary-500) 30%, transparent);
 }
 .bubble-oneself::selection,
 .bubble-oneself *::selection {
-  background: color-mix(in srgb, var(--hula-text-inverse) 30%, transparent);
+  background: color-mix(in srgb, var(--tjg-text-inverse) 30%, transparent);
 }
 
 /* 消息入场动画 — 对齐原型设计 */
@@ -71,13 +71,13 @@
   @include float(bottom);
 }
 .float-box {
-  background-color: var(--hula-surface-sidebar);
+  background-color: var(--tjg-surface-sidebar);
   border-radius: 50px;
   padding: 6px 8px;
-  box-shadow: var(--hula-shadow-sm);
+  box-shadow: var(--tjg-shadow-sm);
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   &:hover {
-    background-color: color-mix(in srgb, var(--hula-color-primary-200) 45%, var(--hula-surface-panel));
+    background-color: color-mix(in srgb, var(--tjg-color-primary-200) 45%, var(--tjg-surface-panel));
   }
 }
 .mac-close:hover {
@@ -87,11 +87,11 @@
 }
 /** 浮标达到最大值时候的样式 */
 .max:hover {
-  background-color: var(--hula-color-danger-100);
+  background-color: var(--tjg-color-danger-100);
 }
 /** 回复气泡的样式 */
 .reply-bubble {
-  @apply text-[--hula-text-tertiary] rounded-8px p-4px cursor-pointer select-none;
+  @apply text-[--tjg-text-tertiary] rounded-8px p-4px cursor-pointer select-none;
   svg,
   span {
     transition: color 0.4s ease-in-out;
@@ -105,10 +105,10 @@
       filter: grayscale(0);
     }
     svg {
-      color: var(--hula-color-primary-500);
+      color: var(--tjg-color-primary-500);
     }
     span {
-      color: var(--hula-text-secondary);
+      color: var(--tjg-text-secondary);
     }
   }
   .content-span {
@@ -116,24 +116,24 @@
   }
   /** 回复图片的计数器样式 */
   .reply-img-sub {
-    @apply absolute bottom-8px right-6px color-[--hula-color-primary-500] bg-[--hula-border-default] p-[2px_4px] rounded-6px text-10px;
+    @apply absolute bottom-8px right-6px color-[--tjg-color-primary-500] bg-[--tjg-border-default] p-[2px_4px] rounded-6px text-10px;
   }
 }
 /** emoji回复气泡的样式 */
 .emoji-reply-bubble {
   @apply relative flex-y-center gap-4px rounded-50px p-[4px_8px] cursor-pointer select-none text-14px w-fit custom-shadow;
-  background: var(--hula-color-primary-300-alpha);
-  border: 1px solid var(--hula-color-primary-500);
+  background: var(--tjg-color-primary-300-alpha);
+  border: 1px solid var(--tjg-color-primary-500);
 }
 
 /** 当前用户标记消息的样式 */
 .emoji-reply-bubble--active {
-  background: var(--hula-settings-warning-bg);
-  border: 1px solid color-mix(in srgb, var(--hula-color-warning-400) 60%, transparent);
+  background: var(--tjg-settings-warning-bg);
+  border: 1px solid color-mix(in srgb, var(--tjg-color-warning-400) 60%, transparent);
 }
 /** 跳转到回复内容时候显示的样式 */
 .active-reply {
-  background-color: color-mix(in srgb, var(--hula-text-secondary) 12%, transparent);
+  background-color: color-mix(in srgb, var(--tjg-text-secondary) 12%, transparent);
   border-radius: 8px;
   margin: 0 8px;
   transition: all 0.4s ease-in-out;
@@ -151,7 +151,7 @@
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 12px;
-  background-color: color-mix(in srgb, var(--hula-text-tertiary) 25%, transparent);
+  background-color: color-mix(in srgb, var(--tjg-text-tertiary) 25%, transparent);
   line-height: 22px;
   margin-top: 6px;
   max-width: var(--bubble-max-width);
@@ -221,9 +221,9 @@
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  background-color: color-mix(in srgb, var(--hula-color-primary-500) 8%, transparent);
+  background-color: color-mix(in srgb, var(--tjg-color-primary-500) 8%, transparent);
   border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--hula-color-primary-500) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tjg-color-primary-500) 20%, transparent);
   margin: 0;
   height: 34px;
   line-height: 36px;
@@ -232,7 +232,7 @@
 }
 
 .announcement-hover {
-  background-color: color-mix(in srgb, var(--hula-color-primary-500) 14%, transparent);
+  background-color: color-mix(in srgb, var(--tjg-color-primary-500) 14%, transparent);
 }
 
 /**! 替换ait的字体颜色 */

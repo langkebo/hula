@@ -65,7 +65,7 @@
     </div>
 
     <div v-if="transcription && showTranscription" class="voice-transcription">
-      <n-icon size="14" color="var(--color-primary)">
+      <n-icon size="14" color="var(--tjg-color-primary-500)">
         <svg><use href="#text" /></svg>
       </n-icon>
       <span>{{ transcription }}</span>
@@ -118,9 +118,9 @@ const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
 const isCurrentUser = computed(() => props.fromUserUid === userStore.userInfo?.uid)
 const iconColor = computed(() =>
   isCurrentUser.value
-    ? 'var(--hula-text-inverse)'
+    ? 'var(--tjg-text-inverse)'
     : getComputedStyle(document.documentElement).getPropertyValue('--voice-icon-color-other').trim() ||
-      'var(--hula-text-primary)'
+      'var(--tjg-text-primary)'
 )
 
 const waveformWidth = computed(() => {
@@ -281,7 +281,7 @@ onUnmounted(() => {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 12px;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
   min-width: 200px;
 
   &.is-current-user {
@@ -349,7 +349,7 @@ onUnmounted(() => {
   align-items: flex-start;
   gap: 6px;
   padding: 8px;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
   border-radius: 6px;
   font-size: 13px;
   line-height: 1.4;

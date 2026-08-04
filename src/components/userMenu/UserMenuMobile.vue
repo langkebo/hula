@@ -118,23 +118,23 @@ function handleTouchClick() {
 }
 
 .online-indicator.online {
-  background-color: var(--hula-status-online);
+  background-color: var(--tjg-status-online);
 }
 
 .online-indicator.offline {
-  background-color: var(--hula-status-offline);
+  background-color: var(--tjg-status-offline);
 }
 
 .menu-divider {
   height: 1px;
-  background-color: var(--hula-border-default);
+  background-color: var(--tjg-border-default);
   margin: 8px 0;
 }
 
 .menu-section-title {
   padding: 8px 16px 4px;
   font-size: 12px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-weight: 500;
 }
 
@@ -148,7 +148,7 @@ function handleTouchClick() {
 }
 
 .menu-item-danger :deep(.van-cell__title) {
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 
 .menu-item-disabled {

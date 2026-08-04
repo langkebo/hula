@@ -105,13 +105,13 @@ const formatTime = (timestamp: number): string => {
   margin: 6px 12px 0;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid var(--hula-color-primary-100);
-  background: var(--hula-color-primary-100);
-  color: var(--hula-text-primary);
+  border: 1px solid var(--tjg-color-primary-100);
+  background: var(--tjg-color-primary-100);
+  color: var(--tjg-text-primary);
   flex-shrink: 0;
   max-height: 240px;
   overflow: hidden;
-  transition: max-height var(--hula-motion-duration-normal, 200ms) var(--hula-motion-ease-standard, ease);
+  transition: max-height var(--tjg-motion-duration-normal, 200ms) var(--tjg-motion-ease-standard, ease);
 }
 
 .sticky-banner__header {
@@ -123,13 +123,13 @@ const formatTime = (timestamp: number): string => {
 
 .sticky-banner__icon {
   flex-shrink: 0;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
 }
 
 .sticky-banner__title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--hula-color-primary-700);
+  color: var(--tjg-color-primary-700);
   flex: 1;
 }
 
@@ -139,7 +139,7 @@ const formatTime = (timestamp: number): string => {
   background: transparent;
   cursor: pointer;
   font-size: 12px;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   padding: 2px 6px;
   border-radius: 6px;
   flex-shrink: 0;
@@ -147,7 +147,7 @@ const formatTime = (timestamp: number): string => {
 
 .sticky-banner__toggle:hover,
 .sticky-banner__set:hover {
-  background: color-mix(in srgb, var(--hula-color-primary-500) 12%, transparent);
+  background: color-mix(in srgb, var(--tjg-color-primary-500) 12%, transparent);
 }
 
 .sticky-banner__list {
@@ -162,20 +162,20 @@ const formatTime = (timestamp: number): string => {
   gap: 8px;
   padding: 6px 8px;
   border-radius: 8px;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   cursor: pointer;
   min-height: 36px;
-  transition: background var(--hula-motion-duration-fast, 150ms) ease;
+  transition: background var(--tjg-motion-duration-fast, 150ms) ease;
 }
 
 .sticky-banner__item:hover {
-  background: color-mix(in srgb, var(--hula-color-primary-500) 8%, var(--hula-surface-panel));
+  background: color-mix(in srgb, var(--tjg-color-primary-500) 8%, var(--tjg-surface-panel));
 }
 
 .sticky-banner__sender {
   font-size: 12px;
   font-weight: 500;
-  color: var(--hula-color-primary-700);
+  color: var(--tjg-color-primary-700);
   flex-shrink: 0;
   max-width: 120px;
   overflow: hidden;
@@ -185,7 +185,7 @@ const formatTime = (timestamp: number): string => {
 
 .sticky-banner__body {
   font-size: 12px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -195,7 +195,7 @@ const formatTime = (timestamp: number): string => {
 
 .sticky-banner__time {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   flex-shrink: 0;
 }
 </style>

@@ -68,10 +68,10 @@ const maskCtx = ref<CanvasRenderingContext2D | null>(null)
 const drawCanvas = ref<HTMLCanvasElement | null>(null)
 const drawCtx = ref<CanvasRenderingContext2D | null>(null)
 const cssVars = getComputedStyle(document.documentElement)
-const selectionBorderColor = cssVars.getPropertyValue('--hula-color-primary-500').trim()
+const selectionBorderColor = cssVars.getPropertyValue('--tjg-color-primary-500').trim()
 const overlayMaskColor =
-  cssVars.getPropertyValue('--hula-overlay-mask-default').trim() ||
-  cssVars.getPropertyValue('--hula-surface-overlay').trim()
+  cssVars.getPropertyValue('--tjg-overlay-mask-default').trim() ||
+  cssVars.getPropertyValue('--tjg-surface-overlay').trim()
 
 const magnifierRef = ref<InstanceType<typeof ScreenshotMagnifier> | null>(null)
 const toolbarRef = ref<InstanceType<typeof ScreenshotToolbar> | null>(null)

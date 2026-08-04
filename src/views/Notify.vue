@@ -18,10 +18,10 @@
         <n-avatar round :size="44" :src="AvatarUtils.getAvatarUrl(group.avatar)" />
 
         <n-flex class="flex-1" vertical justify="center" :size="8">
-          <span class="text-(16px [--hula-text-primary])">{{ group.name }}</span>
+          <span class="text-(16px [--tjg-text-primary])">{{ group.name }}</span>
 
           <n-flex class="w-full" align="center" justify="space-between" :size="10">
-            <span class="max-w-150px truncate text-(12px [--hula-text-primary])">
+            <span class="max-w-150px truncate text-(12px [--tjg-text-primary])">
               <template v-if="group.isAtMe">
                 <span class="text flex-1 leading-tight text-12px truncate">
                   <span class="text-[--color-danger] mr-4px">{{ t('message.message_list.mention_tag') }}</span>
@@ -37,7 +37,7 @@
 
             <!-- 有多少条消息 -->
             <div
-              class="text-(10px [--hula-text-inverse]) rounded-full px-6px py-2px flex-center bg-[--hula-color-danger-500]">
+              class="text-(10px [--tjg-text-inverse]) rounded-full px-6px py-2px flex-center bg-[--tjg-color-danger-500]">
               {{ group.messageCount > 99 ? '99+' : group.messageCount }}
             </div>
           </n-flex>
@@ -126,7 +126,7 @@ watch(
 )
 
 const division = () => {
-  return <div class={'h-1px bg-[--hula-border-default] w-full'}></div>
+  return <div class={'h-1px bg-[--tjg-border-default] w-full'}></div>
 }
 
 // 处理点击消息的逻辑
@@ -358,6 +358,6 @@ onUnmounted(() => {
 </script>
 <style scoped lang="scss">
 .notify {
-  @apply bg-[--hula-surface-panel] size-full p-8px box-border select-none text-[--hula-text-primary] text-12px;
+  @apply bg-[--tjg-surface-panel] size-full p-8px box-border select-none text-[--tjg-text-primary] text-12px;
 }
 </style>

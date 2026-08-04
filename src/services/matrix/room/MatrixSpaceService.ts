@@ -549,7 +549,11 @@ class SpaceService extends BaseMatrixService {
   async getUserSpaces(): Promise<SpaceInfo[]> {
     try {
       const manager = this.getSpaceManager()
-      const spaces = await manager.getUserSpaces()
+      // 浏览器 dev 模式下 SpaceManager 可能等待 sync 永不 resolve，加 3s 超时避免挂起
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('getUserSpaces timeout')), 3000)
+      )
+      const spaces = await Promise.race([manager.getUserSpaces(), timeoutPromise])
       return spaces.map((s) => this.sdkSpaceToSpaceInfo(s))
     } catch (err) {
       // 客户端未就绪时静默返回空列表，不输出错误日志
@@ -929,6 +933,17 @@ class SpaceService extends BaseMatrixService {
       return spaces.map((space) => this.sdkSpaceToSpaceInfo(space))
     } catch (err) {
       logger.error(`[Space] SpaceManager 搜索空间失败: ${err}`)
+    }
+    try {
+      const client = this.getClient()
+      const result = await client.http.authedRequest('GET', '/spaces/search', {
+        search_term: query,
+        limit: String(limit)
+      })
+      const spaces = (result as { spaces?: SdkSpace[] }).spaces ?? []
+      return spaces.map((space) => this.sdkSpaceToSpaceInfo(space))
+    } catch (err) {
+      logger.error(`[Space] HTTP 搜索空间失败: ${err}`)
       return []
     }
   }
@@ -939,6 +954,13 @@ class SpaceService extends BaseMatrixService {
       return (await manager.getSpaceStatistics()) as Record<string, unknown>
     } catch (err) {
       logger.error(`[Space] SpaceManager 获取空间统计失败: ${err}`)
+    }
+    try {
+      const client = this.getClient()
+      const result = await client.http.authedRequest('GET', '/spaces/statistics')
+      return result as Record<string, unknown>
+    } catch (err) {
+      logger.error(`[Space] HTTP 获取空间统计失败: ${err}`)
       return {}
     }
   }
@@ -950,6 +972,14 @@ class SpaceService extends BaseMatrixService {
       return spaces.map((space) => this.sdkSpaceToSpaceInfo(space))
     } catch (err) {
       logger.error(`[Space] SpaceManager 获取用户空间列表失败: ${err}`)
+    }
+    try {
+      const client = this.getClient()
+      const result = await client.http.authedRequest('GET', '/spaces/user')
+      const spaces = (result as { spaces?: SdkSpace[] }).spaces ?? []
+      return spaces.map((space) => this.sdkSpaceToSpaceInfo(space))
+    } catch (err) {
+      logger.error(`[Space] HTTP 获取用户空间列表失败: ${err}`)
       return []
     }
   }
@@ -961,6 +991,14 @@ class SpaceService extends BaseMatrixService {
       return spaces.map((s) => this.sdkSpaceToSpaceInfo(s))
     } catch (err) {
       logger.error(`[Space] SpaceManager 获取房间所属空间失败: ${roomId}, ${err}`)
+    }
+    try {
+      const client = this.getClient()
+      const result = await client.http.authedRequest('GET', `/spaces/room/${encodeURIComponent(roomId)}/parents`)
+      const arr = Array.isArray(result) ? result : ((result as { spaces?: SdkSpace[] }).spaces ?? [])
+      return arr.map((s) => this.sdkSpaceToSpaceInfo(s))
+    } catch (err) {
+      logger.error(`[Space] HTTP 获取房间所属空间失败: ${roomId}, ${err}`)
       return []
     }
   }

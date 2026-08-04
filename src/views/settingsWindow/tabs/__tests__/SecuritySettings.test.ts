@@ -223,15 +223,15 @@ describe('SecuritySettings', () => {
   })
 
   it('loads blocked users from localStorage', async () => {
-    localStorage.setItem('hula-blocked-users', JSON.stringify(['@blocked:test.com']))
+    localStorage.setItem('tjg-blocked-users', JSON.stringify(['@blocked:test.com']))
     const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     expect(getVm(wrapper).blockedUsers).toContain('@blocked:test.com')
   })
 
   it('loads invite lists from localStorage', async () => {
-    localStorage.setItem('hula-invite-blocklist', JSON.stringify(['@block:test.com']))
-    localStorage.setItem('hula-invite-allowlist', JSON.stringify(['@allow:test.com']))
+    localStorage.setItem('tjg-invite-blocklist', JSON.stringify(['@block:test.com']))
+    localStorage.setItem('tjg-invite-allowlist', JSON.stringify(['@allow:test.com']))
     const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
@@ -240,9 +240,9 @@ describe('SecuritySettings', () => {
   })
 
   it('loads privacy settings from localStorage', async () => {
-    localStorage.setItem('hula-show-online', 'false')
-    localStorage.setItem('hula-show-typing', 'false')
-    localStorage.setItem('hula-send-receipts', 'false')
+    localStorage.setItem('tjg-show-online', 'false')
+    localStorage.setItem('tjg-show-typing', 'false')
+    localStorage.setItem('tjg-send-receipts', 'false')
     const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
@@ -256,7 +256,7 @@ describe('SecuritySettings', () => {
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.handleOnlineStatusChange(false)
-    expect(localStorage.getItem('hula-show-online')).toBe('false')
+    expect(localStorage.getItem('tjg-show-online')).toBe('false')
     expect(messageSuccessMock).toHaveBeenCalled()
   })
 
@@ -265,7 +265,7 @@ describe('SecuritySettings', () => {
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
     vm.handleTypingStatusChange(false)
-    expect(localStorage.getItem('hula-show-typing')).toBe('false')
+    expect(localStorage.getItem('tjg-show-typing')).toBe('false')
   })
 
   it('adds blocked user and saves to localStorage', async () => {
@@ -275,12 +275,12 @@ describe('SecuritySettings', () => {
     vm.newBlockedUser = '@newblocked:test.com'
     vm.handleAddBlocked()
     expect(vm.blockedUsers).toContain('@newblocked:test.com')
-    const saved = JSON.parse(localStorage.getItem('hula-blocked-users')!)
+    const saved = JSON.parse(localStorage.getItem('tjg-blocked-users')!)
     expect(saved).toContain('@newblocked:test.com')
   })
 
   it('rejects duplicate blocked user', async () => {
-    localStorage.setItem('hula-blocked-users', JSON.stringify(['@dup:test.com']))
+    localStorage.setItem('tjg-blocked-users', JSON.stringify(['@dup:test.com']))
     const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
@@ -290,7 +290,7 @@ describe('SecuritySettings', () => {
   })
 
   it('removes blocked user', async () => {
-    localStorage.setItem('hula-blocked-users', JSON.stringify(['@rm:test.com', '@keep:test.com']))
+    localStorage.setItem('tjg-blocked-users', JSON.stringify(['@rm:test.com', '@keep:test.com']))
     const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)
@@ -306,11 +306,11 @@ describe('SecuritySettings', () => {
     vm.newBlocklistUser = '@blockuser:test.com'
     vm.handleAddInviteBlocklist()
     expect(vm.inviteBlocklist).toContain('@blockuser:test.com')
-    expect(JSON.parse(localStorage.getItem('hula-invite-blocklist')!)).toContain('@blockuser:test.com')
+    expect(JSON.parse(localStorage.getItem('tjg-invite-blocklist')!)).toContain('@blockuser:test.com')
   })
 
   it('removes user from invite allowlist', async () => {
-    localStorage.setItem('hula-invite-allowlist', JSON.stringify(['@rm:test.com', '@keep:test.com']))
+    localStorage.setItem('tjg-invite-allowlist', JSON.stringify(['@rm:test.com', '@keep:test.com']))
     const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
     await vi.dynamicImportSettled()
     const vm = getVm(wrapper)

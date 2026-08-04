@@ -97,12 +97,12 @@ describe('LabsSettings', () => {
     const feature = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'threads')
     feature.enabled = true
     ;(wrapper.vm as any).handleToggleFeature(feature)
-    const saved = JSON.parse(localStorage.getItem('hula-lab-features')!)
+    const saved = JSON.parse(localStorage.getItem('tjg-lab-features')!)
     expect(saved).toContain('threads')
   })
 
   it('loads feature states from localStorage', () => {
-    localStorage.setItem('hula-lab-features', JSON.stringify(['threads', 'voip']))
+    localStorage.setItem('tjg-lab-features', JSON.stringify(['threads', 'voip']))
     const wrapper = mountComponent()
     const threads = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'threads')
     const voip = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'voip')
@@ -120,7 +120,7 @@ describe('LabsSettings', () => {
   it('saves debug mode to localStorage', () => {
     const wrapper = mountComponent()
     ;(wrapper.vm as any).handleDebugModeChange(true)
-    expect(localStorage.getItem('hula-debug-mode')).toBe('true')
+    expect(localStorage.getItem('tjg-debug-mode')).toBe('true')
   })
 
   it('resets all features triggers dialog', () => {
@@ -130,13 +130,13 @@ describe('LabsSettings', () => {
   })
 
   it('loads debug mode from localStorage', () => {
-    localStorage.setItem('hula-debug-mode', 'true')
+    localStorage.setItem('tjg-debug-mode', 'true')
     const wrapper = mountComponent()
     expect((wrapper.vm as any).debugMode).toBe(true)
   })
 
   it('loads performance metrics from localStorage', () => {
-    localStorage.setItem('hula-show-performance', 'true')
+    localStorage.setItem('tjg-show-performance', 'true')
     const wrapper = mountComponent()
     expect((wrapper.vm as any).showPerformanceMetrics).toBe(true)
   })
@@ -144,7 +144,7 @@ describe('LabsSettings', () => {
   it('saves performance metrics to localStorage', () => {
     const wrapper = mountComponent()
     ;(wrapper.vm as any).handlePerformanceChange(true)
-    expect(localStorage.getItem('hula-show-performance')).toBe('true')
+    expect(localStorage.getItem('tjg-show-performance')).toBe('true')
   })
 
   it('opens integrations from labs', () => {

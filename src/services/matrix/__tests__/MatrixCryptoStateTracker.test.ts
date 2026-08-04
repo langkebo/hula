@@ -69,7 +69,7 @@ describe('MatrixCryptoStateTracker - ADR-005 H1 回归', () => {
     await tracker.ensureCrypto(clientA, true)
 
     // 验证 localStorage 存储了 userId:deviceId
-    const stored = localStorage.getItem('hula.lastCryptoUserId')
+    const stored = localStorage.getItem('tjg.lastCryptoUserId')
     expect(stored).toBe('@user:test.com:device-A')
 
     deleteDbMock.mockClear()
@@ -82,7 +82,7 @@ describe('MatrixCryptoStateTracker - ADR-005 H1 回归', () => {
     expect(deleteDbMock).toHaveBeenCalled()
 
     // 验证 localStorage 更新为新 deviceId
-    expect(localStorage.getItem('hula.lastCryptoUserId')).toBe('@user:test.com:device-B')
+    expect(localStorage.getItem('tjg.lastCryptoUserId')).toBe('@user:test.com:device-B')
   })
 
   it('同用户同设备重启时不应触发清理', async () => {
@@ -120,7 +120,7 @@ describe('MatrixCryptoStateTracker - ADR-005 H1 回归', () => {
 
   it('旧版本 localStorage（仅 userId 无冒号）必须触发清理（向后兼容）', async () => {
     // 模拟旧版本存储的值（仅 userId，无 deviceId）
-    localStorage.setItem('hula.lastCryptoUserId', '@user:test.com')
+    localStorage.setItem('tjg.lastCryptoUserId', '@user:test.com')
 
     const client = createMockClient('@user:test.com', 'device-A')
     await tracker.ensureCrypto(client, true)
@@ -131,11 +131,11 @@ describe('MatrixCryptoStateTracker - ADR-005 H1 回归', () => {
 
   it('clearCryptoStoreForLogout 必须清除 localStorage 记录', async () => {
     // 先设置 localStorage
-    localStorage.setItem('hula.lastCryptoUserId', '@user:test.com:device-A')
+    localStorage.setItem('tjg.lastCryptoUserId', '@user:test.com:device-A')
 
     await tracker.clearCryptoStoreForLogout('@user:test.com')
 
     // 验证 localStorage 被清除
-    expect(localStorage.getItem('hula.lastCryptoUserId')).toBeNull()
+    expect(localStorage.getItem('tjg.lastCryptoUserId')).toBeNull()
   })
 })

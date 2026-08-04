@@ -3,19 +3,19 @@
     <!-- 检测中 -->
     <template v-if="step === 'checking'">
       <n-spin size="large" />
-      <p class="text-14px color-[--hula-text-secondary]">{{ t('ai_assistant.openclaw.install.checking') }}</p>
+      <p class="text-14px color-[--tjg-text-secondary]">{{ t('ai_assistant.openclaw.install.checking') }}</p>
     </template>
 
     <!-- 未安装 -->
     <template v-else-if="step === 'not-installed'">
-      <svg class="size-64px color-[--hula-text-quaternary]">
+      <svg class="size-64px color-[--tjg-text-quaternary]">
         <use href="#robot" />
       </svg>
       <div class="text-center max-w-400px">
         <h3 class="text-18px font-semibold color-[--text-color] mb-8px">
           {{ t('ai_assistant.openclaw.install.title') }}
         </h3>
-        <p class="text-14px color-[--hula-text-secondary] leading-6 mb-16px">
+        <p class="text-14px color-[--tjg-text-secondary] leading-6 mb-16px">
           {{ t('ai_assistant.openclaw.install.description') }}
         </p>
 
@@ -48,14 +48,14 @@
 
     <!-- 安装中 -->
     <template v-else-if="step === 'installing'">
-      <svg class="size-64px color-[--hula-color-primary-500] animate-pulse">
+      <svg class="size-64px color-[--tjg-color-primary-500] animate-pulse">
         <use href="#robot" />
       </svg>
       <div class="text-center max-w-400px">
         <h3 class="text-18px font-semibold color-[--text-color] mb-8px">
           {{ t('ai_assistant.openclaw.install.installing_title') }}
         </h3>
-        <p class="text-14px color-[--hula-text-secondary] leading-6 mb-16px">
+        <p class="text-14px color-[--tjg-text-secondary] leading-6 mb-16px">
           {{ t('ai_assistant.openclaw.install.installing_desc') }}
         </p>
         <n-button type="primary" @click="recheck">
@@ -66,19 +66,19 @@
 
     <!-- 配置中 -->
     <template v-else-if="step === 'configuring'">
-      <svg class="size-64px color-[--hula-color-primary-500]">
+      <svg class="size-64px color-[--tjg-color-primary-500]">
         <use href="#robot" />
       </svg>
       <div class="text-center max-w-400px">
         <h3 class="text-18px font-semibold color-[--text-color] mb-8px">
           {{ t('ai_assistant.openclaw.install.config_title') }}
         </h3>
-        <p class="text-14px color-[--hula-text-secondary] leading-6 mb-16px">
+        <p class="text-14px color-[--tjg-text-secondary] leading-6 mb-16px">
           {{ t('ai_assistant.openclaw.install.config_desc') }}
         </p>
 
-        <div class="config-steps text-left bg-[--hula-surface-panel-muted] rounded-8px p-16px mb-16px">
-          <ol class="list-decimal list-inside text-13px color-[--hula-text-secondary] space-y-8px">
+        <div class="config-steps text-left bg-[--tjg-surface-panel-muted] rounded-8px p-16px mb-16px">
+          <ol class="list-decimal list-inside text-13px color-[--tjg-text-secondary] space-y-8px">
             <li>{{ t('ai_assistant.openclaw.install.config_step1') }}</li>
             <li>{{ t('ai_assistant.openclaw.install.config_step2') }}</li>
             <li>{{ t('ai_assistant.openclaw.install.config_step3') }}</li>

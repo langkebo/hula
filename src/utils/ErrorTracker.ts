@@ -98,7 +98,14 @@ class ErrorTracker {
     // Naive UI seemly/rgba 无法解析 CSS 变量，已在 NaiveProvider 中用具体色值修复
     '[seemly/rgba]: Invalid color value',
     // Tauri 窗口关闭后异步操作引用了已销毁的窗口，属于良性生命周期问题
-    'window not found'
+    'window not found',
+    // N-3: 登出/切换账号时 syncManager.stop() 触发 abortController.abort()，
+    // 浏览器中止 in-flight /sync fetch，SDK 内部已 catch，属良性 abort 错误
+    '/sync failed: fetch failed: Failed to fetch',
+    // N-3: 同上 abort 时序也会中断 presence status 设置请求
+    '/status failed: fetch failed: Failed to fetch',
+    // N-3: abort 后 SlidingSync 进入 backoff 路径产生的退避警告
+    'SlidingSync backing off for'
   ]
 
   trackError(type: TrackedError['type'], error: Error, context: ErrorContext = {}): void {

@@ -52,12 +52,12 @@ pub(crate) fn compile_ios_splash() {
         return;
     }
 
-    println!("cargo:rerun-if-changed=gen/apple/Sources/hula/SplashScreen.mm");
-    println!("cargo:rerun-if-changed=gen/apple/Sources/hula/BadgeBridge.mm");
+    println!("cargo:rerun-if-changed=gen/apple/Sources/tjg/SplashScreen.mm");
+    println!("cargo:rerun-if-changed=gen/apple/Sources/tjg/BadgeBridge.mm");
 
     cc::Build::new()
-        .file("gen/apple/Sources/hula/SplashScreen.mm")
-        .file("gen/apple/Sources/hula/BadgeBridge.mm")
+        .file("gen/apple/Sources/tjg/SplashScreen.mm")
+        .file("gen/apple/Sources/tjg/BadgeBridge.mm")
         .flag("-fobjc-arc")
-        .compile("hula_ios_helpers");
+        .compile("tjg_ios_helpers");
 }

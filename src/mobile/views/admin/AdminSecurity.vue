@@ -4,8 +4,8 @@
       <van-notice-bar
         :scrollable="false"
         mode="closeable"
-        color="var(--hula-admin-notice-text)"
-        background="var(--hula-admin-notice-bg)">
+        color="var(--tjg-admin-notice-text)"
+        background="var(--tjg-admin-notice-bg)">
         {{ t('admin.security.audit_info') }}
       </van-notice-bar>
 

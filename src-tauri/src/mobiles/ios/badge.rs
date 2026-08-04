@@ -1,17 +1,17 @@
 #[cfg(target_os = "ios")]
 mod platform {
     unsafe extern "C" {
-        fn hula_set_application_badge(count: i32);
-        fn hula_request_badge_authorization();
+        fn tjg_set_application_badge(count: i32);
+        fn tjg_request_badge_authorization();
     }
 
     pub fn set_badge(count: Option<u32>) {
         let sanitized = count.unwrap_or(0).min(99_999) as i32;
-        unsafe { hula_set_application_badge(sanitized) };
+        unsafe { tjg_set_application_badge(sanitized) };
     }
 
     pub fn request_authorization() {
-        unsafe { hula_request_badge_authorization() };
+        unsafe { tjg_request_badge_authorization() };
     }
 }
 

@@ -70,34 +70,34 @@ const handleReload = async () => {
   justify-content: center;
   min-height: 100vh;
   padding: 24px;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
 }
 
 .error-content {
   max-width: 480px;
   padding: 32px;
   text-align: center;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
   border-radius: 16px;
-  box-shadow: var(--hula-shadow-md);
+  box-shadow: var(--tjg-shadow-md);
 }
 
 .error-icon {
   margin-bottom: 24px;
-  color: var(--hula-color-danger-500);
+  color: var(--tjg-color-danger-500);
 }
 
 .error-title {
   margin: 0 0 12px;
   font-size: 24px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .error-message {
   margin: 0 0 24px;
   font-size: 14px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   line-height: 1.6;
 }
 
@@ -114,7 +114,7 @@ const handleReload = async () => {
   summary {
     cursor: pointer;
     font-size: 13px;
-    color: var(--hula-text-tertiary);
+    color: var(--tjg-text-tertiary);
   }
 
   pre {
@@ -122,7 +122,7 @@ const handleReload = async () => {
     padding: 12px;
     overflow: auto;
     font-size: 12px;
-    background: var(--hula-surface-panel-muted);
+    background: var(--tjg-surface-panel-muted);
     border-radius: 8px;
     max-height: 200px;
   }

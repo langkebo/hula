@@ -60,8 +60,8 @@
           <div v-if="incomingRequestsCount > 0" class="friend-request-preview">
             <n-flex align="center" justify="space-between" class="mb-8px">
               <n-flex align="center" :size="6">
-                <svg class="size-14px color-[--hula-color-primary-500]"><use href="#bell" /></svg>
-                <span class="text-[var(--text-sm)] font-medium color-[--hula-color-primary-500]">
+                <svg class="size-14px color-[--tjg-color-primary-500]"><use href="#bell" /></svg>
+                <span class="text-[var(--text-sm)] font-medium color-[--tjg-color-primary-500]">
                   {{ t('friend.list.pending_requests', { count: incomingRequestsCount }) }}
                 </span>
               </n-flex>
@@ -82,7 +82,7 @@
                     round />
                   <div class="flex flex-col min-w-0 flex-1">
                     <span class="text-[var(--text-sm)] truncate">{{ request.displayName || request.userId }}</span>
-                    <span v-if="request.message" class="text-[var(--text-xs)] text-[--hula-text-quaternary] truncate">
+                    <span v-if="request.message" class="text-[var(--text-xs)] text-[--tjg-text-quaternary] truncate">
                       {{ request.message }}
                     </span>
                   </div>
@@ -308,7 +308,7 @@ import FriendSearchBar from './FriendSearchBar.vue'
 import { resolveFriendListViewState } from './friendListViewState'
 import { highlightSearchMatch } from './highlightSearchMatch'
 
-const FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'hula-friend-search-history'
+const FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'tjg-friend-search-history'
 /** 列表项超过此阈值时启用虚拟滚动（需求文档 16.1） */
 const VIRTUAL_SCROLL_THRESHOLD = 100
 
@@ -678,7 +678,7 @@ const handleSetNote = async (friend: MatrixContact) => {
           value: friend.note ?? friend.remark ?? '',
           placeholder: t('friend.detail.note_placeholder'),
           style:
-            'width: 100%; padding: 8px 12px; border: 1px solid var(--hula-border-default); border-radius: 6px; font-size: 14px; outline: none; background: var(--hula-surface-panel); color: inherit;',
+            'width: 100%; padding: 8px 12px; border: 1px solid var(--tjg-border-default); border-radius: 6px; font-size: 14px; outline: none; background: var(--tjg-surface-panel); color: inherit;',
           maxlength: 1000
         })
       ]),
@@ -704,7 +704,7 @@ const handleSetDisplayName = async (friend: MatrixContact) => {
           value: friend.remark ?? friend.displayName ?? '',
           placeholder: t('friend.detail.display_name_placeholder'),
           style:
-            'width: 100%; padding: 8px 12px; border: 1px solid var(--hula-border-default); border-radius: 6px; font-size: 14px; outline: none; background: var(--hula-surface-panel); color: inherit;',
+            'width: 100%; padding: 8px 12px; border: 1px solid var(--tjg-border-default); border-radius: 6px; font-size: 14px; outline: none; background: var(--tjg-surface-panel); color: inherit;',
           maxlength: 256
         })
       ]),
@@ -749,7 +749,7 @@ onMounted(async () => {
 
 .friend-list-view__state-title {
   font-size: 14px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .friend-list-view__search-summary {
@@ -758,14 +758,14 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 8px;
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   margin-top: 8px;
 }
 
 .friend-list-view__search-clear {
   border: none;
   background: transparent;
-  color: var(--hula-color-primary-500);
+  color: var(--tjg-color-primary-500);
   cursor: pointer;
   padding: 0;
 }
@@ -773,8 +773,8 @@ onMounted(async () => {
 .friend-request-preview {
   padding: 10px 12px;
   border-radius: 8px;
-  background: var(--hula-color-primary-50, rgba(59, 130, 246, 0.08));
-  border: 1px solid var(--hula-color-primary-100, rgba(59, 130, 246, 0.15));
+  background: var(--tjg-color-primary-50, rgba(59, 130, 246, 0.08));
+  border: 1px solid var(--tjg-color-primary-100, rgba(59, 130, 246, 0.15));
 }
 
 .friend-request-preview__list {
@@ -793,8 +793,8 @@ onMounted(async () => {
   gap: 8px;
   padding: 8px;
   border-radius: 6px;
-  background: var(--hula-surface-panel);
-  border: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-panel);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .friend-items {
@@ -829,23 +829,23 @@ onMounted(async () => {
   overflow: hidden;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 
   &:active {
-    background: var(--hula-surface-session-active);
+    background: var(--tjg-surface-session-active);
   }
 }
 
 .friend-item__presence-text {
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .friend-item__highlight {
-  background: var(--hula-color-warning-100);
-  color: var(--hula-text-primary);
+  background: var(--tjg-color-warning-100);
+  color: var(--tjg-text-primary);
   border-radius: 2px;
   padding: 0 1px;
-  font-weight: var(--hula-font-weight-medium);
+  font-weight: var(--tjg-font-weight-medium);
 }
 </style>

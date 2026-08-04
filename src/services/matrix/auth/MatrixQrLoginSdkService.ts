@@ -387,7 +387,7 @@ class MatrixQrLoginSdkService {
         type: 'm.login.token',
         token: secretsMsg.login_token,
         device_id: newDeviceId,
-        initial_display_name: displayName ?? 'HuLa QR Login'
+        initial_display_name: displayName ?? 'Tjg QR Login'
       })
 
       // Send SuccessPayload to existing device.
@@ -701,7 +701,7 @@ class MatrixQrLoginSdkService {
         type: 'm.login.token',
         token: secretsMsg.login_token,
         device_id: newDeviceId,
-        initial_display_name: displayName ?? 'HuLa QR Login'
+        initial_display_name: displayName ?? 'Tjg QR Login'
       })
 
       // Step 16: Send SuccessPayload to existing device.

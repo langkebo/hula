@@ -17,13 +17,13 @@
 
         <!-- Step: Intro -->
         <div v-if="step === 'intro'" class="flex flex-col items-center text-center">
-          <div class="mb-16px text-[var(--hula-color-primary-500)] bg-[var(--hula-surface-search)] p-16px rounded-full">
+          <div class="mb-16px text-[var(--tjg-color-primary-500)] bg-[var(--tjg-surface-search)] p-16px rounded-full">
             <Icon icon="mdi:shield-check" :width="48" />
           </div>
-          <div class="mb-24px text-[var(--text-sm)] color-[var(--hula-text-secondary)]">
+          <div class="mb-24px text-[var(--text-sm)] color-[var(--tjg-text-secondary)]">
             <p class="mb-8px">{{ t('setting.device_verify_dialog.intro_primary') }}</p>
             <p>{{ t('setting.device_verify_dialog.intro_secondary') }}</p>
-            <p v-if="props.inboundRequest" class="mt-8px color-[var(--hula-color-warning-500)]">
+            <p v-if="props.inboundRequest" class="mt-8px color-[var(--tjg-color-warning-500)]">
               {{ t('setting.device_verify_dialog.inbound_request_hint') }}
             </p>
           </div>
@@ -31,34 +31,34 @@
           <!-- Inbound request details -->
           <div
             v-if="props.inboundRequest"
-            class="w-full bg-[var(--hula-color-warning-100)] border border-[var(--hula-color-warning-500)] rounded-8px p-16px mb-24px text-left">
+            class="w-full bg-[var(--tjg-color-warning-100)] border border-[var(--tjg-color-warning-500)] rounded-8px p-16px mb-24px text-left">
             <div class="flex items-center gap-8px mb-12px">
-              <Icon icon="mdi:account-check" :width="20" class="color-[var(--hula-color-warning-500)]" />
-              <span class="text-[var(--text-sm)] font-medium color-[var(--hula-text-primary)]">
+              <Icon icon="mdi:account-check" :width="20" class="color-[var(--tjg-color-warning-500)]" />
+              <span class="text-[var(--text-sm)] font-medium color-[var(--tjg-text-primary)]">
                 {{ t('setting.device_verify_dialog.inbound_request_hint') }}
               </span>
             </div>
             <div class="flex justify-between mb-8px">
-              <span class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+              <span class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
                 {{ t('setting.device_verify_dialog.pending_request_from') }}
               </span>
-              <span class="text-[var(--text-xs)] font-medium color-[var(--hula-text-primary)]">
+              <span class="text-[var(--text-xs)] font-medium color-[var(--tjg-text-primary)]">
                 {{ props.inboundRequest.userId }}
               </span>
             </div>
             <div class="flex justify-between mb-8px">
-              <span class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+              <span class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
                 {{ t('setting.device_verify_dialog.pending_request_device') }}
               </span>
-              <span class="text-[var(--text-xs)] font-medium color-[var(--hula-text-primary)]">
+              <span class="text-[var(--text-xs)] font-medium color-[var(--tjg-text-primary)]">
                 {{ props.inboundRequest.deviceId }}
               </span>
             </div>
             <div class="flex justify-between">
-              <span class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+              <span class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
                 {{ t('setting.device_verify_dialog.pending_request_methods') }}
               </span>
-              <span class="text-[var(--text-xs)] font-medium color-[var(--hula-text-primary)]">
+              <span class="text-[var(--text-xs)] font-medium color-[var(--tjg-text-primary)]">
                 {{ props.inboundRequest.methods.join(', ') }}
               </span>
             </div>
@@ -67,20 +67,20 @@
           <!-- Device info card (shown when no inbound request) -->
           <div
             v-else
-            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-16px mb-24px text-left">
+            class="w-full bg-[var(--tjg-surface-panel)] border border-[var(--tjg-border-default)] rounded-8px p-16px mb-24px text-left">
             <div class="flex justify-between mb-12px">
-              <span class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+              <span class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
                 {{ t('setting.device_verify_dialog.device_id') }}
               </span>
-              <span class="text-[var(--text-xs)] font-medium color-[var(--hula-text-primary)] break-all ml-16px">
+              <span class="text-[var(--text-xs)] font-medium color-[var(--tjg-text-primary)] break-all ml-16px">
                 {{ deviceId }}
               </span>
             </div>
             <div class="flex justify-between">
-              <span class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+              <span class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
                 {{ t('setting.device_verify_dialog.device_name') }}
               </span>
-              <span class="text-[var(--text-xs)] font-medium color-[var(--hula-text-primary)]">
+              <span class="text-[var(--text-xs)] font-medium color-[var(--tjg-text-primary)]">
                 {{ deviceName || t('setting.device_verify_dialog.unnamed_device') }}
               </span>
             </div>
@@ -89,10 +89,10 @@
           <!-- Pending verifications section -->
           <div
             v-if="pendingVerifications.length > 0"
-            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-16px mb-24px text-left">
+            class="w-full bg-[var(--tjg-surface-panel)] border border-[var(--tjg-border-default)] rounded-8px p-16px mb-24px text-left">
             <div class="flex items-center gap-8px mb-12px">
-              <Icon icon="mdi:clock-outline" :width="18" class="color-[var(--hula-color-primary-500)]" />
-              <span class="text-[var(--text-sm)] font-medium color-[var(--hula-text-primary)]">
+              <Icon icon="mdi:clock-outline" :width="18" class="color-[var(--tjg-color-primary-500)]" />
+              <span class="text-[var(--text-sm)] font-medium color-[var(--tjg-text-primary)]">
                 {{ t('setting.device_verify_dialog.pending_list_title') }}
               </span>
             </div>
@@ -100,10 +100,10 @@
               <n-list-item v-for="req in pendingVerifications" :key="req.transactionId">
                 <div class="flex items-center justify-between w-full">
                   <div class="flex-1 min-w-0">
-                    <div class="text-[var(--text-sm)] color-[var(--hula-text-primary)] truncate">
+                    <div class="text-[var(--text-sm)] color-[var(--tjg-text-primary)] truncate">
                       {{ req.userId }}
                     </div>
-                    <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+                    <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
                       {{ t('setting.device_verify_dialog.pending_request_device') }}: {{ req.deviceId }}
                     </div>
                   </div>
@@ -149,10 +149,10 @@
 
         <!-- Step: Pending List -->
         <div v-else-if="step === 'pendingList'" class="flex flex-col items-center text-center">
-          <div class="mb-16px text-[var(--hula-color-primary-500)] bg-[var(--hula-surface-search)] p-16px rounded-full">
+          <div class="mb-16px text-[var(--tjg-color-primary-500)] bg-[var(--tjg-surface-search)] p-16px rounded-full">
             <Icon icon="mdi:clock-outline" :width="48" />
           </div>
-          <h3 class="text-[var(--text-lg)] font-medium color-[var(--hula-text-primary)] mb-8px">
+          <h3 class="text-[var(--text-lg)] font-medium color-[var(--tjg-text-primary)] mb-8px">
             {{ t('setting.device_verify_dialog.pending_list_title') }}
           </h3>
           <div class="w-full mb-24px">
@@ -163,10 +163,10 @@
               <n-list-item v-for="req in pendingVerifications" :key="req.transactionId">
                 <div class="flex items-center justify-between w-full">
                   <div class="flex-1 min-w-0">
-                    <div class="text-[var(--text-sm)] color-[var(--hula-text-primary)] truncate">
+                    <div class="text-[var(--text-sm)] color-[var(--tjg-text-primary)] truncate">
                       {{ req.userId }}
                     </div>
-                    <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)]">
+                    <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
                       {{ t('setting.device_verify_dialog.pending_request_device') }}: {{ req.deviceId }}
                     </div>
                     <div class="mt-4px">
@@ -198,33 +198,33 @@
         <!-- Step: Show Key -->
         <div v-else-if="step === 'showKey'" class="flex flex-col items-center text-center">
           <div
-            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-24px mb-24px">
-            <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)] mb-16px">
+            class="w-full bg-[var(--tjg-surface-panel)] border border-[var(--tjg-border-default)] rounded-8px p-24px mb-24px">
+            <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)] mb-16px">
               {{ t('setting.device_verify_dialog.fingerprint_label') }}
             </div>
             <div
-              class="flex flex-wrap justify-center gap-8px font-mono text-[var(--text-lg)] font-bold tracking-wider color-[var(--hula-text-primary)]">
+              class="flex flex-wrap justify-center gap-8px font-mono text-[var(--text-lg)] font-bold tracking-wider color-[var(--tjg-text-primary)]">
               <div
                 v-for="(chunk, index) in fingerprintChunks"
                 :key="index"
-                class="bg-[var(--hula-surface-search)] px-8px py-4px rounded-6px">
+                class="bg-[var(--tjg-surface-search)] px-8px py-4px rounded-6px">
                 {{ chunk }}
               </div>
             </div>
             <div
-              class="mt-16px flex items-center justify-center gap-4px text-[var(--text-xs)] color-[var(--hula-color-warning-500)] bg-[var(--hula-color-warning-100)] py-8px px-12px rounded-6px">
+              class="mt-16px flex items-center justify-center gap-4px text-[var(--text-xs)] color-[var(--tjg-color-warning-500)] bg-[var(--tjg-color-warning-100)] py-8px px-12px rounded-6px">
               <Icon icon="mdi:information" :width="16" />
               <span>{{ t('setting.device_verify_dialog.fingerprint_hint') }}</span>
             </div>
           </div>
-          <div class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-24px">
+          <div class="text-[var(--text-sm)] color-[var(--tjg-text-secondary)] mb-24px">
             <p>{{ t('setting.device_verify_dialog.match_question') }}</p>
           </div>
           <!-- Cancel with reason -->
           <div
             v-if="showCancelReason"
-            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-16px mb-16px">
-            <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)] mb-8px">
+            class="w-full bg-[var(--tjg-surface-panel)] border border-[var(--tjg-border-default)] rounded-8px p-16px mb-16px">
+            <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)] mb-8px">
               {{ t('setting.device_verify_dialog.cancel_reason_label') }}
             </div>
             <n-input
@@ -256,23 +256,23 @@
         <!-- Step: Show QR -->
         <div v-else-if="step === 'showQr'" class="flex flex-col items-center text-center">
           <div
-            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-24px mb-24px">
-            <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)] mb-16px">
+            class="w-full bg-[var(--tjg-surface-panel)] border border-[var(--tjg-border-default)] rounded-8px p-24px mb-24px">
+            <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)] mb-16px">
               {{ t('setting.device_verify_dialog.qr_code_label') }}
             </div>
             <n-qr-code :value="qrCodeData" :size="220" />
-            <div class="mt-16px text-[var(--text-xs)] color-[var(--hula-text-secondary)] break-all">
+            <div class="mt-16px text-[var(--text-xs)] color-[var(--tjg-text-secondary)] break-all">
               {{ qrCodeData }}
             </div>
           </div>
-          <div class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-24px">
+          <div class="text-[var(--text-sm)] color-[var(--tjg-text-secondary)] mb-24px">
             <p>{{ t('setting.device_verify_dialog.qr_code_hint') }}</p>
           </div>
           <!-- Cancel with reason -->
           <div
             v-if="showCancelReason"
-            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-16px mb-16px">
-            <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)] mb-8px">
+            class="w-full bg-[var(--tjg-surface-panel)] border border-[var(--tjg-border-default)] rounded-8px p-16px mb-16px">
+            <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)] mb-8px">
               {{ t('setting.device_verify_dialog.cancel_reason_label') }}
             </div>
             <n-input
@@ -302,23 +302,23 @@
         <!-- Step: Scan QR -->
         <div v-else-if="step === 'scanQr'" class="flex flex-col items-center text-center">
           <div
-            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-24px mb-24px">
-            <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)] mb-16px">
+            class="w-full bg-[var(--tjg-surface-panel)] border border-[var(--tjg-border-default)] rounded-8px p-24px mb-24px">
+            <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)] mb-16px">
               {{ t('setting.device_verify_dialog.scan_qr_label') }}
             </div>
             <textarea
               v-model="qrCodeToScan"
-              class="w-full min-h-120px resize-none rounded-8px border border-[var(--hula-border-default)] bg-[var(--hula-surface-panel)] p-12px text-[var(--text-sm)] color-[var(--hula-text-primary)]"
+              class="w-full min-h-120px resize-none rounded-8px border border-[var(--tjg-border-default)] bg-[var(--tjg-surface-panel)] p-12px text-[var(--text-sm)] color-[var(--tjg-text-primary)]"
               :placeholder="t('setting.device_verify_dialog.scan_qr_placeholder')" />
           </div>
-          <div class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-24px">
+          <div class="text-[var(--text-sm)] color-[var(--tjg-text-secondary)] mb-24px">
             <p>{{ t('setting.device_verify_dialog.scan_qr_hint') }}</p>
           </div>
           <!-- Cancel with reason -->
           <div
             v-if="showCancelReason"
-            class="w-full bg-[var(--hula-surface-panel)] border border-[var(--hula-border-default)] rounded-8px p-16px mb-16px">
-            <div class="text-[var(--text-xs)] color-[var(--hula-text-tertiary)] mb-8px">
+            class="w-full bg-[var(--tjg-surface-panel)] border border-[var(--tjg-border-default)] rounded-8px p-16px mb-16px">
+            <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)] mb-8px">
               {{ t('setting.device_verify_dialog.cancel_reason_label') }}
             </div>
             <n-input
@@ -347,13 +347,13 @@
 
         <!-- Step: Success -->
         <div v-else-if="step === 'success'" class="flex flex-col items-center text-center py-24px">
-          <div class="mb-16px text-[var(--hula-color-success-500)]">
+          <div class="mb-16px text-[var(--tjg-color-success-500)]">
             <Icon icon="mdi:check-circle" :width="64" />
           </div>
-          <h3 class="text-[var(--text-lg)] font-medium color-[var(--hula-text-primary)] mb-8px">
+          <h3 class="text-[var(--text-lg)] font-medium color-[var(--tjg-text-primary)] mb-8px">
             {{ t('setting.device_verify_dialog.success_title') }}
           </h3>
-          <p class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-24px">
+          <p class="text-[var(--text-sm)] color-[var(--tjg-text-secondary)] mb-24px">
             {{ t('setting.device_verify_dialog.success_desc') }}
           </p>
           <n-button type="primary" @click="handleClose" class="w-120px">{{ t('common.close') }}</n-button>
@@ -361,16 +361,16 @@
 
         <!-- Step: Rejected -->
         <div v-else-if="step === 'rejected'" class="flex flex-col items-center text-center py-24px">
-          <div class="mb-16px text-[var(--hula-color-danger-500)]">
+          <div class="mb-16px text-[var(--tjg-color-danger-500)]">
             <Icon icon="mdi:alert-circle" :width="64" />
           </div>
-          <h3 class="text-[var(--text-lg)] font-medium color-[var(--hula-text-primary)] mb-8px">
+          <h3 class="text-[var(--text-lg)] font-medium color-[var(--tjg-text-primary)] mb-8px">
             {{ t('setting.device_verify_dialog.rejected_title') }}
           </h3>
-          <p class="text-[var(--text-sm)] color-[var(--hula-text-secondary)] mb-8px">
+          <p class="text-[var(--text-sm)] color-[var(--tjg-text-secondary)] mb-8px">
             {{ t('setting.device_verify_dialog.rejected_desc') }}
           </p>
-          <p class="text-[var(--text-xs)] color-[var(--hula-color-danger-500)] mb-24px">
+          <p class="text-[var(--text-xs)] color-[var(--tjg-color-danger-500)] mb-24px">
             {{ t('setting.device_verify_dialog.rejected_hint') }}
           </p>
           <n-button @click="handleClose" class="w-120px">{{ t('common.close') }}</n-button>
@@ -728,7 +728,7 @@ async function handleReject() {
   display: flex;
   justify-content: center;
   margin-bottom: 16px;
-  color: var(--color-primary);
+  color: var(--tjg-color-primary-500);
 }
 
 .intro-text {
@@ -738,18 +738,18 @@ async function handleReject() {
 
 .intro-text p {
   margin: 8px 0;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .device-info-card {
-  background-color: var(--hula-encryption-surface-subtle);
+  background-color: var(--tjg-encryption-surface-subtle);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
 }
 
 :deep(.dark) .device-info-card {
-  background-color: var(--hula-encryption-surface-dark);
+  background-color: var(--tjg-encryption-surface-dark);
 }
 
 .info-row {
@@ -759,7 +759,7 @@ async function handleReject() {
 }
 
 .info-row:not(:last-child) {
-  border-bottom: 1px solid var(--hula-border-muted);
+  border-bottom: 1px solid var(--tjg-border-muted);
 }
 
 :deep(.dark) .info-row:not(:last-child) {
@@ -800,12 +800,12 @@ async function handleReject() {
   font-size: 18px;
   font-weight: 500;
   padding: 8px 12px;
-  background-color: var(--hula-encryption-surface-subtle);
+  background-color: var(--tjg-encryption-surface-subtle);
   border-radius: 4px;
 }
 
 :deep(.dark) .fingerprint-chunk {
-  background-color: var(--hula-encryption-surface-dark);
+  background-color: var(--tjg-encryption-surface-dark);
 }
 
 .key-hint {

@@ -51,15 +51,15 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
   align-items: center;
   height: 100vh;
   padding: 24px;
-  background: var(--hula-surface-app);
+  background: var(--tjg-surface-app);
 }
 
 .dynamic-shell {
   width: min(840px, 100%);
   padding: 32px;
   border-radius: 20px;
-  background: var(--hula-surface-panel);
-  box-shadow: var(--hula-shadow-lg);
+  background: var(--tjg-surface-panel);
+  box-shadow: var(--tjg-shadow-lg);
 }
 
 .dynamic-shell h1 {
@@ -69,13 +69,13 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
 
 .dynamic-shell p {
   margin: 0;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   line-height: 1.6;
 }
 
 .dynamic-meta {
   margin-top: 16px;
-  color: var(--hula-color-info-500);
+  color: var(--tjg-color-info-500);
   font-size: 14px;
 }
 
@@ -88,9 +88,9 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
 
 .dynamic-card {
   padding: 16px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 16px;
-  background: var(--hula-surface-panel-muted);
+  background: var(--tjg-surface-panel-muted);
 }
 
 .dynamic-card__header {
@@ -107,7 +107,7 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
 }
 
 .dynamic-card__header span {
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-size: 13px;
 }
 </style>

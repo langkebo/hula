@@ -172,9 +172,9 @@ export const useSessionListState = () => {
   const getItemClasses = (item: SessionItem) => {
     const isSelected = globalStore.currentSessionRoomId === item.roomId
     return {
-      'hula-room-list-item--selected': isSelected,
-      'hula-room-list-item--pinned': !!item.top,
-      'hula-room-list-item--muted': !!item.muteNotification
+      'tjg-room-list-item--selected': isSelected,
+      'tjg-room-list-item--pinned': !!item.top,
+      'tjg-room-list-item--muted': !!item.muteNotification
     }
   }
 

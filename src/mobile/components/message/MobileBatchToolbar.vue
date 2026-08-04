@@ -69,12 +69,12 @@ const handleCancel = () => {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
-  background: var(--hula-surface-panel);
-  border-top: 1px solid var(--hula-border-default);
+  background: var(--tjg-surface-panel);
+  border-top: 1px solid var(--tjg-border-default);
 
   &__count {
     font-size: 14px;
-    color: var(--hula-text-secondary);
+    color: var(--tjg-text-secondary);
     white-space: nowrap;
     min-width: 60px;
   }

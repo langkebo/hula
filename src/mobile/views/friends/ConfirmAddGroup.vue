@@ -21,8 +21,8 @@
                   @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 
                 <div class="flex flex-col gap-10px">
-                  <p class="text-[--hula-text-primary]">{{ userInfo.name }}</p>
-                  <p class="text-(12px [--hula-text-primary])">群号: {{ userInfo.account }}</p>
+                  <p class="text-[--tjg-text-primary]">{{ userInfo.name }}</p>
+                  <p class="text-(12px [--tjg-text-primary])">群号: {{ userInfo.account }}</p>
                 </div>
               </div>
 
@@ -85,7 +85,7 @@ onMounted(async () => {
 :deep(.van-cell.van-field) {
   padding: 10px 12px;
   border-radius: 8px;
-  background: var(--hula-overlay-mobile-sheet);
+  background: var(--tjg-overlay-mobile-sheet);
 }
 
 :deep(.van-cell.van-field::after) {

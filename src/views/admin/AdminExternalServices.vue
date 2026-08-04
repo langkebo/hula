@@ -387,13 +387,13 @@ onMounted(() => {
   grid-template-columns: 2fr 1fr 1.5fr 1fr 1fr 1.5fr 2fr;
   gap: 8px;
   padding: 8px 4px;
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
   align-items: center;
 
   &.table-header {
     font-weight: 600;
-    color: var(--hula-text-secondary);
-    background: var(--hula-fill-default, rgba(0, 0, 0, 0.02));
+    color: var(--tjg-text-secondary);
+    background: var(--tjg-fill-default, rgba(0, 0, 0, 0.02));
   }
 }
 

@@ -316,8 +316,8 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--hula-border-default);
-  background: var(--hula-surface-elevated);
+  border-bottom: 1px solid var(--tjg-border-default);
+  background: var(--tjg-surface-elevated);
 }
 
 .trendradar-view__header-left {
@@ -330,13 +330,13 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .trendradar-view__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin: 0;
 }
 
@@ -350,7 +350,7 @@ onMounted(() => {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   transition: transform 0.3s ease;
 }
 
@@ -367,11 +367,11 @@ onMounted(() => {
 .trendradar-view__sidebar {
   width: 100px;
   padding: 12px;
-  border-right: 1px solid var(--hula-border-default);
+  border-right: 1px solid var(--tjg-border-default);
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--hula-surface-elevated);
+  background: var(--tjg-surface-elevated);
 }
 
 .trendradar-view__nav-item {
@@ -382,19 +382,19 @@ onMounted(() => {
   padding: 12px 8px;
   border-radius: 8px;
   cursor: pointer;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-size: 12px;
   transition: all 0.2s ease;
 }
 
 .trendradar-view__nav-item:hover {
-  background: var(--hula-surface-list-hover);
-  color: var(--hula-text-secondary);
+  background: var(--tjg-surface-list-hover);
+  color: var(--tjg-text-secondary);
 }
 
 .trendradar-view__nav-item--active {
   background: var(--color-primary-active);
-  color: var(--color-primary);
+  color: var(--tjg-color-primary-500);
 }
 
 .trendradar-view__nav-icon {
@@ -433,7 +433,7 @@ onMounted(() => {
 .trendradar-view__panel-header h3 {
   font-size: 16px;
   font-weight: 600;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   margin: 0;
 }
 
@@ -446,7 +446,7 @@ onMounted(() => {
   justify-content: center;
   gap: 12px;
   padding: 60px 20px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   font-size: 14px;
 }
 
@@ -472,20 +472,20 @@ onMounted(() => {
 .trendradar-view__analyze-icon {
   width: 16px;
   height: 16px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 
 .trendradar-view__analyze-result {
-  background: var(--hula-surface-elevated);
+  background: var(--tjg-surface-elevated);
   border-radius: 8px;
   padding: 16px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .trendradar-view__analyze-content {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   white-space: pre-wrap;
 }
 
@@ -493,13 +493,13 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   padding: 12px 16px;
-  border-top: 1px solid var(--hula-border-default);
-  background: var(--hula-surface-elevated);
+  border-top: 1px solid var(--tjg-border-default);
+  background: var(--tjg-surface-elevated);
 }
 
 .trendradar-view__input-icon {
   width: 16px;
   height: 16px;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
 }
 </style>

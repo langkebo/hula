@@ -1,7 +1,7 @@
 <template>
   <!-- 弹出框 -->
   <n-modal v-model:show="isShow" :mask-closable="false" class="w-390px border-rd-8px">
-    <div class="bg-[--hula-surface-elevated] min-h-350px h-full box-border flex flex-col">
+    <div class="bg-[--tjg-surface-elevated] min-h-350px h-full box-border flex flex-col">
       <!-- 顶部图片加上操作栏 -->
       <div class="h-140px relative w-full p-6px box-border">
         <img
@@ -16,8 +16,8 @@
         <div
           v-if="isMac()"
           @click="isShow = false"
-          class="mac-close z-10 relative size-13px shadow-inner bg-[--hula-color-primary-500] rounded-50% select-none">
-          <svg class="hidden size-7px color-[--hula-text-inverse] select-none absolute top-3px left-3px">
+          class="mac-close z-10 relative size-13px shadow-inner bg-[--tjg-color-primary-500] rounded-50% select-none">
+          <svg class="hidden size-7px color-[--tjg-text-inverse] select-none absolute top-3px left-3px">
             <use href="#close"></use>
           </svg>
         </div>
@@ -25,14 +25,14 @@
         <svg
           v-if="isWindows()"
           @click="isShow = false"
-          class="z-10 color-[--hula-text-primary] w-12px h-12px absolute top-6px right-6px cursor-pointer select-none">
+          class="z-10 color-[--tjg-text-primary] w-12px h-12px absolute top-6px right-6px cursor-pointer select-none">
           <use href="#close"></use>
         </svg>
       </div>
 
       <n-flex justify="space-between" align="center">
         <n-flex :size="4" align="center" class="p-18px truncate flex-1 min-w-0">
-          <p class="text-[var(--text-base)] text-[--hula-text-primary] leading-loose truncate flex-1 min-w-0">
+          <p class="text-[var(--text-base)] text-[--tjg-text-primary] leading-loose truncate flex-1 min-w-0">
             {{ t('home.action.plugin_manage') }}
           </p>
           <div

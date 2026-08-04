@@ -131,7 +131,7 @@ describe('FriendsSettings', () => {
 
   it('loads settings from localStorage', () => {
     localStorage.setItem(
-      'hula-friend-settings',
+      'tjg-friend-settings',
       JSON.stringify({
         allowFriendRequests: false,
         autoAcceptFriends: true,
@@ -149,7 +149,7 @@ describe('FriendsSettings', () => {
     const vm = wrapper.vm as any
     vm.allowFriendRequests = false
     vm.saveSettings()
-    const saved = JSON.parse(localStorage.getItem('hula-friend-settings')!)
+    const saved = JSON.parse(localStorage.getItem('tjg-friend-settings')!)
     expect(saved.allowFriendRequests).toBe(false)
   })
 

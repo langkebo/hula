@@ -79,7 +79,7 @@ function createRoom(options: {
         }
       }
 
-      if (eventType === 'hula.room.notification_settings' && notificationSettings) {
+      if (eventType === 'tjg.room.notification_settings' && notificationSettings) {
         return {
           getContent: vi.fn(() => notificationSettings)
         }

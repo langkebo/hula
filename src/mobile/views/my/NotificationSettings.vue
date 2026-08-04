@@ -7,7 +7,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-[var(--hula-text-secondary)] mb-8px">
+          <div class="text-14px text-[var(--tjg-text-secondary)] mb-8px">
             {{ t('mobile_notifications.global_section') }}
           </div>
 
@@ -15,8 +15,8 @@
             <van-cell :title="t('mobile_notifications.enable_notifications')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:bell" :width="20" color="var(--hula-color-info-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:bell" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -27,8 +27,8 @@
             <van-cell :title="t('mobile_notifications.enable_sound')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-success-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:volume-high" :width="20" color="var(--hula-color-success-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-success-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:volume-high" :width="20" color="var(--tjg-color-success-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -37,7 +37,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+          <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
             {{ t('mobile_notifications.room_section') }}
           </div>
 
@@ -63,7 +63,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[var(--hula-text-secondary)] mt-16px mb-8px">
+          <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
             {{ t('mobile_notifications.advanced_section') }}
           </div>
 
@@ -71,8 +71,8 @@
             <van-cell :title="t('mobile_notifications.push_notifications')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:cellphone-message" :width="20" color="var(--hula-color-primary-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:cellphone-message" :width="20" color="var(--tjg-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -83,8 +83,8 @@
             <van-cell :title="t('mobile_notifications.email_notifications')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:email-outline" :width="20" color="var(--hula-color-info-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:email-outline" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -98,8 +98,8 @@
             <van-cell :title="t('mobile_notifications.encrypted_rooms')">
               <template #icon>
                 <div
-                  class="w-40px h-40px rounded-full bg-[var(--hula-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-lock-outline" :width="20" color="var(--hula-color-primary-500)" />
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:shield-lock-outline" :width="20" color="var(--tjg-color-primary-500)" />
                 </div>
               </template>
               <template #right-icon>
@@ -203,15 +203,15 @@ async function handleSoundToggle(enabled: boolean) {
 }
 
 function handlePushToggle(enabled: boolean) {
-  localStorage.setItem('hula-push-notifications', enabled.toString())
+  localStorage.setItem('tjg-push-notifications', enabled.toString())
 }
 
 function handleEmailToggle(enabled: boolean) {
-  localStorage.setItem('hula-email-notifications', enabled.toString())
+  localStorage.setItem('tjg-email-notifications', enabled.toString())
 }
 
 function handleEncryptedRoomToggle(enabled: boolean) {
-  localStorage.setItem('hula-encrypted-room-notifications', enabled.toString())
+  localStorage.setItem('tjg-encrypted-room-notifications', enabled.toString())
 }
 
 async function handleSave() {

@@ -197,7 +197,7 @@ describe('MatrixAuthService', () => {
           session: undefined,
           username: 'newuser',
           password: 'password123',
-          initial_device_display_name: 'HuLa Desktop',
+          initial_device_display_name: 'Tjg Desktop',
           auth: undefined
         })
         expect(result).toEqual({

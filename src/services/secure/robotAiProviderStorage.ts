@@ -5,13 +5,13 @@ import { decryptFromSession, encryptForSession } from './sessionCrypto'
 const logger = createLogger('RobotAiProviderStorage')
 
 const STORAGE_KEYS = {
-  AI_PROVIDER: 'hula-chat-ai-provider',
-  TRENDRADAR_CONFIG: 'hula-chat-trendradar-config',
-  TRENDRADAR_API_KEY_SESSION: 'hula-chat-trendradar-api-key-session',
-  TRENDRADAR_API_KEY_SECURE: 'hula-chat-trendradar-api-key'
+  AI_PROVIDER: 'tjg-chat-ai-provider',
+  TRENDRADAR_CONFIG: 'tjg-chat-trendradar-config',
+  TRENDRADAR_API_KEY_SESSION: 'tjg-chat-trendradar-api-key-session',
+  TRENDRADAR_API_KEY_SECURE: 'tjg-chat-trendradar-api-key'
 } as const
 
-type RobotAiProvider = 'hula' | 'siliconflow' | 'trendradar'
+type RobotAiProvider = 'tjg' | 'siliconflow' | 'trendradar'
 interface StoredTrendRadarConfig {
   apiUrl: string
   apiKey: string
@@ -182,7 +182,7 @@ export function loadRobotAiProvider(options?: RobotStorageScopeOptions): RobotAi
 
   const scopedKey = buildScopedKey(STORAGE_KEYS.AI_PROVIDER, options)
   const stored = window.localStorage.getItem(scopedKey) ?? window.localStorage.getItem(STORAGE_KEYS.AI_PROVIDER)
-  if (stored && ['hula', 'siliconflow', 'trendradar'].includes(stored)) {
+  if (stored && ['tjg', 'siliconflow', 'trendradar'].includes(stored)) {
     if (resolveScopeId(options) && window.localStorage.getItem(scopedKey) !== stored) {
       window.localStorage.setItem(scopedKey, stored)
     }

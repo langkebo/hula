@@ -12,23 +12,23 @@
           <van-tabs v-model:active="activeTab" sticky>
             <van-tab :title="t('mobile_files.all')">
               <div v-if="filteredFiles.length === 0" class="flex flex-col items-center justify-center py-60px">
-                <Icon icon="mdi:folder-outline" :width="48" color="var(--hula-border-default)" />
-                <div class="text-14px text-[--hula-text-quaternary] mt-12px">{{ t('mobile_files.empty') }}</div>
+                <Icon icon="mdi:folder-outline" :width="48" color="var(--tjg-border-default)" />
+                <div class="text-14px text-[--tjg-text-quaternary] mt-12px">{{ t('mobile_files.empty') }}</div>
               </div>
               <div v-else class="flex flex-col gap-12px pt-12px">
                 <div
                   v-for="file in filteredFiles"
                   :key="file.id"
-                  class="bg-[--hula-surface-panel] rounded-12px p-12px border border-[--hula-border-default] flex items-center gap-12px"
+                  class="bg-[--tjg-surface-panel] rounded-12px p-12px border border-[--tjg-border-default] flex items-center gap-12px"
                   @click="handleFileClick(file)">
                   <div
                     class="w-40px h-40px rounded-8px flex items-center justify-center"
                     :style="{ backgroundColor: getFileTypeColor(file.type) }">
-                    <Icon :icon="getFileIcon(file.type)" :width="24" color="var(--hula-text-inverse)" />
+                    <Icon :icon="getFileIcon(file.type)" :width="24" color="var(--tjg-text-inverse)" />
                   </div>
                   <div class="flex-1 min-w-0">
-                    <div class="text-14px font-medium truncate text-[--hula-text-primary]">{{ file.name }}</div>
-                    <div class="text-12px text-[--hula-text-quaternary]">
+                    <div class="text-14px font-medium truncate text-[--tjg-text-primary]">{{ file.name }}</div>
+                    <div class="text-12px text-[--tjg-text-quaternary]">
                       {{ formatFileSize(file.size) }} · {{ formatTime(file.time) }}
                     </div>
                   </div>
@@ -42,15 +42,15 @@
                 <div
                   v-for="file in documentFiles"
                   :key="file.id"
-                  class="bg-[--hula-surface-panel] rounded-12px p-12px border border-[--hula-border-default] flex items-center gap-12px">
+                  class="bg-[--tjg-surface-panel] rounded-12px p-12px border border-[--tjg-border-default] flex items-center gap-12px">
                   <div
                     class="w-40px h-40px rounded-8px flex items-center justify-center"
                     :style="documentIconShellStyle">
-                    <Icon icon="mdi:file-document" :width="24" color="var(--hula-color-info-500)" />
+                    <Icon icon="mdi:file-document" :width="24" color="var(--tjg-color-info-500)" />
                   </div>
                   <div class="flex-1 min-w-0">
-                    <div class="text-14px font-medium truncate text-[--hula-text-primary]">{{ file.name }}</div>
-                    <div class="text-12px text-[--hula-text-quaternary]">{{ formatFileSize(file.size) }}</div>
+                    <div class="text-14px font-medium truncate text-[--tjg-text-primary]">{{ file.name }}</div>
+                    <div class="text-12px text-[--tjg-text-quaternary]">{{ formatFileSize(file.size) }}</div>
                   </div>
                 </div>
               </div>
@@ -60,8 +60,8 @@
               <div class="grid grid-cols-3 gap-8px pt-12px">
                 <div v-for="file in mediaFiles" :key="file.id" class="aspect-square rounded-8px overflow-hidden">
                   <img v-if="file.type === 'image'" :src="file.url" class="w-full h-full object-cover" alt="文件图片" />
-                  <div v-else class="w-full h-full bg-[--hula-surface-subtle] flex items-center justify-center">
-                    <Icon icon="mdi:play-circle" :width="32" color="var(--hula-text-secondary)" />
+                  <div v-else class="w-full h-full bg-[--tjg-surface-subtle] flex items-center justify-center">
+                    <Icon icon="mdi:play-circle" :width="32" color="var(--tjg-text-secondary)" />
                   </div>
                 </div>
               </div>
@@ -107,7 +107,7 @@ const showOptions = ref(false)
 const selectedFile = ref<MobileFile | null>(null)
 
 const documentIconShellStyle = {
-  backgroundColor: 'var(--hula-color-info-100)'
+  backgroundColor: 'var(--tjg-color-info-100)'
 } as const
 
 const files = ref<MobileFile[]>([
@@ -136,7 +136,7 @@ const fileActions = [
   { name: t('mobile_files.actions.open') },
   { name: t('mobile_files.actions.save') },
   { name: t('mobile_files.actions.forward') },
-  { name: t('mobile_files.actions.delete'), color: 'var(--hula-color-danger-500)' }
+  { name: t('mobile_files.actions.delete'), color: 'var(--tjg-color-danger-500)' }
 ]
 
 function getFileIcon(type: string): string {
@@ -151,12 +151,12 @@ function getFileIcon(type: string): string {
 
 function getFileTypeColor(type: string): string {
   const colors: Record<string, string> = {
-    document: 'var(--hula-color-info-500)',
-    image: 'var(--hula-color-success-500)',
-    video: 'var(--hula-color-beta-500)',
-    audio: 'var(--hula-color-warning-500)'
+    document: 'var(--tjg-color-info-500)',
+    image: 'var(--tjg-color-success-500)',
+    video: 'var(--tjg-color-beta-500)',
+    audio: 'var(--tjg-color-warning-500)'
   }
-  return colors[type] || 'var(--hula-text-tertiary)'
+  return colors[type] || 'var(--tjg-text-tertiary)'
 }
 
 function formatFileSize(bytes: number): string {

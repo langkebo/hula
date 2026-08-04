@@ -11,12 +11,12 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col gap-15px py-15px px-20px flex-1 min-h-0 z-1">
-          <div class="bg-[--hula-surface-panel] rounded-10px p-0">
+          <div class="bg-[--tjg-surface-panel] rounded-10px p-0">
             <div class="flex py-10px rounded-10px w-full items-center gap-10px" @click="clickInfo">
               <!-- 群头像 -->
               <div class="flex justify-center">
                 <div
-                  class="rounded-full relative bg-[--hula-surface-panel] w-38px h-38px overflow-hidden"
+                  class="rounded-full relative bg-[--tjg-surface-panel] w-38px h-38px overflow-hidden"
                   style="margin-left: 10px">
                   <img
                     class="absolute size-38px rounded-full object-cover"
@@ -53,12 +53,12 @@
           </div>
 
           <!-- 群成员  -->
-          <div v-if="isGroup" class="bg-[--hula-surface-panel] rounded-10px">
+          <div v-if="isGroup" class="bg-[--tjg-surface-panel] rounded-10px">
             <div class="flex items-center justify-between p-[15px_15px_0px_15px]">
               <span class="text-14px font-medium">{{ t('mobile_chat_setting.group_members_title') }}</span>
               <div
                 @click="toGroupChatMember"
-                class="text-12px text-[--hula-text-secondary] flex flex-wrap gap-10px items-center">
+                class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
                 <i18n-t keypath="mobile_chat_setting.member_count">
                   <template #count>
                     <span class="text-[--color-primary]">{{ groupStore.countInfo?.memberNum || 0 }}</span>
@@ -79,7 +79,7 @@
                   :key="i.uid"
                   class="flex flex-col justify-center items-center gap-5px">
                   <div
-                    class="rounded-full relative bg-[--hula-color-primary-100] w-36px h-36px flex items-center justify-center">
+                    class="rounded-full relative bg-[--tjg-color-primary-100] w-36px h-36px flex items-center justify-center">
                     <div
                       v-if="i.activeStatus !== OnlineEnum.ONLINE"
                       class="w-36px h-36px absolute rounded-full bg-[--bg-offline-avatar-overlay] z-4"></div>
@@ -89,7 +89,7 @@
                       alt="用户头像"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                   </div>
-                  <div class="truncate max-w-full text-[--hula-text-secondary]">{{ i.name }}</div>
+                  <div class="truncate max-w-full text-[--tjg-text-secondary]">{{ i.name }}</div>
                 </div>
                 <div class="flex flex-col justify-center items-center gap-5px cursor-pointer">
                   <van-button plain round size="small" icon="plus" @click="toInviteGroupMember" />
@@ -102,17 +102,17 @@
           <!-- 管理群成员 -->
           <div
             v-if="isGroup && groupStore.isAdminOrLord() && globalStore.currentSessionRoomId !== '1'"
-            class="bg-[--hula-surface-panel] p-15px rounded-10px shadow text-14px flex cursor-pointer"
+            class="bg-[--tjg-surface-panel] p-15px rounded-10px shadow text-14px flex cursor-pointer"
             @click="toManageGroupMember">
             {{ t('mobile_chat_setting.manage_group_members') }}
           </div>
 
-          <div class="bg-[--hula-surface-panel] rounded-10px p-15px cursor-pointer" @click="handleSearchChatContent">
+          <div class="bg-[--tjg-surface-panel] rounded-10px p-15px cursor-pointer" @click="handleSearchChatContent">
             {{ t('mobile_chat_setting.search_history') }}
           </div>
 
           <!-- 群公告 & 信息 -->
-          <div class="bg-[--hula-surface-panel] rounded-10px">
+          <div class="bg-[--tjg-surface-panel] rounded-10px">
             <div class="p-15px!">
               <div @click="handleCopy(activeItem?.account || '')" class="flex justify-between items-center">
                 <div class="text-14px">
@@ -124,7 +124,7 @@
                     })
                   }}
                 </div>
-                <div class="text-12px text-[--hula-text-secondary] flex flex-wrap gap-10px items-center">
+                <div class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
                   <div>{{ activeItem?.account || '' }}</div>
                   <div>
                     <svg class="w-14px h-14px iconpark-icon">
@@ -134,21 +134,21 @@
                 </div>
               </div>
             </div>
-            <div class="mx-15px border-b border-[--hula-border-default]"></div>
+            <div class="mx-15px border-b border-[--tjg-border-default]"></div>
             <!-- 公告内容 -->
             <div @click="goToNotice" v-if="isGroup" class="flex flex-col text-14px gap-10px p-15px">
               <div>{{ t('mobile_chat_setting.group_notice.title') }}</div>
-              <div class="text-[--hula-text-secondary] line-clamp-2 text-12px line-height-20px">
+              <div class="text-[--tjg-text-secondary] line-clamp-2 text-12px line-height-20px">
                 {{ announList.length > 0 ? announList[0]?.content : '' }}
               </div>
             </div>
 
-            <div v-if="isGroup" class="mx-15px border-b border-[--hula-border-default]"></div>
+            <div v-if="isGroup" class="mx-15px border-b border-[--tjg-border-default]"></div>
 
             <!-- 群名称 -->
             <div class="flex justify-between p-15px items-center">
               <div class="text-14px">{{ t('mobile_chat_setting.group_name') }}</div>
-              <div class="text-12px text-[--hula-text-secondary] flex flex-wrap gap-10px items-center">
+              <div class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
                 <van-field
                   v-model="nameValue"
                   :border="false"
@@ -159,12 +159,12 @@
               </div>
             </div>
 
-            <div class="mx-15px border-b border-[--hula-border-default]"></div>
+            <div class="mx-15px border-b border-[--tjg-border-default]"></div>
 
             <!-- 群别名 -->
             <div v-if="isGroup" class="flex justify-between p-15px items-center">
               <div class="text-14px">{{ t('mobile_chat_setting.group_alias') }}</div>
-              <div class="text-12px text-[--hula-text-secondary] flex flex-wrap gap-10px items-center">
+              <div class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
                 <van-field
                   v-model="nicknameValue"
                   :border="false"
@@ -180,7 +180,7 @@
           <div class="w-full flex flex-col gap-15px rounded-10px">
             <div class="ps-15px text-14px">
               <span class="dark:text-white">{{ t('mobile_chat_setting.remark') }}</span>
-              <span class="text-[--hula-text-secondary] ml-1">
+              <span class="text-[--tjg-text-secondary] ml-1">
                 {{ t('mobile_chat_setting.remar_kprivate_visible') }}
               </span>
             </div>
@@ -192,7 +192,7 @@
           </div>
 
           <!-- 设置 -->
-          <div class="bg-[--hula-surface-panel] rounded-10px">
+          <div class="bg-[--tjg-surface-panel] rounded-10px">
             <div class="p-15px text-14px font-medium">
               {{ t('mobile_chat_setting.setting_type', { t: title }) }}
             </div>
@@ -200,7 +200,7 @@
               <div class="text-14px">{{ t('mobile_chat_setting.pintop') }}</div>
               <van-switch :model-value="!!activeItem?.top" @update:model-value="handleTop" size="20px" />
             </div>
-            <div class="mx-15px border-b border-[--hula-border-default]"></div>
+            <div class="mx-15px border-b border-[--tjg-border-default]"></div>
             <div class="flex justify-between p-15px items-center">
               <div class="text-14px">{{ t('mobile_chat_setting.silent') }}</div>
               <van-switch
@@ -210,39 +210,39 @@
             </div>
             <div
               v-if="isGroup && roomUpgradeFlow.canUpgrade.value"
-              class="mx-15px border-b border-[--hula-border-default]"></div>
+              class="mx-15px border-b border-[--tjg-border-default]"></div>
             <div
               v-if="isGroup && roomUpgradeFlow.canUpgrade.value"
               class="flex justify-between p-15px items-center cursor-pointer"
               @click="showRoomUpgrade = true">
               <div class="text-14px">{{ t('room_advanced.room_upgrade.title') }}</div>
-              <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
+              <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-10px">
                 <span>{{ roomUpgradeFlow.currentVersion.value || '—' }}</span>
                 <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
               </div>
             </div>
             <div
               v-if="isGroup && listMgmt.canManage.value"
-              class="mx-15px border-b border-[--hula-border-default]"></div>
+              class="mx-15px border-b border-[--tjg-border-default]"></div>
             <div
               v-if="isGroup && listMgmt.canManage.value"
               class="flex justify-between p-15px items-center cursor-pointer"
               @click="openListManagement('allowlist')">
               <div class="text-14px">{{ t('room_advanced.allowlist.title') }}</div>
-              <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
+              <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-10px">
                 <span>{{ listMgmt.allowlistCount.value }}</span>
                 <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
               </div>
             </div>
             <div
               v-if="isGroup && listMgmt.canManage.value"
-              class="mx-15px border-b border-[--hula-border-default]"></div>
+              class="mx-15px border-b border-[--tjg-border-default]"></div>
             <div
               v-if="isGroup && listMgmt.canManage.value"
               class="flex justify-between p-15px items-center cursor-pointer"
               @click="openListManagement('denylist')">
               <div class="text-14px">{{ t('room_advanced.denylist.title') }}</div>
-              <div class="text-12px text-[--hula-text-secondary] flex items-center gap-10px">
+              <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-10px">
                 <span>{{ listMgmt.denylistCount.value }}</span>
                 <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
               </div>

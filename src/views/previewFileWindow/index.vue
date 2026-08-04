@@ -3,8 +3,8 @@
     <ActionBar :shrink="false" :current-label="currentWindowLabel" />
     <n-scrollbar
       style="max-height: calc(100vh)"
-      class="w-full box-border bg-[--hula-surface-panel] rounded-b-8px border-(solid 1px [--hula-border-default])">
-      <div class="flex flex-col gap-4 bg-[--hula-surface-subtle]">
+      class="w-full box-border bg-[--tjg-surface-panel] rounded-b-8px border-(solid 1px [--tjg-border-default])">
+      <div class="flex flex-col gap-4 bg-[--tjg-surface-subtle]">
         <VueOfficeDocx v-if="isShowWord" :src="resourceSrc" style="height: 100vh" />
 
         <VueOfficePdf v-else-if="isShowPdf" :src="resourceSrc" style="height: 95vh" />

@@ -4,11 +4,11 @@
 use dotenvy::dotenv;
 
 #[cfg(target_os = "linux")]
-use hula_app_lib::utils::linux_runtime_guard as runtime_guard;
+use tjg_app_lib::utils::linux_runtime_guard as runtime_guard;
 #[cfg(target_os = "macos")]
-use hula_app_lib::utils::macos_runtime_guard as runtime_guard;
+use tjg_app_lib::utils::macos_runtime_guard as runtime_guard;
 #[cfg(target_os = "windows")]
-use hula_app_lib::utils::win_runtime_guard as runtime_guard;
+use tjg_app_lib::utils::win_runtime_guard as runtime_guard;
 
 fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -41,20 +41,20 @@ fn main() -> std::io::Result<()> {
         i += 1;
     }
 
-    // Priority: --profile-dir > --profile > HULA_PROFILE_DIR env var > default
+    // Priority: --profile-dir > --profile > TJG_PROFILE_DIR env var > default
     let profile_path = if let Some(ref dir) = profile_dir {
         dir.clone()
     } else if let Some(ref name) = profile_name {
         let default_dir = get_default_app_data_dir();
         format!("{}-{}", default_dir, name)
     } else {
-        std::env::var("HULA_PROFILE_DIR").unwrap_or_default()
+        std::env::var("TJG_PROFILE_DIR").unwrap_or_default()
     };
 
     if !profile_path.is_empty() {
         // SAFETY: Setting environment variable before any multi-threading occurs in main
         unsafe {
-            std::env::set_var("HULA_PROFILE_DIR", &profile_path);
+            std::env::set_var("TJG_PROFILE_DIR", &profile_path);
         }
         println!(
             "[PROFILE] Using profile data directory: {} (profile={:?}, dir={:?})",
@@ -62,7 +62,7 @@ fn main() -> std::io::Result<()> {
         );
     }
 
-    hula_app_lib::run();
+    tjg_app_lib::run();
     Ok(())
 }
 
@@ -70,19 +70,19 @@ fn get_default_app_data_dir() -> String {
     #[cfg(target_os = "macos")]
     {
         if let Ok(home) = std::env::var("HOME") {
-            return format!("{}/Library/Application Support/com.hula.pc", home);
+            return format!("{}/Library/Application Support/com.tjg.pc", home);
         }
     }
     #[cfg(target_os = "windows")]
     {
         if let Ok(appdata) = std::env::var("APPDATA") {
-            return format!("{}/com.hula.pc", appdata);
+            return format!("{}/com.tjg.pc", appdata);
         }
     }
     #[cfg(target_os = "linux")]
     {
         if let Ok(home) = std::env::var("HOME") {
-            return format!("{}/.local/share/com.hula.pc", home);
+            return format!("{}/.local/share/com.tjg.pc", home);
         }
     }
     String::new()

@@ -124,22 +124,22 @@ const isCurrentUser = computed(() => {
 
 // 计算语音图标颜色
 const voiceIconColor = computed(() => {
-  return isCurrentUser.value ? 'var(--hula-text-inverse)' : 'var(--hula-text-primary)'
+  return isCurrentUser.value ? 'var(--tjg-text-inverse)' : 'var(--tjg-text-primary)'
 })
 
 const timePreviewStyle = computed(() => {
   if (isCurrentUser.value) {
     return {
-      color: 'var(--hula-text-inverse)',
-      backgroundColor: 'var(--hula-overlay-inverse-strong)',
+      color: 'var(--tjg-text-inverse)',
+      backgroundColor: 'var(--tjg-overlay-inverse-strong)',
       border: 'none'
     }
   }
 
   return {
-    color: 'var(--hula-text-primary)',
-    backgroundColor: 'var(--hula-surface-panel)',
-    border: '1px solid var(--hula-border-strong)'
+    color: 'var(--tjg-text-primary)',
+    backgroundColor: 'var(--tjg-surface-panel)',
+    border: '1px solid var(--tjg-border-strong)'
   }
 })
 
@@ -185,7 +185,7 @@ const waveformRenderer = useWaveformRenderer(
 
 // 计算波形颜色状态
 const getWaveformColors = () => {
-  const baseColor = isCurrentUser.value ? 'var(--hula-text-inverse)' : 'var(--hula-text-primary)'
+  const baseColor = isCurrentUser.value ? 'var(--tjg-text-inverse)' : 'var(--tjg-text-primary)'
 
   // 已播放区域颜色（始终完全不透明）
   const playedColor = baseColor
@@ -195,8 +195,8 @@ const getWaveformColors = () => {
     return {
       playedColor,
       unplayedColor: isCurrentUser.value
-        ? 'color-mix(in srgb, var(--hula-text-inverse) 30%, transparent)'
-        : 'color-mix(in srgb, var(--hula-text-primary) 30%, transparent)'
+        ? 'color-mix(in srgb, var(--tjg-text-inverse) 30%, transparent)'
+        : 'color-mix(in srgb, var(--tjg-text-primary) 30%, transparent)'
     }
   }
 
@@ -311,7 +311,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 
   svg {
     width: 18px;
@@ -373,7 +373,7 @@ onUnmounted(() => {
     white-space: nowrap;
     pointer-events: none;
     z-index: 2;
-    box-shadow: var(--hula-shadow-sm);
+    box-shadow: var(--tjg-shadow-sm);
     animation: fadeIn 0.2s ease;
   }
 }

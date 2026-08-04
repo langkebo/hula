@@ -64,14 +64,13 @@ export class MatrixTokenManager {
 
     try {
       logger.info('[TokenRefresh] Attempting token refresh')
-      const result = (await client.http.request('POST', '/refresh', undefined, {
-        refresh_token: refreshToken
-      })) as Record<string, unknown>
+      const result = await client.refreshToken(refreshToken)
 
-      const newAccessToken = result.access_token as string | undefined
-      const newRefreshToken = result.refresh_token as string | undefined
-      let newExpiresInMs = result.expires_in_ms as number | undefined
-      const expiresInSec = result.expires_in as number | undefined
+      const newAccessToken = result.access_token
+      const newRefreshToken = result.refresh_token
+      let newExpiresInMs = result.expires_in_ms
+      // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
+      const expiresInSec = (result as Record<string, unknown>).expires_in as number | undefined
       if (!newExpiresInMs && expiresInSec) {
         newExpiresInMs = expiresInSec * 1000
       }

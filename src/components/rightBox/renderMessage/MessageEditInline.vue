@@ -128,10 +128,10 @@ const handleSubmit = async () => {
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
-  background: var(--hula-surface-elevated);
-  border: 1px solid var(--hula-color-primary-500);
+  background: var(--tjg-surface-elevated);
+  border: 1px solid var(--tjg-color-primary-500);
   border-radius: 8px;
-  box-shadow: var(--hula-shadow-floating-menu);
+  box-shadow: var(--tjg-shadow-floating-menu);
 }
 
 .edit-header {
@@ -139,7 +139,7 @@ const handleSubmit = async () => {
   align-items: center;
   justify-content: space-between;
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .edit-close {
@@ -151,12 +151,12 @@ const handleSubmit = async () => {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   cursor: pointer;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
-    color: var(--hula-text-primary);
+    background: var(--tjg-surface-list-hover);
+    color: var(--tjg-text-primary);
   }
 }
 
@@ -165,10 +165,10 @@ const handleSubmit = async () => {
   min-height: 36px;
   max-height: 200px;
   padding: 6px 8px;
-  border: 1px solid var(--hula-border-default);
+  border: 1px solid var(--tjg-border-default);
   border-radius: 6px;
-  background: var(--hula-surface-panel);
-  color: var(--hula-text-primary);
+  background: var(--tjg-surface-panel);
+  color: var(--tjg-text-primary);
   font-size: 13px;
   line-height: 1.4;
   resize: none;
@@ -176,7 +176,7 @@ const handleSubmit = async () => {
   font-family: inherit;
 
   &:focus {
-    border-color: var(--hula-color-primary-500);
+    border-color: var(--tjg-color-primary-500);
   }
 }
 
@@ -189,7 +189,7 @@ const handleSubmit = async () => {
 
 .edit-hint {
   font-size: 11px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
 }
 
 .btn {
@@ -202,11 +202,11 @@ const handleSubmit = async () => {
 }
 
 .btn--primary {
-  background: var(--hula-color-primary-500);
-  color: var(--hula-text-inverse);
+  background: var(--tjg-color-primary-500);
+  color: var(--tjg-text-inverse);
 
   &:hover:not(:disabled) {
-    background: var(--hula-color-primary-600, var(--hula-color-primary-500));
+    background: var(--tjg-color-primary-600, var(--tjg-color-primary-500));
   }
 
   &:disabled {

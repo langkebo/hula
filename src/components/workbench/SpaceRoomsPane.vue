@@ -98,7 +98,7 @@ void load()
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--hula-surface-panel);
+  background: var(--tjg-surface-panel);
 }
 
 .space-rooms-pane__header {
@@ -106,7 +106,7 @@ void load()
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--hula-border-layout-divider);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
   flex-shrink: 0;
 }
 
@@ -119,12 +119,12 @@ void load()
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--hula-text-secondary);
+  color: var(--tjg-text-secondary);
   cursor: pointer;
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -132,15 +132,15 @@ void load()
   flex: 1;
   font-size: 15px;
   font-weight: 600;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
 }
 
 .space-rooms-pane__count {
   font-size: 12px;
-  color: var(--hula-text-tertiary);
+  color: var(--tjg-text-tertiary);
   padding: 2px 8px;
   border-radius: 10px;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
 }
 
 .space-rooms-pane__list {
@@ -160,7 +160,7 @@ void load()
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: var(--hula-surface-list-hover);
+    background: var(--tjg-surface-list-hover);
   }
 }
 
@@ -173,7 +173,7 @@ void load()
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--hula-surface-search);
+  background: var(--tjg-surface-search);
 
   img {
     width: 100%;
@@ -183,21 +183,21 @@ void load()
 }
 
 .space-rooms-pane__avatar--fallback {
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 
 .space-rooms-pane__name {
   flex: 1;
   min-width: 0;
   font-size: 13px;
-  color: var(--hula-text-primary);
+  color: var(--tjg-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .space-rooms-pane__arrow {
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   flex-shrink: 0;
 }
 
@@ -210,14 +210,14 @@ void load()
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s ease;
 
   &:hover {
-    background: var(--hula-color-danger-100, color-mix(in srgb, var(--hula-color-danger-500) 12%, transparent));
-    color: var(--hula-color-danger-500);
+    background: var(--tjg-color-danger-100, color-mix(in srgb, var(--tjg-color-danger-500) 12%, transparent));
+    color: var(--tjg-color-danger-500);
   }
 }
 
@@ -225,6 +225,6 @@ void load()
   padding: 40px 16px;
   text-align: center;
   font-size: 13px;
-  color: var(--hula-text-quaternary);
+  color: var(--tjg-text-quaternary);
 }
 </style>
