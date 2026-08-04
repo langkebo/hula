@@ -25,8 +25,8 @@ setDayjsLocale('zh-CN')
  * - < 1 小时：X 分钟前
  * - 今天：HH:mm
  * - 昨天：昨天 HH:mm
- * - 本周：星期几 HH:mm
  * - 跨年：YYYY-MM-DD
+ * - 本周：星期几 HH:mm
  * - 更早：YYYY-MM-DD HH:mm
  *
  * 规则（detail=true）：
@@ -73,19 +73,19 @@ export const formatChatTime = (timestamp: number, opts?: { detail?: boolean }): 
     return i18n.t('common.minutes_ago', { count: minutes })
   }
 
-  // 跨年：YYYY-MM-DD
-  if (now.year() !== date.year()) {
-    return date.format('YYYY-MM-DD')
-  }
-
   // 今天：HH:mm
   if (now.isSame(date, 'day')) {
     return date.format('HH:mm')
   }
 
-  // 昨天：昨天 HH:mm
+  // 昨天：昨天 HH:mm（必须在跨年检查之前，否则跨年昨天会显示为 YYYY-MM-DD）
   if (now.subtract(1, 'day').isSame(date, 'day')) {
     return `${i18n.t('menu.yesterday')} ${date.format('HH:mm')}`
+  }
+
+  // 跨年：YYYY-MM-DD
+  if (now.year() !== date.year()) {
+    return date.format('YYYY-MM-DD')
   }
 
   // 本周：星期几 HH:mm
