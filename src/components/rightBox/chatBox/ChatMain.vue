@@ -78,7 +78,7 @@
                   class="text-[var(--text-sm)] text-[--tjg-text-tertiary] select-none p-4px"
                   v-if="item.timeBlock"
                   @click.stop>
-                  {{ timeToStr(item.message.sendTime) }}
+                  {{ formatChatTime(item.message.sendTime) }}
                 </span>
                 <!-- 消息内容容器 -->
                 <div
@@ -213,7 +213,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
-import { timeToStr } from '@/utils/ComputedTime'
+import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMobile } from '@/utils/PlatformConstants'

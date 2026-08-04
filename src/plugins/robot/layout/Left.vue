@@ -102,7 +102,7 @@
                 </n-flex>
                 <n-flex justify="space-between" align="center" :size="0" class="text-(12px [--tjg-text-tertiary])">
                   <p>{{ t('ai_assistant.robot.message_count', { count: item.messageCount || 0 }) }}</p>
-                  <p>{{ formatTimestamp(item.createTime) }}</p>
+                  <p>{{ formatChatTime(item.createTime) }}</p>
                 </n-flex>
               </div>
             </ContextMenu>
@@ -221,7 +221,7 @@ import type { Conversation } from '@/services/matrix/ai/ConversationService'
 import { conversationService } from '@/services/matrix/ai/ConversationService'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatTimestamp } from '@/utils/ComputedTime'
+import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 

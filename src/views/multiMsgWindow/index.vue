@@ -17,7 +17,7 @@
 
             <div class="flex-y-center gap-12px h-fit">
               <p class="text-(12px --tjg-text-tertiary)">{{ getUserDisplayName(item.fromUser.uid) }}</p>
-              <p class="text-(12px --tjg-text-tertiary)">{{ formatTimestamp(item.message.sendTime) }}</p>
+              <p class="text-(12px --tjg-text-tertiary)">{{ formatChatTime(item.message.sendTime) }}</p>
             </div>
           </div>
 
@@ -60,7 +60,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import type { UserItem } from '@/types/matrix-services'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { formatChatTime } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MultiMsgWindow')

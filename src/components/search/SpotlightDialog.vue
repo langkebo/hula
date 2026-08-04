@@ -147,7 +147,7 @@ import {
   type UserSearchResult
 } from '@/services/matrix/MatrixSearchService'
 import { useSpotlightStore } from '@/stores/domains/widget/spotlight'
-import { formatTimestamp } from '@/utils/ComputedTime'
+import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SpotlightDialog')
@@ -196,7 +196,7 @@ const hasResults = computed(() => {
 
 const formatTime = (timestamp?: number) => {
   if (!timestamp) return ''
-  return formatTimestamp(timestamp, true)
+  return formatChatTime(timestamp, { detail: true })
 }
 
 const getMessagePreviewHtml = (result: MatrixSearchResult) => {

@@ -53,7 +53,7 @@
           <!-- 按日期分组的消息 -->
           <div v-for="(group, date) in groupedMessages" :key="date">
             <n-tag type="warning" class="date-tag-sticky text-12px rounded-8px">
-              {{ formatDateGroupLabel(group.timestamp) }}
+              {{ formatDateLabel(group.timestamp) }}
             </n-tag>
 
             <template v-for="item in group.messages" :key="item.message.id">
@@ -111,7 +111,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatDateGroupLabel } from '@/utils/ComputedTime'
+import { formatDateLabel } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 

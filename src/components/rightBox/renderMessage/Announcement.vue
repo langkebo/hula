@@ -8,7 +8,7 @@
       </n-flex>
 
       <p class="select-none cursor-default flex-shrink-0 text-(12px [--tjg-text-tertiary])">
-        {{ formatTimestamp(body.updateTime || body.createTime, true) }}
+        {{ formatChatTime(body.updateTime || body.createTime, { detail: true }) }}
       </p>
     </n-flex>
 
@@ -52,7 +52,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
 import type { AnnouncementBody } from '@/services/types'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { formatChatTime } from '@/utils/ComputedTime.ts'
 import { isMobile } from '@/utils/PlatformConstants'
 
 const props = defineProps<{

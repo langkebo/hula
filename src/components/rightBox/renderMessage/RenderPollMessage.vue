@@ -36,7 +36,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatTimestamp } from '@/utils/ComputedTime'
+import { formatChatTime } from '@/utils/ComputedTime'
 
 interface PollOption {
   text: string
@@ -70,7 +70,7 @@ const getPercentage = (count?: number): number => {
 }
 
 const formatTime = (timestamp: number) => {
-  return formatTimestamp(timestamp, false)
+  return formatChatTime(timestamp)
 }
 
 const handleVote = (index: number) => {

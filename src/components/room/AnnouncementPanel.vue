@@ -124,7 +124,7 @@ import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { formatChatTime } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AnnouncementPanel')
@@ -165,7 +165,7 @@ const getUserName = (uid: string) => {
   return info?.name || ''
 }
 
-const formatTime = (timestamp?: number) => formatTimestamp(timestamp ?? 0, true)
+const formatTime = (timestamp?: number) => formatChatTime(timestamp ?? 0, { detail: true })
 
 const extractSegments = (content: string) => extractLinkSegments(content)
 const openUrl = (url: string) => openExternalUrl(url)

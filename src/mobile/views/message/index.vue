@@ -148,7 +148,7 @@
                       </svg>
                     </span>
                     <span class="whitespace-nowrap">
-                      {{ formatTimestamp(item?.activeTime) }}
+                      {{ formatChatTime(item?.activeTime) }}
                     </span>
                   </div>
                   <div v-if="item.muteNotification === NotificationTypeEnum.NOT_DISTURB">
@@ -271,7 +271,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { formatChatTime } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
@@ -420,7 +420,7 @@ const sessionList = computed(() => {
         avatar: latestAvatar,
         name: displayName,
         lastMsg: displayMsg || t('message.message_list.default_last_msg'),
-        lastMsgTime: formatTimestamp(item?.activeTime),
+        lastMsgTime: formatChatTime(item?.activeTime),
         isAtMe
       }
     })

@@ -237,7 +237,7 @@ vi.mock('@/utils/AudioManager', () => ({
 }))
 
 vi.mock('@/utils/ComputedTime', () => ({
-  timeToStr: () => 'now'
+  formatChatTime: () => 'now'
 }))
 
 vi.mock('@/utils/Logger', () => ({

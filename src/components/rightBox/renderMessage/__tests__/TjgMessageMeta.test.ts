@@ -74,8 +74,7 @@ vi.mock('@/services/matrix/messaging/MatrixReceiptService', () => ({
 }))
 
 vi.mock('@/utils/ComputedTime', () => ({
-  formatTimestamp: () => '10:30',
-  formatMessageTime: () => '10:30'
+  formatChatTime: () => '10:30'
 }))
 
 vi.mock('naive-ui', async () => {

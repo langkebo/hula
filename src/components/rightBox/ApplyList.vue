@@ -50,7 +50,7 @@
                     </p>
 
                     <p class="text-(12px --tjg-text-tertiary) shrink-0 whitespace-nowrap">
-                      {{ formatTimestamp(item.createTime) }}
+                      {{ formatChatTime(item.createTime) }}
                     </p>
                   </div>
                 </n-flex>
@@ -100,9 +100,7 @@
                 v-else-if="item.status === RequestNoticeAgreeStatus.REJECTED">
                 {{ t('home.apply_list.status.rejected') }}
               </span>
-              <span
-                class="text-(12px --tjg-text-tertiary)"
-                v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
+              <span class="text-(12px --tjg-text-tertiary)" v-else-if="item.status === RequestNoticeAgreeStatus.IGNORE">
                 {{ t('home.apply_list.status.ignored') }}
               </span>
               <span
@@ -140,7 +138,7 @@ import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { formatChatTime } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 

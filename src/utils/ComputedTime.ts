@@ -1,4 +1,4 @@
-import type { ConfigType, Dayjs, OpUnitType } from 'dayjs'
+import type { ConfigType, OpUnitType } from 'dayjs'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import weekday from 'dayjs/plugin/weekday'
@@ -15,52 +15,86 @@ dayjs.extend(relativeTime)
 dayjs.extend(weekday)
 setDayjsLocale('zh-CN')
 
-// 时间格式化为相对文本，仿微信风格
-export const timeToStr = (time: number) => {
-  const sendTime = dayjs(time)
-  // 计算今天和消息的发送时间间隔多少天
-  const gapDay = dayjs().endOf('day').diff(sendTime, 'day')
-  // 消息与今天是否 7 天及以上了
-  const isLastWeek = gapDay >= 7
-  // 今天显示时分, 昨天的显示 `昨天 时分`, 今天往前一周内，显示`周几 时分`， 再前面显示日期 `年月日 时分`
-  return gapDay < 2
-    ? `${gapDay === 1 ? `${useI18nGlobal().t('menu.yesterday')} ` : ''}${sendTime.format('HH:mm')}`
-    : isLastWeek
-      ? sendTime.format('YYYY-MM-DD HH:mm')
-      : dayjs(sendTime).format('dddd HH:mm')
-}
-
 /**
- * 消息时间戳格式化
- * @param timestamp 时间戳
- * @param isDetail 是否显示详细时间
- * @returns 格式化后的时间字符串
+ * 统一消息时间格式化（合并 timeToStr + formatTimestamp + formatMessageTime）
+ *
+ * 规则（detail=false，默认）：
+ * - 无效时间：空字符串
+ * - 未来时间：YYYY-MM-DD HH:mm
+ * - < 1 分钟：刚刚
+ * - < 1 小时：X 分钟前
+ * - 今天：HH:mm
+ * - 昨天：昨天 HH:mm
+ * - 本周：星期几 HH:mm
+ * - 跨年：YYYY-MM-DD
+ * - 更早：YYYY-MM-DD HH:mm
+ *
+ * 规则（detail=true）：
+ * - 今天：HH:mm:ss
+ * - 跨年：YYYY-MM-DD HH:mm:ss
+ * - 同年非今天：MM-DD HH:mm:ss
  */
-export const formatTimestamp = (timestamp: number, isDetail = false): string => {
-  timestamp = Number(timestamp)
-  const now: Dayjs = dayjs()
-  const date: Dayjs = dayjs(timestamp)
-  // 计算今天和消息的发送时间间隔多少天
-  const gapDay = dayjs().endOf('day').diff(date, 'day')
-  // 消息与今天是否 7 天及以上了
-  const isLastWeek = gapDay >= 7
+export const formatChatTime = (timestamp: number, opts?: { detail?: boolean }): string => {
+  const ts = Number(timestamp)
+  if (!Number.isFinite(ts) || ts <= 0) return ''
 
-  // 首先检查是否跨年
+  const now = dayjs()
+  const date = dayjs(ts)
+  const i18n = useI18nGlobal()
+
+  // detail 模式：显示完整日期时间
+  if (opts?.detail) {
+    if (now.year() !== date.year()) {
+      return date.format('YYYY-MM-DD HH:mm:ss')
+    }
+    if (now.isSame(date, 'day')) {
+      return date.format('HH:mm:ss')
+    }
+    return date.format('MM-DD HH:mm:ss')
+  }
+
+  // 非 detail 模式：智能格式化
+  const nowMs = Date.now()
+  const diff = nowMs - ts
+
+  // 容错：未来时间直接显示绝对时间
+  if (diff < 0) {
+    return date.format('YYYY-MM-DD HH:mm')
+  }
+
+  // < 1 分钟：刚刚
+  if (diff < 60_000) {
+    return i18n.t('common.just_now')
+  }
+
+  // < 1 小时：X 分钟前
+  if (diff < 3_600_000) {
+    const minutes = Math.floor(diff / 60_000)
+    return i18n.t('common.minutes_ago', { count: minutes })
+  }
+
+  // 跨年：YYYY-MM-DD
   if (now.year() !== date.year()) {
-    return date.format(`${isDetail ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD'}`)
+    return date.format('YYYY-MM-DD')
   }
 
-  // 其他情况保持不变
+  // 今天：HH:mm
   if (now.isSame(date, 'day')) {
-    return date.format(`${isDetail ? 'HH:mm:ss' : 'HH:mm'}`)
-  } else {
-    if (isDetail) return date.format('MM-DD HH:mm:ss')
-    return gapDay === 1
-      ? useI18nGlobal().t('menu.yesterday')
-      : isLastWeek
-        ? date.format('MM-DD')
-        : dayjs(date).format('dddd')
+    return date.format('HH:mm')
   }
+
+  // 昨天：昨天 HH:mm
+  if (now.subtract(1, 'day').isSame(date, 'day')) {
+    return `${i18n.t('menu.yesterday')} ${date.format('HH:mm')}`
+  }
+
+  // 本周：星期几 HH:mm
+  if (diff < 7 * 86_400_000) {
+    return date.format('dddd HH:mm')
+  }
+
+  // 更早：YYYY-MM-DD HH:mm
+  return date.format('YYYY-MM-DD HH:mm')
 }
 
 /**
@@ -79,7 +113,7 @@ export const isDiffNow = ({ time, unit, diff }: { unit: OpUnitType; time: Config
  * @param timestamp 时间戳
  * @returns 格式化后的日期字符串（今天/昨天/MM-DD）
  */
-export const formatDateGroupLabel = (timestamp: number): string => {
+export const formatDateLabel = (timestamp: number): string => {
   const date = dayjs(timestamp)
   const now = dayjs()
   const i18n = useI18nGlobal()
@@ -101,63 +135,4 @@ export const handRelativeTime = (time: string) => {
 /** 获取指定日期的星期 */
 export const getWeekday = (time: string) => {
   return dayjs(time).format('ddd')
-}
-
-/**
- * 消息时间戳智能格式化（需求文档 6.5 节规范）
- *
- * 规则：
- * - < 1 分钟：刚刚
- * - < 1 小时：X 分钟前
- * - 今天：HH:mm
- * - 昨天：昨天 HH:mm
- * - 本周（昨天之后 7 天内）：星期几 HH:mm
- * - 更早：YYYY-MM-DD HH:mm
- *
- * @param timestamp 毫秒时间戳
- * @returns 格式化后的时间字符串
- */
-export const formatMessageTime = (timestamp: number): string => {
-  const ts = Number(timestamp)
-  if (!Number.isFinite(ts) || ts <= 0) return ''
-
-  const now = Date.now()
-  const diff = now - ts
-  const date = dayjs(ts)
-  const i18n = useI18nGlobal()
-
-  // 容错：未来时间直接显示绝对时间
-  if (diff < 0) {
-    return date.format('YYYY-MM-DD HH:mm')
-  }
-
-  // < 1 分钟：刚刚
-  if (diff < 60_000) {
-    return i18n.t('common.just_now')
-  }
-
-  // < 1 小时：X 分钟前
-  if (diff < 3_600_000) {
-    const minutes = Math.floor(diff / 60_000)
-    return i18n.t('common.minutes_ago', { count: minutes })
-  }
-
-  const nowDate = dayjs()
-  // 今天：HH:mm
-  if (nowDate.isSame(date, 'day')) {
-    return date.format('HH:mm')
-  }
-
-  // 昨天：昨天 HH:mm
-  if (nowDate.subtract(1, 'day').isSame(date, 'day')) {
-    return `${i18n.t('menu.yesterday')} ${date.format('HH:mm')}`
-  }
-
-  // 本周（昨天之后 7 天内）：星期几 HH:mm
-  if (diff < 7 * 86_400_000) {
-    return date.format('dddd HH:mm')
-  }
-
-  // 更早：YYYY-MM-DD HH:mm
-  return date.format('YYYY-MM-DD HH:mm')
 }

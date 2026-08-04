@@ -76,7 +76,7 @@ vi.mock('@/utils/AvatarUtils', () => ({
 }))
 
 vi.mock('@/utils/ComputedTime.ts', () => ({
-  formatTimestamp: () => 'just now'
+  formatChatTime: () => 'just now'
 }))
 
 vi.mock('@/utils/Logger', () => ({

@@ -8,7 +8,7 @@ import { type SessionItem, useChatStore, useSessionStore } from '@/stores/domain
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { formatTimestamp } from '@/utils/ComputedTime.ts'
+import { formatChatTime } from '@/utils/ComputedTime.ts'
 
 type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
 
@@ -139,7 +139,7 @@ export const useSessionListState = () => {
           avatar: latestAvatar,
           name: displayName,
           lastMsg: displayMsg || t('message.message_list.default_last_msg'),
-          lastMsgTime: formatTimestamp(item?.activeTime),
+          lastMsgTime: formatChatTime(item?.activeTime),
           isAtMe,
           isEncrypted,
           isBurnAfterRead
