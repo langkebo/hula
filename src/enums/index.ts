@@ -137,6 +137,8 @@ export enum MittEnum {
   BURN_MESSAGE_BURNED = 'burnMessageBurned',
   /** 私密模式状态变更 */
   PRIVATE_MODE_CHANGED = 'privateModeChanged',
+  /** 移动端请求切换私密模式（HeaderBar → ChatMain） */
+  PRIVATE_MODE_TOGGLE_REQUEST = 'privateModeToggleRequest',
   /** 阅后即焚设置变更 */
   BURN_SETTINGS_CHANGED = 'burnSettingsChanged',
   /** Widget 已创建 */

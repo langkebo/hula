@@ -43,13 +43,10 @@
     </div>
   </Transition>
 
-  <E2EEBanner
-    v-if="currentRoomId"
-    :key="currentRoomId"
-    :room-id="currentRoomId" />
+  <E2EEBanner v-if="currentRoomId" :key="currentRoomId" :room-id="currentRoomId" />
 
   <!-- 私密模式切换按钮（仅单聊） -->
-  <div v-if="!isGroup" class="private-mode-bar flex-shrink-0 px-12px py-4px flex items-center gap-8px">
+  <div v-if="!isMobile() && !isGroup" class="private-mode-bar flex-shrink-0 px-12px py-4px flex items-center gap-8px">
     <button
       data-testid="private-toggle-btn"
       type="button"
@@ -92,6 +89,7 @@ import E2EEBanner from '@/components/chat/E2EEBanner.vue'
 import PrivateModeBanner from '@/components/common/PrivateModeBanner.vue'
 import ScreenshotWatermark from '@/components/common/ScreenshotWatermark.vue'
 import StickyEventBanner from '@/components/rightBox/renderMessage/StickyEventBanner.vue'
+import { isMobile } from '@/utils/PlatformConstants'
 
 // BurnAfterReadToggle is not used in this component but kept for potential future use
 void BurnAfterReadToggle

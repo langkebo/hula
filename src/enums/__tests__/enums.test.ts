@@ -127,6 +127,10 @@ describe('enums/index.ts', () => {
     it('字符串值唯一', () => {
       expectUniqueStringValues(MittEnum as unknown as Record<string, number | string>, 'MittEnum')
     })
+
+    it('PRIVATE_MODE_TOGGLE_REQUEST is defined', () => {
+      expect(MittEnum.PRIVATE_MODE_TOGGLE_REQUEST).toBe('privateModeToggleRequest')
+    })
   })
 
   describe('ThemeEnum', () => {

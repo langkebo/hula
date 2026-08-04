@@ -273,6 +273,17 @@ const {
   cancelPrivateMode
 } = usePrivateMode()
 
+const onPrivateModeToggleRequest = () => {
+  togglePrivateMode()
+}
+
+onMounted(() => {
+  useMitt.on(MittEnum.PRIVATE_MODE_TOGGLE_REQUEST, onPrivateModeToggleRequest)
+})
+onUnmounted(() => {
+  useMitt.off(MittEnum.PRIVATE_MODE_TOGGLE_REQUEST, onPrivateModeToggleRequest)
+})
+
 // ===== 线程面板 + 事件举报 =====
 const { threadPanelVisible, activeThreadId, threadOriginalMessage, eventReportVisible, eventReportData } =
   useChatDialogs(getMessageSenderUid)

@@ -6,7 +6,10 @@
         :room-name="currentSession?.remark || currentSession?.name || ''"
         :msg-count="globalUnreadCount"
         :is-official="globalStore.currentSessionRoomId === '1'"
-        @room-name-click="handleRoomNameClick" />
+        :is-group="isGroupSession"
+        :private-mode-active="privateModeActive"
+        @room-name-click="handleRoomNameClick"
+        @toggle-private-mode="onTogglePrivateMode" />
     </template>
     <template #container>
       <div v-if="isBotSession" class="mobile-assistant-container">
@@ -68,7 +71,8 @@ import { open } from '@tauri-apps/plugin-dialog'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { UserType } from '@/enums'
+import { useMitt } from '@/composables/common/useMitt'
+import { MittEnum, RoomTypeEnum, UserType } from '@/enums'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
@@ -104,9 +108,25 @@ const props = defineProps<{
 }>()
 
 const isBotSession = computed(() => globalStore.currentSession?.account === UserType.BOT)
+const isGroupSession = computed(() => currentSession.value?.type === RoomTypeEnum.GROUP)
 const selectedModelKey = ref<string | null>(null)
 const customModelPath = ref<string | null>(null)
 const showModelPopover = ref(false)
+
+const privateModeActive = ref(false)
+const onPrivateModeChanged = (isActive: boolean) => {
+  privateModeActive.value = isActive
+}
+const onTogglePrivateMode = () => {
+  useMitt.emit(MittEnum.PRIVATE_MODE_TOGGLE_REQUEST)
+}
+
+onMounted(() => {
+  useMitt.on(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
+})
+onUnmounted(() => {
+  useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
+})
 
 const modelActions = computed(() =>
   assistantModelPresets.value.map((preset) => ({
