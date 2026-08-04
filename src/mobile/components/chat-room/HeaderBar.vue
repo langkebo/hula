@@ -21,7 +21,16 @@
       </div>
     </div>
     <div class="w-full h-full flex items-center">
-      <div v-if="!props.hiddenRight" class="w-full justify-end flex pe-16px">
+      <div v-if="!props.hiddenRight" class="w-full justify-end flex pe-16px items-center gap-8px">
+        <button
+          v-if="!props.isGroup"
+          type="button"
+          class="private-toggle-btn-mobile"
+          :class="{ 'private-toggle-btn-mobile--active': props.privateModeActive }"
+          :aria-label="props.privateModeActive ? '退出私密模式' : '进入私密模式'"
+          @click="emits('togglePrivateMode')">
+          <span class="private-toggle-btn-mobile__letter">S</span>
+        </button>
         <svg class="w-24px h-24px iconpark-icon p-5px"><use href="#diannao"></use></svg>
         <svg @click="handleMoreClick" class="w-24px h-24px iconpark-icon p-5px"><use href="#more"></use></svg>
       </div>
@@ -37,23 +46,30 @@ import router from '@/router'
 interface HeaderBarProps {
   msgCount?: number
   isOfficial?: boolean
+  isGroup?: boolean
   hiddenRight?: boolean
   enableDefaultBackground?: boolean
   enableShadow?: boolean
   roomName?: string | false
   border?: boolean
+  privateModeActive?: boolean
 }
 
 const props = withDefaults(defineProps<HeaderBarProps>(), {
   isOfficial: true,
+  isGroup: false,
   hiddenRight: false,
   enableDefaultBackground: true,
   enableShadow: true,
   roomName: false,
-  border: false
+  border: false,
+  privateModeActive: false
 })
 
-const emits = defineEmits<(e: 'roomNameClick', payload: HeaderBarProps) => void>()
+const emits = defineEmits<{
+  roomNameClick: [payload: HeaderBarProps]
+  togglePrivateMode: []
+}>()
 
 const handleRoomNameClick = () => {
   emits('roomNameClick', props)
@@ -80,5 +96,30 @@ const handleMoreClick = () => {
 
 .chat-room-name-official {
   @apply grid grid-cols-[1fr_20px] items-center gap-5px;
+}
+
+.private-toggle-btn-mobile {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--tjg-text-tertiary);
+  border: 1px solid var(--tjg-border-default);
+  cursor: pointer;
+
+  &--active {
+    background: var(--tjg-color-danger-500);
+    color: var(--tjg-text-inverse);
+    border-color: var(--tjg-color-danger-500);
+  }
+
+  &__letter {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1;
+  }
 }
 </style>
