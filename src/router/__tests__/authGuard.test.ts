@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/services/i18n', () => ({
+  useI18nGlobal: () => ({ t: (key: string) => key })
+}))
+
 import { createAuthGuard, isPublicRoute } from '../authGuard'
 
 const mockWarn = vi.fn()
@@ -17,6 +22,7 @@ const createRoute = (path: string, requiresAdmin = false) =>
 describe('authGuard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    ;(globalThis as any).$message = { warning: vi.fn() }
   })
 
   it('allows public routes without authentication', async () => {
@@ -109,7 +115,7 @@ describe('authGuard', () => {
     await guard(createRoute('/admin/users', true), createRoute('/'), next)
 
     expect(mockVerifyAdminAccess).toHaveBeenCalledTimes(1)
-    expect(next).toHaveBeenCalledWith('/404')
+    expect(next).toHaveBeenCalledWith('/')
   })
 
   it('allows authenticated users through protected routes', async () => {
