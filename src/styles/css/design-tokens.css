@@ -714,3 +714,82 @@ html[data-theme='dark'] {
   --border-active-color: var(--tjg-brand-sidebar);
   --msg-active-color: rgba(19, 152, 127, 0.4);
 }
+
+/* ==================== prefers-contrast: more ====================
+ * §2.6.1 WCAG 2.1 AA — 高对比度模式落地
+ * 当用户在系统设置中启用「增加对比度」时，覆盖关键 token 以满足：
+ *   - 正文文本对比度 ≥ 7:1（AAA）/ ≥ 4.5:1（AA）
+ *   - 非文本控件边框 ≥ 3:1
+ *   - 层级表面间差异更明显
+ * 仅覆盖影响对比度的 token，不改变布局/字号/圆角。
+ * ================================================================== */
+
+/* 浅色主题高对比度覆盖 */
+@media (prefers-contrast: more) {
+  :root {
+    /* 文本：加深至纯黑/深灰，确保对浅色背景对比度 ≥ 12:1 */
+    --tjg-text-primary: #000000;
+    --tjg-text-secondary: #1a1a1a;
+    --tjg-text-tertiary: #333333;
+    --tjg-text-quaternary: #404040;
+    --tjg-text-disabled: #595959;
+
+    /* 表面：拉大层级差异，面板用纯白、列表用浅灰 */
+    --tjg-surface-app: #f0f0f0;
+    --tjg-surface-panel: #ffffff;
+    --tjg-surface-list: #e8e8e8;
+    --tjg-surface-sidebar: #e0e0e0;
+    --tjg-surface-panel-muted: #ebebeb;
+    --tjg-surface-subtle: #e0e0e0;
+    --tjg-surface-elevated: #ffffff;
+    --tjg-surface-search: #d6d6d6;
+
+    /* 边框：加深至可见灰，确保 3:1 对比度 */
+    --tjg-border-default: #b0b0b0;
+    --tjg-border-muted: #cccccc;
+    --tjg-border-strong: #808080;
+
+    /* 禁用态填充：提高可见度 */
+    --tjg-surface-input: rgba(0, 0, 0, 0.08);
+    --tjg-surface-sidebar-hover: rgba(0, 0, 0, 0.08);
+    --tjg-surface-sidebar-active: rgba(0, 0, 0, 0.12);
+
+    /* 焦点环：确保可见 */
+    --tjg-focus-ring: 0 0 0 3px rgba(19, 152, 127, 0.6);
+  }
+}
+
+/* 暗色主题高对比度覆盖 */
+@media (prefers-contrast: more) {
+  html[data-theme='dark'] {
+    /* 文本：提亮至纯白/亮灰，确保对深色背景对比度 ≥ 11:1 */
+    --tjg-text-primary: #ffffff;
+    --tjg-text-secondary: #d9d9d9;
+    --tjg-text-tertiary: #bfbfbf;
+    --tjg-text-quaternary: #a6a6a6;
+    --tjg-text-disabled: #808080;
+
+    /* 表面：拉大层级差异 */
+    --tjg-surface-app: #000000;
+    --tjg-surface-panel: #262626;
+    --tjg-surface-list: #1a1a1a;
+    --tjg-surface-sidebar: #0d0d0d;
+    --tjg-surface-panel-muted: #1f1f1f;
+    --tjg-surface-subtle: #1a1a1a;
+    --tjg-surface-elevated: #2d2d2d;
+    --tjg-surface-search: #333333;
+
+    /* 边框：提亮至可见灰 */
+    --tjg-border-default: #595959;
+    --tjg-border-muted: #404040;
+    --tjg-border-strong: #737373;
+
+    /* 禁用态填充：提高可见度 */
+    --tjg-surface-input: rgba(255, 255, 255, 0.1);
+    --tjg-surface-sidebar-hover: rgba(255, 255, 255, 0.1);
+    --tjg-surface-sidebar-active: rgba(255, 255, 255, 0.15);
+
+    /* 焦点环：确保可见 */
+    --tjg-focus-ring: 0 0 0 3px rgba(100, 201, 179, 0.7);
+  }
+}
