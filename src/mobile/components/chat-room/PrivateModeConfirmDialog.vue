@@ -30,7 +30,8 @@ const props = defineProps<{ show: boolean }>()
 const emit = defineEmits<{ 'update:show': [val: boolean]; confirm: []; cancel: [] }>()
 
 const { t } = useI18n()
-const { privateModeFeatures, confirmPrivateMode, cancelPrivateMode } = usePrivateMode()
+// 仅取静态特性列表；确认/取消由父组件通过 mitt 协调状态，避免双实例重复 emit
+const { privateModeFeatures } = usePrivateMode()
 
 const visible = computed({
   get: () => props.show,
@@ -38,12 +39,10 @@ const visible = computed({
 })
 
 const handleConfirm = () => {
-  confirmPrivateMode()
   emit('confirm')
 }
 
 const handleCancel = () => {
-  cancelPrivateMode()
   emit('cancel')
 }
 </script>
