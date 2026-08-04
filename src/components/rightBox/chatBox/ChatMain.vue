@@ -212,9 +212,9 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
@@ -271,11 +271,10 @@ watch(
     if (!msgs?.length) return
     const avatarUrls = new Set<string>()
     for (const item of msgs) {
-      const uid = item?.message?.fromUser?.uid ?? ''
+      const uid = getMessageSenderUid(item)
       if (!uid) continue
       const storeUser = groupStore.getUserInfo(uid)
-      const avatar = storeUser?.avatar || item?.message?.fromUser?.avatar
-      if (avatar) avatarUrls.add(avatar)
+      if (storeUser?.avatar) avatarUrls.add(storeUser.avatar)
     }
     if (avatarUrls.size > 0) {
       AvatarUtils.batchResolve([...avatarUrls], 68)
