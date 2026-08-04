@@ -21,7 +21,6 @@
     "noImplicitAny": true,
     "exactOptionalPropertyTypes": false,
 
-    "baseUrl": ".",
     "paths": {
       "~/*": ["./*"],
       "@/*": ["./src/*"],
