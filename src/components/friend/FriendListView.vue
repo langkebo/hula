@@ -70,39 +70,13 @@
               </n-button>
             </n-flex>
             <div class="friend-request-preview__list">
-              <div
+              <FriendRequestCard
                 v-for="request in previewIncomingRequests"
                 :key="request.userId"
-                class="friend-request-preview__item">
-                <n-flex align="center" :size="8" class="flex-1 min-w-0">
-                  <n-avatar
-                    :size="32"
-                    :src="AvatarUtils.getAvatarUrl(request.avatarUrl)"
-                    :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                    round />
-                  <div class="flex flex-col min-w-0 flex-1">
-                    <span class="text-[var(--text-sm)] truncate">{{ request.displayName || request.userId }}</span>
-                    <span v-if="request.message" class="text-[var(--text-xs)] text-[--tjg-text-quaternary] truncate">
-                      {{ request.message }}
-                    </span>
-                  </div>
-                </n-flex>
-                <n-flex :size="6" shrink-0>
-                  <n-button
-                    type="primary"
-                    size="tiny"
-                    :loading="processingRequest === request.userId"
-                    @click="handleQuickAccept(request)">
-                    {{ t('friend.request.accept') }}
-                  </n-button>
-                  <n-button
-                    size="tiny"
-                    :loading="processingRequest === request.userId"
-                    @click="handleQuickReject(request)">
-                    {{ t('friend.request.reject') }}
-                  </n-button>
-                </n-flex>
-              </div>
+                :request="request"
+                :processing="processingRequest === request.userId"
+                @accept="handleQuickAccept"
+                @reject="handleQuickReject" />
             </div>
           </div>
 
@@ -184,96 +158,46 @@
               v-else-if="filteredFriends.length > VIRTUAL_SCROLL_THRESHOLD"
               class="friend-items friend-items--virtual"
               :items="filteredFriends"
-              :item-size="68"
+              :item-size="76"
               key-field="userId"
               role="list"
               :aria-label="t('friend.list.friend_list_label')"
               v-slot="{ item }">
-              <button
-                v-ripple
-                type="button"
-                role="listitem"
-                class="friend-item"
-                :aria-current="selectedUserId === item.userId ? 'true' : undefined"
-                @click="handleSelectFriend(item)"
-                @contextmenu="handleContextMenu($event, item)">
-                <n-flex align="center" :size="12">
-                  <n-badge :dot="item.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
-                    <n-avatar
-                      :size="44"
-                      :src="AvatarUtils.getAvatarUrl(item.avatarUrl)"
-                      :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                      round />
-                  </n-badge>
-                  <n-flex vertical :size="4" class="flex-1 truncate">
-                    <span class="text-[var(--text-sm)] truncate">
-                      <template v-for="(seg, i) in getHighlightSegments(item)" :key="i">
-                        <mark v-if="seg.matched" class="friend-item__highlight">{{ seg.text }}</mark>
-                        <template v-else>{{ seg.text }}</template>
-                      </template>
-                    </span>
-                    <n-flex align="center" :size="4">
-                      <n-badge
-                        :color="
-                          item.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
-                        "
-                        dot />
-                      <span class="friend-item__presence-text text-[var(--text-xs)]">
-                        {{ item.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(item) }}
-                      </span>
-                      <n-tag v-if="item.friendStatus === 'blocked'" type="error" size="tiny">
-                        {{ t('friend.status.blocked') }}
-                      </n-tag>
-                    </n-flex>
-                  </n-flex>
-                </n-flex>
-              </button>
+              <FriendListItem
+                :friend="item"
+                :selected="item.userId === selectedUserId"
+                :query="appliedSearchValue"
+                @select="handleSelectFriend"
+                @send-message="handleSendMessage"
+                @remove="handleRemoveFriend"
+                @more="
+                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.friend)
+                "
+                @contextmenu="
+                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.friend)
+                " />
             </RecycleScroller>
             <!-- 列表项 ≤ 100 时使用普通 v-for，避免虚拟滚动开销 -->
             <div v-else class="friend-items" role="list" :aria-label="t('friend.list.friend_list_label')">
-              <button
+              <FriendListItem
                 v-for="friend in filteredFriends"
                 :key="friend.userId"
-                v-ripple
-                type="button"
-                role="listitem"
-                class="friend-item"
-                :aria-current="selectedUserId === friend.userId ? 'true' : undefined"
-                @click="handleSelectFriend(friend)"
-                @contextmenu="handleContextMenu($event, friend)">
-                <n-flex align="center" :size="12">
-                  <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--color-warning)" :offset="[-4, 4]">
-                    <n-avatar
-                      :size="44"
-                      :src="AvatarUtils.getAvatarUrl(friend.avatarUrl)"
-                      :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                      round />
-                  </n-badge>
-                  <n-flex vertical :size="4" class="flex-1 truncate">
-                    <span class="text-[var(--text-sm)] truncate">
-                      <template v-for="(seg, i) in getHighlightSegments(friend)" :key="i">
-                        <mark v-if="seg.matched" class="friend-item__highlight">{{ seg.text }}</mark>
-                        <template v-else>{{ seg.text }}</template>
-                      </template>
-                    </span>
-                    <n-flex align="center" :size="4">
-                      <n-badge
-                        :color="
-                          friend.activeStatus === OnlineEnum.ONLINE ? 'var(--color-online)' : 'var(--color-offline)'
-                        "
-                        dot />
-                      <span class="friend-item__presence-text text-[var(--text-xs)]">
-                        {{
-                          friend.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : getLastSeenText(friend)
-                        }}
-                      </span>
-                      <n-tag v-if="friend.friendStatus === 'blocked'" type="error" size="tiny">
-                        {{ t('friend.status.blocked') }}
-                      </n-tag>
-                    </n-flex>
-                  </n-flex>
-                </n-flex>
-              </button>
+                :friend="friend"
+                :selected="friend.userId === selectedUserId"
+                :query="appliedSearchValue"
+                @select="handleSelectFriend"
+                @send-message="handleSendMessage"
+                @remove="handleRemoveFriend"
+                @more="
+                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.friend)
+                "
+                @contextmenu="
+                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.friend)
+                " />
             </div>
           </n-scrollbar>
         </n-spin>
@@ -296,17 +220,16 @@ import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
 import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedbackSummary'
 import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
-import { OnlineEnum, ThemeEnum } from '@/enums'
+import { OnlineEnum } from '@/enums'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { type FriendRequestItem, type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { FriendStatus } from '@/types/matrix-services'
-import { AvatarUtils } from '@/utils/AvatarUtils'
+import FriendListItem from './FriendListItem.vue'
+import FriendRequestCard from './FriendRequestCard.vue'
 import FriendSearchBar from './FriendSearchBar.vue'
 import { resolveFriendListViewState } from './friendListViewState'
-import { highlightSearchMatch } from './highlightSearchMatch'
 
 const FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'tjg-friend-search-history'
 /** 列表项超过此阈值时启用虚拟滚动（需求文档 16.1） */
@@ -318,7 +241,6 @@ const router = useRouter()
 const { announce } = useAriaLive()
 const { showFeedback } = useActionFeedback()
 const contactStore = useContactStore()
-const settingStore = useSettingStore()
 const { isLoaded, canUseFriendList } = useServerCapability()
 const {
   historyValues: searchHistory,
@@ -499,25 +421,6 @@ const showEmptyState = computed(
     viewState.value !== 'capability'
 )
 
-const getLastSeenText = (friend: MatrixContact): string => {
-  if (friend.activeStatus === OnlineEnum.ONLINE) return t('friend.list.online')
-  if (friend.lastOptTime && friend.lastOptTime > 0) {
-    const diffMs = Date.now() - friend.lastOptTime
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-    if (diffMins < 1) return t('friend.list.online')
-    if (diffHours < 24) return t('friend.detail.hours_ago', { count: diffHours })
-    if (diffDays < 7) return t('friend.detail.days_ago', { count: diffDays })
-  }
-  return t('friend.list.offline')
-}
-
-const getFriendDisplayName = (friend: MatrixContact): string => friend.remark || friend.displayName || friend.name
-
-const getHighlightSegments = (friend: MatrixContact) =>
-  highlightSearchMatch(getFriendDisplayName(friend), appliedSearchValue.value)
-
 const handleFilterChange = (filter: FriendStatus | 'all') => {
   currentFilter.value = filter
 }
@@ -565,6 +468,26 @@ const selectedUserId = computed(() => (route.params.userId as string | undefined
 const handleSelectFriend = (friend: MatrixContact) => {
   // 路由跳转后由 useRightView 派生 details 视图
   void router.push({ name: 'friend-details', params: { userId: friend.userId } })
+}
+
+// FriendListItem 发送消息按钮：复用 handleContextMenuSelect 中的发送消息逻辑
+const handleSendMessage = async (friend: MatrixContact) => {
+  const dmInfo = await matrixFriendService.getFriendDmRoom(friend.userId)
+  if (dmInfo.room_id) {
+    const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
+    await openMsgSessionByRoomId(dmInfo.room_id)
+  } else {
+    const roomId = await contactStore.startDirectRoom(friend.userId, false)
+    if (roomId) {
+      const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
+      await openMsgSessionByRoomId(roomId)
+    }
+  }
+}
+
+// FriendListItem 移除好友按钮：复用 handleContextMenuSelect 中的移除逻辑
+const handleRemoveFriend = async (friend: MatrixContact) => {
+  await contactStore.removeFromContacts(friend.userId)
 }
 
 // 阶段 4：触发添加好友 / 好友申请列表，路由驱动右侧栏视图
@@ -786,17 +709,6 @@ onMounted(async () => {
   padding: 0;
 }
 
-.friend-request-preview__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 6px;
-  background: var(--tjg-surface-panel);
-  border: 1px solid var(--tjg-border-default);
-}
-
 .friend-items {
   padding: 8px;
   margin: 0;
@@ -805,47 +717,5 @@ onMounted(async () => {
 
 .friend-items--virtual {
   height: 100%;
-}
-
-.friend-item-wrapper {
-  display: block;
-  margin: 0;
-  padding: 0;
-}
-
-.friend-item {
-  display: block;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  border: none;
-  background: none;
-  text-align: left;
-  color: inherit;
-  font-family: inherit;
-  position: relative;
-  overflow: hidden;
-
-  &:hover {
-    background: var(--tjg-surface-list-hover);
-  }
-
-  &:active {
-    background: var(--tjg-surface-session-active);
-  }
-}
-
-.friend-item__presence-text {
-  color: var(--tjg-text-tertiary);
-}
-
-.friend-item__highlight {
-  background: var(--tjg-color-warning-100);
-  color: var(--tjg-text-primary);
-  border-radius: 2px;
-  padding: 0 1px;
-  font-weight: var(--tjg-font-weight-medium);
 }
 </style>
