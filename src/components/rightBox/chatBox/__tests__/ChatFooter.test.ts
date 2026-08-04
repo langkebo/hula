@@ -154,7 +154,10 @@ vi.mock('@/utils/FileUtil', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
-    error: loggerErrorMock
+    error: loggerErrorMock,
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
   })
 }))
 
@@ -192,9 +195,9 @@ const mountComponent = () =>
         MsgInput: MsgInputStub,
         ChatMsgMultiChoose: true,
         LocationModal: true,
-        Emoticon: true,
-        More: true,
-        VoicePanel: true,
+        FooterOverlays: true,
+        FooterToolbar: true,
+        MobilePanel: true,
         'n-flex': {
           template: '<div><slot /></div>'
         },
