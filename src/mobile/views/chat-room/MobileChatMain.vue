@@ -63,6 +63,12 @@
 
     <!-- 移动端转发对话框 -->
     <MobileForwardDialog v-model:visible="showForwardDialog" :event-id="reactionEventId" :room-id="reactionRoomId" />
+
+    <!-- 移动端私密模式确认对话框（van-dialog） -->
+    <PrivateModeConfirmDialog
+      v-model:show="showPrivateConfirm"
+      @confirm="onConfirmPrivateMode"
+      @cancel="onCancelPrivateMode" />
   </AutoFixHeightPage>
 </template>
 
@@ -79,6 +85,7 @@ import { createLogger } from '@/utils/Logger'
 
 const TjgAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/TjgAssistant.vue'))
 
+import PrivateModeConfirmDialog from '#/components/chat-room/PrivateModeConfirmDialog.vue'
 import MobileBatchToolbar from '#/components/message/MobileBatchToolbar.vue'
 import LocationShare from '#/views/chat-room/LocationShare.vue'
 import MobileForwardDialog from '#/views/chat-room/MobileForwardDialog.vue'
@@ -114,11 +121,26 @@ const customModelPath = ref<string | null>(null)
 const showModelPopover = ref(false)
 
 const privateModeActive = ref(false)
+const showPrivateConfirm = ref(false)
 const onPrivateModeChanged = (isActive: boolean) => {
   privateModeActive.value = isActive
 }
 const onTogglePrivateMode = () => {
-  useMitt.emit(MittEnum.PRIVATE_MODE_TOGGLE_REQUEST)
+  if (privateModeActive.value) {
+    // 已激活，直接退出（ChatMain.togglePrivateMode 走已激活分支）
+    useMitt.emit(MittEnum.PRIVATE_MODE_TOGGLE_REQUEST, { confirmed: false })
+  } else {
+    // 未激活，显示移动端确认对话框（van-dialog）
+    showPrivateConfirm.value = true
+  }
+}
+const onConfirmPrivateMode = () => {
+  showPrivateConfirm.value = false
+  // 用户已确认，ChatMain 直接调用 confirmPrivateMode 进入私密模式，不弹 PC 对话框
+  useMitt.emit(MittEnum.PRIVATE_MODE_TOGGLE_REQUEST, { confirmed: true })
+}
+const onCancelPrivateMode = () => {
+  showPrivateConfirm.value = false
 }
 
 onMounted(() => {

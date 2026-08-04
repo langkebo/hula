@@ -273,8 +273,14 @@ const {
   cancelPrivateMode
 } = usePrivateMode()
 
-const onPrivateModeToggleRequest = () => {
-  togglePrivateMode()
+const onPrivateModeToggleRequest = (payload?: { confirmed: boolean }) => {
+  if (payload?.confirmed) {
+    // 移动端已确认，直接进入私密模式（不弹 PC 对话框）
+    confirmPrivateMode()
+  } else {
+    // 退出私密模式或 PC 端切换
+    togglePrivateMode()
+  }
 }
 
 onMounted(() => {
