@@ -75,15 +75,6 @@ export const isDiffNow = ({ time, unit, diff }: { unit: OpUnitType; time: Config
 }
 
 /**
- * 距离现在 10 分钟了
- * @param {ConfigType} time 输入时间
- * @returns boolean 输入时间是否间隔 now 间隔值以上。
- */
-const _isDiffNow10Min = (time: ConfigType): boolean => {
-  return isDiffNow({ time, unit: 'minute', diff: 10 })
-}
-
-/**
  * 格式化日期分组标签（用于聊天历史等场景）
  * @param timestamp 时间戳
  * @returns 格式化后的日期字符串（今天/昨天/MM-DD）

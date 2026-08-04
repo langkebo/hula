@@ -420,14 +420,6 @@ watch(personList, (newList) => {
   }
 })
 
-// /** 当AI列表发生变化的时候始终select第一个 */
-// watch(groupedAIModels, (newList) => {
-//   if (newList.length > 0) {
-//     /** 先设置滚动条滚动到第一个 */
-//     virtualListInstAI.value?.scrollTo({ key: newList[0].uid })
-//     selectedAIKey.value = newList[0].uid
-//   }
-// })
 const typingTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 const isTyping = ref(false)
 
@@ -803,12 +795,6 @@ onMounted(async () => {
         handleAit(item)
       }
     }
-    // } else if (aiDialogVisible.value && Number(selectedAIKey.value) > -1) {
-    //   const item = groupedAIModels.value.find((item) => item.uid === selectedAIKey.value)
-    //   if (item) {
-    //     handleAI(item)
-    //   }
-    // }
   })
   onKeyStroke('ArrowUp', (e) => {
     e.preventDefault()

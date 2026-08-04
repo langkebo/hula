@@ -1,88 +1,21 @@
 <template>
   <div class="flex flex-col overflow-hidden h-full relative">
-    <!-- 网络状态提示 -->
-    <n-flex
-      v-if="networkBanner"
-      align="center"
-      justify="center"
-      class="z-999 w-full h-40px rounded-4px text-[var(--text-sm)] text-[--tjg-color-danger-500] bg-[--tjg-color-danger-100] flex-shrink-0">
-      <svg class="size-16px">
-        <use href="#cloudError"></use>
-      </svg>
-      {{ networkBanner.text }}
-    </n-flex>
-
-    <!-- 置顶公告提示 -->
-    <Transition name="announcement" mode="out-in">
-      <div v-if="announcementStore.isLoading" key="announcement-loading" class="p-[6px_12px_0_12px]">
-        <div class="custom-announcement flex items-center justify-center h-40px">
-          <n-spin :size="20" />
-        </div>
-      </div>
-      <div v-else-if="isGroup && topAnnouncement" key="announcement" class="p-[6px_12px_0_12px]">
-        <div
-          class="custom-announcement"
-          :class="{ 'announcement-hover': isAnnouncementHover }"
-          @mouseenter="isAnnouncementHover = true"
-          @mouseleave="isAnnouncementHover = false">
-          <n-flex :wrap="false" class="w-full" align="center" justify="space-between">
-            <n-flex :wrap="false" align="center" class="pl-12px select-none flex-1" :size="6">
-              <svg class="size-16px flex-shrink-0">
-                <use href="#Loudspeaker"></use>
-              </svg>
-              <div class="flex-1 min-w-0 line-clamp-1 text-[var(--text-sm)] text-[--tjg-text-tertiary]">
-                {{ topAnnouncement.content }}
-              </div>
-            </n-flex>
-            <div class="flex-shrink-0 w-60px select-none" @click="handleViewAnnouncement">
-              <p class="text-[var(--text-sm)] text-[--tjg-color-primary-500] cursor-pointer">
-                {{ t('home.chat_main.announcement.view_all') }}
-              </p>
-            </div>
-          </n-flex>
-        </div>
-      </div>
-    </Transition>
-
-    <E2EEBanner
-      v-if="globalStore.currentSessionRoomId"
-      :key="globalStore.currentSessionRoomId"
-      :room-id="globalStore.currentSessionRoomId" />
-
-    <!-- 私密模式切换按钮（仅单聊） -->
-    <div v-if="!isGroup" class="private-mode-bar flex-shrink-0 px-12px py-4px flex items-center gap-8px">
-      <button
-        data-testid="private-toggle-btn"
-        type="button"
-        class="private-toggle-btn"
-        :class="{ 'private-toggle-btn--active': privateModeActive }"
-        :title="privateModeActive ? '退出私密模式' : '进入私密模式'"
-        @click="togglePrivateMode">
-        <span class="private-toggle-btn__letter">S</span>
-      </button>
-      <PrivateModeBanner v-if="privateModeActive" :burn-enabled="burnEnabled" />
-      <svg
-        v-if="privateModeActive"
-        data-testid="private-lock-icon"
-        class="size-16px flex-shrink-0 text-[--tjg-color-danger-500]"
-        aria-label="私密模式">
-        <use href="#lock"></use>
-      </svg>
-    </div>
-
-    <!-- ScreenshotWatermark (private mode) -->
-    <ScreenshotWatermark
-      v-if="privateModeActive"
-      :user-id="currentUserId"
-      :user-name="currentUserName"
-      :enabled="privateModeActive" />
-
-    <!-- 粘性事件横幅 -->
-    <StickyEventBanner
-      :events="stickyEvents"
+    <ChatBanners
+      :network-banner-text="networkBanner?.text ?? null"
+      :is-announcement-loading="isAnnouncementLoading"
+      :is-group="isGroup"
+      :top-announcement="topAnnouncement"
+      :current-room-id="globalStore.currentSessionRoomId ?? null"
+      :private-mode-active="privateModeActive"
+      :burn-enabled="burnEnabled"
+      :current-user-id="currentUserId"
+      :current-user-name="currentUserName"
+      :sticky-events="stickyEvents"
       :can-set-sticky="canSetSticky"
+      @toggle-private-mode="togglePrivateMode"
+      @view-announcement="handleViewAnnouncement"
       @set-sticky="handleSetSticky"
-      @view="handleViewStickyEvent" />
+      @view-sticky-event="handleViewStickyEvent" />
 
     <!-- 聊天内容 -->
     <div class="flex flex-col flex-1 min-h-0">
@@ -96,7 +29,12 @@
         @mouseenter="showScrollbar = true"
         @mouseleave="showScrollbar = false">
         <!-- 消息列表 -->
-        <div ref="messageListRef" role="log" aria-live="polite" class="message-list min-h-full flex flex-col" :class="{ 'private-mode-active': privateModeActive }">
+        <div
+          ref="messageListRef"
+          role="log"
+          aria-live="polite"
+          class="message-list min-h-full flex flex-col"
+          :class="{ 'private-mode-active': privateModeActive }">
           <!-- 没有更多消息提示 -->
           <div
             v-show="isMainViewReady && chatStore.shouldShowNoMoreMessage"
@@ -218,111 +156,24 @@
     </div>
   </div>
 
-  <!-- 弹出框 -->
-  <n-modal v-model:show="modalShow" class="w-350px border-rd-8px">
-    <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
-      <div
-        v-if="isMac()"
-        @click="modalShow = false"
-        class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
-          <use href="#close"></use>
-        </svg>
-      </div>
-
-      <svg v-if="isWindows()" @click="modalShow = false" class="w-12px h-12px ml-a cursor-pointer select-none">
-        <use href="#close"></use>
-      </svg>
-      <div class="flex flex-col gap-30px p-[22px_10px_10px_22px] select-none">
-        <span class="text-[var(--text-sm)]">{{ tips }}</span>
-
-        <n-flex justify="end">
-          <n-button @click="handleConfirm" class="w-78px" type="primary">
-            {{ t('home.chat_main.confirm') }}
-          </n-button>
-          <n-button @click="modalShow = false" class="w-78px" secondary>{{ t('home.chat_main.cancel') }}</n-button>
-        </n-flex>
-      </div>
-    </div>
-  </n-modal>
-
-  <n-modal v-model:show="groupNicknameModalVisible" class="w-360px border-rd-8px" :mask-closable="false">
-    <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
-      <div
-        v-if="isMac()"
-        @click="groupNicknameModalVisible = false"
-        class="mac-close z-999 size-13px shadow-inner bg-[--tjg-color-danger-500] rounded-50% select-none absolute left-6px">
-        <svg class="hidden size-7px color-[--tjg-surface-media-preview] select-none absolute top-3px left-3px">
-          <use href="#close"></use>
-        </svg>
-      </div>
-
-      <svg
-        v-if="isWindows()"
-        @click="groupNicknameModalVisible = false"
-        class="w-12px h-12px ml-a cursor-pointer select-none">
-        <use href="#close"></use>
-      </svg>
-      <div class="flex flex-col gap-20px p-[22px_10px_10px_22px] select-none">
-        <span class="text-[var(--text-base)] text-[--tjg-text-primary] font-500">
-          {{ t('home.chat_main.group_nickname.title') }}
-        </span>
-        <n-input
-          v-model:value="groupNicknameValue"
-          :placeholder="t('home.chat_main.group_nickname.placeholder')"
-          :maxlength="12"
-          class="border-(1px solid color-mix(in srgb, var(--tjg-text-tertiary) 80%, transparent))"
-          :disabled="groupNicknameSubmitting"
-          clearable
-          @keydown.enter.prevent="handleGroupNicknameConfirm" />
-        <p v-if="groupNicknameError" class="text-[var(--text-sm)] text-[--tjg-color-danger-500]">
-          {{ groupNicknameError }}
-        </p>
-        <n-flex justify="end" :size="12">
-          <n-button @click="groupNicknameModalVisible = false" :disabled="groupNicknameSubmitting" secondary>
-            {{ t('home.chat_main.cancel') }}
-          </n-button>
-          <n-button type="primary" :loading="groupNicknameSubmitting" @click="handleGroupNicknameConfirm">
-            {{ t('home.chat_main.confirm') }}
-          </n-button>
-        </n-flex>
-      </div>
-    </div>
-  </n-modal>
-
-  <!-- 线程面板 -->
-  <ThreadPanel
-    v-model:show="threadPanelVisible"
-    :original-message="threadOriginalMessage ?? undefined"
-    :thread-id="activeThreadId" />
-
-  <!-- 事件举报对话框 -->
-  <EventReportDialog
-    v-model:show="eventReportVisible"
-    :event-id="eventReportData.eventId"
-    :room-id="eventReportData.roomId"
-    :event-content="eventReportData.eventContent" />
-
-  <!-- 私密模式确认对话框 -->
-  <n-modal v-model:show="showPrivateConfirm" class="w-360px border-rd-8px">
-    <div class="bg-[--tjg-surface-panel] w-360px p-24px box-border flex flex-col gap-16px">
-      <span class="text-[var(--text-base)] text-[--tjg-text-primary] font-500">进入私密模式</span>
-      <div class="flex flex-col gap-8px" data-testid="private-confirm-features">
-        <div
-          v-for="feature in privateModeFeatures"
-          :key="feature.title"
-          class="flex items-center gap-8px text-[var(--text-sm)] text-[--tjg-text-secondary]">
-          <svg class="size-16px flex-shrink-0" :class="feature.iconClass"><use :href="feature.icon"></use></svg>
-          <span>{{ feature.title }}：{{ feature.description }}</span>
-        </div>
-      </div>
-      <p class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">确定要进入私密模式吗？</p>
-      <n-flex justify="end" :size="12">
-        <n-button @click="cancelPrivateMode" secondary>取消</n-button>
-        <n-button type="primary" @click="confirmPrivateMode">确认</n-button>
-      </n-flex>
-    </div>
-  </n-modal>
+  <ChatModals
+    v-model:modal-show="modalShow"
+    v-model:group-nickname-modal-visible="groupNicknameModalVisible"
+    v-model:group-nickname-value="groupNicknameValue"
+    v-model:thread-panel-visible="threadPanelVisible"
+    v-model:event-report-visible="eventReportVisible"
+    v-model:show-private-confirm="showPrivateConfirm"
+    :tips="tips"
+    :group-nickname-error="groupNicknameError"
+    :group-nickname-submitting="groupNicknameSubmitting"
+    :thread-original-message="threadOriginalMessage"
+    :active-thread-id="activeThreadId"
+    :event-report-data="eventReportData"
+    :private-mode-features="privateModeFeatures"
+    @confirm="handleConfirm"
+    @group-nickname-confirm="handleGroupNicknameConfirm"
+    @cancel-private-mode="cancelPrivateMode"
+    @confirm-private-mode="confirmPrivateMode" />
 </template>
 
 <script setup lang="ts">
@@ -343,27 +194,19 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
+import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import { type AnnouncementData, useAnnouncementBanner } from '@/composables/chat/useAnnouncementBanner'
+import { useChatDialogs } from '@/composables/chat/useChatDialogs'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useChatScrollManager } from '@/composables/chat/useChatScrollManager'
+import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { MittEnum, MsgEnum } from '@/enums'
-
-// 异步加载非首屏或重型组件
-const FileUploadProgress = defineAsyncComponent(() => import('@/components/rightBox/FileUploadProgress.vue'))
-const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/ThreadPanel.vue'))
-const EventReportDialog = defineAsyncComponent(() => import('@/components/moderation/EventReportDialog.vue'))
-
-import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
-import E2EEBanner from '@/components/chat/E2EEBanner.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
-import ScreenshotWatermark from '@/components/common/ScreenshotWatermark.vue'
-import StickyEventBanner from '@/components/rightBox/renderMessage/StickyEventBanner.vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { usePopover } from '@/composables/common/usePopover'
 import { useWindow } from '@/composables/common/useWindow'
-import type { Announcement } from '@/stores/domains/chat/announcement'
-import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
+import { MittEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -373,8 +216,12 @@ import { audioManager } from '@/utils/AudioManager'
 import { timeToStr } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
-import { isMac, isMobile, isWindows } from '@/utils/PlatformConstants'
+import { isMobile } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
+import ChatBanners from './ChatBanners.vue'
+import ChatModals from './ChatModals.vue'
+
+const FileUploadProgress = defineAsyncComponent(() => import('@/components/rightBox/FileUploadProgress.vue'))
 
 const logger = createLogger('ChatMain')
 const timerManager = useTimerManager()
@@ -382,18 +229,12 @@ const selfEmit = defineEmits(['scroll'])
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
-type AnnouncementData = {
-  content: string
-  top?: boolean
-}
-
 type SessionChangedPayload = {
   roomId: string
   oldRoomId: string | null
 }
 
 // Store 实例
-const announcementStore = useAnnouncementStore()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
@@ -420,16 +261,21 @@ const getMessageSenderUid = (message: MessageType): string => {
   return message.fromUser?.uid ?? ''
 }
 
-const threadPanelVisible = ref(false)
-const activeThreadId = ref('')
-const threadOriginalMessage = ref<{
-  id: string
-  senderId: string
-  senderName: string
-  senderAvatar: string
-  content: string
-  timestamp: number
-} | null>(null)
+// ===== 私密模式 =====
+const {
+  privateModeActive,
+  showPrivateConfirm,
+  burnEnabled,
+  burnDuration,
+  privateModeFeatures,
+  togglePrivateMode,
+  confirmPrivateMode,
+  cancelPrivateMode
+} = usePrivateMode()
+
+// ===== 线程面板 + 事件举报 =====
+const { threadPanelVisible, activeThreadId, threadOriginalMessage, eventReportVisible, eventReportData } =
+  useChatDialogs(getMessageSenderUid)
 
 // ===== 粘性事件 =====
 interface StickyEventItem {
@@ -457,79 +303,6 @@ function handleViewStickyEvent(eventId: string) {
 }
 
 defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId, stickyEvents, canSetSticky })
-
-// ===== 私密模式 =====
-const privateModeActive = ref(false)
-const showPrivateConfirm = ref(false)
-const burnEnabled = ref(false)
-const burnDuration = ref(60)
-
-const privateModeFeatures = computed(() => [
-  { title: '端到端加密', description: '消息在发送端加密，仅收件人可解密', icon: '#lock', iconClass: 'text-[--tjg-color-primary-500]' },
-  { title: '阅后即焚', description: '消息可设为自动销毁，阅读后即删除', icon: '#fire', iconClass: 'text-[--tjg-color-danger-500]' },
-  { title: '防截屏', description: '启用截屏水印与防截屏保护', icon: '#shield', iconClass: 'text-[--tjg-color-warning-500]' },
-  { title: '不留存', description: '服务器不存储消息内容，仅传输', icon: '#delete', iconClass: 'text-[--tjg-text-tertiary]' }
-])
-
-function togglePrivateMode() {
-  if (privateModeActive.value) {
-    privateModeActive.value = false
-    burnEnabled.value = false
-    useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, false)
-  } else {
-    showPrivateConfirm.value = true
-  }
-}
-
-function confirmPrivateMode() {
-  privateModeActive.value = true
-  showPrivateConfirm.value = false
-  useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, true)
-}
-
-function cancelPrivateMode() {
-  showPrivateConfirm.value = false
-}
-
-const handleOpenThread = ({ eventId }: { eventId: string; roomId?: string }) => {
-  activeThreadId.value = eventId
-  const msg = chatStore.chatMessageList.find((m) => m.message.id === eventId)
-  if (msg) {
-    const bodyContent =
-      typeof msg.message.body === 'object' && msg.message.body !== null
-        ? (msg.message.body as { content?: string }).content
-        : msg.message.body
-    threadOriginalMessage.value = {
-      id: msg.message.id,
-      senderId: getMessageSenderUid(msg),
-      senderName: msg.fromUser.username ?? '',
-      senderAvatar: msg.fromUser.avatar ?? '',
-      content: typeof bodyContent === 'string' ? bodyContent : '',
-      timestamp: msg.message.sendTime
-    }
-  }
-  threadPanelVisible.value = true
-}
-
-useMitt.on(MittEnum.OPEN_THREAD, handleOpenThread)
-
-// ===== 事件举报对话框 =====
-const eventReportVisible = ref(false)
-const eventReportData = reactive({
-  eventId: '',
-  roomId: '',
-  eventContent: ''
-})
-
-useMitt.on(MittEnum.OPEN_EVENT_REPORT, (payload: unknown) => {
-  const data = payload as { roomId: string; eventId: string; eventContent?: string }
-  if (data.roomId && data.eventId) {
-    eventReportData.eventId = data.eventId
-    eventReportData.roomId = data.roomId
-    eventReportData.eventContent = data.eventContent || ''
-    eventReportVisible.value = true
-  }
-})
 
 const isMobileRef = ref(isMobile())
 
@@ -619,8 +392,6 @@ const handleScroll = (event: Event) => {
 
 const activeReply = ref<string>('')
 const showScrollbar = ref<boolean>(true)
-const isAnnouncementHover = ref<boolean>(false)
-const topAnnouncement = ref<AnnouncementData | null>(null)
 const hoverId = ref('')
 
 // 滚轮滚动限制状态
@@ -670,69 +441,12 @@ const handleWheel = (event: WheelEvent) => {
 
 const stopWheelListener = useEventListener(scrollContainerRef, 'wheel', handleWheel, { passive: false })
 
-// 监听公告更新和清空事件的变量
-let announcementUpdatedListener: UnlistenFn | null = null
-let announcementClearListener: UnlistenFn | null = null
-// 获取置顶公告
-const loadTopAnnouncement = async (roomId?: string): Promise<void> => {
-  if (announcementStore.isLoading) return
-  const targetRoomId = roomId ?? currentRoomId.value
-
-  if (!targetRoomId || !isGroup.value) {
-    topAnnouncement.value = null
-    return
-  }
-
-  try {
-    const data = await announcementStore.getGroupAnnouncementList(targetRoomId, 1, 1)
-    if (targetRoomId !== currentRoomId.value) {
-      return
-    }
-
-    if (data && data.records.length > 0) {
-      const topNotice = data.records.find((item: Announcement) => item.top)
-      const oldAnnouncement = topAnnouncement.value
-      topAnnouncement.value = (topNotice as unknown as AnnouncementData) || null
-
-      if (oldAnnouncement !== topAnnouncement.value) {
-        const container = scrollContainerRef.value
-        if (container) {
-          const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-          if (distanceFromBottom <= 20) {
-            nextTick(() => {
-              scrollToBottom()
-            })
-          }
-        }
-      }
-    } else {
-      topAnnouncement.value = null
-    }
-  } catch (error) {
-    logger.error('获取置顶公告失败:', error)
-    if (targetRoomId === currentRoomId.value) {
-      topAnnouncement.value = null
-    }
-  }
-}
-
-watch(
-  () => [currentRoomId.value, isGroup.value] as const,
-  async ([roomId, isGroupChat], prevValue) => {
-    const [prevRoomId, prevIsGroup] = prevValue ?? [undefined, undefined]
-    if (!roomId || !isGroupChat) {
-      topAnnouncement.value = null
-      return
-    }
-
-    if (roomId === prevRoomId && prevIsGroup === isGroupChat) {
-      return
-    }
-
-    await loadTopAnnouncement(roomId)
-  },
-  { immediate: true }
-)
+const {
+  topAnnouncement,
+  isLoading: isAnnouncementLoading,
+  initListeners: initAnnouncementListeners,
+  cleanupListeners: cleanupAnnouncementListeners
+} = useAnnouncementBanner(currentRoomId, isGroup, scrollContainerRef, scrollToBottom)
 
 const jumpToReplyMsg = async (key: string): Promise<void> => {
   // 先在当前列表中尝试查找
@@ -897,82 +611,22 @@ useMitt.on(MittEnum.CHAT_SCROLL_BOTTOM, () => {
 
 onMounted(() => {
   useMitt.on(MittEnum.SESSION_CHANGED, handleSessionChanged)
-  // 初始化监听器
-  const initListeners = async () => {
-    if (!appWindow) return
-    try {
-      // 监听公告更新
-      announcementUpdatedListener = await appWindow.listen<{ roomId: string }>('announcementUpdated', async (event) => {
-        if (event.payload.roomId === currentRoomId.value) {
-          await loadTopAnnouncement()
-        }
-      })
-
-      // 监听公告清空
-      announcementClearListener = await appWindow.listen<{ roomId: string }>('announcementClear', async (event) => {
-        if (event.payload.roomId === currentRoomId.value) {
-          topAnnouncement.value = null
-        }
-      })
-    } catch (error) {
-      logger.error('Failed to initialize listeners:', error)
-    }
+  // 初始化公告监听器
+  if (appWindow) {
+    initAnnouncementListeners(appWindow).catch((e) => logger.error('initAnnouncementListeners failed:', e))
   }
-
-  // 异步初始化监听器（不等待结果）
-  initListeners().catch((e) => logger.error('initListeners failed:', e))
 
   scrollToBottom()
 })
 
 onUnmounted(() => {
-  if (announcementUpdatedListener) {
-    announcementUpdatedListener()
-  }
-  if (announcementClearListener) {
-    announcementClearListener()
-  }
+  cleanupAnnouncementListeners()
   stopWheelListener()
   timerManager.clearAll()
 })
 </script>
 
 <style scoped lang="scss">
-// 私密模式 S 按钮
-.private-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: var(--tjg-radius-full, 50%);
-  background: transparent;
-  color: var(--tjg-text-tertiary);
-  cursor: pointer;
-  font-size: var(--tjg-font-size-sm, 14px);
-  font-weight: var(--tjg-font-weight-semibold, 600);
-  transition: all var(--tjg-motion-duration-fast, 0.15s) var(--tjg-motion-ease-standard, ease);
-
-  &:hover {
-    background: var(--tjg-surface-panel-muted, rgba(0, 0, 0, 0.04));
-    color: var(--tjg-text-primary);
-  }
-
-  &--active {
-    color: var(--tjg-color-danger-500);
-    background: var(--tjg-color-danger-100, rgba(255, 77, 79, 0.1));
-
-    &:hover {
-      background: var(--tjg-color-danger-200, rgba(255, 77, 79, 0.2));
-    }
-  }
-
-  &__letter {
-    pointer-events: none;
-  }
-}
-
 // 悬浮按钮样式
 .float-footer-button {
   position: absolute;
