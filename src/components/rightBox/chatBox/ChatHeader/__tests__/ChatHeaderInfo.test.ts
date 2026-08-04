@@ -38,7 +38,6 @@ vi.mock('naive-ui', () => {
     })
 
   return {
-    NAvatar: simpleStub('NAvatar'),
     NTag: simpleStub('NTag'),
     NTooltip: defineComponent({
       name: 'NTooltip',
@@ -48,6 +47,16 @@ vi.mock('naive-ui', () => {
     })
   }
 })
+
+vi.mock('@/components/atomic/TjgAvatar.vue', () => ({
+  default: defineComponent({
+    name: 'TjgAvatar',
+    props: ['src', 'size', 'name', 'round', 'fallbackSrc', 'ariaLabel'],
+    setup(_, { attrs }) {
+      return () => h('div', { class: 'tjg-avatar-stub', ...attrs })
+    }
+  })
+}))
 
 describe('ChatHeaderInfo', () => {
   it('renders encryption status alongside group metadata', () => {
