@@ -9,8 +9,8 @@
  * - 点击重置按钮调用 reset()
  */
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockGetMetricsSnapshot = vi.fn()
 const mockReset = vi.fn()

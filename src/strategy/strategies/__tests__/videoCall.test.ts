@@ -105,7 +105,7 @@ describe('VideoCallMessageStrategyImpl', () => {
   })
 
   it('doUpload resolves without value', async () => {
-    await expect(strategy.doUpload()).resolves.toBeUndefined()
+    await expect(strategy.doUpload('/some/path', 'https://upload.example.com')).resolves.toBeUndefined()
   })
 
   it('getAllowedActions inherits base strategy', () => {

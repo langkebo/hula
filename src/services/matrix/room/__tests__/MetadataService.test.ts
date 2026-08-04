@@ -136,7 +136,9 @@ describe('MatrixRoomMetadataService', () => {
 
     it('all three swallow errors and return {}', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
-      const httpClient = matrixClientService.getClient() as { http: { authedRequest: typeof vi.fn } }
+      const httpClient = matrixClientService.getClient() as unknown as {
+        http: { authedRequest: ReturnType<typeof vi.fn> }
+      }
       httpClient.http.authedRequest.mockRejectedValue(new Error('boom'))
       expect(await service.getRoomTurnServer('!r')).toEqual({})
       expect(await service.getRoomSync('!r')).toEqual({})
@@ -151,7 +153,9 @@ describe('MatrixRoomMetadataService', () => {
 
     it('swallows errors and returns {}', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
-      const httpClient = matrixClientService.getClient() as { http: { authedRequest: typeof vi.fn } }
+      const httpClient = matrixClientService.getClient() as unknown as {
+        http: { authedRequest: ReturnType<typeof vi.fn> }
+      }
       httpClient.http.authedRequest.mockRejectedValue(new Error('boom'))
       expect(await service.getRoomPermissions('!r')).toEqual({})
     })

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import EmptyState from '@/components/common/EmptyState.vue'
 
 // EmptyState 内部 import { Icon } from '@iconify/vue'，这里 stub 掉以隔离外部依赖

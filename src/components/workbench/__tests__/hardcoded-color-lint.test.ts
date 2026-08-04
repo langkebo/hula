@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { readFileSync, existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
 
 // 合理保留硬编码的文件（NaiveProvider 颜色运算、渐变、令牌定义、日志、stories 资源）
 const ALLOWLIST_PATTERNS = [

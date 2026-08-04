@@ -35,8 +35,8 @@ describe('MatrixBurnAfterReadService', () => {
     mockManager.getBurnSettings.mockResolvedValue({ enabled: true, burn_after_ms: 60000 })
     mockManager.isBurnEnabled.mockResolvedValue(true)
     mockManager.getPendingBurns.mockResolvedValue([])
-    mockManager.markBurnRead.mockResolvedValue({ marked: true, will_delete_at: Date.now() + 60000 })
-    mockManager.cancelBurn.mockResolvedValue({ cancelled: true })
+    mockManager.markBurnRead.mockResolvedValue({ success: true, will_delete_at: Date.now() + 60000 })
+    mockManager.cancelBurn.mockResolvedValue({ success: true })
     mockManager.setBurnConfig.mockResolvedValue({ default_burn_ms: 60000 })
     mockManager.getBurnStats.mockResolvedValue({ total_burned: 0, total_pending: 0, rooms_with_burn_enabled: 0 })
     mockManager.sendMessage.mockResolvedValue({

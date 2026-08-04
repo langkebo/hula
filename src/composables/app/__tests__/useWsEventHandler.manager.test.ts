@@ -55,7 +55,7 @@ describe('Manager event subscription', () => {
 
   it('subscribeManagerEvents subscribes to WidgetManager', async () => {
     const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
-    const client = matrixClientService.getClient() as {
+    const client = matrixClientService.getClient() as unknown as {
       getWidgetManager: () => { on: ReturnType<typeof vi.fn>; off: ReturnType<typeof vi.fn> }
     }
     const widgetMgr = client.getWidgetManager()

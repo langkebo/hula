@@ -12,7 +12,7 @@
 import { describe, expect, it } from 'vitest'
 import { FRIENDS } from '@/services/matrix/paths/friends'
 import { MATRIX_PATHS } from '@/services/matrix/paths/index'
-import { FRIEND_PATHS, ROOM_PATHS, SDK_PATHS, validateHulaPath, WIDGET_PATHS } from '@/services/matrix/paths/sdk-paths'
+import { FRIEND_PATHS, ROOM_PATHS, SDK_PATHS, validateTjgPath, WIDGET_PATHS } from '@/services/matrix/paths/sdk-paths'
 
 describe('Paths single source of truth', () => {
   it('sdk-paths imports from matrix-js-sdk route-table', () => {
@@ -45,13 +45,13 @@ describe('Paths single source of truth', () => {
     expect(pathsModule.SDK_PATHS.length).toBeGreaterThan(0)
   })
 
-  it('validateHulaPath 校验前端路径是否存在于 SDK route-table', () => {
+  it('validateTjgPath 校验前端路径是否存在于 SDK route-table', () => {
     // 命中：FRIENDS.LIST = /_matrix/client/v1/friends 存在于 SDK v1 路由
-    expect(validateHulaPath(FRIENDS.LIST)).toBe(true)
+    expect(validateTjgPath(FRIENDS.LIST)).toBe(true)
     // 命中：模板路径 FRIENDS.ACCEPT(userId) 匹配 SDK 的 /friends/request/{user_id}/accept
-    expect(validateHulaPath(FRIENDS.ACCEPT('@alice:server'))).toBe(true)
+    expect(validateTjgPath(FRIENDS.ACCEPT('@alice:server'))).toBe(true)
     // 不命中：虚构路径
-    expect(validateHulaPath('/_matrix/client/v1/this/path/does/not/exist')).toBe(false)
+    expect(validateTjgPath('/_matrix/client/v1/this/path/does/not/exist')).toBe(false)
   })
 
   it('至少 3 个前端结构化路径匹配 SDK route-table', () => {
@@ -65,7 +65,7 @@ describe('Paths single source of truth', () => {
       FRIENDS.REJECT('@alice:server'),
       FRIENDS.STATUS('@alice:server')
     ]
-    const matched = candidates.filter(validateHulaPath)
+    const matched = candidates.filter(validateTjgPath)
     expect(matched.length).toBeGreaterThanOrEqual(3)
   })
 

@@ -4,9 +4,9 @@
  * Tests URL construction for MatrixAccountService, MatrixDeviceService,
  * and MatrixPresenceService.
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, initializeManagerExtensions, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixAccountService } from '../MatrixAccountService'
 import { matrixDeviceService } from '../MatrixDeviceService'
@@ -66,6 +66,12 @@ setupMswServer(
 )
 
 describe('User service URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    // In Vitest environment, SDK skips async manager init. Manually initialize
+    // so client.getThirdPartyManager() is available.
+    await initializeManagerExtensions()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     realClient = createClient({

@@ -99,7 +99,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('should fallback to HTTP API when presenceManager is unavailable', async () => {
-      mockClient.getPresenceManager = vi.fn(() => null)
+      mockClient.getPresenceManager = vi.fn(() => null) as unknown as (() => PresenceManager) | undefined
 
       await matrixPresenceService.setPresence('unavailable', 'Busy')
 
@@ -146,7 +146,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('should fallback to HTTP API when presenceManager is unavailable', async () => {
-      mockClient.getPresenceManager = vi.fn(() => null)
+      mockClient.getPresenceManager = vi.fn(() => null) as unknown as (() => PresenceManager) | undefined
 
       const result = await matrixPresenceService.getPresence('@other:example.com')
 
@@ -182,7 +182,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('should fallback to HTTP API', async () => {
-      mockClient.getPresenceManager = vi.fn(() => null)
+      mockClient.getPresenceManager = vi.fn(() => null) as unknown as (() => PresenceManager) | undefined
 
       await matrixPresenceService.subscribeToPresence(['@a:example.com'])
 

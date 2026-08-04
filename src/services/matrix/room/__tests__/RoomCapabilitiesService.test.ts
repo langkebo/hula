@@ -46,7 +46,7 @@ describe('RoomCapabilitiesService', () => {
       features: { encryption: { enabled: true } }
     })
 
-    const result = await roomCapabilitiesService.fetch('!a:server')
+    const result = await roomCapabilitiesService.getCapabilities('!a:server')
 
     expect(result?.room_version).toBe('11')
     expect(result?.capabilities?.threading?.enabled).toBe(false)
@@ -59,8 +59,8 @@ describe('RoomCapabilitiesService', () => {
       capabilities: { knock: { enabled: true } }
     })
 
-    const first = await roomCapabilitiesService.fetch('!cache:server')
-    const second = await roomCapabilitiesService.fetch('!cache:server')
+    const first = await roomCapabilitiesService.getCapabilities('!cache:server')
+    const second = await roomCapabilitiesService.getCapabilities('!cache:server')
 
     expect(first).toBe(second)
     expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
@@ -73,8 +73,8 @@ describe('RoomCapabilitiesService', () => {
       capabilities: { restricted: { enabled: false } }
     })
 
-    await roomCapabilitiesService.fetch('!f:server')
-    const refreshed = await roomCapabilitiesService.fetch('!f:server', { force: true })
+    await roomCapabilitiesService.getCapabilities('!f:server')
+    const refreshed = await roomCapabilitiesService.getCapabilities('!f:server', { force: true })
 
     expect(refreshed?.capabilities?.restricted?.enabled).toBe(false)
     expect(mockAuthedRequest).toHaveBeenCalledTimes(2)
@@ -82,18 +82,18 @@ describe('RoomCapabilitiesService', () => {
 
   it('falls back to last cached payload on network failure', async () => {
     mockAuthedRequest.mockResolvedValueOnce({ room_id: '!fb:server', capabilities: { knock: { enabled: true } } })
-    await roomCapabilitiesService.fetch('!fb:server')
+    await roomCapabilitiesService.getCapabilities('!fb:server')
 
     mockAuthedRequest.mockRejectedValueOnce(new Error('boom'))
-    const refreshed = await roomCapabilitiesService.fetch('!fb:server', { force: true })
+    const refreshed = await roomCapabilitiesService.getCapabilities('!fb:server', { force: true })
 
     expect(refreshed?.capabilities?.knock?.enabled).toBe(true)
   })
 
   it('invalidate(roomId) drops only that entry', async () => {
     mockAuthedRequest.mockResolvedValue({ room_id: '!x', capabilities: {} })
-    await roomCapabilitiesService.fetch('!a:server')
-    await roomCapabilitiesService.fetch('!b:server')
+    await roomCapabilitiesService.getCapabilities('!a:server')
+    await roomCapabilitiesService.getCapabilities('!b:server')
 
     roomCapabilitiesService.invalidate('!a:server')
     expect(roomCapabilitiesService.peek('!a:server')).toBeNull()
