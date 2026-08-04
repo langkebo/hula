@@ -4,6 +4,7 @@ import { useI18nGlobal } from '@/services/i18n'
 import { persistRefreshedToken, setupSystemResumeListener } from '@/services/matrix/matrixClientPlatform'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { PendingEventOrdering } from '@/types/matrix-js-sdk'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import { type ConnectionState, type MatrixClientConfig, MatrixConnectionManager } from './MatrixConnectionManager'
 import {
@@ -177,6 +178,18 @@ class MatrixClientService {
     this.syncManager.stop()
     this.cryptoTracker.resetState()
     await this.connectionManager.initialize(config)
+
+    // Register mxc:// resolver so AvatarUtils can convert Matrix media URIs.
+    // Use client.mxcUrlToHttp() directly to avoid circular dependency with MatrixMediaService.
+    const client = this.connectionManager.getClient()
+    if (client) {
+      AvatarUtils.setMxcResolver((mxcUrl, width, height) => {
+        if (width && height) {
+          return client.mxcUrlToHttp(mxcUrl, width, height, 'scale')
+        }
+        return client.mxcUrlToHttp(mxcUrl)
+      })
+    }
   }
 
   // ---- Auth / Login -----------------------------------------------------------
@@ -413,6 +426,7 @@ class MatrixClientService {
       logger.error(errorMessage)
     } finally {
       this.syncManager.stop()
+      AvatarUtils.setMxcResolver(null)
       this.connectionManager.setClient(null)
       this.connectionManager.updateConnectionState('DISCONNECTED')
     }
@@ -530,6 +544,7 @@ class MatrixClientService {
         this.eventRouter.detach(client, this.syncManager)
         this.syncManager.stop()
         client.stopClient()
+        AvatarUtils.setMxcResolver(null)
         this.connectionManager.updateConnectionState('DISCONNECTED')
         logger.info('客户端已停止')
       }
