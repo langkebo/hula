@@ -354,11 +354,11 @@ watch(
   &.is-selected {
     background: var(--tjg-surface-sidebar-selected);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--tjg-color-primary-500) 15%, transparent);
-    animation tjg-space-tree-pulse 1.2s ease-out 1;
+    animation: tjg-space-tree-pulse 1.2s ease-out 1;
 
     &::after {
       opacity: 0.9;
-      animation tjg-space-tree-shimmer 1.15s linear infinite;
+      animation: tjg-space-tree-shimmer 1.15s linear infinite;
     }
   }
 

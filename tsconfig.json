@@ -39,6 +39,7 @@
     "src/**/*.vue",
     "src/**/*.test.ts",
     "vite.config.ts",
+    "vitest.config.ts",
     "build/config/**/*.ts"
   ],
   "exclude": ["src/mobile/components/my/community.vue"]
