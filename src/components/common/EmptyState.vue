@@ -191,10 +191,6 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
   &:hover {
     background: var(--tjg-color-primary-600);
   }
-
-  &:active {
-    transform: scale(0.98);
-  }
 }
 
 .empty-state--welcome .empty-state__icon {
