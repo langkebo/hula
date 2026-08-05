@@ -19,6 +19,7 @@ from pathlib import Path
 ICON_JS = Path(__file__).resolve().parent.parent / "public" / "icon.js"
 
 MAX_WHITELIST = 5
+MAX_RESIDUAL = 5  # 白名单内残留硬编码总处数上限（G4 验收口径）
 
 # 白名单：品牌装饰类固定视觉语义图标（key 为 symbol id，value 为保留理由）。
 WHITELIST = {
@@ -34,6 +35,9 @@ FOLLOW_HEX_RE = re.compile(r'data-follow-(fill|stroke)="(#[0-9a-fA-F]+)"')
 
 
 def audit() -> int:
+    if not ICON_JS.is_file():
+        print(f"[FAIL] 未找到审计文件: {ICON_JS}")
+        return 1
     text = ICON_JS.read_text(encoding="utf-8")
     symbols = SYMBOL_RE.findall(text)
 
@@ -81,6 +85,9 @@ def audit() -> int:
     if len(WHITELIST) > MAX_WHITELIST:
         ok = False
         print(f"[FAIL] 白名单超出上限 {MAX_WHITELIST} 个。")
+    if residual > MAX_RESIDUAL:
+        ok = False
+        print(f"[FAIL] 白名单残留硬编码 {residual} 处，超出上限 {MAX_RESIDUAL} 处。")
 
     return 0 if ok else 1
 
