@@ -291,3 +291,23 @@ describe('Task 7 — prefers-reduced-motion 全局覆盖守卫', () => {
     )
   })
 })
+
+describe('Task 8/10/11 — new token guards', () => {
+  const tokensContent = readFileSync(TOKENS_FILE, 'utf-8')
+
+  it('defines --tjg-motion-scale-active (Task 8)', () => {
+    expect(tokensContent).toContain('--tjg-motion-scale-active: 0.97')
+  })
+
+  it('defines --tjg-dialog-width-* tokens (Task 10)', () => {
+    expect(tokensContent).toContain('--tjg-dialog-width-sm: 320px')
+    expect(tokensContent).toContain('--tjg-dialog-width-md: 480px')
+    expect(tokensContent).toContain('--tjg-dialog-width-lg: 520px')
+  })
+
+  it('defines --tjg-font-size-2xs/md/2lg tokens (Task 11)', () => {
+    expect(tokensContent).toContain('--tjg-font-size-2xs: 11px')
+    expect(tokensContent).toContain('--tjg-font-size-md: 13px')
+    expect(tokensContent).toContain('--tjg-font-size-2lg: 15px')
+  })
+})
