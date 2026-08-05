@@ -536,6 +536,7 @@
   "secret_chat": {
     "title": "私密聊天",
     "desc": "进入需要密码保护的私密会话",
-    "no_password": "请先在设置中设置私密聊天密码"
+    "no_password": "请先在设置中设置私密聊天密码",
+    "hidden_sessions_list": "隐藏会话列表"
   }
 }

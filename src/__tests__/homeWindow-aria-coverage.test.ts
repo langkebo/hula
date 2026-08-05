@@ -3,10 +3,17 @@
  *
  * 对应原型对齐优化方案 Task 5：homeWindow 视图 aria 属性从 0 → ≥40 处。
  * 采用源码级断言（grep 视图文件中的 aria- / role= 属性），与 design-tokens.test.ts
- * 风格一致，不依赖 jsdom 渲染。
+ * 风格一致。
+ *
+ * jsdom 渲染不可行说明：homeWindow 视图组件依赖 Naive UI n-modal/n-list 等组件树、
+ * Tauri WebviewWindow / getCurrentWebviewWindow 等运行时 API、以及 Matrix session store
+ * (Pinia)。在 jsdom 中挂载这些组件需要 mock 完整 Tauri bridge、Vue Router 嵌套路由和
+ * Matrix 客户端，mock 体量远超测试价值。因此本文件采用源码级 grep 守卫作为快速回归门；
+ * 渲染级 aria 覆盖由 e2e/a11y-baseline.spec.ts 的 axe-core 扫描覆盖（Task 5 C1/C2）。
  *
  * 失败基线：src/views/homeWindow 下所有 .vue 当前 aria/role 属性为 0。
- * 目标：≥40 处，且每个视图容器均暴露 role="main" 地标角色。
+ * 目标：≥40 处有效属性（不含 aria-label="" 硬编码空值），且每个视图容器均暴露
+ * role="main" 地标角色。
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -16,8 +23,8 @@ import { describe, expect, it } from 'vitest'
 const ROOT = resolve(__dirname, '..', '..')
 const HOME_WINDOW_DIR = resolve(ROOT, 'src', 'views', 'homeWindow')
 
-const ARIA_PATTERN = /\baria-[a-z]+|role\s*=/gi
 const ARIA_PATTERN_GLOBAL = /\baria-[a-z]+|role\s*=/g
+const EMPTY_ARIA_LABEL = /aria-label\s*=\s*""/g
 
 function walkVueFiles(dir: string): string[] {
   const results: string[] = []
@@ -36,19 +43,11 @@ function walkVueFiles(dir: string): string[] {
 function countAriaAttributes(filePath: string): number {
   const source = readFileSync(filePath, 'utf-8')
   const matches = source.match(ARIA_PATTERN_GLOBAL)
-  return matches ? matches.length : 0
-}
-
-function collectAriaHits(filePath: string): { line: number; text: string }[] {
-  const source = readFileSync(filePath, 'utf-8')
-  const lines = source.split('\n')
-  const hits: { line: number; text: string }[] = []
-  for (let i = 0; i < lines.length; i++) {
-    if (ARIA_PATTERN.test(lines[i])) {
-      hits.push({ line: i + 1, text: lines[i].trim() })
-    }
-  }
-  return hits
+  const raw = matches ? matches.length : 0
+  // 过滤 aria-label="" 字面量空值（不提供辅助信息）
+  const emptyLabelMatches = source.match(EMPTY_ARIA_LABEL)
+  const empty = emptyLabelMatches ? emptyLabelMatches.length : 0
+  return raw - empty
 }
 
 describe('Task 5 — homeWindow 视图 aria 覆盖（G6）', () => {
@@ -85,16 +84,5 @@ describe('Task 5 — homeWindow 视图 aria 覆盖（G6）', () => {
       return source.match(/role\s*=\s*["']list["']/g) ?? []
     })
     expect(listHits.length, '期望至少 1 处 role="list"').toBeGreaterThanOrEqual(1)
-  })
-
-  // 调试辅助：打印每文件命中明细（仅失败时可见）
-  it('aria 命中明细（调试）', () => {
-    const detail = viewFiles
-      .map((f) => {
-        const hits = collectAriaHits(f)
-        return `${relative(ROOT, f)} (${hits.length}):${hits.map((h) => `\n  L${h.line}: ${h.text}`).join('')}`
-      })
-      .join('\n\n')
-    expect(detail).toBeDefined()
   })
 })

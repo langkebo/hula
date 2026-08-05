@@ -1,5 +1,5 @@
 <template>
-  <div class="secret-chat-page size-full" role="main" aria-label="私密聊天">
+  <div class="secret-chat-page size-full" role="main" :aria-label="t('home.secret_chat.title')">
     <div class="secret-chat-header" role="banner">
       <div class="header-title">
         <svg class="size-20px" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -8,15 +8,20 @@
         </svg>
         <span>私密聊天</span>
       </div>
-      <button type="button" class="secret-chat-close-btn" :aria-label="t('common.close')" @click="handleClose">
-        <svg class="w-20px h-20px cursor-pointer" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path
-            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-        </svg>
-      </button>
+      <svg
+        class="w-20px h-20px cursor-pointer"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        role="button"
+        :aria-label="t('common.close')"
+        @click="handleClose">
+        <path
+          d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+          aria-hidden="true" />
+      </svg>
     </div>
 
-    <div class="secret-chat-content" role="region" aria-label="隐藏会话列表">
+    <div class="secret-chat-content" role="region" :aria-label="t('home.secret_chat.hidden_sessions_list')">
       <div v-if="hiddenSessions.length === 0" class="empty-state" role="status">
         <svg class="size-48px text-[--tjg-text-disabled]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
@@ -24,16 +29,14 @@
         <span class="text-(14px [--tjg-text-disabled]) mt-10px">暂无隐藏会话</span>
       </div>
 
-      <div v-else class="session-list" role="list" aria-label="隐藏会话列表">
+      <div v-else class="session-list" role="list" :aria-label="t('home.secret_chat.hidden_sessions_list')">
         <div
           v-for="session in hiddenSessions"
           :key="session.roomId"
           class="session-item"
           role="listitem"
           :aria-label="`${session.name} ${session.unreadCount > 0 ? session.unreadCount + '条未读' : ''}`"
-          tabindex="0"
-          @click="handleSessionClick(session)"
-          @keydown.enter.prevent="handleSessionClick(session)">
+          @click="handleSessionClick(session)">
           <div class="session-avatar" aria-hidden="true">
             <img v-if="session.avatar" :src="session.avatar" :alt="session.name + '的头像'" />
             <div v-else class="avatar-placeholder" aria-hidden="true">
@@ -106,28 +109,6 @@ const handleClose = () => {
   gap: 8px;
   font-size: 16px;
   font-weight: 500;
-}
-
-.secret-chat-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
-  color: var(--tjg-text-primary);
-  border-radius: 4px;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background: var(--tjg-surface-list-hover);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--tjg-color-primary-500);
-    outline-offset: 2px;
-  }
 }
 
 .secret-chat-content {
