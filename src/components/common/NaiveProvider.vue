@@ -368,6 +368,65 @@ const NaiveProviderContent = defineComponent({
   transition-timing-function: var(--tjg-motion-ease-exit);
 }
 
+/* ==================== P2-Task9: Toast 视觉对齐原型（语义色边条） ====================
+ * 对齐 TJG-prototype.html L4260-4283 .toast 设计：
+ *   - 暗色主题：暗底 #1a1a1a + 1px 描边（原型 verbatim）
+ *   - 语义色左 3px 边条（success/error/warning/info/loading → --tjg-color-*）
+ *   - 浅色主题：保留 Naive UI 默认浅底，仅叠加语义色左 3px 边条
+ * 入场动画复用 Naive UI 自带 transition（已由 .n-message-wrapper 接入
+ * --tjg-motion-duration-overlay 280ms，近似原型 toastIn .25s），不另设 keyframes。
+ * reduced-motion 用户由 design-tokens.css 全局 0.01ms 覆盖自动禁用运动感。
+ * ==================================================================== */
+
+/* 暗色主题：暗底 + 1px 描边（#1a1a1a / rgba(255,255,255,0.1) 来自原型 verbatim） */
+html[data-theme='dark'] .n-message {
+  background: #1a1a1a; /* 对齐原型 .toast background */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* 对齐原型 .toast border */
+}
+
+/* 语义色左 3px 边条 — 浅色主题（Naive UI 默认浅底）下叠加 */
+.n-message--success-type {
+  border-left: 3px solid var(--tjg-color-primary-500);
+}
+
+.n-message--error-type {
+  border-left: 3px solid var(--tjg-color-danger-500);
+}
+
+.n-message--warning-type {
+  border-left: 3px solid var(--tjg-color-warning-500);
+}
+
+.n-message--info-type {
+  border-left: 3px solid var(--tjg-color-info-500);
+}
+
+.n-message--loading-type {
+  border-left: 3px solid var(--tjg-color-primary-500);
+}
+
+/* 暗色主题：上面 .n-message 的 border shorthand 会重置 border-left，
+   需用更特异的选择器重新叠加语义色左 3px 边条（对应原型 .toast.success/error/warn） */
+html[data-theme='dark'] .n-message.n-message--success-type {
+  border-left: 3px solid var(--tjg-color-primary-500);
+}
+
+html[data-theme='dark'] .n-message.n-message--error-type {
+  border-left: 3px solid var(--tjg-color-danger-500);
+}
+
+html[data-theme='dark'] .n-message.n-message--warning-type {
+  border-left: 3px solid var(--tjg-color-warning-500);
+}
+
+html[data-theme='dark'] .n-message.n-message--info-type {
+  border-left: 3px solid var(--tjg-color-info-500);
+}
+
+html[data-theme='dark'] .n-message.n-message--loading-type {
+  border-left: 3px solid var(--tjg-color-primary-500);
+}
+
 .n-date-picker-panel {
   zoom: var(--page-scale, 1);
 }
