@@ -3,6 +3,8 @@
     id="layout"
     class="relative flex min-w-310px bg-[--right-bg-color] h-full"
     :class="{ 'is-dragging-files': isDraggingFiles }">
+    <SkipLink target="#center" :label="t('common.skip_to_sessions')" />
+    <SkipLink target="#chat-main" :label="t('common.skip_to_chat')" />
     <GuestModeBanner :visible="isGuestMode" :guest-user-id="guestUserId" />
     <PrivacyOverlay
       v-if="isPrivacyMode"
@@ -42,6 +44,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import GuestModeBanner from '@/components/common/GuestModeBanner.vue'
+import SkipLink from '@/components/common/SkipLink.vue'
 import PrivacyOverlay from '@/components/privacy/PrivacyOverlay.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useCheckUpdate } from '@/composables/common/useCheckUpdate'

@@ -3,6 +3,7 @@
     ref="centerEl"
     data-tauri-drag-region
     id="center"
+    tabindex="-1"
     :class="{ 'rounded-r-8px': isShrink }"
     class="resizable relative select-none flex flex-col border-r-(1px solid [--tjg-border-layout-divider])"
     :style="centerStyle">
