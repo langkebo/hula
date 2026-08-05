@@ -2,7 +2,7 @@
   <div class="friend-group-view">
     <n-flex vertical :size="12" class="p-12px">
       <n-flex align="center" justify="space-between">
-        <span class="text-16px font-semibold">{{ t('friend.group.title') }}</span>
+        <span class="text-[length:var(--tjg-font-size-lg)] font-semibold">{{ t('friend.group.title') }}</span>
         <n-button quaternary circle size="small" @click="showCreateDialog = true">
           <template #icon>
             <n-icon>
@@ -53,7 +53,7 @@
                 <svg class="size-24px text-[--tjg-text-primary]"><use href="#folder" /></svg>
               </div>
               <n-flex vertical :size="4" class="flex-1 truncate">
-                <span class="text-14px truncate">{{ group.name }}</span>
+                <span class="text-[length:var(--tjg-font-size-base)] truncate">{{ group.name }}</span>
                 <span class="text-(12px [--tjg-text-tertiary])">
                   {{ t('friend.group.member_count', { count: group.member_count ?? 0 }) }}
                 </span>

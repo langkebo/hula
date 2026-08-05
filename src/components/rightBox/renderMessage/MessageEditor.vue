@@ -114,7 +114,7 @@ const handleSave = useDebounceFn(async () => {
 }
 
 .edit-label {
-  @apply text-12px color-[--tjg-text-tertiary];
+  @apply text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary];
 }
 
 .editor-content {

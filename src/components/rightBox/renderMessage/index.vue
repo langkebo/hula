@@ -90,7 +90,7 @@
                 <!-- 用户名 -->
                 <span
                   :class="[
-                    'text-12px select-none color-[--tjg-text-tertiary] inline-block align-top',
+                    'text-[length:var(--tjg-font-size-sm)] select-none color-[--tjg-text-tertiary] inline-block align-top',
                     !isMe ? 'cursor-pointer hover:color-[--tjg-color-primary-500] transition-colors' : ''
                   ]"
                   @click.stop="handleMentionUser">
@@ -259,7 +259,11 @@
             :size="6"
             v-if="messageBody.reply"
             @click="emit('jump2Reply', messageBody.reply.id)"
-            :class="isMobileRef ? 'bg-[--tjg-surface-app] text-13px' : 'bg-[--tjg-surface-subtle] text-12px'"
+            :class="
+              isMobileRef
+                ? 'bg-[--tjg-surface-app] text-[length:var(--tjg-font-size-md)]'
+                : 'bg-[--tjg-surface-subtle] text-[length:var(--tjg-font-size-sm)]'
+            "
             class="reply-bubble relative w-fit custom-shadow select-none chat-message-max-width"
             :style="{ 'max-width': bubbleMaxWidth }">
             <svg class="size-14px">

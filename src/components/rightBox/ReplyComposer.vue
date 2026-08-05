@@ -110,11 +110,11 @@ const handleCancel = () => {
 }
 
 .reply-sender {
-  @apply text-12px color-[--tjg-color-primary-500] font-medium flex-1 truncate;
+  @apply text-[length:var(--tjg-font-size-sm)] color-[--tjg-color-primary-500] font-medium flex-1 truncate;
 }
 
 .reply-body {
-  @apply text-12px color-[--tjg-text-tertiary] truncate;
+  @apply text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary] truncate;
 }
 
 .reply-text {
@@ -135,6 +135,6 @@ const handleCancel = () => {
 }
 
 .reply-type-label {
-  @apply text-12px color-[--tjg-text-tertiary];
+  @apply text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary];
 }
 </style>

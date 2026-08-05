@@ -35,7 +35,7 @@
       <n-button
         secondary
         type="primary"
-        class="flex-y-center px-12px h-26px text-12px"
+        class="flex-y-center px-12px h-26px text-[length:var(--tjg-font-size-sm)]"
         @click.stop="openAnnouncementDetail">
         {{ t('components.announcementCard.viewDetail') }}
       </n-button>

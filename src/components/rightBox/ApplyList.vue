@@ -1,7 +1,7 @@
 <template>
   <n-flex vertical class="select-none">
     <n-flex align="center" justify="space-between" class="color-[--tjg-text-primary] px-20px py-10px">
-      <p class="text-16px">
+      <p class="text-[length:var(--tjg-font-size-lg)]">
         {{ t(props.type === 'friend' ? 'home.apply_list.friend_notice' : 'home.apply_list.group_notice') }}
       </p>
     </n-flex>

@@ -3,7 +3,7 @@
     class="w-200px flex-shrink-0 flex flex-col bg-[--tjg-surface-panel] border-r border-solid border-[--tjg-border-default]">
     <!-- 导航标题 -->
     <div class="navigation-header p-20px pb-16px">
-      <h2 class="text-16px font-600 text-[--tjg-text-primary] m-0">
+      <h2 class="text-[length:var(--tjg-font-size-lg)] font-600 text-[--tjg-text-primary] m-0">
         {{ t('fileManager.navigation.title') }}
       </h2>
     </div>
@@ -20,7 +20,7 @@
             <use :href="`#${item.icon}`"></use>
           </svg>
         </div>
-        <span class="text-14px">{{ getNavigationLabel(item) }}</span>
+        <span class="text-[length:var(--tjg-font-size-base)]">{{ getNavigationLabel(item) }}</span>
       </div>
     </div>
   </div>

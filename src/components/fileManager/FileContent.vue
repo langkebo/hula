@@ -4,10 +4,10 @@
     <div class="flex-shrink-0 px-20px py-16px border-b border-solid border-[--tjg-border-default]">
       <div class="flex items-center justify-between gap-32px">
         <n-flex vertical class="flex-shrink-0">
-          <h2 class="text-18px font-600 text-[--tjg-text-primary] m-0">
+          <h2 class="text-[length:var(--tjg-font-size-xl)] font-600 text-[--tjg-text-primary] m-0">
             {{ getContentTitle() }}
           </h2>
-          <p class="text-14px text-[--tjg-text-secondary] opacity-60 m-0 mt-4px">
+          <p class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] opacity-60 m-0 mt-4px">
             {{ getContentSubtitle() }}
           </p>
         </n-flex>
@@ -42,8 +42,12 @@
           <!-- 时间分组 -->
           <div v-for="timeGroup in displayedTimeGroupedFiles" :key="timeGroup.date" class="flex flex-col gap-12px">
             <div class="time-group">
-              <span class="text-14px font-600">{{ timeGroup.displayDate || timeGroup.date }}</span>
-              <span class="text-12px">{{ t('fileManager.list.fileCount', { count: timeGroup.files.length }) }}</span>
+              <span class="text-[length:var(--tjg-font-size-base)] font-600">
+                {{ timeGroup.displayDate || timeGroup.date }}
+              </span>
+              <span class="text-[length:var(--tjg-font-size-sm)]">
+                {{ t('fileManager.list.fileCount', { count: timeGroup.files.length }) }}
+              </span>
             </div>
             <!-- 文件列表 -->
             <div class="flex flex-col gap-15px">
@@ -76,7 +80,12 @@
             {{ t('fileManager.search.clear') }}
           </n-button>
 
-          <n-button v-if="selectedUser" @click="clearUserFilter" ghost color="var(--tjg-color-primary-500)" size="small">
+          <n-button
+            v-if="selectedUser"
+            @click="clearUserFilter"
+            ghost
+            color="var(--tjg-color-primary-500)"
+            size="small">
             {{ t('fileManager.search.showAllUsers') }}
           </n-button>
         </template>

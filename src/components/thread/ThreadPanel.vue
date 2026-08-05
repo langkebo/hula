@@ -19,7 +19,7 @@
 
         <div class="thread-replies">
           <n-flex align="center" :size="8" class="mb-12px">
-            <span class="text-14px font-medium">{{ t('thread.replies') }}</span>
+            <span class="text-[length:var(--tjg-font-size-base)] font-medium">{{ t('thread.replies') }}</span>
             <n-tag size="small" type="info">{{ threadReplies.length }}</n-tag>
           </n-flex>
 

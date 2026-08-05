@@ -48,15 +48,21 @@
                 :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                 round />
               <n-flex vertical :size="4" class="flex-1">
-                <span class="text-16px font-medium">{{ searchResult.displayName || searchResult.userId }}</span>
-                <span class="text-12px text-[--tjg-text-secondary]">{{ searchResult.userId }}</span>
+                <span class="text-[length:var(--tjg-font-size-lg)] font-medium">
+                  {{ searchResult.displayName || searchResult.userId }}
+                </span>
+                <span class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-secondary]">
+                  {{ searchResult.userId }}
+                </span>
               </n-flex>
             </n-flex>
 
             <n-divider style="margin: 12px 0" />
 
             <n-flex vertical :size="8">
-              <span class="text-12px text-[--tjg-text-tertiary]">{{ t('friend.add.message_label') }}</span>
+              <span class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-tertiary]">
+                {{ t('friend.add.message_label') }}
+              </span>
               <n-input
                 v-model:value="requestMessage"
                 type="textarea"
@@ -78,7 +84,9 @@
             :description="hasSearchKeyword ? searchEmptyDescription : t('friend.add.not_found')" />
 
           <div v-else-if="suggestions.length > 0" class="suggestions-section">
-            <span class="text-12px text-[--tjg-text-tertiary] mb-8px">{{ t('friend.add.suggestions') }}</span>
+            <span class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-tertiary] mb-8px">
+              {{ t('friend.add.suggestions') }}
+            </span>
             <div class="suggestion-list">
               <div
                 v-for="suggestion in suggestions"
@@ -92,8 +100,12 @@
                     :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                     round />
                   <n-flex vertical :size="2" class="flex-1">
-                    <span class="text-13px">{{ suggestion.display_name || suggestion.user_id }}</span>
-                    <span class="text-11px text-[--tjg-text-tertiary]">{{ suggestion.user_id }}</span>
+                    <span class="text-[length:var(--tjg-font-size-md)]">
+                      {{ suggestion.display_name || suggestion.user_id }}
+                    </span>
+                    <span class="text-[length:var(--tjg-font-size-2xs)] text-[--tjg-text-tertiary]">
+                      {{ suggestion.user_id }}
+                    </span>
                   </n-flex>
                   <n-button size="tiny" type="primary" ghost>
                     {{ t('friend.add.send') }}
@@ -107,7 +119,9 @@
             <n-icon size="48" color="var(--tjg-text-tertiary)">
               <svg><use href="#search" /></svg>
             </n-icon>
-            <span class="text-14px text-[--tjg-text-tertiary]">{{ t('friend.add.hint') }}</span>
+            <span class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-tertiary]">
+              {{ t('friend.add.hint') }}
+            </span>
           </div>
         </n-spin>
       </div>

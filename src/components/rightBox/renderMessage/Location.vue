@@ -6,7 +6,9 @@
         <svg class="size-14px color-[--tjg-color-primary-500]">
           <use href="#local"></use>
         </svg>
-        <p class="text-14px font-medium color-[--tjg-text-primary]">{{ t('chat.location.title') }}</p>
+        <p class="text-[length:var(--tjg-font-size-base)] font-medium color-[--tjg-text-primary]">
+          {{ t('chat.location.title') }}
+        </p>
       </div>
 
       <div class="text-(10px --tjg-color-primary-500) p-4px rounded-4px border-(1px solid --tjg-color-primary-500)">
@@ -32,7 +34,9 @@
         <svg class="size-32px color-[--tjg-text-quaternary]">
           <use href="#cloudError"></use>
         </svg>
-        <span class="text-12px color-[--tjg-text-quaternary]">{{ t('chat.location.cannot_display') }}</span>
+        <span class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-quaternary]">
+          {{ t('chat.location.cannot_display') }}
+        </span>
       </div>
     </div>
   </main>
