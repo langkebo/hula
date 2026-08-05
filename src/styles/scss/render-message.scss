@@ -28,11 +28,24 @@
 }
 .bubble {
   @include bubble;
+  transition:
+    transform var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    box-shadow var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 }
 .bubble-oneself {
   @include bubble;
   @apply rounded-[12px_4px_12px_12px] color-[--tjg-text-inverse];
   background-color: var(--tjg-bubble-sent-bg);
+  transition:
+    transform var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    box-shadow var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+}
+
+/* 气泡 hover 微浮 — 对齐原型 B2（transform 不触发 reflow，无布局抖动） */
+.bubble:hover,
+.bubble-oneself:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--tjg-shadow-md);
 }
 
 /* 选中文本时的高亮颜色（包含根节点与后代，避免被全局 ::selection 覆盖） */
