@@ -292,7 +292,7 @@ onUnmounted(() => {
 
   &:hover .flash {
     left: 130%;
-    transition: all var(--tjg-motion-duration-overlay) ease-in-out;
+    transition: all var(--tjg-motion-duration-2xslow) ease-in-out;
   }
 }
 
@@ -303,7 +303,7 @@ onUnmounted(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity var(--tjg-motion-duration-overlay) ease;
+  transition: opacity var(--tjg-motion-duration-xslow) ease;
 }
 
 .fade-enter-from,
@@ -335,7 +335,7 @@ onUnmounted(() => {
 
 .v-enter-active,
 .v-leave-active {
-  transition: opacity var(--tjg-motion-duration-overlay) ease;
+  transition: opacity var(--tjg-motion-duration-xslow) ease;
 }
 
 .v-enter-from,

@@ -277,4 +277,17 @@ describe('Task 7 — prefers-reduced-motion 全局覆盖守卫', () => {
   it('reduced-motion 块应将 scroll-behavior 设为 auto', () => {
     expect(tokensContent, 'reduced-motion 块未将 scroll-behavior 设为 auto').toContain('scroll-behavior: auto')
   })
+
+  it('应定义 --tjg-motion-duration-xslow (500ms) 以保留原 0.4s/0.5s 过渡行为', () => {
+    expect(
+      tokensContent,
+      '--tjg-motion-duration-xslow 未定义；用于保留 >280ms 过渡，避免收敛到 overlay 后加速违反「不得改变现有交互行为」约束'
+    ).toContain('--tjg-motion-duration-xslow: 500ms')
+  })
+
+  it('应定义 --tjg-motion-duration-2xslow (800ms) 以精确保留原 0.8s flash 过渡', () => {
+    expect(tokensContent, '--tjg-motion-duration-2xslow 未定义；用于精确保留 0.8s flash 高光扫过过渡').toContain(
+      '--tjg-motion-duration-2xslow: 800ms'
+    )
+  })
 })
