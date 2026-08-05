@@ -139,9 +139,9 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  font-size: 40px;
+  width: 64px;
+  height: 64px;
+  font-size: 28px;
   color: color-mix(in srgb, var(--tjg-text-tertiary) 70%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--tjg-text-tertiary) 8%, transparent);
@@ -154,22 +154,22 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
 }
 
 .empty-state__title {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--tjg-text-secondary);
-  margin: 4px 0 0;
+  margin: 0 0 6px;
 }
 
 .empty-state__description {
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--tjg-text-tertiary);
-  max-width: 320px;
+  max-width: 280px;
   margin: 0;
 }
 
 .empty-state__actions {
-  margin-top: 12px;
+  margin-top: 16px;
   display: flex;
   gap: 8px;
 }
@@ -178,7 +178,7 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
   appearance: none;
   border: 0;
   border-radius: 8px;
-  padding: 6px 16px;
+  padding: 8px 18px;
   font-size: 13px;
   font-weight: 500;
   color: var(--tjg-text-inverse);

@@ -65,9 +65,10 @@
       </div>
     </n-spin>
 
-    <div v-if="!loading && !status && !health && !version && !stats" class="empty-state">
-      {{ t('admin.load_failed') }}
-    </div>
+    <EmptyState
+      v-if="!loading && !status && !health && !version && !stats"
+      icon="mdi:alert-circle-outline"
+      :description="t('admin.load_failed')" />
   </div>
 </template>
 
@@ -75,6 +76,7 @@
 import { NAlert, NButton, NCard, NDescriptions, NDescriptionsItem, NPageHeader, NSpin, NTag } from 'naive-ui'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminServerLogs } from '@/composables/admin'
 
 const { t } = useI18n()
@@ -133,11 +135,5 @@ onMounted(() => loadPanel())
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.empty-state {
-  padding: 48px 0;
-  text-align: center;
-  opacity: 0.6;
 }
 </style>
