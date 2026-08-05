@@ -1,5 +1,5 @@
 <template>
-  <div class="size-full bg-[--right-bg-color]" role="main" aria-label="共享屏幕">
+  <div class="size-full bg-[--right-bg-color]" role="main" :aria-label="t('common.screen_share')">
     <ActionBar :shrink="false" :current-label="currentWindowLabel" />
 
     <div class="flex flex-col gap-4 text-center">
@@ -12,10 +12,12 @@
 <script setup lang="ts">
 import { emit } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useI18n } from 'vue-i18n'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
+const { t } = useI18n()
 const logger = createLogger('SharedScreen')
 
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null

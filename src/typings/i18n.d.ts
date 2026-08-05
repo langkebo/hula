@@ -1047,6 +1047,7 @@ export type I18nKeys = {
     "register_disabled": "请先完成人机验证"
   },
   "chat": {
+    "chat_region": "聊天区域",
     "footer": {
       "emoji": "表情",
       "screenshot": "截图",
@@ -1145,6 +1146,7 @@ export type I18nKeys = {
     "days": "天",
     "no_more": "没有更多了",
     "no_more_data": "没有更多数据了",
+    "screen_share": "共享屏幕",
     "notFound": "页面不存在或已被移除",
     "goHome": "返回首页",
     "draft_restored": "已恢复上次编辑内容",
@@ -1255,6 +1257,7 @@ export type I18nKeys = {
         "refresh": "刷新",
         "cancel": "取消",
         "confirm": "确认",
+        "save": "保存",
         "close": "关闭",
         "actions": "操作"
       },
@@ -1342,7 +1345,11 @@ export type I18nKeys = {
         "batchDeactivateConfirm": "确定要批量停用 {count} 个用户吗？此操作无法撤销。",
         "batchDeactivateSuccess": "批量停用成功",
         "batchDeactivatePartial": "批量停用完成，{failed} 个用户失败",
-        "batchDeactivateFailed": "批量停用失败"
+        "batchDeactivateFailed": "批量停用失败",
+        "filterRole": "角色筛选",
+        "filterStatus": "状态筛选",
+        "allRoles": "全部角色",
+        "allStatuses": "全部状态"
       },
       "rooms": {
         "title": "房间管理",
@@ -1428,6 +1435,28 @@ export type I18nKeys = {
         "banSuccess": "用户已封禁",
         "banFailed": "封禁用户失败",
         "aliasRemoveNotSupported": "别名删除暂不支持"
+      },
+      "dashboard": {
+        "serverInfo": "服务器信息",
+        "totalRooms": "总房间数",
+        "totalUsers": "总用户数",
+        "dailyActive": "日活跃用户",
+        "monthlyActive": "月活跃用户",
+        "messages": "消息总数",
+        "uptime": "运行时间",
+        "serverHealth": "服务器健康",
+        "healthy": "健康",
+        "unhealthy": "异常",
+        "version": "服务器版本",
+        "pythonVersion": "Python 版本",
+        "activityTrend": "活跃趋势",
+        "messageDistribution": "消息分布",
+        "textMessages": "文本消息",
+        "mediaMessages": "媒体消息",
+        "fileMessages": "文件消息",
+        "cpu": "CPU",
+        "memory": "内存",
+        "disk": "磁盘"
       },
       "moderation": "审核管理",
       "quick_actions": "快速操作",
@@ -1650,7 +1679,32 @@ export type I18nKeys = {
         "col_blocked_at": "封禁时间",
         "col_blocked_by": "操作人",
         "col_actions": "操作",
-        "col_failure_reason": "失败原因"
+        "col_failure_reason": "失败原因",
+        "registration_tab": "注册控制",
+        "federation_tab": "联邦控制",
+        "password_tab": "密码策略",
+        "registration_policy": "注册策略",
+        "registration_open": "开放注册",
+        "registration_closed": "关闭注册",
+        "registration_approval": "需要审批",
+        "registration_policy_saved": "注册策略已保存",
+        "registration_policy_failed": "保存注册策略失败",
+        "federation_enabled": "启用联邦",
+        "federation_blacklist": "黑名单",
+        "federation_whitelist": "白名单",
+        "federation_allow_list": "允许列表",
+        "federation_deny_list": "拒绝列表",
+        "federation_policy_saved": "联邦策略已保存",
+        "federation_policy_failed": "保存联邦策略失败",
+        "password_min_length": "最小密码长度",
+        "password_require_complexity": "要求密码复杂度",
+        "password_require_uppercase": "需含大写字母",
+        "password_require_lowercase": "需含小写字母",
+        "password_require_digit": "需含数字",
+        "password_require_symbol": "需含特殊字符",
+        "password_expiry_days": "密码过期天数",
+        "password_policy_saved": "密码策略已保存",
+        "password_policy_failed": "保存密码策略失败"
       },
       "audit": {
         "title": "审计日志",
@@ -1669,7 +1723,14 @@ export type I18nKeys = {
         "type_room": "房间操作",
         "type_admin": "管理操作",
         "type_auth": "认证事件",
-        "type_federation": "联邦事件"
+        "type_federation": "联邦事件",
+        "filter_time_range": "时间范围",
+        "time_start": "开始日期",
+        "time_end": "结束日期",
+        "export_csv": "导出 CSV",
+        "export_json": "导出 JSON",
+        "export_success": "导出成功",
+        "export_failed": "导出失败"
       },
       "retention": {
         "title": "保留策略",
@@ -3343,7 +3404,8 @@ export type I18nKeys = {
     "secret_chat": {
       "title": "私密聊天",
       "desc": "进入需要密码保护的私密会话",
-      "no_password": "请先在设置中设置私密聊天密码"
+      "no_password": "请先在设置中设置私密聊天密码",
+      "hidden_sessions_list": "隐藏会话列表"
     }
   },
   "hooks": {

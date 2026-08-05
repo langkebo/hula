@@ -536,6 +536,7 @@
   "secret_chat": {
     "title": "Secret Chat",
     "desc": "Open password-protected private conversations",
-    "no_password": "Please set a secret chat password in settings first"
+    "no_password": "Please set a secret chat password in settings first",
+    "hidden_sessions_list": "Hidden Sessions"
   }
 }

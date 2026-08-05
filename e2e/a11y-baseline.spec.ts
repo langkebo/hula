@@ -63,6 +63,36 @@ test.describe('a11y baseline', () => {
     ).toHaveLength(0)
   })
 
+  /**
+   * Task 5 (C1/C2) — homeWindow views axe scan.
+   *
+   * Scans the main app shell at /home/friend for serious/critical a11y
+   * violations via axe-core. Uses the same axe injection pattern as the
+   * login shell test above. Skips gracefully when axe-core or Playwright
+   * browser is absent so local `vitest run` still passes; CI is expected
+   * to install the browser and enforce the gate via `pnpm test:a11y`.
+   *
+   * NOTE: The homeWindow views require Matrix auth to render real content.
+   * This test validates that the **skeleton/empty-state shell** of each
+   * view passes axe — full-content validation is deferred to authenticated
+   * E2E smoke suites (follow §20.3 inventory).
+   */
+  test('homeWindow views have no serious/critical violations @a11y', async ({ page }) => {
+    const source = await loadAxeSource()
+    test.skip(!source, 'axe-core not installed — install it in CI to enforce a11y gate')
+
+    await page.addInitScript({ content: source })
+    // Navigate to the main app home window layout (friend view shows
+    // FriendsList with its aria-annotated root container).
+    await page.goto('/home/friend')
+    await page.waitForLoadState('networkidle')
+    const violations = blocking(await runAxe(page))
+    expect(
+      violations,
+      `homeWindow serious/critical a11y violations: ${violations.map((v) => `${v.id} @ ${v.nodes[0]?.target.join(' > ') ?? 'n/a'}`).join('; ')}`
+    ).toHaveLength(0)
+  })
+
   test('prefers-contrast: more raises text contrast on login shell @a11y', async ({ browser }) => {
     // §2.6.1 — 验证 prefers-contrast: more 媒体查询已落地：
     // 在高对比度模式下，正文文本颜色应比默认模式更深（浅色主题），
