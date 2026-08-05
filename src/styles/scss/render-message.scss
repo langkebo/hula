@@ -12,7 +12,7 @@
   -webkit-overflow-wrap: anywhere;
   hyphens: auto; /** 行尾自动断开长单词 */
   -webkit-hyphens: auto;
-  line-height: 1.7;
+  line-height: 1.5; /** 对齐原型 A8：气泡正文 13px / lh 1.5（CJK 行盒 19.5px，可读性充足） */
   line-break: anywhere; /** 支持任意位置换行，包括特殊字符和符号 */
   &.active {
     background-color: var(--tjg-surface-subtle);
