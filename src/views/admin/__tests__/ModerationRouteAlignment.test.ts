@@ -20,6 +20,22 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({ showFeedback: vi.fn() })
 }))
 
+// 避免 matrix-js-sdk 重型转换（~6.7s）导致 5s 默认超时
+vi.mock('@/services/matrix/MatrixEventService', () => ({
+  default: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
+}))
+
+// 截断所有 matrix-js-sdk 直接导入路径
+vi.mock('matrix-js-sdk', () => ({
+  Direction: { Forward: 'f', Backward: 'b' },
+  EventType: { Message: 'm.room.message' },
+  PushRuleKind: {},
+  Visibility: {},
+  ClientEvent: {},
+  RoomEvent: {},
+  RoomStateEvent: {}
+}))
+
 describe('Moderation route alignment', () => {
   it('maps /admin/moderation to ModerationPanel component', async () => {
     const { getDesktopRoutes } = await import('@/router/routes/desktop')

@@ -8,6 +8,22 @@ vi.mock('vant/es/dialog/style', () => ({}))
 vi.mock('vant/es/popup/style', () => ({}))
 vi.mock('vant/es/popover/style', () => ({}))
 
+// 避免 matrix-js-sdk 重型转换（~6.7s）导致超时
+vi.mock('@/services/matrix/MatrixEventService', () => ({
+  default: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
+}))
+
+// 截断所有 matrix-js-sdk 直接导入路径（MobileChatMain 传递依赖）
+vi.mock('matrix-js-sdk', () => ({
+  Direction: { Forward: 'f', Backward: 'b' },
+  EventType: { Message: 'm.room.message' },
+  PushRuleKind: {},
+  Visibility: {},
+  ClientEvent: {},
+  RoomEvent: {},
+  RoomStateEvent: {}
+}))
+
 vi.mock('#/views/chat-room/LocationShare.vue', () => ({
   default: {
     name: 'LocationShare',
