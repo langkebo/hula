@@ -184,6 +184,15 @@
   --tjg-settings-preview-dark-sidebar: #2a2a2a;
   --tjg-settings-preview-dark-content: #333333;
 
+  /* 对话框宽度（对齐原型 C5/G10）
+   * sm: 窄面板/线程抽屉 320px（原型 4574 行）
+   * md: 常规对话框 480px（原型 2605、6256 行）
+   * lg: 宽对话框 520px（原型 2502 行）
+   * 全部上限 90vw，避免视口溢出。 */
+  --tjg-dialog-width-sm: 320px;
+  --tjg-dialog-width-md: 480px;
+  --tjg-dialog-width-lg: 520px;
+
   /* 菜单与浮层 */
   --tjg-menu-bg: linear-gradient(
     45deg,

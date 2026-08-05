@@ -7,7 +7,7 @@
     :closable="true"
     :mask-closable="false"
     class="key-rotation-dialog"
-    style="width: 480px; max-width: 90vw">
+    style="width: var(--tjg-dialog-width-md); max-width: 90vw">
     <n-spin :show="loading">
       <div class="rotation-status">
         <div class="status-header">

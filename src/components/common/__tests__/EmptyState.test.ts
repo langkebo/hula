@@ -72,6 +72,17 @@ describe('EmptyState', () => {
     expect(wrapper.text()).toContain('开始新对话')
   })
 
+  it('renders CTA button from actionText prop and emits action on click', async () => {
+    const wrapper = mount(EmptyState, {
+      props: { illustration: 'no-conversations', title: '无会话', actionText: '开始新对话' }
+    })
+    const btn = wrapper.find('[data-testid="empty-action"]')
+    expect(btn.exists()).toBe(true)
+    expect(btn.text()).toContain('开始新对话')
+    await btn.trigger('click')
+    expect(wrapper.emitted('action')).toHaveLength(1)
+  })
+
   it('uses brand quaternary text color for illustration stroke', () => {
     const wrapper = mount(EmptyState, {
       props: { illustration: 'no-conversations' }

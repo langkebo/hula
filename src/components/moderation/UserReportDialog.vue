@@ -1,5 +1,9 @@
 <template>
-  <n-modal v-model:show="visible" preset="card" :title="t('moderation.report_user.title')" style="width: 520px">
+  <n-modal
+    v-model:show="visible"
+    preset="card"
+    :title="t('moderation.report_user.title')"
+    style="width: var(--tjg-dialog-width-lg); max-width: 90vw">
     <div class="user-report-dialog">
       <!-- 被举报用户预览 -->
       <div v-if="userId" class="user-preview">
