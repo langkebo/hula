@@ -2,6 +2,8 @@
   <!-- Step 2.3：视图驱动动态宽度 + 拖拽调整 + 响应式断点全屏 -->
   <main
     data-tauri-drag-region
+    id="chat-main"
+    tabindex="-1"
     class="bg-[--right-bg-color] flex flex-col min-h-0 border-l border-[--tjg-border-layout-divider] relative"
     :class="{
       'right-pane-animated': transitionEnabled,

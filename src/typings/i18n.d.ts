@@ -1127,6 +1127,8 @@ export type I18nKeys = {
   },
   "common": {
     "done": "完成",
+    "skip_to_sessions": "跳到会话列表",
+    "skip_to_chat": "跳到聊天区",
     "confirm": "确认",
     "cancel": "取消",
     "save": "保存",
