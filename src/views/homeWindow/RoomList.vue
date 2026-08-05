@@ -1,5 +1,5 @@
 <template>
-  <ListWorkbenchShell class="room-list-page">
+  <ListWorkbenchShell class="room-list-page" role="main" :aria-label="t('home.plugins.room_list')">
     <template #toolbar>
       <MessageSessionToolbar
         :search-keyword="searchKeyword"
@@ -9,6 +9,7 @@
         :filtered-count="filteredRoomSessionList.length"
         :total-count="roomSessionList.length"
         :title="t('home.plugins.room_list_short_title')"
+        :aria-label="t('home.plugins.room_list_short_title')"
         :show-create-action="true"
         :show-join-action="true"
         :create-button-text="t('room.create.create')"

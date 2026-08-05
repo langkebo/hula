@@ -153,7 +153,7 @@
       </div>
     </template>
     <!-- 是否退到托盘提示框 -->
-    <n-modal v-if="!tips.notTips" v-model:show="tipsRef.show" class="rounded-8px">
+    <n-modal v-if="!tips.notTips" v-model:show="tipsRef.show" class="rounded-8px" role="dialog" aria-modal="true">
       <div class="bg-[--tjg-surface-elevated] w-290px h-full p-6px box-border flex flex-col">
         <svg
           @click="tipsRef.show = false"

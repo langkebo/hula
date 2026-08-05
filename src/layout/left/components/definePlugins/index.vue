@@ -1,6 +1,6 @@
 <template>
   <!-- 弹出框 -->
-  <n-modal v-model:show="isShow" :mask-closable="false" class="w-390px border-rd-8px">
+  <n-modal v-model:show="isShow" :mask-closable="false" class="w-390px border-rd-8px" role="dialog" aria-modal="true">
     <div class="bg-[--tjg-surface-elevated] min-h-350px h-full box-border flex flex-col">
       <!-- 顶部图片加上操作栏 -->
       <div class="h-140px relative w-full p-6px box-border">

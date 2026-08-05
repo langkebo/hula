@@ -4,6 +4,8 @@
     :style="{ width: '600px', maxWidth: '90vw' }"
     :bordered="false"
     :mask-closable="true"
+    role="dialog"
+    aria-modal="true"
     @update:show="$emit('update:visible', $event)">
     <div class="spotlight-dialog">
       <div class="search-header">

@@ -1,10 +1,10 @@
 <template>
-  <div class="size-full bg-[--right-bg-color]">
+  <div class="size-full bg-[--right-bg-color]" role="main" aria-label="共享屏幕">
     <ActionBar :shrink="false" :current-label="currentWindowLabel" />
 
     <div class="flex flex-col gap-4 text-center">
       <div>
-        <video ref="video" muted autoplay controls class="size-full" />
+        <video ref="video" muted autoplay controls class="size-full" aria-label="共享屏幕视频流" />
       </div>
     </div>
   </div>

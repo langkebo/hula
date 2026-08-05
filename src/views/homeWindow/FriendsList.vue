@@ -1,16 +1,20 @@
 <template>
-  <div class="friends-list-shell">
-    <div class="friends-list-shell__header">
-      <button type="button" class="friends-list-shell__shortcut" @click="handleOpenSecretChat">
+  <div class="friends-list-shell" role="main" :aria-label="t('friend.list.title')">
+    <div class="friends-list-shell__header" role="banner">
+      <button
+        type="button"
+        class="friends-list-shell__shortcut"
+        :aria-label="t('home.secret_chat.title')"
+        @click="handleOpenSecretChat">
         <div class="friends-list-shell__shortcut-main">
           <span class="friends-list-shell__shortcut-title">{{ t('home.secret_chat.title') }}</span>
           <span class="friends-list-shell__shortcut-desc">{{ t('home.secret_chat.desc') }}</span>
         </div>
-        <svg class="size-16px color-[--tjg-text-primary]"><use href="#eye-close"></use></svg>
+        <svg class="size-16px color-[--tjg-text-primary]" aria-hidden="true"><use href="#eye-close"></use></svg>
       </button>
     </div>
 
-    <div class="min-h-0 flex-1">
+    <div class="min-h-0 flex-1" role="region" :aria-label="t('friend.list.title')">
       <FriendListView class="h-full" />
     </div>
   </div>
