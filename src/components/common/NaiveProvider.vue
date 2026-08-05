@@ -384,24 +384,27 @@ html[data-theme='dark'] .n-message {
   border: 1px solid rgba(255, 255, 255, 0.1); /* 对齐原型 .toast border */
 }
 
-/* 语义色左 3px 边条 — 浅色主题（Naive UI 默认浅底）下叠加 */
-.n-message--success-type {
+/* 语义色左 3px 边条 — 浅色主题（Naive UI 默认浅底）下叠加。
+   使用复合选择器 .n-message.n-message--xxx-type（特异性 0,2,0）以胜过 Naive UI 运行时注入的
+   .n-message { border: var(--n-border) }（0,1,0，浅色主题默认 '0'）—— 否则 border shorthand
+   会覆盖 border-left longhand，使 3px 语义色边条在浅色主题下不可见。 */
+.n-message.n-message--success-type {
   border-left: 3px solid var(--tjg-color-primary-500);
 }
 
-.n-message--error-type {
+.n-message.n-message--error-type {
   border-left: 3px solid var(--tjg-color-danger-500);
 }
 
-.n-message--warning-type {
+.n-message.n-message--warning-type {
   border-left: 3px solid var(--tjg-color-warning-500);
 }
 
-.n-message--info-type {
+.n-message.n-message--info-type {
   border-left: 3px solid var(--tjg-color-info-500);
 }
 
-.n-message--loading-type {
+.n-message.n-message--loading-type {
   border-left: 3px solid var(--tjg-color-primary-500);
 }
 
