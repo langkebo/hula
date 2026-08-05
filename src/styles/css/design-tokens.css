@@ -48,6 +48,9 @@
   --tjg-text-disabled: #bfbfbf;
   --tjg-text-inverse: #ffffff;
 
+  /* 白字对比度 3.6:1 @气泡自身背景（浅色气泡白字场景另行校验） */
+  --tjg-bubble-sent-bg: #13987f;
+
   --tjg-surface-app: #fafafa;
   /* 阶段 9：三栏亮度渐进（详见 CONTEXT.md「三栏亮度渐进」术语）—— L0 最深 → L1 中等 → L2 最浅 */
   --tjg-surface-panel: #ffffff;
@@ -493,6 +496,9 @@ html[data-theme='dark'] {
   /* 对比度 5.67:1 AA @surface-app */
   --tjg-text-quaternary: #909090;
   --tjg-text-disabled: #434343;
+
+  /* 白字对比度 5.3:1 AA @气泡自身背景（原型 accent-strong） */
+  --tjg-bubble-sent-bg: #0f7a65;
 
   --tjg-surface-app: #161616;
   /* 阶段 9：三栏亮度渐进（详见 CONTEXT.md「三栏亮度渐进」术语）—— L0 最深 → L1 中等 → L2 最浅 */

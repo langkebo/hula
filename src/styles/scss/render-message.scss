@@ -32,7 +32,7 @@
 .bubble-oneself {
   @include bubble;
   @apply rounded-[12px_4px_12px_12px] color-[--tjg-text-inverse];
-  background-color: var(--tjg-color-primary-500);
+  background-color: var(--tjg-bubble-sent-bg);
 }
 
 /* 选中文本时的高亮颜色（包含根节点与后代，避免被全局 ::selection 覆盖） */
