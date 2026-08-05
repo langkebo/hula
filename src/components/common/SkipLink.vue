@@ -1,10 +1,8 @@
 <template>
   <a
-    href="#"
+    :href="`#${target.replace(/^#/, '')}`"
     class="skip-link"
     data-test="skip-link"
-    @focus="isVisible = true"
-    @blur="isVisible = false"
     @click.prevent="activate"
     @keydown.enter.prevent="activate"
     @keydown.space.prevent="activate">
@@ -21,6 +19,8 @@
  *
  * 用法：`<SkipLink target="#chat-main" :label="t('common.skip_to_chat')" />`
  * 目标容器需声明 `id` 与 `tabindex="-1"` 以接收焦点。
+ *
+ * `:href` 设为 `#<id>`：JS 失效时浏览器原生锚点跳转仍可兜底到达目标。
  */
 interface Props {
   /** 目标元素的 CSS 选择器，例如 "#chat-main" */
@@ -30,8 +30,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-const isVisible = ref(false)
 
 const activate = () => {
   if (typeof document === 'undefined') return
