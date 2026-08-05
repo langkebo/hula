@@ -266,11 +266,11 @@ onUnmounted(() => {
 @use '@/styles/scss/global/variable.scss' as *;
 .box {
   @apply relative select-none custom-shadow cursor-pointer size-fit w-100px h-100px rounded-8px overflow-hidden;
-  transition: all 0.3s ease-in-out;
+  transition: all var(--tjg-motion-duration-overlay) ease-in-out;
 
   &.state-change-enter-active,
   &.state-change-leave-active {
-    transition: all 0.3s ease-in-out;
+    transition: all var(--tjg-motion-duration-overlay) ease-in-out;
   }
 
   &.state-change-enter-from,
@@ -292,7 +292,7 @@ onUnmounted(() => {
 
   &:hover .flash {
     left: 130%;
-    transition: all 0.8s ease-in-out;
+    transition: all var(--tjg-motion-duration-overlay) ease-in-out;
   }
 }
 
@@ -303,7 +303,7 @@ onUnmounted(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.5s ease;
+  transition: opacity var(--tjg-motion-duration-overlay) ease;
 }
 
 .fade-enter-from,
@@ -335,7 +335,7 @@ onUnmounted(() => {
 
 .v-enter-active,
 .v-leave-active {
-  transition: opacity 0.5s ease;
+  transition: opacity var(--tjg-motion-duration-overlay) ease;
 }
 
 .v-enter-from,

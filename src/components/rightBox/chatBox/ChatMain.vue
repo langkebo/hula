@@ -668,7 +668,7 @@ onUnmounted(() => {
   &::-webkit-scrollbar {
     width: 6px;
     transition-property: opacity;
-    transition-duration: 0.3s;
+    transition-duration: var(--tjg-motion-duration-overlay);
     transition-timing-function: ease;
   }
 
@@ -676,7 +676,7 @@ onUnmounted(() => {
     background-color: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
     border-radius: 3px;
     transition-property: opacity, background-color;
-    transition-duration: 0.3s;
+    transition-duration: var(--tjg-motion-duration-overlay);
     transition-timing-function: ease;
     // min-height: 42px;
     z-index: 999;
@@ -716,7 +716,7 @@ onUnmounted(() => {
 
 // Discord 式消息行 hover 高亮（需求文档 6.5 节）
 .message-row {
-  transition: background-color 0.1s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
   border-radius: 4px;
 }
 

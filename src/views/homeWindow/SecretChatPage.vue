@@ -134,7 +134,7 @@ const handleClose = () => {
   padding: 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--tjg-motion-duration-normal);
 }
 
 .session-item:hover {

@@ -580,7 +580,7 @@ onUnmounted(() => {
 <style scoped>
 .drag-upload-enter-active,
 .drag-upload-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--tjg-motion-duration-overlay) ease;
 }
 
 .drag-upload-enter-from,

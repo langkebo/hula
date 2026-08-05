@@ -244,3 +244,37 @@ describe('原型对齐 P0 — 暗色弱化文字 WCAG 对比度', () => {
     ).toBeGreaterThanOrEqual(4.5)
   })
 })
+
+describe('Task 7 — prefers-reduced-motion 全局覆盖守卫', () => {
+  // 读取一次 design-tokens.css 内容供所有断言使用
+  const tokensContent = readFileSync(TOKENS_FILE, 'utf-8')
+
+  it('design-tokens.css 应包含 @media (prefers-reduced-motion: reduce) 块', () => {
+    expect(
+      tokensContent,
+      'design-tokens.css 缺少全局 prefers-reduced-motion 媒体查询块（对齐原型 5668 行策略）'
+    ).toContain('@media (prefers-reduced-motion: reduce)')
+  })
+
+  it('reduced-motion 块应将 animation-duration 压缩至 0.01ms', () => {
+    expect(tokensContent, 'reduced-motion 块未将 animation-duration 压缩至 0.01ms').toContain(
+      'animation-duration: 0.01ms'
+    )
+  })
+
+  it('reduced-motion 块应将 animation-iteration-count 设为 1', () => {
+    expect(tokensContent, 'reduced-motion 块未将 animation-iteration-count 设为 1').toContain(
+      'animation-iteration-count: 1'
+    )
+  })
+
+  it('reduced-motion 块应将 transition-duration 压缩至 0.01ms', () => {
+    expect(tokensContent, 'reduced-motion 块未将 transition-duration 压缩至 0.01ms').toContain(
+      'transition-duration: 0.01ms'
+    )
+  })
+
+  it('reduced-motion 块应将 scroll-behavior 设为 auto', () => {
+    expect(tokensContent, 'reduced-motion 块未将 scroll-behavior 设为 auto').toContain('scroll-behavior: auto')
+  })
+})

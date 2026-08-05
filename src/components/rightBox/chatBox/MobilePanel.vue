@@ -50,7 +50,7 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
   background-color: var(--tjg-surface-panel-muted);
   display: flex;
   flex-direction: column;
-  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: height var(--tjg-motion-duration-overlay) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .panel-container--fixed {
@@ -59,7 +59,7 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
 
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--tjg-motion-duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: bottom;
 }
 

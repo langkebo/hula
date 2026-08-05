@@ -557,7 +557,7 @@ onBeforeUnmount(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: all 0.3s ease;
+  transition: all var(--tjg-motion-duration-overlay) ease;
 }
 
 .fade-enter-from,

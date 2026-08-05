@@ -67,7 +67,7 @@ const handleOpenSecretChat = () => {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--tjg-motion-duration-normal) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);

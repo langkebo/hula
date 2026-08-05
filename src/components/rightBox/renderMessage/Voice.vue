@@ -298,7 +298,7 @@ onUnmounted(() => {
   gap: 12px;
   border-radius: 18px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--tjg-motion-duration-normal) ease;
   &.loading {
     cursor: wait;
     opacity: 0.7;
@@ -348,7 +348,7 @@ onUnmounted(() => {
     height: 100%;
     border-radius: 1px;
     opacity: 0;
-    transition: all 0.1s ease;
+    transition: all var(--tjg-motion-duration-fast) ease;
     pointer-events: none;
     z-index: 1;
 

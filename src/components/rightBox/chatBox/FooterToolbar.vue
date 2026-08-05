@@ -1,8 +1,5 @@
 <template>
-  <n-flex
-    align="center"
-    justify="space-between"
-    class="p-[10px_22px_5px] select-none flex-shrink-0">
+  <n-flex align="center" justify="space-between" class="p-[10px_22px_5px] select-none flex-shrink-0">
     <n-flex align="center" :size="0" class="input-options">
       <!-- emoji表情 -->
       <n-popover
@@ -116,7 +113,11 @@
       </n-popover>
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
         <template #trigger>
-          <svg @click="$emit('handleImageOpen')" class="mr-18px" role="button" :aria-label="t('chat.footer.send_image')">
+          <svg
+            @click="$emit('handleImageOpen')"
+            class="mr-18px"
+            role="button"
+            :aria-label="t('chat.footer.send_image')">
             <use href="#photo"></use>
           </svg>
         </template>
@@ -252,7 +253,7 @@ const onEmojiHandle = (item: string | EmojiUrlPayload, type?: 'emoji' | 'emoji-u
   }
 
   .dropdown-arrow {
-    transition: transform 0.3s ease;
+    transition: transform var(--tjg-motion-duration-overlay) ease;
 
     &:hover {
       transform: rotate(180deg);
