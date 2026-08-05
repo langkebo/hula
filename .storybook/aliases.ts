@@ -30,6 +30,5 @@ export const storybookMockAliases = {
   'content-type': resolveFromStorybook('./mocks/content-type.js'),
   'sdp-transform': resolveFromStorybook('./mocks/sdp-transform.js'),
   'matrix-events-sdk': resolveFromStorybook('./mocks/matrix-events-sdk.js'),
-  'matrix-widget-api': resolveFromStorybook('./mocks/matrix-widget-api.js'),
-  'node:events': resolveFromStorybook('./mocks/events.ts')
+  'matrix-widget-api': resolveFromStorybook('./mocks/matrix-widget-api.js')
 } as const
