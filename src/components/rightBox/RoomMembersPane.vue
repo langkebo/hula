@@ -262,7 +262,7 @@ const handleUnban = async (userId: string) => {
   color: var(--tjg-text-primary);
   font-size: 13px;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color var(--tjg-motion-duration-fast) ease;
 
   &:focus-within {
     border-color: var(--tjg-color-primary-500);
@@ -279,7 +279,7 @@ const handleUnban = async (userId: string) => {
   color: var(--tjg-text-inverse);
   font-size: 13px;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--tjg-motion-duration-fast) ease;
 
   &:hover:not(:disabled) {
     opacity: 0.85;
@@ -313,7 +313,7 @@ const handleUnban = async (userId: string) => {
   padding: 8px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.1s ease;
+  transition: background var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);
@@ -371,7 +371,7 @@ const handleUnban = async (userId: string) => {
   border-radius: 6px;
   background: transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--tjg-motion-duration-fast) ease;
 
   &--warning:hover {
     background: var(--tjg-color-warning-100, rgba(245, 158, 11, 0.1));

@@ -120,7 +120,7 @@ const handleClick = () => {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 8px;
-  transition: background-color 0.2s;
+  transition: background-color var(--tjg-motion-duration-normal);
 
   &:hover {
     background-color: color-mix(in srgb, var(--tjg-text-primary) 5%, transparent);

@@ -92,7 +92,7 @@ onMounted(() => {
     background: var(--tjg-text-tertiary);
     border-radius: 2px;
     opacity: 0;
-    transition: all 0.2s ease;
+    transition: all var(--tjg-motion-duration-normal) ease;
   }
 
   // 上下辅助线（默认隐藏，hover 时显示）
@@ -103,7 +103,7 @@ onMounted(() => {
     height: 1px;
     background: transparent;
     border-radius: 1px;
-    transition: all 0.2s ease;
+    transition: all var(--tjg-motion-duration-normal) ease;
     opacity: 0;
     box-shadow:
       0 -3px 0 0 color-mix(in srgb, var(--tjg-text-tertiary) 50%, transparent),

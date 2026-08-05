@@ -203,7 +203,7 @@ onUnmounted(cleanup)
     font-size: 13px;
     color: var(--tjg-text-primary);
     background: var(--tjg-surface-panel-muted);
-    transition: all 0.2s ease;
+    transition: all var(--tjg-motion-duration-normal) ease;
     user-select: none;
     -webkit-user-select: none;
 
@@ -243,7 +243,7 @@ onUnmounted(cleanup)
     font-size: 13px;
     color: var(--tjg-text-primary);
     background: var(--tjg-surface-panel-muted);
-    transition: all 0.2s ease;
+    transition: all var(--tjg-motion-duration-normal) ease;
     user-select: none;
     -webkit-user-select: none;
     white-space: nowrap;
@@ -270,7 +270,7 @@ onUnmounted(cleanup)
       color-mix(in srgb, var(--tjg-color-primary-500) 32%, transparent),
       var(--tjg-color-primary-400)
     );
-    transition: all 0.2s ease-in-out;
+    transition: all var(--tjg-motion-duration-normal) ease-in-out;
     user-select: none;
     -webkit-user-select: none;
 
@@ -300,7 +300,7 @@ onUnmounted(cleanup)
     font-size: 13px;
     color: var(--tjg-text-primary);
     background: var(--tjg-surface-panel-muted);
-    transition: all 0.2s ease-in-out;
+    transition: all var(--tjg-motion-duration-normal) ease-in-out;
     user-select: none;
     -webkit-user-select: none;
 
@@ -330,7 +330,7 @@ onUnmounted(cleanup)
     font-size: 13px;
     color: var(--tjg-text-primary);
     background: var(--tjg-surface-panel-muted);
-    transition: all 0.2s ease;
+    transition: all var(--tjg-motion-duration-normal) ease;
     user-select: none;
     -webkit-user-select: none;
 

@@ -245,7 +245,7 @@ onMounted(async () => {
 <style scoped lang="scss">
 .badge-item {
   .tip {
-    transition: opacity 0.4s ease-in-out;
+    transition: opacity var(--tjg-motion-duration-overlay) ease-in-out;
     @apply absolute top-0 left-0 w-full h-full flex-center gap-4px z-999 opacity-0;
   }
 
@@ -261,7 +261,7 @@ onMounted(async () => {
 
   .avatar-hover {
     opacity: 0;
-    transition: opacity 0.4s ease-in-out;
+    transition: opacity var(--tjg-motion-duration-overlay) ease-in-out;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     top: 0;

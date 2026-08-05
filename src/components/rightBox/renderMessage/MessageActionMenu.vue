@@ -204,7 +204,7 @@ const close = () => {
   font-size: 13px;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);

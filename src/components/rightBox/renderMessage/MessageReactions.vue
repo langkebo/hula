@@ -68,7 +68,7 @@ const reactionList = computed(() => {
   border-radius: 10px;
   background: var(--tjg-fill-default);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--tjg-motion-duration-fast) ease;
   font-size: 11px;
   line-height: 1.4;
   color: var(--tjg-text-secondary);

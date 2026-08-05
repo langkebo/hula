@@ -251,7 +251,7 @@ onUnmounted(() => {
 
 .box {
   @apply relative select-none cursor-pointer size-fit w-60px h-40px rounded-8px overflow-hidden;
-  transition: all 0.2s;
+  transition: all var(--tjg-motion-duration-normal);
 }
 
 .downloading {
@@ -267,7 +267,7 @@ onUnmounted(() => {
 
 .v-enter-active,
 .v-leave-active {
-  transition: opacity 0.5s ease;
+  transition: opacity var(--tjg-motion-duration-overlay) ease;
 }
 
 .v-enter-from,

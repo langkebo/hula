@@ -355,7 +355,7 @@ watch(
   padding: 8px 10px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);

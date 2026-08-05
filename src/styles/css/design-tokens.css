@@ -807,3 +807,21 @@ html[data-theme='dark'] {
     --tjg-focus-ring: 0 0 0 3px rgba(100, 201, 179, 0.7);
   }
 }
+
+/* ==================== prefers-reduced-motion: reduce ====================
+ * §B1+B6 / G5+G8 — 全局减弱动态效果（a11y）
+ * 对齐原型 5668 行策略：当用户在系统设置中启用「减弱动态效果」时，
+ * 将所有动画/过渡时长压缩至 0.01ms（视觉上即瞬时切换），
+ * 但保留布局与可交互性，仅消除运动感。
+ * 浅色 / 暗色主题均生效（全局 a11y，不区分主题）。
+ * ================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

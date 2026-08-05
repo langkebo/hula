@@ -274,7 +274,7 @@ const onImageLoadError = (e: Event) => {
   background-color: color-mix(in srgb, var(--tjg-text-primary) 3%, transparent);
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--tjg-motion-duration-normal) ease;
 }
 
 .text-card:hover {
@@ -294,7 +294,7 @@ const onImageLoadError = (e: Event) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--tjg-motion-duration-normal) ease;
 }
 
 .text-card-link-content {

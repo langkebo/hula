@@ -238,7 +238,7 @@ useMitt.on(MittEnum.DETAILS_SHOW, () => {
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--tjg-motion-duration-normal) ease;
 
     svg {
       color: var(--tjg-text-tertiary);

@@ -473,7 +473,7 @@ onMounted(async () => {
   @apply relative custom-shadow bg-[--tjg-surface-panel-muted] w-225px h-70px rounded-8px px-14px py-4px flex-y-center;
   cursor: default !important;
   user-select: none !important;
-  transition: all 0.2s ease;
+  transition: all var(--tjg-motion-duration-normal) ease;
 
   &.downloading {
     opacity: 0.7;
@@ -590,7 +590,7 @@ onMounted(async () => {
 }
 
 .progress-ring-circle {
-  transition: stroke-dashoffset 0.3s ease;
+  transition: stroke-dashoffset var(--tjg-motion-duration-overlay) ease;
 }
 
 .progress-text {
