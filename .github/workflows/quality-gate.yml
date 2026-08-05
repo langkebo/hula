@@ -95,6 +95,7 @@ jobs:
           pnpm check:v-html
           pnpm check:doc-coverage
           pnpm check:sdk-boundary
+          pnpm check:icon-colors
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps
