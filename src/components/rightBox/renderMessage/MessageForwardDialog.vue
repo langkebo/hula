@@ -1,5 +1,11 @@
 <template>
-  <div v-if="visible" class="message-forward-dialog" data-test="forward-dialog" role="dialog" @click.stop>
+  <div
+    v-if="visible"
+    class="message-forward-dialog"
+    data-test="forward-dialog"
+    role="dialog"
+    aria-modal="true"
+    @click.stop>
     <div class="dialog-header">
       <span class="dialog-title">{{ t('message.forward_title') }}</span>
       <button type="button" class="dialog-close" :aria-label="t('common.close')" @click="handleCancel">

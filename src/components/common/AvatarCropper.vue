@@ -4,7 +4,9 @@
     @update:show="$emit('update:show', $event)"
     :mask-closable="false"
     class="rounded-8px"
-    transform-origin="center">
+    transform-origin="center"
+    role="dialog"
+    aria-modal="true">
     <div class="bg-[--tjg-border-muted] w-560px h-480px box-border flex flex-col items-center justify-between">
       <!-- 标题栏 -->
       <n-flex :size="6" vertical class="w-full">

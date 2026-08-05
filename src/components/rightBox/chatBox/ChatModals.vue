@@ -1,6 +1,6 @@
 <template>
   <!-- 弹出框 -->
-  <n-modal v-model:show="modalShow" class="w-350px border-rd-8px">
+  <n-modal v-model:show="modalShow" class="w-350px border-rd-8px" role="dialog" aria-modal="true">
     <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="modalShow = false" />
 
@@ -20,7 +20,12 @@
     </div>
   </n-modal>
 
-  <n-modal v-model:show="groupNicknameModalVisible" class="w-360px border-rd-8px" :mask-closable="false">
+  <n-modal
+    v-model:show="groupNicknameModalVisible"
+    class="w-360px border-rd-8px"
+    :mask-closable="false"
+    role="dialog"
+    aria-modal="true">
     <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="groupNicknameModalVisible = false" />
 
@@ -71,7 +76,7 @@
     :event-content="eventReportData.eventContent" />
 
   <!-- 私密模式确认对话框 -->
-  <n-modal v-model:show="showPrivateConfirm" class="w-360px border-rd-8px">
+  <n-modal v-model:show="showPrivateConfirm" class="w-360px border-rd-8px" role="dialog" aria-modal="true">
     <div class="bg-[--tjg-surface-panel] w-360px p-24px box-border flex flex-col gap-16px">
       <span class="text-[var(--text-base)] text-[--tjg-text-primary] font-500">进入私密模式</span>
       <div class="flex flex-col gap-8px" data-testid="private-confirm-features">

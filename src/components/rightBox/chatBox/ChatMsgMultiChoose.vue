@@ -19,7 +19,7 @@
     </div>
   </div>
 
-  <n-modal v-model:show="showModal" class="w-70% rounded-8px">
+  <n-modal v-model:show="showModal" class="w-70% rounded-8px" role="dialog" aria-modal="true">
     <div class="bg-[--tjg-surface-panel] h-full p-6px box-border flex flex-col">
       <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="showModal = false" />
 
@@ -107,7 +107,7 @@
     </div>
   </n-modal>
 
-  <n-modal v-model:show="showDeleteConfirm" class="w-350px border-rd-8px">
+  <n-modal v-model:show="showDeleteConfirm" class="w-350px border-rd-8px" role="dialog" aria-modal="true">
     <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="showDeleteConfirm = false" />
 

@@ -4,7 +4,9 @@
     v-model:show="visible"
     :mask-closable="false"
     class="rounded-8px"
-    transform-origin="center">
+    transform-origin="center"
+    role="dialog"
+    aria-modal="true">
     <div class="bg-[--tjg-surface-panel] min-w-320px h-fit box-border flex flex-col select-none cursor-default">
       <n-flex :size="6" vertical>
         <MacCloseButton v-if="isMac()" class="mt-6px absolute left-6px" @click="visible = false" />

@@ -1,7 +1,7 @@
 <template>
-  <div class="space-list-page h-full flex">
+  <div class="space-list-page h-full flex" role="main" :aria-label="t('home.plugins.space_list')">
     <!-- 中间栏：空间列表（右侧栏由 layout/right/index.vue 渲染 SpaceChildrenPane） -->
-    <SkeletonSpaceTree v-if="isLoading" :rows="6" />
+    <SkeletonSpaceTree v-if="isLoading" :rows="6" :aria-label="t('home.plugins.space_list')" aria-busy="true" />
     <SpaceListPane
       v-else
       :spaces="spaceItems"
