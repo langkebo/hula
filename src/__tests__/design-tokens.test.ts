@@ -189,3 +189,58 @@ describe('2.1.4 — 禁止硬编码品牌绿色（#13987f / rgba(19,152,127) / r
     ).toEqual([])
   })
 })
+
+describe('原型对齐 P0 — 暗色弱化文字 WCAG 对比度', () => {
+  const tokensContent = readFileSync(TOKENS_FILE, 'utf-8')
+
+  /** 解析 html[data-theme='dark'] 块内指定 token 的 #rrggbb 值 */
+  function readDarkToken(name: string): string {
+    const darkBlockMatch = tokensContent.match(/html\[data-theme='dark'\]\s*\{([\s\S]*?)\n\}/)
+    if (!darkBlockMatch) throw new Error("未找到 html[data-theme='dark'] 块")
+    const tokenMatch = darkBlockMatch[1].match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`))
+    if (!tokenMatch) throw new Error(`dark 块中未找到 ${name}`)
+    return tokenMatch[1]
+  }
+
+  /** sRGB 通道线性化 */
+  function linearize(channel: number): number {
+    const c = channel / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }
+
+  /** 相对亮度 L = 0.2126·R + 0.7152·G + 0.0722·B */
+  function relativeLuminance(hex: string): number {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)
+  }
+
+  /** WCAG 对比度 = (L亮+0.05)/(L暗+0.05) */
+  function contrastRatio(fg: string, bg: string): number {
+    const l1 = relativeLuminance(fg)
+    const l2 = relativeLuminance(bg)
+    const [lighter, darker] = l1 >= l2 ? [l1, l2] : [l2, l1]
+    return (lighter + 0.05) / (darker + 0.05)
+  }
+
+  const SURFACE_APP = '#161616'
+
+  it('dark 块 --tjg-text-tertiary 对 surface-app 的对比度应 ≥ 4.5 (WCAG AA)', () => {
+    const tertiary = readDarkToken('--tjg-text-tertiary')
+    const ratio = contrastRatio(tertiary, SURFACE_APP)
+    expect(
+      ratio,
+      `--tjg-text-tertiary (${tertiary}) @ surface-app (${SURFACE_APP}) 对比度 ${ratio.toFixed(2)}:1，低于 AA 4.5:1`
+    ).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('dark 块 --tjg-text-quaternary 对 surface-app 的对比度应 ≥ 4.5 (WCAG AA)', () => {
+    const quaternary = readDarkToken('--tjg-text-quaternary')
+    const ratio = contrastRatio(quaternary, SURFACE_APP)
+    expect(
+      ratio,
+      `--tjg-text-quaternary (${quaternary}) @ surface-app (${SURFACE_APP}) 对比度 ${ratio.toFixed(2)}:1，低于 AA 4.5:1`
+    ).toBeGreaterThanOrEqual(4.5)
+  })
+})
