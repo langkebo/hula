@@ -488,8 +488,10 @@ html[data-theme='dark'] {
 
   --tjg-text-primary: #ffffff;
   --tjg-text-secondary: #909090;
-  --tjg-text-tertiary: #707070;
-  --tjg-text-quaternary: #595959;
+  /* 对比度 4.9:1 AA @surface-app */
+  --tjg-text-tertiary: #858585;
+  /* 对比度 5.67:1 AA @surface-app */
+  --tjg-text-quaternary: #909090;
   --tjg-text-disabled: #434343;
 
   --tjg-surface-app: #161616;
