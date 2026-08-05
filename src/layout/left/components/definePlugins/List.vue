@@ -267,7 +267,7 @@ onUnmounted(() => {
 
 .v-enter-active,
 .v-leave-active {
-  transition: opacity var(--tjg-motion-duration-overlay) ease;
+  transition: opacity var(--tjg-motion-duration-xslow) ease;
 }
 
 .v-enter-from,

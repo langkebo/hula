@@ -155,6 +155,12 @@
   --tjg-motion-duration-normal: 180ms;
   --tjg-motion-duration-slow: 240ms;
   --tjg-motion-duration-overlay: 280ms;
+  /* 扩展时长：覆盖 >280ms 的过渡场景（fade enter/leave、hover overlay 等），
+   * 用于保留原 0.4s/0.5s 行为，避免收敛到 overlay(280ms) 后过渡加速 30-44%
+   * 违反「不得改变现有交互行为」全局约束。 */
+  --tjg-motion-duration-xslow: 500ms;
+  /* 2xslow：保留 flash 高光扫过等显式长过渡（原 0.8s），精确保持原时长。 */
+  --tjg-motion-duration-2xslow: 800ms;
   --tjg-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --tjg-motion-ease-enter: cubic-bezier(0, 0, 0, 1);
   --tjg-motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
