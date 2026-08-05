@@ -33,7 +33,7 @@
           </n-button>
         </template>
         <n-flex vertical :size="4">
-          <span class="text-12px text-gray-500">{{ t('voice.speed') }}</span>
+          <span class="text-[length:var(--tjg-font-size-sm)] text-gray-500">{{ t('voice.speed') }}</span>
           <n-flex :size="4">
             <n-button
               v-for="s in speedOptions"

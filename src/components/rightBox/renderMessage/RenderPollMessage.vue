@@ -90,7 +90,7 @@ const handleVote = (index: number) => {
 }
 
 .poll-title {
-  @apply text-14px font-medium;
+  @apply text-[length:var(--tjg-font-size-base)] font-medium;
 }
 
 .poll-options {
@@ -114,11 +114,11 @@ const handleVote = (index: number) => {
 }
 
 .option-text {
-  @apply text-14px flex-1;
+  @apply text-[length:var(--tjg-font-size-base)] flex-1;
 }
 
 .option-count {
-  @apply text-12px color-[--tjg-text-tertiary];
+  @apply text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary];
 }
 
 .option-progress {
@@ -126,7 +126,7 @@ const handleVote = (index: number) => {
 }
 
 .poll-footer {
-  @apply flex items-center justify-between text-12px color-[--tjg-text-tertiary];
+  @apply flex items-center justify-between text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary];
 }
 
 .ended-badge {

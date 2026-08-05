@@ -46,7 +46,9 @@
               @click="handleBack">
               <svg class="size-16px"><use href="#left-bar"></use></svg>
             </button>
-            <span class="text-14px font-medium color-[--tjg-text-primary] truncate">{{ viewTitle }}</span>
+            <span class="text-[length:var(--tjg-font-size-base)] font-medium color-[--tjg-text-primary] truncate">
+              {{ viewTitle }}
+            </span>
           </header>
 
           <div class="flex-1 min-h-0 flex flex-col">

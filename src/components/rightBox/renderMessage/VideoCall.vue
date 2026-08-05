@@ -7,7 +7,9 @@
     </svg>
 
     <!-- 消息内容 -->
-    <div class="select-none cursor-default" :class="isMobileRef ? 'text-16px' : 'text-14px'">
+    <div
+      class="select-none cursor-default"
+      :class="isMobileRef ? 'text-[length:var(--tjg-font-size-lg)]' : 'text-[length:var(--tjg-font-size-base)]'">
       {{ body }}
     </div>
   </div>

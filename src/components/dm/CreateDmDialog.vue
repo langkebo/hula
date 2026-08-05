@@ -40,8 +40,10 @@
               :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
               round />
             <n-flex vertical :size="4" class="flex-1">
-              <span class="text-16px font-medium">{{ searchResult.displayName || searchResult.userId }}</span>
-              <span class="text-12px text-gray-500">{{ searchResult.userId }}</span>
+              <span class="text-[length:var(--tjg-font-size-lg)] font-medium">
+                {{ searchResult.displayName || searchResult.userId }}
+              </span>
+              <span class="text-[length:var(--tjg-font-size-sm)] text-gray-500">{{ searchResult.userId }}</span>
             </n-flex>
           </n-flex>
 
@@ -61,16 +63,16 @@
           <n-icon size="48" color="var(--tjg-text-quaternary)">
             <svg><use href="#search" /></svg>
           </n-icon>
-          <span class="text-14px text-gray-400">{{ t('dm.create.hint') }}</span>
+          <span class="text-[length:var(--tjg-font-size-base)] text-gray-400">{{ t('dm.create.hint') }}</span>
         </div>
       </n-spin>
 
       <n-divider style="margin: 0" />
 
       <n-flex vertical :size="8">
-        <span class="text-12px text-gray-500">{{ t('dm.create.recent_contacts') }}</span>
+        <span class="text-[length:var(--tjg-font-size-sm)] text-gray-500">{{ t('dm.create.recent_contacts') }}</span>
         <n-scrollbar style="max-height: 200px">
-          <div v-if="recentContacts.length === 0" class="text-12px text-gray-400">
+          <div v-if="recentContacts.length === 0" class="text-[length:var(--tjg-font-size-sm)] text-gray-400">
             {{ t('dm.create.no_recent') }}
           </div>
           <div v-else class="recent-list">
@@ -85,7 +87,9 @@
                   :src="AvatarUtils.getAvatarUrl(contact.avatarUrl)"
                   :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                   round />
-                <span class="text-14px truncate">{{ contact.displayName || contact.userId }}</span>
+                <span class="text-[length:var(--tjg-font-size-base)] truncate">
+                  {{ contact.displayName || contact.userId }}
+                </span>
               </n-flex>
             </div>
           </div>

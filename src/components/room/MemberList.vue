@@ -467,11 +467,11 @@ async function confirmUnban() {
 }
 
 .member-title {
-  @apply text-14px font-medium;
+  @apply text-[length:var(--tjg-font-size-base)] font-medium;
 }
 
 .member-count {
-  @apply text-12px color-[--tjg-text-tertiary];
+  @apply text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary];
 }
 
 .member-filter {
@@ -487,7 +487,7 @@ async function confirmUnban() {
 }
 
 .group-label {
-  @apply text-12px color-[--tjg-text-tertiary] px-4px;
+  @apply text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary] px-4px;
 }
 
 .member-item {
@@ -507,11 +507,11 @@ async function confirmUnban() {
 }
 
 .member-name {
-  @apply text-14px truncate;
+  @apply text-[length:var(--tjg-font-size-base)] truncate;
 }
 
 .member-role {
-  @apply text-12px color-[--tjg-color-primary-500];
+  @apply text-[length:var(--tjg-font-size-sm)] color-[--tjg-color-primary-500];
 }
 
 .member-status {
@@ -541,7 +541,7 @@ async function confirmUnban() {
 }
 
 .action-bar-name {
-  @apply text-13px truncate;
+  @apply text-[length:var(--tjg-font-size-md)] truncate;
 }
 
 .action-bar-buttons {

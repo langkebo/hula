@@ -11,7 +11,10 @@
           重新编辑
         </p>
       </n-flex>
-      <span v-else class="text-12px color-[--tjg-text-tertiary] select-none" v-safe-html="recallText"></span>
+      <span
+        v-else
+        class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary] select-none"
+        v-safe-html="recallText"></span>
     </template>
     <template v-else>
       <n-flex align="center" :size="6">

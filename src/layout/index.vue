@@ -25,8 +25,10 @@
         v-if="isDraggingFiles"
         class="pointer-events-none absolute inset-0 z-999 flex flex-col items-center justify-center bg-black/30 text-center text-[--tjg-text-inverse]">
         <div class="rounded-16px border border-white/60 bg-white/15 px-40px py-20px backdrop-blur-md">
-          <p class="text-18px font-semibold tracking-wide">{{ t('home.file_drop.title') }}</p>
-          <p class="mt-6px text-13px text-white/80">{{ t('home.file_drop.desc') }}</p>
+          <p class="text-[length:var(--tjg-font-size-xl)] font-semibold tracking-wide">
+            {{ t('home.file_drop.title') }}
+          </p>
+          <p class="mt-6px text-[length:var(--tjg-font-size-md)] text-white/80">{{ t('home.file_drop.desc') }}</p>
         </div>
       </div>
     </transition>

@@ -13,7 +13,7 @@
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        class="rounded-6px border-(solid 1px [--tjg-border-default]) w-full relative text-12px"
+        class="rounded-6px border-(solid 1px [--tjg-border-default]) w-full relative text-[length:var(--tjg-font-size-sm)]"
         size="small">
         <template #prefix>
           <svg class="size-16px text-[--tjg-text-secondary] opacity-60">
@@ -26,7 +26,9 @@
     <!-- 动态内容区域 -->
     <div class="flex-1 px-8px overflow-hidden">
       <div class="pl-4px mb-12px">
-        <span class="text-14px font-500 text-[--tjg-text-primary]">{{ getSectionTitle() }}</span>
+        <span class="text-[length:var(--tjg-font-size-base)] font-500 text-[--tjg-text-primary]">
+          {{ getSectionTitle() }}
+        </span>
       </div>
 
       <n-scrollbar style="height: calc(100vh / var(--page-scale, 1) - 110px)">
@@ -56,14 +58,16 @@
               <svg class="size-48px text-[--tjg-text-primary] opacity-30 mb-12px">
                 <use href="#search"></use>
               </svg>
-              <p class="text-14px text-[--tjg-text-secondary] opacity-60 m-0">{{ getEmptyMessage() }}</p>
+              <p class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] opacity-60 m-0">
+                {{ getEmptyMessage() }}
+              </p>
             </div>
           </div>
 
           <!-- 加载状态 -->
           <div v-if="loading" class="flex-center h-200px">
             <n-spin size="small" />
-            <span class="ml-8px text-14px text-[--tjg-text-secondary] opacity-60">
+            <span class="ml-8px text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] opacity-60">
               {{ t('fileManager.common.loading') }}
             </span>
           </div>

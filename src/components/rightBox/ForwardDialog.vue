@@ -175,7 +175,7 @@ watch(
 }
 
 .room-name {
-  @apply text-14px truncate;
+  @apply text-[length:var(--tjg-font-size-base)] truncate;
 }
 
 .encrypted-badge {

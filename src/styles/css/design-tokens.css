@@ -101,8 +101,14 @@
   --tjg-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
 
   --tjg-font-size-xs: 10px;
+  /* 2xs：辅助文字（原型 11px） */
+  --tjg-font-size-2xs: 11px;
   --tjg-font-size-sm: 12px;
+  /* md：气泡正文（原型 13px） */
+  --tjg-font-size-md: 13px;
   --tjg-font-size-base: 14px;
+  /* 2lg：标题（原型 15px） */
+  --tjg-font-size-2lg: 15px;
   --tjg-font-size-lg: 16px;
   --tjg-font-size-xl: 18px;
   --tjg-font-size-2xl: 20px;

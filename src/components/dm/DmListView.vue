@@ -2,7 +2,7 @@
   <div class="dm-list-view">
     <n-flex vertical :size="12" class="p-12px">
       <n-flex align="center" justify="space-between">
-        <span class="text-16px font-semibold">{{ t('dm.list.title') }}</span>
+        <span class="text-[length:var(--tjg-font-size-lg)] font-semibold">{{ t('dm.list.title') }}</span>
         <n-button quaternary circle size="small" @click="showCreateDm = true">
           <template #icon>
             <n-icon>
@@ -44,15 +44,15 @@
             </n-badge>
             <n-flex vertical :size="4" class="flex-1 truncate">
               <n-flex align="center" justify="space-between">
-                <span class="text-14px truncate">
+                <span class="text-[length:var(--tjg-font-size-base)] truncate">
                   {{ dmRoom.name || dmRoom.roomId }}
                 </span>
-                <span class="text-12px text-[--tjg-text-tertiary]">
+                <span class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-tertiary]">
                   {{ formatTime(dmRoom.lastMessage?.timestamp) }}
                 </span>
               </n-flex>
               <n-flex align="center" justify="space-between">
-                <span class="text-12px text-[--tjg-text-quaternary] truncate flex-1">
+                <span class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-quaternary] truncate flex-1">
                   {{ dmRoom.lastMessage?.content || t('dm.list.no_message') }}
                 </span>
                 <n-flex align="center" :size="4">

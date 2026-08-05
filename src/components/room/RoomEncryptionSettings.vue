@@ -2,7 +2,7 @@
   <n-card size="small" :bordered="true">
     <template #header>
       <n-flex align="center" :size="8">
-        <Icon icon="mdi:shield-lock-outline" class="text-16px" />
+        <Icon icon="mdi:shield-lock-outline" class="text-[length:var(--tjg-font-size-lg)]" />
         <span>{{ t('encryption.room_settings.title') }}</span>
       </n-flex>
     </template>
@@ -11,7 +11,9 @@
       <template v-if="!isEncrypted">
         <n-flex vertical :size="12" align="center">
           <Icon icon="mdi:shield-off-outline" class="text-32px color-[--tjg-text-tertiary]" />
-          <span class="text-13px text-gray-500">{{ t('encryption.room_settings.not_encrypted') }}</span>
+          <span class="text-[length:var(--tjg-font-size-md)] text-gray-500">
+            {{ t('encryption.room_settings.not_encrypted') }}
+          </span>
           <n-button type="primary" size="small" :loading="enabling" @click="handleEnableEncryption">
             <template #icon>
               <Icon icon="mdi:shield-lock" />

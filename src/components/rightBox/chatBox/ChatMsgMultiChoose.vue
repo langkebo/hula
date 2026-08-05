@@ -33,7 +33,7 @@
             <n-input
               id="search"
               v-model:value="searchText"
-              class="rounded-6px mt-8px border-(solid 1px [--tjg-border-default]) w-full relative text-12px"
+              class="rounded-6px mt-8px border-(solid 1px [--tjg-border-default]) w-full relative text-[length:var(--tjg-font-size-sm)]"
               :maxlength="20"
               :placeholder="t('message.multi_choose.search_placeholder')"
               clearable
@@ -47,7 +47,10 @@
 
             <n-scrollbar class="flex-1">
               <template v-for="session in filteredSessionList" :key="session.roomId">
-                <n-flex align="center" :size="8" class="text-12px text-[--tjg-text-primary] py-8px px-4px">
+                <n-flex
+                  align="center"
+                  :size="8"
+                  class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-primary] py-8px px-4px">
                   <n-checkbox v-model:checked="session.isCheck" @click.stop />
                   <n-avatar class="rounded-8px" :size="30" :src="AvatarUtils.getAvatarUrl(session.avatar)" />
                   <p>{{ session.remark ? session.remark : session.name }}</p>
@@ -115,7 +118,7 @@
         <use href="#close"></use>
       </svg>
       <div class="flex flex-col gap-30px p-[22px_10px_10px_22px] select-none">
-        <span class="text-14px leading-normal">{{ deleteConfirmText }}</span>
+        <span class="text-[length:var(--tjg-font-size-base)] leading-normal">{{ deleteConfirmText }}</span>
 
         <n-flex justify="end">
           <n-button class="w-78px" secondary @click="showDeleteConfirm = false">

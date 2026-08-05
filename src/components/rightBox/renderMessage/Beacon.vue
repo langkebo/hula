@@ -6,13 +6,17 @@
         <svg class="size-14px color-[--tjg-color-warning-400]">
           <use href="#local"></use>
         </svg>
-        <p class="text-14px font-medium color-[--tjg-text-primary]">{{ t('chat.beacon.live_location') }}</p>
+        <p class="text-[length:var(--tjg-font-size-base)] font-medium color-[--tjg-text-primary]">
+          {{ t('chat.beacon.live_location') }}
+        </p>
       </div>
 
       <div class="flex-y-center gap-4px">
         <span v-if="isActive" class="status-dot active"></span>
         <span v-else class="status-dot inactive"></span>
-        <p class="text-10px" :class="isActive ? 'color-[--tjg-color-primary-500]' : 'color-[--tjg-text-quaternary]'">
+        <p
+          class="text-[length:var(--tjg-font-size-xs)]"
+          :class="isActive ? 'color-[--tjg-color-primary-500]' : 'color-[--tjg-text-quaternary]'">
           {{ isActive ? '共享中' : '已结束' }}
         </p>
       </div>
@@ -26,7 +30,7 @@
     <!-- 状态面板 -->
     <div class="relative rounded-6px overflow-hidden bg-[--tjg-surface-app] h-80px flex-col-center gap-8px">
       <template v-if="isActive">
-        <p class="text-12px color-[--tjg-text-secondary]">
+        <p class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-secondary]">
           {{ t('chat.beacon.remaining_time') }} {{ remainingTimeText }}
         </p>
         <n-button size="small" type="primary" secondary @click.stop="handleJoinClick">
@@ -37,7 +41,9 @@
         <svg class="size-24px color-[--tjg-text-quaternary]">
           <use href="#time-out"></use>
         </svg>
-        <span class="text-12px color-[--tjg-text-quaternary]">{{ t('chat.beacon.ended') }}</span>
+        <span class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-quaternary]">
+          {{ t('chat.beacon.ended') }}
+        </span>
       </template>
     </div>
   </main>

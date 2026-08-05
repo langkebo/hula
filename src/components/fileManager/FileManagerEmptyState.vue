@@ -4,7 +4,9 @@
       <Icon :icon="resolvedIcon" class="empty-icon mb-16px" :width="58" />
 
       <!-- 标题 -->
-      <h3 v-if="title" class="empty-title text-15px font-500 text-[--tjg-text-primary] mb-8px m-0">
+      <h3
+        v-if="title"
+        class="empty-title text-[length:var(--tjg-font-size-2lg)] font-500 text-[--tjg-text-primary] mb-8px m-0">
         {{ title }}
       </h3>
 

@@ -215,11 +215,11 @@ watch(
 }
 
 .user-name {
-  @apply text-14px truncate;
+  @apply text-[length:var(--tjg-font-size-base)] truncate;
 }
 
 .user-id {
-  @apply text-12px color-[--tjg-text-tertiary] truncate;
+  @apply text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary] truncate;
 }
 
 .manual-invite {

@@ -12,7 +12,9 @@
         <!-- 最近使用 -->
         <div v-if="activeIndex === 0">
           <div v-if="emojiRef.historyList?.length > 0">
-            <span v-if="!checkIsUrl(emojiRef.historyList[0])" class="text-12px text-[--tjg-text-primary]">
+            <span
+              v-if="!checkIsUrl(emojiRef.historyList[0])"
+              class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-primary]">
               {{ t('emoticon.recent.title') }}
             </span>
             <n-flex align="center" :class="isMobileRef ? 'emoji-grid-mobile mt-12px mb-12px' : 'mt-12px mb-12px'">
@@ -31,7 +33,7 @@
           <!-- emoji表情 -->
           <div v-for="items in emojiObj" :key="items?.name">
             <template v-if="items?.name && items.value?.length">
-              <span class="text-12px text-[--tjg-text-primary]">{{ items.name }}</span>
+              <span class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-primary]">{{ items.name }}</span>
               <n-flex align="center" :class="isMobileRef ? 'emoji-grid-mobile my-12px' : 'my-12px'">
                 <n-flex
                   align="center"
@@ -49,7 +51,9 @@
 
         <!-- 表情包系列 -->
         <div v-else-if="currentSeries" class="series-virtual-wrapper">
-          <span class="text-12px text-[--tjg-text-primary] pl-12px">{{ currentSeries.name }}</span>
+          <span class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-primary] pl-12px">
+            {{ currentSeries.name }}
+          </span>
           <div class="series-virtual-container mt-12px">
             <n-virtual-list
               ref="seriesVirtualListRef"
@@ -95,7 +99,9 @@
         <!-- 我的喜欢页面 -->
         <div v-else>
           <div v-if="emojiStore.emojiList?.length > 0">
-            <span class="text-12px text-[--tjg-text-primary]">{{ t('emoticon.favorites.title') }}</span>
+            <span class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-primary]">
+              {{ t('emoticon.favorites.title') }}
+            </span>
             <n-flex align="center" :class="isMobileRef ? 'emoji-pack-grid-mobile mx-6px my-12px' : 'mx-6px my-12px'">
               <n-flex
                 align="center"

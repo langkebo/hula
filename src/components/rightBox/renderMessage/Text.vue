@@ -1,5 +1,5 @@
 <template>
-  <div :class="isMobileRef ? 'text-16px' : 'text-14px'">
+  <div :class="isMobileRef ? 'text-[length:var(--tjg-font-size-lg)]' : 'text-[length:var(--tjg-font-size-base)]'">
     <template v-for="(item, index) in fragments" :key="index">
       <n-popover
         trigger="click"
@@ -73,7 +73,7 @@
           <img class="text-card-image" :src="urlMap[item].image" :alt="urlMap[item].title" @error="onImageLoadError" />
         </div>
         <div class="text-card-link-content">
-          <span class="text-14px line-clamp-1">{{ urlMap[item].title }}</span>
+          <span class="text-[length:var(--tjg-font-size-base)] line-clamp-1">{{ urlMap[item].title }}</span>
           <span class="text-(12px [--tjg-text-tertiary]) mt-4px line-clamp-2">{{ urlMap[item].description }}</span>
         </div>
       </div>

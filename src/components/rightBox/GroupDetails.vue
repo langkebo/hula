@@ -67,7 +67,9 @@
 
     <div v-if="announcementContent" class="announcement-container">
       <div class="announcement-header">
-        <span class="text-14px">{{ t('home.chat_details.group.announcement.label') }}</span>
+        <span class="text-[length:var(--tjg-font-size-base)]">
+          {{ t('home.chat_details.group.announcement.label') }}
+        </span>
         <n-button text type="primary" size="small" @click="handleOpenAnnouncement">
           {{ t('home.chat_details.group.announcement.window_title') }}
         </n-button>

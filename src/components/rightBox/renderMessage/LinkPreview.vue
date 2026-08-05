@@ -3,7 +3,7 @@
     <!-- 原文链接或内容展示 -->
     <div
       v-if="showUrl"
-      class="text-14px color-[--tjg-text-tertiary] mb-8px break-words whitespace-pre-wrap leading-relaxed">
+      class="text-[length:var(--tjg-font-size-base)] color-[--tjg-text-tertiary] mb-8px break-words whitespace-pre-wrap leading-relaxed">
       <a
         :href="body?.url"
         target="_blank"
@@ -40,7 +40,7 @@
           <svg class="size-12px color-[--tjg-text-quaternary] mr-4px">
             <use href="#link"></use>
           </svg>
-          <span class="text-11px color-[--tjg-text-quaternary] truncate">
+          <span class="text-[length:var(--tjg-font-size-2xs)] color-[--tjg-text-quaternary] truncate">
             {{ body?.siteName || domainName }}
           </span>
         </div>
@@ -133,11 +133,11 @@ const handleLinkClick = () => {
     }
 
     .preview-title {
-      @apply: text-13px font-medium color-[--tjg-text-primary] leading-tight mb-4px;
+      @apply: text-[length:var(--tjg-font-size-md)] font-medium color-[--tjg-text-primary] leading-tight mb-4px;
     }
 
     .preview-desc {
-      @apply: text-12px color-[--tjg-text-secondary] leading-snug;
+      @apply: text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-secondary] leading-snug;
       /* 在水平模式下描述最多显示两行 */
       -webkit-line-clamp: 2 !important;
     }
@@ -147,11 +147,11 @@ const handleLinkClick = () => {
     @apply: p-10px;
 
     .preview-title {
-      @apply: text-14px font-medium color-[--tjg-text-primary] leading-tight mb-6px;
+      @apply: text-[length:var(--tjg-font-size-base)] font-medium color-[--tjg-text-primary] leading-tight mb-6px;
     }
 
     .preview-desc {
-      @apply: text-12px color-[--tjg-text-secondary] leading-normal;
+      @apply: text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-secondary] leading-normal;
     }
   }
 }

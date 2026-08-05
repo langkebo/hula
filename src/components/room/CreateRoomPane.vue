@@ -54,11 +54,15 @@
             <n-radio value="space">{{ t('room.create.space') }}</n-radio>
           </n-radio-group>
         </n-form-item>
-        <div class="text-12px color-[--tjg-text-tertiary] mb-16px">{{ t('room.create.room_type_hint') }}</div>
+        <div class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary] mb-16px">
+          {{ t('room.create.room_type_hint') }}
+        </div>
 
         <n-form-item :label="t('room.create.encryption')" path="isEncrypted">
           <n-switch v-model:value="formData.isEncrypted" />
-          <span class="text-12px color-[--tjg-text-tertiary] ml-12px">{{ t('room.create.encryption_hint') }}</span>
+          <span class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-tertiary] ml-12px">
+            {{ t('room.create.encryption_hint') }}
+          </span>
         </n-form-item>
 
         <n-form-item :label="t('room.create.history')" path="historyVisibility">
@@ -79,7 +83,9 @@
 
     <!-- 阶段 2: 邀请成员（可选） -->
     <div v-else-if="stage === 'invite'" class="flex-1 min-h-0 flex flex-col px-20px py-16px">
-      <p class="text-14px color-[--tjg-text-secondary] mb-16px">{{ t('room.create.invite_desc') }}</p>
+      <p class="text-[length:var(--tjg-font-size-base)] color-[--tjg-text-secondary] mb-16px">
+        {{ t('room.create.invite_desc') }}
+      </p>
       <n-input
         v-model:value="inviteInput"
         :placeholder="t('room.create.invite_placeholder')"

@@ -40,7 +40,7 @@
                   class="emoji-item cursor-pointer flex-center"
                   @click="onEmojiClick(emoji)">
                   <img v-if="checkIsUrl(emoji)" :src="resolveRecentRenderUrl(emoji)" class="size-24px" alt="表情" />
-                  <span v-else class="text-18px">{{ emoji }}</span>
+                  <span v-else class="text-[length:var(--tjg-font-size-xl)]">{{ emoji }}</span>
                 </div>
               </div>
             </div>
@@ -74,7 +74,7 @@
           <div class="footer-item">
             <n-flex
               @click="$emit('handleScreenshot')"
-              class="text-12px cursor-pointer group"
+              class="text-[length:var(--tjg-font-size-sm)] cursor-pointer group"
               align="center"
               justify="space-between">
               <n-flex align="center" :size="6">
@@ -87,7 +87,7 @@
             </n-flex>
 
             <n-flex
-              class="text-12px cursor-pointer group"
+              class="text-[length:var(--tjg-font-size-sm)] cursor-pointer group"
               align="center"
               justify="space-between"
               @click="isConcealLocal = !isConcealLocal">

@@ -174,6 +174,6 @@ onMounted(async () => {
 }
 
 #image-no-data {
-  @apply size-full mt-60px text-[--tjg-text-primary] text-14px;
+  @apply size-full mt-60px text-[--tjg-text-primary] text-[length:var(--tjg-font-size-base)];
 }
 </style>

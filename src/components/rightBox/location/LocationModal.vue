@@ -92,7 +92,9 @@
         <!-- 位置信息显示 -->
         <div v-if="selectedLocation" class="location-modal__info rounded-6px p-12px">
           <n-flex vertical :size="8">
-            <span class="text-14px font-medium">{{ t('message.location.modal.info.current') }}</span>
+            <span class="text-[length:var(--tjg-font-size-base)] font-medium">
+              {{ t('message.location.modal.info.current') }}
+            </span>
             <div class="text-(12px [--tjg-text-secondary])">
               {{ selectedLocation.address || t('message.location.modal.info.fetching_address') }}
             </div>
