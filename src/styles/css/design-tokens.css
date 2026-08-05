@@ -164,6 +164,8 @@
   --tjg-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --tjg-motion-ease-enter: cubic-bezier(0, 0, 0, 1);
   --tjg-motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* 按钮按下态缩放比例（对齐原型 B3） */
+  --tjg-motion-scale-active: 0.97;
 
   /* 设置壳层 */
   --tjg-settings-sidebar-width: 240px;
@@ -812,6 +814,18 @@ html[data-theme='dark'] {
     /* 焦点环：确保可见 */
     --tjg-focus-ring: 0 0 0 3px rgba(100, 201, 179, 0.7);
   }
+}
+
+/* ==================== 全局按钮 active 缩放反馈（B3） ====================
+ * 对齐原型：所有可交互按钮在按下时轻微缩放，禁用态排除。
+ * 低特异性选择器，不与 Naive UI 内部 pressed 状态冲突（Naive UI 使用
+ * --n-color-pressed 改色，不用 transform）。
+ * reduced-motion 用户由下方全局 0.01ms 覆盖自动禁用运动感。
+ * ================================================================== */
+button:not(:disabled):not(.n-button--disabled):active,
+.n-button:not(.n-button--disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(var(--tjg-motion-scale-active));
 }
 
 /* ==================== prefers-reduced-motion: reduce ====================
