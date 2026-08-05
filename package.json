@@ -32,6 +32,7 @@
     "commit": "git add . && git-cz",
     "check": "pnpm gen:i18n && biome check && node scripts/check-i18n.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",
+    "check:icon-colors": "python3 scripts/audit-icon-colors.py",
     "gen:i18n": "node scripts/generate-i18n-types.mjs",
     "check:write": "biome check --write --unsafe",
     "knip": "knip --no-exit-code",
