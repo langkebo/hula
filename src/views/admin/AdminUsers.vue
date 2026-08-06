@@ -609,10 +609,7 @@ async function handleSetRateLimit() {
   if (!selectedUser.value) return
   settingRateLimit.value = true
   try {
-    await admin.setRateLimit(selectedUser.value.userId, {
-      messagesPerSecond: rateLimitForm.value.messagesPerSecond,
-      burstCount: rateLimitForm.value.burstCount
-    })
+    await admin.overrideUserRateLimit(selectedUser.value.userId)
     showFeedback(t('admin.users.rateLimitSetSuccess'), 'success')
     showRateLimitDialog.value = false
   } catch (err) {

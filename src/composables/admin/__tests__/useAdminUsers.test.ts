@@ -12,7 +12,7 @@ vi.mock('@/services/matrix/admin', () => ({
     deactivateUser: vi.fn().mockResolvedValue(undefined),
     setAdmin: vi.fn().mockResolvedValue(undefined),
     deleteUserDevice: vi.fn().mockResolvedValue(undefined),
-    setRateLimit: vi.fn().mockResolvedValue(undefined),
+    overrideUserRateLimit: vi.fn().mockResolvedValue(undefined),
     deleteRateLimit: vi.fn().mockResolvedValue(undefined),
     shadowBanUser: vi.fn().mockResolvedValue(undefined),
     unshadowBanUser: vi.fn().mockResolvedValue(undefined)

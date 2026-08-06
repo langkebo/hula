@@ -295,8 +295,8 @@ class AdminFacadeService extends BaseMatrixService {
     return this.users.getRateLimit(userId)
   }
 
-  async setRateLimit(userId: string, _limit: RateLimit): Promise<void> {
-    return this.users.setRateLimit(userId, _limit)
+  async overrideUserRateLimit(userId: string): Promise<void> {
+    return this.users.overrideUserRateLimit(userId)
   }
 
   async deleteRateLimit(userId: string): Promise<void> {
@@ -613,14 +613,6 @@ class AdminFacadeService extends BaseMatrixService {
 
   async adminDeleteSpace(spaceId: string): Promise<void> {
     return this.rooms.adminDeleteSpace(spaceId)
-  }
-
-  async getRateLimits(userId?: string): Promise<Record<string, unknown>> {
-    return this.users.getRateLimits(userId)
-  }
-
-  async setRateLimits(userId: string, limits: Record<string, unknown>): Promise<void> {
-    return this.users.setRateLimits(userId, limits)
   }
 
   async getAuditLog(
@@ -1023,18 +1015,6 @@ class AdminFacadeService extends BaseMatrixService {
 
   async deleteSystemNotification(notificationId: string): Promise<void> {
     return this.notifications.deleteSystemNotification(notificationId)
-  }
-
-  async getUserRateLimit(userId: string): Promise<Record<string, unknown> | null> {
-    return this.users.getUserRateLimit(userId)
-  }
-
-  async setUserRateLimit(userId: string, limit: Record<string, unknown>): Promise<void> {
-    return this.users.setUserRateLimit(userId, limit)
-  }
-
-  async deleteUserRateLimit(userId: string): Promise<void> {
-    return this.users.deleteUserRateLimit(userId)
   }
 
   async getAdminInfo(): Promise<Record<string, unknown> | null> {
