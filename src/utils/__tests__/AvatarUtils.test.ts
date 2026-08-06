@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AvatarUtils } from '../AvatarUtils'
 
 describe('AvatarUtils', () => {
@@ -73,5 +73,117 @@ describe('AvatarUtils', () => {
     it('rejects ftp and other protocols', () => {
       expect(AvatarUtils.getAvatarUrl('ftp://example.com/file')).toBe('/logoD.png')
     })
+  })
+})
+
+describe('mxc:// URL handling', () => {
+  afterEach(() => {
+    AvatarUtils.setMxcResolver(null)
+    AvatarUtils.clearCache()
+  })
+
+  it('returns default when mxc:// URL has no resolver registered', () => {
+    AvatarUtils.setMxcResolver(null)
+    expect(AvatarUtils.getAvatarUrl('mxc://example.org/abc123')).toBe('/logoD.png')
+  })
+
+  it('converts mxc:// URL using registered resolver', () => {
+    AvatarUtils.setMxcResolver((url) => `https://cdn.example.com/${url.replace('mxc://', '')}`)
+    expect(AvatarUtils.getAvatarUrl('mxc://example.org/abc123')).toBe('https://cdn.example.com/example.org/abc123')
+  })
+
+  it('returns default when resolver returns null', () => {
+    AvatarUtils.setMxcResolver(() => null)
+    expect(AvatarUtils.getAvatarUrl('mxc://example.org/abc123')).toBe('/logoD.png')
+  })
+
+  it('caches resolved mxc:// URLs', () => {
+    let callCount = 0
+    AvatarUtils.setMxcResolver((url) => {
+      callCount++
+      return `https://cdn.example.com/${url.replace('mxc://', '')}`
+    })
+    AvatarUtils.getAvatarUrl('mxc://example.org/cache-test')
+    AvatarUtils.getAvatarUrl('mxc://example.org/cache-test')
+    expect(callCount).toBe(1)
+  })
+
+  it('re-resolves after cache is cleared', () => {
+    let callCount = 0
+    AvatarUtils.setMxcResolver((url) => {
+      callCount++
+      return `https://cdn.example.com/${url.replace('mxc://', '')}`
+    })
+    AvatarUtils.getAvatarUrl('mxc://example.org/recheck')
+    AvatarUtils.clearCache('mxc://example.org/recheck')
+    AvatarUtils.getAvatarUrl('mxc://example.org/recheck')
+    expect(callCount).toBe(2)
+  })
+
+  it('clearCache(avatar) clears size-variant entries too', () => {
+    let callCount = 0
+    AvatarUtils.setMxcResolver((url) => {
+      callCount++
+      return `https://cdn/${url}`
+    })
+    AvatarUtils.getAvatarUrl('mxc://example.org/variant', 96)
+    AvatarUtils.getAvatarUrl('mxc://example.org/variant')       // base key
+    AvatarUtils.clearCache('mxc://example.org/variant')        // Should clear both keys
+    AvatarUtils.getAvatarUrl('mxc://example.org/variant', 96)
+    AvatarUtils.getAvatarUrl('mxc://example.org/variant')
+    expect(callCount).toBe(4)                                   // Both keys re-resolved
+  })
+
+  it('clears entire cache when a new resolver is registered', () => {
+    let callCount = 0
+    const r1 = (url: string) => { callCount++; return `https://cdn1/${url}` }
+    const r2 = (url: string) => { callCount++; return `https://cdn2/${url}` }
+    AvatarUtils.setMxcResolver(r1)
+    AvatarUtils.getAvatarUrl('mxc://example.org/invalidate')
+    AvatarUtils.setMxcResolver(r2)        // Should clear entire cache
+    AvatarUtils.getAvatarUrl('mxc://example.org/invalidate')
+    expect(callCount).toBe(2)             // r1 + r2 each called once
+  })
+})
+
+describe('getAvatarUrl with size parameter', () => {
+  afterEach(() => {
+    AvatarUtils.setMxcResolver(null)
+    AvatarUtils.clearCache()
+  })
+
+  it('passes size to resolver for mxc:// URLs', () => {
+    const resolver = vi.fn((url: string) => `https://cdn.example.com/${url.replace('mxc://', '')}`)
+    AvatarUtils.setMxcResolver(resolver)
+    AvatarUtils.getAvatarUrl('mxc://example.org/sized', 96)
+    expect(resolver).toHaveBeenCalledWith('mxc://example.org/sized', 96, 96)
+  })
+
+  it('ignores size for non-mxc URLs', () => {
+    expect(AvatarUtils.getAvatarUrl('005', 96)).toBe('/avatar/005.webp')
+    expect(AvatarUtils.getAvatarUrl('https://example.com/a.png', 96)).toBe('https://example.com/a.png')
+  })
+})
+
+describe('getRandomDefaultAvatar', () => {
+  it('returns a 3-digit string between 001 and 022', () => {
+    for (let i = 0; i < 50; i++) {
+      const result = AvatarUtils.getRandomDefaultAvatar()
+      expect(result).toMatch(/^\d{3}$/)
+      const num = parseInt(result, 10)
+      expect(num).toBeGreaterThanOrEqual(1)
+      expect(num).toBeLessThanOrEqual(22)
+    }
+  })
+
+  it('returns a value that is a valid default avatar', () => {
+    for (let i = 0; i < 20; i++) {
+      expect(AvatarUtils.isDefaultAvatar(AvatarUtils.getRandomDefaultAvatar())).toBe(true)
+    }
+  })
+
+  it('returns a URL that resolves to /avatar/NNN.webp', () => {
+    const random = AvatarUtils.getRandomDefaultAvatar()
+    expect(AvatarUtils.getAvatarUrl(random)).toBe(`/avatar/${random}.webp`)
   })
 })

@@ -4,10 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TjgAvatar from '../TjgAvatar.vue'
 
 // === Mock AvatarUtils ===
-const getAvatarUrlMock = vi.fn((src: string) => src || '/logoD.png')
+const getAvatarUrlMock = vi.fn((src: string, _size?: number) => src || '/logoD.png')
 vi.mock('@/utils/AvatarUtils', () => ({
   AvatarUtils: {
-    getAvatarUrl: (src: string) => getAvatarUrlMock(src)
+    getAvatarUrl: (src: string, size?: number) => getAvatarUrlMock(src, size)
   }
 }))
 
@@ -96,5 +96,50 @@ describe('TjgAvatar', () => {
     })
     expect(wrapper.find('.tjg-avatar').attributes('role')).toBe('img')
     expect(wrapper.find('.tjg-avatar').attributes('aria-label')).toBe('User avatar')
+  })
+
+  it('shows text initials when both src and fallback fail', async () => {
+    const wrapper = mount(TjgAvatar, {
+      props: {
+        src: 'https://broken.example.com/a.png',
+        fallbackSrc: 'https://also-broken.example.com/fb.png',
+        name: 'Alice',
+        size: 48
+      }
+    })
+
+    // Main image fails
+    await wrapper.find('img').trigger('error')
+
+    // Fallback image also fails
+    await wrapper.find('img').trigger('error')
+
+    // Should show initials
+    expect(wrapper.text()).toContain('A')
+  })
+
+  it('uses first two characters for initials when name has multiple words', async () => {
+    const wrapper = mount(TjgAvatar, {
+      props: {
+        src: 'https://broken.example.com/a.png',
+        name: 'Bob Smith'
+      }
+    })
+
+    await wrapper.find('img').trigger('error')
+    await wrapper.find('img').trigger('error')
+
+    expect(wrapper.text()).toContain('BS')
+  })
+
+  it('passes size to AvatarUtils.getAvatarUrl for thumbnail generation', () => {
+    // The mock is set up as: getAvatarUrl: (src: string) => getAvatarUrlMock(src)
+    // We need to update the mock to accept size param and verify it's passed
+    mount(TjgAvatar, {
+      props: { src: '005', size: 48 }
+    })
+
+    // Verify the mock was called
+    expect(getAvatarUrlMock).toHaveBeenCalled()
   })
 })

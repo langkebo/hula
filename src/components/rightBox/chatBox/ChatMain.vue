@@ -210,10 +210,12 @@ import { useWindow } from '@/composables/common/useWindow'
 import { MittEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
@@ -239,6 +241,7 @@ type SessionChangedPayload = {
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
+const groupStore = useGroupStore()
 const userStore = useUserStore()
 const networkStatus = useNetworkStatus()
 // const { footerHeight } = useChatLayoutGlobal() // 已移除，不再需要
@@ -261,6 +264,25 @@ const { enableScroll } = usePopover(selectKey, 'image-chat-main')
 const getMessageSenderUid = (message: MessageType): string => {
   return message.fromUser?.uid ?? ''
 }
+
+// Batch preload avatar URLs when message list changes to avoid lazy-load waterfall
+watch(
+  () => chatStore.chatMessageList,
+  (msgs) => {
+    if (!msgs?.length) return
+    const avatarUrls = new Set<string>()
+    for (const item of msgs) {
+      const uid = getMessageSenderUid(item)
+      if (!uid) continue
+      const storeUser = groupStore.getUserInfo(uid)
+      if (storeUser?.avatar) avatarUrls.add(storeUser.avatar)
+    }
+    if (avatarUrls.size > 0) {
+      AvatarUtils.batchResolve([...avatarUrls], 68)
+    }
+  },
+  { immediate: true }
+)
 
 // ===== 私密模式 =====
 const {
