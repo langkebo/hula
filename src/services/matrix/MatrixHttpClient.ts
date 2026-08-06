@@ -1,6 +1,4 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import { type AppError, toAppError } from '@/common/errors'
-import { err, ok, type Result } from '@/common/result'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
 import { getMatrixAccessToken, getMatrixClient, getMatrixHomeserverUrl } from './matrixClientAccessor'
@@ -333,22 +331,6 @@ class MatrixHttpClient {
         throw err
       }
       return defaultValue as T | null
-    }
-  }
-
-  /**
-   * 发送请求并返回 Result<T, AppError> 格式
-   */
-  async requestAppResult<T>(
-    method: MatrixHttpMethod,
-    path: string,
-    options: MatrixHttpRequestOptions = {}
-  ): Promise<Result<T, AppError>> {
-    try {
-      const data = await this.request<T>(method, path, options)
-      return ok(data)
-    } catch (e) {
-      return err(toAppError(e))
     }
   }
 
