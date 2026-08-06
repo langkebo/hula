@@ -530,17 +530,6 @@ export class AdminUserService {
     }
   }
 
-  async deleteUser(userId: string): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.deactivateUser(userId)
-      logger.info(`[Admin] 删除用户成功: ${userId}`)
-    } catch (err) {
-      logger.error(`[Admin] 删除用户失败: ${err}`)
-      throw err
-    }
-  }
-
   async getAccountStatus(userId: string): Promise<Record<string, unknown> | null> {
     try {
       const admin = await this.sdkAdmin()
