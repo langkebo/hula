@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### 🔧 Refactoring | 重构
+
+* **service:** remove UI side effects from MatrixHttpClient — drop `showLoading`/`showErrorToast` options and direct `window.$loadingBar`/`window.$message` calls; HTTP layer no longer couples to Naive UI globals
+* **composable:** extend `useActionFeedback` with loading bar API (`startLoading`/`finishLoading`/`errorLoading`) wrapping `window.$loadingBar` with optional chaining for safe degradation when not injected
+* **service:** migrate `authGuard.ts` from direct `window.$message?.warning()` to `useActionFeedback.showFeedback(..., 'warning')` — router layer no longer directly operates UI global objects
+* **service:** migrate `messageLoading.ts` from 6 direct `window.$loadingBar` manipulations to `useActionFeedback` loading bar API — store layer no longer directly operates UI global objects; `showLoadingBar` parameter retained for caller control
+
 ## [3.0.10](https://github.com/langkebo/hula/compare/v3.0.9...v3.0.10) (2026-07-01)
 
 ### 🔧 Refactoring | 重构
