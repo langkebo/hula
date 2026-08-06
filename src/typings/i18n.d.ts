@@ -843,7 +843,8 @@ export type I18nKeys = {
       }
     },
     "register": {
-      "title": "欢迎注册",
+      "title": "注册",
+      "title_accent": "账号",
       "labels": {
         "nickname": "昵称",
         "password": "密码",

@@ -8,12 +8,49 @@
     <ActionBar :max-w="false" :shrink="false" />
 
     <div class="flex-1 min-h-0 w-full overflow-hidden relative z-10">
+      <!-- 返回登录链接（对齐原型 auth-back-link） -->
+      <div
+        class="auth-back-link"
+        @click="router.replace('/login')"
+        role="button"
+        tabindex="0"
+        :aria-label="t('auth.register.actions.back_to_login')"
+        @keydown.enter="router.replace('/login')">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true">
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+        <span>{{ t('auth.register.actions.back_to_login') }}</span>
+      </div>
       <div class="min-h-full w-full box-border flex flex-col items-center justify-center py-12px px-20px pb-40px">
         <!-- 注册菜单 -->
-        <div class="w-full max-w-300px pointer-events-auto flex flex-col gap-12px text-center">
-          <div class="flex justify-center items-center gap-12px">
-            <span class="text-24px color-[--tjg-color-primary-500] textFont">{{ t('auth.register.title') }}</span>
-            <img class="w-100px h-40px" src="/tjg.png" alt="Tjg" />
+        <div class="w-full w-340px pointer-events-auto flex flex-col gap-12px text-center">
+          <!-- Logo + 标题（对齐原型 auth-logo 结构） -->
+          <div class="auth-logo">
+            <div class="auth-logo-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true">
+                <path
+                  d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              </svg>
+            </div>
+            <div class="auth-logo-text">
+              {{ t('auth.register.title') }}
+              <span class="accent">{{ t('auth.register.title_accent') }}</span>
+            </div>
           </div>
 
           <div class="w-full">
@@ -130,23 +167,18 @@
                   </div>
                 </n-form-item>
 
-                <!-- 密码提示信息 -->
-                <n-flex vertical v-if="info.password">
-                  <n-flex vertical :size="4">
-                    <Validation
-                      :value="info.password"
-                      :message="t('auth.register.password_hints.min_length')"
-                      :validator="validateMinLength" />
-                    <Validation
-                      :value="info.password"
-                      :message="t('auth.register.password_hints.alpha_numeric')"
-                      :validator="validateAlphaNumeric" />
-                    <Validation
-                      :value="info.password"
-                      :message="t('auth.register.password_hints.special_char')"
-                      :validator="validateSpecialChar" />
-                  </n-flex>
-                </n-flex>
+                <!-- 密码强度提示（对齐原型 pwd-hints 结构） -->
+                <div v-if="info.password" class="pwd-hints">
+                  <div :class="['pwd-hint', { valid: validateMinLength(info.password) }]">
+                    {{ t('auth.register.password_hints.min_length') }}
+                  </div>
+                  <div :class="['pwd-hint', { valid: validateAlphaNumeric(info.password) }]">
+                    {{ t('auth.register.password_hints.alpha_numeric') }}
+                  </div>
+                  <div :class="['pwd-hint', { valid: validateSpecialChar(info.password) }]">
+                    {{ t('auth.register.password_hints.special_char') }}
+                  </div>
+                </div>
 
                 <!-- 协议 -->
                 <n-flex align="center" justify="center" :size="6" class="mt-10px">
@@ -174,19 +206,11 @@
             @click="handleStepAction">
             {{ btnText }}
           </n-button>
-          <n-button class="w-full mt-10px" @click="router.replace('/login')">
-            {{ t('auth.register.actions.back_to_login') }}
-          </n-button>
           <p v-if="sendCodeCooldown > 0" class="text-(12px --color-primary) mt-6px whitespace-nowrap">
             {{ t('auth.register.tips.reopen_code') }}
           </p>
         </div>
       </div>
-    </div>
-
-    <!-- 底部栏 -->
-    <div class="text-(12px --tjg-text-tertiary) w-full absolute bottom-20px left-0 text-center pointer-events-none z-0">
-      <span>Copyright {{ currentYear - 1 }}-{{ currentYear }} 龙卷风 All Rights Reserved.</span>
     </div>
 
     <!-- 邮箱验证码输入弹窗 -->
@@ -230,7 +254,6 @@
 
 <script setup lang="ts">
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
-import dayjs from 'dayjs'
 import { darkTheme, type FormInst, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -251,7 +274,6 @@ const {
 
 import PinInput from '@/components/atomic/PinInput.vue'
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
-import Validation from '@/components/common/Validation.vue'
 import { useWindow } from '@/composables/common/useWindow'
 import router from '@/router'
 import type { RegisterUserReq } from '@/services/types.ts'
@@ -327,8 +349,6 @@ const btnText = computed(() => {
   }
   return t('auth.register.actions.send_code')
 })
-// 使用day.js获取当前年份
-const currentYear = dayjs().year()
 const registerForm = ref<FormInst | null>(null)
 const emailCodeModal = ref(false)
 
@@ -649,11 +669,112 @@ onUnmounted(() => {
 @use '@/styles/scss/global/login-bg';
 @use '@/styles/scss/login';
 
-.textFont {
-  font-family: AliFangYuan, sans-serif !important;
-}
-
 :deep(.n-form-item.n-form-item--top-labelled) {
   grid-template-rows: none;
+}
+
+/* 返回登录链接（对齐原型 .auth-back-link） */
+.auth-back-link {
+  position: absolute;
+  top: 14px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--tjg-text-secondary);
+  cursor: pointer;
+  z-index: 10;
+  transition: color 0.15s;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    color: var(--tjg-text-primary);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-back-link {
+    transition: none;
+  }
+}
+
+/* Logo + 标题（对齐原型 .auth-logo） */
+.auth-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.auth-logo-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--tjg-radius-sm, 4px);
+  background: linear-gradient(135deg, var(--tjg-color-primary-400), var(--tjg-color-primary-600));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--tjg-color-primary-500) 40%, transparent);
+
+  svg {
+    width: 22px;
+    height: 22px;
+    color: var(--tjg-text-inverse, #fff);
+  }
+}
+
+.auth-logo-text {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tjg-text-primary);
+  letter-spacing: 1px;
+
+  .accent {
+    color: var(--tjg-color-primary-500);
+  }
+}
+
+/* 密码强度提示（对齐原型 .pwd-hints） */
+.pwd-hints {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: -6px;
+}
+
+.pwd-hint {
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--tjg-text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
+
+  &::before {
+    content: '○';
+    font-size: 10px;
+  }
+
+  &.valid {
+    color: var(--tjg-color-primary-500);
+
+    &::before {
+      content: '●';
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pwd-hint {
+    transition: none;
+  }
 }
 </style>
