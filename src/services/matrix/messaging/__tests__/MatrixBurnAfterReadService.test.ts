@@ -1,3 +1,4 @@
+import { error as logError } from '@tauri-apps/plugin-log'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -89,10 +90,25 @@ describe('MatrixBurnAfterReadService', () => {
       expect(result).toBe(true)
     })
 
-    it('should return false on error', async () => {
-      mockManager.isBurnEnabled.mockRejectedValueOnce(new Error('error'))
+    it('should return false on error when throwOnError is false (default)', async () => {
+      mockManager.isBurnEnabled.mockRejectedValueOnce(new Error('Server error'))
       const result = await matrixBurnAfterReadService.isBurnEnabled('!room:test')
       expect(result).toBe(false)
+    })
+
+    // FT-131-A: 安全特性 isBurnEnabled 不能静默吞错，必须记录日志以便排查
+    it('FT-131-A: 失败时记录 error 日志（不再静默吞错）', async () => {
+      vi.mocked(logError).mockClear()
+      mockManager.isBurnEnabled.mockRejectedValueOnce(new Error('Server error'))
+      await matrixBurnAfterReadService.isBurnEnabled('!room:test')
+      expect(logError).toHaveBeenCalled()
+      expect(vi.mocked(logError).mock.calls[0][0]).toContain('isBurnEnabled')
+    })
+
+    // FT-131-A: 与其他方法一致，支持 throwOnError 选项让调用方可控地传播错误
+    it('FT-131-A: throwOnError=true 时向上抛出错误', async () => {
+      mockManager.isBurnEnabled.mockRejectedValueOnce(new Error('Server error'))
+      await expect(matrixBurnAfterReadService.isBurnEnabled('!room:test', true)).rejects.toThrow('Server error')
     })
   })
 

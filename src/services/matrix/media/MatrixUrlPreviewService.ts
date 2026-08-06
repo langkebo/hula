@@ -47,7 +47,9 @@ export function getDomain(url: string): string {
   try {
     const urlObj = new URL(url)
     return urlObj.hostname
-  } catch {
+  } catch (err) {
+    // R-18: log silent catch in getDomain
+    logger.warn('getDomain failed:', err)
     return ''
   }
 }

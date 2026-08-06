@@ -337,7 +337,8 @@ class SynapseRustExtensionsService extends BaseMatrixService {
         method: 'GET'
       })
       if (response && typeof response === 'object') {
-        const arrayField = response.items ?? response.friends ?? response.data
+        // FT-092: 后端 GET /friends 已移除冗余 items 字段，优先使用 friends 字段
+        const arrayField = response.friends ?? response.items ?? response.data
         if (Array.isArray(arrayField)) {
           // 按 user_id 去重，防止后端返回重复数据
           const seen = new Set<string>()

@@ -23,7 +23,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const userId = client.getUserId()
-      const path = `/user/${encodeURIComponent(userId ?? '')}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+      const path = MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA(userId ?? '', roomId, eventType)
       const result = await client.http.authedRequest('GET', path)
       return result as Record<string, unknown>
     } catch (err) {
@@ -36,7 +36,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const userId = client.getUserId()
-      const path = `/user/${encodeURIComponent(userId ?? '')}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`
+      const path = MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA(userId ?? '', roomId, eventType)
       await client.http.authedRequest('PUT', path, undefined, content)
       logger.info(`[MatrixRoom] 设置房间 account data 成功: ${roomId}/${eventType}`)
     } catch (err) {
@@ -87,7 +87,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async setReadLifetime(roomId: string, lifetimeMs: number): Promise<void> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('PUT', `/rooms/${encodeURIComponent(roomId)}/burn`, undefined, {
+      await client.http.authedRequest('PUT', MATRIX_PATHS.BURN.ROOM_BURN(roomId), undefined, {
         enabled: true,
         burn_after_ms: lifetimeMs
       })
@@ -256,7 +256,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   async signEvent(roomId: string, eventId: string): Promise<{ signature: string; signed_by: string }> {
     const client = this.getClient()
-    const path = `/rooms/${encodeURIComponent(roomId)}/sign/${encodeURIComponent(eventId)}`
+    const path = MATRIX_PATHS.ROOM.SIGN_EVENT(roomId, eventId)
     try {
       const result = await client.http.authedRequest('PUT', path)
       logger.info(`[MatrixRoom] 事件签名成功: ${roomId}/${eventId}`)
@@ -269,7 +269,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   async verifyEvent(roomId: string, eventId: string): Promise<{ valid: boolean; verifier: string }> {
     const client = this.getClient()
-    const path = `/rooms/${encodeURIComponent(roomId)}/verify/${encodeURIComponent(eventId)}`
+    const path = MATRIX_PATHS.ROOM.VERIFY_EVENT(roomId, eventId)
     try {
       const result = await client.http.authedRequest('POST', path)
       logger.info(`[MatrixRoom] 事件验证成功: ${roomId}/${eventId}`)
@@ -284,7 +284,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   async getMessageQueue(roomId: string): Promise<{ queue?: Array<{ event_id: string; type: string }> }> {
     const client = this.getClient()
-    const path = `/rooms/${encodeURIComponent(roomId)}/message_queue`
+    const path = MATRIX_PATHS.ROOM.MESSAGE_QUEUE(roomId)
     try {
       const result = await client.http.authedRequest('GET', path)
       return result as { queue?: Array<{ event_id: string; type: string }> }
@@ -298,7 +298,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   async getEncryptedEvents(roomId: string): Promise<{ events?: Array<Record<string, unknown>> }> {
     const client = this.getClient()
-    const path = `/rooms/${encodeURIComponent(roomId)}/encrypted_events`
+    const path = MATRIX_PATHS.ROOM.ENCRYPTED_EVENTS(roomId)
     try {
       const result = await client.http.authedRequest('GET', path)
       return result as { events?: Array<Record<string, unknown>> }

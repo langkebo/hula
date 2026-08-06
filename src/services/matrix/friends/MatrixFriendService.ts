@@ -97,8 +97,9 @@ class MatrixFriendService {
         if (manager && typeof (manager as FriendManager).start === 'function') {
           return manager as FriendManager
         }
-      } catch {
-        // getFriendManager() 可能抛出异常
+      } catch (err) {
+        // FT-131-C: 记录 getFriendManager 工厂异常，避免静默吞错导致 manager 不可用原因无法排查
+        logger.warn(`[MatrixFriend] getFriendManager() 工厂抛出异常: ${err}`)
       }
     }
 
@@ -211,8 +212,8 @@ class MatrixFriendService {
         const pending = await synapseRustExtensionsService.getPendingRequests()
         this.syncState = {
           ...this.syncState,
-          incomingRequests: (pending.incoming ?? []).map((r) => this.normalizeSynapseFriendRequest(r)),
-          outgoingRequests: (pending.outgoing ?? []).map((r) => this.normalizeSynapseFriendRequest(r))
+          incomingRequests: (pending.incoming ?? []).map((r) => this.normalizeSynapseFriendRequest(r, 'incoming')),
+          outgoingRequests: (pending.outgoing ?? []).map((r) => this.normalizeSynapseFriendRequest(r, 'outgoing'))
         }
       } catch (err) {
         logger.warn(`[MatrixFriend] REST API 轮询好友请求失败: ${err}`)
@@ -241,13 +242,18 @@ class MatrixFriendService {
   }
 
   /** 将 REST API 返回的好友请求转换为 FriendRequest 格式 */
-  private normalizeSynapseFriendRequest(req: SynapseFriendRequest): FriendRequest {
+  private normalizeSynapseFriendRequest(
+    req: SynapseFriendRequest,
+    direction: 'incoming' | 'outgoing' = 'incoming'
+  ): FriendRequest {
+    // incoming: 对方发起，user_id 取 requester
+    // outgoing: 本方发起，user_id 取 recipient
     return {
-      user_id: req.requester,
+      user_id: direction === 'incoming' ? req.requester : req.recipient,
       message: req.message,
       status: req.status === 'declined' ? 'rejected' : req.status,
       timestamp: req.created_ts,
-      direction: 'incoming'
+      direction
     }
   }
 
@@ -453,7 +459,7 @@ class MatrixFriendService {
     // FriendManager 不可用时，回退到 REST API
     try {
       const pending = await synapseRustExtensionsService.getPendingRequests()
-      return pending.incoming as unknown as FriendRequest[]
+      return (pending.incoming ?? []).map((r) => this.normalizeSynapseFriendRequest(r, 'incoming'))
     } catch (restErr) {
       logger.error(`[MatrixFriend] REST API 获取入站好友请求也失败: ${restErr}`)
       return []
@@ -474,7 +480,7 @@ class MatrixFriendService {
     // FriendManager 不可用时，回退到 REST API
     try {
       const pending = await synapseRustExtensionsService.getPendingRequests()
-      return pending.outgoing as unknown as FriendRequest[]
+      return (pending.outgoing ?? []).map((r) => this.normalizeSynapseFriendRequest(r, 'outgoing'))
     } catch (restErr) {
       logger.error(`[MatrixFriend] REST API 获取出站好友请求也失败: ${restErr}`)
       return []
@@ -716,11 +722,17 @@ class MatrixFriendService {
     try {
       const groups = await (
         manager as FriendManagerCompat & {
-          getFriendGroups?: () => Promise<FriendGroup[]>
+          getFriendGroups?: () => Promise<Array<{ id: string; name: string; members?: string[]; created_at?: number }>>
         }
       ).getFriendGroups?.()
       logger.info(`[MatrixFriend] 获取好友分组成功: ${groups?.length ?? 0} 个`)
-      return (groups as unknown as FriendGroup[] | undefined) ?? []
+      // SDK FriendGroup.id → 前端 FriendGroup.group_id 映射
+      return (groups ?? []).map((g) => ({
+        group_id: g.id,
+        name: g.name,
+        member_count: g.members?.length,
+        created_at: g.created_at
+      }))
     } catch (err) {
       logger.error(`[MatrixFriend] 获取好友分组失败: ${err}`)
       throw err

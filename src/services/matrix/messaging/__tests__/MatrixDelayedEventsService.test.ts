@@ -150,4 +150,49 @@ describe('MatrixDelayedEventsService', () => {
       expect(mockClient._unstable_sendScheduledDelayedEvent).toHaveBeenCalledWith('d1')
     })
   })
+
+  describe('delayId type compatibility (FT-084/FT-101: backend returns i64)', () => {
+    it('should accept number delayId for cancel without TypeError', async () => {
+      mockClient._unstable_cancelScheduledDelayedEvent.mockResolvedValue({})
+      const result = await matrixDelayedEventsService.cancelScheduledDelayedEvent(12345)
+      expect(mockClient._unstable_cancelScheduledDelayedEvent).toHaveBeenCalledWith(12345)
+      expect(result).toEqual({ ok: true })
+    })
+
+    it('should accept number delayId for restart', async () => {
+      mockClient._unstable_restartScheduledDelayedEvent.mockResolvedValue({})
+      await matrixDelayedEventsService.restartScheduledDelayedEvent(67890)
+      expect(mockClient._unstable_restartScheduledDelayedEvent).toHaveBeenCalledWith(67890)
+    })
+
+    it('should accept number delayId for send', async () => {
+      mockClient._unstable_sendScheduledDelayedEvent.mockResolvedValue({})
+      await matrixDelayedEventsService.sendScheduledDelayedEvent(99999)
+      expect(mockClient._unstable_sendScheduledDelayedEvent).toHaveBeenCalledWith(99999)
+    })
+
+    it('should accept number delayId for updateScheduledDelayedEvent', async () => {
+      mockClient._unstable_cancelScheduledDelayedEvent.mockResolvedValue({})
+      await matrixDelayedEventsService.updateScheduledDelayedEvent(42, 'cancel')
+      expect(mockClient._unstable_cancelScheduledDelayedEvent).toHaveBeenCalledWith(42)
+    })
+
+    it('should still accept string delayId (backward compat)', async () => {
+      mockClient._unstable_sendScheduledDelayedEvent.mockResolvedValue({})
+      await matrixDelayedEventsService.sendScheduledDelayedEvent('delay-str-1')
+      expect(mockClient._unstable_sendScheduledDelayedEvent).toHaveBeenCalledWith('delay-str-1')
+    })
+
+    it('should accept number delay_id in sendDelayedEvent response', async () => {
+      mockClient._unstable_sendDelayedEvent.mockResolvedValue({ delay_id: 100001, event_id: '$evt:test' })
+      const result = await matrixDelayedEventsService.sendDelayedEvent(
+        '!room:test',
+        'm.room.message',
+        { body: 'hi' },
+        { delay: 5000 }
+      )
+      expect(result.delay_id).toBe(100001)
+      expect(result.event_id).toBe('$evt:test')
+    })
+  })
 })

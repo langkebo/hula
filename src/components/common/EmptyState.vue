@@ -64,6 +64,23 @@
         <line x1="29" y1="29" x2="40" y2="40" />
         <path d="M15 20h10M20 15v10" />
       </svg>
+      <svg
+        v-else-if="illustration === 'server-unavailable'"
+        data-illustration="server-unavailable"
+        width="48"
+        height="48"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="var(--tjg-text-quaternary)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
+        <rect x="6" y="10" width="36" height="10" rx="2" />
+        <rect x="6" y="28" width="36" height="10" rx="2" />
+        <circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="33" r="1.5" fill="currentColor" stroke="none" />
+        <line x1="6" y1="6" x2="42" y2="42" />
+      </svg>
       <Icon v-else :icon="icon" />
     </div>
     <p v-if="title" class="empty-state__title">{{ title }}</p>
@@ -100,7 +117,7 @@ const props = withDefaults(
     compact?: boolean
     variant?: 'default' | 'welcome' | 'subtle'
     /** 内联 SVG 插图类型（优先于 icon 属性） */
-    illustration?: 'no-conversations' | 'no-friends' | 'no-spaces' | 'no-results'
+    illustration?: 'no-conversations' | 'no-friends' | 'no-spaces' | 'no-results' | 'server-unavailable'
     /** 引导按钮文案，提供时渲染按钮并在点击时 emit action */
     actionText?: string
   }>(),

@@ -1,40 +1,32 @@
 import { PREFIX_V1 } from './prefixes'
 
+/**
+ * Crypto 路径组（L3 路径常量）
+ *
+ * FT-120: 仅保留被 L2 服务实际引用的常量。大部分 crypto 操作走 SDK 的
+ * cryptoSDKAdapter 管理器（内部封装 HTTP），前端不直接拼接 URL；
+ * 以下常量用于 endpointCapabilityService.check() 能力探测或直接 HTTP 调用。
+ *
+ * 已移除的死常量（FT-120）：
+ *   KEYS_UPLOAD / KEYS_QUERY / KEYS_CLAIM / KEYS_CHANGES — MatrixCryptoService 走 manager
+ *   DEVICE_SIGNING_UPLOAD / SIGNATURES_UPLOAD / SEND_TO_DEVICE — 走 manager
+ *   ROOM_KEYS_VERSION / ROOM_KEYS_VERSION_BY_ID / ROOM_KEYS_KEYS / ROOM_KEYS_KEYS_BY_ROOM /
+ *   ROOM_KEYS_KEYS_BY_SESSION — 走 KeyBackupManager
+ *   ROOM_KEYS_RECOVERY_PROGRESS / ROOM_KEYS_VERIFY / ROOM_KEYS_BATCH_RECOVER /
+ *   ROOM_KEYS_RECOVER_ROOM / ROOM_KEYS_RECOVER_SESSION / ROOM_KEYS_EXPORT / ROOM_KEYS_IMPORT — 走 manager
+ *   VERIFY_ACCEPT / VERIFY_KEY_AGREEMENT / VERIFY_MAC / VERIFY_DONE / VERIFY_CANCEL /
+ *   VERIFY_REQUESTS — 走 KeyVerificationManager
+ *   KEY_ROTATION_* — 未实现
+ */
 export const CRYPTO = {
-  KEYS_UPLOAD: '/keys/upload',
-  KEYS_QUERY: '/keys/query',
-  KEYS_CLAIM: '/keys/claim',
-  KEYS_CHANGES: '/keys/changes',
-  DEVICE_SIGNING_UPLOAD: '/keys/device_signing/upload',
-  SIGNATURES_UPLOAD: '/keys/signatures/upload',
-  SEND_TO_DEVICE: (eventType: string, txnId: string) => `/sendToDevice/${eventType}/${txnId}`,
-  ROOM_KEYS_VERSION: '/room_keys/version',
-  ROOM_KEYS_VERSION_BY_ID: (version: string) => `/room_keys/version/${version}`,
-  ROOM_KEYS_KEYS: '/room_keys/keys',
-  ROOM_KEYS_KEYS_BY_ROOM: (roomId: string) => `/room_keys/keys/${roomId}`,
-  ROOM_KEYS_KEYS_BY_SESSION: (roomId: string, sessionId: string) => `/room_keys/keys/${roomId}/${sessionId}`,
+  /** POST — 密钥恢复端点（MatrixCryptoService.recoverKey 能力探测）。 */
   ROOM_KEYS_RECOVER: '/room_keys/recover',
-  ROOM_KEYS_RECOVERY_PROGRESS: (version: string) => `/room_keys/recovery/${version}/progress`,
-  ROOM_KEYS_VERIFY: (version: string) => `/room_keys/verify/${version}`,
-  ROOM_KEYS_BATCH_RECOVER: '/room_keys/batch_recover',
-  ROOM_KEYS_RECOVER_ROOM: (version: string, roomId: string) => `/room_keys/recover/${version}/${roomId}`,
-  ROOM_KEYS_RECOVER_SESSION: (version: string, roomId: string, sessionId: string) =>
-    `/room_keys/recover/${version}/${roomId}/${sessionId}`,
-  ROOM_KEYS_EXPORT: (version?: string) => (version ? `/room_keys/export/${version}` : '/room_keys/export'),
-  ROOM_KEYS_IMPORT: (version?: string) => (version ? `/room_keys/import/${version}` : '/room_keys/import'),
+  /** GET — 房间密钥请求列表（MatrixDeviceService.getRoomKeyRequests）。 */
   ROOM_KEYS_REQUEST: '/room_keys/request',
+  /** POST — SAS 验证启动（MatrixCryptoService 能力探测）。 */
   VERIFY_START: PREFIX_V1 + '/keys/device_signing/verify_start',
-  VERIFY_ACCEPT: PREFIX_V1 + '/keys/device_signing/verify_accept',
-  VERIFY_KEY_AGREEMENT: PREFIX_V1 + '/keys/device_signing/verify_key_agreement',
-  VERIFY_MAC: PREFIX_V1 + '/keys/device_signing/verify_mac',
-  VERIFY_DONE: PREFIX_V1 + '/keys/device_signing/verify_done',
-  VERIFY_CANCEL: PREFIX_V1 + '/keys/device_signing/verify_cancel',
-  VERIFY_REQUESTS: PREFIX_V1 + '/keys/device_signing/requests',
+  /** GET — 显示 QR 码（MatrixCryptoService.showQrCode 能力探测）。 */
   QR_CODE_SHOW: PREFIX_V1 + '/keys/qr_code/show',
-  QR_CODE_SCAN: PREFIX_V1 + '/keys/qr_code/scan',
-  KEY_ROTATION_CHECK: PREFIX_V1 + '/keys/rotation/check',
-  KEY_ROTATION_ROTATE: PREFIX_V1 + '/keys/rotation/rotate',
-  KEY_ROTATION_HISTORY: (deviceId: string) => `${PREFIX_V1}/keys/rotation/history/${encodeURIComponent(deviceId)}`,
-  KEY_ROTATION_REVOKE: PREFIX_V1 + '/keys/rotation/revoke',
-  KEY_ROTATION_CONFIG: PREFIX_V1 + '/keys/rotation/config'
+  /** POST — 扫描 QR 码（MatrixCryptoService.scanQrCode 能力探测）。 */
+  QR_CODE_SCAN: PREFIX_V1 + '/keys/qr_code/scan'
 } as const

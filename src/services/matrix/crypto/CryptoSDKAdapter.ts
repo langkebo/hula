@@ -370,7 +370,8 @@ class CryptoSDKAdapter {
     const client = this.getExtendedClient()
     try {
       return client.isCrossSigningReady?.() ?? false
-    } catch {
+    } catch (err) {
+      logger.error('Check cross-signing ready failed:', err)
       return false
     }
   }

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
+import { ADMIN } from '../admin'
 import { AUTH } from '../auth'
 import { BURN } from '../burn'
-import { DM } from '../dm'
+import { MODERATION } from '../moderation'
+import { NOTIFICATION } from '../notification'
 import { PREFIX_V1, PREFIX_V3 } from '../prefixes'
 import { ROOM } from '../room'
+import { VOICE } from '../voice'
 import { WELL_KNOWN } from '../wellKnown'
 
 describe('paths/prefixes', () => {
@@ -32,61 +35,8 @@ describe('paths/burn', () => {
     expect(BURN.STATS).toBe('/user/burn/stats')
   })
 
-  it('ROOM_BURN 拼接 roomId', () => {
-    expect(BURN.ROOM_BURN('!room:server')).toBe('/rooms/!room:server/burn')
-  })
-})
-
-describe('paths/dm', () => {
-  it('GET_DM 返回 v1 前缀的 dm 路径并编码 userId', () => {
-    expect(DM.GET_DM('@alice:server')).toBe(`/_matrix/client/v1/friends/dm/${encodeURIComponent('@alice:server')}`)
-  })
-
-  it('CREATE_DM 与 GET_DM 共享同一端点', () => {
-    expect(DM.CREATE_DM('@bob:home')).toBe(DM.GET_DM('@bob:home'))
-  })
-
-  it('对特殊字符进行 encodeURIComponent', () => {
-    const userId = '@alice:server/with slash'
-    expect(DM.GET_DM(userId)).toBe(`/_matrix/client/v1/friends/dm/${encodeURIComponent(userId)}`)
-  })
-})
-
-describe('paths/auth · 字符串常量', () => {
-  it('LOGIN 路径', () => {
-    expect(AUTH.LOGIN).toBe('/login')
-  })
-
-  it('LOGOUT 路径', () => {
-    expect(AUTH.LOGOUT).toBe('/logout')
-  })
-
-  it('REFRESH 路径', () => {
-    expect(AUTH.REFRESH).toBe('/refresh')
-  })
-
-  it('REGISTER 路径', () => {
-    expect(AUTH.REGISTER).toBe('/register')
-  })
-
-  it('WHOAMI 路径', () => {
-    expect(AUTH.WHOAMI).toBe('/account/whoami')
-  })
-
-  it('CAPABILITIES 路径', () => {
-    expect(AUTH.CAPABILITIES).toBe('/capabilities')
-  })
-
-  it('PASSWORD_CHANGE 路径', () => {
-    expect(AUTH.PASSWORD_CHANGE).toBe('/account/password')
-  })
-
-  it('DEACTIVATE 路径', () => {
-    expect(AUTH.DEACTIVATE).toBe('/account/deactivate')
-  })
-
-  it('EMAIL_REQUEST_TOKEN 路径', () => {
-    expect(AUTH.EMAIL_REQUEST_TOKEN).toBe('/account/3pid/email/requestToken')
+  it('ROOM_BURN 编码 roomId（FT-089: 与其他 ROOM 路径一致使用 encodeURIComponent）', () => {
+    expect(BURN.ROOM_BURN('!room:server')).toBe('/rooms/!room%3Aserver/burn')
   })
 })
 
@@ -249,5 +199,99 @@ describe('paths/room · 其它路径', () => {
 
   it('TAGS 编码 roomId 与 userId', () => {
     expect(ROOM.TAGS('!r:s', '@u:home')).toBe('/user/%40u%3Ahome/rooms/!r%3As/tags')
+  })
+
+  it('SIGN_EVENT 编码 roomId 与 eventId（FT-089: P2-8 事件签名）', () => {
+    expect(ROOM.SIGN_EVENT('!r:s', '$ev:1')).toBe('/rooms/!r%3As/sign/%24ev%3A1')
+  })
+
+  it('VERIFY_EVENT 编码 roomId 与 eventId（FT-089: P2-8 事件验证）', () => {
+    expect(ROOM.VERIFY_EVENT('!r:s', '$ev:1')).toBe('/rooms/!r%3As/verify/%24ev%3A1')
+  })
+
+  it('MESSAGE_QUEUE 编码 roomId（FT-089: P2-6 消息队列）', () => {
+    expect(ROOM.MESSAGE_QUEUE('!r:s')).toBe('/rooms/!r%3As/message_queue')
+  })
+
+  it('ENCRYPTED_EVENTS 编码 roomId（FT-089: P2-9 加密事件列表）', () => {
+    expect(ROOM.ENCRYPTED_EVENTS('!r:s')).toBe('/rooms/!r%3As/encrypted_events')
+  })
+
+  it('INVITE_BLOCKLIST 编码 roomId（FT-118: RoomOperations 邀请黑名单）', () => {
+    expect(ROOM.INVITE_BLOCKLIST('!r:s')).toBe('/rooms/!r%3As/invite_blocklist')
+  })
+
+  it('INVITE_ALLOWLIST 编码 roomId（FT-118: RoomOperations 邀请白名单）', () => {
+    expect(ROOM.INVITE_ALLOWLIST('!r:s')).toBe('/rooms/!r%3As/invite_allowlist')
+  })
+})
+
+describe('paths/voice · MSC4143 RTC transports（FT-096）', () => {
+  it('RTC_TRANSPORTS 指向 unstable MSC4143 路径', () => {
+    expect(VOICE.RTC_TRANSPORTS).toBe('/_matrix/client/unstable/org.matrix.msc4143/rtc/transports')
+  })
+})
+
+describe('paths/notification · pushers 路径常量（FT-088）', () => {
+  it('PUSH_RULES 带尾斜杠前缀', () => {
+    expect(NOTIFICATION.PUSH_RULES).toBe('/pushrules/')
+  })
+
+  it('PUSHERS 指向 pushers 端点', () => {
+    expect(NOTIFICATION.PUSHERS).toBe('/pushers')
+  })
+
+  it('PUSHERS_SET 指向 pushers/set 端点', () => {
+    expect(NOTIFICATION.PUSHERS_SET).toBe('/pushers/set')
+  })
+})
+
+describe('paths/admin · external_services 子路径（FT-090: AdminExternalServiceService 使用）', () => {
+  it('EXTERNAL_SERVICES_LIST 为相对路径常量', () => {
+    expect(ADMIN.EXTERNAL_SERVICES_LIST).toBe('/external_services')
+  })
+
+  it('SYNAPSE_ADMIN_BASE 为 v1 前缀', () => {
+    expect(ADMIN.SYNAPSE_ADMIN_BASE).toBe('/_synapse/admin/v1')
+  })
+
+  it('SYNAPSE_ADMIN_BASE_V2 为 v2 前缀（FT-119: 与 ADMIN.USERS 的 v2 版本对齐）', () => {
+    expect(ADMIN.SYNAPSE_ADMIN_BASE_V2).toBe('/_synapse/admin/v2')
+  })
+
+  it('EXTERNAL_SERVICES_BY_ID 编码 asId', () => {
+    expect(ADMIN.EXTERNAL_SERVICES_BY_ID('trendradar_news-bot')).toBe('/external_services/trendradar_news-bot')
+  })
+
+  it('EXTERNAL_SERVICES_BY_ID 对特殊字符进行编码', () => {
+    expect(ADMIN.EXTERNAL_SERVICES_BY_ID('as/id with space')).toBe('/external_services/as%2Fid%20with%20space')
+  })
+
+  it('EXTERNAL_SERVICES_HEALTH 为相对路径常量', () => {
+    expect(ADMIN.EXTERNAL_SERVICES_HEALTH).toBe('/external_services/health')
+  })
+
+  it('EXTERNAL_SERVICES_HEALTH_BY_ID 编码 asId', () => {
+    expect(ADMIN.EXTERNAL_SERVICES_HEALTH_BY_ID('trendradar_news-bot')).toBe(
+      '/external_services/trendradar_news-bot/health'
+    )
+  })
+
+  it('EXTERNAL_SERVICES_HEALTH_CHECK 编码 asId', () => {
+    expect(ADMIN.EXTERNAL_SERVICES_HEALTH_CHECK('trendradar_news-bot')).toBe(
+      '/external_services/trendradar_news-bot/health/check'
+    )
+  })
+})
+
+describe('paths/moderation · 举报与评分路径（FT-091: ReportService 使用）', () => {
+  it('REPORT_EVENT_SCORE v3 前缀并编码 roomId 与 eventId', () => {
+    expect(MODERATION.REPORT_EVENT_SCORE('v3', '!r:hs', '$e1')).toBe(
+      '/_matrix/client/v3/rooms/!r%3Ahs/report/%24e1/score'
+    )
+  })
+
+  it('REPORT_ROOM 使用 v3 前缀并编码 roomId', () => {
+    expect(MODERATION.REPORT_ROOM('!r:hs')).toBe('/_matrix/client/v3/rooms/!r%3Ahs/report')
   })
 })

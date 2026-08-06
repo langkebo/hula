@@ -60,6 +60,11 @@ interface DelayedEventClient {
     content: Record<string, unknown> & { msc4354_sticky_key?: string },
     txnId?: string
   ): Promise<SendDelayedEventResponse>
+  _unstable_getDelayedEvents(
+    status?: DelayedEventStatus,
+    delayId?: DelayedEventIdQuery,
+    fromToken?: string
+  ): Promise<DelayedEventInfo>
 }
 
 /** 定时消息/可撤回消息发送的延迟选项，与 SDK `SendDelayedEventRequestOpts` 等价。 */
@@ -68,8 +73,16 @@ export type DelayedEventOptions = SendDelayedEventRequestOpts
 /** 延迟事件查询范围。 */
 export type DelayedEventStatus = 'scheduled' | 'finalised'
 
+/**
+ * 延迟事件 ID 类型。
+ *
+ * 后端 `DelayedEvent.id` 为 `i64`（JSON number），但旧版客户端可能生成 string。
+ * FT-084/FT-101: 类型必须接受 number，否则 `delayId.trim is not a function`。
+ */
+export type DelayedEventId = string | number
+
 /** 延迟事件 ID 列表或单个 ID。 */
-export type DelayedEventIdQuery = string | string[]
+export type DelayedEventIdQuery = DelayedEventId | DelayedEventId[]
 
 /** 对延迟事件可执行的操作，对应 MSC4140 `UpdateDelayedEventAction`。 */
 export type ScheduledDelayedEventAction = 'cancel' | 'restart' | 'send'
@@ -188,7 +201,7 @@ class MatrixDelayedEventsService {
     delayId?: DelayedEventIdQuery,
     fromToken?: string
   ): Promise<DelayedEventInfo> {
-    const client = this.requireClient()
+    const client = this.requireClient() as unknown as DelayedEventClient
     const result = await client._unstable_getDelayedEvents(status, delayId, fromToken)
     const scheduledCount = result.scheduled?.length ?? 0
     const finalisedCount = result.finalised?.length ?? 0
@@ -199,18 +212,18 @@ class MatrixDelayedEventsService {
   /**
    * 对尚未送达的延迟事件执行操作。
    *
-   * @param delayId 目标延迟事件 ID
+   * @param delayId 目标延迟事件 ID（后端 i64，可为 number 或 string）
    * @param action `cancel` | `restart` | `send`
    */
   async updateScheduledDelayedEvent(
-    delayId: string,
+    delayId: DelayedEventId,
     action: ScheduledDelayedEventAction
   ): Promise<ScheduledDelayedEventResult> {
     const client = this.requireClient()
-    const methodMap: Record<ScheduledDelayedEventAction, (delayId: string) => Promise<unknown>> = {
-      cancel: (id) => client._unstable_cancelScheduledDelayedEvent(id),
-      restart: (id) => client._unstable_restartScheduledDelayedEvent(id),
-      send: (id) => client._unstable_sendScheduledDelayedEvent(id)
+    const methodMap: Record<ScheduledDelayedEventAction, (delayId: DelayedEventId) => Promise<unknown>> = {
+      cancel: (id) => client._unstable_cancelScheduledDelayedEvent(String(id)),
+      restart: (id) => client._unstable_restartScheduledDelayedEvent(String(id)),
+      send: (id) => client._unstable_sendScheduledDelayedEvent(String(id))
     }
     await methodMap[action](delayId)
     logger.info(`[updateScheduledDelayedEvent] delay_id=${delayId} action=${action}`)
@@ -220,21 +233,21 @@ class MatrixDelayedEventsService {
   /**
    * 取消一条尚未送达的定时消息（最常用的"撤回"语义）。
    */
-  async cancelScheduledDelayedEvent(delayId: string): Promise<ScheduledDelayedEventResult> {
+  async cancelScheduledDelayedEvent(delayId: DelayedEventId): Promise<ScheduledDelayedEventResult> {
     return this.updateScheduledDelayedEvent(delayId, 'cancel')
   }
 
   /**
    * 重置定时消息的计时（重新开始倒计时）。
    */
-  async restartScheduledDelayedEvent(delayId: string): Promise<ScheduledDelayedEventResult> {
+  async restartScheduledDelayedEvent(delayId: DelayedEventId): Promise<ScheduledDelayedEventResult> {
     return this.updateScheduledDelayedEvent(delayId, 'restart')
   }
 
   /**
    * 立即触发定时消息送达（不再等待倒计时）。
    */
-  async sendScheduledDelayedEvent(delayId: string): Promise<ScheduledDelayedEventResult> {
+  async sendScheduledDelayedEvent(delayId: DelayedEventId): Promise<ScheduledDelayedEventResult> {
     return this.updateScheduledDelayedEvent(delayId, 'send')
   }
 

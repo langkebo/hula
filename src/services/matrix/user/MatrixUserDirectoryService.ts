@@ -97,7 +97,9 @@ class UserDirectoryService extends BaseMatrixService {
       const client = this.getClient()
       const profile = await client.getProfileInfo(userId)
       return !!profile
-    } catch {
+    } catch (err) {
+      // R-15: log silent catch in isSearchable
+      logger.warn('isSearchable failed:', err)
       return false
     }
   }

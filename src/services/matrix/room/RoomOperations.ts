@@ -1,8 +1,12 @@
 import { Preset, Visibility } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { HttpClient } from '@/utils/HttpClient'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { MATRIX_PATHS } from '../paths'
+
+const logger = createLogger('RoomOperations')
 
 export class RoomOperations extends BaseMatrixService {
   // --- Aliases (was AliasesService) ---
@@ -218,36 +222,42 @@ export class RoomOperations extends BaseMatrixService {
 
   // --- Moderation (was ModerationService) ---
 
-  async getInviteBlocklist(roomId: string): Promise<string[]> {
+  async getInviteBlocklist(roomId: string, throwOnError = false): Promise<string[]> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/invite_blocklist`)
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.INVITE_BLOCKLIST(roomId))
       return (result as { blocked?: string[] }).blocked ?? []
-    } catch {
+    } catch (err) {
+      // R-12: blocklist 失败不能静默（返回 [] 等同于"无黑名单"，安全风险）
+      logger.error(`获取 invite blocklist 失败: ${roomId} ${err}`)
+      if (throwOnError) throw err
       return []
     }
   }
 
   async setInviteBlocklist(roomId: string, blocked: string[]): Promise<void> {
     const client = this.getClient()
-    await client.http.authedRequest('POST', `/rooms/${encodeURIComponent(roomId)}/invite_blocklist`, undefined, {
+    await client.http.authedRequest('POST', MATRIX_PATHS.ROOM.INVITE_BLOCKLIST(roomId), undefined, {
       blocked
     })
   }
 
-  async getInviteAllowlist(roomId: string): Promise<string[]> {
+  async getInviteAllowlist(roomId: string, throwOnError = false): Promise<string[]> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/invite_allowlist`)
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.INVITE_ALLOWLIST(roomId))
       return (result as { allowed?: string[] }).allowed ?? []
-    } catch {
+    } catch (err) {
+      // R-12: allowlist 失败不能静默
+      logger.error(`获取 invite allowlist 失败: ${roomId} ${err}`)
+      if (throwOnError) throw err
       return []
     }
   }
 
   async setInviteAllowlist(roomId: string, allowed: string[]): Promise<void> {
     const client = this.getClient()
-    await client.http.authedRequest('POST', `/rooms/${encodeURIComponent(roomId)}/invite_allowlist`, undefined, {
+    await client.http.authedRequest('POST', MATRIX_PATHS.ROOM.INVITE_ALLOWLIST(roomId), undefined, {
       allowed
     })
   }
@@ -391,7 +401,9 @@ export class RoomOperations extends BaseMatrixService {
     try {
       const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/sticky_events`)
       return result as Record<string, unknown>
-    } catch {
+    } catch (err) {
+      // R-12: sticky events 获取失败不应静默
+      logger.error(`获取 sticky events 失败: ${roomId} ${err}`)
       return {}
     }
   }

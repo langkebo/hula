@@ -175,7 +175,9 @@ class MatrixLocationService {
         description: content.body || content['m.location']?.description,
         timestamp: event.getTs()
       }
-    } catch {
+    } catch (err) {
+      // R-19: log silent catch in parseLocationEvent
+      logger.warn('parseLocation failed:', err)
       return null
     }
   }

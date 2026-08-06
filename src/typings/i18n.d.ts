@@ -3503,6 +3503,11 @@ export type I18nKeys = {
       },
       "pass": {
         "placeholder": "输入 Tjg 密码"
+      },
+      "homeserver": {
+        "placeholder": "服务器地址",
+        "advanced_hint": "支持 Matrix 联邦协议，可输入域名（tjg.im）或完整 URL",
+        "toggle_title": "高级服务器设置"
       }
     },
     "option": {

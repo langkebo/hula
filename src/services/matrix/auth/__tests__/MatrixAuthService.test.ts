@@ -51,15 +51,32 @@ const server = setupMswServer(
   })
 )
 
-const { mockSdk } = vi.hoisted(() => ({
+const { mockSdk, loggerSpy } = vi.hoisted(() => ({
   mockSdk: {
     createClient: vi.fn()
+  },
+  loggerSpy: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
   }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => loggerSpy
 }))
 
 vi.mock('matrix-js-sdk', () => ({
   ...mockSdk,
   default: mockSdk
+}))
+
+vi.mock('@/services/backend/config', () => ({
+  resolveMatrixRuntimeEndpointConfig: () => ({
+    homeserverUrl: TEST_BASE_URL,
+    identityServerUrl: TEST_BASE_URL
+  })
 }))
 
 import * as sdk from 'matrix-js-sdk'
@@ -680,5 +697,25 @@ describe('MatrixAuthService', () => {
         '请求邮箱令牌失败 (400): [M_INVALID_EMAIL] (邮箱格式无效)'
       )
     })
+  })
+})
+
+describe('R-20: error logging', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('logs a warning when fetchWellKnown throws and returns empty object', async () => {
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+      getHomeserverUrl: () => {
+        throw new Error('homeserver url failed')
+      }
+    } as unknown as MatrixClient)
+
+    const result = await MatrixAuthService.getWellKnown()
+
+    expect(result).toEqual({})
+    expect(loggerSpy.warn).toHaveBeenCalledTimes(1)
+    expect(loggerSpy.warn).toHaveBeenCalledWith('fetchWellKnown failed:', expect.any(Error))
   })
 })

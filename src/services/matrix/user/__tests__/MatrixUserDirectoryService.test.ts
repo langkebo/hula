@@ -3,6 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { userDirectoryService } from '../MatrixUserDirectoryService'
 
+const { loggerSpy } = vi.hoisted(() => ({
+  loggerSpy: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => loggerSpy
+}))
+
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn()
@@ -68,5 +81,25 @@ describe('MatrixUserDirectoryService', () => {
       limit: 10
     })
     expect(result[0].userId).toBe('@bob:example.com')
+  })
+})
+
+describe('R-15: error logging', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+  })
+
+  it('logs a warning when isSearchable throws and returns false', async () => {
+    const client = {
+      getProfileInfo: vi.fn().mockRejectedValue(new Error('profile fetch failed'))
+    }
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client as unknown as MatrixClient)
+
+    const result = await userDirectoryService.isSearchable('@alice:example.com')
+
+    expect(result).toBe(false)
+    expect(loggerSpy.warn).toHaveBeenCalledTimes(1)
+    expect(loggerSpy.warn).toHaveBeenCalledWith('isSearchable failed:', expect.any(Error))
   })
 })

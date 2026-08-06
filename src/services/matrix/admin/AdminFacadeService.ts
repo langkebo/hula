@@ -111,7 +111,9 @@ class AdminFacadeService extends BaseMatrixService {
     try {
       await this.adminRequest('GET', '/whoami')
       return true
-    } catch {
+    } catch (err) {
+      // R-14: log silent catch in checkAdminApiAvailability
+      logger.warn('checkAdminApiAvailability failed:', err)
       return false
     }
   }
@@ -145,7 +147,7 @@ class AdminFacadeService extends BaseMatrixService {
             `/users/${encodeURIComponent(userId)}`,
             undefined,
             undefined,
-            { prefix: MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE }
+            { prefix: MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE_V2 }
           )
           const isAdmin = Boolean((userInfo as { admin?: boolean }).admin)
           this.cachedAdminStatus = isAdmin

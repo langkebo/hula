@@ -111,7 +111,9 @@ export class CryptoHealthMonitor {
       const devices = await matrixCryptoService.getDevices(userId)
       if (!Array.isArray(devices)) return false
       return devices.some((d) => !d.isVerified)
-    } catch {
+    } catch (err) {
+      // R-01: 未验证设备检查失败不应静默，记录日志便于排查鉴权/网络问题
+      logger.error('checkUnverifiedDevices 失败:', err)
       return false
     }
   }
@@ -123,8 +125,10 @@ export class CryptoHealthMonitor {
         return false
       }
       return true
-    } catch {
-      return true
+    } catch (err) {
+      // R-02: 备份检查失败不能误报 true（"已同步"），否则会掩盖真实的备份缺失风险
+      logger.error('checkKeyBackupSync 失败，降级为未同步:', err)
+      return false
     }
   }
 
@@ -139,7 +143,9 @@ export class CryptoHealthMonitor {
         return await crypto.isCrossSigningReady()
       }
       return false
-    } catch {
+    } catch (err) {
+      // R-03: 跨签名检查失败不应静默
+      logger.error('checkCrossSigningReady 失败:', err)
       return false
     }
   }
@@ -159,7 +165,9 @@ export class CryptoHealthMonitor {
         }
       }
       return count
-    } catch {
+    } catch (err) {
+      // R-04: 不可解密消息计数失败不应静默
+      logger.error('countUndecryptableMessages 失败:', err)
       return 0
     }
   }

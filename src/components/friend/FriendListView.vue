@@ -2,26 +2,30 @@
   <nav class="friend-list-view" :aria-label="t('friend.list.title')">
     <div v-if="showStatePanel" class="friend-list-view__state" role="status" :aria-busy="isCapabilityLoading">
       <n-spin :show="isCapabilityLoading" class="h-full">
-        <n-empty
+        <EmptyState
           v-if="viewState === 'capability'"
+          illustration="server-unavailable"
+          :title="t('friend.list.capability_unavailable_title')"
           :description="t('friend.list.capability_unavailable_description')"
-          size="large">
-          <template #extra>
-            <span class="friend-list-view__state-title">
-              {{ t('friend.list.capability_unavailable_title') }}
-            </span>
+          class="mt-40px">
+          <template #actions>
+            <n-button size="small" @click="handleRetryFriendList">
+              {{ t('common.retry') }}
+            </n-button>
           </template>
-        </n-empty>
-        <n-empty v-else :description="lastFriendError?.message || t('common.error')" size="large">
-          <template #extra>
-            <n-flex vertical align="center" :size="12">
-              <span class="friend-list-view__state-title">{{ t('common.error') }}</span>
-              <n-button size="small" @click="handleRetryFriendList">
-                {{ t('common.retry') }}
-              </n-button>
-            </n-flex>
+        </EmptyState>
+        <EmptyState
+          v-else
+          illustration="no-results"
+          :title="t('common.error')"
+          :description="lastFriendError?.message || t('common.error')"
+          class="mt-40px">
+          <template #actions>
+            <n-button size="small" @click="handleRetryFriendList">
+              {{ t('common.retry') }}
+            </n-button>
           </template>
-        </n-empty>
+        </EmptyState>
       </n-spin>
     </div>
 
@@ -272,11 +276,6 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-}
-
-.friend-list-view__state-title {
-  font-size: 14px;
-  color: var(--tjg-text-primary);
 }
 
 .friend-items {

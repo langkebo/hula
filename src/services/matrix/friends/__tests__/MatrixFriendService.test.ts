@@ -1,3 +1,4 @@
+import { warn as logWarn } from '@tauri-apps/plugin-log'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -296,6 +297,61 @@ describe('MatrixFriendService', () => {
           online: true
         })
       ])
+    })
+  })
+
+  // FT-130: getFriendGroups 不应使用冗余的双重类型断言
+  describe('getFriendGroups (FT-130: no redundant double assertion)', () => {
+    it('返回 manager 的 getFriendGroups 结果', async () => {
+      const groups = [
+        { group_id: 'g1', name: '家人' },
+        { group_id: 'g2', name: '同事' }
+      ]
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        friendManager: {
+          ...mockFriendManager,
+          getFriendGroups: vi.fn(async () => groups),
+          start: vi.fn(),
+          on: vi.fn()
+        }
+      } as unknown as MatrixClient)
+
+      const result = await matrixFriendService.getFriendGroups()
+
+      expect(result).toHaveLength(2)
+      expect(result[0].group_id).toBe('g1')
+      expect(result[0].name).toBe('家人')
+    })
+
+    it('manager 无 getFriendGroups 方法时返回空数组', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        friendManager: {
+          ...mockFriendManager,
+          start: vi.fn(),
+          on: vi.fn()
+        }
+      } as unknown as MatrixClient)
+
+      const result = await matrixFriendService.getFriendGroups()
+
+      expect(result).toEqual([])
+    })
+  })
+
+  // FT-131-C: getFriendManager 工厂方法抛错时不能静默吞错，必须记录日志
+  describe('FT-131-C: manager factory error logging', () => {
+    it('getFriendManager() 抛错时记录 warn 日志（不再静默吞错）', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getFriendManager: () => {
+          throw new Error('friend manager factory boom')
+        }
+      } as unknown as MatrixClient)
+
+      vi.mocked(logWarn).mockClear()
+      await matrixFriendService.getFriends()
+
+      expect(logWarn).toHaveBeenCalled()
+      expect(vi.mocked(logWarn).mock.calls[0][0]).toContain('getFriendManager')
     })
   })
 })

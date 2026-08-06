@@ -7,10 +7,10 @@
     <!--顶部操作栏-->
     <ActionBar :max-w="false" :shrink="false" />
 
-    <div class="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden relative z-10">
-      <div class="min-h-full w-full flex flex-col items-center justify-center py-20px px-20px pb-60px">
+    <div class="flex-1 min-h-0 w-full overflow-hidden relative z-10">
+      <div class="min-h-full w-full box-border flex flex-col items-center justify-center py-12px px-20px pb-40px">
         <!-- 注册菜单 -->
-        <div class="w-full max-w-260px pointer-events-auto flex flex-col gap-16px text-center">
+        <div class="w-full max-w-300px pointer-events-auto flex flex-col gap-12px text-center">
           <div class="flex justify-center items-center gap-12px">
             <span class="text-24px color-[--tjg-color-primary-500] textFont">{{ t('auth.register.title') }}</span>
             <img class="w-100px h-40px" src="/tjg.png" alt="Tjg" />

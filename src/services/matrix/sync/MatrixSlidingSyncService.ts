@@ -284,7 +284,9 @@ class MatrixSlidingSyncService {
     try {
       const list = this.slidingSync.getList(listName)
       return list?.rooms?.length ?? 0
-    } catch {
+    } catch (err) {
+      // R-13: log silent catch in getListRoomCount
+      logger.warn('getListRoomCount failed:', err)
       return 0
     }
   }

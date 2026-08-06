@@ -6,7 +6,6 @@ import { AUTH } from './auth'
 import { BURN } from './burn'
 import { CLIENT_CONFIG } from './clientConfig'
 import { CRYPTO } from './crypto'
-import { DM } from './dm'
 import { FRIENDS } from './friends'
 import { GUEST } from './guest'
 import { MEDIA } from './media'
@@ -58,7 +57,6 @@ export const MATRIX_PATHS = {
   ACCOUNT_DATA,
   RELATIONS,
   WIDGET,
-  DM,
   MODERATION,
   EXTENSIONS: matrixExtensionEndpoints
 } as const

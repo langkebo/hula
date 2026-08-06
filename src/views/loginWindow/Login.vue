@@ -1,34 +1,41 @@
 <template>
-  <n-config-provider :theme="naiveTheme" data-tauri-drag-region class="login-box size-full rounded-8px select-none">
-    <ActionBar :max-w="false" :shrink="false" proxy />
+  <n-config-provider
+    :theme="naiveTheme"
+    data-tauri-drag-region
+    class="login-box size-full rounded-8px select-none flex flex-col overflow-hidden">
+    <ActionBar :max-w="false" :shrink="false" proxy class="shrink-0" />
 
-    <ManualLoginForm
-      v-if="uiState === 'manual'"
-      v-model:login-info="loginInfo"
-      v-model:protocol="protocol"
-      :loading="loading"
-      :login-disabled="loginDisabled"
-      :login-text="loginText"
-      :login-status="loginStatus"
-      :last-login-error="lastLoginError"
-      @login="normalLogin('PC', true, false)"
-      @retry="retryLogin"
-      @open-service-agreement="openServiceAgreement"
-      @open-privacy-agreement="openPrivacyAgreement" />
+    <div class="flex-1 min-h-0 w-full overflow-hidden flex flex-col justify-center">
+      <ManualLoginForm
+        v-if="uiState === 'manual'"
+        v-model:login-info="loginInfo"
+        v-model:protocol="protocol"
+        v-model:homeserver-url="homeserverUrl"
+        :loading="loading"
+        :login-disabled="loginDisabled"
+        :login-text="loginText"
+        :login-status="loginStatus"
+        :last-login-error="lastLoginError"
+        @login="normalLogin('PC', true, false)"
+        @retry="retryLogin"
+        @open-service-agreement="openServiceAgreement"
+        @open-privacy-agreement="openPrivacyAgreement" />
 
-    <AutoLoginForm
-      v-else-if="uiState === 'auto'"
-      :loading="loading"
-      :login-disabled="loginDisabled"
-      :login-text="loginText"
-      :user-info="userStore.userInfo"
-      @login="triggerAutoLogin" />
+      <AutoLoginForm
+        v-else-if="uiState === 'auto'"
+        :loading="loading"
+        :login-disabled="loginDisabled"
+        :login-text="loginText"
+        :user-info="userStore.userInfo"
+        @login="triggerAutoLogin" />
 
-    <div v-if="uiState !== 'auto'" class="w-full pb-22px pt-3px">
-      <ThirdPartyLogin :login-context="loginContext" />
+      <div v-if="uiState !== 'auto'" class="w-full pb-12px pt-4px shrink-0">
+        <ThirdPartyLogin :login-context="loginContext" />
+      </div>
     </div>
 
     <LoginBottomBar
+      class="shrink-0 pb-16px px-20px"
       :mode="uiState"
       @switch-to-qr="router.push('/qrCode')"
       @cancel-auto-login="cancelAutoLoginAndShowManual"

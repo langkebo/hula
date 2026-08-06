@@ -1,15 +1,87 @@
 <template>
-  <n-flex vertical :size="22">
-    <n-flex justify="center" class="w-full pt-12px" data-tauri-drag-region>
-      <n-avatar
-        class="welcome size-80px rounded-50% border-(2px solid [--login-avatar-border])"
-        :color="'var(--login-avatar-bg)'"
-        alt="Tjg Logo"
-        :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-        :src="AvatarUtils.getAvatarUrl(loginInfo.avatar)" />
+  <n-flex vertical :size="16">
+    <n-flex justify="center" class="w-full pt-8px" data-tauri-drag-region>
+      <div class="login-avatar-wrap relative">
+        <n-avatar
+          class="welcome size-80px rounded-50% border-(3px solid [--login-avatar-border])"
+          :color="'var(--login-avatar-bg)'"
+          alt="Tjg Logo"
+          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+          :src="AvatarUtils.getAvatarUrl(loginInfo.avatar)" />
+      </div>
     </n-flex>
 
-    <n-flex class="ma text-center h-full w-260px" vertical :size="16">
+    <n-flex class="ma text-center w-300px" vertical :size="12">
+      <!-- 服务器地址（家服务）输入框 -->
+      <div class="homeserver-wrap">
+        <n-input
+          size="large"
+          v-model:value="homeserverUrl"
+          type="text"
+          :placeholder="t('login.input.homeserver.placeholder')"
+          :title="t('login.input.homeserver.toggle_title')"
+          spellCheck="false"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          clearable>
+          <template #prefix>
+            <svg
+              class="size-16px color-[--tjg-text-secondary] flex-shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true">
+              <rect x="3" y="4" width="18" height="6" rx="1.5" />
+              <rect x="3" y="14" width="18" height="6" rx="1.5" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+              <line x1="7" y1="17" x2="7.01" y2="17" />
+            </svg>
+          </template>
+          <template #suffix>
+            <n-flex
+              class="cursor-pointer color-[--tjg-text-secondary]"
+              :title="t('login.input.homeserver.toggle_title')"
+              @click="showServerAdvanced = !showServerAdvanced">
+              <svg
+                class="w-14px h-14px transition-transform duration-200"
+                :class="{ 'rotate-180': showServerAdvanced }"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </n-flex>
+          </template>
+        </n-input>
+        <!-- 高级服务器设置折叠提示 -->
+        <transition name="server-advanced">
+          <div v-if="showServerAdvanced" class="homeserver-hint">
+            <svg
+              class="size-11px flex-shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            <span>{{ t('login.input.homeserver.advanced_hint') }}</span>
+          </div>
+        </transition>
+      </div>
+
       <n-input
         :class="{ 'pl-16px': loginHistories.length > 0 }"
         size="large"
@@ -38,7 +110,7 @@
       <div
         style="border: 1px solid var(--login-dropdown-border)"
         v-if="loginHistories.length > 0 && arrowStatus"
-        class="account-box absolute w-260px max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border">
+        class="account-box absolute w-300px max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border">
         <n-scrollbar style="max-height: 120px" trigger="none">
           <n-flex
             vertical
@@ -96,7 +168,7 @@
         :disabled="loginDisabled"
         tertiary
         style="color: var(--tjg-text-inverse)"
-        class="gradient-button w-full mt-8px mb-10px"
+        class="gradient-button w-full mt-4px mb-4px"
         @click="emit('login')">
         <span>{{ loginText }}</span>
       </n-button>
@@ -149,8 +221,10 @@ const loginInfo = defineModel<{
 }>('loginInfo', { required: true })
 
 const protocol = defineModel<boolean>('protocol', { required: true })
+const homeserverUrl = defineModel<string>('homeserverUrl', { required: true })
 
 const arrowStatus = ref(false)
+const showServerAdvanced = ref(false)
 const accountPH = ref(t('login.input.account.placeholder'))
 const passwordPH = ref(t('login.input.pass.placeholder'))
 
@@ -211,16 +285,14 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.login-error-retry {
+/* homeserver-wrap 仅作为输入框 + 折叠提示的容器，不加背景/边框/padding，
+   保证内部 n-input 与账号/密码输入框完全对齐（与原型 .auth-input-wrap 一致） */
+.homeserver-wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  margin-top: 4px;
-  background: var(--tjg-color-danger-50);
-  border: 1px solid var(--tjg-color-danger-200);
-  border-radius: 6px;
+  width: 100%;
+  gap: 4px;
 }
 
 .login-error-retry__message {
@@ -229,5 +301,41 @@ onUnmounted(() => {
   color: var(--tjg-color-danger-600, #dc2626);
   text-align: center;
   margin: 0;
+}
+
+.homeserver-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--tjg-text-tertiary);
+  text-align: left;
+}
+
+.server-advanced-enter-active,
+.server-advanced-leave-active {
+  transition:
+    opacity 0.25s ease,
+    max-height 0.25s ease;
+  overflow: hidden;
+  max-height: 60px;
+}
+
+.server-advanced-enter-from,
+.server-advanced-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .server-advanced-enter-active,
+  .server-advanced-leave-active {
+    transition: none;
+  }
+  .rotate-180 {
+    transition: none;
+  }
 }
 </style>

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { MATRIX_PATHS } from '@/services/matrix/paths'
+
 const authedRequestMock = vi.fn()
 
 vi.mock('@/services/matrix/MatrixHttpClient', () => ({
@@ -50,14 +52,15 @@ describe('MatrixVoiceService — P2-7 RTC 传输协议信息扩展', () => {
     authedRequestMock.mockReset()
   })
 
-  it('getRtcTransports 调用 GET /unstable/org.matrix.msc4143/rtc/transports', async () => {
+  it('getRtcTransports 调用 GET VOICE.RTC_TRANSPORTS（FT-096: 使用 L3 常量）', async () => {
     authedRequestMock.mockResolvedValue({
       transports: [{ transport: 'webrtc', version: '1.0' }]
     })
 
     const result = await matrixVoiceService.getRtcTransports()
 
-    expect(authedRequestMock).toHaveBeenCalledWith('GET', '/_matrix/client/unstable/org.matrix.msc4143/rtc/transports')
+    expect(authedRequestMock).toHaveBeenCalledWith('GET', MATRIX_PATHS.VOICE.RTC_TRANSPORTS)
+    expect(MATRIX_PATHS.VOICE.RTC_TRANSPORTS).toBe('/_matrix/client/unstable/org.matrix.msc4143/rtc/transports')
     expect(result).toEqual({ transports: [{ transport: 'webrtc', version: '1.0' }] })
   })
 

@@ -1,9 +1,17 @@
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { uploadService } from '@/services/UploadService'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 const TEST_BASE_URL = 'https://matrix.test'
+
+vi.mock('@/services/backend', () => ({
+  resolveMatrixRuntimeEndpointConfig: () => ({
+    homeserverUrl: TEST_BASE_URL,
+    identityServerUrl: TEST_BASE_URL
+  })
+}))
+
+const { uploadService } = await import('@/services/UploadService')
 
 const server = setupServer()
 

@@ -241,10 +241,22 @@
           "url": "https://matrix.test:**"
         },
         {
+          "url": "http://matrix.test"
+        },
+        {
+          "url": "http://matrix.test:**"
+        },
+        {
           "url": "https://element.test"
         },
         {
           "url": "https://element.test:**"
+        },
+        {
+          "url": "http://element.test"
+        },
+        {
+          "url": "http://element.test:**"
         }
       ]
     }

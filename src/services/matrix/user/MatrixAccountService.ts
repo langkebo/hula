@@ -1,5 +1,6 @@
 import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
+import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 
@@ -381,7 +382,30 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const result = await client.getCapabilities()
       logger.info('[MatrixAccount] 获取能力声明成功')
-      return result as Record<string, unknown>
+      const caps = result as { capabilities?: Record<string, unknown>; unstable_features?: Record<string, boolean> }
+      // SDK 的 getCapabilities() 只返回 IServerCapabilities（仅 capabilities 字段），
+      // 丢弃了 unstable_features。而 io.hula.friends 仅存在于 unstable_features 中，
+      // 因此需要额外通过 HTTP 请求获取完整响应。
+      if (!caps.unstable_features) {
+        try {
+          const baseUrl = client.getHomeserverUrl()
+          const accessToken = client.getAccessToken()
+          const url = `${baseUrl}/_matrix/client/v3/capabilities`
+          const response = await getRuntimeAwareFetch()(url, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              Accept: 'application/json'
+            }
+          })
+          if (response.ok) {
+            const fullBody = (await response.json()) as Record<string, unknown>
+            return fullBody
+          }
+        } catch {
+          // 降级：使用 SDK 返回的数据（可能缺少 unstable_features）
+        }
+      }
+      return caps as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixAccount] 获取能力声明失败: ${err}`)
       return {}

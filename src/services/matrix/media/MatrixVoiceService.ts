@@ -73,6 +73,13 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 class MatrixVoiceService extends BaseMatrixService {
+  // FT-122: 校验必需的 ID 参数非空，避免空字符串传给后端
+  private requireNonEmpty(value: string, name: string): void {
+    if (!value || value.trim() === '') {
+      throw new Error(`${name} is required and must be a non-empty string`)
+    }
+  }
+
   private getVoiceClient(): MxcHttpClient {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -109,6 +116,7 @@ class MatrixVoiceService extends BaseMatrixService {
   }
 
   async uploadVoice(roomId: string, file: Blob | File, filename = 'voice.webm'): Promise<VoiceMessageResult> {
+    this.requireNonEmpty(roomId, 'roomId')
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
@@ -142,6 +150,8 @@ class MatrixVoiceService extends BaseMatrixService {
   }
 
   async getVoice(roomId: string, eventId: string): Promise<VoicePlaybackInfo | null> {
+    this.requireNonEmpty(roomId, 'roomId')
+    this.requireNonEmpty(eventId, 'eventId')
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
@@ -221,6 +231,7 @@ class MatrixVoiceService extends BaseMatrixService {
     totalDuration: number
     totalMessages: number
   }> {
+    this.requireNonEmpty(userId, 'userId')
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
@@ -258,7 +269,7 @@ class MatrixVoiceService extends BaseMatrixService {
     try {
       const available = await endpointCapabilityService.check('GET', MATRIX_PATHS.VOICE.CONFIG)
       if (!available) {
-        return { maxDuration: 300, allowedFormats: ['audio/webm', 'audio/ogg', 'audio/mp4'], autoTranscribe: false }
+        throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
       }
       const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', MATRIX_PATHS.VOICE.CONFIG)
       return {
@@ -267,12 +278,13 @@ class MatrixVoiceService extends BaseMatrixService {
         autoTranscribe: (result.auto_transcribe as boolean) ?? false
       }
     } catch (err) {
-      logger.warn(`[MatrixVoiceService] getVoiceConfig failed: ${err}`)
-      return { maxDuration: 300, allowedFormats: ['audio/webm', 'audio/ogg', 'audio/mp4'], autoTranscribe: false }
+      logger.error(`[MatrixVoiceService] 获取语音配置失败: ${err}`)
+      throw err
     }
   }
 
   async deleteVoice(messageId: string): Promise<void> {
+    this.requireNonEmpty(messageId, 'messageId')
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
@@ -281,8 +293,7 @@ class MatrixVoiceService extends BaseMatrixService {
       const path = MATRIX_PATHS.VOICE.CONTENT(messageId)
       const available = await endpointCapabilityService.check('DELETE', path)
       if (!available) {
-        logger.warn('[MatrixVoiceService] 语音删除端点不可用')
-        return
+        throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
       }
       await authedRequestWithPath<void>(client, 'DELETE', path)
     } catch (err) {
@@ -299,6 +310,7 @@ class MatrixVoiceService extends BaseMatrixService {
     voices: Array<{ event_id: string; sender: string; duration: number; timestamp: number }>
     total: number
   }> {
+    this.requireNonEmpty(roomId, 'roomId')
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
@@ -333,6 +345,7 @@ class MatrixVoiceService extends BaseMatrixService {
     voices: Array<{ event_id: string; room_id: string; duration: number; timestamp: number }>
     total: number
   }> {
+    this.requireNonEmpty(userId, 'userId')
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
@@ -360,6 +373,7 @@ class MatrixVoiceService extends BaseMatrixService {
   }
 
   async getVoiceContent(messageId: string): Promise<Record<string, unknown> | null> {
+    this.requireNonEmpty(messageId, 'messageId')
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
@@ -380,6 +394,7 @@ class MatrixVoiceService extends BaseMatrixService {
   }
 
   async convertVoice(messageId: string, targetFormat: string): Promise<{ url: string; format: string } | null> {
+    this.requireNonEmpty(messageId, 'messageId')
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
@@ -413,6 +428,7 @@ class MatrixVoiceService extends BaseMatrixService {
     messageId: string,
     options?: { bitrate?: number; sample_rate?: number }
   ): Promise<{ url: string; size: number } | null> {
+    this.requireNonEmpty(messageId, 'messageId')
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
@@ -489,10 +505,7 @@ class MatrixVoiceService extends BaseMatrixService {
   async getRtcTransports(): Promise<Record<string, unknown>> {
     try {
       const client = this.getClient()
-      const result = await client.http.authedRequest(
-        'GET',
-        '/_matrix/client/unstable/org.matrix.msc4143/rtc/transports'
-      )
+      const result = await client.http.authedRequest('GET', MATRIX_PATHS.VOICE.RTC_TRANSPORTS)
       return result as Record<string, unknown>
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getRtcTransports failed: ${err}`)

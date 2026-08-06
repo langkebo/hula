@@ -283,4 +283,40 @@ describe('MatrixReceiptService', () => {
 
     expect(matrixReceiptService.getUnreadCount('!room:id')).toBe(5)
   })
+
+  // FT-133: clearCache 应清理缓存的 client/manager 和 pending 任务
+  describe('clearCache (FT-133: explicit cache cleanup)', () => {
+    it('清理已缓存的 client 和 manager 引用', () => {
+      mockReceiptManager.getReceipt.mockReturnValue([])
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+      // 触发缓存
+      matrixReceiptService.getReadReceipts('!room:id', '$event')
+      expect((matrixReceiptService as any).cachedClient).toBeTruthy()
+      expect((matrixReceiptService as any).cachedManager).toBeTruthy()
+
+      // 清理
+      matrixReceiptService.clearCache()
+
+      expect((matrixReceiptService as any).cachedClient).toBeNull()
+      expect((matrixReceiptService as any).cachedManager).toBeNull()
+    })
+
+    it('清理 pending mark-as-read 任务并清除定时器', async () => {
+      vi.useFakeTimers()
+      mockClient.getRoom.mockReturnValue(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+      const pending = matrixReceiptService.markRoomAsRead('!room:id')
+      await vi.advanceTimersByTimeAsync(3000)
+      await pending
+
+      expect((matrixReceiptService as any).pendingMarkAsReadTasks.size).toBe(1)
+
+      matrixReceiptService.clearCache()
+
+      expect((matrixReceiptService as any).pendingMarkAsReadTasks.size).toBe(0)
+      vi.useRealTimers()
+    })
+  })
 })

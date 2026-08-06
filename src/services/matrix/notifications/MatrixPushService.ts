@@ -3,6 +3,8 @@ import { PushRuleKind, TweakName } from 'matrix-js-sdk'
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { MatrixRequestDeduper } from '../MatrixRequestDeduper'
+import { MATRIX_PATHS } from '../paths'
 import { shouldNotifyForEventType } from './pushRules'
 
 const logger = createLogger('MatrixPushService')
@@ -11,21 +13,26 @@ type PushRuleScope = 'global' | string
 
 class MatrixPushService extends BaseMatrixService {
   async getPushers(): Promise<IPusher[]> {
-    const client = this.getClient()
-    try {
-      const pushManager = (
-        client as unknown as { getPushManager?: () => { getPushers: () => Promise<IPusher[]> } }
-      ).getPushManager?.()
-      if (pushManager) {
-        return await pushManager.getPushers()
+    // FT-132: 高频读取请求并发去重，避免并发调用发送多次 HTTP 请求
+    return MatrixRequestDeduper.dedupe('pushers:list', async () => {
+      const client = this.getClient()
+      try {
+        const pushManager = (
+          client as unknown as { getPushManager?: () => { getPushers: () => Promise<IPusher[]> } }
+        ).getPushManager?.()
+        if (pushManager) {
+          return await pushManager.getPushers()
+        }
+        // Fallback to direct HTTP
+        const response = (await client.http.authedRequest('GET', MATRIX_PATHS.NOTIFICATION.PUSHERS)) as {
+          pushers?: unknown
+        }
+        return Array.isArray(response.pushers) ? (response.pushers as IPusher[]) : []
+      } catch (err) {
+        logger.error(`[MatrixPush] 获取 pushers 失败: ${err}`)
+        throw err
       }
-      // Fallback to direct HTTP
-      const response = (await client.http.authedRequest('GET', '/pushers')) as { pushers?: unknown }
-      return Array.isArray(response.pushers) ? (response.pushers as IPusher[]) : []
-    } catch (err) {
-      logger.error(`[MatrixPush] 获取 pushers 失败: ${err}`)
-      throw err
-    }
+    })
   }
 
   async getPushRules(): Promise<IPushRules> {
@@ -50,7 +57,7 @@ class MatrixPushService extends BaseMatrixService {
         await pushManager.removePusher(pushkey, appId, deviceId || undefined)
         logger.info(`[MatrixPush] 注销 pusher 成功: ${appId}/${pushkey}`)
       } else {
-        await client.http.authedRequest('POST', '/pushers/set', undefined, {
+        await client.http.authedRequest('POST', MATRIX_PATHS.NOTIFICATION.PUSHERS_SET, undefined, {
           pushkey,
           app_id: appId,
           kind: null
@@ -65,11 +72,17 @@ class MatrixPushService extends BaseMatrixService {
 
   async setPushRuleEnabled(scope: PushRuleScope, kind: PushRuleKind | string, ruleId: string, enabled: boolean) {
     const client = this.getClient()
+    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
-        ruleId
-      )}/enabled`
-      await client.http.authedRequest('PUT', path, undefined, { enabled })
+      const pushManager = extendedClient.getPushManager?.()
+      if (pushManager) {
+        await pushManager.setPushRuleEnabled(scope, kind, ruleId, enabled)
+      } else {
+        const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
+          ruleId
+        )}/enabled`
+        await client.http.authedRequest('PUT', path, undefined, { enabled })
+      }
       logger.info(`[MatrixPush] 设置规则 enabled 成功: ${scope}/${String(kind)}/${ruleId} -> ${enabled}`)
     } catch (err) {
       logger.error(`[MatrixPush] 设置规则 enabled 失败: ${err}`)
@@ -84,11 +97,17 @@ class MatrixPushService extends BaseMatrixService {
     actions: PushRuleAction[]
   ) {
     const client = this.getClient()
+    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
-        ruleId
-      )}/actions`
-      await client.http.authedRequest('PUT', path, undefined, { actions })
+      const pushManager = extendedClient.getPushManager?.()
+      if (pushManager) {
+        await pushManager.setPushRuleActions(scope, kind, ruleId, actions)
+      } else {
+        const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(
+          ruleId
+        )}/actions`
+        await client.http.authedRequest('PUT', path, undefined, { actions })
+      }
       logger.info(`[MatrixPush] 设置规则 actions 成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 设置规则 actions 失败: ${err}`)
@@ -98,12 +117,18 @@ class MatrixPushService extends BaseMatrixService {
 
   async muteRoom(roomId: string): Promise<void> {
     const client = this.getClient()
+    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      const path = `/pushrules/global/room/${encodeURIComponent(roomId)}`
-      await client.http.authedRequest('PUT', path, undefined, {
-        actions: ['dont_notify'],
-        enabled: true
-      })
+      const pushManager = extendedClient.getPushManager?.()
+      if (pushManager) {
+        await pushManager.muteRoom(roomId)
+      } else {
+        const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}global/room/${encodeURIComponent(roomId)}`
+        await client.http.authedRequest('PUT', path, undefined, {
+          actions: ['dont_notify'],
+          enabled: true
+        })
+      }
       logger.info(`[MatrixPush] 房间静音成功: ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 房间静音失败: ${err}`)
@@ -113,9 +138,15 @@ class MatrixPushService extends BaseMatrixService {
 
   async unmuteRoom(roomId: string): Promise<void> {
     const client = this.getClient()
+    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      const path = `/pushrules/global/room/${encodeURIComponent(roomId)}`
-      await client.http.authedRequest('DELETE', path)
+      const pushManager = extendedClient.getPushManager?.()
+      if (pushManager) {
+        await pushManager.unmuteRoom(roomId)
+      } else {
+        const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}global/room/${encodeURIComponent(roomId)}`
+        await client.http.authedRequest('DELETE', path)
+      }
       logger.info(`[MatrixPush] 取消房间静音成功: ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 取消房间静音失败: ${err}`)
@@ -163,7 +194,7 @@ class MatrixPushService extends BaseMatrixService {
           device_id: pusherData.device_id || deviceId
         }
         if (pusherData.profile_tag) body.profile_tag = pusherData.profile_tag
-        await client.http.authedRequest('POST', '/pushers/set', undefined, body)
+        await client.http.authedRequest('POST', MATRIX_PATHS.NOTIFICATION.PUSHERS_SET, undefined, body)
         logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
       }
     } catch (err) {
@@ -181,12 +212,23 @@ class MatrixPushService extends BaseMatrixService {
     pattern?: string
   ): Promise<void> {
     const client = this.getClient()
+    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
-      const body: Record<string, unknown> = { actions }
-      if (conditions) body.conditions = conditions
-      if (pattern) body.pattern = pattern
-      await client.http.authedRequest('PUT', path, undefined, body)
+      const pushManager = extendedClient.getPushManager?.()
+      if (pushManager) {
+        const rule: { actions: PushRuleAction[]; conditions?: Record<string, unknown>[]; pattern?: string } = {
+          actions
+        }
+        if (conditions) rule.conditions = conditions
+        if (pattern) rule.pattern = pattern
+        await pushManager.createPushRule(scope, kind, ruleId, rule)
+      } else {
+        const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
+        const body: Record<string, unknown> = { actions }
+        if (conditions) body.conditions = conditions
+        if (pattern) body.pattern = pattern
+        await client.http.authedRequest('PUT', path, undefined, body)
+      }
       logger.info(`[MatrixPush] 创建推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 创建推送规则失败: ${err}`)
@@ -196,9 +238,15 @@ class MatrixPushService extends BaseMatrixService {
 
   async deletePushRule(scope: PushRuleScope, kind: PushRuleKind | string, ruleId: string): Promise<void> {
     const client = this.getClient()
+    const extendedClient = client as unknown as MatrixClientExtended
     try {
-      const path = `/pushrules/${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
-      await client.http.authedRequest('DELETE', path)
+      const pushManager = extendedClient.getPushManager?.()
+      if (pushManager) {
+        await pushManager.deletePushRule(scope, kind, ruleId)
+      } else {
+        const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}${encodeURIComponent(scope)}/${encodeURIComponent(String(kind))}/${encodeURIComponent(ruleId)}`
+        await client.http.authedRequest('DELETE', path)
+      }
       logger.info(`[MatrixPush] 删除推送规则成功: ${scope}/${String(kind)}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixPush] 删除推送规则失败: ${err}`)
@@ -207,13 +255,11 @@ class MatrixPushService extends BaseMatrixService {
   }
 
   async isRoomMuted(roomId: string): Promise<boolean> {
-    try {
-      const rules = await this.getPushRules()
-      const roomRules = rules.global?.room ?? []
-      return roomRules.some((rule: IPushRule) => rule.rule_id === roomId && rule.enabled !== false)
-    } catch {
-      return false
-    }
+    // FT-124: 不吞掉 getPushRules 的错误。鉴权失败/网络错误应抛出，
+    // 仅当 push rules 成功获取但无匹配规则时返回 false。
+    const rules = await this.getPushRules()
+    const roomRules = rules.global?.room ?? []
+    return roomRules.some((rule: IPushRule) => rule.rule_id === roomId && rule.enabled !== false)
   }
 
   subscribePushRules(listener: (rules: IPushRules) => void): () => void {

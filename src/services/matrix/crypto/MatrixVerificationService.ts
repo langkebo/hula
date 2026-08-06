@@ -111,7 +111,8 @@ class VerificationService extends BaseMatrixService {
     try {
       const client = this.getVerificationClient()
       return client.getUserId() || null
-    } catch {
+    } catch (err) {
+      logger.error(`[Verification] 获取当前用户 ID 失败: ${err}`)
       return null
     }
   }
@@ -120,7 +121,8 @@ class VerificationService extends BaseMatrixService {
     try {
       const client = this.getVerificationClient()
       return client.getDeviceId() || null
-    } catch {
+    } catch (err) {
+      logger.error(`[Verification] 获取当前设备 ID 失败: ${err}`)
       return null
     }
   }
