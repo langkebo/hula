@@ -1,6 +1,5 @@
 import { ServiceDiscoverySDK } from '@/services/discovery'
 import { ConsulRegistry } from '@/services/discovery/adapters/consul'
-import { StaticRegistry } from '@/services/discovery/adapters/static'
 import { RoundRobinLoadBalancer } from '@/services/discovery/loadBalancer'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
@@ -27,22 +26,18 @@ function getSDK(): ServiceDiscoverySDK | null {
 
   if (sdkInstance) return sdkInstance
 
-  // 根据环境变量选择 Registry
+  // 只有配置了 VITE_CONSUL_URL 时才启用 SDK Discovery。
+  // 之前的 StaticRegistry fallback（localhost:8008）会覆盖用户输入的任意
+  // 服务器地址——因为 StaticRegistry.discover() 不检查 tags，总是返回
+  // default 实例，导致用户输入 https://matrix.example.com 也被强制重定向
+  // 到 http://localhost:8008。现在无 Consul 时返回 null，让调用方走
+  // explicit_url / .well-known 传统发现路径，正确尊重用户输入。
   const consulUrl = import.meta.env.VITE_CONSUL_URL
-  const registry = consulUrl
-    ? new ConsulRegistry(consulUrl)
-    : new StaticRegistry({
-        'matrix-homeserver': [
-          {
-            id: 'default',
-            serviceName: 'matrix-homeserver',
-            address: 'localhost',
-            port: 8008,
-            metadata: { protocol: 'http' }
-          }
-        ]
-      })
+  if (!consulUrl) {
+    return null
+  }
 
+  const registry = new ConsulRegistry(consulUrl)
   sdkInstance = new ServiceDiscoverySDK(registry, new RoundRobinLoadBalancer())
   return sdkInstance
 }

@@ -37,7 +37,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   discoverAndSaveMatrixEndpoints,
-  isValidHttpUrl,
+  isPotentialHomeserverInput,
   resolveMatrixEndpointConfig,
   saveMatrixIdentityServerUrl
 } from '@/services/backend'
@@ -53,10 +53,6 @@ const saving = ref(false)
 onMounted(() => {
   homeserverUrl.value = resolveMatrixEndpointConfig().homeserverUrl
 })
-
-function isPotentialHomeserverInput(value: string): boolean {
-  return isValidHttpUrl(value) || isValidHttpUrl(`http://${value}`) || /^[^/\s]+\.[^/\s]+$/.test(value)
-}
 
 async function handleSave() {
   if (!homeserverUrl.value.trim()) {

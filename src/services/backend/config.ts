@@ -66,6 +66,17 @@ export function isValidHttpUrl(value: string): boolean {
   }
 }
 
+/**
+ * 判断用户输入是否可能是有效的 homeserver 地址。
+ * 接受三种格式：
+ *  - 完整 URL：http(s)://host[:port][/path]
+ *  - 无协议域名：host[:port]（会自动补 http:// 后校验）
+ *  - 含点号的域名：example.com（用于 .well-known 发现）
+ */
+export function isPotentialHomeserverInput(value: string): boolean {
+  return isValidHttpUrl(value) || isValidHttpUrl(`http://${value}`) || /^[^/\s]+\.[^/\s]+$/.test(value)
+}
+
 export function getDefaultMatrixEndpointConfig(): MatrixEndpointConfig {
   return {
     homeserverUrl: import.meta.env.VITE_HOMESERVER_URL || DEFAULT_MATRIX_HOMESERVER_URL,
