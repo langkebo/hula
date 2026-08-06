@@ -37,7 +37,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import {
   discoverAndSaveMatrixEndpoints,
-  isValidHttpUrl,
+  isPotentialHomeserverInput,
   resolveMatrixEndpointConfig,
   saveMatrixIdentityServerUrl
 } from '@/services/backend'
@@ -71,10 +71,6 @@ watch(
 
 function handleClose() {
   showModal.value = false
-}
-
-function isPotentialHomeserverInput(value: string): boolean {
-  return isValidHttpUrl(value) || isValidHttpUrl(`http://${value}`) || /^[^/\s]+\.[^/\s]+$/.test(value)
 }
 
 async function handleSave() {

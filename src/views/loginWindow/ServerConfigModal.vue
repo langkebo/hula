@@ -27,6 +27,7 @@ import {
   DEFAULT_MATRIX_HOMESERVER_URL,
   DEFAULT_MATRIX_IDENTITY_SERVER_URL,
   discoverAndSaveMatrixEndpoints,
+  isPotentialHomeserverInput,
   isValidHttpUrl,
   saveMatrixHomeserverUrl,
   saveMatrixIdentityServerUrl
@@ -40,10 +41,6 @@ const { showFeedback } = useActionFeedback()
 const show = defineModel<boolean>('show', { required: true })
 const homeserverUrl = defineModel<string>('homeserverUrl', { required: true })
 const identityServerUrl = defineModel<string>('identityServerUrl', { required: true })
-
-const isPotentialHomeserverInput = (value: string): boolean => {
-  return isValidHttpUrl(value) || isValidHttpUrl(`http://${value}`) || /^[^/\s]+\.[^/\s]+$/.test(value)
-}
 
 const saveServerConfig = () => {
   const rawHomeserverValue = (homeserverUrl.value || DEFAULT_MATRIX_HOMESERVER_URL).trim()
