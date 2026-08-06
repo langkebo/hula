@@ -16,7 +16,6 @@ interface MatrixHttpRequestOptions {
   quiet?: boolean
   retries?: number
   retryDelay?: number
-  showErrorToast?: boolean
 }
 
 type MatrixHttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS'
@@ -214,8 +213,6 @@ class MatrixHttpClient {
       requestOptions = options
     }
 
-    const showErrorToast = requestOptions.showErrorToast ?? false
-
     let retries = requestOptions.retries ?? 0
     const retryDelay = requestOptions.retryDelay ?? 1000
 
@@ -228,9 +225,6 @@ class MatrixHttpClient {
         // Retry only on network errors or 5xx server errors
         const isRetryable = err instanceof TypeError || error.message?.includes('HTTP 5')
         if (!isRetryable || retries <= 0) {
-          if (showErrorToast && window.$message) {
-            window.$message.error(error.message || String(err))
-          }
           throw err
         }
         retries--
@@ -325,13 +319,8 @@ class MatrixHttpClient {
   ): Promise<T | null> {
     const { logPrefix = 'MatrixHttpClient', defaultValue = null, quiet = false, throwOnError = false } = options
 
-    const mergedOptions = {
-      showErrorToast: !quiet,
-      ...options
-    }
-
     try {
-      const result = await this.request<T>(method, path, mergedOptions)
+      const result = await this.request<T>(method, path, options)
       if (!quiet && method !== 'GET') {
         logger.info(`[${logPrefix}] ${method} ${path} 成功`)
       }

@@ -5,28 +5,28 @@ import type { FilesMeta } from '@/services/types'
 import type { PathUploadFile } from '@/utils/FileType'
 import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
-import { useUserStore } from '../stores/domains/user/user'
 import { getFilesMeta } from './PathUtil'
 
 const logger = createLogger('FileUtil')
 
 class FileUtil {
-  private static _userStore: ReturnType<typeof useUserStore> | null = null
-
-  private static get userStore() {
-    if (!FileUtil._userStore) {
-      FileUtil._userStore = useUserStore()
-    }
-    return FileUtil._userStore
+  /**
+   * 获取用户资源目录（fallback：动态导入 useUserStore）
+   * 当调用方未传入 userResourceDir 时使用
+   */
+  private static async getUserResourceDir(): Promise<string> {
+    const { useUserStore } = await import('../stores/domains/user/user')
+    return await useUserStore().getUserRoomAbsoluteDir()
   }
   /**
    * 打开文件选择器，允许用户选择多个文件，将选中的文件复制到用户资源目录下
    * 副作用: 会将选中的文件复制到用户资源目录下
+   * @param userResourceDir 可选，用户资源目录路径。未传入时动态获取
    * @returns
    * files: 选中的文件列表
    * filesMeta: 选中的文件元数据列表
    */
-  static async openAndCopyFile(): Promise<{
+  static async openAndCopyFile(userResourceDir?: string): Promise<{
     files: PathUploadFile[]
     filesMeta: FilesMeta
   } | null> {
@@ -41,7 +41,7 @@ class FileUtil {
     }
     const selectedPaths = Array.isArray(selected) ? selected : [selected]
     const filesMeta = await getFilesMeta<FilesMeta>(selectedPaths)
-    void FileUtil.copyUploadFile(selectedPaths, filesMeta)
+    void FileUtil.copyUploadFile(selectedPaths, filesMeta, userResourceDir)
 
     return {
       files: await FileUtil.map2PathUploadFile(selectedPaths, filesMeta),
@@ -54,14 +54,15 @@ class FileUtil {
    * 副作用: 会将选中的文件复制到用户资源目录下
    * @param files 选中的文件路径列表
    * @param filesMeta 选中的文件元数据列表
+   * @param userResourceDir 可选，用户资源目录路径。未传入时动态获取
    */
-  static async copyUploadFile(files: string[], filesMeta: FilesMeta) {
-    const userResourceDir = await FileUtil.userStore.getUserRoomAbsoluteDir()
+  static async copyUploadFile(files: string[], filesMeta: FilesMeta, userResourceDir?: string) {
+    const dir = userResourceDir ?? (await FileUtil.getUserResourceDir())
     for (const filePathStr of files) {
       const fileMeta = filesMeta.find((f) => f.path === filePathStr)
       if (fileMeta) {
         try {
-          await copyFile(filePathStr, await join(userResourceDir, fileMeta.name))
+          await copyFile(filePathStr, await join(dir, fileMeta.name))
         } catch (error) {
           logger.error('复制文件失败:', error)
         }

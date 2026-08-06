@@ -2,9 +2,9 @@ import postcsspxtorem from 'postcss-pxtorem'
 import { NaiveUiResolver, VantResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { mergeConfig, type UserConfig } from 'vite'
-import { getComponentsDirs, getComponentsDtsPath, getComponentsGlobs } from './components'
-import { getLocalIP } from './utils'
-import { baseConfig } from './vite.config.base'
+import { getComponentsDirs, getComponentsDtsPath, getComponentsGlobs } from './components.ts'
+import { getLocalIP } from './utils.ts'
+import { baseConfig } from './vite.config.base.ts'
 
 export function createMobileConfig(platform: string, _env?: Record<string, string>): UserConfig {
   const rawIP = getLocalIP() || '127.0.0.1'
@@ -20,7 +20,7 @@ export function createMobileConfig(platform: string, _env?: Record<string, strin
   return mergeConfig(baseConfig, {
     server: {
       port: serverPort,
-      hmr: {
+      ws: {
         protocol: 'ws',
         host: host,
         port: serverPort

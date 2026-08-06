@@ -1,8 +1,8 @@
 import { type ConfigEnv, defineConfig, loadEnv, mergeConfig } from 'vite'
-import { atStartup } from './build/config/console'
-import { getLocalIP } from './build/config/utils'
-import { desktopConfig } from './build/config/vite.config.desktop'
-import { createMobileConfig } from './build/config/vite.config.mobile'
+import { atStartup } from './build/config/console.ts'
+import { getLocalIP } from './build/config/utils.ts'
+import { desktopConfig } from './build/config/vite.config.desktop.ts'
+import { createMobileConfig } from './build/config/vite.config.mobile.ts'
 
 export default defineConfig(({ mode }: ConfigEnv) => {
   const config = loadEnv(mode, process.cwd(), '')
@@ -24,7 +24,9 @@ export default defineConfig(({ mode }: ConfigEnv) => {
   // 3. 让 dev 代理目标跟随 VITE_HOMESERVER_URL，支持自签名 https
   //    例：VITE_HOMESERVER_URL=https://matrix.test 时，自动走代理 + 关掉 TLS 校验。
   //    Tauri 运行时由 runtimeFetch.ts 的 .test 域名白名单处理；这里只影响浏览器 dev。
-  const homeserverTarget = config.VITE_HOMESERVER_URL?.trim() || 'http://localhost:8008'
+  //    如果有独立代理目标（如 nginx 未启动时直连后端），用 VITE_PROXY_TARGET 覆盖。
+  const homeserverTarget =
+    config.VITE_PROXY_TARGET?.trim() || config.VITE_HOMESERVER_URL?.trim() || 'http://localhost:8008'
   const isHttps = homeserverTarget.startsWith('https://')
   viteConfig = mergeConfig(viteConfig, {
     server: {

@@ -159,6 +159,17 @@ describe('FileUtil', () => {
       await FileUtil.copyUploadFile([], [] as never)
       expect(copyFileMock).not.toHaveBeenCalled()
     })
+
+    it('uses provided userResourceDir instead of dynamic import', async () => {
+      const files = ['/tmp/a.pdf']
+      const filesMeta = [{ path: '/tmp/a.pdf', name: 'a.pdf' }] as never
+      copyFileMock.mockResolvedValue(undefined)
+
+      await FileUtil.copyUploadFile(files, filesMeta, '/custom/dir')
+
+      expect(copyFileMock).toHaveBeenCalledWith('/tmp/a.pdf', '/custom/dir/a.pdf')
+      expect(getUserRoomAbsoluteDirMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('openAndCopyFile', () => {
@@ -197,6 +208,20 @@ describe('FileUtil', () => {
 
       expect(result?.files).toHaveLength(2)
       expect(result?.filesMeta).toHaveLength(2)
+    })
+
+    it('passes userResourceDir to copyUploadFile', async () => {
+      openMock.mockResolvedValue(['/tmp/a.pdf'])
+      getFilesMetaMock.mockResolvedValue([{ path: '/tmp/a.pdf', name: 'a.pdf', mime_type: 'application/pdf' }])
+      statMock.mockResolvedValue({ size: 100 })
+      copyFileMock.mockResolvedValue(undefined)
+
+      await FileUtil.openAndCopyFile('/custom/dir')
+
+      // copyUploadFile 是 void 调用（异步），等待微任务完成
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(copyFileMock).toHaveBeenCalledWith('/tmp/a.pdf', '/custom/dir/a.pdf')
+      expect(getUserRoomAbsoluteDirMock).not.toHaveBeenCalled()
     })
   })
 })

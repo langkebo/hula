@@ -1,31 +1,25 @@
 <template>
-  <div
-    v-if="mode === 'auto'"
-    class="text-14px grid grid-cols-[1fr_auto_1fr] items-center gap-x-12px w-full"
-    id="bottomBar">
+  <div v-if="mode === 'auto'" class="text-14px flex justify-center items-center gap-12px w-full" id="bottomBar">
     <div
-      class="color-[--tjg-color-primary-500] cursor-pointer justify-self-end text-right"
+      class="color-[--tjg-color-primary-500] cursor-pointer"
       :title="cancelLoginTitle"
       @click="emit('cancel-auto-login')">
       {{ cancelLoginLabel }}
     </div>
-    <div class="w-1px h-14px bg-[--login-divider-color] justify-self-center"></div>
+    <div class="w-1px h-14px bg-[--login-divider-color]"></div>
     <div
-      class="color-[--tjg-color-primary-500] cursor-pointer justify-self-start text-left"
+      class="color-[--tjg-color-primary-500] cursor-pointer"
       :title="removeAccountTitle"
       @click="emit('remove-account')">
       {{ removeAccountLabel }}
     </div>
   </div>
-  <div v-else class="text-14px grid grid-cols-[1fr_auto_1fr] items-center gap-x-12px w-full" id="bottomBar">
-    <div
-      class="color-[--tjg-color-primary-500] cursor-pointer justify-self-end text-right"
-      :title="qrCodeTitle"
-      @click="emit('switch-to-qr')">
+  <div v-else class="text-14px flex justify-center items-center gap-12px w-full" id="bottomBar">
+    <div class="color-[--tjg-color-primary-500] cursor-pointer" :title="qrCodeTitle" @click="emit('switch-to-qr')">
       {{ qrCodeLabel }}
     </div>
-    <div class="w-1px h-14px bg-[--login-divider-color] justify-self-center"></div>
-    <div class="justify-self-start text-left">
+    <div class="w-1px h-14px bg-[--login-divider-color]"></div>
+    <div>
       <n-popover
         trigger="click"
         id="moreShow"

@@ -1,12 +1,7 @@
 <template>
-  <div v-if="hasSsoOption" class="flex-center cursor-default gap-12px text-12px color-[--tjg-text-tertiary]">
-    <span class="h-px w-60px bg-[--login-third-party-divider-color]"></span>
-    <span>{{ ssoLabel }}</span>
-    <span class="h-px w-60px bg-[--login-third-party-divider-color]"></span>
-  </div>
-  <div class="flex-x-center gap-28px" :class="{ 'mt-16px': hasSsoOption }">
+  <div class="flex-x-center gap-28px mt-16px">
     <div
-      v-for="item in visibleSsoOptions"
+      v-for="item in ssoOptions"
       :key="item.key"
       role="button"
       tabindex="0"
@@ -32,22 +27,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, type Ref, ref } from 'vue'
+import { computed, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useSessionActions } from '@/composables/user/useSessionActions'
-import {
-  discoverAndSaveMatrixEndpoints,
-  resolveMatrixEndpointConfig,
-  saveMatrixSessionEndpointConfig
-} from '@/services/backend'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('ThirdPartyLogin')
-const { getLoginFlows, discoverOidc, getOidcAuthorizationUrl } = useSessionActions()
-const { showFeedback } = useActionFeedback()
-
 import { useLoginFlow } from '@/composables/user/useLoginFlow'
+
+const { showFeedback } = useActionFeedback()
 
 export type ThirdPartyLoginContext = Pick<ReturnType<typeof useLoginFlow>, 'loading' | 'loginDisabled'> & {
   giteeLogin?: () => void
@@ -73,208 +58,29 @@ const resolvedContext: ThirdPartyLoginContext & ReturnType<typeof useLoginFlow> 
   ? { ...defaultContext, ...props.loginContext }
   : defaultContext
 
-const ssoLabel = computed(() => t('login.sso.title'))
+const ssoDisabled = computed(
+  () => resolvedContext.loading.value || resolvedContext.loginDisabled.value || props.extraDisabled
+)
 
 const noop = () => {
   showFeedback(t('login.sso.unavailable_feature'), 'info')
 }
 
-const ssoDisabled = computed(
-  () => resolvedContext.loading.value || resolvedContext.loginDisabled.value || props.extraDisabled
-)
-
-const availableFlows = ref<Set<string>>(new Set())
-const flowsLoading = ref(false)
-const flowsError = ref<string | null>(null)
-
-const SSO_FLOW_MAP: Record<string, string> = {
-  oidc: 'm.login.sso',
-  saml: 'm.login.sso',
-  cas: 'm.login.cas'
-}
-
-async function detectAvailableFlows(): Promise<void> {
-  flowsLoading.value = true
-  flowsError.value = null
-  try {
-    const flows = await getLoginFlows()
-    const flowTypes = new Set(flows.map((f) => f.type))
-    availableFlows.value = flowTypes
-    logger.info('检测到可用登录流:', [...flowTypes])
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    flowsError.value = msg
-    logger.warn('获取登录流失败，将显示所有SSO选项:', msg)
-  } finally {
-    flowsLoading.value = false
-  }
-}
-
-onMounted(() => {
-  detectAvailableFlows()
-})
-
-function isSsoFlowAvailable(key: string): boolean {
-  // 非 SSO 第三方账号（Gitee/GitHub）始终可用
-  const flowType = SSO_FLOW_MAP[key]
-  if (!flowType) {
-    return true
-  }
-  // SSO 检测失败时不显示 OIDC/SAML/CAS，避免默认暴露单点登录入口
-  if (flowsError.value) {
-    return false
-  }
-  if (flowsLoading.value) {
-    return true
-  }
-  if (availableFlows.value.size === 0) {
-    return true
-  }
-  return availableFlows.value.has(flowType)
-}
-
-const getHomeserverUrl = (): string => {
-  try {
-    const configuredHomeserverUrl = resolvedContext.homeserverUrl?.value?.trim()
-    if (configuredHomeserverUrl) {
-      return configuredHomeserverUrl
-    }
-  } catch (e) {
-    logger.warn('Failed to get homeserver URL:', e)
-  }
-
-  return resolveMatrixEndpointConfig().homeserverUrl
-}
-
-const resolveSsoHomeserverUrl = async (): Promise<string> => {
-  const configuredHomeserverUrl = getHomeserverUrl()
-  const fallbackConfig = resolveMatrixEndpointConfig()
-  const discovery = await discoverAndSaveMatrixEndpoints(configuredHomeserverUrl, fallbackConfig)
-  saveMatrixSessionEndpointConfig({
-    homeserverUrl: discovery.homeserverUrl,
-    identityServerUrl: discovery.identityServerUrl
-  })
-
-  if (resolvedContext.homeserverUrl) {
-    resolvedContext.homeserverUrl.value = discovery.homeserverUrl
-  }
-
-  if (resolvedContext.identityServerUrl) {
-    resolvedContext.identityServerUrl.value = discovery.identityServerUrl
-  }
-
-  return discovery.homeserverUrl
-}
-
-const redirectTo = (url: string): void => {
-  window.location.assign(url)
-}
-
-const handleOidcLogin = async () => {
-  if (!isSsoFlowAvailable('oidc')) {
-    showFeedback(t('login.sso.oidc_not_configured'), 'info')
-    return
-  }
-  try {
-    const homeserverUrl = await resolveSsoHomeserverUrl()
-    const discovery = await discoverOidc(homeserverUrl)
-
-    if (!discovery) {
-      showFeedback(t('login.sso.oidc_unavailable'), 'error')
-      return
-    }
-
-    const redirectUri = `${window.location.origin}/oidc/callback`
-    const authUrl = await getOidcAuthorizationUrl({ redirectUri })
-
-    if (authUrl) {
-      redirectTo(authUrl)
-    } else {
-      showFeedback(t('login.sso.oidc_auth_url_failed'), 'error')
-    }
-  } catch (error) {
-    logger.error('OIDC login error:', error)
-    showFeedback(t('login.sso.oidc_failed'), 'error')
-  }
-}
-
-const handleSamlLogin = async () => {
-  if (!isSsoFlowAvailable('saml')) {
-    showFeedback(t('login.sso.saml_not_configured'), 'info')
-    return
-  }
-  try {
-    const homeserverUrl = await resolveSsoHomeserverUrl()
-    const redirectUri = encodeURIComponent(`${window.location.origin}/login`)
-    const samlUrl = `${homeserverUrl}/_matrix/client/r0/login/sso/redirect/saml?redirectUrl=${redirectUri}`
-    redirectTo(samlUrl)
-  } catch (error) {
-    logger.error('SAML login error:', error)
-    showFeedback(t('login.sso.saml_failed'), 'error')
-  }
-}
-
-const handleCasLogin = async () => {
-  if (!isSsoFlowAvailable('cas')) {
-    showFeedback(t('login.sso.cas_not_configured'), 'info')
-    return
-  }
-  try {
-    const homeserverUrl = await resolveSsoHomeserverUrl()
-    const redirectUri = encodeURIComponent(`${window.location.origin}/login`)
-    const casUrl = `${homeserverUrl}/cas/login?service=${redirectUri}`
-    redirectTo(casUrl)
-  } catch (error) {
-    logger.error('CAS login error:', error)
-    showFeedback(t('login.sso.cas_failed'), 'error')
-  }
-}
-
+// 企业 SSO（OIDC/SAML/CAS）入口已下线，仅保留 Gitee/GitHub 第三方登录
 const ssoOptions = computed(() => [
-  {
-    key: 'oidc',
-    label: t('login.sso.oidc'),
-    icon: 'OIDC',
-    style: 'color-[--tjg-color-primary-500] dark:color-[--tjg-color-primary-500]80',
-    action: handleOidcLogin,
-    available: isSsoFlowAvailable('oidc')
-  },
-  {
-    key: 'saml',
-    label: t('login.sso.saml'),
-    icon: 'SAML',
-    style: 'text-[--tjg-text-primary]',
-    action: handleSamlLogin,
-    available: isSsoFlowAvailable('saml')
-  },
-  {
-    key: 'cas',
-    label: t('login.sso.cas'),
-    icon: 'CAS',
-    style: 'color-[--tjg-color-danger-500] dark:color-[--tjg-color-danger-500]80',
-    action: handleCasLogin,
-    available: isSsoFlowAvailable('cas')
-  },
   {
     key: 'gitee',
     label: t('login.third_party.gitee'),
     icon: '#gitee-login',
     style: 'color-[--tjg-color-danger-500] dark:color-[--tjg-color-danger-500]80',
-    action: resolvedContext.giteeLogin || noop,
-    available: true
+    action: resolvedContext.giteeLogin || noop
   },
   {
     key: 'github',
     label: t('login.third_party.github'),
     icon: '#github-login',
     style: 'text-[--tjg-text-primary]',
-    action: resolvedContext.githubLogin || noop,
-    available: true
+    action: resolvedContext.githubLogin || noop
   }
 ])
-
-const visibleSsoOptions = computed(() => ssoOptions.value.filter((item) => item.available))
-
-// 是否存在任一 SSO（OIDC/SAML/CAS）可见项；仅此时显示"单点登录"分隔线，否则只展示第三方账号图标（与原型一致）
-const hasSsoOption = computed(() => visibleSsoOptions.value.some((item) => Boolean(SSO_FLOW_MAP[item.key])))
 </script>

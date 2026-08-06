@@ -11,7 +11,7 @@
       </div>
     </n-flex>
 
-    <n-flex class="ma text-center w-300px" vertical :size="12">
+    <n-flex class="ma text-center w-340px" vertical :size="12">
       <!-- 服务器地址（家服务）输入框 -->
       <div class="homeserver-wrap">
         <n-input
@@ -110,7 +110,7 @@
       <div
         style="border: 1px solid var(--login-dropdown-border)"
         v-if="loginHistories.length > 0 && arrowStatus"
-        class="account-box absolute w-300px max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border">
+        class="account-box absolute w-340px max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border">
         <n-scrollbar style="max-height: 120px" trigger="none">
           <n-flex
             vertical

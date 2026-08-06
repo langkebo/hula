@@ -1,7 +1,7 @@
 // biome-ignore-all lint/suspicious/noConsole: Vite startup banner intentionally writes to the terminal.
 
 import { execSync } from 'node:child_process'
-import pkg from '../../package.json'
+import pkg from '../../package.json' with { type: 'json' }
 
 let rustVersion = 'unknown'
 try {
