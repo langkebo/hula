@@ -74,7 +74,7 @@ interface UseAdminUsersResult {
   deactivateUser: (userId: string) => Promise<void>
   setAdmin: (userId: string, isAdmin: boolean) => Promise<void>
   deleteUserDevice: (userId: string, deviceId: string) => Promise<void>
-  setRateLimit: (userId: string, limit: RateLimit) => Promise<void>
+  overrideUserRateLimit: (userId: string) => Promise<void>
   deleteRateLimit: (userId: string) => Promise<void>
   shadowBanUser: (userId: string) => Promise<void>
   unshadowBanUser: (userId: string) => Promise<void>
@@ -220,8 +220,8 @@ export function useAdminUsers(): UseAdminUsersResult {
     if (selectedUser.value?.userId === userId) await loadUserDevices()
   }
 
-  async function setRateLimit(userId: string, limit: RateLimit) {
-    await adminService.setRateLimit(userId, limit)
+  async function overrideUserRateLimit(userId: string) {
+    await adminService.overrideUserRateLimit(userId)
     if (selectedUser.value?.userId === userId) await loadRateLimit()
   }
 
@@ -352,7 +352,7 @@ export function useAdminUsers(): UseAdminUsersResult {
     deactivateUser,
     setAdmin,
     deleteUserDevice,
-    setRateLimit,
+    overrideUserRateLimit,
     deleteRateLimit,
     shadowBanUser,
     unshadowBanUser

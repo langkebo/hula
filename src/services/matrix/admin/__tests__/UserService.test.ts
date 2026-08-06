@@ -187,6 +187,12 @@ describe('AdminUserService', () => {
     })
   })
 
+  it('overrideUserRateLimit calls admin.overrideRateLimit without limit param', async () => {
+    await service.overrideUserRateLimit('@user:server.com')
+    expect((admin as any).overrideRateLimit).toHaveBeenCalledWith('@user:server.com')
+    expect((admin as any).overrideRateLimit).toHaveBeenCalledTimes(1)
+  })
+
   it('checkUserAdmin passes throwOnError=false', async () => {
     ;(admin as any).isAdmin.mockResolvedValueOnce(true)
 

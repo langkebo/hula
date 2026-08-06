@@ -176,10 +176,7 @@ describe('adminService facade', () => {
       getServerNotices: vi.fn().mockResolvedValue({ notices: [] }),
       getRateLimitOverride: vi.fn().mockResolvedValue(null),
       overrideRateLimit: vi.fn().mockResolvedValue(undefined),
-      deleteRateLimitOverride: vi.fn().mockResolvedValue(undefined),
-      getRateLimit: vi.fn().mockResolvedValue(null),
-      setRateLimit: vi.fn().mockResolvedValue(undefined),
-      deleteRateLimit: vi.fn().mockResolvedValue(undefined)
+      deleteRateLimitOverride: vi.fn().mockResolvedValue(undefined)
     }
     vi.mocked(matrixClientService.getClient).mockReturnValue({
       getUserId: vi.fn(() => '@admin:server.com'),
@@ -411,12 +408,7 @@ describe('adminService facade', () => {
       })
       expect(mockAdminManager.getRateLimitOverride).toHaveBeenCalledWith('@user:server', false)
 
-      await expect(
-        adminService.setRateLimit('@user:server', {
-          messagesPerSecond: 20,
-          burstCount: 40
-        })
-      ).resolves.toBeUndefined()
+      await expect(adminService.overrideUserRateLimit('@user:server')).resolves.toBeUndefined()
       expect(mockAdminManager.overrideRateLimit).toHaveBeenCalledWith('@user:server')
 
       await expect(adminService.deleteRateLimit('@user:server')).resolves.toBeUndefined()

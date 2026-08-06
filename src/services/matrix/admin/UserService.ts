@@ -207,13 +207,14 @@ export class AdminUserService {
     }
   }
 
-  async setRateLimit(userId: string, _limit: RateLimit): Promise<void> {
+  async overrideUserRateLimit(userId: string): Promise<void> {
+    if (!isValidMatrixUserId(userId)) throw new Error(`Invalid user ID: ${userId}`)
     try {
       const admin = await this.sdkAdmin()
       await admin.overrideRateLimit(userId)
-      logger.info(`[Admin] 速率限制已设置: ${userId}`)
+      logger.info(`[Admin] 用户速率限制已覆盖（禁用）: ${userId}`)
     } catch (err) {
-      logger.error(`[Admin] 设置速率限制失败: ${err}`)
+      logger.error(`[Admin] 覆盖速率限制失败: ${err}`)
       throw err
     }
   }
@@ -263,65 +264,6 @@ export class AdminUserService {
     } catch (err) {
       logger.error(`[Admin] 获取影子封禁状态失败: ${err}`)
       return null
-    }
-  }
-
-  async getRateLimits(userId?: string): Promise<Record<string, unknown>> {
-    try {
-      const admin = await this.sdkAdmin()
-      if (userId) {
-        const result = await admin.getRateLimitOverride(userId, false)
-        return (result as unknown as Record<string, unknown>) ?? {}
-      }
-      const result = await admin.getServerConfig(false)
-      return (result as unknown as Record<string, unknown>) ?? {}
-    } catch (err) {
-      logger.error(`[Admin] 获取限速配置失败: ${err}`)
-      return {}
-    }
-  }
-
-  async setRateLimits(userId: string, _limits: Record<string, unknown>): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.overrideRateLimit(userId)
-      logger.info(`[Admin] 设置限速配置成功: ${userId}`)
-    } catch (err) {
-      logger.error(`[Admin] 设置限速配置失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getUserRateLimit(userId: string): Promise<Record<string, unknown> | null> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.getRateLimit(userId, false)
-      return (result as unknown as Record<string, unknown>) ?? null
-    } catch (err) {
-      logger.error(`[Admin] 获取用户限速失败: ${err}`)
-      return null
-    }
-  }
-
-  async setUserRateLimit(userId: string, limit: Record<string, unknown>): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.setRateLimit(userId, limit as { messages_per_second?: number; burst_count?: number })
-      logger.info(`[Admin] 设置用户限速: ${userId}`)
-    } catch (err) {
-      logger.error(`[Admin] 设置用户限速失败: ${err}`)
-      throw err
-    }
-  }
-
-  async deleteUserRateLimit(userId: string): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.deleteRateLimit(userId)
-      logger.info(`[Admin] 删除用户限速: ${userId}`)
-    } catch (err) {
-      logger.error(`[Admin] 删除用户限速失败: ${err}`)
-      throw err
     }
   }
 
