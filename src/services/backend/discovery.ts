@@ -123,10 +123,17 @@ export async function discoverMatrixEndpoints(
   }
 
   // 优先尝试从 ServiceDiscoverySDK 解析 (ADR-002)
+  // 注意：只有用户输入的不是 explicit URL 时才尝试 SDK discovery。
+  // explicit URL（http://... 或 https://...）直接走 explicit_url 路径，
+  // 避免把完整 URL 当作 Consul tag 传入。
+  const isExplicitUrl = trimmedInput.startsWith('http://') || trimmedInput.startsWith('https://')
   const sdk = getSDK()
-  if (sdk) {
+  if (sdk && !isExplicitUrl) {
     try {
-      const instance = await sdk.resolve('matrix-homeserver', { tags: [trimmedInput] })
+      // 用 server_name（去协议、去路径、去尾部斜杠后的主机[:端口]）作为 tag，
+      // 与 Consul 中注册的 matrix-homeserver 实例 tags 匹配。
+      const serverNameTag = normalizeServerName(trimmedInput)
+      const instance = await sdk.resolve('matrix-homeserver', { tags: [serverNameTag] })
       if (instance) {
         const protocol = instance.metadata?.protocol || 'http'
         return {

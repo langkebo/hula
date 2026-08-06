@@ -11,6 +11,7 @@ interface ConsulServiceEntry {
     Weights?: {
       Passing: number
     }
+    Tags?: string[]
     Meta: Record<string, string>
   }
   Node: {
@@ -28,7 +29,16 @@ export class ConsulRegistry implements Registry {
   }
 
   async discover(options: DiscoveryOptions): Promise<ServiceInstance[]> {
-    const url = `${this.baseUrl}/v1/health/service/${options.serviceName}?passing=${options.passingOnly !== false}`
+    // Consul 支持 ?tag= 参数做服务端过滤。当调用方传入 tags 时，使用第一个
+    // tag 做 Consul 查询过滤（Consul API 只支持单 tag 过滤）。其余 tags
+    // 由 ServiceDiscoverySDK.resolve() 做客户端二次过滤。
+    const params = new URLSearchParams()
+    params.set('passing', String(options.passingOnly !== false))
+    if (options.tags && options.tags.length > 0) {
+      params.set('tag', options.tags[0])
+    }
+
+    const url = `${this.baseUrl}/v1/health/service/${options.serviceName}?${params.toString()}`
 
     try {
       const data = await HttpClient.get<ConsulServiceEntry[]>(url)
@@ -38,6 +48,7 @@ export class ConsulRegistry implements Registry {
         address: entry.Service.Address || entry.Node.Address,
         port: entry.Service.Port,
         weight: entry.Service.Weights?.Passing ?? 1,
+        tags: entry.Service.Tags ?? [],
         metadata: entry.Service.Meta
       }))
     } catch (error) {

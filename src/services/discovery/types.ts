@@ -4,6 +4,7 @@ export interface ServiceInstance {
   address: string
   port: number
   weight?: number
+  tags?: string[]
   metadata?: Record<string, string>
 }
 
