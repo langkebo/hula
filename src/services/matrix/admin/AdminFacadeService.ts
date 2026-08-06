@@ -1,5 +1,4 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import { ref } from 'vue'
 import { TauriCommand } from '@/enums'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
@@ -1061,45 +1060,3 @@ class AdminFacadeService extends BaseMatrixService {
 }
 
 export const adminService = new AdminFacadeService()
-
-function _useAdmin() {
-  const stats = ref<ServerStats | null>(null)
-  const users = ref<UserInfo[]>([])
-  const rooms = ref<RoomInfo[]>([])
-  const isLoading = ref(false)
-
-  function initialize() {
-    adminService.initialize()
-  }
-
-  async function loadStats() {
-    isLoading.value = true
-    try {
-      stats.value = await adminService.getServerStats()
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function loadUsers(limit?: number) {
-    isLoading.value = true
-    try {
-      const result = await adminService.getUsers(limit)
-      users.value = result.users
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function loadRooms(limit?: number) {
-    isLoading.value = true
-    try {
-      const result = await adminService.getRooms(limit)
-      rooms.value = result.rooms
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  return { stats, users, rooms, isLoading, initialize, loadStats, loadUsers, loadRooms }
-}
