@@ -3,6 +3,7 @@ import { PushRuleActionName } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
+import { MatrixRequestDeduper } from '../../MatrixRequestDeduper'
 import { matrixPushService } from '../MatrixPushService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
@@ -68,6 +69,8 @@ const mockAuthedRequest = vi
 describe('MatrixPushService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // FT-132: 清理 MatrixRequestDeduper 静态缓存，避免测试间状态泄漏
+    MatrixRequestDeduper.clear()
     vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue({
       http: { authedRequest: mockAuthedRequest },
       getPushRules: vi.fn().mockResolvedValue({
@@ -91,6 +94,14 @@ describe('MatrixPushService', () => {
       )
       const result = await matrixPushService.getPushers()
       expect(result).toEqual([])
+    })
+
+    // FT-132: 并发调用去重，两次 getPushers 只发一次 HTTP 请求
+    it('并发调用去重：两次 getPushers 只发一次 HTTP 请求 (FT-132)', async () => {
+      mockAuthedRequest.mockClear()
+      const [r1, r2] = await Promise.all([matrixPushService.getPushers(), matrixPushService.getPushers()])
+      expect(r1).toEqual(r2)
+      expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
     })
 
     it('should throw on error', async () => {
@@ -165,6 +176,17 @@ describe('MatrixPushService', () => {
     it('should return false for unmuted room', async () => {
       const result = await matrixPushService.isRoomMuted('!other:server')
       expect(result).toBe(false)
+    })
+
+    // FT-124: getPushRules 失败时应抛出错误，不能静默返回 false（掩盖鉴权失败/网络错误）
+    it('getPushRules 失败时抛出错误而非静默返回 false (FT-124)', async () => {
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue({
+        http: { authedRequest: mockAuthedRequest },
+        getPushRules: vi.fn().mockRejectedValue(new Error('HTTP 401')),
+        getDeviceId: () => 'TEST_DEVICE_ID'
+      })
+
+      await expect(matrixPushService.isRoomMuted('!room:server')).rejects.toThrow('HTTP 401')
     })
   })
 

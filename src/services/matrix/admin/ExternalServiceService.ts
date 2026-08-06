@@ -118,7 +118,11 @@ export class AdminExternalServiceService {
       if (params.serviceType && params.serviceType !== 'all') {
         queryParams = { service_type: params.serviceType }
       }
-      const result = await this.adminRequest<ExternalService[]>('GET', '/external_services', queryParams)
+      const result = await this.adminRequest<ExternalService[]>(
+        'GET',
+        MATRIX_PATHS.ADMIN.EXTERNAL_SERVICES_LIST,
+        queryParams
+      )
       return result ?? []
     } catch (err) {
       logger.error(`[AdminExternalService] listServices 失败: ${err}`)
@@ -139,7 +143,12 @@ export class AdminExternalServiceService {
     if (request.api_key !== undefined) body.api_key = request.api_key
     if (request.config !== undefined) body.config = request.config
 
-    const result = await this.adminRequest<ExternalService>('POST', '/external_services', undefined, body)
+    const result = await this.adminRequest<ExternalService>(
+      'POST',
+      MATRIX_PATHS.ADMIN.EXTERNAL_SERVICES_LIST,
+      undefined,
+      body
+    )
     logger.info(`[AdminExternalService] 注册外部服务成功: ${result?.as_id}`)
     return result
   }
@@ -156,7 +165,7 @@ export class AdminExternalServiceService {
 
     const result = await this.adminRequest<ExternalService>(
       'PUT',
-      `/external_services/${encodeURIComponent(asId)}`,
+      MATRIX_PATHS.ADMIN.EXTERNAL_SERVICES_BY_ID(asId),
       undefined,
       body
     )
@@ -168,7 +177,7 @@ export class AdminExternalServiceService {
    * 注销外部服务。
    */
   async deleteService(asId: string): Promise<void> {
-    await this.adminRequest<void>('DELETE', `/external_services/${encodeURIComponent(asId)}`)
+    await this.adminRequest<void>('DELETE', MATRIX_PATHS.ADMIN.EXTERNAL_SERVICES_BY_ID(asId))
     logger.info(`[AdminExternalService] 注销外部服务成功: ${asId}`)
   }
 
@@ -177,7 +186,10 @@ export class AdminExternalServiceService {
    */
   async getAllHealth(): Promise<ExternalServiceHealth[]> {
     try {
-      const result = await this.adminRequest<ExternalServiceHealth[]>('GET', '/external_services/health')
+      const result = await this.adminRequest<ExternalServiceHealth[]>(
+        'GET',
+        MATRIX_PATHS.ADMIN.EXTERNAL_SERVICES_HEALTH
+      )
       return result ?? []
     } catch (err) {
       logger.error(`[AdminExternalService] getAllHealth 失败: ${err}`)
@@ -192,7 +204,7 @@ export class AdminExternalServiceService {
     try {
       return await this.adminRequest<ExternalServiceHealth>(
         'GET',
-        `/external_services/${encodeURIComponent(asId)}/health`
+        MATRIX_PATHS.ADMIN.EXTERNAL_SERVICES_HEALTH_BY_ID(asId)
       )
     } catch (err) {
       const status = (err as { httpStatus?: number }).httpStatus
@@ -210,7 +222,7 @@ export class AdminExternalServiceService {
   async checkServiceHealth(asId: string): Promise<HealthCheckResult> {
     const result = await this.adminRequest<HealthCheckResult>(
       'POST',
-      `/external_services/${encodeURIComponent(asId)}/health/check`
+      MATRIX_PATHS.ADMIN.EXTERNAL_SERVICES_HEALTH_CHECK(asId)
     )
     logger.info(`[AdminExternalService] 健康检查完成: ${asId} healthy=${result?.is_healthy}`)
     return result

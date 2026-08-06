@@ -45,7 +45,10 @@ const missing = computed<TjgCapability[]>(() => {
     e2ee: cap.canUseE2EE.value,
     voip: cap.canUseVoip.value,
     'friend-list': cap.canUseFriendList.value,
-    'admin-api': cap.canUseAdminApi.value
+    'admin-api': cap.canUseAdminApi.value,
+    'burn-after-read': cap.canUseBurnAfterRead.value,
+    openclaw: cap.canUseOpenclaw.value,
+    'ai-connection': cap.canUseAiConnection.value
   }
   return requiredList.value.filter((name) => !getters[name])
 })

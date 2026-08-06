@@ -1,0 +1,205 @@
+{
+  "test_environment": {
+    "base_url": "https://matrix.test",
+    "ledger_profile": "all",
+    "ledger_entry_count": 1378,
+    "backend_declared_routes": 1352,
+    "admin_user": "@tjgtestadmin:matrix.test",
+    "user_user": "@tjgtestuser:matrix.test",
+    "probe_method_for_registration": "correct-method + errcode inspection"
+  },
+  "registration": {
+    "total": 1378,
+    "registered": 1365,
+    "not_registered": 13,
+    "registration_rate": 99.06,
+    "not_registered_list": [
+      {
+        "method": "GET",
+        "path": "/_matrix/app/v1/rooms/{alias}",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "GET",
+        "path": "/_matrix/client/r0/login/sso/userinfo",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "GET",
+        "path": "/_synapse/admin/v1/appservices/{as_id}/state/{state_key}",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "POST",
+        "path": "/_synapse/worker/v1/commands/{command_id}/complete",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "POST",
+        "path": "/_synapse/worker/v1/commands/{command_id}/fail",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "GET",
+        "path": "/_synapse/worker/v1/events",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "GET",
+        "path": "/_synapse/worker/v1/replication/{worker_id}/position",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "PUT",
+        "path": "/_synapse/worker/v1/replication/{worker_id}/{stream_name}",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "POST",
+        "path": "/_synapse/worker/v1/tasks/{task_id}/complete",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "POST",
+        "path": "/_synapse/worker/v1/tasks/{task_id}/fail",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "POST",
+        "path": "/_synapse/worker/v1/workers/{worker_id}/connect",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "POST",
+        "path": "/_synapse/worker/v1/workers/{worker_id}/disconnect",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      },
+      {
+        "method": "POST",
+        "path": "/_synapse/worker/v1/workers/{worker_id}/heartbeat",
+        "reason": "404 M_UNRECOGNIZED (route not wired)"
+      }
+    ],
+    "not_registered_count": 13
+  },
+  "availability": {
+    "probed": 1365,
+    "buckets": {
+      "ok-2xx": 58,
+      "forbidden-403": 312,
+      "auth-required-401": 49,
+      "resource-not-found-404": 26,
+      "bad-request-400": 33,
+      "other-422": 17,
+      "rate-limited-429": 869,
+      "not-found-404": 1
+    },
+    "error_details": {},
+    "latency_ms": {
+      "count": 1365,
+      "min": 2.2,
+      "p50": 7.3,
+      "p90": 11.5,
+      "p95": 15.3,
+      "p99": 33.0,
+      "max": 142.2
+    }
+  },
+  "security": {
+    "findings_count": 8,
+    "critical": 5,
+    "medium": 3,
+    "findings": [
+      {
+        "type": "AUTH_BYPASS",
+        "severity": "CRITICAL",
+        "method": "GET",
+        "path": "/_matrix/client/r0/account/profile/{user_id}",
+        "status": 200,
+        "snippet": "{\"avatar_url\":null,\"displayname\":null,\"user_id\":\"@tjgtestuser:matrix.test\"}",
+        "detail": "protected route returned 2xx without Authorization header"
+      },
+      {
+        "type": "AUTH_BYPASS",
+        "severity": "CRITICAL",
+        "method": "GET",
+        "path": "/_matrix/client/r0/spaces/public",
+        "status": 200,
+        "snippet": "{\"next_batch\":null,\"spaces\":[]}",
+        "detail": "protected route returned 2xx without Authorization header"
+      },
+      {
+        "type": "AUTH_BYPASS",
+        "severity": "CRITICAL",
+        "method": "POST",
+        "path": "/_matrix/client/unstable/org.matrix.msc4108/rendezvous",
+        "status": 200,
+        "snippet": "{\"url\":\"https://matrix.test/_matrix/client/unstable/org.matrix.msc4108/rendezvous/ad68f45c08724efe9495e3e6ffe3e91b\"}",
+        "detail": "protected route returned 2xx without Authorization header"
+      },
+      {
+        "type": "AUTH_BYPASS",
+        "severity": "CRITICAL",
+        "method": "GET",
+        "path": "/_matrix/media/r1/download/{server_name}/{media_id}",
+        "status": 200,
+        "snippet": "{}",
+        "detail": "protected route returned 2xx without Authorization header"
+      },
+      {
+        "type": "AUTH_BYPASS",
+        "severity": "CRITICAL",
+        "method": "GET",
+        "path": "/_matrix/media/r1/download/{server_name}/{media_id}/{filename}",
+        "status": 200,
+        "snippet": "{}",
+        "detail": "protected route returned 2xx without Authorization header"
+      },
+      {
+        "type": "WEAK_AUTH_ENFORCEMENT",
+        "severity": "MEDIUM",
+        "method": "POST",
+        "path": "/_synapse/external/openclaw/{service_id}/webhook",
+        "status": 422,
+        "errcode": "",
+        "detail": "protected route returned 422 instead of 401/403 without auth"
+      },
+      {
+        "type": "WEAK_AUTH_ENFORCEMENT",
+        "severity": "MEDIUM",
+        "method": "POST",
+        "path": "/_synapse/external/trendradar/{service_id}/webhook",
+        "status": 422,
+        "errcode": "",
+        "detail": "protected route returned 422 instead of 401/403 without auth"
+      },
+      {
+        "type": "WEAK_AUTH_ENFORCEMENT",
+        "severity": "MEDIUM",
+        "method": "POST",
+        "path": "/_synapse/external/webhook/{service_id}",
+        "status": 422,
+        "errcode": "",
+        "detail": "protected route returned 422 instead of 401/403 without auth"
+      }
+    ]
+  },
+  "category_breakdown": {
+    "registered": {
+      "discovery": 6,
+      "other": 51,
+      "appservice-api": 4,
+      "client-api": 914,
+      "client-api-other": 43,
+      "federation-api": 47,
+      "media-api": 28,
+      "admin-api": 272
+    },
+    "not_registered": {
+      "appservice-api": 1,
+      "client-api": 1,
+      "admin-api": 1,
+      "other": 10
+    }
+  }
+}

@@ -3,6 +3,7 @@ import type { AdminManager } from 'matrix-js-sdk/admin'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
+import { MATRIX_PATHS } from '../../paths'
 import { AdminReportService } from '../ReportService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
@@ -86,12 +87,18 @@ describe('AdminReportService', () => {
     expect(client.reportEvent).toHaveBeenCalledWith('!r:hs', '$e1', 'spam', '')
   })
 
-  it('reportRoom 走 v3 房间举报端点', async () => {
+  it('reportRoom 走 v3 房间举报端点（FT-091: 使用 MATRIX_PATHS.MODERATION.REPORT_ROOM）', async () => {
+    // 验证 L3 常量值（完整路径含 v3 前缀）
+    expect(MATRIX_PATHS.MODERATION.REPORT_ROOM('!r:hs')).toBe('/_matrix/client/v3/rooms/!r%3Ahs/report')
     await expect(service.reportRoom('!r:hs', 'abuse', 'desc')).resolves.toEqual({ report_id: 'rep-1' })
-    expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/rooms/!r%3Ahs/report', undefined, {
-      reason: 'abuse',
-      description: 'desc'
-    })
+    // prefixedAuthedRequest 剥离默认 v3 前缀后，authedRequest 收到相对路径（v3 是 SDK 默认前缀，opts=undefined）
+    expect(authedRequestImpl).toHaveBeenCalledWith(
+      'POST',
+      '/rooms/!r%3Ahs/report',
+      undefined,
+      { reason: 'abuse', description: 'desc' },
+      undefined
+    )
   })
 
   it('reportRoom v3 失败时回退到首条时间线事件举报', async () => {
@@ -109,15 +116,24 @@ describe('AdminReportService', () => {
     expect(client.reportEvent).toHaveBeenCalledWith('!r:hs', '$first', 'abuse', '')
   })
 
-  it('scoreReport 校验分值范围（-100~0），越界不发请求', async () => {
+  it('scoreReport 校验分值范围（-100~0），越界不发请求（FT-091: 使用 MATRIX_PATHS.MODERATION.REPORT_EVENT_SCORE）', async () => {
+    // 验证 L3 常量值
+    expect(MATRIX_PATHS.MODERATION.REPORT_EVENT_SCORE('v3', '!r:hs', '$e1')).toBe(
+      '/_matrix/client/v3/rooms/!r%3Ahs/report/%24e1/score'
+    )
     await expect(service.scoreReport('!r:hs', '$e1', 5)).rejects.toThrow('matrix_error.admin.score_range_invalid')
     await expect(service.scoreReport('!r:hs', '$e1', -101)).rejects.toThrow('matrix_error.admin.score_range_invalid')
     expect(authedRequestImpl).not.toHaveBeenCalled()
 
     await service.scoreReport('!r:hs', '$e1', -50)
-    expect(authedRequestImpl).toHaveBeenCalledWith('PUT', '/rooms/!r%3Ahs/report/%24e1/score', undefined, {
-      score: -50
-    })
+    // prefixedAuthedRequest 剥离默认 v3 前缀后，authedRequest 收到相对路径（opts=undefined）
+    expect(authedRequestImpl).toHaveBeenCalledWith(
+      'PUT',
+      '/rooms/!r%3Ahs/report/%24e1/score',
+      undefined,
+      { score: -50 },
+      undefined
+    )
   })
 
   it('getAdminReports 组装查询参数并映射响应', async () => {
@@ -159,5 +175,53 @@ describe('AdminReportService', () => {
       })
     )
     await expect(service.dismissReport('rep-1')).resolves.toBe(false)
+  })
+
+  // FT-131-D: 所有降级方法支持 throwOnError 选项，让调用方可控区分 "not found" 与 "API 失败"
+  describe('FT-131-D: throwOnError option', () => {
+    it('getAdminReports throwOnError=true 时向上抛出而非降级空列表', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/reports`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      await expect(service.getAdminReports(undefined, 50, undefined, true)).rejects.toThrow()
+    })
+
+    it('dismissReport throwOnError=true 时向上抛出而非返回 false', async () => {
+      server.use(
+        http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/reports/:reportId`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      await expect(service.dismissReport('rep-1', true)).rejects.toThrow()
+    })
+
+    it('getAdminReport throwOnError=true 时向上抛出而非返回 null', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/reports/:reportId`, () => {
+          return new HttpResponse(null, { status: 404 })
+        })
+      )
+      await expect(service.getAdminReport('rep-1', true)).rejects.toThrow()
+    })
+
+    it('countAllEventReports throwOnError=true 时向上抛出而非返回 0', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/event_reports/count`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      await expect(service.countAllEventReports(true)).rejects.toThrow()
+    })
+
+    it('deleteEventReport throwOnError=true 时向上抛出而非返回 false', async () => {
+      server.use(
+        http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/event_reports/:id`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      await expect(service.deleteEventReport(1, true)).rejects.toThrow()
+    })
   })
 })

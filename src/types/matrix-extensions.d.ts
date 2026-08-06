@@ -4,7 +4,7 @@
  * 为 matrix-js-sdk 提供额外的类型定义，避免使用 any 类型
  */
 
-import type { IPusher, IPusherRequest, MatrixClient } from 'matrix-js-sdk'
+import type { IPusher, IPusherRequest, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
 
 // ============================================
 // Crypto API 扩展
@@ -173,10 +173,25 @@ export interface IDeviceUpdateRequest {
 }
 
 // SDK-7: Push 管理器类型
+export interface ICreatePushRuleRequest {
+  actions: PushRuleAction[]
+  conditions?: Record<string, unknown>[]
+  pattern?: string
+  before?: string
+  after?: string
+}
+
 export interface PushManager {
   setPusher(pusher: IPusherRequest): Promise<void>
   removePusher(pushkey: string, appId: string, deviceId?: string): Promise<void>
   getPushers(forceRefresh?: boolean): Promise<IPusher[]>
+  // FT-112: Push rule operations routed through SDK PushManager
+  setPushRuleEnabled(scope: string, kind: string, ruleId: string, enabled: boolean): Promise<void>
+  setPushRuleActions(scope: string, kind: string, ruleId: string, actions: PushRuleAction[]): Promise<void>
+  createPushRule(scope: string, kind: string, ruleId: string, rule: ICreatePushRuleRequest): Promise<void>
+  deletePushRule(scope: string, kind: string, ruleId: string): Promise<void>
+  muteRoom(roomId: string): Promise<void>
+  unmuteRoom(roomId: string): Promise<void>
 }
 
 export interface DeviceListUpdatesResponse {

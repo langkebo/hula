@@ -1,3 +1,4 @@
+import { warn as logWarn } from '@tauri-apps/plugin-log'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '../MatrixClientService'
@@ -10,6 +11,15 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../user/MatrixAccountService', () => ({
   matrixAccountService: { getCapabilities: vi.fn().mockResolvedValue({}) }
+}))
+
+vi.mock('../MatrixWorkerHost', () => ({
+  matrixWorkerHost: { isStarted: false }
+}))
+
+const throwingFetch = vi.fn(() => Promise.reject(new Error('network down')))
+vi.mock('../network/runtimeFetch', () => ({
+  getRuntimeAwareFetch: () => throwingFetch
 }))
 
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
@@ -63,7 +73,9 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     store.setCapabilities({ capabilities: { 'm.voice': { enabled: true } } })
     expect(matrixCapabilityService.canUseVoip()).toBe(true)
 
-    store.setCapabilities({ capabilities: { 'm.voice': { enabled: false }, 'io.hula.voice_extended': true } })
+    store.setCapabilities({
+      capabilities: { 'm.voice': { enabled: false }, 'io.hula.voice_extended': { enabled: true } }
+    })
     expect(matrixCapabilityService.canUseVoip()).toBe(true)
 
     store.setCapabilities({
@@ -78,7 +90,7 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     expect(matrixCapabilityService.canUseAdminApi()).toBe(false)
 
     store.setCapabilities({
-      capabilities: { 'io.hula.friends': true, 'io.hula.admin': true }
+      capabilities: { 'io.hula.friends': { enabled: true }, 'io.hula.admin': { enabled: true } }
     })
     expect(matrixCapabilityService.canUseFriendList()).toBe(true)
     expect(matrixCapabilityService.canUseAdminApi()).toBe(true)
@@ -133,5 +145,61 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     const store = useCapabilityStore()
     store.setCapabilities({ capabilities: { 'm.voice': { enabled: true } } })
     expect(() => matrixCapabilityService.requireCapability('voip')).not.toThrow()
+  })
+})
+
+// FT-131-B: fetchVersions / fetchClientConfig 不能静默吞错，必须记录日志以便排查能力检测失败
+describe('FT-131-B: capability fetch error logging', () => {
+  beforeEach(() => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    registerCapabilityStoreResolver(() => useCapabilityStore())
+    vi.clearAllMocks()
+    throwingFetch.mockReset()
+    throwingFetch.mockImplementation(() => Promise.reject(new Error('network down')))
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+      getHomeserverUrl: () => 'https://matrix.test'
+    } as never)
+  })
+
+  it('fetchVersions 失败时记录 warn 日志（不再静默吞错）', async () => {
+    await matrixCapabilityService.fetchCapabilities()
+    expect(logWarn).toHaveBeenCalled()
+    const allWarnCalls = vi.mocked(logWarn).mock.calls.map((c) => String(c[0]))
+    expect(allWarnCalls.some((msg) => msg.includes('versions') || msg.includes('Versions'))).toBe(true)
+  })
+
+  it('fetchClientConfig 失败时记录 warn 日志（不再静默吞错）', async () => {
+    await matrixCapabilityService.fetchCapabilities()
+    expect(logWarn).toHaveBeenCalled()
+    const allWarnCalls = vi.mocked(logWarn).mock.calls.map((c) => String(c[0]))
+    expect(allWarnCalls.some((msg) => msg.includes('client_config') || msg.includes('ClientConfig'))).toBe(true)
+  })
+
+  it('能力检测整体仍返回降级结果（不因日志而破坏降级）', async () => {
+    const result = await matrixCapabilityService.fetchCapabilities()
+    expect(result).not.toBeNull()
+    expect(result?.unstable_features).toEqual({})
+    expect(result?.client_config).toEqual({})
+  })
+})
+
+// R-16: tryGetStore 不能静默吞错，必须记录日志以便排查 store 解析失败
+describe('R-16: error logging', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // 注册一个会抛错的 resolver，使 tryGetStore 进入 catch 分支
+    registerCapabilityStoreResolver(() => {
+      throw new Error('store unavailable')
+    })
+  })
+
+  it('logs a warning when tryGetStore throws and returns null', () => {
+    const result = matrixCapabilityService.hasCapability('voip')
+
+    expect(result).toBe(false)
+    expect(logWarn).toHaveBeenCalled()
+    const allWarnCalls = vi.mocked(logWarn).mock.calls.map((c) => String(c[0]))
+    expect(allWarnCalls.some((msg) => msg.includes('tryGetStore'))).toBe(true)
   })
 })

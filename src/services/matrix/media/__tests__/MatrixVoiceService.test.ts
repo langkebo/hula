@@ -173,4 +173,47 @@ describe('MatrixVoiceService', () => {
     expect(isVoiceMessageResult({ filename: 123 })).toBe(false)
     expect(isVoiceMessageResult(null)).toBe(false)
   })
+
+  // FT-122: 所有接受 ID 参数的方法必须校验非空，不能将空字符串传给后端
+  describe('FT-122: input validation', () => {
+    it('uploadVoice 空 roomId 抛出错误', async () => {
+      await expect(matrixVoiceService.uploadVoice('', new Blob(['x']))).rejects.toThrow()
+    })
+
+    it('getVoice 空 roomId 抛出错误', async () => {
+      await expect(matrixVoiceService.getVoice('', '$event')).rejects.toThrow()
+    })
+
+    it('getVoice 空 eventId 抛出错误', async () => {
+      await expect(matrixVoiceService.getVoice('!room:id', '')).rejects.toThrow()
+    })
+
+    it('getUserVoiceStats 空 userId 抛出错误', async () => {
+      await expect(matrixVoiceService.getUserVoiceStats('')).rejects.toThrow()
+    })
+
+    it('deleteVoice 空 messageId 抛出错误', async () => {
+      await expect(matrixVoiceService.deleteVoice('')).rejects.toThrow()
+    })
+
+    it('getRoomVoiceList 空 roomId 抛出错误', async () => {
+      await expect(matrixVoiceService.getRoomVoiceList('', 50, 0)).rejects.toThrow()
+    })
+
+    it('getUserVoiceList 空 userId 抛出错误', async () => {
+      await expect(matrixVoiceService.getUserVoiceList('', 50, 0)).rejects.toThrow()
+    })
+
+    it('getVoiceContent 空 messageId 抛出错误', async () => {
+      await expect(matrixVoiceService.getVoiceContent('')).rejects.toThrow()
+    })
+
+    it('convertVoice 空 messageId 抛出错误', async () => {
+      await expect(matrixVoiceService.convertVoice('', 'mp3')).rejects.toThrow()
+    })
+
+    it('optimizeVoice 空 messageId 抛出错误', async () => {
+      await expect(matrixVoiceService.optimizeVoice('', {})).rejects.toThrow()
+    })
+  })
 })

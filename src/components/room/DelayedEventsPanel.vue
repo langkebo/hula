@@ -24,7 +24,7 @@
           <div class="event-meta">
             <div class="meta-row">
               <span class="meta-label">{{ t('delayed_events.fields.delay_id') }}:</span>
-              <span class="meta-value" :title="event.delay_id">{{ event.delay_id }}</span>
+              <span class="meta-value" :title="String(event.delay_id)">{{ event.delay_id }}</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">{{ t('delayed_events.fields.type') }}:</span>
@@ -45,7 +45,7 @@
               secondary
               data-testid="delayed-cancel-btn"
               :loading="actionLoading === `cancel:${event.delay_id}`"
-              @click="handleCancel(event.delay_id)">
+              @click="handleCancel(String(event.delay_id))">
               {{ t('delayed_events.actions.cancel') }}
             </n-button>
             <n-button
@@ -53,7 +53,7 @@
               secondary
               data-testid="delayed-restart-btn"
               :loading="actionLoading === `restart:${event.delay_id}`"
-              @click="handleRestart(event.delay_id)">
+              @click="handleRestart(String(event.delay_id))">
               {{ t('delayed_events.actions.restart') }}
             </n-button>
             <n-button
@@ -62,7 +62,7 @@
               secondary
               data-testid="delayed-send-btn"
               :loading="actionLoading === `send:${event.delay_id}`"
-              @click="handleSend(event.delay_id)">
+              @click="handleSend(String(event.delay_id))">
               {{ t('delayed_events.actions.send') }}
             </n-button>
           </div>
@@ -80,7 +80,7 @@
             <div class="event-meta">
               <div class="meta-row">
                 <span class="meta-label">{{ t('delayed_events.fields.delay_id') }}:</span>
-                <span class="meta-value" :title="entry.delayed_event.delay_id">
+                <span class="meta-value" :title="String(entry.delayed_event.delay_id)">
                   {{ entry.delayed_event.delay_id }}
                 </span>
               </div>

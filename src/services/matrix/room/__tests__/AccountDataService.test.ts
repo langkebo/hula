@@ -2,6 +2,7 @@ import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
+import { MATRIX_PATHS } from '../../paths'
 import { MatrixRoomAccountDataService } from '../AccountDataService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
@@ -25,6 +26,19 @@ const server = setupMswServer(
   }),
   http.get(`${TEST_BASE_URL}/_matrix/admin/v1/external_services`, () => {
     return new HttpResponse(null, { status: 500 })
+  }),
+  // FT-089: sign/verify/message_queue/encrypted_events
+  http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/sign/:eventId`, () => {
+    return HttpResponse.json({ signature: 'sig', signed_by: '@me:e' })
+  }),
+  http.post(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/verify/:eventId`, () => {
+    return HttpResponse.json({ valid: true, verifier: '@me:e' })
+  }),
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/message_queue`, () => {
+    return HttpResponse.json({ queue: [{ event_id: '$e:1', type: 'm.room.message' }] })
+  }),
+  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/encrypted_events`, () => {
+    return HttpResponse.json({ events: [{ event_id: '$e:1' }] })
   })
 )
 
@@ -83,7 +97,7 @@ describe('MatrixRoomAccountDataService', () => {
       expect(await service.getRoomAccountData('!r:e', 'm.fully_read')).toEqual({ foo: 1 })
       expect(authedRequestImpl).toHaveBeenCalledWith(
         'GET',
-        `/user/${encodeURIComponent('@me:e')}/rooms/${encodeURIComponent('!r:e')}/account_data/${encodeURIComponent('m.fully_read')}`
+        MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA('@me:e', '!r:e', 'm.fully_read')
       )
     })
 
@@ -104,7 +118,7 @@ describe('MatrixRoomAccountDataService', () => {
       await service.setRoomAccountData('!r', 'm.x', { a: 1 })
       expect(authedRequestImpl).toHaveBeenCalledWith(
         'PUT',
-        `/user/${encodeURIComponent('@me:e')}/rooms/${encodeURIComponent('!r')}/account_data/${encodeURIComponent('m.x')}`,
+        MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA('@me:e', '!r', 'm.x'),
         undefined,
         { a: 1 }
       )
@@ -146,10 +160,10 @@ describe('MatrixRoomAccountDataService', () => {
   })
 
   describe('setReadLifetime', () => {
-    it('PUTs burn config to /burn', async () => {
+    it('PUTs burn config to BURN.ROOM_BURN(roomId)（FT-089: 使用 L3 常量）', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       await service.setReadLifetime('!r', 5000)
-      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', `/rooms/${encodeURIComponent('!r')}/burn`, undefined, {
+      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', MATRIX_PATHS.BURN.ROOM_BURN('!r'), undefined, {
         enabled: true,
         burn_after_ms: 5000
       })
@@ -163,6 +177,83 @@ describe('MatrixRoomAccountDataService', () => {
       )
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       await expect(service.setReadLifetime('!r', 1000)).rejects.toThrow('403')
+    })
+  })
+
+  // FT-089: 4 个新方法的行为测试 — 验证 path 严格等于 L3 常量值
+  describe('signEvent', () => {
+    it('PUTs to ROOM.SIGN_EVENT(roomId, eventId)（FT-089）', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      const result = await service.signEvent('!r:e', '$ev:1')
+      expect(result).toEqual({ signature: 'sig', signed_by: '@me:e' })
+      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', MATRIX_PATHS.ROOM.SIGN_EVENT('!r:e', '$ev:1'))
+    })
+
+    it('re-throws backend errors', async () => {
+      server.use(
+        http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/sign/:eventId`, () => {
+          return new HttpResponse(null, { status: 403 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      await expect(service.signEvent('!r:e', '$ev:1')).rejects.toThrow('403')
+    })
+  })
+
+  describe('verifyEvent', () => {
+    it('POSTs to ROOM.VERIFY_EVENT(roomId, eventId)（FT-089）', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      const result = await service.verifyEvent('!r:e', '$ev:1')
+      expect(result).toEqual({ valid: true, verifier: '@me:e' })
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', MATRIX_PATHS.ROOM.VERIFY_EVENT('!r:e', '$ev:1'))
+    })
+
+    it('re-throws backend errors', async () => {
+      server.use(
+        http.post(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/verify/:eventId`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      await expect(service.verifyEvent('!r:e', '$ev:1')).rejects.toThrow('500')
+    })
+  })
+
+  describe('getMessageQueue', () => {
+    it('GETs ROOM.MESSAGE_QUEUE(roomId)（FT-089）', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      const result = await service.getMessageQueue('!r:e')
+      expect(result.queue).toEqual([{ event_id: '$e:1', type: 'm.room.message' }])
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', MATRIX_PATHS.ROOM.MESSAGE_QUEUE('!r:e'))
+    })
+
+    it('swallows backend errors and returns {}', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/message_queue`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      expect(await service.getMessageQueue('!r:e')).toEqual({})
+    })
+  })
+
+  describe('getEncryptedEvents', () => {
+    it('GETs ROOM.ENCRYPTED_EVENTS(roomId)（FT-089）', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      const result = await service.getEncryptedEvents('!r:e')
+      expect(result.events).toEqual([{ event_id: '$e:1' }])
+      expect(authedRequestImpl).toHaveBeenCalledWith('GET', MATRIX_PATHS.ROOM.ENCRYPTED_EVENTS('!r:e'))
+    })
+
+    it('swallows backend errors and returns {}', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/encrypted_events`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      expect(await service.getEncryptedEvents('!r:e')).toEqual({})
     })
   })
 

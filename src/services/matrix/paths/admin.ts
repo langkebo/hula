@@ -1,5 +1,11 @@
 export const ADMIN = {
   SYNAPSE_ADMIN_BASE: '/_synapse/admin/v1',
+  /**
+   * Synapse admin v2 前缀（FT-119）。
+   * 用于查询单用户详情（GET /_synapse/admin/v2/users/<userId>），
+   * 与 ADMIN.USERS (v2) 版本保持一致。
+   */
+  SYNAPSE_ADMIN_BASE_V2: '/_synapse/admin/v2',
   /** @deprecated Use AdminFacadeService or ServerService methods instead */
   SERVER_INFO: '/_synapse/admin/v1/server',
   /** @deprecated Use AdminFacadeService or ServerService methods instead */
@@ -19,6 +25,15 @@ export const ADMIN = {
   /** @deprecated Unused - will be removed in a future version */
   CAPTCHA_CLEANUP: '/_synapse/admin/v1/captcha/cleanup',
   EXTERNAL_SERVICES: '/_synapse/admin/v1/external_services',
+  /**
+   * 以下为 ExternalServiceService 使用的相对子路径（FT-090）。
+   * 服务调用时通过 `{ prefix: SYNAPSE_ADMIN_BASE }` 注入完整前缀。
+   */
+  EXTERNAL_SERVICES_LIST: '/external_services',
+  EXTERNAL_SERVICES_BY_ID: (asId: string) => `/external_services/${encodeURIComponent(asId)}`,
+  EXTERNAL_SERVICES_HEALTH: '/external_services/health',
+  EXTERNAL_SERVICES_HEALTH_BY_ID: (asId: string) => `/external_services/${encodeURIComponent(asId)}/health`,
+  EXTERNAL_SERVICES_HEALTH_CHECK: (asId: string) => `/external_services/${encodeURIComponent(asId)}/health/check`,
   REPORTS: '/_synapse/admin/v1/reports',
   REPORT_BY_ID: (reportId: string) => `/_synapse/admin/v1/reports/${encodeURIComponent(reportId)}`,
   SERVER_NOTIFICATIONS: '/_synapse/admin/v1/server_notifications',

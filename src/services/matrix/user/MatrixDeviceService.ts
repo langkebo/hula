@@ -10,6 +10,7 @@ import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixDeviceService')
 
@@ -255,7 +256,7 @@ class MatrixDeviceService extends BaseMatrixService {
       const result = await authedRequestWithPath<{ requests?: Array<Record<string, unknown>> }>(
         client,
         'GET',
-        '/room_keys/request'
+        MATRIX_PATHS.CRYPTO.ROOM_KEYS_REQUEST
       )
       logger.info('[DeviceService] 获取密钥请求列表成功')
       return result.requests ?? []

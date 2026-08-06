@@ -4,6 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { adminService } from '..'
 
+const { loggerSpy } = vi.hoisted(() => ({
+  loggerSpy: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => loggerSpy
+}))
+
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn()
 }))
@@ -960,5 +973,30 @@ describe('adminService facade', () => {
       expect(result?.total).toBe(42)
       expect(mockAdminManager.getMediaStats).toHaveBeenCalled()
     })
+  })
+})
+
+describe('R-14: error logging', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(matrixClientService, 'getClient')
+    adminService.clearAdminApiCache()
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
+      getUserId: vi.fn(() => '@admin:server.com'),
+      getAccessToken: vi.fn(() => 'token'),
+      getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
+      getDomain: vi.fn(() => 'server.com'),
+      http: {
+        authedRequest: vi.fn().mockRejectedValue(new Error('admin api unreachable'))
+      }
+    } as unknown as MatrixClient)
+  })
+
+  it('logs a warning when checkAdminApiAvailability throws and returns false', async () => {
+    const result = await adminService.checkAdminApiAvailability()
+
+    expect(result).toBe(false)
+    expect(loggerSpy.warn).toHaveBeenCalledTimes(1)
+    expect(loggerSpy.warn).toHaveBeenCalledWith('checkAdminApiAvailability failed:', expect.any(Error))
   })
 })

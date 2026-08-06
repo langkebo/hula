@@ -9,6 +9,19 @@ import {
   type SlidingSyncLifecycleListener
 } from '../MatrixSyncManager'
 
+const { loggerSpy } = vi.hoisted(() => ({
+  loggerSpy: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => loggerSpy
+}))
+
 describe('MatrixSyncManager', () => {
   const createMockClient = () => ({}) as unknown as import('matrix-js-sdk').MatrixClient
 
@@ -788,5 +801,49 @@ describe('MatrixSyncManager', () => {
 
       manager.stop()
     })
+  })
+})
+
+describe('R-17b: error logging', () => {
+  const createMockClient = () => ({}) as unknown as import('matrix-js-sdk').MatrixClient
+
+  const defaultConfig: MatrixClientConfig = {
+    homeserverUrl: 'https://matrix.test'
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+  })
+
+  it('logs a warning when loadPersistedPos throws and returns null', () => {
+    // Put corrupted JSON in localStorage to trigger JSON.parse error
+    localStorage.setItem('matrix.sliding_sync.pos', '{invalid json')
+
+    // Stub setInitialPos (may not exist in SDK build)
+    const proto = SlidingSync.prototype as unknown as { setInitialPos?: (pos: string) => void }
+    const hadMethod = typeof proto.setInitialPos === 'function'
+    if (!hadMethod) {
+      proto.setInitialPos = () => {}
+    }
+    const setInitialPosSpy = vi.spyOn(proto, 'setInitialPos')
+
+    const manager = new MatrixSyncManager()
+    manager.create(createMockClient(), defaultConfig)
+
+    // Corrupted data should not be restored
+    expect(setInitialPosSpy).not.toHaveBeenCalled()
+    // R-17b: logger should have been called
+    expect(loggerSpy.warn).toHaveBeenCalledWith('getPersistedPos failed:', expect.any(Error))
+
+    manager.stop()
+    setInitialPosSpy.mockRestore()
+    if (!hadMethod) {
+      delete proto.setInitialPos
+    }
   })
 })

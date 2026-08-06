@@ -81,12 +81,13 @@ export class AdminReportService {
   async reportRoom(roomId: string, reason: string, description?: string): Promise<ReportRoomResponse | null> {
     const client = this.getClient()
     try {
-      const result = (await client.http.authedRequest(
+      const result = await this.prefixedAuthedRequest<ReportRoomResponse>(
+        client,
         'POST',
-        `/rooms/${encodeURIComponent(roomId)}/report`,
+        MATRIX_PATHS.MODERATION.REPORT_ROOM(roomId),
         undefined,
         { reason, description }
-      )) as ReportRoomResponse
+      )
       logger.info(`[Admin] 举报房间成功: ${roomId}, report_id=${result.report_id}`)
       return result
     } catch (err) {
@@ -116,9 +117,10 @@ export class AdminReportService {
       throw new Error('matrix_error.admin.score_range_invalid')
     }
     try {
-      await client.http.authedRequest(
+      await this.prefixedAuthedRequest<void>(
+        client,
         'PUT',
-        `/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/score`,
+        MATRIX_PATHS.MODERATION.REPORT_EVENT_SCORE('v3', roomId, eventId),
         undefined,
         { score }
       )
@@ -129,7 +131,7 @@ export class AdminReportService {
     }
   }
 
-  async getScannerInfo(roomId: string, eventId: string): Promise<ScannerInfo | null> {
+  async getScannerInfo(roomId: string, eventId: string, throwOnError = false): Promise<ScannerInfo | null> {
     const client = this.getClient()
     try {
       const result = await this.prefixedAuthedRequest<ScannerInfo>(
@@ -140,6 +142,7 @@ export class AdminReportService {
       return result
     } catch (err) {
       logger.error(`[Admin] 获取扫描器信息失败: ${err}`)
+      if (throwOnError) throw err
       return null
     }
   }
@@ -147,7 +150,8 @@ export class AdminReportService {
   async getAdminReports(
     roomId?: string,
     limit: number = 50,
-    from?: string
+    from?: string,
+    throwOnError = false
   ): Promise<{ reports: AdminReport[]; next_batch?: string }> {
     const client = this.getClient()
     try {
@@ -166,11 +170,12 @@ export class AdminReportService {
       }
     } catch (err) {
       logger.error(`[Admin] 获取管理端报表失败: ${err}`)
+      if (throwOnError) throw err
       return { reports: [] }
     }
   }
 
-  async getAdminReport(reportId: string): Promise<AdminReport | null> {
+  async getAdminReport(reportId: string, throwOnError = false): Promise<AdminReport | null> {
     const client = this.getClient()
     try {
       const result = await this.prefixedAuthedRequest<AdminReport>(
@@ -181,11 +186,12 @@ export class AdminReportService {
       return result as AdminReport
     } catch (err) {
       logger.error(`[Admin] 获取报表详情失败: ${err}`)
+      if (throwOnError) throw err
       return null
     }
   }
 
-  async dismissReport(reportId: string): Promise<boolean> {
+  async dismissReport(reportId: string, throwOnError = false): Promise<boolean> {
     const client = this.getClient()
     try {
       await this.prefixedAuthedRequest<void>(client, 'DELETE', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
@@ -193,6 +199,7 @@ export class AdminReportService {
       return true
     } catch (err) {
       logger.error(`[Admin] 驳回报表失败: ${err}`)
+      if (throwOnError) throw err
       return false
     }
   }
@@ -238,7 +245,7 @@ export class AdminReportService {
     }
   }
 
-  async countAllEventReports(): Promise<number> {
+  async countAllEventReports(throwOnError = false): Promise<number> {
     const client = this.getClient()
     try {
       const result = await this.prefixedAuthedRequest<{ count?: number }>(
@@ -249,11 +256,12 @@ export class AdminReportService {
       return result.count ?? 0
     } catch (err) {
       logger.error(`[Admin] 获取事件举报总数失败: ${err}`)
+      if (throwOnError) throw err
       return 0
     }
   }
 
-  async countEventReportsByStatus(status: string): Promise<number> {
+  async countEventReportsByStatus(status: string, throwOnError = false): Promise<number> {
     const client = this.getClient()
     try {
       const result = await this.prefixedAuthedRequest<{ count?: number }>(
@@ -264,11 +272,12 @@ export class AdminReportService {
       return result.count ?? 0
     } catch (err) {
       logger.error(`[Admin] 按状态获取事件举报数失败: ${err}`)
+      if (throwOnError) throw err
       return 0
     }
   }
 
-  async resolveEventReport(id: number, params: { reason: string }): Promise<EventReport | null> {
+  async resolveEventReport(id: number, params: { reason: string }, throwOnError = false): Promise<EventReport | null> {
     const client = this.getClient()
     try {
       const result = await this.prefixedAuthedRequest<EventReport>(
@@ -281,11 +290,12 @@ export class AdminReportService {
       return result
     } catch (err) {
       logger.error(`[Admin] 解决事件举报失败: ${err}`)
+      if (throwOnError) throw err
       return null
     }
   }
 
-  async dismissEventReport(id: number, params: { reason: string }): Promise<EventReport | null> {
+  async dismissEventReport(id: number, params: { reason: string }, throwOnError = false): Promise<EventReport | null> {
     const client = this.getClient()
     try {
       const result = await this.prefixedAuthedRequest<EventReport>(
@@ -298,11 +308,12 @@ export class AdminReportService {
       return result
     } catch (err) {
       logger.error(`[Admin] 驳回事件举报失败: ${err}`)
+      if (throwOnError) throw err
       return null
     }
   }
 
-  async escalateEventReport(id: number): Promise<EventReport | null> {
+  async escalateEventReport(id: number, throwOnError = false): Promise<EventReport | null> {
     const client = this.getClient()
     try {
       const result = await this.prefixedAuthedRequest<EventReport>(
@@ -313,11 +324,12 @@ export class AdminReportService {
       return result
     } catch (err) {
       logger.error(`[Admin] 升级事件举报失败: ${err}`)
+      if (throwOnError) throw err
       return null
     }
   }
 
-  async deleteEventReport(id: number): Promise<boolean> {
+  async deleteEventReport(id: number, throwOnError = false): Promise<boolean> {
     const client = this.getClient()
     try {
       await this.prefixedAuthedRequest<void>(client, 'DELETE', this.eventReportPath(id))
@@ -325,11 +337,12 @@ export class AdminReportService {
       return true
     } catch (err) {
       logger.error(`[Admin] 删除事件举报失败: ${err}`)
+      if (throwOnError) throw err
       return false
     }
   }
 
-  async getEventReportHistory(id: number): Promise<EventReportHistory[]> {
+  async getEventReportHistory(id: number, throwOnError = false): Promise<EventReportHistory[]> {
     const client = this.getClient()
     try {
       const result = await this.prefixedAuthedRequest<{ history?: EventReportHistory[] }>(
@@ -340,6 +353,7 @@ export class AdminReportService {
       return result.history ?? []
     } catch (err) {
       logger.error(`[Admin] 获取事件举报历史失败: ${err}`)
+      if (throwOnError) throw err
       return []
     }
   }

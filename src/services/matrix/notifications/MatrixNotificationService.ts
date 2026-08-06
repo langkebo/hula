@@ -1,4 +1,11 @@
-import { type IPusherRequest, type IPushRule, type IPushRules, type MatrixClient, PushRuleKind } from 'matrix-js-sdk'
+import {
+  type IPusher,
+  type IPusherRequest,
+  type IPushRule,
+  type IPushRules,
+  type MatrixClient,
+  PushRuleKind
+} from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { safeJsonParse, validateObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -239,9 +246,9 @@ class MatrixNotificationService extends BaseMatrixService {
         PushRuleKind.Underride
       ]
       for (const kind of kinds) {
-        const ruleList = ((rules as unknown as Record<string, unknown>)?.[kind] ?? undefined) as unknown as
-          | IPushRule[]
-          | undefined
+        // FT-106: IPushRules 结构是 { global: { override, content, room, sender, underride } }
+        // 必须通过 rules.global[kind] 访问，而非 rules[kind]
+        const ruleList = (rules.global?.[kind] ?? undefined) as IPushRule[] | undefined
         if (ruleList?.some((r) => r.rule_id === ruleId)) {
           return kind
         }
@@ -441,12 +448,12 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 设置推送规则 (SDK 无 addPushRule 实现，统一到 matrixHttpClient)
+   * 设置推送规则 (使用 SDK 高层方法 client.addPushRule)
    */
   async setPushRuleByScope(scope: string, kind: string, ruleId: string, body: Record<string, unknown>): Promise<void> {
+    const client = this.getNotificationClient()
     try {
-      const path = `${MATRIX_PATHS.NOTIFICATION.PUSH_RULES}${encodeURIComponent(scope)}/${encodeURIComponent(kind)}/${encodeURIComponent(ruleId)}`
-      await matrixHttpClient.request('PUT', path, { body })
+      await client.addPushRule(scope, kind as PushRuleKind, ruleId, body)
       logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
@@ -470,12 +477,13 @@ class MatrixNotificationService extends BaseMatrixService {
 
   /**
    * 获取推送设备列表 (使用 SDK 高层方法)
+   * FT-128: 返回 IPusher[] 而非类型擦除的 Array<Record<string, unknown>>
    */
-  async fetchPushers(): Promise<Array<Record<string, unknown>>> {
+  async fetchPushers(): Promise<IPusher[]> {
     const client = this.getNotificationClient()
     try {
       const result = await client.getPushers()
-      return (result.pushers ?? []) as unknown as Array<Record<string, unknown>>
+      return result.pushers ?? []
     } catch (err) {
       logger.error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
       throw err
@@ -484,8 +492,19 @@ class MatrixNotificationService extends BaseMatrixService {
 
   /**
    * 设置推送设备 (使用 SDK 高层方法)
+   * FT-129: 校验必填字段后再调用 SDK，不使用 as unknown as 强转
    */
   async setPusherByBody(pusher: Record<string, unknown>): Promise<void> {
+    if (typeof pusher.pushkey !== 'string' || pusher.pushkey === '') {
+      throw new Error('pusher.pushkey is required and must be a non-empty string')
+    }
+    if (typeof pusher.app_id !== 'string' || pusher.app_id === '') {
+      throw new Error('pusher.app_id is required and must be a non-empty string')
+    }
+    if (typeof pusher.kind !== 'string' || pusher.kind === '') {
+      throw new Error('pusher.kind is required and must be a non-empty string')
+    }
+
     const client = this.getNotificationClient()
     try {
       await client.setPusher(pusher as unknown as IPusherRequest)

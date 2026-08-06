@@ -7,8 +7,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 
-const { getClientMock } = vi.hoisted(() => ({
-  getClientMock: vi.fn(() => null as MatrixClient | null)
+const { getClientMock, loggerSpy } = vi.hoisted(() => ({
+  getClientMock: vi.fn(() => null as MatrixClient | null),
+  loggerSpy: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => loggerSpy
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
@@ -170,5 +180,25 @@ describe('MatrixLocationService', () => {
       expect(url).toContain('116.4074')
       expect(url).toContain('openstreetmap.org')
     })
+  })
+})
+
+describe('R-19: error logging', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('logs a warning when parseLocationEvent throws and returns null', () => {
+    const mockEvent = {
+      getContent: () => {
+        throw new Error('getContent failed')
+      }
+    }
+
+    const result = matrixLocationService.parseLocationEvent(mockEvent as unknown as MatrixEvent)
+
+    expect(result).toBeNull()
+    expect(loggerSpy.warn).toHaveBeenCalledTimes(1)
+    expect(loggerSpy.warn).toHaveBeenCalledWith('parseLocation failed:', expect.any(Error))
   })
 })

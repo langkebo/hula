@@ -31,8 +31,9 @@ class MatrixEventReportService extends BaseMatrixService {
         if (manager && typeof (manager as EventReportManager).createReport === 'function') {
           return manager as EventReportManagerCompat
         }
-      } catch {
-        // getEventReportManager() 可能抛出异常
+      } catch (err) {
+        // FT-131-C: 记录 getEventReportManager 工厂异常，避免静默吞错导致 manager 不可用原因无法排查
+        logger.warn(`[MatrixEventReport] getEventReportManager() 工厂抛出异常: ${err}`)
       }
     }
     return null

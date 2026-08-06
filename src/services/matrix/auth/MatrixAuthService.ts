@@ -924,7 +924,9 @@ export class MatrixAuthService {
         return {}
       }
       return (await response.json()) as Record<string, unknown>
-    } catch {
+    } catch (err) {
+      // R-20: well-known is optional (相对合理), use warn not error
+      logger.warn('fetchWellKnown failed:', err)
       return {}
     }
   }

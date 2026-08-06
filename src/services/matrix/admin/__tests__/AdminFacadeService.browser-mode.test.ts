@@ -175,6 +175,22 @@ describe('AdminFacadeService — C-1 浏览器 dev 模式（无 Tauri runtime）
     )
   })
 
+  it('浏览器模式下 admin 用户查询应使用 v2 路径（FT-119: 与 ADMIN.USERS 的 v2 版本对齐）', async () => {
+    authedRequestMock.mockResolvedValue({ name: 'admin1', admin: true })
+
+    await adminService.getServerStats()
+
+    expect(authedRequestMock).toHaveBeenCalledWith(
+      'GET',
+      '/users/%40admin1%3Amatrix.test',
+      undefined,
+      undefined,
+      expect.objectContaining({
+        prefix: '/_synapse/admin/v2'
+      })
+    )
+  })
+
   it('浏览器模式下 clearAdminApiCache 后应重新验证', async () => {
     authedRequestMock.mockResolvedValue({ name: 'admin1', admin: true })
 

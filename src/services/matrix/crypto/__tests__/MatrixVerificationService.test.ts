@@ -1,5 +1,20 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+// 使用 vi.hoisted 创建 logSpy，使其在模块加载（vi.mock 工厂执行）时即可用
+const logSpy = vi.hoisted(() => ({
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  child: vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }))
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => logSpy
+}))
+
 import matrixClientService from '../../MatrixClientService'
 import { matrixVerificationService } from '../MatrixVerificationService'
 
@@ -37,6 +52,12 @@ describe('MatrixVerificationService', () => {
     matrixVerificationService.initialize()
     ;(matrixVerificationService as unknown as { pendingRequests: Map<string, unknown> }).pendingRequests.clear()
     ;(matrixVerificationService as unknown as { observedClient: unknown }).observedClient = mockClient
+
+    // 重置 logSpy 调用记录，避免用例间相互污染
+    logSpy.info.mockClear()
+    logSpy.error.mockClear()
+    logSpy.warn.mockClear()
+    logSpy.debug.mockClear()
   })
 
   describe('startSasVerification', () => {
@@ -217,6 +238,31 @@ describe('MatrixVerificationService', () => {
           methods: ['m.sas.v1']
         })
       ])
+    })
+  })
+
+  describe('getCurrentUserId / getCurrentDeviceId 错误吞没', () => {
+    it('getCurrentUserId 在获取客户端失败时应返回 null 并记录 error 日志', () => {
+      // 让 getClient 抛错，触发 getCurrentUserId 的 catch 块
+      vi.mocked(matrixClientService.getClient).mockImplementation(() => {
+        throw new Error('client not initialized')
+      })
+
+      const result = matrixVerificationService.getCurrentUserId()
+
+      expect(result).toBeNull()
+      expect(logSpy.error).toHaveBeenCalledTimes(1)
+    })
+
+    it('getCurrentDeviceId 在获取客户端失败时应返回 null 并记录 error 日志', () => {
+      vi.mocked(matrixClientService.getClient).mockImplementation(() => {
+        throw new Error('client not initialized')
+      })
+
+      const result = matrixVerificationService.getCurrentDeviceId()
+
+      expect(result).toBeNull()
+      expect(logSpy.error).toHaveBeenCalledTimes(1)
     })
   })
 })

@@ -103,8 +103,36 @@ export const pageSize = 20
 export const ROOM_MESSAGE_CACHE_LIMIT = 40
 export const RECALL_EXPIRATION_TIME = 2 * 60 * 1000
 
+/**
+ * Synapse-Rust 扩展 capability 值类型，与 SDK `ICapability` 对齐。
+ * FT-099: 后端 GET /capabilities 返回的扩展能力声明。
+ */
+export interface SynapseRustCapability {
+  enabled: boolean
+}
+
+/**
+ * Synapse-Rust 扩展 capability key 声明。
+ * FT-099: 与 SDK `Capabilities` 接口中的扩展 key 保持一致。
+ * 运行时通过 `HULA_CAPABILITY_ALIASES` 解析（见 MatrixCapabilityService.ts）。
+ */
+export interface SynapseRustCapabilities {
+  /** 阅后即焚（burn-after-read feature） */
+  'io.hula.burn_after_read'?: SynapseRustCapability
+  /** 好友系统（friends feature） */
+  'io.hula.friends'?: SynapseRustCapability
+  /** 语音消息扩展（voice-extended feature），与 m.voice 别名等价 */
+  'io.hula.voice_extended'?: SynapseRustCapability
+  /** Matrix 标准语音（与 io.hula.voice_extended 别名等价） */
+  'm.voice'?: SynapseRustCapability
+  /** OpenClaw 路由（openclaw-routes feature） */
+  openclaw?: SynapseRustCapability
+  /** AI 连接（ai-connection feature） */
+  ai_connection?: SynapseRustCapability
+}
+
 export interface MatrixCapabilities {
   unstable_features: Record<string, boolean>
-  capabilities: Record<string, unknown>
+  capabilities: SynapseRustCapabilities & Record<string, unknown>
   client_config: Record<string, unknown>
 }

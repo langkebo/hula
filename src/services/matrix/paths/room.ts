@@ -63,5 +63,19 @@ export const ROOM = {
   TURN_SERVER: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/turn_server`,
   ROOM_SYNC: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/sync`,
   CALL: (roomId: string, callId: string) => `/rooms/${encodeURIComponent(roomId)}/call/${encodeURIComponent(callId)}`,
-  VAULT_DATA: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/vault_data`
+  VAULT_DATA: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/vault_data`,
+  /** P2-8 事件签名 (FT-089) */
+  SIGN_EVENT: (roomId: string, eventId: string) =>
+    `/rooms/${encodeURIComponent(roomId)}/sign/${encodeURIComponent(eventId)}`,
+  /** P2-8 事件验证 (FT-089) */
+  VERIFY_EVENT: (roomId: string, eventId: string) =>
+    `/rooms/${encodeURIComponent(roomId)}/verify/${encodeURIComponent(eventId)}`,
+  /** P2-6 消息队列状态 (FT-089) */
+  MESSAGE_QUEUE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/message_queue`,
+  /** P2-9 加密事件列表扩展 (FT-089) */
+  ENCRYPTED_EVENTS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/encrypted_events`,
+  /** 邀请黑名单 (FT-118: RoomOperations.getInviteBlocklist/setInviteBlocklist) */
+  INVITE_BLOCKLIST: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/invite_blocklist`,
+  /** 邀请白名单 (FT-118: RoomOperations.getInviteAllowlist/setInviteAllowlist) */
+  INVITE_ALLOWLIST: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/invite_allowlist`
 } as const

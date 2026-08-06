@@ -29,7 +29,15 @@ type MatrixCapabilitiesResponse = {
  * - The `useServerCapability()` composable bridges service + store at the
  *   consumption layer (no circular import at the service definition level).
  */
-export type TjgCapability = 'sliding-sync' | 'e2ee' | 'voip' | 'friend-list' | 'admin-api'
+export type TjgCapability =
+  | 'sliding-sync'
+  | 'e2ee'
+  | 'voip'
+  | 'friend-list'
+  | 'admin-api'
+  | 'burn-after-read'
+  | 'openclaw'
+  | 'ai-connection'
 
 const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capabilities: string[] }> = {
   'sliding-sync': {
@@ -51,6 +59,18 @@ const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capab
   'admin-api': {
     unstable: ['io.hula.admin'],
     capabilities: ['io.hula.admin']
+  },
+  'burn-after-read': {
+    unstable: ['io.hula.burn_after_read'],
+    capabilities: ['io.hula.burn_after_read']
+  },
+  openclaw: {
+    unstable: ['openclaw'],
+    capabilities: ['openclaw']
+  },
+  'ai-connection': {
+    unstable: ['ai_connection'],
+    capabilities: ['ai_connection']
   }
 }
 
@@ -109,7 +129,9 @@ function getCapabilityStore() {
 function tryGetStore() {
   try {
     return getCapabilityStore()
-  } catch {
+  } catch (err) {
+    // R-16: log silent catch in tryGetStore
+    logger.warn('tryGetStore failed:', err)
     return null
   }
 }
@@ -149,6 +171,21 @@ class MatrixCapabilityService {
 
   canUseVoip(): boolean {
     return this.hasCapability('voip')
+  }
+
+  /** FT-099: 阅后即焚扩展能力检测 */
+  canUseBurnAfterRead(): boolean {
+    return this.hasCapability('burn-after-read')
+  }
+
+  /** FT-099: OpenClaw 路由扩展能力检测 */
+  canUseOpenClaw(): boolean {
+    return this.hasCapability('openclaw')
+  }
+
+  /** FT-099: AI 连接扩展能力检测 */
+  canUseAiConnection(): boolean {
+    return this.hasCapability('ai-connection')
   }
 
   canUseThreads(): boolean {
@@ -228,16 +265,24 @@ class MatrixCapabilityService {
       try {
         const data = await matrixWorkerHost.getServerVersions(baseUrl)
         return { unstable_features: data.unstable_features }
-      } catch {
+      } catch (err) {
+        // FT-131-B: 记录 versions 拉取失败，避免静默吞错导致能力检测异常无法排查
+        logger.warn(`[CapabilityService] fetchVersions (worker) failed: ${err}`)
         return {}
       }
     }
     try {
       const url = `${baseUrl}/_matrix/client/versions`
       const response = await getRuntimeAwareFetch()(url)
-      if (!response.ok) return {}
+      if (!response.ok) {
+        // FT-131-B: HTTP 非 2xx 也需记录，避免静默降级掩盖服务端错误
+        logger.warn(`[CapabilityService] fetchVersions got HTTP ${response.status}`)
+        return {}
+      }
       return (await response.json()) as MatrixVersionsResponse
-    } catch {
+    } catch (err) {
+      // FT-131-B: 记录 versions 拉取失败，避免静默吞错导致能力检测异常无法排查
+      logger.warn(`[CapabilityService] fetchVersions failed: ${err}`)
       return {}
     }
   }
@@ -246,9 +291,15 @@ class MatrixCapabilityService {
     try {
       const url = `${baseUrl}${MATRIX_PATHS.CLIENT_CONFIG.CLIENT}`
       const response = await getRuntimeAwareFetch()(url)
-      if (!response.ok) return {} as MatrixCapabilities['client_config']
+      if (!response.ok) {
+        // FT-131-B: HTTP 非 2xx 也需记录，避免静默降级掩盖服务端错误
+        logger.warn(`[CapabilityService] fetchClientConfig got HTTP ${response.status}`)
+        return {} as MatrixCapabilities['client_config']
+      }
       return (await response.json()) as MatrixCapabilities['client_config']
-    } catch {
+    } catch (err) {
+      // FT-131-B: 记录 client_config 拉取失败，避免静默吞错导致能力检测异常无法排查
+      logger.warn(`[CapabilityService] fetchClientConfig failed: ${err}`)
       return {} as MatrixCapabilities['client_config']
     }
   }
@@ -277,6 +328,9 @@ export function useServerCapability() {
     canUseFriendList: computed(() => service.canUseFriendList()),
     canUseSlidingSync: computed(() => service.canUseSlidingSync()),
     canUseE2EE: computed(() => service.canUseE2EE()),
-    canUseVoip: computed(() => service.canUseVoip())
+    canUseVoip: computed(() => service.canUseVoip()),
+    canUseBurnAfterRead: computed(() => service.canUseBurnAfterRead()),
+    canUseOpenclaw: computed(() => service.canUseOpenClaw()),
+    canUseAiConnection: computed(() => service.canUseAiConnection())
   }
 }

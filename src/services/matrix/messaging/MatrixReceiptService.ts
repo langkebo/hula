@@ -321,6 +321,25 @@ class MatrixReceiptService extends BaseMatrixService {
     const rooms = client.getRooms()
     return rooms.filter((room) => this.hasUnread(room.roomId)).map((room) => room.roomId)
   }
+
+  /**
+   * FT-133: 显式清理缓存的 client/manager 引用和 pending 任务。
+   * 应在登出/会话切换时调用，避免缓存持有旧 client 引用阻碍 GC。
+   */
+  clearCache(): void {
+    this.cachedClient = null
+    this.cachedManager = null
+
+    this.pendingMarkAsReadTasks.forEach((task) => {
+      if (task.timer) {
+        clearTimeout(task.timer)
+      }
+    })
+    this.pendingMarkAsReadTasks.clear()
+    this.loggedDroppedReceiptRooms.clear()
+
+    logger.info('[MatrixReceipt] 缓存已清理 (cachedClient/cachedManager/pendingTasks)')
+  }
 }
 
 export const matrixReceiptService = new MatrixReceiptService()

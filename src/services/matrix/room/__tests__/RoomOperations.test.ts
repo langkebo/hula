@@ -2,6 +2,7 @@ import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
+import { MATRIX_PATHS } from '../../paths'
 import { RoomOperations } from '../RoomOperations'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
@@ -17,6 +18,12 @@ const server = setupMswServer(
   http.post(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_blocklist`, () => {
     return HttpResponse.json({})
   }),
+  http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_allowlist`, () => {
+    return HttpResponse.json({ allowed: ['@good:e'] })
+  }),
+  http.post(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_allowlist`, () => {
+    return HttpResponse.json({})
+  }),
   http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/sticky_events`, () => {
     return HttpResponse.json({ key: 'value' })
   }),
@@ -28,11 +35,13 @@ const server = setupMswServer(
   })
 )
 
-vi.mock('@tauri-apps/plugin-log', () => ({
+const logSpy = vi.hoisted(() => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
 }))
+
+vi.mock('@tauri-apps/plugin-log', () => logSpy)
 
 vi.mock('@/services/offline/OfflineQueueService', () => ({
   offlineQueueService: {
@@ -479,8 +488,35 @@ describe('RoomOperations', () => {
     it('POSTs blocklist via client.http', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
       await ops.setInviteBlocklist('!r', ['@bad:e'])
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/rooms/!r/invite_blocklist', undefined, {
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', MATRIX_PATHS.ROOM.INVITE_BLOCKLIST('!r'), undefined, {
         blocked: ['@bad:e']
+      })
+    })
+  })
+
+  describe('getInviteAllowlist', () => {
+    it('GETs invite allowlist via client.http', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      expect(await ops.getInviteAllowlist('!r')).toEqual(['@good:e'])
+    })
+
+    it('returns empty array on error', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_allowlist`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      expect(await ops.getInviteAllowlist('!r')).toEqual([])
+    })
+  })
+
+  describe('setInviteAllowlist', () => {
+    it('POSTs allowlist via client.http', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      await ops.setInviteAllowlist('!r', ['@good:e'])
+      expect(authedRequestImpl).toHaveBeenCalledWith('POST', MATRIX_PATHS.ROOM.INVITE_ALLOWLIST('!r'), undefined, {
+        allowed: ['@good:e']
       })
     })
   })
@@ -591,6 +627,56 @@ describe('RoomOperations', () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as never)
       await ops.removeMemberAsAdmin('!r', '@u:e')
       expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 0)
+    })
+  })
+
+  // R-12: blocklist/allowlist/stickyEvents 错误吞没 — 安全风险（blocklist 失败=无黑名单）
+  describe('R-12: error logging in moderation methods', () => {
+    beforeEach(() => {
+      logSpy.error.mockClear()
+    })
+
+    it('getInviteBlocklist 错误时记录 error 日志（不再静默）', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_blocklist`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      expect(await ops.getInviteBlocklist('!r')).toEqual([])
+      expect(logSpy.error).toHaveBeenCalled()
+    })
+
+    it('getInviteBlocklist throwOnError=true 时向上抛出', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_blocklist`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      await expect(ops.getInviteBlocklist('!r', true)).rejects.toThrow()
+    })
+
+    it('getInviteAllowlist 错误时记录 error 日志', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/invite_allowlist`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      expect(await ops.getInviteAllowlist('!r')).toEqual([])
+      expect(logSpy.error).toHaveBeenCalled()
+    })
+
+    it('getStickyEvents 错误时记录 error 日志', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/sticky_events`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      expect(await ops.getStickyEvents('!r')).toEqual({})
+      expect(logSpy.error).toHaveBeenCalled()
     })
   })
 })

@@ -87,12 +87,15 @@ class MatrixBurnAfterReadService {
     }
   }
 
-  async isBurnEnabled(roomId: string): Promise<boolean> {
+  async isBurnEnabled(roomId: string, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
       if (!manager) return false
       return await manager.isBurnEnabled(roomId)
-    } catch {
+    } catch (error) {
+      // FT-131-A: 安全特性不能静默吞错，必须记录日志以便排查鉴权失败/服务异常
+      logger.error(`检查阅后即焚状态失败 (isBurnEnabled): roomId=${roomId}, error=${error}`)
+      if (throwOnError) throw error
       return false
     }
   }

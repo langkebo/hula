@@ -5,6 +5,19 @@ import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
 import matrixClientService from '../../MatrixClientService'
 import matrixSlidingSyncService from '../MatrixSlidingSyncService'
 
+const { loggerSpy } = vi.hoisted(() => ({
+  loggerSpy: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => loggerSpy
+}))
+
 vi.mock('@tauri-apps/plugin-log', () => ({
   debug: vi.fn(),
   info: vi.fn(),
@@ -117,5 +130,31 @@ describe('MatrixSlidingSyncService', () => {
     lifecycleCallback('COMPLETE', { rooms: { '!room:1': { timeline: [{}] } } })
 
     expect(onRoomListRefresh).not.toHaveBeenCalled()
+  })
+})
+
+describe('R-13: error logging', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    matrixSlidingSyncService.destroy()
+  })
+
+  it('logs a warning when getListRoomCount throws and returns 0', async () => {
+    const syncInstance = {
+      on: vi.fn(),
+      off: vi.fn(),
+      getList: vi.fn(() => {
+        throw new Error('list access failed')
+      })
+    }
+
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as unknown as SlidingSync)
+    await matrixSlidingSyncService.initialize()
+
+    const result = matrixSlidingSyncService.getListRoomCount()
+
+    expect(result).toBe(0)
+    expect(loggerSpy.warn).toHaveBeenCalledTimes(1)
+    expect(loggerSpy.warn).toHaveBeenCalledWith('getListRoomCount failed:', expect.any(Error))
   })
 })

@@ -3,6 +3,31 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '../../MatrixClientService'
 import { cryptoSDKAdapter } from '../CryptoSDKAdapter'
 
+// 使用 vi.hoisted 创建 logSpy，确保在 vi.mock 工厂执行前就已存在
+const { logSpy } = vi.hoisted(() => ({
+  logSpy: vi.fn()
+}))
+
+// Mock Logger，使 error 方法指向 logSpy 以便断言 catch 块是否记录日志
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => ({
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: logSpy,
+    log: vi.fn(),
+    child: vi.fn(),
+    setLevel: vi.fn(),
+    getLevel: vi.fn(),
+    time: vi.fn(),
+    timeEnd: vi.fn(),
+    group: vi.fn(),
+    groupEnd: vi.fn(),
+    table: vi.fn()
+  })
+}))
+
 type MockFn = ReturnType<typeof vi.fn>
 
 interface MockExtendedClient {
@@ -442,6 +467,26 @@ describe('CryptoSDKAdapter', () => {
       expect(result.privateKeysCached).toBe(true)
       expect(result.crossSigningVerified).toBe(true)
       expect(result.isSetup).toBe(true)
+    })
+  })
+
+  describe('isCrossSigningReady', () => {
+    beforeEach(() => {
+      logSpy.mockClear()
+    })
+
+    it('应在 client.isCrossSigningReady 抛错时记录 error 日志并返回 false (R-11)', async () => {
+      // 模拟 isCrossSigningReady 方法抛错
+      mockClient.isCrossSigningReady = vi.fn(() => {
+        throw new Error('cross-signing check failed')
+      })
+
+      const result = await cryptoSDKAdapter.isCrossSigningReady()
+
+      // 返回值仍为 false（不变）
+      expect(result).toBe(false)
+      // catch 块必须记录 error 日志，不能静默吞没
+      expect(logSpy).toHaveBeenCalledTimes(1)
     })
   })
 })

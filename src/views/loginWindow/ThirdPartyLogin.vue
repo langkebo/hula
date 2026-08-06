@@ -1,10 +1,10 @@
 <template>
-  <div class="flex-center cursor-default gap-12px text-12px color-[--tjg-text-tertiary]">
+  <div v-if="hasSsoOption" class="flex-center cursor-default gap-12px text-12px color-[--tjg-text-tertiary]">
     <span class="h-px w-60px bg-[--login-third-party-divider-color]"></span>
     <span>{{ ssoLabel }}</span>
     <span class="h-px w-60px bg-[--login-third-party-divider-color]"></span>
   </div>
-  <div class="flex-x-center gap-28px mt-16px">
+  <div class="flex-x-center gap-28px" :class="{ 'mt-16px': hasSsoOption }">
     <div
       v-for="item in visibleSsoOptions"
       :key="item.key"
@@ -115,11 +115,16 @@ onMounted(() => {
 })
 
 function isSsoFlowAvailable(key: string): boolean {
-  if (flowsLoading.value || flowsError.value) {
-    return true
-  }
+  // 非 SSO 第三方账号（Gitee/GitHub）始终可用
   const flowType = SSO_FLOW_MAP[key]
   if (!flowType) {
+    return true
+  }
+  // SSO 检测失败时不显示 OIDC/SAML/CAS，避免默认暴露单点登录入口
+  if (flowsError.value) {
+    return false
+  }
+  if (flowsLoading.value) {
     return true
   }
   if (availableFlows.value.size === 0) {
@@ -269,4 +274,7 @@ const ssoOptions = computed(() => [
 ])
 
 const visibleSsoOptions = computed(() => ssoOptions.value.filter((item) => item.available))
+
+// 是否存在任一 SSO（OIDC/SAML/CAS）可见项；仅此时显示"单点登录"分隔线，否则只展示第三方账号图标（与原型一致）
+const hasSsoOption = computed(() => visibleSsoOptions.value.some((item) => Boolean(SSO_FLOW_MAP[item.key])))
 </script>

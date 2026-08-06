@@ -25,6 +25,19 @@ vi.mock('@/services/matrix/MatrixEventService', () => ({
   default: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
 }))
 
+// AdminFacadeService 导入 16+ 子服务，触发重型依赖链导致超时
+vi.mock('@/services/matrix/admin', () => ({
+  adminService: {
+    getReports: vi.fn(),
+    getEventReport: vi.fn(),
+    getEventReportHistory: vi.fn(),
+    resolveReport: vi.fn(),
+    getContentFilters: vi.fn(),
+    addContentFilter: vi.fn(),
+    removeContentFilter: vi.fn()
+  }
+}))
+
 // 截断所有 matrix-js-sdk 直接导入路径
 vi.mock('matrix-js-sdk', () => ({
   Direction: { Forward: 'f', Backward: 'b' },

@@ -3,6 +3,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import { getDomain, matrixUrlPreviewService, simplifyUrl } from '../MatrixUrlPreviewService'
 
+const { loggerSpy } = vi.hoisted(() => ({
+  loggerSpy: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => loggerSpy
+}))
+
 const TEST_BASE_URL = 'https://matrix.example.com'
 
 const server = setupMswServer(
@@ -160,5 +173,19 @@ describe('MatrixUrlPreviewService', () => {
     it('should return empty string for invalid URL', () => {
       expect(getDomain('not-a-url')).toBe('')
     })
+  })
+})
+
+describe('R-18: error logging', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('logs a warning when getDomain throws and returns empty string', () => {
+    const result = getDomain('not-a-url')
+
+    expect(result).toBe('')
+    expect(loggerSpy.warn).toHaveBeenCalledTimes(1)
+    expect(loggerSpy.warn).toHaveBeenCalledWith('getDomain failed:', expect.any(Error))
   })
 })

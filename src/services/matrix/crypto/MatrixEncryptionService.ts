@@ -62,7 +62,8 @@ class MatrixEncryptionService extends BaseMatrixService {
     let client: MatrixClient
     try {
       client = this.getClient()
-    } catch {
+    } catch (err) {
+      logger.error(`[Encryption] 获取加密设置失败：客户端不可用: ${err}`)
       return null
     }
 
@@ -119,7 +120,8 @@ class MatrixEncryptionService extends BaseMatrixService {
     let client: MatrixClient
     try {
       client = this.getClient()
-    } catch {
+    } catch (err) {
+      logger.error(`[Encryption] 检查密钥轮换需求失败：客户端不可用: ${err}`)
       return false
     }
 
@@ -162,7 +164,8 @@ class MatrixEncryptionService extends BaseMatrixService {
     try {
       client = this.getClient()
       return client.deviceId ?? null
-    } catch {
+    } catch (err) {
+      logger.error(`[Encryption] 获取当前设备 ID 失败：客户端不可用: ${err}`)
       return null
     }
   }
@@ -171,7 +174,8 @@ class MatrixEncryptionService extends BaseMatrixService {
     let client: MatrixClient
     try {
       client = this.getClient()
-    } catch {
+    } catch (err) {
+      logger.error(`[Encryption] 获取轮换历史失败：客户端不可用: ${err}`)
       return []
     }
 

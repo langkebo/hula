@@ -42,7 +42,8 @@ import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
-import { PREFIX_V3 } from '../paths'
+import { authedRequestWithPath, matrixHttpClient } from '../MatrixHttpClient'
+import { MATRIX_PATHS, PREFIX_V3 } from '../paths'
 
 const logger = createLogger('MatrixQrLoginSdkService')
 
@@ -212,31 +213,20 @@ function generateDeviceId(): string {
     .toUpperCase()
 }
 
-function resolveMatrixClientUrl(path: string): string {
-  const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
-  const normalizedHomeserverUrl = homeserverUrl.replace(/\/+$/, '')
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return `${normalizedHomeserverUrl}${normalizedPath}`
-}
-
+/**
+ * FT-087: 通过 matrixHttpClient 发送未认证的 POST 请求（走 SDK 基础设施：重试、URL 解析）。
+ *
+ * 新设备 QR 登录时没有 access_token，但 matrixHttpClient.request 在无 client 时
+ * 回退到手动 fetch（不注入 Authorization 头），在有 client 时走 authedRequest
+ * （login 端点不需要认证，后端会忽略 access_token）。
+ */
 async function postJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
-  const url = resolveMatrixClientUrl(path)
-  const response = await getRuntimeAwareFetch()(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  })
-  if (!response.ok) {
-    const text = await response.text().catch(() => '')
-    throw new Error(`MSC4108 login request failed (${response.status}): ${text}`)
-  }
-  const text = await response.text()
-  return (text ? JSON.parse(text) : {}) as T
+  return matrixHttpClient.request<T>('POST', path, { body })
 }
 
 // ── Service ──
 
-class MatrixQrLoginSdkService {
+export class MatrixQrLoginSdkService {
   private status: QrLoginStatus = 'idle'
   private listeners = new Set<StatusListener>()
 
@@ -527,12 +517,12 @@ class MatrixQrLoginSdkService {
       // Step 11: Generate short-lived login token via POST /v1/login/qr_token.
       // This is an authenticated request — the existing device's credentials
       // authorize issuance of a token bound to its user_id.
-      const tokenResponse = await client.http.authedRequest<{ login_token: string; expires_in_ms: number }>(
+      // FT-091: 使用 MATRIX_PATHS.AUTH.QR_GENERATE_TOKEN（L3 常量）替代硬编码路径。
+      // authedRequestWithPath 内部用 stripMatrixPrefix 剥离 v1 前缀，避免 SDK 默认 v3 前缀拼接错误。
+      const tokenResponse = await authedRequestWithPath<{ login_token: string; expires_in_ms: number }>(
+        client,
         'POST',
-        '/login/qr_token',
-        undefined,
-        undefined,
-        { prefix: '/_matrix/client/v1' }
+        MATRIX_PATHS.AUTH.QR_GENERATE_TOKEN
       )
 
       const homeserverUrl = client.getHomeserverUrl()

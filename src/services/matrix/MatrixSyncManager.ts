@@ -498,7 +498,9 @@ export class MatrixSyncManager {
       }
 
       return data.pos
-    } catch {
+    } catch (err) {
+      // R-17b: log silent catch in getPersistedPos (loadPersistedPos)
+      logger.warn('getPersistedPos failed:', err)
       // Corrupted data or localStorage unavailable — silently skip
       return null
     }
