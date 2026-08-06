@@ -28,6 +28,9 @@ src-tauri/target
 
 .history/
 
+# Git worktrees (local development isolation)
+.worktrees/
+
 /coverage
 
 # Build stats
