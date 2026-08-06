@@ -84,10 +84,25 @@ export function useActionFeedback() {
     window.$message?.destroyAll?.()
   }
 
+  const startLoading = () => {
+    window.$loadingBar?.start?.()
+  }
+
+  const finishLoading = () => {
+    window.$loadingBar?.finish?.()
+  }
+
+  const errorLoading = () => {
+    window.$loadingBar?.error?.()
+  }
+
   return {
     showFeedback,
     showError,
     showProgressFeedback,
-    clearFeedback
+    clearFeedback,
+    startLoading,
+    finishLoading,
+    errorLoading
   }
 }
