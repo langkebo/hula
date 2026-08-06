@@ -22,6 +22,11 @@ describe('useActionFeedback', () => {
       error: vi.fn(),
       destroyAll: vi.fn()
     }
+    ;(window as any).$loadingBar = {
+      start: vi.fn(),
+      finish: vi.fn(),
+      error: vi.fn()
+    }
   })
 
   it('shows toast and announces with type-based default politeness', () => {
@@ -116,5 +121,37 @@ describe('useActionFeedback', () => {
       // Error 对象无 errcode，回退到 message
       expect(window.$message.error).toHaveBeenCalledWith('网络断开')
     })
+  })
+
+  it('startLoading 调用 window.$loadingBar.start', () => {
+    const { startLoading } = useActionFeedback()
+    startLoading()
+    expect(window.$loadingBar.start).toHaveBeenCalledTimes(1)
+  })
+
+  it('finishLoading 调用 window.$loadingBar.finish', () => {
+    const { finishLoading } = useActionFeedback()
+    finishLoading()
+    expect(window.$loadingBar.finish).toHaveBeenCalledTimes(1)
+  })
+
+  it('errorLoading 调用 window.$loadingBar.error', () => {
+    const { errorLoading } = useActionFeedback()
+    errorLoading()
+    expect(window.$loadingBar.error).toHaveBeenCalledTimes(1)
+  })
+
+  it('loading bar 方法在 window.$loadingBar 未注入时安全跳过', () => {
+    const original = window.$loadingBar
+    delete (window as { $loadingBar?: unknown }).$loadingBar
+
+    const { startLoading, finishLoading, errorLoading } = useActionFeedback()
+    expect(() => {
+      startLoading()
+      finishLoading()
+      errorLoading()
+    }).not.toThrow()
+
+    ;(window as { $loadingBar?: unknown }).$loadingBar = original
   })
 })
