@@ -4,6 +4,20 @@ vi.mock('@/services/i18n', () => ({
   useI18nGlobal: () => ({ t: (key: string) => key })
 }))
 
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: vi.fn((message: string, _type: string) => {
+      ;(globalThis as { $message?: { warning?: (m: string) => void } }).$message?.warning?.(message)
+    }),
+    showError: vi.fn(),
+    showProgressFeedback: vi.fn(),
+    clearFeedback: vi.fn(),
+    startLoading: vi.fn(),
+    finishLoading: vi.fn(),
+    errorLoading: vi.fn()
+  })
+}))
+
 import { createAuthGuard, isPublicRoute } from '../authGuard'
 
 const mockWarn = vi.fn()
@@ -116,6 +130,8 @@ describe('authGuard', () => {
 
     expect(mockVerifyAdminAccess).toHaveBeenCalledTimes(1)
     expect(next).toHaveBeenCalledWith('/')
+    // authGuard 不再直接操作 window.$message，而是通过 useActionFeedback
+    expect(window.$message.warning).toHaveBeenCalledWith('error.matrix.forbidden')
   })
 
   it('allows authenticated users through protected routes', async () => {
