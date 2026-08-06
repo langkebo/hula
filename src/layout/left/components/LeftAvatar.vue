@@ -14,11 +14,10 @@
       <div
         class="relative size-34px rounded-50% cursor-pointer"
         @contextmenu="handleAvatarContextMenu">
-        <n-avatar
+        <TjgAvatar
+          :src="userStore.userInfo?.avatar"
           :size="34"
-          :src="avatarSrc"
-          :color="cssVar('--avatar-fallback-color')"
-          :fallback-src="cssVar('--avatar-fallback-src')"
+          :name="userStore.userInfo?.name"
           round />
 
         <div
@@ -37,12 +36,12 @@
       <!-- 头像以及信息区域 -->
       <n-flex :size="25" align="center" justify="space-between" class="select-none cursor-default">
         <n-flex>
-          <n-avatar
-            :src="avatarSrc"
+          <TjgAvatar
+            :src="userStore.userInfo?.avatar"
+            :size="68"
+            :name="userStore.userInfo?.name"
             round
-            :color="cssVar('--avatar-fallback-color')"
-            :fallback-src="cssVar('--avatar-fallback-src')"
-            class="size-68px text-[var(--text-xl)] select-none cursor-default" />
+            class="text-[var(--text-xl)] select-none cursor-default" />
 
           <n-flex :size="10" class="text-[--tjg-text-primary]" justify="center" vertical>
             <span class="text-[var(--text-lg)]">{{ userStore.userInfo?.name }}</span>
@@ -103,19 +102,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import TjgAvatar from '@/components/atomic/TjgAvatar.vue'
 import UserMenuDropdown from '@/components/userMenu/UserMenuDropdown.vue'
 import { useUserMenu } from '@/components/userMenu/useUserMenu'
 import { useOnlineStatus } from '@/composables/common/useOnlineStatus'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
-import { AvatarUtils } from '@/utils/AvatarUtils.ts'
-import { cssVar } from '@/utils/CssUtils'
 import { leftHook } from '../hook.ts'
 
 const userStore = useUserStore()
 const groupStore = useGroupStore()
 const { t } = useI18n()
-const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar as string))
 const currentUserLocation = computed(() => {
   const uid = userStore.userInfo?.uid
   if (!uid) return ''

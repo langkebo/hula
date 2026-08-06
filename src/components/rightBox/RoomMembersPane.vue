@@ -34,7 +34,7 @@
         class="room-members-pane__item"
         data-test="member-item"
         @click="emit('memberClick', member.userId)">
-        <n-avatar :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '')" :size="36" round />
+        <n-avatar :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '', 72)" :size="36" round />
         <div class="room-members-pane__item-info">
           <span class="room-members-pane__item-name">{{ member.name || member.displayName || member.userId }}</span>
           <span v-if="member.isCreator" class="room-members-pane__item-role">{{ t('room.detail.role_creator') }}</span>
@@ -73,7 +73,7 @@
           :key="`banned-${member.userId}`"
           class="room-members-pane__item room-members-pane__item--banned"
           data-test="member-item">
-          <n-avatar :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '')" :size="36" round />
+          <n-avatar :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '', 72)" :size="36" round />
           <div class="room-members-pane__item-info">
             <span class="room-members-pane__item-name">{{ member.name || member.displayName || member.userId }}</span>
             <span class="room-members-pane__item-status">{{ t('room.detail.status_banned') }}</span>

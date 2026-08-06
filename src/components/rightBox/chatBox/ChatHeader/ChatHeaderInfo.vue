@@ -1,16 +1,6 @@
 <template>
   <div class="chat-header-info" @click="handleClick">
-    <n-avatar
-      v-if="isChannel"
-      class="avatar"
-      :src="channelAvatar"
-      :size="44"
-      round
-      :style="{ border: '2px solid var(--tjg-color-primary-500)' }" />
-    <n-avatar v-else-if="avatar" class="avatar" :src="avatar" :size="44" round :style="avatarStyle" />
-    <n-avatar v-else class="avatar" :size="44" round :style="avatarStyle">
-      {{ nameInitial }}
-    </n-avatar>
+    <TjgAvatar class="avatar" :src="avatar" :size="44" :name="name" round :style="avatarStyle" />
 
     <div class="info-content">
       <div class="name-row">
@@ -50,14 +40,14 @@
 </template>
 
 <script setup lang="ts">
-import { NAvatar, NTag } from 'naive-ui'
+import { NTag } from 'naive-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import TjgAvatar from '@/components/atomic/TjgAvatar.vue'
 import EncryptionStatus from '@/components/encryption/EncryptionStatus.vue'
 import { useTyping } from '@/composables/chat/useTyping'
 import { RoomTypeEnum } from '@/enums'
 import { IsAllUserEnum } from '@/services/types'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 
 type RoomEncryptionStatus = 'encrypted' | 'unencrypted' | 'unknown' | 'error'
 
@@ -80,10 +70,6 @@ const { t } = useI18n()
 const isGroup = computed(() => props.type === RoomTypeEnum.GROUP)
 const isChannel = computed(() => props.hotFlag === IsAllUserEnum.Yes)
 
-const nameInitial = computed(() => {
-  return props.name?.charAt(0)?.toUpperCase() || '?'
-})
-
 const avatarStyle = computed(() => {
   if (isChannel.value) {
     return { border: '2px solid var(--tjg-color-primary-500)' }
@@ -92,10 +78,6 @@ const avatarStyle = computed(() => {
     return { border: '2px solid var(--tjg-color-success-500)' }
   }
   return { border: '2px solid var(--tjg-border-strong)' }
-})
-
-const channelAvatar = computed(() => {
-  return AvatarUtils.getAvatarUrl(props.avatar)
 })
 
 const { getTypingUsersText } = useTyping()

@@ -11,16 +11,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   trace: vi.fn()
 }))
 
-vi.mock('@/utils/AvatarUtils', () => ({
-  AvatarUtils: {
-    getAvatarUrl: vi.fn(() => '/mocked-avatar.png')
-  }
-}))
-
-vi.mock('@/utils/CssUtils', () => ({
-  cssVar: vi.fn(() => 'mocked-var')
-}))
-
 vi.mock('@/composables/common/useOnlineStatus', () => ({
   useOnlineStatus: () => ({
     statusIcon: '/mocked-status.png',
@@ -102,7 +92,7 @@ describe('LeftAvatar — C-2 用户菜单可访问性', () => {
             name: 'Popover',
             template: '<div><slot name="trigger" /><slot /></div>'
           },
-          NAvatar: { name: 'Avatar', template: '<div class="n-avatar"><slot /></div>' },
+          TjgAvatar: { name: 'TjgAvatar', template: '<div class="tjg-avatar-stub"></div>' },
           NFlex: { name: 'Flex', template: '<div class="n-flex"><slot /></div>' },
           NButton: { name: 'Button', template: '<button><slot /></button>' },
           NImage: { name: 'Image', template: '<img />' },
