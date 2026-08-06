@@ -43,26 +43,11 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
   }
 }))
 
-vi.mock('dayjs', () => {
-  const dayjsMock = () => ({
-    year: () => 2026,
-    format: () => '2026-05-15',
-    add: () => dayjsMock(),
-    subtract: () => dayjsMock(),
-    locale: vi.fn()
-  })
-  dayjsMock.extend = vi.fn()
-  dayjsMock.duration = vi.fn()
-  dayjsMock.locale = vi.fn()
-  return {
-    default: dayjsMock
-  }
-})
-
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       if (key === 'auth.register.actions.submit') return '注册'
+      if (key === 'auth.register.actions.back_to_login') return '返回登录'
       if (key === 'auth.register.messages.register_success') return '注册成功'
       if (key === 'auth.register.messages.register_fail') return '注册失败'
       if (key === 'auth.register.actions.sending') return '发送中'
@@ -299,5 +284,17 @@ describe('registerWindow', () => {
     )
     expect(completeDesktopLoginTransitionMock).toHaveBeenCalled()
     expect(showFeedbackMock).toHaveBeenCalledWith('注册成功', 'success')
+  })
+
+  it('renders back-to-login link with correct aria-label', () => {
+    const wrapper = mount(RegisterView, {
+      global: {
+        stubs: {
+          'action-bar': true
+        }
+      }
+    })
+    const backLink = wrapper.find('[aria-label="返回登录"]')
+    expect(backLink.exists()).toBe(true)
   })
 })
