@@ -175,7 +175,7 @@
                 </n-descriptions>
                 <n-space>
                   <n-button size="small" @click="showRateLimitDialog = true">
-                    {{ t('admin.users.setRateLimit') }}
+                    {{ t('admin.users.overrideUserRateLimit') }}
                   </n-button>
                   <n-button size="small" type="error" @click="handleDeleteRateLimit">
                     {{ t('admin.users.deleteRateLimit') }}
@@ -241,20 +241,13 @@
 
     <n-modal
       v-model:show="showRateLimitDialog"
-      :title="t('admin.users.setRateLimit')"
+      :title="t('admin.users.overrideUserRateLimit')"
       preset="dialog"
       style="width: 400px">
-      <n-form :model="rateLimitForm">
-        <n-form-item :label="t('admin.users.messagesPerSecond')">
-          <n-input-number v-model:value="rateLimitForm.messagesPerSecond" :min="0" :max="1000" style="width: 100%" />
-        </n-form-item>
-        <n-form-item :label="t('admin.users.burstCount')">
-          <n-input-number v-model:value="rateLimitForm.burstCount" :min="0" :max="10000" style="width: 100%" />
-        </n-form-item>
-      </n-form>
+      <span>{{ t('admin.users.overrideRateLimitConfirm') }}</span>
       <template #action>
         <n-button @click="showRateLimitDialog = false">{{ t('admin.common.cancel') }}</n-button>
-        <n-button type="primary" :loading="settingRateLimit" @click="handleSetRateLimit">
+        <n-button type="warning" :loading="settingRateLimit" @click="handleOverrideRateLimit">
           {{ t('admin.common.confirm') }}
         </n-button>
       </template>
@@ -313,11 +306,6 @@ const createForm = ref({
   password: '',
   displayName: '',
   isAdmin: false
-})
-
-const rateLimitForm = ref({
-  messagesPerSecond: 10,
-  burstCount: 20
 })
 
 const createRules = {
@@ -605,7 +593,7 @@ async function handleDeleteDevice(deviceId: string) {
   })
 }
 
-async function handleSetRateLimit() {
+async function handleOverrideRateLimit() {
   if (!selectedUser.value) return
   settingRateLimit.value = true
   try {
