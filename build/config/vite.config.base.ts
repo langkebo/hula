@@ -7,9 +7,9 @@ import AutoImport from 'unplugin-auto-import/vite'
 import type { UserConfig } from 'vite'
 import compression from 'vite-plugin-compression'
 import VueSetupExtend from 'vite-plugin-vue-setup-extend'
-import packageJson from '../../package.json'
-import { cspNoncePlugin } from '../plugins/vite-plugin-csp-nonce'
-import { createManualChunks } from './chunks'
+import packageJson from '../../package.json' with { type: 'json' }
+import { cspNoncePlugin } from '../plugins/vite-plugin-csp-nonce.ts'
+import { createManualChunks } from './chunks.ts'
 
 const dependencies = Object.keys(packageJson.dependencies || {})
 

@@ -135,7 +135,7 @@ const handleFallbackError = () => {
   justify-content: center;
   width: 100%;
   height: 100%;
-  color: #fff;
+  color: var(--tjg-text-inverse);
   font-weight: 600;
   user-select: none;
   line-height: 1;

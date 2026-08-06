@@ -168,7 +168,7 @@ describe('MatrixHttpClient', () => {
     expect(window.$loadingBar.finish).not.toHaveBeenCalled()
   })
 
-  it('showErrorToast: true 请求失败时调用 window.$message.error', async () => {
+  it('request 不再操作 window.$message（即使传入 showErrorToast）', async () => {
     authedRequest.mockRejectedValueOnce(new Error('boom'))
 
     await expect(
@@ -177,14 +177,14 @@ describe('MatrixHttpClient', () => {
       } as never)
     ).rejects.toThrow('boom')
 
-    expect(window.$message.error).toHaveBeenCalledWith('boom')
+    expect(window.$message.error).not.toHaveBeenCalled()
   })
 
-  it('safeRequest 默认（quiet 未设）失败时调用 window.$message.error', async () => {
+  it('safeRequest 默认（quiet 未设）失败时不再调用 window.$message.error', async () => {
     authedRequest.mockRejectedValueOnce(new Error('boom'))
 
     await matrixHttpClient.get('/test')
 
-    expect(window.$message.error).toHaveBeenCalledWith('boom')
+    expect(window.$message.error).not.toHaveBeenCalled()
   })
 })
