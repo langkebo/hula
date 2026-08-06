@@ -36,6 +36,12 @@ describe('RoomCapabilitiesService', () => {
   beforeEach(() => {
     mockAuthedRequest.mockReset()
     roomCapabilitiesService.invalidate()
+    vi.stubGlobal('$message', {
+      error: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      info: vi.fn()
+    })
   })
 
   it('returns capability payload from network on first fetch', async () => {
@@ -117,5 +123,30 @@ describe('RoomCapabilitiesService', () => {
 
   it('exposes TTL constant for diagnostics', () => {
     expect(__ROOM_CAPABILITIES_TTL_MS__).toBeGreaterThan(0)
+  })
+
+  it('网络失败时不调用 window.$message.error（无 UI 副作用）', async () => {
+    mockAuthedRequest.mockRejectedValueOnce(new Error('network down'))
+
+    const result = await roomCapabilitiesService.getCapabilities('!fail:server')
+
+    expect(result).toBeNull()
+    expect(window.$message.error).not.toHaveBeenCalled()
+  })
+
+  it('网络失败后沿用既有缓存', async () => {
+    // 第一次请求成功，填充缓存
+    mockAuthedRequest.mockResolvedValueOnce({
+      room_id: '!cache-fallback:server',
+      room_version: '10'
+    })
+    await roomCapabilitiesService.getCapabilities('!cache-fallback:server')
+
+    // 第二次请求（force=true）失败，应沿用缓存
+    mockAuthedRequest.mockRejectedValueOnce(new Error('boom'))
+    const result = await roomCapabilitiesService.getCapabilities('!cache-fallback:server', { force: true })
+
+    expect(result?.room_version).toBe('10')
+    expect(window.$message.error).not.toHaveBeenCalled()
   })
 })
