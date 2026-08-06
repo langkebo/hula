@@ -337,10 +337,6 @@ class AdminFacadeService extends BaseMatrixService {
     return this.rooms.getRoomState(roomId)
   }
 
-  async deleteRoom(roomId: string, options?: { purge?: boolean }): Promise<void> {
-    return this.rooms.deleteRoom(roomId, options)
-  }
-
   async blockRoom(roomId: string, block: boolean): Promise<void> {
     return this.rooms.blockRoom(roomId, block)
   }
@@ -815,7 +811,7 @@ class AdminFacadeService extends BaseMatrixService {
     return this.rooms.getRoomForwardExtremities(roomId)
   }
 
-  async deleteRoomV2(
+  async deleteRoom(
     roomId: string,
     options?: {
       purge?: boolean
@@ -826,7 +822,7 @@ class AdminFacadeService extends BaseMatrixService {
       block?: boolean
     }
   ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; localAliases: string[]; newRoomId?: string }> {
-    return this.rooms.deleteRoomV2(roomId, options)
+    return this.rooms.deleteRoom(roomId, options)
   }
 
   async getSpaceDetails(spaceId: string): Promise<Record<string, unknown> | null> {
@@ -1027,19 +1023,6 @@ class AdminFacadeService extends BaseMatrixService {
 
   async deleteSystemNotification(notificationId: string): Promise<void> {
     return this.notifications.deleteSystemNotification(notificationId)
-  }
-
-  async deleteRoomCompat(
-    roomId: string,
-    options?: {
-      purge?: boolean
-      force?: boolean
-      newRoomUserId?: string
-      roomName?: string
-      message?: string
-    }
-  ): Promise<{ kickedUsers: string[]; newRoomId?: string }> {
-    return this.rooms.deleteRoomCompat(roomId, options)
   }
 
   async getUserRateLimit(userId: string): Promise<Record<string, unknown> | null> {
