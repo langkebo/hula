@@ -1058,10 +1058,6 @@ class AdminFacadeService extends BaseMatrixService {
     return this.server.getAdminInfo()
   }
 
-  async deleteUser(userId: string): Promise<void> {
-    return this.users.deleteUser(userId)
-  }
-
   async getSecurityEvents(
     limit = 100,
     from?: string,
