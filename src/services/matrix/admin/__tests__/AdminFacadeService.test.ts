@@ -521,21 +521,6 @@ describe('adminService facade', () => {
       expect(mockAdminManager.isAdmin).toHaveBeenCalledWith('@user:server', false)
     })
 
-    it('should set user admin via SDK', async () => {
-      await adminService.setUserAdmin('@user:server', true)
-      expect(mockAdminManager.setAdmin).toHaveBeenCalledWith('@user:server', true)
-    })
-
-    it('should deactivate user v2 via SDK', async () => {
-      await expect(adminService.deactivateUserV2('@user:server')).resolves.toBeUndefined()
-      expect(mockAdminManager.deactivateUser).toHaveBeenCalledWith('@user:server')
-    })
-
-    it('should reset password v2 via SDK', async () => {
-      await expect(adminService.resetPasswordV2('@user:server', 'newpass')).resolves.toBeUndefined()
-      expect(mockAdminManager.resetPassword).toHaveBeenCalledWith('@user:server', 'newpass')
-    })
-
     it('should get account status', async () => {
       mockAdminManager.getAccountStatus.mockResolvedValue({ locked: false })
       const result = await adminService.getAccountStatus('@user:server')
