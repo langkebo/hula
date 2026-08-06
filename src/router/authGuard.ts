@@ -1,4 +1,5 @@
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useI18nGlobal } from '@/services/i18n'
 
 const PUBLIC_ROUTE_PREFIXES = [
@@ -65,7 +66,7 @@ export const createAuthGuard = ({
         if (!isAdmin) {
           logger.warn(`非管理员尝试访问受限路径: ${to.path}`)
           const i18n = useI18nGlobal()
-          window.$message?.warning(i18n.t('error.matrix.forbidden'))
+          useActionFeedback().showFeedback(i18n.t('error.matrix.forbidden'), 'warning')
           return next('/')
         }
       }
