@@ -149,7 +149,7 @@ describe('AdminRoomService', () => {
     expect(await service.getRoomForwardExtremities('!room:server.com')).toEqual([{ event_id: '$a' }])
   })
 
-  it('deleteRoomV2 maps option keys and response fields', async () => {
+  it('deleteRoom maps option keys and response fields', async () => {
     ;(admin as any).deleteRoomAdmin.mockResolvedValueOnce({
       kicked_users: ['@u1:server.com'],
       failed_to_kick_users: [],
@@ -157,7 +157,7 @@ describe('AdminRoomService', () => {
       new_room_id: '!new:server.com'
     })
 
-    const result = await service.deleteRoomV2('!room:server.com', {
+    const result = await service.deleteRoom('!room:server.com', {
       purge: true,
       force: true,
       newRoomUserId: '@admin:server.com',
@@ -175,32 +175,5 @@ describe('AdminRoomService', () => {
       block: true
     })
     expect(result.newRoomId).toBe('!new:server.com')
-  })
-
-  it('deleteRoomCompat keeps force_purge compatibility body', async () => {
-    ;(admin as any).deleteRoomAdmin.mockResolvedValueOnce({
-      kicked_users: ['@u1:server.com'],
-      new_room_id: '!new:server.com'
-    })
-
-    const result = await service.deleteRoomCompat('!room:server.com', {
-      purge: true,
-      force: true,
-      newRoomUserId: '@admin:server.com',
-      roomName: 'Archive',
-      message: 'bye'
-    })
-
-    expect((admin as any).deleteRoomAdmin).toHaveBeenCalledWith('!room:server.com', {
-      purge: true,
-      force_purge: true,
-      new_room_user_id: '@admin:server.com',
-      room_name: 'Archive',
-      message: 'bye'
-    })
-    expect(result).toEqual({
-      kickedUsers: ['@u1:server.com'],
-      newRoomId: '!new:server.com'
-    })
   })
 })

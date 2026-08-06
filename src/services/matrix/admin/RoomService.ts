@@ -67,18 +67,6 @@ export class AdminRoomService {
     }
   }
 
-  async deleteRoom(roomId: string, options?: { purge?: boolean }): Promise<void> {
-    if (!isValidMatrixRoomId(roomId)) throw new Error(`Invalid room ID: ${roomId}`)
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.deleteRoom(roomId, options ?? false)
-      logger.info(`[Admin] 房间已删除: ${roomId}`)
-    } catch (err) {
-      logger.error(`[Admin] 删除房间失败: ${err}`)
-      throw err
-    }
-  }
-
   async blockRoom(roomId: string, block: boolean): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
@@ -459,7 +447,7 @@ export class AdminRoomService {
     }
   }
 
-  async deleteRoomV2(
+  async deleteRoom(
     roomId: string,
     options?: {
       purge?: boolean
@@ -470,6 +458,7 @@ export class AdminRoomService {
       block?: boolean
     }
   ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; localAliases: string[]; newRoomId?: string }> {
+    if (!isValidMatrixRoomId(roomId)) throw new Error(`Invalid room ID: ${roomId}`)
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.deleteRoomAdmin(roomId, {
@@ -480,7 +469,7 @@ export class AdminRoomService {
         message: options?.message,
         block: options?.block
       })
-      logger.info(`[Admin] v2删除房间: ${roomId}`)
+      logger.info(`[Admin] 房间已删除: ${roomId}`)
       return {
         // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
         kickedUsers: (result as any)?.kicked_users ?? [],
@@ -492,39 +481,7 @@ export class AdminRoomService {
         newRoomId: (result as any)?.new_room_id
       }
     } catch (err) {
-      logger.error(`[Admin] v2删除房间失败: ${err}`)
-      throw err
-    }
-  }
-
-  async deleteRoomCompat(
-    roomId: string,
-    options?: {
-      purge?: boolean
-      force?: boolean
-      newRoomUserId?: string
-      roomName?: string
-      message?: string
-    }
-  ): Promise<{ kickedUsers: string[]; newRoomId?: string }> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.deleteRoomAdmin(roomId, {
-        purge: options?.purge,
-        force_purge: options?.force,
-        new_room_user_id: options?.newRoomUserId,
-        room_name: options?.roomName,
-        message: options?.message
-      })
-      logger.info(`[Admin] 兼容删除房间: ${roomId}`)
-      return {
-        // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-        kickedUsers: (result as any)?.kicked_users ?? [],
-        // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-        newRoomId: (result as any)?.new_room_id
-      }
-    } catch (err) {
-      logger.error(`[Admin] 兼容删除房间失败: ${err}`)
+      logger.error(`[Admin] 删除房间失败: ${err}`)
       throw err
     }
   }

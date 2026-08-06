@@ -135,11 +135,6 @@ describe('adminService facade', () => {
       searchRoomEvents: vi.fn().mockResolvedValue({ results: [] }),
       searchRooms: vi.fn().mockResolvedValue({ rooms: [] }),
       getRoomForwardExtremities: vi.fn().mockResolvedValue({ results: [] }),
-      deleteRoomV2: vi.fn().mockResolvedValue({
-        kicked_users: [],
-        failed_to_kick_users: [],
-        local_aliases: []
-      }),
       getUsersPaginated: vi.fn().mockResolvedValue({ items: [], nextToken: undefined }),
       getUser: vi.fn().mockResolvedValue(null),
       createUser: vi.fn().mockResolvedValue({}),
@@ -633,14 +628,14 @@ describe('adminService facade', () => {
       expect(result).toHaveLength(1)
     })
 
-    it('should delete room v2 via SDK with field mapping', async () => {
+    it('should delete room via SDK with field mapping', async () => {
       mockAdminManager.deleteRoomAdmin.mockResolvedValue({
         kicked_users: ['@u1:server'],
         failed_to_kick_users: [],
         local_aliases: ['#room:server'],
         new_room_id: '!new:server'
       })
-      const result = await adminService.deleteRoomV2('!room:server', {
+      const result = await adminService.deleteRoom('!room:server', {
         purge: true,
         newRoomUserId: '@new:server',
         roomName: 'n'
