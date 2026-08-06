@@ -49,6 +49,18 @@ describe('MatrixHttpClient', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Characterization: mock Naive UI global side-effect targets
+    vi.stubGlobal('$message', {
+      error: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      info: vi.fn()
+    })
+    vi.stubGlobal('$loadingBar', {
+      start: vi.fn(),
+      finish: vi.fn(),
+      error: vi.fn()
+    })
     authedRequest = vi.fn().mockResolvedValue({})
     getMatrixHomeserverUrlMock.mockReturnValue('https://matrix.test')
     getMatrixAccessTokenMock.mockReturnValue('tok-abc')
@@ -128,5 +140,51 @@ describe('MatrixHttpClient', () => {
       },
       body: JSON.stringify({ ok: true })
     })
+  })
+
+  it('showLoading: true 时调用 window.$loadingBar.start/finish', async () => {
+    authedRequest.mockResolvedValueOnce({ ok: true })
+
+    await matrixHttpClient.request('GET', '/test', {
+      showLoading: true
+    } as never)
+
+    expect(window.$loadingBar.start).toHaveBeenCalledTimes(1)
+    expect(window.$loadingBar.finish).toHaveBeenCalledTimes(1)
+    expect(window.$loadingBar.error).not.toHaveBeenCalled()
+  })
+
+  it('showLoading: true 请求失败时调用 window.$loadingBar.error', async () => {
+    authedRequest.mockRejectedValueOnce(new Error('boom'))
+
+    await expect(
+      matrixHttpClient.request('GET', '/test', {
+        showLoading: true
+      } as never)
+    ).rejects.toThrow('boom')
+
+    expect(window.$loadingBar.start).toHaveBeenCalledTimes(1)
+    expect(window.$loadingBar.error).toHaveBeenCalledTimes(1)
+    expect(window.$loadingBar.finish).not.toHaveBeenCalled()
+  })
+
+  it('showErrorToast: true 请求失败时调用 window.$message.error', async () => {
+    authedRequest.mockRejectedValueOnce(new Error('boom'))
+
+    await expect(
+      matrixHttpClient.request('GET', '/test', {
+        showErrorToast: true
+      } as never)
+    ).rejects.toThrow('boom')
+
+    expect(window.$message.error).toHaveBeenCalledWith('boom')
+  })
+
+  it('safeRequest 默认（quiet 未设）失败时调用 window.$message.error', async () => {
+    authedRequest.mockRejectedValueOnce(new Error('boom'))
+
+    await matrixHttpClient.get('/test')
+
+    expect(window.$message.error).toHaveBeenCalledWith('boom')
   })
 })
