@@ -142,19 +142,19 @@ describe('MatrixHttpClient', () => {
     })
   })
 
-  it('showLoading: true 时调用 window.$loadingBar.start/finish', async () => {
+  it('request 不再操作 window.$loadingBar（即使传入 showLoading）', async () => {
     authedRequest.mockResolvedValueOnce({ ok: true })
 
     await matrixHttpClient.request('GET', '/test', {
       showLoading: true
     } as never)
 
-    expect(window.$loadingBar.start).toHaveBeenCalledTimes(1)
-    expect(window.$loadingBar.finish).toHaveBeenCalledTimes(1)
+    expect(window.$loadingBar.start).not.toHaveBeenCalled()
+    expect(window.$loadingBar.finish).not.toHaveBeenCalled()
     expect(window.$loadingBar.error).not.toHaveBeenCalled()
   })
 
-  it('showLoading: true 请求失败时调用 window.$loadingBar.error', async () => {
+  it('request 失败不再操作 window.$loadingBar', async () => {
     authedRequest.mockRejectedValueOnce(new Error('boom'))
 
     await expect(
@@ -163,8 +163,8 @@ describe('MatrixHttpClient', () => {
       } as never)
     ).rejects.toThrow('boom')
 
-    expect(window.$loadingBar.start).toHaveBeenCalledTimes(1)
-    expect(window.$loadingBar.error).toHaveBeenCalledTimes(1)
+    expect(window.$loadingBar.start).not.toHaveBeenCalled()
+    expect(window.$loadingBar.error).not.toHaveBeenCalled()
     expect(window.$loadingBar.finish).not.toHaveBeenCalled()
   })
 

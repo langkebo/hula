@@ -16,7 +16,6 @@ interface MatrixHttpRequestOptions {
   quiet?: boolean
   retries?: number
   retryDelay?: number
-  showLoading?: boolean
   showErrorToast?: boolean
 }
 
@@ -215,12 +214,7 @@ class MatrixHttpClient {
       requestOptions = options
     }
 
-    const showLoading = requestOptions.showLoading ?? false
     const showErrorToast = requestOptions.showErrorToast ?? false
-
-    if (showLoading && window.$loadingBar) {
-      window.$loadingBar.start()
-    }
 
     let retries = requestOptions.retries ?? 0
     const retryDelay = requestOptions.retryDelay ?? 1000
@@ -228,18 +222,12 @@ class MatrixHttpClient {
     while (true) {
       try {
         const result = await this._doRequest<T>(method, requestPath, requestOptions)
-        if (showLoading && window.$loadingBar) {
-          window.$loadingBar.finish()
-        }
         return result
       } catch (err: unknown) {
         const error = err as Error & { message?: string }
         // Retry only on network errors or 5xx server errors
         const isRetryable = err instanceof TypeError || error.message?.includes('HTTP 5')
         if (!isRetryable || retries <= 0) {
-          if (showLoading && window.$loadingBar) {
-            window.$loadingBar.error()
-          }
           if (showErrorToast && window.$message) {
             window.$message.error(error.message || String(err))
           }
