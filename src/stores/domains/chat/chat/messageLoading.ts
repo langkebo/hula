@@ -38,7 +38,7 @@ interface MessageLoadingDeps {
 
 export const createMessageLoading = (deps: MessageLoadingDeps) => {
   const { t } = useI18n()
-  const { showFeedback } = useActionFeedback()
+  const { showFeedback, startLoading, finishLoading, errorLoading } = useActionFeedback()
   const {
     globalStore,
     sessionStore,
@@ -60,8 +60,8 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
 
   const getPageMsg = async (size: number, roomId: string, cursor: string = '', showLoadingBar = false) => {
     try {
-      if (showLoadingBar && window.$loadingBar) {
-        window.$loadingBar.start()
+      if (showLoadingBar) {
+        startLoading()
       }
       const currentOptions = messageOptions[roomId] || {
         isLast: false,
@@ -97,13 +97,13 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         cursor: result.cursor,
         hasLoadedOnce: true
       }
-      if (showLoadingBar && window.$loadingBar) {
-        window.$loadingBar.finish()
+      if (showLoadingBar) {
+        finishLoading()
       }
     } catch (err) {
       logger.error('获取消息失败:', err)
-      if (showLoadingBar && window.$loadingBar) {
-        window.$loadingBar.error()
+      if (showLoadingBar) {
+        errorLoading()
       }
       showFeedback(t('message.load_messages_failed'), 'error')
       messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: true }
