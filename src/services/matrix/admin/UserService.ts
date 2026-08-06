@@ -266,20 +266,6 @@ export class AdminUserService {
     }
   }
 
-  async shadowBan(userId: string, ban: boolean = true): Promise<void> {
-    try {
-      if (ban) {
-        await this.shadowBanUser(userId)
-      } else {
-        await this.unshadowBanUser(userId)
-      }
-      logger.info(`[Admin] 影子封禁${ban ? '启用' : '解除'}: ${userId}`)
-    } catch (err) {
-      logger.error(`[Admin] 影子封禁操作失败: ${err}`)
-      throw err
-    }
-  }
-
   async getRateLimits(userId?: string): Promise<Record<string, unknown>> {
     try {
       const admin = await this.sdkAdmin()
@@ -348,27 +334,6 @@ export class AdminUserService {
       logger.error(`[Admin] 获取 Whois 失败: ${err}`)
       return null
     }
-  }
-
-  async getUsersV2(
-    limit = 100,
-    from?: string,
-    name?: string,
-    guests?: boolean
-  ): Promise<{ users: UserInfo[]; nextToken?: string }> {
-    return this.getUsers(limit, from, name, guests)
-  }
-
-  async getUserV2(userId: string): Promise<UserInfo | null> {
-    return this.getUser(userId)
-  }
-
-  async createUserV2(
-    username: string,
-    password: string,
-    options?: { admin?: boolean; displayname?: string; deactivated?: boolean }
-  ): Promise<UserInfo | null> {
-    return this.createUser(username, password, options)
   }
 
   async getUserRooms(userId: string): Promise<Array<{ roomId: string; membership: string; isRoomAdmin: boolean }>> {
@@ -565,21 +530,6 @@ export class AdminUserService {
     }
   }
 
-  async setUserAdmin(userId: string, isAdmin: boolean): Promise<void> {
-    return this.setAdmin(userId, isAdmin)
-  }
-
-  async deactivateUserV2(userId: string): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.deactivateUser(userId)
-      logger.info(`[Admin] v2停用用户: ${userId}`)
-    } catch (err) {
-      logger.error(`[Admin] v2停用用户失败: ${err}`)
-      throw err
-    }
-  }
-
   async deleteUser(userId: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
@@ -587,17 +537,6 @@ export class AdminUserService {
       logger.info(`[Admin] 删除用户成功: ${userId}`)
     } catch (err) {
       logger.error(`[Admin] 删除用户失败: ${err}`)
-      throw err
-    }
-  }
-
-  async resetPasswordV2(userId: string, newPassword: string): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.resetPassword(userId, newPassword)
-      logger.info(`[Admin] v2重置密码: ${userId}`)
-    } catch (err) {
-      logger.error(`[Admin] v2重置密码失败: ${err}`)
       throw err
     }
   }

@@ -619,10 +619,6 @@ class AdminFacadeService extends BaseMatrixService {
     return this.rooms.adminDeleteSpace(spaceId)
   }
 
-  async shadowBan(userId: string, ban = true): Promise<void> {
-    return this.users.shadowBan(userId, ban)
-  }
-
   async getRateLimits(userId?: string): Promise<Record<string, unknown>> {
     return this.users.getRateLimits(userId)
   }
@@ -658,27 +654,6 @@ class AdminFacadeService extends BaseMatrixService {
 
   async updateSamlConfig(config: Record<string, unknown>): Promise<void> {
     return this.security.updateSamlConfig(config)
-  }
-
-  async getUsersV2(
-    limit = 100,
-    from?: string,
-    name?: string,
-    guests = true
-  ): Promise<{ users: UserInfo[]; nextToken?: string }> {
-    return this.users.getUsersV2(limit, from, name, guests)
-  }
-
-  async getUserV2(userId: string): Promise<UserInfo | null> {
-    return this.users.getUserV2(userId)
-  }
-
-  async createUserV2(
-    username: string,
-    password: string,
-    options?: { admin?: boolean; displayname?: string; deactivated?: boolean }
-  ): Promise<UserInfo | null> {
-    return this.users.createUserV2(username, password, options)
   }
 
   async getUserRooms(userId: string): Promise<Array<{ roomId: string; membership: string; isRoomAdmin: boolean }>> {
@@ -741,18 +716,6 @@ class AdminFacadeService extends BaseMatrixService {
 
   async checkUserAdmin(userId: string): Promise<boolean> {
     return this.users.checkUserAdmin(userId)
-  }
-
-  async setUserAdmin(userId: string, isAdmin: boolean): Promise<void> {
-    return this.users.setUserAdmin(userId, isAdmin)
-  }
-
-  async deactivateUserV2(userId: string): Promise<void> {
-    return this.users.deactivateUserV2(userId)
-  }
-
-  async resetPasswordV2(userId: string, newPassword: string): Promise<void> {
-    return this.users.resetPasswordV2(userId, newPassword)
   }
 
   async getAccountStatus(userId: string): Promise<Record<string, unknown> | null> {
