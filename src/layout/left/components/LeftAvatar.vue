@@ -28,7 +28,7 @@
       class="size-full p-15px box-border rounded-8px"
       vertical>
       <!-- 头像以及信息区域 -->
-      <n-flex :size="25" align="center" justify="space-between" class="select-none cursor-default">
+      <n-flex :size="25" align="center" justify="start" class="select-none cursor-default">
         <n-flex>
           <TjgAvatar
             :src="userStore.userInfo?.avatar"
@@ -51,11 +51,6 @@
               <span>{{ statusTitle }}</span>
             </n-flex>
           </n-flex>
-        </n-flex>
-
-        <n-flex :size="5" align="center" class="item-hover" vertical>
-          <svg class="size-20px"><use href="#thumbs-up"></use></svg>
-          <span class="text-[var(--text-sm)]">9999+</span>
         </n-flex>
       </n-flex>
       <!-- 地址 -->
