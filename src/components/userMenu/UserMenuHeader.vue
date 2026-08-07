@@ -5,9 +5,7 @@
         <slot name="avatar">
           <n-avatar round :size="48" :src="userAvatar" :fallback-src="defaultAvatar" />
         </slot>
-        <div class="status-indicator" :class="statusClass" :style="statusStyle">
-          <Icon :icon="statusIcon" :width="10" />
-        </div>
+        <div class="status-indicator" :class="statusClass" :style="statusStyle" />
       </div>
       <div class="user-details">
         <div class="user-name">{{ displayName }}</div>
