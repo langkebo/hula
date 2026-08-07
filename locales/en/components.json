@@ -27,7 +27,11 @@
       "round": "Round preview",
       "square": "Rounded-square preview"
     },
-    "uploading": "Uploading..."
+    "uploading": "Uploading...",
+    "close_during_upload": {
+      "title": "Uploading",
+      "content": "The avatar is still uploading. Close anyway?"
+    }
   },
   "avatarGallery": {
     "title": "Choose Avatar"

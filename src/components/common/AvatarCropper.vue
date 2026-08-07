@@ -18,9 +18,16 @@
 
         <svg
           v-if="isWindows()"
-          class="size-14px cursor-pointer pt-6px select-none absolute right-6px"
+          class="size-14px cursor-pointer pt-6px select-none absolute right-6px text-[--tjg-text-secondary] hover:text-[--tjg-text-primary]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
           @click="closeWindow">
-          <use href="#close"></use>
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
         <span class="h-1px w-full bg-[--tjg-border-default]"></span>
       </n-flex>
@@ -95,7 +102,7 @@
         </n-flex>
       </n-flex>
       <n-flex class="p-12px" align="center" justify="center" :size="12">
-        <n-button quaternary @click="closeWindow" :disabled="loading">{{ t('components.common.cancel') }}</n-button>
+        <n-button quaternary @click="closeWindow">{{ t('components.common.cancel') }}</n-button>
         <n-button secondary type="primary" @click="handleCrop" :loading="loading">{{ loadingText }}</n-button>
       </n-flex>
     </div>
@@ -103,6 +110,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDialog } from 'naive-ui'
 import type { CSSProperties } from 'vue'
 // biome-ignore lint/style/useImportType: used as component in template
 import { VueCropper as VueCropperComp } from 'vue-cropper'
@@ -112,6 +120,7 @@ import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
 const { t } = useI18n()
+const dialog = useDialog()
 const localImageUrl = ref('')
 const cropperReady = ref(false)
 
@@ -188,9 +197,20 @@ const handleCrop = () => {
   })
 }
 
-/** 关闭裁剪窗口 */
+/** 关闭裁剪窗口（上传中需二次确认） */
 const closeWindow = () => {
-  if (!loading.value) {
+  if (loading.value) {
+    // 上传中：二次确认后再关闭，避免误中断
+    dialog.warning({
+      title: t('components.avatarCropper.close_during_upload.title'),
+      content: t('components.avatarCropper.close_during_upload.content'),
+      positiveText: t('components.common.confirm'),
+      negativeText: t('components.common.cancel'),
+      onPositiveClick: () => {
+        emit('update:show', false)
+      }
+    })
+  } else {
     emit('update:show', false)
   }
 }

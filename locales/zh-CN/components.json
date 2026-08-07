@@ -27,7 +27,11 @@
       "round": "圆形预览",
       "square": "矩形预览"
     },
-    "uploading": "上传中..."
+    "uploading": "上传中...",
+    "close_during_upload": {
+      "title": "上传中",
+      "content": "头像正在上传，确定要关闭吗？"
+    }
   },
   "avatarGallery": {
     "title": "选择头像"
