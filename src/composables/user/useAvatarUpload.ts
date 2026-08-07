@@ -28,6 +28,7 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
   const fileInput = ref<HTMLInputElement>()
   const localImageUrl = ref('')
   const showCropper = ref(false)
+  const showGallery = ref(false)
   const cropperRef = ref()
 
   // 处理选中的图片文件（File 对象），加载到裁剪器
@@ -101,6 +102,22 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
     }
   }
 
+  // 处理从头像库选择的头像：将 webp 转为 blob 后通过 Matrix 媒体上传
+  const handleGallerySelect = async (avatarUrl: string) => {
+    try {
+      const response = await fetch(avatarUrl)
+      const blob = await response.blob()
+      const file = new File([blob], `avatar_${Date.now()}.webp`, { type: 'image/webp' })
+      const uploadResult = await matrixMediaService.uploadImage(file)
+      const mxcUrl = uploadResult.contentUri
+      if (onSuccess) onSuccess(mxcUrl)
+      showGallery.value = false
+    } catch (error) {
+      logger.error('Gallery avatar upload failed:', error)
+      showFeedback(t('hooks.avatar_upload.upload_failed'), 'error')
+    }
+  }
+
   // 处理裁剪 - 通过 Matrix 媒体上传接口上传，返回 mxc:// URI
   const handleCrop = async (cropBlob: Blob) => {
     try {
@@ -159,9 +176,11 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
     fileInput,
     localImageUrl,
     showCropper,
+    showGallery,
     cropperRef,
     openFileSelector,
     handleFileChange,
+    handleGallerySelect,
     handleCrop,
     openAvatarCropper
   }
