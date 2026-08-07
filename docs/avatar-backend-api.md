@@ -61,3 +61,42 @@
   → MatrixMediaService.uploadImage(file) → mxc://
   → onSuccess(mxc) → 同上
 ```
+
+## 头像变更历史后端存储设计
+
+本章节为 synapse-rust 扩展的设计规范（documentary 性质）。完整实现需要 synapse-rust 仓库的 Rust 开发与数据库迁移工作，不在本前端代码库范围内。本文档记录契约，为未来后端工作提供明确规范。
+
+### 新表结构：avatar_history
+
+在 synapse-rust 数据库中新增 `avatar_history` 表，记录用户每次头像变更的旧值、新值与时间戳，用于审计追踪与历史头像画廊展示：
+
+```sql
+CREATE TABLE avatar_history (
+  id BIGSERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  old_avatar_url TEXT,
+  new_avatar_url TEXT NOT NULL,
+  changed_at BIGINT NOT NULL,  -- epoch millis
+  CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(name)
+);
+CREATE INDEX idx_avatar_history_user ON avatar_history(user_id, changed_at DESC);
+```
+
+### 新 synapse-rust 扩展 API
+
+新增以下 unstable 端点供前端查询头像变更历史：
+
+- `GET /_matrix/client/unstable/io.tjg.avatar/history?limit=20` — 当前用户的头像历史
+- `GET /_matrix/client/unstable/io.tjg.avatar/history/{userId}` — 管理员/其他用户的历史（需权限）
+
+### 前端集成计划（未来，不在当前计划范围内）
+
+待后端端点就绪后，前端按以下步骤集成：
+
+- 在 `src/services/matrix/user/` 添加 `MatrixAvatarHistoryService`
+- 调用 `setAvatarUrl` 的 hook 同时 POST 到 history 端点
+- 在 Settings > Account > Avatar History 画廊展示历史
+
+### 为何仅作为文档
+
+synapse-rust 是独立仓库（langkebo/synapse-rust）。后端变更需要在该仓库进行 Rust 开发 + 数据库迁移。本文档记录契约，为未来后端工作提供明确规范。
