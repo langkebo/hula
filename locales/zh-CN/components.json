@@ -29,6 +29,9 @@
     },
     "uploading": "上传中..."
   },
+  "avatarGallery": {
+    "title": "选择头像"
+  },
   "announcementCard": {
     "title": "公告",
     "viewDetail": "查看详情",
