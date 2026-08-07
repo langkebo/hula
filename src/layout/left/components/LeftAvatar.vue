@@ -11,20 +11,14 @@
     trigger="click">
     <template #trigger>
       <!-- 头像 -->
-      <div
-        class="relative size-34px rounded-50% cursor-pointer"
-        @contextmenu="handleAvatarContextMenu">
-        <TjgAvatar
-          :src="userStore.userInfo?.avatar"
-          :size="34"
-          :name="userStore.userInfo?.name"
-          round />
+      <div class="relative size-34px rounded-50% cursor-pointer" @contextmenu="handleAvatarContextMenu">
+        <TjgAvatar :src="userStore.userInfo?.avatar" :size="34" :name="userStore.userInfo?.name" round />
 
         <div
-          class="bg-[--left-bg-color] text-[var(--text-xs)] rounded-50% size-12px absolute bottom--2px right--2px border-(2px solid [--left-bg-color])"
-          @click.stop="openContent(t('home.profile_card.online_status'), 'onlineStatus', 320, 480)">
-          <img :src="statusIcon" :alt="statusTitle" class="rounded-50% size-full" />
-        </div>
+          v-if="isOnline"
+          class="rounded-50% size-10px absolute bottom--2px right--2px border-(2px solid [--left-bg-color]) bg-[--tjg-status-online]"
+          :title="statusTitle"
+          @click.stop="openContent(t('home.profile_card.online_status'), 'onlineStatus', 320, 480)" />
       </div>
     </template>
     <!-- 用户个人信息框 -->
@@ -119,7 +113,7 @@ const currentUserLocation = computed(() => {
   return ((groupStore.getUserInfo(uid) as unknown as Record<string, unknown> | undefined)?.locPlace as string) ?? ''
 })
 const { shrinkStatus, infoShow, themeColor, openContent, handleEditing } = leftHook()
-const { statusIcon, statusTitle, statusBgColor } = useOnlineStatus()
+const { statusIcon, statusTitle, statusBgColor, isOnline } = useOnlineStatus()
 
 const { isOpen: isMenuOpen, position: menuPosition, openMenu, closeMenu, handleMenuItemClick } = useUserMenu()
 
