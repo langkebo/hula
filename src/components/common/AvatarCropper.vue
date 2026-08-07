@@ -126,7 +126,7 @@ type VueCropperInstance = InstanceType<typeof VueCropperComp> & {
   getCropBlob: (callback: (blob: Blob) => void) => void
 }
 
-const cropperRef = ref<HTMLElement | null>(null)
+const cropperRef = ref<InstanceType<typeof VueCropperComp> | null>(null)
 const loading = ref(false)
 const loadingText = computed(() =>
   loading.value ? t('components.avatarCropper.uploading') : t('components.common.confirm')
@@ -156,9 +156,9 @@ watch(
   [() => props.show, () => props.imageUrl],
   ([show, imageUrl]) => {
     if (show && imageUrl) {
-      // 等待模态框 DOM 渲染完成后再初始化裁剪组件
+      // 先同步设置图片 URL，确保 v-if 渲染 VueCropperComp 时 img 已就绪
+      localImageUrl.value = imageUrl
       nextTick(() => {
-        localImageUrl.value = imageUrl
         cropperReady.value = true
       })
     } else {
@@ -177,7 +177,7 @@ const handleRealTime = (data: CropPreview) => {
 const handleCrop = () => {
   loading.value = true
 
-  const cropper = cropperRef.value as unknown as VueCropperInstance | null
+  const cropper = cropperRef.value as VueCropperInstance | null
   if (!cropper?.getCropBlob) {
     loading.value = false
     return
