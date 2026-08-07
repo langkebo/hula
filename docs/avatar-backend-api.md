@@ -23,3 +23,41 @@
 | 头像变更历史 | 新 synapse-rust 扩展：`avatar_history` 表 (user_id, old_mxc, new_mxc, timestamp) + `GET /_matrix/client/unstable/io.tjg.avatar/history` | 中（审计追踪） |
 | 在线状态同步 | 已通过 Matrix presence 工作。前端监听 `m.presence` 事件。无需新后端。 | 已完成 |
 | 位置显示 | `locPlace` 字段 — 需验证 synapse-rust 是否存储用户位置。可能未实现。 | 低 |
+
+## 头像上传/保存/更新 API 契约
+
+本章节记录头像相关操作的完整 API 契约，区分已工作能力（无需新后端代码）与未来扩展。
+
+### 已工作的 API（无需新后端代码）
+
+| 操作 | 前端服务 | Matrix API | 状态 |
+|:---|:---|:---|:---|
+| 上传头像图片 | `MatrixMediaService.uploadImage(file)` | `POST /_matrix/media/v3/upload` | 已工作 |
+| 设置用户头像 | `MatrixProfileService.setAvatarUrl(mxc)` | `PUT /_matrix/client/v3/profile/{userId}/avatar_url` | 已工作 |
+| 获取用户头像 | `MatrixProfileService.getAvatarUrl(userId)` | `GET /_matrix/client/v3/profile/{userId}` | 已工作 |
+| 转换 mxc:// 为 HTTP | `MatrixClientService.mxcResolver` | `client.mxcUrlToHttp()` | 已工作（已修复） |
+| 设置在线状态 | `MatrixPresenceService.setPresence(status)` | `PUT /_matrix/client/v3/presence/{userId}/status` | 已工作 |
+| 获取在线状态 | `MatrixPresenceService.getPresence(userId)` | `GET /_matrix/client/v3/presence/{userId}/status` | 已工作 |
+
+### 本地图片上传 → 设置头像 流程
+
+用户从本地选择图片后，经过裁剪、上传、设置头像三步完成头像更新：
+
+```
+用户选择图片 → useAvatarUpload.handleCrop(blob)
+  → MatrixMediaService.uploadImage(file) → 返回 mxc://
+  → onSuccess(mxc) → userStore.updateAvatar(mxc)
+  → MatrixProfileService.setAvatarUrl(mxc) → PUT /profile/{userId}/avatar_url
+  → Matrix presence 事件广播头像变更给所有设备/联系人
+```
+
+### 头像库选择 → 设置头像 流程
+
+用户从头像库选择预设头像后，需先将远程 URL 下载为本地文件，再走与本地图片相同的上传流程：
+
+```
+用户点击头像库头像 → handleGallerySelect(url)
+  → fetch(url) → blob → File
+  → MatrixMediaService.uploadImage(file) → mxc://
+  → onSuccess(mxc) → 同上
+```
