@@ -320,7 +320,8 @@
     "title": "Edit profile",
     "avatar": {
       "change": "Change avatar",
-      "tips": "Recommended size 180x180px. Supports JPG, PNG, WEBP formats and files under 500kb"
+      "tips": "Recommended size 180x180px. Supports JPG, PNG, WEBP formats and files under 500kb",
+      "choose_from_gallery": "Choose from gallery"
     },
     "badge": {
       "current": "Current badge:",

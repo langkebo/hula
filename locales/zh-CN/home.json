@@ -320,7 +320,8 @@
     "title": "编辑资料",
     "avatar": {
       "change": "更换头像",
-      "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb"
+      "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb",
+      "choose_from_gallery": "从头像库选择"
     },
     "badge": {
       "current": "当前佩戴的徽章:",

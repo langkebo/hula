@@ -48,6 +48,12 @@
             </p>
           </n-popover>
         </n-flex>
+        <!-- 从头像库选择 -->
+        <n-flex justify="center">
+          <n-button text size="small" @click="showGallery = true">
+            {{ t('home.profile_edit.avatar.choose_from_gallery') }}
+          </n-button>
+        </n-flex>
         <!-- 当前佩戴的徽章 -->
         <n-flex v-if="currentBadge" align="center" justify="center">
           <span class="text-[var(--text-sm)] text-[--tjg-text-secondary]">
@@ -148,11 +154,13 @@
     class="hidden"
     @change="handleFileChange" />
   <AvatarCropper ref="cropperRef" v-model:show="showCropper" :image-url="localImageUrl" @crop="handleCrop" />
+  <AvatarGallery v-model:show="showGallery" @select="handleGallerySelect" />
 </template>
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import AvatarGallery from '@/components/common/AvatarGallery.vue'
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { countGraphemes } from '@/composables/common/useCommon'
@@ -184,9 +192,11 @@ const {
   fileInput,
   localImageUrl,
   showCropper,
+  showGallery,
   cropperRef,
   openAvatarCropper,
   handleFileChange,
+  handleGallerySelect,
   handleCrop: onCrop
 } = useAvatarUpload({
   onSuccess: async (mxcUrl) => {
