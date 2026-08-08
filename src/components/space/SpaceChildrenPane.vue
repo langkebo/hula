@@ -1,42 +1,64 @@
 <template>
-  <SpaceDetailsPane
-    :active-space="activeSpaceItem"
-    :members="spaceMembers"
-    :rooms="spaceRooms"
-    :members-loading="membersLoading"
-    :rooms-loading="roomsLoading"
-    :can-manage="canManageSelectedSpace"
-    :is-member="isMember"
-    :sub-view="subView"
-    :joining-space="joiningSpace"
-    :manage-mode="manageMode"
-    :manage-submitting="manageSubmitting"
-    :invite-user-id="inviteForm.userId"
-    :add-room-id="addRoomForm.roomId"
-    :add-room-suggested="addRoomForm.suggested"
-    :saving-space-name="savingSpaceName"
-    :saving-space-topic="savingSpaceTopic"
-    :entering-chat="enteringChat"
-    @enter-space="handleEnterChat"
-    @enter-room="handleEnterRoom"
-    @invite-member="openInviteSpaceMember"
-    @add-room="openAddSpaceRoom"
-    @join-space="handleJoinSpace"
-    @save-space-name="handleSaveSpaceName"
-    @save-space-topic="handleSaveSpaceTopic"
-    @remove-room="handleRemoveSpaceRoom"
-    @leave-space="handleLeaveSpace"
-    @delete-space="handleDeleteSpace"
-    @close-manage-pane="closeManagePane"
-    @submit-manage-pane="submitManagePane"
-    @update:sub-view="subView = $event"
-    @update:invite-user-id="inviteForm.userId = $event"
-    @update:add-room-id="addRoomForm.roomId = $event"
-    @update:add-room-suggested="addRoomForm.suggested = $event" />
+  <div class="space-children-pane flex-1 min-h-0 flex flex-col">
+    <!-- 空间横幅头部 -->
+    <SpaceHeader
+      v-if="activeSpaceItem"
+      :space="activeSpaceItem"
+      :can-manage="canManageSelectedSpace"
+      @settings="handleSpaceSettings" />
+
+    <!-- 子房间网格（快速概览） -->
+    <section v-if="activeSpaceItem" class="space-children-pane__rooms" :aria-label="t('space.rooms')">
+      <SpaceRoomGrid
+        :rooms="spaceRooms"
+        :loading="roomsLoading"
+        @enter-room="handleEnterRoom"
+        @preview-room="handleEnterRoom" />
+    </section>
+
+    <!-- 完整详情面板（保留既有全部能力） -->
+    <SpaceDetailsPane
+      class="flex-1 min-h-0"
+      :active-space="activeSpaceItem"
+      :members="spaceMembers"
+      :rooms="spaceRooms"
+      :members-loading="membersLoading"
+      :rooms-loading="roomsLoading"
+      :can-manage="canManageSelectedSpace"
+      :is-member="isMember"
+      :sub-view="subView"
+      :joining-space="joiningSpace"
+      :manage-mode="manageMode"
+      :manage-submitting="manageSubmitting"
+      :invite-user-id="inviteForm.userId"
+      :add-room-id="addRoomForm.roomId"
+      :add-room-suggested="addRoomForm.suggested"
+      :saving-space-name="savingSpaceName"
+      :saving-space-topic="savingSpaceTopic"
+      :entering-chat="enteringChat"
+      @enter-space="handleEnterChat"
+      @enter-room="handleEnterRoom"
+      @invite-member="openInviteSpaceMember"
+      @add-room="openAddSpaceRoom"
+      @join-space="handleJoinSpace"
+      @save-space-name="handleSaveSpaceName"
+      @save-space-topic="handleSaveSpaceTopic"
+      @remove-room="handleRemoveSpaceRoom"
+      @leave-space="handleLeaveSpace"
+      @delete-space="handleDeleteSpace"
+      @close-manage-pane="closeManagePane"
+      @submit-manage-pane="submitManagePane"
+      @update:sub-view="subView = $event"
+      @update:invite-user-id="inviteForm.userId = $event"
+      @update:add-room-id="addRoomForm.roomId = $event"
+      @update:add-room-suggested="addRoomForm.suggested = $event" />
+  </div>
 </template>
 
 <script lang="ts" setup name="SpaceChildrenPane">
 import { useI18n } from 'vue-i18n'
+import SpaceHeader from '@/components/space/SpaceHeader.vue'
+import SpaceRoomGrid from '@/components/space/SpaceRoomGrid.vue'
 import SpaceDetailsPane from '@/components/workbench/SpaceDetailsPane.vue'
 import type { SpaceListItem } from '@/components/workbench/SpaceListPane.vue'
 import { useEnterChat } from '@/composables/chat/useEnterChat'
@@ -154,6 +176,11 @@ const handleEnterRoom = async (roomId: string) => {
   } catch (err) {
     showFeedback(String(err), 'error')
   }
+}
+
+// 空间设置入口：回到概览子视图，展示完整管理面板
+const handleSpaceSettings = () => {
+  subView.value = 'overview'
 }
 
 // 离开空间（带确认弹窗）
@@ -378,3 +405,14 @@ watch(
   { immediate: true }
 )
 </script>
+
+<style scoped lang="scss">
+.space-children-pane__rooms {
+  flex-shrink: 0;
+  padding: var(--tjg-space-3) var(--tjg-space-4);
+  border-bottom: 1px solid var(--tjg-border-default);
+  background: var(--tjg-surface-panel);
+  max-height: 280px;
+  overflow: auto;
+}
+</style>
