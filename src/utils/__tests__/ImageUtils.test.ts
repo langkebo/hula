@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compressImage, detectImageFormat, formatFileSize, isImageFile, isImageUrl } from '../ImageUtils'
+import { compressImage, detectImageFormat, isImageFile, isImageUrl } from '../ImageUtils'
 
 describe('ImageUtils', () => {
   describe('detectImageFormat', () => {
@@ -42,31 +42,7 @@ describe('ImageUtils', () => {
     })
   })
 
-  describe('formatFileSize', () => {
-    it('should format bytes', () => {
-      expect(formatFileSize(0)).toBe('0 Bytes')
-      expect(formatFileSize(500)).toBe('500 Bytes')
-    })
-
-    it('should format KB', () => {
-      expect(formatFileSize(1024)).toBe('1 KB')
-      expect(formatFileSize(1536)).toBe('1.5 KB')
-    })
-
-    it('should format MB', () => {
-      expect(formatFileSize(1048576)).toBe('1 MB')
-      expect(formatFileSize(1572864)).toBe('1.5 MB')
-    })
-
-    it('should format GB', () => {
-      expect(formatFileSize(1073741824)).toBe('1 GB')
-    })
-
-    it('should respect decimal parameter', () => {
-      expect(formatFileSize(1536, 1)).toBe('1.5 KB')
-      expect(formatFileSize(1536, 0)).toBe('2 KB')
-    })
-  })
+  // formatFileSize 已统一到 Formatting.formatBytes，相关断言见 Formatting.test.ts
 
   describe('isImageFile', () => {
     it('should return true for image file extensions', () => {

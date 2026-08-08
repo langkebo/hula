@@ -1,3 +1,5 @@
+import { escapeHtml } from './escapeHtml'
+
 const MATRIX_USER_ID_REGEX = /^@[a-z0-9._=/+-]+:[a-zA-Z0-9.-]+$/
 const MATRIX_ROOM_ID_REGEX = /^![a-zA-Z0-9]+:[a-zA-Z0-9.-]+$/
 const MATRIX_EVENT_ID_REGEX = /^\$[a-zA-Z0-9/+_-]+$/
@@ -25,12 +27,7 @@ export function isValidUrl(value: string): boolean {
 }
 
 export function sanitizeHtml(input: string): string {
-  return input
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
+  return escapeHtml(input)
 }
 
 export function sanitizeForLog(input: string, maxLength = 200): string {

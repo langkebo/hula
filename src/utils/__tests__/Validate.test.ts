@@ -139,6 +139,11 @@ describe('Validate 工具', () => {
       expect(sanitizeInput('"quote"')).toBe('&quot;quote&quot;')
     })
 
+    it('should escape & to prevent double-escaping corruption', () => {
+      expect(sanitizeInput('a & b')).toBe('a &amp; b')
+      expect(sanitizeInput('&lt;')).toBe('&amp;lt;')
+    })
+
     it('should handle empty string', () => {
       expect(sanitizeInput('')).toBe('')
     })
