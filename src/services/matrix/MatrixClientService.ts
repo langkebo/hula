@@ -669,6 +669,17 @@ class MatrixClientService {
     return client?.getHomeserverUrl?.() ?? this.connectionManager.getConfig()?.homeserverUrl ?? null
   }
 
+  /**
+   * 获取当前 Matrix homeserver 的域名（server name）。
+   *
+   * 用于在不直接访问 SDK client 的情况下判断联邦用户等场景。
+   * 客户端未初始化时返回空字符串。
+   */
+  getServerDomain(): string {
+    const client = this.connectionManager.getClient()
+    return client?.getDomain?.() ?? ''
+  }
+
   getDeviceId(): string | null {
     return this.connectionManager.getClient()?.getDeviceId() ?? null
   }

@@ -84,40 +84,34 @@ class MatrixDeviceService extends BaseMatrixService {
   /**
    * 获取指定用户的所有设备（用于好友详情页设备列表展示）
    *
-   * 通过 MatrixClient.getUserDevices（crypto API）拉取目标用户的设备信息，
-   * 并补充 verified 标记。仅当客户端启用了 E2E 加密时可用；非加密客户端
-   * 或无设备信息的用户返回空数组，不抛错。
+   * 通过 `client.getStoredDevicesForUser(userId)` 拉取目标用户的设备信息
+   * （该方法在 SDK 中已实现，返回 `LegacyStoredDevice[]`），并调用
+   * `device.isVerified()` 获取验证状态。仅当客户端启用了 E2E 加密时可用；
+   * 非加密客户端或无设备信息的用户返回空数组，不抛错。
    *
    * @param userId 目标用户 MXID
-   * @returns 设备列表
+   * @returns 设备列表（失败时返回空数组，不抛出异常）
    */
   async getUserDevices(userId: string): Promise<Device[]> {
     try {
       const client = this.getClient()
-      // crypto.getUserDevices 返回的是 SDK 内部 DeviceInfo 对象，需要归一化为 Device 接口
-      const rawDevices = (await client.getUserDevices(userId)) as Array<{
-        deviceId?: string
-        device_id?: string
-        displayName?: string
-        display_name?: string
-        lastSeenTs?: number
-        last_seen_ts?: number
-        lastSeenIp?: string
-        last_seen_ip?: string
-        verified?: boolean
-      }>
-      const devices: Device[] = (rawDevices ?? []).map((raw) => ({
-        device_id: raw.deviceId ?? raw.device_id ?? '',
-        display_name: raw.displayName ?? raw.display_name,
-        last_seen_ts: raw.lastSeenTs ?? raw.last_seen_ts,
-        last_seen_ip: raw.lastSeenIp ?? raw.last_seen_ip,
-        verified: raw.verified
+      const extendedClient = client as unknown as MatrixClientExtended
+      // getStoredDevicesForUser 是 SDK 已实现的方法，返回 LegacyStoredDevice[]
+      if (typeof extendedClient.getStoredDevicesForUser !== 'function') {
+        logger.info(`[DeviceService] 客户端不支持 getStoredDevicesForUser，返回空数组: userId=${userId}`)
+        return []
+      }
+      const rawDevices = await extendedClient.getStoredDevicesForUser(userId)
+      const devices: Device[] = (rawDevices ?? []).map((device) => ({
+        device_id: device.deviceId,
+        display_name: device.displayName,
+        verified: typeof device.isVerified === 'function' ? device.isVerified() : false
       }))
       logger.info(`[DeviceService] 获取用户设备列表成功: userId=${userId}, ${devices.length} 个设备`)
       return devices
     } catch (err) {
       logger.error(`[DeviceService] 获取用户设备列表失败: userId=${userId}, ${err}`)
-      throw err
+      return []
     }
   }
 

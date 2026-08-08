@@ -60,7 +60,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 describe('MatrixDeviceService', () => {
-  let mockClient: Partial<MatrixClient>
+  let mockClient: Partial<MatrixClient> & Partial<MatrixClientExtended>
   let mockDeviceManager: {
     getDevices: ReturnType<typeof vi.fn>
     getDevice: ReturnType<typeof vi.fn>
@@ -113,14 +113,14 @@ describe('MatrixDeviceService', () => {
       getDeviceId: vi.fn(() => 'CURRENT_DEVICE')
     }
 
-    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as MatrixClient)
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
   })
 
   describe('getDevices', () => {
     it('应该在未调用 initialize 时回退到 matrixClientService', async () => {
       const mockDevices: Device[] = [{ device_id: 'DEVICE1', display_name: 'Device 1', verified: true }]
       mockDeviceManager.getDevices.mockResolvedValue(mockDevices)
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
       const service = new (matrixDeviceService.constructor as unknown as new () => typeof matrixDeviceService)()
       const devices = await service.getDevices()
@@ -182,61 +182,64 @@ describe('MatrixDeviceService', () => {
   })
 
   describe('getUserDevices', () => {
-    it('应该通过 client.getUserDevices 获取目标用户设备并归一化字段', async () => {
+    it('应该通过 getStoredDevicesForUser 获取目标用户设备并归一化字段', async () => {
       const rawDevices = [
         {
           deviceId: 'DEV1',
+          userId: '@alice:matrix.test',
           displayName: 'MacBook',
-          lastSeenTs: 1000,
-          lastSeenIp: '1.1.1.1',
-          verified: true
+          isVerified: () => true,
+          isUnverified: () => false
         },
-        // SDK 也可能返回 snake_case 字段
         {
-          device_id: 'DEV2',
-          display_name: 'iPhone',
-          last_seen_ts: 2000,
-          last_seen_ip: '2.2.2.2'
+          deviceId: 'DEV2',
+          userId: '@alice:matrix.test',
+          displayName: 'iPhone',
+          isVerified: () => false,
+          isUnverified: () => true
         }
       ]
-      mockClient.getUserDevices = vi.fn().mockResolvedValue(rawDevices)
+      mockClient.getStoredDevicesForUser = vi.fn().mockResolvedValue(rawDevices)
 
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
 
-      expect(mockClient.getUserDevices).toHaveBeenCalledWith('@alice:matrix.test')
+      expect(mockClient.getStoredDevicesForUser).toHaveBeenCalledWith('@alice:matrix.test')
       expect(devices).toEqual([
         {
           device_id: 'DEV1',
           display_name: 'MacBook',
-          last_seen_ts: 1000,
-          last_seen_ip: '1.1.1.1',
           verified: true
         },
         {
           device_id: 'DEV2',
           display_name: 'iPhone',
-          last_seen_ts: 2000,
-          last_seen_ip: '2.2.2.2',
-          verified: undefined
+          verified: false
         }
       ])
     })
 
     it('应该在 SDK 返回空列表时返回空数组', async () => {
-      mockClient.getUserDevices = vi.fn().mockResolvedValue([])
+      mockClient.getStoredDevicesForUser = vi.fn().mockResolvedValue([])
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([])
     })
 
     it('应该在 SDK 返回 null/undefined 时返回空数组', async () => {
-      mockClient.getUserDevices = vi.fn().mockResolvedValue(null)
+      mockClient.getStoredDevicesForUser = vi.fn().mockResolvedValue(null)
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([])
     })
 
-    it('应该在 SDK 抛错时向上抛出', async () => {
-      mockClient.getUserDevices = vi.fn().mockRejectedValue(new Error('Network error'))
-      await expect(matrixDeviceService.getUserDevices('@alice:matrix.test')).rejects.toThrow('Network error')
+    it('应该在客户端不支持 getStoredDevicesForUser 时返回空数组', async () => {
+      // getStoredDevicesForUser 未定义
+      const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+      expect(devices).toEqual([])
+    })
+
+    it('应该在 SDK 抛错时返回空数组（优雅降级，不抛出）', async () => {
+      mockClient.getStoredDevicesForUser = vi.fn().mockRejectedValue(new Error('Network error'))
+      const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+      expect(devices).toEqual([])
     })
   })
 
