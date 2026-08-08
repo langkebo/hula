@@ -4365,7 +4365,10 @@ export type I18nKeys = {
       "non_text_message": "［非文本消息］",
       "select_copy_prompt": "请选择需要复制的消息",
       "copy_success": "已复制选中消息",
-      "copy_failed": "复制消息失败，请稍后再试"
+      "copy_failed": "复制消息失败，请稍后再试",
+      "select_messages_first": "请选择需要保存的消息",
+      "save_success": "已保存选中消息到电脑",
+      "save_failed": "保存消息失败，请稍后再试"
     },
     "forward": {
       "title": "转发消息",

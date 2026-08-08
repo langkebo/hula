@@ -278,7 +278,10 @@
     "non_text_message": "[Non-text message]",
     "select_copy_prompt": "Please select messages to copy",
     "copy_success": "Selected messages copied",
-    "copy_failed": "Failed to copy, please try again later"
+    "copy_failed": "Failed to copy, please try again later",
+    "select_messages_first": "Please select messages to save",
+    "save_success": "Selected messages saved to PC",
+    "save_failed": "Failed to save, please try again later"
   },
   "forward": {
     "title": "Forward Message",
