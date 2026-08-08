@@ -1,4 +1,5 @@
 import type { HighlighterCore, LanguageRegistration, ThemeRegistration } from '@shikijs/core'
+import { escapeHtml } from '../utils/escapeHtml'
 import { createTask, registerTask } from './workerRegistry'
 
 interface HighlightInput {
@@ -191,9 +192,5 @@ const highlightTask = createTask<HighlightInput, HighlightOutput>('highlight-cod
     return { html: `<pre><code>${escapeHtml(input.code)}</code></pre>` }
   }
 })
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
 
 registerTask(highlightTask)

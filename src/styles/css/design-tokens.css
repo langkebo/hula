@@ -371,8 +371,20 @@
 
   /* ==================== Semantic Application Tokens ==================== */
   --shadow-enabled: 1;
-  --font-family: 'PingFang';
   --blur-enabled: 1;
+
+  /* Hula 设计令牌别名：model.tsx 引用了 --hula-* 前缀，但全库从未定义，
+     导致相关样式静默失效。此处统一映射到规范 --tjg-* 令牌。 */
+  --hula-surface-elevated: var(--tjg-surface-elevated);
+  --hula-surface-subtle: var(--tjg-surface-subtle);
+  --hula-text-primary: var(--tjg-text-primary);
+  --hula-text-tertiary: var(--tjg-text-tertiary);
+  --hula-text-quaternary: var(--tjg-text-quaternary);
+  --hula-text-disabled: var(--tjg-text-disabled);
+  --hula-border-default: var(--tjg-border-default);
+  --hula-color-primary-500: var(--tjg-color-primary-500);
+  --hula-color-danger-100: var(--tjg-color-danger-100);
+  --hula-color-danger-500: var(--tjg-color-danger-500);
   --color-primary: var(--tjg-color-primary-500);
   --color-primary-light: var(--tjg-color-primary-100);
   --color-primary-hover: var(--tjg-color-primary-200);

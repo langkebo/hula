@@ -8,8 +8,9 @@ import {
   matrixAttachmentEncryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { chunkUploadService } from '@/services/performance/ChunkUploadService'
+import { formatBytes } from '@/utils/Formatting'
 import { HttpClient, HttpClientError } from '@/utils/HttpClient'
-import { compressImage, formatFileSize, isImageFile } from '@/utils/ImageUtils'
+import { compressImage, isImageFile } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
@@ -105,14 +106,97 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       const uploadResponse = await client.uploadContent(file, opts)
       return typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
     } catch (err) {
-      if (!this.isPayloadTooLarge(err)) throw err
-      logger.warn(`[MatrixMedia] 上传返回 413,回退到分片上传: ${file.name}`)
-      const result = await chunkUploadService.upload({
-        file,
-        onProgress: (p) => onProgress?.(p.percentage)
-      })
-      return result.mxcUrl
+      if (this.isPayloadTooLarge(err)) {
+        logger.warn(`[MatrixMedia] 上传返回 413,回退到分片上传: ${file.name}`)
+        const result = await chunkUploadService.upload({
+          file,
+          onProgress: (p) => onProgress?.(p.percentage)
+        })
+        return result.mxcUrl
+      }
+      const errName = err instanceof Error ? err.name : ''
+      if (errName === 'AbortError') {
+        // SDK uploadContent 用 XMLHttpRequest 跨域被 CORS 阻止，回退到同源 XHR + Vite proxy
+        logger.warn(`[MatrixMedia][AVATAR_DEBUG] uploadContent AbortError, 回退到直接 XHR 上传`)
+        logger.info(
+          `[MatrixMedia][AVATAR_DEBUG] calling uploadViaDirectFetch, typeof=${typeof this.uploadViaDirectFetch}`
+        )
+        const result = await this.uploadViaDirectFetch(client, file, opts)
+        logger.info(`[MatrixMedia][AVATAR_DEBUG] uploadViaDirectFetch returned: ${result}`)
+        return result
+      }
+      throw err
     }
+  }
+
+  /**
+   * 直接上传：绕过 SDK 的 uploadContent（XMLHttpRequest 跨域 CORS 阻止）
+   * 用 XMLHttpRequest + 同源 Vite proxy URL，避免 CORS 问题
+   */
+  private uploadViaDirectFetch(
+    client: MatrixClient,
+    file: File,
+    opts: { type?: string; name?: string }
+  ): Promise<string> {
+    const homeserverUrl = client.getHomeserverUrl()
+    const accessToken = client.getAccessToken()
+    const filename = opts.name || file.name || 'upload'
+    const mimetype = opts.type || file.type || 'application/octet-stream'
+
+    // 构造同源 URL（dev 模式走 Vite proxy，避免 XMLHttpRequest 跨域 CORS）
+    let uploadUrl = `${homeserverUrl}/_matrix/media/v3/upload?filename=${encodeURIComponent(filename)}&content_type=${encodeURIComponent(mimetype)}`
+    if (import.meta.env.DEV) {
+      try {
+        const parsed = new URL(uploadUrl)
+        if (parsed.pathname.startsWith('/_matrix/')) {
+          uploadUrl = `${window.location.origin}${parsed.pathname}${parsed.search}`
+        }
+      } catch {
+        // URL 解析失败，用原始 URL
+      }
+    }
+
+    logger.info(`[MatrixMedia][AVATAR_DEBUG] 直接 XHR 上传: ${uploadUrl}, size=${file.size}`)
+
+    return new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', uploadUrl)
+      xhr.setRequestHeader('Content-Type', mimetype)
+      if (accessToken) {
+        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`)
+      }
+      const timeout = setTimeout(() => {
+        xhr.abort()
+        reject(new Error('上传超时（30s）'))
+      }, 30000)
+
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState !== XMLHttpRequest.DONE) return
+        clearTimeout(timeout)
+        if (xhr.status === 0) {
+          reject(new Error('XMLHttpRequest 网络错误（CORS 或连接失败）'))
+          return
+        }
+        try {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const result = JSON.parse(xhr.responseText) as { content_uri: string }
+            logger.info(`[MatrixMedia][AVATAR_DEBUG] 直接上传成功: ${result.content_uri}`)
+            resolve(result.content_uri)
+          } else {
+            reject(new Error(`上传失败: ${xhr.status} ${xhr.responseText}`))
+          }
+        } catch (err) {
+          reject(new Error(`解析响应失败: ${err}`))
+        }
+      }
+
+      xhr.onerror = () => {
+        clearTimeout(timeout)
+        reject(new Error('XMLHttpRequest onerror'))
+      }
+
+      xhr.send(file)
+    })
   }
 
   private resolveDownloadUrl(mediaUrl: string): string {
@@ -272,7 +356,12 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     const client = this.getClient()
 
     try {
+      logger.info(
+        `[MatrixMedia][AVATAR_DEBUG] uploadImage start, size=${file.size} type=${file.type} name=${file.name}`
+      )
+      logger.info(`[MatrixMedia][AVATAR_DEBUG] calling getImageDimensions...`)
       const dimensions = await this.getImageDimensions(file)
+      logger.info(`[MatrixMedia][AVATAR_DEBUG] dimensions: ${dimensions.width}x${dimensions.height}`)
 
       let fileToUpload = file
       let originalSize = file.size
@@ -285,20 +374,21 @@ class MatrixMediaServiceClass extends BaseMatrixService {
           originalSize = result.originalSize ?? file.size
           compressedSize = result.compressedSize ?? file.size
           logger.info(
-            `[MatrixMedia] 图片压缩完成: ${formatFileSize(originalSize)} -> ${formatFileSize(compressedSize)} (${result.compressionRatio.toFixed(1)}%)`
+            `[MatrixMedia][AVATAR_DEBUG] 压缩完成: ${formatBytes(originalSize)} -> ${formatBytes(compressedSize)} (${result.compressionRatio.toFixed(1)}%)`
           )
         } catch (compressErr) {
-          logger.error(`[MatrixMedia] 图片压缩失败，使用原图: ${compressErr}`)
+          logger.error(`[MatrixMedia][AVATAR_DEBUG] 压缩失败，使用原图: ${compressErr}`)
         }
       }
 
+      logger.info(`[MatrixMedia][AVATAR_DEBUG] 开始 uploadContent, homeserver=${client.getHomeserverUrl()}`)
       const contentUri = await this.uploadContentWithChunkFallback(
         client,
         fileToUpload,
         this.createUploadOptions(fileToUpload.type, onProgress, fileToUpload.name),
         onProgress
       )
-      logger.info(`[MatrixMedia] 图片上传成功: ${contentUri}`)
+      logger.info(`[MatrixMedia][AVATAR_DEBUG] uploadContent 成功: ${contentUri}`)
       return {
         contentUri,
         size: compressedSize,
@@ -307,7 +397,16 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         height: dimensions.height
       }
     } catch (err) {
-      logger.error(`[MatrixMedia] 图片上传失败: ${err}`)
+      const errInfo = {
+        name: err instanceof Error ? err.name : 'unknown',
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack?.split('\n').slice(0, 5).join(' | ') : undefined,
+        cause: err instanceof Error ? err.cause : undefined,
+        errcode: (err as { errcode?: string })?.errcode,
+        httpStatus: (err as { httpStatus?: number })?.httpStatus,
+        data: (err as { data?: unknown })?.data
+      }
+      logger.error(`[MatrixMedia] 图片上传失败: ${JSON.stringify(errInfo)}`)
       throw err
     }
   }
@@ -558,24 +657,27 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   private getImageDimensions(file: File): Promise<{ width: number; height: number }> {
     return this.withTimeout(
-      new Promise((resolve, reject) => {
+      new Promise<{ width: number; height: number }>((resolve) => {
+        const url = URL.createObjectURL(file)
         const img = new Image()
         img.onload = () => {
-          resolve({
-            width: img.naturalWidth,
-            height: img.naturalHeight
-          })
-          URL.revokeObjectURL(img.src)
+          const result = { width: img.naturalWidth, height: img.naturalHeight }
+          URL.revokeObjectURL(url)
+          resolve(result)
         }
         img.onerror = () => {
-          reject(new Error('无法加载图片'))
-          URL.revokeObjectURL(img.src)
+          URL.revokeObjectURL(url)
+          logger.warn(`[MatrixMedia][AVATAR_DEBUG] getImageDimensions onerror, 用默认尺寸 0x0`)
+          resolve({ width: 0, height: 0 })
         }
-        img.src = URL.createObjectURL(file)
+        img.src = url
       }),
       10000,
       '获取图片尺寸超时'
-    )
+    ).catch((err) => {
+      logger.warn(`[MatrixMedia][AVATAR_DEBUG] getImageDimensions 失败, 用默认尺寸: ${err}`)
+      return { width: 0, height: 0 }
+    })
   }
 
   private getVideoMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {

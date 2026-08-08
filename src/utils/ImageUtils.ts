@@ -459,19 +459,4 @@ export const isImageFile = (file: File | string): boolean => {
   return imageExtensions.includes(extension || '')
 }
 
-/**
- * 格式化文件大小
- * @param bytes 字节数
- * @param decimals 小数位数
- */
-export const formatFileSize = (bytes: number, decimals: number = 2): string => {
-  if (bytes === 0) return '0 Bytes'
-
-  const k = 1024
-  const dm = decimals < 0 ? 0 : decimals
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-  return parseFloat((bytes / k ** i).toFixed(dm)) + ' ' + sizes[i]
-}
+// formatFileSize 已统一到 Formatting.formatBytes（见 src/utils/Formatting.ts）

@@ -140,9 +140,9 @@ const burnStats = ref({ totalBurned: 0, activeRooms: 0 })
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return t('setting.burn_after_read.formats.seconds', { count: String(seconds) })
-  if (seconds < 3600) return t('setting.burn_after_read.formats.minutes', { count: String(seconds / 60) })
-  if (seconds < 86400) return t('setting.burn_after_read.formats.hours', { count: String(seconds / 3600) })
-  return t('setting.burn_after_read.formats.days', { count: String(seconds / 86400) })
+  if (seconds < 3600) return t('setting.burn_after_read.formats.minutes', { count: String(Math.floor(seconds / 60)) })
+  if (seconds < 86400) return t('setting.burn_after_read.formats.hours', { count: String(Math.floor(seconds / 3600)) })
+  return t('setting.burn_after_read.formats.days', { count: String(Math.floor(seconds / 86400)) })
 }
 
 const durationOptions = computed(() => [

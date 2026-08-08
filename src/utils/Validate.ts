@@ -1,4 +1,5 @@
 import { useI18nGlobal } from '@/services/i18n'
+import { escapeHtml } from './escapeHtml'
 
 export const validateSpecialChar = (value: string, patten = /[!@#¥$%.&*^()_+=\-~]/) => patten.test(value)
 
@@ -116,15 +117,7 @@ export const validateRoomAlias = (value: string): { valid: boolean; message?: st
   return { valid: true }
 }
 
-export const sanitizeInput = (value: string): string => {
-  if (!value) return ''
-  return value
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;')
-}
+export const sanitizeInput = escapeHtml
 
 export const validateFileType = (value: string, allowedTypes: string[]): { valid: boolean; message?: string } => {
   const { t } = useI18nGlobal()
