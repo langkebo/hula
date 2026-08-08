@@ -864,40 +864,6 @@ export class MatrixAuthService {
     }
   }
 
-  static async getVersions(): Promise<{
-    versions: string[]
-    unstableFeatures: Record<string, boolean>
-  }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    if (matrixWorkerHost.isStarted) {
-      try {
-        const baseUrl = client.getHomeserverUrl()
-        const accessToken = client.getAccessToken() ?? undefined
-        const result = await matrixWorkerHost.getServerVersions(baseUrl, accessToken)
-        return {
-          versions: result.versions ?? [],
-          unstableFeatures: result.unstable_features ?? {}
-        }
-      } catch (err) {
-        throw normalizeSdkMatrixError(err, '获取服务器版本失败')
-      }
-    }
-
-    try {
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/_matrix/client/versions')
-      return {
-        versions: (result.versions as string[]) ?? [],
-        unstableFeatures: (result.unstable_features as Record<string, boolean>) ?? {}
-      }
-    } catch (err) {
-      throw normalizeSdkMatrixError(err, '获取服务器版本失败')
-    }
-  }
-
   static async getWellKnown(): Promise<Record<string, unknown>> {
     const client = matrixClientService.getClient()
     if (!client) {
