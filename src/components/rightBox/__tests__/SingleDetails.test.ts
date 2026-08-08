@@ -191,7 +191,8 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
     getClient: () => ({
       getDomain: () => 'matrix.test',
       getHomeserverUrl: () => 'https://matrix.test'
-    })
+    }),
+    getServerDomain: () => 'matrix.test'
   }
 }))
 
