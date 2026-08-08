@@ -163,7 +163,10 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
 
     try {
       const response = await nativeFetch(input as URL | Request | string, normalizedInit)
-      if (!response.ok && response.status !== 404) {
+      // 403 on presence endpoints is expected (user doesn't share a room with target);
+      // MatrixPresenceService handles it gracefully by returning offline.
+      const isExpectedForbidden = response.status === 403 && url.includes('/presence/')
+      if (!response.ok && response.status !== 404 && !isExpectedForbidden) {
         const method = normalizedInit?.method || 'GET'
         logger.warn(`nativeFetch ${method} ${url} -> ${response.status}`)
       }
