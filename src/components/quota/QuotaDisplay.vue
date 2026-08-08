@@ -5,7 +5,7 @@
         <div class="quota-progress">
           <n-progress type="line" :percentage="quotaPercentage" :status="progressStatus" :show-indicator="true" />
           <div class="quota-info">
-            <span>{{ formatSize(quotaUsed) }} / {{ formatSize(quotaLimit) }}</span>
+            <span>{{ formatBytes(quotaUsed) }} / {{ formatBytes(quotaLimit) }}</span>
           </div>
         </div>
 
@@ -41,6 +41,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuotaStore } from '@/stores/domains/admin/quota'
+import { formatBytes } from '@/utils/Formatting'
 
 const { t } = useI18n()
 
@@ -53,13 +54,7 @@ const progressStatus = computed(() => {
   return 'success'
 })
 
-function formatSize(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / k ** i).toFixed(2)) + ' ' + sizes[i]
-}
+// 统一使用 @/utils/Formatting 的 formatBytes
 
 function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleString()

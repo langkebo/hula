@@ -195,11 +195,17 @@ const {
     if (userStore.matrixProfile) {
       userStore.matrixProfile.avatarUrl = mxcUrl
     }
+    // 更新 userInfo.avatar（主界面头像组件读取此字段）
+    if (userStore.userInfo) {
+      userStore.userInfo.avatar = mxcUrl
+    }
     const historyItem = loginHistoriesStore.loginHistories.find((item) => item.uid === (userStore.userInfo?.uid ?? ''))
     if (historyItem) {
       historyItem.avatar = mxcUrl
     }
     updateCurrentUserCache('avatar', mxcUrl)
+    // 清除旧头像的 URL 缓存，确保下次解析使用最新 mxcResolver
+    AvatarUtils.clearCache()
   }
 })
 
@@ -216,7 +222,7 @@ const localUserInfo = ref<Partial<ModifyUserInfoType>>({
   phone: '',
   avatar: '',
   resume: '',
-  modifyNameChance: 0
+  modifyNameChance: -1
 } as ModifyUserInfoType)
 
 const syncLocalUserInfoFromStore = () => {

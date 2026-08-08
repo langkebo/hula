@@ -163,7 +163,7 @@
       </div>
     </div>
 
-    <n-card title="邀请权限管理" class="settings-card">
+    <n-card :title="t('setting.invite_permission.title')" class="settings-card">
       <InvitePermissionPanel />
     </n-card>
 
@@ -355,8 +355,10 @@ import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDial
 import InvitePermissionPanel from '@/components/settings/InvitePermissionPanel.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAccount } from '@/composables/user/useAccount'
+import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
@@ -507,12 +509,53 @@ const backupStatusText = computed(() => {
 })
 
 onMounted(async () => {
+  // P0-#3：安全设置窗口是独立 Tauri WebView，MatrixClientService 为新实例。
+  // ensureClientReady() 从后端存储的 token 重建客户端，内部通过 store 的
+  // loginWithToken → settlePostLoginStartup → startClient 完成客户端启动
+  // （含 Rust Crypto 初始化）。必须 await 确保整个流程完成后再加载数据。
+  logger.info('[SecuritySettings] onMounted 开始 — 独立 WebView 会话恢复流程启动')
+
+  // ── 步骤 1：ensureClientReady（从后端 token 重建客户端 + loginWithToken + startClient）──
+  logger.info('[SecuritySettings] 步骤 1/3: 调用 sessionOrchestrator.ensureClientReady()')
+  const t1 = Date.now()
+  try {
+    await sessionOrchestrator.ensureClientReady()
+    logger.info(`[SecuritySettings] 步骤 1/3 完成: ensureClientReady 成功 (${Date.now() - t1}ms)`)
+  } catch (err) {
+    logger.warn(
+      `[SecuritySettings] 步骤 1/3 失败: ensureClientReady 失败 (${Date.now() - t1}ms):`,
+      err instanceof Error ? err.message : String(err)
+    )
+  }
+
+  // ── 步骤 2：waitForClientReady（确保 MatrixClient 实例可用）──
+  logger.info('[SecuritySettings] 步骤 2/3: 调用 waitForClientReady({ timeoutMs: 15000 })')
+  const t2 = Date.now()
+  try {
+    await matrixClientService.waitForClientReady({ timeoutMs: 15000 })
+    const client = matrixClientService.getClient()
+    const userId = matrixClientService.getUserId()
+    const deviceId = client?.getDeviceId?.() ?? null
+    const cryptoReady = matrixClientService.isCryptoReady()
+    logger.info(
+      `[SecuritySettings] 步骤 2/3 完成: waitForClientReady 成功 (${Date.now() - t2}ms) — userId=${userId}, deviceId=${deviceId}, cryptoReady=${cryptoReady}`
+    )
+  } catch (err) {
+    logger.warn(
+      `[SecuritySettings] 步骤 2/3 失败: waitForClientReady 超时 (${Date.now() - t2}ms):`,
+      err instanceof Error ? err.message : String(err)
+    )
+  }
+
+  // ── 步骤 3：加载加密状态和用户数据 ──
+  logger.info('[SecuritySettings] 步骤 3/3: 加载加密状态与用户数据')
   await encryptionStore.loadEncryptionStatus()
   await loadIgnoredUsers()
   await loadBlockedUsers()
   loadInviteLists()
   await loadBackupInfo()
   loadPrivacySettings()
+  logger.info('[SecuritySettings] onMounted 全部完成')
 })
 
 async function loadBackupInfo() {

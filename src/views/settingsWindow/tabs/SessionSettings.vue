@@ -90,8 +90,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAccount } from '@/composables/user/useAccount'
+import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { type DeviceInfo, matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SessionSettings')
 
 defineOptions({
   name: 'SessionSettings'
@@ -121,6 +126,16 @@ const otherDevices = computed(() => {
 })
 
 onMounted(async () => {
+  // 独立 WebView 窗口需要先恢复 MatrixClient 实例，否则 getClient() 返回 null
+  // 导致 BaseMatrixService.getClient() 抛出 client_not_initialized 错误
+  logger.info('[SessionSettings] onMounted — 独立 WebView 会话恢复流程启动')
+  try {
+    await sessionOrchestrator.ensureClientReady()
+    await matrixClientService.waitForClientReady({ timeoutMs: 15000 })
+    logger.info('[SessionSettings] 会话恢复完成，开始加载设备列表')
+  } catch (err) {
+    logger.warn('[SessionSettings] 会话恢复失败:', err instanceof Error ? err.message : String(err))
+  }
   await loadDevices()
 })
 
@@ -129,6 +144,8 @@ async function loadDevices() {
   try {
     devices.value = await getDevices()
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    logger.error('[SessionSettings] 获取设备列表失败:', msg)
     showFeedback(t('setting.sessions.fetch_failed'), 'error')
   } finally {
     loading.value = false

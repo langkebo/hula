@@ -1,57 +1,65 @@
 <template>
-  <n-config-provider
-    :theme="naiveTheme"
-    data-tauri-drag-region
-    class="login-box size-full rounded-8px select-none flex flex-col overflow-hidden">
-    <ActionBar :max-w="false" :shrink="false" proxy class="shrink-0" />
+  <n-config-provider :theme="naiveTheme">
+    <div
+      data-tauri-drag-region
+      class="login-box rounded-8px select-none flex flex-col"
+      style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; box-sizing: border-box">
+      <ActionBar :max-w="false" :shrink="false" proxy class="shrink-0" />
 
-    <div class="flex-1 min-h-0 w-full overflow-hidden flex flex-col justify-center">
-      <ManualLoginForm
-        v-if="uiState === 'manual'"
-        v-model:login-info="loginInfo"
-        v-model:protocol="protocol"
-        v-model:homeserver-url="homeserverUrl"
-        :loading="loading"
-        :login-disabled="loginDisabled"
-        :login-text="loginText"
-        :login-status="loginStatus"
-        :last-login-error="lastLoginError"
-        @login="normalLogin('PC', true, false)"
-        @retry="retryLogin"
-        @open-service-agreement="openServiceAgreement"
-        @open-privacy-agreement="openPrivacyAgreement" />
+      <div
+        class="flex flex-col"
+        style="flex: 1 1 0%; min-height: 0; box-sizing: border-box; padding: 20px 32px; overflow: hidden">
+        <ManualLoginForm
+          v-if="uiState === 'manual'"
+          style="width: 100%"
+          v-model:login-info="loginInfo"
+          v-model:protocol="protocol"
+          v-model:homeserver-url="homeserverUrl"
+          :loading="loading"
+          :login-disabled="loginDisabled"
+          :login-text="loginText"
+          :login-status="loginStatus"
+          :last-login-error="lastLoginError"
+          @login="normalLogin('PC', true, false)"
+          @retry="retryLogin"
+          @open-service-agreement="openServiceAgreement"
+          @open-privacy-agreement="openPrivacyAgreement" />
 
-      <AutoLoginForm
-        v-else-if="uiState === 'auto'"
-        :loading="loading"
-        :login-disabled="loginDisabled"
-        :login-text="loginText"
-        :user-info="userStore.userInfo"
-        @login="triggerAutoLogin" />
+        <AutoLoginForm
+          v-else-if="uiState === 'auto'"
+          :loading="loading"
+          :login-disabled="loginDisabled"
+          :login-text="loginText"
+          :user-info="userStore.userInfo"
+          @login="triggerAutoLogin" />
 
-      <div v-if="uiState !== 'auto'" class="w-full pb-12px pt-4px shrink-0">
-        <ThirdPartyLogin :login-context="loginContext" />
+        <div v-if="uiState !== 'auto'" class="w-full flex justify-center shrink-0" style="margin-top: 18px">
+          <ThirdPartyLogin :login-context="loginContext" />
+        </div>
+
+        <LoginBottomBar
+          class="shrink-0 w-full"
+          style="margin-top: 18px"
+          :mode="uiState"
+          @switch-to-qr="router.push('/qrCode')"
+          @cancel-auto-login="cancelAutoLoginAndShowManual"
+          @remove-account="removeStoredAccount"
+          @open-register="router.push('/register')"
+          @open-forget-password="createWebviewWindow(t('login.option.items.forget'), 'forgetPassword', 600, 600)"
+          @open-server-config="showServerConfig = true" />
       </div>
+
+      <ServerConfigModal
+        v-model:show="showServerConfig"
+        v-model:homeserver-url="homeserverUrl"
+        v-model:identity-server-url="identityServerUrl" />
     </div>
-
-    <LoginBottomBar
-      class="shrink-0 pb-16px px-20px"
-      :mode="uiState"
-      @switch-to-qr="router.push('/qrCode')"
-      @cancel-auto-login="cancelAutoLoginAndShowManual"
-      @remove-account="removeStoredAccount"
-      @open-register="router.push('/register')"
-      @open-forget-password="createWebviewWindow(t('login.option.items.forget'), 'forgetPassword', 600, 600)"
-      @open-server-config="showServerConfig = true" />
-
-    <ServerConfigModal
-      v-model:show="showServerConfig"
-      v-model:homeserver-url="homeserverUrl"
-      v-model:identity-server-url="identityServerUrl" />
   </n-config-provider>
 </template>
 
 <script setup lang="ts">
+import { LogicalSize } from '@tauri-apps/api/dpi'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { darkTheme, lightTheme } from 'naive-ui'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -59,6 +67,7 @@ import { useWindow } from '@/composables/common/useWindow'
 import router from '@/router'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { isDesktop } from '@/utils/PlatformConstants'
 import AutoLoginForm from './AutoLoginForm.vue'
 import LoginBottomBar from './LoginBottomBar.vue'
 import ManualLoginForm from './ManualLoginForm.vue'
@@ -109,6 +118,13 @@ onBeforeMount(async () => {
 
 onMounted(async () => {
   await mount()
+  // 显式设置窗口尺寸为 420x580（按原型 TJG-prototype.html），覆盖 tauri-plugin-window-state 恢复的旧尺寸
+  if (isDesktop()) {
+    try {
+      const win = getCurrentWindow()
+      await win.setSize(new LogicalSize(420, 580))
+    } catch (e) {}
+  }
 })
 
 onUnmounted(() => {
@@ -116,7 +132,7 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped lang="scss">
+<style lang="scss">
 @use '@/styles/scss/global/login-bg';
 @use '@/styles/scss/login';
 </style>

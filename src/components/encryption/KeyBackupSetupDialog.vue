@@ -204,7 +204,7 @@ async function startSetup() {
 function copyKey() {
   navigator.clipboard
     .writeText(recoveryKey.value)
-    .then(() => showFeedback(t('encryption.backup.copy_success'), 'success'))
+    .then(() => showFeedback(t('encryption.backup_setup_dialog.copy_success'), 'success'))
     .catch(() => showFeedback(t('encryption.backup_setup_dialog.copy_manual'), 'error'))
 }
 
@@ -218,7 +218,7 @@ function downloadKey() {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
-  showFeedback(t('encryption.backup.download_success'), 'success')
+  showFeedback(t('encryption.backup_setup_dialog.download_success'), 'success')
 }
 
 async function confirmSetup() {
@@ -255,7 +255,19 @@ async function verifyKeyInput() {
 
   loading.value = true
   try {
-    const backupInfo = await encryption.getKeyBackupInfo()
+    // P0-#3：校验前确保客户端已就绪，避免冷启动时「未就绪」报错
+    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+    // SSSS 上传和 key backup 创建是后台异步的，验证时备份可能还没创建好
+    // 增加重试逻辑：最多重试 3 次，每次间隔 1.5s（总计最多 3s）
+    let backupInfo = null
+    for (let attempt = 0; attempt < 3; attempt++) {
+      backupInfo = await encryption.getKeyBackupInfo()
+      if (backupInfo) break
+      if (attempt < 2) {
+        logger.info(`[KeyBackupSetup] 验证重试 ${attempt + 1}/3 — 备份尚未就绪，等待 1.5s`)
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+      }
+    }
     if (backupInfo) {
       step.value = 'success'
       showFeedback(t('encryption.backup_setup_dialog.verify_success'), 'success')

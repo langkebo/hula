@@ -1,5 +1,6 @@
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useClipboard } from '@/composables/common/useClipboard'
 import { useMitt } from '@/composables/common/useMitt'
 import { MarkEnum, MittEnum } from '@/enums'
 import { matrixEventService } from '@/services/matrix/MatrixEventService'
@@ -25,6 +26,7 @@ const logger = createLogger('MessageActionHandlers')
 export function useMessageActionHandlers() {
   const { t } = useI18n()
   const { showFeedback } = useActionFeedback()
+  const { write: writeClipboard } = useClipboard()
   const chatStore = useChatStore()
 
   /** 回复：触发回复事件 */
@@ -40,7 +42,7 @@ export function useMessageActionHandlers() {
       return
     }
     try {
-      await navigator.clipboard.writeText(text)
+      await writeClipboard(text)
       showFeedback(t('message.copy_success'), 'success')
     } catch (err) {
       logger.error('复制失败:', err)

@@ -1,7 +1,7 @@
 import { nextTick, onMounted, type Ref } from 'vue'
 import { sanitizeMessageInputHtml } from '@/composables/chat/sanitizeInputHtml'
 import { useMitt } from '@/composables/common/useMitt'
-import { MittEnum, MsgEnum } from '@/enums'
+import { MittEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { createLogger } from '@/utils/Logger'
 import { getReplyContent } from '@/utils/MessageReply.ts'
@@ -29,10 +29,7 @@ interface UseMsgInputEventsOptions {
   aiKeyword: Ref<string>
   groupStore: GroupStoreLike
   focusOn: (el: HTMLElement) => void
-  insertNode: (type: MsgEnum, payload: Record<string, unknown>, container: HTMLElement) => void
   triggerInputEvent: (el: HTMLElement) => void
-  getEditorRange: () => { range: Range; selection: Selection } | null
-  updateSelectionRange: (snapshot: { range: Range; selection: Selection } | null) => void
 }
 
 /**
@@ -50,10 +47,7 @@ export const useMsgInputEvents = ({
   aiKeyword,
   groupStore,
   focusOn,
-  insertNode,
-  triggerInputEvent,
-  getEditorRange,
-  updateSelectionRange
+  triggerInputEvent
 }: UseMsgInputEventsOptions) => {
   const onReEdit = async (event: string) => {
     messageInputDom.value.focus()
@@ -80,9 +74,6 @@ export const useMsgInputEvents = ({
 
       focusOn(messageInputDom.value)
 
-      const existingReplyDiv = document.getElementById('replyDiv')
-      existingReplyDiv?.remove()
-
       reply.value = { avatar: '', imgCount: 0, accountName: '', content: '', key: 0 }
 
       const content = getReplyContent(event.message)
@@ -94,15 +85,13 @@ export const useMsgInputEvents = ({
         key: event.message.id
       }
 
+      // 回复预览交由 ReplyComposer.vue 渲染（绑定 reply ref），此处不再注入 DOM
       nextTick().then(() => {
         try {
           focusOn(messageInputDom.value)
-          insertNode(MsgEnum.REPLY, { avatar, accountName, content: reply.value.content }, {} as HTMLElement)
-          updateSelectionRange(getEditorRange())
-          focusOn(messageInputDom.value)
           triggerInputEvent(messageInputDom.value)
         } catch (err) {
-          logger.error('插入回复框时错误:', err)
+          logger.error('回复框聚焦时错误:', err)
         }
       })
     } catch (err) {

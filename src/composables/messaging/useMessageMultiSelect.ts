@@ -3,6 +3,7 @@ import type { MaybeRef } from 'vue'
 import { computed, ref, unref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useClipboard } from '@/composables/common/useClipboard'
 import { useMessageForward } from '@/composables/messaging/useMessageForward'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -39,6 +40,7 @@ interface BatchForwardTarget {
 export function useMessageMultiSelect(options: UseMessageMultiSelectOptions) {
   const { t } = useI18n()
   const { showFeedback } = useActionFeedback()
+  const { write: writeClipboard } = useClipboard()
   const chatStore = useChatStore()
 
   // 集成 useMessageForward,供 batchForward 注入首条已选消息事件
@@ -132,7 +134,7 @@ export function useMessageMultiSelect(options: UseMessageMultiSelectOptions) {
         showFeedback(t('mobile_chat.multi_select.copy_failed'), 'error')
         return false
       }
-      await navigator.clipboard.writeText(text)
+      await writeClipboard(text)
       showFeedback(t('mobile_chat.multi_select.copy_success'), 'success')
       logger.info(`[batchCopy] 复制 ${selectedMessages.value.length} 条消息`)
       return true

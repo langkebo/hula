@@ -323,6 +323,8 @@ watch(
 async function loadBackupStatus() {
   statusLoading.value = true
   try {
+    // P0-#3：对话框在冷启动时可能早于客户端就绪打开，先等待就绪再查备份状态
+    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
     const info = await encryption.getKeyBackupInfo()
     if (info?.version) {
       backupExists.value = true

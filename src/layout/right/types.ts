@@ -16,20 +16,3 @@ export type RightViewType =
   | 'applyList'
   | 'spaceChildren'
   | 'chat'
-
-export const RIGHT_VIEW_TYPES: ReadonlyArray<RightViewType> = [
-  'empty',
-  'details',
-  'search',
-  'addFriend',
-  'createRoom',
-  'joinRoom',
-  'createSpace',
-  'applyList',
-  'spaceChildren',
-  'chat'
-]
-
-export function isRightViewType(value: unknown): value is RightViewType {
-  return typeof value === 'string' && (RIGHT_VIEW_TYPES as string[]).includes(value)
-}

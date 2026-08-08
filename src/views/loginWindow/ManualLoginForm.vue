@@ -1,6 +1,11 @@
 <template>
-  <n-flex vertical :size="16">
-    <n-flex justify="center" class="w-full pt-8px" data-tauri-drag-region>
+  <div
+    class="login-form-root"
+    style="display: flex; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box">
+    <div
+      class="login-avatar-row"
+      data-tauri-drag-region
+      style="display: flex; justify-content: center; width: 100%; margin: 8px 0 20px; box-sizing: border-box">
       <div class="login-avatar-wrap relative">
         <n-avatar
           class="welcome size-80px rounded-50% border-(3px solid [--login-avatar-border])"
@@ -9,9 +14,11 @@
           :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
           :src="AvatarUtils.getAvatarUrl(loginInfo.avatar)" />
       </div>
-    </n-flex>
+    </div>
 
-    <n-flex class="ma text-center w-340px" vertical :size="12">
+    <div
+      class="login-form-body"
+      style="display: flex; flex-direction: column; gap: 14px; width: 300px; max-width: 100%; box-sizing: border-box">
       <!-- 服务器地址（家服务）输入框 -->
       <div class="homeserver-wrap">
         <n-input
@@ -42,7 +49,7 @@
             </svg>
           </template>
           <template #suffix>
-            <n-flex
+            <div
               class="cursor-pointer color-[--tjg-text-secondary]"
               :title="t('login.input.homeserver.toggle_title')"
               @click="showServerAdvanced = !showServerAdvanced">
@@ -58,7 +65,7 @@
                 aria-hidden="true">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
-            </n-flex>
+            </div>
           </template>
         </n-input>
         <!-- 高级服务器设置折叠提示 -->
@@ -96,24 +103,23 @@
         autoCapitalize="off"
         clearable>
         <template #suffix>
-          <n-flex v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
+          <div v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
             <svg v-if="!arrowStatus" class="down w-18px h-18px color-[--tjg-text-secondary] cursor-pointer">
               <use href="#down"></use>
             </svg>
             <svg v-else class="down w-18px h-18px color-[--tjg-text-secondary] cursor-pointer">
               <use href="#up"></use>
             </svg>
-          </n-flex>
+          </div>
         </template>
       </n-input>
 
       <div
-        style="border: 1px solid var(--login-dropdown-border)"
         v-if="loginHistories.length > 0 && arrowStatus"
-        class="account-box absolute w-340px max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border">
+        class="account-box absolute max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border"
+        style="width: 100%; max-width: 340px; border: 1px solid var(--login-dropdown-border)">
         <n-scrollbar style="max-height: 120px" trigger="none">
-          <n-flex
-            vertical
+          <div
             v-for="item in loginHistories"
             :key="item.account"
             @click="giveAccount(item)"
@@ -128,7 +134,7 @@
                 <use href="#close"></use>
               </svg>
             </div>
-          </n-flex>
+          </div>
         </n-scrollbar>
       </div>
 
@@ -149,7 +155,7 @@
         @blur="passwordPH = t('login.input.pass.placeholder')"
         clearable />
 
-      <n-flex align="center" justify="center" :size="6">
+      <div class="protocol-row">
         <n-checkbox v-model:checked="protocol" :aria-label="t('login.term.checkout.text1')" />
         <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px agreement">
           <span>{{ t('login.term.checkout.text1') }}</span>
@@ -161,12 +167,11 @@
             {{ t('login.term.checkout.text4') }}
           </span>
         </div>
-      </n-flex>
+      </div>
 
       <n-button
         :loading="loading"
         :disabled="loginDisabled"
-        tertiary
         style="color: var(--tjg-text-inverse)"
         class="gradient-button w-full mt-4px mb-4px"
         @click="emit('login')">
@@ -179,8 +184,8 @@
           {{ t('login.status.retry') }}
         </n-button>
       </div>
-    </n-flex>
-  </n-flex>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -285,14 +290,52 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* homeserver-wrap 仅作为输入框 + 折叠提示的容器，不加背景/边框/padding，
-   保证内部 n-input 与账号/密码输入框完全对齐（与原型 .auth-input-wrap 一致） */
+/* 根容器：flex 列布局，子元素水平居中 */
+.login-form-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 头像行：居中 */
+.login-avatar-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* 表单主体：固定宽度 300px（按原型 auth-form max-width），由父容器 align-items: center 居中 */
+.login-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 300px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 确保表单内的 n-input 填满父容器宽度 */
+.login-form-body :deep(.n-input) {
+  width: 100%;
+}
+
+/* homeserver-wrap 仅作为输入框 + 折叠提示的容器 */
 .homeserver-wrap {
   position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
   gap: 4px;
+}
+
+/* 协议行 */
+.protocol-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .login-error-retry__message {

@@ -3,11 +3,7 @@
     v-model:show="infoShow"
     :placement="shrinkStatus ? 'bottom-start' : 'right-start'"
     :show-arrow="false"
-    style="
-      padding: 0;
-      background: color-mix(in srgb, var(--tjg-surface-elevated) 20%, transparent);
-      backdrop-filter: blur(10px);
-    "
+    style="padding: 0; background: var(--tjg-surface-panel)"
     trigger="click">
     <template #trigger>
       <!-- 头像 -->
@@ -21,46 +17,23 @@
           @click.stop="openContent(t('home.profile_card.online_status'), 'onlineStatus', 320, 480)" />
       </div>
     </template>
-    <!-- 用户个人信息框 -->
-    <n-flex
-      :size="26"
-      :style="`background: linear-gradient(to bottom, ${statusBgColor} 0%, ${themeColor} 100%)`"
-      class="size-full p-15px box-border rounded-8px"
-      vertical>
-      <!-- 头像以及信息区域 -->
-      <n-flex :size="25" align="center" justify="start" class="select-none cursor-default">
-        <n-flex>
-          <TjgAvatar
-            :src="userStore.userInfo?.avatar"
-            :size="68"
-            :name="userStore.userInfo?.name"
-            round
-            class="text-[var(--text-xl)] select-none cursor-default" />
 
-          <n-flex :size="10" class="text-[--tjg-text-primary]" justify="center" vertical>
-            <span class="text-[var(--text-lg)]">{{ userStore.userInfo?.name }}</span>
-            <span class="text-[var(--text-sm)] text-[--info-text-color]">
-              {{ t('home.profile_card.labels.account') }} {{ userStore.userInfo?.account }}
-            </span>
-            <n-flex
-              :size="5"
-              align="center"
-              class="item-hover ml--4px"
-              @click="openContent(t('home.profile_card.online_status'), 'onlineStatus', 320, 480)">
-              <img :src="statusIcon" :alt="statusTitle" class="rounded-50% size-18px" />
-              <span>{{ statusTitle }}</span>
-            </n-flex>
-          </n-flex>
-        </n-flex>
-      </n-flex>
-      <!-- 地址 -->
-      <n-flex :size="26" class="select-none">
-        <span class="text-[--info-text-color]">{{ t('home.profile_card.labels.location') }}</span>
-        <span>{{ currentUserLocation || t('home.profile_card.location_unknown') }}</span>
-      </n-flex>
-      <n-flex :size="40" align="center" justify="center">
-        <n-button secondary @click="handleEditing">{{ t('home.profile_card.buttons.edit') }}</n-button>
-      </n-flex>
+    <!-- 用户个人信息框：复用已增强的资料卡（扩展资料 / 四态在线 / 复制反馈 / a11y） -->
+    <n-flex vertical :size="0" class="min-w-[284px]">
+      <!-- 资料卡撑满容器宽度，使顶部绿色横幅与下方退出登录按钮等宽 -->
+      <InfoPopover v-if="userStore.userInfo?.uid" :uid="userStore.userInfo.uid" class="!w-full" />
+
+      <!-- 账号操作层：仅保留「退出登录」（设置 / 锁屏 / 关于已由导航栏底部入口覆盖） -->
+      <div class="mt-8px pt-10px border-t-(1px solid [--tjg-surface-subtle]) px-10px pb-8px">
+        <button
+          type="button"
+          class="flex items-center justify-center gap-8px w-full px-8px py-9px rounded-8px text-(13px [--tjg-text-secondary]) font-medium cursor-pointer outline-none transition-colors duration-150 hover:bg-[--tjg-color-danger-50] hover:text-[--tjg-color-danger-500] focus-visible:bg-[--tjg-color-danger-50] focus-visible:text-[--tjg-color-danger-500] active:bg-[--tjg-color-danger-100]"
+          :aria-label="t('menu.sign_out')"
+          @click="handleLogout">
+          <svg class="size-16px shrink-0" aria-hidden="true"><use href="#power" /></svg>
+          <span>{{ t('menu.sign_out') }}</span>
+        </button>
+      </div>
     </n-flex>
   </n-popover>
 
@@ -73,28 +46,42 @@
     @item-click="handleMenuItemClick" />
 </template>
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TjgAvatar from '@/components/atomic/TjgAvatar.vue'
+import InfoPopover from '@/components/common/InfoPopover.vue'
 import UserMenuDropdown from '@/components/userMenu/UserMenuDropdown.vue'
 import { useUserMenu } from '@/components/userMenu/useUserMenu'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useOnlineStatus } from '@/composables/common/useOnlineStatus'
-import { useGroupStore } from '@/stores/domains/chat/group'
+import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { useUserStore } from '@/stores/domains/user/user'
+import { createLogger } from '@/utils/Logger'
 import { leftHook } from '../hook.ts'
 
+const logger = createLogger('LeftAvatar')
+
 const userStore = useUserStore()
-const groupStore = useGroupStore()
 const { t } = useI18n()
-const currentUserLocation = computed(() => {
-  const uid = userStore.userInfo?.uid
-  if (!uid) return ''
-  return ((groupStore.getUserInfo(uid) as unknown as Record<string, unknown> | undefined)?.locPlace as string) ?? ''
-})
-const { shrinkStatus, infoShow, themeColor, openContent, handleEditing } = leftHook()
-const { statusIcon, statusTitle, statusBgColor, isOnline } = useOnlineStatus()
+const { showFeedback } = useActionFeedback()
+const { logout } = useLoginFlow()
+const { shrinkStatus, infoShow, openContent } = leftHook()
+const { isOnline, statusTitle } = useOnlineStatus()
 
 const { isOpen: isMenuOpen, position: menuPosition, openMenu, closeMenu, handleMenuItemClick } = useUserMenu()
+
+/** 关闭本人资料卡 */
+const close = () => {
+  infoShow.value = false
+}
+
+const handleLogout = async () => {
+  try {
+    await logout()
+  } catch (error) {
+    logger.error('[LeftAvatar] 退出登录失败:', error)
+    showFeedback(t('menu.sign_out_failed'), 'error')
+  }
+}
 
 function handleAvatarContextMenu(event: MouseEvent) {
   event.preventDefault()

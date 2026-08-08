@@ -81,15 +81,6 @@ if (process.env.NODE_ENV === 'development') {
   }
 }
 
-export const forceUpdateMessageTop = (topValue: number) => {
-  const messages = document.querySelectorAll('.n-message-container.n-message-container--top')
-
-  messages.forEach((el) => {
-    const dom = el as HTMLElement
-    dom.style.top = `${topValue}px`
-  })
-}
-
 if (isMobile()) {
   if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', setup)

@@ -9,6 +9,18 @@
         <n-tag v-if="isChannel" size="small" type="success" :bordered="false">
           {{ t('home.chat_header.channel') }}
         </n-tag>
+        <span
+          v-if="isFederated"
+          class="federation-icon"
+          :title="federationTitle"
+          role="img"
+          :aria-label="t('home.chat_header.federated')">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.93 6h-2.95a15.7 15.7 0 0 0-1.38-3.56A8 8 0 0 1 18.93 8ZM12 4.26c.83 1.2 1.48 2.53 1.91 3.94h-3.82c.43-1.41 1.08-2.74 1.91-3.94ZM4.26 14a7.96 7.96 0 0 1 0-4h3.38a16.6 16.6 0 0 0 0 4H4.26Zm.81 2h2.95c.33 1.27.8 2.47 1.38 3.56A8 8 0 0 1 5.07 16Zm2.95-8H5.07a8 8 0 0 1 4.33-3.56A15.7 15.7 0 0 0 8.02 8ZM12 19.74c-.83-1.2-1.48-2.53-1.91-3.94h3.82A13.5 13.5 0 0 1 12 19.74ZM14.34 14H9.66a14.8 14.8 0 0 1 0-4h4.68a14.8 14.8 0 0 1 0 4Zm.27 5.56c.58-1.09 1.05-2.29 1.38-3.56h2.95a8 8 0 0 1-4.33 3.56ZM16.36 14a16.6 16.6 0 0 0 0-4h3.38a7.96 7.96 0 0 1 0 4h-3.38Z" />
+          </svg>
+        </span>
       </div>
 
       <div class="status-row">
@@ -63,7 +75,15 @@ const props = defineProps<{
   hotFlag?: IsAllUserEnum
   encryptionStatus?: RoomEncryptionStatus | null
   roomId?: string
+  isFederated?: boolean
+  federationServer?: string
 }>()
+
+const federationTitle = computed(() =>
+  props.federationServer
+    ? t('home.chat_header.federated_tooltip', { server: props.federationServer })
+    : t('home.chat_header.federated')
+)
 
 const { t } = useI18n()
 
@@ -162,6 +182,19 @@ const handleClick = () => {
 .status-icon {
   width: 14px;
   height: 14px;
+}
+
+.federation-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tjg-text-tertiary);
+  cursor: help;
+  transition: color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+
+  &:hover {
+    color: var(--tjg-text-secondary);
+  }
 }
 
 .security-status {

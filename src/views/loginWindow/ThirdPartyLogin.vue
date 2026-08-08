@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-x-center gap-28px mt-16px">
+  <div class="flex-x-center gap-28px mt-12px">
     <div
       v-for="item in ssoOptions"
       :key="item.key"

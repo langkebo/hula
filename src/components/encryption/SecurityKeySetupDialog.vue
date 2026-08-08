@@ -143,7 +143,7 @@ import { NButton, NCheckbox, NForm, NFormItem, NInput, NModal, NSpin } from 'nai
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { createLogger } from '@/utils/Logger'
 
@@ -253,44 +253,79 @@ function resetState() {
 
 async function startSetup(mode: SetupMode) {
   setupMode.value = mode
+  logger.info(`[SecurityKeySetup] startSetup 开始 — mode=${mode}`)
 
-  // Validate passphrase mode input
+  // ── 步骤 A：参数校验（仅 passphrase 模式）──
   if (mode === 'passphrase') {
+    logger.info('[SecurityKeySetup] 步骤 A: 校验 passphrase')
     if (passphraseForm.passphrase.length < 8) {
+      logger.warn('[SecurityKeySetup] 步骤 A 失败: passphrase 长度不足')
       showFeedback(t('encryption.security_key.passphrase_too_short'), 'error')
       return
     }
     if (passphraseForm.passphrase !== passphraseForm.confirmPassphrase) {
+      logger.warn('[SecurityKeySetup] 步骤 A 失败: passphrase 不匹配')
       showFeedback(t('encryption.security_key.passphrase_mismatch'), 'error')
       return
     }
+    logger.info('[SecurityKeySetup] 步骤 A 通过: passphrase 校验成功')
   }
 
   loading.value = true
   step.value = 'generating'
 
+  // ── 步骤 B：等待 MatrixClient 就绪 ──
+  logger.info('[SecurityKeySetup] 步骤 B: 调用 waitForClientReady({ timeoutMs: 30000 })')
+  const tB = Date.now()
   try {
-    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+    await matrixClientService.waitForClientReady({ timeoutMs: 30000 })
+    const client = matrixClientService.getClient()
+    const crypto = cryptoSDKAdapter.getCrypto()
+    const cryptoMethods = crypto
+      ? Object.keys(crypto as object).filter(
+          (k) => typeof (crypto as unknown as Record<string, unknown>)[k] === 'function'
+        )
+      : []
+    logger.info(
+      `[SecurityKeySetup] 步骤 B 完成: waitForClientReady 成功 (${Date.now() - tB}ms) — userId=${client?.getUserId?.()}, deviceId=${client?.getDeviceId?.()}, crypto=${crypto ? '可用' : '不可用'}`
+    )
+    if (!crypto) {
+      logger.error(
+        '[SecurityKeySetup] 步骤 B 警告: getCrypto() 返回 null — Rust Crypto 未初始化，后续 setupKeyBackupWithOptions 将失败'
+      )
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    logger.error(`[SecurityKeySetup] 步骤 B 失败: waitForClientReady 超时 (${Date.now() - tB}ms): ${msg}`)
+    showFeedback(t('encryption.security_key.create_failed'), 'error')
+    step.value = mode === 'passphrase' ? 'passphrase' : 'intro'
+    loading.value = false
+    return
+  }
 
-    // Use standard Matrix SSSS: createRecoveryKeyFromPassphrase
-    // This handles PBKDF2 key derivation on the client side (spec-compliant)
-    const password = mode === 'passphrase' ? passphraseForm.passphrase : undefined
-    const recoveryKeyResult = await matrixCryptoService.createRecoveryKeyFromPassphrase(password)
+  // ── 步骤 C：调用 setupKeyBackupWithOptions 生成安全密钥 ──
+  const input = mode === 'passphrase' ? { password: passphraseForm.passphrase } : undefined
+  logger.info(
+    `[SecurityKeySetup] 步骤 C: 调用 cryptoSDKAdapter.setupKeyBackupWithOptions — input=${input ? 'password(已隐藏)' : 'undefined(generate模式)'}`
+  )
+  const tC = Date.now()
+  try {
+    const encodedPrivateKey = await cryptoSDKAdapter.setupKeyBackupWithOptions(input)
+    logger.info(
+      `[SecurityKeySetup] 步骤 C 完成: setupKeyBackupWithOptions 成功 (${Date.now() - tC}ms) — keyLength=${encodedPrivateKey?.length ?? 0}`
+    )
 
-    if (recoveryKeyResult) {
-      recoveryKey.value = recoveryKeyResult.encodedPrivateKey
-      if (mode === 'passphrase') {
-        // For passphrase mode, skip showing the key and go directly to verify
-        step.value = 'verify'
-      } else {
-        step.value = 'showKey'
-      }
+    recoveryKey.value = encodedPrivateKey
+    if (mode === 'passphrase') {
+      step.value = 'verify'
+      logger.info('[SecurityKeySetup] 进入 verify 步骤（passphrase 模式）')
     } else {
-      showFeedback(t('encryption.security_key.create_failed'), 'error')
-      step.value = mode === 'passphrase' ? 'passphrase' : 'intro'
+      step.value = 'showKey'
+      logger.info('[SecurityKeySetup] 进入 showKey 步骤（generate 模式）')
     }
   } catch (error) {
-    logger.error('Failed to create security key:', error instanceof Error ? error.message : String(error))
+    const msg = error instanceof Error ? error.message : String(error)
+    logger.error(`[SecurityKeySetup] 步骤 C 失败: setupKeyBackupWithOptions 失败 (${Date.now() - tC}ms): ${msg}`)
     showFeedback(t('encryption.security_key.create_failed'), 'error')
     step.value = mode === 'passphrase' ? 'passphrase' : 'intro'
   } finally {

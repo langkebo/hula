@@ -22,8 +22,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 
-const { getThread } = matrixThreadService
-
 const { t } = useI18n()
 
 const props = defineProps<{
@@ -40,7 +38,7 @@ const replyCount = ref(0)
 const hasReplies = computed(() => replyCount.value > 0)
 
 const loadThreadInfo = () => {
-  const thread = getThread(props.roomId, props.eventId)
+  const thread = matrixThreadService.getThread(props.roomId, props.eventId)
   if (thread) {
     replyCount.value = thread.replyCount
   }

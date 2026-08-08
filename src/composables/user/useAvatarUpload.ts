@@ -1,5 +1,5 @@
-import { convertFileSrc } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
+import { readFile } from '@tauri-apps/plugin-fs'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
@@ -77,11 +77,24 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
       if (!selected) return
 
       const filePath = typeof selected === 'string' ? selected : (selected as string)
+      logger.info('[AVATAR_DEBUG] Tauri file selected:', filePath)
 
-      // 直接使用 convertFileSrc 将本地路径转为 WebView 可访问的 asset URL
-      // vue-cropper 的 img 属性支持 URL，无需手动读取文件内容
-      const assetUrl = convertFileSrc(filePath)
-      localImageUrl.value = assetUrl
+      // 读取文件内容并转为 data URL（data URL 内嵌，不依赖 blob: 机制，Tauri webview 兼容性更好）
+      const bytes = await readFile(filePath)
+      const mime = filePath.toLowerCase().endsWith('.png')
+        ? 'image/png'
+        : filePath.toLowerCase().endsWith('.webp')
+          ? 'image/webp'
+          : 'image/jpeg'
+      const blob = new Blob([bytes], { type: mime })
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(new Error('FileReader 读取失败'))
+        reader.readAsDataURL(blob)
+      })
+      logger.info('[AVATAR_DEBUG] data URL created, length:', dataUrl.length, 'mime:', mime)
+      localImageUrl.value = dataUrl
       nextTick(() => {
         showCropper.value = true
       })
@@ -105,15 +118,29 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
   // 处理从头像库选择的头像：将 webp 转为 blob 后通过 Matrix 媒体上传
   const handleGallerySelect = async (avatarUrl: string) => {
     try {
+      logger.info('[AVATAR_DEBUG] gallery select:', avatarUrl)
       const response = await fetch(avatarUrl)
+      logger.info('[AVATAR_DEBUG] fetch status:', response.status, response.statusText)
       const blob = await response.blob()
+      logger.info('[AVATAR_DEBUG] blob size:', blob.size, 'type:', blob.type)
       const file = new File([blob], `avatar_${Date.now()}.webp`, { type: 'image/webp' })
+      logger.info('[AVATAR_DEBUG] file created, size:', file.size)
       const uploadResult = await matrixMediaService.uploadImage(file)
+      logger.info('[AVATAR_DEBUG] upload success, mxc:', uploadResult.contentUri)
       const mxcUrl = uploadResult.contentUri
       if (onSuccess) onSuccess(mxcUrl)
       showGallery.value = false
     } catch (error) {
-      logger.error('Gallery avatar upload failed:', error)
+      const errInfo = {
+        name: error instanceof Error ? error.name : 'unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        cause: error instanceof Error ? error.cause : undefined,
+        errcode: (error as { errcode?: string })?.errcode,
+        httpStatus: (error as { httpStatus?: number })?.httpStatus,
+        data: (error as { data?: unknown })?.data
+      }
+      logger.error('[AVATAR_DEBUG] gallery upload failed:', errInfo)
       showFeedback(t('hooks.avatar_upload.upload_failed'), 'error')
     }
   }

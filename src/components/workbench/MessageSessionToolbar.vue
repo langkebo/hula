@@ -64,6 +64,20 @@
           {{ filter.label }}
         </n-button>
       </n-flex>
+
+      <n-flex :size="4" wrap>
+        <n-button
+          v-for="filter in typeFilterOptions"
+          :key="filter.value"
+          :type="sessionTypeFilter === filter.value ? 'primary' : 'default'"
+          :aria-pressed="sessionTypeFilter === filter.value"
+          size="tiny"
+          quaternary
+          class="message-session-toolbar__filter message-session-toolbar__filter--type"
+          @click="handleTypeFilter(filter.value)">
+          {{ filter.label }}
+        </n-button>
+      </n-flex>
     </n-flex>
     <n-divider style="margin: 0" />
   </div>
@@ -76,6 +90,7 @@ import { useI18n } from 'vue-i18n'
 import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import {
   WORKBENCH_SESSION_ENGAGEMENT_FILTERS,
+  WORKBENCH_SESSION_TYPE_FILTERS,
   type WorkbenchSessionEngagementFilter,
   type WorkbenchSessionSort,
   type WorkbenchSessionTypeFilter
@@ -118,6 +133,17 @@ const filterOptions = computed(() => [
   { value: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.unread, label: t('space.engagement_unread') },
   { value: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.mention, label: t('space.engagement_mention') }
 ])
+
+// 原型对齐项 #1：补「群聊 / 单人」类型过滤（sessionTypeFilter 维度，此前仅定义未渲染）
+const typeFilterOptions = computed(() => [
+  { value: WORKBENCH_SESSION_TYPE_FILTERS.group, label: t('space.type_group') },
+  { value: WORKBENCH_SESSION_TYPE_FILTERS.single, label: t('space.type_single') }
+])
+
+// 再次点击已激活的类型按钮则重置为 all（toggle 语义）
+const handleTypeFilter = (value: WorkbenchSessionTypeFilter) => {
+  emit('update:sessionTypeFilter', props.sessionTypeFilter === value ? WORKBENCH_SESSION_TYPE_FILTERS.all : value)
+}
 
 const resolvedTitle = computed(() => props.title || t('home.action.message_short_title', '消息'))
 

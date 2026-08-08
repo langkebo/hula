@@ -290,6 +290,7 @@ import { I18nT, useI18n } from 'vue-i18n'
 import MobileListManagementDialog from '#/views/chat-room/MobileListManagementDialog.vue'
 import MobileRoomUpgradeDialog from '#/views/chat-room/MobileRoomUpgradeDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useClipboard } from '@/composables/common/useClipboard'
 import { useMitt } from '@/composables/common/useMitt'
 import { useMyRoomInfoUpdater } from '@/composables/room/useMyRoomInfoUpdater'
 import { useRoomListManagement } from '@/composables/room/useRoomListManagement'
@@ -313,6 +314,7 @@ import { createLogger } from '@/utils/Logger'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 
 const logger = createLogger('ChatSetting')
+const { write: writeClipboard } = useClipboard()
 
 defineOptions({
   name: 'mobileChatSetting'
@@ -405,10 +407,9 @@ const handleCrop = async (cropBlob: Blob) => {
 }
 
 const handleCopy = (val: string) => {
-  if (val) {
-    navigator.clipboard.writeText(val)
-    showFeedback(t('mobile_chat_setting.copy_id', { id: val }), 'success')
-  }
+  if (!val) return
+  void writeClipboard(val).catch((err) => logger.error('复制失败:', err))
+  showFeedback(t('mobile_chat_setting.copy_id', { id: val }), 'success')
 }
 
 const toFriendInfo = (uid: string) => {

@@ -156,7 +156,6 @@ export const useMsgInput = (messageInputDom: Ref) => {
         return sanitized.trim()
       }
 
-      doc.querySelector('#replyDiv')?.remove()
       if (doc.querySelector('#temp-image')) return 'image'
 
       const textContent = doc.body.textContent?.trim()
@@ -259,10 +258,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
     aiKeyword,
     groupStore,
     focusOn,
-    insertNode,
-    triggerInputEvent,
-    getEditorRange,
-    updateSelectionRange
+    triggerInputEvent
   })
 
   return {

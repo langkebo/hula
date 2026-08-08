@@ -139,6 +139,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('FriendsSettings')
@@ -180,10 +181,17 @@ const editingGroupId = ref('')
 
 const STORAGE_KEY = 'tjg-friend-settings'
 
-onMounted(() => {
+onMounted(async () => {
+  // P0-#3：好友分组/请求依赖 MatrixClient，冷启动时客户端尚未就绪会导致
+  // 「Failed to load friend groups」等报错。先等待客户端就绪再发请求。
   loadSettings()
-  loadFriendGroups()
-  loadFriendRequests()
+  try {
+    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+  } catch {
+    logger.warn('[FriendsSettings] 客户端未在超时内就绪，使用本地缓存设置')
+  }
+  await loadFriendGroups()
+  await loadFriendRequests()
 })
 
 function loadSettings() {
