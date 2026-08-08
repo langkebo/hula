@@ -1,5 +1,9 @@
 <template>
-  <ul v-if="spaces.length > 0" class="space-tree" role="tree" :aria-label="t('space.title')">
+  <ul
+    v-if="spaces.length > 0"
+    class="space-tree"
+    :role="isRoot ? 'tree' : 'group'"
+    :aria-label="isRoot ? t('space.title') : undefined">
     <li
       v-for="node in spaces"
       :key="node.spaceId"
@@ -83,7 +87,8 @@
           role="treeitem"
           :aria-level="level + 2"
           tabindex="0"
-          @click="emit('select', node.spaceId)">
+          @click="emit('select-room', room.roomId)"
+          @keydown="handleRoomKeydown($event, room)">
           <span class="space-tree__toggle-placeholder" aria-hidden="true" />
           <span class="space-tree__room-icon" aria-hidden="true">
             <svg
@@ -108,6 +113,7 @@
           :collapsed-ids="collapsedIds"
           :level="level + 1"
           @select="emit('select', $event)"
+          @select-room="emit('select-room', $event)"
           @toggle="emit('toggle', $event)" />
       </div>
     </li>
@@ -150,10 +156,13 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   select: [spaceId: string]
+  'select-room': [roomId: string]
   toggle: [spaceId: string]
 }>()
 
 const { t } = useI18n()
+
+const isRoot = computed(() => props.level === 0)
 
 const hasChildren = (node: SpaceTreeNode): boolean => {
   const hasSpaces = (node.children?.length ?? 0) > 0
@@ -196,6 +205,18 @@ const handleKeydown = (event: KeyboardEvent, node: SpaceTreeNode) => {
         event.preventDefault()
         emit('toggle', node.spaceId)
       }
+      break
+    default:
+      break
+  }
+}
+
+const handleRoomKeydown = (event: KeyboardEvent, room: { roomId: string }) => {
+  switch (event.key) {
+    case 'Enter':
+    case ' ':
+      event.preventDefault()
+      emit('select-room', room.roomId)
       break
     default:
       break
