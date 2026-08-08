@@ -70,7 +70,9 @@ function buildRegisterAuth(
     }
   }
 
-  return undefined
+  // 无 session 的单步注册：synapse-rust 要求 auth 字段标识注册流程类型，
+  // 否则返回 401 要求完成 auth flow。发送 { type: 'm.login.dummy' } 即可单步注册。
+  return { type: 'm.login.dummy' }
 }
 
 function buildResetPasswordAuth(

@@ -16,6 +16,7 @@
  * @see codebase-design DEEPENING.md — 接受依赖，不创建依赖
  */
 import { createClient, initializeManagerExtensions, type MatrixClient } from 'matrix-js-sdk'
+import type { CryptoCallbacks } from 'matrix-js-sdk/crypto'
 import { resolveMatrixRuntimeHomeserverUrl } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
 import { setMatrixClientAccessor } from '@/services/matrix/matrixClientAccessor'
@@ -107,6 +108,27 @@ export class MatrixConnectionManager {
         `初始化 MatrixClient: baseUrl=${config.homeserverUrl}, hasTauriRuntime=${hasTauriRuntime()}, fetchFn=${fetchFn ? 'custom' : 'undefined(SDK default)'}`
       )
 
+      const cryptoCallbacks: CryptoCallbacks = {
+        getSecretStorageKey: async (opts: { keys: Record<string, unknown> }) => {
+          // Try to find a cached key in sessionStorage
+          for (const keyId of Object.keys(opts.keys)) {
+            const cached = sessionStorage.getItem(`ssss_${keyId}`)
+            if (cached) {
+              try {
+                const key = Uint8Array.from(atob(cached), (c) => c.charCodeAt(0))
+                return [keyId, key]
+              } catch {
+                sessionStorage.removeItem(`ssss_${keyId}`)
+              }
+            }
+          }
+          return null
+        },
+        cacheSecretStorageKey: (keyId: string, _keyInfo: unknown, key: Uint8Array) => {
+          sessionStorage.setItem(`ssss_${keyId}`, btoa(String.fromCharCode(...key)))
+        }
+      }
+
       const clientOpts: ICreateClientOpts = {
         baseUrl: config.homeserverUrl,
         deviceId: config.deviceId,
@@ -114,7 +136,8 @@ export class MatrixConnectionManager {
         userId: config.userId,
         useAuthorizationHeader: true,
         allowInsecureHttp: config.allowInsecureHttp,
-        fetchFn
+        fetchFn,
+        cryptoCallbacks
       }
 
       if (config.identityServerUrl) {

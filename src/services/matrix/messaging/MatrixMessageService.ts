@@ -28,19 +28,6 @@ export interface MessageSearchOptions {
   sender?: string
 }
 
-export interface MessageReaction {
-  type: string
-  key: string
-  count: number
-  me: boolean
-}
-
-export interface MarkedMessage {
-  msgId: string
-  markType: number
-  actType: number
-}
-
 export interface MessageListOptions {
   roomId: string
   limit?: number

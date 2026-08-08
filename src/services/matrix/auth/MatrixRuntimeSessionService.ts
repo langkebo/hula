@@ -31,6 +31,7 @@ import type { SearchEventDoc, SearchRoomDoc } from '@/workers/matrixWorkerTypes'
 const logger = createLogger('MatrixRuntimeSessionService')
 
 interface StoredMatrixTokens {
+  uid?: string | null
   token: string | null
   refreshToken?: string | null
 }
@@ -160,10 +161,9 @@ class MatrixRuntimeSessionService {
       return
     }
 
-    const uid = this.port.matrix.getUserId() ?? this.port.user.getUserInfo()?.uid ?? ''
-    if (!uid) {
-      return
-    }
+    // 获取 uid——优先从运行时读取，若 Pinia store 未初始化（如独立 WebView），
+    // 则从后端存储的 token 记录中获取。
+    let uid = this.port.matrix.getUserId() ?? this.port.user.getUserInfo()?.uid ?? ''
 
     const runtimeAccessToken = this.port.matrix.getAccessToken()
     const runtimeRefreshToken = this.port.matrix.getRefreshToken()
@@ -173,6 +173,15 @@ class MatrixRuntimeSessionService {
           refreshToken: runtimeRefreshToken ?? null
         }
       : await this.getStoredTokens()
+
+    // 如果 uid 为空但后端返回了 uid，则使用后端 uid
+    if (!uid && storedTokens.uid) {
+      uid = storedTokens.uid
+    }
+
+    if (!uid) {
+      return
+    }
 
     if (!storedTokens.token) {
       throw new Error(useI18nGlobal().t('matrix_error.auth.access_token_missing'))
@@ -663,6 +672,16 @@ class MatrixRuntimeSessionService {
   }
 
   /**
+   * Ensure the MatrixClient is initialized and ready for use.
+   * Unlike `bootstrapPostLoginState`, this only restores the session
+   * (creates the client) without waiting for sync, presence, or search index.
+   * Useful for standalone WebViews (e.g., security settings window).
+   */
+  async ensureClientReady(options?: MatrixPostLoginBootstrapOptions): Promise<void> {
+    await this.ensureClientReadyForBootstrap(options)
+  }
+
+  /**
    * Bootstrap post-login state: sync, presence, search index, and UI.
    *
    * @throws {Error} if the user id is missing or any sub-step fails.
@@ -717,7 +736,7 @@ class MatrixRuntimeSessionService {
         account: toLocalpart(options.account || uid),
         email: '',
         avatar: AvatarUtils.getAvatarUrl(options.avatar),
-        modifyNameChance: 0,
+        modifyNameChance: -1,
         sex: SexEnum.MAN,
         userStateId: '',
         avatarUpdateTime: 0,
@@ -884,7 +903,7 @@ class MatrixRuntimeSessionService {
     if (isDesktop()) {
       this.port.global.setTrayMenuShow(false)
       try {
-        await createWebviewWindow('登录', 'login', 320, 448, undefined, false, 320, 448)
+        await createWebviewWindow('登录', 'login', 420, 640, undefined, false, 420, 640)
         await emit(EventEnum.LOGOUT)
         await resizeWindow('tray', 130, 44)
       } catch (error) {
