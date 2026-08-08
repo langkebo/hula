@@ -221,9 +221,9 @@ class MatrixDelayedEventsService {
   ): Promise<ScheduledDelayedEventResult> {
     const client = this.requireClient()
     const methodMap: Record<ScheduledDelayedEventAction, (delayId: DelayedEventId) => Promise<unknown>> = {
-      cancel: (id) => client._unstable_cancelScheduledDelayedEvent(String(id)),
-      restart: (id) => client._unstable_restartScheduledDelayedEvent(String(id)),
-      send: (id) => client._unstable_sendScheduledDelayedEvent(String(id))
+      cancel: (id) => client._unstable_cancelScheduledDelayedEvent(id),
+      restart: (id) => client._unstable_restartScheduledDelayedEvent(id),
+      send: (id) => client._unstable_sendScheduledDelayedEvent(id)
     }
     await methodMap[action](delayId)
     logger.info(`[updateScheduledDelayedEvent] delay_id=${delayId} action=${action}`)
