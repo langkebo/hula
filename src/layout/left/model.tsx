@@ -81,7 +81,7 @@ export const LockScreen = defineComponent(() => {
   lock.value.rules.lockPassword.message = t('message.lock_screen.validation_required')
   return () => (
     <NModal v-model:show={modalShow.value} maskClosable={false} class="w-350px border-rd-8px">
-      <div class="bg-[--hula-surface-elevated] w-360px h-full p-6px box-border flex flex-col">
+      <div class="bg-[--tjg-surface-elevated] w-360px h-full p-6px box-border flex flex-col">
         {isMac() ? (
           <MacCloseButton onClick={() => (modalShow.value = false)} class="relative" />
         ) : (
@@ -95,7 +95,7 @@ export const LockScreen = defineComponent(() => {
 
             <NAvatar bordered round size={80} src={AvatarUtils.getAvatarUrl(userStore.userInfo!.avatar!)} />
 
-            <p class="text-(14px center [--hula-text-primary]) truncate w-200px">{userStore.userInfo!.name}</p>
+            <p class="text-(14px center [--tjg-text-primary]) truncate w-200px">{userStore.userInfo!.name}</p>
           </NFlex>
           <NForm ref={formRef} model={formValue.value} rules={lock.value.rules}>
             <NFormItem
@@ -106,7 +106,7 @@ export const LockScreen = defineComponent(() => {
               <NInput
                 show-password-on="click"
                 v-model:value={formValue.value.lockPassword}
-                class="border-(1px solid [--hula-border-default])"
+                class="border-(1px solid [--tjg-border-default])"
                 size="small"
                 type="password"
                 placeholder={t('message.lock_screen.password_placeholder')}
@@ -118,7 +118,7 @@ export const LockScreen = defineComponent(() => {
             loading={lock.value.loading}
             onClick={lock.value.handleLock}
             class="w-full"
-            color="var(--hula-color-primary-500)">
+            color="var(--tjg-color-primary-500)">
             {t('message.lock_screen.confirm_button')}
           </NButton>
         </div>
@@ -287,7 +287,7 @@ export const CheckUpdate = defineComponent(() => {
   })
   return () => (
     <NModal v-model:show={modalShow.value} maskClosable={false} class="w-350px border-rd-8px">
-      <div class="bg-[--hula-surface-elevated] w-500px h-full p-6px box-border flex flex-col">
+      <div class="bg-[--tjg-surface-elevated] w-500px h-full p-6px box-border flex flex-col">
         {isMac() ? (
           <MacCloseButton onClick={() => (modalShow.value = false)} class="relative" />
         ) : (
@@ -307,18 +307,18 @@ export const CheckUpdate = defineComponent(() => {
               <NFlex align={'center'} size={10}>
                 <NFlex align={'center'} size={10}>
                   <p>{t('message.check_update.current_version')}:</p>
-                  <p class="text-(20px [--hula-text-tertiary]) font-500">{currentVersion.value}</p>
+                  <p class="text-(20px [--tjg-text-tertiary]) font-500">{currentVersion.value}</p>
                 </NFlex>
 
                 {newVersion.value ? (
                   <NFlex align={'center'} size={10} class="relative">
-                    <svg class="w-24px h-24px select-none text-[--hula-text-disabled]">
+                    <svg class="w-24px h-24px select-none text-[--tjg-text-disabled]">
                       <use href={'#RightArrow'}></use>
                     </svg>
 
-                    <p class="relative text-(20px [--hula-color-primary-500]) font-500">{newVersion.value}</p>
+                    <p class="relative text-(20px [--tjg-color-primary-500]) font-500">{newVersion.value}</p>
 
-                    <span class="absolute top--10px right--44px p-[4px_8px] bg-[--hula-color-danger-100] rounded-6px text-(12px [--hula-color-danger-500])">
+                    <span class="absolute top--10px right--44px p-[4px_8px] bg-[--tjg-color-danger-100] rounded-6px text-(12px [--tjg-color-danger-500])">
                       {t('message.check_update.new_tag')}
                     </span>
                   </NFlex>
@@ -327,22 +327,22 @@ export const CheckUpdate = defineComponent(() => {
               <NFlex align={'center'} size={10}>
                 {newVersionTime.value ? (
                   <>
-                    <p class="text-(12px [--hula-text-tertiary])">{t('message.check_update.new_release_date')}</p>
-                    <p class="text-(12px [--hula-color-primary-500])">{handRelativeTime(newVersionTime.value)}</p>
+                    <p class="text-(12px [--tjg-text-tertiary])">{t('message.check_update.new_release_date')}</p>
+                    <p class="text-(12px [--tjg-color-primary-500])">{handRelativeTime(newVersionTime.value)}</p>
                   </>
                 ) : (
                   <>
-                    <p class="text-(12px [--hula-text-tertiary])">{t('message.check_update.release_date')}</p>
-                    <p class="text-(12px [--hula-color-primary-500])">{handRelativeTime(versionTime.value)}</p>
+                    <p class="text-(12px [--tjg-text-tertiary])">{t('message.check_update.release_date')}</p>
+                    <p class="text-(12px [--tjg-color-primary-500])">{handRelativeTime(versionTime.value)}</p>
                   </>
                 )}
               </NFlex>
             </NFlex>
-            <p class="text-(14px [--hula-text-tertiary])">{t('message.check_update.log_title')}</p>
+            <p class="text-(14px [--tjg-text-tertiary])">{t('message.check_update.log_title')}</p>
             <NScrollbar class="max-h-460px p-[0_10px] box-border">
               {newCommitLog.value.length > 0 ? (
                 <>
-                  <div class="p-[4px_8px] mt-4px w-fit bg-[--hula-color-danger-100] rounded-6px text-(12px [--hula-color-danger-500])">
+                  <div class="p-[4px_8px] mt-4px w-fit bg-[--tjg-color-danger-100] rounded-6px text-(12px [--tjg-color-danger-500])">
                     {newVersion.value}
                   </div>
 
@@ -362,11 +362,11 @@ export const CheckUpdate = defineComponent(() => {
 
                   <NFlex>
                     <NFlex vertical size={20}>
-                      <svg class="m-[4px_40px] w-24px h-24px select-none rotate-270 text-[--hula-text-disabled]">
+                      <svg class="m-[4px_40px] w-24px h-24px select-none rotate-270 text-[--tjg-text-disabled]">
                         <use href={'#RightArrow'}></use>
                       </svg>
 
-                      <span class="p-[4px_8px] w-fit bg-[--hula-surface-subtle] rounded-6px text-(12px [--hula-text-quaternary])">
+                      <span class="p-[4px_8px] w-fit bg-[--tjg-surface-subtle] rounded-6px text-(12px [--tjg-text-quaternary])">
                         {currentVersion.value}
                       </span>
                     </NFlex>
@@ -405,7 +405,7 @@ export const CheckUpdate = defineComponent(() => {
               {updating.value && (
                 <NProgress
                   type="line"
-                  color="var(--hula-color-primary-500)"
+                  color="var(--tjg-color-primary-500)"
                   indicator-placement="inside"
                   percentage={percentage.value}
                   processing
