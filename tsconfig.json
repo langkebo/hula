@@ -7,6 +7,7 @@
     "skipLibCheck": true,
 
     "moduleResolution": "bundler",
+    "customConditions": ["matrix-org:wasm-esm"],
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -25,7 +26,7 @@
       "~/*": ["./*"],
       "@/*": ["./src/*"],
       "#/*": ["./src/mobile/*"],
-      "matrix-js-sdk/rendezvous": ["../matrix-js-sdk/src/rendezvous/index.ts"]
+      "matrix-js-sdk/rendezvous": ["../matrix-js-sdk/lib/rendezvous/index.d.ts"]
     },
     "types": ["vitest/globals", "@vue/test-utils", "node"],
     "allowSyntheticDefaultImports": true,
