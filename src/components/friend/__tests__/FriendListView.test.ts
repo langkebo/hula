@@ -31,7 +31,8 @@ const {
   addSpecialFriendMock,
   showFeedbackMock,
   getFriendDmRoomMock,
-  openMsgSessionByRoomIdMock
+  openMsgSessionByRoomIdMock,
+  groupingState
 } = vi.hoisted(() => ({
   routerPushMock: vi.fn(),
   contactStoreMock: {
@@ -55,7 +56,16 @@ const {
   addSpecialFriendMock: vi.fn(),
   showFeedbackMock: vi.fn(),
   getFriendDmRoomMock: vi.fn(),
-  openMsgSessionByRoomIdMock: vi.fn()
+  openMsgSessionByRoomIdMock: vi.fn(),
+  groupingState: {
+    refs: null as null | {
+      shouldGroup: { value: boolean }
+      groupedSections: { value: Array<Record<string, unknown>> }
+    },
+    toggleCollapse: vi.fn(),
+    isCollapsed: vi.fn(() => false),
+    loadGroups: vi.fn(() => Promise.resolve())
+  }
 }))
 
 const route = reactive({
@@ -137,6 +147,69 @@ vi.mock('@/utils/AvatarUtils', () => ({
   AvatarUtils: {
     getAvatarUrl: (url?: string) => url ?? ''
   }
+}))
+
+vi.mock('../composables/useFriendGrouping', async () => {
+  const { ref } = await import('vue')
+  groupingState.refs = {
+    shouldGroup: ref(false),
+    groupedSections: ref([])
+  }
+  return {
+    useFriendGrouping: () => ({
+      shouldGroup: groupingState.refs!.shouldGroup,
+      groupedSections: groupingState.refs!.groupedSections,
+      toggleCollapse: groupingState.toggleCollapse,
+      isCollapsed: groupingState.isCollapsed,
+      loadGroups: groupingState.loadGroups
+    })
+  }
+})
+
+vi.mock('../ContactGroupSection.vue', () => ({
+  default: defineComponent({
+    name: 'ContactGroupSectionStub',
+    props: {
+      groupName: { type: String, default: '' },
+      friends: { type: Array, default: () => [] },
+      collapsed: { type: Boolean, default: false },
+      selectedUserId: { type: String, default: '' },
+      query: { type: String, default: '' }
+    },
+    emits: ['toggle', 'select-friend', 'send-message', 'remove', 'more', 'contextmenu'],
+    setup(props, { emit }) {
+      return () =>
+        h(
+          'div',
+          {
+            'data-test': 'contact-group-section',
+            'data-group-name': props.groupName,
+            'data-friends-count': String(props.friends.length),
+            'data-collapsed': String(props.collapsed)
+          },
+          [
+            h(
+              'button',
+              {
+                type: 'button',
+                'data-test': 'group-toggle',
+                onClick: () => emit('toggle')
+              },
+              'toggle'
+            ),
+            h(
+              'button',
+              {
+                type: 'button',
+                'data-test': 'group-select-friend',
+                onClick: () => emit('select-friend', props.friends[0])
+              },
+              'select'
+            )
+          ]
+        )
+    }
+  })
 }))
 
 vi.mock('@/components/friend/FriendSearchBar.vue', () => ({
@@ -373,6 +446,11 @@ describe('FriendListView', () => {
     // 默认：未找到已有 DM 房间，startDirectRoom 返回新房间 ID
     getFriendDmRoomMock.mockResolvedValue({ room_id: '', exists: false })
     contactStoreMock.startDirectRoom.mockResolvedValue('@new-room:example.com')
+    // 重置分组状态
+    if (groupingState.refs) {
+      groupingState.refs.shouldGroup.value = false
+      groupingState.refs.groupedSections.value = []
+    }
   })
 
   it('renders friend list semantics and marks selected friend after click', async () => {
@@ -600,5 +678,108 @@ describe('FriendListView', () => {
     // send-message 路径不应被触发
     expect(getFriendDmRoomMock).not.toHaveBeenCalled()
     expect(contactStoreMock.startDirectRoom).not.toHaveBeenCalled()
+  })
+
+  describe('grouping integration', () => {
+    it('calls loadGroups on mount', async () => {
+      mountView()
+      await flushPromises()
+
+      expect(groupingState.loadGroups).toHaveBeenCalledTimes(1)
+    })
+
+    it('renders grouped sections when shouldGroup is true', async () => {
+      groupingState.refs!.shouldGroup.value = true
+      groupingState.refs!.groupedSections.value = [
+        {
+          groupId: '__favorite__',
+          groupName: 'friend.group.section.favorite',
+          friends: [contactStoreMock.contactsList[0]],
+          isFavorite: true,
+          isUngrouped: false
+        }
+      ]
+
+      const wrapper = mountView()
+      await flushPromises()
+
+      const sections = wrapper.findAll('[data-test="contact-group-section"]')
+      expect(sections).toHaveLength(1)
+      expect(sections[0]?.attributes('data-group-name')).toBe('friend.group.section.favorite')
+      expect(sections[0]?.attributes('data-friends-count')).toBe('1')
+    })
+
+    it('renders flat list when shouldGroup is false', async () => {
+      groupingState.refs!.shouldGroup.value = false
+
+      const wrapper = mountView()
+      await flushPromises()
+
+      expect(wrapper.find('[data-test="contact-group-section"]').exists()).toBe(false)
+      expect(wrapper.findAll('.friend-list-item')).toHaveLength(2)
+    })
+
+    it('toggles group collapse when header toggle is clicked', async () => {
+      groupingState.refs!.shouldGroup.value = true
+      groupingState.refs!.groupedSections.value = [
+        {
+          groupId: '__favorite__',
+          groupName: 'Favorites',
+          friends: [contactStoreMock.contactsList[0]],
+          isFavorite: true,
+          isUngrouped: false
+        }
+      ]
+
+      const wrapper = mountView()
+      await flushPromises()
+
+      await wrapper.get('[data-test="group-toggle"]').trigger('click')
+
+      expect(groupingState.toggleCollapse).toHaveBeenCalledWith('__favorite__')
+    })
+
+    it('selects friend when a friend in a group is clicked', async () => {
+      groupingState.refs!.shouldGroup.value = true
+      groupingState.refs!.groupedSections.value = [
+        {
+          groupId: '__favorite__',
+          groupName: 'Favorites',
+          friends: [contactStoreMock.contactsList[0]],
+          isFavorite: true,
+          isUngrouped: false
+        }
+      ]
+
+      const wrapper = mountView()
+      await flushPromises()
+
+      await wrapper.get('[data-test="group-select-friend"]').trigger('click')
+
+      expect(routerPushMock).toHaveBeenCalledWith({
+        name: 'friend-details',
+        params: { userId: '@alice:example.com' }
+      })
+    })
+
+    it('passes collapsed state from isCollapsed to ContactGroupSection', async () => {
+      groupingState.refs!.shouldGroup.value = true
+      groupingState.refs!.groupedSections.value = [
+        {
+          groupId: 'group-1',
+          groupName: 'Design Team',
+          friends: [contactStoreMock.contactsList[0]],
+          isFavorite: false,
+          isUngrouped: false
+        }
+      ]
+      groupingState.isCollapsed.mockReturnValue(true)
+
+      const wrapper = mountView()
+      await flushPromises()
+
+      const section = wrapper.get('[data-test="contact-group-section"]')
+      expect(section.attributes('data-collapsed')).toBe('true')
+    })
   })
 })

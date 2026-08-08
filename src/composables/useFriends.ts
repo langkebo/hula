@@ -2,7 +2,7 @@ import { useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, type MaybeRefOrGetter, ref, toValue, watch } from 'vue'
 import { OnlineEnum, UserType } from '@/enums'
-import { type FriendGroup, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { type Friend, type FriendGroup, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { type GroupSearchResult, matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import type { UserProfile } from '@/services/matrix/user/MatrixContactService'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
@@ -500,6 +500,10 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
     await matrixFriendService.deleteFriendGroup(groupId)
   }
 
+  const getFriendsInGroup = async (groupId: string): Promise<Friend[]> => {
+    return await matrixFriendService.getFriendsInGroup(groupId)
+  }
+
   // ============================================================================
   // Return
   // ============================================================================
@@ -556,6 +560,7 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
     getFriendGroups,
     createFriendGroup,
     renameFriendGroup,
-    deleteFriendGroup
+    deleteFriendGroup,
+    getFriendsInGroup
   }
 }
