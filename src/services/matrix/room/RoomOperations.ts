@@ -364,6 +364,33 @@ export class RoomOperations extends BaseMatrixService {
     return (event?.getContent()?.pinned as string[]) ?? []
   }
 
+  /**
+   * 判断当前用户是否有权限发送 m.room.pinned_events state event（置顶/取消置顶）。
+   *
+   * 权限层级（MSC4354 / Matrix spec）：
+   * - 用户 power = power_levels.users[userId] ?? power_levels.users_default ?? 0
+   * - 所需 power = power_levels.events['m.room.pinned_events'] ?? power_levels.state_default ?? 50
+   * - 可置顶当且仅当 userPower >= requiredPower
+   */
+  canPinEvents(roomId: string): boolean {
+    const client = matrixClientService.getClient()
+    if (!client) return false
+    const userId = client.getUserId()
+    if (!userId) return false
+    const room = client.getRoom(roomId)
+    if (!room) return false
+    const powerEvent = room.currentState.getStateEvents('m.room.power_levels', '')
+    if (!powerEvent) return false
+    const content = powerEvent.getContent() as Record<string, unknown>
+    const users = (content.users as Record<string, number> | undefined) ?? {}
+    const usersDefault = (content.users_default as number | undefined) ?? 0
+    const events = (content.events as Record<string, number> | undefined) ?? {}
+    const stateDefault = (content.state_default as number | undefined) ?? 50
+    const userPower = users[userId] ?? usersDefault
+    const requiredPower = events['m.room.pinned_events'] ?? stateDefault
+    return userPower >= requiredPower
+  }
+
   async setPinnedEvents(roomId: string, eventIds: string[]): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('pin', roomId, { roomId, type: 'pinned', eventIds })

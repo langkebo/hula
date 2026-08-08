@@ -108,4 +108,28 @@ describe('StickyEventBanner — 粘性事件横幅 (§8.2)', () => {
     const toggleBtn = wrapper.find('[data-testid="sticky-toggle-btn"]')
     expect(toggleBtn.text()).toContain('2')
   })
+
+  it('canSetSticky=true 时每条事件显示取消置顶按钮', () => {
+    const wrapper = mount(StickyEventBanner, {
+      props: { events: [makeEvent({ eventId: '$evt1:server' })], canSetSticky: true }
+    })
+    expect(wrapper.find('[data-testid="sticky-cancel-btn"]').exists()).toBe(true)
+  })
+
+  it('canSetSticky=false 时不显示取消置顶按钮', () => {
+    const wrapper = mount(StickyEventBanner, {
+      props: { events: [makeEvent()], canSetSticky: false }
+    })
+    expect(wrapper.find('[data-testid="sticky-cancel-btn"]').exists()).toBe(false)
+  })
+
+  it('点击取消置顶按钮触发 cancel-sticky 事件并携带 eventId', async () => {
+    const wrapper = mount(StickyEventBanner, {
+      props: { events: [makeEvent({ eventId: '$evt1:server' })], canSetSticky: true }
+    })
+    await wrapper.find('[data-testid="sticky-cancel-btn"]').trigger('click')
+    const cancelEvents = wrapper.emitted('cancel-sticky')
+    expect(cancelEvents).toBeTruthy()
+    expect(cancelEvents![0]).toEqual(['$evt1:server'])
+  })
 })

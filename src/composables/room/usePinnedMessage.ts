@@ -9,7 +9,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('usePinnedMessage')
 
 /** 置顶消息摘要(纯文本展示用) */
-interface PinnedMessageInfo {
+export interface PinnedMessageInfo {
   eventId: string
   sender: string
   body: string
@@ -42,16 +42,27 @@ export function usePinnedMessage(options: UsePinnedMessageOptions) {
   /** 已知置顶 ID 集合,用于检测新拉取到的置顶 */
   const knownPinnedIds = ref<Set<string>>(new Set())
 
+  /** 已解析的置顶消息数组，按时间倒序排列（最新在前），供横幅列表渲染 */
+  const pinnedMessagesSorted = computed<PinnedMessageInfo[]>(() =>
+    [...pinnedMessages.value].sort((a, b) => b.timestamp - a.timestamp)
+  )
+
   /** 取时间戳最大的一条作为展示用的最近置顶消息 */
-  const latestPinnedMessage = computed<PinnedMessageInfo | null>(() => {
-    if (pinnedMessages.value.length === 0) return null
-    return [...pinnedMessages.value].sort((a, b) => b.timestamp - a.timestamp)[0]
-  })
+  const latestPinnedMessage = computed<PinnedMessageInfo | null>(() =>
+    pinnedMessagesSorted.value.length > 0 ? pinnedMessagesSorted.value[0] : null
+  )
 
   const resolveRoomId = (): string | null => {
     const id = toValue(options.roomId)
     return id ? String(id) : null
   }
+
+  /** 当前用户是否有权限置顶/取消置顶消息（基于 m.room.power_levels） */
+  const canSetSticky = computed<boolean>(() => {
+    const roomId = resolveRoomId()
+    if (!roomId) return false
+    return roomOperations.canPinEvents(roomId)
+  })
 
   /** 从消息体中提取纯文本摘要 */
   const extractBody = (raw: unknown): string => {
@@ -212,7 +223,9 @@ export function usePinnedMessage(options: UsePinnedMessageOptions) {
 
   return {
     pinnedEventIds,
+    pinnedMessages: pinnedMessagesSorted,
     latestPinnedMessage,
+    canSetSticky,
     loading,
     errorMessage,
     dismissed,

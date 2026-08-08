@@ -172,6 +172,25 @@ describe('useMessageActionHandlers', () => {
       await handlers.handlePin(buildMessage(), false)
       expect(showFeedbackMock).toHaveBeenCalledWith('message.pin_failed', 'error')
     })
+
+    it('emits PINNED_EVENTS_CHANGED after successful pin', async () => {
+      const handlers = useMessageActionHandlers()
+      await handlers.handlePin(buildMessage(), false)
+      expect(mittEmitMock).toHaveBeenCalledWith(MittEnum.PINNED_EVENTS_CHANGED, { roomId: '!room-1:server' })
+    })
+
+    it('emits PINNED_EVENTS_CHANGED after successful unpin', async () => {
+      const handlers = useMessageActionHandlers()
+      await handlers.handlePin(buildMessage(), true)
+      expect(mittEmitMock).toHaveBeenCalledWith(MittEnum.PINNED_EVENTS_CHANGED, { roomId: '!room-1:server' })
+    })
+
+    it('does not emit PINNED_EVENTS_CHANGED when pin fails', async () => {
+      pinEventMock.mockRejectedValueOnce(new Error('forbidden'))
+      const handlers = useMessageActionHandlers()
+      await handlers.handlePin(buildMessage(), false)
+      expect(mittEmitMock).not.toHaveBeenCalledWith(MittEnum.PINNED_EVENTS_CHANGED, expect.anything())
+    })
   })
 
   describe('handleRecall', () => {

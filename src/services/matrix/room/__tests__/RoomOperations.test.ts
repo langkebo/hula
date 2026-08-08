@@ -465,6 +465,99 @@ describe('RoomOperations', () => {
     })
   })
 
+  describe('canPinEvents', () => {
+    const buildClient = (powerLevels: Record<string, unknown>, userId = '@me:s') => ({
+      getUserId: () => userId,
+      getRoom: () => ({
+        currentState: {
+          getStateEvents: vi.fn().mockReturnValue({
+            getContent: () => powerLevels
+          })
+        }
+      })
+    })
+
+    it('returns true when user power meets pinned_events event requirement', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        buildClient({
+          users: { '@me:s': 50 },
+          events: { 'm.room.pinned_events': 50 },
+          users_default: 0,
+          state_default: 50
+        }) as never
+      )
+      expect(ops.canPinEvents('!r')).toBe(true)
+    })
+
+    it('returns false when user power below pinned_events event requirement', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        buildClient({
+          users: { '@me:s': 0 },
+          events: { 'm.room.pinned_events': 50 },
+          users_default: 0,
+          state_default: 50
+        }) as never
+      )
+      expect(ops.canPinEvents('!r')).toBe(false)
+    })
+
+    it('falls back to state_default when pinned_events not in events map', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        buildClient({
+          users: { '@me:s': 25 },
+          state_default: 25,
+          users_default: 0
+        }) as never
+      )
+      expect(ops.canPinEvents('!r')).toBe(true)
+    })
+
+    it('falls back to users_default when user not in users map', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        buildClient({
+          users_default: 50,
+          events: { 'm.room.pinned_events': 50 },
+          state_default: 50
+        }) as never
+      )
+      expect(ops.canPinEvents('!r')).toBe(true)
+    })
+
+    it('uses default 50 for state_default when missing', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(
+        buildClient({
+          users: { '@me:s': 50 }
+        }) as never
+      )
+      expect(ops.canPinEvents('!r')).toBe(true)
+    })
+
+    it('returns false when room not found', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getUserId: () => '@me:s',
+        getRoom: () => null
+      } as never)
+      expect(ops.canPinEvents('!r')).toBe(false)
+    })
+
+    it('returns false when no power_levels state event', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getUserId: () => '@me:s',
+        getRoom: () => ({
+          currentState: {
+            getStateEvents: vi.fn().mockReturnValue(null)
+          }
+        })
+      } as never)
+      expect(ops.canPinEvents('!r')).toBe(false)
+    })
+
+    it('returns false when client is null', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+      expect(ops.canPinEvents('!r')).toBe(false)
+    })
+  })
+
   // === Moderation methods ===
 
   describe('getInviteBlocklist', () => {
