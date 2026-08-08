@@ -33,9 +33,6 @@ const logger = createLogger('AdminBackgroundUpdate')
 
 type GetClientGetter = () => MatrixClient
 
-/** 后台更新任务的状态。 */
-export type BackgroundUpdateStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
-
 /** 后台更新任务实体（对应后端 UpdateResponse）。 */
 export interface BackgroundUpdate {
   job_name: string

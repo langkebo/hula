@@ -142,6 +142,17 @@ class MatrixClientService {
         } catch {
           /* ignore */
         }
+        // 限流时间过长（>60s）时不再阻塞重试，立即抛错让 UI 显示"登录过于频繁，请X分钟后重试"
+        // 否则 setTimeout(900000) 会阻塞 15 分钟，useLoginFlow 30s 超时后状态混乱
+        if (retryAfterMs > 60_000) {
+          const err = new Error(
+            JSON.stringify({ errcode: 'M_LIMIT_EXCEEDED', error: 'Rate limited', retry_after_ms: retryAfterMs })
+          ) as Error & { errcode?: string; retry_after_ms?: number }
+          err.errcode = 'M_LIMIT_EXCEEDED'
+          err.retry_after_ms = retryAfterMs
+          logger.warn(`登录请求被限流 (429)，retry_after_ms=${retryAfterMs} 过长，不再重试，直接抛错`)
+          throw err
+        }
         logger.warn(`登录请求被限流 (429)，${retryAfterMs}ms 后重试 (${attempt + 1}/${maxRetries})`)
         await new Promise((resolve) => setTimeout(resolve, retryAfterMs))
         continue
@@ -184,10 +195,17 @@ class MatrixClientService {
     const client = this.connectionManager.getClient()
     if (client) {
       AvatarUtils.setMxcResolver((mxcUrl, width, height) => {
-        if (width && height) {
-          return client.mxcUrlToHttp(mxcUrl, width, height, 'scale')
+        // 防护：登录失败或 client 未完全初始化时 mxcUrlToHttp 可能不存在
+        const resolver = client.mxcUrlToHttp
+        if (typeof resolver !== 'function') return null
+        try {
+          if (width && height) {
+            return resolver.call(client, mxcUrl, width, height, 'scale')
+          }
+          return resolver.call(client, mxcUrl)
+        } catch {
+          return null
         }
-        return client.mxcUrlToHttp(mxcUrl)
       })
     }
   }
@@ -340,13 +358,20 @@ class MatrixClientService {
     }
 
     try {
+      // P0-#2：复用配置中已持久化的 deviceId 初始化客户端，避免每次 token 登录
+      // 生成新设备，导致 Rust Crypto 存储「账号不匹配」而降级为非加密模式。
       await this.initialize({
         ...config,
         accessToken: token,
-        userId: userId
+        userId: userId,
+        deviceId: config.deviceId ?? undefined
       })
 
-      let resolvedDeviceId = this.connectionManager.getClient()?.getDeviceId?.() ?? undefined
+      // 优先复用持久化 deviceId；仅当其缺失时再尝试 whoami 回填。
+      let resolvedDeviceId = resolveStableDeviceId(
+        config,
+        this.connectionManager.getClient()?.getDeviceId?.() ?? undefined
+      )
       if (!resolvedDeviceId) {
         resolvedDeviceId = await this.resolveTokenLoginDeviceId(userId)
         if (resolvedDeviceId) {
@@ -822,3 +847,16 @@ class MatrixClientService {
 
 export const matrixClientService = new MatrixClientService()
 export default matrixClientService
+
+/**
+ * P0-#2：解析 token 登录应使用的 deviceId。
+ * 优先复用配置中已持久化的 deviceId，避免每次 token 登录都生成新设备，
+ * 否则 Rust Crypto 存储会因「账号不匹配」而清空并降级为非加密模式。
+ * 仅当配置中无 deviceId 时，才回退到 sdk 初始化时生成的设备（或 whoami 回填）。
+ */
+export function resolveStableDeviceId(
+  config: MatrixClientConfig,
+  clientGeneratedId: string | undefined
+): string | undefined {
+  return config.deviceId ?? clientGeneratedId
+}

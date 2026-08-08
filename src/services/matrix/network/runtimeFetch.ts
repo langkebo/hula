@@ -73,6 +73,29 @@ function rewriteToDevProxyUrl(url: string): string {
 }
 
 /**
+ * Tauri plugin-http 通过 Rust 资源表（resource id）管理在途请求：
+ * `fetch` 返回 rid → signal abort 触发 `fetch_cancel(rid)` 丢弃资源 →
+ * 随后的 `fetch_send(rid)` / `fetch_read_body(rid)` 会抛出 "resource id invalid"。
+ * 插件自身在若干分支直接抛出普通 Error("Request cancelled")。
+ *
+ * 这两类错误本质是"请求已被主动取消"，不是网络故障：
+ * - 不能回退到浏览器 fetch（会把 SDK 已放弃的请求重新发出去，产生幽灵重复请求）
+ * - 必须归一化为 AbortError，否则 matrix-js-sdk 的 sync 循环会误判为网络异常并进入错误退避
+ */
+function isSignalAborted(init?: RequestInit): boolean {
+  return init?.signal?.aborted === true
+}
+
+function createAbortError(url: string): Error {
+  if (typeof DOMException === 'function') {
+    return new DOMException(`Request aborted: ${url}`, 'AbortError') as unknown as Error
+  }
+  const error = new Error(`Request aborted: ${url}`)
+  error.name = 'AbortError'
+  return error
+}
+
+/**
  * 判断错误是否为可重试的网络错误（连接拒绝、超时、网络中断等）
  * HTTP 状态码错误（4xx/5xx）不属于此类，不应重试
  */
@@ -105,11 +128,18 @@ async function fetchWithRetry(
 ): Promise<Response> {
   let lastError: unknown
   for (let attempt = 0; attempt <= retries; attempt++) {
+    if (isSignalAborted(init)) {
+      throw createAbortError(resolveRequestUrl(input))
+    }
     try {
       const response = await fetchFn(input, init)
       return response
     } catch (error) {
       lastError = error
+      // 请求已被主动取消：立即归一化为 AbortError，不再退避重试
+      if (isSignalAborted(init)) {
+        throw createAbortError(resolveRequestUrl(input))
+      }
       if (attempt < retries && isRetryableNetworkError(error)) {
         const delay = FETCH_RETRY_BASE_DELAY_MS * 2 ** attempt
         logger.warn(`fetch 失败，${delay}ms 后重试 (${attempt + 1}/${retries}): ${resolveRequestUrl(input)}`)
@@ -127,6 +157,10 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
     const normalizedInit = withTauriClientOptions(input, init)
     const url = resolveRequestUrl(input)
 
+    if (isSignalAborted(init)) {
+      throw createAbortError(url)
+    }
+
     try {
       const response = await nativeFetch(input as URL | Request | string, normalizedInit)
       if (!response.ok && response.status !== 404) {
@@ -135,6 +169,12 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
       }
       return response
     } catch (error) {
+      // 主动取消导致的 "resource id invalid" / "Request cancelled" 属于预期行为：
+      // 既不记录噪声日志，也不回退浏览器 fetch（否则会重放 SDK 已放弃的请求）
+      if (isSignalAborted(init)) {
+        throw createAbortError(url)
+      }
+
       logger.warn(`nativeFetch 抛出异常 for ${url}: ${error}`)
       if (!shouldUseBrowserFallback(input)) {
         throw error

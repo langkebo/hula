@@ -1,6 +1,7 @@
 import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import type { DeviceManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 
@@ -20,11 +21,10 @@ interface DeviceResponse {
   display_name?: string
   last_seen_ip?: string
   last_seen_ts?: number
-  last_seen_user_agent?: string
 }
 
 interface AuthData {
-  type?: string
+  type: string
   user?: string
   password?: string
   session?: string
@@ -60,12 +60,15 @@ class MatrixAccountService extends BaseMatrixService {
 
   async changePassword(oldPassword: string, newPassword: string, logoutDevices: boolean = false): Promise<boolean> {
     const client = this.getClient()
+    logger.warn(`[MatrixAccount] changePassword() 开始: logoutDevices=${logoutDevices}`)
 
     try {
       const userId = client.getUserId()
       if (!userId) {
+        logger.error('[MatrixAccount] changePassword() 失败: 无法获取 userId')
         throw new Error(this.t('matrix_error.account.cannot_get_user_id'))
       }
+      logger.warn(`[MatrixAccount] changePassword() userId=${userId}, 调用 client.setPassword()`)
 
       const authData: Parameters<typeof client.setPassword>[0] = {
         type: 'm.login.password',
@@ -77,93 +80,136 @@ class MatrixAccountService extends BaseMatrixService {
       }
 
       await client.setPassword(authData, newPassword, logoutDevices)
-      logger.info('[MatrixAccount] 修改密码成功')
+      logger.warn('[MatrixAccount] changePassword() 成功')
       return true
     } catch (err) {
-      logger.error(`[MatrixAccount] 修改密码失败: ${err}`)
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+      logger.error(`[MatrixAccount] changePassword() 失败: ${detail}`)
       throw err
     }
   }
 
+  private getDeviceMgr(): DeviceManager {
+    logger.warn('[MatrixAccount] getDeviceMgr() 开始获取 DeviceManager')
+    const client = this.getClient() as unknown as MatrixClientExtended
+    logger.warn(
+      `[MatrixAccount] getDeviceMgr() client 已获取, getDeviceManager 方法存在: ${typeof client.getDeviceManager === 'function'}`
+    )
+    const deviceManager = client.getDeviceManager?.()
+    if (!deviceManager) {
+      logger.error(
+        '[MatrixAccount] getDeviceMgr() DeviceManager 不可用 — SDK 扩展可能未初始化 (initializeManagerExtensions 未调用或 MatrixClient 未通过 createClient 创建)'
+      )
+      throw new Error('DeviceManager is not available. SDK extensions may not be initialized.')
+    }
+    logger.warn('[MatrixAccount] getDeviceMgr() DeviceManager 获取成功')
+    return deviceManager
+  }
+
   async getDevices(): Promise<DeviceInfo[]> {
     const client = this.getClient()
+    logger.warn('[MatrixAccount] getDevices() 开始获取设备列表')
 
     try {
-      const response = await client.getDevices()
+      const deviceManager = this.getDeviceMgr()
+      logger.warn('[MatrixAccount] getDevices() 调用 deviceManager.getDevices()')
+      const response = await deviceManager.getDevices()
       const userId = client.getUserId()
-      // getDevices() 返回数组
       const devices = Array.isArray(response) ? response : []
-      logger.info(`[MatrixAccount] 获取设备列表成功: ${devices.length} 个设备`)
-      return (devices as DeviceResponse[]).map((d) => ({
+      logger.warn(`[MatrixAccount] getDevices() 成功: ${devices.length} 个设备, userId=${userId}`)
+      const result = (devices as DeviceResponse[]).map((d) => ({
         deviceId: d.device_id,
         userId: userId,
         displayName: d.display_name,
         lastSeenIp: d.last_seen_ip,
         lastSeenTs: d.last_seen_ts,
-        lastSeenUserAgent: d.last_seen_user_agent
+        lastSeenUserAgent: undefined
       }))
+      logger.warn(`[MatrixAccount] getDevices() 设备ID列表: ${result.map((d) => d.deviceId).join(', ') || '(空)'}`)
+      return result
     } catch (err) {
-      logger.error(`[MatrixAccount] 获取设备列表失败: ${err}`)
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+      logger.error(`[MatrixAccount] getDevices() 失败: ${detail}`)
+      if (err instanceof Error && err.stack) {
+        logger.error(`[MatrixAccount] getDevices() 堆栈: ${err.stack}`)
+      }
       throw err
     }
   }
 
   async getDevice(deviceId: string): Promise<DeviceInfo> {
     const client = this.getClient()
+    logger.warn(`[MatrixAccount] getDevice() 开始获取设备: deviceId=${deviceId}`)
 
     try {
-      const response = (await client.getDevice(deviceId)) as DeviceResponse
+      const deviceManager = this.getDeviceMgr()
+      const response = (await deviceManager.getDevice(deviceId)) as DeviceResponse | null
+      if (!response) {
+        logger.warn(`[MatrixAccount] getDevice() 设备不存在: ${deviceId}`)
+        throw new Error(`Device not found: ${deviceId}`)
+      }
       const userId = client.getUserId()
-      logger.info(`[MatrixAccount] 获取设备信息成功: ${deviceId}`)
+      logger.warn(`[MatrixAccount] getDevice() 成功: deviceId=${deviceId}, name=${response.display_name ?? '(未命名)'}`)
       return {
         deviceId: response.device_id,
         userId: userId,
         displayName: response.display_name,
         lastSeenIp: response.last_seen_ip,
         lastSeenTs: response.last_seen_ts,
-        lastSeenUserAgent: response.last_seen_user_agent
+        lastSeenUserAgent: undefined
       }
     } catch (err) {
-      logger.error(`[MatrixAccount] 获取设备信息失败: ${err}`)
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+      logger.error(`[MatrixAccount] getDevice() 失败: deviceId=${deviceId}, ${detail}`)
       throw err
     }
   }
 
   async setDeviceName(deviceId: string, displayName: string): Promise<boolean> {
-    const client = this.getClient()
-
+    logger.warn(`[MatrixAccount] setDeviceName() 开始: deviceId=${deviceId}, displayName=${displayName}`)
     try {
-      await client.setDeviceName(deviceId, displayName)
-      logger.info(`[MatrixAccount] 更新设备名称成功: ${deviceId}`)
+      const deviceManager = this.getDeviceMgr()
+      await deviceManager.updateDevice(deviceId, { display_name: displayName })
+      logger.warn(`[MatrixAccount] setDeviceName() 成功: deviceId=${deviceId}`)
       return true
     } catch (err) {
-      logger.error(`[MatrixAccount] 更新设备名称失败: ${err}`)
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+      logger.error(`[MatrixAccount] setDeviceName() 失败: deviceId=${deviceId}, ${detail}`)
       throw err
     }
   }
 
   async deleteDevice(deviceId: string, authData?: AuthData): Promise<boolean> {
-    const client = this.getClient()
-
+    logger.warn(`[MatrixAccount] deleteDevice() 开始: deviceId=${deviceId}, hasAuth=${!!authData}`)
     try {
-      await client.deleteDevice(deviceId, authData)
-      logger.info(`[MatrixAccount] 删除设备成功: ${deviceId}`)
+      const deviceManager = this.getDeviceMgr()
+      await deviceManager.deleteDevice(deviceId, authData)
+      logger.warn(`[MatrixAccount] deleteDevice() 成功: deviceId=${deviceId}`)
       return true
     } catch (err) {
-      logger.error(`[MatrixAccount] 删除设备失败: ${err}`)
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+      // 401/UIA 错误需要上层处理交互式认证
+      const isUia = err instanceof Error && (err.message.includes('401') || err.message.includes('M_FORBIDDEN'))
+      logger.error(
+        `[MatrixAccount] deleteDevice() 失败: deviceId=${deviceId}, ${detail}${isUia ? ' [UIA 认证需要]' : ''}`
+      )
       throw err
     }
   }
 
   async deleteDevices(deviceIds: string[], authData?: AuthData): Promise<boolean> {
-    const client = this.getClient()
-
+    logger.warn(
+      `[MatrixAccount] deleteDevices() 开始: count=${deviceIds.length}, ids=[${deviceIds.join(', ')}], hasAuth=${!!authData}`
+    )
     try {
-      await client.deleteMultipleDevices(deviceIds, authData)
-      logger.info(`[MatrixAccount] 批量删除设备成功: ${deviceIds.length} 个`)
+      const deviceManager = this.getDeviceMgr()
+      await deviceManager.deleteDevices(deviceIds, authData)
+      logger.warn(`[MatrixAccount] deleteDevices() 成功: ${deviceIds.length} 个设备已删除`)
       return true
     } catch (err) {
-      logger.error(`[MatrixAccount] 批量删除设备失败: ${err}`)
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+      const isUia = err instanceof Error && (err.message.includes('401') || err.message.includes('M_FORBIDDEN'))
+      logger.error(`[MatrixAccount] deleteDevices() 失败: ${detail}${isUia ? ' [UIA 认证需要]' : ''}`)
       throw err
     }
   }
@@ -364,25 +410,31 @@ class MatrixAccountService extends BaseMatrixService {
 
   async getCapabilities(): Promise<Record<string, unknown>> {
     const client = this.getClient()
+    logger.warn(`[MatrixAccount] getCapabilities() 开始: workerStarted=${matrixWorkerHost.isStarted}`)
 
     if (matrixWorkerHost.isStarted) {
       const accessToken = client.getAccessToken()
       if (accessToken) {
         try {
+          logger.warn('[MatrixAccount] getCapabilities() 通过 worker 获取')
           const result = await matrixWorkerHost.getCapabilities(client.getHomeserverUrl(), accessToken)
-          logger.info('[MatrixAccount] 获取能力声明成功（worker）')
+          logger.warn('[MatrixAccount] getCapabilities() 成功（worker）')
           return result
         } catch (err) {
-          logger.error(`[MatrixAccount] 获取能力声明失败（worker）: ${err}`)
-          return {}
+          const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+          logger.error(`[MatrixAccount] getCapabilities() 失败（worker）: ${detail}, 降级到 SDK`)
         }
+      } else {
+        logger.warn('[MatrixAccount] getCapabilities() worker 已启动但无 accessToken, 降级到 SDK')
       }
     }
 
     try {
+      logger.warn('[MatrixAccount] getCapabilities() 通过 SDK client.getCapabilities() 获取')
       const result = await client.getCapabilities()
-      logger.info('[MatrixAccount] 获取能力声明成功')
       const caps = result as { capabilities?: Record<string, unknown>; unstable_features?: Record<string, boolean> }
+      const hasUnstable = !!caps.unstable_features
+      logger.warn(`[MatrixAccount] getCapabilities() SDK 返回, hasUnstableFeatures=${hasUnstable}`)
       // SDK 的 getCapabilities() 只返回 IServerCapabilities（仅 capabilities 字段），
       // 丢弃了 unstable_features。而 io.hula.friends 仅存在于 unstable_features 中，
       // 因此需要额外通过 HTTP 请求获取完整响应。
@@ -391,6 +443,7 @@ class MatrixAccountService extends BaseMatrixService {
           const baseUrl = client.getHomeserverUrl()
           const accessToken = client.getAccessToken()
           const url = `${baseUrl}/_matrix/client/v3/capabilities`
+          logger.warn(`[MatrixAccount] getCapabilities() 补充 HTTP 请求获取 unstable_features: ${url}`)
           const response = await getRuntimeAwareFetch()(url, {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -399,15 +452,21 @@ class MatrixAccountService extends BaseMatrixService {
           })
           if (response.ok) {
             const fullBody = (await response.json()) as Record<string, unknown>
+            logger.warn('[MatrixAccount] getCapabilities() HTTP 补充请求成功')
             return fullBody
+          } else {
+            logger.warn(`[MatrixAccount] getCapabilities() HTTP 补充请求返回 ${response.status}`)
           }
-        } catch {
-          // 降级：使用 SDK 返回的数据（可能缺少 unstable_features）
+        } catch (err) {
+          const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+          logger.warn(`[MatrixAccount] getCapabilities() HTTP 补充请求失败: ${detail}, 降级使用 SDK 数据`)
         }
       }
+      logger.warn('[MatrixAccount] getCapabilities() 返回 SDK 数据')
       return caps as Record<string, unknown>
     } catch (err) {
-      logger.error(`[MatrixAccount] 获取能力声明失败: ${err}`)
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+      logger.error(`[MatrixAccount] getCapabilities() 失败: ${detail}`)
       return {}
     }
   }

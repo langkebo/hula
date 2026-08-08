@@ -170,6 +170,8 @@ export class MatrixCryptoStateTracker {
         logger.warn('检测到 crypto 账户不匹配，尝试清除旧 crypto 数据后重试...')
         try {
           await clearStaleCryptoStores(userId)
+          // 等待浏览器释放 IndexedDB 连接句柄，避免重试时数据库仍被占用
+          await new Promise((resolve) => setTimeout(resolve, 300))
           await cryptoClient.initRustCrypto({ useIndexedDB })
           this.rustCryptoDebugState = {
             attempted: true,
@@ -181,7 +183,12 @@ export class MatrixCryptoStateTracker {
           logger.info(`Rust Crypto 重试初始化完成: ${userId}/${deviceId}`)
           return
         } catch (retryErr) {
-          const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr)
+          const retryMsg =
+            retryErr instanceof Error
+              ? retryErr.message
+              : typeof retryErr === 'object' && retryErr !== null
+                ? JSON.stringify(retryErr) || String(retryErr)
+                : String(retryErr)
           this.rustCryptoDebugState = {
             attempted: true,
             initialized: false,
@@ -189,7 +196,7 @@ export class MatrixCryptoStateTracker {
             error: retryMsg,
             usedIndexedDB: useIndexedDB
           }
-          logger.warn('Rust Crypto 重试仍失败，继续以非加密模式启动:', retryErr)
+          logger.warn(`Rust Crypto 重试仍失败，继续以非加密模式启动: ${retryMsg}`)
           return
         }
       }
@@ -282,52 +289,49 @@ export class MatrixCryptoStateTracker {
   }
 
   /**
-   * 直接删除指定用户的 crypto IndexedDB 数据库。
-   * 不依赖 indexedDB.databases()（非标准 API），按命名约定直接删除。
+   * 删除 crypto IndexedDB 数据库（与 clearStaleCryptoStores 相同的固定名称）。
+   * 保留此方法是为了在 ensureCrypto 中单独调用，语义上表示"删除当前用户的 crypto 数据"。
+   * 实际上数据库名称不包含 userId，直接按固定名称删除。
    */
-  private async deleteCryptoDbForUser(userId: string): Promise<void> {
-    if (typeof globalThis.indexedDB === 'undefined') return
-    const userSuffix = userId.replace(/[^a-zA-Z0-9]/g, '_')
-    const dbName = `matrix-js-sdk:crypto:${userSuffix}`
-    await new Promise<void>((resolve) => {
-      const req = globalThis.indexedDB.deleteDatabase(dbName)
-      req.onsuccess = () => resolve()
-      req.onerror = () => resolve()
-      req.onblocked = () => resolve()
-    })
+  private async deleteCryptoDbForUser(_userId: string): Promise<void> {
+    await clearStaleCryptoStores(_userId)
   }
 }
 
 /**
- * 清除指定用户的旧 crypto IndexedDB 数据库。
- * matrix-js-sdk 使用 `matrix-js-sdk:crypto:*` 命名约定。
- * 换设备登录时，旧设备的 crypto store 会导致账户不匹配错误，
- * 需要清除该用户的所有 crypto 数据库（SDK 会自动重建）。
+ * 清除 Matrix crypto 使用的 IndexedDB 数据库。
+ *
+ * Rust crypto 使用两个数据库（见 SDK client-store-cleanup.ts）：
+ *   - matrix-js-sdk::matrix-sdk-crypto
+ *   - matrix-js-sdk::matrix-sdk-crypto-meta
+ * Legacy crypto store 使用：
+ *   - matrix-js-sdk:crypto
+ *
+ * 这些名称是固定的，不包含 userId 后缀。直接按名称删除，
+ * 不依赖 indexedDB.databases()（Safari/WKWebView 不支持该 API）。
  */
-async function clearStaleCryptoStores(userId: string): Promise<void> {
+async function clearStaleCryptoStores(_userId: string): Promise<void> {
   if (typeof globalThis.indexedDB === 'undefined') return
-  const databases = await (
-    globalThis.indexedDB as IDBFactory & {
-      databases?: () => Promise<IDBDatabaseInfo[]>
-    }
-  )
-    .databases?.()
-    .catch(() => [] as IDBDatabaseInfo[])
-  if (!databases) return
-  const cryptoDbPrefix = 'matrix-js-sdk:crypto'
-  const userSuffix = userId.replace(/[^a-zA-Z0-9]/g, '_')
+  const dbNames = ['matrix-js-sdk::matrix-sdk-crypto', 'matrix-js-sdk::matrix-sdk-crypto-meta', 'matrix-js-sdk:crypto']
   await Promise.all(
-    databases
-      .filter((db: IDBDatabaseInfo) => db.name?.startsWith(cryptoDbPrefix) && db.name.includes(userSuffix))
-      .map(
-        (db: IDBDatabaseInfo) =>
-          new Promise<void>((resolve) => {
-            if (!db.name) return resolve()
-            const req = globalThis.indexedDB.deleteDatabase(db.name)
-            req.onsuccess = () => resolve()
-            req.onerror = () => resolve()
-            req.onblocked = () => resolve()
-          })
-      )
+    dbNames.map(
+      (dbName) =>
+        new Promise<void>((resolve) => {
+          logger.info(`删除 IndexedDB: ${dbName}`)
+          const req = globalThis.indexedDB.deleteDatabase(dbName)
+          req.onsuccess = () => {
+            logger.info(`已删除 IndexedDB: ${dbName}`)
+            resolve()
+          }
+          req.onerror = () => {
+            logger.warn(`删除 IndexedDB 失败: ${dbName}`)
+            resolve()
+          }
+          req.onblocked = () => {
+            logger.info(`IndexedDB 被阻塞，等待释放: ${dbName}`)
+            resolve()
+          }
+        })
+    )
   )
 }
