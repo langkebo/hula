@@ -2,17 +2,13 @@
   <div class="admin-dashboard">
     <n-spin :show="loading">
       <div class="stats-grid">
-        <div v-for="stat in statCards" :key="stat.label" class="stat-card">
-          <div class="stat-icon" :style="{ background: stat.color }">
-            <svg class="size-24px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path :d="stat.icon" />
-            </svg>
-          </div>
-          <div class="stat-info">
-            <span class="stat-value">{{ stat.value }}</span>
-            <span class="stat-label">{{ stat.label }}</span>
-          </div>
-        </div>
+        <AdminStatCard
+          v-for="stat in statCards"
+          :key="stat.label"
+          :label="stat.label"
+          :value="stat.value"
+          :icon="stat.icon"
+          :color="stat.color" />
       </div>
 
       <!-- Charts Section -->
@@ -231,6 +227,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminStatCard from '@/components/admin/AdminStatCard.vue'
 import { adminService, type ServerHealth, type ServerStats, type ServerVersion } from '@/services/matrix/admin'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
@@ -451,51 +448,6 @@ onMounted(loadData)
   margin-bottom: 24px;
 }
 
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: var(--admin-card-bg);
-  border-radius: 12px;
-  box-shadow: var(--admin-card-shadow);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--admin-card-shadow-hover);
-  }
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--admin-stat-value-color);
-}
-
-.stat-label {
-  font-size: 13px;
-  color: var(--tjg-text-quaternary);
-  margin-top: 2px;
-}
-
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -661,14 +613,6 @@ onMounted(loadData)
 @media (max-width: 640px) {
   .stats-grid {
     grid-template-columns: 1fr;
-  }
-
-  .stat-card {
-    padding: 16px;
-  }
-
-  .stat-value {
-    font-size: 20px;
   }
 
   .dashboard-section {

@@ -16,15 +16,12 @@
       </n-button>
     </div>
 
-    <n-spin :show="loading || searchLoading">
-      <n-data-table
-        :columns="columns"
-        :data="isSearchMode ? searchResults : filteredRooms"
-        :pagination="{ pageSize: 20 }"
-        :bordered="false"
-        striped
-        :row-key="(row: RoomInfo) => row.roomId" />
-    </n-spin>
+    <AdminTable
+      :columns="columns"
+      :data="isSearchMode ? searchResults : filteredRooms"
+      :loading="loading || searchLoading"
+      :pagination="{ pageSize: 20 }"
+      :row-key="(row: RoomInfo) => row.roomId" />
 
     <n-modal v-model:show="showRoomDetail" :title="t('admin.rooms.roomDetail')" preset="dialog" style="width: 800px">
       <template v-if="selectedRoom">
@@ -275,6 +272,7 @@ import { Icon } from '@iconify/vue'
 import { NButton, NPopconfirm, NSpace, NStatistic, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { type RoomInfo, useAdminRooms } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'

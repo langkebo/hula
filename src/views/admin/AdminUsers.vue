@@ -31,21 +31,17 @@
         <n-button type="primary" @click="showCreateDialog = true">
           {{ t('admin.users.createUser') }}
         </n-button>
-        <n-button v-if="selectedUserIds.size > 0" type="error" @click="handleBatchDeactivate">
-          {{ t('admin.users.batchDeactivate') }} ({{ selectedUserIds.size }})
-        </n-button>
       </n-space>
     </div>
 
-    <n-spin :show="loading">
-      <n-data-table
-        :columns="columns"
-        :data="filteredUsers"
-        :pagination="{ pageSize: 20 }"
-        :bordered="false"
-        striped
-        :row-key="(row: UserInfo) => row.userId" />
-    </n-spin>
+    <AdminBulkActionBar :selected-count="selectedUserIds.size" :actions="batchActions" @action="handleBatchAction" />
+
+    <AdminTable
+      :columns="columns"
+      :data="filteredUsers"
+      :loading="loading"
+      :pagination="{ pageSize: 20 }"
+      :row-key="(row: UserInfo) => row.userId" />
 
     <n-modal v-model:show="showCreateDialog" :title="t('admin.users.createUser')" preset="dialog" style="width: 500px">
       <n-form ref="createFormRef" :model="createForm" :rules="createRules">
@@ -266,6 +262,8 @@
 import { NButton, NCheckbox, NSpace, NSwitch, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminBulkActionBar from '@/components/admin/AdminBulkActionBar.vue'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { type UserDevice, type UserInfo, type UserSession, useAdminUsers } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'
@@ -708,6 +706,15 @@ async function handleBatchDeactivate() {
       }
     }
   })
+}
+
+// 批量操作列表（由 AdminBulkActionBar 渲染）
+const batchActions = computed(() => [
+  { key: 'deactivate', label: t('admin.users.batchDeactivate'), type: 'error' as const }
+])
+
+function handleBatchAction(key: string) {
+  if (key === 'deactivate') handleBatchDeactivate()
 }
 
 onMounted(loadUsers)
