@@ -1099,6 +1099,7 @@ html,body{
   font-size:11px;
   position:relative;
   flex-shrink:0;
+  cursor:pointer;
 }
 .member-avatar.online::after{
   content:''; position:absolute; right:-1px; bottom:-1px;
@@ -2104,33 +2105,117 @@ html,body{
 }
 .vc-pip-btn.end{ background:var(--error); }
 
-/* 用户资料卡弹出层 */
+/* ============================================================
+   用户资料卡弹出层（对齐 HuLa InfoPopover：轻量 Popover）
+   后端字段来源：MatrixProfileService.getProfile / getExtendedProfile
+   （sex · resume · region · birthday）、Presence（在线状态）、设备列表
+   ============================================================ */
 .profile-card{
   position:fixed;
-  background:var(--bg-mid);
+  width:300px;
+  max-width:calc(100vw - 24px);
+  background:var(--bg-popover);
+  border:1px solid var(--line-color);
   border-radius:var(--r-md);
   box-shadow:var(--shadow-panel);
-  padding:14px;
-  width:260px;
-  z-index:1000;
+  padding:0;
+  z-index:1200;
   display:none;
-  border:1px solid var(--bg-light);
+  overflow:hidden;
+  color:var(--text-primary);
+  font-family:var(--font);
 }
-.profile-card.show{ display:block; animation:msgIn .15s; }
-.pc-avatar-lg{
-  width:56px; height:56px; border-radius:50%;
+.profile-card.show{ display:block; animation:pcPop .18s cubic-bezier(.2,.8,.3,1); }
+@keyframes pcPop{ from{ opacity:0; transform:scale(.96) translateY(6px);} to{ opacity:1; transform:none; } }
+
+/* 头部：头像 + 基础身份 */
+.pc-header{ display:flex; gap:14px; align-items:flex-start; padding:16px 16px 12px; }
+.pc-avatar-wrap{ position:relative; flex-shrink:0; }
+.pc-avatar{
+  width:60px; height:60px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  font-size:22px;
-  margin-bottom:8px;
+  font-size:24px; font-weight:600; color:#fff;
 }
-.pc-name{ font-size:15px; font-weight:600; display:flex; align-items:center; gap:6px; }
-.pc-mxid{ font-size:11px; color:var(--text-secondary); margin-top:3px; font-family:monospace; }
-.pc-meta{ display:flex; gap:12px; margin-top:10px; padding-top:10px; border-top:1px solid var(--bg-light); font-size:11px; color:var(--text-secondary); }
-.pc-meta-item{ display:flex; flex-direction:column; gap:2px; }
-.pc-meta-val{ color:var(--text-primary); font-weight:500; }
-.pc-devices{ margin-top:10px; }
-.pc-device{ display:flex; align-items:center; gap:6px; font-size:11px; padding:3px 0; color:var(--text-secondary); }
-.pc-device-dot{ width:6px; height:6px; border-radius:50%; background:var(--success); }
+.pc-dot{
+  position:absolute; right:-1px; bottom:1px;
+  width:14px; height:14px; border-radius:50%;
+  border:2.5px solid var(--bg-popover);
+}
+.pc-dot.online{ background:var(--success); }
+.pc-dot.away{ background:var(--warn); }
+.pc-dot.busy{ background:var(--error); }
+.pc-dot.offline{ background:var(--text-muted); }
+.pc-idblock{ flex:1; min-width:0; padding-top:3px; }
+.pc-name{ font-size:16px; font-weight:600; display:flex; align-items:center; gap:6px; line-height:1.3; }
+.pc-name .role-admin{ font-size:13px; line-height:1; }
+.pc-mxid{
+  display:inline-flex; align-items:center; gap:5px;
+  margin-top:4px; padding:2px 7px; border-radius:var(--r-xs);
+  background:var(--bg-mid); border:1px solid transparent;
+  font-size:11px; color:var(--text-secondary); font-family:monospace;
+  cursor:pointer; max-width:100%; transition:all .15s;
+}
+.pc-mxid:hover{ background:var(--bg-light); border-color:var(--line-color); color:var(--text-primary); }
+.pc-mxid .pc-mxid-text{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pc-mxid .pc-copy{ width:13px; height:13px; flex-shrink:0; opacity:.65; }
+.pc-mxid:hover .pc-copy{ opacity:1; }
+
+/* 在线状态行 */
+.pc-presence{
+  display:flex; align-items:center; gap:7px;
+  margin:0 16px 12px; padding:8px 10px;
+  background:var(--bg-mid); border-radius:var(--r-sm);
+  font-size:12px; color:var(--text-secondary);
+}
+.pc-presence .pc-dot{ position:static; border:none; width:8px; height:8px; }
+.pc-presence-text{ font-weight:500; color:var(--text-primary); }
+.pc-presence-time{ margin-left:auto; color:var(--text-muted); font-size:11px; }
+
+/* 个人简介（resume 字段） */
+.pc-bio{ margin:0 16px 12px; padding:10px 12px; background:var(--bg-mid); border-radius:var(--r-sm); }
+.pc-bio-label{ font-size:11px; color:var(--text-muted); margin-bottom:4px; display:flex; align-items:center; gap:4px; }
+.pc-bio-label svg{ width:13px; height:13px; }
+.pc-bio-text{ font-size:12.5px; line-height:1.55; color:var(--text-secondary); word-break:break-word; }
+
+/* 信息网格（扩展资料 + 角色 + 加入时间） */
+.pc-meta{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+  background:var(--line-color); border:1px solid var(--line-color);
+  margin:0 16px 12px; border-radius:var(--r-sm); overflow:hidden;
+}
+.pc-meta-item{ background:var(--bg-mid); padding:9px 10px; display:flex; flex-direction:column; gap:3px; min-width:0; }
+.pc-meta-label{ font-size:10.5px; color:var(--text-muted); display:flex; align-items:center; gap:4px; }
+.pc-meta-label svg{ width:12px; height:12px; }
+.pc-meta-val{ font-size:12.5px; color:var(--text-primary); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pc-meta-val.accent{ color:var(--accent); }
+
+/* 设备列表 */
+.pc-devices{ margin:0 16px 14px; }
+.pc-devices-title{ font-size:11px; color:var(--text-muted); margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.pc-devices-title svg{ width:13px; height:13px; }
+.pc-device{ display:flex; align-items:center; gap:9px; font-size:12px; padding:5px 0; color:var(--text-secondary); }
+.pc-dev-ico{ width:26px; height:26px; border-radius:var(--r-sm); background:var(--bg-mid); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.pc-dev-ico svg{ width:15px; height:15px; color:var(--icon-color); }
+.pc-dev-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pc-dev-verify{ font-size:11px; color:var(--success); display:flex; align-items:center; gap:3px; flex-shrink:0; }
+.pc-dev-verify svg{ width:13px; height:13px; }
+
+/* 操作按钮 */
+.pc-actions{ display:flex; gap:8px; padding:0 16px 16px; }
+.pc-btn{
+  height:36px; border-radius:var(--r-sm); border:1px solid var(--line-color);
+  background:var(--bg-mid); color:var(--text-primary);
+  font-size:13px; font-family:var(--font); font-weight:500;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+  padding:0 12px; transition:all .15s;
+}
+.pc-btn:hover{ background:var(--bg-light); }
+.pc-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+.pc-btn svg{ width:17px; height:17px; flex-shrink:0; }
+.pc-btn.primary{ flex:1; background:var(--accent-strong); border-color:var(--accent-strong); color:#fff; }
+.pc-btn.primary:hover{ background:var(--accent); border-color:var(--accent); }
+.pc-btn.icon{ width:36px; padding:0; }
+.pc-btn .btn-label{ white-space:nowrap; }
 
 /* 工具类 */
 .hidden{ display:none !important; }
@@ -2235,8 +2320,21 @@ html,body{
   position:relative;
   flex-shrink:0;
   border:1px solid var(--line-color);
+  cursor:pointer;
 }
 .contact-avatar.offline{ filter:grayscale(1); opacity:0.6; }
+/* 可点击头像的键盘焦点样式（WCAG AA） */
+.msg-avatar:focus-visible,
+.member-avatar:focus-visible,
+.contact-avatar:focus-visible,
+.m-contact-avatar[role="button"]:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+.m-contact-avatar[role="button"]{ cursor:pointer; }
+.msg-avatar[role="button"],
+.member-avatar[role="button"],
+.contact-avatar[role="button"]{ cursor:pointer; }
 .contact-avatar.online::after{
   content:''; position:absolute; right:-1px; bottom:-1px;
   width:10px; height:10px; border-radius:50%;
@@ -9146,7 +9244,7 @@ m.reaction</textarea></div>
           <div class="m-content m-contact-list">
             <div class="m-contact-letter">在线 (4)</div>
             <div class="m-contact-item">
-              <div class="m-contact-avatar av-2" style="position:relative;">
+              <div class="m-contact-avatar av-2" style="position:relative;" onclick="showProfileCard(event, '@huayao:tjg.im', null)" role="button" tabindex="0" aria-haspopup="dialog" title="查看 花傲姚 的资料">
                 花
                 <span style="position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;background:var(--success);border-radius:50%;border:1.5px solid var(--bg-deepest);"></span>
               </div>
@@ -9156,21 +9254,21 @@ m.reaction</textarea></div>
               </div>
             </div>
             <div class="m-contact-item">
-              <div class="m-contact-avatar av-3">D</div>
+              <div class="m-contact-avatar av-3" onclick="showProfileCard(event, '@dawn:matrix.org', null)" role="button" tabindex="0" aria-haspopup="dialog" title="查看 Dawn 的资料">D</div>
               <div>
                 <div class="m-contact-name">Dawn</div>
                 <div class="m-contact-status">@dawn:matrix.org</div>
               </div>
             </div>
             <div class="m-contact-item">
-              <div class="m-contact-avatar av-4">林</div>
+              <div class="m-contact-avatar av-4" onclick="showProfileCard(event, '@linxi:tjg.im', null)" role="button" tabindex="0" aria-haspopup="dialog" title="查看 林夕 的资料">林</div>
               <div>
                 <div class="m-contact-name">林夕</div>
                 <div class="m-contact-status">@linxi:tjg.im</div>
               </div>
             </div>
             <div class="m-contact-item">
-              <div class="m-contact-avatar av-5">默</div>
+              <div class="m-contact-avatar av-5" onclick="showProfileCard(event, '@silent:tjg.im', null)" role="button" tabindex="0" aria-haspopup="dialog" title="查看 默然 的资料">默</div>
               <div>
                 <div class="m-contact-name">默然</div>
                 <div class="m-contact-status">@silent:tjg.im</div>
@@ -9178,14 +9276,14 @@ m.reaction</textarea></div>
             </div>
             <div class="m-contact-letter">离线 (12)</div>
             <div class="m-contact-item">
-              <div class="m-contact-avatar av-6">小</div>
+              <div class="m-contact-avatar av-6" onclick="showProfileCard(event, '@xiaoqi:matrix.org', null)" role="button" tabindex="0" aria-haspopup="dialog" title="查看 小七 的资料">小</div>
               <div>
                 <div class="m-contact-name">小七</div>
                 <div class="m-contact-status">@xiaoqi:matrix.org</div>
               </div>
             </div>
             <div class="m-contact-item">
-              <div class="m-contact-avatar av-7">阿</div>
+              <div class="m-contact-avatar av-7" onclick="showProfileCard(event, '@ali:fediverse.org', null)" role="button" tabindex="0" aria-haspopup="dialog" title="查看 阿狸 的资料">阿</div>
               <div>
                 <div class="m-contact-name">阿狸</div>
                 <div class="m-contact-status">@ali:fediverse.org</div>
@@ -9631,29 +9729,52 @@ m.reaction</textarea></div>
   <div class="rp-manage" onclick="openEmojiPackDialog()" title="管理表情包"><svg><use href="#i-settings"/></svg></div>
 </div>
 
-<!-- 用户资料卡 -->
-<div class="profile-card" id="profileCard">
-  <div class="pc-avatar-lg av-2">花</div>
-  <div class="pc-name">花傲姚 <span class="role-admin">👑</span></div>
-  <div class="pc-mxid">@huayao:tjg.im</div>
-  <div class="pc-meta">
-    <div class="pc-meta-item">
-      <span>加入时间</span>
-      <span class="pc-meta-val">2024-08</span>
+<!-- 用户资料卡（点击头像弹出 · 对齐 HuLa InfoPopover） -->
+<div class="profile-card" id="profileCard" role="dialog" aria-label="用户资料卡">
+  <div class="pc-header">
+    <div class="pc-avatar-wrap">
+      <div class="pc-avatar av-2" data-pc="avatar">花</div>
+      <span class="pc-dot online" data-pc="dot" title="在线"></span>
     </div>
-    <div class="pc-meta-item">
-      <span>角色</span>
-      <span class="pc-meta-val">管理员</span>
-    </div>
-    <div class="pc-meta-item">
-      <span>状态</span>
-      <span class="pc-meta-val" style="color:var(--success);">在线</span>
+    <div class="pc-idblock">
+      <div class="pc-name"><span data-pc="name">花傲姚</span> <span class="role-admin" data-pc="role" style="display:none"></span></div>
+      <button class="pc-mxid" type="button" data-pc="copy" title="复制 Matrix ID" aria-label="复制 Matrix ID">
+        <span class="pc-mxid-text" data-pc="mxid">@huayao:tjg.im</span>
+        <svg class="pc-copy"><use href="#i-copy"/></svg>
+      </button>
     </div>
   </div>
-  <div class="pc-devices">
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">已验证设备 (2)</div>
-    <div class="pc-device"><span class="pc-device-dot"></span> macOS · Safari</div>
-    <div class="pc-device"><span class="pc-device-dot"></span> iOS · TJG App</div>
+
+  <div class="pc-presence">
+    <span class="pc-dot online" data-pc="dot2"></span>
+    <span class="pc-presence-text" data-pc="presence">在线</span>
+    <span class="pc-presence-time" data-pc="presenceTime"></span>
+  </div>
+
+  <div class="pc-bio" data-pc="bioBox">
+    <div class="pc-bio-label"><svg><use href="#i-info"/></svg> 个人简介</div>
+    <div class="pc-bio-text" data-pc="bio"></div>
+  </div>
+
+  <div class="pc-meta">
+    <div class="pc-meta-item"><span class="pc-meta-label">性别</span><span class="pc-meta-val" data-pc="sex">—</span></div>
+    <div class="pc-meta-item"><span class="pc-meta-label"><svg><use href="#i-map"/></svg>地区</span><span class="pc-meta-val" data-pc="region">—</span></div>
+    <div class="pc-meta-item"><span class="pc-meta-label">生日</span><span class="pc-meta-val" data-pc="birthday">—</span></div>
+    <div class="pc-meta-item"><span class="pc-meta-label">加入</span><span class="pc-meta-val" data-pc="join">—</span></div>
+    <div class="pc-meta-item"><span class="pc-meta-label">角色</span><span class="pc-meta-val accent" data-pc="roleText">—</span></div>
+    <div class="pc-meta-item"><span class="pc-meta-label">设备</span><span class="pc-meta-val" data-pc="devCount">0</span></div>
+  </div>
+
+  <div class="pc-devices" data-pc="devBox">
+    <div class="pc-devices-title"><svg><use href="#i-device"/></svg> 已验证设备 (<span data-pc="devCount2">0</span>)</div>
+    <div data-pc="devList"></div>
+  </div>
+
+  <div class="pc-actions">
+    <button class="pc-btn primary" type="button" data-pc="msg" onclick="pcAction('msg')"><svg><use href="#i-chat"/></svg><span class="btn-label">发消息</span></button>
+    <button class="pc-btn icon" type="button" title="语音通话" aria-label="语音通话" onclick="pcAction('phone')"><svg><use href="#i-phone"/></svg></button>
+    <button class="pc-btn icon" type="button" data-pc="add" title="添加好友" aria-label="添加好友" onclick="pcAction('add')"><svg><use href="#i-user-plus"/></svg></button>
+    <button class="pc-btn icon" type="button" title="更多" aria-label="更多操作" onclick="pcAction('more')"><svg><use href="#i-more"/></svg></button>
   </div>
 </div>
 
@@ -10766,7 +10887,7 @@ function renderMessage(m, idx){
     <div class="msg-row others" data-msg-id="msg-${idx}" oncontextmenu="showCtxMenu(event)">
       <div class="msg-check" onclick="toggleMsgSelect(this)"></div>
       ${renderMsgActions()}
-      <div class="msg-avatar ${m.av}" onclick="showProfileCard(event)">${m.sender.charAt(0)}</div>
+      <div class="msg-avatar ${m.av}" data-sender="${m.sender}" data-mxid="${m.mxid||''}" data-pf='${JSON.stringify({name:m.sender, av:m.av, mxid:m.mxid||'', server:(m.mxid?m.mxid.split(':')[1]:'tjg.im')})}' role="button" tabindex="0" aria-haspopup="dialog" title="查看 ${m.sender} 的资料">${m.sender.charAt(0)}</div>
       <div class="msg-bubble-wrap">
         <div class="msg-sender-name">
           ${m.sender}
@@ -10909,7 +11030,7 @@ function renderMemberItem(m){
     : '';
   return `
     <div class="member-item">
-      <div class="member-avatar ${m.online ? 'online' : ''} ${m.av}">${m.initial}</div>
+      <div class="member-avatar ${m.online ? 'online' : ''} ${m.av}" data-name="${m.name}" data-pf='${JSON.stringify(memberFallback(m))}' role="button" tabindex="0" aria-haspopup="dialog" title="查看 ${m.name} 的资料">${m.initial}</div>
       <div class="member-name">${m.name} ${roleIcon} ${fedTag}</div>
     </div>
   `;
@@ -12280,14 +12401,306 @@ setTimeout(() => {
   // showIncomingCall({ type:'voice', caller:{ name:'林夕', mxid:'@linxi:tjg.im', avatar:'av-4', initial:'林' } });
 }, 5000);
 
+/* ============================================================
+   用户资料卡（点击头像弹出 · 对齐 HuLa InfoPopover）
+   数据契约对应 synapse-rust 后端：
+   - MatrixProfileService.getProfile      → displayname / avatar_url
+   - MatrixProfileService.getExtendedProfile → sex / resume / region / birthday
+   - MatrixPresenceService.getPresence    → online / away / busy / offline
+   ============================================================ */
 const profileCard = document.getElementById('profileCard');
-function showProfileCard(e){
-  e.stopPropagation();
-  profileCard.style.left = (e.clientX + 10) + 'px';
-  profileCard.style.top = (e.clientY + 10) + 'px';
-  profileCard.classList.add('show');
+const PRESENCE_LABEL = { online:'在线', away:'离开', busy:'忙碌', offline:'离线' };
+
+/* ============================================================
+   用户资料卡 · 后端数据契约（对接 synapse-rust @ https://matrix.test）
+   字段契约对应标准 Matrix Client-Server API：
+     GET /_matrix/client/v3/profile/{userId}              -> displayname / avatar_url
+     GET /_matrix/client/v3/presence/{userId}/status      -> presence(online|away|busy|offline) / last_active_ago
+     GET /_matrix/client/unstable/io.tjg.profile/{userId} -> sex / resume / region / birthday / join（synapse-rust 扩展）
+   本地兜底数据（联系人/成员/消息）在后端不可达时保证资料卡可展示。
+   真实请求实现见下方 TJGProfileAPI.get。
+   ============================================================ */
+
+/* 将本地联系人 / 成员 / 消息对象映射为资料卡契约结构（后端无记录时的兜底） */
+function buildProfileFromLocal(o){
+  if(!o) return null;
+  const isOnline = o.online !== false && o.online !== 'offline' && o.status !== 'offline';
+  const roleText = o.role === 'admin' ? '管理员' : o.role === 'mod' ? '版主' : '成员';
+  const roleIcon = o.role === 'admin' ? '👑' : o.role === 'mod' ? '🛡' : '';
+  const devN = typeof o.devices === 'number' ? o.devices : (Array.isArray(o.devices) ? o.devices.length : 0);
+  const devices = devN ? Array.from({length:devN}, (_,i)=>({name:'设备 '+(i+1)})) : [];
+  return {
+    name: o.name || o.mxid || '未知用户',
+    mxid: o.mxid || '',
+    av: o.av || 'av-1',
+    initial: o.initial || (o.name||'?').charAt(0),
+    presence: isOnline ? 'online' : 'offline',
+    presenceTime: o.presenceTime || '',
+    resume: o.resume || (o.remark ? ('备注：'+o.remark) : ''),
+    sex:'—', region: o.server ? '@:'+o.server : '—', birthday:'—', join:'—',
+    role: roleText, roleIcon: roleIcon,
+    devices: devices
+  };
 }
-document.addEventListener('click', () => profileCard.classList.remove('show'));
+
+/* ============================================================
+   后端资料服务 · 真实连接 synapse-rust @ https://matrix.test
+   标准 Matrix Client-Server API：
+     GET /_matrix/client/v3/profile/{userId}               -> displayname / avatar_url（公开，无需鉴权）
+     GET /_matrix/client/v3/presence/{userId}/status       -> presence / last_active_ago（可能需鉴权）
+     GET /_matrix/client/unstable/io.tjg.profile/{userId}  -> sex/resume/region/birthday/join（synapse-rust 扩展，尽力而为）
+   网络 / CORS / 鉴权失败时自动回退到本地兜底数据，资料卡始终可展示。
+   ============================================================ */
+const MATRIX_BASE = 'https://matrix.test';
+const MATRIX_MEDIA = MATRIX_BASE + '/_matrix/media/v3';
+
+function mxcToHttp(mxc, size){
+  if(!mxc || typeof mxc !== 'string' || !mxc.startsWith('mxc://')) return null;
+  const parts = mxc.slice('mxc://'.length).split('/');
+  if(parts.length < 2) return null;
+  const [serverName, mediaId] = parts;
+  const s = size || 96;
+  return `${MATRIX_MEDIA}/thumbnail/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}?width=${s}&height=${s}&method=crop`;
+}
+function formatAgo(ms){
+  if(ms == null) return '';
+  const sec = Math.floor(ms / 1000);
+  if(sec < 60) return sec + ' 秒';
+  const min = Math.floor(sec / 60);
+  if(min < 60) return min + ' 分钟';
+  const hr = Math.floor(min / 60);
+  if(hr < 24) return hr + ' 小时';
+  const day = Math.floor(hr / 24);
+  return day + ' 天';
+}
+
+const TJGProfileAPI = {
+  async get(userId, fallback){
+    // 兜底：先用本地数据构造，保证资料卡即时渲染（即便后端不可达 / CORS 失败）
+    const local = buildProfileFromLocal(fallback);
+    const base = local || {
+      name: userId || '未知用户', mxid: userId || '', av:'av-1',
+      initial:(userId||'?').charAt(0), presence:'offline', resume:'', role:'成员', devices:[]
+    };
+    base.mxid = userId || base.mxid;
+
+    if(!userId || typeof userId !== 'string' || !userId.startsWith('@')){
+      return base; // 非法 mxid，直接返回本地兜底
+    }
+
+    const enc = encodeURIComponent(userId);
+    const headers = { 'Accept': 'application/json' };
+
+    // 1) 基础资料（displayname + avatar_url）—— 公开接口，无需鉴权
+    try {
+      const r = await fetch(`${MATRIX_BASE}/_matrix/client/v3/profile/${enc}`, { mode:'cors', headers });
+      if(r.ok){
+        const j = await r.json().catch(() => ({}));
+        if(j.displayname) base.name = j.displayname;
+        if(j.avatar_url) base.avatarUrl = mxcToHttp(j.avatar_url, 96);
+      }
+    } catch(_) { /* 网络 / CORS 失败：保持本地兜底 */ }
+
+    // 2) 在线状态（可能需鉴权；失败则用本地值）
+    try {
+      const r = await fetch(`${MATRIX_BASE}/_matrix/client/v3/presence/${enc}/status`, { mode:'cors', headers });
+      if(r.ok){
+        const j = await r.json().catch(() => ({}));
+        if(j.presence) base.presence = j.presence;
+        if(typeof j.last_active_ago === 'number') base.presenceTime = '活跃 ' + formatAgo(j.last_active_ago) + ' 前';
+      }
+    } catch(_) {}
+
+    // 3) synapse-rust 扩展资料（sex/resume/region/birthday/join）—— 尽力而为，未实现时静默忽略
+    try {
+      const r = await fetch(`${MATRIX_BASE}/_matrix/client/unstable/io.tjg.profile/${enc}`, { mode:'cors', headers });
+      if(r.ok){
+        const j = await r.json().catch(() => ({}));
+        if(j.sex) base.sex = j.sex;
+        if(j.resume) base.resume = j.resume;
+        if(j.region) base.region = j.region;
+        if(j.birthday) base.birthday = j.birthday;
+        if(j.join) base.join = j.join;
+      }
+    } catch(_) {}
+
+    return base;
+  }
+};
+
+/* 头像兜底数据构造（供模板内联 / 键盘事件复用） */
+function memberFallback(m){
+  return { name:m.name, av:m.av, initial:m.initial, online:!!m.online, role:m.role||'', server:m.server||'tjg.im' };
+}
+function contactFallback(c){
+  return { name:c.name, av:c.av, initial:c.initial, online:c.online, mxid:c.mxid, server:c.server, devices:c.devices, remark:c.remark };
+}
+function avatarPf(el){
+  try { return el.dataset.pf ? JSON.parse(el.dataset.pf) : null; } catch(_) { return null; }
+}
+
+const ProfileCard = {
+  current: null,
+  open(e, key, fallback){
+    if(e && e.stopPropagation) e.stopPropagation();
+    this.current = { key: key, fallback: fallback };
+    const t = e && e.target;
+    // 优先用头像元素自身的矩形定位（点击头像内部子元素也能正确锚定）
+    const av = (t && t.closest) ? t.closest('.msg-avatar, .member-avatar, .contact-avatar, .m-contact-avatar') : null;
+    const rect = (av && av.getBoundingClientRect) ? av.getBoundingClientRect()
+      : (t && t.getBoundingClientRect) ? t.getBoundingClientRect()
+      : { left:(e?e.clientX:12), right:(e?e.clientX:12), top:(e?e.clientY:12), bottom:(e?e.clientY:12) };
+    profileCard.classList.add('show');
+    this.position(rect);
+    // 乐观渲染：先用本地兜底数据即时展示，再与后端返回对齐
+    const local = buildProfileFromLocal(fallback);
+    this.render(local || { name:key||'未知用户', mxid:key||'', av:'av-1', initial:(key||'?').charAt(0), presence:'offline', resume:'', role:'成员', devices:[] });
+    this.load(key, fallback);
+    const first = profileCard.querySelector('.pc-btn, .pc-mxid');
+    if(first) first.focus({ preventScroll:true });
+  },
+  load(key, fallback){
+    if(!key) return;
+    TJGProfileAPI.get(key, fallback).then(d => {
+      // 仅在弹层仍打开时回填，避免覆盖已切换的目标
+      if(profileCard.classList.contains('show')) this.render(d);
+    }).catch(()=>{});
+  },
+  render(d){
+    this.current = this.current || {};
+    this.current.mxid = d.mxid; this.current.name = d.name;
+    const set = (k,v)=>{ const el = profileCard.querySelector(`[data-pc="${k}"]`); if(el) el.textContent = (v==null||v==='' ? '—' : v); };
+    const avatar = profileCard.querySelector('[data-pc="avatar"]');
+    if(avatar){
+      avatar.className = 'pc-avatar ' + (d.av||'av-1');
+      const setLetter = () => { avatar.textContent = d.initial || (d.name||'?').charAt(0); avatar.style.backgroundImage = ''; };
+      if(d.avatarUrl){
+        // 真实头像优先；加载失败（404 / CORS）则回退到首字母 + 渐变
+        const img = new Image();
+        img.onload = () => { avatar.style.backgroundImage = `url("${d.avatarUrl}")`; avatar.style.backgroundSize = 'cover'; avatar.style.backgroundPosition = 'center'; avatar.textContent = ''; };
+        img.onerror = setLetter;
+        img.src = d.avatarUrl;
+      } else {
+        setLetter();
+      }
+    }
+    set('name', d.name); set('mxid', d.mxid);
+    profileCard.querySelector('[data-pc="mxid"]').dataset.mxid = d.mxid || '';
+    set('bio', d.resume);
+    if(d.resume==null||d.resume===''){ profileCard.querySelector('[data-pc="bioBox"]').style.display='none'; }
+    else { profileCard.querySelector('[data-pc="bioBox"]').style.display=''; }
+    set('sex', d.sex); set('region', d.region); set('birthday', d.birthday);
+    set('join', d.join); set('roleText', d.role);
+    set('presence', PRESENCE_LABEL[d.presence] || '离线');
+    set('presenceTime', d.presenceTime || '');
+    const roleIcon = profileCard.querySelector('[data-pc="role"]');
+    if(roleIcon){ roleIcon.style.display = d.roleIcon ? '' : 'none'; roleIcon.textContent = d.roleIcon || ''; }
+    ['dot','dot2'].forEach(k=>{ const el = profileCard.querySelector(`[data-pc="${k}"]`); if(el){ el.className = 'pc-dot ' + (d.presence||'offline'); el.title = PRESENCE_LABEL[d.presence]||'离线'; } });
+    const devs = Array.isArray(d.devices) ? d.devices : [];
+    set('devCount', devs.length); set('devCount2', devs.length);
+    const devBox = profileCard.querySelector('[data-pc="devBox"]');
+    devBox.style.display = devs.length ? '' : 'none';
+    profileCard.querySelector('[data-pc="devList"]').innerHTML = devs.map(dev=>`
+      <div class="pc-device">
+        <span class="pc-dev-ico"><svg><use href="#i-device"/></svg></span>
+        <span class="pc-dev-name">${dev.name}</span>
+        <span class="pc-dev-verify"><svg><use href="#i-check"/></svg></span>
+      </div>`).join('');
+  },
+  position(rect){
+    const pad = 12, card = profileCard;
+    card.style.left = '0px'; card.style.top = '0px';
+    const r = card.getBoundingClientRect();
+    let x = rect.right + 8, y = rect.bottom + 8;
+    if(x + r.width > window.innerWidth - pad) x = rect.left - r.width - 8;
+    if(x < pad) x = pad;
+    if(y + r.height > window.innerHeight - pad) y = rect.top - r.height - 8;
+    if(y < pad) y = pad;
+    card.style.left = x + 'px';
+    card.style.top = y + 'px';
+  }
+};
+
+function showProfileCard(e, key, fallback){ ProfileCard.open(e, key, fallback); }
+
+/* 资料卡操作按钮：接入真实业务 */
+function pcAction(action){
+  const cur = ProfileCard.current || {};
+  const mxid = cur.mxid, name = cur.name;
+  if(action === 'msg'){
+    openDmByMxid(mxid, name);
+  } else if(action === 'add'){
+    openAddFriendDialog(mxid);
+  } else if(action === 'phone'){
+    announce('正在发起语音通话：' + (name || mxid || '未知用户'));
+  } else {
+    announce('更多操作：' + (name || mxid || '未知用户'));
+  }
+}
+
+/* 发消息 → 打开（或创建）对应 DM 会话 */
+function openDmByMxid(mxid, name){
+  profileCard.classList.remove('show');
+  let room = (mxid && rooms.find(r => r.mxid === mxid))
+    || rooms.find(r => r.name === name && (r.type==='dm' || r.type==='encrypted-dm'));
+  if(!room){
+    const av = (contactsData.friend.find(c=>c.mxid===mxid) || {}).av || 'av-1';
+    const maxId = rooms.reduce((m,r)=>Math.max(m,r.id), 0);
+    room = {
+      id: maxId + 1, name: name || mxid || '新会话', type:'dm', icon:'', av: av,
+      preview:'点击开始对话…', time:'刚刚', online:1, unread:0, muted:false, isOnline:true, mxid: mxid
+    };
+    rooms.unshift(room);
+    renderRoomList();
+  }
+  switchRoom(room.id);
+}
+
+/* 添加好友 → 打开添加好友对话框并预填 Matrix ID */
+function openAddFriendDialog(prefillMxid){
+  profileCard.classList.remove('show');
+  openDialog('addFriendDialog');
+  addFriendSearchInput.value = prefillMxid || '';
+  addFriendSearchInput.focus();
+  renderAddFriendResults(prefillMxid || '');
+}
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') profileCard.classList.remove('show'); });
+
+/* 头像点击 → 打开资料卡（统一事件委托，连接真实后端 https://matrix.test）
+   点击卡片外部 → 关闭。单一处理器避免"打开后又被关闭"的竞态。 */
+document.addEventListener('click', (e) => {
+  const av = e.target.closest('.msg-avatar, .member-avatar, .contact-avatar');
+  if (av) {
+    e.stopPropagation();
+    const key = av.dataset.mxid || av.dataset.sender || av.dataset.name || '';
+    ProfileCard.open(e, key, avatarPf(av));
+    return;
+  }
+  if (!profileCard.contains(e.target)) {
+    profileCard.classList.remove('show');
+  }
+});
+
+/* 头像键盘可达性：Enter / Space 触发资料卡（WCAG AA） */
+document.addEventListener('keydown', e=>{
+  const t = e.target;
+  if((e.key==='Enter' || e.key===' ' || e.key==='Spacebar') && t.classList && (t.classList.contains('msg-avatar') || t.classList.contains('member-avatar') || t.classList.contains('contact-avatar') || t.classList.contains('m-contact-avatar'))){
+    e.preventDefault();
+    const key = t.dataset.mxid || t.dataset.sender || t.dataset.name || '';
+    showProfileCard(e, key, avatarPf(t));
+  }
+});
+
+/* Matrix ID 复制 */
+profileCard.querySelector('[data-pc="copy"]').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  const mxid = profileCard.querySelector('[data-pc="mxid"]').dataset.mxid || '';
+  if(navigator.clipboard){ navigator.clipboard.writeText(mxid).catch(()=>{}); }
+  const btn = e.currentTarget;
+  btn.querySelector('.pc-mxid-text').textContent = '已复制';
+  setTimeout(()=>{ const t = profileCard.querySelector('[data-pc="mxid"]'); if(t) t.textContent = mxid; }, 1200);
+});
 
 /* ============================================================
    空间树折叠
@@ -14104,6 +14517,7 @@ function renderContacts(tab){
 
 // D1: 事件委托 — 联系人列表点击（只绑定一次，避免每次 render 重复绑定）
 contactsBodyEl.addEventListener('click', (e) => {
+  if(e.target.closest('.contact-avatar')) return; // 头像点击由资料卡处理，不打开详情面板
   const item = e.target.closest('.contact-item');
   if(!item) return;
   contactsBodyEl.querySelectorAll('.contact-item').forEach(i => i.classList.remove('active'));
@@ -14140,7 +14554,7 @@ function renderContactItem(c){
     : c.online ? '在线' : '离线';
   return `
     <div class="contact-item" data-mxid="${c.mxid}" data-ctab="${currentCTab}">
-      <div class="contact-avatar ${c.av} ${c.online?'online':'offline'}">${c.initial}</div>
+      <div class="contact-avatar ${c.av} ${c.online?'online':'offline'}" data-mxid="${c.mxid}" data-pf='${JSON.stringify(contactFallback(c))}' role="button" tabindex="0" aria-haspopup="dialog" title="查看 ${c.name} 的资料">${c.initial}</div>
       <div class="contact-info">
         <div class="contact-name">${c.name} ${roleIcon} ${starIcon} ${c.isBot?'<span class="bot-tag">机器人</span>':''} ${c.group ? `<span class="contact-group-badge">${c.group}</span>` : ''}</div>
         <div class="contact-status">${statusText} ${server?`· @:${server}`:''} ${c.memberCount?`· ${c.memberCount} 成员`:''}</div>
