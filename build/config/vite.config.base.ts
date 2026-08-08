@@ -157,19 +157,13 @@ export const baseConfig: UserConfig = {
     }
   },
   optimizeDeps: {
-    include: [
-      'vue',
-      'vue-router',
-      'pinia',
-      '@vueuse/core',
-      'naive-ui',
-      'dayjs',
-      'es-toolkit',
-      'dompurify',
-      'mitt',
-      'matrix-js-sdk'
-    ],
+    // 注意：matrix-js-sdk 通过 link:../matrix-js-sdk 本地链接，其依赖（loglevel, oidc-client-ts,
+    // jwt-decode 等）安装在 matrix-js-sdk 自身的 node_modules/ 中。如果将其加入 include，
+    // Vite 预打包会改写 import 路径，导致在 HuLa 的 node_modules 中找不到这些依赖。
+    // 因此必须 exclude，让 Vite 直接按源码路径解析，利用 Node 模块查找机制找到 sibling 的依赖。
+    include: ['vue', 'vue-router', 'pinia', '@vueuse/core', 'naive-ui', 'dayjs', 'es-toolkit', 'dompurify', 'mitt'],
     exclude: [
+      'matrix-js-sdk',
       '@matrix-org/matrix-sdk-crypto-wasm',
       'three',
       '@vue-office/docx',
