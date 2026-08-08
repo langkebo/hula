@@ -9,7 +9,7 @@
         height="48"
         viewBox="0 0 48 48"
         fill="none"
-        stroke="var(--tjg-status-offline)"
+        stroke="var(--tjg-color-danger-500)"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round">
@@ -25,7 +25,7 @@
         height="48"
         viewBox="0 0 48 48"
         fill="none"
-        stroke="var(--tjg-status-offline)"
+        stroke="var(--tjg-color-danger-500)"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round">
@@ -42,7 +42,7 @@
         height="48"
         viewBox="0 0 48 48"
         fill="none"
-        stroke="var(--tjg-status-offline)"
+        stroke="var(--tjg-color-danger-500)"
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round">
@@ -53,7 +53,7 @@
         <line x1="6" y1="6" x2="42" y2="42" />
       </svg>
     </div>
-    <p class="error-state__title">{{ title }}</p>
+    <p v-if="title" class="error-state__title">{{ title }}</p>
     <p v-if="message" class="error-state__message">{{ message }}</p>
     <div v-if="retryText || $slots.actions" class="error-state__actions">
       <button
@@ -124,8 +124,8 @@ withDefaults(
   width: 64px;
   height: 64px;
   border-radius: 999px;
-  color: var(--tjg-status-offline);
-  background: color-mix(in srgb, var(--tjg-status-offline) 10%, transparent);
+  color: var(--tjg-color-danger-500);
+  background: color-mix(in srgb, var(--tjg-color-danger-500) 10%, transparent);
 }
 
 .error-state__icon--compact {

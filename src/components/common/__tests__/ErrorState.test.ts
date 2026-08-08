@@ -131,11 +131,25 @@ describe('ErrorState', () => {
     expect(wrapper.attributes('aria-live')).toBe('assertive')
   })
 
-  it('uses --tjg-status-offline token for illustration stroke color', () => {
+  it('uses --tjg-color-danger-500 token for illustration stroke color', () => {
     const wrapper = mount(ErrorState, {
       props: { title: '出错了', illustration: 'generic-error' }
     })
     const svg = wrapper.find('[data-illustration="generic-error"]')
-    expect(svg.attributes('stroke')).toBe('var(--tjg-status-offline)')
+    expect(svg.attributes('stroke')).toBe('var(--tjg-color-danger-500)')
+  })
+
+  it('renders both retry button and actions slot when both are provided', () => {
+    const wrapper = mount(ErrorState, {
+      props: { title: '加载失败', retryText: '重试' },
+      slots: {
+        actions: '<a class="custom-link" href="#">联系客服</a>'
+      }
+    })
+    const btn = wrapper.find('[data-testid="error-retry"]')
+    expect(btn.exists()).toBe(true)
+    expect(btn.text()).toContain('重试')
+    expect(wrapper.find('.custom-link').exists()).toBe(true)
+    expect(wrapper.text()).toContain('联系客服')
   })
 })
