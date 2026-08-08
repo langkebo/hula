@@ -638,6 +638,7 @@
       "subtitle": "Monitor federation server connections",
       "total_servers": "Total Servers",
       "online_servers": "Online",
+      "degraded_servers": "Degraded",
       "offline_servers": "Offline",
       "search_placeholder": "Search server name",
       "col_server": "Server",
