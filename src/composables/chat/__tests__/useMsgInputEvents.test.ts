@@ -152,9 +152,8 @@ describe('useMsgInputEvents', () => {
     expect(ctx.reply.value.content).toBe('REPLY_BODY')
     expect(ctx.reply.value.key).toBe('m-42')
 
-    // nextTick phase: insertNode + triggerInputEvent
+    // nextTick phase: triggerInputEvent (reply preview now via ReplyComposer, no DOM injection)
     await nextTick()
-    expect(ctx.insertNode).toHaveBeenCalled()
     expect(ctx.triggerInputEvent).toHaveBeenCalledWith(ctx.dom)
   })
 })

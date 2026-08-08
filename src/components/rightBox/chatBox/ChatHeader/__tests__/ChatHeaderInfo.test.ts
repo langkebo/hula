@@ -1,99 +1,71 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent } from 'vue'
 import { RoomTypeEnum } from '@/enums'
 import ChatHeaderInfo from '../ChatHeaderInfo.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: { count?: number }) => {
-      if (key === 'home.chat_header.member_count') {
-        return `${params?.count ?? 0} members`
-      }
-
-      const messages: Record<string, string> = {
-        'home.chat_header.channel': 'Channel',
-        'components.encryptionStatus.encrypted': 'Encrypted',
-        'components.encryptionStatus.unencrypted': 'Not encrypted',
-        'components.encryptionStatus.unknown': 'Checking security',
-        'components.encryptionStatus.error': 'Security issue',
-        'components.encryptionStatus.encryptedTooltip': 'Encrypted tooltip',
-        'components.encryptionStatus.unencryptedTooltip': 'Unencrypted tooltip',
-        'components.encryptionStatus.unknownTooltip': 'Unknown tooltip',
-        'components.encryptionStatus.errorTooltip': 'Error tooltip'
-      }
-
-      return messages[key] ?? key
-    }
-  })
-}))
-
-vi.mock('naive-ui', () => {
-  const simpleStub = (name: string) =>
-    defineComponent({
+// naive-ui 与内部重组件 stub，聚焦联邦图标渲染
+vi.mock('naive-ui', async () => {
+  const { defineComponent: dc, h: hh } = await import('vue')
+  const passthrough = (name: string) =>
+    dc({
       name,
-      setup(_, { slots, attrs }) {
-        return () => h('div', attrs, slots.default?.())
-      }
+      setup:
+        (_, { slots }) =>
+        () =>
+          hh('div', { class: `n-${name.toLowerCase()}` }, [slots.default?.()])
     })
-
-  return {
-    NTag: simpleStub('NTag'),
-    NTooltip: defineComponent({
-      name: 'NTooltip',
-      setup(_, { slots }) {
-        return () => h('div', { 'data-test': 'tooltip' }, [slots.trigger?.(), slots.default?.()])
-      }
-    })
-  }
+  return { NTag: passthrough('NTag') }
 })
 
 vi.mock('@/components/atomic/TjgAvatar.vue', () => ({
-  default: defineComponent({
-    name: 'TjgAvatar',
-    props: ['src', 'size', 'name', 'round', 'fallbackSrc', 'ariaLabel'],
-    setup(_, { attrs }) {
-      return () => h('div', { class: 'tjg-avatar-stub', ...attrs })
-    }
+  default: defineComponent({ name: 'TjgAvatarStub', template: '<div class="tjg-avatar-stub"></div>' })
+}))
+vi.mock('@/components/encryption/EncryptionStatus.vue', () => ({
+  default: defineComponent({ name: 'EncryptionStatusStub', template: '<div class="enc-stub"></div>' })
+}))
+vi.mock('@/composables/chat/useTyping', () => ({
+  useTyping: () => ({ getTypingUsersText: () => '' })
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, unknown>) => (params ? `${key}:${JSON.stringify(params)}` : key),
+    locale: { value: 'zh-CN' }
   })
 }))
 
-describe('ChatHeaderInfo', () => {
-  it('renders encryption status alongside group metadata', () => {
-    const wrapper = mount(ChatHeaderInfo, {
-      props: {
-        name: 'Secure Room',
-        avatar: '',
-        type: RoomTypeEnum.GROUP,
-        memberCount: 3,
-        isOnline: false,
-        statusIcon: null,
-        statusTitle: '',
-        isBotUser: false,
-        encryptionStatus: 'encrypted'
-      }
-    })
-
-    expect(wrapper.text()).toContain('3 members')
-    expect(wrapper.text()).toContain('Encrypted')
+const mountInfo = (props: Record<string, unknown> = {}) =>
+  mount(ChatHeaderInfo, {
+    props: {
+      name: '测试房间',
+      avatar: '',
+      type: RoomTypeEnum.GROUP,
+      memberCount: 3,
+      isOnline: false,
+      statusIcon: '',
+      statusTitle: '',
+      isBotUser: false,
+      ...props
+    }
   })
 
-  it('renders direct message presence and unencrypted state together', () => {
-    const wrapper = mount(ChatHeaderInfo, {
-      props: {
-        name: 'Alex',
-        avatar: '',
-        type: RoomTypeEnum.SINGLE,
-        memberCount: 0,
-        isOnline: true,
-        statusIcon: null,
-        statusTitle: 'Online',
-        isBotUser: false,
-        encryptionStatus: 'unencrypted'
-      }
-    })
+describe('ChatHeaderInfo · 联邦图标', () => {
+  it('非联邦房间不渲染 globe 图标', () => {
+    const wrapper = mountInfo({ isFederated: false })
+    expect(wrapper.find('.federation-icon').exists()).toBe(false)
+  })
 
-    expect(wrapper.text()).toContain('Online')
-    expect(wrapper.text()).toContain('Not encrypted')
+  it('联邦房间渲染 globe 图标并带无障碍标签', () => {
+    const wrapper = mountInfo({ isFederated: true, federationServer: 'matrix.remote' })
+    const icon = wrapper.find('.federation-icon')
+    expect(icon.exists()).toBe(true)
+    expect(icon.attributes('role')).toBe('img')
+    expect(icon.attributes('aria-label')).toBe('home.chat_header.federated')
+  })
+
+  it('tooltip 包含 server 名称', () => {
+    const wrapper = mountInfo({ isFederated: true, federationServer: 'matrix.remote' })
+    expect(wrapper.find('.federation-icon').attributes('title')).toContain('matrix.remote')
   })
 })

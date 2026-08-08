@@ -244,7 +244,7 @@ describe('KeyBackupSetupDialog', () => {
     expect(getKeyBackupInfoMock).toHaveBeenCalled()
     expect(vm.step).toBe('success')
     expect(vm.dialogTitle).toBe('设置完成')
-    expect(messageSuccessMock).toHaveBeenCalledWith('安全备份验证成功')
+    expect(messageSuccessMock).toHaveBeenCalledWith('密钥备份验证成功')
 
     vm.handleClose()
 
@@ -280,19 +280,19 @@ describe('KeyBackupSetupDialog', () => {
 
     await vm.startSetup()
     expect(vm.step).toBe('intro')
-    expect(messageErrorMock).toHaveBeenCalledWith('创建安全备份失败，请稍后重试')
+    expect(messageErrorMock).toHaveBeenCalledWith('创建密钥备份失败')
 
     vm.recoveryKey = 'RECOVERY-KEY-123'
     await vm.copyKey()
     await flushPromises()
-    expect(messageErrorMock).toHaveBeenCalledWith('复制失败，请手动复制')
+    expect(messageErrorMock).toHaveBeenCalledWith('请手动复制密钥')
 
     vm.step = 'verify'
     vm.recoveryKey = 'RECOVERY-KEY-123'
     vm.verifyKey = 'RECOVERY-KEY-123'
     await vm.verifyKeyInput()
 
-    expect(messageErrorMock).toHaveBeenCalledWith('验证备份失败')
+    expect(messageErrorMock).toHaveBeenCalledWith('密钥备份验证失败，请稍后重试')
   })
 
   it('缺少当前密码时阻止初始化备份', async () => {
@@ -306,21 +306,23 @@ describe('KeyBackupSetupDialog', () => {
   })
 
   it('在密钥不匹配或备份信息缺失时阻止完成设置', async () => {
-    getKeyBackupInfoMock.mockResolvedValueOnce(null)
+    getKeyBackupInfoMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce(null)
     const wrapper = mountComponent()
 
     ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).recoveryKey = 'RECOVERY-KEY-123'
     ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'WRONG-KEY'
-    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).step = 'verify'
     await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
 
     expect(messageErrorMock).toHaveBeenCalledWith('密钥不匹配，请重新输入')
 
     ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKey = 'RECOVERY-KEY-123'
+    ;(wrapper.vm as unknown as KeyBackupSetupDialogVm).step = 'verify'
+    // 重试逻辑会产生 ~3s 延迟（3 次重试 × 1.5s 间隔）
     await (wrapper.vm as unknown as KeyBackupSetupDialogVm).verifyKeyInput()
+    await flushPromises()
 
     expect((wrapper.vm as unknown as KeyBackupSetupDialogVm).step).toBe('verify')
-    expect(messageErrorMock).toHaveBeenCalledWith('验证备份失败')
+    expect(messageErrorMock).toHaveBeenCalledWith('密钥备份验证失败，请稍后重试')
   })
 
   it('取消时重置内部状态', async () => {

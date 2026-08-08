@@ -105,6 +105,7 @@ vi.mock('@/composables/chat/useMsgInput', () => ({
     handleAI: vi.fn(),
     handleInput: vi.fn(),
     msgInput: ref(''),
+    reply: ref({ avatar: '', imgCount: 0, accountName: '', content: '', key: 0 }),
     send: vi.fn(),
     sendLocationDirect: sendLocationDirectMock,
     sendFilesDirect: vi.fn(),

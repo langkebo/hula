@@ -215,7 +215,7 @@ describe('MatrixAuthService', () => {
           username: 'newuser',
           password: 'password123',
           initial_device_display_name: 'Tjg Desktop',
-          auth: undefined
+          auth: { type: 'm.login.dummy' }
         })
         expect(result).toEqual({
           user_id: '@newuser:matrix.org',

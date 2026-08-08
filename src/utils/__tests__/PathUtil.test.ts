@@ -227,16 +227,16 @@ describe('PathUtil', () => {
     it('creates userData root if missing on desktop', async () => {
       existsMock.mockResolvedValue(false)
       const result = await getUserDataRootAbsoluteDir()
-      expect(existsMock).toHaveBeenCalledWith('userData', { baseDir: 'Resource' })
-      expect(mkdirMock).toHaveBeenCalledWith('userData', { baseDir: 'Resource', recursive: true })
-      expect(result).toBe('/resource/userData')
+      expect(existsMock).toHaveBeenCalledWith('userData', { baseDir: 'AppData' })
+      expect(mkdirMock).toHaveBeenCalledWith('userData', { baseDir: 'AppData', recursive: true })
+      expect(result).toBe('/app-data/userData')
     })
 
     it('skips mkdir when userData root already exists', async () => {
       existsMock.mockResolvedValue(true)
       const result = await getUserDataRootAbsoluteDir()
       expect(mkdirMock).not.toHaveBeenCalled()
-      expect(result).toBe('/resource/userData')
+      expect(result).toBe('/app-data/userData')
     })
 
     it('uses AppData on mobile', async () => {
@@ -253,7 +253,7 @@ describe('PathUtil', () => {
       existsMock.mockResolvedValue(false)
       const result = await getUserVideosDir('user-1', 'room-1')
       expect(mkdirMock).toHaveBeenCalledWith('userData/user-1/room-1', {
-        baseDir: 'Resource',
+        baseDir: 'AppData',
         recursive: true
       })
       expect(result).toBe('userData/user-1/room-1')
@@ -277,7 +277,7 @@ describe('PathUtil', () => {
     it('returns absolute path on desktop', async () => {
       existsMock.mockResolvedValue(true)
       const result = await getUserAbsoluteVideosDir('user-1', 'room-1')
-      expect(result).toBe('/resource/userData/user-1/room-1')
+      expect(result).toBe('/app-data/userData/user-1/room-1')
     })
 
     it('returns absolute path on mobile', async () => {
@@ -293,7 +293,7 @@ describe('PathUtil', () => {
       existsMock.mockResolvedValue(false)
       const result = await getUserEmojiDir('user-1')
       expect(mkdirMock).toHaveBeenCalledWith('userData/user-1/emojis', {
-        baseDir: 'Resource',
+        baseDir: 'AppData',
         recursive: true
       })
       expect(result).toBe('userData/user-1/emojis')
@@ -325,7 +325,7 @@ describe('PathUtil', () => {
       })
       expect(result.exists).toBe(true)
       expect(result.relativePath).toContain('userData/ai/user-1/conv-1/image.png')
-      expect(result.absolutePath).toContain('/resource/userData/ai/user-1/conv-1/image.png')
+      expect(result.absolutePath).toContain('/app-data/userData/ai/user-1/conv-1/image.png')
     })
 
     it('creates AI conversation dir when missing', async () => {
@@ -349,10 +349,10 @@ describe('PathUtil', () => {
         data
       })
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('userData/ai/user-1/conv-1/image.png'), data, {
-        baseDir: 'Resource'
+        baseDir: 'AppData'
       })
       expect(result.relativePath).toContain('userData/ai/user-1/conv-1/image.png')
-      expect(result.absolutePath).toContain('/resource/userData/ai/user-1/conv-1/image.png')
+      expect(result.absolutePath).toContain('/app-data/userData/ai/user-1/conv-1/image.png')
     })
 
     it('uses AppData on mobile for AI images', async () => {
@@ -376,9 +376,9 @@ describe('PathUtil', () => {
       const result = await ensureModelFile('tjg.glb', 'https://example.com/hula.glb')
       expect(downloadBytesMock).toHaveBeenCalledWith('https://example.com/hula.glb')
       expect(writeFileMock).toHaveBeenCalledWith('userData/models/tjg.glb', expect.any(Uint8Array), {
-        baseDir: 'Resource'
+        baseDir: 'AppData'
       })
-      expect(result).toBe('/resource/userData/models/tjg.glb')
+      expect(result).toBe('/app-data/userData/models/tjg.glb')
     })
 
     it('returns existing model path without downloading', async () => {
@@ -386,7 +386,7 @@ describe('PathUtil', () => {
       const result = await ensureModelFile('tjg.glb', 'https://example.com/hula.glb')
       expect(downloadBytesMock).not.toHaveBeenCalled()
       expect(writeFileMock).not.toHaveBeenCalled()
-      expect(result).toBe('/resource/userData/models/tjg.glb')
+      expect(result).toBe('/app-data/userData/models/tjg.glb')
     })
 
     it('uses AppData on mobile', async () => {

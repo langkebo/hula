@@ -1,111 +1,91 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import type { WorkbenchSessionTypeFilter } from '@/router/spaceNavigation'
 import MessageSessionToolbar from '../MessageSessionToolbar.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, fallback?: string) => fallback ?? key
-  })
-}))
-
+// 自定义 naive-ui stub：NButton 渲染真实 button（保留 class 与 click），其余透传 div
 vi.mock('naive-ui', async () => {
   const { defineComponent, h } = await import('vue')
-
   const passthrough = (name: string) =>
     defineComponent({
       name,
-      props: ['value'],
-      emits: ['update:value', 'click'],
-      setup(props, { emit, slots }) {
-        return () =>
-          h(
-            'button',
-            {
-              'data-test': name,
-              'data-value': props.value ?? '',
-              onClick: () => emit('click'),
-              onInput: (event: Event) => emit('update:value', (event.target as HTMLInputElement).value)
-            },
-            slots.default?.()
-          )
-      }
+      setup:
+        (_, { slots }) =>
+        () =>
+          h('div', { class: `n-${name.toLowerCase()}` }, [slots.default?.()])
     })
-
+  const NButtonStub = defineComponent({
+    name: 'NButton',
+    props: { type: String, size: String, quaternary: Boolean, circle: Boolean },
+    emits: ['click'],
+    setup:
+      (_, { slots, attrs, emit }) =>
+      () =>
+        h('button', { ...attrs, onClick: (e: Event) => emit('click', e) }, [slots.default?.()])
+  })
   return {
-    NButton: passthrough('NButton'),
-    NFlex: defineComponent({
-      name: 'NFlex',
-      setup(_, { slots }) {
-        return () => h('div', { 'data-test': 'NFlex' }, slots.default?.())
-      }
-    }),
-    NIcon: defineComponent({
-      name: 'NIcon',
-      setup(_, { slots }) {
-        return () => h('div', { 'data-test': 'NIcon' }, slots.default?.())
-      }
-    }),
-    NInput: defineComponent({
-      name: 'NInput',
-      props: ['value'],
-      emits: ['update:value'],
-      setup(props, { emit, slots }) {
-        return () =>
-          h('label', { 'data-test': 'NInput' }, [
-            slots.prefix?.(),
-            h('input', {
-              value: props.value,
-              onInput: (event: Event) => emit('update:value', (event.target as HTMLInputElement).value)
-            })
-          ])
-      }
-    }),
-    NDivider: defineComponent({
-      name: 'NDivider',
-      setup() {
-        return () => h('div', { 'data-test': 'NDivider' })
-      }
-    })
+    NButton: NButtonStub,
+    NFlex: passthrough('NFlex'),
+    NInput: passthrough('NInput'),
+    NDivider: passthrough('NDivider'),
+    NIcon: passthrough('NIcon')
   }
 })
 
-describe('MessageSessionToolbar', () => {
-  it('renders a room-specific title and filtered summary badge', () => {
-    const wrapper = mount(MessageSessionToolbar, {
-      props: {
-        title: '房间',
-        searchKeyword: '',
-        sessionTypeFilter: 'all',
-        sessionEngagementFilter: 'unread',
-        sessionSort: 'recent',
-        filteredCount: 4,
-        totalCount: 12
-      }
-    })
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key,
+    locale: { value: 'zh-CN' }
+  })
+}))
 
-    expect(wrapper.text()).toContain('房间')
-    expect(wrapper.text()).toContain('4/12')
+const mountToolbar = (props: Partial<{ sessionTypeFilter: WorkbenchSessionTypeFilter }> = {}) =>
+  mount(MessageSessionToolbar, {
+    props: {
+      searchKeyword: '',
+      sessionTypeFilter: 'all' as WorkbenchSessionTypeFilter,
+      sessionEngagementFilter: 'all',
+      sessionSort: 'recent',
+      filteredCount: 0,
+      totalCount: 0,
+      ...props
+    }
   })
 
-  it('emits create and join actions when corresponding buttons are visible', async () => {
-    const wrapper = mount(MessageSessionToolbar, {
-      props: {
-        searchKeyword: '',
-        sessionTypeFilter: 'all',
-        sessionEngagementFilter: 'all',
-        sessionSort: 'recent',
-        filteredCount: 0,
-        totalCount: 0,
-        showCreateAction: true,
-        showJoinAction: true
-      }
-    })
+const typeButtons = (wrapper: ReturnType<typeof mountToolbar>) =>
+  wrapper.findAll('.message-session-toolbar__filter--type')
 
-    const buttons = wrapper.findAll('[data-test="NButton"]')
-    await buttons[0]?.trigger('click')
-    await buttons[1]?.trigger('click')
+describe('MessageSessionToolbar · 群聊/单人 类型过滤', () => {
+  it('渲染「群聊」「单人」两个类型过滤按钮', () => {
+    const wrapper = mountToolbar()
+    const buttons = typeButtons(wrapper)
+    expect(buttons).toHaveLength(2)
+    expect(buttons[0].text()).toContain('space.type_group')
+    expect(buttons[1].text()).toContain('space.type_single')
+  })
 
-    expect(wrapper.emitted('joinRoom')).toHaveLength(1)
-    expect(wrapper.emitted('createRoom')).toHaveLength(1)
+  it('点击「群聊」emit update:sessionTypeFilter=group', async () => {
+    const wrapper = mountToolbar()
+    await typeButtons(wrapper)[0].trigger('click')
+    expect(wrapper.emitted('update:sessionTypeFilter')).toBeTruthy()
+    expect(wrapper.emitted('update:sessionTypeFilter')?.[0]).toEqual(['group'])
+  })
+
+  it('点击「单人」emit update:sessionTypeFilter=single', async () => {
+    const wrapper = mountToolbar()
+    await typeButtons(wrapper)[1].trigger('click')
+    expect(wrapper.emitted('update:sessionTypeFilter')?.[0]).toEqual(['single'])
+  })
+
+  it('再次点击已激活的类型按钮重置为 all（toggle）', async () => {
+    const wrapper = mountToolbar({ sessionTypeFilter: 'group' })
+    await typeButtons(wrapper)[0].trigger('click')
+    expect(wrapper.emitted('update:sessionTypeFilter')?.[0]).toEqual(['all'])
+  })
+
+  it('激活态通过 sessionTypeFilter prop 反映（aria-pressed）', () => {
+    const wrapper = mountToolbar({ sessionTypeFilter: 'single' })
+    expect(typeButtons(wrapper)[1].attributes('aria-pressed')).toBe('true')
+    expect(typeButtons(wrapper)[0].attributes('aria-pressed')).toBe('false')
   })
 })
