@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full bg-[--center-bg-color]">
+  <div class="flex flex-col h-full bg-[--tjg-surface-panel]">
     <NavBar :title="t('mobile_tabbar.items.rooms')">
       <template #right>
         <van-icon

@@ -102,7 +102,7 @@ const backgroundImageStyle = computed(() => {
 })
 
 const mergedStyle = computed(() => ({
-  backgroundColor: 'var(--center-bg-color)',
+  backgroundColor: 'var(--tjg-surface-panel)',
   ...backgroundImageStyle.value
 }))
 
