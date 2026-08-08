@@ -179,6 +179,8 @@ const trendArrowPath = computed(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .admin-stat-card {
+    transition: none;
+
     &:hover {
       transform: none;
     }
