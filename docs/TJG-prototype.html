@@ -6226,7 +6226,7 @@ button:focus-visible, .icon-btn:focus-visible, .chat-action-btn:focus-visible,
 }
 .sys-detail-fill{ height:100%; border-radius:4px; transition:width .3s; }
 .sys-detail-meta{ font-size:10px; color:var(--text-muted); }
-/* —— A2-A5: 联邦/令牌/服务器配置/外部服务页面 —— */
+/* —— A2-A4: 联邦/令牌/服务器配置页面 —— */
 .fed-status{
   display:inline-flex; align-items:center; gap:4px;
   padding:2px 8px; border-radius:10px;
@@ -7097,10 +7097,6 @@ label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(
     <!-- 令牌（注册令牌） -->
     <symbol id="i-token" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="8" cy="8" r="5"/><path d="M11.5 11.5L21 21"/><line x1="5" y1="8" x2="11" y2="8"/>
-    </symbol>
-    <!-- 桥接（外部服务集成） -->
-    <symbol id="i-bridge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 7h18M3 17h18"/><circle cx="7" cy="7" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 7h6M9 17h6"/>
     </symbol>
     <!-- 活动（趋势） -->
     <symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -8414,7 +8410,6 @@ label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(
                 <div class="admin-nav-item" data-atab="federation"><svg><use href="#i-globe"/></svg> 联邦管理</div>
                 <div class="admin-nav-item" data-atab="tokens"><svg><use href="#i-token"/></svg> 注册令牌</div>
                 <div class="admin-nav-item" data-atab="servercfg"><svg><use href="#i-server"/></svg> 服务器配置</div>
-                <div class="admin-nav-item" data-atab="bridges"><svg><use href="#i-bridge"/></svg> 外部服务</div>
                 <div class="admin-nav-divider"></div>
                 <div class="admin-nav-item" data-atab="reports"><svg><use href="#i-info"/></svg> 举报管理 <span class="admin-nav-badge" id="reportsNavBadge">5</span></div>
                 <div class="admin-nav-item" data-atab="audit"><svg><use href="#i-clipboard"/></svg> 审计日志</div>
@@ -8753,102 +8748,6 @@ label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(
                     <div class="cfg-control"><textarea rows="4">matrix.org
 tchncs.de
 mozilla.org</textarea></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- A5: 外部服务集成 -->
-              <div class="admin-page" id="atab-bridges">
-                <div class="admin-page-head">
-                  <div>
-                    <div class="admin-page-title">外部服务集成</div>
-                    <div class="admin-page-sub">GET /_synapse/admin/v1/appservices · Webhooks · Bridges</div>
-                  </div>
-                  <div class="admin-toolbar">
-                    <button class="admin-btn" onclick="showToast('已打开添加服务对话框', 'info')"><svg><use href="#i-plus"/></svg> 添加服务</button>
-                    <button class="admin-btn"><svg><use href="#i-refresh"/></svg> 刷新</button>
-                  </div>
-                </div>
-
-                <div class="cfg-section">
-                  <div class="cfg-section-title"><svg class="icon-sm"><use href="#i-bridge"/></svg> 桥接服务 (Bridges)</div>
-                  <div class="bridge-card">
-                    <div class="bridge-icon" style="background:rgba(16,185,129,0.15);color:var(--success);"><svg><use href="#i-bridge"/></svg></div>
-                    <div class="bridge-body">
-                      <div class="bridge-name">Telegram Bridge <span class="fed-status active">运行中</span></div>
-                      <div class="bridge-desc">连接 Telegram 与 TJG，支持双向消息同步、群组映射、媒体转发</div>
-                      <div class="bridge-meta">
-                        <span><svg class="icon-sm"><use href="#i-users"/></svg> 142 用户</span>
-                        <span><svg class="icon-sm"><use href="#i-chat"/></svg> 38 房间</span>
-                        <span><svg class="icon-sm"><use href="#i-activity"/></svg> 2.4k 消息/日</span>
-                      </div>
-                    </div>
-                    <div class="bridge-actions">
-                      <button class="admin-btn" style="font-size:11px;padding:4px 10px;">配置</button>
-                      <button class="admin-btn" style="font-size:11px;padding:4px 10px;color:var(--error);">停止</button>
-                    </div>
-                  </div>
-                  <div class="bridge-card">
-                    <div class="bridge-icon" style="background:rgba(107,163,248,0.15);color:var(--info);"><svg><use href="#i-bridge"/></svg></div>
-                    <div class="bridge-body">
-                      <div class="bridge-name">Discord Bridge <span class="fed-status active">运行中</span></div>
-                      <div class="bridge-desc">连接 Discord 服务器，支持频道映射、角色同步、表情互通</div>
-                      <div class="bridge-meta">
-                        <span><svg class="icon-sm"><use href="#i-users"/></svg> 89 用户</span>
-                        <span><svg class="icon-sm"><use href="#i-chat"/></svg> 24 房间</span>
-                        <span><svg class="icon-sm"><use href="#i-activity"/></svg> 1.8k 消息/日</span>
-                      </div>
-                    </div>
-                    <div class="bridge-actions">
-                      <button class="admin-btn" style="font-size:11px;padding:4px 10px;">配置</button>
-                      <button class="admin-btn" style="font-size:11px;padding:4px 10px;color:var(--error);">停止</button>
-                    </div>
-                  </div>
-                  <div class="bridge-card">
-                    <div class="bridge-icon" style="background:rgba(218,133,131,0.15);color:var(--error);"><svg><use href="#i-bridge"/></svg></div>
-                    <div class="bridge-body">
-                      <div class="bridge-name">WhatsApp Bridge <span class="fed-status error">异常</span></div>
-                      <div class="bridge-desc">连接 WhatsApp 账号，最后心跳 5 分钟前丢失，已自动重试 3 次</div>
-                      <div class="bridge-meta">
-                        <span><svg class="icon-sm"><use href="#i-users"/></svg> 56 用户</span>
-                        <span><svg class="icon-sm"><use href="#i-chat"/></svg> 18 房间</span>
-                        <span><svg class="icon-sm"><use href="#i-activity"/></svg> 0 消息/日</span>
-                      </div>
-                    </div>
-                    <div class="bridge-actions">
-                      <button class="admin-btn" style="font-size:11px;padding:4px 10px;color:var(--warn);">重启</button>
-                      <button class="admin-btn" style="font-size:11px;padding:4px 10px;color:var(--error);">停止</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="cfg-section">
-                  <div class="cfg-section-title"><svg class="icon-sm"><use href="#i-code"/></svg> 应用服务 (AppServices)</div>
-                  <table class="admin-table">
-                    <thead><tr><th>名称</th><th>ID</th><th>状态</th><th>URL</th><th>机器人用户</th><th>操作</th></tr></thead>
-                    <tbody>
-                      <tr><td>TJG Bot</td><td>as_tjg_bot</td><td><span class="fed-status active">在线</span></td><td>http://localhost:9001</td><td>@tjgbot:tjg.im</td><td><button class="admin-btn" style="font-size:11px;">编辑</button></td></tr>
-                      <tr><td>搜索索引器</td><td>as_search</td><td><span class="fed-status active">在线</span></td><td>http://localhost:9002</td><td>@search:tjg.im</td><td><button class="admin-btn" style="font-size:11px;">编辑</button></td></tr>
-                      <tr><td>通知网关</td><td>as_push</td><td><span class="fed-status pending">重连中</span></td><td>http://localhost:9003</td><td>@push:tjg.im</td><td><button class="admin-btn" style="font-size:11px;">编辑</button></td></tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div class="cfg-section">
-                  <div class="cfg-section-title"><svg class="icon-sm"><use href="#i-webhook"/></svg> Webhooks</div>
-                  <div class="cfg-toggle-row">
-                    <div class="cfg-toggle-info">启用 Webhook <small>允许外部系统接收事件推送</small></div>
-                    <label class="cfg-switch"><input type="checkbox" checked><span class="slider"></span></label>
-                  </div>
-                  <div class="cfg-row">
-                    <div class="cfg-label">Webhook 密钥 <small>用于验证请求签名</small></div>
-                    <div class="cfg-control"><input type="password" value="wh_secret_xxxxxxxx" readonly></div>
-                  </div>
-                  <div class="cfg-row">
-                    <div class="cfg-label">事件订阅 <small>每行一个事件类型</small></div>
-                    <div class="cfg-control"><textarea rows="4">m.room.message
-m.room.member
-m.reaction</textarea></div>
                   </div>
                 </div>
               </div>
