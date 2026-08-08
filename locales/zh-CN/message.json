@@ -260,6 +260,7 @@
     "single_forward": "逐条转发",
     "merge_forward": "合并转发",
     "save_to_pc": "保存至电脑",
+    "copy_action": "复制",
     "delete_action": "删除",
     "exit_multi_select": "退出多选",
     "cancel_button": "取消",
@@ -274,7 +275,10 @@
     "forward_success": "消息转发成功",
     "forward_failed": "消息转发失败",
     "forward_partial_failed": "{failed}/{total} 个目标转发失败",
-    "non_text_message": "［非文本消息］"
+    "non_text_message": "［非文本消息］",
+    "select_copy_prompt": "请选择需要复制的消息",
+    "copy_success": "已复制选中消息",
+    "copy_failed": "复制消息失败，请稍后再试"
   },
   "forward": {
     "title": "转发消息",

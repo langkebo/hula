@@ -168,6 +168,8 @@
   },
   "chat_header": {
     "bot_tag": "Assistant",
+    "federated": "Federated room",
+    "federated_tooltip": "Federated room · served by {server}",
     "status_abnormal": "Friend status unavailable",
     "start_meeting": "Start meeting",
     "meeting_widget_name": "Room meeting",
@@ -289,13 +291,22 @@
     "online_status": "Online status",
     "status": {
       "online": "Online",
-      "offline": "Offline"
+      "offline": "Offline",
+      "away": "Away",
+      "busy": "Busy"
     },
     "labels": {
       "account": "Account",
       "location": "Location",
       "badges": "Badges",
-      "activities": "Activities"
+      "activities": "Activities",
+      "sex": "Gender",
+      "bio": "Bio",
+      "region": "Region",
+      "birthday": "Birthday",
+      "joinTime": "Joined",
+      "male": "Male",
+      "female": "Female"
     },
     "location_unknown": "Unknown",
     "tooltip": {
@@ -306,14 +317,27 @@
     "buttons": {
       "edit": "Edit profile",
       "message": "Message",
-      "add_friend": "Add friend"
+      "add_friend": "Add friend",
+      "mention": "Mention"
     },
     "notification": {
-      "copy_success": "Copied {account}"
+      "copy_success": "Copied {account}",
+      "copy_copied": "Copied"
+    },
+    "presence": {
+      "activeNow": "Active just now",
+      "activeMinutes": "Active {minutes} min ago",
+      "activeHours": "Active {hours} h ago",
+      "activeDays": "Active {days} d ago"
+    },
+    "error": {
+      "title": "Failed to load profile",
+      "desc": "Could not fetch this user's profile. Please try again later."
     },
     "modal": {
       "add_friend": "Add friend request"
     },
+    "account_actions": "Account actions",
     "developer_badge": "Tjg Developer"
   },
   "profile_edit": {
@@ -339,7 +363,8 @@
       "nickname": {
         "label": "Nickname",
         "placeholder": "Enter your nickname",
-        "remaining": "Rename attempts left: {count}"
+        "remaining": "Rename attempts left: {count}",
+        "unlimited": "Rename attempts: unlimited"
       }
     },
     "actions": {
@@ -373,11 +398,16 @@
     },
     "roles": {
       "owner": "Owner",
-      "admin": "Admin"
+      "admin": "Admin",
+      "member": "Member"
     },
     "empty": {
       "no_chat_selected": "No chat selected",
       "select_to_start": "Select a conversation or start a new chat"
+    },
+    "toggle": {
+      "expand": "Expand info panel",
+      "collapse": "Collapse info panel"
     }
   },
   "about": {

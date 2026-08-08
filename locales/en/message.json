@@ -260,6 +260,7 @@
     "single_forward": "Forward individually",
     "merge_forward": "Forward as summary",
     "save_to_pc": "Save to PC",
+    "copy_action": "Copy",
     "delete_action": "Delete",
     "exit_multi_select": "Exit selection",
     "cancel_button": "Cancel",
@@ -274,7 +275,10 @@
     "forward_success": "Messages forwarded",
     "forward_failed": "Failed to forward",
     "forward_partial_failed": "{failed}/{total} target(s) failed to forward",
-    "non_text_message": "[Non-text message]"
+    "non_text_message": "[Non-text message]",
+    "select_copy_prompt": "Please select messages to copy",
+    "copy_success": "Selected messages copied",
+    "copy_failed": "Failed to copy, please try again later"
   },
   "forward": {
     "title": "Forward Message",

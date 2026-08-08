@@ -1536,5 +1536,21 @@
       "delete_success": "Connection deleted",
       "delete_failed": "Failed to delete connection"
     }
+  },
+  "invite_permission": {
+    "title": "Invite Permission Management",
+    "mode": {
+      "allow_all": "Allow Everyone",
+      "blocklist": "Blocklist Mode",
+      "allowlist": "Allowlist Mode"
+    },
+    "blocklist": {
+      "title": "Invite Blocklist"
+    },
+    "allowlist": {
+      "title": "Invite Allowlist"
+    },
+    "user_id_placeholder": "@user:example.com",
+    "add": "Add"
   }
 }

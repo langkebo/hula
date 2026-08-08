@@ -26,6 +26,8 @@
   "engagement_unread": "未读",
   "engagement_mention": "提及",
   "engagement_invite": "邀请",
+  "type_group": "群聊",
+  "type_single": "单人",
   "sort_label": "排序方式",
   "sort_recent": "最近活跃",
   "sort_name": "名称",

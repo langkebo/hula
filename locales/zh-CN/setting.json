@@ -1536,5 +1536,21 @@
       "delete_success": "连接已删除",
       "delete_failed": "删除连接失败"
     }
+  },
+  "invite_permission": {
+    "title": "邀请权限管理",
+    "mode": {
+      "allow_all": "允许所有人邀请",
+      "blocklist": "黑名单模式",
+      "allowlist": "白名单模式"
+    },
+    "blocklist": {
+      "title": "邀请黑名单"
+    },
+    "allowlist": {
+      "title": "邀请白名单"
+    },
+    "user_id_placeholder": "@user:example.com",
+    "add": "添加"
   }
 }
