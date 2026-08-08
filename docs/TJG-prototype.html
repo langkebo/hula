@@ -116,8 +116,121 @@
   --bg:var(--bg-deep);
   --accent-hover:var(--accent-dim);
 }
+
+/* ============================================================
+   Light 主题覆盖（data-theme="light"）
+   —— 反相为白底黑字，参考 src/styles/css/design-tokens.css light 值
+   ============================================================ */
+[data-theme="light"]{
+  /* 背景层级 — 反相为白底灰阶 */
+  --bg-black:#ffffff;
+  --bg-deepest:#f5f5f5;       /* 右侧聊天背景 */
+  --bg-deep:#fafafa;          /* 中心背景 */
+  --bg-mid:#ffffff;           /* 设置项/卡片 */
+  --bg-light:#f0f0f0;         /* 列表 hover */
+  --bg-hover:#eaeaea;         /* 菜单 hover */
+  --bg-popover:#ffffff;       /* 弹出框 */
+  --bg-left-menu:#f3f3f3;     /* 左侧菜单 */
+  --bg-left-hover:#e5e5e5;    /* 左侧菜单 hover */
+  --bg-search:#f0f0f0;        /* 搜索框 */
+  --bg-button:#eaeaea;        /* 通用按钮 */
+  --bg-disabled:#d0d0d0;      /* 禁用 */
+
+  /* 强调色 — 保持品牌色，微调深色变体以适应白底 */
+  --accent:#0f7a66;           /* 品牌色（白底对比度 4.5:1 AA） */
+  --accent-strong:#0a5c4d;    /* 深强调色（白字 6:1 AAA） */
+  --accent-dim:#13987f;       /* hover 态 */
+  --accent-soft:rgba(15,122,102,0.1);
+  --accent-active:rgba(15,122,102,0.4);
+
+  /* 文字 — 反相为黑色系 */
+  --text-primary:#18181c;     /* 主文字（对比度 17:1 AAA） */
+  --text-secondary:#505050;   /* 次要文字（对比度 8:1 AAA） */
+  --text-muted:#909090;       /* 弱化文字（对比度 3:1 AA-large） */
+  --text-faint:#b0b0b0;       /* 极弱文字 */
+  --icon-color:#595959;       /* 图标色 */
+  --line-color:#e3e3e3;       /* 分隔线 */
+
+  /* 气泡 */
+  --bubble-received:#e8f5f0;  /* 接收气泡（浅绿底） */
+  --bubble-sent:#0f7a66;      /* 发送气泡（白字 AA） */
+  --bubble-text:#18181c;      /* 气泡文字 */
+  --bubble-translate:rgba(0,0,0,0.05);
+
+  /* 语义色 — 白底需更高饱和度 */
+  --error:#cf1322;            /* 危险色（白底 5:1 AA） */
+  --error-bg:#fff1f0;
+  --warn:#d46b08;             /* 警告色（白底 4.5:1 AA） */
+  --warn-bg:#fffbe6;
+  --info:#096dd9;             /* 信息色（白底 4.5:1 AA） */
+  --info-bg:#e6f4ff;
+  --success:#389e0d;          /* 成功色（白底 4:1 AA-large） */
+  --success-bg:#f6ffed;
+
+  /* 特殊色 */
+  --beta:#722ed1;
+  --beta-bg:#f9f0ff;
+  --fed-blue:#096dd9;
+
+  /* UI */
+  --shadow-panel:0 4px 24px rgba(0,0,0,0.08);
+  --shadow-bubble:0 1px 2px rgba(0,0,0,0.04);
+  --scrollbar-thumb:#d0d0d0;
+  --scrollbar-hover:#b0b0b0;
+}
+
+/* ============================================================
+   auto 模式：未显式设置 data-theme 时跟随系统浅色
+   （JS 运行前避免 FOUC；JS 显式设置 data-theme 后由此覆盖）
+   ============================================================ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg-black:#ffffff;
+    --bg-deepest:#f5f5f5;
+    --bg-deep:#fafafa;
+    --bg-mid:#ffffff;
+    --bg-light:#f0f0f0;
+    --bg-hover:#eaeaea;
+    --bg-popover:#ffffff;
+    --bg-left-menu:#f3f3f3;
+    --bg-left-hover:#e5e5e5;
+    --bg-search:#f0f0f0;
+    --bg-button:#eaeaea;
+    --bg-disabled:#d0d0d0;
+    --accent:#0f7a66;
+    --accent-strong:#0a5c4d;
+    --accent-dim:#13987f;
+    --accent-soft:rgba(15,122,102,0.1);
+    --accent-active:rgba(15,122,102,0.4);
+    --text-primary:#18181c;
+    --text-secondary:#505050;
+    --text-muted:#909090;
+    --text-faint:#b0b0b0;
+    --icon-color:#595959;
+    --line-color:#e3e3e3;
+    --bubble-received:#e8f5f0;
+    --bubble-sent:#0f7a66;
+    --bubble-text:#18181c;
+    --bubble-translate:rgba(0,0,0,0.05);
+    --error:#cf1322;
+    --error-bg:#fff1f0;
+    --warn:#d46b08;
+    --warn-bg:#fffbe6;
+    --info:#096dd9;
+    --info-bg:#e6f4ff;
+    --success:#389e0d;
+    --success-bg:#f6ffed;
+    --beta:#722ed1;
+    --beta-bg:#f9f0ff;
+    --fed-blue:#096dd9;
+    --shadow-panel:0 4px 24px rgba(0,0,0,0.08);
+    --shadow-bubble:0 1px 2px rgba(0,0,0,0.04);
+    --scrollbar-thumb:#d0d0d0;
+    --scrollbar-hover:#b0b0b0;
+  }
+}
 html,body{
-  background:#000;
+  background:var(--bg-black);
   font-family:var(--font);
   color:var(--text-primary);
   overflow:auto;
@@ -10397,6 +10510,39 @@ m.reaction</textarea></div>
 
 <script>
 /* ============================================================
+   主题切换逻辑（原型演示用）
+   真实项目参考 src/stores/domains/settings/setting.ts
+   ============================================================ */
+function applyTheme(theme) {
+  if (theme === 'auto') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    localStorage.setItem('theme', 'auto');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }
+  // 更新 theme-card active 状态
+  document.querySelectorAll('.theme-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.theme === theme);
+  });
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('theme') || 'dark'; // 原型默认暗色
+  applyTheme(saved);
+}
+
+// 跟随系统变化（auto 模式）
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (localStorage.getItem('theme') === 'auto') {
+    applyTheme('auto');
+  }
+});
+
+initTheme();
+
+/* ============================================================
    模拟数据
    ============================================================ */
 
@@ -17970,13 +18116,15 @@ function bindSettingsInteractions(){
       showToast(`${label} 已切换为 ${e.target.value}`, 'success');
     });
   });
-  // 主题卡
-  settingsContentEl.querySelectorAll('.theme-card').forEach(card => {
-    card.addEventListener('click', () => {
-      settingsContentEl.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      showToast('主题已切换，部分变更将在重启后生效', 'success');
-    });
+  // 主题卡 — 应用主题（applyTheme 内部已同步 active 状态）
+  settingsContentEl.querySelectorAll('.theme-card').forEach(card => card.addEventListener('click', () => {
+    applyTheme(card.dataset.theme);
+    showToast('主题已切换', 'success');
+  }));
+  // 数据默认 hardcode dark 为 active，按实际已应用主题校正 active 状态
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  settingsContentEl.querySelectorAll('.theme-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.theme === currentTheme);
   });
   // 操作行
   settingsContentEl.querySelectorAll('[data-action]').forEach(row => {
