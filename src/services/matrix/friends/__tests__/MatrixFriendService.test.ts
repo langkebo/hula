@@ -304,8 +304,8 @@ describe('MatrixFriendService', () => {
   describe('getFriendGroups (FT-130: no redundant double assertion)', () => {
     it('返回 manager 的 getFriendGroups 结果', async () => {
       const groups = [
-        { group_id: 'g1', name: '家人' },
-        { group_id: 'g2', name: '同事' }
+        { id: 'g1', name: '家人' },
+        { id: 'g2', name: '同事' }
       ]
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         friendManager: {

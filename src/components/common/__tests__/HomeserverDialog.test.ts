@@ -12,13 +12,15 @@ const {
   discoverAndSaveMatrixEndpointsMock,
   resolveMatrixEndpointConfigMock,
   saveMatrixIdentityServerUrlMock,
-  isValidHttpUrlMock
+  isValidHttpUrlMock,
+  isPotentialHomeserverInputMock
 } = vi.hoisted(() => ({
   showFeedbackMock: vi.fn(),
   discoverAndSaveMatrixEndpointsMock: vi.fn(),
   resolveMatrixEndpointConfigMock: vi.fn(),
   saveMatrixIdentityServerUrlMock: vi.fn(),
-  isValidHttpUrlMock: vi.fn()
+  isValidHttpUrlMock: vi.fn(),
+  isPotentialHomeserverInputMock: vi.fn()
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -64,7 +66,8 @@ vi.mock('@/services/backend', () => ({
   discoverAndSaveMatrixEndpoints: discoverAndSaveMatrixEndpointsMock,
   resolveMatrixEndpointConfig: resolveMatrixEndpointConfigMock,
   saveMatrixIdentityServerUrl: saveMatrixIdentityServerUrlMock,
-  isValidHttpUrl: isValidHttpUrlMock
+  isValidHttpUrl: isValidHttpUrlMock,
+  isPotentialHomeserverInput: isPotentialHomeserverInputMock
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -90,6 +93,9 @@ describe('HomeserverDialog', () => {
       } catch {
         return false
       }
+    })
+    isPotentialHomeserverInputMock.mockImplementation((value: string) => {
+      return isValidHttpUrlMock(value) || isValidHttpUrlMock(`http://${value}`) || /^[^/\s]+\.[^/\s]+$/.test(value)
     })
   })
 
