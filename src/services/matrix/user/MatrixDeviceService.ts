@@ -82,6 +82,46 @@ class MatrixDeviceService extends BaseMatrixService {
   }
 
   /**
+   * 获取指定用户的所有设备（用于好友详情页设备列表展示）
+   *
+   * 通过 MatrixClient.getUserDevices（crypto API）拉取目标用户的设备信息，
+   * 并补充 verified 标记。仅当客户端启用了 E2E 加密时可用；非加密客户端
+   * 或无设备信息的用户返回空数组，不抛错。
+   *
+   * @param userId 目标用户 MXID
+   * @returns 设备列表
+   */
+  async getUserDevices(userId: string): Promise<Device[]> {
+    try {
+      const client = this.getClient()
+      // crypto.getUserDevices 返回的是 SDK 内部 DeviceInfo 对象，需要归一化为 Device 接口
+      const rawDevices = (await client.getUserDevices(userId)) as Array<{
+        deviceId?: string
+        device_id?: string
+        displayName?: string
+        display_name?: string
+        lastSeenTs?: number
+        last_seen_ts?: number
+        lastSeenIp?: string
+        last_seen_ip?: string
+        verified?: boolean
+      }>
+      const devices: Device[] = (rawDevices ?? []).map((raw) => ({
+        device_id: raw.deviceId ?? raw.device_id ?? '',
+        display_name: raw.displayName ?? raw.display_name,
+        last_seen_ts: raw.lastSeenTs ?? raw.last_seen_ts,
+        last_seen_ip: raw.lastSeenIp ?? raw.last_seen_ip,
+        verified: raw.verified
+      }))
+      logger.info(`[DeviceService] 获取用户设备列表成功: userId=${userId}, ${devices.length} 个设备`)
+      return devices
+    } catch (err) {
+      logger.error(`[DeviceService] 获取用户设备列表失败: userId=${userId}, ${err}`)
+      throw err
+    }
+  }
+
+  /**
    * 获取单个设备详情
    *
    * @param deviceId 设备 ID
