@@ -84,10 +84,16 @@ class MatrixDeviceService extends BaseMatrixService {
   /**
    * 获取指定用户的所有设备（用于好友详情页设备列表展示）
    *
-   * 通过 `client.getStoredDevicesForUser(userId)` 拉取目标用户的设备信息
-   * （该方法在 SDK 中已实现，返回 `LegacyStoredDevice[]`），并调用
-   * `device.isVerified()` 获取验证状态。仅当客户端启用了 E2E 加密时可用；
-   * 非加密客户端或无设备信息的用户返回空数组，不抛错。
+   * 通过 `client.getUserDevices(userId)` 拉取目标用户的设备信息。该方法在本
+   * SDK fork 中已实现（`device-keys/index.ts:482`），返回
+   * `Record<string, IContent>`（以 device_id 为键的对象映射，不是数组）。
+   * 使用 `Object.values()` 转为数组后归一化为 `Device[]`。
+   *
+   * `IContent` 为通用内容映射，设备信息典型字段包括 `device_id`、
+   * `display_name`、`last_seen_ts`、`last_seen_ip`、`last_seen_user_agent`。
+   * `verified` 字段若不存在则默认 `false`。
+   *
+   * 失败时返回空数组，不抛出异常（优雅降级）。
    *
    * @param userId 目标用户 MXID
    * @returns 设备列表（失败时返回空数组，不抛出异常）
@@ -96,17 +102,24 @@ class MatrixDeviceService extends BaseMatrixService {
     try {
       const client = this.getClient()
       const extendedClient = client as unknown as MatrixClientExtended
-      // getStoredDevicesForUser 是 SDK 已实现的方法，返回 LegacyStoredDevice[]
-      if (typeof extendedClient.getStoredDevicesForUser !== 'function') {
-        logger.info(`[DeviceService] 客户端不支持 getStoredDevicesForUser，返回空数组: userId=${userId}`)
-        return []
-      }
-      const rawDevices = await extendedClient.getStoredDevicesForUser(userId)
-      const devices: Device[] = (rawDevices ?? []).map((device) => ({
-        device_id: device.deviceId,
-        display_name: device.displayName,
-        verified: typeof device.isVerified === 'function' ? device.isVerified() : false
-      }))
+      // getUserDevices 返回 Record<string, IContent>（device_id -> 设备信息）
+      // 类型声明（augmentation）标记为 unknown[]，但运行时实际返回 Record，需经 unknown 中转
+      const deviceMap = (await extendedClient.getUserDevices(userId)) as unknown as Record<
+        string,
+        Record<string, unknown>
+      >
+      const rawDevices = Object.values(deviceMap ?? {})
+      const devices: Device[] = rawDevices
+        .map((content) => ({
+          device_id: String(content.device_id ?? ''),
+          display_name: typeof content.display_name === 'string' ? content.display_name : undefined,
+          last_seen_ts: typeof content.last_seen_ts === 'number' ? content.last_seen_ts : undefined,
+          last_seen_ip: typeof content.last_seen_ip === 'string' ? content.last_seen_ip : undefined,
+          last_seen_user_agent:
+            typeof content.last_seen_user_agent === 'string' ? content.last_seen_user_agent : undefined,
+          verified: typeof content.verified === 'boolean' ? content.verified : false
+        }))
+        .filter((device) => device.device_id)
       logger.info(`[DeviceService] 获取用户设备列表成功: userId=${userId}, ${devices.length} 个设备`)
       return devices
     } catch (err) {
