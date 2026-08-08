@@ -131,6 +131,7 @@ export class AdminUserService {
   }
 
   async setAdmin(userId: string, isAdmin: boolean): Promise<void> {
+    if (!isValidMatrixUserId(userId)) throw new Error(`Invalid user ID: ${userId}`)
     try {
       const admin = await this.sdkAdmin()
       await admin.setAdmin(userId, isAdmin)
@@ -220,6 +221,7 @@ export class AdminUserService {
   }
 
   async deleteRateLimit(userId: string): Promise<void> {
+    if (!isValidMatrixUserId(userId)) throw new Error(`Invalid user ID: ${userId}`)
     try {
       const admin = await this.sdkAdmin()
       await admin.deleteRateLimitOverride(userId)

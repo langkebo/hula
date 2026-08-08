@@ -132,6 +132,22 @@ describe('AdminUserService', () => {
     await expect(service.resetPassword('@alice:server.com', '')).rejects.toThrow('Password cannot be empty')
   })
 
+  it('deactivateUser rejects invalid user id', async () => {
+    await expect(service.deactivateUser('bad-id')).rejects.toThrow('Invalid user ID')
+  })
+
+  it('setAdmin rejects invalid user id', async () => {
+    await expect(service.setAdmin('bad-id', true)).rejects.toThrow('Invalid user ID')
+  })
+
+  it('overrideUserRateLimit rejects invalid user id', async () => {
+    await expect(service.overrideUserRateLimit('bad-id')).rejects.toThrow('Invalid user ID')
+  })
+
+  it('deleteRateLimit rejects invalid user id', async () => {
+    await expect(service.deleteRateLimit('bad-id')).rejects.toThrow('Invalid user ID')
+  })
+
   it('getUserRooms supports string and object room entries', async () => {
     ;(admin as any).getUserRooms.mockResolvedValueOnce({
       rooms: ['!plain:server.com', { room_id: '!rich:server.com', membership: 'join', is_room_admin: true }]
