@@ -174,6 +174,17 @@ vi.mock('@/composables/search/useSearchShortcut', () => ({
   triggerGlobalSearch: vi.fn()
 }))
 
+// Mock useFriendGrouping to avoid transitive import of useFriends → multiple Pinia stores
+vi.mock('../composables/useFriendGrouping', () => ({
+  useFriendGrouping: () => ({
+    shouldGroup: { value: false },
+    groupedSections: { value: [] },
+    toggleCollapse: vi.fn(),
+    isCollapsed: vi.fn(() => false),
+    loadGroups: vi.fn(async () => undefined)
+  })
+}))
+
 // Stub 子组件
 const stubs = {
   FriendSearchBar: defineComponent({
