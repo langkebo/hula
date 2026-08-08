@@ -120,7 +120,7 @@ const navItems: NavItem[] = [
 
 <style scoped lang="scss">
 .tab-bar-wrap {
-  background: var(--center-bg-color);
+  background: var(--tjg-surface-panel);
 }
 
 .tab-bar {
