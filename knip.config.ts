@@ -4,7 +4,9 @@ const config: KnipConfig = {
   ignore: [
     // Storybook mocks are referenced via Vite resolve.alias in .storybook/aliases.ts,
     // not via static imports — knip cannot trace them.
-    '.storybook/mocks/**'
+    '.storybook/mocks/**',
+    // unplugin-vue-components auto-generates these; knip cannot trace the usage
+    'src/typings/components*.d.ts'
   ],
   ignoreDependencies: ['matrix-js-sdk'],
   entry: [
