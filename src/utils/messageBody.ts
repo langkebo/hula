@@ -2,7 +2,7 @@
  * MessageBody 类型 guards 和工具函数
  */
 
-import type { MessageBody } from '@/stores/domains/chat/message'
+import type { MessageBody } from '@/stores/domains/chat/chat/types'
 import { isObject, isString } from './typeGuard'
 
 /**

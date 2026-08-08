@@ -2016,7 +2016,14 @@ export type I18nKeys = {
         "round": "圆形预览",
         "square": "矩形预览"
       },
-      "uploading": "上传中..."
+      "uploading": "上传中...",
+      "close_during_upload": {
+        "title": "上传中",
+        "content": "头像正在上传，确定要关闭吗？"
+      }
+    },
+    "avatarGallery": {
+      "title": "选择头像"
     },
     "announcementCard": {
       "title": "公告",
@@ -3191,7 +3198,8 @@ export type I18nKeys = {
       "title": "编辑资料",
       "avatar": {
         "change": "更换头像",
-        "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb"
+        "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb",
+        "choose_from_gallery": "从头像库选择"
       },
       "badge": {
         "current": "当前佩戴的徽章:",
@@ -3209,7 +3217,8 @@ export type I18nKeys = {
         "nickname": {
           "label": "昵称",
           "placeholder": "请输入你的昵称",
-          "remaining": "剩余改名次数: {count}"
+          "remaining": "剩余改名次数: {count}",
+          "unlimited": "改名次数: 无限制"
         }
       },
       "actions": {

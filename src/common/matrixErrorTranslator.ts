@@ -143,7 +143,24 @@ export function translateMatrixError(
 
   const errObj = err as Record<string, unknown>
 
-  const errcode = (errObj.errcode as string) || (errObj.code as string) || ''
+  let errcode = (errObj.errcode as string) || (errObj.code as string) || ''
+  // SDK 有时把 errcode 放在 Error.message 的 JSON 字符串里（如 "Error: {"errcode":"M_FORBIDDEN",...}"），
+  // 而非对象属性。此时 errObj.errcode 为 undefined，需要从 message 解析提取。
+  if (!errcode && err instanceof Error && err.message) {
+    const jsonMatch = err.message.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>
+        errcode = (parsed.errcode as string) || ''
+        // 同步 httpStatus 到 errObj，供下方 httpStatus 分支使用
+        if (parsed.httpStatus && !errObj.httpStatus) {
+          errObj.httpStatus = parsed.httpStatus
+        }
+      } catch {
+        // JSON 解析失败，忽略
+      }
+    }
+  }
   if (options.context === 'login' && errcode === 'M_FORBIDDEN') {
     return LOGIN_FORBIDDEN_ERROR
   }

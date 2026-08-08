@@ -39,6 +39,14 @@ function toServerName(mxid?: string | null): string {
 }
 
 /**
+ * 公开导出：从任意 MXID（用户或房间 ID `!:opaque:server`）中提取 server name。
+ * 联邦判定时复用，避免重复解析逻辑。
+ */
+export function extractServerName(mxid?: string | null): string {
+  return toServerName(mxid)
+}
+
+/**
  * 校验是否为合法 MXID。
  */
 function isMatrixUserId(value?: string | null): boolean {

@@ -142,7 +142,7 @@ export const useUserStore = defineStore(
         account: toLocalpart(matrixUserId),
         email: '',
         avatar: '',
-        modifyNameChance: 0,
+        modifyNameChance: -1,
         sex: SexEnum.MAN,
         userStateId: '',
         avatarUpdateTime: 0,
