@@ -137,32 +137,53 @@
           </n-button>
         </n-flex>
 
-        <!-- 成员列表 -->
+        <!-- 成员列表（按 presence 分在线/离线两组） -->
         <div class="flex-1 min-h-0 relative">
-          <n-virtual-list
-            id="image-chat-sidebar"
-            class="h-full px-6px py-4px"
-            item-resizable
-            @scroll="handleScroll($event)"
-            :item-size="46"
-            :items="displayedUserList">
-            <template #default="{ item }">
+          <div id="image-chat-sidebar" class="h-full overflow-y-auto px-6px py-4px" @scroll="handleScroll($event)">
+            <template v-for="item in memberListItems" :key="item.key">
+              <!-- 分组标题 -->
+              <div
+                v-if="item.kind === 'header'"
+                :data-testid="`group-header-${item.group}`"
+                :role="item.group === 'offline' ? 'button' : undefined"
+                :aria-expanded="item.group === 'offline' ? !offlineCollapsed : undefined"
+                class="flex items-center gap-4px h-32px px-8px select-none text-[var(--text-xs)] color-[--tjg-text-tertiary]"
+                :class="
+                  item.group === 'offline' ? 'cursor-pointer hover:color-[--tjg-text-secondary]' : 'cursor-default'
+                "
+                @click="item.group === 'offline' && toggleOffline()">
+                <svg
+                  v-if="item.group === 'offline'"
+                  class="size-10px color-[--tjg-text-tertiary] transition-transform"
+                  :class="offlineCollapsed ? 'rotate-0' : 'rotate-90'">
+                  <use href="#right"></use>
+                </svg>
+                <span>
+                  {{
+                    item.group === 'online'
+                      ? t('home.chat_sidebar.groups.online', '在线')
+                      : t('home.chat_sidebar.groups.offline', '离线')
+                  }}—{{ item.count }}
+                </span>
+              </div>
+              <!-- 成员行 -->
               <n-popover
-                :ref="(el: any) => (infoPopoverRefs[item.uid] = el)"
-                @update:show="handlePopoverUpdate(item.uid, $event)"
+                v-else
+                :ref="(el: any) => (infoPopoverRefs[item.user.uid] = el)"
+                @update:show="handlePopoverUpdate(item.user.uid, $event)"
                 trigger="click"
                 placement="left"
                 :show-arrow="false"
                 style="padding: 0; background: var(--tjg-surface-panel)">
                 <template #trigger>
                   <ContextMenu
-                    :content="item"
-                    @select="$event.click(item, 'Sidebar')"
+                    :content="item.user"
+                    @select="$event.click(item.user, 'Sidebar')"
                     :menu="optionsList"
                     :special-menu="report">
                     <n-flex
-                      @click="onClickMember(item)"
-                      :key="item.uid"
+                      @click="onClickMember(item.user)"
+                      :key="item.user.uid"
                       :size="10"
                       align="center"
                       justify="space-between"
@@ -172,45 +193,45 @@
                           <n-avatar
                             round
                             class="grayscale"
-                            :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE }"
+                            :class="{ 'grayscale-0': item.user.activeStatus === OnlineEnum.ONLINE }"
                             :size="26"
                             :color="'var(--tjg-text-inverse)'"
                             :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-                            :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                            @load="userLoadedMap[item.uid] = true"
-                            @error="userLoadedMap[item.uid] = true" />
+                            :src="AvatarUtils.getAvatarUrl(item.user.avatar)"
+                            @load="userLoadedMap[item.user.uid] = true"
+                            @error="userLoadedMap[item.user.uid] = true" />
                         </div>
                         <n-flex vertical :size="2" class="flex-1 truncate">
                           <p
-                            :title="item.name"
+                            :title="item.user.name"
                             class="text-[var(--text-xs)] truncate flex-1 leading-tight color-[--tjg-text-primary]">
-                            {{ item.myName ? item.myName : item.name }}
+                            {{ item.user.myName ? item.user.myName : item.user.name }}
                           </p>
                           <n-flex
-                            v-if="item.userStateId && getUserState(item.userStateId)"
+                            v-if="item.user.userStateId && getUserState(item.user.userStateId)"
                             align="center"
                             :size="4"
                             class="flex-1">
                             <img
                               class="size-12px"
-                              :src="getUserState(item.userStateId)?.url"
-                              :alt="translateStateTitle(getUserState(item.userStateId)?.title)" />
+                              :src="getUserState(item.user.userStateId)?.url"
+                              :alt="translateStateTitle(getUserState(item.user.userStateId)?.title)" />
                             <span
                               class="text-[10px] text-[--tjg-text-tertiary] flex-1 min-w-0 truncate"
-                              :title="translateStateTitle(getUserState(item.userStateId)?.title)">
-                              {{ translateStateTitle(getUserState(item.userStateId)?.title) }}
+                              :title="translateStateTitle(getUserState(item.user.userStateId)?.title)">
+                              {{ translateStateTitle(getUserState(item.user.userStateId)?.title) }}
                             </span>
                           </n-flex>
                         </n-flex>
                       </n-flex>
 
                       <div
-                        v-if="item.roleId === RoleEnum.LORD"
+                        v-if="item.user.roleId === RoleEnum.LORD"
                         class="flex px-4px bg-[--tjg-color-danger-500]30 py-3px rounded-4px size-fit select-none">
                         <p class="text-(10px [--tjg-color-danger-500])">{{ t('home.chat_sidebar.roles.owner') }}</p>
                       </div>
                       <div
-                        v-if="item.roleId === RoleEnum.ADMIN"
+                        v-if="item.user.roleId === RoleEnum.ADMIN"
                         class="flex px-4px bg-[--tjg-color-primary-100] py-3px rounded-4px size-fit select-none">
                         <p class="text-(10px [--tjg-color-primary-500])">{{ t('home.chat_sidebar.roles.admin') }}</p>
                       </div>
@@ -218,10 +239,13 @@
                   </ContextMenu>
                 </template>
                 <!-- 用户个人信息框 -->
-                <InfoPopover v-if="selectKey === item.uid" :uid="item.uid" :activeStatus="item.activeStatus" />
+                <InfoPopover
+                  v-if="selectKey === item.user.uid"
+                  :uid="item.user.uid"
+                  :activeStatus="item.user.activeStatus" />
               </n-popover>
             </template>
-          </n-virtual-list>
+          </div>
         </div>
       </div>
 
@@ -335,6 +359,48 @@ provide('popoverControls', { enableScroll })
 const displayedUserList = ref<UserItem[]>([])
 /** 用户信息加载状态 */
 const userLoadedMap = ref<Record<string, boolean>>({})
+
+// ==== P0-1: 成员列表按 presence 分在线/离线两组 ====
+interface MemberHeaderItem {
+  key: string
+  kind: 'header'
+  group: 'online' | 'offline'
+  count: number
+}
+interface MemberRowItem {
+  key: string
+  kind: 'member'
+  user: UserItem
+}
+type MemberListItem = MemberHeaderItem | MemberRowItem
+
+/** 离线组默认折叠 */
+const offlineCollapsed = ref(true)
+const toggleOffline = () => {
+  offlineCollapsed.value = !offlineCollapsed.value
+}
+
+/** 按 presence 将成员分为在线/离线两组（在线 = activeStatus === ONLINE） */
+const groupedMembers = computed(() => {
+  const online = displayedUserList.value.filter((m) => m.activeStatus === OnlineEnum.ONLINE)
+  const offline = displayedUserList.value.filter((m) => m.activeStatus !== OnlineEnum.ONLINE)
+  return { online, offline, onlineCount: online.length, offlineCount: offline.length }
+})
+
+/** 列表渲染用的扁平项：分组标题 + 成员行（离线组折叠时不包含其成员） */
+const memberListItems = computed<MemberListItem[]>(() => {
+  const items: MemberListItem[] = []
+  const { online, offline, onlineCount, offlineCount } = groupedMembers.value
+  items.push({ key: 'header-online', kind: 'header', group: 'online', count: onlineCount })
+  for (const m of online) items.push({ key: `member-online-${m.uid}`, kind: 'member', user: m })
+  if (offlineCount > 0) {
+    items.push({ key: 'header-offline', kind: 'header', group: 'offline', count: offlineCount })
+    if (!offlineCollapsed.value) {
+      for (const m of offline) items.push({ key: `member-offline-${m.uid}`, kind: 'member', user: m })
+    }
+  }
+  return items
+})
 
 watch(
   () => [globalStore.currentSessionRoomId, isGroup.value] as const,

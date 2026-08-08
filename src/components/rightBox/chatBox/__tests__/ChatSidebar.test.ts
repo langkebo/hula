@@ -1,7 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, reactive, ref } from 'vue'
-import { RoomTypeEnum } from '@/enums'
+import { OnlineEnum, RoomTypeEnum } from '@/enums'
+import type { UserItem } from '@/services/types'
 import ChatSidebar from '../ChatSidebar.vue'
 
 // 受控的 isGroup，通过 globalStore.currentSession.type 切换群聊/单聊
@@ -47,7 +48,12 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
+  useI18n: () => ({
+    t: (key: string, defaultOrParams?: unknown) => {
+      if (typeof defaultOrParams === 'string') return defaultOrParams
+      return key
+    }
+  })
 }))
 
 vi.mock('@/services/matrix/room/roomTypeUtils', () => ({
@@ -124,6 +130,16 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
+// 阻断 AnnouncementPanel / InfoPopover 的传递依赖加载真实 matrix-js-sdk
+// （主项目 node_modules 缺少 @babel/runtime，导致 matrix-js-sdk/lib/matrix.js 无法解析）
+vi.mock('@/components/room/AnnouncementPanel.vue', () => ({
+  default: { name: 'AnnouncementPanel', props: ['roomId'], emits: ['close'], setup: () => () => null }
+}))
+
+vi.mock('@/components/common/InfoPopover.vue', () => ({
+  default: { name: 'InfoPopover', props: ['uid', 'activeStatus'], setup: () => () => null }
+}))
+
 const AnnouncementPanelStub = defineComponent({
   name: 'AnnouncementPanel',
   props: ['roomId'],
@@ -143,7 +159,6 @@ const mountComponent = () =>
         'n-tab-pane': { template: '<div><slot /></div>' },
         'n-button': { template: '<button><slot /></button>' },
         'n-input': { template: '<input />' },
-        'n-virtual-list': { template: '<div><slot /></div>' },
         'n-popover': { template: '<div><slot name="trigger" /><slot /></div>' },
         'n-avatar': { template: '<div />' },
         'n-progress': { template: '<div />' },
@@ -226,5 +241,79 @@ describe('ChatSidebar', () => {
     expect(toggle.exists()).toBe(true)
     // v-show 在好友/单聊下隐藏交互把手（display:none）
     expect(toggle.attributes('style')).toContain('display: none')
+  })
+
+  // ---- P0-1: 成员列表按 presence 分在线/离线两组 ----
+  const makeUser = (uid: string, name: string, activeStatus: OnlineEnum): UserItem => ({
+    uid,
+    name,
+    account: uid,
+    avatar: '',
+    activeStatus,
+    lastOptTime: 0
+  })
+
+  /** 装载包含 2 个在线 + 1 个离线成员的群聊侧栏，并展开侧栏 */
+  const mountWithMembers = async () => {
+    groupStore.userList = [
+      makeUser('u1', 'Alice', OnlineEnum.ONLINE),
+      makeUser('u2', 'Bob', OnlineEnum.ONLINE),
+      makeUser('u3', 'Carol', OnlineEnum.OFFLINE)
+    ]
+    const wrapper = mountComponent()
+    // 展开侧栏（默认折叠）
+    await wrapper.find('[role="button"]').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('groups members with an online header showing the online count', async () => {
+    const wrapper = await mountWithMembers()
+
+    const onlineHeader = wrapper.find('[data-testid="group-header-online"]')
+    expect(onlineHeader.exists()).toBe(true)
+    expect(onlineHeader.text()).toContain('在线')
+    expect(onlineHeader.text()).toContain('2')
+  })
+
+  it('groups members with an offline header showing the offline count', async () => {
+    const wrapper = await mountWithMembers()
+
+    const offlineHeader = wrapper.find('[data-testid="group-header-offline"]')
+    expect(offlineHeader.exists()).toBe(true)
+    expect(offlineHeader.text()).toContain('离线')
+    expect(offlineHeader.text()).toContain('1')
+  })
+
+  it('shows online members and hides offline members when collapsed by default', async () => {
+    const wrapper = await mountWithMembers()
+
+    const text = wrapper.text()
+    expect(text).toContain('Alice')
+    expect(text).toContain('Bob')
+    // 离线组默认折叠，Carol 不应渲染
+    expect(text).not.toContain('Carol')
+  })
+
+  it('expands offline members when the offline header is clicked', async () => {
+    const wrapper = await mountWithMembers()
+
+    const offlineHeader = wrapper.find('[data-testid="group-header-offline"]')
+    await offlineHeader.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Carol')
+  })
+
+  it('collapses offline members again when the offline header is clicked twice', async () => {
+    const wrapper = await mountWithMembers()
+
+    const offlineHeader = wrapper.find('[data-testid="group-header-offline"]')
+    await offlineHeader.trigger('click')
+    await flushPromises()
+    await offlineHeader.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Carol')
   })
 })
