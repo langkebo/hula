@@ -12,6 +12,11 @@ const translationMap: Record<string, string> = {
   'setting.appearance.theme_light': '浅色',
   'setting.appearance.theme_dark': '深色',
   'setting.appearance.theme_auto': '跟随系统',
+  'setting.appearance.preview.title': '实时预览',
+  'setting.appearance.preview.sample_text': '示例文字',
+  'setting.appearance.preview.button': '按钮',
+  'setting.appearance.preview.input_placeholder': '输入框',
+  'setting.appearance.preview.current_theme': '当前主题',
   'setting.appearance.font_section': '字体',
   'setting.appearance.font_label': '界面字体',
   'setting.appearance.font_desc': '设置应用使用的字体',
@@ -49,9 +54,7 @@ type AppearanceSettingsVm = ComponentPublicInstance & {
   windowShadow: boolean
   blurEffect: boolean
   bubbleStyle: boolean
-  themeOptions: Array<{ value: string; label: string }>
   fontOptions: Array<{ value: string; label: string }>
-  handleThemeChange: (theme: string) => void
   handleFontChange: (value: string) => void
   handleFontSizeChange: (value: number) => void
   handleShadowChange: (value: boolean) => void
@@ -150,8 +153,21 @@ describe('AppearanceSettings', () => {
     expect(wrapper.text()).toContain('主题')
     expect(wrapper.text()).toContain('字体')
     expect(wrapper.text()).toContain('界面效果')
-    expect(vm.themeOptions.map((option) => option.value)).toEqual(['light', 'dark', 'os'])
     expect(vm.fontOptions).toHaveLength(4)
+  })
+
+  it('renders ThemeSwitcher and AppearancePreview components', () => {
+    const wrapper = mount(AppearanceSettings)
+
+    expect(wrapper.findComponent({ name: 'ThemeSwitcher' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'AppearancePreview' }).exists()).toBe(true)
+  })
+
+  it('does not render inline theme-preview divs after extraction', () => {
+    const wrapper = mount(AppearanceSettings)
+
+    expect(wrapper.find('.theme-preview').exists()).toBe(false)
+    expect(wrapper.find('.theme-options').exists()).toBe(false)
   })
 
   it('derives current theme from store state', () => {
@@ -174,11 +190,14 @@ describe('AppearanceSettings', () => {
     expect(document.documentElement.style.getPropertyValue('--font-size-base')).toBe('18px')
   })
 
-  it('updates theme through store and shows feedback', () => {
+  it('updates theme through ThemeSwitcher child calling store toggleTheme', async () => {
     const wrapper = mount(AppearanceSettings)
-    const vm = getVm(wrapper)
 
-    vm.handleThemeChange('light')
+    const switcher = wrapper.findComponent({ name: 'ThemeSwitcher' })
+    expect(switcher.exists()).toBe(true)
+    // ThemeSwitcher 内部调用 store.toggleTheme
+    const lightOption = switcher.find('[data-test="theme-option"][data-value="light"]')
+    await lightOption.trigger('click')
 
     expect(toggleThemeMock).toHaveBeenCalledWith('light')
     expect(messageSuccessMock).toHaveBeenCalledWith('主题已切换')

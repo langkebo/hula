@@ -1,5 +1,31 @@
 import { vi } from 'vitest'
 
+// localStorage polyfill：Node 22+ 在未提供 --localstorage-file 时
+// 不会自动注入 localStorage，happy-dom 也可能不提供。
+// 此处提供最小实现，保证单元测试中 localStorage API 可用。
+if (typeof globalThis.localStorage === 'undefined') {
+  const store = new Map<string, string>()
+  const localStoragePolyfill: Storage = {
+    get length() {
+      return store.size
+    },
+    clear: () => store.clear(),
+    getItem: (key: string) => (store.has(key) ? (store.get(key) as string) : null),
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
+    removeItem: (key: string) => {
+      store.delete(key)
+    },
+    setItem: (key: string, value: string) => {
+      store.set(key, String(value))
+    }
+  }
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: localStoragePolyfill,
+    writable: true,
+    configurable: true
+  })
+}
+
 vi.mock('colorthief', () => ({
   default: class Colorthief {
     getColor = vi.fn()

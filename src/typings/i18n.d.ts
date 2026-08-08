@@ -6789,6 +6789,13 @@ export type I18nKeys = {
       "font_microsoft_yahei": "微软雅黑",
       "font_pingfang_sc": "苹方",
       "font_source_han_sans": "思源黑体",
+      "preview": {
+        "title": "实时预览",
+        "sample_text": "这是一段示例文字，用于预览当前主题效果。",
+        "button": "按钮",
+        "input_placeholder": "输入框",
+        "current_theme": "当前主题"
+      },
       "feedback": {
         "theme_changed": "主题已切换",
         "font_changed": "字体已更改",

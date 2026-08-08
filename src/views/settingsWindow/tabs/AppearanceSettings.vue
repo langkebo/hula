@@ -2,20 +2,8 @@
   <div class="appearance-settings">
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.appearance.theme_section') }}</h3>
-      <div class="theme-options">
-        <div
-          v-for="theme in themeOptions"
-          :key="theme.value"
-          class="theme-option"
-          :class="{ 'theme-option-active': currentTheme === theme.value }"
-          @click="handleThemeChange(theme.value)">
-          <div class="theme-preview" :class="theme.previewClass">
-            <div class="preview-sidebar" />
-            <div class="preview-content" />
-          </div>
-          <span class="theme-label">{{ theme.label }}</span>
-        </div>
-      </div>
+      <ThemeSwitcher :model-value="currentTheme" />
+      <AppearancePreview class="appearance-settings__preview" />
     </div>
 
     <n-divider />
@@ -93,6 +81,8 @@
 import { NDivider, NSelect, NSlider, NSwitch } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AppearancePreview from '@/components/settings/AppearancePreview.vue'
+import ThemeSwitcher from '@/components/settings/ThemeSwitcher.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
@@ -103,12 +93,6 @@ defineOptions({
 const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const settingStore = useSettingStore()
-
-const themeOptions = computed(() => [
-  { value: 'light', label: t('setting.appearance.theme_light'), previewClass: 'preview-light' },
-  { value: 'dark', label: t('setting.appearance.theme_dark'), previewClass: 'preview-dark' },
-  { value: 'os', label: t('setting.appearance.theme_auto'), previewClass: 'preview-auto' }
-])
 
 const fontOptions = computed(() => [
   { label: t('setting.appearance.font_default'), value: 'PingFang' },
@@ -139,11 +123,6 @@ onMounted(() => {
     bubbleStyle.value = savedBubbleStyle === 'true'
   }
 })
-
-function handleThemeChange(theme: string) {
-  settingStore.toggleTheme(theme)
-  showFeedback(t('setting.appearance.feedback.theme_changed'), 'success')
-}
 
 function handleFontChange(value: string) {
   settingStore.setPageFont(value)
@@ -193,6 +172,10 @@ function handleBubbleStyleChange(value: boolean) {
   padding: 0 var(--tjg-space-2);
 }
 
+.appearance-settings__preview {
+  margin-top: var(--tjg-space-4);
+}
+
 .settings-section {
   margin-bottom: var(--tjg-space-4);
 }
@@ -202,87 +185,6 @@ function handleBubbleStyleChange(value: boolean) {
   font-weight: var(--tjg-font-weight-medium);
   margin-bottom: var(--tjg-space-4);
   color: var(--tjg-text-primary);
-}
-
-.theme-options {
-  display: flex;
-  gap: var(--tjg-space-4);
-}
-
-.theme-option {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  padding: var(--tjg-space-2);
-  border-radius: var(--tjg-radius-sm);
-  border: 2px solid transparent;
-  transition: border-color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
-}
-
-.theme-option:hover {
-  border-color: color-mix(in srgb, var(--tjg-color-info-500) 30%, transparent);
-}
-
-.theme-option-active {
-  border-color: var(--tjg-color-info-500);
-}
-
-.theme-preview {
-  width: 80px;
-  height: 60px;
-  border-radius: var(--tjg-radius-sm);
-  display: flex;
-  overflow: hidden;
-  margin-bottom: var(--tjg-space-2);
-}
-
-.preview-light {
-  background-color: var(--tjg-settings-preview-light-shell);
-}
-
-.preview-light .preview-sidebar {
-  background-color: var(--tjg-settings-preview-light-sidebar);
-}
-
-.preview-light .preview-content {
-  background-color: var(--tjg-settings-preview-light-content);
-}
-
-.preview-dark {
-  background-color: var(--tjg-settings-preview-dark-shell);
-}
-
-.preview-dark .preview-sidebar {
-  background-color: var(--tjg-settings-preview-dark-sidebar);
-}
-
-.preview-dark .preview-content {
-  background-color: var(--tjg-settings-preview-dark-content);
-}
-
-.preview-auto {
-  background: linear-gradient(
-    135deg,
-    var(--tjg-settings-preview-light-shell) 50%,
-    var(--tjg-settings-preview-dark-shell) 50%
-  );
-}
-
-.preview-sidebar {
-  width: 20px;
-  height: 100%;
-}
-
-.preview-content {
-  flex: 1;
-  margin: var(--tjg-space-1);
-  border-radius: var(--tjg-radius-xs);
-}
-
-.theme-label {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-secondary);
 }
 
 .setting-item {
