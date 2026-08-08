@@ -13,8 +13,8 @@ vi.mock('@/services/matrix/room/MetadataService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/auth/MatrixAuthService', () => ({
-  MatrixAuthService: {
+vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
+  matrixAccountService: {
     getCapabilities: mockGetCapabilities
   }
 }))

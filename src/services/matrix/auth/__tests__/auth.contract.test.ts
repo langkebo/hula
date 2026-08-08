@@ -85,14 +85,6 @@ describe('MatrixAuthService URL construction contract (real SDK + msw)', () => {
     expect(whoamiCalls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/account/whoami`)
   })
 
-  it('getCapabilities hits /_matrix/client/v3/capabilities exactly once (no duplication)', async () => {
-    await MatrixAuthService.getCapabilities()
-
-    const capCalls = seenUrls.filter((u) => u.includes('/capabilities'))
-    expect(capCalls).toHaveLength(1)
-    expect(capCalls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/capabilities`)
-  })
-
   it('logout hits /_matrix/client/v3/logout exactly once (no duplication)', async () => {
     await MatrixAuthService.logout()
 

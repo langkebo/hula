@@ -796,20 +796,6 @@ export class MatrixAuthService {
     }
   }
 
-  static async getCapabilities(): Promise<Record<string, unknown>> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/capabilities')
-      return result
-    } catch (err) {
-      throw normalizeSdkMatrixError(err, '获取能力声明失败')
-    }
-  }
-
   static async getSamlRedirect(idpId?: string, redirectUrl?: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
