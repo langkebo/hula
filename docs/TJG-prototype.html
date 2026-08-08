@@ -5716,6 +5716,9 @@ textarea.form-input{
 /* 大屏 (1200px-1699px)：PC + 移动并排，缩小间距 */
 @media (max-width: 1699px) and (min-width: 1200px){
   .app-wrap{ gap:16px; padding:16px; }
+  /* ⚠️ 原型展示技巧 — 真实项目请用 UnoCSS 响应式工具类（如 md:flex-row flex-col）
+     实现 fluid layout，不要用 transform:scale 缩放整个视口。
+     参考项目 src/mobile/ 的独立移动端实现。（本规则同时覆盖下方 .mobile 缩放） */
   .pc{ transform:scale(0.92); transform-origin:top left; }
   .mobile{ transform:scale(0.9); transform-origin:top left; }
 }
@@ -5723,6 +5726,9 @@ textarea.form-input{
 @media (max-width: 1199px) and (min-width: 768px){
   .mobile{ display:none; }
   .app-wrap{ justify-content:center; }
+  /* ⚠️ 原型展示技巧 — 真实项目请用 UnoCSS 响应式工具类（如 md:flex-row flex-col）
+     实现 fluid layout，不要用 transform:scale 缩放整个视口。
+     参考项目 src/mobile/ 的独立移动端实现。 */
   .pc{ transform:scale(0.85); transform-origin:top center; }
 }
 /* 小屏 (≤767px)：仅显示移动端，居中 */
@@ -13984,6 +13990,11 @@ document.querySelectorAll('.m-extra-item').forEach(item => {
 /* ============================================================
    移动端：底部 Tab 切换
    ============================================================ */
+// 注意：移动端路由与 PC 端 switchView 完全独立。
+// PC 端 switchView 切换 .pc-view (#view-message / #view-contacts ...)；
+// 移动端 .m-tab 通过 data-page 切换 .mobile-page (#mPageMsg / #mPageContact /
+// #mPageRoom / #mPageSpace / #mPageMe)，每个 Tab 映射到独立的 DOM 子树与内容，
+// 不存在 #message 与 #contacts 渲染相同截图的问题（审查报告此处为误报）。
 document.querySelectorAll('.m-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.m-tab').forEach(t => t.classList.remove('active'));
