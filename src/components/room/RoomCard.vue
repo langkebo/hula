@@ -1,31 +1,35 @@
 <template>
   <article
-    class="room-card"
+    class="room-card flex items-center gap-[--tjg-space-3] p-[--tjg-space-3] rounded-[--tjg-radius-sm] bg-[--tjg-surface-panel] border border-[--tjg-border-muted] cursor-pointer outline-none"
     data-testid="room-card"
     role="button"
     tabindex="0"
     :aria-label="room.name"
     @click="handlePreview"
-    @keydown.enter.prevent="handlePreview"
-    @keydown.space.prevent="handlePreview">
-    <div class="room-card__avatar">
+    @keydown.enter.self.prevent="handlePreview"
+    @keydown.space.self.prevent="handlePreview">
+    <div
+      class="room-card__avatar shrink-0 flex items-center justify-center size-[40px] overflow-hidden rounded-[--tjg-radius-full] bg-[--tjg-surface-subtle]">
       <img
         v-if="room.avatarUrl"
         :src="room.avatarUrl"
         :alt="''"
-        class="room-card__avatar-img"
+        class="room-card__avatar-img w-full h-full object-cover"
         data-testid="room-avatar-img" />
-      <span v-else class="room-card__avatar-placeholder" data-testid="room-avatar-placeholder">
+      <span
+        v-else
+        class="room-card__avatar-placeholder text-[--tjg-text-secondary]"
+        data-testid="room-avatar-placeholder">
         {{ avatarPlaceholder }}
       </span>
     </div>
 
-    <div class="room-card__info">
-      <div class="room-card__header">
-        <span class="room-card__name" :title="room.name">{{ room.name }}</span>
+    <div class="room-card__info flex-1 min-w-0">
+      <div class="room-card__header flex items-center gap-[--tjg-space-2]">
+        <span class="room-card__name truncate text-[--tjg-text-primary]" :title="room.name">{{ room.name }}</span>
         <span
           v-if="room.isFederated"
-          class="room-card__federation-badge"
+          class="room-card__federation-badge inline-flex items-center gap-2px shrink-0 px-6px py-1px rounded-[--tjg-radius-xs] bg-[--tjg-color-info-100] text-[--tjg-color-info-600]"
           data-testid="room-federation-badge"
           :title="t('room.discovery.federated')">
           <svg
@@ -47,8 +51,10 @@
         </span>
       </div>
 
-      <div class="room-card__meta">
-        <span class="room-card__members">
+      <div class="room-card__meta flex items-center gap-[--tjg-space-2] mt-2px">
+        <span
+          class="room-card__members inline-flex items-center gap-4px text-[--tjg-text-secondary]"
+          :aria-label="t('room.discovery.members', { count: room.numJoinedMembers })">
           <svg
             viewBox="0 0 24 24"
             width="12"
@@ -68,11 +74,13 @@
         </span>
       </div>
 
-      <p v-if="room.topic" class="room-card__topic" data-testid="room-topic">{{ truncatedTopic }}</p>
+      <p v-if="room.topic" class="room-card__topic truncate mt-2px text-[--tjg-text-tertiary]" data-testid="room-topic">
+        {{ truncatedTopic }}
+      </p>
     </div>
 
     <n-button
-      class="room-card__join"
+      class="room-card__join shrink-0"
       size="small"
       type="primary"
       secondary
@@ -129,16 +137,7 @@ const handlePreview = () => {
 
 <style scoped lang="scss">
 .room-card {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-3);
-  padding: var(--tjg-space-3);
-  border-radius: var(--tjg-radius-sm);
-  background: var(--tjg-surface-panel);
-  border: 1px solid var(--tjg-border-muted);
   box-shadow: var(--tjg-shadow-card);
-  cursor: pointer;
-  outline: none;
   transition:
     box-shadow var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
     border-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
@@ -156,89 +155,28 @@ const handlePreview = () => {
   }
 }
 
-.room-card__avatar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  overflow: hidden;
-  border-radius: var(--tjg-radius-full);
-  background: var(--tjg-surface-subtle);
-}
-
-.room-card__avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .room-card__avatar-placeholder {
   font-size: var(--tjg-font-size-lg);
   font-weight: var(--tjg-font-weight-medium);
-  color: var(--tjg-text-secondary);
-}
-
-.room-card__info {
-  flex: 1;
-  min-width: 0;
-}
-
-.room-card__header {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-2);
 }
 
 .room-card__name {
   font-size: var(--tjg-font-size-base);
   font-weight: var(--tjg-font-weight-medium);
-  color: var(--tjg-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .room-card__federation-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: var(--tjg-radius-xs);
-  background: var(--tjg-color-info-100);
-  color: var(--tjg-color-info-600);
   font-size: var(--tjg-font-size-2xs);
   line-height: 1.4;
 }
 
-.room-card__meta {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-2);
-  margin-top: 2px;
-}
-
 .room-card__members {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-secondary);
 }
 
 .room-card__topic {
   margin: 2px 0 0;
   font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-tertiary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.room-card__join {
-  flex-shrink: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

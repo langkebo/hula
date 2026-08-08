@@ -1,5 +1,5 @@
 <template>
-  <div class="join-reason-input">
+  <div class="join-reason-input flex flex-col gap-[--tjg-space-2]">
     <n-input
       v-model:value="reason"
       type="textarea"
@@ -13,7 +13,7 @@
       type="primary"
       :disabled="!canSubmit"
       :loading="loading"
-      class="join-reason-input__submit"
+      class="join-reason-input__submit self-end"
       data-testid="join-reason-submit"
       @click="handleSubmit">
       {{ t('room.discovery.preview_join') }}
@@ -61,15 +61,3 @@ const handleSubmit = () => {
   emit('submit', reason.value.trim())
 }
 </script>
-
-<style scoped lang="scss">
-.join-reason-input {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tjg-space-2);
-}
-
-.join-reason-input__submit {
-  align-self: flex-end;
-}
-</style>

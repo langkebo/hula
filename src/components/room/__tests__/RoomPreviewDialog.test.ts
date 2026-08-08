@@ -6,15 +6,23 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-const reasonHolder = vi.hoisted(() => ({ emit: null as null | ((reason: string) => void) }))
+const reasonHolder = vi.hoisted(() => ({
+  emit: null as null | ((reason: string) => void),
+  emitUpdate: null as null | ((value: string) => void)
+}))
 
 vi.mock('../JoinReasonInput.vue', () => ({
   default: {
     name: 'JoinReasonInput',
-    props: { modelValue: { type: String, default: '' }, disabled: { type: Boolean, default: false } },
+    props: {
+      modelValue: { type: String, default: '' },
+      disabled: { type: Boolean, default: false },
+      showSubmit: { type: Boolean, default: true }
+    },
     emits: ['update:modelValue', 'submit'],
     setup(_: Record<string, unknown>, { emit }: { emit: (event: string, ...args: unknown[]) => void }) {
       reasonHolder.emit = (reason: string) => emit('submit', reason)
+      reasonHolder.emitUpdate = (value: string) => emit('update:modelValue', value)
       return () => null
     }
   }
@@ -110,12 +118,32 @@ describe('RoomPreviewDialog', () => {
     expect(joinBtn?.attributes('disabled')).toBeDefined()
   })
 
-  it('emits join with reason when JoinReasonInput submits', async () => {
+  it('shows reason_required hint when requireReason is true and reason is empty', () => {
     const wrapper = mountDialog({ requireReason: true })
-    // simulate JoinReasonInput submit
-    reasonHolder.emit!('please let me in')
+    expect(wrapper.find('[data-testid="reason-required-hint"]').exists()).toBe(true)
+  })
+
+  it('shows reason label when requireReason is true', () => {
+    const wrapper = mountDialog({ requireReason: true })
+    expect(wrapper.find('[data-testid="reason-label"]').exists()).toBe(true)
+  })
+
+  it('emits join with reason when requireReason and footer join clicked after typing reason', async () => {
+    const wrapper = mountDialog({ requireReason: true })
+    // simulate typing a reason via v-model
+    reasonHolder.emitUpdate!('please let me in')
     await wrapper.vm.$nextTick()
+    const joinBtn = wrapper.findAll('button').find((b) => b.text().includes('preview_join'))
+    expect(joinBtn?.attributes('disabled')).toBeUndefined()
+    await joinBtn!.trigger('click')
     expect(wrapper.emitted('join')).toEqual([['!room1:matrix.test', 'please let me in']])
+  })
+
+  it('hides reason_required hint when reason is provided', async () => {
+    const wrapper = mountDialog({ requireReason: true })
+    reasonHolder.emitUpdate!('a reason')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="reason-required-hint"]').exists()).toBe(false)
   })
 
   it('emits update:visible false when cancel clicked', async () => {

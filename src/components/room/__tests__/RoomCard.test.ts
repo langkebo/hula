@@ -85,6 +85,30 @@ describe('RoomCard', () => {
     expect(wrapper.emitted('preview')).toEqual([['!room1:matrix.test']])
   })
 
+  it('emits preview with roomId when Enter is pressed on the card body', async () => {
+    const wrapper = mountCard()
+    await wrapper.find('[data-testid="room-card"]').trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('preview')).toEqual([['!room1:matrix.test']])
+  })
+
+  it('emits preview with roomId when Space is pressed on the card body', async () => {
+    const wrapper = mountCard()
+    await wrapper.find('[data-testid="room-card"]').trigger('keydown', { key: ' ' })
+    expect(wrapper.emitted('preview')).toEqual([['!room1:matrix.test']])
+  })
+
+  it('does not emit preview when Enter is pressed on the join button', async () => {
+    const wrapper = mountCard()
+    await wrapper.find('[data-testid="room-join-btn"]').trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('preview')).toBeUndefined()
+  })
+
+  it('does not emit preview when Space is pressed on the join button', async () => {
+    const wrapper = mountCard()
+    await wrapper.find('[data-testid="room-join-btn"]').trigger('keydown', { key: ' ' })
+    expect(wrapper.emitted('preview')).toBeUndefined()
+  })
+
   it('shows federation badge when isFederated is true', () => {
     const wrapper = mountCard({ room: { ...sampleRoom, isFederated: true } })
     expect(wrapper.find('[data-testid="room-federation-badge"]').exists()).toBe(true)
