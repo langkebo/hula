@@ -259,6 +259,8 @@ declare module 'matrix-js-sdk' {
               events_after?: MatrixEvent[]
             }
           }>
+          count?: number
+          highlights?: string[]
         }
       }
     }>

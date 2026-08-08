@@ -26,7 +26,8 @@
       @show-qr-code="handleShowQRCode"
       @toggle-sidebar="handleSidebarShow"
       @open-in-new-window="handleOpenInNewWindow"
-      @toggle-private-mode="handleTogglePrivateMode" />
+      @toggle-private-mode="handleTogglePrivateMode"
+      @open-search="handleOpenSearch" />
 
     <ChatHeaderSidebar
       v-model:visible="sidebarShow"
@@ -123,8 +124,9 @@ import { useI18n } from 'vue-i18n'
 import { useIndependentChatWindow } from '@/composables/chat/useIndependentChatWindow'
 import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
+import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
-import { CallTypeEnum, RoomActEnum, RoomTypeEnum } from '@/enums'
+import { CallTypeEnum, MittEnum, RoomActEnum, RoomTypeEnum } from '@/enums'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
@@ -348,6 +350,10 @@ const { privateModeActive, showPrivateConfirm, setRoomId, togglePrivateMode, con
 const handleTogglePrivateMode = () => {
   setRoomId(currentSessionRoomId.value || '')
   togglePrivateMode()
+}
+
+const handleOpenSearch = () => {
+  useMitt.emit(MittEnum.OPEN_ROOM_SEARCH)
 }
 
 const handleStartVideoCall = async () => {
