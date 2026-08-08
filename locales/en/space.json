@@ -1,6 +1,9 @@
 {
   "title": "Space",
   "space_selected": "Space selected: {name}",
+  "expand": "Expand",
+  "collapse": "Collapse",
+  "hierarchy": "Hierarchy",
   "context": {
     "enter_chat": "Enter Chat",
     "open_in_new_window": "Open in New Window",
@@ -45,6 +48,7 @@
   "member_count_value": "{count} members",
   "room_count_value": "{count} rooms",
   "no_spaces_yet": "No spaces yet, create one",
+  "no_rooms": "No rooms",
   "space_overview": "Space Overview",
   "space_actions": "Space Actions",
   "danger_zone": "Danger Zone",
