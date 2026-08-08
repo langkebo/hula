@@ -7,7 +7,7 @@
     "cut": "剪切"
   },
   "send": "发送",
-  "placeholder": "善言一句暖人心，恶语一句伤人心",
+  "placeholder": "输入消息，Enter 发送…  输入 {'@'} 提及成员",
   "send_or_newline": "{send} 发送/{newline} 换行",
   "file": "文件",
   "image": "图片",

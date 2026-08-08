@@ -17,7 +17,18 @@
     "screen_share": "屏幕共享",
     "group_qr_code": "群二维码",
     "more_options": "更多选项",
-    "open_in_new_window": "在新窗口打开"
+    "open_in_new_window": "在新窗口打开",
+    "private_mode": "私密模式",
+    "private_mode_toggle": "切换到私密模式",
+    "private_mode_confirm_title": "切换到私密模式",
+    "private_mode_confirm_desc": "私密模式下：",
+    "private_mode_feature_e2ee": "消息将启用端到端加密",
+    "private_mode_feature_burn": "支持阅后即焚功能",
+    "private_mode_feature_screenshot": "启用防截屏保护",
+    "private_mode_feature_no_retention": "消息不留存于服务器",
+    "private_mode_active": "私密模式已启用",
+    "private_mode_cancel": "取消",
+    "private_mode_confirm": "确认切换"
   },
   "burn": {
     "message_destroyed": "此消息已销毁",

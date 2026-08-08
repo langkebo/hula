@@ -17,7 +17,18 @@
     "screen_share": "Screen Share",
     "group_qr_code": "Group QR Code",
     "more_options": "More Options",
-    "open_in_new_window": "Open in New Window"
+    "open_in_new_window": "Open in New Window",
+    "private_mode": "Private Mode",
+    "private_mode_toggle": "Toggle Private Mode",
+    "private_mode_confirm_title": "Switch to Private Mode",
+    "private_mode_confirm_desc": "In private mode:",
+    "private_mode_feature_e2ee": "Messages will be end-to-end encrypted",
+    "private_mode_feature_burn": "Burn-after-read supported",
+    "private_mode_feature_screenshot": "Screenshot protection enabled",
+    "private_mode_feature_no_retention": "Messages not stored on server",
+    "private_mode_active": "Private mode is active",
+    "private_mode_cancel": "Cancel",
+    "private_mode_confirm": "Confirm"
   },
   "burn": {
     "message_destroyed": "This message has been destroyed",

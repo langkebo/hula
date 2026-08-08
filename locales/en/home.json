@@ -173,6 +173,8 @@
     "status_abnormal": "Friend status unavailable",
     "start_meeting": "Start meeting",
     "meeting_widget_name": "Room meeting",
+    "member_count": "{count} members",
+    "member_count_online": "{count} online",
     "toolbar": {
       "audio_call": "Voice call",
       "video_call": "Video call",

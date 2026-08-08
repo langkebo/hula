@@ -1066,7 +1066,18 @@ export type I18nKeys = {
       "screen_share": "屏幕共享",
       "group_qr_code": "群二维码",
       "more_options": "更多选项",
-      "open_in_new_window": "在新窗口打开"
+      "open_in_new_window": "在新窗口打开",
+      "private_mode": "私密模式",
+      "private_mode_toggle": "切换到私密模式",
+      "private_mode_confirm_title": "切换到私密模式",
+      "private_mode_confirm_desc": "私密模式下：",
+      "private_mode_feature_e2ee": "消息将启用端到端加密",
+      "private_mode_feature_burn": "支持阅后即焚功能",
+      "private_mode_feature_screenshot": "启用防截屏保护",
+      "private_mode_feature_no_retention": "消息不留存于服务器",
+      "private_mode_active": "私密模式已启用",
+      "private_mode_cancel": "取消",
+      "private_mode_confirm": "确认切换"
     },
     "burn": {
       "message_destroyed": "此消息已销毁",
@@ -2259,7 +2270,7 @@ export type I18nKeys = {
       "cut": "剪切"
     },
     "send": "发送",
-    "placeholder": "善言一句暖人心，恶语一句伤人心",
+    "placeholder": "输入消息，Enter 发送…  输入 {'@'} 提及成员",
     "send_or_newline": "{send} 发送/{newline} 换行",
     "file": "文件",
     "image": "图片",
@@ -2475,6 +2486,33 @@ export type I18nKeys = {
       "revoke_success": "密钥撤销成功",
       "revoke_failed": "密钥撤销失败",
       "admin_only": "仅管理员"
+    },
+    "backup_setup_dialog": {
+      "dialog_title_intro": "设置密钥备份",
+      "dialog_title_create": "正在创建",
+      "dialog_title_show_key": "保存恢复密钥",
+      "dialog_title_verify": "验证恢复密钥",
+      "dialog_title_success": "设置完成",
+      "dialog_title_default": "密钥备份",
+      "intro_primary": "密钥备份可以安全地备份你的加密密钥。如果你丢失设备或在新设备登录，可以使用恢复密钥恢复加密数据。",
+      "intro_warning": "请妥善保存恢复密钥，丢失后将无法恢复加密数据！",
+      "start_setup": "开始设置",
+      "creating": "正在生成恢复密钥...",
+      "your_recovery_key": "你的恢复密钥",
+      "key_warning": "请将此密钥保存在安全的地方，不要分享给任何人",
+      "key_saved_confirm": "我已安全保存密钥",
+      "confirm_complete": "下一步",
+      "verify_prompt": "请输入你保存的恢复密钥以确认",
+      "verify_key": "验证",
+      "success_title": "密钥备份设置完成！",
+      "success_desc": "你的加密密钥现在受到安全备份的保护。请妥善保存恢复密钥，以便在新设备上恢复加密数据。",
+      "create_failed": "创建密钥备份失败",
+      "copy_manual": "请手动复制密钥",
+      "copy_success": "恢复密钥已复制到剪贴板",
+      "download_success": "恢复密钥已下载",
+      "key_mismatch": "密钥不匹配，请重新输入",
+      "verify_success": "密钥备份验证成功",
+      "verify_failed": "密钥备份验证失败，请稍后重试"
     },
     "onboarding": {
       "dialog_title": "设置加密",
@@ -3046,9 +3084,13 @@ export type I18nKeys = {
     },
     "chat_header": {
       "bot_tag": "助手",
+      "federated": "联邦房间",
+      "federated_tooltip": "联邦房间 · 由 {server} 提供服务",
       "status_abnormal": "好友状态异常",
       "start_meeting": "发起会议",
       "meeting_widget_name": "房间会议",
+      "member_count": "{count} 位成员",
+      "member_count_online": "{count} 人在线",
       "toolbar": {
         "audio_call": "语音通话",
         "video_call": "视频通话",
@@ -3167,13 +3209,22 @@ export type I18nKeys = {
       "online_status": "在线状态",
       "status": {
         "online": "在线",
-        "offline": "离线"
+        "offline": "离线",
+        "away": "离开",
+        "busy": "忙碌"
       },
       "labels": {
         "account": "账号",
         "location": "所在地",
         "badges": "获得的徽章",
-        "activities": "动态"
+        "activities": "动态",
+        "sex": "性别",
+        "bio": "个人简介",
+        "region": "地区",
+        "birthday": "生日",
+        "joinTime": "加入时间",
+        "male": "男",
+        "female": "女"
       },
       "location_unknown": "未知",
       "tooltip": {
@@ -3184,14 +3235,27 @@ export type I18nKeys = {
       "buttons": {
         "edit": "编辑资料",
         "message": "发信息",
-        "add_friend": "加好友"
+        "add_friend": "加好友",
+        "mention": "@提及"
       },
       "notification": {
-        "copy_success": "复制成功 {account}"
+        "copy_success": "复制成功 {account}",
+        "copy_copied": "已复制"
+      },
+      "presence": {
+        "activeNow": "刚刚活跃",
+        "activeMinutes": "{minutes} 分钟前活跃",
+        "activeHours": "{hours} 小时前活跃",
+        "activeDays": "{days} 天前活跃"
+      },
+      "error": {
+        "title": "资料加载失败",
+        "desc": "暂时无法获取该用户资料，请稍后重试"
       },
       "modal": {
         "add_friend": "申请加好友"
       },
+      "account_actions": "账号操作",
       "developer_badge": "Tjg开发工程师"
     },
     "profile_edit": {
@@ -3252,11 +3316,16 @@ export type I18nKeys = {
       },
       "roles": {
         "owner": "群主",
-        "admin": "管理员"
+        "admin": "管理员",
+        "member": "普通成员"
       },
       "empty": {
         "no_chat_selected": "未选择会话",
         "select_to_start": "选择一个会话或发起新聊天"
+      },
+      "toggle": {
+        "expand": "展开信息面板",
+        "collapse": "收起信息面板"
       }
     },
     "about": {
@@ -4278,6 +4347,7 @@ export type I18nKeys = {
       "single_forward": "逐条转发",
       "merge_forward": "合并转发",
       "save_to_pc": "保存至电脑",
+      "copy_action": "复制",
       "delete_action": "删除",
       "exit_multi_select": "退出多选",
       "cancel_button": "取消",
@@ -4292,7 +4362,10 @@ export type I18nKeys = {
       "forward_success": "消息转发成功",
       "forward_failed": "消息转发失败",
       "forward_partial_failed": "{failed}/{total} 个目标转发失败",
-      "non_text_message": "［非文本消息］"
+      "non_text_message": "［非文本消息］",
+      "select_copy_prompt": "请选择需要复制的消息",
+      "copy_success": "已复制选中消息",
+      "copy_failed": "复制消息失败，请稍后再试"
     },
     "forward": {
       "title": "转发消息",
@@ -7474,6 +7547,22 @@ export type I18nKeys = {
         "delete_success": "连接已删除",
         "delete_failed": "删除连接失败"
       }
+    },
+    "invite_permission": {
+      "title": "邀请权限管理",
+      "mode": {
+        "allow_all": "允许所有人邀请",
+        "blocklist": "黑名单模式",
+        "allowlist": "白名单模式"
+      },
+      "blocklist": {
+        "title": "邀请黑名单"
+      },
+      "allowlist": {
+        "title": "邀请白名单"
+      },
+      "user_id_placeholder": "@user:example.com",
+      "add": "添加"
     }
   },
   "space": {
@@ -7504,6 +7593,8 @@ export type I18nKeys = {
     "engagement_unread": "未读",
     "engagement_mention": "提及",
     "engagement_invite": "邀请",
+    "type_group": "群聊",
+    "type_single": "单人",
     "sort_label": "排序方式",
     "sort_recent": "最近活跃",
     "sort_name": "名称",
