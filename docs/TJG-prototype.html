@@ -120,6 +120,8 @@
 /* ============================================================
    Light 主题覆盖（data-theme="light"）
    —— 反相为白底黑字，参考 src/styles/css/design-tokens.css light 值
+   —— auto 模式由 JS initTheme() 检测 prefers-color-scheme 后设置
+      data-theme="light"/"dark"，无需 @media CSS 重复定义
    ============================================================ */
 [data-theme="light"]{
   /* 背景层级 — 反相为白底灰阶 */
@@ -179,56 +181,6 @@
   --scrollbar-hover:#b0b0b0;
 }
 
-/* ============================================================
-   auto 模式：未显式设置 data-theme 时跟随系统浅色
-   （JS 运行前避免 FOUC；JS 显式设置 data-theme 后由此覆盖）
-   ============================================================ */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg-black:#ffffff;
-    --bg-deepest:#f5f5f5;
-    --bg-deep:#fafafa;
-    --bg-mid:#ffffff;
-    --bg-light:#f0f0f0;
-    --bg-hover:#eaeaea;
-    --bg-popover:#ffffff;
-    --bg-left-menu:#f3f3f3;
-    --bg-left-hover:#e5e5e5;
-    --bg-search:#f0f0f0;
-    --bg-button:#eaeaea;
-    --bg-disabled:#d0d0d0;
-    --accent:#0f7a66;
-    --accent-strong:#0a5c4d;
-    --accent-dim:#13987f;
-    --accent-soft:rgba(15,122,102,0.1);
-    --accent-active:rgba(15,122,102,0.4);
-    --text-primary:#18181c;
-    --text-secondary:#505050;
-    --text-muted:#909090;
-    --text-faint:#b0b0b0;
-    --icon-color:#595959;
-    --line-color:#e3e3e3;
-    --bubble-received:#e8f5f0;
-    --bubble-sent:#0f7a66;
-    --bubble-text:#18181c;
-    --bubble-translate:rgba(0,0,0,0.05);
-    --error:#cf1322;
-    --error-bg:#fff1f0;
-    --warn:#d46b08;
-    --warn-bg:#fffbe6;
-    --info:#096dd9;
-    --info-bg:#e6f4ff;
-    --success:#389e0d;
-    --success-bg:#f6ffed;
-    --beta:#722ed1;
-    --beta-bg:#f9f0ff;
-    --fed-blue:#096dd9;
-    --shadow-panel:0 4px 24px rgba(0,0,0,0.08);
-    --shadow-bubble:0 1px 2px rgba(0,0,0,0.04);
-    --scrollbar-thumb:#d0d0d0;
-    --scrollbar-hover:#b0b0b0;
-  }
-}
 html,body{
   background:var(--bg-black);
   font-family:var(--font);
@@ -6284,27 +6236,6 @@ label.cfg-switch input{ opacity:0; width:0; height:0; position:absolute; }
 label.cfg-switch .slider{ position:absolute; top:1px; left:1px; width:16px; height:16px; background:var(--text-muted); border-radius:50%; transition:all .15s; pointer-events:none; }
 label.cfg-switch input:checked + .slider{ left:17px; background:#fff; }
 label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(--accent); }
-.bridge-card{
-  background:var(--bg-mid);
-  border:1px solid var(--line-color);
-  border-radius:var(--r-md);
-  padding:14px; margin-bottom:10px;
-  display:flex; gap:12px;
-}
-.bridge-icon{
-  width:40px; height:40px; border-radius:var(--r-sm);
-  display:flex; align-items:center; justify-content:center;
-  flex-shrink:0;
-}
-.bridge-body{ flex:1; }
-.bridge-name{
-  font-size:13px; font-weight:600; color:var(--text);
-  display:flex; align-items:center; gap:8px; margin-bottom:4px;
-}
-.bridge-desc{ font-size:11px; color:var(--text-muted); margin-bottom:8px; }
-.bridge-meta{ display:flex; gap:12px; font-size:11px; color:var(--text-muted); }
-.bridge-meta span{ display:flex; align-items:center; gap:4px; }
-.bridge-actions{ display:flex; flex-direction:column; gap:4px; align-items:flex-end; }
 .reports-stats{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
   gap:12px; margin-bottom:16px;
