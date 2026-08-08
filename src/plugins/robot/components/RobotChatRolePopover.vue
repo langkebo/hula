@@ -50,12 +50,7 @@
             @click="emit('select-role', role)">
             <n-avatar :src="role.avatar" :size="32" round :fallback-src="getDefaultAvatar()" />
             <n-flex vertical :size="2" class="flex-1 min-w-0">
-              <n-flex align="center" :size="8">
-                <span class="role-name">{{ role.name }}</span>
-                <n-tag v-if="role.status === 0" size="tiny" type="success">
-                  {{ t('ai_assistant.robot.available') }}
-                </n-tag>
-              </n-flex>
+              <ChatRoleBadge :role="role" />
               <span class="role-desc">{{ role.description }}</span>
             </n-flex>
             <Icon
@@ -72,6 +67,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import ChatRoleBadge from '@/plugins/robot/components/ChatRoleBadge.vue'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 
 const { t } = useI18n()
