@@ -1797,7 +1797,10 @@ export type I18nKeys = {
         "col_actions": "操作",
         "reconnect": "重连",
         "reconnect_success": "重连请求已发送",
-        "reconnect_failed": "重连失败"
+        "reconnect_failed": "重连失败",
+        "status_online": "在线",
+        "status_degraded": "降级",
+        "status_offline": "离线"
       },
       "saml": {
         "title": "SAML 配置",
