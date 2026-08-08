@@ -134,6 +134,9 @@
 </template>
 
 <script setup lang="ts">
+import { save } from '@tauri-apps/plugin-dialog'
+import { writeTextFile } from '@tauri-apps/plugin-fs'
+import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { ErrorType } from '@/common/exception'
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
@@ -249,6 +252,62 @@ const handleCopy = async () => {
   }
 }
 
+const getSenderName = (msg: MessageType) => {
+  const senderUid = msg.fromUser?.uid ?? ''
+  const userInfo = senderUid ? groupStore.getUserInfo(senderUid) : undefined
+  return userInfo?.myName || msg.fromUser?.username || ''
+}
+
+const getMessageText = (msg: MessageType) => {
+  const body = (msg.message.body || {}) as MessageBody
+  return (
+    body.content ||
+    body.fileName ||
+    (body.name as string) ||
+    (body.title as string) ||
+    body.url ||
+    t('message.multi_choose.non_text_message')
+  )
+}
+
+const formatMessagesForExport = (messages: MessageType[], format: 'md' | 'txt') => {
+  return messages
+    .map((msg) => {
+      const sender = getSenderName(msg)
+      const timestamp = dayjs(msg.message.sendTime).format('YYYY-MM-DD HH:mm:ss')
+      const content = getMessageText(msg)
+      if (format === 'md') {
+        return `## ${sender}\n${timestamp}\n\n${content}\n\n---\n`
+      }
+      return `[${timestamp}] ${sender}: ${content}\n`
+    })
+    .join('')
+}
+
+const handleSaveToPc = async () => {
+  if (selectedMsgs.value.length === 0) {
+    showFeedback(t('message.multi_choose.select_messages_first'), 'warning')
+    return
+  }
+  try {
+    const filePath = await save({
+      defaultPath: `messages-${Date.now()}.md`,
+      filters: [
+        { name: 'Markdown', extensions: ['md'] },
+        { name: 'Text', extensions: ['txt'] }
+      ]
+    })
+    if (!filePath) return
+    const ext = filePath.endsWith('.txt') ? 'txt' : 'md'
+    const content = formatMessagesForExport(selectedMsgs.value, ext)
+    await writeTextFile(filePath, content)
+    showFeedback(t('message.multi_choose.save_success'), 'success')
+  } catch (error) {
+    logger.error('保存消息到电脑失败:', error)
+    showFeedback(t('message.multi_choose.save_failed'), 'error')
+  }
+}
+
 const handleBatchDelete = async () => {
   if (isDeleting.value || selectedMsgs.value.length === 0) return
   const roomId = globalStore.currentSessionRoomId
@@ -329,9 +388,8 @@ const toolOptions = computed(() => [
   {
     text: t('message.multi_choose.save_to_pc'),
     icon: '#collect-laptop',
-    click: () => {
-      showFeedback(t('message.multi_choose.not_implemented'), 'warning')
-    }
+    disabled: selectedMsgs.value.length === 0,
+    click: handleSaveToPc
   },
   {
     text: t('message.multi_choose.copy_action'),

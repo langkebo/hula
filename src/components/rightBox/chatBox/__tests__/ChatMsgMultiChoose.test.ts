@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import dayjs from 'dayjs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 import { MittEnum, MsgEnum, RoomTypeEnum, TauriCommand } from '@/enums'
@@ -16,7 +17,9 @@ const {
   mittOnMock,
   mittEmitMock,
   loggerErrorMock,
-  clipboardWriteTextMock
+  clipboardWriteTextMock,
+  saveDialogMock,
+  writeTextFileMock
 } = vi.hoisted(() => ({
   showFeedbackMock: vi.fn(),
   forwardRoomMessagesMock: vi.fn(),
@@ -29,7 +32,9 @@ const {
   mittOnMock: vi.fn(),
   mittEmitMock: vi.fn(),
   loggerErrorMock: vi.fn(),
-  clipboardWriteTextMock: vi.fn().mockResolvedValue(undefined)
+  clipboardWriteTextMock: vi.fn().mockResolvedValue(undefined),
+  saveDialogMock: vi.fn(),
+  writeTextFileMock: vi.fn()
 }))
 
 let chatStore: any
@@ -67,6 +72,14 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
   })
+}))
+
+vi.mock('@tauri-apps/plugin-dialog', () => ({
+  save: saveDialogMock
+}))
+
+vi.mock('@tauri-apps/plugin-fs', () => ({
+  writeTextFile: writeTextFileMock
 }))
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
@@ -316,11 +329,11 @@ describe('ChatMsgMultiChoose', () => {
     chatStore.chatMessageList = []
     const wrapper = mountComponent()
 
-    const toolbarButtons = getToolbarButtons(wrapper)
-    await toolbarButtons[2]!.trigger('click')
+    await (wrapper.vm as unknown as { handleSaveToPc: () => Promise<void> }).handleSaveToPc()
+    await flushPromises()
     ;(wrapper.vm as unknown as { handleDeleteClick: () => void }).handleDeleteClick()
 
-    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.not_implemented', 'warning')
+    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.select_messages_first', 'warning')
     expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.select_delete_prompt', 'warning')
   })
 
@@ -429,5 +442,102 @@ describe('ChatMsgMultiChoose', () => {
 
     expect(clipboardWriteTextMock).not.toHaveBeenCalled()
     expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.select_copy_prompt', 'warning')
+  })
+
+  it('shows warning and skips dialog when saving to PC with no selection', async () => {
+    chatStore.chatMessageList = []
+    const wrapper = mountComponent()
+
+    await (wrapper.vm as unknown as { handleSaveToPc: () => Promise<void> }).handleSaveToPc()
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.select_messages_first', 'warning')
+    expect(saveDialogMock).not.toHaveBeenCalled()
+    expect(writeTextFileMock).not.toHaveBeenCalled()
+  })
+
+  it('writes markdown file with sender, timestamp and content when saving as .md', async () => {
+    const sendTime = 1700000000000
+    chatStore.chatMessageList = [
+      {
+        isCheck: true,
+        message: {
+          id: 'msg-1',
+          roomId: '!source:example.com',
+          sendTime,
+          type: MsgEnum.TEXT,
+          body: { content: 'hello' }
+        },
+        fromUser: { uid: '@alice:example.com', username: 'Alice' }
+      }
+    ]
+    saveDialogMock.mockResolvedValue('/path/messages-export.md')
+    writeTextFileMock.mockResolvedValue(undefined)
+
+    const wrapper = mountComponent()
+    await (wrapper.vm as unknown as { handleSaveToPc: () => Promise<void> }).handleSaveToPc()
+    await flushPromises()
+
+    const expectedTimestamp = dayjs(sendTime).format('YYYY-MM-DD HH:mm:ss')
+    const expectedContent = `## Alice\n${expectedTimestamp}\n\nhello\n\n---\n`
+    expect(saveDialogMock).toHaveBeenCalledWith({
+      defaultPath: expect.stringMatching(/^messages-\d+\.md$/),
+      filters: [
+        { name: 'Markdown', extensions: ['md'] },
+        { name: 'Text', extensions: ['txt'] }
+      ]
+    })
+    expect(writeTextFileMock).toHaveBeenCalledWith('/path/messages-export.md', expectedContent)
+    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.save_success', 'success')
+  })
+
+  it('writes txt file when saving as .txt', async () => {
+    const sendTime = 1700000000000
+    chatStore.chatMessageList = [
+      {
+        isCheck: true,
+        message: {
+          id: 'msg-1',
+          roomId: '!source:example.com',
+          sendTime,
+          type: MsgEnum.TEXT,
+          body: { content: 'hello' }
+        },
+        fromUser: { uid: '@alice:example.com', username: 'Alice' }
+      }
+    ]
+    saveDialogMock.mockResolvedValue('/path/messages-export.txt')
+    writeTextFileMock.mockResolvedValue(undefined)
+
+    const wrapper = mountComponent()
+    await (wrapper.vm as unknown as { handleSaveToPc: () => Promise<void> }).handleSaveToPc()
+    await flushPromises()
+
+    const expectedTimestamp = dayjs(sendTime).format('YYYY-MM-DD HH:mm:ss')
+    const expectedContent = `[${expectedTimestamp}] Alice: hello\n`
+    expect(writeTextFileMock).toHaveBeenCalledWith('/path/messages-export.txt', expectedContent)
+    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.save_success', 'success')
+  })
+
+  it('does not write file when user cancels save dialog', async () => {
+    saveDialogMock.mockResolvedValue(null)
+
+    const wrapper = mountComponent()
+    await (wrapper.vm as unknown as { handleSaveToPc: () => Promise<void> }).handleSaveToPc()
+    await flushPromises()
+
+    expect(writeTextFileMock).not.toHaveBeenCalled()
+    expect(showFeedbackMock).not.toHaveBeenCalled()
+  })
+
+  it('shows error feedback when writeTextFile fails', async () => {
+    saveDialogMock.mockResolvedValue('/path/messages-export.md')
+    writeTextFileMock.mockRejectedValue(new Error('disk full'))
+
+    const wrapper = mountComponent()
+    await (wrapper.vm as unknown as { handleSaveToPc: () => Promise<void> }).handleSaveToPc()
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.save_failed', 'error')
   })
 })
