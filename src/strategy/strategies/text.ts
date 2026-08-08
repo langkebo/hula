@@ -31,10 +31,6 @@ export class TextMessageStrategyImpl extends AbstractMessageStrategy {
     if (replyValue?.message?.body?.content) {
       const tempDiv = document.createElement('div')
       tempDiv.innerHTML = DOMPurify.sanitize(msg.content as string)
-      const replyDiv = tempDiv.querySelector('#replyDiv')
-      if (replyDiv) {
-        replyDiv.parentNode?.removeChild(replyDiv)
-      }
       tempDiv.innerHTML = DOMPurify.sanitize(removeTag(tempDiv.innerHTML), { RETURN_DOM: false })
 
       // 确保所有的&nbsp;都被替换为空格
