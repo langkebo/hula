@@ -10,7 +10,10 @@ const PREFIX_V3 = '/_matrix/client/v3'
 
 const server = setupMswServer(
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/capabilities`, () => {
-    return HttpResponse.json({ capabilities: { 'm.room.tombstone': { enabled: true } } })
+    return HttpResponse.json({
+      capabilities: { 'm.room.tombstone': { enabled: true } },
+      unstable_features: { 'io.hula.friends': true }
+    })
   }),
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/thirdparty/protocols`, () => {
     return HttpResponse.json({ irc: { fields: ['network'] } })
@@ -138,17 +141,30 @@ describe('MatrixAccountService', () => {
   })
 
   describe('getCapabilities', () => {
-    it('should get capabilities', async () => {
-      const mockCaps = { capabilities: { 'm.room.tombstone': { enabled: true } } }
-      mockClient.getCapabilities.mockResolvedValue(mockCaps)
-
+    it('should get capabilities via single authedRequest (no duplication)', async () => {
       const result = await matrixAccountService.getCapabilities()
-      expect(result).toEqual(mockCaps)
-      expect(mockClient.getCapabilities).toHaveBeenCalled()
+
+      // 返回完整响应体（含 unstable_features）
+      expect(result).toEqual({
+        capabilities: { 'm.room.tombstone': { enabled: true } },
+        unstable_features: { 'io.hula.friends': true }
+      })
+      // authedRequest 恰好调用一次（不存在 SDK + 补充 fetch 双请求）
+      expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
+      expect(mockAuthedRequest).toHaveBeenCalledWith('GET', '/capabilities', undefined, undefined, undefined)
+      // 不应走 SDK client.getCapabilities()（它会丢弃 unstable_features）
+      expect(mockClient.getCapabilities).not.toHaveBeenCalled()
+    })
+
+    it('should return unstable_features from the response', async () => {
+      const result = (await matrixAccountService.getCapabilities()) as {
+        unstable_features?: Record<string, boolean>
+      }
+      expect(result.unstable_features).toEqual({ 'io.hula.friends': true })
     })
 
     it('should return empty object on error', async () => {
-      mockClient.getCapabilities.mockRejectedValue(new Error('HTTP 500'))
+      mockAuthedRequest.mockRejectedValueOnce(new Error('HTTP 500'))
       const result = await matrixAccountService.getCapabilities()
       expect(result).toEqual({})
     })

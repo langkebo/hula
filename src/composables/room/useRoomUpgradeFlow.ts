@@ -1,9 +1,9 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { matrixRoomMetadataService } from '@/services/matrix/room/MetadataService'
 import { roomOperations } from '@/services/matrix/room/RoomOperations'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useRoomUpgradeFlow')
@@ -29,7 +29,7 @@ interface UseRoomUpgradeFlowOptions {
  *
  * 服务端能力来源:
  * - 当前版本:`m.room.create` 事件中的 `room_version`
- * - 可用版本:`MatrixAuthService.getCapabilities()` 返回的 `m.room_versions.available`
+ * - 可用版本:`matrixAccountService.getCapabilities()` 返回的 `m.room_versions.available`
  */
 export function useRoomUpgradeFlow(options: UseRoomUpgradeFlowOptions) {
   const { t } = useI18n()
@@ -94,7 +94,7 @@ export function useRoomUpgradeFlow(options: UseRoomUpgradeFlowOptions) {
     try {
       const [version, caps] = await Promise.all([
         matrixRoomMetadataService.getRoomVersion(roomId),
-        MatrixAuthService.getCapabilities()
+        matrixAccountService.getCapabilities()
       ])
       currentVersion.value = version
       parseRoomVersions(caps ?? {})

@@ -1,6 +1,5 @@
 import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
-import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import type { DeviceManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -410,60 +409,33 @@ class MatrixAccountService extends BaseMatrixService {
 
   async getCapabilities(): Promise<Record<string, unknown>> {
     const client = this.getClient()
-    logger.warn(`[MatrixAccount] getCapabilities() 开始: workerStarted=${matrixWorkerHost.isStarted}`)
+    logger.debug(`[MatrixAccount] getCapabilities() 开始: workerStarted=${matrixWorkerHost.isStarted}`)
 
+    // Worker 路径：在 worker 线程发起单次请求，避免阻塞主线程
     if (matrixWorkerHost.isStarted) {
       const accessToken = client.getAccessToken()
       if (accessToken) {
         try {
-          logger.warn('[MatrixAccount] getCapabilities() 通过 worker 获取')
+          logger.debug('[MatrixAccount] getCapabilities() 通过 worker 获取')
           const result = await matrixWorkerHost.getCapabilities(client.getHomeserverUrl(), accessToken)
-          logger.warn('[MatrixAccount] getCapabilities() 成功（worker）')
+          logger.debug('[MatrixAccount] getCapabilities() 成功（worker）')
           return result
         } catch (err) {
           const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
-          logger.error(`[MatrixAccount] getCapabilities() 失败（worker）: ${detail}, 降级到 SDK`)
+          logger.warn(`[MatrixAccount] getCapabilities() 失败（worker）: ${detail}, 降级到 authedRequest`)
         }
       } else {
-        logger.warn('[MatrixAccount] getCapabilities() worker 已启动但无 accessToken, 降级到 SDK')
+        logger.warn('[MatrixAccount] getCapabilities() worker 已启动但无 accessToken, 降级到 authedRequest')
       }
     }
 
+    // 非 worker 路径：通过 SDK authedRequest 发起单次请求，返回完整响应体（含 unstable_features）。
+    // 注意：不能用 client.getCapabilities()，它只返回 IServerCapabilities（丢弃 unstable_features），
+    // 会导致需要第二次 HTTP 请求补充获取 unstable_features（如 io.hula.friends）。
     try {
-      logger.warn('[MatrixAccount] getCapabilities() 通过 SDK client.getCapabilities() 获取')
-      const result = await client.getCapabilities()
-      const caps = result as { capabilities?: Record<string, unknown>; unstable_features?: Record<string, boolean> }
-      const hasUnstable = !!caps.unstable_features
-      logger.warn(`[MatrixAccount] getCapabilities() SDK 返回, hasUnstableFeatures=${hasUnstable}`)
-      // SDK 的 getCapabilities() 只返回 IServerCapabilities（仅 capabilities 字段），
-      // 丢弃了 unstable_features。而 io.hula.friends 仅存在于 unstable_features 中，
-      // 因此需要额外通过 HTTP 请求获取完整响应。
-      if (!caps.unstable_features) {
-        try {
-          const baseUrl = client.getHomeserverUrl()
-          const accessToken = client.getAccessToken()
-          const url = `${baseUrl}/_matrix/client/v3/capabilities`
-          logger.warn(`[MatrixAccount] getCapabilities() 补充 HTTP 请求获取 unstable_features: ${url}`)
-          const response = await getRuntimeAwareFetch()(url, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              Accept: 'application/json'
-            }
-          })
-          if (response.ok) {
-            const fullBody = (await response.json()) as Record<string, unknown>
-            logger.warn('[MatrixAccount] getCapabilities() HTTP 补充请求成功')
-            return fullBody
-          } else {
-            logger.warn(`[MatrixAccount] getCapabilities() HTTP 补充请求返回 ${response.status}`)
-          }
-        } catch (err) {
-          const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
-          logger.warn(`[MatrixAccount] getCapabilities() HTTP 补充请求失败: ${detail}, 降级使用 SDK 数据`)
-        }
-      }
-      logger.warn('[MatrixAccount] getCapabilities() 返回 SDK 数据')
-      return caps as Record<string, unknown>
+      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/capabilities')
+      logger.debug('[MatrixAccount] getCapabilities() 成功（authedRequest）')
+      return result
     } catch (err) {
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
       logger.error(`[MatrixAccount] getCapabilities() 失败: ${detail}`)
