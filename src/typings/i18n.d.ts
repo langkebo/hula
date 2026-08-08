@@ -5805,6 +5805,25 @@ export type I18nKeys = {
       "burn_after_read": "阅后即焚",
       "has_draft": "有草稿",
       "failed_send": "发送失败"
+    },
+    "discovery": {
+      "aria_label": "房间发现",
+      "search_placeholder": "搜索房间名称...",
+      "join": "加入",
+      "empty": "暂无公开房间",
+      "members": "{count} 成员",
+      "federated": "联邦",
+      "no_topic": "暂无简介",
+      "preview_title": "房间预览",
+      "preview_members": "成员数",
+      "preview_topic": "简介",
+      "preview_history": "历史摘要",
+      "preview_no_history": "暂无历史摘要",
+      "reason_label": "加房理由",
+      "reason_placeholder": "请输入加房理由（联邦房必填）",
+      "reason_required": "请输入加房理由",
+      "cancel": "取消",
+      "preview_join": "加入房间"
     }
   },
   "room_advanced": {
