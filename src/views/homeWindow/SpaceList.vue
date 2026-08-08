@@ -46,6 +46,7 @@
         :selected-space-id="selectedSpaceId"
         :collapsed-ids="collapsedIds"
         @select="handleSelectSpace"
+        @select-room="handleSelectRoom"
         @toggle="handleTreeToggle" />
       <!-- 列表视图 -->
       <SpaceListPane
@@ -72,6 +73,7 @@ import type { SpaceListItem } from '@/components/workbench/SpaceListPane.vue'
 import SpaceListPane from '@/components/workbench/SpaceListPane.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
+import { useEnterChat } from '@/composables/chat/useEnterChat'
 import { useSpaces } from '@/composables/space'
 import { buildCreateSpaceRoute, buildSpaceRoute } from '@/router/spaceNavigation'
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
@@ -84,6 +86,7 @@ const { announce } = useAriaLive()
 const { showFeedback } = useActionFeedback()
 const router = useRouter()
 const roomStore = useRoomStore()
+const { enterChat: enterChatFn } = useEnterChat()
 
 // 空间列表数据
 const { spaces, loading: spaceLoading, load: reloadSpaces } = useSpaces()
@@ -139,6 +142,16 @@ const handleSelectSpace = (spaceId: string) => {
   const spaceName = spaces.value.find((s) => s.spaceId === spaceId)?.name || spaceId
   announce(t('space.space_selected', { name: spaceName }), 'polite')
   void router.push(buildSpaceRoute(spaceId))
+}
+
+// 选择房间：进入房间聊天会话
+const handleSelectRoom = async (roomId: string) => {
+  if (!roomId) return
+  try {
+    await enterChatFn(roomId, 'room')
+  } catch (err) {
+    showFeedback(String(err), 'error')
+  }
 }
 
 // 创建空间

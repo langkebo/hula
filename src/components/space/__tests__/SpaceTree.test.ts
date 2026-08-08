@@ -172,4 +172,47 @@ describe('SpaceTree', () => {
     expect(svg.exists()).toBe(true)
     expect(svg.attributes('stroke-width')).toBe('1.5')
   })
+
+  // === Fix #1: ARIA tree role — root=tree, recursive=group ===
+
+  it('renders only one role=tree (root); recursive levels use role=group', () => {
+    const wrapper = mountTree()
+    const trees = wrapper.findAll('[role="tree"]')
+    expect(trees.length).toBe(1)
+    // Recursive child SpaceTree must NOT produce a nested role=tree
+    const groups = wrapper.findAll('[role="group"]')
+    expect(groups.length).toBeGreaterThanOrEqual(1)
+  })
+
+  // === Fix #2 & #3: room leaf keyboard + select-room emit ===
+
+  it('emits select-room with roomId when room leaf clicked', async () => {
+    const wrapper = mountTree()
+    await wrapper.find('[data-testid="space-tree-room-!room-parent:server"]').trigger('click')
+    expect(wrapper.emitted('select-room')).toEqual([['!room-parent:server']])
+  })
+
+  it('emits select-room with roomId on Enter keypress', async () => {
+    const wrapper = mountTree()
+    await wrapper.find('[data-testid="space-tree-room-!room-parent:server"]').trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('select-room')).toEqual([['!room-parent:server']])
+  })
+
+  it('emits select-room with roomId on Space keypress', async () => {
+    const wrapper = mountTree()
+    await wrapper.find('[data-testid="space-tree-room-!room-parent:server"]').trigger('keydown', { key: ' ' })
+    expect(wrapper.emitted('select-room')).toEqual([['!room-parent:server']])
+  })
+
+  it('forwards select-room from nested room leaf through recursive SpaceTree', async () => {
+    const wrapper = mountTree()
+    await wrapper.find('[data-testid="space-tree-room-!room-a1:server"]').trigger('click')
+    expect(wrapper.emitted('select-room')).toEqual([['!room-a1:server']])
+  })
+
+  it('does not emit select when room leaf clicked (select is for spaces only)', async () => {
+    const wrapper = mountTree()
+    await wrapper.find('[data-testid="space-tree-room-!room-parent:server"]').trigger('click')
+    expect(wrapper.emitted('select')).toBeUndefined()
+  })
 })
