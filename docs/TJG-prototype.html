@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#1b1b1b">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#1b1b1b" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <title>TJG — Matrix IM 高保真原型</title>
 <style>
 /* ============================================================
@@ -12,6 +13,28 @@
    ============================================================ */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust:100%; }
 :root{
+  /* ============================================================
+     ⚠️ 重要：原型 token 体系说明（开发者必读）
+     ============================================================
+     本原型使用内部 token 体系（纯暗色设计参考），变量名如
+     --bg-deep / --text-primary / --accent 等仅为原型内部使用。
+
+     真实开发必须使用项目规范 token：
+     - 权威来源：src/styles/css/design-tokens.css
+     - 规范前缀：--tjg-*（如 --tjg-bg-deep, --tjg-text-primary）
+     - 旧别名 --color-*/--bg-* 已于 2.6.3 全部迁移完毕，禁止使用
+     - 主题切换：真实项目通过 document.documentElement.dataset.theme 实现
+       （参考 src/stores/domains/settings/setting.ts）
+
+     原型变量 → --tjg-* 对应关系（近似）：
+     --bg-deep      ≈ --tjg-surface-app（暗色）/ --tjg-bg-deep
+     --bg-mid       ≈ --tjg-surface-elevated
+     --text-primary ≈ --tjg-text-inverse（暗色）/ --tjg-text-primary
+     --accent       ≈ --tjg-brand
+     --accent-strong≈ --tjg-color-primary-600
+     --line-color   ≈ --tjg-border-default
+     完整映射见 design-tokens.css 注释
+     ============================================================ */
   /* ============================================================
      背景层级（对齐 HuLa 深色主题 variable.scss dark）
      ============================================================ */
