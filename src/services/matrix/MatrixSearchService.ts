@@ -223,6 +223,51 @@ class MatrixSearchService {
     })
   }
 
+  /**
+   * 在指定房间内搜索历史消息，返回结果、总数与高亮关键词。
+   * 用于房间内 F2 搜索面板：结果供跳转到对应消息位置。
+   */
+  async searchRoomMessages(
+    roomId: string,
+    query: string
+  ): Promise<{ results: SearchResult[]; count: number; highlights: string[] }> {
+    if (!query.trim()) {
+      return { results: [], count: 0, highlights: [] }
+    }
+
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
+    }
+
+    try {
+      const response = await client.search({
+        search_categories: {
+          room_events: {
+            search_term: query,
+            filter: { rooms: [roomId], limit: 20 },
+            order_by: 'recent',
+            event_context: { before_limit: 0, after_limit: 0, include_profile: true }
+          }
+        }
+      })
+
+      const results = this.parseSearchResults(response)
+      const roomEvents = response.search_categories?.room_events
+
+      logger.info(`[MatrixSearch] 房间内搜索完成: room=${roomId} query="${query}" 找到 ${results.length} 条`)
+
+      return {
+        results,
+        count: roomEvents?.count ?? results.length,
+        highlights: roomEvents?.highlights ?? []
+      }
+    } catch (err) {
+      logger.error(`[MatrixSearch] 房间内搜索失败: ${err}`)
+      throw err
+    }
+  }
+
   async searchUsers(query: string, limit: number = 10): Promise<UserSearchResult[]> {
     const client = matrixClientService.getClient()
     if (!client) {

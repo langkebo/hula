@@ -137,6 +137,25 @@
       {{ privateModeActive ? t('chat.header.private_mode_active') : t('chat.header.private_mode_toggle') }}
     </n-tooltip>
 
+    <n-tooltip v-if="!isMobile" trigger="hover" :delay="500">
+      <template #trigger>
+        <n-button
+          quaternary
+          circle
+          size="small"
+          :aria-label="t('chat.header.search_messages')"
+          @click="handleOpenSearch">
+          <template #icon>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.3-4.3" stroke-linecap="round" />
+            </svg>
+          </template>
+        </n-button>
+      </template>
+      {{ t('chat.header.search_messages') }}
+    </n-tooltip>
+
     <n-tooltip trigger="hover" :delay="500">
       <template #trigger>
         <n-button
@@ -180,6 +199,7 @@ const emit = defineEmits<{
   (e: 'toggle-sidebar'): void
   (e: 'open-in-new-window'): void
   (e: 'toggle-private-mode'): void
+  (e: 'open-search'): void
 }>()
 
 const { t } = useI18n()
@@ -194,6 +214,7 @@ const handleShowQRCode = () => emit('show-qr-code')
 const handleToggleSidebar = () => emit('toggle-sidebar')
 const handleOpenInNewWindow = () => emit('open-in-new-window')
 const handleTogglePrivateMode = () => emit('toggle-private-mode')
+const handleOpenSearch = () => emit('open-search')
 </script>
 
 <style scoped lang="scss">

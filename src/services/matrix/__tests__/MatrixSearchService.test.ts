@@ -6,6 +6,15 @@ import matrixWorkerHost from '../MatrixWorkerHost'
 
 vi.spyOn(matrixClientService, 'getClient')
 
+// 阻断真实 MatrixClientService 的传递依赖加载 matrix-js-sdk
+// （主项目 node_modules 缺少 @babel/runtime/loglevel，本地 SDK 构建产物无法解析，
+//  参见 ChatSidebar.test.ts 同类说明）。getClient 以 vi.fn 提供给 spyOn/mockReturnValue。
+vi.mock('../MatrixClientService', () => ({
+  default: {
+    getClient: vi.fn()
+  }
+}))
+
 vi.mock('../MatrixWorkerHost', () => ({
   default: {
     isStarted: false,
@@ -154,6 +163,96 @@ describe('MatrixSearchService', () => {
       expect(matrixWorkerHost.querySearchIndex).toHaveBeenCalled()
       expect(mockClient.search).toHaveBeenCalled()
       expect(results[0]?.eventId).toBe('$remote_1')
+    })
+  })
+
+  describe('searchRoomMessages', () => {
+    it('returns results, count and highlights for a non-empty query', async () => {
+      mockClient.search = vi.fn().mockResolvedValue({
+        search_categories: {
+          room_events: {
+            results: [
+              {
+                result: {
+                  room_id: '!room:example.com',
+                  event_id: '$event_1',
+                  sender: '@alice:example.com',
+                  content: { body: 'hello world', msgtype: 'm.text' },
+                  origin_server_ts: 1234567890
+                }
+              }
+            ],
+            count: 1,
+            highlights: ['hello']
+          }
+        }
+      })
+
+      const res = await matrixSearchService.searchRoomMessages('!room:example.com', 'hello')
+
+      expect(mockClient.search).toHaveBeenCalledWith(
+        expect.objectContaining({
+          search_categories: {
+            room_events: expect.objectContaining({
+              search_term: 'hello',
+              filter: expect.objectContaining({ rooms: ['!room:example.com'] })
+            })
+          }
+        })
+      )
+      expect(res.results.length).toBe(1)
+      expect(res.results[0]?.eventId).toBe('$event_1')
+      expect(res.results[0]?.sender).toBe('@alice:example.com')
+      expect(res.results[0]?.timestamp).toBe(1234567890)
+      expect(res.count).toBe(1)
+      expect(res.highlights).toEqual(['hello'])
+    })
+
+    it('returns empty results for blank query without calling client.search', async () => {
+      const res = await matrixSearchService.searchRoomMessages('!room:example.com', '   ')
+
+      expect(mockClient.search).not.toHaveBeenCalled()
+      expect(res.results).toEqual([])
+      expect(res.count).toBe(0)
+      expect(res.highlights).toEqual([])
+    })
+
+    it('throws when client is not initialized', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+      await expect(matrixSearchService.searchRoomMessages('!room:example.com', 'hello')).rejects.toThrow()
+    })
+
+    it('propagates errors from client.search', async () => {
+      mockClient.search = vi.fn().mockRejectedValue(new Error('network down'))
+
+      await expect(matrixSearchService.searchRoomMessages('!room:example.com', 'hello')).rejects.toThrow('network down')
+    })
+
+    it('defaults count/highlights when omitted by server', async () => {
+      mockClient.search = vi.fn().mockResolvedValue({
+        search_categories: {
+          room_events: {
+            results: [
+              {
+                result: {
+                  room_id: '!room:example.com',
+                  event_id: '$event_2',
+                  sender: '@bob:example.com',
+                  content: { body: 'hi', msgtype: 'm.text' },
+                  origin_server_ts: 1
+                }
+              }
+            ]
+          }
+        }
+      })
+
+      const res = await matrixSearchService.searchRoomMessages('!room:example.com', 'hi')
+
+      expect(res.results.length).toBe(1)
+      expect(res.count).toBe(1)
+      expect(res.highlights).toEqual([])
     })
   })
 
