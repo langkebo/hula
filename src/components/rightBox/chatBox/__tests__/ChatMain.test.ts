@@ -1,8 +1,32 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import ChatMain from '../ChatMain.vue'
+
+const pinnedMessagesRef = ref<unknown[]>([])
+const canSetStickyRef = ref(false)
+const loadMock = vi.fn(async () => undefined)
+const pinMock = vi.fn(async () => true)
+const unpinMock = vi.fn(async () => true)
+
+vi.mock('@/composables/room/usePinnedMessage', () => ({
+  usePinnedMessage: () => ({
+    pinnedMessages: computed(() => pinnedMessagesRef.value),
+    latestPinnedMessage: computed(() => null),
+    canSetSticky: computed(() => canSetStickyRef.value),
+    pinnedEventIds: ref([]),
+    loading: ref(false),
+    errorMessage: ref(null),
+    dismissed: ref(false),
+    load: loadMock,
+    refresh: loadMock,
+    pin: pinMock,
+    unpin: unpinMock,
+    dismiss: vi.fn(),
+    resetDismiss: vi.fn()
+  })
+}))
 
 vi.mock('@/utils/AppHarness', () => ({
   detectAppPlatform: () => 'desktop',
@@ -301,6 +325,10 @@ const mountComponent = () =>
 describe('ChatMain', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    pinnedMessagesRef.value = []
+    canSetStickyRef.value = false
+    loadMock.mockResolvedValue(undefined)
+    unpinMock.mockResolvedValue(true)
 
     globalStore = reactive({
       currentSessionRoomId: '!room:example.com'
@@ -394,6 +422,10 @@ describe('ChatMain', () => {
 describe('ChatMain private mode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    pinnedMessagesRef.value = []
+    canSetStickyRef.value = false
+    loadMock.mockResolvedValue(undefined)
+    unpinMock.mockResolvedValue(true)
 
     // usePrivateMode is a module-level singleton; reset shared state between tests
     // so assertions about "inactive" state are not polluted by prior tests.
@@ -557,6 +589,10 @@ describe('ChatMain private mode', () => {
 describe('ChatMain sticky events', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    pinnedMessagesRef.value = []
+    canSetStickyRef.value = false
+    loadMock.mockResolvedValue(undefined)
+    unpinMock.mockResolvedValue(true)
 
     globalStore = reactive({
       currentSessionRoomId: '!room:example.com'
@@ -613,12 +649,31 @@ describe('ChatMain sticky events', () => {
     expect(banners.props('canSetSticky')).toBe(false)
   })
 
-  it('updates stickyEvents when set via expose', async () => {
+  it('reflects canSetSticky=true from composable', async () => {
+    canSetStickyRef.value = true
     const wrapper = mountComponent()
-    const vm = wrapper.vm as unknown as {
-      stickyEvents: { eventId: string; sender: string; body: string; timestamp: number }[]
-    }
-    vm.stickyEvents = [{ eventId: '$evt1', sender: '@alice:server', body: 'Hello', timestamp: Date.now() }]
+    await flushPromises()
+    const banners = wrapper.findComponent({ name: 'ChatBanners' })
+    expect(banners.props('canSetSticky')).toBe(true)
+  })
+
+  it('loads pinned messages on mount via composable', async () => {
+    mountComponent()
+    await flushPromises()
+    expect(loadMock).toHaveBeenCalled()
+  })
+
+  it('handleCancelSticky calls unpin with eventId', async () => {
+    const wrapper = mountComponent()
+    await (wrapper.vm as unknown as { handleCancelSticky: (eventId: string) => Promise<void> }).handleCancelSticky(
+      '$evt1'
+    )
+    expect(unpinMock).toHaveBeenCalledWith('$evt1')
+  })
+
+  it('reflects stickyEvents from composable', async () => {
+    pinnedMessagesRef.value = [{ eventId: '$evt1', sender: '@alice:server', body: 'Hello', timestamp: Date.now() }]
+    const wrapper = mountComponent()
     await flushPromises()
     const banners = wrapper.findComponent({ name: 'ChatBanners' })
     expect(banners.props('stickyEvents')).toHaveLength(1)

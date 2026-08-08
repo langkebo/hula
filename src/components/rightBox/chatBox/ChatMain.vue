@@ -15,7 +15,22 @@
       @toggle-private-mode="togglePrivateMode"
       @view-announcement="handleViewAnnouncement"
       @set-sticky="handleSetSticky"
+      @cancel-sticky="handleCancelSticky"
       @view-sticky-event="handleViewStickyEvent" />
+
+    <!-- 房间内消息搜索面板（F2） -->
+    <ChatRoomSearch
+      :is-open="searchIsOpen"
+      :query="searchQuery"
+      :results="searchResults"
+      :loading="searchLoading"
+      :active-index="searchActiveIndex"
+      @update:query="handleSearchQueryUpdate"
+      @query-input="handleSearchQueryInput"
+      @select-result="handleSearchSelectResult"
+      @navigate="handleSearchNavigate"
+      @set-active="handleSearchSetActive"
+      @close="closeRoomSearch" />
 
     <!-- 聊天内容 -->
     <div class="flex flex-col flex-1 min-h-0">
@@ -202,11 +217,13 @@ import { useChatDialogs } from '@/composables/chat/useChatDialogs'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useChatScrollManager } from '@/composables/chat/useChatScrollManager'
 import { usePrivateMode } from '@/composables/chat/usePrivateMode'
+import { useRoomSearch } from '@/composables/chat/useRoomSearch'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { usePopover } from '@/composables/common/usePopover'
 import { useWindow } from '@/composables/common/useWindow'
+import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { MittEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -223,6 +240,7 @@ import { isMobile } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
 import ChatBanners from './ChatBanners.vue'
 import ChatModals from './ChatModals.vue'
+import ChatRoomSearch from './ChatRoomSearch.vue'
 
 const FileUploadProgress = defineAsyncComponent(() => import('@/components/rightBox/FileUploadProgress.vue'))
 
@@ -317,27 +335,21 @@ onUnmounted(() => {
 const { threadPanelVisible, activeThreadId, threadOriginalMessage, eventReportVisible, eventReportData } =
   useChatDialogs(getMessageSenderUid)
 
-// ===== 粘性事件 =====
-interface StickyEventItem {
-  eventId: string
-  sender: string
-  body: string
-  timestamp: number
-}
-
-const stickyEvents = ref<StickyEventItem[]>([])
-const canSetSticky = computed(() => {
-  // TODO: 根据 power_levels 判断是否有权限设置粘性事件
-  return false
-})
+// ===== 粘性事件（置顶消息横幅）=====
+const pinnedMessageFlow = usePinnedMessage({ roomId: () => globalStore.currentSessionRoomId ?? null })
+const stickyEvents = pinnedMessageFlow.pinnedMessages
+const canSetSticky = pinnedMessageFlow.canSetSticky
 
 function handleSetSticky() {
-  // TODO: 打开消息选择器或使用最近选中消息
+  // TODO: 打开消息选择器选择要置顶的消息（横幅按钮入口）
   logger.info('Set sticky event requested')
 }
 
+async function handleCancelSticky(eventId: string) {
+  await pinnedMessageFlow.unpin(eventId)
+}
+
 function handleViewStickyEvent(eventId: string) {
-  // 滚动到对应消息
   logger.info('View sticky event:', eventId)
   jumpToReplyMsg(eventId)
 }
@@ -358,6 +370,25 @@ const newMsgCountLabel = computed(() => {
   return currentNewMsgCount.value.count > 99 ? '99+' : String(currentNewMsgCount.value.count)
 })
 const currentRoomId = computed(() => globalStore.currentSessionRoomId ?? null)
+
+// 房间切换时重新加载置顶消息
+watch(
+  currentRoomId,
+  (newId) => {
+    if (newId) {
+      pinnedMessageFlow.load().catch((e) => logger.error('加载置顶消息失败:', e))
+    }
+  },
+  { immediate: true }
+)
+
+// 监听置顶消息变更事件（来自消息右键菜单的 pin/unpin）
+const onPinnedEventsChanged = (payload: { roomId?: string } | undefined) => {
+  if (payload?.roomId && payload.roomId === currentRoomId.value) {
+    pinnedMessageFlow.load().catch((e) => logger.error('刷新置顶消息失败:', e))
+  }
+}
+useMitt.on(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
 const isMainViewReady = computed(() => {
   if (!currentRoomId.value) {
     return false
@@ -545,6 +576,69 @@ const jumpToReplyMsg = async (key: string): Promise<void> => {
   }
 }
 
+// 侧栏置顶/收藏点击 → 跳转定位到指定消息（复用 jumpToReplyMsg 的滚动+高亮逻辑）
+const onNavigateToMessage = (payload: { roomId?: string; eventId?: string } | undefined) => {
+  if (!payload?.eventId) return
+  if (payload.roomId && payload.roomId !== currentRoomId.value) return
+  jumpToReplyMsg(payload.eventId)
+}
+
+// ===== 房间内消息搜索（F2）=====
+const searchRoomId = computed(() => globalStore.currentSessionRoomId ?? '')
+const {
+  isOpen: searchIsOpen,
+  query: searchQuery,
+  results: searchResults,
+  loading: searchLoading,
+  activeIndex: searchActiveIndex,
+  onQueryInput: handleSearchQueryInput,
+  openSearch: openRoomSearch,
+  closeSearch: closeRoomSearch,
+  navigateNext: searchNavigateNext,
+  navigatePrev: searchNavigatePrev,
+  selectResult: searchSelectResult
+} = useRoomSearch(searchRoomId)
+
+function handleSearchQueryUpdate(value: string) {
+  searchQuery.value = value
+}
+
+function handleSearchNavigate(direction: 'next' | 'prev') {
+  if (direction === 'next') {
+    searchNavigateNext()
+  } else {
+    searchNavigatePrev()
+  }
+}
+
+function handleSearchSetActive(index: number) {
+  searchActiveIndex.value = index
+}
+
+function handleSearchSelectResult(index: number) {
+  const result = searchSelectResult(index)
+  if (result) {
+    closeRoomSearch()
+    jumpToReplyMsg(result.eventId)
+  }
+}
+
+// F2 快捷键打开搜索面板
+useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+  if (event.key === 'F2' && !searchIsOpen.value) {
+    const target = event.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      return
+    }
+    event.preventDefault()
+    openRoomSearch()
+  }
+})
+
+const onOpenRoomSearch = () => {
+  openRoomSearch()
+}
+
 const handleFloatButtonClick = async () => {
   try {
     // 只有消息数量超过60条才进行重置和刷新
@@ -651,6 +745,8 @@ useMitt.on(MittEnum.CHAT_SCROLL_BOTTOM, () => {
 
 onMounted(() => {
   useMitt.on(MittEnum.SESSION_CHANGED, handleSessionChanged)
+  useMitt.on(MittEnum.OPEN_ROOM_SEARCH, onOpenRoomSearch)
+  useMitt.on(MittEnum.NAVIGATE_TO_MESSAGE, onNavigateToMessage)
   // 初始化公告监听器
   if (appWindow) {
     initAnnouncementListeners(appWindow).catch((e) => logger.error('initAnnouncementListeners failed:', e))
@@ -663,6 +759,9 @@ onUnmounted(() => {
   cleanupAnnouncementListeners()
   stopWheelListener()
   timerManager.clearAll()
+  useMitt.off(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
+  useMitt.off(MittEnum.OPEN_ROOM_SEARCH, onOpenRoomSearch)
+  useMitt.off(MittEnum.NAVIGATE_TO_MESSAGE, onNavigateToMessage)
 })
 </script>
 

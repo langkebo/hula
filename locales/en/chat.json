@@ -17,6 +17,17 @@
     "screen_share": "Screen Share",
     "group_qr_code": "Group QR Code",
     "more_options": "More Options",
+    "search_messages": "Search Messages",
+    "search": {
+      "title": "Search Room Messages",
+      "placeholder": "Enter keyword to search message history",
+      "loading": "Searching...",
+      "no_results": "No matching messages found",
+      "empty_hint": "Type a keyword to search message history",
+      "results_count": "{count} results found",
+      "jump_hint": "Click or press Enter to jump to the message",
+      "close": "Close"
+    },
     "open_in_new_window": "Open in New Window",
     "private_mode": "Private Mode",
     "private_mode_toggle": "Toggle Private Mode",

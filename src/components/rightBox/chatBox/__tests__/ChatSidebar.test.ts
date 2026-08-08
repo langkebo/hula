@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, reactive, ref } from 'vue'
-import { OnlineEnum, RoomTypeEnum } from '@/enums'
+import { computed, defineComponent, nextTick, reactive, ref } from 'vue'
+import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import type { UserItem } from '@/services/types'
 import ChatSidebar from '../ChatSidebar.vue'
 
@@ -12,6 +12,21 @@ const { loggerErrorMock, mittOnMock, mittOffMock, mittEmitMock, getUserByIdsMock
   mittOffMock: vi.fn(),
   mittEmitMock: vi.fn(),
   getUserByIdsMock: vi.fn().mockResolvedValue([])
+}))
+
+// P0-4: 置顶消息接线测试用 mock
+// 经 vi.hoisted 持有的共享状态，确保 vi.mock 工厂与测试用例访问同一引用
+const {
+  unpinMock,
+  pinnedLoadMock,
+  pinnedHoisted: pinnedState
+} = vi.hoisted(() => ({
+  unpinMock: vi.fn().mockResolvedValue(true),
+  pinnedLoadMock: vi.fn().mockResolvedValue(undefined),
+  pinnedHoisted: {
+    messages: [] as Array<{ eventId: string; sender: string; body: string; timestamp: number; msgtype: string }>,
+    canSetSticky: false
+  }
 }))
 
 let globalStore: ReturnType<typeof reactive<{ currentSessionRoomId: string; currentSession: { type: RoomTypeEnum } }>>
@@ -140,6 +155,47 @@ vi.mock('@/components/common/InfoPopover.vue', () => ({
   default: { name: 'InfoPopover', props: ['uid', 'activeStatus'], setup: () => () => null }
 }))
 
+// P0-4: 置顶消息 composable mock，pinnedMessages/canSetSticky 由 pinnedState 驱动
+vi.mock('@/composables/room/usePinnedMessage', () => ({
+  usePinnedMessage: () => ({
+    pinnedMessages: computed(() => pinnedState.messages),
+    canSetSticky: computed(() => pinnedState.canSetSticky),
+    unpin: unpinMock,
+    load: pinnedLoadMock,
+    pin: vi.fn().mockResolvedValue(true),
+    refresh: vi.fn().mockResolvedValue(undefined),
+    dismiss: vi.fn(),
+    resetDismiss: vi.fn(),
+    latestPinnedMessage: computed(() => null),
+    pinnedEventIds: ref([]),
+    loading: ref(false),
+    errorMessage: ref(null),
+    dismissed: ref(false)
+  })
+}))
+
+// P0-4: PinnedMessageBanner 桩件，暴露 navigate / cancel-sticky 触发按钮
+vi.mock('@/components/room/PinnedMessageBanner.vue', () => ({
+  default: {
+    name: 'PinnedMessageBanner',
+    props: {
+      events: { type: Array, default: () => [] },
+      canSetSticky: { type: Boolean, default: false }
+    },
+    emits: ['navigate', 'cancel-sticky'],
+    template:
+      '<div data-testid="pinned-banner">' +
+      '<button data-testid="pmb-navigate" type="button" @click="$emit(\'navigate\', \'evt-1\')">go</button>' +
+      '<button data-testid="pmb-cancel" type="button" @click="$emit(\'cancel-sticky\', \'evt-1\')">cancel</button>' +
+      '</div>'
+  }
+}))
+
+// P0-4: FavoritesPanel 桩件，避免加载真实依赖
+vi.mock('@/components/rightBox/chatBox/FavoritesPanel.vue', () => ({
+  default: { name: 'FavoritesPanel', props: ['roomId'], template: '<div data-testid="favorites-panel"></div>' }
+}))
+
 const AnnouncementPanelStub = defineComponent({
   name: 'AnnouncementPanel',
   props: ['roomId'],
@@ -202,6 +258,12 @@ describe('ChatSidebar', () => {
     settingStore = reactive({
       themeContent: 'light'
     })
+
+    // P0-4: 重置置顶消息 mock 状态
+    pinnedState.messages = []
+    pinnedState.canSetSticky = false
+    unpinMock.mockResolvedValue(true)
+    pinnedLoadMock.mockResolvedValue(undefined)
   })
 
   it('collapses the info panel by default for group chats', () => {
@@ -315,5 +377,64 @@ describe('ChatSidebar', () => {
     await flushPromises()
 
     expect(wrapper.text()).not.toContain('Carol')
+  })
+
+  // ---- P0-4: pins Tab 接线 PinnedMessageBanner ----
+  const makePinnedMessage = (eventId: string, body = 'pinned content') => ({
+    eventId,
+    sender: 'Alice',
+    body,
+    timestamp: 1700000000000,
+    msgtype: 'm.text'
+  })
+
+  /** 挂载并展开侧栏（默认折叠，置顶/收藏内容在 v-if="!isCollapsed" 块内） */
+  const mountExpanded = async () => {
+    const wrapper = mountComponent()
+    await wrapper.find('[role="button"]').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('renders PinnedMessageBanner when there are pinned messages', async () => {
+    pinnedState.messages = [makePinnedMessage('evt-1')]
+    const wrapper = await mountExpanded()
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="pinned-banner"]').exists()).toBe(true)
+  })
+
+  it('shows empty state instead of PinnedMessageBanner when no pinned messages', async () => {
+    pinnedState.messages = []
+    const wrapper = await mountExpanded()
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="pinned-banner"]').exists()).toBe(false)
+  })
+
+  it('emits NAVIGATE_TO_MESSAGE via mitt when PinnedMessageBanner emits navigate', async () => {
+    pinnedState.messages = [makePinnedMessage('evt-1')]
+    const wrapper = await mountExpanded()
+    await nextTick()
+
+    await wrapper.find('[data-testid="pmb-navigate"]').trigger('click')
+    await flushPromises()
+
+    expect(mittEmitMock).toHaveBeenCalledWith(
+      MittEnum.NAVIGATE_TO_MESSAGE,
+      expect.objectContaining({ eventId: 'evt-1' })
+    )
+  })
+
+  it('calls unpin when PinnedMessageBanner emits cancel-sticky', async () => {
+    pinnedState.messages = [makePinnedMessage('evt-1')]
+    pinnedState.canSetSticky = true
+    const wrapper = await mountExpanded()
+    await nextTick()
+
+    await wrapper.find('[data-testid="pmb-cancel"]').trigger('click')
+    await flushPromises()
+
+    expect(unpinMock).toHaveBeenCalledWith('evt-1')
   })
 })

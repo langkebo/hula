@@ -1066,6 +1066,17 @@ export type I18nKeys = {
       "screen_share": "屏幕共享",
       "group_qr_code": "群二维码",
       "more_options": "更多选项",
+      "search_messages": "搜索消息",
+      "search": {
+        "title": "搜索房间消息",
+        "placeholder": "输入关键词搜索历史消息",
+        "loading": "搜索中...",
+        "no_results": "未找到匹配消息",
+        "empty_hint": "输入关键词以搜索历史消息",
+        "results_count": "找到 {count} 条结果",
+        "jump_hint": "点击或回车跳转到该消息",
+        "close": "关闭"
+      },
       "open_in_new_window": "在新窗口打开",
       "private_mode": "私密模式",
       "private_mode_toggle": "切换到私密模式",
@@ -3321,11 +3332,30 @@ export type I18nKeys = {
       },
       "empty": {
         "no_chat_selected": "未选择会话",
-        "select_to_start": "选择一个会话或发起新聊天"
+        "select_to_start": "选择一个会话或发起新聊天",
+        "pins": "暂无置顶消息"
       },
       "toggle": {
         "expand": "展开信息面板",
         "collapse": "收起信息面板"
+      },
+      "tabs": {
+        "members": "成员",
+        "files": "文件",
+        "pins": "置顶",
+        "favorites": "收藏"
+      },
+      "pins": {
+        "title": "置顶消息",
+        "cancel": "取消置顶"
+      },
+      "favorites": {
+        "total": "收藏消息 {count} 条",
+        "export_md": "导出 Markdown",
+        "export_txt": "导出文本",
+        "search_placeholder": "搜索收藏消息",
+        "empty": "暂无收藏消息",
+        "load_failed": "加载收藏消息失败"
       }
     },
     "about": {
