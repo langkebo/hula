@@ -182,10 +182,10 @@
           <svg style="width: 22px; height: 22px; outline: none; cursor: pointer"><use href="#explosion"></use></svg>
           <n-popover trigger="hover" :show-arrow="false" placement="top">
             <template #trigger>
-              <p class="text-(12px [--tjg-text-tertiary]) cursor-default select-none pr-6px">
-                {{ t('ai_assistant.robot.token_usage') }} {{ serverTokenUsage ?? conversationTokens }} /
-                {{ selectedModel?.maxTokens || 0 }}
-              </p>
+              <TokenUsageMeter
+                :used="serverTokenUsage ?? conversationTokens"
+                :total="selectedModel?.maxTokens || 0"
+                class="cursor-default select-none pr-6px" />
             </template>
             <span>{{ t('ai_assistant.robot.token_limit_hint') }}</span>
           </n-popover>
@@ -220,6 +220,7 @@ import { useI18n } from 'vue-i18n'
 import MsgInput from '@/components/rightBox/MsgInput.vue'
 import RobotChatModelPopover from '@/plugins/robot/components/RobotChatModelPopover.vue'
 import RobotChatRolePopover from '@/plugins/robot/components/RobotChatRolePopover.vue'
+import TokenUsageMeter from '@/plugins/robot/components/TokenUsageMeter.vue'
 import type { VideoImageUploadPayload } from '@/plugins/robot/composables/useAiGenerationParams'
 import type { PaginationState } from '@/plugins/robot/composables/useRobotChat'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'

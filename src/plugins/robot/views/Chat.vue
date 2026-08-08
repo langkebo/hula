@@ -40,6 +40,13 @@
         :is-likely-media-url="isLikelyMediaUrl"
         @preview-image="handleImagePreview"
         @delete-message="handleDeleteMessage" />
+      <!-- 流式输出光标动画 -->
+      <div
+        v-if="isAIStreaming"
+        class="flex items-center gap-6px px-16px py-4px bg-[--tjg-surface-panel-muted] text-(12px [--tjg-text-tertiary])">
+        <span>{{ t('ai_assistant.robot.ai_thinking') }}</span>
+        <StreamingCursor :active="isAIStreaming" />
+      </div>
       <div class="h-1px bg-[--tjg-border-default]"></div>
       <RobotChatInputPanel
         ref="MsgInputRef"
@@ -250,6 +257,7 @@ import { useI18n } from 'vue-i18n'
 import RobotChatHeader from '@/plugins/robot/components/RobotChatHeader.vue'
 import RobotChatInputPanel from '@/plugins/robot/components/RobotChatInputPanel.vue'
 import RobotChatMessageList from '@/plugins/robot/components/RobotChatMessageList.vue'
+import StreamingCursor from '@/plugins/robot/components/StreamingCursor.vue'
 import { useRobotChat } from '@/plugins/robot/composables/useRobotChat'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 

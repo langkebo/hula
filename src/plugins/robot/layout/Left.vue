@@ -64,46 +64,37 @@
           <div
             v-for="(item, index) in chatList"
             :key="item.id"
-            @click="handleActive(item)"
-            :class="['chat-item', activeItem?.id === item.id ? 'chat-item-active' : '']">
+            class="chat-item-wrapper relative mb-5px"
+            @click="handleActive(item)">
             <ContextMenu
               :menu="menuList"
               :special-menu="specialMenuList"
-              class="msg-box w-full h-75px mb-5px"
               @select="(menuItem) => menuItem.click?.(item as any)">
-              <div class="absolute flex flex-col gap-14px w-full p-[8px_14px] box-border">
-                <n-flex justify="space-between" align="center" :size="0" class="leading-22px">
-                  <n-ellipsis
-                    v-if="editingItemId !== item.id"
-                    style="width: calc(100% - 20px)"
-                    class="text-(14px [--tjg-text-primary]) truncate font-500 select-none">
-                    {{ item.title || t('ai_assistant.robot.conversation_title', { index: index + 1 }) }}
-                  </n-ellipsis>
-                  <n-input
-                    v-else
-                    @blur="handleBlur(item, index)"
-                    ref="inputInstRef"
-                    v-model:value="item.title"
-                    clearable
-                    :placeholder="t('ai_assistant.robot.input_title')"
-                    type="text"
-                    size="tiny"
-                    spellCheck="false"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    style="width: 200px"
-                    class="h-22px lh-22px rounded-6px"></n-input>
-                  <svg
-                    @click.stop="deleteChat(item)"
-                    class="color-[--tjg-text-primary] size-20px opacity-0 absolute right-0px top-4px">
-                    <use href="#squareClose"></use>
-                  </svg>
-                </n-flex>
-                <n-flex justify="space-between" align="center" :size="0" class="text-(12px [--tjg-text-tertiary])">
-                  <p>{{ t('ai_assistant.robot.message_count', { count: item.messageCount || 0 }) }}</p>
-                  <p>{{ formatChatTime(item.createTime) }}</p>
-                </n-flex>
+              <div class="relative w-full">
+                <RobotCard
+                  v-if="editingItemId !== item.id"
+                  :robot="mapChatItemToRobot(item, index)"
+                  :active="activeItem?.id === item.id" />
+                <n-input
+                  v-else
+                  @blur="handleBlur(item, index)"
+                  ref="inputInstRef"
+                  v-model:value="item.title"
+                  clearable
+                  :placeholder="t('ai_assistant.robot.input_title')"
+                  type="text"
+                  size="tiny"
+                  spellCheck="false"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  style="width: 200px"
+                  class="h-22px lh-22px rounded-6px"></n-input>
+                <svg
+                  @click.stop="deleteChat(item)"
+                  class="chat-item-delete color-[--tjg-text-primary] size-20px absolute right-4px top-4px">
+                  <use href="#squareClose"></use>
+                </svg>
               </div>
             </ContextMenu>
           </div>
@@ -214,6 +205,7 @@ import type { InputInst, VirtualListInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
+import RobotCard, { type RobotCardData } from '@/plugins/robot/components/RobotCard.vue'
 import router from '@/router'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 import { chatRoleService } from '@/services/matrix/ai/ChatRoleService'
@@ -265,6 +257,14 @@ interface ChatItem {
 }
 
 const chatList = ref<ChatItem[]>([])
+
+/** Map a ChatItem to RobotCardData for the RobotCard component */
+const mapChatItemToRobot = (item: ChatItem, index: number): RobotCardData => ({
+  id: item.id,
+  name: item.title || t('ai_assistant.robot.conversation_title', { index: index + 1 }),
+  messageCount: item.messageCount ?? 0,
+  time: formatChatTime(item.createTime)
+})
 
 // 获取会话列表
 const fetchConversationList = async (isLoadMore = false) => {
@@ -711,21 +711,18 @@ onMounted(async () => {
   text-14px color-[--tjg-text-primary] border-(1px solid [--tjg-border-default]);
 }
 
-.chat-item {
-  @apply relative bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) cursor-pointer custom-shadow rounded-8px w-full h-65px;
-  transition: all 0.2s ease;
+.chat-item-wrapper {
+  cursor: pointer;
 
   &:hover {
-    @apply bg-[--chat-hover-color];
-    svg {
-      @apply opacity-100 -translate-x-1 transition-all duration-800 ease-in-out;
+    .chat-item-delete {
+      @apply opacity-100 -translate-x-2 transition-all duration-800 ease-in-out;
     }
   }
 }
 
-.chat-item-active {
-  border: 1px dashed var(--tjg-color-primary-500);
-  box-shadow: 0 0 0 1px var(--tjg-color-primary-100) inset;
+.chat-item-delete {
+  @apply opacity-0 transition-all duration-800 ease-in-out;
 }
 
 .list-move, /* 对移动中的元素应用的过渡 */
