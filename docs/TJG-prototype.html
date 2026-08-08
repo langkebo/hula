@@ -115,6 +115,21 @@
   --border:var(--line-color);
   --bg:var(--bg-deep);
   --accent-hover:var(--accent-dim);
+
+  /* ============================================================
+     叠层与边框（可主题化 — light 主题在 [data-theme="light"] 中反相为黑色透明）
+     定义用带空格 rgba()，replace_all 搜索无空格版本，互不干扰
+     ============================================================ */
+  --overlay-faint:rgba(255, 255, 255, 0.04);   /* 极弱叠层 — 微背景/细分隔 */
+  --overlay-subtle:rgba(255, 255, 255, 0.06);  /* 弱叠层 — 边框/分隔线 */
+  --overlay-soft:rgba(255, 255, 255, 0.08);    /* 软叠层 — 输入框/hover */
+  --overlay-light:rgba(255, 255, 255, 0.1);    /* 轻叠层 — 边框/背景 */
+  --overlay-medium:rgba(255, 255, 255, 0.12);  /* 中叠层 — 激活/输入框 */
+  --overlay-strong:rgba(255, 255, 255, 0.18);  /* 强叠层 */
+  --overlay-hover:rgba(255, 255, 255, 0.22);   /* hover 强叠层 */
+  --border-medium:rgba(255, 255, 255, 0.3);    /* 中边框 */
+  --border-strong:rgba(255, 255, 255, 0.4);    /* 强边框 */
+  --border-opaque:rgba(255, 255, 255, 0.9);    /* 近不透明边框 */
 }
 
 /* ============================================================
@@ -179,6 +194,18 @@
   --shadow-bubble:0 1px 2px rgba(0,0,0,0.04);
   --scrollbar-thumb:#d0d0d0;
   --scrollbar-hover:#b0b0b0;
+
+  /* 叠层与边框 — 反相为黑色透明（白底可见） */
+  --overlay-faint:rgba(0, 0, 0, 0.03);
+  --overlay-subtle:rgba(0, 0, 0, 0.05);
+  --overlay-soft:rgba(0, 0, 0, 0.04);
+  --overlay-light:rgba(0, 0, 0, 0.06);
+  --overlay-medium:rgba(0, 0, 0, 0.08);
+  --overlay-strong:rgba(0, 0, 0, 0.1);
+  --overlay-hover:rgba(0, 0, 0, 0.12);
+  --border-medium:rgba(0, 0, 0, 0.15);
+  --border-strong:rgba(0, 0, 0, 0.25);
+  --border-opaque:rgba(0, 0, 0, 0.85);
 }
 
 html,body{
@@ -234,7 +261,7 @@ html,body{
   background:var(--bg-deepest);
   border-radius:var(--r-lg);
   overflow:hidden;
-  box-shadow:var(--shadow-panel), 0 0 0 1px rgba(255,255,255,0.04);
+  box-shadow:var(--shadow-panel), 0 0 0 1px var(--overlay-faint);
   display:flex;
   flex-direction:column;
 }
@@ -246,7 +273,7 @@ html,body{
   display:flex;
   align-items:center;
   padding:0 14px;
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
   flex-shrink:0;
   position:relative;
 }
@@ -305,7 +332,7 @@ html,body{
 .nav-bar{
   width:64px;
   background:var(--bg-deep);
-  border-right:1px solid #000;
+  border-right:1px solid var(--line-color);
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -360,7 +387,7 @@ html,body{
 .room-list-panel{
   width:300px;
   background:var(--bg-deep);
-  border-right:1px solid #000;
+  border-right:1px solid var(--line-color);
   display:flex;
   flex-direction:column;
   flex-shrink:0;
@@ -386,7 +413,7 @@ html,body{
   padding:0 12px 8px;
   display:flex; gap:8px;
   overflow-x:auto;
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
   padding-bottom:10px;
 }
 .space-shortcut{
@@ -402,7 +429,7 @@ html,body{
 .space-shortcut.add{ background:var(--bg-mid); color:var(--text-secondary); }
 
 /* 空间树形导航 */
-.space-tree{ padding:6px 8px; border-bottom:1px solid #000; }
+.space-tree{ padding:6px 8px; border-bottom:1px solid var(--line-color); }
 .space-tree-item{ padding:2px 0; }
 .space-tree-header{
   display:flex; align-items:center; gap:6px;
@@ -438,7 +465,7 @@ html,body{
   display:flex;
   gap:2px;
   padding:6px 8px 4px;
-  border-bottom:1px solid rgba(255,255,255,0.04);
+  border-bottom:1px solid var(--overlay-faint);
   flex-shrink:0;
 }
 .session-filter-tab{
@@ -578,7 +605,7 @@ html,body{
 /* 聊天头部 */
 .chat-header{
   padding:12px 18px;
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
   display:flex; align-items:center; justify-content:space-between;
   background:var(--bg-deep);
   flex-shrink:0;
@@ -748,7 +775,7 @@ html,body{
 .msg-audio .audio-play{
   width:30px; height:30px;
   border-radius:50%;
-  background:rgba(255,255,255,0.12);
+  background:var(--overlay-medium);
   display:flex; align-items:center; justify-content:center;
   flex-shrink:0;
 }
@@ -857,7 +884,7 @@ html,body{
 .file-icon{
   width:36px; height:36px;
   border-radius:var(--r-xs);
-  background:rgba(255,255,255,0.1);
+  background:var(--overlay-light);
   display:flex; align-items:center; justify-content:center;
   font-size:18px;
   flex-shrink:0;
@@ -868,12 +895,12 @@ html,body{
 .file-download{
   width:28px; height:28px;
   border-radius:50%;
-  background:rgba(255,255,255,0.12);
+  background:var(--overlay-medium);
   display:flex; align-items:center; justify-content:center;
   flex-shrink:0;
   transition:background .15s;
 }
-.file-download:hover{ background:rgba(255,255,255,0.22); }
+.file-download:hover{ background:var(--overlay-hover); }
 .file-download svg{ width:14px; height:14px; }
 
 /* 引用回复 */
@@ -881,7 +908,7 @@ html,body{
   border-left:3px solid var(--accent);
   padding:4px 10px;
   margin-bottom:5px;
-  background:rgba(255,255,255,0.05);
+  background:var(--overlay-faint);
   border-radius:0 var(--r-xs) var(--r-xs) 0;
   font-size:11px;
   color:var(--text-secondary);
@@ -944,7 +971,7 @@ html,body{
 .input-area{
   padding:12px 18px 14px;
   background:var(--bg-deep);
-  border-top:1px solid #000;
+  border-top:1px solid var(--line-color);
   flex-shrink:0;
 }
 .input-toolbar{
@@ -1158,7 +1185,7 @@ html,body{
 .info-panel{
   width:240px;
   background:var(--bg-deep);
-  border-left:1px solid #000;
+  border-left:1px solid var(--line-color);
   display:flex;
   flex-direction:column;
   flex-shrink:0;
@@ -1167,11 +1194,11 @@ html,body{
 .info-panel.collapsed{ width:0; overflow:hidden; }
 .info-panel-header{
   padding:14px 16px;
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
   display:flex; align-items:center; justify-content:space-between;
 }
 .info-panel-header h3{ font-size:13px; font-weight:600; }
-.info-section{ padding:14px 16px; border-bottom:1px solid #000; }
+.info-section{ padding:14px 16px; border-bottom:1px solid var(--line-color); }
 .info-section h4{ font-size:11px; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; }
 .member-group{ margin-bottom:10px; }
 .member-group-title{ font-size:11px; color:var(--text-muted); margin-bottom:6px; display:flex; align-items:center; gap:5px; }
@@ -1314,7 +1341,7 @@ html,body{
 .m-header{
   padding:8px 16px 10px;
   background:var(--bg-deep);
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
   flex-shrink:0;
 }
 .m-header-row{ display:flex; align-items:center; justify-content:space-between; }
@@ -1384,7 +1411,7 @@ html,body{
 .m-chat-header{
   padding:8px 12px;
   background:var(--bg-deep);
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
   display:flex; align-items:center; gap:10px;
   flex-shrink:0;
 }
@@ -1410,7 +1437,7 @@ html,body{
 .m-input-bar{
   padding:8px 10px 10px;
   background:var(--bg-deep);
-  border-top:1px solid #000;
+  border-top:1px solid var(--line-color);
   display:flex; flex-direction:column; gap:8px;
   flex-shrink:0;
 }
@@ -1525,7 +1552,7 @@ html,body{
   padding:24px 16px 20px;
   display:flex; align-items:center; gap:14px;
   background:var(--bg-deep);
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
 }
 .m-profile-avatar{
   width:64px; height:64px; border-radius:50%;
@@ -1547,7 +1574,7 @@ html,body{
   display:flex; align-items:center; gap:12px;
   padding:12px 14px;
   cursor:pointer;
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
 }
 .m-setting-item:last-child{ border-bottom:none; }
 .m-setting-item:active{ background:var(--bg-mid); }
@@ -1565,7 +1592,7 @@ html,body{
 .m-tabbar{
   height:62px;
   background:var(--bg-deep);
-  border-top:1px solid #000;
+  border-top:1px solid var(--line-color);
   display:flex;
   flex-shrink:0;
   padding-bottom:10px; /* iOS 安全区 */
@@ -1779,7 +1806,7 @@ html,body{
 .m-shake-phone{
   width:80px; height:80px;
   border-radius:50%;
-  background:rgba(255,255,255,0.08);
+  background:var(--overlay-soft);
   display:flex; align-items:center; justify-content:center;
   color:rgba(255,255,255,0.6);
   position:relative; z-index:2;
@@ -1832,8 +1859,8 @@ html,body{
 }
 .m-shake-result-card{
   width:100%; max-width:300px;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.1);
+  background:var(--overlay-subtle);
+  border:1px solid var(--overlay-light);
   border-radius:var(--r-lg);
   padding:20px;
   text-align:center;
@@ -1870,7 +1897,7 @@ html,body{
   background:#ec4899; color:#fff;
 }
 .m-shake-result-btn.skip{
-  background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.6);
+  background:var(--overlay-soft); color:rgba(255,255,255,0.6);
 }
 .m-shake-searching{
   font-size:13px; color:rgba(255,255,255,0.5);
@@ -1878,7 +1905,7 @@ html,body{
 }
 .m-shake-searching::after{
   content:''; width:12px; height:12px;
-  border:2px solid rgba(255,255,255,0.2);
+  border:2px solid var(--overlay-strong);
   border-top-color:#ec4899;
   border-radius:50%;
   animation:spin .8s linear infinite;
@@ -1906,7 +1933,7 @@ html,body{
 .m-scanner-frame{
   width:240px; height:240px; position:relative;
   border-radius:12px; overflow:hidden;
-  background:rgba(255,255,255,0.05);
+  background:var(--overlay-faint);
 }
 .m-scanner-corner{
   position:absolute; width:32px; height:32px;
@@ -1941,7 +1968,7 @@ html,body{
 }
 .m-scanner-opt-icon{
   width:48px; height:48px; border-radius:50%;
-  background:rgba(255,255,255,0.1);
+  background:var(--overlay-light);
   display:flex; align-items:center; justify-content:center;
   color:#fff;
 }
@@ -2187,7 +2214,7 @@ html,body{
 }
 .vc-pip-btn{
   width:28px; height:28px; border-radius:50%;
-  background:rgba(255,255,255,0.1);
+  background:var(--overlay-light);
   display:flex; align-items:center; justify-content:center;
   font-size:13px; cursor:pointer;
 }
@@ -2321,7 +2348,7 @@ html,body{
 /* —— 通用：视图标题栏 —— */
 .view-header{
   padding:14px 18px 12px;
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
   display:flex; align-items:center; justify-content:space-between;
   background:var(--bg-deep);
   flex-shrink:0;
@@ -2354,13 +2381,13 @@ html,body{
   display:flex;
   flex-direction:column;
   background:var(--bg-deep);
-  border-right:1px solid #000;
+  border-right:1px solid var(--line-color);
   min-width:0;
 }
 .contacts-notice-row{
   display:flex; flex-direction:column; gap:8px;
   padding:10px 12px;
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
 }
 .notice-card{
   flex:1;
@@ -2441,7 +2468,7 @@ html,body{
 /* C6: 好友分组管理项 */
 .group-mgr-item{
   display:flex; align-items:center; gap:8px;
-  padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06);
+  padding:10px 0; border-bottom:1px solid var(--overlay-subtle);
 }
 .group-mgr-name{ flex:1; font-size:13px; color:var(--text-primary); }
 .group-mgr-count{ font-size:11px; color:var(--text-muted); }
@@ -2519,7 +2546,7 @@ html,body{
 .gv-item-name{ font-size:13px; font-weight:500; display:flex; align-items:center; gap:6px; }
 .gv-item-meta{ font-size:11px; color:var(--text-secondary); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 .gv-item-meta .gv-inviter{ display:flex; align-items:center; gap:4px; }
-.gv-item-actions{ display:flex; gap:8px; justify-content:flex-end; padding-top:8px; border-top:1px solid rgba(255,255,255,0.04); }
+.gv-item-actions{ display:flex; gap:8px; justify-content:flex-end; padding-top:8px; border-top:1px solid var(--overlay-faint); }
 .gv-btn-accept, .gv-btn-decline{
   display:flex; align-items:center; gap:4px;
   padding:5px 12px;
@@ -3317,7 +3344,7 @@ html,body{
 .robot-sidebar{
   width:300px;
   background:var(--bg-deep);
-  border-right:1px solid #000;
+  border-right:1px solid var(--line-color);
   display:flex;
   flex-direction:column;
   padding:24px 16px 12px;
@@ -3483,7 +3510,7 @@ html,body{
 .robot-msg-name{ font-size:11px; color:var(--text-secondary); margin-bottom:4px; }
 .robot-input-bar{
   padding:14px 20px;
-  border-top:1px solid #000;
+  border-top:1px solid var(--line-color);
   background:var(--bg-deep);
   display:flex; gap:10px; align-items:flex-end;
 }
@@ -3583,7 +3610,7 @@ html,body{
     -30vmax -10vmax, 50vmax 50vmax;
   background-repeat:no-repeat;
   animation:authBgMove 8s linear infinite;
-  box-shadow:var(--shadow-panel), 0 0 0 1px rgba(255,255,255,0.04);
+  box-shadow:var(--shadow-panel), 0 0 0 1px var(--overlay-faint);
 }
 @keyframes authBgMove{
   0%,100%{
@@ -3683,7 +3710,7 @@ html,body{
   width:80px; height:80px;
   border-radius:50%;
   background:linear-gradient(135deg,#f4c375,#da8583);
-  border:3px solid rgba(255,255,255,0.9);
+  border:3px solid var(--border-opaque);
   margin:8px 0 20px;
   display:flex; align-items:center; justify-content:center;
   font-size:32px;
@@ -3720,8 +3747,8 @@ html,body{
 }
 .auth-input{
   width:100%;
-  background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,255,255,0.12);
+  background:var(--overlay-soft);
+  border:1px solid var(--overlay-medium);
   border-radius:var(--r-sm);
   padding:12px 40px 12px 16px;
   font-size:14px;
@@ -3732,7 +3759,7 @@ html,body{
 }
 .auth-input::placeholder{ color:rgba(255,255,255,0.4); }
 .auth-input:focus{
-  background:rgba(255,255,255,0.12);
+  background:var(--overlay-medium);
   border-color:var(--accent);
   box-shadow:0 0 0 3px rgba(16,185,129,0.15);
 }
@@ -3805,7 +3832,7 @@ html,body{
 .gradient-button .spinner{
   display:inline-block;
   width:14px; height:14px;
-  border:2px solid rgba(255,255,255,0.3);
+  border:2px solid var(--border-medium);
   border-top-color:var(--text-primary);
   border-radius:50%;
   animation:spin .8s linear infinite;
@@ -3825,7 +3852,7 @@ html,body{
 }
 .auth-checkbox{
   width:14px; height:14px;
-  border:1.5px solid rgba(255,255,255,0.4);
+  border:1.5px solid var(--border-strong);
   border-radius:3px;
   cursor:pointer;
   display:flex; align-items:center; justify-content:center;
@@ -3864,7 +3891,7 @@ html,body{
 .auth-footer-link:hover{ opacity:0.8; text-decoration:underline; }
 .auth-footer-divider{
   width:1px; height:14px;
-  background:rgba(255,255,255,0.2);
+  background:var(--overlay-strong);
 }
 .auth-more-menu{
   position:relative;
@@ -3876,7 +3903,7 @@ html,body{
   transform:translateX(-50%);
   background:rgba(26,26,26,0.95);
   backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid var(--overlay-light);
   border-radius:var(--r-sm);
   padding:5px;
   min-width:140px;
@@ -3893,7 +3920,7 @@ html,body{
   border-radius:var(--r-xs);
   display:flex; align-items:center; gap:8px;
 }
-.auth-more-item:hover{ background:rgba(255,255,255,0.1); color:var(--text-primary); }
+.auth-more-item:hover{ background:var(--overlay-light); color:var(--text-primary); }
 
 /* 第三方登录 */
 .auth-third-party{
@@ -3905,15 +3932,15 @@ html,body{
 .tp-icon{
   width:34px; height:34px;
   border-radius:50%;
-  background:rgba(255,255,255,0.1);
+  background:var(--overlay-light);
   display:flex; align-items:center; justify-content:center;
   font-size:16px;
   cursor:pointer;
   transition:all .2s;
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid var(--overlay-light);
 }
 .tp-icon:hover{
-  background:rgba(255,255,255,0.18);
+  background:var(--overlay-strong);
   transform:translateY(-2px);
 }
 
@@ -4001,7 +4028,7 @@ html,body{
 .pin-modal-mask.show{ display:flex; }
 .pin-modal{
   background:#1a1a1a;
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid var(--overlay-light);
   border-radius:var(--r-lg);
   padding:28px 24px;
   width:340px;
@@ -4064,7 +4091,7 @@ html,body{
 .dialog-mask.show{ display:flex; }
 .dialog-box{
   background:#1a1a1a;
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid var(--overlay-light);
   border-radius:var(--r-lg);
   width:460px;
   max-height:85vh;
@@ -4076,7 +4103,7 @@ html,body{
 .dialog-header{
   display:flex; align-items:center; justify-content:space-between;
   padding:18px 20px 14px;
-  border-bottom:1px solid rgba(255,255,255,0.06);
+  border-bottom:1px solid var(--overlay-subtle);
   flex-shrink:0;
 }
 .dialog-title{
@@ -4117,7 +4144,7 @@ html,body{
 .dialog-footer{
   display:flex; gap:10px; justify-content:flex-end;
   padding:14px 20px;
-  border-top:1px solid rgba(255,255,255,0.06);
+  border-top:1px solid var(--overlay-subtle);
   flex-shrink:0;
 }
 .dialog-btn{
@@ -4155,7 +4182,7 @@ html,body{
 .form-input{
   width:100%;
   background:var(--bg-mid);
-  border:1px solid rgba(255,255,255,0.08);
+  border:1px solid var(--overlay-soft);
   border-radius:var(--r-sm);
   padding:10px 14px;
   font-size:13px; color:var(--text-primary);
@@ -4200,7 +4227,7 @@ textarea.form-input{
   width:32px; height:32px; margin:0 auto 6px;
   display:flex; align-items:center; justify-content:center;
   border-radius:50%;
-  background:rgba(255,255,255,0.06);
+  background:var(--overlay-subtle);
 }
 .type-card.active .type-card-icon{
   background:rgba(19,152,127,0.15);
@@ -4213,7 +4240,7 @@ textarea.form-input{
 .toggle-row{
   display:flex; align-items:center; justify-content:space-between;
   padding:10px 0;
-  border-bottom:1px solid rgba(255,255,255,0.04);
+  border-bottom:1px solid var(--overlay-faint);
 }
 .toggle-row:last-child{ border-bottom:none; }
 .toggle-label{ font-size:13px; }
@@ -4263,7 +4290,7 @@ textarea.form-input{
 .member-chip-remove:hover{ color:var(--error); }
 .member-search-results{
   max-height:200px; overflow-y:auto;
-  border:1px solid rgba(255,255,255,0.06);
+  border:1px solid var(--overlay-subtle);
   border-radius:var(--r-sm);
 }
 .member-search-item{
@@ -4287,14 +4314,14 @@ textarea.form-input{
 /* —— 搜索栏（联系人视图内嵌） —— */
 .contacts-search-bar{
   padding:0 14px 10px;
-  border-bottom:1px solid #000;
+  border-bottom:1px solid var(--line-color);
 }
 /* C5: 联系人分组标签栏 */
 .contacts-group-tabs{
   display:flex;
   gap:2px;
   padding:6px 12px;
-  border-bottom:1px solid rgba(255,255,255,0.04);
+  border-bottom:1px solid var(--overlay-faint);
   flex-shrink:0;
 }
 .contacts-group-tab{
@@ -4373,7 +4400,7 @@ textarea.form-input{
 .friend-request-item .fr-msg{
   font-size:11px; color:var(--text-secondary);
   margin-top:4px; padding:4px 8px;
-  background:rgba(255,255,255,0.04);
+  background:var(--overlay-faint);
   border-radius:4px;
 }
 .friend-request-item .fr-actions{
@@ -4458,7 +4485,7 @@ textarea.form-input{
 }
 .toast{
   background:#1a1a1a;
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid var(--overlay-light);
   border-radius:var(--r-sm);
   padding:10px 18px;
   font-size:13px; color:var(--text-primary);
@@ -4507,7 +4534,7 @@ textarea.form-input{
 .perm-row{
   display:flex; align-items:center; justify-content:space-between;
   padding:12px 0;
-  border-bottom:1px solid rgba(255,255,255,0.04);
+  border-bottom:1px solid var(--overlay-faint);
 }
 .perm-row:last-child{ border-bottom:none; }
 .perm-info{ flex:1; min-width:0; }
@@ -4543,7 +4570,7 @@ textarea.form-input{
 .avatar-color-opt:hover{ transform:scale(1.1); }
 .avatar-color-opt.active{
   border-color:var(--text-primary);
-  box-shadow:0 0 0 2px rgba(255,255,255,0.2);
+  box-shadow:0 0 0 2px var(--overlay-strong);
 }
 
 /* —— 子房间输入与列表 —— */
@@ -4668,14 +4695,14 @@ textarea.form-input{
 .settings-sidebar{
   width:200px; flex-shrink:0;
   background:var(--bg-deepest);
-  border-right:1px solid #000;
+  border-right:1px solid var(--line-color);
   padding:16px 0;
   display:flex; flex-direction:column;
 }
 .settings-sidebar-header{
   padding:0 18px 14px;
   font-size:15px; font-weight:600; color:var(--text-primary);
-  border-bottom:1px solid rgba(255,255,255,0.04);
+  border-bottom:1px solid var(--overlay-faint);
   margin-bottom:8px;
 }
 .settings-menu-list{ flex:1; overflow-y:auto; padding:0 8px; }
@@ -4703,7 +4730,7 @@ textarea.form-input{
 }
 .settings-sidebar-footer{
   padding:12px 18px 0;
-  border-top:1px solid rgba(255,255,255,0.04);
+  border-top:1px solid var(--overlay-faint);
   font-size:11px; color:var(--text-muted);
 }
 .settings-sidebar-footer a{ color:var(--accent); text-decoration:none; }
@@ -4716,7 +4743,7 @@ textarea.form-input{
   font-size:18px; font-weight:600; color:var(--text-primary);
   margin-bottom:20px;
   padding-bottom:14px;
-  border-bottom:1px solid rgba(255,255,255,0.06);
+  border-bottom:1px solid var(--overlay-subtle);
 }
 .settings-section{ margin-bottom:28px; }
 .settings-section-title{
@@ -4763,7 +4790,7 @@ textarea.form-input{
   position:fixed; top:20px; right:20px;
   width:320px; max-width:calc(100vw - 40px);
   background:var(--bg-mid);
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid var(--overlay-light);
   border-radius:var(--r-md);
   box-shadow:0 10px 40px rgba(0,0,0,0.5);
   display:flex; gap:12px;
@@ -4806,12 +4833,12 @@ textarea.form-input{
   border-radius:var(--r-sm);
   transition:color .15s, background .15s;
 }
-.dnp-close:hover{ color:var(--text-primary); background:rgba(255,255,255,0.08); }
+.dnp-close:hover{ color:var(--text-primary); background:var(--overlay-soft); }
 
 /* 设置输入框 */
 .setting-input{
   background:var(--bg-light);
-  border:1px solid rgba(255,255,255,0.08);
+  border:1px solid var(--overlay-soft);
   border-radius:var(--r-sm);
   padding:6px 12px;
   font-size:13px; color:var(--text-primary);
@@ -4878,7 +4905,7 @@ textarea.form-input{
 .shortcut-key{
   padding:3px 8px;
   background:var(--bg-light);
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid var(--overlay-light);
   border-radius:4px;
   font-size:11px; color:var(--text-secondary);
   font-family:monospace;
@@ -4942,7 +4969,7 @@ textarea.form-input{
 /* 下拉选择 */
 .setting-select{
   background:var(--bg-light);
-  border:1px solid rgba(255,255,255,0.08);
+  border:1px solid var(--overlay-soft);
   border-radius:var(--r-sm);
   padding:6px 28px 6px 12px;
   font-size:13px; color:var(--text-primary);
@@ -4991,7 +5018,7 @@ textarea.form-input{
   display:flex; align-items:center; justify-content:center;
   color:#fff; font-size:20px; font-weight:600;
   cursor:pointer;
-  border:2px solid rgba(255,255,255,0.1);
+  border:2px solid var(--overlay-light);
   transition:all .15s;
 }
 .setting-avatar:hover{ border-color:var(--accent); }
@@ -5144,7 +5171,7 @@ textarea.form-input{
 .tech-info-item{
   display:flex; justify-content:space-between; align-items:center;
   padding:12px 16px;
-  border-bottom:1px solid rgba(255,255,255,0.04);
+  border-bottom:1px solid var(--overlay-faint);
 }
 .tech-info-item:last-child{ border-bottom:none; }
 .tech-info-label{ font-size:12px; color:var(--text-muted); }
@@ -5202,13 +5229,13 @@ textarea.form-input{
   position:absolute; bottom:120px; left:60px;
   width:280px; max-height:240px; overflow-y:auto;
   background:var(--bg-deep);
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid var(--overlay-light);
   border-radius:var(--r-md);
   box-shadow:0 8px 24px rgba(0,0,0,0.4);
   display:none; z-index:100;
 }
 .slash-cmd.show{ display:block; }
-.sc-header{ padding:8px 12px; font-size:11px; color:var(--text-muted); border-bottom:1px solid rgba(255,255,255,0.06); }
+.sc-header{ padding:8px 12px; font-size:11px; color:var(--text-muted); border-bottom:1px solid var(--overlay-subtle); }
 .sc-item{ display:flex; gap:10px; padding:8px 12px; cursor:pointer; align-items:center; }
 .sc-item:hover, .sc-item.active{ background:var(--bg-light); }
 .sc-cmd{ font-size:13px; color:var(--accent); font-weight:600; min-width:56px; }
@@ -5364,7 +5391,7 @@ textarea.form-input{
   display:none; align-items:center; gap:8px;
   padding:8px 12px;
   background:var(--bg-deep);
-  border-bottom:1px solid rgba(255,255,255,0.06);
+  border-bottom:1px solid var(--overlay-subtle);
 }
 .multi-select-bar.show{ display:flex; }
 .ms-count{ font-size:12px; color:var(--accent); font-weight:600; }
@@ -5646,11 +5673,11 @@ textarea.form-input{
 .pip-float-btn{
   width:30px; height:30px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  background:rgba(255,255,255,0.12); color:var(--text-primary); cursor:pointer;
+  background:var(--overlay-medium); color:var(--text-primary); cursor:pointer;
   transition:all .15s;
 }
 .pip-float-btn svg{ width:14px; height:14px; }
-.pip-float-btn:hover{ background:rgba(255,255,255,0.22); }
+.pip-float-btn:hover{ background:var(--overlay-hover); }
 .pip-float-btn.restore{ background:var(--accent); }
 .pip-float-btn.restore:hover{ background:var(--accent-dim); }
 .pip-float-btn.end{ background:var(--error); }
@@ -5972,7 +5999,7 @@ button:focus-visible, .icon-btn:focus-visible, .chat-action-btn:focus-visible,
 }
 .chat-panel.priv-on .priv-watermark{ display:block; }
 .priv-watermark span{
-  position:absolute; font-size:11px; color:rgba(255,255,255,0.06);
+  position:absolute; font-size:11px; color:var(--overlay-subtle);
   transform:rotate(-45deg); white-space:nowrap;
 }
 /* 私密模式确认对话框 */
@@ -6343,7 +6370,7 @@ label.cfg-switch:has(input:checked){ background:var(--accent); border-color:var(
 .logs-viewer::-webkit-scrollbar{ width:8px; }
 .logs-viewer::-webkit-scrollbar-thumb{ background:#30363d; border-radius:4px; }
 .log-line{ display:flex; gap:10px; padding:2px 0; }
-.log-line:hover{ background:rgba(255,255,255,0.03); }
+.log-line:hover{ background:var(--overlay-faint); }
 .log-ts{ color:#6e7681; flex-shrink:0; }
 .log-level{ font-weight:600; flex-shrink:0; width:54px; }
 .log-level.INFO{ color:#58a6ff; }
