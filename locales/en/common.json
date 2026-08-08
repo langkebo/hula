@@ -647,7 +647,10 @@
       "col_actions": "Actions",
       "reconnect": "Reconnect",
       "reconnect_success": "Reconnect request sent",
-      "reconnect_failed": "Reconnect failed"
+      "reconnect_failed": "Reconnect failed",
+      "status_online": "Online",
+      "status_degraded": "Degraded",
+      "status_offline": "Offline"
     },
     "saml": {
       "title": "SAML Configuration",

@@ -64,11 +64,11 @@ import {
   NInput,
   NPageHeader,
   NSpace,
-  NStatistic,
-  NTag
+  NStatistic
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import FedStatusBadge from '@/components/federation/FedStatusBadge.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
@@ -79,7 +79,7 @@ const { showFeedback } = useActionFeedback()
 
 interface FederationServer {
   serverName: string
-  status: 'online' | 'offline' | 'unknown'
+  status: 'online' | 'degraded' | 'offline'
   lastContact?: number
   retryInterval?: number
   failureCount?: number
@@ -106,15 +106,7 @@ const columns: DataTableColumns<FederationServer> = [
     title: t('admin.federation_monitor.col_status'),
     key: 'status',
     width: 100,
-    render: (row) =>
-      h(
-        NTag,
-        {
-          size: 'small',
-          type: row.status === 'online' ? 'success' : row.status === 'offline' ? 'error' : 'default'
-        },
-        () => row.status
-      )
+    render: (row) => h(FedStatusBadge, { status: row.status, size: 'small' })
   },
   {
     title: t('admin.federation_monitor.col_last_contact'),
@@ -165,13 +157,24 @@ async function loadData() {
       const serverName = entry.domain
       if (!serverName) continue
 
-      const status = await adminService.getFederationServerStatus(serverName)
+      const serverStatus = await adminService.getFederationServerStatus(serverName)
+      const failureCount = serverStatus?.failure_count as number | undefined
+
+      // Determine federation status: online (healthy), degraded (reachable but
+      // has failures), or offline (unreachable).
+      let fedStatus: FederationServer['status']
+      if (serverStatus?.reachable) {
+        fedStatus = failureCount && failureCount > 0 ? 'degraded' : 'online'
+      } else {
+        fedStatus = 'offline'
+      }
+
       servers.push({
         serverName,
-        status: status?.reachable ? 'online' : 'offline',
-        lastContact: status?.last_successful_stream_ordering as number | undefined,
-        failureCount: status?.failure_count as number | undefined,
-        retryInterval: status?.retry_interval as number | undefined
+        status: fedStatus,
+        lastContact: serverStatus?.last_successful_stream_ordering as number | undefined,
+        failureCount,
+        retryInterval: serverStatus?.retry_interval as number | undefined
       })
     }
 
