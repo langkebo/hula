@@ -54,6 +54,13 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+vi.mock('@/composables/chat/useEnterChat', () => ({
+  useEnterChat: () => ({
+    enterChat: vi.fn(async () => undefined),
+    enterSpace: vi.fn(async () => undefined)
+  })
+}))
+
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({ showFeedback: showFeedbackMock })
 }))

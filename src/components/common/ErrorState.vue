@@ -5,6 +5,7 @@
       <svg
         v-if="illustration === 'generic-error'"
         data-illustration="generic-error"
+        aria-hidden="true"
         width="48"
         height="48"
         viewBox="0 0 48 48"
@@ -21,6 +22,7 @@
       <svg
         v-else-if="illustration === 'network-error'"
         data-illustration="network-error"
+        aria-hidden="true"
         width="48"
         height="48"
         viewBox="0 0 48 48"
@@ -38,6 +40,7 @@
       <svg
         v-else
         data-illustration="server-error"
+        aria-hidden="true"
         width="48"
         height="48"
         viewBox="0 0 48 48"

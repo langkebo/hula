@@ -61,6 +61,13 @@ vi.mock('dayjs', () => {
   return { default: dayjsFn }
 })
 
+vi.mock('@/composables/chat/useEnterChat', () => ({
+  useEnterChat: () => ({
+    enterChat: vi.fn(async () => undefined),
+    enterSpace: vi.fn(async () => undefined)
+  })
+}))
+
 // ============ SpaceList mocks ============
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({ showFeedback: vi.fn() })
