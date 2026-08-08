@@ -181,6 +181,65 @@ describe('MatrixDeviceService', () => {
     })
   })
 
+  describe('getUserDevices', () => {
+    it('应该通过 client.getUserDevices 获取目标用户设备并归一化字段', async () => {
+      const rawDevices = [
+        {
+          deviceId: 'DEV1',
+          displayName: 'MacBook',
+          lastSeenTs: 1000,
+          lastSeenIp: '1.1.1.1',
+          verified: true
+        },
+        // SDK 也可能返回 snake_case 字段
+        {
+          device_id: 'DEV2',
+          display_name: 'iPhone',
+          last_seen_ts: 2000,
+          last_seen_ip: '2.2.2.2'
+        }
+      ]
+      mockClient.getUserDevices = vi.fn().mockResolvedValue(rawDevices)
+
+      const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+
+      expect(mockClient.getUserDevices).toHaveBeenCalledWith('@alice:matrix.test')
+      expect(devices).toEqual([
+        {
+          device_id: 'DEV1',
+          display_name: 'MacBook',
+          last_seen_ts: 1000,
+          last_seen_ip: '1.1.1.1',
+          verified: true
+        },
+        {
+          device_id: 'DEV2',
+          display_name: 'iPhone',
+          last_seen_ts: 2000,
+          last_seen_ip: '2.2.2.2',
+          verified: undefined
+        }
+      ])
+    })
+
+    it('应该在 SDK 返回空列表时返回空数组', async () => {
+      mockClient.getUserDevices = vi.fn().mockResolvedValue([])
+      const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+      expect(devices).toEqual([])
+    })
+
+    it('应该在 SDK 返回 null/undefined 时返回空数组', async () => {
+      mockClient.getUserDevices = vi.fn().mockResolvedValue(null)
+      const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+      expect(devices).toEqual([])
+    })
+
+    it('应该在 SDK 抛错时向上抛出', async () => {
+      mockClient.getUserDevices = vi.fn().mockRejectedValue(new Error('Network error'))
+      await expect(matrixDeviceService.getUserDevices('@alice:matrix.test')).rejects.toThrow('Network error')
+    })
+  })
+
   describe('updateDevice', () => {
     it('应该更新设备显示名称', async () => {
       mockDeviceManager.updateDevice.mockResolvedValue(undefined)
