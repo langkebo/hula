@@ -139,6 +139,8 @@ export enum MittEnum {
   PRIVATE_MODE_CHANGED = 'privateModeChanged',
   /** 移动端请求切换私密模式（HeaderBar → ChatMain） */
   PRIVATE_MODE_TOGGLE_REQUEST = 'privateModeToggleRequest',
+  /** 打开房间内消息搜索面板（ChatHeaderToolbar → ChatMain） */
+  OPEN_ROOM_SEARCH = 'openRoomSearch',
   /** 阅后即焚设置变更 */
   BURN_SETTINGS_CHANGED = 'burnSettingsChanged',
   /** Widget 已创建 */
@@ -146,7 +148,11 @@ export enum MittEnum {
   /** Widget 已更新 */
   WIDGET_UPDATED = 'widgetUpdated',
   /** Widget 已删除 */
-  WIDGET_DELETED = 'widgetDeleted'
+  WIDGET_DELETED = 'widgetDeleted',
+  /** 置顶消息变更（pin/unpin 后刷新横幅） */
+  PINNED_EVENTS_CHANGED = 'pinnedEventsChanged',
+  /** 跳转到指定消息（侧栏置顶/收藏点击 → ChatMain 滚动定位） */
+  NAVIGATE_TO_MESSAGE = 'navigateToMessage'
 }
 
 /** 主题类型 */

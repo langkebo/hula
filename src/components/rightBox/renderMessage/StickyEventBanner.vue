@@ -45,6 +45,25 @@
         <span class="sticky-banner__sender">{{ event.sender }}</span>
         <span class="sticky-banner__body">{{ event.body }}</span>
         <span class="sticky-banner__time">{{ formatTime(event.timestamp) }}</span>
+        <button
+          v-if="canSetSticky"
+          type="button"
+          class="sticky-banner__cancel"
+          data-testid="sticky-cancel-btn"
+          aria-label="取消置顶"
+          @click.stop="$emit('cancel-sticky', event.eventId)">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -69,6 +88,7 @@ const props = withDefaults(
 defineEmits<{
   (e: 'view', eventId: string): void
   (e: 'set-sticky'): void
+  (e: 'cancel-sticky', eventId: string): void
 }>()
 
 const MAX_VISIBLE_EXPANDED = 3
@@ -148,6 +168,28 @@ const formatTime = (timestamp: number): string => {
 .sticky-banner__toggle:hover,
 .sticky-banner__set:hover {
   background: color-mix(in srgb, var(--tjg-color-primary-500) 12%, transparent);
+}
+
+.sticky-banner__cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: var(--tjg-radius-sm, 4px);
+  background: transparent;
+  color: var(--tjg-text-tertiary);
+  cursor: pointer;
+  transition:
+    background var(--tjg-motion-duration-fast, 150ms) ease,
+    color var(--tjg-motion-duration-fast, 150ms) ease;
+}
+
+.sticky-banner__cancel:hover {
+  background: color-mix(in srgb, var(--tjg-color-danger-500) 12%, transparent);
+  color: var(--tjg-color-danger-500);
 }
 
 .sticky-banner__list {

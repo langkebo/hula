@@ -73,6 +73,7 @@ export function useMessageActionHandlers() {
         await matrixRoomActionFacade.pinEvent(message.message.roomId, message.message.id)
         showFeedback(t('message.pin_success'), 'success')
       }
+      useMitt.emit(MittEnum.PINNED_EVENTS_CHANGED, { roomId: message.message.roomId })
     } catch (err) {
       logger.error('置顶消息失败:', err)
       showFeedback(t('message.pin_failed'), 'error')

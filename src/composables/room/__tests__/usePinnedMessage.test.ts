@@ -7,7 +7,8 @@ const {
   mockGetMemberDisplayName,
   mockGetRoomMessage,
   mockChatGetMessage,
-  mockShowFeedback
+  mockShowFeedback,
+  mockCanPinEvents
 } = vi.hoisted(() => ({
   mockGetPinnedEvents: vi.fn(),
   mockPinEvent: vi.fn(),
@@ -15,7 +16,8 @@ const {
   mockGetMemberDisplayName: vi.fn(),
   mockGetRoomMessage: vi.fn(),
   mockChatGetMessage: vi.fn(),
-  mockShowFeedback: vi.fn()
+  mockShowFeedback: vi.fn(),
+  mockCanPinEvents: vi.fn()
 }))
 
 vi.mock('@/services/matrix/room/RoomOperations', () => ({
@@ -23,7 +25,8 @@ vi.mock('@/services/matrix/room/RoomOperations', () => ({
     getPinnedEvents: mockGetPinnedEvents,
     pinEvent: mockPinEvent,
     unpinEvent: mockUnpinEvent,
-    getMemberDisplayName: mockGetMemberDisplayName
+    getMemberDisplayName: mockGetMemberDisplayName,
+    canPinEvents: mockCanPinEvents
   }
 }))
 
@@ -66,6 +69,7 @@ describe('usePinnedMessage', () => {
     vi.clearAllMocks()
     mockChatGetMessage.mockReturnValue(undefined)
     mockGetMemberDisplayName.mockResolvedValue(null)
+    mockCanPinEvents.mockReturnValue(false)
   })
 
   describe('初始状态', () => {
@@ -372,6 +376,77 @@ describe('usePinnedMessage', () => {
 
       expect(mockGetPinnedEvents).toHaveBeenCalledWith('!r1:s')
       expect(flow.latestPinnedMessage.value?.eventId).toBe('$e1:s')
+    })
+  })
+
+  describe('pinnedMessages 数组', () => {
+    it('加载完成后暴露所有已解析的置顶消息数组', async () => {
+      mockGetPinnedEvents.mockResolvedValueOnce(['$old:s', '$new:s'])
+      mockGetRoomMessage
+        .mockResolvedValueOnce(makeMatrixEvent('$old:s', '@a:s', 'old', 1000))
+        .mockResolvedValueOnce(makeMatrixEvent('$new:s', '@b:s', 'new', 5000))
+
+      const flow = usePinnedMessage({ roomId: '!r:s' })
+      await flow.load()
+
+      expect(flow.pinnedMessages.value).toHaveLength(2)
+      expect(flow.pinnedMessages.value[0].eventId).toBe('$new:s')
+      expect(flow.pinnedMessages.value[1].eventId).toBe('$old:s')
+    })
+
+    it('无置顶消息时 pinnedMessages 为空数组', async () => {
+      mockGetPinnedEvents.mockResolvedValueOnce([])
+
+      const flow = usePinnedMessage({ roomId: '!r:s' })
+      await flow.load()
+
+      expect(flow.pinnedMessages.value).toEqual([])
+    })
+
+    it('部分解析失败时仅保留成功的消息', async () => {
+      mockGetPinnedEvents.mockResolvedValueOnce(['$bad:s', '$good:s'])
+      mockGetRoomMessage
+        .mockRejectedValueOnce(new Error('not found'))
+        .mockResolvedValueOnce(makeMatrixEvent('$good:s', '@b:s', 'good', 3000))
+
+      const flow = usePinnedMessage({ roomId: '!r:s' })
+      await flow.load()
+
+      expect(flow.pinnedMessages.value).toHaveLength(1)
+      expect(flow.pinnedMessages.value[0].eventId).toBe('$good:s')
+    })
+
+    it('置顶后重新加载时 pinnedMessages 更新', async () => {
+      mockPinEvent.mockResolvedValueOnce(undefined)
+      mockGetPinnedEvents.mockResolvedValueOnce(['$e1:s'])
+      mockGetRoomMessage.mockResolvedValueOnce(makeMatrixEvent('$e1:s', '@a:s', 'pinned', 1000))
+
+      const flow = usePinnedMessage({ roomId: '!r:s' })
+      await flow.pin('$e1:s')
+
+      expect(flow.pinnedMessages.value).toHaveLength(1)
+      expect(flow.pinnedMessages.value[0].eventId).toBe('$e1:s')
+    })
+  })
+
+  describe('canSetSticky 权限', () => {
+    it('canPinEvents 返回 true 时 canSetSticky 为 true', () => {
+      mockCanPinEvents.mockReturnValue(true)
+      const flow = usePinnedMessage({ roomId: '!r:s' })
+      expect(flow.canSetSticky.value).toBe(true)
+      expect(mockCanPinEvents).toHaveBeenCalledWith('!r:s')
+    })
+
+    it('canPinEvents 返回 false 时 canSetSticky 为 false', () => {
+      mockCanPinEvents.mockReturnValue(false)
+      const flow = usePinnedMessage({ roomId: '!r:s' })
+      expect(flow.canSetSticky.value).toBe(false)
+    })
+
+    it('roomId 为空时 canSetSticky 为 false 且不调用 canPinEvents', () => {
+      const flow = usePinnedMessage({ roomId: null })
+      expect(flow.canSetSticky.value).toBe(false)
+      expect(mockCanPinEvents).not.toHaveBeenCalled()
     })
   })
 })
