@@ -86,6 +86,33 @@
                 </n-button>
               </template>
             </EmptyState>
+            <!-- 分组展示模式：按自定义分组渲染可折叠区段，星标组置顶 -->
+            <div
+              v-else-if="shouldGroup && groupedSections.length > 0"
+              class="friend-items friend-items--grouped"
+              role="list"
+              :aria-label="t('friend.list.friend_list_label')">
+              <ContactGroupSection
+                v-for="section in groupedSections"
+                :key="section.groupId"
+                :group-name="section.groupName"
+                :friends="section.friends"
+                :collapsed="isCollapsed(section.groupId)"
+                :selected-user-id="selectedUserId"
+                :query="appliedSearchValue"
+                @toggle="toggleCollapse(section.groupId)"
+                @select-friend="handleSelectFriend"
+                @send-message="handleSendMessage"
+                @remove="handleRemoveFriend"
+                @more="
+                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.friend)
+                "
+                @contextmenu="
+                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.friend)
+                " />
+            </div>
             <!-- 性能优化：列表项超过 100 时使用 RecycleScroller 虚拟滚动（需求文档 16.1） -->
             <RecycleScroller
               v-else-if="displayedFriends.length > VIRTUAL_SCROLL_THRESHOLD"
@@ -151,8 +178,10 @@ import SkeletonFriendList from '@/components/common/SkeletonFriendList.vue'
 import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
+import ContactGroupSection from './ContactGroupSection.vue'
 import { useFriendContextMenu } from './composables/useFriendContextMenu'
 import { useFriendFilters } from './composables/useFriendFilters'
+import { useFriendGrouping } from './composables/useFriendGrouping'
 import { useFriendRequests } from './composables/useFriendRequests'
 import { useFriendSearch } from './composables/useFriendSearch'
 import FriendListHeader from './FriendListHeader.vue'
@@ -208,6 +237,11 @@ const {
   handleClearActiveSearch
 } = useFriendSearch({ filteredFriends, currentFilter, showStatePanel })
 
+// 分组状态与分组区段
+const { shouldGroup, groupedSections, toggleCollapse, isCollapsed, loadGroups } = useFriendGrouping({
+  friends: displayedFriends
+})
+
 const showSearchEmptyState = computed(
   () =>
     displayedFriends.value.length === 0 &&
@@ -255,6 +289,7 @@ const handleRetryFriendList = async () => {
 
 onMounted(async () => {
   await contactStore.initialize()
+  void loadGroups()
 })
 </script>
 
@@ -286,5 +321,9 @@ onMounted(async () => {
 
 .friend-items--virtual {
   height: 100%;
+}
+
+.friend-items--grouped {
+  padding: 4px 8px;
 }
 </style>

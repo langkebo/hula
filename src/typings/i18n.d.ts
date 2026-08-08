@@ -2942,7 +2942,11 @@ export type I18nKeys = {
       "rename_failed": "重命名失败",
       "delete_success": "分组已删除",
       "delete_failed": "删除分组失败",
-      "load_failed": "加载分组失败"
+      "load_failed": "加载分组失败",
+      "section": {
+        "favorite": "星标好友",
+        "ungrouped": "未分组"
+      }
     }
   },
   "home": {

@@ -172,6 +172,10 @@
     "rename_failed": "Failed to rename group",
     "delete_success": "Group deleted",
     "delete_failed": "Failed to delete group",
-    "load_failed": "Failed to load groups"
+    "load_failed": "Failed to load groups",
+    "section": {
+      "favorite": "Favorites",
+      "ungrouped": "Ungrouped"
+    }
   }
 }
