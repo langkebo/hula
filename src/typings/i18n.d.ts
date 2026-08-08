@@ -1284,7 +1284,9 @@ export type I18nKeys = {
         "confirm": "确认",
         "save": "保存",
         "close": "关闭",
-        "actions": "操作"
+        "actions": "操作",
+        "selectedCount": "已选择 {count} 项",
+        "noData": "暂无数据"
       },
       "users": {
         "title": "用户管理",

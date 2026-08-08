@@ -134,7 +134,9 @@
       "confirm": "Confirm",
       "save": "Save",
       "close": "Close",
-      "actions": "Actions"
+      "actions": "Actions",
+      "selectedCount": "{count} selected",
+      "noData": "No data"
     },
     "users": {
       "title": "Users",
