@@ -357,6 +357,13 @@
     "font_microsoft_yahei": "Microsoft YaHei",
     "font_pingfang_sc": "PingFang SC",
     "font_source_han_sans": "Source Han Sans",
+    "preview": {
+      "title": "Live Preview",
+      "sample_text": "This is sample text to preview the current theme.",
+      "button": "Button",
+      "input_placeholder": "Input",
+      "current_theme": "Current theme"
+    },
     "feedback": {
       "theme_changed": "Theme switched",
       "font_changed": "Font changed",
