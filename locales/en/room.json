@@ -192,5 +192,24 @@
     "burn_after_read": "Burn after read",
     "has_draft": "Has draft",
     "failed_send": "Send failed"
+  },
+  "discovery": {
+    "aria_label": "Room discovery",
+    "search_placeholder": "Search room name...",
+    "join": "Join",
+    "empty": "No public rooms",
+    "members": "{count} members",
+    "federated": "Federated",
+    "no_topic": "No topic",
+    "preview_title": "Room preview",
+    "preview_members": "Members",
+    "preview_topic": "Topic",
+    "preview_history": "Recent history",
+    "preview_no_history": "No recent history",
+    "reason_label": "Join reason",
+    "reason_placeholder": "Enter join reason (required for federated rooms)",
+    "reason_required": "Please enter a join reason",
+    "cancel": "Cancel",
+    "preview_join": "Join room"
   }
 }
