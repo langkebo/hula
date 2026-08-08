@@ -5,7 +5,6 @@
   /* 白字对比度 3.6:1 @brand（AA-large only；浅色气泡白字同此值） */
   --tjg-brand: #13987f;
   --tjg-brand-light: #cef9ec;
-  --tjg-brand-sidebar: #64a29c;
   --tjg-color-primary-500: var(--tjg-brand);
   --tjg-color-primary-400: #1ab292;
   --tjg-color-primary-300: #64c9b3;
@@ -123,17 +122,14 @@
   --tjg-font-size-2xl: 20px;
   --tjg-font-size-3xl: 24px;
 
-  --tjg-font-weight-normal: 400;
   --tjg-font-weight-medium: 500;
   --tjg-font-weight-semibold: 600;
   --tjg-font-weight-bold: 700;
 
   --tjg-line-height-tight: 1.25;
   --tjg-line-height-normal: 1.5;
-  --tjg-line-height-relaxed: 1.75;
 
   /* 间距 */
-  --tjg-space-0: 0;
   --tjg-space-1: 4px;
   --tjg-space-2: 8px;
   --tjg-space-3: 12px;
@@ -141,23 +137,18 @@
   --tjg-space-5: 20px;
   --tjg-space-6: 24px;
   --tjg-space-8: 32px;
-  --tjg-space-10: 40px;
 
   /* 圆角 */
-  --tjg-radius-none: 0;
   --tjg-radius-xs: 4px;
   --tjg-radius-sm: 8px;
   --tjg-radius-md: 10px;
   --tjg-radius-lg: 12px;
-  --tjg-radius-xl: 16px;
-  --tjg-radius-2xl: 20px;
   --tjg-radius-full: 9999px;
 
   /* 阴影 */
   --tjg-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --tjg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --tjg-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
-  --tjg-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
   --tjg-shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.04);
   --tjg-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
   --tjg-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -192,12 +183,6 @@
   --tjg-settings-meter-bg: rgba(0, 0, 0, 0.1);
   --tjg-settings-warning-bg: var(--tjg-color-warning-100);
   --tjg-surface-media-preview: #000000;
-  --tjg-settings-preview-light-shell: #f5f5f5;
-  --tjg-settings-preview-light-sidebar: #e8e8e8;
-  --tjg-settings-preview-light-content: #ffffff;
-  --tjg-settings-preview-dark-shell: #1a1a1a;
-  --tjg-settings-preview-dark-sidebar: #2a2a2a;
-  --tjg-settings-preview-dark-content: #333333;
 
   /* 对话框宽度（对齐原型 C5/G10）
    * sm: 窄面板/线程抽屉 320px（原型 4574 行）
@@ -231,13 +216,6 @@
   /* 业务语义色 */
   --tjg-room-unread-badge-bg: var(--tjg-color-primary-500);
   --tjg-room-highlight-badge-bg: var(--tjg-color-danger-500);
-  --tjg-room-invite-bg: var(--tjg-color-primary-100);
-  --tjg-room-tombstoned-text: var(--tjg-text-disabled);
-  --tjg-space-public-badge-bg: var(--tjg-color-success-100);
-  --tjg-space-invite-badge-bg: var(--tjg-color-warning-100);
-  --tjg-friend-favorite-badge-bg: var(--tjg-color-warning-100);
-  --tjg-friend-blocked-badge-bg: var(--tjg-color-danger-100);
-  --tjg-sync-recovering-bg: var(--tjg-color-warning-100);
 
   /* 管理后台 */
   --tjg-admin-sidebar-bg: #1a1a2e;
@@ -260,11 +238,7 @@
   --tjg-encryption-surface-dark: rgba(255, 255, 255, 0.05);
   --tjg-overlay-mobile-sheet: rgba(255, 255, 255, 0.85);
   --tjg-color-indigo-500: #6366f1;
-  --tjg-color-indigo-100: rgba(99, 102, 241, 0.14);
   --tjg-color-purple-500: #722ed1;
-  --tjg-color-purple-100: rgba(114, 46, 209, 0.14);
-  --tjg-admin-notice-text: #2a5f9e;
-  --tjg-admin-notice-bg: #eef6ff;
 
   /* ==================== Backward-Compatible Aliases ==================== */
 
@@ -324,16 +298,13 @@
   --font-size-2xl: var(--tjg-font-size-2xl);
   --font-size-3xl: var(--tjg-font-size-3xl);
 
-  --font-weight-normal: var(--tjg-font-weight-normal);
   --font-weight-medium: var(--tjg-font-weight-medium);
   --font-weight-semibold: var(--tjg-font-weight-semibold);
   --font-weight-bold: var(--tjg-font-weight-bold);
 
   --line-height-tight: var(--tjg-line-height-tight);
   --line-height-normal: var(--tjg-line-height-normal);
-  --line-height-relaxed: var(--tjg-line-height-relaxed);
 
-  --spacing-0: var(--tjg-space-0);
   --spacing-xs: var(--tjg-space-1);
   --spacing-sm: var(--tjg-space-2);
   --spacing-md: var(--tjg-space-3);
@@ -341,20 +312,15 @@
   --spacing-xl: var(--tjg-space-5);
   --spacing-2xl: var(--tjg-space-6);
   --spacing-3xl: var(--tjg-space-8);
-  --spacing-4xl: var(--tjg-space-10);
 
-  --radius-none: var(--tjg-radius-none);
   --radius-sm: var(--tjg-radius-xs);
   --radius-md: var(--tjg-radius-sm);
   --radius-lg: var(--tjg-radius-lg);
-  --radius-xl: var(--tjg-radius-xl);
-  --radius-2xl: var(--tjg-radius-2xl);
   --radius-full: var(--tjg-radius-full);
 
   --shadow-sm: var(--tjg-shadow-sm);
   --shadow-md: var(--tjg-shadow-md);
   --shadow-lg: var(--tjg-shadow-lg);
-  --shadow-xl: var(--tjg-shadow-xl);
 
   --transition-fast: var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
   --transition-normal: var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
@@ -375,16 +341,6 @@
 
   /* Hula 设计令牌别名：model.tsx 引用了 --hula-* 前缀，但全库从未定义，
      导致相关样式静默失效。此处统一映射到规范 --tjg-* 令牌。 */
-  --hula-surface-elevated: var(--tjg-surface-elevated);
-  --hula-surface-subtle: var(--tjg-surface-subtle);
-  --hula-text-primary: var(--tjg-text-primary);
-  --hula-text-tertiary: var(--tjg-text-tertiary);
-  --hula-text-quaternary: var(--tjg-text-quaternary);
-  --hula-text-disabled: var(--tjg-text-disabled);
-  --hula-border-default: var(--tjg-border-default);
-  --hula-color-primary-500: var(--tjg-color-primary-500);
-  --hula-color-danger-100: var(--tjg-color-danger-100);
-  --hula-color-danger-500: var(--tjg-color-danger-500);
   --color-primary: var(--tjg-color-primary-500);
   --color-primary-light: var(--tjg-color-primary-100);
   --color-primary-hover: var(--tjg-color-primary-200);
@@ -417,35 +373,18 @@
   --action-bar-icon-color: var(--tjg-text-secondary);
   --action-bar-icon-hover: var(--tjg-surface-search);
   --search-bg-color: var(--tjg-surface-search);
-  --bg-msg-first-child: var(--tjg-surface-search);
-  --bg-msg-hover: var(--tjg-surface-panel-muted);
-  --bg-active-msg: var(--tjg-color-primary-500);
-  --bg-chat-drawer: var(--tjg-surface-panel-muted);
-  --bg-setting-item: var(--tjg-surface-elevated);
   --setting-item-line: var(--tjg-surface-subtle);
-  --bg-popover: var(--tjg-surface-elevated);
   --bg-menu: var(--tjg-menu-bg);
   --bg-menu-hover: var(--tjg-menu-hover);
   --line-color: var(--tjg-border-default);
-  --bg-left-menu: var(--tjg-surface-subtle);
-  --bg-left-menu-hover: color-mix(in srgb, var(--tjg-text-secondary) 10%, transparent);
-  --bg-left-active: var(--tjg-surface-sidebar-active);
   --button-bg-color: var(--tjg-surface-subtle);
   --disabled-color: var(--tjg-text-disabled);
-  --bg-bubble: var(--tjg-surface-elevated);
-  --bg-bubble-active: var(--tjg-surface-subtle);
-  --bg-translate-bubble: color-mix(in srgb, var(--tjg-text-tertiary) 25%, transparent);
-  --bg-avatar: var(--tjg-surface-subtle);
   --info-hover: color-mix(in srgb, var(--tjg-surface-subtle) 45%, transparent);
   --info-text-color: var(--tjg-text-primary);
   --tray-hover: var(--tjg-surface-search);
   --tray-hover-e: color-mix(in srgb, var(--tjg-color-danger-100) 85%, var(--tjg-surface-panel));
-  --bg-info: var(--tjg-surface-panel);
-  --bg-emoji: var(--tjg-surface-overlay);
   --reply-color: var(--tjg-text-tertiary);
   --reply-hover: var(--tjg-text-secondary);
-  --bg-reply-img-count: var(--tjg-border-default);
-  --bg-edit: var(--tjg-border-muted);
   --time-color: var(--tjg-border-default);
   --chat-bt-color: var(--tjg-text-inverse);
   --chat-left-bg: color-mix(in srgb, var(--tjg-color-primary-200) 65%, var(--tjg-surface-panel));
@@ -513,7 +452,6 @@
   /* 右侧面板主题渐变背景 */
   --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.3) 20%, rgba(130, 193, 187, 0.3) 100%);
   /* 选中边框品牌色 */
-  --border-active-color: var(--tjg-brand-sidebar);
   /* 消息激活色 */
   --msg-active-color: var(--tjg-brand);
 }
@@ -534,7 +472,6 @@ html[data-theme='dark'] {
   --tjg-color-info-500: #40a9ff;
   --tjg-color-info-100: rgba(24, 144, 255, 0.15);
   --tjg-color-purple-500: #9254de;
-  --tjg-color-purple-100: rgba(146, 84, 222, 0.15);
 
   /* 对比度 18.10:1 AAA @surface-app（#161616） */
   --tjg-text-primary: #ffffff;
@@ -572,7 +509,6 @@ html[data-theme='dark'] {
   --tjg-surface-inverse-hover: rgba(255, 255, 255, 0.15);
   --tjg-surface-darkest: #161616;
   --tjg-surface-dark: #1a1a1a;
-  --tjg-surface-dark-mid: #222222;
   --tjg-overlay-mask-default: rgba(0, 0, 0, 0.4);
   --tjg-overlay-mask-subtle: rgba(0, 0, 0, 0.2);
   --tjg-overlay-inverse-strong: rgba(0, 0, 0, 0.8);
@@ -592,7 +528,6 @@ html[data-theme='dark'] {
   --tjg-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --tjg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.24);
   --tjg-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.32);
-  --tjg-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
   --tjg-shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.06);
   --tjg-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.24);
   --tjg-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.36);
@@ -622,13 +557,6 @@ html[data-theme='dark'] {
 
   --tjg-room-unread-badge-bg: var(--tjg-color-primary-400);
   --tjg-room-highlight-badge-bg: var(--tjg-color-danger-500);
-  --tjg-room-invite-bg: rgba(19, 152, 127, 0.15);
-  --tjg-room-tombstoned-text: #595959;
-  --tjg-space-public-badge-bg: rgba(82, 196, 26, 0.15);
-  --tjg-space-invite-badge-bg: rgba(250, 173, 20, 0.15);
-  --tjg-friend-favorite-badge-bg: rgba(250, 173, 20, 0.15);
-  --tjg-friend-blocked-badge-bg: rgba(255, 77, 79, 0.08);
-  --tjg-sync-recovering-bg: rgba(250, 173, 20, 0.15);
   --tjg-admin-sidebar-bg: #141422;
   --tjg-admin-sidebar-text: color-mix(in srgb, var(--tjg-text-inverse) 55%, transparent);
   --tjg-admin-sidebar-border: var(--tjg-border-contrast);
@@ -648,8 +576,6 @@ html[data-theme='dark'] {
   --tjg-encryption-surface-subtle: rgba(255, 255, 255, 0.05);
   --tjg-encryption-surface-dark: rgba(0, 0, 0, 0.02);
   --tjg-overlay-mobile-sheet: rgba(33, 33, 33, 0.95);
-  --tjg-admin-notice-text: #40a9ff;
-  --tjg-admin-notice-bg: rgba(24, 144, 255, 0.12);
 
   --color-success: var(--tjg-color-success-500);
   --color-warning: var(--tjg-color-warning-500);
@@ -681,7 +607,6 @@ html[data-theme='dark'] {
   --shadow-sm: var(--tjg-shadow-sm);
   --shadow-md: var(--tjg-shadow-md);
   --shadow-lg: var(--tjg-shadow-lg);
-  --shadow-xl: var(--tjg-shadow-xl);
 
   /* ==================== Dark Theme Semantic Overrides ==================== */
   --left-text-color: #ccc;
@@ -696,35 +621,18 @@ html[data-theme='dark'] {
   --action-bar-icon-color: var(--tjg-text-secondary);
   --action-bar-icon-hover: var(--tjg-surface-search);
   --search-bg-color: var(--tjg-surface-search);
-  --bg-msg-first-child: var(--tjg-surface-search);
-  --bg-msg-hover: var(--tjg-surface-subtle);
-  --bg-active-msg: var(--tjg-color-primary-200);
-  --bg-chat-drawer: var(--tjg-surface-panel);
-  --bg-setting-item: var(--tjg-surface-panel-muted);
   --setting-item-line: var(--tjg-surface-subtle);
-  --bg-popover: var(--tjg-surface-elevated);
   --bg-menu: var(--tjg-menu-bg);
   --bg-menu-hover: var(--tjg-menu-hover);
   --line-color: var(--tjg-border-default);
-  --bg-left-menu: var(--tjg-surface-sidebar);
-  --bg-left-menu-hover: var(--tjg-surface-sidebar-hover);
-  --bg-left-active: var(--tjg-surface-sidebar-active);
   --button-bg-color: var(--tjg-surface-subtle);
   --disabled-color: var(--tjg-text-disabled);
-  --bg-bubble: var(--tjg-surface-panel-muted);
-  --bg-bubble-active: color-mix(in srgb, var(--tjg-surface-subtle) 80%, transparent);
-  --bg-translate-bubble: color-mix(in srgb, var(--tjg-text-tertiary) 22%, transparent);
-  --bg-avatar: var(--tjg-surface-sidebar);
   --info-hover: color-mix(in srgb, var(--tjg-surface-subtle) 38%, transparent);
   --info-text-color: var(--tjg-text-primary);
   --tray-hover: var(--tjg-surface-subtle);
   --tray-hover-e: color-mix(in srgb, var(--tjg-color-danger-200) 70%, var(--tjg-surface-panel));
-  --bg-info: var(--tjg-surface-panel);
-  --bg-emoji: color-mix(in srgb, var(--tjg-surface-panel) 80%, transparent);
   --reply-color: var(--tjg-text-tertiary);
   --reply-hover: var(--tjg-text-secondary);
-  --bg-reply-img-count: var(--tjg-text-secondary);
-  --bg-edit: var(--tjg-surface-panel-muted);
   --time-color: var(--tjg-surface-subtle);
   --chat-bt-color: var(--tjg-surface-subtle);
   --chat-left-bg: var(--tjg-color-primary-500);
@@ -771,7 +679,6 @@ html[data-theme='dark'] {
 
   /* 暗色右侧面板主题渐变背景 */
   --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.2) 0%, rgba(130, 193, 187, 0.2) 150%);
-  --border-active-color: var(--tjg-brand-sidebar);
   --msg-active-color: rgba(19, 152, 127, 0.4);
 }
 
@@ -815,7 +722,6 @@ html[data-theme='dark'] {
     --tjg-surface-sidebar-active: rgba(0, 0, 0, 0.12);
 
     /* 焦点环：确保可见 */
-    --tjg-focus-ring: 0 0 0 3px rgba(19, 152, 127, 0.6);
   }
 }
 
@@ -850,7 +756,6 @@ html[data-theme='dark'] {
     --tjg-surface-sidebar-active: rgba(255, 255, 255, 0.15);
 
     /* 焦点环：确保可见 */
-    --tjg-focus-ring: 0 0 0 3px rgba(100, 201, 179, 0.7);
   }
 }
 
