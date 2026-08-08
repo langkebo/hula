@@ -405,11 +405,30 @@
     },
     "empty": {
       "no_chat_selected": "No chat selected",
-      "select_to_start": "Select a conversation or start a new chat"
+      "select_to_start": "Select a conversation or start a new chat",
+      "pins": "No pinned messages"
     },
     "toggle": {
       "expand": "Expand info panel",
       "collapse": "Collapse info panel"
+    },
+    "tabs": {
+      "members": "Members",
+      "files": "Files",
+      "pins": "Pins",
+      "favorites": "Favorites"
+    },
+    "pins": {
+      "title": "Pinned Messages",
+      "cancel": "Unpin"
+    },
+    "favorites": {
+      "total": "{count} favorite(s)",
+      "export_md": "Export Markdown",
+      "export_txt": "Export Text",
+      "search_placeholder": "Search favorites",
+      "empty": "No favorite messages",
+      "load_failed": "Failed to load favorites"
     }
   },
   "about": {

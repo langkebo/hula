@@ -78,6 +78,7 @@
     :events="stickyEvents"
     :can-set-sticky="canSetSticky"
     @set-sticky="$emit('setSticky')"
+    @cancel-sticky="(eventId: string) => $emit('cancelSticky', eventId)"
     @view="(eventId: string) => $emit('viewStickyEvent', eventId)" />
 </template>
 
@@ -124,6 +125,7 @@ defineEmits<{
   togglePrivateMode: []
   viewAnnouncement: []
   setSticky: []
+  cancelSticky: [eventId: string]
   viewStickyEvent: [eventId: string]
 }>()
 </script>

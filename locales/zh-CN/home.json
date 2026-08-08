@@ -405,11 +405,30 @@
     },
     "empty": {
       "no_chat_selected": "未选择会话",
-      "select_to_start": "选择一个会话或发起新聊天"
+      "select_to_start": "选择一个会话或发起新聊天",
+      "pins": "暂无置顶消息"
     },
     "toggle": {
       "expand": "展开信息面板",
       "collapse": "收起信息面板"
+    },
+    "tabs": {
+      "members": "成员",
+      "files": "文件",
+      "pins": "置顶",
+      "favorites": "收藏"
+    },
+    "pins": {
+      "title": "置顶消息",
+      "cancel": "取消置顶"
+    },
+    "favorites": {
+      "total": "收藏消息 {count} 条",
+      "export_md": "导出 Markdown",
+      "export_txt": "导出文本",
+      "search_placeholder": "搜索收藏消息",
+      "empty": "暂无收藏消息",
+      "load_failed": "加载收藏消息失败"
     }
   },
   "about": {

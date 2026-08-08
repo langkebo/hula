@@ -97,6 +97,7 @@
         </n-tab-pane>
         <n-tab-pane name="files" :tab="t('home.chat_sidebar.tabs.files', '文件')"></n-tab-pane>
         <n-tab-pane name="pins" :tab="t('home.chat_sidebar.tabs.pins', '置顶')"></n-tab-pane>
+        <n-tab-pane name="favorites" :tab="t('home.chat_sidebar.tabs.favorites', '收藏')"></n-tab-pane>
       </n-tabs>
 
       <!-- 动态内容区域 -->
@@ -284,9 +285,28 @@
         </div>
       </div>
 
-      <!-- 置顶 Tab 占位 -->
-      <div v-show="activeTab === 'pins'" class="flex-1 min-h-0 flex items-center justify-center">
-        <n-empty :description="t('home.chat_sidebar.empty.pins', '暂无置顶消息')" />
+      <!-- 置顶 Tab：PinnedMessageBanner 列表 -->
+      <div v-show="activeTab === 'pins'" class="flex-1 min-h-0 flex flex-col">
+        <div class="flex-1 min-h-0 overflow-y-auto px-6px py-4px">
+          <PinnedMessageBanner
+            v-if="pinnedMessages.length > 0"
+            :events="pinnedMessages"
+            :can-set-sticky="canSetSticky"
+            @navigate="handleNavigateToMessage"
+            @cancel-sticky="handleCancelSticky" />
+          <n-empty v-else :description="t('home.chat_sidebar.empty.pins', '暂无置顶消息')">
+            <template #icon>
+              <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
+                <use href="#pin"></use>
+              </svg>
+            </template>
+          </n-empty>
+        </div>
+      </div>
+
+      <!-- 收藏 Tab -->
+      <div v-show="activeTab === 'favorites'" class="flex-1 min-h-0 flex flex-col">
+        <FavoritesPanel v-if="currentRoomId" :room-id="currentRoomId" />
       </div>
     </div>
   </main>
@@ -298,12 +318,14 @@ import type { InputInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import AnnouncementPanel from '@/components/room/AnnouncementPanel.vue'
+import PinnedMessageBanner from '@/components/room/PinnedMessageBanner.vue'
 import { useChatMain } from '@/composables/chat/useChatMain'
 import { useRoomType } from '@/composables/chat/useRoomType'
 import { useLinkSegments } from '@/composables/common/useLinkSegments'
 import { useMitt } from '@/composables/common/useMitt'
 import { usePopover } from '@/composables/common/usePopover'
 import { useWindow } from '@/composables/common/useWindow'
+import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { MittEnum, OnlineEnum, RoleEnum, RoomTypeEnum, ThemeEnum, WsResponseMessageType } from '@/enums'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { UserItem } from '@/services/types'
@@ -314,8 +336,8 @@ import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-
 import { createLogger } from '@/utils/Logger'
+import FavoritesPanel from './FavoritesPanel.vue'
 
 const logger = createLogger('ChatSidebar')
 
@@ -535,6 +557,37 @@ const translateStateTitle = (title?: string) => {
   return translated === key ? title : translated
 }
 
+// ==== P0-4: 置顶消息接线 ====
+const pinnedMessageFlow = usePinnedMessage({ roomId: () => currentRoomId.value })
+const { pinnedMessages, canSetSticky } = pinnedMessageFlow
+
+/** 点击置顶消息：通过 mitt 通知 ChatMain 跳转定位到该消息 */
+const handleNavigateToMessage = (eventId: string) => {
+  useMitt.emit(MittEnum.NAVIGATE_TO_MESSAGE, { roomId: currentRoomId.value, eventId })
+}
+
+/** 取消置顶：调用 composable unpin 后，通知 ChatMain 等其它置顶横幅实例刷新 */
+const handleCancelSticky = async (eventId: string) => {
+  await pinnedMessageFlow.unpin(eventId)
+  useMitt.emit(MittEnum.PINNED_EVENTS_CHANGED, { roomId: currentRoomId.value })
+}
+
+/** 置顶消息变更（来自消息右键菜单的 pin/unpin）→ 刷新侧栏置顶列表 */
+const onPinnedEventsChanged = (payload: { roomId?: string } | undefined) => {
+  if (payload?.roomId && payload.roomId === currentRoomId.value) {
+    pinnedMessageFlow.load().catch((e) => logger.error('刷新置顶消息失败:', e))
+  }
+}
+
+// 房间切换时加载置顶消息
+watch(
+  () => currentRoomId.value,
+  () => {
+    pinnedMessageFlow.load().catch((e) => logger.error('加载置顶消息失败:', e))
+  },
+  { immediate: true }
+)
+
 appWindow?.listen<{ hasAnnouncements?: boolean }>('announcementUpdated', async (event) => {
   if (event.payload) {
     const { hasAnnouncements } = event.payload
@@ -559,6 +612,9 @@ onMounted(async () => {
   useMitt.on(MittEnum.OPEN_ANNOUNCEMENT_PANEL, () => {
     showAnnouncementPanel.value = true
   })
+
+  // 置顶消息变更 → 刷新侧栏置顶列表
+  useMitt.on(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
 
   appWindow?.listen('announcementClear', async () => {
     clearAnnouncements()
@@ -605,6 +661,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   groupStore.cleanupSession()
+  useMitt.off(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
 })
 </script>
 
