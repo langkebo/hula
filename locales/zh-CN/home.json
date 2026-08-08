@@ -168,6 +168,8 @@
   },
   "chat_header": {
     "bot_tag": "助手",
+    "federated": "联邦房间",
+    "federated_tooltip": "联邦房间 · 由 {server} 提供服务",
     "status_abnormal": "好友状态异常",
     "start_meeting": "发起会议",
     "meeting_widget_name": "房间会议",
@@ -289,13 +291,22 @@
     "online_status": "在线状态",
     "status": {
       "online": "在线",
-      "offline": "离线"
+      "offline": "离线",
+      "away": "离开",
+      "busy": "忙碌"
     },
     "labels": {
       "account": "账号",
       "location": "所在地",
       "badges": "获得的徽章",
-      "activities": "动态"
+      "activities": "动态",
+      "sex": "性别",
+      "bio": "个人简介",
+      "region": "地区",
+      "birthday": "生日",
+      "joinTime": "加入时间",
+      "male": "男",
+      "female": "女"
     },
     "location_unknown": "未知",
     "tooltip": {
@@ -306,14 +317,27 @@
     "buttons": {
       "edit": "编辑资料",
       "message": "发信息",
-      "add_friend": "加好友"
+      "add_friend": "加好友",
+      "mention": "@提及"
     },
     "notification": {
-      "copy_success": "复制成功 {account}"
+      "copy_success": "复制成功 {account}",
+      "copy_copied": "已复制"
+    },
+    "presence": {
+      "activeNow": "刚刚活跃",
+      "activeMinutes": "{minutes} 分钟前活跃",
+      "activeHours": "{hours} 小时前活跃",
+      "activeDays": "{days} 天前活跃"
+    },
+    "error": {
+      "title": "资料加载失败",
+      "desc": "暂时无法获取该用户资料，请稍后重试"
     },
     "modal": {
       "add_friend": "申请加好友"
     },
+    "account_actions": "账号操作",
     "developer_badge": "Tjg开发工程师"
   },
   "profile_edit": {
@@ -339,7 +363,8 @@
       "nickname": {
         "label": "昵称",
         "placeholder": "请输入你的昵称",
-        "remaining": "剩余改名次数: {count}"
+        "remaining": "剩余改名次数: {count}",
+        "unlimited": "改名次数: 无限制"
       }
     },
     "actions": {
@@ -373,11 +398,16 @@
     },
     "roles": {
       "owner": "群主",
-      "admin": "管理员"
+      "admin": "管理员",
+      "member": "普通成员"
     },
     "empty": {
       "no_chat_selected": "未选择会话",
       "select_to_start": "选择一个会话或发起新聊天"
+    },
+    "toggle": {
+      "expand": "展开信息面板",
+      "collapse": "收起信息面板"
     }
   },
   "about": {

@@ -26,6 +26,8 @@
   "engagement_unread": "Unread",
   "engagement_mention": "Mentions",
   "engagement_invite": "Invites",
+  "type_group": "Groups",
+  "type_single": "Direct",
   "sort_label": "Sort Order",
   "sort_recent": "Recent",
   "sort_name": "Name",
