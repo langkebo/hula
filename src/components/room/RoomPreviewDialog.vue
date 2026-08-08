@@ -6,18 +6,26 @@
     :bordered="false"
     :style="{ width: '480px', maxWidth: '90vw' }"
     @update:show="handleUpdateVisible">
-    <div v-if="room" class="room-preview-dialog" data-testid="room-preview-dialog">
+    <div v-if="room" class="room-preview-dialog flex flex-col gap-[--tjg-space-3]" data-testid="room-preview-dialog">
       <n-spin :show="loading">
-        <div class="room-preview-dialog__head">
-          <div class="room-preview-dialog__avatar">
-            <img v-if="room.avatarUrl" :src="room.avatarUrl" :alt="''" class="room-preview-dialog__avatar-img" />
-            <span v-else class="room-preview-dialog__avatar-placeholder">
+        <div class="room-preview-dialog__head flex items-center gap-[--tjg-space-3]">
+          <div
+            class="room-preview-dialog__avatar shrink-0 flex items-center justify-center size-[48px] overflow-hidden rounded-[--tjg-radius-full] bg-[--tjg-surface-subtle]">
+            <img
+              v-if="room.avatarUrl"
+              :src="room.avatarUrl"
+              :alt="''"
+              class="room-preview-dialog__avatar-img w-full h-full object-cover" />
+            <span v-else class="room-preview-dialog__avatar-placeholder text-[--tjg-text-secondary]">
               {{ room.name?.charAt(0) || '?' }}
             </span>
           </div>
-          <div class="room-preview-dialog__title">
-            <span class="room-preview-dialog__name">{{ room.name }}</span>
-            <span v-if="room.isFederated" class="room-preview-dialog__federated" :title="t('room.discovery.federated')">
+          <div class="room-preview-dialog__title flex items-center gap-[--tjg-space-2] min-w-0">
+            <span class="room-preview-dialog__name truncate text-[--tjg-text-primary]">{{ room.name }}</span>
+            <span
+              v-if="room.isFederated"
+              class="room-preview-dialog__federated inline-flex items-center gap-2px shrink-0 px-6px py-1px rounded-[--tjg-radius-xs] bg-[--tjg-color-info-100] text-[--tjg-color-info-600]"
+              :title="t('room.discovery.federated')">
               <svg
                 viewBox="0 0 24 24"
                 width="12"
@@ -38,10 +46,15 @@
           </div>
         </div>
 
-        <dl class="room-preview-dialog__meta">
-          <div class="room-preview-dialog__row">
-            <dt class="room-preview-dialog__label">{{ t('room.discovery.preview_members') }}</dt>
-            <dd class="room-preview-dialog__value">
+        <dl
+          class="room-preview-dialog__meta flex flex-col gap-[--tjg-space-2] m-0 p-[--tjg-space-3] rounded-[--tjg-radius-sm] bg-[--tjg-surface-panel-muted]">
+          <div class="room-preview-dialog__row flex items-start gap-[--tjg-space-2]">
+            <dt
+              class="room-preview-dialog__label shrink-0 w-64px m-0 text-[--tjg-text-tertiary]"
+              data-testid="preview-members-label">
+              {{ t('room.discovery.preview_members') }}
+            </dt>
+            <dd class="room-preview-dialog__value flex items-center gap-4px m-0 text-[--tjg-text-primary] break-words">
               <svg
                 viewBox="0 0 24 24"
                 width="14"
@@ -60,32 +73,47 @@
               {{ room.numJoinedMembers }}
             </dd>
           </div>
-          <div class="room-preview-dialog__row">
-            <dt class="room-preview-dialog__label">{{ t('room.discovery.preview_topic') }}</dt>
-            <dd class="room-preview-dialog__value room-preview-dialog__value--topic">
+          <div class="room-preview-dialog__row flex items-start gap-[--tjg-space-2]">
+            <dt class="room-preview-dialog__label shrink-0 w-64px m-0 text-[--tjg-text-tertiary]">
+              {{ t('room.discovery.preview_topic') }}
+            </dt>
+            <dd
+              class="room-preview-dialog__value room-preview-dialog__value--topic flex items-center gap-4px m-0 text-[--tjg-text-secondary] break-words">
               {{ room.topic || t('room.discovery.no_topic') }}
             </dd>
           </div>
-          <div class="room-preview-dialog__row">
-            <dt class="room-preview-dialog__label">{{ t('room.discovery.preview_history') }}</dt>
-            <dd class="room-preview-dialog__value room-preview-dialog__value--muted">
+          <div class="room-preview-dialog__row flex items-start gap-[--tjg-space-2]">
+            <dt class="room-preview-dialog__label shrink-0 w-64px m-0 text-[--tjg-text-tertiary]">
+              {{ t('room.discovery.preview_history') }}
+            </dt>
+            <dd
+              class="room-preview-dialog__value room-preview-dialog__value--muted flex items-center gap-4px m-0 text-[--tjg-text-tertiary] break-words">
               {{ historySummary }}
             </dd>
           </div>
         </dl>
 
-        <join-reason-input
-          v-if="requireReason"
-          v-model="reason"
-          :disabled="loading"
-          :show-submit="false"
-          class="room-preview-dialog__reason"
-          @submit="handleReasonSubmit" />
+        <div v-if="requireReason" class="room-preview-dialog__reason-section mt-[--tjg-space-1]">
+          <span class="block text-[--tjg-text-tertiary]" data-testid="reason-label">
+            {{ t('room.discovery.reason_label') }}
+          </span>
+          <join-reason-input
+            v-model="reason"
+            :disabled="loading"
+            :show-submit="false"
+            class="room-preview-dialog__reason mt-[--tjg-space-1]" />
+          <p
+            v-if="!canJoin"
+            class="room-preview-dialog__reason-hint mt-[--tjg-space-1] text-[--tjg-color-danger-500]"
+            data-testid="reason-required-hint">
+            {{ t('room.discovery.reason_required') }}
+          </p>
+        </div>
       </n-spin>
     </div>
 
     <template #footer>
-      <div class="room-preview-dialog__footer">
+      <div class="room-preview-dialog__footer flex justify-end gap-[--tjg-space-2]">
         <n-button @click="handleCancel">{{ t('room.discovery.cancel') }}</n-button>
         <n-button
           type="primary"
@@ -157,12 +185,6 @@ const handleJoin = () => {
   close()
 }
 
-const handleReasonSubmit = (reasonText: string) => {
-  if (!props.room) return
-  emit('join', props.room.roomId, reasonText)
-  close()
-}
-
 // 打开对话框时重置理由输入
 watch(
   () => props.visible,
@@ -175,120 +197,26 @@ watch(
 </script>
 
 <style scoped lang="scss">
-.room-preview-dialog {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tjg-space-3);
-}
-
-.room-preview-dialog__head {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-3);
-}
-
-.room-preview-dialog__avatar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  overflow: hidden;
-  border-radius: var(--tjg-radius-full);
-  background: var(--tjg-surface-subtle);
-}
-
-.room-preview-dialog__avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .room-preview-dialog__avatar-placeholder {
   font-size: var(--tjg-font-size-xl);
   font-weight: var(--tjg-font-weight-medium);
-  color: var(--tjg-text-secondary);
-}
-
-.room-preview-dialog__title {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-2);
-  min-width: 0;
 }
 
 .room-preview-dialog__name {
   font-size: var(--tjg-font-size-lg);
   font-weight: var(--tjg-font-weight-semibold);
-  color: var(--tjg-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .room-preview-dialog__federated {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: var(--tjg-radius-xs);
-  background: var(--tjg-color-info-100);
-  color: var(--tjg-color-info-600);
   font-size: var(--tjg-font-size-2xs);
   line-height: 1.4;
 }
 
-.room-preview-dialog__meta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tjg-space-2);
-  margin: 0;
-  padding: var(--tjg-space-3);
-  border-radius: var(--tjg-radius-sm);
-  background: var(--tjg-surface-panel-muted);
-}
-
-.room-preview-dialog__row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--tjg-space-2);
-}
-
 .room-preview-dialog__label {
-  flex-shrink: 0;
-  width: 64px;
-  margin: 0;
   font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-tertiary);
 }
 
 .room-preview-dialog__value {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
   font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-primary);
-  word-break: break-word;
-}
-
-.room-preview-dialog__value--topic {
-  color: var(--tjg-text-secondary);
-}
-
-.room-preview-dialog__value--muted {
-  color: var(--tjg-text-tertiary);
-}
-
-.room-preview-dialog__reason {
-  margin-top: var(--tjg-space-1);
-}
-
-.room-preview-dialog__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--tjg-space-2);
 }
 </style>
