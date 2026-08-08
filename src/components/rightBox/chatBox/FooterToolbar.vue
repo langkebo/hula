@@ -150,14 +150,17 @@
 
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
         <template #trigger>
-          <svg
+          <div
             :class="{ 'text-[--tjg-color-primary-500]': burnAfterReadEnabled }"
             @click="$emit('toggleBurnAfterRead')"
-            class="mr-18px cursor-pointer"
+            class="mr-18px cursor-pointer flex-center"
             role="button"
             :aria-label="t('chat.footer.burn_after_read')">
-            <use href="#timer"></use>
-          </svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="13" r="8" />
+              <path d="M12 9v4l3 2M9 2h6M12 5V2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
         </template>
         <span>{{ t('editor.burn_after_read') }}</span>
       </n-popover>

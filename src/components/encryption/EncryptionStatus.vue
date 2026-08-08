@@ -1,10 +1,38 @@
 <template>
   <div class="encryption-status" :class="statusClass">
-    <span class="status-dot" aria-hidden="true"></span>
+    <!-- encrypted: lock-check -->
+    <svg v-if="status === 'encrypted'" class="status-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path
+        d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm3 8H9V6a3 3 0 0 1 6 0v3zm-3 5a2 2 0 0 1 1 3.74V19a1 1 0 0 1-2 0v-1.26A2 2 0 0 1 12 14z" />
+    </svg>
+    <!-- unencrypted: lock-open -->
+    <svg
+      v-else-if="status === 'unencrypted'"
+      class="status-icon"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true">
+      <path
+        d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm3 8H9V6a3 3 0 0 1 6 0v3z"
+        opacity="0.4" />
+      <path d="M10 14a2 2 0 0 1 1-1.74V11a1 1 0 0 1 2 0v1.26A2 2 0 0 1 14 16a2 2 0 0 1-4-2z" opacity="0.4" />
+    </svg>
+    <!-- error: lock-alert -->
+    <svg v-else-if="status === 'error'" class="status-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path
+        d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm3 8H9V6a3 3 0 0 1 6 0v3zm-4 4a1 1 0 0 1 2 0v3a1 1 0 0 1-2 0v-3zm1 6.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+    </svg>
+    <!-- unknown: lock-question -->
+    <svg v-else class="status-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path
+        d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm3 8H9V6a3 3 0 0 1 6 0v3zm-3 4.5a1.5 1.5 0 0 1 1 2.6V17a1 1 0 0 1-2 0v-.9a1.5 1.5 0 0 1 1-2.6z" />
+    </svg>
     <span class="status-text">{{ statusText }}</span>
     <n-tooltip v-if="showTooltip" trigger="hover">
       <template #trigger>
-        <span class="status-hint" aria-label="encryption info">i</span>
+        <svg class="status-hint" viewBox="0 0 24 24" fill="currentColor" aria-label="encryption info">
+          <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+        </svg>
       </template>
       {{ tooltipText }}
     </n-tooltip>
@@ -82,13 +110,10 @@ const tooltipText = computed(() => {
   }
 }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
+.status-icon {
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
-  border-radius: 999px;
-  background-color: currentColor;
-  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
 }
 
 .status-text {
@@ -98,17 +123,10 @@ const tooltipText = computed(() => {
 }
 
 .status-hint {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 600;
   color: var(--tjg-text-tertiary);
-  background-color: color-mix(in srgb, var(--tjg-text-primary) 8%, transparent);
   cursor: help;
 }
 </style>

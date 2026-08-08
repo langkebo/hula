@@ -18,13 +18,15 @@
     <ChatHeaderToolbar
       :room-type="roomType"
       :meeting-loading="meetingLoading"
+      :private-mode-active="privateModeActive"
       @video-call="handleStartVideoCall"
       @voice-call="handleStartVoiceCall"
       @start-meeting="handleStartMeeting"
       @screen-share="handleScreenShare"
       @show-qr-code="handleShowQRCode"
       @toggle-sidebar="handleSidebarShow"
-      @open-in-new-window="handleOpenInNewWindow" />
+      @open-in-new-window="handleOpenInNewWindow"
+      @toggle-private-mode="handleTogglePrivateMode" />
 
     <ChatHeaderSidebar
       v-model:visible="sidebarShow"
@@ -70,6 +72,47 @@
         </n-button>
       </div>
     </n-modal>
+
+    <!-- 私密模式确认对话框 -->
+    <n-modal
+      v-model:show="showPrivateConfirm"
+      preset="dialog"
+      :title="t('chat.header.private_mode_confirm_title')"
+      :positive-text="t('chat.header.private_mode_confirm')"
+      :negative-text="t('chat.header.private_mode_cancel')"
+      @positive-click="confirmPrivateMode"
+      @negative-click="cancelPrivateMode">
+      <div class="private-confirm-body">
+        <p class="private-confirm-desc">{{ t('chat.header.private_mode_confirm_desc') }}</p>
+        <ul class="private-feature-list">
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm3 8H9V6a3 3 0 0 1 6 0v3z" />
+            </svg>
+            {{ t('chat.header.private_mode_feature_e2ee') }}
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2c0 5-4 7-4 12a4 4 0 0 0 8 0c0-5-4-7-4-12z" />
+            </svg>
+            {{ t('chat.header.private_mode_feature_burn') }}
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+            </svg>
+            {{ t('chat.header.private_mode_feature_screenshot') }}
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+            </svg>
+            {{ t('chat.header.private_mode_feature_no_retention') }}
+          </li>
+        </ul>
+      </div>
+    </n-modal>
   </div>
 </template>
 
@@ -78,6 +121,7 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useIndependentChatWindow } from '@/composables/chat/useIndependentChatWindow'
+import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { useWindow } from '@/composables/common/useWindow'
 import { CallTypeEnum, RoomActEnum, RoomTypeEnum } from '@/enums'
@@ -297,6 +341,15 @@ const handleShareQRCode = () => {
 // 原型对齐项 #5：头部通话按钮接真实逻辑（复用项目既有 callWindow + CallView 独立窗口体系）
 const { startRtcCall } = useWindow()
 
+// 私密模式：复用已有的 usePrivateMode 单例 composable
+const { privateModeActive, showPrivateConfirm, setRoomId, togglePrivateMode, confirmPrivateMode, cancelPrivateMode } =
+  usePrivateMode()
+
+const handleTogglePrivateMode = () => {
+  setRoomId(currentSessionRoomId.value || '')
+  togglePrivateMode()
+}
+
 const handleStartVideoCall = async () => {
   if (!currentSessionRoomId.value) return
   await startRtcCall(CallTypeEnum.VIDEO)
@@ -424,5 +477,37 @@ watch(
 
 .qr-code-actions {
   margin-top: 16px;
+}
+
+.private-confirm-body {
+  padding: 4px 0;
+}
+
+.private-confirm-desc {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--tjg-text-secondary);
+}
+
+.private-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--tjg-text-secondary);
+
+    svg {
+      color: var(--tjg-color-danger-500);
+      flex-shrink: 0;
+    }
+  }
 }
 </style>

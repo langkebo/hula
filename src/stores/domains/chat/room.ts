@@ -159,7 +159,17 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
       }
 
       const chatStore = useChatStore()
+      // 可显示的消息事件类型白名单，非消息事件（如 m.thread、m.reaction）不渲染为消息气泡
+      const DISPLAYABLE_EVENT_TYPES = new Set([
+        'm.room.message',
+        'm.room.encrypted',
+        'm.room.member',
+        'm.room.redaction',
+        'm.beacon_info',
+        'm.beacon'
+      ])
       for (const event of roomData.timeline) {
+        if (!DISPLAYABLE_EVENT_TYPES.has(event.type ?? '')) continue
         const msgtype = event.content?.msgtype as string | undefined
         let msgEnum = MsgEnum.TEXT
         if (msgtype === 'm.image') msgEnum = MsgEnum.IMAGE
