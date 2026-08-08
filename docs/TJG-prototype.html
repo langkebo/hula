@@ -2261,15 +2261,17 @@ html,body{
 
 /* —— 联系人视图 —— */
 .contacts-view{
-  flex:1;
+  width:300px;
+  flex-shrink:0;
   display:flex;
   flex-direction:column;
   background:var(--bg-deep);
+  border-right:1px solid #000;
   min-width:0;
 }
 .contacts-notice-row{
-  display:flex; gap:10px;
-  padding:10px 14px;
+  display:flex; flex-direction:column; gap:8px;
+  padding:10px 12px;
   border-bottom:1px solid #000;
 }
 .notice-card{
@@ -2451,14 +2453,15 @@ html,body{
 
 /* —— 联系人详情面板（右侧） —— */
 .contacts-detail{
-  width:300px;
+  flex:1;
+  min-width:0;
   background:var(--bg-deep);
-  border-left:1px solid #000;
   display:flex;
   flex-direction:column;
   align-items:center;
+  justify-content:center;
   padding:30px 20px;
-  flex-shrink:0;
+  overflow-y:auto;
 }
 .detail-avatar{
   width:80px; height:80px; border-radius:50%;
@@ -2485,6 +2488,7 @@ html,body{
 .detail-action-btn.primary{ background:var(--accent); color:var(--text-primary); }
 .detail-meta{
   width:100%;
+  max-width:460px;
   margin-top:24px;
   padding-top:18px;
   border-top:1px solid var(--line-color);
@@ -11472,7 +11476,7 @@ let mentionQuery = '';
 let mentionStartPos = -1;
 
 // 当前房间可提及的成员列表（基于 rooms 数据 + 房间消息发送者派生）
-function getRoomMembers(){
+function getMentionMembers(){
   // 简化：返回当前房间消息中出现的所有发送者 + 当前用户
   const msgs = chatContents[currentRoomId] || [];
   const senderSet = new Map();
@@ -11516,7 +11520,7 @@ function handleMentionInput(){
 }
 
 function showMentionPopup(query){
-  const members = getRoomMembers();
+  const members = getMentionMembers();
   const q = (query||'').toLowerCase();
   const filtered = q ? members.filter(m => m.name.toLowerCase().includes(q) || m.mxid.toLowerCase().includes(q)) : members;
   if(filtered.length === 0){
