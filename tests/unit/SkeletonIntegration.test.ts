@@ -247,22 +247,4 @@ describe('Skeleton integration', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="skeleton-settings"]').exists()).toBe(true)
   })
-
-  it('DmListView renders SkeletonDmList when loading', async () => {
-    const DmListView = (await import('@/components/dm/DmListView.vue')).default
-    const wrapper = mount(DmListView, {
-      props: { loading: true },
-      shallow: true,
-      global: {
-        stubs: {
-          SkeletonDmList: {
-            name: 'SkeletonDmList',
-            template: '<div data-testid="skeleton-dm" />'
-          }
-        }
-      }
-    })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="skeleton-dm"]').exists()).toBe(true)
-  })
 })

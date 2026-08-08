@@ -489,4 +489,124 @@ describe('CryptoSDKAdapter', () => {
       expect(logSpy).toHaveBeenCalledTimes(1)
     })
   })
+
+  // ==================== setupKeyBackupWithOptions ====================
+  // 修复验证：安全密钥生成 + bootstrapSecretStorage 上传
+  describe('setupKeyBackupWithOptions', () => {
+    const mockEncodedKey = 'ES9X ABC4 DEFG HIJK LMNO PQRS TUVW XYZ1 2345'
+
+    function createMockCrypto() {
+      return {
+        createRecoveryKeyFromPassphrase: vi.fn().mockResolvedValue({
+          privateKey: new Uint8Array([1, 2, 3, 4]),
+          encodedPrivateKey: mockEncodedKey
+        }),
+        bootstrapSecretStorage: vi.fn().mockResolvedValue(undefined),
+        restoreKeyBackup: vi.fn().mockResolvedValue(undefined),
+        resetKeyBackup: vi.fn().mockResolvedValue(undefined)
+      }
+    }
+
+    beforeEach(() => {
+      logSpy.mockClear()
+    })
+
+    it('should generate random key + bootstrapSecretStorage when no input (generate mode)', async () => {
+      const mockCrypto = createMockCrypto()
+      mockClient.getCrypto = vi.fn(() => mockCrypto)
+
+      const result = await cryptoSDKAdapter.setupKeyBackupWithOptions()
+
+      // 验证：生成随机密钥（无密码）
+      expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledTimes(1)
+      expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledWith(undefined)
+
+      // 验证：调用 bootstrapSecretStorage（仅 SSSS，不含 keyBackup）— 后台立即启动
+      expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledTimes(1)
+      expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledWith({
+        createSecretStorageKey: expect.any(Function),
+        setupNewSecretStorage: true,
+        setupNewKeyBackup: false
+      })
+
+      // 验证：返回 encodedPrivateKey
+      expect(result).toBe(mockEncodedKey)
+
+      // 验证：后台 resetKeyBackup 被调用（fire-and-forget，需等待微任务完成）
+      await vi.waitFor(() => {
+        expect(mockCrypto.resetKeyBackup).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    it('should generate key from password + bootstrapSecretStorage (passphrase mode)', async () => {
+      const mockCrypto = createMockCrypto()
+      mockClient.getCrypto = vi.fn(() => mockCrypto)
+
+      const password = 'MySecurePassphrase123!'
+      const result = await cryptoSDKAdapter.setupKeyBackupWithOptions({ password })
+
+      // 验证：使用密码创建密钥（修复的关键：密码现在被传递）
+      expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledTimes(1)
+      expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledWith(password)
+
+      // 验证：调用 bootstrapSecretStorage
+      expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledTimes(1)
+
+      // 验证：返回 encodedPrivateKey
+      expect(result).toBe(mockEncodedKey)
+    })
+
+    it('should restore key backup when recoveryKey is provided', async () => {
+      const mockCrypto = createMockCrypto()
+      mockClient.getCrypto = vi.fn(() => mockCrypto)
+
+      const existingKey = 'ES9X OLD-KEY-RESTORE-12345'
+      const result = await cryptoSDKAdapter.setupKeyBackupWithOptions(existingKey)
+
+      // 验证：调用 restoreKeyBackup（不生成新密钥，不 bootstrap）
+      expect(mockCrypto.restoreKeyBackup).toHaveBeenCalledTimes(1)
+      expect(mockCrypto.createRecoveryKeyFromPassphrase).not.toHaveBeenCalled()
+      expect(mockCrypto.bootstrapSecretStorage).not.toHaveBeenCalled()
+
+      // 验证：返回原密钥
+      expect(result).toBe(existingKey)
+    })
+
+    it('should throw when crypto is not available', async () => {
+      mockClient.getCrypto = vi.fn(() => null)
+
+      await expect(cryptoSDKAdapter.setupKeyBackupWithOptions()).rejects.toThrow('CryptoApi 不可用')
+    })
+
+    it('should handle bootstrapSecretStorage failure gracefully', async () => {
+      const mockCrypto = createMockCrypto()
+      mockCrypto.bootstrapSecretStorage = vi.fn().mockRejectedValue(new Error('Server error'))
+      mockClient.getCrypto = vi.fn(() => mockCrypto)
+
+      // SSSS 失败时仍返回密钥（降级处理，用户可稍后重试）
+      const result = await cryptoSDKAdapter.setupKeyBackupWithOptions()
+      expect(result).toBe(mockEncodedKey)
+    })
+
+    it('should fallback to resetKeyBackup when bootstrapSecretStorage is not available', async () => {
+      const mockCrypto = {
+        createRecoveryKeyFromPassphrase: vi.fn().mockResolvedValue({
+          privateKey: new Uint8Array([1, 2, 3, 4]),
+          encodedPrivateKey: mockEncodedKey
+        }),
+        // bootstrapSecretStorage 不存在（旧 SDK 兼容）
+        resetKeyBackup: vi.fn().mockResolvedValue(undefined)
+      }
+      mockClient.getCrypto = vi.fn(() => mockCrypto)
+
+      const result = await cryptoSDKAdapter.setupKeyBackupWithOptions()
+
+      // 验证：生成了密钥
+      expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledTimes(1)
+      // 验证：回退到 resetKeyBackup
+      expect(mockCrypto.resetKeyBackup).toHaveBeenCalledTimes(1)
+      // 验证：返回密钥
+      expect(result).toBe(mockEncodedKey)
+    })
+  })
 })

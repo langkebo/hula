@@ -115,6 +115,83 @@ describe('runtimeFetch', () => {
     expect(warnMock).toHaveBeenCalledTimes(3)
   })
 
+  it('does not fall back to browser fetch when the request signal is aborted', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    const browserFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', browserFetch)
+
+    const controller = new AbortController()
+    // 模拟 Tauri RID 竞态：abort 触发 fetch_cancel 后 fetch_send 拿到失效的 rid
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      controller.abort()
+      throw new Error('resource id invalid')
+    })
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await expect(
+      runtimeFetch('https://matrix.test/_matrix/client/v3/sync', { signal: controller.signal })
+    ).rejects.toMatchObject({ name: 'AbortError' })
+
+    expect(browserFetch).not.toHaveBeenCalled()
+  })
+
+  it('normalizes tauri "Request cancelled" errors to AbortError', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    const browserFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', browserFetch)
+
+    const controller = new AbortController()
+    controller.abort()
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Request cancelled'))
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await expect(
+      runtimeFetch('https://matrix.test/_matrix/client/v3/sync', { signal: controller.signal })
+    ).rejects.toMatchObject({ name: 'AbortError' })
+
+    expect(browserFetch).not.toHaveBeenCalled()
+  })
+
+  it('stops browser fetch retries once the signal aborts mid-flight', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+
+    const controller = new AbortController()
+    const browserFetch = vi.fn().mockImplementation(async () => {
+      controller.abort()
+      throw new Error('Failed to fetch')
+    })
+    vi.stubGlobal('fetch', browserFetch)
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('error sending request'))
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await expect(
+      runtimeFetch('https://matrix.test/_matrix/client/v3/keys/query', {
+        method: 'POST',
+        signal: controller.signal
+      })
+    ).rejects.toMatchObject({ name: 'AbortError' })
+
+    // 信号已中止，不得继续退避重试
+    expect(browserFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('still falls back and retries for genuine network failures without an abort signal', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+
+    const browserFetch = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Failed to fetch'))
+      .mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', browserFetch)
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('resource id invalid'))
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    const response = await runtimeFetch('https://matrix.test/_matrix/client/v3/capabilities')
+
+    expect(response.ok).toBe(true)
+    expect(browserFetch).toHaveBeenCalledTimes(2)
+  })
+
   it('preserves explicit credentials when provided', async () => {
     const browserFetch = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal('fetch', browserFetch)

@@ -15,7 +15,8 @@ const {
   openImageViewerMock,
   mittOnMock,
   mittEmitMock,
-  loggerErrorMock
+  loggerErrorMock,
+  clipboardWriteTextMock
 } = vi.hoisted(() => ({
   showFeedbackMock: vi.fn(),
   forwardRoomMessagesMock: vi.fn(),
@@ -27,7 +28,8 @@ const {
   openImageViewerMock: vi.fn(),
   mittOnMock: vi.fn(),
   mittEmitMock: vi.fn(),
-  loggerErrorMock: vi.fn()
+  loggerErrorMock: vi.fn(),
+  clipboardWriteTextMock: vi.fn().mockResolvedValue(undefined)
 }))
 
 let chatStore: any
@@ -303,6 +305,11 @@ describe('ChatMsgMultiChoose', () => {
     buildCustomTaskImageBodyMock.mockResolvedValue({
       url: 'mxc://image'
     })
+
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: clipboardWriteTextMock }
+    })
   })
 
   it('uses action feedback for empty delete selection and save-to-pc warning', async () => {
@@ -321,7 +328,7 @@ describe('ChatMsgMultiChoose', () => {
     globalStore.currentSessionRoomId = ''
     const wrapper = mountComponent()
 
-    await getToolbarButtons(wrapper)[3]!.trigger('click')
+    await getToolbarButtons(wrapper)[4]!.trigger('click')
     await flushPromises()
     await getButtonByText(wrapper, 'message.multi_choose.delete_action').trigger('click')
     await flushPromises()
@@ -332,7 +339,7 @@ describe('ChatMsgMultiChoose', () => {
   it('uses action feedback for batch delete success and failure', async () => {
     const wrapper = mountComponent()
 
-    await getToolbarButtons(wrapper)[3]!.trigger('click')
+    await getToolbarButtons(wrapper)[4]!.trigger('click')
     await flushPromises()
     await getButtonByText(wrapper, 'message.multi_choose.delete_action').trigger('click')
     await flushPromises()
@@ -355,7 +362,7 @@ describe('ChatMsgMultiChoose', () => {
     invokeWithErrorHandlerMock.mockRejectedValueOnce(new Error('delete failed'))
     const failedWrapper = mountComponent()
 
-    await getToolbarButtons(failedWrapper)[3]!.trigger('click')
+    await getToolbarButtons(failedWrapper)[4]!.trigger('click')
     await flushPromises()
     await getButtonByText(failedWrapper, 'message.multi_choose.delete_action').trigger('click')
     await flushPromises()
@@ -399,5 +406,28 @@ describe('ChatMsgMultiChoose', () => {
 
     expect(loggerErrorMock).toHaveBeenCalled()
     expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.forward_failed', 'error')
+  })
+
+  it('copies selected message text to clipboard and exits multi-select', async () => {
+    const wrapper = mountComponent()
+    // 复制按钮位于 save_to_pc 之后（索引 3）
+    await getToolbarButtons(wrapper)[3]!.trigger('click')
+    await flushPromises()
+
+    expect(clipboardWriteTextMock).toHaveBeenCalledWith('Alice: hello')
+    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.copy_success', 'success')
+    expect(chatStore.clearMsgCheck).toHaveBeenCalled()
+    expect(chatStore.setMsgMultiChoose).toHaveBeenCalledWith(false)
+  })
+
+  it('shows warning when copying with no selection', async () => {
+    chatStore.chatMessageList = []
+    const wrapper = mountComponent()
+
+    await (wrapper.vm as unknown as { handleCopy: () => Promise<void> }).handleCopy()
+    await flushPromises()
+
+    expect(clipboardWriteTextMock).not.toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.select_copy_prompt', 'warning')
   })
 })

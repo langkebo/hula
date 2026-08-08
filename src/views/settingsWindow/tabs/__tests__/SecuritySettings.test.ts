@@ -130,6 +130,17 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
 }))
 
 let _encryptionEnabled = false
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    waitForClientReady: vi.fn().mockResolvedValue(undefined),
+    getClient: vi.fn()
+  },
+  default: {
+    waitForClientReady: vi.fn().mockResolvedValue(undefined),
+    getClient: vi.fn()
+  }
+}))
+
 vi.mock('@/stores/domains/settings/encryption', () => ({
   useEncryptionStore: () => ({
     get encryptionEnabled() {

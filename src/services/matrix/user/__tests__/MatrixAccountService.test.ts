@@ -55,16 +55,20 @@ const mockAuthedRequest = vi
   })
 
 describe('MatrixAccountService', () => {
+  let mockDeviceManager: {
+    getDevices: ReturnType<typeof vi.fn>
+    getDevice: ReturnType<typeof vi.fn>
+    renameDevice: ReturnType<typeof vi.fn>
+    deleteDevice: ReturnType<typeof vi.fn>
+    deleteDevices: ReturnType<typeof vi.fn>
+  }
   let mockClient: {
     setDisplayName: ReturnType<typeof vi.fn>
     setAvatarUrl: ReturnType<typeof vi.fn>
     getProfileInfo: ReturnType<typeof vi.fn>
     getUserId: ReturnType<typeof vi.fn>
     getDeviceId: ReturnType<typeof vi.fn>
-    getDevices: ReturnType<typeof vi.fn>
-    setDeviceName: ReturnType<typeof vi.fn>
-    deleteDevice: ReturnType<typeof vi.fn>
-    deleteMultipleDevices: ReturnType<typeof vi.fn>
+    getDeviceManager: ReturnType<typeof vi.fn>
     setPresence: ReturnType<typeof vi.fn>
     getAccountData: ReturnType<typeof vi.fn>
     setAccountData: ReturnType<typeof vi.fn>
@@ -75,6 +79,13 @@ describe('MatrixAccountService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDeviceManager = {
+      getDevices: vi.fn().mockResolvedValue([]),
+      getDevice: vi.fn().mockResolvedValue(null),
+      renameDevice: vi.fn().mockResolvedValue(undefined),
+      deleteDevice: vi.fn().mockResolvedValue(undefined),
+      deleteDevices: vi.fn().mockResolvedValue(undefined)
+    }
     mockClient = {
       setDisplayName: vi.fn().mockResolvedValue({}),
       setAvatarUrl: vi.fn().mockResolvedValue({}),
@@ -84,10 +95,7 @@ describe('MatrixAccountService', () => {
       }),
       getUserId: vi.fn(() => '@user:server'),
       getDeviceId: vi.fn(() => 'DEVICE1'),
-      getDevices: vi.fn().mockResolvedValue({ devices: [] }),
-      setDeviceName: vi.fn().mockResolvedValue({}),
-      deleteDevice: vi.fn().mockResolvedValue({}),
-      deleteMultipleDevices: vi.fn().mockResolvedValue({}),
+      getDeviceManager: vi.fn(() => mockDeviceManager),
       setPresence: vi.fn().mockResolvedValue({}),
       getAccountData: vi.fn().mockReturnValue(null),
       setAccountData: vi.fn().mockResolvedValue(undefined),
@@ -121,7 +129,7 @@ describe('MatrixAccountService', () => {
 
   describe('getDevices', () => {
     it('should get device list', async () => {
-      mockClient.getDevices.mockResolvedValue([{ device_id: 'D1', display_name: 'Desktop' }])
+      mockDeviceManager.getDevices.mockResolvedValue([{ device_id: 'D1', display_name: 'Desktop' }])
 
       const result = await matrixAccountService.getDevices()
       expect(result).toHaveLength(1)

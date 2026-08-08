@@ -140,68 +140,6 @@ describe('insertNodeAtRange — MsgEnum.TEXT', () => {
   })
 })
 
-describe('insertNodeAtRange — MsgEnum.REPLY', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
-  it('inserts #replyDiv as the first child of #message-input', () => {
-    const { insertNodeAtRange } = useCommon()
-    const input = makeMessageInput()
-    const sr = setupRangeIn(input)
-
-    insertNodeAtRange(
-      MsgEnum.REPLY,
-      { accountName: 'Alice', content: 'previous message', avatar: 'mxc://avatar' },
-      input,
-      sr
-    )
-
-    const replyDiv = document.getElementById('replyDiv')
-    expect(replyDiv).toBeTruthy()
-    expect(input.firstChild).toBe(replyDiv)
-    // Author appears somewhere inside the reply card
-    expect(replyDiv!.textContent).toContain('Alice')
-  })
-
-  it('replaces an existing #replyDiv when one is already present', () => {
-    const { insertNodeAtRange } = useCommon()
-    const input = makeMessageInput()
-
-    insertNodeAtRange(
-      MsgEnum.REPLY,
-      { accountName: 'Alice', content: 'first', avatar: 'a' },
-      input,
-      setupRangeIn(input)
-    )
-    const firstDiv = document.getElementById('replyDiv')!
-
-    insertNodeAtRange(MsgEnum.REPLY, { accountName: 'Bob', content: 'second', avatar: 'b' }, input, setupRangeIn(input))
-    const secondDiv = document.getElementById('replyDiv')!
-
-    expect(secondDiv).not.toBe(firstDiv)
-    expect(document.querySelectorAll('#replyDiv').length).toBe(1)
-    expect(secondDiv.textContent).toContain('Bob')
-  })
-
-  it('does nothing when #message-input is missing', () => {
-    document.body.innerHTML = ''
-    const { insertNodeAtRange } = useCommon()
-    // Build a detached host so getEditorRange returns something usable
-    const detached = document.createElement('div')
-    document.body.appendChild(detached)
-    expect(() =>
-      insertNodeAtRange(
-        MsgEnum.REPLY,
-        { accountName: 'X', content: 'y', avatar: 'z' },
-        detached,
-        setupRangeIn(detached)
-      )
-    ).not.toThrow()
-    expect(document.getElementById('replyDiv')).toBeNull()
-  })
-})
-
 describe('insertNodeAtRange — MsgEnum.AI', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

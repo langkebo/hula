@@ -89,15 +89,6 @@ vi.mock('../session', () => ({
   useSessionStore: () => sessionStoreMock
 }))
 
-vi.mock('../../message', () => ({
-  useMessageStore: () => ({
-    getTimerWorker: vi.fn(() => timerWorkerMock)
-  }),
-  pageSize: 20,
-  ROOM_MESSAGE_CACHE_LIMIT: 40,
-  RECALL_EXPIRATION_TIME: 2 * 60 * 1000
-}))
-
 vi.mock('../timerWorker', () => ({
   getTimerWorker: () => timerWorkerMock
 }))
@@ -127,7 +118,7 @@ vi.mock('@/services/matrix/MatrixEventService', () => ({
 
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import { useChatStore } from '@/stores/domains/chat/chat/message'
-import type { MessageType } from '@/stores/domains/chat/message'
+import type { MessageType } from '@/stores/domains/chat/chat/types'
 
 const createMessage = (id: string, roomId = 'room-1'): MessageType => ({
   clientKey: id,

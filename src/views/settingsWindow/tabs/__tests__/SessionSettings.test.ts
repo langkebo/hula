@@ -74,6 +74,18 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   }
 }))
 
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: { waitForClientReady: vi.fn().mockResolvedValue(undefined) }
+}))
+
+vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
+  sessionOrchestrator: { ensureClientReady: vi.fn().mockResolvedValue(undefined) }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() })
+}))
+
 vi.mock('@/stores/domains/chat/matrix', () => ({
   useMatrixStore: () => ({
     deviceId: 'CURRENT_DEVICE'
