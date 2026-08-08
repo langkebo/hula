@@ -19,9 +19,6 @@
     --card-foreground: oklch(0.141 0.005 285.823);
     --input: oklch(0.92 0.004 286.32);
 
-    // 包含边框的选中样式
-    --border-active-color: var(--tjg-color-primary-500);
-
     // 右边布局内容背景
     --right-theme-bg-color: var(--tjg-surface-subtle);
 
@@ -64,9 +61,6 @@ html[data-theme='dark'] {
     --card: oklch(0.21 0.006 285.885);
     --card-foreground: oklch(0.985 0 0);
     --input: oklch(1 0 0 / 15%);
-
-    // 包含边框的选中样式
-    --border-active-color: var(--tjg-color-primary-500);
 
     // 右边布局内容背景
     --right-theme-bg-color: var(--tjg-surface-sidebar);
