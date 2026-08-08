@@ -49,7 +49,7 @@
           :ref="(el) => setInfoPopoverRef(message.message.id, el)"
           @update:show="handlePopoverUpdate(message.message.id, $event)"
           trigger="click"
-          placement="right"
+          :placement="isMe ? 'left' : 'right'"
           :show-arrow="false"
           style="padding: 0; background: var(--tjg-surface-panel)">
           <template #trigger>
@@ -63,8 +63,14 @@
                 round
                 :size="34"
                 @click="handleAvatarClick(senderUid, message.message.id)"
+                @keydown.enter.prevent="handleAvatarClick(senderUid, message.message.id)"
+                @keydown.space.prevent="handleAvatarClick(senderUid, message.message.id)"
                 class="select-none"
                 color="var(--tjg-surface-panel)"
+                role="button"
+                tabindex="0"
+                aria-haspopup="dialog"
+                :aria-label="senderDisplayName"
                 :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
                 :src="getAvatarSrc(senderUid)"
                 :class="isMe ? '' : 'mr-10px'" />

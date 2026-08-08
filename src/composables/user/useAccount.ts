@@ -1,7 +1,7 @@
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 
 interface AuthData {
-  type?: string
+  type: string
   user?: string
   password?: string
   session?: string

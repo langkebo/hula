@@ -213,6 +213,7 @@ import type {
   TelemetryMetricsSummary,
   TelemetryStatus
 } from '@/services/matrix/admin/TelemetryService'
+import { formatBytes } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminTelemetry')
@@ -253,11 +254,7 @@ const formatTimestamp = (ts?: number | null): string => {
   }
 }
 
-const formatBytes = (bytes: number): string => {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(2)} MB`
-}
+// 统一使用 @/utils/Formatting 的 formatBytes
 
 const severityTagType = (severity: TelemetryAlertSeverity): 'default' | 'info' | 'warning' | 'error' => {
   switch (severity) {

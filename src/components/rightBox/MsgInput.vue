@@ -6,6 +6,9 @@
     <!-- 录音模式 -->
     <VoiceRecorder v-show="isVoiceMode" @cancel="handleVoiceCancel" @send="sendVoiceDirect" />
 
+    <!-- 回复预览条（原型对齐项 #3：替换原内联 #replyDiv） -->
+    <ReplyComposer v-if="replyToInfo" :reply-to="replyToInfo" @cancel="clearReply" />
+
     <!-- 输入框表单 -->
     <form
       v-show="!isVoiceMode"
@@ -159,13 +162,15 @@ import type { VirtualListInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ReplyToInfo } from '@/components/rightBox/ReplyComposer.vue'
+import ReplyComposer from '@/components/rightBox/ReplyComposer.vue'
 import { useMsgInput } from '@/composables/chat/useMsgInput'
 import { useTyping } from '@/composables/chat/useTyping'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useCommon } from '@/composables/common/useCommon'
 import { useMitt } from '@/composables/common/useMitt'
 import { useSendOptions } from '@/composables/settings/settingsOptions'
-import { MittEnum, MobilePanelStateEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
+import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import type { AIModel, UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -258,8 +263,28 @@ const {
   groupedAIModels,
   updateSelectionRange,
   focusOn,
-  getCursorSelectionRange
+  getCursorSelectionRange,
+  reply
 } = useMsgInput(messageInputDom)
+
+// 原型对齐项 #3：回复预览条改用 ReplyComposer.vue（绑定 reply ref），替换原内联 #replyDiv DOM 注入
+const replyToInfo = computed<ReplyToInfo | null>(() => {
+  const r = reply.value
+  if (!r.key) return null
+  return {
+    eventId: String(r.key),
+    senderId: '',
+    senderName: r.accountName,
+    senderAvatar: r.avatar,
+    msgType: MsgEnum.TEXT,
+    contentPreview: r.content,
+    thumbnailUrl: ''
+  }
+})
+
+const clearReply = () => {
+  reply.value = { avatar: '', imgCount: 0, accountName: '', content: '', key: 0 }
+}
 
 const { startTyping, stopTyping } = useTyping()
 

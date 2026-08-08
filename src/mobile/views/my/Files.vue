@@ -29,7 +29,7 @@
                   <div class="flex-1 min-w-0">
                     <div class="text-14px font-medium truncate text-[--tjg-text-primary]">{{ file.name }}</div>
                     <div class="text-12px text-[--tjg-text-quaternary]">
-                      {{ formatFileSize(file.size) }} · {{ formatTime(file.time) }}
+                      {{ formatBytes(file.size) }} · {{ formatTime(file.time) }}
                     </div>
                   </div>
                   <van-icon name="ellipsis" @click.stop="showFileOptions(file)" />
@@ -50,7 +50,7 @@
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="text-14px font-medium truncate text-[--tjg-text-primary]">{{ file.name }}</div>
-                    <div class="text-12px text-[--tjg-text-quaternary]">{{ formatFileSize(file.size) }}</div>
+                    <div class="text-12px text-[--tjg-text-quaternary]">{{ formatBytes(file.size) }}</div>
                   </div>
                 </div>
               </div>
@@ -84,6 +84,7 @@ import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatBytes } from '@/utils/Formatting'
 
 const { t } = useI18n()
 
@@ -159,12 +160,7 @@ function getFileTypeColor(type: string): string {
   return colors[type] || 'var(--tjg-text-tertiary)'
 }
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
-}
+// 统一使用 @/utils/Formatting 的 formatBytes
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp)

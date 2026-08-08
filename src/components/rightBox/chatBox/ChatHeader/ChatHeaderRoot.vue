@@ -11,6 +11,8 @@
       :status-title="statusTitle"
       :encryption-status="encryptionStatus"
       :has-custom-state="hasCustomState"
+      :is-federated="isFederated"
+      :federation-server="federationServer"
       @click="handleInfoClick" />
 
     <ChatHeaderToolbar
@@ -77,8 +79,10 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useIndependentChatWindow } from '@/composables/chat/useIndependentChatWindow'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
-import { RoomActEnum, RoomTypeEnum } from '@/enums'
+import { useWindow } from '@/composables/common/useWindow'
+import { CallTypeEnum, RoomActEnum, RoomTypeEnum } from '@/enums'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
 import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
@@ -87,6 +91,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
+import { extractServerName } from '@/utils/userIdentity'
 import ChatHeaderInfo from './ChatHeaderInfo.vue'
 import ChatHeaderSidebar from './ChatHeaderSidebar.vue'
 import ChatHeaderToolbar from './ChatHeaderToolbar.vue'
@@ -99,6 +104,14 @@ const chatStore = useChatStore()
 const userStore = useUserStore()
 
 const { currentSession: activeItem, currentSessionRoomId } = storeToRefs(globalStore)
+
+// 原型对齐项 #7：联邦房间标识（房间 server name 与本地 homeserver 不一致即视为联邦）
+const federationServer = computed(() => extractServerName(currentSessionRoomId.value))
+const isFederated = computed(() => {
+  const roomServer = federationServer.value
+  const localServer = extractServerName(matrixClientService.getUserId())
+  return Boolean(roomServer) && roomServer !== localServer
+})
 
 const sidebarShow = ref(false)
 const modalShow = ref(false)
@@ -281,26 +294,24 @@ const handleShareQRCode = () => {
   logger.debug('分享二维码')
 }
 
+// 原型对齐项 #5：头部通话按钮接真实逻辑（复用项目既有 callWindow + CallView 独立窗口体系）
+const { startRtcCall } = useWindow()
+
 const handleStartVideoCall = async () => {
   if (!currentSessionRoomId.value) return
-  try {
-    logger.info('发起视频通话:', currentSessionRoomId.value)
-  } catch (error) {
-    logger.error('发起视频通话失败:', error)
-  }
+  await startRtcCall(CallTypeEnum.VIDEO)
 }
 
 const handleStartVoiceCall = async () => {
   if (!currentSessionRoomId.value) return
-  try {
-    logger.info('发起语音通话:', currentSessionRoomId.value)
-  } catch (error) {
-    logger.error('发起语音通话失败:', error)
-  }
+  await startRtcCall(CallTypeEnum.AUDIO)
 }
 
-const handleScreenShare = () => {
-  logger.debug('屏幕共享')
+// 屏幕共享在现有架构下只能在通话内进行（无独立发起入口，见优化方案 #5 备注），
+// 头部按钮复用视频通话窗口，用户在通话内再开启共享。
+const handleScreenShare = async () => {
+  if (!currentSessionRoomId.value) return
+  await startRtcCall(CallTypeEnum.VIDEO)
 }
 
 // 附录 C.6：在新窗口打开当前聊天

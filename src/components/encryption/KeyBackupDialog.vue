@@ -307,6 +307,8 @@ const canProceed = computed(() => {
 const loadBackupStatus = async () => {
   loading.value = true
   try {
+    // P0-#3：对话框在冷启动时可能早于客户端就绪打开，先等待就绪再查备份状态
+    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
     const info = await encryption.getKeyBackupInfo()
     backupStatus.value = {
       hasBackup: !!info,

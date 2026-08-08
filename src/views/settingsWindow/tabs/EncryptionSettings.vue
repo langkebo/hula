@@ -297,6 +297,7 @@ import KeyRotationDialog from '@/components/encryption/KeyRotationDialog.vue'
 import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useClipboard } from '@/composables/common/useClipboard'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import { matrixVerificationService, type VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
@@ -309,6 +310,7 @@ defineOptions({
 })
 
 const { showFeedback } = useActionFeedback()
+const { write: writeClipboard } = useClipboard()
 const { t } = useI18n()
 const encryptionStore = useEncryptionStore()
 
@@ -468,8 +470,10 @@ function handleShowDeviceKey() {
   deviceKeyVisible.value = true
 }
 
-function copyFingerprint() {
-  navigator.clipboard.writeText(deviceFingerprint.value.replace(/\s/g, ''))
+async function copyFingerprint() {
+  await writeClipboard(deviceFingerprint.value.replace(/\s/g, '')).catch((err) =>
+    logger.error('复制设备指纹失败:', err)
+  )
   showFeedback(t('setting.encryption.copied'), 'success')
 }
 

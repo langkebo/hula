@@ -139,6 +139,7 @@ import { ErrorType } from '@/common/exception'
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { useCustomForwardTask } from '@/composables/chat/useCustomForwardTask'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useClipboard } from '@/composables/common/useClipboard'
 import { useImageViewer } from '@/composables/common/useImageViewer'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, MsgEnum, RoomTypeEnum, TauriCommand } from '@/enums'
@@ -162,6 +163,7 @@ const { sendStructuredMessage } = matrixMessageService
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
+const { write: writeClipboard } = useClipboard()
 const chatStore = useChatStore()
 const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
@@ -226,6 +228,25 @@ const handleDeleteClick = () => {
     return
   }
   showDeleteConfirm.value = true
+}
+
+// 原型对齐项 #9：批量栏「复制」——拼接选中消息文本写入剪贴板
+const handleCopy = async () => {
+  if (msgContents.value.length === 0) {
+    showFeedback(t('message.multi_choose.select_copy_prompt'), 'warning')
+    return
+  }
+  const text = msgContents.value.join('\n')
+  try {
+    await writeClipboard(text)
+    showFeedback(t('message.multi_choose.copy_success'), 'success')
+    chatStore.clearMsgCheck()
+    chatStore.resetSessionSelection()
+    chatStore.setMsgMultiChoose(false)
+  } catch (error) {
+    logger.error('批量复制消息失败:', error)
+    showFeedback(t('message.multi_choose.copy_failed'), 'error')
+  }
 }
 
 const handleBatchDelete = async () => {
@@ -311,6 +332,12 @@ const toolOptions = computed(() => [
     click: () => {
       showFeedback(t('message.multi_choose.not_implemented'), 'warning')
     }
+  },
+  {
+    text: t('message.multi_choose.copy_action'),
+    icon: '#copy',
+    disabled: selectedMsgs.value.length === 0,
+    click: handleCopy
   },
   {
     text: t('message.multi_choose.delete_action'),

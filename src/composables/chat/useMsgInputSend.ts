@@ -124,8 +124,6 @@ const createRafProgressUpdater = (chatStore: ChatStoreLike, msgId: string, throt
   }
 }
 
-const retainRawContent = (type: MsgEnum) => [MsgEnum.EMOJI, MsgEnum.IMAGE].includes(type)
-
 export function useMsgInputSend(options: UseMsgInputSendOptions) {
   const {
     messageInputDom,
@@ -331,14 +329,6 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     if (!messageStrategy) {
       showFeedback(t('hooks.msg_input.type_not_supported'), 'warning')
       return
-    }
-
-    const replyDiv = messageInputDom.value.querySelector('#replyDiv')
-    if (replyDiv) {
-      replyDiv.remove()
-      if (!retainRawContent(contentType)) {
-        msgInput.value = messageInputDom.value.innerHTML.replace(replyDiv.outerHTML, '')
-      }
     }
 
     const msg = await messageStrategy.getMsg(msgInput.value, reply.value as unknown as MessageType)

@@ -2,6 +2,7 @@ import type { ComputedRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { EmojiMenuItem } from '@/composables/chat/emojiMenuData'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useClipboard } from '@/composables/common/useClipboard'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { matrixEventService } from '@/services/matrix/MatrixEventService'
 import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
@@ -21,6 +22,7 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
   const { isMe, emojiList } = options
   const { t } = useI18n()
   const { showFeedback } = useActionFeedback()
+  const { write: writeClipboard } = useClipboard()
   const chatStore = useChatStore()
 
   const handleRetry = async (item: MessageType): Promise<void> => {
@@ -131,10 +133,9 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
   }
 
   const handleCopyTranslation = (text: string) => {
-    if (text) {
-      navigator.clipboard.writeText(text)
-      showFeedback(t('message_container.copy_success'), 'success')
-    }
+    if (!text) return
+    void writeClipboard(text).catch((err) => logger.error('复制翻译失败:', err))
+    showFeedback(t('message_container.copy_success'), 'success')
   }
 
   const isSingleLineEmojis = (item: MessageType): boolean => {

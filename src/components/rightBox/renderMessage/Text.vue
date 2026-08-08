@@ -83,6 +83,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useClipboard } from '@/composables/common/useClipboard'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import type { TextBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -111,6 +112,7 @@ const URL_REGEX = /https?:\/\/[^\s<]+[^<.,:;"')\]\s]/g
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
+const { write: writeClipboard } = useClipboard()
 const groupStore = useGroupStore()
 
 // 仅依赖后端透出的 atUidList，避免用户手动输入的「@文本」被误判
@@ -252,10 +254,9 @@ const openUrl = (url: string) => openExternalUrl(url)
 
 // 处理复制
 const handleCopy = (item: string) => {
-  if (item) {
-    navigator.clipboard.writeText(item)
-    showFeedback(t('copy_success'), 'success')
-  }
+  if (!item) return
+  void writeClipboard(item).catch(() => {})
+  showFeedback(t('copy_success'), 'success')
 }
 
 const onImageLoadError = (e: Event) => {

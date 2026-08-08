@@ -8,53 +8,67 @@
   line-height: 22px;
 }
 
+/*
+ * 登录按钮样式覆盖
+ * Naive UI 的 n-button 内部样式优先级高，必须用 !important 强制覆盖
+ * 穿透 .n-button__content 确保白色文字生效
+ */
 .gradient-button {
-  @apply border-none;
-  color: var(--tjg-text-inverse);
-  background: linear-gradient(135deg, var(--tjg-brand), var(--tjg-color-primary-400));
+  border: none !important;
+  color: var(--tjg-text-inverse) !important;
+  background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-700)) !important;
   box-shadow:
-    0 4px 14px color-mix(in srgb, var(--tjg-brand) 40%, transparent),
-    inset 0px 1px 0px rgba(255, 255, 255, 0.2);
+    0 6px 20px color-mix(in srgb, var(--tjg-color-primary-700) 45%, transparent),
+    0 2px 6px color-mix(in srgb, var(--tjg-color-primary-700) 25%, transparent),
+    inset 0px 1px 0px color-mix(in srgb, white 25%, transparent) !important;
   transition:
     background 0.25s ease,
     box-shadow 0.25s ease,
     transform 0.15s ease,
     filter 0.15s ease,
     opacity 0.2s ease;
-  /* 可点击状态：饱满渐变 + 明显阴影 + 白色文字（对比度 > 4.5:1） */
+
+  /* 默认态：深青绿渐变，与亮色品牌背景形成强对比 */
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-brand));
-    box-shadow: 0 6px 20px color-mix(in srgb, var(--tjg-brand) 50%, transparent);
+    background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-600)) !important;
+    box-shadow:
+      0 8px 24px color-mix(in srgb, var(--tjg-brand) 50%, transparent),
+      inset 0px 1px 0px color-mix(in srgb, white 30%, transparent) !important;
     transform: translateY(-1px) scale(1.01);
   }
+
   &:active:not(:disabled) {
-    /* 按下态：明显变暗 + 亮度降低，与默认/hover 清晰区分 */
-    background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-600));
+    background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700)) !important;
     transform: translateY(0) scale(0.97);
     box-shadow:
-      0 2px 8px var(--tjg-color-primary-300-alpha),
-      inset 0px 2px 4px rgba(0, 0, 0, 0.15);
+      0 2px 8px color-mix(in srgb, var(--tjg-color-primary-700) 40%, transparent),
+      inset 0px 2px 4px color-mix(in srgb, black 20%, transparent) !important;
     filter: brightness(0.88);
   }
-  /* 未激活/禁用状态：去饱和灰阶渐变，对比度仍满足 AA 级 */
+
+  /* 禁用状态：灰阶渐变 */
   &:disabled,
   &.n-button--disabled {
-    background: linear-gradient(135deg, var(--tjg-text-disabled), var(--tjg-border-strong));
-    box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, var(--tjg-text-disabled), var(--tjg-border-strong)) !important;
+    box-shadow: inset 0px 1px 0px color-mix(in srgb, white 10%, transparent) !important;
     opacity: 0.7;
     cursor: not-allowed;
     transform: none;
     filter: none;
   }
-  /* 加载中状态：脉冲动画提示正在处理 */
+
+  /* 加载中状态：脉冲动画 */
   &.n-button--loading {
-    background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-400));
-    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha);
+    background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-400)) !important;
+    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha) !important;
     animation: gradient-button-pulse 1.4s ease-in-out infinite;
   }
-  /* 修正：原 `&:span` 是无效选择器，改为后代选择器确保白色文字生效 */
+
+  /* 穿透 n-button 内部 DOM，强制白色文字 */
+  .n-button__content,
+  .n-button__content > span,
   span {
-    color: var(--tjg-text-inverse);
+    color: var(--tjg-text-inverse) !important;
   }
 }
 
@@ -72,23 +86,27 @@
 
 [data-theme='dark'] {
   .gradient-button {
-    background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-brand));
-    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha);
+    background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-brand)) !important;
+    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha) !important;
+
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-600));
-      box-shadow: 0 6px 20px color-mix(in srgb, var(--tjg-brand) 40%, transparent);
+      background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-600)) !important;
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--tjg-brand) 40%, transparent) !important;
     }
+
     &:active:not(:disabled) {
-      background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700));
+      background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700)) !important;
       filter: brightness(0.82);
     }
+
     &:disabled,
     &.n-button--disabled {
-      background: linear-gradient(135deg, var(--tjg-text-tertiary), var(--tjg-text-quaternary));
+      background: linear-gradient(135deg, var(--tjg-text-tertiary), var(--tjg-text-quaternary)) !important;
       opacity: 0.6;
     }
+
     &.n-button--loading {
-      background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-500));
+      background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-500)) !important;
     }
   }
 }

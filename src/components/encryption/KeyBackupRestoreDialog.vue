@@ -165,6 +165,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useEncryption } from '@/composables/encryption'
 import { matrixKeyBackupService } from '@/services/matrix'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
@@ -242,6 +243,8 @@ onMounted(async () => {
 
 async function loadBackupVersions() {
   try {
+    // P0-#3：对话框可能在客户端就绪前打开（如设置页冷启动），先等待就绪
+    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
     const info = await encryption.getKeyBackupInfo()
     if (info) {
       // Single version: auto-select and hide selector

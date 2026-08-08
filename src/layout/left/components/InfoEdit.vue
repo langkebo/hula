@@ -95,7 +95,11 @@
             </n-input>
           </template>
           <span>
-            {{ t('home.profile_edit.form.nickname.remaining', { count: editInfo.content.modifyNameChance || 0 }) }}
+            {{
+              (editInfo.content.modifyNameChance ?? 0) < 0
+                ? t('home.profile_edit.form.nickname.unlimited')
+                : t('home.profile_edit.form.nickname.remaining', { count: editInfo.content.modifyNameChance ?? 0 })
+            }}
           </span>
         </n-popover>
 
@@ -206,6 +210,10 @@ const {
     if (userStore.matrixProfile) {
       userStore.matrixProfile.avatarUrl = mxcUrl
     }
+    // 更新 userInfo.avatar（LeftAvatar 等主界面组件读取此字段）
+    if (userStore.userInfo) {
+      userStore.userInfo.avatar = mxcUrl
+    }
     // 更新编辑信息
     editInfo.value.content.avatar = mxcUrl
     // 更新登录历史记录
@@ -215,6 +223,8 @@ const {
     }
     // 更新缓存里面的用户信息
     updateCurrentUserCache('avatar', mxcUrl)
+    // 清除旧头像的 URL 缓存，确保下次解析使用最新 mxcResolver
+    AvatarUtils.clearCache()
     showFeedback(t('home.profile_edit.toast.avatar_update_success'), 'success')
   }
 })
@@ -230,6 +240,15 @@ const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith
 const openEditInfo = () => {
   editInfo.value.show = true
   editInfo.value.content = userStore.userInfo ?? {}
+  // 兼容旧持久化数据：modifyNameChance 为 0 或 undefined 时，规范化为 -1（无限制）
+  // 旧版本 initUserInfo 设置 modifyNameChance: 0 并被持久化到 localStorage，
+  // 重启后加载的 0 会触发 saveEditInfo 的改名次数不足检查
+  if (editInfo.value.content.modifyNameChance === undefined || editInfo.value.content.modifyNameChance === 0) {
+    editInfo.value.content.modifyNameChance = -1
+    if (userStore.userInfo) {
+      userStore.userInfo.modifyNameChance = -1
+    }
+  }
   localUserInfo.value = { ...(userStore.userInfo ?? {}) }
   /** 获取徽章列表 */
   badgeService.getBadgeList().then((res) => {

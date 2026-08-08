@@ -85,6 +85,7 @@ import { OnlineEnum, ThemeEnum } from '@/enums'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { escapeHtml } from '@/utils/escapeHtml'
 
 const props = withDefaults(
   defineProps<{
@@ -113,8 +114,6 @@ const settingStore = useSettingStore()
 const isRtl = computed(() => props.dir === 'rtl')
 const displayName = computed(() => props.friend.remark || props.friend.displayName || props.friend.name)
 const ariaLabel = computed(() => `${displayName.value} ${props.friend.userId}`)
-
-const escapeHtml = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
 
 const highlightText = (value?: string | null) => {
   const text = String(value || '')

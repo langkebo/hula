@@ -93,6 +93,15 @@ export const leftHook = () => {
       showFeedback(t('home.profile_edit.toast.nickname_empty'), 'error')
       return
     }
+    // 兼容旧持久化数据：modifyNameChance 为 0 或 undefined 时，规范化为 -1（无限制）
+    // 旧版本持久化的 0 会导致首次改名即触发"改名次数不足"
+    if (localUserInfo.modifyNameChance === undefined || localUserInfo.modifyNameChance === 0) {
+      localUserInfo.modifyNameChance = -1
+      editInfo.value.content.modifyNameChance = -1
+      if (userStore.userInfo) {
+        userStore.userInfo.modifyNameChance = -1
+      }
+    }
     if (localUserInfo.modifyNameChance === 0) {
       showFeedback(t('home.profile_edit.toast.rename_limit'), 'error')
       return
@@ -107,8 +116,9 @@ export const leftHook = () => {
       currentUserInfo.name = localUserInfo.name!
       loginHistoriesStore.updateLoginHistory(<UserInfoType>currentUserInfo)
       updateCurrentUserCache('name', localUserInfo.name)
-      if (!editInfo.value.content.modifyNameChance) return
-      editInfo.value.content.modifyNameChance -= 1
+      if ((editInfo.value.content.modifyNameChance ?? 0) > 0) {
+        editInfo.value.content.modifyNameChance = (editInfo.value.content.modifyNameChance ?? 0) - 1
+      }
       showFeedback(t('home.profile_edit.toast.save_success'), 'success')
     })
   }

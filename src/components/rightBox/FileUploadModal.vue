@@ -42,7 +42,7 @@
                 :title="file.name">
                 {{ file.name }}
               </div>
-              <div class="text-(12px [--tjg-text-secondary])">{{ formatFileSize(file.size) }}</div>
+              <div class="text-(12px [--tjg-text-secondary])">{{ formatBytes(file.size) }}</div>
             </div>
 
             <div @click="removeFile(index)" class="flex-shrink-0 pl-20px cursor-pointer">
@@ -109,9 +109,7 @@ const getFileExtension = (fileName: string): string => {
   return fileName.split('.').pop()?.toLowerCase() || 'file'
 }
 
-const formatFileSize = (bytes: number): string => {
-  return formatBytes(bytes)
-}
+// 直接复用 @/utils/Formatting 的 formatBytes
 
 const handleIconError = (event: Event) => {
   const target = event.target as HTMLImageElement

@@ -9,13 +9,16 @@
         : 'w-0 border-none',
       'relative'
     ]">
-    <!-- 收缩按钮 -->
+    <!-- 收缩按钮：默认折叠，点击展开/收起 -->
     <div
       v-show="isGroup"
+      role="button"
+      :aria-label="isCollapsed ? t('home.chat_sidebar.toggle.expand') : t('home.chat_sidebar.toggle.collapse')"
+      :aria-expanded="!isCollapsed"
       @click.stop="isCollapsed = !isCollapsed"
-      class="absolute top-1/2 -left-14px -translate-y-1/2 cursor-pointer bg-[--tjg-surface-sidebar-selected] h-48px w-14px rounded-l-12px flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10 shadow-sm border border-r-0 border-[--tjg-border-default]">
+      class="absolute top-1/2 -left-14px -translate-y-1/2 cursor-pointer bg-[--tjg-surface-sidebar-selected] h-48px w-14px rounded-l-12px flex items-center justify-center opacity-100 hover:opacity-80 transition-opacity z-10 shadow-sm border border-r-0 border-[--tjg-border-default]">
       <svg
-        :class="isCollapsed ? 'rotate-0' : 'rotate-180'"
+        :class="isCollapsed ? 'rotate-180' : 'rotate-0'"
         class="size-14px color-[--tjg-text-tertiary] transition-transform">
         <use href="#left-arrow"></use>
       </svg>
@@ -48,11 +51,7 @@
         </n-flex>
 
         <!-- 公告加载失败提示 -->
-        <n-flex
-          v-if="announError"
-          class="h-60px bg-[--tjg-surface-search] rounded-8px"
-          align="center"
-          justify="center">
+        <n-flex v-if="announError" class="h-60px bg-[--tjg-surface-search] rounded-8px" align="center" justify="center">
           <div class="text-center">
             <p class="text-[var(--text-xs)] color-[--tjg-color-danger-500] mb-6px">
               {{ t('home.chat_sidebar.announcement.load_failed') }}
@@ -327,7 +326,7 @@ const searchRequestId = ref(0)
 /** List中的Popover组件实例 */
 const infoPopoverRefs = ref<Record<string, { setShow: (show: boolean) => void } | null>>({})
 const inputInstRef = ref<InputInst | null>(null)
-const isCollapsed = ref(false)
+const isCollapsed = ref(true)
 const { optionsList, report, selectKey } = useChatMain()
 const { handlePopoverUpdate, enableScroll } = usePopover(selectKey, 'image-chat-sidebar')
 provide('popoverControls', { enableScroll })

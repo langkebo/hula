@@ -40,6 +40,7 @@ import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { formatBytes } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
@@ -68,11 +69,7 @@ let timer: number | null = null
 const ACTIVE_REFRESH_INTERVAL = 3000
 const IDLE_REFRESH_INTERVAL = 15000
 
-const formatBytes = (bytes: number) => {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
-  return (bytes / 1024 / 1024).toFixed(2) + ' MB'
-}
+// 统一使用 @/utils/Formatting 的 formatBytes
 
 const estimateSize = (obj: unknown, depth = 0, seen = new WeakSet<object>()): number => {
   if (depth > 10) return 0

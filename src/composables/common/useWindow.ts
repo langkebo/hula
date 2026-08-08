@@ -207,8 +207,13 @@ export const useWindow = () => {
 
     const monitor = await primaryMonitor()
     const clampedSize = clampSizeToMonitor(width, height, monitor)
-    const clampedMinWidth = Math.min(minW, clampedSize.width)
-    const clampedMinHeight = Math.min(minH, clampedSize.height)
+    const _clampedMinWidth = Math.min(minW, clampedSize.width)
+    const _clampedMinHeight = Math.min(minH, clampedSize.height)
+
+    // 原生窗口的 minWidth/minHeight 不应小于请求的 width/height；
+    // 否则 Tauri 可能在窗口创建后立即将尺寸压缩到 min 值，导致实际渲染尺寸小于预期。
+    const effectiveMinWidth = Math.max(minW, clampedSize.width)
+    const effectiveMinHeight = Math.max(minH, clampedSize.height)
 
     const webview = new WebviewWindow(label, {
       title: title,
@@ -218,8 +223,8 @@ export const useWindow = () => {
       center: true,
       width: clampedSize.width,
       height: clampedSize.height,
-      minHeight: clampedMinHeight,
-      minWidth: clampedMinWidth,
+      minHeight: effectiveMinHeight,
+      minWidth: effectiveMinWidth,
       skipTaskbar: false,
       decorations: !isCompatibilityMode.value,
       transparent: transparent || isCompatibilityMode.value,
@@ -363,8 +368,11 @@ export const useWindow = () => {
     // 创建新窗口
     const monitor = await primaryMonitor()
     const clampedSize = clampSizeToMonitor(width, height, monitor)
-    const clampedMinWidth = Math.min(options?.minWidth ?? 500, clampedSize.width)
-    const clampedMinHeight = Math.min(options?.minHeight ?? 500, clampedSize.height)
+    const _clampedMinWidth = Math.min(options?.minWidth ?? 500, clampedSize.width)
+    const _clampedMinHeight = Math.min(options?.minHeight ?? 500, clampedSize.height)
+
+    const effectiveMinWidth = Math.max(options?.minWidth ?? 500, clampedSize.width)
+    const effectiveMinHeight = Math.max(options?.minHeight ?? 500, clampedSize.height)
 
     const modalWindow = new WebviewWindow(label, {
       url: `/${label}`,
@@ -373,8 +381,8 @@ export const useWindow = () => {
       height: clampedSize.height,
       resizable: false,
       center: true,
-      minWidth: clampedMinWidth,
-      minHeight: clampedMinHeight,
+      minWidth: effectiveMinWidth,
+      minHeight: effectiveMinHeight,
       focus: true,
       minimizable: false,
       parent: parentWindow ? parentWindow : parent,

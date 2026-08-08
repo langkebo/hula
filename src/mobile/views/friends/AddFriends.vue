@@ -118,6 +118,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useClipboard } from '@/composables/common/useClipboard'
 import { type FriendSearchResult, useFriends } from '@/composables/useFriends'
 import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
@@ -129,6 +130,7 @@ import { isMobile } from '@/utils/PlatformConstants'
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
+const { write: writeClipboard } = useClipboard()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const tabs = ref([
@@ -157,7 +159,7 @@ const searchPlaceholder: Record<string, string> = {
 }
 
 const handleCopy = (account: string) => {
-  navigator.clipboard.writeText(account)
+  void writeClipboard(account).catch(() => {})
   showFeedback(t('mobile_contact.copy_success', { account }), 'success')
 }
 
