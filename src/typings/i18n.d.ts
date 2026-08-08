@@ -1788,6 +1788,7 @@ export type I18nKeys = {
         "subtitle": "监控联邦服务器连接状态",
         "total_servers": "总服务器数",
         "online_servers": "在线",
+        "degraded_servers": "降级",
         "offline_servers": "离线",
         "search_placeholder": "搜索服务器名称",
         "col_server": "服务器",

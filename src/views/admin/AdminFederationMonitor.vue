@@ -8,7 +8,7 @@
       </template>
     </n-page-header>
 
-    <n-grid :cols="3" :x-gap="16" :y-gap="16" class="mb-20px">
+    <n-grid :cols="4" :x-gap="16" :y-gap="16" class="mb-20px" responsive="screen" item-responsive>
       <n-gi>
         <n-card size="small">
           <n-statistic :label="t('admin.federation_monitor.total_servers')">
@@ -21,6 +21,15 @@
           <n-statistic :label="t('admin.federation_monitor.online_servers')">
             <template #default>
               <span class="text-[--tjg-color-success-500]">{{ onlineCount }}</span>
+            </template>
+          </n-statistic>
+        </n-card>
+      </n-gi>
+      <n-gi>
+        <n-card size="small">
+          <n-statistic :label="t('admin.federation_monitor.degraded_servers')">
+            <template #default>
+              <span class="text-[--tjg-color-warning-500]">{{ degradedCount }}</span>
             </template>
           </n-statistic>
         </n-card>
@@ -92,7 +101,8 @@ const serverList = ref<FederationServer[]>([])
 const pagination = { pageSize: 15 }
 
 const onlineCount = computed(() => serverList.value.filter((s) => s.status === 'online').length)
-const offlineCount = computed(() => serverList.value.filter((s) => s.status !== 'online').length)
+const degradedCount = computed(() => serverList.value.filter((s) => s.status === 'degraded').length)
+const offlineCount = computed(() => serverList.value.filter((s) => s.status === 'offline').length)
 
 const filteredServers = computed(() => {
   if (!searchTerm.value.trim()) return serverList.value
