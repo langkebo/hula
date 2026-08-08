@@ -53,7 +53,9 @@ const globalStubs = {
   NFlex: { template: '<div><slot /></div>' },
   NForm: { template: '<form><slot /></form>' },
   NFormItem: { template: '<div><slot /></div>' },
-  NInput: { template: '<input />' }
+  NInput: { template: '<input />' },
+  RoomParentSpaces: { template: '<div class="room-parent-spaces" />' },
+  AvatarCropper: { template: '<div class="avatar-cropper" />' }
 }
 
 interface MountFakeRoom {
