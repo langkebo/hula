@@ -182,62 +182,98 @@ describe('MatrixDeviceService', () => {
   })
 
   describe('getUserDevices', () => {
-    it('应该通过 getStoredDevicesForUser 获取目标用户设备并归一化字段', async () => {
-      const rawDevices = [
-        {
-          deviceId: 'DEV1',
-          userId: '@alice:matrix.test',
-          displayName: 'MacBook',
-          isVerified: () => true,
-          isUnverified: () => false
+    it('应该通过 getUserDevices 获取目标用户设备并归一化字段', async () => {
+      // getUserDevices 返回 Record<string, IContent>（device_id -> 设备信息）
+      const deviceMap = {
+        DEV1: {
+          device_id: 'DEV1',
+          display_name: 'MacBook',
+          last_seen_ts: 1000000,
+          last_seen_ip: '192.168.1.1',
+          last_seen_user_agent: 'Mozilla/5.0',
+          verified: true
         },
-        {
-          deviceId: 'DEV2',
-          userId: '@alice:matrix.test',
-          displayName: 'iPhone',
-          isVerified: () => false,
-          isUnverified: () => true
+        DEV2: {
+          device_id: 'DEV2',
+          display_name: 'iPhone',
+          last_seen_ts: 2000000,
+          last_seen_ip: '10.0.0.1',
+          verified: false
         }
-      ]
-      mockClient.getStoredDevicesForUser = vi.fn().mockResolvedValue(rawDevices)
+      }
+      mockClient.getUserDevices = vi.fn().mockResolvedValue(deviceMap)
 
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
 
-      expect(mockClient.getStoredDevicesForUser).toHaveBeenCalledWith('@alice:matrix.test')
+      expect(mockClient.getUserDevices).toHaveBeenCalledWith('@alice:matrix.test')
       expect(devices).toEqual([
         {
           device_id: 'DEV1',
           display_name: 'MacBook',
+          last_seen_ts: 1000000,
+          last_seen_ip: '192.168.1.1',
+          last_seen_user_agent: 'Mozilla/5.0',
           verified: true
         },
         {
           device_id: 'DEV2',
           display_name: 'iPhone',
+          last_seen_ts: 2000000,
+          last_seen_ip: '10.0.0.1',
           verified: false
         }
       ])
     })
 
-    it('应该在 SDK 返回空列表时返回空数组', async () => {
-      mockClient.getStoredDevicesForUser = vi.fn().mockResolvedValue([])
+    it('应该在 SDK 返回空对象时返回空数组', async () => {
+      mockClient.getUserDevices = vi.fn().mockResolvedValue({})
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([])
     })
 
     it('应该在 SDK 返回 null/undefined 时返回空数组', async () => {
-      mockClient.getStoredDevicesForUser = vi.fn().mockResolvedValue(null)
+      mockClient.getUserDevices = vi.fn().mockResolvedValue(null)
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([])
     })
 
-    it('应该在客户端不支持 getStoredDevicesForUser 时返回空数组', async () => {
-      // getStoredDevicesForUser 未定义
+    it('应该在 verified 字段缺失时默认为 false', async () => {
+      const deviceMap = {
+        DEV1: {
+          device_id: 'DEV1',
+          display_name: 'MacBook'
+        }
+      }
+      mockClient.getUserDevices = vi.fn().mockResolvedValue(deviceMap)
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
-      expect(devices).toEqual([])
+      expect(devices).toEqual([
+        {
+          device_id: 'DEV1',
+          display_name: 'MacBook',
+          verified: false
+        }
+      ])
+    })
+
+    it('应该过滤掉缺少 device_id 的条目', async () => {
+      const deviceMap = {
+        DEV1: {
+          device_id: 'DEV1',
+          display_name: 'MacBook',
+          verified: true
+        },
+        BAD: {
+          display_name: 'NoDeviceId'
+        }
+      }
+      mockClient.getUserDevices = vi.fn().mockResolvedValue(deviceMap)
+      const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+      expect(devices).toHaveLength(1)
+      expect(devices[0].device_id).toBe('DEV1')
     })
 
     it('应该在 SDK 抛错时返回空数组（优雅降级，不抛出）', async () => {
-      mockClient.getStoredDevicesForUser = vi.fn().mockRejectedValue(new Error('Network error'))
+      mockClient.getUserDevices = vi.fn().mockRejectedValue(new Error('Network error'))
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([])
     })
