@@ -20,6 +20,7 @@ pub struct UpdateTokenRequest {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TokenResponse {
+    uid: Option<String>,
     token: Option<String>,
     refresh_token: Option<String>,
 }
@@ -60,6 +61,11 @@ pub async fn get_user_tokens(state: State<'_, AppData>) -> Result<TokenResponse,
     let user_info = state.user_info.lock().await;
 
     let response = TokenResponse {
+        uid: if user_info.uid.is_empty() {
+            None
+        } else {
+            Some(user_info.uid.clone())
+        },
         token: if user_info.token.is_empty() {
             None
         } else {
@@ -83,7 +89,9 @@ pub async fn get_user_tokens(state: State<'_, AppData>) -> Result<TokenResponse,
         .map(|token| token.len())
         .unwrap_or(0);
     info!(
-        "Successfully retrieved user token info: token_present={}, token_len={}, refresh_token_present={}, refresh_token_len={}",
+        "Successfully retrieved user token info: uid_present={}, uid={:?}, token_present={}, token_len={}, refresh_token_present={}, refresh_token_len={}",
+        response.uid.is_some(),
+        response.uid,
         response.token.is_some(),
         token_len,
         response.refresh_token.is_some(),
