@@ -43,8 +43,7 @@
       <!-- 流式输出光标动画 -->
       <div
         v-if="isAIStreaming"
-        class="flex items-center gap-6px px-16px py-4px bg-[--tjg-surface-panel-muted] text-(12px [--tjg-text-tertiary])">
-        <span>{{ t('ai_assistant.robot.ai_thinking') }}</span>
+        class="flex items-center px-16px py-4px bg-[--tjg-surface-panel-muted]">
         <StreamingCursor :active="isAIStreaming" />
       </div>
       <div class="h-1px bg-[--tjg-border-default]"></div>

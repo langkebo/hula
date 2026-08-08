@@ -64,8 +64,7 @@
           <div
             v-for="(item, index) in chatList"
             :key="item.id"
-            class="chat-item-wrapper relative mb-5px"
-            @click="handleActive(item)">
+            class="chat-item-wrapper relative mb-5px">
             <ContextMenu
               :menu="menuList"
               :special-menu="specialMenuList"
@@ -74,7 +73,8 @@
                 <RobotCard
                   v-if="editingItemId !== item.id"
                   :robot="mapChatItemToRobot(item, index)"
-                  :active="activeItem?.id === item.id" />
+                  :active="activeItem?.id === item.id"
+                  @click="handleActive(item)" />
                 <n-input
                   v-else
                   @blur="handleBlur(item, index)"
