@@ -28,6 +28,19 @@ vi.mock('@/composables/room/usePinnedMessage', () => ({
   })
 }))
 
+const enableBurnMock = vi.fn().mockResolvedValue(true)
+const disableBurnMock = vi.fn().mockResolvedValue(true)
+
+vi.mock('@/composables/useBurnAfterRead', () => ({
+  useBurnAfterRead: () => ({
+    enableBurn: enableBurnMock,
+    disableBurn: disableBurnMock,
+    isRoomBurnEnabled: () => false,
+    getRoomBurnDuration: () => 60,
+    refreshBurnSettings: vi.fn().mockResolvedValue(undefined)
+  })
+}))
+
 vi.mock('@/utils/AppHarness', () => ({
   detectAppPlatform: () => 'desktop',
   isBrowser: () => true,
@@ -678,5 +691,102 @@ describe('ChatMain sticky events', () => {
     await flushPromises()
     const banners = wrapper.findComponent({ name: 'ChatBanners' })
     expect(banners.props('stickyEvents')).toHaveLength(1)
+  })
+})
+
+describe('ChatMain BurnAfterReadToggle service integration', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    pinnedMessagesRef.value = []
+    canSetStickyRef.value = false
+    loadMock.mockResolvedValue(undefined)
+    unpinMock.mockResolvedValue(true)
+    enableBurnMock.mockResolvedValue(true)
+    disableBurnMock.mockResolvedValue(true)
+
+    // usePrivateMode is a module-level singleton; reset shared state between tests
+    // so assertions about "inactive" state are not polluted by prior tests.
+    const { privateModeActive, showPrivateConfirm, burnEnabled, burnDuration, currentRoomId } = usePrivateMode()
+    privateModeActive.value = false
+    showPrivateConfirm.value = false
+    burnEnabled.value = false
+    burnDuration.value = 60
+    currentRoomId.value = ''
+
+    globalStore = reactive({
+      currentSessionRoomId: '!room:example.com'
+    })
+    userStore = reactive({
+      userInfo: {
+        uid: '@me:example.com'
+      }
+    })
+
+    chatStore = reactive({
+      isGroup: false,
+      shouldShowNoMoreMessage: false,
+      chatMessageList: [],
+      currentSessionInfo: { roomId: '!room:example.com' },
+      currentMessageOptions: {
+        hasLoadedOnce: true,
+        isLast: false,
+        isLoading: false
+      },
+      currentNewMsgCount: null,
+      isMsgMultiChoose: false,
+      msgMultiChooseMode: 'default',
+      newMsgCount: {},
+      loadMore: vi.fn(async () => undefined),
+      getMsgIndex: vi.fn(() => -1),
+      clearNewMsgCount: vi.fn(),
+      clearRedundantMessages: vi.fn(),
+      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined)
+    })
+
+    appWindowListenMock.mockResolvedValue(vi.fn())
+    getGroupAnnouncementListMock.mockResolvedValue({
+      records: []
+    })
+  })
+
+  it('calls enableBurn when toggle turned on in private mode', async () => {
+    const wrapper = mountComponent()
+    ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
+    await flushPromises()
+    const toggle = wrapper.findComponent({ name: 'BurnAfterReadToggle' })
+    expect(toggle.exists()).toBe(true)
+    await toggle.vm.$emit('update:enabled', true)
+    await flushPromises()
+    expect(enableBurnMock).toHaveBeenCalledWith('!room:example.com', 60000)
+    expect(disableBurnMock).not.toHaveBeenCalled()
+  })
+
+  it('calls disableBurn when toggle turned off in private mode', async () => {
+    // burnEnabled is a singleton ref shared across tests; start with burn on so the
+    // emit(false) reflects an on→off transition.
+    const { burnEnabled } = usePrivateMode()
+    burnEnabled.value = true
+    const wrapper = mountComponent()
+    ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
+    await flushPromises()
+    const toggle = wrapper.findComponent({ name: 'BurnAfterReadToggle' })
+    expect(toggle.exists()).toBe(true)
+    await toggle.vm.$emit('update:enabled', false)
+    await flushPromises()
+    expect(disableBurnMock).toHaveBeenCalledWith('!room:example.com')
+    expect(enableBurnMock).not.toHaveBeenCalled()
+  })
+
+  it('does not call service when no roomId', async () => {
+    globalStore.currentSessionRoomId = ''
+    const wrapper = mountComponent()
+    ;(wrapper.vm as unknown as { confirmPrivateMode: () => void }).confirmPrivateMode()
+    await flushPromises()
+    const toggle = wrapper.findComponent({ name: 'BurnAfterReadToggle' })
+    expect(toggle.exists()).toBe(true)
+    await toggle.vm.$emit('update:enabled', true)
+    await flushPromises()
+    expect(enableBurnMock).not.toHaveBeenCalled()
+    expect(disableBurnMock).not.toHaveBeenCalled()
   })
 })
