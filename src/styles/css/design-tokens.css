@@ -2,7 +2,7 @@
   /* ==================== Tjg Design Tokens ==================== */
 
   /* 品牌色 */
-  /* 白字对比度 3.6:1 @brand（AA-large only；浅色气泡白字同此值） */
+  /* 白字对比度 3.6:1 @brand（AA-large only；正文白字场景须用 primary-600，如发送气泡） */
   --tjg-brand: #13987f;
   --tjg-brand-light: #cef9ec;
   --tjg-color-primary-500: var(--tjg-brand);
@@ -49,15 +49,15 @@
   --tjg-text-primary: #18181c;
   /* 对比度 8.06:1 AAA @surface-panel（#ffffff） */
   --tjg-text-secondary: #505050;
-  /* 对比度 3.19:1 @surface-panel（AA-large only；正文不达 AA，仅用于辅助/大字号） */
-  --tjg-text-tertiary: #909090;
-  /* 对比度 2.85:1 fail @surface-panel（不达 AA，仅用于装饰性极弱文字） */
-  --tjg-text-quaternary: #999999;
+  /* 对比度 4.54:1 AA @surface-app（#fafafa）；4.74:1 @surface-panel（#ffffff） */
+  --tjg-text-tertiary: #737373;
+  /* 对比度 4.54:1 AA @surface-panel（#ffffff；主场景为设置/面板卡片，侧栏等深底残留走 prefers-contrast 覆盖） */
+  --tjg-text-quaternary: #767676;
   --tjg-text-disabled: #bfbfbf;
   --tjg-text-inverse: #ffffff;
 
-  /* 白字对比度 3.6:1 @气泡自身背景（浅色气泡白字场景另行校验） */
-  --tjg-bubble-sent-bg: #13987f;
+  /* 白字对比度 5.26:1 AA（= primary-600，与暗色 accent-strong #0f7a65 视觉一致；品牌 #13987f 白字仅 3.6:1 不达 AA） */
+  --tjg-bubble-sent-bg: #0f7a66;
   /* 接收气泡：浅色保持现状（原型仅规定暗色 #355b55，浅色沿用 surface-elevated） */
   --tjg-bubble-received-bg: var(--tjg-surface-elevated);
 
