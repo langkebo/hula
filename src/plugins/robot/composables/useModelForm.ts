@@ -1,4 +1,4 @@
-import type { FormInst, FormRules } from 'naive-ui'
+import type { FormRules } from 'naive-ui'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -7,6 +7,11 @@ import { modelService } from '@/services/matrix/ai/ModelService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ModelForm')
+
+// 表单校验入口（n-form 在 ModelFormModal 子组件内，通过 defineExpose 暴露 validate）
+export interface FormValidator {
+  validate: () => Promise<unknown> | undefined
+}
 
 export interface FormModel {
   keyId: string
@@ -48,7 +53,7 @@ export const useModelForm = () => {
   const showEditModal = ref(false)
   const editingModel = ref<AIModel | null>(null)
   const submitting = ref(false)
-  const formRef = ref<FormInst>()
+  const formRef = ref<FormValidator>()
   const formData = ref<FormModel>(createDefaultFormData())
 
   const statusOptions = [
