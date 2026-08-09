@@ -46,20 +46,10 @@
 
   <E2EEBanner v-if="currentRoomId" :key="currentRoomId" :room-id="currentRoomId" />
 
-  <!-- 私密模式切换按钮（仅单聊） -->
-  <div v-if="!isMobileRef && !isGroup" class="private-mode-bar flex-shrink-0 px-12px py-4px flex items-center gap-8px">
-    <button
-      data-testid="private-toggle-btn"
-      type="button"
-      class="private-toggle-btn"
-      :class="{ 'private-toggle-btn--active': privateModeActive }"
-      :title="privateModeActive ? '退出私密模式' : '进入私密模式'"
-      @click="$emit('togglePrivateMode')">
-      <span class="private-toggle-btn__letter">S</span>
-    </button>
-    <PrivateModeBanner v-if="privateModeActive" :burn-enabled="burnEnabled" />
+  <!-- 私密模式提示（S 按钮由 ChatHeaderToolbar 提供，此处仅显示状态） -->
+  <PrivateModeBanner v-if="privateModeActive" :burn-enabled="burnEnabled" />
+  <div v-if="privateModeActive" class="flex-shrink-0 px-12px py-4px flex items-center gap-8px">
     <svg
-      v-if="privateModeActive"
       data-testid="private-lock-icon"
       class="size-16px flex-shrink-0 text-[--tjg-color-danger-500]"
       aria-label="私密模式">
@@ -86,20 +76,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
 import E2EEBanner from '@/components/chat/E2EEBanner.vue'
 import PrivateModeBanner from '@/components/common/PrivateModeBanner.vue'
 import ScreenshotWatermark from '@/components/common/ScreenshotWatermark.vue'
 import StickyEventBanner from '@/components/rightBox/renderMessage/StickyEventBanner.vue'
-import { isMobile } from '@/utils/PlatformConstants'
-
-// BurnAfterReadToggle is not used in this component but kept for potential future use
-void BurnAfterReadToggle
 
 const { t } = useI18n()
 const isAnnouncementHover = ref<boolean>(false)
-
-const isMobileRef = computed(() => isMobile())
 
 interface StickyEventItem {
   eventId: string
@@ -123,47 +106,9 @@ defineProps<{
 }>()
 
 defineEmits<{
-  togglePrivateMode: []
   viewAnnouncement: []
   setSticky: []
   cancelSticky: [eventId: string]
   viewStickyEvent: [eventId: string]
 }>()
 </script>
-
-<style scoped lang="scss">
-// 私密模式 S 按钮
-.private-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: var(--tjg-radius-full, 50%);
-  background: transparent;
-  color: var(--tjg-text-tertiary);
-  cursor: pointer;
-  font-size: var(--tjg-font-size-sm, 14px);
-  font-weight: var(--tjg-font-weight-semibold, 600);
-  transition: all var(--tjg-motion-duration-fast, 0.15s) var(--tjg-motion-ease-standard, ease);
-
-  &:hover {
-    background: var(--tjg-surface-panel-muted, rgba(0, 0, 0, 0.04));
-    color: var(--tjg-text-primary);
-  }
-
-  &--active {
-    color: var(--tjg-color-danger-500);
-    background: var(--tjg-color-danger-100, rgba(255, 77, 79, 0.1));
-
-    &:hover {
-      background: var(--tjg-color-danger-200, rgba(255, 77, 79, 0.2));
-    }
-  }
-
-  &__letter {
-    pointer-events: none;
-  }
-}
-</style>

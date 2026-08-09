@@ -1,4 +1,4 @@
-import { shallowMount } from '@vue/test-utils'
+import { mount, shallowMount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import ChatBanners from '../ChatBanners.vue'
 
@@ -40,5 +40,46 @@ describe('ChatBanners 公告区 loading spinner 门控', () => {
       props: { ...baseProps, isAnnouncementLoading: false, isGroup: true }
     })
     expect(wrapper.find('.custom-announcement').exists()).toBe(false)
+  })
+})
+
+const mountBanners = (props: Partial<InstanceType<typeof ChatBanners>['$props']> = {}) =>
+  mount(ChatBanners, {
+    props: {
+      networkBannerText: null,
+      isAnnouncementLoading: false,
+      isGroup: false,
+      topAnnouncement: null,
+      currentRoomId: '!room1:server',
+      privateModeActive: true,
+      burnEnabled: false,
+      currentUserId: '@me:server',
+      currentUserName: 'Me',
+      stickyEvents: [],
+      canSetSticky: false,
+      ...props
+    },
+    global: { stubs: ['E2EEBanner', 'StickyEventBanner', 'PrivateModeBanner', 'ScreenshotWatermark'] }
+  })
+
+describe('ChatBanners 私密模式 S 按钮（已委托给 ChatHeaderToolbar）', () => {
+  it('不渲染私密模式 S 切换按钮（已委托给 ChatHeaderToolbar）', () => {
+    const wrapper = mountBanners({ privateModeActive: false })
+    expect(wrapper.find('[data-testid="private-toggle-btn"]').exists()).toBe(false)
+  })
+
+  it('privateModeActive 且 burnEnabled 时渲染 PrivateModeBanner', () => {
+    const wrapper = mountBanners({ privateModeActive: true, burnEnabled: true })
+    expect(wrapper.findComponent({ name: 'PrivateModeBanner' }).exists()).toBe(true)
+  })
+
+  it('privateModeActive 时渲染锁图标', () => {
+    const wrapper = mountBanners({ privateModeActive: true })
+    expect(wrapper.find('[data-testid="private-lock-icon"]').exists()).toBe(true)
+  })
+
+  it('privateModeActive 时渲染 ScreenshotWatermark', () => {
+    const wrapper = mountBanners({ privateModeActive: true })
+    expect(wrapper.findComponent({ name: 'ScreenshotWatermark' }).exists()).toBe(true)
   })
 })
