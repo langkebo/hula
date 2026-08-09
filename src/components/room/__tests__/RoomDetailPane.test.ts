@@ -55,7 +55,11 @@ const globalStubs = {
   NFormItem: { template: '<div><slot /></div>' },
   NInput: { template: '<input />' },
   RoomParentSpaces: { template: '<div class="room-parent-spaces" />' },
-  AvatarCropper: { template: '<div class="avatar-cropper" />' }
+  AvatarCropper: { template: '<div class="avatar-cropper" />' },
+  // 重度依赖加密服务图谱（CryptoSDKAdapter→worker 桥接），挂载后会导致 forks worker 无法退出；
+  // 本套件只测 power-level 接线，加密面板行为由 RoomEncryptionSettings 自有测试覆盖
+  RoomEncryptionSettings: { template: '<div class="room-encryption-settings" />' },
+  InviteDialog: { template: '<div class="invite-dialog" />' }
 }
 
 interface MountFakeRoom {
