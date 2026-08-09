@@ -1,5 +1,5 @@
 /**
- * SynapseRustExtensionsService friends contract tests — MSW intercepts at the
+ * SynapseFriendExtensionService contract tests — MSW intercepts at the
  * HTTP boundary.
  *
  * Unlike the thirdparty methods (which use SDK `client.http.authedRequest`),
@@ -21,8 +21,9 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
+import { synapseDmExtensionService } from '../extensions/SynapseDmExtensionService'
+import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import { matrixClientService } from '../MatrixClientService'
-import { synapseRustExtensionsService } from '../SynapseRustExtensionsService'
 
 const HOMESERVER = 'https://hs.synapserust-friends-contract.test'
 const ACCESS_TOKEN = 'friends-contract-at'
@@ -107,20 +108,22 @@ const server = setupMswServer(
   })
 )
 
-describe('SynapseRustExtensionsService friends URL construction contract (real fetch + msw)', () => {
+describe('SynapseFriendExtensionService friends URL construction contract (real fetch + msw)', () => {
   beforeEach(() => {
     seenUrls.length = 0
     vi.spyOn(matrixClientService, 'getHomeserverUrl').mockReturnValue(HOMESERVER)
     vi.spyOn(matrixClientService, 'getAccessToken').mockReturnValue(ACCESS_TOKEN)
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null as unknown as MatrixClient)
     vi.spyOn(matrixClientService, 'waitForClientReady').mockResolvedValue(null as unknown as MatrixClient)
-    // Reset the singleton's cached state so each test starts clean.
-    synapseRustExtensionsService.clear()
+    // Reset the singletons' cached state so each test starts clean.
+    synapseFriendExtensionService.clear()
+    synapseDmExtensionService.clear()
     // clear() sets baseUrl/accessToken to '' — re-seed via ensureInitialized
     // by pre-setting them (matches what ensureInitialized would do).
-    ;(synapseRustExtensionsService as unknown as { baseUrl: string }).baseUrl = HOMESERVER
-    ;(synapseRustExtensionsService as unknown as { accessToken: string }).accessToken = ACCESS_TOKEN
-    ;(synapseRustExtensionsService as unknown as { friendEndpointAvailable: null }).friendEndpointAvailable = null
+    for (const svc of [synapseFriendExtensionService, synapseDmExtensionService]) {
+      ;(svc as unknown as { baseUrl: string }).baseUrl = HOMESERVER
+      ;(svc as unknown as { accessToken: string }).accessToken = ACCESS_TOKEN
+    }
   })
 
   afterEach(() => {
@@ -131,7 +134,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   const filterBy = (substring: string) => seenUrls.filter((u) => u.url.includes(substring))
 
   it('getFriends hits GET /_matrix/client/v1/friends and unwraps {data: [...]}', async () => {
-    const result = await synapseRustExtensionsService.getFriends()
+    const result = await synapseFriendExtensionService.getFriends()
     const calls = filterBy('/friends')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
@@ -148,7 +151,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
         return HttpResponse.json([{ user_id: '@bare:hs', since: 2 }])
       })
     )
-    const result = await synapseRustExtensionsService.getFriends()
+    const result = await synapseFriendExtensionService.getFriends()
     expect(result).toHaveLength(1)
     expect(result[0].user_id).toBe('@bare:hs')
   })
@@ -160,12 +163,12 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
         return HttpResponse.json({ error: 'unauthorized' }, { status: 401 })
       })
     )
-    const result = await synapseRustExtensionsService.getFriends()
+    const result = await synapseFriendExtensionService.getFriends()
     expect(result).toEqual([])
   })
 
   it('searchFriends builds GET /_matrix/client/v1/friends/search?q=...&limit=...&mode=...', async () => {
-    const result = await synapseRustExtensionsService.searchFriends('ljf', { limit: 10, mode: 'exact' })
+    const result = await synapseFriendExtensionService.searchFriends('ljf', { limit: 10, mode: 'exact' })
     const calls = filterBy('/friends/search')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
@@ -175,7 +178,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('sendFriendRequest POSTs /_matrix/client/v1/friends/request with {user_id, message}', async () => {
-    const result = await synapseRustExtensionsService.sendFriendRequest('@target:hs', 'hi')
+    const result = await synapseFriendExtensionService.sendFriendRequest('@target:hs', 'hi')
     const calls = filterBy('/friends/request')
     const postCall = calls.find((c) => c.method === 'POST' && c.url.endsWith('/friends/request'))
     expect(postCall).toBeDefined()
@@ -185,7 +188,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('getPendingRequests hits both incoming and outgoing endpoints in parallel', async () => {
-    const result = await synapseRustExtensionsService.getPendingRequests()
+    const result = await synapseFriendExtensionService.getPendingRequests()
     const incoming = filterBy('/friends/requests/incoming')
     const outgoing = filterBy('/friends/requests/outgoing')
     expect(incoming).toHaveLength(1)
@@ -198,7 +201,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('acceptFriendRequest POSTs /_matrix/client/v1/friends/request/{userId}/accept (URL-encoded)', async () => {
-    const result = await synapseRustExtensionsService.acceptFriendRequest('@user:hs')
+    const result = await synapseFriendExtensionService.acceptFriendRequest('@user:hs')
     const calls = filterBy('/accept')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
@@ -208,7 +211,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('declineFriendRequest POSTs /_matrix/client/v1/friends/request/{userId}/reject', async () => {
-    await synapseRustExtensionsService.declineFriendRequest('@user:hs')
+    await synapseFriendExtensionService.declineFriendRequest('@user:hs')
     const calls = filterBy('/reject')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
@@ -216,7 +219,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('cancelFriendRequest POSTs /_matrix/client/v1/friends/request/{userId}/cancel', async () => {
-    await synapseRustExtensionsService.cancelFriendRequest('@user:hs')
+    await synapseFriendExtensionService.cancelFriendRequest('@user:hs')
     const calls = filterBy('/cancel')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
@@ -224,7 +227,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('removeFriend DELETEs /_matrix/client/v1/friends/{userId}', async () => {
-    await synapseRustExtensionsService.removeFriend('@friend:hs')
+    await synapseFriendExtensionService.removeFriend('@friend:hs')
     const calls = filterBy('/friends/')
     const deleteCall = calls.find((c) => c.method === 'DELETE')
     expect(deleteCall).toBeDefined()
@@ -232,7 +235,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('setFriendNote PUTs /_matrix/client/v1/friends/{userId}/note with {note}', async () => {
-    await synapseRustExtensionsService.setFriendNote('@friend:hs', 'bestie')
+    await synapseFriendExtensionService.setFriendNote('@friend:hs', 'bestie')
     const calls = filterBy('/note')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('PUT')
@@ -241,7 +244,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('checkFriendship hits GET /_matrix/client/v1/friends/check/{userId} and unwraps {data: {are_friends}}', async () => {
-    const result = await synapseRustExtensionsService.checkFriendship('@friend:hs')
+    const result = await synapseFriendExtensionService.checkFriendship('@friend:hs')
     const calls = filterBy('/friends/check/')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
@@ -250,7 +253,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('createPrivateDm POSTs /_matrix/client/v1/friends/dm/{userId} with {is_private}', async () => {
-    const result = await synapseRustExtensionsService.createPrivateDm('@target:hs', true)
+    const result = await synapseDmExtensionService.createPrivateDm('@target:hs', true)
     const calls = filterBy('/friends/dm/')
     const postCall = calls.find((c) => c.method === 'POST')
     expect(postCall).toBeDefined()
@@ -261,7 +264,7 @@ describe('SynapseRustExtensionsService friends URL construction contract (real f
   })
 
   it('getDmRoom hits GET /_matrix/client/v1/friends/dm/{userId}', async () => {
-    const result = await synapseRustExtensionsService.getDmRoom('@target:hs')
+    const result = await synapseDmExtensionService.getDmRoom('@target:hs')
     const calls = filterBy('/friends/dm/')
     const getCall = calls.find((c) => c.method === 'GET')
     expect(getCall).toBeDefined()

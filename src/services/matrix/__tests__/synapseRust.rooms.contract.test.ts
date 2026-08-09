@@ -1,5 +1,5 @@
 /**
- * SynapseRustExtensionsService rooms + captcha contract tests — MSW intercepts
+ * SynapseRust extensions (rooms + captcha) contract tests — MSW intercepts
  * at the HTTP boundary.
  *
  * Like the friends contract test, these methods use the service's own
@@ -18,8 +18,12 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
+import { synapseCaptchaService } from '../extensions/SynapseCaptchaService'
+import { synapseInviteListService } from '../extensions/SynapseInviteListService'
+import { synapsePrivacyExtensionService } from '../extensions/SynapsePrivacyExtensionService'
+import { synapseRoomSummaryService } from '../extensions/SynapseRoomSummaryService'
+import { synapseStickyEventService } from '../extensions/SynapseStickyEventService'
 import { matrixClientService } from '../MatrixClientService'
-import { synapseRustExtensionsService } from '../SynapseRustExtensionsService'
 
 const HOMESERVER = 'https://hs.synapserust-rooms-contract.test'
 const ACCESS_TOKEN = 'rooms-contract-at'
@@ -138,17 +142,25 @@ const server = setupMswServer(
   })
 )
 
-describe('SynapseRustExtensionsService rooms + captcha URL construction contract (real fetch + msw)', () => {
+describe('SynapseRust extensions rooms + captcha URL construction contract (real fetch + msw)', () => {
   beforeEach(() => {
     seenUrls.length = 0
     vi.spyOn(matrixClientService, 'getHomeserverUrl').mockReturnValue(HOMESERVER)
     vi.spyOn(matrixClientService, 'getAccessToken').mockReturnValue(ACCESS_TOKEN)
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null as unknown as MatrixClient)
     vi.spyOn(matrixClientService, 'waitForClientReady').mockResolvedValue(null as unknown as MatrixClient)
-    synapseRustExtensionsService.clear()
-    ;(synapseRustExtensionsService as unknown as { baseUrl: string }).baseUrl = HOMESERVER
-    ;(synapseRustExtensionsService as unknown as { accessToken: string }).accessToken = ACCESS_TOKEN
-    ;(synapseRustExtensionsService as unknown as { friendEndpointAvailable: null }).friendEndpointAvailable = null
+    const services = [
+      synapsePrivacyExtensionService,
+      synapseInviteListService,
+      synapseStickyEventService,
+      synapseRoomSummaryService,
+      synapseCaptchaService
+    ]
+    for (const svc of services) {
+      svc.clear()
+      ;(svc as unknown as { baseUrl: string }).baseUrl = HOMESERVER
+      ;(svc as unknown as { accessToken: string }).accessToken = ACCESS_TOKEN
+    }
   })
 
   afterEach(() => {
@@ -160,7 +172,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
 
   describe('burn after read', () => {
     it('getBurnStats hits GET /_matrix/client/v3/user/burn/stats and unwraps {data}', async () => {
-      const result = await synapseRustExtensionsService.getBurnStats()
+      const result = await synapsePrivacyExtensionService.getBurnStats()
       const calls = filterBy('/user/burn/stats')
       expect(calls).toHaveLength(1)
       expect(calls[0].method).toBe('GET')
@@ -170,7 +182,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('enableBurnAfterRead PUTs /_matrix/client/v3/rooms/{roomId}/burn with {enabled, burn_after_ms?}', async () => {
-      await synapseRustExtensionsService.enableBurnAfterRead('!room:hs', true, 60000)
+      await synapsePrivacyExtensionService.enableBurnAfterRead('!room:hs', true, 60000)
       const calls = filterBy('/burn')
       const putCall = calls.find((c) => c.method === 'PUT')
       expect(putCall).toBeDefined()
@@ -179,7 +191,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('isBurnAfterReadEnabled hits GET /_matrix/client/v3/rooms/{roomId}/burn', async () => {
-      const result = await synapseRustExtensionsService.isBurnAfterReadEnabled('!room:hs')
+      const result = await synapsePrivacyExtensionService.isBurnAfterReadEnabled('!room:hs')
       const calls = filterBy('/burn')
       const getCall = calls.find((c) => c.method === 'GET')
       expect(getCall).toBeDefined()
@@ -190,7 +202,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
 
   describe('anti-screenshot', () => {
     it('enableAntiScreenshot PUTs /_matrix/client/v3/rooms/{roomId}/anti_screenshot with {enabled}', async () => {
-      await synapseRustExtensionsService.enableAntiScreenshot('!room:hs', true)
+      await synapsePrivacyExtensionService.enableAntiScreenshot('!room:hs', true)
       const calls = filterBy('/anti_screenshot')
       const putCall = calls.find((c) => c.method === 'PUT')
       expect(putCall).toBeDefined()
@@ -199,7 +211,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('isAntiScreenshotEnabled hits GET /_matrix/client/v3/rooms/{roomId}/anti_screenshot', async () => {
-      const result = await synapseRustExtensionsService.isAntiScreenshotEnabled('!room:hs')
+      const result = await synapsePrivacyExtensionService.isAntiScreenshotEnabled('!room:hs')
       const calls = filterBy('/anti_screenshot')
       const getCall = calls.find((c) => c.method === 'GET')
       expect(getCall).toBeDefined()
@@ -210,7 +222,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
 
   describe('invite blocklist / allowlist', () => {
     it('getInviteBlocklist hits GET /_matrix/client/v3/rooms/{roomId}/invite_blocklist', async () => {
-      const result = await synapseRustExtensionsService.getInviteBlocklist('!room:hs')
+      const result = await synapseInviteListService.getInviteBlocklist('!room:hs')
       const calls = filterBy('/invite_blocklist')
       const getCall = calls.find((c) => c.method === 'GET')
       expect(getCall).toBeDefined()
@@ -219,7 +231,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('setInviteBlocklist POSTs /_matrix/client/v3/rooms/{roomId}/invite_blocklist with {user_ids}', async () => {
-      await synapseRustExtensionsService.setInviteBlocklist('!room:hs', ['@bad:hs'])
+      await synapseInviteListService.setInviteBlocklist('!room:hs', ['@bad:hs'])
       const calls = filterBy('/invite_blocklist')
       const postCall = calls.find((c) => c.method === 'POST')
       expect(postCall).toBeDefined()
@@ -227,7 +239,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('getInviteAllowlist hits GET /_matrix/client/v3/rooms/{roomId}/invite_allowlist', async () => {
-      const result = await synapseRustExtensionsService.getInviteAllowlist('!room:hs')
+      const result = await synapseInviteListService.getInviteAllowlist('!room:hs')
       const calls = filterBy('/invite_allowlist')
       const getCall = calls.find((c) => c.method === 'GET')
       expect(getCall).toBeDefined()
@@ -236,7 +248,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('setInviteAllowlist POSTs /_matrix/client/v3/rooms/{roomId}/invite_allowlist with {user_ids}', async () => {
-      await synapseRustExtensionsService.setInviteAllowlist('!room:hs', ['@good:hs'])
+      await synapseInviteListService.setInviteAllowlist('!room:hs', ['@good:hs'])
       const calls = filterBy('/invite_allowlist')
       const postCall = calls.find((c) => c.method === 'POST')
       expect(postCall).toBeDefined()
@@ -246,7 +258,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
 
   describe('sticky events', () => {
     it('getStickyEvents hits GET /_matrix/client/v3/rooms/{roomId}/sticky_events', async () => {
-      const result = await synapseRustExtensionsService.getStickyEvents('!room:hs')
+      const result = await synapseStickyEventService.getStickyEvents('!room:hs')
       const calls = filterBy('/sticky_events')
       const getCall = calls.find((c) => c.method === 'GET' && !c.url.includes('/sticky_events/'))
       expect(getCall).toBeDefined()
@@ -256,7 +268,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('setStickyEvent POSTs /_matrix/client/v3/rooms/{roomId}/sticky_events with {events:[{event_id,event_type}]}', async () => {
-      await synapseRustExtensionsService.setStickyEvent('!room:hs', '$e1:hs', 'm.room.name')
+      await synapseStickyEventService.setStickyEvent('!room:hs', '$e1:hs', 'm.room.name')
       const calls = filterBy('/sticky_events')
       const postCall = calls.find((c) => c.method === 'POST')
       expect(postCall).toBeDefined()
@@ -266,7 +278,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('clearStickyEvent DELETEs /_matrix/client/v3/rooms/{roomId}/sticky_events/{eventType}', async () => {
-      await synapseRustExtensionsService.clearStickyEvent('!room:hs', 'm.room.name')
+      await synapseStickyEventService.clearStickyEvent('!room:hs', 'm.room.name')
       const calls = filterBy('/sticky_events/')
       const deleteCall = calls.find((c) => c.method === 'DELETE')
       expect(deleteCall).toBeDefined()
@@ -276,7 +288,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
 
   describe('room summary', () => {
     it('getRoomSummary hits GET /_matrix/client/v3/rooms/{roomId}/summary and unwraps {data}', async () => {
-      const result = await synapseRustExtensionsService.getRoomSummary('!room:hs')
+      const result = await synapseRoomSummaryService.getRoomSummary('!room:hs')
       const calls = filterBy('/summary')
       const getCall = calls.find((c) => c.method === 'GET' && !c.url.includes('/summary/'))
       expect(getCall).toBeDefined()
@@ -297,7 +309,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
           })
         })
       )
-      const result = await synapseRustExtensionsService.getRoomSummary('!bare:hs')
+      const result = await synapseRoomSummaryService.getRoomSummary('!bare:hs')
       expect(result?.room_id).toBe('!bare:hs')
       expect(result?.name).toBe('Bare')
     })
@@ -309,12 +321,12 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
           return new HttpResponse(null, { status: 404 })
         })
       )
-      const result = await synapseRustExtensionsService.getRoomSummary('!missing:hs', false)
+      const result = await synapseRoomSummaryService.getRoomSummary('!missing:hs', false)
       expect(result).toBeNull()
     })
 
     it('getRoomSummaryMembers hits GET /_matrix/client/v3/rooms/{roomId}/summary/members (bare array)', async () => {
-      const result = await synapseRustExtensionsService.getRoomSummaryMembers('!room:hs')
+      const result = await synapseRoomSummaryService.getRoomSummaryMembers('!room:hs')
       const calls = filterBy('/summary/members')
       expect(calls).toHaveLength(1)
       expect(calls[0].method).toBe('GET')
@@ -323,7 +335,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('getRoomSummaryState hits GET /_matrix/client/v3/rooms/{roomId}/summary/state (bare array)', async () => {
-      const result = await synapseRustExtensionsService.getRoomSummaryState('!room:hs')
+      const result = await synapseRoomSummaryService.getRoomSummaryState('!room:hs')
       const calls = filterBy('/summary/state')
       expect(calls).toHaveLength(1)
       expect(calls[0].method).toBe('GET')
@@ -332,7 +344,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('getRoomSummaryStats hits GET /_matrix/client/v3/rooms/{roomId}/summary/stats (bare object)', async () => {
-      const result = await synapseRustExtensionsService.getRoomSummaryStats('!room:hs')
+      const result = await synapseRoomSummaryService.getRoomSummaryStats('!room:hs')
       const calls = filterBy('/summary/stats')
       expect(calls).toHaveLength(1)
       expect(calls[0].method).toBe('GET')
@@ -342,7 +354,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
 
   describe('room ephemeral', () => {
     it('getRoomEphemeral hits GET /_matrix/client/v3/rooms/{roomId}/ephemeral and unwraps {data:{chunk}}', async () => {
-      const result = await synapseRustExtensionsService.getRoomEphemeral('!room:hs')
+      const result = await synapseRoomSummaryService.getRoomEphemeral('!room:hs')
       const calls = filterBy('/ephemeral')
       expect(calls).toHaveLength(1)
       expect(calls[0].method).toBe('GET')
@@ -352,7 +364,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('getRoomEphemeral appends ?types=... when types filter provided', async () => {
-      await synapseRustExtensionsService.getRoomEphemeral('!room:hs', ['m.typing', 'm.receipt'])
+      await synapseRoomSummaryService.getRoomEphemeral('!room:hs', ['m.typing', 'm.receipt'])
       const calls = filterBy('/ephemeral')
       expect(calls).toHaveLength(1)
       expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/ephemeral?types=m.typing,m.receipt`)
@@ -361,7 +373,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
 
   describe('captcha', () => {
     it('sendCaptcha POSTs /_matrix/client/v3/register/captcha/send with {target, captcha_type}', async () => {
-      const result = await synapseRustExtensionsService.sendCaptcha('+8613800138000', 'sms')
+      const result = await synapseCaptchaService.sendCaptcha('+8613800138000', 'sms')
       const calls = filterBy('/captcha/send')
       expect(calls).toHaveLength(1)
       expect(calls[0].method).toBe('POST')
@@ -371,7 +383,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('verifyCaptcha POSTs /_matrix/client/v3/register/captcha/verify with {captcha_id, code}', async () => {
-      const result = await synapseRustExtensionsService.verifyCaptcha('cap-1', '123456')
+      const result = await synapseCaptchaService.verifyCaptcha('cap-1', '123456')
       const calls = filterBy('/captcha/verify')
       expect(calls).toHaveLength(1)
       expect(calls[0].method).toBe('POST')
@@ -380,7 +392,7 @@ describe('SynapseRustExtensionsService rooms + captcha URL construction contract
     })
 
     it('getCaptchaStatus hits GET /_matrix/client/v3/register/captcha/status?captcha_id=...', async () => {
-      const result = await synapseRustExtensionsService.getCaptchaStatus('cap-1')
+      const result = await synapseCaptchaService.getCaptchaStatus('cap-1')
       const calls = filterBy('/captcha/status')
       expect(calls).toHaveLength(1)
       expect(calls[0].method).toBe('GET')

@@ -19,9 +19,18 @@ vi.mock('../MatrixSpecialFriendService', () => ({
   }
 }))
 
-vi.mock('../../SynapseRustExtensionsService', () => ({
-  synapseRustExtensionsService: {
-    getFriends: vi.fn(async () => [])
+vi.mock('../../extensions/SynapseFriendExtensionService', () => ({
+  synapseFriendExtensionService: {
+    getFriends: vi.fn(async () => []),
+    getPendingRequests: vi.fn(async () => ({ incoming: [], outgoing: [] })),
+    checkFriendship: vi.fn(async () => false),
+    sendFriendRequest: vi.fn(async () => ({})),
+    acceptFriendRequest: vi.fn(async () => ({})),
+    declineFriendRequest: vi.fn(async () => undefined),
+    cancelFriendRequest: vi.fn(async () => undefined),
+    removeFriend: vi.fn(async () => undefined),
+    setFriendNote: vi.fn(async () => undefined),
+    searchFriends: vi.fn(async () => ({ results: [], limited: false }))
   }
 }))
 
@@ -100,7 +109,7 @@ vi.mock('@/services/matrix/MatrixHttpClient', async () => {
 
 const { default: matrixFriendService } = await import('../MatrixFriendService')
 const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
-const { synapseRustExtensionsService } = await import('../../SynapseRustExtensionsService')
+const { synapseFriendExtensionService } = await import('../../extensions/SynapseFriendExtensionService')
 
 describe('MatrixFriendService', () => {
   beforeEach(() => {
@@ -270,7 +279,7 @@ describe('MatrixFriendService', () => {
           start: vi.fn()
         }
       } as unknown as MatrixClient)
-      vi.mocked(synapseRustExtensionsService.getFriends).mockResolvedValueOnce([
+      vi.mocked(synapseFriendExtensionService.getFriends).mockResolvedValueOnce([
         {
           user_id: '@ljf:matrix.test',
           displayname: 'ljf',
@@ -287,7 +296,7 @@ describe('MatrixFriendService', () => {
 
       const friends = await matrixFriendService.getFriends()
 
-      expect(synapseRustExtensionsService.getFriends).toHaveBeenCalledTimes(1)
+      expect(synapseFriendExtensionService.getFriends).toHaveBeenCalledTimes(1)
       expect(friends).toEqual([
         expect.objectContaining({
           user_id: '@ljf:matrix.test',
