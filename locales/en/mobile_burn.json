@@ -13,5 +13,6 @@
   "enabled": "Burn after read enabled",
   "disabled": "Burn after read disabled",
   "room_enabled": "Room burn after read enabled",
-  "room_disabled": "Room burn after read disabled"
+  "room_disabled": "Room burn after read disabled",
+  "room_toggle_failed": "Operation failed, please try again"
 }
