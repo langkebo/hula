@@ -153,7 +153,6 @@
   --tjg-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
   --tjg-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.15);
   --tjg-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
-  --tjg-shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.2);
   --tjg-shadow-top-bar: 0 -3px 6px -4px rgba(0, 0, 0, 0.1);
 
   /* 动效 */
@@ -175,7 +174,6 @@
 
   /* 设置壳层 */
   --tjg-settings-sidebar-width: 240px;
-  --tjg-settings-content-max-width: 960px;
   --tjg-settings-header-height: 88px;
   --tjg-settings-divider: rgba(0, 0, 0, 0.05);
   --tjg-settings-card-bg: rgba(0, 0, 0, 0.02);
@@ -237,127 +235,39 @@
   --tjg-encryption-surface-subtle: rgba(0, 0, 0, 0.02);
   --tjg-encryption-surface-dark: rgba(255, 255, 255, 0.05);
   --tjg-overlay-mobile-sheet: rgba(255, 255, 255, 0.85);
-  --tjg-color-indigo-500: #6366f1;
   --tjg-color-purple-500: #722ed1;
 
   /* ==================== Backward-Compatible Aliases ==================== */
 
   --color-primary: var(--tjg-color-primary-500);
-  --color-primary-light: var(--tjg-color-primary-400);
-  --color-primary-lighter: var(--tjg-color-primary-300);
-  --color-primary-dark: var(--tjg-color-primary-600);
-  --color-primary-darker: var(--tjg-color-primary-700);
 
-  --color-success: var(--tjg-color-success-500);
-  --color-success-light: var(--tjg-color-success-400);
-  --color-success-dark: var(--tjg-color-success-600);
 
-  --color-warning: var(--tjg-color-warning-500);
-  --color-warning-light: var(--tjg-color-warning-400);
-  --color-warning-dark: var(--tjg-color-warning-600);
 
-  --color-danger: var(--tjg-color-danger-500);
-  --color-danger-light: var(--tjg-color-danger-400);
-  --color-danger-dark: var(--tjg-color-danger-600);
 
-  --color-info: var(--tjg-color-info-500);
-  --color-info-light: var(--tjg-color-info-400);
-  --color-info-dark: var(--tjg-color-info-600);
 
-  --color-text-primary: var(--tjg-text-primary);
-  --color-text-secondary: var(--tjg-text-secondary);
   --color-text-tertiary: var(--tjg-text-tertiary);
-  --color-text-quaternary: var(--tjg-text-tertiary);
-  --color-text-disabled: var(--tjg-text-disabled);
-  --color-text-white: var(--tjg-text-inverse);
 
-  --color-bg-primary: var(--tjg-surface-panel);
-  --color-bg-secondary: var(--tjg-surface-panel-muted);
-  --color-bg-tertiary: #e8e8e8;
-  --color-bg-quaternary: var(--tjg-border-strong);
-  --color-bg-hover: rgba(0, 0, 0, 0.04);
-  --color-bg-active: rgba(0, 0, 0, 0.08);
 
-  --color-border-primary: var(--tjg-border-strong);
-  --color-border-secondary: #e8e8e8;
-  --color-border-tertiary: var(--tjg-border-muted);
 
-  --color-online: var(--tjg-status-online);
-  --color-offline: var(--tjg-status-offline);
-  --color-busy: var(--tjg-status-busy);
-  --color-away: var(--tjg-status-away);
 
   --font-family: var(--tjg-font-family);
-  --font-family-mono: var(--tjg-font-family-mono);
 
-  --font-size-xs: var(--tjg-font-size-xs);
-  --font-size-sm: var(--tjg-font-size-sm);
   --font-size-base: var(--tjg-font-size-base);
-  --font-size-lg: var(--tjg-font-size-lg);
-  --font-size-xl: var(--tjg-font-size-xl);
-  --font-size-2xl: var(--tjg-font-size-2xl);
-  --font-size-3xl: var(--tjg-font-size-3xl);
 
-  --font-weight-medium: var(--tjg-font-weight-medium);
-  --font-weight-semibold: var(--tjg-font-weight-semibold);
-  --font-weight-bold: var(--tjg-font-weight-bold);
 
-  --line-height-tight: var(--tjg-line-height-tight);
-  --line-height-normal: var(--tjg-line-height-normal);
 
-  --spacing-xs: var(--tjg-space-1);
-  --spacing-sm: var(--tjg-space-2);
-  --spacing-md: var(--tjg-space-3);
-  --spacing-lg: var(--tjg-space-4);
-  --spacing-xl: var(--tjg-space-5);
-  --spacing-2xl: var(--tjg-space-6);
-  --spacing-3xl: var(--tjg-space-8);
 
-  --radius-sm: var(--tjg-radius-xs);
-  --radius-md: var(--tjg-radius-sm);
-  --radius-lg: var(--tjg-radius-lg);
-  --radius-full: var(--tjg-radius-full);
 
-  --shadow-sm: var(--tjg-shadow-sm);
-  --shadow-md: var(--tjg-shadow-md);
-  --shadow-lg: var(--tjg-shadow-lg);
 
-  --transition-fast: var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
-  --transition-normal: var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
-  --transition-slow: var(--tjg-motion-duration-slow) var(--tjg-motion-ease-standard);
 
-  --z-index-dropdown: 1000;
-  --z-index-sticky: 1020;
-  --z-index-fixed: 1030;
-  --z-index-modal-backdrop: 1040;
-  --z-index-modal: 1050;
-  --z-index-popover: 1060;
-  --z-index-tooltip: 1070;
-  --z-index-toast: 1080;
 
   /* ==================== Semantic Application Tokens ==================== */
   --shadow-enabled: 1;
-  --blur-enabled: 1;
 
-  /* Hula 设计令牌别名：model.tsx 引用了 --hula-* 前缀，但全库从未定义，
-     导致相关样式静默失效。此处统一映射到规范 --tjg-* 令牌。 */
+  /* Hula 设计令牌别名：以下别名均被存量布局/组件消费（外部引用已核实），
+     统一映射到规范 --tjg-* 令牌。零引用别名已于 2026-08-09 清零。 */
   --color-primary: var(--tjg-color-primary-500);
-  --color-primary-light: var(--tjg-color-primary-100);
-  --color-primary-hover: var(--tjg-color-primary-200);
-  --color-primary-active: var(--tjg-color-primary-300-alpha);
-  --color-success: var(--tjg-color-success-500);
-  --color-success-light: var(--tjg-color-success-100);
-  --color-warning: var(--tjg-color-warning-500);
-  --color-warning-light: var(--tjg-color-warning-100);
-  --color-danger: var(--tjg-color-danger-500);
-  --color-danger-light: var(--tjg-color-danger-100);
-  --color-danger-hover: var(--tjg-color-danger-200);
-  --color-info: var(--tjg-color-info-500);
-  --color-info-light: var(--tjg-color-info-100);
   --color-text-tertiary: var(--tjg-text-tertiary);
-  --color-text-quaternary: var(--tjg-text-quaternary);
-  --color-text-secondary: var(--tjg-text-secondary);
-  --app-bg-color: var(--tjg-surface-app);
   --left-bg-color: var(--tjg-surface-sidebar);
   --left-active-bg-color: var(--tjg-surface-sidebar-selected);
   --left-text-color: #e3e3e3;
@@ -366,49 +276,27 @@
   --left-bg-hover: var(--tjg-surface-sidebar-hover);
   --left-active-icon-color: #f1f1f1;
   --left-win-icon-color: rgba(255, 255, 255, 0.4);
-  --center-bg-color: var(--tjg-surface-panel);
   --right-bg-color: var(--tjg-surface-subtle);
   --text-color: var(--tjg-text-primary);
-  --icon-color: var(--tjg-text-primary);
-  --action-bar-icon-color: var(--tjg-text-secondary);
-  --action-bar-icon-hover: var(--tjg-surface-search);
-  --search-bg-color: var(--tjg-surface-search);
   --setting-item-line: var(--tjg-surface-subtle);
   --bg-menu: var(--tjg-menu-bg);
   --bg-menu-hover: var(--tjg-menu-hover);
-  --line-color: var(--tjg-border-default);
-  --button-bg-color: var(--tjg-surface-subtle);
-  --disabled-color: var(--tjg-text-disabled);
   --info-hover: color-mix(in srgb, var(--tjg-surface-subtle) 45%, transparent);
   --info-text-color: var(--tjg-text-primary);
   --tray-hover: var(--tjg-surface-search);
   --tray-hover-e: color-mix(in srgb, var(--tjg-color-danger-100) 85%, var(--tjg-surface-panel));
-  --reply-color: var(--tjg-text-tertiary);
-  --reply-hover: var(--tjg-text-secondary);
-  --time-color: var(--tjg-border-default);
   --chat-bt-color: var(--tjg-text-inverse);
   --chat-left-bg: color-mix(in srgb, var(--tjg-color-primary-200) 65%, var(--tjg-surface-panel));
   --chat-right-bg: var(--tjg-surface-subtle);
   --chat-text-color: var(--tjg-text-secondary);
   --chat-hover-color: var(--tjg-border-default);
-  --search-color: var(--tjg-surface-search);
   --bate-color: var(--tjg-color-beta-500);
   --bate-bg: var(--tjg-color-beta-100);
-  --card-bg: var(--tjg-color-primary-300-alpha);
   --progress-bg: color-mix(in srgb, var(--tjg-color-primary-100) 80%, var(--tjg-surface-panel));
   --reply-bg: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
   --danger-text: var(--tjg-color-danger-500);
-  --danger-bg: var(--tjg-color-danger-100);
-  --warning-text: var(--tjg-color-warning-500);
-  --warning-bg: var(--tjg-color-warning-100);
   --avatar-border-color: var(--tjg-surface-panel);
-  --avatar-hover-bg: color-mix(in srgb, var(--tjg-surface-panel) 70%, transparent);
   --plugin-bg-color: var(--tjg-surface-search);
-  --float-block-hover-color: var(--tjg-text-tertiary);
-  --float-hover-bg-color: color-mix(in srgb, var(--tjg-color-primary-100) 80%, var(--tjg-surface-panel));
-  --group-notice-list-bg: color-mix(in srgb, var(--tjg-surface-panel) 72%, transparent);
-  --file-bg-color: var(--tjg-surface-elevated);
-  --van-dialog-confirm-button-text-color: var(--tjg-color-primary-500);
   --admin-sidebar-bg: var(--tjg-admin-sidebar-bg);
   --admin-sidebar-text: var(--tjg-admin-sidebar-text);
   --admin-sidebar-border: var(--tjg-admin-sidebar-border);
@@ -416,10 +304,8 @@
   --admin-bg: var(--tjg-admin-bg);
   --admin-card-bg: var(--tjg-admin-card-bg);
   --admin-card-shadow: var(--tjg-admin-card-shadow);
-  --admin-card-shadow-hover: var(--tjg-admin-card-shadow-hover);
   --admin-header-border: var(--tjg-admin-header-border);
   --admin-title-color: var(--tjg-admin-title-color);
-  --admin-stat-value-color: var(--tjg-admin-stat-value-color);
   --admin-health-ok-bg: var(--tjg-admin-health-ok-bg);
   --admin-health-ok-text: var(--tjg-admin-health-ok-text);
   --admin-health-err-bg: var(--tjg-admin-health-err-bg);
@@ -429,11 +315,9 @@
   --login-dropdown-bg: rgba(253, 253, 253, 0.6);
   --login-dropdown-border: rgba(70, 70, 70, 0.1);
   --login-divider-color: var(--tjg-border-default);
-  --login-third-party-divider-color: var(--tjg-border-muted);
   --login-surface-bg: var(--tjg-surface-panel);
   --avatar-fallback-color: var(--tjg-text-inverse);
   --avatar-fallback-src: /logoD.png;
-  --voice-icon-color-other: var(--tjg-text-primary);
   --action-close-hover-bg: #c22b1c;
   --action-close-hover-icon: var(--tjg-text-inverse);
   --plugin-icon-bg: color-mix(in srgb, var(--tjg-text-quaternary) 6%, transparent);
@@ -444,8 +328,6 @@
   --tag-info-bg: var(--tjg-color-info-100);
   --time-group-bg: color-mix(in srgb, var(--tjg-surface-subtle) 50%, transparent);
   --pin-input-bg: var(--tjg-surface-elevated);
-  --badge-danger-bg: var(--tjg-color-danger-500);
-  --badge-danger-text: var(--tjg-text-inverse);
   --bg-offline-avatar-overlay: color-mix(in srgb, var(--tjg-text-tertiary) 70%, transparent);
   --bg-long-press-menu: var(--tjg-surface-subtle);
 
@@ -532,7 +414,6 @@ html[data-theme='dark'] {
   --tjg-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.24);
   --tjg-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.36);
   --tjg-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.36);
-  --tjg-shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.48);
   --tjg-shadow-top-bar: 0 -3px 6px -4px rgba(0, 0, 0, 0.24);
   --tjg-settings-divider: rgba(255, 255, 255, 0.05);
   --tjg-settings-card-bg: rgba(255, 255, 255, 0.05);
@@ -577,36 +458,12 @@ html[data-theme='dark'] {
   --tjg-encryption-surface-dark: rgba(0, 0, 0, 0.02);
   --tjg-overlay-mobile-sheet: rgba(33, 33, 33, 0.95);
 
-  --color-success: var(--tjg-color-success-500);
-  --color-warning: var(--tjg-color-warning-500);
-  --color-danger: var(--tjg-color-danger-500);
-  --color-info: var(--tjg-color-info-500);
 
-  --color-text-primary: var(--tjg-text-primary);
-  --color-text-secondary: var(--tjg-text-secondary);
   --color-text-tertiary: var(--tjg-text-tertiary);
-  --color-text-quaternary: var(--tjg-text-quaternary);
-  --color-text-disabled: var(--tjg-text-disabled);
 
-  --color-bg-primary: var(--tjg-surface-panel);
-  --color-bg-secondary: var(--tjg-surface-panel-muted);
-  --color-bg-tertiary: var(--tjg-surface-subtle);
-  --color-bg-quaternary: #3a3a3a;
-  --color-bg-hover: rgba(255, 255, 255, 0.08);
-  --color-bg-active: rgba(255, 255, 255, 0.12);
 
-  --color-border-primary: var(--tjg-border-strong);
-  --color-border-secondary: var(--tjg-surface-subtle);
-  --color-border-tertiary: var(--tjg-border-muted);
 
-  --color-online: var(--tjg-status-online);
-  --color-offline: var(--tjg-status-offline);
-  --color-busy: var(--tjg-status-busy);
-  --color-away: var(--tjg-status-away);
 
-  --shadow-sm: var(--tjg-shadow-sm);
-  --shadow-md: var(--tjg-shadow-md);
-  --shadow-lg: var(--tjg-shadow-lg);
 
   /* ==================== Dark Theme Semantic Overrides ==================== */
   --left-text-color: #ccc;
@@ -614,56 +471,33 @@ html[data-theme='dark'] {
   --left-active-hover: rgba(26, 178, 146, 0.8);
   --left-active-icon-color: #1ab292;
   --left-win-icon-color: #1ab292;
-  --center-bg-color: var(--tjg-surface-panel);
   --right-bg-color: var(--tjg-surface-sidebar);
   --text-color: var(--tjg-text-primary);
-  --icon-color: var(--tjg-text-secondary);
-  --action-bar-icon-color: var(--tjg-text-secondary);
-  --action-bar-icon-hover: var(--tjg-surface-search);
-  --search-bg-color: var(--tjg-surface-search);
   --setting-item-line: var(--tjg-surface-subtle);
   --bg-menu: var(--tjg-menu-bg);
   --bg-menu-hover: var(--tjg-menu-hover);
-  --line-color: var(--tjg-border-default);
-  --button-bg-color: var(--tjg-surface-subtle);
-  --disabled-color: var(--tjg-text-disabled);
   --info-hover: color-mix(in srgb, var(--tjg-surface-subtle) 38%, transparent);
   --info-text-color: var(--tjg-text-primary);
   --tray-hover: var(--tjg-surface-subtle);
   --tray-hover-e: color-mix(in srgb, var(--tjg-color-danger-200) 70%, var(--tjg-surface-panel));
-  --reply-color: var(--tjg-text-tertiary);
-  --reply-hover: var(--tjg-text-secondary);
-  --time-color: var(--tjg-surface-subtle);
   --chat-bt-color: var(--tjg-surface-subtle);
   --chat-left-bg: var(--tjg-color-primary-500);
   --chat-right-bg: var(--tjg-surface-sidebar);
   --chat-text-color: var(--tjg-text-secondary);
   --chat-hover-color: var(--tjg-surface-panel-muted);
-  --search-color: var(--tjg-surface-search);
-  --card-bg: var(--tjg-color-primary-100);
   --progress-bg: transparent;
   --reply-bg: color-mix(in srgb, var(--tjg-surface-panel) 70%, transparent);
   --danger-text: var(--tjg-color-danger-500);
-  --danger-bg: var(--tjg-color-danger-100);
-  --warning-text: var(--tjg-color-warning-500);
-  --warning-bg: var(--tjg-color-warning-100);
   --avatar-border-color: var(--tjg-surface-panel);
-  --avatar-hover-bg: color-mix(in srgb, var(--tjg-surface-panel) 70%, transparent);
   --plugin-bg-color: var(--tjg-surface-subtle);
-  --float-block-hover-color: var(--tjg-text-inverse);
-  --float-hover-bg-color: color-mix(in srgb, var(--tjg-color-primary-200) 45%, var(--tjg-surface-panel));
-  --group-notice-list-bg: var(--tjg-surface-panel-muted);
-  --file-bg-color: var(--tjg-surface-elevated);
   --login-avatar-border: var(--tjg-border-default);
   --login-avatar-bg: var(--tjg-surface-search);
   --login-dropdown-bg: rgba(72, 72, 78, 0.6);
   --login-dropdown-border: rgba(255, 255, 255, 0.1);
   --login-divider-color: var(--tjg-border-default);
-  --login-third-party-divider-color: var(--tjg-border-muted);
   --login-surface-bg: var(--tjg-surface-panel);
   --avatar-fallback-color: transparent;
   --avatar-fallback-src: /logoL.png;
-  --voice-icon-color-other: var(--tjg-text-inverse);
   --plugin-icon-bg: color-mix(in srgb, var(--tjg-text-quaternary) 10%, transparent);
   --plugin-downloading-bg: color-mix(in srgb, var(--tjg-color-info-500) 45%, var(--tjg-surface-panel));
   --plugin-downloading-text: var(--tjg-color-info-500);
@@ -672,8 +506,6 @@ html[data-theme='dark'] {
   --tag-info-bg: var(--tjg-color-info-100);
   --time-group-bg: color-mix(in srgb, var(--tjg-surface-panel) 50%, transparent);
   --pin-input-bg: var(--tjg-surface-elevated);
-  --badge-danger-bg: var(--tjg-color-danger-500);
-  --badge-danger-text: var(--tjg-text-inverse);
   --bg-offline-avatar-overlay: color-mix(in srgb, var(--tjg-text-tertiary) 60%, transparent);
   --bg-long-press-menu: var(--tjg-surface-subtle);
 
