@@ -34,6 +34,8 @@
       </span>
     </div>
 
+    <PendingBurnMessages v-if="enabled && pendingCount > 0" :room-id="props.roomId" />
+
     <p v-if="enabled" class="room-burn-settings__tip">{{ t('room.burn.tip') }}</p>
   </div>
 </template>
@@ -43,6 +45,7 @@ import { NSelect, NSwitch } from 'naive-ui'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
+import PendingBurnMessages from './PendingBurnMessages.vue'
 
 const props = defineProps<{ roomId: string }>()
 const { t } = useI18n()

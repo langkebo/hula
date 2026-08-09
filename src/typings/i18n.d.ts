@@ -5816,7 +5816,12 @@ export type I18nKeys = {
       "duration_label": "焚毁时间",
       "duration_desc": "消息阅读后多少时间后销毁",
       "pending_count": "当前待销毁消息：{count} 条",
-      "tip": "提示：销毁后消息无法恢复，请谨慎使用"
+      "tip": "提示：销毁后消息无法恢复，请谨慎使用",
+      "pending_title": "待销毁消息",
+      "pending_empty": "暂无待销毁消息",
+      "cancel": "取消销毁",
+      "remaining_seconds": "{count} 秒后销毁",
+      "remaining_minutes": "{count} 分钟后销毁"
     },
     "discovery": {
       "aria_label": "房间发现",
