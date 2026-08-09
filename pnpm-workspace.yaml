@@ -1,6 +1,5 @@
 packages:
   - "."
-  - "../matrix-js-sdk"
 
 onlyBuiltDependencies:
   - '@vue-office/docx'

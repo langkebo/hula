@@ -20,7 +20,8 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/@vant/': 'vant',
 
   // Matrix SDK 相关
-  // link:../matrix-js-sdk 经 vite alias 解析为仓库外真实路径,不含 node_modules
+  // tarball（file:vendor/matrix-js-sdk.tgz）安装后，vite alias 指向 node_modules 内
+  // 包路径（.pnpm 真实路径同样包含 '/matrix-js-sdk/src/' 子串，两种形态均可命中）
   '/matrix-js-sdk/src/': 'matrix-sdk',
   'node_modules/matrix-js-sdk': 'matrix-sdk',
   'node_modules/@matrix-org/': 'matrix-sdk',

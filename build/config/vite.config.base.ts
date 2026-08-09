@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import UnoCSS from '@unocss/vite'
 import vue from '@vitejs/plugin-vue'
@@ -13,6 +14,15 @@ import { createManualChunks } from './chunks.ts'
 
 const dependencies = Object.keys(packageJson.dependencies || {})
 
+// SDK 去 link 化（2026-08-09）：matrix-js-sdk 以 tarball（file:vendor/matrix-js-sdk.tgz）
+// 安装进 node_modules，构建不再依赖仓库外 sibling 目录。以下 alias 将 fork 自定义子路径
+// 指向已安装包内的 TS 源码（tarball 的 files 包含 src/），保持"从源码编译 SDK"的
+// 既有运行时行为不变（lib 产物中 logger 访问 process.env 在浏览器/Worker 下会失败）。
+// 注意：不能用 require.resolve('matrix-js-sdk/package.json')——SDK 的 exports 未导出
+// './package.json' 子路径；顶级依赖的 node_modules/matrix-js-sdk 软链由 pnpm 保证存在。
+const sdkPackageRoot = path.join(fileURLToPath(new URL('../../', import.meta.url)), 'node_modules', 'matrix-js-sdk')
+const sdkSrc = (...segments: string[]) => path.join(sdkPackageRoot, 'src', ...segments)
+
 export const baseConfig: UserConfig = {
   resolve: {
     alias: {
@@ -21,58 +31,40 @@ export const baseConfig: UserConfig = {
       '~': fileURLToPath(new URL('../../', import.meta.url)),
       'stream-monaco': fileURLToPath(new URL('../empty-module.js', import.meta.url)),
       'monaco-editor': fileURLToPath(new URL('../empty-module.js', import.meta.url)),
-      'matrix-js-sdk/src': fileURLToPath(new URL('../../../matrix-js-sdk/src', import.meta.url)),
-      'matrix-js-sdk/friend': fileURLToPath(new URL('../../../matrix-js-sdk/src/friend/index.ts', import.meta.url)),
-      'matrix-js-sdk/crypto': fileURLToPath(new URL('../../../matrix-js-sdk/src/crypto-api/index.ts', import.meta.url)),
-      'matrix-js-sdk/dm': fileURLToPath(new URL('../../../matrix-js-sdk/src/dm/index.ts', import.meta.url)),
-      'matrix-js-sdk/voice': fileURLToPath(new URL('../../../matrix-js-sdk/src/voice/index.ts', import.meta.url)),
-      'matrix-js-sdk/notification': fileURLToPath(
-        new URL('../../../matrix-js-sdk/src/notification/index.ts', import.meta.url)
-      ),
-      'matrix-js-sdk/push': fileURLToPath(new URL('../../../matrix-js-sdk/src/push/index.ts', import.meta.url)),
-      'matrix-js-sdk/space': fileURLToPath(new URL('../../../matrix-js-sdk/src/space/index.ts', import.meta.url)),
-      'matrix-js-sdk/admin': fileURLToPath(new URL('../../../matrix-js-sdk/src/admin/index.ts', import.meta.url)),
-      'matrix-js-sdk/beacon': fileURLToPath(new URL('../../../matrix-js-sdk/src/beacon/index.ts', import.meta.url)),
-      'matrix-js-sdk/client': fileURLToPath(new URL('../../../matrix-js-sdk/src/client.ts', import.meta.url)),
-      'matrix-js-sdk/sync': fileURLToPath(new URL('../../../matrix-js-sdk/src/sync.ts', import.meta.url)),
-      'matrix-js-sdk/models/room': fileURLToPath(new URL('../../../matrix-js-sdk/src/models/room.ts', import.meta.url)),
-      'matrix-js-sdk/models/room-state': fileURLToPath(
-        new URL('../../../matrix-js-sdk/src/models/room-state.ts', import.meta.url)
-      ),
-      'matrix-js-sdk/models': fileURLToPath(new URL('../../../matrix-js-sdk/src/models/index.ts', import.meta.url)),
-      'matrix-js-sdk/http-api': fileURLToPath(new URL('../../../matrix-js-sdk/src/http-api/index.ts', import.meta.url)),
-      'matrix-js-sdk/manager-extensions': fileURLToPath(
-        new URL('../../../matrix-js-sdk/src/manager-extensions/index.ts', import.meta.url)
-      ),
-      'matrix-js-sdk/store/worker': fileURLToPath(
-        new URL('../../../matrix-js-sdk/src/store/indexeddb-store-worker.ts', import.meta.url)
-      ),
-      'matrix-js-sdk/credentials': fileURLToPath(
-        new URL('../../../matrix-js-sdk/src/credentials/index.ts', import.meta.url)
-      ),
-      'matrix-js-sdk/account': fileURLToPath(new URL('../../../matrix-js-sdk/src/account/index.ts', import.meta.url)),
-      'matrix-js-sdk/auth': fileURLToPath(new URL('../../../matrix-js-sdk/src/auth/index.ts', import.meta.url)),
-      'matrix-js-sdk/capabilities': fileURLToPath(
-        new URL('../../../matrix-js-sdk/src/capabilities/index.ts', import.meta.url)
-      ),
-      'matrix-js-sdk/room': fileURLToPath(new URL('../../../matrix-js-sdk/src/room/index.ts', import.meta.url)),
-      'matrix-js-sdk/media': fileURLToPath(new URL('../../../matrix-js-sdk/src/media/index.ts', import.meta.url)),
-      'matrix-js-sdk/message': fileURLToPath(new URL('../../../matrix-js-sdk/src/message/index.ts', import.meta.url)),
-      'matrix-js-sdk/profile': fileURLToPath(new URL('../../../matrix-js-sdk/src/profile/index.ts', import.meta.url)),
-      'matrix-js-sdk/presence': fileURLToPath(new URL('../../../matrix-js-sdk/src/presence/index.ts', import.meta.url)),
-      'matrix-js-sdk/sending': fileURLToPath(new URL('../../../matrix-js-sdk/src/sending/index.ts', import.meta.url)),
-      'matrix-js-sdk/crypto-keys': fileURLToPath(
-        new URL('../../../matrix-js-sdk/src/crypto-keys/index.ts', import.meta.url)
-      ),
-      'matrix-js-sdk/device': fileURLToPath(new URL('../../../matrix-js-sdk/src/device/index.ts', import.meta.url)),
-      'matrix-js-sdk/telemetry': fileURLToPath(
-        new URL('../../../matrix-js-sdk/src/telemetry/index.ts', import.meta.url)
-      ),
-      'matrix-js-sdk/qr-login': fileURLToPath(new URL('../../../matrix-js-sdk/src/qr-login/index.ts', import.meta.url)),
-      'matrix-js-sdk/rendezvous': fileURLToPath(
-        new URL('../../../matrix-js-sdk/src/rendezvous/index.ts', import.meta.url)
-      ),
-      'matrix-js-sdk': fileURLToPath(new URL('../../../matrix-js-sdk/src/index.ts', import.meta.url))
+      'matrix-js-sdk/src': sdkSrc(),
+      'matrix-js-sdk/friend': sdkSrc('friend', 'index.ts'),
+      'matrix-js-sdk/crypto': sdkSrc('crypto-api', 'index.ts'),
+      'matrix-js-sdk/dm': sdkSrc('dm', 'index.ts'),
+      'matrix-js-sdk/voice': sdkSrc('voice', 'index.ts'),
+      'matrix-js-sdk/notification': sdkSrc('notification', 'index.ts'),
+      'matrix-js-sdk/push': sdkSrc('push', 'index.ts'),
+      'matrix-js-sdk/space': sdkSrc('space', 'index.ts'),
+      'matrix-js-sdk/admin': sdkSrc('admin', 'index.ts'),
+      'matrix-js-sdk/beacon': sdkSrc('beacon', 'index.ts'),
+      'matrix-js-sdk/client': sdkSrc('client.ts'),
+      'matrix-js-sdk/sync': sdkSrc('sync.ts'),
+      'matrix-js-sdk/models/room': sdkSrc('models', 'room.ts'),
+      'matrix-js-sdk/models/room-state': sdkSrc('models', 'room-state.ts'),
+      'matrix-js-sdk/models': sdkSrc('models', 'index.ts'),
+      'matrix-js-sdk/http-api': sdkSrc('http-api', 'index.ts'),
+      'matrix-js-sdk/manager-extensions': sdkSrc('manager-extensions', 'index.ts'),
+      'matrix-js-sdk/store/worker': sdkSrc('store', 'indexeddb-store-worker.ts'),
+      'matrix-js-sdk/credentials': sdkSrc('credentials', 'index.ts'),
+      'matrix-js-sdk/account': sdkSrc('account', 'index.ts'),
+      'matrix-js-sdk/auth': sdkSrc('auth', 'index.ts'),
+      'matrix-js-sdk/capabilities': sdkSrc('capabilities', 'index.ts'),
+      'matrix-js-sdk/room': sdkSrc('room', 'index.ts'),
+      'matrix-js-sdk/media': sdkSrc('media', 'index.ts'),
+      'matrix-js-sdk/message': sdkSrc('message', 'index.ts'),
+      'matrix-js-sdk/profile': sdkSrc('profile', 'index.ts'),
+      'matrix-js-sdk/presence': sdkSrc('presence', 'index.ts'),
+      'matrix-js-sdk/sending': sdkSrc('sending', 'index.ts'),
+      'matrix-js-sdk/crypto-keys': sdkSrc('crypto-keys', 'index.ts'),
+      'matrix-js-sdk/device': sdkSrc('device', 'index.ts'),
+      'matrix-js-sdk/telemetry': sdkSrc('telemetry', 'index.ts'),
+      'matrix-js-sdk/qr-login': sdkSrc('qr-login', 'index.ts'),
+      'matrix-js-sdk/rendezvous': sdkSrc('rendezvous', 'index.ts'),
+      'matrix-js-sdk': sdkSrc('index.ts')
     }
   },
   css: {
@@ -157,10 +149,10 @@ export const baseConfig: UserConfig = {
     }
   },
   optimizeDeps: {
-    // 注意：matrix-js-sdk 通过 link:../matrix-js-sdk 本地链接，其依赖（loglevel, oidc-client-ts,
-    // jwt-decode 等）安装在 matrix-js-sdk 自身的 node_modules/ 中。如果将其加入 include，
-    // Vite 预打包会改写 import 路径，导致在 HuLa 的 node_modules 中找不到这些依赖。
-    // 因此必须 exclude，让 Vite 直接按源码路径解析，利用 Node 模块查找机制找到 sibling 的依赖。
+    // 注意：matrix-js-sdk 经 vite alias 指向包内 TS 源码（见 resolve.alias 注释），
+    // 若加入 include，Vite 预打包会改写 import 路径并绕过 alias，且其 lib 产物中
+    // logger 访问 process.env 在浏览器/Worker 下会失败。因此必须 exclude，
+    // 让 Vite 直接按源码路径即时转换。
     include: ['vue', 'vue-router', 'pinia', '@vueuse/core', 'naive-ui', 'dayjs', 'es-toolkit', 'dompurify', 'mitt'],
     exclude: [
       'matrix-js-sdk',
@@ -181,10 +173,8 @@ export const baseConfig: UserConfig = {
     host: '0.0.0.0',
     strictPort: true,
     fs: {
-      allow: [
-        fileURLToPath(new URL('../../', import.meta.url)),
-        fileURLToPath(new URL('../../../matrix-js-sdk', import.meta.url))
-      ]
+      // SDK 去 link 化后源码经 node_modules 解析，无需再放行仓库外 sibling 目录
+      allow: [fileURLToPath(new URL('../../', import.meta.url))]
     },
     proxy: {
       '/_matrix': {
