@@ -12,7 +12,6 @@
       :current-user-name="currentUserName"
       :sticky-events="stickyEvents"
       :can-set-sticky="canSetSticky"
-      @toggle-private-mode="togglePrivateMode"
       @view-announcement="handleViewAnnouncement"
       @set-sticky="handleSetSticky"
       @cancel-sticky="handleCancelSticky"
