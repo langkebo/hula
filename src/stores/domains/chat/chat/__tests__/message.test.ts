@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 
-const { globalStoreMock, timerWorkerMock, sessionStoreMock } = vi.hoisted(() => ({
+const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef } = vi.hoisted(() => ({
   globalStoreMock: {
     currentSessionRoomId: 'room-1',
     currentSession: null as null | { type?: number }
@@ -12,6 +12,8 @@ const { globalStoreMock, timerWorkerMock, sessionStoreMock } = vi.hoisted(() => 
     terminate: vi.fn(),
     onmessage: null as null | ((event: { data: { type: string; msgId?: string } }) => void)
   },
+  // 可变窗口 label，便于按用例切换 home / message（独立聊天窗口）进行回归
+  windowLabelRef: { value: 'home' },
   sessionStoreMock: {
     sessionList: [],
     sessionOptions: {},
@@ -41,7 +43,7 @@ vi.mock('vue-router', () => ({
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
   WebviewWindow: {
     getCurrent: () => ({
-      label: 'home'
+      label: windowLabelRef.value
     })
   }
 }))
@@ -107,6 +109,20 @@ vi.mock('@/services/matrix/room/QueryService', () => ({
   }
 }))
 
+vi.mock('@/services/matrix/room/RealtimeService', () => ({
+  matrixRoomRealtimeService: {
+    convertRoomToSession: vi.fn((room: { roomId: string; name?: string }) => ({
+      roomId: room.roomId,
+      name: room.name || '',
+      avatar: '',
+      type: 0,
+      unreadCount: 0,
+      activeTime: 0
+    }))
+  },
+  MatrixRoomRealtimeService: class {}
+}))
+
 vi.mock('@/services/matrix/MatrixEventService', () => ({
   default: {
     getPagedRoomMessages: vi.fn(),
@@ -117,6 +133,7 @@ vi.mock('@/services/matrix/MatrixEventService', () => ({
 }))
 
 import matrixEventService from '@/services/matrix/MatrixEventService'
+import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { useChatStore } from '@/stores/domains/chat/chat/message'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
 
@@ -141,6 +158,7 @@ describe('ChatMessageStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    windowLabelRef.value = 'home'
     globalStoreMock.currentSessionRoomId = 'room-1'
     globalStoreMock.currentSession = null
     timerWorkerMock.postMessage.mockClear()
@@ -434,6 +452,37 @@ describe('ChatMessageStore', () => {
     expect(store.chatMessageListByRoomId('room-2')).toEqual([])
     expect(store.currentMessageOptions).toMatchObject({ hasLoadedOnce: true, isLoading: false })
     expect(sessionStoreMock.markSessionRead).toHaveBeenCalledWith('room-1')
+  })
+
+  it('should still load messages in the standalone chat window (label "message")', async () => {
+    windowLabelRef.value = 'message'
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValue({
+      messages: [],
+      isLast: true,
+      cursor: ''
+    })
+    const store = useChatStore()
+
+    await store.changeRoom()
+
+    // 独立聊天窗口不再被 window guard 挡在门外，必须执行 getPageMsg 与已读标记，
+    // 否则骨架屏永久转圈、无历史消息。
+    expect(matrixEventService.getPagedRoomMessages).toHaveBeenCalledWith('room-1', 20, '')
+    expect(store.currentMessageOptions).toMatchObject({ hasLoadedOnce: true, isLoading: false })
+    expect(sessionStoreMock.markSessionRead).toHaveBeenCalledWith('room-1')
+  })
+
+  it('should add a minimal session when opening a room missing from sessionList (e.g. from a notification)', async () => {
+    const store = useChatStore()
+    const fakeRoom = { roomId: 'room-1', name: 'Orphan Room' }
+    // 默认 matrixRoomQueryService.getRoom 返回 null；本用例只覆盖这一次调用
+    vi.mocked(matrixRoomQueryService.getRoom).mockReturnValueOnce(fakeRoom as any)
+
+    await store.changeRoom()
+
+    expect(sessionStoreMock.addSession).toHaveBeenCalledWith(
+      expect.objectContaining({ roomId: 'room-1', name: 'Orphan Room' })
+    )
   })
 
   it('should merge remote page messages into existing sorted keys incrementally', async () => {
