@@ -6,11 +6,6 @@
     <SkipLink target="#center" :label="t('common.skip_to_sessions')" />
     <SkipLink target="#chat-main" :label="t('common.skip_to_chat')" />
     <GuestModeBanner :visible="isGuestMode" :guest-user-id="guestUserId" />
-    <PrivacyOverlay
-      v-if="isPrivacyMode"
-      :visible="isPrivacyMode"
-      :watermark-text="watermarkText"
-      :show-block-message="true" />
     <div class="flex flex-1 min-h-0">
       <AsyncLeft />
       <AsyncCenter />
@@ -47,14 +42,12 @@ import { useRoute } from 'vue-router'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import GuestModeBanner from '@/components/common/GuestModeBanner.vue'
 import SkipLink from '@/components/common/SkipLink.vue'
-import PrivacyOverlay from '@/components/privacy/PrivacyOverlay.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
 import { useMitt } from '@/composables/common/useMitt'
 import { useOverlayController } from '@/composables/common/useOverlayController'
 import { useWindow } from '@/composables/common/useWindow'
 import { useSearchShortcut } from '@/composables/search/useSearchShortcut'
-import { usePrivacyProtection } from '@/composables/usePrivacyProtection'
 import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { MittEnum, MsgEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
 import type { FilesMeta } from '@/services/types'
@@ -107,15 +100,8 @@ const { overlayVisible, markAsyncLoaded } = useOverlayController({
   minDisplayMs: 600
 })
 
-const { isPrivacyMode, settings, enterPrivateChat, leavePrivateChat, generateWatermark } = usePrivacyProtection({
-  onPrivacyChange: (isPrivate) => {
-    logger.info('隐私模式变更:', isPrivate)
-  }
-})
-
-const watermarkText = computed(() => generateWatermark())
-
 let initPromise: Promise<void> | null = null
+
 // 只有首次登录需要延迟异步组件的加载，后续重新登录直接渲染
 const maybeDelayForInitialRender = async () => {
   if (!shouldBlockInitialRender.value) {
