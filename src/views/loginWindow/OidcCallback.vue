@@ -6,14 +6,16 @@
     </div>
 
     <div v-else-if="status === 'error'" class="flex-col-center gap-16px">
-      <n-result status="error" :title="t('login.oidc.error_title')" :description="errorMessage">
-        <template #footer>
-          <n-space justify="center">
-            <n-button @click="goToLogin">{{ t('login.oidc.back_to_login') }}</n-button>
-            <n-button type="primary" @click="retry">{{ t('login.oidc.retry') }}</n-button>
-          </n-space>
+      <ErrorState
+        illustration="network-error"
+        :title="t('login.oidc.error_title')"
+        :message="errorMessage"
+        :retry-text="t('login.oidc.retry')"
+        @retry="retry">
+        <template #actions>
+          <n-button @click="goToLogin">{{ t('login.oidc.back_to_login') }}</n-button>
         </template>
-      </n-result>
+      </ErrorState>
     </div>
 
     <div v-else-if="status === 'success'" class="flex-col-center gap-16px">
@@ -32,6 +34,7 @@
 import { NButton, NResult, NSpace, NSpin } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSessionActions } from '@/composables/user/useSessionActions'
 import { resolveMatrixEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend/config'

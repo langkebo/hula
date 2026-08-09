@@ -14,18 +14,14 @@
             </n-button>
           </template>
         </EmptyState>
-        <EmptyState
+        <ErrorState
           v-else
-          illustration="no-results"
+          illustration="server-error"
           :title="t('common.error')"
-          :description="lastFriendError?.message || t('common.error')"
-          class="mt-40px">
-          <template #actions>
-            <n-button size="small" @click="handleRetryFriendList">
-              {{ t('common.retry') }}
-            </n-button>
-          </template>
-        </EmptyState>
+          :message="lastFriendError?.message || t('common.error')"
+          :retry-text="t('common.retry')"
+          class="mt-40px"
+          @retry="handleRetryFriendList" />
       </n-spin>
     </div>
 
@@ -174,6 +170,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import SkeletonFriendList from '@/components/common/SkeletonFriendList.vue'
 import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
