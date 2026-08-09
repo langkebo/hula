@@ -10,32 +10,12 @@ import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 import { toLocalpart } from '@/utils/userIdentity'
+// MatrixRoomMember 的唯一真源在 ./group/types（useWsEventHandler 已直接引用），此处 re-export 保持既有消费方兼容
+import type { MatrixRoomMember } from './group/types'
 
 const logger = createLogger('GroupStore')
 
-export interface MatrixRoomMember {
-  userId: string
-  displayName: string | null
-  avatarUrl: string | null
-  membership: 'join' | 'leave' | 'invite' | 'ban'
-  powerLevel: number
-  isModerator: boolean
-  isCreator: boolean
-  name: string
-  uid: string
-  account: string
-  avatar: string
-  activeStatus: OnlineEnum
-  roleId: number
-  lastOptTime: number
-  myName?: string
-  userStateId?: string
-  linkedGitee?: boolean
-  linkedGithub?: boolean
-  oauthProviders?: ('gitee' | 'github')[]
-  hideMyPosts?: boolean
-  hideTheirPosts?: boolean
-}
+export type { MatrixRoomMember }
 
 export interface MatrixGroupInfo {
   roomId: string
@@ -123,32 +103,6 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
         logger.info(`[GroupStore] Successfully set display name to: ${value}`)
       } catch (e) {
         logger.error(`[GroupStore] Failed to set display name: ${e}`)
-      }
-    }
-  })
-
-  const myRoleIdInCurrentGroup = computed({
-    get() {
-      const myUserId = matrixStore.userId
-      if (!myUserId) return 0
-      const member = currentRoomMembers.value.find((m) => m.userId === myUserId)
-      if (!member) return 0
-      if (member.isCreator) return 0
-      if (member.isModerator) return 1
-      return 2
-    },
-    async set(value: number) {
-      const myUserId = matrixStore.userId
-      const roomId = globalStore.currentSessionRoomId
-      if (!myUserId || !roomId) return
-      try {
-        // 0=创建者, 1=管理员, 2=普通成员
-        // Matrix power level: 100=创建者/管理员, 0=普通成员
-        const powerLevel = value <= 1 ? 100 : 0
-        await matrixRoomMemberFacade.setMemberPowerLevel(roomId, myUserId, powerLevel)
-        logger.info(`[GroupStore] 成功设置角色: ${value}`)
-      } catch (e) {
-        logger.error(`[GroupStore] 设置角色失败: ${e}`)
       }
     }
   })
@@ -414,22 +368,6 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     }
   }
 
-  async function setPowerLevel(roomId: string, userId: string, powerLevel: number): Promise<boolean> {
-    try {
-      await matrixRoomMemberFacade.setMemberPowerLevel(roomId, userId, powerLevel)
-      await loadRoomMembers(roomId, true)
-      logger.info(`[GroupStore] 设置用户权限成功: ${userId} -> ${powerLevel}`)
-      return true
-    } catch (err) {
-      logger.error(`[GroupStore] 设置用户权限失败: ${err}`)
-      return false
-    }
-  }
-
-  function getMemberByUserId(roomId: string, userId: string): MatrixRoomMember | undefined {
-    return membersMap[roomId]?.find((m) => m.userId === userId || m.uid === userId)
-  }
-
   function getMembersByRoomId(roomId: string): MatrixRoomMember[] {
     return membersMap[roomId] || []
   }
@@ -520,11 +458,6 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     if (groupInfoMap[roomId]) {
       groupInfoMap[roomId] = { ...groupInfoMap[roomId], memberNum: totalNum }
     }
-  }
-
-  function clearRoomData(roomId: string): void {
-    delete membersMap[roomId]
-    delete groupInfoMap[roomId]
   }
 
   function clearAllData(): void {
@@ -628,15 +561,6 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     delete groupInfoMap[roomId]
   }
 
-  async function setGroupDetails(): Promise<void> {
-    const rooms = await matrixRoomQueryFacade.getRooms()
-    for (const room of rooms) {
-      if (!groupInfoMap[room.roomId]) {
-        await loadGroupInfo(room.roomId)
-      }
-    }
-  }
-
   function updateAdminStatus(roomId: string, uids: string[], isAdmin: boolean): void {
     const members = membersMap[roomId]
     if (!members) return
@@ -675,7 +599,6 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     currentLordId,
     adminUidList,
     myNameInCurrentGroup,
-    myRoleIdInCurrentGroup,
     isCurrentLord,
     isAdmin,
     getUserInfo,
@@ -698,8 +621,6 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     setRoomAvatar,
     setVisibility,
     getVisibility,
-    setPowerLevel,
-    getMemberByUserId,
     getMembersByRoomId,
     getUserListByRoomId,
     getUser,
@@ -709,7 +630,6 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     updateGroupDetail,
     updateOnlineNum,
     updateGroupNumber,
-    clearRoomData,
     clearAllData,
     cleanupSession,
     getGroupUserList,
@@ -726,7 +646,6 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     addGroupDetail,
     removeGroupDetail,
     updateAdminStatus,
-    setGroupDetails,
     switchSession
   }
 })
