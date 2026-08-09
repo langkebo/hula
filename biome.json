@@ -124,7 +124,7 @@
         }
       },
       "formatter": {
-        "enabled": true
+        "enabled": false
       }
     },
     {
