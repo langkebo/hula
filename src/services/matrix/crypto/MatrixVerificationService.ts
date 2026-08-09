@@ -1,4 +1,4 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { IScanQrCodeRequest, MatrixClient } from 'matrix-js-sdk'
 import { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
 import type { KeyVerificationManager } from 'matrix-js-sdk/key-verification'
 import type {
@@ -306,8 +306,8 @@ class VerificationService extends BaseMatrixService {
     try {
       const manager = this.getSDKKeyVerificationManager()
       if (!manager) throw new Error('KeyVerificationManager not available')
-      // biome-ignore lint/suspicious/noExplicitAny: SDK crypto client lacks type definitions for synapse-rust extensions
-      await manager.scanQrCodeHttp({ qr_code: qrCodeData } as any)
+      // synapse-rust scanQrCodeHttp accepts { qr_code: string } — different from SDK's IScanQrCodeRequest
+      await manager.scanQrCodeHttp({ qr_code: qrCodeData } as unknown as IScanQrCodeRequest)
       logger.info('[Verification] 扫描二维码成功')
       return true
     } catch (err) {

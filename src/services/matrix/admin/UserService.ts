@@ -14,6 +14,13 @@ const logger = createLogger('UserService')
 type UserDomainClientGetter = () => MatrixClient
 type UserDomainSdkGetter = () => Promise<import('matrix-js-sdk/admin').AdminManager>
 
+/** synapse-rust 扩展：getUserRooms 返回的房间对象（SDK 类型为 string[]） */
+interface SynapseUserRoom {
+  room_id?: string
+  membership?: string
+  is_room_admin?: boolean
+}
+
 export class AdminUserService {
   constructor(
     private readonly sdkAdmin: UserDomainSdkGetter,
@@ -284,19 +291,18 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserRooms(userId)
-      const rooms = result?.rooms ?? []
+      // SDK types rooms as string[], but synapse-rust returns room objects with
+      // room_id/membership/is_room_admin. Cast to a union to enable type narrowing.
+      const rooms = (result?.rooms ?? []) as Array<string | SynapseUserRoom>
       if (Array.isArray(rooms)) {
         return rooms.map((room) => {
           if (typeof room === 'string') {
             return { roomId: room, membership: '', isRoomAdmin: false }
           }
           return {
-            // biome-ignore lint/suspicious/noExplicitAny: SDK room type lacks type definitions for synapse-rust extensions
-            roomId: (room as any).room_id || '',
-            // biome-ignore lint/suspicious/noExplicitAny: SDK room type lacks type definitions for synapse-rust extensions
-            membership: (room as any).membership || '',
-            // biome-ignore lint/suspicious/noExplicitAny: SDK room type lacks type definitions for synapse-rust extensions
-            isRoomAdmin: Boolean((room as any).is_room_admin)
+            roomId: room.room_id || '',
+            membership: room.membership || '',
+            isRoomAdmin: Boolean(room.is_room_admin)
           }
         })
       }
@@ -494,8 +500,7 @@ export class AdminUserService {
   }> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      const result = await (admin as any).listLoginFailures({ limit, from })
+      const result = await admin.listLoginFailures({ limit, from })
       return {
         failures: result?.failures ?? [],
         nextToken: result?.next_token

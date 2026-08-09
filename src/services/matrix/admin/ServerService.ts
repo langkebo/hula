@@ -92,8 +92,7 @@ export class AdminServerService {
   async updateServerConfig(config: Record<string, unknown>): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      await (admin as any).updateServerConfig(config)
+      await admin.updateServerConfig(config)
       logger.info('[AdminServer] 服务器配置已更新')
     } catch (err) {
       logger.error(`[AdminServer] 更新服务器配置失败: ${err}`)
@@ -131,8 +130,7 @@ export class AdminServerService {
       const admin = await this.sdkAdmin()
       const params: { level?: string; limit?: number } = { limit }
       if (level) params.level = level
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      return (await (admin as any).getServerLogs(params)) ?? null
+      return (await admin.getServerLogs(params)) ?? null
     } catch (err) {
       logger.error(`[AdminServer] 获取服务器日志失败: ${err}`)
       return null

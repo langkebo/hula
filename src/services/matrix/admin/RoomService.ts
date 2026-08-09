@@ -1,4 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import type { AdminShutdownRoomResult } from 'matrix-js-sdk/admin'
 import { isValidMatrixRoomId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
 import type { RoomInfo, RoomState, ShutdownRoomResult } from './AdminTypes'
@@ -470,15 +471,12 @@ export class AdminRoomService {
         block: options?.block
       })
       logger.info(`[Admin] 房间已删除: ${roomId}`)
+      const typedResult = result as unknown as AdminShutdownRoomResult
       return {
-        // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-        kickedUsers: (result as any)?.kicked_users ?? [],
-        // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-        failedToKickUsers: (result as any)?.failed_to_kick_users ?? [],
-        // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-        localAliases: (result as any)?.local_aliases ?? [],
-        // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-        newRoomId: (result as any)?.new_room_id
+        kickedUsers: typedResult?.kicked_users ?? [],
+        failedToKickUsers: typedResult?.failed_to_kick_users ?? [],
+        localAliases: typedResult?.local_aliases ?? [],
+        newRoomId: typedResult?.new_room_id
       }
     } catch (err) {
       logger.error(`[Admin] 删除房间失败: ${err}`)
