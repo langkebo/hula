@@ -50,84 +50,11 @@
           aria-live="polite"
           class="message-list min-h-full flex flex-col"
           :class="{ 'private-mode-active': privateModeActive }">
-          <!-- 没有更多消息提示 -->
-          <div
-            v-show="isMainViewReady && chatStore.shouldShowNoMoreMessage"
-            class="flex-center gap-6px h-32px flex-shrink-0 cursor-default select-none">
-            <p class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">{{ t('home.chat_main.no_more') }}</p>
-          </div>
-
-          <!-- 空状态 -->
-          <EmptyState
-            v-if="isMainViewReady && chatStore.chatMessageList.length === 0"
-            illustration="no-conversations"
-            :title="t('home.chat_main.empty_title')"
-            :description="t('home.chat_main.empty_desc')"
-            class="flex-1 py-60px" />
-          <DynamicScroller
-            v-if="isMainViewReady"
-            class="scroller flex-1"
-            :items="chatStore.chatMessageList"
-            :min-item-size="40"
-            :buffer="10"
-            key-field="clientKey"
-            v-slot="{ item, index, active }">
-            <DynamicScrollerItem
-              :item="item"
-              :active="active"
-              :size-dependencies="[
-                item.message.body,
-                item.message.msgtype,
-                item.message.content?.info?.h?._,
-                item.message.content?.file?._,
-                item.replyEvent
-              ]"
-              :data-index="index">
-              <n-flex
-                vertical
-                class="flex-y-center mb-12px"
-                :data-message-id="item.message.id"
-                :data-message-index="index">
-                <!-- 信息间隔时间 -->
-                <span
-                  class="text-[var(--text-sm)] text-[--tjg-text-tertiary] select-none p-4px"
-                  v-if="item.timeBlock"
-                  @click.stop>
-                  {{ formatChatTime(item.message.sendTime) }}
-                </span>
-                <!-- 消息内容容器 -->
-                <div
-                  @mouseenter="hoverId = item.message.id"
-                  :class="[
-                    'w-full box-border message-row',
-                    item.message.type === MsgEnum.RECALL ? 'min-h-22px' : 'min-h-62px',
-                    isGroup ? 'p-[14px_10px_14px_20px]' : 'chat-single p-[4px_10px_10px_20px]',
-                    { 'active-reply': activeReply === item.message.id },
-                    { 'message-row--multi-select': computeMsgHover(item) },
-                    { 'message-row--hoverable': !chatStore.isMsgMultiChoose }
-                  ]"
-                  @click="
-                    () => {
-                      if (chatStore.isMsgMultiChoose && isMessageMultiSelectEnabled(item.message.type)) {
-                        item.isCheck = !item.isCheck
-                      }
-                    }
-                  ">
-                  <RenderMessage
-                    :message="item"
-                    :is-group="isGroup"
-                    :from-user="{ uid: getMessageSenderUid(item) }"
-                    :upload-progress="item.uploadProgress"
-                    @jump2-reply="jumpToReplyMsg" />
-                </div>
-              </n-flex>
-            </DynamicScrollerItem>
-          </DynamicScroller>
-          <div v-else class="message-list-placeholder">
-            <div class="message-skeleton message-skeleton--left"></div>
-            <div class="message-skeleton message-skeleton--right"></div>
-            <div class="message-skeleton message-skeleton--left message-skeleton--short"></div>
-          </div>
+          <ChatMessageList
+            :is-group="isGroup"
+            :private-mode-active="privateModeActive"
+            :active-reply="activeReply"
+            @jump-to-reply="jumpToReplyMsg" />
         </div>
       </div>
     </div>
@@ -209,9 +136,7 @@ import {
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
 import { type AnnouncementData, useAnnouncementBanner } from '@/composables/chat/useAnnouncementBanner'
 import { useAvatarPreloader } from '@/composables/chat/useAvatarPreloader'
 import { useChatDialogs } from '@/composables/chat/useChatDialogs'
@@ -227,19 +152,18 @@ import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { usePopover } from '@/composables/common/usePopover'
 import { useWindow } from '@/composables/common/useWindow'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
-import { MittEnum, MsgEnum } from '@/enums'
+import { MittEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
-import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
-import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMobile } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
 import ChatBanners from './ChatBanners.vue'
+import ChatMessageList from './ChatMessageList.vue'
 import ChatModals from './ChatModals.vue'
 import ChatRoomSearch from './ChatRoomSearch.vue'
 
@@ -367,17 +291,6 @@ const onPinnedEventsChanged = (payload: { roomId?: string } | undefined) => {
   }
 }
 useMitt.on(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
-const isMainViewReady = computed(() => {
-  if (!currentRoomId.value) {
-    return false
-  }
-
-  const currentSessionInfo = chatStore.currentSessionInfo
-  const hasSessionBound = currentSessionInfo?.roomId === currentRoomId.value
-  const hasLoadedCurrentRoom = chatStore.currentMessageOptions?.hasLoadedOnce === true
-
-  return hasSessionBound && hasLoadedCurrentRoom
-})
 const networkBanner = computed(() => {
   if (!networkStatus.browserOnline.value && networkStatus.wsOnline.value !== true) {
     return { text: t('home.chat_main.network_offline') }
@@ -392,17 +305,6 @@ const networkBanner = computed(() => {
   }
 
   return null
-})
-const computeMsgHover = computed(() => (item: MessageType) => {
-  if (!chatStore.isMsgMultiChoose || !isMessageMultiSelectEnabled(item.message.type)) {
-    return false
-  }
-
-  if (chatStore.msgMultiChooseMode === 'forward') {
-    return false
-  }
-
-  return hoverId.value === item.message.id || item.isCheck
 })
 
 const scrollContainerRef = useTemplateRef<HTMLDivElement>('scrollContainer')
@@ -439,7 +341,6 @@ const handleScroll = (event: Event) => {
 }
 
 const showScrollbar = ref<boolean>(true)
-const hoverId = ref('')
 
 const { stop: stopWheelListener } = useWheelScrollLimiter(scrollContainerRef)
 
@@ -645,73 +546,8 @@ onUnmounted(() => {
   will-change: auto;
 }
 
-// Discord 式消息行 hover 高亮（需求文档 6.5 节）
-.message-row {
-  transition: background-color var(--tjg-motion-duration-fast) ease;
-  border-radius: 4px;
-}
-
-.message-row--hoverable:hover:not(.active-reply):not(.message-row--multi-select) {
-  background: color-mix(in srgb, var(--tjg-text-primary) 4%, transparent);
-}
-
-.message-row--multi-select {
-  background: color-mix(in srgb, var(--tjg-text-tertiary) 20%, transparent);
-}
-
-.message-list-placeholder {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px 20px 28px;
-}
-
-.message-skeleton {
-  height: 48px;
-  border-radius: 14px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--tjg-surface-panel) 88%, var(--tjg-text-tertiary) 12%) 0%,
-    color-mix(in srgb, var(--tjg-surface-panel) 78%, var(--tjg-text-tertiary) 22%) 50%,
-    color-mix(in srgb, var(--tjg-surface-panel) 88%, var(--tjg-text-tertiary) 12%) 100%
-  );
-  background-size: 200% 100%;
-  animation: chat-skeleton-shimmer 1.2s ease-in-out infinite;
-}
-
-.message-skeleton--left {
-  width: min(320px, 78%);
-}
-
-.message-skeleton--right {
-  width: min(260px, 64%);
-  margin-left: auto;
-}
-
-.message-skeleton--short {
-  width: min(200px, 52%);
-}
-
-@keyframes chat-skeleton-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
-}
-
 // 拖拽时禁用鼠标事件，避免不必要的监听损耗
 :global(body.dragging-resize) .scrollbar-container {
   pointer-events: none;
-}
-
-// 私密模式样式
-.private-mode-active {
-  .message-row {
-    border-left: 2px solid var(--tjg-color-danger-500);
-  }
 }
 </style>
