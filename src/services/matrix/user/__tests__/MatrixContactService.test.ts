@@ -39,8 +39,8 @@ vi.mock('../../friends/MatrixFriendService', () => ({
   matrixFriendService: mockFriendService
 }))
 
-vi.mock('../../SynapseRustExtensionsService', () => ({
-  synapseRustExtensionsService: mockSynapseExtensionsService
+vi.mock('../../extensions/SynapseFriendExtensionService', () => ({
+  synapseFriendExtensionService: mockSynapseExtensionsService
 }))
 
 vi.mock('../../room/ActionFacade', () => ({

@@ -2,13 +2,13 @@ import type { MatrixEvent, RoomMember, User } from 'matrix-js-sdk'
 import { ERROR_CLIENT_NOT_INITIALIZED_EN } from '@/common/matrixConstants'
 import { createLogger } from '@/utils/Logger'
 import { normalizeMatrixUserId, toLocalpart } from '@/utils/userIdentity'
+import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import { matrixFriendService } from '../friends/MatrixFriendService'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixRoomActionFacade } from '../room/ActionFacade'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
 import { matrixRoomQueryFacade } from '../room/QueryFacade'
 import { matrixRoomReadFacade } from '../room/ReadFacade'
-import { synapseRustExtensionsService } from '../SynapseRustExtensionsService'
 
 const logger = createLogger('MatrixContactService')
 
@@ -69,7 +69,7 @@ class MatrixContactService {
       const normalizedUserId = this.normalizeTargetUserId(trimmedQuery)
       const exactKeyword = toLocalpart(normalizedUserId) || trimmedQuery
 
-      const exactMatches = await synapseRustExtensionsService.searchFriends(exactKeyword, {
+      const exactMatches = await synapseFriendExtensionService.searchFriends(exactKeyword, {
         limit,
         mode: 'exact'
       })
@@ -81,7 +81,7 @@ class MatrixContactService {
         }))
       }
 
-      const fallbackMatches = await synapseRustExtensionsService.searchFriends(trimmedQuery, {
+      const fallbackMatches = await synapseFriendExtensionService.searchFriends(trimmedQuery, {
         limit,
         mode: 'fuzzy'
       })

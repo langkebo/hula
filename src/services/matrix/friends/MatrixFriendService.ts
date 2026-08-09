@@ -15,16 +15,16 @@ export type FriendStatus = FriendRequestStatus | FriendRelationStatus
 import type { MatrixClient } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
+import { type SynapseDmInfo, synapseDmExtensionService } from '../extensions/SynapseDmExtensionService'
+import {
+  type SynapseFriendInfo,
+  type SynapseFriendRequest,
+  synapseFriendExtensionService
+} from '../extensions/SynapseFriendExtensionService'
 import matrixClientService from '../MatrixClientService'
 import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 import { matrixRoomActionFacade } from '../room/ActionFacade'
-import {
-  type SynapseDmInfo,
-  type SynapseFriendInfo,
-  type SynapseFriendRequest,
-  synapseRustExtensionsService
-} from '../SynapseRustExtensionsService'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
 
 const logger = createLogger('MatrixFriendService')
@@ -209,7 +209,7 @@ class MatrixFriendService {
     } else {
       // FriendManager 不可用时，通过 REST API 拉取
       try {
-        const pending = await synapseRustExtensionsService.getPendingRequests()
+        const pending = await synapseFriendExtensionService.getPendingRequests()
         this.syncState = {
           ...this.syncState,
           incomingRequests: (pending.incoming ?? []).map((r) => this.normalizeSynapseFriendRequest(r, 'incoming')),
@@ -284,7 +284,7 @@ class MatrixFriendService {
 
   private async getFriendsByFallbackApi(): Promise<Friend[]> {
     try {
-      const friends = await synapseRustExtensionsService.getFriends()
+      const friends = await synapseFriendExtensionService.getFriends()
       return friends.map((friend) => this.normalizeFriend(friend))
     } catch (err) {
       logger.error(`[MatrixFriend] 回退好友列表接口失败: ${err}`)
@@ -428,7 +428,7 @@ class MatrixFriendService {
 
     // FriendManager 不可用时，回退到 REST API
     try {
-      return await synapseRustExtensionsService.checkFriendship(userId)
+      return await synapseFriendExtensionService.checkFriendship(userId)
     } catch (restErr) {
       logger.error(`[MatrixFriend] REST API 检查好友关系也失败: ${restErr}`)
       return false
@@ -458,7 +458,7 @@ class MatrixFriendService {
 
     // FriendManager 不可用时，回退到 REST API
     try {
-      const pending = await synapseRustExtensionsService.getPendingRequests()
+      const pending = await synapseFriendExtensionService.getPendingRequests()
       return (pending.incoming ?? []).map((r) => this.normalizeSynapseFriendRequest(r, 'incoming'))
     } catch (restErr) {
       logger.error(`[MatrixFriend] REST API 获取入站好友请求也失败: ${restErr}`)
@@ -479,7 +479,7 @@ class MatrixFriendService {
 
     // FriendManager 不可用时，回退到 REST API
     try {
-      const pending = await synapseRustExtensionsService.getPendingRequests()
+      const pending = await synapseFriendExtensionService.getPendingRequests()
       return (pending.outgoing ?? []).map((r) => this.normalizeSynapseFriendRequest(r, 'outgoing'))
     } catch (restErr) {
       logger.error(`[MatrixFriend] REST API 获取出站好友请求也失败: ${restErr}`)
@@ -504,7 +504,7 @@ class MatrixFriendService {
       if (manager) {
         await manager.sendFriendRequest(userId, reason)
       } else {
-        await synapseRustExtensionsService.sendFriendRequest(userId, reason)
+        await synapseFriendExtensionService.sendFriendRequest(userId, reason)
       }
       logger.info(`[MatrixFriend] 发送好友请求成功: ${userId}`)
     } catch (err) {
@@ -519,7 +519,7 @@ class MatrixFriendService {
       // FriendManager 失败时降级到 REST API
       if (manager) {
         try {
-          await synapseRustExtensionsService.sendFriendRequest(userId, reason)
+          await synapseFriendExtensionService.sendFriendRequest(userId, reason)
           logger.info(`[MatrixFriend] 发送好友请求成功(REST降级): ${userId}`)
           return
         } catch (restErr) {
@@ -560,7 +560,7 @@ class MatrixFriendService {
       await manager.acceptFriendRequest(userId)
       logger.info(`[MatrixFriend] 接受好友请求成功: ${userId}`)
     } catch {
-      await synapseRustExtensionsService.acceptFriendRequest(userId)
+      await synapseFriendExtensionService.acceptFriendRequest(userId)
       logger.info(`[MatrixFriend] 接受好友请求成功(REST降级): ${userId}`)
     }
   }
@@ -580,7 +580,7 @@ class MatrixFriendService {
 
     // FriendManager 不可用或失败时，回退到 REST API
     try {
-      await synapseRustExtensionsService.cancelFriendRequest(userId)
+      await synapseFriendExtensionService.cancelFriendRequest(userId)
       logger.info(`[MatrixFriend] 取消好友请求成功(REST降级): ${userId}`)
     } catch (restErr) {
       logger.error(`[MatrixFriend] REST API 取消好友请求也失败: ${restErr}`)
@@ -594,7 +594,7 @@ class MatrixFriendService {
       await manager.rejectFriendRequest(userId)
       logger.info(`[MatrixFriend] 拒绝好友请求成功: ${userId}`)
     } catch {
-      await synapseRustExtensionsService.declineFriendRequest(userId)
+      await synapseFriendExtensionService.declineFriendRequest(userId)
       logger.info(`[MatrixFriend] 拒绝好友请求成功(REST降级): ${userId}`)
     }
   }
@@ -605,7 +605,7 @@ class MatrixFriendService {
       await manager.removeFriend(userId)
       logger.info(`[MatrixFriend] 删除好友成功: ${userId}`)
     } catch {
-      await synapseRustExtensionsService.removeFriend(userId)
+      await synapseFriendExtensionService.removeFriend(userId)
       logger.info(`[MatrixFriend] 删除好友成功(REST降级): ${userId}`)
     }
   }
@@ -634,7 +634,7 @@ class MatrixFriendService {
 
       logger.info(`[MatrixFriend] 设置好友笔记成功: ${userId}`)
     } catch {
-      await synapseRustExtensionsService.setFriendNote(userId, note)
+      await synapseFriendExtensionService.setFriendNote(userId, note)
       logger.info(`[MatrixFriend] 设置好友笔记成功(REST降级): ${userId}`)
     }
   }
@@ -695,7 +695,7 @@ class MatrixFriendService {
   /** 获取与指定好友的 DM 房间（对应后端 GET /friends/{uid}/dm） */
   async getFriendDmRoom(userId: string): Promise<SynapseDmInfo> {
     try {
-      const result = await synapseRustExtensionsService.getDmRoom(userId)
+      const result = await synapseDmExtensionService.getDmRoom(userId)
       logger.info(`[MatrixFriend] 获取好友 DM 房间: userId=${userId}, roomId=${result.room_id || '(none)'}`)
       return result
     } catch (err) {
@@ -896,7 +896,7 @@ class MatrixFriendService {
     }
 
     try {
-      const result = await synapseRustExtensionsService.checkFriendship(userId)
+      const result = await synapseFriendExtensionService.checkFriendship(userId)
       return result ? 'accepted' : null
     } catch (restErr) {
       logger.error(`[MatrixFriend] REST API 获取好友状态也失败: ${restErr}`)
@@ -925,7 +925,7 @@ class MatrixFriendService {
     options?: { mode?: 'fuzzy' | 'exact'; limit?: number }
   ): Promise<Array<{ user_id: string; display_name?: string; avatar_url?: string }>> {
     try {
-      const results = await synapseRustExtensionsService.searchFriends(query, options)
+      const results = await synapseFriendExtensionService.searchFriends(query, options)
       return results.map((r) => ({
         user_id: r.user_id,
         display_name:

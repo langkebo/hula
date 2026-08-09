@@ -1,7 +1,10 @@
 import type { Room } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import { type RoomSummary as SynapseRoomSummary, synapseRustExtensionsService } from '../SynapseRustExtensionsService'
+import {
+  type RoomSummary as SynapseRoomSummary,
+  synapseRoomSummaryService
+} from '../extensions/SynapseRoomSummaryService'
 
 const logger = createLogger('SummaryService')
 
@@ -104,7 +107,7 @@ export class MatrixRoomSummaryAggregateService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const room = client.getRoom(roomId)
-      const summary = await synapseRustExtensionsService.getRoomSummary(roomId, true)
+      const summary = await synapseRoomSummaryService.getRoomSummary(roomId, true)
       if (summary) {
         return this.toServerRoomSummary(summary, room)
       }

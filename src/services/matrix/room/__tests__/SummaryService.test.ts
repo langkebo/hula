@@ -1,12 +1,12 @@
 import { JoinRule, type Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { RoomSummary as SynapseRoomSummary } from '../../extensions/SynapseRoomSummaryService'
 import matrixClientService from '../../MatrixClientService'
-import type { RoomSummary as SynapseRoomSummary } from '../../SynapseRustExtensionsService'
 import { MatrixRoomSummaryAggregateService } from '../SummaryService'
 
 const synapseGetRoomSummaryMock = vi.fn()
-vi.mock('../../SynapseRustExtensionsService', () => ({
-  synapseRustExtensionsService: {
+vi.mock('../../extensions/SynapseRoomSummaryService', () => ({
+  synapseRoomSummaryService: {
     getRoomSummary: (...args: unknown[]) => synapseGetRoomSummaryMock(...args)
   }
 }))
