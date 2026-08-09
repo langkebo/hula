@@ -46,7 +46,7 @@
         </svg>
         <!-- 头像 -->
         <n-popover
-          :ref="(el) => setInfoPopoverRef(message.message.id, el)"
+          :ref="(el: unknown) => setInfoPopoverRef(message.message.id, el)"
           @update:show="handlePopoverUpdate(message.message.id, $event)"
           trigger="click"
           :placement="isMe ? 'left' : 'right'"

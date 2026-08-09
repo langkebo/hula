@@ -4,7 +4,7 @@
     :width="320"
     placement="right"
     :mask-closable="true"
-    @update:show="(v) => emit('update:visible', v)">
+    @update:show="(v: boolean) => emit('update:visible', v)">
     <n-drawer-content :title="drawerTitle" closable>
       <div class="sidebar-content">
         <div v-if="isGroup" class="group-info-section">
