@@ -1,7 +1,7 @@
 <template>
   <n-modal
     :show="show"
-    @update:show="(val) => emit('update:show', val)"
+    @update:show="(val: boolean) => emit('update:show', val)"
     preset="card"
     :title="t('ai_assistant.openclaw.settingsStore.title')"
     class="openclaw-settings-modal w-600px max-w-90vw"
