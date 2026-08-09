@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 import RoomDetailPane from '../RoomDetailPane.vue'
 
 const { getGroupDetailByRoomId, getMembersByRoomId, getRoomMock, getUserIdMock } = vi.hoisted(() => ({
@@ -43,12 +44,62 @@ vi.mock('@vueuse/core', () => ({
   useClipboard: () => ({ copy: copyMock })
 }))
 
+// usePinnedMessage 默认 mock：返回空置顶列表，避免触发真实 SDK 调用
+const { pinnedEventIdsMock } = vi.hoisted(() => ({
+  pinnedEventIdsMock: [] as string[]
+}))
+
+vi.mock('@/composables/room/usePinnedMessage', () => ({
+  usePinnedMessage: () => ({
+    pinnedEventIds: { value: pinnedEventIdsMock },
+    pinnedMessages: { value: [] },
+    loading: { value: false },
+    latestPinnedMessage: { value: null },
+    load: vi.fn().mockResolvedValue(undefined),
+    refresh: vi.fn().mockResolvedValue(undefined),
+    canPin: { value: false }
+  })
+}))
+
+// RoomDetailMembers / RoomDetailLastMessage stub：暴露 props 便于断言
+const RoomDetailMembersStub = defineComponent({
+  name: 'RoomDetailMembersStub',
+  props: {
+    members: { type: Array, default: () => [] },
+    loading: { type: Boolean, default: false }
+  },
+  setup(props) {
+    return () =>
+      h('div', { 'data-test': 'room-detail-members-stub' }, [
+        h('span', { 'data-test': 'room-detail-members-count' }, String(props.members.length)),
+        h('span', { 'data-test': 'room-detail-members-loading' }, String(props.loading))
+      ])
+  }
+})
+
+const RoomDetailLastMessageStub = defineComponent({
+  name: 'RoomDetailLastMessageStub',
+  props: {
+    lastMessage: { type: [String, null], default: null },
+    senderName: { type: [String, null], default: null },
+    timestamp: { type: [Number, null], default: null }
+  },
+  setup(props) {
+    return () =>
+      h('div', { 'data-test': 'room-detail-last-message-stub' }, [
+        h('span', { 'data-test': 'room-detail-last-message-body' }, props.lastMessage ?? ''),
+        h('span', { 'data-test': 'room-detail-last-message-sender' }, props.senderName ?? '')
+      ])
+  }
+})
+
 const globalStubs = {
   NSpin: { template: '<div class="n-spin"><slot /></div>' },
   NTag: { template: '<span class="n-tag"><slot /></span>' },
   NButton: {
     emits: ['click'],
-    template: '<button class="n-button" @click="$emit(\'click\')"><slot /></button>'
+    template:
+      '<button class="n-button" @click="$emit(\'click\')"><slot /><template v-if="$slots.icon"><slot name="icon" /></template></button>'
   },
   NFlex: { template: '<div><slot /></div>' },
   NForm: { template: '<form><slot /></form>' },
@@ -59,7 +110,9 @@ const globalStubs = {
   // 重度依赖加密服务图谱（CryptoSDKAdapter→worker 桥接），挂载后会导致 forks worker 无法退出；
   // 本套件只测 power-level 接线，加密面板行为由 RoomEncryptionSettings 自有测试覆盖
   RoomEncryptionSettings: { template: '<div class="room-encryption-settings" />' },
-  InviteDialog: { template: '<div class="invite-dialog" />' }
+  InviteDialog: { template: '<div class="invite-dialog" />' },
+  RoomDetailMembers: RoomDetailMembersStub,
+  RoomDetailLastMessage: RoomDetailLastMessageStub
 }
 
 interface MountFakeRoom {
@@ -100,6 +153,7 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
       { userId: '@b:matrix.test', activeStatus: 1 },
       { userId: '@c:matrix.test', activeStatus: 0 }
     ])
+    pinnedEventIdsMock.length = 0
   })
 
   it('renders invite button and edit overlay when user has full power level', async () => {
@@ -162,11 +216,13 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
 
     const wrapper = await mountPane()
 
-    const text = wrapper.text()
-    expect(text).toContain('4')
-    const onlineSpan = wrapper.find('.info-value.online')
-    expect(onlineSpan.exists()).toBe(true)
-    expect(onlineSpan.text()).toBe('2')
+    // P1-2：统计卡片集成 — 成员卡片显示 max(memberCount, members.length)=4，在线卡片显示 2
+    const memberCard = wrapper.find('[data-testid="stat-card-members"]')
+    const onlineCard = wrapper.find('[data-testid="stat-card-online"]')
+    expect(memberCard.exists()).toBe(true)
+    expect(onlineCard.exists()).toBe(true)
+    expect(memberCard.text()).toContain('4')
+    expect(onlineCard.text()).toContain('2')
   })
 
   it('uses room.canInvite() result, not a hardcoded true', async () => {
@@ -189,5 +245,89 @@ describe('RoomDetailPane.buildRoomDetail (P5 power-level wiring)', () => {
 
     expect(copyMock).toHaveBeenCalledWith('!alpha:matrix.test')
     expect(showFeedbackMock).toHaveBeenCalledWith('room.detail.id_copied', 'success')
+  })
+})
+
+describe('RoomDetailPane P1 integration (stats / last message / members / action bar)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getGroupDetailByRoomId.mockResolvedValue({
+      name: 'Alpha Room',
+      avatar: 'mxc://server/avatar',
+      topic: 'Alpha topic',
+      memberCount: 10,
+      isPublic: true,
+      isEncrypted: false
+    })
+    getMembersByRoomId.mockResolvedValue([
+      { userId: '@a:matrix.test', activeStatus: 1 },
+      { userId: '@b:matrix.test', activeStatus: 0 }
+    ])
+    getUserIdMock.mockReturnValue('@admin:matrix.test')
+    getRoomMock.mockReturnValue(fakeRoom({ canInvite: true, canEdit: true }))
+    pinnedEventIdsMock.length = 0
+  })
+
+  it('renders stats card with member / online / announcement counts', async () => {
+    pinnedEventIdsMock.push('ev1', 'ev2', 'ev3')
+
+    const wrapper = await mountPane()
+
+    const statsGrid = wrapper.find('[data-testid="stat-grid"]')
+    expect(statsGrid.exists()).toBe(true)
+    expect(wrapper.find('[data-testid="stat-card-members"]').text()).toContain('10')
+    expect(wrapper.find('[data-testid="stat-card-online"]').text()).toContain('1')
+    expect(wrapper.find('[data-testid="stat-card-announcements"]').text()).toContain('3')
+  })
+
+  it('renders zero announcement count when no pinned messages', async () => {
+    const wrapper = await mountPane()
+
+    expect(wrapper.find('[data-testid="stat-card-announcements"]').text()).toContain('0')
+  })
+
+  it('renders last message preview section with members count prop passed through', async () => {
+    const wrapper = await mountPane()
+
+    const membersStub = wrapper.find('[data-test="room-detail-members-stub"]')
+    expect(membersStub.exists()).toBe(true)
+    expect(membersStub.find('[data-test="room-detail-members-count"]').text()).toBe('2')
+  })
+
+  it('renders horizontal action bar with enter room and settings buttons side by side', async () => {
+    const wrapper = await mountPane()
+
+    const actionBar = wrapper.find('[data-testid="room-detail-action-bar"]')
+    expect(actionBar.exists()).toBe(true)
+    // 横向布局：flex-row + gap
+    expect(actionBar.classes().some((c) => c.includes('flex-row') || c.includes('flex'))).toBe(true)
+    // 两个按钮均存在
+    expect(actionBar.find('[data-testid="room-detail-action-enter"]').exists()).toBe(true)
+    expect(actionBar.find('[data-testid="room-detail-action-settings"]').exists()).toBe(true)
+  })
+
+  it('emits enterRoom when clicking enter button', async () => {
+    const wrapper = await mountPane()
+
+    await wrapper.find('[data-testid="room-detail-action-enter"]').trigger('click')
+    expect(wrapper.emitted('enterRoom')).toBeTruthy()
+  })
+
+  it('emits settings when clicking settings button', async () => {
+    const wrapper = await mountPane()
+
+    await wrapper.find('[data-testid="room-detail-action-settings"]').trigger('click')
+    expect(wrapper.emitted('settings')).toBeTruthy()
+  })
+
+  it('renders larger hero avatar (64x64) per P1-2 spec', async () => {
+    const wrapper = await mountPane()
+
+    const avatar = wrapper.find('.header-avatar')
+    expect(avatar.exists()).toBe(true)
+    // Hero 头像从 52px 升级到 64px
+    const style = avatar.attributes('style') || ''
+    expect(style).toContain('width: 64px')
+    expect(style).toContain('height: 64px')
   })
 })

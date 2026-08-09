@@ -11,8 +11,7 @@ const {
   handleMsgClickMock,
   handleMsgDblclickMock,
   useMittOnMock,
-  useMittEmitMock,
-  scrollToIndexMock
+  useMittEmitMock
 } = vi.hoisted(() => ({
   routerReplaceMock: vi.fn(),
   routerPushMock: vi.fn(),
@@ -20,8 +19,7 @@ const {
   handleMsgClickMock: vi.fn(),
   handleMsgDblclickMock: vi.fn(),
   useMittOnMock: vi.fn(),
-  useMittEmitMock: vi.fn(),
-  scrollToIndexMock: vi.fn()
+  useMittEmitMock: vi.fn()
 }))
 
 const route = reactive({
@@ -83,6 +81,8 @@ const chatStore = reactive({
   }
 })
 
+const groupInfoMap = reactive<Record<string, unknown>>({})
+
 vi.mock('@vueuse/core', () => ({
   useDebounceFn: <Args extends unknown[], ReturnValue>(fn: (...args: Args) => ReturnValue) => fn
 }))
@@ -135,6 +135,12 @@ vi.mock('@/composables/common/useMitt', () => ({
   }
 }))
 
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: vi.fn()
+  })
+}))
+
 vi.mock('@/composables/workbench/useSessionPageSync', () => ({
   useSessionPageSync: vi.fn()
 }))
@@ -153,6 +159,37 @@ vi.mock('@/composables/workbench/useSessionListState', () => ({
   })
 }))
 
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    getUserId: () => '@me:server'
+  }
+}))
+
+vi.mock('@/services/matrix/auth/MatrixSessionService', () => ({
+  matrixSessionService: {
+    setSessionTop: vi.fn()
+  }
+}))
+
+vi.mock('@/stores/domains/chat/group', () => ({
+  useGroupStore: () => ({
+    groupInfoMap,
+    loadGroupInfo: vi.fn(async (roomId: string) => {
+      groupInfoMap[roomId] = {
+        roomId,
+        name: roomId,
+        memberCount: 10,
+        onlineCount: 3,
+        topic: 'test topic',
+        isEncrypted: false,
+        isPublic: true,
+        creator: '@other:server'
+      }
+      return groupInfoMap[roomId]
+    })
+  })
+}))
+
 vi.mock('@/components/workbench/MessageSessionToolbar.vue', () => ({
   default: defineComponent({
     name: 'MessageSessionToolbarStub',
@@ -161,7 +198,7 @@ vi.mock('@/components/workbench/MessageSessionToolbar.vue', () => ({
       filteredCount: { type: Number, default: 0 },
       totalCount: { type: Number, default: 0 }
     },
-    emits: ['update:searchKeyword', 'update:sessionTypeFilter', 'update:sessionSort'],
+    emits: ['update:searchKeyword', 'update:sessionTypeFilter', 'update:sessionSort', 'searchSubmit'],
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'room-toolbar' }, [
@@ -175,31 +212,51 @@ vi.mock('@/components/workbench/MessageSessionToolbar.vue', () => ({
               onClick: () => emit('update:searchKeyword', 'beta')
             },
             'search'
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'toolbar-search-submit',
+              onClick: () => emit('searchSubmit')
+            },
+            'submit'
           )
         ])
     }
   })
 }))
 
-vi.mock('@/components/workbench/RoomSessionList.vue', () => ({
+vi.mock('@/components/room/RoomCardGrid.vue', () => ({
   default: defineComponent({
-    name: 'RoomSessionListStub',
+    name: 'RoomCardGridStub',
     props: {
-      sessionList: { type: Array, default: () => [] },
-      emptyDescription: { type: String, default: '' },
-      onMsgClick: { type: Function, default: undefined },
-      onMsgDblclick: { type: Function, default: undefined }
+      rooms: { type: Array, default: () => [] },
+      loading: { type: Boolean, default: false },
+      emptyDescription: { type: String, default: '' }
     },
-    setup(props, { expose }) {
-      expose({
-        scrollToIndex: scrollToIndexMock
-      })
-
+    emits: ['preview', 'message', 'info', 'settings', 'pin'],
+    setup(props) {
       return () =>
-        h('div', { 'data-test': 'session-list' }, [
-          h('span', { 'data-test': 'session-list-count' }, String(props.sessionList.length)),
-          h('span', { 'data-test': 'session-list-empty' }, props.emptyDescription)
+        h('div', { 'data-test': 'room-card-grid' }, [
+          h('span', { 'data-test': 'room-card-grid-count' }, String(props.rooms.length)),
+          h('span', { 'data-test': 'room-card-grid-empty' }, props.emptyDescription)
         ])
+    }
+  })
+}))
+
+vi.mock('@/components/room/RoomMembershipTabs.vue', () => ({
+  default: defineComponent({
+    name: 'RoomMembershipTabsStub',
+    props: {
+      modelValue: { type: String, default: 'all' },
+      joinedCount: { type: Number, default: 0 },
+      createdCount: { type: Number, default: 0 }
+    },
+    emits: ['update:modelValue'],
+    setup() {
+      return () => h('div', { 'data-test': 'membership-tabs' })
     }
   })
 }))
@@ -212,15 +269,16 @@ describe('RoomListView', () => {
     route.path = '/room'
     route.name = 'room'
     globalStore.currentSessionRoomId = '!alpha:server'
+    Object.keys(groupInfoMap).forEach((key) => delete groupInfoMap[key])
   })
 
-  it('renders the room workbench shell with toolbar and filtered group sessions', async () => {
+  it('renders the room workbench shell with toolbar and card grid', async () => {
     const wrapper = mount(RoomListView)
     await flushPromises()
 
     expect(wrapper.find('[data-test="room-toolbar"]').exists()).toBe(true)
     expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('2/2')
-    expect(wrapper.get('[data-test="session-list-count"]').text()).toBe('2')
+    expect(wrapper.get('[data-test="room-card-grid-count"]').text()).toBe('2')
   })
 
   it('reads the initial search value from the route query and filters the room list', async () => {
@@ -232,23 +290,57 @@ describe('RoomListView', () => {
     expect(wrapper.get('[data-test="toolbar-search-value"]').text()).toBe('beta')
     expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('1/2')
 
-    const list = wrapper.getComponent({ name: 'RoomSessionListStub' })
-    expect(list.props('sessionList')).toHaveLength(1)
-    // 单击房间项时通过 router.push 跳转到房间详情路由，双击直接调用 handleMsgClick
-    expect(typeof list.props('onMsgClick')).toBe('function')
-    expect(typeof list.props('onMsgDblclick')).toBe('function')
+    const grid = wrapper.getComponent({ name: 'RoomCardGridStub' })
+    expect(grid.props('rooms')).toHaveLength(1)
 
-    // 阶段 2：验证单击触发 router.push 跳转到房间详情路由
-    const sampleSession = list.props('sessionList')[0]
-    await list.props('onMsgClick')(sampleSession)
+    // P2: 单击卡片直接进入聊天界面（不再跳转房间详情）
+    await grid.vm.$emit('preview', '!beta:server')
+    expect(handleMsgClickMock).toHaveBeenCalled()
+  })
+
+  it('opens room details when info action is emitted from a card', async () => {
+    const wrapper = mount(RoomListView)
+    await flushPromises()
+
+    const grid = wrapper.getComponent({ name: 'RoomCardGridStub' })
+    await grid.vm.$emit('info', '!alpha:server')
+
     expect(routerPushMock).toHaveBeenCalledWith({
       name: 'room-details',
-      params: { roomId: sampleSession.roomId }
+      params: { roomId: '!alpha:server' }
     })
+  })
 
-    // 验证双击调用 handleMsgClick
-    await list.props('onMsgDblclick')(sampleSession)
-    expect(handleMsgClickMock).toHaveBeenCalledWith(sampleSession)
+  it('enters chat when search submit is emitted with filtered results', async () => {
+    route.query = { search: 'beta' }
+
+    const wrapper = mount(RoomListView)
+    await flushPromises()
+
+    // 搜索过滤后仅剩 Beta Room
+    expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('1/2')
+
+    // 按 Enter 提交搜索 → 进入第一个匹配结果的聊天
+    await wrapper.get('[data-test="toolbar-search-submit"]').trigger('click')
+
+    expect(handleMsgClickMock).toHaveBeenCalled()
+    const calledItem = handleMsgClickMock.mock.calls[0][0]
+    expect(calledItem.roomId).toBe('!beta:server')
+  })
+
+  it('does nothing when search submit is emitted with no results', async () => {
+    route.query = { search: 'nonexistent' }
+
+    const wrapper = mount(RoomListView)
+    await flushPromises()
+
+    // 无匹配结果
+    expect(wrapper.get('[data-test="toolbar-summary"]').text()).toBe('0/2')
+
+    handleMsgClickMock.mockClear()
+    await wrapper.get('[data-test="toolbar-search-submit"]').trigger('click')
+
+    expect(handleMsgClickMock).not.toHaveBeenCalled()
   })
 
   it('syncs the search keyword back to the roomList route query', async () => {
@@ -268,13 +360,12 @@ describe('RoomListView', () => {
     })
   })
 
-  it('updates the list when a new room is created or joined', async () => {
+  it('updates the card grid when a new room is created or joined', async () => {
     const wrapper = mount(RoomListView)
     await flushPromises()
 
-    expect(wrapper.get('[data-test="session-list-count"]').text()).toBe('2')
+    expect(wrapper.get('[data-test="room-card-grid-count"]').text()).toBe('2')
 
-    // Simulate creating a room by adding it to the session source
     sessionSource.value.push({
       roomId: '!new_room:server',
       name: 'New Room',
@@ -291,6 +382,16 @@ describe('RoomListView', () => {
 
     await flushPromises()
 
-    expect(wrapper.get('[data-test="session-list-count"]').text()).toBe('3')
+    expect(wrapper.get('[data-test="room-card-grid-count"]').text()).toBe('3')
+  })
+
+  it('enters chat when message action is emitted from a card', async () => {
+    const wrapper = mount(RoomListView)
+    await flushPromises()
+
+    const grid = wrapper.getComponent({ name: 'RoomCardGridStub' })
+    await grid.vm.$emit('message', '!alpha:server')
+
+    expect(handleMsgClickMock).toHaveBeenCalled()
   })
 })
