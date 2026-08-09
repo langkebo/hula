@@ -153,7 +153,44 @@ export const baseConfig: UserConfig = {
     // 若加入 include，Vite 预打包会改写 import 路径并绕过 alias，且其 lib 产物中
     // logger 访问 process.env 在浏览器/Worker 下会失败。因此必须 exclude，
     // 让 Vite 直接按源码路径即时转换。
-    include: ['vue', 'vue-router', 'pinia', '@vueuse/core', 'naive-ui', 'dayjs', 'es-toolkit', 'dompurify', 'mitt'],
+    // 'events' 必须 include：SDK 源码 typed-event-emitter.ts 对 Node builtin events
+    // 做值导入（import { EventEmitter }），tarball 模式下 SDK 位于 node_modules 内，
+    // Vite 不会对 excluded 包的 CJS 依赖做运行时发现优化，不预打包就会以裸 CJS
+    // 直发浏览器，报 "does not provide an export named 'EventEmitter'"（2026-08-09
+    // 登录页白屏事故）。同理 include SDK src 直接值导入的其余 CJS 包：
+    // loglevel / content-type / matrix-events-sdk / matrix-widget-api / sdp-transform。
+    // 这些都是独立小包，include 不影响 SDK 的 alias 编译链。
+    // '@tauri-apps/api/*' 子路径必须 include：webviewWindow 是静态导入，但其内部传递
+    // 依赖 @tauri-apps/api/webview 初始依赖扫描抓不到，运行时"迟到发现"会触发 Vite
+    // 重新预构建 + 整页 reload，在 reload 竞态里出现 "Importing a module script failed."
+    // （2026-08-09 调试日志复现）。预打包所有子路径后不再有运行时发现，消除该竞态。
+    include: [
+      'vue',
+      'vue-router',
+      'pinia',
+      '@vueuse/core',
+      'naive-ui',
+      'dayjs',
+      'es-toolkit',
+      'dompurify',
+      'mitt',
+      'events',
+      'loglevel',
+      'content-type',
+      'matrix-events-sdk',
+      'matrix-widget-api',
+      'sdp-transform',
+      '@tauri-apps/api',
+      '@tauri-apps/api/webviewWindow',
+      '@tauri-apps/api/webview',
+      '@tauri-apps/api/core',
+      '@tauri-apps/api/event',
+      '@tauri-apps/api/path',
+      '@tauri-apps/api/window',
+      '@tauri-apps/api/app',
+      '@tauri-apps/api/dpi',
+      '@tauri-apps/api/tray'
+    ],
     exclude: [
       'matrix-js-sdk',
       '@matrix-org/matrix-sdk-crypto-wasm',
