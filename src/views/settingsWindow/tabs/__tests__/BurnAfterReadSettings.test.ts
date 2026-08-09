@@ -46,14 +46,35 @@ const translationMap: Record<string, string> = {
     '阅后即焚不能保证对方未截图或保存消息。服务器会在消息到期后删除，但无法控制客户端行为。'
 }
 
-const { mockManager, messageSuccessMock, messageErrorMock } = vi.hoisted(() => ({
+const {
+  mockManager,
+  messageSuccessMock,
+  messageErrorMock,
+  dialogWarningMock,
+  setBurnDefaultEnabledMock,
+  setBurnDefaultDurationMock,
+  setBurnShowCountdownEnabledMock,
+  settingStoreMock
+} = vi.hoisted(() => ({
   mockManager: {
     getBurnStats: vi.fn(),
     enableBurn: vi.fn(),
     disableBurn: vi.fn()
   },
   messageSuccessMock: vi.fn(),
-  messageErrorMock: vi.fn()
+  messageErrorMock: vi.fn(),
+  dialogWarningMock: vi.fn(),
+  setBurnDefaultEnabledMock: vi.fn(),
+  setBurnDefaultDurationMock: vi.fn(),
+  setBurnShowCountdownEnabledMock: vi.fn(),
+  settingStoreMock: {
+    burnDefaultEnabled: false,
+    burnDefaultDuration: 60,
+    burnShowCountdownEnabled: true,
+    setBurnDefaultEnabled: (...args: any[]) => setBurnDefaultEnabledMock(...args),
+    setBurnDefaultDuration: (...args: any[]) => setBurnDefaultDurationMock(...args),
+    setBurnShowCountdownEnabled: (...args: any[]) => setBurnShowCountdownEnabledMock(...args)
+  }
 }))
 
 vi.mock('naive-ui', () => ({
@@ -68,7 +89,7 @@ vi.mock('naive-ui', () => ({
   NForm: { name: 'NForm', template: '<form><slot /></form>' },
   NFormItem: { name: 'NFormItem', template: '<div><slot /></div>', props: ['label'] },
   useMessage: () => ({ success: messageSuccessMock, error: messageErrorMock }),
-  useDialog: () => ({ warning: vi.fn() })
+  useDialog: () => ({ warning: dialogWarningMock })
 }))
 
 vi.mock('@/services/matrix/messaging/MatrixBurnAfterReadService', () => ({
@@ -77,6 +98,10 @@ vi.mock('@/services/matrix/messaging/MatrixBurnAfterReadService', () => ({
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }))
+}))
+
+vi.mock('@/stores/domains/settings/setting', () => ({
+  useSettingStore: () => settingStoreMock
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -100,6 +125,10 @@ describe('BurnAfterReadSettings', () => {
     vi.clearAllMocks()
     ;(window as any).$message = { success: messageSuccessMock, error: messageErrorMock }
     localStorage.clear()
+    // settingStore mock 默认值；clearAllMocks 不会重置属性值，需显式重置
+    settingStoreMock.burnDefaultEnabled = false
+    settingStoreMock.burnDefaultDuration = 60
+    settingStoreMock.burnShowCountdownEnabled = true
     mockManager.getBurnStats.mockResolvedValue({ totalBurned: 128, pendingBurns: 3, activeRooms: 2 })
   })
 
@@ -119,41 +148,79 @@ describe('BurnAfterReadSettings', () => {
     expect(wrapper.text()).toContain('显示焚毁倒计时')
   })
 
-  it('loads settings from localStorage', () => {
+  it('reads globalBurnEnabled/globalBurnDuration from settingStore', () => {
+    settingStoreMock.burnDefaultEnabled = true
+    settingStoreMock.burnDefaultDuration = 300
+    const wrapper = mount(BurnAfterReadSettings)
+    expect((wrapper.vm as any).globalBurnEnabled).toBe(true)
+    expect((wrapper.vm as any).globalBurnDuration).toBe(300)
+  })
+
+  it('reads showBurnCountdown from settingStore', () => {
+    settingStoreMock.burnShowCountdownEnabled = false
+    const wrapper = mount(BurnAfterReadSettings)
+    expect((wrapper.vm as any).showBurnCountdown).toBe(false)
+  })
+
+  it('loads pure UI prefs (autoBurnRead/burnSound/burnRooms) from localStorage', () => {
     localStorage.setItem(
       'tjg-burn-after-read-settings',
       JSON.stringify({
-        globalBurnEnabled: true,
-        globalBurnDuration: 300,
         autoBurnRead: false,
         burnSound: true,
         burnRooms: []
       })
     )
     const wrapper = mount(BurnAfterReadSettings)
-    expect((wrapper.vm as any).globalBurnEnabled).toBe(true)
-    expect((wrapper.vm as any).globalBurnDuration).toBe(300)
     expect((wrapper.vm as any).autoBurnRead).toBe(false)
     expect((wrapper.vm as any).burnSound).toBe(true)
   })
 
-  it('saves settings to localStorage', () => {
+  it('does NOT read globalBurnEnabled from localStorage (uses settingStore)', () => {
+    localStorage.setItem(
+      'tjg-burn-after-read-settings',
+      JSON.stringify({
+        globalBurnEnabled: true,
+        globalBurnDuration: 300
+      })
+    )
+    // settingStore 默认 false/60，localStorage 中即使有也不应被读取
     const wrapper = mount(BurnAfterReadSettings)
-    const vm = wrapper.vm as any
-    vm.globalBurnEnabled = true
-    vm.saveSettings()
-    const saved = JSON.parse(localStorage.getItem('tjg-burn-after-read-settings')!)
-    expect(saved.globalBurnEnabled).toBe(true)
+    expect((wrapper.vm as any).globalBurnEnabled).toBe(false)
+    expect((wrapper.vm as any).globalBurnDuration).toBe(60)
   })
 
-  it('defaults globalBurnEnabled to false', () => {
+  it('saveSettings only persists pure UI prefs + burnRooms to localStorage', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    const vm = wrapper.vm as any
+    vm.autoBurnRead = false
+    vm.burnNotification = true
+    vm.burnSound = true
+    vm.saveSettings()
+    const saved = JSON.parse(localStorage.getItem('tjg-burn-after-read-settings')!)
+    expect(saved).toHaveProperty('autoBurnRead', false)
+    expect(saved).toHaveProperty('burnNotification', true)
+    expect(saved).toHaveProperty('burnSound', true)
+    expect(saved).toHaveProperty('burnRooms')
+    // 不应再持久化这三个全局字段
+    expect(saved).not.toHaveProperty('globalBurnEnabled')
+    expect(saved).not.toHaveProperty('globalBurnDuration')
+    expect(saved).not.toHaveProperty('showBurnCountdown')
+  })
+
+  it('defaults globalBurnEnabled to false (from settingStore)', () => {
     const wrapper = mount(BurnAfterReadSettings)
     expect((wrapper.vm as any).globalBurnEnabled).toBe(false)
   })
 
-  it('defaults globalBurnDuration to 60', () => {
+  it('defaults globalBurnDuration to 60 (from settingStore)', () => {
     const wrapper = mount(BurnAfterReadSettings)
     expect((wrapper.vm as any).globalBurnDuration).toBe(60)
+  })
+
+  it('defaults showBurnCountdown to true (from settingStore)', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    expect((wrapper.vm as any).showBurnCountdown).toBe(true)
   })
 
   it('formatDuration works correctly', () => {
@@ -170,7 +237,44 @@ describe('BurnAfterReadSettings', () => {
     const vm = wrapper.vm as any
     vm.handleBurnDurationChange(300)
     expect((wrapper.vm as any).globalBurnDuration).toBe(300)
+    expect(setBurnDefaultDurationMock).toHaveBeenCalledWith(300)
     expect(messageSuccessMock).toHaveBeenCalled()
+  })
+
+  it('calls setBurnDefaultEnabled(true) when global toggle dialog is confirmed', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    const vm = wrapper.vm as any
+    vm.handleGlobalBurnToggle(true)
+    // dialog.warning 被调用，提取 onPositiveClick 并触发以模拟确认
+    expect(dialogWarningMock).toHaveBeenCalledTimes(1)
+    const options = dialogWarningMock.mock.calls[0][0] as { onPositiveClick: () => void }
+    options.onPositiveClick()
+    expect(setBurnDefaultEnabledMock).toHaveBeenCalledWith(true)
+    expect((wrapper.vm as any).globalBurnEnabled).toBe(true)
+  })
+
+  it('calls setBurnDefaultEnabled(false) when global toggle is turned off', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    const vm = wrapper.vm as any
+    vm.handleGlobalBurnToggle(false)
+    expect(setBurnDefaultEnabledMock).toHaveBeenCalledWith(false)
+    expect((wrapper.vm as any).globalBurnEnabled).toBe(false)
+  })
+
+  it('calls setBurnShowCountdownEnabled when countdown toggle changes', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    const vm = wrapper.vm as any
+    vm.handleToggle('showBurnCountdown')
+    expect(setBurnShowCountdownEnabledMock).toHaveBeenCalledWith(vm.showBurnCountdown)
+  })
+
+  it('does NOT call settingStore setters for pure UI prefs', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    const vm = wrapper.vm as any
+    vm.handleToggle('autoBurnRead')
+    vm.handleToggle('burnNotification')
+    vm.handleToggle('burnSound')
+    expect(setBurnShowCountdownEnabledMock).not.toHaveBeenCalled()
   })
 
   it('shows security warning', () => {

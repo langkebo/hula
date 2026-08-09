@@ -149,6 +149,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('BurnAfterReadSettings')
@@ -161,12 +162,16 @@ const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t } = useI18n()
 const { getBurnStats, enableBurn, disableBurn } = useBurnAfterRead()
+const settingStore = useSettingStore()
 
-const globalBurnEnabled = ref(false)
-const globalBurnDuration = ref(60)
+// 三个全局字段读写 settingStore，与移动端状态源一致
+const globalBurnEnabled = ref(settingStore.burnDefaultEnabled)
+// 显式标注 number；settingStore getter 返回联合类型 30|60|300|3600|86400，避免 ref 收窄后无法赋 number
+const globalBurnDuration = ref<number>(settingStore.burnDefaultDuration)
+const showBurnCountdown = ref(settingStore.burnShowCountdownEnabled)
+// 三个纯 UI 偏好继续用 localStorage（无后端对应）
 const autoBurnRead = ref(true)
 const burnNotification = ref(true)
-const showBurnCountdown = ref(true)
 const burnSound = ref(false)
 
 const loadingRooms = ref(false)
@@ -211,11 +216,9 @@ function loadSettings() {
   if (saved) {
     try {
       const data = JSON.parse(saved)
-      if (data.globalBurnEnabled !== undefined) globalBurnEnabled.value = data.globalBurnEnabled
-      if (data.globalBurnDuration !== undefined) globalBurnDuration.value = data.globalBurnDuration
+      // 仅读取三个纯 UI 偏好；全局三字段已由 settingStore 提供
       if (data.autoBurnRead !== undefined) autoBurnRead.value = data.autoBurnRead
       if (data.burnNotification !== undefined) burnNotification.value = data.burnNotification
-      if (data.showBurnCountdown !== undefined) showBurnCountdown.value = data.showBurnCountdown
       if (data.burnSound !== undefined) burnSound.value = data.burnSound
       if (data.burnRooms) burnRooms.value = data.burnRooms
     } catch {
@@ -228,11 +231,8 @@ function saveSettings() {
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
-      globalBurnEnabled: globalBurnEnabled.value,
-      globalBurnDuration: globalBurnDuration.value,
       autoBurnRead: autoBurnRead.value,
       burnNotification: burnNotification.value,
-      showBurnCountdown: showBurnCountdown.value,
       burnSound: burnSound.value,
       burnRooms: burnRooms.value
     })
@@ -271,6 +271,7 @@ async function handleGlobalBurnToggle(value: boolean) {
       negativeText: t('setting.common.cancel'),
       onPositiveClick: () => {
         globalBurnEnabled.value = true
+        settingStore.setBurnDefaultEnabled(true)
         saveSettings()
         showFeedback(t('setting.burn_after_read.feedback.global_enabled'), 'success')
       },
@@ -280,6 +281,7 @@ async function handleGlobalBurnToggle(value: boolean) {
     })
   } else {
     globalBurnEnabled.value = false
+    settingStore.setBurnDefaultEnabled(false)
     saveSettings()
     showFeedback(t('setting.burn_after_read.feedback.global_disabled'), 'info')
   }
@@ -287,11 +289,16 @@ async function handleGlobalBurnToggle(value: boolean) {
 
 function handleBurnDurationChange(value: number) {
   globalBurnDuration.value = value
+  settingStore.setBurnDefaultDuration(value)
   saveSettings()
   showFeedback(t('setting.burn_after_read.feedback.duration_changed', { duration: formatDuration(value) }), 'success')
 }
 
-function handleToggle(_key: string) {
+function handleToggle(key: string) {
+  // showBurnCountdown 已迁移至 settingStore，与全局三字段统一
+  if (key === 'showBurnCountdown') {
+    settingStore.setBurnShowCountdownEnabled(showBurnCountdown.value)
+  }
   saveSettings()
   showFeedback(t('setting.burn_after_read.feedback.settings_updated'), 'success')
 }
