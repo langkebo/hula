@@ -101,13 +101,13 @@ jobs:
           echo "Build mode: $MODE"
 
       - name: Download component typings
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: components-typings
           path: components-typings
 
       - name: Download frontend dist
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: frontend-dist
