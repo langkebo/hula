@@ -7,12 +7,11 @@
  * tests miss because the stub authedRequest bypasses SDK URL construction.
  *
  * The real SDK client lacks the project's custom getSpaceManager()
- * extension, so getSpaceHierarchy/getSpaceHierarchyV1 fall back to
- * authedRequestWithPath — exactly the code path we need to verify.
+ * extension, so getSpaceHierarchy falls back to authedRequestWithPath —
+ * exactly the code path we need to verify.
  *
- * Covers 4 authedRequestWithPath call sites in MatrixSpaceService:
- * getSpaceHierarchy (fallback), getSpaceHierarchyV1 (fallback),
- * checkSpaceRequiresAuth, getSpaceHierarchyPublic (authed path).
+ * Covers the authedRequestWithPath call site in MatrixSpaceService:
+ * getSpaceHierarchy (fallback)。
  */
 import { createClient, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
@@ -39,14 +38,6 @@ setupMswServer(
   http.get(`${HOMESERVER}/_matrix/client/v1/spaces/:spaceId/hierarchy`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ rooms: [{ room_id: '!r1:hs', name: 'Room 1' }], next_batch: 'nb' })
-  }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/spaces/:spaceId/hierarchy/v1`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ rooms: [{ room_id: '!r2:hs', name: 'Room 2' }] })
-  }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/rooms/:roomId/hierarchy`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ rooms: [{ room_id: '!r3:hs', name: 'Room 3' }] })
   })
 )
 
@@ -80,39 +71,5 @@ describe('Space service URL construction contract (real SDK + msw)', () => {
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result.rooms).toHaveLength(1)
     expect(result.next_batch).toBe('nb')
-  })
-
-  it('getSpaceHierarchyV1 falls back to /_matrix/client/v1/spaces/:spaceId/hierarchy/v1 (no V1 double-prefix)', async () => {
-    const result = await matrixSpaceService.getSpaceHierarchyV1('!space:hs', { limit: 5 })
-
-    const calls = seenUrls.filter((u) => u.url.includes('/hierarchy/v1'))
-    expect(calls).toHaveLength(1)
-    expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/spaces/!space%3Ahs/hierarchy/v1?limit=5`)
-    expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
-    expect(result.rooms).toHaveLength(1)
-  })
-
-  it('checkSpaceRequiresAuth hits /_matrix/client/v1/rooms/:roomId/hierarchy with max_depth=1 (no V1 double-prefix)', async () => {
-    const result = await matrixSpaceService.checkSpaceRequiresAuth('!space:hs')
-
-    const calls = seenUrls.filter((u) => u.url.includes('/rooms/!space%3Ahs/hierarchy'))
-    expect(calls).toHaveLength(1)
-    expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/rooms/!space%3Ahs/hierarchy?max_depth=1`)
-    expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
-    expect(result.requiresAuth).toBe(false)
-    expect(result.accessible).toBe(true)
-  })
-
-  it('getSpaceHierarchyPublic (authed) hits /_matrix/client/v1/rooms/:roomId/hierarchy (no V1 double-prefix)', async () => {
-    const result = await matrixSpaceService.getSpaceHierarchyPublic('!space:hs', { limit: 20, maxDepth: 2 })
-
-    const calls = seenUrls.filter((u) => u.url.includes('/rooms/!space%3Ahs/hierarchy'))
-    expect(calls).toHaveLength(1)
-    expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/rooms/!space%3Ahs/hierarchy?limit=20&max_depth=2`)
-    expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
-    expect(result.rooms).toHaveLength(1)
   })
 })
