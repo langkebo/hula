@@ -9,7 +9,6 @@ import {
   matrixFriendService
 } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { matrixRoomQueryFacade } from '@/services/matrix/room/QueryFacade'
 import { Direction, EventType } from '@/services/matrix/sdk'
@@ -89,8 +88,6 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   const friendFilter = ref<FriendStatus | 'all'>('all')
   const lastFriendError = ref<FriendListErrorState | null>(null)
 
-  const directContacts = computed(() => contactsList.value.filter((c) => c.directRoomId))
-
   const filteredContacts = computed(() => {
     if (friendFilter.value === 'all') {
       return contactsList.value
@@ -100,7 +97,6 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   const favoriteContacts = computed(() => contactsList.value.filter((c) => c.friendStatus === 'favorite'))
   const blockedContacts = computed(() => contactsList.value.filter((c) => c.friendStatus === 'blocked'))
-  const hiddenContacts = computed(() => contactsList.value.filter((c) => c.friendStatus === 'hidden'))
 
   const incomingRequestsCount = computed(
     () => requestFriendsList.value.filter((r) => r.direction === 'incoming').length
@@ -488,10 +484,6 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     await removeFromContacts(uid)
   }
 
-  function deleteContact(uid: string): void {
-    contactsList.value = contactsList.value.filter((c) => c.userId !== uid && c.uid !== uid)
-  }
-
   async function setFriendNote(userId: string, note: string): Promise<boolean> {
     try {
       await matrixFriendService.setFriendNote(userId, note)
@@ -522,17 +514,6 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     } catch (err) {
       logger.error(`[ContactStore] 设置好友显示名失败: ${err}`)
       return false
-    }
-  }
-
-  async function loadFriendSuggestions(): Promise<
-    Array<{ user_id: string; display_name?: string; avatar_url?: string; reason?: string }>
-  > {
-    try {
-      return await matrixFriendService.getFriendSuggestions()
-    } catch (err) {
-      logger.error(`[ContactStore] 获取好友建议失败: ${err}`)
-      return []
     }
   }
 
@@ -585,30 +566,6 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     }
   }
 
-  async function acceptInvite(roomId: string): Promise<boolean> {
-    try {
-      await matrixRoomActionFacade.joinRoom(roomId)
-      pendingInvites.value = pendingInvites.value.filter((i) => i.roomId !== roomId)
-      logger.info(`[ContactStore] 接受邀请成功: ${roomId}`)
-      return true
-    } catch (err) {
-      logger.error(`[ContactStore] 接受邀请失败: ${err}`)
-      return false
-    }
-  }
-
-  async function rejectInvite(roomId: string): Promise<boolean> {
-    try {
-      await matrixRoomActionFacade.leaveRoom(roomId)
-      pendingInvites.value = pendingInvites.value.filter((i) => i.roomId !== roomId)
-      logger.info(`[ContactStore] 拒绝邀请成功: ${roomId}`)
-      return true
-    } catch (err) {
-      logger.error(`[ContactStore] 拒绝邀请失败: ${err}`)
-      return false
-    }
-  }
-
   function getContactByUserId(userId: string): MatrixContact | undefined {
     return contactsList.value.find((c) => c.userId === userId || c.uid === userId)
   }
@@ -633,10 +590,6 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
 
   function isFriend(userId: string): Promise<boolean> {
     return matrixFriendService.isFriend(userId)
-  }
-
-  function setFriendFilter(filter: FriendStatus | 'all'): void {
-    friendFilter.value = filter
   }
 
   function clearContacts(): void {
@@ -676,11 +629,9 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     contactsOptions,
     requestFriendsList,
     applyPageOptions,
-    directContacts,
     filteredContacts,
     favoriteContacts,
     blockedContacts,
-    hiddenContacts,
     incomingRequestsCount,
     friendFilter,
     initialize,
@@ -695,18 +646,13 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     cancelFriendRequest,
     removeFromContacts,
     onDeleteFriend,
-    deleteContact,
     setFriendNote,
     setFriendDisplayName,
-    loadFriendSuggestions,
     setFriendStatus,
     loadPendingInvites,
-    acceptInvite,
-    rejectInvite,
     getContactByUserId,
     updateContactPresence,
     isFriend,
-    setFriendFilter,
     clearContacts,
     getApplyUnReadCount,
     getApplyPage,

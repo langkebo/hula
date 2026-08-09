@@ -17,29 +17,6 @@ import { LRUCache } from '@/utils/LRUCache'
 
 const logger = createLogger('RoomStore')
 
-type TimelineEvent = {
-  event_id: string
-  type: string
-  sender: string
-  content: {
-    body?: string
-    msgtype?: string
-    [key: string]: unknown
-  }
-  origin_server_ts: number
-}
-
-type TimelineUpdate = {
-  timeline?: TimelineEvent[]
-  notification_count?: number
-  highlight_count?: number
-  summary?: {
-    name?: string
-    avatar_url?: string
-    joined_member_count?: number
-  }
-}
-
 export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
   const roomDetailCache = new LRUCache<string, RoomDetail>(50)
   const roomDetailPending = new Map<string, Promise<RoomDetail | null>>()
@@ -203,13 +180,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     rooms.value.set(roomId, existingRoom)
     triggerRef(rooms)
     logger.info(`[RoomStore] 处理增量更新: ${roomId}`)
-  }
-
-  async function handleBatchIncrementalUpdate(updates: Record<string, TimelineUpdate>): Promise<void> {
-    for (const [roomId, roomData] of Object.entries(updates)) {
-      await handleIncrementalUpdate(roomId, roomData)
-    }
-    logger.info(`[RoomStore] 批量增量更新完成: ${Object.keys(updates).length} 个房间`)
   }
 
   async function createRoom(options: {
@@ -549,13 +519,6 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     logger.info('[RoomStore] 房间状态已重置')
   }
 
-  function pruneCache(keepCount: number = 20): void {
-    const currentSize = roomDetailCache.size
-    if (currentSize <= keepCount) return
-
-    logger.info(`[RoomStore] 缓存裁剪: ${currentSize} -> ${keepCount}`)
-  }
-
   function getCacheStats(): { size: number; keys: string[] } {
     return {
       size: roomDetailCache.size,
@@ -688,10 +651,8 @@ export const useRoomStore = defineStore(StoresEnum.ROOM, () => {
     loadRoomDetails,
     resetState,
     clearRoomDetailCache,
-    pruneCache,
     getCacheStats,
     handleIncrementalUpdate,
-    handleBatchIncrementalUpdate,
     setTagsForRoom,
     getTagsForRoom,
     hasTag,

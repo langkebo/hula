@@ -4,7 +4,7 @@ import { OnlineEnum } from '@/enums'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { type ContactInvite, useContactStore } from '../contacts'
+import { useContactStore } from '../contacts'
 
 const { matrixClientServiceMock, getClientMock, getUserIdMock } = vi.hoisted(() => {
   const waitForClientReadyMock = vi.fn()
@@ -78,15 +78,6 @@ vi.mock('@/services/matrix/user/MatrixProfileService', () => ({
   profileService: profileServiceMock
 }))
 
-const matrixRoomActionFacadeMock = vi.hoisted(() => ({
-  joinRoom: vi.fn(),
-  leaveRoom: vi.fn()
-}))
-
-vi.mock('@/services/matrix/room/ActionFacade', () => ({
-  matrixRoomActionFacade: matrixRoomActionFacadeMock
-}))
-
 const matrixRoomQueryFacadeMock = vi.hoisted(() => ({
   getRooms: vi.fn()
 }))
@@ -104,16 +95,6 @@ const globalStoreMock = {
   setFriendUnreadCount: vi.fn(),
   incrementFriendUnreadCount: vi.fn(),
   decrementFriendUnreadCount: vi.fn()
-}
-
-function createInvite(roomId = '!invite:matrix.org'): ContactInvite {
-  return {
-    roomId,
-    fromUserId: '@alice:matrix.org',
-    fromDisplayName: 'Alice',
-    timestamp: Date.now(),
-    isGroup: true
-  }
 }
 
 function createInviteRoom(roomId = '!invite:matrix.org') {
@@ -205,30 +186,6 @@ describe('contacts store startup client readiness', () => {
       isGroup: true
     })
     expect(globalStoreMock.setGroupUnreadCount).toHaveBeenCalledWith(1)
-  })
-
-  it('acceptInvite joins room when client is available', async () => {
-    matrixRoomActionFacadeMock.joinRoom.mockResolvedValue({ roomId: '!invite:matrix.org' })
-
-    const store = useContactStore()
-    store.$patch({ pendingInvites: [createInvite()] })
-
-    await expect(store.acceptInvite('!invite:matrix.org')).resolves.toBe(true)
-
-    expect(matrixRoomActionFacadeMock.joinRoom).toHaveBeenCalledWith('!invite:matrix.org')
-    expect(store.pendingInvites).toHaveLength(0)
-  })
-
-  it('rejectInvite leaves room when client is available', async () => {
-    matrixRoomActionFacadeMock.leaveRoom.mockResolvedValue(undefined)
-
-    const store = useContactStore()
-    store.$patch({ pendingInvites: [createInvite()] })
-
-    await expect(store.rejectInvite('!invite:matrix.org')).resolves.toBe(true)
-
-    expect(matrixRoomActionFacadeMock.leaveRoom).toHaveBeenCalledWith('!invite:matrix.org')
-    expect(store.pendingInvites).toHaveLength(0)
   })
 })
 
