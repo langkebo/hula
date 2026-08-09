@@ -60,26 +60,49 @@ vi.mock('@/views/settingsWindow/SettingsDialog.vue', () => ({
   default: { name: 'SettingsDialog', template: '<div />' }
 }))
 
+const mountLayout = async () => {
+  vi.stubGlobal(
+    'Worker',
+    class {
+      postMessage = vi.fn()
+      terminate = vi.fn()
+      onerror = null
+      onmessage = null
+    }
+  )
+  const Layout = (await import('@/layout/index.vue')).default
+  return shallowMount(Layout, {
+    global: {
+      stubs: {
+        RouterView: true,
+        GuestModeBanner: { name: 'GuestModeBanner', template: '<div data-testid="guest-banner" />' }
+      }
+    }
+  })
+}
+
 describe('GuestModeBanner integration', () => {
   it('renders GuestModeBanner component', async () => {
-    vi.stubGlobal(
-      'Worker',
-      class {
-        postMessage = vi.fn()
-        terminate = vi.fn()
-        onerror = null
-        onmessage = null
-      }
-    )
-    const Layout = (await import('@/layout/index.vue')).default
-    const wrapper = shallowMount(Layout, {
-      global: {
-        stubs: {
-          RouterView: true,
-          GuestModeBanner: { name: 'GuestModeBanner', template: '<div data-testid="guest-banner" />' }
-        }
-      }
-    })
+    const wrapper = await mountLayout()
     expect(wrapper.findComponent({ name: 'GuestModeBanner' }).exists()).toBe(true)
+  })
+})
+
+// Regression guard: layout/index.vue previously rendered <PrivacyOverlay v-if="isPrivacyMode">,
+// where isPrivacyMode was a LOCAL ref from usePrivacyProtection that was NEVER set to true
+// (enterPrivateChat was destructured but never called). This made PrivacyOverlay dead code —
+// it never rendered. Private mode state is now owned by the usePrivateMode singleton and
+// consumed by ChatBanners (ScreenshotWatermark / PrivateModeBanner), not by Layout-level overlays.
+// These tests prevent re-introducing similar "declared-but-never-mutated state drives v-if" patterns.
+describe('Layout private mode overlay regression', () => {
+  it('does not render PrivacyOverlay component', async () => {
+    const wrapper = await mountLayout()
+    expect(wrapper.findComponent({ name: 'PrivacyOverlay' }).exists()).toBe(false)
+  })
+
+  it('does not render any privacy overlay element in layout output', async () => {
+    const wrapper = await mountLayout()
+    expect(wrapper.find('.privacy-overlay').exists()).toBe(false)
+    expect(wrapper.find('[class*="privacy-overlay"]').exists()).toBe(false)
   })
 })
