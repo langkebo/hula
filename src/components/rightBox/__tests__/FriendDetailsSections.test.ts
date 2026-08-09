@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { NSelect } from 'naive-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import FriendDetailsSections from '../FriendDetailsSections.vue'
 
@@ -11,6 +12,8 @@ const getFriendGroupsMock = vi.hoisted(() =>
   ])
 )
 const getFriendGroupsByUserMock = vi.hoisted(() => vi.fn().mockResolvedValue([{ group_id: 'g1', name: 'Colleagues' }]))
+const addFriendToGroupMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const removeFriendFromGroupMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const getUserDevicesMock = vi.hoisted(() =>
   vi.fn().mockResolvedValue([
     {
@@ -34,7 +37,7 @@ const getUserDevicesMock = vi.hoisted(() =>
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string, params?: Record<string, string | number>) => {
+    t: (key: string, _params?: Record<string, string | number>) => {
       const map: Record<string, string> = {
         'friend.detail.group_section': 'Group Assignment',
         'friend.detail.group_placeholder': 'Select group',
@@ -84,8 +87,8 @@ vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
   matrixFriendService: {
     getFriendGroups: getFriendGroupsMock,
     getFriendGroupsByUser: getFriendGroupsByUserMock,
-    addFriendToGroup: vi.fn().mockResolvedValue(undefined),
-    removeFriendFromGroup: vi.fn().mockResolvedValue(undefined)
+    addFriendToGroup: addFriendToGroupMock,
+    removeFriendFromGroup: removeFriendFromGroupMock
   }
 }))
 
@@ -112,7 +115,7 @@ const globalStubs = {
     props: ['value', 'options', 'multiple', 'placeholder', 'disabled', 'loading', 'size'],
     emits: ['update:value'],
     template:
-      '<select class="n-select-stub" :multiple="multiple" :data-loading="loading" :data-placeholder="placeholder"><option v-for="o in options" :key="o.value" :value="o.value">{{ o.label }}</option></select>'
+      '<select class="n-select-stub" :multiple="multiple" :data-loading="loading" :data-placeholder="placeholder" @change="$emit(\'update:value\', Array.from($event.target.selectedOptions).map((o) => o.value))"><option v-for="o in options" :key="o.value" :value="o.value">{{ o.label }}</option></select>'
   }
 }
 
@@ -190,5 +193,27 @@ describe('FriendDetailsSections', () => {
 
     expect(wrapper.find('.single-details__device-list').exists()).toBe(false)
     expect(wrapper.text()).toContain('No devices')
+  })
+
+  it('assigns the friend to a newly selected group', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    wrapper.findComponent(NSelect).vm.$emit('update:value', ['g1', 'g2'])
+    await flushPromises()
+
+    expect(addFriendToGroupMock).toHaveBeenCalledWith('g2', '@kevins:matrix.test')
+    expect(removeFriendFromGroupMock).not.toHaveBeenCalled()
+  })
+
+  it('removes the friend from a deselected group', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    wrapper.findComponent(NSelect).vm.$emit('update:value', [])
+    await flushPromises()
+
+    expect(removeFriendFromGroupMock).toHaveBeenCalledWith('g1', '@kevins:matrix.test')
+    expect(addFriendToGroupMock).not.toHaveBeenCalled()
   })
 })
