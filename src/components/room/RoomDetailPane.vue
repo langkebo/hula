@@ -15,10 +15,14 @@
       <template v-else-if="roomDetail">
         <div class="pane-header">
           <div class="header-avatar-wrapper">
-            <div class="header-avatar" :class="{ 'is-uploading': avatarUploading }" @click="handleAvatarClick">
+            <div
+              class="header-avatar"
+              :class="{ 'is-uploading': avatarUploading }"
+              style="width: 64px; height: 64px"
+              @click="handleAvatarClick">
               <img v-if="roomDetail.avatar" :src="roomDetail.avatar" alt="room avatar" class="avatar-img" />
               <div v-else class="avatar-fallback">
-                <svg class="size-24px color-[--tjg-text-tertiary]"><use href="#view-grid-card"></use></svg>
+                <svg class="size-28px color-[--tjg-text-tertiary]"><use href="#view-grid-card"></use></svg>
               </div>
               <n-spin v-if="avatarUploading" size="small" class="avatar-spin" />
               <div class="avatar-overlay" v-else-if="roomDetail.canEdit">
@@ -28,7 +32,23 @@
           </div>
 
           <div class="header-info">
-            <h3 class="room-name">{{ roomDetail.name }}</h3>
+            <div class="room-name-row flex items-center gap-[--tjg-space-2]">
+              <h3 class="room-name">{{ roomDetail.name }}</h3>
+              <div class="header-badges flex items-center gap-[--tjg-space-1]">
+                <span
+                  v-if="roomDetail.isPublic"
+                  class="inline-flex items-center px-[6px] py-[1px] rounded-[--tjg-radius-xs] bg-[--tjg-color-info-100] text-[--tjg-color-info-600] text-[length:var(--tjg-font-size-2xs)]"
+                  :title="t('room.detail.public')">
+                  {{ t('room.detail.public') }}
+                </span>
+                <span
+                  v-if="roomDetail.isEncrypted"
+                  class="inline-flex items-center px-[6px] py-[1px] rounded-[--tjg-radius-xs] bg-[--tjg-color-success-100] text-[--tjg-color-success-600] text-[length:var(--tjg-font-size-2xs)]"
+                  :title="t('room.detail.encrypted')">
+                  {{ t('room.detail.encrypted') }}
+                </span>
+              </div>
+            </div>
             <div class="room-id-row">
               <span class="room-id-label">ID:</span>
               <span class="room-id-value" :title="roomId">{{ truncateId(roomId) }}</span>
@@ -94,45 +114,29 @@
         </div>
 
         <template v-else>
+          <!-- P1-2：统计卡片（总成员/在线/公告） -->
           <div class="pane-section">
-            <div class="section-title">{{ t('room.detail.overview') }}</div>
+            <RoomDetailStats
+              :member-count="roomDetail.memberCount"
+              :online-count="roomDetail.onlineCount"
+              :announcement-count="announcementCount" />
+          </div>
 
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="info-label">{{ t('room.detail.topic') }}</span>
-                <span class="info-value" :class="{ 'is-empty': !roomDetail.topic }">
-                  {{ roomDetail.topic || t('room.detail.no_topic') }}
-                </span>
-              </div>
+          <div class="pane-divider" />
 
-              <div class="info-item">
-                <span class="info-label">{{ t('room.detail.members') }}</span>
-                <span class="info-value">{{ roomDetail.memberCount }}</span>
-              </div>
+          <!-- P1-3：最近消息预览 -->
+          <div class="pane-section">
+            <RoomDetailLastMessage
+              :last-message="lastMessage"
+              :sender-name="lastMessageSender"
+              :timestamp="lastMessageTime" />
+          </div>
 
-              <div class="info-item">
-                <span class="info-label">{{ t('room.detail.online') }}</span>
-                <span class="info-value online">{{ roomDetail.onlineCount || 0 }}</span>
-              </div>
+          <div class="pane-divider" />
 
-              <div class="info-item">
-                <span class="info-label">{{ t('room.detail.visibility') }}</span>
-                <span class="info-value">
-                  <n-tag :type="roomDetail.isPublic ? 'info' : 'default'" size="small" round>
-                    {{ roomDetail.isPublic ? t('room.detail.public') : t('room.detail.private') }}
-                  </n-tag>
-                </span>
-              </div>
-
-              <div class="info-item">
-                <span class="info-label">{{ t('room.detail.encryption') }}</span>
-                <span class="info-value">
-                  <n-tag :type="roomDetail.isEncrypted ? 'success' : 'default'" size="small" round>
-                    {{ roomDetail.isEncrypted ? t('room.detail.encrypted') : t('room.detail.not_encrypted') }}
-                  </n-tag>
-                </span>
-              </div>
-            </div>
+          <!-- P1-3：核心成员预览 -->
+          <div class="pane-section">
+            <RoomDetailMembers :members="roomMembers" :loading="membersLoading" />
           </div>
 
           <div class="pane-divider" />
@@ -147,33 +151,33 @@
             <RoomParentSpaces :room-id="roomId!" />
           </div>
 
-          <div class="pane-divider" />
+          <!-- P1-4：底部横向操作栏 -->
+          <div
+            class="pane-action-bar flex flex-row items-center gap-[--tjg-space-2]"
+            data-testid="room-detail-action-bar">
+            <n-button type="primary" class="flex-1" data-testid="room-detail-action-enter" @click="enterRoom">
+              <template #icon>
+                <svg class="size-14px"><use href="#message"></use></svg>
+              </template>
+              {{ t('room.detail.enter_chat') }}
+            </n-button>
 
-          <div class="pane-section">
-            <div class="section-title">{{ t('room.detail.actions') }}</div>
+            <n-button secondary class="flex-1" data-testid="room-detail-action-settings" @click="openRoomSettings">
+              <template #icon>
+                <svg class="size-14px"><use href="#settings"></use></svg>
+              </template>
+              {{ t('room.detail.settings') }}
+            </n-button>
+          </div>
 
-            <div class="action-buttons">
-              <n-button type="primary" block @click="enterRoom">
-                <template #icon>
-                  <svg class="size-14px"><use href="#message"></use></svg>
-                </template>
-                {{ t('room.detail.enter_chat') }}
-              </n-button>
-
-              <n-button block secondary @click="openRoomSettings">
-                <template #icon>
-                  <svg class="size-14px"><use href="#settings"></use></svg>
-                </template>
-                {{ t('room.detail.settings') }}
-              </n-button>
-
-              <n-button v-if="roomDetail.canInvite" block secondary @click="showInviteDialog = true">
-                <template #icon>
-                  <svg class="size-14px"><use href="#add-user"></use></svg>
-                </template>
-                {{ t('room.detail.invite') }}
-              </n-button>
-            </div>
+          <!-- 邀请按钮：保留为次要操作（仅 canInvite 时显示） -->
+          <div v-if="roomDetail.canInvite" class="pane-invite-secondary">
+            <n-button block text size="small" @click="showInviteDialog = true">
+              <template #icon>
+                <svg class="size-12px"><use href="#add-user"></use></svg>
+              </template>
+              {{ t('room.detail.invite') }}
+            </n-button>
           </div>
         </template>
       </template>
@@ -207,14 +211,19 @@ import { useClipboard } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import InviteDialog from '@/components/room/InviteDialog.vue'
+import RoomDetailLastMessage from '@/components/room/RoomDetailLastMessage.vue'
+import RoomDetailMembers from '@/components/room/RoomDetailMembers.vue'
+import RoomDetailStats from '@/components/room/RoomDetailStats.vue'
 import RoomEncryptionSettings from '@/components/room/RoomEncryptionSettings.vue'
 import RoomParentSpaces from '@/components/space/RoomParentSpaces.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import { OnlineEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import type { MatrixRoomMember } from '@/stores/domains/chat/group/types'
 
 interface RoomDetail {
   name: string
@@ -264,6 +273,18 @@ const loading = ref(false)
 const roomDetail = ref<RoomDetail | null>(null)
 const showInviteDialog = ref(false)
 const avatarUploading = ref(false)
+const roomMembers = ref<MatrixRoomMember[]>([])
+const membersLoading = ref(false)
+const lastMessage = ref<string | null>(null)
+const lastMessageSender = ref<string | null>(null)
+const lastMessageTime = ref<number | null>(null)
+
+// P1-2：置顶消息作为公告数来源
+const { pinnedEventIds, load: loadPinnedMessages } = usePinnedMessage({
+  roomId: () => props.roomId
+})
+
+const announcementCount = computed(() => pinnedEventIds.value?.length ?? 0)
 
 const {
   fileInput: avatarFileInput,
@@ -318,8 +339,77 @@ const openRoomSettings = () => {
   emit('settings')
 }
 
-const openInviteMember = () => {
-  showInviteDialog.value = true
+interface MatrixTimelineEvent {
+  getType?: () => string
+  type?: string
+  getContent?: () => Record<string, unknown> | undefined
+  content?: Record<string, unknown>
+  getSender?: () => string | null
+  sender?: string
+  getTs?: () => number | null
+  origin_server_ts?: number
+}
+
+const resolveLastMessage = () => {
+  if (!props.roomId) {
+    lastMessage.value = null
+    lastMessageSender.value = null
+    lastMessageTime.value = null
+    return
+  }
+  try {
+    const room = matrixClientService.getRoom(props.roomId)
+    if (!room) return
+    const timeline = (
+      room as unknown as {
+        getLiveTimeline?: () => { getEvents?: () => MatrixTimelineEvent[] }
+      }
+    ).getLiveTimeline?.()
+    const events = timeline?.getEvents?.() ?? []
+    // 从末尾向前找第一条可显示消息事件
+    for (let i = events.length - 1; i >= 0; i--) {
+      const event = events[i]
+      const eventType = event.getType?.() ?? event.type
+      if (eventType !== 'm.room.message' && eventType !== 'm.room.encrypted') continue
+      const content = event.getContent?.() ?? event.content
+      const body = (content?.body as string) ?? null
+      const sender = event.getSender?.() ?? event.sender ?? null
+      const ts = event.getTs?.() ?? event.origin_server_ts ?? null
+      lastMessage.value = body
+      lastMessageSender.value = resolveSenderName(sender)
+      lastMessageTime.value = ts ?? null
+      return
+    }
+    lastMessage.value = null
+    lastMessageSender.value = null
+    lastMessageTime.value = null
+  } catch {
+    lastMessage.value = null
+    lastMessageSender.value = null
+    lastMessageTime.value = null
+  }
+}
+
+const resolveSenderName = (senderId: string | null): string | null => {
+  if (!senderId) return null
+  const member = roomMembers.value.find((m) => m.userId === senderId)
+  return member?.displayName || member?.name || senderId
+}
+
+const loadRoomMembers = async () => {
+  if (!props.roomId) {
+    roomMembers.value = []
+    return
+  }
+  membersLoading.value = true
+  try {
+    const members = await groupStore.getMembersByRoomId(props.roomId)
+    roomMembers.value = (members as MatrixRoomMember[]) || []
+  } catch {
+    roomMembers.value = []
+  } finally {
+    membersLoading.value = false
+  }
 }
 
 const buildRoomDetail = async (): Promise<RoomDetail | null> => {
@@ -336,6 +426,7 @@ const buildRoomDetail = async (): Promise<RoomDetail | null> => {
       memberCount = Math.max(memberCount, members?.length || 0)
       onlineCount =
         members?.filter((m) => (m as unknown as Record<string, unknown>).activeStatus === OnlineEnum.ONLINE).length || 0
+      roomMembers.value = (members as MatrixRoomMember[]) || []
     } catch {
       // member retrieval is best-effort
     }
@@ -372,6 +463,14 @@ const loadRoomDetail = async () => {
   loading.value = true
   roomDetail.value = await buildRoomDetail()
   loading.value = false
+  // 并行加载：最近消息 + 置顶消息（公告数）
+  resolveLastMessage()
+  try {
+    await loadPinnedMessages?.()
+  } catch {
+    // best-effort: 置顶消息加载失败不影响主流程
+  }
+  loadRoomMembers()
 }
 
 watch(
@@ -381,6 +480,10 @@ watch(
       loadRoomDetail()
     } else {
       roomDetail.value = null
+      roomMembers.value = []
+      lastMessage.value = null
+      lastMessageSender.value = null
+      lastMessageTime.value = null
     }
   },
   { immediate: true }
@@ -434,8 +537,6 @@ watch(
 
 .header-avatar {
   position: relative;
-  width: 52px;
-  height: 52px;
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
@@ -492,8 +593,12 @@ watch(
   min-width: 0;
 }
 
+.room-name-row {
+  margin-bottom: 2px;
+}
+
 .room-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--tjg-text-primary);
   margin: 0;
@@ -548,49 +653,18 @@ watch(
   letter-spacing: 0.5px;
 }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-
-.info-item {
+.pane-action-bar {
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
   align-items: center;
-}
-
-.info-label {
-  font-size: 13px;
-  color: var(--tjg-text-secondary);
-}
-
-.info-value {
-  font-size: 13px;
-  color: var(--tjg-text-primary);
-
-  &.is-empty {
-    color: var(--tjg-text-tertiary);
-    font-style: italic;
-  }
-
-  &.online {
-    color: var(--tjg-color-success-500);
-  }
-}
-
-.action-buttons {
-  display: flex;
-  flex-direction: column;
   gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--tjg-border-default);
+  background: var(--tjg-surface-panel);
 }
 
-.announcement-content {
-  font-size: 13px;
-  color: var(--tjg-text-secondary);
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
+.pane-invite-secondary {
+  padding: 0 16px 12px;
 }
 
 .pane-error {

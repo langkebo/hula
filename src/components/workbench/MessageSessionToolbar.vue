@@ -33,7 +33,8 @@
         :placeholder="t('space.search_sessions_placeholder')"
         :aria-label="t('space.search_sessions_placeholder')"
         @update:value="handleSearchChange"
-        @keydown.esc="handleSearchEsc">
+        @keydown.esc="handleSearchEsc"
+        @keydown.enter="handleSearchSubmit">
         <template #prefix>
           <svg class="size-16px color-[--tjg-text-tertiary]">
             <use href="#search"></use>
@@ -126,6 +127,7 @@ const emit = defineEmits<{
   'update:sessionSort': [value: WorkbenchSessionSort]
   createRoom: []
   joinRoom: []
+  searchSubmit: []
 }>()
 
 const filterOptions = computed(() => [
@@ -161,6 +163,11 @@ const handleSearchChange = (value: string) => {
 // 阶段 9：Esc 清空搜索框并失焦
 const handleSearchEsc = () => {
   emit('update:searchKeyword', '')
+}
+
+// P2：Enter 提交搜索 — 由父组件决定打开首个匹配结果
+const handleSearchSubmit = () => {
+  emit('searchSubmit')
 }
 
 // 阶段 9：点击全局搜索按钮，携带当前关键词跳转 /search

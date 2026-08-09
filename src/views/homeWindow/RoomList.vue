@@ -18,24 +18,27 @@
         @update:session-engagement-filter="setSessionEngagementFilter"
         @update:session-sort="setSessionSort"
         @create-room="handleCreateRoom"
-        @join-room="handleJoinRoom" />
+        @join-room="handleJoinRoom"
+        @search-submit="handleSearchSubmit" />
     </template>
 
     <template #default>
-      <RoomSessionList
-        ref="sessionListRef"
-        :session-list="filteredRoomSessionList"
-        :sync-loading="syncLoading"
-        :session-loading="chatStore.sessionOptions.isLoading"
-        :network-banner="networkBanner"
-        :empty-description="emptyDescription"
-        :get-item-classes="getItemClasses"
-        :visible-menu="visibleMenu"
-        :visible-special-menu="visibleSpecialMenu"
-        :on-msg-click="handleRoomSelect"
-        :on-msg-dblclick="handleRoomDblClick"
-        :on-menu-show="handleMenuShow"
-        :on-retry-network="retrySessions" />
+      <div class="room-list-page__content flex flex-col h-full">
+        <div
+          class="room-list-page__tabs flex items-center justify-between px-[--tjg-space-3] py-[--tjg-space-2] border-b border-[--tjg-border-muted]">
+          <RoomMembershipTabs v-model="membershipFilter" :joined-count="joinedCount" :created-count="createdCount" />
+        </div>
+
+        <RoomCardGrid
+          :rooms="filteredRoomCardViewModels"
+          :loading="syncLoading || chatStore.sessionOptions.isLoading"
+          :empty-description="emptyDescription"
+          @preview="handleCardPreview"
+          @message="handleCardMessage"
+          @info="handleCardInfo"
+          @settings="handleCardSettings"
+          @pin="handleCardPin" />
+      </div>
     </template>
   </ListWorkbenchShell>
 </template>
@@ -43,37 +46,35 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import RoomCardGrid from '@/components/room/RoomCardGrid.vue'
+import RoomMembershipTabs from '@/components/room/RoomMembershipTabs.vue'
 import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
 import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
-import type RoomSessionList from '@/components/workbench/RoomSessionList.vue'
 import { useMessage } from '@/composables/chat/useMessage'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useTauriListener } from '@/composables/common/useTauriListener'
+import { useRoomCardViewModels } from '@/composables/room/useRoomCardViewModels'
+import { useRoomMembershipFilter } from '@/composables/room/useRoomMembershipFilter'
 import { useMessageSessionFilters } from '@/composables/workbench/useMessageSessionFilters'
 import { useSessionListState } from '@/composables/workbench/useSessionListState'
 import { useSessionPageSync } from '@/composables/workbench/useSessionPageSync'
 import { useWorkbenchSessionQuerySync } from '@/composables/workbench/useWorkbenchSessionQuerySync'
 import { MittEnum, RoomTypeEnum } from '@/enums'
 import { WORKBENCH_SESSION_ENGAGEMENT_FILTERS, WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
+import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { SessionItem } from '@/stores/domains/chat/chat'
+import { useGroupStore } from '@/stores/domains/chat/group'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 
 const { t } = useI18n()
 const router = useRouter()
+const { showFeedback } = useActionFeedback()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const { addListener } = useTauriListener()
-const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visibleSpecialMenu } = useMessage()
-const {
-  chatStore,
-  globalStore,
-  syncLoading,
-  networkBanner,
-  retrySessions,
-  sessionList,
-  handleMenuShow,
-  getItemClasses,
-  invalidateSessionCache
-} = useSessionListState()
+const { handleMsgClick, handleMsgDelete } = useMessage()
+const { chatStore, globalStore, syncLoading, sessionList, invalidateSessionCache } = useSessionListState()
 
 const roomSessionList = computed(() => sessionList.value.filter((item) => item.type === RoomTypeEnum.GROUP))
 const {
@@ -88,7 +89,38 @@ const {
   setSessionEngagementFilter,
   setSessionSort
 } = useMessageSessionFilters(roomSessionList)
-const sessionListRef = ref<InstanceType<typeof RoomSessionList> | null>(null)
+
+const groupStore = useGroupStore()
+const currentUserId = matrixClientService.getUserId()
+
+const { roomCardViewModels } = useRoomCardViewModels(filteredRoomSessionList, {
+  groupInfoMap: groupStore.groupInfoMap,
+  loadGroupInfo: groupStore.loadGroupInfo
+})
+
+const membershipFilterableRooms = computed(() =>
+  roomCardViewModels.value.map((vm) => ({
+    roomId: vm.roomId,
+    membership: 'join' as const,
+    creator: groupStore.groupInfoMap[vm.roomId]?.creator ?? null
+  }))
+)
+
+const { activeFilter: membershipFilter, filteredRooms: membershipFilteredRooms } = useRoomMembershipFilter(
+  membershipFilterableRooms,
+  { currentUserId }
+)
+
+const filteredRoomCardViewModels = computed(() => {
+  const filteredIds = new Set(membershipFilteredRooms.value.map((r) => r.roomId))
+  return roomCardViewModels.value.filter((vm) => filteredIds.has(vm.roomId))
+})
+
+const joinedCount = computed(
+  () => membershipFilterableRooms.value.filter((r) => r.membership === 'join' && r.creator !== currentUserId).length
+)
+const createdCount = computed(() => membershipFilterableRooms.value.filter((r) => r.creator === currentUserId).length)
+
 const ROOM_LIST_ROUTE_NAME = 'room'
 
 const emptyDescription = computed(() => {
@@ -103,14 +135,57 @@ const emptyDescription = computed(() => {
   return t('space.empty_sessions')
 })
 
-/** 单击房间项时在右侧栏展示房间详情，双击直接打开聊天 */
-const handleRoomSelect = (item: SessionItem) => {
-  // 阶段 2：路由驱动详情视图，跳转后由 useRightView 派生 details 视图
-  void router.push({ name: 'room-details', params: { roomId: item.roomId } })
+const findSessionItem = (roomId: string): SessionItem | undefined => {
+  return roomSessionList.value.find((item) => item.roomId === roomId)
 }
 
-const handleRoomDblClick = (item: SessionItem) => {
-  void handleMsgClick(item)
+/** P2：进入聊天界面（卡片单击和消息按钮共用） */
+const enterChat = (roomId: string) => {
+  const item = findSessionItem(roomId)
+  if (item) {
+    void handleMsgClick(item)
+  }
+}
+
+/** 单击卡片 → 进入聊天界面 */
+const handleCardPreview = (roomId: string) => {
+  enterChat(roomId)
+}
+
+/** 点击消息按钮 → 进入聊天界面 */
+const handleCardMessage = (roomId: string) => {
+  enterChat(roomId)
+}
+
+/** 点击信息按钮 → 打开房间详情 */
+const handleCardInfo = (roomId: string) => {
+  void router.push({ name: 'room-details', params: { roomId } })
+}
+
+/** 点击设置按钮 → 打开房间详情并进入设置模式 */
+const handleCardSettings = (roomId: string) => {
+  void router.push({ name: 'room-details', params: { roomId }, query: { mode: 'settings' } })
+}
+
+/** P2：搜索框 Enter → 打开首个匹配结果的聊天 */
+const handleSearchSubmit = () => {
+  const firstRoom = filteredRoomCardViewModels.value[0]
+  if (firstRoom) {
+    enterChat(firstRoom.roomId)
+  }
+}
+
+/** 点击置顶按钮 → 切换置顶状态 */
+const handleCardPin = async (roomId: string) => {
+  const item = findSessionItem(roomId)
+  if (!item) return
+  try {
+    await matrixSessionService.setSessionTop(roomId, !item.top)
+    chatStore.updateSession(roomId, { top: !item.top })
+    showFeedback(item.top ? t('message.message_menu.unpin_success') : t('message.message_menu.pin_success'), 'success')
+  } catch {
+    showFeedback(item.top ? t('message.message_menu.unpin_fail') : t('message.message_menu.pin_fail'), 'error')
+  }
 }
 
 useSessionPageSync({ activePath: '/room', handleMsgClick })
@@ -126,7 +201,6 @@ useWorkbenchSessionQuerySync({
   setSessionSort
 })
 
-// 阶段 4：创建/加入房间通过路由跳转，由右侧栏 createRoom/joinRoom 视图承载
 const handleCreateRoom = () => {
   void router.push({ name: 'room-create' })
 }
@@ -158,10 +232,6 @@ onMounted(async () => {
   })
   useMitt.on(MittEnum.LOCATE_SESSION, async (e: { roomId: string }) => {
     ensureSessionVisible(e.roomId)
-    const index = filteredRoomSessionList.value.findIndex((item) => item.roomId === e.roomId)
-    if (index !== -1) {
-      await sessionListRef.value?.scrollToIndex(index)
-    }
   })
 })
 </script>
@@ -171,6 +241,10 @@ onMounted(async () => {
 
 .room-list-page {
   background: var(--tjg-surface-panel);
+}
+
+.room-list-page__content {
+  min-height: 0;
 }
 
 #image-no-data {
