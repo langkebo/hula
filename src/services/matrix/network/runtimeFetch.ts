@@ -168,7 +168,17 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
       const isExpectedForbidden = response.status === 403 && url.includes('/presence/')
       if (!response.ok && response.status !== 404 && !isExpectedForbidden) {
         const method = normalizedInit?.method || 'GET'
-        logger.warn(`nativeFetch ${method} ${url} -> ${response.status}`)
+        // 429 需要区分来源以便排查：Rust 限流中间件会带 x-ratelimit-remaining 头，
+        // nginx limit_req 的 429 没有该头；retry-after 反映服务端建议的退避时长
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('retry-after')
+          const remaining = response.headers.get('x-ratelimit-remaining')
+          logger.warn(
+            `nativeFetch ${method} ${url} -> 429 (retry-after: ${retryAfter ?? 'n/a'}s, x-ratelimit-remaining: ${remaining ?? 'n/a'})`
+          )
+        } else {
+          logger.warn(`nativeFetch ${method} ${url} -> ${response.status}`)
+        }
       }
       return response
     } catch (error) {
