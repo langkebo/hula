@@ -8,7 +8,16 @@
         :aria-selected="viewMode === 'list'"
         :class="['space-list-page__view-tab', { 'space-list-page__view-tab--active': viewMode === 'list' }]"
         @click="viewMode = 'list'">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true">
           <line x1="8" y1="6" x2="21" y2="6" />
           <line x1="8" y1="12" x2="21" y2="12" />
           <line x1="8" y1="18" x2="21" y2="18" />
@@ -24,7 +33,16 @@
         :aria-selected="viewMode === 'tree'"
         :class="['space-list-page__view-tab', { 'space-list-page__view-tab--active': viewMode === 'tree' }]"
         @click="viewMode = 'tree'">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true">
           <rect x="3" y="3" width="6" height="6" rx="1" />
           <rect x="15" y="3" width="6" height="6" rx="1" />
           <rect x="9" y="15" width="6" height="6" rx="1" />
@@ -71,9 +89,9 @@ import type { SpaceTreeNode } from '@/components/space/SpaceTree.vue'
 import SpaceTree from '@/components/space/SpaceTree.vue'
 import type { SpaceListItem } from '@/components/workbench/SpaceListPane.vue'
 import SpaceListPane from '@/components/workbench/SpaceListPane.vue'
+import { useEnterChat } from '@/composables/chat/useEnterChat'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
-import { useEnterChat } from '@/composables/chat/useEnterChat'
 import { useSpaces } from '@/composables/space'
 import { buildCreateSpaceRoute, buildSpaceRoute } from '@/router/spaceNavigation'
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
