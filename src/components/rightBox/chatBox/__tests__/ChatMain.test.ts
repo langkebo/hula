@@ -312,6 +312,7 @@ const mountComponent = () =>
         ThreadPanel: true,
         Transition: false,
         ChatBanners: false,
+        ChatMessageList: false,
         ChatModals: false,
         'n-flex': true,
         'n-icon': true,
