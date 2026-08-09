@@ -28,22 +28,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Read SDK pin
-        id: sdk-pin
-        shell: bash
-        run: echo "commit=$(jq -r .sdk_commit meta/sdk-pin.json)" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout matrix-js-sdk (sibling)
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: langkebo/matrix-js-sdk
-          ref: ${{ steps.sdk-pin.outputs.commit }}
-          path: matrix-js-sdk
-
-      - name: Create sibling symlink
-        shell: bash
-        run: ln -sf "$PWD/matrix-js-sdk" "$PWD/../matrix-js-sdk"
-
       - name: Setup Node.js
         uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
@@ -65,21 +49,15 @@ jobs:
           path: |
             ${{ env.STORE_PATH }}
             node_modules
-            matrix-js-sdk/node_modules
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
-      - name: Install SDK dependencies
-        shell: bash
-        run: pnpm --dir matrix-js-sdk install --frozen-lockfile
-
-      - name: Build SDK
-        shell: bash
-        run: pnpm --dir matrix-js-sdk build
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Verify SDK pin
+        run: pnpm verify:sdk-pin
 
       - name: Check SDK version
         run: |
