@@ -26,15 +26,6 @@ vi.mock('@/composables/common/useOverlayController', () => ({
 }))
 vi.mock('@/composables/common/useWindow', () => ({ useWindow: () => ({ ensureNotifyWindow: vi.fn() }) }))
 vi.mock('@/composables/search/useSearchShortcut', () => ({ useSearchShortcut: vi.fn() }))
-vi.mock('@/composables/usePrivacyProtection', () => ({
-  usePrivacyProtection: () => ({
-    isPrivacyMode: false,
-    settings: {},
-    enterPrivateChat: vi.fn(),
-    leavePrivateChat: vi.fn(),
-    generateWatermark: vi.fn()
-  })
-}))
 vi.mock('@/composables/user/useLoginFlow', () => ({
   useLoginFlow: () => ({ logout: vi.fn(), init: vi.fn(() => Promise.resolve()) })
 }))
@@ -65,7 +56,6 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({ WebviewWindow: { getCurrent: v
 vi.mock('@tauri-apps/api/window', () => ({ UserAttentionType: { Critical: 'Critical' } }))
 
 vi.mock('@/components/atomic/LoadingSpinner.vue', () => ({ default: { name: 'LoadingSpinner', template: '<div />' } }))
-vi.mock('@/components/privacy/PrivacyOverlay.vue', () => ({ default: { name: 'PrivacyOverlay', template: '<div />' } }))
 vi.mock('@/views/settingsWindow/SettingsDialog.vue', () => ({
   default: { name: 'SettingsDialog', template: '<div />' }
 }))
