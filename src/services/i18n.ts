@@ -85,8 +85,11 @@ const formatFallbackMessage = (message: string, params?: Record<string, unknown>
 // Preload zh-CN messages synchronously so the UI never shows English
 // before the async bootstrap completes.
 if (i18n && fallbackMessages['zh-CN']) {
-  // biome-ignore lint/suspicious/noExplicitAny: vue-i18n setLocaleMessage accepts any message schema
-  i18n.global.setLocaleMessage('zh-CN', fallbackMessages['zh-CN'] as any)
+  // @ts-expect-error — Dynamic JSON imports yield Record<string, unknown>,
+  // but vue-i18n's setLocaleMessage expects RemoveIndexSignature<...> with
+  // 86+ schema-inferred named properties that cannot be satisfied without
+  // a type assertion. This is a known type boundary for dynamic locale loading.
+  i18n.global.setLocaleMessage('zh-CN', fallbackMessages['zh-CN'])
 }
 
 const fallbackComposer: FallbackComposer = {

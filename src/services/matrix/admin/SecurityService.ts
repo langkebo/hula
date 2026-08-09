@@ -130,8 +130,7 @@ export class AdminSecurityService {
   async getSamlConfig(): Promise<Record<string, unknown>> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      return (await (admin as any).getSamlConfig()) ?? {}
+      return (await admin.getSamlConfig()) ?? {}
     } catch (err) {
       logger.error(`[MatrixAdmin] 获取 SAML 配置失败: ${err}`)
       return {}
@@ -141,8 +140,7 @@ export class AdminSecurityService {
   async getSamlMetadata(): Promise<Record<string, unknown>> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      return (await (admin as any).getSamlMetadata()) ?? {}
+      return (await admin.getSamlMetadata()) ?? {}
     } catch (err) {
       logger.error(`[MatrixAdmin] 获取 SAML 元数据失败: ${err}`)
       return {}
@@ -152,8 +150,7 @@ export class AdminSecurityService {
   async getSpMetadata(): Promise<Blob | string | null> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      return (await (admin as any).getSpMetadata()) ?? null
+      return (await admin.getSpMetadata()) ?? null
     } catch (err) {
       logger.error(`[MatrixAdmin] 获取 SP 元数据失败: ${err}`)
       return null
@@ -163,8 +160,7 @@ export class AdminSecurityService {
   async updateSamlConfig(config: Record<string, unknown>): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      await (admin as any).updateSamlConfig(config)
+      await admin.updateSamlConfig(config)
       logger.info('[MatrixAdmin] 更新 SAML 配置成功')
     } catch (err) {
       logger.error(`[MatrixAdmin] 更新 SAML 配置失败: ${err}`)
@@ -175,8 +171,7 @@ export class AdminSecurityService {
   async refreshIdpMetadata(): Promise<Record<string, unknown>> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      const metadata = await (admin as any).refreshIdpMetadata()
+      const metadata = await admin.refreshIdpMetadata()
       logger.info('[MatrixAdmin] 刷新 SAML IdP 元数据成功')
       return metadata ?? {}
     } catch (err) {
@@ -323,8 +318,7 @@ export class AdminSecurityService {
   }> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      const result = await (admin as any).listSamlMappings({ limit, from })
+      const result = await admin.listSamlMappings({ limit, from })
       return {
         mappings: result?.mappings ?? [],
         nextToken: result?.next_token
@@ -338,8 +332,7 @@ export class AdminSecurityService {
   async getSamlMapping(nameId: string): Promise<Record<string, unknown> | null> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      return (await (admin as any).getSamlMapping(nameId)) ?? null
+      return (await admin.getSamlMapping(nameId)) ?? null
     } catch (err) {
       logger.error(`[Admin] 获取SAML映射详情失败: ${err}`)
       return null
@@ -349,8 +342,7 @@ export class AdminSecurityService {
   async updateSamlMapping(nameId: string, updates: Record<string, unknown>): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      await (admin as any).updateSamlMapping(nameId, updates)
+      await admin.updateSamlMapping(nameId, updates)
       logger.info(`[Admin] 更新SAML映射: ${nameId}`)
     } catch (err) {
       logger.error(`[Admin] 更新SAML映射失败: ${err}`)
@@ -361,8 +353,7 @@ export class AdminSecurityService {
   async deleteSamlMapping(nameId: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      await (admin as any).deleteSamlMapping(nameId)
+      await admin.deleteSamlMapping(nameId)
       logger.info(`[Admin] 删除SAML映射: ${nameId}`)
     } catch (err) {
       logger.error(`[Admin] 删除SAML映射失败: ${err}`)
@@ -373,8 +364,7 @@ export class AdminSecurityService {
   async samlLogout(userId: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      await (admin as any).samlLogout(userId)
+      await admin.samlLogout(userId)
       logger.info(`[Admin] SAML登出: ${userId}`)
     } catch (err) {
       logger.error(`[Admin] SAML登出失败: ${err}`)
@@ -392,8 +382,7 @@ export class AdminSecurityService {
       const params: Record<string, unknown> = { limit }
       if (from) params.from = from
       if (filters) Object.assign(params, filters)
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      const result = await (admin as any).listSecurityEvents(params)
+      const result = await admin.listSecurityEvents(params)
       return {
         events: result?.events ?? [],
         nextToken: result?.next_token
@@ -407,8 +396,7 @@ export class AdminSecurityService {
   async getIpBlocks(): Promise<Array<Record<string, unknown>> | null> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      return (await (admin as any).listIpBlocks()) ?? null
+      return (await admin.listIpBlocks()) ?? null
     } catch (err) {
       logger.error(`[Admin] 获取IP封禁列表失败: ${err}`)
       return null
@@ -425,8 +413,7 @@ export class AdminSecurityService {
       if (options?.cidr !== undefined) sdkOptions.cidr = options.cidr
       if (options?.expireAt !== undefined) sdkOptions.expire_at = options.expireAt
       if (options?.reason !== undefined) sdkOptions.reason = options.reason
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      return (await (admin as any).blockIp(ip, sdkOptions)) ?? null
+      return (await admin.blockIp(ip, sdkOptions)) ?? null
     } catch (err) {
       logger.error(`[Admin] 封禁IP失败: ${err}`)
       return null
@@ -436,8 +423,7 @@ export class AdminSecurityService {
   async unblockIp(ip: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      await (admin as any).unblockIp(ip)
+      await admin.unblockIp(ip)
     } catch (err) {
       logger.error(`[Admin] 解除IP封禁失败: ${err}`)
       throw err
@@ -447,8 +433,7 @@ export class AdminSecurityService {
   async getIpReputation(ip: string): Promise<Record<string, unknown> | null> {
     try {
       const admin = await this.sdkAdmin()
-      // biome-ignore lint/suspicious/noExplicitAny: SDK AdminManager lacks type definitions for synapse-rust extensions
-      return (await (admin as any).getIpReputation(ip)) ?? null
+      return (await admin.getIpReputation(ip)) ?? null
     } catch (err) {
       logger.error(`[Admin] 获取IP声誉失败: ${err}`)
       return null

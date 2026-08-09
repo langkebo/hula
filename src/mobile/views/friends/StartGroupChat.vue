@@ -110,6 +110,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
 import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
+import { Preset, Visibility } from '@/services/matrix/sdk'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -176,10 +177,8 @@ const createGroup = async () => {
     const room = await matrixRoomCreationService.createRoom({
       invite: selectedList.value,
       is_direct: false,
-      // biome-ignore lint/suspicious/noExplicitAny: SDK type doesn't include these value literals
-      preset: 'private_chat' as any,
-      // biome-ignore lint/suspicious/noExplicitAny: SDK type doesn't include these value literals
-      visibility: 'private' as any
+      preset: Preset.PrivateChat,
+      visibility: Visibility.Private
     })
 
     await chatStore.getSessionList(true)

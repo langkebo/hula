@@ -6,7 +6,7 @@
  */
 
 export type { MatrixClient, MatrixEvent, Room, RoomMember, RoomState } from 'matrix-js-sdk'
-export { Direction, EventType, PushRuleKind, Visibility } from 'matrix-js-sdk'
+export { Direction, EventType, Preset, PushRuleKind, Visibility } from 'matrix-js-sdk'
 export type { AdminManager } from 'matrix-js-sdk/admin'
 export { ClientEvent } from 'matrix-js-sdk/client'
 

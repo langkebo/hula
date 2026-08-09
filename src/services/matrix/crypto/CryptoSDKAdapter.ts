@@ -9,6 +9,7 @@ import type {
   ISecuritySummary,
   KeyBackupManager,
   LegacyStoredDevice,
+  MatrixAuthData,
   MatrixClientExtended,
   SecureBackupManager,
   VerificationRequest
@@ -570,8 +571,7 @@ class CryptoSDKAdapter {
       return generatedKey.encodedPrivateKey
     } else {
       log('分支 4: 调用 resetKeyBackup (bootstrapSecretStorage 不可用)')
-      // biome-ignore lint/suspicious/noExplicitAny: SDK crypto client lacks type definitions for synapse-rust extensions
-      await crypto.resetKeyBackup(authData as any)
+      await crypto.resetKeyBackup(authData as unknown as MatrixAuthData)
       const key = generatedKey?.encodedPrivateKey || ''
       log('分支 4 完成: resetKeyBackup 成功')
       return key

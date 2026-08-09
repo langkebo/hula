@@ -61,14 +61,11 @@
           tag="div"
           style="padding: 4px"
           class="sort-target flex flex-col-center gap-12px">
-          <div
-            v-for="(item, index) in chatList"
-            :key="item.id"
-            class="chat-item-wrapper relative mb-5px">
+          <div v-for="(item, index) in chatList" :key="item.id" class="chat-item-wrapper relative mb-5px">
             <ContextMenu
               :menu="menuList"
               :special-menu="specialMenuList"
-              @select="(menuItem) => menuItem.click?.(item as any)">
+              @select="(menuItem) => menuItem.click?.(item)">
               <div class="relative w-full">
                 <RobotCard
                   v-if="editingItemId !== item.id"
