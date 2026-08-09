@@ -52,6 +52,8 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 import { ErrorType, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler.ts'
+import { useScreenshotExport } from './composables/useScreenshotExport'
+import { useSelectionDragResize } from './composables/useSelectionDragResize'
 import type ScreenshotMagnifier from './ScreenshotMagnifier.vue'
 import type ScreenshotToolbar from './ScreenshotToolbar.vue'
 import type { DrawToolType, ScreenConfig } from './types'
@@ -82,12 +84,7 @@ const currentDrawTool = ref<DrawToolType>(null)
 const showButtonGroup = ref(false)
 const isImageLoaded = ref(false)
 
-const isDragging = ref(false)
-const isResizing = ref(false)
 const borderRadius = ref(0)
-const dragOffset = ref({ x: 0, y: 0 })
-const resizeDirection = ref('')
-const resizeStartPosition = ref({ x: 0, y: 0, width: 0, height: 0, left: 0, top: 0 })
 
 const screenConfig = ref<ScreenConfig>({
   startX: 0,
@@ -218,6 +215,36 @@ const updateButtonGroupPosition = () => {
   toolbarRef.value?.updatePosition()
 }
 
+// Selection drag & 8-direction resize
+const {
+  isDragging,
+  isResizing,
+  handleSelectionDragStart,
+  handleResizeStart,
+  cleanup: cleanupDragResize
+} = useSelectionDragResize({
+  screenConfig,
+  selectionAreaStyle,
+  currentDrawTool,
+  borderRadius,
+  selectionBorderColor,
+  showButtonGroup,
+  redrawSelection,
+  updateButtonGroupPosition,
+  hideMagnifier: () => magnifierRef.value?.hideMagnifier(),
+  onResizeMouseMove: (e) => magnifierRef.value?.handleMouseMove(e)
+})
+
+// Screenshot export pipeline (canvas merge + crop + rounded corners)
+const { exportSelection } = useScreenshotExport({
+  imgCanvas,
+  drawCanvas,
+  screenConfig,
+  borderRadius,
+  isImageLoaded,
+  resetScreenshot: async () => {}
+})
+
 const drawImgCanvas = (type: DrawToolType) => {
   if (!drawTools) return
 
@@ -287,182 +314,6 @@ const resetDrawTools = () => {
     drawCanvas.value.style.pointerEvents = 'none'
     drawCanvas.value.style.zIndex = '5'
   }
-}
-
-const handleSelectionDragStart = (event: MouseEvent) => {
-  if (currentDrawTool.value) return
-
-  isDragging.value = true
-  dragOffset.value = {
-    x: event.clientX - parseFloat(selectionAreaStyle.value.left),
-    y: event.clientY - parseFloat(selectionAreaStyle.value.top)
-  }
-
-  document.addEventListener('mousemove', handleSelectionDragMove)
-  document.addEventListener('mouseup', handleSelectionDragEnd)
-}
-
-const handleSelectionDragMove = (event: MouseEvent) => {
-  if (!isDragging.value) return
-
-  event.preventDefault()
-
-  const newLeft = event.clientX - dragOffset.value.x
-  const newTop = event.clientY - dragOffset.value.y
-
-  const selectionWidth = parseFloat(selectionAreaStyle.value.width)
-  const selectionHeight = parseFloat(selectionAreaStyle.value.height)
-  const maxLeft = window.innerWidth - selectionWidth
-  const maxTop = window.innerHeight - selectionHeight
-
-  const constrainedLeft = Math.max(0, Math.min(newLeft, maxLeft))
-  const constrainedTop = Math.max(0, Math.min(newTop, maxTop))
-
-  selectionAreaStyle.value.left = `${constrainedLeft}px`
-  selectionAreaStyle.value.top = `${constrainedTop}px`
-
-  const { scaleX, scaleY } = screenConfig.value
-  screenConfig.value.startX = constrainedLeft * scaleX
-  screenConfig.value.startY = constrainedTop * scaleY
-  screenConfig.value.endX = (constrainedLeft + selectionWidth) * scaleX
-  screenConfig.value.endY = (constrainedTop + selectionHeight) * scaleY
-
-  redrawSelection()
-}
-
-const handleSelectionDragEnd = () => {
-  isDragging.value = false
-
-  document.removeEventListener('mousemove', handleSelectionDragMove)
-  document.removeEventListener('mouseup', handleSelectionDragEnd)
-
-  magnifierRef.value?.hideMagnifier()
-  nextTick(updateButtonGroupPosition)
-}
-
-const handleResizeStart = (event: MouseEvent, direction: string) => {
-  if (currentDrawTool.value) return
-
-  isResizing.value = true
-  resizeDirection.value = direction
-
-  resizeStartPosition.value = {
-    x: event.clientX,
-    y: event.clientY,
-    width: parseFloat(selectionAreaStyle.value.width),
-    height: parseFloat(selectionAreaStyle.value.height),
-    left: parseFloat(selectionAreaStyle.value.left),
-    top: parseFloat(selectionAreaStyle.value.top)
-  }
-
-  document.addEventListener('mousemove', handleResizeMove)
-  document.addEventListener('mouseup', handleResizeEnd)
-}
-
-const handleResizeMove = (event: MouseEvent) => {
-  if (!isResizing.value) return
-
-  event.preventDefault()
-
-  magnifierRef.value?.handleMouseMove(event)
-
-  const deltaX = event.clientX - resizeStartPosition.value.x
-  const deltaY = event.clientY - resizeStartPosition.value.y
-
-  let newLeft = resizeStartPosition.value.left
-  let newTop = resizeStartPosition.value.top
-  let newWidth = resizeStartPosition.value.width
-  let newHeight = resizeStartPosition.value.height
-
-  switch (resizeDirection.value) {
-    case 'nw':
-      newLeft += deltaX
-      newTop += deltaY
-      newWidth -= deltaX
-      newHeight -= deltaY
-      break
-    case 'ne':
-      newTop += deltaY
-      newWidth += deltaX
-      newHeight -= deltaY
-      break
-    case 'sw':
-      newLeft += deltaX
-      newWidth -= deltaX
-      newHeight += deltaY
-      break
-    case 'se':
-      newWidth += deltaX
-      newHeight += deltaY
-      break
-    case 'n':
-      newTop += deltaY
-      newHeight -= deltaY
-      break
-    case 'e':
-      newWidth += deltaX
-      break
-    case 's':
-      newHeight += deltaY
-      break
-    case 'w':
-      newLeft += deltaX
-      newWidth -= deltaX
-      break
-  }
-
-  const minSize = 20
-  if (newWidth < minSize) {
-    if (resizeDirection.value.includes('w')) {
-      newLeft = resizeStartPosition.value.left + resizeStartPosition.value.width - minSize
-    }
-    newWidth = minSize
-  }
-  if (newHeight < minSize) {
-    if (resizeDirection.value.includes('n')) {
-      newTop = resizeStartPosition.value.top + resizeStartPosition.value.height - minSize
-    }
-    newHeight = minSize
-  }
-
-  newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - newWidth))
-  newTop = Math.max(0, Math.min(newTop, window.innerHeight - newHeight))
-
-  selectionAreaStyle.value = {
-    left: `${newLeft}px`,
-    top: `${newTop}px`,
-    width: `${newWidth}px`,
-    height: `${newHeight}px`,
-    borderRadius: `${borderRadius.value}px`,
-    border: `2px solid ${selectionBorderColor}`
-  }
-
-  const { scaleX, scaleY } = screenConfig.value
-  screenConfig.value.startX = newLeft * scaleX
-  screenConfig.value.startY = newTop * scaleY
-  screenConfig.value.endX = (newLeft + newWidth) * scaleX
-  screenConfig.value.endY = (newTop + newHeight) * scaleY
-
-  redrawSelection()
-  if (showButtonGroup.value) {
-    updateButtonGroupPosition()
-  }
-}
-
-const handleResizeEnd = () => {
-  isResizing.value = false
-  resizeDirection.value = ''
-
-  document.removeEventListener('mousemove', handleResizeMove)
-  document.removeEventListener('mouseup', handleResizeEnd)
-
-  magnifierRef.value?.hideMagnifier()
-
-  nextTick(() => {
-    if (showButtonGroup.value) {
-      updateButtonGroupPosition()
-    }
-  })
 }
 
 const handleBorderRadiusChange = (value: number) => {
@@ -571,94 +422,40 @@ const confirmSelection = async () => {
     return
   }
 
-  const rectX = Math.min(startX, endX)
-  const rectY = Math.min(startY, endY)
+  const blob = await exportSelection()
 
-  const mergedCanvas = document.createElement('canvas')
-  const mergedCtx = mergedCanvas.getContext('2d')
+  if (!blob) {
+    showFeedback(t('message.screenshot.save_failed'), 'error')
+    await resetScreenshot()
+    return
+  }
 
-  mergedCanvas.width = imgCanvas.value!.width
-  mergedCanvas.height = imgCanvas.value!.height
+  try {
+    const arrayBuffer = await blob.arrayBuffer()
+    const buffer = new Uint8Array(arrayBuffer)
 
-  if (mergedCtx) {
     try {
-      mergedCtx.drawImage(imgCanvas.value!, 0, 0)
-      mergedCtx.globalCompositeOperation = 'source-over'
-      mergedCtx.drawImage(drawCanvas.value!, 0, 0)
-
-      const offscreenCanvas = document.createElement('canvas')
-      const offscreenCtx = offscreenCanvas.getContext('2d')
-
-      offscreenCanvas.width = width
-      offscreenCanvas.height = height
-
-      if (offscreenCtx) {
-        offscreenCtx.drawImage(mergedCanvas, rectX, rectY, width, height, 0, 0, width, height)
-
-        if (borderRadius.value > 0) {
-          const scale = screenConfig.value.scaleX || 1
-          const r = Math.min(borderRadius.value * scale, width / 2, height / 2)
-          if (r > 0) {
-            offscreenCtx.save()
-            offscreenCtx.globalCompositeOperation = 'destination-in'
-
-            offscreenCtx.beginPath()
-            offscreenCtx.moveTo(r, 0)
-            offscreenCtx.lineTo(width - r, 0)
-            offscreenCtx.quadraticCurveTo(width, 0, width, r)
-            offscreenCtx.lineTo(width, height - r)
-            offscreenCtx.quadraticCurveTo(width, height, width - r, height)
-            offscreenCtx.lineTo(r, height)
-            offscreenCtx.quadraticCurveTo(0, height, 0, height - r)
-            offscreenCtx.lineTo(0, r)
-            offscreenCtx.quadraticCurveTo(0, 0, r, 0)
-            offscreenCtx.closePath()
-            offscreenCtx.fill()
-
-            offscreenCtx.restore()
-          }
-        }
-
-        offscreenCanvas.toBlob(async (blob) => {
-          if (blob && blob.size > 0) {
-            try {
-              const arrayBuffer = await blob.arrayBuffer()
-              const buffer = new Uint8Array(arrayBuffer)
-
-              try {
-                await emitTo('home', 'screenshot', {
-                  type: 'image',
-                  buffer: Array.from(buffer),
-                  mimeType: 'image/png'
-                })
-              } catch (e) {
-                logger.warn('Failed to send screenshot to home window:', e)
-              }
-
-              try {
-                await writeImage(buffer)
-                showFeedback(t('message.screenshot.save_success'), 'success')
-              } catch (clipboardError) {
-                logger.error('Failed to copy screenshot to clipboard:', clipboardError)
-                showFeedback(t('message.screenshot.save_failed'), 'error')
-              }
-
-              await resetScreenshot()
-            } catch (error) {
-              showFeedback(t('message.screenshot.save_failed'), 'error')
-              await resetScreenshot()
-            }
-          } else {
-            showFeedback(t('message.screenshot.save_failed'), 'error')
-            await resetScreenshot()
-          }
-        }, 'image/png')
-      }
-    } catch (error) {
-      logger.error('Canvas operation failed:', error)
-      showFeedback(t('message.screenshot.save_failed'), 'error')
-      await resetScreenshot()
+      await emitTo('home', 'screenshot', {
+        type: 'image',
+        buffer: Array.from(buffer),
+        mimeType: 'image/png'
+      })
+    } catch (e) {
+      logger.warn('Failed to send screenshot to home window:', e)
     }
+
+    try {
+      await writeImage(buffer)
+      showFeedback(t('message.screenshot.save_success'), 'success')
+    } catch (clipboardError) {
+      logger.error('Failed to copy screenshot to clipboard:', clipboardError)
+      showFeedback(t('message.screenshot.save_failed'), 'error')
+    }
+
+    await resetScreenshot()
+  } catch {
+    showFeedback(t('message.screenshot.save_failed'), 'error')
+    await resetScreenshot()
   }
 }
 
