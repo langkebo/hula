@@ -50,7 +50,9 @@
             { 'active-reply': activeReply === item.message.id },
             { 'message-row--multi-select': computeMsgHover(item) },
             { 'message-row--hoverable': !chatStore.isMsgMultiChoose },
-            { 'message-row--private-mode': privateModeActive }
+            { 'message-row--private-mode': privateModeActive },
+            { 'message-row--private-mode-sender': privateModeActive && isMessageFromMe(item) },
+            { 'message-row--private-mode-receiver': privateModeActive && !isMessageFromMe(item) }
           ]"
           @click="
             () => {
@@ -84,6 +86,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import { MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
@@ -102,6 +105,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const chatStore = useChatStore()
 const globalStore = useGlobalStore()
+const userStore = useUserStore()
 
 const hoverId = ref('')
 const logger = createLogger('ChatMessageList')
@@ -148,6 +152,8 @@ const computeMsgHover = computed(() => (item: MessageType) => {
 const getMessageSenderUid = (message: MessageType): string => {
   return message.fromUser?.uid ?? ''
 }
+
+const isMessageFromMe = (item: MessageType) => getMessageSenderUid(item) === (userStore.userInfo?.uid ?? '')
 </script>
 
 <style scoped lang="scss">
@@ -167,6 +173,16 @@ const getMessageSenderUid = (message: MessageType): string => {
 
 // 私密模式样式（原 .private-mode-active .message-row，scoped 边界下改为行内类）
 .message-row--private-mode {
+  border-left: 2px solid var(--tjg-color-danger-500);
+}
+
+.message-row--private-mode-sender {
+  background: color-mix(in srgb, var(--tjg-color-danger-500) 8%, transparent);
+  border-left: 2px solid var(--tjg-color-danger-500);
+}
+
+.message-row--private-mode-receiver {
+  border: 1px solid color-mix(in srgb, var(--tjg-color-danger-500) 40%, transparent);
   border-left: 2px solid var(--tjg-color-danger-500);
 }
 
