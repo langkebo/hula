@@ -33,7 +33,7 @@ The project supports:
 - **Key Tauri Plugins:** log, fs, dialog, clipboard-manager, autostart, notification, updater, global-shortcut, os, shell, opener, barcode-scanner
 
 ### Matrix Protocol Integration
-- **SDK:** Local `matrix-js-sdk` (sibling directory, linked via `link:../matrix-js-sdk`)
+- **SDK:** Local `matrix-js-sdk` fork, vendored as a pinned tarball (`file:vendor/matrix-js-sdk.tgz`, locked by `meta/sdk-pin.json`)
 - **Backend:** [synapse-rust](https://github.com/langkebo/synapse-rust) - Rust-based Matrix Homeserver
 - **Sync:** Sliding Sync (`SlidingSync`) used for efficient room sync
 - **Worker:** Matrix SDK runs in a Web Worker (`src/workers/matrixSdk.worker.ts`) to keep main thread < 50ms blocked
@@ -49,19 +49,22 @@ The project supports:
 - Android Studio / Xcode (for mobile development)
 
 ### Local Development Setup
-1. Clone the repository and the sibling `matrix-js-sdk` repository into the same parent directory
-2. The project uses `link:../matrix-js-sdk` for local SDK integration
-3. Run `pnpm install` to install dependencies and link the SDK
-4. Ensure you have access to a synapse-rust backend instance (see [synapse-rust](https://github.com/langkebo/synapse-rust))
-5. Configure `VITE_HOMESERVER_URL` in `.env.local` (never commit this file)
+1. Clone the repository
+2. Run `pnpm install` — the Matrix SDK installs from the vendored tarball `vendor/matrix-js-sdk.tgz` (pinned in `meta/sdk-pin.json`); no sibling SDK checkout is needed
+3. Ensure you have access to a synapse-rust backend instance (see [synapse-rust](https://github.com/langkebo/synapse-rust))
+4. Configure `VITE_HOMESERVER_URL` in `.env.local` (never commit this file)
 
-### Three-Repo Development
-For full local development, you need all three repositories running:
+### SDK Co-Development (optional)
+Day-to-day frontend work only needs this repo plus a synapse-rust backend. The sibling `../matrix-js-sdk` checkout is required only when changing the SDK itself:
 1. **synapse-rust** - Backend Matrix Homeserver (default port: 8008)
-2. **matrix-js-sdk** - Local SDK (sibling directory `../matrix-js-sdk`)
+2. **matrix-js-sdk** - SDK fork (sibling directory `../matrix-js-sdk`, only needed for SDK changes)
 3. **hula** - This frontend application
 
-If `pnpm install` fails with SDK linking errors, verify the `matrix-js-sdk` directory exists at `../matrix-js-sdk` relative to this repo.
+To pick up SDK changes: build the SDK (`pnpm --dir ../matrix-js-sdk build`), then run
+`node scripts/pack-sdk-tarball.mjs --allow-commit-drift --apply` followed by `pnpm install`.
+This refreshes `vendor/matrix-js-sdk.tgz` and `meta/sdk-pin.json` — commit both together.
+`node scripts/pack-sdk-tarball.mjs --restore` temporarily switches back to `link:` mode for rapid
+SDK iteration; never commit in link mode (`verify:sdk-pin` rejects it on release branches).
 
 ### Environment Variables
 - `VITE_APP_NAME` - Application name
@@ -170,7 +173,7 @@ If `pnpm install` fails with SDK linking errors, verify the `matrix-js-sdk` dire
   - **`migration/`**: Database migration files.
   - **`tauri.conf.json`**: Base Tauri configuration; platform overrides: `tauri.windows.conf.json`, `tauri.macos.conf.json`, `tauri.linux.conf.json`, `tauri.android.conf.json`, `tauri.ios.conf.json`.
 - **`tauri-plugin-hula/`**: Custom local Tauri plugin.
-- **`matrix-js-sdk/`**: Local Matrix SDK (sibling directory `../matrix-js-sdk`, linked via pnpm).
+- **`vendor/matrix-js-sdk.tgz`**: Vendored Matrix SDK tarball (pinned via `meta/sdk-pin.json`; regenerate with `scripts/pack-sdk-tarball.mjs`).
 - **`skills/hula-skill/`**: Custom development skill templates.
 - **`build/`**: Vite build configuration helpers (`components.ts`, `chunks.ts`, `console.ts`).
 - **`scripts/`**: Build and development helper scripts.
@@ -273,8 +276,8 @@ Theme tokens live in `src/styles/scss/global/variable.scss`, but prefer inline U
 ## Working with Matrix SDK
 
 ### SDK Integration
-- The project uses a **local** matrix-js-sdk located at `../matrix-js-sdk` (sibling directory to `hula/`)
-- Linked via `"matrix-js-sdk": "link:../matrix-js-sdk"` in package.json
+- The project vendors a **local** matrix-js-sdk fork as a pinned tarball (`vendor/matrix-js-sdk.tgz`)
+- Referenced via `"matrix-js-sdk": "file:vendor/matrix-js-sdk.tgz"` in package.json; `meta/sdk-pin.json` locks version/commit/SHA256
 - Never modify SDK code directly; propose changes to the SDK repository instead
 - SDK type augmentations live in `src/types/matrix-js-sdk-augmentations.d.ts`; verify with `pnpm check:sdk-types`
 

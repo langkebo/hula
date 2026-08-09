@@ -101,7 +101,7 @@ HuLa 通过集成本地 [matrix-js-sdk](https://github.com/langkebo/matrix-js-sd
 - **synapse-rust 扩展**: Rust 后端特有的增强功能，包括好友关系、Widget、语音消息等
 - **throwOnError 模式**: 遵循 SDK 错误处理规范，读取操作默认抛出异常，确保错误可观测性
 
-详细 API 契约请参考 [matrix-js-sdk API 契约文档](./matrix-js-sdk/docs/api-contract/)。
+详细 API 契约请参考 matrix-js-sdk 仓库（[langkebo/matrix-js-sdk](https://github.com/langkebo/matrix-js-sdk)）中的 `docs/api-contract/` 文档。
 
 ## 🛠️ 技术栈
 
@@ -182,13 +182,13 @@ pnpm run tauri:build
 
 ## ⚠️ 注意事项
 
-1. **本地 SDK 集成**: 项目使用 `link:../matrix-js-sdk` 方式集成本地 Matrix SDK，通过该 SDK 实现与 synapse-rust 后端的完整对接
+1. **本地 SDK 集成**: 项目以 vendor tarball（`file:vendor/matrix-js-sdk.tgz`，由 `meta/sdk-pin.json` 锁定版本/commit/SHA256）方式集成 Matrix SDK fork，通过该 SDK 实现与 synapse-rust 后端的完整对接
 2. **后端服务**: 项目对接 [synapse-rust](https://gitee.com/llangkebo/synapse-rust) 作为 Matrix Homeserver，支持标准 Matrix 协议及 Rust 后端扩展能力
-3. **API 契约遵循**: 所有 SDK 调用遵循 [matrix-js-sdk API 契约](./matrix-js-sdk/docs/api-contract/) 中的 throwOnError 错误处理模式
+3. **API 契约遵循**: 所有 SDK 调用遵循 matrix-js-sdk API 契约（SDK 仓库 `docs/api-contract/`）中的 throwOnError 错误处理模式
 4. **依赖管理**: 使用 pnpm 作为包管理器
 5. **类型检查**: 运行 `pnpm vue-tsc --noEmit` 进行类型检查
 6. **代码规范**: 遵循 `.trae/rules/project_rules.md` 中的规范
-7. **开发环境**: 需同时运行 hula、matrix-js-sdk 和 synapse-rust 三个项目
+7. **开发环境**: 日常前端开发只需运行 hula（SDK 已 vendor 进仓库）+ synapse-rust 后端；仅修改 SDK 本体时才需要 sibling `../matrix-js-sdk` 检出
 
 ## 📋 提交规范
 
