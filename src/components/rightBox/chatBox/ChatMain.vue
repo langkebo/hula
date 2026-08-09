@@ -90,10 +90,10 @@
       class="flex-shrink-0 px-12px py-4px flex items-center gap-8px border-t border-[--tjg-border-default]">
       <BurnAfterReadToggle
         :enabled="burnEnabled"
-        @update:enabled="burnEnabled = $event"
-        @select-duration="burnDuration = $event" />
+        @update:enabled="handleBurnToggle"
+        @select-duration="handleBurnDurationChange" />
       <span class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">
-        {{ burnEnabled ? `阅后即焚已开启` : '点击图标开启阅后即焚' }}
+        {{ burnEnabled ? t('editor.burn_after_read_enabled') : t('editor.burn_after_read_disabled') }}
       </span>
     </div>
   </div>
@@ -151,6 +151,7 @@ import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { usePopover } from '@/composables/common/usePopover'
 import { useWindow } from '@/composables/common/useWindow'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
+import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { MittEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -219,6 +220,35 @@ const {
   confirmPrivateMode,
   cancelPrivateMode
 } = usePrivateMode()
+
+const burnAfterRead = useBurnAfterRead()
+
+const handleBurnToggle = async (val: boolean) => {
+  const roomId = globalStore.currentSessionRoomId
+  if (!roomId) return
+  try {
+    if (val) {
+      await burnAfterRead.enableBurn(roomId, burnDuration.value * 1000)
+      burnEnabled.value = true
+    } else {
+      await burnAfterRead.disableBurn(roomId)
+      burnEnabled.value = false
+    }
+  } catch {
+    // 服务失败时不更新本地状态
+  }
+}
+
+const handleBurnDurationChange = async (seconds: number) => {
+  burnDuration.value = seconds
+  const roomId = globalStore.currentSessionRoomId
+  if (!roomId || !burnEnabled.value) return
+  try {
+    await burnAfterRead.enableBurn(roomId, seconds * 1000)
+  } catch {
+    // ignore
+  }
+}
 
 const onPrivateModeToggleRequest = (payload?: { confirmed: boolean }) => {
   if (payload?.confirmed) {
