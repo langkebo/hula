@@ -82,14 +82,16 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     return messageMap[globalStore.currentSessionRoomId] || {}
   })
 
+  // 注意：getter 必须是纯函数，不能在读取时写入 messageOptions（避免在 computed 中产生副作用、
+  // 进而可能把某个房间“播种”成 hasLoadedOnce:false 且永不翻转，导致骨架屏永久转圈）。
+  // 缺失的房间返回稳定的默认对象即可，真正写入由 changeRoom / getPageMsg 通过 setter 完成。
   const currentMessageOptions = computed({
     get: () => {
       const roomId = globalStore.currentSessionRoomId
-      const current = messageOptions[roomId]
-      if (current === undefined) {
-        messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
-      }
-      return messageOptions[roomId]
+      return (
+        messageOptions[roomId] ??
+        ({ isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false } as MessageListOptions)
+      )
     },
     set: (val) => {
       const roomId = globalStore.currentSessionRoomId

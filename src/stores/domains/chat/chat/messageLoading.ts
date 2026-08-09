@@ -5,6 +5,8 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import matrixEventService from '@/services/matrix/MatrixEventService'
+import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
+import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
@@ -59,6 +61,7 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
   } = deps
 
   const getPageMsg = async (size: number, roomId: string, cursor: string = '', showLoadingBar = false) => {
+    logger.info(`[getPageMsg] 开始加载房间消息 roomId=${roomId} cursor=${cursor}`)
     try {
       if (showLoadingBar) {
         startLoading()
@@ -100,8 +103,11 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
       if (showLoadingBar) {
         finishLoading()
       }
+      logger.info(
+        `[getPageMsg] 加载房间消息完成 roomId=${roomId} messages=${result.messages.length} isLast=${result.isLast} hasLoadedOnce=true`
+      )
     } catch (err) {
-      logger.error('获取消息失败:', err)
+      logger.error(`[getPageMsg] 获取消息失败 roomId=${roomId}:`, err)
       if (showLoadingBar) {
         errorLoading()
       }
@@ -151,16 +157,44 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
     }
   }
 
+  const ensureSessionForRoom = async (roomId: string) => {
+    if (!roomId) return
+    if (sessionStore.getSession(roomId)) return
+    try {
+      const room = await matrixRoomQueryService.getRoom(roomId, false)
+      if (!room) return
+      const session = matrixRoomRealtimeService.convertRoomToSession(room)
+      sessionStore.addSession({ ...session })
+    } catch (err) {
+      logger.warn('为缺失会话补充最小会话元信息失败:', roomId, err)
+    }
+  }
+
+  // 已知不参与消息加载的窗口标签。
+  // 主窗口是 'home'，移动端主窗口是 'mobile-home'，独立聊天窗口是 'message'。
+  // 其它窗口（登录、截图、托盘等）不应执行 changeRoom。
+  const NON_CHAT_WINDOW_LABELS = new Set(['login', 'capture', 'tray', 'notify', 'update', 'checkupdate'])
+
   const changeRoom = async () => {
     const currentWindowLabel = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
-    if (!currentWindowLabel) return
-    if (currentWindowLabel.label !== 'home' && currentWindowLabel.label !== 'mobile-home') {
+    const label = currentWindowLabel?.label ?? 'browser'
+    if (currentWindowLabel && NON_CHAT_WINDOW_LABELS.has(label)) {
+      logger.debug(`[changeRoom] 当前窗口 ${label} 不参与消息加载，直接返回`)
       return
     }
 
-    if (!globalStore.currentSessionRoomId) return
-
     const roomId = globalStore.currentSessionRoomId
+    if (!roomId) {
+      logger.debug('[changeRoom] 无当前会话 roomId，直接返回')
+      return
+    }
+
+    logger.info(`[changeRoom] 开始切换房间 window=${label} roomId=${roomId}`)
+
+    // 兜底：当用户从通知/搜索/好友页等入口打开一个尚未进入 sessionList 的会话时，
+    // 消息能拉到但 session 取不到，会导致 ChatHeader 等依赖 currentSessionInfo 的 UI 缺数据。
+    // 这里用实时 client 中的 Room 投影出一个最小会话补进去，使会话元信息就绪。
+    await ensureSessionForRoom(roomId)
     clearOtherRoomsMessages(roomId)
     cleanupExpiredRecalledMessages()
     clearRoomMessagesExceptTransient(roomId)
@@ -181,7 +215,7 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
     try {
       await getPageMsg(pageSize, roomId, '', true)
     } catch (err) {
-      logger.error('无法加载消息:', err)
+      logger.error('[changeRoom] 无法加载消息:', err)
       currentMessageOptions.value = {
         isLast: false,
         isLoading: false,
@@ -189,6 +223,10 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         hasLoadedOnce: true
       }
     }
+
+    logger.info(
+      `[changeRoom] 切换房间结束 window=${label} roomId=${roomId} hasLoadedOnce=${currentMessageOptions.value?.hasLoadedOnce}`
+    )
 
     if (globalStore.currentSessionRoomId) {
       sessionStore.markSessionRead(globalStore.currentSessionRoomId)

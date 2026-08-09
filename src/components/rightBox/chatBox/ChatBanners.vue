@@ -13,7 +13,8 @@
 
   <!-- 置顶公告提示 -->
   <Transition name="announcement" mode="out-in">
-    <div v-if="isAnnouncementLoading" key="announcement-loading" class="p-[6px_12px_0_12px]">
+    <!-- 公告 loading 只应在群聊显示：单聊本无公告，避免全局 isLoading 残留时每个会话都转圈 -->
+    <div v-if="isAnnouncementLoading && isGroup" key="announcement-loading" class="p-[6px_12px_0_12px]">
       <div class="custom-announcement flex items-center justify-center h-40px">
         <n-spin :size="20" />
       </div>

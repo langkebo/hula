@@ -77,7 +77,8 @@ const actions = computed<ActionItem[]>(() => [
   {
     key: 'delete',
     label: '删除',
-    icon: 'trash',
+    // icon.js sprite 中无 trash 符号，使用语义等价的 delete 符号（均走 currentColor）
+    icon: 'delete',
     visible: true,
     handler: () => emit('delete')
   }

@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -86,6 +86,7 @@ import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatChatTime } from '@/utils/ComputedTime'
+import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 
 const props = defineProps<{
@@ -103,19 +104,33 @@ const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 
 const hoverId = ref('')
+const logger = createLogger('ChatMessageList')
 
-// 主视图就绪：会话已绑定且当前房间消息完成首次加载
+// 诊断：观察当前房间 hasLoadedOnce 状态变化，确认 UI 层是否收到翻转。
+watch(
+  () => chatStore.currentMessageOptions?.hasLoadedOnce,
+  (hasLoadedOnce) => {
+    logger.info(
+      `[ChatMessageList] currentMessageOptions.hasLoadedOnce 变化: ${hasLoadedOnce}, roomId=${globalStore.currentSessionRoomId}`
+    )
+  },
+  { immediate: true }
+)
+
+// 主视图就绪：当前房间消息完成首次加载即可渲染消息区。
+// 原先还要求 currentSessionInfo?.roomId === currentRoomId（hasSessionBound），
+// 但当会话尚未进入 sessionList（如从通知/搜索/好友页直接进入）时 getSession 取不到，
+// 会导致消息已加载完成却永远卡在骨架屏（持续转圈）。会话元信息缺失只影响头部，
+// 不应阻塞消息列表渲染，故此处仅以"消息是否已加载过"作为就绪门槛。
 const isMainViewReady = computed(() => {
   const currentRoomId = globalStore.currentSessionRoomId ?? null
   if (!currentRoomId) {
     return false
   }
 
-  const currentSessionInfo = chatStore.currentSessionInfo
-  const hasSessionBound = currentSessionInfo?.roomId === currentRoomId
   const hasLoadedCurrentRoom = chatStore.currentMessageOptions?.hasLoadedOnce === true
 
-  return hasSessionBound && hasLoadedCurrentRoom
+  return hasLoadedCurrentRoom
 })
 
 const computeMsgHover = computed(() => (item: MessageType) => {
