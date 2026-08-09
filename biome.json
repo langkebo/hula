@@ -42,31 +42,31 @@
         "useAltText": "off"
       },
       "complexity": {
-        "useOptionalChain": "warn",
+        "useOptionalChain": "error",
         "useLiteralKeys": "off",
         "useDateNow": "off",
         "noStaticOnlyClass": "off"
       },
       "correctness": {
-        "noUnusedVariables": "warn",
-        "noUnusedImports": "warn"
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error"
       },
       "style": {
         "useNodejsImportProtocol": "off",
         "noNonNullAssertion": "off",
         "useNamingConvention": "off",
         "useTemplate": "off",
-        "useImportType": "warn"
+        "useImportType": "error"
       },
       "suspicious": {
         "noGlobalIsNan": "off",
-        "noExplicitAny": "warn",
+        "noExplicitAny": "error",
         "noAssignInExpressions": "off",
         "noImplicitAnyLet": "off",
         "noConfusingVoidType": "off",
         "noArrayIndexKey": "off",
         "useIterableCallbackReturn": "off",
-        "noConsole": "warn"
+        "noConsole": "error"
       }
     }
   },
@@ -117,7 +117,7 @@
             "useVueMultiWordComponentNames": "off"
           },
           "suspicious": {
-            "noExplicitAny": "warn",
+            "noExplicitAny": "error",
             "noAssignInExpressions": "off",
             "noImplicitAnyLet": "off"
           }
