@@ -13,13 +13,21 @@ const getBurnSettingsMock = vi.fn()
 const enableBurnMock = vi.fn()
 const disableBurnMock = vi.fn()
 const markBurnReadMock = vi.fn()
+const getBurnStatsMock = vi.fn()
+const cancelBurnMock = vi.fn()
+const getPendingBurnsMock = vi.fn()
+const setBurnConfigMock = vi.fn()
 
 vi.mock('@/services/matrix/messaging/MatrixBurnAfterReadService', () => ({
   matrixBurnAfterReadService: {
     getBurnSettings: (...args: unknown[]) => getBurnSettingsMock(...args),
     enableBurn: (...args: unknown[]) => enableBurnMock(...args),
     disableBurn: (...args: unknown[]) => disableBurnMock(...args),
-    markBurnRead: (...args: unknown[]) => markBurnReadMock(...args)
+    markBurnRead: (...args: unknown[]) => markBurnReadMock(...args),
+    getBurnStats: (...args: unknown[]) => getBurnStatsMock(...args),
+    cancelBurn: (...args: unknown[]) => cancelBurnMock(...args),
+    getPendingBurns: (...args: unknown[]) => getPendingBurnsMock(...args),
+    setBurnConfig: (...args: unknown[]) => setBurnConfigMock(...args)
   }
 }))
 
@@ -32,6 +40,10 @@ describe('useBurnAfterRead', () => {
     enableBurnMock.mockReset()
     disableBurnMock.mockReset()
     markBurnReadMock.mockReset()
+    getBurnStatsMock.mockReset()
+    cancelBurnMock.mockReset()
+    getPendingBurnsMock.mockReset()
+    setBurnConfigMock.mockReset()
   })
 
   afterEach(() => {
@@ -270,29 +282,36 @@ describe('useBurnAfterRead', () => {
   })
 
   describe('getBurnStats', () => {
-    it('空缓存时返回零值统计', () => {
+    it('空缓存时返回零值统计', async () => {
+      getBurnStatsMock.mockResolvedValue({
+        totalBurned: 0,
+        totalPending: 0,
+        roomsWithBurnEnabled: 0
+      })
       const { getBurnStats } = useBurnAfterRead()
-      const stats = getBurnStats()
+      const stats = await getBurnStats()
       expect(stats).toEqual({
         totalBurned: 0,
         totalPending: 0,
-        roomsWithBurnEnabled: 0,
-        enabledCount: 0,
-        totalCount: 0
+        roomsWithBurnEnabled: 0
       })
     })
 
     it('根据缓存统计启用的房间数', async () => {
       enableBurnMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      getBurnStatsMock.mockResolvedValue({
+        totalBurned: 0,
+        totalPending: 0,
+        roomsWithBurnEnabled: 3
+      })
       const { enableBurn, getBurnStats } = useBurnAfterRead()
       await enableBurn('room-1')
       await enableBurn('room-2')
       await enableBurn('room-3')
 
-      const stats = getBurnStats()
+      const stats = await getBurnStats()
+      expect(getBurnStatsMock).toHaveBeenCalledTimes(1)
       expect(stats.roomsWithBurnEnabled).toBe(3)
-      expect(stats.enabledCount).toBe(3)
-      expect(stats.totalCount).toBe(3)
       expect(stats.totalBurned).toBe(0)
       expect(stats.totalPending).toBe(0)
     })
@@ -300,16 +319,21 @@ describe('useBurnAfterRead', () => {
     it('混合启用/禁用状态的统计正确', async () => {
       enableBurnMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
       disableBurnMock.mockResolvedValue({ enabled: false, burnAfterMs: 0 })
+      // 服务返回混合状态：启用 2 个
+      getBurnStatsMock.mockResolvedValue({
+        totalBurned: 0,
+        totalPending: 0,
+        roomsWithBurnEnabled: 2
+      })
       const { enableBurn, disableBurn, getBurnStats } = useBurnAfterRead()
       await enableBurn('room-1')
       await enableBurn('room-2')
       await disableBurn('room-2')
       await enableBurn('room-3')
 
-      const stats = getBurnStats()
-      // room-1: true, room-2: false, room-3: true -> 启用 2 个，总数 3
-      expect(stats.enabledCount).toBe(2)
-      expect(stats.totalCount).toBe(3)
+      const stats = await getBurnStats()
+      // 服务层返回值原样透传
+      expect(stats.roomsWithBurnEnabled).toBe(2)
     })
   })
 })
