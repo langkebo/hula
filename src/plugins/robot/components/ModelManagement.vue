@@ -343,58 +343,27 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { FormInst, FormRules } from 'naive-ui'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
-import type { ApiKey, Platform } from '@/services/matrix/ai/ApiKeyService'
-import { apiKeyService } from '@/services/matrix/ai/ApiKeyService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
-import { modelService } from '@/services/matrix/ai/ModelService'
 import { useUserStore } from '@/stores/domains/user/user'
-import { createLogger } from '@/utils/Logger'
-import { useTimerManager } from '@/utils/TimerManager'
+import { useApiKeyOptions } from '../composables/useApiKeyOptions'
+import { useModelForm } from '../composables/useModelForm'
+import { useModelList } from '../composables/useModelList'
+import { usePlatformModels } from '../composables/usePlatformModels'
 import ApiKeyManagement from './ApiKeyManagement.vue'
-
-type SelectOption = {
-  label: string
-  value: string
-}
-
-type FormModel = {
-  keyId: string
-  name: string
-  model: string
-  platform: string
-  avatar: string
-  type: number
-  sort: number
-  status: number
-  temperature: number
-  maxTokens: number
-  maxContexts: number
-  publicStatus: number
-}
-
-type ModelSubmitPayload = FormModel & {
-  id?: string
-}
-
-type ValidationValue = number | null | undefined | ''
-
-const logger = createLogger('ModelManagement')
-const timerManager = useTimerManager()
-const { t } = useI18n()
-const { showFeedback } = useActionFeedback()
 
 const showModal = defineModel<boolean>({ default: false })
 const emit = defineEmits<{
   refresh: []
 }>()
 
+const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const userStore = useUserStore()
 
 // 检查当前用户是否是模型创建人
@@ -402,319 +371,70 @@ const isModelCreator = (model: AIModel) => {
   return userStore.userInfo?.uid === model.userId
 }
 
-// 模型列表
-const loading = ref(false)
-const modelList = ref<AIModel[]>([])
-const pagination = ref({
-  pageNo: 1,
-  pageSize: 10,
-  total: 0
-})
+// Composables
+const { loading, modelList, pagination, loadModelList, handlePageChange, deleteModel } = useModelList()
+
+const {
+  showEditModal,
+  editingModel,
+  submitting,
+  formRef,
+  formData,
+  statusOptions,
+  formRules,
+  handleAdd,
+  handleEdit,
+  handleNameChange,
+  handlePublicStatusChange,
+  handleKeyIdChange: formKeyIdChange,
+  handleSubmit: formSubmit
+} = useModelForm()
+
+const {
+  platformOptions,
+  platformModelInfo,
+  modelExamples,
+  modelDocsUrl,
+  modelPlaceholder,
+  modelHint,
+  loadPlatformList
+} = usePlatformModels(formData)
+
+const { apiKeyOptions, apiKeyMap, loadApiKeyOptions } = useApiKeyOptions()
 
 // API 密钥管理
 const showApiKeyManagement = ref(false)
-const apiKeyOptions = ref<SelectOption[]>([])
-const apiKeyMap = ref<Map<string, ApiKey>>(new Map())
 
-// 编辑相关
-const showEditModal = ref(false)
-const editingModel = ref<AIModel | null>(null)
-const submitting = ref(false)
-const formRef = ref<FormInst>()
-
-// 表单数据
-const formData = ref<FormModel>({
-  keyId: '',
-  name: '',
-  model: '',
-  platform: '',
-  avatar: '',
-  type: 1,
-  sort: 0,
-  status: 0,
-  temperature: 0.8,
-  maxTokens: 4096,
-  maxContexts: 10,
-  publicStatus: 1 // 0=公开，1=私有
-})
-
-// 平台选项和模型信息
-const platformOptions = ref<SelectOption[]>([])
-const platformModelInfo = ref<Record<string, { examples: string; docs: string; hint: string }>>({})
-
-// 加载平台列表
-const loadPlatformList = async () => {
-  try {
-    const data = await apiKeyService.platformList()
-    if (data && Array.isArray(data)) {
-      platformOptions.value = data.map((item: Platform) => ({
-        label: item.label,
-        value: item.platform
-      }))
-
-      // 构建平台模型信息映射
-      const infoMap: Record<string, { examples: string; docs: string; hint: string }> = {}
-      data.forEach((item: Platform) => {
-        infoMap[item.platform] = {
-          examples: item.examples || '',
-          docs: item.docs || '',
-          hint: item.hint || ''
-        }
-      })
-      platformModelInfo.value = infoMap
-    }
-  } catch (error) {
-    // 如果加载失败，使用默认值
-    platformOptions.value = [
-      { label: t('ai_assistant.robot.openai_default'), value: 'OpenAI' },
-      { label: t('ai_assistant.robot.deepseek_default'), value: 'DeepSeek' }
-    ]
-    platformModelInfo.value = {
-      OpenAI: {
-        examples: 'gpt-4, gpt-4-turbo, gpt-3.5-turbo',
-        docs: 'https://platform.openai.com/docs/models',
-        hint: t('ai_assistant.robot.openai_hint')
-      },
-      DeepSeek: {
-        examples: 'deepseek-chat, deepseek-reasoner, deepseek-coder',
-        docs: 'https://platform.deepseek.com/api-docs',
-        hint: t('ai_assistant.robot.deepseek_hint')
-      }
-    }
-  }
-}
-
-// 计算属性：模型示例列表（用于下拉选择）
-const modelExamples = computed(() => {
-  if (!formData.value.platform) {
-    return []
-  }
-  const info = platformModelInfo.value[formData.value.platform]
-  if (!info?.examples) {
-    return []
-  }
-  // 将 examples 字符串按逗号分割，去重，并转换为选项格式
-  const models = info.examples
-    .split(',')
-    .map((model) => model.trim())
-    .filter((model) => model.length > 0)
-
-  // 使用 Set 去重，保持顺序
-  const uniqueModels = Array.from(new Set(models))
-
-  return uniqueModels.map((model) => ({
-    label: model,
-    value: model
-  }))
-})
-
-// 计算属性：模型文档链接
-const modelDocsUrl = computed(() => {
-  if (!formData.value.platform) {
-    return ''
-  }
-  const info = platformModelInfo.value[formData.value.platform]
-  return info ? info.docs : ''
-})
-
-// 计算属性：模型输入框的占位符
-const modelPlaceholder = computed(() => {
-  if (!formData.value.platform) {
-    return t('ai_assistant.robot.select_platform_first')
-  }
-  const info = platformModelInfo.value[formData.value.platform]
-  if (modelExamples.value.length > 0) {
-    return t('ai_assistant.robot.select_or_input_model')
-  }
-  return info ? `例如: ${info.examples}` : t('ai_assistant.robot.input_model_flag')
-})
-
-// 计算属性：模型输入提示
-const modelHint = computed(() => {
-  if (!formData.value.platform) {
-    return t('ai_assistant.robot.select_platform_before_model')
-  }
-  const info = platformModelInfo.value[formData.value.platform]
-  return info ? info.hint : t('ai_assistant.robot.fill_model_flag')
-})
-
-// 监听模型输入变化，自动保存到后端
-let saveModelTimeout: number | null = null
-watch(
-  () => formData.value.model,
-  async (newModel, _oldModel) => {
-    // 清除之前的定时器
-    if (saveModelTimeout) {
-      clearTimeout(saveModelTimeout)
-    }
-
-    // 如果模型为空或平台未选择，不处理
-    if (!newModel || !formData.value.platform) {
-      return
-    }
-
-    // 如果模型已经在示例列表中，不需要保存
-    const existingModels = modelExamples.value.map((item) => item.value)
-    if (existingModels.includes(newModel)) {
-      return
-    }
-
-    // 防抖：用户停止输入 1 秒后再保存
-    saveModelTimeout = timerManager.setTimeout(async () => {
-      try {
-        await apiKeyService.addPlatformModel(formData.value.platform, newModel)
-        // 重新加载平台列表，更新示例
-        await loadPlatformList()
-        showFeedback(t('ai_assistant.robot.model_added_to_examples'), 'success')
-      } catch (error) {
-        logger.error('保存模型失败:', error)
-        // 静默失败，不影响用户操作
-      }
-    }, 1000)
-  }
-)
-
-// 状态选项
-const statusOptions = [
-  { label: t('ai_assistant.robot.available'), value: 0 },
-  { label: t('ai_assistant.robot.unavailable'), value: 1 }
-]
-
-// 表单验证规则
-const formRules: FormRules = {
-  keyId: [{ required: true, message: t('ai_assistant.robot.select_api_key_required'), trigger: 'change' }],
-  name: [{ required: true, message: t('ai_assistant.robot.input_model_name_required'), trigger: 'blur' }],
-  model: [{ required: true, message: t('ai_assistant.robot.input_model_flag_required'), trigger: 'blur' }],
-  platform: [{ required: true, message: t('ai_assistant.robot.select_platform_required'), trigger: 'change' }],
-  type: [
-    {
-      required: true,
-      type: 'number',
-      message: t('ai_assistant.robot.select_model_type_required'),
-      trigger: 'change',
-      validator: (_rule: unknown, value: ValidationValue) => {
-        return value !== undefined && value !== null && value !== ''
-      }
-    }
-  ],
-  sort: [
-    {
-      required: true,
-      type: 'number',
-      message: t('ai_assistant.robot.input_sort_required'),
-      trigger: 'blur',
-      validator: (_rule: unknown, value: ValidationValue) => {
-        return value !== undefined && value !== null && value !== ''
-      }
-    }
-  ],
-  status: [
-    {
-      required: true,
-      type: 'number',
-      message: t('ai_assistant.robot.select_status_required'),
-      trigger: 'change',
-      validator: (_rule: unknown, value: ValidationValue) => {
-        return value !== undefined && value !== null && value !== ''
-      }
-    }
-  ]
-}
-
-// 获取默认头像
-const getDefaultAvatar = () => {
-  return 'https://img1.baidu.com/it/u=3613958228,3522035000&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=500'
-}
-
-// 获取模型头像
-const getModelAvatar = (model: AIModel | null) => {
-  if (!model) return getDefaultAvatar()
-  if (model.avatar) return model.avatar
-  return getDefaultAvatar()
-}
-
-// 加载 API 密钥选项
-const loadApiKeyOptions = async () => {
-  try {
-    const data = await apiKeyService.simpleList()
-    apiKeyOptions.value = (data || []).map((item: ApiKey) => ({
-      label: item.platform ? `${item.name} (${item.platform})` : item.name,
-      value: item.id
-    }))
-    apiKeyMap.value = new Map((data || []).map((item: ApiKey) => [item.id, item]))
-  } catch (error) {
-    logger.error('加载 API 密钥列表失败:', error)
-  }
-}
-
-// 加载模型列表
-const loadModelList = async () => {
-  loading.value = true
-  try {
-    const data = await modelService.page({
-      pageNo: pagination.value.pageNo,
-      pageSize: pagination.value.pageSize
-    })
-    modelList.value = data.list || []
-    pagination.value.total = data.total || 0
-  } catch (error) {
-    logger.error('加载模型列表失败:', error)
-    showFeedback(t('ai_assistant.robot.load_models_failed'), 'error')
-  } finally {
-    loading.value = false
-  }
-}
-
-// 分页变化
-const handlePageChange = (page: number) => {
-  pagination.value.pageNo = page
-  loadModelList()
-}
-
-// API密钥切换处理
+// API密钥切换处理（桥接 composable）
 const handleKeyIdChange = (keyId: string) => {
-  if (keyId) {
-    const apiKeyInfo = apiKeyMap.value.get(keyId)
-    if (apiKeyInfo?.platform) {
-      // 自动填充平台
-      formData.value.platform = apiKeyInfo.platform
-      // 清空模型标志，让用户重新输入
-      formData.value.model = ''
-    }
+  formKeyIdChange(keyId, apiKeyMap.value)
+}
+
+// 提交表单（桥接 composable + emit）
+const handleSubmit = async () => {
+  const success = await formSubmit()
+  if (success) {
+    loadModelList()
+    emit('refresh')
   }
 }
 
-// 模型名称变化处理 - 单向同步到模型标志
-const handleNameChange = (value: string) => {
-  // 将模型名称同步到模型标志（单向绑定）
-  if (value) {
-    formData.value.model = value
+// 删除模型（桥接 composable + emit）
+const handleDelete = async (id: string) => {
+  const success = await deleteModel(id)
+  if (success) {
+    emit('refresh')
   }
 }
 
-// 公开状态变化处理
-const handlePublicStatusChange = (checked: boolean) => {
-  formData.value.publicStatus = checked ? 0 : 1
+// 打开 API 密钥管理
+const handleOpenApiKeyManagement = () => {
+  showApiKeyManagement.value = true
 }
 
-// 新增模型
-const handleAdd = () => {
-  editingModel.value = null
-  formData.value = {
-    keyId: '',
-    name: '',
-    model: '',
-    platform: '',
-    avatar: '',
-    type: 1,
-    sort: 0,
-    status: 0,
-    temperature: 0.8,
-    maxTokens: 4096,
-    maxContexts: 10,
-    publicStatus: 1 // 0=公开，1=私有
-  }
-  showEditModal.value = true
+// API 密钥管理刷新后的回调
+const handleApiKeyManagementRefresh = () => {
+  loadApiKeyOptions()
 }
 
 const {
@@ -737,93 +457,16 @@ const handleCrop = async (cropBlob: Blob) => {
   await onCrop(cropBlob)
 }
 
-// 编辑模型
-const handleEdit = (model: AIModel) => {
-  editingModel.value = model
-  formData.value = {
-    keyId: model.keyId || '',
-    name: model.name,
-    model: model.model,
-    platform: model.platform,
-    avatar: model.avatar || '',
-    type: model.type ?? 1,
-    sort: model.sort ?? 0,
-    status: model.status ?? 0,
-    temperature: model.temperature ?? 0.8,
-    maxTokens: model.maxTokens ?? 4096,
-    maxContexts: model.maxContexts ?? 10,
-    publicStatus: model.publicStatus ?? 0 // 0=公开，1=私有
-  }
-  showEditModal.value = true
+// 获取默认头像
+const getDefaultAvatar = () => {
+  return 'https://img1.baidu.com/it/u=3613958228,3522035000&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=500'
 }
 
-// 提交表单
-const handleSubmit = async () => {
-  try {
-    await formRef.value?.validate()
-    submitting.value = true
-
-    const submitData: ModelSubmitPayload = {
-      keyId: formData.value.keyId,
-      name: formData.value.name,
-      model: formData.value.model,
-      platform: formData.value.platform,
-      avatar: formData.value.avatar,
-      type: formData.value.type,
-      sort: formData.value.sort,
-      status: formData.value.status,
-      temperature: formData.value.temperature,
-      maxTokens: formData.value.maxTokens,
-      maxContexts: formData.value.maxContexts,
-      publicStatus: formData.value.publicStatus
-    }
-    if (editingModel.value) {
-      submitData.id = editingModel.value.id
-      await modelService.update(submitData)
-      showFeedback(t('ai_assistant.robot.model_updated'), 'success')
-    } else {
-      await modelService.update(submitData)
-      showFeedback(t('ai_assistant.robot.model_created'), 'success')
-    }
-
-    showEditModal.value = false
-    loadModelList()
-    // 通知父组件刷新
-    emit('refresh')
-  } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'errors' in error) {
-      // 表单验证错误
-      return
-    }
-    logger.error('保存模型失败:', error)
-    showFeedback(t('ai_assistant.robot.save_model_failed'), 'error')
-  } finally {
-    submitting.value = false
-  }
-}
-
-// 删除模型
-const handleDelete = async (id: string) => {
-  try {
-    await modelService.delete({ id })
-    showFeedback(t('ai_assistant.robot.model_deleted'), 'success')
-    loadModelList()
-    // 通知父组件刷新
-    emit('refresh')
-  } catch (error) {
-    logger.error('删除模型失败:', error)
-    showFeedback(t('ai_assistant.robot.delete_model_failed'), 'error')
-  }
-}
-
-// 打开 API 密钥管理
-const handleOpenApiKeyManagement = () => {
-  showApiKeyManagement.value = true
-}
-
-// API 密钥管理刷新后的回调
-const handleApiKeyManagementRefresh = () => {
-  loadApiKeyOptions()
+// 获取模型头像
+const getModelAvatar = (model: AIModel | null) => {
+  if (!model) return getDefaultAvatar()
+  if (model.avatar) return model.avatar
+  return getDefaultAvatar()
 }
 
 // 监听弹窗显示状态
