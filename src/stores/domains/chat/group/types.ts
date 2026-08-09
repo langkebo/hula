@@ -29,3 +29,27 @@ export interface MatrixRoomMember {
   hideMyPosts?: boolean
   hideTheirPosts?: boolean
 }
+
+/**
+ * 群组（房间）信息
+ */
+export interface MatrixGroupInfo {
+  roomId: string
+  name: string
+  avatarUrl: string | null
+  topic: string | null
+  memberCount: number
+  memberNum?: number
+  isEncrypted: boolean
+  isPublic: boolean
+  creator: string | null
+  remark?: string
+  allowScanEnter?: boolean
+  avatar: string
+  groupName: string
+  roleId: number
+  account: string
+  myName: string
+  joinRule?: string
+  onlineCount?: number
+}
