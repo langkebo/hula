@@ -61,6 +61,21 @@ vi.mock('@/composables/room/usePinnedMessage', () => ({
   })
 }))
 
+// RoomBurnSettings 透传 useBurnAfterRead（→ matrixBurnAfterReadService → global store →
+// chat store → friend services），在 RoomDetailPane 套件里会拖入重型依赖图并在模块加载期
+// 调用 matrixClientService.getClient()。此处 mock useBurnAfterRead 断开依赖链；
+// RoomBurnSettings 自有测试覆盖其真实行为。
+vi.mock('@/composables/useBurnAfterRead', () => ({
+  useBurnAfterRead: () => ({
+    isRoomBurnEnabled: () => false,
+    getRoomBurnDuration: () => 0,
+    refreshBurnSettings: vi.fn().mockResolvedValue(undefined),
+    enableBurn: vi.fn().mockResolvedValue(undefined),
+    disableBurn: vi.fn().mockResolvedValue(undefined),
+    getPendingBurns: vi.fn().mockResolvedValue([])
+  })
+}))
+
 // RoomDetailMembers / RoomDetailLastMessage stub：暴露 props 便于断言
 const RoomDetailMembersStub = defineComponent({
   name: 'RoomDetailMembersStub',
@@ -110,6 +125,9 @@ const globalStubs = {
   // 重度依赖加密服务图谱（CryptoSDKAdapter→worker 桥接），挂载后会导致 forks worker 无法退出；
   // 本套件只测 power-level 接线，加密面板行为由 RoomEncryptionSettings 自有测试覆盖
   RoomEncryptionSettings: { template: '<div class="room-encryption-settings" />' },
+  // RoomBurnSettings 依赖 useBurnAfterRead（pinia + matrixBurnAfterReadService），
+  // 由 RoomBurnSettings 自有测试覆盖；此处 stub 避免拖入重型依赖图
+  RoomBurnSettings: { template: '<div class="room-burn-settings" />' },
   InviteDialog: { template: '<div class="invite-dialog" />' },
   RoomDetailMembers: RoomDetailMembersStub,
   RoomDetailLastMessage: RoomDetailLastMessageStub

@@ -193,6 +193,15 @@
     "has_draft": "Has draft",
     "failed_send": "Send failed"
   },
+  "burn": {
+    "title": "Burn After Read",
+    "enable_label": "Enable Burn After Read",
+    "enable_desc": "When enabled, newly sent messages will be automatically destroyed after being read",
+    "duration_label": "Burn Duration",
+    "duration_desc": "Time until messages are destroyed after being read",
+    "pending_count": "Pending messages to burn: {count}",
+    "tip": "Tip: Destroyed messages cannot be recovered, use with caution"
+  },
   "discovery": {
     "aria_label": "Room discovery",
     "search_placeholder": "Search room name...",

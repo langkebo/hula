@@ -145,6 +145,8 @@
             <RoomEncryptionSettings v-if="roomId" :room-id="roomId" />
           </div>
 
+          <RoomBurnSettings v-if="roomId" :room-id="roomId" />
+
           <div class="pane-divider" />
 
           <div class="pane-section">
@@ -211,6 +213,7 @@ import { useClipboard } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import InviteDialog from '@/components/room/InviteDialog.vue'
+import RoomBurnSettings from '@/components/room/RoomBurnSettings.vue'
 import RoomDetailLastMessage from '@/components/room/RoomDetailLastMessage.vue'
 import RoomDetailMembers from '@/components/room/RoomDetailMembers.vue'
 import RoomDetailStats from '@/components/room/RoomDetailStats.vue'
