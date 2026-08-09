@@ -4,7 +4,10 @@
  *
  * Compares enums declared inside `declare module 'matrix-js-sdk'` in
  * `src/types/matrix-js-sdk-augmentations.d.ts` against their canonical
- * definitions in the sibling `../matrix-js-sdk` repository.
+ * definitions in the installed matrix-js-sdk package source
+ * (`node_modules/matrix-js-sdk/src`, shipped in the vendor tarball;
+ * falls back to the sibling `../matrix-js-sdk` checkout when present
+ * for local SDK co-development).
  *
  * Motivation: `matrix-js-sdk-augmentations.d.ts` is 1471 LOC of manually
  * maintained type patches. Historically it has drifted from the SDK
@@ -30,7 +33,7 @@
  *   node scripts/check-sdk-augmentations.mjs --json     machine-readable output
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Project, SyntaxKind } from 'ts-morph'
@@ -38,7 +41,11 @@ import { Project, SyntaxKind } from 'ts-morph'
 const scriptDir = fileURLToPath(new URL('.', import.meta.url))
 const repoRoot = resolve(scriptDir, '..')
 const augmentationPath = resolve(repoRoot, 'src/types/matrix-js-sdk-augmentations.d.ts')
-const sdkRoot = resolve(repoRoot, '../matrix-js-sdk/src')
+// SDK 去 link 化（2026-08-09）：优先读已安装 tarball 解包出的 src/（node_modules），
+// 本地联合开发时若 sibling 存在则优先用 sibling（内容更新）。
+const installedSdkSrc = resolve(repoRoot, 'node_modules/matrix-js-sdk/src')
+const siblingSdkSrc = resolve(repoRoot, '../matrix-js-sdk/src')
+const sdkRoot = existsSync(siblingSdkSrc) ? siblingSdkSrc : installedSdkSrc
 const emitJson = process.argv.includes('--json')
 
 function fail(message, code = 2) {
@@ -49,7 +56,9 @@ function fail(message, code = 2) {
 try {
   statSync(sdkRoot)
 } catch {
-  fail(`SDK source not found at ${sdkRoot}. Ensure matrix-js-sdk is linked as a sibling repo.`)
+  fail(
+    `SDK source not found at ${installedSdkSrc} (nor sibling ${siblingSdkSrc}). Run pnpm install first.`
+  )
 }
 
 const project = new Project({
