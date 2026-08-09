@@ -115,32 +115,23 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
     }
   }
 
-  // 处理从头像库选择的头像：将 webp 转为 blob 后通过 Matrix 媒体上传
+  // 处理从头像库选择的头像：读取 webview 本地静态资源（/avatar/*.webp，非网络请求）后通过 Matrix 媒体上传
   const handleGallerySelect = async (avatarUrl: string) => {
     try {
-      logger.info('[AVATAR_DEBUG] gallery select:', avatarUrl)
+      // 浏览器原生 fetch：相对路径静态资源在 Tauri 下走 webview 协议，
+      // plugin-http(reqwest) 无法处理；已登记 no-raw-fetch allowlist
       const response = await fetch(avatarUrl)
-      logger.info('[AVATAR_DEBUG] fetch status:', response.status, response.statusText)
       const blob = await response.blob()
-      logger.info('[AVATAR_DEBUG] blob size:', blob.size, 'type:', blob.type)
       const file = new File([blob], `avatar_${Date.now()}.webp`, { type: 'image/webp' })
-      logger.info('[AVATAR_DEBUG] file created, size:', file.size)
       const uploadResult = await matrixMediaService.uploadImage(file)
-      logger.info('[AVATAR_DEBUG] upload success, mxc:', uploadResult.contentUri)
       const mxcUrl = uploadResult.contentUri
       if (onSuccess) onSuccess(mxcUrl)
       showGallery.value = false
     } catch (error) {
-      const errInfo = {
-        name: error instanceof Error ? error.name : 'unknown',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        cause: error instanceof Error ? error.cause : undefined,
-        errcode: (error as { errcode?: string })?.errcode,
-        httpStatus: (error as { httpStatus?: number })?.httpStatus,
-        data: (error as { data?: unknown })?.data
-      }
-      logger.error('[AVATAR_DEBUG] gallery upload failed:', errInfo)
+      logger.error(
+        'gallery avatar upload failed:',
+        error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+      )
       showFeedback(t('hooks.avatar_upload.upload_failed'), 'error')
     }
   }
