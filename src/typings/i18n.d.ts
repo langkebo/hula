@@ -7657,6 +7657,9 @@ export type I18nKeys = {
   "space": {
     "title": "空间",
     "space_selected": "已选择空间：{name}",
+    "expand": "展开",
+    "collapse": "收起",
+    "hierarchy": "层级",
     "context": {
       "enter_chat": "进入聊天",
       "open_in_new_window": "在新窗口打开",
@@ -7701,6 +7704,7 @@ export type I18nKeys = {
     "member_count_value": "{count} 成员",
     "room_count_value": "{count} 房间",
     "no_spaces_yet": "还没有空间，去创建吧",
+    "no_rooms": "暂无房间",
     "space_overview": "空间概览",
     "space_actions": "空间操作",
     "danger_zone": "危险操作",

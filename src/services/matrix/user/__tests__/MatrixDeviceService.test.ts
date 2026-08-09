@@ -7,6 +7,39 @@ import matrixClientService from '../../MatrixClientService'
 import type { Device } from '../MatrixDeviceService'
 import { matrixDeviceService } from '../MatrixDeviceService'
 
+// getUserDevices 不再调用 client.getUserDevices（该 SDK 方法运行时不存在），
+// 而是走 authedRequestWithPath -> POST /keys/query。这里拦截该 helper，
+// 默认实现仍路由到真实 fetch（走 MSW），单测可按用例覆盖返回值。
+const hoisted = vi.hoisted(() => {
+  const authedRequestImpl = vi
+    .fn()
+    .mockImplementation(async (method: string, path: string, _queryParams?: unknown, body?: unknown) => {
+      const prefixedPath = path.startsWith('/_') ? path : `/_matrix/client/v3${path}`
+      const url = `https://matrix.example.com${prefixedPath}`
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-access-token'
+      }
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      return response.json()
+    })
+  const authedRequestWithPathMock = vi
+    .fn()
+    .mockImplementation((...args: unknown[]) =>
+      authedRequestImpl(...(args.slice(1) as [string, string, unknown?, unknown?]))
+    )
+  return { authedRequestImpl, authedRequestWithPathMock }
+})
+
+vi.mock('@/services/matrix/MatrixHttpClient', () => ({
+  authedRequestWithPath: (...args: unknown[]) => hoisted.authedRequestWithPathMock(...args)
+}))
+
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
@@ -93,6 +126,11 @@ describe('MatrixDeviceService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+
+    hoisted.authedRequestWithPathMock.mockReset()
+    hoisted.authedRequestWithPathMock.mockImplementation((...args: unknown[]) =>
+      hoisted.authedRequestImpl(...(args.slice(1) as [string, string, unknown?, unknown?]))
+    )
 
     mockDeviceManager = {
       getDevices: vi.fn(),
@@ -182,8 +220,8 @@ describe('MatrixDeviceService', () => {
   })
 
   describe('getUserDevices', () => {
-    it('应该通过 getUserDevices 获取目标用户设备并归一化字段', async () => {
-      // getUserDevices 返回 Record<string, IContent>（device_id -> 设备信息）
+    it('应该通过 keys/query 获取目标用户设备并归一化字段', async () => {
+      // keys/query 返回 device_keys: { [userId]: { [deviceId]: 设备密钥内容 } }
       const deviceMap = {
         DEV1: {
           device_id: 'DEV1',
@@ -201,11 +239,19 @@ describe('MatrixDeviceService', () => {
           verified: false
         }
       }
-      mockClient.getUserDevices = vi.fn().mockResolvedValue(deviceMap)
+      hoisted.authedRequestWithPathMock.mockResolvedValue({
+        device_keys: { '@alice:matrix.test': deviceMap }
+      })
 
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
 
-      expect(mockClient.getUserDevices).toHaveBeenCalledWith('@alice:matrix.test')
+      expect(hoisted.authedRequestWithPathMock).toHaveBeenCalledWith(
+        expect.anything(),
+        'POST',
+        '/_matrix/client/v3/keys/query',
+        undefined,
+        expect.objectContaining({ device_keys: expect.objectContaining({ '@alice:matrix.test': [] }) })
+      )
       expect(devices).toEqual([
         {
           device_id: 'DEV1',
@@ -226,13 +272,13 @@ describe('MatrixDeviceService', () => {
     })
 
     it('应该在 SDK 返回空对象时返回空数组', async () => {
-      mockClient.getUserDevices = vi.fn().mockResolvedValue({})
+      hoisted.authedRequestWithPathMock.mockResolvedValue({ device_keys: { '@alice:matrix.test': {} } })
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([])
     })
 
     it('应该在 SDK 返回 null/undefined 时返回空数组', async () => {
-      mockClient.getUserDevices = vi.fn().mockResolvedValue(null)
+      hoisted.authedRequestWithPathMock.mockResolvedValue(null)
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([])
     })
@@ -244,7 +290,7 @@ describe('MatrixDeviceService', () => {
           display_name: 'MacBook'
         }
       }
-      mockClient.getUserDevices = vi.fn().mockResolvedValue(deviceMap)
+      hoisted.authedRequestWithPathMock.mockResolvedValue({ device_keys: { '@alice:matrix.test': deviceMap } })
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([
         {
@@ -266,14 +312,14 @@ describe('MatrixDeviceService', () => {
           display_name: 'NoDeviceId'
         }
       }
-      mockClient.getUserDevices = vi.fn().mockResolvedValue(deviceMap)
+      hoisted.authedRequestWithPathMock.mockResolvedValue({ device_keys: { '@alice:matrix.test': deviceMap } })
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toHaveLength(1)
       expect(devices[0].device_id).toBe('DEV1')
     })
 
     it('应该在 SDK 抛错时返回空数组（优雅降级，不抛出）', async () => {
-      mockClient.getUserDevices = vi.fn().mockRejectedValue(new Error('Network error'))
+      hoisted.authedRequestWithPathMock.mockRejectedValue(new Error('Network error'))
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([])
     })

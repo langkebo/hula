@@ -175,7 +175,7 @@ describe('runtimeFetch', () => {
     expect(browserFetch).toHaveBeenCalledTimes(1)
   })
 
-  it('still falls back and retries for genuine network failures without an abort signal', async () => {
+  it('falls back to browser fetch and retries for genuine network failures without an abort signal', async () => {
     vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
 
     const browserFetch = vi
@@ -183,13 +183,34 @@ describe('runtimeFetch', () => {
       .mockRejectedValueOnce(new Error('Failed to fetch'))
       .mockResolvedValue({ ok: true, status: 200 })
     vi.stubGlobal('fetch', browserFetch)
-    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('resource id invalid'))
+    // 真正的网络层错误（连接被拒 / 服务端不可达），不是 Tauri 取消错误
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('error sending request for url (https://matrix.test/_matrix/client/v3/capabilities)')
+    )
 
     const runtimeFetch = getRuntimeAwareFetch()
     const response = await runtimeFetch('https://matrix.test/_matrix/client/v3/capabilities')
 
     expect(response.ok).toBe(true)
     expect(browserFetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('normalizes tauri "resource id invalid" to AbortError and never falls back, even without an explicit abort signal', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    const browserFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', browserFetch)
+    // 真实 Tauri 报错格式：The resource id <rid> is invalid.
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('The resource id 3191644895 is invalid.')
+    )
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await expect(
+      runtimeFetch('https://matrix.test/_matrix/client/unstable/org.matrix.simplified_msc3575/sync')
+    ).rejects.toMatchObject({ name: 'AbortError' })
+
+    // 不得回退浏览器 fetch / 不得重放 SDK 已放弃的 /sync 长轮询
+    expect(browserFetch).not.toHaveBeenCalled()
   })
 
   it('preserves explicit credentials when provided', async () => {

@@ -85,6 +85,19 @@ export class MatrixConnectionManager {
    * - fetchFn 选择（Tauri nativeFetch vs browser fetch）
    */
   async initialize(config: MatrixClientConfig): Promise<void> {
+    // 幂等守卫：已有 client 且配置等价 → 直接复用，避免重复创建导致 client 泄漏、
+    // E2EE 设备密钥查询（keys/query）翻倍，以及重复事件监听器。
+    // 复用路径下 facade 不会 detach 监听器（见 MatrixClientService.initialize），故此处仅返回。
+    if (this.client && this.config && this.isConfigEquivalent(config)) {
+      logger.info('MatrixClient 已初始化且配置一致，复用现有实例')
+      return
+    }
+    // 配置不一致（如 deviceId 变化）→ 先释放旧实例，避免内存/连接泄漏。
+    if (this.client) {
+      logger.info('MatrixClient 配置变更，释放旧实例后重建')
+      this.resetState()
+    }
+
     try {
       this.config = config
       this.connectionState = 'CONNECTING'
@@ -275,6 +288,32 @@ export class MatrixConnectionManager {
 
   getConfig(): MatrixClientConfig | null {
     return this.config
+  }
+
+  /**
+   * 判断给定配置是否与当前已初始化的 client 等价（可安全复用，无需重建）。
+   * 仅比较定义 client 身份的核心字段；slidingSync 等运行期参数不参与比较。
+   */
+  private isConfigEquivalent(config: MatrixClientConfig): boolean {
+    const cur = this.config
+    if (!cur) return false
+    return (
+      cur.homeserverUrl === config.homeserverUrl &&
+      cur.userId === config.userId &&
+      cur.deviceId === config.deviceId &&
+      cur.accessToken === config.accessToken &&
+      cur.identityServerUrl === config.identityServerUrl &&
+      cur.allowInsecureHttp === config.allowInsecureHttp
+    )
+  }
+
+  /**
+   * 供 facade（MatrixClientService.initialize）判断本次 initialize 是否会复用现有 client。
+   * 复用路径下 facade 不应 detach 监听器 / stop / reset crypto，否则已挂载的事件路由会丢失
+   * （eventRouter.setup 仅在 startClient 重挂）。
+   */
+  shouldReuse(config: MatrixClientConfig): boolean {
+    return !!this.client && !!this.config && this.isConfigEquivalent(config)
   }
 
   getConnectionState(): ConnectionState {

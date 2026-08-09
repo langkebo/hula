@@ -102,6 +102,11 @@ describe('MatrixSpaceService', () => {
       childCount: 0
     })
     expect(mockCreateRoom).toHaveBeenCalled()
+    // 契约：不得把 m.room.create 放进 initial_state（服务端会拒绝并返回 400）。
+    // 创建 Space 必须走 room_types: ['m.space']。
+    const createRoomArg = mockCreateRoom.mock.calls[0][0]
+    expect(createRoomArg.room_types).toEqual(['m.space'])
+    expect(createRoomArg.initial_state).not.toContainEqual(expect.objectContaining({ type: 'm.room.create' }))
   })
 
   it('should return null when target space room does not exist', async () => {

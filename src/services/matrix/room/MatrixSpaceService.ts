@@ -118,17 +118,16 @@ class SpaceService extends BaseMatrixService {
   async createSpace(options: SpaceOptions): Promise<SpaceInfo | null> {
     const client = this.getClient()
     try {
+      // 注意：不能把 `m.room.create` 放进 `initial_state` —— 它由服务端在创建房间时
+      // 自动生成，客户端显式提供会被 synapse(-rust) 拒绝并返回 400
+      // （errcode M_INVALID_PARAM / "m.room.create cannot be supplied in initial_state"）。
+      // 创建 Space 的正确方式是用 `room_types: ['m.space']`（下面已设置）。
       const { room_id } = await client.createRoom({
         name: options.name,
         topic: options.topic,
         visibility: options.visibility,
         room_types: ['m.space'],
         initial_state: [
-          {
-            type: 'm.room.create',
-            state_key: '',
-            content: { type: 'm.space' }
-          },
           ...(options.avatarUrl
             ? [
                 {
