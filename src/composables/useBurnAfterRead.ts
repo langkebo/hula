@@ -1,5 +1,9 @@
 import { computed, ref } from 'vue'
-import { matrixBurnAfterReadService } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
+import {
+  type BurnPendingEvent,
+  type BurnStats,
+  matrixBurnAfterReadService
+} from '@/services/matrix/messaging/MatrixBurnAfterReadService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 export function useBurnAfterRead() {
@@ -69,15 +73,35 @@ export function useBurnAfterRead() {
     }
   }
 
-  const getBurnStats = () => {
-    const enabledCount = Object.values(burnSettingsCache.value).filter(Boolean).length
-    const totalCount = Object.keys(burnSettingsCache.value).length
-    return {
-      totalBurned: 0,
-      totalPending: 0,
-      roomsWithBurnEnabled: enabledCount,
-      enabledCount,
-      totalCount
+  const getBurnStats = async (): Promise<BurnStats> => {
+    try {
+      return await matrixBurnAfterReadService.getBurnStats()
+    } catch {
+      return { totalBurned: 0, totalPending: 0, roomsWithBurnEnabled: 0 }
+    }
+  }
+
+  const cancelBurn = async (roomId: string, eventId: string): Promise<boolean> => {
+    try {
+      return await matrixBurnAfterReadService.cancelBurn(roomId, eventId)
+    } catch {
+      return false
+    }
+  }
+
+  const getPendingBurns = async (roomId: string): Promise<BurnPendingEvent[]> => {
+    try {
+      return await matrixBurnAfterReadService.getPendingBurns(roomId)
+    } catch {
+      return []
+    }
+  }
+
+  const setBurnConfig = async (defaultBurnMs: number): Promise<number | null> => {
+    try {
+      return await matrixBurnAfterReadService.setBurnConfig(defaultBurnMs)
+    } catch {
+      return null
     }
   }
 
@@ -115,6 +139,9 @@ export function useBurnAfterRead() {
     markMessageRead,
     getBurnStats,
     enableBurn,
-    disableBurn
+    disableBurn,
+    cancelBurn,
+    getPendingBurns,
+    setBurnConfig
   }
 }
