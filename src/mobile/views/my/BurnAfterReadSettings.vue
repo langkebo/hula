@@ -114,10 +114,12 @@ import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
+const { enableBurn, disableBurn, getBurnStats } = useBurnAfterRead()
 
 settingStore.migrateLegacyPreferenceSettings()
 
@@ -164,6 +166,18 @@ onMounted(() => {
   loadBurnStats()
 })
 
+async function loadBurnStats() {
+  try {
+    const stats = await getBurnStats()
+    burnStats.value = {
+      totalBurned: stats.totalBurned,
+      activeRooms: stats.roomsWithBurnEnabled
+    }
+  } catch {
+    // 保留默认 0
+  }
+}
+
 function loadBurnRooms() {
   loadingRooms.value = true
   try {
@@ -175,17 +189,6 @@ function loadBurnRooms() {
     // ignore
   } finally {
     loadingRooms.value = false
-  }
-}
-
-function loadBurnStats() {
-  try {
-    const saved = localStorage.getItem('tjg-burn-stats')
-    if (saved) {
-      burnStats.value = JSON.parse(saved)
-    }
-  } catch {
-    // ignore
   }
 }
 
@@ -211,9 +214,22 @@ function handleDurationConfirm({ selectedValues }: { selectedValues: number[] })
   showDurationPicker.value = false
 }
 
-function handleRoomToggle(room: { roomId: string; name: string; duration: number; enabled: boolean }, val: boolean) {
-  room.enabled = val
-  saveBurnRooms()
-  showToast(val ? t('mobile_burn.room_enabled') : t('mobile_burn.room_disabled'))
+async function handleRoomToggle(
+  room: { roomId: string; name: string; duration: number; enabled: boolean },
+  val: boolean
+) {
+  try {
+    if (val) {
+      await enableBurn(room.roomId, room.duration * 1000)
+    } else {
+      await disableBurn(room.roomId)
+    }
+    room.enabled = val
+    saveBurnRooms()
+    showToast(val ? t('mobile_burn.room_enabled') : t('mobile_burn.room_disabled'))
+    await loadBurnStats()
+  } catch {
+    showToast(t('mobile_burn.room_toggle_failed'))
+  }
 }
 </script>

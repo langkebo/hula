@@ -4475,7 +4475,8 @@ export type I18nKeys = {
     "enabled": "阅后即焚已启用",
     "disabled": "阅后即焚已禁用",
     "room_enabled": "房间阅后即焚已启用",
-    "room_disabled": "房间阅后即焚已禁用"
+    "room_disabled": "房间阅后即焚已禁用",
+    "room_toggle_failed": "操作失败，请重试"
   },
   "mobile_chat": {
     "search": "搜索聊天内容",
