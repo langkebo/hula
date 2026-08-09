@@ -87,7 +87,13 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(matrixClientService as unknown as MatrixClientServiceInternals).connectionManager.setClient(null)
+    vi.unstubAllGlobals()
+    // 完整重置连接管理器（含 config），确保幂等守卫从干净状态判断
+    ;(
+      matrixClientService as unknown as {
+        connectionManager: { resetState: () => void }
+      }
+    ).connectionManager.resetState()
     ;(matrixClientService as unknown as MatrixClientServiceInternals).slidingSyncInstance = null
     ;(matrixClientService as unknown as MatrixClientServiceInternals).config = null
     ;(matrixClientService as unknown as MatrixClientServiceInternals).observedClient = null
@@ -222,12 +228,15 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
   })
 
   describe('loginWithToken()', () => {
-    it('应该在 token 恢复缺少 deviceId 时通过 whoami 回填', async () => {
+    it('应该在 token 恢复缺少 deviceId 时于首次 initialize 前通过 whoami 预解析（只 init 一次）', async () => {
       const { createClient } = await import('matrix-js-sdk')
-      const whoamiMock = vi.fn().mockResolvedValue({
-        user_id: '@restore:example.com',
-        device_id: 'RESTOREDEVICE'
+      // 模拟 whoami 端点（带 token 直连，无需已初始化的 client）
+      const whoamiFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ user_id: '@restore:example.com', device_id: 'RESTOREDEVICE' })
       })
+      vi.stubGlobal('fetch', whoamiFetch)
+
       vi.mocked(createClient).mockImplementation(
         () =>
           ({
@@ -236,7 +245,7 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
             startClient: vi.fn(),
             stopClient: vi.fn(),
             logout: vi.fn(),
-            whoami: whoamiMock,
+            whoami: vi.fn(),
             getCrypto: vi.fn(() => undefined),
             initRustCrypto: vi.fn().mockResolvedValue(undefined),
             getUserId: vi.fn(() => '@restore:example.com'),
@@ -252,13 +261,65 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
 
       const result = await matrixClientService.loginWithToken('restore-token', '@restore:example.com')
 
-      expect(whoamiMock).toHaveBeenCalledTimes(1)
+      // whoami 应在首次 initialize 前被直连调用一次（带 Bearer token）
+      expect(whoamiFetch).toHaveBeenCalledWith(
+        'http://localhost:28008/_matrix/client/v3/account/whoami',
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer restore-token' })
+        })
+      )
+      // deviceId 在首次 init 前已解析 → 只应 createClient 一次（pre-init 无 deviceId + loginWithToken 带 deviceId 共 2 次，
+      // 但绝不出现「无 deviceId 建 client 后又带 deviceId 二次 init」的泄漏）
+      const initCalls = vi.mocked(createClient).mock.calls
+      const preInitCall = initCalls.find((c) => !(c[0] as { deviceId?: string }).deviceId)
+      const tokenInitCall = initCalls.find((c) => (c[0] as { deviceId?: string }).deviceId === 'RESTOREDEVICE')
+      expect(preInitCall).toBeTruthy()
+      expect(tokenInitCall).toBeTruthy()
+      // 不应出现「先无 deviceId 的 loginWithToken init，再带 deviceId 的二次 init」
+      expect(initCalls.length).toBe(2)
+
       expect(result).toEqual({
         success: true,
         userId: '@restore:example.com',
         deviceId: 'RESTOREDEVICE',
         accessToken: 'restore-token'
       })
+    })
+
+    it('已持久化 deviceId 时应短路，不发起 whoami 请求', async () => {
+      const { createClient } = await import('matrix-js-sdk')
+      const whoamiFetch = vi.fn()
+      vi.stubGlobal('fetch', whoamiFetch)
+
+      vi.mocked(createClient).mockImplementation(
+        () =>
+          ({
+            login: vi.fn(),
+            loginRequest: vi.fn(),
+            startClient: vi.fn(),
+            stopClient: vi.fn(),
+            logout: vi.fn(),
+            whoami: vi.fn(),
+            getCrypto: vi.fn(() => undefined),
+            initRustCrypto: vi.fn().mockResolvedValue(undefined),
+            getUserId: vi.fn(() => '@restore:example.com'),
+            getDeviceId: vi.fn(() => 'PERSISTED_DEVICE'),
+            on: vi.fn(),
+            off: vi.fn()
+          }) as any
+      )
+
+      // 预置带 deviceId 的配置（模拟会话恢复时已持久化设备）
+      await matrixClientService.initialize({
+        homeserverUrl: 'http://localhost:28008',
+        deviceId: 'PERSISTED_DEVICE'
+      })
+
+      const result = await matrixClientService.loginWithToken('restore-token', '@restore:example.com')
+
+      // 已有 deviceId → 不应产生任何 whoami 往返
+      expect(whoamiFetch).not.toHaveBeenCalled()
+      expect(result.deviceId).toBe('PERSISTED_DEVICE')
     })
   })
 

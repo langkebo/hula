@@ -22,9 +22,6 @@ export type { EventDecryptedDebugState, RustCryptoDebugState } from './MatrixCry
 const logger = createLogger('MatrixClient')
 
 type StartClientOptions = Parameters<MatrixClient['startClient']>[0]
-type WhoamiCapableClient = MatrixClient & {
-  whoami?: () => Promise<{ device_id?: string | null; user_id?: string | null }>
-}
 
 /**
  * 登录结果接口
@@ -182,12 +179,16 @@ class MatrixClientService {
    * @throws {Error} if client creation fails.
    */
   async initialize(config: MatrixClientConfig): Promise<void> {
-    const observed = this.eventRouter.getObservedClient()
-    if (observed) {
-      this.eventRouter.detach(observed, this.syncManager)
+    // 仅当不会复用现有 client 时才 detach 监听器 / 停止 sync / 重置 crypto。
+    // 复用路径若先 detach，已挂载的事件路由会丢失（eventRouter.setup 仅在 startClient 重挂）。
+    if (!this.connectionManager.shouldReuse(config)) {
+      const observed = this.eventRouter.getObservedClient()
+      if (observed) {
+        this.eventRouter.detach(observed, this.syncManager)
+      }
+      this.syncManager.stop()
+      this.cryptoTracker.resetState()
     }
-    this.syncManager.stop()
-    this.cryptoTracker.resetState()
     await this.connectionManager.initialize(config)
 
     // Register mxc:// resolver so AvatarUtils can convert Matrix media URIs.
@@ -358,31 +359,28 @@ class MatrixClientService {
     }
 
     try {
-      // P0-#2：复用配置中已持久化的 deviceId 初始化客户端，避免每次 token 登录
-      // 生成新设备，导致 Rust Crypto 存储「账号不匹配」而降级为非加密模式。
+      // P0-#2（优化）：在首次 initialize 前解析稳定 deviceId，避免「先建 client 再发现
+      // deviceId 又重建」的泄漏与重复 E2EE 查询（keys/query 翻倍 / 重复回执）。
+      // 优先复用配置中已持久化的 deviceId；缺失时通过 whoami 端点（带 token 直连，无需已初始化的 client）
+      // 预解析 access token 绑定的设备，再一次性 initialize。
+      // 短路：已持久化 deviceId 时不发 whoami 请求，避免多余往返。
+      const whoamiDeviceId = config.deviceId
+        ? undefined
+        : await this.resolveDeviceIdByWhoami(token, config.homeserverUrl)
+      const stableDeviceId = resolveStableDeviceId(config, whoamiDeviceId)
+
       await this.initialize({
         ...config,
         accessToken: token,
-        userId: userId,
-        deviceId: config.deviceId ?? undefined
+        userId,
+        deviceId: stableDeviceId
       })
 
-      // 优先复用持久化 deviceId；仅当其缺失时再尝试 whoami 回填。
-      let resolvedDeviceId = resolveStableDeviceId(
-        config,
+      // 回退：若 whoami 也未返回 deviceId，则采用 SDK 实际使用的设备（首次 sync 后才落定）。
+      const resolvedDeviceId = resolveStableDeviceId(
+        { ...config, deviceId: stableDeviceId },
         this.connectionManager.getClient()?.getDeviceId?.() ?? undefined
       )
-      if (!resolvedDeviceId) {
-        resolvedDeviceId = await this.resolveTokenLoginDeviceId(userId)
-        if (resolvedDeviceId) {
-          await this.initialize({
-            ...this.connectionManager.getConfig()!,
-            accessToken: token,
-            userId,
-            deviceId: resolvedDeviceId
-          })
-        }
-      }
 
       this.connectionManager.updateConnectionState('CONNECTED')
 
@@ -459,33 +457,27 @@ class MatrixClientService {
 
   // ---- Lifecycle --------------------------------------------------------------
 
-  private async resolveTokenLoginDeviceId(userId: string): Promise<string | undefined> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      return undefined
-    }
-
-    const currentDeviceId = client.getDeviceId?.() ?? undefined
-    if (currentDeviceId) {
-      return currentDeviceId
-    }
-
-    const whoamiCapableClient = client as WhoamiCapableClient
-    if (typeof whoamiCapableClient.whoami !== 'function') {
-      return undefined
-    }
-
+  /**
+   * 通过 whoami 端点（带 token 的直接 HTTP 调用，无需已初始化的 MatrixClient）
+   * 解析 access token 绑定的 deviceId，用于 token 登录 / 会话恢复时一次性确定稳定设备 ID，
+   * 避免「先建 client 再发现 deviceId 又重建」的泄漏与重复 E2EE 查询。
+   */
+  private async resolveDeviceIdByWhoami(token: string, homeserverUrl: string): Promise<string | undefined> {
+    const runtimeFetch = getRuntimeAwareFetch()
+    const url = `${homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/account/whoami`
     try {
-      const response = await whoamiCapableClient.whoami()
-      const resolvedDeviceId = response.device_id ?? undefined
-      if (resolvedDeviceId) {
-        logger.info(`Token 登录通过 whoami 回填 deviceId: ${userId}/${resolvedDeviceId}`)
-      } else {
-        logger.warn(`Token 登录 whoami 未返回 deviceId: ${userId}`)
+      const response = await runtimeFetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!response.ok) {
+        logger.warn(`whoami 预解析 deviceId 失败 (status=${response.status})，回退 SDK 默认设备`)
+        return undefined
       }
-      return resolvedDeviceId
+      const data = (await response.json()) as { device_id?: string | null; user_id?: string | null }
+      return data.device_id ?? undefined
     } catch (err) {
-      logger.warn(`Token 登录回填 deviceId 失败: ${userId}`, err)
+      logger.warn('whoami 预解析 deviceId 异常，回退 SDK 默认设备', err)
       return undefined
     }
   }

@@ -53,9 +53,17 @@ vi.mock('matrix-js-sdk', () => {
 
 describe('MatrixClientService', () => {
   type MatrixClientServiceInternals = {
-    connectionManager: { setClient: (c: unknown) => void; getClient: () => unknown }
+    connectionManager: {
+      setClient: (c: unknown) => void
+      getClient: () => unknown
+      resetState: () => void
+      shouldReuse: (config: unknown) => boolean
+    }
     connectionState: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'ERROR'
   }
+
+  /** 访问 facade 的私有协作者，供白盒断言使用 */
+  const internals = () => matrixClientService as unknown as MatrixClientServiceInternals
 
   type LoginCapableClient = MatrixClient & {
     login: ReturnType<typeof vi.fn>
@@ -65,8 +73,9 @@ describe('MatrixClientService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.unstubAllGlobals()
-    ;(matrixClientService as unknown as MatrixClientServiceInternals).connectionManager.setClient(null)
-    ;(matrixClientService as unknown as MatrixClientServiceInternals).connectionState = 'DISCONNECTED'
+    // 完整重置连接管理器（含 config），确保幂等守卫从干净状态开始判断
+    internals().connectionManager.resetState()
+    internals().connectionState = 'DISCONNECTED'
   })
 
   it('should be defined', () => {
@@ -90,6 +99,42 @@ describe('MatrixClientService', () => {
   it('should return null when getting client before init', () => {
     const client = matrixClientService.getClient()
     expect(client).toBeNull()
+  })
+
+  describe('initialize() 幂等守卫', () => {
+    const baseConfig = {
+      homeserverUrl: 'https://matrix.example.com',
+      userId: '@test:example.com',
+      deviceId: 'TEST_DEVICE',
+      accessToken: 'test_token'
+    }
+
+    it('配置一致时重复 initialize 应复用现有 client（不再 createClient）', async () => {
+      await matrixClientService.initialize(baseConfig)
+      await matrixClientService.initialize(baseConfig)
+
+      expect(sdk.createClient).toHaveBeenCalledTimes(1)
+      expect(matrixClientService.getClient()).toBeTruthy()
+    })
+
+    it('配置变更（deviceId 不同）时应释放旧 client 后重建（createClient 两次）', async () => {
+      await matrixClientService.initialize(baseConfig)
+      await matrixClientService.initialize({ ...baseConfig, deviceId: 'OTHER_DEVICE' })
+
+      expect(sdk.createClient).toHaveBeenCalledTimes(2)
+    })
+
+    it('shouldReuse 契约：facade 据此决定是否 detach（复用不丢监听器，重建才 detach）', async () => {
+      await matrixClientService.initialize(baseConfig)
+
+      const { connectionManager } = internals()
+
+      // 等价配置 → 应判定复用，facade 据此跳过 detach（避免丢失已挂载的事件路由）
+      expect(connectionManager.shouldReuse(baseConfig)).toBe(true)
+
+      // 不同 deviceId → 应判定非复用，facade 据此先 detach 再重建，避免 client 泄漏
+      expect(connectionManager.shouldReuse({ ...baseConfig, deviceId: 'OTHER_DEVICE' })).toBe(false)
+    })
   })
 
   it('should handle login successfully', async () => {

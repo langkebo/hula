@@ -86,6 +86,22 @@ function isSignalAborted(init?: RequestInit): boolean {
   return init?.signal?.aborted === true
 }
 
+/**
+ * 判断错误是否来自 Tauri plugin-http 的"请求已被放弃"语义。
+ * 两类典型报错：
+ * - "The resource id <rid> is invalid."（abort 触发 fetch_cancel 丢弃资源后，
+ *   插件在 fetch_send/fetch_read_body 阶段拿到失效 rid 抛出；注意中间夹着真实数字，
+ *   不能简单用 includes('resource id invalid') 匹配）
+ * - "Request cancelled"（插件在若干分支直接抛出的普通 Error）
+ * 这类错误本质是请求已被主动取消（或插件自身资源表竞态），不是网络故障：
+ * 应归一化为 AbortError，不回退浏览器 fetch、不重试。
+ */
+function isTauriCancelError(error: unknown): boolean {
+  const errorObj = error as { message?: unknown }
+  const message = String(errorObj?.message ?? error).toLowerCase()
+  return (message.includes('resource id') && message.includes('invalid')) || message.includes('request cancelled')
+}
+
 function createAbortError(url: string): Error {
   if (typeof DOMException === 'function') {
     return new DOMException(`Request aborted: ${url}`, 'AbortError') as unknown as Error
@@ -109,7 +125,6 @@ function isRetryableNetworkError(error: unknown): boolean {
     message.includes('err_connection_refused') ||
     message.includes('err_connection_reset') ||
     message.includes('err_internet_disconnected') ||
-    message.includes('resource id invalid') ||
     message.includes('timeout') ||
     message.includes('aborted')
   )
@@ -182,9 +197,13 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
       }
       return response
     } catch (error) {
-      // 主动取消导致的 "resource id invalid" / "Request cancelled" 属于预期行为：
-      // 既不记录噪声日志，也不回退浏览器 fetch（否则会重放 SDK 已放弃的请求）
-      if (isSignalAborted(init)) {
+      // Tauri plugin-http 在请求被主动取消（SDK 显式 abort 或插件自身资源表竞态）时，
+      // 会抛出 "resource id invalid" / "Request cancelled"。这类错误的本质是请求已被放弃，
+      // 不是网络故障：归一化为 AbortError，且不回退浏览器 fetch、不重试
+      // （否则会重放 SDK 已放弃的 /sync 长轮询，产生幽灵重复请求）。
+      // 注意：不能仅依赖 init.signal.aborted —— 当取消由插件资源表竞态引发、或 /sync 长轮询
+      // 在自激循环里被挤掉时，JS 信号未必被置位，必须按错误内容识别。
+      if (isSignalAborted(init) || isTauriCancelError(error)) {
         throw createAbortError(url)
       }
 

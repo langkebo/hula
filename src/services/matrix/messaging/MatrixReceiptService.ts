@@ -35,6 +35,13 @@ class MatrixReceiptService extends BaseMatrixService {
   private cachedManager: ReadReceiptsManager | null = null
   private pendingMarkAsReadTasks = new Map<string, PendingMarkAsReadTask>()
   private loggedDroppedReceiptRooms = new Set<string>()
+  /**
+   * 已成功发送的回执事件 ID（按 roomId）。用于去重：同一事件被多个路径
+   * （房间已读、单条已读、线程已读、延迟补发）同时触发时，只发一次，
+   * 避免服务端收到重复回执、也避免无意义的网络往返。
+   * 仅在发送成功后才写入，发送失败不记录（下次可重试）。
+   */
+  private lastSentReceiptEventId = new Map<string, string>()
 
   private getRoomIfAvailable(roomId: string): Room | null {
     return this.getClient().getRoom(roomId) ?? null
@@ -162,10 +169,28 @@ class MatrixReceiptService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.messaging.receipt_event_id_missing'))
       }
 
+      // 去重：同一事件已标记/已发送过则跳过，避免重复回执。
+      // 关键：标记必须在 await 之前【同步】完成。否则 changeRoom 末尾的 markSessionRead
+      // 与单条已读并发触发同一 eventId 时，两次都会通过下方检查、各自 await 后双发回执。
+      if (this.lastSentReceiptEventId.get(roomId) === eventId) {
+        logger.info(`[MatrixReceipt] 阅读回执已发送过，跳过重复发送: ${roomId}/${eventId}`)
+        return eventId
+      }
+      // 同步占位：吞噬并发的重复发送（原子去重）
+      this.lastSentReceiptEventId.set(roomId, eventId)
+
       // SDK ReadReceiptsManager.sendReadReceiptByEventId 接受 (roomId, eventId)
       // 不要使用 sendReadReceipt(event)，因为它需要 MatrixEvent 实例
       const manager = this.getReadReceiptsManager()
-      await manager.sendReadReceiptByEventId(roomId, eventId)
+      try {
+        await manager.sendReadReceiptByEventId(roomId, eventId)
+      } catch (sendErr) {
+        // 发送失败：清除占位，允许后续重试（延迟补发任务会再次尝试）
+        if (this.lastSentReceiptEventId.get(roomId) === eventId) {
+          this.lastSentReceiptEventId.delete(roomId)
+        }
+        throw sendErr
+      }
       logger.info(`[MatrixReceipt] 发送阅读回执成功: ${roomId}/${eventId}`)
       return eventId
     } catch (err) {
@@ -329,6 +354,7 @@ class MatrixReceiptService extends BaseMatrixService {
   clearCache(): void {
     this.cachedClient = null
     this.cachedManager = null
+    this.lastSentReceiptEventId.clear()
 
     this.pendingMarkAsReadTasks.forEach((task) => {
       if (task.timer) {

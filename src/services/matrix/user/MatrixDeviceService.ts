@@ -101,24 +101,39 @@ class MatrixDeviceService extends BaseMatrixService {
   async getUserDevices(userId: string): Promise<Device[]> {
     try {
       const client = this.getClient()
-      const extendedClient = client as unknown as MatrixClientExtended
-      // getUserDevices 返回 Record<string, IContent>（device_id -> 设备信息）
-      // 类型声明（augmentation）标记为 unknown[]，但运行时实际返回 Record，需经 unknown 中转
-      const deviceMap = (await extendedClient.getUserDevices(userId)) as unknown as Record<
-        string,
-        Record<string, unknown>
-      >
-      const rawDevices = Object.values(deviceMap ?? {})
+      // 本 SDK fork（matrix-js-sdk）的 MatrixClient.getUserDevices 仅有类型声明
+      // （src/types/matrix-js-sdk-augmentations.d.ts:178），运行时并未实现；
+      // DeviceKeysManager 内的同名方法（matrix-js-sdk/lib/device-keys/index.js:308）
+      // 又代理到不存在的 client.getUserDevices，同样抛 "is not a function"。
+      // 因此直接打 keys/query 端点查询目标用户设备密钥，响应结构：
+      // { device_keys: { [userId]: { [deviceId]: 设备密钥内容 } } }。
+      const resp = await authedRequestWithPath<{
+        device_keys?: Record<string, Record<string, Record<string, unknown>>>
+      }>(client, 'POST', '/_matrix/client/v3/keys/query', undefined, {
+        device_keys: { [userId]: [] }
+      })
+      const deviceMap = resp?.device_keys?.[userId] ?? {}
+      const rawDevices = Object.values(deviceMap)
       const devices: Device[] = rawDevices
-        .map((content) => ({
-          device_id: String(content.device_id ?? ''),
-          display_name: typeof content.display_name === 'string' ? content.display_name : undefined,
-          last_seen_ts: typeof content.last_seen_ts === 'number' ? content.last_seen_ts : undefined,
-          last_seen_ip: typeof content.last_seen_ip === 'string' ? content.last_seen_ip : undefined,
-          last_seen_user_agent:
-            typeof content.last_seen_user_agent === 'string' ? content.last_seen_user_agent : undefined,
-          verified: typeof content.verified === 'boolean' ? content.verified : false
-        }))
+        .map((content) => {
+          // keys/query 返回的是设备密钥，display_name 通常位于 unsigned.device_display_name
+          const unsigned = (content.unsigned ?? {}) as Record<string, unknown>
+          const displayName =
+            typeof content.display_name === 'string'
+              ? content.display_name
+              : typeof unsigned.device_display_name === 'string'
+                ? unsigned.device_display_name
+                : undefined
+          return {
+            device_id: String(content.device_id ?? ''),
+            display_name: displayName,
+            last_seen_ts: typeof content.last_seen_ts === 'number' ? content.last_seen_ts : undefined,
+            last_seen_ip: typeof content.last_seen_ip === 'string' ? content.last_seen_ip : undefined,
+            last_seen_user_agent:
+              typeof content.last_seen_user_agent === 'string' ? content.last_seen_user_agent : undefined,
+            verified: typeof content.verified === 'boolean' ? content.verified : false
+          }
+        })
         .filter((device) => device.device_id)
       logger.info(`[DeviceService] 获取用户设备列表成功: userId=${userId}, ${devices.length} 个设备`)
       return devices

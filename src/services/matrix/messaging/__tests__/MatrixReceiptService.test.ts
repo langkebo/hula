@@ -51,6 +51,8 @@ describe('MatrixReceiptService', () => {
       }
     })
     pendingTasks?.clear()
+    // 重置回执去重缓存，避免跨用例污染（同 roomId+eventId 会被误判为已发送而跳过）
+    ;(matrixReceiptService as any).lastSentReceiptEventId?.clear()
     vi.clearAllMocks()
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     vi.useRealTimers()
@@ -111,6 +113,54 @@ describe('MatrixReceiptService', () => {
     await matrixReceiptService.sendReadMarker('!room:id', '$event')
 
     expect(mockReceiptManager.setReadMarker).toHaveBeenCalledWith('!room:id', '$event')
+  })
+
+  it('同一事件重复发送阅读回执时只发一次（去重）', async () => {
+    mockReceiptManager.sendReadReceiptByEventId.mockResolvedValue(undefined)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    const event = { getId: () => '$dup-event' } as unknown as MatrixEvent
+    await matrixReceiptService.sendReadReceipt('!room:id', event)
+    await matrixReceiptService.sendReadReceipt('!room:id', event)
+
+    expect(mockReceiptManager.sendReadReceiptByEventId).toHaveBeenCalledTimes(1)
+    expect(mockReceiptManager.sendReadReceiptByEventId).toHaveBeenCalledWith('!room:id', '$dup-event')
+  })
+
+  it('并发触发同一事件只发一次（竞态去重，回归）', async () => {
+    mockReceiptManager.sendReadReceiptByEventId.mockResolvedValue(undefined)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    const event = { getId: () => '$race-event' } as unknown as MatrixEvent
+    // 不 await 第一个就发起第二个，模拟 changeRoom 的 markSessionRead 与单条已读并发
+    const p1 = matrixReceiptService.sendReadReceipt('!room:id', event)
+    const p2 = matrixReceiptService.sendReadReceipt('!room:id', event)
+    await Promise.all([p1, p2])
+
+    expect(mockReceiptManager.sendReadReceiptByEventId).toHaveBeenCalledTimes(1)
+  })
+
+  it('发送失败后清除占位允许重试（不永久吞掉回执）', async () => {
+    mockReceiptManager.sendReadReceiptByEventId
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(undefined)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    const event = { getId: () => '$retry-event' } as unknown as MatrixEvent
+    await expect(matrixReceiptService.sendReadReceipt('!room:id', event)).rejects.toThrow('network')
+    // 失败后重试应再次发送（占位已清除）
+    await matrixReceiptService.sendReadReceipt('!room:id', event)
+    expect(mockReceiptManager.sendReadReceiptByEventId).toHaveBeenCalledTimes(2)
+  })
+
+  it('不同事件仍各自发送（去重不跨事件）', async () => {
+    mockReceiptManager.sendReadReceiptByEventId.mockResolvedValue(undefined)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
+
+    await matrixReceiptService.sendReadReceipt('!room:id', { getId: () => '$e1' } as unknown as MatrixEvent)
+    await matrixReceiptService.sendReadReceipt('!room:id', { getId: () => '$e2' } as unknown as MatrixEvent)
+
+    expect(mockReceiptManager.sendReadReceiptByEventId).toHaveBeenCalledTimes(2)
   })
 
   it('使用 SDK 回执数据并补全成员展示信息', () => {
