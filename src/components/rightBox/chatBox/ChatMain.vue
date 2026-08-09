@@ -195,7 +195,7 @@
 <script setup lang="ts">
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useEventListener, useTimeoutFn } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -213,12 +213,15 @@ import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { type AnnouncementData, useAnnouncementBanner } from '@/composables/chat/useAnnouncementBanner'
+import { useAvatarPreloader } from '@/composables/chat/useAvatarPreloader'
 import { useChatDialogs } from '@/composables/chat/useChatDialogs'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useChatScrollManager } from '@/composables/chat/useChatScrollManager'
+import { useMessageJump } from '@/composables/chat/useMessageJump'
+import { useNewMessageBadge } from '@/composables/chat/useNewMessageBadge'
 import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import { useRoomSearch } from '@/composables/chat/useRoomSearch'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useWheelScrollLimiter } from '@/composables/chat/useWheelScrollLimiter'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { usePopover } from '@/composables/common/usePopover'
@@ -227,12 +230,10 @@ import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { MittEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
@@ -248,7 +249,6 @@ const logger = createLogger('ChatMain')
 const timerManager = useTimerManager()
 const selfEmit = defineEmits(['scroll'])
 const { t } = useI18n()
-const { showFeedback } = useActionFeedback()
 
 type SessionChangedPayload = {
   roomId: string
@@ -259,7 +259,6 @@ type SessionChangedPayload = {
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
-const groupStore = useGroupStore()
 const userStore = useUserStore()
 const networkStatus = useNetworkStatus()
 // const { footerHeight } = useChatLayoutGlobal() // 已移除，不再需要
@@ -279,28 +278,12 @@ const {
 } = chatMainContext
 const { enableScroll } = usePopover(selectKey, 'image-chat-main')
 
+// Batch preload avatar URLs when message list changes
+useAvatarPreloader()
+
 const getMessageSenderUid = (message: MessageType): string => {
   return message.fromUser?.uid ?? ''
 }
-
-// Batch preload avatar URLs when message list changes to avoid lazy-load waterfall
-watch(
-  () => chatStore.chatMessageList,
-  (msgs) => {
-    if (!msgs?.length) return
-    const avatarUrls = new Set<string>()
-    for (const item of msgs) {
-      const uid = getMessageSenderUid(item)
-      if (!uid) continue
-      const storeUser = groupStore.getUserInfo(uid)
-      if (storeUser?.avatar) avatarUrls.add(storeUser.avatar)
-    }
-    if (avatarUrls.size > 0) {
-      AvatarUtils.batchResolve([...avatarUrls], 68)
-    }
-  },
-  { immediate: true }
-)
 
 // ===== 私密模式 =====
 const {
@@ -364,11 +347,6 @@ const isGroup = computed<boolean>(() => chatStore.isGroup)
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const currentUserId = computed(() => userStore.userInfo?.uid ?? '')
 const currentUserName = computed(() => userStore.userInfo?.name ?? '')
-const currentNewMsgCount = computed(() => chatStore.currentNewMsgCount || null)
-const newMsgCountLabel = computed(() => {
-  if (!currentNewMsgCount.value?.count || currentNewMsgCount.value.count <= 0) return '0'
-  return currentNewMsgCount.value.count > 99 ? '99+' : String(currentNewMsgCount.value.count)
-})
 const currentRoomId = computed(() => globalStore.currentSessionRoomId ?? null)
 
 // 房间切换时重新加载置顶消息
@@ -430,7 +408,6 @@ const computeMsgHover = computed(() => (item: MessageType) => {
 const scrollContainerRef = useTemplateRef<HTMLDivElement>('scrollContainer')
 const messageListRef = useTemplateRef<HTMLDivElement>('messageListRef')
 
-const storeNewMsgCount = computed(() => chatStore.currentNewMsgCount?.count ?? 0)
 const isLastPage = computed(() => chatStore.currentMessageOptions?.isLast ?? false)
 const isLoading = computed(() => chatStore.currentMessageOptions?.isLoading ?? false)
 
@@ -442,7 +419,7 @@ const scrollManager = useChatScrollManager({
   isLoading,
   currentRoomId,
   clearNewMsgCount: () => chatStore.clearNewMsgCount(),
-  newMessageCountSource: storeNewMsgCount
+  newMessageCountSource: computed(() => chatStore.currentNewMsgCount?.count ?? 0)
 })
 
 const {
@@ -461,56 +438,10 @@ const handleScroll = (event: Event) => {
   scrollManagerHandleScroll(event)
 }
 
-const activeReply = ref<string>('')
 const showScrollbar = ref<boolean>(true)
 const hoverId = ref('')
 
-// 滚轮滚动限制状态
-const MAX_WHEEL_DELTA = 130
-const DOM_DELTA_LINE = 1
-const DOM_DELTA_PAGE = 2
-
-const clampWheelDelta = (delta: number): number => {
-  if (Math.abs(delta) <= MAX_WHEEL_DELTA) {
-    return delta
-  }
-  return Math.sign(delta) * MAX_WHEEL_DELTA
-}
-
-const normalizeWheelDelta = (event: WheelEvent, target: HTMLElement): number => {
-  switch (event.deltaMode) {
-    case DOM_DELTA_LINE:
-      return event.deltaY * 16
-    case DOM_DELTA_PAGE:
-      return event.deltaY * target.clientHeight
-    default:
-      return event.deltaY
-  }
-}
-
-const handleWheel = (event: WheelEvent) => {
-  const container = scrollContainerRef.value
-  if (!container) return
-
-  // 跳过触控板缩放或横向滚动
-  if (event.ctrlKey || Math.abs(event.deltaY) < Math.abs(event.deltaX)) {
-    return
-  }
-
-  const normalizedDelta = normalizeWheelDelta(event, container)
-  if (Math.abs(normalizedDelta) < 0.5) {
-    return
-  }
-
-  event.preventDefault()
-  const limitedDelta = clampWheelDelta(normalizedDelta)
-  if (Math.abs(limitedDelta) < 0.5) {
-    return
-  }
-  container.scrollTop += limitedDelta
-}
-
-const stopWheelListener = useEventListener(scrollContainerRef, 'wheel', handleWheel, { passive: false })
+const { stop: stopWheelListener } = useWheelScrollLimiter(scrollContainerRef)
 
 const {
   topAnnouncement,
@@ -519,69 +450,21 @@ const {
   cleanupListeners: cleanupAnnouncementListeners
 } = useAnnouncementBanner(currentRoomId, isGroup, scrollContainerRef, scrollToBottom)
 
-const jumpToReplyMsg = async (key: string): Promise<void> => {
-  // 先在当前列表中尝试查找
-  let messageIndex = chatStore.getMsgIndex(String(key))
+// Message jump (find, scroll, highlight)
+const { activeReply, jumpToReplyMsg, onNavigateToMessage, clearActiveReply } = useMessageJump({
+  isLoadingMore,
+  scrollToIndex,
+  currentRoomId
+})
 
-  // 如果找到了，直接滚动到该消息
-  if (messageIndex !== -1) {
-    scrollToIndex(messageIndex, 'instant')
-    activeReply.value = String(key)
-    return
-  }
-
-  // 设置加载标记
-  isLoadingMore.value = true
-
-  // 显示加载状态
-  showFeedback('正在查找消息...', 'info')
-
-  // 尝试加载历史消息直到找到目标消息或无法再加载
-  let foundMessage = false
-  let attemptCount = 0
-  const MAX_ATTEMPTS = 5 // 设置最大尝试次数，避免无限循环
-
-  while (!foundMessage && attemptCount < MAX_ATTEMPTS) {
-    attemptCount++
-
-    // 加载更多历史消息
-    await chatStore.loadMore()
-
-    // 在新加载的消息中查找
-    messageIndex = chatStore.getMsgIndex(key)
-
-    if (messageIndex !== -1) {
-      foundMessage = true
-      break
-    }
-
-    // 简单延时，避免快速请求
-    await new Promise<void>((resolve) => {
-      timerManager.setTimeout(() => resolve(), 300)
-    })
-  }
-
-  // 重置加载标记
-  isLoadingMore.value = false
-
-  // 如果找到了消息，滚动到该位置
-  if (foundMessage) {
-    nextTick(() => {
-      scrollToIndex(messageIndex, 'instant')
-      activeReply.value = key
-    })
-  } else {
-    // 如果尝试多次后仍未找到消息
-    showFeedback('无法找到原始消息，可能已被删除或太久远', 'warning')
-  }
-}
-
-// 侧栏置顶/收藏点击 → 跳转定位到指定消息（复用 jumpToReplyMsg 的滚动+高亮逻辑）
-const onNavigateToMessage = (payload: { roomId?: string; eventId?: string } | undefined) => {
-  if (!payload?.eventId) return
-  if (payload.roomId && payload.roomId !== currentRoomId.value) return
-  jumpToReplyMsg(payload.eventId)
-}
+// New message count badge + float button
+const { currentNewMsgCount, newMsgCountLabel, handleFloatButtonClick } = useNewMessageBadge({
+  scrollContainerRef,
+  isLoadingMore,
+  shouldShowFloatButton,
+  scrollToBottom,
+  userUid
+})
 
 // ===== 房间内消息搜索（F2）=====
 const searchRoomId = computed(() => globalStore.currentSessionRoomId ?? '')
@@ -639,19 +522,6 @@ const onOpenRoomSearch = () => {
   openRoomSearch()
 }
 
-const handleFloatButtonClick = async () => {
-  try {
-    // 只有消息数量超过60条才进行重置和刷新
-    if (chatStore.chatMessageList.length > 60) {
-      await chatStore.resetAndRefreshCurrentRoomMessages()
-    }
-    scrollToBottom()
-  } catch (error) {
-    logger.error('重置消息列表失败:', error)
-    scrollToBottom()
-  }
-}
-
 const handleSessionChanged = async ({ roomId, oldRoomId }: SessionChangedPayload) => {
   if (!roomId || roomId === oldRoomId) {
     return
@@ -662,42 +532,6 @@ const handleSessionChanged = async ({ roomId, oldRoomId }: SessionChangedPayload
   }
 }
 
-// 监听消息列表变化
-watch(
-  () => chatStore.chatMessageList,
-  async (value, oldValue) => {
-    if (value.length > oldValue.length) {
-      const latestMessage = value[value.length - 1]
-
-      if (isLoadingMore.value) {
-        return
-      }
-
-      const container = scrollContainerRef.value
-      if (container) {
-        const isOtherUserMessage =
-          latestMessage?.fromUser?.uid && String(latestMessage.fromUser.uid) !== String(userUid.value)
-        if (shouldShowFloatButton.value && isOtherUserMessage) {
-          const roomId = globalStore.currentSessionRoomId
-          const current = chatStore.newMsgCount[roomId]
-          if (!current) {
-            chatStore.newMsgCount[roomId] = {
-              count: 1,
-              isStart: true
-            }
-          } else {
-            current.count++
-          }
-        } else {
-          await nextTick()
-          scrollToBottom()
-        }
-      }
-    }
-  },
-  { deep: false }
-)
-
 // 处理聊天区域点击事件，用于清除回复样式和气泡激活状态
 const handleChatAreaClick = (event: Event): void => {
   const target = event.target as Element
@@ -707,17 +541,8 @@ const handleChatAreaClick = (event: Event): void => {
     target.closest('.reply-bubble') || target.matches('.active-reply') || target.closest('.active-reply')
 
   // 如果点击的不是回复相关元素，清除activeReply样式
-  if (!isReplyElement && activeReply.value) {
-    nextTick(() => {
-      const activeReplyElement = document.querySelector('.active-reply') as HTMLElement
-      if (activeReplyElement) {
-        activeReplyElement.classList.add('reply-exit')
-        useTimeoutFn(() => {
-          activeReplyElement.classList.remove('reply-exit')
-          activeReply.value = ''
-        }, 300)
-      }
-    })
+  if (!isReplyElement) {
+    clearActiveReply()
   }
 }
 
@@ -727,21 +552,6 @@ const handleViewAnnouncement = (): void => {
     useMitt.emit(MittEnum.OPEN_ANNOUNCEMENT_PANEL, { roomId: currentRoomId.value })
   })
 }
-
-// 监听滚动到底部的事件
-let scrollBottomScheduled = false
-useMitt.on(MittEnum.CHAT_SCROLL_BOTTOM, () => {
-  if (scrollBottomScheduled) return
-  scrollBottomScheduled = true
-  requestAnimationFrame(() => {
-    scrollBottomScheduled = false
-    // 只有消息数量超过60条才进行重置和刷新
-    if (chatStore.chatMessageList.length > 60) {
-      chatStore.clearRedundantMessages(globalStore.currentSessionRoomId)
-    }
-    scrollToBottom()
-  })
-})
 
 onMounted(() => {
   useMitt.on(MittEnum.SESSION_CHANGED, handleSessionChanged)
