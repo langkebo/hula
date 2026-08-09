@@ -87,7 +87,7 @@ export function useSpaces(): UseSpacesResult {
 
   const getRoomSpaceInfo = async (roomId: string): Promise<SpaceInfo | null> => {
     try {
-      return await matrixSpaceService.getRoomParentSpacesViaApi(roomId).then((spaces) => spaces[0] ?? null)
+      return await matrixSpaceService.getRoomParentSpaces(roomId).then((spaces) => spaces[0] ?? null)
     } catch (err) {
       logger.error('get room space info failed', err)
       return null
