@@ -200,7 +200,12 @@
     "duration_label": "Burn Duration",
     "duration_desc": "Time until messages are destroyed after being read",
     "pending_count": "Pending messages to burn: {count}",
-    "tip": "Tip: Destroyed messages cannot be recovered, use with caution"
+    "tip": "Tip: Destroyed messages cannot be recovered, use with caution",
+    "pending_title": "Pending Burn Messages",
+    "pending_empty": "No pending burn messages",
+    "cancel": "Cancel Burn",
+    "remaining_seconds": "Burns in {count} seconds",
+    "remaining_minutes": "Burns in {count} minutes"
   },
   "discovery": {
     "aria_label": "Room discovery",
