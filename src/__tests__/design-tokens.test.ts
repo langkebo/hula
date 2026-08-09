@@ -245,6 +245,69 @@ describe('原型对齐 P0 — 暗色弱化文字 WCAG 对比度', () => {
   })
 })
 
+describe('架构评审 P0 — 浅色弱化文字与发送气泡 WCAG 对比度', () => {
+  const tokensContent = readFileSync(TOKENS_FILE, 'utf-8')
+
+  /** 解析 :root 块（浅色主题）内指定 token 的 #rrggbb 值 */
+  function readRootToken(name: string): string {
+    const rootBlockMatch = tokensContent.match(/:root\s*\{([\s\S]*?)\n\}/)
+    if (!rootBlockMatch) throw new Error('未找到 :root 块')
+    const tokenMatch = rootBlockMatch[1].match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`))
+    if (!tokenMatch) throw new Error(`:root 块中未找到 ${name}`)
+    return tokenMatch[1]
+  }
+
+  /** sRGB 通道线性化 */
+  function linearize(channel: number): number {
+    const c = channel / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }
+
+  /** 相对亮度 L = 0.2126·R + 0.7152·G + 0.0722·B */
+  function relativeLuminance(hex: string): number {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)
+  }
+
+  /** WCAG 对比度 = (L亮+0.05)/(L暗+0.05) */
+  function contrastRatio(fg: string, bg: string): number {
+    const l1 = relativeLuminance(fg)
+    const l2 = relativeLuminance(bg)
+    const [lighter, darker] = l1 >= l2 ? [l1, l2] : [l2, l1]
+    return (lighter + 0.05) / (darker + 0.05)
+  }
+
+  it('浅色 --tjg-text-tertiary 对 surface-app 的对比度应 ≥ 4.5 (WCAG AA)', () => {
+    const tertiary = readRootToken('--tjg-text-tertiary')
+    const ratio = contrastRatio(tertiary, '#fafafa')
+    expect(
+      ratio,
+      `--tjg-text-tertiary (${tertiary}) @ surface-app (#fafafa) 对比度 ${ratio.toFixed(2)}:1，低于 AA 4.5:1`
+    ).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('浅色 --tjg-text-quaternary 对 surface-panel 的对比度应 ≥ 4.5 (WCAG AA)', () => {
+    // quaternary 主场景为设置/面板卡片（白底），以 surface-panel 为测量基准
+    const quaternary = readRootToken('--tjg-text-quaternary')
+    const ratio = contrastRatio(quaternary, '#ffffff')
+    expect(
+      ratio,
+      `--tjg-text-quaternary (${quaternary}) @ surface-panel (#ffffff) 对比度 ${ratio.toFixed(2)}:1，低于 AA 4.5:1`
+    ).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('浅色 --tjg-bubble-sent-bg 白字对比度应 ≥ 4.5 (WCAG AA)', () => {
+    const bubbleBg = readRootToken('--tjg-bubble-sent-bg')
+    const ratio = contrastRatio('#ffffff', bubbleBg)
+    expect(
+      ratio,
+      `--tjg-bubble-sent-bg (${bubbleBg}) 白字对比度 ${ratio.toFixed(2)}:1，低于 AA 4.5:1`
+    ).toBeGreaterThanOrEqual(4.5)
+  })
+})
+
 describe('Task 7 — prefers-reduced-motion 全局覆盖守卫', () => {
   // 读取一次 design-tokens.css 内容供所有断言使用
   const tokensContent = readFileSync(TOKENS_FILE, 'utf-8')
