@@ -193,6 +193,15 @@
     "has_draft": "有草稿",
     "failed_send": "发送失败"
   },
+  "burn": {
+    "title": "阅后即焚",
+    "enable_label": "启用阅后即焚",
+    "enable_desc": "开启后，新发送的消息在对方阅读后将自动销毁",
+    "duration_label": "焚毁时间",
+    "duration_desc": "消息阅读后多少时间后销毁",
+    "pending_count": "当前待销毁消息：{count} 条",
+    "tip": "提示：销毁后消息无法恢复，请谨慎使用"
+  },
   "discovery": {
     "aria_label": "房间发现",
     "search_placeholder": "搜索房间名称...",
