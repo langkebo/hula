@@ -6,6 +6,7 @@ const ALLOWLIST = new Set([
   'src/App.vue',                                     // apple.com favicon reachability check (no-cors)
   'src/strategy/strategies/video.ts',                // blob: URL requires browser-native fetch
   'src/views/openclaw/OpenClawView.vue',             // OpenClawService doesn't exist yet — needs new service
+  'src/composables/user/useAvatarUpload.ts',          // gallery avatar is a webview-local static asset (/avatar/*.webp), not a network request
 ]);
 
 const output = execSync(
