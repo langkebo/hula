@@ -254,15 +254,21 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     body,
     uploadProgress,
     timeBlock,
-    roomId
+    roomId,
+    isBurning,
+    isBurned,
+    burnRemainingSeconds
   }: {
     msgId: string
-    status: MessageStatusEnum
+    status?: MessageStatusEnum
     newMsgId?: string
     body?: Record<string, unknown>
     uploadProgress?: number
     timeBlock?: number
     roomId?: string
+    isBurning?: boolean
+    isBurned?: boolean
+    burnRemainingSeconds?: number
   }) => {
     const resolvedRoomId =
       (roomId && messageMap[roomId]?.[msgId] ? roomId : undefined) ??
@@ -278,7 +284,19 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     if (!msg) return
     const previousMessageId = msg.message.id
 
-    msg.message.status = status
+    if (status !== undefined) {
+      msg.message.status = status
+    }
+    // Fix 4: 支持 burn 状态字段更新，驱动 BurnMessage 组件的倒计时生命周期
+    if (isBurning !== undefined) {
+      msg.message.isBurning = isBurning
+    }
+    if (isBurned !== undefined) {
+      msg.message.isBurned = isBurned
+    }
+    if (burnRemainingSeconds !== undefined) {
+      msg.message.burnRemainingSeconds = burnRemainingSeconds
+    }
     if (timeBlock !== undefined) {
       msg.timeBlock = timeBlock
     }

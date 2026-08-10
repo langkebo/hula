@@ -31,11 +31,13 @@ vi.mock('@/services/matrix/messaging/MatrixBurnAfterReadService', () => ({
   }
 }))
 
-const { useBurnAfterRead } = await import('@/composables/useBurnAfterRead')
+const { useBurnAfterRead, _resetBurnCacheForTesting } = await import('@/composables/useBurnAfterRead')
 
 describe('useBurnAfterRead', () => {
   beforeEach(() => {
     globalStoreMock.currentSessionRoomId = ''
+    // Fix 1: 缓存已提升为模块级单例，每个测试需重置避免交叉污染
+    _resetBurnCacheForTesting()
     getBurnSettingsMock.mockReset()
     enableBurnMock.mockReset()
     disableBurnMock.mockReset()
@@ -96,6 +98,30 @@ describe('useBurnAfterRead', () => {
     })
   })
 
+  describe('singleton cache (Fix 1)', () => {
+    it('多个 useBurnAfterRead() 实例共享同一份缓存', async () => {
+      enableBurnMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      // 实例 A：开启 burn
+      const instanceA = useBurnAfterRead()
+      await instanceA.enableBurn('room-shared', 60000)
+
+      // 实例 B：应能读到 A 写入的状态
+      const instanceB = useBurnAfterRead()
+      expect(instanceB.isRoomBurnEnabled('room-shared')).toBe(true)
+      expect(instanceB.getRoomBurnDuration('room-shared')).toBe(60)
+    })
+
+    it('refreshBurnSettings 写入的缓存对其他实例可见', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 30000 })
+      const instanceA = useBurnAfterRead()
+      await instanceA.refreshBurnSettings('room-refresh')
+
+      const instanceB = useBurnAfterRead()
+      expect(instanceB.isRoomBurnEnabled('room-refresh')).toBe(true)
+      expect(instanceB.getRoomBurnDuration('room-refresh')).toBe(30)
+    })
+  })
+
   describe('refreshBurnSettings', () => {
     it('roomId 为空时直接返回，不调用服务', async () => {
       const { refreshBurnSettings } = useBurnAfterRead()
@@ -109,7 +135,8 @@ describe('useBurnAfterRead', () => {
       await refreshBurnSettings('room-1')
       expect(getBurnSettingsMock).toHaveBeenCalledWith('room-1')
       expect(isRoomBurnEnabled('room-1')).toBe(true)
-      expect(getRoomBurnDuration('room-1')).toBe(60000)
+      // Fix 2: burnAfterMs 60000ms 转为 60 秒存储
+      expect(getRoomBurnDuration('room-1')).toBe(60)
     })
 
     it('服务返回 null 时不更新缓存', async () => {
@@ -149,6 +176,20 @@ describe('useBurnAfterRead', () => {
       await enableBurn('room-1', 60000)
       expect(enableBurnMock).toHaveBeenCalledWith('room-1', 60000)
       expect(isRoomBurnEnabled('room-1')).toBe(true)
+    })
+
+    it('Fix 3: 同时更新时长缓存（毫秒转秒）', async () => {
+      enableBurnMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      const { enableBurn, getRoomBurnDuration } = useBurnAfterRead()
+      await enableBurn('room-1', 60000)
+      expect(getRoomBurnDuration('room-1')).toBe(60)
+    })
+
+    it('Fix 3: 未传 burnAfterMs 时用服务返回值更新时长缓存', async () => {
+      enableBurnMock.mockResolvedValue({ enabled: true, burnAfterMs: 30000 })
+      const { enableBurn, getRoomBurnDuration } = useBurnAfterRead()
+      await enableBurn('room-1')
+      expect(getRoomBurnDuration('room-1')).toBe(30)
     })
 
     it('服务返回 null 时不更新缓存', async () => {
@@ -253,17 +294,26 @@ describe('useBurnAfterRead', () => {
   })
 
   describe('markMessageRead', () => {
-    it('roomId 为空时直接返回', async () => {
+    it('roomId 为空时返回 false', async () => {
       const { markMessageRead } = useBurnAfterRead()
-      await markMessageRead('msg-1')
+      const result = await markMessageRead('msg-1')
+      expect(result).toBe(false)
       expect(markBurnReadMock).not.toHaveBeenCalled()
     })
 
-    it('调用 markBurnRead 服务', async () => {
+    it('调用 markBurnRead 服务并返回 true', async () => {
       markBurnReadMock.mockResolvedValue(true)
       const { markMessageRead } = useBurnAfterRead()
-      await markMessageRead('msg-1', 'room-1')
+      const result = await markMessageRead('msg-1', 'room-1')
       expect(markBurnReadMock).toHaveBeenCalledWith('room-1', 'msg-1')
+      expect(result).toBe(true)
+    })
+
+    it('服务返回 false 时返回 false', async () => {
+      markBurnReadMock.mockResolvedValue(false)
+      const { markMessageRead } = useBurnAfterRead()
+      const result = await markMessageRead('msg-1', 'room-1')
+      expect(result).toBe(false)
     })
 
     it('使用 currentSessionRoomId 作为默认 roomId', async () => {
@@ -274,10 +324,11 @@ describe('useBurnAfterRead', () => {
       expect(markBurnReadMock).toHaveBeenCalledWith('session-room', 'msg-1')
     })
 
-    it('服务抛错时不抛出', async () => {
+    it('服务抛错时返回 false 不抛出', async () => {
       markBurnReadMock.mockRejectedValue(new Error('server error'))
       const { markMessageRead } = useBurnAfterRead()
-      await expect(markMessageRead('msg-1', 'room-1')).resolves.toBeUndefined()
+      const result = await markMessageRead('msg-1', 'room-1')
+      expect(result).toBe(false)
     })
   })
 
