@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="rootEl"
     class="burn-message"
     :class="{ 'burn-message--burning': internalIsBurning, 'burn-message--burned': internalIsBurned }">
     <div class="burn-message__content">
@@ -24,9 +25,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import BurnIndicator from './BurnIndicator.vue'
 
 const { t } = useI18n()
@@ -43,12 +45,44 @@ const props = defineProps<{
 }>()
 
 const burnAfterReadApi = useBurnAfterRead()
+const chatStore = useChatStore()
 
 const internalIsBurning = ref(props.isBurning || false)
 const internalIsBurned = ref(props.isBurned || false)
 const internalRemainingSeconds = ref(props.remainingSeconds || props.burnDuration || 60)
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+const hasMarkedRead = ref(false)
+let intersectionObserver: IntersectionObserver | null = null
+
+const rootEl = ref<HTMLElement | null>(null)
+
+// Fix 5: 消息进入视口时触发 markBurnRead，而非倒计时结束后。
+// 正确流程：用户看到消息 → markBurnRead 通知后端 → 成功后设 isBurning=true → 启动倒计时。
+onMounted(() => {
+  if (!rootEl.value || typeof IntersectionObserver === 'undefined') return
+  intersectionObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && !hasMarkedRead.value && !internalIsBurned.value) {
+          hasMarkedRead.value = true
+          handleMessageVisible()
+        }
+      }
+    },
+    { threshold: 0.5 }
+  )
+  intersectionObserver.observe(rootEl.value)
+})
+
+async function handleMessageVisible() {
+  if (!props.roomId || !props.eventId) return
+  const success = await burnAfterReadApi.markMessageRead(props.eventId, props.roomId)
+  if (success) {
+    // Fix 4: 标记成功后设 isBurning=true，触发 watch → startCountdown
+    chatStore.updateMsg({ msgId: props.msgId, isBurning: true })
+  }
+}
 
 watch(
   () => props.isBurning,
@@ -101,14 +135,14 @@ async function completeBurn() {
   internalIsBurning.value = false
   internalIsBurned.value = true
   internalRemainingSeconds.value = 0
-
-  if (props.roomId && props.eventId) {
-    try {
-      await burnAfterReadApi.markMessageRead(props.roomId, props.eventId)
-    } catch {
-      // silent
-    }
-  }
+  // Fix 5: 移除 markMessageRead 调用（已在消息可见时调用）
+  // 持久化 burned 状态到 store，防止组件重建后重复触发
+  chatStore.updateMsg({
+    msgId: props.msgId,
+    isBurning: false,
+    isBurned: true,
+    burnRemainingSeconds: 0
+  })
 }
 
 function clearCountdown() {
@@ -120,11 +154,10 @@ function clearCountdown() {
 
 onUnmounted(() => {
   clearCountdown()
+  intersectionObserver?.disconnect()
 })
 
-const showIndicator = computed(() => {
-  return props.burnAfterRead && (internalIsBurning.value || internalIsBurned.value || props.burnAfterRead)
-})
+const showIndicator = computed(() => props.burnAfterRead)
 
 const indicatorStatus = computed(() => {
   if (internalIsBurned.value) return 'burned'
