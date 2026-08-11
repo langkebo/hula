@@ -216,14 +216,6 @@ describe('paths/room · 其它路径', () => {
   it('ENCRYPTED_EVENTS 编码 roomId（FT-089: P2-9 加密事件列表）', () => {
     expect(ROOM.ENCRYPTED_EVENTS('!r:s')).toBe('/rooms/!r%3As/encrypted_events')
   })
-
-  it('INVITE_BLOCKLIST 编码 roomId（FT-118: RoomOperations 邀请黑名单）', () => {
-    expect(ROOM.INVITE_BLOCKLIST('!r:s')).toBe('/rooms/!r%3As/invite_blocklist')
-  })
-
-  it('INVITE_ALLOWLIST 编码 roomId（FT-118: RoomOperations 邀请白名单）', () => {
-    expect(ROOM.INVITE_ALLOWLIST('!r:s')).toBe('/rooms/!r%3As/invite_allowlist')
-  })
 })
 
 describe('paths/voice · MSC4143 RTC transports（FT-096）', () => {

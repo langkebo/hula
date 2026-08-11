@@ -73,9 +73,5 @@ export const ROOM = {
   /** P2-6 消息队列状态 (FT-089) */
   MESSAGE_QUEUE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/message_queue`,
   /** P2-9 加密事件列表扩展 (FT-089) */
-  ENCRYPTED_EVENTS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/encrypted_events`,
-  /** 邀请黑名单 (FT-118: RoomOperations.getInviteBlocklist/setInviteBlocklist) */
-  INVITE_BLOCKLIST: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/invite_blocklist`,
-  /** 邀请白名单 (FT-118: RoomOperations.getInviteAllowlist/setInviteAllowlist) */
-  INVITE_ALLOWLIST: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/invite_allowlist`
+  ENCRYPTED_EVENTS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/encrypted_events`
 } as const
