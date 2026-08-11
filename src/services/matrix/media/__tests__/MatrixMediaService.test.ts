@@ -464,26 +464,18 @@ describe('MatrixMediaService', () => {
       await expect(matrixMediaService.uploadContentWithId('server', 'id', file)).rejects.toThrow('客户端未初始化')
     })
 
-    it('should upload content with id successfully', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ content_uri: 'mxc://matrix.org/named123' })
-      })
-      vi.stubGlobal('fetch', mockFetch)
-
+    it('should upload content with id via MediaManager.uploadContentWithId', async () => {
+      const uploadContentWithId = vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/named123' })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
-        getAccessToken: vi.fn(() => 'token123')
+        getMediaManager: () => ({ uploadContentWithId })
       } as unknown as MatrixClient)
-      vi.mocked(matrixClientService.getTelemetry).mockReturnValue(null)
 
       const file = new File(['content'], 'test.txt', { type: 'text/plain' })
       const result = await matrixMediaService.uploadContentWithId('matrix.org', 'named-id', file)
 
+      expect(uploadContentWithId).toHaveBeenCalledWith('matrix.org', 'named-id', file, 'text/plain')
       expect(result.contentUri).toBe('mxc://matrix.org/named123')
       expect(result.mimetype).toBe('text/plain')
-
-      vi.unstubAllGlobals()
     })
   })
 })
