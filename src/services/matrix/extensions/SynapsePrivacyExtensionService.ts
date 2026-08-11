@@ -1,70 +1,18 @@
 import { createLogger } from '@/utils/Logger'
+import { matrixBurnAfterReadService } from '../messaging/MatrixBurnAfterReadService'
 import { PREFIX_V3 } from '../paths'
 import { SynapseExtensionHttpBase } from './SynapseExtensionHttpBase'
 
 const logger = createLogger('SynapsePrivacyExtensionService')
 
-export interface BurnStats {
-  total_burned: number
-  total_pending: number
-  rooms_with_burn_enabled: number
-}
-
 /**
- * synapse-rust 隐私房间扩展：阅后即焚、防截屏、私密聊天创建。
+ * synapse-rust 隐私房间扩展：防截屏、私密聊天创建。
  * 从 SynapseRustExtensionsService 拆分而来。
+ *
+ * 注：阅后即焚（burn）相关方法已迁移到 `MatrixBurnAfterReadService`
+ * （内部集成 `client.getBurnAfterReadManager()`），本服务不再保留 burn 死代码。
  */
 class SynapsePrivacyExtensionService extends SynapseExtensionHttpBase {
-  async getBurnStats(): Promise<BurnStats> {
-    try {
-      const response = await this.request<BurnStats | { data?: BurnStats }>(`${PREFIX_V3}/user/burn/stats`, {
-        method: 'GET'
-      })
-      const data = this.unwrapMaybeWrappedData(response)
-      logger.info(`[SynapseRust] 获取阅后即焚统计成功: ${JSON.stringify(data)}`)
-      return data || { total_burned: 0, total_pending: 0, rooms_with_burn_enabled: 0 }
-    } catch (err) {
-      logger.error(`[SynapseRust] 获取阅后即焚统计失败: ${err}`)
-      return { total_burned: 0, total_pending: 0, rooms_with_burn_enabled: 0 }
-    }
-  }
-
-  /**
-   * 为房间启用阅后即焚功能
-   * @param roomId 房间 ID
-   * @param enabled 是否启用
-   */
-  async enableBurnAfterRead(roomId: string, enabled: boolean = true, burnAfterMs?: number): Promise<void> {
-    try {
-      await this.request(`${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/burn`, {
-        method: 'PUT',
-        body: JSON.stringify({ enabled, ...(burnAfterMs !== undefined && { burn_after_ms: burnAfterMs }) })
-      })
-      logger.info(`[SynapseRust] ${enabled ? '启用' : '禁用'}阅后即焚成功: roomId=${roomId}`)
-    } catch (err) {
-      logger.error(`[SynapseRust] ${enabled ? '启用' : '禁用'}阅后即焚失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 检查房间是否启用了阅后即焚
-   * @param roomId 房间 ID
-   */
-  async isBurnAfterReadEnabled(roomId: string): Promise<boolean> {
-    try {
-      const response = await this.request<{ enabled: boolean } | { data?: { enabled: boolean } }>(
-        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/burn`,
-        { method: 'GET' }
-      )
-      const data = this.unwrapMaybeWrappedData(response)
-      return data?.enabled || false
-    } catch (err) {
-      logger.error(`[SynapseRust] 检查阅后即焚状态失败: ${err}`)
-      return false
-    }
-  }
-
   /**
    * 为房间启用防截屏功能
    * @param roomId 房间 ID
@@ -133,8 +81,8 @@ class SynapsePrivacyExtensionService extends SynapseExtensionHttpBase {
         throw new Error(this.t('matrix_error.room.create_failed_no_id'))
       }
 
-      // 启用阅后即焚和防截屏
-      await this.enableBurnAfterRead(roomId, true)
+      // 启用阅后即焚（委托给已集成 BurnAfterReadManager 的服务）和防截屏
+      await matrixBurnAfterReadService.enableBurn(roomId)
       await this.enableAntiScreenshot(roomId, true)
 
       logger.info(`[SynapseRust] 创建私密聊天成功: roomId=${roomId}`)
