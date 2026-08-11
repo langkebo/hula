@@ -1,5 +1,5 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
+import type { MatrixClient } from '@/services/matrix/sdk'
 import type { SearchEventContext } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
 import type { SearchMessageHit } from '@/workers/matrixWorkerTypes'

@@ -1,5 +1,5 @@
-import type { MatrixClient } from 'matrix-js-sdk'
-import { ClientPrefix } from 'matrix-js-sdk/http-api'
+import type { MatrixClient } from '@/services/matrix/sdk'
+import { ClientPrefix } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'

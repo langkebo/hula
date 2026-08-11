@@ -1,7 +1,7 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
+import type { MatrixClient } from '@/services/matrix/sdk'
 import matrixClientService from '../../MatrixClientService'
 import { MATRIX_PATHS } from '../../paths'
 import { MatrixRoomAccountDataService } from '../AccountDataService'
