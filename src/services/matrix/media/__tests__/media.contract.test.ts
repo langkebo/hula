@@ -6,13 +6,13 @@
  * (/_matrix/client/v3/_matrix/media/v3/... → 404) that vi.mock tests miss
  * because the stub authedRequest bypasses SDK URL construction.
  *
- * Covers the 6 authedRequestWithPath call sites in MatrixMediaService:
+ * Covers the 6 quota / config / delete call sites in MatrixMediaService:
  * getMediaConfig, deleteMedia, getQuotaAlerts, checkQuota, getQuotaStats,
  * getAuthenticatedMediaConfig.
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, initializeManagerExtensions, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixMediaService } from '../MatrixMediaService'
 
@@ -67,6 +67,13 @@ setupMswServer(
 )
 
 describe('Media service URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    // In Vitest environment, SDK skips async manager init. Manually initialize
+    // so client.getMediaManager() (used by getQuotaAlerts/checkQuota/getQuotaStats)
+    // is available on the real MatrixClient instance.
+    await initializeManagerExtensions()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     realClient = createClient({

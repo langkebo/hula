@@ -580,15 +580,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async getQuotaAlerts(): Promise<Array<Record<string, unknown>>> {
-    const client = this.getClient()
     try {
-      const result = await authedRequestWithPath<{ alerts?: Array<Record<string, unknown>> }>(
-        client,
-        'GET',
-        MATRIX_PATHS.MEDIA.QUOTA_ALERTS
-      )
+      const response = await this.getMedia().getMediaQuotaAlerts()
       logger.info('[MatrixMedia] 获取配额告警成功')
-      return result.alerts ?? []
+      return (response.alerts ?? []) as unknown as Array<Record<string, unknown>>
     } catch (err) {
       logger.error(`[MatrixMedia] 获取配额告警失败: ${err}`)
       return []
@@ -596,13 +591,12 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async checkQuota(): Promise<{ limit: number; used: number; remaining: number } | null> {
-    const client = this.getClient()
     try {
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', MATRIX_PATHS.MEDIA.QUOTA_CHECK)
+      const result = await this.getMedia().checkMediaQuota()
       return {
-        limit: (result.limit as number) ?? 0,
-        used: (result.used as number) ?? 0,
-        remaining: (result.remaining as number) ?? 0
+        limit: result.limit ?? 0,
+        used: result.used ?? 0,
+        remaining: result.remaining ?? 0
       }
     } catch (err) {
       logger.error(`[MatrixMedia] 配额检查失败: ${err}`)
@@ -615,13 +609,12 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     mediaCount: number
     limitBytes: number
   } | null> {
-    const client = this.getClient()
     try {
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', MATRIX_PATHS.MEDIA.QUOTA_STATS)
+      const result = await this.getMedia().getMediaQuotaStats()
       return {
-        storageBytes: (result.storage_bytes as number) ?? 0,
-        mediaCount: (result.media_count as number) ?? 0,
-        limitBytes: (result.limit_bytes as number) ?? 0
+        storageBytes: result.storage_bytes ?? 0,
+        mediaCount: result.media_count ?? 0,
+        limitBytes: result.limit_bytes ?? 0
       }
     } catch (err) {
       logger.error(`[MatrixMedia] 获取配额统计失败: ${err}`)
