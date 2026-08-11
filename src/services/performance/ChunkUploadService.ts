@@ -1,6 +1,5 @@
-import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
-import { getMatrixAccessToken, getMatrixHomeserverUrl } from '@/services/matrix/matrixClientAccessor'
-import { HttpClient } from '@/utils/HttpClient'
+import type { MatrixClient } from 'matrix-js-sdk'
+import { getMatrixClient } from '@/services/matrix/matrixClientAccessor'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChunkUploadService')
@@ -40,25 +39,38 @@ interface ChunkInfo {
   status: 'pending' | 'uploading' | 'completed' | 'failed'
 }
 
-/** Base URL for Matrix media v1 endpoints */
-function getBaseUrl(): string {
-  return getMatrixHomeserverUrl() || resolveMatrixRuntimeEndpointConfig().homeserverUrl
+interface ChunkUploadContext {
+  id: string
+  file: File
+  chunkSize: number
+  maxRetries: number
+  concurrency: number
+  totalChunks: number
+  chunks: ChunkInfo[]
+  uploadedSize: number
+  startTime: number
+  aborted: boolean
+  paused?: boolean
+  onProgress?: (progress: UploadProgress) => void
+  onChunkComplete?: (chunkIndex: number, total: number) => void
+  onComplete?: (result: UploadResult) => void
+  onError?: (error: Error) => void
 }
 
-/** Get the current access token for auth headers */
-function getAuthHeaders(): Record<string, string> {
-  const token = getMatrixAccessToken()
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-function chunkEndpoint(path: string, params?: URLSearchParams): string {
-  const url = new URL(`/_matrix/media/v1/upload/chunk${path}`, getBaseUrl())
-  if (params) url.search = params.toString()
-  return url.toString()
-}
+// Type alias for the MediaManager instance returned by client.getMediaManager()
+type MediaManagerInstance = ReturnType<NonNullable<MatrixClient['getMediaManager']>>
 
 class ChunkUploadService {
   private uploads: Map<string, ChunkUploadContext> = new Map()
+
+  /** 获取 MediaManager——失败时抛错 */
+  private getMedia(client: MatrixClient): MediaManagerInstance {
+    const fn = (client as unknown as { getMediaManager?: () => unknown }).getMediaManager
+    if (typeof fn !== 'function') {
+      throw new Error('MatrixClient.getMediaManager is not available; SDK 未初始化')
+    }
+    return fn.call(client) as MediaManagerInstance
+  }
 
   async upload(options: ChunkUploadOptions): Promise<UploadResult> {
     const {
@@ -72,10 +84,16 @@ class ChunkUploadService {
       onError
     } = options
 
+    const client = getMatrixClient()
+    if (!client) {
+      throw new Error('Matrix client not initialized')
+    }
+    const media = this.getMedia(client)
+
     const totalChunks = Math.ceil(file.size / chunkSize)
 
-    // Step 1: Start upload session on server
-    const startResp = await this.startUpload(file.name, file.type, file.size, totalChunks)
+    // Step 1: Start upload session via MediaManager.startChunkUpload
+    const startResp = await media.startChunkUpload(file.name, file.type || 'application/octet-stream', file.size)
     const serverUploadId = startResp.upload_id
 
     const context: ChunkUploadContext = {
@@ -108,14 +126,13 @@ class ChunkUploadService {
     this.uploads.set(serverUploadId, context)
 
     try {
-      const result = await this.processUpload(context)
+      const result = await this.processUpload(context, media)
       logger.info(`[ChunkUpload] 上传完成: ${file.name}`)
       return result
     } catch (err) {
       logger.error(`[ChunkUpload] 上传失败: ${err}`)
-      // Try to cancel the upload on server
       try {
-        await this.cancelUpload(serverUploadId)
+        await media.cancelChunkUpload(serverUploadId)
       } catch {
         // Ignore cancel errors during cleanup
       }
@@ -125,26 +142,7 @@ class ChunkUploadService {
     }
   }
 
-  /** Call POST /_matrix/media/v1/upload/chunk/start to create a server-side upload session */
-  private async startUpload(
-    filename: string,
-    contentType: string,
-    totalSize: number,
-    totalChunks: number
-  ): Promise<{ upload_id: string; chunk_size_limit: number; max_file_size: number }> {
-    return await HttpClient.post<{ upload_id: string; chunk_size_limit: number; max_file_size: number }>(
-      chunkEndpoint('/start'),
-      {
-        filename,
-        content_type: contentType || 'application/octet-stream',
-        total_size: totalSize,
-        total_chunks: totalChunks
-      },
-      { headers: getAuthHeaders() }
-    )
-  }
-
-  private async processUpload(context: ChunkUploadContext): Promise<UploadResult> {
+  private async processUpload(context: ChunkUploadContext, media: MediaManagerInstance): Promise<UploadResult> {
     const uploadPromises: Promise<void>[] = []
 
     const processNext = async () => {
@@ -159,8 +157,10 @@ class ChunkUploadService {
         chunk.status = 'uploading'
 
         try {
-          await this.uploadChunk(context, chunk)
+          await this.uploadChunk(context, chunk, media)
           chunk.status = 'completed'
+          context.uploadedSize += chunk.end - chunk.start
+          this.updateProgress(context)
           context.onChunkComplete?.(chunk.index, context.totalChunks)
         } catch (err) {
           chunk.retryCount++
@@ -185,69 +185,23 @@ class ChunkUploadService {
       throw new Error('Upload aborted')
     }
 
-    return this.completeUpload(context)
+    return this.completeUpload(context, media)
   }
 
-  /** Upload a single chunk via POST /_matrix/media/v1/upload/chunk?upload_id=...&chunk_index=... */
-  private async uploadChunk(context: ChunkUploadContext, chunk: ChunkInfo): Promise<void> {
+  /** Upload a single chunk via MediaManager.uploadChunk */
+  private async uploadChunk(context: ChunkUploadContext, chunk: ChunkInfo, media: MediaManagerInstance): Promise<void> {
     const slice = context.file.slice(chunk.start, chunk.end)
     const buffer = await slice.arrayBuffer()
-
-    const params = new URLSearchParams({
-      upload_id: context.id,
-      chunk_index: chunk.index.toString(),
-      total_chunks: context.totalChunks.toString(),
-      total_size: context.file.size.toString()
-    })
-    if (chunk.index === 0) {
-      params.set('filename', context.file.name)
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const chunkProgress = e.loaded / e.total
-          this.updateProgress(context, chunk.index, chunkProgress)
-        }
-      }
-
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          context.uploadedSize += chunk.end - chunk.start
-          resolve()
-        } else {
-          reject(new Error(`Chunk upload failed: ${xhr.status}`))
-        }
-      }
-
-      xhr.onerror = () => reject(new Error('Network error'))
-
-      xhr.open('POST', chunkEndpoint('', params))
-
-      // Set auth header
-      const token = getMatrixAccessToken()
-      if (token) {
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`)
-      }
-      // Set content type to the file's mime type or octet-stream
-      xhr.setRequestHeader('Content-Type', context.file.type || 'application/octet-stream')
-
-      xhr.send(buffer)
-    })
+    await media.uploadChunk(context.id, chunk.index, buffer)
   }
 
-  private updateProgress(context: ChunkUploadContext, chunkIndex: number, chunkProgress: number): void {
+  private updateProgress(context: ChunkUploadContext): void {
     const elapsed = Date.now() - context.startTime
     const speed = context.uploadedSize / (elapsed / 1000)
     const remaining = speed > 0 ? (context.file.size - context.uploadedSize) / speed : 0
 
-    const chunkProgressArray = context.chunks.map((_c, i) => {
-      if (i < chunkIndex) return 1
-      if (i === chunkIndex) return chunkProgress
-      return 0
-    })
+    // Stepwise chunkProgress: completed=1, else=0 (fetch has no upload progress events)
+    const chunkProgressArray = context.chunks.map((c) => (c.status === 'completed' ? 1 : 0))
 
     context.onProgress?.({
       loaded: context.uploadedSize,
@@ -259,32 +213,18 @@ class ChunkUploadService {
     })
   }
 
-  /** Call POST /_matrix/media/v1/upload/chunk/complete to finalize the upload */
-  private async completeUpload(context: ChunkUploadContext): Promise<UploadResult> {
-    const result = await HttpClient.post<{ content_uri: string; size?: number }>(
-      chunkEndpoint('/complete'),
-      { upload_id: context.id },
-      { headers: getAuthHeaders() }
-    )
-
+  /** Finalize upload via MediaManager.completeChunkUpload */
+  private async completeUpload(context: ChunkUploadContext, media: MediaManagerInstance): Promise<UploadResult> {
+    const result = await media.completeChunkUpload(context.id)
     return {
       mxcUrl: result.content_uri,
       filename: context.file.name,
-      size: result.size ?? context.file.size,
+      size: context.file.size,
       mimeType: context.file.type
     }
   }
 
-  /** Call POST /_matrix/media/v1/upload/chunk/cancel to cancel an in-progress upload */
-  private async cancelUpload(uploadId: string): Promise<void> {
-    try {
-      await HttpClient.post(chunkEndpoint('/cancel'), { upload_id: uploadId }, { headers: getAuthHeaders() })
-    } catch {
-      logger.error(`[ChunkUpload] Failed to cancel upload ${uploadId}`)
-    }
-  }
-
-  /** Get upload progress from server */
+  /** Get upload progress from server via MediaManager.getChunkUploadProgress */
   async getProgress(uploadId: string): Promise<{
     upload_id: string
     uploaded_chunks: number
@@ -293,10 +233,19 @@ class ChunkUploadService {
     total_size: number | null
     status: string
   } | null> {
+    const client = getMatrixClient()
+    if (!client) return null
     try {
-      return await HttpClient.get(chunkEndpoint('/progress', new URLSearchParams({ upload_id: uploadId })), {
-        headers: getAuthHeaders()
-      })
+      const media = this.getMedia(client)
+      const resp = await media.getChunkUploadProgress(uploadId)
+      return {
+        upload_id: resp.upload_id,
+        uploaded_chunks: resp.received_chunks,
+        total_chunks: resp.total_chunks,
+        uploaded_size: resp.bytes_received,
+        total_size: resp.total_bytes,
+        status: 'in_progress'
+      }
     } catch {
       return null
     }
@@ -306,8 +255,15 @@ class ChunkUploadService {
     const context = this.uploads.get(uploadId)
     if (context) {
       context.aborted = true
-      // Fire-and-forget cancel on server
-      this.cancelUpload(uploadId).catch(() => {})
+      const client = getMatrixClient()
+      if (client) {
+        try {
+          const media = this.getMedia(client)
+          media.cancelChunkUpload(uploadId).catch(() => {})
+        } catch {
+          // client 不可用时跳过——服务端最终会过期 session
+        }
+      }
       logger.info(`[ChunkUpload] 上传已取消: ${uploadId}`)
     }
   }
@@ -325,24 +281,6 @@ class ChunkUploadService {
       context.paused = false
     }
   }
-}
-
-interface ChunkUploadContext {
-  id: string
-  file: File
-  chunkSize: number
-  maxRetries: number
-  concurrency: number
-  totalChunks: number
-  chunks: ChunkInfo[]
-  uploadedSize: number
-  startTime: number
-  aborted: boolean
-  paused?: boolean
-  onProgress?: (progress: UploadProgress) => void
-  onChunkComplete?: (chunkIndex: number, total: number) => void
-  onComplete?: (result: UploadResult) => void
-  onError?: (error: Error) => void
 }
 
 export const chunkUploadService = new ChunkUploadService()
