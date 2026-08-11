@@ -22,14 +22,35 @@ vi.mock('../MatrixWorkerHost', () => ({
   }
 }))
 
+vi.mock('@/services/i18n', () => ({
+  useI18nGlobal: () => ({ t: (key: string) => key })
+}))
+
+vi.mock('@tauri-apps/plugin-log', () => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn()
+}))
+
 describe('MatrixSearchService', () => {
   let mockClient: Partial<MatrixClient>
+  let searchMgr: {
+    searchMessageText: ReturnType<typeof vi.fn>
+    searchUserDirectory: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
+    searchMgr = {
+      searchMessageText: vi.fn(),
+      searchUserDirectory: vi.fn()
+    }
     mockClient = {
-      search: vi.fn(),
+      getSearchManager: vi.fn(() => searchMgr as unknown as ReturnType<NonNullable<MatrixClient['getSearchManager']>>),
       getUserId: vi.fn(() => '@user:example.com'),
-      getRoom: vi.fn()
+      getRoom: vi.fn(),
+      publicRooms: vi.fn(),
+      getRoomDirectoryVisibility: vi.fn(),
+      setRoomDirectoryVisibility: vi.fn()
     }
 
     vi.mocked(matrixClientService.getClient).mockReset()
@@ -39,9 +60,9 @@ describe('MatrixSearchService', () => {
     vi.mocked(matrixWorkerHost, true).isStarted = false
   })
 
-  describe('searchMessages', () => {
-    it('should search messages with query', async () => {
-      mockClient.search = vi.fn().mockResolvedValue({
+  describe('searchMessages via SearchManager', () => {
+    it('should search messages via getSearchManager().searchMessageText', async () => {
+      searchMgr.searchMessageText.mockResolvedValue({
         search_categories: {
           room_events: {
             results: [
@@ -62,34 +83,25 @@ describe('MatrixSearchService', () => {
 
       const results = await matrixSearchService.searchMessages('hello')
 
-      expect(mockClient.search).toHaveBeenCalledWith(
+      expect(searchMgr.searchMessageText).toHaveBeenCalledWith(
         expect.objectContaining({
-          search_categories: expect.objectContaining({
-            room_events: expect.objectContaining({
-              search_term: 'hello'
-            })
-          })
+          term: 'hello'
         })
       )
       expect(results.length).toBeGreaterThan(0)
     })
 
-    it('should search messages within a specific room', async () => {
-      mockClient.search = vi.fn().mockResolvedValue({
+    it('should pass room_id when searching within a specific room', async () => {
+      searchMgr.searchMessageText.mockResolvedValue({
         search_categories: { room_events: { results: [], count: 0 } }
       })
 
       await matrixSearchService.searchMessages('test', { roomId: '!room:example.com' })
 
-      expect(mockClient.search).toHaveBeenCalledWith(
+      expect(searchMgr.searchMessageText).toHaveBeenCalledWith(
         expect.objectContaining({
-          search_categories: {
-            room_events: expect.objectContaining({
-              filter: expect.objectContaining({
-                rooms: ['!room:example.com']
-              })
-            })
-          }
+          term: 'test',
+          room_id: '!room:example.com'
         })
       )
     })
@@ -101,7 +113,7 @@ describe('MatrixSearchService', () => {
     })
 
     it('should return empty array when no results', async () => {
-      mockClient.search = vi.fn().mockResolvedValue({
+      searchMgr.searchMessageText.mockResolvedValue({
         search_categories: { room_events: { results: [], count: 0 } }
       })
 
@@ -132,14 +144,14 @@ describe('MatrixSearchService', () => {
           scope: 'messages'
         })
       )
-      expect(mockClient.search).not.toHaveBeenCalled()
+      expect(searchMgr.searchMessageText).not.toHaveBeenCalled()
       expect(results[0]?.eventId).toBe('$local_1')
       expect(results[0]?.content.body).toBe('hello from worker')
     })
 
-    it('should fall back to remote search when hybrid search misses locally', async () => {
+    it('should fall back to SearchManager when hybrid search misses locally', async () => {
       vi.mocked(matrixWorkerHost, true).isStarted = true
-      mockClient.search = vi.fn().mockResolvedValue({
+      searchMgr.searchMessageText.mockResolvedValue({
         search_categories: {
           room_events: {
             results: [
@@ -161,14 +173,14 @@ describe('MatrixSearchService', () => {
       const results = await matrixSearchService.searchMessages('hello', { source: 'hybrid' })
 
       expect(matrixWorkerHost.querySearchIndex).toHaveBeenCalled()
-      expect(mockClient.search).toHaveBeenCalled()
+      expect(searchMgr.searchMessageText).toHaveBeenCalled()
       expect(results[0]?.eventId).toBe('$remote_1')
     })
   })
 
   describe('searchRoomMessages', () => {
     it('returns results, count and highlights for a non-empty query', async () => {
-      mockClient.search = vi.fn().mockResolvedValue({
+      searchMgr.searchMessageText.mockResolvedValue({
         search_categories: {
           room_events: {
             results: [
@@ -190,14 +202,10 @@ describe('MatrixSearchService', () => {
 
       const res = await matrixSearchService.searchRoomMessages('!room:example.com', 'hello')
 
-      expect(mockClient.search).toHaveBeenCalledWith(
+      expect(searchMgr.searchMessageText).toHaveBeenCalledWith(
         expect.objectContaining({
-          search_categories: {
-            room_events: expect.objectContaining({
-              search_term: 'hello',
-              filter: expect.objectContaining({ rooms: ['!room:example.com'] })
-            })
-          }
+          term: 'hello',
+          room_id: '!room:example.com'
         })
       )
       expect(res.results.length).toBe(1)
@@ -208,10 +216,10 @@ describe('MatrixSearchService', () => {
       expect(res.highlights).toEqual(['hello'])
     })
 
-    it('returns empty results for blank query without calling client.search', async () => {
+    it('returns empty results for blank query without calling SearchManager', async () => {
       const res = await matrixSearchService.searchRoomMessages('!room:example.com', '   ')
 
-      expect(mockClient.search).not.toHaveBeenCalled()
+      expect(searchMgr.searchMessageText).not.toHaveBeenCalled()
       expect(res.results).toEqual([])
       expect(res.count).toBe(0)
       expect(res.highlights).toEqual([])
@@ -223,14 +231,14 @@ describe('MatrixSearchService', () => {
       await expect(matrixSearchService.searchRoomMessages('!room:example.com', 'hello')).rejects.toThrow()
     })
 
-    it('propagates errors from client.search', async () => {
-      mockClient.search = vi.fn().mockRejectedValue(new Error('network down'))
+    it('propagates errors from SearchManager', async () => {
+      searchMgr.searchMessageText.mockRejectedValue(new Error('network down'))
 
       await expect(matrixSearchService.searchRoomMessages('!room:example.com', 'hello')).rejects.toThrow('network down')
     })
 
     it('defaults count/highlights when omitted by server', async () => {
-      mockClient.search = vi.fn().mockResolvedValue({
+      searchMgr.searchMessageText.mockResolvedValue({
         search_categories: {
           room_events: {
             results: [
@@ -256,11 +264,58 @@ describe('MatrixSearchService', () => {
     })
   })
 
-  describe('searchUsers', () => {
+  describe('searchUsers via SearchManager', () => {
     it('should throw when client is not initialized', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
       await expect(matrixSearchService.searchUsers('test')).rejects.toThrow()
+    })
+
+    it('calls getSearchManager().searchUserDirectory and maps results', async () => {
+      searchMgr.searchUserDirectory.mockResolvedValue({
+        results: [{ user_id: '@alice:hs', display_name: 'Alice', avatar_url: 'mxc://hs/a' }],
+        limited: false
+      })
+
+      const results = await matrixSearchService.searchUsers('alice', 10)
+
+      expect(searchMgr.searchUserDirectory).toHaveBeenCalledWith({ term: 'alice', limit: 10 })
+      expect(results).toEqual([
+        {
+          userId: '@alice:hs',
+          displayName: 'Alice',
+          avatarUrl: 'mxc://hs/a'
+        }
+      ])
+    })
+
+    it('returns empty array on M_UNAUTHORIZED/M_FORBIDDEN instead of throwing', async () => {
+      searchMgr.searchUserDirectory.mockRejectedValue(new Error('M_FORBIDDEN'))
+
+      const results = await matrixSearchService.searchUsers('test')
+      expect(results).toEqual([])
+    })
+
+    it('rethrows non-auth errors', async () => {
+      searchMgr.searchUserDirectory.mockRejectedValue(new Error('network down'))
+
+      await expect(matrixSearchService.searchUsers('test')).rejects.toThrow('network down')
+    })
+  })
+
+  describe('publicRooms (no SearchManager equivalent)', () => {
+    it('still uses client.publicRooms', async () => {
+      mockClient.publicRooms = vi.fn().mockResolvedValue({
+        chunk: [{ room_id: '!r:hs', name: 'Room', avatar_url: undefined, joined_members: 5 }],
+        next_batch: 'next',
+        prev_batch: 'prev',
+        total_room_count_estimate: 1
+      })
+
+      const res = await matrixSearchService.getPublicRooms(undefined, 20)
+
+      expect(mockClient.publicRooms).toHaveBeenCalled()
+      expect(res.rooms).toHaveLength(1)
     })
   })
 })
