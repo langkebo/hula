@@ -7,8 +7,9 @@
  * 这些测试与 MatrixVoiceService.test.ts 互补：前者验证成功路径，
  * 此文件专门覆盖错误传播路径。
  */
-import type { MatrixClient } from 'matrix-js-sdk'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MatrixClient } from '@/services/matrix/sdk'
 import matrixClientService from '../../MatrixClientService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({

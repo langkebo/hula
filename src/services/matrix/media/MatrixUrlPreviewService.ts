@@ -6,7 +6,6 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('UrlPreview')
@@ -77,7 +76,7 @@ class MatrixUrlPreviewService {
 
   /**
    * 获取 URL 预览
-   * 使用 Matrix 媒体 API preview_url 端点（MSC2788）。
+   * 使用 SDK MediaManager.previewUrl（内部调用 client.getUrlPreview，走 /_matrix/media/r0/preview_url）。
    */
   async getPreview(params: UrlPreviewParams): Promise<UrlPreview | null> {
     const { url, timestamp } = params
@@ -88,26 +87,14 @@ class MatrixUrlPreviewService {
     }
 
     try {
-      // MATRIX_PATHS.MEDIA.PREVIEW_URL 含完整媒体前缀，直接传入 authedRequest 会被
-      // SDK 再次拼接默认 client 前缀导致 404。authedRequestWithPath 内部调用
-      // stripMatrixPrefix 剥离媒体前缀，并通过 opts.prefix 显式传递。
-      const queryParams: Record<string, string> = { url }
-      if (timestamp) {
-        queryParams.ts = String(timestamp)
-      }
-
-      const response = await authedRequestWithPath<Record<string, unknown>>(
-        client,
-        'GET',
-        MATRIX_PATHS.MEDIA.PREVIEW_URL,
-        queryParams
-      )
+      // SDK UrlPreview 类型不完整（缺 og:title 等），实际 API 返回 og:* 字段，用 Record 访问
+      const response = (await client.getMediaManager().previewUrl(url, timestamp)) as unknown as Record<string, unknown>
 
       if (!response || !Object.keys(response).length) {
         return null
       }
 
-      // 处理 Matrix 0.6.1 格式的响应
+      // SDK 返回原始响应（含 og:* 字段），前端做字段映射为统一 UrlPreview 结构
       const result: UrlPreview = {
         url,
         title: (response['og:title'] ?? response.title) as string | undefined,

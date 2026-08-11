@@ -6,8 +6,9 @@
  * 2. setupKeyBackupWithOptions 在客户端就绪后能正常生成密钥并 bootstrap
  * 3. 超时情况能正确抛出错误
  */
-import type { MatrixClient } from 'matrix-js-sdk'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MatrixClient } from '@/services/matrix/sdk'
 import { matrixClientService } from '../../MatrixClientService'
 import { MatrixConnectionManager } from '../../MatrixConnectionManager'
 import { cryptoSDKAdapter } from '../CryptoSDKAdapter'

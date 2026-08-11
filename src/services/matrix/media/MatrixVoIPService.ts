@@ -1,12 +1,8 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 
 const logger = createLogger('MatrixVoIP')
-
-let turnAvailableCache: boolean | null = null
-let turnCheckTimestamp = 0
-const TURN_CHECK_TTL = 5 * 60 * 1000
 
 interface VoIPCall {
   callId: string
@@ -538,14 +534,13 @@ class MatrixVoIPService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const result = await client.http.authedRequest('GET', '/voip/turnServer')
-      const r = result as Record<string, unknown>
+      const r = await client.getTurnServerManager().getTurnServerConfig()
       logger.info('[VoIP] 获取 TURN 服务器配置成功')
       return {
-        username: (r.username as string) ?? '',
-        password: (r.password as string) ?? '',
-        uris: (r.uris as string[]) ?? [],
-        ttl: (r.ttl as number) ?? 3600
+        username: r.username ?? '',
+        password: r.password ?? '',
+        uris: r.uris ?? [],
+        ttl: r.ttl ?? 3600
       }
     } catch (err) {
       logger.error(`[VoIP] 获取 TURN 服务器配置失败: ${err}`)
@@ -558,48 +553,39 @@ class MatrixVoIPService extends BaseMatrixService {
     reason?: string
     turnServer?: { username: string; password: string; uris: string[]; ttl: number }
   }> {
-    const now = Date.now()
-    if (turnAvailableCache !== null && now - turnCheckTimestamp < TURN_CHECK_TTL) {
-      return { available: turnAvailableCache }
-    }
-
+    // Migration 2026-08-11: removed turnAvailableCache/TURN_CHECK_TTL.
+    // SDK TurnServerManager provides 30s auto-refresh via checkTurnServers()
+    // and turn_servers_updated event. checkTurnAvailability is only called
+    // from checkVoipAvailability (user-initiated call flow), so per-call
+    // HTTP fetch is acceptable.
     let client: MatrixClient
     try {
       client = this.getClient()
     } catch (err) {
       logger.warn('checkTurnAvailability getClient failed:', err)
-      turnAvailableCache = false
-      turnCheckTimestamp = now
       return { available: false, reason: '客户端未初始化' }
     }
 
     try {
-      const result = await client.http.authedRequest('GET', '/voip/turnServer')
-      const r = result as Record<string, unknown>
-      const uris = (r.uris as string[]) ?? []
+      const r = await client.getTurnServerManager().getTurnServerConfig()
+      const uris = r.uris ?? []
 
       if (uris.length === 0) {
-        turnAvailableCache = false
-        turnCheckTimestamp = now
         logger.warn('[VoIP] TURN 服务器未配置')
         return { available: false, reason: 'TURN 服务器未部署，语音通话可能在 NAT 环境下不可用' }
       }
 
       logger.info('[VoIP] TURN 服务器可用')
-      turnAvailableCache = true
-      turnCheckTimestamp = now
       return {
         available: true,
         turnServer: {
-          username: (r.username as string) ?? '',
-          password: (r.password as string) ?? '',
+          username: r.username ?? '',
+          password: r.password ?? '',
           uris,
-          ttl: (r.ttl as number) ?? 3600
+          ttl: r.ttl ?? 3600
         }
       }
     } catch (err) {
-      turnAvailableCache = false
-      turnCheckTimestamp = now
       const errMsg = err instanceof Error ? err.message : String(err)
       logger.warn(`[VoIP] TURN 服务器检测失败: ${errMsg}`)
       return { available: false, reason: 'TURN 服务检测失败，语音通话功能可能受限' }
@@ -638,11 +624,6 @@ class MatrixVoIPService extends BaseMatrixService {
     }
 
     return { voipAvailable: true, turnAvailable: true }
-  }
-
-  clearTurnCache(): void {
-    turnAvailableCache = null
-    turnCheckTimestamp = 0
   }
 }
 

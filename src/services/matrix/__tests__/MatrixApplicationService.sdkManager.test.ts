@@ -1,5 +1,5 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MatrixClient } from '@/services/matrix/sdk'
 import matrixClientService from '../MatrixClientService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({

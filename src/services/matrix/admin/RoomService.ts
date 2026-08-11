@@ -1,5 +1,4 @@
-import type { MatrixClient } from 'matrix-js-sdk'
-import type { AdminShutdownRoomResult } from 'matrix-js-sdk/admin'
+import type { AdminShutdownRoomResult, MatrixClient } from '@/services/matrix/sdk'
 import { isValidMatrixRoomId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
 import type { RoomInfo, RoomState, ShutdownRoomResult } from './AdminTypes'

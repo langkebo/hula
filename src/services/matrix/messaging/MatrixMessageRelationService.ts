@@ -9,8 +9,6 @@ import {
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixMessageRelationService')
 
@@ -558,13 +556,11 @@ class MatrixMessageRelationService extends BaseMatrixService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const result = await authedRequestWithPath<AggregationsResponse>(
-        client,
-        'GET',
-        MATRIX_PATHS.RELATIONS.AGGREGATIONS(roomId, eventId, relType)
-      )
+      // Migration 2026-08-11: switched from authedRequestWithPath to
+      // SDK RelationsManager.getAggregations for unified error handling.
+      const result = await client.getRelationsManager().getAggregations(roomId, eventId, relType)
       logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
-      return result
+      return result as unknown as AggregationsResponse
     } catch (err) {
       logger.error(`[MessageRelation] 获取聚合数据失败: ${err}`)
       return null

@@ -15,12 +15,17 @@
  *
  * @see codebase-design DEEPENING.md — 接受依赖，不创建依赖
  */
-import { createClient, initializeManagerExtensions, type MatrixClient } from 'matrix-js-sdk'
-import type { CryptoCallbacks } from 'matrix-js-sdk/crypto'
+
 import { resolveMatrixRuntimeHomeserverUrl } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
 import { setMatrixClientAccessor } from '@/services/matrix/matrixClientAccessor'
 import { getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
+import {
+  type CryptoCallbacks,
+  createClient,
+  initializeManagerExtensions,
+  type MatrixClient
+} from '@/services/matrix/sdk'
 import type { ICreateClientOpts } from '@/types/matrix-js-sdk'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'

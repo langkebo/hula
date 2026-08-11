@@ -1,5 +1,5 @@
-import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MatrixClient, Room } from '@/services/matrix/sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import matrixClientService from '../../MatrixClientService'
 import { matrixReactionService } from '../MatrixReactionService'
@@ -12,11 +12,22 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
 
 describe('MatrixReactionService', () => {
   let mockClient: Partial<MatrixClient>
+  let reactToMessageMock: ReturnType<typeof vi.fn>
+  let redactReactionMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
+    // Migration 2026-08-11: switched from client.sendEvent/redactEvent to
+    // SDK ReactionsManager.reactToMessage/redactReaction.
+    reactToMessageMock = vi.fn().mockResolvedValue('$reaction_event_1')
+    redactReactionMock = vi.fn().mockResolvedValue({ event_id: '$redact:hs' })
+
+    const reactionsManager = {
+      reactToMessage: reactToMessageMock,
+      redactReaction: redactReactionMock
+    }
+
     mockClient = {
-      sendEvent: vi.fn().mockResolvedValue({ event_id: '$reaction_event_1' }),
-      redactEvent: vi.fn().mockResolvedValue({}),
+      getReactionsManager: (() => reactionsManager) as unknown as MatrixClient['getReactionsManager'],
       getRoom: vi.fn(),
       getUserId: vi.fn(() => '@user:example.com')
     }
@@ -28,17 +39,8 @@ describe('MatrixReactionService', () => {
     it('should send reaction event', async () => {
       const result = await matrixReactionService.addReaction('!room:example.com', '$event_1', '👍')
 
-      expect(mockClient.sendEvent).toHaveBeenCalledWith(
-        '!room:example.com',
-        'm.reaction',
-        expect.objectContaining({
-          'm.relates_to': expect.objectContaining({
-            rel_type: 'm.annotation',
-            event_id: '$event_1',
-            key: '👍'
-          })
-        })
-      )
+      // SDK ReactionsManager.reactToMessage constructs the m.reaction event internally
+      expect(reactToMessageMock).toHaveBeenCalledWith('!room:example.com', '$event_1', '👍')
       expect(result).toBe('$reaction_event_1')
     })
 
@@ -81,7 +83,8 @@ describe('MatrixReactionService', () => {
     it('should redact reaction event', async () => {
       await matrixReactionService.removeReaction('!room:example.com', '$reaction_1')
 
-      expect(mockClient.redactEvent).toHaveBeenCalledWith('!room:example.com', '$reaction_1')
+      // SDK ReactionsManager.redactReaction delegates to client.redactEvent internally
+      expect(redactReactionMock).toHaveBeenCalledWith('!room:example.com', '$reaction_1')
     })
 
     it('should throw when client is not initialized', async () => {
