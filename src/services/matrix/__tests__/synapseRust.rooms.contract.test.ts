@@ -11,8 +11,9 @@
  * HTTP method, request body shape, and response unwrapping
  * (`{data: ...}` wrapper vs bare payload).
  *
- * Covers: burn stats/toggle, anti-screenshot toggle, invite blocklist/allowlist,
+ * Covers: anti-screenshot toggle, invite blocklist/allowlist,
  * sticky events, room summary (members/state/stats), ephemeral, captcha.
+ * Burn-after-read endpoints are covered by MatrixBurnAfterReadService tests.
  */
 import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
@@ -44,19 +45,6 @@ vi.mock('../EndpointCapabilityService', () => ({
 }))
 
 const server = setupMswServer(
-  http.get(`${HOMESERVER}/_matrix/client/v3/user/burn/stats`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ data: { total_burned: 5, total_pending: 2, rooms_with_burn_enabled: 3 } })
-  }),
-  http.put(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/burn`, async ({ request }) => {
-    const body = await request.text()
-    seenUrls.push({ method: request.method, url: request.url, body })
-    return HttpResponse.json({ status: 'ok' })
-  }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/burn`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ data: { enabled: true } })
-  }),
   http.put(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/anti_screenshot`, async ({ request }) => {
     const body = await request.text()
     seenUrls.push({ method: request.method, url: request.url, body })
@@ -169,36 +157,6 @@ describe('SynapseRust extensions rooms + captcha URL construction contract (real
   })
 
   const filterBy = (substring: string) => seenUrls.filter((u) => u.url.includes(substring))
-
-  describe('burn after read', () => {
-    it('getBurnStats hits GET /_matrix/client/v3/user/burn/stats and unwraps {data}', async () => {
-      const result = await synapsePrivacyExtensionService.getBurnStats()
-      const calls = filterBy('/user/burn/stats')
-      expect(calls).toHaveLength(1)
-      expect(calls[0].method).toBe('GET')
-      expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v3/user/burn/stats`)
-      expect(result.total_burned).toBe(5)
-      expect(result.rooms_with_burn_enabled).toBe(3)
-    })
-
-    it('enableBurnAfterRead PUTs /_matrix/client/v3/rooms/{roomId}/burn with {enabled, burn_after_ms?}', async () => {
-      await synapsePrivacyExtensionService.enableBurnAfterRead('!room:hs', true, 60000)
-      const calls = filterBy('/burn')
-      const putCall = calls.find((c) => c.method === 'PUT')
-      expect(putCall).toBeDefined()
-      expect(putCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/burn`)
-      expect(JSON.parse(putCall!.body!)).toEqual({ enabled: true, burn_after_ms: 60000 })
-    })
-
-    it('isBurnAfterReadEnabled hits GET /_matrix/client/v3/rooms/{roomId}/burn', async () => {
-      const result = await synapsePrivacyExtensionService.isBurnAfterReadEnabled('!room:hs')
-      const calls = filterBy('/burn')
-      const getCall = calls.find((c) => c.method === 'GET')
-      expect(getCall).toBeDefined()
-      expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/burn`)
-      expect(result).toBe(true)
-    })
-  })
 
   describe('anti-screenshot', () => {
     it('enableAntiScreenshot PUTs /_matrix/client/v3/rooms/{roomId}/anti_screenshot with {enabled}', async () => {
