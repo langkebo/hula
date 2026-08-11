@@ -519,25 +519,13 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     file: File | Blob,
     mimetype?: string
   ): Promise<UploadResult> {
-    const client = this.getClient()
     const resolvedMimetype =
       mimetype || (file instanceof File ? file.type || 'application/octet-stream' : 'application/octet-stream')
     try {
-      // 使用 PUT /_matrix/media/v3/upload/{serverName}/{mediaId}
-      const uploadPath = MATRIX_PATHS.MEDIA.UPLOAD_WITH_ID(serverName, mediaId)
-      const uploadUrl = `${client.getHomeserverUrl()}${uploadPath}`
-      const accessToken = client.getAccessToken()
-
-      const data = await HttpClient.put<{ content_uri: string }>(uploadUrl, file, {
-        headers: {
-          'Content-Type': resolvedMimetype,
-          Authorization: `Bearer ${accessToken}`
-        }
-      })
-      const contentUri = typeof data === 'string' ? data : (data as { content_uri: string }).content_uri
-      logger.info(`[MatrixMedia] 具名上传成功: ${contentUri}`)
+      const response = await this.getMedia().uploadContentWithId(serverName, mediaId, file, resolvedMimetype)
+      logger.info(`[MatrixMedia] 具名上传成功: ${response.content_uri}`)
       return {
-        contentUri,
+        contentUri: response.content_uri,
         size: file.size,
         mimetype: resolvedMimetype
       }
