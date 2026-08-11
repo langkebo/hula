@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { type AIConnectionInfo, type McpTool, matrixAIConnectionService } from '../ai/MatrixAIConnectionService'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -11,6 +12,15 @@ type AIConnection = AIConnectionInfo
 type MCPTool = McpTool
 
 /**
+ * AccountDataManager 实例类型。
+ *
+ * 注：`matrix-js-sdk/account-data` 子路径在 package.json exports 中未导出，
+ * 但 MatrixClient.getAccountDataManager() 已在 matrix-client-extensions.d.ts 中声明，
+ * 这里通过 MatrixClient 访问器返回类型派生，保持与其他 Manager 一致的类型模式。
+ */
+type AccountDataManagerInstance = ReturnType<NonNullable<MatrixClient['getAccountDataManager']>>
+
+/**
  * Room account-data / reporting / retention domain service.
  *
  * Covers per-user-per-room account_data, content-scanner reports,
@@ -19,13 +29,22 @@ type MCPTool = McpTool
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
 export class MatrixRoomAccountDataService extends BaseMatrixService {
-  async getRoomAccountData(roomId: string, eventType: string): Promise<Record<string, unknown> | null> {
+  private getAccountDataMgr(): AccountDataManagerInstance {
     const client = this.getClient()
+    const fn = (client as unknown as { getAccountDataManager?: () => AccountDataManagerInstance }).getAccountDataManager
+    if (typeof fn !== 'function') {
+      throw new Error('MatrixClient.getAccountDataManager is not available; SDK 未初始化')
+    }
+    return fn.call(client)
+  }
+
+  async getRoomAccountData(roomId: string, eventType: string): Promise<Record<string, unknown> | null> {
+    // getClient() 在 try 之外调用，保持原行为：客户端未初始化时抛错而非返回 null
+    const mgr = this.getAccountDataMgr()
     try {
-      const userId = client.getUserId()
-      const path = MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA(userId ?? '', roomId, eventType)
-      const result = await client.http.authedRequest('GET', path)
-      return result as Record<string, unknown>
+      const event = await mgr.getRoomAccountDataFromServer(roomId, eventType)
+      if (!event) return null
+      return (event.getContent() as Record<string, unknown>) ?? null
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间 account data 失败: ${err}`)
       return null
@@ -33,11 +52,9 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   }
 
   async setRoomAccountData(roomId: string, eventType: string, content: Record<string, unknown>): Promise<void> {
-    const client = this.getClient()
+    const mgr = this.getAccountDataMgr()
     try {
-      const userId = client.getUserId()
-      const path = MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA(userId ?? '', roomId, eventType)
-      await client.http.authedRequest('PUT', path, undefined, content)
+      await mgr.setRoomAccountData(roomId, eventType, content)
       logger.info(`[MatrixRoom] 设置房间 account data 成功: ${roomId}/${eventType}`)
     } catch (err) {
       logger.error(`[MatrixRoom] 设置房间 account data 失败: ${err}`)

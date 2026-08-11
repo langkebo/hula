@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
@@ -8,13 +9,9 @@ import { MatrixRoomAccountDataService } from '../AccountDataService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
+type AccountDataManagerInstance = ReturnType<NonNullable<MatrixClient['getAccountDataManager']>>
+
 const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/user/:userId/rooms/:roomId/account_data/:eventType`, () => {
-    return HttpResponse.json({ foo: 1 })
-  }),
-  http.put(`${TEST_BASE_URL}${PREFIX_V3}/user/:userId/rooms/:roomId/account_data/:eventType`, async () => {
-    return HttpResponse.json({})
-  }),
   http.get(`${TEST_BASE_URL}/_matrix/client/v1/rooms/:roomId/report/:eventId/scanner_info`, () => {
     return HttpResponse.json({ clean: true })
   }),
@@ -52,6 +49,10 @@ const authedRequestImpl = vi.fn()
 
 describe('MatrixRoomAccountDataService', () => {
   let service: InstanceType<typeof MatrixRoomAccountDataService>
+  let accountDataMgr: {
+    getRoomAccountDataFromServer: ReturnType<typeof vi.fn>
+    setRoomAccountData: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -75,6 +76,10 @@ describe('MatrixRoomAccountDataService', () => {
         return response.json()
       }
     )
+    accountDataMgr = {
+      getRoomAccountDataFromServer: vi.fn(),
+      setRoomAccountData: vi.fn()
+    }
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     service = new MatrixRoomAccountDataService()
   })
@@ -83,54 +88,51 @@ describe('MatrixRoomAccountDataService', () => {
     getUserId: () => userId,
     http: {
       authedRequest: authedRequestImpl
-    }
+    },
+    getAccountDataManager: () => accountDataMgr as unknown as AccountDataManagerInstance
   })
 
-  describe('getRoomAccountData', () => {
+  describe('getRoomAccountData via AccountDataManager', () => {
     it('throws when client is not initialized', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       await expect(service.getRoomAccountData('!r', 'm.x')).rejects.toThrow('客户端未初始化')
     })
 
-    it('GETs the user/rooms/account_data URL with triple-encoded params', async () => {
+    it('calls getRoomAccountDataFromServer and returns event content', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      const eventContent = { foo: 1 }
+      // AccountDataManager.getRoomAccountDataFromServer wraps the response in a MatrixEvent
+      accountDataMgr.getRoomAccountDataFromServer.mockResolvedValue({
+        getContent: () => eventContent
+      })
       expect(await service.getRoomAccountData('!r:e', 'm.fully_read')).toEqual({ foo: 1 })
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'GET',
-        MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA('@me:e', '!r:e', 'm.fully_read')
-      )
+      expect(accountDataMgr.getRoomAccountDataFromServer).toHaveBeenCalledWith('!r:e', 'm.fully_read')
+    })
+
+    it('returns null when manager returns undefined (data not found)', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      accountDataMgr.getRoomAccountDataFromServer.mockResolvedValue(undefined)
+      expect(await service.getRoomAccountData('!r:e', 'm.x')).toBeNull()
     })
 
     it('swallows backend errors and returns null', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/user/:userId/rooms/:roomId/account_data/:eventType`, () => {
-          return new HttpResponse(null, { status: 404 })
-        })
-      )
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      accountDataMgr.getRoomAccountDataFromServer.mockRejectedValue(new Error('HTTP 404'))
       expect(await service.getRoomAccountData('!r', 'x')).toBeNull()
     })
   })
 
-  describe('setRoomAccountData', () => {
-    it('PUTs the payload as-is', async () => {
+  describe('setRoomAccountData via AccountDataManager', () => {
+    it('calls setRoomAccountData with roomId/eventType/content', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      accountDataMgr.setRoomAccountData.mockResolvedValue(undefined)
       await service.setRoomAccountData('!r', 'm.x', { a: 1 })
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'PUT',
-        MATRIX_PATHS.ACCOUNT_DATA.ROOM_ACCOUNT_DATA('@me:e', '!r', 'm.x'),
-        undefined,
-        { a: 1 }
-      )
+      expect(accountDataMgr.setRoomAccountData).toHaveBeenCalledWith('!r', 'm.x', { a: 1 })
     })
 
     it('re-throws backend errors', async () => {
-      server.use(
-        http.put(`${TEST_BASE_URL}${PREFIX_V3}/user/:userId/rooms/:roomId/account_data/:eventType`, () => {
-          return new HttpResponse(null, { status: 403 })
-        })
-      )
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      accountDataMgr.setRoomAccountData.mockRejectedValue(new Error('HTTP 403'))
       await expect(service.setRoomAccountData('!r', 'x', {})).rejects.toThrow('403')
     })
   })
