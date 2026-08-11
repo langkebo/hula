@@ -548,15 +548,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async getMediaConfig(): Promise<{ 'm.upload.size'?: number; [key: string]: unknown }> {
-    const client = this.getClient()
     try {
-      const result = await authedRequestWithPath<{ 'm.upload.size'?: number; [key: string]: unknown }>(
-        client,
-        'GET',
-        MATRIX_PATHS.MEDIA.CONFIG
-      )
+      const result = await this.getMedia().getMediaConfig(false)
       logger.info('[MatrixMedia] 获取上传配置成功')
-      return result
+      return result as { 'm.upload.size'?: number; [key: string]: unknown }
     } catch (err) {
       logger.error(`[MatrixMedia] 获取上传配置失败: ${err}`)
       throw err
@@ -626,13 +621,8 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     authenticated_media: boolean
     [key: string]: unknown
   } | null> {
-    const client = this.getClient()
     try {
-      const result = (await authedRequestWithPath<Record<string, unknown>>(
-        client,
-        'GET',
-        MATRIX_PATHS.MEDIA.CLIENT_MEDIA_CONFIG
-      )) as Record<string, unknown>
+      const result = (await this.getMedia().getMediaConfig(true)) as Record<string, unknown>
       logger.info('[MatrixMedia] 获取认证媒体配置成功')
       return {
         authenticated_media: (result.authenticated_media as boolean) ?? false,

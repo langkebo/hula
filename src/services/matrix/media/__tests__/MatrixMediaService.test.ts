@@ -290,27 +290,51 @@ describe('MatrixMediaService', () => {
   })
 
   describe('getMediaConfig', () => {
-    it('should get media config', async () => {
+    it('should get media config via MediaManager.getMediaConfig(false)', async () => {
+      const getMediaConfig = vi.fn().mockResolvedValue({ 'm.upload.size': 52428800 })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        http: { authedRequest: authedRequestImpl }
+        getMediaManager: () => ({ getMediaConfig })
       } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getMediaConfig()
 
+      expect(getMediaConfig).toHaveBeenCalledWith(false)
       expect(result['m.upload.size']).toBe(52428800)
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/config', undefined, undefined, {
-        prefix: '/_matrix/media/v3'
-      })
     })
 
     it('should throw on error', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        http: {
-          authedRequest: vi.fn().mockRejectedValue(new Error('fail'))
-        }
+        getMediaManager: () => ({
+          getMediaConfig: vi.fn().mockRejectedValue(new Error('fail'))
+        })
       } as unknown as MatrixClient)
 
       await expect(matrixMediaService.getMediaConfig()).rejects.toThrow('fail')
+    })
+  })
+
+  describe('getAuthenticatedMediaConfig', () => {
+    it('should get authenticated media config via MediaManager.getMediaConfig(true)', async () => {
+      const getMediaConfig = vi.fn().mockResolvedValue({ authenticated_media: true })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({ getMediaConfig })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMediaService.getAuthenticatedMediaConfig()
+
+      expect(getMediaConfig).toHaveBeenCalledWith(true)
+      expect(result?.authenticated_media).toBe(true)
+    })
+
+    it('should return null on error', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({
+          getMediaConfig: vi.fn().mockRejectedValue(new Error('fail'))
+        })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMediaService.getAuthenticatedMediaConfig()
+      expect(result).toBeNull()
     })
   })
 
