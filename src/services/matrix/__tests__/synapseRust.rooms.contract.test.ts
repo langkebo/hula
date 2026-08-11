@@ -1,5 +1,5 @@
 /**
- * SynapseRust extensions (rooms + captcha) contract tests — MSW intercepts
+ * SynapseRust extensions (rooms) contract tests — MSW intercepts
  * at the HTTP boundary.
  *
  * Like the friends contract test, these methods use the service's own
@@ -12,14 +12,15 @@
  * (`{data: ...}` wrapper vs bare payload).
  *
  * Covers: anti-screenshot toggle, invite blocklist/allowlist,
- * sticky events, room summary (members/state/stats), ephemeral, captcha.
+ * sticky events, room summary (members/state/stats), ephemeral.
  * Burn-after-read endpoints are covered by MatrixBurnAfterReadService tests.
+ * Captcha endpoints are covered by SDK CaptchaManager (matrix-js-sdk/lib/captcha),
+ * not exposed via package.json exports — frontend has no production callers.
  */
 import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
-import { synapseCaptchaService } from '../extensions/SynapseCaptchaService'
 import { synapseInviteListService } from '../extensions/SynapseInviteListService'
 import { synapsePrivacyExtensionService } from '../extensions/SynapsePrivacyExtensionService'
 import { synapseRoomSummaryService } from '../extensions/SynapseRoomSummaryService'
@@ -113,24 +114,10 @@ const server = setupMswServer(
   http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/ephemeral`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ data: { chunk: [{ type: 'm.typing', content: {} }] } })
-  }),
-  http.post(`${HOMESERVER}/_matrix/client/v3/register/captcha/send`, async ({ request }) => {
-    const body = await request.text()
-    seenUrls.push({ method: request.method, url: request.url, body })
-    return HttpResponse.json({ data: { captcha_id: 'cap-1', expires_in: 300 } })
-  }),
-  http.post(`${HOMESERVER}/_matrix/client/v3/register/captcha/verify`, async ({ request }) => {
-    const body = await request.text()
-    seenUrls.push({ method: request.method, url: request.url, body })
-    return HttpResponse.json({ data: { verified: true } })
-  }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/register/captcha/status`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ data: { used: false } })
   })
 )
 
-describe('SynapseRust extensions rooms + captcha URL construction contract (real fetch + msw)', () => {
+describe('SynapseRust extensions rooms URL construction contract (real fetch + msw)', () => {
   beforeEach(() => {
     seenUrls.length = 0
     vi.spyOn(matrixClientService, 'getHomeserverUrl').mockReturnValue(HOMESERVER)
@@ -141,8 +128,7 @@ describe('SynapseRust extensions rooms + captcha URL construction contract (real
       synapsePrivacyExtensionService,
       synapseInviteListService,
       synapseStickyEventService,
-      synapseRoomSummaryService,
-      synapseCaptchaService
+      synapseRoomSummaryService
     ]
     for (const svc of services) {
       svc.clear()
@@ -326,36 +312,6 @@ describe('SynapseRust extensions rooms + captcha URL construction contract (real
       const calls = filterBy('/ephemeral')
       expect(calls).toHaveLength(1)
       expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/ephemeral?types=m.typing,m.receipt`)
-    })
-  })
-
-  describe('captcha', () => {
-    it('sendCaptcha POSTs /_matrix/client/v3/register/captcha/send with {target, captcha_type}', async () => {
-      const result = await synapseCaptchaService.sendCaptcha('+8613800138000', 'sms')
-      const calls = filterBy('/captcha/send')
-      expect(calls).toHaveLength(1)
-      expect(calls[0].method).toBe('POST')
-      expect(JSON.parse(calls[0].body!)).toEqual({ target: '+8613800138000', captcha_type: 'sms' })
-      expect(result.success).toBe(true)
-      expect(result.captchaId).toBe('cap-1')
-    })
-
-    it('verifyCaptcha POSTs /_matrix/client/v3/register/captcha/verify with {captcha_id, code}', async () => {
-      const result = await synapseCaptchaService.verifyCaptcha('cap-1', '123456')
-      const calls = filterBy('/captcha/verify')
-      expect(calls).toHaveLength(1)
-      expect(calls[0].method).toBe('POST')
-      expect(JSON.parse(calls[0].body!)).toEqual({ captcha_id: 'cap-1', code: '123456' })
-      expect(result).toBe(true)
-    })
-
-    it('getCaptchaStatus hits GET /_matrix/client/v3/register/captcha/status?captcha_id=...', async () => {
-      const result = await synapseCaptchaService.getCaptchaStatus('cap-1')
-      const calls = filterBy('/captcha/status')
-      expect(calls).toHaveLength(1)
-      expect(calls[0].method).toBe('GET')
-      expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v3/register/captcha/status?captcha_id=cap-1`)
-      expect(result).toHaveProperty('used', false)
     })
   })
 })
