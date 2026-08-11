@@ -1,3 +1,4 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
 import type { SearchEventContext } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
@@ -51,6 +52,8 @@ interface MatrixSearchResponse {
   search_categories?: {
     room_events?: {
       results?: MatrixSearchEventResult[]
+      count?: number
+      highlights?: string[]
     }
   }
 }
@@ -65,35 +68,39 @@ interface SearchMessagesOptions {
   source?: SearchSource
 }
 
-class MatrixSearchService {
-  private buildMessageSearchParams(query: string, options?: SearchMessagesOptions): Record<string, unknown> {
-    return {
-      search_categories: {
-        room_events: {
-          search_term: query,
-          filter: {
-            limit: options?.limit || 20,
-            rooms: options?.roomId ? [options.roomId] : undefined
-          },
-          order_by: 'recent',
-          event_context: {
-            before_limit: options?.beforeLimit || 3,
-            after_limit: options?.afterLimit || 3,
-            include_profile: true
-          }
-        }
-      }
-    }
-  }
+/**
+ * SearchManager 实例类型。
+ *
+ * 注：`matrix-js-sdk/search` 子路径在 package.json exports 中未导出，
+ * 但 MatrixClient.getSearchManager() 已在 matrix-client-extensions.d.ts 中声明，
+ * 这里通过 MatrixClient 访问器返回类型派生，保持与其他 Manager 一致的类型模式。
+ */
+type SearchManagerInstance = ReturnType<NonNullable<MatrixClient['getSearchManager']>>
 
-  private async searchMessagesRemote(query: string, options?: SearchMessagesOptions): Promise<SearchResult[]> {
+class MatrixSearchService {
+  private getSearchMgr(): SearchManagerInstance {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
+    const fn = (client as unknown as { getSearchManager?: () => SearchManagerInstance }).getSearchManager
+    if (typeof fn !== 'function') {
+      throw new Error('MatrixClient.getSearchManager is not available; SDK 未初始化')
+    }
+    return fn.call(client)
+  }
 
-    const response = await client.search(this.buildMessageSearchParams(query, options))
-    return this.parseSearchResults(response)
+  private async searchMessagesRemote(query: string, options?: SearchMessagesOptions): Promise<SearchResult[]> {
+    const response = await this.getSearchMgr().searchMessageText({
+      term: query,
+      room_id: options?.roomId,
+      limit: options?.limit || 20,
+      before_limit: options?.beforeLimit || 3,
+      after_limit: options?.afterLimit || 3,
+      order_by_recency: true,
+      include_state: true
+    })
+    return this.parseSearchResults(response as unknown as MatrixSearchResponse)
   }
 
   private mapWorkerMessageResults(results: SearchMessageHit[]): SearchResult[] {
@@ -235,25 +242,23 @@ class MatrixSearchService {
       return { results: [], count: 0, highlights: [] }
     }
 
-    const client = matrixClientService.getClient()
-    if (!client) {
+    // 客户端初始化校验由 getSearchMgr() 完成
+    // 调用 getSearchMgr() 仅用于在 query.trim() 通过后提前抛错
+    if (!matrixClientService.getClient()) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
-      const response = await client.search({
-        search_categories: {
-          room_events: {
-            search_term: query,
-            filter: { rooms: [roomId], limit: 20 },
-            order_by: 'recent',
-            event_context: { before_limit: 0, after_limit: 0, include_profile: true }
-          }
-        }
+      const response = await this.getSearchMgr().searchMessageText({
+        term: query,
+        room_id: roomId,
+        limit: 20,
+        order_by_recency: true
       })
 
-      const results = this.parseSearchResults(response)
-      const roomEvents = response.search_categories?.room_events
+      const typed = response as unknown as MatrixSearchResponse
+      const results = this.parseSearchResults(typed)
+      const roomEvents = typed.search_categories?.room_events
 
       logger.info(`[MatrixSearch] 房间内搜索完成: room=${roomId} query="${query}" 找到 ${results.length} 条`)
 
@@ -269,13 +274,12 @@ class MatrixSearchService {
   }
 
   async searchUsers(query: string, limit: number = 10): Promise<UserSearchResult[]> {
-    const client = matrixClientService.getClient()
-    if (!client) {
+    if (!matrixClientService.getClient()) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
     try {
-      const response = await client.searchUserDirectory({
+      const response = await this.getSearchMgr().searchUserDirectory({
         term: query,
         limit
       })
@@ -334,6 +338,9 @@ class MatrixSearchService {
       .sort((a, b) => a.roomName.localeCompare(b.roomName))
   }
 
+  /**
+   * 获取公开房间目录。SearchManager 无等价方法，保留 client.publicRooms。
+   */
   async getPublicRooms(
     server?: string,
     limit: number = 20,
@@ -372,6 +379,9 @@ class MatrixSearchService {
     }
   }
 
+  /**
+   * 搜索公开房间目录。SearchManager 无等价方法，保留 client.publicRooms。
+   */
   async searchPublicRooms(query: string, server?: string): Promise<RoomSearchResult[]> {
     const client = matrixClientService.getClient()
     if (!client) {
