@@ -1,26 +1,10 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { MediaManager } from 'matrix-js-sdk/media'
 import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
-import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { setupMswServer } from '@/../tests/msw'
 import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
 import matrixClientService from '../../MatrixClientService'
 import { matrixMediaService } from '../MatrixMediaService'
-
-const TEST_BASE_URL = 'https://matrix.test'
-
-const _server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/_matrix/media/v3/config`, () => {
-    return HttpResponse.json({ 'm.upload.size': 52428800 })
-  }),
-  http.post(`${TEST_BASE_URL}/_matrix/media/v3/delete/:serverName/:mediaId`, () => {
-    return HttpResponse.json({})
-  }),
-  http.get(`${TEST_BASE_URL}/_matrix/media/v1/quota/alerts`, () => {
-    return HttpResponse.json({ alerts: [{ alert_id: '1', alert_type: 'warning' }] })
-  })
-)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),

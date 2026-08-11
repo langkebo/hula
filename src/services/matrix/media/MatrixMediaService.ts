@@ -56,7 +56,11 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   protected getMedia(): MediaManager {
     const client = this.getClient()
-    return (client as unknown as { getMediaManager: () => MediaManager }).getMediaManager()
+    const fn = (client as unknown as { getMediaManager?: () => MediaManager }).getMediaManager
+    if (typeof fn !== 'function') {
+      throw new Error('MatrixClient.getMediaManager is not available; SDK 未初始化')
+    }
+    return fn.call(client)
   }
 
   private createUploadOptions(
