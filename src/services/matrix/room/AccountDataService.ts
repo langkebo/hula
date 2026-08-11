@@ -1,4 +1,4 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { type AIConnectionInfo, type McpTool, matrixAIConnectionService } from '../ai/MatrixAIConnectionService'
 import { BaseMatrixService } from '../BaseMatrixService'
