@@ -1,7 +1,7 @@
 /**
  * FT-120: L3 路径常量"无死常量"契约测试
  *
- * 验证 DM / MODERATION / AUTH / CRYPTO 模块中只保留被 L2 服务实际引用的常量，
+ * 验证 DM / MODERATION / AUTH / CRYPTO / VOICE / ROOM 模块中只保留被 L2 服务实际引用的常量，
  * 防止维护者被从未使用的路径常量误导。
  *
  * 当某常量不再被任何 L2 服务引用时，应将其从此处的 expected 集合中移除并从源文件删除；
@@ -13,6 +13,8 @@ import { AUTH } from '../auth'
 import { CRYPTO } from '../crypto'
 import { MEDIA } from '../media'
 import { MODERATION } from '../moderation'
+import { ROOM } from '../room'
+import { VOICE } from '../voice'
 
 /** 断言对象的键集合恰好等于 expectedKeys（顺序无关）。 */
 function expectKeys(obj: object, expectedKeys: string[]): void {
@@ -119,6 +121,47 @@ describe('FT-120: 无死路径常量', () => {
       ]) {
         expect(MEDIA).not.toHaveProperty(dead)
       }
+    })
+  })
+
+  describe('VOICE 模块仅保留被 L2 服务引用的常量', () => {
+    // MatrixVoiceService.uploadVoice → VOICE.UPLOAD (authedRequestWithPath)
+    // MatrixVoiceService.getVoiceConfig → VOICE.CONFIG (endpointCapabilityService.check)
+    // MatrixVoiceService.deleteVoice/getVoiceContent → VOICE.CONTENT (capability + path)
+    // MatrixVoiceService.getRoomVoiceList → VOICE.ROOM_LIST (authedRequestWithPath)
+    // MatrixVoiceService.getUserVoiceList → VOICE.USER_LIST (authedRequestWithPath)
+    // MatrixVoiceService.convertVoice → VOICE.CONVERT (endpointCapabilityService.check)
+    // MatrixVoiceService.optimizeVoice → VOICE.OPTIMIZE (endpointCapabilityService.check)
+    // MatrixVoiceService.transcribeVoiceViaApi → VOICE.TRANSCRIPTION (capability)
+    // MatrixVoiceService.getRtcTransports → VOICE.RTC_TRANSPORTS (authedRequest, MSC4143)
+    // VOICE.STATS / ROOM_STATS / USER_STATS 已迁移到 VoiceManager，不再需要路径常量。
+    it('VOICE 仅包含被 L2 服务引用的 9 个常量', () => {
+      expectKeys(VOICE, [
+        'CONFIG',
+        'UPLOAD',
+        'ROOM_LIST',
+        'USER_LIST',
+        'CONTENT',
+        'CONVERT',
+        'OPTIMIZE',
+        'TRANSCRIPTION',
+        'RTC_TRANSPORTS'
+      ])
+    })
+
+    it('VOICE 不再包含已迁移到 VoiceManager 的死常量', () => {
+      for (const dead of ['STATS', 'ROOM_STATS', 'USER_STATS']) {
+        expect(VOICE).not.toHaveProperty(dead)
+      }
+    })
+  })
+
+  describe('ROOM 模块不再包含已迁移到 InviteBlocklistManager 的死常量', () => {
+    // RoomOperations.getInviteBlocklist/setInviteBlocklist/getInviteAllowlist/
+    // setInviteAllowlist 已迁移到 client.getInviteBlocklistManager()，不再需要路径常量。
+    it('ROOM 不再包含 INVITE_BLOCKLIST / INVITE_ALLOWLIST', () => {
+      expect(ROOM).not.toHaveProperty('INVITE_BLOCKLIST')
+      expect(ROOM).not.toHaveProperty('INVITE_ALLOWLIST')
     })
   })
 })
