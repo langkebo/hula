@@ -1,4 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import type { MediaManager } from 'matrix-js-sdk/media'
 import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -394,5 +395,18 @@ describe('MatrixMediaService', () => {
 
       vi.unstubAllGlobals()
     })
+  })
+})
+
+describe('getMedia (private accessor)', () => {
+  it('returns the MediaManager instance from the current client', () => {
+    const mediaManager = { previewUrl: vi.fn() } as unknown as MediaManager
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
+      getMediaManager: vi.fn(() => mediaManager)
+    } as unknown as MatrixClient)
+
+    // 通过反射验证 getMedia 返回值
+    const svc = matrixMediaService as unknown as { getMedia: () => MediaManager }
+    expect(svc.getMedia()).toBe(mediaManager)
   })
 })

@@ -1,4 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import type { MediaManager } from 'matrix-js-sdk/media'
 import {
   type MatrixEncryptedAttachmentLike,
   matrixAttachmentDecryptionService
@@ -54,6 +55,11 @@ const DEFAULT_COMPRESS_OPTIONS: CompressOptions = {
 class MatrixMediaServiceClass extends BaseMatrixService {
   private compressOptions: CompressOptions = { ...DEFAULT_COMPRESS_OPTIONS }
   private enableCompression = true
+
+  protected getMedia(): MediaManager {
+    const client = this.getClient()
+    return (client as unknown as { getMediaManager: () => MediaManager }).getMediaManager()
+  }
 
   private createUploadOptions(
     mimetype: string | undefined,
