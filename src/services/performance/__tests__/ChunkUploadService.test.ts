@@ -1,77 +1,105 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createClient, initializeManagerExtensions, type MatrixClient } from 'matrix-js-sdk'
+import { HttpResponse, http } from 'msw'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupMswServer } from '~/tests/msw'
+
+const HOMESERVER = 'https://hs.chunk-contract.test'
+let realClient: MatrixClient
 
 vi.mock('@/services/matrix/matrixClientAccessor', () => ({
-  getMatrixAccessToken: () => 'tok-1',
-  getMatrixHomeserverUrl: () => 'https://matrix.test'
+  getMatrixClient: () => realClient,
+  getMatrixAccessToken: () => 'contract-at',
+  getMatrixHomeserverUrl: () => HOMESERVER
 }))
 vi.mock('@/services/backend/config', () => ({
-  resolveMatrixRuntimeEndpointConfig: () => ({ homeserverUrl: 'https://matrix.test' })
+  resolveMatrixRuntimeEndpointConfig: () => ({ homeserverUrl: HOMESERVER })
 }))
+vi.mock('@tauri-apps/plugin-log', () => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn()
+}))
+
+const seenRequests: { method: string; url: string }[] = []
+
+const server = setupMswServer(
+  http.post(`${HOMESERVER}/_matrix/media/v1/upload/chunk/start`, ({ request }) => {
+    seenRequests.push({ method: request.method, url: request.url })
+    return HttpResponse.json({ upload_id: 'u1', chunk_size_limit: 5242880, max_file_size: 52428800 })
+  }),
+  http.post(`${HOMESERVER}/_matrix/media/v1/upload/chunk`, ({ request }) => {
+    seenRequests.push({ method: request.method, url: request.url })
+    return HttpResponse.json({ upload_id: 'u1', chunk_index: 0, received_bytes: 10 })
+  }),
+  http.post(`${HOMESERVER}/_matrix/media/v1/upload/chunk/complete`, ({ request }) => {
+    seenRequests.push({ method: request.method, url: request.url })
+    return HttpResponse.json({ upload_id: 'u1', content_uri: 'mxc://hs/chunked' })
+  }),
+  http.post(`${HOMESERVER}/_matrix/media/v1/upload/chunk/cancel`, ({ request }) => {
+    seenRequests.push({ method: request.method, url: request.url })
+    return HttpResponse.json({ upload_id: 'u1', cancelled: true })
+  })
+)
 
 import chunkUploadService from '../ChunkUploadService'
 
-class FakeXHR {
-  static instances: FakeXHR[] = []
-  static failuresRemaining = 0
-  upload = { onprogress: null as null | ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) }
-  status = 200
-  onload: (() => void) | null = null
-  onerror: (() => void) | null = null
-  url = ''
-  open(_method: string, url: string) {
-    this.url = url
-  }
-  setRequestHeader() {}
-  send() {
-    FakeXHR.instances.push(this)
-    if (FakeXHR.failuresRemaining > 0) {
-      FakeXHR.failuresRemaining--
-      this.status = 500
-    }
-    queueMicrotask(() => this.onload?.())
-  }
-}
-
-const fetchMock = vi.fn()
-
-const okJson = (body: unknown) => ({ ok: true, json: async () => body, text: async () => '' }) as unknown as Response
-
-beforeEach(() => {
-  FakeXHR.instances = []
-  FakeXHR.failuresRemaining = 0
-  fetchMock.mockReset()
-  vi.stubGlobal('XMLHttpRequest', FakeXHR)
-  vi.stubGlobal('fetch', fetchMock)
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
-
 const makeFile = () => new File([new Uint8Array(10)], 'big.bin', { type: 'application/octet-stream' })
 
-describe('ChunkUploadService', () => {
-  it('start/complete 端点 URL 含合法主机与 /_matrix 前缀', async () => {
-    fetchMock
-      .mockResolvedValueOnce(okJson({ upload_id: 'u1', chunk_size_limit: 1, max_file_size: 1 }))
-      .mockResolvedValueOnce(okJson({ content_uri: 'mxc://hs/x', size: 10 }))
-
-    const result = await chunkUploadService.upload({ file: makeFile(), chunkSize: 10 })
-
-    expect(fetchMock.mock.calls[0][0]).toBe('https://matrix.test/_matrix/media/v1/upload/chunk/start')
-    expect(fetchMock.mock.calls[1][0]).toBe('https://matrix.test/_matrix/media/v1/upload/chunk/complete')
-    expect(FakeXHR.instances[0].url).toContain('https://matrix.test/_matrix/media/v1/upload/chunk?')
-    expect(result.mxcUrl).toBe('mxc://hs/x')
+describe('ChunkUploadService (MediaManager-backed)', () => {
+  beforeAll(async () => {
+    // SDK skips async manager init under Vitest; must call explicitly
+    realClient = createClient({
+      baseUrl: HOMESERVER,
+      accessToken: 'contract-at',
+      userId: '@test:hs.chunk-contract.test',
+      deviceId: 'DEV1'
+    })
+    await initializeManagerExtensions()
+    // Disable SDK-level retries so frontend maxRetries is the only retry
+    // source under test. Otherwise uploadChunk's withRetry retries 500s
+    // (idempotent defaults to true) and the test times out waiting for
+    // SDK backoff (1s + 2s + 4s = 7s per attempt) before frontend retry.
+    realClient.getMediaManager().setRetryOptions({ maxRetries: 0 })
   })
 
-  it('chunk 重试耗尽后上传失败并调用 cancel 端点', async () => {
-    fetchMock
-      .mockResolvedValueOnce(okJson({ upload_id: 'u2', chunk_size_limit: 1, max_file_size: 1 }))
-      .mockResolvedValueOnce(okJson({}))
-    FakeXHR.failuresRemaining = 99
+  beforeEach(() => {
+    seenRequests.length = 0
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('start/uploadChunk/complete URLs hit /_matrix/media/v1/upload/chunk/* via SDK', async () => {
+    const result = await chunkUploadService.upload({ file: makeFile(), chunkSize: 10 })
+
+    expect(seenRequests.find((r) => r.url.includes('/chunk/start'))).toBeTruthy()
+    expect(seenRequests.find((r) => r.url.includes('/chunk?') || r.url.includes('/chunk&'))).toBeTruthy()
+    expect(seenRequests.find((r) => r.url.includes('/chunk/complete'))).toBeTruthy()
+    expect(result.mxcUrl).toBe('mxc://hs/chunked')
+  })
+
+  it('chunk upload failure after retry exhaustion triggers cancel endpoint', async () => {
+    // Override the chunk handler to always return 500
+    server.use(
+      http.post(
+        `${HOMESERVER}/_matrix/media/v1/upload/chunk`,
+        () => new HttpResponse('Internal Server Error', { status: 500 })
+      )
+    )
 
     await expect(chunkUploadService.upload({ file: makeFile(), chunkSize: 10, maxRetries: 2 })).rejects.toThrow()
 
-    expect(fetchMock.mock.calls[1][0]).toBe('https://matrix.test/_matrix/media/v1/upload/chunk/cancel')
+    expect(seenRequests.find((r) => r.url.includes('/chunk/cancel'))).toBeTruthy()
+  })
+
+  it('progress callback receives percentage based on completed chunks', async () => {
+    const onProgress = vi.fn()
+    await chunkUploadService.upload({ file: makeFile(), chunkSize: 10, onProgress })
+
+    const lastCall = onProgress.mock.calls[onProgress.mock.calls.length - 1]?.[0]
+    expect(lastCall.percentage).toBe(100)
+    expect(lastCall.loaded).toBe(10)
+    expect(lastCall.total).toBe(10)
   })
 })
