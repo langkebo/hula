@@ -37,7 +37,9 @@ vi.mock('@/utils/ImageUtils', () => ({
 const mockClient = {
   getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
   getAccessToken: vi.fn(() => 'token123'),
-  uploadContent: vi.fn(),
+  getMediaManager: vi.fn(() => ({
+    uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/uploaded123' })
+  })),
   mxcUrlToHttp: vi.fn((url: string) => url.replace('mxc://', 'https://matrix.test/_matrix/media/r0/download/'))
 }
 
@@ -129,7 +131,7 @@ describe('MatrixMediaService', () => {
         content_uri: 'mxc://matrix.org/encrypted123'
       })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        uploadContent,
+        getMediaManager: () => ({ uploadContent }),
         mxcUrlToHttp: vi.fn()
       } as unknown as MatrixClient)
 
@@ -214,8 +216,10 @@ describe('MatrixMediaService', () => {
   describe('successful uploads', () => {
     beforeEach(() => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        uploadContent: vi.fn().mockResolvedValue({
-          content_uri: 'mxc://matrix.org/uploaded123'
+        getMediaManager: () => ({
+          uploadContent: vi.fn().mockResolvedValue({
+            content_uri: 'mxc://matrix.org/uploaded123'
+          })
         }),
         mxcUrlToHttp: vi.fn().mockReturnValue('https://matrix.org/media/uploaded123')
       } as unknown as MatrixClient)
@@ -233,6 +237,8 @@ describe('MatrixMediaService', () => {
     })
 
     it('should forward upload progress to callback', async () => {
+      // MediaManager.uploadContent passes opts to http.uploadContent which reads
+      // opts.progressHandler (not opts.progress). The mock simulates this behavior.
       const uploadContent = vi
         .fn()
         .mockImplementation(
@@ -244,7 +250,7 @@ describe('MatrixMediaService', () => {
         )
 
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        uploadContent,
+        getMediaManager: () => ({ uploadContent }),
         mxcUrlToHttp: vi.fn().mockReturnValue('https://matrix.org/media/uploaded123')
       } as unknown as MatrixClient)
 

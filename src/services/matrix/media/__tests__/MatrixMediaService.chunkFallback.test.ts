@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { uploadContentMock, chunkUploadMock } = vi.hoisted(() => ({
-  uploadContentMock: vi.fn(),
+const { mediaUploadMock, chunkUploadMock } = vi.hoisted(() => ({
+  mediaUploadMock: vi.fn(),
   chunkUploadMock: vi.fn()
 }))
 
 vi.mock('../../MatrixClientService', () => {
   const svc = {
     getClient: () => ({
-      uploadContent: uploadContentMock,
+      getMediaManager: () => ({ uploadContent: mediaUploadMock }),
       mxcUrlToHttp: () => null,
       http: { authedRequest: vi.fn() }
     }),
@@ -28,12 +28,12 @@ const bigFile = new File([new Uint8Array(8)], 'big.bin', { type: 'application/oc
 
 describe('MatrixMediaService 413 分片回退', () => {
   beforeEach(() => {
-    uploadContentMock.mockReset()
+    mediaUploadMock.mockReset()
     chunkUploadMock.mockReset()
   })
 
   it('uploadFile 遇 413 回退分片上传并返回其 mxcUrl', async () => {
-    uploadContentMock.mockRejectedValueOnce(Object.assign(new Error('too large'), { httpStatus: 413 }))
+    mediaUploadMock.mockRejectedValueOnce(Object.assign(new Error('too large'), { httpStatus: 413 }))
     chunkUploadMock.mockResolvedValueOnce({
       mxcUrl: 'mxc://hs/chunked',
       filename: 'big.bin',
@@ -48,7 +48,7 @@ describe('MatrixMediaService 413 分片回退', () => {
   })
 
   it('errcode M_TOO_LARGE 同样触发回退', async () => {
-    uploadContentMock.mockRejectedValueOnce(Object.assign(new Error('too large'), { errcode: 'M_TOO_LARGE' }))
+    mediaUploadMock.mockRejectedValueOnce(Object.assign(new Error('too large'), { errcode: 'M_TOO_LARGE' }))
     chunkUploadMock.mockResolvedValueOnce({
       mxcUrl: 'mxc://hs/chunked2',
       filename: 'big.bin',
@@ -61,7 +61,7 @@ describe('MatrixMediaService 413 分片回退', () => {
   })
 
   it('非 413 错误原样抛出且不触发分片', async () => {
-    uploadContentMock.mockRejectedValueOnce(Object.assign(new Error('forbidden'), { httpStatus: 403 }))
+    mediaUploadMock.mockRejectedValueOnce(Object.assign(new Error('forbidden'), { httpStatus: 403 }))
 
     await expect(matrixMediaService.uploadFile(bigFile)).rejects.toThrow('forbidden')
     expect(chunkUploadMock).not.toHaveBeenCalled()
@@ -70,7 +70,7 @@ describe('MatrixMediaService 413 分片回退', () => {
 
 describe('MatrixMediaService uploadLargeFile 主动分块上传 (§9.4.1)', () => {
   beforeEach(() => {
-    uploadContentMock.mockReset()
+    mediaUploadMock.mockReset()
     chunkUploadMock.mockReset()
   })
 
@@ -86,7 +86,7 @@ describe('MatrixMediaService uploadLargeFile 主动分块上传 (§9.4.1)', () =
     const result = await matrixMediaService.uploadLargeFile(largeFile)
 
     expect(chunkUploadMock).toHaveBeenCalledTimes(1)
-    expect(uploadContentMock).not.toHaveBeenCalled()
+    expect(mediaUploadMock).not.toHaveBeenCalled()
     expect(result.contentUri).toBe('mxc://hs/large-file')
     expect(result.size).toBe(largeFile.size)
   })
