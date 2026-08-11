@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest'
 
 import { AUTH } from '../auth'
 import { CRYPTO } from '../crypto'
+import { MEDIA } from '../media'
 import { MODERATION } from '../moderation'
 
 /** 断言对象的键集合恰好等于 expectedKeys（顺序无关）。 */
@@ -93,6 +94,31 @@ describe('FT-120: 无死路径常量', () => {
     it('MATRIX_PATHS 不再包含 DM 键', async () => {
       const { MATRIX_PATHS } = await import('../index')
       expect(MATRIX_PATHS).not.toHaveProperty('DM')
+    })
+  })
+
+  describe('MEDIA 模块仅保留被 L2 服务引用的常量', () => {
+    // MatrixUrlPreviewService.getPreview → MEDIA.DOWNLOAD_PREFIX (mxc→http 拼接)
+    // MatrixUrlPreviewService.getPreviewsFromEvent → MEDIA.MEDIA_PREFIX (排除媒体链接)
+    // 上传/配额/配置/删除/具名上传/预览端点均已迁移到 client.getMediaManager()，不再需要路径常量。
+    it('MEDIA 仅包含 DOWNLOAD_PREFIX 与 MEDIA_PREFIX', () => {
+      expectKeys(MEDIA, ['DOWNLOAD_PREFIX', 'MEDIA_PREFIX'])
+    })
+
+    it('MEDIA 不再包含已迁移到 MediaManager 的死常量', () => {
+      for (const dead of [
+        'UPLOAD',
+        'UPLOAD_WITH_ID',
+        'CONFIG',
+        'DELETE',
+        'QUOTA_ALERTS',
+        'QUOTA_CHECK',
+        'QUOTA_STATS',
+        'CLIENT_MEDIA_CONFIG',
+        'PREVIEW_URL'
+      ]) {
+        expect(MEDIA).not.toHaveProperty(dead)
+      }
     })
   })
 })
