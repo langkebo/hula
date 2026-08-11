@@ -55,11 +55,11 @@ describe('ChunkUploadService (MediaManager-backed)', () => {
       deviceId: 'DEV1'
     })
     await initializeManagerExtensions()
-    // Disable SDK-level retries so frontend maxRetries is the only retry
-    // source under test. Otherwise uploadChunk's withRetry retries 500s
-    // (idempotent defaults to true) and the test times out waiting for
-    // SDK backoff (1s + 2s + 4s = 7s per attempt) before frontend retry.
-    realClient.getMediaManager().setRetryOptions({ maxRetries: 0 })
+    // Note: production ChunkUploadService.upload() now calls
+    // setRetryOptions({ maxRetries: 0 }) itself to disable SDK-level
+    // retry (uploadChunk's withRetry defaults to idempotent=true and
+    // would retry 500s, causing double-retry with frontend maxRetries).
+    // The finally block restores maxRetries=3 after each upload.
   })
 
   beforeEach(() => {
@@ -91,6 +91,26 @@ describe('ChunkUploadService (MediaManager-backed)', () => {
     await expect(chunkUploadService.upload({ file: makeFile(), chunkSize: 10, maxRetries: 2 })).rejects.toThrow()
 
     expect(seenRequests.find((r) => r.url.includes('/chunk/cancel'))).toBeTruthy()
+  })
+
+  it('disables SDK-level retry during upload to prevent double-retry', async () => {
+    // Verify production code calls setRetryOptions({ maxRetries: 0 }) by
+    // counting HTTP requests on a 500: with maxRetries=3 (frontend), the
+    // chunk endpoint should be hit exactly 3 times (1 original + 2 retries,
+    // because retryCount++ then >= maxRetries check allows N-1 retries).
+    // If SDK retry were active, it would be 12 hits (3 frontend × 4 SDK).
+    server.use(
+      http.post(`${HOMESERVER}/_matrix/media/v1/upload/chunk`, ({ request }) => {
+        seenRequests.push({ method: request.method, url: request.url })
+        return new HttpResponse('Internal Server Error', { status: 500 })
+      })
+    )
+
+    await expect(chunkUploadService.upload({ file: makeFile(), chunkSize: 10, maxRetries: 3 })).rejects.toThrow()
+
+    const chunkHits = seenRequests.filter((r) => r.url.includes('/chunk?') || r.url.includes('/chunk&')).length
+    // 1 original attempt + 2 frontend retries = 3 total (no SDK retry)
+    expect(chunkHits).toBe(3)
   })
 
   it('progress callback receives percentage based on completed chunks', async () => {
