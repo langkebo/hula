@@ -340,29 +340,95 @@ describe('MatrixMediaService', () => {
   })
 
   describe('getQuotaAlerts', () => {
-    it('should get quota alerts', async () => {
+    it('should get quota alerts via MediaManager.getMediaQuotaAlerts', async () => {
+      const getMediaQuotaAlerts = vi.fn().mockResolvedValue({
+        alerts: [{ alert_id: 'a1', alert_type: 'warning' }]
+      })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        http: { authedRequest: authedRequestImpl }
+        getMediaManager: () => ({ getMediaQuotaAlerts })
       } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getQuotaAlerts()
 
+      expect(getMediaQuotaAlerts).toHaveBeenCalledTimes(1)
       expect(result).toHaveLength(1)
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/quota/alerts', undefined, undefined, {
-        prefix: '/_matrix/media/v1'
-      })
+      expect(result[0].alert_id).toBe('a1')
     })
 
     it('should return empty array on error', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        http: {
-          authedRequest: vi.fn().mockRejectedValue(new Error('fail'))
-        }
+        getMediaManager: () => ({
+          getMediaQuotaAlerts: vi.fn().mockRejectedValue(new Error('fail'))
+        })
       } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getQuotaAlerts()
-
       expect(result).toEqual([])
+    })
+  })
+
+  describe('checkQuota', () => {
+    it('should check quota via MediaManager.checkMediaQuota', async () => {
+      const checkMediaQuota = vi.fn().mockResolvedValue({
+        limit: 104857600,
+        used: 52428800,
+        remaining: 52428800,
+        rule: 'default'
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({ checkMediaQuota })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMediaService.checkQuota()
+
+      expect(checkMediaQuota).toHaveBeenCalledTimes(1)
+      expect(result?.limit).toBe(104857600)
+      expect(result?.used).toBe(52428800)
+      expect(result?.remaining).toBe(52428800)
+    })
+
+    it('should return null on error', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({
+          checkMediaQuota: vi.fn().mockRejectedValue(new Error('fail'))
+        })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMediaService.checkQuota()
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('getQuotaStats', () => {
+    it('should get quota stats via MediaManager.getMediaQuotaStats', async () => {
+      const getMediaQuotaStats = vi.fn().mockResolvedValue({
+        user_id: '@test:example.com',
+        storage_bytes: 52428800,
+        media_count: 42,
+        limit_bytes: 104857600,
+        statistics: {}
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({ getMediaQuotaStats })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMediaService.getQuotaStats()
+
+      expect(getMediaQuotaStats).toHaveBeenCalledTimes(1)
+      expect(result?.storageBytes).toBe(52428800)
+      expect(result?.mediaCount).toBe(42)
+      expect(result?.limitBytes).toBe(104857600)
+    })
+
+    it('should return null on error', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({
+          getMediaQuotaStats: vi.fn().mockRejectedValue(new Error('fail'))
+        })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMediaService.getQuotaStats()
+      expect(result).toBeNull()
     })
   })
 
