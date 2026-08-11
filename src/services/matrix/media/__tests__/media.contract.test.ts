@@ -44,7 +44,7 @@ setupMswServer(
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ 'm.upload.size': 52428800 })
   }),
-  http.post(`${HOMESERVER}/_matrix/media/v3/delete/:serverName/:mediaId`, ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/media/v1/delete/:serverName/:mediaId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({})
   }),
@@ -103,13 +103,13 @@ describe('Media service URL construction contract (real SDK + msw)', () => {
     expect(result['m.upload.size']).toBe(52428800)
   })
 
-  it('deleteMedia hits POST /_matrix/media/v3/delete/:server/:mediaId (no double-prefix)', async () => {
+  it('deleteMedia hits POST /_matrix/media/v1/delete/:server/:mediaId (no double-prefix)', async () => {
     const result = await matrixMediaService.deleteMedia('matrix.org', 'media123')
 
-    const calls = seenUrls.filter((u) => u.url.includes('/media/v3/delete/'))
+    const calls = seenUrls.filter((u) => u.url.includes('/media/v1/delete/'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/media/v3/delete/matrix.org/media123`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/media/v1/delete/matrix.org/media123`)
     expect(calls[0].url).not.toMatch(DOUBLE_PREFIX)
     expect(result).toBe(true)
   })

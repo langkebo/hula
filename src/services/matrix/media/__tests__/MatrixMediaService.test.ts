@@ -34,8 +34,6 @@ vi.mock('@/utils/ImageUtils', () => ({
   formatFileSize: vi.fn((size: number) => `${size} B`)
 }))
 
-const authedRequestImpl = vi.fn()
-
 const mockClient = {
   getHomeserverUrl: vi.fn(() => 'https://matrix.test'),
   getAccessToken: vi.fn(() => 'token123'),
@@ -46,25 +44,6 @@ const mockClient = {
 describe('MatrixMediaService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    authedRequestImpl.mockImplementation(
-      async (method: string, path: string, _queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
-        const prefix = opts?.prefix ?? ''
-        const url = `${TEST_BASE_URL}${prefix}${path}`
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer test-access-token'
-        }
-        const response = await fetch(url, {
-          method,
-          headers,
-          body: body ? JSON.stringify(body) : undefined
-        })
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-        return response.json()
-      }
-    )
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     vi.spyOn(matrixClientService, 'getTelemetry').mockReturnValue(null)
     vi.spyOn(matrixClientService, 'getHomeserverUrl').mockReturnValue('https://matrix.test')
@@ -339,24 +318,23 @@ describe('MatrixMediaService', () => {
   })
 
   describe('deleteMedia', () => {
-    it('should delete media successfully', async () => {
+    it('should delete media via MediaManager.deleteMedia', async () => {
+      const deleteMedia = vi.fn().mockResolvedValue(undefined)
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        http: { authedRequest: authedRequestImpl }
+        getMediaManager: () => ({ deleteMedia })
       } as unknown as MatrixClient)
 
       const result = await matrixMediaService.deleteMedia('matrix.org', 'media123')
 
+      expect(deleteMedia).toHaveBeenCalledWith('matrix.org', 'media123')
       expect(result).toBe(true)
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/delete/matrix.org/media123', undefined, undefined, {
-        prefix: '/_matrix/media/v3'
-      })
     })
 
     it('should throw on delete error', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        http: {
-          authedRequest: vi.fn().mockRejectedValue(new Error('forbidden'))
-        }
+        getMediaManager: () => ({
+          deleteMedia: vi.fn().mockRejectedValue(new Error('forbidden'))
+        })
       } as unknown as MatrixClient)
 
       await expect(matrixMediaService.deleteMedia('matrix.org', 'media123')).rejects.toThrow('forbidden')

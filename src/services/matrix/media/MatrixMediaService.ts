@@ -15,8 +15,6 @@ import { compressImage, isImageFile } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixMediaService')
 
@@ -547,13 +545,8 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async deleteMedia(serverName: string, mediaId: string): Promise<boolean> {
-    const client = this.getClient()
     try {
-      await authedRequestWithPath<void>(
-        client,
-        'POST',
-        MATRIX_PATHS.MEDIA.DELETE(encodeURIComponent(serverName), encodeURIComponent(mediaId))
-      )
+      await this.getMedia().deleteMedia(serverName, mediaId)
       logger.info(`[MatrixMedia] 媒体删除成功: ${serverName}/${mediaId}`)
       return true
     } catch (err) {
