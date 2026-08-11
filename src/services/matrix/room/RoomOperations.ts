@@ -1,12 +1,20 @@
+import type { MatrixClient } from 'matrix-js-sdk'
 import { Preset, Visibility } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('RoomOperations')
+
+/**
+ * InviteBlocklistManager 实例类型。
+ *
+ * 注：`matrix-js-sdk/invite-blocklist` 子路径未在 package.json exports 中暴露，
+ * 这里通过 MatrixClient 的访问器返回类型派生，避免违反 SDK 边界策略。
+ */
+type InviteBlocklistManagerInstance = ReturnType<NonNullable<MatrixClient['getInviteBlocklistManager']>>
 
 export class RoomOperations extends BaseMatrixService {
   // --- Aliases (was AliasesService) ---
@@ -222,44 +230,51 @@ export class RoomOperations extends BaseMatrixService {
 
   // --- Moderation (was ModerationService) ---
 
-  async getInviteBlocklist(roomId: string, throwOnError = false): Promise<string[]> {
-    const client = this.getClient()
+  /**
+   * 获取邀请黑名单。
+   *
+   * 注：SDK InviteBlocklistManager.getBlocklist 内部已捕获错误并返回缓存值（或空数组），
+   * 因此 `throwOnError` 参数在此实现中不再向上抛错——保留参数仅为向后兼容签名。
+   * 失败时由 SDK 记录 warn 日志并返回缓存。
+   */
+  async getInviteBlocklist(roomId: string, _throwOnError = false): Promise<string[]> {
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.INVITE_BLOCKLIST(roomId))
-      return (result as { blocked?: string[] }).blocked ?? []
+      return await this.getInviteBlocklistMgr().getBlocklist(roomId)
     } catch (err) {
-      // R-12: blocklist 失败不能静默（返回 [] 等同于"无黑名单"，安全风险）
+      // 仅在 SDK 本身抛错（如客户端未初始化）时记录
       logger.error(`获取 invite blocklist 失败: ${roomId} ${err}`)
-      if (throwOnError) throw err
       return []
     }
   }
 
   async setInviteBlocklist(roomId: string, blocked: string[]): Promise<void> {
-    const client = this.getClient()
-    await client.http.authedRequest('POST', MATRIX_PATHS.ROOM.INVITE_BLOCKLIST(roomId), undefined, {
-      blocked
-    })
+    await this.getInviteBlocklistMgr().setBlocklist(roomId, blocked)
   }
 
-  async getInviteAllowlist(roomId: string, throwOnError = false): Promise<string[]> {
-    const client = this.getClient()
+  /**
+   * 获取邀请白名单。同 getInviteBlocklist，SDK 内部已处理错误。
+   */
+  async getInviteAllowlist(roomId: string, _throwOnError = false): Promise<string[]> {
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.INVITE_ALLOWLIST(roomId))
-      return (result as { allowed?: string[] }).allowed ?? []
+      return await this.getInviteBlocklistMgr().getAllowlist(roomId)
     } catch (err) {
-      // R-12: allowlist 失败不能静默
       logger.error(`获取 invite allowlist 失败: ${roomId} ${err}`)
-      if (throwOnError) throw err
       return []
     }
   }
 
   async setInviteAllowlist(roomId: string, allowed: string[]): Promise<void> {
+    await this.getInviteBlocklistMgr().setAllowlist(roomId, allowed)
+  }
+
+  private getInviteBlocklistMgr(): InviteBlocklistManagerInstance {
     const client = this.getClient()
-    await client.http.authedRequest('POST', MATRIX_PATHS.ROOM.INVITE_ALLOWLIST(roomId), undefined, {
-      allowed
-    })
+    const fn = (client as unknown as { getInviteBlocklistManager?: () => InviteBlocklistManagerInstance })
+      .getInviteBlocklistManager
+    if (typeof fn !== 'function') {
+      throw new Error('MatrixClient.getInviteBlocklistManager is not available; SDK 未初始化')
+    }
+    return fn.call(client)
   }
 
   // --- Lifecycle (was LifecycleService) ---

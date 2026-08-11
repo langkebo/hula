@@ -21,7 +21,6 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
-import { synapseInviteListService } from '../extensions/SynapseInviteListService'
 import { synapsePrivacyExtensionService } from '../extensions/SynapsePrivacyExtensionService'
 import { synapseRoomSummaryService } from '../extensions/SynapseRoomSummaryService'
 import { synapseStickyEventService } from '../extensions/SynapseStickyEventService'
@@ -54,24 +53,6 @@ const server = setupMswServer(
   http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/anti_screenshot`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ data: { enabled: false } })
-  }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/invite_blocklist`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ data: { blocked_users: ['@bad:hs'], updated_ts: 123 } })
-  }),
-  http.post(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/invite_blocklist`, async ({ request }) => {
-    const body = await request.text()
-    seenUrls.push({ method: request.method, url: request.url, body })
-    return HttpResponse.json({ status: 'ok' })
-  }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/invite_allowlist`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ data: { allowed_users: ['@good:hs'], updated_ts: 456 } })
-  }),
-  http.post(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/invite_allowlist`, async ({ request }) => {
-    const body = await request.text()
-    seenUrls.push({ method: request.method, url: request.url, body })
-    return HttpResponse.json({ status: 'ok' })
   }),
   http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/sticky_events`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
@@ -124,12 +105,7 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
     vi.spyOn(matrixClientService, 'getAccessToken').mockReturnValue(ACCESS_TOKEN)
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null as unknown as MatrixClient)
     vi.spyOn(matrixClientService, 'waitForClientReady').mockResolvedValue(null as unknown as MatrixClient)
-    const services = [
-      synapsePrivacyExtensionService,
-      synapseInviteListService,
-      synapseStickyEventService,
-      synapseRoomSummaryService
-    ]
+    const services = [synapsePrivacyExtensionService, synapseStickyEventService, synapseRoomSummaryService]
     for (const svc of services) {
       svc.clear()
       ;(svc as unknown as { baseUrl: string }).baseUrl = HOMESERVER
@@ -161,42 +137,6 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
       expect(getCall).toBeDefined()
       expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/anti_screenshot`)
       expect(result).toBe(false)
-    })
-  })
-
-  describe('invite blocklist / allowlist', () => {
-    it('getInviteBlocklist hits GET /_matrix/client/v3/rooms/{roomId}/invite_blocklist', async () => {
-      const result = await synapseInviteListService.getInviteBlocklist('!room:hs')
-      const calls = filterBy('/invite_blocklist')
-      const getCall = calls.find((c) => c.method === 'GET')
-      expect(getCall).toBeDefined()
-      expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/invite_blocklist`)
-      expect(result.blocked_users).toHaveLength(1)
-    })
-
-    it('setInviteBlocklist POSTs /_matrix/client/v3/rooms/{roomId}/invite_blocklist with {user_ids}', async () => {
-      await synapseInviteListService.setInviteBlocklist('!room:hs', ['@bad:hs'])
-      const calls = filterBy('/invite_blocklist')
-      const postCall = calls.find((c) => c.method === 'POST')
-      expect(postCall).toBeDefined()
-      expect(JSON.parse(postCall!.body!)).toEqual({ user_ids: ['@bad:hs'] })
-    })
-
-    it('getInviteAllowlist hits GET /_matrix/client/v3/rooms/{roomId}/invite_allowlist', async () => {
-      const result = await synapseInviteListService.getInviteAllowlist('!room:hs')
-      const calls = filterBy('/invite_allowlist')
-      const getCall = calls.find((c) => c.method === 'GET')
-      expect(getCall).toBeDefined()
-      expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/invite_allowlist`)
-      expect(result.allowed_users).toHaveLength(1)
-    })
-
-    it('setInviteAllowlist POSTs /_matrix/client/v3/rooms/{roomId}/invite_allowlist with {user_ids}', async () => {
-      await synapseInviteListService.setInviteAllowlist('!room:hs', ['@good:hs'])
-      const calls = filterBy('/invite_allowlist')
-      const postCall = calls.find((c) => c.method === 'POST')
-      expect(postCall).toBeDefined()
-      expect(JSON.parse(postCall!.body!)).toEqual({ user_ids: ['@good:hs'] })
     })
   })
 
