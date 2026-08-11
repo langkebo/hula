@@ -80,3 +80,4 @@ build/config/*.d.ts
 build/config/*.js
 vite.config.d.ts
 vite.config.js
+.superpowers/
