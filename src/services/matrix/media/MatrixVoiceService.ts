@@ -1,3 +1,5 @@
+import type { MatrixClient } from 'matrix-js-sdk'
+import { ClientPrefix } from 'matrix-js-sdk/http-api'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
@@ -72,6 +74,15 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+/**
+ * VoiceManager 实例类型。
+ *
+ * 注：`matrix-js-sdk/voice` 子路径在 package.json exports 中已暴露，
+ * 但为保持与 RoomOperations 中 InviteBlocklistManager 一致的类型派生模式，
+ * 这里同样通过 MatrixClient 访问器返回类型派生。
+ */
+type VoiceManagerInstance = ReturnType<NonNullable<MatrixClient['getVoiceManager']>>
+
 class MatrixVoiceService extends BaseMatrixService {
   // FT-122: 校验必需的 ID 参数非空，避免空字符串传给后端
   private requireNonEmpty(value: string, name: string): void {
@@ -86,6 +97,22 @@ class MatrixVoiceService extends BaseMatrixService {
       throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
     }
     return client as MxcHttpClient
+  }
+
+  /**
+   * VoiceManager 访问器。
+   *
+   * SDK VoiceManager 默认使用 ClientPrefix.V3，但前端历史使用 V1 端点。
+   * 后端 V1/V3 均支持 stats/config/upload 等，但 convert/optimize/transcription
+   * 仅 V3 有路由。为保持行为一致性，全部走 V1（后端 V1 也支持）。
+   */
+  private getVoiceMgr(): VoiceManagerInstance {
+    const client = this.getClient()
+    const fn = (client as unknown as { getVoiceManager?: () => VoiceManagerInstance }).getVoiceManager
+    if (typeof fn !== 'function') {
+      throw new Error('MatrixClient.getVoiceManager is not available; SDK 未初始化')
+    }
+    return fn.call(client)
   }
 
   private resolveHttpUrl(mxcUrl?: string): string | undefined {
@@ -202,24 +229,16 @@ class MatrixVoiceService extends BaseMatrixService {
     totalMessages: number
     averageDuration: number
   }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
-
     try {
-      const path = roomId ? MATRIX_PATHS.VOICE.ROOM_STATS(roomId) : MATRIX_PATHS.VOICE.STATS
-      const available = await endpointCapabilityService.check('GET', path)
-      if (!available) {
-        logger.warn('[MatrixVoiceService] 语音统计端点不可用')
-        return { totalDuration: 0, totalMessages: 0, averageDuration: 0 }
-      }
-
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path)
+      const mgr = this.getVoiceMgr()
+      const result = roomId
+        ? await mgr.getRoomVoiceStats(roomId, ClientPrefix.V1)
+        : await mgr.getVoiceStats(ClientPrefix.V1)
+      const data = result as unknown as Record<string, unknown>
       return {
-        totalDuration: (result.total_duration as number) ?? 0,
-        totalMessages: (result.total_messages as number) ?? 0,
-        averageDuration: (result.average_duration as number) ?? 0
+        totalDuration: (data.total_duration as number) ?? (data.total_duration_ms as number) ?? 0,
+        totalMessages: (data.total_messages as number) ?? (data.message_count as number) ?? 0,
+        averageDuration: (data.average_duration as number) ?? (data.average_duration_ms as number) ?? 0
       }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getVoiceStats failed: ${err}`)
@@ -232,23 +251,12 @@ class MatrixVoiceService extends BaseMatrixService {
     totalMessages: number
   }> {
     this.requireNonEmpty(userId, 'userId')
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
-
     try {
-      const path = MATRIX_PATHS.VOICE.USER_STATS(userId)
-      const available = await endpointCapabilityService.check('GET', path)
-      if (!available) {
-        logger.warn('[MatrixVoiceService] 用户语音统计端点不可用')
-        return { totalDuration: 0, totalMessages: 0 }
-      }
-
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path)
+      const result = await this.getVoiceMgr().getUserVoiceStats(userId, ClientPrefix.V1)
+      const data = result as unknown as Record<string, unknown>
       return {
-        totalDuration: (result.total_duration as number) ?? 0,
-        totalMessages: (result.total_messages as number) ?? 0
+        totalDuration: (data.total_duration as number) ?? (data.total_duration_ms as number) ?? 0,
+        totalMessages: (data.total_messages as number) ?? (data.message_count as number) ?? 0
       }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getUserVoiceStats failed: ${err}`)
@@ -261,21 +269,18 @@ class MatrixVoiceService extends BaseMatrixService {
     allowedFormats: string[]
     autoTranscribe: boolean
   }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
-
     try {
       const available = await endpointCapabilityService.check('GET', MATRIX_PATHS.VOICE.CONFIG)
       if (!available) {
         throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
       }
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', MATRIX_PATHS.VOICE.CONFIG)
+      const result = await this.getVoiceMgr().getVoiceConfig(ClientPrefix.V1)
+      const data = result as unknown as Record<string, unknown>
       return {
-        maxDuration: (result.max_duration as number) ?? 300,
-        allowedFormats: (result.allowed_formats as string[]) ?? ['audio/webm', 'audio/ogg', 'audio/mp4'],
-        autoTranscribe: (result.auto_transcribe as boolean) ?? false
+        maxDuration: (data.max_duration as number) ?? 300,
+        allowedFormats: (data.allowed_formats as string[]) ??
+          (data.allowed_content_types as string[]) ?? ['audio/webm', 'audio/ogg', 'audio/mp4'],
+        autoTranscribe: (data.auto_transcribe as boolean) ?? false
       }
     } catch (err) {
       logger.error(`[MatrixVoiceService] 获取语音配置失败: ${err}`)
@@ -285,17 +290,12 @@ class MatrixVoiceService extends BaseMatrixService {
 
   async deleteVoice(messageId: string): Promise<void> {
     this.requireNonEmpty(messageId, 'messageId')
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
     try {
-      const path = MATRIX_PATHS.VOICE.CONTENT(messageId)
-      const available = await endpointCapabilityService.check('DELETE', path)
+      const available = await endpointCapabilityService.check('DELETE', MATRIX_PATHS.VOICE.CONTENT(messageId))
       if (!available) {
         throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
       }
-      await authedRequestWithPath<void>(client, 'DELETE', path)
+      await this.getVoiceMgr().deleteVoiceMessage(messageId, ClientPrefix.V1)
     } catch (err) {
       logger.error(`[MatrixVoiceService] 删除语音失败: ${messageId} ${err}`)
       throw err
@@ -374,19 +374,13 @@ class MatrixVoiceService extends BaseMatrixService {
 
   async getVoiceContent(messageId: string): Promise<Record<string, unknown> | null> {
     this.requireNonEmpty(messageId, 'messageId')
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
-
     try {
-      const path = MATRIX_PATHS.VOICE.CONTENT(messageId)
-      const available = await endpointCapabilityService.check('GET', path)
+      const available = await endpointCapabilityService.check('GET', MATRIX_PATHS.VOICE.CONTENT(messageId))
       if (!available) {
         return null
       }
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path)
-      return result
+      const result = await this.getVoiceMgr().getVoiceMessage(messageId, ClientPrefix.V1)
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getVoiceContent failed: ${err}`)
       return null
@@ -395,11 +389,6 @@ class MatrixVoiceService extends BaseMatrixService {
 
   async convertVoice(messageId: string, targetFormat: string): Promise<{ url: string; format: string } | null> {
     this.requireNonEmpty(messageId, 'messageId')
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
-
     try {
       const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.CONVERT)
       if (!available) {
@@ -407,17 +396,9 @@ class MatrixVoiceService extends BaseMatrixService {
         return null
       }
 
-      const result = await authedRequestWithPath<Record<string, unknown>>(
-        client,
-        'POST',
-        MATRIX_PATHS.VOICE.CONVERT,
-        undefined,
-        {
-          message_id: messageId,
-          target_format: targetFormat
-        }
-      )
-      return { url: (result.url as string) ?? '', format: (result.format as string) ?? targetFormat }
+      const result = await this.getVoiceMgr().convertVoiceMessage(messageId, { format: targetFormat }, ClientPrefix.V1)
+      const data = result as unknown as Record<string, unknown>
+      return { url: (data.url as string) ?? '', format: (data.format as string) ?? targetFormat }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] convertVoice failed: ${err}`)
       return null
@@ -429,11 +410,6 @@ class MatrixVoiceService extends BaseMatrixService {
     options?: { bitrate?: number; sample_rate?: number }
   ): Promise<{ url: string; size: number } | null> {
     this.requireNonEmpty(messageId, 'messageId')
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
-
     try {
       const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.OPTIMIZE)
       if (!available) {
@@ -441,18 +417,9 @@ class MatrixVoiceService extends BaseMatrixService {
         return null
       }
 
-      const body: Record<string, unknown> = { message_id: messageId }
-      if (options?.bitrate) body.bitrate = options.bitrate
-      if (options?.sample_rate) body.sample_rate = options.sample_rate
-
-      const result = await authedRequestWithPath<Record<string, unknown>>(
-        client,
-        'POST',
-        MATRIX_PATHS.VOICE.OPTIMIZE,
-        undefined,
-        body
-      )
-      return { url: (result.url as string) ?? '', size: (result.size as number) ?? 0 }
+      const result = await this.getVoiceMgr().optimizeVoiceMessage(messageId, options ?? {}, ClientPrefix.V1)
+      const data = result as unknown as Record<string, unknown>
+      return { url: (data.url as string) ?? '', size: (data.size as number) ?? 0 }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] optimizeVoice failed: ${err}`)
       return null
@@ -463,11 +430,6 @@ class MatrixVoiceService extends BaseMatrixService {
     messageId: string,
     lang?: string
   ): Promise<{ text: string; language?: string; confidence?: number } | null> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
-
     try {
       const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.TRANSCRIPTION)
       if (!available) {
@@ -475,20 +437,13 @@ class MatrixVoiceService extends BaseMatrixService {
         return null
       }
 
-      const body: Record<string, unknown> = { message_id: messageId }
-      if (lang) body.lang = lang
-
-      const result = await authedRequestWithPath<Record<string, unknown>>(
-        client,
-        'POST',
-        MATRIX_PATHS.VOICE.TRANSCRIPTION,
-        undefined,
-        body
-      )
+      const options = lang ? { language: lang } : undefined
+      const result = await this.getVoiceMgr().transcribeVoiceMessage(messageId, options, ClientPrefix.V1)
+      const data = result as unknown as Record<string, unknown>
       return {
-        text: (result.text as string) ?? '',
-        language: result.language as string | undefined,
-        confidence: result.confidence as number | undefined
+        text: (data.text as string) ?? '',
+        language: data.language as string | undefined,
+        confidence: data.confidence as number | undefined
       }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] transcribeVoiceViaApi failed: ${err}`)
@@ -500,6 +455,7 @@ class MatrixVoiceService extends BaseMatrixService {
    * 获取 RTC 传输协议信息（MSC4143）
    *
    * 调用 GET /_matrix/client/unstable/org.matrix.msc4143/rtc/transports
+   * VoiceManager 无此方法（MSC4143 unstable 端点），保留 http.authedRequest 直连。
    * 失败时返回空对象，调用方按无 RTC 能力处理。
    */
   async getRtcTransports(): Promise<Record<string, unknown>> {

@@ -6,6 +6,10 @@
  *
  * 这些测试与 MatrixVoiceService.test.ts 互补：前者验证成功路径，
  * 此文件专门覆盖错误传播路径。
+ *
+ * 注：deleteVoice/getVoiceConfig 已迁移到 VoiceManager（Task 5），
+ * 这些方法通过 getVoiceMgr() 调用 VoiceManager。uploadVoice 仍走
+ * authedRequestWithPath（FormData 上传），保留 authedRequestMock。
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -32,12 +36,21 @@ vi.mock('@/services/i18n', () => ({
 
 const authedRequestMock = vi.fn()
 
+const deleteVoiceMessageMock = vi.fn()
+const getVoiceConfigMock = vi.fn()
+
+const voiceMgr = {
+  deleteVoiceMessage: deleteVoiceMessageMock,
+  getVoiceConfig: getVoiceConfigMock
+}
+
 const mockClient = {
   http: {
     authedRequest: authedRequestMock
   },
   mxcUrlToHttp: vi.fn((mxcUrl: string) => `https://cdn.example.com/${mxcUrl.replace('mxc://', '')}`),
-  getRoom: vi.fn(() => null)
+  getRoom: vi.fn(() => null),
+  getVoiceManager: vi.fn(() => voiceMgr)
 }
 
 const { matrixVoiceService } = await import('../MatrixVoiceService')
@@ -48,9 +61,11 @@ describe('MatrixVoiceService error propagation (FT-113)', () => {
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
     endpointCheckMock.mockResolvedValue(true)
     authedRequestMock.mockResolvedValue({})
+    deleteVoiceMessageMock.mockResolvedValue({})
+    getVoiceConfigMock.mockResolvedValue({})
   })
 
-  describe('deleteVoice', () => {
+  describe('deleteVoice via VoiceManager', () => {
     it('throws when the voice delete endpoint is unavailable instead of silently returning', async () => {
       endpointCheckMock.mockResolvedValueOnce(false)
 
@@ -58,17 +73,17 @@ describe('MatrixVoiceService error propagation (FT-113)', () => {
       await expect(matrixVoiceService.deleteVoice('$msg-1')).rejects.toThrow(
         'matrix_error.media.voice_message_manager_unavailable'
       )
-      expect(authedRequestMock).not.toHaveBeenCalled()
+      expect(deleteVoiceMessageMock).not.toHaveBeenCalled()
     })
 
-    it('propagates HTTP errors from the delete endpoint instead of swallowing them', async () => {
-      authedRequestMock.mockRejectedValueOnce(new Error('HTTP 403'))
+    it('propagates VoiceManager errors from deleteVoiceMessage instead of swallowing them', async () => {
+      deleteVoiceMessageMock.mockRejectedValueOnce(new Error('HTTP 403'))
 
       await expect(matrixVoiceService.deleteVoice('$msg-1')).rejects.toThrow('HTTP 403')
     })
   })
 
-  describe('getVoiceConfig', () => {
+  describe('getVoiceConfig via VoiceManager', () => {
     it('throws when the voice config endpoint is unavailable instead of returning silent defaults', async () => {
       endpointCheckMock.mockResolvedValueOnce(false)
 
@@ -77,17 +92,17 @@ describe('MatrixVoiceService error propagation (FT-113)', () => {
       await expect(matrixVoiceService.getVoiceConfig()).rejects.toThrow(
         'matrix_error.media.voice_message_manager_unavailable'
       )
-      expect(authedRequestMock).not.toHaveBeenCalled()
+      expect(getVoiceConfigMock).not.toHaveBeenCalled()
     })
 
-    it('propagates HTTP errors from the config endpoint instead of returning silent defaults', async () => {
-      authedRequestMock.mockRejectedValueOnce(new Error('HTTP 500'))
+    it('propagates VoiceManager errors from getVoiceConfig instead of returning silent defaults', async () => {
+      getVoiceConfigMock.mockRejectedValueOnce(new Error('HTTP 500'))
 
       await expect(matrixVoiceService.getVoiceConfig()).rejects.toThrow('HTTP 500')
     })
 
     it('still returns parsed config on the success path', async () => {
-      authedRequestMock.mockResolvedValueOnce({
+      getVoiceConfigMock.mockResolvedValueOnce({
         max_duration: 600,
         allowed_formats: ['audio/webm'],
         auto_transcribe: true
@@ -99,7 +114,7 @@ describe('MatrixVoiceService error propagation (FT-113)', () => {
     })
   })
 
-  describe('uploadVoice', () => {
+  describe('uploadVoice (still uses authedRequestWithPath)', () => {
     it('propagates HTTP errors from the upload endpoint', async () => {
       authedRequestMock.mockRejectedValueOnce(new Error('HTTP 401'))
 

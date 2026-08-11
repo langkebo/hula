@@ -10,10 +10,16 @@
  * uploadVoice, getVoiceStats, getUserVoiceStats, getVoiceConfig,
  * deleteVoice, getRoomVoiceList, getUserVoiceList, getVoiceContent,
  * convertVoice, optimizeVoice, transcribeVoiceViaApi.
+ *
+ * After Task 5 migration:
+ * - uploadVoice / getRoomVoiceList / getUserVoiceList still use authedRequestWithPath
+ * - getVoiceStats / getUserVoiceStats / getVoiceConfig / deleteVoice / getVoiceContent /
+ *   convertVoice / optimizeVoice / transcribeVoiceViaApi use getVoiceManager()
+ *   (VoiceManager internally hits the same V1 endpoints via SDK HTTP layer)
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, extendMatrixClientWithManagers, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixVoiceService } from '../MatrixVoiceService'
 
@@ -44,8 +50,10 @@ vi.mock('@/services/i18n', () => ({
   useI18nGlobal: () => ({ t: (key: string) => key })
 }))
 
-// MSW handlers at FULL V1-prefixed URLs. Specific paths registered before
-// the :messageId wildcard so /voice/config etc. don't get swallowed.
+// MSW handlers at FULL V1-prefixed URLs.
+// VoiceManager uses REST-style paths: /voice/{mediaId}/convert (not /voice/convert).
+// Backend (synapse-rust/src/web/routes/voice.rs) registers the same pattern.
+// Specific paths registered before the :messageId wildcard so /voice/config etc. don't get swallowed.
 setupMswServer(
   http.post(`${HOMESERVER}/_matrix/client/v1/voice/upload`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
@@ -75,15 +83,16 @@ setupMswServer(
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ voices: [{ event_id: '$v2', room_id: '!r:hs', duration: 8, timestamp: 2 }], total: 1 })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/voice/convert`, ({ request }) => {
+  // VoiceManager REST-style paths: /voice/{mediaId}/convert|optimize|transcription
+  http.post(`${HOMESERVER}/_matrix/client/v1/voice/:mediaId/convert`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ url: 'mxc://hs.voice-contract.test/conv1', format: 'mp3' })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/voice/optimize`, ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/client/v1/voice/:mediaId/optimize`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ url: 'mxc://hs.voice-contract.test/opt1', size: 1024 })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/voice/transcription`, ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/client/v1/voice/:mediaId/transcription`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ text: 'hello', language: 'en', confidence: 0.95 })
   }),
@@ -99,6 +108,12 @@ setupMswServer(
 )
 
 describe('Voice service URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    // In Vitest environment, SDK skips async manager init (shouldSkipAsyncManagerInit).
+    // Manually initialize so getVoiceManager() is available on the real SDK client.
+    await extendMatrixClientWithManagers()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     realClient = createClient({
@@ -219,35 +234,37 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     expect(result?.body).toBe('voice-bytes')
   })
 
-  it('convertVoice hits POST /voice/convert with body (no V1 double-prefix)', async () => {
+  it('convertVoice hits POST /voice/:mediaId/convert via VoiceManager (no V1 double-prefix)', async () => {
     const result = await matrixVoiceService.convertVoice('$msg-3', 'mp3')
 
-    const calls = seenUrls.filter((u) => u.url.includes('/voice/convert'))
+    const calls = seenUrls.filter((u) => u.url.includes('/convert'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/convert`)
+    // VoiceManager uses REST-style: /voice/{mediaId}/convert
+    // encodeURIComponent('$msg-3') = '%24msg-3'
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/%24msg-3/convert`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result?.format).toBe('mp3')
   })
 
-  it('optimizeVoice hits POST /voice/optimize with body (no V1 double-prefix)', async () => {
+  it('optimizeVoice hits POST /voice/:mediaId/optimize via VoiceManager (no V1 double-prefix)', async () => {
     const result = await matrixVoiceService.optimizeVoice('$msg-4', { bitrate: 128 })
 
-    const calls = seenUrls.filter((u) => u.url.includes('/voice/optimize'))
+    const calls = seenUrls.filter((u) => u.url.includes('/optimize'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/optimize`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/%24msg-4/optimize`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result?.size).toBe(1024)
   })
 
-  it('transcribeVoiceViaApi hits POST /voice/transcription with body (no V1 double-prefix)', async () => {
+  it('transcribeVoiceViaApi hits POST /voice/:mediaId/transcription via VoiceManager (no V1 double-prefix)', async () => {
     const result = await matrixVoiceService.transcribeVoiceViaApi('$msg-5', 'en')
 
-    const calls = seenUrls.filter((u) => u.url.includes('/voice/transcription'))
+    const calls = seenUrls.filter((u) => u.url.includes('/transcription'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/transcription`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/%24msg-5/transcription`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result?.text).toBe('hello')
     expect(result?.language).toBe('en')

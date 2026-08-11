@@ -54,12 +54,19 @@ const authedRequestMock = vi
     }
   )
 
+const transcribeVoiceMessageMock = vi.fn()
+
+const voiceMgr = {
+  transcribeVoiceMessage: transcribeVoiceMessageMock
+}
+
 const mockClient = {
   http: {
     authedRequest: authedRequestMock
   },
   mxcUrlToHttp: vi.fn((mxcUrl: string) => `https://cdn.example.com/${mxcUrl.replace('mxc://', '')}`),
-  getRoom: vi.fn(() => null as Room | null)
+  getRoom: vi.fn(() => null as Room | null),
+  getVoiceManager: vi.fn(() => voiceMgr)
 }
 
 const { matrixVoiceService, isVoiceMessageResult } = await import('../MatrixVoiceService')
@@ -123,6 +130,11 @@ describe('MatrixVoiceService', () => {
   })
 
   it('should transcribe voice through the voice transcription endpoint', async () => {
+    transcribeVoiceMessageMock.mockResolvedValueOnce({
+      text: 'hello world',
+      language: 'en'
+    })
+
     const result = await matrixVoiceService.transcribeVoice({
       roomId: '!room:example.org',
       eventId: '$voice-event'
@@ -133,13 +145,13 @@ describe('MatrixVoiceService', () => {
       language: 'en'
     })
     expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/client/v1/voice/transcription')
-    expect(authedRequestMock).toHaveBeenCalledWith(
-      'POST',
-      '/voice/transcription',
+    expect(transcribeVoiceMessageMock).toHaveBeenCalledWith(
+      '$voice-event',
       undefined,
-      { message_id: '$voice-event' },
-      { prefix: '/_matrix/client/v1' }
+      // ClientPrefix.V1
+      expect.anything()
     )
+    expect(authedRequestMock).not.toHaveBeenCalled()
   })
 
   it('returns endpoint-unavailable error when upload api is disabled', async () => {
