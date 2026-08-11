@@ -4,11 +4,11 @@
     data-tauri-drag-region
     id="center"
     tabindex="-1"
-    :class="{ 'rounded-r-8px': isShrink }"
+    :class="{ 'rounded-r-8px': isShrink, 'border-r-0': isRoomListRoute }"
     class="resizable relative select-none flex flex-col border-r-(1px solid [--tjg-border-layout-divider])"
     :style="centerStyle">
-    <!-- 分隔条（shrink 模式下隐藏） -->
-    <PanelResizeHandle v-show="!isShrink" side="left" style="touch-action: none" />
+    <!-- 分隔条（shrink 模式 / 房间列表页隐藏） -->
+    <PanelResizeHandle v-show="!isShrink && !isRoomListRoute" side="left" style="touch-action: none" />
 
     <ActionBar
       class="absolute right-0 w-full"
@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useRoute } from 'vue-router'
 import PanelResizeHandle from '@/components/common/PanelResizeHandle.vue'
 import { useResponsiveBreakpoint } from '@/composables/layout/useResponsiveBreakpoint'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -39,6 +40,9 @@ const MIN_CENTER_WIDTH = 280
 const MAX_CENTER_WIDTH = 400
 const DEFAULT_CENTER_WIDTH = MIN_CENTER_WIDTH
 const CENTER_WIDTH_STORAGE_KEY = 'tjg-center-panel-width'
+
+const route = useRoute()
+const isRoomListRoute = computed(() => route.name === 'room')
 
 function loadStoredWidth(): number {
   if (typeof localStorage === 'undefined') return DEFAULT_CENTER_WIDTH
@@ -64,7 +68,7 @@ const centerEl = shallowRef<HTMLElement | null>(null)
 // Step 2.3：响应式断点派生收缩状态；非 shrink 模式宽度由 store 持久化
 const { isShrink } = useResponsiveBreakpoint()
 
-// 中间栏样式：shrink 模式下 flex 自适应，否则按 store 持久化的面板宽度
+// 中间栏样式：shrink 模式下 flex 自适应，房间列表页扩展填满，否则按 store 持久化的面板宽度
 const centerStyle = computed(() => {
   if (isShrink.value) {
     return {
@@ -72,6 +76,15 @@ const centerStyle = computed(() => {
       width: '64px',
       minWidth: '0',
       maxWidth: '64px'
+    }
+  }
+  // 房间列表页：中间栏扩展填满可用空间（右侧栏已隐藏）
+  if (isRoomListRoute.value) {
+    return {
+      flex: '1 1 auto',
+      width: 'auto',
+      minWidth: '0',
+      maxWidth: 'none'
     }
   }
   const w = settingStore.panelWidth.left

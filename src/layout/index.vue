@@ -9,7 +9,7 @@
     <div class="flex flex-1 min-h-0">
       <AsyncLeft />
       <AsyncCenter />
-      <AsyncRight v-if="!shrinkStatus" />
+      <AsyncRight v-if="!shrinkStatus && !isRoomListRoute" />
     </div>
     <div v-if="overlayVisible" class="absolute inset-0 z-10 flex items-center justify-center bg-[--right-bg-color]">
       <LoadingSpinner :percentage="loadingPercentage" :loading-text="loadingText" />
@@ -27,7 +27,6 @@
         </div>
       </div>
     </transition>
-    <SettingsDialog />
   </div>
 </template>
 
@@ -67,13 +66,13 @@ import { createLogger } from '@/utils/Logger'
 import { getFilesMeta } from '@/utils/PathUtil'
 import { isMobile, isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
-import SettingsDialog from '@/views/settingsWindow/SettingsDialog.vue'
 
 const logger = createLogger('Layout')
 const { showFeedback } = useActionFeedback()
 
 const { t } = useI18n()
 const route = useRoute()
+const isRoomListRoute = computed(() => route.name === 'room')
 const userStore = useUserStore()
 const chatStore = useChatStore()
 const groupStore = useGroupStore()

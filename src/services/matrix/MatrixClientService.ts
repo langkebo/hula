@@ -3,6 +3,7 @@ import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 import { useI18nGlobal } from '@/services/i18n'
 import { persistRefreshedToken, setupSystemResumeListener } from '@/services/matrix/matrixClientPlatform'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import { deleteCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
 import { PendingEventOrdering } from '@/types/matrix-js-sdk'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
@@ -438,6 +439,10 @@ class MatrixClientService {
       return
     }
 
+    // 在 client.logout() 销毁会话前提取 userId/deviceId，用于清理 keychain 中的 storagePassword
+    const userId = client.getUserId?.() ?? null
+    const deviceId = client.getDeviceId?.() ?? null
+
     this.tokenManager.clear()
 
     try {
@@ -452,6 +457,10 @@ class MatrixClientService {
       AvatarUtils.setMxcResolver(null)
       this.connectionManager.setClient(null)
       this.connectionManager.updateConnectionState('DISCONNECTED')
+      // ISSUE-08：清理 keychain 中的 crypto storagePassword，避免残留
+      if (userId && deviceId) {
+        void deleteCryptoStoragePassword(userId, deviceId)
+      }
     }
   }
 

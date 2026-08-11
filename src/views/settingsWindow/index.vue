@@ -1,18 +1,20 @@
 <template>
   <div class="settings-window-page">
-    <SettingsDialog standalone />
+    <SettingsPage :standalone="isStandalone" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import {
   normalizeSettingsTab,
   type SettingsTabInput,
   useSettingsDialogStore
 } from '../../stores/domains/settings/settingsDialog'
-import SettingsDialog from './SettingsDialog.vue'
+import SettingsPage from './SettingsPage.vue'
 
 defineOptions({
   name: 'SettingsWindowPage'
@@ -21,6 +23,17 @@ defineOptions({
 const route = useRoute()
 const settingsDialogStore = useSettingsDialogStore()
 
+const isStandalone = ref(false)
+
+function detectStandalone() {
+  if (!hasTauriRuntime()) {
+    isStandalone.value = false
+    return
+  }
+  const label = WebviewWindow.getCurrent().label
+  isStandalone.value = label === 'settings'
+}
+
 function syncRouteTab() {
   const tab = typeof route.query.tab === 'string' ? (route.query.tab as SettingsTabInput) : undefined
   const normalizedTab = normalizeSettingsTab(tab)
@@ -28,6 +41,7 @@ function syncRouteTab() {
 }
 
 onMounted(() => {
+  detectStandalone()
   syncRouteTab()
 })
 
@@ -44,7 +58,6 @@ watch(
   width: 100%;
   height: 100%;
   background: var(--tjg-surface-app);
-  padding: var(--tjg-space-3);
   box-sizing: border-box;
 }
 </style>

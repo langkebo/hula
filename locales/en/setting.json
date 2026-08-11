@@ -84,6 +84,13 @@
       "friends": ["friends", "contacts", "remark", "requests", "groups"],
       "burn_after_read": ["burn-after-read", "ephemeral", "burn", "timer"],
       "ai_connection": ["AI", "connection", "MCP", "tools", "openai", "assistant"]
+    },
+    "groups": {
+      "general": "General",
+      "communication": "Communication",
+      "security": "Security",
+      "advanced": "Advanced",
+      "other": "Other"
     }
   },
   "footer": {
@@ -1288,6 +1295,9 @@
     "rotation_status_label": "Key Rotation Status",
     "rotation_needed": "Rotation Needed",
     "rotation_up_to_date": "Up to Date",
+    "dehydrated_device_section": "Dehydrated Device",
+    "dehydrated_device_label": "Dehydrated Device",
+    "dehydrated_device_desc": "Manage your dehydrated device for offline key storage",
     "device_section": "Device Verification",
     "verify_status_label": "Verification Status",
     "this_device_verified": "This device is verified",
@@ -1439,6 +1449,7 @@
     "security_key_created": "Security key set up successfully",
     "e2ee_incomplete_hint": "Encryption setup incomplete, recommended to complete setup to secure your messages",
     "quick_setup": "Quick Setup",
+    "complete_e2ee_setup": "Complete End-to-End Encryption Setup",
     "onboarding_complete": "Encryption setup complete!",
     "onboarding_skip": "Encryption setup skipped, you can complete it later in settings",
     "secure_backup_section": "Secure Backup (4S)",

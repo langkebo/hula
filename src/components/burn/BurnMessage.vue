@@ -29,6 +29,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useUserStore } from '@/stores/domains/user/user'
 import BurnIndicator from './BurnIndicator.vue'
 
 const { t } = useI18n()
@@ -42,10 +43,12 @@ const props = defineProps<{
   isBurned?: boolean
   roomId?: string
   eventId?: string
+  senderId?: string
 }>()
 
 const burnAfterReadApi = useBurnAfterRead()
 const chatStore = useChatStore()
+const userStore = useUserStore()
 
 const internalIsBurning = ref(props.isBurning || false)
 const internalIsBurned = ref(props.isBurned || false)
@@ -77,6 +80,10 @@ onMounted(() => {
 
 async function handleMessageVisible() {
   if (!props.roomId || !props.eventId) return
+  // T6: 发送方不调用 markBurnRead（应由接收方触发）。
+  // 发送方的倒计时由 BURN_MESSAGE_READ 事件驱动（接收方阅读后后端通知）。
+  const currentUserId = userStore.userInfo?.uid
+  if (props.senderId && currentUserId && props.senderId === currentUserId) return
   const success = await burnAfterReadApi.markMessageRead(props.eventId, props.roomId)
   if (success) {
     // Fix 4: 标记成功后设 isBurning=true，触发 watch → startCountdown

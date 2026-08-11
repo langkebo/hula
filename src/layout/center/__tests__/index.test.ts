@@ -58,7 +58,8 @@ vi.mock('vue-router', () => ({
   RouterView: defineComponent({
     name: 'RouterView',
     setup: () => () => h('div', { class: 'router-view-stub' })
-  })
+  }),
+  useRoute: () => ({ name: 'message', path: '/message' })
 }))
 
 import { useSettingStore } from '@/stores/domains/settings/setting'

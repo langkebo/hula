@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { isDesktop } from '@/composables/usePlatform'
 import { useSessionActions } from '@/composables/user/useSessionActions'
-import { type SettingsTabType, useSettingsDialogStore } from '@/stores/domains/settings/settingsDialog'
+import type { SettingsTabType } from '@/stores/domains/settings/settingsDialog'
 import { type MenuPosition, type MenuTrigger, useUserMenuStore } from '@/stores/domains/user/userMenu'
 import { createLogger } from '@/utils/Logger'
 import { findMenuItemById, getFilteredSections, setLogoutCallback, setRouterInstance } from './menuConfig'
@@ -14,7 +14,6 @@ const logger = createLogger('UserMenu')
 
 export function useUserMenu() {
   const userMenuStore = useUserMenuStore()
-  const settingsDialogStore = useSettingsDialogStore()
   const dialog = useDialog()
   const { showFeedback, showProgressFeedback } = useActionFeedback()
   const router = useRouter()
@@ -77,7 +76,7 @@ export function useUserMenu() {
     if (!item || item.disabled) return
 
     if (item.tabId) {
-      settingsDialogStore.openDialog(item.tabId)
+      openSettings(item.tabId)
     } else if (item.action) {
       item.action()
     }
@@ -86,7 +85,8 @@ export function useUserMenu() {
   }
 
   function openSettings(tab?: SettingsTabType): void {
-    settingsDialogStore.openDialog(tab)
+    const query = tab ? { tab } : undefined
+    router.push({ path: '/settings', query })
     closeMenu()
   }
 

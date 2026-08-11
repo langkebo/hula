@@ -142,7 +142,8 @@
               :is-burning="message.message.isBurning"
               :is-burned="message.message.isBurned"
               :room-id="message.message.roomId"
-              :event-id="message.message.id">
+              :event-id="message.message.id"
+              :sender-id="message.fromUser?.uid">
               <component
                 v-memo="[
                   message.message.id,

@@ -30,6 +30,7 @@
         </div>
 
         <RoomCardGrid
+          class="flex-1 min-h-0"
           :rooms="filteredRoomCardViewModels"
           :loading="syncLoading || chatStore.sessionOptions.isLoading"
           :empty-description="emptyDescription"
@@ -41,12 +42,19 @@
       </div>
     </template>
   </ListWorkbenchShell>
+
+  <RoomDetailDrawer
+    :room-id="drawerRoomId"
+    @close="drawerRoomId = null"
+    @enter-room="handleDrawerEnterRoom"
+    @settings="handleDrawerSettings" />
 </template>
 <script lang="ts" setup name="roomList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import RoomCardGrid from '@/components/room/RoomCardGrid.vue'
+import RoomDetailDrawer from '@/components/room/RoomDetailDrawer.vue'
 import RoomMembershipTabs from '@/components/room/RoomMembershipTabs.vue'
 import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
 import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
@@ -139,31 +147,47 @@ const findSessionItem = (roomId: string): SessionItem | undefined => {
   return roomSessionList.value.find((item) => item.roomId === roomId)
 }
 
-/** P2：进入聊天界面（卡片单击和消息按钮共用） */
-const enterChat = (roomId: string) => {
+/** 房间详情抽屉状态 */
+const drawerRoomId = ref<string | null>(null)
+
+/** 进入聊天界面（消息按钮 + 抽屉「进入房间」共用） */
+const enterChat = async (roomId: string) => {
   const item = findSessionItem(roomId)
   if (item) {
-    void handleMsgClick(item)
+    await handleMsgClick(item)
+    await router.push({ name: 'message', params: { roomId } }).catch(() => {})
   }
 }
 
-/** 单击卡片 → 进入聊天界面 */
+/** 单击卡片 → 打开房间详情抽屉 */
 const handleCardPreview = (roomId: string) => {
-  enterChat(roomId)
+  drawerRoomId.value = roomId
 }
 
 /** 点击消息按钮 → 进入聊天界面 */
 const handleCardMessage = (roomId: string) => {
-  enterChat(roomId)
+  void enterChat(roomId)
 }
 
-/** 点击信息按钮 → 打开房间详情 */
+/** 点击信息按钮 → 打开房间详情抽屉 */
 const handleCardInfo = (roomId: string) => {
-  void router.push({ name: 'room-details', params: { roomId } })
+  drawerRoomId.value = roomId
 }
 
-/** 点击设置按钮 → 打开房间详情并进入设置模式 */
+/** 点击设置按钮 → 打开房间详情抽屉（后续可切换为设置抽屉） */
 const handleCardSettings = (roomId: string) => {
+  drawerRoomId.value = roomId
+}
+
+/** 抽屉「进入房间」→ 进入聊天界面 */
+const handleDrawerEnterRoom = (roomId: string) => {
+  drawerRoomId.value = null
+  void enterChat(roomId)
+}
+
+/** 抽屉「房间设置」→ 跳转设置模式 */
+const handleDrawerSettings = (roomId: string) => {
+  drawerRoomId.value = null
   void router.push({ name: 'room-details', params: { roomId }, query: { mode: 'settings' } })
 }
 
