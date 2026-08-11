@@ -21,33 +21,52 @@ export type SettingsTabType = (typeof SETTINGS_TAB_IDS)[number]
 export type LegacySettingsTabType = 'security' | 'help' | 'general' | 'privacy' | 'shortcuts' | 'about'
 export type SettingsTabInput = SettingsTabType | LegacySettingsTabType
 
+export type SettingsTabGroup = 'general' | 'communication' | 'security' | 'advanced' | 'other'
+
 export interface SettingsTab {
   id: SettingsTabType
   label: string
   icon: string
+  group: SettingsTabGroup
   desktopOnly?: boolean
   mobileOnly?: boolean
 }
 
 export type SettingsTabTranslator = (key: string) => string
 
+export const SETTINGS_TAB_GROUPS: { id: SettingsTabGroup; label: string }[] = [
+  { id: 'general', label: 'General' },
+  { id: 'communication', label: 'Communication' },
+  { id: 'security', label: 'Security' },
+  { id: 'advanced', label: 'Advanced' },
+  { id: 'other', label: 'Other' }
+]
+
+export const SETTINGS_TAB_GROUP_TRANSLATION_KEYS: Record<SettingsTabGroup, string> = {
+  general: 'setting.dialog.groups.general',
+  communication: 'setting.dialog.groups.communication',
+  security: 'setting.dialog.groups.security',
+  advanced: 'setting.dialog.groups.advanced',
+  other: 'setting.dialog.groups.other'
+}
+
 export const SETTINGS_TABS: SettingsTab[] = [
-  { id: 'account', label: 'Account', icon: 'user' },
-  { id: 'sessions', label: 'Sessions', icon: 'devices' },
-  { id: 'appearance', label: 'Appearance', icon: 'palette' },
-  { id: 'notifications', label: 'Notifications', icon: 'bell' },
-  { id: 'preferences', label: 'Preferences', icon: 'settings' },
-  { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', desktopOnly: true },
-  { id: 'sidebar', label: 'Sidebar', icon: 'sidebar', desktopOnly: true },
-  { id: 'voiceVideo', label: 'Voice & Video', icon: 'microphone' },
-  { id: 'securityPrivacy', label: 'Security & Privacy', icon: 'shield' },
-  { id: 'encryption', label: 'Encryption', icon: 'key' },
-  { id: 'labs', label: 'Labs', icon: 'flask' },
-  { id: 'mjolnir', label: 'Moderation', icon: 'block-helper' },
-  { id: 'helpAbout', label: 'Help & About', icon: 'help-circle' },
-  { id: 'friends', label: 'Friends', icon: 'account-group' },
-  { id: 'burnAfterRead', label: 'Burn After Read', icon: 'timer-outline' },
-  { id: 'aiConnection', label: 'AI Connection', icon: 'robot' }
+  { id: 'account', label: 'Account', icon: 'user', group: 'general' },
+  { id: 'sessions', label: 'Sessions', icon: 'devices', group: 'general' },
+  { id: 'appearance', label: 'Appearance', icon: 'palette', group: 'general' },
+  { id: 'notifications', label: 'Notifications', icon: 'bell', group: 'general' },
+  { id: 'preferences', label: 'Preferences', icon: 'settings', group: 'general' },
+  { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', group: 'general', desktopOnly: true },
+  { id: 'sidebar', label: 'Sidebar', icon: 'sidebar', group: 'general', desktopOnly: true },
+  { id: 'voiceVideo', label: 'Voice & Video', icon: 'microphone', group: 'communication' },
+  { id: 'securityPrivacy', label: 'Security & Privacy', icon: 'shield', group: 'security' },
+  { id: 'encryption', label: 'Encryption', icon: 'key', group: 'security' },
+  { id: 'labs', label: 'Labs', icon: 'flask', group: 'advanced' },
+  { id: 'mjolnir', label: 'Moderation', icon: 'block-helper', group: 'advanced' },
+  { id: 'helpAbout', label: 'Help & About', icon: 'help-circle', group: 'other' },
+  { id: 'friends', label: 'Friends', icon: 'account-group', group: 'communication' },
+  { id: 'burnAfterRead', label: 'Burn After Read', icon: 'timer-outline', group: 'communication' },
+  { id: 'aiConnection', label: 'AI Connection', icon: 'robot', group: 'advanced' }
 ]
 
 const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {
@@ -120,4 +139,22 @@ export function normalizeSettingsTab(tab?: SettingsTabInput): SettingsTabType | 
   }
 
   return undefined
+}
+
+export function getSettingsTabGroupLabel(groupId: SettingsTabGroup, t?: SettingsTabTranslator): string {
+  const fallback = SETTINGS_TAB_GROUPS.find((g) => g.id === groupId)?.label ?? groupId
+  if (!t) return fallback
+  const key = SETTINGS_TAB_GROUP_TRANSLATION_KEYS[groupId]
+  const translated = t(key)
+  return translated === key ? fallback : translated
+}
+
+export function getGroupedSettingsTabs(
+  tabs: SettingsTab[]
+): { group: SettingsTabGroup; label: string; tabs: SettingsTab[] }[] {
+  return SETTINGS_TAB_GROUPS.map((g) => ({
+    group: g.id,
+    label: g.label,
+    tabs: tabs.filter((tab) => tab.group === g.id)
+  })).filter((entry) => entry.tabs.length > 0)
 }

@@ -7,6 +7,11 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
+vi.mock('@/services/secure/cryptoStorageKey', () => ({
+  getOrCreateCryptoStoragePassword: vi.fn().mockResolvedValue(null),
+  deleteCryptoStoragePassword: vi.fn().mockResolvedValue(undefined)
+}))
+
 /**
  * H1 回归测试：同一用户换设备登录时，ensureCrypto 必须触发主动清理。
  *

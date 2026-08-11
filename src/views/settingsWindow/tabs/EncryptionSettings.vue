@@ -559,6 +559,7 @@ function handleE2EEBootstrapSkip() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--tjg-space-3);
   padding: var(--tjg-space-3) 0;
   border-bottom: 1px solid var(--tjg-settings-divider);
 }
@@ -566,6 +567,8 @@ function handleE2EEBootstrapSkip() {
 .setting-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  flex: 1;
 }
 
 .setting-label {

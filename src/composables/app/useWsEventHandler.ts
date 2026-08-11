@@ -535,6 +535,15 @@ export function useWsEventHandler() {
       }
     })
 
+    // T6: 接收方阅读 burn 消息后，后端发射 MessageRead 事件给所有房间成员。
+    // 发送方收到此事件后启动倒计时（发送方自身不调 markBurnRead）。
+    useMitt.on<{ eventId: string; readAt: number }>(MittEnum.BURN_MESSAGE_READ, (payload) => {
+      logger.debug('[ManagerEvent] 阅后即焚消息已被对方阅读', payload)
+      if (payload?.eventId) {
+        chatStore.updateMsg({ msgId: payload.eventId, isBurning: true })
+      }
+    })
+
     useMitt.on(MittEnum.WIDGET_CREATED, (widget: unknown) => {
       logger.info('[ManagerEvent] Widget 已创建', widget)
     })

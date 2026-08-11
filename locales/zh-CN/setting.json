@@ -84,6 +84,13 @@
       "friends": ["好友", "联系人", "备注", "contacts", "remark"],
       "burn_after_read": ["阅后即焚", "ephemeral", "burn", "timer"],
       "ai_connection": ["AI", "连接", "MCP", "工具", "openai", "assistant"]
+    },
+    "groups": {
+      "general": "通用",
+      "communication": "通讯",
+      "security": "安全",
+      "advanced": "高级",
+      "other": "其他"
     }
   },
   "footer": {
@@ -1288,6 +1295,9 @@
     "rotation_status_label": "密钥轮换状态",
     "rotation_needed": "需要轮换",
     "rotation_up_to_date": "已是最新",
+    "dehydrated_device_section": "脱水设备",
+    "dehydrated_device_label": "脱水设备",
+    "dehydrated_device_desc": "管理用于离线密钥存储的脱水设备",
     "device_section": "设备验证",
     "verify_status_label": "验证状态",
     "this_device_verified": "此设备已验证",
@@ -1439,6 +1449,7 @@
     "security_key_created": "安全密钥设置成功",
     "e2ee_incomplete_hint": "加密设置尚未完成，建议完成设置以保护消息安全",
     "quick_setup": "快速设置",
+    "complete_e2ee_setup": "完成端到端加密设置",
     "onboarding_complete": "加密设置完成！",
     "onboarding_skip": "已跳过加密设置，可稍后在设置中完成",
     "secure_backup_section": "安全备份 (4S)",

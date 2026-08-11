@@ -56,9 +56,6 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({ WebviewWindow: { getCurrent: v
 vi.mock('@tauri-apps/api/window', () => ({ UserAttentionType: { Critical: 'Critical' } }))
 
 vi.mock('@/components/atomic/LoadingSpinner.vue', () => ({ default: { name: 'LoadingSpinner', template: '<div />' } }))
-vi.mock('@/views/settingsWindow/SettingsDialog.vue', () => ({
-  default: { name: 'SettingsDialog', template: '<div />' }
-}))
 
 const mountLayout = async () => {
   vi.stubGlobal(

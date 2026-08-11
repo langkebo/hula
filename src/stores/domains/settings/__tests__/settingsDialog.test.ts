@@ -23,7 +23,7 @@ describe('settingsDialog', () => {
   it('maps remaining legacy dialog targets without breaking activeTab', () => {
     const store = useSettingsDialogStore()
 
-    store.openDialog('security')
+    store.setActiveTab('security')
     expect(store.activeTab).toBe('securityPrivacy')
 
     store.setActiveTab('help')

@@ -14,6 +14,7 @@
  * IndexedDB 清理重试 + crypto 状态机复杂实现
  */
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
+import { getOrCreateCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixCrypto')
@@ -35,7 +36,7 @@ export interface EventDecryptedDebugState {
 
 type RustCryptoCapableClient = MatrixClient & {
   getCrypto?: () => unknown
-  initRustCrypto?: (args?: { useIndexedDB?: boolean }) => Promise<void>
+  initRustCrypto?: (args?: { useIndexedDB?: boolean; storagePassword?: string }) => Promise<void>
 }
 
 /**
@@ -150,9 +151,19 @@ export class MatrixCryptoStateTracker {
       usedIndexedDB: useIndexedDB
     }
 
+    // ISSUE-08 对接：从系统 keychain 派生 storagePassword，加密 IndexedDB crypto store
+    // 和待发事件队列（PendingEventsCipher）。keychain 不可用时降级为不加密（dev/浏览器）。
+    const storagePassword = await getOrCreateCryptoStoragePassword(userId, deviceId)
+    if (storagePassword) {
+      logger.info(`已从 keychain 获取 crypto storagePassword: ${userId}/${deviceId}`)
+    } else {
+      logger.warn(`未获取到 crypto storagePassword，crypto store 将不加密: ${userId}/${deviceId}`)
+    }
+
     try {
       await cryptoClient.initRustCrypto({
-        useIndexedDB
+        useIndexedDB,
+        storagePassword: storagePassword ?? undefined
       })
       this.rustCryptoDebugState = {
         attempted: true,
@@ -172,7 +183,10 @@ export class MatrixCryptoStateTracker {
           await clearStaleCryptoStores(userId)
           // 等待浏览器释放 IndexedDB 连接句柄，避免重试时数据库仍被占用
           await new Promise((resolve) => setTimeout(resolve, 300))
-          await cryptoClient.initRustCrypto({ useIndexedDB })
+          await cryptoClient.initRustCrypto({
+            useIndexedDB,
+            storagePassword: storagePassword ?? undefined
+          })
           this.rustCryptoDebugState = {
             attempted: true,
             initialized: true,
