@@ -79,12 +79,36 @@ describe('AdminReportService', () => {
     service = new AdminReportService(sdkAdmin, () => client as unknown as MatrixClient)
   })
 
-  it('reportEvent 委托 client.reportEvent 并默认空说明', async () => {
-    client.reportEvent.mockResolvedValueOnce(undefined)
+  describe('reportEvent via ReportingManager', () => {
+    it('调用 getReportingManager().reportEvent 并传 -50 中性 score', async () => {
+      const reportEventMock = vi.fn().mockResolvedValue({})
+      // 注入 ReportingManager 到 client 上
+      ;(client as unknown as { getReportingManager?: () => unknown }).getReportingManager = () => ({
+        reportEvent: reportEventMock
+      })
 
-    await service.reportEvent({ roomId: '!r:hs', eventId: '$e1', reason: 'spam' })
+      await service.reportEvent({ roomId: '!r:hs', eventId: '$e1', reason: 'spam' })
 
-    expect(client.reportEvent).toHaveBeenCalledWith('!r:hs', '$e1', 'spam', '')
+      expect(reportEventMock).toHaveBeenCalledWith('!r:hs', '$e1', -50, 'spam')
+      // 不应再调用 client.reportEvent（旧 SDK 高层方法）
+      expect(client.reportEvent).not.toHaveBeenCalled()
+    })
+
+    it('携带 explanation 时拼接到 reason', async () => {
+      const reportEventMock = vi.fn().mockResolvedValue({})
+      ;(client as unknown as { getReportingManager?: () => unknown }).getReportingManager = () => ({
+        reportEvent: reportEventMock
+      })
+
+      await service.reportEvent({
+        roomId: '!r:hs',
+        eventId: '$e1',
+        reason: 'spam',
+        explanation: 'details'
+      })
+
+      expect(reportEventMock).toHaveBeenCalledWith('!r:hs', '$e1', -50, 'spam: details')
+    })
   })
 
   it('reportRoom 走 v3 房间举报端点（FT-091: 使用 MATRIX_PATHS.MODERATION.REPORT_ROOM）', async () => {
@@ -107,13 +131,17 @@ describe('AdminReportService', () => {
         return HttpResponse.json({ errcode: 'M_UNRECOGNIZED' }, { status: 400 })
       })
     )
-    client.reportEvent.mockResolvedValueOnce(undefined)
+    // 回退会调用 reportEvent → ReportingManager.reportEvent
+    const reportEventMock = vi.fn().mockResolvedValue({})
+    ;(client as unknown as { getReportingManager?: () => unknown }).getReportingManager = () => ({
+      reportEvent: reportEventMock
+    })
     client.getRoom.mockReturnValueOnce({
       timeline: [{ getId: () => '$first' }]
     })
 
     await expect(service.reportRoom('!r:hs', 'abuse')).resolves.toEqual({ report_id: '' })
-    expect(client.reportEvent).toHaveBeenCalledWith('!r:hs', '$first', 'abuse', '')
+    expect(reportEventMock).toHaveBeenCalledWith('!r:hs', '$first', -50, 'abuse')
   })
 
   it('scoreReport 校验分值范围（-100~0），越界不发请求（FT-091: 使用 MATRIX_PATHS.MODERATION.REPORT_EVENT_SCORE）', async () => {
