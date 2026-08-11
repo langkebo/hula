@@ -107,7 +107,14 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     onProgress?: (progress: number) => void
   ): Promise<string> {
     try {
-      const uploadResponse = await client.uploadContent(file, opts)
+      // MediaManager.uploadContent adds m.upload.size precheck (5min cache).
+      // Pass opts as UploadOpts (with progressHandler) via type cast: the
+      // MediaManager type signature says `progress` but internally passes
+      // opts to http.uploadContent which reads `progressHandler`.
+      const uploadResponse = await this.getMedia().uploadContent(
+        file,
+        opts as unknown as { name?: string; type?: string; progress?: (p: { loaded: number; total: number }) => void }
+      )
       return typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
     } catch (err) {
       if (this.isPayloadTooLarge(err)) {
@@ -471,11 +478,8 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const uploadResponse = await client.uploadContent(blob, {
-        type: mimetype
-      })
-
-      const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+      const opts = this.createUploadOptions(mimetype, undefined, _filename)
+      const contentUri = await this.uploadContentWithChunkFallback(client, blob as File, opts)
       logger.info(`[MatrixMedia] Blob 上传成功: ${contentUri}`)
       return {
         contentUri,
