@@ -17,6 +17,14 @@ const logger = createLogger('ReportService')
 type ReportDomainSdkGetter = () => Promise<AdminManager>
 type ReportDomainClientGetter = () => MatrixClient
 
+/**
+ * ReportingManager 实例类型。
+ *
+ * 注：`matrix-js-sdk/reporting` 子路径未在 package.json exports 中暴露，
+ * 这里通过 MatrixClient 的访问器返回类型派生，避免违反 SDK 边界策略。
+ */
+type ReportingManagerInstance = ReturnType<NonNullable<MatrixClient['getReportingManager']>>
+
 export class AdminReportService {
   constructor(
     readonly _sdkAdmin: ReportDomainSdkGetter,
@@ -40,15 +48,25 @@ export class AdminReportService {
   }
 
   async reportEvent(request: ReportRequest): Promise<void> {
-    const client = this.getClient()
     const { roomId, eventId, reason, explanation } = request
     try {
-      await client.reportEvent(roomId, eventId, reason, explanation || '')
+      const fullReason = explanation ? `${reason}: ${explanation}` : reason
+      // score: -100~0, 前端无 score 概念, 用 -50 中性值
+      await this.getReportingMgr().reportEvent(roomId, eventId, -50, fullReason)
       logger.info(`[Admin] 举报成功: ${roomId}/${eventId}`)
     } catch (err) {
       logger.error(`[Admin] 举报失败: ${err}`)
       throw err
     }
+  }
+
+  private getReportingMgr(): ReportingManagerInstance {
+    const client = this.getClient()
+    const fn = (client as unknown as { getReportingManager?: () => ReportingManagerInstance }).getReportingManager
+    if (typeof fn !== 'function') {
+      throw new Error('MatrixClient.getReportingManager is not available; SDK 未初始化')
+    }
+    return fn.call(client)
   }
 
   async reportUser(userId: string, reason: string, explanation?: string): Promise<void> {
