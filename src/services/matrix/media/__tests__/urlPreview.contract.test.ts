@@ -6,17 +6,16 @@
  * (/_matrix/client/v3/_matrix/media/r0/preview_url → 404) that vi.mock
  * tests miss because the stub authedRequest bypasses SDK URL construction.
  *
- * MatrixUrlPreviewService uses the second overload of authedRequest:
- *   authedRequest({ prefix: mediaPrefix }, 'GET', previewPath, queryParams, undefined, { global: false })
- * stripMatrixPrefix extracts prefix from the full media-prefixed path constant,
- * then passes it explicitly via opts.prefix so the SDK does not prepend its
- * default client prefix.
+ * Migration 2026-08-11: switched from authedRequestWithPath to SDK
+ * MediaManager.previewUrl (internally calls client.getUrlPreview →
+ * RoomManager.getUrlPreview, which uses MediaPrefix.V3 = /_matrix/media/v3).
+ * SDK also normalizes the URL (adds trailing slash) and buckets ts to minute.
  *
- * Covers the 1 authedRequest call site in MatrixUrlPreviewService.getPreview.
+ * Covers the 1 MediaManager.previewUrl call site in MatrixUrlPreviewService.getPreview.
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, initializeManagerExtensions, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixUrlPreviewService } from '../MatrixUrlPreviewService'
 
@@ -40,11 +39,12 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 setupMswServer(
-  http.get(`${HOMESERVER}/_matrix/media/r0/preview_url`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/media/v3/preview_url`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     const url = new URL(request.url)
     const previewUrl = url.searchParams.get('url')
-    if (previewUrl === 'https://example.com') {
+    // SDK normalizes URL: https://example.com → https://example.com/ (trailing slash)
+    if (previewUrl === 'https://example.com/') {
       return HttpResponse.json({
         'og:title': 'Example Page',
         'og:description': 'A test page',
@@ -52,7 +52,7 @@ setupMswServer(
         'og:site_name': 'Example'
       })
     }
-    if (previewUrl === 'https://empty.example.com') {
+    if (previewUrl === 'https://empty.example.com/') {
       return HttpResponse.json({})
     }
     return HttpResponse.json({ 'og:title': 'Default Page' })
@@ -60,6 +60,12 @@ setupMswServer(
 )
 
 describe('UrlPreview service URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    // In Vitest environment, SDK skips async manager init. Manually initialize
+    // so client.getMediaManager() is available.
+    await initializeManagerExtensions()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     realClient = createClient({
@@ -75,16 +81,17 @@ describe('UrlPreview service URL construction contract (real SDK + msw)', () => 
   })
 
   // Guards against SDK prepending its default client prefix to a media-prefixed
-  // path constant (the V1/media double-prefix bug fixed in Phase H.1).
+  // path (the media double-prefix bug).
   const MEDIA_DOUBLE_PREFIX = /\/_matrix\/client\/v3\/_matrix\/(media|client)/
 
-  it('getPreview hits /_matrix/media/r0/preview_url?url=... (no media double-prefix)', async () => {
+  it('getPreview hits /_matrix/media/v3/preview_url?url=... (no media double-prefix)', async () => {
     const result = await matrixUrlPreviewService.getPreview({ url: 'https://example.com' })
 
     const calls = seenUrls.filter((u) => u.url.includes('/preview_url'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/media/r0/preview_url?url=https%3A%2F%2Fexample.com`)
+    // SDK normalizes URL (trailing slash) and defaults ts=0
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/media/v3/preview_url?url=https%3A%2F%2Fexample.com%2F&ts=0`)
     expect(calls[0].url).not.toMatch(MEDIA_DOUBLE_PREFIX)
     expect(result?.title).toBe('Example Page')
     expect(result?.description).toBe('A test page')
@@ -100,7 +107,10 @@ describe('UrlPreview service URL construction contract (real SDK + msw)', () => 
     const calls = seenUrls.filter((u) => u.url.includes('/preview_url'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/media/r0/preview_url?url=https%3A%2F%2Fexample.com&ts=1234567890`)
+    // SDK buckets ts to minute: Math.floor(1234567890 / 60000) * 60000 = 1234560000
+    expect(calls[0].url).toBe(
+      `${HOMESERVER}/_matrix/media/v3/preview_url?url=https%3A%2F%2Fexample.com%2F&ts=1234560000`
+    )
     expect(calls[0].url).not.toMatch(MEDIA_DOUBLE_PREFIX)
     expect(result?.title).toBe('Example Page')
   })
@@ -110,7 +120,7 @@ describe('UrlPreview service URL construction contract (real SDK + msw)', () => 
 
     const calls = seenUrls.filter((u) => u.url.includes('/preview_url'))
     expect(calls).toHaveLength(1)
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/media/r0/preview_url?url=https%3A%2F%2Fempty.example.com`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/media/v3/preview_url?url=https%3A%2F%2Fempty.example.com%2F&ts=0`)
     expect(calls[0].url).not.toMatch(MEDIA_DOUBLE_PREFIX)
     expect(result).toBeNull()
   })

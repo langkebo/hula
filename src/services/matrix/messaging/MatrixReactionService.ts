@@ -39,17 +39,11 @@ class MatrixReactionService extends BaseMatrixService {
     }
 
     try {
-      const content = {
-        [MatrixContentField.RELATES_TO]: {
-          rel_type: 'm.annotation',
-          event_id: eventId,
-          key: emoji
-        }
-      }
-
-      const response = await client.sendEvent(roomId, 'm.reaction', content)
+      // SDK ReactionsManager.reactToMessage 内部构造 m.reaction 事件并调用 sendEvent，
+      // 返回新 reaction 的 event_id（修复后不再丢弃）。
+      const eventIdResult = await client.getReactionsManager().reactToMessage(roomId, eventId, emoji)
       logger.info(`[MatrixReaction] 添加反应成功: ${eventId} -> ${emoji}`)
-      return response.event_id
+      return eventIdResult ?? ''
     } catch (err) {
       logger.error(`[MatrixReaction] 添加反应失败: ${err}`)
       throw err
@@ -69,7 +63,8 @@ class MatrixReactionService extends BaseMatrixService {
     }
 
     try {
-      await client.redactEvent(roomId, reactionEventId)
+      // SDK ReactionsManager.redactReaction 内部调用 client.redactEvent。
+      await client.getReactionsManager().redactReaction(roomId, reactionEventId)
       logger.info(`[MatrixReaction] 移除反应成功: ${reactionEventId}`)
     } catch (err) {
       logger.error(`[MatrixReaction] 移除反应失败: ${err}`)

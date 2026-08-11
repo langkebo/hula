@@ -1,6 +1,4 @@
-import { HttpResponse, http } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { setupMswServer } from '@/../tests/msw'
 import { getDomain, matrixUrlPreviewService, simplifyUrl } from '../MatrixUrlPreviewService'
 
 const { loggerSpy } = vi.hoisted(() => ({
@@ -18,53 +16,15 @@ vi.mock('@/utils/Logger', () => ({
 
 const TEST_BASE_URL = 'https://matrix.example.com'
 
-const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/_matrix/media/r0/preview_url`, ({ request }) => {
-    const url = new URL(request.url)
-    const previewUrl = url.searchParams.get('url')
-    if (previewUrl === 'https://example.com') {
-      return HttpResponse.json({
-        'og:title': 'Example Page',
-        'og:description': 'A test page',
-        'og:image': 'https://example.com/image.jpg'
-      })
-    }
-    return HttpResponse.json({ 'og:title': 'Page' })
-  })
-)
-
-// Spy on getClient to return a client whose authedRequest calls real fetch.
-// The MatrixUrlPreviewService uses authedRequestWithPath, which calls the
-// first overload: authedRequest(method, path, queryParams, body, { prefix }).
-// The mock reconstructs the full URL from prefix + path + queryParams and hits MSW.
+// Migration 2026-08-11: switched from mocking http.authedRequest to mocking
+// SDK MediaManager.previewUrl. The service now calls client.getMediaManager().previewUrl(),
+// which returns the raw og:* response. Field mapping logic (og:title → title) is
+// verified here; URL construction is verified by urlPreview.contract.test.ts.
+const previewUrlMock = vi.fn()
 vi.spyOn(matrixUrlPreviewService as any, 'client', 'get').mockReturnValue({
   getUserId: () => '@test:example.com',
   getMediaApiUrl: () => TEST_BASE_URL,
-  http: {
-    authedRequest: async (
-      method: string,
-      path: string,
-      queryParams?: Record<string, string>,
-      _body?: unknown,
-      opts?: { prefix?: string }
-    ) => {
-      const prefix = opts?.prefix ?? ''
-      const queryString =
-        queryParams && Object.keys(queryParams).length ? '?' + new URLSearchParams(queryParams).toString() : ''
-      const url = `${TEST_BASE_URL}${prefix}${path}${queryString}`
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer test-token'
-        }
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      return response.json()
-    }
-  }
+  getMediaManager: () => ({ previewUrl: previewUrlMock })
 })
 
 describe('MatrixUrlPreviewService', () => {
@@ -74,6 +34,12 @@ describe('MatrixUrlPreviewService', () => {
 
   describe('getPreview', () => {
     it('should return URL preview', async () => {
+      previewUrlMock.mockResolvedValue({
+        'og:title': 'Example Page',
+        'og:description': 'A test page',
+        'og:image': 'https://example.com/image.jpg'
+      })
+
       const result = await matrixUrlPreviewService.getPreview({ url: 'https://example.com' })
 
       expect(result).toBeTruthy()
@@ -81,11 +47,7 @@ describe('MatrixUrlPreviewService', () => {
     })
 
     it('should return null for empty response', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/media/r0/preview_url`, () => {
-          return HttpResponse.json({})
-        })
-      )
+      previewUrlMock.mockResolvedValue({})
 
       const result = await matrixUrlPreviewService.getPreview({ url: 'https://empty-response.example.com' })
 
@@ -93,11 +55,7 @@ describe('MatrixUrlPreviewService', () => {
     })
 
     it('should return null on error', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/media/r0/preview_url`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      previewUrlMock.mockRejectedValue(new Error('HTTP 500'))
 
       const result = await matrixUrlPreviewService.getPreview({ url: 'https://example.com' })
 
@@ -107,6 +65,8 @@ describe('MatrixUrlPreviewService', () => {
 
   describe('getPreviews', () => {
     it('should return previews for multiple URLs', async () => {
+      previewUrlMock.mockResolvedValue({ 'og:title': 'Page' })
+
       const urls = ['https://example.com', 'https://test.com']
       const results = await matrixUrlPreviewService.getPreviews(urls)
 

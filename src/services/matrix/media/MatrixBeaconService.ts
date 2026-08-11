@@ -87,23 +87,26 @@ class MatrixBeaconService {
   }
 
   /**
-   * 创建信标 (发送 m.beacon_info 事件)
+   * 创建信标 (发送 m.beacon_info state event，符合 MSC3489 规范)
+   * 迁移 2026-08-11: 从 client.sendEvent (timeline event) 改为 SDK BeaconManager.createLiveBeacon (state event)
    */
   async createBeacon(params: CreateBeaconParams): Promise<BeaconInfo> {
     const { roomId, description, timeout = 3600000 } = params
     const client = this.getClient()
     if (!client) throw new Error('Matrix client not initialized')
 
-    const content = {
-      msgtype: 'm.beacon_info',
-      beacon_info: {
-        description,
-        timeout,
-        live: true
-      }
-    }
+    // SDK BeaconManager.createLiveBeacon 内部调用 sendStateEvent，
+    // 使用 M_BEACON_INFO 类型 + state_key = userId，符合 MSC3489 规范。
+    // 前端之前用 sendEvent (timeline event) 不符合规范。
+    const beaconInfoContent = {
+      description,
+      timeout,
+      live: true,
+      'm.ts': Date.now(),
+      'm.asset': { type: 'm.self' }
+    } as Parameters<ReturnType<typeof client.getBeaconManager>['createLiveBeacon']>[1]
 
-    const response = await client.sendEvent(roomId, 'm.beacon_info', content)
+    const response = await client.getBeaconManager().createLiveBeacon(roomId, beaconInfoContent)
     if (!response) {
       throw new Error('Failed to send beacon event')
     }

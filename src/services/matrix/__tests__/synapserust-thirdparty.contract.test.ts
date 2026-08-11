@@ -14,9 +14,10 @@
  * `matrixClientService.getClient()` with a stub client whose `authedRequest`
  * didn't run real SDK URL construction. This test locks in the short-path fix.
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createClient, initializeManagerExtensions, type MatrixClient } from '@/services/matrix/sdk'
 import { setupMswServer } from '~/tests/msw'
 import { synapseThirdpartyService } from '../extensions/SynapseThirdpartyService'
 import { matrixClientService } from '../MatrixClientService'
@@ -64,6 +65,12 @@ setupMswServer(
 )
 
 describe('SynapseThirdpartyService thirdparty URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    // In Vitest environment, SDK skips async manager init. Manually initialize
+    // so client.getThirdPartyManager() is available.
+    await initializeManagerExtensions()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     vi.spyOn(matrixClientService, 'getHomeserverUrl').mockReturnValue(HOMESERVER)

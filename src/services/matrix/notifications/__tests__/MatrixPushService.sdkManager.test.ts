@@ -1,6 +1,5 @@
-import type { IPusher } from 'matrix-js-sdk'
-import { PushRuleActionName } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { type IPusher, PushRuleActionName } from '@/services/matrix/sdk'
 import { matrixPushService } from '../MatrixPushService'
 
 /**
