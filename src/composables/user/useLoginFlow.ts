@@ -244,6 +244,9 @@ export const useLoginFlow = () => {
       // matrixStore.connectionState 可能在 login()/startClient() 过程中被设为
       // 'CONNECTING' 或因 SDK sync 事件变为 'RECONNECTING'，失败后必须复位
       matrixStore.connectionState = 'DISCONNECTED'
+      // 重置 isInitialized：initialize() 会设为 true，但 login 失败后客户端不可用，
+      // 不重置会导致后续 checkSession/waitForReady 等误判客户端已就绪
+      matrixStore.isInitialized = false
       const matrixErr = err as Error & { errcode?: string; httpStatus?: number; message?: string }
       const translated = translateMatrixError(matrixErr, { context: 'login' })
       const userMessage =

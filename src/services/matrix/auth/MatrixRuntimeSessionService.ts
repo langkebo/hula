@@ -632,7 +632,11 @@ class MatrixRuntimeSessionService {
       lastOptTime: Date.now()
     })
 
-    matrixPresenceService.onPresenceChange((presence) => {
+    // 捕获 onPresenceChange 返回的清理函数，登出时调用避免回调残留
+    if (this.presenceChangeCleanup) {
+      this.presenceChangeCleanup()
+    }
+    this.presenceChangeCleanup = matrixPresenceService.onPresenceChange((presence) => {
       const patch = buildPresenceStorePatch(presence)
       if (presence.user_id === uid) {
         this.port.user.updateProfileFields({
@@ -702,6 +706,7 @@ class MatrixRuntimeSessionService {
   }
 
   private beforeUnloadRegistered = false
+  private presenceChangeCleanup: (() => void) | null = null
   private readonly onBeforeUnload = () => {
     void matrixPresenceService.setPresence('unavailable').catch((err) => {
       logger.warn('Set presence to unavailable failed:', err)
@@ -917,6 +922,12 @@ class MatrixRuntimeSessionService {
 
     stopPresenceHeartbeat()
     matrixWsBridge.stop()
+
+    // 清理 presence 变化回调，避免登出后残留监听器导致重复处理
+    if (this.presenceChangeCleanup) {
+      this.presenceChangeCleanup()
+      this.presenceChangeCleanup = null
+    }
 
     const cleanupAndTerminate = async () => {
       try {

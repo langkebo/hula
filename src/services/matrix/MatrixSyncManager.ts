@@ -545,10 +545,14 @@ export class MatrixSyncManager {
 
   /**
    * Wait for sliding sync to be ready, with a timeout.
+   *
+   * Returns false when sync was never started (no readyPromise) instead of
+   * silently returning true — callers would proceed as if sync is ready
+   * when in fact nothing has been initialised.
    */
   async waitForReady(timeoutMs: number = 10000): Promise<boolean> {
     if (!this.instance) return false
-    if (!this.readyPromise) return true
+    if (!this.readyPromise) return false
     try {
       await Promise.race([
         this.readyPromise,

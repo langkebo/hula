@@ -51,6 +51,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
   const sessionOptions = reactive({ isLast: false, isLoading: false, cursor: '' })
   const syncLoading = ref(false)
   const unreadDetail = shallowRef<Record<string, UnreadDetail>>({})
+  const loadError = ref<string | null>(null)
 
   const writeUnreadDetail = (roomId: string, detail: UnreadDetail | null) => {
     if (!roomId) return
@@ -196,6 +197,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     try {
       if (sessionOptions.isLoading) return
       sessionOptions.isLoading = true
+      loadError.value = null
       globalStore.unreadReady = false
       const previousSessionMap = sessionList.value.reduce(
         (map, session) => {
@@ -228,6 +230,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
       globalStore.unreadReady = true
     } catch (err) {
       logger.error('获取会话列表失败:', err)
+      loadError.value = err instanceof Error ? err.message : String(err)
     } finally {
       sessionOptions.isLoading = false
     }
@@ -301,6 +304,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     sessionOptions,
     syncLoading,
     unreadDetail,
+    loadError,
     getSessionList,
     updateSession,
     updateSessionLastActiveTime,
