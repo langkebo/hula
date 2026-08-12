@@ -6,9 +6,7 @@
         <div class="flex flex-col items-center gap-15px">
           <img class="w-100px h-100px" :src="qrCodeIcon" alt="二维码" />
           <div class="text-20px font-bold text-[--tjg-text-primary]">
-            登录
-            <span class="text-[--tjg-color-primary-500]">{{ serverName || 'HULA' }}</span>
-            &nbsp;的HULA
+            {{ t('login.qr.confirm_title', { server: serverName || t('login.qr.confirm_default_server') }) }}
           </div>
           <div v-if="checkCode" class="text-14px text-[--tjg-text-tertiary]">
             校验码:

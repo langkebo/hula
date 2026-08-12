@@ -2,7 +2,7 @@ import { useDialog } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useI18nGlobal } from '@/services/i18n'
-import type { SettingsTabType } from '@/stores/domains/settings/settingsDialog'
+import type { SettingsTabType } from '@/stores/domains/settings/settingsTab'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MenuConfig')

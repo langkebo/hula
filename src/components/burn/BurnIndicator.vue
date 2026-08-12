@@ -81,8 +81,8 @@ const show = computed(() => {
 }
 
 .burn-indicator--burned {
-  background: rgba(108, 108, 108, 0.1);
-  border-color: rgba(108, 108, 108, 0.3);
+  background: color-mix(in srgb, var(--tjg-text-tertiary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
   color: var(--tjg-text-tertiary);
 }
 
@@ -141,7 +141,7 @@ const show = computed(() => {
   left: 0;
   right: 0;
   height: 2px;
-  background: rgba(255, 87, 87, 0.2);
+  background: color-mix(in srgb, var(--tjg-color-danger-500) 20%, transparent);
   border-radius: 0 0 12px 12px;
   overflow: hidden;
 }

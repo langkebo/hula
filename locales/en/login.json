@@ -121,7 +121,9 @@
       "rendezvous": "Rendezvous Login"
     },
     "rendezvous_hint": "Use MSC3886 Rendezvous protocol for secure cross-device login",
-    "open_rendezvous": "Open Rendezvous Manager"
+    "open_rendezvous": "Open Rendezvous Manager",
+    "confirm_title": "Sign in to {server}",
+    "confirm_default_server": "Tjg"
   },
   "guide": {
     "welcome": {

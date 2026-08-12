@@ -26,7 +26,10 @@
             :key="tab.id"
             type="button"
             class="settings-tab-item"
-            :class="{ 'settings-tab-item-active': tab.id === activeTab }"
+            :class="{
+              'settings-tab-item-active': tab.id === activeTab,
+              'settings-tab-item-hit': hasSearchQuery && tab.id !== activeTab
+            }"
             role="tab"
             :aria-selected="tab.id === activeTab"
             :aria-controls="contentId"
@@ -40,7 +43,14 @@
           </button>
         </div>
       </template>
-      <div v-else class="settings-nav-empty">{{ t('setting.dialog.nav_empty') }}</div>
+      <EmptyState
+        v-else
+        illustration="no-results"
+        compact
+        :title="t('setting.dialog.nav_empty')"
+        :description="t('setting.dialog.nav_empty_desc')"
+        :action-text="t('setting.dialog.nav_clear_search')"
+        @action="clearSearch" />
     </div>
   </aside>
 </template>
@@ -50,13 +60,14 @@ import { Icon } from '@iconify/vue'
 import { NIcon, NInput } from 'naive-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import {
   getGroupedSettingsTabs,
   getSettingsTabGroupLabel,
   type SettingsTab,
   type SettingsTabGroup,
   type SettingsTabType
-} from '@/stores/domains/settings/settingsDialog'
+} from '@/stores/domains/settings/settingsTab'
 
 defineOptions({
   name: 'SettingsSidebar'
@@ -86,6 +97,8 @@ const searchQuery = computed({
   set: (val: string) => emit('update:searchQuery', val)
 })
 
+const hasSearchQuery = computed(() => props.searchQuery.trim().length > 0)
+
 const groupedTabs = computed(() => {
   const grouped = getGroupedSettingsTabs(props.tabs)
   return grouped.map((g) => ({
@@ -93,6 +106,10 @@ const groupedTabs = computed(() => {
     label: getSettingsTabGroupLabel(g.group as SettingsTabGroup, t)
   }))
 })
+
+function clearSearch() {
+  emit('update:searchQuery', '')
+}
 
 const iconMap: Record<string, string> = {
   user: 'mdi:account',
@@ -204,7 +221,8 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
   color: var(--tjg-text-secondary);
   transition:
     background-color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard),
-    color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
+    color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard),
+    box-shadow var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
   border-radius: var(--tjg-radius-sm);
   margin: 2px var(--tjg-space-2);
   border: none;
@@ -226,6 +244,13 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tjg-color-primary-500) 10%, transparent);
 }
 
+// 搜索命中高亮：非选中态的命中项用浅色背景 + 左侧强调条标识
+.settings-tab-item-hit {
+  background-color: color-mix(in srgb, var(--tjg-color-primary-500) 6%, transparent);
+  box-shadow: inset 2px 0 0 var(--tjg-color-primary-500);
+  color: var(--tjg-text-primary);
+}
+
 .settings-tab-icon {
   display: flex;
   align-items: center;
@@ -237,11 +262,5 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 .settings-tab-label {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-}
-
-.settings-nav-empty {
-  padding: var(--tjg-space-5) var(--tjg-space-4);
-  color: var(--tjg-text-tertiary);
-  font-size: var(--text-sm);
 }
 </style>

@@ -121,7 +121,9 @@
       "rendezvous": "Rendezvous 登录"
     },
     "rendezvous_hint": "使用 MSC3886 Rendezvous 协议进行安全的跨设备登录",
-    "open_rendezvous": "打开 Rendezvous 管理"
+    "open_rendezvous": "打开 Rendezvous 管理",
+    "confirm_title": "登录 {server}",
+    "confirm_default_server": "Tjg"
   },
   "guide": {
     "welcome": {

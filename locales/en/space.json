@@ -117,7 +117,7 @@
   "create_failed": "Failed to create space",
   "load_failed": "Failed to load spaces",
   "invite_title": "Invite Member",
-  "invite_user_placeholder": "User ID, e.g. @alice:example.com",
+  "invite_user_placeholder": "User ID, e.g. {'@'}alice:example.com",
   "invite_user_required": "User ID is required",
   "invite_success": "Invitation sent",
   "invite_failed": "Failed to invite",

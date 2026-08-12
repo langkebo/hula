@@ -99,7 +99,7 @@
     "name_error": "Failed to update room name",
     "members_title": "Members",
     "no_members": "No members",
-    "invite_placeholder": "Enter user ID, e.g. @user:server",
+    "invite_placeholder": "Enter user ID, e.g. {'@'}user:server",
     "invite_button": "Invite",
     "invite_user_required": "Please enter a user ID",
     "invite_success": "Invitation sent",

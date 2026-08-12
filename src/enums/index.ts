@@ -228,7 +228,7 @@ export enum StoresEnum {
   ROOM = 'room',
   /** 用户菜单 */
   USER_MENU = 'userMenu',
-  /** 设置对话框 */
+  /** 设置标签页（持久化 key 保持 settingsDialog 不变） */
   SETTINGS_DIALOG = 'settingsDialog',
   /** 全局搜索 */
   SPOTLIGHT = 'spotlight',

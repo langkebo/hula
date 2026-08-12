@@ -276,11 +276,11 @@ const handleBatchToggle = () => {
     }
 
     .tjg-room-list-item__preview {
-      color: rgba(255, 255, 255, 0.85);
+      color: color-mix(in srgb, var(--tjg-text-inverse) 85%, transparent);
     }
 
     .tjg-room-list-item__time {
-      color: rgba(255, 255, 255, 0.75);
+      color: color-mix(in srgb, var(--tjg-text-inverse) 75%, transparent);
     }
   }
 

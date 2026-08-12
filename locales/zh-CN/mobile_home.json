@@ -31,7 +31,7 @@
   "new_chat_creating": "创建中...",
   "new_chat_success": "聊天创建成功",
   "new_chat_failed": "创建聊天失败",
-  "user_id_placeholder": "用户 ID，如 @alice:example.com",
+  "user_id_placeholder": "用户 ID，如 {'@'}alice:example.com",
   "user_id_required": "请输入用户 ID",
   "create_group_title": "创建群聊",
   "create_group_prompt": "请输入群聊名称和成员 ID（用逗号分隔）",

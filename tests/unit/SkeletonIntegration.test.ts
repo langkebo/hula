@@ -13,7 +13,8 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ name: 'space', path: '/space', params: {}, query: {} }),
-  useRouter: () => ({ push: vi.fn(), back: vi.fn() })
+  useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
+  onBeforeRouteLeave: vi.fn()
 }))
 
 vi.mock('naive-ui', () => ({
@@ -145,8 +146,8 @@ vi.mock('@/composables/usePlatform', () => ({
   })
 }))
 
-vi.mock('@/stores/domains/settings/settingsDialog', () => ({
-  useSettingsDialogStore: () => ({
+vi.mock('@/stores/domains/settings/settingsTab', () => ({
+  useSettingsTabStore: () => ({
     isOpen: true,
     activeTab: 'account',
     setActiveTab: vi.fn(),
@@ -237,9 +238,9 @@ describe('Skeleton integration', () => {
     expect(wrapper.find('[data-testid="skeleton-space"]').exists()).toBe(true)
   })
 
-  it('SettingsDialog renders SkeletonSettings when loading', async () => {
-    const SettingsDialog = (await import('@/views/settingsWindow/SettingsDialog.vue')).default
-    const wrapper = mount(SettingsDialog, {
+  it('SettingsPage renders SkeletonSettings when loading', async () => {
+    const SettingsPage = (await import('@/views/settingsWindow/SettingsPage.vue')).default
+    const wrapper = mount(SettingsPage, {
       props: { loading: true },
       shallow: true,
       global: {

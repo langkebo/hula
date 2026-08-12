@@ -12,7 +12,7 @@
   "url_required": "URL不能为空",
   "url_invalid": "URL格式不正确",
   "matrix_id_required": "Matrix ID 不能为空",
-  "matrix_id_invalid": "Matrix ID 格式不正确，格式应为 @user:server",
+  "matrix_id_invalid": "Matrix ID 格式不正确，格式应为 {'@'}user:server",
   "room_id_required": "房间 ID 不能为空",
   "room_id_invalid": "房间 ID 格式不正确",
   "room_alias_required": "房间别名不能为空",

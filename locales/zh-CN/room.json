@@ -99,7 +99,7 @@
     "name_error": "房间名称更新失败",
     "members_title": "成员列表",
     "no_members": "暂无成员",
-    "invite_placeholder": "输入用户 ID，例如 @user:server",
+    "invite_placeholder": "输入用户 ID，例如 {'@'}user:server",
     "invite_button": "邀请",
     "invite_user_required": "请输入用户 ID",
     "invite_success": "邀请已发送",

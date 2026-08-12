@@ -48,6 +48,10 @@
     "sessions": "No conversation files",
     "groups": "No group files"
   },
+  "preview": {
+    "no_document": "No document to preview",
+    "no_document_desc": "Supported formats: doc, docx, pdf, xlsx, pptx"
+  },
   "notifications": {
     "saveFileSuccess": "File saved successfully",
     "saveFileFail": "Failed to save file",

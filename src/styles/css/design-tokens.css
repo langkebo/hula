@@ -264,7 +264,7 @@
   /* ==================== Semantic Application Tokens ==================== */
   --shadow-enabled: 1;
 
-  /* Hula 设计令牌别名：以下别名均被存量布局/组件消费（外部引用已核实），
+  /* Tjg 设计令牌别名：以下别名均被存量布局/组件消费（外部引用已核实），
      统一映射到规范 --tjg-* 令牌。零引用别名已于 2026-08-09 清零。 */
   --color-primary: var(--tjg-color-primary-500);
   --color-text-tertiary: var(--tjg-text-tertiary);

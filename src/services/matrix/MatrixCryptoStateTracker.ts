@@ -138,7 +138,6 @@ export class MatrixCryptoStateTracker {
       if (useIndexedDB) {
         logger.info(`检测到 crypto 用户/设备变化（${lastCryptoUser} → ${cryptoUserKey}），主动清理旧 crypto store`)
         await clearStaleCryptoStores(userId)
-        await this.deleteCryptoDbForUser(userId)
       }
       this.writeLastCryptoUser(cryptoUserKey)
     }
@@ -174,11 +173,16 @@ export class MatrixCryptoStateTracker {
       }
       logger.info(`Rust Crypto 初始化完成: ${userId}/${deviceId}`)
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err)
-      // 账户不匹配通常是因为旧设备的 crypto store 残留（换设备登录/多设备登录）。
-      // 尝试清除旧的 IndexedDB crypto 数据库后重试一次。
-      if (errMsg.includes("account in the store doesn't match") && useIndexedDB) {
-        logger.warn('检测到 crypto 账户不匹配，尝试清除旧 crypto 数据后重试...')
+      const errMsg = normalizeCryptoError(err)
+      // WASM 抛出的错误通常是空对象 {}（wasm-bindgen 转换），
+      // String({}) = "[object Object]" 无法匹配具体错误字符串，
+      // 因此 initRustCrypto 失败且 IndexedDB 可用时，无条件清理旧 store 后重试一次。
+      // 常见触发场景：
+      //   - "account in the store doesn't match"（换设备登录，旧 store 残留）
+      //   - "An object failed to be decrypted while unpickling"（storagePassword 跨会话不一致）
+      //   - store 损坏 / 版本不兼容
+      if (useIndexedDB) {
+        logger.warn(`Rust Crypto 初始化失败（${errMsg}），尝试清除旧 crypto 数据后重试...`)
         try {
           await clearStaleCryptoStores(userId)
           // 等待浏览器释放 IndexedDB 连接句柄，避免重试时数据库仍被占用
@@ -197,12 +201,7 @@ export class MatrixCryptoStateTracker {
           logger.info(`Rust Crypto 重试初始化完成: ${userId}/${deviceId}`)
           return
         } catch (retryErr) {
-          const retryMsg =
-            retryErr instanceof Error
-              ? retryErr.message
-              : typeof retryErr === 'object' && retryErr !== null
-                ? JSON.stringify(retryErr) || String(retryErr)
-                : String(retryErr)
+          const retryMsg = normalizeCryptoError(retryErr)
           this.rustCryptoDebugState = {
             attempted: true,
             initialized: false,
@@ -221,7 +220,7 @@ export class MatrixCryptoStateTracker {
         error: errMsg,
         usedIndexedDB: useIndexedDB
       }
-      logger.warn('Rust Crypto 初始化失败，继续以非加密模式启动:', err)
+      logger.warn(`Rust Crypto 初始化失败，继续以非加密模式启动: ${errMsg}`)
     }
   }
 
@@ -278,10 +277,21 @@ export class MatrixCryptoStateTracker {
   async clearCryptoStoreForLogout(userId: string): Promise<void> {
     this.clearLastCryptoUser()
     if (typeof globalThis.indexedDB !== 'undefined') {
-      await clearStaleCryptoStores(userId)
-      await this.deleteCryptoDbForUser(userId)
+      try {
+        const result = await clearStaleCryptoStores(userId)
+        if (result.failed > 0 || result.blocked > 0) {
+          logger.warn(
+            `登出清理部分失败: ${userId} (已删除=${result.deleted}, 失败=${result.failed}, 被阻塞=${result.blocked})`
+          )
+        } else {
+          logger.info(`登出清理完成: ${userId} (已删除 ${result.deleted} 个数据库)`)
+        }
+      } catch (err) {
+        logger.error(`登出清理 IndexedDB 异常: ${userId}`, err)
+      }
+    } else {
+      logger.info(`登出清理完成（无 IndexedDB）: ${userId}`)
     }
-    logger.info(`登出清理完成: ${userId}`)
   }
 
   /** 读取 localStorage 中的 lastCryptoUserId 记录 */
@@ -301,15 +311,39 @@ export class MatrixCryptoStateTracker {
     if (typeof globalThis.localStorage === 'undefined') return
     globalThis.localStorage.removeItem('tjg.lastCryptoUserId')
   }
+}
 
-  /**
-   * 删除 crypto IndexedDB 数据库（与 clearStaleCryptoStores 相同的固定名称）。
-   * 保留此方法是为了在 ensureCrypto 中单独调用，语义上表示"删除当前用户的 crypto 数据"。
-   * 实际上数据库名称不包含 userId，直接按固定名称删除。
-   */
-  private async deleteCryptoDbForUser(_userId: string): Promise<void> {
-    await clearStaleCryptoStores(_userId)
+/**
+ * 将 crypto 初始化抛出的错误对象归一化为字符串消息。
+ *
+ * 背景：WASM（@matrix-org/matrix-sdk-crypto-wasm）在 OlmMachine.initFromStore 或
+ * StoreHandle.open 失败时，通过 wasm-bindgen 抛出的错误往往是**空对象 `{}`**，
+ * 既不是 Error 实例，也没有 message 属性。直接 `String({})` 会得到 `"[object Object]"`，
+ * 无法用于匹配具体的错误字符串（如 "account mismatch"）。
+ *
+ * 归一化策略：
+ *   - Error 实例 → err.message
+ *   - 非空对象 → JSON.stringify，失败则回退 String
+ *   - 其他基本类型 → String(err)
+ *
+ * @param err catch 块捕获到的错误对象
+ * @returns 可读的错误消息字符串（可能为空字符串）
+ */
+function normalizeCryptoError(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message
   }
+  if (typeof err === 'object' && err !== null) {
+    // 优先 JSON.stringify（可捕获空对象 {}、含字段的普通对象）
+    try {
+      const json = JSON.stringify(err)
+      // JSON.stringify({}) === "{}" 等空结构，仍返回以便上层匹配
+      return json && json !== '{}' ? json : '[empty-object]'
+    } catch {
+      return String(err)
+    }
+  }
+  return String(err)
 }
 
 /**
@@ -323,29 +357,55 @@ export class MatrixCryptoStateTracker {
  *
  * 这些名称是固定的，不包含 userId 后缀。直接按名称删除，
  * 不依赖 indexedDB.databases()（Safari/WKWebView 不支持该 API）。
+ *
+ * @returns 删除结果统计 { deleted, failed, blocked }
  */
-async function clearStaleCryptoStores(_userId: string): Promise<void> {
-  if (typeof globalThis.indexedDB === 'undefined') return
+async function clearStaleCryptoStores(_userId: string): Promise<{ deleted: number; failed: number; blocked: number }> {
+  if (typeof globalThis.indexedDB === 'undefined') return { deleted: 0, failed: 0, blocked: 0 }
   const dbNames = ['matrix-js-sdk::matrix-sdk-crypto', 'matrix-js-sdk::matrix-sdk-crypto-meta', 'matrix-js-sdk:crypto']
-  await Promise.all(
-    dbNames.map(
-      (dbName) =>
-        new Promise<void>((resolve) => {
-          logger.info(`删除 IndexedDB: ${dbName}`)
-          const req = globalThis.indexedDB.deleteDatabase(dbName)
-          req.onsuccess = () => {
-            logger.info(`已删除 IndexedDB: ${dbName}`)
-            resolve()
-          }
-          req.onerror = () => {
-            logger.warn(`删除 IndexedDB 失败: ${dbName}`)
-            resolve()
-          }
-          req.onblocked = () => {
-            logger.info(`IndexedDB 被阻塞，等待释放: ${dbName}`)
-            resolve()
-          }
-        })
-    )
-  )
+  const results = await Promise.all(dbNames.map((dbName) => deleteCryptoDbWithRetry(dbName)))
+  return {
+    deleted: results.filter((r) => r === 'deleted').length,
+    failed: results.filter((r) => r === 'failed').length,
+    blocked: results.filter((r) => r === 'blocked').length
+  }
+}
+
+/**
+ * 删除单个 IndexedDB 数据库，onblocked 时等待 300ms 后重试一次。
+ *
+ * @returns 'deleted' | 'failed' | 'blocked'
+ */
+function deleteCryptoDbWithRetry(dbName: string): Promise<'deleted' | 'failed' | 'blocked'> {
+  return new Promise((resolve) => {
+    logger.info(`删除 IndexedDB: ${dbName}`)
+    const req = globalThis.indexedDB.deleteDatabase(dbName)
+    req.onsuccess = () => {
+      logger.info(`已删除 IndexedDB: ${dbName}`)
+      resolve('deleted')
+    }
+    req.onerror = () => {
+      logger.warn(`删除 IndexedDB 失败: ${dbName}`)
+      resolve('failed')
+    }
+    req.onblocked = () => {
+      logger.info(`IndexedDB 被阻塞，300ms 后重试: ${dbName}`)
+      // 等待连接句柄释放后重试一次（与 ensureCrypto 重试策略一致的 300ms 等待）
+      setTimeout(() => {
+        const retryReq = globalThis.indexedDB.deleteDatabase(dbName)
+        retryReq.onsuccess = () => {
+          logger.info(`重试成功，已删除 IndexedDB: ${dbName}`)
+          resolve('deleted')
+        }
+        retryReq.onerror = () => {
+          logger.warn(`重试删除 IndexedDB 失败: ${dbName}`)
+          resolve('failed')
+        }
+        retryReq.onblocked = () => {
+          logger.warn(`IndexedDB 仍被阻塞，跳过: ${dbName}`)
+          resolve('blocked')
+        }
+      }, 300)
+    }
+  })
 }

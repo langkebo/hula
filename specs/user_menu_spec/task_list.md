@@ -14,7 +14,7 @@
 |--------|---------|---------|------|--------|
 | UM-001 | 创建 usePlatform Hook | `src/composables/usePlatform.ts` | ✅ 已完成 | P0 |
 | UM-002 | 创建 userMenu Store | `src/stores/userMenu.ts` | ✅ 已完成 | P0 |
-| UM-003 | 创建 settingsDialog Store | `src/stores/settingsDialog.ts` | ✅ 已完成 | P0 |
+| UM-003 | 创建 settingsTab Store | `src/stores/settingsTab.ts` | ✅ 已完成 | P0 |
 | UM-004 | 创建菜单配置文件 | `src/components/userMenu/menuConfig.ts` | ✅ 已完成 | P0 |
 | UM-005 | 创建 useUserMenu Hook | `src/hooks/useUserMenu.ts` | ✅ 已完成 | P0 |
 
