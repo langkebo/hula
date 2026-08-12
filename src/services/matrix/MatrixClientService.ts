@@ -75,6 +75,9 @@ class MatrixClientService {
   private readonly tokenManager = new MatrixTokenManager()
   private readonly syncManager = new MatrixSyncManager()
   private telemetryManager: TelemetryManager | null = null
+  // Mutex：防止 startClient 并发执行（settlePostLoginStartup / useConnectionStatus.retry / forceReconnect 可能同时触发）
+  // 并发会导致两次 ensureCrypto + 两次 SDK startClient，造成 crypto 状态异常和 sync 重复启动
+  private startClientPromise: Promise<void> | null = null
 
   constructor() {
     logger.info?.('Matrix 客户端服务初始化')
@@ -502,6 +505,20 @@ class MatrixClientService {
   }
 
   async startClient(): Promise<void> {
+    // Mutex 保护：如果已有 startClient 正在执行，直接 await 同一个 Promise
+    // 防止并发触发两次 ensureCrypto + 两次 SDK startClient
+    if (this.startClientPromise) {
+      logger.warn('startClient 已在执行中，复用现有 Promise（跳过重复初始化）')
+      return this.startClientPromise
+    }
+
+    this.startClientPromise = this.doStartClient().finally(() => {
+      this.startClientPromise = null
+    })
+    return this.startClientPromise
+  }
+
+  private async doStartClient(): Promise<void> {
     const client = this.connectionManager.getClient()
     if (!client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
