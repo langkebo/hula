@@ -444,6 +444,14 @@ class MatrixRuntimeSessionService {
       }
     } catch (err) {
       logger.error(`密码登录失败: ${err}`)
+      // 清理已启动的 client：若 matrix.login() 成功但 bootstrapPostLoginState 失败，
+      // client 仍在运行 sync，资源泄漏 + 重试时可能产生重复登录/设备。
+      // stopClient 是幂等的，可安全调用。
+      try {
+        await matrixClientService.stopClient()
+      } catch (cleanupErr) {
+        logger.warn('登录失败后清理 client 异常:', cleanupErr)
+      }
       throw err
     }
   }
@@ -734,6 +742,12 @@ class MatrixRuntimeSessionService {
     } finally {
       if (timeoutHandle) clearTimeout(timeoutHandle)
     }
+
+    // 防止孤儿 Promise：若超时胜出，bootstrapTask 仍在后台运行。
+    // 给它附加 catch 避免超时后 reject 产生 unhandled rejection。
+    bootstrapTask.catch((err) => {
+      logger.warn('bootstrapPostLoginState 超时后后台任务失败（已忽略）:', err)
+    })
   }
 
   private async doBootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions): Promise<void> {

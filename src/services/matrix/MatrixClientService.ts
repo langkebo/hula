@@ -36,6 +36,8 @@ export interface LoginResult {
   deviceId?: string
   /** 访问令牌 */
   accessToken?: string
+  /** 刷新令牌（用于自动续期） */
+  refreshToken?: string
   /** 错误信息 */
   error?: string
 }
@@ -256,7 +258,8 @@ class MatrixClientService {
         success: true,
         userId: loginResponse.user_id,
         deviceId: loginResponse.device_id,
-        accessToken: loginResponse.access_token
+        accessToken: loginResponse.access_token,
+        refreshToken: loginResponse.refresh_token
       }
     } catch (err) {
       this.connectionManager.updateConnectionState('ERROR')
@@ -334,7 +337,8 @@ class MatrixClientService {
         success: true,
         userId: loginResponse.user_id,
         deviceId: loginResponse.device_id,
-        accessToken: loginResponse.access_token
+        accessToken: loginResponse.access_token,
+        refreshToken: loginResponse.refresh_token
       }
     } catch (err) {
       this.connectionManager.updateConnectionState('ERROR')
@@ -526,11 +530,28 @@ class MatrixClientService {
 
       const config = this.connectionManager.getConfig()
       if (config?.accessToken) {
-        if (!this.syncManager.get()) {
-          this.syncManager.create(client, config)
+        // Sliding Sync 端点探测：若服务器不支持 Sliding Sync，不注入 slidingSync 实例，
+        // SDK 会自动降级到传统 /sync 端点，避免 404 反复重试导致 sync 永不 prepared。
+        let slidingSyncSupported = true
+        try {
+          slidingSyncSupported = await client.isSlidingSyncSupported()
+        } catch (probeErr) {
+          // 探测失败时保守降级为不使用 SlidingSync，避免 sync 卡死
+          logger.warn('Sliding Sync 端点探测失败，降级到 /sync:', probeErr)
+          slidingSyncSupported = false
         }
-        this.syncManager.resetReady()
-        startOpts.slidingSync = this.syncManager.get()!
+
+        if (slidingSyncSupported) {
+          if (!this.syncManager.get()) {
+            this.syncManager.create(client, config)
+          }
+          this.syncManager.resetReady()
+          startOpts.slidingSync = this.syncManager.get()!
+        } else {
+          // 降级：销毁可能存在的旧 SlidingSync 实例，走传统 /sync
+          logger.warn('Sliding Sync 不可用，降级到传统 /sync 端点')
+          this.syncManager.stop()
+        }
       } else {
         this.syncManager.stop()
       }
@@ -596,6 +617,12 @@ class MatrixClientService {
       await new Promise((resolve) => setTimeout(resolve, 1000))
       this.connectionManager.updateConnectionState('RECONNECTING')
 
+      // 关键修复：必须先 detach 旧监听器 + 销毁 terminated SlidingSync 实例，
+      // 否则 slidingSync.stop() 设置的 terminated=true 会导致新 start() 立即退出，
+      // sync 永不重启；同时 removeAllListeners 会让事件监听器全部丢失。
+      this.eventRouter.detach(client, this.syncManager)
+      this.syncManager.stop()
+
       const startOpts: StartClientOptions = {
         initialSyncLimit: 10,
         pendingEventOrdering: PendingEventOrdering.Detached
@@ -603,14 +630,37 @@ class MatrixClientService {
 
       const config = this.connectionManager.getConfig()
       if (config?.accessToken) {
-        if (!this.syncManager.get()) {
-          this.syncManager.create(client, config)
+        // 探测 Sliding Sync 端点（与 startClient 保持一致）
+        let slidingSyncSupported = true
+        try {
+          slidingSyncSupported = await client.isSlidingSyncSupported()
+        } catch (probeErr) {
+          logger.warn('[LIFECYCLE] Sliding Sync 探测失败，降级到 /sync:', probeErr)
+          slidingSyncSupported = false
         }
-        this.syncManager.resetReady()
-        startOpts.slidingSync = this.syncManager.get()!
+
+        if (slidingSyncSupported) {
+          // 创建全新的 SlidingSync 实例（terminated=false，监听器干净）
+          this.syncManager.create(client, config)
+          this.syncManager.resetReady()
+          startOpts.slidingSync = this.syncManager.get()!
+        }
       }
 
-      client.startClient(startOpts)
+      // 重新注册所有 handler（与 startClient 一致）
+      this.eventRouter.setSyncStateHandler((state, prevState, data) => {
+        const result = this.connectionManager.mapSyncState(state, prevState, data)
+        if (result.connectionState) {
+          this.connectionManager.updateConnectionState(result.connectionState)
+        }
+        if (result.isReady) {
+          this.syncManager.markReady()
+        }
+      })
+      this.eventRouter.setup(client, this.syncManager)
+
+      // await！原实现不 await 会导致异步错误被静默吞没
+      await client.startClient(startOpts)
       logger.info('[LIFECYCLE] Sync restarted after system resume')
     } catch (error) {
       logger.error('[LIFECYCLE] Failed to reconnect Matrix sync:', error)

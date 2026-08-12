@@ -13,6 +13,7 @@ import { MittEnum } from '@/enums'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
 import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { UserInfoType } from '@/services/types'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -119,7 +120,13 @@ export const useLoginFlow = () => {
         loginText.value = t('login.button.login.default')
         loginStatus.value = 'failed'
         lastLoginError.value = t('login.status.timeout')
-        matrixStore.connectionState = 'DISCONNECTED'
+        // 通过状态机更新连接状态，避免直接赋值绕过状态机约束
+        matrixClientService.updateConnectionState('DISCONNECTED')
+        // 清理底层会话：超时后底层 loginWithPassword 可能仍在运行，
+        // client 可能已 startClient，需要 stopClient 清理资源。
+        matrixClientService.stopClient().catch((err) => {
+          logger.warn('登录超时后清理 client 失败:', err)
+        })
         showFeedback(t('login.status.timeout'), 'error')
       }
     }, LOGIN_TIMEOUT_MS)

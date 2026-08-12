@@ -144,9 +144,12 @@ const runInitWithMode = (_block: boolean) => {
     markInitialSyncCompleted()
   })
 
+  // 关键修复：init 失败时不 rethrow，避免所有异步组件共享 rejected promise 导致白屏。
+  // 错误已由 init() 内部的 bootstrapPostLoginState 处理（超时兜底 resolve），
+  // 路由守卫会在后续导航中处理未登录状态。
+  // 此处仅记录错误，让异步组件能正常加载（可能显示空数据，但不白屏）。
   return p.catch((error) => {
-    logger.error('初始化失败:', error)
-    throw error
+    logger.error('初始化失败（不阻塞异步组件加载）:', error)
   })
 }
 

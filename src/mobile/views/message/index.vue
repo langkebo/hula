@@ -91,7 +91,12 @@
       v-model="loading"
       @refresh="onRefresh">
       <div class="flex flex-col h-full">
+        <!-- 空状态：会话列表为空时显示 -->
+        <div v-if="filteredSessionList.length === 0" class="flex-1 flex items-center justify-center min-h-200px">
+          <van-empty description="暂无会话" />
+        </div>
         <SmartVirtualList
+          v-else
           class="mobile-session-list flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
           :items="filteredSessionList"
           :item-height="72"
@@ -545,7 +550,17 @@ const handleTimelineEvent = () => {
 }
 
 onMounted(async () => {
-  await contactStore.getContactList(true)
+  // 初始加载：先尝试加载会话列表，再加载联系人
+  try {
+    await chatStore.getSessionList(true)
+  } catch (err) {
+    logger.error('初始加载会话列表失败:', err)
+  }
+  try {
+    await contactStore.getContactList(true)
+  } catch (err) {
+    logger.error('初始加载联系人失败:', err)
+  }
   matrixClientService.on('sync', handleSyncEvent as (...args: unknown[]) => void)
   matrixClientService.on('timeline', handleTimelineEvent as (...args: unknown[]) => void)
 })

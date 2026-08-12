@@ -75,7 +75,7 @@ export function createSessionStorePort(): SessionStorePort {
         return getRuntimeMatrixSession().accessToken ?? undefined
       },
       getRefreshToken() {
-        return (matrixStore() as unknown as { refreshToken?: string }).refreshToken ?? undefined
+        return matrixStore().refreshToken ?? undefined
       },
       getHomeserverUrl() {
         return getRuntimeMatrixSession().homeserverUrl ?? undefined
@@ -89,8 +89,8 @@ export function createSessionStorePort(): SessionStorePort {
       completeSSOLogin(loginToken) {
         return matrixStore().completeSSOLogin(loginToken)
       },
-      loginWithToken(accessToken, userId) {
-        return matrixStore().loginWithToken(accessToken, userId)
+      loginWithToken(accessToken, userId, refreshToken) {
+        return matrixStore().loginWithToken(accessToken, userId, refreshToken)
       },
       logout() {
         return matrixStore().logout()
