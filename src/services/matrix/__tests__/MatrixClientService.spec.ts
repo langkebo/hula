@@ -2,6 +2,7 @@ import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import type { MatrixClient } from 'matrix-js-sdk'
 import * as sdk from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { errorTracker } from '@/utils/ErrorTracker'
 import { matrixClientService } from '../MatrixClientService'
 import {
   __resetConnectionManagerSingletonForTesting,
@@ -43,6 +44,17 @@ vi.mock('@/stores/domains/chat/capability', () => ({
     setExtensionHealth: vi.fn(),
     resetExtensionHealth: vi.fn()
   })
+}))
+
+// Mock ErrorTracker 以断言降级可观测事件（O7 契约测试）
+vi.mock('@/utils/ErrorTracker', () => ({
+  errorTracker: {
+    trackManual: vi.fn(),
+    initialize: vi.fn(),
+    trackError: vi.fn(),
+    trackVueError: vi.fn(),
+    getErrorSummary: vi.fn()
+  }
 }))
 
 // Mock matrix-js-sdk
@@ -519,6 +531,37 @@ describe('MatrixClientService', () => {
 
       // 不应 throw——降级而非阻断
       await expect(matrixClientService.initialize(config)).resolves.not.toThrow()
+    })
+
+    it('O7: FriendManager 扩展缺失时发射 friend_manager_degraded 遥测事件（可观测闭环）', async () => {
+      const config = {
+        homeserverUrl: 'https://matrix.example.com',
+        userId: '@test:example.com',
+        deviceId: 'TEST_DEVICE',
+        accessToken: 'test_token'
+      }
+
+      // 模拟扩展缺失：initializeManagerExtensions 失败时 getFriendManager 访问器根本不存在
+      const sharedClient = sdk.createClient({ baseUrl: '' }) as unknown as {
+        getFriendManager?: ReturnType<typeof vi.fn>
+      }
+      sharedClient.getFriendManager = undefined
+      vi.mocked(errorTracker).trackManual.mockClear()
+
+      await matrixClientService.initialize(config)
+
+      // 降级不再仅停留在日志——必须进入遥测，供监控/告警消费
+      expect(vi.mocked(errorTracker).trackManual).toHaveBeenCalledWith(
+        'friend_manager_degraded',
+        expect.objectContaining({
+          reason: 'getFriendManager_unavailable',
+          fallback: 'rest_api',
+          possibleCause: 'initializeManagerExtensions_failed_or_sdk_incompatible'
+        })
+      )
+
+      // 还原健康态，避免污染后续用例（本文件此后已无用例，防御性还原）
+      sharedClient.getFriendManager = vi.fn(() => ({ start: vi.fn() }))
     })
   })
 })

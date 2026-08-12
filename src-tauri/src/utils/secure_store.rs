@@ -741,4 +741,323 @@ mod tests {
         // 清理
         let _ = fs::remove_file(path);
     }
+
+    /// 验证空字符串值的处理：save_to_fallback 和 SecureStore::set/get
+    #[test]
+    fn test_empty_value_handling() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("empty-value");
+
+        let key = "empty-value-key";
+        let value = "";
+
+        // save_to_fallback 应正确处理空字符串
+        let saved = save_to_fallback(key, value);
+        assert!(saved, "save_to_fallback should handle empty string value");
+
+        let loaded = load_from_fallback(key);
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value),
+            "Loaded empty value should match"
+        );
+
+        // 清理 fallback 文件
+        delete_from_fallback(key);
+
+        // SecureStore::set/get 也应正确处理空字符串
+        let result = SecureStore::set(key, value);
+        assert!(
+            result.is_ok(),
+            "SecureStore::set should handle empty string"
+        );
+
+        let loaded = SecureStore::get(key).unwrap();
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value),
+            "SecureStore::get should return empty string"
+        );
+
+        // 清理
+        let _ = SecureStore::delete(key);
+    }
+
+    /// 验证超长值（10KB）的处理
+    #[test]
+    fn test_large_value_10kb() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("large-value");
+
+        let key = "large-value-key";
+        // 10KB 大小的值（10240 字节）
+        let value = "a".repeat(10240);
+
+        // save_to_fallback 应正确处理超长值
+        let saved = save_to_fallback(key, &value);
+        assert!(saved, "save_to_fallback should handle 10KB value");
+
+        let loaded = load_from_fallback(key);
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value.as_str()),
+            "Loaded 10KB value should match"
+        );
+
+        // 清理 fallback 文件
+        delete_from_fallback(key);
+
+        // SecureStore::set/get 也应正确处理超长值
+        let result = SecureStore::set(key, &value);
+        assert!(result.is_ok(), "SecureStore::set should handle 10KB value");
+
+        let loaded = SecureStore::get(key).unwrap();
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value.as_str()),
+            "SecureStore::get should return 10KB value"
+        );
+
+        // 清理
+        let _ = SecureStore::delete(key);
+    }
+
+    /// 验证特殊字符值：Unicode、emoji、换行符、路径分隔符
+    #[test]
+    fn test_special_characters_value() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("special-chars");
+
+        let key = "special-chars-key";
+        // 包含中文、emoji、换行符、路径分隔符、制表符等
+        let value = "中文测试-🔐-newline\n\ttab/slash\\back-emoji🎉-üñîçødé";
+
+        // save_to_fallback 应正确处理特殊字符
+        let saved = save_to_fallback(key, value);
+        assert!(saved, "save_to_fallback should handle special characters");
+
+        let loaded = load_from_fallback(key);
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value),
+            "Loaded value with special characters should match"
+        );
+
+        // 清理 fallback 文件
+        delete_from_fallback(key);
+
+        // SecureStore::set/get 也应正确处理特殊字符
+        let result = SecureStore::set(key, value);
+        assert!(
+            result.is_ok(),
+            "SecureStore::set should handle special characters"
+        );
+
+        let loaded = SecureStore::get(key).unwrap();
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value),
+            "SecureStore::get should return value with special characters"
+        );
+
+        // 清理
+        let _ = SecureStore::delete(key);
+    }
+
+    /// 验证特殊 key 格式：包含 @、:、空格、中文
+    #[test]
+    fn test_special_key_formats() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("special-keys");
+
+        // 包含 @、:、空格、中文等多种特殊字符的 key
+        let special_keys = vec![
+            "user@example.com",
+            "namespace:key",
+            "key with spaces",
+            "中文密钥",
+            "mixed@中文:with spaces",
+        ];
+
+        for key in &special_keys {
+            let value = format!("value-for-{}", key);
+
+            // save_to_fallback 应正确处理特殊 key
+            let saved = save_to_fallback(key, &value);
+            assert!(
+                saved,
+                "save_to_fallback should handle special key: {:?}",
+                key
+            );
+
+            let loaded = load_from_fallback(key);
+            assert_eq!(
+                loaded.as_deref(),
+                Some(value.as_str()),
+                "Loaded value for special key {:?} should match",
+                key
+            );
+
+            // 清理 fallback 文件
+            delete_from_fallback(key);
+        }
+    }
+
+    /// 验证覆盖写入：同一 key 两次 set 不同 value，get 返回最新值
+    #[test]
+    fn test_overwrite_with_different_value() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("overwrite");
+
+        let key = "overwrite-test-key";
+        let value1 = "first-value";
+        let value2 = "second-value-completely-different";
+
+        // 第一次写入
+        let result = SecureStore::set(key, value1);
+        assert!(result.is_ok(), "First set should succeed");
+
+        let loaded = SecureStore::get(key).unwrap();
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value1),
+            "After first set, get should return first value"
+        );
+
+        // 第二次写入（覆盖）
+        let result = SecureStore::set(key, value2);
+        assert!(result.is_ok(), "Second set (overwrite) should succeed");
+
+        let loaded = SecureStore::get(key).unwrap();
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value2),
+            "After overwrite, get should return the latest value"
+        );
+
+        // 清理
+        let _ = SecureStore::delete(key);
+    }
+
+    /// 验证删除后再写入：delete 后 set 再 get，值正确
+    #[test]
+    fn test_delete_then_set_again() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("delete-re-set");
+
+        let key = "delete-re-set-key";
+        let value1 = "first-value-before-delete";
+        let value2 = "second-value-after-delete";
+
+        // 第一次写入并验证
+        let result = SecureStore::set(key, value1);
+        assert!(result.is_ok(), "First set should succeed");
+
+        let loaded = SecureStore::get(key).unwrap();
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value1),
+            "First value should be loaded"
+        );
+
+        // 删除
+        let result = SecureStore::delete(key);
+        assert!(result.is_ok(), "Delete should succeed");
+
+        // 验证已删除
+        let loaded = SecureStore::get(key).unwrap();
+        assert!(loaded.is_none(), "After delete, get should return None");
+
+        // 再次写入新值
+        let result = SecureStore::set(key, value2);
+        assert!(result.is_ok(), "Second set after delete should succeed");
+
+        // 验证新值正确
+        let loaded = SecureStore::get(key).unwrap();
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value2),
+            "After delete and re-set, get should return the new value"
+        );
+
+        // 清理
+        let _ = SecureStore::delete(key);
+    }
+
+    /// 验证 get 不存在的 key 返回 None 不报错
+    #[test]
+    fn test_get_nonexistent_key_returns_none() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("get-nonexistent");
+
+        let key = "this-key-does-not-exist-anywhere";
+
+        // get 不存在的 key 应返回 Ok(None)，不报错
+        let result = SecureStore::get(key);
+        assert!(result.is_ok(), "get should not error on nonexistent key");
+        assert!(
+            result.unwrap().is_none(),
+            "get should return None for nonexistent key"
+        );
+    }
+
+    /// 验证 delete 不存在的 key 不报错
+    #[test]
+    fn test_delete_nonexistent_key_no_error() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("delete-nonexistent");
+
+        let key = "nonexistent-key-for-delete-test";
+
+        // delete 不存在的 key 应返回 Ok，不报错
+        let result = SecureStore::delete(key);
+        assert!(result.is_ok(), "delete should not error on nonexistent key");
+    }
+
+    /// 验证重复 delete 同一 key 不报错
+    #[test]
+    fn test_repeated_delete_no_error() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("repeated-delete");
+
+        let key = "repeated-delete-test-key";
+        let value = "some-value";
+
+        // 先写入
+        let result = SecureStore::set(key, value);
+        assert!(result.is_ok(), "set should succeed");
+
+        // 第一次删除
+        let result1 = SecureStore::delete(key);
+        assert!(result1.is_ok(), "First delete should succeed");
+
+        // 第二次删除（key 已不存在）
+        let result2 = SecureStore::delete(key);
+        assert!(
+            result2.is_ok(),
+            "Second delete (on nonexistent key) should not error"
+        );
+
+        // 第三次删除（继续验证幂等性）
+        let result3 = SecureStore::delete(key);
+        assert!(
+            result3.is_ok(),
+            "Third delete (on nonexistent key) should not error"
+        );
+    }
+
+    /// 验证 is_available 在正常环境下返回 true
+    #[test]
+    fn test_is_available_returns_true_in_normal_env() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("is-available");
+
+        // 在设置了有效 HOME 的正常环境下，is_available 应返回 true
+        // （keychain 或 fallback 至少一个可用）
+        let available = SecureStore::is_available();
+        assert!(
+            available,
+            "is_available should return true in normal environment with valid HOME"
+        );
+    }
 }

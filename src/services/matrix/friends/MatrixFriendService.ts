@@ -15,6 +15,7 @@ export type FriendStatus = FriendRequestStatus | FriendRelationStatus
 import type { MatrixClient } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
+import { isFriendManagerRegistered } from '../extensions/managerExtensions'
 import { type SynapseDmInfo, synapseDmExtensionService } from '../extensions/SynapseDmExtensionService'
 import {
   type SynapseFriendInfo,
@@ -103,11 +104,9 @@ class MatrixFriendService {
       }
     }
 
-    // 回退：检查直接挂载的 friendManager 属性
+    // 回退：检查直接挂载的 friendManager 属性（与 isFriendManagerRegistered 判定一致）
     const friendManager = clientWithMethods.friendManager
-    return friendManager &&
-      typeof friendManager === 'object' &&
-      typeof (friendManager as FriendManager).start === 'function'
+    return isFriendManagerRegistered(client) && friendManager && typeof friendManager === 'object'
       ? (friendManager as FriendManager)
       : null
   }
