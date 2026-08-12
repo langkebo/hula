@@ -259,6 +259,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSessionActions } from '@/composables/user/useSessionActions'
 import { resolveMatrixRuntimeEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend'
+import { useCountdown } from '@/shared/composables/useCountdown'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
@@ -330,12 +331,10 @@ const commonEmailDomains = computed(() => {
   })
 })
 
-/** 发送验证码冷却时间(秒) */
-const sendCodeCooldown = ref(0)
 /** 验证码倒计时消息ID */
 const EMAIL_TIMER_ID = 'register_window_email_timer'
-/** 倒计时定时器 Worker */
-const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
+/** 发送验证码冷却时间(秒) — 委托给共享 useCountdown */
+const { countdown: sendCodeCooldown, start: startCountdown, stop: stopCountdown } = useCountdown(EMAIL_TIMER_ID)
 /** 发送验证码按钮文本 */
 const btnText = computed(() => {
   if (loading.value) {
@@ -567,27 +566,7 @@ const finishRegistrationAndEnterHome = async (registerResult: Awaited<ReturnType
 }
 
 const startSendCodeCountdown = () => {
-  sendCodeCooldown.value = 60
-  timerWorker.postMessage({
-    type: 'startTimer',
-    msgId: EMAIL_TIMER_ID,
-    duration: 60 * 1000
-  })
-}
-
-timerWorker.onmessage = (e) => {
-  const { type, msgId, remainingTime } = e.data
-  if (msgId !== EMAIL_TIMER_ID) return
-
-  if (type === 'debug') {
-    sendCodeCooldown.value = Math.max(0, Math.ceil(remainingTime / 1000))
-  } else if (type === 'timeout') {
-    sendCodeCooldown.value = 0
-  }
-}
-
-timerWorker.onerror = () => {
-  sendCodeCooldown.value = 0
+  startCountdown(60)
 }
 
 /** 生成随机头像 */
@@ -652,16 +631,6 @@ onMounted(async () => {
   if (hasTauriRuntime()) {
     await getCurrentWebviewWindow().show()
   }
-})
-
-// 组件卸载时清理计时器
-onUnmounted(() => {
-  timerWorker.postMessage({
-    type: 'clearTimer',
-    msgId: EMAIL_TIMER_ID
-  })
-  timerWorker.terminate()
-  sendCodeCooldown.value = 0
 })
 </script>
 
