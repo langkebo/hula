@@ -5,50 +5,32 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useExtensionEventBridge } from '@/composables/app/useExtensionEventBridge'
+import { createCallHandler } from '@/composables/app/wsCallHandler'
+import { createMemberHandler } from '@/composables/app/wsMemberHandler'
+import { createPresenceHandler } from '@/composables/app/wsPresenceHandler'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
-import { CallTypeEnum, ChangeTypeEnum, MittEnum, OnlineEnum, RoomTypeEnum, WsResponseMessageType } from '@/enums'
+import { CallTypeEnum, ChangeTypeEnum, MittEnum, OnlineEnum, WsResponseMessageType } from '@/enums'
 import type { LoginSuccessResType, OnStatusChangeType, WsTokenExpire } from '@/services/legacy/wsEventTypes'
-import type { PresenceInfo } from '@/services/matrix/user/MatrixPresenceService'
 import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import type { MatrixRoomMember } from '@/stores/domains/chat/group/types.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
-import { buildPresenceStorePatch, collectTrackedPresenceUserIds } from '@/utils/presenceStatus'
+import { collectTrackedPresenceUserIds } from '@/utils/presenceStatus'
 
 const logger = createLogger('WsEventHandler')
-
-interface ClientServiceDeps {
-  getClient(): unknown
-  waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<unknown>
-}
-
-interface PresenceServiceDeps {
-  setPresence(presence: 'online' | 'offline' | 'unavailable', statusMsg?: string): Promise<void>
-  onPresenceChange(handler: (info: PresenceInfo) => void): () => void
-  subscribeToPresence(userIds: string[]): Promise<unknown>
-  getBatchPresence(userIds: string[]): Promise<PresenceInfo[]>
-}
 
 type VideoCallRequestPayload = {
   callerUid: string
   isVideo: boolean
   [key: string]: unknown
-}
-
-type WebsocketConnectionStatePayload = {
-  type?: string
-  state?: string
-  isReconnection?: boolean
-  is_reconnection?: boolean
 }
 
 export function useWsEventHandler() {
@@ -64,238 +46,17 @@ export function useWsEventHandler() {
 
   const userUid = computed(() => userStore.userInfo?.uid ?? '')
 
-  let clientServiceCache: ClientServiceDeps | undefined
-  const getMatrixClientService = async (): Promise<ClientServiceDeps> => {
-    if (!clientServiceCache) {
-      const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
-      clientServiceCache = matrixClientService as ClientServiceDeps
-    }
-    return clientServiceCache
-  }
-
-  let presenceServiceCache: PresenceServiceDeps | undefined
-  const getMatrixPresenceService = async (): Promise<PresenceServiceDeps> => {
-    if (!presenceServiceCache) {
-      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
-      presenceServiceCache = matrixPresenceService as PresenceServiceDeps
-    }
-    return presenceServiceCache
-  }
-
-  const subscribedPresenceUserIds = new Set<string>()
-  let isPresenceSyncInFlight = false
-  let hasPendingPresenceSync = false
-  let unsubscribePresenceListener: (() => void) | null = null
-
-  let lastWsConnectionState: string | null = null
-  let isReconnectInFlight = false
   let wsEventUnlisten: UnlistenFn | null = null
 
-  const applyPresenceToStores = async () => {
-    const trackedUserIds = collectTrackedPresenceUserIds({
-      currentUserId: userStore.userInfo?.uid,
-      contacts: contactStore.contactsList,
-      members: groupStore.allUserInfo
-    })
-
-    if (!trackedUserIds.length) {
-      return
-    }
-
-    const clientService = await getMatrixClientService()
-    if (!clientService.getClient()) {
-      return
-    }
-
-    const presenceService = await getMatrixPresenceService()
-    const nextSubscribedUserIds = trackedUserIds.filter((userId) => !subscribedPresenceUserIds.has(userId))
-    if (nextSubscribedUserIds.length) {
-      await presenceService.subscribeToPresence(nextSubscribedUserIds)
-      nextSubscribedUserIds.forEach((userId) => subscribedPresenceUserIds.add(userId))
-    }
-
-    const presences = await presenceService.getBatchPresence(trackedUserIds)
-    const now = Date.now()
-
-    presences.forEach((presence) => {
-      const patch = buildPresenceStorePatch(presence, now)
-      contactStore.updateContactPresence(presence.user_id, patch)
-      groupStore.updateUserPresence(presence.user_id, {
-        activeStatus: patch.activeStatus,
-        lastOptTime: patch.lastOptTime
-      })
-      if (userStore.userInfo && presence.user_id === userStore.userInfo.uid) {
-        userStore.userInfo.activeStatus = patch.activeStatus
-        userStore.userInfo.lastOptTime = patch.lastOptTime
-      }
-    })
-  }
-
-  const syncAvatarPresence = async () => {
-    if (isPresenceSyncInFlight) {
-      hasPendingPresenceSync = true
-      return
-    }
-
-    isPresenceSyncInFlight = true
-    try {
-      await applyPresenceToStores()
-    } catch (error) {
-      logger.error('同步头像在线状态失败:', error)
-    } finally {
-      isPresenceSyncInFlight = false
-      if (hasPendingPresenceSync) {
-        hasPendingPresenceSync = false
-        await syncAvatarPresence()
-      }
-    }
-  }
-
-  const refreshActiveGroupMembers = async () => {
-    const tasks: Promise<unknown>[] = []
-    try {
-      const isCurrentGroup = globalStore.currentSession?.type === RoomTypeEnum.GROUP
-      const activeRoomId =
-        (isCurrentGroup && globalStore.currentSessionRoomId) ||
-        chatStore.sessionList.find((item) => item.type === RoomTypeEnum.GROUP)?.roomId
-
-      if (activeRoomId) {
-        tasks.push(groupStore.getGroupUserList(activeRoomId, true))
-      }
-      await Promise.allSettled(tasks)
-      await syncAvatarPresence()
-    } catch (error) {
-      logger.error('刷新群成员失败:', error)
-    }
-  }
-
-  const handleWebsocketEvent = async (event: { payload: WebsocketConnectionStatePayload | null | undefined }) => {
-    const payload = event.payload
-    if (payload?.type !== 'connectionStateChanged') return
-
-    const previousState = (lastWsConnectionState || '').toUpperCase() || null
-    const nextStateRaw = payload.state
-    const nextState = typeof nextStateRaw === 'string' ? nextStateRaw.toUpperCase() : ''
-    const isReconnectionFlag = payload.isReconnection ?? payload.is_reconnection
-    const shouldHandleReconnect = nextState === 'CONNECTED' && isReconnectionFlag
-
-    lastWsConnectionState = nextState || previousState
-
-    if (!shouldHandleReconnect) return
-    if (isReconnectInFlight || chatStore.syncLoading) return
-    isReconnectInFlight = true
-
-    chatStore.syncLoading = true
-    try {
-      await chatStore.getSessionList(true)
-      await refreshActiveGroupMembers()
-      if (globalStore.currentSessionRoomId) {
-        const currentRoomId = globalStore.currentSessionRoomId
-        const currentSession = chatStore.getSession(currentRoomId)
-        await chatStore.fetchCurrentRoomRemoteOnce(20)
-        if (currentSession?.unreadCount) {
-          chatStore.markSessionRead(currentRoomId)
-        }
-      }
-      globalStore.refreshUnreadBadge()
-    } finally {
-      chatStore.syncLoading = false
-      isReconnectInFlight = false
-    }
-  }
-
-  const handleVideoCall = async (remotedUid: string, callType: CallTypeEnum) => {
-    logger.info(`监听到视频通话调用，remotedUid: ${remotedUid}, callType: ${callType}`)
-    const currentSession = globalStore.currentSession
-    const targetUid = remotedUid || currentSession?.detailId
-    if (!targetUid) {
-      logger.warn('当前会话尚未就绪或无法解析对端用户，忽略通话事件')
-      return
-    }
-    if (isMobile()) {
-      router.push({
-        path: '/mobile/rtcCall',
-        query: {
-          remoteUserId: targetUid,
-          roomId: globalStore.currentSessionRoomId,
-          callType: callType,
-          isIncoming: 'true'
-        }
-      })
-    } else {
-      await createRtcCallWindow(true, targetUid, globalStore.currentSessionRoomId, callType)
-    }
-  }
-
-  const isSelfUser = (uid: string): boolean => {
-    return uid === (userStore.userInfo?.uid ?? '')
-  }
-
-  const handleSelfRemove = async (roomId: string) => {
-    logger.info('本人退出群聊，移除会话数据')
-    sessionStore.removeSession(roomId)
-    groupStore.removeAllUsers(roomId)
-    if (globalStore.currentSessionRoomId === roomId) {
-      globalStore.updateCurrentSessionRoomId(sessionStore.sessionList[0].roomId)
-    }
-  }
-
-  const handleOtherMemberRemove = async (uid: string, roomId: string) => {
-    logger.info('群成员退出群聊，移除群内的成员数据')
-    groupStore.removeUserItem(uid, roomId)
-  }
-
-  const handleMemberRemove = async (userList: UserItem[], roomId: string) => {
-    for (const user of userList) {
-      if (isSelfUser(user.uid)) {
-        await handleSelfRemove(roomId)
-      } else {
-        await handleOtherMemberRemove(user.uid, roomId)
-      }
-    }
-  }
-
-  const handleOtherMemberAdd = async (user: UserItem, roomId: string) => {
-    logger.info('群成员加入群聊，添加群成员数据')
-    const matrixMember: MatrixRoomMember = {
-      ...user,
-      userId: user.uid,
-      displayName: user.name,
-      avatarUrl: user.avatar,
-      membership: 'join',
-      powerLevel: 0,
-      isModerator: false,
-      isCreator: false,
-      roleId: 2
-    }
-    groupStore.addUserItem(matrixMember, roomId)
-  }
-
-  const handleSelfAdd = async (roomId: string) => {
-    logger.info('本人加入群聊，加载该群聊的会话数据')
-    await sessionStore.addSession({
-      roomId,
-      name: roomId,
-      type: RoomTypeEnum.SINGLE,
-      unreadCount: 0,
-      activeTime: Date.now()
-    })
-    try {
-      await groupStore.getGroupUserList(roomId, true)
-    } catch (error) {
-      logger.error('初始化群成员失败:', error)
-    }
-  }
-
-  const handleMemberAdd = async (userList: UserItem[], roomId: string) => {
-    for (const user of userList) {
-      if (isSelfUser(user.uid)) {
-        await handleSelfAdd(roomId)
-      } else {
-        await handleOtherMemberAdd(user, roomId)
-      }
-    }
-  }
+  const presenceHandler = createPresenceHandler({ userStore, contactStore, groupStore, chatStore, globalStore })
+  const memberHandler = createMemberHandler({ userStore, sessionStore, groupStore, globalStore })
+  const callHandler = createCallHandler({
+    globalStore,
+    chatStore,
+    router,
+    createRtcCallWindow,
+    refreshActiveGroupMembers: presenceHandler.refreshActiveGroupMembers
+  })
 
   const registerHandlers = () => {
     useMitt.on<VideoCallRequestPayload>(WsResponseMessageType.VideoCallRequest, (event) => {
@@ -309,7 +70,7 @@ export function useWsEventHandler() {
         })
         return
       }
-      handleVideoCall(remoteUid, callType)
+      callHandler.handleVideoCall(remoteUid, callType)
     })
 
     useMitt.on(WsResponseMessageType.LOGIN_SUCCESS, async (data: LoginSuccessResType) => {
@@ -327,31 +88,8 @@ export function useWsEventHandler() {
         userStore.userInfo.activeStatus = OnlineEnum.ONLINE
         userStore.userInfo.lastOptTime = Date.now()
       }
-      try {
-        const clientService = await getMatrixClientService()
-        await clientService.waitForClientReady({ timeoutMs: 5000 })
-        const presenceService = await getMatrixPresenceService()
-        await presenceService.setPresence('online')
-        logger.info('[Login] 在线状态已设置为 online')
-        await syncAvatarPresence()
-        if (!unsubscribePresenceListener) {
-          unsubscribePresenceListener = presenceService.onPresenceChange((presence: PresenceInfo) => {
-            const patch = buildPresenceStorePatch(presence)
-            contactStore.updateContactPresence(presence.user_id, patch)
-            groupStore.updateUserPresence(presence.user_id, {
-              activeStatus: patch.activeStatus,
-              lastOptTime: patch.lastOptTime
-            })
-            if (userStore.userInfo && presence.user_id === userStore.userInfo.uid) {
-              userStore.userInfo.activeStatus = patch.activeStatus
-              userStore.userInfo.lastOptTime = patch.lastOptTime
-            }
-          })
-        }
-      } catch (error) {
-        logger.error('[Login] 设置在线状态失败:', error)
-      }
-      await refreshActiveGroupMembers()
+      await presenceHandler.handleLoginPresence()
+      await presenceHandler.refreshActiveGroupMembers()
     })
 
     useMitt.on(WsResponseMessageType.MSG_RECALL, (data: RevokedMsgType) => {
@@ -390,9 +128,9 @@ export function useWsEventHandler() {
         const isRemoveAction =
           param.changeType === ChangeTypeEnum.REMOVE || param.changeType === ChangeTypeEnum.EXIT_GROUP
         if (isRemoveAction) {
-          await handleMemberRemove(param.userList, param.roomId)
+          await memberHandler.handleMemberRemove(param.userList, param.roomId)
         } else {
-          await handleMemberAdd(param.userList, param.roomId)
+          await memberHandler.handleMemberAdd(param.userList, param.roomId)
         }
         groupStore.addGroupDetail(param.roomId)
         groupStore.updateGroupNumber(param.roomId, param.totalNum)
@@ -555,7 +293,7 @@ export function useWsEventHandler() {
     })
 
     if (hasTauriRuntime()) {
-      listen('websocket-event', handleWebsocketEvent).then((unlisten) => {
+      listen('websocket-event', callHandler.handleWebsocketEvent).then((unlisten) => {
         wsEventUnlisten = unlisten
       })
     }
@@ -568,7 +306,7 @@ export function useWsEventHandler() {
           members: groupStore.allUserInfo
         }).join('|'),
       () => {
-        void syncAvatarPresence()
+        void presenceHandler.syncAvatarPresence()
       },
       {
         immediate: true
@@ -577,11 +315,7 @@ export function useWsEventHandler() {
   }
 
   const cleanup = () => {
-    subscribedPresenceUserIds.clear()
-    if (unsubscribePresenceListener) {
-      unsubscribePresenceListener()
-      unsubscribePresenceListener = null
-    }
+    presenceHandler.cleanup()
     if (wsEventUnlisten) {
       wsEventUnlisten()
       wsEventUnlisten = null

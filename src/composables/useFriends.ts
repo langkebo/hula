@@ -2,224 +2,49 @@ import { useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, type MaybeRefOrGetter, ref, toValue, watch } from 'vue'
 import { OnlineEnum, UserType } from '@/enums'
-import { type Friend, type FriendGroup, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { type GroupSearchResult, matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import type { UserProfile } from '@/services/matrix/user/MatrixContactService'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
-import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
-
-export type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
-
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createFriendGroupService } from './friends/friendGroupService'
+import {
+  buildNormalContacts,
+  type FriendSearchResult,
+  type FriendSearchType,
+  filterRecommendedUsers,
+  type GroupSearchViewItem,
+  resolveFriendSearchAction,
+  type SearchPredicates,
+  sortBlockedContactsByTime,
+  sortContactsByOnlineStatus,
+  sortFriendSearchResults,
+  sortGroupChatList,
+  type UserSearchResult
+} from './friends/friendSearchUtils'
 
-// ============================================================================
-// Types
-// ============================================================================
+// Re-export to preserve the public API of this module.
+export type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
+export type { FriendSearchResult, GroupSearchViewItem, UserSearchResult } from './friends/friendSearchUtils'
+export {
+  buildNormalContacts,
+  filterRecommendedUsers,
+  resolveFriendSearchAction,
+  sortBlockedContactsByTime,
+  sortContactsByOnlineStatus,
+  sortFriendSearchResults,
+  sortGroupChatList,
+  sortNormalContacts
+} from './friends/friendSearchUtils'
 
-type FriendSearchType = 'recommend' | 'user' | 'group'
-type FriendSearchAction = 'edit-profile' | 'message' | 'add'
+type UserStateItem = { id: string; title?: string; url?: string }
 
-type BaseSearchResult = {
-  account: string
-  name: string
-  avatar: string
-  isFavorite?: boolean
-}
-
-export type UserSearchResult = BaseSearchResult & {
-  uid: string
-  roomId?: string
-}
-
-export type GroupSearchViewItem = BaseSearchResult & {
-  roomId: string
-  uid?: string
-  deleteStatus?: number | boolean
-  extJson?: string
-}
-
-export type FriendSearchResult = UserSearchResult | GroupSearchViewItem
-
-type SearchPredicates = {
-  isCurrentUser: (uid: string) => boolean
-  isFriend: (uid: string) => boolean
-  isInGroup: (roomId: string) => boolean
-}
-
-type GroupListItem = {
-  roomId: string
-}
-
-type UserStateItem = {
-  id: string
-  title?: string
-  url?: string
-}
-
-type FriendConfirmTarget = {
-  uid: string
-  name: string
-  account: string
-  avatar: string
-}
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const RECOMMEND_USER_UID_START = '20016'
-const RECOMMEND_USER_UID_END = '20030'
-
-// ============================================================================
-// Utility Functions - Search
-// ============================================================================
-
-function matchesKeyword(value: string | undefined | null, keyword: string): boolean {
-  if (!value || !keyword) return false
-  return String(value).toLowerCase().includes(keyword.toLowerCase())
-}
-
-export function resolveFriendSearchAction(
-  item: FriendSearchResult,
-  type: FriendSearchType,
-  predicates: SearchPredicates
-): FriendSearchAction {
-  if (type === 'group') {
-    return predicates.isInGroup(item.roomId || '') ? 'message' : 'add'
-  }
-
-  const uid = String(item.uid || '')
-  if (predicates.isCurrentUser(uid)) return 'edit-profile'
-  if (predicates.isFriend(uid)) return 'message'
-  return 'add'
-}
-
-export function sortFriendSearchResults(
-  items: FriendSearchResult[],
-  type: FriendSearchType,
-  predicates: SearchPredicates
-): FriendSearchResult[] {
-  return [...items].sort((a, b) => {
-    if (type === 'group') {
-      const aInGroup = predicates.isInGroup(a.roomId || '')
-      const bInGroup = predicates.isInGroup(b.roomId || '')
-      if (aInGroup && !bInGroup) return -1
-      if (!aInGroup && bInGroup) return 1
-      return 0
-    }
-
-    const aUid = String(a.uid || '')
-    const bUid = String(b.uid || '')
-    if (predicates.isCurrentUser(aUid)) return -1
-    if (predicates.isCurrentUser(bUid)) return 1
-
-    const aIsFriend = predicates.isFriend(aUid)
-    const bIsFriend = predicates.isFriend(bUid)
-    if (aIsFriend && !bIsFriend) return -1
-    if (!aIsFriend && bIsFriend) return 1
-    return 0
-  })
-}
-
-export function filterRecommendedUsers(
-  users: Array<{
-    uid: string | number
-    account?: string
-    name?: string
-    avatar?: string
-  }>,
-  favoriteIds: Set<string>,
-  keyword = ''
-): UserSearchResult[] {
-  const normalizedKeyword = keyword.trim().toLowerCase()
-
-  return users
-    .filter((user) => {
-      const uid = String(user.uid)
-      if (uid < RECOMMEND_USER_UID_START || uid > RECOMMEND_USER_UID_END) {
-        return false
-      }
-
-      if (!normalizedKeyword) {
-        return true
-      }
-
-      return (
-        matchesKeyword(user.name, normalizedKeyword) ||
-        matchesKeyword(user.account, normalizedKeyword) ||
-        matchesKeyword(uid, normalizedKeyword)
-      )
-    })
-    .map((user) => {
-      const uid = String(user.uid)
-      return {
-        uid,
-        account: user.account || uid,
-        name: user.name || uid,
-        avatar: user.avatar || '',
-        isFavorite: favoriteIds.has(uid)
-      }
-    })
-}
-
-// ============================================================================
-// Utility Functions - List
-// ============================================================================
-
-export function sortGroupChatList<T extends GroupListItem>(groups: T[]): T[] {
-  return [...groups].sort((a, b) => {
-    if (a.roomId === '1' && b.roomId !== '1') return -1
-    if (a.roomId !== '1' && b.roomId === '1') return 1
-    return 0
-  })
-}
-
-export function sortContactsByOnlineStatus<T extends Pick<MatrixContact, 'activeStatus'>>(contacts: T[]): T[] {
-  return [...contacts].sort((a, b) => {
-    if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-    if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-    return 0
-  })
-}
-
-export function sortBlockedContactsByTime<T extends Pick<MatrixContact, 'lastOptTime'>>(contacts: T[]): T[] {
-  return [...contacts].sort((a, b) => (b.lastOptTime || 0) - (a.lastOptTime || 0))
-}
-
-export function sortNormalContacts(contacts: MatrixContact[], isBotUser: (uid: string) => boolean): MatrixContact[] {
-  return [...contacts].sort((a, b) => {
-    const aIsBot = isBotUser(a.uid)
-    const bIsBot = isBotUser(b.uid)
-    if (aIsBot && !bIsBot) return -1
-    if (!aIsBot && bIsBot) return 1
-    if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
-    if (a.activeStatus !== OnlineEnum.ONLINE && b.activeStatus === OnlineEnum.ONLINE) return 1
-    return 0
-  })
-}
-
-export function buildNormalContacts(
-  contacts: MatrixContact[],
-  specialContacts: MatrixContact[],
-  blockedContacts: MatrixContact[],
-  isBotUser: (uid: string) => boolean
-): MatrixContact[] {
-  const specialIds = new Set(specialContacts.map((contact) => contact.uid))
-  const blockedIds = new Set(blockedContacts.map((contact) => contact.uid))
-  return sortNormalContacts(
-    contacts.filter((contact) => !specialIds.has(contact.uid) && !blockedIds.has(contact.uid)),
-    isBotUser
-  )
-}
-
-// ============================================================================
-// Main Composable
-// ============================================================================
+type FriendConfirmTarget = { uid: string; name: string; account: string; avatar: string }
 
 export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<string> }) {
   const contactStore = useContactStore()
@@ -228,10 +53,7 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
   const userStore = useUserStore()
   const userStatusStore = useUserStatusStore()
   const { stateList } = storeToRefs(userStatusStore)
-
-  // ============================================================================
-  // Search State
-  // ============================================================================
+  const friendGroupService = createFriendGroupService()
 
   const searchType = ref<FriendSearchType>('recommend')
   const searchValue = ref('')
@@ -240,22 +62,8 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
   const loading = ref(false)
   const initialLoading = ref(true)
   const favoriteIds = ref<Set<string>>(new Set())
-
-  // ============================================================================
-  // List State
-  // ============================================================================
-
   const selectedItem = ref('')
-
-  // ============================================================================
-  // Request Confirm State
-  // ============================================================================
-
   const requestMsg = ref('')
-
-  // ============================================================================
-  // Computed - Predicates
-  // ============================================================================
 
   const friendIds = computed(() => new Set(contactStore.contactsList.map((contact) => String(contact.uid))))
   const joinedGroupIds = computed(() => new Set(groupStore.groupDetails.map((group) => String(group.roomId))))
@@ -266,23 +74,15 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
   const isInGroup = (roomId: string) => joinedGroupIds.value.has(String(roomId))
   const isBotUser = (uid: string) => groupStore.getUserInfo(uid)?.account === UserType.BOT
 
-  const predicates: SearchPredicates = {
-    isCurrentUser,
-    isFriend,
-    isInGroup
-  }
-
-  // ============================================================================
-  // Computed - Lists
-  // ============================================================================
+  const predicates: SearchPredicates = { isCurrentUser, isFriend, isInGroup }
 
   const groupChatList = computed(() => sortGroupChatList(groupStore.groupDetails))
   const onlineCount = computed(
-    () => contactStore.contactsList.filter((item: MatrixContact) => item.activeStatus === OnlineEnum.ONLINE).length
+    () => contactStore.contactsList.filter((item) => item.activeStatus === OnlineEnum.ONLINE).length
   )
   const specialContacts = computed(() => sortContactsByOnlineStatus(contactStore.favoriteContacts))
   const specialOnlineCount = computed(
-    () => specialContacts.value.filter((item: MatrixContact) => item.activeStatus === OnlineEnum.ONLINE).length
+    () => specialContacts.value.filter((item) => item.activeStatus === OnlineEnum.ONLINE).length
   )
   const blockedContacts = computed(() => sortBlockedContactsByTime(contactStore.blockedContacts))
   const normalContacts = computed(() =>
@@ -291,35 +91,14 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
   const normalOnlineCount = computed(() => Math.max(onlineCount.value - specialOnlineCount.value, 0))
   const contactUnreadCount = computed(() => globalStore.contactUnreadCount)
 
-  // ============================================================================
-  // Computed - Request Confirm
-  // ============================================================================
-
   const targetUid = computed(() => String(globalStore.addFriendTargetUid || ''))
   const userInfo = computed<FriendConfirmTarget>(() => {
     const uid = targetUid.value
-    if (!uid) {
-      return {
-        uid: '',
-        name: '',
-        account: '',
-        avatar: ''
-      }
-    }
-
+    if (!uid) return { uid: '', name: '', account: '', avatar: '' }
     const user = groupStore.getUserInfo(uid)
-    return {
-      uid,
-      name: user?.name || '',
-      account: user?.account || uid,
-      avatar: user?.avatar || ''
-    }
+    return { uid, name: user?.name || '', account: user?.account || uid, avatar: user?.avatar || '' }
   })
   const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(userInfo.value.avatar))
-
-  // ============================================================================
-  // Methods - Search
-  // ============================================================================
 
   const getRecommendedUsers = (keyword = '') =>
     sortFriendSearchResults(
@@ -437,10 +216,6 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
 
   const getActionKind = (item: FriendSearchResult) => resolveFriendSearchAction(item, searchType.value, predicates)
 
-  // ============================================================================
-  // Methods - List
-  // ============================================================================
-
   const getUserState = (uid: string): UserStateItem | null => {
     const userInfo = groupStore.getUserInfo(uid)
     const userStateId = userInfo?.userStateId
@@ -460,10 +235,6 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
 
   const isSelected = (id: string) => selectedItem.value === String(id || '')
 
-  // ============================================================================
-  // Methods - Request Confirm
-  // ============================================================================
-
   const syncDefaultMessage = () => {
     requestMsg.value = String(toValue(options?.defaultRequestMessage) || '')
   }
@@ -476,40 +247,12 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
     return true
   }
 
-  const getFriendSuggestions = async () => {
-    return await matrixFriendService.getFriendSuggestions()
-  }
+  const getFriendSuggestions = async () => matrixFriendService.getFriendSuggestions()
 
-  const searchFriendsViaApi = async (query: string, options?: { mode?: 'fuzzy' | 'exact'; limit?: number }) => {
-    return await matrixFriendService.searchFriendsViaApi(query, options)
-  }
-
-  const getFriendGroups = async (): Promise<FriendGroup[]> => {
-    return await matrixFriendService.getFriendGroups()
-  }
-
-  const createFriendGroup = async (name: string): Promise<FriendGroup> => {
-    return await matrixFriendService.createFriendGroup(name)
-  }
-
-  const renameFriendGroup = async (groupId: string, name: string): Promise<void> => {
-    await matrixFriendService.renameFriendGroup(groupId, name)
-  }
-
-  const deleteFriendGroup = async (groupId: string): Promise<void> => {
-    await matrixFriendService.deleteFriendGroup(groupId)
-  }
-
-  const getFriendsInGroup = async (groupId: string): Promise<Friend[]> => {
-    return await matrixFriendService.getFriendsInGroup(groupId)
-  }
-
-  // ============================================================================
-  // Return
-  // ============================================================================
+  const searchFriendsViaApi = async (query: string, options?: { mode?: 'fuzzy' | 'exact'; limit?: number }) =>
+    matrixFriendService.searchFriendsViaApi(query, options)
 
   return {
-    // Search
     searchType,
     searchValue,
     searchResults,
@@ -522,8 +265,6 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
     handleTypeChange,
     initialize,
     getActionKind,
-
-    // List
     groupChatList,
     onlineCount,
     specialContacts,
@@ -537,30 +278,18 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
     setSelectedItem,
     clearSelectedItem,
     isSelected,
-
-    // Request Confirm
     targetUid,
     userInfo,
     avatarSrc,
     requestMsg,
     syncDefaultMessage,
     submitRequest,
-
-    // Predicates (shared)
     isFriend,
     isCurrentUser,
     isInGroup,
     isBotUser,
-
-    // Friend Suggestions & Search
     getFriendSuggestions,
     searchFriendsViaApi,
-
-    // Friend Groups
-    getFriendGroups,
-    createFriendGroup,
-    renameFriendGroup,
-    deleteFriendGroup,
-    getFriendsInGroup
+    ...friendGroupService
   }
 }
