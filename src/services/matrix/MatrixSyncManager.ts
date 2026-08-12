@@ -12,127 +12,6 @@ const logger = createLogger('SyncManager')
 export type SlidingSyncLifecycleListener = (state: SlidingSyncState, resp: unknown, err?: Error) => void
 
 /**
- * Error statistics snapshot returned by {@link MatrixSyncManager.getErrorStats}.
- *
- * All counters are over the lifetime of the current SlidingSync instance
- * (reset on `stop()`). `consecutiveErrors` resets to 0 on the next successful
- * Complete event; `totalErrors` and `totalRequests` are cumulative.
- */
-export interface SyncErrorStats {
-  /** Consecutive errors since the last successful Complete event. */
-  consecutiveErrors: number
-  /** Total errors since the instance was created. */
-  totalErrors: number
-  /** Total requests (success + error) since the instance was created. */
-  totalRequests: number
-  /** Unix timestamp (ms) of the most recent error, or null if no errors. */
-  lastErrorTime: number | null
-}
-
-/**
- * Internal seam: sliding-window quality tracker for SlidingSync.
- *
- * Hidden inside MatrixSyncManager — not part of the public interface.
- * Records RequestFinished (with/without error) and Complete events to
- * maintain:
- *   - consecutive/total error counters
- *   - a sliding window of the last 100 request outcomes (for success rate)
- *   - a sliding window of the last 10 inter-Complete intervals (for latency)
- *
- * @see codebase-design — internal seam private to MatrixSyncManager's
- *   implementation; tested through the public interface.
- */
-class SyncQualityTracker {
-  private static readonly OUTCOME_WINDOW = 100
-  private static readonly LATENCY_WINDOW = 10
-
-  private consecutiveErrors = 0
-  private totalErrors = 0
-  private totalRequests = 0
-  private lastErrorTime: number | null = null
-
-  /** Sliding window of recent request outcomes (true = success, false = error). */
-  private readonly outcomes: boolean[] = []
-  /** Sliding window of recent inter-Complete intervals (ms). */
-  private readonly latencies: number[] = []
-  /** Timestamp of the previous Complete event, for interval calculation. */
-  private lastCompleteTs: number | null = null
-
-  /** Record a RequestFinished event. `error` is non-null when the request failed. */
-  recordRequest(error: Error | undefined): void {
-    this.totalRequests++
-    const success = !error
-    this.outcomes.push(success)
-    if (this.outcomes.length > SyncQualityTracker.OUTCOME_WINDOW) {
-      this.outcomes.shift()
-    }
-
-    if (error) {
-      this.consecutiveErrors++
-      this.totalErrors++
-      this.lastErrorTime = Date.now()
-    }
-    // Note: consecutiveErrors is reset in recordComplete()
-  }
-
-  /** Record a Complete event (successful sync cycle). */
-  recordComplete(): void {
-    this.consecutiveErrors = 0
-
-    const now = Date.now()
-    if (this.lastCompleteTs !== null) {
-      const interval = now - this.lastCompleteTs
-      this.latencies.push(interval)
-      if (this.latencies.length > SyncQualityTracker.LATENCY_WINDOW) {
-        this.latencies.shift()
-      }
-    }
-    this.lastCompleteTs = now
-
-    // Complete also counts as a successful request for the outcome window
-    this.totalRequests++
-    this.outcomes.push(true)
-    if (this.outcomes.length > SyncQualityTracker.OUTCOME_WINDOW) {
-      this.outcomes.shift()
-    }
-  }
-
-  getErrorStats(): SyncErrorStats {
-    return {
-      consecutiveErrors: this.consecutiveErrors,
-      totalErrors: this.totalErrors,
-      totalRequests: this.totalRequests,
-      lastErrorTime: this.lastErrorTime
-    }
-  }
-
-  /** Average inter-Complete interval (ms) over the last 10 samples. Returns 0 if < 2 samples. */
-  getSyncLatency(): number {
-    if (this.latencies.length === 0) return 0
-    const sum = this.latencies.reduce((acc, v) => acc + v, 0)
-    return Math.round(sum / this.latencies.length)
-  }
-
-  /** Success rate over the last 100 requests. Returns 1 when no requests recorded. */
-  getSuccessRate(): number {
-    if (this.outcomes.length === 0) return 1
-    const successes = this.outcomes.filter((o) => o).length
-    return successes / this.outcomes.length
-  }
-
-  /** Reset all counters and windows (called on stop/recreate). */
-  reset(): void {
-    this.consecutiveErrors = 0
-    this.totalErrors = 0
-    this.totalRequests = 0
-    this.lastErrorTime = null
-    this.outcomes.length = 0
-    this.latencies.length = 0
-    this.lastCompleteTs = null
-  }
-}
-
-/**
  * Network type detected via Network Information API.
  * Falls back to 'wifi' when the API is unavailable (desktop/Tauri).
  */
@@ -191,7 +70,6 @@ export class MatrixSyncManager {
   private posPersistListener: SlidingSyncLifecycleListener | null = null
   private currentNetworkType: NetworkType | null = null
   private networkChangeHandler: (() => void) | null = null
-  private readonly qualityTracker = new SyncQualityTracker()
 
   /**
    * Create a SlidingSync instance from the current config.
@@ -269,13 +147,6 @@ export class MatrixSyncManager {
 
     // 订阅 Lifecycle 事件，在 Complete 时持久化 pos，在 400 错误时清除 pos
     this.posPersistListener = (state, resp, err) => {
-      // 质量追踪：记录每次请求结果和 Complete 周期
-      if (state === SlidingSyncState.Complete) {
-        this.qualityTracker.recordComplete()
-      } else if (state === SlidingSyncState.RequestFinished) {
-        this.qualityTracker.recordRequest(err)
-      }
-
       if (state === SlidingSyncState.Complete && resp && typeof resp === 'object' && 'pos' in resp) {
         const pos = (resp as { pos: string }).pos
         if (pos) {
@@ -336,8 +207,12 @@ export class MatrixSyncManager {
    * Stop and clear the current instance.
    *
    * Also removes the internal pos persistence listener and network change
-   * listener to avoid memory leaks. The persisted pos in localStorage is
-   * NOT cleared — it will be reused on the next `create()` call if within TTL.
+   * listener to avoid memory leaks. The persisted `pos` IS cleared — when
+   * `stop()` is called, the SlidingSync instance is being disposed and the
+   * associated client's room store may be reset (e.g. client rebuild during
+   * login). Retaining a stale `pos` would cause SlidingSync to fetch only
+   * incremental updates on the next `create()`, leaving the new room store's
+   * timelines empty (messages=0, isLast=true).
    */
   stop(): void {
     this.unregisterNetworkChangeListener()
@@ -348,7 +223,10 @@ export class MatrixSyncManager {
     this.instance?.stop?.()
     this.instance = null
     this.currentNetworkType = null
-    this.qualityTracker.reset()
+    // Clear persisted pos so the next create() performs a fresh initial sync.
+    // Without this, a rebuilt client (empty room store) would receive only
+    // incremental updates via the restored pos, resulting in empty timelines.
+    this.clearPersistedPos()
   }
 
   /**
@@ -408,55 +286,6 @@ export class MatrixSyncManager {
         `New preset takes effect on next create().`
     )
     this.currentNetworkType = newType
-  }
-
-  /**
-   * Get the current network type (for testing/monitoring).
-   * Returns null when no SlidingSync instance is active.
-   */
-  getCurrentNetworkType(): NetworkType | null {
-    return this.currentNetworkType
-  }
-
-  /**
-   * Get error statistics for the current SlidingSync instance.
-   *
-   * Returns a snapshot of { consecutiveErrors, totalErrors, totalRequests, lastErrorTime }.
-   * All counters reset on `stop()`. `consecutiveErrors` resets to 0 on the next
-   * successful Complete event.
-   *
-   * Deep module: hides the SyncQualityTracker's sliding window and counter logic
-   * behind a single accessor. Callers (telemetry, diagnostics, UI health indicators)
-   * get a complete picture without knowing the tracking implementation.
-   */
-  getErrorStats(): SyncErrorStats {
-    return this.qualityTracker.getErrorStats()
-  }
-
-  /**
-   * Get the average sync latency (ms) over the last 10 Complete events.
-   *
-   * Latency = inter-Complete interval (time between consecutive successful sync cycles).
-   * Returns 0 when fewer than 2 Complete events have been recorded.
-   *
-   * Deep module: hides the latency sliding window and timestamp pairing logic.
-   * Useful for network quality monitoring and adaptive timeout tuning.
-   */
-  getSyncLatency(): number {
-    return this.qualityTracker.getSyncLatency()
-  }
-
-  /**
-   * Get the success rate over the last 100 requests.
-   *
-   * Returns a value in [0, 1] where 1 = all requests succeeded, 0 = all failed.
-   * Returns 1 when no requests have been recorded (no failures).
-   *
-   * Deep module: hides the outcome sliding window. Callers get a single number
-   * for health dashboards without managing the window themselves.
-   */
-  getSuccessRate(): number {
-    return this.qualityTracker.getSuccessRate()
   }
 
   /**

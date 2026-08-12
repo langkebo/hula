@@ -88,13 +88,16 @@ export async function getOrCreateCryptoStoragePassword(userId: string, deviceId:
     }
 
     // 4. 写入后立即读回验证
-    //    macOS dev 模式下 keychain 可能写入成功但读取失败（binary 签名变化），
-    //    如果不验证，每次启动都会生成不同密码，导致 initRustCrypto 报
+    //    Rust 端 SecureStore 采用双写策略（keychain + 加密文件 fallback），
+    //    get_secret 会先读 keychain，失败后从文件 fallback 加载。
+    //    验证确保密码可跨会话稳定读取，避免 initRustCrypto 报
     //    "An object failed to be decrypted while unpickling"。
     //    验证失败时返回 null（不加密），保证跨会话一致性。
     const verifyRead = await getSecureSecret(key)
     if (verifyRead !== password) {
-      logger.warn(`keychain 写入后读回验证失败（写入成功但读取不一致），crypto store 将不加密: ${userId}/${deviceId}`)
+      logger.warn(
+        `storage password 写入后读回验证失败（keychain + 文件 fallback 均不可读），crypto store 将不加密: ${userId}/${deviceId}`
+      )
       // 尝试清理无效的 keychain 条目
       await deleteSecureSecret(key).catch(() => {})
       return null

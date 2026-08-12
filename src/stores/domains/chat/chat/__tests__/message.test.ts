@@ -126,8 +126,6 @@ vi.mock('@/services/matrix/room/RealtimeService', () => ({
 vi.mock('@/services/matrix/MatrixEventService', () => ({
   default: {
     getPagedRoomMessages: vi.fn(),
-    getRoomMessages: vi.fn(),
-    getMoreRoomMessages: vi.fn(),
     convertEventToMessage: vi.fn()
   }
 }))

@@ -1,5 +1,14 @@
 <template>
   <div class="space-list-page h-full flex flex-col" role="main" :aria-label="t('home.plugins.space_list')">
+    <!-- 空间视图头部（标题 + 空间切换器 + 搜索 + 创建按钮） -->
+    <SpaceViewHeader
+      v-if="!isLoading"
+      :spaces="spaceSwitcherItems"
+      :current-space-id="selectedSpaceId"
+      @space-select="handleSelectSpace"
+      @search="handleGlobalSearch"
+      @create="openCreateSpace" />
+
     <!-- 视图切换工具条：列表 / 层级树 -->
     <div v-if="!isLoading" class="space-list-page__view-bar" role="tablist" :aria-label="t('space.title')">
       <button
@@ -87,11 +96,13 @@ import { useI18n } from 'vue-i18n'
 import SkeletonSpaceTree from '@/components/common/SkeletonSpaceTree.vue'
 import type { SpaceTreeNode } from '@/components/space/SpaceTree.vue'
 import SpaceTree from '@/components/space/SpaceTree.vue'
+import SpaceViewHeader from '@/components/space/SpaceViewHeader.vue'
 import type { SpaceListItem } from '@/components/workbench/SpaceListPane.vue'
 import SpaceListPane from '@/components/workbench/SpaceListPane.vue'
 import { useEnterChat } from '@/composables/chat/useEnterChat'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
+import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import { useSpaces } from '@/composables/space'
 import { buildCreateSpaceRoute, buildSpaceRoute } from '@/router/spaceNavigation'
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
@@ -129,6 +140,17 @@ const spaceItems = computed<SpaceListItem[]>(() => {
     isPublic: false // 默认为私有空间，后续可根据空间可见性扩展
   }))
 })
+
+// 空间切换器所需的最小字段集
+const spaceSwitcherItems = computed(() =>
+  spaces.value.map((space) => ({
+    spaceId: space.spaceId,
+    name: space.name,
+    avatarUrl: space.avatarUrl,
+    childCount: space.childCount,
+    memberCount: space.memberCount
+  }))
+)
 
 // 视图模式：列表 / 层级树
 const viewMode = ref<'list' | 'tree'>('list')
@@ -175,6 +197,11 @@ const handleSelectRoom = async (roomId: string) => {
 // 创建空间
 const openCreateSpace = () => {
   void router.push(buildCreateSpaceRoute())
+}
+
+// 全局搜索（跳转到搜索页面，限定类型为空间）
+const handleGlobalSearch = () => {
+  triggerGlobalSearch('')
 }
 
 // 切换空间置顶状态（使用 m.favourite 房间标签）

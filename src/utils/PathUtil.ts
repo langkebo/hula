@@ -123,16 +123,6 @@ const ensureUserDataRoot = async (): Promise<void> => {
 }
 
 /**
- * 获取缓存目录，路径结构为：appCacheDir/userUid/subFolder
- * @param subFolder 子目录名
- * @param userUid 当前用户ID
- */
-const _getPathCache = async (subFolder: string, userUid: string): Promise<string> => {
-  const cacheDir = await appCacheDir()
-  return await join(cacheDir, String(userUid), subFolder)
-}
-
-/**
  * 获取用户视频文件夹（userData/userUid/roomId），并确保整个路径存在。
  * @param userUid 用户ID
  * @param roomId 房间ID
@@ -177,16 +167,6 @@ const getUserEmojiDir = async (userUid: string): Promise<string> => {
     })
   }
   return emojiDir
-}
-
-/**
- * 获取用户表情包目录的绝对路径
- * @param userUid 用户ID
- */
-const _getUserAbsoluteEmojiDir = async (userUid: string): Promise<string> => {
-  const emojiDir = await getUserEmojiDir(userUid)
-  const baseDirPath = await appDataDir()
-  return await join(baseDirPath, emojiDir)
 }
 
 const getImageCache = (subFolder: string, userUid: string): string => {

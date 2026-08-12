@@ -286,8 +286,8 @@ const emptyDescription = computed(() => {
 
 <style scoped lang="scss">
 .space-list-pane {
-  width: 280px;
-  min-width: 240px;
+  width: 300px;
+  min-width: 280px;
   max-width: 360px;
   height: 100%;
   background: var(--tjg-surface-panel);

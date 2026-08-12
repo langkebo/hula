@@ -233,83 +233,6 @@ describe('MatrixSyncManager', () => {
       expect(SLIDING_SYNC_PRESETS['slow-2g']).toEqual({ roomRangeEnd: 9, timelineLimit: 1, pollTimeout: 15000 })
     })
 
-    it('create() 使用 wifi 预设创建 SlidingSync（无 navigator.connection）', () => {
-      setMockConnection(null)
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-
-      // 验证 manager 记录了正确的 networkType
-      expect(manager.getCurrentNetworkType()).toBe('wifi')
-      manager.stop()
-    })
-
-    it('create() 在 4g 网络下使用 4g 预设', () => {
-      setMockConnection({ effectiveType: '4g' })
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-
-      expect(manager.getCurrentNetworkType()).toBe('4g')
-      manager.stop()
-    })
-
-    it('create() 在 slow-2g 网络下使用 slow-2g 预设', () => {
-      setMockConnection({ effectiveType: 'slow-2g' })
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-
-      expect(manager.getCurrentNetworkType()).toBe('slow-2g')
-      manager.stop()
-    })
-
-    it('config 中的显式值优先于网络预设', () => {
-      setMockConnection({ effectiveType: 'slow-2g' }) // 预设 roomRangeEnd=9
-      const manager = new MatrixSyncManager()
-      const customConfig: MatrixClientConfig = {
-        homeserverUrl: 'https://matrix.test',
-        slidingSync: { roomRangeEnd: 100, timelineLimit: 20, pollTimeout: 60000 }
-      }
-      // 显式配置不应被预设覆盖，create() 应成功
-      expect(() => manager.create(createMockClient(), customConfig)).not.toThrow()
-      expect(manager.getCurrentNetworkType()).toBe('slow-2g') // 网络类型仍被记录
-      manager.stop()
-    })
-
-    it('adaptToNetwork: 网络变化时更新 currentNetworkType', () => {
-      setMockConnection({ effectiveType: 'wifi' })
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-      expect(manager.getCurrentNetworkType()).toBe('wifi')
-
-      // 模拟网络降级到 3g
-      setMockConnection({ effectiveType: '3g' })
-      manager.adaptToNetwork()
-      expect(manager.getCurrentNetworkType()).toBe('3g')
-
-      manager.stop()
-    })
-
-    it('adaptToNetwork: 网络类型不变时不更新', () => {
-      setMockConnection({ effectiveType: '4g' })
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-      const initialType = manager.getCurrentNetworkType()
-
-      manager.adaptToNetwork() // 网络类型未变
-      expect(manager.getCurrentNetworkType()).toBe(initialType)
-
-      manager.stop()
-    })
-
-    it('stop 后 currentNetworkType 被清除', () => {
-      setMockConnection({ effectiveType: '4g' })
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-      expect(manager.getCurrentNetworkType()).toBe('4g')
-
-      manager.stop()
-      expect(manager.getCurrentNetworkType()).toBeNull()
-    })
-
     it('stop 后网络变化监听器被移除', () => {
       const removeSpy = vi.fn()
       setMockConnection({ effectiveType: 'wifi', removeEventListener: removeSpy })
@@ -325,30 +248,6 @@ describe('MatrixSyncManager', () => {
       setMockConnection(null)
       const manager = new MatrixSyncManager()
       expect(() => manager.create(createMockClient(), defaultConfig)).not.toThrow()
-      manager.stop()
-    })
-
-    it('网络变化触发 adaptToNetwork 被调用', () => {
-      const listeners: Array<() => void> = []
-      setMockConnection({
-        effectiveType: 'wifi',
-        addEventListener: (_type: string, handler: () => void) => listeners.push(handler),
-        removeEventListener: vi.fn()
-      })
-
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-      expect(manager.getCurrentNetworkType()).toBe('wifi')
-
-      // 模拟网络降级到 3g
-      setMockConnection({ effectiveType: '3g' })
-
-      // 触发 'change' 事件
-      for (const listener of listeners) {
-        listener()
-      }
-
-      expect(manager.getCurrentNetworkType()).toBe('3g')
       manager.stop()
     })
   })
@@ -392,17 +291,25 @@ describe('MatrixSyncManager', () => {
       manager.stop()
     })
 
-    it('重启后从 localStorage 恢复 pos 并设置到 SlidingSync 实例', () => {
+    it('stop() 清除持久化的 pos，防止 client 重建后 timeline 为空', () => {
       // 第一次 create：持久化 pos
       const manager1 = new MatrixSyncManager()
       const ss1 = manager1.create(createMockClient(), defaultConfig)
       emitLifecycle(ss1, SlidingSyncState.Complete, makeResp('persisted-pos-456'))
-      manager1.stop()
 
       // 验证 pos 已持久化
       expect(JSON.parse(localStorage.getItem('matrix.sliding_sync.pos')!).pos).toBe('persisted-pos-456')
 
-      // 第二次 create：应恢复 pos
+      // stop() 应清除 pos（client 重建时 room store 会被清空，pos 不再有效）
+      manager1.stop()
+      expect(localStorage.getItem('matrix.sliding_sync.pos')).toBeNull()
+    })
+
+    it('未调用 stop() 时，新 manager 从 localStorage 恢复 pos', () => {
+      // 模拟应用重启场景：pos 已在 localStorage 中，但旧 manager 未调用 stop()
+      // （例如进程直接退出）
+      localStorage.setItem('matrix.sliding_sync.pos', JSON.stringify({ pos: 'restart-pos-789', ts: Date.now() }))
+
       // setInitialPos 可能在 SDK 构建版本中不存在，添加 stub
       const proto = SlidingSync.prototype as unknown as { setInitialPos?: (pos: string) => void }
       const hadMethod = typeof proto.setInitialPos === 'function'
@@ -411,11 +318,11 @@ describe('MatrixSyncManager', () => {
       }
       const setInitialPosSpy = vi.spyOn(proto, 'setInitialPos')
 
-      const manager2 = new MatrixSyncManager()
-      manager2.create(createMockClient(), defaultConfig)
+      const manager = new MatrixSyncManager()
+      manager.create(createMockClient(), defaultConfig)
 
-      expect(setInitialPosSpy).toHaveBeenCalledWith('persisted-pos-456')
-      manager2.stop()
+      expect(setInitialPosSpy).toHaveBeenCalledWith('restart-pos-789')
+      manager.stop()
       setInitialPosSpy.mockRestore()
       if (!hadMethod) {
         delete proto.setInitialPos
@@ -554,252 +461,6 @@ describe('MatrixSyncManager', () => {
         const params = ss.getListParams(key)
         expect(params?.timeline_limit).toBe(1)
       }
-    })
-  })
-
-  describe('连接质量监控（OPT-9 深化）', () => {
-    /**
-     * 步骤 4.2 OPT-9 测试：验证 MatrixSyncManager 的错误统计、延迟监控、成功率计算。
-     *
-     * 设计原则（codebase-design）：
-     * - 深模块：3 个公有方法（getErrorStats/getSyncLatency/getSuccessRate）隐藏滑动窗口实现
-     * - 接受依赖：通过 SlidingSync Lifecycle 事件自动采集，无需调用方传入数据
-     * - 返回结果：所有方法返回快照对象/数字，不产生副作用
-     */
-    beforeEach(() => {
-      localStorage.clear()
-    })
-
-    afterEach(() => {
-      localStorage.clear()
-    })
-
-    function emitLifecycle(
-      ss: import('matrix-js-sdk').SlidingSync,
-      state: SlidingSyncState,
-      resp: unknown,
-      err?: Error
-    ): void {
-      ;(ss.emit as (event: string, ...args: unknown[]) => void)(SlidingSyncEvent.Lifecycle, state, resp, err)
-    }
-
-    it('getErrorStats: 初始状态返回全零', () => {
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-
-      const stats = manager.getErrorStats()
-      expect(stats).toEqual({
-        consecutiveErrors: 0,
-        totalErrors: 0,
-        totalRequests: 0,
-        lastErrorTime: null
-      })
-
-      manager.stop()
-    })
-
-    it('getErrorStats: RequestFinished 错误递增 consecutiveErrors 和 totalErrors', () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('network error'))
-
-      const stats = manager.getErrorStats()
-      expect(stats.consecutiveErrors).toBe(1)
-      expect(stats.totalErrors).toBe(1)
-      expect(stats.totalRequests).toBe(1)
-      expect(stats.lastErrorTime).not.toBeNull()
-
-      manager.stop()
-    })
-
-    it('getErrorStats: 连续错误递增 consecutiveErrors', () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err1'))
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err2'))
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err3'))
-
-      const stats = manager.getErrorStats()
-      expect(stats.consecutiveErrors).toBe(3)
-      expect(stats.totalErrors).toBe(3)
-      expect(stats.totalRequests).toBe(3)
-
-      manager.stop()
-    })
-
-    it('getErrorStats: 成功的 Complete 事件重置 consecutiveErrors', () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err'))
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err'))
-      expect(manager.getErrorStats().consecutiveErrors).toBe(2)
-
-      // 成功响应
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p1' }, undefined)
-
-      const stats = manager.getErrorStats()
-      expect(stats.consecutiveErrors).toBe(0)
-      expect(stats.totalErrors).toBe(2) // 总错误数不重置
-      expect(stats.totalRequests).toBe(3) // 2 错误 + 1 成功
-
-      manager.stop()
-    })
-
-    it('getSyncLatency: 无 Complete 事件时返回 0', () => {
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-
-      expect(manager.getSyncLatency()).toBe(0)
-
-      manager.stop()
-    })
-
-    it('getSyncLatency: 单次 Complete 事件后返回 0（需要至少 2 次才能计算间隔）', () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p1' }, undefined)
-
-      expect(manager.getSyncLatency()).toBe(0)
-
-      manager.stop()
-    })
-
-    it('getSyncLatency: 两次 Complete 事件后返回间隔时间', async () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p1' }, undefined)
-      // 等待一小段时间确保时间戳不同
-      await new Promise((resolve) => setTimeout(resolve, 50))
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p2' }, undefined)
-
-      const latency = manager.getSyncLatency()
-      // 延迟应大于 0（至少 50ms 的间隔）
-      expect(latency).toBeGreaterThan(0)
-      // 上限检查（避免假阳性）
-      expect(latency).toBeLessThan(5000)
-
-      manager.stop()
-    })
-
-    it('getSyncLatency: 滑动窗口只保留最近 10 次延迟样本', async () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      // 发出 12 次 Complete 事件
-      for (let i = 0; i < 12; i++) {
-        emitLifecycle(ss, SlidingSyncState.Complete, { pos: `p${i}` }, undefined)
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      }
-
-      // 延迟应基于最近 10 次样本，不是全部 12 次
-      const latency = manager.getSyncLatency()
-      expect(latency).toBeGreaterThan(0)
-      expect(latency).toBeLessThan(1000)
-
-      manager.stop()
-    })
-
-    it('getSuccessRate: 无请求时返回 1（无失败）', () => {
-      const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
-
-      expect(manager.getSuccessRate()).toBe(1)
-
-      manager.stop()
-    })
-
-    it('getSuccessRate: 全部成功时返回 1', () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p1' }, undefined)
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p2' }, undefined)
-
-      expect(manager.getSuccessRate()).toBe(1)
-
-      manager.stop()
-    })
-
-    it('getSuccessRate: 全部失败时返回 0', () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err'))
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err'))
-
-      expect(manager.getSuccessRate()).toBe(0)
-
-      manager.stop()
-    })
-
-    it('getSuccessRate: 混合成功/失败时返回正确比率', () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      // 3 成功 + 1 失败 = 75%
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p1' }, undefined)
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p2' }, undefined)
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p3' }, undefined)
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err'))
-
-      expect(manager.getSuccessRate()).toBe(0.75)
-
-      manager.stop()
-    })
-
-    it('getSuccessRate: 滑动窗口只统计最近 100 次请求', () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      // 60 次失败（窗口只保留最近 100 次，前 10 次会被驱逐）
-      for (let i = 0; i < 60; i++) {
-        emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err'))
-      }
-      // 40 次成功（窗口内：50 失败 + 40 成功 = 90，但窗口容量 100，所以全部保留）
-      for (let i = 0; i < 40; i++) {
-        emitLifecycle(ss, SlidingSyncState.Complete, { pos: `p${i}` }, undefined)
-      }
-
-      // 总共 100 次请求，窗口保留全部：60 失败 + 40 成功 = 40%
-      expect(manager.getSuccessRate()).toBe(0.4)
-
-      // 再加 10 次成功，窗口驱逐前 10 次失败
-      for (let i = 0; i < 10; i++) {
-        emitLifecycle(ss, SlidingSyncState.Complete, { pos: `p${i}` }, undefined)
-      }
-      // 窗口内：50 失败 + 50 成功 = 50%
-      expect(manager.getSuccessRate()).toBe(0.5)
-
-      manager.stop()
-    })
-
-    it('stop 后质量统计被重置', () => {
-      const manager = new MatrixSyncManager()
-      const ss = manager.create(createMockClient(), defaultConfig)
-
-      emitLifecycle(ss, SlidingSyncState.RequestFinished, null, new Error('err'))
-      emitLifecycle(ss, SlidingSyncState.Complete, { pos: 'p1' }, undefined)
-      expect(manager.getErrorStats().totalRequests).toBe(2)
-
-      manager.stop()
-      // 清除 localStorage 中持久化的 pos，避免第二次 create() 调用 setInitialPos
-      localStorage.clear()
-
-      // 重新创建后统计应重置
-      manager.create(createMockClient(), defaultConfig)
-      expect(manager.getErrorStats()).toEqual({
-        consecutiveErrors: 0,
-        totalErrors: 0,
-        totalRequests: 0,
-        lastErrorTime: null
-      })
-
-      manager.stop()
     })
   })
 })

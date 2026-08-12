@@ -12,9 +12,4 @@ describe('paths single source of truth', () => {
     expect(Array.isArray(mod.SDK_PATHS)).toBe(true)
     expect(mod.SDK_PATHS.length).toBeGreaterThan(0)
   })
-
-  it('CUSTOM_PATHS marker exists for frontend-only constants', async () => {
-    const mod = await import('../index')
-    expect(mod.CUSTOM_PATHS).toBeDefined()
-  })
 })

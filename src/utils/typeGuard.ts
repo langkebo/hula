@@ -36,14 +36,6 @@ export function isNullOrUndefined(value: unknown): value is null | undefined {
   return value === null || value === undefined
 }
 
-function _isEmptyString(value: unknown): value is '' {
-  return value === ''
-}
-
-function _hasProperty<T extends object, K extends string>(obj: T, key: K): obj is T & { [P in K]: unknown } {
-  return key in obj
-}
-
 export function getProperty<T extends object, K extends string>(obj: T, key: K, defaultValue?: unknown): unknown {
   if (key in obj) {
     return (obj as Record<string, unknown>)[key]

@@ -2,14 +2,10 @@ import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { isMessageEventType, MatrixBurnDuration, MatrixEventType, MatrixFormat } from '@/common/matrixConstants'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import { ReceiptType } from '@/types/matrix-js-sdk'
 import type { MessageType } from '@/types/message'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from './BaseMatrixService'
 import matrixMessageAdapter from './messaging/MatrixMessageAdapter'
-import { matrixMessageRelationService } from './messaging/MatrixMessageRelationService'
-import { matrixReactionService } from './messaging/MatrixReactionService'
-import { matrixReceiptService } from './messaging/MatrixReceiptService'
 import { matrixRoomQueryService } from './room/QueryService'
 
 const logger = createLogger('MatrixEvent')
@@ -32,11 +28,6 @@ interface ThumbnailInfo {
   height?: number
   size?: number
   mimetype?: string
-}
-
-interface VoiceInfo {
-  size?: number
-  duration?: number
 }
 
 type EventContent = Record<string, unknown>
@@ -253,51 +244,6 @@ class MatrixEventService extends BaseMatrixService {
     }
   }
 
-  async sendVoiceMessage(
-    roomId: string,
-    source: MessageSendSource,
-    voiceInfo: VoiceInfo,
-    filename = 'voice.ogg'
-  ): Promise<string> {
-    try {
-      const contentUri = await this.resolveContentUri(source, 'audio/ogg')
-      const content: EventContent = {
-        msgtype: 'm.audio',
-        body: filename,
-        info: {
-          size: typeof source === 'string' ? voiceInfo.size : source.size,
-          duration: voiceInfo.duration,
-          mimetype: typeof source === 'string' ? 'audio/ogg' : source.type || 'audio/ogg'
-        },
-        url: contentUri,
-        'm.voice': {},
-        'org.matrix.msc1767.audio': {
-          duration: voiceInfo.duration
-        }
-      }
-
-      return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
-    } catch (err) {
-      logger.error(`发送语音消息失败: ${roomId} ${err}`)
-      throw err
-    }
-  }
-
-  async sendLocationMessage(roomId: string, geoUri: string, description: string): Promise<string> {
-    try {
-      const content: EventContent = {
-        msgtype: 'm.location',
-        body: description,
-        geo_uri: geoUri
-      }
-
-      return this.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
-    } catch (err) {
-      logger.error(`发送位置消息失败: ${roomId} ${err}`)
-      throw err
-    }
-  }
-
   async redactEvent(roomId: string, eventId: string, reason?: string): Promise<void> {
     const client = this.getClient()
 
@@ -306,108 +252,6 @@ class MatrixEventService extends BaseMatrixService {
       logger.info(`撤回事件成功: ${roomId}/${eventId}`)
     } catch (err) {
       logger.error(`撤回事件失败: ${err}`)
-      throw err
-    }
-  }
-
-  async sendMessageReceipt(roomId: string, eventId: string, receiptType: string = ReceiptType.Read): Promise<void> {
-    const client = this.getClient()
-
-    if (receiptType === ReceiptType.Read) {
-      await matrixReceiptService.sendReadReceiptByEventId(roomId, eventId)
-      return
-    }
-
-    const room = client.getRoom(roomId)
-    if (!room) {
-      throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
-    }
-
-    const targetEvent = room.findEventById(eventId)
-    if (!targetEvent) {
-      throw new Error(this.t('matrix_error.messaging.event_not_found', { eventId }))
-    }
-
-    try {
-      await client.sendReadReceipt(targetEvent, receiptType as ReceiptType)
-      logger.info(`发送回执成功: ${roomId}/${eventId}/${receiptType}`)
-    } catch (err) {
-      logger.error(`发送回执失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getRoomTimeline(roomId: string, limit = 50): Promise<MatrixEvent[]> {
-    try {
-      const client = this.getClient()
-      const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
-      }
-
-      const events = room.getLiveTimeline().getEvents()
-      return events.slice(Math.max(events.length - limit, 0))
-    } catch (err) {
-      logger.error(`获取房间时间线失败: ${roomId} ${err}`)
-      throw err
-    }
-  }
-
-  async paginateTimeline(roomId: string, direction: 'b' | 'f' = 'b', limit = 50): Promise<MatrixEvent[]> {
-    const client = this.getClient()
-    const room = client.getRoom(roomId)
-    if (!room) {
-      throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
-    }
-
-    const beforeEvents = room.getLiveTimeline().getEvents()
-    const beforeLength = beforeEvents.length
-
-    try {
-      if (direction === 'b') {
-        await client.scrollback(room, limit)
-      }
-
-      const events = room.getLiveTimeline().getEvents()
-      const addedCount = Math.max(events.length - beforeLength, 0)
-
-      if (addedCount > 0) {
-        return direction === 'b' ? events.slice(0, addedCount) : events.slice(events.length - addedCount)
-      }
-
-      return direction === 'b' ? events.slice(0, limit) : events.slice(Math.max(events.length - limit, 0))
-    } catch (err) {
-      logger.error(`分页时间线失败: ${err}`)
-      throw err
-    }
-  }
-
-  async replyToEvent(roomId: string, eventId: string, body: string, html?: string): Promise<string> {
-    try {
-      this.getClient()
-      return await matrixMessageRelationService.replyToMessage(roomId, eventId, { body, html })
-    } catch (err) {
-      logger.error(`回复消息失败: ${roomId}/${eventId} ${err}`)
-      throw err
-    }
-  }
-
-  async editEvent(roomId: string, eventId: string, body: string, html?: string): Promise<string> {
-    try {
-      this.getClient()
-      return await matrixMessageRelationService.editMessage(roomId, eventId, { body, html })
-    } catch (err) {
-      logger.error(`编辑消息失败: ${roomId}/${eventId} ${err}`)
-      throw err
-    }
-  }
-
-  async reactToEvent(roomId: string, eventId: string, emoji: string): Promise<string> {
-    try {
-      this.getClient()
-      return await matrixReactionService.addReaction(roomId, eventId, emoji)
-    } catch (err) {
-      logger.error(`添加反应失败: ${roomId}/${eventId} ${err}`)
       throw err
     }
   }
@@ -468,25 +312,6 @@ class MatrixEventService extends BaseMatrixService {
     }
   }
 
-  async getRoomMessages(roomId: string, limit = 50): Promise<MessageType[]> {
-    const rawEvents = await this.getRoomTimeline(roomId, limit)
-    return rawEvents
-      .filter((event) => isMessageEventType(event.getType()))
-      .map((event) => this.convertEventToMessageType(event))
-  }
-
-  async getMoreRoomMessages(
-    roomId: string,
-    direction: 'f' | 'b' = 'b',
-    limit = 50
-  ): Promise<{ messages: MessageType[]; hasMore: boolean }> {
-    const rawEvents = await this.paginateTimeline(roomId, direction, limit)
-    const messages = rawEvents
-      .filter((event) => isMessageEventType(event.getType()))
-      .map((event) => this.convertEventToMessageType(event))
-    return { messages, hasMore: rawEvents.length >= limit }
-  }
-
   async getPagedRoomMessages(
     roomId: string,
     pageSize: number,
@@ -501,8 +326,26 @@ class MatrixEventService extends BaseMatrixService {
       return { messages: [], isLast: true, cursor: '' }
     }
 
-    const timeline = room.getLiveTimeline()
-    const events = timeline.getEvents()
+    let timeline = room.getLiveTimeline()
+    let events = timeline.getEvents()
+
+    // SlidingSync 的 timeline_limit 较小（10-50），如果 timeline 为空或事件不足，
+    // 通过 /messages API（client.scrollback）从服务端拉取历史消息。
+    // 场景：client 重建后 room store 被清空，SlidingSync 尚未填充 timeline，
+    // 或房间长时间无活动导致 SlidingSync 未返回 timeline 事件。
+    if (events.length === 0) {
+      try {
+        const client = this.getClient()
+        await client.scrollback(room, Math.max(pageSize, 30))
+        // scrollback 会将历史事件插入到 timeline 中，重新获取
+        timeline = room.getLiveTimeline()
+        events = timeline.getEvents()
+      } catch (err) {
+        logger.error(`scrollback 获取历史消息失败: ${roomId}`, err)
+        // scrollback 失败时返回空结果，不阻塞 UI
+        return { messages: [], isLast: true, cursor: '' }
+      }
+    }
 
     const startIndex = cursor ? events.findIndex((e: MatrixEvent) => e.getId() === cursor) : 0
     const endIndex = Math.min(startIndex + pageSize, events.length)

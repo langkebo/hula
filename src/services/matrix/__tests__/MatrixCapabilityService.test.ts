@@ -17,7 +17,7 @@ vi.mock('../MatrixWorkerHost', () => ({
   matrixWorkerHost: { isStarted: false }
 }))
 
-const throwingFetch = vi.fn(() => Promise.reject(new Error('network down')))
+const throwingFetch = vi.fn((): Promise<unknown> => Promise.reject(new Error('network down')))
 vi.mock('../network/runtimeFetch', () => ({
   getRuntimeAwareFetch: () => throwingFetch
 }))
@@ -201,5 +201,75 @@ describe('R-16: error logging', () => {
     expect(logWarn).toHaveBeenCalled()
     const allWarnCalls = vi.mocked(logWarn).mock.calls.map((c) => String(c[0]))
     expect(allWarnCalls.some((msg) => msg.includes('tryGetStore'))).toBe(true)
+  })
+})
+
+// Phase 2 ⑥: 并发去重 — fetchCapabilities 并发调用只发一次 HTTP
+describe('Phase 2 ⑥: capability 探测并发去重（SingleFlight）', () => {
+  let fetchCallCount: number
+
+  beforeEach(() => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    registerCapabilityStoreResolver(() => useCapabilityStore())
+    vi.clearAllMocks()
+    fetchCallCount = 0
+
+    // 可计数的 resolved mock fetch
+    throwingFetch.mockReset()
+    throwingFetch.mockImplementation(() => {
+      fetchCallCount++
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ unstable_features: { 'io.hula.friends': true } })
+      })
+    })
+
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+      getHomeserverUrl: () => 'https://matrix.test'
+    } as never)
+  })
+
+  it('并发调用 fetchCapabilities 3 次，/versions 只发 1 次 HTTP 请求', async () => {
+    const [r1, r2, r3] = await Promise.all([
+      matrixCapabilityService.fetchCapabilities(),
+      matrixCapabilityService.fetchCapabilities(),
+      matrixCapabilityService.fetchCapabilities()
+    ])
+
+    // 三个返回值相同（同一 Promise 的结果）
+    expect(r1).toBe(r2)
+    expect(r2).toBe(r3)
+
+    // fetchVersions + fetchClientConfig 各调用 1 次（共 2 次 fetch）
+    // matrixAccountService.getCapabilities 被 mock，不走 fetch
+    expect(fetchCallCount).toBe(2)
+  })
+
+  it('串行调用 fetchCapabilities 2 次（第一次完成后），每次都发 HTTP（不缓存结果）', async () => {
+    await matrixCapabilityService.fetchCapabilities()
+    const firstCallCount = fetchCallCount
+
+    await matrixCapabilityService.fetchCapabilities()
+
+    // 第二次调用应重新发请求（in-flight 已清空，不缓存结果）
+    expect(fetchCallCount).toBeGreaterThan(firstCallCount)
+  })
+
+  it('fetchCapabilities 失败后清空 in-flight，允许重试', async () => {
+    // 第一次失败
+    throwingFetch.mockImplementationOnce(() => Promise.reject(new Error('timeout')))
+    const r1 = await matrixCapabilityService.fetchCapabilities()
+    expect(r1).not.toBeNull() // 降级返回空对象，不 throw
+
+    // 第二次应能正常执行（in-flight 已清空）
+    throwingFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ unstable_features: { 'io.hula.friends': true } })
+      })
+    )
+    const r2 = await matrixCapabilityService.fetchCapabilities()
+    expect(r2?.unstable_features['io.hula.friends']).toBe(true)
   })
 })

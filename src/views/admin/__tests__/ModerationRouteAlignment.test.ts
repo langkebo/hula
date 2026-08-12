@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-// ModerationPanel is a self-contained container (fetches data from the store),
-// while ModerationDashboard is a presentational component that needs a parent.
+// ModerationPanel is a self-contained container (fetches data from the store).
 // The /admin/moderation route should map to ModerationPanel.
 vi.mock('@/stores/domains/chat/moderation', () => ({
   useModerationStore: () => ({

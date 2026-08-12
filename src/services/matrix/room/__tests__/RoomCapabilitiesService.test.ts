@@ -28,9 +28,7 @@ vi.mock('../../matrixClientAccessor', () => ({
   resetMatrixClientAccessorForTests: vi.fn()
 }))
 
-const { roomCapabilitiesService, ROOM_CAPABILITY_NAMES, __ROOM_CAPABILITIES_TTL_MS__ } = await import(
-  '../RoomCapabilitiesService'
-)
+const { roomCapabilitiesService, __ROOM_CAPABILITIES_TTL_MS__ } = await import('../RoomCapabilitiesService')
 
 describe('RoomCapabilitiesService', () => {
   beforeEach(() => {
@@ -115,10 +113,6 @@ describe('RoomCapabilitiesService', () => {
     const payload = { room_id: '!c:server', capabilities: { threading: { enabled: false } } }
     expect(roomCapabilitiesService.isCapabilityEnabled(payload, 'threading')).toBe(false)
     expect(roomCapabilitiesService.isCapabilityEnabled(payload, 'knock')).toBe(true)
-  })
-
-  it('exports stable capability names from contract', () => {
-    expect(ROOM_CAPABILITY_NAMES).toEqual(['knock', 'restricted', 'threading', 'read_receipts', 'typing_notifications'])
   })
 
   it('exposes TTL constant for diagnostics', () => {

@@ -1,5 +1,7 @@
 {
   "done": "完成",
+  "online": "在线",
+  "offline": "离线",
   "skip_to_sessions": "跳到会话列表",
   "skip_to_chat": "跳到聊天区",
   "confirm": "确认",

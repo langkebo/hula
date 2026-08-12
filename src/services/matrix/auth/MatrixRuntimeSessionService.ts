@@ -21,6 +21,7 @@ import type { MessageType } from '@/types/message'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMac } from '@/utils/PlatformConstants'
 import { buildPresenceStorePatch } from '@/utils/presenceStatus'
@@ -150,6 +151,14 @@ export interface SessionStorePort {
 
 class MatrixRuntimeSessionService {
   constructor(private readonly port: SessionStorePort) {}
+
+  // ─── bootstrap 幂等守卫（使用 IdempotencyGuard 共享工具） ──────────────
+  // 防止 loginWithPassword/loginWithSsoToken/restoreWithAccessToken 内部调用
+  // 与 useLoginFlow.init() 外部调用并发触发，导致：
+  // - 两次 room.setupEventListeners()（重复事件监听器 → 重复消息处理）
+  // - 两次 startPresenceHeartbeat() / matrixWsBridge.start()
+  // - 两次 bootstrapSearchIndex（重复灌入 worker 索引）
+  private bootstrapGuard = new IdempotencyGuard()
 
   private getCurrentClientDeviceId(): string | null {
     const client = this.port.matrix.getClient() as { getDeviceId?: () => string | null } | null
@@ -745,27 +754,29 @@ class MatrixRuntimeSessionService {
     const BOOTSTRAP_TIMEOUT_MS = 30_000
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined
 
-    const bootstrapTask = this.doBootstrapPostLoginState(options)
+    // bootstrapTask 完成时才标记 settled（超时/失败不标记，允许后续重试）
+    // IdempotencyGuard 负责：settled 短路 + in-flight Promise 复用
+    const bootstrapTask = () => {
+      const task = this.doBootstrapPostLoginState(options)
 
-    // 整体超时保护：防止单个步骤（如 worker 请求、sync 等待）卡住导致登录流程永不返回
-    const timeoutPromise = new Promise<void>((resolve) => {
-      timeoutHandle = setTimeout(() => {
-        logger.warn(`bootstrapPostLoginState 整体超时 ${BOOTSTRAP_TIMEOUT_MS}ms，强制完成（部分功能可能在后台继续）`)
-        resolve()
-      }, BOOTSTRAP_TIMEOUT_MS)
-    })
+      // 整体超时保护：防止单个步骤卡住导致登录流程永不返回
+      const timeoutPromise = new Promise<void>((resolve) => {
+        timeoutHandle = setTimeout(() => {
+          logger.warn(`bootstrapPostLoginState 整体超时 ${BOOTSTRAP_TIMEOUT_MS}ms，强制完成（部分功能可能在后台继续）`)
+          resolve()
+        }, BOOTSTRAP_TIMEOUT_MS)
+      })
 
-    try {
-      await Promise.race([bootstrapTask, timeoutPromise])
-    } finally {
-      if (timeoutHandle) clearTimeout(timeoutHandle)
+      return Promise.race([task, timeoutPromise]).finally(() => {
+        if (timeoutHandle) clearTimeout(timeoutHandle)
+        // 防止孤儿 Promise：若超时胜出，task 仍在后台运行
+        task.catch((err) => {
+          logger.warn('bootstrapPostLoginState 超时后后台任务失败（已忽略）:', err)
+        })
+      })
     }
 
-    // 防止孤儿 Promise：若超时胜出，bootstrapTask 仍在后台运行。
-    // 给它附加 catch 避免超时后 reject 产生 unhandled rejection。
-    bootstrapTask.catch((err) => {
-      logger.warn('bootstrapPostLoginState 超时后后台任务失败（已忽略）:', err)
-    })
+    return this.bootstrapGuard.run(bootstrapTask)
   }
 
   private async doBootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions): Promise<void> {
@@ -848,6 +859,9 @@ class MatrixRuntimeSessionService {
   async resetLocalSessionState(options: ResetMatrixRuntimeSessionOptions = {}): Promise<void> {
     try {
       const { preserveTokens = false } = options
+
+      // 重置 bootstrap 幂等守卫，确保下次登录能重新执行 bootstrap pipeline
+      this.bootstrapGuard.reset()
 
       if (!preserveTokens) {
         localStorage.removeItem('user')

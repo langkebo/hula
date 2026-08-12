@@ -39,6 +39,8 @@ let hasStarted = false
 let currentReporter: Reporter = defaultReporter
 let sdkRequestStatsTimer: ReturnType<typeof setInterval> | null = null
 let sdkRequestStatsSnapshots = new Map<string, string>()
+// 保留 PerformanceObserver 引用，stop 时 disconnect 避免长任务监听器泄漏
+let longtaskObserver: PerformanceObserver | null = null
 
 const sampleSdkRequestStats = (): void => {
   const managerStats = matrixClientService.getManagerStatsList()
@@ -148,6 +150,7 @@ export const startWebVitalObserver = (
         })
       }
     })
+    longtaskObserver = observer
 
     try {
       observer.observe({ type: 'longtask', buffered: true })
@@ -159,8 +162,24 @@ export const startWebVitalObserver = (
   logger.info('[WebVitals] 性能监控已启动')
 }
 
-const _stopWebVitalObserver = (): void => {
-  hasStarted = false
+/**
+ * 停止 WebVitals 监控，清理所有资源：
+ * - disconnect PerformanceObserver（避免长任务监听器泄漏）
+ * - clearInterval SDK 请求统计定时器
+ * - terminate PerformanceReporter
+ * - 复位 hasStarted，允许后续重新 start
+ */
+export const stopWebVitalObserver = (): void => {
+  if (longtaskObserver) {
+    try {
+      longtaskObserver.disconnect()
+    } catch {
+      // disconnect 可能已在别处调用或环境不支持，静默忽略
+    }
+    longtaskObserver = null
+  }
   stopSdkRequestStatsObserver()
   performanceReporter.terminate()
+  hasStarted = false
+  currentReporter = defaultReporter
 }

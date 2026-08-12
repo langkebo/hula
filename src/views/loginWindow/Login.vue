@@ -67,6 +67,7 @@ import { useWindow } from '@/composables/common/useWindow'
 import router from '@/router'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
 import AutoLoginForm from './AutoLoginForm.vue'
 import LoginBottomBar from './LoginBottomBar.vue'
@@ -75,6 +76,7 @@ import ServerConfigModal from './ServerConfigModal.vue'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'
 import { useLoginOrchestrator } from './useLoginOrchestrator'
 
+const logger = createLogger('Login')
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
@@ -123,7 +125,9 @@ onMounted(async () => {
     try {
       const win = getCurrentWindow()
       await win.setSize(new LogicalSize(420, 580))
-    } catch (e) {}
+    } catch (e) {
+      logger.warn('设置窗口尺寸失败:', e)
+    }
   }
 })
 

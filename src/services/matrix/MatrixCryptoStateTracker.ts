@@ -40,6 +40,27 @@ type RustCryptoCapableClient = MatrixClient & {
 }
 
 /**
+ * ensureCrypto 跨窗口互斥锁名称。
+ *
+ * 背景：Tauri 多窗口架构中，每个 WebView 窗口有独立的 globalThis 和模块实例，
+ * 导致 globalThis 级 mutex 无法跨窗口工作。多个窗口并发调用 initRustCrypto
+ * 会竞争同一 IndexedDB（同 origin 共享），导致第二个卡到 8s 超时。
+ *
+ * 方案：使用 Web Locks API（navigator.locks.request）实现跨窗口互斥锁。
+ * Web Locks 是浏览器原生提供的跨标签/窗口锁机制，同源所有窗口共享。
+ * Tauri macOS WKWebView（Safari 16.4+）支持此 API。
+ */
+const CRYPTO_LOCK_NAME = 'tjg-ensure-crypto'
+
+/**
+ * 检测 Web Locks API 是否可用。
+ * 测试环境（Node.js/vitest）和旧浏览器可能不支持，需要 fallback。
+ */
+function isWebLocksAvailable(): boolean {
+  return typeof navigator !== 'undefined' && navigator.locks != null && typeof navigator.locks.request === 'function'
+}
+
+/**
  * Crypto 状态追踪器
  *
  * 深模块：小接口（ensureCrypto/handleEventDecrypted/getState）+ 大实现
@@ -88,6 +109,7 @@ export class MatrixCryptoStateTracker {
     }
 
     const cryptoClient = client as RustCryptoCapableClient
+
     if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
       this.rustCryptoDebugState = {
         attempted: false,
@@ -110,20 +132,70 @@ export class MatrixCryptoStateTracker {
       return
     }
 
-    // 8s 超时保护：ensureCrypto 完全非阻塞化会导致 SDK 内部状态异常，
-    // 但完全阻塞又会卡住 startClient → sync 循环不启动。
-    // 平衡策略：Promise.race 8s 超时，超时后 fire-and-forget 继续后台执行。
-    // 3s 太短：第一次 initRustCrypto ~1.4s + 清理 IndexedDB ~0.3s + 第二次 initRustCrypto ~2s = ~3.7s
-    // 重试场景下 3s 必然超时，导致 crypto 初始化被打断，后续解密全部失败。
     const ENSURE_CRYPTO_TIMEOUT_MS = 8_000
-    const cryptoTask = this.doEnsureCrypto(cryptoClient)
-    const timeoutTask = new Promise<void>((resolve) => {
-      setTimeout(() => {
-        logger.warn(`ensureCrypto 超过 ${ENSURE_CRYPTO_TIMEOUT_MS}ms 未完成，转为后台继续（不阻塞 sync 启动）`)
-        resolve()
-      }, ENSURE_CRYPTO_TIMEOUT_MS)
-    })
-    await Promise.race([cryptoTask, timeoutTask])
+
+    if (isWebLocksAvailable()) {
+      // 使用 Web Locks API 实现跨窗口互斥锁
+      // 其他窗口正在初始化 crypto 时，本窗口等待锁释放
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), ENSURE_CRYPTO_TIMEOUT_MS)
+
+      try {
+        await navigator.locks.request(CRYPTO_LOCK_NAME, { mode: 'exclusive', signal: controller.signal }, async () => {
+          // 获取锁后检查 crypto 是否已可用（可能其他窗口已完成）
+          if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
+            this.rustCryptoDebugState = {
+              attempted: false,
+              initialized: true,
+              skippedReason: 'crypto-already-available-after-lock',
+              error: null,
+              usedIndexedDB: null
+            }
+            return
+          }
+          logger.info('获取到 crypto 锁，开始初始化 Rust Crypto')
+          await this.doEnsureCrypto(cryptoClient)
+        })
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          logger.warn(
+            `ensureCrypto 超过 ${ENSURE_CRYPTO_TIMEOUT_MS}ms 未完成（等待其他窗口释放锁），转为后台继续（不阻塞 sync 启动）`
+          )
+          // 后台重新尝试获取锁（不超时），其他窗口完成后本窗口继续初始化
+          navigator.locks
+            .request(CRYPTO_LOCK_NAME, { mode: 'exclusive' }, async () => {
+              if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
+                this.rustCryptoDebugState = {
+                  attempted: false,
+                  initialized: true,
+                  skippedReason: 'crypto-already-available-after-lock-retry',
+                  error: null,
+                  usedIndexedDB: null
+                }
+                logger.info('后台等待锁后 crypto 已可用，跳过初始化')
+                return
+              }
+              logger.info('后台获取到 crypto 锁，开始初始化 Rust Crypto')
+              await this.doEnsureCrypto(cryptoClient)
+            })
+            .catch((e: unknown) => logger.warn(`后台 ensureCrypto 失败: ${normalizeCryptoError(e)}`))
+        } else {
+          throw err
+        }
+      } finally {
+        clearTimeout(timeoutId)
+      }
+    } else {
+      // Fallback：无 Web Locks API（测试环境/旧浏览器），使用 Promise.race 超时
+      const cryptoTask = this.doEnsureCrypto(cryptoClient)
+      const timeoutTask = new Promise<void>((resolve) => {
+        setTimeout(() => {
+          logger.warn(`ensureCrypto 超过 ${ENSURE_CRYPTO_TIMEOUT_MS}ms 未完成，转为后台继续（不阻塞 sync 启动）`)
+          resolve()
+        }, ENSURE_CRYPTO_TIMEOUT_MS)
+      })
+      await Promise.race([cryptoTask, timeoutTask])
+    }
   }
 
   /**

@@ -16,6 +16,7 @@ const { matrixClientServiceMock, getHomeserverUrlMock, matrixCapabilityServiceMo
     completeSSOLogin: vi.fn(),
     logout: vi.fn(),
     on: vi.fn(),
+    off: vi.fn(),
     initialize: vi.fn(),
     startClient: vi.fn(),
     stopClient: vi.fn(),

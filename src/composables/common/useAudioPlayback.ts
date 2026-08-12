@@ -221,6 +221,8 @@ export const useAudioPlayback = (
   const cleanup = () => {
     // 移除音频管理器监听器
     audioManager.removeListener(handleAudioStateChange)
+    // 停止音频管理器，释放其对 audio 元素的引用，使元素及其事件监听器可被 GC 回收
+    audioManager.stop()
 
     // 清理音频元素
     if (audioElement.value) {

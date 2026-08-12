@@ -612,87 +612,107 @@ onMounted(async () => {
     router.push('/welcome')
   }
 
-  useMitt.on('update-chat-title', (e: { id: string; title: string }) => {
-    chatList.value.forEach((item) => {
-      if (item.id === e.id) {
-        item.title = e.title
+  // useMitt.on 在 await 后调用，getCurrentInstance() 返回 null，自动清理失效。
+  // 需手动捕获 cleanup 函数并在 onUnmounted 中调用。
+  const cleanups: (() => void)[] = []
+
+  cleanups.push(
+    useMitt.on('update-chat-title', (e: { id: string; title: string }) => {
+      chatList.value.forEach((item) => {
+        if (item.id === e.id) {
+          item.title = e.title
+        }
+      })
+    })
+  )
+
+  cleanups.push(
+    useMitt.on('return-chat', () => {
+      if (chatList.value.length > 0) {
+        handleActive(chatList.value[0])
       }
     })
-  })
-
-  useMitt.on('return-chat', () => {
-    if (chatList.value.length > 0) {
-      handleActive(chatList.value[0])
-    }
-  })
+  )
 
   // 监听会话刷新事件
-  useMitt.on('refresh-conversations', () => {
-    refreshConversationList()
-  })
+  cleanups.push(
+    useMitt.on('refresh-conversations', () => {
+      refreshConversationList()
+    })
+  )
 
   // 监听角色管理刷新事件
-  useMitt.on('refresh-roles', () => {
-    checkHasRoles()
-  })
+  cleanups.push(
+    useMitt.on('refresh-roles', () => {
+      checkHasRoles()
+    })
+  )
 
   // ✅ 监听添加会话事件
-  useMitt.on('add-conversation', (newChat: Conversation) => {
-    if (newChat?.id) {
-      // 检查是否已存在
-      const exists = chatList.value.some((chat) => chat.id === newChat.id)
-      if (!exists) {
-        const rawCreateTime = Number(newChat.createTime)
-        const normalizedChat: ChatItem = {
-          id: newChat.id,
-          title: newChat.title,
-          createTime: Number.isFinite(rawCreateTime) ? rawCreateTime : Date.now(),
-          messageCount: newChat.messageCount || 0,
-          isPinned: newChat.isPinned || false,
-          roleId: newChat.roleId,
-          modelId: newChat.modelId
-        }
+  cleanups.push(
+    useMitt.on('add-conversation', (newChat: Conversation) => {
+      if (newChat?.id) {
+        // 检查是否已存在
+        const exists = chatList.value.some((chat) => chat.id === newChat.id)
+        if (!exists) {
+          const rawCreateTime = Number(newChat.createTime)
+          const normalizedChat: ChatItem = {
+            id: newChat.id,
+            title: newChat.title,
+            createTime: Number.isFinite(rawCreateTime) ? rawCreateTime : Date.now(),
+            messageCount: newChat.messageCount || 0,
+            isPinned: newChat.isPinned || false,
+            roleId: newChat.roleId,
+            modelId: newChat.modelId
+          }
 
-        // 添加到列表顶部
-        chatList.value.unshift(normalizedChat)
+          // 添加到列表顶部
+          chatList.value.unshift(normalizedChat)
 
-        // 滚动到顶部
-        nextTick(() => {
-          scrollbar.value?.scrollTo({ position: 'top' })
-        })
+          // 滚动到顶部
+          nextTick(() => {
+            scrollbar.value?.scrollTo({ position: 'top' })
+          })
 
-        handleActive(normalizedChat)
-      }
-    }
-  })
-
-  useMitt.on('update-chat-meta', (payload: { id: string; messageCount?: number; createTime?: number }) => {
-    if (!payload?.id) return
-    const target = chatList.value.find((chat) => chat.id === payload.id)
-    if (target) {
-      if (typeof payload.messageCount === 'number') {
-        target.messageCount = payload.messageCount
-      }
-      if (payload.createTime !== undefined && payload.createTime !== null) {
-        const parsed = Number(payload.createTime)
-        if (Number.isFinite(parsed)) {
-          target.createTime = parsed
+          handleActive(normalizedChat)
         }
       }
-    }
+    })
+  )
 
-    const active = activeItem.value
-    if (active && active.id === payload.id) {
-      if (typeof payload.messageCount === 'number') {
-        active.messageCount = payload.messageCount
-      }
-      if (payload.createTime !== undefined && payload.createTime !== null) {
-        const parsed = Number(payload.createTime)
-        if (Number.isFinite(parsed)) {
-          active.createTime = parsed
+  cleanups.push(
+    useMitt.on('update-chat-meta', (payload: { id: string; messageCount?: number; createTime?: number }) => {
+      if (!payload?.id) return
+      const target = chatList.value.find((chat) => chat.id === payload.id)
+      if (target) {
+        if (typeof payload.messageCount === 'number') {
+          target.messageCount = payload.messageCount
+        }
+        if (payload.createTime !== undefined && payload.createTime !== null) {
+          const parsed = Number(payload.createTime)
+          if (Number.isFinite(parsed)) {
+            target.createTime = parsed
+          }
         }
       }
-    }
+
+      const active = activeItem.value
+      if (active && active.id === payload.id) {
+        if (typeof payload.messageCount === 'number') {
+          active.messageCount = payload.messageCount
+        }
+        if (payload.createTime !== undefined && payload.createTime !== null) {
+          const parsed = Number(payload.createTime)
+          if (Number.isFinite(parsed)) {
+            active.createTime = parsed
+          }
+        }
+      }
+    })
+  )
+
+  onUnmounted(() => {
+    cleanups.forEach((cleanup) => cleanup())
   })
 })
 </script>

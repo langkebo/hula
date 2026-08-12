@@ -71,27 +71,6 @@ class BadgeService {
       return []
     }
   }
-
-  /**
-   * 批量获取徽章
-   * @param badgeIds 徽章 ID 列表
-   * @returns 徽章列表
-   */
-  async getBadgesBatch(badgeIds: string[]): Promise<Badge[]> {
-    try {
-      const { wearingItemId } = await this.getCurrentUserBadgeState()
-      const badges = buildBadgeCatalog(badgeIds)
-      logger.info('[Badge] 批量获取徽章成功')
-      return badges.map((badge) => ({
-        ...badge,
-        obtain: IsYesEnum.YES,
-        wearing: badge.id === wearingItemId ? IsYesEnum.YES : IsYesEnum.NO
-      }))
-    } catch (err) {
-      logger.error(`[Badge] 批量获取徽章失败: ${err}`)
-      return []
-    }
-  }
 }
 
 export const badgeService = new BadgeService()

@@ -14,7 +14,7 @@ const {
   useMittEmitMock
 } = vi.hoisted(() => ({
   routerReplaceMock: vi.fn(),
-  routerPushMock: vi.fn(),
+  routerPushMock: vi.fn().mockResolvedValue(undefined),
   addListenerMock: vi.fn(async () => {}),
   handleMsgClickMock: vi.fn(),
   handleMsgDblclickMock: vi.fn(),
@@ -160,6 +160,14 @@ vi.mock('@/composables/workbench/useSessionListState', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
+  default: {
+    getUserId: () => '@me:server',
+    getClient: () => ({
+      on: vi.fn(),
+      off: vi.fn(),
+      getUserId: () => '@me:server'
+    })
+  },
   matrixClientService: {
     getUserId: () => '@me:server'
   }
@@ -261,6 +269,32 @@ vi.mock('@/components/room/RoomMembershipTabs.vue', () => ({
   })
 }))
 
+vi.mock('@/components/room/RoomDetailDrawer.vue', () => ({
+  default: defineComponent({
+    name: 'RoomDetailDrawerStub',
+    props: {
+      roomId: { type: String, default: null }
+    },
+    emits: ['close', 'enter-room', 'settings'],
+    setup(props) {
+      return () => h('div', { 'data-test': 'room-detail-drawer' }, props.roomId ?? '')
+    }
+  })
+}))
+
+vi.mock('@/components/room/RoomSettingsDrawer.vue', () => ({
+  default: defineComponent({
+    name: 'RoomSettingsDrawerStub',
+    props: {
+      roomId: { type: String, default: null }
+    },
+    emits: ['close'],
+    setup(props) {
+      return () => h('div', { 'data-test': 'room-settings-drawer' }, props.roomId ?? '')
+    }
+  })
+}))
+
 describe('RoomListView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -293,9 +327,10 @@ describe('RoomListView', () => {
     const grid = wrapper.getComponent({ name: 'RoomCardGridStub' })
     expect(grid.props('rooms')).toHaveLength(1)
 
-    // P2: 单击卡片直接进入聊天界面（不再跳转房间详情）
+    // 单击卡片 → 打开房间详情抽屉
     await grid.vm.$emit('preview', '!beta:server')
-    expect(handleMsgClickMock).toHaveBeenCalled()
+    const detailDrawer = wrapper.getComponent({ name: 'RoomDetailDrawerStub' })
+    expect(detailDrawer.props('roomId')).toBe('!beta:server')
   })
 
   it('opens room details when info action is emitted from a card', async () => {
@@ -305,10 +340,8 @@ describe('RoomListView', () => {
     const grid = wrapper.getComponent({ name: 'RoomCardGridStub' })
     await grid.vm.$emit('info', '!alpha:server')
 
-    expect(routerPushMock).toHaveBeenCalledWith({
-      name: 'room-details',
-      params: { roomId: '!alpha:server' }
-    })
+    const detailDrawer = wrapper.getComponent({ name: 'RoomDetailDrawerStub' })
+    expect(detailDrawer.props('roomId')).toBe('!alpha:server')
   })
 
   it('enters chat when search submit is emitted with filtered results', async () => {

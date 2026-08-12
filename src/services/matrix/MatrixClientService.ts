@@ -6,8 +6,14 @@ import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { clearCryptoStoragePasswordCache, deleteCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
 import { PendingEventOrdering } from '@/types/matrix-js-sdk'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
-import { type ConnectionState, type MatrixClientConfig, MatrixConnectionManager } from './MatrixConnectionManager'
+import {
+  type ConnectionState,
+  getMatrixConnectionManager,
+  type MatrixClientConfig,
+  type MatrixConnectionManager
+} from './MatrixConnectionManager'
 import {
   type EventDecryptedDebugState,
   MatrixCryptoStateTracker,
@@ -69,15 +75,16 @@ export interface LoginResult {
  * ```
  */
 class MatrixClientService {
-  private readonly connectionManager = new MatrixConnectionManager()
+  private readonly connectionManager = getMatrixConnectionManager()
   private readonly eventRouter = new MatrixEventRouter()
   private readonly cryptoTracker = new MatrixCryptoStateTracker()
   private readonly tokenManager = new MatrixTokenManager()
   private readonly syncManager = new MatrixSyncManager()
   private telemetryManager: TelemetryManager | null = null
-  // Mutex：防止 startClient 并发执行（settlePostLoginStartup / useConnectionStatus.retry / forceReconnect 可能同时触发）
-  // 并发会导致两次 ensureCrypto + 两次 SDK startClient，造成 crypto 状态异常和 sync 重复启动
-  private startClientPromise: Promise<void> | null = null
+  // startClient 幂等守卫（IdempotencyGuard）：
+  // 防止 settlePostLoginStartup / useConnectionStatus.retry / forceReconnect 并发或串行重复触发
+  // ensureCrypto + SDK startClient。在 stopClient / logout / initialize 重建时 reset。
+  private startClientGuard = new IdempotencyGuard()
 
   constructor() {
     logger.info?.('Matrix 客户端服务初始化')
@@ -185,6 +192,9 @@ class MatrixClientService {
    * @throws {Error} if client creation fails.
    */
   async initialize(config: MatrixClientConfig): Promise<void> {
+    // 记录 initialize 前的 client 引用，用于检测 fallback 重建
+    const previousClient = this.connectionManager.getClient()
+
     // 仅当不会复用现有 client 时才 detach 监听器 / 停止 sync / 重置 crypto。
     // 复用路径若先 detach，已挂载的事件路由会丢失（eventRouter.setup 仅在 startClient 重挂）。
     if (!this.connectionManager.shouldReuse(config)) {
@@ -194,8 +204,22 @@ class MatrixClientService {
       }
       this.syncManager.stop()
       this.cryptoTracker.resetState()
+      // 重建 client 时重置启动守卫，允许新 client 重新走 startClient 流程
+      this.startClientGuard.reset()
     }
     await this.connectionManager.initialize(config)
+
+    // Fallback 重建检测：shouldReuse 判定复用（身份匹配，仅 token 变化），
+    // 但 connectionManager.initialize 内部 setAccessToken 失败回退到 rebuild。
+    // 此时 client 引用已变更，但 facade 未 detach 旧监听器 → 需要补做清理。
+    const currentClient = this.connectionManager.getClient()
+    if (previousClient && currentClient && previousClient !== currentClient && this.startClientGuard.isSettled) {
+      logger.warn('检测到 setAccessToken fallback 重建，清理旧 client 监听器与启动状态')
+      this.eventRouter.detach(previousClient, this.syncManager)
+      this.syncManager.stop()
+      this.cryptoTracker.resetState()
+      this.startClientGuard.reset()
+    }
 
     // Register mxc:// resolver so AvatarUtils can convert Matrix media URIs.
     // Use client.mxcUrlToHttp() directly to avoid circular dependency with MatrixMediaService.
@@ -464,6 +488,8 @@ class MatrixClientService {
       AvatarUtils.setMxcResolver(null)
       this.connectionManager.setClient(null)
       this.connectionManager.updateConnectionState('DISCONNECTED')
+      // 重置启动守卫，确保登出后下次登录能正常 startClient
+      this.startClientGuard.reset()
       // ISSUE-08：清理 keychain 中的 crypto storagePassword，避免残留
       if (userId && deviceId) {
         void deleteCryptoStoragePassword(userId, deviceId)
@@ -472,7 +498,9 @@ class MatrixClientService {
       clearCryptoStoragePasswordCache()
       // 清除 IndexedDB crypto store 与 localStorage 记录，确保下次登录从干净状态开始
       if (userId) {
-        void this.cryptoTracker.clearCryptoStoreForLogout(userId)
+        this.cryptoTracker.clearCryptoStoreForLogout(userId).catch((err) => {
+          logger.warn(`清理 crypto store 失败 (userId=${userId}):`, err)
+        })
       }
     }
   }
@@ -505,17 +533,9 @@ class MatrixClientService {
   }
 
   async startClient(): Promise<void> {
-    // Mutex 保护：如果已有 startClient 正在执行，直接 await 同一个 Promise
-    // 防止并发触发两次 ensureCrypto + 两次 SDK startClient
-    if (this.startClientPromise) {
-      logger.warn('startClient 已在执行中，复用现有 Promise（跳过重复初始化）')
-      return this.startClientPromise
-    }
-
-    this.startClientPromise = this.doStartClient().finally(() => {
-      this.startClientPromise = null
-    })
-    return this.startClientPromise
+    // IdempotencyGuard 负责：settled 短路 + in-flight Promise 复用
+    // 防止串行/并发重复触发 ensureCrypto + SDK startClient
+    return this.startClientGuard.run(() => this.doStartClient())
   }
 
   private async doStartClient(): Promise<void> {
@@ -616,6 +636,8 @@ class MatrixClientService {
         client.stopClient()
         AvatarUtils.setMxcResolver(null)
         this.connectionManager.updateConnectionState('DISCONNECTED')
+        // 重置启动守卫，允许下次 startClient 重新初始化
+        this.startClientGuard.reset()
         logger.info('客户端已停止')
       }
     } catch (err) {
@@ -959,7 +981,15 @@ class MatrixClientService {
   }
 }
 
-export const matrixClientService = new MatrixClientService()
+// 单例：使用 globalThis 守卫，防止 Vite HMR 模块重载或动态/静态导入混用
+// 导致重复实例化（两个实例会并发调用 initRustCrypto，竞争 IndexedDB 句柄）
+const SINGLETON_KEY = '__TJG_MATRIX_CLIENT_SERVICE__'
+const g = globalThis as Record<string, unknown>
+const existing = g[SINGLETON_KEY] as MatrixClientService | undefined
+export const matrixClientService = existing ?? new MatrixClientService()
+if (!existing) {
+  g[SINGLETON_KEY] = matrixClientService
+}
 export default matrixClientService
 
 /**

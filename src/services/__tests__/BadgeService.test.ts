@@ -107,27 +107,4 @@ describe('BadgeService', () => {
       await expect(badgeService.setUserBadge('1')).rejects.toThrow('Write failed')
     })
   })
-
-  describe('getBadgesBatch', () => {
-    it('returns only requested badge IDs with wearing flag', async () => {
-      mockGetAccountData.mockResolvedValue({
-        ownedIds: ['1', '2', '3'],
-        wearingItemId: '2'
-      })
-
-      const badges = await badgeService.getBadgesBatch(['1', '3'])
-
-      expect(badges).toHaveLength(2)
-      expect(badges[0]).toMatchObject({ id: '1', obtain: 1, wearing: 0 })
-      expect(badges[1]).toMatchObject({ id: '3', obtain: 1, wearing: 0 })
-    })
-
-    it('returns empty array on error', async () => {
-      mockGetAccountData.mockRejectedValue(new Error('Timeout'))
-
-      const badges = await badgeService.getBadgesBatch(['1'])
-
-      expect(badges).toEqual([])
-    })
-  })
 })

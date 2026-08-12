@@ -9,26 +9,6 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-// Stub RoomCard: renders roomId + numJoinedMembers so we can assert prop conversion
-vi.mock('@/components/room/RoomCard.vue', () => ({
-  default: defineComponent({
-    name: 'RoomCard',
-    props: {
-      room: { type: Object, required: true }
-    },
-    emits: ['join', 'preview'],
-    setup(props, { emit }) {
-      return () =>
-        h('div', { 'data-testid': 'room-card-stub', 'data-room-id': props.room.roomId }, [
-          h('span', { class: 'stub-name' }, props.room.name),
-          h('span', { class: 'stub-members' }, String(props.room.numJoinedMembers)),
-          h('button', { class: 'stub-join', onClick: () => emit('join', props.room.roomId) }, 'join'),
-          h('button', { class: 'stub-preview', onClick: () => emit('preview', props.room.roomId) }, 'preview')
-        ])
-    }
-  })
-}))
-
 vi.mock('@/components/common/EmptyState.vue', () => ({
   default: defineComponent({
     name: 'EmptyState',
@@ -42,7 +22,11 @@ vi.mock('@/components/common/EmptyState.vue', () => ({
 vi.mock('@/components/common/SkeletonBase.vue', () => ({
   default: defineComponent({
     name: 'SkeletonBase',
-    props: { variant: { type: String, default: 'text' }, height: { type: [String, Number], default: '14px' } },
+    props: {
+      variant: { type: String, default: 'text' },
+      width: { type: [String, Number], default: '100%' },
+      height: { type: [String, Number], default: '14px' }
+    },
     setup(props) {
       return () => h('div', { 'data-testid': 'skeleton-stub', 'data-variant': props.variant })
     }
@@ -63,49 +47,44 @@ const sampleRooms = [
 ]
 
 describe('SpaceRoomGrid', () => {
-  it('renders the grid container', () => {
+  it('renders the list container', () => {
     const wrapper = mountGrid({ rooms: sampleRooms })
     expect(wrapper.find('[data-testid="space-room-grid"]').exists()).toBe(true)
   })
 
-  it('renders a RoomCard for each room', () => {
+  it('renders a list item for each room', () => {
     const wrapper = mountGrid({ rooms: sampleRooms })
-    const cards = wrapper.findAll('[data-testid="room-card-stub"]')
-    expect(cards).toHaveLength(2)
+    const items = wrapper.findAll('[data-testid="space-room-grid"] .space-room-grid__item')
+    expect(items).toHaveLength(2)
   })
 
-  it('converts SpaceChildRoom to RoomCardData with numJoinedMembers defaulting to 0', () => {
+  it('renders room name in each item', () => {
     const wrapper = mountGrid({ rooms: sampleRooms })
-    const members = wrapper.findAll('.stub-members')
-    expect(members[0].text()).toBe('0')
-    expect(members[1].text()).toBe('0')
-  })
-
-  it('passes name and avatarUrl through to RoomCard', () => {
-    const wrapper = mountGrid({ rooms: sampleRooms })
-    const names = wrapper.findAll('.stub-name')
+    const names = wrapper.findAll('.space-room-grid__name')
     expect(names[0].text()).toBe('General')
     expect(names[1].text()).toBe('Random')
   })
 
-  it('emits enter-room with roomId when RoomCard join clicked', async () => {
+  it('emits enter-room with roomId when item clicked', async () => {
     const wrapper = mountGrid({ rooms: sampleRooms })
-    await wrapper.findAll('.stub-join')[0].trigger('click')
+    const items = wrapper.findAll('.space-room-grid__item')
+    await items[0].trigger('click')
     expect(wrapper.emitted('enter-room')).toEqual([['!room-1:server']])
   })
 
-  it('emits preview-room with roomId when RoomCard preview clicked', async () => {
+  it('emits enter-room with roomId when enter button clicked', async () => {
     const wrapper = mountGrid({ rooms: sampleRooms })
-    await wrapper.findAll('.stub-preview')[1].trigger('click')
-    expect(wrapper.emitted('preview-room')).toEqual([['!room-2:server']])
+    const buttons = wrapper.findAll('.space-room-grid__enter-btn')
+    await buttons[1].trigger('click')
+    expect(wrapper.emitted('enter-room')).toEqual([['!room-2:server']])
   })
 
   it('renders skeleton placeholders when loading is true', () => {
     const wrapper = mountGrid({ rooms: [], loading: true })
     const skeletons = wrapper.findAll('[data-testid="skeleton-stub"]')
     expect(skeletons.length).toBeGreaterThan(0)
-    // No room cards while loading
-    expect(wrapper.findAll('[data-testid="room-card-stub"]')).toHaveLength(0)
+    // No room items while loading
+    expect(wrapper.findAll('.space-room-grid__item')).toHaveLength(0)
   })
 
   it('renders EmptyState with no-results illustration when rooms empty and not loading', () => {
@@ -125,9 +104,30 @@ describe('SpaceRoomGrid', () => {
     expect(wrapper.findAll('[data-testid="skeleton-stub"]')).toHaveLength(0)
   })
 
-  it('renders grid layout with grid class', () => {
+  it('renders list layout with space-room-grid class', () => {
     const wrapper = mountGrid({ rooms: sampleRooms })
     const grid = wrapper.find('[data-testid="space-room-grid"]')
     expect(grid.classes()).toContain('space-room-grid')
+  })
+
+  it('renders avatar placeholder when no avatarUrl', () => {
+    const wrapper = mountGrid({ rooms: [sampleRooms[0]] })
+    const placeholder = wrapper.find('.space-room-grid__avatar-placeholder')
+    expect(placeholder.exists()).toBe(true)
+    expect(placeholder.text()).toBe('G')
+  })
+
+  it('renders avatar image when avatarUrl provided', () => {
+    const wrapper = mountGrid({ rooms: [sampleRooms[1]] })
+    const img = wrapper.find('.space-room-grid__avatar-img')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toBe('https://example.com/a.png')
+  })
+
+  it('emits enter-room on Enter keydown', async () => {
+    const wrapper = mountGrid({ rooms: sampleRooms })
+    const items = wrapper.findAll('.space-room-grid__item')
+    await items[0].trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('enter-room')).toEqual([['!room-1:server']])
   })
 })

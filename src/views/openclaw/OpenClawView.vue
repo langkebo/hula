@@ -233,6 +233,7 @@ import { ThemeEnum } from '@/enums'
 import { useOpenClawConversationStore } from '@/stores/domains/chat/openClawConversation'
 import { useRobotChatSettingsStore } from '@/stores/domains/chat/robotChatSettings'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { createLogger } from '@/utils/Logger'
 import OpenClawInstallGuide from './components/OpenClawInstallGuide.vue'
 import OpenClawSettings from './components/OpenClawSettings.vue'
 import type { OpenClawWorkbenchMessage } from './types'
@@ -245,6 +246,7 @@ const MarkdownRender = defineAsyncComponent(async () => {
   return mod.default
 })
 
+const logger = createLogger('OpenClaw')
 const { t } = useI18n()
 
 const emit = defineEmits<(event: 'back') => void>()
@@ -502,7 +504,9 @@ const fetchAIStream = async (conversationId: string, userMessageContent: string,
                 })
                 scrollToBottom()
               }
-            } catch (e) {}
+            } catch (e) {
+              logger.warn('解析流式响应失败:', e)
+            }
           }
         }
       }

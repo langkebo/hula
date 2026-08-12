@@ -87,6 +87,7 @@ import { useI18n } from 'vue-i18n'
 import { type SpaceInfo, useSpace } from '@/composables/space'
 import { ThemeEnum } from '@/enums'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { createLogger } from '@/utils/Logger'
 
 const props = defineProps<{
   spaceId?: string
@@ -107,6 +108,7 @@ const emit = defineEmits<{
   select: [room: SpaceInfo]
 }>()
 
+const logger = createLogger('TjgSpaceTree')
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const { getHierarchy } = useSpace(() => props.spaceId!)
@@ -170,6 +172,7 @@ const loadData = async (from?: string) => {
     }
     nextBatch.value = result.next_batch
   } catch (err) {
+    logger.warn('加载空间房间列表失败:', err)
   } finally {
     loading.value = false
     loadingMore.value = false

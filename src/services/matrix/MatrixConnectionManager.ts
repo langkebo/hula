@@ -26,6 +26,7 @@ import {
   initializeManagerExtensions,
   type MatrixClient
 } from '@/services/matrix/sdk'
+import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import type { ICreateClientOpts } from '@/types/matrix-js-sdk'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
@@ -88,18 +89,35 @@ export class MatrixConnectionManager {
    * - manager extensions 注册
    * - matrixClientAccessor 设置
    * - fetchFn 选择（Tauri nativeFetch vs browser fetch）
+   *
+   * 身份 vs 易变字段分离（对齐 element-web SdkConfig）：
+   * - 身份字段（homeserverUrl/userId/deviceId/identityServerUrl/allowInsecureHttp）变化 → 重建 client
+   * - 易变字段（accessToken）变化 → 原地 setAccessToken，绝不重建
+   *   避免 token 刷新时整客户端重建导致 sync 中断、E2EE 重新握手、事件监听器重挂
    */
   async initialize(config: MatrixClientConfig): Promise<void> {
-    // 幂等守卫：已有 client 且配置等价 → 直接复用，避免重复创建导致 client 泄漏、
-    // E2EE 设备密钥查询（keys/query）翻倍，以及重复事件监听器。
-    // 复用路径下 facade 不会 detach 监听器（见 MatrixClientService.initialize），故此处仅返回。
-    if (this.client && this.config && this.isConfigEquivalent(config)) {
-      logger.info('MatrixClient 已初始化且配置一致，复用现有实例')
-      return
+    // 身份等价 → 复用现有 client（不 detach 监听器 / 不 stop sync / 不 reset crypto）
+    if (this.client && this.config && this.isIdentityEquivalent(config)) {
+      // token 旋转：身份不变但 accessToken 变化时，原地更新而非重建
+      if (config.accessToken && config.accessToken !== this.config.accessToken) {
+        const tokenUpdated = this.tryUpdateAccessTokenInPlace(config.accessToken)
+        if (!tokenUpdated) {
+          // fallback：setAccessToken 失败 → 释放旧实例走重建路径
+          logger.warn('setAccessToken 原地更新失败，回退到整客户端重建')
+          this.resetState()
+          // 继续走下方的重建路径
+        } else {
+          this.config = config
+          return
+        }
+      } else {
+        logger.info('MatrixClient 已初始化且配置一致，复用现有实例')
+        return
+      }
     }
-    // 配置不一致（如 deviceId 变化）→ 先释放旧实例，避免内存/连接泄漏。
+    // 身份变化（如 deviceId/userId 变化）→ 先释放旧实例，避免内存/连接泄漏。
     if (this.client) {
-      logger.info('MatrixClient 配置变更，释放旧实例后重建')
+      logger.info('MatrixClient 身份变更，释放旧实例后重建')
       this.resetState()
     }
 
@@ -171,6 +189,11 @@ export class MatrixConnectionManager {
 
       this.client = createClient(clientOpts)
       logger.info(`客户端初始化完成: ${config.homeserverUrl}`)
+
+      // 扩展健康断言：在 client 创建后检测关键扩展是否已注册。
+      // 缺失时 warn + 写入 capability store 的 extensionHealth（degraded），
+      // 不再被 info 级静默吞掉。UI 层可据此显示降级提示。
+      this.assertCriticalExtensions()
     } catch (err) {
       this.connectionState = 'ERROR'
       logger.error('客户端初始化失败:', err)
@@ -296,17 +319,47 @@ export class MatrixConnectionManager {
   }
 
   /**
-   * 判断给定配置是否与当前已初始化的 client 等价（可安全复用，无需重建）。
-   * 仅比较定义 client 身份的核心字段；slidingSync 等运行期参数不参与比较。
+   * 原地更新 accessToken，避免 token 旋转时整客户端重建。
+   *
+   * 场景：token 刷新（MatrixTokenManager / loginWithToken refresh）后，
+   * 身份字段不变仅 accessToken 变化。此时通过 SDK 的 setAccessToken 原地更新，
+   * 避免 rebuild 导致 sync 中断、E2EE 重新握手、事件监听器重挂。
+   *
+   * @returns true 表示更新成功；false 表示 setAccessToken 不可用或抛错，调用方应回退到 rebuild
    */
-  private isConfigEquivalent(config: MatrixClientConfig): boolean {
+  private tryUpdateAccessTokenInPlace(newToken: string): boolean {
+    if (!this.client) return false
+    try {
+      const setter = (this.client as unknown as { setAccessToken?: (token: string) => void }).setAccessToken
+      if (typeof setter !== 'function') {
+        logger.warn('MatrixClient 不支持 setAccessToken，无法原地更新 token')
+        return false
+      }
+      setter.call(this.client, newToken)
+      logger.info('Token 旋转，原地更新 accessToken（不重建 client）')
+      return true
+    } catch (err) {
+      logger.warn('setAccessToken 抛错，将回退到整客户端重建:', err)
+      return false
+    }
+  }
+
+  /**
+   * 判断配置身份是否等价（不含 accessToken 等易变字段）。
+   *
+   * 身份字段（不可变）：homeserverUrl / userId / deviceId / identityServerUrl / allowInsecureHttp
+   * 易变字段（可原地更新）：accessToken
+   *
+   * 对齐 element-web SdkConfig 的"身份 vs 易变"分离原则：
+   * 仅身份变化才需要重建 client；token 旋转通过 setAccessToken 原地更新。
+   */
+  private isIdentityEquivalent(config: MatrixClientConfig): boolean {
     const cur = this.config
     if (!cur) return false
     return (
       cur.homeserverUrl === config.homeserverUrl &&
       cur.userId === config.userId &&
       cur.deviceId === config.deviceId &&
-      cur.accessToken === config.accessToken &&
       cur.identityServerUrl === config.identityServerUrl &&
       cur.allowInsecureHttp === config.allowInsecureHttp
     )
@@ -314,11 +367,13 @@ export class MatrixConnectionManager {
 
   /**
    * 供 facade（MatrixClientService.initialize）判断本次 initialize 是否会复用现有 client。
-   * 复用路径下 facade 不应 detach 监听器 / stop / reset crypto，否则已挂载的事件路由会丢失
-   * （eventRouter.setup 仅在 startClient 重挂）。
+   *
+   * 复用判定基于身份等价（不含 accessToken），因此 token 旋转时也返回 true，
+   * facade 据此跳过 detach / stop / reset（避免丢失已挂载的事件路由和 sync 状态）。
+   * token 更新由 connectionManager.initialize 内部通过 setAccessToken 原地完成。
    */
   shouldReuse(config: MatrixClientConfig): boolean {
-    return !!this.client && !!this.config && this.isConfigEquivalent(config)
+    return !!this.client && !!this.config && this.isIdentityEquivalent(config)
   }
 
   getConnectionState(): ConnectionState {
@@ -339,6 +394,51 @@ export class MatrixConnectionManager {
     this.client = client
   }
 
+  /**
+   * 扩展健康断言：检测关键 SDK 扩展是否已注册到 client。
+   *
+   * 在 initializeManagerExtensions() 后调用。检测结果写入 capability store 的
+   * extensionHealth 字段，UI 层可据此显示降级提示。
+   *
+   * 检测方式：通过鸭子类型检查 client 上的扩展访问器方法是否存在。
+   * - friend-manager：检查 `client.getFriendManager` 是否为 function
+   *
+   * 缺失时不 throw（与现有 MatrixFriendService 的 REST 降级策略一致），
+   * 但会 warn 级日志 + 标记 degraded，不再被 info 级静默吞掉。
+   */
+  private assertCriticalExtensions(): void {
+    if (!this.client) return
+
+    const clientWithMethods = this.client as unknown as Record<string, unknown>
+    const results: Record<string, 'healthy' | 'degraded'> = {}
+
+    // FriendManager 扩展
+    const hasFriendManager =
+      typeof clientWithMethods.getFriendManager === 'function' ||
+      (clientWithMethods.friendManager &&
+        typeof (clientWithMethods.friendManager as Record<string, unknown>).start === 'function')
+
+    results['friend-manager'] = hasFriendManager ? 'healthy' : 'degraded'
+
+    if (!hasFriendManager) {
+      logger.warn(
+        '[扩展健康断言] FriendManager 扩展未注册，好友功能将降级到 REST API。' +
+          '可能原因：initializeManagerExtensions 失败或 SDK 版本不兼容。'
+      )
+    } else {
+      logger.info('[扩展健康断言] FriendManager 扩展已注册')
+    }
+
+    // 写入 capability store（Pinia 可能未初始化，如独立 WebView / 测试环境）
+    try {
+      const store = useCapabilityStore()
+      store.setExtensionHealthBatch(results)
+    } catch {
+      // Pinia 未初始化时静默跳过（测试环境常见），不影响 client 创建
+      logger.debug('[扩展健康断言] capability store 未初始化，跳过状态写入')
+    }
+  }
+
   /** 重置状态（供 facade 在 stop/logout 时调用） */
   resetState(): void {
     this.cleanupResumeListener()
@@ -347,4 +447,32 @@ export class MatrixConnectionManager {
     this.connectionState = 'DISCONNECTED'
     this.consecutiveSyncErrors = 0
   }
+}
+
+// ─── globalThis 单例守卫 ──────────────────────────────────────────────────────
+// 防止 Vite HMR 模块重载 / 动态-静态导入混用 / 绕过 MatrixClientService 直接 new
+// 导致第二个 ConnectionManager 实例并发调用 initializeManagerExtensions() 和
+// createClient()，竞争 IndexedDB crypto 句柄。
+// 与 MatrixClientService 的 __TJG_MATRIX_CLIENT_SERVICE__ 守卫对齐。
+const CONNECTION_MANAGER_SINGLETON_KEY = '__TJG_MATRIX_CONNECTION_MANAGER__'
+const __g = globalThis as Record<string, unknown>
+
+/**
+ * 获取 MatrixConnectionManager 的进程级单例。
+ *
+ * 生产代码应通过此函数获取实例，而非直接 `new MatrixConnectionManager()`。
+ * 单元测试如需独立实例，可直接 `new`（构造函数保持公开），
+ * 但应在 beforeEach / afterEach 中清理 globalThis 上的单例缓存以避免污染。
+ */
+export function getMatrixConnectionManager(): MatrixConnectionManager {
+  const existing = __g[CONNECTION_MANAGER_SINGLETON_KEY] as MatrixConnectionManager | undefined
+  if (existing) return existing
+  const instance = new MatrixConnectionManager()
+  __g[CONNECTION_MANAGER_SINGLETON_KEY] = instance
+  return instance
+}
+
+/** 测试专用：清理 globalThis 单例缓存，确保下一个 getMatrixConnectionManager() 创建新实例。 */
+export function __resetConnectionManagerSingletonForTesting(): void {
+  delete __g[CONNECTION_MANAGER_SINGLETON_KEY]
 }
