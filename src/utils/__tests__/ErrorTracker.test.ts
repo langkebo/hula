@@ -43,6 +43,18 @@ describe('ErrorTracker', () => {
       })
       expect(errorTracker.getErrors()).toEqual([])
     })
+
+    // O6 契约：重复 init 不应重复注册全局 handler
+    it('重复 init 不重复注册 window.onerror / onunhandledrejection', () => {
+      errorTracker.initialize({ enableGlobalHandlers: true })
+      const handlerAfterFirstInit = window.onerror
+      const rejectionHandlerAfterFirstInit = window.onunhandledrejection
+
+      errorTracker.initialize({ enableGlobalHandlers: true })
+
+      expect(window.onerror).toBe(handlerAfterFirstInit)
+      expect(window.onunhandledrejection).toBe(rejectionHandlerAfterFirstInit)
+    })
   })
 
   describe('tracking errors', () => {

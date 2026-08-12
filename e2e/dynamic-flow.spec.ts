@@ -16,18 +16,18 @@ const MOBILE_RUNTIME_ISSUE_OPTIONS = {
 
 const resetSamples = async (page: Page) => {
   await page.evaluate(() => {
-    ;(window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__ = []
+    ;(window as Window & { __TJG_RENDER_SAMPLES__?: RenderSample[] }).__TJG_RENDER_SAMPLES__ = []
   })
 }
 
 const _waitForSample = async (page: Page, name: string): Promise<RenderSample> => {
   await page.waitForFunction((sampleName) => {
-    const samples = (window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__
+    const samples = (window as Window & { __TJG_RENDER_SAMPLES__?: RenderSample[] }).__TJG_RENDER_SAMPLES__
     return Boolean(samples?.some((sample) => sample.name === sampleName))
   }, name)
 
   const sample = await page.evaluate((sampleName) => {
-    const samples = (window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__
+    const samples = (window as Window & { __TJG_RENDER_SAMPLES__?: RenderSample[] }).__TJG_RENDER_SAMPLES__
     return samples?.find((item) => item.name === sampleName) ?? null
   }, name)
 
@@ -50,7 +50,7 @@ test.describe('Dynamic Mobile Flow', () => {
     // Render samples are recorded via tab bar clicks, not direct navigation.
     // Verify the page renders without errors; timing assertions are optional.
     const indexSample = await page.evaluate(() => {
-      const samples = (window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__
+      const samples = (window as Window & { __TJG_RENDER_SAMPLES__?: RenderSample[] }).__TJG_RENDER_SAMPLES__
       return samples?.find((item) => item.name === 'mobile-dynamic-index') ?? null
     })
 
@@ -70,7 +70,7 @@ test.describe('Dynamic Mobile Flow', () => {
         await expect(page.getByText('动态详情').first()).toBeVisible()
 
         const detailSample = await page.evaluate(() => {
-          const samples = (window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__
+          const samples = (window as Window & { __TJG_RENDER_SAMPLES__?: RenderSample[] }).__TJG_RENDER_SAMPLES__
           return samples?.find((item) => item.name === 'mobile-dynamic-detail') ?? null
         })
         expectNoRuntimeIssues(runtimeIssues, MOBILE_RUNTIME_ISSUE_OPTIONS)

@@ -2,6 +2,7 @@
   <article
     class="room-card-item flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] border border-[--tjg-border-muted] cursor-pointer outline-none"
     data-testid="room-card-item"
+    :data-room-id="room.roomId"
     role="button"
     tabindex="0"
     :aria-label="room.name"

@@ -126,17 +126,17 @@ import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 const logger = createLogger('QRCode')
 
 import { useWindow } from '@/composables/common/useWindow'
-import { useLoginFlow } from '@/composables/user/useLoginFlow'
 import { TauriCommand } from '@/enums'
 import router from '@/router'
 import { resolveMatrixRuntimeEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend/config'
-import { getEnhancedFingerprint } from '@/services/fingerprint'
+import { loginCommand } from '@/services/backend/tauriCommand'
 import {
   matrixQrLoginSdkService,
   type NewDeviceLoginResult,
   type QrLoginStatus
 } from '@/services/matrix/auth/MatrixQrLoginSdkService'
-import { loginCommand } from '@/services/tauriCommand'
+import { getEnhancedFingerprint } from '@/services/secure/fingerprint'
+import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import ThirdPartyLogin, { type ThirdPartyLoginContext } from './ThirdPartyLogin.vue'

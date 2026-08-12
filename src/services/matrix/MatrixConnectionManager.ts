@@ -30,8 +30,8 @@ import {
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import type { ICreateClientOpts } from '@/types/matrix-js-sdk'
 import { hasTauriRuntime } from '@/utils/AppHarness'
-import { errorTracker } from '@/utils/ErrorTracker'
 import { createLogger } from '@/utils/Logger'
+import { track } from '@/utils/telemetry'
 
 const logger = createLogger('MatrixConnection')
 
@@ -424,11 +424,16 @@ export class MatrixConnectionManager {
         '[扩展健康断言] FriendManager 扩展未注册，好友功能将降级到 REST API。' +
           '可能原因：initializeManagerExtensions 失败或 SDK 版本不兼容。'
       )
-      // 可观测性：发射健康事件，供监控/告警消费（不再仅依赖日志）
-      errorTracker.trackManual('friend_manager_degraded', {
-        reason: 'getFriendManager_unavailable',
-        fallback: 'rest_api',
-        possibleCause: 'initializeManagerExtensions_failed_or_sdk_incompatible'
+      // O2: 通过 telemetry 事件总线发射健康事件，供监控/告警消费
+      track({
+        kind: 'health',
+        name: 'friend_manager_degraded',
+        severity: 'warn',
+        context: {
+          reason: 'getFriendManager_unavailable',
+          fallback: 'rest_api',
+          possibleCause: 'initializeManagerExtensions_failed_or_sdk_incompatible'
+        }
       })
     } else {
       logger.info('[扩展健康断言] FriendManager 扩展已注册')

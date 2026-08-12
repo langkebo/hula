@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { badgeService } from '@/services/BadgeService'
+import { badgeService } from '@/services/notification/BadgeService'
 
 const mockGetAccountData = vi.fn()
 const mockSetAccountData = vi.fn()

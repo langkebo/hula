@@ -9,6 +9,10 @@
  * - bootstrapSettled / bootstrapPromise — 应使用 IdempotencyGuard
  * - clientStarted / hasStarted — 应使用 IdempotencyGuard
  *
+ * 注意：`initialized` 也是可迁移的手写守卫模式（已在 ErrorTracker 中迁移），
+ * 但因为变量名在非守卫场景中也很常见（20+ 文件），不加入自动检测。
+ * 代码审查时应注意 `private initialized = false` 模式并建议迁移到 IdempotencyGuard。
+ *
  * 允许清单：ExecutionGuard.ts 本身 + 同步函数中合理的布尔标志（永久例外）
  */
 import { execSync } from 'node:child_process'

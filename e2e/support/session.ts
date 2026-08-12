@@ -63,7 +63,7 @@ export const seedMockSession = async (page: Page, options: MockSessionOptions = 
       }
 
       if (payload.resetRenderSamples) {
-        ;(window as Window & { __HULA_RENDER_SAMPLES__?: unknown[] }).__HULA_RENDER_SAMPLES__ = []
+        ;(window as Window & { __TJG_RENDER_SAMPLES__?: unknown[] }).__TJG_RENDER_SAMPLES__ = []
       }
     },
     {

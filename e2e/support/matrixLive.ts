@@ -242,32 +242,32 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
           callbacks?: Map<number, (data: unknown) => void>
           runCallback?: (id: number, data: unknown) => void
         }
-        __HULA_TAURI_CALLBACKS__?: Map<number, unknown>
-        __HULA_TAURI_CALLBACK_ID__?: number
-        __HULA_TAURI_EVENT_LISTENERS__?: Map<string, Set<number>>
+        __TJG_TAURI_CALLBACKS__?: Map<number, unknown>
+        __TJG_TAURI_CALLBACK_ID__?: number
+        __TJG_TAURI_EVENT_LISTENERS__?: Map<string, Set<number>>
         __TAURI_EVENT_PLUGIN_INTERNALS__?: {
           unregisterListener: (event: string, eventId: number) => void
         }
       }
 
       if (!runtimeWindow.__TAURI_INTERNALS__) {
-        runtimeWindow.__HULA_TAURI_CALLBACKS__ = new Map()
-        runtimeWindow.__HULA_TAURI_CALLBACK_ID__ = 0
-        runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__ = new Map()
+        runtimeWindow.__TJG_TAURI_CALLBACKS__ = new Map()
+        runtimeWindow.__TJG_TAURI_CALLBACK_ID__ = 0
+        runtimeWindow.__TJG_TAURI_EVENT_LISTENERS__ = new Map()
         const unregisterCallback = (id: number) => {
-          runtimeWindow.__HULA_TAURI_CALLBACKS__?.delete(id)
+          runtimeWindow.__TJG_TAURI_CALLBACKS__?.delete(id)
         }
         const unregisterListener = (event: string, eventId: number) => {
-          runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__?.get(event)?.delete(eventId)
+          runtimeWindow.__TJG_TAURI_EVENT_LISTENERS__?.get(event)?.delete(eventId)
           unregisterCallback(eventId)
         }
         const emitEvent = (event: string, payload?: unknown) => {
-          const listenerIds = runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__?.get(event)
+          const listenerIds = runtimeWindow.__TJG_TAURI_EVENT_LISTENERS__?.get(event)
           if (!listenerIds?.size) {
             return
           }
           listenerIds.forEach((listenerId) => {
-            const callback = runtimeWindow.__HULA_TAURI_CALLBACKS__?.get(listenerId)
+            const callback = runtimeWindow.__TJG_TAURI_CALLBACKS__?.get(listenerId)
             if (typeof callback === 'function') {
               ;(callback as (data: unknown) => void)({
                 event,
@@ -301,9 +301,9 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
               if (!event || !handlerId) {
                 return handlerId
               }
-              const listeners = runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__?.get(event) ?? new Set<number>()
+              const listeners = runtimeWindow.__TJG_TAURI_EVENT_LISTENERS__?.get(event) ?? new Set<number>()
               listeners.add(handlerId)
-              runtimeWindow.__HULA_TAURI_EVENT_LISTENERS__?.set(event, listeners)
+              runtimeWindow.__TJG_TAURI_EVENT_LISTENERS__?.set(event, listeners)
               return handlerId
             }
             if (cmd === 'plugin:event|unlisten') {
@@ -331,15 +331,15 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
             return undefined
           },
           transformCallback(callback: unknown) {
-            const nextId = (runtimeWindow.__HULA_TAURI_CALLBACK_ID__ ?? 0) + 1
-            runtimeWindow.__HULA_TAURI_CALLBACK_ID__ = nextId
-            runtimeWindow.__HULA_TAURI_CALLBACKS__?.set(nextId, callback)
+            const nextId = (runtimeWindow.__TJG_TAURI_CALLBACK_ID__ ?? 0) + 1
+            runtimeWindow.__TJG_TAURI_CALLBACK_ID__ = nextId
+            runtimeWindow.__TJG_TAURI_CALLBACKS__?.set(nextId, callback)
             return nextId
           },
           unregisterCallback,
-          callbacks: runtimeWindow.__HULA_TAURI_CALLBACKS__ as Map<number, (data: unknown) => void>,
+          callbacks: runtimeWindow.__TJG_TAURI_CALLBACKS__ as Map<number, (data: unknown) => void>,
           runCallback(id: number, data: unknown) {
-            const callback = runtimeWindow.__HULA_TAURI_CALLBACKS__?.get(id)
+            const callback = runtimeWindow.__TJG_TAURI_CALLBACKS__?.get(id)
             if (typeof callback === 'function') {
               ;(callback as (data: unknown) => void)(data)
             }
@@ -379,7 +379,7 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
 
   await page.goto(env.appUrl)
   await page.waitForSelector('#app', { state: 'visible' })
-  await waitForHulaAppReady(page)
+  await waitForTjgAppReady(page)
   await waitForPinia(page)
   await page.evaluate(async () => {
     const runtimeWindow = window as Window & { pinia?: unknown }
@@ -399,9 +399,9 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
   })
 }
 
-const waitForHulaAppReady = async (page: Page): Promise<void> => {
+const waitForTjgAppReady = async (page: Page): Promise<void> => {
   await page.waitForFunction(
-    () => (window as Window & { __HULA_APP_READY__?: boolean }).__HULA_APP_READY__ === true,
+    () => (window as Window & { __TJG_APP_READY__?: boolean }).__TJG_APP_READY__ === true,
     undefined,
     {
       timeout: 120_000
@@ -412,7 +412,7 @@ const waitForHulaAppReady = async (page: Page): Promise<void> => {
 const waitForPinia = async (page: Page): Promise<void> => {
   await page.waitForFunction(
     () =>
-      (window as Window & { __HULA_PINIA_READY__?: boolean; pinia?: unknown }).__HULA_PINIA_READY__ === true &&
+      (window as Window & { __TJG_PINIA_READY__?: boolean; pinia?: unknown }).__TJG_PINIA_READY__ === true &&
       (window as Window & { pinia?: unknown }).pinia != null,
     undefined,
     {
@@ -428,6 +428,7 @@ const waitForMatrixLoggedIn = async (page: Page): Promise<void> => {
         page.evaluate(async () => {
           const runtimeWindow = window as Window & { pinia?: unknown }
           const matrixStoreModulePath = '/src/stores/domains/chat/matrix.ts'
+          const matrixClientServiceModulePath = '/src/services/matrix/MatrixClientService.ts'
           const sessionStateModulePath = '/src/services/matrix/matrixSessionState.ts'
           const currentUserStateModulePath = '/src/common/currentUserState.ts'
           const { useMatrixStore } = (await import(/* @vite-ignore */ matrixStoreModulePath)) as {
@@ -435,7 +436,11 @@ const waitForMatrixLoggedIn = async (page: Page): Promise<void> => {
               isLoggedIn: boolean
               userId?: string | null
               accessToken?: string | null
-              getClient?: () => {
+            }
+          }
+          const { matrixClientService } = (await import(/* @vite-ignore */ matrixClientServiceModulePath)) as {
+            matrixClientService: {
+              getClient: () => {
                 getUserId?: () => string | null
                 getAccessToken?: () => string | null
               } | null
@@ -450,7 +455,7 @@ const waitForMatrixLoggedIn = async (page: Page): Promise<void> => {
           const matrixStore = useMatrixStore(runtimeWindow.pinia)
           const sessionSnapshot = getMatrixSessionSnapshot()
           const currentUser = getCurrentUserInfo()
-          const client = matrixStore.getClient?.() ?? null
+          const client = matrixClientService.getClient()
           const accessToken =
             matrixStore.accessToken ?? sessionSnapshot.accessToken ?? client?.getAccessToken?.() ?? null
           const userId =
@@ -472,7 +477,7 @@ const waitForMatrixLoggedIn = async (page: Page): Promise<void> => {
 
 const loginWithPasswordApi = async (page: Page, env: MatrixLiveEnv, actor: MatrixLiveActor): Promise<void> => {
   const credentials = resolveActorCredentials(env, actor)
-  await waitForHulaAppReady(page)
+  await waitForTjgAppReady(page)
   await waitForPinia(page)
 
   const loginOptions = {
@@ -545,7 +550,7 @@ const loginWithPasswordApi = async (page: Page, env: MatrixLiveEnv, actor: Matri
 
 const restoreWithAccessToken = async (page: Page, env: MatrixLiveEnv, actor: MatrixLiveActor): Promise<void> => {
   const credentials = resolveActorCredentials(env, actor)
-  await waitForHulaAppReady(page)
+  await waitForTjgAppReady(page)
   await waitForPinia(page)
 
   await page.evaluate(
@@ -735,7 +740,7 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
           '/src/stores/domains/chat/matrix.ts'
         ),
         importBrowserModule<{ useRoomStore: (pinia?: unknown) => Record<string, unknown> }>(
-          '/src/stores/domains/chat/room.ts'
+          '/src/stores/domains/chat/room/index.ts'
         ),
         importBrowserModule<{ useSessionStore: (pinia?: unknown) => Record<string, unknown> }>(
           '/src/stores/domains/chat/chat/session.ts'
@@ -748,6 +753,11 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
         ),
         importBrowserModule<{
           matrixClientService: {
+            getClient: () => {
+              getRoom?: (id: string) => unknown
+              getCrypto?: () => unknown
+              getRooms?: () => unknown[]
+            } | null
             getRustCryptoDebugState: () => Record<string, unknown>
             getEventDecryptedDebugState: () => Record<string, unknown>
           }
@@ -802,7 +812,7 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
         sessionEngagementFilter: filters.engagement,
         sessionSort: filters.sort
       })
-      const client = matrixStore.getClient?.()
+      const client = matrixClientService.getClient()
       const crypto = client?.getCrypto?.() ?? null
       const activeRoomId = requestedRoomId || globalStore.currentSessionRoomId || null
       const activeRoom = activeRoomId ? (client?.getRoom?.(activeRoomId) ?? null) : null
@@ -1007,26 +1017,32 @@ const resolveMatrixLiveRoomCandidates = async (
       const runtimeWindow = window as Window & { pinia?: unknown }
       const importBrowserModule = <T>(modulePath: string): Promise<T> =>
         import(/* @vite-ignore */ modulePath) as Promise<T>
-      const [{ useMatrixStore }, { useRoomStore }, { useSessionStore }, { useGlobalStore }] = await Promise.all([
-        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
-          '/src/stores/domains/chat/matrix.ts'
-        ),
-        importBrowserModule<{ useRoomStore: (pinia?: unknown) => Record<string, unknown> }>(
-          '/src/stores/domains/chat/room.ts'
-        ),
-        importBrowserModule<{ useSessionStore: (pinia?: unknown) => Record<string, unknown> }>(
-          '/src/stores/domains/chat/chat/session.ts'
-        ),
-        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => Record<string, unknown> }>(
-          '/src/stores/domains/widget/global.ts'
-        )
-      ])
+      const [{ useMatrixStore }, { useRoomStore }, { useSessionStore }, { useGlobalStore }, { matrixClientService }] =
+        await Promise.all([
+          importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
+            '/src/stores/domains/chat/matrix.ts'
+          ),
+          importBrowserModule<{ useRoomStore: (pinia?: unknown) => Record<string, unknown> }>(
+            '/src/stores/domains/chat/room/index.ts'
+          ),
+          importBrowserModule<{ useSessionStore: (pinia?: unknown) => Record<string, unknown> }>(
+            '/src/stores/domains/chat/chat/session.ts'
+          ),
+          importBrowserModule<{ useGlobalStore: (pinia?: unknown) => Record<string, unknown> }>(
+            '/src/stores/domains/widget/global.ts'
+          ),
+          importBrowserModule<{
+            matrixClientService: {
+              getClient: () => { getRoom?: (id: string) => unknown; getRooms?: () => unknown[] } | null
+            }
+          }>('/src/services/matrix/MatrixClientService.ts')
+        ])
 
-      const matrixStore = useMatrixStore(runtimeWindow.pinia)
+      const _matrixStore = useMatrixStore(runtimeWindow.pinia)
       const roomStore = useRoomStore(runtimeWindow.pinia)
       const sessionStore = useSessionStore(runtimeWindow.pinia)
       const globalStore = useGlobalStore(runtimeWindow.pinia)
-      const client = matrixStore.getClient?.()
+      const client = matrixClientService.getClient()
       const currentSessionRoomId = globalStore.currentSessionRoomId || null
 
       const requestedRoom = targetRoomId
@@ -1084,6 +1100,20 @@ const selectRoomById = async (page: Page, targetRoomId: string): Promise<void> =
       useGlobalStore: (pinia?: unknown) => { updateCurrentSessionRoomId: (roomId: string) => void }
     }
     useGlobalStore(runtimeWindow.pinia).updateCurrentSessionRoomId(roomId)
+
+    // Also push the route to /message/:roomId so the chat view renders.
+    // The message workspace's watch on currentSessionInfo has a guard that skips
+    // onMsgClick when newVal.roomId === globalStore.currentSessionRoomId, which is
+    // always true when we set the room ID programmatically. So we must navigate
+    // the route ourselves, just like onMsgClick does.
+    const routerModule = (await import(/* @vite-ignore */ '/src/router/index.ts')) as {
+      default: { push: (to: { name: string; params: { roomId: string } }) => Promise<unknown> }
+    }
+    try {
+      await routerModule.default.push({ name: 'message', params: { roomId } })
+    } catch (e) {
+      console.error('[selectRoomById] router.push failed:', e)
+    }
   }, targetRoomId)
 }
 
@@ -1097,13 +1127,11 @@ export const openConfiguredRoom = async (page: Page, env: MatrixLiveEnv): Promis
   )
 
   if (env.roomId && requestedRoomExists) {
-    const roomLocator = page.locator(`[data-test="session-item-${env.roomId}"]`).first()
-    const visibleRoomCount = await roomLocator.count()
-    if (visibleRoomCount > 0) {
-      await roomLocator.dispatchEvent('click')
-    } else {
-      await selectRoomById(page, env.roomId)
-    }
+    // Always use selectRoomById — the data-test selector contains the room ID
+    // which has special characters (!, :) that can cause click failures.
+    // selectRoomById sets the store + pushes the route, which reliably
+    // triggers the chat view to render.
+    await selectRoomById(page, env.roomId)
 
     await expect
       .poll(() => getCurrentSessionRoomId(page), {
@@ -1111,6 +1139,14 @@ export const openConfiguredRoom = async (page: Page, env: MatrixLiveEnv): Promis
         message: '等待前端按 roomId 完成会话切换'
       })
       .toBe(env.roomId)
+
+    // Debug: verify the route includes roomId
+    const currentUrl = page.url()
+    if (!currentUrl.includes(env.roomId)) {
+      console.warn(
+        `[openConfiguredRoom] URL does not contain roomId after selectRoomById. URL: ${currentUrl}, expected roomId: ${env.roomId}`
+      )
+    }
 
     return env.roomId
   }
@@ -1235,18 +1271,21 @@ export const resolveLiveTimelineTextCandidate = async (
       const runtimeWindow = window as Window & { pinia?: unknown }
       const importBrowserModule = <T>(modulePath: string): Promise<T> =>
         import(/* @vite-ignore */ modulePath) as Promise<T>
-      const [{ useMatrixStore }, { useChatStore }] = await Promise.all([
+      const [{ useMatrixStore }, { useChatStore }, { matrixClientService }] = await Promise.all([
         importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
           '/src/stores/domains/chat/matrix.ts'
         ),
         importBrowserModule<{ useChatStore: (pinia?: unknown) => Record<string, unknown> }>(
           '/src/stores/domains/chat/chat/index.ts'
-        )
+        ),
+        importBrowserModule<{
+          matrixClientService: { getClient: () => { getRoom?: (id: string) => unknown } | null }
+        }>('/src/services/matrix/MatrixClientService.ts')
       ])
 
-      const matrixStore = useMatrixStore(runtimeWindow.pinia)
+      const _matrixStore = useMatrixStore(runtimeWindow.pinia)
       const chatStore = useChatStore(runtimeWindow.pinia)
-      const client = matrixStore.getClient?.()
+      const client = matrixClientService.getClient()
       const room = client?.getRoom?.(targetRoomId)
       const chatMessages = chatStore.chatMessageListByRoomId(targetRoomId) ?? []
       const timelineEvents = room?.getLiveTimeline?.()?.getEvents?.() ?? []

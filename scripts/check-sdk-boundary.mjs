@@ -50,7 +50,12 @@ const ALLOWED_BOUNDARY_FILES = new Set([
   'src/services/matrix/sdk-compat.ts',
   'src/services/matrix/sdk-errors.ts',
   'src/types/matrix-js-sdk/index.ts',
-  'src/types/matrix-js-sdk-augmentations.d.ts'
+  'src/types/matrix-js-sdk-augmentations.d.ts',
+  // Worker SDK boundary — runs matrix-js-sdk in a dedicated thread.
+  // These files are the Worker's equivalent of sdk.ts: they own the SDK
+  // instance and expose it to sibling handler modules via shared state.
+  'src/workers/workerState.ts',
+  'src/workers/workerClientHandlers.ts'
 ])
 
 /**

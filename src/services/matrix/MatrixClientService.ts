@@ -1,13 +1,11 @@
-import type { ICreateRoomOpts, LoginResponse, MatrixClient, Room, SlidingSync, User } from 'matrix-js-sdk'
-import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
-import { useI18nGlobal } from '@/services/i18n'
-import { persistRefreshedToken, setupSystemResumeListener } from '@/services/matrix/matrixClientPlatform'
-import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
-import { clearCryptoStoragePasswordCache, deleteCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
-import { PendingEventOrdering } from '@/types/matrix-js-sdk'
-import { AvatarUtils } from '@/utils/AvatarUtils'
+import type { ICreateRoomOpts, MatrixClient, Room, SlidingSync, TelemetryManager, User } from '@/services/matrix/sdk'
 import { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
+import { type LoginResult, MatrixClientAuth } from './MatrixClientAuth'
+import { MatrixClientLifecycle } from './MatrixClientLifecycle'
+import { MatrixClientRoom } from './MatrixClientRoom'
+import { MatrixClientState } from './MatrixClientState'
+import { MatrixClientTelemetry } from './MatrixClientTelemetry'
 import {
   type ConnectionState,
   getMatrixConnectionManager,
@@ -23,30 +21,12 @@ import { MatrixEventRouter } from './MatrixEventRouter'
 import { MatrixSyncManager } from './MatrixSyncManager'
 import { MatrixTokenManager } from './MatrixTokenManager'
 
+export type { LoginResult } from './MatrixClientAuth'
+export { resolveStableDeviceId } from './MatrixClientAuth'
 export type { ConnectionState, MatrixClientConfig } from './MatrixConnectionManager'
 export type { EventDecryptedDebugState, RustCryptoDebugState } from './MatrixCryptoStateTracker'
 
 const logger = createLogger('MatrixClient')
-
-type StartClientOptions = Parameters<MatrixClient['startClient']>[0]
-
-/**
- * 登录结果接口
- */
-export interface LoginResult {
-  /** 是否成功 */
-  success: boolean
-  /** 用户 ID */
-  userId?: string
-  /** 设备 ID */
-  deviceId?: string
-  /** 访问令牌 */
-  accessToken?: string
-  /** 刷新令牌（用于自动续期） */
-  refreshToken?: string
-  /** 错误信息 */
-  error?: string
-}
 
 /**
  * Matrix 客户端服务（facade）
@@ -57,6 +37,11 @@ export interface LoginResult {
  * - MatrixCryptoStateTracker — crypto 调试状态
  * - MatrixTokenManager — token 刷新
  * - MatrixSyncManager — Sliding Sync
+ * - MatrixClientLifecycle — initialize/startClient/stopClient/forceReconnect
+ * - MatrixClientAuth — login/SSO/loginWithToken/logout
+ * - MatrixClientState — getClient/getConnectionState/getUserId 等查询
+ * - MatrixClientRoom — getRooms/createRoom/joinRoom/leaveRoom/canManageSpace
+ * - MatrixClientTelemetry — getTelemetry/getManagerStatsList
  *
  * @example
  * ```typescript
@@ -75,16 +60,22 @@ export interface LoginResult {
  * ```
  */
 class MatrixClientService {
-  private readonly connectionManager = getMatrixConnectionManager()
+  private readonly connectionManager: MatrixConnectionManager = getMatrixConnectionManager()
   private readonly eventRouter = new MatrixEventRouter()
   private readonly cryptoTracker = new MatrixCryptoStateTracker()
   private readonly tokenManager = new MatrixTokenManager()
   private readonly syncManager = new MatrixSyncManager()
-  private telemetryManager: TelemetryManager | null = null
   // startClient 幂等守卫（IdempotencyGuard）：
   // 防止 settlePostLoginStartup / useConnectionStatus.retry / forceReconnect 并发或串行重复触发
   // ensureCrypto + SDK startClient。在 stopClient / logout / initialize 重建时 reset。
-  private startClientGuard = new IdempotencyGuard()
+  private readonly startClientGuard = new IdempotencyGuard()
+
+  // 子服务（facade 委托对象）
+  private readonly lifecycle: MatrixClientLifecycle
+  private readonly auth: MatrixClientAuth
+  private readonly state: MatrixClientState
+  private readonly roomOps: MatrixClientRoom
+  private readonly telemetry: MatrixClientTelemetry
 
   constructor() {
     logger.info?.('Matrix 客户端服务初始化')
@@ -93,642 +84,102 @@ class MatrixClientService {
     this.connectionManager.onStateChange((state) => {
       this.eventRouter.emit('connectionState', { state })
     })
-  }
 
-  // ---- HTTP fallback login helpers --------------------------------------------
-
-  private async loginByHttpFallback(username: string, password: string, deviceName?: string): Promise<LoginResponse> {
-    const config = this.connectionManager.getConfig()
-    if (!config?.homeserverUrl) {
-      throw new Error(useI18nGlobal().t('matrix_error.auth.client_config_missing'))
-    }
-
-    const url = `${config.homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/login`
-    const body = JSON.stringify({
-      type: 'm.login.password',
-      user: username,
-      password,
-      initial_device_display_name: deviceName || 'Tjg Client'
+    // 实例化子服务，注入主类持有的协作模块
+    this.lifecycle = new MatrixClientLifecycle({
+      connectionManager: this.connectionManager,
+      eventRouter: this.eventRouter,
+      syncManager: this.syncManager,
+      cryptoTracker: this.cryptoTracker,
+      tokenManager: this.tokenManager,
+      startClientGuard: this.startClientGuard
     })
-    return this.loginRequestWithRetry(url, body)
-  }
-
-  private async tokenLoginByHttpFallback(loginToken: string): Promise<LoginResponse> {
-    const config = this.connectionManager.getConfig()
-    if (!config?.homeserverUrl) {
-      throw new Error(useI18nGlobal().t('matrix_error.auth.client_config_missing'))
-    }
-
-    const url = `${config.homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/login`
-    const body = JSON.stringify({
-      type: 'm.login.token',
-      token: loginToken
+    this.auth = new MatrixClientAuth({
+      connectionManager: this.connectionManager,
+      eventRouter: this.eventRouter,
+      syncManager: this.syncManager,
+      cryptoTracker: this.cryptoTracker,
+      tokenManager: this.tokenManager,
+      lifecycle: this.lifecycle,
+      startClientGuard: this.startClientGuard
     })
-
-    return this.loginRequestWithRetry(url, body)
+    this.state = new MatrixClientState({
+      connectionManager: this.connectionManager,
+      syncManager: this.syncManager,
+      cryptoTracker: this.cryptoTracker
+    })
+    this.roomOps = new MatrixClientRoom({
+      connectionManager: this.connectionManager
+    })
+    this.telemetry = new MatrixClientTelemetry({
+      connectionManager: this.connectionManager
+    })
   }
 
-  private async loginRequestWithRetry(url: string, body: string, maxRetries = 2): Promise<LoginResponse> {
-    const runtimeFetch = getRuntimeAwareFetch()
+  // ---- Lifecycle --------------------------------------------------------------
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const response = await runtimeFetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body
-      })
-
-      if (response.ok) {
-        return (await response.json()) as LoginResponse
-      }
-
-      if (response.status === 429 && attempt < maxRetries) {
-        let retryAfterMs = 5000
-        try {
-          const errorBody = await response.clone().json()
-          retryAfterMs = errorBody.retry_after_ms || 5000
-        } catch {
-          /* ignore */
-        }
-        // 限流时间过长（>60s）时不再阻塞重试，立即抛错让 UI 显示"登录过于频繁，请X分钟后重试"
-        // 否则 setTimeout(900000) 会阻塞 15 分钟，useLoginFlow 30s 超时后状态混乱
-        if (retryAfterMs > 60_000) {
-          const err = new Error(
-            JSON.stringify({ errcode: 'M_LIMIT_EXCEEDED', error: 'Rate limited', retry_after_ms: retryAfterMs })
-          ) as Error & { errcode?: string; retry_after_ms?: number }
-          err.errcode = 'M_LIMIT_EXCEEDED'
-          err.retry_after_ms = retryAfterMs
-          logger.warn(`登录请求被限流 (429)，retry_after_ms=${retryAfterMs} 过长，不再重试，直接抛错`)
-          throw err
-        }
-        logger.warn(`登录请求被限流 (429)，${retryAfterMs}ms 后重试 (${attempt + 1}/${maxRetries})`)
-        await new Promise((resolve) => setTimeout(resolve, retryAfterMs))
-        continue
-      }
-
-      const text = await response.text().catch(() => '')
-      throw new Error(
-        text || useI18nGlobal().t('matrix_error.auth.login_failed_with_status', { status: response.status })
-      )
-    }
-
-    throw new Error('登录请求被限流，请稍后重试')
-  }
-
-  // ---- Public API -------------------------------------------------------------
-
-  getTelemetry(): TelemetryManager | null {
-    return this.telemetryManager
-  }
-
-  /**
-   * Initialize the Matrix client with the provided config.
-   *
-   * Detaches old event listeners, resets crypto debug state, and delegates
-   * client creation + accessor setup to MatrixConnectionManager.
-   *
-   * @throws {Error} if client creation fails.
-   */
   async initialize(config: MatrixClientConfig): Promise<void> {
-    // 记录 initialize 前的 client 引用，用于检测 fallback 重建
-    const previousClient = this.connectionManager.getClient()
+    return this.lifecycle.initialize(config)
+  }
 
-    // 仅当不会复用现有 client 时才 detach 监听器 / 停止 sync / 重置 crypto。
-    // 复用路径若先 detach，已挂载的事件路由会丢失（eventRouter.setup 仅在 startClient 重挂）。
-    if (!this.connectionManager.shouldReuse(config)) {
-      const observed = this.eventRouter.getObservedClient()
-      if (observed) {
-        this.eventRouter.detach(observed, this.syncManager)
-      }
-      this.syncManager.stop()
-      this.cryptoTracker.resetState()
-      // 重建 client 时重置启动守卫，允许新 client 重新走 startClient 流程
-      this.startClientGuard.reset()
-    }
-    await this.connectionManager.initialize(config)
+  async startClient(): Promise<void> {
+    return this.lifecycle.startClient()
+  }
 
-    // Fallback 重建检测：shouldReuse 判定复用（身份匹配，仅 token 变化），
-    // 但 connectionManager.initialize 内部 setAccessToken 失败回退到 rebuild。
-    // 此时 client 引用已变更，但 facade 未 detach 旧监听器 → 需要补做清理。
-    const currentClient = this.connectionManager.getClient()
-    if (previousClient && currentClient && previousClient !== currentClient && this.startClientGuard.isSettled) {
-      logger.warn('检测到 setAccessToken fallback 重建，清理旧 client 监听器与启动状态')
-      this.eventRouter.detach(previousClient, this.syncManager)
-      this.syncManager.stop()
-      this.cryptoTracker.resetState()
-      this.startClientGuard.reset()
-    }
+  async stopClient(): Promise<void> {
+    return this.lifecycle.stopClient()
+  }
 
-    // Register mxc:// resolver so AvatarUtils can convert Matrix media URIs.
-    // Use client.mxcUrlToHttp() directly to avoid circular dependency with MatrixMediaService.
-    const client = this.connectionManager.getClient()
-    if (client) {
-      AvatarUtils.setMxcResolver((mxcUrl, width, height) => {
-        // 防护：登录失败或 client 未完全初始化时 mxcUrlToHttp 可能不存在
-        const resolver = client.mxcUrlToHttp
-        if (typeof resolver !== 'function') return null
-        try {
-          if (width && height) {
-            return resolver.call(client, mxcUrl, width, height, 'scale')
-          }
-          return resolver.call(client, mxcUrl)
-        } catch {
-          return null
-        }
-      })
-    }
+  async waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
+    return this.lifecycle.waitForClientReady(opts)
+  }
+
+  async waitForSlidingSyncReady(timeoutMs: number = 10000): Promise<boolean> {
+    return this.lifecycle.waitForSlidingSyncReady(timeoutMs)
   }
 
   // ---- Auth / Login -----------------------------------------------------------
 
   async login(username: string, password: string, deviceName?: string): Promise<LoginResult> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      return { success: false, error: '客户端未初始化' }
-    }
-
-    try {
-      this.connectionManager.updateConnectionState('CONNECTING')
-      let loginResponse: LoginResponse
-
-      try {
-        loginResponse = await client.loginRequest({
-          type: 'm.login.password',
-          identifier: { type: 'm.id.user', user: username },
-          password,
-          initial_device_display_name: deviceName || 'Tjg Client'
-        })
-      } catch (error) {
-        const errInfo = error instanceof Error ? error.message : String(error)
-        const httpStatus = (error as { httpStatus?: number })?.httpStatus
-        const errcode = (error as { errcode?: string })?.errcode
-        logger.warn(`SDK 密码登录失败 (status=${httpStatus}, errcode=${errcode}): ${errInfo}，尝试 HTTP 回退`)
-        loginResponse = await this.loginByHttpFallback(username, password, deviceName)
-      }
-
-      await this.initialize({
-        ...this.connectionManager.getConfig()!,
-        accessToken: loginResponse.access_token,
-        userId: loginResponse.user_id,
-        deviceId: loginResponse.device_id ?? undefined
-      })
-
-      this.connectionManager.updateConnectionState('CONNECTED')
-      const expiresInMs = loginResponse.expires_in_ms ?? 0
-      if (loginResponse.refresh_token && expiresInMs > 0) {
-        this.tokenManager.schedule(this.connectionManager.getClient()!, loginResponse.refresh_token, expiresInMs)
-      }
-
-      return {
-        success: true,
-        userId: loginResponse.user_id,
-        deviceId: loginResponse.device_id,
-        accessToken: loginResponse.access_token,
-        refreshToken: loginResponse.refresh_token
-      }
-    } catch (err) {
-      this.connectionManager.updateConnectionState('ERROR')
-      const errorMessage = err instanceof Error ? err.message : '登录失败'
-      logger.error(`登录失败: ${errorMessage}`)
-      return {
-        success: false,
-        error: errorMessage
-      }
-    }
+    return this.auth.login(username, password, deviceName)
   }
 
   async getSSOLoginUrl(identityProviderId?: string): Promise<string> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const loginFlow = await client.loginFlows()
-      const ssoFlow = loginFlow.flows.find((flow: Record<string, unknown>) => flow.type === 'm.login.sso')
-
-      if (!ssoFlow) {
-        throw new Error(useI18nGlobal().t('matrix_error.auth.sso_not_supported'))
-      }
-
-      const ssoUrl = client.getSsoLoginUrl(window.location.href, 'Tjg Client', identityProviderId)
-
-      logger.info('获取 SSO 登录 URL 成功')
-      return ssoUrl
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取 SSO 登录 URL 失败'
-      logger.error(errorMessage)
-      throw err
-    }
+    return this.auth.getSSOLoginUrl(identityProviderId)
   }
 
   async completeSSOLogin(loginToken: string): Promise<LoginResult> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      return { success: false, error: '客户端未初始化' }
-    }
-
-    try {
-      this.connectionManager.updateConnectionState('CONNECTING')
-      let loginResponse: LoginResponse
-
-      try {
-        loginResponse = await client.login('m.login.token', {
-          token: loginToken
-        })
-      } catch (error) {
-        const errInfo = error instanceof Error ? error.message : String(error)
-        const httpStatus = (error as { httpStatus?: number })?.httpStatus
-        logger.warn(`SDK SSO 登录失败 (status=${httpStatus}): ${errInfo}，尝试 HTTP 回退`)
-        loginResponse = await this.tokenLoginByHttpFallback(loginToken)
-      }
-
-      logger.info(`SSO 登录成功: ${loginResponse.user_id}`)
-
-      await this.initialize({
-        ...this.connectionManager.getConfig()!,
-        accessToken: loginResponse.access_token,
-        userId: loginResponse.user_id,
-        deviceId: loginResponse.device_id ?? undefined
-      })
-
-      this.connectionManager.updateConnectionState('CONNECTED')
-      const expiresInMs = loginResponse.expires_in_ms ?? 0
-      if (loginResponse.refresh_token && expiresInMs > 0) {
-        this.tokenManager.schedule(this.connectionManager.getClient()!, loginResponse.refresh_token, expiresInMs)
-      }
-
-      return {
-        success: true,
-        userId: loginResponse.user_id,
-        deviceId: loginResponse.device_id,
-        accessToken: loginResponse.access_token,
-        refreshToken: loginResponse.refresh_token
-      }
-    } catch (err) {
-      this.connectionManager.updateConnectionState('ERROR')
-      const errorMessage = err instanceof Error ? err.message : 'SSO 登录失败'
-      logger.error(errorMessage)
-      return {
-        success: false,
-        error: errorMessage
-      }
-    }
+    return this.auth.completeSSOLogin(loginToken)
   }
 
-  /**
-   * Authenticate using a pre-existing access token (e.g. from QR login or session restore).
-   * Optionally refreshes the token if a refreshToken is provided.
-   *
-   * @throws Never throws (returns { success: false, error } on failure).
-   */
   async loginWithToken(token: string, userId: string, refreshToken?: string): Promise<LoginResult> {
-    const config = this.connectionManager.getConfig()
-    if (!config) {
-      return { success: false, error: '配置未初始化' }
-    }
-
-    try {
-      // P0-#2（优化）：在首次 initialize 前解析稳定 deviceId，避免「先建 client 再发现
-      // deviceId 又重建」的泄漏与重复 E2EE 查询（keys/query 翻倍 / 重复回执）。
-      // 优先复用配置中已持久化的 deviceId；缺失时通过 whoami 端点（带 token 直连，无需已初始化的 client）
-      // 预解析 access token 绑定的设备，再一次性 initialize。
-      // 短路：已持久化 deviceId 时不发 whoami 请求，避免多余往返。
-      const whoamiDeviceId = config.deviceId
-        ? undefined
-        : await this.resolveDeviceIdByWhoami(token, config.homeserverUrl)
-      const stableDeviceId = resolveStableDeviceId(config, whoamiDeviceId)
-
-      await this.initialize({
-        ...config,
-        accessToken: token,
-        userId,
-        deviceId: stableDeviceId
-      })
-
-      // 回退：若 whoami 也未返回 deviceId，则采用 SDK 实际使用的设备（首次 sync 后才落定）。
-      const resolvedDeviceId = resolveStableDeviceId(
-        { ...config, deviceId: stableDeviceId },
-        this.connectionManager.getClient()?.getDeviceId?.() ?? undefined
-      )
-
-      this.connectionManager.updateConnectionState('CONNECTED')
-
-      let activeAccessToken = token
-      if (refreshToken) {
-        try {
-          const client = this.connectionManager.getClient()
-          if (client) {
-            const refreshResult = await client.refreshToken(refreshToken)
-
-            const newAccessToken = refreshResult.access_token
-            const newRefreshToken = refreshResult.refresh_token
-            let newExpiresInMs = refreshResult.expires_in_ms
-            // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
-            const expiresInSec = (refreshResult as unknown as Record<string, unknown>).expires_in as number | undefined
-            if (!newExpiresInMs && expiresInSec) {
-              newExpiresInMs = expiresInSec * 1000
-            }
-
-            if (newAccessToken && newExpiresInMs && newExpiresInMs > 0) {
-              client.setAccessToken(newAccessToken)
-              activeAccessToken = newAccessToken
-              const uid = client.getUserId()
-              if (uid) {
-                await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? refreshToken)
-              }
-              this.tokenManager.schedule(client, newRefreshToken ?? refreshToken, newExpiresInMs)
-            }
-          }
-        } catch {
-          // 服务器不支持 refresh 或刷新失败，不影响登录
-        }
-      }
-
-      return {
-        success: true,
-        userId: userId,
-        deviceId: resolvedDeviceId,
-        accessToken: activeAccessToken
-      }
-    } catch (err) {
-      this.connectionManager.updateConnectionState('ERROR')
-      const errorMessage = err instanceof Error ? err.message : 'Token 登录失败'
-      logger.error(errorMessage)
-      return {
-        success: false,
-        error: errorMessage
-      }
-    }
+    return this.auth.loginWithToken(token, userId, refreshToken)
   }
 
   async logout(): Promise<void> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      return
-    }
-
-    // 在 client.logout() 销毁会话前提取 userId/deviceId，用于清理 keychain 中的 storagePassword
-    const userId = client.getUserId?.() ?? null
-    const deviceId = client.getDeviceId?.() ?? null
-
-    this.tokenManager.clear()
-
-    try {
-      await client.logout()
-      await this.stopClient()
-      logger.info('登出成功')
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '登出失败'
-      logger.error(errorMessage)
-    } finally {
-      this.syncManager.stop()
-      AvatarUtils.setMxcResolver(null)
-      this.connectionManager.setClient(null)
-      this.connectionManager.updateConnectionState('DISCONNECTED')
-      // 重置启动守卫，确保登出后下次登录能正常 startClient
-      this.startClientGuard.reset()
-      // ISSUE-08：清理 keychain 中的 crypto storagePassword，避免残留
-      if (userId && deviceId) {
-        void deleteCryptoStoragePassword(userId, deviceId)
-      }
-      // 全量清理内存缓存中的 crypto storagePassword，防止切换账号时复用旧密码
-      clearCryptoStoragePasswordCache()
-      // 清除 IndexedDB crypto store 与 localStorage 记录，确保下次登录从干净状态开始
-      if (userId) {
-        this.cryptoTracker.clearCryptoStoreForLogout(userId).catch((err) => {
-          logger.warn(`清理 crypto store 失败 (userId=${userId}):`, err)
-        })
-      }
-    }
+    return this.auth.logout()
   }
 
-  // ---- Lifecycle --------------------------------------------------------------
+  // ---- State / Accessors ------------------------------------------------------
 
-  /**
-   * 通过 whoami 端点（带 token 的直接 HTTP 调用，无需已初始化的 MatrixClient）
-   * 解析 access token 绑定的 deviceId，用于 token 登录 / 会话恢复时一次性确定稳定设备 ID，
-   * 避免「先建 client 再发现 deviceId 又重建」的泄漏与重复 E2EE 查询。
-   */
-  private async resolveDeviceIdByWhoami(token: string, homeserverUrl: string): Promise<string | undefined> {
-    const runtimeFetch = getRuntimeAwareFetch()
-    const url = `${homeserverUrl.replace(/\/+$/, '')}/_matrix/client/v3/account/whoami`
-    try {
-      const response = await runtimeFetch(url, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (!response.ok) {
-        logger.warn(`whoami 预解析 deviceId 失败 (status=${response.status})，回退 SDK 默认设备`)
-        return undefined
-      }
-      const data = (await response.json()) as { device_id?: string | null; user_id?: string | null }
-      return data.device_id ?? undefined
-    } catch (err) {
-      logger.warn('whoami 预解析 deviceId 异常，回退 SDK 默认设备', err)
-      return undefined
-    }
+  getTelemetry(): TelemetryManager | null {
+    return this.telemetry.getTelemetry()
   }
-
-  async startClient(): Promise<void> {
-    // IdempotencyGuard 负责：settled 短路 + in-flight Promise 复用
-    // 防止串行/并发重复触发 ensureCrypto + SDK startClient
-    return this.startClientGuard.run(() => this.doStartClient())
-  }
-
-  private async doStartClient(): Promise<void> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    // setupSystemResumeListener 返回 void（不提供取消订阅 API），
-    // 用 wrapper 适配 ConnectionManager.setupResumeListener 要求的 `() => () => void` 契约。
-    this.connectionManager.setupResumeListener(
-      () => {
-        const currentClient = this.connectionManager.getClient()
-        if (currentClient && this.connectionManager.getConnectionState() === 'CONNECTED') {
-          this.forceReconnect()
-        }
-      },
-      (cb: () => void) => {
-        setupSystemResumeListener(cb)
-        return () => {}
-      }
-    )
-
-    try {
-      const startOpts: StartClientOptions = {
-        initialSyncLimit: 20,
-        pendingEventOrdering: PendingEventOrdering.Detached
-      }
-
-      const config = this.connectionManager.getConfig()
-      if (config?.accessToken) {
-        // Sliding Sync 端点探测：若服务器不支持 Sliding Sync，不注入 slidingSync 实例，
-        // SDK 会自动降级到传统 /sync 端点，避免 404 反复重试导致 sync 永不 prepared。
-        let slidingSyncSupported = true
-        try {
-          slidingSyncSupported = await client.isSlidingSyncSupported()
-        } catch (probeErr) {
-          // 探测失败时保守降级为不使用 SlidingSync，避免 sync 卡死
-          logger.warn('Sliding Sync 端点探测失败，降级到 /sync:', probeErr)
-          slidingSyncSupported = false
-        }
-
-        if (slidingSyncSupported) {
-          if (!this.syncManager.get()) {
-            this.syncManager.create(client, config)
-          }
-          this.syncManager.resetReady()
-          startOpts.slidingSync = this.syncManager.get()!
-        } else {
-          // 降级：销毁可能存在的旧 SlidingSync 实例，走传统 /sync
-          logger.warn('Sliding Sync 不可用，降级到传统 /sync 端点')
-          this.syncManager.stop()
-        }
-      } else {
-        this.syncManager.stop()
-      }
-
-      await this.cryptoTracker.ensureCrypto(client, !!config?.accessToken)
-
-      this.eventRouter.setSyncStateHandler((state, prevState, data) => {
-        const result = this.connectionManager.mapSyncState(state, prevState, data)
-        if (result.connectionState) {
-          this.connectionManager.updateConnectionState(result.connectionState)
-        }
-        if (result.isReady) {
-          this.syncManager.markReady()
-        }
-      })
-      this.eventRouter.setLifecycleErrorHandler((err) => {
-        this.connectionManager.handleSyncLifecycleError(err)
-      })
-      this.eventRouter.setLifecycleResetHandler(() => {
-        this.connectionManager.resetSyncErrorCount()
-      })
-      this.eventRouter.setEventDecryptedHandler((event, err) => {
-        this.cryptoTracker.handleEventDecrypted(event, err)
-      })
-
-      this.eventRouter.setup(client, this.syncManager)
-      await client.startClient(startOpts)
-
-      logger.info('客户端启动成功')
-    } catch (err) {
-      this.connectionManager.updateConnectionState('ERROR')
-      const errorMessage = err instanceof Error ? err.message : '客户端启动失败'
-      logger.error(errorMessage, err)
-      throw err
-    }
-  }
-
-  async stopClient(): Promise<void> {
-    try {
-      this.tokenManager.clear()
-      const client = this.connectionManager.getClient()
-      if (client) {
-        this.eventRouter.detach(client, this.syncManager)
-        this.syncManager.stop()
-        client.stopClient()
-        AvatarUtils.setMxcResolver(null)
-        this.connectionManager.updateConnectionState('DISCONNECTED')
-        // 重置启动守卫，允许下次 startClient 重新初始化
-        this.startClientGuard.reset()
-        logger.info('客户端已停止')
-      }
-    } catch (err) {
-      logger.error('停止客户端失败:', err)
-      throw err
-    }
-  }
-
-  private async forceReconnect(): Promise<void> {
-    const client = this.connectionManager.getClient()
-    if (!client) return
-
-    try {
-      logger.info('[LIFECYCLE] Stopping current sync for reconnect')
-      client.stopClient()
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      this.connectionManager.updateConnectionState('RECONNECTING')
-
-      // 关键修复：必须先 detach 旧监听器 + 销毁 terminated SlidingSync 实例，
-      // 否则 slidingSync.stop() 设置的 terminated=true 会导致新 start() 立即退出，
-      // sync 永不重启；同时 removeAllListeners 会让事件监听器全部丢失。
-      this.eventRouter.detach(client, this.syncManager)
-      this.syncManager.stop()
-
-      const startOpts: StartClientOptions = {
-        initialSyncLimit: 10,
-        pendingEventOrdering: PendingEventOrdering.Detached
-      }
-
-      const config = this.connectionManager.getConfig()
-      if (config?.accessToken) {
-        // 探测 Sliding Sync 端点（与 startClient 保持一致）
-        let slidingSyncSupported = true
-        try {
-          slidingSyncSupported = await client.isSlidingSyncSupported()
-        } catch (probeErr) {
-          logger.warn('[LIFECYCLE] Sliding Sync 探测失败，降级到 /sync:', probeErr)
-          slidingSyncSupported = false
-        }
-
-        if (slidingSyncSupported) {
-          // 创建全新的 SlidingSync 实例（terminated=false，监听器干净）
-          this.syncManager.create(client, config)
-          this.syncManager.resetReady()
-          startOpts.slidingSync = this.syncManager.get()!
-        }
-      }
-
-      // 重新注册所有 handler（与 startClient 一致）
-      this.eventRouter.setSyncStateHandler((state, prevState, data) => {
-        const result = this.connectionManager.mapSyncState(state, prevState, data)
-        if (result.connectionState) {
-          this.connectionManager.updateConnectionState(result.connectionState)
-        }
-        if (result.isReady) {
-          this.syncManager.markReady()
-        }
-      })
-      this.eventRouter.setup(client, this.syncManager)
-
-      // await！原实现不 await 会导致异步错误被静默吞没
-      await client.startClient(startOpts)
-      logger.info('[LIFECYCLE] Sync restarted after system resume')
-    } catch (error) {
-      logger.error('[LIFECYCLE] Failed to reconnect Matrix sync:', error)
-      this.connectionManager.updateConnectionState('ERROR')
-    }
-  }
-
-  // ---- Connection state -------------------------------------------------------
 
   updateConnectionState(state: ConnectionState): void {
-    this.connectionManager.updateConnectionState(state)
+    this.state.updateConnectionState(state)
   }
-
-  // ---- Accessors --------------------------------------------------------------
 
   getClient(): MatrixClient | null {
-    return this.connectionManager.getClient()
-  }
-
-  async waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
-    return this.connectionManager.waitForClientReady(opts)
+    return this.state.getClient()
   }
 
   getSlidingSync(): SlidingSync | null {
-    return this.syncManager.get()
+    return this.state.getSlidingSync()
   }
 
   getRustCryptoDebugState(): RustCryptoDebugState {
-    return this.cryptoTracker.getRustCryptoDebugState()
+    return this.state.getRustCryptoDebugState()
   }
 
   /**
@@ -736,33 +187,27 @@ class MatrixClientService {
    * 用于在登录后判断加密功能是否可用，若不可用则在加密房间无法发送消息。
    */
   isCryptoReady(): boolean {
-    return this.cryptoTracker.getRustCryptoDebugState().initialized
+    return this.state.isCryptoReady()
   }
 
   getEventDecryptedDebugState(): EventDecryptedDebugState {
-    return this.cryptoTracker.getEventDecryptedDebugState()
-  }
-
-  async waitForSlidingSyncReady(timeoutMs: number = 10000): Promise<boolean> {
-    return this.syncManager.waitForReady(timeoutMs)
+    return this.state.getEventDecryptedDebugState()
   }
 
   getConnectionState(): ConnectionState {
-    return this.connectionManager.getConnectionState()
+    return this.state.getConnectionState()
   }
 
   getUserId(): string | null {
-    return this.connectionManager.getClient()?.getUserId() ?? null
+    return this.state.getUserId()
   }
 
   getAccessToken(): string | null {
-    const client = this.connectionManager.getClient()
-    return client?.getAccessToken?.() ?? this.connectionManager.getConfig()?.accessToken ?? null
+    return this.state.getAccessToken()
   }
 
   getHomeserverUrl(): string | null {
-    const client = this.connectionManager.getClient()
-    return client?.getHomeserverUrl?.() ?? this.connectionManager.getConfig()?.homeserverUrl ?? null
+    return this.state.getHomeserverUrl()
   }
 
   /**
@@ -772,40 +217,45 @@ class MatrixClientService {
    * 客户端未初始化时返回空字符串。
    */
   getServerDomain(): string {
-    const client = this.connectionManager.getClient()
-    return client?.getDomain?.() ?? ''
+    return this.state.getServerDomain()
   }
 
   getDeviceId(): string | null {
-    return this.connectionManager.getClient()?.getDeviceId() ?? null
+    return this.state.getDeviceId()
   }
 
   getUser(userId: string): User | null {
-    return this.connectionManager.getClient()?.getUser(userId) ?? null
+    return this.state.getUser(userId)
   }
 
   isRoomEncrypted(roomId: string): boolean {
-    return this.connectionManager.getClient()?.isRoomEncrypted?.(roomId) ?? false
+    return this.state.isRoomEncrypted(roomId)
   }
 
-  // ---- Space management -------------------------------------------------------
+  // ---- Room operations --------------------------------------------------------
 
-  private static readonly DEFAULT_MODERATOR_POWER_LEVEL = 50
+  getRooms(): Room[] {
+    return this.roomOps.getRooms()
+  }
+
+  getRoom(roomId: string): Room | null {
+    return this.roomOps.getRoom(roomId)
+  }
+
+  async createRoom(options: ICreateRoomOpts): Promise<Room> {
+    return this.roomOps.createRoom(options)
+  }
+
+  async joinRoom(roomId: string): Promise<Room> {
+    return this.roomOps.joinRoom(roomId)
+  }
+
+  async leaveRoom(roomId: string): Promise<void> {
+    return this.roomOps.leaveRoom(roomId)
+  }
 
   canManageSpace(spaceId: string): boolean {
-    const client = this.connectionManager.getClient()
-    if (!client || !spaceId) return false
-
-    const userId = client.getUserId()
-    const room = client.getRoom(spaceId)
-    if (!userId || !room || room.getMyMembership?.() !== 'join') {
-      return false
-    }
-
-    const member = room.getMember(userId) ?? room.currentState?.getMember?.(userId)
-    const powerLevel =
-      member?.powerLevel ?? (member as { getPowerLevel?: () => number } | undefined)?.getPowerLevel?.() ?? 0
-    return powerLevel >= MatrixClientService.DEFAULT_MODERATOR_POWER_LEVEL
+    return this.roomOps.canManageSpace(spaceId)
   }
 
   // ---- Manager stats ----------------------------------------------------------
@@ -814,160 +264,7 @@ class MatrixClientService {
     name: string
     stats: { total: number; successful: number; failed: number; retried: number }
   }> {
-    const client = this.connectionManager.getClient()
-    if (!client) return []
-
-    const results: Array<{
-      name: string
-      stats: { total: number; successful: number; failed: number; retried: number }
-    }> = []
-    const getterNames = this.extractManagerGetterNames(client)
-
-    for (const getterName of getterNames) {
-      const getter: unknown = (client as unknown as Record<string, unknown>)[getterName]
-      if (typeof getter !== 'function') continue
-      try {
-        const manager = (getter as () => unknown).call(client)
-        if (
-          manager &&
-          typeof (
-            manager as {
-              getRequestStats?: () => { total: number; successful: number; failed: number; retried: number }
-            }
-          ).getRequestStats === 'function'
-        ) {
-          const stats = (
-            manager as { getRequestStats: () => { total: number; successful: number; failed: number; retried: number } }
-          ).getRequestStats()
-          const managerName = this.toManagerMetricName(getterName)
-          results.push({ name: managerName, stats })
-        }
-      } catch {
-        // ignore individual manager access errors
-      }
-    }
-
-    return results
-  }
-
-  private extractManagerGetterNames(client: object): string[] {
-    const getterNames = new Set<string>()
-    let prototype = Object.getPrototypeOf(client)
-
-    while (prototype && prototype !== Object.prototype) {
-      for (const name of Object.getOwnPropertyNames(prototype)) {
-        if (name !== 'constructor' && /^get[A-Z].*Manager$/.test(name)) {
-          getterNames.add(name)
-        }
-      }
-      prototype = Object.getPrototypeOf(prototype)
-    }
-
-    return [...getterNames]
-  }
-
-  private toManagerMetricName(getterName: string): string {
-    const baseName = getterName.replace(/^get/, '').replace(/Manager$/, '')
-    return baseName ? baseName.charAt(0).toLowerCase() + baseName.slice(1) : getterName
-  }
-
-  // ---- Room operations --------------------------------------------------------
-
-  getRooms(): Room[] {
-    return this.connectionManager.getClient()?.getRooms() ?? []
-  }
-
-  getRoom(roomId: string): Room | null {
-    return this.connectionManager.getClient()?.getRoom(roomId) ?? null
-  }
-
-  async createRoom(options: ICreateRoomOpts): Promise<Room> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const response = await client.createRoom(options)
-      logger.info(`创建房间成功: ${response.room_id}`)
-      // SDK 的 createRoom 只发 HTTP 请求返回 { room_id }，不会立即写入 client.store。
-      // 房间进入 store 依赖 sync 循环在后续 sync 响应中处理（sync.ts:1687 storeRoom）。
-      // 因此创建后轮询等待 sync 把房间带入 store，而非立即查询（会因时序返回 null）。
-      const room = await this.waitForRoom(client, response.room_id, 5000)
-      if (!room) {
-        throw new Error(useI18nGlobal().t('matrix_error.client.room_instance_failed_after_create'))
-      }
-      return room
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err)
-      logger.error(`创建房间失败: ${errorMessage}`)
-      throw err
-    }
-  }
-
-  /**
-   * 轮询等待 client.store 中出现指定 roomId 的 Room 实例。
-   *
-   * SDK createRoom/joinRoom 返回后，房间不会立即进入 store，必须等 sync 循环处理。
-   * 此方法以 100ms 间隔轮询，直到房间出现或超时。
-   *
-   * @param client MatrixClient 实例
-   * @param roomId 房间 ID
-   * @param timeoutMs 超时毫秒数（默认 5000ms）
-   * @returns Room 实例，超时返回 null
-   */
-  private async waitForRoom(
-    client: ReturnType<MatrixConnectionManager['getClient']>,
-    roomId: string,
-    timeoutMs = 5000
-  ): Promise<Room | null> {
-    const deadline = Date.now() + timeoutMs
-    while (Date.now() < deadline) {
-      const room = client?.getRoom(roomId)
-      if (room) return room
-      await new Promise((resolve) => setTimeout(resolve, 100))
-    }
-    return client?.getRoom(roomId) ?? null
-  }
-
-  async joinRoom(roomId: string): Promise<Room> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.joinRoom(roomId)
-      logger.info(`加入房间成功: ${roomId}`)
-      // 与 createRoom 同理：joinRoom 返回后房间需等 sync 循环写入 store
-      const room = await this.waitForRoom(client, roomId, 5000)
-      if (!room) {
-        throw new Error(useI18nGlobal().t('matrix_error.client.room_instance_failed_after_join'))
-      }
-      return room
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : useI18nGlobal().t('matrix_error.client.join_room_failed')
-      logger.error(errorMessage)
-      throw err
-    }
-  }
-
-  async leaveRoom(roomId: string): Promise<void> {
-    const client = this.connectionManager.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.leave(roomId)
-      logger.info(`离开房间成功: ${roomId}`)
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : useI18nGlobal().t('matrix_error.client.leave_room_failed')
-      logger.error(errorMessage)
-      throw err
-    }
+    return this.telemetry.getManagerStatsList()
   }
 
   // ---- Event system -----------------------------------------------------------
@@ -991,16 +288,3 @@ if (!existing) {
   g[SINGLETON_KEY] = matrixClientService
 }
 export default matrixClientService
-
-/**
- * P0-#2：解析 token 登录应使用的 deviceId。
- * 优先复用配置中已持久化的 deviceId，避免每次 token 登录都生成新设备，
- * 否则 Rust Crypto 存储会因「账号不匹配」而清空并降级为非加密模式。
- * 仅当配置中无 deviceId 时，才回退到 sdk 初始化时生成的设备（或 whoami 回填）。
- */
-export function resolveStableDeviceId(
-  config: MatrixClientConfig,
-  clientGeneratedId: string | undefined
-): string | undefined {
-  return config.deviceId ?? clientGeneratedId
-}

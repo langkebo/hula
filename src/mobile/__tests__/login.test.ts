@@ -150,7 +150,7 @@ const mobileLoadingRef = ref(false)
 const mobileLoginTextRef = ref('登录')
 const mobileLoginDisabledRef = ref(false)
 
-vi.mock('@/composables/user/useLoginFlow', () => ({
+vi.mock('@/shared/composables/useLoginFlow', () => ({
   useLoginFlow: () => ({
     normalLogin: vi.fn(),
     loading: mobileLoadingRef,

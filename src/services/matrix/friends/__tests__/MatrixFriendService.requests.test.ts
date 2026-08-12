@@ -33,7 +33,10 @@ describe('FT-107: getIncomingRequests/getOutgoingRequests 使用 normalizeSynaps
   })
 
   it('normalizeSynapseFriendRequest 支持方向参数（incoming 用 requester，outgoing 用 recipient）', () => {
-    const methodMatch = sourceContent.match(/private normalizeSynapseFriendRequest[\s\S]*?\n {2}\}/)
+    // FT-107: normalizeSynapseFriendRequest 已抽到 friendUtils.ts 纯函数模块
+    const utilsPath = resolve(process.cwd(), 'src/services/matrix/friends/friendUtils.ts')
+    const utilsContent = readFileSync(utilsPath, 'utf8')
+    const methodMatch = utilsContent.match(/function normalizeSynapseFriendRequest[\s\S]*?\n}/)
     expect(methodMatch).toBeTruthy()
     const methodBody = methodMatch![0]
 

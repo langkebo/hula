@@ -10,8 +10,8 @@
  * After refactoring:
  * - fetchRelations / fetchRelationsByType use `client.relations()` (SDK high-level,
  *   hits /_matrix/client/v1/rooms/.../relations/...).
- * - getAggregations uses `authedRequestWithPath` (wrapper around authedRequest,
- *   hits /_matrix/client/v3/rooms/.../aggregations/...).
+ * - getAggregations uses `client.getRelationsManager().getAggregations()` (SDK high-level,
+ *   hits /_matrix/client/v1/rooms/.../aggregations/... per Matrix spec v1).
  * - sendRelation uses `client.sendEvent()` (SDK high-level,
  *   hits /_matrix/client/v3/rooms/.../send/...).
  */
@@ -54,8 +54,8 @@ setupMswServer(
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ chunk: [{ event_id: '$rel-2' }] })
   }),
-  // getAggregations → authedRequestWithPath → SDK default prefix V3
-  http.get(`${HOMESERVER}${PREFIX_V3}/rooms/:roomId/aggregations/:eventId/:relType`, ({ request }) => {
+  // getAggregations → client.getRelationsManager().getAggregations() → SDK RelationsManager uses ClientPrefix.V1 (per Matrix spec)
+  http.get(`${HOMESERVER}${PREFIX_V1}/rooms/:roomId/aggregations/:eventId/:relType`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ chunk: [{ type: 'm.annotation', key: '👍', count: 3 }] })
   }),
@@ -120,13 +120,13 @@ describe('Message-relation service URL construction contract (real SDK + msw)', 
     expect(result?.chunk).toHaveLength(1)
   })
 
-  it('getAggregations hits /_matrix/client/v3/rooms/{roomId}/aggregations/{eventId}/{relType} (no duplication)', async () => {
+  it('getAggregations hits /_matrix/client/v1/rooms/{roomId}/aggregations/{eventId}/{relType} (no duplication)', async () => {
     const result = await matrixMessageRelationService.getAggregations('!r:hs', '$e1', 'm.annotation')
 
     expect(seenUrls).toHaveLength(1)
     expect(seenUrls[0].method).toBe('GET')
-    expect(seenUrls[0].url).toBe(`${HOMESERVER}${PREFIX_V3}/rooms/!r%3Ahs/aggregations/%24e1/m.annotation`)
-    expect(seenUrls[0].url).not.toMatch(/\/_matrix\/client\/v3\/_matrix\/client\/v3/)
+    expect(seenUrls[0].url).toBe(`${HOMESERVER}${PREFIX_V1}/rooms/!r%3Ahs/aggregations/%24e1/m.annotation`)
+    expect(seenUrls[0].url).not.toMatch(/\/_matrix\/client\/v1\/_matrix\/client\/v1/)
     expect(result?.chunk?.[0]?.count).toBe(3)
   })
 

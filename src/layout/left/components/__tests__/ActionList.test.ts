@@ -139,7 +139,7 @@ const registerMocks = () => {
     })
   }))
 
-  vi.doMock('@/composables/user/useLoginFlow', () => ({
+  vi.doMock('@/shared/composables/useLoginFlow', () => ({
     useLoginFlow: () => ({
       logout
     })

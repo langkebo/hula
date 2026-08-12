@@ -1,4 +1,6 @@
-import type { EventType, MatrixEvent, Room } from 'matrix-js-sdk'
+/** MatrixThreadService — orchestrator for the thread subsystem. Delegates *ViaApi to MatrixThreadApi, state to MatrixThreadState. */
+
+import type { EventType, MatrixEvent } from 'matrix-js-sdk'
 import {
   MatrixContentField,
   MatrixEventType,
@@ -9,192 +11,20 @@ import {
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
-import { matrixReceiptService } from './MatrixReceiptService'
+import { MatrixThreadApi } from './MatrixThreadApi'
+import { MatrixThreadState } from './MatrixThreadState'
+import type { MessageContent, Thread, ThreadMessage, ThreadViewData } from './threadTypes'
+import { buildDisplayMessage } from './threadUtils'
+
+export type { Thread, ThreadDisplayMessage } from './threadTypes'
 
 const logger = createLogger('MatrixThreadService')
 
-type MsgType = string
-
-interface IContent {
-  [key: string]: unknown
-}
-
-interface RelatesTo {
-  rel_type: string
-  event_id?: string
-  'm.in_reply_to'?: {
-    event_id?: string
-  }
-}
-
-interface MessageContent {
-  msgtype?: MsgType
-  body: string
-  format?: string
-  formatted_body?: string
-  'm.relates_to'?: RelatesTo
-  mute?: boolean
-  frozen?: boolean
-  freeze?: boolean
-  [key: string]: unknown
-}
-
-export interface Thread {
-  id: string
-  rootEventId: string
-  roomId: string
-  replyCount: number
-  lastReply?: {
-    eventId: string
-    sender: string
-    timestamp: number
-    content: IContent
-  }
-  participants: string[]
-}
-
-interface ThreadMessage {
-  eventId: string
-  sender: string
-  content: IContent
-  timestamp: number
-  inReplyTo?: string
-}
-
-export interface ThreadDisplayMessage {
-  eventId: string
-  sender: string
-  senderName: string
-  avatarUrl?: string
-  content: string
-  timestamp: number
-  inReplyTo?: string
-}
-
-interface ThreadViewData {
-  thread: Thread | null
-  rootMessage: ThreadDisplayMessage | null
-  replies: ThreadDisplayMessage[]
-}
-
-interface ThreadListItem {
-  id: string
-  roomId: string
-  threadId: string
-  rootEventId: string
-  rootSender: string
-  rootContent: unknown
-  rootOriginServerTs: number
-  latestEventId: string
-  latestSender: string
-  latestContent: unknown
-  latestOriginServerTs: number
-  replyCount: number
-  participants: string[]
-  isFrozen: boolean
-  createdTs: number
-  updatedTs?: number
-}
-
-interface ThreadStatistics {
-  totalReplies: number
-  totalParticipants: number
-  totalEdits: number
-  totalRedactions: number
-  firstReplyTs?: number
-  lastReplyTs?: number
-  avgReplyTimeMs?: number
-}
-
-interface ThreadSubscription {
-  notificationLevel: string
-  isMuted: boolean
-  subscribedTs?: number
-}
-
-interface ThreadingManagerCompat {
-  getGlobalThreadList?: (
-    limit?: number,
-    from?: string
-  ) => Promise<{ threads: unknown[]; next_batch?: string; total: number }>
-  createGlobalThread?: (
-    roomId: string,
-    rootEventId: string,
-    content?: Record<string, unknown>
-  ) => Promise<Record<string, unknown>>
-  getSubscribedThreads?: () => Promise<unknown[]>
-  getGlobalUnreadThreads?: () => Promise<unknown[]>
-  createRoomThread?: (
-    roomId: string,
-    rootEventId: string,
-    content?: Record<string, unknown>
-  ) => Promise<Record<string, unknown>>
-  getRoomThreadList?: (
-    roomId: string,
-    limit?: number,
-    from?: string,
-    includeAll?: boolean
-  ) => Promise<{ threads: ThreadListItem[]; next_batch?: string }>
-  searchRoomThreads?: (roomId: string, query: string, limit?: number) => Promise<ThreadListItem[]>
-  getRoomUnreadThreads?: (roomId: string) => Promise<unknown[]>
-  getRoomThread?: (
-    roomId: string,
-    threadId: string,
-    includeReplies?: boolean,
-    replyLimit?: number
-  ) => Promise<Record<string, unknown> | null>
-  deleteRoomThread?: (roomId: string, threadId: string) => Promise<void>
-  freezeThread?: (roomId: string, threadId: string) => Promise<void>
-  unfreezeThread?: (roomId: string, threadId: string) => Promise<void>
-  addThreadReply?: (
-    roomId: string,
-    threadId: string,
-    content: Record<string, unknown>,
-    inReplyToEventId?: string
-  ) => Promise<Record<string, unknown>>
-  getThreadReplies?: (roomId: string, threadId: string) => Promise<unknown[]>
-  subscribeToThread?: (roomId: string, threadId: string, notificationLevel: string) => Promise<ThreadSubscription>
-  unsubscribeFromThread?: (roomId: string, threadId: string) => Promise<void>
-  muteThread?: (roomId: string, threadId: string) => Promise<ThreadSubscription>
-  markThreadRead?: (
-    roomId: string,
-    threadId: string,
-    eventId: string,
-    originServerTs: number
-  ) => Promise<Record<string, unknown>>
-  getThreadStats?: (roomId: string, threadId: string) => Promise<ThreadStatistics | null>
-  redactThreadReply?: (roomId: string, eventId: string) => Promise<void>
-  getLegacyRoomThreadList?: (
-    userId: string,
-    roomId: string,
-    limit?: number,
-    from?: string,
-    includeAll?: boolean
-  ) => Promise<{ chunk: unknown[]; next_batch?: string }>
-}
-
 class MatrixThreadService extends BaseMatrixService {
-  private getThreadingManager(): ThreadingManagerCompat | null {
-    const client = matrixClientService.getClient()
-    if (!client) return null
-    return (client as unknown as { threadingManager?: ThreadingManagerCompat }).threadingManager ?? null
-  }
+  private readonly api = new MatrixThreadApi()
+  private readonly state = new MatrixThreadState((roomId, threadRootId) => this.getThreadReplies(roomId, threadRootId))
 
-  private buildDisplayMessage(room: Room, event: MatrixEvent): ThreadDisplayMessage {
-    const sender = event.getSender() || ''
-    const member = room.getMember(sender)
-    const content = event.getContent() as MessageContent
-
-    return {
-      eventId: event.getId() || '',
-      sender,
-      senderName: member?.name || sender,
-      avatarUrl: member?.getMxcAvatarUrl() || undefined,
-      content: content.body || '',
-      timestamp: event.getTs(),
-      inReplyTo: content?.[MatrixContentField.RELATES_TO]?.['m.in_reply_to']?.event_id
-    }
-  }
+  // === Core: create / reply ===
 
   async createThread(
     roomId: string,
@@ -246,7 +76,7 @@ class MatrixThreadService extends BaseMatrixService {
 
     try {
       const messageContent: MessageContent = {
-        msgtype: (content.msgtype || MatrixMsgType.TEXT) as MsgType,
+        msgtype: (content.msgtype || MatrixMsgType.TEXT) as string,
         body: content.body,
         [MatrixContentField.RELATES_TO]: {
           rel_type: MatrixRelType.THREAD,
@@ -267,6 +97,8 @@ class MatrixThreadService extends BaseMatrixService {
       throw err
     }
   }
+
+  // === Query methods (timeline-backed) ===
 
   getThread(roomId: string, threadRootId: string): Thread | null {
     const client = matrixClientService.getClient()
@@ -362,30 +194,18 @@ class MatrixThreadService extends BaseMatrixService {
 
   getThreadViewData(roomId: string, threadRootId: string): ThreadViewData {
     const client = matrixClientService.getClient()
-    if (!client) {
-      return {
-        thread: null,
-        rootMessage: null,
-        replies: []
-      }
-    }
-
-    const room = client.getRoom(roomId)
+    const room = client?.getRoom(roomId)
     if (!room) {
-      return {
-        thread: null,
-        rootMessage: null,
-        replies: []
-      }
+      return { thread: null, rootMessage: null, replies: [] }
     }
 
     const thread = this.getThread(roomId, threadRootId)
     const rootEvent = room.findEventById(threadRootId)
-    const replies = this.getThreadReplies(roomId, threadRootId).map((reply) => this.buildDisplayMessage(room, reply))
+    const replies = this.getThreadReplies(roomId, threadRootId).map((reply) => buildDisplayMessage(room, reply))
 
     return {
       thread,
-      rootMessage: rootEvent ? this.buildDisplayMessage(room, rootEvent) : null,
+      rootMessage: rootEvent ? buildDisplayMessage(room, rootEvent) : null,
       replies
     }
   }
@@ -449,149 +269,6 @@ class MatrixThreadService extends BaseMatrixService {
     })
   }
 
-  isThreadRoot(event: MatrixEvent): boolean {
-    const client = matrixClientService.getClient()
-    if (!client) return false
-
-    const room = client.getRoom(event.getRoomId()!)
-    if (!room) return false
-
-    const eventId = event.getId()
-    if (!eventId) return false
-
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
-
-    for (const e of events) {
-      const content = e.getContent() as MessageContent
-      const relatesTo = content[MatrixContentField.RELATES_TO]
-
-      if (relatesTo?.rel_type === MatrixRelType.THREAD && relatesTo.event_id === eventId) {
-        return true
-      }
-    }
-
-    return false
-  }
-
-  isInThread(event: MatrixEvent): boolean {
-    const content = event.getContent() as MessageContent
-    const relatesTo = content?.[MatrixContentField.RELATES_TO]
-    return relatesTo?.rel_type === MatrixRelType.THREAD
-  }
-
-  isBodyInThread(body: Record<string, unknown>): boolean {
-    const relatesTo = body[MatrixContentField.RELATES_TO] as { rel_type?: string } | undefined
-    return relatesTo?.rel_type === MatrixRelType.THREAD
-  }
-
-  getThreadRootId(event: MatrixEvent): string | null {
-    const content = event.getContent() as MessageContent
-    const relatesTo = content?.[MatrixContentField.RELATES_TO]
-    if (relatesTo?.rel_type === MatrixRelType.THREAD) {
-      return relatesTo.event_id || null
-    }
-    return null
-  }
-
-  async getThreadNotificationCount(roomId: string, threadRootId: string): Promise<number> {
-    const client = matrixClientService.getClient()
-    if (!client) return 0
-
-    const room = client.getRoom(roomId)
-    if (!room) return 0
-
-    const myUserId = client.getUserId()
-    if (!myUserId) return 0
-
-    const receipt = room.getEventReadUpTo(myUserId, false)
-    const replies = this.getThreadReplies(roomId, threadRootId)
-
-    let unreadCount = 0
-    for (const reply of replies) {
-      if (reply.getId() === receipt) break
-      if (reply.getSender() !== myUserId) {
-        unreadCount++
-      }
-    }
-
-    return unreadCount
-  }
-
-  async markThreadAsRead(roomId: string, threadRootId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) return
-
-    const replies = this.getThreadReplies(roomId, threadRootId)
-    const lastReply = replies[replies.length - 1]
-
-    if (lastReply) {
-      await matrixReceiptService.sendReadReceiptByEventId(roomId, lastReply.getId()!)
-      logger.info(`[MatrixThread] 标记线程已读: ${threadRootId}`)
-    }
-  }
-
-  async muteThread(roomId: string, threadRootId: string, mute: boolean): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.sendEvent(roomId, 'm.thread_mute' as EventType, {
-        [MatrixContentField.RELATES_TO]: {
-          rel_type: MatrixRelType.THREAD,
-          event_id: threadRootId
-        },
-        mute: mute
-      })
-      logger.info(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程成功: ${threadRootId}`)
-    } catch (err) {
-      logger.error(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程失败: ${err}`)
-      throw err
-    }
-  }
-
-  async freezeThread(roomId: string, threadRootId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.sendEvent(roomId, 'm.thread_freeze' as EventType, {
-        [MatrixContentField.RELATES_TO]: {
-          rel_type: MatrixRelType.THREAD,
-          event_id: threadRootId
-        }
-      })
-      logger.info(`[MatrixThread] 冻结线程成功: ${threadRootId}`)
-    } catch (err) {
-      logger.error(`[MatrixThread] 冻结线程失败: ${err}`)
-      throw err
-    }
-  }
-
-  async unfreezeThread(roomId: string, threadRootId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.sendEvent(roomId, 'm.thread_unfreeze' as EventType, {
-        [MatrixContentField.RELATES_TO]: {
-          rel_type: MatrixRelType.THREAD,
-          event_id: threadRootId
-        }
-      })
-      logger.info(`[MatrixThread] 解冻线程成功: ${threadRootId}`)
-    } catch (err) {
-      logger.error(`[MatrixThread] 解冻线程失败: ${err}`)
-      throw err
-    }
-  }
-
   async getUnreadThreads(roomId?: string): Promise<Thread[]> {
     const client = matrixClientService.getClient()
     if (!client) return []
@@ -603,7 +280,7 @@ class MatrixThreadService extends BaseMatrixService {
     if (!myUserId) return []
 
     for (const thread of threads) {
-      const unreadCount = await this.getThreadNotificationCount(roomId!, thread.id)
+      const unreadCount = await this.state.getThreadNotificationCount(roomId!, thread.id)
       if (unreadCount > 0) {
         unreadThreads.push(thread)
       }
@@ -613,335 +290,107 @@ class MatrixThreadService extends BaseMatrixService {
     return unreadThreads
   }
 
-  isThreadMuted(threadRootId: string): boolean {
-    const client = matrixClientService.getClient()
-    if (!client) return false
-
-    const rooms = client.getRooms()
-    for (const room of rooms) {
-      const timelineSet = room.getUnfilteredTimelineSet()
-      const events = timelineSet.getLiveTimeline().getEvents()
-
-      for (const event of events) {
-        const content = event.getContent() as MessageContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-
-        if (
-          relatesTo?.rel_type === MatrixRelType.THREAD &&
-          relatesTo.event_id === threadRootId &&
-          content.mute === true
-        ) {
-          return true
-        }
-      }
-    }
-
-    return false
+  isThreadRoot(event: MatrixEvent) {
+    return this.state.isThreadRoot(event)
+  }
+  isInThread(event: MatrixEvent) {
+    return this.state.isInThread(event)
+  }
+  isBodyInThread(body: Record<string, unknown>) {
+    return this.state.isBodyInThread(body)
+  }
+  getThreadRootId(event: MatrixEvent) {
+    return this.state.getThreadRootId(event)
+  }
+  isThreadMuted(threadRootId: string) {
+    return this.state.isThreadMuted(threadRootId)
+  }
+  isThreadFrozen(threadRootId: string) {
+    return this.state.isThreadFrozen(threadRootId)
+  }
+  async freezeThread(roomId: string, threadRootId: string) {
+    return this.state.freezeThread(roomId, threadRootId)
+  }
+  async unfreezeThread(roomId: string, threadRootId: string) {
+    return this.state.unfreezeThread(roomId, threadRootId)
+  }
+  async markThreadAsRead(roomId: string, threadRootId: string) {
+    return this.state.markThreadAsRead(roomId, threadRootId)
+  }
+  async muteThread(roomId: string, threadRootId: string, mute: boolean) {
+    return this.state.muteThread(roomId, threadRootId, mute)
+  }
+  async getThreadNotificationCount(roomId: string, threadRootId: string) {
+    return this.state.getThreadNotificationCount(roomId, threadRootId)
   }
 
-  isThreadFrozen(threadRootId: string): boolean {
-    const client = matrixClientService.getClient()
-    if (!client) return false
-
-    const rooms = client.getRooms()
-    for (const room of rooms) {
-      const timelineSet = room.getUnfilteredTimelineSet()
-      const events = timelineSet.getLiveTimeline().getEvents()
-
-      for (const event of events) {
-        const content = event.getContent() as MessageContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-
-        if (
-          relatesTo?.rel_type === MatrixRelType.THREAD &&
-          relatesTo.event_id === threadRootId &&
-          (content.frozen !== undefined || content.freeze !== undefined)
-        ) {
-          return true
-        }
-      }
-    }
-
-    return false
+  async getGlobalThreadListViaApi(limit = 50, from?: string) {
+    return this.api.getGlobalThreadListViaApi(limit, from)
   }
-
-  async getGlobalThreadListViaApi(
-    limit = 50,
-    from?: string
-  ): Promise<{ threads: unknown[]; nextBatch?: string; total: number }> {
-    const manager = this.getThreadingManager()
-    if (!manager?.getGlobalThreadList) return { threads: [], total: 0 }
-    try {
-      const result = await manager.getGlobalThreadList(limit, from)
-      return { threads: result.threads, nextBatch: result.next_batch, total: result.total }
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取全局线程列表失败: ${err}`)
-      return { threads: [], total: 0 }
-    }
+  async getSubscribedThreadsViaApi() {
+    return this.api.getSubscribedThreadsViaApi()
   }
-
-  async createGlobalThreadViaApi(
-    roomId: string,
-    rootEventId: string,
-    content?: Record<string, unknown>
-  ): Promise<Record<string, unknown> | null> {
-    const manager = this.getThreadingManager()
-    if (!manager?.createGlobalThread) return null
-    try {
-      return await manager.createGlobalThread(roomId, rootEventId, content)
-    } catch (err) {
-      logger.error(`[MatrixThread] 全局创建线程失败: ${err}`)
-      throw err
-    }
+  async getGlobalUnreadThreadsViaApi() {
+    return this.api.getGlobalUnreadThreadsViaApi()
   }
-
-  async getSubscribedThreadsViaApi(): Promise<unknown[]> {
-    const manager = this.getThreadingManager()
-    if (!manager?.getSubscribedThreads) return []
-    try {
-      const result = await manager.getSubscribedThreads()
-      return Array.isArray(result) ? result : []
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取已订阅线程失败: ${err}`)
-      return []
-    }
+  async getRoomUnreadThreadsViaApi(roomId: string) {
+    return this.api.getRoomUnreadThreadsViaApi(roomId)
   }
-
-  async getGlobalUnreadThreadsViaApi(): Promise<unknown[]> {
-    const manager = this.getThreadingManager()
-    if (!manager?.getGlobalUnreadThreads) return []
-    try {
-      const result = await manager.getGlobalUnreadThreads()
-      return Array.isArray(result) ? result : []
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取全局未读线程失败: ${err}`)
-      return []
-    }
+  async freezeThreadViaApi(roomId: string, threadId: string) {
+    return this.api.freezeThreadViaApi(roomId, threadId)
   }
-
-  async createRoomThreadViaApi(
-    roomId: string,
-    rootEventId: string,
-    content?: Record<string, unknown>
-  ): Promise<Record<string, unknown> | null> {
-    const manager = this.getThreadingManager()
-    if (!manager?.createRoomThread) return null
-    try {
-      return await manager.createRoomThread(roomId, rootEventId, content)
-    } catch (err) {
-      logger.error(`[MatrixThread] 房间内创建线程失败: ${err}`)
-      throw err
-    }
+  async unfreezeThreadViaApi(roomId: string, threadId: string) {
+    return this.api.unfreezeThreadViaApi(roomId, threadId)
   }
-
-  async getRoomThreadListViaApi(
-    roomId: string,
-    limit = 50,
-    from?: string,
-    includeAll = false
-  ): Promise<{ threads: ThreadListItem[]; nextBatch?: string }> {
-    const manager = this.getThreadingManager()
-    if (!manager?.getRoomThreadList) return { threads: [] }
-    try {
-      const result = await manager.getRoomThreadList(roomId, limit, from, includeAll)
-      return { threads: result.threads ?? [], nextBatch: result.next_batch }
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取房间线程列表失败: ${err}`)
-      return { threads: [] }
-    }
+  async muteThreadViaApi(roomId: string, threadId: string) {
+    return this.api.muteThreadViaApi(roomId, threadId)
   }
-
-  async searchRoomThreadsViaApi(roomId: string, query: string, limit = 20): Promise<ThreadListItem[]> {
-    const manager = this.getThreadingManager()
-    if (!manager?.searchRoomThreads) return []
-    try {
-      return (await manager.searchRoomThreads(roomId, query, limit)) ?? []
-    } catch (err) {
-      logger.error(`[MatrixThread] 搜索房间线程失败: ${err}`)
-      return []
-    }
+  async getThreadStatsViaApi(roomId: string, threadId: string) {
+    return this.api.getThreadStatsViaApi(roomId, threadId)
   }
-
-  async getRoomUnreadThreadsViaApi(roomId: string): Promise<unknown[]> {
-    const manager = this.getThreadingManager()
-    if (!manager?.getRoomUnreadThreads) return []
-    try {
-      const result = await manager.getRoomUnreadThreads(roomId)
-      return Array.isArray(result) ? result : []
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取房间未读线程失败: ${err}`)
-      return []
-    }
+  async redactThreadReplyViaApi(roomId: string, eventId: string) {
+    return this.api.redactThreadReplyViaApi(roomId, eventId)
   }
-
-  async getRoomThreadViaApi(
-    roomId: string,
-    threadId: string,
-    includeReplies = true,
-    replyLimit = 50
-  ): Promise<Record<string, unknown> | null> {
-    const manager = this.getThreadingManager()
-    if (!manager?.getRoomThread) return null
-    try {
-      return await manager.getRoomThread(roomId, threadId, includeReplies, replyLimit)
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取线程详情失败: ${err}`)
-      return null
-    }
+  async deleteRoomThreadViaApi(roomId: string, threadId: string) {
+    return this.api.deleteRoomThreadViaApi(roomId, threadId)
   }
-
-  async deleteRoomThreadViaApi(roomId: string, threadId: string): Promise<void> {
-    const manager = this.getThreadingManager()
-    if (!manager?.deleteRoomThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
-    try {
-      await manager.deleteRoomThread(roomId, threadId)
-    } catch (err) {
-      logger.error(`[MatrixThread] 删除线程失败: ${err}`)
-      throw err
-    }
+  async getThreadRepliesViaApi(roomId: string, threadId: string) {
+    return this.api.getThreadRepliesViaApi(roomId, threadId)
   }
-
-  async freezeThreadViaApi(roomId: string, threadId: string): Promise<void> {
-    const manager = this.getThreadingManager()
-    if (!manager?.freezeThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
-    try {
-      await manager.freezeThread(roomId, threadId)
-    } catch (err) {
-      logger.error(`[MatrixThread] 冻结线程失败: ${err}`)
-      throw err
-    }
+  async unsubscribeFromThreadViaApi(roomId: string, threadId: string) {
+    return this.api.unsubscribeFromThreadViaApi(roomId, threadId)
   }
-
-  async unfreezeThreadViaApi(roomId: string, threadId: string): Promise<void> {
-    const manager = this.getThreadingManager()
-    if (!manager?.unfreezeThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
-    try {
-      await manager.unfreezeThread(roomId, threadId)
-    } catch (err) {
-      logger.error(`[MatrixThread] 解冻线程失败: ${err}`)
-      throw err
-    }
+  async createGlobalThreadViaApi(roomId: string, rootEventId: string, content?: Record<string, unknown>) {
+    return this.api.createGlobalThreadViaApi(roomId, rootEventId, content)
   }
-
+  async createRoomThreadViaApi(roomId: string, rootEventId: string, content?: Record<string, unknown>) {
+    return this.api.createRoomThreadViaApi(roomId, rootEventId, content)
+  }
+  async searchRoomThreadsViaApi(roomId: string, query: string, limit = 20) {
+    return this.api.searchRoomThreadsViaApi(roomId, query, limit)
+  }
+  async getRoomThreadViaApi(roomId: string, threadId: string, includeReplies = true, replyLimit = 50) {
+    return this.api.getRoomThreadViaApi(roomId, threadId, includeReplies, replyLimit)
+  }
+  async getRoomThreadListViaApi(roomId: string, limit = 50, from?: string, includeAll = false) {
+    return this.api.getRoomThreadListViaApi(roomId, limit, from, includeAll)
+  }
   async addThreadReplyViaApi(
     roomId: string,
     threadId: string,
     content: Record<string, unknown>,
     inReplyToEventId?: string
-  ): Promise<Record<string, unknown> | null> {
-    const manager = this.getThreadingManager()
-    if (!manager?.addThreadReply) return null
-    try {
-      return await manager.addThreadReply(roomId, threadId, content, inReplyToEventId)
-    } catch (err) {
-      logger.error(`[MatrixThread] 添加线程回复失败: ${err}`)
-      throw err
-    }
+  ) {
+    return this.api.addThreadReplyViaApi(roomId, threadId, content, inReplyToEventId)
   }
-
-  async getThreadRepliesViaApi(roomId: string, threadId: string): Promise<unknown[]> {
-    const manager = this.getThreadingManager()
-    if (!manager?.getThreadReplies) return []
-    try {
-      const result = await manager.getThreadReplies(roomId, threadId)
-      return Array.isArray(result) ? result : []
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取线程回复失败: ${err}`)
-      return []
-    }
+  async subscribeToThreadViaApi(roomId: string, threadId: string, notificationLevel = 'all') {
+    return this.api.subscribeToThreadViaApi(roomId, threadId, notificationLevel)
   }
-
-  async subscribeToThreadViaApi(
-    roomId: string,
-    threadId: string,
-    notificationLevel = 'all'
-  ): Promise<ThreadSubscription | null> {
-    const manager = this.getThreadingManager()
-    if (!manager?.subscribeToThread) return null
-    try {
-      return await manager.subscribeToThread(roomId, threadId, notificationLevel)
-    } catch (err) {
-      logger.error(`[MatrixThread] 订阅线程失败: ${err}`)
-      throw err
-    }
+  async markThreadReadViaApi(roomId: string, threadId: string, eventId: string, originServerTs: number) {
+    return this.api.markThreadReadViaApi(roomId, threadId, eventId, originServerTs)
   }
-
-  async unsubscribeFromThreadViaApi(roomId: string, threadId: string): Promise<void> {
-    const manager = this.getThreadingManager()
-    if (!manager?.unsubscribeFromThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
-    try {
-      await manager.unsubscribeFromThread(roomId, threadId)
-    } catch (err) {
-      logger.error(`[MatrixThread] 取消订阅线程失败: ${err}`)
-      throw err
-    }
-  }
-
-  async muteThreadViaApi(roomId: string, threadId: string): Promise<ThreadSubscription | null> {
-    const manager = this.getThreadingManager()
-    if (!manager?.muteThread) return null
-    try {
-      return await manager.muteThread(roomId, threadId)
-    } catch (err) {
-      logger.error(`[MatrixThread] 静音线程失败: ${err}`)
-      throw err
-    }
-  }
-
-  async markThreadReadViaApi(
-    roomId: string,
-    threadId: string,
-    eventId: string,
-    originServerTs: number
-  ): Promise<Record<string, unknown> | null> {
-    const manager = this.getThreadingManager()
-    if (!manager?.markThreadRead) return null
-    try {
-      return await manager.markThreadRead(roomId, threadId, eventId, originServerTs)
-    } catch (err) {
-      logger.error(`[MatrixThread] 标记线程已读失败: ${err}`)
-      return null
-    }
-  }
-
-  async getThreadStatsViaApi(roomId: string, threadId: string): Promise<ThreadStatistics | null> {
-    const manager = this.getThreadingManager()
-    if (!manager?.getThreadStats) return null
-    try {
-      return await manager.getThreadStats(roomId, threadId)
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取线程统计失败: ${err}`)
-      return null
-    }
-  }
-
-  async redactThreadReplyViaApi(roomId: string, eventId: string): Promise<void> {
-    const manager = this.getThreadingManager()
-    if (!manager?.redactThreadReply) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
-    try {
-      await manager.redactThreadReply(roomId, eventId)
-    } catch (err) {
-      logger.error(`[MatrixThread] 撤回线程回复失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getLegacyRoomThreadList(
-    userId: string,
-    roomId: string,
-    limit = 50,
-    from?: string,
-    includeAll = false
-  ): Promise<{ chunk: unknown[]; nextBatch?: string }> {
-    const manager = this.getThreadingManager()
-    if (!manager?.getLegacyRoomThreadList) return { chunk: [] }
-    try {
-      const result = await manager.getLegacyRoomThreadList(userId, roomId, limit, from, includeAll)
-      return { chunk: result.chunk ?? [], nextBatch: result.next_batch }
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取兼容旧版线程列表失败: ${err}`)
-      return { chunk: [] }
-    }
+  async getLegacyRoomThreadList(userId: string, roomId: string, limit = 50, from?: string, includeAll = false) {
+    return this.api.getLegacyRoomThreadList(userId, roomId, limit, from, includeAll)
   }
 }
 

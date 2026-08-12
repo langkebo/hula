@@ -1,4 +1,5 @@
 import { useMitt } from '@/composables/common/useMitt'
+import { WsResponseMessageType, type WsTokenExpire } from '@/services/legacy/wsType'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import {
   ClientEvent,
@@ -10,7 +11,6 @@ import {
   RoomStateEvent
 } from '@/services/matrix/sdk'
 import type { RevokedMsgType } from '@/services/types'
-import { WsResponseMessageType, type WsTokenExpire } from '@/services/wsType'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixWsBridge')

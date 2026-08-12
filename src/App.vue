@@ -289,7 +289,7 @@ const requestIOSNetworkPermission = async () => {
 const setupMobileReLoginListener = async () => {
   if (!isMobile()) return
   try {
-    const { useLoginFlow } = await import('@/composables/user/useLoginFlow')
+    const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
     const { useTauriListener } = await import('@/composables/common/useTauriListener')
     const { listen } = await import('@tauri-apps/api/event')
     const { addListener } = useTauriListener()

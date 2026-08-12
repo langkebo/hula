@@ -3209,6 +3209,7 @@ export type I18nKeys = {
       "meeting_widget_name": "房间会议",
       "member_count": "{count} 位成员",
       "member_count_online": "{count} 人在线",
+      "channel": "频道",
       "toolbar": {
         "audio_call": "语音通话",
         "video_call": "视频通话",

@@ -1,14 +1,18 @@
 /**
- * 登录页 UI 编排层。
+ * 登录页 UI 编排层（桌面端 + 移动端共享）。
  *
  * 该 composable 仅负责表单状态、平台跳转和触发统一会话服务，
  * 不再直接承载底层 Matrix 登录、会话恢复或退出编排实现。
+ *
+ * 桌面端通过 useLoginOrchestrator 间接调用，
+ * 移动端 login.vue 直接调用。
  */
 
 import { useNetwork } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { translateMatrixError } from '@/common/matrixErrorTranslator'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
@@ -17,13 +21,13 @@ import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { UserInfoType } from '@/services/types'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
-import { useMitt } from '../common/useMitt'
 
 const logger = createLogger('useLoginFlow')
 
@@ -31,6 +35,7 @@ export const useLoginFlow = () => {
   const settingStore = useSettingStore()
   const userStore = useUserStore()
   const matrixStore = useMatrixStore()
+  const loginHistoriesStore = useLoginHistoriesStore()
 
   const { t } = useI18nGlobal()
   const { showFeedback } = useActionFeedback()
@@ -280,10 +285,43 @@ export const useLoginFlow = () => {
     await normalLogin('PC', true, false)
   }
 
+  /**
+   * 选择历史账号并填充登录表单。
+   * 桌面端和移动端共用此逻辑。
+   */
+  const selectAccount = (item: {
+    account?: string
+    password?: string
+    avatar?: string
+    name?: string
+    uid?: string
+  }) => {
+    info.value.account = item.account || ''
+    info.value.password = item.password || ''
+    info.value.avatar = item.avatar || ''
+    info.value.name = item.name || ''
+    info.value.uid = item.uid || ''
+  }
+
+  /**
+   * 删除历史账号记录并清空登录表单。
+   * 桌面端和移动端共用此逻辑。
+   */
+  const deleteAccountHistory = (item: UserInfoType) => {
+    loginHistoriesStore.removeLoginHistory(item)
+    info.value.account = ''
+    info.value.password = ''
+    info.value.avatar = ''
+    info.value.name = ''
+    info.value.uid = ''
+  }
+
   return {
     logout,
     normalLogin,
     retryLogin,
+    selectAccount,
+    deleteAccountHistory,
     loading,
     loginText,
     loginDisabled,

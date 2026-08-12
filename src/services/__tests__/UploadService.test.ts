@@ -11,7 +11,7 @@ vi.mock('@/services/backend', () => ({
   })
 }))
 
-const { uploadService } = await import('@/services/UploadService')
+const { uploadService } = await import('@/services/performance/UploadService')
 
 const server = setupServer()
 

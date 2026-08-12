@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const initConfigMock = vi.fn()
-vi.mock('@/services/ConfigService', () => ({
+vi.mock('@/services/backend/ConfigService', () => ({
   configService: {
     initConfig: () => initConfigMock()
   }
