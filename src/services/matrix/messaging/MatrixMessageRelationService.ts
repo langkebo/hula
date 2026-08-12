@@ -1,4 +1,4 @@
-import { Direction, type MatrixEvent } from 'matrix-js-sdk'
+import type { MatrixEvent } from 'matrix-js-sdk'
 import {
   MatrixContentField,
   MatrixEventType,
@@ -9,97 +9,50 @@ import {
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { getEditedContent, getReplyToEventId, getThreadRootId, isEdited } from './relationEventHelpers'
+import { createRelationQueries } from './relationQueries'
+import type {
+  AggregationsResponse,
+  RelationContent,
+  RelationsResponse,
+  SendRelationResponse,
+  ThreadInfo
+} from './relationTypes'
 
 const logger = createLogger('MatrixMessageRelationService')
 
-type RelatesTo = {
-  rel_type?: string
-  event_id?: string
-  'm.in_reply_to'?: { event_id: string }
-}
-
-type RelationContent = Record<string, unknown> & {
-  'm.relates_to'?: RelatesTo
-  'm.new_content'?: Record<string, unknown>
-}
-
-interface MessageEdit {
-  eventId: string
-  originalContent: Record<string, unknown>
-  newContent: Record<string, unknown>
-  timestamp: number
-  sender: string
-}
-
-interface ReplyChain {
-  eventId: string
-  content: Record<string, unknown>
-  sender: string
-  timestamp: number
-  inReplyTo?: ReplyChain
-}
-
-interface ThreadInfo {
-  threadId: string
-  rootEventId: string
-  replyCount: number
-  participants: string[]
-  lastReply?: {
-    eventId: string
-    sender: string
-    timestamp: number
-  }
-}
-
-interface RelationsResponse {
-  chunk: Array<Record<string, unknown>>
-  next_batch?: string
-  prev_batch?: string
-}
-
-interface AggregationItem {
-  type: string
-  key: string
-  count: number
-}
-
-interface AggregationsResponse {
-  chunk: AggregationItem[]
-}
-
-interface SendRelationResponse {
-  event_id: string
-  room_id: string
-  relates_to: {
-    event_id: string
-    rel_type: string
-  }
-}
-
+/**
+ * Matrix 消息关系服务 — 编辑/回复/线程/删除/关系 API。
+ *
+ * 实现已拆分为三个子模块：
+ * - relationTypes：类型定义
+ * - relationEventHelpers：事件纯函数检查（isEdited / getReplyToEventId 等）
+ * - relationQueries：查询操作工厂（编辑历史、回复链、线程、Relations API）
+ *
+ * 本文件保留：写操作（编辑/回复/删除/发送关系）+ 查询委托。
+ */
 class MatrixMessageRelationService extends BaseMatrixService {
+  private queries = createRelationQueries(() => matrixClientService.getClient())
+
+  // ── 编辑 ──
+
   async editMessage(
     roomId: string,
     originalEventId: string,
     newContent: { body: string; html?: string; msgtype?: string }
   ): Promise<string> {
     const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
+    if (!client) throw new Error(this.t('matrix_error.common.client_not_initialized'))
 
     try {
       const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
-      }
+      if (!room) throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
 
       const originalEvent = room.findEventById(originalEventId)
-      if (!originalEvent) {
+      if (!originalEvent)
         throw new Error(this.t('matrix_error.messaging.original_message_not_found', { originalEventId }))
-      }
 
-      const myUserId = client.getUserId()
-      if (originalEvent.getSender() !== myUserId) {
+      if (originalEvent.getSender() !== client.getUserId()) {
         throw new Error(this.t('matrix_error.messaging.can_only_edit_own_messages'))
       }
 
@@ -107,14 +60,8 @@ class MatrixMessageRelationService extends BaseMatrixService {
         ...(originalEvent.getContent() as RelationContent),
         msgtype: newContent.msgtype || MatrixMsgType.TEXT,
         body: `* ${newContent.body}`,
-        'm.new_content': {
-          msgtype: newContent.msgtype || MatrixMsgType.TEXT,
-          body: newContent.body
-        },
-        [MatrixContentField.RELATES_TO]: {
-          rel_type: 'm.replace',
-          event_id: originalEventId
-        }
+        'm.new_content': { msgtype: newContent.msgtype || MatrixMsgType.TEXT, body: newContent.body },
+        [MatrixContentField.RELATES_TO]: { rel_type: 'm.replace', event_id: originalEventId }
       }
 
       if (newContent.html) {
@@ -136,23 +83,17 @@ class MatrixMessageRelationService extends BaseMatrixService {
 
   async editMediaMessage(roomId: string, originalEventId: string, newCaption?: string): Promise<string> {
     const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
+    if (!client) throw new Error(this.t('matrix_error.common.client_not_initialized'))
 
     try {
       const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
-      }
+      if (!room) throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
 
       const originalEvent = room.findEventById(originalEventId)
-      if (!originalEvent) {
+      if (!originalEvent)
         throw new Error(this.t('matrix_error.messaging.original_message_not_found', { originalEventId }))
-      }
 
-      const myUserId = client.getUserId()
-      if (originalEvent.getSender() !== myUserId) {
+      if (originalEvent.getSender() !== client.getUserId()) {
         throw new Error(this.t('matrix_error.messaging.can_only_edit_own_messages'))
       }
 
@@ -162,14 +103,8 @@ class MatrixMessageRelationService extends BaseMatrixService {
       const content: Record<string, unknown> = {
         ...originalContent,
         body: `* ${newBody}`,
-        'm.new_content': {
-          ...originalContent,
-          body: newBody
-        },
-        [MatrixContentField.RELATES_TO]: {
-          rel_type: 'm.replace',
-          event_id: originalEventId
-        }
+        'm.new_content': { ...originalContent, body: newBody },
+        [MatrixContentField.RELATES_TO]: { rel_type: 'm.replace', event_id: originalEventId }
       }
 
       const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)
@@ -181,63 +116,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     }
   }
 
-  getEditHistory(roomId: string, eventId: string): MessageEdit[] {
-    const client = matrixClientService.getClient()
-    if (!client) return []
-
-    const room = client.getRoom(roomId)
-    if (!room) return []
-
-    const edits: MessageEdit[] = []
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
-
-    for (const event of events) {
-      const content = event.getContent() as RelationContent
-      const relatesTo = content[MatrixContentField.RELATES_TO]
-
-      if (relatesTo?.rel_type === 'm.replace' && relatesTo.event_id === eventId) {
-        const newContent = content['m.new_content']
-        edits.push({
-          eventId: event.getId()!,
-          originalContent: content,
-          newContent: newContent ?? {},
-          timestamp: event.getTs(),
-          sender: event.getSender()!
-        })
-      }
-    }
-
-    return edits.sort((a, b) => a.timestamp - b.timestamp)
-  }
-
-  getLatestEdit(roomId: string, eventId: string): MatrixEvent | null {
-    const client = matrixClientService.getClient()
-    if (!client) return null
-
-    const room = client.getRoom(roomId)
-    if (!room) return null
-
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
-
-    let latestEdit: MatrixEvent | null = null
-    let latestTimestamp = 0
-
-    for (const event of events) {
-      const content = event.getContent() as RelationContent
-      const relatesTo = content[MatrixContentField.RELATES_TO]
-
-      if (relatesTo?.rel_type === 'm.replace' && relatesTo.event_id === eventId) {
-        if (event.getTs() > latestTimestamp) {
-          latestTimestamp = event.getTs()
-          latestEdit = event
-        }
-      }
-    }
-
-    return latestEdit
-  }
+  // ── 回复 ──
 
   async replyToMessage(
     roomId: string,
@@ -245,29 +124,20 @@ class MatrixMessageRelationService extends BaseMatrixService {
     content: { body: string; html?: string; msgtype?: string }
   ): Promise<string> {
     const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
+    if (!client) throw new Error(this.t('matrix_error.common.client_not_initialized'))
 
     try {
       const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
-      }
+      if (!room) throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
 
-      const replyToEvent = room.findEventById(replyToEventId)
-      if (!replyToEvent) {
+      if (!room.findEventById(replyToEventId)) {
         throw new Error(this.t('matrix_error.messaging.reply_message_not_found', { replyToEventId }))
       }
 
       const messageContent: Record<string, unknown> = {
         msgtype: content.msgtype || MatrixMsgType.TEXT,
         body: content.body,
-        [MatrixContentField.RELATES_TO]: {
-          'm.in_reply_to': {
-            event_id: replyToEventId
-          }
-        }
+        [MatrixContentField.RELATES_TO]: { 'm.in_reply_to': { event_id: replyToEventId } }
       }
 
       if (content.html) {
@@ -290,9 +160,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     content: { body: string; html?: string; msgtype?: string }
   ): Promise<string> {
     const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
+    if (!client) throw new Error(this.t('matrix_error.common.client_not_initialized'))
 
     try {
       const messageContent: Record<string, unknown> = {
@@ -301,9 +169,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
         [MatrixContentField.RELATES_TO]: {
           rel_type: MatrixRelType.THREAD,
           event_id: threadRootId,
-          'm.in_reply_to': {
-            event_id: threadRootId
-          }
+          'm.in_reply_to': { event_id: threadRootId }
         }
       }
 
@@ -321,165 +187,20 @@ class MatrixMessageRelationService extends BaseMatrixService {
     }
   }
 
-  getReplyChain(roomId: string, eventId: string, maxDepth: number = 10): ReplyChain[] {
-    const client = matrixClientService.getClient()
-    if (!client) return []
-
-    const room = client.getRoom(roomId)
-    if (!room) return []
-
-    const chain: ReplyChain[] = []
-    let currentEventId: string | undefined = eventId
-    let depth = 0
-
-    while (currentEventId && depth < maxDepth) {
-      const event = room.findEventById(currentEventId)
-      if (!event) break
-
-      const content = event.getContent() as { 'm.relates_to'?: { 'm.in_reply_to'?: { event_id?: string } } }
-      chain.push({
-        eventId: currentEventId,
-        content: content,
-        sender: event.getSender()!,
-        timestamp: event.getTs()
-      })
-
-      const relatesTo = content?.[MatrixContentField.RELATES_TO]
-      currentEventId = relatesTo?.['m.in_reply_to']?.event_id
-      depth++
-    }
-
-    return chain
-  }
-
-  getThreadReplies(roomId: string, threadRootId: string): MatrixEvent[] {
-    const client = matrixClientService.getClient()
-    if (!client) return []
-
-    const room = client.getRoom(roomId)
-    if (!room) return []
-
-    const replies: MatrixEvent[] = []
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
-
-    for (const event of events) {
-      const content = event.getContent() as RelationContent
-      const relatesTo = content[MatrixContentField.RELATES_TO]
-
-      if (relatesTo?.rel_type === MatrixRelType.THREAD && relatesTo.event_id === threadRootId) {
-        replies.push(event)
-      }
-    }
-
-    return replies.sort((a, b) => a.getTs() - b.getTs())
-  }
-
-  getThreadInfo(roomId: string, threadRootId: string): ThreadInfo | null {
-    const client = matrixClientService.getClient()
-    if (!client) return null
-
-    const room = client.getRoom(roomId)
-    if (!room) return null
-
-    const rootEvent = room.findEventById(threadRootId)
-    if (!rootEvent) return null
-
-    const replies = this.getThreadReplies(roomId, threadRootId)
-    const participants = new Set<string>()
-    let lastReply: { eventId: string; sender: string; timestamp: number } | undefined
-
-    for (const reply of replies) {
-      const sender = reply.getSender()
-      if (sender) participants.add(sender)
-
-      if (!lastReply || reply.getTs() > lastReply.timestamp) {
-        lastReply = {
-          eventId: reply.getId()!,
-          sender: reply.getSender()!,
-          timestamp: reply.getTs()
-        }
-      }
-    }
-
-    return {
-      threadId: threadRootId,
-      rootEventId: threadRootId,
-      replyCount: replies.length,
-      participants: Array.from(participants),
-      lastReply
-    }
-  }
-
-  getEventReplies(roomId: string, eventId: string): MatrixEvent[] {
-    const client = matrixClientService.getClient()
-    if (!client) return []
-
-    const room = client.getRoom(roomId)
-    if (!room) return []
-
-    const replies: MatrixEvent[] = []
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
-
-    for (const event of events) {
-      const content = event.getContent() as RelationContent
-      const relatesTo = content[MatrixContentField.RELATES_TO]
-
-      if (relatesTo?.['m.in_reply_to']?.event_id === eventId) {
-        replies.push(event)
-      }
-    }
-
-    return replies.sort((a, b) => a.getTs() - b.getTs())
-  }
-
-  isEdited(event: MatrixEvent): boolean {
-    const content = event.getContent() as RelationContent
-    return !!content['m.new_content']
-  }
-
-  getEditedContent(event: MatrixEvent): Record<string, unknown> {
-    const content = event.getContent() as RelationContent
-    if (content['m.new_content']) {
-      return content['m.new_content'] as RelationContent
-    }
-    return content as RelationContent
-  }
-
-  getReplyToEventId(event: MatrixEvent): string | null {
-    const content = event.getContent() as { 'm.relates_to'?: { 'm.in_reply_to'?: { event_id?: string } } }
-    return content?.[MatrixContentField.RELATES_TO]?.['m.in_reply_to']?.event_id || null
-  }
-
-  getThreadRootId(event: MatrixEvent): string | null {
-    const content = event.getContent() as { 'm.relates_to'?: { rel_type?: string; event_id?: string } }
-    const relatesTo = content?.[MatrixContentField.RELATES_TO]
-    if (relatesTo?.rel_type === MatrixRelType.THREAD) {
-      return relatesTo.event_id || null
-    }
-    return null
-  }
+  // ── 删除 ──
 
   async deleteMessage(roomId: string, eventId: string, reason?: string): Promise<void> {
     const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
+    if (!client) throw new Error(this.t('matrix_error.common.client_not_initialized'))
 
     try {
       const room = client.getRoom(roomId)
-      if (!room) {
-        throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
-      }
+      if (!room) throw new Error(this.t('matrix_error.common.room_not_found', { roomId }))
 
       const event = room.findEventById(eventId)
-      if (!event) {
-        throw new Error(this.t('matrix_error.messaging.message_not_found', { eventId }))
-      }
+      if (!event) throw new Error(this.t('matrix_error.messaging.message_not_found', { eventId }))
 
-      const myUserId = client.getUserId()
-      if (event.getSender() !== myUserId) {
+      if (event.getSender() !== client.getUserId()) {
         throw new Error(this.t('matrix_error.messaging.can_only_delete_own_messages'))
       }
 
@@ -491,81 +212,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     }
   }
 
-  // ============================================
-  // Server-side Relations API (契约 relations.md)
-  // ============================================
-
-  async fetchRelations(
-    roomId: string,
-    eventId: string,
-    options?: { from?: string; to?: string; limit?: number; dir?: 'b' | 'f' }
-  ): Promise<RelationsResponse | null> {
-    const client = matrixClientService.getClient()
-    if (!client) return null
-    try {
-      const opts: { from?: string; to?: string; limit?: number; dir?: Direction } = {}
-      if (options?.from) opts.from = options.from
-      if (options?.to) opts.to = options.to
-      if (options?.limit) opts.limit = options.limit
-      if (options?.dir === 'b') opts.dir = Direction.Backward
-      else if (options?.dir === 'f') opts.dir = Direction.Forward
-      const result = await client.relations(roomId, eventId, null, null, opts)
-      const response: RelationsResponse = {
-        chunk: result.events.map((e) => e.event as unknown as Record<string, unknown>)
-      }
-      if (result.nextBatch) response.next_batch = result.nextBatch
-      if (result.prevBatch) response.prev_batch = result.prevBatch
-      logger.info(`[MessageRelation] 获取关系列表成功: ${eventId}, chunk=${response.chunk.length}`)
-      return response
-    } catch (err) {
-      logger.error(`[MessageRelation] 获取关系列表失败: ${err}`)
-      return null
-    }
-  }
-
-  async fetchRelationsByType(
-    roomId: string,
-    eventId: string,
-    relType: string,
-    options?: { from?: string; to?: string; limit?: number; dir?: 'b' | 'f' }
-  ): Promise<RelationsResponse | null> {
-    const client = matrixClientService.getClient()
-    if (!client) return null
-    try {
-      const opts: { from?: string; to?: string; limit?: number; dir?: Direction } = {}
-      if (options?.from) opts.from = options.from
-      if (options?.to) opts.to = options.to
-      if (options?.limit) opts.limit = options.limit
-      if (options?.dir === 'b') opts.dir = Direction.Backward
-      else if (options?.dir === 'f') opts.dir = Direction.Forward
-      const result = await client.relations(roomId, eventId, relType, null, opts)
-      const response: RelationsResponse = {
-        chunk: result.events.map((e) => e.event as unknown as Record<string, unknown>)
-      }
-      if (result.nextBatch) response.next_batch = result.nextBatch
-      if (result.prevBatch) response.prev_batch = result.prevBatch
-      logger.info(`[MessageRelation] 获取类型关系列表成功: ${eventId}/${relType}, chunk=${response.chunk.length}`)
-      return response
-    } catch (err) {
-      logger.error(`[MessageRelation] 获取类型关系列表失败: ${err}`)
-      return null
-    }
-  }
-
-  async getAggregations(roomId: string, eventId: string, relType: string): Promise<AggregationsResponse | null> {
-    const client = matrixClientService.getClient()
-    if (!client) return null
-    try {
-      // Migration 2026-08-11: switched from authedRequestWithPath to
-      // SDK RelationsManager.getAggregations for unified error handling.
-      const result = await client.getRelationsManager().getAggregations(roomId, eventId, relType)
-      logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
-      return result as unknown as AggregationsResponse
-    } catch (err) {
-      logger.error(`[MessageRelation] 获取聚合数据失败: ${err}`)
-      return null
-    }
-  }
+  // ── 发送关系事件 ──
 
   async sendRelation(
     roomId: string,
@@ -580,15 +227,11 @@ class MatrixMessageRelationService extends BaseMatrixService {
     try {
       const body: Record<string, unknown> = { ...content }
       if (key) body.key = key
-      const txnId = `txn_${Date.now()}`
-      const result = await client.sendEvent(roomId, eventType, body, txnId)
+      const result = await client.sendEvent(roomId, eventType, body, `txn_${Date.now()}`)
       const response: SendRelationResponse = {
         event_id: result.event_id,
         room_id: roomId,
-        relates_to: {
-          event_id: eventId,
-          rel_type: relType
-        }
+        relates_to: { event_id: eventId, rel_type: relType }
       }
       logger.info(`[MessageRelation] 发送关系事件成功: ${response.event_id}`)
       return response
@@ -598,16 +241,92 @@ class MatrixMessageRelationService extends BaseMatrixService {
     }
   }
 
+  // ── 聚合 ──
+
+  async getAggregations(roomId: string, eventId: string, relType: string): Promise<AggregationsResponse | null> {
+    const client = matrixClientService.getClient()
+    if (!client) return null
+    try {
+      const result = await client.getRelationsManager().getAggregations(roomId, eventId, relType)
+      logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
+      return result as unknown as AggregationsResponse
+    } catch (err) {
+      logger.error(`[MessageRelation] 获取聚合数据失败: ${err}`)
+      return null
+    }
+  }
+
+  // ── 查询委托（relationQueries）──
+
+  getEditHistory(roomId: string, eventId: string) {
+    return this.queries.getEditHistory(roomId, eventId)
+  }
+
+  getLatestEdit(roomId: string, eventId: string): MatrixEvent | null {
+    return this.queries.getLatestEdit(roomId, eventId)
+  }
+
+  getReplyChain(roomId: string, eventId: string, maxDepth?: number) {
+    return this.queries.getReplyChain(roomId, eventId, maxDepth)
+  }
+
+  getThreadReplies(roomId: string, threadRootId: string): MatrixEvent[] {
+    return this.queries.getThreadReplies(roomId, threadRootId)
+  }
+
+  getThreadInfo(roomId: string, threadRootId: string): ThreadInfo | null {
+    return this.queries.getThreadInfo(roomId, threadRootId)
+  }
+
+  getEventReplies(roomId: string, eventId: string): MatrixEvent[] {
+    return this.queries.getEventReplies(roomId, eventId)
+  }
+
+  async fetchRelations(
+    roomId: string,
+    eventId: string,
+    options?: { from?: string; to?: string; limit?: number; dir?: 'b' | 'f' }
+  ): Promise<RelationsResponse | null> {
+    return this.queries.fetchRelations(roomId, eventId, options)
+  }
+
+  async fetchRelationsByType(
+    roomId: string,
+    eventId: string,
+    relType: string,
+    options?: { from?: string; to?: string; limit?: number; dir?: 'b' | 'f' }
+  ): Promise<RelationsResponse | null> {
+    return this.queries.fetchRelationsByType(roomId, eventId, relType, options)
+  }
+
   async getEditHistoryViaApi(
     roomId: string,
     eventId: string,
     options?: { from?: string; limit?: number; dir?: 'b' | 'f' }
   ): Promise<RelationsResponse | null> {
-    return this.fetchRelationsByType(roomId, eventId, 'm.replace', options)
+    return this.queries.fetchRelationsByType(roomId, eventId, 'm.replace', options)
   }
 
   async getReactionAggregations(roomId: string, eventId: string): Promise<AggregationsResponse | null> {
     return this.getAggregations(roomId, eventId, 'm.annotation')
+  }
+
+  // ── 事件检查委托（relationEventHelpers）──
+
+  isEdited(event: MatrixEvent): boolean {
+    return isEdited(event)
+  }
+
+  getEditedContent(event: MatrixEvent): Record<string, unknown> {
+    return getEditedContent(event)
+  }
+
+  getReplyToEventId(event: MatrixEvent): string | null {
+    return getReplyToEventId(event)
+  }
+
+  getThreadRootId(event: MatrixEvent): string | null {
+    return getThreadRootId(event)
   }
 }
 

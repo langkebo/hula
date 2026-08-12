@@ -126,12 +126,13 @@ describe('MatrixQrLoginSdkService.reciprocateLogin qr_token path (FT-091)', () =
 })
 
 describe('MatrixQrLoginSdkService.postJson 使用 SDK HTTP 基础设施（FT-087）', () => {
-  const sourcePath = resolve(process.cwd(), 'src/services/matrix/auth/MatrixQrLoginSdkService.ts')
-  const sourceContent = readFileSync(sourcePath, 'utf8')
+  // postJson 已拆分到 qrLoginHelpers.ts
+  const helpersPath = resolve(process.cwd(), 'src/services/matrix/auth/qrLoginHelpers.ts')
+  const helpersContent = readFileSync(helpersPath, 'utf8')
 
   it('postJson 函数体引用 matrixHttpClient 而非直接 fetch', () => {
     // 提取 postJson 函数体
-    const postJsonMatch = sourceContent.match(/async function postJson[\s\S]*?\n}/)
+    const postJsonMatch = helpersContent.match(/async function postJson[\s\S]*?\n}/)
     expect(postJsonMatch).toBeTruthy()
     const postJsonBody = postJsonMatch![0]
 
@@ -141,7 +142,7 @@ describe('MatrixQrLoginSdkService.postJson 使用 SDK HTTP 基础设施（FT-087
     expect(postJsonBody).not.toMatch(/getRuntimeAwareFetch\s*\(\s*\)/)
   })
 
-  it('模块顶部引入 matrixHttpClient', () => {
-    expect(sourceContent).toMatch(/import\s+\{[^}]*matrixHttpClient[^}]*\}\s+from\s+['"][^'']*MatrixHttpClient['"]/)
+  it('qrLoginHelpers 模块顶部引入 matrixHttpClient', () => {
+    expect(helpersContent).toMatch(/import\s+\{[^}]*matrixHttpClient[^}]*\}\s+from\s+['"][^'']*MatrixHttpClient['"]/)
   })
 })

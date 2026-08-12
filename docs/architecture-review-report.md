@@ -1,6 +1,6 @@
-# HuLa (Tjg) 前端架构评审报告 v4
+# HuLa (Tjg) 前端架构评审报告 v5
 
-> **评审日期**: 2026-08-13（v4，基于 P1-4/P1-5 优化完成后的最新代码库）  
+> **评审日期**: 2026-08-14（v5，基于 P1-6/P1-7 优化完成后的最新代码库）  
 > **项目版本**: v3.0.10  
 > **主框架**: Vue 3.5 + TypeScript 6 + Vite 8 + Tauri v2  
 > **项目定位**: 跨平台即时通讯系统（Matrix 协议 + synapse-rust 后端）
@@ -9,13 +9,13 @@
 
 ## 一、总览评分表
 
-| 维度 | v3 评分 | v4 评分 | 变化 | 诊断结论 |
-|:---|:---:|:---:|:---:|:---|
-| 技术栈健康度 | 45/50 | **47/50** | +2 | SDK 别名抽取+校验完成，死别名清理 |
-| 架构设计模式 | 45/50 | **47/50** | +2 | Worker 模块化拆分完成，enums 按域拆分 |
-| 工程化成熟度 | 47/50 | **48/50** | +1 | 守卫脚本 16 个，knip 已入 CI，测试覆盖大幅提升 |
-| 性能与可维护性 | 43/50 | **46/50** | +3 | 超 800 行文件清零（仅剩 1 个豁免），巨石组件/服务大幅减少 |
-| **综合评分** | **180/200 (90.0%)** | **188/200 (94.0%)** | **+8** | **优秀，P0/P1 核心重构全部完成** |
+| 维度 | v3 评分 | v4 评分 | v5 评分 | 变化 | 诊断结论 |
+|:---|:---:|:---:|:---:|:---:|:---|
+| 技术栈健康度 | 45/50 | 47/50 | **47/50** | — | SDK 别名抽取+校验完成，死别名清理 |
+| 架构设计模式 | 45/50 | 47/50 | **48/50** | +1 | Worker/服务/Composables 全面模块化，工厂模式标准化 |
+| 工程化成熟度 | 47/50 | 48/50 | **48/50** | — | 守卫脚本 16 个，knip 已入 CI，测试覆盖大幅提升 |
+| 性能与可维护性 | 43/50 | 46/50 | **48/50** | +2 | 超 600 行服务文件清零（6 个大文件全部拆分完毕） |
+| **综合评分** | **180/200 (90.0%)** | **188/200 (94.0%)** | **191/200 (95.5%)** | **+3** | **优秀，P0/P1 核心重构全部完成** |
 
 ---
 
@@ -205,8 +205,8 @@
 | P1-3 | 补齐无测试源文件中核心 Service 层的单元测试（第一批：authHelpers/authErrors/friendUtils/roomTypeUtils/CryptoDeviceAdapter，104 tests，进行中） | 提升核心路径覆盖率 | 10-20 人日 | 🟡 进行中 |
 | P1-4 | SDK 别名配置抽取 + 自动校验脚本 | 降低 SDK 升级风险 | 2-3 人日 | ✅ 已完成 |
 | P1-5 | Worker 消息处理器模块化拆分 | 提升 Worker 可维护性 | 2-3 人日 | ✅ 已完成 |
-| P1-6 | **新增**：拆分 4 个超 500 行 composables（useChatContextMenus 710 / useWindow 690 / useWsEventHandler 614 / useFriends 566） | 职责分离，提升可维护性 | 3-5 人日 | 待处理 |
-| P1-7 | **新增**：拆分 6 个超 600 行服务（MatrixMessageService 794 / MatrixQrLoginSdkService 781 / MatrixSpaceService 713 / MatrixMediaService 706 / MatrixVoIPService 630 / MatrixMessageRelationService 614） | 降低修改风险 | 5-8 人日 | 待处理 |
+| P1-6 | **新增**：拆分 4 个超 500 行 composables（useChatContextMenus 710 / useWindow 690 / useWsEventHandler 614 / useFriends 566） | 职责分离，提升可维护性 | 3-5 人日 | ✅ 已完成 |
+| P1-7 | **新增**：拆分 6 个超 600 行服务（MatrixMessageService 794→369 / MatrixQrLoginSdkService 781→489 / MatrixSpaceService 713→390 / MatrixMediaService 706→353 / MatrixVoIPService 630→361 / MatrixMessageRelationService 614→318） | 降低修改风险 | 5-8 人日 | ✅ 已完成 |
 | P1-8 | **新增**：补齐 Vue 组件测试覆盖（当前 297/472 无测试，优先 admin/聊天核心/通用组件；第一批：9 admin 页面 + Image/Voice 渲染组件，74 tests，全量基线 7271 用例 0 失败） | 降低 UI 回归风险 | 8-12 人日 | 🟡 进行中 |
 
 ### P2 — 中期优化（2-3 个迭代内）
