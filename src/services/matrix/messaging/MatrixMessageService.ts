@@ -1,12 +1,6 @@
-import type { ISendEventResponse, MatrixClient, MatrixEvent } from 'matrix-js-sdk'
-import {
-  MatrixBurnDuration,
-  MatrixContentField,
-  MatrixEventType,
-  MatrixFormat,
-  MatrixMsgType
-} from '@/common/matrixConstants'
-import { MsgEnum } from '@/enums'
+import type { ISendEventResponse, MatrixEvent } from 'matrix-js-sdk'
+import { MatrixBurnDuration, MatrixEventType, MatrixFormat, MatrixMsgType } from '@/common/matrixConstants'
+import type { MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -14,36 +8,20 @@ import { matrixEventService } from '../MatrixEventService'
 import { matrixMessageRelationService } from './MatrixMessageRelationService'
 import { matrixReactionService } from './MatrixReactionService'
 import { matrixReceiptService } from './MatrixReceiptService'
+import { buildMatrixContent } from './messageContentBuilder'
+import type { MessageListOptions, MessageListResult, MessageSearchOptions } from './messageQueryHelpers'
+import {
+  getMessageEvents,
+  getMessageList,
+  getMsgList,
+  getMsgListByIds,
+  getRoomMessage,
+  getUnreadMessages
+} from './messageQueryHelpers'
 
 const logger = createLogger('MatrixMessageService')
 
-export interface MessageSearchOptions {
-  roomId?: string
-  limit?: number
-  before?: string
-  after?: string
-  sentBefore?: number
-  sentAfter?: number
-  type?: string
-  sender?: string
-}
-
-export interface MessageListOptions {
-  roomId: string
-  limit?: number
-  before?: string
-  after?: string
-  type?: string
-  sender?: string
-  threadId?: string
-}
-
-export interface MessageListResult {
-  events: MatrixEvent[]
-  start?: string
-  end?: string
-  hasMore: boolean
-}
+export type { MessageListOptions, MessageListResult, MessageSearchOptions } from './messageQueryHelpers'
 
 export interface SendMessagePayload {
   id?: string
@@ -58,19 +36,25 @@ const MESSAGE_SEND_MAX_RETRIES = 3
 const MESSAGE_SEND_RETRY_DELAY_MS = 1000
 const MESSAGE_SEND_RETRY_BACKOFF = 2
 
-/**
- * 不可重试错误特征：这些错误重试也不会成功，应立即失败。
- * - "does not support encryption": 客户端 crypto 未初始化，重试无效
- * - "Event blocked by other events not yet sent": SDK 发送队列被前一个失败事件阻塞，重试只会累积更多阻塞
- */
 const NON_RETRYABLE_ERROR_PATTERNS = ['does not support encryption', 'Event blocked by other events not yet sent']
 
 function isNonRetryableError(error: Error): boolean {
   return NON_RETRYABLE_ERROR_PATTERNS.some((pattern) => error.message.includes(pattern))
 }
 
+/**
+ * Matrix 消息服务 — 发送、撤回、编辑、查询与已读回执。
+ *
+ * 实现已拆分为两个子模块：
+ * - messageContentBuilder：纯函数，将业务 body 转换为 Matrix content
+ * - messageQueryHelpers：纯函数，接收 client 参数的消息查询逻辑
+ *
+ * 本文件保留：事件 ID 管理、发送重试、离线入队、已读回执。
+ */
 class MatrixMessageService extends BaseMatrixService {
   private localToRemoteEventIdMap: Map<string, string> = new Map()
+
+  // ===== 事件 ID 管理 =====
 
   isLocalEventId(eventId: string): boolean {
     return eventId.startsWith('local-')
@@ -93,155 +77,8 @@ class MatrixMessageService extends BaseMatrixService {
       logger.info(`[MatrixMessage] 已注册本地→远程事件 ID 映射: ${localEventId} -> ${remoteEventId}`)
     }
   }
-  private asRecord(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
-  }
 
-  private convertMsgTypeToMatrix(msgType: MsgEnum): string {
-    switch (msgType) {
-      case MsgEnum.TEXT:
-        return MatrixMsgType.TEXT
-      case MsgEnum.IMAGE:
-      case MsgEnum.EMOJI:
-        return MatrixMsgType.IMAGE
-      case MsgEnum.VIDEO:
-        return MatrixMsgType.VIDEO
-      case MsgEnum.AUDIO:
-      case MsgEnum.VOICE:
-        return MatrixMsgType.AUDIO
-      case MsgEnum.FILE:
-        return MatrixMsgType.FILE
-      case MsgEnum.LOCATION:
-        return MatrixMsgType.LOCATION
-      case MsgEnum.NOTICE:
-        return MatrixMsgType.NOTICE
-      default:
-        return MatrixMsgType.TEXT
-    }
-  }
-
-  private buildMatrixContent(msgType: MsgEnum, body: unknown): Record<string, unknown> {
-    const bodyRecord = this.asRecord(body)
-    const reply = this.asRecord(bodyRecord.reply)
-    const encryptedFile = this.asRecord(bodyRecord.encryptedFile)
-    const hasEncryptedFile = typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
-
-    const content: Record<string, unknown> = {
-      msgtype: this.convertMsgTypeToMatrix(msgType),
-      body: ''
-    }
-
-    switch (msgType) {
-      case MsgEnum.TEXT:
-      case MsgEnum.NOTICE: {
-        content.body = (bodyRecord.content as string | undefined) || (typeof body === 'string' ? body : '') || ''
-        if (typeof reply.id === 'string') {
-          content[MatrixContentField.RELATES_TO] = {
-            'm.in_reply_to': {
-              event_id: reply.id
-            }
-          }
-        }
-        break
-      }
-      case MsgEnum.IMAGE:
-      case MsgEnum.EMOJI: {
-        content.body = (bodyRecord.fileName as string | undefined) || 'image'
-        if (hasEncryptedFile) {
-          content.file = encryptedFile
-        } else {
-          content.url = bodyRecord.url
-        }
-        content.info = {
-          size: (bodyRecord.size as number | undefined) || 0,
-          w: (bodyRecord.width as number | undefined) || 0,
-          h: (bodyRecord.height as number | undefined) || 0,
-          mimetype: (bodyRecord.mimetype as string | undefined) || 'image/png'
-        }
-        break
-      }
-      case MsgEnum.VIDEO: {
-        const thumbnailEncryptedFile = this.asRecord(bodyRecord.thumbnailEncryptedFile)
-        const hasEncryptedThumbnail =
-          typeof thumbnailEncryptedFile.url === 'string' && typeof thumbnailEncryptedFile.v === 'string'
-        content.body = (bodyRecord.fileName as string | undefined) || 'video'
-        if (hasEncryptedFile) {
-          content.file = encryptedFile
-        } else {
-          content.url = bodyRecord.url
-        }
-        content.info = {
-          size: (bodyRecord.size as number | undefined) || 0,
-          duration: (bodyRecord.duration as number | undefined) || 0,
-          w: (bodyRecord.thumbWidth as number | undefined) || 0,
-          h: (bodyRecord.thumbHeight as number | undefined) || 0,
-          mimetype: (bodyRecord.mimetype as string | undefined) || 'video/mp4',
-          thumbnail_info: {
-            size: (bodyRecord.thumbSize as number | undefined) || 0,
-            w: (bodyRecord.thumbWidth as number | undefined) || 0,
-            h: (bodyRecord.thumbHeight as number | undefined) || 0
-          }
-        }
-        if (hasEncryptedThumbnail) {
-          ;(content.info as Record<string, unknown>).thumbnail_file = thumbnailEncryptedFile
-        } else {
-          ;(content.info as Record<string, unknown>).thumbnail_url = bodyRecord.thumbUrl
-        }
-        break
-      }
-      case MsgEnum.VOICE: {
-        content.body = (bodyRecord.fileName as string | undefined) || 'voice'
-        if (hasEncryptedFile) {
-          content.file = encryptedFile
-        } else {
-          content.url = bodyRecord.mxcUrl || bodyRecord.url
-        }
-        content.info = {
-          size: (bodyRecord.size as number | undefined) || 0,
-          duration: (bodyRecord.second as number | undefined) || 0,
-          mimetype:
-            (bodyRecord.mimeType as string | undefined) || (bodyRecord.mimetype as string | undefined) || 'audio/ogg'
-        }
-        break
-      }
-      case MsgEnum.FILE: {
-        content.body = (bodyRecord.fileName as string | undefined) || 'file'
-        if (hasEncryptedFile) {
-          content.file = encryptedFile
-        } else {
-          content.url = bodyRecord.url
-        }
-        content.info = {
-          size: (bodyRecord.size as number | undefined) || 0,
-          mimetype: (bodyRecord.mimetype as string | undefined) || 'application/octet-stream'
-        }
-        break
-      }
-      case MsgEnum.LOCATION: {
-        content.body = (bodyRecord.description as string | undefined) || ''
-        content.geo_uri = (bodyRecord.geoUri as string | undefined) || ''
-        break
-      }
-      default: {
-        content.body = typeof body === 'string' ? body : JSON.stringify(body)
-      }
-    }
-
-    return content
-  }
-
-  private findEventByIdAcrossRooms(eventId: string): MatrixEvent | null {
-    const client = this.getClient()
-
-    for (const room of client.getRooms()) {
-      const event = room.findEventById(eventId)
-      if (event) {
-        return event
-      }
-    }
-
-    return null
-  }
+  // ===== 发送重试 =====
 
   private async sendWithRetry<T>(sendFn: () => Promise<T>, operationName: string): Promise<T> {
     let lastError: Error | null = null
@@ -252,13 +89,10 @@ class MatrixMessageService extends BaseMatrixService {
         return await sendFn()
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err))
-
-        // 不可重试错误（如 crypto 未初始化、发送队列阻塞）立即失败，避免无效重试
         if (isNonRetryableError(lastError)) {
           logger.error(`[MatrixMessage] ${operationName} failed (non-retryable): ${lastError.message}`)
           throw lastError
         }
-
         if (attempt < MESSAGE_SEND_MAX_RETRIES) {
           logger.error(
             `[MatrixMessage] ${operationName} failed (attempt ${attempt}/${MESSAGE_SEND_MAX_RETRIES}): ${lastError.message}, retrying in ${delay}ms...`
@@ -272,9 +106,10 @@ class MatrixMessageService extends BaseMatrixService {
         }
       }
     }
-
     throw lastError
   }
+
+  // ===== 消息发送 =====
 
   async sendMessageStream(roomId: string, content: string, txId?: string): Promise<ISendEventResponse> {
     return this.sendTextMessage(roomId, content, txId)
@@ -282,7 +117,7 @@ class MatrixMessageService extends BaseMatrixService {
 
   async sendStructuredMessage(payload: SendMessagePayload): Promise<ISendEventResponse> {
     return this.sendWithRetry(async () => {
-      const content = this.buildMatrixContent(payload.msgType, payload.body)
+      const content = buildMatrixContent(payload.msgType, payload.body)
       if (payload.burnAfterRead) {
         content['m.burn_after_read'] = {
           expires_in: payload.burnExpiresInMs || MatrixBurnDuration.DEFAULT_MS
@@ -302,10 +137,7 @@ class MatrixMessageService extends BaseMatrixService {
       const id = offlineQueueService.enqueue('message', roomId, {
         roomId,
         eventType: MatrixEventType.ROOM_MESSAGE,
-        content: {
-          msgtype: MatrixMsgType.TEXT,
-          body: content
-        }
+        content: { msgtype: MatrixMsgType.TEXT, body: content }
       })
       logger.info(`[MatrixMessage] 离线状态，已将文本消息入队: ${roomId} (queueId: ${id})`)
       return { event_id: `local-${id}` } as ISendEventResponse
@@ -313,7 +145,6 @@ class MatrixMessageService extends BaseMatrixService {
 
     return this.sendWithRetry(async () => {
       const client = this.getClient()
-
       const txnId = txId || `m${Date.now()}`
       const response = await client.sendTextMessage(roomId, content, txnId)
       logger.info(`[MatrixMessage] Text message sent to ${roomId}: ${txnId}`)
@@ -326,12 +157,7 @@ class MatrixMessageService extends BaseMatrixService {
       const id = offlineQueueService.enqueue('message', roomId, {
         roomId,
         eventType: MatrixEventType.ROOM_MESSAGE,
-        content: {
-          msgtype: MatrixMsgType.TEXT,
-          body,
-          format: MatrixFormat.HTML,
-          formatted_body: html
-        }
+        content: { msgtype: MatrixMsgType.TEXT, body, format: MatrixFormat.HTML, formatted_body: html }
       })
       logger.info(`[MatrixMessage] 离线状态，已将 HTML 消息入队: ${roomId} (queueId: ${id})`)
       return { event_id: `local-${id}` } as ISendEventResponse
@@ -339,7 +165,6 @@ class MatrixMessageService extends BaseMatrixService {
 
     return this.sendWithRetry(async () => {
       const client = this.getClient()
-
       const txnId = txId || `m${Date.now()}`
       const response = await client.sendHtmlMessage(roomId, txnId, body, html)
       logger.info(`[MatrixMessage] HTML message sent to ${roomId}: ${txnId}`)
@@ -352,10 +177,7 @@ class MatrixMessageService extends BaseMatrixService {
       const id = offlineQueueService.enqueue('message', roomId, {
         roomId,
         eventType: MatrixEventType.ROOM_MESSAGE,
-        content: {
-          msgtype: 'm.emote',
-          body: content
-        }
+        content: { msgtype: 'm.emote', body: content }
       })
       logger.info(`[MatrixMessage] 离线状态，已将 Emote 消息入队: ${roomId} (queueId: ${id})`)
       return { event_id: `local-${id}` } as ISendEventResponse
@@ -363,13 +185,14 @@ class MatrixMessageService extends BaseMatrixService {
 
     return this.sendWithRetry(async () => {
       const client = this.getClient()
-
       const txnId = txId || `m${Date.now()}`
       const response = await client.sendEmote(roomId, txnId, content)
       logger.info(`[MatrixMessage] Emote message sent to ${roomId}: ${txnId}`)
       return response
     }, 'sendEmoteMessage')
   }
+
+  // ===== 消息撤回与编辑 =====
 
   async recallMessage(roomId: string, eventId: string, txId?: string): Promise<void> {
     const resolvedId = this.resolveEventId(eventId)
@@ -385,7 +208,6 @@ class MatrixMessageService extends BaseMatrixService {
 
     try {
       const client = this.getClient()
-
       const txnId = txId || `m${Date.now()}`
       await client.redactEvent(roomId, resolvedId, txnId)
       logger.info(`[MatrixMessage] Message redacted in ${roomId}: ${resolvedId}`)
@@ -395,48 +217,22 @@ class MatrixMessageService extends BaseMatrixService {
     }
   }
 
-  async getMessageEvents(roomId: string, options?: MessageSearchOptions): Promise<MatrixEvent[]> {
+  async editMessage(roomId: string, eventId: string, newContent: string): Promise<ISendEventResponse> {
+    const resolvedId = this.resolveEventId(eventId)
+    if (this.isLocalEventId(resolvedId)) {
+      throw new Error('Cannot edit a message that has not been sent yet (local ID)')
+    }
     try {
-      const client = this.getClient()
-
-      const { limit = 20, before, after, type, sender } = options || {}
-
-      const options_: {
-        limit: number
-        reverse: boolean
-        from?: string
-        to?: undefined
-        types?: string[]
-      } = {
-        limit,
-        reverse: !!before
-      }
-
-      if (before) {
-        options_.from = before
-        options_.to = undefined
-      } else if (after) {
-        options_.from = after
-        options_.to = undefined
-      }
-
-      if (type) {
-        options_.types = [type]
-      }
-
-      const response = (await client.getRoom(roomId)?.timeline) ?? []
-      let events = response
-
-      if (sender) {
-        events = events.filter((e) => e.sender?.userId === sender)
-      }
-
-      return events.slice(0, limit)
+      const newEventId = await matrixMessageRelationService.editMessage(roomId, resolvedId, { body: newContent })
+      logger.info(`[MatrixMessage] Message edited in ${roomId}: ${resolvedId}`)
+      return { event_id: newEventId } as ISendEventResponse
     } catch (err) {
-      logger.error(`[MatrixMessage] Failed to get message events: ${err}`)
+      logger.error(`[MatrixMessage] Failed to edit message: ${err}`)
       throw err
     }
   }
+
+  // ===== 表情回应 =====
 
   async addReaction(roomId: string, eventId: string, reaction: string): Promise<void> {
     try {
@@ -458,50 +254,52 @@ class MatrixMessageService extends BaseMatrixService {
     }
   }
 
-  async editMessage(roomId: string, eventId: string, newContent: string): Promise<ISendEventResponse> {
-    const resolvedId = this.resolveEventId(eventId)
-    if (this.isLocalEventId(resolvedId)) {
-      throw new Error('Cannot edit a message that has not been sent yet (local ID)')
-    }
-    try {
-      const newEventId = await matrixMessageRelationService.editMessage(roomId, resolvedId, {
-        body: newContent
-      })
-      logger.info(`[MatrixMessage] Message edited in ${roomId}: ${resolvedId}`)
-      return { event_id: newEventId } as ISendEventResponse
-    } catch (err) {
-      logger.error(`[MatrixMessage] Failed to edit message: ${err}`)
-      throw err
-    }
+  // ===== 消息查询（委托 messageQueryHelpers）=====
+
+  async getMessageEvents(roomId: string, options?: MessageSearchOptions): Promise<MatrixEvent[]> {
+    return getMessageEvents(this.getClient(), roomId, options)
   }
 
   async getRoomMessage(roomId: string, eventId: string): Promise<MatrixEvent | null> {
-    try {
-      const client = this.getClient()
-
-      const room = client.getRoom(roomId)
-      return room?.findEventById(eventId) || null
-    } catch (err) {
-      logger.error(`[MatrixMessage] Failed to get room message: ${err}`)
-      throw err
-    }
+    return getRoomMessage(this.getClient(), roomId, eventId)
   }
+
+  async getUnreadMessages(roomId: string): Promise<MatrixEvent[]> {
+    return getUnreadMessages(this.getClient(), roomId)
+  }
+
+  async getMessageList(options: MessageListOptions): Promise<MessageListResult> {
+    return getMessageList(options, this.getClient())
+  }
+
+  async getMsgList(
+    roomId: string,
+    limit: number = 20,
+    options?: { type?: string; sender?: string }
+  ): Promise<MatrixEvent[]> {
+    return getMsgList(this.getClient(), roomId, limit, options)
+  }
+
+  async getMsgListByIds(
+    params: { msgIds?: string[]; async?: boolean } | string,
+    limit?: number
+  ): Promise<MatrixEvent[]> {
+    return getMsgListByIds(this.getClient(), params, limit)
+  }
+
+  // ===== 已读回执 =====
 
   async getReadReceipt(roomId: string, eventId: string): Promise<{ hasRead: boolean }> {
     try {
       const client = this.getClient()
-
       const room = client.getRoom(roomId)
-      if (!room) {
-        return { hasRead: false }
-      }
+      if (!room) return { hasRead: false }
 
       const event = room.findEventById(eventId)
       if (!event) return { hasRead: false }
       const myUserId = client.getUserId()
       if (!myUserId) return { hasRead: false }
-      const hasRead = room.hasUserReadEvent(myUserId, eventId)
-      return { hasRead }
+      return { hasRead: room.hasUserReadEvent(myUserId, eventId) }
     } catch (err) {
       logger.error(`[MatrixMessage] Failed to get read receipt: ${err}`)
       throw err
@@ -521,14 +319,10 @@ class MatrixMessageService extends BaseMatrixService {
   async markRoomAsRead(roomId: string): Promise<void> {
     try {
       const client = this.getClient()
-
       const room = client.getRoom(roomId)
       const lastEvent = room?.timeline?.[room.timeline.length - 1]
       const eventId = lastEvent?.getId()
-      if (!eventId) {
-        return
-      }
-
+      if (!eventId) return
       await this.markMessagesRead(roomId, eventId)
     } catch (err) {
       logger.error(`[MatrixMessage] Failed to mark room as read: ${err}`)
@@ -536,219 +330,6 @@ class MatrixMessageService extends BaseMatrixService {
     }
   }
 
-  async getUnreadMessages(roomId: string): Promise<MatrixEvent[]> {
-    try {
-      const client = this.getClient()
-
-      const room = client.getRoom(roomId)
-      if (!room) {
-        return []
-      }
-
-      const myUserId = client.getUserId()
-      const events = room.timeline
-      const unreadEvents: MatrixEvent[] = []
-
-      for (const event of events) {
-        const hasRead = room.hasUserReadEvent(myUserId!, event.getId()!)
-        if (!hasRead) {
-          if (event.sender?.userId !== myUserId && event.getType() === MatrixEventType.ROOM_MESSAGE) {
-            unreadEvents.push(event)
-          }
-        }
-      }
-
-      return unreadEvents
-    } catch (err) {
-      logger.error(`[MatrixMessage] Failed to get unread messages: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 获取消息列表（支持分页和过滤）
-   *
-   * @param options - 查询选项
-   * @param options.roomId - 房间 ID
-   * @param options.limit - 返回消息数量限制
-   * @param options.before - 获取此事件之前的消息
-   * @param options.after - 获取此事件之后的消息
-   * @param options.type - 按消息类型过滤
-   * @param options.sender - 按发送者过滤
-   * @param options.threadId - 线程 ID
-   * @returns 消息列表结果
-   */
-  async getMessageList(options: MessageListOptions): Promise<MessageListResult> {
-    try {
-      const client = this.getClient()
-
-      const { roomId, limit = 20, before, after, type, sender, threadId } = options
-
-      const room = client.getRoom(roomId)
-      if (!room) {
-        return { events: [], hasMore: false }
-      }
-
-      const timeline = room.timeline
-      let events = [...timeline]
-
-      if (sender) {
-        events = events.filter((e) => e.sender?.userId === sender)
-      }
-
-      if (type) {
-        events = events.filter((e) => e.getType() === type)
-      }
-
-      if (threadId) {
-        events = events.filter((e) => {
-          const relation = e.getRelation()
-          return relation?.event_id === threadId
-        })
-      }
-
-      let startIndex = 0
-      let endIndex = limit
-
-      if (before) {
-        const beforeIndex = events.findIndex((e) => e.getId() === before)
-        if (beforeIndex > 0) {
-          startIndex = Math.max(0, beforeIndex - limit)
-          endIndex = beforeIndex
-        } else if (beforeIndex < 0 && events.length < limit) {
-          const serverEvents = await this.fetchServerMessages(client, roomId, before, limit, 'b')
-          events = [...serverEvents, ...events]
-          startIndex = 0
-          endIndex = Math.min(events.length, limit)
-        }
-      } else if (after) {
-        const afterIndex = events.findIndex((e) => e.getId() === after)
-        if (afterIndex >= 0) {
-          startIndex = afterIndex + 1
-          endIndex = Math.min(events.length, startIndex + limit)
-        } else if (afterIndex < 0 && events.length < limit) {
-          const serverEvents = await this.fetchServerMessages(client, roomId, after, limit, 'f')
-          events = [...events, ...serverEvents]
-          startIndex = 0
-          endIndex = Math.min(events.length, limit)
-        }
-      }
-
-      const resultEvents = events.slice(startIndex, endIndex)
-      const hasMore = before ? startIndex > 0 : endIndex < events.length
-
-      return {
-        events: resultEvents,
-        hasMore
-      }
-    } catch (err) {
-      logger.error(`[MatrixMessage] Failed to get message list: ${err}`)
-      throw err
-    }
-  }
-
-  private async fetchServerMessages(
-    client: MatrixClient,
-    roomId: string,
-    fromToken: string,
-    limit: number,
-    dir: 'b' | 'f'
-  ): Promise<MatrixEvent[]> {
-    try {
-      const response = (await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/messages`, {
-        from: fromToken,
-        limit: String(limit),
-        dir
-      })) as Record<string, unknown>
-      const chunk = response.chunk
-      return Array.isArray(chunk) ? (chunk as MatrixEvent[]) : []
-    } catch (err) {
-      logger.error(`[MatrixMessage] Failed to fetch server messages: ${err}`)
-      return []
-    }
-  }
-
-  /**
-   * 获取房间消息列表
-   *
-   * @param roomId - 房间 ID
-   * @param limit - 返回消息数量限制
-   * @param options - 可选参数
-   * @param options.type - 按消息类型过滤
-   * @param options.sender - 按发送者过滤
-   * @returns 消息列表
-   */
-  async getMsgList(
-    roomId: string,
-    limit: number = 20,
-    options?: { type?: string; sender?: string }
-  ): Promise<MatrixEvent[]> {
-    try {
-      const client = this.getClient()
-
-      const room = client.getRoom(roomId)
-      if (!room) {
-        return []
-      }
-
-      const { type, sender } = options || {}
-      let events = [...room.timeline]
-
-      if (sender) {
-        events = events.filter((e) => e.sender?.userId === sender)
-      }
-
-      if (type) {
-        events = events.filter((e) => e.getType() === type)
-      }
-
-      return events.slice(0, limit)
-    } catch (err) {
-      logger.error(`[MatrixMessage] Failed to get message list: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 获取消息列表 (兼容旧 API)
-   *
-   * @param params - 包含 msgIds 的对象或房间 ID
-   * @param limit - 消息数量限制
-   * @returns 消息列表
-   */
-  async getMsgListByIds(
-    params: { msgIds?: string[]; async?: boolean } | string,
-    limit?: number
-  ): Promise<MatrixEvent[]> {
-    if (typeof params === 'object' && 'msgIds' in params) {
-      try {
-        const messages: MatrixEvent[] = []
-        for (const msgId of params.msgIds || []) {
-          try {
-            const event = this.findEventByIdAcrossRooms(msgId)
-            if (event) {
-              messages.push(event)
-            }
-          } catch (e) {
-            logger.error(`[MatrixMessage] Failed to get message ${msgId}: ${e}`)
-          }
-        }
-        return messages
-      } catch (err) {
-        logger.error(`[MatrixMessage] Failed to get messages by IDs: ${err}`)
-        return []
-      }
-    }
-    return this.getMsgList(params as string, limit)
-  }
-
-  /**
-   * 标记单条消息为已读
-   *
-   * @param roomId - 房间 ID
-   * @param eventId - 事件 ID
-   * @returns 是否成功
-   */
   async markMsg(roomId: string, eventId: string): Promise<boolean> {
     try {
       await matrixReceiptService.sendReadReceiptByEventId(roomId, eventId)
@@ -760,13 +341,6 @@ class MatrixMessageService extends BaseMatrixService {
     }
   }
 
-  /**
-   * 批量标记消息为已读
-   *
-   * @param roomId - 房间 ID
-   * @param eventIds - 事件 ID 列表
-   * @returns 成功标记的数量
-   */
   async markMsgs(roomId: string, eventIds: string[]): Promise<number> {
     try {
       const resolvedIds = eventIds.map((id) => this.resolveEventId(id)).filter((id) => !this.isLocalEventId(id))

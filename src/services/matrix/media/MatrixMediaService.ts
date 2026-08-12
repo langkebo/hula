@@ -1,55 +1,41 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import type { MediaManager } from 'matrix-js-sdk/media'
-import {
-  type MatrixEncryptedAttachmentLike,
-  matrixAttachmentDecryptionService
-} from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import {
   type EncryptedAttachmentFile,
   matrixAttachmentEncryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { chunkUploadService } from '@/services/performance/ChunkUploadService'
 import { formatBytes } from '@/utils/Formatting'
-import { HttpClient, HttpClientError } from '@/utils/HttpClient'
 import { compressImage, isImageFile } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import {
+  downloadEncryptedFileBytes as dlEncryptedFileBytes,
+  downloadFileBytes as dlFileBytes
+} from './mediaDownloadHelpers'
+import { getAudioDuration, getImageDimensions, getVideoMetadata } from './mediaMetadata'
+import {
+  type CompressOptions,
+  DEFAULT_COMPRESS_OPTIONS,
+  type EncryptedUploadResult,
+  type MediaInfo,
+  type UploadResult
+} from './mediaTypes'
+import { createUploadOptions, uploadContentWithChunkFallback } from './mediaUploadHelpers'
 
 const logger = createLogger('MatrixMediaService')
 
-interface UploadResult {
-  contentUri: string
-  size: number
-  mimetype: string
-}
-
-interface EncryptedUploadResult extends UploadResult {
-  encryptedFile: EncryptedAttachmentFile
-}
-
-interface MediaInfo {
-  size: number
-  mimetype: string
-  width?: number
-  height?: number
-  duration?: number
-}
-
-interface CompressOptions {
-  quality?: number
-  maxWidth?: number
-  maxHeight?: number
-  maxSizeKB?: number
-}
-
-const DEFAULT_COMPRESS_OPTIONS: CompressOptions = {
-  quality: 0.8,
-  maxWidth: 1920,
-  maxHeight: 1920,
-  maxSizeKB: 1024
-}
-
+/**
+ * Matrix Media 服务 — 文件上传/下载/媒体配置/配额管理。
+ *
+ * 实现已拆分为四个子模块：
+ * - mediaTypes：类型定义和常量
+ * - mediaMetadata：图片/视频/音频元数据提取（纯 DOM 函数）
+ * - mediaUploadHelpers：上传选项构造、错误判断、分片回退、直接 XHR 上传
+ * - mediaDownloadHelpers：URL 解析、文件下载、加密文件下载
+ *
+ * 本文件保留：上传编排、压缩控制、URL 解析、媒体配置/配额管理。
+ */
 class MatrixMediaServiceClass extends BaseMatrixService {
   private compressOptions: CompressOptions = { ...DEFAULT_COMPRESS_OPTIONS }
   private enableCompression = true
@@ -63,34 +49,6 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     return fn.call(client)
   }
 
-  private createUploadOptions(
-    mimetype: string | undefined,
-    onProgress?: (progress: number) => void,
-    filename?: string,
-    includeFilename: boolean = true
-  ): {
-    type?: string
-    name?: string
-    includeFilename?: boolean
-    progressHandler?: (progress: { loaded: number; total: number }) => void
-  } {
-    return {
-      type: mimetype,
-      name: filename,
-      includeFilename,
-      progressHandler: onProgress
-        ? ({ loaded, total }) => {
-            if (!total) {
-              return
-            }
-
-            const percentage = Math.min(100, Math.max(0, Math.round((loaded / total) * 100)))
-            onProgress(percentage)
-          }
-        : undefined
-    }
-  }
-
   setCompressOptions(options: CompressOptions) {
     this.compressOptions = { ...DEFAULT_COMPRESS_OPTIONS, ...options }
   }
@@ -99,208 +57,22 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     this.enableCompression = enable
   }
 
-  private isPayloadTooLarge(err: unknown): boolean {
-    const e = err as { httpStatus?: number; errcode?: string }
-    return e?.httpStatus === 413 || e?.errcode === 'M_TOO_LARGE'
-  }
-
-  private async uploadContentWithChunkFallback(
-    client: MatrixClient,
-    file: File,
-    opts: ReturnType<MatrixMediaServiceClass['createUploadOptions']>,
-    onProgress?: (progress: number) => void
-  ): Promise<string> {
-    try {
-      // MediaManager.uploadContent adds m.upload.size precheck (5min cache).
-      // Pass opts as UploadOpts (with progressHandler) via type cast: the
-      // MediaManager type signature says `progress` but internally passes
-      // opts to http.uploadContent which reads `progressHandler`.
-      const uploadResponse = await this.getMedia().uploadContent(
-        file,
-        opts as unknown as { name?: string; type?: string; progress?: (p: { loaded: number; total: number }) => void }
-      )
-      return typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
-    } catch (err) {
-      if (this.isPayloadTooLarge(err)) {
-        logger.warn(`[MatrixMedia] 上传返回 413,回退到分片上传: ${file.name}`)
-        const result = await chunkUploadService.upload({
-          file,
-          onProgress: (p) => onProgress?.(p.percentage)
-        })
-        return result.mxcUrl
-      }
-      const errName = err instanceof Error ? err.name : ''
-      if (errName === 'AbortError') {
-        // SDK uploadContent 用 XMLHttpRequest 跨域被 CORS 阻止，回退到同源 XHR + Vite proxy
-        logger.warn(`[MatrixMedia][AVATAR_DEBUG] uploadContent AbortError, 回退到直接 XHR 上传`)
-        logger.info(
-          `[MatrixMedia][AVATAR_DEBUG] calling uploadViaDirectFetch, typeof=${typeof this.uploadViaDirectFetch}`
-        )
-        const result = await this.uploadViaDirectFetch(client, file, opts)
-        logger.info(`[MatrixMedia][AVATAR_DEBUG] uploadViaDirectFetch returned: ${result}`)
-        return result
-      }
-      throw err
-    }
-  }
-
-  /**
-   * 直接上传：绕过 SDK 的 uploadContent（XMLHttpRequest 跨域 CORS 阻止）
-   * 用 XMLHttpRequest + 同源 Vite proxy URL，避免 CORS 问题
-   */
-  private uploadViaDirectFetch(
-    client: MatrixClient,
-    file: File,
-    opts: { type?: string; name?: string }
-  ): Promise<string> {
-    const homeserverUrl = client.getHomeserverUrl()
-    const accessToken = client.getAccessToken()
-    const filename = opts.name || file.name || 'upload'
-    const mimetype = opts.type || file.type || 'application/octet-stream'
-
-    // 构造同源 URL（dev 模式走 Vite proxy，避免 XMLHttpRequest 跨域 CORS）
-    let uploadUrl = `${homeserverUrl}/_matrix/media/v3/upload?filename=${encodeURIComponent(filename)}&content_type=${encodeURIComponent(mimetype)}`
-    if (import.meta.env.DEV) {
-      try {
-        const parsed = new URL(uploadUrl)
-        if (parsed.pathname.startsWith('/_matrix/')) {
-          uploadUrl = `${window.location.origin}${parsed.pathname}${parsed.search}`
-        }
-      } catch {
-        // URL 解析失败，用原始 URL
-      }
-    }
-
-    logger.info(`[MatrixMedia][AVATAR_DEBUG] 直接 XHR 上传: ${uploadUrl}, size=${file.size}`)
-
-    return new Promise<string>((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open('POST', uploadUrl)
-      xhr.setRequestHeader('Content-Type', mimetype)
-      if (accessToken) {
-        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`)
-      }
-      const timeout = setTimeout(() => {
-        xhr.abort()
-        reject(new Error('上传超时（30s）'))
-      }, 30000)
-
-      xhr.onreadystatechange = () => {
-        if (xhr.readyState !== XMLHttpRequest.DONE) return
-        clearTimeout(timeout)
-        if (xhr.status === 0) {
-          reject(new Error('XMLHttpRequest 网络错误（CORS 或连接失败）'))
-          return
-        }
-        try {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const result = JSON.parse(xhr.responseText) as { content_uri: string }
-            logger.info(`[MatrixMedia][AVATAR_DEBUG] 直接上传成功: ${result.content_uri}`)
-            resolve(result.content_uri)
-          } else {
-            reject(new Error(`上传失败: ${xhr.status} ${xhr.responseText}`))
-          }
-        } catch (err) {
-          reject(new Error(`解析响应失败: ${err}`))
-        }
-      }
-
-      xhr.onerror = () => {
-        clearTimeout(timeout)
-        reject(new Error('XMLHttpRequest onerror'))
-      }
-
-      xhr.send(file)
-    })
-  }
-
-  private resolveDownloadUrl(mediaUrl: string): string {
-    if (!mediaUrl) {
-      throw new Error(this.t('matrix_error.media.url_empty'))
-    }
-
-    if (mediaUrl.startsWith('mxc://')) {
-      const downloadUrl = this.getMediaUrl(mediaUrl)
-      if (!downloadUrl) {
-        throw new Error(this.t('matrix_error.media.url_parse_failed', { mediaUrl }))
-      }
-      return downloadUrl
-    }
-
-    return mediaUrl
-  }
-
-  async downloadFileBytes(mediaUrl: string): Promise<Uint8Array> {
-    const client = this.getClient()
-    const downloadUrl = this.resolveDownloadUrl(mediaUrl)
-
-    const accessToken = client.getAccessToken()
-    if (accessToken && downloadUrl.startsWith(client.getHomeserverUrl())) {
-      try {
-        const buffer = await HttpClient.downloadBytes(downloadUrl, {
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
-        })
-        return new Uint8Array(buffer)
-      } catch (err) {
-        if (err instanceof HttpClientError && err.status === 404 && accessToken) {
-          // Fallback: try authenticated download endpoint (MSC3916)
-          const mxcMatch = mediaUrl.match(/^mxc:\/\/([^/]+)\/(.+)$/)
-          if (mxcMatch) {
-            const serverName = mxcMatch[1]
-            const mediaId = mxcMatch[2]
-            const authDownloadUrl = `${client.getHomeserverUrl()}_matrix/client/v1/media/download/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`
-            try {
-              const buffer = await HttpClient.downloadBytes(authDownloadUrl, {
-                headers: { Authorization: `Bearer ${accessToken}` }
-              })
-              return new Uint8Array(buffer)
-            } catch {
-              // fall through to error
-            }
-          }
-          // Last fallback: access_token in query (only if all else fails)
-          const separator = downloadUrl.includes('?') ? '&' : '?'
-          const queryUrl = `${downloadUrl}${separator}access_token=${encodeURIComponent(accessToken)}`
-          const buffer = await HttpClient.downloadBytes(queryUrl)
-          return new Uint8Array(buffer)
-        }
-        throw err
-      }
-    }
-
-    const buffer = await HttpClient.downloadBytes(downloadUrl)
-    return new Uint8Array(buffer)
-  }
-
-  async downloadEncryptedFileBytes(encryptedFile: MatrixEncryptedAttachmentLike): Promise<Uint8Array> {
-    const parsedEncryptedFile = matrixAttachmentDecryptionService.parseEncryptedFile(encryptedFile)
-    const ciphertext = await this.downloadFileBytes(parsedEncryptedFile.url)
-    return matrixAttachmentDecryptionService.decryptAttachment(ciphertext, parsedEncryptedFile)
-  }
+  // ── 上传 ──
 
   async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
     const client = this.getClient()
-
     try {
-      const contentUri = await this.uploadContentWithChunkFallback(
+      const contentUri = await uploadContentWithChunkFallback(
+        () => this.getMedia(),
         client,
         file,
-        this.createUploadOptions(file.type, onProgress, file.name),
+        createUploadOptions(file.type, onProgress, file.name),
         onProgress
       )
       logger.info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
-
-      // 记录遥测
       const telemetry = matrixClientService.getTelemetry()
-      if (telemetry) {
-        telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
-      }
-
-      return {
-        contentUri,
-        size: file.size,
-        mimetype: file.type || 'application/octet-stream'
-      }
+      if (telemetry) telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
+      return { contentUri, size: file.size, mimetype: file.type || 'application/octet-stream' }
     } catch (err) {
       logger.error(`[MatrixMedia] 文件上传失败: ${err}`)
       throw err
@@ -310,7 +82,6 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   /**
    * 主动分块上传大文件 (§9.4.1)
    * 阈值：文件 ≥ 10MB 时应优先调用此方法，避免触发 413 后再回退。
-   * 复用 ChunkUploadService 现有的 413 自动半分重试机制。
    */
   async uploadLargeFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
     try {
@@ -319,17 +90,9 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         onProgress: (p) => onProgress?.(p.percentage)
       })
       logger.info(`[MatrixMedia] 大文件分块上传成功: ${result.mxcUrl}`)
-
       const telemetry = matrixClientService.getTelemetry()
-      if (telemetry) {
-        telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
-      }
-
-      return {
-        contentUri: result.mxcUrl,
-        size: file.size,
-        mimetype: file.type || 'application/octet-stream'
-      }
+      if (telemetry) telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
+      return { contentUri: result.mxcUrl, size: file.size, mimetype: file.type || 'application/octet-stream' }
     } catch (err) {
       logger.error(`[MatrixMedia] 大文件分块上传失败: ${err}`)
       throw err
@@ -338,28 +101,24 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   async uploadEncryptedFile(file: File, onProgress?: (progress: number) => void): Promise<EncryptedUploadResult> {
     const client = this.getClient()
-
     try {
       const encryptedPayload = await matrixAttachmentEncryptionService.encryptAttachment(file)
       const encryptedBlobFile = new File([encryptedPayload.encryptedData as unknown as BlobPart], file.name, {
         type: 'application/octet-stream'
       })
-      const contentUri = await this.uploadContentWithChunkFallback(
+      const contentUri = await uploadContentWithChunkFallback(
+        () => this.getMedia(),
         client,
         encryptedBlobFile,
-        this.createUploadOptions('application/octet-stream', onProgress, file.name, false),
+        createUploadOptions('application/octet-stream', onProgress, file.name, false),
         onProgress
       )
       logger.info(`[MatrixMedia] 加密文件上传成功: ${contentUri}`)
-
       return {
         contentUri,
         size: file.size,
         mimetype: file.type || 'application/octet-stream',
-        encryptedFile: {
-          ...encryptedPayload.encryptedFile,
-          url: contentUri
-        }
+        encryptedFile: { ...encryptedPayload.encryptedFile, url: contentUri } as EncryptedAttachmentFile
       }
     } catch (err) {
       logger.error(`[MatrixMedia] 加密文件上传失败: ${err}`)
@@ -369,38 +128,34 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   async uploadImage(file: File, onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
     const client = this.getClient()
-
     try {
       logger.info(
         `[MatrixMedia][AVATAR_DEBUG] uploadImage start, size=${file.size} type=${file.type} name=${file.name}`
       )
-      logger.info(`[MatrixMedia][AVATAR_DEBUG] calling getImageDimensions...`)
-      const dimensions = await this.getImageDimensions(file)
+      const dimensions = await getImageDimensions(file)
       logger.info(`[MatrixMedia][AVATAR_DEBUG] dimensions: ${dimensions.width}x${dimensions.height}`)
 
       let fileToUpload = file
-      let originalSize = file.size
       let compressedSize = file.size
 
       if (this.enableCompression && isImageFile(file)) {
         try {
           const result = await compressImage(file, this.compressOptions)
           fileToUpload = new File([result.blob], file.name || 'image.jpg', { type: result.blob.type })
-          originalSize = result.originalSize ?? file.size
           compressedSize = result.compressedSize ?? file.size
           logger.info(
-            `[MatrixMedia][AVATAR_DEBUG] 压缩完成: ${formatBytes(originalSize)} -> ${formatBytes(compressedSize)} (${result.compressionRatio.toFixed(1)}%)`
+            `[MatrixMedia][AVATAR_DEBUG] 压缩完成: ${formatBytes(result.originalSize ?? file.size)} -> ${formatBytes(compressedSize)} (${result.compressionRatio.toFixed(1)}%)`
           )
         } catch (compressErr) {
           logger.error(`[MatrixMedia][AVATAR_DEBUG] 压缩失败，使用原图: ${compressErr}`)
         }
       }
 
-      logger.info(`[MatrixMedia][AVATAR_DEBUG] 开始 uploadContent, homeserver=${client.getHomeserverUrl()}`)
-      const contentUri = await this.uploadContentWithChunkFallback(
+      const contentUri = await uploadContentWithChunkFallback(
+        () => this.getMedia(),
         client,
         fileToUpload,
-        this.createUploadOptions(fileToUpload.type, onProgress, fileToUpload.name),
+        createUploadOptions(fileToUpload.type, onProgress, fileToUpload.name),
         onProgress
       )
       logger.info(`[MatrixMedia][AVATAR_DEBUG] uploadContent 成功: ${contentUri}`)
@@ -428,14 +183,13 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
     const client = this.getClient()
-
     try {
-      const metadata = await this.getVideoMetadata(file)
-
-      const contentUri = await this.uploadContentWithChunkFallback(
+      const metadata = await getVideoMetadata(file)
+      const contentUri = await uploadContentWithChunkFallback(
+        () => this.getMedia(),
         client,
         file,
-        this.createUploadOptions(file.type, onProgress, file.name),
+        createUploadOptions(file.type, onProgress, file.name),
         onProgress
       )
       logger.info(`[MatrixMedia] 视频上传成功: ${contentUri}`)
@@ -455,68 +209,34 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   async uploadAudio(file: File, onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
     const client = this.getClient()
-
     try {
-      const duration = await this.getAudioDuration(file)
-
-      const contentUri = await this.uploadContentWithChunkFallback(
+      const duration = await getAudioDuration(file)
+      const contentUri = await uploadContentWithChunkFallback(
+        () => this.getMedia(),
         client,
         file,
-        this.createUploadOptions(file.type, onProgress, file.name),
+        createUploadOptions(file.type, onProgress, file.name),
         onProgress
       )
       logger.info(`[MatrixMedia] 音频上传成功: ${contentUri}`)
-      return {
-        contentUri,
-        size: file.size,
-        mimetype: file.type || 'audio/ogg',
-        duration
-      }
+      return { contentUri, size: file.size, mimetype: file.type || 'audio/ogg', duration }
     } catch (err) {
       logger.error(`[MatrixMedia] 音频上传失败: ${err}`)
       throw err
     }
   }
 
-  async uploadBlob(blob: Blob, _filename: string, mimetype: string): Promise<UploadResult> {
+  async uploadBlob(blob: Blob, filename: string, mimetype: string): Promise<UploadResult> {
     const client = this.getClient()
-
     try {
-      const opts = this.createUploadOptions(mimetype, undefined, _filename)
-      const contentUri = await this.uploadContentWithChunkFallback(client, blob as File, opts)
+      const opts = createUploadOptions(mimetype, undefined, filename)
+      const contentUri = await uploadContentWithChunkFallback(() => this.getMedia(), client, blob as File, opts)
       logger.info(`[MatrixMedia] Blob 上传成功: ${contentUri}`)
-      return {
-        contentUri,
-        size: blob.size,
-        mimetype
-      }
+      return { contentUri, size: blob.size, mimetype }
     } catch (err) {
       logger.error(`[MatrixMedia] Blob 上传失败: ${err}`)
       throw err
     }
-  }
-
-  getMediaUrl(mxcUrl: string, width?: number, height?: number): string | null {
-    if (!mxcUrl?.startsWith('mxc://')) {
-      return null
-    }
-
-    const client = this.getClient()
-
-    if (width && height) {
-      return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
-    }
-
-    return client.mxcUrlToHttp(mxcUrl) ?? null
-  }
-
-  getThumbnailUrl(mxcUrl: string, width: number, height: number): string | null {
-    if (!mxcUrl?.startsWith('mxc://')) {
-      return null
-    }
-
-    const client = this.getClient()
-    return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
   }
 
   async uploadContentWithId(
@@ -530,16 +250,50 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     try {
       const response = await this.getMedia().uploadContentWithId(serverName, mediaId, file, resolvedMimetype)
       logger.info(`[MatrixMedia] 具名上传成功: ${response.content_uri}`)
-      return {
-        contentUri: response.content_uri,
-        size: file.size,
-        mimetype: resolvedMimetype
-      }
+      return { contentUri: response.content_uri, size: file.size, mimetype: resolvedMimetype }
     } catch (err) {
       logger.error(`[MatrixMedia] 具名上传失败: ${err}`)
       throw err
     }
   }
+
+  // ── URL 解析 ──
+
+  getMediaUrl(mxcUrl: string, width?: number, height?: number): string | null {
+    if (!mxcUrl?.startsWith('mxc://')) return null
+    const client = this.getClient()
+    if (width && height) return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
+    return client.mxcUrlToHttp(mxcUrl) ?? null
+  }
+
+  getThumbnailUrl(mxcUrl: string, width: number, height: number): string | null {
+    if (!mxcUrl?.startsWith('mxc://')) return null
+    return this.getClient().mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
+  }
+
+  // ── 下载（委托 mediaDownloadHelpers）──
+
+  async downloadFileBytes(mediaUrl: string): Promise<Uint8Array> {
+    const client = this.getClient()
+    return dlFileBytes(
+      client,
+      mediaUrl,
+      (url) => this.getMediaUrl(url),
+      (key, params) => this.t(key, params)
+    )
+  }
+
+  async downloadEncryptedFileBytes(encryptedFile: Parameters<typeof dlEncryptedFileBytes>[1]): Promise<Uint8Array> {
+    const client = this.getClient()
+    return dlEncryptedFileBytes(
+      client,
+      encryptedFile,
+      (url) => this.getMediaUrl(url),
+      (key, params) => this.t(key, params)
+    )
+  }
+
+  // ── 媒体配置 & 配额 ──
 
   async getMediaConfig(): Promise<{ 'm.upload.size'?: number; [key: string]: unknown }> {
     try {
@@ -577,22 +331,14 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   async checkQuota(): Promise<{ limit: number; used: number; remaining: number } | null> {
     try {
       const result = await this.getMedia().checkMediaQuota()
-      return {
-        limit: result.limit ?? 0,
-        used: result.used ?? 0,
-        remaining: result.remaining ?? 0
-      }
+      return { limit: result.limit ?? 0, used: result.used ?? 0, remaining: result.remaining ?? 0 }
     } catch (err) {
       logger.error(`[MatrixMedia] 配额检查失败: ${err}`)
       return null
     }
   }
 
-  async getQuotaStats(): Promise<{
-    storageBytes: number
-    mediaCount: number
-    limitBytes: number
-  } | null> {
+  async getQuotaStats(): Promise<{ storageBytes: number; mediaCount: number; limitBytes: number } | null> {
     try {
       const result = await this.getMedia().getMediaQuotaStats()
       return {
@@ -606,100 +352,15 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
-  async getAuthenticatedMediaConfig(): Promise<{
-    authenticated_media: boolean
-    [key: string]: unknown
-  } | null> {
+  async getAuthenticatedMediaConfig(): Promise<{ authenticated_media: boolean; [key: string]: unknown } | null> {
     try {
       const result = (await this.getMedia().getMediaConfig(true)) as Record<string, unknown>
       logger.info('[MatrixMedia] 获取认证媒体配置成功')
-      return {
-        authenticated_media: (result.authenticated_media as boolean) ?? false,
-        ...result
-      }
+      return { authenticated_media: (result.authenticated_media as boolean) ?? false, ...result }
     } catch (err) {
       logger.error(`[MatrixMedia] 获取认证媒体配置失败: ${err}`)
       return null
     }
-  }
-
-  private withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
-    let timer: ReturnType<typeof setTimeout>
-    return Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(errorMessage)), ms)
-      })
-    ]).finally(() => clearTimeout(timer))
-  }
-
-  private getImageDimensions(file: File): Promise<{ width: number; height: number }> {
-    return this.withTimeout(
-      new Promise<{ width: number; height: number }>((resolve) => {
-        const url = URL.createObjectURL(file)
-        const img = new Image()
-        img.onload = () => {
-          const result = { width: img.naturalWidth, height: img.naturalHeight }
-          URL.revokeObjectURL(url)
-          resolve(result)
-        }
-        img.onerror = () => {
-          URL.revokeObjectURL(url)
-          logger.warn(`[MatrixMedia][AVATAR_DEBUG] getImageDimensions onerror, 用默认尺寸 0x0`)
-          resolve({ width: 0, height: 0 })
-        }
-        img.src = url
-      }),
-      10000,
-      '获取图片尺寸超时'
-    ).catch((err) => {
-      logger.warn(`[MatrixMedia][AVATAR_DEBUG] getImageDimensions 失败, 用默认尺寸: ${err}`)
-      return { width: 0, height: 0 }
-    })
-  }
-
-  private getVideoMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
-    return this.withTimeout(
-      new Promise((resolve, reject) => {
-        const video = document.createElement('video')
-        video.preload = 'metadata'
-        video.onloadedmetadata = () => {
-          resolve({
-            width: video.videoWidth,
-            height: video.videoHeight,
-            duration: Math.round(video.duration * 1000)
-          })
-          URL.revokeObjectURL(video.src)
-        }
-        video.onerror = () => {
-          reject(new Error('无法加载视频'))
-          URL.revokeObjectURL(video.src)
-        }
-        video.src = URL.createObjectURL(file)
-      }),
-      10000,
-      '获取视频元数据超时'
-    )
-  }
-
-  private getAudioDuration(file: File): Promise<number> {
-    return this.withTimeout(
-      new Promise((resolve, reject) => {
-        const audio = new Audio()
-        audio.preload = 'metadata'
-        audio.onloadedmetadata = () => {
-          resolve(Math.round(audio.duration * 1000))
-          URL.revokeObjectURL(audio.src)
-        }
-        audio.onerror = () => {
-          reject(new Error('无法加载音频'))
-          URL.revokeObjectURL(audio.src)
-        }
-        audio.src = URL.createObjectURL(file)
-      }),
-      10000,
-      '获取音频时长超时'
-    )
   }
 }
 
