@@ -13,7 +13,7 @@ export {
   SETTINGS_TABS
 } from './settingsSchema'
 
-export const useSettingsDialogStore = defineStore(StoresEnum.SETTINGS_DIALOG, () => {
+export const useSettingsTabStore = defineStore(StoresEnum.SETTINGS_DIALOG, () => {
   const activeTab = ref<SettingsTabType>('account')
   const initialData = ref<Record<string, unknown> | undefined>(undefined)
 

@@ -66,7 +66,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
   { id: 'helpAbout', label: 'Help & About', icon: 'help-circle', group: 'other' },
   { id: 'friends', label: 'Friends', icon: 'account-group', group: 'communication' },
   { id: 'burnAfterRead', label: 'Burn After Read', icon: 'timer-outline', group: 'communication' },
-  { id: 'aiConnection', label: 'AI Connection', icon: 'robot', group: 'advanced' }
+  { id: 'aiConnection', label: 'AI Connection', icon: 'puzzle', group: 'advanced' }
 ]
 
 const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {

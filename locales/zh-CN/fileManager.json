@@ -48,6 +48,10 @@
     "sessions": "暂无会话文件",
     "groups": "暂无群组文件"
   },
+  "preview": {
+    "no_document": "暂无文档可预览",
+    "no_document_desc": "支持的格式：doc、docx、pdf、xlsx、pptx"
+  },
   "notifications": {
     "saveFileSuccess": "文件保存成功",
     "saveFileFail": "保存文件失败",

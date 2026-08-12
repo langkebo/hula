@@ -3,7 +3,7 @@ import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 import { useI18nGlobal } from '@/services/i18n'
 import { persistRefreshedToken, setupSystemResumeListener } from '@/services/matrix/matrixClientPlatform'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
-import { deleteCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
+import { clearCryptoStoragePasswordCache, deleteCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
 import { PendingEventOrdering } from '@/types/matrix-js-sdk'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
@@ -460,6 +460,12 @@ class MatrixClientService {
       // ISSUE-08：清理 keychain 中的 crypto storagePassword，避免残留
       if (userId && deviceId) {
         void deleteCryptoStoragePassword(userId, deviceId)
+      }
+      // 全量清理内存缓存中的 crypto storagePassword，防止切换账号时复用旧密码
+      clearCryptoStoragePasswordCache()
+      // 清除 IndexedDB crypto store 与 localStorage 记录，确保下次登录从干净状态开始
+      if (userId) {
+        void this.cryptoTracker.clearCryptoStoreForLogout(userId)
       }
     }
   }

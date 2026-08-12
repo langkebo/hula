@@ -1,7 +1,7 @@
 <template>
   <div
     id="layout"
-    class="relative flex min-w-310px bg-[--right-bg-color] h-full"
+    class="relative flex min-w-310px bg-[--tjg-surface-subtle] h-full"
     :class="{ 'is-dragging-files': isDraggingFiles }">
     <SkipLink target="#center" :label="t('common.skip_to_sessions')" />
     <SkipLink target="#chat-main" :label="t('common.skip_to_chat')" />
@@ -11,19 +11,22 @@
       <AsyncCenter />
       <AsyncRight v-if="!shrinkStatus && !isRoomListRoute" />
     </div>
-    <div v-if="overlayVisible" class="absolute inset-0 z-10 flex items-center justify-center bg-[--right-bg-color]">
+    <div v-if="overlayVisible" class="absolute inset-0 z-10 flex items-center justify-center bg-[--tjg-surface-subtle]">
       <LoadingSpinner :percentage="loadingPercentage" :loading-text="loadingText" />
     </div>
 
     <transition name="drag-upload">
       <div
         v-if="isDraggingFiles"
-        class="pointer-events-none absolute inset-0 z-999 flex flex-col items-center justify-center bg-black/30 text-center text-[--tjg-text-inverse]">
-        <div class="rounded-16px border border-white/60 bg-white/15 px-40px py-20px backdrop-blur-md">
+        class="pointer-events-none absolute inset-0 z-999 flex flex-col items-center justify-center bg-[--tjg-overlay-mask-default] text-center text-[--tjg-text-inverse]">
+        <div
+          class="rounded-16px border border-[--tjg-border-strong] bg-[--tjg-overlay] px-40px py-20px backdrop-blur-md">
           <p class="text-[length:var(--tjg-font-size-xl)] font-semibold tracking-wide">
             {{ t('home.file_drop.title') }}
           </p>
-          <p class="mt-6px text-[length:var(--tjg-font-size-md)] text-white/80">{{ t('home.file_drop.desc') }}</p>
+          <p class="mt-6px text-[length:var(--tjg-font-size-md)] text-[--tjg-text-inverse] opacity-80">
+            {{ t('home.file_drop.desc') }}
+          </p>
         </div>
       </div>
     </transition>

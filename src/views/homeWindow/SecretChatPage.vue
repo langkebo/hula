@@ -6,7 +6,7 @@
           <path
             d="M12 3a9 9 0 0 0-9 9 9.75 9.75 0 0 0 5.5 8.38l-1.15 1.15a1 1 0 0 0 1.37 1.37l1.15-1.15A9.75 9.75 0 0 0 21 12a9 9 0 0 0-9-9zm-5 9a5 5 0 1 1 10 0 5 5 0 0 1-10 0z" />
         </svg>
-        <span>私密聊天</span>
+        <span>{{ t('home.secret_chat.title') }}</span>
       </div>
       <svg
         class="w-20px h-20px cursor-pointer"
@@ -26,7 +26,7 @@
         v-if="hiddenSessions.length === 0"
         role="status"
         illustration="no-conversations"
-        description="暂无隐藏会话" />
+        :description="t('home.secret_chat.no_hidden_sessions')" />
 
       <div v-else class="session-list" role="list" :aria-label="t('home.secret_chat.hidden_sessions_list')">
         <div
@@ -44,7 +44,7 @@
           </div>
           <div class="session-info">
             <div class="session-name">{{ session.name }}</div>
-            <div class="session-preview">{{ session.text || '暂无消息' }}</div>
+            <div class="session-preview">{{ session.text || t('home.secret_chat.no_messages') }}</div>
           </div>
           <div class="session-meta">
             <span class="unread-count" v-if="session.unreadCount > 0" :aria-label="`${session.unreadCount}条未读`">
@@ -196,7 +196,7 @@ const handleClose = () => {
   height: 20px;
   padding: 0 6px;
   border-radius: 10px;
-  background: var(--error-color);
+  background: var(--tjg-color-danger-500);
   color: var(--tjg-text-inverse);
   font-size: 12px;
 }

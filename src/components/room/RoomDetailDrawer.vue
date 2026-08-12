@@ -372,7 +372,7 @@ watch(
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--tjg-overlay-mask-default);
   display: flex;
   justify-content: flex-end;
 }
@@ -383,7 +383,7 @@ watch(
   height: 100%;
   background: var(--tjg-surface-panel);
   border-left: 1px solid var(--tjg-border-default);
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--tjg-shadow-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;

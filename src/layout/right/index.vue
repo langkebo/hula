@@ -4,7 +4,7 @@
     data-tauri-drag-region
     id="chat-main"
     tabindex="-1"
-    class="bg-[--right-bg-color] flex flex-col min-h-0 border-l border-[--tjg-border-layout-divider] relative"
+    class="bg-[--tjg-surface-subtle] flex flex-col min-h-0 border-l border-[--tjg-border-layout-divider] relative"
     :class="{
       'right-pane-animated': transitionEnabled,
       'flex-1 w-full': isRightPaneFullscreen

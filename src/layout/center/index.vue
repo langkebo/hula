@@ -38,7 +38,7 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 
 const MIN_CENTER_WIDTH = 280
 const MAX_CENTER_WIDTH = 400
-const DEFAULT_CENTER_WIDTH = MIN_CENTER_WIDTH
+const DEFAULT_CENTER_WIDTH = 300
 const CENTER_WIDTH_STORAGE_KEY = 'tjg-center-panel-width'
 
 const route = useRoute()

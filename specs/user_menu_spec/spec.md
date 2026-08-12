@@ -34,7 +34,7 @@
 │  ┌───────────────────────────────────────────────────────────┐ │
 │  │  Stores (Pinia)                                           │ │
 │  │  - userMenu.ts (菜单状态)                                  │ │
-│  │  - settingsDialog.ts (设置对话框状态)                      │ │
+│  │  - settingsTab.ts (设置对话框状态)                      │ │
 │  │  - user.ts (用户状态)                                      │ │
 │  │  - setting.ts (设置状态)                                   │ │
 │  └───────────────────────────────────────────────────────────┘ │
@@ -194,7 +194,7 @@ src/
 │       └── SettingsTabNav.vue         # 标签页导航
 ├── stores/
 │   ├── userMenu.ts                    # 用户菜单状态
-│   └── settingsDialog.ts              # 设置对话框状态
+│   └── settingsTab.ts              # 设置对话框状态
 ├── composables/
 │   ├── useUserMenu.ts                 # 用户菜单 Hook
 │   ├── useSettings.ts                 # 设置功能 Hook
@@ -214,7 +214,7 @@ interface UserMenuState {
   trigger: 'left' | 'right' | 'touch'
 }
 
-// stores/settingsDialog.ts
+// stores/settingsTab.ts
 interface SettingsDialogState {
   isOpen: boolean
   activeTab: SettingsTabType

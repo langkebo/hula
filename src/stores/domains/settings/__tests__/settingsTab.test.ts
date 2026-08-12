@@ -1,8 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { normalizeSettingsTab, SETTINGS_TABS, useSettingsDialogStore } from '../settingsDialog'
+import { normalizeSettingsTab, SETTINGS_TABS, useSettingsTabStore } from '../settingsTab'
 
-describe('settingsDialog', () => {
+describe('settingsTab', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
@@ -21,7 +21,7 @@ describe('settingsDialog', () => {
   })
 
   it('maps remaining legacy dialog targets without breaking activeTab', () => {
-    const store = useSettingsDialogStore()
+    const store = useSettingsTabStore()
 
     store.setActiveTab('security')
     expect(store.activeTab).toBe('securityPrivacy')

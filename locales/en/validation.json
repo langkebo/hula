@@ -12,7 +12,7 @@
   "url_required": "URL cannot be empty",
   "url_invalid": "Invalid URL format",
   "matrix_id_required": "Matrix ID cannot be empty",
-  "matrix_id_invalid": "Invalid Matrix ID format, expected @user:server",
+  "matrix_id_invalid": "Invalid Matrix ID format, expected {'@'}user:server",
   "room_id_required": "Room ID cannot be empty",
   "room_id_invalid": "Invalid Room ID format",
   "room_alias_required": "Room alias cannot be empty",

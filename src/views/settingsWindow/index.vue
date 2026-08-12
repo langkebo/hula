@@ -12,8 +12,8 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 import {
   normalizeSettingsTab,
   type SettingsTabInput,
-  useSettingsDialogStore
-} from '../../stores/domains/settings/settingsDialog'
+  useSettingsTabStore
+} from '../../stores/domains/settings/settingsTab'
 import SettingsPage from './SettingsPage.vue'
 
 defineOptions({
@@ -21,7 +21,7 @@ defineOptions({
 })
 
 const route = useRoute()
-const settingsDialogStore = useSettingsDialogStore()
+const settingsTabStore = useSettingsTabStore()
 
 const isStandalone = ref(false)
 
@@ -37,7 +37,7 @@ function detectStandalone() {
 function syncRouteTab() {
   const tab = typeof route.query.tab === 'string' ? (route.query.tab as SettingsTabInput) : undefined
   const normalizedTab = normalizeSettingsTab(tab)
-  settingsDialogStore.setActiveTab(normalizedTab ?? 'account')
+  settingsTabStore.setActiveTab(normalizedTab ?? 'account')
 }
 
 onMounted(() => {

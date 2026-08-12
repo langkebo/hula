@@ -1,10 +1,10 @@
 <template>
-  <div style="background: var(--left-bg-color)" class="h-full">
-    <div style="background: var(--left-bg-color)" class="h-30px"></div>
+  <div style="background: var(--tjg-surface-sidebar)" class="h-full">
+    <div style="background: var(--tjg-surface-sidebar)" class="h-30px"></div>
     <main
       :class="`left ${leftMinWidthClass} h-full p-[0_6px_40px] box-border flex-col-center select-none`"
       data-tauri-drag-region>
-      <p class="text-[var(--text-base)] text-[--left-text-color] cursor-default select-none m-[4px_0_16px_0]">Tjg</p>
+      <p class="text-[var(--text-base)] text-[--tjg-text-secondary] cursor-default select-none m-[4px_0_16px_0]">Tjg</p>
       <!-- 头像模块 -->
       <LeftAvatar />
       <!-- 导航选项按钮模块 -->

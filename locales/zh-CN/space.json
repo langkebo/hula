@@ -117,7 +117,7 @@
   "create_failed": "创建失败",
   "load_failed": "加载失败",
   "invite_title": "邀请成员",
-  "invite_user_placeholder": "请输入用户 ID，如 @alice:example.com",
+  "invite_user_placeholder": "请输入用户 ID，如 {'@'}alice:example.com",
   "invite_user_required": "请输入用户 ID",
   "invite_success": "邀请成功",
   "invite_failed": "邀请失败",

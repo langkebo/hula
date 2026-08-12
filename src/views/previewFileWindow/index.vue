@@ -13,7 +13,11 @@
 
         <VueOfficePptx v-else-if="isShowPpt" :src="resourceSrc" style="height: 95vh" />
 
-        <div v-else class="text-gray-500">📄 暂无文档可预览</div>
+        <EmptyState
+          v-else
+          illustration="no-results"
+          :title="t('fileManager.preview.no_document')"
+          :description="t('fileManager.preview.no_document_desc')" />
       </div>
     </n-scrollbar>
   </div>
@@ -25,11 +29,15 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import { merge } from 'es-toolkit'
 import type { FileTypeResult } from 'file-type'
 import { defineAsyncComponent } from 'vue'
+import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useWindow } from '@/composables/common/useWindow'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { getFile } from '@/utils/PathUtil'
+
+const { t } = useI18n()
 
 const logger = createLogger('PreviewFile')
 

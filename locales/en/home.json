@@ -589,6 +589,8 @@
     "title": "Secret Chat",
     "desc": "Open password-protected private conversations",
     "no_password": "Please set a secret chat password in settings first",
-    "hidden_sessions_list": "Hidden Sessions"
+    "hidden_sessions_list": "Hidden Sessions",
+    "no_hidden_sessions": "No hidden sessions",
+    "no_messages": "No messages"
   }
 }

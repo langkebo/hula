@@ -31,7 +31,7 @@
   "new_chat_creating": "Creating...",
   "new_chat_success": "Chat created",
   "new_chat_failed": "Failed to create chat",
-  "user_id_placeholder": "User ID, e.g. @alice:example.com",
+  "user_id_placeholder": "User ID, e.g. {'@'}alice:example.com",
   "user_id_required": "Please enter a user ID",
   "create_group_title": "Create Group Chat",
   "create_group_prompt": "Enter group name and member IDs (separated by commas)",

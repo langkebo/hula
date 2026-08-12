@@ -1,3 +1,4 @@
+import { useRouter } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
@@ -63,6 +64,7 @@ const useMoreList = () => {
   const { showFeedback } = useActionFeedback()
   const { createWebviewWindow } = useWindow()
   const { logout } = useLoginFlow()
+  const router = useRouter()
   const showHomeserverDialog = ref(false)
 
   const openHomeserverDialog = () => {
@@ -92,9 +94,7 @@ const useMoreList = () => {
         items.push({
           label: t('menu.admin_panel'),
           icon: 'hammer-and-wrench',
-          click: async () => {
-            const { useRouter } = await import('vue-router')
-            const router = useRouter()
+          click: () => {
             router.push('/admin')
           }
         })
@@ -122,8 +122,8 @@ const useMoreList = () => {
         {
           label: t('menu.settings'),
           icon: 'settings',
-          click: async () => {
-            await createWebviewWindow(t('common.window_titles.settings'), 'settings', 840, 840, '', true, 840, 600)
+          click: () => {
+            router.push('/settings')
           }
         },
         {

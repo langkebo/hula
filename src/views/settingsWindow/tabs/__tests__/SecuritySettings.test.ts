@@ -3,6 +3,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import SecuritySettings from '../SecuritySettings.vue'
+import BlockedUsersSection from '../sections/BlockedUsersSection.vue'
+import InviteListsSection from '../sections/InviteListsSection.vue'
+import PrivacySettingsSection from '../sections/PrivacySettingsSection.vue'
+import PrivateChatSection from '../sections/PrivateChatSection.vue'
 
 const {
   messageSuccessMock,
@@ -69,28 +73,36 @@ const {
 
 type SecuritySettingsVm = ComponentPublicInstance & {
   encryptionEnabled: boolean
+}
+
+type BlockedUsersVm = ComponentPublicInstance & {
   blockedUsers: string[]
-  inviteBlocklist: string[]
-  inviteAllowlist: string[]
+  newBlockedUser: string
+  handleAddBlocked: () => void
+  handleUnblock: (userId: string) => void
+}
+
+type PrivacySettingsVm = ComponentPublicInstance & {
   showOnlineStatus: boolean
   showTypingStatus: boolean
   sendReadReceipts: boolean
-  newBlockedUser: string
+  handleOnlineStatusChange: (value: boolean) => void
+  handleTypingStatusChange: (value: boolean) => void
+}
+
+type InviteListsVm = ComponentPublicInstance & {
+  inviteBlocklist: string[]
+  inviteAllowlist: string[]
   newBlocklistUser: string
-  secretChatEnabled: boolean
-  secretChatHideSessions: boolean
-  secretChatAutoLock: boolean
-  secretChatLockTimeout: number
+  handleAddInviteBlocklist: () => void
+  handleRemoveInviteAllowlist: (userId: string) => void
+}
+
+type PrivateChatVm = ComponentPublicInstance & {
   secretChatForm: {
     password: string
     confirmPassword: string
   }
-  handleOnlineStatusChange: (value: boolean) => void
-  handleTypingStatusChange: (value: boolean) => void
-  handleAddBlocked: () => void
-  handleUnblock: (userId: string) => void
-  handleAddInviteBlocklist: () => void
-  handleRemoveInviteAllowlist: (userId: string) => void
   handleClearSecretChat: () => void
   handleSaveSecretChat: () => Promise<void>
 }
@@ -107,6 +119,7 @@ vi.mock('naive-ui', () => ({
   NFormItem: { name: 'NFormItem', template: '<div><slot /></div>', props: ['path', 'label'] },
   NInput: { name: 'NInput', template: '<input />', props: ['value', 'type', 'placeholder'] },
   NAlert: { name: 'NAlert', template: '<div class="n-alert"><slot /></div>', props: ['type', 'showIcon'] },
+  NSelect: { name: 'NSelect', template: '<select />', props: ['value', 'options'] },
   useMessage: () => ({ success: messageSuccessMock, warning: messageWarningMock, error: messageErrorMock }),
   useDialog: () => ({ warning: dialogWarningMock })
 }))
@@ -147,7 +160,8 @@ vi.mock('@/stores/domains/settings/encryption', () => ({
       return _encryptionEnabled
     },
     securityKeyConfigured: false,
-    loadEncryptionStatus: vi.fn()
+    loadEncryptionStatus: vi.fn(),
+    markSecurityKeyConfigured: vi.fn()
   })
 }))
 
@@ -171,6 +185,18 @@ vi.mock('@/components/encryption/KeyBackupSetupDialog.vue', () => ({
   default: { name: 'KeyBackupSetupDialog', template: '<div class="key-backup-dialog" />', props: ['show'] }
 }))
 
+vi.mock('@/components/encryption/SecureBackupDialog.vue', () => ({
+  default: { name: 'SecureBackupDialog', template: '<div />', props: ['show'] }
+}))
+
+vi.mock('@/components/encryption/SecurityKeySetupDialog.vue', () => ({
+  default: { name: 'SecurityKeySetupDialog', template: '<div />', props: ['show'] }
+}))
+
+vi.mock('@/components/settings/InvitePermissionPanel.vue', () => ({
+  default: { name: 'InvitePermissionPanel', template: '<div />' }
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn() })
 }))
@@ -192,6 +218,14 @@ vi.mock('vue-i18n', () => ({
 
 describe('SecuritySettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as SecuritySettingsVm
+  const getBlockedVm = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.findComponent(BlockedUsersSection).vm as BlockedUsersVm
+  const getPrivacyVm = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.findComponent(PrivacySettingsSection).vm as PrivacySettingsVm
+  const getInviteVm = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.findComponent(InviteListsSection).vm as InviteListsVm
+  const getPrivateChatVm = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.findComponent(PrivateChatSection).vm as PrivateChatVm
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -205,14 +239,14 @@ describe('SecuritySettings', () => {
   })
 
   it('renders correctly', async () => {
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     expect(wrapper.find('.security-settings').exists()).toBe(true)
     expect(wrapper.text()).toContain('加密状态')
   })
 
   it('shows encryption disabled state by default', async () => {
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     expect(getVm(wrapper).encryptionEnabled).toBe(false)
     expect(wrapper.text()).toContain('端到端加密未启用')
@@ -221,31 +255,31 @@ describe('SecuritySettings', () => {
   it('shows encryption enabled state', async () => {
     isEncryptionAvailableMock.mockResolvedValue(true)
     _encryptionEnabled = true
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     expect(getVm(wrapper).encryptionEnabled).toBe(true)
   })
 
   it('loads ignored users on mount', async () => {
     getIgnoredUsersMock.mockResolvedValue(['@user1:test.com', '@user2:test.com'])
-    mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    mount(SecuritySettings)
     await vi.dynamicImportSettled()
     expect(getIgnoredUsersMock).toHaveBeenCalled()
   })
 
   it('loads blocked users from localStorage', async () => {
     localStorage.setItem('tjg-blocked-users', JSON.stringify(['@blocked:test.com']))
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    expect(getVm(wrapper).blockedUsers).toContain('@blocked:test.com')
+    expect(getBlockedVm(wrapper).blockedUsers).toContain('@blocked:test.com')
   })
 
   it('loads invite lists from localStorage', async () => {
     localStorage.setItem('tjg-invite-blocklist', JSON.stringify(['@block:test.com']))
     localStorage.setItem('tjg-invite-allowlist', JSON.stringify(['@allow:test.com']))
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getInviteVm(wrapper)
     expect(vm.inviteBlocklist).toContain('@block:test.com')
     expect(vm.inviteAllowlist).toContain('@allow:test.com')
   })
@@ -254,35 +288,35 @@ describe('SecuritySettings', () => {
     localStorage.setItem('tjg-show-online', 'false')
     localStorage.setItem('tjg-show-typing', 'false')
     localStorage.setItem('tjg-send-receipts', 'false')
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getPrivacyVm(wrapper)
     expect(vm.showOnlineStatus).toBe(false)
     expect(vm.showTypingStatus).toBe(false)
     expect(vm.sendReadReceipts).toBe(false)
   })
 
   it('saves online status to localStorage', async () => {
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getPrivacyVm(wrapper)
     vm.handleOnlineStatusChange(false)
     expect(localStorage.getItem('tjg-show-online')).toBe('false')
     expect(messageSuccessMock).toHaveBeenCalled()
   })
 
   it('saves typing status to localStorage', async () => {
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getPrivacyVm(wrapper)
     vm.handleTypingStatusChange(false)
     expect(localStorage.getItem('tjg-show-typing')).toBe('false')
   })
 
   it('adds blocked user and saves to localStorage', async () => {
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getBlockedVm(wrapper)
     vm.newBlockedUser = '@newblocked:test.com'
     vm.handleAddBlocked()
     expect(vm.blockedUsers).toContain('@newblocked:test.com')
@@ -292,9 +326,9 @@ describe('SecuritySettings', () => {
 
   it('rejects duplicate blocked user', async () => {
     localStorage.setItem('tjg-blocked-users', JSON.stringify(['@dup:test.com']))
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getBlockedVm(wrapper)
     vm.newBlockedUser = '@dup:test.com'
     vm.handleAddBlocked()
     expect(messageWarningMock).toHaveBeenCalledWith('该用户已在屏蔽列表中')
@@ -302,18 +336,18 @@ describe('SecuritySettings', () => {
 
   it('removes blocked user', async () => {
     localStorage.setItem('tjg-blocked-users', JSON.stringify(['@rm:test.com', '@keep:test.com']))
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getBlockedVm(wrapper)
     vm.handleUnblock('@rm:test.com')
     expect(vm.blockedUsers).not.toContain('@rm:test.com')
     expect(vm.blockedUsers).toContain('@keep:test.com')
   })
 
   it('adds user to invite blocklist', async () => {
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getInviteVm(wrapper)
     vm.newBlocklistUser = '@blockuser:test.com'
     vm.handleAddInviteBlocklist()
     expect(vm.inviteBlocklist).toContain('@blockuser:test.com')
@@ -322,26 +356,26 @@ describe('SecuritySettings', () => {
 
   it('removes user from invite allowlist', async () => {
     localStorage.setItem('tjg-invite-allowlist', JSON.stringify(['@rm:test.com', '@keep:test.com']))
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getInviteVm(wrapper)
     vm.handleRemoveInviteAllowlist('@rm:test.com')
     expect(vm.inviteAllowlist).not.toContain('@rm:test.com')
   })
 
   it('clears secret chat triggers dialog', async () => {
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getPrivateChatVm(wrapper)
     vm.handleClearSecretChat()
     expect(dialogWarningMock).toHaveBeenCalledWith(expect.objectContaining({ title: '确认清除' }))
   })
 
   it('saves secret chat password', async () => {
     isSecretChatConfiguredMock.mockReturnValue(true)
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getPrivateChatVm(wrapper)
     vm.secretChatForm.password = '1234'
     vm.secretChatForm.confirmPassword = '1234'
     await vm.handleSaveSecretChat()
@@ -349,9 +383,9 @@ describe('SecuritySettings', () => {
   })
 
   it('rejects mismatched secret chat passwords', async () => {
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getPrivateChatVm(wrapper)
     vm.secretChatForm.password = '1234'
     vm.secretChatForm.confirmPassword = '5678'
     await vm.handleSaveSecretChat()
@@ -359,9 +393,9 @@ describe('SecuritySettings', () => {
   })
 
   it('rejects short secret chat password', async () => {
-    const wrapper = mount(SecuritySettings, { global: { stubs: { InvitePermissionPanel: true } } })
+    const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
-    const vm = getVm(wrapper)
+    const vm = getPrivateChatVm(wrapper)
     vm.secretChatForm.password = '12'
     vm.secretChatForm.confirmPassword = '12'
     await vm.handleSaveSecretChat()

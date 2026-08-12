@@ -54,9 +54,14 @@ describe('Wave 1 - 问题 1：会话列表选中项样式冲突', () => {
     const match = source.match(nestedSelected)
     expect(match, '应存在 &--selected 嵌套规则').not.toBeNull()
     const block = match![1]
-    expect(block).toMatch(/\.tjg-room-list-item__name\s*\{[^}]*color:\s*#ffffff/)
-    expect(block).toMatch(/\.tjg-room-list-item__preview[^{]*\{[^}]*color:\s*rgba\(255,\s*255,\s*255,\s*0\.85\)/)
-    expect(block).toMatch(/\.tjg-room-list-item__time\s*\{[^}]*color:\s*rgba\(255,\s*255,\s*255,\s*0\.75\)/)
+    // name 使用 var(--tjg-text-inverse)（白色），preview/time 使用基于 text-inverse 的 color-mix 降透明度
+    expect(block).toMatch(/\.tjg-room-list-item__name\s*\{[^}]*color:\s*var\(--tjg-text-inverse\)/)
+    expect(block).toMatch(
+      /\.tjg-room-list-item__preview[^{]*\{[^}]*color:\s*color-mix\(in srgb,\s*var\(--tjg-text-inverse\)\s*85%,\s*transparent\)/
+    )
+    expect(block).toMatch(
+      /\.tjg-room-list-item__time\s*\{[^}]*color:\s*color-mix\(in srgb,\s*var\(--tjg-text-inverse\)\s*75%,\s*transparent\)/
+    )
   })
 })
 

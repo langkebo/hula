@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import type { SettingsTabType } from '@/stores/domains/settings/settingsDialog'
+import type { SettingsTabType } from '@/stores/domains/settings/settingsTab'
 
 export const SETTINGS_TAB_COMPONENT_LOADERS: Record<SettingsTabType, () => Promise<Component>> = {
   account: () => import('./tabs/AccountSettings.vue'),

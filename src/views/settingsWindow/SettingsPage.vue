@@ -24,7 +24,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDialog } from 'naive-ui'
 import { computed, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import SkeletonSettings from '@/components/common/SkeletonSettings.vue'
 import {
   createSettingsDirtyRegistry,
@@ -32,11 +32,7 @@ import {
 } from '@/composables/settings/useSettingsDirtyRegistry'
 import { findFirstMatchingSettingsTab, useSettingsShell } from '@/composables/settings/useSettingsShell'
 import { usePlatform } from '@/composables/usePlatform'
-import {
-  getSettingsTabLabel,
-  type SettingsTabType,
-  useSettingsDialogStore
-} from '@/stores/domains/settings/settingsDialog'
+import { getSettingsTabLabel, type SettingsTabType, useSettingsTabStore } from '@/stores/domains/settings/settingsTab'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import SettingsContent from './SettingsContent.vue'
 import SettingsSidebar from './SettingsSidebar.vue'
@@ -58,7 +54,7 @@ const props = withDefaults(
 
 const LeftNav = defineAsyncComponent(() => import('@/layout/left/index.vue'))
 
-const settingsDialogStore = useSettingsDialogStore()
+const settingsTabStore = useSettingsTabStore()
 const { isDesktop } = usePlatform()
 const { t, tm } = useI18n()
 const router = useRouter()
@@ -76,7 +72,7 @@ const { searchQuery, filteredTabs } = useSettingsShell({
   resolveSearchKeywords
 })
 
-const activeTab = computed(() => settingsDialogStore.activeTab)
+const activeTab = computed(() => settingsTabStore.activeTab)
 
 const dirtyRegistry = createSettingsDirtyRegistry(async ({ scope, currentTabLabel: label }) => {
   return await new Promise<boolean>((resolve) => {
@@ -114,7 +110,7 @@ async function handleTabChange(tabId: SettingsTabType) {
   })
   if (!canLeave) return
 
-  settingsDialogStore.setActiveTab(tabId)
+  settingsTabStore.setActiveTab(tabId)
   router.replace({ path: '/settings', query: { tab: tabId } })
 }
 
@@ -135,7 +131,12 @@ async function handleClose() {
     }
     return
   }
-  router.push('/message')
+  // 非独立窗口模式：优先返回上一页，无历史记录时回退到消息页
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/message')
+  }
 }
 
 async function handleSearchEnter() {
@@ -162,6 +163,20 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
   event.returnValue = ''
 }
 
+// A-1: 路由守卫，LeftNav 导航离开设置页时确认未保存更改
+onBeforeRouteLeave(async () => {
+  if (!hasDirtyTabs.value) return true
+  const canLeave = await dirtyRegistry.confirmIfNeeded({
+    scope: 'close',
+    tabId: activeTab.value,
+    currentTabLabel: getSettingsTabLabel(activeTab.value, t)
+  })
+  if (canLeave) {
+    dirtyRegistry.clearDirtyTabs()
+  }
+  return canLeave
+})
+
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)
   window.addEventListener('keydown', handleShortcutKey)
@@ -174,18 +189,14 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-@use '@/styles/scss/global/responsive.scss' as responsive;
-
 .settings-page {
   display: flex;
   height: 100%;
   min-height: 0;
   background: var(--tjg-surface-app);
   color: var(--tjg-text-primary);
-
-  @include responsive.respond-to-max('md') {
-    flex-direction: column;
-  }
+  // 设置页为桌面端专属路由，移动端使用 /mobile/mobileMy/... 独立栈式导航。
+  // 不在窄屏下纵向堆叠三栏，避免破坏桌面端布局语义。
 }
 
 .settings-page-left {

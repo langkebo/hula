@@ -38,7 +38,7 @@ import { NButton, NIcon } from 'naive-ui'
 import type { Component } from 'vue'
 import { computed, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getSettingsTabLabel, type SettingsTabType } from '@/stores/domains/settings/settingsDialog'
+import { getSettingsTabLabel, type SettingsTabType } from '@/stores/domains/settings/settingsTab'
 import { SETTINGS_TAB_COMPONENT_LOADERS } from './tabComponentLoaders'
 
 defineOptions({

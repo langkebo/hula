@@ -174,13 +174,13 @@ onUnmounted(() => {
 }
 
 :deep(.dark) .menu-divider {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--tjg-border-contrast);
 }
 
 .menu-section-title {
   padding: 8px 16px 4px;
   font-size: 12px;
-  color: var(--text-secondary, var(--tjg-text-tertiary));
+  color: var(--tjg-text-tertiary);
   font-weight: 500;
 }
 
@@ -198,11 +198,11 @@ onUnmounted(() => {
 }
 
 .menu-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--tjg-surface-sidebar-hover);
 }
 
 :deep(.dark) .menu-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--tjg-surface-inverse-hover);
 }
 
 .menu-item-danger {

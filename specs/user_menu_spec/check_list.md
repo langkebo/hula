@@ -33,7 +33,7 @@
 - [x] UM-015: SettingsTabNav 标签页列表
 - [x] UM-016: 标签页组件基类
 - [x] UM-017: 标签页切换动画
-- [x] UM-018: settingsDialog store 状态
+- [x] UM-018: settingsTab store 状态
 
 ### 2.2 账户设置页
 - [x] UM-019: AccountSettings.vue 文件已创建
