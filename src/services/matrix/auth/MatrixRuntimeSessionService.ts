@@ -250,16 +250,28 @@ class MatrixRuntimeSessionService {
 
   async hasAuthenticatedSession(): Promise<boolean> {
     try {
+      // 快速路径：已登录直接返回，不走 IPC
       if (this.port.matrix.isLoggedIn()) {
+        this.cachedHasSession = null
         return true
       }
 
+      // 已初始化但未登录，无可用会话
       if (this.port.matrix.isInitialized()) {
+        this.cachedHasSession = null
         return false
       }
 
+      // 未登录+未初始化：首次走 IPC，后续导航复用缓存避免重复 IPC
+      // 缓存在登出或会话恢复成功后清除
+      if (this.cachedHasSession !== null) {
+        return this.cachedHasSession
+      }
+
       const tokens = await this.getStoredTokens()
-      return !!tokens.token
+      const hasSession = !!tokens.token
+      this.cachedHasSession = hasSession
+      return hasSession
     } catch (err) {
       logger.error(`检查认证会话失败: ${err}`)
       return false
@@ -707,6 +719,7 @@ class MatrixRuntimeSessionService {
 
   private beforeUnloadRegistered = false
   private presenceChangeCleanup: (() => void) | null = null
+  private cachedHasSession: boolean | null = null
   private readonly onBeforeUnload = () => {
     void matrixPresenceService.setPresence('unavailable').catch((err) => {
       logger.warn('Set presence to unavailable failed:', err)
@@ -928,6 +941,9 @@ class MatrixRuntimeSessionService {
       this.presenceChangeCleanup()
       this.presenceChangeCleanup = null
     }
+
+    // 清除会话检查缓存，下次导航重新走 IPC
+    this.cachedHasSession = null
 
     const cleanupAndTerminate = async () => {
       try {

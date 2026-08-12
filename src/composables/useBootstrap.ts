@@ -4,7 +4,6 @@ import { getDefaultMatrixEndpointConfig } from '@/services/backend'
 import { applyLanguagePreference } from '@/services/i18n'
 import { updateSettings } from '@/services/tauriCommand'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 import { initializePlatform, isDesktop, isMobile } from '@/utils/PlatformConstants'
 import { parseStoredProxySettings } from '@/utils/proxySettings'
@@ -21,7 +20,6 @@ const useSharedBootstrap = createSharedComposable(() => {
   const loadingProgress = ref(0)
   const error = ref<string | null>(null)
 
-  const userStore = useUserStore()
   const settingStore = useSettingStore()
 
   const isLoading = computed(() => state.value === 'initializing')
@@ -31,6 +29,14 @@ const useSharedBootstrap = createSharedComposable(() => {
     loadingProgress.value = progress
   }
 
+  /**
+   * Race a promise against a timeout. On timeout, resolves `undefined`
+   * (fire-and-forget pattern for non-critical bootstrap steps).
+   *
+   * Callers that need the return value MUST handle `undefined`.
+   * Currently all callers ignore the return value — the timeout simply
+   * skips the step to avoid blocking bootstrap.
+   */
   function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T | undefined> {
     let timer: ReturnType<typeof setTimeout> | null = null
     return Promise.race([
@@ -76,9 +82,6 @@ const useSharedBootstrap = createSharedComposable(() => {
         8_000,
         '恢复配置'
       )
-
-      await setLoading('检查会话...', 80)
-      await checkSession()
 
       await setLoading('就绪', 100)
       state.value = 'ready'
@@ -126,13 +129,6 @@ const useSharedBootstrap = createSharedComposable(() => {
 
   async function restoreLanguage() {
     await applyLanguagePreference(settingStore.languagePreference)
-  }
-
-  async function checkSession() {
-    const hasSession = userStore.isLoggedIn
-    if (!hasSession) {
-      logger.debug('无可恢复会话')
-    }
   }
 
   function preloadCriticalRoutes() {

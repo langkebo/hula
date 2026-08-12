@@ -84,7 +84,13 @@ const settingStore = useSettingStore()
 // 负责记录哪些账号已经完成过首次同步的全局 store，避免多账号串数据
 const initialSyncStore = useInitialSyncStore()
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
-const hasCachedSessions = computed(() => chatStore.sessionList.length > 0)
+// 是否需要阻塞首屏并做初始化同步
+const requiresInitialSync = ref(true)
+// hasCachedSessions 必须结合 requiresInitialSync 判断：
+// 多账号切换时 sessionList 可能残留上一个账号的数据，若仅看 length>0 会误判为有缓存，
+// 导致 shouldBlockInitialRender 为 false，新账号首屏无数据。
+const hasCachedSessions = computed(() => !requiresInitialSync.value && chatStore.sessionList.length > 0)
+const shouldBlockInitialRender = computed(() => requiresInitialSync.value && !hasCachedSessions.value)
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const loadingPercentage = ref(10)
 const loadingText = ref(t('home.loading.app'))
@@ -92,9 +98,6 @@ const { logout, init } = useLoginFlow()
 const { ensureNotifyWindow } = useWindow()
 // 阶段 3：注册全局搜索快捷键（Ctrl+F 聚焦中间栏搜索框，Ctrl+Shift+F 全局搜索）
 useSearchShortcut()
-// 是否需要阻塞首屏并做初始化同步
-const requiresInitialSync = ref(true)
-const shouldBlockInitialRender = computed(() => requiresInitialSync.value && !hasCachedSessions.value)
 const { overlayVisible, markAsyncLoaded } = useOverlayController({
   isInitialSync: shouldBlockInitialRender,
   progress: loadingPercentage,
