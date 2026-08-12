@@ -207,7 +207,7 @@
 | P1-5 | Worker 消息处理器模块化拆分 | 提升 Worker 可维护性 | 2-3 人日 | ✅ 已完成 |
 | P1-6 | **新增**：拆分 4 个超 500 行 composables（useChatContextMenus 710 / useWindow 690 / useWsEventHandler 614 / useFriends 566） | 职责分离，提升可维护性 | 3-5 人日 | 待处理 |
 | P1-7 | **新增**：拆分 6 个超 600 行服务（MatrixMessageService 794 / MatrixQrLoginSdkService 781 / MatrixSpaceService 713 / MatrixMediaService 706 / MatrixVoIPService 630 / MatrixMessageRelationService 614） | 降低修改风险 | 5-8 人日 | 待处理 |
-| P1-8 | **新增**：补齐 Vue 组件测试覆盖（当前 297/472 无测试，优先 admin/聊天核心/通用组件） | 降低 UI 回归风险 | 8-12 人日 | 待处理 |
+| P1-8 | **新增**：补齐 Vue 组件测试覆盖（当前 297/472 无测试，优先 admin/聊天核心/通用组件；第一批：9 admin 页面 + Image/Voice 渲染组件，74 tests，全量基线 7271 用例 0 失败） | 降低 UI 回归风险 | 8-12 人日 | 🟡 进行中 |
 
 ### P2 — 中期优化（2-3 个迭代内）
 
