@@ -87,8 +87,21 @@ export async function getOrCreateCryptoStoragePassword(userId: string, deviceId:
       return null
     }
 
+    // 4. 写入后立即读回验证
+    //    macOS dev 模式下 keychain 可能写入成功但读取失败（binary 签名变化），
+    //    如果不验证，每次启动都会生成不同密码，导致 initRustCrypto 报
+    //    "An object failed to be decrypted while unpickling"。
+    //    验证失败时返回 null（不加密），保证跨会话一致性。
+    const verifyRead = await getSecureSecret(key)
+    if (verifyRead !== password) {
+      logger.warn(`keychain 写入后读回验证失败（写入成功但读取不一致），crypto store 将不加密: ${userId}/${deviceId}`)
+      // 尝试清理无效的 keychain 条目
+      await deleteSecureSecret(key).catch(() => {})
+      return null
+    }
+
     passwordCache.set(cKey, password)
-    logger.info(`生成并存储 crypto storage password: ${userId}/${deviceId}`)
+    logger.info(`生成并存储 crypto storage password（已验证可读回）: ${userId}/${deviceId}`)
     return password
   } catch (err) {
     logger.error(`获取 crypto storage password 失败: ${userId}/${deviceId}`, err)
