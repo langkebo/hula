@@ -237,6 +237,17 @@ onBeforeMount(async () => {
   useMitt.emit(MittEnum.LOCATE_SESSION, { roomId: globalStore.currentSessionRoomId })
 })
 
+// useMitt 监听器必须在同步 setup 上下文中注册，确保 onUnmounted 自动清理生效。
+useMitt.on(MittEnum.UPDATE_SESSION_LAST_MSG, (payload?: { roomId?: string }) => {
+  invalidateSessionCache(payload?.roomId)
+})
+useMitt.on(MittEnum.DELETE_SESSION, async (roomId: string) => {
+  await handleMsgDelete(roomId)
+})
+useMitt.on(MittEnum.LOCATE_SESSION, async (e: { roomId: string }) => {
+  ensureSessionVisible(e.roomId)
+})
+
 onMounted(async () => {
   if (appWindow && appWindow.label === 'home') {
     await addListener(
@@ -248,15 +259,6 @@ onMounted(async () => {
       'search_to_msg'
     )
   }
-  useMitt.on(MittEnum.UPDATE_SESSION_LAST_MSG, (payload?: { roomId?: string }) => {
-    invalidateSessionCache(payload?.roomId)
-  })
-  useMitt.on(MittEnum.DELETE_SESSION, async (roomId: string) => {
-    await handleMsgDelete(roomId)
-  })
-  useMitt.on(MittEnum.LOCATE_SESSION, async (e: { roomId: string }) => {
-    ensureSessionVisible(e.roomId)
-  })
 })
 </script>
 

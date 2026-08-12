@@ -6,10 +6,12 @@ const logger = createLogger('TokenManager')
 
 const MIN_REFRESH_INTERVAL_MS = 30000
 const RETRY_INTERVAL_MS = 30000
+const MAX_RETRIES = 5
 
 export class MatrixTokenManager {
   private timer: ReturnType<typeof setTimeout> | null = null
   private refreshing = false
+  private retryCount = 0
 
   /**
    * Schedule automatic token refresh `expiresInMs - 60s` before expiry.
@@ -30,7 +32,7 @@ export class MatrixTokenManager {
   }
 
   /**
-   * Cancel any pending token refresh timer.
+   * Cancel any pending token refresh timer and reset retry state.
    *
    * @throws Never throws (pure cleanup, no external calls).
    */
@@ -39,6 +41,7 @@ export class MatrixTokenManager {
       clearTimeout(this.timer)
       this.timer = null
     }
+    this.retryCount = 0
   }
 
   /**
@@ -53,7 +56,7 @@ export class MatrixTokenManager {
    *
    * On success: persists new tokens and re-schedules the next refresh.
    * On 404: stops auto-refresh (server does not support it).
-   * On 429 / network error: retries in 30s.
+   * On 429 / network error: retries with exponential backoff (30s→480s, max 5 attempts).
    * On any other error: logs out the expired session.
    *
    * @throws Never throws to callers (all error paths handled internally).
@@ -82,6 +85,7 @@ export class MatrixTokenManager {
           await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? '')
         }
         logger.info('[TokenRefresh] Access token refreshed successfully')
+        this.retryCount = 0
         if (newExpiresInMs && newExpiresInMs > 0) {
           this.schedule(client, newRefreshToken ?? refreshToken, newExpiresInMs)
         } else {
@@ -95,14 +99,25 @@ export class MatrixTokenManager {
         this.clear()
         return
       }
-      if (httpStatus === 429) {
-        logger.warn('[TokenRefresh] Rate limited (429), retrying in 30s')
-        this.schedule(client, refreshToken, RETRY_INTERVAL_MS)
-        return
-      }
-      if (httpStatus === undefined) {
-        logger.warn(`[TokenRefresh] Network error during refresh, retrying in 30s: ${err}`)
-        this.schedule(client, refreshToken, RETRY_INTERVAL_MS)
+      if (httpStatus === 429 || httpStatus === undefined) {
+        this.retryCount++
+        if (this.retryCount > MAX_RETRIES) {
+          logger.error(`[TokenRefresh] Max retries (${MAX_RETRIES}) exceeded, logging out`)
+          try {
+            await logoutExpiredSession()
+          } catch (cleanupErr) {
+            logger.warn('Cleanup error:', cleanupErr)
+          }
+          return
+        }
+        // Exponential backoff: 30s, 60s, 120s, 240s, 480s
+        const backoffMs = RETRY_INTERVAL_MS * 2 ** (this.retryCount - 1)
+        // Respect retry_after_ms header if present (429 only)
+        const retryAfterMs = (err as { data?: { retry_after_ms?: number } })?.data?.retry_after_ms
+        const delay = retryAfterMs ? Math.max(retryAfterMs, RETRY_INTERVAL_MS) : backoffMs
+        const reason = httpStatus === 429 ? 'Rate limited (429)' : 'Network error'
+        logger.warn(`[TokenRefresh] ${reason}, retry ${this.retryCount}/${MAX_RETRIES} in ${delay}ms`)
+        this.schedule(client, refreshToken, delay)
         return
       }
       logger.error(`[TokenRefresh] Refresh failed: ${err}`)
