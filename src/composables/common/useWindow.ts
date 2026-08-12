@@ -1,161 +1,23 @@
 import { LogicalSize } from '@tauri-apps/api/dpi'
-import type { WebviewOptions } from '@tauri-apps/api/webview'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { type Monitor, primaryMonitor, UserAttentionType, type WindowOptions } from '@tauri-apps/api/window'
+import { primaryMonitor } from '@tauri-apps/api/window'
 
-import { assign } from 'es-toolkit/compat'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { CallTypeEnum, EventEnum, RoomTypeEnum } from '@/enums'
+import { EventEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
-import { createLogger } from '@/utils/Logger'
-import { isCompatibility, isDesktop, isMac, isWindows, isWindows10 } from '@/utils/PlatformConstants'
+import { isDesktop, isMac, isWindows10 } from '@/utils/PlatformConstants'
 import { invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
-
-const logger = createLogger('useWindow')
-
-/** 判断是兼容的系统 */
-const isCompatibilityMode = computed(() => isCompatibility())
-const WINDOW_SAFE_PADDING = 32
-const MIN_LOGICAL_WIDTH = 320
-const MIN_LOGICAL_HEIGHT = 200
-const MAC_TRAFFIC_LIGHTS_SPACING = 6
-type DesktopWindowOptions = Omit<WebviewOptions, 'x' | 'y' | 'width' | 'height'> & WindowOptions
-
-const clampSizeToMonitor = (width: number, height: number, monitor?: Monitor | null) => {
-  if (!monitor) {
-    return { width, height }
-  }
-
-  const scaleFactor = monitor.scaleFactor ?? 1
-  const maxLogicalWidth = Math.max(MIN_LOGICAL_WIDTH, monitor.size.width / scaleFactor - WINDOW_SAFE_PADDING)
-  const maxLogicalHeight = Math.max(MIN_LOGICAL_HEIGHT, monitor.size.height / scaleFactor - WINDOW_SAFE_PADDING)
-
-  return {
-    width: Math.min(width, Math.floor(maxLogicalWidth)),
-    height: Math.min(height, Math.floor(maxLogicalHeight))
-  }
-}
-
-// Mac 端用于模拟父窗口禁用态的透明蒙层
-const MAC_MODAL_OVERLAY_ID = 'mac-modal-overlay'
-// 记录当前已经打开模态窗口的 label，方便在最后一个关闭时移除蒙层
-const activeMacModalLabels = new Set<string>()
-
-// 创建或复用蒙层 DOM
-const ensureMacOverlayElement = () => {
-  if (typeof document === 'undefined') return
-  if (document.getElementById(MAC_MODAL_OVERLAY_ID)) return
-  const overlay = document.createElement('div')
-  overlay.id = MAC_MODAL_OVERLAY_ID
-  assign(overlay.style, {
-    position: 'fixed',
-    inset: '0',
-    zIndex: '9999',
-    backgroundColor: 'transparent',
-    pointerEvents: 'auto',
-    width: '100vw',
-    height: '100vh',
-    userSelect: 'none',
-    cursor: 'not-allowed'
-  })
-  const mountPoint = document.body ?? document.documentElement
-  mountPoint?.appendChild(overlay)
-}
-
-// 移除蒙层
-const removeMacOverlayElement = () => {
-  if (typeof document === 'undefined') return
-  document.getElementById(MAC_MODAL_OVERLAY_ID)?.remove()
-}
-
-// 记录当前窗口并展示蒙层
-const attachMacModalOverlay = (label: string) => {
-  if (!isMac()) return
-  activeMacModalLabels.add(label)
-  ensureMacOverlayElement()
-}
-
-// 解除当前窗口的蒙层记录，如果没有其他窗口则移除蒙层
-const detachMacModalOverlay = (label: string) => {
-  if (!isMac()) return
-  activeMacModalLabels.delete(label)
-  if (activeMacModalLabels.size === 0) {
-    removeMacOverlayElement()
-  }
-}
-
-const awaitWindowCreation = async (label: string, webview: WebviewWindow): Promise<WebviewWindow> => {
-  return new Promise((resolve, reject) => {
-    let settled = false
-
-    const resolveWindow = (window: WebviewWindow) => {
-      if (settled) return
-      settled = true
-      resolve(window)
-    }
-
-    const rejectWindow = (error: Error) => {
-      if (settled) return
-      settled = true
-      reject(error)
-    }
-
-    void webview.once('tauri://created', () => {
-      resolveWindow(webview)
-    })
-
-    void webview.once('tauri://error', async () => {
-      const existingWindow = await WebviewWindow.getByLabel(label)
-      if (existingWindow) {
-        resolveWindow(existingWindow)
-        return
-      }
-
-      rejectWindow(new Error(useI18nGlobal().t('hooks.window.create_failed', { label })))
-    })
-  })
-}
-
-const ensureDesktopWindowInstance = async (
-  label: string,
-  options: DesktopWindowOptions,
-  onCreated?: (window: WebviewWindow) => Promise<void> | void
-) => {
-  if (!isDesktop()) {
-    return null
-  }
-
-  const existingWindow = await WebviewWindow.getByLabel(label)
-  if (existingWindow) {
-    return existingWindow
-  }
-
-  const webview = new WebviewWindow(label, options)
-  const createdWindow = await awaitWindowCreation(label, webview)
-  await onCreated?.(createdWindow)
-  return createdWindow
-}
+import { clampSizeToMonitor, isCompatibilityMode, logger, MAC_TRAFFIC_LIGHTS_SPACING } from './windowHelpers'
+import { createModalWindowFactory } from './windowModal'
+import { createRtcWindowManager } from './windowRtc'
 
 export const useWindow = () => {
   const globalStore = useGlobalStore()
   const { t } = useI18nGlobal()
   const { showFeedback } = useActionFeedback()
-  /**
-   * 创建窗口
-   * @param title 窗口标题
-   * @param label 窗口名称
-   * @param width 窗口宽度
-   * @param height 窗口高度
-   * @param wantCloseWindow 创建后需要关闭的窗口
-   * @param resizable 调整窗口大小
-   * @param minW 窗口最小宽度
-   * @param minH 窗口最小高度
-   * @param transparent 是否透明
-   * @param visible 是否显示
-   * @param queryParams URL查询参数
-   * */
+  /** 创建窗口；移动端或非 Tauri 环境返回 null */
   const createWebviewWindow = async (
     title: string,
     label: string,
@@ -282,15 +144,6 @@ export const useWindow = () => {
    *
    * @param windowLabel - 要获取载荷的窗口标签。
    * @returns 返回一个 Promise，解析后为泛型 T，表示窗口中保存的 payload 数据。
-   * 可以通过泛型指定返回的结构类型。
-   *
-   * @example
-   * interface MyPayload {
-   *   userId: string;
-   *   token: string;
-   * }
-   *
-   * const payload = await getWindowPayload<MyPayload>('my-window')
    */
   const getWindowPayload = async <T>(windowLabel: string, once: boolean = true) => {
     // 移动端不支持窗口管理
@@ -300,151 +153,7 @@ export const useWindow = () => {
     return await invokeWithErrorHandler<T>('get_window_payload', { label: windowLabel, once })
   }
 
-  /**
-   * 注册指定窗口的载荷更新事件监听器。当该窗口的 payload 被更新时触发回调。
-   *
-   * @param this - 可选的绑定上下文对象，内部通过 `Function.prototype.call` 使用。
-   * @param windowLabel - 窗口标签，用于构造监听的事件名称 `${label}:update`。
-   * @param callback - 在 payload 更新时调用的函数，回调参数为 `TauriEvent<T>`。
-   * @returns 返回一个 Promise，解析后为 `UnlistenFn`（一个函数），调用它可以注销监听器。
-   *
-   * @example
-   * const unlisten = await getWindowPayloadListener<MyPayload>('my-window', (event) => {
-   *   logger.debug('收到 payload 更新:', event.payload)
-   * })
-   *
-   * // 需要时手动取消监听
-   * unlisten()
-   */
-  // async function getWindowPayloadListener<T>(this: unknown, windowLabel: string, callback: (event: unknown) => void) {
-  //   const listenLabel = `${windowLabel}:update`
-
-  //   return addListener(
-  //     listen<T>(listenLabel, (event) => {
-  //       callback.call(this, event)
-  //     })
-  //   )
-  // }
-
-  /**
-   * 创建模态子窗口
-   * @param title 窗口标题
-   * @param label 窗口标识
-   * @param width 窗口宽度
-   * @param height 窗口高度
-   * @param parent 父窗口
-   * @param payload 传递给子窗口的数据
-   * @returns 创建的窗口实例或已存在的窗口实例
-   */
-  const createModalWindow = async (
-    title: string,
-    label: string,
-    width: number,
-    height: number,
-    parent: string,
-    payload?: Record<string, unknown>,
-    options?: {
-      minWidth?: number
-      minHeight?: number
-    }
-  ) => {
-    // 移动端不支持窗口管理
-    if (!isDesktop()) {
-      return null
-    }
-    // 检查窗口是否已存在
-    const existingWindow = await WebviewWindow.getByLabel(label)
-    const parentWindow = parent ? await WebviewWindow.getByLabel(parent) : null
-
-    if (existingWindow) {
-      if (isMac()) {
-        attachMacModalOverlay(label)
-      }
-      // 如果窗口已存在，则聚焦到现有窗口并使其闪烁
-      existingWindow.requestUserAttention(UserAttentionType.Critical)
-      return existingWindow
-    }
-
-    // 创建新窗口
-    const monitor = await primaryMonitor()
-    const clampedSize = clampSizeToMonitor(width, height, monitor)
-    const _clampedMinWidth = Math.min(options?.minWidth ?? 500, clampedSize.width)
-    const _clampedMinHeight = Math.min(options?.minHeight ?? 500, clampedSize.height)
-
-    const effectiveMinWidth = Math.max(options?.minWidth ?? 500, clampedSize.width)
-    const effectiveMinHeight = Math.max(options?.minHeight ?? 500, clampedSize.height)
-
-    const modalWindow = new WebviewWindow(label, {
-      url: `/${label}`,
-      title: title,
-      width: clampedSize.width,
-      height: clampedSize.height,
-      resizable: false,
-      center: true,
-      minWidth: effectiveMinWidth,
-      minHeight: effectiveMinHeight,
-      focus: true,
-      minimizable: false,
-      parent: parentWindow ? parentWindow : parent,
-      decorations: !isCompatibilityMode.value,
-      transparent: isCompatibilityMode.value,
-      titleBarStyle: 'overlay', // mac覆盖标签栏
-      hiddenTitle: true, // mac隐藏标题栏
-      visible: false,
-      dragDropEnabled: true, // 启用文件拖放
-      ...(isWindows10() ? { shadow: false } : {})
-    })
-
-    // 监听窗口创建完成事件
-    modalWindow.once('tauri://created', async () => {
-      if (isWindows()) {
-        // 禁用父窗口，模拟模态窗口效果
-        await parentWindow?.setEnabled(false)
-      }
-
-      // 如果有 payload，发送到子窗口
-      if (payload) {
-        await sendWindowPayload(label, payload)
-      }
-
-      // 设置窗口为焦点
-      await modalWindow.setFocus()
-
-      if (isMac()) {
-        await invokeSilently('set_window_movable', {
-          windowLabel: label,
-          movable: false
-        })
-        await invokeSilently('set_macos_traffic_lights_spacing', {
-          windowLabel: label,
-          spacing: MAC_TRAFFIC_LIGHTS_SPACING
-        })
-        attachMacModalOverlay(label)
-      }
-    })
-
-    // 监听错误事件
-    modalWindow.once('tauri://error', async (e) => {
-      logger.error(`${title}窗口创建失败:`, e)
-      showFeedback(`创建${title}窗口失败`, 'error')
-      await parentWindow?.setEnabled(true)
-    })
-
-    void modalWindow.once('tauri://destroyed', async () => {
-      if (isMac()) {
-        detachMacModalOverlay(label)
-      }
-      if (isWindows()) {
-        try {
-          await parentWindow?.setEnabled(true)
-        } catch (error) {
-          logger.error('重新启用父窗口失败:', error)
-        }
-      }
-    })
-
-    return modalWindow
-  }
+  const createModalWindow = createModalWindowFactory({ sendWindowPayload, showFeedback })
 
   /**
    * 调整窗口大小
@@ -515,131 +224,8 @@ export const useWindow = () => {
     }
   }
 
-  const startRtcCall = async (callType: CallTypeEnum) => {
-    try {
-      const currentSession = globalStore.currentSession
-      if (!currentSession) {
-        showFeedback(t('hooks.window.session_not_ready'), 'warning')
-        return
-      }
-      // 判断是否为群聊，如果是群聊则跳过
-      if (currentSession.type === RoomTypeEnum.GROUP) {
-        showFeedback(t('hooks.window.group_call_not_supported'), 'warning')
-        return
-      }
-
-      // 获取当前房间好友的ID（单聊时使用detailId作为remoteUid）
-      const remoteUid = currentSession.detailId
-      if (!remoteUid) {
-        showFeedback(t('hooks.window.user_info_missing'), 'error')
-        return
-      }
-      await createRtcCallWindow(false, remoteUid, globalStore.currentSessionRoomId, callType)
-    } catch (error) {
-      logger.error('创建视频通话窗口失败:', error)
-    }
-  }
-
-  const createRtcCallWindow = async (
-    isIncoming: boolean,
-    remoteUserId: string,
-    roomId: string,
-    callType: CallTypeEnum
-  ) => {
-    // 根据是否来电决定窗口尺寸
-    const windowConfig = isIncoming
-      ? { width: 360, height: 90, minWidth: 360, minHeight: 90 } // 来电通知尺寸
-      : callType === CallTypeEnum.VIDEO
-        ? { width: 850, height: 580, minWidth: 850, minHeight: 580 } // 视频通话尺寸
-        : { width: 500, height: 650, minWidth: 500, minHeight: 650 } // 语音通话尺寸
-
-    const type =
-      callType === CallTypeEnum.VIDEO ? t('common.window_titles.video_call') : t('common.window_titles.audio_call')
-    await createWebviewWindow(
-      type, // 窗口标题
-      'rtcCall', // 窗口标签
-      windowConfig.width, // 宽度
-      windowConfig.height, // 高度
-      undefined, // 不需要关闭其他窗口
-      true, // 可调整大小
-      windowConfig.minWidth, // 最小宽度
-      windowConfig.minHeight, // 最小高度
-      false, // 不透明
-      false, // 显示窗口
-      {
-        remoteUserId,
-        roomId: roomId,
-        callType,
-        isIncoming
-      }
-    )
-  }
-
-  const ensureCaptureWindow = async () => {
-    return ensureDesktopWindowInstance(
-      'capture',
-      {
-        url: '/capture',
-        fullscreen: false,
-        transparent: true,
-        resizable: false,
-        skipTaskbar: true,
-        decorations: false,
-        visible: false,
-        hiddenTitle: true,
-        alwaysOnTop: true,
-        focus: true,
-        titleBarStyle: 'overlay',
-        visibleOnAllWorkspaces: true
-      },
-      async (captureWindow) => {
-        await captureWindow.hide().catch(() => {
-          /* window may already be hidden */
-        })
-      }
-    )
-  }
-
-  const ensureCheckUpdateWindow = async () => {
-    return ensureDesktopWindowInstance(
-      'checkupdate',
-      {
-        title: t('common.window_titles.check_update'),
-        url: '/checkupdate',
-        resizable: false,
-        width: 500,
-        height: 150,
-        alwaysOnTop: true,
-        focus: true,
-        skipTaskbar: true,
-        visible: false,
-        titleBarStyle: 'overlay',
-        hiddenTitle: true
-      },
-      async (checkUpdateWindow) => {
-        if (isMac()) {
-          await invokeSilently('set_macos_traffic_lights_spacing', {
-            windowLabel: checkUpdateWindow.label,
-            spacing: MAC_TRAFFIC_LIGHTS_SPACING
-          })
-        }
-      }
-    )
-  }
-
-  const ensureNotifyWindow = async () => {
-    return ensureDesktopWindowInstance('notify', {
-      url: '/notify',
-      resizable: false,
-      visible: false,
-      width: 280,
-      height: 140,
-      alwaysOnTop: true,
-      skipTaskbar: true,
-      decorations: false,
-      transparent: true
-    })
-  }
+  const { startRtcCall, createRtcCallWindow, ensureCaptureWindow, ensureCheckUpdateWindow, ensureNotifyWindow } =
+    createRtcWindowManager({ globalStore, t, showFeedback, createWebviewWindow })
 
   return {
     createWebviewWindow,
@@ -657,34 +243,7 @@ export const useWindow = () => {
   }
 }
 
-async function _createWebviewWindow(
-  title: string,
-  label: string,
-  width: number,
-  height: number,
-  wantCloseWindow?: string,
-  resizable = false,
-  minW = 330,
-  minH = 495,
-  transparent?: boolean,
-  visible = false,
-  queryParams?: Record<string, string | number | boolean>
-) {
-  const { createWebviewWindow: _create } = useWindow()
-  return _create(title, label, width, height, wantCloseWindow, resizable, minW, minH, transparent, visible, queryParams)
-}
-
 export async function ensureCaptureWindow() {
   const { ensureCaptureWindow: _ensure } = useWindow()
-  return _ensure()
-}
-
-async function _ensureCheckUpdateWindow() {
-  const { ensureCheckUpdateWindow: _ensure } = useWindow()
-  return _ensure()
-}
-
-async function _ensureNotifyWindow() {
-  const { ensureNotifyWindow: _ensure } = useWindow()
   return _ensure()
 }
