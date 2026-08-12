@@ -501,6 +501,91 @@ export class RoomOperations extends BaseMatrixService {
   async removeMemberAsAdmin(roomId: string, userId: string): Promise<void> {
     await this.setMemberPowerLevel(roomId, userId, 0)
   }
+
+  // --- History Visibility ---
+
+  /** 获取房间历史可见性（m.room.history_visibility 状态事件） */
+  async getHistoryVisibility(roomId: string): Promise<string> {
+    const client = this.getClient()
+    const room = client.getRoom(roomId)
+    if (!room) return 'shared'
+    const event = room.currentState.getStateEvents('m.room.history_visibility', '')
+    return (event?.getContent()?.history_visibility as string) ?? 'shared'
+  }
+
+  /** 设置房间历史可见性 */
+  async setHistoryVisibility(roomId: string, visibility: string): Promise<void> {
+    const client = this.getClient()
+    await client.sendStateEvent(roomId, 'm.room.history_visibility', { history_visibility: visibility }, '')
+  }
+
+  // --- Power Levels ---
+
+  /** 获取房间权限级别（m.room.power_levels 状态事件） */
+  async getPowerLevels(roomId: string): Promise<Record<string, unknown>> {
+    const client = this.getClient()
+    const room = client.getRoom(roomId)
+    if (!room) return {}
+    const event = room.currentState.getStateEvents('m.room.power_levels', '')
+    return (event?.getContent() as Record<string, unknown>) ?? {}
+  }
+
+  /** 设置房间权限级别 */
+  async setPowerLevels(roomId: string, content: Record<string, unknown>): Promise<void> {
+    const client = this.getClient()
+    await client.sendStateEvent(roomId, 'm.room.power_levels', content, '')
+  }
+
+  // --- Notification Level ---
+
+  /** 获取房间通知级别（all / mentions / mute） */
+  async getNotificationLevel(roomId: string): Promise<'all' | 'mentions' | 'mute'> {
+    const client = this.getClient()
+    try {
+      const rules = await client.getPushRules()
+      const overrideRules = rules?.global?.override ?? []
+      const roomRule = overrideRules.find((r: { rule_id: string }) => r.rule_id === roomId)
+      if (roomRule) {
+        if (!roomRule.actions || roomRule.actions.length === 0) return 'mute'
+        return 'mentions'
+      }
+    } catch {
+      // 规则不存在时视为默认 all
+    }
+    return 'all'
+  }
+
+  /** 设置房间通知级别 */
+  async setNotificationLevel(roomId: string, level: 'all' | 'mentions' | 'mute'): Promise<void> {
+    const client = this.getClient()
+    // 先清除现有规则
+    try {
+      await client.deletePushRule('global', 'override', roomId)
+    } catch {
+      // 规则不存在时忽略
+    }
+
+    if (level === 'mute') {
+      await client.addPushRule('global', 'override', roomId, {
+        conditions: [{ kind: 'event_match', key: 'room_id', pattern: roomId }],
+        actions: []
+      })
+    } else if (level === 'mentions') {
+      // 仅 @提及 通知：匹配 body 中包含当前用户名
+      const userId = client.getUserId()
+      if (userId) {
+        const localPart = userId.split(':')[0].replace('@', '')
+        await client.addPushRule('global', 'override', roomId, {
+          conditions: [
+            { kind: 'event_match', key: 'room_id', pattern: roomId },
+            { kind: 'event_match', key: 'content.body', pattern: localPart }
+          ],
+          actions: ['notify', { set_tweak: 'highlight', value: true }]
+        })
+      }
+    }
+    // level === 'all' 时不清除（默认行为）
+  }
 }
 
 export const roomOperations = new RoomOperations()

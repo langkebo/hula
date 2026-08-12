@@ -3,17 +3,35 @@
     data-testid="panel-resize-handle"
     class="panel-resize-handle"
     :style="{ cursor: 'col-resize' }"
-    @pointerdown="onPointerDown"
-  />
+    @pointerdown="onPointerDown" />
 </template>
 
 <script setup lang="ts">
+import { onUnmounted } from 'vue'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 const props = defineProps<{ side: 'left' | 'right' }>()
 const settingStore = useSettingStore()
 
 let dragging = false
+let activeMove: ((ev: PointerEvent) => void) | null = null
+let activeUp: (() => void) | null = null
+
+function cleanupDrag() {
+  if (activeMove) {
+    window.removeEventListener('pointermove', activeMove)
+    activeMove = null
+  }
+  if (activeUp) {
+    window.removeEventListener('pointerup', activeUp)
+    activeUp = null
+  }
+  if (dragging) {
+    dragging = false
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  }
+}
 
 function onPointerDown(e: PointerEvent) {
   e.preventDefault()
@@ -31,15 +49,15 @@ function onPointerDown(e: PointerEvent) {
     settingStore.setPanelWidth(props.side, startWidth + delta)
   }
   const onUp = () => {
-    dragging = false
-    document.body.style.cursor = ''
-    document.body.style.userSelect = ''
-    window.removeEventListener('pointermove', onMove)
-    window.removeEventListener('pointerup', onUp)
+    cleanupDrag()
   }
+  activeMove = onMove
+  activeUp = onUp
   window.addEventListener('pointermove', onMove)
   window.addEventListener('pointerup', onUp)
 }
+
+onUnmounted(cleanupDrag)
 </script>
 
 <style scoped>

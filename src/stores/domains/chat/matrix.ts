@@ -71,9 +71,24 @@ export const useMatrixStore = defineStore(
       }
     }
 
+    // 具名监听器函数，支持重新登录时 .off() 移除旧监听器，避免叠加
+    const onConnectionState = (data: unknown) => {
+      const { state } = data as { state: string }
+      connectionState.value = state.toUpperCase() as ConnectionState
+    }
+    const onSync = (data: unknown) => {
+      const { state } = data as { state: string }
+      syncState.value = state
+    }
+
     async function initialize(config: MatrixClientConfig): Promise<void> {
       try {
         lastError.value = null
+
+        // 移除上次 initialize 注册的监听器，防止重新登录时叠加
+        matrixClientService.off('connectionState', onConnectionState)
+        matrixClientService.off('sync', onSync)
+
         await matrixClientService.initialize(config)
         homeserverUrl.value = config.homeserverUrl
         userId.value = config.userId ?? null
@@ -82,15 +97,8 @@ export const useMatrixStore = defineStore(
         isInitialized.value = true
         connectionState.value = 'CONNECTING'
 
-        matrixClientService.on('connectionState', (data: unknown) => {
-          const { state } = data as { state: string }
-          connectionState.value = state.toUpperCase() as ConnectionState
-        })
-
-        matrixClientService.on('sync', (data: unknown) => {
-          const { state } = data as { state: string }
-          syncState.value = state
-        })
+        matrixClientService.on('connectionState', onConnectionState)
+        matrixClientService.on('sync', onSync)
       } catch (error) {
         logger.error('初始化失败:', error)
         connectionState.value = 'ERROR'

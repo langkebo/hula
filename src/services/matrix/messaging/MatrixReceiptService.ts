@@ -110,7 +110,9 @@ class MatrixReceiptService extends BaseMatrixService {
     }
     this.pendingMarkAsReadTasks.set(roomId, task)
     task.timer = setTimeout(() => {
-      void this.flushPendingMarkAsRead(roomId)
+      this.flushPendingMarkAsRead(roomId).catch((err) => {
+        logger.error(`[MatrixReceipt] 补发已读回执未捕获异常: ${err}`)
+      })
     }, DEFERRED_READ_RETRY_INTERVAL_MS)
   }
 
@@ -138,7 +140,9 @@ class MatrixReceiptService extends BaseMatrixService {
       }
 
       task.timer = setTimeout(() => {
-        void this.flushPendingMarkAsRead(roomId)
+        this.flushPendingMarkAsRead(roomId).catch((err) => {
+          logger.error(`[MatrixReceipt] 补发已读回执未捕获异常: ${err}`)
+        })
       }, DEFERRED_READ_RETRY_INTERVAL_MS)
     } catch (err) {
       this.clearPendingMarkAsReadTask(roomId)

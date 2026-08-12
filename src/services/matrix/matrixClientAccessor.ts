@@ -66,11 +66,6 @@ export function getMatrixHomeserverUrl(): string | null {
   return getMatrixClientAccessor()?.getHomeserverUrl?.() ?? null
 }
 
-function _getMatrixTelemetry(): TelemetryManager | null {
-  warnLegacyFallbackOnce('getTelemetry')
-  return getMatrixClientAccessor()?.getTelemetry?.() ?? null
-}
-
 export function waitForMatrixClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
   warnLegacyFallbackOnce('waitForClientReady')
   const accessorPromise = getMatrixClientAccessor()?.waitForClientReady?.(opts)

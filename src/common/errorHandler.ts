@@ -132,12 +132,3 @@ export const createValidationError = (message: string, details?: Record<string, 
 
 export const createNetworkError = (message: string, details?: Record<string, unknown>) =>
   globalErrorHandler.createError(message, ErrorType.Network, { details })
-
-const _createAuthError = (message: string, details?: Record<string, unknown>) =>
-  globalErrorHandler.createError(message, ErrorType.Authentication, { details, showError: true })
-
-const _createServerError = (message: string, code?: number, details?: Record<string, unknown>) =>
-  globalErrorHandler.createError(message, ErrorType.Server, { code, details })
-
-const _createRateLimitError = (message: string, details?: Record<string, unknown>) =>
-  globalErrorHandler.createError(message, ErrorType.RateLimit, { details, showError: true })

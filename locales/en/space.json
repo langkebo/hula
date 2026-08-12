@@ -1,6 +1,10 @@
 {
-  "title": "Space",
+  "title": "Spaces",
   "space_selected": "Space selected: {name}",
+  "switcher_title": "Switch Space",
+  "switcher_search_placeholder": "Search spaces…",
+  "switcher_empty": "No matching spaces",
+  "switcher_current": "Current space",
   "expand": "Expand",
   "collapse": "Collapse",
   "hierarchy": "Hierarchy",

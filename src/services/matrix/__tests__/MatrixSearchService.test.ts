@@ -47,10 +47,7 @@ describe('MatrixSearchService', () => {
     mockClient = {
       getSearchManager: vi.fn(() => searchMgr as unknown as ReturnType<NonNullable<MatrixClient['getSearchManager']>>),
       getUserId: vi.fn(() => '@user:example.com'),
-      getRoom: vi.fn(),
-      publicRooms: vi.fn(),
-      getRoomDirectoryVisibility: vi.fn(),
-      setRoomDirectoryVisibility: vi.fn()
+      getRoom: vi.fn()
     }
 
     vi.mocked(matrixClientService.getClient).mockReset()
@@ -300,22 +297,6 @@ describe('MatrixSearchService', () => {
       searchMgr.searchUserDirectory.mockRejectedValue(new Error('network down'))
 
       await expect(matrixSearchService.searchUsers('test')).rejects.toThrow('network down')
-    })
-  })
-
-  describe('publicRooms (no SearchManager equivalent)', () => {
-    it('still uses client.publicRooms', async () => {
-      mockClient.publicRooms = vi.fn().mockResolvedValue({
-        chunk: [{ room_id: '!r:hs', name: 'Room', avatar_url: undefined, joined_members: 5 }],
-        next_batch: 'next',
-        prev_batch: 'prev',
-        total_room_count_estimate: 1
-      })
-
-      const res = await matrixSearchService.getPublicRooms(undefined, 20)
-
-      expect(mockClient.publicRooms).toHaveBeenCalled()
-      expect(res.rooms).toHaveLength(1)
     })
   })
 })

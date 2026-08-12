@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createDedupedFetcher, MatrixRequestDeduper } from '../MatrixRequestDeduper'
+import { MatrixRequestDeduper } from '../MatrixRequestDeduper'
 
 describe('MatrixRequestDeduper', () => {
   beforeEach(() => {
@@ -63,20 +63,5 @@ describe('MatrixRequestDeduper', () => {
     it('should return 0 when no pending requests', () => {
       expect(MatrixRequestDeduper.getPendingCount()).toBe(0)
     })
-  })
-})
-
-describe('createDedupedFetcher', () => {
-  beforeEach(() => {
-    MatrixRequestDeduper.clear()
-  })
-
-  it('should create a deduped fetcher function', async () => {
-    const mockFetcher = vi.fn().mockResolvedValue({ id: '1', name: 'Test' })
-    const dedupedFetch = createDedupedFetcher('test', mockFetcher)
-
-    const result = await dedupedFetch('1')
-    expect(result).toEqual({ id: '1', name: 'Test' })
-    expect(mockFetcher).toHaveBeenCalledWith('1')
   })
 })

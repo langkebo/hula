@@ -27,7 +27,9 @@ export class MatrixTokenManager {
     logger.info(`[TokenRefresh] Scheduled refresh in ${refreshAt}ms (expiresInMs=${expiresInMs})`)
 
     this.timer = setTimeout(() => {
-      void this.refresh(client, refreshToken)
+      this.refresh(client, refreshToken).catch((err) => {
+        logger.error('[TokenRefresh] refresh threw uncaught error:', err)
+      })
     }, refreshAt)
   }
 

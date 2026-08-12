@@ -451,6 +451,10 @@ onMounted(async () => {
     tipShow.value = false
   }, 5000)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 </script>
 <style lang="scss" scoped>
 @use '../style';

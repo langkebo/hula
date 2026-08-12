@@ -19,17 +19,8 @@ interface SlidingSyncCallbacks {
   onRoomListRefresh?: () => void
 }
 
-interface SlidingSyncRoomUpdate {
-  roomId: string
-  timeline: unknown[]
-  state: Record<string, unknown>
-  notificationCount: number
-  highlightCount: number
-}
-
 class MatrixSlidingSyncService {
   private slidingSync: SlidingSync | null = null
-  private _isInitialized: boolean = false
   private callbacks: SlidingSyncCallbacks = {}
   private hasCompletedInitialSync = false
   private roomCache: Map<
@@ -48,10 +39,6 @@ class MatrixSlidingSyncService {
   ) => this.onLifecycle(state, resp, err)
   private readonly roomDataListener = (roomId: string, roomData: MSC3575RoomData) => this.onRoomData(roomId, roomData)
 
-  get isInitialized(): boolean {
-    return this._isInitialized
-  }
-
   registerCallbacks(callbacks: SlidingSyncCallbacks): void {
     this.callbacks = { ...this.callbacks, ...callbacks }
   }
@@ -60,7 +47,6 @@ class MatrixSlidingSyncService {
     const syncInstance = matrixClientService.getSlidingSync()
     if (!syncInstance) {
       this.slidingSync = null
-      this._isInitialized = false
       this.hasCompletedInitialSync = false
       logger.info('Sliding Sync 未启用，跳过服务初始化')
       return
@@ -68,14 +54,13 @@ class MatrixSlidingSyncService {
 
     // 关键修复：即使 slidingSync 是同一实例，也必须先 detach 再 attach。
     // 原因：SlidingSync.stop() 会 removeAllListeners，forceReconnect 后监听器全部丢失。
-    // 若此处 early-return（同实例 + isInitialized），监听器永不重注册，
+    // 若此处 early-return（同实例），监听器永不重注册，
     // 导致 unread counts、room updates 全部失效。
     if (this.slidingSync) {
       this.detachListeners(this.slidingSync)
     }
 
     this.slidingSync = syncInstance
-    this._isInitialized = true
     this.hasCompletedInitialSync = false
     this.roomCache.clear()
 
@@ -83,16 +68,6 @@ class MatrixSlidingSyncService {
     this.slidingSync.on(SlidingSyncEvent.RoomData, this.roomDataListener)
 
     logger.info('Service initialized')
-  }
-
-  destroy(): void {
-    if (this.slidingSync) {
-      this.detachListeners(this.slidingSync)
-    }
-    this.slidingSync = null
-    this._isInitialized = false
-    this.hasCompletedInitialSync = false
-    this.roomCache.clear()
   }
 
   private detachListeners(instance: SlidingSync): void {
@@ -213,97 +188,6 @@ class MatrixSlidingSyncService {
           hasSummaryDelta
       )
     })
-  }
-
-  updateVisibleRange(startIndex: number, endIndex: number): void {
-    if (!this.slidingSync) return
-
-    try {
-      this.slidingSync.setListRanges('default', [[startIndex, endIndex]])
-      logger.debug(`Updated visible range: ${startIndex}-${endIndex}`)
-    } catch (err) {
-      logger.error(`Failed to update visible range: ${err}`)
-    }
-  }
-
-  setListSort(listName: string, sort: string[]): void {
-    if (!this.slidingSync) return
-
-    try {
-      const list = this.slidingSync.getList(listName)
-      if (list) {
-        list.setSort(sort)
-        logger.debug(`Set sort for ${listName}: ${sort.join(', ')}`)
-      }
-    } catch (err) {
-      logger.error(`Failed to set sort: ${err}`)
-    }
-  }
-
-  setListFilters(listName: string, filters: Record<string, unknown>): void {
-    if (!this.slidingSync) return
-
-    try {
-      const list = this.slidingSync.getList(listName)
-      if (list) {
-        list.setFilters(filters)
-        logger.debug(`Set filters for ${listName}`)
-      }
-    } catch (err) {
-      logger.error(`Failed to set filters: ${err}`)
-    }
-  }
-
-  subscribeRoom(roomId: string, subscribe: boolean = true): void {
-    if (!this.slidingSync) return
-
-    try {
-      if (subscribe) {
-        this.slidingSync.subscribeToRoom(roomId, {
-          timelineLimit: 50,
-          invite: true
-        })
-        logger.debug(`Subscribed to room: ${roomId}`)
-      } else {
-        this.slidingSync.unsubscribeFromRoom(roomId)
-        logger.debug(`Unsubscribed from room: ${roomId}`)
-      }
-    } catch (err) {
-      logger.error(`Failed to ${subscribe ? 'subscribe' : 'unsubscribe'}: ${err}`)
-    }
-  }
-
-  getSyncPosition(): string | null {
-    if (!this.slidingSync) return null
-    return this.slidingSync.getSyncToken()
-  }
-
-  getListRoomCount(listName: string = 'default'): number {
-    if (!this.slidingSync) return 0
-
-    try {
-      const list = this.slidingSync.getList(listName)
-      return list?.rooms?.length ?? 0
-    } catch (err) {
-      // R-13: log silent catch in getListRoomCount
-      logger.warn('getListRoomCount failed:', err)
-      return 0
-    }
-  }
-
-  async getIncrementalUpdate(roomId: string): Promise<SlidingSyncRoomUpdate | null> {
-    if (!this.slidingSync) return null
-
-    const cached = this.roomCache.get(roomId)
-    if (!cached) return null
-
-    return {
-      roomId,
-      timeline: cached.timeline ?? [],
-      state: cached.state ?? {},
-      notificationCount: cached.notification_count ?? 0,
-      highlightCount: cached.highlight_count ?? 0
-    }
   }
 
   applySlidingSyncUnreadCounts(roomInfos: RoomInfo[]): void {

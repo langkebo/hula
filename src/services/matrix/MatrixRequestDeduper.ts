@@ -41,12 +41,3 @@ export class MatrixRequestDeduper {
     logger.info('[Deduper] 请求去重缓存已清空')
   }
 }
-
-export function createDedupedFetcher<T>(
-  keyPrefix: string,
-  fetcher: (id: string) => Promise<T>
-): (id: string) => Promise<T> {
-  return (id: string): Promise<T> => {
-    return MatrixRequestDeduper.dedupe(`${keyPrefix}:${id}`, () => fetcher(id))
-  }
-}

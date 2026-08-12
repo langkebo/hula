@@ -556,4 +556,54 @@ describe('MatrixRuntimeSessionService', () => {
     expect(authenticated).toBe(false)
     expect(mockInvoke).not.toHaveBeenCalledWith('get_user_tokens')
   })
+
+  describe('bootstrapPostLoginState 幂等守卫', () => {
+    const bootstrapOptions = {
+      account: 'alice',
+      displayName: 'Alice',
+      avatar: 'mxc://alice',
+      client: 'PC' as const
+    }
+
+    beforeEach(() => {
+      mockPort.matrix.getUserId.mockReturnValue('@alice:example.com')
+      mockPort.matrix.getAccessToken.mockReturnValue('access-token')
+    })
+
+    it('串行调用两次，pipeline 步骤各只执行一次', async () => {
+      const service = createService()
+
+      await service.bootstrapPostLoginState(bootstrapOptions)
+      await service.bootstrapPostLoginState(bootstrapOptions)
+
+      expect(mockPort.room.setupEventListeners).toHaveBeenCalledTimes(1)
+      expect(mockPort.room.loadRooms).toHaveBeenCalledTimes(1)
+      expect(mockPort.chat.getSessionList).toHaveBeenCalledTimes(1)
+    })
+
+    it('并发调用两次，pipeline 步骤各只执行一次（Promise 复用）', async () => {
+      const service = createService()
+
+      await Promise.all([
+        service.bootstrapPostLoginState(bootstrapOptions),
+        service.bootstrapPostLoginState(bootstrapOptions)
+      ])
+
+      expect(mockPort.room.setupEventListeners).toHaveBeenCalledTimes(1)
+      expect(mockPort.room.loadRooms).toHaveBeenCalledTimes(1)
+    })
+
+    it('resetLocalSessionState 后再次 bootstrap 应重新执行 pipeline', async () => {
+      const service = createService()
+
+      await service.bootstrapPostLoginState(bootstrapOptions)
+      expect(mockPort.room.setupEventListeners).toHaveBeenCalledTimes(1)
+
+      await service.resetLocalSessionState()
+      mockPort.room.setupEventListeners.mockClear()
+
+      await service.bootstrapPostLoginState(bootstrapOptions)
+      expect(mockPort.room.setupEventListeners).toHaveBeenCalledTimes(1)
+    })
+  })
 })

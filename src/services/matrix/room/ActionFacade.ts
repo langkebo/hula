@@ -29,6 +29,7 @@ export interface MatrixRoomActionFacade {
   getRetentionPolicy(roomId: string): Promise<{ content: Record<string, unknown> } | null>
   setRetentionPolicy(roomId: string, content: Record<string, unknown>): Promise<void>
   setStickyEvents(roomId: string, events: Record<string, unknown>): Promise<void>
+  getStickyEvents(roomId: string): Promise<Record<string, unknown>>
   setTag(roomId: string, tag: string, order?: number): Promise<void>
   removeTag(roomId: string, tag: string): Promise<void>
   setInviteBlocklist(roomId: string, blocked: string[]): Promise<void>
@@ -36,6 +37,13 @@ export interface MatrixRoomActionFacade {
   upgradeRoom(roomId: string, newVersion: string): Promise<string>
   incrementUnread(roomId: string, highlight?: boolean): Promise<void>
   clearUnread(roomId: string): Promise<void>
+  getHistoryVisibility(roomId: string): Promise<string>
+  setHistoryVisibility(roomId: string, visibility: string): Promise<void>
+  getPowerLevels(roomId: string): Promise<Record<string, unknown>>
+  setPowerLevels(roomId: string, content: Record<string, unknown>): Promise<void>
+  getNotificationLevel(roomId: string): Promise<'all' | 'mentions' | 'mute'>
+  setNotificationLevel(roomId: string, level: 'all' | 'mentions' | 'mute'): Promise<void>
+  getAliases(roomId: string): Promise<string[]>
 
   // --- Delegated to MembershipService (deep) ---
   joinRoom(roomId: string): Promise<Room>
@@ -75,6 +83,7 @@ export const matrixRoomActionFacade: MatrixRoomActionFacade = {
   getRetentionPolicy: (roomId) => roomOperations.getRetentionPolicy(roomId),
   setRetentionPolicy: (roomId, content) => roomOperations.setRetentionPolicy(roomId, content),
   setStickyEvents: (roomId, events) => roomOperations.setStickyEvents(roomId, events),
+  getStickyEvents: (roomId) => roomOperations.getStickyEvents(roomId),
   setTag: (roomId, tag, order?) => roomOperations.setTag(roomId, tag, order),
   removeTag: (roomId, tag) => roomOperations.removeTag(roomId, tag),
   setInviteBlocklist: (roomId, blocked) => roomOperations.setInviteBlocklist(roomId, blocked),
@@ -82,6 +91,13 @@ export const matrixRoomActionFacade: MatrixRoomActionFacade = {
   upgradeRoom: (roomId, newVersion) => roomOperations.upgradeRoom(roomId, newVersion),
   incrementUnread: (roomId, highlight?) => roomOperations.incrementUnread(roomId, highlight),
   clearUnread: (roomId) => roomOperations.clearUnread(roomId),
+  getHistoryVisibility: (roomId) => roomOperations.getHistoryVisibility(roomId),
+  setHistoryVisibility: (roomId, visibility) => roomOperations.setHistoryVisibility(roomId, visibility),
+  getPowerLevels: (roomId) => roomOperations.getPowerLevels(roomId),
+  setPowerLevels: (roomId, content) => roomOperations.setPowerLevels(roomId, content),
+  getNotificationLevel: (roomId) => roomOperations.getNotificationLevel(roomId),
+  setNotificationLevel: (roomId, level) => roomOperations.setNotificationLevel(roomId, level),
+  getAliases: (roomId) => roomOperations.getAliases(roomId),
 
   // Membership (deep)
   joinRoom: (roomId) => matrixRoomMembershipService.joinRoom(roomId),

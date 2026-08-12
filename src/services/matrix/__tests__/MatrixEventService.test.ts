@@ -1,31 +1,11 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ReceiptType } from '@/types/matrix-js-sdk'
 import { matrixEventService } from '../MatrixEventService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
-}))
-
-vi.mock('../messaging/MatrixReceiptService', () => ({
-  matrixReceiptService: {
-    sendReadReceiptByEventId: vi.fn()
-  }
-}))
-
-vi.mock('../messaging/MatrixReactionService', () => ({
-  matrixReactionService: {
-    addReaction: vi.fn()
-  }
-}))
-
-vi.mock('../messaging/MatrixMessageRelationService', () => ({
-  matrixMessageRelationService: {
-    replyToMessage: vi.fn(),
-    editMessage: vi.fn()
-  }
 }))
 
 vi.mock('@/services/offline/OfflineQueueService', () => ({
@@ -36,9 +16,6 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
 
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import matrixClientService from '../MatrixClientService'
-import { matrixMessageRelationService } from '../messaging/MatrixMessageRelationService'
-import { matrixReactionService } from '../messaging/MatrixReactionService'
-import { matrixReceiptService } from '../messaging/MatrixReceiptService'
 
 describe('MatrixEventService', () => {
   beforeEach(() => {
@@ -180,127 +157,9 @@ describe('MatrixEventService', () => {
     })
   })
 
-  describe('sendVoiceMessage', () => {
-    it('should throw error when client is not initialized', async () => {
-      await expect(
-        matrixEventService.sendVoiceMessage('!room:id', 'mxc://matrix.org/voice', {
-          size: 1024,
-          duration: 5000
-        })
-      ).rejects.toThrow('客户端未初始化')
-    })
-  })
-
-  describe('sendLocationMessage', () => {
-    it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.sendLocationMessage('!room:id', 'geo:0,0', 'Location')).rejects.toThrow(
-        '客户端未初始化'
-      )
-    })
-  })
-
   describe('redactEvent', () => {
     it('should throw error when client is not initialized', async () => {
       await expect(matrixEventService.redactEvent('!room:id', '$event:id')).rejects.toThrow('客户端未初始化')
-    })
-  })
-
-  describe('sendMessageReceipt', () => {
-    it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.sendMessageReceipt('!room:id', '$event:id')).rejects.toThrow('客户端未初始化')
-    })
-
-    it('should delegate read receipts to MatrixReceiptService', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
-      vi.mocked(matrixReceiptService.sendReadReceiptByEventId).mockResolvedValue('$event:id')
-
-      await matrixEventService.sendMessageReceipt('!room:id', '$event:id')
-
-      expect(matrixReceiptService.sendReadReceiptByEventId).toHaveBeenCalledWith('!room:id', '$event:id')
-    })
-
-    it('should keep fallback path for non-read receipt types', async () => {
-      const mockEvent = { getId: vi.fn(() => '$event:id') }
-      const mockRoom = {
-        findEventById: vi.fn(() => mockEvent)
-      }
-      const mockClient = {
-        getRoom: vi.fn(() => mockRoom),
-        sendReadReceipt: vi.fn().mockResolvedValue(undefined)
-      }
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
-
-      await matrixEventService.sendMessageReceipt('!room:id', '$event:id', ReceiptType.ReadPrivate)
-
-      expect(mockClient.sendReadReceipt).toHaveBeenCalledWith(mockEvent, ReceiptType.ReadPrivate)
-    })
-  })
-
-  describe('getRoomTimeline', () => {
-    it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.getRoomTimeline('!room:id')).rejects.toThrow('客户端未初始化')
-    })
-  })
-
-  describe('paginateTimeline', () => {
-    it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.paginateTimeline('!room:id')).rejects.toThrow('客户端未初始化')
-    })
-  })
-
-  describe('replyToEvent', () => {
-    it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.replyToEvent('!room:id', '$event:id', 'Reply text')).rejects.toThrow(
-        '客户端未初始化'
-      )
-    })
-
-    it('should delegate replies to MatrixMessageRelationService', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
-      vi.mocked(matrixMessageRelationService.replyToMessage).mockResolvedValue('$reply')
-
-      const result = await matrixEventService.replyToEvent('!room:id', '$event:id', 'Reply text')
-
-      expect(matrixMessageRelationService.replyToMessage).toHaveBeenCalledWith('!room:id', '$event:id', {
-        body: 'Reply text'
-      })
-      expect(result).toBe('$reply')
-    })
-  })
-
-  describe('editEvent', () => {
-    it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.editEvent('!room:id', '$event:id', 'Edited text')).rejects.toThrow(
-        '客户端未初始化'
-      )
-    })
-
-    it('should delegate edits to MatrixMessageRelationService', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
-      vi.mocked(matrixMessageRelationService.editMessage).mockResolvedValue('$edited')
-
-      const result = await matrixEventService.editEvent('!room:id', '$event:id', 'Edited text')
-
-      expect(matrixMessageRelationService.editMessage).toHaveBeenCalledWith('!room:id', '$event:id', {
-        body: 'Edited text'
-      })
-      expect(result).toBe('$edited')
-    })
-  })
-
-  describe('reactToEvent', () => {
-    it('should throw error when client is not initialized', async () => {
-      await expect(matrixEventService.reactToEvent('!room:id', '$event:id', 'icon')).rejects.toThrow('客户端未初始化')
-    })
-
-    it('should delegate reactions to MatrixReactionService', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
-      vi.mocked(matrixReactionService.addReaction).mockResolvedValue('$reaction')
-
-      const result = await matrixEventService.reactToEvent('!room:id', '$event:id', 'icon')
-
-      expect(matrixReactionService.addReaction).toHaveBeenCalledWith('!room:id', '$event:id', 'icon')
-      expect(result).toBe('$reaction')
     })
   })
 

@@ -71,12 +71,16 @@ jobs:
           pnpm check:doc-coverage
           pnpm check:sdk-boundary
           pnpm check:icon-colors
+          pnpm check:guard-patterns
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps
 
       - name: Unit Tests
         run: pnpm test:unit
+
+      - name: Stability Contract Tests
+        run: pnpm test:stability
 
       - name: SDK Pin Verification
         continue-on-error: true

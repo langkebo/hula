@@ -8,6 +8,8 @@ export interface SpaceChildRoom {
   roomId: string
   name: string
   avatarUrl?: string
+  memberCount?: number
+  onlineCount?: number
 }
 
 interface UseSpaceRoomsResult {

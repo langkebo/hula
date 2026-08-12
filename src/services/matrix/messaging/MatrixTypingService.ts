@@ -55,7 +55,9 @@ class MatrixTypingService extends BaseMatrixService {
   }
 
   startTyping(roomId: string, timeout: number = this.DEFAULT_TIMEOUT): void {
-    void this.sendTypingNotification(roomId, true, timeout)
+    this.sendTypingNotification(roomId, true, timeout).catch((err) => {
+      logger.warn('[MatrixTyping] Start typing notification failed:', err)
+    })
   }
 
   stopTyping(roomId: string): void {

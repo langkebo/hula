@@ -1,4 +1,4 @@
-import { nextTick, onMounted, type Ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, type Ref } from 'vue'
 import { sanitizeMessageInputHtml } from '@/composables/chat/sanitizeInputHtml'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
@@ -118,6 +118,13 @@ export const useMsgInputEvents = ({
       messageInputDom.value.addEventListener('compositionend', onCompositionEnd as EventListener)
     }
     useMitt.on(MittEnum.REPLY_MEG, onReplyMeg as (event: unknown) => void)
+  })
+
+  onUnmounted(() => {
+    if (messageInputDom.value) {
+      messageInputDom.value.removeEventListener('compositionstart', onCompositionStart)
+      messageInputDom.value.removeEventListener('compositionend', onCompositionEnd as EventListener)
+    }
   })
 
   return { onReEdit, onReplyMeg, onCompositionStart, onCompositionEnd }

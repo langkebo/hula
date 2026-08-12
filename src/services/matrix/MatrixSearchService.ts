@@ -221,15 +221,6 @@ class MatrixSearchService {
     return results
   }
 
-  async searchInRoom(roomId: string, query: string, limit: number = 20): Promise<SearchResult[]> {
-    return this.searchMessages(query, {
-      roomId,
-      limit,
-      beforeLimit: 5,
-      afterLimit: 5
-    })
-  }
-
   /**
    * 在指定房间内搜索历史消息，返回结果、总数与高亮关键词。
    * 用于房间内 F2 搜索面板：结果供跳转到对应消息位置。
@@ -339,47 +330,6 @@ class MatrixSearchService {
   }
 
   /**
-   * 获取公开房间目录。SearchManager 无等价方法，保留 client.publicRooms。
-   */
-  async getPublicRooms(
-    server?: string,
-    limit: number = 20,
-    since?: string
-  ): Promise<{
-    rooms: RoomSearchResult[]
-    nextBatch?: string
-    prevBatch?: string
-    totalRooms: number
-  }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const response = await client.publicRooms({
-        server,
-        limit,
-        since
-      })
-
-      const rooms = this.toRoomSearchResults(response.chunk || [])
-
-      logger.info(`[MatrixSearch] 获取公开房间成功: ${rooms.length} 个房间`)
-
-      return {
-        rooms,
-        nextBatch: response.next_batch,
-        prevBatch: response.prev_batch,
-        totalRooms: response.total_room_count_estimate || 0
-      }
-    } catch (err) {
-      logger.error(`[MatrixSearch] 获取公开房间失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
    * 搜索公开房间目录。SearchManager 无等价方法，保留 client.publicRooms。
    */
   async searchPublicRooms(query: string, server?: string): Promise<RoomSearchResult[]> {
@@ -402,36 +352,6 @@ class MatrixSearchService {
       return rooms
     } catch (err) {
       logger.error(`[MatrixSearch] 搜索公开房间失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getRoomDirectoryVisibility(roomId: string): Promise<'public' | 'private'> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const response = await client.getRoomDirectoryVisibility(roomId)
-      return response.visibility as 'public' | 'private'
-    } catch (err) {
-      logger.error(`[MatrixSearch] 获取房间可见性失败: ${err}`)
-      throw err
-    }
-  }
-
-  async setRoomDirectoryVisibility(roomId: string, visibility: 'public' | 'private'): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.setRoomDirectoryVisibility(roomId, visibility)
-      logger.info(`[MatrixSearch] 设置房间可见性成功: ${roomId} -> ${visibility}`)
-    } catch (err) {
-      logger.error(`[MatrixSearch] 设置房间可见性失败: ${err}`)
       throw err
     }
   }

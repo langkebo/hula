@@ -396,7 +396,9 @@ class PerformanceReporter {
     }
 
     this.flushTimer = setInterval(() => {
-      void this.flush()
+      this.flush().catch((err) => {
+        logger.warn('[PerformanceReporter] flush failed:', err)
+      })
     }, this.config.flushInterval)
   }
 
@@ -405,7 +407,9 @@ class PerformanceReporter {
 
     this.visibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
-        void this.forceFlush()
+        this.forceFlush().catch((err) => {
+          logger.warn('[PerformanceReporter] forceFlush on visibilitychange failed:', err)
+        })
       }
     }
 
@@ -448,7 +452,9 @@ class PerformanceReporter {
       document.removeEventListener('visibilitychange', this.visibilityHandler)
       this.visibilityHandler = null
     }
-    void this.forceFlush()
+    this.forceFlush().catch((err) => {
+      logger.warn('[PerformanceReporter] forceFlush on terminate failed:', err)
+    })
   }
 
   reset(): void {

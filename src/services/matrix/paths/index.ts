@@ -21,7 +21,7 @@ import { VOICE } from './voice'
 import { WELL_KNOWN } from './wellKnown'
 import { WIDGET } from './widget'
 
-export { PREFIX_V1, PREFIX_V3 } from './prefixes'
+export { PREFIX_V3 } from './prefixes'
 // 从 SDK re-export 路由表常量与校验工具，使 SDK 路由成为前后端 API 路径的单一事实源。
 // 详见 `./sdk-paths.ts`。
 export * from './sdk-paths'
@@ -58,13 +58,5 @@ export const MATRIX_PATHS = {
   RELATIONS,
   WIDGET,
   MODERATION,
-  EXTENSIONS: matrixExtensionEndpoints
-} as const
-
-/**
- * 前端特有的非 SDK 路径（非 Matrix API 路由），如后端扩展端点名。
- * 这些路径不存在于 SDK route-table 中，是前端独有定制，不参与 `validateTjgPath` 校验。
- */
-export const CUSTOM_PATHS = {
   EXTENSIONS: matrixExtensionEndpoints
 } as const

@@ -29,6 +29,11 @@ class RenderWorkerClient {
 
     this.worker.onerror = (err) => {
       logger.error('Worker error:', err)
+      // Worker 发生不可恢复错误：拒绝所有 pending tasks，避免内存泄漏与永久挂起的 Promise
+      for (const [id, callbacks] of this.pendingTasks) {
+        this.pendingTasks.delete(id)
+        callbacks.reject(new Error(`Worker error: ${err.message ?? 'unknown'}`))
+      }
     }
   }
 

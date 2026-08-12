@@ -1,6 +1,10 @@
 {
   "title": "空间",
   "space_selected": "已选择空间：{name}",
+  "switcher_title": "切换空间",
+  "switcher_search_placeholder": "搜索空间…",
+  "switcher_empty": "无匹配空间",
+  "switcher_current": "当前空间",
   "expand": "展开",
   "collapse": "收起",
   "hierarchy": "层级",

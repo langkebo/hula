@@ -230,6 +230,7 @@ export const leftHook = () => {
 
   onUnmounted(() => {
     window.removeEventListener('click', closeMenu, true)
+    prefers.removeEventListener('change', followOS)
   })
 
   return {

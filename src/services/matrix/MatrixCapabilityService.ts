@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import type { MatrixCapabilities } from '@/types/message'
+import { SingleFlight } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from './MatrixClientService'
 import { MATRIX_PATHS } from './paths'
@@ -137,6 +138,12 @@ function tryGetStore() {
 }
 
 class MatrixCapabilityService {
+  // SingleFlight：并发调用 fetchCapabilities 时复用同一 Promise，
+  // 避免重复发起 /versions + /capabilities + /client_config 共 3 个 HTTP 请求。
+  // 场景：settlePostLoginStartup 的 finally 中 await refreshCapabilities()
+  // 与 startClient store 方法中 fire-and-forget refreshCapabilities() 并发触发。
+  private capabilityFlight = new SingleFlight<MatrixCapabilities | null>()
+
   hasCapability(capability: TjgCapability): boolean {
     const store = tryGetStore()
     if (!store) return false
@@ -205,6 +212,8 @@ class MatrixCapabilityService {
   /**
    * Fetch server capabilities without writing to any store.
    * The caller is responsible for persisting the result.
+   *
+   * SingleFlight：并发调用时复用同一 Promise，只发一次 /versions + /capabilities + /client_config。
    */
   async fetchCapabilities(): Promise<MatrixCapabilities | null> {
     const client = matrixClientService.getClient()
@@ -216,37 +225,37 @@ class MatrixCapabilityService {
     const baseUrl = client.getHomeserverUrl()
     logger.info(`[CapabilityService] Detecting server capabilities: ${baseUrl}`)
 
-    try {
-      const [versionsResult, capabilitiesResult, clientConfigResult] = await Promise.allSettled([
-        this.fetchVersions(baseUrl),
-        matrixAccountService.getCapabilities() as Promise<MatrixCapabilitiesResponse>,
-        this.fetchClientConfig(baseUrl)
-      ])
+    return this.capabilityFlight.run(async () => {
+      try {
+        const [versionsResult, capabilitiesResult, clientConfigResult] = await Promise.allSettled([
+          this.fetchVersions(baseUrl),
+          matrixAccountService.getCapabilities() as Promise<MatrixCapabilitiesResponse>,
+          this.fetchClientConfig(baseUrl)
+        ])
 
-      const versions = versionsResult.status === 'fulfilled' ? versionsResult.value : { unstable_features: {} }
-      const capabilities = capabilitiesResult.status === 'fulfilled' ? capabilitiesResult.value : { capabilities: {} }
-      const clientConfig = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
+        const versions = versionsResult.status === 'fulfilled' ? versionsResult.value : { unstable_features: {} }
+        const capabilities = capabilitiesResult.status === 'fulfilled' ? capabilitiesResult.value : { capabilities: {} }
+        const clientConfig = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
 
-      // 合并 versions 和 capabilities 两个来源的 unstable_features
-      // versions 接口返回标准的 unstable_features（如 msc 标志）
-      // capabilities 接口也可能返回 unstable_features（如 io.hula.friends）
-      const capabilitiesUnstable = (capabilities as Record<string, unknown>).unstable_features as
-        | Record<string, boolean>
-        | undefined
-      const mergedUnstableFeatures = mergeUnstableFeatures(capabilitiesUnstable, versions.unstable_features)
+        // 合并 versions 和 capabilities 两个来源的 unstable_features
+        const capabilitiesUnstable = (capabilities as Record<string, unknown>).unstable_features as
+          | Record<string, boolean>
+          | undefined
+        const mergedUnstableFeatures = mergeUnstableFeatures(capabilitiesUnstable, versions.unstable_features)
 
-      const result: MatrixCapabilities = {
-        unstable_features: mergedUnstableFeatures,
-        capabilities: capabilities.capabilities || {},
-        client_config: clientConfig || {}
+        const result: MatrixCapabilities = {
+          unstable_features: mergedUnstableFeatures,
+          capabilities: capabilities.capabilities || {},
+          client_config: clientConfig || {}
+        }
+
+        logger.info('[CapabilityService] Server capability detection complete')
+        return result
+      } catch (err) {
+        logger.error(`[CapabilityService] Server capability detection partially failed: ${err}`)
+        return null
       }
-
-      logger.info('[CapabilityService] Server capability detection complete')
-      return result
-    } catch (err) {
-      logger.error(`[CapabilityService] Server capability detection partially failed: ${err}`)
-      return null
-    }
+    })
   }
 
   /**
