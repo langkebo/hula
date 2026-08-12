@@ -32,9 +32,10 @@
 - `MatrixClientService` mock 必须同时提供命名导出与 default
 - **测试内禁用 `await import()` 动态导入被测模块**：用静态导入 + hoisted `vi.mock`
 - **否定断言必须做变异验证**：临时删守卫确认用例真的 FAIL
+- **单例 mock 的 computed 响应式陷阱**：mock 工厂里 `reactive(obj)` + `computed(() => obj.x)` 在多个测试串行时，primitive 重赋值 + 单例 computed 缓存会导致依赖追踪串扰（读到旧值）。正确做法：工厂内用 `ref()` 创建真实实例挂回 `vi.hoisted` 容器，测试直接改 `.value`；`reactive` 对象属性用 `Object.assign` 原地改。
 
 ## 测试基线（2026-08-09 起）
-- 全量 611 文件 6429 用例 0 失败
+- 全量 661 文件 7302 用例 0 失败（截至 2026-08-13，P1-7 重构 + P1-8 两批组件测试后）
 - 组件测试挂起 forks worker：写 import-only 探针二分定位，stub 重度服务图谱子组件
 
 ## synapse-rust 优化任务进度（2026-08-10）

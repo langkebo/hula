@@ -207,7 +207,7 @@
 | P1-5 | Worker 消息处理器模块化拆分 | 提升 Worker 可维护性 | 2-3 人日 | ✅ 已完成 |
 | P1-6 | **新增**：拆分 4 个超 500 行 composables（useChatContextMenus 710 / useWindow 690 / useWsEventHandler 614 / useFriends 566） | 职责分离，提升可维护性 | 3-5 人日 | ✅ 已完成 |
 | P1-7 | **新增**：拆分 6 个超 600 行服务（MatrixMessageService 794→369 / MatrixQrLoginSdkService 781→489 / MatrixSpaceService 713→390 / MatrixMediaService 706→353 / MatrixVoIPService 630→361 / MatrixMessageRelationService 614→318） | 降低修改风险 | 5-8 人日 | ✅ 已完成 |
-| P1-8 | **新增**：补齐 Vue 组件测试覆盖（当前 297/472 无测试，优先 admin/聊天核心/通用组件；第一批：9 admin 页面 + Image/Voice 渲染组件 74 tests；第二批：6 个聊天核心/通用组件 RecallMessage/BotMessage/SystemMessage/FileUploadProgress/MsgInputMobileControls/NetworkStatusBar 31 tests；累计 642 test 文件 / 7302 用例全绿） | 降低 UI 回归风险 | 8-12 人日 | 🟡 进行中 |
+| P1-8 | **新增**：补齐 Vue 组件测试覆盖（当前 297/472 无测试，优先 admin/聊天核心/通用组件；第一批：9 admin 页面 + Image/Voice 渲染组件 74 tests；第二批：6 组件 RecallMessage/BotMessage/SystemMessage/FileUploadProgress/MsgInputMobileControls/NetworkStatusBar 31 tests；第三批：5 聊天核心渲染组件 Video/AudioCall/VideoCall/LinkPreview/MergeMessage 26 tests；累计 669 test 文件 / 7458 用例全绿） | 降低 UI 回归风险 | 8-12 人日 | 🟡 进行中 |
 
 ### P2 — 中期优化（2-3 个迭代内）
 
@@ -262,7 +262,7 @@
 | Worker 架构 | 851 行 switch-dispatch 单文件 | 118 行薄分发 + 4 个 handler 模块 | +2 分 |
 | enums 管理 | 624 行单文件 | 10 个域文件 + 21 行 barrel | +1 分 |
 | knip CI 集成 | 未在 CI 中运行 | 已在 quality-gate 中运行 | +1 分 |
-| TS 测试覆盖 | 289 文件无测试 | 86 文件无测试（-203，P1-3 第一批补测 +104 tests；P1-8 两批补测组件 105 tests，基线 7302 用例） | +2 分 |
+| TS 测试覆盖 | 289 文件无测试 | 86 文件无测试（-203，P1-3 第一批补测 +104 tests；P1-8 三批补测组件 131 tests，基线 7458 用例） | +2 分 |
 | Storybook stories | 19 个 | 24 个（+5） | 小幅改善 |
 | 文件行数分布 | 52 Vue + 34 TS >500 行 | 47 Vue + 24 TS >500 行 | -15 文件 |
 
