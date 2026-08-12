@@ -222,10 +222,17 @@ export class MatrixCryptoStateTracker {
       if (useIndexedDB) {
         logger.warn(`Rust Crypto 初始化失败（${errMsg}），尝试清除旧 crypto 数据后重试...`)
         try {
-          await clearStaleCryptoStores(userId)
-          // 等待浏览器释放 IndexedDB 连接句柄，避免重试时数据库仍被占用
-          // 100ms 足够（clearStaleCryptoStores 内部已有 onblocked 300ms 重试保护）
-          await new Promise((resolve) => setTimeout(resolve, 100))
+          const cleanupResult = await clearStaleCryptoStores(userId)
+          // 等待浏览器释放 IndexedDB 连接句柄，避免重试时数据库仍被占用。
+          // 如果有数据库删除失败/超时（通常是 meta 被 SDK 持有），
+          // 延长等待时间到 1s，给 WASM 释放连接更多时间。
+          const waitMs = cleanupResult.failed > 0 || cleanupResult.blocked > 0 ? 1_000 : 100
+          if (waitMs > 100) {
+            logger.warn(
+              `IndexedDB 清理部分失败 (failed=${cleanupResult.failed}, blocked=${cleanupResult.blocked})，等待 ${waitMs}ms 后重试`
+            )
+          }
+          await new Promise((resolve) => setTimeout(resolve, waitMs))
           await cryptoClient.initRustCrypto({
             useIndexedDB,
             storagePassword: storagePassword ?? undefined
