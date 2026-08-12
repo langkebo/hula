@@ -5,7 +5,7 @@ const logger = createLogger('Fingerprint')
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000
 
-const worker = new Worker(new URL('../workers/fingerprint.worker.ts', import.meta.url), {
+const worker = new Worker(new URL('../../workers/fingerprint.worker.ts', import.meta.url), {
   type: 'module'
 })
 

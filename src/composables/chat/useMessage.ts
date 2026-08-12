@@ -6,6 +6,7 @@ import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserT
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { useChatSession } from '@/shared/composables/useChatSession'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -36,92 +37,33 @@ const logger = createLogger('Message')
 export const useMessage = () => {
   const { t } = useI18n()
   const { showFeedback } = useActionFeedback()
-  const globalStore = useGlobalStore()
+  const _globalStore = useGlobalStore()
   const chatStore = useChatStore()
   const settingStore = useSettingStore()
   const contactStore = useContactStore()
-  const groupStore = useGroupStore()
+  const _groupStore = useGroupStore()
   const roomStore = useRoomStore()
-  const userStore = useUserStore()
+  const _userStore = useUserStore()
   const BOT_ALLOWED_MENU_INDEXES = new Set([0, 1, 2, 3])
 
   // 确保监听器只注册一次
   registerShrinkListener()
 
-  /**
-   * 处理点击选中消息
-   * 如果本地缓存中找不到自己，说明尚未同步服务端数据，此时强制刷新群成员信息。
-   */
-  const ensureGroupMembersSynced = async (roomId: string, sessionType: RoomTypeEnum) => {
-    if (sessionType !== RoomTypeEnum.GROUP) return
-
-    const currentUid = userStore.userInfo?.uid
-    if (!currentUid) return
-
-    const memberList = groupStore.getUserListByRoomId(roomId)
-    const alreadyHasCurrentUser = memberList.some((member) => member.uid === currentUid)
-
-    if (!alreadyHasCurrentUser) {
-      await groupStore.getGroupUserList(roomId, true)
-    }
-  }
+  // 会话操作委托给共享 composable
+  const { switchSession, removeSession, preloadChatRoom: _preloadChatRoom } = useChatSession()
 
   const handleMsgClick = async (item: SessionItem) => {
     msgBoxShow.value = true
-    // 更新当前会话信息
-    const roomId = item.roomId
-    logger.debug('点击会话:', roomId, 'UI未读数:', item.unreadCount)
-
-    globalStore.updateCurrentSessionRoomId(roomId)
-
-    chatStore.getSession(roomId)
-    chatStore.markSessionRead(roomId)
-
-    // 再根据是否存在自身成员做一次兜底刷新，防止批量切换账号后看到旧数据
-    try {
-      await ensureGroupMembersSynced(roomId, item.type)
-    } catch (error) {
-      logger.error('同步群成员失败:', error)
-    }
+    await switchSession(item)
   }
 
-  /**
-   * 预加载聊天室
-   * @param roomId
-   */
-  const preloadChatRoom = (roomId: string = '1') => {
-    globalStore.updateCurrentSessionRoomId(roomId)
-  }
+  const preloadChatRoom = _preloadChatRoom
 
   /**
-   * 删除会话
+   * 删除会话（委托给 useChatSession.removeSession）
    * @param roomId 会话信息
    */
-  const handleMsgDelete = async (roomId: string) => {
-    const currentSessions = chatStore.sessionList
-    const currentIndex = currentSessions.findIndex((session) => session.roomId === roomId)
-
-    // 检查是否是当前选中的会话
-    const isCurrentSession = roomId === globalStore.currentSessionRoomId
-
-    chatStore.removeSession(roomId)
-    // 隐藏会话接口已通过 invokeWithErrorHandler 调用
-    await invokeWithErrorHandler('hide_contact_command', { data: { roomId, hide: true } })
-
-    // 如果不是当前选中的会话，直接返回
-    if (!isCurrentSession) {
-      return
-    }
-
-    const updatedSessions = chatStore.sessionList
-
-    // 选择下一个或上一个会话
-    const nextIndex = Math.min(currentIndex, updatedSessions.length - 1)
-    const nextSession = updatedSessions[nextIndex]
-    if (nextSession) {
-      await handleMsgClick(nextSession)
-    }
-  }
+  const handleMsgDelete = removeSession
 
   /** 处理双击事件 */
   const handleMsgDblclick = (item: SessionItem) => {

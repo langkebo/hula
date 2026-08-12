@@ -1,33 +1,58 @@
-# S8 完成概览：EventNotifier Redis 跨实例扇出
+# 架构优化执行 — 2026-08-13
 
-## 任务
-S8: `EventNotifier` Redis 扇出从未接线（`with_redis` 零调用、无订阅端、60 行死代码），多实例长轮询必然 30s 延迟。
+## 完成项
 
-## 完成内容（TDD 全流程）
+### P1-4: SDK 别名配置抽取为独立模块 + 自动校验脚本 ✅
+- 新建 `build/config/sdk-aliases.ts`：34 条别名抽取为数据驱动的 `sdkAliasEntries` 数组 + `createSdkAliases()` 函数
+- 新建 `scripts/verify-sdk-aliases.mjs`：CI 校验脚本，逐条检查别名目标路径是否存在
+- **校验脚本发现并清理 5 条死别名**（notification/models barrel/credentials/message/qr-login — SDK 重构后已不存在且项目代码未引用）
+- 清理后 29 条别名全部校验通过
+- `package.json` 添加 `check:sdk-aliases` script
+- `quality-gate.yml` 在 Boundary Checks 中添加 `pnpm check:sdk-aliases`
 
-### S8-A/B: handle_redis_message（Red → Green）
-- 提取 `notify_room_local` / `notify_user_local`（仅本地 `notify_waiters()`，不回 Redis）
-- `notify_room` / `notify_user` 重构为 local + publish 两步
-- 新增 `handle_redis_message(&self, msg)`: 跳过自回声（`sender_instance == self.instance_id`）→ 路由到 local notify
-- TDD: 3 个测试（跨实例 room 唤醒、跨实例 user 唤醒、自回声抑制）
+### P1-5: Worker 消息处理器模块化拆分 ✅
+- `matrixSdk.worker.ts` 从 851 行 → 110 行薄分发层（-87%）
+- 新建 4 个 handler 模块：
+  - `workerState.ts`（54 行）— 共享可变状态 + initSDK + sendResponse
+  - `workerSearchHandlers.ts`（392 行）— 搜索索引引擎
+  - `workerClientHandlers.ts`（162 行）— 客户端生命周期
+  - `workerProbeHandlers.ts`（168 行）— 服务器探测
+- 删除死代码：`_pendingRequests` Map 和 `_generateId` 函数
 
-### S8-C: start_redis_subscriber 后台任务
-- `start_redis_subscriber()`: 创建 `redis::Client`，spawn tokio 任务
-- `subscribe_and_listen()`: 订阅 `synapse:events:notify` 频道 → 反序列化 `EventNotifyMessage` → 调 `handle_redis_message`
-- 断线 1s 自动重连
-- 无 Redis 时安全 no-op（返回 `Ok(())`）
-- TDD: 1 个测试验证无 Redis 时 no-op
+### P2-1: enums/index.ts 按域拆分 ✅（此前已完成）
+### P2-3: CI 添加 knip 死代码检测 ✅（此前已完成）
 
-### S8-D: 容器接线
-- `container.rs` `build_domains`: 当 `config.redis.enabled` 时自动创建 Redis pool → `with_redis` + `start_redis_subscriber`
-- 失败降级为 `EventNotifier::new()`（纯本地通知）
-- 不改 `ServiceContainer::new` 签名，避免影响 60+ 个调用方
+## 守门验证结果
 
-## 测试结果
-- event_notifier 模块: **23 passed, 0 failed** (原 19 + 新增 4)
-- 全 synapse-services: **1422 passed, 1 flaky** (media test，单独运行通过，与 S8 无关)
+| 命令 | 结果 |
+|:---|:---|
+| `vue-tsc --noEmit` | 0 errors ✅ |
+| `biome check`（新文件） | clean ✅ |
+| `check:file-size` | 1173 文件全部在约束内 ✅ |
+| `check:ratchet` | 74/75 baseline（改善 1）✅ |
+| `check:sdk-boundary` | 253 < 266 baseline ✅ |
+| `check:sdk-aliases` | 29/29 通过 ✅ |
 
-## 修改的文件
-- `synapse-services/src/event_notifier.rs` — 核心实现 + 4 个新测试
-- `synapse-services/src/container.rs` — 容器接线
-- `synapse-rust-问题确认与优化方案.md` — S8 标记 ✅已修复
+## 变更文件
+
+| 文件 | 操作 |
+|:---|:---|
+| `build/config/sdk-aliases.ts` | 新建 |
+| `scripts/verify-sdk-aliases.mjs` | 新建 |
+| `build/config/vite.config.base.ts` | 修改（引用新模块） |
+| `src/workers/workerState.ts` | 新建 |
+| `src/workers/workerSearchHandlers.ts` | 新建 |
+| `src/workers/workerClientHandlers.ts` | 新建 |
+| `src/workers/workerProbeHandlers.ts` | 新建 |
+| `src/workers/matrixSdk.worker.ts` | 重写（薄分发层） |
+| `package.json` | 修改（添加 check:sdk-aliases） |
+| `.github/workflows/quality-gate.yml` | 修改（添加 sdk-aliases 检查） |
+| `docs/architecture-review-report.md` | 修改（更新 P1-4/P1-5/P2-1/P2-3 状态） |
+
+## 剩余待处理项
+
+- P1-3: 补齐 289 个无测试源文件中核心 Service 层的单元测试（10-20 人日）
+- P2-2: services/ 根目录杂项服务归类（1-2 人日）
+- P2-4: Storybook 覆盖率提升至核心组件 20%+（3-5 人日）
+- P2-5: 评估 three.js / shiki 按需加载优化（2-3 人日）
+- P2-6: 桌面/移动共享逻辑提取评估（3-5 人日）

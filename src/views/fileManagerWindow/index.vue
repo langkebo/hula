@@ -28,7 +28,7 @@ import {
   type FileQueryParam,
   getNavigationItems,
   queryFiles
-} from '@/services/tauriCommand'
+} from '@/services/backend/tauriCommand'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 

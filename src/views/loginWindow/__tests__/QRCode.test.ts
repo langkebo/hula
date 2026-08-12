@@ -71,7 +71,7 @@ vi.mock('@/enums', async (importOriginal) => {
   }
 })
 
-vi.mock('@/composables/user/useLoginFlow', () => ({
+vi.mock('@/shared/composables/useLoginFlow', () => ({
   useLoginFlow: () => ({
     loading: ref(false),
     loginDisabled: ref(false)
@@ -95,7 +95,7 @@ vi.mock('@/services/backend/config', () => ({
   saveMatrixSessionEndpointConfig: saveMatrixSessionEndpointConfigMock
 }))
 
-vi.mock('@/services/fingerprint', () => ({
+vi.mock('@/services/secure/fingerprint', () => ({
   getEnhancedFingerprint: getEnhancedFingerprintMock
 }))
 
@@ -112,7 +112,7 @@ vi.mock('@/services/matrix/auth/MatrixQrLoginSdkService', () => ({
   }
 }))
 
-vi.mock('@/services/tauriCommand', () => ({
+vi.mock('@/services/backend/tauriCommand', () => ({
   loginCommand: loginCommandMock
 }))
 

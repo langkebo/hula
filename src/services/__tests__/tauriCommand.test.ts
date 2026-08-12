@@ -39,7 +39,7 @@ vi.mock('../../stores/domains/user/user', () => ({
   useUserStore: () => mockUserStore
 }))
 
-const { loginCommand } = await import('../tauriCommand')
+const { loginCommand } = await import('../backend/tauriCommand')
 
 describe('loginCommand', () => {
   beforeEach(() => {

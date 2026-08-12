@@ -27,7 +27,7 @@ vi.mock('@/stores/domains/user/user', () => ({
   useUserStore: vi.fn(() => userStoreMock)
 }))
 
-vi.mock('@/services/UploadService', () => ({
+vi.mock('@/services/performance/UploadService', () => ({
   uploadService: {
     getUploadProvider: vi.fn(),
     getOssToken: vi.fn()
@@ -119,7 +119,7 @@ describe('useUpload', () => {
     const largeFile = new File(['test'], 'large.txt', { type: 'text/plain' })
     Object.defineProperty(largeFile, 'size', { value: largeSize })
 
-    const { uploadService } = await import('@/services/UploadService')
+    const { uploadService } = await import('@/services/performance/UploadService')
     vi.mocked(uploadService.getOssToken).mockResolvedValue({
       uploadUrl: 'http://test.com/upload',
       downloadUrl: 'http://test.com/download',
@@ -132,7 +132,7 @@ describe('useUpload', () => {
   })
 
   it('should resolve upload provider', async () => {
-    const { uploadService } = await import('@/services/UploadService')
+    const { uploadService } = await import('@/services/performance/UploadService')
     vi.mocked(uploadService.getUploadProvider).mockResolvedValue({ provider: 'minio' })
 
     const { uploadFile } = useUpload()
@@ -190,7 +190,7 @@ describe('useUpload', () => {
   })
 
   it('should get upload and download URLs', async () => {
-    const { uploadService } = await import('@/services/UploadService')
+    const { uploadService } = await import('@/services/performance/UploadService')
     vi.mocked(uploadService.getOssToken).mockResolvedValue({
       uploadUrl: 'http://test.com/upload',
       downloadUrl: 'http://test.com/download',
@@ -207,7 +207,7 @@ describe('useUpload', () => {
   })
 
   it('should trigger onChange event on progress', async () => {
-    const { uploadService } = await import('@/services/UploadService')
+    const { uploadService } = await import('@/services/performance/UploadService')
     vi.mocked(uploadService.getOssToken).mockResolvedValue({
       uploadUrl: 'http://test.com/upload',
       downloadUrl: 'http://test.com/download',

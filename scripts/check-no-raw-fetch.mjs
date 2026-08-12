@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process';
 
 const ALLOWLIST = new Set([
   'src/services/matrix/network/runtimeFetch.ts',   // the fetch wrapper itself
-  'src/workers/matrixSdk.worker.ts',                // worker bridge needs raw fetch for SDK proxying
+  'src/workers/workerProbeHandlers.ts',             // worker pre-login server diagnostics (versions/loginFlows/CORS/capabilities) — runs before SDK client exists
   'src/App.vue',                                     // apple.com favicon reachability check (no-cors)
   'src/strategy/strategies/video.ts',                // blob: URL requires browser-native fetch
   'src/views/openclaw/OpenClawView.vue',             // OpenClawService doesn't exist yet — needs new service

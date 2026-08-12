@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { getStaticMap } from '@/services/mapApi'
+import { getStaticMap } from '@/services/legacy/mapApi'
 
 type LocationData = { latitude: number; longitude: number }
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { WsResponseMessageType } from '@/services/legacy/wsType'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { ClientEvent, RoomEvent, RoomStateEvent } from '@/services/matrix/sdk'
-import { WsResponseMessageType } from '@/services/wsType'
 
 const mockEmit = vi.fn()
 vi.mock('@/composables/common/useMitt', () => ({

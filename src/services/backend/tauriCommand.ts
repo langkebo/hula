@@ -2,8 +2,8 @@ import { useI18nGlobal } from '@/services/i18n'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
-import { useMatrixStore } from '../stores/domains/chat/matrix'
-import { useUserStore } from '../stores/domains/user/user'
+import { useMatrixStore } from '../../stores/domains/chat/matrix'
+import { useUserStore } from '../../stores/domains/user/user'
 
 type Settings = {
   database: {

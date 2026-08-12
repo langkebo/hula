@@ -61,12 +61,16 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Dead Code Detection (knip)
+        run: pnpm knip
+
       - name: Type Check
         run: pnpm typecheck
 
       - name: Boundary Checks
         run: |
           pnpm check:sdk-types
+          pnpm check:sdk-aliases
           pnpm check:v-html
           pnpm check:doc-coverage
           pnpm check:sdk-boundary
@@ -80,7 +84,7 @@ jobs:
         run: pnpm test:unit
 
       - name: Stability Contract Tests
-        run: pnpm test:stability
+        run: pnpm test:contract
 
       - name: SDK Pin Verification
         continue-on-error: true

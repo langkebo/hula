@@ -1,468 +1,63 @@
-import * as sdk from 'matrix-js-sdk'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
-import { getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
-import { createLogger } from '@/utils/Logger'
+import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import { initializeManagerExtensions } from '@/services/matrix/sdk'
 import { matrixClientService } from '../MatrixClientService'
 import { authedRequestWithPath } from '../MatrixHttpClient'
-import { MATRIX_PATHS, PREFIX_V3 } from '../paths'
+import { MATRIX_PATHS } from '../paths'
+import { logger, normalizeSdkMatrixError } from './authErrors'
+import {
+  buildRegisterAuth,
+  createTemporaryMatrixClient,
+  generateClientSecret,
+  type MatrixEmailTokenPurpose,
+  type MatrixLoginResult,
+  type MatrixRegisterResult,
+  type MatrixRequestedEmailTokenResult,
+  matrixLogin,
+  matrixRegister,
+  matrixRequestEmailToken,
+  matrixSubmitEmailToken,
+  runSdkFirst,
+  withClientSecret
+} from './authHelpers'
+import * as captchaApi from './MatrixAuthCaptcha'
+import * as passwordApi from './MatrixAuthPassword'
+import * as samlApi from './MatrixAuthSaml'
 
-const logger = createLogger('MatrixAuth')
+// 类型再导出：保持对外 API 不变（useSessionActions 等仍从此处导入类型）
+export type { MatrixLoginResult, MatrixRegisterResult, MatrixRequestedEmailTokenResult } from './authHelpers'
 
-interface MatrixLoginResult {
-  user_id: string
-  access_token: string
-  device_id: string
-  home_server?: string
-  refresh_token?: string
-  expires_in?: number
-}
-
-export interface MatrixRegisterResult {
-  user_id: string
-  access_token?: string
-  device_id?: string
-  refresh_token?: string
-  expires_in?: number
-}
-
-interface MatrixEmailTokenResult {
-  sid: string
-  submit_url?: string
-  expires_in?: number
-}
-
-export interface MatrixRequestedEmailTokenResult extends MatrixEmailTokenResult {
-  client_secret: string
-}
-
-interface MatrixCaptchaResult {
-  session: string
-  api_path: string
-  mxc_url: string
-}
-
-type MatrixAuthPayload = Record<string, unknown>
-type MatrixEmailTokenPurpose = 'register' | 'password_reset'
-
-function buildRegisterAuth(
-  session?: string,
-  authType?: string,
-  authToken?: string,
-  clientSecret?: string
-): MatrixAuthPayload | undefined {
-  if (session && authType === 'm.login.email.identity') {
-    return {
-      type: authType,
-      threepid_creds: {
-        sid: session,
-        client_secret: clientSecret || authToken
-      }
-    }
-  }
-
-  if (session && authType) {
-    return {
-      session,
-      type: authType,
-      token: authToken
-    }
-  }
-
-  // 无 session 的单步注册：synapse-rust 要求 auth 字段标识注册流程类型，
-  // 否则返回 401 要求完成 auth flow。发送 { type: 'm.login.dummy' } 即可单步注册。
-  return { type: 'm.login.dummy' }
-}
-
-function buildResetPasswordAuth(
-  authSession?: string,
-  authType?: string,
-  authToken?: string,
-  clientSecret?: string
-): MatrixAuthPayload | undefined {
-  if (authSession && authType === 'm.login.email.identity') {
-    return {
-      type: authType,
-      threepid_creds: {
-        sid: authSession,
-        client_secret: clientSecret || authToken
-      }
-    }
-  }
-
-  if (authSession && authType) {
-    return {
-      session: authSession,
-      type: authType,
-      token: authToken
-    }
-  }
-
-  return undefined
-}
-
-function withClientSecret(result: MatrixEmailTokenResult, clientSecret: string): MatrixRequestedEmailTokenResult {
-  return {
-    ...result,
-    client_secret: clientSecret
-  }
-}
-
-function generateClientSecret(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  const array = new Uint8Array(43)
-  crypto.getRandomValues(array)
-  let result = ''
-  for (let i = 0; i < 43; i++) {
-    result += chars.charAt(array[i] % chars.length)
-  }
-  return result
-}
-
-function resolveMatrixClientUrl(path: string): string {
-  const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
-  const normalizedHomeserverUrl = homeserverUrl.replace(/\/+$/, '')
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return `${normalizedHomeserverUrl}${normalizedPath}`
-}
-
-function createTemporaryMatrixClient() {
-  const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
-  return sdk.createClient({
-    baseUrl: homeserverUrl,
-    allowInsecureHttp: homeserverUrl.startsWith('http://'),
-    fetchFn: getRuntimeAwareFetchFn()
-  })
-}
-
-function getMatrixErrorHint(errcode: string): string {
-  switch (errcode) {
-    case 'M_FORBIDDEN':
-      return '认证信息无效或当前操作无权限'
-    case 'M_USER_IN_USE':
-      return '用户名已被占用'
-    case 'M_INVALID_USERNAME':
-      return '用户名格式无效'
-    case 'M_THREEPID_IN_USE':
-      return '邮箱已被使用'
-    case 'M_THREEPID_NOT_FOUND':
-      return '邮箱未绑定账号'
-    case 'M_MISSING_PARAM':
-      return '请求缺少必要参数'
-    case 'M_INVALID_PARAM':
-      return '请求参数无效'
-    case 'M_INVALID_EMAIL':
-      return '邮箱格式无效'
-    case 'M_BAD_JSON':
-      return '请求体格式无效'
-    case 'M_LIMIT_EXCEEDED':
-      return '请求过于频繁，请稍后重试'
-    case 'M_SESSION_NOT_FOUND':
-      return '验证会话不存在或已失效'
-    case 'M_TOKEN_EXPIRED':
-      return '验证码已过期'
-    case 'M_TOKEN_ALREADY_USED':
-      return '验证码已被使用'
-    default:
-      return ''
-  }
-}
-
-function formatMatrixErrorDetail(text: string): string {
-  if (!text) {
-    return ''
-  }
-
-  try {
-    const parsed = JSON.parse(text) as {
-      error?: unknown
-      errcode?: unknown
-    }
-    const errorMessage = typeof parsed.error === 'string' ? parsed.error : ''
-    const errorCode = typeof parsed.errcode === 'string' ? parsed.errcode : ''
-    const errorHint = errorCode ? getMatrixErrorHint(errorCode) : ''
-
-    if (errorMessage && errorCode && errorHint) {
-      return `${errorMessage} [${errorCode}] (${errorHint})`
-    }
-    if (errorMessage && errorCode) {
-      return `${errorMessage} [${errorCode}]`
-    }
-    if (errorMessage) {
-      return errorMessage
-    }
-    if (errorCode && errorHint) {
-      return `[${errorCode}] (${errorHint})`
-    }
-    if (errorCode) {
-      return `[${errorCode}]`
-    }
-  } catch {
-    // Fall back to the raw response body when the homeserver does not return Matrix JSON.
-  }
-
-  return text
-}
-
-function normalizeSdkMatrixError(error: unknown, failureLabel: string): Error {
-  if (!(error instanceof Error)) {
-    return new Error(failureLabel)
-  }
-
-  const matrixError = error as Error & {
-    errcode?: unknown
-    error?: unknown
-    httpStatus?: unknown
-  }
-
-  const errorCode = typeof matrixError.errcode === 'string' ? matrixError.errcode : ''
-  const errorMessage = typeof matrixError.error === 'string' ? matrixError.error : error.message
-  const status = typeof matrixError.httpStatus === 'number' ? matrixError.httpStatus : undefined
-  const detail = formatMatrixErrorDetail(
-    JSON.stringify({
-      errcode: errorCode || undefined,
-      error: errorMessage || undefined
-    })
-  )
-
-  if (status) {
-    return new Error(`${failureLabel} (${status}): ${detail}`)
-  }
-
-  return new Error(`${failureLabel}: ${detail}`)
-}
-
-async function runSdkFirst<T>(
-  sdkRequest: () => Promise<T>,
-  fallbackRequest: () => Promise<T>,
-  failureLabel: string
-): Promise<T> {
-  try {
-    return await sdkRequest()
-  } catch (error) {
-    // Matrix 标准错误（带 errcode）是用户可操作的错误，直接抛出而不回退
-    const errcode = (error as { errcode?: string })?.errcode
-    if (errcode) {
-      throw normalizeSdkMatrixError(error, failureLabel)
-    }
-
-    // 登录/注册场景 SDK 内部错误时尝试 fallback
-    const errInfo = error instanceof Error ? error.message : String(error)
-    const httpStatus = (error as { httpStatus?: number })?.httpStatus
-    logger.warn(`SDK 请求失败 (status=${httpStatus}, errcode=${errcode}): ${errInfo}，尝试 HTTP 回退`)
-    try {
-      return await fallbackRequest()
-    } catch (fallbackError) {
-      throw normalizeSdkMatrixError(fallbackError, failureLabel)
-    }
-  }
-}
-
-async function postMatrixJson<T>(path: string, body: Record<string, unknown>, failureLabel: string): Promise<T> {
-  const url = resolveMatrixClientUrl(path)
-  let response: Response
-
-  try {
-    response = await getRuntimeAwareFetch()(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
-  } catch (error) {
-    const detail = error instanceof Error && error.message ? `: ${error.message}` : ''
-    throw new Error(`${failureLabel}: 无法连接 Matrix homeserver (${url})，请检查网络、服务地址或 CORS 配置${detail}`)
-  }
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => '')
-    throw new Error(`${failureLabel} (${response.status}): ${formatMatrixErrorDetail(text)}`)
-  }
-
-  const text = await response.text()
-  if (!text) {
-    return {} as T
-  }
-
-  return JSON.parse(text) as T
-}
-
-async function matrixLogin(
-  username: string,
-  password: string,
-  deviceId?: string,
-  deviceName?: string
-): Promise<MatrixLoginResult> {
-  if (matrixClientService.getClient()) {
-    const result = await matrixClientService.login(username, password, deviceName)
-    if (!result.success || !result.userId || !result.accessToken) {
-      throw new Error(result.error || 'Matrix 登录失败')
-    }
-
-    return {
-      user_id: result.userId,
-      access_token: result.accessToken,
-      device_id: result.deviceId || deviceId || ''
-    }
-  }
-
-  return postMatrixJson<MatrixLoginResult>(
-    `${PREFIX_V3}/login`,
-    {
-      type: 'm.login.password',
-      user: username,
-      password,
-      device_id: deviceId,
-      initial_display_name: deviceName
-    },
-    '登录失败'
-  )
-}
-
-async function matrixRegister(
-  username: string,
-  password: string,
-  session?: string,
-  authType?: string,
-  authToken?: string,
-  clientSecret?: string
-): Promise<MatrixRegisterResult> {
-  const auth = buildRegisterAuth(session, authType, authToken, clientSecret)
-
-  return postMatrixJson<MatrixRegisterResult>(
-    `${PREFIX_V3}/register`,
-    {
-      type: 'm.login.dummy',
-      session,
-      username,
-      password,
-      initial_device_display_name: 'Tjg Desktop',
-      auth
-    },
-    '注册失败'
-  )
-}
-
-async function matrixRequestEmailToken(
-  email: string,
-  clientSecret: string,
-  sendAttempt: number
-): Promise<MatrixEmailTokenResult> {
-  return postMatrixJson<MatrixEmailTokenResult>(
-    `${PREFIX_V3}/register/email/requestToken`,
-    {
-      email,
-      client_secret: clientSecret,
-      send_attempt: sendAttempt
-    },
-    '请求邮箱令牌失败'
-  )
-}
-
-async function matrixRequestPasswordEmailToken(
-  email: string,
-  clientSecret: string,
-  sendAttempt: number
-): Promise<MatrixEmailTokenResult> {
-  return postMatrixJson<MatrixEmailTokenResult>(
-    `${PREFIX_V3}/account/password/email/requestToken`,
-    {
-      email,
-      client_secret: clientSecret,
-      send_attempt: sendAttempt
-    },
-    '请求找回密码邮箱令牌失败'
-  )
-}
-
-function resolveSubmitEmailTokenPath(purpose: MatrixEmailTokenPurpose): string {
-  return purpose === 'password_reset'
-    ? `${PREFIX_V3}/account/password/email/submitToken`
-    : `${PREFIX_V3}/register/email/submitToken`
-}
-
-async function matrixSubmitEmailToken(
-  token: string,
-  clientSecret: string,
-  sid: string,
-  purpose: MatrixEmailTokenPurpose = 'register'
-): Promise<Record<string, unknown>> {
-  return postMatrixJson(
-    resolveSubmitEmailTokenPath(purpose),
-    {
-      token,
-      client_secret: clientSecret,
-      sid
-    },
-    '提交邮箱令牌失败'
-  )
-}
-
-async function matrixGetCaptcha(options?: {
-  session?: string
-  captchaType?: string
-  length?: number
-}): Promise<MatrixCaptchaResult> {
-  const resolvedSession = options?.session
-  const captchaType = options?.captchaType || 'sms'
-  const length = options?.length || 4
-
-  if (resolvedSession) {
-    return postMatrixJson<MatrixCaptchaResult>(
-      `${PREFIX_V3}/register/captcha/send`,
-      { captcha_type: captchaType, length, session: resolvedSession },
-      '获取验证码失败'
-    )
-  }
-
-  try {
-    const initResult = await postMatrixJson<{
-      session?: string
-      flows?: Array<{ type: string; stages?: string[] }>
-    }>(`${PREFIX_V3}/register`, { type: 'm.login.dummy' }, '获取注册会话失败')
-    const session = initResult.session
-    if (!session) {
-      throw new Error(useI18nGlobal().t('matrix_error.auth.register_no_valid_session'))
-    }
-    return postMatrixJson<MatrixCaptchaResult>(
-      `${PREFIX_V3}/register/captcha/send`,
-      { captcha_type: captchaType, length, session },
-      '获取验证码失败'
-    )
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err)
-    if (errMsg.includes('422') || errMsg.includes('M_UNKNOWN')) {
-      throw new Error(useI18nGlobal().t('matrix_error.auth.verification_service_unavailable'))
-    }
-    throw err
-  }
-}
-
-async function matrixResetPassword(
-  newPassword: string,
-  authSession?: string,
-  authType?: string,
-  authToken?: string,
-  clientSecret?: string
-): Promise<Record<string, unknown>> {
-  const auth = buildResetPasswordAuth(authSession, authType, authToken, clientSecret)
-
-  return postMatrixJson(
-    `${PREFIX_V3}/account/password`,
-    {
-      new_password: newPassword,
-      auth
-    },
-    '重置密码失败'
-  )
-}
-
+/**
+ * Matrix 认证服务（facade）。
+ *
+ * 主文件仅承载核心登录/注册/会话流程；验证码、密码重置、SAML 子领域
+ * 通过类属性委托到 `MatrixAuthCaptcha` / `MatrixAuthPassword` / `MatrixAuthSaml`。
+ * 辅助函数与错误归一化分别在 `authHelpers` / `authErrors` 中。
+ */
 export class MatrixAuthService {
   private static generateClientSecret(): string {
     return generateClientSecret()
   }
+
+  // ===== Captcha / Password / SAML — 委托到拆分模块 =====
+  static readonly getCaptcha = captchaApi.getCaptcha
+  static readonly startRegistrationSession = captchaApi.startRegistrationSession
+  static readonly verifyCaptcha = captchaApi.verifyCaptcha
+  static readonly getCaptchaStatus = captchaApi.getCaptchaStatus
+  static readonly cleanupExpiredCaptchas = captchaApi.cleanupExpiredCaptchas
+
+  static readonly requestPasswordEmailToken = passwordApi.requestPasswordEmailToken
+  static readonly forgetPassword = passwordApi.forgetPassword
+  static readonly resetPassword = passwordApi.resetPassword
+
+  static readonly getSamlRedirect = samlApi.getSamlRedirect
+  static readonly handleSamlCallback = samlApi.handleSamlCallback
+  static readonly samlLogout = samlApi.samlLogout
+  static readonly getSamlMetadata = samlApi.getSamlMetadata
+
+  // ===== 核心登录 / 注册 =====
 
   /**
    * @throws {MatrixError} M_FORBIDDEN — invalid credentials
@@ -557,86 +152,7 @@ export class MatrixAuthService {
     )
   }
 
-  static async requestPasswordEmailToken(
-    email: string,
-    sendAttempt: number = 1,
-    clientSecret?: string
-  ): Promise<MatrixRequestedEmailTokenResult> {
-    const resolvedClientSecret = clientSecret || MatrixAuthService.generateClientSecret()
-    return runSdkFirst(
-      async () => {
-        const result = await createTemporaryMatrixClient().requestPasswordEmailToken(
-          email,
-          resolvedClientSecret,
-          sendAttempt
-        )
-        return withClientSecret(result, resolvedClientSecret)
-      },
-      async () => {
-        const result = await matrixRequestPasswordEmailToken(email, resolvedClientSecret, sendAttempt)
-        return withClientSecret(result, resolvedClientSecret)
-      },
-      '请求找回密码邮箱令牌失败'
-    )
-  }
-
-  static async getCaptcha(options?: {
-    session?: string
-    captchaType?: string
-    length?: number
-  }): Promise<MatrixCaptchaResult> {
-    return matrixGetCaptcha(options)
-  }
-
-  static async startRegistrationSession(): Promise<{
-    session: string
-    flows: Array<{ type: string; stages?: string[] }>
-  }> {
-    try {
-      const result = await createTemporaryMatrixClient().registerRequest({})
-      const r = result as unknown as {
-        session?: string
-        flows?: Array<{ type: string; stages?: string[] }>
-      }
-      if (!r.session) {
-        throw new Error(useI18nGlobal().t('matrix_error.auth.register_no_session'))
-      }
-      return { session: r.session, flows: r.flows ?? [] }
-    } catch (err) {
-      const matrixErr = err as {
-        errcode?: string
-        session?: string
-        flows?: Array<{ type: string; stages?: string[] }>
-      }
-      if (matrixErr.session && matrixErr.flows) {
-        return { session: matrixErr.session, flows: matrixErr.flows }
-      }
-      throw normalizeSdkMatrixError(err, '启动注册会话失败')
-    }
-  }
-
-  static async verifyCaptcha(session: string, response: string): Promise<{ success: boolean }> {
-    return postMatrixJson<{ success: boolean }>(
-      `${PREFIX_V3}/register/captcha/verify`,
-      { session, response },
-      '验证验证码失败'
-    )
-  }
-
-  static async getCaptchaStatus(session: string): Promise<{ verified: boolean }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-    try {
-      const result = await authedRequestWithPath<{ verified: boolean }>(client, 'GET', '/register/captcha/status', {
-        session
-      })
-      return result
-    } catch (_err) {
-      throw new Error(useI18nGlobal().t('matrix_error.auth.query_code_status_failed'))
-    }
-  }
+  // ===== 会话 / 账户 =====
 
   /**
    * @throws {MatrixError} M_FORBIDDEN — invalid credentials
@@ -658,54 +174,6 @@ export class MatrixAuthService {
     } catch (err) {
       throw normalizeSdkMatrixError(err, '获取账户信息失败')
     }
-  }
-
-  static async cleanupExpiredCaptchas(): Promise<{ cleaned: number }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const result = await authedRequestWithPath<{ cleaned?: number }>(
-        client,
-        'DELETE',
-        '/register/captcha/clean',
-        undefined,
-        {}
-      )
-      return { cleaned: result.cleaned ?? 0 }
-    } catch (err) {
-      throw normalizeSdkMatrixError(err, '清理过期验证码失败')
-    }
-  }
-
-  static async forgetPassword(
-    email: string,
-    sendAttempt: number = 1,
-    clientSecret?: string
-  ): Promise<MatrixRequestedEmailTokenResult> {
-    return MatrixAuthService.requestPasswordEmailToken(email, sendAttempt, clientSecret)
-  }
-
-  static async resetPassword(
-    newPassword: string,
-    authSession?: string,
-    authType?: string,
-    authToken?: string,
-    clientSecret?: string
-  ): Promise<Record<string, unknown>> {
-    const auth = buildResetPasswordAuth(authSession, authType, authToken, clientSecret)
-
-    if (!auth) {
-      return matrixResetPassword(newPassword, authSession, authType, authToken, clientSecret)
-    }
-
-    return runSdkFirst(
-      () => createTemporaryMatrixClient().setPassword(auth, newPassword),
-      () => matrixResetPassword(newPassword, authSession, authType, authToken, clientSecret),
-      '重置密码失败'
-    )
   }
 
   static async isUsernameAvailable(username: string): Promise<boolean> {
@@ -734,7 +202,7 @@ export class MatrixAuthService {
     }
     // 确保 SDK Manager 扩展已加载（尤其是 getAccountManager），避免临时客户端缺少原型方法
     try {
-      await sdk.initializeManagerExtensions()
+      await initializeManagerExtensions()
     } catch {
       // 初始化失败时忽略，loginFlows 可能仍可用
     }
@@ -796,74 +264,6 @@ export class MatrixAuthService {
     }
   }
 
-  static async getSamlRedirect(idpId?: string, redirectUrl?: string): Promise<string> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const queryParams: Record<string, string> = {}
-      if (idpId) queryParams.idp_id = idpId
-      if (redirectUrl) queryParams.redirectUrl = redirectUrl
-      const result = await authedRequestWithPath<{ redirect_url?: string }>(
-        client,
-        'GET',
-        '/login/saml/redirect',
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )
-      return result.redirect_url ?? ''
-    } catch (err) {
-      throw normalizeSdkMatrixError(err, '获取 SAML 重定向失败')
-    }
-  }
-
-  static async handleSamlCallback(
-    samlResponse: string,
-    relayState?: string,
-    sessionId?: string
-  ): Promise<MatrixLoginResult> {
-    const body: Record<string, unknown> = { saml_response: samlResponse }
-    if (relayState) body.relay_state = relayState
-    if (sessionId) body.session_id = sessionId
-
-    return postMatrixJson<MatrixLoginResult>(`${PREFIX_V3}/login/saml/callback`, body, 'SAML 回调处理失败')
-  }
-
-  static async samlLogout(redirectUrl?: string): Promise<string | null> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const queryParams = redirectUrl ? { redirectUrl } : undefined
-      const result = await authedRequestWithPath<{ redirect_url?: string }>(
-        client,
-        'POST',
-        '/login/saml/logout',
-        queryParams
-      )
-      return result.redirect_url ?? null
-    } catch (err) {
-      throw normalizeSdkMatrixError(err, 'SAML 登出失败')
-    }
-  }
-
-  static async getSamlMetadata(): Promise<Record<string, unknown>> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/login/saml/metadata')
-      return result
-    } catch (err) {
-      throw normalizeSdkMatrixError(err, '获取 SAML 元数据失败')
-    }
-  }
-
   static async getWellKnown(): Promise<Record<string, unknown>> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -907,5 +307,3 @@ export class MatrixAuthService {
     }
   }
 }
-
-const _matrixAuthService = MatrixAuthService

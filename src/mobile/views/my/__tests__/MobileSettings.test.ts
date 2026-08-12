@@ -64,7 +64,7 @@ vi.mock('@/stores/domains/user/userStatus', () => ({
   })
 }))
 
-vi.mock('@/composables/user/useLoginFlow', () => ({
+vi.mock('@/shared/composables/useLoginFlow', () => ({
   useLoginFlow: () => ({ logout: logoutMock })
 }))
 

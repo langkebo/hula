@@ -57,11 +57,9 @@ jobs:
 
       - name: Build project
         run: pnpm build
-        continue-on-error: true
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@df409f7d9260372bd5f19e5b04e83cb3c43714ae
-        continue-on-error: true
 
   performance-metrics:
     name: Performance Metrics

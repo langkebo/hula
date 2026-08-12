@@ -18,16 +18,16 @@ interface WaitForFunctionOptions {
 async function waitForPinia(page: MockPage): Promise<void> {
   await page.waitForFunction(
     () =>
-      (window as Window & { __HULA_PINIA_READY__?: boolean; pinia?: unknown }).__HULA_PINIA_READY__ === true &&
+      (window as Window & { __TJG_PINIA_READY__?: boolean; pinia?: unknown }).__TJG_PINIA_READY__ === true &&
       (window as Window & { pinia?: unknown }).pinia != null,
     undefined,
     { timeout: 30_000 }
   )
 }
 
-async function waitForHulaAppReady(page: MockPage): Promise<void> {
+async function waitForTjgAppReady(page: MockPage): Promise<void> {
   await page.waitForFunction(
-    () => (window as Window & { __HULA_APP_READY__?: boolean }).__HULA_APP_READY__ === true,
+    () => (window as Window & { __TJG_APP_READY__?: boolean }).__TJG_APP_READY__ === true,
     undefined,
     { timeout: 120_000 }
   )
@@ -39,7 +39,7 @@ describe('E2E support utilities - matrixLive', () => {
   })
 
   describe('waitForPinia', () => {
-    it('should resolve when __HULA_PINIA_READY__ is true', async () => {
+    it('should resolve when __TJG_PINIA_READY__ is true', async () => {
       const page = createMockPage()
       page.waitForFunction.mockImplementation(
         (_callback: () => boolean, _arg: undefined, _options: WaitForFunctionOptions) => {
@@ -66,8 +66,8 @@ describe('E2E support utilities - matrixLive', () => {
     })
   })
 
-  describe('waitForHulaAppReady', () => {
-    it('should resolve when __HULA_APP_READY__ is true', async () => {
+  describe('waitForTjgAppReady', () => {
+    it('should resolve when __TJG_APP_READY__ is true', async () => {
       const page = createMockPage()
       page.waitForFunction.mockImplementation(
         (_callback: () => boolean, _arg: undefined, _options: WaitForFunctionOptions) => {
@@ -75,7 +75,7 @@ describe('E2E support utilities - matrixLive', () => {
         }
       )
 
-      await waitForHulaAppReady(page)
+      await waitForTjgAppReady(page)
 
       expect(page.waitForFunction).toHaveBeenCalledTimes(1)
       const [_callback, arg, options] = page.waitForFunction.mock.calls[0]

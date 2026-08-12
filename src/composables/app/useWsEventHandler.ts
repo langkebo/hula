@@ -427,7 +427,7 @@ export function useWsEventHandler() {
         Number(userUid.value) === Number(wsTokenExpire.uid) &&
         (userStore.userInfo?.client ?? '') === wsTokenExpire.client
       ) {
-        const { useLoginFlow } = await import('@/composables/user/useLoginFlow')
+        const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
         const { logout } = useLoginFlow()
         if (isMobile()) {
           try {

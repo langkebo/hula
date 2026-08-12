@@ -26,7 +26,7 @@ vi.mock('@/composables/common/useOverlayController', () => ({
 }))
 vi.mock('@/composables/common/useWindow', () => ({ useWindow: () => ({ ensureNotifyWindow: vi.fn() }) }))
 vi.mock('@/composables/search/useSearchShortcut', () => ({ useSearchShortcut: vi.fn() }))
-vi.mock('@/composables/user/useLoginFlow', () => ({
+vi.mock('@/shared/composables/useLoginFlow', () => ({
   useLoginFlow: () => ({ logout: vi.fn(), init: vi.fn(() => Promise.resolve()) })
 }))
 

@@ -4,7 +4,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLoginFlow } from '@/composables/user/useLoginFlow'
+import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 

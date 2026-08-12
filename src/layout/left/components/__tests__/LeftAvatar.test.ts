@@ -92,7 +92,7 @@ vi.mock('@/components/userMenu/useUserMenu', () => ({
   })
 }))
 
-vi.mock('@/composables/user/useLoginFlow', () => ({
+vi.mock('@/shared/composables/useLoginFlow', () => ({
   useLoginFlow: () => ({ logout: logoutSpy })
 }))
 

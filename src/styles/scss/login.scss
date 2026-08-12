@@ -8,6 +8,25 @@
   line-height: 22px;
 }
 
+:deep(.van-cell.van-field) {
+  padding: 10px 16px;
+  background: var(--tjg-overlay-mobile-sheet);
+  border-radius: 8px;
+}
+
+:deep(.van-cell.van-field::after) {
+  display: none;
+}
+
+:deep(.van-field__right-icon) {
+  color: var(--tjg-text-secondary);
+  cursor: pointer;
+}
+
+:deep(.van-field__clear) {
+  color: var(--tjg-text-tertiary);
+}
+
 /*
  * 登录按钮样式覆盖
  * Naive UI 的 n-button 内部样式优先级高，必须用 !important 强制覆盖

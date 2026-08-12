@@ -116,6 +116,12 @@ vi.mock('../../stores/domains/user/user', () => ({
   useUserStore: () => mockUserStore
 }))
 
+vi.mock('@/stores/domains/user/loginHistory', () => ({
+  useLoginHistoriesStore: () => ({
+    removeLoginHistory: vi.fn()
+  })
+}))
+
 vi.mock('@/utils/PlatformConstants', () => ({
   isDesktop: () => true,
   isMac: () => false,
@@ -152,7 +158,7 @@ vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
   sessionOrchestrator: mockSessionOrchestrator
 }))
 
-const { useLoginFlow } = await import('@/composables/user/useLoginFlow')
+const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
 
 describe('useLoginFlow', () => {
   beforeEach(() => {

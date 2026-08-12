@@ -11,17 +11,14 @@ import VueSetupExtend from 'vite-plugin-vue-setup-extend'
 import packageJson from '../../package.json' with { type: 'json' }
 import { cspNoncePlugin } from '../plugins/vite-plugin-csp-nonce.ts'
 import { createManualChunks } from './chunks.ts'
+import { createSdkAliases } from './sdk-aliases.ts'
 
 const dependencies = Object.keys(packageJson.dependencies || {})
 
 // SDK 去 link 化（2026-08-09）：matrix-js-sdk 以 tarball（file:vendor/matrix-js-sdk.tgz）
-// 安装进 node_modules，构建不再依赖仓库外 sibling 目录。以下 alias 将 fork 自定义子路径
-// 指向已安装包内的 TS 源码（tarball 的 files 包含 src/），保持"从源码编译 SDK"的
-// 既有运行时行为不变（lib 产物中 logger 访问 process.env 在浏览器/Worker 下会失败）。
-// 注意：不能用 require.resolve('matrix-js-sdk/package.json')——SDK 的 exports 未导出
-// './package.json' 子路径；顶级依赖的 node_modules/matrix-js-sdk 软链由 pnpm 保证存在。
+// 安装进 node_modules，构建不再依赖仓库外 sibling 目录。alias 配置已抽取到 sdk-aliases.ts，
+// 使用 `pnpm check:sdk-aliases` 可自动校验别名路径在 SDK 升级后是否仍然有效。
 const sdkPackageRoot = path.join(fileURLToPath(new URL('../../', import.meta.url)), 'node_modules', 'matrix-js-sdk')
-const sdkSrc = (...segments: string[]) => path.join(sdkPackageRoot, 'src', ...segments)
 
 export const baseConfig: UserConfig = {
   resolve: {
@@ -31,40 +28,7 @@ export const baseConfig: UserConfig = {
       '~': fileURLToPath(new URL('../../', import.meta.url)),
       'stream-monaco': fileURLToPath(new URL('../empty-module.js', import.meta.url)),
       'monaco-editor': fileURLToPath(new URL('../empty-module.js', import.meta.url)),
-      'matrix-js-sdk/src': sdkSrc(),
-      'matrix-js-sdk/friend': sdkSrc('friend', 'index.ts'),
-      'matrix-js-sdk/crypto': sdkSrc('crypto-api', 'index.ts'),
-      'matrix-js-sdk/dm': sdkSrc('dm', 'index.ts'),
-      'matrix-js-sdk/voice': sdkSrc('voice', 'index.ts'),
-      'matrix-js-sdk/notification': sdkSrc('notification', 'index.ts'),
-      'matrix-js-sdk/push': sdkSrc('push', 'index.ts'),
-      'matrix-js-sdk/space': sdkSrc('space', 'index.ts'),
-      'matrix-js-sdk/admin': sdkSrc('admin', 'index.ts'),
-      'matrix-js-sdk/beacon': sdkSrc('beacon', 'index.ts'),
-      'matrix-js-sdk/client': sdkSrc('client.ts'),
-      'matrix-js-sdk/sync': sdkSrc('sync.ts'),
-      'matrix-js-sdk/models/room': sdkSrc('models', 'room.ts'),
-      'matrix-js-sdk/models/room-state': sdkSrc('models', 'room-state.ts'),
-      'matrix-js-sdk/models': sdkSrc('models', 'index.ts'),
-      'matrix-js-sdk/http-api': sdkSrc('http-api', 'index.ts'),
-      'matrix-js-sdk/manager-extensions': sdkSrc('manager-extensions', 'index.ts'),
-      'matrix-js-sdk/store/worker': sdkSrc('store', 'indexeddb-store-worker.ts'),
-      'matrix-js-sdk/credentials': sdkSrc('credentials', 'index.ts'),
-      'matrix-js-sdk/account': sdkSrc('account', 'index.ts'),
-      'matrix-js-sdk/auth': sdkSrc('auth', 'index.ts'),
-      'matrix-js-sdk/capabilities': sdkSrc('capabilities', 'index.ts'),
-      'matrix-js-sdk/room': sdkSrc('room', 'index.ts'),
-      'matrix-js-sdk/media': sdkSrc('media', 'index.ts'),
-      'matrix-js-sdk/message': sdkSrc('message', 'index.ts'),
-      'matrix-js-sdk/profile': sdkSrc('profile', 'index.ts'),
-      'matrix-js-sdk/presence': sdkSrc('presence', 'index.ts'),
-      'matrix-js-sdk/sending': sdkSrc('sending', 'index.ts'),
-      'matrix-js-sdk/crypto-keys': sdkSrc('crypto-keys', 'index.ts'),
-      'matrix-js-sdk/device': sdkSrc('device', 'index.ts'),
-      'matrix-js-sdk/telemetry': sdkSrc('telemetry', 'index.ts'),
-      'matrix-js-sdk/qr-login': sdkSrc('qr-login', 'index.ts'),
-      'matrix-js-sdk/rendezvous': sdkSrc('rendezvous', 'index.ts'),
-      'matrix-js-sdk': sdkSrc('index.ts')
+      ...createSdkAliases(sdkPackageRoot)
     }
   },
   css: {

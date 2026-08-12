@@ -16,12 +16,12 @@ const DESKTOP_RUNTIME_ISSUE_OPTIONS = {
 
 const waitForSample = async (page: Page, name: string): Promise<RenderSample> => {
   await page.waitForFunction((sampleName) => {
-    const samples = (window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__
+    const samples = (window as Window & { __TJG_RENDER_SAMPLES__?: RenderSample[] }).__TJG_RENDER_SAMPLES__
     return Boolean(samples?.some((sample) => sample.name === sampleName))
   }, name)
 
   const sample = await page.evaluate((sampleName) => {
-    const samples = (window as Window & { __HULA_RENDER_SAMPLES__?: RenderSample[] }).__HULA_RENDER_SAMPLES__
+    const samples = (window as Window & { __TJG_RENDER_SAMPLES__?: RenderSample[] }).__TJG_RENDER_SAMPLES__
     return samples?.find((item) => item.name === sampleName) ?? null
   }, name)
 

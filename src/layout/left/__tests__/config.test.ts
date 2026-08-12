@@ -29,7 +29,7 @@ vi.mock('@/stores/domains/admin/admin', () => ({
   })
 }))
 
-vi.mock('@/composables/user/useLoginFlow', () => ({
+vi.mock('@/shared/composables/useLoginFlow', () => ({
   useLoginFlow: () => ({
     logout: vi.fn()
   })

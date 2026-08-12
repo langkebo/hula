@@ -124,7 +124,7 @@
 import { useI18n } from 'vue-i18n'
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { useGeolocation } from '@/composables/common/useGeolocation'
-import { reverseGeocode } from '@/services/mapApi'
+import { reverseGeocode } from '@/services/legacy/mapApi'
 import type { LocationData } from '@/types/common'
 import { createLogger } from '@/utils/Logger'
 import { isMac, isWindows } from '@/utils/PlatformConstants'

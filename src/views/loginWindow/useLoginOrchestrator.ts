@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
 import { type DriverStepConfig, useDriver } from '@/composables/common/useDriver'
 import { useWindow } from '@/composables/common/useWindow'
-import { useLoginFlow } from '@/composables/user/useLoginFlow'
+import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useGuideStore } from '@/stores/domains/settings/guide'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
@@ -38,6 +38,7 @@ export function useLoginOrchestrator() {
   const {
     normalLogin,
     retryLogin,
+    selectAccount: giveAccount,
     loading,
     loginText,
     loginDisabled,
@@ -66,14 +67,6 @@ export function useLoginOrchestrator() {
     loginText,
     loginDisabled
   })
-
-  const giveAccount = (item: { account?: string; password?: string; avatar: string; name?: string; uid?: string }) => {
-    loginInfo.value.account = item.account || ''
-    loginInfo.value.password = item.password || ''
-    loginInfo.value.avatar = item.avatar
-    loginInfo.value.name = item.name || ''
-    loginInfo.value.uid = item.uid || ''
-  }
 
   const cancelAutoLoginAndShowManual = () => {
     cancelAutoLogin()

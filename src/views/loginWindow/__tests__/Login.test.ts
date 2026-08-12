@@ -120,7 +120,7 @@ vi.mock('@/composables/common/useDriver', () => ({
   })
 }))
 
-vi.mock('@/composables/user/useLoginFlow', () => ({
+vi.mock('@/shared/composables/useLoginFlow', () => ({
   useLoginFlow: () => ({
     normalLogin: normalLoginMock,
     loading: loginLoadingRef,

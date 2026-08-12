@@ -1,4 +1,4 @@
-import { configService } from '@/services/ConfigService'
+import { configService } from '@/services/backend/ConfigService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('iceServers')

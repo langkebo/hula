@@ -1,3 +1,4 @@
+import { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ErrorTracker')
@@ -40,24 +41,28 @@ const DEFAULT_CONFIG: ErrorTrackerConfig = {
 class ErrorTracker {
   private config: ErrorTrackerConfig = DEFAULT_CONFIG
   private errors: Map<string, TrackedError> = new Map()
-  private initialized = false
+  // O9: 迁移到 IdempotencyGuard，统一守卫语义
+  private initGuard = new IdempotencyGuard()
   private originalOnError: OnErrorEventHandler | null = null
   private originalOnUnhandledRejection: ((event: PromiseRejectionEvent) => void) | null = null
 
   initialize(config?: Partial<ErrorTrackerConfig>): void {
-    if (this.initialized) {
+    // 同步检查：已完成或正在进行中则跳过
+    if (this.initGuard.isSettled || this.initGuard.isRunning) {
       logger.warn('[ErrorTracker] 已经初始化，跳过重复调用')
       return
     }
 
     this.config = { ...DEFAULT_CONFIG, ...config }
-    this.initialized = true
 
-    if (this.config.enableGlobalHandlers) {
-      this.installGlobalHandlers()
-    }
-
-    logger.info('[ErrorTracker] 错误追踪已初始化')
+    // 通过 IdempotencyGuard 管理幂等性，factory 返回 resolved Promise 表示同步完成
+    void this.initGuard.run(() => {
+      if (this.config.enableGlobalHandlers) {
+        this.installGlobalHandlers()
+      }
+      logger.info('[ErrorTracker] 错误追踪已初始化')
+      return Promise.resolve()
+    })
   }
 
   private installGlobalHandlers(): void {
@@ -206,7 +211,7 @@ class ErrorTracker {
       }
     }
     this.errors.clear()
-    this.initialized = false
+    this.initGuard.reset()
   }
 
   private computeFingerprint(error: Error, context: ErrorContext): string {

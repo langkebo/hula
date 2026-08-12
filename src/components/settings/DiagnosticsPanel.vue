@@ -55,6 +55,27 @@
         {{ t('setting.diagnostics.retry_rate_abnormal_desc', { rate: retryRatePercent.toFixed(1) }) }}
       </n-alert>
 
+      <!-- O3: 扩展健康状态 -->
+      <n-alert
+        v-if="hasDegradedExtension"
+        data-testid="extension-degraded-warning"
+        type="warning"
+        class="diagnostics-alert"
+        title="扩展降级">
+        <div v-for="id in degradedExtensionIds" :key="id" class="extension-health-item">
+          <Icon icon="mdi:alert-circle-outline" :width="16" />
+          <span>{{ id }}: 降级（功能回退到 REST API）</span>
+        </div>
+      </n-alert>
+      <n-alert
+        v-else-if="extensionHealthChecked"
+        data-testid="extension-healthy-info"
+        type="success"
+        class="diagnostics-alert"
+        title="扩展状态正常">
+        所有关键扩展已注册
+      </n-alert>
+
       <div class="diagnostics-actions">
         <n-button size="small" data-testid="reset-btn" @click="handleReset">
           {{ t('setting.diagnostics.reset') }}
@@ -65,10 +86,12 @@
 </template>
 
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { NAlert, NButton, NCard, NGi, NGrid, NStatistic } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useApiMetrics } from '@/composables/useApiMetrics'
+import { useCapabilityStore } from '@/stores/domains/chat/capability'
 
 defineOptions({
   name: 'DiagnosticsPanel'
@@ -76,8 +99,18 @@ defineOptions({
 
 const { t } = useI18n()
 const { getMetricsSnapshot, reset: resetMetrics } = useApiMetrics()
+const capabilityStore = useCapabilityStore()
 
 const snapshot = ref(getMetricsSnapshot())
+
+// O3: 扩展健康状态
+const hasDegradedExtension = computed(() => capabilityStore.hasDegradedExtension)
+const extensionHealthChecked = computed(() => Object.keys(capabilityStore.extensionHealth).length > 0)
+const degradedExtensionIds = computed(() =>
+  Object.entries(capabilityStore.extensionHealth)
+    .filter(([, status]) => status === 'degraded')
+    .map(([id]) => id)
+)
 
 const apiAvgLatency = computed(() => {
   const values = Object.values(snapshot.value.apiCalls)
@@ -119,6 +152,13 @@ function handleReset() {
 
 .diagnostics-alert {
   margin-top: var(--tjg-space-4);
+}
+
+.extension-health-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
 }
 
 .diagnostics-actions {
