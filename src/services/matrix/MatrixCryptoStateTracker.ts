@@ -110,12 +110,12 @@ export class MatrixCryptoStateTracker {
       return
     }
 
-    // 3s 超时保护：ensureCrypto 完全非阻塞化会导致 SDK 内部状态异常，
+    // 8s 超时保护：ensureCrypto 完全非阻塞化会导致 SDK 内部状态异常，
     // 但完全阻塞又会卡住 startClient → sync 循环不启动。
-    // 平衡策略：Promise.race 3s 超时，超时后 fire-and-forget 继续后台执行，
-    // 不阻塞 startClient() 调用方的 sync 启动。
-    // 若 3s 内初始化完成则正常返回；超时则标记为 deferred，sync 启动不依赖 crypto。
-    const ENSURE_CRYPTO_TIMEOUT_MS = 3_000
+    // 平衡策略：Promise.race 8s 超时，超时后 fire-and-forget 继续后台执行。
+    // 3s 太短：第一次 initRustCrypto ~1.4s + 清理 IndexedDB ~0.3s + 第二次 initRustCrypto ~2s = ~3.7s
+    // 重试场景下 3s 必然超时，导致 crypto 初始化被打断，后续解密全部失败。
+    const ENSURE_CRYPTO_TIMEOUT_MS = 8_000
     const cryptoTask = this.doEnsureCrypto(cryptoClient)
     const timeoutTask = new Promise<void>((resolve) => {
       setTimeout(() => {
@@ -155,12 +155,38 @@ export class MatrixCryptoStateTracker {
     // 修复：localStorage 改为存储 userId:deviceId，换设备时触发清理。
     const cryptoUserKey = `${userId}:${deviceId}`
     const lastCryptoUser = this.readLastCryptoUser()
-    if (lastCryptoUser !== cryptoUserKey) {
-      if (useIndexedDB) {
-        logger.info(`检测到 crypto 用户/设备变化（${lastCryptoUser} → ${cryptoUserKey}），主动清理旧 crypto store`)
-        await clearStaleCryptoStores(userId)
-      }
+
+    // ISSUE-08 对接：从系统 keychain 派生 storagePassword，加密 IndexedDB crypto store
+    // 和待发事件队列（PendingEventsCipher）。keychain 不可用时降级为不加密（dev/浏览器）。
+    const storagePassword = await getOrCreateCryptoStoragePassword(userId, deviceId)
+    const currentEncrypted = storagePassword ? '1' : '0'
+    const lastEncrypted = this.readLastCryptoEncrypted()
+
+    // 提前清理：以下情况在 initRustCrypto 之前清理旧 store，避免第一次失败+重试耗时
+    // 1. userId:deviceId 变化（换设备登录）
+    // 2. storagePassword 加密状态变化（上次不加密→这次加密，或反之）
+    //    常见场景：macOS dev 模式 keychain 不稳定，上次 keychain 不可用（不加密），
+    //    这次 keychain 可用（有密码），用新密码打开旧不加密 store 会报
+    //    "An object failed to be decrypted while unpickling"
+    const userChanged = lastCryptoUser !== cryptoUserKey
+    const encryptedChanged =
+      lastCryptoUser === cryptoUserKey && lastEncrypted !== null && lastEncrypted !== currentEncrypted
+    if (useIndexedDB && (userChanged || encryptedChanged)) {
+      const reason = userChanged
+        ? `用户/设备变化（${lastCryptoUser} → ${cryptoUserKey}）`
+        : `加密状态变化（${lastEncrypted} → ${currentEncrypted}）`
+      logger.info(`检测到 crypto ${reason}，提前清理旧 crypto store 避免 initRustCrypto 失败`)
+      await clearStaleCryptoStores(userId)
+    }
+    if (userChanged || encryptedChanged || lastEncrypted === null) {
       this.writeLastCryptoUser(cryptoUserKey)
+      this.writeLastCryptoEncrypted(currentEncrypted)
+    }
+
+    if (storagePassword) {
+      logger.info(`已从 keychain 获取 crypto storagePassword: ${userId}/${deviceId}`)
+    } else {
+      logger.warn(`未获取到 crypto storagePassword，crypto store 将不加密: ${userId}/${deviceId}`)
     }
 
     this.rustCryptoDebugState = {
@@ -169,15 +195,6 @@ export class MatrixCryptoStateTracker {
       skippedReason: null,
       error: null,
       usedIndexedDB: useIndexedDB
-    }
-
-    // ISSUE-08 对接：从系统 keychain 派生 storagePassword，加密 IndexedDB crypto store
-    // 和待发事件队列（PendingEventsCipher）。keychain 不可用时降级为不加密（dev/浏览器）。
-    const storagePassword = await getOrCreateCryptoStoragePassword(userId, deviceId)
-    if (storagePassword) {
-      logger.info(`已从 keychain 获取 crypto storagePassword: ${userId}/${deviceId}`)
-    } else {
-      logger.warn(`未获取到 crypto storagePassword，crypto store 将不加密: ${userId}/${deviceId}`)
     }
 
     try {
@@ -207,7 +224,8 @@ export class MatrixCryptoStateTracker {
         try {
           await clearStaleCryptoStores(userId)
           // 等待浏览器释放 IndexedDB 连接句柄，避免重试时数据库仍被占用
-          await new Promise((resolve) => setTimeout(resolve, 300))
+          // 100ms 足够（clearStaleCryptoStores 内部已有 onblocked 300ms 重试保护）
+          await new Promise((resolve) => setTimeout(resolve, 100))
           await cryptoClient.initRustCrypto({
             useIndexedDB,
             storagePassword: storagePassword ?? undefined
@@ -327,10 +345,23 @@ export class MatrixCryptoStateTracker {
     globalThis.localStorage.setItem('tjg.lastCryptoUserId', value)
   }
 
-  /** 清除 localStorage 中的 lastCryptoUserId 记录 */
+  /** 读取上次 storagePassword 加密状态（'1'=有密码, '0'=无密码, null=首次） */
+  private readLastCryptoEncrypted(): string | null {
+    if (typeof globalThis.localStorage === 'undefined') return null
+    return globalThis.localStorage.getItem('tjg.lastCryptoEncrypted')
+  }
+
+  /** 写入 storagePassword 加密状态 */
+  private writeLastCryptoEncrypted(value: string): void {
+    if (typeof globalThis.localStorage === 'undefined') return
+    globalThis.localStorage.setItem('tjg.lastCryptoEncrypted', value)
+  }
+
+  /** 清除 localStorage 中的 lastCryptoUserId 和加密状态记录 */
   private clearLastCryptoUser(): void {
     if (typeof globalThis.localStorage === 'undefined') return
     globalThis.localStorage.removeItem('tjg.lastCryptoUserId')
+    globalThis.localStorage.removeItem('tjg.lastCryptoEncrypted')
   }
 }
 
@@ -395,19 +426,31 @@ async function clearStaleCryptoStores(_userId: string): Promise<{ deleted: numbe
 /**
  * 删除单个 IndexedDB 数据库，onblocked 时等待 300ms 后重试一次。
  *
+ * 超时保护：2s 内无结果则 resolve('failed')，避免某些 WebView 环境下
+ * deleteDatabase 对不存在的数据库既不触发 onsuccess 也不触发 onerror，
+ * 导致 Promise 永久 pending 卡住 clearStaleCryptoStores → ensureCrypto。
+ *
  * @returns 'deleted' | 'failed' | 'blocked'
  */
 function deleteCryptoDbWithRetry(dbName: string): Promise<'deleted' | 'failed' | 'blocked'> {
   return new Promise((resolve) => {
+    let settled = false
+    const finish = (result: 'deleted' | 'failed' | 'blocked') => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeoutHandle)
+      resolve(result)
+    }
+
     logger.info(`删除 IndexedDB: ${dbName}`)
     const req = globalThis.indexedDB.deleteDatabase(dbName)
     req.onsuccess = () => {
       logger.info(`已删除 IndexedDB: ${dbName}`)
-      resolve('deleted')
+      finish('deleted')
     }
     req.onerror = () => {
       logger.warn(`删除 IndexedDB 失败: ${dbName}`)
-      resolve('failed')
+      finish('failed')
     }
     req.onblocked = () => {
       logger.info(`IndexedDB 被阻塞，300ms 后重试: ${dbName}`)
@@ -416,17 +459,25 @@ function deleteCryptoDbWithRetry(dbName: string): Promise<'deleted' | 'failed' |
         const retryReq = globalThis.indexedDB.deleteDatabase(dbName)
         retryReq.onsuccess = () => {
           logger.info(`重试成功，已删除 IndexedDB: ${dbName}`)
-          resolve('deleted')
+          finish('deleted')
         }
         retryReq.onerror = () => {
           logger.warn(`重试删除 IndexedDB 失败: ${dbName}`)
-          resolve('failed')
+          finish('failed')
         }
         retryReq.onblocked = () => {
           logger.warn(`IndexedDB 仍被阻塞，跳过: ${dbName}`)
-          resolve('blocked')
+          finish('blocked')
         }
       }, 300)
     }
+
+    // 超时保护：2s 内无结果则视为失败
+    const timeoutHandle = setTimeout(() => {
+      if (!settled) {
+        logger.warn(`删除 IndexedDB 超时 (2s)，跳过: ${dbName}`)
+        finish('failed')
+      }
+    }, 2_000)
   })
 }
