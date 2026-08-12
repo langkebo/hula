@@ -287,4 +287,139 @@ describe('RoomSettingsDrawer', () => {
     expect(wrapper.find('[data-testid="tab-error"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('boom from members tab')
   })
+
+  // === 异常场景测试 ===
+
+  it('renders all 11 tabs without white screen when switching between them', async () => {
+    const wrapper = mountDrawer()
+    await flushPromises()
+
+    const expectedTestIds = [
+      'basic-tab',
+      'members-tab',
+      'permissions-tab',
+      'security-tab',
+      'notifications-tab',
+      'alias-tab',
+      'history-tab',
+      'retention-tab',
+      'tags-tab',
+      'sticky-tab',
+      'advanced-tab'
+    ]
+
+    const tabs = wrapper.findAll('.rs-drawer__tab')
+    expect(tabs).toHaveLength(expectedTestIds.length)
+
+    for (let i = 0; i < tabs.length; i++) {
+      await tabs[i].trigger('click')
+      await flushPromises()
+      expect(wrapper.find(`[data-testid="${expectedTestIds[i]}"]`).exists()).toBe(true)
+      expect(wrapper.find('[data-testid="tab-error"]').exists()).toBe(false)
+    }
+  })
+
+  it('does not crash when clicking the same tab button multiple times', async () => {
+    const wrapper = mountDrawer()
+    await flushPromises()
+
+    const tabs = wrapper.findAll('.rs-drawer__tab')
+    const securityTab = tabs[3]
+
+    for (let i = 0; i < 3; i++) {
+      await securityTab.trigger('click')
+      await flushPromises()
+    }
+
+    expect(wrapper.find('[data-testid="security-tab"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tab-error"]').exists()).toBe(false)
+    expect(securityTab.classes()).toContain('rs-drawer__tab--active')
+  })
+
+  it('shows only the last tab content when rapidly switching tabs A to B to C', async () => {
+    const wrapper = mountDrawer()
+    await flushPromises()
+
+    const tabs = wrapper.findAll('.rs-drawer__tab')
+    // Rapidly switch: basic (0) -> members (1) -> permissions (2)
+    await tabs[0].trigger('click')
+    await tabs[1].trigger('click')
+    await tabs[2].trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="permissions-tab"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="basic-tab"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="members-tab"]').exists()).toBe(false)
+    expect(tabs[2].classes()).toContain('rs-drawer__tab--active')
+  })
+
+  it('clears tabError and re-renders tab content when retry button is clicked', async () => {
+    let renderAttempt = 0
+    vi.doMock('@/components/room/settings-tabs/MembersTab.vue', () => ({
+      default: {
+        name: 'RecoverableErrorTab',
+        props: { roomId: { type: String, required: true } },
+        setup() {
+          renderAttempt++
+          if (renderAttempt === 1) {
+            throw new Error('transient members tab error')
+          }
+        },
+        template: '<div data-testid="members-tab" :data-room-id="roomId" />'
+      }
+    }))
+
+    vi.resetModules()
+    const { default: DrawerWithRetry } = await import('../RoomSettingsDrawer.vue')
+
+    const wrapper = mount(DrawerWithRetry, {
+      props: { roomId: ROOM_ID },
+      global: {
+        stubs: {
+          Transition: { template: '<div><slot /></div>' },
+          Teleport: { template: '<div><slot /></div>' }
+        }
+      }
+    })
+    await flushPromises()
+
+    // Switch to members tab (index 1) to trigger the error
+    const tabs = wrapper.findAll('.rs-drawer__tab')
+    await tabs[1].trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="tab-error"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('transient members tab error')
+    expect(renderAttempt).toBe(1)
+
+    // Click retry button to clear tabError and re-render
+    await wrapper.find('.rs-tab__error-retry').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="tab-error"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="members-tab"]').exists()).toBe(true)
+    expect(renderAttempt).toBe(2)
+  })
+
+  it('does not render any tab content when roomId is null', async () => {
+    const wrapper = mountDrawer(null)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="room-settings-drawer"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="room-settings-drawer-overlay"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="basic-tab"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="tab-error"]').exists()).toBe(false)
+    expect(wrapper.findAll('.rs-drawer__tab')).toHaveLength(0)
+  })
+
+  it('emits close event when close button is clicked', async () => {
+    const wrapper = mountDrawer()
+    await flushPromises()
+
+    await wrapper.find('.rs-drawer__close').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
 })

@@ -18,6 +18,7 @@
 
 import { resolveMatrixRuntimeHomeserverUrl } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
+import { isFriendManagerRegistered } from '@/services/matrix/extensions/managerExtensions'
 import { setMatrixClientAccessor } from '@/services/matrix/matrixClientAccessor'
 import { getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
 import {
@@ -29,6 +30,7 @@ import {
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import type { ICreateClientOpts } from '@/types/matrix-js-sdk'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { errorTracker } from '@/utils/ErrorTracker'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixConnection')
@@ -409,14 +411,11 @@ export class MatrixConnectionManager {
   private assertCriticalExtensions(): void {
     if (!this.client) return
 
-    const clientWithMethods = this.client as unknown as Record<string, unknown>
+    const _clientWithMethods = this.client as unknown as Record<string, unknown>
     const results: Record<string, 'healthy' | 'degraded'> = {}
 
-    // FriendManager 扩展
-    const hasFriendManager =
-      typeof clientWithMethods.getFriendManager === 'function' ||
-      (clientWithMethods.friendManager &&
-        typeof (clientWithMethods.friendManager as Record<string, unknown>).start === 'function')
+    // FriendManager 扩展 —— 注册检查统一委托单一真相谓词，避免逻辑漂移
+    const hasFriendManager = isFriendManagerRegistered(this.client)
 
     results['friend-manager'] = hasFriendManager ? 'healthy' : 'degraded'
 
@@ -425,6 +424,12 @@ export class MatrixConnectionManager {
         '[扩展健康断言] FriendManager 扩展未注册，好友功能将降级到 REST API。' +
           '可能原因：initializeManagerExtensions 失败或 SDK 版本不兼容。'
       )
+      // 可观测性：发射健康事件，供监控/告警消费（不再仅依赖日志）
+      errorTracker.trackManual('friend_manager_degraded', {
+        reason: 'getFriendManager_unavailable',
+        fallback: 'rest_api',
+        possibleCause: 'initializeManagerExtensions_failed_or_sdk_incompatible'
+      })
     } else {
       logger.info('[扩展健康断言] FriendManager 扩展已注册')
     }
