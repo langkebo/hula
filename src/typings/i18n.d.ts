@@ -3948,6 +3948,8 @@ export type I18nKeys = {
     "register_fail": "注册失败",
     "server_config": {
       "title": "服务器配置",
+      "homeserver_label": "Homeserver 地址",
+      "identity_label": "Identity Server 地址",
       "identity_placeholder": "留空表示不使用 Identity Server",
       "restart_hint": "修改服务器配置后需要重新登录",
       "reset": "重置默认",
@@ -5782,6 +5784,9 @@ export type I18nKeys = {
       "settings": "房间设置",
       "invite": "邀请成员",
       "announcement": "公告",
+      "pinned_title": "置顶公告",
+      "no_pinned": "暂无置顶公告",
+      "pinned_loading": "加载置顶公告中…",
       "load_failed": "加载失败",
       "id_copied": "已复制房间 ID",
       "no_data": "暂无数据",

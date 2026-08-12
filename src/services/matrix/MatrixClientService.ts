@@ -801,7 +801,10 @@ class MatrixClientService {
     try {
       const response = await client.createRoom(options)
       logger.info(`创建房间成功: ${response.room_id}`)
-      const room = client.getRoom(response.room_id)
+      // SDK 的 createRoom 只发 HTTP 请求返回 { room_id }，不会立即写入 client.store。
+      // 房间进入 store 依赖 sync 循环在后续 sync 响应中处理（sync.ts:1687 storeRoom）。
+      // 因此创建后轮询等待 sync 把房间带入 store，而非立即查询（会因时序返回 null）。
+      const room = await this.waitForRoom(client, response.room_id, 5000)
       if (!room) {
         throw new Error(useI18nGlobal().t('matrix_error.client.room_instance_failed_after_create'))
       }
@@ -813,6 +816,31 @@ class MatrixClientService {
     }
   }
 
+  /**
+   * 轮询等待 client.store 中出现指定 roomId 的 Room 实例。
+   *
+   * SDK createRoom/joinRoom 返回后，房间不会立即进入 store，必须等 sync 循环处理。
+   * 此方法以 100ms 间隔轮询，直到房间出现或超时。
+   *
+   * @param client MatrixClient 实例
+   * @param roomId 房间 ID
+   * @param timeoutMs 超时毫秒数（默认 5000ms）
+   * @returns Room 实例，超时返回 null
+   */
+  private async waitForRoom(
+    client: ReturnType<MatrixConnectionManager['getClient']>,
+    roomId: string,
+    timeoutMs = 5000
+  ): Promise<Room | null> {
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() < deadline) {
+      const room = client?.getRoom(roomId)
+      if (room) return room
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+    return client?.getRoom(roomId) ?? null
+  }
+
   async joinRoom(roomId: string): Promise<Room> {
     const client = this.connectionManager.getClient()
     if (!client) {
@@ -822,7 +850,8 @@ class MatrixClientService {
     try {
       await client.joinRoom(roomId)
       logger.info(`加入房间成功: ${roomId}`)
-      const room = client.getRoom(roomId)
+      // 与 createRoom 同理：joinRoom 返回后房间需等 sync 循环写入 store
+      const room = await this.waitForRoom(client, roomId, 5000)
       if (!room) {
         throw new Error(useI18nGlobal().t('matrix_error.client.room_instance_failed_after_join'))
       }

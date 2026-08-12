@@ -121,6 +121,11 @@
                   </p>
                 </section>
 
+                <!-- 置顶公告 -->
+                <section class="room-drawer__section">
+                  <RoomDetailPinnedMessages :messages="pinnedMessages" :loading="pinnedLoading" />
+                </section>
+
                 <!-- 最近消息 -->
                 <section class="room-drawer__section">
                   <RoomDetailLastMessage
@@ -169,6 +174,7 @@ import { useClipboard } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import RoomDetailLastMessage from '@/components/room/RoomDetailLastMessage.vue'
 import RoomDetailMembers from '@/components/room/RoomDetailMembers.vue'
+import RoomDetailPinnedMessages from '@/components/room/RoomDetailPinnedMessages.vue'
 import RoomDetailStats from '@/components/room/RoomDetailStats.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
@@ -208,7 +214,12 @@ const lastMessage = ref<string | null>(null)
 const lastMessageSender = ref<string | null>(null)
 const lastMessageTime = ref<number | null>(null)
 
-const { pinnedEventIds, load: loadPinnedMessages } = usePinnedMessage({
+const {
+  pinnedEventIds,
+  pinnedMessages,
+  loading: pinnedLoading,
+  load: loadPinnedMessages
+} = usePinnedMessage({
   roomId: () => props.roomId
 })
 

@@ -252,12 +252,22 @@ class MatrixCapabilityService {
   /**
    * @deprecated Use fetchCapabilities() + store.setCapabilities() instead.
    * Kept for backward compatibility during migration.
+   *
+   * 错误兜底：即使 fetchCapabilities 返回 null（client 未就绪、网络异常等），
+   * 也必须 setCapabilities(空对象) 将 isLoaded 置 true。
+   * 否则 FriendListView 的 isCapabilityLoading = !isLoaded 会永久为 true，
+   * 导致 n-spin 无限转圈（即便好友数据已成功返回 0 条）。
    */
   async refreshCapabilities(): Promise<void> {
     const data = await this.fetchCapabilities()
-    if (data) {
-      getCapabilityStore().setCapabilities(data)
-    }
+    // data 为 null 时用空对象兜底，确保 isLoaded=true，UI 不再无限转圈
+    getCapabilityStore().setCapabilities(
+      data ?? {
+        unstable_features: {},
+        capabilities: {},
+        client_config: {}
+      }
+    )
   }
 
   private async fetchVersions(baseUrl: string): Promise<MatrixVersionsResponse> {
