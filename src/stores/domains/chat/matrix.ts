@@ -19,6 +19,7 @@ export const useMatrixStore = defineStore(
     const userId = ref<string | null>(null)
     const deviceId = ref<string | null>(null)
     const accessToken = ref<string | null>(null)
+    const refreshToken = ref<string | null>(null)
     const homeserverUrl = ref<string | null>(null)
     const lastError = ref<string | null>(null)
     const isInitialized = ref(false)
@@ -33,10 +34,17 @@ export const useMatrixStore = defineStore(
       const startupTask = (async () => {
         try {
           await matrixClientService.startClient()
-          await matrixCapabilityService.refreshCapabilities()
         } catch (error) {
           startupError = error instanceof Error ? error : new Error(String(error))
           logger.warn('登录后 Matrix 启动收尾失败:', error)
+        } finally {
+          // 无论 startClient 成功与否，都必须刷新能力（refreshCapabilities 内部已做空对象兜底），
+          // 否则 FriendListView 的 isCapabilityLoading = !isLoaded 会永久为 true，导致 n-spin 无限转圈。
+          try {
+            await matrixCapabilityService.refreshCapabilities()
+          } catch (capabilityErr) {
+            logger.warn('refreshCapabilities 失败，使用空兜底:', capabilityErr)
+          }
         }
       })()
 
@@ -56,6 +64,10 @@ export const useMatrixStore = defineStore(
 
       if (startupError) {
         logger.error('Matrix startClient 失败，同步将不可用:', (startupError as Error).message)
+        // 状态修正：startClient 失败时连接状态不应保持 CONNECTED，
+        // 否则 UI 会显示"已连接"但实际 sync 未运行、消息永远不会到达。
+        connectionState.value = 'ERROR'
+        lastError.value = (startupError as Error).message
       }
     }
 
@@ -96,6 +108,7 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           accessToken.value = result.accessToken ?? null
+          refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
 
           await settlePostLoginStartup()
@@ -133,6 +146,7 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           accessToken.value = result.accessToken ?? null
+          refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
 
           await settlePostLoginStartup()
@@ -151,16 +165,17 @@ export const useMatrixStore = defineStore(
       }
     }
 
-    async function loginWithToken(token: string, uid: string, refreshToken?: string): Promise<boolean> {
+    async function loginWithToken(token: string, uid: string, refreshTokenParam?: string): Promise<boolean> {
       try {
         lastError.value = null
         connectionState.value = 'CONNECTING'
-        const result = await matrixClientService.loginWithToken(token, uid, refreshToken)
+        const result = await matrixClientService.loginWithToken(token, uid, refreshTokenParam)
 
         if (result.success) {
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           accessToken.value = result.accessToken ?? null
+          refreshToken.value = result.refreshToken ?? refreshTokenParam ?? null
           connectionState.value = 'CONNECTED'
 
           await settlePostLoginStartup()
@@ -188,6 +203,7 @@ export const useMatrixStore = defineStore(
         userId.value = null
         deviceId.value = null
         accessToken.value = null
+        refreshToken.value = null
         connectionState.value = 'DISCONNECTED'
         syncState.value = null
         lastError.value = null
@@ -215,6 +231,7 @@ export const useMatrixStore = defineStore(
       userId,
       deviceId,
       accessToken,
+      refreshToken,
       homeserverUrl,
       lastError,
       isInitialized,

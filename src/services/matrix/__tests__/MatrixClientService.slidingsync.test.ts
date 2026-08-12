@@ -16,6 +16,7 @@ vi.mock('matrix-js-sdk', () => ({
     initRustCrypto: vi.fn().mockResolvedValue(undefined),
     getUserId: vi.fn(() => '@test:example.com'),
     getDeviceId: vi.fn(() => 'DEVICE123'),
+    isSlidingSyncSupported: vi.fn().mockResolvedValue(true),
     on: vi.fn(),
     off: vi.fn()
   })),

@@ -379,7 +379,14 @@ async function setupSessionWatch() {
 
 // ========== Lifecycle ==========
 onMounted(async () => {
-  await bootstrap()
+  // bootstrap 内部失败会 re-throw，必须 catch 避免未处理 rejection 中断后续初始化。
+  // bootstrap 内部已将错误存入 state.error，SplashScreen 会展示重试入口。
+  try {
+    await bootstrap()
+  } catch (err) {
+    logger.error('Bootstrap 失败，跳过依赖初始化的步骤:', err)
+    return
+  }
   await initOfflineQueue()
   await requestIOSNetworkPermission()
   initPlatformStyles()

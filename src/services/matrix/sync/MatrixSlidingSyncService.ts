@@ -66,12 +66,12 @@ class MatrixSlidingSyncService {
       return
     }
 
-    if (this.slidingSync && this.slidingSync !== syncInstance) {
+    // 关键修复：即使 slidingSync 是同一实例，也必须先 detach 再 attach。
+    // 原因：SlidingSync.stop() 会 removeAllListeners，forceReconnect 后监听器全部丢失。
+    // 若此处 early-return（同实例 + isInitialized），监听器永不重注册，
+    // 导致 unread counts、room updates 全部失效。
+    if (this.slidingSync) {
       this.detachListeners(this.slidingSync)
-    }
-
-    if (this.slidingSync === syncInstance && this._isInitialized) {
-      return
     }
 
     this.slidingSync = syncInstance
