@@ -1,10 +1,10 @@
 <template>
   <n-modal v-model:show="show" preset="card" :title="t('login.server_config.title')" :style="{ width: '400px' }">
     <n-flex vertical :size="12">
-      <n-form-item label="Homeserver URL">
+      <n-form-item :label="t('login.server_config.homeserver_label')">
         <n-input v-model:value="homeserverUrl" :placeholder="DEFAULT_MATRIX_HOMESERVER_URL" clearable />
       </n-form-item>
-      <n-form-item label="Identity Server URL">
+      <n-form-item :label="t('login.server_config.identity_label')">
         <n-input
           v-model:value="identityServerUrl"
           :placeholder="DEFAULT_MATRIX_IDENTITY_SERVER_URL || t('login.server_config.identity_placeholder')"

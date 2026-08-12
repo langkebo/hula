@@ -110,6 +110,27 @@ export class MatrixCryptoStateTracker {
       return
     }
 
+    // 3s 超时保护：ensureCrypto 完全非阻塞化会导致 SDK 内部状态异常，
+    // 但完全阻塞又会卡住 startClient → sync 循环不启动。
+    // 平衡策略：Promise.race 3s 超时，超时后 fire-and-forget 继续后台执行，
+    // 不阻塞 startClient() 调用方的 sync 启动。
+    // 若 3s 内初始化完成则正常返回；超时则标记为 deferred，sync 启动不依赖 crypto。
+    const ENSURE_CRYPTO_TIMEOUT_MS = 3_000
+    const cryptoTask = this.doEnsureCrypto(cryptoClient)
+    const timeoutTask = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        logger.warn(`ensureCrypto 超过 ${ENSURE_CRYPTO_TIMEOUT_MS}ms 未完成，转为后台继续（不阻塞 sync 启动）`)
+        resolve()
+      }, ENSURE_CRYPTO_TIMEOUT_MS)
+    })
+    await Promise.race([cryptoTask, timeoutTask])
+  }
+
+  /**
+   * ensureCrypto 的实际实现，被外层 ensureCrypto 用 Promise.race 包装超时。
+   * 超时后此任务仍会在后台继续执行（fire-and-forget），最终更新 rustCryptoDebugState。
+   */
+  private async doEnsureCrypto(cryptoClient: RustCryptoCapableClient): Promise<void> {
     const userId = cryptoClient.getUserId?.()
     const deviceId = cryptoClient.getDeviceId?.()
     if (!userId || !deviceId) {

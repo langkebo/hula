@@ -243,6 +243,8 @@
   "register_fail": "Registration failed.",
   "server_config": {
     "title": "Server Configuration",
+    "homeserver_label": "Homeserver URL",
+    "identity_label": "Identity Server URL",
     "identity_placeholder": "Leave empty to disable Identity Server",
     "restart_hint": "You need to log in again after changing the server configuration",
     "reset": "Reset to Default",

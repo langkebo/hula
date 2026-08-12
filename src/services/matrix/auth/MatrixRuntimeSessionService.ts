@@ -541,26 +541,55 @@ class MatrixRuntimeSessionService {
   private waitSyncPrepared(timeoutMs = 8000): Promise<void> {
     return new Promise((resolve) => {
       let settled = false
+
+      const finish = (state: string, source: 'event' | 'poll') => {
+        if (settled) return
+        settled = true
+        matrixClientService.off('sync', off as never)
+        if (pollHandle) clearTimeout(pollHandle)
+        logger.info(`waitSyncPrepared: sync 状态 ${state}（${source}），继续 bootstrap`)
+        resolve()
+      }
+
       const off = (data: unknown) => {
         const state = (data as { state?: string })?.state
         if (state === 'PREPARED' || state === 'SYNCING') {
-          if (settled) return
-          settled = true
-          matrixClientService.off('sync', off as never)
-          logger.info(`waitSyncPrepared: sync 状态 ${state}，继续 bootstrap`)
-          resolve()
+          finish(state, 'event')
         }
       }
+
       // 注意：不能通过 getConnectionState() 提前返回，因为 login()/loginWithToken()
       // 会在 startClient() 之前就把 connectionState 设为 'CONNECTED'，
       // 这并不代表 sync 真正进入 PREPARED/SYNCING 状态。
       // 必须等待 SDK 的 sync 事件确认 sync 已就绪，否则后续 loadRooms/getSessionList
       // 会在 sync 未完成时执行，导致空数据或卡住。
       matrixClientService.on('sync', off as never)
+
+      // 竞态修复：注册监听器后立即检查 getSyncState()，避免错过已触发的 sync 事件。
+      // settlePostLoginStartup 中的 startClient() 可能在 bootstrapPostLoginState
+      // 注册监听器之前就已经让 sync 进入 PREPARED，此时事件已错过，只靠监听会必然超时。
+      // 采用轮询兜底（与 CryptoSDKAdapter.ts:508-533 一致的范式）：
+      // 立即查一次，之后每 200ms 查一次，直到状态满足或超时。
+      let pollHandle: ReturnType<typeof setTimeout> | undefined
+      const pollSyncState = () => {
+        if (settled) return
+        const client = matrixClientService.getClient()
+        const currentState = client?.getSyncState?.()
+        if (currentState === 'PREPARED' || currentState === 'SYNCING') {
+          finish(currentState, 'poll')
+          return
+        }
+        // 继续轮询，直到超时
+        pollHandle = setTimeout(pollSyncState, 200)
+      }
+      // 立即查一次（不等 200ms），覆盖"sync 已在注册前 prepared"的竞态
+      pollSyncState()
+
       setTimeout(() => {
         if (settled) return
         settled = true
         matrixClientService.off('sync', off as never)
+        if (pollHandle) clearTimeout(pollHandle)
         logger.warn(`waitSyncPrepared 超时 ${timeoutMs}ms，使用当前状态继续 bootstrap`)
         resolve()
       }, timeoutMs)
@@ -716,6 +745,11 @@ class MatrixRuntimeSessionService {
       }
 
       await this.ensureClientReadyForBootstrap(options)
+      // 等待 client 真正就绪后再等 sync prepared。
+      // ensureClientReadyForBootstrap 仅创建 client + loginWithToken，但 client 可能在异步
+      // 初始化过程中；waitForClientReady 轮询确认 client 实例可用，避免 waitSyncPrepared
+      // 等待一个永远不到的 sync 事件。
+      await matrixClientService.waitForClientReady({ timeoutMs: 30_000 })
       await this.waitSyncPrepared()
 
       this.clearUserLocalStorage()
