@@ -268,6 +268,8 @@ class MatrixMessageService extends BaseMatrixService {
     return getUnreadMessages(this.getClient(), roomId)
   }
 
+  /** 获取消息列表
+   */
   async getMessageList(options: MessageListOptions): Promise<MessageListResult> {
     return getMessageList(options, this.getClient())
   }
@@ -330,6 +332,8 @@ class MatrixMessageService extends BaseMatrixService {
     }
   }
 
+  /** 标记单条消息状态
+   */
   async markMsg(roomId: string, eventId: string): Promise<boolean> {
     try {
       await matrixReceiptService.sendReadReceiptByEventId(roomId, eventId)
@@ -341,6 +345,8 @@ class MatrixMessageService extends BaseMatrixService {
     }
   }
 
+  /** 批量标记消息状态
+   */
   async markMsgs(roomId: string, eventIds: string[]): Promise<number> {
     try {
       const resolvedIds = eventIds.map((id) => this.resolveEventId(id)).filter((id) => !this.isLocalEventId(id))

@@ -55,7 +55,11 @@ const ALLOWED_BOUNDARY_FILES = new Set([
   // These files are the Worker's equivalent of sdk.ts: they own the SDK
   // instance and expose it to sibling handler modules via shared state.
   'src/workers/workerState.ts',
-  'src/workers/workerClientHandlers.ts'
+  'src/workers/workerClientHandlers.ts',
+  // QR Login SDK boundary — directly interacts with matrix-js-sdk/rendezvous
+  // module (lazy-loaded dynamic import for MSC4108 QR login protocol).
+  'src/services/matrix/auth/qrLoginHelpers.ts',
+  'src/services/matrix/auth/qrLoginTypes.ts'
 ])
 
 /**

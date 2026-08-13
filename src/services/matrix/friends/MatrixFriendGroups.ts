@@ -14,6 +14,8 @@ const logger = createLogger('MatrixFriendGroups')
 export class MatrixFriendGroups {
   constructor(private readonly sync: MatrixFriendSync) {}
 
+  /** 获取好友分组列表
+   */
   async getFriendGroups(): Promise<FriendGroup[]> {
     const manager = await this.sync.requireFriendManager()
 
@@ -37,6 +39,8 @@ export class MatrixFriendGroups {
     }
   }
 
+  /** 创建好友分组
+   */
   async createFriendGroup(name: string): Promise<FriendGroup> {
     const manager = await this.sync.requireFriendManager()
 
@@ -63,6 +67,8 @@ export class MatrixFriendGroups {
     }
   }
 
+  /** 删除好友分组
+   */
   async deleteFriendGroup(groupId: string): Promise<void> {
     const manager = await this.sync.requireFriendManager()
 
@@ -79,6 +85,8 @@ export class MatrixFriendGroups {
     }
   }
 
+  /** 重命名好友分组
+   */
   async renameFriendGroup(groupId: string, name: string): Promise<void> {
     const manager = await this.sync.requireFriendManager()
 
@@ -95,6 +103,8 @@ export class MatrixFriendGroups {
     }
   }
 
+  /** 将好友添加到分组
+   */
   async addFriendToGroup(groupId: string, userId: string): Promise<void> {
     const manager = await this.sync.requireFriendManager()
 
@@ -111,6 +121,8 @@ export class MatrixFriendGroups {
     }
   }
 
+  /** 从分组中移除好友
+   */
   async removeFriendFromGroup(groupId: string, userId: string): Promise<void> {
     const manager = await this.sync.requireFriendManager()
 
@@ -127,6 +139,8 @@ export class MatrixFriendGroups {
     }
   }
 
+  /** 获取分组中的好友列表
+   */
   async getFriendsInGroup(groupId: string): Promise<Friend[]> {
     const manager = await this.sync.requireFriendManager()
 
@@ -144,6 +158,8 @@ export class MatrixFriendGroups {
     }
   }
 
+  /** 获取用户所属的好友分组
+   */
   async getFriendGroupsByUser(userId: string): Promise<FriendGroup[]> {
     const manager = await this.sync.requireFriendManager()
 

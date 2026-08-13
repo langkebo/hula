@@ -16,6 +16,8 @@ const logger = createLogger('MatrixFriendOperations')
 export class MatrixFriendOperations {
   constructor(private readonly sync: MatrixFriendSync) {}
 
+  /** 发送好友请求
+   */
   async sendFriendRequest(userId: string, reason?: string): Promise<void> {
     const manager = await this.sync.ensureFriendManager(false)
 
@@ -73,6 +75,8 @@ export class MatrixFriendOperations {
     }
   }
 
+  /** 接受好友请求
+   */
   async acceptFriendRequest(userId: string): Promise<void> {
     try {
       const manager = await this.sync.requireFriendManager()
@@ -84,6 +88,8 @@ export class MatrixFriendOperations {
     }
   }
 
+  /** 取消好友请求
+   */
   async cancelFriendRequest(userId: string): Promise<void> {
     const manager = await this.sync.ensureFriendManager(false)
 
@@ -107,6 +113,8 @@ export class MatrixFriendOperations {
     }
   }
 
+  /** 拒绝好友请求
+   */
   async rejectFriendRequest(userId: string): Promise<void> {
     try {
       const manager = await this.sync.requireFriendManager()
@@ -118,6 +126,8 @@ export class MatrixFriendOperations {
     }
   }
 
+  /** 删除好友
+   */
   async removeFriend(userId: string): Promise<void> {
     try {
       const manager = await this.sync.requireFriendManager()
@@ -129,6 +139,8 @@ export class MatrixFriendOperations {
     }
   }
 
+  /** 设置好友显示名称
+   */
   async setFriendDisplayName(userId: string, displayName: string): Promise<void> {
     try {
       const manager = await this.sync.requireFriendManager()
@@ -140,6 +152,8 @@ export class MatrixFriendOperations {
     }
   }
 
+  /** 设置好友备注
+   */
   async setFriendNote(userId: string, note: string): Promise<void> {
     try {
       const manager = await this.sync.requireFriendManager()
@@ -158,6 +172,8 @@ export class MatrixFriendOperations {
     }
   }
 
+  /** 设置好友状态
+   */
   async setFriendStatus(userId: string, status: FriendStatus): Promise<void> {
     let manager: FriendManagerCompat | null = null
 

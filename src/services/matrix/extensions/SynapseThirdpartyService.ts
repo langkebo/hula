@@ -10,6 +10,8 @@ const logger = createLogger('SynapseThirdpartyService')
  * 走 SDK ThirdPartyManager，不再裸调 client.http.authedRequest。
  */
 class SynapseThirdpartyService extends BaseMatrixService {
+  /** 获取第三方协议列表
+   */
   async getThirdpartyProtocols(): Promise<Record<string, unknown>> {
     try {
       const client = matrixClientService.getClient()
@@ -39,6 +41,8 @@ class SynapseThirdpartyService extends BaseMatrixService {
     }
   }
 
+  /** 查询第三方协议用户
+   */
   async getThirdpartyUser(protocol: string, params?: Record<string, string>): Promise<Array<Record<string, unknown>>> {
     try {
       const client = matrixClientService.getClient()

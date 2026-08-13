@@ -1,6 +1,6 @@
-import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { describe, expect, it } from 'vitest'
 import { MatrixEventType } from '@/common/matrixConstants'
+import type { MatrixClient, MatrixEvent } from '../../sdk'
 import {
   findEventByIdAcrossRooms,
   getMessageEvents,

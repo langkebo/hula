@@ -1,8 +1,8 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixAttachmentDecryptionService } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { HttpClient, HttpClientError } from '@/utils/HttpClient'
+import type { MatrixClient } from '../../sdk'
 import { downloadEncryptedFileBytes, downloadFileBytes, resolveDownloadUrl } from '../mediaDownloadHelpers'
 
 vi.mock('@/utils/HttpClient', async () => {

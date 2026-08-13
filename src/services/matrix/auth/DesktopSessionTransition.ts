@@ -15,6 +15,8 @@ const logger = createLogger('DesktopSessionTransition')
 export class DesktopSessionTransition {
   constructor(private readonly host: SessionRuntimeHost) {}
 
+  /** 应用桌面端登录状态
+   */
   async applyDesktopLoginState(): Promise<void> {
     const port = this.host.port
     try {
@@ -31,6 +33,8 @@ export class DesktopSessionTransition {
     }
   }
 
+  /** 打开桌面端主窗口
+   */
   async openDesktopHomeWindow(): Promise<void> {
     try {
       if (!isDesktop() || !hasTauriRuntime()) {
@@ -52,6 +56,8 @@ export class DesktopSessionTransition {
     }
   }
 
+  /** 完成桌面端登录转换流程
+   */
   async completeDesktopLoginTransition(): Promise<void> {
     try {
       await this.applyDesktopLoginState()

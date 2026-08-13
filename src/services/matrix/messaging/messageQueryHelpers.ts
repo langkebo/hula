@@ -1,6 +1,7 @@
-import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { MatrixEventType } from '@/common/matrixConstants'
 import { createLogger } from '@/utils/Logger'
+import { authedRequestWithPath } from '../MatrixHttpClient'
+import type { MatrixClient, MatrixEvent } from '../sdk'
 
 const logger = createLogger('MessageQueryHelpers')
 
@@ -42,6 +43,8 @@ export function findEventByIdAcrossRooms(client: MatrixClient, eventId: string):
   return null
 }
 
+/** 获取消息事件列表
+ */
 export async function getMessageEvents(
   client: MatrixClient,
   roomId: string,
@@ -64,6 +67,8 @@ export async function getMessageEvents(
   }
 }
 
+/** 获取房间指定消息
+ */
 export async function getRoomMessage(
   client: MatrixClient,
   roomId: string,
@@ -78,6 +83,8 @@ export async function getRoomMessage(
   }
 }
 
+/** 获取未读消息列表
+ */
 export async function getUnreadMessages(client: MatrixClient, roomId: string): Promise<MatrixEvent[]> {
   try {
     const room = client.getRoom(roomId)
@@ -105,6 +112,8 @@ export async function getUnreadMessages(client: MatrixClient, roomId: string): P
   }
 }
 
+/** 获取消息列表
+ */
 export async function getMessageList(options: MessageListOptions, client: MatrixClient): Promise<MessageListResult> {
   try {
     const { roomId, limit = 20, before, after, type, sender, threadId } = options
@@ -180,11 +189,16 @@ async function fetchServerMessages(
   dir: 'b' | 'f'
 ): Promise<MatrixEvent[]> {
   try {
-    const response = (await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/messages`, {
-      from: fromToken,
-      limit: String(limit),
-      dir
-    })) as Record<string, unknown>
+    const response = (await authedRequestWithPath<Record<string, unknown>>(
+      client,
+      'GET',
+      `/rooms/${encodeURIComponent(roomId)}/messages`,
+      {
+        from: fromToken,
+        limit: String(limit),
+        dir
+      }
+    )) as Record<string, unknown>
     const chunk = response.chunk
     return Array.isArray(chunk) ? (chunk as MatrixEvent[]) : []
   } catch (err) {
@@ -193,6 +207,8 @@ async function fetchServerMessages(
   }
 }
 
+/** 获取消息列表（简写）
+ */
 export async function getMsgList(
   client: MatrixClient,
   roomId: string,
@@ -223,6 +239,8 @@ export async function getMsgList(
   }
 }
 
+/** 根据 ID 列表获取消息
+ */
 export async function getMsgListByIds(
   client: MatrixClient,
   params: { msgIds?: string[]; async?: boolean } | string,

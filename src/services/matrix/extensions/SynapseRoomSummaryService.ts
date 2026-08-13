@@ -58,6 +58,8 @@ export type RoomEphemeralEvent = Record<string, unknown>
  * 从 SynapseRustExtensionsService 拆分而来。
  */
 class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
+  /** 获取房间摘要
+   */
   async getRoomSummary(roomId: string, throwOnError = true): Promise<RoomSummary | null> {
     try {
       const path = `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/summary`
@@ -80,6 +82,8 @@ class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 获取房间摘要成员列表
+   */
   async getRoomSummaryMembers(roomId: string, throwOnError = true): Promise<RoomSummaryMember[]> {
     try {
       const response = await this.request<RoomSummaryMember[] | { data?: RoomSummaryMember[] }>(
@@ -99,6 +103,8 @@ class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 获取房间摘要英雄成员
+   */
   async getRoomSummaryHeroes(roomId: string, throwOnError = true): Promise<RoomSummaryMember[]> {
     const members = await this.getRoomSummaryMembers(roomId, throwOnError)
     const heroes = members.filter((member) => member.is_hero)
@@ -106,6 +112,8 @@ class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
     return heroes
   }
 
+  /** 获取房间摘要状态事件
+   */
   async getRoomSummaryState(roomId: string, throwOnError = true): Promise<RoomSummaryState[]> {
     try {
       const response = await this.request<RoomSummaryState[] | { data?: RoomSummaryState[] }>(
@@ -125,6 +133,8 @@ class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 获取房间摘要统计数据
+   */
   async getRoomSummaryStats(roomId: string, throwOnError = true): Promise<RoomSummaryStats | null> {
     try {
       const response = await this.request<RoomSummaryStats | { data?: RoomSummaryStats }>(
@@ -143,6 +153,8 @@ class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 获取房间临时事件
+   */
   async getRoomEphemeral(roomId: string, types?: string[]): Promise<RoomEphemeralEvent[]> {
     try {
       const path = `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/ephemeral`

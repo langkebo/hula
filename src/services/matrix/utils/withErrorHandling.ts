@@ -21,6 +21,8 @@ function resolveFeedbackMessage(appError: AppError): string {
   return appError.message || appError.kind
 }
 
+/** 包装函数并添加统一错误处理
+ */
 export async function withErrorHandling<T>(op: () => Promise<T>, opts: ErrorHandlingOptions): Promise<T | undefined> {
   const maxRetries = opts.maxRetries ?? DEFAULT_MAX_RETRIES
   const retryDelayMs = opts.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS

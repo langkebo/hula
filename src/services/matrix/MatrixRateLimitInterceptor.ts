@@ -53,6 +53,8 @@ function resolveUrl(input: RequestInfo | URL): string {
   return typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
 }
 
+/** 判断是否应对客户端应用速率限制
+ */
 export function shouldApplyClientRateLimit(input: RequestInfo | URL): boolean {
   const url = resolveUrl(input)
   return !SYNC_PATH_PATTERNS.some((pattern) => pattern.test(url))

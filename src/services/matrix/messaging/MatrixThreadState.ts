@@ -22,6 +22,8 @@ export class MatrixThreadState extends BaseMatrixService {
     super()
   }
 
+  /** 判断事件是否为话题根消息
+   */
   isThreadRoot(event: MatrixEvent): boolean {
     const client = matrixClientService.getClient()
     if (!client) return false
@@ -47,17 +49,23 @@ export class MatrixThreadState extends BaseMatrixService {
     return false
   }
 
+  /** 判断事件是否属于话题
+   */
   isInThread(event: MatrixEvent): boolean {
     const content = event.getContent() as MessageContent
     const relatesTo = content?.[MatrixContentField.RELATES_TO]
     return relatesTo?.rel_type === MatrixRelType.THREAD
   }
 
+  /** 判断消息体是否在话题中
+   */
   isBodyInThread(body: Record<string, unknown>): boolean {
     const relatesTo = body[MatrixContentField.RELATES_TO] as { rel_type?: string } | undefined
     return relatesTo?.rel_type === MatrixRelType.THREAD
   }
 
+  /** 获取话题根消息 ID
+   */
   getThreadRootId(event: MatrixEvent): string | null {
     const content = event.getContent() as MessageContent
     const relatesTo = content?.[MatrixContentField.RELATES_TO]
@@ -67,6 +75,8 @@ export class MatrixThreadState extends BaseMatrixService {
     return null
   }
 
+  /** 判断话题是否被静音
+   */
   isThreadMuted(threadRootId: string): boolean {
     const client = matrixClientService.getClient()
     if (!client) return false
@@ -93,6 +103,8 @@ export class MatrixThreadState extends BaseMatrixService {
     return false
   }
 
+  /** 判断话题是否被冻结
+   */
   isThreadFrozen(threadRootId: string): boolean {
     const client = matrixClientService.getClient()
     if (!client) return false
@@ -119,6 +131,8 @@ export class MatrixThreadState extends BaseMatrixService {
     return false
   }
 
+  /** 获取话题通知计数
+   */
   async getThreadNotificationCount(roomId: string, threadRootId: string): Promise<number> {
     const client = matrixClientService.getClient()
     if (!client) return 0
@@ -143,6 +157,8 @@ export class MatrixThreadState extends BaseMatrixService {
     return unreadCount
   }
 
+  /** 标记话题为已读
+   */
   async markThreadAsRead(roomId: string, threadRootId: string): Promise<void> {
     const replies = this.fetchThreadReplies(roomId, threadRootId)
     const lastReply = replies[replies.length - 1]
@@ -153,6 +169,8 @@ export class MatrixThreadState extends BaseMatrixService {
     }
   }
 
+  /** 静音话题
+   */
   async muteThread(roomId: string, threadRootId: string, mute: boolean): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -174,6 +192,8 @@ export class MatrixThreadState extends BaseMatrixService {
     }
   }
 
+  /** 冻结话题
+   */
   async freezeThread(roomId: string, threadRootId: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -194,6 +214,8 @@ export class MatrixThreadState extends BaseMatrixService {
     }
   }
 
+  /** 解冻话题
+   */
   async unfreezeThread(roomId: string, threadRootId: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) {

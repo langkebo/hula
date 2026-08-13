@@ -1,5 +1,5 @@
-import type { MatrixEvent } from 'matrix-js-sdk'
 import { describe, expect, it } from 'vitest'
+import type { MatrixEvent } from '../../sdk'
 import { getEditedContent, getReplyToEventId, getThreadRootId, isEdited } from '../relationEventHelpers'
 
 /** 创建模拟 MatrixEvent 对象 */

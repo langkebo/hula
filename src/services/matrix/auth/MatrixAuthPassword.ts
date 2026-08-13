@@ -9,6 +9,8 @@ import {
   withClientSecret
 } from './authHelpers'
 
+/** 请求密码重置邮箱令牌
+ */
 export async function requestPasswordEmailToken(
   email: string,
   sendAttempt: number = 1,
@@ -32,6 +34,8 @@ export async function requestPasswordEmailToken(
   )
 }
 
+/** 发起忘记密码流程
+ */
 export async function forgetPassword(
   email: string,
   sendAttempt: number = 1,
@@ -40,6 +44,8 @@ export async function forgetPassword(
   return requestPasswordEmailToken(email, sendAttempt, clientSecret)
 }
 
+/** 重置密码
+ */
 export async function resetPassword(
   newPassword: string,
   authSession?: string,

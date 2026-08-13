@@ -37,6 +37,8 @@ export class MatrixFriendSync {
 
   constructor(private readonly emit: (event: string, data?: unknown) => void) {}
 
+  /** 初始化好友同步
+   */
   async initialize(): Promise<void> {
     try {
       const manager = await this.ensureFriendManager(false)
@@ -111,6 +113,8 @@ export class MatrixFriendSync {
     return this.friendManager
   }
 
+  /** 确保好友管理器已初始化
+   */
   async ensureFriendManager(throwOnMissing = true): Promise<FriendManagerCompat | null> {
     const manager = this.syncFriendManager()
     if (!manager) {
@@ -130,6 +134,8 @@ export class MatrixFriendSync {
     return manager
   }
 
+  /** 获取好友管理器（不存在则抛异常）
+   */
   async requireFriendManager(): Promise<FriendManagerCompat> {
     const manager = await this.ensureFriendManager(false)
     if (!manager) {
@@ -138,6 +144,8 @@ export class MatrixFriendSync {
     return manager
   }
 
+  /** 更新同步状态
+   */
   async updateSyncState(): Promise<void> {
     if (!this.friendManager) return
     try {
@@ -156,6 +164,8 @@ export class MatrixFriendSync {
     }
   }
 
+  /** 获取同步状态值
+   */
   getSyncStateValue(): FriendSyncState {
     return this.syncState
   }
@@ -285,6 +295,8 @@ export class MatrixFriendSync {
     }
   }
 
+  /** 执行好友列表同步
+   */
   async sync(): Promise<void> {
     await this.requireFriendManager()
 
@@ -297,6 +309,8 @@ export class MatrixFriendSync {
     }
   }
 
+  /** 停止好友同步
+   */
   stop(): void {
     if (this.friendManager) {
       this.friendManager.stop()

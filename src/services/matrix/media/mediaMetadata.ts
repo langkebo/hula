@@ -9,7 +9,8 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MediaMetadata')
 
-/** 带超时的 Promise 包装 */
+/** 为 Promise 添加超时限制
+ */
 export function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout>
   return Promise.race([
@@ -20,7 +21,8 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: st
   ]).finally(() => clearTimeout(timer))
 }
 
-/** 获取图片宽高（10s 超时，失败返回 0x0） */
+/** 获取图片尺寸
+ */
 export function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return withTimeout(
     new Promise<{ width: number; height: number }>((resolve) => {
@@ -46,7 +48,8 @@ export function getImageDimensions(file: File): Promise<{ width: number; height:
   })
 }
 
-/** 获取视频元数据（宽/高/时长 ms，10s 超时） */
+/** 获取视频元数据
+ */
 export function getVideoMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return withTimeout(
     new Promise((resolve, reject) => {
@@ -71,7 +74,8 @@ export function getVideoMetadata(file: File): Promise<{ width: number; height: n
   )
 }
 
-/** 获取音频时长（ms，10s 超时） */
+/** 获取音频时长
+ */
 export function getAudioDuration(file: File): Promise<number> {
   return withTimeout(
     new Promise((resolve, reject) => {

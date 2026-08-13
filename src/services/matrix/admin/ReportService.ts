@@ -227,6 +227,8 @@ export class AdminReportService {
     return id != null ? `${base}/${id}` : base
   }
 
+  /** 获取事件举报列表
+   */
   async listEventReports(params?: { limit?: number }): Promise<EventReport[]> {
     const client = this.getClient()
     try {
@@ -245,6 +247,8 @@ export class AdminReportService {
     }
   }
 
+  /** 按状态获取事件举报列表
+   */
   async listEventReportsByStatus(status: string, params?: { limit?: number }): Promise<EventReport[]> {
     const client = this.getClient()
     try {
@@ -263,6 +267,8 @@ export class AdminReportService {
     }
   }
 
+  /** 统计所有事件举报数量
+   */
   async countAllEventReports(throwOnError = false): Promise<number> {
     const client = this.getClient()
     try {
@@ -279,6 +285,8 @@ export class AdminReportService {
     }
   }
 
+  /** 按状态统计事件举报数量
+   */
   async countEventReportsByStatus(status: string, throwOnError = false): Promise<number> {
     const client = this.getClient()
     try {
@@ -295,6 +303,8 @@ export class AdminReportService {
     }
   }
 
+  /** 标记事件举报为已解决
+   */
   async resolveEventReport(id: number, params: { reason: string }, throwOnError = false): Promise<EventReport | null> {
     const client = this.getClient()
     try {
@@ -313,6 +323,8 @@ export class AdminReportService {
     }
   }
 
+  /** 驳回事件举报
+   */
   async dismissEventReport(id: number, params: { reason: string }, throwOnError = false): Promise<EventReport | null> {
     const client = this.getClient()
     try {
@@ -331,6 +343,8 @@ export class AdminReportService {
     }
   }
 
+  /** 升级事件举报
+   */
   async escalateEventReport(id: number, throwOnError = false): Promise<EventReport | null> {
     const client = this.getClient()
     try {
@@ -347,6 +361,8 @@ export class AdminReportService {
     }
   }
 
+  /** 删除事件举报
+   */
   async deleteEventReport(id: number, throwOnError = false): Promise<boolean> {
     const client = this.getClient()
     try {
@@ -360,6 +376,8 @@ export class AdminReportService {
     }
   }
 
+  /** 获取事件举报处理历史
+   */
   async getEventReportHistory(id: number, throwOnError = false): Promise<EventReportHistory[]> {
     const client = this.getClient()
     try {

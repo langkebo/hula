@@ -294,6 +294,8 @@ class AdminFacadeService extends BaseMatrixService {
     return this.users.getRateLimit(userId)
   }
 
+  /** 覆盖指定用户的速率限制
+   */
   async overrideUserRateLimit(userId: string): Promise<void> {
     return this.users.overrideUserRateLimit(userId)
   }

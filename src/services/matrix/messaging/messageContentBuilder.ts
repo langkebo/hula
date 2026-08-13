@@ -35,6 +35,8 @@ function convertMsgTypeToMatrix(msgType: MsgEnum): string {
   }
 }
 
+/** 构建 Matrix 消息内容体
+ */
 export function buildMatrixContent(msgType: MsgEnum, body: unknown): Record<string, unknown> {
   const bodyRecord = asRecord(body)
   const reply = asRecord(bodyRecord.reply)

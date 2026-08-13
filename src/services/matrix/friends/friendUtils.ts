@@ -39,15 +39,20 @@ export type FriendManagerCompat = FriendManager & {
   setFriendStatus?: (userId: string, status: FriendStatus) => Promise<void>
 }
 
+/** 获取好友的用户 ID
+ */
 export function getFriendUserId(friend: Friend): string {
   return friend.user_id ?? ''
 }
 
+/** 获取好友请求的用户 ID
+ */
 export function getRequestUserId(request: FriendRequest): string {
   return request.user_id ?? ''
 }
 
-/** 将 REST API 返回的好友请求转换为 FriendRequest 格式 */
+/** 规范化 Synapse 好友请求数据
+ */
 export function normalizeSynapseFriendRequest(
   req: SynapseFriendRequest,
   direction: 'incoming' | 'outgoing' = 'incoming'
@@ -63,6 +68,8 @@ export function normalizeSynapseFriendRequest(
   }
 }
 
+/** 规范化好友数据
+ */
 export function normalizeFriend(friend: Friend | SynapseFriendInfo): Friend {
   const source = friend as Friend & {
     displayname?: string
@@ -88,10 +95,14 @@ export function normalizeFriend(friend: Friend | SynapseFriendInfo): Friend {
   } as Friend
 }
 
+/** 转换为用户 ID
+ */
 export function toUserId(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
+/** 转换为目标好友请求格式
+ */
 export function toFriendRequest(value: unknown): FriendRequest | null {
   return value && typeof value === 'object' ? (value as FriendRequest) : null
 }

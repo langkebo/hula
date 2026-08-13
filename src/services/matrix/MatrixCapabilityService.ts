@@ -180,17 +180,20 @@ class MatrixCapabilityService {
     return this.hasCapability('voip')
   }
 
-  /** FT-099: 阅后即焚扩展能力检测 */
+  /** 检测是否支持阅后即焚能力
+   */
   canUseBurnAfterRead(): boolean {
     return this.hasCapability('burn-after-read')
   }
 
-  /** FT-099: OpenClaw 路由扩展能力检测 */
+  /** 检测是否支持 OpenClaw 能力
+   */
   canUseOpenClaw(): boolean {
     return this.hasCapability('openclaw')
   }
 
-  /** FT-099: AI 连接扩展能力检测 */
+  /** 检测是否支持 AI 连接能力
+   */
   canUseAiConnection(): boolean {
     return this.hasCapability('ai-connection')
   }

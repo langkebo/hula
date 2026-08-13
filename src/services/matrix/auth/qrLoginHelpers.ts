@@ -16,6 +16,8 @@ const logger = createLogger('QrLoginHelpers')
 
 let sdkModulePromise: Promise<SdkRendezvousModule> | null = null
 
+/** 加载 SDK 扫码登录会话模块
+ */
 export async function loadSdkRendezvous(): Promise<SdkRendezvousModule> {
   if (!sdkModulePromise) {
     sdkModulePromise = import('matrix-js-sdk/rendezvous').then((mod) => ({
@@ -26,6 +28,8 @@ export async function loadSdkRendezvous(): Promise<SdkRendezvousModule> {
   return sdkModulePromise
 }
 
+/** 字节数组转 Base64 字符串
+ */
 export function bytesToBase64(bytes: Uint8Array): string {
   let binary = ''
   for (let i = 0; i < bytes.length; i++) {
@@ -34,6 +38,8 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary)
 }
 
+/** Base64 字符串转字节数组
+ */
 export function base64ToBytes(b64: string): Uint8Array {
   const binary = atob(b64)
   const bytes = new Uint8Array(binary.length)
@@ -43,6 +49,8 @@ export function base64ToBytes(b64: string): Uint8Array {
   return bytes
 }
 
+/** 生成设备 ID
+ */
 export function generateDeviceId(): string {
   const random = crypto.getRandomValues(new Uint8Array(8))
   return Array.from(random)

@@ -1,7 +1,6 @@
-import type { MatrixClient } from 'matrix-js-sdk'
-import type { MediaManager } from 'matrix-js-sdk/media'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { chunkUploadService } from '@/services/performance/ChunkUploadService'
+import type { MatrixClient, MediaManager } from '../../sdk'
 import {
   createUploadOptions,
   isPayloadTooLarge,

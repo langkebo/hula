@@ -21,6 +21,8 @@ const logger = createLogger('CryptoKeyBackupAdapter')
 export class CryptoKeyBackupAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
 
+  /** 备份密钥
+   */
   async backupKeys(): Promise<void> {
     const backupManager = this.accessors.getKeyBackupManager()
     if (backupManager) {
@@ -46,6 +48,8 @@ export class CryptoKeyBackupAdapter {
     }
   }
 
+  /** 设置密钥备份
+   */
   async setupKeyBackup(passphrase: string): Promise<KeyBackupSetupResult> {
     const secureBackupManager = this.accessors.getSecureBackupManager()
     if (secureBackupManager) {
@@ -220,6 +224,8 @@ export class CryptoKeyBackupAdapter {
     }
   }
 
+  /** 从备份恢复密钥
+   */
   async restoreKeys(backupKey: string): Promise<KeyBackupRestoreResult> {
     const secureBackupManager = this.accessors.getSecureBackupManager()
     if (secureBackupManager) {
@@ -252,6 +258,8 @@ export class CryptoKeyBackupAdapter {
     return { imported: 0, total: 0 }
   }
 
+  /** 从密钥备份恢复
+   */
   async restoreFromBackup(_recoveryKey: string): Promise<KeyBackupRestoreResult> {
     const crypto = this.accessors.getCrypto()
     if (!crypto) {
@@ -270,6 +278,8 @@ export class CryptoKeyBackupAdapter {
     }
   }
 
+  /** 使用恢复短语从备份恢复密钥
+   */
   async restoreFromBackupWithPassphrase(passphrase: string): Promise<KeyBackupRestoreResult> {
     const crypto = this.accessors.getCrypto()
     if (!crypto) {
@@ -292,6 +302,8 @@ export class CryptoKeyBackupAdapter {
     }
   }
 
+  /** 导出密钥
+   */
   async exportKeys(passphrase?: string): Promise<KeyExportResult> {
     const secureBackupManager = this.accessors.getSecureBackupManager()
     if (secureBackupManager && passphrase) {
@@ -315,6 +327,8 @@ export class CryptoKeyBackupAdapter {
     return { data: '', count: 0 }
   }
 
+  /** 导入密钥
+   */
   async importKeys(data: string): Promise<KeyImportResult> {
     const keys = JSON.parse(data)
     const crypto = this.accessors.getCrypto()
@@ -326,6 +340,8 @@ export class CryptoKeyBackupAdapter {
     return { imported: 0, total: 0 }
   }
 
+  /** 从恢复短语创建恢复密钥
+   */
   async createRecoveryKeyFromPassphrase(password?: string): Promise<GeneratedSecretStorageKey | null> {
     const crypto = this.accessors.getCrypto()
     if (!crypto) return null

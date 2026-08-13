@@ -1,8 +1,8 @@
-import { type MatrixClient, Visibility } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
+import { type MatrixClient, Visibility } from '../../sdk'
 import { matrixSpaceService } from '../MatrixSpaceService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
@@ -157,10 +157,16 @@ describe('MatrixSpaceService', () => {
       expect(result).toHaveLength(1)
       expect(result[0].spaceId).toBe('!space1:server')
       expect(result[0].name).toBe('Space 1')
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/spaces/search', {
-        search_term: 'test',
-        limit: '10'
-      })
+      expect(authedRequestImpl).toHaveBeenCalledWith(
+        'GET',
+        '/spaces/search',
+        {
+          search_term: 'test',
+          limit: '10'
+        },
+        undefined,
+        undefined
+      )
     })
 
     it('should return empty array on error', async () => {
@@ -263,7 +269,13 @@ describe('MatrixSpaceService', () => {
 
       expect(result).toHaveLength(1)
       expect(result[0].spaceId).toBe('!parent:server')
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/spaces/room/!room%3Aserver/parents')
+      expect(authedRequestImpl).toHaveBeenCalledWith(
+        'GET',
+        '/spaces/room/!room%3Aserver/parents',
+        undefined,
+        undefined,
+        undefined
+      )
     })
   })
 })

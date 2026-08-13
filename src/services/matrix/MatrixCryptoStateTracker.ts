@@ -357,17 +357,20 @@ export class MatrixCryptoStateTracker {
     }
   }
 
-  /** 获取 Rust Crypto 调试状态（返回副本） */
+  /** 获取 Rust Crypto 调试状态
+   */
   getRustCryptoDebugState(): RustCryptoDebugState {
     return { ...this.rustCryptoDebugState }
   }
 
-  /** 获取事件解密调试状态（返回副本） */
+  /** 获取事件解密调试状态
+   */
   getEventDecryptedDebugState(): EventDecryptedDebugState {
     return { ...this.eventDecryptedDebugState }
   }
 
-  /** 重置所有状态（供 facade 在 initialize/stop 时调用） */
+  /** 重置加密状态追踪器
+   */
   resetState(): void {
     this.rustCryptoDebugState = {
       attempted: false,

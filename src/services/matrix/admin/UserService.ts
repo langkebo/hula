@@ -215,6 +215,8 @@ export class AdminUserService {
     }
   }
 
+  /** 覆盖指定用户的速率限制
+   */
   async overrideUserRateLimit(userId: string): Promise<void> {
     if (!isValidMatrixUserId(userId)) throw new Error(`Invalid user ID: ${userId}`)
     try {

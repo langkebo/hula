@@ -20,6 +20,8 @@ export interface SynapseDmInfo {
  * 注意：服务端 DM 端点挂在 friends 路径命名空间下（MATRIX_PATHS.FRIENDS.DM）。
  */
 class SynapseDmExtensionService extends SynapseExtensionHttpBase {
+  /** 创建私信对话
+   */
   async createPrivateDm(userId: string, isPrivate = true): Promise<SynapseCreateDmResult> {
     try {
       const response = await this.request<SynapseCreateDmResult | { data?: SynapseCreateDmResult }>(
@@ -38,6 +40,8 @@ class SynapseDmExtensionService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 获取私信房间
+   */
   async getDmRoom(userId: string): Promise<SynapseDmInfo> {
     try {
       const response = await this.request<SynapseDmInfo | { data?: SynapseDmInfo }>(

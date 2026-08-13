@@ -60,6 +60,8 @@ export class MatrixQrLoginSdkService {
   private channel: SecureChannelInstance | null = null
   private session: RendezvousSessionInstance | null = null
 
+  /** 获取扫码登录当前状态
+   */
   getStatus(): QrLoginStatus {
     return this.status
   }
@@ -76,6 +78,8 @@ export class MatrixQrLoginSdkService {
     })
   }
 
+  /** 注册状态变更监听
+   */
   onStatusChange(listener: StatusListener): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
@@ -83,6 +87,8 @@ export class MatrixQrLoginSdkService {
 
   // ── New device: generate QR ──
 
+  /** 以新设备身份生成二维码
+   */
   async generateQrCodeAsNewDevice(homeserverUrl: string): Promise<QrCodeData> {
     if (!homeserverUrl) {
       throw new Error('Homeserver URL is required for QR login')
@@ -126,6 +132,8 @@ export class MatrixQrLoginSdkService {
 
   // ── New device: wait + login ──
 
+  /** 等待对端确认并完成登录
+   */
   async waitForReciprocationAndLogin(displayName?: string): Promise<NewDeviceLoginResult> {
     if (!this.channel || !this.session) {
       throw new Error('No active QR session — call generateQrCodeAsNewDevice() first')
@@ -183,6 +191,8 @@ export class MatrixQrLoginSdkService {
 
   // ── Existing device: generate QR ──
 
+  /** 生成扫码登录二维码
+   */
   async generateQrCode(): Promise<QrCodeData> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -232,6 +242,8 @@ export class MatrixQrLoginSdkService {
 
   // ── Existing device: reciprocate ──
 
+  /** 确认对端登录请求
+   */
   async reciprocateLogin(): Promise<ExistingDeviceReciprocateResult> {
     if (!this.channel || !this.session) {
       throw new Error('No active QR session — call generateQrCode() or scanQrCode() first')
@@ -301,6 +313,8 @@ export class MatrixQrLoginSdkService {
     }
   }
 
+  /** 拒绝登录请求
+   */
   async declineLogin(): Promise<void> {
     if (!this.channel) return
     try {
@@ -319,6 +333,8 @@ export class MatrixQrLoginSdkService {
 
   // ── New device: scan + complete ──
 
+  /** 扫描二维码登录
+   */
   async scanQrCode(qrCodeBase64: string): Promise<ScannedSessionInfo> {
     this.cleanupSession()
     this.setStatus('generating')
@@ -364,6 +380,8 @@ export class MatrixQrLoginSdkService {
     }
   }
 
+  /** 完成新设备登录
+   */
   async completeNewDeviceLogin(displayName?: string): Promise<NewDeviceLoginResult> {
     if (!this.channel || !this.session) {
       throw new Error('No active QR session — call scanQrCode() first')
@@ -417,6 +435,8 @@ export class MatrixQrLoginSdkService {
 
   // ── Cancellation / cleanup ──
 
+  /** 取消扫码登录流程
+   */
   async cancel(): Promise<void> {
     if (this.channel) {
       try {
@@ -429,6 +449,8 @@ export class MatrixQrLoginSdkService {
     this.cleanupSession()
   }
 
+  /** 重置扫码登录状态
+   */
   reset(): void {
     this.cleanupSession()
     this.setStatus('idle')

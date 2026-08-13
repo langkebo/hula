@@ -42,6 +42,8 @@ export interface MatrixCaptchaResult {
 export type MatrixAuthPayload = Record<string, unknown>
 export type MatrixEmailTokenPurpose = 'register' | 'password_reset'
 
+/** 构建注册认证参数
+ */
 export function buildRegisterAuth(
   session?: string,
   authType?: string,
@@ -71,6 +73,8 @@ export function buildRegisterAuth(
   return { type: 'm.login.dummy' }
 }
 
+/** 构建重置密码认证参数
+ */
 export function buildResetPasswordAuth(
   authSession?: string,
   authType?: string,
@@ -98,6 +102,8 @@ export function buildResetPasswordAuth(
   return undefined
 }
 
+/** 使用客户端密钥执行操作
+ */
 export function withClientSecret(
   result: MatrixEmailTokenResult,
   clientSecret: string
@@ -108,6 +114,8 @@ export function withClientSecret(
   }
 }
 
+/** 生成客户端密钥
+ */
 export function generateClientSecret(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   const array = new Uint8Array(43)
@@ -119,6 +127,8 @@ export function generateClientSecret(): string {
   return result
 }
 
+/** 解析 Matrix 客户端 URL
+ */
 export function resolveMatrixClientUrl(path: string): string {
   const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
   const normalizedHomeserverUrl = homeserverUrl.replace(/\/+$/, '')
@@ -126,6 +136,8 @@ export function resolveMatrixClientUrl(path: string): string {
   return `${normalizedHomeserverUrl}${normalizedPath}`
 }
 
+/** 创建临时 Matrix 客户端
+ */
 export function createTemporaryMatrixClient() {
   const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
   return createClient({
@@ -163,6 +175,8 @@ export async function runSdkFirst<T>(
   }
 }
 
+/** 发送 Matrix JSON 请求
+ */
 export async function postMatrixJson<T>(path: string, body: Record<string, unknown>, failureLabel: string): Promise<T> {
   const url = resolveMatrixClientUrl(path)
   let response: Response
@@ -193,6 +207,8 @@ export async function postMatrixJson<T>(path: string, body: Record<string, unkno
   return JSON.parse(text) as T
 }
 
+/** Matrix 密码登录
+ */
 export async function matrixLogin(
   username: string,
   password: string,
@@ -225,6 +241,8 @@ export async function matrixLogin(
   )
 }
 
+/** Matrix 注册
+ */
 export async function matrixRegister(
   username: string,
   password: string,
@@ -249,6 +267,8 @@ export async function matrixRegister(
   )
 }
 
+/** 请求邮箱验证令牌
+ */
 export async function matrixRequestEmailToken(
   email: string,
   clientSecret: string,
@@ -265,6 +285,8 @@ export async function matrixRequestEmailToken(
   )
 }
 
+/** 请求密码重置邮箱令牌
+ */
 export async function matrixRequestPasswordEmailToken(
   email: string,
   clientSecret: string,
@@ -281,12 +303,16 @@ export async function matrixRequestPasswordEmailToken(
   )
 }
 
+/** 解析邮箱令牌提交路径
+ */
 export function resolveSubmitEmailTokenPath(purpose: MatrixEmailTokenPurpose): string {
   return purpose === 'password_reset'
     ? `${PREFIX_V3}/account/password/email/submitToken`
     : `${PREFIX_V3}/register/email/submitToken`
 }
 
+/** 提交邮箱验证令牌
+ */
 export async function matrixSubmitEmailToken(
   token: string,
   clientSecret: string,
@@ -304,6 +330,8 @@ export async function matrixSubmitEmailToken(
   )
 }
 
+/** 获取 Matrix 验证码
+ */
 export async function matrixGetCaptcha(options?: {
   session?: string
   captchaType?: string
@@ -344,6 +372,8 @@ export async function matrixGetCaptcha(options?: {
   }
 }
 
+/** 重置 Matrix 密码
+ */
 export async function matrixResetPassword(
   newPassword: string,
   authSession?: string,

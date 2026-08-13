@@ -1,4 +1,3 @@
-import type { StoreStats } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import type {
@@ -10,6 +9,7 @@ import type {
   WorkerMessage,
   WorkerResponse
 } from '@/workers/matrixWorkerTypes'
+import type { StoreStats } from './sdk'
 
 const logger = createLogger('MatrixWorkerHost')
 

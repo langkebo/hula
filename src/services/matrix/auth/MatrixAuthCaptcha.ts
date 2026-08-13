@@ -5,6 +5,8 @@ import { PREFIX_V3 } from '../paths'
 import { normalizeSdkMatrixError } from './authErrors'
 import { createTemporaryMatrixClient, type MatrixCaptchaResult, matrixGetCaptcha, postMatrixJson } from './authHelpers'
 
+/** 获取验证码
+ */
 export async function getCaptcha(options?: {
   session?: string
   captchaType?: string
@@ -13,6 +15,8 @@ export async function getCaptcha(options?: {
   return matrixGetCaptcha(options)
 }
 
+/** 启动注册验证码会话
+ */
 export async function startRegistrationSession(): Promise<{
   session: string
   flows: Array<{ type: string; stages?: string[] }>
@@ -40,6 +44,8 @@ export async function startRegistrationSession(): Promise<{
   }
 }
 
+/** 验证验证码
+ */
 export async function verifyCaptcha(session: string, response: string): Promise<{ success: boolean }> {
   return postMatrixJson<{ success: boolean }>(
     `${PREFIX_V3}/register/captcha/verify`,
@@ -48,6 +54,8 @@ export async function verifyCaptcha(session: string, response: string): Promise<
   )
 }
 
+/** 获取验证码状态
+ */
 export async function getCaptchaStatus(session: string): Promise<{ verified: boolean }> {
   const client = matrixClientService.getClient()
   if (!client) {
@@ -63,6 +71,8 @@ export async function getCaptchaStatus(session: string): Promise<{ verified: boo
   }
 }
 
+/** 清理过期的验证码会话
+ */
 export async function cleanupExpiredCaptchas(): Promise<{ cleaned: number }> {
   const client = matrixClientService.getClient()
   if (!client) {

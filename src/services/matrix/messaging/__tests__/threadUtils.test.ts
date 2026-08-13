@@ -1,7 +1,7 @@
-import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatrixContentField, MatrixRelType } from '@/common/matrixConstants'
 import matrixClientService from '../../MatrixClientService'
+import type { MatrixClient, MatrixEvent, Room } from '../../sdk'
 import type { ThreadingManagerCompat } from '../threadTypes'
 import { buildDisplayMessage, getThreadingManager } from '../threadUtils'
 

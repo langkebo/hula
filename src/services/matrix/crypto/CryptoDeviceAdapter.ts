@@ -14,6 +14,8 @@ const logger = createLogger('CryptoDeviceAdapter')
 export class CryptoDeviceAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
 
+  /** 获取用户设备列表
+   */
   async getDevices(userId: string): Promise<DeviceInfo[]> {
     const trustManager = this.accessors.getDeviceTrustManager()
     if (trustManager) {
@@ -44,6 +46,8 @@ export class CryptoDeviceAdapter {
     return []
   }
 
+  /** 获取指定设备信息
+   */
   async getDevice(userId: string, deviceId: string): Promise<DeviceInfo | null> {
     const trustManager = this.accessors.getDeviceTrustManager()
     if (trustManager) {
@@ -74,6 +78,8 @@ export class CryptoDeviceAdapter {
     return null
   }
 
+  /** 验证设备
+   */
   async verifyDevice(userId: string, deviceId: string): Promise<void> {
     const trustManager = this.accessors.getDeviceTrustManager()
     if (trustManager) {
@@ -105,6 +111,8 @@ export class CryptoDeviceAdapter {
     }
   }
 
+  /** 取消验证设备
+   */
   async unverifyDevice(userId: string, deviceId: string): Promise<void> {
     const crypto = this.accessors.getCrypto()
     if (crypto) {
@@ -120,6 +128,8 @@ export class CryptoDeviceAdapter {
     }
   }
 
+  /** 获取设备验证状态
+   */
   async getDeviceVerificationStatus(userId: string, deviceId: string): Promise<DeviceVerificationResult> {
     const crypto = this.accessors.getCrypto()
     if (crypto) {
@@ -147,6 +157,8 @@ export class CryptoDeviceAdapter {
     return { verified: false, crossSigningVerified: false, devicesCrossSigningVerified: false }
   }
 
+  /** 请求设备验证
+   */
   async requestDeviceVerification(userId: string, deviceId: string): Promise<VerificationRequest | null> {
     const trustManager = this.accessors.getDeviceTrustManager()
     if (trustManager) {
@@ -166,6 +178,8 @@ export class CryptoDeviceAdapter {
     return null
   }
 
+  /** 屏蔽设备
+   */
   async blockDevice(userId: string, deviceId: string): Promise<void> {
     const client = this.accessors.getExtendedClient()
     if (typeof client.setDeviceBlocked === 'function') {
@@ -184,6 +198,8 @@ export class CryptoDeviceAdapter {
     logger.warn(`无法屏蔽设备：无可用的加密接口`)
   }
 
+  /** 取消屏蔽设备
+   */
   async unblockDevice(userId: string, deviceId: string): Promise<void> {
     const client = this.accessors.getExtendedClient()
     if (typeof client.setDeviceBlocked === 'function') {

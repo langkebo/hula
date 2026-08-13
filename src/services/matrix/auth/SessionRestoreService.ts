@@ -54,6 +54,8 @@ export class SessionRestoreService {
     return result.value
   }
 
+  /** 检查是否存在已认证会话
+   */
   async hasAuthenticatedSession(): Promise<boolean> {
     const port = this.host.port
     try {
