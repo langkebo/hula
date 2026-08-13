@@ -62,7 +62,11 @@ export function detectNetworkType(): NetworkType {
 
 export class MatrixSyncManager {
   private static readonly POS_STORAGE_KEY = 'matrix.sliding_sync.pos'
-  private static readonly POS_TTL_MS = 24 * 60 * 60 * 1000 // 24h
+  // 契约对齐：后端 sliding sync token 的 time_to_idle 为 30min（synapse-rust
+  // sliding_sync_service CONNECTION_TTL_MS）。前端 pos TTL 必须 ≤ 30min，否则
+  // 客户端关闭 30min 后恢复的 pos 已被后端 GC，只会得到 400 M_UNKNOWN_POS +
+  // 全量重同步。取 25min 留 5min 余量，覆盖「短时重启走增量」的窗口。
+  private static readonly POS_TTL_MS = 25 * 60 * 1000 // 25min
 
   private instance: SlidingSync | null = null
   private readyResolve: (() => void) | null = null
@@ -328,7 +332,7 @@ export class MatrixSyncManager {
       // Check TTL — expired pos is stale and should not be reused
       if (Date.now() - data.ts > MatrixSyncManager.POS_TTL_MS) {
         localStorage.removeItem(MatrixSyncManager.POS_STORAGE_KEY)
-        logger.info('SlidingSync pos expired (TTL 24h), removing from localStorage')
+        logger.info('SlidingSync pos expired (TTL 25min), removing from localStorage')
         return null
       }
 
