@@ -156,8 +156,8 @@ const useMoreList = () => {
 const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle'>> = [
   {
     url: 'roomList',
-    icon: 'view-grid-card',
-    iconAction: 'view-grid-card',
+    icon: 'room',
+    iconAction: 'room',
     state: PluginEnum.BUILTIN,
     isAdd: true,
     dot: false,
@@ -166,8 +166,8 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
   },
   {
     url: 'space',
-    icon: 'peoples-two',
-    iconAction: 'peoples-two',
+    icon: 'space',
+    iconAction: 'space',
     state: PluginEnum.BUILTIN,
     isAdd: true,
     dot: false,

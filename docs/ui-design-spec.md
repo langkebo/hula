@@ -207,7 +207,7 @@ PC 桌面端为**三栏布局**：导航栏（第一栏）+ 列表面板（第�
 | 13 | AI 连接 | `i-bot` | aiConnection |
 | 14 | 帮助关于 | `i-info` | helpAbout |
 
-**当前实现**：`src/views/settingsWindow/index.vue` + `src/views/settingsWindow/tabs/*`。对比原型缺失：**存储管理（storage）、实验室（labs）、AI 连接（aiConnection）**；当前新增：会话（sessions）、侧边栏（sidebar）。
+**当前实现**：`src/views/settingsWindow/index.vue` + `src/views/settingsWindow/tabs/*`，由 `stores/domains/settings/settingsSchema.ts` 的 `SETTINGS_TABS` 定义 16 个 Tab。对比原型缺失：**通用设置（general，已并入 preferences）、存储管理（storage）**；`labs`/`burnAfterRead`/`aiConnection` 均已实现；当前新增：会话（sessions）、侧边栏（sidebar）、审核（mjolnir）、好友（friends）。
 
 ### 3.9 管理后台（view-admin）
 
@@ -272,7 +272,7 @@ PC 桌面端为**三栏布局**：导航栏（第一栏）+ 列表面板（第�
 | D2 | 「消息」「好友」「联邦」独立入口 | 有 | 缺（消息靠 /message 路由，好友靠 roomList 内入口，联邦缺失） | **高** |
 | D3 | 图标语义 | 房间=i-room(拱门)、空间=i-space(立方体)、好友=i-users | 房间=view-grid-card(网格)、空间=peoples-two(多人) | 中 |
 | D4 | 联邦主视图 | view-federation（统计卡+服务器列表） | 仅管理后台 federation-monitor | **高** |
-| D5 | 设置菜单项 | 14 项（含存储/实验室/AI连接/阅后即焚） | 缺 storage/labs/aiConnection | 中 |
+| D5 | 设置菜单项 | 14 项（含通用/存储管理） | 缺 general/storage；labs/burnAfterRead/aiConnection 已实现 | 低 |
 | D6 | 移动端「空间」页 | mPageSpace 独立页 | home 无 space tab | 中 |
 | D7 | 功能扩展 | — | 动态/邮件/文件管理/趋势雷达/openclaw 等 | 有意扩展 |
 
@@ -314,7 +314,7 @@ PC 桌面端为**三栏布局**：导航栏（第一栏）+ 列表面板（第�
 
 1. **P0**：恢复「联邦」主视图入口（导航图标 + 视图，复用后端 federation 模块）。
 2. **P0**：导航栏重构为原型 8 图标模式，补齐「消息」「好友」独立入口，修正房间/空间图标语义。
-3. **P1**：设置页补齐 storage / labs / aiConnection 菜单项。
+3. **P1**：设置页补齐 storage（存储管理）菜单项（labs/aiConnection 已实现，无需补）。
 4. **P1**：修复 e2e 失效引用（更新 store 路径）。
 5. **P2**：移动端补「空间」页；统一左栏旧变量（`--left-*`）到 `--tjg-*`。
 6. **P2**：功能扩展项（动态/邮件/文件管理）纳入导航一致性评估，避免与原型冲突。

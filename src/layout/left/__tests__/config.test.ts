@@ -63,13 +63,13 @@ describe('usePluginsList', () => {
 
     expect(plugins.value.map((item) => item.url)).toEqual(['roomList', 'space', 'openclaw'])
     expect(plugins.value[0]).toMatchObject({
-      icon: 'view-grid-card',
-      iconAction: 'view-grid-card',
+      icon: 'room',
+      iconAction: 'room',
       title: 'home.plugins.room_list'
     })
     expect(plugins.value[1]).toMatchObject({
-      icon: 'peoples-two',
-      iconAction: 'peoples-two',
+      icon: 'space',
+      iconAction: 'space',
       title: 'home.plugins.space_list'
     })
   })

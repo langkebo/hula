@@ -270,11 +270,11 @@
   --color-text-tertiary: var(--tjg-text-tertiary);
   --left-bg-color: var(--tjg-surface-sidebar);
   --left-active-bg-color: var(--tjg-surface-sidebar-selected);
-  --left-text-color: #e3e3e3;
-  --left-icon-color: #e3e3e3;
-  --left-active-hover: #f1f1f1;
+  --left-text-color: var(--tjg-text-primary);
+  --left-icon-color: var(--tjg-text-primary);
+  --left-active-hover: var(--tjg-text-primary);
   --left-bg-hover: var(--tjg-surface-sidebar-hover);
-  --left-active-icon-color: #f1f1f1;
+  --left-active-icon-color: var(--tjg-text-primary);
   --left-win-icon-color: rgba(255, 255, 255, 0.4);
   --right-bg-color: var(--tjg-surface-subtle);
   --text-color: var(--tjg-text-primary);
@@ -468,9 +468,9 @@ html[data-theme='dark'] {
   /* ==================== Dark Theme Semantic Overrides ==================== */
   --left-text-color: #ccc;
   --left-icon-color: #ccc;
-  --left-active-hover: rgba(26, 178, 146, 0.8);
-  --left-active-icon-color: #1ab292;
-  --left-win-icon-color: #1ab292;
+  --left-active-hover: color-mix(in srgb, var(--tjg-color-primary-400) 80%, transparent);
+  --left-active-icon-color: var(--tjg-color-primary-400);
+  --left-win-icon-color: var(--tjg-color-primary-400);
   --right-bg-color: var(--tjg-surface-sidebar);
   --text-color: var(--tjg-text-primary);
   --setting-item-line: var(--tjg-surface-subtle);

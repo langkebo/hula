@@ -19,8 +19,8 @@ const plugins = ref([
     url: 'roomList',
     title: 'Room List',
     shortTitle: 'Rooms',
-    icon: 'view-grid-card',
-    iconAction: 'view-grid-card-action',
+    icon: 'room',
+    iconAction: 'room-action',
     isAdd: true,
     miniShow: false,
     badge: 2,
@@ -31,8 +31,8 @@ const plugins = ref([
     url: 'space',
     title: 'Space List',
     shortTitle: 'Spaces',
-    icon: 'peoples-two',
-    iconAction: 'peoples-two-action',
+    icon: 'space',
+    iconAction: 'space-action',
     isAdd: true,
     miniShow: false,
     badge: 1
@@ -279,7 +279,7 @@ describe('ActionList', () => {
     const wrapper = await mountActionList()
 
     const hrefs = wrapper.findAll('.workspace-entry use').map((node) => node.attributes('href'))
-    expect(hrefs).toEqual(['#view-grid-card-action', '#peoples-two-action'])
+    expect(hrefs).toEqual(['#room-action', '#space-action'])
     expect(wrapper.findAll('.workspace-entry--open')).toHaveLength(1)
     expect(wrapper.findAll('.workspace-entry--active')).toHaveLength(1)
 
