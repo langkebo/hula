@@ -305,9 +305,63 @@ describe('MatrixSyncManager', () => {
       expect(localStorage.getItem('matrix.sliding_sync.pos')).toBeNull()
     })
 
+    it('room store 为空时清除持久化 pos，避免空 timeline（4.2.2）', () => {
+      // 模拟崩溃/清缓存后重启：pos 仍在 localStorage，但 room store 为空
+      // （StubStore 不持久化房间数据）。此时盲目恢复增量 pos 会导致
+      // timeline 为空，必须清 pos 强制走全量初始同步。
+      localStorage.setItem('matrix.sliding_sync.pos', JSON.stringify({ pos: 'orphan-pos', ts: Date.now() }))
+
+      const proto = SlidingSync.prototype as unknown as { setInitialPos?: (pos: string) => void }
+      const hadMethod = typeof proto.setInitialPos === 'function'
+      if (!hadMethod) {
+        proto.setInitialPos = () => {}
+      }
+      const setInitialPosSpy = vi.spyOn(proto, 'setInitialPos')
+
+      const emptyClient = { getRooms: () => [] } as unknown as import('matrix-js-sdk').MatrixClient
+      const manager = new MatrixSyncManager()
+      manager.create(emptyClient, defaultConfig)
+
+      expect(setInitialPosSpy).not.toHaveBeenCalled()
+      expect(localStorage.getItem('matrix.sliding_sync.pos')).toBeNull()
+
+      manager.stop()
+      setInitialPosSpy.mockRestore()
+      if (!hadMethod) {
+        delete proto.setInitialPos
+      }
+    })
+
+    it('room store 有数据时恢复持久化 pos（增量同步）', () => {
+      // 模拟 room store 已加载历史房间的短时重启：pos 有效且房间数据在，
+      // 此时恢复增量 pos 是安全的。
+      localStorage.setItem('matrix.sliding_sync.pos', JSON.stringify({ pos: 'restart-pos-789', ts: Date.now() }))
+
+      const proto = SlidingSync.prototype as unknown as { setInitialPos?: (pos: string) => void }
+      const hadMethod = typeof proto.setInitialPos === 'function'
+      if (!hadMethod) {
+        proto.setInitialPos = () => {}
+      }
+      const setInitialPosSpy = vi.spyOn(proto, 'setInitialPos')
+
+      const populatedClient = {
+        getRooms: () => [{ roomId: '!r:example.com' }]
+      } as unknown as import('matrix-js-sdk').MatrixClient
+      const manager = new MatrixSyncManager()
+      manager.create(populatedClient, defaultConfig)
+
+      expect(setInitialPosSpy).toHaveBeenCalledWith('restart-pos-789')
+
+      manager.stop()
+      setInitialPosSpy.mockRestore()
+      if (!hadMethod) {
+        delete proto.setInitialPos
+      }
+    })
+
     it('未调用 stop() 时，新 manager 从 localStorage 恢复 pos', () => {
       // 模拟应用重启场景：pos 已在 localStorage 中，但旧 manager 未调用 stop()
-      // （例如进程直接退出）
+      // （例如进程直接退出）。room store 已加载历史房间，增量恢复是安全的。
       localStorage.setItem('matrix.sliding_sync.pos', JSON.stringify({ pos: 'restart-pos-789', ts: Date.now() }))
 
       // setInitialPos 可能在 SDK 构建版本中不存在，添加 stub
@@ -318,8 +372,11 @@ describe('MatrixSyncManager', () => {
       }
       const setInitialPosSpy = vi.spyOn(proto, 'setInitialPos')
 
+      const populatedClient = {
+        getRooms: () => [{ roomId: '!r:example.com' }]
+      } as unknown as import('matrix-js-sdk').MatrixClient
       const manager = new MatrixSyncManager()
-      manager.create(createMockClient(), defaultConfig)
+      manager.create(populatedClient, defaultConfig)
 
       expect(setInitialPosSpy).toHaveBeenCalledWith('restart-pos-789')
       manager.stop()
