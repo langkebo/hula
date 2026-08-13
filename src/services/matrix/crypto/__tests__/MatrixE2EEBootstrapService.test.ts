@@ -20,20 +20,25 @@ vi.mock('@/common/matrixErrorTranslator', () => ({
   formatMatrixError: (err: unknown) => `formatted:${String(err)}`
 }))
 
-vi.mock('../MatrixClientService', () => ({
+vi.mock('../../MatrixClientService', () => ({
   default: { getClient: vi.fn() }
 }))
 
-vi.mock('./CryptoHealthMonitor', () => ({
-  CryptoHealthMonitor: vi.fn().mockImplementation(() => ({
-    start: vi.fn(),
-    stop: vi.fn(),
-    getStatus: vi.fn(),
-    registerCallbacks: vi.fn()
-  }))
+vi.mock('../CryptoHealthMonitor', () => ({
+  CryptoHealthMonitor: vi.fn(function (this: {
+    start: ReturnType<typeof vi.fn>
+    stop: ReturnType<typeof vi.fn>
+    getStatus: ReturnType<typeof vi.fn>
+    registerCallbacks: ReturnType<typeof vi.fn>
+  }) {
+    this.start = vi.fn()
+    this.stop = vi.fn()
+    this.getStatus = vi.fn()
+    this.registerCallbacks = vi.fn()
+  })
 }))
 
-vi.mock('./MatrixCryptoService', () => ({
+vi.mock('../MatrixCryptoService', () => ({
   matrixCryptoService: {
     initializeCrypto: vi.fn(),
     getCryptoStatus: vi.fn(),
@@ -42,7 +47,7 @@ vi.mock('./MatrixCryptoService', () => ({
   }
 }))
 
-vi.mock('./CryptoSDKAdapter', () => ({
+vi.mock('../CryptoSDKAdapter', () => ({
   cryptoSDKAdapter: {
     isEncryptionAvailable: vi.fn(),
     getCryptoStatus: vi.fn(),
@@ -71,9 +76,9 @@ const mockedSDKAdapter = vi.mocked(cryptoSDKAdapter)
 // healthMonitor instance here to assert against it in tests.
 const healthMonitorInstance = (
   CryptoHealthMonitor as unknown as {
-    mock: { results: Array<{ value: unknown }> }
+    mock: { instances: Array<unknown> }
   }
-).mock.results[0]?.value as {
+).mock.instances[0] as {
   start: ReturnType<typeof vi.fn>
   stop: ReturnType<typeof vi.fn>
   getStatus: ReturnType<typeof vi.fn>
