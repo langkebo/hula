@@ -218,7 +218,7 @@
 | P2-3 | CI 添加 knip 死代码检测 | 防止死代码引入 | 0.5 人日 | ✅ 已完成 |
 | P2-4 | Storybook 覆盖率提升至核心组件 20%+ | 组件可视化回归 | 3-5 人日 | 待处理 |
 | P2-5 | 评估 three.js / shiki 按需加载优化 | 降低包体积 | 2-3 人日 | ✅ 已完成 |
-| P2-6 | 桌面/移动共享逻辑提取评估 | 减少代码重复 | 3-5 人日 | 🟡 评估完成 |
+| P2-6 | 桌面/移动共享逻辑提取评估 | 减少代码重复 | 3-5 人日 | ✅ 已完成 |
 | P2-7 | **新增**：`services/types.ts` 按域拆分 | 降低导入耦合 | 1 人日 | ✅ 已完成 |
 | P2-8 | **新增**：审计 41 处 `biome-ignore`，移除非必要豁免 | 恢复 lint 保护 | 1 人日 | ✅ 已完成 |
 | P2-9 | **新增**：清理 5 个源码文件中的 console 调用 | 生产环境整洁 | 0.5 人日 | ✅ 已完成 |
@@ -227,7 +227,7 @@
 
 - **P2-2**：`services/` 根目录杂项已归类——`BadgeService→notification/`、`ConfigService→backend/`、`UploadService→performance/`、`fingerprint→secure/`、`mapApi→legacy/`，根目录仅保留 `i18n.ts / renderWorker.ts / types.ts`。
 - **P2-5**：评估结论——`shiki` 已全动态 import（`highlightTask.ts`），`three` 已组件级懒加载（`TjgAssistant` 经 `defineAsyncComponent` 引入），配合 `manualChunks` 分离 `three/shiki-*` chunk 及 `modulePreload.resolveDependencies` 过滤重 chunk，按需加载已充分实现，无需进一步改动。
-- **P2-6**：评估摸排——移动/桌面存在 11 个同名组件（设置页 EncryptionSettings/SecuritySettings/NotificationSettings/VoiceVideoSettings 等 + ThreadView/ThreadIndicator），重叠点集中在**业务逻辑**而非 UI（两端 UI 库不同）；建议后续提取共享 composable/service，而非共享 UI 组件。
+- **P2-6**：深入评估结论——移动/桌面 11 个同名组件（`index.vue` 除外为 10 组）经逐组核验，**绝大多数无需提取**：① 已共享——BurnAfterReadSettings 已提取 `useBurnAfterRead`、PreferencesSettings 复用 `useSettingStore`；② 同名不同责——NotificationSettings（desktop 本地通知偏好 vs mobile Matrix 推送规则）、SecuritySettings（desktop 会话/密钥安全 vs mobile 加密账号安全）仅命名相同，职责不同；③ 逻辑轻量——Labs/Mjolnir/VoiceVideoSettings 及 ThreadIndicator 无共享价值。唯一有限重叠是 ThreadView/EncryptionSettings 的组件编排层，但核心逻辑已下沉 `matrixThreadService`/`matrixEncryptionContextService`，强行提取 UI 编排会因两端 UI 库差异增加耦合，ROI 低。**结论：P2-6 无需大规模重构，维持现状。**
 - **P2-7**：`services/types.ts` 608 行按域拆分为 6 个模块（`user/message/notice/contact/room/misc`）+ barrel re-export，`@/services/types` 导入路径不变，零调用点改动，vue-tsc 0 错误。
 - **P2-8**：审计结论——41 处 `biome-ignore` 中仅 `RoomSettingsDrawer.vue` 的 `biome-ignore-all noConsole` 为非必要豁免（掩盖调试 console），已随 P2-9 移除；其余 40 处均为合法豁免（Worker/Logger/CLI 的 `noConsole`、模板 enum 的 `useImportType`、SDK 类型的 `noExplicitAny`、生成 `.d.ts` 的 `lint: disable`、测试桩）。
 - **P2-9**：唯一含真实调试 console 的源码文件为 `RoomSettingsDrawer.vue`（6 处），已清理——`onErrorCaptured` 错误边界改为 `logger.error`，移除 5 处调试 log；其余 4 个"文件"为误报（Logger.ts 本体 / Console.ts 助手 / workerLogger.ts worker / PathUtil.ts JSDoc 示例）。
