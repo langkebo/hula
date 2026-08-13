@@ -27,8 +27,12 @@
 ### P2-5: three.js / shiki 按需加载评估 ✅
 - 结论：已充分优化，无需改动——`shiki` 全动态 import，`three` 组件级懒加载（`TjgAssistant` 经 `defineAsyncComponent`），`manualChunks` + `modulePreload` 过滤重 chunk
 
-### P2-6: 双平台共享逻辑评估 🟡
-- 摸排发现 11 个同名组件（设置页 + ThreadView/ThreadIndicator），重叠在业务逻辑而非 UI，建议后续提取共享 composable/service
+### P2-6: 双平台共享逻辑评估 ✅
+- 深入核验 11 个同名组件（10 组有效）：**结论是无需大规模提取**
+- 已共享：BurnAfterReadSettings（`useBurnAfterRead`）、PreferencesSettings（`useSettingStore`）
+- 同名不同责：NotificationSettings（本地偏好 vs Matrix 推送规则）、SecuritySettings（会话安全 vs 加密账号）
+- 逻辑轻量：Labs/Mjolnir/VoiceVideoSettings、ThreadIndicator
+- 有限重叠仅 ThreadView/EncryptionSettings 的编排层，但核心逻辑已下沉 service，强行提取 ROI 低
 
 ## 守门验证结果
 
@@ -48,6 +52,5 @@
 ## 剩余待处理项
 
 - **P2-4**：Storybook 覆盖率提升至 20%+（3-5 人日，未启动）
-- **P2-6**：共享逻辑提取实施（评估已完成，实施 3-5 人日）
 - **P1-3**：Service 层单元测试（进行中，约 30 个测试文件待提交验证）
 - **P1-8**：组件测试继续补测（ROI 递减）
