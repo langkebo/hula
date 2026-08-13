@@ -73,7 +73,6 @@
 </template>
 
 <script setup lang="ts">
-// biome-ignore-all lint/suspicious/noConsole: Debug logging for Tab rendering diagnostics
 import { useI18n } from 'vue-i18n'
 import AdvancedTab from '@/components/room/settings-tabs/AdvancedTab.vue'
 import AliasTab from '@/components/room/settings-tabs/AliasTab.vue'
@@ -86,6 +85,7 @@ import RetentionTab from '@/components/room/settings-tabs/RetentionTab.vue'
 import SecurityTab from '@/components/room/settings-tabs/SecurityTab.vue'
 import StickyTab from '@/components/room/settings-tabs/StickyTab.vue'
 import TagsTab from '@/components/room/settings-tabs/TagsTab.vue'
+import { createLogger } from '@/utils/Logger'
 
 type TabKey =
   | 'basic'
@@ -115,6 +115,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const logger = createLogger('RoomSettingsDrawer')
 
 const tabs: TabDef[] = [
   { key: 'basic', label: 'room.settings_drawer.tab_basic', component: BasicTab },
@@ -146,7 +147,7 @@ const retryTab = () => {
 }
 
 onErrorCaptured((err) => {
-  console.error('[RoomSettingsDrawer] Tab render error', {
+  logger.error('[RoomSettingsDrawer] Tab render error', {
     activeTab: activeTab.value,
     error: err instanceof Error ? err.message : String(err),
     stack: err instanceof Error ? err.stack : undefined
@@ -164,50 +165,9 @@ watch(
   }
 )
 
-// Tab 渲染状态日志：记录每次切换的组件解析结果
-watch(activeTab, (newTab) => {
-  const tabDef = tabs.find((tab) => tab.key === newTab)
-  const comp = tabDef?.component
-  console.log('[RoomSettingsDrawer] Tab switched', {
-    tab: newTab,
-    label: tabDef?.label ?? '(unknown)',
-    component: comp ? (comp as { name?: string }).name || 'anonymous' : null,
-    resolved: comp !== undefined,
-    timestamp: new Date().toISOString()
-  })
-})
-
 onMounted(() => {
-  console.log('[RoomSettingsDrawer] mounted', {
-    roomId: props.roomId,
-    timestamp: new Date().toISOString()
-  })
-
-  console.log('[RoomSettingsDrawer] Tab registry', {
-    totalTabs: tabs.length,
-    tabs: tabs.map((tab) => ({
-      key: tab.key,
-      label: tab.label,
-      component: tab.component ? (tab.component as { name?: string }).name || 'anonymous' : null,
-      hasPermissionLogic: ['permissions', 'members', 'security'].includes(tab.key)
-    }))
-  })
-
-  console.log('[RoomSettingsDrawer] Initial render state', {
-    activeTab: activeTab.value,
-    activeTabComponent: (activeTabComponent.value as { name?: string }).name || 'anonymous',
-    roomId: props.roomId,
-    hasRoomId: !!props.roomId
-  })
-
-  console.log('[RoomSettingsDrawer] Permission check summary', {
-    note: 'RoomSettingsDrawer 本身不做权限检查，权限逻辑在各 Tab 子组件内',
-    tabsWithPermissionCheck: [
-      { tab: 'permissions', logic: 'getPowerLevels/setPowerLevels via matrixRoomActionFacade' },
-      { tab: 'members', logic: 'canModerate() based on powerLevel < 100' },
-      { tab: 'security', logic: 'encryption.isRoomEncrypted + getRoomVisibility' }
-    ]
-  })
+  // Tab 渲染诊断日志已移除：生产构建由 esbuild drop 剔除 console，
+  // 错误边界仍通过 logger.error 记录。
 })
 </script>
 
