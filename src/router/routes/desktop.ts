@@ -5,6 +5,7 @@ const Message = () => import('@/views/homeWindow/message/index.vue')
 const RoomList = () => import('@/views/homeWindow/RoomList.vue')
 const SpaceList = () => import('@/views/homeWindow/SpaceList.vue')
 const FederationView = () => import('@/views/homeWindow/FederationView.vue')
+const SettingsWindow = () => import('@/views/settingsWindow/index.vue')
 
 export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
   {
@@ -37,6 +38,9 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
 
       // /search - 全局搜索（阶段 9 替换为独立 SearchView）
       { path: '/search', name: 'search', component: FriendsList },
+
+      // /settings - 设置页（三栏内嵌，standalone=false）
+      { path: '/settings', name: 'settings', component: SettingsWindow },
 
       // 旧路径 redirect（向后兼容）
       { path: '/friendsList', redirect: '/friend' },
@@ -110,11 +114,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     path: '/sharedScreen',
     name: 'sharedScreen',
     component: () => import('@/views/homeWindow/SharedScreen.vue')
-  },
-  {
-    path: '/settings',
-    name: 'settings',
-    component: () => import('@/views/settingsWindow/index.vue')
   },
   {
     path: '/general',

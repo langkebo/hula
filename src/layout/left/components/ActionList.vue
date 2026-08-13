@@ -247,6 +247,22 @@
         </p>
       </div>
 
+      <!-- 管理员按钮（仅管理员显示，对接管理后台） -->
+      <div
+        v-if="adminStore.canAccessAdmin"
+        :class="[{ active: activeUrl === 'admin' }, 'bottom-action flex-col-center']"
+        style="text-align: center"
+        :aria-label="t('menu.admin_panel')"
+        :title="t('menu.admin_panel')"
+        @click="router.push('/admin')">
+        <svg class="size-22px" aria-hidden="true">
+          <use href="#wrench"></use>
+        </svg>
+        <p v-if="showMode === ShowModeEnum.TEXT" class="menu-text text-[var(--text-xs)] text-center">
+          {{ t('menu.admin_panel') }}
+        </p>
+      </div>
+
       <!--  更多选项面板  -->
       <div
         :title="t('home.action.more')"
@@ -296,9 +312,11 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import HomeserverDialog from '@/components/common/HomeserverDialog.vue'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { PluginEnum, ShowModeEnum } from '@/enums'
+import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useMenuTopStore } from '@/stores/domains/settings/menuTop'
 import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -313,6 +331,8 @@ const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const { addListener } = useTauriListener()
 const globalStore = useGlobalStore()
 const pluginsStore = usePluginsStore()
+const adminStore = useAdminStore()
+const router = useRouter()
 const { showMode } = storeToRefs(useSettingStore())
 const { menuTop } = storeToRefs(useMenuTopStore())
 const itemsBottom = useItemsBottom()
