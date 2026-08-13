@@ -139,10 +139,16 @@ export class MatrixSyncManager {
     )
 
     // 恢复持久化的 pos，实现增量 sync
+    // 4.2.2: 仅当 room store 已有房间数据时才恢复增量 pos。若 room store
+    // 为空（崩溃恢复 / 存储被清 / room store 未持久化），增量 pos 会让新
+    // store 的 timeline 为空，因此清掉 pos 强制走全量初始同步。
     const persistedPos = this.loadPersistedPos()
-    if (persistedPos) {
+    if (persistedPos && this.hasRoomData(client)) {
       slidingSync.setInitialPos(persistedPos)
       logger.info(`Sliding Sync restored pos from localStorage (pos=${persistedPos.slice(0, 8)}...)`)
+    } else if (persistedPos) {
+      this.clearPersistedPos()
+      logger.info('SlidingSync room store empty — clearing persisted pos to force a full initial sync')
     }
 
     // 订阅 Lifecycle 事件，在 Complete 时持久化 pos，在 400 错误时清除 pos
@@ -332,6 +338,22 @@ export class MatrixSyncManager {
       logger.warn('getPersistedPos failed:', err)
       // Corrupted data or localStorage unavailable — silently skip
       return null
+    }
+  }
+
+  /**
+   * 判断 client 的 room store 是否已有房间数据。
+   *
+   * 用于 4.2.2：pos 是滑动同步的增量游标，只有当 room store 里还有房间
+   * 数据时，恢复增量 pos 才是安全的；否则会得到空 timeline（增量同步只
+   * 返回自 pos 以来变化的房间，无法重建未变化的房间）。
+   */
+  private hasRoomData(client: MatrixClient): boolean {
+    try {
+      const rooms = client.getRooms?.()
+      return Array.isArray(rooms) && rooms.length > 0
+    } catch {
+      return false
     }
   }
 
