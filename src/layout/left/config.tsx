@@ -39,6 +39,11 @@ const baseItemsBottom: Array<Omit<OPT.L.Common, 'title' | 'shortTitle'>> = [
     window: {
       resizable: true
     }
+  },
+  {
+    url: 'settings',
+    icon: 'settings',
+    iconAction: 'settings'
   }
 ]
 
@@ -55,6 +60,11 @@ const useItemsBottom = () =>
         ...baseItemsBottom[1],
         title: t('home.action.favorite'),
         shortTitle: t('home.action.favorite_short_title')
+      },
+      {
+        ...baseItemsBottom[2],
+        title: t('home.action.settings'),
+        shortTitle: t('home.action.settings_short_title')
       }
     ])
   })()
@@ -117,13 +127,6 @@ const useMoreList = () => {
             useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
               type: ModalEnum.LOCK_SCREEN
             })
-          }
-        },
-        {
-          label: t('menu.settings'),
-          icon: 'settings',
-          click: () => {
-            router.push('/settings')
           }
         },
         {
