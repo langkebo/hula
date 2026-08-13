@@ -191,6 +191,16 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
       resizable: true
     },
     miniShow: false
+  },
+  {
+    url: 'federation',
+    icon: 'federation',
+    iconAction: 'federation',
+    state: PluginEnum.BUILTIN,
+    isAdd: true,
+    dot: false,
+    progress: 0,
+    miniShow: false
   }
   // {
   //   icon: 'Music',
@@ -275,6 +285,11 @@ const usePluginsList = () =>
         ...basePluginsList[2],
         title: t('home.plugins.chatbot'),
         shortTitle: t('home.plugins.chatbot_short_title')
+      },
+      {
+        ...basePluginsList[3],
+        title: t('home.plugins.federation'),
+        shortTitle: t('home.plugins.federation_short_title')
       }
     ])
   })()

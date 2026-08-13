@@ -61,7 +61,7 @@ describe('usePluginsList', () => {
     const { usePluginsList } = await import('../config.tsx')
     const plugins = usePluginsList()
 
-    expect(plugins.value.map((item) => item.url)).toEqual(['roomList', 'space', 'openclaw'])
+    expect(plugins.value.map((item) => item.url)).toEqual(['roomList', 'space', 'openclaw', 'federation'])
     expect(plugins.value[0]).toMatchObject({
       icon: 'room',
       iconAction: 'room',

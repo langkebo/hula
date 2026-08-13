@@ -51,6 +51,10 @@
     "space_list_short_title": "空间",
     "chatbot": "ChatBot",
     "chatbot_short_title": "ChatBot",
+    "federation": "联邦",
+    "federation_short_title": "联邦",
+    "federation_loading": "正在加载联邦服务器...",
+    "federation_empty": "暂无联邦服务器",
     "status": {
       "builtin": "已内置",
       "uninstalling": "卸载中"
