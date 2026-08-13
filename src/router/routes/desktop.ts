@@ -4,6 +4,7 @@ const FriendsList = () => import('@/views/homeWindow/FriendsList.vue')
 const Message = () => import('@/views/homeWindow/message/index.vue')
 const RoomList = () => import('@/views/homeWindow/RoomList.vue')
 const SpaceList = () => import('@/views/homeWindow/SpaceList.vue')
+const FederationView = () => import('@/views/homeWindow/FederationView.vue')
 
 export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
   {
@@ -27,6 +28,9 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
       { path: '/space', name: 'space', component: SpaceList },
       { path: '/space/create', name: 'space-create', component: SpaceList },
       { path: '/space/:spaceId', name: 'space-details', component: SpaceList },
+
+      // /federation - 联邦主视图
+      { path: '/federation', name: 'federation', component: FederationView },
 
       // /message 系列 - 渲染消息列表，:roomId 可选
       { path: '/message/:roomId?', name: 'message', component: Message },

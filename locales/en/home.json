@@ -51,6 +51,10 @@
     "space_list_short_title": "Space",
     "chatbot": "ChatBot",
     "chatbot_short_title": "ChatBot",
+    "federation": "Federation",
+    "federation_short_title": "Federation",
+    "federation_loading": "Loading federation servers...",
+    "federation_empty": "No federation servers",
     "status": {
       "builtin": "Built-in",
       "uninstalling": "Uninstalling"
