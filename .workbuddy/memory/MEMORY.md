@@ -33,9 +33,12 @@
 - **测试内禁用 `await import()` 动态导入被测模块**：用静态导入 + hoisted `vi.mock`
 - **否定断言必须做变异验证**：临时删守卫确认用例真的 FAIL
 - **单例 mock 的 computed 响应式陷阱**：mock 工厂里 `reactive(obj)` + `computed(() => obj.x)` 在多个测试串行时，primitive 重赋值 + 单例 computed 缓存会导致依赖追踪串扰（读到旧值）。正确做法：工厂内用 `ref()` 创建真实实例挂回 `vi.hoisted` 容器，测试直接改 `.value`；`reactive` 对象属性用 `Object.assign` 原地改。
+- **happy-dom 下 `img` 的 `error` 事件无法派发**：`wrapper.find('img').trigger('error')` 与原生 `dispatchEvent(new Event('error'))` 都触发不了 Vue `onError` 监听。测试图片加载失败分支时，不要依赖 error 事件，改测组件自身的真实行为（如入队下载、状态 computed）。
+- **模板以 HTML 注释开头 → Vue 多根片段**：`<!-- 注释 -->` 在 `<template>` 顶部的组件会被视为 fragment（多根），`wrapper.classes()`/`wrapper.element` 取不到真实根元素 class。改用语义化 class token 查询：`wrapper.find('.flex-row-reverse').exists()`。
+- **`vi.mock` 内 `nextTick` 须从 `vue` 导入**：从 `@vue/test-utils` 导入 `nextTick` 会报 "not a function"，正确来源是 `vue`。
 
 ## 测试基线（2026-08-09 起）
-- 全量 661 文件 7302 用例 0 失败（截至 2026-08-13，P1-7 重构 + P1-8 两批组件测试后）
+- 全量 669 文件 7458 用例 0 失败（截至 2026-08-13，P1-7 重构 + P1-8 三批组件测试 + 遗留 *Helpers 测试提交后）
 - 组件测试挂起 forks worker：写 import-only 探针二分定位，stub 重度服务图谱子组件
 
 ## synapse-rust 优化任务进度（2026-08-10）

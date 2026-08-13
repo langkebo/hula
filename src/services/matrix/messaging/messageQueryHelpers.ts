@@ -5,13 +5,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('MessageQueryHelpers')
 
 export interface MessageSearchOptions {
-  roomId?: string
   limit?: number
-  before?: string
-  after?: string
-  sentBefore?: number
-  sentAfter?: number
-  type?: string
   sender?: string
 }
 
@@ -54,30 +48,7 @@ export async function getMessageEvents(
   options?: MessageSearchOptions
 ): Promise<MatrixEvent[]> {
   try {
-    const { limit = 20, before, after, type, sender } = options || {}
-
-    const options_: {
-      limit: number
-      reverse: boolean
-      from?: string
-      to?: undefined
-      types?: string[]
-    } = {
-      limit,
-      reverse: !!before
-    }
-
-    if (before) {
-      options_.from = before
-      options_.to = undefined
-    } else if (after) {
-      options_.from = after
-      options_.to = undefined
-    }
-
-    if (type) {
-      options_.types = [type]
-    }
+    const { limit = 20, sender } = options || {}
 
     const response = (await client.getRoom(roomId)?.timeline) ?? []
     let events = response
