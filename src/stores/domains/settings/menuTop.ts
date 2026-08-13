@@ -20,8 +20,8 @@ export const useMenuTopStore = defineStore(
       },
       {
         url: 'friendsList',
-        icon: 'avatar',
-        iconAction: 'avatar-action',
+        icon: 'peoples-two',
+        iconAction: 'peoples-two',
         state: PluginEnum.BUILTIN,
         isAdd: true,
         dot: false,
