@@ -386,8 +386,8 @@ describe('MatrixSyncManager', () => {
       }
     })
 
-    it('TTL 24h 过期后 loadPersistedPos 返回 null 并清除 localStorage', () => {
-      // 写入一个 25 小时前的 pos
+    it('TTL 25min 过期后 loadPersistedPos 返回 null 并清除 localStorage', () => {
+      // 写入一个 25 小时前的 pos（远超 25min TTL）
       const expiredTs = Date.now() - 25 * 60 * 60 * 1000 // 25h ago
       localStorage.setItem('matrix.sliding_sync.pos', JSON.stringify({ pos: 'expired-pos', ts: expiredTs }))
 
@@ -405,6 +405,35 @@ describe('MatrixSyncManager', () => {
       // 过期的 pos 不应被恢复
       expect(setInitialPosSpy).not.toHaveBeenCalled()
       // localStorage 中的过期 pos 应被清除
+      expect(localStorage.getItem('matrix.sliding_sync.pos')).toBeNull()
+
+      manager.stop()
+      setInitialPosSpy.mockRestore()
+      if (!hadMethod) {
+        delete proto.setInitialPos
+      }
+    })
+
+    it('pos 超过后端 token TTL（30min）时应过期，避免恢复已失效 pos', () => {
+      // 后端 sliding sync token time_to_idle=30min；前端 pos TTL 必须 ≤ 30min，
+      // 否则客户端关闭 30min 后恢复的 pos 已失效，导致 400 + 全量重同步。
+      const expiredTs = Date.now() - 31 * 60 * 1000 // 31min 前，超过新 TTL 25min
+      localStorage.setItem('matrix.sliding_sync.pos', JSON.stringify({ pos: 'stale-pos', ts: expiredTs }))
+
+      const proto = SlidingSync.prototype as unknown as { setInitialPos?: (pos: string) => void }
+      const hadMethod = typeof proto.setInitialPos === 'function'
+      if (!hadMethod) {
+        proto.setInitialPos = () => {}
+      }
+      const setInitialPosSpy = vi.spyOn(proto, 'setInitialPos')
+
+      const populatedClient = {
+        getRooms: () => [{ roomId: '!r:example.com' }]
+      } as unknown as import('matrix-js-sdk').MatrixClient
+      const manager = new MatrixSyncManager()
+      manager.create(populatedClient, defaultConfig)
+
+      expect(setInitialPosSpy).not.toHaveBeenCalled()
       expect(localStorage.getItem('matrix.sliding_sync.pos')).toBeNull()
 
       manager.stop()
