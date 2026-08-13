@@ -112,7 +112,8 @@ export class RoomOperations extends BaseMatrixService {
     await client.sendStateEvent(roomId, 'm.room.avatar', { url: avatarUrl }, '')
   }
 
-  /** 获取房间消息保留策略（m.room.retention 状态事件） */
+  /** 获取消息保留策略
+   */
   async getRetentionPolicy(roomId: string): Promise<{ content: Record<string, unknown> } | null> {
     const client = this.getClient()
     const room = client.getRoom(roomId)
@@ -122,7 +123,8 @@ export class RoomOperations extends BaseMatrixService {
     return { content: event.getContent() as Record<string, unknown> }
   }
 
-  /** 设置房间消息保留策略（m.room.retention 状态事件） */
+  /** 设置消息保留策略
+   */
   async setRetentionPolicy(roomId: string, content: Record<string, unknown>): Promise<void> {
     const client = this.getClient()
     await client.sendStateEvent(roomId, 'm.room.retention', content, '')
@@ -504,7 +506,8 @@ export class RoomOperations extends BaseMatrixService {
 
   // --- History Visibility ---
 
-  /** 获取房间历史可见性（m.room.history_visibility 状态事件） */
+  /** 获取历史消息可见性
+   */
   async getHistoryVisibility(roomId: string): Promise<string> {
     const client = this.getClient()
     const room = client.getRoom(roomId)
@@ -513,7 +516,8 @@ export class RoomOperations extends BaseMatrixService {
     return (event?.getContent()?.history_visibility as string) ?? 'shared'
   }
 
-  /** 设置房间历史可见性 */
+  /** 设置历史消息可见性
+   */
   async setHistoryVisibility(roomId: string, visibility: string): Promise<void> {
     const client = this.getClient()
     await client.sendStateEvent(roomId, 'm.room.history_visibility', { history_visibility: visibility }, '')
@@ -521,7 +525,8 @@ export class RoomOperations extends BaseMatrixService {
 
   // --- Power Levels ---
 
-  /** 获取房间权限级别（m.room.power_levels 状态事件） */
+  /** 获取房间权限等级
+   */
   async getPowerLevels(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     const room = client.getRoom(roomId)
@@ -530,7 +535,8 @@ export class RoomOperations extends BaseMatrixService {
     return (event?.getContent() as Record<string, unknown>) ?? {}
   }
 
-  /** 设置房间权限级别 */
+  /** 设置房间权限等级
+   */
   async setPowerLevels(roomId: string, content: Record<string, unknown>): Promise<void> {
     const client = this.getClient()
     await client.sendStateEvent(roomId, 'm.room.power_levels', content, '')
@@ -538,7 +544,8 @@ export class RoomOperations extends BaseMatrixService {
 
   // --- Notification Level ---
 
-  /** 获取房间通知级别（all / mentions / mute） */
+  /** 获取通知级别
+   */
   async getNotificationLevel(roomId: string): Promise<'all' | 'mentions' | 'mute'> {
     const client = this.getClient()
     try {
@@ -555,7 +562,8 @@ export class RoomOperations extends BaseMatrixService {
     return 'all'
   }
 
-  /** 设置房间通知级别 */
+  /** 设置通知级别
+   */
   async setNotificationLevel(roomId: string, level: 'all' | 'mentions' | 'mute'): Promise<void> {
     const client = this.getClient()
     // 先清除现有规则

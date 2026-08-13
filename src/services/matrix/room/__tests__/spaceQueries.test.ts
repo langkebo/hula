@@ -1,5 +1,5 @@
-import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MatrixClient, Room } from '../../sdk'
 import type { Space as SdkSpace, SpaceManager as SdkSpaceManager } from '../../sdk-compat'
 import { createSpaceQueries } from '../spaceQueries'
 
@@ -88,7 +88,13 @@ describe('spaceQueries', () => {
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.getRoomParentSpaces('!room:server')
       expect(result).toEqual([{ spaceId: '!p2:server', name: 'Parent 2', memberCount: 0, childCount: 0 }])
-      expect(authedRequest).toHaveBeenCalledWith('GET', '/spaces/room/!room%3Aserver/parents')
+      expect(authedRequest).toHaveBeenCalledWith(
+        'GET',
+        '/spaces/room/!room%3Aserver/parents',
+        undefined,
+        undefined,
+        undefined
+      )
     })
 
     it('falls back to REST and handles a { spaces } response object', async () => {
@@ -147,10 +153,16 @@ describe('spaceQueries', () => {
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.searchSpaces('rest', 7)
       expect(result).toEqual([{ spaceId: '!s2:server', name: 'Via REST', memberCount: 0, childCount: 0 }])
-      expect(client.http.authedRequest).toHaveBeenCalledWith('GET', '/spaces/search', {
-        search_term: 'rest',
-        limit: '7'
-      })
+      expect(client.http.authedRequest).toHaveBeenCalledWith(
+        'GET',
+        '/spaces/search',
+        {
+          search_term: 'rest',
+          limit: '7'
+        },
+        undefined,
+        undefined
+      )
     })
 
     it('falls back to local search when manager and REST both fail', async () => {

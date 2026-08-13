@@ -5,6 +5,8 @@ import { PREFIX_V3 } from '../paths'
 import { normalizeSdkMatrixError } from './authErrors'
 import { type MatrixLoginResult, postMatrixJson } from './authHelpers'
 
+/** 获取 SAML 登录重定向地址
+ */
 export async function getSamlRedirect(idpId?: string, redirectUrl?: string): Promise<string> {
   const client = matrixClientService.getClient()
   if (!client) {
@@ -27,6 +29,8 @@ export async function getSamlRedirect(idpId?: string, redirectUrl?: string): Pro
   }
 }
 
+/** 处理 SAML 登录回调
+ */
 export async function handleSamlCallback(
   samlResponse: string,
   relayState?: string,
@@ -39,6 +43,8 @@ export async function handleSamlCallback(
   return postMatrixJson<MatrixLoginResult>(`${PREFIX_V3}/login/saml/callback`, body, 'SAML 回调处理失败')
 }
 
+/** SAML 登出
+ */
 export async function samlLogout(redirectUrl?: string): Promise<string | null> {
   const client = matrixClientService.getClient()
   if (!client) {
@@ -59,6 +65,8 @@ export async function samlLogout(redirectUrl?: string): Promise<string | null> {
   }
 }
 
+/** 获取 SAML 元数据
+ */
 export async function getSamlMetadata(): Promise<Record<string, unknown>> {
   const client = matrixClientService.getClient()
   if (!client) {

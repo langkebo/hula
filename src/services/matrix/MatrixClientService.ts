@@ -118,6 +118,8 @@ class MatrixClientService {
 
   // ---- Lifecycle --------------------------------------------------------------
 
+  /** 初始化 Matrix 客户端
+   */
   async initialize(config: MatrixClientConfig): Promise<void> {
     return this.lifecycle.initialize(config)
   }
@@ -152,6 +154,8 @@ class MatrixClientService {
     return this.auth.completeSSOLogin(loginToken)
   }
 
+  /** 使用访问令牌登录
+   */
   async loginWithToken(token: string, userId: string, refreshToken?: string): Promise<LoginResult> {
     return this.auth.loginWithToken(token, userId, refreshToken)
   }

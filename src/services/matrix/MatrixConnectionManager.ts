@@ -260,12 +260,14 @@ export class MatrixConnectionManager {
     }
   }
 
-  /** 成功 sync 后重置错误计数 */
+  /** 重置同步错误计数
+   */
   resetSyncErrorCount(): void {
     this.consecutiveSyncErrors = 0
   }
 
-  /** 更新连接状态并通知所有订阅者 */
+  /** 更新连接状态
+   */
   updateConnectionState(state: ConnectionState): void {
     if (this.connectionState === state) return
     this.connectionState = state
@@ -273,12 +275,14 @@ export class MatrixConnectionManager {
     logger.info(`连接状态已更新: ${state}`)
   }
 
-  /** 订阅状态变更 */
+  /** 注册连接状态变更监听
+   */
   onStateChange(cb: ConnectionStateChangeCallback): void {
     this.stateChangeCallbacks.add(cb)
   }
 
-  /** 取消订阅状态变更 */
+  /** 移除连接状态变更监听
+   */
   offStateChange(cb: ConnectionStateChangeCallback): void {
     this.stateChangeCallbacks.delete(cb)
   }
@@ -289,7 +293,8 @@ export class MatrixConnectionManager {
     this.resumeCleanup = registerFn(onResume)
   }
 
-  /** 清理系统恢复监听器 */
+  /** 清理系统恢复监听器
+   */
   cleanupResumeListener(): void {
     if (this.resumeCleanup) {
       this.resumeCleanup()
@@ -297,7 +302,8 @@ export class MatrixConnectionManager {
     }
   }
 
-  /** 等待 client 就绪 */
+  /** 等待客户端就绪
+   */
   async waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
     if (this.client) return this.client
     const timeoutMs = opts?.timeoutMs ?? 5000
@@ -312,10 +318,14 @@ export class MatrixConnectionManager {
 
   // ---- Accessors -------------------------------------------------------------
 
+  /** 获取 Matrix 客户端实例
+   */
   getClient(): MatrixClient | null {
     return this.client
   }
 
+  /** 获取客户端配置
+   */
   getConfig(): MatrixClientConfig | null {
     return this.config
   }
@@ -378,10 +388,14 @@ export class MatrixConnectionManager {
     return !!this.client && !!this.config && this.isIdentityEquivalent(config)
   }
 
+  /** 获取当前连接状态
+   */
   getConnectionState(): ConnectionState {
     return this.connectionState
   }
 
+  /** 获取连续同步错误次数
+   */
   getConsecutiveSyncErrors(): number {
     return this.consecutiveSyncErrors
   }
@@ -449,7 +463,8 @@ export class MatrixConnectionManager {
     }
   }
 
-  /** 重置状态（供 facade 在 stop/logout 时调用） */
+  /** 重置连接管理器状态
+   */
   resetState(): void {
     this.cleanupResumeListener()
     this.client = null

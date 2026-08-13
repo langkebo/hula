@@ -79,6 +79,8 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   // ==================== Vault (安全保险库) ====================
 
+  /** 获取保险库数据
+   */
   async getVaultData(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
@@ -90,6 +92,8 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     }
   }
 
+  /** 设置保险库数据
+   */
   async setVaultData(roomId: string, content: Record<string, unknown>): Promise<void> {
     const client = this.getClient()
     try {
@@ -271,6 +275,8 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   // === P2-8 事件签名与验证 ===
 
+  /** 签名事件
+   */
   async signEvent(roomId: string, eventId: string): Promise<{ signature: string; signed_by: string }> {
     const client = this.getClient()
     const path = MATRIX_PATHS.ROOM.SIGN_EVENT(roomId, eventId)
@@ -284,6 +290,8 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     }
   }
 
+  /** 验证事件签名
+   */
   async verifyEvent(roomId: string, eventId: string): Promise<{ valid: boolean; verifier: string }> {
     const client = this.getClient()
     const path = MATRIX_PATHS.ROOM.VERIFY_EVENT(roomId, eventId)
@@ -299,6 +307,8 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   // === P2-6 消息队列状态 ===
 
+  /** 获取消息队列数据
+   */
   async getMessageQueue(roomId: string): Promise<{ queue?: Array<{ event_id: string; type: string }> }> {
     const client = this.getClient()
     const path = MATRIX_PATHS.ROOM.MESSAGE_QUEUE(roomId)
@@ -313,6 +323,8 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   // === P2-9 加密事件列表扩展 ===
 
+  /** 获取加密事件数据
+   */
   async getEncryptedEvents(roomId: string): Promise<{ events?: Array<Record<string, unknown>> }> {
     const client = this.getClient()
     const path = MATRIX_PATHS.ROOM.ENCRYPTED_EVENTS(roomId)

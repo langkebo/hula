@@ -69,10 +69,14 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
 
   // ==================== Accessors ====================
 
+  /** 获取扩展加密客户端实例
+   */
   getExtendedClient(): MatrixClientExtended {
     return matrixClientService.getClient() as unknown as MatrixClientExtended
   }
 
+  /** 获取 Matrix 客户端实例
+   */
   getClient(): MatrixClient {
     const client = matrixClientService.getClient()
     if (!client) throw new Error('Matrix client not initialized')
@@ -90,26 +94,38 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
     this.cryptoCache = null
   }
 
+  /** 获取设备信任管理器
+   */
   getDeviceTrustManager(): DeviceTrustManager | null {
     return this.getExtendedClient().getDeviceTrustManager?.() ?? null
   }
 
+  /** 获取安全备份管理器
+   */
   getSecureBackupManager(): SecureBackupManager | null {
     return this.getExtendedClient().getSecureBackupManager?.() ?? null
   }
 
+  /** 获取密钥备份管理器
+   */
   getKeyBackupManager(): KeyBackupManager | null {
     return this.getExtendedClient().getKeyBackupManager?.() ?? null
   }
 
+  /** 获取 SDK 设备密钥管理器
+   */
   getSDKDeviceKeysManager(): DeviceKeysManager | null {
     return this.getExtendedClient().getDeviceKeysManager?.() ?? null
   }
 
+  /** 获取 SDK 密钥备份管理器
+   */
   getSDKKeyBackupManager(): SDKKeyBackupManager | null {
     return this.getExtendedClient().getSDKKeyBackupManager?.() ?? null
   }
 
+  /** 获取 SDK 密钥验证管理器
+   */
   getSDKKeyVerificationManager(): KeyVerificationManager | null {
     return this.getExtendedClient().getKeyVerificationManager?.() ?? null
   }
@@ -131,6 +147,8 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
     return this.deviceAdapter.getDevices(userId)
   }
 
+  /** 获取指定设备信息
+   */
   getDevice(userId: string, deviceId: string): Promise<DeviceInfo | null> {
     return this.deviceAdapter.getDevice(userId, deviceId)
   }

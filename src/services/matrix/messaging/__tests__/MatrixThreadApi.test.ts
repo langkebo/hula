@@ -1,6 +1,6 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
+import type { MatrixClient } from '../../sdk'
 import { MatrixThreadApi } from '../MatrixThreadApi'
 import type { ThreadingManagerCompat } from '../threadTypes'
 

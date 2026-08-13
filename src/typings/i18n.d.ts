@@ -3061,6 +3061,8 @@ export type I18nKeys = {
       "file_manager_short_title": "文件",
       "favorite": "收藏列表",
       "favorite_short_title": "收藏",
+      "settings": "设置",
+      "settings_short_title": "设置",
       "plugin": "插件",
       "plugin_manage": "插件管理",
       "more": "更多",
@@ -3085,6 +3087,10 @@ export type I18nKeys = {
       "space_list_short_title": "空间",
       "chatbot": "ChatBot",
       "chatbot_short_title": "ChatBot",
+      "federation": "联邦",
+      "federation_short_title": "联邦",
+      "federation_loading": "正在加载联邦服务器...",
+      "federation_empty": "暂无联邦服务器",
       "status": {
         "builtin": "已内置",
         "uninstalling": "卸载中"
@@ -6245,7 +6251,8 @@ export type I18nKeys = {
         "help_about": "帮助与关于",
         "friends": "好友管理",
         "burn_after_read": "阅后即焚",
-        "ai_connection": "AI 连接"
+        "ai_connection": "AI 连接",
+        "storage": "存储管理"
       },
       "search_terms": {
         "account": [
@@ -6645,6 +6652,21 @@ export type I18nKeys = {
     },
     "storage": {
       "title": "存储",
+      "desc": "查看并清理本地缓存数据，管理存储占用",
+      "sdk_store": "SDK 缓存统计",
+      "hit_rate": "命中率",
+      "hits": "命中次数",
+      "misses": "未命中次数",
+      "evictions": "淘汰条目数",
+      "total_entries": "缓存条目总数",
+      "memory_usage": "内存占用",
+      "browser_storage": "浏览器存储占用",
+      "browser_usage": "已用空间",
+      "browser_quota": "配额上限",
+      "cleanup": "清理缓存",
+      "clear_sdk": "清理 SDK 缓存数据",
+      "clear_sdk_desc": "清除 Matrix SDK 的本地存储（房间数据、加密密钥等），不影响账号与服务器数据",
+      "clear": "立即清理",
       "file_scan_progress": "扫描文件中",
       "usage": "扫描文件占比",
       "used_space": "已用空间",

@@ -209,6 +209,8 @@ export class MatrixClientLifecycle {
     }
   }
 
+  /** 停止客户端并清理监听器
+   */
   async stopClient(): Promise<void> {
     const { connectionManager, eventRouter, syncManager, tokenManager, startClientGuard } = this.deps
     try {
@@ -292,10 +294,14 @@ export class MatrixClientLifecycle {
     }
   }
 
+  /** 等待客户端就绪
+   */
   async waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
     return this.deps.connectionManager.waitForClientReady(opts)
   }
 
+  /** 等待 SlidingSync 就绪
+   */
   async waitForSlidingSyncReady(timeoutMs: number = 10000): Promise<boolean> {
     return this.deps.syncManager.waitForReady(timeoutMs)
   }

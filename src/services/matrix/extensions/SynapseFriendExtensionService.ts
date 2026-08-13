@@ -91,6 +91,8 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     return await endpointCapabilityService.check('GET', MATRIX_PATHS.FRIENDS.LIST)
   }
 
+  /** 获取好友列表
+   */
   async getFriends(): Promise<SynapseFriendInfo[]> {
     try {
       if (!(await this.isFriendEndpointAvailable())) {
@@ -220,6 +222,8 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 获取待处理的好友请求
+   */
   async getPendingRequests(): Promise<SynapsePendingRequests> {
     try {
       if (!(await this.isFriendEndpointAvailable())) return { incoming: [], outgoing: [] }
@@ -256,6 +260,8 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 接受好友请求
+   */
   async acceptFriendRequest(userId: string): Promise<{
     status: string
     room_id: string
@@ -288,6 +294,8 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 拒绝好友请求
+   */
   async declineFriendRequest(userId: string): Promise<void> {
     try {
       if (!(await this.isFriendEndpointAvailable())) return
@@ -302,6 +310,8 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 取消好友请求
+   */
   async cancelFriendRequest(userId: string): Promise<void> {
     try {
       if (!(await this.isFriendEndpointAvailable())) return
@@ -316,6 +326,8 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 删除好友
+   */
   async removeFriend(userId: string): Promise<void> {
     try {
       if (!(await this.isFriendEndpointAvailable())) return
@@ -329,6 +341,8 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 设置好友备注
+   */
   async setFriendNote(userId: string, note: string): Promise<void> {
     try {
       if (!(await this.isFriendEndpointAvailable())) return
@@ -343,6 +357,8 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 检查好友关系状态
+   */
   async checkFriendship(userId: string): Promise<boolean> {
     try {
       if (!(await this.isFriendEndpointAvailable())) return false

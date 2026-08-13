@@ -80,6 +80,8 @@ export class MatrixClientAuth {
 
   // ---- Public Auth API --------------------------------------------------------
 
+  /** 用户名密码登录
+   */
   async login(username: string, password: string, deviceName?: string): Promise<LoginResult> {
     const { connectionManager, tokenManager, lifecycle } = this.deps
     const client = connectionManager.getClient()
@@ -141,6 +143,8 @@ export class MatrixClientAuth {
     }
   }
 
+  /** 获取 SSO 登录 URL
+   */
   async getSSOLoginUrl(identityProviderId?: string): Promise<string> {
     const { connectionManager } = this.deps
     const client = connectionManager.getClient()
@@ -167,6 +171,8 @@ export class MatrixClientAuth {
     }
   }
 
+  /** 使用登录令牌完成 SSO 登录
+   */
   async completeSSOLogin(loginToken: string): Promise<LoginResult> {
     const { connectionManager, tokenManager, lifecycle } = this.deps
     const client = connectionManager.getClient()
@@ -313,6 +319,8 @@ export class MatrixClientAuth {
     }
   }
 
+  /** 登出并清理本地状态
+   */
   async logout(): Promise<void> {
     const { connectionManager, tokenManager, syncManager, cryptoTracker, eventRouter, lifecycle, startClientGuard } =
       this.deps

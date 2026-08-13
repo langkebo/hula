@@ -219,6 +219,8 @@ class SiliconFlowClient {
     }
   }
 
+  /** 测试 SiliconFlow 服务连接
+   */
   async testConnection(baseUrl: string, apiKey: string): Promise<boolean> {
     try {
       await HttpClient.get(`${baseUrl}/v1/models`, {

@@ -1,6 +1,6 @@
-import { SlidingSyncState } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatrixEventRouter } from '@/services/matrix/MatrixEventRouter'
+import { SlidingSyncState } from '../sdk'
 
 // ---- 依赖 mock（白盒：不依赖真实 SDK / 网络）-----------------------------------
 

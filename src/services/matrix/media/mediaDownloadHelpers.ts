@@ -5,17 +5,18 @@
  * 纯函数，接收 MatrixClient 作为依赖。
  */
 
-import type { MatrixClient } from 'matrix-js-sdk'
 import {
   type MatrixEncryptedAttachmentLike,
   matrixAttachmentDecryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { HttpClient, HttpClientError } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
+import type { MatrixClient } from '../sdk'
 
 const _logger = createLogger('MediaDownloadHelpers')
 
-/** 将 mxc:// URL 或 http URL 解析为可下载的 http URL */
+/** 解析媒体下载 URL
+ */
 export function resolveDownloadUrl(
   _client: MatrixClient,
   mediaUrl: string,
@@ -37,7 +38,8 @@ export function resolveDownloadUrl(
   return mediaUrl
 }
 
-/** 下载文件字节（支持认证下载、MSC3916 回退） */
+/** 下载文件字节数据
+ */
 export async function downloadFileBytes(
   client: MatrixClient,
   mediaUrl: string,
@@ -84,7 +86,8 @@ export async function downloadFileBytes(
   return new Uint8Array(buffer)
 }
 
-/** 下载并解密加密文件 */
+/** 下载加密文件字节数据
+ */
 export async function downloadEncryptedFileBytes(
   client: MatrixClient,
   encryptedFile: MatrixEncryptedAttachmentLike,

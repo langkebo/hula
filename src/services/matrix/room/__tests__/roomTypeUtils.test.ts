@@ -1,5 +1,5 @@
-import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { describe, expect, it } from 'vitest'
+import type { MatrixClient, Room } from '../../sdk'
 import { isDirectMessageRoom, isDirectMessageRoomFromRoom } from '../roomTypeUtils'
 
 function mockClient(opts: {

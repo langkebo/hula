@@ -14,12 +14,13 @@
  *
  * @see codebase-design — 深模块：setup/detach/on/off/emit 小接口 + 复杂监听器管理实现
  */
-import { type MatrixClient, type MatrixEvent, type Room, SlidingSyncState } from 'matrix-js-sdk'
+
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import type { SearchEventDoc } from '@/workers/matrixWorkerTypes'
 import type { MatrixSyncManager } from './MatrixSyncManager'
+import { type MatrixClient, type MatrixEvent, type Room, SlidingSyncState } from './sdk'
 
 /** 同步状态处理回调（由 facade 设置，委托给 ConnectionManager） */
 export type SyncStateHandler = (state: string, prevState?: string, data?: unknown) => void
@@ -186,17 +187,20 @@ export class MatrixEventRouter {
     this.syncStateHandler = handler
   }
 
-  /** 设置 SlidingSync Lifecycle 错误处理器（由 facade 设置，委托给 ConnectionManager.handleSyncLifecycleError） */
+  /** 设置同步生命周期错误处理器
+   */
   setLifecycleErrorHandler(handler: SyncLifecycleErrorHandler): void {
     this.lifecycleErrorHandler = handler
   }
 
-  /** 设置 SlidingSync Lifecycle 成功处理器（由 facade 设置，委托给 ConnectionManager.resetSyncErrorCount） */
+  /** 设置同步生命周期重置处理器
+   */
   setLifecycleResetHandler(handler: SyncLifecycleResetHandler): void {
     this.lifecycleResetHandler = handler
   }
 
-  /** 设置事件解密处理器（由 facade 设置，委托给 CryptoStateTracker） */
+  /** 设置事件解密处理器
+   */
   setEventDecryptedHandler(handler: EventDecryptedHandler): void {
     this.eventDecryptedHandler = handler
   }
@@ -260,7 +264,8 @@ export class MatrixEventRouter {
     this.observedClient = null
   }
 
-  /** 注销所有 Room 级监听器 */
+  /** 分离房间事件监听器
+   */
   detachRoomListeners(): void {
     for (const [, entry] of this.roomListeners) {
       const roomAny = entry.room as unknown as {
@@ -293,7 +298,8 @@ export class MatrixEventRouter {
     }
   }
 
-  /** 触发事件（通知所有外部订阅者） */
+  /** 触发指定事件
+   */
   emit(event: string, ...data: unknown[]): void {
     const listeners = this.eventListeners.get(event)
     if (listeners) {
@@ -301,12 +307,14 @@ export class MatrixEventRouter {
     }
   }
 
-  /** 清理所有外部事件监听器（供 facade 在 dispose 时调用） */
+  /** 清除所有外部监听器
+   */
   clearExternalListeners(): void {
     this.eventListeners.clear()
   }
 
-  /** 获取当前观察的 client（供 facade 访问） */
+  /** 获取当前观察的客户端实例
+   */
   getObservedClient(): MatrixClient | null {
     return this.observedClient
   }

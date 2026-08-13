@@ -97,6 +97,8 @@ class MatrixRuntimeSessionService {
 
   // ─── Public API (delegates to sub-services) ──────────────────────────────
 
+  /** 获取本地存储的登录令牌
+   */
   async getStoredTokens(): Promise<StoredMatrixTokens> {
     return this.restoreService.getStoredTokens()
   }
@@ -105,26 +107,38 @@ class MatrixRuntimeSessionService {
     return this.restoreService.hasAuthenticatedSession()
   }
 
+  /** 使用访问令牌恢复会话
+   */
   async restoreWithAccessToken(options: RestoreMatrixRuntimeSessionOptions): Promise<void> {
     return this.restoreService.restoreWithAccessToken(options)
   }
 
+  /** 用户名密码登录
+   */
   async loginWithPassword(options: MatrixPasswordLoginOptions): Promise<{ uid: string; accessToken: string }> {
     return this.loginService.loginWithPassword(options)
   }
 
+  /** 使用 SSO 令牌登录
+   */
   async loginWithSsoToken(options: MatrixSsoLoginOptions): Promise<{ uid: string; accessToken: string }> {
     return this.loginService.loginWithSsoToken(options)
   }
 
+  /** 确保客户端已就绪
+   */
   async ensureClientReady(options?: MatrixPostLoginBootstrapOptions): Promise<void> {
     return this.bootstrapService.ensureClientReady(options)
   }
 
+  /** 初始化登录后状态
+   */
   async bootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
     return this.bootstrapService.bootstrapPostLoginState(options)
   }
 
+  /** 重置本地会话状态
+   */
   async resetLocalSessionState(options: ResetMatrixRuntimeSessionOptions = {}): Promise<void> {
     return this.logoutService.resetLocalSessionState(options)
   }
@@ -141,6 +155,8 @@ class MatrixRuntimeSessionService {
     return this.desktopTransition.completeDesktopLoginTransition()
   }
 
+  /** 登出当前会话
+   */
   async logoutCurrentSession(options: LogoutMatrixRuntimeSessionOptions = {}): Promise<void> {
     return this.logoutService.logoutCurrentSession(options)
   }

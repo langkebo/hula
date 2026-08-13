@@ -5,17 +5,22 @@
  * 采用工厂模式，接收 getClient/getSpaceManager 依赖。
  */
 
-import type { IPublicRoomsChunkRoom, MatrixClient, Room } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import { authedRequestWithPath } from '../MatrixHttpClient'
+import type { IPublicRoomsChunkRoom, MatrixClient, Room } from '../sdk'
 import type { Space as SdkSpace, SpaceManager as SdkSpaceManager } from '../sdk-compat'
 import type { SpaceInfo } from './MatrixSpaceService'
 import { getSpaceChildIds, normalizeSpaceTreePathItems, roomToSpaceInfo, sdkSpaceToSpaceInfo } from './spaceHelpers'
 
 const logger = createLogger('SpaceQueries')
 
+/** 创建空间查询实例
+ */
 export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManager: () => SdkSpaceManager) {
   return {
+    /** 获取房间父空间列表
+     */
     async getRoomParentSpaces(roomId: string): Promise<SpaceInfo[]> {
       try {
         const manager = getSpaceManager()
@@ -26,7 +31,11 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
       }
       try {
         const client = getClient()
-        const result = await client.http.authedRequest('GET', `/spaces/room/${encodeURIComponent(roomId)}/parents`)
+        const result = await authedRequestWithPath<unknown>(
+          client,
+          'GET',
+          `/spaces/room/${encodeURIComponent(roomId)}/parents`
+        )
         const arr = Array.isArray(result) ? result : ((result as { spaces?: SdkSpace[] }).spaces ?? [])
         return arr.map((s) => sdkSpaceToSpaceInfo(s))
       } catch (err) {
@@ -48,6 +57,8 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
       }
     },
 
+    /** 搜索空间
+     */
     async searchSpaces(query: string, limit = 10): Promise<SpaceInfo[]> {
       if (!query.trim()) return []
       try {
@@ -58,7 +69,7 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
         logger.warn('SpaceManager 搜索失败，回退:', err)
         try {
           const client = getClient()
-          const result = await client.http.authedRequest('GET', '/spaces/search', {
+          const result = await authedRequestWithPath<unknown>(client, 'GET', '/spaces/search', {
             search_term: query,
             limit: String(limit)
           })
@@ -82,6 +93,8 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
       }
     },
 
+    /** 获取用户空间列表
+     */
     async getUserSpaces(): Promise<SpaceInfo[]> {
       try {
         const manager = getSpaceManager()
@@ -106,6 +119,8 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
       }
     },
 
+    /** 获取公开空间列表
+     */
     async getPublicSpaces(limit: number = 50): Promise<SpaceInfo[]> {
       try {
         const manager = getSpaceManager()

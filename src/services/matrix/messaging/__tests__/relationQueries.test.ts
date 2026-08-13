@@ -1,6 +1,6 @@
-import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { describe, expect, it, vi } from 'vitest'
 import { MatrixContentField, MatrixRelType } from '@/common/matrixConstants'
+import type { MatrixClient, MatrixEvent } from '../../sdk'
 import { createRelationQueries } from '../relationQueries'
 
 type EventOverrides = {

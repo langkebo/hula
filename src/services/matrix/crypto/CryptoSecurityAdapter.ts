@@ -13,6 +13,8 @@ const logger = createLogger('CryptoSecurityAdapter')
 export class CryptoSecurityAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
 
+  /** 获取加密安全摘要
+   */
   async getSecuritySummary(): Promise<ISecuritySummary | null> {
     const trustManager = this.accessors.getDeviceTrustManager()
     if (trustManager) {
@@ -21,6 +23,8 @@ export class CryptoSecurityAdapter {
     return null
   }
 
+  /** 获取交叉签名状态
+   */
   async getCrossSigningStatus(): Promise<CrossSigningStatusResult> {
     const crypto = this.accessors.getCrypto()
     if (!crypto) {
@@ -56,6 +60,8 @@ export class CryptoSecurityAdapter {
     }
   }
 
+  /** 判断交叉签名是否就绪
+   */
   async isCrossSigningReady(): Promise<boolean> {
     const client = this.accessors.getExtendedClient()
     try {
@@ -66,6 +72,8 @@ export class CryptoSecurityAdapter {
     }
   }
 
+  /** 设置交叉签名
+   */
   async setupCrossSigning(authParams?: { password?: string; authData?: unknown }): Promise<void> {
     const crypto = this.accessors.getCrypto()
     if (!crypto) {

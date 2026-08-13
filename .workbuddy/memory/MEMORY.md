@@ -18,6 +18,8 @@
 - **WorkBuddy safe-delete shim**：拦 >50 文件删除，用 `mv` 移去 /tmp 绕过
 - **matrix-js-sdk 已去 link 化**：tgz+pin 锁定，改 SDK 后 `pack-sdk-tarball.mjs --apply` + `pnpm install`
 - **pnpm overrides 纪律**：caret 钉同主版本，`>=` 会解析到最新大版本
+- **icon.js 是压缩单行 sprite**：新增图标用 python 脚本定位 `<svg>` 标记插入（手动 Edit 易破坏）；sprite 坐标系 48×48，原型 24×24 path 需缩放 2 倍
+- **设置 tab 真实来源**：`settingsSchema.ts` 的 `SETTINGS_TABS` 定义，不是 desktop.ts 路由 redirect 列表（后者不完整）
 
 ## synapse-rust 要点
 - **两套配置树，只有 `docker/deploy/` 是活的**：改前先 `docker inspect` 确认挂载

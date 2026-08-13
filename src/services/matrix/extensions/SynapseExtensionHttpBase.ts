@@ -20,6 +20,8 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
   private accessToken: string = ''
   private endpointAvailability: Map<string, boolean> = new Map()
 
+  /** 初始化扩展 HTTP 客户端
+   */
   async initialize(): Promise<void> {
     const baseUrlFromConfig = matrixClientService.getHomeserverUrl?.() || ''
     const accessTokenFromConfig = matrixClientService.getAccessToken?.() || ''
@@ -44,12 +46,16 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
     this.accessToken = accessToken
   }
 
+  /** 清理扩展状态
+   */
   clear(): void {
     this.baseUrl = ''
     this.accessToken = ''
     this.endpointAvailability.clear()
   }
 
+  /** 停止扩展服务
+   */
   stop(): void {
     this.accessToken = ''
   }
@@ -154,6 +160,8 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
     return response as T
   }
 
+  /** 检查扩展端点可用性
+   */
   async checkEndpointAvailability(endpoint: string): Promise<boolean> {
     const cached = this.endpointAvailability.get(endpoint)
     if (cached !== undefined) return cached

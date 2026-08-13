@@ -42,15 +42,20 @@ export class MatrixClientTelemetry {
 
   constructor(private readonly deps: MatrixClientTelemetryDeps) {}
 
-  /** 注入 SDK TelemetryManager 实例（由主类在 client 创建后调用） */
+  /** 设置遥测管理器
+   */
   setTelemetryManager(manager: TelemetryManager | null): void {
     this.telemetryManager = manager
   }
 
+  /** 获取遥测数据
+   */
   getTelemetry(): TelemetryManager | null {
     return this.telemetryManager
   }
 
+  /** 获取管理器统计列表
+   */
   getManagerStatsList(): ManagerStatsEntry[] {
     const client = this.deps.connectionManager.getClient()
     if (!client) return []

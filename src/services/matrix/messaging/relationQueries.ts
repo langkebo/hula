@@ -5,17 +5,21 @@
  * 服务端 Relations API 等查询逻辑。采用工厂模式，接收 getClient 依赖。
  */
 
-import { Direction, type MatrixClient, type MatrixEvent } from 'matrix-js-sdk'
 import { MatrixContentField, MatrixRelType } from '@/common/matrixConstants'
 import { createLogger } from '@/utils/Logger'
+import { Direction, type MatrixClient, type MatrixEvent } from '../sdk'
 import type { MessageEdit, RelationContent, RelationsResponse, ReplyChain, ThreadInfo } from './relationTypes'
 
 const logger = createLogger('RelationQueries')
 
+/** 创建消息关系查询实例
+ */
 export function createRelationQueries(getClient: () => MatrixClient | null) {
   return {
     // ── 编辑历史 ──
 
+    /** 获取消息编辑历史
+     */
     getEditHistory(roomId: string, eventId: string): MessageEdit[] {
       const client = getClient()
       if (!client) return []
@@ -39,6 +43,8 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
       return edits.sort((a, b) => a.timestamp - b.timestamp)
     },
 
+    /** 获取最新编辑版本
+     */
     getLatestEdit(roomId: string, eventId: string): MatrixEvent | null {
       const client = getClient()
       if (!client) return null
@@ -62,6 +68,8 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
 
     // ── 回复链 & 线程 ──
 
+    /** 获取回复链
+     */
     getReplyChain(roomId: string, eventId: string, maxDepth = 10): ReplyChain[] {
       const client = getClient()
       if (!client) return []
@@ -88,6 +96,8 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
       return chain
     },
 
+    /** 获取话题回复列表
+     */
     getThreadReplies(roomId: string, threadRootId: string): MatrixEvent[] {
       const client = getClient()
       if (!client) return []
@@ -105,6 +115,8 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
       return replies.sort((a, b) => a.getTs() - b.getTs())
     },
 
+    /** 获取话题信息
+     */
     getThreadInfo(roomId: string, threadRootId: string): ThreadInfo | null {
       const client = getClient()
       if (!client) return null
@@ -133,6 +145,8 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
       }
     },
 
+    /** 获取事件回复列表
+     */
     getEventReplies(roomId: string, eventId: string): MatrixEvent[] {
       const client = getClient()
       if (!client) return []

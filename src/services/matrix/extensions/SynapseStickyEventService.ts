@@ -17,6 +17,8 @@ export interface StickyEvent {
  * 从 SynapseRustExtensionsService 拆分而来。
  */
 class SynapseStickyEventService extends SynapseExtensionHttpBase {
+  /** 获取置顶事件列表
+   */
   async getStickyEvents(roomId: string): Promise<StickyEvent[]> {
     try {
       const path = `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/sticky_events`
@@ -38,6 +40,8 @@ class SynapseStickyEventService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 设置置顶事件
+   */
   async setStickyEvent(roomId: string, eventId: string, eventType: string): Promise<void> {
     try {
       await this.request(`${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/sticky_events`, {
@@ -53,6 +57,8 @@ class SynapseStickyEventService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 清除置顶事件
+   */
   async clearStickyEvent(roomId: string, eventType: string): Promise<void> {
     try {
       await this.request(

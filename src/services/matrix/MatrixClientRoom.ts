@@ -32,14 +32,20 @@ const DEFAULT_MODERATOR_POWER_LEVEL = 50
 export class MatrixClientRoom {
   constructor(private readonly deps: MatrixClientRoomDeps) {}
 
+  /** 获取所有房间列表
+   */
   getRooms(): Room[] {
     return this.deps.connectionManager.getClient()?.getRooms() ?? []
   }
 
+  /** 获取指定房间实例
+   */
   getRoom(roomId: string): Room | null {
     return this.deps.connectionManager.getClient()?.getRoom(roomId) ?? null
   }
 
+  /** 创建房间
+   */
   async createRoom(options: ICreateRoomOpts): Promise<Room> {
     const client = this.deps.connectionManager.getClient()
     if (!client) {
@@ -80,6 +86,8 @@ export class MatrixClientRoom {
     return client?.getRoom(roomId) ?? null
   }
 
+  /** 加入房间
+   */
   async joinRoom(roomId: string): Promise<Room> {
     const client = this.deps.connectionManager.getClient()
     if (!client) {
@@ -103,6 +111,8 @@ export class MatrixClientRoom {
     }
   }
 
+  /** 离开房间
+   */
   async leaveRoom(roomId: string): Promise<void> {
     const client = this.deps.connectionManager.getClient()
     if (!client) {
@@ -120,6 +130,8 @@ export class MatrixClientRoom {
     }
   }
 
+  /** 判断当前用户是否有空间管理权限
+   */
   canManageSpace(spaceId: string): boolean {
     const client = this.deps.connectionManager.getClient()
     if (!client || !spaceId) return false

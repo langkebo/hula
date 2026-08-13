@@ -5,15 +5,15 @@
  * 分片回退逻辑。纯函数，接收 MatrixClient / MediaManager 作为依赖。
  */
 
-import type { MatrixClient } from 'matrix-js-sdk'
-import type { MediaManager } from 'matrix-js-sdk/media'
 import { chunkUploadService } from '@/services/performance/ChunkUploadService'
 import { createLogger } from '@/utils/Logger'
+import type { MatrixClient, MediaManager } from '../sdk'
 import type { UploadOpts } from './mediaTypes'
 
 const logger = createLogger('MediaUploadHelpers')
 
-/** 构造上传选项对象 */
+/** 创建上传选项
+ */
 export function createUploadOptions(
   mimetype: string | undefined,
   onProgress?: (progress: number) => void,
@@ -34,7 +34,8 @@ export function createUploadOptions(
   }
 }
 
-/** 判断错误是否为 413 Payload Too Large */
+/** 判断上传数据是否超出大小限制
+ */
 export function isPayloadTooLarge(err: unknown): boolean {
   const e = err as { httpStatus?: number; errcode?: string }
   return e?.httpStatus === 413 || e?.errcode === 'M_TOO_LARGE'

@@ -1,5 +1,5 @@
-import type { Room } from 'matrix-js-sdk'
 import { describe, expect, it, vi } from 'vitest'
+import type { Room } from '../../sdk'
 import type { Space as SdkSpace } from '../../sdk-compat'
 import { getSpaceChildIds, normalizeSpaceTreePathItems, roomToSpaceInfo, sdkSpaceToSpaceInfo } from '../spaceHelpers'
 

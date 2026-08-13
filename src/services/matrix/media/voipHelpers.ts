@@ -11,13 +11,15 @@ import type { CallStats, TurnServerConfig, VoIPCall, VoIPCallHandler } from './v
 
 const logger = createLogger('VoIPHelpers')
 
-/** 从客户端获取指定通话 */
+/** 根据 ID 获取通话实例
+ */
 export function getCallById(callId: string, client: MatrixClient): VoIPCall | undefined {
   const calls = (client as unknown as { getCallHandler?: () => VoIPCallHandler }).getCallHandler?.()?.calls || {}
   return calls[callId]
 }
 
-/** 从 RTCPeerConnection 提取通话统计 */
+/** 从 PeerConnection 获取通话统计信息
+ */
 export async function getCallStatsFromPeerConn(call: VoIPCall): Promise<CallStats | null> {
   const pc = call.peerConn
   if (!pc) return null
@@ -51,7 +53,8 @@ export async function getCallStatsFromPeerConn(call: VoIPCall): Promise<CallStat
   }
 }
 
-/** 检查媒体设备权限（是否拥有音频/视频输入设备） */
+/** 检查媒体设备权限
+ */
 export async function checkMediaPermissions(): Promise<{ audio: boolean; video: boolean }> {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices()
@@ -65,7 +68,8 @@ export async function checkMediaPermissions(): Promise<{ audio: boolean; video: 
   }
 }
 
-/** 获取媒体设备列表 */
+/** 获取媒体设备列表
+ */
 export async function getMediaDeviceList(): Promise<{ audio: MediaDeviceInfo[]; video: MediaDeviceInfo[] }> {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices()
@@ -79,7 +83,8 @@ export async function getMediaDeviceList(): Promise<{ audio: MediaDeviceInfo[]; 
   }
 }
 
-/** 获取 TURN 服务器配置 */
+/** 获取 TURN 服务器配置
+ */
 export async function getTurnServerConfig(client: MatrixClient): Promise<TurnServerConfig> {
   try {
     const r = await client.getTurnServerManager().getTurnServerConfig()
@@ -96,7 +101,8 @@ export async function getTurnServerConfig(client: MatrixClient): Promise<TurnSer
   }
 }
 
-/** 检测 TURN 服务器可用性 */
+/** 检查 TURN 服务器可用性
+ */
 export async function checkTurnAvailability(client: MatrixClient): Promise<{
   available: boolean
   reason?: string
@@ -128,7 +134,8 @@ export async function checkTurnAvailability(client: MatrixClient): Promise<{
   }
 }
 
-/** 检测 VoIP 整体可用性（模块 + TURN） */
+/** 检查 VoIP 功能可用性
+ */
 export async function checkVoipAvailability(client: MatrixClient): Promise<{
   voipAvailable: boolean
   turnAvailable: boolean
