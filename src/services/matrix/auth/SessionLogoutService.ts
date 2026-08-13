@@ -99,8 +99,9 @@ export class SessionLogoutService {
     const cleanupAndTerminate = async () => {
       try {
         await matrixWorkerHost.resetSearchIndex()
+        await matrixWorkerHost.clearStores()
       } catch (err) {
-        logger.warn(`登出时清理搜索索引失败: ${err}`)
+        logger.warn(`登出时清理本地数据失败: ${err}`)
       } finally {
         matrixWorkerHost.terminate('logout')
       }

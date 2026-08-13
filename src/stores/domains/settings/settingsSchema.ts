@@ -14,7 +14,8 @@ export const SETTINGS_TAB_IDS = [
   'helpAbout',
   'friends',
   'burnAfterRead',
-  'aiConnection'
+  'aiConnection',
+  'storage'
 ] as const
 
 export type SettingsTabType = (typeof SETTINGS_TAB_IDS)[number]
@@ -66,7 +67,8 @@ export const SETTINGS_TABS: SettingsTab[] = [
   { id: 'helpAbout', label: 'Help & About', icon: 'help-circle', group: 'other' },
   { id: 'friends', label: 'Friends', icon: 'account-group', group: 'communication' },
   { id: 'burnAfterRead', label: 'Burn After Read', icon: 'timer-outline', group: 'communication' },
-  { id: 'aiConnection', label: 'AI Connection', icon: 'puzzle', group: 'advanced' }
+  { id: 'aiConnection', label: 'AI Connection', icon: 'puzzle', group: 'advanced' },
+  { id: 'storage', label: 'Storage', icon: 'file', group: 'advanced' }
 ]
 
 const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {
@@ -85,7 +87,8 @@ const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {
   helpAbout: 'setting.dialog.tabs.help_about',
   friends: 'setting.dialog.tabs.friends',
   burnAfterRead: 'setting.dialog.tabs.burn_after_read',
-  aiConnection: 'setting.dialog.tabs.ai_connection'
+  aiConnection: 'setting.dialog.tabs.ai_connection',
+  storage: 'setting.dialog.tabs.storage'
 }
 
 export const SETTINGS_LEGACY_TAB_MAP: Record<LegacySettingsTabType, SettingsTabType> = {

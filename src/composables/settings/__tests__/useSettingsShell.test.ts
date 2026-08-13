@@ -17,7 +17,8 @@ const translationMap: Record<string, string> = {
   'setting.dialog.tabs.help_about': 'Help & About',
   'setting.dialog.tabs.friends': 'Friends',
   'setting.dialog.tabs.burn_after_read': 'Burn After Read',
-  'setting.dialog.tabs.ai_connection': 'AI Connection'
+  'setting.dialog.tabs.ai_connection': 'AI Connection',
+  'setting.dialog.tabs.storage': 'Storage'
 }
 
 const translate = (key: string) => translationMap[key] ?? key
@@ -37,16 +38,17 @@ const keywordMap = {
   helpAbout: ['帮助', '关于', '更新', '诊断', 'help', 'about'],
   friends: ['好友', 'contacts', 'remark'],
   burnAfterRead: ['阅后即焚', 'ephemeral', 'burn', 'timer'],
-  aiConnection: ['AI', '连接', 'MCP', '工具', 'openai', 'assistant']
+  aiConnection: ['AI', '连接', 'MCP', '工具', 'openai', 'assistant'],
+  storage: ['存储', '缓存', 'storage', 'cache']
 } as const
 
 const resolveSearchKeywords = (tabId: keyof typeof keywordMap) => [...keywordMap[tabId]]
 
 describe('useSettingsShell', () => {
-  it('keeps the documented 16 tabs visible on desktop', () => {
+  it('keeps the documented 17 tabs visible on desktop', () => {
     const shell = useSettingsShell({ isDesktop: true })
 
-    expect(shell.visibleTabs.value).toHaveLength(16)
+    expect(shell.visibleTabs.value).toHaveLength(17)
     expect(shell.visibleTabs.value.map((tab) => tab.id)).toContain('keyboard')
     expect(shell.visibleTabs.value.map((tab) => tab.id)).toContain('sidebar')
     expect(shell.visibleTabs.value.find((tab) => tab.id === 'account')?.label).toBe('Account')

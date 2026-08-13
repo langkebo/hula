@@ -40,7 +40,8 @@
       "help_about": "Help & About",
       "friends": "Friends",
       "burn_after_read": "Burn After Read",
-      "ai_connection": "AI Connection"
+      "ai_connection": "AI Connection",
+      "storage": "Storage"
     },
     "search_terms": {
       "account": ["account", "profile", "display-name", "user", "personal"],
@@ -703,6 +704,21 @@
   },
   "storage": {
     "title": "Storage",
+    "desc": "View and clean local cache data to manage storage usage",
+    "sdk_store": "SDK Cache Stats",
+    "hit_rate": "Hit Rate",
+    "hits": "Hits",
+    "misses": "Misses",
+    "evictions": "Evictions",
+    "total_entries": "Total Entries",
+    "memory_usage": "Memory Usage",
+    "browser_storage": "Browser Storage Usage",
+    "browser_usage": "Used",
+    "browser_quota": "Quota",
+    "cleanup": "Clean Cache",
+    "clear_sdk": "Clear SDK cache data",
+    "clear_sdk_desc": "Clears Matrix SDK local storage (room data, encryption keys, etc.) without affecting account or server data",
+    "clear": "Clear now",
     "file_scan_progress": "Scanning Progress",
     "usage": "File Scan Progress",
     "used_space": "Used Space",

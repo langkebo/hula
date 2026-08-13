@@ -29,7 +29,8 @@ describe('settingsSchema · 常量定义', () => {
       'helpAbout',
       'friends',
       'burnAfterRead',
-      'aiConnection'
+      'aiConnection',
+      'storage'
     ])
   })
 
@@ -103,7 +104,7 @@ describe('settingsSchema · getSettingsTabs', () => {
     const tabs = getSettingsTabs()
     expect(tabs).toHaveLength(SETTINGS_TABS.length)
     expect(tabs[0].label).toBe('Account')
-    expect(tabs[tabs.length - 1].label).toBe('AI Connection')
+    expect(tabs[tabs.length - 1].label).toBe('Storage')
   })
 
   it('提供翻译器时每个 tab 都使用翻译后的 label', () => {
