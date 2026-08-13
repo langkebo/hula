@@ -20,7 +20,9 @@ import type {
   WorkerMessage
 } from './matrixWorkerTypes'
 import {
+  handleClearStores,
   handleGetClient,
+  handleGetStats,
   handleInitialize,
   handleLogin,
   handleStartClient,
@@ -63,6 +65,8 @@ const messageHandlers: Record<string, HandlerFn> = {
   login: (payload) => handleLogin(payload as { username: string; password: string; deviceName?: string }),
   startClient: () => handleStartClient(),
   stopClient: () => handleStopClient(),
+  clearStores: () => handleClearStores(),
+  getStats: () => handleGetStats(),
   getClient: () => handleGetClient(),
   syncOnce: (payload) => handleSyncOnce(payload as SyncOptions),
 

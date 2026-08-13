@@ -6,6 +6,7 @@
  * 从 matrixSdk.worker.ts 拆分，保持原有逻辑不变。
  */
 
+import type { StoreStats } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
 import type { LoginResult, MatrixClientConfig, SyncOptions } from './matrixWorkerTypes'
 import { extractClientConfig, initSDK, state } from './workerState'
@@ -142,6 +143,27 @@ export async function handleStopClient(): Promise<void> {
   if (state.client) {
     state.client.stopClient()
   }
+}
+
+/**
+ * 清理 SDK 持久化存储（IndexedDB store + legacy crypto store + rust-crypto store）。
+ * 用于退出登录 / 切换账号时清除本地缓存数据，避免残留。
+ */
+export async function handleClearStores(): Promise<void> {
+  if (state.client) {
+    state.client.stopClient()
+    await state.client.clearStores()
+  }
+}
+
+/**
+ * 获取 SDK store 缓存统计（对齐后端 CacheStats：hits/misses/evictions/total_entries/memory_usage_bytes/hit_rate）。
+ */
+export async function handleGetStats(): Promise<StoreStats | null> {
+  if (state.client) {
+    return state.client.store.getStats()
+  }
+  return null
 }
 
 /**

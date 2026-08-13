@@ -7,6 +7,7 @@
 
 export type {
   ICreateRoomOpts,
+  IPublicRoomsChunkRoom,
   IPusher,
   LoginResponse,
   MatrixClient,
@@ -15,6 +16,7 @@ export type {
   RoomMember,
   RoomState,
   SlidingSync,
+  StoreStats,
   User
 } from 'matrix-js-sdk'
 export {
@@ -25,6 +27,7 @@ export {
   Preset,
   PushRuleActionName,
   PushRuleKind,
+  SlidingSyncState,
   Visibility
 } from 'matrix-js-sdk'
 export type { AdminManager, AdminShutdownRoomResult } from 'matrix-js-sdk/admin'
@@ -36,6 +39,8 @@ export { FriendEvent } from 'matrix-js-sdk/friend'
 export { ClientPrefix } from 'matrix-js-sdk/http-api'
 export type { KeyBackupManager as SDKKeyBackupManager } from 'matrix-js-sdk/key-backup'
 export type { KeyVerificationManager } from 'matrix-js-sdk/key-verification'
+export type { MediaManager } from 'matrix-js-sdk/media'
 export { RoomEvent } from 'matrix-js-sdk/models/room'
 export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'
+export type { MSC4108RendezvousSession, MSC4108SecureChannel } from 'matrix-js-sdk/rendezvous'
 export type { TelemetryManager } from 'matrix-js-sdk/telemetry'
