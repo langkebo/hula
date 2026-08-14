@@ -317,6 +317,7 @@ import HomeserverDialog from '@/components/common/HomeserverDialog.vue'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { PluginEnum, ShowModeEnum } from '@/enums'
 import { useAdminStore } from '@/stores/domains/admin/admin'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useMenuTopStore } from '@/stores/domains/settings/menuTop'
 import { usePluginsStore } from '@/stores/domains/settings/plugins'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -332,6 +333,7 @@ const { addListener } = useTauriListener()
 const globalStore = useGlobalStore()
 const pluginsStore = usePluginsStore()
 const adminStore = useAdminStore()
+const matrixStore = useMatrixStore()
 const router = useRouter()
 const { showMode } = storeToRefs(useSettingStore())
 const { menuTop } = storeToRefs(useMenuTopStore())
@@ -474,6 +476,17 @@ onMounted(async () => {
     tipShow.value = false
   }, 5000)
 })
+
+// 登录状态就绪后（userId/accessToken 加载完成）重试管理员检测，
+// 避免挂载时登录态未就绪导致 isAdmin 误判为 false 且不重试。
+watch(
+  () => matrixStore.isLoggedIn,
+  (loggedIn) => {
+    if (loggedIn) {
+      void adminStore.checkAdminStatus()
+    }
+  }
+)
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)

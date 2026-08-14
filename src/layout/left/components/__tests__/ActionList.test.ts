@@ -116,6 +116,12 @@ const registerMocks = () => {
     })
   }))
 
+  vi.doMock('@/stores/domains/chat/matrix', () => ({
+    useMatrixStore: () => ({
+      isLoggedIn: false
+    })
+  }))
+
   vi.doMock('@tauri-apps/api/core', () => ({
     invoke
   }))
