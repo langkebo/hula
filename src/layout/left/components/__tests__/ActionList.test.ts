@@ -111,7 +111,8 @@ const registerMocks = () => {
 
   vi.doMock('@/stores/domains/admin/admin', () => ({
     useAdminStore: () => ({
-      canAccessAdmin: false
+      canAccessAdmin: false,
+      checkAdminStatus: vi.fn().mockResolvedValue(false)
     })
   }))
 
