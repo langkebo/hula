@@ -440,6 +440,9 @@ const setHomeHeight = () => {
 }
 
 onMounted(async () => {
+  // 初始化管理员状态检测（决定扳手按钮是否显示）
+  void adminStore.checkAdminStatus()
+
   // 初始化窗口高度
   setHomeHeight()
 

@@ -39,9 +39,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
       // /search - 全局搜索（阶段 9 替换为独立 SearchView）
       { path: '/search', name: 'search', component: FriendsList },
 
-      // /settings - 设置页（三栏内嵌，standalone=false）
-      { path: '/settings', name: 'settings', component: SettingsWindow },
-
       // 旧路径 redirect（向后兼容）
       { path: '/friendsList', redirect: '/friend' },
       { path: '/roomList', redirect: '/room' },
@@ -114,6 +111,11 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     path: '/sharedScreen',
     name: 'sharedScreen',
     component: () => import('@/views/homeWindow/SharedScreen.vue')
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: SettingsWindow
   },
   {
     path: '/general',
