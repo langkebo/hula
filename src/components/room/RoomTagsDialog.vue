@@ -1,11 +1,5 @@
 <template>
-  <n-modal
-    :show="show"
-    preset="card"
-    :title="t('room_tags.title')"
-    :style="{ width: '460px' }"
-    :bordered="false"
-    @update:show="handleVisibleChange">
+  <BaseRightDrawer :show="show" :title="t('room_tags.title')" @update:show="handleVisibleChange">
     <div class="room-tags-dialog">
       <!-- 添加标签 -->
       <div class="add-row">
@@ -77,7 +71,7 @@
         <n-button @click="handleClose">{{ t('common.close') }}</n-button>
       </div>
     </template>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">

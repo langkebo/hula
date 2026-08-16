@@ -1,12 +1,5 @@
 <template>
-  <n-modal
-    v-model:show="showModal"
-    preset="card"
-    :title="t('menu.homeserver')"
-    :style="{ width: '400px' }"
-    :mask-closable="false"
-    :closable="true"
-    @close="handleClose">
+  <BaseRightDrawer v-model:show="showModal" :title="t('menu.homeserver')">
     <div class="homeserver-config">
       <div class="config-item">
         <div class="config-label">{{ t('menu.homeserver_url') }}</div>
@@ -27,11 +20,11 @@
         <n-button type="primary" :loading="saving" @click="handleSave">{{ t('common.save') }}</n-button>
       </div>
     </template>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">
-import { NButton, NInput, NModal } from 'naive-ui'
+import { NButton, NInput } from 'naive-ui'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'

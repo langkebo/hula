@@ -1,11 +1,5 @@
 <template>
-  <n-modal
-    :show="show"
-    preset="card"
-    :title="t('room.discovery.preview_title')"
-    :bordered="false"
-    :style="{ width: '480px', maxWidth: '90vw' }"
-    @update:show="handleUpdateVisible">
+  <BaseRightDrawer :show="show" :title="t('room.discovery.preview_title')" @update:show="handleUpdateVisible">
     <div v-if="room" class="room-preview-dialog flex flex-col gap-[--tjg-space-3]" data-testid="room-preview-dialog">
       <n-spin :show="loading">
         <div class="room-preview-dialog__head flex items-center gap-[--tjg-space-3]">
@@ -125,7 +119,7 @@
         </n-button>
       </div>
     </template>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">

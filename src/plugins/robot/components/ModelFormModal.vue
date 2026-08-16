@@ -1,12 +1,6 @@
 <template>
   <!-- 新增/编辑模型弹窗 -->
-  <n-modal
-    v-model:show="show"
-    preset="card"
-    :title="editingModel ? t('ai_assistant.robot.edit_model') : t('ai_assistant.robot.add_model')"
-    style="width: 750px"
-    :bordered="false"
-    :segmented="{ content: 'soft', footer: 'soft' }">
+  <BaseRightDrawer v-model:show="show" :title="editingModel ? t('ai_assistant.robot.edit_model') : t('ai_assistant.robot.add_model')">
     <n-scrollbar style="max-height: calc(80vh - 140px)">
       <n-form
         ref="formRef"
@@ -201,7 +195,7 @@
         </n-button>
       </n-flex>
     </template>
-  </n-modal>
+  </BaseRightDrawer>
 
   <!-- 头像裁剪组件 -->
   <AvatarCropper ref="cropperRef" v-model:show="showCropper" :image-url="localImageUrl" @crop="handleCrop" />

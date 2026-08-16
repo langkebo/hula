@@ -82,7 +82,12 @@ const mountDialog = (
   props: Partial<{ show: boolean; room: RoomCardData | null; requireReason: boolean; loading: boolean }> = {}
 ) =>
   mount(RoomPreviewDialog, {
-    props: { show: true, room: sampleRoom, requireReason: false, loading: false, ...props }
+    props: { show: true, room: sampleRoom, requireReason: false, loading: false, ...props },
+    global: {
+      stubs: {
+        BaseRightDrawer: { template: '<div><slot /><slot name="footer" /></div>' }
+      }
+    }
   })
 
 describe('RoomPreviewDialog', () => {
