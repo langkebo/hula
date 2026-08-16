@@ -233,23 +233,27 @@ describe('AdminReportService', () => {
       )
       await expect(service.getAdminReport('rep-1', true)).rejects.toThrow()
     })
+  })
 
-    it('countAllEventReports throwOnError=true 时向上抛出而非返回 0', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/event_reports/count`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
-      await expect(service.countAllEventReports(true)).rejects.toThrow()
-    })
-
-    it('deleteEventReport throwOnError=true 时向上抛出而非返回 false', async () => {
-      server.use(
-        http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/event_reports/:id`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
-      await expect(service.deleteEventReport(1, true)).rejects.toThrow()
+  // Task 2: event-report 族已整体迁移至 MatrixEventReportService（走 getEventReportManager），
+  // ReportService 不再裸调 /_synapse/admin/v1/event_reports，杜绝双轨。
+  describe('event-report 族已删除（双轨消除）', () => {
+    it('不再暴露任何裸调 event_reports 方法', () => {
+      const svc = service as unknown as Record<string, unknown>
+      const removedMethods = [
+        'listEventReports',
+        'listEventReportsByStatus',
+        'countAllEventReports',
+        'countEventReportsByStatus',
+        'resolveEventReport',
+        'dismissEventReport',
+        'escalateEventReport',
+        'deleteEventReport',
+        'getEventReportHistory'
+      ]
+      for (const name of removedMethods) {
+        expect(svc[name], `${name} 应已从 ReportService 删除，改由 MatrixEventReportService 承担`).toBeUndefined()
+      }
     })
   })
 })

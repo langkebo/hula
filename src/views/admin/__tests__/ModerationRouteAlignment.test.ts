@@ -37,6 +37,22 @@ vi.mock('@/services/matrix/admin', () => ({
   }
 }))
 
+// Task 2: ModerationPanel 已改走 MatrixEventReportService（经 BaseMatrixService → MatrixClientService 重型链），
+// 这里 mock 掉避免动态导入组件时拉入 matrix-js-sdk
+vi.mock('@/services/matrix/moderation/MatrixEventReportService', () => ({
+  matrixEventReportService: {
+    listReports: vi.fn().mockResolvedValue([]),
+    getReportsByStatus: vi.fn().mockResolvedValue([]),
+    getReportsCount: vi.fn().mockResolvedValue({ total_reports: 0 }),
+    getStatusCount: vi.fn().mockResolvedValue({ status: 'open', count: 0 }),
+    resolveReport: vi.fn(),
+    dismissReport: vi.fn(),
+    escalateReport: vi.fn(),
+    deleteReport: vi.fn(),
+    getReportHistory: vi.fn().mockResolvedValue([])
+  }
+}))
+
 // 截断所有 matrix-js-sdk 直接导入路径
 vi.mock('matrix-js-sdk', () => ({
   Direction: { Forward: 'f', Backward: 'b' },

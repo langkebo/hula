@@ -37,30 +37,28 @@ vi.mock('@/stores/domains/chat/moderation', () => ({
   })
 }))
 
-// Admin service mock for event reports
-const listEventReportsMock = vi.fn()
-const listEventReportsByStatusMock = vi.fn()
-const countAllEventReportsMock = vi.fn()
-const countEventReportsByStatusMock = vi.fn()
-const resolveEventReportMock = vi.fn()
-const dismissEventReportMock = vi.fn()
-const escalateEventReportMock = vi.fn()
-const deleteEventReportMock = vi.fn()
-const getEventReportHistoryMock = vi.fn()
+// MatrixEventReportService mock for event reports（Task 2: ModerationPanel 已从 adminService.reports 切到该服务）
+const listReportsMock = vi.fn()
+const getReportsByStatusMock = vi.fn()
+const getReportsCountMock = vi.fn()
+const getStatusCountMock = vi.fn()
+const eventResolveReportMock = vi.fn()
+const dismissReportMock = vi.fn()
+const escalateReportMock = vi.fn()
+const deleteReportMock = vi.fn()
+const getReportHistoryMock = vi.fn()
 
-vi.mock('@/services/matrix/admin', () => ({
-  adminService: {
-    reports: {
-      listEventReports: (...args: unknown[]) => listEventReportsMock(...args),
-      listEventReportsByStatus: (...args: unknown[]) => listEventReportsByStatusMock(...args),
-      countAllEventReports: (...args: unknown[]) => countAllEventReportsMock(...args),
-      countEventReportsByStatus: (...args: unknown[]) => countEventReportsByStatusMock(...args),
-      resolveEventReport: (...args: unknown[]) => resolveEventReportMock(...args),
-      dismissEventReport: (...args: unknown[]) => dismissEventReportMock(...args),
-      escalateEventReport: (...args: unknown[]) => escalateEventReportMock(...args),
-      deleteEventReport: (...args: unknown[]) => deleteEventReportMock(...args),
-      getEventReportHistory: (...args: unknown[]) => getEventReportHistoryMock(...args)
-    }
+vi.mock('@/services/matrix/moderation/MatrixEventReportService', () => ({
+  matrixEventReportService: {
+    listReports: (...args: unknown[]) => listReportsMock(...args),
+    getReportsByStatus: (...args: unknown[]) => getReportsByStatusMock(...args),
+    getReportsCount: (...args: unknown[]) => getReportsCountMock(...args),
+    getStatusCount: (...args: unknown[]) => getStatusCountMock(...args),
+    resolveReport: (...args: unknown[]) => eventResolveReportMock(...args),
+    dismissReport: (...args: unknown[]) => dismissReportMock(...args),
+    escalateReport: (...args: unknown[]) => escalateReportMock(...args),
+    deleteReport: (...args: unknown[]) => deleteReportMock(...args),
+    getReportHistory: (...args: unknown[]) => getReportHistoryMock(...args)
   }
 }))
 
@@ -157,14 +155,14 @@ function setupWindowConfirm(returnValue: boolean) {
 describe('ModerationPanel — P1-4 事件举报管理', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    listEventReportsMock.mockResolvedValue([])
-    countAllEventReportsMock.mockResolvedValue(0)
-    countEventReportsByStatusMock.mockResolvedValue(0)
-    resolveEventReportMock.mockResolvedValue(null)
-    dismissEventReportMock.mockResolvedValue(null)
-    escalateEventReportMock.mockResolvedValue(null)
-    deleteEventReportMock.mockResolvedValue(true)
-    getEventReportHistoryMock.mockResolvedValue([])
+    listReportsMock.mockResolvedValue([])
+    getReportsCountMock.mockResolvedValue({ total_reports: 0 })
+    getStatusCountMock.mockResolvedValue({ status: 'open', count: 0 })
+    eventResolveReportMock.mockResolvedValue(null)
+    dismissReportMock.mockResolvedValue(null)
+    escalateReportMock.mockResolvedValue(null)
+    deleteReportMock.mockResolvedValue(undefined)
+    getReportHistoryMock.mockResolvedValue([])
   })
 
   const mountPanel = () =>
@@ -189,47 +187,47 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
   }
 
   it('挂载时加载事件举报列表与统计', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
-    countAllEventReportsMock.mockResolvedValue(1)
-    countEventReportsByStatusMock.mockResolvedValueOnce(1) // open
+    listReportsMock.mockResolvedValue([sampleEventReport])
+    getReportsCountMock.mockResolvedValue({ total_reports: 1 })
+    getStatusCountMock.mockResolvedValueOnce({ status: 'open', count: 1 })
 
     const wrapper = mountPanel()
     await flushPromises()
 
-    expect(listEventReportsMock).toHaveBeenCalledWith({ limit: 100 })
-    expect(countAllEventReportsMock).toHaveBeenCalled()
-    expect(countEventReportsByStatusMock).toHaveBeenCalledWith('open')
-    expect(countEventReportsByStatusMock).toHaveBeenCalledWith('resolved')
-    expect(countEventReportsByStatusMock).toHaveBeenCalledWith('dismissed')
+    expect(listReportsMock).toHaveBeenCalledWith({ limit: 100 })
+    expect(getReportsCountMock).toHaveBeenCalled()
+    expect(getStatusCountMock).toHaveBeenCalledWith('open')
+    expect(getStatusCountMock).toHaveBeenCalledWith('resolved')
+    expect(getStatusCountMock).toHaveBeenCalledWith('dismissed')
     expect(wrapper.find('[data-testid="event-report-stat-total"]').exists()).toBe(true)
   })
 
-  it('状态过滤调用 listEventReportsByStatus', async () => {
+  it('状态过滤调用 getReportsByStatus', async () => {
     const wrapper = mountPanel()
     await flushPromises()
 
-    listEventReportsByStatusMock.mockResolvedValue([])
+    getReportsByStatusMock.mockResolvedValue([])
     const select = wrapper.find('[data-testid="event-report-status-filter"]')
     await select.setValue('open')
     await flushPromises()
 
-    expect(listEventReportsByStatusMock).toHaveBeenCalledWith('open', { limit: 100 })
+    expect(getReportsByStatusMock).toHaveBeenCalledWith('open', { limit: 100 })
   })
 
   it('点击刷新按钮重新拉取列表', async () => {
     const wrapper = mountPanel()
     await flushPromises()
 
-    listEventReportsMock.mockClear()
+    listReportsMock.mockClear()
     await wrapper.find('[data-testid="event-report-refresh-btn"]').trigger('click')
     await flushPromises()
 
-    expect(listEventReportsMock).toHaveBeenCalled()
+    expect(listReportsMock).toHaveBeenCalled()
   })
 
   it('升级事件举报成功后给出反馈', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
-    escalateEventReportMock.mockResolvedValue({ ...sampleEventReport, status: 'escalated' })
+    listReportsMock.mockResolvedValue([sampleEventReport])
+    escalateReportMock.mockResolvedValue({ ...sampleEventReport, status: 'escalated' })
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -237,13 +235,13 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await wrapper.find('[data-testid="event-report-action-escalate"]').trigger('click')
     await flushPromises()
 
-    expect(escalateEventReportMock).toHaveBeenCalledWith(101)
+    expect(escalateReportMock).toHaveBeenCalledWith(101)
     expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.escalateSuccess', 'success')
   })
 
   it('升级失败给出错误反馈', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
-    escalateEventReportMock.mockResolvedValue(null)
+    listReportsMock.mockResolvedValue([sampleEventReport])
+    escalateReportMock.mockRejectedValue(new Error('boom'))
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -254,8 +252,8 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.escalateFailed', 'error')
   })
 
-  it('删除事件举报弹出确认并调用 deleteEventReport', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
+  it('删除事件举报弹出确认并调用 deleteReport', async () => {
+    listReportsMock.mockResolvedValue([sampleEventReport])
     setupWindowConfirm(true)
 
     const wrapper = mountPanel()
@@ -264,12 +262,12 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await wrapper.find('[data-testid="event-report-action-delete"]').trigger('click')
     await flushPromises()
 
-    expect(deleteEventReportMock).toHaveBeenCalledWith(101)
+    expect(deleteReportMock).toHaveBeenCalledWith(101)
     expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.deleteSuccess', 'success')
   })
 
-  it('删除确认取消时不调用 deleteEventReport', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
+  it('删除确认取消时不调用 deleteReport', async () => {
+    listReportsMock.mockResolvedValue([sampleEventReport])
     setupWindowConfirm(false)
 
     const wrapper = mountPanel()
@@ -278,12 +276,12 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await wrapper.find('[data-testid="event-report-action-delete"]').trigger('click')
     await flushPromises()
 
-    expect(deleteEventReportMock).not.toHaveBeenCalled()
+    expect(deleteReportMock).not.toHaveBeenCalled()
   })
 
-  it('解决举报对话框：填写原因后调用 resolveEventReport', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
-    resolveEventReportMock.mockResolvedValue({ ...sampleEventReport, status: 'resolved' })
+  it('解决举报对话框：填写原因后调用 resolveReport', async () => {
+    listReportsMock.mockResolvedValue([sampleEventReport])
+    eventResolveReportMock.mockResolvedValue({ ...sampleEventReport, status: 'resolved' })
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -296,12 +294,12 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await wrapper.find('[data-testid="event-report-action-confirm"]').trigger('click')
     await flushPromises()
 
-    expect(resolveEventReportMock).toHaveBeenCalledWith(101, { reason: 'resolved by admin' })
+    expect(eventResolveReportMock).toHaveBeenCalledWith(101, { reason: 'resolved by admin' })
     expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.resolveSuccess', 'success')
   })
 
   it('解决对话框不填原因时给出错误反馈', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
+    listReportsMock.mockResolvedValue([sampleEventReport])
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -312,13 +310,13 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await wrapper.find('[data-testid="event-report-action-confirm"]').trigger('click')
     await flushPromises()
 
-    expect(resolveEventReportMock).not.toHaveBeenCalled()
+    expect(eventResolveReportMock).not.toHaveBeenCalled()
     expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.dialog.reasonRequired', 'error')
   })
 
-  it('驳回举报对话框：调用 dismissEventReport', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
-    dismissEventReportMock.mockResolvedValue({ ...sampleEventReport, status: 'dismissed' })
+  it('驳回举报对话框：调用 dismissReport', async () => {
+    listReportsMock.mockResolvedValue([sampleEventReport])
+    dismissReportMock.mockResolvedValue({ ...sampleEventReport, status: 'dismissed' })
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -330,12 +328,12 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await wrapper.find('[data-testid="event-report-action-confirm"]').trigger('click')
     await flushPromises()
 
-    expect(dismissEventReportMock).toHaveBeenCalledWith(101, { reason: 'invalid report' })
+    expect(dismissReportMock).toHaveBeenCalledWith(101, { reason: 'invalid report' })
     expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.dismissSuccess', 'success')
   })
 
   it('取消按钮关闭对话框且不调用接口', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
+    listReportsMock.mockResolvedValue([sampleEventReport])
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -346,11 +344,11 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await wrapper.find('[data-testid="event-report-action-cancel"]').trigger('click')
     await flushPromises()
 
-    expect(resolveEventReportMock).not.toHaveBeenCalled()
+    expect(eventResolveReportMock).not.toHaveBeenCalled()
   })
 
   it('点击历史按钮打开历史对话框', async () => {
-    listEventReportsMock.mockResolvedValue([sampleEventReport])
+    listReportsMock.mockResolvedValue([sampleEventReport])
     const history = [
       {
         id: 1,
@@ -363,7 +361,7 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
         created_ts: 1700000000000
       }
     ]
-    getEventReportHistoryMock.mockResolvedValue(history)
+    getReportHistoryMock.mockResolvedValue(history)
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -371,11 +369,11 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await wrapper.find('[data-testid="event-report-action-history"]').trigger('click')
     await flushPromises()
 
-    expect(getEventReportHistoryMock).toHaveBeenCalledWith(101)
+    expect(getReportHistoryMock).toHaveBeenCalledWith(101)
   })
 
   it('加载事件举报失败时显示错误反馈并清空列表', async () => {
-    listEventReportsMock.mockRejectedValue(new Error('boom'))
+    listReportsMock.mockRejectedValue(new Error('boom'))
 
     mountPanel()
     await flushPromises()
@@ -384,7 +382,7 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
   })
 
   it('已解决状态的举报禁用解决按钮', async () => {
-    listEventReportsMock.mockResolvedValue([{ ...sampleEventReport, status: 'resolved' }])
+    listReportsMock.mockResolvedValue([{ ...sampleEventReport, status: 'resolved' }])
 
     const wrapper = mountPanel()
     await flushPromises()
