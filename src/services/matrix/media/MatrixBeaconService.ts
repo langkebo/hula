@@ -156,40 +156,26 @@ class MatrixBeaconService {
 
   /**
    * 获取房间内所有活跃信标
+   * 迁移 2026-08-16: 从 client.search 裸调改为 BeaconManager.getBeaconsForRoom 本地读取，
+   * 不再发 /search 请求。isLive 由 SDK 按 beacon_info live 标记 + timeout 时效窗口计算。
    */
   async getActiveBeacons(roomId: string): Promise<BeaconInfo[]> {
     try {
       const client = this.getClient()
       if (!client) return []
-      const result = await client.search({
-        room_ids: [roomId],
-        filter: {
-          types: ['m.beacon_info']
-        },
-        limit: 50
-      })
-
-      const beacons: BeaconInfo[] = []
-
-      // MatrixClient.search return structure
-      const results = result?.search_categories?.room_events?.results || []
-      for (const item of results) {
-        const event = item.result
-        const content = event.content as BeaconEventContent
-        if (content?.beacon_info?.live) {
-          beacons.push({
-            event_id: event.event_id,
-            room_id: roomId,
-            user_id: event.sender,
-            description: content.beacon_info.description,
-            timeout: content.beacon_info.timeout,
-            is_live: true,
-            last_updated: event.origin_server_ts || Date.now()
-          })
-        }
-      }
+      const beacons = client.getBeaconManager().getBeaconsForRoom(roomId)
 
       return beacons
+        .filter((beacon) => beacon.isLive)
+        .map((beacon) => ({
+          event_id: beacon.beaconInfoId,
+          room_id: roomId,
+          user_id: beacon.beaconInfoOwner,
+          description: beacon.beaconInfo.description,
+          timeout: beacon.beaconInfo.timeout,
+          is_live: beacon.isLive,
+          last_updated: beacon.beaconInfo.timestamp ?? Date.now()
+        }))
     } catch (err) {
       logger.warn('getActiveBeacons failed:', err)
       return []
@@ -244,6 +230,10 @@ class MatrixBeaconService {
 
   /**
    * 获取信标位置历史
+   *
+   * 注意：SDK Beacon 模型只跟踪「当前/最新」位置（latestLocationState），不保留
+   * 历史位置列表，BeaconManager 无等价能力，因此保留 client.search 裸调实现
+   * （不发 /search 无法获取历史轨迹，勿做有损迁移）。
    */
   async getBeaconLocationHistory(
     roomId: string,
