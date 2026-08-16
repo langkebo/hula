@@ -52,7 +52,10 @@ describe('SecurityKeySetupFlow', () => {
   describe('waitForClientReady with delayed initialization', () => {
     it('should resolve immediately when client is already available', async () => {
       const manager = new MatrixConnectionManager()
-      const mockClient = { id: 'ready-client' } as unknown as MatrixClient
+      const mockClient = {
+        id: 'ready-client',
+        whenManagerExtensionsReady: vi.fn().mockResolvedValue(undefined)
+      } as unknown as MatrixClient
       manager.setClient(mockClient)
 
       const result = await manager.waitForClientReady({ timeoutMs: 100, intervalMs: 5 })
@@ -61,7 +64,10 @@ describe('SecurityKeySetupFlow', () => {
 
     it('should wait and resolve when client becomes available after delay', async () => {
       const manager = new MatrixConnectionManager()
-      const mockClient = { id: 'delayed-client' } as unknown as MatrixClient
+      const mockClient = {
+        id: 'delayed-client',
+        whenManagerExtensionsReady: vi.fn().mockResolvedValue(undefined)
+      } as unknown as MatrixClient
 
       // 并行执行：开始等待 + 延迟后设置 client
       const waitPromise = manager.waitForClientReady({ timeoutMs: 500, intervalMs: 10 })
@@ -77,7 +83,10 @@ describe('SecurityKeySetupFlow', () => {
 
     it('should wait and resolve with longer delay (200ms) within 30s timeout', async () => {
       const manager = new MatrixConnectionManager()
-      const mockClient = { id: 'longer-delay-client' } as unknown as MatrixClient
+      const mockClient = {
+        id: 'longer-delay-client',
+        whenManagerExtensionsReady: vi.fn().mockResolvedValue(undefined)
+      } as unknown as MatrixClient
 
       // 模拟实际场景：30s 超时，50ms 轮询
       const waitPromise = manager.waitForClientReady({ timeoutMs: 30000, intervalMs: 50 })
@@ -106,7 +115,10 @@ describe('SecurityKeySetupFlow', () => {
 
       // 客户端在 100ms 内就绪，应该在默认 5000ms 超时前返回
       await new Promise((resolve) => setTimeout(resolve, 50))
-      const mockClient = { id: 'default-timeout-client' } as unknown as MatrixClient
+      const mockClient = {
+        id: 'default-timeout-client',
+        whenManagerExtensionsReady: vi.fn().mockResolvedValue(undefined)
+      } as unknown as MatrixClient
       manager.setClient(mockClient)
 
       const result = await waitPromise
