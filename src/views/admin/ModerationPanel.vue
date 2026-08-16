@@ -60,15 +60,9 @@
                 data-testid="event-report-stat-total"
                 :label="t('moderation.event_reports.stats.total')"
                 :value="eventReportStats.total" />
-              <n-statistic
-                :label="t('moderation.event_reports.stats.open')"
-                :value="eventReportStats.open" />
-              <n-statistic
-                :label="t('moderation.event_reports.stats.resolved')"
-                :value="eventReportStats.resolved" />
-              <n-statistic
-                :label="t('moderation.event_reports.stats.dismissed')"
-                :value="eventReportStats.dismissed" />
+              <n-statistic :label="t('moderation.event_reports.stats.open')" :value="eventReportStats.open" />
+              <n-statistic :label="t('moderation.event_reports.stats.resolved')" :value="eventReportStats.resolved" />
+              <n-statistic :label="t('moderation.event_reports.stats.dismissed')" :value="eventReportStats.dismissed" />
             </n-space>
 
             <n-space>
@@ -94,7 +88,6 @@
               :row-key="(row: EventReport) => row.id" />
           </n-space>
         </n-tab-pane>
-
       </n-tabs>
     </n-card>
 
@@ -179,8 +172,8 @@ import { storeToRefs } from 'pinia'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { adminService } from '@/services/matrix/admin'
 import type { EventReport, EventReportHistory } from '@/services/matrix/admin/AdminTypes'
+import { matrixEventReportService } from '@/services/matrix/moderation/MatrixEventReportService'
 import { useModerationStore } from '@/stores/domains/chat/moderation'
 import type { Report } from '@/types/matrix-services'
 
@@ -388,11 +381,11 @@ async function loadEventReports() {
   eventReportLoading.value = true
   try {
     if (eventReportStatusFilter.value) {
-      eventReports.value = await adminService.reports.listEventReportsByStatus(eventReportStatusFilter.value, {
+      eventReports.value = (await matrixEventReportService.getReportsByStatus(eventReportStatusFilter.value, {
         limit: 100
-      })
+      })) as EventReport[]
     } else {
-      eventReports.value = await adminService.reports.listEventReports({ limit: 100 })
+      eventReports.value = (await matrixEventReportService.listReports({ limit: 100 })) as EventReport[]
     }
   } catch {
     showFeedback(t('moderation.event_reports.loadFailed'), 'error')
@@ -403,13 +396,24 @@ async function loadEventReports() {
 }
 
 async function loadEventReportStats() {
-  const [total, open, resolved, dismissed] = await Promise.all([
-    adminService.reports.countAllEventReports(),
-    adminService.reports.countEventReportsByStatus('open'),
-    adminService.reports.countEventReportsByStatus('resolved'),
-    adminService.reports.countEventReportsByStatus('dismissed')
-  ])
-  eventReportStats.value = { total, open, resolved, dismissed }
+  try {
+    // 旧裸调族: countAllEventReports 读 count 字段恒为 0 / countEventReportsByStatus 路径 404；
+    // 现经 SDK manager（契约：count 返回 { total_reports }，status/count 返回 { count }）
+    const [total, open, resolved, dismissed] = await Promise.all([
+      matrixEventReportService.getReportsCount(),
+      matrixEventReportService.getStatusCount('open'),
+      matrixEventReportService.getStatusCount('resolved'),
+      matrixEventReportService.getStatusCount('dismissed')
+    ])
+    eventReportStats.value = {
+      total: total.total_reports ?? 0,
+      open: open.count,
+      resolved: resolved.count,
+      dismissed: dismissed.count
+    }
+  } catch {
+    // 保持默认 0 值（旧实现 throwOnError=false 时同样降级为 0）
+  }
 }
 
 function handleEventReportFilterChange(value: string) {
@@ -418,21 +422,23 @@ function handleEventReportFilterChange(value: string) {
 }
 
 async function handleEscalate(id: number) {
-  const result = await adminService.reports.escalateEventReport(id)
-  if (result) {
+  try {
+    await matrixEventReportService.escalateReport(id)
     showFeedback(t('moderation.event_reports.toast.escalateSuccess'), 'success')
     loadEventReports()
-  } else {
+  } catch {
     showFeedback(t('moderation.event_reports.toast.escalateFailed'), 'error')
   }
 }
 
 async function handleDelete(id: number) {
   if (!window.confirm(t('moderation.event_reports.dialog.deleteConfirm'))) return
-  const result = await adminService.reports.deleteEventReport(id)
-  if (result) {
+  try {
+    await matrixEventReportService.deleteReport(id)
     showFeedback(t('moderation.event_reports.toast.deleteSuccess'), 'success')
     loadEventReports()
+  } catch {
+    // 旧实现失败时静默（返回 false 不提示），保持行为一致
   }
 }
 
@@ -451,24 +457,32 @@ async function confirmAction() {
   }
   const { type, reportId, reason } = actionDialog.value
   if (type === 'resolve') {
-    const result = await adminService.reports.resolveEventReport(reportId, { reason })
-    if (result) {
+    // 适配：SDK DTO 将 resolve 请求体声明为 resolution_reason，但后端契约（event_report.rs）实际读取 reason
+    const body = { reason } as unknown as Parameters<typeof matrixEventReportService.resolveReport>[1]
+    try {
+      await matrixEventReportService.resolveReport(reportId, body)
       showFeedback(t('moderation.event_reports.toast.resolveSuccess'), 'success')
       actionDialog.value = { ...actionDialog.value, show: false }
       loadEventReports()
+    } catch {
+      // 失败时保持对话框打开（旧实现返回 null 时不关闭）
     }
   } else {
-    const result = await adminService.reports.dismissEventReport(reportId, { reason })
-    if (result) {
+    try {
+      await matrixEventReportService.dismissReport(reportId, { reason })
       showFeedback(t('moderation.event_reports.toast.dismissSuccess'), 'success')
       actionDialog.value = { ...actionDialog.value, show: false }
       loadEventReports()
+    } catch {
+      // 失败时保持对话框打开（旧实现返回 null 时不关闭）
     }
   }
 }
 
 async function handleHistory(id: number) {
-  const history = await adminService.reports.getEventReportHistory(id)
+  // 适配：SDK getReportHistory 声明返回 ReportResponse[]，但后端实际返回 ReportHistoryResponse[]
+  // （含 action/actor_user_id/new_status 等历史字段，与本地 EventReportHistory 一致）
+  const history = (await matrixEventReportService.getReportHistory(id)) as unknown as EventReportHistory[]
   historyDialog.value = { show: true, history }
 }
 
