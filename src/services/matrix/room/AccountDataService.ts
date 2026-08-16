@@ -108,7 +108,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async setReadLifetime(roomId: string, lifetimeMs: number): Promise<void> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('PUT', MATRIX_PATHS.BURN.ROOM_BURN(roomId), undefined, {
+      await authedRequestWithPath(client, 'PUT', MATRIX_PATHS.BURN.ROOM_BURN(roomId), undefined, {
         enabled: true,
         burn_after_ms: lifetimeMs
       })
@@ -170,7 +170,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getBurnStats(): Promise<{ total: number; active: number }> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.BURN.STATS)
+      const result = await authedRequestWithPath(client, 'GET', MATRIX_PATHS.BURN.STATS)
       const data = result as { total?: number; active?: number }
       return { total: data.total ?? 0, active: data.active ?? 0 }
     } catch (err) {
@@ -182,7 +182,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async burnRoom(roomId: string): Promise<void> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('POST', MATRIX_PATHS.BURN.ROOM_BURN(roomId))
+      await authedRequestWithPath(client, 'POST', MATRIX_PATHS.BURN.ROOM_BURN(roomId))
       logger.info(`[MatrixRoom] 立即焚毁房间成功: ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixRoom] 立即焚毁房间失败: ${err}`)

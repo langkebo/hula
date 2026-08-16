@@ -60,7 +60,7 @@ const SDK_PATH_MATCHERS = SDK_PATHS.map((r) => buildPathMatcher(r.path))
  * 用于运行时或测试时确认前端路径常量与 SDK 路由保持一致。
  *
  * @example
- * validateTjgPath('/_matrix/client/v1/friends') // true
+ * validateTjgPath('/_matrix/vendor/v1/friends') // true
  * validateTjgPath('/_matrix/client/v1/nonexistent') // false
  */
 export function validateTjgPath(tjgPath: string): boolean {

@@ -74,23 +74,23 @@ vi.mock('matrix-js-sdk/friend', () => ({
 const TEST_BASE_URL = 'https://matrix.example.com'
 
 const _server = setupMswServer(
-  // Friend endpoints use /_matrix/client/v1/ prefix
-  http.get(`${TEST_BASE_URL}/_matrix/client/v1/friends`, () => {
+  // Friend endpoints use /_matrix/vendor/v1/ prefix
+  http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/friends`, () => {
     return HttpResponse.json({ friends: [] })
   }),
-  http.get(`${TEST_BASE_URL}/_matrix/client/v1/friends/:userId/status`, () => {
+  http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/friends/:userId/status`, () => {
     return HttpResponse.json({ status: 'friends' })
   }),
-  http.get(`${TEST_BASE_URL}/_matrix/client/v1/friends/search`, () => {
+  http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/friends/search`, () => {
     return HttpResponse.json({ results: [] })
   }),
-  http.get(`${TEST_BASE_URL}/_matrix/client/v1/friends/requests/incoming`, () => {
+  http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/friends/requests/incoming`, () => {
     return HttpResponse.json({ requests: [] })
   })
 )
 
 // Bridge: mock authedRequestWithPath to route through MSW.
-// Friend service paths use PREFIX_V1 ('/_matrix/client/v1') — these are full
+// Friend service paths use PREFIX_VENDOR_V1 ('/_matrix/vendor/v1') — these are full
 // paths starting with '/_', so the bridge correctly passes them through to
 // fetch without adding a PREFIX_V3.
 vi.mock('@/services/matrix/MatrixHttpClient', async () => {

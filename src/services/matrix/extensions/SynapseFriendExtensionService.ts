@@ -70,7 +70,7 @@ export interface SynapseCheckFriendshipResult {
 }
 
 /**
- * synapse-rust 好友关系扩展（/_matrix/client/v1/friends/*）。
+ * synapse-rust 好友关系扩展（/_matrix/vendor/v1/friends/*）。
  * 从 SynapseRustExtensionsService 拆分而来，仅承载好友域方法。
  */
 class SynapseFriendExtensionService extends SynapseExtensionHttpBase {

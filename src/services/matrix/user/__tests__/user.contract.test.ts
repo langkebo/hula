@@ -39,7 +39,7 @@ setupMswServer(
     seenUrls.push(request.url)
     return HttpResponse.json({ protocols: {} })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/my_rooms`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/my_rooms`, ({ request }) => {
     seenUrls.push(request.url)
     return HttpResponse.json({ room_ids: ['!room1:test', '!room2:test'] })
   }),
@@ -96,12 +96,12 @@ describe('User service URL construction contract (real SDK + msw)', () => {
     expect(calls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/thirdparty/protocols`)
   })
 
-  it('getMyRooms hits /_matrix/client/v3/my_rooms (no duplication)', async () => {
+  it('getMyRooms hits /_matrix/vendor/v1/my_rooms (no duplication)', async () => {
     const result = await matrixAccountService.getMyRooms()
 
     const calls = seenUrls.filter((u) => u.includes('/my_rooms'))
     expect(calls).toHaveLength(1)
-    expect(calls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/my_rooms`)
+    expect(calls[0]).toBe(`${HOMESERVER}/_matrix/vendor/v1/my_rooms`)
     expect(result).toEqual(['!room1:test', '!room2:test'])
   })
 

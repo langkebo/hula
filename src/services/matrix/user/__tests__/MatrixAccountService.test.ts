@@ -18,7 +18,7 @@ const server = setupMswServer(
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/thirdparty/protocols`, () => {
     return HttpResponse.json({ irc: { fields: ['network'] } })
   }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/my_rooms`, () => {
+  http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
     return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
   }),
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/events`, () => {
@@ -34,28 +34,30 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const mockAuthedRequest = vi
   .fn()
-  .mockImplementation(async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
-    const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
-    const url = new URL(`${TEST_BASE_URL}${defaultPrefix}${path}`)
-    if (queryParams && typeof queryParams === 'object') {
-      for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
-        url.searchParams.set(key, value)
+  .mockImplementation(
+    async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
+      const defaultPrefix = opts?.prefix ?? (path.startsWith('/_') ? '' : PREFIX_V3)
+      const url = new URL(`${TEST_BASE_URL}${defaultPrefix}${path}`)
+      if (queryParams && typeof queryParams === 'object') {
+        for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
+          url.searchParams.set(key, value)
+        }
       }
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-access-token'
+      }
+      const response = await fetch(url.toString(), {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      return response.json()
     }
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer test-access-token'
-    }
-    const response = await fetch(url.toString(), {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined
-    })
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-    return response.json()
-  })
+  )
 
 describe('MatrixAccountService', () => {
   let mockDeviceManager: {
@@ -190,7 +192,7 @@ describe('MatrixAccountService', () => {
   describe('getMyRooms', () => {
     it('should get my rooms', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/my_rooms`, () => {
+        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
           return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
         })
       )
@@ -201,7 +203,7 @@ describe('MatrixAccountService', () => {
 
     it('should return empty array on error', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/my_rooms`, () => {
+        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
