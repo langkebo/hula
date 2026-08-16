@@ -217,6 +217,8 @@
   --tjg-room-highlight-badge-bg: var(--tjg-color-danger-600);
   /* <mark> 搜索命中高亮背景 */
   --tjg-mark-highlight-bg: rgba(99, 102, 241, 0.14);
+  /* 移动端编辑资料头像底部"更换头像"遮罩（15% 深灰 + 毛玻璃） */
+  --tjg-avatar-scrim-bg: rgba(50, 50, 50, 0.15);
 
   /* 管理后台 */
   --tjg-admin-sidebar-bg: #1a1a2e;
