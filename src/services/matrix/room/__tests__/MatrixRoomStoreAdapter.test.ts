@@ -147,6 +147,45 @@ describe('MatrixRoomStoreAdapter', () => {
     })
   })
 
+  it('should parse location events into a LocationBody', () => {
+    const event = createEventLike({
+      id: '$location',
+      content: {
+        msgtype: 'm.location',
+        body: '位置: 北京',
+        geo_uri: 'geo:39.9042,116.4074',
+        'm.location': { uri: 'geo:39.9042,116.4074', description: '北京' },
+        'm.ts': 1700000000000
+      }
+    })
+    const message = matrixRoomStoreAdapter.convertMatrixEventToMessage(event as unknown as MatrixEvent)
+
+    expect(message.message.type).toBe(MsgEnum.LOCATION)
+    expect(message.message.body).toMatchObject({
+      latitude: '39.9042',
+      longitude: '116.4074',
+      address: '北京'
+    })
+  })
+
+  it('should parse beacon events into a BeaconBody', () => {
+    const message = matrixRoomStoreAdapter.convertTimelineEventToMessage('!room:id', {
+      event_id: '$beacon',
+      type: 'm.beacon_info',
+      sender: '@user:server',
+      content: { description: '共享', timeout: 60000, live: true, 'm.ts': 1700000000000 },
+      origin_server_ts: 2000
+    })
+
+    expect(message.message.type).toBe(MsgEnum.BEACON)
+    expect(message.message.body).toMatchObject({
+      description: '共享',
+      timeout: 60000,
+      isLive: true,
+      lastUpdateTs: 1700000000000
+    })
+  })
+
   it('should identify displayable sdk message events', () => {
     expect(
       matrixRoomStoreAdapter.isDisplayableMessageEvent(

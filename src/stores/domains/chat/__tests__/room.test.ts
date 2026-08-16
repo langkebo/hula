@@ -501,6 +501,134 @@ describe('RoomStore', () => {
         })
       )
     })
+
+    it('should map location messages to location type and parse body', async () => {
+      const store = useRoomStore()
+      store.rooms.set('!room:id', {
+        roomId: '!room:id',
+        name: 'Room',
+        avatarUrl: null,
+        isDirect: false,
+        isEncrypted: false,
+        unreadCount: 0,
+        highlightCount: 0,
+        notificationCount: 0,
+        lastMessage: null,
+        lastMessageTime: null,
+        members: []
+      })
+
+      await store.handleIncrementalUpdate('!room:id', {
+        timeline: [
+          {
+            event_id: '$loc',
+            type: 'm.room.message',
+            sender: '@u:server',
+            content: {
+              msgtype: 'm.location',
+              body: '位置: 北京',
+              geo_uri: 'geo:39.9042,116.4074',
+              'm.location': { uri: 'geo:39.9042,116.4074', description: '北京' },
+              'm.ts': 1700000000000
+            },
+            origin_server_ts: 111
+          }
+        ]
+      })
+
+      expect(store.rooms.get('!room:id')).toMatchObject({
+        lastMessage: '[位置]',
+        lastMessageTime: 111
+      })
+      expect(mockChatStore.pushMsg).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.objectContaining({
+            type: MsgEnum.LOCATION,
+            body: expect.objectContaining({ latitude: '39.9042', longitude: '116.4074', address: '北京' })
+          })
+        })
+      )
+    })
+
+    it('should map beacon_info events to beacon type and parse body', async () => {
+      const store = useRoomStore()
+      store.rooms.set('!room:id', {
+        roomId: '!room:id',
+        name: 'Room',
+        avatarUrl: null,
+        isDirect: false,
+        isEncrypted: false,
+        unreadCount: 0,
+        highlightCount: 0,
+        notificationCount: 0,
+        lastMessage: null,
+        lastMessageTime: null,
+        members: []
+      })
+
+      await store.handleIncrementalUpdate('!room:id', {
+        timeline: [
+          {
+            event_id: '$beacon',
+            type: 'm.beacon_info',
+            sender: '@u:server',
+            content: { description: '共享', timeout: 60000, live: true, 'm.ts': 1700000000000 },
+            origin_server_ts: 222
+          }
+        ]
+      })
+
+      expect(store.rooms.get('!room:id')).toMatchObject({
+        lastMessage: '[实时位置共享]',
+        lastMessageTime: 222
+      })
+      expect(mockChatStore.pushMsg).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.objectContaining({
+            type: MsgEnum.BEACON,
+            body: expect.objectContaining({ description: '共享', timeout: 60000, isLive: true })
+          })
+        })
+      )
+    })
+
+    it('should map unstable beacon event names to beacon type', async () => {
+      const store = useRoomStore()
+      store.rooms.set('!room:id', {
+        roomId: '!room:id',
+        name: 'Room',
+        avatarUrl: null,
+        isDirect: false,
+        isEncrypted: false,
+        unreadCount: 0,
+        highlightCount: 0,
+        notificationCount: 0,
+        lastMessage: null,
+        lastMessageTime: null,
+        members: []
+      })
+
+      await store.handleIncrementalUpdate('!room:id', {
+        timeline: [
+          {
+            event_id: '$beacon2',
+            type: 'org.matrix.msc3672.beacon',
+            sender: '@u:server',
+            content: { 'm.location': { uri: 'geo:39.9,116.4' }, 'm.ts': 1700000001000 },
+            origin_server_ts: 333
+          }
+        ]
+      })
+
+      expect(mockChatStore.pushMsg).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.objectContaining({
+            type: MsgEnum.BEACON,
+            body: expect.objectContaining({ uri: 'geo:39.9,116.4' })
+          })
+        })
+      )
+    })
   })
 
   describe('loadRooms', () => {
