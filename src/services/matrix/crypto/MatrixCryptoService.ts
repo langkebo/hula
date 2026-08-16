@@ -1,4 +1,4 @@
-import type { GeneratedSecretStorageKey, SecureBackupInfo, VerificationRequest } from '@/types/matrix-extensions'
+import type { GeneratedSecretStorageKey, VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { cryptoSDKAdapter } from './CryptoSDKAdapter'
@@ -157,15 +157,15 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
-  async createSecureBackup(passphrase: string): Promise<SecureBackupInfo | null> {
+  async createSecureBackup(passphrase: string): Promise<{ recoveryKey: string } | null> {
     try {
-      const secureBackupManager = cryptoSDKAdapter.getManagerAccessors().secureBackup()
-      if (secureBackupManager) {
-        const result = await secureBackupManager.createSecureBackup(passphrase)
-        logger.info(`[MatrixCrypto] 创建安全备份成功: ${result.backup_id}`)
-        return result
-      }
-      return null
+      // ISSUE-6.3: 客户端派生，passphrase 经 PBKDF2 派生 recovery key，
+      // 仅上传公钥 + 密文，口令/私钥永不上送服务端。
+      const recoveryKey = await cryptoSDKAdapter.setupKeyBackupWithOptions(
+        passphrase ? { password: passphrase } : undefined
+      )
+      logger.info('[MatrixCrypto] 创建安全备份成功(客户端派生)')
+      return { recoveryKey }
     } catch (err) {
       logger.error(`[MatrixCrypto] 创建安全备份失败: ${err}`)
       throw err

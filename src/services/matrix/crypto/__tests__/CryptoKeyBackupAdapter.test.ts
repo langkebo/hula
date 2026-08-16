@@ -116,69 +116,22 @@ describe('CryptoKeyBackupAdapter', () => {
   })
 
   describe('setupKeyBackup', () => {
-    it('uses SecureBackupManager when available', async () => {
-      const secureBackupManager = {
-        createSecureBackup: vi.fn().mockResolvedValue({})
-      } as unknown as SecureBackupManager
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ secureBackupManager }))
-
-      const result = await adapter.setupKeyBackup('my-passphrase')
-
-      expect(secureBackupManager.createSecureBackup).toHaveBeenCalledWith('my-passphrase')
-      expect(result).toEqual({ success: true })
-    })
-
-    it('creates new backup version via KeyBackupManager when none exists', async () => {
-      const keyBackupManager = {
-        checkKeyBackup: vi.fn().mockResolvedValue(null),
-        prepareKeyBackupVersion: vi.fn().mockResolvedValue({
-          algorithm: 'm.megolm_backup.v1',
-          auth_data: { public_key: 'pk' },
-          privateKey: new Uint8Array()
-        }),
-        createKeyBackupVersion: vi.fn().mockResolvedValue({ version: '1' }),
-        scheduleKeyBackupSend: vi.fn().mockResolvedValue(undefined)
-      } as unknown as KeyBackupManager
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ keyBackupManager }))
-
-      const result = await adapter.setupKeyBackup('pass')
-
-      expect(keyBackupManager.prepareKeyBackupVersion).toHaveBeenCalled()
-      expect(keyBackupManager.createKeyBackupVersion).toHaveBeenCalled()
-      expect(keyBackupManager.scheduleKeyBackupSend).toHaveBeenCalled()
-      expect(result).toEqual({ success: true })
-    })
-
-    it('skips create when backup exists via KeyBackupManager', async () => {
-      const keyBackupManager = {
-        checkKeyBackup: vi.fn().mockResolvedValue({ version: '1' }),
-        prepareKeyBackupVersion: vi.fn(),
-        createKeyBackupVersion: vi.fn(),
-        scheduleKeyBackupSend: vi.fn().mockResolvedValue(undefined)
-      } as unknown as KeyBackupManager
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ keyBackupManager }))
-
-      await adapter.setupKeyBackup('pass')
-
-      expect(keyBackupManager.prepareKeyBackupVersion).not.toHaveBeenCalled()
-      expect(keyBackupManager.createKeyBackupVersion).not.toHaveBeenCalled()
-    })
-
-    it('falls back to CryptoApi.resetKeyBackup when no managers', async () => {
+    it('derives client-side via setupKeyBackupWithOptions and returns success', async () => {
       const crypto = {
-        getKeyBackupInfo: vi.fn().mockResolvedValue(null),
+        createRecoveryKeyFromPassphrase: vi.fn().mockResolvedValue(fakeGeneratedKey),
         resetKeyBackup: vi.fn().mockResolvedValue(undefined)
       } as unknown as CryptoApi
       const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
 
-      const result = await adapter.setupKeyBackup('pass')
+      const result = await adapter.setupKeyBackup('my-passphrase')
 
+      expect(crypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledWith('my-passphrase')
       expect(crypto.resetKeyBackup).toHaveBeenCalled()
       expect(result).toEqual({ success: true })
     })
 
-    it('returns failure when no managers or crypto available', async () => {
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({}))
+    it('returns failure when CryptoApi is unavailable', async () => {
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto: null }))
       const result = await adapter.setupKeyBackup('pass')
       expect(result).toEqual({ success: false })
     })
@@ -279,41 +232,6 @@ describe('CryptoKeyBackupAdapter', () => {
   })
 
   describe('restoreKeys', () => {
-    it('uses SecureBackupManager when available with backup versions', async () => {
-      const sdkKeyBackupManager = {
-        getBackupVersions: vi.fn().mockResolvedValue({ versions: [{ version: 'v1' }] })
-      } as unknown as SDKKeyBackupManager
-      const secureBackupManager = {
-        restoreFromSecureBackup: vi.fn().mockResolvedValue({ recovered_keys: 10, total_keys: 12 })
-      } as unknown as SecureBackupManager
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ secureBackupManager, sdkKeyBackupManager }))
-
-      const result = await adapter.restoreKeys('backup-key')
-
-      expect(secureBackupManager.restoreFromSecureBackup).toHaveBeenCalledWith('v1', 'backup-key')
-      expect(result).toEqual({ imported: 10, total: 12 })
-    })
-
-    it('returns zeros when SecureBackupManager available but no backup versions', async () => {
-      const sdkKeyBackupManager = {
-        getBackupVersions: vi.fn().mockResolvedValue({ versions: [] })
-      } as unknown as SDKKeyBackupManager
-      const secureBackupManager = {
-        restoreFromSecureBackup: vi.fn()
-      } as unknown as SecureBackupManager
-      const keyBackupManager = {
-        checkKeyBackup: vi.fn().mockResolvedValue(null)
-      } as unknown as KeyBackupManager
-      const adapter = new CryptoKeyBackupAdapter(
-        createMockAccessors({ secureBackupManager, sdkKeyBackupManager, keyBackupManager })
-      )
-
-      const result = await adapter.restoreKeys('key')
-
-      expect(secureBackupManager.restoreFromSecureBackup).not.toHaveBeenCalled()
-      expect(result).toEqual({ imported: 0, total: 0 })
-    })
-
     it('uses KeyBackupManager when SecureBackupManager not available', async () => {
       const keyBackupManager = {
         checkKeyBackup: vi.fn().mockResolvedValue({ version: '1' }),
@@ -421,45 +339,7 @@ describe('CryptoKeyBackupAdapter', () => {
   })
 
   describe('exportKeys', () => {
-    it('verifies passphrase via SecureBackupManager when provided', async () => {
-      const sdkKeyBackupManager = {
-        getBackupVersions: vi.fn().mockResolvedValue({ versions: [{ version: 'v1' }] })
-      } as unknown as SDKKeyBackupManager
-      const secureBackupManager = {
-        verifySecureBackup: vi.fn().mockResolvedValue({ valid: true })
-      } as unknown as SecureBackupManager
-      const crypto = {
-        exportRoomKeys: vi.fn().mockResolvedValue([{ session_id: 's1' }, { session_id: 's2' }])
-      } as unknown as CryptoApi
-      const adapter = new CryptoKeyBackupAdapter(
-        createMockAccessors({ secureBackupManager, sdkKeyBackupManager, crypto })
-      )
-
-      const result = await adapter.exportKeys('pass')
-
-      expect(secureBackupManager.verifySecureBackup).toHaveBeenCalledWith('v1', 'pass')
-      expect(crypto.exportRoomKeys).toHaveBeenCalled()
-      expect(result.count).toBe(2)
-      expect(result.data).toContain('session_id')
-    })
-
-    it('throws when passphrase verification fails', async () => {
-      const sdkKeyBackupManager = {
-        getBackupVersions: vi.fn().mockResolvedValue({ versions: [{ version: 'v1' }] })
-      } as unknown as SDKKeyBackupManager
-      const secureBackupManager = {
-        verifySecureBackup: vi.fn().mockResolvedValue({ valid: false })
-      } as unknown as SecureBackupManager
-      const crypto = { exportRoomKeys: vi.fn() } as unknown as CryptoApi
-      const adapter = new CryptoKeyBackupAdapter(
-        createMockAccessors({ secureBackupManager, sdkKeyBackupManager, crypto })
-      )
-
-      await expect(adapter.exportKeys('wrong-pass')).rejects.toThrow('密码验证失败')
-      expect(crypto.exportRoomKeys).not.toHaveBeenCalled()
-    })
-
-    it('exports without passphrase verification when no SecureBackupManager', async () => {
+    it('exports room keys locally without server-side passphrase verification', async () => {
       const crypto = {
         exportRoomKeys: vi.fn().mockResolvedValue([{ id: 1 }])
       } as unknown as CryptoApi

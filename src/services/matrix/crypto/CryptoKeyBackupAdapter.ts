@@ -48,42 +48,18 @@ export class CryptoKeyBackupAdapter {
     }
   }
 
-  /** 设置密钥备份
+  /** 设置密钥备份（ISSUE-6.3: 客户端派生，passphrase 不上送服务端）
    */
   async setupKeyBackup(passphrase: string): Promise<KeyBackupSetupResult> {
-    const secureBackupManager = this.accessors.getSecureBackupManager()
-    if (secureBackupManager) {
-      await secureBackupManager.createSecureBackup(passphrase)
-      logger.info('安全密钥备份设置成功(passphrase加密)')
+    try {
+      // 客户端派生：passphrase 经 PBKDF2 派生 recovery key，仅上传公钥 + 密文
+      await this.setupKeyBackupWithOptions(passphrase ? { password: passphrase } : undefined)
+      logger.info('密钥备份设置成功(客户端派生)')
       return { success: true }
+    } catch (err) {
+      logger.error('密钥备份设置失败(客户端派生)', err)
+      return { success: false }
     }
-
-    const backupManager = this.accessors.getKeyBackupManager()
-    if (backupManager) {
-      const backupInfo = await backupManager.checkKeyBackup()
-      if (!backupInfo) {
-        const keyInfo = await backupManager.prepareKeyBackupVersion()
-        await backupManager.createKeyBackupVersion({
-          algorithm: keyInfo.algorithm,
-          auth_data: keyInfo.auth_data
-        })
-      }
-      backupManager.scheduleKeyBackupSend()
-      logger.info('密钥备份设置成功')
-      return { success: true }
-    }
-
-    const crypto = this.accessors.getCrypto()
-    if (crypto) {
-      const backupInfo = await crypto.getKeyBackupInfo()
-      if (!backupInfo) {
-        await crypto.resetKeyBackup()
-      }
-      logger.info('密钥备份设置成功(基础)')
-      return { success: true }
-    }
-
-    return { success: false }
   }
 
   async setupKeyBackupWithOptions(
@@ -227,15 +203,6 @@ export class CryptoKeyBackupAdapter {
   /** 从备份恢复密钥
    */
   async restoreKeys(backupKey: string): Promise<KeyBackupRestoreResult> {
-    const secureBackupManager = this.accessors.getSecureBackupManager()
-    if (secureBackupManager) {
-      const versions = await this.accessors.getSDKKeyBackupManager()?.getBackupVersions()
-      if (versions?.versions?.length) {
-        const result = await secureBackupManager.restoreFromSecureBackup(versions.versions[0].version, backupKey)
-        return { imported: result.recovered_keys, total: result.total_keys }
-      }
-    }
-
     const backupManager = this.accessors.getKeyBackupManager()
     if (backupManager) {
       const backupInfo = await backupManager.checkKeyBackup()
@@ -302,23 +269,9 @@ export class CryptoKeyBackupAdapter {
     }
   }
 
-  /** 导出密钥
+  /** 导出密钥（ISSUE-6.3: 本地导出，不再经服务端 passphrase 验证）
    */
-  async exportKeys(passphrase?: string): Promise<KeyExportResult> {
-    const secureBackupManager = this.accessors.getSecureBackupManager()
-    if (secureBackupManager && passphrase) {
-      const sdkManager = this.accessors.getSDKKeyBackupManager()
-      if (sdkManager) {
-        const versions = await sdkManager.getBackupVersions()
-        if (versions.versions.length > 0) {
-          const verifyResult = await secureBackupManager.verifySecureBackup(versions.versions[0].version, passphrase)
-          if (!verifyResult.valid) {
-            throw new Error('密码验证失败')
-          }
-        }
-      }
-    }
-
+  async exportKeys(_passphrase?: string): Promise<KeyExportResult> {
     const crypto = this.accessors.getCrypto()
     if (crypto && typeof crypto.exportRoomKeys === 'function') {
       const keys = await crypto.exportRoomKeys()
