@@ -349,6 +349,107 @@ describe('useLocationStore', () => {
       expect(store.activeBeacons.size).toBe(0)
       expect(store.sharing).toBe(false)
     })
+
+    it('恢复房间 B 不清房间 A 的信标与到期定时器（合并语义）', async () => {
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+      const roomABeacon = {
+        event_id: '$beacon-a',
+        room_id: '!room:a',
+        user_id: '@alice:example.com',
+        description: 'A',
+        timeout: 60000,
+        is_live: true,
+        last_updated: Date.now()
+      }
+      const roomBBeacon = {
+        event_id: '$beacon-b',
+        room_id: '!room:b',
+        user_id: '@alice:example.com',
+        description: 'B',
+        timeout: 120000,
+        is_live: true,
+        last_updated: Date.now()
+      }
+      vi.mocked(matrixBeaconService.getActiveBeacons).mockResolvedValueOnce([roomABeacon])
+      vi.mocked(matrixBeaconService.stopBeacon).mockResolvedValue(true)
+
+      const store = useLocationStore()
+      await store.restoreActiveBeacons('!room:a')
+      expect(store.activeBeacons.size).toBe(1)
+      expect(store.sharing).toBe(true)
+
+      vi.mocked(matrixBeaconService.getActiveBeacons).mockResolvedValueOnce([roomBBeacon])
+      await store.restoreActiveBeacons('!room:b')
+
+      // 两个房间的信标并存，共享态保持 true
+      expect(store.activeBeacons.size).toBe(2)
+      expect(store.activeBeacons.get('$beacon-a')?.isLive).toBe(true)
+      expect(store.activeBeacons.get('$beacon-b')?.isLive).toBe(true)
+      expect(store.sharing).toBe(true)
+
+      // 房间 A 的到期定时器未被清除：推进 60s 后 A 自动停止，B 仍 live，共享态仍为 true
+      await vi.advanceTimersByTimeAsync(60000)
+      expect(matrixBeaconService.stopBeacon).toHaveBeenCalledWith('!room:a', '$beacon-a')
+      expect(store.activeBeacons.get('$beacon-a')?.isLive).toBe(false)
+      expect(store.activeBeacons.get('$beacon-b')?.isLive).toBe(true)
+      expect(store.sharing).toBe(true)
+    })
+
+    it('恢复同一房间会清除该房间旧信标并仅保留最新恢复结果', async () => {
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+      const oldBeacon = {
+        event_id: '$beacon-old',
+        room_id: '!room:a',
+        user_id: '@alice:example.com',
+        description: '旧',
+        timeout: 60000,
+        is_live: true,
+        last_updated: Date.now()
+      }
+      const newBeacon = {
+        event_id: '$beacon-new',
+        room_id: '!room:a',
+        user_id: '@alice:example.com',
+        description: '新',
+        timeout: 60000,
+        is_live: true,
+        last_updated: Date.now()
+      }
+      vi.mocked(matrixBeaconService.getActiveBeacons).mockResolvedValueOnce([oldBeacon])
+      vi.mocked(matrixBeaconService.stopBeacon).mockResolvedValue(true)
+
+      const store = useLocationStore()
+      await store.restoreActiveBeacons('!room:a')
+      expect(store.activeBeacons.has('$beacon-old')).toBe(true)
+
+      vi.mocked(matrixBeaconService.getActiveBeacons).mockResolvedValueOnce([newBeacon])
+      await store.restoreActiveBeacons('!room:a')
+
+      expect(store.activeBeacons.size).toBe(1)
+      expect(store.activeBeacons.has('$beacon-old')).toBe(false)
+      expect(store.activeBeacons.has('$beacon-new')).toBe(true)
+      expect(store.sharing).toBe(true)
+    })
+
+    it('恢复后 sharing 依据「是否存在任一 live 信标」而非信标数量', async () => {
+      // 房间 A 的信标已手动停止（仍留在 map，isLive=false）
+      vi.mocked(matrixBeaconService.createBeacon).mockResolvedValue({ ...BEACON, room_id: '!room:a' })
+      vi.mocked(matrixLocationService.getCurrentPosition).mockRejectedValue(new Error('跳过初始定位'))
+      vi.mocked(matrixBeaconService.stopBeacon).mockResolvedValue(true)
+
+      const store = useLocationStore()
+      await store.startLiveShare('!room:a')
+      await store.stopLiveShare('$beacon1')
+      expect(store.sharing).toBe(false)
+      expect(store.activeBeacons.size).toBe(1)
+
+      // 恢复房间 B（无活跃信标）：A 的 stopped 信标仍留在 map，但无 live 信标，共享态应为 false
+      vi.mocked(matrixBeaconService.getActiveBeacons).mockResolvedValue([])
+      await store.restoreActiveBeacons('!room:b')
+
+      expect(store.activeBeacons.size).toBe(1)
+      expect(store.sharing).toBe(false)
+    })
   })
 
   describe('reset', () => {
