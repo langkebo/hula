@@ -22,7 +22,7 @@
                 alt="用户头像"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
               <div
-                class="absolute h-50% w-full bottom-0 bg-[rgb(50,50,50)] bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-15 backdrop-saturate-100 backdrop-contrast-100"></div>
+                class="absolute h-50% w-full bottom-0 bg-[--tjg-avatar-scrim-bg] bg-clip-padding backdrop-filter backdrop-blur-sm backdrop-saturate-100 backdrop-contrast-100"></div>
               <div class="absolute bottom-25% text-center w-full text-12px text-white">
                 {{ t('mobile_edit_profile.change_avatar') }}
               </div>

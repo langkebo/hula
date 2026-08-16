@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
-import { IsYesEnum, MittEnum, ThemeEnum } from '@/enums'
+import { IsYesEnum, MittEnum } from '@/enums'
 import router from '@/router'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
@@ -11,7 +11,6 @@ import { badgeService } from '@/services/notification/BadgeService'
 import type { BadgeType, UserInfoType } from '@/services/types.ts'
 import { type MatrixRoomMember, useGroupStore } from '@/stores/domains/chat/group'
 import { useMenuTopStore } from '@/stores/domains/settings/menuTop'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
@@ -20,11 +19,9 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('LeftHook')
 
 export const leftHook = () => {
-  const prefers = matchMedia('(prefers-color-scheme: dark)')
   const { createWebviewWindow } = useWindow()
   const { t } = useI18nGlobal()
   const { showFeedback } = useActionFeedback()
-  const settingStore = useSettingStore()
   const { menuTop } = storeToRefs(useMenuTopStore())
   const loginHistoriesStore = useLoginHistoriesStore()
   const userStore = useUserStore()
@@ -38,9 +35,6 @@ export const leftHook = () => {
   const infoShow = ref(false)
   /** 是否显示上半部分操作栏中的提示 */
   const tipShow = ref(true)
-  const themeColor = ref(
-    settingStore.themeContent === ThemeEnum.DARK ? 'rgba(63,63,63, 0.2)' : 'rgba(241,241,241, 0.2)'
-  )
   /** 已打开窗口的列表 */
   const openWindowsList = ref(new Set<string>())
   /** 编辑资料弹窗 */
@@ -59,21 +53,6 @@ export const leftHook = () => {
   )
 
   /* =================================== 方法 =============================================== */
-
-  /** 跟随系统主题模式切换主题 */
-  const followOS = () => {
-    themeColor.value = prefers.matches ? 'rgba(63,63,63, 0.2)' : 'rgba(241,241,241, 0.2)'
-  }
-
-  watchEffect(() => {
-    /** 判断是否是跟随系统主题 */
-    if (settingStore.themePattern === ThemeEnum.OS) {
-      followOS()
-      prefers.addEventListener('change', followOS)
-    } else {
-      prefers.removeEventListener('change', followOS)
-    }
-  })
 
   /** 更新缓存里面的用户信息 */
   const updateCurrentUserCache = (key: 'name' | 'avatar', value: string | null | undefined) => {
@@ -230,7 +209,6 @@ export const leftHook = () => {
 
   onUnmounted(() => {
     window.removeEventListener('click', closeMenu, true)
-    prefers.removeEventListener('change', followOS)
   })
 
   return {
@@ -240,7 +218,6 @@ export const leftHook = () => {
     shrinkStatus,
     infoShow,
     tipShow,
-    themeColor,
     openWindowsList,
     editInfo,
     currentBadge,
@@ -249,7 +226,6 @@ export const leftHook = () => {
     openContent,
     saveEditInfo,
     toggleWarningBadge,
-    updateCurrentUserCache,
-    followOS
+    updateCurrentUserCache
   }
 }
