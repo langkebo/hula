@@ -2,10 +2,22 @@
  * MatrixBeaconService 单元测试
  */
 
-import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
+
+// 局部结构类型（mock 断言用）：不直接 import matrix-js-sdk，避免 sdk-boundary 门禁违规
+type MockClient = {
+  getBeaconManager(): { getBeaconsForRoom(roomId: string): unknown[] }
+  search: (...args: unknown[]) => Promise<unknown>
+}
+
+// 通过真实 getClient 的返回类型对齐注入，避免测试内 import matrix-js-sdk
+function mockGetClient(client: MockClient): void {
+  vi.mocked(matrixClientService.getClient).mockReturnValue(
+    client as unknown as NonNullable<ReturnType<typeof matrixClientService.getClient>>
+  )
+}
 
 vi.mock('@/services/matrix/MatrixClientService')
 
@@ -71,8 +83,8 @@ describe('MatrixBeaconService', () => {
       const mockClient = {
         getBeaconManager: vi.fn(() => ({ getBeaconsForRoom })),
         search
-      } as unknown as MatrixClient
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient)
+      } as unknown as MockClient
+      mockGetClient(mockClient)
 
       const result = await matrixBeaconService.getActiveBeacons('!room:id')
 
@@ -106,8 +118,8 @@ describe('MatrixBeaconService', () => {
       const mockClient = {
         getBeaconManager: vi.fn(() => ({ getBeaconsForRoom })),
         search
-      } as unknown as MatrixClient
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient)
+      } as unknown as MockClient
+      mockGetClient(mockClient)
 
       const result = await matrixBeaconService.getActiveBeacons('!room:id')
 
@@ -169,8 +181,8 @@ describe('MatrixBeaconService', () => {
           }
         }
       })
-      const mockClient = { search } as unknown as MatrixClient
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient)
+      const mockClient = { search } as unknown as MockClient
+      mockGetClient(mockClient)
 
       const result = await matrixBeaconService.getBeaconLocationHistory('!room:id', '$event:id')
 
@@ -197,8 +209,8 @@ describe('MatrixBeaconService', () => {
 
     it('should return empty array when search fails', async () => {
       const search = vi.fn().mockRejectedValue(new Error('search failed'))
-      const mockClient = { search } as unknown as MatrixClient
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient)
+      const mockClient = { search } as unknown as MockClient
+      mockGetClient(mockClient)
 
       const result = await matrixBeaconService.getBeaconLocationHistory('!room:id', '$event:id')
 
