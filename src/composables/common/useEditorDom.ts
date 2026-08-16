@@ -127,7 +127,7 @@ export const useEditorDom = (options: UseEditorDomOptions) => {
       display: flex;
       align-items: center;
       font-size: 12px;
-      color: #999;
+      color: var(--tjg-text-muted);
       cursor: pointer;
       margin-left: 10px;
       flex-shrink: 0;

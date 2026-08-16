@@ -76,7 +76,9 @@ export const useOnlineStatus = (uid?: ComputedRef<string | undefined> | Ref<stri
     if (hasCustomState.value && userStatus.value?.bgColor) {
       return userStatus.value.bgColor
     }
-    return isOnline.value ? 'rgba(26, 178, 146, 0.4)' : 'rgba(144, 144, 144, 0.4)'
+    return isOnline.value
+      ? 'color-mix(in srgb, var(--tjg-status-online) 40%, transparent)'
+      : 'color-mix(in srgb, var(--tjg-status-offline) 40%, transparent)'
   })
 
   return {
