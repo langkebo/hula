@@ -126,6 +126,7 @@ import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { useGeolocation } from '@/composables/common/useGeolocation'
 import { reverseGeocode } from '@/services/legacy/mapApi'
 import type { LocationData } from '@/types/common'
+import { gcj02ToWgs84 } from '@/utils/CoordinateTransform'
 import { createLogger } from '@/utils/Logger'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 import StaticProxyMap from './StaticProxyMap.vue'
@@ -163,6 +164,8 @@ const modalVisible = computed({
 })
 
 const selectedLocation = ref<LocationData | null>(null)
+// WGS-84 坐标（geo URI 存储/发送用），与 selectedLocation（GCJ-02，地图显示用）分离
+const originalLocation = ref<LocationData | null>(null)
 const mapLoading = ref(false)
 const mapError = ref<string | null>(null)
 const sendingLocation = ref(false)
@@ -184,6 +187,7 @@ const showActionButtons = computed(() => {
 const handleClose = () => {
   clearError()
   selectedLocation.value = null
+  originalLocation.value = null
   mapError.value = null
   mapLoading.value = false
   emit('cancel')
@@ -216,6 +220,13 @@ const getLocation = async () => {
       address,
       timestamp: result.timestamp
     }
+    // 发送/存储用 WGS-84 坐标（geo URI 必须与其它客户端互通）
+    originalLocation.value = {
+      latitude: result.original.lat,
+      longitude: result.original.lng,
+      address,
+      timestamp: result.timestamp
+    }
   } catch (error) {
     logger.error('获取位置失败:', error)
   }
@@ -226,6 +237,7 @@ watch(modalVisible, (visible) => {
   if (visible) {
     // 重置状态
     selectedLocation.value = null
+    originalLocation.value = null
     mapError.value = null
     mapLoading.value = false
 
@@ -237,6 +249,7 @@ watch(modalVisible, (visible) => {
 // 重新定位
 const relocate = async () => {
   selectedLocation.value = null
+  originalLocation.value = null
   mapError.value = null
   await getLocation()
 }
@@ -259,10 +272,20 @@ const handleLocationChange = async (newLocation: { lat: number; lng: number }) =
   const address =
     geocodeResult?.formatted_addresses?.recommend || geocodeResult?.address || selectedLocation.value.address
 
+  // 地图交互返回 GCJ-02 坐标；地图显示继续用 GCJ-02，发送坐标回退为 WGS-84
+  const wgs = gcj02ToWgs84(newLocation.lat, newLocation.lng)
+
   selectedLocation.value = {
     ...selectedLocation.value,
     latitude: newLocation.lat,
     longitude: newLocation.lng,
+    address,
+    timestamp: Date.now()
+  }
+  originalLocation.value = {
+    ...originalLocation.value,
+    latitude: wgs.lat,
+    longitude: wgs.lng,
     address,
     timestamp: Date.now()
   }
@@ -275,10 +298,11 @@ const handleMapError = (error: string) => {
 
 // 确认发送位置
 const handleConfirm = async () => {
-  if (!selectedLocation.value) return
+  if (!originalLocation.value) return
 
   sendingLocation.value = true
-  emit('location-selected', selectedLocation.value)
+  // 回传 WGS-84 坐标，geo URI 存储/发送必须用 WGS-84
+  emit('location-selected', originalLocation.value)
   modalVisible.value = false
   sendingLocation.value = false
 }

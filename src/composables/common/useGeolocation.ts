@@ -18,6 +18,18 @@ type GeolocationOptions = {
   maximumAge?: number
 }
 
+/** getLocationWithTransform 返回结果：原始 WGS-84 与转换后 GCJ-02 坐标分离 */
+export type LocationWithTransform = {
+  /** WGS-84 坐标，用于发送/存储（geo URI 必须用 WGS-84 与其它客户端互通） */
+  original: { lat: number; lng: number }
+  /** GCJ-02 坐标，用于腾讯地图显示与逆地理编码 */
+  transformed: { lat: number; lng: number }
+  position: GeolocationPosition
+  address: string
+  precision: 'high' | 'low'
+  timestamp: number
+}
+
 export const useGeolocation = () => {
   const { t } = useI18n()
   const state = ref<GeolocationState>({
@@ -95,7 +107,7 @@ export const useGeolocation = () => {
     })
   }
 
-  const getLocationWithTransform = async (options?: GeolocationOptions) => {
+  const getLocationWithTransform = async (options?: GeolocationOptions): Promise<LocationWithTransform> => {
     const position = await getCurrentPosition(options)
     const { latitude, longitude } = position.coords
 

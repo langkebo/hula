@@ -3,14 +3,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BeaconBody } from '@/services/types'
 import BeaconMessage from '../Beacon.vue'
 
-const { showFeedbackMock, openExternalUrlMock, getOpenStreetMapUrlMock, setIntervalMock, clearIntervalMock } =
-  vi.hoisted(() => ({
-    showFeedbackMock: vi.fn(),
-    openExternalUrlMock: vi.fn(),
-    getOpenStreetMapUrlMock: vi.fn(),
-    setIntervalMock: vi.fn(() => 1),
-    clearIntervalMock: vi.fn()
-  }))
+const {
+  showFeedbackMock,
+  openExternalUrlMock,
+  getOpenStreetMapUrlMock,
+  setIntervalMock,
+  clearIntervalMock,
+  wgs84ToGcj02Mock
+} = vi.hoisted(() => ({
+  showFeedbackMock: vi.fn(),
+  openExternalUrlMock: vi.fn(),
+  getOpenStreetMapUrlMock: vi.fn(),
+  setIntervalMock: vi.fn(() => 1),
+  clearIntervalMock: vi.fn(),
+  wgs84ToGcj02Mock: vi.fn()
+}))
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({
@@ -20,6 +27,10 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 
 vi.mock('@/composables/common/useLinkSegments', () => ({
   openExternalUrl: openExternalUrlMock
+}))
+
+vi.mock('@/utils/CoordinateTransform', () => ({
+  wgs84ToGcj02: wgs84ToGcj02Mock
 }))
 
 vi.mock('@/services/matrix/media/MatrixLocationService', () => ({
@@ -74,6 +85,7 @@ describe('Beacon render message', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getOpenStreetMapUrlMock.mockReturnValue('https://map.example.com')
+    wgs84ToGcj02Mock.mockImplementation((lat: number, lng: number) => ({ lat: lat + 0.01, lng: lng + 0.01 }))
   })
 
   it('uses action feedback when the beacon is inactive', () => {
@@ -119,9 +131,11 @@ describe('Beacon render message', () => {
 
     ;(wrapper.vm as unknown as { handleBeaconClick: () => void }).handleBeaconClick()
 
+    // 收到 WGS-84 后，显示前转 GCJ-02
+    expect(wgs84ToGcj02Mock).toHaveBeenCalledWith(39.9, 116.3)
     expect(getOpenStreetMapUrlMock).toHaveBeenCalledWith({
-      latitude: 39.9,
-      longitude: 116.3,
+      latitude: 39.91,
+      longitude: 116.31,
       timestamp: expect.any(Number)
     })
     expect(openExternalUrlMock).toHaveBeenCalledWith('https://map.example.com')
