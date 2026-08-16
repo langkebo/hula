@@ -7,6 +7,9 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LocationStore')
 
+/** 到期自动停止失败后的退避重试间隔。 */
+const EXPIRY_STOP_RETRY_DELAY_MS = 5000
+
 /** 活跃信标状态（以 beacon_info 事件 ID 为键） */
 export interface ActiveBeacon {
   roomId: string
@@ -56,9 +59,7 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
     const remaining = beacon.timestamp + beacon.timeout - Date.now()
     if (remaining <= 0) {
       // 已过期：立即停止（信标已写入 activeBeacons，stopLiveShare 可定位到它）
-      void stopLiveShare(beaconInfoEventId).catch((error) => {
-        logger.warn('到期自动停止失败:', beaconInfoEventId, error)
-      })
+      void stopLiveShare(beaconInfoEventId).catch((error) => handleExpiryStopFailure(beaconInfoEventId, error))
       return
     }
 
@@ -66,10 +67,23 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
       beaconInfoEventId,
       setTimeout(() => {
         expiryTimers.delete(beaconInfoEventId)
-        void stopLiveShare(beaconInfoEventId).catch((error) => {
-          logger.warn('到期自动停止失败:', beaconInfoEventId, error)
-        })
+        void stopLiveShare(beaconInfoEventId).catch((error) => handleExpiryStopFailure(beaconInfoEventId, error))
       }, remaining)
+    )
+  }
+
+  /**
+   * 到期自动停止失败时的兜底：短暂退避后重新调度 stopLiveShare。
+   * 否则定时器已删除、isLive/sharing 未复位，信标会永久卡在 live 态。
+   */
+  function handleExpiryStopFailure(beaconInfoEventId: string, error: unknown): void {
+    logger.warn('到期自动停止失败，短暂退避后重试:', beaconInfoEventId, error)
+    expiryTimers.set(
+      beaconInfoEventId,
+      setTimeout(() => {
+        expiryTimers.delete(beaconInfoEventId)
+        void stopLiveShare(beaconInfoEventId).catch((err) => handleExpiryStopFailure(beaconInfoEventId, err))
+      }, EXPIRY_STOP_RETRY_DELAY_MS)
     )
   }
 

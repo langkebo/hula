@@ -4,6 +4,7 @@ import { matrixRoomCreationService } from '@/services/matrix/room/CreationServic
 import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
 import type { RoomInfo } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useLocationStore } from '@/stores/domains/chat/location'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RoomStore.Lifecycle')
@@ -126,6 +127,14 @@ export function createRoomLifecycle(ctx: RoomLifecycleContext) {
 
   function setCurrentRoom(roomId: string | null): void {
     currentRoomId.value = roomId
+    // 进入房间时恢复该房间的活跃位置信标（会话恢复接线点）。
+    if (roomId) {
+      void useLocationStore()
+        .restoreActiveBeacons(roomId)
+        .catch((error) => {
+          logger.warn(`[RoomStore] 恢复房间位置信标失败: ${roomId}`, error)
+        })
+    }
   }
 
   function updateRoom(roomId: string, updates: Partial<RoomInfo>): void {

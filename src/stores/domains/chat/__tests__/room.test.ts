@@ -13,7 +13,8 @@ const {
   mockRealtimeService,
   mockRoomSummaryService,
   mockMatrixClientService,
-  mockChatStore
+  mockChatStore,
+  mockLocationStore
 } = vi.hoisted(() => ({
   mockReadFacade: {
     getRoomSummary: vi.fn()
@@ -83,6 +84,9 @@ const {
     updateMsg: vi.fn(),
     checkMsgExist: vi.fn(),
     clearRoomMessages: vi.fn()
+  },
+  mockLocationStore: {
+    restoreActiveBeacons: vi.fn()
   }
 }))
 
@@ -129,6 +133,10 @@ vi.mock('@/stores/domains/chat/matrix', () => ({
 
 vi.mock('@/stores/domains/chat/chat', () => ({
   useChatStore: () => mockChatStore
+}))
+
+vi.mock('@/stores/domains/chat/location', () => ({
+  useLocationStore: () => mockLocationStore
 }))
 
 function createMockRoom(
@@ -180,6 +188,7 @@ describe('RoomStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockLocationStore.restoreActiveBeacons.mockResolvedValue(undefined)
     mockMatrixClientService.getClient.mockReturnValue(null)
     mockRoomSummaryService.getRoomListSnapshot.mockReturnValue(null)
     mockRoomSummaryService.getAllRoomListSnapshots.mockReturnValue([])
@@ -248,6 +257,15 @@ describe('RoomStore', () => {
       store.setCurrentRoom(null)
 
       expect(store.currentRoomId).toBeNull()
+    })
+
+    it('进入房间时恢复该房间的活跃位置信标', () => {
+      const store = useRoomStore()
+
+      store.setCurrentRoom('!room:id')
+
+      expect(store.currentRoomId).toBe('!room:id')
+      expect(mockLocationStore.restoreActiveBeacons).toHaveBeenCalledWith('!room:id')
     })
   })
 
