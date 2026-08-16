@@ -17,11 +17,11 @@
       <van-cell-group inset>
         <van-cell :title="t('location_share.my_location')">
           <template #value>
-            <span v-if="location.currentLocation.value" class="coords">
+            <span v-if="currentLocation" class="coords">
               {{
                 t('location_share.lat_lng', {
-                  lat: location.currentLocation.value.latitude,
-                  lng: location.currentLocation.value.longitude
+                  lat: currentLocation.latitude,
+                  lng: currentLocation.longitude
                 })
               }}
             </span>
@@ -29,7 +29,7 @@
           </template>
         </van-cell>
 
-        <van-cell v-if="location.sharing.value" :title="t('location_share.beacon_info')">
+        <van-cell v-if="sharing" :title="t('location_share.beacon_info')">
           <template #value>
             <span class="sharing-badge">{{ t('location_share.sharing') }}</span>
           </template>
@@ -37,7 +37,7 @@
       </van-cell-group>
 
       <!-- 共享时长选择(未共享时显示) -->
-      <div v-if="!location.sharing.value" class="duration-row">
+      <div v-if="!sharing" class="duration-row">
         <div class="duration-label">{{ t('location_share.live_duration') }}</div>
         <div class="duration-options">
           <van-button
@@ -55,39 +55,44 @@
 
       <!-- 操作按钮 -->
       <div class="actions">
-        <van-button block :loading="location.loading.value" @click="handleGetCurrentPosition">
+        <van-button block :loading="locating" @click="handleGetCurrentPosition">
           {{ t('location_share.my_location') }}
         </van-button>
 
-        <van-button
-          block
-          type="primary"
-          :disabled="!location.currentLocation.value"
-          :loading="sending"
-          @click="handleSendOnce">
+        <van-button block type="primary" :disabled="!currentLocation" :loading="sending" @click="handleSendOnce">
           {{ t('location_share.share_once') }}
         </van-button>
 
-        <van-button v-if="!location.sharing.value" block type="success" :loading="starting" @click="handleStartBeacon">
+        <van-button v-if="!sharing" block type="success" :loading="starting" @click="handleStartBeacon">
           {{ t('location_share.start_share') }}
         </van-button>
-        <van-button v-else block type="danger" :loading="stopping" @click="handleStopBeacon">
+        <van-button v-else block type="danger" :loading="stopping" @click="handleStopBeacon()">
           {{ t('location_share.stop_share') }}
         </van-button>
       </div>
 
       <!-- 错误提示 -->
-      <div v-if="location.error.value" class="error-text">
-        {{ location.error.value }}
+      <div v-if="error" class="error-text">
+        {{ error }}
       </div>
     </div>
   </van-popup>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useLocationShare } from '@/composables/location/useLocationShare'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useGeolocation } from '@/composables/common/useGeolocation'
+import { type LocationData, matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
+import { useLocationStore } from '@/stores/domains/chat/location'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('LocationShare')
+
+/** 实时共享期间，即使设备静止也定期发布最新位置，保持 beacon 活跃 */
+const LIVE_PUBLISH_INTERVAL_MS = 15000
 
 const props = defineProps<{
   show: boolean
@@ -100,8 +105,21 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const { getCurrentPosition, watchPosition, isLoading: locating } = useGeolocation()
 
-const location = useLocationShare({ roomId: props.roomId })
+// 接入 store（C2）：统一管理 beacon 开/停与位置发布状态
+const locationStore = useLocationStore()
+const { sharing } = storeToRefs(locationStore)
+
+// 本地 UI 状态
+const currentLocation = ref<LocationData | null>(null)
+const error = ref<string | null>(null)
+const activeBeaconId = ref<string | null>(null)
+
+// watchPosition（C5）清理句柄 + 周期发布定时器
+let stopWatch: (() => void) | null = null
+let publishTimer: number | undefined
 
 // 共享时长选项(毫秒)
 const durationOptions = [
@@ -115,47 +133,107 @@ const sending = ref(false)
 const starting = ref(false)
 const stopping = ref(false)
 
+const toLocationData = (pos: GeolocationPosition): LocationData => ({
+  latitude: pos.coords.latitude,
+  longitude: pos.coords.longitude,
+  accuracy: pos.coords.accuracy,
+  timestamp: pos.timestamp
+})
+
 // popup 显隐同步
 const handleShowUpdate = (val: boolean) => {
   emit('update:show', val)
 }
 
-// 打开时自动获取一次位置
+// 单次获取当前位置（发送面板预览）
+const refreshPosition = async (): Promise<LocationData | null> => {
+  try {
+    const pos = await getCurrentPosition()
+    currentLocation.value = toLocationData(pos)
+    error.value = null
+    return currentLocation.value
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    error.value = msg
+    showFeedback(msg, 'error')
+    return null
+  }
+}
+
+// 打开面板时若尚无位置则自动获取一次
 watch(
   () => props.show,
   (val) => {
-    if (val) {
-      location.getCurrentPosition()
+    if (val && !currentLocation.value) {
+      void refreshPosition()
     }
   }
 )
 
-// 房间变化时重置状态
+// 切换房间时停止当前 beacon 并清理监听
 watch(
   () => props.roomId,
   () => {
-    location.reset()
+    if (activeBeaconId.value) {
+      void handleStopBeacon({ silent: true })
+    }
   }
 )
 
 const handleGetCurrentPosition = async () => {
-  await location.getCurrentPosition()
+  await refreshPosition()
 }
 
 const handleSendOnce = async () => {
   const roomId = props.roomId
-  const current = location.currentLocation.value
+  const current = currentLocation.value
   if (!roomId || !current) return
   sending.value = true
   try {
-    const ok = await location.sendLocation(roomId, current)
-    if (ok) {
-      emit('sent')
-      emit('update:show', false)
-    }
+    await matrixLocationService.sendLocation(roomId, current)
+    showFeedback(t('location_share.send_success'), 'success')
+    emit('sent')
+    emit('update:show', false)
+  } catch (err) {
+    logger.error('发送位置失败', err)
+    showFeedback(t('location_share.send_failed'), 'error')
   } finally {
     sending.value = false
   }
+}
+
+const stopLiveWatch = () => {
+  stopWatch?.()
+  stopWatch = null
+  if (publishTimer !== undefined) {
+    window.clearInterval(publishTimer)
+    publishTimer = undefined
+  }
+}
+
+const startLiveWatch = () => {
+  stopLiveWatch()
+
+  // 实时监听位置变化（C5），位置更新即发布 m.beacon
+  stopWatch = watchPosition(
+    (pos) => {
+      const loc = toLocationData(pos)
+      currentLocation.value = loc
+      if (activeBeaconId.value) {
+        void locationStore.publishLocation(activeBeaconId.value, loc)
+      }
+    },
+    (err) => {
+      error.value = err.message
+    }
+  )
+
+  // 周期发布：设备静止时也定期发布最新位置，保持 beacon 时效
+  publishTimer = window.setInterval(() => {
+    if (activeBeaconId.value && currentLocation.value) {
+      void locationStore.publishLocation(activeBeaconId.value, currentLocation.value)
+    }
+  }, LIVE_PUBLISH_INTERVAL_MS)
 }
 
 const handleStartBeacon = async () => {
@@ -163,22 +241,47 @@ const handleStartBeacon = async () => {
   if (!roomId) return
   starting.value = true
   try {
-    await location.startBeacon(roomId, selectedDuration.value)
+    const beaconId = await locationStore.startLiveShare(roomId, undefined, selectedDuration.value)
+    activeBeaconId.value = beaconId
+    startLiveWatch()
+    showFeedback(t('location_share.start_success'), 'success')
+  } catch (err) {
+    logger.error('开启位置共享失败', err)
+    showFeedback(t('location_share.start_failed'), 'error')
   } finally {
     starting.value = false
   }
 }
 
-const handleStopBeacon = async () => {
-  const roomId = props.roomId
-  if (!roomId) return
+const handleStopBeacon = async (opts?: { silent?: boolean }) => {
+  const silent = opts?.silent ?? false
+  if (!activeBeaconId.value) return
   stopping.value = true
   try {
-    await location.stopBeacon(roomId)
+    stopLiveWatch()
+    await locationStore.stopLiveShare(activeBeaconId.value)
+    activeBeaconId.value = null
+    if (!silent) {
+      showFeedback(t('location_share.stop_success'), 'success')
+    }
+  } catch (err) {
+    logger.error('停止位置共享失败', err)
+    if (!silent) {
+      showFeedback(t('location_share.stop_failed'), 'error')
+    }
   } finally {
     stopping.value = false
   }
 }
+
+// 组件卸载时清理监听并停止 beacon，避免泄漏
+onUnmounted(() => {
+  stopLiveWatch()
+  if (activeBeaconId.value) {
+    void locationStore.stopLiveShare(activeBeaconId.value).catch(() => {})
+    activeBeaconId.value = null
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -220,7 +323,7 @@ const handleStopBeacon = async () => {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 10px;
-  background-color: var(--tjg-color-success-bg, rgba(7, 193, 96, 0.12));
+  background-color: var(--tjg-color-success-bg);
   color: var(--tjg-color-success-500);
   font-size: 12px;
 }

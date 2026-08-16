@@ -380,6 +380,8 @@ const File = defineAsyncComponent(() => import('./File.vue'))
 const LinkPreview = defineAsyncComponent(() => import('./LinkPreview.vue'))
 const Location = defineAsyncComponent(() => import('./Location.vue'))
 const MergeMessage = defineAsyncComponent(() => import('./MergeMessage.vue'))
+const BeaconMobile = defineAsyncComponent(() => import('#/components/chat-room/BeaconMessage.vue'))
+const LocationMobile = defineAsyncComponent(() => import('#/components/chat-room/LocationMessage.vue'))
 const BotMessage = defineAsyncComponent(() => import('./special/BotMessage.vue'))
 const Video = defineAsyncComponent(() => import('./Video.vue'))
 const VideoCall = defineAsyncComponent(() => import('./VideoCall.vue'))
@@ -555,8 +557,8 @@ const componentMap: Partial<Record<MsgEnum, Component>> = {
   [MsgEnum.RECALL]: RecallMessage,
   [MsgEnum.BOT]: BotMessage,
   [MsgEnum.MERGE]: MergeMessage,
-  [MsgEnum.LOCATION]: Location,
-  [MsgEnum.BEACON]: Beacon,
+  [MsgEnum.LOCATION]: isMobile() ? LocationMobile : Location,
+  [MsgEnum.BEACON]: isMobile() ? BeaconMobile : Beacon,
   [MsgEnum.LINK_PREVIEW]: LinkPreview
 }
 
