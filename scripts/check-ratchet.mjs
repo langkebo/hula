@@ -9,6 +9,9 @@
  *    instead of full-path literals (double-prefix bug source, see G2).
  *  - ts_expect_error: `@ts-expect-error` in src. strict: true is a hard red
  *    line (G1); per-line escapes are allowed but the count must not grow.
+ *  - hardcoded_color: literal hex/rgb colors in src (non-test, excluding
+ *    SVG `<use href="#...">` refs and comments). New colors should use
+ *    `--tjg-*` design tokens instead of raw literals.
  *
  * Usage:
  *   node scripts/check-ratchet.mjs            # verify (CI / pre-merge)
@@ -48,9 +51,24 @@ function countOccurrences(content, pattern) {
   return (content.match(pattern) ?? []).length
 }
 
+/** 去除注释与 SVG 图标引用，避免把 `#add`/`#close` 这类 `<use href="#...">` 误判为硬编码颜色 */
+function stripCommentsAndSvgRefs(content) {
+  return content
+    .replace(/\/\/[^\n]*/g, '') // 行注释
+    .replace(/\/\*[\s\S]*?\*\//g, '') // 块注释
+    .replace(/href\s*=\s*["']#[^"']*["']/g, '') // SVG use href
+}
+
 const counters = {
   matrix_prefix_hardcoded: { pattern: /\/_matrix/g, includeTests: false, total: 0, files: new Map() },
-  ts_expect_error: { pattern: /@ts-expect-error/g, includeTests: true, total: 0, files: new Map() }
+  ts_expect_error: { pattern: /@ts-expect-error/g, includeTests: true, total: 0, files: new Map() },
+  hardcoded_color: {
+    pattern: /#[0-9a-fA-F]{3,8}\b|rgba?\(\s*[0-9]/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsAndSvgRefs
+  }
 }
 
 for (const filePath of walk(srcRoot)) {
@@ -58,7 +76,8 @@ for (const filePath of walk(srcRoot)) {
   const content = fs.readFileSync(filePath, 'utf8')
   for (const counter of Object.values(counters)) {
     if (!counter.includeTests && isTestPath(relPath)) continue
-    const count = countOccurrences(content, counter.pattern)
+    const text = counter.strip ? counter.strip(content) : content
+    const count = countOccurrences(text, counter.pattern)
     if (count > 0) {
       counter.total += count
       counter.files.set(relPath, count)
