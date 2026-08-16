@@ -53,6 +53,7 @@
   --tjg-text-tertiary: #737373;
   /* 对比度 4.54:1 AA @surface-panel（#ffffff；主场景为设置/面板卡片，侧栏等深底残留走 prefers-contrast 覆盖） */
   --tjg-text-quaternary: #767676;
+  --tjg-text-muted: #999999;
   --tjg-text-disabled: #bfbfbf;
   --tjg-text-inverse: #ffffff;
 
@@ -214,6 +215,8 @@
   /* 业务语义色 */
   --tjg-room-unread-badge-bg: var(--tjg-color-primary-600);
   --tjg-room-highlight-badge-bg: var(--tjg-color-danger-600);
+  /* <mark> 搜索命中高亮背景 */
+  --tjg-mark-highlight-bg: rgba(99, 102, 241, 0.14);
 
   /* 管理后台 */
   --tjg-admin-sidebar-bg: #1a1a2e;

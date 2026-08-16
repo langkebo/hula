@@ -253,7 +253,7 @@ const highlightText = (value?: string | null) => {
 }
 
 :deep(mark) {
-  background: rgba(99, 102, 241, 0.14);
+  background: var(--tjg-mark-highlight-bg);
   border-radius: 4px;
   color: inherit;
   padding: 0 2px;
