@@ -58,13 +58,24 @@ export class LocationMessageStrategyImpl extends AbstractMessageStrategy {
    * @returns 消息体
    */
   buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+    const latitude = String(msg.latitude)
+    const longitude = String(msg.longitude)
+    const address = String(msg.address)
+    const precision = String(msg.precision ?? '高精度')
+    const timestamp = String(msg.timestamp ?? Date.now())
     return {
-      geo_uri: `geo:${msg.latitude},${msg.longitude};u=${msg.precision === '高精度' ? 10 : 100}`,
+      geo_uri: `geo:${latitude},${longitude};u=${precision === '高精度' ? 10 : 100}`,
       msgtype: 'm.location',
-      body: `位置: ${msg.address}`,
+      body: `位置: ${address}`,
+      // 本地回显回填 LocationBody（其 latitude/longitude/address/precision/timestamp 均为 string）
+      latitude,
+      longitude,
+      address,
+      precision,
+      timestamp,
       info: {
-        address: msg.address,
-        timestamp: msg.timestamp
+        address,
+        timestamp
       },
       replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
       reply: reply?.message?.body?.content

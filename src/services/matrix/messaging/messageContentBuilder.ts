@@ -135,8 +135,12 @@ export function buildMatrixContent(msgType: MsgEnum, body: unknown): Record<stri
       break
     }
     case MsgEnum.LOCATION: {
-      content.body = (bodyRecord.description as string | undefined) || ''
-      content.geo_uri = (bodyRecord.geoUri as string | undefined) || ''
+      content.body = (bodyRecord.description as string | undefined) || (bodyRecord.body as string | undefined) || ''
+      content.geo_uri = (bodyRecord.geoUri as string | undefined) || (bodyRecord.geo_uri as string | undefined) || ''
+      const info = asRecord(bodyRecord.info)
+      if (Object.keys(info).length > 0) {
+        content.info = info
+      }
       break
     }
     default: {
