@@ -305,6 +305,13 @@ export class MatrixConnectionManager {
   /** 等待客户端就绪
    */
   async waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
+    const client = await this.waitForClientInstance(opts)
+    // createClient 同步返回时仅核心 manager 可用；私有 manager 异步挂载，用 getXxxManager() 前必须等挂载完成。
+    await client.whenManagerExtensionsReady()
+    return client
+  }
+
+  private async waitForClientInstance(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
     if (this.client) return this.client
     const timeoutMs = opts?.timeoutMs ?? 5000
     const intervalMs = opts?.intervalMs ?? 50
