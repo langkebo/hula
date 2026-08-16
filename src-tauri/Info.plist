@@ -12,6 +12,8 @@
   <string>HuLa needs accessibility permission to capture screen content</string>
   <key>NSLocalNetworkUsageDescription</key>
   <string>HuLa needs local network access to reach your development server</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>HuLa needs your location to share your live location with contacts</string>
   <key>UISupportedInterfaceOrientations</key>
   <array>
     <string>UIInterfaceOrientationPortrait</string>
