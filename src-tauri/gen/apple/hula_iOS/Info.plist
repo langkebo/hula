@@ -48,6 +48,8 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>HuLa needs local network access to reach your development server</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>HuLa needs your location to share your live location with contacts</string>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>HuLa 需要允许通知与角标以显示未读消息</string>
 	<key>UIBackgroundModes</key>
