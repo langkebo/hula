@@ -1,5 +1,5 @@
 import { type MatrixEvent, NotificationCountType, type Room } from 'matrix-js-sdk'
-import { MessageStatusEnum } from '@/enums'
+import { MessageStatusEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/types/message'
 import matrixMessageAdapter from '../messaging/MatrixMessageAdapter'
 import { getMessagePreviewByType, getRoomTimelinePreview } from './roomPreviewText'
@@ -86,6 +86,27 @@ function isDisplayableMessageEvent(event: MatrixEvent): boolean {
 }
 
 /**
+ * 组装消息 body：
+ * - 位置/信标事件使用 MatrixMessageAdapter 解析为 LocationBody/BeaconBody
+ * - 其余类型保持原始 content 透传，兼容现有渲染路径
+ */
+function buildMessageBody(
+  content: Record<string, unknown>,
+  body: string,
+  messageType: MsgEnum
+): MessageType['message']['body'] {
+  if (messageType === MsgEnum.LOCATION || messageType === MsgEnum.BEACON) {
+    return matrixMessageAdapter.convertMatrixContent(content, messageType) as MessageType['message']['body']
+  }
+  return {
+    ...content,
+    body,
+    content: body,
+    msgtype: (content.msgtype as string | undefined) ?? 'm.text'
+  }
+}
+
+/**
  * 将 SDK 的 MatrixEvent 转换为 Tjg 内部的 MessageType 格式
  */
 function convertMatrixEventToMessage(event: MatrixEvent): MessageType {
@@ -104,12 +125,7 @@ function convertMatrixEventToMessage(event: MatrixEvent): MessageType {
       id: event.getId() ?? '',
       roomId: event.getRoomId() ?? '',
       type: messageType,
-      body: {
-        ...content,
-        body,
-        content: body,
-        msgtype: (content.msgtype as string | undefined) ?? 'm.text'
-      },
+      body: buildMessageBody(content, body, messageType),
       sendTime: event.getTs(),
       messageMarks: {},
       status: MessageStatusEnum.SUCCESS
@@ -145,12 +161,7 @@ function convertTimelineEventToMessage(roomId: string, event: Record<string, unk
       id: event.event_id as string,
       roomId,
       type: messageType,
-      body: {
-        ...content,
-        body,
-        content: body,
-        msgtype: (content.msgtype as string | undefined) ?? 'm.text'
-      },
+      body: buildMessageBody(content, body, messageType),
       sendTime: event.origin_server_ts as number,
       messageMarks: {},
       status: MessageStatusEnum.SUCCESS

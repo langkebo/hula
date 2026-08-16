@@ -31,6 +31,31 @@ describe('MatrixMessageAdapter', () => {
         })
       ).toBe(MsgEnum.LINK_PREVIEW)
     })
+
+    it('should map m.location messages to location messages', () => {
+      expect(
+        matrixMessageAdapter.getMsgTypeFromEventLike('m.room.message', {
+          msgtype: 'm.location',
+          body: '位置'
+        })
+      ).toBe(MsgEnum.LOCATION)
+    })
+
+    it('should map beacon events to beacon messages', () => {
+      expect(matrixMessageAdapter.getMsgTypeFromEventLike('m.beacon_info', { timeout: 1000, live: true })).toBe(
+        MsgEnum.BEACON
+      )
+      expect(matrixMessageAdapter.getMsgTypeFromEventLike('m.beacon', { 'm.location': { uri: 'geo:1,2' } })).toBe(
+        MsgEnum.BEACON
+      )
+    })
+
+    it('should map unstable beacon event names to beacon messages', () => {
+      expect(matrixMessageAdapter.getMsgTypeFromEventLike('org.matrix.msc3672.beacon_info', { timeout: 1000 })).toBe(
+        MsgEnum.BEACON
+      )
+      expect(matrixMessageAdapter.getMsgTypeFromEventLike('org.matrix.msc3672.beacon', {})).toBe(MsgEnum.BEACON)
+    })
   })
 
   describe('convertMatrixContent', () => {
@@ -88,6 +113,97 @@ describe('MatrixMessageAdapter', () => {
         encryptedFile: {
           v: 'v2'
         }
+      })
+    })
+
+    it('should parse location content into a LocationBody', () => {
+      const result = matrixMessageAdapter.convertMatrixContent(
+        {
+          msgtype: 'm.location',
+          body: '位置: 北京',
+          geo_uri: 'geo:39.9042,116.4074;u=10',
+          'm.location': { uri: 'geo:39.9042,116.4074;u=10', description: '北京' },
+          'm.ts': 1700000000000
+        },
+        MsgEnum.LOCATION
+      )
+
+      expect(result).toEqual({
+        latitude: '39.9042',
+        longitude: '116.4074',
+        address: '北京',
+        precision: '',
+        timestamp: '1700000000000'
+      })
+    })
+
+    it('should fall back to geo_uri and unstable location key for location body', () => {
+      const result = matrixMessageAdapter.convertMatrixContent(
+        {
+          msgtype: 'm.location',
+          geo_uri: 'geo:39.9,116.4',
+          'org.matrix.msc3488.location': { uri: 'geo:39.9,116.4', description: 'Office' },
+          'org.matrix.msc3488.ts': 1234
+        },
+        MsgEnum.LOCATION
+      )
+
+      expect(result).toMatchObject({
+        latitude: '39.9',
+        longitude: '116.4',
+        address: 'Office',
+        timestamp: '1234'
+      })
+    })
+
+    it('should default location coordinates to zero when geo uri is missing', () => {
+      const result = matrixMessageAdapter.convertMatrixContent(
+        { msgtype: 'm.location', body: '位置' },
+        MsgEnum.LOCATION
+      )
+
+      expect(result).toMatchObject({
+        latitude: '0',
+        longitude: '0',
+        address: '位置'
+      })
+    })
+
+    it('should parse beacon_info content into a BeaconBody', () => {
+      const result = matrixMessageAdapter.convertMatrixContent(
+        {
+          description: '实时位置共享',
+          timeout: 3600000,
+          live: true,
+          'm.ts': 1700000000000
+        },
+        MsgEnum.BEACON
+      )
+
+      expect(result).toEqual({
+        description: '实时位置共享',
+        timeout: 3600000,
+        isLive: true,
+        uri: undefined,
+        lastUpdateTs: 1700000000000
+      })
+    })
+
+    it('should parse beacon location content into a BeaconBody with uri', () => {
+      const result = matrixMessageAdapter.convertMatrixContent(
+        {
+          'm.location': { uri: 'geo:39.9,116.4' },
+          'm.ts': 1700000001000
+        },
+        MsgEnum.BEACON
+      )
+
+      expect(result).toMatchObject({
+        description: '',
+        timeout: 0,
+        isLive: false,
+        uri: 'geo:39.9,116.4',
+        lastUpdateTs: 1700000001000
       })
     })
   })

@@ -2,6 +2,7 @@ import { type ShallowRef, triggerRef } from 'vue'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import matrixEventService from '@/services/matrix/MatrixEventService'
+import matrixMessageAdapter from '@/services/matrix/messaging/MatrixMessageAdapter'
 import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
 import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
 import matrixSlidingSyncService, { type SlidingSyncUnreadUpdate } from '@/services/matrix/sync/MatrixSlidingSyncService'
@@ -12,6 +13,14 @@ import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RoomStore.Sync')
+
+/** Beacon 事件类型（含 MSC3672 不稳定名） */
+const BEACON_EVENT_TYPES = new Set([
+  'm.beacon_info',
+  'm.beacon',
+  'org.matrix.msc3672.beacon_info',
+  'org.matrix.msc3672.beacon'
+])
 
 interface TimelineEvent {
   type?: string
@@ -88,6 +97,10 @@ export function createRoomSync(ctx: RoomSyncContext) {
           existingRoom.lastMessage = '[音频]'
         } else if (msgtype === 'm.file') {
           existingRoom.lastMessage = '[文件]'
+        } else if (msgtype === 'm.location') {
+          existingRoom.lastMessage = '[位置]'
+        } else if (BEACON_EVENT_TYPES.has(latestEvent.type ?? '')) {
+          existingRoom.lastMessage = '[实时位置共享]'
         } else if (latestEvent.type === 'm.room.member') {
           existingRoom.lastMessage = latestEvent.content?.membership === 'join' ? '加入了房间' : '离开了房间'
         } else {
@@ -103,8 +116,7 @@ export function createRoomSync(ctx: RoomSyncContext) {
         'm.room.encrypted',
         'm.room.member',
         'm.room.redaction',
-        'm.beacon_info',
-        'm.beacon'
+        ...BEACON_EVENT_TYPES
       ])
       for (const event of roomData.timeline) {
         if (!DISPLAYABLE_EVENT_TYPES.has(event.type ?? '')) continue
@@ -114,7 +126,15 @@ export function createRoomSync(ctx: RoomSyncContext) {
         else if (msgtype === 'm.video') msgEnum = MsgEnum.VIDEO
         else if (msgtype === 'm.audio' || msgtype === 'm.voice') msgEnum = MsgEnum.VOICE
         else if (msgtype === 'm.file') msgEnum = MsgEnum.FILE
+        else if (msgtype === 'm.location') msgEnum = MsgEnum.LOCATION
         else if (event.type === 'm.room.member') msgEnum = MsgEnum.SYSTEM
+        else if (BEACON_EVENT_TYPES.has(event.type ?? '')) msgEnum = MsgEnum.BEACON
+
+        const content = (event.content ?? {}) as Record<string, unknown>
+        const body: MessageType['message']['body'] =
+          msgEnum === MsgEnum.LOCATION || msgEnum === MsgEnum.BEACON
+            ? (matrixMessageAdapter.convertMatrixContent(content, msgEnum) as MessageType['message']['body'])
+            : ((event.content?.body as Record<string, unknown>) ?? '')
 
         const msg: MessageType = {
           clientKey: event.event_id ?? '',
@@ -127,7 +147,7 @@ export function createRoomSync(ctx: RoomSyncContext) {
             id: event.event_id ?? '',
             roomId: roomId,
             type: msgEnum,
-            body: (event.content?.body as Record<string, unknown>) ?? '',
+            body,
             sendTime: (event.origin_server_ts as number | null) ?? 0,
             messageMarks: {},
             status: MessageStatusEnum.SUCCESS

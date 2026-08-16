@@ -1,7 +1,17 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
-import type { FileBody, ImageBody, MessageBody, TextBody, VideoBody, VoiceBody } from '@/services/types'
+import type {
+  BeaconBody,
+  FileBody,
+  ImageBody,
+  LocationBody,
+  MessageBody,
+  TextBody,
+  VideoBody,
+  VoiceBody
+} from '@/services/types'
 import type { MessageType } from '@/types/message'
+import { locationEventGeoUri, parseGeoUri } from '@/utils/location'
 
 interface MatrixMessageAdapter {
   convertMatrixEventToMessageType(event: MatrixEvent, roomId: string): MessageType
@@ -51,7 +61,12 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
       return MsgEnum.SYSTEM
     }
 
-    if (eventType === 'm.beacon_info' || eventType === 'm.beacon') {
+    if (
+      eventType === 'm.beacon_info' ||
+      eventType === 'm.beacon' ||
+      eventType === 'org.matrix.msc3672.beacon_info' ||
+      eventType === 'org.matrix.msc3672.beacon'
+    ) {
       return MsgEnum.BEACON
     }
 
@@ -148,6 +163,35 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
           url: mediaUrl,
           encryptedFile
         } as FileBody
+      case MsgEnum.LOCATION: {
+        const location = (content['m.location'] ?? content['org.matrix.msc3488.location']) as
+          | { description?: unknown }
+          | undefined
+        const geo = parseGeoUri(locationEventGeoUri(content))
+        return {
+          latitude: String(geo?.latitude ?? 0),
+          longitude: String(geo?.longitude ?? 0),
+          address:
+            (typeof location?.description === 'string' && location.description) ||
+            (typeof content.body === 'string' ? content.body : '') ||
+            '',
+          precision: '',
+          timestamp: String(content['m.ts'] ?? content['org.matrix.msc3488.ts'] ?? 0)
+        } as LocationBody
+      }
+      case MsgEnum.BEACON: {
+        const info = ((content['m.beacon_info'] as Record<string, unknown> | undefined) ?? content) as Record<
+          string,
+          unknown
+        >
+        return {
+          description: (info.description as string | undefined) ?? '',
+          timeout: (info.timeout as number | undefined) ?? 0,
+          isLive: (info.live as boolean | undefined) ?? false,
+          uri: locationEventGeoUri(content),
+          lastUpdateTs: (info['m.ts'] ?? info['org.matrix.msc3488.ts']) as number | undefined
+        } as BeaconBody
+      }
       default:
         return {
           content: typeof content.body === 'string' ? content.body : JSON.stringify(content)
