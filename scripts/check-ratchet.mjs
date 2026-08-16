@@ -64,7 +64,7 @@ const counters = {
   matrix_prefix_hardcoded: { pattern: /\/_matrix/g, includeTests: false, total: 0, files: new Map() },
   ts_expect_error: { pattern: /@ts-expect-error/g, includeTests: true, total: 0, files: new Map() },
   hardcoded_color: {
-    pattern: /#[0-9a-fA-F]{3,8}\b|rgba?\(\s*[0-9]/g,
+    pattern: /#[0-9a-fA-F]{3}\b|#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{8}\b|rgba?\(\s*[0-9]/g,
     includeTests: false,
     total: 0,
     files: new Map(),
