@@ -57,10 +57,10 @@ describe('FriendListItem', () => {
     }
   }
 
-  it('renders friend information correctly', () => {
+  it('renders item information correctly', () => {
     const wrapper = mount(FriendListItem, {
       props: {
-        friend: mockFriend
+        item: mockFriend
       },
       global: {
         stubs: globalStubs,
@@ -76,7 +76,7 @@ describe('FriendListItem', () => {
   it('highlights search query', () => {
     const wrapper = mount(FriendListItem, {
       props: {
-        friend: mockFriend,
+        item: mockFriend,
         query: 'Ali'
       },
       global: {
@@ -92,7 +92,7 @@ describe('FriendListItem', () => {
   it('emits select event on click', async () => {
     const wrapper = mount(FriendListItem, {
       props: {
-        friend: mockFriend
+        item: mockFriend
       },
       global: {
         stubs: globalStubs,
@@ -108,7 +108,7 @@ describe('FriendListItem', () => {
   it('emits send-message event when message button is clicked', async () => {
     const wrapper = mount(FriendListItem, {
       props: {
-        friend: mockFriend
+        item: mockFriend
       },
       global: {
         stubs: globalStubs,
@@ -125,7 +125,7 @@ describe('FriendListItem', () => {
   it('applies RTL class when dir is rtl', () => {
     const wrapper = mount(FriendListItem, {
       props: {
-        friend: mockFriend,
+        item: mockFriend,
         dir: 'rtl'
       },
       global: {

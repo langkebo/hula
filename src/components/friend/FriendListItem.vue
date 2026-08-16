@@ -5,41 +5,41 @@
     :dir="dir"
     :aria-label="ariaLabel"
     tabindex="0"
-    @click="$emit('select', friend)"
-    @keydown.enter="$emit('select', friend)"
-    @contextmenu="$emit('contextmenu', { friend, event: $event })">
+    @click="$emit('select', item)"
+    @keydown.enter="$emit('select', item)"
+    @contextmenu="$emit('contextmenu', { item, event: $event })">
     <div class="friend-list-item__avatar-wrap">
-      <n-badge :dot="friend.friendStatus === 'favorite'" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
+      <n-badge :dot="item.friendStatus === 'favorite'" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
         <n-avatar
           :size="44"
           round
-          :src="AvatarUtils.getAvatarUrl(friend.avatarUrl)"
+          :src="AvatarUtils.getAvatarUrl(item.avatarUrl)"
           :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
       </n-badge>
       <span
         class="friend-list-item__presence"
-        :class="{ 'friend-list-item__presence--online': friend.activeStatus === OnlineEnum.ONLINE }"
+        :class="{ 'friend-list-item__presence--online': item.activeStatus === OnlineEnum.ONLINE }"
         aria-hidden="true" />
     </div>
 
     <div class="friend-list-item__content">
       <div class="friend-list-item__title-row">
         <span class="friend-list-item__name" v-safe-html="highlightText(displayName)" />
-        <n-tag v-if="friend.friendStatus === 'blocked'" size="tiny" type="error">
+        <n-tag v-if="item.friendStatus === 'blocked'" size="tiny" type="error">
           {{ t('friend.status.blocked') }}
         </n-tag>
-        <n-tag v-else-if="(friend.friendStatus as string) === 'hidden'" size="tiny">
+        <n-tag v-else-if="(item.friendStatus as string) === 'hidden'" size="tiny">
           {{ t('friend.status.hidden') }}
         </n-tag>
       </div>
       <div class="friend-list-item__meta">
         <span>
-          {{ friend.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : t('friend.list.offline') }}
+          {{ item.activeStatus === OnlineEnum.ONLINE ? t('friend.list.online') : t('friend.list.offline') }}
         </span>
         <span
-          v-if="friend.statusMessage"
+          v-if="item.statusMessage"
           class="friend-list-item__status"
-          v-safe-html="highlightText(friend.statusMessage)" />
+          v-safe-html="highlightText(item.statusMessage)" />
       </div>
     </div>
 
@@ -49,7 +49,7 @@
         circle
         size="small"
         :aria-label="t('friend.context.send_message')"
-        @click.stop="$emit('send-message', friend)">
+        @click.stop="$emit('send-message', item)">
         <template #icon>
           <svg class="size-16px"><use href="#message" /></svg>
         </template>
@@ -59,7 +59,7 @@
         circle
         size="small"
         :aria-label="t('friend.context.remove')"
-        @click.stop="$emit('remove', friend)">
+        @click.stop="$emit('remove', item)">
         <template #icon>
           <svg class="size-16px"><use href="#delete" /></svg>
         </template>
@@ -69,7 +69,7 @@
         circle
         size="small"
         :aria-label="t('menu.ctx_menu_more')"
-        @click.stop="$emit('more', { friend, event: $event })">
+        @click.stop="$emit('more', { item, event: $event })">
         <template #icon>
           <svg class="size-16px"><use href="#more" /></svg>
         </template>
@@ -89,7 +89,7 @@ import { escapeHtml } from '@/utils/escapeHtml'
 
 const props = withDefaults(
   defineProps<{
-    friend: MatrixContact
+    item: MatrixContact
     selected?: boolean
     dir?: 'ltr' | 'rtl'
     query?: string
@@ -102,18 +102,18 @@ const props = withDefaults(
 )
 
 defineEmits<{
-  select: [friend: MatrixContact]
-  'send-message': [friend: MatrixContact]
-  remove: [friend: MatrixContact]
-  more: [payload: { friend: MatrixContact; event: MouseEvent }]
-  contextmenu: [payload: { friend: MatrixContact; event: MouseEvent }]
+  select: [item: MatrixContact]
+  'send-message': [item: MatrixContact]
+  remove: [item: MatrixContact]
+  more: [payload: { item: MatrixContact; event: MouseEvent }]
+  contextmenu: [payload: { item: MatrixContact; event: MouseEvent }]
 }>()
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const isRtl = computed(() => props.dir === 'rtl')
-const displayName = computed(() => props.friend.remark || props.friend.displayName || props.friend.name)
-const ariaLabel = computed(() => `${displayName.value} ${props.friend.userId}`)
+const displayName = computed(() => props.item.remark || props.item.displayName || props.item.name)
+const ariaLabel = computed(() => `${displayName.value} ${props.item.userId}`)
 
 const highlightText = (value?: string | null) => {
   const text = String(value || '')

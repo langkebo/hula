@@ -20,7 +20,7 @@ vi.mock('vue-i18n', () => ({
 vi.mock('../RoomCard.vue', () => ({
   default: defineComponent({
     name: 'RoomCard',
-    props: { room: { type: Object as () => RoomData, required: true } },
+    props: { item: { type: Object as () => RoomData, required: true } },
     emits: ['join', 'preview'],
     setup(props, { emit }) {
       return () =>
@@ -28,19 +28,19 @@ vi.mock('../RoomCard.vue', () => ({
           'div',
           {
             'data-testid': 'room-card',
-            onClick: () => emit('preview', props.room.roomId)
+            onClick: () => emit('preview', props.item.roomId)
           },
           [
-            h('span', { class: 'room-card__name' }, props.room.name),
-            h('span', { class: 'room-card__members' }, String(props.room.numJoinedMembers)),
-            props.room.topic ? h('span', { class: 'room-card__topic' }, props.room.topic) : null,
+            h('span', { class: 'room-card__name' }, props.item.name),
+            h('span', { class: 'room-card__members' }, String(props.item.numJoinedMembers)),
+            props.item.topic ? h('span', { class: 'room-card__topic' }, props.item.topic) : null,
             h(
               'button',
               {
                 'data-testid': 'room-join-btn',
                 onClick: (event: Event) => {
                   event.stopPropagation()
-                  emit('join', props.room.roomId)
+                  emit('join', props.item.roomId)
                 }
               },
               'join'
@@ -170,7 +170,7 @@ describe('PublicRoomDiscovery', () => {
     expect(wrapper.find('[data-testid="search-input"]').exists()).toBe(true)
   })
 
-  it('renders a list of room cards', () => {
+  it('renders a list of item cards', () => {
     const wrapper = mountComponent()
     const cards = wrapper.findAll('[data-testid="room-card"]')
     expect(cards).toHaveLength(2)
@@ -192,7 +192,7 @@ describe('PublicRoomDiscovery', () => {
     expect(wrapper.emitted('search')).toEqual([['matrix']])
   })
 
-  it('renders room name, member count and topic in each card', () => {
+  it('renders item name, member count and topic in each card', () => {
     const wrapper = mountComponent()
     const firstCard = wrapper.findAll('[data-testid="room-card"]')[0]!
     const text = firstCard.text()
@@ -234,10 +234,10 @@ describe('PublicRoomDiscovery', () => {
     expect(dialog.props('visible')).toBe(false)
   })
 
-  it('passes requireReason based on room federation flag', async () => {
+  it('passes requireReason based on item federation flag', async () => {
     const wrapper = mountComponent()
     const dialog = wrapper.findComponent({ name: 'RoomPreviewDialog' })
-    // second room is federated
+    // second item is federated
     const secondCard = wrapper.findAll('[data-testid="room-card"]')[1]!
     await secondCard.find('[data-testid="room-join-btn"]').trigger('click')
     expect(dialog.props('requireReason')).toBe(true)
@@ -264,7 +264,7 @@ describe('PublicRoomDiscovery', () => {
     expect(wrapper.find('[role="region"]').exists()).toBe(true)
   })
 
-  it('uses a responsive minmax grid for the room list', () => {
+  it('uses a responsive minmax grid for the item list', () => {
     const wrapper = mountComponent()
     const grid = wrapper.find('.room-list')
     expect(grid.exists()).toBe(true)

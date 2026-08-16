@@ -4,15 +4,15 @@
     data-testid="room-card"
     role="button"
     tabindex="0"
-    :aria-label="room.name"
+    :aria-label="item.name"
     @click="handlePreview"
     @keydown.enter.self.prevent="handlePreview"
     @keydown.space.self.prevent="handlePreview">
     <div
       class="room-card__avatar shrink-0 flex items-center justify-center size-[40px] overflow-hidden rounded-[--tjg-radius-full] bg-[--tjg-surface-subtle]">
       <img
-        v-if="room.avatarUrl"
-        :src="room.avatarUrl"
+        v-if="item.avatarUrl"
+        :src="item.avatarUrl"
         :alt="''"
         class="room-card__avatar-img w-full h-full object-cover"
         data-testid="room-avatar-img" />
@@ -26,9 +26,9 @@
 
     <div class="room-card__info flex-1 min-w-0">
       <div class="room-card__header flex items-center gap-[--tjg-space-2]">
-        <span class="room-card__name truncate text-[--tjg-text-primary]" :title="room.name">{{ room.name }}</span>
+        <span class="room-card__name truncate text-[--tjg-text-primary]" :title="item.name">{{ item.name }}</span>
         <span
-          v-if="room.isFederated"
+          v-if="item.isFederated"
           class="room-card__federation-badge inline-flex items-center gap-2px shrink-0 px-6px py-1px rounded-[--tjg-radius-xs] bg-[--tjg-color-info-100] text-[--tjg-color-info-600]"
           data-testid="room-federation-badge"
           :title="t('room.discovery.federated')">
@@ -54,7 +54,7 @@
       <div class="room-card__meta flex items-center gap-[--tjg-space-2] mt-2px">
         <span
           class="room-card__members inline-flex items-center gap-4px text-[--tjg-text-secondary]"
-          :aria-label="t('room.discovery.members', { count: room.numJoinedMembers })">
+          :aria-label="t('room.discovery.members', { count: item.numJoinedMembers })">
           <svg
             viewBox="0 0 24 24"
             width="12"
@@ -70,11 +70,11 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
-          {{ room.numJoinedMembers }}
+          {{ item.numJoinedMembers }}
         </span>
       </div>
 
-      <p v-if="room.topic" class="room-card__topic truncate mt-2px text-[--tjg-text-tertiary]" data-testid="room-topic">
+      <p v-if="item.topic" class="room-card__topic truncate mt-2px text-[--tjg-text-tertiary]" data-testid="room-topic">
         {{ truncatedTopic }}
       </p>
     </div>
@@ -106,7 +106,7 @@ export interface RoomCardData {
 }
 
 const props = defineProps<{
-  room: RoomCardData
+  item: RoomCardData
 }>()
 
 const emit = defineEmits<{
@@ -118,20 +118,20 @@ const { t } = useI18n()
 
 const TOPIC_MAX_LEN = 60
 
-const avatarPlaceholder = computed(() => props.room.name?.charAt(0) || '?')
+const avatarPlaceholder = computed(() => props.item.name?.charAt(0) || '?')
 
 const truncatedTopic = computed(() => {
-  const topic = props.room.topic ?? ''
+  const topic = props.item.topic ?? ''
   if (topic.length <= TOPIC_MAX_LEN) return topic
   return `${topic.slice(0, TOPIC_MAX_LEN)}...`
 })
 
 const handleJoin = () => {
-  emit('join', props.room.roomId)
+  emit('join', props.item.roomId)
 }
 
 const handlePreview = () => {
-  emit('preview', props.room.roomId)
+  emit('preview', props.item.roomId)
 }
 </script>
 

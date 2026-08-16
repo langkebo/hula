@@ -14,7 +14,7 @@ const meta = {
   args: {
     active: false,
     compact: false,
-    space: {
+    item: {
       spaceId: '!space-design:example.com',
       name: 'Design Collaboration',
       childCount: 6,
@@ -52,7 +52,7 @@ export const Default: Story = {}
 
 export const InviteOnly: Story = {
   args: {
-    space: {
+    item: {
       spaceId: '!space-invite:example.com',
       name: 'Partner Launch',
       childCount: 3,

@@ -116,7 +116,7 @@ vi.mock('naive-ui', () => {
 vi.mock('../SpaceListItemCard.vue', () => ({
   default: defineComponent({
     name: 'SpaceListItemCard',
-    props: { space: { type: Object as PropType<SpaceListItem>, required: true }, active: Boolean },
+    props: { item: { type: Object as PropType<SpaceListItem>, required: true }, active: Boolean },
     emits: ['click', 'pin', 'settings', 'leave', 'delete', 'contextmenu'],
     setup(props, { emit }) {
       return () =>
@@ -125,19 +125,19 @@ vi.mock('../SpaceListItemCard.vue', () => ({
           {
             class: ['space-card-stub', { 'space-card-stub--active': props.active }],
             'data-test': 'space-card',
-            'data-space-id': props.space.spaceId,
+            'data-space-id': props.item.spaceId,
             onClick: () => emit('click'),
-            onContextmenu: (e: Event) => emit('contextmenu', { space: props.space, event: e })
+            onContextmenu: (e: Event) => emit('contextmenu', { item: props.item, event: e })
           },
           [
-            h('span', { class: 'space-card-stub__name' }, props.space.name),
+            h('span', { class: 'space-card-stub__name' }, props.item.name),
             h(
               'button',
               {
                 class: 'stub-pin',
                 onClick: (e: Event) => {
                   e.stopPropagation()
-                  emit('pin', props.space.spaceId)
+                  emit('pin', props.item.spaceId)
                 }
               },
               'pin'
@@ -148,7 +148,7 @@ vi.mock('../SpaceListItemCard.vue', () => ({
                 class: 'stub-settings',
                 onClick: (e: Event) => {
                   e.stopPropagation()
-                  emit('settings', props.space.spaceId)
+                  emit('settings', props.item.spaceId)
                 }
               },
               'settings'
@@ -159,7 +159,7 @@ vi.mock('../SpaceListItemCard.vue', () => ({
                 class: 'stub-leave',
                 onClick: (e: Event) => {
                   e.stopPropagation()
-                  emit('leave', props.space.spaceId)
+                  emit('leave', props.item.spaceId)
                 }
               },
               'leave'
@@ -170,7 +170,7 @@ vi.mock('../SpaceListItemCard.vue', () => ({
                 class: 'stub-delete',
                 onClick: (e: Event) => {
                   e.stopPropagation()
-                  emit('delete', props.space.spaceId)
+                  emit('delete', props.item.spaceId)
                 }
               },
               'delete'
@@ -204,7 +204,7 @@ describe('SpaceListPane', () => {
   })
 
   // (a) 渲染
-  it('renders the space list pane with all spaces', () => {
+  it('renders the item list pane with all spaces', () => {
     const wrapper = mountPane()
     expect(wrapper.find('[data-test="space-list-pane"]').exists()).toBe(true)
     const cards = wrapper.findAll('[data-test="space-card"]')
@@ -247,7 +247,7 @@ describe('SpaceListPane', () => {
   })
 
   // (c) 选中空间 emit
-  it('emits selectSpace when clicking a space card', async () => {
+  it('emits selectSpace when clicking a item card', async () => {
     const wrapper = mountPane()
     const cards = wrapper.findAll('[data-test="space-card"]')
     await cards[0].trigger('click')
@@ -364,7 +364,7 @@ describe('SpaceListPane', () => {
     expect(triggerGlobalSearchMock).toHaveBeenCalled()
   })
 
-  it('marks the active space card with active class', () => {
+  it('marks the active item card with active class', () => {
     // 非虚拟路径分为"我的空间"组(isPublic:false) + "公开空间"组(isPublic:true)
     // 渲染顺序：[!space-1(Design), !space-3(Marketing), !space-2(Engineering)]
     const wrapper = mountPane({ selectedSpaceId: '!space-2:server' })

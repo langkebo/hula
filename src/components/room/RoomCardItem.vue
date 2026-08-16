@@ -2,10 +2,10 @@
   <article
     class="room-card-item flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] border border-[--tjg-border-muted] cursor-pointer outline-none"
     data-testid="room-card-item"
-    :data-room-id="room.roomId"
+    :data-room-id="item.roomId"
     role="button"
     tabindex="0"
-    :aria-label="room.name"
+    :aria-label="item.name"
     @click="handlePreview"
     @keydown.enter.self.prevent="handlePreview"
     @keydown.space.self.prevent="handlePreview">
@@ -13,8 +13,8 @@
       <div
         class="room-card-item__avatar shrink-0 flex items-center justify-center size-[48px] overflow-hidden rounded-[--tjg-radius-md] bg-[--tjg-surface-subtle]">
         <img
-          v-if="room.avatar"
-          :src="room.avatar"
+          v-if="item.avatar"
+          :src="item.avatar"
           :alt="''"
           class="w-full h-full object-cover"
           data-testid="room-card-avatar-img" />
@@ -28,11 +28,11 @@
 
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-[--tjg-space-2]">
-          <span class="room-card-item__name truncate text-[--tjg-text-primary]" :title="room.name">
-            {{ room.name }}
+          <span class="room-card-item__name truncate text-[--tjg-text-primary]" :title="item.name">
+            {{ item.name }}
           </span>
           <span
-            v-if="room.isPinned"
+            v-if="item.isPinned"
             class="room-card-item__pinned shrink-0 color-[--tjg-color-primary-500]"
             data-testid="room-card-pinned"
             :title="t('menu.pin')">
@@ -55,7 +55,7 @@
 
         <div class="room-card-item__meta flex items-center gap-[--tjg-space-2] mt-2px">
           <span
-            v-if="room.isFederated"
+            v-if="item.isFederated"
             class="inline-flex items-center gap-2px shrink-0 px-6px py-1px rounded-[--tjg-radius-xs] bg-[--tjg-color-info-100] text-[--tjg-color-info-600] text-[length:var(--tjg-font-size-2xs)]"
             data-testid="room-card-federation"
             :title="t('room.discovery.federated')">
@@ -77,7 +77,7 @@
             {{ t('room.discovery.federated') }}
           </span>
           <span
-            v-if="room.isEncrypted"
+            v-if="item.isEncrypted"
             class="inline-flex items-center shrink-0 color-[--tjg-color-success-500]"
             data-testid="room-card-encrypted"
             :title="t('room.detail.encrypted')">
@@ -99,15 +99,15 @@
       </div>
 
       <span
-        v-if="room.unreadCount > 0"
+        v-if="item.unreadCount > 0"
         class="room-card-item__unread shrink-0 inline-flex items-center justify-center min-w-[18px] h-[18px] px-4px rounded-full bg-[--tjg-color-danger-600] text-[--tjg-text-inverse] text-[length:var(--tjg-font-size-2xs)] font-[--tjg-font-weight-medium]"
         data-testid="room-card-unread">
-        {{ room.unreadCount > 99 ? '99+' : room.unreadCount }}
+        {{ item.unreadCount > 99 ? '99+' : item.unreadCount }}
       </span>
     </header>
 
     <p
-      v-if="room.topic"
+      v-if="item.topic"
       class="room-card-item__topic text-[--tjg-text-tertiary] text-[length:var(--tjg-font-size-sm)] leading-[1.5]"
       data-testid="room-card-topic">
       {{ truncatedTopic }}
@@ -130,11 +130,11 @@
           <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
           <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
-        {{ room.memberCount }}
+        {{ item.memberCount }}
       </span>
       <span class="inline-flex items-center gap-4px color-[--tjg-color-success-500]">
         <span class="inline-block size-[6px] rounded-full bg-[--tjg-status-online]"></span>
-        {{ room.onlineCount }}
+        {{ item.onlineCount }}
       </span>
     </div>
 
@@ -208,8 +208,8 @@
         type="button"
         class="room-card-item__action flex-center flex-1 h-[28px] rounded-[--tjg-radius-sm] color-[--tjg-text-secondary] hover:bg-[--tjg-surface-list-hover] hover:color-[--tjg-color-primary-500] transition-colors cursor-pointer"
         data-testid="room-card-action-pin"
-        :aria-label="room.isPinned ? t('menu.unpin') : t('menu.pin')"
-        :title="room.isPinned ? t('menu.unpin') : t('menu.pin')"
+        :aria-label="item.isPinned ? t('menu.unpin') : t('menu.pin')"
+        :title="item.isPinned ? t('menu.unpin') : t('menu.pin')"
         @click.stop="handleAction('pin')">
         <svg
           viewBox="0 0 24 24"
@@ -248,7 +248,7 @@ export interface RoomCardViewModel {
 }
 
 const props = defineProps<{
-  room: RoomCardViewModel
+  item: RoomCardViewModel
 }>()
 
 const emit = defineEmits<{
@@ -263,31 +263,31 @@ const { t } = useI18n()
 
 const TOPIC_MAX_LEN = 80
 
-const avatarPlaceholder = computed(() => props.room.name?.charAt(0) || '?')
+const avatarPlaceholder = computed(() => props.item.name?.charAt(0) || '?')
 
 const truncatedTopic = computed(() => {
-  const topic = props.room.topic ?? ''
+  const topic = props.item.topic ?? ''
   if (topic.length <= TOPIC_MAX_LEN) return topic
   return `${topic.slice(0, TOPIC_MAX_LEN)}...`
 })
 
 const handlePreview = () => {
-  emit('preview', props.room.roomId)
+  emit('preview', props.item.roomId)
 }
 
 const handleAction = (action: 'message' | 'info' | 'settings' | 'pin') => {
   switch (action) {
     case 'message':
-      emit('message', props.room.roomId)
+      emit('message', props.item.roomId)
       break
     case 'info':
-      emit('info', props.room.roomId)
+      emit('info', props.item.roomId)
       break
     case 'settings':
-      emit('settings', props.room.roomId)
+      emit('settings', props.item.roomId)
       break
     case 'pin':
-      emit('pin', props.room.roomId)
+      emit('pin', props.item.roomId)
       break
   }
 }

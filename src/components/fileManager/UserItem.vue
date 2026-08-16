@@ -51,9 +51,7 @@ type Emits = (e: 'click', item: DisplayFileManagerItem) => void
 
 const props = withDefaults(
   defineProps<{
-    user?: FileManagerListItem
-    room?: FileManagerListItem
-    contact?: FileManagerListItem
+    item?: FileManagerListItem
     isSelected?: boolean
   }>(),
   {
@@ -66,7 +64,7 @@ const { t } = useI18n()
 
 // 统一的数据格式
 const itemData = computed<DisplayFileManagerItem>(() => {
-  const item = props.user || props.room || props.contact || {}
+  const item = props.item || {}
 
   return {
     name:

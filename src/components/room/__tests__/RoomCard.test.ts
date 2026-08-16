@@ -49,11 +49,11 @@ const sampleRoom: RoomData = {
   isFederated: false
 }
 
-const mountCard = (props: Partial<{ room: RoomData }> = {}) =>
-  mount(RoomCard, { props: { room: sampleRoom, ...props } })
+const mountCard = (props: Partial<{ item: RoomData }> = {}) =>
+  mount(RoomCard, { props: { item: sampleRoom, ...props } })
 
 describe('RoomCard', () => {
-  it('renders room name, member count and topic', () => {
+  it('renders item name, member count and topic', () => {
     const wrapper = mountCard()
     const text = wrapper.find('[data-testid="room-card"]').text()
     expect(text).toContain('Matrix Chat')
@@ -67,7 +67,7 @@ describe('RoomCard', () => {
   })
 
   it('renders avatar image when avatarUrl provided', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, avatarUrl: 'https://example.com/a.png' } })
+    const wrapper = mountCard({ item: { ...sampleRoom, avatarUrl: 'https://example.com/a.png' } })
     const img = wrapper.find('[data-testid="room-avatar-img"]')
     expect(img.exists()).toBe(true)
     expect(img.attributes('src')).toBe('https://example.com/a.png')
@@ -110,25 +110,25 @@ describe('RoomCard', () => {
   })
 
   it('shows federation badge when isFederated is true', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, isFederated: true } })
+    const wrapper = mountCard({ item: { ...sampleRoom, isFederated: true } })
     expect(wrapper.find('[data-testid="room-federation-badge"]').exists()).toBe(true)
   })
 
   it('hides federation badge when isFederated is false', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, isFederated: false } })
+    const wrapper = mountCard({ item: { ...sampleRoom, isFederated: false } })
     expect(wrapper.find('[data-testid="room-federation-badge"]').exists()).toBe(false)
   })
 
   it('truncates long topic text', () => {
     const longTopic = 'a'.repeat(120)
-    const wrapper = mountCard({ room: { ...sampleRoom, topic: longTopic } })
+    const wrapper = mountCard({ item: { ...sampleRoom, topic: longTopic } })
     const topicEl = wrapper.find('[data-testid="room-topic"]')
     expect(topicEl.text().length).toBeLessThan(longTopic.length)
     expect(topicEl.text()).toContain('...')
   })
 
   it('does not render topic element when topic is absent', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, topic: undefined } })
+    const wrapper = mountCard({ item: { ...sampleRoom, topic: undefined } })
     expect(wrapper.find('[data-testid="room-topic"]').exists()).toBe(false)
   })
 })

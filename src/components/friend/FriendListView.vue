@@ -101,12 +101,12 @@
                 @send-message="handleSendMessage"
                 @remove="handleRemoveFriend"
                 @more="
-                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
-                    handleContextMenu(payload.event, payload.friend)
+                  (payload: { item: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.item)
                 "
                 @contextmenu="
-                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
-                    handleContextMenu(payload.event, payload.friend)
+                  (payload: { item: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.item)
                 " />
             </div>
             <!-- 性能优化：列表项超过 100 时使用 RecycleScroller 虚拟滚动（需求文档 16.1） -->
@@ -120,19 +120,19 @@
               :aria-label="t('friend.list.friend_list_label')"
               v-slot="{ item }">
               <FriendListItem
-                :friend="item"
+                :item="item"
                 :selected="item.userId === selectedUserId"
                 :query="appliedSearchValue"
                 @select="handleSelectFriend"
                 @send-message="handleSendMessage"
                 @remove="handleRemoveFriend"
                 @more="
-                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
-                    handleContextMenu(payload.event, payload.friend)
+                  (payload: { item: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.item)
                 "
                 @contextmenu="
-                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
-                    handleContextMenu(payload.event, payload.friend)
+                  (payload: { item: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.item)
                 " />
             </RecycleScroller>
             <!-- 列表项 ≤ 100 时使用普通 v-for，避免虚拟滚动开销 -->
@@ -140,19 +140,19 @@
               <FriendListItem
                 v-for="friend in displayedFriends"
                 :key="friend.userId"
-                :friend="friend"
+                :item="friend"
                 :selected="friend.userId === selectedUserId"
                 :query="appliedSearchValue"
                 @select="handleSelectFriend"
                 @send-message="handleSendMessage"
                 @remove="handleRemoveFriend"
                 @more="
-                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
-                    handleContextMenu(payload.event, payload.friend)
+                  (payload: { item: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.item)
                 "
                 @contextmenu="
-                  (payload: { friend: MatrixContact; event: MouseEvent }) =>
-                    handleContextMenu(payload.event, payload.friend)
+                  (payload: { item: MatrixContact; event: MouseEvent }) =>
+                    handleContextMenu(payload.event, payload.item)
                 " />
             </div>
           </n-scrollbar>
