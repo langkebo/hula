@@ -1,5 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { BackupInfo, KeyBackupManager, MatrixClientExtended, SecureBackupManager } from '@/types/matrix-extensions'
+import type { BackupInfo, KeyBackupManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 
@@ -101,11 +101,6 @@ class MatrixKeyBackupService extends BaseMatrixService {
   private getKeyBackupManager(): KeyBackupManager | null {
     const client = this.getClient() as unknown as MatrixClientExtended
     return client.getKeyBackupManager?.() ?? null
-  }
-
-  private getSecureBackupManager(): SecureBackupManager | null {
-    const client = this.getClient() as unknown as MatrixClientExtended
-    return client.getSecureBackupManager?.() ?? null
   }
 
   async checkKeyBackup(): Promise<BackupInfo | null> {
@@ -433,91 +428,6 @@ class MatrixKeyBackupService extends BaseMatrixService {
       return result as ImportResult
     } catch (err) {
       logger.error(`[KeyBackup] 按版本导入密钥失败: ${version}, ${err}`)
-      throw err
-    }
-  }
-
-  // ==================== Secure Backup ====================
-
-  async createSecureBackup(passphrase: string): Promise<{ id: string; algorithm: string }> {
-    try {
-      const secureBackupManager = this.getSecureBackupManager()
-      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
-      const result = await secureBackupManager.createSecureBackup(passphrase)
-      logger.info('[KeyBackup] 创建安全备份成功')
-      return { id: result.backup_id, algorithm: result.algorithm }
-    } catch (err) {
-      logger.error(`[KeyBackup] 创建安全备份失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getSecureBackup(backupId: string): Promise<Record<string, unknown> | null> {
-    try {
-      const secureBackupManager = this.getSecureBackupManager()
-      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
-      const result = await secureBackupManager.getSecureBackup(backupId)
-      return result as unknown as Record<string, unknown>
-    } catch (err) {
-      logger.error(`[KeyBackup] 获取安全备份失败: ${backupId}, ${err}`)
-      return null
-    }
-  }
-
-  async deleteSecureBackup(backupId: string): Promise<void> {
-    try {
-      const secureBackupManager = this.getSecureBackupManager()
-      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
-      await secureBackupManager.deleteSecureBackup(backupId)
-      logger.info(`[KeyBackup] 删除安全备份成功: ${backupId}`)
-    } catch (err) {
-      logger.error(`[KeyBackup] 删除安全备份失败: ${backupId}, ${err}`)
-      throw err
-    }
-  }
-
-  async addKeysToSecureBackup(
-    backupId: string,
-    passphrase: string,
-    sessionKeys: Array<{ session_id: string; session_data: Record<string, unknown> }>
-  ): Promise<void> {
-    try {
-      const secureBackupManager = this.getSecureBackupManager()
-      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
-      await secureBackupManager.addKeysToSecureBackup(backupId, passphrase, sessionKeys)
-      logger.info(`[KeyBackup] 写入安全备份密钥成功: ${backupId}`)
-    } catch (err) {
-      logger.error(`[KeyBackup] 写入安全备份密钥失败: ${backupId}, ${err}`)
-      throw err
-    }
-  }
-
-  async restoreFromSecureBackup(backupId: string, passphrase: string): Promise<ImportResult> {
-    try {
-      const secureBackupManager = this.getSecureBackupManager()
-      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
-      const result = await secureBackupManager.restoreFromSecureBackup(backupId, passphrase)
-      logger.info(`[KeyBackup] 安全备份恢复成功: ${backupId}`)
-      return {
-        count: result.recovered_keys,
-        failed: 0,
-        total: result.total_keys
-      }
-    } catch (err) {
-      logger.error(`[KeyBackup] 安全备份恢复失败: ${backupId}, ${err}`)
-      throw err
-    }
-  }
-
-  async verifySecureBackup(backupId: string, passphrase: string): Promise<VerifyResult> {
-    try {
-      const secureBackupManager = this.getSecureBackupManager()
-      if (!secureBackupManager) throw new Error('[KeyBackup] SecureBackupManager 不可用')
-      const result = await secureBackupManager.verifySecureBackup(backupId, passphrase)
-      logger.info(`[KeyBackup] 安全备份校验成功: ${backupId}`)
-      return { valid: result.valid, algorithm: '', auth_data: {}, key_count: 0 }
-    } catch (err) {
-      logger.error(`[KeyBackup] 安全备份校验失败: ${backupId}, ${err}`)
       throw err
     }
   }

@@ -1,13 +1,12 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { BackupInfo, KeyBackupManager, SecureBackupManager } from '@/types/matrix-extensions'
+import type { BackupInfo, KeyBackupManager } from '@/types/matrix-extensions'
 import matrixClientService from '../../MatrixClientService'
 import { matrixKeyBackupService } from '../MatrixKeyBackupService'
 
 describe('MatrixKeyBackupService', () => {
   let mockClient: Partial<MatrixClient>
   let mockKeyBackupManager: Partial<KeyBackupManager>
-  let mockSecureBackupManager: Partial<SecureBackupManager>
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -43,19 +42,8 @@ describe('MatrixKeyBackupService', () => {
       importKeys: vi.fn()
     }
 
-    mockSecureBackupManager = {
-      createSecureBackup: vi.fn(),
-      getSecureBackup: vi.fn(),
-      deleteSecureBackup: vi.fn(),
-      addKeysToSecureBackup: vi.fn(),
-      restoreFromSecureBackup: vi.fn(),
-      verifySecureBackup: vi.fn(),
-      clearCache: vi.fn()
-    }
-
     mockClient = {
-      getKeyBackupManager: vi.fn(() => mockKeyBackupManager as KeyBackupManager),
-      getSecureBackupManager: vi.fn(() => mockSecureBackupManager as SecureBackupManager)
+      getKeyBackupManager: vi.fn(() => mockKeyBackupManager as KeyBackupManager)
     } as unknown as Partial<MatrixClient>
 
     vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as MatrixClient)
@@ -285,109 +273,6 @@ describe('MatrixKeyBackupService', () => {
 
       expect(result).toEqual(mockResult)
       expect(mockKeyBackupManager.importKeys).toHaveBeenCalledWith([], 'v1')
-    })
-  })
-
-  describe('Secure Backup', () => {
-    describe('createSecureBackup', () => {
-      it('应该创建安全备份', async () => {
-        const mockSecureInfo = {
-          backup_id: 'backup-1',
-          algorithm: 'm.megolm_backup.v1',
-          version: 'v1',
-          auth_data: {},
-          created_ts: 123,
-          key_count: 0
-        }
-        mockSecureBackupManager.createSecureBackup = vi.fn().mockResolvedValue(mockSecureInfo)
-
-        const result = await matrixKeyBackupService.createSecureBackup('my-passphrase')
-
-        expect(result).toEqual({ id: 'backup-1', algorithm: 'm.megolm_backup.v1' })
-        expect(mockSecureBackupManager.createSecureBackup).toHaveBeenCalledWith('my-passphrase')
-      })
-    })
-
-    describe('getSecureBackup', () => {
-      it('应该获取安全备份', async () => {
-        const mockBackup = {
-          backup_id: 'backup-1',
-          algorithm: 'm.megolm_backup.v1',
-          version: 'v1',
-          auth_data: {},
-          created_ts: 123,
-          key_count: 0
-        }
-        mockSecureBackupManager.getSecureBackup = vi.fn().mockResolvedValue(mockBackup)
-
-        const result = await matrixKeyBackupService.getSecureBackup('backup-1')
-
-        expect(result).toEqual(mockBackup)
-        expect(mockSecureBackupManager.getSecureBackup).toHaveBeenCalledWith('backup-1')
-      })
-
-      it('应该在获取失败时返回 null', async () => {
-        mockSecureBackupManager.getSecureBackup = vi.fn().mockRejectedValue(new Error('Not found'))
-
-        const result = await matrixKeyBackupService.getSecureBackup('nonexistent')
-
-        expect(result).toBeNull()
-      })
-    })
-
-    describe('deleteSecureBackup', () => {
-      it('应该删除安全备份', async () => {
-        mockSecureBackupManager.deleteSecureBackup = vi.fn().mockResolvedValue(undefined)
-
-        await matrixKeyBackupService.deleteSecureBackup('backup-1')
-
-        expect(mockSecureBackupManager.deleteSecureBackup).toHaveBeenCalledWith('backup-1')
-      })
-
-      it('应该处理删除失败', async () => {
-        mockSecureBackupManager.deleteSecureBackup = vi.fn().mockRejectedValue(new Error('Delete failed'))
-
-        await expect(matrixKeyBackupService.deleteSecureBackup('backup-1')).rejects.toThrow('Delete failed')
-      })
-    })
-
-    describe('addKeysToSecureBackup', () => {
-      it('应该写入密钥到安全备份', async () => {
-        const sessionKeys = [{ session_id: 's1', session_data: {} }]
-        mockSecureBackupManager.addKeysToSecureBackup = vi.fn().mockResolvedValue({ count: 1 })
-
-        await matrixKeyBackupService.addKeysToSecureBackup('backup-1', 'passphrase', sessionKeys)
-
-        expect(mockSecureBackupManager.addKeysToSecureBackup).toHaveBeenCalledWith(
-          'backup-1',
-          'passphrase',
-          sessionKeys
-        )
-      })
-    })
-
-    describe('restoreFromSecureBackup', () => {
-      it('应该从安全备份恢复', async () => {
-        const mockRestoreResult = { recovered_keys: 10, total_keys: 10 }
-        mockSecureBackupManager.restoreFromSecureBackup = vi.fn().mockResolvedValue(mockRestoreResult)
-
-        const result = await matrixKeyBackupService.restoreFromSecureBackup('backup-1', 'passphrase')
-
-        expect(result).toEqual({ count: 10, failed: 0, total: 10 })
-        expect(mockSecureBackupManager.restoreFromSecureBackup).toHaveBeenCalledWith('backup-1', 'passphrase')
-      })
-    })
-
-    describe('verifySecureBackup', () => {
-      it('应该校验安全备份', async () => {
-        const mockVerifyResult = { valid: true }
-        mockSecureBackupManager.verifySecureBackup = vi.fn().mockResolvedValue(mockVerifyResult)
-
-        const result = await matrixKeyBackupService.verifySecureBackup('backup-1', 'passphrase')
-
-        expect(result.valid).toBe(true)
-        expect(mockSecureBackupManager.verifySecureBackup).toHaveBeenCalledWith('backup-1', 'passphrase')
-      })
     })
   })
 })
