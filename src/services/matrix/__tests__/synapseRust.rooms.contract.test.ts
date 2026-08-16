@@ -11,7 +11,7 @@
  * HTTP method, request body shape, and response unwrapping
  * (`{data: ...}` wrapper vs bare payload).
  *
- * Covers: anti-screenshot toggle, invite blocklist/allowlist,
+ * Covers: invite blocklist/allowlist,
  * sticky events, room summary (members/state/stats), ephemeral.
  * Burn-after-read endpoints are covered by MatrixBurnAfterReadService tests.
  * Captcha endpoints are covered by SDK CaptchaManager (matrix-js-sdk/lib/captcha),
@@ -21,7 +21,6 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
-import { synapsePrivacyExtensionService } from '../extensions/SynapsePrivacyExtensionService'
 import { synapseRoomSummaryService } from '../extensions/SynapseRoomSummaryService'
 import { synapseStickyEventService } from '../extensions/SynapseStickyEventService'
 import { matrixClientService } from '../MatrixClientService'
@@ -45,15 +44,6 @@ vi.mock('../EndpointCapabilityService', () => ({
 }))
 
 const server = setupMswServer(
-  http.put(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/anti_screenshot`, async ({ request }) => {
-    const body = await request.text()
-    seenUrls.push({ method: request.method, url: request.url, body })
-    return HttpResponse.json({ status: 'ok' })
-  }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/anti_screenshot`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ data: { enabled: false } })
-  }),
   http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/sticky_events`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({
@@ -105,7 +95,7 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
     vi.spyOn(matrixClientService, 'getAccessToken').mockReturnValue(ACCESS_TOKEN)
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null as unknown as MatrixClient)
     vi.spyOn(matrixClientService, 'waitForClientReady').mockResolvedValue(null as unknown as MatrixClient)
-    const services = [synapsePrivacyExtensionService, synapseStickyEventService, synapseRoomSummaryService]
+    const services = [synapseStickyEventService, synapseRoomSummaryService]
     for (const svc of services) {
       svc.clear()
       ;(svc as unknown as { baseUrl: string }).baseUrl = HOMESERVER
@@ -119,26 +109,6 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
   })
 
   const filterBy = (substring: string) => seenUrls.filter((u) => u.url.includes(substring))
-
-  describe('anti-screenshot', () => {
-    it('enableAntiScreenshot PUTs /_matrix/client/v3/rooms/{roomId}/anti_screenshot with {enabled}', async () => {
-      await synapsePrivacyExtensionService.enableAntiScreenshot('!room:hs', true)
-      const calls = filterBy('/anti_screenshot')
-      const putCall = calls.find((c) => c.method === 'PUT')
-      expect(putCall).toBeDefined()
-      expect(putCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/anti_screenshot`)
-      expect(JSON.parse(putCall!.body!)).toEqual({ enabled: true })
-    })
-
-    it('isAntiScreenshotEnabled hits GET /_matrix/client/v3/rooms/{roomId}/anti_screenshot', async () => {
-      const result = await synapsePrivacyExtensionService.isAntiScreenshotEnabled('!room:hs')
-      const calls = filterBy('/anti_screenshot')
-      const getCall = calls.find((c) => c.method === 'GET')
-      expect(getCall).toBeDefined()
-      expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/anti_screenshot`)
-      expect(result).toBe(false)
-    })
-  })
 
   describe('sticky events', () => {
     it('getStickyEvents hits GET /_matrix/client/v3/rooms/{roomId}/sticky_events', async () => {
