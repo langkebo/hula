@@ -174,6 +174,22 @@ describe('useLocationStore', () => {
       expect(store.sharing).toBe(false)
       expect(store.currentLocation).toBeNull()
     })
+
+    it('stopBeacon 返回 false 时抛错并保持共享态', async () => {
+      vi.mocked(matrixBeaconService.createBeacon).mockResolvedValue(BEACON)
+      vi.mocked(matrixLocationService.getCurrentPosition).mockResolvedValue(LOCATION)
+      vi.mocked(matrixBeaconService.updateBeaconLocation).mockResolvedValue(LOCATION_EVENT)
+      vi.mocked(matrixBeaconService.stopBeacon).mockResolvedValue(false)
+
+      const store = useLocationStore()
+      await store.startLiveShare('!room:id', '实时位置共享')
+
+      await expect(store.stopLiveShare('$beacon1')).rejects.toThrow('停止信标失败')
+
+      expect(matrixBeaconService.stopBeacon).toHaveBeenCalledWith('!room:id', '$beacon1')
+      expect(store.activeBeacons.get('$beacon1')?.isLive).toBe(true)
+      expect(store.sharing).toBe(true)
+    })
   })
 
   describe('reset', () => {

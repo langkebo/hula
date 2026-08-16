@@ -27,6 +27,13 @@ const {
   appWindowListenMock: vi.fn()
 }))
 
+let mockLocationStore: {
+  sharing: boolean
+  activeBeacons: Map<string, { isLive: boolean }>
+  startLiveShare: typeof startLiveShareMock
+  stopLiveShare: typeof stopLiveShareMock
+}
+
 let globalStore: ReturnType<
   typeof reactive<{
     currentSession: null
@@ -125,13 +132,7 @@ vi.mock('@/composables/chat/useMsgInput', () => ({
 }))
 
 vi.mock('@/stores/domains/chat/location', () => ({
-  useLocationStore: () =>
-    reactive({
-      sharing: false,
-      activeBeacons: new Map(),
-      startLiveShare: startLiveShareMock,
-      stopLiveShare: stopLiveShareMock
-    })
+  useLocationStore: () => mockLocationStore
 }))
 
 vi.mock('../location/LocationModal.vue', () => ({
@@ -239,6 +240,12 @@ describe('MsgInput', () => {
     startLiveShareMock.mockResolvedValue('$beacon')
     sendLocationDirectMock.mockResolvedValue(undefined)
     processFilesMock.mockResolvedValue(undefined)
+    mockLocationStore = reactive({
+      sharing: false,
+      activeBeacons: new Map(),
+      startLiveShare: startLiveShareMock,
+      stopLiveShare: stopLiveShareMock
+    })
   })
 
   it('uses action feedback for beacon start success', async () => {
@@ -260,6 +267,34 @@ describe('MsgInput', () => {
 
     expect(loggerErrorMock).toHaveBeenCalled()
     expect(showFeedbackMock).toHaveBeenCalledWith('message.beacon.failed', 'error')
+  })
+
+  it('calls stopLiveShare and shows success feedback when already sharing', async () => {
+    mockLocationStore.sharing = true
+    mockLocationStore.activeBeacons = new Map([['$beacon', { isLive: true }]])
+    stopLiveShareMock.mockResolvedValue(undefined)
+    const wrapper = mountComponent()
+
+    await (wrapper.vm as unknown as { handleBeaconClick: () => Promise<void> }).handleBeaconClick()
+    await flushPromises()
+
+    expect(stopLiveShareMock).toHaveBeenCalledWith('$beacon')
+    expect(startLiveShareMock).not.toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('已停止共享', 'success')
+  })
+
+  it('shows error feedback when stopLiveShare fails', async () => {
+    mockLocationStore.sharing = true
+    mockLocationStore.activeBeacons = new Map([['$beacon', { isLive: true }]])
+    stopLiveShareMock.mockRejectedValueOnce(new Error('stop failed'))
+    const wrapper = mountComponent()
+
+    await (wrapper.vm as unknown as { handleBeaconClick: () => Promise<void> }).handleBeaconClick()
+    await flushPromises()
+
+    expect(stopLiveShareMock).toHaveBeenCalledWith('$beacon')
+    expect(loggerErrorMock).toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('停止共享失败', 'error')
   })
 
   it('uses action feedback for location send failure and empty AI content warning', async () => {

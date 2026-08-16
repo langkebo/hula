@@ -84,9 +84,11 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
     if (!beacon) return
 
     const stopped = await matrixBeaconService.stopBeacon(beacon.roomId, beaconInfoEventId)
-    if (stopped) {
-      activeBeacons.value.set(beaconInfoEventId, { ...beacon, isLive: false })
+    if (!stopped) {
+      throw new Error('停止信标失败')
     }
+
+    activeBeacons.value.set(beaconInfoEventId, { ...beacon, isLive: false })
 
     // 仅当不再存在任何 live 信标时才关闭共享态（为多信标场景预留）。
     sharing.value = Array.from(activeBeacons.value.values()).some((item) => item.isLive)
