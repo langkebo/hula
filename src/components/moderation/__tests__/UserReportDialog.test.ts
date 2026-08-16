@@ -24,6 +24,10 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 
 // Naive UI 组件注册名不带 N 前缀（NModal.name === 'Modal'），stub key 按注册名匹配
 const naiveStubs = {
+  BaseRightDrawer: {
+    template: '<div class="rj-drawer-stub" v-if="show"><slot /><slot name="footer" /></div>',
+    props: ['show']
+  },
   Modal: {
     template: '<div class="n-modal-stub" v-if="show"><slot /><slot name="footer" /></div>',
     props: ['show']
