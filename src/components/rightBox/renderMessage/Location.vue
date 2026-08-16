@@ -48,6 +48,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { LocationBody } from '@/services/types'
+import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
 import { isWindows } from '@/utils/PlatformConstants'
 import LocationModal from '../location/LocationModal.vue'
 import StaticProxyMap from '../location/StaticProxyMap.vue'
@@ -71,12 +72,18 @@ const props = withDefaults(
 const modalVisible = ref(false)
 
 // 计算属性
-const locationData = computed(() => ({
-  latitude: Number(props.body?.latitude),
-  longitude: Number(props.body?.longitude),
-  address: props.body?.address,
-  timestamp: Number(props.body?.timestamp) || Date.now()
-}))
+const locationData = computed(() => {
+  const latitude = Number(props.body?.latitude)
+  const longitude = Number(props.body?.longitude)
+  // 收到的 geo URI 存 WGS-84，腾讯地图显示前转 GCJ-02（仅中国境内坐标会被转换）
+  const gcj = wgs84ToGcj02(latitude, longitude)
+  return {
+    latitude: gcj.lat,
+    longitude: gcj.lng,
+    address: props.body?.address,
+    timestamp: Number(props.body?.timestamp) || Date.now()
+  }
+})
 
 // 点击位置消息
 const handleLocationClick = () => {
