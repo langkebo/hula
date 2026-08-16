@@ -5,7 +5,6 @@
         :state="connectionState"
         :retry-count="connectionRetryCount"
         @retry="handleConnectionRetry" />
-      <NetworkStatusBar />
       <SplashScreen
         v-if="showSplash"
         :visible="showSplash"
