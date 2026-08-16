@@ -8,7 +8,6 @@ export type { ICreateClientOpts, MSC3575RoomData, MSC3575SlidingSyncResponse, Sl
 export {
   NotificationCountType,
   PendingEventOrdering,
-  ReceiptType,
   SlidingSyncEvent,
   SlidingSyncState
 } from 'matrix-js-sdk'
