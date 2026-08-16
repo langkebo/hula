@@ -13,6 +13,8 @@ export interface ActiveBeacon {
   owner: string
   description?: string
   timeout?: number
+  /** beacon 起始时间戳（m.ts），用于计算到期时间 */
+  timestamp: number
   isLive: boolean
   latestUri?: string
 }
@@ -21,13 +23,55 @@ export interface ActiveBeacon {
  * 位置 / beacon 实时共享 Store。
  *
  * 统一管理 live share 的状态，替代组件里零散的局部 ref。
- * 当前只覆盖「单次定位 + 单信标」的开/停闭环；持续定位循环（watchPosition）
- * 与超时/会话恢复留待后续任务（C5/C9）。
+ * 覆盖「开启 → 周期发布 → 超时/手动停止 → 过期清理 → 会话恢复」完整闭环。
  */
 export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
   const activeBeacons = ref<Map<string, ActiveBeacon>>(new Map())
   const sharing = ref(false)
   const currentLocation = ref<LocationData | null>(null)
+
+  /** 到期定时器（以 beacon_info 事件 ID 为键），到期后自动停止对应信标。 */
+  const expiryTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+  function clearExpiryTimer(beaconInfoEventId: string): void {
+    const timer = expiryTimers.get(beaconInfoEventId)
+    if (timer !== undefined) {
+      clearTimeout(timer)
+      expiryTimers.delete(beaconInfoEventId)
+    }
+  }
+
+  function clearAllExpiryTimers(): void {
+    for (const timer of expiryTimers.values()) {
+      clearTimeout(timer)
+    }
+    expiryTimers.clear()
+  }
+
+  /** 依据 timestamp + timeout 计算剩余时长并排定到期定时器；到期即调用 stopLiveShare。 */
+  function scheduleExpiry(beaconInfoEventId: string, beacon: ActiveBeacon): void {
+    clearExpiryTimer(beaconInfoEventId)
+    if (beacon.timeout === undefined || beacon.timeout <= 0) return
+
+    const remaining = beacon.timestamp + beacon.timeout - Date.now()
+    if (remaining <= 0) {
+      // 已过期：立即停止（信标已写入 activeBeacons，stopLiveShare 可定位到它）
+      void stopLiveShare(beaconInfoEventId).catch((error) => {
+        logger.warn('到期自动停止失败:', beaconInfoEventId, error)
+      })
+      return
+    }
+
+    expiryTimers.set(
+      beaconInfoEventId,
+      setTimeout(() => {
+        expiryTimers.delete(beaconInfoEventId)
+        void stopLiveShare(beaconInfoEventId).catch((error) => {
+          logger.warn('到期自动停止失败:', beaconInfoEventId, error)
+        })
+      }, remaining)
+    )
+  }
 
   /**
    * 开启实时位置共享：创建 beacon_info，取一次当前位置并发布首个 m.beacon。
@@ -36,15 +80,20 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
   async function startLiveShare(roomId: string, description?: string, timeout?: number): Promise<string> {
     const beacon = await matrixBeaconService.createBeacon({ roomId, description, timeout })
 
-    activeBeacons.value.set(beacon.event_id, {
+    // 本地会话以开启时刻为起始时间（服务端 m.ts 即创建时刻，二者相差毫秒级），
+    // 与 SDK checkLiveness 的「timestamp + timeout」口径一致。
+    const active: ActiveBeacon = {
       roomId,
       owner: beacon.user_id,
       description: beacon.description,
       timeout: beacon.timeout,
+      timestamp: Date.now(),
       isLive: beacon.is_live,
       latestUri: undefined
-    })
+    }
+    activeBeacons.value.set(beacon.event_id, active)
     sharing.value = true
+    scheduleExpiry(beacon.event_id, active)
 
     try {
       const location = await matrixLocationService.getCurrentPosition()
@@ -83,6 +132,8 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
     const beacon = activeBeacons.value.get(beaconInfoEventId)
     if (!beacon) return
 
+    clearExpiryTimer(beaconInfoEventId)
+
     const stopped = await matrixBeaconService.stopBeacon(beacon.roomId, beaconInfoEventId)
     if (!stopped) {
       throw new Error('停止信标失败')
@@ -95,8 +146,39 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
     currentLocation.value = null
   }
 
+  /**
+   * 会话恢复：从服务端重建活跃信标并恢复共享态。
+   * 重连 / 重启后调用（app 就绪或进入房间时），并为仍 live 的信标重建到期定时器。
+   */
+  async function restoreActiveBeacons(roomId: string): Promise<void> {
+    const beacons = await matrixBeaconService.getActiveBeacons(roomId)
+
+    clearAllExpiryTimers()
+    const restored = new Map<string, ActiveBeacon>()
+    for (const beacon of beacons) {
+      restored.set(beacon.event_id, {
+        roomId: beacon.room_id,
+        owner: beacon.user_id,
+        description: beacon.description,
+        timeout: beacon.timeout,
+        timestamp: beacon.last_updated,
+        isLive: beacon.is_live,
+        latestUri: undefined
+      })
+    }
+
+    activeBeacons.value = restored
+    sharing.value = restored.size > 0
+    currentLocation.value = null
+
+    for (const [beaconInfoEventId, beacon] of restored) {
+      scheduleExpiry(beaconInfoEventId, beacon)
+    }
+  }
+
   /** 重置所有位置 / 信标状态。 */
   function reset(): void {
+    clearAllExpiryTimers()
     activeBeacons.value = new Map()
     sharing.value = false
     currentLocation.value = null
@@ -109,6 +191,7 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
     startLiveShare,
     publishLocation,
     stopLiveShare,
+    restoreActiveBeacons,
     reset
   }
 })

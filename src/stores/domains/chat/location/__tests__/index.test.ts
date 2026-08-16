@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import { useLocationStore } from '../index'
@@ -8,7 +8,8 @@ vi.mock('@/services/matrix/media/MatrixBeaconService', () => ({
   matrixBeaconService: {
     createBeacon: vi.fn(),
     updateBeaconLocation: vi.fn(),
-    stopBeacon: vi.fn()
+    stopBeacon: vi.fn(),
+    getActiveBeacons: vi.fn()
   }
 }))
 
@@ -47,6 +48,11 @@ describe('useLocationStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('初始状态为空且未在共享', () => {
@@ -86,6 +92,7 @@ describe('useLocationStore', () => {
         owner: '@alice:example.com',
         description: '实时位置共享',
         timeout: 3600000,
+        timestamp: expect.any(Number),
         isLive: true,
         latestUri: 'geo:39.9042,116.4074'
       })
@@ -189,6 +196,114 @@ describe('useLocationStore', () => {
       expect(matrixBeaconService.stopBeacon).toHaveBeenCalledWith('!room:id', '$beacon1')
       expect(store.activeBeacons.get('$beacon1')?.isLive).toBe(true)
       expect(store.sharing).toBe(true)
+    })
+  })
+
+  describe('超时自动停止', () => {
+    it('到期后自动停止信标并关闭共享态', async () => {
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+      vi.mocked(matrixBeaconService.createBeacon).mockResolvedValue({
+        ...BEACON,
+        timeout: 60000,
+        last_updated: Date.now()
+      })
+      vi.mocked(matrixLocationService.getCurrentPosition).mockRejectedValue(new Error('跳过初始定位'))
+      vi.mocked(matrixBeaconService.stopBeacon).mockResolvedValue(true)
+
+      const store = useLocationStore()
+      await store.startLiveShare('!room:id', '实时位置共享', 60000)
+
+      expect(store.sharing).toBe(true)
+      expect(matrixBeaconService.stopBeacon).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(60000)
+
+      expect(matrixBeaconService.stopBeacon).toHaveBeenCalledWith('!room:id', '$beacon1')
+      expect(store.activeBeacons.get('$beacon1')?.isLive).toBe(false)
+      expect(store.sharing).toBe(false)
+    })
+
+    it('手动停止后清除到期定时器（不重复停止）', async () => {
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+      vi.mocked(matrixBeaconService.createBeacon).mockResolvedValue({
+        ...BEACON,
+        timeout: 60000,
+        last_updated: Date.now()
+      })
+      vi.mocked(matrixLocationService.getCurrentPosition).mockRejectedValue(new Error('跳过初始定位'))
+      vi.mocked(matrixBeaconService.stopBeacon).mockResolvedValue(true)
+
+      const store = useLocationStore()
+      await store.startLiveShare('!room:id', '实时位置共享', 60000)
+
+      await vi.advanceTimersByTimeAsync(30000)
+      await store.stopLiveShare('$beacon1')
+      expect(matrixBeaconService.stopBeacon).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(120000)
+      expect(matrixBeaconService.stopBeacon).toHaveBeenCalledTimes(1)
+      expect(store.sharing).toBe(false)
+    })
+  })
+
+  describe('restoreActiveBeacons（会话恢复）', () => {
+    it('从 getActiveBeacons 重建活跃信标并恢复共享态', async () => {
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+      vi.mocked(matrixBeaconService.getActiveBeacons).mockResolvedValue([
+        {
+          event_id: '$beacon1',
+          room_id: '!room:id',
+          user_id: '@alice:example.com',
+          description: '实时位置共享',
+          timeout: 60000,
+          is_live: true,
+          last_updated: Date.now()
+        }
+      ])
+
+      const store = useLocationStore()
+      await store.restoreActiveBeacons('!room:id')
+
+      expect(matrixBeaconService.getActiveBeacons).toHaveBeenCalledWith('!room:id')
+      expect(store.activeBeacons.size).toBe(1)
+      expect(store.activeBeacons.get('$beacon1')?.isLive).toBe(true)
+      expect(store.activeBeacons.get('$beacon1')?.timestamp).toBe(Date.now())
+      expect(store.sharing).toBe(true)
+    })
+
+    it('恢复后为仍 live 的信标重建到期定时器', async () => {
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+      vi.mocked(matrixBeaconService.getActiveBeacons).mockResolvedValue([
+        {
+          event_id: '$beacon1',
+          room_id: '!room:id',
+          user_id: '@alice:example.com',
+          description: '实时位置共享',
+          timeout: 60000,
+          is_live: true,
+          last_updated: Date.now()
+        }
+      ])
+      vi.mocked(matrixBeaconService.stopBeacon).mockResolvedValue(true)
+
+      const store = useLocationStore()
+      await store.restoreActiveBeacons('!room:id')
+
+      await vi.advanceTimersByTimeAsync(60000)
+
+      expect(matrixBeaconService.stopBeacon).toHaveBeenCalledWith('!room:id', '$beacon1')
+      expect(store.activeBeacons.get('$beacon1')?.isLive).toBe(false)
+      expect(store.sharing).toBe(false)
+    })
+
+    it('无活跃信标时保持未共享', async () => {
+      vi.mocked(matrixBeaconService.getActiveBeacons).mockResolvedValue([])
+
+      const store = useLocationStore()
+      await store.restoreActiveBeacons('!room:id')
+
+      expect(store.activeBeacons.size).toBe(0)
+      expect(store.sharing).toBe(false)
     })
   })
 
