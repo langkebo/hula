@@ -312,4 +312,14 @@ describe('ActionList', () => {
       expect(entry.find('.workspace-entry__content').exists()).toBe(false)
     })
   })
+
+  it('makes top nav items keyboard-accessible (Enter triggers jump)', async () => {
+    const wrapper = await mountActionList()
+
+    const messageItem = wrapper.findAll('[role="button"]').find((node) => node.attributes('aria-label') === 'Message')
+    expect(messageItem).toBeTruthy()
+
+    await messageItem!.trigger('keydown', { key: 'Enter' })
+    expect(pageJumps).toHaveBeenCalledWith('message', 'Message', undefined, undefined)
+  })
 })
