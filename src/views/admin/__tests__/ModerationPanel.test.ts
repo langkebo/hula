@@ -252,7 +252,42 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.escalateFailed', 'error')
   })
 
-  it('删除事件举报弹出确认并调用 deleteReport', async () => {
+  it('删除事件举报弹出确认并调用 deleteReport，reload 后 id 消失给出成功反馈', async () => {
+    // 挂载时列表含该举报；删除后 reload 的列表不再包含（模拟删除成功）
+    listReportsMock.mockResolvedValueOnce([sampleEventReport]).mockResolvedValueOnce([])
+    setupWindowConfirm(true)
+
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="event-report-action-delete"]').trigger('click')
+    await flushPromises()
+
+    expect(deleteReportMock).toHaveBeenCalledWith(101)
+    expect(listReportsMock).toHaveBeenCalledTimes(2)
+    expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.deleteSuccess', 'success')
+  })
+
+  it('deleteReport 抛错（204 空 body 被 SDK 误判）时仍 reload，id 消失即视为删除成功', async () => {
+    // SDK 对 204 No Content（空 body）执行 res.json() 必然 reject，但服务端已删除成功
+    listReportsMock.mockResolvedValueOnce([sampleEventReport]).mockResolvedValueOnce([])
+    deleteReportMock.mockRejectedValue(new Error('Unexpected end of JSON input'))
+    setupWindowConfirm(true)
+
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="event-report-action-delete"]').trigger('click')
+    await flushPromises()
+
+    expect(deleteReportMock).toHaveBeenCalledWith(101)
+    // 即使 deleteReport 抛错也重新加载列表
+    expect(listReportsMock).toHaveBeenCalledTimes(2)
+    // 被删 id 已不在 reload 后的列表 → 判定为删除成功
+    expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.deleteSuccess', 'success')
+  })
+
+  it('删除后 reload 列表中该 id 仍在时给出删除失败反馈', async () => {
     listReportsMock.mockResolvedValue([sampleEventReport])
     setupWindowConfirm(true)
 
@@ -263,7 +298,7 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await flushPromises()
 
     expect(deleteReportMock).toHaveBeenCalledWith(101)
-    expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.deleteSuccess', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.toast.deleteFailed', 'error')
   })
 
   it('删除确认取消时不调用 deleteReport', async () => {
