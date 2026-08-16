@@ -4118,7 +4118,7 @@ packages:
     resolution: {integrity: sha512-1QEOsXO+bhyCroIe2/A5OwaxHvBm7EsSQ46DEDn8RBIfQwN5HWBpFvyWWR4QY0KHPPnnJdI99wgRiAl7Ad5qaA==}
 
   matrix-js-sdk@file:vendor/matrix-js-sdk.tgz:
-    resolution: {integrity: sha512-3B+BqhpXL6kwOYjZVF2d2XgMg0FmvQ8CYVBDf/MPD3gHNQzk6pnTnQulx2PEAwr1iSZZ/oFZ+npS2hxdEQit8A==, tarball: file:vendor/matrix-js-sdk.tgz}
+    resolution: {integrity: sha512-t1K1DiZfhcLqBnOiY396PTVr6Cgl/lK/js6tQ3v+MQk7z0C/J7WGLmyDJ/ifHI9xdH9loDHzKmtV7FJfui/ryA==, tarball: file:vendor/matrix-js-sdk.tgz}
     version: 40.2.0
     engines: {node: '>=22.0.0'}
 
