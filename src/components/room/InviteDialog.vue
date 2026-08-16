@@ -1,11 +1,11 @@
 <template>
   <n-modal
-    :show="visible"
+    :show="show"
     preset="card"
     :title="t('room.invite.title')"
     :style="{ width: '400px' }"
     :bordered="false"
-    @update:show="$emit('update:visible', $event)">
+    @update:show="$emit('update:show', $event)">
     <div class="invite-dialog">
       <n-input v-model:value="searchQuery" :placeholder="t('room.invite.search_placeholder')" clearable>
         <template #prefix>
@@ -54,7 +54,7 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <n-button @click="$emit('update:visible', false)">{{ t('common.cancel') }}</n-button>
+        <n-button @click="$emit('update:show', false)">{{ t('common.cancel') }}</n-button>
         <n-button type="primary" :disabled="selectedUsers.length === 0" :loading="inviting" @click="handleInvite">
           {{ t('room.invite.invite') }}
           <template v-if="selectedUsers.length > 0">({{ selectedUsers.length }})</template>
@@ -75,12 +75,12 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('InviteDialog')
 
 const props = defineProps<{
-  visible: boolean
+  show: boolean
   roomId: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:visible', value: boolean): void
+  (e: 'update:show', value: boolean): void
   (e: 'invited', userIds: string[]): void
 }>()
 
@@ -162,7 +162,7 @@ const handleInvite = async () => {
 
     showFeedback(t('room.invite.success', { count: selectedUsers.value.length }), 'success')
     emit('invited', selectedUsers.value)
-    emit('update:visible', false)
+    emit('update:show', false)
     selectedUsers.value = []
   } catch (error) {
     logger.error('邀请失败:', error)
@@ -177,9 +177,9 @@ watch(searchQuery, (query) => {
 })
 
 watch(
-  () => props.visible,
-  (visible) => {
-    if (!visible) {
+  () => props.show,
+  (show) => {
+    if (!show) {
       selectedUsers.value = []
       searchQuery.value = ''
       manualUserId.value = ''

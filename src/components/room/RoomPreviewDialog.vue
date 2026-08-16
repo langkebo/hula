@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    :show="visible"
+    :show="show"
     preset="card"
     :title="t('room.discovery.preview_title')"
     :bordered="false"
@@ -136,7 +136,7 @@ import type { RoomCardData } from './RoomCard.vue'
 
 const props = withDefaults(
   defineProps<{
-    visible: boolean
+    show: boolean
     room: RoomCardData | null
     requireReason?: boolean
     loading?: boolean
@@ -148,7 +148,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
+  'update:show': [value: boolean]
   join: [roomId: string, reason?: string]
   cancel: []
 }>()
@@ -167,11 +167,11 @@ const historySummary = computed(() => {
 })
 
 const close = () => {
-  emit('update:visible', false)
+  emit('update:show', false)
 }
 
 const handleUpdateVisible = (value: boolean) => {
-  emit('update:visible', value)
+  emit('update:show', value)
 }
 
 const handleCancel = () => {
@@ -187,9 +187,9 @@ const handleJoin = () => {
 
 // 打开对话框时重置理由输入
 watch(
-  () => props.visible,
-  (visible) => {
-    if (visible) {
+  () => props.show,
+  (show) => {
+    if (show) {
       reason.value = ''
     }
   }

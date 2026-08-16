@@ -53,7 +53,7 @@
 
     <!-- 位置选择弹窗 -->
     <LocationModal
-      v-model:visible="showLocationModal"
+      v-model:show="showLocationModal"
       @location-selected="handleLocationSelected"
       @cancel="showLocationModal = false" />
 

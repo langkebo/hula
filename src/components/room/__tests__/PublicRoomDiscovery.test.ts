@@ -56,12 +56,12 @@ vi.mock('../RoomPreviewDialog.vue', () => ({
   default: defineComponent({
     name: 'RoomPreviewDialog',
     props: {
-      visible: { type: Boolean, default: false },
+      show: { type: Boolean, default: false },
       room: { type: Object as () => RoomData | null, default: null },
       requireReason: { type: Boolean, default: false },
       loading: { type: Boolean, default: false }
     },
-    emits: ['update:visible', 'join', 'cancel'],
+    emits: ['update:show', 'join', 'cancel'],
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-testid': 'room-preview-dialog' }, [
@@ -76,7 +76,7 @@ vi.mock('../RoomPreviewDialog.vue', () => ({
               'data-testid': 'dialog-cancel-btn',
               onClick: () => {
                 emit('cancel')
-                emit('update:visible', false)
+                emit('update:show', false)
               }
             },
             'cancel'
@@ -204,13 +204,13 @@ describe('PublicRoomDiscovery', () => {
   it('opens preview dialog when a card join button is clicked', async () => {
     const wrapper = mountComponent()
     const dialog = wrapper.findComponent({ name: 'RoomPreviewDialog' })
-    // initially not visible
-    expect(dialog.props('visible')).toBe(false)
+    // initially not show
+    expect(dialog.props('show')).toBe(false)
 
     const firstCard = wrapper.findAll('[data-testid="room-card"]')[0]!
     await firstCard.find('[data-testid="room-join-btn"]').trigger('click')
 
-    expect(dialog.props('visible')).toBe(true)
+    expect(dialog.props('show')).toBe(true)
     expect(dialog.props('room')?.roomId).toBe('!room1:matrix.test')
   })
 
@@ -231,7 +231,7 @@ describe('PublicRoomDiscovery', () => {
 
     await wrapper.find('[data-testid="dialog-cancel-btn"]').trigger('click')
     expect(wrapper.emitted('join')).toBeUndefined()
-    expect(dialog.props('visible')).toBe(false)
+    expect(dialog.props('show')).toBe(false)
   })
 
   it('passes requireReason based on item federation flag', async () => {

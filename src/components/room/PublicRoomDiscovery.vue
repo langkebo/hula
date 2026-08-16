@@ -34,10 +34,10 @@
     </n-spin>
 
     <RoomPreviewDialog
-      :visible="previewVisible"
+      :show="previewVisible"
       :room="previewRoom"
       :require-reason="previewRequireReason"
-      @update:visible="previewVisible = $event"
+      @update:show="previewVisible = $event"
       @cancel="previewVisible = false"
       @join="handleJoin" />
   </section>

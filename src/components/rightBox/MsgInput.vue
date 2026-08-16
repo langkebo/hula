@@ -1,7 +1,7 @@
 <template>
   <div class="msg-input-container">
     <!-- 位置选择弹窗 -->
-    <LocationModal v-model:visible="showLocationModal" @location-selected="handleLocationSelected" />
+    <LocationModal v-model:show="showLocationModal" @location-selected="handleLocationSelected" />
 
     <!-- 录音模式 -->
     <VoiceRecorder v-show="isVoiceMode" @cancel="handleVoiceCancel" @send="sendVoiceDirect" />

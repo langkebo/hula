@@ -41,8 +41,8 @@ vi.mock('@/components/rightBox/location/LocationModal.vue', async () => {
   return {
     default: defineComponent({
       name: 'LocationModal',
-      props: ['visible'],
-      emits: ['update:visible', 'location-selected', 'cancel'],
+      props: ['show'],
+      emits: ['update:show', 'location-selected', 'cancel'],
       setup() {
         return () => h('div', { 'data-test': 'location-modal' })
       }
