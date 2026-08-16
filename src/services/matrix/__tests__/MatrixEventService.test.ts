@@ -1,5 +1,6 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MsgEnum } from '@/enums'
 import { matrixEventService } from '../MatrixEventService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -184,6 +185,99 @@ describe('MatrixEventService', () => {
       expect(result).toBe('local-q-5')
 
       Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+    })
+  })
+
+  describe('convertEventToMessage', () => {
+    const makeEvent = (type: string, content: Record<string, unknown>): MatrixEvent =>
+      ({
+        getId: () => '$evt',
+        getSender: () => '@alice:e',
+        getType: () => type,
+        getContent: () => content,
+        getTs: () => 1700000000000
+      }) as unknown as MatrixEvent
+
+    const makeRoom = (): Room =>
+      ({
+        roomId: '!room:e',
+        getMember: () => ({ name: 'Alice', getMxcAvatarUrl: () => 'mxc://a' })
+      }) as unknown as Room
+
+    it('maps m.location into a LocationBody', () => {
+      const msg = matrixEventService.convertEventToMessage(
+        makeEvent('m.room.message', {
+          msgtype: 'm.location',
+          body: '位置',
+          geo_uri: 'geo:39.9042,116.4074',
+          'm.location': { uri: 'geo:39.9042,116.4074', description: '北京' },
+          'm.ts': 1700000000000
+        }),
+        makeRoom()
+      )
+
+      expect(msg?.message.type).toBe(MsgEnum.LOCATION)
+      expect(msg?.message.body).toEqual({
+        latitude: '39.9042',
+        longitude: '116.4074',
+        address: '北京',
+        precision: '',
+        timestamp: '1700000000000'
+      })
+    })
+
+    it('maps m.beacon_info into a BeaconBody', () => {
+      const msg = matrixEventService.convertEventToMessage(
+        makeEvent('m.beacon_info', {
+          description: '实时',
+          timeout: 3600000,
+          live: true,
+          'm.ts': 1700000000000
+        }),
+        makeRoom()
+      )
+
+      expect(msg?.message.type).toBe(MsgEnum.BEACON)
+      expect(msg?.message.body).toMatchObject({
+        description: '实时',
+        timeout: 3600000,
+        isLive: true,
+        lastUpdateTs: 1700000000000
+      })
+    })
+
+    it('maps m.beacon into a BeaconBody with uri', () => {
+      const msg = matrixEventService.convertEventToMessage(
+        makeEvent('m.beacon', {
+          'm.location': { uri: 'geo:39.9,116.4' },
+          'm.ts': 1700000001000
+        }),
+        makeRoom()
+      )
+
+      expect(msg?.message.type).toBe(MsgEnum.BEACON)
+      expect(msg?.message.body).toMatchObject({
+        uri: 'geo:39.9,116.4',
+        lastUpdateTs: 1700000001000
+      })
+    })
+
+    it('maps unstable beacon event names into a BeaconBody', () => {
+      const msg = matrixEventService.convertEventToMessage(
+        makeEvent('org.matrix.msc3672.beacon_info', { timeout: 1000 }),
+        makeRoom()
+      )
+
+      expect(msg?.message.type).toBe(MsgEnum.BEACON)
+      expect(msg?.message.body).toMatchObject({ timeout: 1000 })
+    })
+
+    it('keeps raw content passthrough for non-location/beacon types', () => {
+      const content = { msgtype: 'm.text', body: 'hello' }
+      const msg = matrixEventService.convertEventToMessage(makeEvent('m.room.message', content), makeRoom())
+
+      expect(msg?.message.type).toBe(MsgEnum.TEXT)
+      expect(msg?.message.body).toEqual(content)
     })
   })
 })

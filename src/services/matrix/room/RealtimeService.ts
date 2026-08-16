@@ -15,6 +15,18 @@ const ROOM_EVENTS = {
   Member: 'Room.member'
 } as const
 
+/**
+ * 实时位置共享（beacon）相关事件类型，含 MSC3672 不稳定前缀。
+ * 实时时间线需将这些事件 dispatch 到 convertEventToMessage，
+ * 否则会被当作普通事件丢弃（message 为 null）而无法渲染。
+ */
+const BEACON_EVENT_TYPES = new Set<string>([
+  'm.beacon_info',
+  'm.beacon',
+  'org.matrix.msc3672.beacon_info',
+  'org.matrix.msc3672.beacon'
+])
+
 interface RoomSession {
   roomId: string
   name: string
@@ -80,6 +92,8 @@ export class MatrixRoomRealtimeService {
         message = matrixEventServiceLocal.convertEventToMessage(event, room)
       } else if (eventType === 'm.room.encrypted') {
         message = matrixEventServiceLocal.convertEventToMessageType(event)
+      } else if (BEACON_EVENT_TYPES.has(eventType)) {
+        message = matrixEventServiceLocal.convertEventToMessage(event, room)
       }
 
       callback({
