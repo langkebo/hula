@@ -34,36 +34,7 @@
       </div>
     </div>
 
-    <n-modal v-model:show="showAddPusherModal" preset="dialog" :title="t('setting.push.add_pusher.title')">
-      <n-form label-placement="left" label-width="auto">
-        <n-form-item :label="t('setting.push.add_pusher.kind_label')">
-          <n-select v-model:value="newPusher.kind" :options="pusherKindOptions" />
-        </n-form-item>
-        <n-form-item :label="t('setting.push.add_pusher.app_id_label')">
-          <n-input v-model:value="newPusher.app_id" :placeholder="t('setting.push.add_pusher.app_id_placeholder')" />
-        </n-form-item>
-        <n-form-item :label="t('setting.push.add_pusher.app_display_name_label')">
-          <n-input
-            v-model:value="newPusher.app_display_name"
-            :placeholder="t('setting.push.add_pusher.app_display_name_placeholder')" />
-        </n-form-item>
-        <n-form-item :label="t('setting.push.add_pusher.device_display_name_label')">
-          <n-input
-            v-model:value="newPusher.device_display_name"
-            :placeholder="t('setting.push.add_pusher.device_display_name_placeholder')" />
-        </n-form-item>
-        <n-form-item :label="t('setting.push.add_pusher.pushkey_label')">
-          <n-input v-model:value="newPusher.pushkey" :placeholder="t('setting.push.add_pusher.pushkey_placeholder')" />
-        </n-form-item>
-        <n-form-item :label="t('setting.push.add_pusher.lang_label')">
-          <n-input v-model:value="newPusher.lang" placeholder="en" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showAddPusherModal = false">{{ t('setting.push.add_pusher.cancel') }}</n-button>
-        <n-button type="primary" @click="handleAddPusher">{{ t('setting.push.add_pusher.confirm') }}</n-button>
-      </template>
-    </n-modal>
+    <AddPusherDialog v-model:show="showAddPusherModal" @added="fetchPushers" />
 
     <n-divider />
 
@@ -172,17 +143,13 @@ import {
   NButton,
   NDivider,
   NEmpty,
-  NForm,
-  NFormItem,
   NInput,
-  NModal,
-  NSelect,
   NSpin,
   NSwitch,
   NTimePicker,
   useDialog
 } from 'naive-ui'
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
@@ -190,6 +157,7 @@ import { matrixNotificationService } from '@/services/matrix/notifications/Matri
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
 import type { IPusher, IPushRule, IPushRules, PushRuleKind } from '@/types/matrix-services'
 import { createLogger } from '@/utils/Logger'
+import AddPusherDialog from './AddPusherDialog.vue'
 
 const logger = createLogger('PushSettings')
 
@@ -225,20 +193,6 @@ const notifications = ref<Array<Record<string, unknown>>>([])
 let unsubscribePushRules: (() => void) | null = null
 
 const showAddPusherModal = ref(false)
-const newPusher = reactive({
-  kind: 'http',
-  app_id: '',
-  app_display_name: '',
-  device_display_name: '',
-  pushkey: '',
-  lang: 'en'
-})
-
-const pusherKindOptions = [
-  { label: 'Web (HTTP)', value: 'http' },
-  { label: 'APNs (iOS)', value: 'apns' },
-  { label: 'FCM (Android)', value: 'fcm' }
-]
 
 const ruleKinds = ['override', 'content', 'room', 'sender', 'underride'] as const
 
@@ -401,40 +355,6 @@ function handleDeletePusher(pusher: IPusher) {
       }
     }
   })
-}
-
-async function handleAddPusher() {
-  if (!newPusher.app_id || !newPusher.pushkey) {
-    showFeedback(t('setting.push.add_pusher.required'), 'warning')
-    return
-  }
-  try {
-    await matrixNotificationService.setPusherByBody({
-      kind: newPusher.kind,
-      app_id: newPusher.app_id,
-      app_display_name: newPusher.app_display_name,
-      device_display_name: newPusher.device_display_name,
-      pushkey: newPusher.pushkey,
-      lang: newPusher.lang || 'en',
-      data: {}
-    })
-    showFeedback(t('setting.push.add_pusher.success'), 'success')
-    showAddPusherModal.value = false
-    resetNewPusher()
-    await fetchPushers()
-  } catch (error) {
-    logger.error('Failed to add pusher', error)
-    showFeedback(t('setting.push.add_pusher.failed'), 'error')
-  }
-}
-
-function resetNewPusher() {
-  newPusher.kind = 'http'
-  newPusher.app_id = ''
-  newPusher.app_display_name = ''
-  newPusher.device_display_name = ''
-  newPusher.pushkey = ''
-  newPusher.lang = 'en'
 }
 
 function getDeviceIcon(kind?: string): string {
