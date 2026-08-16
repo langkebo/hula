@@ -1,7 +1,4 @@
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
-import { stripMatrixPrefix } from '../MatrixHttpClient'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MediaService')
 
@@ -69,32 +66,6 @@ export class AdminMediaService {
       logger.info(`[AdminMedia] 媒体已删除: ${mediaId}`)
     } catch (err) {
       logger.error(`[AdminMedia] 删除媒体失败: ${err}`)
-      throw err
-    }
-  }
-
-  async purgeRemoteMedia(beforeTs: number, includeProfiles: boolean = false): Promise<{ deleted: number }> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[AdminMedia] 客户端未初始化')
-    }
-
-    try {
-      const { path, prefix } = stripMatrixPrefix(MATRIX_PATHS.ADMIN.PURGE_REMOTE_MEDIA)
-      const result = await client.http.authedRequest(
-        'POST',
-        path,
-        undefined,
-        {
-          before_ts: beforeTs,
-          include_profiles: includeProfiles
-        },
-        { prefix }
-      )
-      logger.info(`[AdminMedia] 清理远程媒体成功: ${(result as { deleted?: number }).deleted ?? 0} 个`)
-      return { deleted: (result as { deleted?: number }).deleted ?? 0 }
-    } catch (err) {
-      logger.error(`[AdminMedia] 清理远程媒体失败: ${err}`)
       throw err
     }
   }
