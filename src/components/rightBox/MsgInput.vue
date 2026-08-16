@@ -173,6 +173,7 @@ import { useSendOptions } from '@/composables/settings/settingsOptions'
 import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import type { AIModel, UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useLocationStore } from '@/stores/domains/chat/location'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import type { LocationData } from '@/types/common'
@@ -215,11 +216,12 @@ const virtualListInstAit = useTemplateRef<VirtualListInst>('virtualListInst-ait'
 const virtualListInstAI = useTemplateRef<VirtualListInst>('virtualListInst-AI')
 const isVoiceMode = ref(false)
 const groupStore = useGroupStore()
+const locationStore = useLocationStore()
+const { sharing } = storeToRefs(locationStore)
 
 const showFileModal = ref(false)
 const pendingFiles = ref<UploadFile[]>([])
 const showLocationModal = ref(false)
-const isBeaconActive = ref(false)
 const privateModeActive = ref(false)
 const onPrivateModeChanged = (isActive: boolean) => {
   privateModeActive.value = isActive
@@ -358,34 +360,31 @@ const showFileModalCallback = (files: UploadFile[]) => {
 const handleBeaconClick = async () => {
   if (!currentSessionRoomId.value) return
 
+  // 已在共享中：再次点击工具栏按钮即「停止共享」
+  if (sharing.value) {
+    await stopSharing()
+    return
+  }
+
   try {
-    const { useGeolocation } = await import('@/composables/common/useGeolocation')
-    const { matrixBeaconService } = await import('@/services/matrix/media/MatrixBeaconService')
-    const { getCurrentPosition } = useGeolocation()
-
-    const position = await getCurrentPosition()
-    const { latitude, longitude } = position.coords
-
-    const beacon = await matrixBeaconService.createBeacon({
-      roomId: currentSessionRoomId.value,
-      description: '实时位置共享'
-    })
-
-    if (beacon) {
-      await matrixBeaconService.updateBeaconLocation({
-        roomId: currentSessionRoomId.value,
-        beaconInfoEventId: beacon.event_id,
-        latitude,
-        longitude,
-        uncertainty: position.coords.accuracy ?? undefined
-      })
-
-      isBeaconActive.value = true
-      showFeedback(t('message.beacon.started') || '信标已启动', 'success')
-    }
+    await locationStore.startLiveShare(currentSessionRoomId.value, '实时位置共享')
+    showFeedback(t('message.beacon.started') || '信标已启动', 'success')
   } catch (error) {
     logger.error('启动 Beacon 失败:', error)
     showFeedback(t('message.beacon.failed') || '信标启动失败', 'error')
+  }
+}
+
+const stopSharing = async () => {
+  const liveBeaconId = Array.from(locationStore.activeBeacons.entries()).find(([, beacon]) => beacon.isLive)?.[0]
+  if (!liveBeaconId) return
+
+  try {
+    await locationStore.stopLiveShare(liveBeaconId)
+    showFeedback('已停止共享', 'success')
+  } catch (error) {
+    logger.error('停止 Beacon 失败:', error)
+    showFeedback('停止共享失败', 'error')
   }
 }
 

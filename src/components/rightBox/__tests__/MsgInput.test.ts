@@ -7,9 +7,8 @@ const {
   showFeedbackMock,
   processFilesMock,
   sendLocationDirectMock,
-  getCurrentPositionMock,
-  createBeaconMock,
-  updateBeaconLocationMock,
+  startLiveShareMock,
+  stopLiveShareMock,
   loggerErrorMock,
   mittOnMock,
   mittOffMock,
@@ -19,9 +18,8 @@ const {
   showFeedbackMock: vi.fn(),
   processFilesMock: vi.fn(),
   sendLocationDirectMock: vi.fn(),
-  getCurrentPositionMock: vi.fn(),
-  createBeaconMock: vi.fn(),
-  updateBeaconLocationMock: vi.fn(),
+  startLiveShareMock: vi.fn(),
+  stopLiveShareMock: vi.fn(),
   loggerErrorMock: vi.fn(),
   mittOnMock: vi.fn(),
   mittOffMock: vi.fn(),
@@ -126,17 +124,14 @@ vi.mock('@/composables/chat/useMsgInput', () => ({
   })
 }))
 
-vi.mock('@/composables/common/useGeolocation', () => ({
-  useGeolocation: () => ({
-    getCurrentPosition: getCurrentPositionMock
-  })
-}))
-
-vi.mock('@/services/matrix/media/MatrixBeaconService', () => ({
-  matrixBeaconService: {
-    createBeacon: createBeaconMock,
-    updateBeaconLocation: updateBeaconLocationMock
-  }
+vi.mock('@/stores/domains/chat/location', () => ({
+  useLocationStore: () =>
+    reactive({
+      sharing: false,
+      activeBeacons: new Map(),
+      startLiveShare: startLiveShareMock,
+      stopLiveShare: stopLiveShareMock
+    })
 }))
 
 vi.mock('../location/LocationModal.vue', () => ({
@@ -241,17 +236,7 @@ describe('MsgInput', () => {
       currentSessionRoomId: '!room:example.com'
     })
 
-    getCurrentPositionMock.mockResolvedValue({
-      coords: {
-        latitude: 12.34,
-        longitude: 56.78,
-        accuracy: 9
-      }
-    })
-    createBeaconMock.mockResolvedValue({
-      event_id: '$beacon'
-    })
-    updateBeaconLocationMock.mockResolvedValue(undefined)
+    startLiveShareMock.mockResolvedValue('$beacon')
     sendLocationDirectMock.mockResolvedValue(undefined)
     processFilesMock.mockResolvedValue(undefined)
   })
@@ -262,22 +247,12 @@ describe('MsgInput', () => {
     await (wrapper.vm as unknown as { handleBeaconClick: () => Promise<void> }).handleBeaconClick()
     await flushPromises()
 
-    expect(createBeaconMock).toHaveBeenCalledWith({
-      roomId: '!room:example.com',
-      description: '实时位置共享'
-    })
-    expect(updateBeaconLocationMock).toHaveBeenCalledWith({
-      roomId: '!room:example.com',
-      beaconInfoEventId: '$beacon',
-      latitude: 12.34,
-      longitude: 56.78,
-      uncertainty: 9
-    })
+    expect(startLiveShareMock).toHaveBeenCalledWith('!room:example.com', '实时位置共享')
     expect(showFeedbackMock).toHaveBeenCalledWith('message.beacon.started', 'success')
   })
 
   it('uses action feedback for beacon start failure', async () => {
-    getCurrentPositionMock.mockRejectedValueOnce(new Error('permission denied'))
+    startLiveShareMock.mockRejectedValueOnce(new Error('permission denied'))
     const wrapper = mountComponent()
 
     await (wrapper.vm as unknown as { handleBeaconClick: () => Promise<void> }).handleBeaconClick()
