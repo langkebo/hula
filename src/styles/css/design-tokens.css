@@ -212,7 +212,7 @@
   --tjg-color-beta-100: #d9ccf7;
 
   /* 业务语义色 */
-  --tjg-room-unread-badge-bg: var(--tjg-color-primary-500);
+  --tjg-room-unread-badge-bg: var(--tjg-color-primary-600);
   --tjg-room-highlight-badge-bg: var(--tjg-color-danger-500);
 
   /* 管理后台 */
