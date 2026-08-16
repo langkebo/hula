@@ -27,7 +27,7 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
-    path: '/mobile/dynamic'
+    path: '/mobile/space'
   })
 }))
 
@@ -49,7 +49,7 @@ const mountTabBar = (props: Record<string, unknown> = {}) =>
   })
 
 describe('Mobile TabBar', () => {
-  it('registers dynamic as a formal mobile navigation entry', () => {
+  it('registers space as a formal mobile navigation entry', () => {
     const wrapper = mountTabBar()
 
     const links = wrapper.findAll('[data-to]')
@@ -58,7 +58,7 @@ describe('Mobile TabBar', () => {
       '/mobile/message',
       '/mobile/friends',
       '/mobile/rooms',
-      '/mobile/dynamic',
+      '/mobile/space',
       '/mobile/my'
     ])
     expect(wrapper.text()).toContain('空间')

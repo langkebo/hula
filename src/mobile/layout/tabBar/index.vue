@@ -71,8 +71,8 @@ const getUnReadCount = (label: string) => {
 }
 
 const handleNavigate = (path: string) => {
-  if (path === '/mobile/dynamic') {
-    startRenderSample('mobile-dynamic-index', {
+  if (path === '/mobile/space') {
+    startRenderSample('mobile-space-view', {
       route: path,
       meta: { source: 'tab-bar' }
     })
@@ -103,10 +103,10 @@ const navItems: NavItem[] = [
   },
   {
     label: t('mobile_tabbar.items.spaces'),
-    path: '/mobile/dynamic',
-    icon: 'robot',
-    actionIcon: 'robot',
-    testId: 'mobile-tab-dynamic'
+    path: '/mobile/space',
+    icon: 'space',
+    actionIcon: 'space',
+    testId: 'mobile-tab-space'
   },
   {
     label: t('mobile_tabbar.items.me'),
