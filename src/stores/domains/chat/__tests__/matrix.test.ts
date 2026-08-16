@@ -65,6 +65,18 @@ vi.mock('@/stores/domains/admin/admin', () => ({
   })
 }))
 
+const { restoreActiveBeaconsMock } = vi.hoisted(() => ({
+  restoreActiveBeaconsMock: vi.fn()
+}))
+
+vi.mock('@/stores/domains/chat/room', () => ({
+  useRoomStore: () => ({ currentRoomId: '!room:id' })
+}))
+
+vi.mock('@/stores/domains/chat/location', () => ({
+  useLocationStore: () => ({ restoreActiveBeacons: restoreActiveBeaconsMock })
+}))
+
 describe('MatrixStore', () => {
   beforeEach(() => {
     vi.useRealTimers()
@@ -464,6 +476,24 @@ describe('MatrixStore', () => {
 
       store.connectionState = 'ERROR'
       expect(store.isConnected).toBe(false)
+    })
+  })
+
+  describe('location beacon session recovery on reconnect', () => {
+    it('connectionState → CONNECTED 时恢复当前房间活跃位置信标', async () => {
+      const store = useMatrixStore()
+      matrixClientServiceMock.initialize.mockResolvedValue(undefined)
+
+      await store.initialize({ homeserverUrl: 'https://matrix.test' })
+
+      const handler = matrixClientServiceMock.on.mock.calls.find(([evt]) => evt === 'connectionState')?.[1]
+      expect(handler).toBeTypeOf('function')
+
+      ;(handler as (data: unknown) => void)({ state: 'connected' })
+
+      await vi.waitFor(() => {
+        expect(restoreActiveBeaconsMock).toHaveBeenCalledWith('!room:id')
+      })
     })
   })
 })

@@ -12,6 +12,23 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('MatrixStore')
 const POST_LOGIN_STARTUP_TIMEOUT_MS = 15_000
 
+/**
+ * 连接进入 CONNECTED（初始同步完成或重连成功）后恢复当前房间的活跃位置信标。
+ * 动态导入 room/location store，避免静态循环依赖，也避免把重模块拉进 matrix store 的初始化路径。
+ */
+async function restoreActiveLocationBeacons(): Promise<void> {
+  try {
+    const { useRoomStore } = await import('./room')
+    const { useLocationStore } = await import('./location')
+    const roomId = useRoomStore().currentRoomId
+    if (roomId) {
+      await useLocationStore().restoreActiveBeacons(roomId)
+    }
+  } catch (error) {
+    logger.warn('重连后恢复位置信标失败:', error)
+  }
+}
+
 export const useMatrixStore = defineStore(
   StoresEnum.MATRIX,
   () => {
@@ -75,6 +92,10 @@ export const useMatrixStore = defineStore(
     const onConnectionState = (data: unknown) => {
       const { state } = data as { state: string }
       connectionState.value = state.toUpperCase() as ConnectionState
+      // 重连成功 / 初始同步完成（进入 CONNECTED）时恢复会话中的位置信标。
+      if (connectionState.value === 'CONNECTED') {
+        void restoreActiveLocationBeacons()
+      }
     }
     const onSync = (data: unknown) => {
       const { state } = data as { state: string }
