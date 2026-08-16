@@ -48,7 +48,8 @@ vi.mock('@/services/matrix/sdk', () => ({
     baseUrl: (opts as { baseUrl?: string }).baseUrl,
     getAccessToken: () => 'token',
     getHomeserverUrl: () => 'https://matrix.test',
-    setAccessToken: vi.fn()
+    setAccessToken: vi.fn(),
+    whenManagerExtensionsReady: vi.fn().mockResolvedValue(undefined)
   })),
   initializeManagerExtensions: vi.fn().mockResolvedValue(undefined)
 }))
@@ -347,6 +348,17 @@ describe('MatrixConnectionManager', () => {
       await manager.initialize(baseConfig)
       const client = await manager.waitForClientReady()
       expect(client).toBe(manager.getClient())
+    })
+
+    it('awaits whenManagerExtensionsReady before returning the client', async () => {
+      await manager.initialize(baseConfig)
+      const client = manager.getClient()!
+      const whenManagerExtensionsReadySpy = vi.spyOn(client, 'whenManagerExtensionsReady')
+
+      const resolved = await manager.waitForClientReady()
+
+      expect(resolved).toBe(client)
+      expect(whenManagerExtensionsReadySpy).toHaveBeenCalledTimes(1)
     })
 
     it('throws when client is not ready within timeout', async () => {
