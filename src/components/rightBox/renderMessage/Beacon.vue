@@ -56,7 +56,6 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import type { BeaconBody } from '@/services/types'
-import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
 import { useTimerManager } from '@/utils/TimerManager'
 
 defineOptions({
@@ -170,12 +169,8 @@ const handleBeaconClick = () => {
     return
   }
 
-  // 收到的 geo URI 存 WGS-84，显示前转 GCJ-02（仅中国境内坐标会被转换）
-  const gcj = wgs84ToGcj02(location.latitude, location.longitude)
-  const displayLocation = { ...location, latitude: gcj.lat, longitude: gcj.lng }
-
-  // 使用 OpenStreetMap 打开地图（无需 API Key）
-  const mapsUrl = matrixLocationService.getOpenStreetMapUrl(displayLocation)
+  // OSM 为 WGS-84，不转换；仅腾讯 StaticProxyMap 显示才需要 GCJ-02
+  const mapsUrl = matrixLocationService.getOpenStreetMapUrl(location)
   void openExternalUrl(mapsUrl)
 }
 
