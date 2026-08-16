@@ -34,10 +34,17 @@ export class MatrixFriendSync {
   private pollTimer: ReturnType<typeof setInterval> | null = null
   /** 轮询间隔（毫秒） */
   private static readonly POLL_INTERVAL = 30_000
+  /** 连接状态变更回调引用（用于注销） */
+  private connectionStateCallback: ((...args: unknown[]) => void) | null = null
+  /** 防止 handleClientReady 并发重试 */
+  private isRetrying = false
 
   constructor(private readonly emit: (event: string, data?: unknown) => void) {}
 
   /** 初始化好友同步
+   *
+   * 注册连接状态监听器，在客户端重建后自动重试获取 FriendManager。
+   * 解决客户端身份变更（重新登录）后 FriendManager 扩展丢失的问题。
    */
   async initialize(): Promise<void> {
     try {
@@ -49,10 +56,12 @@ export class MatrixFriendSync {
         }
         // 即使 FriendManager 不可用，也启动轮询（使用 REST API）
         this.startPolling()
-        return
+      } else {
+        this.hasLoggedMissingFriendManager = false
+        logger.info('[MatrixFriend] FriendService 初始化完成')
       }
-      this.hasLoggedMissingFriendManager = false
-      logger.info('[MatrixFriend] FriendService 初始化完成')
+      // 始终注册连接状态监听，处理客户端重建后 FriendManager 丢失场景
+      this.registerConnectionStateListener()
     } catch (err) {
       logger.error(`[MatrixFriend] 初始化失败: ${err}`)
       throw err
@@ -87,21 +96,30 @@ export class MatrixFriendSync {
       return null
     }
 
+    // 客户端变更检测：当 observedClient 与当前 client 不同时，
+    // 清理旧 manager 引用（旧客户端可能已被 stopClient/dispose，stop() 可能抛错）
+    if (this.observedClient && this.observedClient !== client) {
+      this.cleanupOldManager()
+      this.observedClient = null
+      this.managerStarted = false
+      this.hasLoggedMissingFriendManager = false
+      this.syncState = { friends: [], incomingRequests: [], outgoingRequests: [] }
+    }
+
     const manager = this.getFriendManager(client)
     if (!manager) {
       return null
     }
 
-    if (this.observedClient !== client || this.friendManager !== manager) {
-      if (this.friendManager && this.friendManager !== manager) {
-        this.stopPolling()
-        this.friendManager.stop()
-        this.friendManager.removeAllListeners()
+    if (this.friendManager !== manager) {
+      if (this.friendManager) {
+        this.cleanupOldManager()
       }
 
       this.friendManager = manager
       this.observedClient = client
       this.managerStarted = false
+      this.hasLoggedMissingFriendManager = false
       this.syncState = {
         friends: [],
         incomingRequests: [],
@@ -111,6 +129,19 @@ export class MatrixFriendSync {
     }
 
     return this.friendManager
+  }
+
+  /** 安全清理旧 FriendManager（stop/removeAllListeners 可能抛错） */
+  private cleanupOldManager(): void {
+    if (!this.friendManager) return
+    this.stopPolling()
+    try {
+      this.friendManager.stop()
+      this.friendManager.removeAllListeners()
+    } catch (err) {
+      logger.warn(`[MatrixFriend] 旧 FriendManager 清理失败（可能客户端已停止）: ${err}`)
+    }
+    this.friendManager = null
   }
 
   /** 确保好友管理器已初始化
@@ -309,17 +340,57 @@ export class MatrixFriendSync {
     }
   }
 
+  /** 注册连接状态监听器，客户端重建后自动重试获取 FriendManager */
+  private registerConnectionStateListener(): void {
+    if (this.connectionStateCallback) return
+    this.connectionStateCallback = (...args: unknown[]) => {
+      const data = args[0] as { state?: string } | undefined
+      if (data?.state === 'CONNECTED') {
+        void this.handleClientReady()
+      }
+    }
+    matrixClientService.on('connectionState', this.connectionStateCallback)
+  }
+
+  /** 注销连接状态监听器 */
+  private removeConnectionStateListener(): void {
+    if (this.connectionStateCallback) {
+      matrixClientService.off('connectionState', this.connectionStateCallback)
+      this.connectionStateCallback = null
+    }
+  }
+
+  /** 客户端就绪后重试获取 FriendManager（处理客户端重建场景） */
+  private async handleClientReady(): Promise<void> {
+    if (this.isRetrying) return
+    const client = matrixClientService.getClient()
+    if (!client) return
+    // 客户端未变更且 manager 已启动 → 无需重试
+    if (this.observedClient === client && this.managerStarted) return
+
+    this.isRetrying = true
+    try {
+      const manager = await this.ensureFriendManager(false)
+      if (manager) {
+        this.hasLoggedMissingFriendManager = false
+        this.emit('sync', this.syncState)
+        logger.info('[MatrixFriend] 客户端就绪后 FriendManager 已恢复')
+      }
+    } catch (err) {
+      logger.warn(`[MatrixFriend] 客户端就绪后重试获取 FriendManager 失败: ${err}`)
+    } finally {
+      this.isRetrying = false
+    }
+  }
+
   /** 停止好友同步
    */
   stop(): void {
-    if (this.friendManager) {
-      this.friendManager.stop()
-      this.friendManager.removeAllListeners()
-      this.friendManager = null
-    }
-    this.stopPolling()
+    this.removeConnectionStateListener()
+    this.cleanupOldManager()
     this.observedClient = null
     this.managerStarted = false
+    this.isRetrying = false
     this.syncState = {
       friends: [],
       incomingRequests: [],
