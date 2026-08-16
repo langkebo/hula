@@ -68,6 +68,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
+import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import type { BeaconBody } from '@/services/types'
 import { formatBeaconRemainingTime, isBeaconActive } from '@/utils/beacon'
@@ -82,9 +83,15 @@ const { t } = useI18n()
 const props = withDefaults(
   defineProps<{
     body?: BeaconBody
+    /** 消息元数据（roomId + beacon_info 事件 id），用于「查看位置」时聚合最新实时位置兜底 */
+    message?: {
+      id: string
+      roomId: string
+    }
   }>(),
   {
-    body: undefined
+    body: undefined,
+    message: undefined
   }
 )
 
@@ -97,7 +104,14 @@ const remainingTimeText = computed(() => formatBeaconRemainingTime(props.body, n
 
 const handleOpenLocation = () => {
   if (!isActive.value) return
-  const location = props.body?.uri ? parseGeoUri(props.body.uri) : null
+  const roomId = props.message?.roomId
+  const beaconInfoEventId = props.message?.id
+  // beacon_info content 不含 m.location，body.uri 恒为 undefined；
+  // 从 SDK Room.currentState.beacons 按 beacon_info 事件 ID 读取发送者最新位置兜底。
+  const uri =
+    props.body?.uri ??
+    (roomId && beaconInfoEventId ? matrixBeaconService.getBeaconLatestUri(roomId, beaconInfoEventId) : undefined)
+  const location = uri ? parseGeoUri(uri) : null
   if (!location) return
   // OSM 使用 WGS-84，不做 GCJ-02 转换
   void openExternalUrl(

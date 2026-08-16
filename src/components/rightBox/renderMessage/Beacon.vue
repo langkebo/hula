@@ -54,6 +54,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
+import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import type { BeaconBody } from '@/services/types'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -84,9 +85,15 @@ const props = withDefaults(
   defineProps<{
     /** Beacon 事件的消息体 */
     body?: BeaconBody
+    /** 消息元数据（roomId + beacon_info 事件 id），用于「查看位置」时聚合最新实时位置兜底 */
+    message?: {
+      id: string
+      roomId: string
+    }
   }>(),
   {
-    body: undefined
+    body: undefined,
+    message: undefined
   }
 )
 
@@ -149,6 +156,18 @@ const parseGeoUri = (uri: string): { latitude: number; longitude: number; timest
 }
 
 /**
+ * 获取最新位置 URI：
+ * beacon_info content 不含 m.location，`body.uri` 恒为 undefined，
+ * 因此从 SDK Room.currentState.beacons 按 beacon_info 事件 ID 读取发送者最新位置兜底。
+ */
+const getLatestUri = (): string | undefined => {
+  const roomId = props.message?.roomId
+  const beaconInfoEventId = props.message?.id
+  if (!roomId || !beaconInfoEventId) return undefined
+  return matrixBeaconService.getBeaconLatestUri(roomId, beaconInfoEventId)
+}
+
+/**
  * 打开地图查看位置
  */
 const handleBeaconClick = () => {
@@ -157,7 +176,7 @@ const handleBeaconClick = () => {
     return
   }
 
-  const uri = props.body?.uri
+  const uri = props.body?.uri ?? getLatestUri()
   if (!uri) {
     showFeedback('无法获取位置信息', 'info')
     return
