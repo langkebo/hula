@@ -8,8 +8,13 @@ import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService
 
 // 局部结构类型（mock 断言用）：不直接 import matrix-js-sdk，避免 sdk-boundary 门禁违规
 type MockClient = {
-  getBeaconManager(): { getBeaconsForRoom(roomId: string): unknown[] }
+  getBeaconManager(): {
+    getBeaconsForRoom(roomId: string): unknown[]
+    setLiveBeacon(roomId: string, content: unknown): Promise<unknown>
+  }
   search: (...args: unknown[]) => Promise<unknown>
+  sendEvent: (...args: unknown[]) => Promise<{ event_id: string }>
+  getRoomEvent: (roomId: string, eventId: string) => Promise<{ getContent(): unknown }>
 }
 
 // 通过真实 getClient 的返回类型对齐注入，避免测试内 import matrix-js-sdk
@@ -141,6 +146,38 @@ describe('MatrixBeaconService', () => {
         })
       ).rejects.toThrow('Matrix client not initialized')
     })
+
+    it('should send an M_BEACON event with the standard makeBeaconContent shape', async () => {
+      const sendEvent = vi.fn().mockResolvedValue({ event_id: '$beacon_loc_1' })
+      const mockClient = { sendEvent } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      const result = await matrixBeaconService.updateBeaconLocation({
+        roomId: '!room:id',
+        beaconInfoEventId: '$beacon_info_1',
+        latitude: 39.9042,
+        longitude: 116.4074,
+        uncertainty: 10
+      })
+
+      expect(sendEvent).toHaveBeenCalledTimes(1)
+      expect(sendEvent).toHaveBeenCalledWith(
+        '!room:id',
+        'org.matrix.msc3672.beacon',
+        expect.objectContaining({
+          'org.matrix.msc3488.location': {
+            uri: 'geo:39.9042,116.4074'
+          },
+          'm.relates_to': {
+            rel_type: 'm.reference',
+            event_id: '$beacon_info_1'
+          },
+          'org.matrix.msc3488.ts': expect.any(Number)
+        })
+      )
+      expect(result.event_id).toBe('$beacon_loc_1')
+      expect(result.beacon_info_id).toBe('$beacon_info_1')
+    })
   })
 
   describe('getBeaconLocationHistory', () => {
@@ -162,17 +199,13 @@ describe('MatrixBeaconService', () => {
                   event_id: '$beacon_loc_1',
                   origin_server_ts: 1700000002000,
                   content: {
-                    beacon: {
-                      event_id: '$event:id',
-                      timestamp: 1700000001500,
-                      location: {
-                        uri: 'geo:39.9042,116.4074',
-                        timestamp: 1700000001500,
-                        accuracy: 10,
-                        altitude: 50,
-                        speed: 1.5,
-                        bearing: 90
-                      }
+                    'org.matrix.msc3488.location': {
+                      uri: 'geo:39.9042,116.4074'
+                    },
+                    'org.matrix.msc3488.ts': 1700000001500,
+                    'm.relates_to': {
+                      rel_type: 'm.reference',
+                      event_id: '$event:id'
                     }
                   }
                 }
@@ -189,7 +222,7 @@ describe('MatrixBeaconService', () => {
       expect(search).toHaveBeenCalledWith(
         expect.objectContaining({
           room_ids: ['!room:id'],
-          filter: expect.objectContaining({ types: ['m.beacon'] })
+          filter: expect.objectContaining({ types: ['org.matrix.msc3672.beacon', 'm.beacon'] })
         })
       )
       expect(result).toEqual([
@@ -198,11 +231,7 @@ describe('MatrixBeaconService', () => {
           beacon_info_id: '$event:id',
           timestamp: 1700000001500,
           latitude: 39.9042,
-          longitude: 116.4074,
-          uncertainty: 10,
-          altitude: 50,
-          speed: 1.5,
-          bearing: 90
+          longitude: 116.4074
         }
       ])
     })
@@ -215,6 +244,40 @@ describe('MatrixBeaconService', () => {
       const result = await matrixBeaconService.getBeaconLocationHistory('!room:id', '$event:id')
 
       expect(result).toEqual([])
+    })
+  })
+
+  describe('stopBeacon', () => {
+    it('should return false when client is not initialized', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+      const result = await matrixBeaconService.stopBeacon('!room:id', '$beacon_info_1')
+
+      expect(result).toBe(false)
+    })
+
+    it('should stop beacon via BeaconManager.setLiveBeacon with a live:false state event', async () => {
+      const getRoomEvent = vi.fn().mockResolvedValue({
+        getContent: () => ({ timeout: 3600000, description: 'Test beacon' })
+      })
+      const setLiveBeacon = vi.fn().mockResolvedValue({ event_id: '$beacon_info_stopped' })
+      const getBeaconManager = vi.fn(() => ({ setLiveBeacon }))
+      const mockClient = { getRoomEvent, getBeaconManager } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      const result = await matrixBeaconService.stopBeacon('!room:id', '$beacon_info_1')
+
+      expect(result).toBe(true)
+      expect(getRoomEvent).toHaveBeenCalledWith('!room:id', '$beacon_info_1')
+      expect(getBeaconManager).toHaveBeenCalled()
+      expect(setLiveBeacon).toHaveBeenCalledWith(
+        '!room:id',
+        expect.objectContaining({
+          timeout: 3600000,
+          live: false,
+          description: 'Test beacon'
+        })
+      )
     })
   })
 })
