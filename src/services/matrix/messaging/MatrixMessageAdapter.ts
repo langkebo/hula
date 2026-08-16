@@ -61,12 +61,7 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
       return MsgEnum.SYSTEM
     }
 
-    if (
-      eventType === 'm.beacon_info' ||
-      eventType === 'm.beacon' ||
-      eventType === 'org.matrix.msc3672.beacon_info' ||
-      eventType === 'org.matrix.msc3672.beacon'
-    ) {
+    if (eventType === 'm.beacon_info' || eventType === 'org.matrix.msc3672.beacon_info') {
       return MsgEnum.BEACON
     }
 

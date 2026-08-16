@@ -151,7 +151,7 @@ describe('MatrixRoomRealtimeService', () => {
       expect(cb.mock.calls[0][0].message).toEqual({ id: 'enc' })
     })
 
-    it.each(['m.beacon_info', 'm.beacon', 'org.matrix.msc3672.beacon_info', 'org.matrix.msc3672.beacon'])(
+    it.each(['m.beacon_info', 'org.matrix.msc3672.beacon_info'])(
       'onTimelineEvent dispatches %s through convertEventToMessage',
       (eventType) => {
         const { on } = setupClient()
@@ -163,6 +163,20 @@ describe('MatrixRoomRealtimeService', () => {
         expect(convertEventToMessageMock).toHaveBeenCalled()
         expect(convertEventToMessageTypeMock).not.toHaveBeenCalled()
         expect(cb.mock.calls[0][0].message).toEqual({ id: 'beacon' })
+      }
+    )
+
+    it.each(['m.beacon', 'org.matrix.msc3672.beacon'])(
+      'onTimelineEvent leaves message null for %s (position updates are not independent bubbles)',
+      (eventType) => {
+        const { on } = setupClient()
+        convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
+        const cb = vi.fn()
+        service.onTimelineEvent(cb)
+        on.mock.calls[0][1]({ getType: () => eventType, getContent: () => ({}) }, makeRoom())
+        expect(convertEventToMessageMock).not.toHaveBeenCalled()
+        expect(convertEventToMessageTypeMock).not.toHaveBeenCalled()
+        expect(cb.mock.calls[0][0].message).toBeNull()
       }
     )
 

@@ -246,20 +246,15 @@ describe('MatrixEventService', () => {
       })
     })
 
-    it('maps m.beacon into a BeaconBody with uri', () => {
-      const msg = matrixEventService.convertEventToMessage(
-        makeEvent('m.beacon', {
-          'm.location': { uri: 'geo:39.9,116.4' },
-          'm.ts': 1700000001000
-        }),
-        makeRoom()
-      )
+    it('no longer maps m.beacon position updates into a BEACON bubble (Blocker 3)', () => {
+      const content = {
+        'm.location': { uri: 'geo:39.9,116.4' },
+        'm.ts': 1700000001000
+      }
+      const msg = matrixEventService.convertEventToMessage(makeEvent('m.beacon', content), makeRoom())
 
-      expect(msg?.message.type).toBe(MsgEnum.BEACON)
-      expect(msg?.message.body).toMatchObject({
-        uri: 'geo:39.9,116.4',
-        lastUpdateTs: 1700000001000
-      })
+      expect(msg?.message.type).toBe(MsgEnum.TEXT)
+      expect(msg?.message.body).toEqual(content)
     })
 
     it('maps unstable beacon event names into a BeaconBody', () => {

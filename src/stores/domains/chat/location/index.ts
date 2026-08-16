@@ -128,6 +128,12 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
       return
     }
 
+    // 停止（含到期自动停止）后不得继续后台定位并上报（Blocker 1：隐私级）。
+    if (!beacon.isLive) {
+      logger.warn('publishLocation: 信标已停止，跳过位置发布', beaconInfoEventId)
+      return
+    }
+
     await matrixBeaconService.updateBeaconLocation({
       roomId: beacon.roomId,
       beaconInfoEventId,

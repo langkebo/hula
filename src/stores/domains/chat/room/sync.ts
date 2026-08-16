@@ -14,7 +14,18 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RoomStore.Sync')
 
-/** Beacon 事件类型（含 MSC3672 不稳定名） */
+/**
+ * 可渲染为独立 BEACON 气泡的 beacon 事件类型（含 MSC3672 不稳定名）。
+ * 仅 m.beacon_info 作为独立气泡；m.beacon（位置更新）通过 m.relates_to 关联到
+ * beacon_info，不单独成气泡（Blocker 3）。
+ */
+const BEACON_INFO_EVENT_TYPES = new Set(['m.beacon_info', 'org.matrix.msc3672.beacon_info'])
+
+/**
+ * 房间列表「实时位置共享」预览的事件类型（含 MSC3672 不稳定名）。
+ * beacon_info 与 m.beacon 位置更新都应让列表预览显示为「实时位置共享」，
+ * 避免位置更新到达时把 lastMessage 清空。
+ */
 const BEACON_EVENT_TYPES = new Set([
   'm.beacon_info',
   'm.beacon',
@@ -116,7 +127,7 @@ export function createRoomSync(ctx: RoomSyncContext) {
         'm.room.encrypted',
         'm.room.member',
         'm.room.redaction',
-        ...BEACON_EVENT_TYPES
+        ...BEACON_INFO_EVENT_TYPES
       ])
       for (const event of roomData.timeline) {
         if (!DISPLAYABLE_EVENT_TYPES.has(event.type ?? '')) continue
@@ -128,7 +139,7 @@ export function createRoomSync(ctx: RoomSyncContext) {
         else if (msgtype === 'm.file') msgEnum = MsgEnum.FILE
         else if (msgtype === 'm.location') msgEnum = MsgEnum.LOCATION
         else if (event.type === 'm.room.member') msgEnum = MsgEnum.SYSTEM
-        else if (BEACON_EVENT_TYPES.has(event.type ?? '')) msgEnum = MsgEnum.BEACON
+        else if (BEACON_INFO_EVENT_TYPES.has(event.type ?? '')) msgEnum = MsgEnum.BEACON
 
         const content = (event.content ?? {}) as Record<string, unknown>
         const body: MessageType['message']['body'] =

@@ -221,6 +221,15 @@ const stopLiveWatch = () => {
   }
 }
 
+// 到期/手动停止后 sharing 变为 false 时，清理 watchPosition 与周期发布定时器，
+// 避免停止后仍后台定位并上报（Blocker 1：隐私级）。
+watch(sharing, (val) => {
+  if (!val) {
+    stopLiveWatch()
+    activeBeaconId.value = null
+  }
+})
+
 const startLiveWatch = () => {
   stopLiveWatch()
 
