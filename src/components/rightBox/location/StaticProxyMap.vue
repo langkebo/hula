@@ -23,7 +23,11 @@ import { getStaticMap } from '@/services/legacy/mapApi'
 
 type LocationData = { latitude: number; longitude: number }
 
-// 这里缩放很大的时候有问题，会出现图片显示不了；谁来修复一下
+// 腾讯静态图 API 的缩放级别范围（超出范围后端会拒绝请求，导致图片无法显示）。
+const MIN_ZOOM = 3
+const MAX_ZOOM = 18
+const clampZoom = (z: number) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(z)))
+
 const props = withDefaults(
   defineProps<{ location: LocationData; zoom?: number; height?: number; draggable?: boolean; controls?: boolean }>(),
   { zoom: 18, height: 300, draggable: true, controls: true }
@@ -42,7 +46,7 @@ const displayImgSrc = computed(() =>
 )
 const centerLat = ref(props.location.latitude)
 const centerLng = ref(props.location.longitude)
-const zoom = ref(props.zoom)
+const zoom = ref(clampZoom(props.zoom))
 const controls = computed(() => !!props.controls)
 
 const world = (z: number) => 256 * 2 ** z
@@ -79,11 +83,11 @@ const fetchImage = async () => {
 }
 
 const zoomIn = () => {
-  zoom.value = Math.min(zoom.value + 1, 20)
+  zoom.value = clampZoom(zoom.value + 1)
   fetchImage()
 }
 const zoomOut = () => {
-  zoom.value = Math.max(zoom.value - 1, 3)
+  zoom.value = clampZoom(zoom.value - 1)
   fetchImage()
 }
 const onWheel = (ev: WheelEvent) => {
