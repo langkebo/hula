@@ -15,7 +15,7 @@ vi.mock('@/services/matrix/sdk', () => ({
 }))
 
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: vi.fn() }
+  default: { getClient: vi.fn(), on: vi.fn(), off: vi.fn() }
 }))
 
 vi.mock('../../extensions/SynapseFriendExtensionService', () => ({
