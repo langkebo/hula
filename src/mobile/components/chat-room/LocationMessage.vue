@@ -17,7 +17,14 @@
         </svg>
         <span class="location-message__title-text">{{ t('chat.location.title') }}</span>
       </div>
-      <span v-if="body?.precision" class="location-message__precision">{{ body.precision }}</span>
+      <van-tag
+        v-if="body?.precision"
+        plain
+        round
+        color="var(--tjg-color-primary-500)"
+        text-color="var(--tjg-color-primary-500)">
+        {{ body.precision }}
+      </van-tag>
     </div>
 
     <!-- 地址信息 -->
@@ -61,7 +68,7 @@ import StaticProxyMap from '@/components/rightBox/location/StaticProxyMap.vue'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import type { LocationBody } from '@/services/types'
-import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
+import { toGcj02LocationData } from '@/utils/location'
 
 defineOptions({
   inheritAttrs: false
@@ -79,19 +86,7 @@ const props = withDefaults(
 )
 
 // 收到的 geo URI 存 WGS-84，腾讯地图显示前转 GCJ-02（仅中国境内坐标会被转换）
-const locationData = computed(() => {
-  const latitude = Number(props.body?.latitude)
-  const longitude = Number(props.body?.longitude)
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
-
-  const gcj = wgs84ToGcj02(latitude, longitude)
-  return {
-    latitude: gcj.lat,
-    longitude: gcj.lng,
-    address: props.body?.address,
-    timestamp: Number(props.body?.timestamp) || Date.now()
-  }
-})
+const locationData = computed(() => toGcj02LocationData(props.body))
 
 const handleOpenMap = () => {
   if (!locationData.value) return
@@ -145,15 +140,6 @@ const handleOpenMap = () => {
     font-size: var(--tjg-font-size-base);
     font-weight: var(--tjg-font-weight-medium);
     color: var(--tjg-text-primary);
-  }
-
-  &__precision {
-    flex-shrink: 0;
-    padding: 2px 6px;
-    border-radius: var(--tjg-radius-xs);
-    border: 1px solid var(--tjg-color-primary-500);
-    color: var(--tjg-color-primary-500);
-    font-size: var(--tjg-font-size-xs);
   }
 
   &__address {

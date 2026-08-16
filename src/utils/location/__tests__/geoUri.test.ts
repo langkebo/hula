@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { locationEventGeoUri, parseGeoUri } from '@/utils/location'
+import { locationEventGeoUri, parseGeoUri, toGcj02LocationData } from '@/utils/location'
 
 describe('parseGeoUri', () => {
   it('parses latitude and longitude from a geo uri', () => {
@@ -54,5 +54,31 @@ describe('locationEventGeoUri', () => {
   it('returns undefined when no uri is present', () => {
     expect(locationEventGeoUri({})).toBeUndefined()
     expect(locationEventGeoUri({ 'm.location': {} })).toBeUndefined()
+  })
+})
+
+describe('toGcj02LocationData', () => {
+  it('将 WGS-84 位置消息体转换为 GCJ-02 地图数据', () => {
+    const result = toGcj02LocationData({
+      latitude: '39.9042',
+      longitude: '116.4074',
+      address: '北京',
+      precision: '高精度',
+      timestamp: '1700000000000'
+    })
+
+    expect(result).not.toBeNull()
+    // 中国境内坐标会被偏移（GCJ-02 偏移量约 0.001~0.006 度），结果仍在原坐标附近
+    expect(result!.latitude).toBeCloseTo(39.9042, 1)
+    expect(result!.longitude).toBeCloseTo(116.4074, 1)
+    expect(result!.address).toBe('北京')
+    expect(result!.timestamp).toBe(1700000000000)
+  })
+
+  it('经纬度非法时返回 null', () => {
+    expect(toGcj02LocationData(undefined)).toBeNull()
+    expect(
+      toGcj02LocationData({ latitude: 'invalid', longitude: '116.4074', address: '', precision: '', timestamp: '0' })
+    ).toBeNull()
   })
 })
