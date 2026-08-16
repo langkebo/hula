@@ -51,12 +51,13 @@ function countOccurrences(content, pattern) {
   return (content.match(pattern) ?? []).length
 }
 
-/** 去除注释与 SVG 图标引用，避免把 `#add`/`#close` 这类 `<use href="#...">` 误判为硬编码颜色 */
+/** 去除注释、SVG 图标引用与 `var(--*)` 回退值，只保留真正无 token 的字面量颜色 */
 function stripCommentsAndSvgRefs(content) {
   return content
     .replace(/\/\/[^\n]*/g, '') // 行注释
     .replace(/\/\*[\s\S]*?\*\//g, '') // 块注释
     .replace(/href\s*=\s*["']#[^"']*["']/g, '') // SVG use href
+    .replace(/var\([^)]*\)/g, '') // CSS var(...) 表达式（含 fallback 色，属安全模式）
 }
 
 const counters = {
