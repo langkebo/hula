@@ -1,11 +1,5 @@
 <template>
-  <n-modal
-    v-model:show="show"
-    preset="card"
-    :title="t('ai_assistant.robot.model_management')"
-    style="width: 800px"
-    :bordered="false"
-    :segmented="{ content: 'soft', footer: 'soft' }">
+  <BaseRightDrawer v-model:show="show" :title="t('ai_assistant.robot.model_management')">
     <template #header-extra>
       <n-button type="primary" size="small" @click="emit('add')">
         <template #icon>
@@ -47,7 +41,7 @@
         :page-count="Math.ceil(pagination.total / pagination.pageSize)"
         @update:page="emit('pageChange', $event)" />
     </n-flex>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">

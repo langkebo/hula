@@ -1,5 +1,5 @@
 <template>
-  <n-modal v-model:show="show" preset="card" :title="t('login.server_config.title')" :style="{ width: '400px' }">
+  <BaseRightDrawer v-model:show="show" :title="t('login.server_config.title')">
     <n-flex vertical :size="12">
       <n-form-item :label="t('login.server_config.homeserver_label')">
         <n-input v-model:value="homeserverUrl" :placeholder="DEFAULT_MATRIX_HOMESERVER_URL" clearable />
@@ -17,7 +17,7 @@
         <n-button type="primary" @click="saveServerConfig">{{ t('login.server_config.save') }}</n-button>
       </n-flex>
     </n-flex>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">

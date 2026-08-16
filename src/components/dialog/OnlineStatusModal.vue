@@ -1,11 +1,5 @@
 <template>
-  <n-modal
-    v-model:show="visible"
-    class="h-fit w-320px"
-    preset="card"
-    :title="t('home.profile_card.online_status')"
-    :bordered="false"
-    :closable="true">
+  <BaseRightDrawer v-model:show="visible" :title="t('home.profile_card.online_status')">
     <n-flex
       vertical
       :size="20"
@@ -44,7 +38,7 @@
         </n-flex>
       </n-scrollbar>
     </n-flex>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">

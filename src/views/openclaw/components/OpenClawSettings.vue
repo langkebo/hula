@@ -1,16 +1,8 @@
 <template>
-  <n-modal
+  <BaseRightDrawer
     :show="show"
-    @update:show="(val: boolean) => emit('update:show', val)"
-    preset="card"
     :title="t('ai_assistant.openclaw.settingsStore.title')"
-    class="openclaw-settings-modal w-600px max-w-90vw"
-    :bordered="false"
-    size="huge"
-    :segmented="{
-      content: 'soft',
-      footer: 'soft'
-    }">
+    @update:show="(val: boolean) => emit('update:show', val)">
     <div class="openclaw-settings-content max-h-60vh overflow-y-auto pr-4">
       <n-form ref="formRef" :model="settingsStore" label-placement="top" require-mark-placement="right-hanging">
         <n-divider title-placement="left">{{ t('ai_assistant.openclaw.settingsStore.general') }}</n-divider>
@@ -71,7 +63,7 @@
         <n-button type="primary" @click="emit('update:show', false)">{{ t('common.confirm') }}</n-button>
       </div>
     </template>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">

@@ -16,21 +16,24 @@
             :style="{ width }">
             <header class="rj-drawer__header">
               <span class="rj-drawer__title">{{ title }}</span>
-              <button type="button" class="rj-drawer__close" :aria-label="t('common.close')" @click="handleClose">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true">
-                  <path d="M18 6 6 18" />
-                  <path d="m6 6 12 12" />
-                </svg>
-              </button>
+              <div class="rj-drawer__header-actions">
+                <slot name="header-extra" />
+                <button type="button" class="rj-drawer__close" :aria-label="t('common.close')" @click="handleClose">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                </button>
+              </div>
             </header>
 
             <div class="rj-drawer__body">
@@ -106,6 +109,12 @@ const handleClose = () => {
   font-size: var(--tjg-font-size-base);
   font-weight: var(--tjg-font-weight-medium);
   color: var(--tjg-text-primary);
+}
+
+.rj-drawer__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .rj-drawer__close {
