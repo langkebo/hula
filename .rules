@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Overview
-HuLa is a modern, cross-platform Instant Messaging (IM) system. It leverages **Tauri v2** for the application container, **Vite 7** for fast frontend tooling, **Vue 3** for the user interface, and **TypeScript** for type safety. The backend logic is implemented in **Rust**.
+TJG（天机阁）is a modern, cross-platform Instant Messaging (IM) system. It leverages **Tauri v2** for the application container, **Vite 7** for fast frontend tooling, **Vue 3** for the user interface, and **TypeScript** for type safety. The backend logic is implemented in **Rust**.
 
 The project supports:
 - **Desktop:** Windows, macOS, Linux
@@ -58,7 +58,7 @@ The project supports:
 Day-to-day frontend work only needs this repo plus a synapse-rust backend. The sibling `../matrix-js-sdk` checkout is required only when changing the SDK itself:
 1. **synapse-rust** - Backend Matrix Homeserver (default port: 8008)
 2. **matrix-js-sdk** - SDK fork (sibling directory `../matrix-js-sdk`, only needed for SDK changes)
-3. **hula** - This frontend application
+3. **Tjg** - This frontend application
 
 To pick up SDK changes: build the SDK (`pnpm --dir ../matrix-js-sdk build`), then run
 `node scripts/pack-sdk-tarball.mjs --allow-commit-drift --apply` followed by `pnpm install`.
@@ -194,10 +194,16 @@ SDK iteration; never commit in link mode (`verify:sdk-pin` rejects it on release
 ## Architecture Notes
 
 ### Three-Layer Architecture
-HuLa follows a three-layer architecture:
+TJG follows a three-layer architecture:
 1. **Frontend Application** (Tauri + Vue 3 + TypeScript): Cross-platform desktop/mobile UI
 2. **SDK Layer** (local matrix-js-sdk): Matrix protocol encapsulation, Sliding Sync, manager extensions
 3. **Backend Service** (synapse-rust): Rust-based Matrix Homeserver
+
+### 初始化与连接状态机（ADR-003）
+- **永不白屏（乐观渲染）**：登录后立即用缓存数据渲染 UI，后台异步 `startClient()` + sync，成功后静默更新 store；失败显示连接状态横幅，仅在 access_token 401 且无缓存时才跳登录页。
+- 连接状态机：`DISCONNECTED → CONNECTING → CONNECTED → SYNCING → CATCHUP → SYNCED`，任一环节可进入 `ERROR` 并自动指数退避重连。
+- 单一数据源：统一用 Pinia store（持久化到 localStorage）；禁止 module-level ref；禁止 Web Worker 直接 fetch（一切 HTTP 走 SDK Manager）。
+- 详见 `docs/adr/ADR-003-tjg-greenfield-rewrite.md`。
 
 ### Communication Patterns
 - **Real-time Messaging:** Matrix Sliding Sync (frontend) / `tokio-tungstenite` WebSocket (Rust)
@@ -302,7 +308,7 @@ Theme tokens live in `src/styles/scss/global/variable.scss`, but prefer inline U
 - `MatrixClientService` manages the underlying `MatrixClient` instance and Sliding Sync initialization
 
 ### Sliding Sync
-- HuLa uses Sliding Sync (`SlidingSync`) for efficient, incremental room list sync
+- TJG uses Sliding Sync (`SlidingSync`) for efficient, incremental room list sync
 - Managed by `MatrixSlidingSyncService` and `SlidingSyncReconnectManager`
 - The `MatrixClientService` initializes `SlidingSync` on startup
 
@@ -324,7 +330,7 @@ Theme tokens live in `src/styles/scss/global/variable.scss`, but prefer inline U
 
 ## AI Integration
 
-HuLa integrates multiple AI providers via `src/services/ai-provider.ts`:
+TJG integrates multiple AI providers via `src/services/ai-provider.ts`:
 - **OpenClaw** (`src/services/openclaw/`): OpenAI-compatible gateway with streaming and auto-reconnect
 - **SiliconFlow** (`src/services/siliconflow/`): SiliconFlow AI provider
 - **TrendRadar** (`src/services/trendradar/`): Trending news and content aggregation
