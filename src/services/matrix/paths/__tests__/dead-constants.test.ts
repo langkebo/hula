@@ -100,15 +100,17 @@ describe('FT-120: 无死路径常量', () => {
   })
 
   describe('MEDIA 模块仅保留被 L2 服务引用的常量', () => {
-    // MatrixUrlPreviewService.getPreview → MEDIA.DOWNLOAD_PREFIX (mxc→http 拼接)
-    // MatrixUrlPreviewService.getPreviewsFromEvent → MEDIA.MEDIA_PREFIX (排除媒体链接)
-    // 上传/配额/配置/删除/具名上传/预览端点均已迁移到 client.getMediaManager()，不再需要路径常量。
-    it('MEDIA 仅包含 DOWNLOAD_PREFIX 与 MEDIA_PREFIX', () => {
-      expectKeys(MEDIA, ['DOWNLOAD_PREFIX', 'MEDIA_PREFIX'])
+    // MatrixUrlPreviewService 已移除，其引用的 DOWNLOAD_PREFIX / MEDIA_PREFIX 已随之删除；
+    // 上传/配额/配置/删除/具名上传/预览端点均已迁移到 client.getMediaManager()，
+    // 不再需要路径常量。当前 MEDIA 不含任何常量。
+    it('MEDIA 不再包含任何路径常量', () => {
+      expectKeys(MEDIA, [])
     })
 
     it('MEDIA 不再包含已迁移到 MediaManager 的死常量', () => {
       for (const dead of [
+        'DOWNLOAD_PREFIX',
+        'MEDIA_PREFIX',
         'UPLOAD',
         'UPLOAD_WITH_ID',
         'CONFIG',
