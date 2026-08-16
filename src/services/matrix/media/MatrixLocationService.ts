@@ -1,4 +1,4 @@
-import type { EventType, IContent, MatrixEvent } from 'matrix-js-sdk'
+import { ContentHelpers, type EventType, type IContent, LocationAssetType, type MatrixEvent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 
@@ -70,90 +70,19 @@ class MatrixLocationService {
     try {
       const geoUri = `geo:${location.latitude},${location.longitude}${location.accuracy ? `;u=${location.accuracy}` : ''}`
 
-      const content: LocationContent = {
-        msgtype: 'm.location',
-        body: location.description || geoUri,
-        geo_uri: geoUri,
-        'm.location': {
-          uri: geoUri,
-          description: location.description
-        }
-      }
+      const content = ContentHelpers.makeLocationContent(
+        undefined,
+        geoUri,
+        location.timestamp,
+        location.description,
+        LocationAssetType.Pin
+      )
 
       const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
       logger.info(`[Location] 发送位置成功: ${roomId}`)
       return response.event_id
     } catch (err) {
       logger.error(`[Location] 发送位置失败: ${err}`)
-      throw err
-    }
-  }
-
-  async startLiveLocationShare(roomId: string, duration: number = 3600000): Promise<string> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Location] 客户端未初始化')
-    }
-
-    try {
-      const location = await this.getCurrentPosition()
-      const geoUri = `geo:${location.latitude},${location.longitude}`
-
-      const content: LocationContent = {
-        msgtype: 'm.location',
-        body: 'Live location',
-        geo_uri: geoUri,
-        'm.location': {
-          uri: geoUri,
-          description: 'Live location share'
-        },
-        'org.matrix.msc3488.asset': {
-          type: 'm.self'
-        },
-        'org.matrix.msc3488.ts': Date.now(),
-        expires_at: Date.now() + duration
-      }
-
-      const response = await client.sendEvent(roomId, 'm.room.message' as EventType, content)
-      logger.info(`[Location] 开始实时位置分享: ${roomId}`)
-      return response.event_id
-    } catch (err) {
-      logger.error(`[Location] 开始实时位置分享失败: ${err}`)
-      throw err
-    }
-  }
-
-  async updateLiveLocation(roomId: string, eventId: string, location: LocationData): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error('[Location] 客户端未初始化')
-    }
-
-    try {
-      const geoUri = `geo:${location.latitude},${location.longitude}`
-
-      const content: LocationContent = {
-        msgtype: 'm.location',
-        body: 'Live location update',
-        geo_uri: geoUri,
-        'm.location': {
-          uri: geoUri,
-          description: 'Live location update'
-        },
-        'org.matrix.msc3488.asset': {
-          type: 'm.self'
-        },
-        'org.matrix.msc3488.ts': Date.now(),
-        'm.relates_to': {
-          rel_type: 'm.replace',
-          event_id: eventId
-        }
-      }
-
-      await client.sendEvent(roomId, 'm.room.message' as EventType, content)
-      logger.info(`[Location] 更新实时位置: ${roomId}`)
-    } catch (err) {
-      logger.error(`[Location] 更新实时位置失败: ${err}`)
       throw err
     }
   }

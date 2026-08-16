@@ -3,6 +3,7 @@
  * 位置信标功能
  */
 
+import { ContentHelpers, M_BEACON, type MBeaconEventContent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 
@@ -190,27 +191,9 @@ class MatrixBeaconService {
     const client = this.getClient()
     if (!client) throw new Error('Matrix client not initialized')
 
-    const content = {
-      msgtype: 'm.beacon',
-      beacon: {
-        event_id: beaconInfoEventId,
-        timestamp: Date.now(),
-        location: {
-          uri: `geo:${latitude},${longitude}`,
-          timestamp: Date.now(),
-          accuracy: uncertainty,
-          altitude,
-          speed,
-          bearing
-        }
-      },
-      'm.relates_to': {
-        rel_type: 'm.reference',
-        event_id: beaconInfoEventId
-      }
-    }
+    const content = ContentHelpers.makeBeaconContent(`geo:${latitude},${longitude}`, Date.now(), beaconInfoEventId)
 
-    const response = await client.sendEvent(roomId, 'm.beacon', content)
+    const response = await client.sendEvent(roomId, M_BEACON.name, content)
     if (!response) {
       throw new Error('Failed to send beacon location event')
     }
@@ -233,7 +216,7 @@ class MatrixBeaconService {
    *
    * 注意：SDK Beacon 模型只跟踪「当前/最新」位置（latestLocationState），不保留
    * 历史位置列表，BeaconManager 无等价能力，因此保留 client.search 裸调实现
-   * （不发 /search 无法获取历史轨迹，勿做有损迁移）。
+   * （不发 /search 无法获取历史轨迹，勿做有损迁移）。待 SDK 提供历史 API 后替换。
    */
   async getBeaconLocationHistory(
     roomId: string,
@@ -246,7 +229,7 @@ class MatrixBeaconService {
       const result = await client.search({
         room_ids: [roomId],
         filter: {
-          types: ['m.beacon']
+          types: M_BEACON.names
         },
         limit
       })
@@ -256,24 +239,17 @@ class MatrixBeaconService {
       const results = result?.search_categories?.room_events?.results || []
       for (const item of results) {
         const event = item.result
-        const content = event.content as BeaconEventContent
-        if (content?.beacon?.location) {
-          const geo = content.beacon.location
-          const geoMatch = (geo.uri as string | undefined)?.match(/geo:([-\d.]+),([-\d.]+)/)
+        const parsed = ContentHelpers.parseBeaconContent(event.content as MBeaconEventContent)
+        const geoMatch = parsed.uri?.match(/geo:([-\d.]+),([-\d.]+)/)
 
-          if (geoMatch) {
-            locations.push({
-              event_id: event.event_id,
-              beacon_info_id: beaconInfoEventId,
-              timestamp: geo.timestamp || event.origin_server_ts || Date.now(),
-              latitude: parseFloat(geoMatch[1]),
-              longitude: parseFloat(geoMatch[2]),
-              uncertainty: geo.accuracy,
-              altitude: geo.altitude,
-              speed: geo.speed,
-              bearing: geo.bearing
-            })
-          }
+        if (geoMatch) {
+          locations.push({
+            event_id: event.event_id,
+            beacon_info_id: beaconInfoEventId,
+            timestamp: parsed.timestamp || event.origin_server_ts || Date.now(),
+            latitude: parseFloat(geoMatch[1]),
+            longitude: parseFloat(geoMatch[2])
+          })
         }
       }
 
@@ -291,20 +267,18 @@ class MatrixBeaconService {
     try {
       const client = this.getClient()
       if (!client) return false
+
+      // 读取现有 beacon_info 以保留 timeout/description
       const event = await client.getRoomEvent(roomId, beaconInfoEventId)
-      const content = event.getContent() as BeaconEventContent
+      const content = event.getContent() as { description?: string; timeout?: number }
 
-      if (!content?.beacon_info) return false
+      // 本 fork 的 BeaconManager.stopBeacon(roomId, beaconId) 仅本地调用 beacon.destroy()，
+      // 不会向服务端发送 state event；改用 setLiveBeacon(live:false) 发送 m.beacon_info
+      // state event（state_key = 发送者 mxid），与 element-web 线上行为一致。
+      await client
+        .getBeaconManager()
+        .setLiveBeacon(roomId, ContentHelpers.makeBeaconInfoContent(content.timeout ?? 0, false, content.description))
 
-      const updatedContent = {
-        ...content,
-        beacon_info: {
-          ...content.beacon_info,
-          live: false
-        }
-      }
-
-      await client.sendEvent(roomId, 'm.beacon_info', updatedContent)
       return true
     } catch (err) {
       logger.warn('stopBeacon failed:', err)

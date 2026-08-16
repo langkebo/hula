@@ -114,27 +114,42 @@ describe('MatrixLocationService', () => {
         })
       ).rejects.toThrow('客户端未初始化')
     })
-  })
 
-  describe('startLiveLocationShare', () => {
-    it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+    it('should send an m.room.message event with the standard makeLocationContent shape', async () => {
+      const sendEvent = vi.fn().mockResolvedValue({ event_id: '$location:id' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        sendEvent
+      } as unknown as MatrixClient)
 
-      await expect(matrixLocationService.startLiveLocationShare('!room:id', 3600000)).rejects.toThrow('客户端未初始化')
-    })
-  })
+      const location = {
+        latitude: 39.9042,
+        longitude: 116.4074,
+        accuracy: 10,
+        description: '测试位置',
+        timestamp: 1700000000000
+      }
 
-  describe('updateLiveLocation', () => {
-    it('should throw when client is not initialized', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+      const result = await matrixLocationService.sendLocation('!room:id', location)
 
-      await expect(
-        matrixLocationService.updateLiveLocation('!room:id', '$event:id', {
-          latitude: 39.9042,
-          longitude: 116.4074,
-          timestamp: Date.now()
+      expect(result).toBe('$location:id')
+      expect(sendEvent).toHaveBeenCalledTimes(1)
+      expect(sendEvent).toHaveBeenCalledWith(
+        '!room:id',
+        'm.room.message',
+        expect.objectContaining({
+          msgtype: 'm.location',
+          body: expect.any(String),
+          geo_uri: 'geo:39.9042,116.4074;u=10',
+          'org.matrix.msc3488.location': {
+            description: '测试位置',
+            uri: 'geo:39.9042,116.4074;u=10'
+          },
+          'org.matrix.msc3488.asset': {
+            type: 'm.pin'
+          },
+          'org.matrix.msc3488.ts': 1700000000000
         })
-      ).rejects.toThrow('客户端未初始化')
+      )
     })
   })
 
