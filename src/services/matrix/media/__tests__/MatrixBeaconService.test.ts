@@ -58,6 +58,28 @@ describe('MatrixBeaconService', () => {
 
       expect(result).toBeNull()
     })
+
+    it('should read top-level description/timeout/live (not nested beacon_info)', async () => {
+      const getRoomEvent = vi.fn().mockResolvedValue({
+        sender: { userId: '@alice:example.com' },
+        getTs: () => 1700000000000,
+        getContent: () => ({ description: 'Alice beacon', timeout: 3600000, live: true })
+      })
+      const mockClient = { getRoomEvent } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      const result = await matrixBeaconService.getBeaconInfo('!room:id', '$beacon_info_1')
+
+      expect(result).toEqual({
+        event_id: '$beacon_info_1',
+        room_id: '!room:id',
+        user_id: '@alice:example.com',
+        description: 'Alice beacon',
+        timeout: 3600000,
+        is_live: true,
+        last_updated: 1700000000000
+      })
+    })
   })
 
   describe('getActiveBeacons', () => {
@@ -270,6 +292,28 @@ describe('MatrixBeaconService', () => {
       expect(result).toBe(true)
       expect(getRoomEvent).toHaveBeenCalledWith('!room:id', '$beacon_info_1')
       expect(getBeaconManager).toHaveBeenCalled()
+      expect(setLiveBeacon).toHaveBeenCalledWith(
+        '!room:id',
+        expect.objectContaining({
+          timeout: 3600000,
+          live: false,
+          description: 'Test beacon'
+        })
+      )
+    })
+
+    it('should default timeout to 3600000 when beacon_info content omits timeout', async () => {
+      const getRoomEvent = vi.fn().mockResolvedValue({
+        getContent: () => ({ description: 'Test beacon' })
+      })
+      const setLiveBeacon = vi.fn().mockResolvedValue({ event_id: '$beacon_info_stopped' })
+      const getBeaconManager = vi.fn(() => ({ setLiveBeacon }))
+      const mockClient = { getRoomEvent, getBeaconManager } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      const result = await matrixBeaconService.stopBeacon('!room:id', '$beacon_info_1')
+
+      expect(result).toBe(true)
       expect(setLiveBeacon).toHaveBeenCalledWith(
         '!room:id',
         expect.objectContaining({

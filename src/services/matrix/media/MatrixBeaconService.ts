@@ -3,40 +3,12 @@
  * 位置信标功能
  */
 
-import { ContentHelpers, M_BEACON, type MBeaconEventContent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import type { MBeaconEventContent } from '../sdk'
+import { ContentHelpers, M_BEACON } from '../sdk'
 
 const logger = createLogger('MatrixBeaconService')
-
-type BeaconInfoContent = {
-  description?: string
-  timeout?: number
-  live?: boolean
-}
-
-type BeaconLocationContent = {
-  uri?: string
-  description?: string
-  ts?: number
-  timestamp?: number
-  accuracy?: number
-  altitude?: number
-  speed?: number
-  bearing?: number
-}
-
-type BeaconEventContent = {
-  beacon_info?: BeaconInfoContent
-  beacon?: {
-    event_id?: string
-    timestamp?: number
-    location?: BeaconLocationContent
-  }
-  location?: BeaconLocationContent
-  'm.relates_to'?: { event_id?: string }
-  [key: string]: unknown
-}
 
 interface BeaconInfo {
   event_id: string
@@ -136,17 +108,17 @@ class MatrixBeaconService {
       const client = this.getClient()
       if (!client) return null
       const event = await client.getRoomEvent(roomId, eventId)
-      const content = event.getContent() as BeaconEventContent
+      const content = event.getContent() as { description?: string; timeout?: number; live?: boolean }
 
-      if (!content?.beacon_info) return null
+      if (content.timeout === undefined) return null
 
       return {
         event_id: eventId,
         room_id: roomId,
         user_id: event.sender?.userId || '',
-        description: content.beacon_info.description,
-        timeout: content.beacon_info.timeout,
-        is_live: content.beacon_info.live ?? false,
+        description: content.description,
+        timeout: content.timeout,
+        is_live: content.live ?? false,
         last_updated: event.getTs() || Date.now()
       }
     } catch (err) {
@@ -277,7 +249,10 @@ class MatrixBeaconService {
       // state event（state_key = 发送者 mxid），与 element-web 线上行为一致。
       await client
         .getBeaconManager()
-        .setLiveBeacon(roomId, ContentHelpers.makeBeaconInfoContent(content.timeout ?? 0, false, content.description))
+        .setLiveBeacon(
+          roomId,
+          ContentHelpers.makeBeaconInfoContent(content.timeout ?? 3600000, false, content.description)
+        )
 
       return true
     } catch (err) {

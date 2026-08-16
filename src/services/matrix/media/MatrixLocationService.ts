@@ -1,6 +1,7 @@
-import { ContentHelpers, type EventType, type IContent, LocationAssetType, type MatrixEvent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+import type { EventType, IContent, MatrixEvent } from '../sdk'
+import { ContentHelpers, LocationAssetType } from '../sdk'
 
 const logger = createLogger('MatrixLocationService')
 

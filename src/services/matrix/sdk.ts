@@ -6,12 +6,15 @@
  */
 
 export type {
+  IContent,
   ICreateRoomOpts,
   IPublicRoomsChunkRoom,
   IPusher,
   LoginResponse,
   MatrixClient,
   MatrixEvent,
+  MBeaconEventContent,
+  MBeaconInfoEventContent,
   Room,
   RoomMember,
   RoomState,
@@ -20,10 +23,15 @@ export type {
   User
 } from 'matrix-js-sdk'
 export {
+  ContentHelpers,
   createClient,
   Direction,
   EventType,
   initializeManagerExtensions,
+  LocationAssetType,
+  M_BEACON,
+  M_BEACON_INFO,
+  M_LOCATION,
   Preset,
   PushRuleActionName,
   PushRuleKind,
