@@ -131,13 +131,32 @@ describe('Beacon render message', () => {
 
     ;(wrapper.vm as unknown as { handleBeaconClick: () => void }).handleBeaconClick()
 
-    // 收到 WGS-84 后，显示前转 GCJ-02
-    expect(wgs84ToGcj02Mock).toHaveBeenCalledWith(39.9, 116.3)
+    // OSM 为 WGS-84：URL 收到原始 WGS-84，不调用 wgs84ToGcj02
+    expect(wgs84ToGcj02Mock).not.toHaveBeenCalled()
     expect(getOpenStreetMapUrlMock).toHaveBeenCalledWith({
-      latitude: 39.91,
-      longitude: 116.31,
+      latitude: 39.9,
+      longitude: 116.3,
       timestamp: expect.any(Number)
     })
     expect(openExternalUrlMock).toHaveBeenCalledWith('https://map.example.com')
+  })
+
+  it('does not transform coordinates to GCJ-02 for OSM (WGS-84 passthrough)', () => {
+    const wrapper = mountBeacon({
+      description: 'live beacon',
+      isLive: true,
+      lastUpdateTs: Date.now(),
+      timeout: 60_000,
+      uri: 'geo:31.2304,121.4737'
+    })
+
+    ;(wrapper.vm as unknown as { handleBeaconClick: () => void }).handleBeaconClick()
+
+    expect(wgs84ToGcj02Mock).not.toHaveBeenCalled()
+    expect(getOpenStreetMapUrlMock).toHaveBeenCalledWith({
+      latitude: 31.2304,
+      longitude: 121.4737,
+      timestamp: expect.any(Number)
+    })
   })
 })
