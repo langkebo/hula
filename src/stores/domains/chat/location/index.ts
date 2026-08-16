@@ -167,16 +167,23 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
   }
 
   /**
-   * 会话恢复：从服务端重建活跃信标并恢复共享态。
+   * 会话恢复：从服务端重建某房间的活跃信标并恢复共享态。
    * 重连 / 重启后调用（app 就绪或进入房间时），并为仍 live 的信标重建到期定时器。
+   * 采用合并语义：只替换该房间的信标，不覆盖其它房间仍在共享的信标及其到期定时器。
    */
   async function restoreActiveBeacons(roomId: string): Promise<void> {
     const beacons = await matrixBeaconService.getActiveBeacons(roomId)
 
-    clearAllExpiryTimers()
-    const restored = new Map<string, ActiveBeacon>()
+    // 合并语义：仅清除该房间下的旧信标及其到期定时器，不触碰其它房间的信标。
+    for (const [beaconInfoEventId, beacon] of activeBeacons.value) {
+      if (beacon.roomId === roomId) {
+        clearExpiryTimer(beaconInfoEventId)
+        activeBeacons.value.delete(beaconInfoEventId)
+      }
+    }
+
     for (const beacon of beacons) {
-      restored.set(beacon.event_id, {
+      const active: ActiveBeacon = {
         roomId: beacon.room_id,
         owner: beacon.user_id,
         description: beacon.description,
@@ -184,16 +191,14 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
         timestamp: beacon.last_updated,
         isLive: beacon.is_live,
         latestUri: undefined
-      })
+      }
+      activeBeacons.value.set(beacon.event_id, active)
+      scheduleExpiry(beacon.event_id, active)
     }
 
-    activeBeacons.value = restored
-    sharing.value = restored.size > 0
+    // 与 stopLiveShare 口径统一：只要还存在任一 live 信标即视为共享中。
+    sharing.value = Array.from(activeBeacons.value.values()).some((item) => item.isLive)
     currentLocation.value = null
-
-    for (const [beaconInfoEventId, beacon] of restored) {
-      scheduleExpiry(beaconInfoEventId, beacon)
-    }
   }
 
   /** 重置所有位置 / 信标状态。 */
