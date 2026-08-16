@@ -37,8 +37,6 @@ export enum MittEnum {
   SHRINK_WINDOW = 'windowShrink',
   /** 详情页面显示 */
   DETAILS_SHOW = 'detailsShow',
-  /** 好友申请页面显示 */
-  APPLY_SHOW = 'applyShow',
   /** 回复消息 */
   REPLY_MEG = 'replyMsg',
   /** 手动触发InfoPopover */
@@ -51,18 +49,12 @@ export enum MittEnum {
   OPEN_GROUP_NICKNAME_MODAL = 'openGroupNicknameModal',
   /** 左边菜单弹窗 */
   LEFT_MODAL_SHOW = 'leftModalShow',
-  /** 登录窗口异地登录弹窗 */
-  LOGIN_REMOTE_MODAL = 'loginRemoteModal',
-  /** 触发home窗口事件 */
-  HOME_WINDOW_RESIZE = 'homeWindowResize',
   /** @ AT */
   AT = 'at',
   /** 重新编辑 */
   RE_EDIT = 'reEdit',
   /** 删除会话 */
   DELETE_SESSION = 'deleteSession',
-  /** 隐藏会话 */
-  HIDE_SESSION = 'hideSession',
   /** 定位会话 */
   LOCATE_SESSION = 'locateSession',
   /** 聊天框滚动到底部 */
@@ -196,31 +188,21 @@ export enum MarkEnum {
   /** 点赞 */
   LIKE = 1,
   /** 不满 */
-  DISLIKE,
+  DISLIKE = 2,
   /** 爱心 */
-  HEART,
+  HEART = 3,
   /** 愤怒 */
-  ANGRY,
-  /** 礼炮 */
-  CELEBRATE,
+  ANGRY = 4,
   /** 火箭 */
-  ROCKET,
+  ROCKET = 6,
   /** 笑哭 */
-  LOL,
-  /** 鼓掌 */
-  APPLAUSE,
+  LOL = 7,
   /** 鲜花 */
-  FLOWER,
-  /** 炸弹 */
-  BOMB,
-  /** 疑问 */
-  CONFUSED,
-  /** 胜利 */
-  VICTORY,
+  FLOWER = 9,
   /** 灯光 */
-  LIGHT,
+  LIGHT = 13,
   /** 红包 */
-  MONEY
+  MONEY = 14
 }
 
 export enum MergeMessageType {
