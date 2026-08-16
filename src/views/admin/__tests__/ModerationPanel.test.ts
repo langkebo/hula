@@ -372,6 +372,21 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     expect(getReportHistoryMock).toHaveBeenCalledWith(101)
   })
 
+  it('获取历史失败时仍打开历史对话框（空历史，保持旧 throwOnError=false 语义）', async () => {
+    listReportsMock.mockResolvedValue([sampleEventReport])
+    getReportHistoryMock.mockRejectedValue(new Error('boom'))
+
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="event-report-action-history"]').trigger('click')
+    await flushPromises()
+
+    expect(getReportHistoryMock).toHaveBeenCalledWith(101)
+    // 失败不产生未捕获 rejection，对话框仍打开（空历史）
+    expect(wrapper.find('.n-modal').exists()).toBe(true)
+  })
+
   it('加载事件举报失败时显示错误反馈并清空列表', async () => {
     listReportsMock.mockRejectedValue(new Error('boom'))
 
