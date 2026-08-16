@@ -1,7 +1,6 @@
 <template>
   <!-- 桌面端工具栏 -->
-  <div
-    class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-[--tjg-border-layout-divider]">
+  <div class="flex-shrink-0 px-2 py-1 flex items-center gap-2 border-t border-[--tjg-border-layout-divider]">
     <!-- 位置共享 -->
     <n-tooltip trigger="hover">
       <template #trigger>
@@ -16,18 +15,18 @@
       {{ t('message.location.share') || '位置共享' }}
     </n-tooltip>
 
-    <!-- Beacon 信标 -->
+    <!-- Beacon 信标（共享中显示为停止态） -->
     <n-tooltip trigger="hover">
       <template #trigger>
-        <n-button quaternary size="small" @click="$emit('handleBeaconClick')">
+        <n-button quaternary size="small" :type="isSharing ? 'error' : 'default'" @click="$emit('handleBeaconClick')">
           <template #icon>
-            <svg class="w-18px h-18px">
+            <svg class="w-18px h-18px" :class="isSharing ? 'color-[--tjg-color-danger-500]' : ''">
               <use href="#signal"></use>
             </svg>
           </template>
         </n-button>
       </template>
-      {{ t('message.beacon.share') || '发送信标' }}
+      {{ isSharing ? t('message.beacon.stop') : t('message.beacon.share') }}
     </n-tooltip>
 
     <!-- 文件上传 -->
@@ -112,6 +111,7 @@ const props = defineProps<{
   disabledSend: boolean
   isAIMode: boolean
   isAIStreaming: boolean
+  isSharing: boolean
   arrow: boolean
   chatKey: string
   sendOptions: { label: string; value: string }[]

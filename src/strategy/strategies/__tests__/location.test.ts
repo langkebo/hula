@@ -104,9 +104,43 @@ describe('LocationMessageStrategyImpl', () => {
     expect(body.geo_uri).toBe('geo:39.9,116.4;u=10')
     expect(body.msgtype).toBe('m.location')
     expect(body.body).toBe('位置: Beijing')
-    expect(body.info).toEqual({ address: 'Beijing', timestamp: 1000 })
+    expect(body.info).toEqual({ address: 'Beijing', timestamp: '1000' })
     expect(body.replyMsgId).toBe('rk')
     expect(body.reply).toBeUndefined()
+  })
+
+  it('buildMessageBody backfills LocationBody with string fields for local echo', () => {
+    const body = strategy.buildMessageBody(
+      {
+        type: MsgEnum.LOCATION,
+        latitude: 39.9042,
+        longitude: 116.4074,
+        address: 'Beijing',
+        precision: '高精度',
+        timestamp: 1234567890
+      },
+      null
+    )
+    expect(body.latitude).toBe('39.9042')
+    expect(body.longitude).toBe('116.4074')
+    expect(body.address).toBe('Beijing')
+    expect(body.precision).toBe('高精度')
+    expect(body.timestamp).toBe('1234567890')
+  })
+
+  it('buildMessageBody keeps WGS-84 coordinates unchanged (no GCJ-02 transform)', () => {
+    const body = strategy.buildMessageBody(
+      {
+        type: MsgEnum.LOCATION,
+        latitude: 31.2304,
+        longitude: 121.4737,
+        address: 'Shanghai',
+        precision: '高精度',
+        timestamp: 1
+      },
+      null
+    )
+    expect(body.geo_uri).toBe('geo:31.2304,121.4737;u=10')
   })
 
   it('buildMessageBody uses u=100 for non-high precision', () => {

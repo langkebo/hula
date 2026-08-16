@@ -66,6 +66,7 @@
           :disabled-send="disabledSend"
           :isAIMode="props.isAIMode"
           :isAIStreaming="props.isAIStreaming"
+          :is-sharing="sharing"
           :send-options="sendOptions"
           @show-location-modal="showLocationModal = true"
           @handle-beacon-click="handleBeaconClick"

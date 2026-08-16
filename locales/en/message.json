@@ -244,6 +244,7 @@
   },
   "beacon": {
     "share": "Share beacon",
+    "stop": "Stop sharing",
     "started": "Beacon started",
     "failed": "Failed to start beacon"
   },

@@ -468,7 +468,32 @@ describe('buildMatrixContent', () => {
       expect(content.geo_uri).toBe('')
     })
 
-    it('should not set info for location messages', () => {
+    it('should fall back to snake_case geo_uri produced by the strategy', () => {
+      const content = buildMatrixContent(MsgEnum.LOCATION, {
+        geo_uri: 'geo:39.9,116.4;u=10',
+        body: '位置: Beijing'
+      })
+      expect(content.geo_uri).toBe('geo:39.9,116.4;u=10')
+    })
+
+    it('should fall back to body when description is not provided', () => {
+      const content = buildMatrixContent(MsgEnum.LOCATION, {
+        geo_uri: 'geo:39.9,116.4;u=10',
+        body: '位置: Beijing'
+      })
+      expect(content.body).toBe('位置: Beijing')
+    })
+
+    it('should preserve info.address from the strategy body', () => {
+      const content = buildMatrixContent(MsgEnum.LOCATION, {
+        geo_uri: 'geo:39.9,116.4;u=10',
+        body: '位置: Beijing',
+        info: { address: 'Beijing', timestamp: '1000' }
+      })
+      expect(content.info).toEqual({ address: 'Beijing', timestamp: '1000' })
+    })
+
+    it('should not set info for location messages without info', () => {
       const content = buildMatrixContent(MsgEnum.LOCATION, { description: 'Place', geoUri: 'geo:1,2' })
       expect(content.info).toBeUndefined()
     })

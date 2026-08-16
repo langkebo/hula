@@ -4481,6 +4481,7 @@ export type I18nKeys = {
     },
     "beacon": {
       "share": "发送信标",
+      "stop": "停止共享",
       "started": "信标已启动",
       "failed": "信标启动失败"
     },
