@@ -89,6 +89,8 @@ export enum StoresEnum {
   MODERATION = 'moderation',
   /** 服务端能力探测 */
   CAPABILITY = 'capability',
+  /** 位置 / beacon 实时共享 */
+  LOCATION = 'location',
   /** 消息多选 */
   /** 加密状态 */
   ENCRYPTION = 'encryption'
