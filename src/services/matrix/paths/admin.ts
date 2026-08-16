@@ -36,18 +36,9 @@ export const ADMIN = {
   EXTERNAL_SERVICES_HEALTH_CHECK: (asId: string) => `/external_services/${encodeURIComponent(asId)}/health/check`,
   REPORTS: '/_synapse/admin/v1/reports',
   REPORT_BY_ID: (reportId: string) => `/_synapse/admin/v1/reports/${encodeURIComponent(reportId)}`,
-  SERVER_NOTIFICATIONS: '/_synapse/admin/v1/server_notifications',
-  SERVER_NOTIFICATION_BY_ID: (id: string) => `/_synapse/admin/v1/server_notifications/${encodeURIComponent(id)}`,
-  SERVER_NOTIFICATIONS_ACTIVE: '/_synapse/admin/v1/server_notifications/active',
-  SERVER_NOTIFICATION_READ: (id: string) => `/_synapse/admin/v1/server_notifications/${encodeURIComponent(id)}/read`,
-  SERVER_NOTIFICATION_DISMISS: (id: string) =>
-    `/_synapse/admin/v1/server_notifications/${encodeURIComponent(id)}/dismiss`,
-  SERVER_NOTIFICATION_TEMPLATES: '/_synapse/admin/v1/server_notifications/templates',
   APPSERVICES: '/_synapse/admin/v1/appservices',
   APPSERVICE_BY_ID: (id: string) => `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`,
   /** @deprecated Use AdminFacadeService methods instead */
   MATRIX_WHOAMI: '/_matrix/admin/v1/whoami',
-  MATRIX_EXTERNAL_SERVICES: '/_matrix/admin/v1/external_services',
-  /** Purge remote media cache (admin) — used by AdminMediaService.purgeRemoteMedia */
-  PURGE_REMOTE_MEDIA: '/_matrix/client/v1/admin/purge_remote_media'
+  MATRIX_EXTERNAL_SERVICES: '/_matrix/admin/v1/external_services'
 } as const

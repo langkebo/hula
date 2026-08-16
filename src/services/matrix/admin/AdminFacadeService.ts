@@ -601,10 +601,6 @@ class AdminFacadeService extends BaseMatrixService {
     return this.media.deleteMedia(mediaId)
   }
 
-  async purgeRemoteMedia(beforeTs: number, includeProfiles = false): Promise<{ deleted: number }> {
-    return this.media.purgeRemoteMedia(beforeTs, includeProfiles)
-  }
-
   async adminGetSpaces(
     limit = 50,
     from?: string

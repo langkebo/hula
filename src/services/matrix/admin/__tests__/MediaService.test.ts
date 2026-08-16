@@ -115,25 +115,4 @@ describe('AdminMediaService', () => {
     admin.getMediaStats.mockRejectedValueOnce(new Error('boom'))
     await expect(service.getMediaStats()).resolves.toBeNull()
   })
-
-  it('purgeRemoteMedia 通过 admin HTTP 端点发送 before_ts 与 include_profiles', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
-
-    await expect(service.purgeRemoteMedia(1700000000000, true)).resolves.toEqual({ deleted: 3 })
-    expect(authedRequestImpl).toHaveBeenCalledWith(
-      'POST',
-      '/admin/purge_remote_media',
-      undefined,
-      {
-        before_ts: 1700000000000,
-        include_profiles: true
-      },
-      { prefix: '/_matrix/client/v1' }
-    )
-  })
-
-  it('purgeRemoteMedia 客户端未初始化时抛错', async () => {
-    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
-    await expect(service.purgeRemoteMedia(1)).rejects.toThrow('[AdminMedia] 客户端未初始化')
-  })
 })
