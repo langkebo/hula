@@ -145,7 +145,7 @@ describe('InviteDialog', () => {
   it('uses action feedback for invalid id, invite success and invite failure', async () => {
     const wrapper = mount(InviteDialog, {
       props: {
-        visible: true,
+        show: true,
         roomId: '!room:example.com'
       }
     })

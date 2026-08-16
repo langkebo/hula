@@ -1,6 +1,6 @@
 <template>
   <n-modal
-    :show="visible"
+    :show="show"
     preset="card"
     :title="t('room_tags.title')"
     :style="{ width: '460px' }"
@@ -87,12 +87,12 @@ import { useI18n } from 'vue-i18n'
 import { useRoomTags } from '@/composables/room/useRoomTags'
 
 const props = defineProps<{
-  visible: boolean
+  show: boolean
   roomId: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:visible', value: boolean): void
+  (e: 'update:show', value: boolean): void
   (e: 'close'): void
   (e: 'updated'): void
 }>()
@@ -139,18 +139,18 @@ const handleClearAll = () => {
 }
 
 const handleClose = () => {
-  emit('update:visible', false)
+  emit('update:show', false)
 }
 
 const handleVisibleChange = (value: boolean) => {
-  emit('update:visible', value)
+  emit('update:show', value)
   if (!value) emit('close')
 }
 
 watch(
-  () => [props.visible, props.roomId] as const,
-  ([visible, roomId]) => {
-    if (visible && roomId) {
+  () => [props.show, props.roomId] as const,
+  ([show, roomId]) => {
+    if (show && roomId) {
       flow.load()
     }
   },

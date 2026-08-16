@@ -42,7 +42,7 @@
   </main>
 
   <!-- 位置详情弹窗 -->
-  <LocationModal v-model:visible="modalVisible" />
+  <LocationModal v-model:show="modalVisible" />
 </template>
 
 <script setup lang="ts">

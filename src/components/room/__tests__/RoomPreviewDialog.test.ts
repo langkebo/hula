@@ -79,14 +79,14 @@ const sampleRoom: RoomCardData = {
 }
 
 const mountDialog = (
-  props: Partial<{ visible: boolean; room: RoomCardData | null; requireReason: boolean; loading: boolean }> = {}
+  props: Partial<{ show: boolean; room: RoomCardData | null; requireReason: boolean; loading: boolean }> = {}
 ) =>
   mount(RoomPreviewDialog, {
-    props: { visible: true, room: sampleRoom, requireReason: false, loading: false, ...props }
+    props: { show: true, room: sampleRoom, requireReason: false, loading: false, ...props }
   })
 
 describe('RoomPreviewDialog', () => {
-  it('renders room name, member count and topic when visible', () => {
+  it('renders room name, member count and topic when show', () => {
     const wrapper = mountDialog()
     const text = wrapper.find('[data-testid="room-preview-dialog"]').text()
     expect(text).toContain('Matrix Chat')
@@ -146,11 +146,11 @@ describe('RoomPreviewDialog', () => {
     expect(wrapper.find('[data-testid="reason-required-hint"]').exists()).toBe(false)
   })
 
-  it('emits update:visible false when cancel clicked', async () => {
+  it('emits update:show false when cancel clicked', async () => {
     const wrapper = mountDialog()
     const cancelBtn = wrapper.findAll('button').find((b) => b.text().includes('cancel'))
     await cancelBtn!.trigger('click')
-    expect(wrapper.emitted('update:visible')?.at(-1)).toEqual([false])
+    expect(wrapper.emitted('update:show')?.at(-1)).toEqual([false])
   })
 
   it('does not render preview content when room is null', () => {

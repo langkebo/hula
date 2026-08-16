@@ -134,17 +134,17 @@ import StaticProxyMap from './StaticProxyMap.vue'
 const logger = createLogger('LocationModal')
 
 type LocationModalProps = {
-  visible: boolean
+  show: boolean
 }
 
 type LocationModalEmits = {
-  'update:visible': [visible: boolean]
+  'update:show': [show: boolean]
   'location-selected': [location: LocationData]
   cancel: []
 }
 
 const props = withDefaults(defineProps<LocationModalProps>(), {
-  visible: false
+  show: false
 })
 
 const emit = defineEmits<LocationModalEmits>()
@@ -154,12 +154,12 @@ const { state: locationState, getLocationWithTransform, clearError } = useGeoloc
 
 // 响应式状态
 const modalVisible = computed({
-  get: () => props.visible,
+  get: () => props.show,
   set: (value: boolean) => {
     if (!value) {
       handleClose()
     }
-    emit('update:visible', value)
+    emit('update:show', value)
   }
 })
 
@@ -233,8 +233,8 @@ const getLocation = async () => {
 }
 
 // 监听弹窗显示
-watch(modalVisible, (visible) => {
-  if (visible) {
+watch(modalVisible, (show) => {
+  if (show) {
     // 重置状态
     selectedLocation.value = null
     originalLocation.value = null
