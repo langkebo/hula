@@ -1,5 +1,5 @@
 <template>
-  <n-modal v-model:show="visible" preset="card" :title="t('moderation.report.title')" style="width: 520px">
+  <BaseRightDrawer v-model:show="visible" :title="t('moderation.report.title')">
     <div class="event-report-dialog">
       <!-- 事件内容预览 -->
       <div v-if="eventContent" class="event-preview">
@@ -37,13 +37,14 @@
         </n-button>
       </div>
     </template>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseRightDrawer from '@/components/common/BaseRightDrawer.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixEventReportService } from '@/services/matrix/moderation/MatrixEventReportService'
 import { createLogger } from '@/utils/Logger'

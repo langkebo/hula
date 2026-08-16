@@ -1,11 +1,5 @@
 <template>
-  <n-modal
-    :show="show"
-    preset="card"
-    :title="t('room.invite.title')"
-    :style="{ width: '400px' }"
-    :bordered="false"
-    @update:show="$emit('update:show', $event)">
+  <BaseRightDrawer :show="show" :title="t('room.invite.title')" @update:show="$emit('update:show', $event)">
     <div class="invite-dialog">
       <n-input v-model:value="searchQuery" :placeholder="t('room.invite.search_placeholder')" clearable>
         <template #prefix>
@@ -61,11 +55,12 @@
         </n-button>
       </div>
     </template>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import BaseRightDrawer from '@/components/common/BaseRightDrawer.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'

@@ -147,6 +147,11 @@ describe('InviteDialog', () => {
       props: {
         show: true,
         roomId: '!room:example.com'
+      },
+      global: {
+        stubs: {
+          BaseRightDrawer: { template: '<div><slot /><slot name="footer" /></div>' }
+        }
       }
     })
 

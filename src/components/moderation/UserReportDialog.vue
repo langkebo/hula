@@ -1,9 +1,5 @@
 <template>
-  <n-modal
-    v-model:show="visible"
-    preset="card"
-    :title="t('moderation.report_user.title')"
-    style="width: var(--tjg-dialog-width-lg); max-width: 90vw">
+  <BaseRightDrawer v-model:show="visible" :title="t('moderation.report_user.title')">
     <div class="user-report-dialog">
       <!-- 被举报用户预览 -->
       <div v-if="userId" class="user-preview">
@@ -52,13 +48,14 @@
         </n-button>
       </div>
     </template>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseRightDrawer from '@/components/common/BaseRightDrawer.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService } from '@/services/matrix/admin/AdminFacadeService'
 import { createLogger } from '@/utils/Logger'

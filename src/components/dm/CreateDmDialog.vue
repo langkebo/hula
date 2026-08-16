@@ -1,13 +1,5 @@
 <template>
-  <n-modal
-    v-model:show="visible"
-    preset="card"
-    :title="t('dm.create.title')"
-    :bordered="false"
-    :closable="true"
-    :mask-closable="true"
-    class="create-dm-dialog"
-    style="width: 420px; max-width: 90vw">
+  <BaseRightDrawer v-model:show="visible" :title="t('dm.create.title')">
     <n-flex vertical :size="16">
       <n-input
         v-model:value="searchValue"
@@ -96,11 +88,12 @@
         </n-scrollbar>
       </n-flex>
     </n-flex>
-  </n-modal>
+  </BaseRightDrawer>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import BaseRightDrawer from '@/components/common/BaseRightDrawer.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { ThemeEnum } from '@/enums'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
