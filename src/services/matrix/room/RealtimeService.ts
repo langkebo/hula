@@ -108,7 +108,7 @@ export class MatrixRoomRealtimeService {
       if (event.getType() === 'm.room.encrypted') {
         for (const delay of [250, 1000, 3000]) {
           setTimeout(() => {
-            if (event.getType() === 'm.room.message') {
+            if (event.getType() === 'm.room.message' || BEACON_EVENT_TYPES.has(event.getType())) {
               emitTimelineEvent(event, room)
             }
           }, delay)

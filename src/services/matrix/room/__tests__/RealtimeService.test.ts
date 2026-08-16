@@ -229,6 +229,48 @@ describe('MatrixRoomRealtimeService', () => {
       }
     })
 
+    it.each(['m.beacon_info', 'org.matrix.msc3672.beacon_info'])(
+      'onTimelineEvent re-emits a decrypted %s event through convertEventToMessage',
+      (eventType) => {
+        vi.useFakeTimers()
+        try {
+          const { on } = setupClient()
+          const room = makeRoom()
+          let type = 'm.room.encrypted'
+          const event = {
+            getType: () => type,
+            getContent: () => ({})
+          }
+
+          convertRoomToRoomInfoMock.mockReturnValue({ roomId: '!r:e' })
+          convertEventToMessageTypeMock.mockReturnValueOnce({ id: 'enc' })
+          convertEventToMessageMock.mockReturnValueOnce({ id: 'beacon' })
+
+          const cb = vi.fn()
+          service.onTimelineEvent(cb)
+          on.mock.calls[0][1](event, room)
+
+          expect(cb).toHaveBeenCalledTimes(1)
+          expect(cb.mock.calls[0][0]).toMatchObject({
+            eventType: 'm.room.encrypted',
+            message: { id: 'enc' }
+          })
+
+          type = eventType
+          vi.advanceTimersByTime(250)
+
+          expect(cb).toHaveBeenCalledTimes(2)
+          expect(cb.mock.calls[1][0]).toMatchObject({
+            eventType,
+            message: { id: 'beacon' }
+          })
+          expect(convertEventToMessageMock).toHaveBeenCalledWith(event, room)
+        } finally {
+          vi.useRealTimers()
+        }
+      }
+    )
+
     it('onRoomNameChange forwards roomId + name', () => {
       const { on } = setupClient()
       const cb = vi.fn()
