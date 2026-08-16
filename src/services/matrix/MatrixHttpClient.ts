@@ -35,6 +35,7 @@ interface MatrixAuthedRequestInvoker {
  * 此函数检测并剥离已知前缀，返回短路径和需要显式设置的 prefix（仅非默认前缀需要）。
  */
 const MATRIX_PREFIXES = [
+  '/_matrix/vendor/v1',
   '/_matrix/client/v3',
   '/_matrix/client/v1',
   '/_matrix/client/r0',

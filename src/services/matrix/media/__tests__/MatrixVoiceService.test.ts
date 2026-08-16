@@ -7,13 +7,13 @@ import matrixClientService from '../../MatrixClientService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 
 const _server = setupMswServer(
-  http.post(`${TEST_BASE_URL}/_matrix/client/v1/voice/upload`, () => {
+  http.post(`${TEST_BASE_URL}/_matrix/vendor/v1/voice/upload`, () => {
     return HttpResponse.json({
       event_id: '$voice-event',
       content_uri: 'mxc://example.org/media'
     })
   }),
-  http.post(`${TEST_BASE_URL}/_matrix/client/v1/voice/transcription`, async ({ request }) => {
+  http.post(`${TEST_BASE_URL}/_matrix/vendor/v1/voice/transcription`, async ({ request }) => {
     const body = await request.json()
     return HttpResponse.json({ text: 'hello world', language: 'en', ...(body as Record<string, unknown>) })
   })
@@ -90,9 +90,9 @@ describe('MatrixVoiceService', () => {
       mxcUrl: 'mxc://example.org/media',
       httpUrl: 'https://cdn.example.com/example.org/media'
     })
-    expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/client/v1/voice/upload')
+    expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/vendor/v1/voice/upload')
     expect(authedRequestMock).toHaveBeenCalledWith('POST', '/voice/upload', undefined, expect.any(FormData), {
-      prefix: '/_matrix/client/v1'
+      prefix: '/_matrix/vendor/v1'
     })
   })
 
@@ -144,7 +144,7 @@ describe('MatrixVoiceService', () => {
       text: 'hello world',
       language: 'en'
     })
-    expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/client/v1/voice/transcription')
+    expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/vendor/v1/voice/transcription')
     expect(transcribeVoiceMessageMock).toHaveBeenCalledWith(
       '$voice-event',
       undefined,

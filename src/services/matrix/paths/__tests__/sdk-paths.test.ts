@@ -20,7 +20,7 @@ describe('sdk-paths', () => {
 
   describe('validateTjgPath', () => {
     it('returns true for exact literal path', () => {
-      expect(validateTjgPath('/_matrix/client/v1/friends')).toBe(true)
+      expect(validateTjgPath('/_matrix/vendor/v1/friends')).toBe(true)
     })
 
     it('returns true for path with concrete param segment', () => {

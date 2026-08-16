@@ -14,7 +14,7 @@
  *   - Request body shape (JSON payloads)
  *   - Response parsing (bare vs `{data: ...}` wrapped payloads)
  *
- * All friends endpoints use PREFIX_V1 (/matrix/client/v1) via MATRIX_PATHS.FRIENDS.
+ * All friends endpoints use PREFIX_VENDOR_V1 (/_matrix/vendor/v1) via MATRIX_PATHS.FRIENDS.
  */
 
 import type { MatrixClient } from 'matrix-js-sdk'
@@ -44,65 +44,65 @@ vi.mock('../EndpointCapabilityService', () => ({
 // Catch-all handlers for all friends endpoints. Tests can override with
 // server.use() for error/edge cases.
 const server = setupMswServer(
-  http.get(`${HOMESERVER}/_matrix/client/v1/friends`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/friends`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({
       data: [{ user_id: '@alice:hs', display_name: 'Alice', since: 1 }]
     })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/friends/search`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/friends/search`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({
       results: [{ user_id: '@bob:hs', username: 'bob', match_type: 'fuzzy' }]
     })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/friends/request`, async ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/friends/request`, async ({ request }) => {
     const body = await request.text()
     seenUrls.push({ method: request.method, url: request.url, body })
     return HttpResponse.json({ data: { request_id: 42, status: 'pending' } })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/friends/requests/incoming`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/friends/requests/incoming`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({
       requests: [{ request_id: 1, requester: '@x:hs', recipient: '@me:hs', status: 'pending', created_ts: 1 }]
     })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/friends/requests/outgoing`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/friends/requests/outgoing`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ requests: [] })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/friends/request/:userId/accept`, async ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/friends/request/:userId/accept`, async ({ request }) => {
     const body = await request.text()
     seenUrls.push({ method: request.method, url: request.url, body })
     return HttpResponse.json({ data: { status: 'accepted', room_id: '!dm:hs' } })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/friends/request/:userId/reject`, async ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/friends/request/:userId/reject`, async ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ status: 'ok' })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/friends/request/:userId/cancel`, ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/friends/request/:userId/cancel`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ status: 'ok' })
   }),
-  http.delete(`${HOMESERVER}/_matrix/client/v1/friends/:userId`, ({ request }) => {
+  http.delete(`${HOMESERVER}/_matrix/vendor/v1/friends/:userId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ status: 'ok' })
   }),
-  http.put(`${HOMESERVER}/_matrix/client/v1/friends/:userId/note`, async ({ request }) => {
+  http.put(`${HOMESERVER}/_matrix/vendor/v1/friends/:userId/note`, async ({ request }) => {
     const body = await request.text()
     seenUrls.push({ method: request.method, url: request.url, body })
     return HttpResponse.json({ status: 'ok' })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/friends/check/:userId`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/friends/check/:userId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ data: { are_friends: true } })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/friends/dm/:userId`, async ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/friends/dm/:userId`, async ({ request }) => {
     const body = await request.text()
     seenUrls.push({ method: request.method, url: request.url, body })
     return HttpResponse.json({ data: { room_id: '!dm:hs', created: true } })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/friends/dm/:userId`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/friends/dm/:userId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ data: { room_id: '!dm:hs', exists: true } })
   })
@@ -133,12 +133,12 @@ describe('SynapseFriendExtensionService friends URL construction contract (real 
 
   const filterBy = (substring: string) => seenUrls.filter((u) => u.url.includes(substring))
 
-  it('getFriends hits GET /_matrix/client/v1/friends and unwraps {data: [...]}', async () => {
+  it('getFriends hits GET /_matrix/vendor/v1/friends and unwraps {data: [...]}', async () => {
     const result = await synapseFriendExtensionService.getFriends()
     const calls = filterBy('/friends')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/friends`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends`)
     expect(result).toHaveLength(1)
     expect(result[0].user_id).toBe('@alice:hs')
     expect(result[0].display_name).toBe('Alice')
@@ -146,7 +146,7 @@ describe('SynapseFriendExtensionService friends URL construction contract (real 
 
   it('getFriends accepts bare array payload (no {data: ...} wrapper)', async () => {
     server.use(
-      http.get(`${HOMESERVER}/_matrix/client/v1/friends`, ({ request }) => {
+      http.get(`${HOMESERVER}/_matrix/vendor/v1/friends`, ({ request }) => {
         seenUrls.push({ method: request.method, url: request.url })
         return HttpResponse.json([{ user_id: '@bare:hs', since: 2 }])
       })
@@ -158,7 +158,7 @@ describe('SynapseFriendExtensionService friends URL construction contract (real 
 
   it('getFriends returns [] on HTTP error', async () => {
     server.use(
-      http.get(`${HOMESERVER}/_matrix/client/v1/friends`, ({ request }) => {
+      http.get(`${HOMESERVER}/_matrix/vendor/v1/friends`, ({ request }) => {
         seenUrls.push({ method: request.method, url: request.url })
         return HttpResponse.json({ error: 'unauthorized' }, { status: 401 })
       })
@@ -167,17 +167,17 @@ describe('SynapseFriendExtensionService friends URL construction contract (real 
     expect(result).toEqual([])
   })
 
-  it('searchFriends builds GET /_matrix/client/v1/friends/search?q=...&limit=...&mode=...', async () => {
+  it('searchFriends builds GET /_matrix/vendor/v1/friends/search?q=...&limit=...&mode=...', async () => {
     const result = await synapseFriendExtensionService.searchFriends('ljf', { limit: 10, mode: 'exact' })
     const calls = filterBy('/friends/search')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/friends/search?q=ljf&limit=10&mode=exact`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends/search?q=ljf&limit=10&mode=exact`)
     expect(result).toHaveLength(1)
     expect(result[0].user_id).toBe('@bob:hs')
   })
 
-  it('sendFriendRequest POSTs /_matrix/client/v1/friends/request with {user_id, message}', async () => {
+  it('sendFriendRequest POSTs /_matrix/vendor/v1/friends/request with {user_id, message}', async () => {
     const result = await synapseFriendExtensionService.sendFriendRequest('@target:hs', 'hi')
     const calls = filterBy('/friends/request')
     const postCall = calls.find((c) => c.method === 'POST' && c.url.endsWith('/friends/request'))
@@ -200,75 +200,75 @@ describe('SynapseFriendExtensionService friends URL construction contract (real 
     expect(result.outgoing).toHaveLength(0)
   })
 
-  it('acceptFriendRequest POSTs /_matrix/client/v1/friends/request/{userId}/accept (URL-encoded)', async () => {
+  it('acceptFriendRequest POSTs /_matrix/vendor/v1/friends/request/{userId}/accept (URL-encoded)', async () => {
     const result = await synapseFriendExtensionService.acceptFriendRequest('@user:hs')
     const calls = filterBy('/accept')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/friends/request/%40user%3Ahs/accept`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends/request/%40user%3Ahs/accept`)
     expect(result.status).toBe('accepted')
     expect(result.room_id).toBe('!dm:hs')
   })
 
-  it('declineFriendRequest POSTs /_matrix/client/v1/friends/request/{userId}/reject', async () => {
+  it('declineFriendRequest POSTs /_matrix/vendor/v1/friends/request/{userId}/reject', async () => {
     await synapseFriendExtensionService.declineFriendRequest('@user:hs')
     const calls = filterBy('/reject')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/friends/request/%40user%3Ahs/reject`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends/request/%40user%3Ahs/reject`)
   })
 
-  it('cancelFriendRequest POSTs /_matrix/client/v1/friends/request/{userId}/cancel', async () => {
+  it('cancelFriendRequest POSTs /_matrix/vendor/v1/friends/request/{userId}/cancel', async () => {
     await synapseFriendExtensionService.cancelFriendRequest('@user:hs')
     const calls = filterBy('/cancel')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/friends/request/%40user%3Ahs/cancel`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends/request/%40user%3Ahs/cancel`)
   })
 
-  it('removeFriend DELETEs /_matrix/client/v1/friends/{userId}', async () => {
+  it('removeFriend DELETEs /_matrix/vendor/v1/friends/{userId}', async () => {
     await synapseFriendExtensionService.removeFriend('@friend:hs')
     const calls = filterBy('/friends/')
     const deleteCall = calls.find((c) => c.method === 'DELETE')
     expect(deleteCall).toBeDefined()
-    expect(deleteCall!.url).toBe(`${HOMESERVER}/_matrix/client/v1/friends/%40friend%3Ahs`)
+    expect(deleteCall!.url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends/%40friend%3Ahs`)
   })
 
-  it('setFriendNote PUTs /_matrix/client/v1/friends/{userId}/note with {note}', async () => {
+  it('setFriendNote PUTs /_matrix/vendor/v1/friends/{userId}/note with {note}', async () => {
     await synapseFriendExtensionService.setFriendNote('@friend:hs', 'bestie')
     const calls = filterBy('/note')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('PUT')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/friends/%40friend%3Ahs/note`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends/%40friend%3Ahs/note`)
     expect(JSON.parse(calls[0].body!)).toEqual({ note: 'bestie' })
   })
 
-  it('checkFriendship hits GET /_matrix/client/v1/friends/check/{userId} and unwraps {data: {are_friends}}', async () => {
+  it('checkFriendship hits GET /_matrix/vendor/v1/friends/check/{userId} and unwraps {data: {are_friends}}', async () => {
     const result = await synapseFriendExtensionService.checkFriendship('@friend:hs')
     const calls = filterBy('/friends/check/')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/friends/check/%40friend%3Ahs`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends/check/%40friend%3Ahs`)
     expect(result).toBe(true)
   })
 
-  it('createPrivateDm POSTs /_matrix/client/v1/friends/dm/{userId} with {is_private}', async () => {
+  it('createPrivateDm POSTs /_matrix/vendor/v1/friends/dm/{userId} with {is_private}', async () => {
     const result = await synapseDmExtensionService.createPrivateDm('@target:hs', true)
     const calls = filterBy('/friends/dm/')
     const postCall = calls.find((c) => c.method === 'POST')
     expect(postCall).toBeDefined()
-    expect(postCall!.url).toBe(`${HOMESERVER}/_matrix/client/v1/friends/dm/%40target%3Ahs`)
+    expect(postCall!.url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends/dm/%40target%3Ahs`)
     expect(JSON.parse(postCall!.body!)).toEqual({ is_private: true })
     expect(result.room_id).toBe('!dm:hs')
     expect(result.created).toBe(true)
   })
 
-  it('getDmRoom hits GET /_matrix/client/v1/friends/dm/{userId}', async () => {
+  it('getDmRoom hits GET /_matrix/vendor/v1/friends/dm/{userId}', async () => {
     const result = await synapseDmExtensionService.getDmRoom('@target:hs')
     const calls = filterBy('/friends/dm/')
     const getCall = calls.find((c) => c.method === 'GET')
     expect(getCall).toBeDefined()
-    expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/client/v1/friends/dm/%40target%3Ahs`)
+    expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends/dm/%40target%3Ahs`)
     expect(result.room_id).toBe('!dm:hs')
     expect(result.exists).toBe(true)
   })

@@ -3,6 +3,7 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import type { DeviceManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { PREFIX_VENDOR_V1 } from '../paths/prefixes'
 
 const logger = createLogger('MatrixAccountService')
 
@@ -459,15 +460,15 @@ class MatrixAccountService extends BaseMatrixService {
   /**
    * 获取当前用户已加入的房间列表。
    *
-   * 注意：`/_matrix/client/v3/my_rooms` 并非标准 Matrix Spec 端点，
-   * 在某些后端（如 synapse-rust）上可能返回 404。
+   * 注意：`/_matrix/vendor/v1/my_rooms` 并非标准 Matrix Spec 端点，
+   * 是 synapse-rust 私有端点（ISSUE-13 vendor 命名空间）。
    * 当该端点不可用时，自动降级为 SDK 的标准 `getJoinedRooms()` 方法。
    */
   async getMyRooms(): Promise<string[]> {
     const client = this.getClient()
 
     try {
-      const result = await authedRequestWithPath<{ room_ids?: string[] }>(client, 'GET', '/my_rooms')
+      const result = await authedRequestWithPath<{ room_ids?: string[] }>(client, 'GET', `${PREFIX_VENDOR_V1}/my_rooms`)
       return result.room_ids ?? []
     } catch (err) {
       // 如果返回 404，说明该非标准端点在后端不存在，降级到标准 Matrix API

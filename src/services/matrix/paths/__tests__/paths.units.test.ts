@@ -32,11 +32,11 @@ describe('paths/wellKnown', () => {
 
 describe('paths/burn', () => {
   it('STATS 为字符串常量', () => {
-    expect(BURN.STATS).toBe('/user/burn/stats')
+    expect(BURN.STATS).toBe('/_matrix/vendor/v1/user/burn/stats')
   })
 
   it('ROOM_BURN 编码 roomId（FT-089: 与其他 ROOM 路径一致使用 encodeURIComponent）', () => {
-    expect(BURN.ROOM_BURN('!room:server')).toBe('/rooms/!room%3Aserver/burn')
+    expect(BURN.ROOM_BURN('!room:server')).toBe('/_matrix/vendor/v1/rooms/!room%3Aserver/burn')
   })
 })
 

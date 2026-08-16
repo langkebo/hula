@@ -3,7 +3,7 @@
  *
  * Uses a REAL SDK client so URL construction and prefix handling execute
  * through real matrix-js-sdk code. Catches V1 double-prefix bugs
- * (/_matrix/client/v3/_matrix/client/v1/voice/... → 404) that vi.mock
+ * (/_matrix/client/v3/_matrix/vendor/v1/voice/... → 404) that vi.mock
  * tests miss because the stub authedRequest bypasses SDK URL construction.
  *
  * Covers all 11 authedRequestWithPath call sites in MatrixVoiceService:
@@ -55,53 +55,53 @@ vi.mock('@/services/i18n', () => ({
 // Backend (synapse-rust/src/web/routes/voice.rs) registers the same pattern.
 // Specific paths registered before the :messageId wildcard so /voice/config etc. don't get swallowed.
 setupMswServer(
-  http.post(`${HOMESERVER}/_matrix/client/v1/voice/upload`, ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/upload`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ event_id: '$evt-1', content_uri: 'mxc://hs.voice-contract.test/m1' })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/voice/config`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/config`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ max_duration: 600, allowed_formats: ['audio/webm'], auto_transcribe: true })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/voice/stats`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/stats`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ total_duration: 1200, total_messages: 10, average_duration: 120 })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/voice/room/:roomId/stats`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/room/:roomId/stats`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ total_duration: 300, total_messages: 3, average_duration: 100 })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/voice/room/:roomId`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/room/:roomId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ voices: [{ event_id: '$v1', sender: '@a:hs', duration: 5, timestamp: 1 }], total: 1 })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/voice/user/:userId/stats`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/user/:userId/stats`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ total_duration: 600, total_messages: 5 })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/voice/user/:userId`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/user/:userId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ voices: [{ event_id: '$v2', room_id: '!r:hs', duration: 8, timestamp: 2 }], total: 1 })
   }),
   // VoiceManager REST-style paths: /voice/{mediaId}/convert|optimize|transcription
-  http.post(`${HOMESERVER}/_matrix/client/v1/voice/:mediaId/convert`, ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/:mediaId/convert`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ url: 'mxc://hs.voice-contract.test/conv1', format: 'mp3' })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/voice/:mediaId/optimize`, ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/:mediaId/optimize`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ url: 'mxc://hs.voice-contract.test/opt1', size: 1024 })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v1/voice/:mediaId/transcription`, ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/:mediaId/transcription`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ text: 'hello', language: 'en', confidence: 0.95 })
   }),
   // Wildcard :messageId routes last (DELETE + GET)
-  http.delete(`${HOMESERVER}/_matrix/client/v1/voice/:messageId`, ({ request }) => {
+  http.delete(`${HOMESERVER}/_matrix/vendor/v1/voice/:messageId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({})
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v1/voice/:messageId`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/:messageId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ body: 'voice-bytes', info: { mimetype: 'audio/webm', size: 2048 } })
   })
@@ -128,42 +128,42 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     vi.clearAllMocks()
   })
 
-  // V1 double-prefix guard: SDK must NOT prepend /_matrix/client/v3 when
-  // the service already passes a V1-prefixed path via { prefix } option.
-  const V1_DOUBLE_PREFIX = /\/_matrix\/client\/v3\/_matrix\/client\/v1/
+  // vendor double-prefix guard: SDK must NOT prepend /_matrix/client/v3 when
+  // the service already passes a vendor-prefixed path via { prefix } option.
+  const V1_DOUBLE_PREFIX = /\/_matrix\/client\/v3\/_matrix\/vendor\/v1/
 
-  it('uploadVoice hits /_matrix/client/v1/voice/upload (no V1 double-prefix)', async () => {
+  it('uploadVoice hits /_matrix/vendor/v1/voice/upload (no V1 double-prefix)', async () => {
     const file = new Blob(['voice-bytes'], { type: 'audio/webm' })
     const result = await matrixVoiceService.uploadVoice('!room:hs', file, 'voice.webm')
 
     const calls = seenUrls.filter((u) => u.url.includes('/voice/upload'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/upload`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/upload`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result.eventId).toBe('$evt-1')
     expect(result.mxcUrl).toBe('mxc://hs.voice-contract.test/m1')
   })
 
-  it('getVoiceConfig hits /_matrix/client/v1/voice/config (no V1 double-prefix)', async () => {
+  it('getVoiceConfig hits /_matrix/vendor/v1/voice/config (no V1 double-prefix)', async () => {
     const result = await matrixVoiceService.getVoiceConfig()
 
     const calls = seenUrls.filter((u) => u.url.includes('/voice/config'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/config`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/config`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result.maxDuration).toBe(600)
     expect(result.autoTranscribe).toBe(true)
   })
 
-  it('getVoiceStats hits /_matrix/client/v1/voice/stats (no V1 double-prefix)', async () => {
+  it('getVoiceStats hits /_matrix/vendor/v1/voice/stats (no V1 double-prefix)', async () => {
     const result = await matrixVoiceService.getVoiceStats()
 
     const calls = seenUrls.filter((u) => u.url.endsWith('/voice/stats'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/stats`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/stats`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result.totalMessages).toBe(10)
   })
@@ -175,7 +175,7 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
     // encodeURIComponent('!room:hs') = '!room%3Ahs'
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/room/!room%3Ahs/stats`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/room/!room%3Ahs/stats`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result.totalMessages).toBe(3)
   })
@@ -187,7 +187,7 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
     // encodeURIComponent('@alice:hs') = '%40alice%3Ahs'
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/user/%40alice%3Ahs/stats`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/user/%40alice%3Ahs/stats`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result.totalMessages).toBe(5)
   })
@@ -198,7 +198,7 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     const calls = seenUrls.filter((u) => u.method === 'DELETE')
     expect(calls).toHaveLength(1)
     // encodeURIComponent('$msg-1') = '%24msg-1'
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/%24msg-1`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/%24msg-1`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
   })
 
@@ -208,7 +208,7 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     const calls = seenUrls.filter((u) => u.url.includes('/voice/room/!room%3Ahs?'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/room/!room%3Ahs?limit=25&offset=10`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/room/!room%3Ahs?limit=25&offset=10`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result.total).toBe(1)
   })
@@ -219,7 +219,7 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     const calls = seenUrls.filter((u) => u.url.includes('/voice/user/%40bob%3Ahs?'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/user/%40bob%3Ahs?limit=5&offset=0`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/user/%40bob%3Ahs?limit=5&offset=0`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result.total).toBe(1)
   })
@@ -229,7 +229,7 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
 
     const calls = seenUrls.filter((u) => u.method === 'GET' && u.url.includes('%24msg-2'))
     expect(calls).toHaveLength(1)
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/%24msg-2`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/%24msg-2`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result?.body).toBe('voice-bytes')
   })
@@ -242,7 +242,7 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     expect(calls[0].method).toBe('POST')
     // VoiceManager uses REST-style: /voice/{mediaId}/convert
     // encodeURIComponent('$msg-3') = '%24msg-3'
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/%24msg-3/convert`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/%24msg-3/convert`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result?.format).toBe('mp3')
   })
@@ -253,7 +253,7 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     const calls = seenUrls.filter((u) => u.url.includes('/optimize'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/%24msg-4/optimize`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/%24msg-4/optimize`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result?.size).toBe(1024)
   })
@@ -264,7 +264,7 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     const calls = seenUrls.filter((u) => u.url.includes('/transcription'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/voice/%24msg-5/transcription`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/%24msg-5/transcription`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result?.text).toBe('hello')
     expect(result?.language).toBe('en')

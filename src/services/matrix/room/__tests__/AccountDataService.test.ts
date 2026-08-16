@@ -15,7 +15,7 @@ const server = setupMswServer(
   http.get(`${TEST_BASE_URL}/_matrix/client/v1/rooms/:roomId/report/:eventId/scanner_info`, () => {
     return HttpResponse.json({ clean: true })
   }),
-  http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/burn`, async () => {
+  http.put(`${TEST_BASE_URL}/_matrix/vendor/v1/rooms/:roomId/burn`, async () => {
     return HttpResponse.json({})
   }),
   http.get(`${TEST_BASE_URL}/_synapse/admin/v1/external_services`, () => {
@@ -165,15 +165,21 @@ describe('MatrixRoomAccountDataService', () => {
     it('PUTs burn config to BURN.ROOM_BURN(roomId)（FT-089: 使用 L3 常量）', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       await service.setReadLifetime('!r', 5000)
-      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', MATRIX_PATHS.BURN.ROOM_BURN('!r'), undefined, {
-        enabled: true,
-        burn_after_ms: 5000
-      })
+      expect(authedRequestImpl).toHaveBeenCalledWith(
+        'PUT',
+        '/rooms/!r/burn',
+        undefined,
+        {
+          enabled: true,
+          burn_after_ms: 5000
+        },
+        { prefix: '/_matrix/vendor/v1' }
+      )
     })
 
     it('re-throws backend errors', async () => {
       server.use(
-        http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/burn`, () => {
+        http.put(`${TEST_BASE_URL}/_matrix/vendor/v1/rooms/:roomId/burn`, () => {
           return new HttpResponse(null, { status: 403 })
         })
       )
