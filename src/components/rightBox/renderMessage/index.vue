@@ -543,7 +543,12 @@ const handleOpenThread = (eventId: string) => {
 
 defineExpose({ isThreadReply, handleOpenThread })
 
-const componentMap: Partial<Record<MsgEnum, Component>> = {
+// 移动端/桌面端位置与 beacon 渲染组件选择收拢到单一 computed（平台常量，运行时不变），
+// 与上方 ThreadIndicator 的移动端覆盖模式一致，避免在 componentMap 里散落 isMobile() 内联分支。
+const LocationComponent = computed(() => (isMobile() ? LocationMobile : Location))
+const BeaconComponent = computed(() => (isMobile() ? BeaconMobile : Beacon))
+
+const componentMap = computed<Partial<Record<MsgEnum, Component>>>(() => ({
   [MsgEnum.TEXT]: Text,
   [MsgEnum.IMAGE]: Image,
   [MsgEnum.EMOJI]: Emoji,
@@ -557,10 +562,10 @@ const componentMap: Partial<Record<MsgEnum, Component>> = {
   [MsgEnum.RECALL]: RecallMessage,
   [MsgEnum.BOT]: BotMessage,
   [MsgEnum.MERGE]: MergeMessage,
-  [MsgEnum.LOCATION]: isMobile() ? LocationMobile : Location,
-  [MsgEnum.BEACON]: isMobile() ? BeaconMobile : Beacon,
+  [MsgEnum.LOCATION]: LocationComponent.value,
+  [MsgEnum.BEACON]: BeaconComponent.value,
   [MsgEnum.LINK_PREVIEW]: LinkPreview
-}
+}))
 
 const isSpecialMsgType = (type: number): boolean => {
   return (

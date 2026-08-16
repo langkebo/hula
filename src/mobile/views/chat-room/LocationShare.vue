@@ -36,6 +36,11 @@
         </van-cell>
       </van-cell-group>
 
+      <!-- 地图预览（腾讯静态图，需 GCJ-02 坐标） -->
+      <div v-if="mapLocation" class="map-preview">
+        <StaticProxyMap :location="mapLocation" :zoom="16" :height="160" :draggable="false" :controls="false" />
+      </div>
+
       <!-- 共享时长选择(未共享时显示) -->
       <div v-if="!sharing" class="duration-row">
         <div class="duration-label">{{ t('location_share.live_duration') }}</div>
@@ -83,10 +88,12 @@
 import { storeToRefs } from 'pinia'
 import { onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import StaticProxyMap from '@/components/rightBox/location/StaticProxyMap.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useGeolocation } from '@/composables/common/useGeolocation'
 import { type LocationData, matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import { useLocationStore } from '@/stores/domains/chat/location'
+import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LocationShare')
@@ -106,7 +113,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
-const { getCurrentPosition, watchPosition, isLoading: locating } = useGeolocation()
+const { getLocationWithTransform, watchPosition, isLoading: locating } = useGeolocation()
 
 // 接入 store（C2）：统一管理 beacon 开/停与位置发布状态
 const locationStore = useLocationStore()
@@ -114,6 +121,8 @@ const { sharing } = storeToRefs(locationStore)
 
 // 本地 UI 状态
 const currentLocation = ref<LocationData | null>(null)
+/** 地图预览用的 GCJ-02 坐标（发送仍用 WGS-84 的 currentLocation） */
+const mapLocation = ref<{ latitude: number; longitude: number } | null>(null)
 const error = ref<string | null>(null)
 const activeBeaconId = ref<string | null>(null)
 
@@ -148,8 +157,9 @@ const handleShowUpdate = (val: boolean) => {
 // 单次获取当前位置（发送面板预览）
 const refreshPosition = async (): Promise<LocationData | null> => {
   try {
-    const pos = await getCurrentPosition()
-    currentLocation.value = toLocationData(pos)
+    const transformed = await getLocationWithTransform()
+    currentLocation.value = toLocationData(transformed.position)
+    mapLocation.value = { latitude: transformed.transformed.lat, longitude: transformed.transformed.lng }
     error.value = null
     return currentLocation.value
   } catch (err) {
@@ -219,6 +229,8 @@ const startLiveWatch = () => {
     (pos) => {
       const loc = toLocationData(pos)
       currentLocation.value = loc
+      const gcj = wgs84ToGcj02(loc.latitude, loc.longitude)
+      mapLocation.value = { latitude: gcj.lat, longitude: gcj.lng }
       if (activeBeaconId.value) {
         void locationStore.publishLocation(activeBeaconId.value, loc)
       }
@@ -326,6 +338,13 @@ onUnmounted(() => {
   background-color: var(--tjg-color-success-bg);
   color: var(--tjg-color-success-500);
   font-size: 12px;
+}
+
+.map-preview {
+  margin: 12px 16px;
+  overflow: hidden;
+  border-radius: var(--tjg-radius-sm);
+  border: 1px solid var(--tjg-border-default);
 }
 
 .duration-row {

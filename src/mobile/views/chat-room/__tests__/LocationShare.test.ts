@@ -3,14 +3,15 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-// 可控 mock：useGeolocation 的 getCurrentPosition / watchPosition
-const { mockGetCurrentPosition, mockWatchPosition } = vi.hoisted(() => {
+// 可控 mock：useGeolocation 的 getCurrentPosition / getLocationWithTransform / watchPosition
+const { mockGetCurrentPosition, mockGetLocationWithTransform, mockWatchPosition } = vi.hoisted(() => {
   type WatchUpdate = (pos: {
     coords: { latitude: number; longitude: number; accuracy: number }
     timestamp: number
   }) => void
   return {
     mockGetCurrentPosition: vi.fn(),
+    mockGetLocationWithTransform: vi.fn(),
     mockWatchPosition: vi.fn<(onUpdate: WatchUpdate, onError: (err: Error) => void) => () => void>(() => vi.fn())
   }
 })
@@ -18,9 +19,19 @@ const { mockGetCurrentPosition, mockWatchPosition } = vi.hoisted(() => {
 vi.mock('@/composables/common/useGeolocation', () => ({
   useGeolocation: () => ({
     getCurrentPosition: mockGetCurrentPosition,
+    getLocationWithTransform: mockGetLocationWithTransform,
     watchPosition: mockWatchPosition,
     isLoading: { value: false }
   })
+}))
+
+// 地图组件用桩替代，避免引入腾讯静态图代理与 HTTP 客户端
+vi.mock('@/components/rightBox/location/StaticProxyMap.vue', () => ({
+  default: {
+    name: 'StaticProxyMap',
+    template: '<div class="static-map-stub" />',
+    props: ['location', 'zoom', 'height', 'draggable', 'controls']
+  }
 }))
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
@@ -43,6 +54,7 @@ vi.mock('@/services/matrix/media/MatrixLocationService', () => ({
   }
 }))
 
+import StaticProxyMap from '@/components/rightBox/location/StaticProxyMap.vue'
 import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 
@@ -93,6 +105,14 @@ beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
   mockGetCurrentPosition.mockResolvedValue(POSITION)
+  mockGetLocationWithTransform.mockResolvedValue({
+    original: { lat: 39.9042, lng: 116.4074 },
+    transformed: { lat: 39.9085, lng: 116.4127 },
+    position: POSITION,
+    address: '',
+    precision: 'high',
+    timestamp: 1700000001000
+  })
   vi.mocked(matrixLocationService.getCurrentPosition).mockResolvedValue(LOCATION)
   vi.mocked(matrixLocationService.sendLocation).mockResolvedValue('$event-1')
   vi.mocked(matrixBeaconService.createBeacon).mockResolvedValue(BEACON)
@@ -110,7 +130,7 @@ beforeEach(() => {
 async function openAndLocate(wrapper: ReturnType<typeof mount>) {
   await wrapper.setProps({ show: true })
   await flushPromises()
-  expect(mockGetCurrentPosition).toHaveBeenCalled()
+  expect(mockGetLocationWithTransform).toHaveBeenCalled()
 }
 
 /** 点击开始共享并等待完整开链（startLiveShare → startLiveWatch）完成 */
@@ -181,6 +201,19 @@ describe('LocationShare - store + watchPosition 闭环', () => {
     await flushPromises()
 
     expect(matrixLocationService.sendLocation).toHaveBeenCalledWith('!room:test', LOCATION)
+    wrapper.unmount()
+  })
+
+  it('地图预览使用 getLocationWithTransform 的 GCJ-02 转换坐标', async () => {
+    const wrapper = await mountShare()
+    await openAndLocate(wrapper)
+
+    const map = wrapper.findComponent(StaticProxyMap)
+    expect(map.exists()).toBe(true)
+
+    const loc = map.props('location') as { latitude: number; longitude: number }
+    expect(loc.latitude).toBeCloseTo(39.9085, 5)
+    expect(loc.longitude).toBeCloseTo(116.4127, 5)
     wrapper.unmount()
   })
 })

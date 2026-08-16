@@ -5,6 +5,9 @@
  * 并统一读取各版本键名（稳定键 `m.location`、不稳定键 `org.matrix.msc3488.location`、旧版 `geo_uri`）。
  */
 
+import type { LocationBody } from '@/services/types'
+import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
+
 export interface GeoUriResult {
   /** 纬度 */
   latitude: number
@@ -47,4 +50,34 @@ export function locationEventGeoUri(content: Record<string, unknown>): string | 
     }
   }
   return typeof content.geo_uri === 'string' ? content.geo_uri : undefined
+}
+
+/**
+ * `StaticProxyMap`（腾讯静态图）显示所需的数据结构：经纬度已转换为 GCJ-02。
+ */
+export interface Gcj02LocationData {
+  latitude: number
+  longitude: number
+  address?: string
+  timestamp: number
+}
+
+/**
+ * 将收到的位置消息体（geo URI 存 WGS-84）转换为腾讯地图显示用的 GCJ-02 坐标。
+ * 境外坐标 `wgs84ToGcj02` 不转换、原样返回；仅中国境内坐标会被偏移。
+ * @param body 位置消息体
+ * @returns 可交给 `StaticProxyMap` 的数据；经纬度非法时返回 null
+ */
+export function toGcj02LocationData(body: LocationBody | undefined): Gcj02LocationData | null {
+  const latitude = Number(body?.latitude)
+  const longitude = Number(body?.longitude)
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+
+  const gcj = wgs84ToGcj02(latitude, longitude)
+  return {
+    latitude: gcj.lat,
+    longitude: gcj.lng,
+    address: body?.address,
+    timestamp: Number(body?.timestamp) || Date.now()
+  }
 }

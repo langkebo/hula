@@ -24,9 +24,9 @@
 
       <div class="beacon-message__status">
         <span :class="['beacon-message__status-dot', isActive ? 'is-active' : 'is-inactive']"></span>
-        <span :class="['beacon-message__status-text', isActive ? 'is-active' : 'is-inactive']">
+        <van-tag plain round :color="isActive ? 'var(--tjg-color-primary-500)' : 'var(--tjg-text-quaternary)'">
           {{ isActive ? t('location_share.sharing') : t('chat.beacon.ended') }}
-        </span>
+        </van-tag>
       </div>
     </div>
 
@@ -38,7 +38,9 @@
     <!-- 状态面板 -->
     <div class="beacon-message__panel">
       <template v-if="isActive">
-        <span class="beacon-message__remaining">{{ t('chat.beacon.remaining_time') }} {{ remainingTimeText }}</span>
+        <van-cell-group inset class="beacon-message__cell-group">
+          <van-cell :title="t('chat.beacon.remaining_time')" :value="remainingTimeText" />
+        </van-cell-group>
         <van-button size="small" round type="primary" plain @click.stop="handleOpenLocation">
           {{ t('chat.beacon.view_location') }}
         </van-button>
@@ -68,6 +70,8 @@ import { useI18n } from 'vue-i18n'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import type { BeaconBody } from '@/services/types'
+import { formatBeaconRemainingTime, isBeaconActive } from '@/utils/beacon'
+import { parseGeoUri } from '@/utils/location'
 
 defineOptions({
   inheritAttrs: false
@@ -87,39 +91,9 @@ const props = withDefaults(
 const now = ref(Date.now())
 let timer: number | undefined
 
-const isActive = computed(() => {
-  if (!props.body?.isLive) return false
-  const startTime = props.body.lastUpdateTs || Date.now()
-  return now.value < startTime + (props.body.timeout || 0)
-})
+const isActive = computed(() => isBeaconActive(props.body, now.value))
 
-const remainingTimeText = computed(() => {
-  if (!props.body) return '00:00'
-  const startTime = props.body.lastUpdateTs || Date.now()
-  const endTime = startTime + (props.body.timeout || 0)
-  const diff = Math.max(0, Math.floor((endTime - now.value) / 1000))
-
-  if (diff <= 0) return '00:00'
-
-  const h = Math.floor(diff / 3600)
-  const m = Math.floor((diff % 3600) / 60)
-  const s = diff % 60
-
-  if (h > 0) {
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-  }
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-})
-
-const parseGeoUri = (uri: string): { latitude: number; longitude: number } | null => {
-  if (!uri) return null
-  const match = uri.match(/geo:([-\d.]+),([-\d.]+)/)
-  if (!match) return null
-  return {
-    latitude: parseFloat(match[1]),
-    longitude: parseFloat(match[2])
-  }
-}
+const remainingTimeText = computed(() => formatBeaconRemainingTime(props.body, now.value))
 
 const handleOpenLocation = () => {
   if (!isActive.value) return
@@ -213,18 +187,6 @@ onUnmounted(() => {
     }
   }
 
-  &__status-text {
-    font-size: var(--tjg-font-size-xs);
-
-    &.is-active {
-      color: var(--tjg-color-primary-500);
-    }
-
-    &.is-inactive {
-      color: var(--tjg-text-quaternary);
-    }
-  }
-
   &__description {
     padding-bottom: 8px;
     font-size: var(--tjg-font-size-sm);
@@ -242,14 +204,24 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    height: 80px;
+    min-height: 80px;
+    padding: 8px 0;
     border-radius: var(--tjg-radius-sm);
     background-color: var(--tjg-surface-app);
   }
 
-  &__remaining {
-    font-size: var(--tjg-font-size-sm);
-    color: var(--tjg-text-secondary);
+  &__cell-group {
+    width: 100%;
+    margin: 0;
+
+    :deep(.van-cell) {
+      padding: 6px 12px;
+      background: transparent;
+
+      &::after {
+        border-bottom: none;
+      }
+    }
   }
 
   &__ended-icon {

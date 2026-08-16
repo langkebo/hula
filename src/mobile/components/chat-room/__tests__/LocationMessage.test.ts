@@ -30,6 +30,25 @@ const VanButtonStub = {
   emits: ['click']
 }
 
+const VanTagStub = {
+  name: 'VanTag',
+  template: '<span class="van-tag-stub"><slot /></span>',
+  props: ['plain', 'round', 'size', 'color', 'textColor', 'text-color', 'type']
+}
+
+const VanCellStub = {
+  name: 'VanCell',
+  template:
+    '<div class="van-cell-stub"><span class="title">{{ title }}</span><span class="value">{{ value }}</span><slot /></div>',
+  props: ['title', 'value', 'label', 'isLink', 'is-link', 'clickable']
+}
+
+const VanCellGroupStub = {
+  name: 'VanCellGroup',
+  template: '<div class="van-cell-group-stub"><slot /></div>',
+  props: ['inset']
+}
+
 describe('LocationMessage（移动端位置消息渲染）', () => {
   it('渲染标题/地址，并将 WGS-84 转 GCJ-02 后传给地图', async () => {
     const LocationMessage = (await import('../LocationMessage.vue')).default
@@ -42,7 +61,8 @@ describe('LocationMessage（移动端位置消息渲染）', () => {
           precision: '高精度',
           timestamp: '1700000000000'
         }
-      }
+      },
+      global: { stubs: { 'van-tag': VanTagStub } }
     })
 
     expect(wrapper.text()).toContain('chat.location.title')
@@ -59,7 +79,10 @@ describe('LocationMessage（移动端位置消息渲染）', () => {
 
   it('无 body 时显示无法展示占位', async () => {
     const LocationMessage = (await import('../LocationMessage.vue')).default
-    const wrapper = mount(LocationMessage, { props: { body: undefined } })
+    const wrapper = mount(LocationMessage, {
+      props: { body: undefined },
+      global: { stubs: { 'van-tag': VanTagStub } }
+    })
 
     expect(wrapper.text()).toContain('chat.location.cannot_display')
   })
@@ -78,7 +101,14 @@ describe('BeaconMessage（移动端实时位置消息渲染）', () => {
           uri: 'geo:39.9042,116.4074'
         }
       },
-      global: { stubs: { 'van-button': VanButtonStub } }
+      global: {
+        stubs: {
+          'van-button': VanButtonStub,
+          'van-tag': VanTagStub,
+          'van-cell': VanCellStub,
+          'van-cell-group': VanCellGroupStub
+        }
+      }
     })
 
     expect(wrapper.text()).toContain('chat.beacon.live_location')
@@ -93,7 +123,14 @@ describe('BeaconMessage（移动端实时位置消息渲染）', () => {
       props: {
         body: { description: '一起走', timeout: 3600000, isLive: false }
       },
-      global: { stubs: { 'van-button': VanButtonStub } }
+      global: {
+        stubs: {
+          'van-button': VanButtonStub,
+          'van-tag': VanTagStub,
+          'van-cell': VanCellStub,
+          'van-cell-group': VanCellGroupStub
+        }
+      }
     })
 
     expect(wrapper.text()).toContain('chat.beacon.ended')
