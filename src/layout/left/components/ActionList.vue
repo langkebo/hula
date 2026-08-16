@@ -11,8 +11,12 @@
           showMode === ShowModeEnum.ICON ? 'p-[6px_8px]' : 'w-46px py-4px'
         ]"
         style="text-align: center"
+        role="button"
+        tabindex="0"
         :aria-label="item.title"
         @click="pageJumps(item.url, item.title, item.size, item.window)"
+        @keydown.enter="pageJumps(item.url, item.title, item.size, item.window)"
+        @keydown.space.prevent="pageJumps(item.url, item.title, item.size, item.window)"
         :title="item.title">
         <!-- 已经打开窗口时展示 -->
         <n-popover :show-arrow="false" v-if="openWindowsList.has(item.url)" trigger="hover" placement="right">
@@ -100,8 +104,12 @@
           showMode === ShowModeEnum.ICON ? 'p-[6px_8px]' : 'w-46px py-4px'
         ]"
         style="text-align: center"
+        role="button"
+        tabindex="0"
         :aria-label="item.title"
         @click="pageJumps(item.url, item.title, item.size, item.window)"
+        @keydown.enter="pageJumps(item.url, item.title, item.size, item.window)"
+        @keydown.space.prevent="pageJumps(item.url, item.title, item.size, item.window)"
         :title="item.title">
         <!-- 已经打开窗口时展示 -->
         <n-popover :show-arrow="false" v-if="openWindowsList.has(item.url)" trigger="hover" placement="right">
@@ -203,8 +211,12 @@
           showMode === ShowModeEnum.ICON ? 'p-[6px_8px]' : 'w-46px py-4px'
         ]"
         style="text-align: center"
+        role="button"
+        tabindex="0"
         :aria-label="item.title"
         @click="pageJumps(item.url, item.title, item.size, item.window)"
+        @keydown.enter="pageJumps(item.url, item.title, item.size, item.window)"
+        @keydown.space.prevent="pageJumps(item.url, item.title, item.size, item.window)"
         :title="item.title">
         <!-- 已经打开窗口时展示 -->
         <n-popover :show-arrow="false" v-if="openWindowsList.has(item.url)" trigger="hover" placement="right">
@@ -252,9 +264,13 @@
         v-if="adminStore.canAccessAdmin"
         :class="[{ active: activeUrl === 'admin' }, 'bottom-action flex-col-center']"
         style="text-align: center"
+        role="button"
+        tabindex="0"
         :aria-label="t('menu.admin_panel')"
         :title="t('menu.admin_panel')"
-        @click="router.push('/admin')">
+        @click="router.push('/admin')"
+        @keydown.enter="router.push('/admin')"
+        @keydown.space.prevent="router.push('/admin')">
         <svg class="size-22px" aria-hidden="true">
           <use href="#wrench"></use>
         </svg>
@@ -267,7 +283,11 @@
       <div
         :title="t('home.action.more')"
         :aria-label="t('home.action.more')"
-        :class="{ 'bottom-action py-4px': showMode === ShowModeEnum.TEXT }">
+        role="button"
+        tabindex="0"
+        :class="{ 'bottom-action py-4px': showMode === ShowModeEnum.TEXT }"
+        @keydown.enter="settingShow = !settingShow"
+        @keydown.space.prevent="settingShow = !settingShow">
         <n-popover
           v-model:show="settingShow"
           style="padding: 0; background: transparent; user-select: none"
@@ -494,6 +514,13 @@ onUnmounted(() => {
 </script>
 <style lang="scss" scoped>
 @use '../style';
+
+// 键盘可达的导航项（role="button" 的 div）需要可见焦点环
+[role='button']:focus-visible {
+  outline: 2px solid var(--tjg-color-primary-500);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
 
 .setting-item {
   left: 24px;
