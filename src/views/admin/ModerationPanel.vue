@@ -377,7 +377,7 @@ const eventReportColumns = computed<DataTableColumns<EventReport>>(() => [
   }
 ])
 
-async function loadEventReports() {
+async function loadEventReports(): Promise<boolean> {
   eventReportLoading.value = true
   try {
     if (eventReportStatusFilter.value) {
@@ -387,9 +387,11 @@ async function loadEventReports() {
     } else {
       eventReports.value = (await matrixEventReportService.listReports({ limit: 100 })) as EventReport[]
     }
+    return true
   } catch {
     showFeedback(t('moderation.event_reports.loadFailed'), 'error')
     eventReports.value = []
+    return false
   } finally {
     eventReportLoading.value = false
   }
@@ -433,12 +435,24 @@ async function handleEscalate(id: number) {
 
 async function handleDelete(id: number) {
   if (!window.confirm(t('moderation.event_reports.dialog.deleteConfirm'))) return
+  // SDK deleteReport 对后端 204 No Content（空 body）执行 res.json() 会误抛错，
+  // 但服务端实际已删除成功。因此不因 deleteReport 抛错就放弃：无论成败都重新加载
+  // 列表，再按「被删 id 是否仍在列表」判定真实结果——旧 MatrixHttpClient 靠
+  // responseText ? JSON.parse : {} 正确处理空 body（SDK 侧修复另立 backlog）。
   try {
     await matrixEventReportService.deleteReport(id)
-    showFeedback(t('moderation.event_reports.toast.deleteSuccess'), 'success')
-    loadEventReports()
   } catch {
-    // 旧实现失败时静默（返回 false 不提示），保持行为一致
+    // 忽略 deleteReport 抛错（204 空 body 误判），以 reload 后的列表为准
+  }
+  const reloaded = await loadEventReports()
+  if (!reloaded) {
+    // 重新加载失败时 loadEventReports 已给出 loadFailed 错误反馈，不再重复提示
+    return
+  }
+  if (eventReports.value.some((report) => report.id === id)) {
+    showFeedback(t('moderation.event_reports.toast.deleteFailed'), 'error')
+  } else {
+    showFeedback(t('moderation.event_reports.toast.deleteSuccess'), 'success')
   }
 }
 
