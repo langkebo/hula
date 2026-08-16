@@ -159,6 +159,33 @@ class MatrixBeaconService {
   }
 
   /**
+   * 获取信标的最新位置 URI（接收端「查看实时位置」聚合展示用）
+   *
+   * beacon_info content 不含 m.location，因此 `BeaconBody.uri` 恒为 undefined，
+   * 点击「查看位置」会报「无法获取位置信息」。这里从 SDK
+   * `Room.currentState.beacons`（B1 修复后已正确聚合 m.beacon 位置）按
+   * beacon_info 事件 ID 找到对应 beacon，返回 `latestLocationState.uri` 兜底。
+   */
+  getBeaconLatestUri(roomId: string, beaconInfoEventId: string): string | undefined {
+    try {
+      const client = this.getClient()
+      if (!client) return undefined
+      const room = client.getRoom(roomId)
+      if (!room?.currentState?.beacons) return undefined
+
+      for (const beacon of room.currentState.beacons.values()) {
+        if (beacon.beaconInfoId === beaconInfoEventId) {
+          return beacon.latestLocationState?.uri
+        }
+      }
+      return undefined
+    } catch (err) {
+      logger.warn('getBeaconLatestUri failed:', err)
+      return undefined
+    }
+  }
+
+  /**
    * 更新信标位置 (发送 m.beacon 事件)
    */
   async updateBeaconLocation(params: UpdateBeaconLocationParams): Promise<BeaconLocation> {

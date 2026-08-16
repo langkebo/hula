@@ -7,6 +7,11 @@ import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
 
 // 局部结构类型（mock 断言用）：不直接 import matrix-js-sdk，避免 sdk-boundary 门禁违规
+type MockBeacon = {
+  beaconInfoId: string
+  latestLocationState?: { uri?: string }
+}
+
 type MockClient = {
   getBeaconManager(): {
     getBeaconsForRoom(roomId: string): unknown[]
@@ -16,6 +21,7 @@ type MockClient = {
   search: (...args: unknown[]) => Promise<unknown>
   sendEvent: (...args: unknown[]) => Promise<{ event_id: string }>
   getRoomEvent: (roomId: string, eventId: string) => Promise<{ getContent(): unknown }>
+  getRoom(roomId: string): { currentState?: { beacons?: Map<string, MockBeacon> } } | null
 }
 
 // 通过真实 getClient 的返回类型对齐注入，避免测试内 import matrix-js-sdk
@@ -193,6 +199,74 @@ describe('MatrixBeaconService', () => {
 
       expect(result).toEqual([])
       expect(search).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getBeaconLatestUri', () => {
+    it('should return undefined when client is not initialized', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+      expect(matrixBeaconService.getBeaconLatestUri('!room:id', '$beacon_info_1')).toBeUndefined()
+    })
+
+    it('should return undefined when the room is not found', () => {
+      const getRoom = vi.fn().mockReturnValue(null)
+      const mockClient = { getRoom } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      expect(matrixBeaconService.getBeaconLatestUri('!room:id', '$beacon_info_1')).toBeUndefined()
+      expect(getRoom).toHaveBeenCalledWith('!room:id')
+    })
+
+    it('should return the latest location uri of the matching beacon info event', () => {
+      const getRoom = vi.fn().mockReturnValue({
+        currentState: {
+          beacons: new Map<string, MockBeacon>([
+            ['!room:id_@alice', { beaconInfoId: '$beacon_info_1', latestLocationState: { uri: 'geo:39.9,116.3' } }],
+            ['!room:id_@bob', { beaconInfoId: '$beacon_info_2', latestLocationState: { uri: 'geo:31.2,121.5' } }]
+          ])
+        }
+      })
+      const mockClient = { getRoom } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      expect(matrixBeaconService.getBeaconLatestUri('!room:id', '$beacon_info_2')).toBe('geo:31.2,121.5')
+    })
+
+    it('should return undefined when the beacon has no latest location state', () => {
+      const getRoom = vi.fn().mockReturnValue({
+        currentState: {
+          beacons: new Map<string, MockBeacon>([['!room:id_@alice', { beaconInfoId: '$beacon_info_1' }]])
+        }
+      })
+      const mockClient = { getRoom } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      expect(matrixBeaconService.getBeaconLatestUri('!room:id', '$beacon_info_1')).toBeUndefined()
+    })
+
+    it('should return undefined when no beacon matches the info event id', () => {
+      const getRoom = vi.fn().mockReturnValue({
+        currentState: {
+          beacons: new Map<string, MockBeacon>([
+            ['!room:id_@alice', { beaconInfoId: '$beacon_info_1', latestLocationState: { uri: 'geo:39.9,116.3' } }]
+          ])
+        }
+      })
+      const mockClient = { getRoom } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      expect(matrixBeaconService.getBeaconLatestUri('!room:id', '$beacon_info_missing')).toBeUndefined()
+    })
+
+    it('should return undefined when getRoom throws', () => {
+      const getRoom = vi.fn().mockImplementation(() => {
+        throw new Error('room unavailable')
+      })
+      const mockClient = { getRoom } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      expect(matrixBeaconService.getBeaconLatestUri('!room:id', '$beacon_info_1')).toBeUndefined()
     })
   })
 

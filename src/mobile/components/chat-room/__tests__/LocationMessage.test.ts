@@ -1,6 +1,12 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
+const { openExternalUrlMock, getOpenStreetMapUrlMock, getBeaconLatestUriMock } = vi.hoisted(() => ({
+  openExternalUrlMock: vi.fn(),
+  getOpenStreetMapUrlMock: vi.fn(() => 'https://osm.example'),
+  getBeaconLatestUriMock: vi.fn()
+}))
+
 // 地图组件用桩替代，避免引入腾讯静态图代理与 HTTP 客户端
 vi.mock('@/components/rightBox/location/StaticProxyMap.vue', () => ({
   default: {
@@ -11,12 +17,18 @@ vi.mock('@/components/rightBox/location/StaticProxyMap.vue', () => ({
 }))
 
 vi.mock('@/composables/common/useLinkSegments', () => ({
-  openExternalUrl: vi.fn()
+  openExternalUrl: openExternalUrlMock
 }))
 
 vi.mock('@/services/matrix/media/MatrixLocationService', () => ({
   matrixLocationService: {
-    getOpenStreetMapUrl: vi.fn(() => 'https://osm.example')
+    getOpenStreetMapUrl: getOpenStreetMapUrlMock
+  }
+}))
+
+vi.mock('@/services/matrix/media/MatrixBeaconService', () => ({
+  matrixBeaconService: {
+    getBeaconLatestUri: getBeaconLatestUriMock
   }
 }))
 
@@ -114,6 +126,32 @@ describe('BeaconMessage（移动端实时位置消息渲染）', () => {
     expect(wrapper.text()).toContain('chat.beacon.live_location')
     expect(wrapper.text()).toContain('chat.beacon.remaining_time')
     expect(wrapper.text()).toContain('chat.beacon.view_location')
+    wrapper.unmount()
+  })
+
+  it('body.uri 缺失时点击查看位置用 SDK 最新位置兜底', async () => {
+    getBeaconLatestUriMock.mockReturnValue('geo:39.9,116.3')
+    const BeaconMessage = (await import('../BeaconMessage.vue')).default
+    const wrapper = mount(BeaconMessage, {
+      props: {
+        body: { description: '一起走', timeout: 3600000, isLive: true, lastUpdateTs: Date.now() },
+        message: { id: '$beacon_info_1', roomId: '!room:id' }
+      },
+      global: {
+        stubs: {
+          'van-button': VanButtonStub,
+          'van-tag': VanTagStub,
+          'van-cell': VanCellStub,
+          'van-cell-group': VanCellGroupStub
+        }
+      }
+    })
+
+    ;(wrapper.vm as unknown as { handleOpenLocation: () => void }).handleOpenLocation()
+
+    expect(getBeaconLatestUriMock).toHaveBeenCalledWith('!room:id', '$beacon_info_1')
+    expect(getOpenStreetMapUrlMock).toHaveBeenCalled()
+    expect(openExternalUrlMock).toHaveBeenCalledWith('https://osm.example')
     wrapper.unmount()
   })
 

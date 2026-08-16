@@ -7,6 +7,7 @@ const {
   showFeedbackMock,
   openExternalUrlMock,
   getOpenStreetMapUrlMock,
+  getBeaconLatestUriMock,
   setIntervalMock,
   clearIntervalMock,
   wgs84ToGcj02Mock
@@ -14,6 +15,7 @@ const {
   showFeedbackMock: vi.fn(),
   openExternalUrlMock: vi.fn(),
   getOpenStreetMapUrlMock: vi.fn(),
+  getBeaconLatestUriMock: vi.fn(),
   setIntervalMock: vi.fn(() => 1),
   clearIntervalMock: vi.fn(),
   wgs84ToGcj02Mock: vi.fn()
@@ -36,6 +38,12 @@ vi.mock('@/utils/CoordinateTransform', () => ({
 vi.mock('@/services/matrix/media/MatrixLocationService', () => ({
   matrixLocationService: {
     getOpenStreetMapUrl: getOpenStreetMapUrlMock
+  }
+}))
+
+vi.mock('@/services/matrix/media/MatrixBeaconService', () => ({
+  matrixBeaconService: {
+    getBeaconLatestUri: getBeaconLatestUriMock
   }
 }))
 
@@ -74,10 +82,11 @@ vi.mock('naive-ui', async () => {
   }
 })
 
-const mountBeacon = (body?: BeaconBody) =>
+const mountBeacon = (body?: BeaconBody, message?: { id: string; roomId: string }) =>
   mount(BeaconMessage, {
     props: {
-      body
+      body,
+      message
     }
   })
 
@@ -118,6 +127,30 @@ describe('Beacon render message', () => {
     })
     ;(invalidUriWrapper.vm as unknown as { handleBeaconClick: () => void }).handleBeaconClick()
     expect(showFeedbackMock).toHaveBeenCalledWith('位置信息格式无效', 'info')
+  })
+
+  it('falls back to the latest uri from the beacon service when body.uri is missing', () => {
+    getBeaconLatestUriMock.mockReturnValue('geo:39.9,116.3')
+
+    const wrapper = mountBeacon(
+      {
+        description: 'live beacon',
+        isLive: true,
+        lastUpdateTs: Date.now(),
+        timeout: 60_000
+      },
+      { id: '$beacon_info_1', roomId: '!room:id' }
+    )
+
+    ;(wrapper.vm as unknown as { handleBeaconClick: () => void }).handleBeaconClick()
+
+    expect(getBeaconLatestUriMock).toHaveBeenCalledWith('!room:id', '$beacon_info_1')
+    expect(getOpenStreetMapUrlMock).toHaveBeenCalledWith({
+      latitude: 39.9,
+      longitude: 116.3,
+      timestamp: expect.any(Number)
+    })
+    expect(openExternalUrlMock).toHaveBeenCalledWith('https://map.example.com')
   })
 
   it('opens external map when beacon data is valid', () => {
