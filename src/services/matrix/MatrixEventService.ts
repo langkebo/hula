@@ -290,6 +290,16 @@ class MatrixEventService extends BaseMatrixService {
     const burnExpiresIn = burnAfterReadMeta?.expires_in || MatrixBurnDuration.DEFAULT_MS
     const burnRemainingSeconds = burnAfterRead ? Math.round(burnExpiresIn / 1000) : undefined
 
+    // 位置/信标消息复用 C6 的 MatrixMessageAdapter 解析为 LocationBody/BeaconBody，
+    // 其余类型保持原始 content 透传，兼容现有渲染路径。
+    const body: MessageType['message']['body'] =
+      msgType === MsgEnum.LOCATION || msgType === MsgEnum.BEACON
+        ? (matrixMessageAdapter.convertMatrixContent(
+            content as Record<string, unknown>,
+            msgType
+          ) as MessageType['message']['body'])
+        : content
+
     return {
       clientKey: event.getId() || '',
       message: {
@@ -297,7 +307,7 @@ class MatrixEventService extends BaseMatrixService {
         roomId: room.roomId,
         sendTime: event.getTs?.() || Date.now(),
         type: msgType,
-        body: content,
+        body,
         status: MessageStatusEnum.SUCCESS,
         burnAfterRead,
         burnRemainingSeconds,
