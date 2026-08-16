@@ -154,6 +154,24 @@ describe('useLocationStore', () => {
         timestamp: 1700000002000
       })
     })
+
+    it('信标已停止（isLive=false）时不发布位置（Blocker 1 守卫）', async () => {
+      vi.mocked(matrixBeaconService.createBeacon).mockResolvedValue(BEACON)
+      vi.mocked(matrixLocationService.getCurrentPosition).mockRejectedValue(new Error('跳过初始定位'))
+      vi.mocked(matrixBeaconService.updateBeaconLocation).mockResolvedValue(LOCATION_EVENT)
+      vi.mocked(matrixBeaconService.stopBeacon).mockResolvedValue(true)
+
+      const store = useLocationStore()
+      await store.startLiveShare('!room:id', '实时位置共享')
+      await store.stopLiveShare('$beacon1')
+
+      vi.mocked(matrixBeaconService.updateBeaconLocation).mockClear()
+
+      await store.publishLocation('$beacon1', LOCATION)
+
+      expect(matrixBeaconService.updateBeaconLocation).not.toHaveBeenCalled()
+      expect(store.currentLocation).toBeNull()
+    })
   })
 
   describe('stopLiveShare', () => {

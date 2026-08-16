@@ -610,7 +610,7 @@ describe('RoomStore', () => {
       )
     })
 
-    it('should map unstable beacon event names to beacon type', async () => {
+    it('should not render m.beacon position updates as an independent beacon bubble', async () => {
       const store = useRoomStore()
       store.rooms.set('!room:id', {
         roomId: '!room:id',
@@ -638,14 +638,9 @@ describe('RoomStore', () => {
         ]
       })
 
-      expect(mockChatStore.pushMsg).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.objectContaining({
-            type: MsgEnum.BEACON,
-            body: expect.objectContaining({ uri: 'geo:39.9,116.4' })
-          })
-        })
-      )
+      // m.beacon 不单独成气泡，但仍应让房间列表预览显示为「实时位置共享」
+      expect(mockChatStore.pushMsg).not.toHaveBeenCalled()
+      expect(store.rooms.get('!room:id')?.lastMessage).toBe('[实时位置共享]')
     })
   })
 

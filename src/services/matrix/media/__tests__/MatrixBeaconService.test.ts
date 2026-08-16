@@ -12,6 +12,7 @@ type MockClient = {
     getBeaconsForRoom(roomId: string): unknown[]
     setLiveBeacon(roomId: string, content: unknown): Promise<unknown>
   }
+  getUserId(): string
   search: (...args: unknown[]) => Promise<unknown>
   sendEvent: (...args: unknown[]) => Promise<{ event_id: string }>
   getRoomEvent: (roomId: string, eventId: string) => Promise<{ getContent(): unknown }>
@@ -109,6 +110,7 @@ describe('MatrixBeaconService', () => {
       const search = vi.fn()
       const mockClient = {
         getBeaconManager: vi.fn(() => ({ getBeaconsForRoom })),
+        getUserId: () => '@alice:example.com',
         search
       } as unknown as MockClient
       mockGetClient(mockClient)
@@ -119,6 +121,44 @@ describe('MatrixBeaconService', () => {
       expect(getBeaconsForRoom).toHaveBeenCalledWith('!room:id')
       expect(search).not.toHaveBeenCalled()
       // 只返回 live 的信标，字段完整映射
+      expect(result).toEqual([
+        {
+          event_id: '$beacon_info_1',
+          room_id: '!room:id',
+          user_id: '@alice:example.com',
+          description: 'Alice beacon',
+          timeout: 3600000,
+          is_live: true,
+          last_updated: 1700000000000
+        }
+      ])
+    })
+
+    it('should only return live beacons owned by the current user (Blocker 2)', async () => {
+      const getBeaconsForRoom = vi.fn().mockReturnValue([
+        {
+          isLive: true,
+          beaconInfoId: '$beacon_info_1',
+          beaconInfoOwner: '@alice:example.com',
+          beaconInfo: { description: 'Alice beacon', timeout: 3600000, timestamp: 1700000000000 }
+        },
+        {
+          isLive: true,
+          beaconInfoId: '$beacon_info_2',
+          beaconInfoOwner: '@bob:example.com',
+          beaconInfo: { description: 'Bob beacon', timeout: 3600000, timestamp: 1700000001000 }
+        }
+      ])
+      const search = vi.fn()
+      const mockClient = {
+        getBeaconManager: vi.fn(() => ({ getBeaconsForRoom })),
+        getUserId: () => '@alice:example.com',
+        search
+      } as unknown as MockClient
+      mockGetClient(mockClient)
+
+      const result = await matrixBeaconService.getActiveBeacons('!room:id')
+
       expect(result).toEqual([
         {
           event_id: '$beacon_info_1',
@@ -144,6 +184,7 @@ describe('MatrixBeaconService', () => {
       const search = vi.fn()
       const mockClient = {
         getBeaconManager: vi.fn(() => ({ getBeaconsForRoom })),
+        getUserId: () => '@alice:example.com',
         search
       } as unknown as MockClient
       mockGetClient(mockClient)

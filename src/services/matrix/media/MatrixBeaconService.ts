@@ -136,10 +136,13 @@ class MatrixBeaconService {
     try {
       const client = this.getClient()
       if (!client) return []
+      const userId = client.getUserId()
       const beacons = client.getBeaconManager().getBeaconsForRoom(roomId)
 
+      // 仅恢复属于当前用户的信标（Blocker 2：正确性级），避免把他人 beacon
+      // 写入本地 map、开启共享态并排定时器。
       return beacons
-        .filter((beacon) => beacon.isLive)
+        .filter((beacon) => beacon.isLive && beacon.beaconInfoOwner === userId)
         .map((beacon) => ({
           event_id: beacon.beaconInfoId,
           room_id: roomId,

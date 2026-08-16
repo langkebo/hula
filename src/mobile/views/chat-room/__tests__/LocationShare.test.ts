@@ -57,6 +57,7 @@ vi.mock('@/services/matrix/media/MatrixLocationService', () => ({
 import StaticProxyMap from '@/components/rightBox/location/StaticProxyMap.vue'
 import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
+import { useLocationStore } from '@/stores/domains/chat/location'
 
 const VanButtonStub = {
   name: 'VanButton',
@@ -189,6 +190,25 @@ describe('LocationShare - store + watchPosition 闭环', () => {
     await flushPromises()
 
     expect(matrixBeaconService.stopBeacon).toHaveBeenCalledWith('!room:test', '$beacon1')
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('到期后 sharing 变为 false 时自动清理 watchPosition 与周期发布定时器', async () => {
+    const cleanup = vi.fn()
+    mockWatchPosition.mockReturnValue(cleanup)
+
+    const wrapper = await mountShare()
+    await openAndLocate(wrapper)
+    await startShare(wrapper)
+    expect(mockWatchPosition).toHaveBeenCalledTimes(1)
+
+    // 模拟到期：store 停止信标使 sharing 变为 false，组件订阅该变化并自动清理 watch/timer
+    const locationStore = useLocationStore()
+    await locationStore.stopLiveShare('$beacon1')
+    await nextTick()
+    await flushPromises()
+
     expect(cleanup).toHaveBeenCalledTimes(1)
     wrapper.unmount()
   })

@@ -41,20 +41,21 @@ describe('MatrixMessageAdapter', () => {
       ).toBe(MsgEnum.LOCATION)
     })
 
-    it('should map beacon events to beacon messages', () => {
+    it('should map beacon_info events to beacon messages, but not m.beacon position updates', () => {
       expect(matrixMessageAdapter.getMsgTypeFromEventLike('m.beacon_info', { timeout: 1000, live: true })).toBe(
         MsgEnum.BEACON
       )
+      // m.beacon（位置更新）不再映射为独立 BEACON 气泡（Blocker 3）
       expect(matrixMessageAdapter.getMsgTypeFromEventLike('m.beacon', { 'm.location': { uri: 'geo:1,2' } })).toBe(
-        MsgEnum.BEACON
+        MsgEnum.UNKNOWN
       )
     })
 
-    it('should map unstable beacon event names to beacon messages', () => {
+    it('should map unstable beacon_info names to beacon messages, but not unstable m.beacon', () => {
       expect(matrixMessageAdapter.getMsgTypeFromEventLike('org.matrix.msc3672.beacon_info', { timeout: 1000 })).toBe(
         MsgEnum.BEACON
       )
-      expect(matrixMessageAdapter.getMsgTypeFromEventLike('org.matrix.msc3672.beacon', {})).toBe(MsgEnum.BEACON)
+      expect(matrixMessageAdapter.getMsgTypeFromEventLike('org.matrix.msc3672.beacon', {})).toBe(MsgEnum.UNKNOWN)
     })
   })
 
@@ -186,24 +187,6 @@ describe('MatrixMessageAdapter', () => {
         isLive: true,
         uri: undefined,
         lastUpdateTs: 1700000000000
-      })
-    })
-
-    it('should parse beacon location content into a BeaconBody with uri', () => {
-      const result = matrixMessageAdapter.convertMatrixContent(
-        {
-          'm.location': { uri: 'geo:39.9,116.4' },
-          'm.ts': 1700000001000
-        },
-        MsgEnum.BEACON
-      )
-
-      expect(result).toMatchObject({
-        description: '',
-        timeout: 0,
-        isLive: false,
-        uri: 'geo:39.9,116.4',
-        lastUpdateTs: 1700000001000
       })
     })
   })

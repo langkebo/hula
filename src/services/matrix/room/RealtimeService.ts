@@ -16,16 +16,13 @@ const ROOM_EVENTS = {
 } as const
 
 /**
- * 实时位置共享（beacon）相关事件类型，含 MSC3672 不稳定前缀。
+ * 实时位置共享（beacon）中可渲染为独立 BEACON 气泡的事件类型，含 MSC3672 不稳定前缀。
  * 实时时间线需将这些事件 dispatch 到 convertEventToMessage，
  * 否则会被当作普通事件丢弃（message 为 null）而无法渲染。
+ * m.beacon（位置更新）不在此列：它通过 m.relates_to 关联到 beacon_info，
+ * 不单独成气泡（Blocker 3）。
  */
-const BEACON_EVENT_TYPES = new Set<string>([
-  'm.beacon_info',
-  'm.beacon',
-  'org.matrix.msc3672.beacon_info',
-  'org.matrix.msc3672.beacon'
-])
+const BEACON_EVENT_TYPES = new Set<string>(['m.beacon_info', 'org.matrix.msc3672.beacon_info'])
 
 interface RoomSession {
   roomId: string
