@@ -9,7 +9,7 @@ const meta = {
     layout: 'centered'
   },
   args: {
-    friend: {
+    item: {
       userId: '@alice:example.com',
       displayName: 'Alice',
       avatarUrl: '',

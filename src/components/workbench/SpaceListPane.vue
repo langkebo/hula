@@ -76,7 +76,7 @@
                 :aria-label="t('space.title')"
                 v-slot="{ item }">
                 <SpaceListItemCard
-                  :space="item"
+                  :item="item"
                   :active="selectedSpaceId === item.spaceId"
                   @click="emit('selectSpace', item.spaceId)"
                   @pin="emit('pinSpace', $event)"
@@ -98,7 +98,7 @@
                     <SpaceListItemCard
                       v-for="space in mySpaces"
                       :key="space.spaceId"
-                      :space="space"
+                      :item="space"
                       :active="selectedSpaceId === space.spaceId"
                       @click="emit('selectSpace', space.spaceId)"
                       @pin="emit('pinSpace', $event)"
@@ -120,7 +120,7 @@
                     <SpaceListItemCard
                       v-for="space in publicSpaces"
                       :key="space.spaceId"
-                      :space="space"
+                      :item="space"
                       :active="selectedSpaceId === space.spaceId"
                       @click="emit('selectSpace', space.spaceId)"
                       @pin="emit('pinSpace', $event)"

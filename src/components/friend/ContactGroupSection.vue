@@ -31,7 +31,7 @@
       <FriendListItem
         v-for="friend in friends"
         :key="friend.userId"
-        :friend="friend"
+        :item="friend"
         :selected="friend.userId === selectedUserId"
         :query="query"
         @select="$emit('select-friend', $event)"
@@ -63,11 +63,11 @@ withDefaults(
 
 defineEmits<{
   toggle: []
-  'select-friend': [friend: MatrixContact]
-  'send-message': [friend: MatrixContact]
-  remove: [friend: MatrixContact]
-  more: [payload: { friend: MatrixContact; event: MouseEvent }]
-  contextmenu: [payload: { friend: MatrixContact; event: MouseEvent }]
+  'select-friend': [item: MatrixContact]
+  'send-message': [item: MatrixContact]
+  remove: [item: MatrixContact]
+  more: [payload: { item: MatrixContact; event: MouseEvent }]
+  contextmenu: [payload: { item: MatrixContact; event: MouseEvent }]
 }>()
 </script>
 

@@ -35,7 +35,7 @@
         <div class="pr-12px">
           <!-- 全部选项 -->
           <UserItem
-            :user="getAllOption()"
+            :item="getAllOption()"
             :is-selected="selectedUser === '' && selectedRoom === ''"
             @click="handleItemClick"
             class="mb-8px" />
@@ -45,9 +45,7 @@
             :is="getItemComponent()"
             v-for="item in filteredList"
             :key="getItemKey(item)"
-            :user="item"
-            :room="item"
-            :contact="item"
+            :item="item"
             :is-selected="isItemSelected(item)"
             @click="handleItemClick"
             class="mb-8px" />

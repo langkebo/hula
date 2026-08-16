@@ -29,7 +29,7 @@
         <RoomCardItem
           v-for="room in rooms"
           :key="room.roomId"
-          :room="room"
+          :item="room"
           @preview="onPreview"
           @message="onMessage"
           @info="onInfo"

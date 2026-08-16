@@ -9,41 +9,41 @@
     @click="emit('click')"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
-    @contextmenu="emit('contextmenu', { space, event: $event })">
-    <n-badge :dot="space.isPinned" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
+    @contextmenu="emit('contextmenu', { item, event: $event })">
+    <n-badge :dot="item.isPinned" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
       <div class="space-card__avatar">
         <n-avatar
-          v-if="space.avatarUrl"
+          v-if="item.avatarUrl"
           :size="compact ? 36 : 40"
-          :src="space.avatarUrl"
+          :src="item.avatarUrl"
           round
           class="space-card__img" />
         <div v-else class="space-card__initials" :style="{ background: avatarColor }">
           {{ initials }}
         </div>
-        <div v-if="space.unreadCount" class="space-card__unread-badge">
-          {{ space.unreadCount > 99 ? '99+' : space.unreadCount }}
+        <div v-if="item.unreadCount" class="space-card__unread-badge">
+          {{ item.unreadCount > 99 ? '99+' : item.unreadCount }}
         </div>
       </div>
     </n-badge>
     <div class="space-card__content">
       <!-- 上行：空间名称 + 快速操作按钮 -->
       <div class="space-card__title-row">
-        <span class="space-card__name">{{ space.name }}</span>
+        <span class="space-card__name">{{ item.name }}</span>
         <n-flex v-if="hovered && !active" :size="2" align="center" class="space-card__quick-actions" @click.stop>
           <n-tooltip trigger="hover">
             <template #trigger>
-              <button type="button" class="space-card__action-btn" @click.stop="emit('pin', space.spaceId)">
+              <button type="button" class="space-card__action-btn" @click.stop="emit('pin', item.spaceId)">
                 <svg class="size-12px">
-                  <use :href="space.isPinned ? '#unpin' : '#pin'" />
+                  <use :href="item.isPinned ? '#unpin' : '#pin'" />
                 </svg>
               </button>
             </template>
-            {{ space.isPinned ? t('space.unpin_space') : t('space.pin_space') }}
+            {{ item.isPinned ? t('space.unpin_space') : t('space.pin_space') }}
           </n-tooltip>
           <n-tooltip trigger="hover">
             <template #trigger>
-              <button type="button" class="space-card__action-btn" @click.stop="emit('settings', space.spaceId)">
+              <button type="button" class="space-card__action-btn" @click.stop="emit('settings', item.spaceId)">
                 <svg class="size-12px">
                   <use href="#settings" />
                 </svg>
@@ -53,7 +53,7 @@
           </n-tooltip>
           <n-tooltip trigger="hover">
             <template #trigger>
-              <button type="button" class="space-card__action-btn" @click.stop="emit('leave', space.spaceId)">
+              <button type="button" class="space-card__action-btn" @click.stop="emit('leave', item.spaceId)">
                 <svg class="size-12px">
                   <use href="#logout" />
                 </svg>
@@ -66,7 +66,7 @@
               <button
                 type="button"
                 class="space-card__action-btn space-card__action-btn--danger"
-                @click.stop="emit('delete', space.spaceId)">
+                @click.stop="emit('delete', item.spaceId)">
                 <svg class="size-12px">
                   <use href="#delete" />
                 </svg>
@@ -75,25 +75,25 @@
             {{ t('space.delete_space') }}
           </n-tooltip>
         </n-flex>
-        <span v-else-if="!compact && space.memberCount" class="space-card__member-count">
-          {{ space.memberCount }} {{ t('space.members') }}
+        <span v-else-if="!compact && item.memberCount" class="space-card__member-count">
+          {{ item.memberCount }} {{ t('space.members') }}
         </span>
       </div>
       <!-- 下行：主题/状态 + 元信息 -->
       <div class="space-card__desc-row">
         <n-flex align="center" :gap="4" class="min-w-0 flex-1">
           <span
-            v-if="space.statusText"
+            v-if="item.statusText"
             class="space-card__status-pill"
             :class="[
-              space.statusTone ? `space-card__status-pill--${space.statusTone}` : 'space-card__status-pill--neutral'
+              item.statusTone ? `space-card__status-pill--${item.statusTone}` : 'space-card__status-pill--neutral'
             ]">
-            {{ space.statusText }}
+            {{ item.statusText }}
           </span>
-          <span v-if="!compact && space.topic" class="space-card__topic">{{ space.topic }}</span>
-          <span v-else-if="space.visibilityText" class="space-card__visibility">{{ space.visibilityText }}</span>
-          <span v-else-if="!compact && space.childCount" class="space-card__meta">
-            {{ space.childCount }} {{ t('space.rooms') }}
+          <span v-if="!compact && item.topic" class="space-card__topic">{{ item.topic }}</span>
+          <span v-else-if="item.visibilityText" class="space-card__visibility">{{ item.visibilityText }}</span>
+          <span v-else-if="!compact && item.childCount" class="space-card__meta">
+            {{ item.childCount }} {{ t('space.rooms') }}
           </span>
           <span v-else class="space-card__placeholder">--</span>
         </n-flex>
@@ -108,7 +108,7 @@ import { useI18n } from 'vue-i18n'
 import type { SpaceListItem } from './SpaceListPane.vue'
 
 const props = defineProps<{
-  space: SpaceListItem
+  item: SpaceListItem
   active: boolean
   compact?: boolean
 }>()
@@ -119,21 +119,21 @@ const emit = defineEmits<{
   settings: [spaceId: string]
   leave: [spaceId: string]
   delete: [spaceId: string]
-  contextmenu: [payload: { space: SpaceListItem; event: MouseEvent }]
+  contextmenu: [payload: { item: SpaceListItem; event: MouseEvent }]
 }>()
 
 const { t } = useI18n()
 const hovered = ref(false)
 
 const initials = computed(() => {
-  const name = props.space.name || ''
+  const name = props.item.name || ''
   return name.slice(0, 2).toUpperCase() || '?'
 })
 
 const avatarColor = computed(() => {
   let hash = 0
-  for (let i = 0; i < props.space.spaceId.length; i++) {
-    hash = props.space.spaceId.charCodeAt(i) + ((hash << 5) - hash)
+  for (let i = 0; i < props.item.spaceId.length; i++) {
+    hash = props.item.spaceId.charCodeAt(i) + ((hash << 5) - hash)
   }
   const hue = Math.abs(hash) % 360
   return `hsl(${hue}, 45%, 55%)`

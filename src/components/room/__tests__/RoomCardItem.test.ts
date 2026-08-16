@@ -20,11 +20,11 @@ const sampleRoom: RoomCardViewModel = {
   isPinned: false
 }
 
-const mountCard = (props: Partial<{ room: RoomCardViewModel }> = {}) =>
-  mount(RoomCardItem, { props: { room: sampleRoom, ...props } })
+const mountCard = (props: Partial<{ item: RoomCardViewModel }> = {}) =>
+  mount(RoomCardItem, { props: { item: sampleRoom, ...props } })
 
 describe('RoomCardItem', () => {
-  it('renders room name, member count and online count', () => {
+  it('renders item name, member count and online count', () => {
     const wrapper = mountCard()
     const text = wrapper.find('[data-testid="room-card-item"]').text()
     expect(text).toContain('TJG 官方频道')
@@ -38,7 +38,7 @@ describe('RoomCardItem', () => {
   })
 
   it('does not render topic element when topic is absent', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, topic: undefined } })
+    const wrapper = mountCard({ item: { ...sampleRoom, topic: undefined } })
     expect(wrapper.find('[data-testid="room-card-topic"]').exists()).toBe(false)
   })
 
@@ -48,45 +48,45 @@ describe('RoomCardItem', () => {
   })
 
   it('renders avatar image when avatar provided', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, avatar: 'https://example.com/a.png' } })
+    const wrapper = mountCard({ item: { ...sampleRoom, avatar: 'https://example.com/a.png' } })
     const img = wrapper.find('[data-testid="room-card-avatar-img"]')
     expect(img.exists()).toBe(true)
     expect(img.attributes('src')).toBe('https://example.com/a.png')
   })
 
   it('shows unread badge when unreadCount > 0', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, unreadCount: 3 } })
+    const wrapper = mountCard({ item: { ...sampleRoom, unreadCount: 3 } })
     expect(wrapper.find('[data-testid="room-card-unread"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="room-card-unread"]').text()).toContain('3')
   })
 
   it('hides unread badge when unreadCount is 0', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, unreadCount: 0 } })
+    const wrapper = mountCard({ item: { ...sampleRoom, unreadCount: 0 } })
     expect(wrapper.find('[data-testid="room-card-unread"]').exists()).toBe(false)
   })
 
   it('shows federation badge when isFederated is true', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, isFederated: true } })
+    const wrapper = mountCard({ item: { ...sampleRoom, isFederated: true } })
     expect(wrapper.find('[data-testid="room-card-federation"]').exists()).toBe(true)
   })
 
   it('hides federation badge when isFederated is false', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, isFederated: false } })
+    const wrapper = mountCard({ item: { ...sampleRoom, isFederated: false } })
     expect(wrapper.find('[data-testid="room-card-federation"]').exists()).toBe(false)
   })
 
   it('shows encryption indicator when isEncrypted is true', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, isEncrypted: true } })
+    const wrapper = mountCard({ item: { ...sampleRoom, isEncrypted: true } })
     expect(wrapper.find('[data-testid="room-card-encrypted"]').exists()).toBe(true)
   })
 
   it('hides encryption indicator when isEncrypted is false', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, isEncrypted: false } })
+    const wrapper = mountCard({ item: { ...sampleRoom, isEncrypted: false } })
     expect(wrapper.find('[data-testid="room-card-encrypted"]').exists()).toBe(false)
   })
 
   it('shows pinned indicator when isPinned is true', () => {
-    const wrapper = mountCard({ room: { ...sampleRoom, isPinned: true } })
+    const wrapper = mountCard({ item: { ...sampleRoom, isPinned: true } })
     expect(wrapper.find('[data-testid="room-card-pinned"]').exists()).toBe(true)
   })
 
@@ -134,7 +134,7 @@ describe('RoomCardItem', () => {
 
   it('truncates long topic text', () => {
     const longTopic = 'a'.repeat(120)
-    const wrapper = mountCard({ room: { ...sampleRoom, topic: longTopic } })
+    const wrapper = mountCard({ item: { ...sampleRoom, topic: longTopic } })
     const topicEl = wrapper.find('[data-testid="room-card-topic"]')
     expect(topicEl.text().length).toBeLessThan(longTopic.length)
     expect(topicEl.text()).toContain('...')

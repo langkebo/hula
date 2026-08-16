@@ -27,7 +27,7 @@
 
     <n-spin :show="loading">
       <div v-if="rooms.length > 0" class="room-list" :style="gridStyle">
-        <RoomCard v-for="room in rooms" :key="room.roomId" :room="room" @join="openPreview" @preview="openPreview" />
+        <RoomCard v-for="room in rooms" :key="room.roomId" :item="room" @join="openPreview" @preview="openPreview" />
         <div ref="sentinelEl" class="room-list__sentinel" data-testid="load-more-sentinel" />
       </div>
       <n-empty v-else :description="t('room.discovery.empty')" data-testid="empty-state" />
