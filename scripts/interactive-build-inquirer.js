@@ -8,7 +8,12 @@ import os from 'os'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-import { buildUpdaterConfigOverride, UPDATER_KEY_ENV } from './updater-config.js'
+import {
+  buildCspConfigOverride,
+  buildUpdaterConfigOverride,
+  HOMESERVER_URL_ENV,
+  UPDATER_KEY_ENV
+} from './updater-config.js'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -46,22 +51,51 @@ function loadEnvFiles() {
   }
 }
 
-// 生成 updater 的 --config 覆盖文件；无 key 时返回 null（跳过注入）
-function writeUpdaterConfigOverride() {
-  const key = process.env[UPDATER_KEY_ENV]
-  const override = buildUpdaterConfigOverride(key)
+// 读取指定平台实际 conf 中的 csp / devCsp 字符串，供 CSP 注入覆盖使用。
+// 平台 conf 缺失时回退到 base tauri.conf.json（devCsp 仅在平台 conf 中存在）。
+function readSecurityCsp(platform) {
+  const baseConf = JSON.parse(
+    fs.readFileSync(path.join(repoRoot, 'src-tauri', 'tauri.conf.json'), 'utf8')
+  )
+  const platformConfPath = path.join(repoRoot, 'src-tauri', `tauri.${platform}.conf.json`)
+  let platformConf = {}
+  if (fs.existsSync(platformConfPath)) {
+    platformConf = JSON.parse(fs.readFileSync(platformConfPath, 'utf8'))
+  }
 
-  if (!override) {
+  return {
+    csp: platformConf?.app?.security?.csp ?? baseConf?.app?.security?.csp,
+    devCsp: platformConf?.app?.security?.devCsp ?? baseConf?.app?.security?.devCsp
+  }
+}
+
+// 生成 `tauri build --config` 覆盖文件，合并 updater tauriKey 与 homeserver CSP 注入；
+// 两者都无需注入时返回 null（跳过 --config）。
+function writeConfigOverride(platform) {
+  const tauriKey = process.env[UPDATER_KEY_ENV]
+  const updater = buildUpdaterConfigOverride(tauriKey)
+
+  if (!updater) {
     console.warn(
       `\n⚠️  未设置 ${UPDATER_KEY_ENV}，updater 端点将不含真实 tauriKey（不影响本地运行，更新检查会退化为 gitee 端点）。` +
         `\n    请在 .env.local 中设置 ${UPDATER_KEY_ENV}（切勿提交到仓库）。\n`
     )
+  }
+
+  const homeserverUrl = process.env[HOMESERVER_URL_ENV]
+  const cspOverride = buildCspConfigOverride(homeserverUrl, readSecurityCsp(platform))
+
+  const override = {}
+  if (updater) Object.assign(override, updater)
+  if (cspOverride) Object.assign(override, cspOverride)
+
+  if (Object.keys(override).length === 0) {
     return null
   }
 
   const configDir = path.join(repoRoot, 'src-tauri', 'target')
   fs.mkdirSync(configDir, { recursive: true })
-  const configPath = path.join(configDir, 'updater-config.override.json')
+  const configPath = path.join(configDir, 'tauri-config.override.json')
   fs.writeFileSync(configPath, JSON.stringify(override))
   return configPath
 }
@@ -300,15 +334,15 @@ function getDebugOptions() {
 }
 
 // 执行打包命令
-async function executeBuild(command, isDebug = false) {
-  // 若设置了 UPDATER_TAURI_KEY，注入 updater tauriKey 的 --config 覆盖
-  const updaterConfigPath = writeUpdaterConfigOverride()
+async function executeBuild(command, isDebug = false, platform = getCurrentPlatform().platform) {
+  // 若设置了 UPDATER_TAURI_KEY 或 VITE_HOMESERVER_URL，注入 --config 覆盖
+  const configPath = writeConfigOverride(platform)
 
   // 如果是调试模式，添加 --debug 参数
   const finalCommand = isDebug ? `${command} --debug` : command
   const [cmd, ...baseArgs] = finalCommand.split(' ')
 
-  const args = updaterConfigPath ? [...baseArgs, '--config', updaterConfigPath] : baseArgs
+  const args = configPath ? [...baseArgs, '--config', configPath] : baseArgs
 
   const child = spawn(cmd, args, {
     stdio: 'inherit', // 直接继承父进程的 stdio，保留颜色输出
@@ -318,9 +352,9 @@ async function executeBuild(command, isDebug = false) {
   return new Promise((resolve, reject) => {
     child.on('close', (code) => {
       // 清理临时 config 覆盖文件
-      if (updaterConfigPath && fs.existsSync(updaterConfigPath)) {
+      if (configPath && fs.existsSync(configPath)) {
         try {
-          fs.unlinkSync(updaterConfigPath)
+          fs.unlinkSync(configPath)
         } catch {
           // 忽略清理失败（文件位于 gitignored 的 src-tauri/target 下）
         }
@@ -446,7 +480,7 @@ async function main() {
         const isMobilePlatform = selectedPlatform === 'ios' || selectedPlatform === 'android'
 
         if (isMobilePlatform) {
-          const exitCode = await executeBuild(bundleResult.command, false)
+          const exitCode = await executeBuild(bundleResult.command, false, selectedPlatform)
           process.exit(exitCode)
         } else {
           // 桌面端平台需要选择调试模式
@@ -459,7 +493,7 @@ async function main() {
               break
             }
 
-            const exitCode = await executeBuild(bundleResult.command, debugResult)
+            const exitCode = await executeBuild(bundleResult.command, debugResult, selectedPlatform)
             process.exit(exitCode)
           }
         }
