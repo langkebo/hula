@@ -11,7 +11,8 @@ vi.mock('@/services/matrix/sdk', () => ({
     Removed: 'Removed',
     RequestReceived: 'RequestReceived',
     ListUpdated: 'ListUpdated'
-  }
+  },
+  initializeManagerExtensions: vi.fn(async () => {})
 }))
 
 vi.mock('../../MatrixClientService', () => ({
@@ -28,7 +29,7 @@ vi.mock('@/services/i18n', () => ({
   useI18nGlobal: () => ({ t: (key: string) => `translated:${key}` })
 }))
 
-import { FriendEvent } from '@/services/matrix/sdk'
+import { FriendEvent, initializeManagerExtensions } from '@/services/matrix/sdk'
 import matrixClientService from '../../MatrixClientService'
 import { MatrixFriendSync } from '../MatrixFriendSync'
 
@@ -95,6 +96,37 @@ describe('initialize', () => {
     })
 
     await expect(sync.initialize()).rejects.toThrow('client boom')
+  })
+})
+
+describe('客户端重建后懒注册 FriendManager 扩展', () => {
+  it('client 重建后访问器缺失时懒注册并恢复 manager（不再降级 REST）', async () => {
+    // 模拟身份变更重建后的 client：getFriendManager 访问器尚未挂载
+    const rebuiltClient = {} as unknown as MatrixClient
+    vi.mocked(matrixClientService.getClient).mockReturnValue(rebuiltClient)
+
+    // initializeManagerExtensions 懒注册成功后挂载 getFriendManager 访问器
+    vi.mocked(initializeManagerExtensions).mockImplementationOnce(async () => {
+      ;(rebuiltClient as unknown as Record<string, unknown>).getFriendManager = () => mockManager
+    })
+
+    const manager = await sync.ensureFriendManager(false)
+
+    expect(initializeManagerExtensions).toHaveBeenCalledTimes(1)
+    expect(manager).toBe(mockManager)
+    expect(mockManager.start).toHaveBeenCalledTimes(1)
+  })
+
+  it('懒注册后仍无访问器时返回 null 降级 REST（不抛错）', async () => {
+    const rebuiltClient = {} as unknown as MatrixClient
+    vi.mocked(matrixClientService.getClient).mockReturnValue(rebuiltClient)
+    vi.mocked(initializeManagerExtensions).mockResolvedValueOnce(undefined)
+
+    const manager = await sync.ensureFriendManager(false)
+
+    expect(initializeManagerExtensions).toHaveBeenCalledTimes(1)
+    expect(manager).toBeNull()
+    expect(mockManager.start).not.toHaveBeenCalled()
   })
 })
 
