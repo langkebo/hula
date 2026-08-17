@@ -36,7 +36,10 @@ const authedRequestImpl = vi.fn()
 const makeAdmin = () => ({
   getFederationDestinations: vi.fn(),
   getFederationDestination: vi.fn(),
-  resetFederationConnection: vi.fn()
+  resetFederationConnection: vi.fn(),
+  getFederationBlacklist: vi.fn(),
+  addToFederationBlacklist: vi.fn(),
+  removeFromFederationBlacklist: vi.fn()
 })
 
 describe('AdminFederationService', () => {
@@ -113,51 +116,32 @@ describe('AdminFederationService', () => {
     await expect(service.resetFederationConnection('remote.hs')).rejects.toThrow('reset-fail')
   })
 
-  it('getFederationBlacklist 通过 synapse admin 端点并兼容 blacklist/servers 两种响应', async () => {
-    blacklistResponse = {
-      blacklist: [{ domain: 'evil.hs', reason: 'spam', added_by: '@admin:hs', added_at: 100 }, { not_a_domain: true }]
-    }
+  it('getFederationBlacklist 委托 AdminManager 并映射 server_name→domain', async () => {
+    admin.getFederationBlacklist.mockResolvedValueOnce([
+      { server_name: 'evil.hs', reason: 'spam', added_ts: 100 }
+    ])
 
     await expect(service.getFederationBlacklist()).resolves.toEqual([
-      { domain: 'evil.hs', reason: 'spam', addedBy: '@admin:hs', addedAt: 100 }
+      { domain: 'evil.hs', reason: 'spam', addedBy: undefined, addedAt: 100 }
     ])
-    expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/federation/blacklist', undefined, undefined, {
-      prefix: '/_synapse/admin/v1'
-    })
-
-    blacklistResponse = { servers: [{ server_name: 'bad.hs' }] }
-    await expect(service.getFederationBlacklist()).resolves.toEqual([{ domain: 'bad.hs' }])
+    expect(admin.getFederationBlacklist).toHaveBeenCalled()
   })
 
-  it('addToFederationBlacklist 对域名 URL 编码并返回布尔结果', async () => {
-    await expect(service.addToFederationBlacklist('evil.hs/x', 'spam')).resolves.toBe(true)
-    expect(authedRequestImpl).toHaveBeenCalledWith(
-      'POST',
-      '/federation/blacklist/evil.hs%2Fx',
-      undefined,
-      { reason: 'spam' },
-      { prefix: '/_synapse/admin/v1' }
-    )
+  it('addToFederationBlacklist 委托 AdminManager 并返回布尔结果', async () => {
+    admin.addToFederationBlacklist.mockResolvedValueOnce(undefined)
+    await expect(service.addToFederationBlacklist('evil.hs', 'spam')).resolves.toBe(true)
+    expect(admin.addToFederationBlacklist).toHaveBeenCalledWith('evil.hs', 'spam')
 
-    server.use(
-      http.post(`${TEST_BASE_URL}/_synapse/admin/v1/federation/blacklist/:domain`, () => {
-        return new HttpResponse(null, { status: 500 })
-      })
-    )
+    admin.addToFederationBlacklist.mockRejectedValueOnce(new Error('boom'))
     await expect(service.addToFederationBlacklist('evil.hs')).resolves.toBe(false)
   })
 
-  it('removeFromFederationBlacklist 使用 DELETE 且失败时返回 false', async () => {
+  it('removeFromFederationBlacklist 委托 AdminManager 且失败时返回 false', async () => {
+    admin.removeFromFederationBlacklist.mockResolvedValueOnce(undefined)
     await expect(service.removeFromFederationBlacklist('evil.hs')).resolves.toBe(true)
-    expect(authedRequestImpl).toHaveBeenCalledWith('DELETE', '/federation/blacklist/evil.hs', undefined, undefined, {
-      prefix: '/_synapse/admin/v1'
-    })
+    expect(admin.removeFromFederationBlacklist).toHaveBeenCalledWith('evil.hs')
 
-    server.use(
-      http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/federation/blacklist/:domain`, () => {
-        return new HttpResponse(null, { status: 500 })
-      })
-    )
+    admin.removeFromFederationBlacklist.mockRejectedValueOnce(new Error('boom'))
     await expect(service.removeFromFederationBlacklist('evil.hs')).resolves.toBe(false)
   })
 
