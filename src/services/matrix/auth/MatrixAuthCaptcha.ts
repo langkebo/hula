@@ -80,14 +80,8 @@ export async function cleanupExpiredCaptchas(): Promise<{ cleaned: number }> {
   }
 
   try {
-    const result = await authedRequestWithPath<{ cleaned?: number }>(
-      client,
-      'DELETE',
-      '/register/captcha/clean',
-      undefined,
-      {}
-    )
-    return { cleaned: result.cleaned ?? 0 }
+    const result = await client.getCaptchaManager().deleteExpiredCaptchas()
+    return { cleaned: result.cleaned_count ?? 0 }
   } catch (err) {
     throw normalizeSdkMatrixError(err, '清理过期验证码失败')
   }
