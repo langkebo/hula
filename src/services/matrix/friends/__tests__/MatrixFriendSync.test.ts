@@ -11,8 +11,7 @@ vi.mock('@/services/matrix/sdk', () => ({
     Removed: 'Removed',
     RequestReceived: 'RequestReceived',
     ListUpdated: 'ListUpdated'
-  },
-  initializeManagerExtensions: vi.fn(async () => {})
+  }
 }))
 
 vi.mock('../../MatrixClientService', () => ({
@@ -29,7 +28,8 @@ vi.mock('@/services/i18n', () => ({
   useI18nGlobal: () => ({ t: (key: string) => `translated:${key}` })
 }))
 
-import { FriendEvent, initializeManagerExtensions } from '@/services/matrix/sdk'
+import { FriendEvent } from '@/services/matrix/sdk'
+import { synapseFriendExtensionService } from '../../extensions/SynapseFriendExtensionService'
 import matrixClientService from '../../MatrixClientService'
 import { MatrixFriendSync } from '../MatrixFriendSync'
 
@@ -75,7 +75,7 @@ afterEach(() => {
 })
 
 describe('initialize', () => {
-  it('无 client 时不抛错并降级到轮询', async () => {
+  it('无 client 时不抛错（暂缓初始化，等待连接后重试）', async () => {
     vi.mocked(matrixClientService.getClient).mockReturnValue(null)
 
     await expect(sync.initialize()).resolves.toBeUndefined()
@@ -99,33 +99,74 @@ describe('initialize', () => {
   })
 })
 
-describe('客户端重建后懒注册 FriendManager 扩展', () => {
-  it('client 重建后访问器缺失时懒注册并恢复 manager（不再降级 REST）', async () => {
-    // 模拟身份变更重建后的 client：getFriendManager 访问器尚未挂载
-    const rebuiltClient = {} as unknown as MatrixClient
-    vi.mocked(matrixClientService.getClient).mockReturnValue(rebuiltClient)
+describe('真实触发路径：client 缺失窗口 vs 扩展真实缺失', () => {
+  /** 最小化 MatrixClient 桩：getFriendManager 挂在原型上，模拟 SDK 真实注入形态 */
+  function makePrototypeClient(getFriendManagerImpl: () => unknown): MatrixClient {
+    class FakeMatrixClient {}
+    ;(FakeMatrixClient.prototype as unknown as Record<string, unknown>).getFriendManager = getFriendManagerImpl
+    return new FakeMatrixClient() as unknown as MatrixClient
+  }
 
-    // initializeManagerExtensions 懒注册成功后挂载 getFriendManager 访问器
-    vi.mocked(initializeManagerExtensions).mockImplementationOnce(async () => {
-      ;(rebuiltClient as unknown as Record<string, unknown>).getFriendManager = () => mockManager
+  it('客户端尚未创建（getClient 返回 null）时不降级 REST，仅注册连接监听等待重试', async () => {
+    vi.useFakeTimers()
+    vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+    vi.mocked(synapseFriendExtensionService.getPendingRequests).mockResolvedValue({
+      incoming: [],
+      outgoing: []
     })
 
-    const manager = await sync.ensureFriendManager(false)
+    await sync.initialize()
 
-    expect(initializeManagerExtensions).toHaveBeenCalledTimes(1)
-    expect(manager).toBe(mockManager)
-    expect(mockManager.start).toHaveBeenCalledTimes(1)
+    // 降级路径未触发：不启动 REST 轮询、不启动 manager
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(synapseFriendExtensionService.getPendingRequests).not.toHaveBeenCalled()
+    expect(mockManager.start).not.toHaveBeenCalled()
+    // 已注册连接监听，待 CONNECTED 后重试
+    expect(matrixClientService.on).toHaveBeenCalledWith('connectionState', expect.any(Function))
   })
 
-  it('懒注册后仍无访问器时返回 null 降级 REST（不抛错）', async () => {
-    const rebuiltClient = {} as unknown as MatrixClient
-    vi.mocked(matrixClientService.getClient).mockReturnValue(rebuiltClient)
-    vi.mocked(initializeManagerExtensions).mockResolvedValueOnce(undefined)
+  it('prototype 携带 getFriendManager 的 client 通过深检查恢复 manager（不依赖懒注册）', async () => {
+    const client = makePrototypeClient(() => mockManager)
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client)
 
+    await sync.initialize()
+
+    expect(mockManager.start).toHaveBeenCalledTimes(1)
     const manager = await sync.ensureFriendManager(false)
+    expect(manager).toBe(mockManager)
+  })
 
-    expect(initializeManagerExtensions).toHaveBeenCalledTimes(1)
-    expect(manager).toBeNull()
+  it('getFriendManager 工厂抛错时（client 存在）仍降级到 REST 轮询', async () => {
+    vi.useFakeTimers()
+    const client = makePrototypeClient(() => {
+      throw new Error('factory boom')
+    })
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client)
+    vi.mocked(synapseFriendExtensionService.getPendingRequests).mockResolvedValue({
+      incoming: [],
+      outgoing: []
+    })
+
+    await expect(sync.initialize()).resolves.toBeUndefined()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(synapseFriendExtensionService.getPendingRequests).toHaveBeenCalled()
+    expect(mockManager.start).not.toHaveBeenCalled()
+  })
+
+  it('getFriendManager 返回无 start 的对象时降级到 REST 轮询', async () => {
+    vi.useFakeTimers()
+    const client = makePrototypeClient(() => ({ getFriends: async () => [] }))
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client)
+    vi.mocked(synapseFriendExtensionService.getPendingRequests).mockResolvedValue({
+      incoming: [],
+      outgoing: []
+    })
+
+    await expect(sync.initialize()).resolves.toBeUndefined()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(synapseFriendExtensionService.getPendingRequests).toHaveBeenCalled()
     expect(mockManager.start).not.toHaveBeenCalled()
   })
 })
