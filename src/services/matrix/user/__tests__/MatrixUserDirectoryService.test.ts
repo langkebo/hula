@@ -82,6 +82,62 @@ describe('MatrixUserDirectoryService', () => {
     })
     expect(result[0].userId).toBe('@bob:example.com')
   })
+
+  it('listUserDirectory 委托 UserDirectoryManager.listUserDirectoryPaginated 并映射 users', async () => {
+    const listUserDirectoryPaginated = vi.fn().mockResolvedValue({
+      users: [{ user_id: '@alice:example.com', display_name: 'Alice', avatar_url: 'mxc://a' }],
+      next_batch: 'cursor-1'
+    })
+    const client = {
+      getUserDirectoryManager: () => ({ listUserDirectoryPaginated })
+    }
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client as unknown as MatrixClient)
+
+    const result = await userDirectoryService.listUserDirectory(30, 'cursor-0')
+
+    expect(listUserDirectoryPaginated).toHaveBeenCalledWith(30, 'cursor-0')
+    expect(result).toEqual({
+      users: [{ userId: '@alice:example.com', displayName: 'Alice', avatarUrl: 'mxc://a' }],
+      next_batch: 'cursor-1'
+    })
+  })
+
+  it('listUserDirectory 失败时返回空列表', async () => {
+    const client = {
+      getUserDirectoryManager: () => ({
+        listUserDirectoryPaginated: vi.fn().mockRejectedValue(new Error('boom'))
+      })
+    }
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client as unknown as MatrixClient)
+
+    expect(await userDirectoryService.listUserDirectory()).toEqual({ users: [] })
+  })
+
+  it('getUserDirectoryProfile 委托 UserDirectoryManager.getProfile 并映射 displayname', async () => {
+    const getProfile = vi.fn().mockResolvedValue({ displayname: 'Alice', avatar_url: 'mxc://a' })
+    const client = {
+      getUserDirectoryManager: () => ({ getProfile })
+    }
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client as unknown as MatrixClient)
+
+    const result = await userDirectoryService.getUserDirectoryProfile('@alice:example.com')
+
+    expect(getProfile).toHaveBeenCalledWith('@alice:example.com')
+    expect(result).toEqual({
+      userId: '@alice:example.com',
+      displayName: 'Alice',
+      avatarUrl: 'mxc://a'
+    })
+  })
+
+  it('getUserDirectoryProfile 失败时返回 null', async () => {
+    const client = {
+      getUserDirectoryManager: () => ({ getProfile: vi.fn().mockRejectedValue(new Error('boom')) })
+    }
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client as unknown as MatrixClient)
+
+    expect(await userDirectoryService.getUserDirectoryProfile('@alice:example.com')).toBeNull()
+  })
 })
 
 describe('R-15: error logging', () => {
