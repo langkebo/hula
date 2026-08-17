@@ -242,12 +242,7 @@ describe('MatrixSpaceService', () => {
       expect(result[0].space_id).toBe('!root:server')
     })
 
-    it('should return empty array when getSpaceTreePath fails and parents chain is empty', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/room/:roomId/parents`, () => {
-          return HttpResponse.json([])
-        })
-      )
+    it('should return empty array when getSpaceTreePath fails', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(
         asMatrixClient({
           getSpaceManager: () => ({ getSpaceTreePath: vi.fn().mockRejectedValue(new Error('boom')) })
