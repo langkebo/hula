@@ -258,7 +258,7 @@ export class MatrixAuthService {
     }
 
     try {
-      await authedRequestWithPath(client, 'POST', '/logout/all')
+      await client.getAccountManager().logoutAll()
     } catch (err) {
       throw normalizeSdkMatrixError(err, '全局登出失败')
     }

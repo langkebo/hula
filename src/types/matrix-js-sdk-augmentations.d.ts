@@ -215,9 +215,8 @@ declare module 'matrix-js-sdk' {
     }): Promise<IPublicRoomsResponse>
     getAccountData(eventType: string): MatrixEvent | null
     getHomeserverUrl(): string
-    getAccountManager(): {
-      submitEmailToken(sid: string, clientSecret: string, token: string): Promise<Record<string, unknown>>
-    }
+    // SDK 已上浮 getAccountManager(): AccountManager（matrix-client-extensions.d.ts），
+    // 此处不再用窄化返回类型遮蔽，否则 AccountManager.logoutAll 等成员会丢失类型。
     requestPasswordEmailToken(
       email: string,
       clientSecret: string,

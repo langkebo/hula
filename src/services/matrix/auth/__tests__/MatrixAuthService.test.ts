@@ -681,6 +681,20 @@ describe('MatrixAuthService', () => {
       })
     })
 
+    describe('logoutAll', () => {
+      it('logoutAll 委托 AccountManager.logoutAll', async () => {
+        const logoutAllMock = vi.fn().mockResolvedValue(undefined)
+        const client = {
+          getAccountManager: () => ({ logoutAll: logoutAllMock })
+        }
+        vi.mocked(matrixClientService.getClient).mockReturnValue(client as never)
+
+        await MatrixAuthService.logoutAll()
+
+        expect(logoutAllMock).toHaveBeenCalledWith()
+      })
+    })
+
     it('should show readable invalid email error from homeserver', async () => {
       const requestRegisterEmailToken = vi.fn().mockRejectedValue(new Error('sdk bootstrap failed'))
       vi.spyOn(sdk, 'createClient').mockReturnValue({
