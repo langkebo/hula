@@ -147,8 +147,8 @@ export function createPresenceHandler(deps: PresenceHandlerDeps) {
       const clientService = await getMatrixClientService()
       await clientService.waitForClientReady({ timeoutMs: 5000 })
       const presenceService = await getMatrixPresenceService()
-      await presenceService.setPresence('online')
-      logger.info('[Login] 在线状态已设置为 online')
+      // 初始 online 上报由 SessionBootstrapService.startPresencePipeline 统一负责，
+      // 这里仅同步头像/成员状态并注册监听，避免 WS 重连等触发点重复上报 online。
       await syncAvatarPresence()
       if (!unsubscribePresenceListener) {
         unsubscribePresenceListener = presenceService.onPresenceChange((presence: PresenceInfo) => {
