@@ -3,7 +3,66 @@
 
 import { select } from '@inquirer/prompts'
 import { spawn } from 'child_process'
+import fs from 'fs'
 import os from 'os'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+import { buildUpdaterConfigOverride, UPDATER_KEY_ENV } from './updater-config.js'
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+// 解析 dotenv 格式（与 Vite / scripts/verify-env.mjs 保持一致）
+function parseDotenv(body) {
+  const out = {}
+  for (const raw of body.split(/\r?\n/)) {
+    const line = raw.trim()
+    if (!line || line.startsWith('#')) continue
+    const eq = line.indexOf('=')
+    if (eq < 0) continue
+    const key = line.slice(0, eq).trim()
+    let value = line.slice(eq + 1).trim()
+    if (value.startsWith('"') && value.endsWith('"') && value.length >= 2) {
+      value = value.slice(1, -1)
+    } else if (value.startsWith("'") && value.endsWith("'") && value.length >= 2) {
+      value = value.slice(1, -1)
+    }
+    out[key] = value
+  }
+  return out
+}
+
+// 加载 .env 与 .env.local（.env.local 后加载，覆盖 .env；已存在的 process.env 变量优先）
+function loadEnvFiles() {
+  for (const file of ['.env', '.env.local']) {
+    const envPath = path.join(repoRoot, file)
+    if (!fs.existsSync(envPath)) continue
+    const vars = parseDotenv(fs.readFileSync(envPath, 'utf8'))
+    for (const [key, value] of Object.entries(vars)) {
+      if (process.env[key] === undefined) process.env[key] = value
+    }
+  }
+}
+
+// 生成 updater 的 --config 覆盖文件；无 key 时返回 null（跳过注入）
+function writeUpdaterConfigOverride() {
+  const key = process.env[UPDATER_KEY_ENV]
+  const override = buildUpdaterConfigOverride(key)
+
+  if (!override) {
+    console.warn(
+      `\n⚠️  未设置 ${UPDATER_KEY_ENV}，updater 端点将不含真实 tauriKey（不影响本地运行，更新检查会退化为 gitee 端点）。` +
+        `\n    请在 .env.local 中设置 ${UPDATER_KEY_ENV}（切勿提交到仓库）。\n`
+    )
+    return null
+  }
+
+  const configDir = path.join(repoRoot, 'src-tauri', 'target')
+  fs.mkdirSync(configDir, { recursive: true })
+  const configPath = path.join(configDir, 'updater-config.override.json')
+  fs.writeFileSync(configPath, JSON.stringify(override))
+  return configPath
+}
 
 // 检测当前平台
 function getCurrentPlatform() {
@@ -240,9 +299,14 @@ function getDebugOptions() {
 
 // 执行打包命令
 async function executeBuild(command, isDebug = false) {
+  // 若设置了 UPDATER_TAURI_KEY，注入 updater tauriKey 的 --config 覆盖
+  const updaterConfigPath = writeUpdaterConfigOverride()
+
   // 如果是调试模式，添加 --debug 参数
   const finalCommand = isDebug ? `${command} --debug` : command
-  const [cmd, ...args] = finalCommand.split(' ')
+  const [cmd, ...baseArgs] = finalCommand.split(' ')
+
+  const args = updaterConfigPath ? [...baseArgs, '--config', updaterConfigPath] : baseArgs
 
   const child = spawn(cmd, args, {
     stdio: 'inherit', // 直接继承父进程的 stdio，保留颜色输出
@@ -251,6 +315,15 @@ async function executeBuild(command, isDebug = false) {
 
   return new Promise((resolve, reject) => {
     child.on('close', (code) => {
+      // 清理临时 config 覆盖文件
+      if (updaterConfigPath && fs.existsSync(updaterConfigPath)) {
+        try {
+          fs.unlinkSync(updaterConfigPath)
+        } catch {
+          // 忽略清理失败（文件位于 gitignored 的 src-tauri/target 下）
+        }
+      }
+
       if (code === 0) {
         console.log('\n🎉 打包完成')
         resolve(code)
@@ -350,6 +423,9 @@ async function selectBundle(selectedPlatform) {
 
 async function main() {
   try {
+    // 读取 .env / .env.local，使 UPDATER_TAURI_KEY 等变量对打包脚本可见
+    loadEnvFiles()
+
     // 主循环
     while (true) {
       // 第一步：选择平台
