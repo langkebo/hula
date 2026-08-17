@@ -1,4 +1,5 @@
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
+import { Direction } from 'matrix-js-sdk'
 import { isMessageEventType, MatrixBurnDuration, MatrixEventType, MatrixFormat } from '@/common/matrixConstants'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
@@ -339,42 +340,72 @@ class MatrixEventService extends BaseMatrixService {
     let timeline = room.getLiveTimeline()
     let events = timeline.getEvents()
 
-    // SlidingSync 的 timeline_limit 较小（10-50），如果 timeline 为空或事件不足，
-    // 通过 /messages API（client.scrollback）从服务端拉取历史消息。
-    // 场景：client 重建后 room store 被清空，SlidingSync 尚未填充 timeline，
-    // 或房间长时间无活动导致 SlidingSync 未返回 timeline 事件。
+    // 首次加载或 timeline 为空时，从服务端补历史
     if (events.length === 0) {
       try {
         const client = this.getClient()
         await client.scrollback(room, Math.max(pageSize, 30))
-        // scrollback 会将历史事件插入到 timeline 中，重新获取
         timeline = room.getLiveTimeline()
         events = timeline.getEvents()
       } catch (err) {
         logger.error(`scrollback 获取历史消息失败: ${roomId}`, err)
-        // scrollback 失败时返回空结果，不阻塞 UI
         return { messages: [], isLast: true, cursor: '' }
       }
     }
 
-    const startIndex = cursor ? events.findIndex((e: MatrixEvent) => e.getId() === cursor) : 0
-    const endIndex = Math.min(startIndex + pageSize, events.length)
-    const pageEvents = events.slice(startIndex, endIndex)
+    // 旧→新有序。cursor 表示「已加载的最旧消息 id」。
+    let startIndex: number
+    let endIndex: number
+    if (!cursor) {
+      // 首次：取最新一页
+      startIndex = Math.max(0, events.length - pageSize)
+      endIndex = events.length
+    } else {
+      // loadMore：取 cursor 之前（更早）的一页
+      let cursorIndex = events.findIndex((e) => e.getId() === cursor)
+      if (cursorIndex < 0) {
+        // cursor 不在当前 timeline（SlidingSync 重排）：安全终止，避免空页死循环
+        logger.warn(`[getPagedRoomMessages] cursor 未命中，终止分页: ${roomId}`)
+        return { messages: [], isLast: true, cursor }
+      }
 
+      // 本地 timeline 已到最旧，但服务端仍有更早历史（pagination token 存在）：
+      // 先 scrollback 拉取更早事件，避免 isLast 过早为 true 导致漏拉历史。
+      const startIndexBeforeScroll = Math.max(0, cursorIndex - pageSize)
+      if (startIndexBeforeScroll === 0 && timeline.getPaginationToken(Direction.Backward)) {
+        try {
+          const client = this.getClient()
+          await client.scrollback(room, pageSize)
+          timeline = room.getLiveTimeline()
+          events = timeline.getEvents()
+          cursorIndex = events.findIndex((e) => e.getId() === cursor)
+          if (cursorIndex < 0) {
+            logger.warn(`[getPagedRoomMessages] cursor 未命中，终止分页: ${roomId}`)
+            return { messages: [], isLast: true, cursor }
+          }
+        } catch (err) {
+          logger.error(`scrollback 获取更早历史消息失败: ${roomId}`, err)
+        }
+      }
+
+      startIndex = Math.max(0, cursorIndex - pageSize)
+      endIndex = cursorIndex
+    }
+
+    const pageEvents = events.slice(startIndex, endIndex)
     const messages: MessageType[] = []
     for (const event of pageEvents) {
       if (isMessageEventType(event.getType())) {
         const msg = this.convertEventToMessage(event, room)
-        if (msg) {
-          messages.push(msg)
-        }
+        if (msg) messages.push(msg)
       }
     }
 
+    // isLast 只基于「是否已到最旧」；cursor 始终指向本页最旧一条
     return {
       messages,
-      isLast: endIndex >= events.length,
-      cursor: pageEvents[pageEvents.length - 1]?.getId() || ''
+      isLast: startIndex <= 0,
+      cursor: pageEvents[0]?.getId() || cursor
     }
   }
 }
