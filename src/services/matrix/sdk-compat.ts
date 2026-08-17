@@ -14,7 +14,17 @@
 // package's main entry. Routing them here keeps consumer services off the
 // bare `matrix-js-sdk/@types/*` subpath.
 
+import type { MatrixClient } from 'matrix-js-sdk'
+
 export type { Space, SpaceChild, SpaceManager, SpaceMember } from 'matrix-js-sdk/space'
+
+// WidgetsManager (and its response types) are NOT exposed as a public subpath
+// export by the SDK fork — only `matrix-js-sdk/space`, `matrix-js-sdk/admin`, etc.
+// are. The type is reachable through the augmented `MatrixClient.getWidgetsManager()`
+// getter, so we derive it here to keep consumers off the internal `lib/widgets` path
+// and give CI a single boundary to guard.
+export type WidgetsManager = ReturnType<MatrixClient['getWidgetsManager']>
+export type WidgetMessageResponse = ReturnType<WidgetsManager['sendWidgetMessage']>
 
 let compatInitialized = false
 
