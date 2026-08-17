@@ -390,24 +390,7 @@ class SpaceService extends BaseMatrixService {
       }
       return normalizeSpaceTreePathItems(result.path ?? [])
     } catch (err) {
-      logger.info(`[Space] tree_path 失败，回退到 parents 链路: ${spaceId}, ${err}`)
-      return await this.getSpaceTreePathViaParents(spaceId)
-    }
-  }
-
-  private async getSpaceTreePathViaParents(spaceId: string): Promise<Array<{ space_id: string; name: string }>> {
-    try {
-      const parentSpaces = await this.getRoomParentSpaces(spaceId)
-      if (!parentSpaces.length) return []
-      const directParent = parentSpaces[0]
-      const parentPath = await this.getSpaceTreePathViaParents(directParent.spaceId)
-      return normalizeSpaceTreePathItems([
-        ...parentPath,
-        { space_id: directParent.spaceId, name: directParent.name || '' },
-        { space_id: spaceId, name: (await this.getSpace(spaceId))?.name || '' }
-      ])
-    } catch (err) {
-      logger.error(`[Space] 通过父空间回退树路径失败: ${spaceId}, ${err}`)
+      logger.error(`[Space] 获取空间树路径失败: ${spaceId}, ${err}`)
       return []
     }
   }
