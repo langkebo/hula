@@ -155,6 +155,9 @@ async function processGenericPathFile(
     const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(targetRoomId)
 
     if (isEncrypted) {
+      // file.path 可能是两种来源，均可通过收窄后的 fs:read-files scope：
+      //  1. dialog open() 选中的原始路径 —— Tauri v2 会自动把选中文件加入 fs scope；
+      //  2. 拖拽路径 —— 已由 FileUtil.copyDroppedFilesToAppScope 复制到 $APPDATA/userData/dropped。
       const fileData = await readFile(file.path)
       const fileBlob = new File([fileData], file.name, { type: file.type })
       const result = await matrixMediaService.uploadEncryptedFile(fileBlob, _progressCallback)

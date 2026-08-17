@@ -79,7 +79,10 @@ export const useAvatarUpload = (options: AvatarUploadOptions = {}) => {
       const filePath = typeof selected === 'string' ? selected : (selected as string)
       logger.info('[AVATAR_DEBUG] Tauri file selected:', filePath)
 
-      // 读取文件内容并转为 data URL（data URL 内嵌，不依赖 blob: 机制，Tauri webview 兼容性更好）
+      // 读取文件内容并转为 data URL（data URL 内嵌，不依赖 blob: 机制，Tauri webview 兼容性更好）。
+      // filePath 来自 plugin-dialog 的 open()：Tauri v2 会自动把选中的文件加入 fs scope
+      // （见 tauri-plugin-dialog commands.rs 中 `s.allow_file(&path)`），因此即使文件位于
+      // $PICTURES 等 $APPDATA 之外，readFile 也能通过收窄后的 fs:read-files scope。
       const bytes = await readFile(filePath)
       const mime = filePath.toLowerCase().endsWith('.png')
         ? 'image/png'

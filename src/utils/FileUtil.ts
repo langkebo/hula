@@ -73,10 +73,15 @@ class FileUtil {
   }
 
   /**
-   * 将选中的文件路径列表和文件元数据列表转换为路径文件对象列表
+   * 将选中的文件路径列表和文件元数据列表转换为路径文件对象列表。
    * @param files 选中的文件路径列表
    * @param filesMeta 选中的文件元数据列表
    * @returns 路径文件对象列表
+   *
+   * 注意：`openAndCopyFile` 传入的 `files` 是 plugin-dialog `open()` 返回的原始路径。
+   * Tauri v2 的 `open()` 会自动把选中文件加入 fs scope，因此后续 `readFile(file.path)` /
+   * `stat(file.path)` 即使文件位于 $HOME/$PICTURES 等 $APPDATA 之外也能通过收窄后的 scope；
+   * 无需在此处把 dialog 路径再复制到应用作用域目录（拖拽路径才需要走 copyDroppedFilesToAppScope）。
    */
   static async map2PathUploadFile(files: string[], filesMeta: FilesMeta): Promise<PathUploadFile[]> {
     return await Promise.all(
