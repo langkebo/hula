@@ -66,6 +66,7 @@ vi.mock('@/services/matrix/room/MatrixDirectMessageService', () => ({
     initialize: vi.fn(),
     stop: vi.fn(),
     getDmRoomInfos: vi.fn(),
+    getDmForUser: vi.fn(),
     createDm: vi.fn()
   }
 }))

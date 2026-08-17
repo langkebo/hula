@@ -37,6 +37,7 @@ import {
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { naiveColorsFor, withAlpha, type ThemeName } from '@/styles/naiveTokenSource'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
@@ -49,24 +50,6 @@ const { notificMax, messageMax } = defineProps<{
 defineOptions({ name: 'NaiveProvider' })
 const settingStore = useSettingStore()
 const { locale } = useI18n()
-
-/**
- * 品牌色具体色值（供 Naive UI 颜色运算使用）。
- * Naive UI 内部使用 seemly/rgba() 对颜色做运算（如计算 hover/pressed 状态），
- * 无法解析 CSS 变量引用，必须传入具体色值。
- * 注意：暗色模式下 primary 色值不变，danger 变为 #ff7875（在 darkThemeOverrides 中覆盖）。
- */
-const primaryColors = {
-  500: '#13987f',
-  400: '#1ab292',
-  600: '#0f7a66',
-  200: 'rgba(19, 152, 127, 0.2)',
-  100: 'rgba(19, 152, 127, 0.1)'
-}
-
-const dangerColors = {
-  500: '#ff4d4f'
-}
 
 type NaiveLocalePack = {
   locale: NLocale
@@ -149,129 +132,141 @@ onUnmounted(() => {
   detachPrefersListener()
 })
 
-const commonTheme: GlobalThemeOverrides = {
-  Badge: {
-    color: dangerColors[500]
-  },
-  Input: {
-    borderRadius: '10px',
-    borderHover: '0',
-    borderDisabled: '0',
-    borderFocus: '0',
-    boxShadowFocus: '0'
-  },
-  Checkbox: {
-    colorChecked: primaryColors[500],
-    borderChecked: `1px solid ${primaryColors[500]}`,
-    borderFocus: `1px solid ${primaryColors[500]}`,
-    boxShadowFocus: `0 0 0 2px ${primaryColors[200]}`,
-    checkMarkColor: 'var(--tjg-text-inverse)'
-  },
-  Tag: {
-    borderRadius: '4px'
-  },
-  Button: {
-    borderRadiusMedium: '10px',
-    borderRadiusSmall: '6px',
-    colorPrimary: primaryColors[500],
-    colorHoverPrimary: primaryColors[400],
-    colorPressedPrimary: primaryColors[600],
-    colorFocusPrimary: primaryColors[400],
-    colorDisabledPrimary: primaryColors[200],
-    // 显式提供 secondary 颜色，防止 Naive UI 尝试使用 seemly/rgba 解析 CSS 变量
-    colorSecondaryPrimary: primaryColors[100],
-    colorSecondaryHoverPrimary: 'rgba(19, 152, 127, 0.18)',
-    colorSecondaryPressedPrimary: 'rgba(19, 152, 127, 0.24)',
-    textColorTextPrimary: primaryColors[500],
-    textColorGhostPrimary: primaryColors[500]
-  },
-  Tabs: {
-    tabTextColorSegment: 'var(--tjg-text-secondary)',
-    tabPaddingMediumSegment: '4px',
-    tabTextColorActiveLine: primaryColors[500],
-    tabTextColorHoverLine: primaryColors[500],
-    tabTextColorActiveBar: primaryColors[500],
-    tabTextColorHoverBar: primaryColors[500],
-    barColor: primaryColors[500]
-  },
-  Popover: {
-    padding: '5px',
-    borderRadius: '8px'
-  },
-  Dropdown: {
-    borderRadius: '8px'
-  },
-  Avatar: {
-    border: '1px solid var(--tjg-surface-panel)'
-  },
-  Switch: {
-    railColorActive: primaryColors[500],
-    loadingColor: primaryColors[500],
-    boxShadowFocus: `0 0 0 2px ${primaryColors[200]}`
-  },
-  Radio: {
-    dotColorActive: primaryColors[500],
-    buttonBorderColorActive: primaryColors[500],
-    buttonTextColorActive: primaryColors[500],
-    boxShadowFocus: `0 0 0 2px ${primaryColors[200]}`
-  },
-  Message: {
-    iconColorSuccess: primaryColors[500],
-    iconColorLoading: primaryColors[500],
-    loadingColor: primaryColors[500],
-    borderRadius: '8px'
-  },
-  Slider: {
-    handleSize: '12px',
-    fontSize: '10px',
-    markFontSize: '8px',
-    fillColor: primaryColors[500],
-    fillColorHover: primaryColors[500],
-    indicatorBorderRadius: '8px'
-  },
-  Notification: {
-    borderRadius: '8px'
-  },
-  Steps: {
-    indicatorBorderColorProcess: primaryColors[500],
-    indicatorColorProcess: primaryColors[500],
-    indicatorTextColorProcess: 'var(--tjg-text-inverse)',
-    stepHeaderTextColorProcess: primaryColors[500],
-    indicatorIconColorProcess: 'var(--tjg-text-inverse)'
-  },
-  LoadingBar: {
-    colorLoading: primaryColors[500]
+/**
+ * Naive UI 内部使用 seemely/rgba() 对颜色做运算（hover/pressed 派生），
+ * 无法解析 CSS 变量引用，具体色值经 naiveTokenSource 从 design-tokens.css
+ * 镜像取得（唯一 token 源，同步由守护测试锁定）；
+ * secondary hover/pressed 透明度（0.18/0.24）由品牌色派生。
+ */
+const createThemeOverrides = (theme: ThemeName): GlobalThemeOverrides => {
+  const c = naiveColorsFor(theme)
+  const commonTheme: GlobalThemeOverrides = {
+    Badge: {
+      color: c.danger500
+    },
+    Input: {
+      borderRadius: '10px',
+      borderHover: '0',
+      borderDisabled: '0',
+      borderFocus: '0',
+      boxShadowFocus: '0'
+    },
+    Checkbox: {
+      colorChecked: c.primary500,
+      borderChecked: `1px solid ${c.primary500}`,
+      borderFocus: `1px solid ${c.primary500}`,
+      boxShadowFocus: `0 0 0 2px ${c.primary200}`,
+      checkMarkColor: 'var(--tjg-text-inverse)'
+    },
+    Tag: {
+      borderRadius: '4px'
+    },
+    Button: {
+      borderRadiusMedium: '10px',
+      borderRadiusSmall: '6px',
+      colorPrimary: c.primary500,
+      colorHoverPrimary: c.primary400,
+      colorPressedPrimary: c.primary600,
+      colorFocusPrimary: c.primary400,
+      colorDisabledPrimary: c.primary200,
+      // 显式提供 secondary 颜色，防止 Naive UI 尝试使用 seemly/rgba 解析 CSS 变量
+      colorSecondaryPrimary: c.primary100,
+      colorSecondaryHoverPrimary: withAlpha(c.primary500, 0.18),
+      colorSecondaryPressedPrimary: withAlpha(c.primary500, 0.24),
+      textColorTextPrimary: c.primary500,
+      textColorGhostPrimary: c.primary500
+    },
+    Tabs: {
+      tabTextColorSegment: 'var(--tjg-text-secondary)',
+      tabPaddingMediumSegment: '4px',
+      tabTextColorActiveLine: c.primary500,
+      tabTextColorHoverLine: c.primary500,
+      tabTextColorActiveBar: c.primary500,
+      tabTextColorHoverBar: c.primary500,
+      barColor: c.primary500
+    },
+    Popover: {
+      padding: '5px',
+      borderRadius: '8px'
+    },
+    Dropdown: {
+      borderRadius: '8px'
+    },
+    Avatar: {
+      border: '1px solid var(--tjg-surface-panel)'
+    },
+    Switch: {
+      railColorActive: c.primary500,
+      loadingColor: c.primary500,
+      boxShadowFocus: `0 0 0 2px ${c.primary200}`
+    },
+    Radio: {
+      dotColorActive: c.primary500,
+      buttonBorderColorActive: c.primary500,
+      buttonTextColorActive: c.primary500,
+      boxShadowFocus: `0 0 0 2px ${c.primary200}`
+    },
+    Message: {
+      iconColorSuccess: c.primary500,
+      iconColorLoading: c.primary500,
+      loadingColor: c.primary500,
+      borderRadius: '8px'
+    },
+    Slider: {
+      handleSize: '12px',
+      fontSize: '10px',
+      markFontSize: '8px',
+      fillColor: c.primary500,
+      fillColorHover: c.primary500,
+      indicatorBorderRadius: '8px'
+    },
+    Notification: {
+      borderRadius: '8px'
+    },
+    Steps: {
+      indicatorBorderColorProcess: c.primary500,
+      indicatorColorProcess: c.primary500,
+      indicatorTextColorProcess: 'var(--tjg-text-inverse)',
+      stepHeaderTextColorProcess: c.primary500,
+      indicatorIconColorProcess: 'var(--tjg-text-inverse)'
+    },
+    LoadingBar: {
+      colorLoading: c.primary500
+    }
+  }
+
+  if (theme === 'dark') {
+    return {
+      ...commonTheme,
+      Scrollbar: {
+        color: 'color-mix(in srgb, var(--tjg-text-inverse) 20%, transparent)',
+        colorHover: 'color-mix(in srgb, var(--tjg-text-inverse) 30%, transparent)'
+      },
+      Skeleton: {
+        color: 'color-mix(in srgb, var(--tjg-border-strong) 40%, transparent)',
+        colorEnd: 'color-mix(in srgb, var(--tjg-border-default) 15%, transparent)'
+      }
+    }
+  }
+
+  return {
+    ...commonTheme,
+    Scrollbar: {
+      color: 'var(--tjg-border-strong)',
+      colorHover: 'var(--tjg-border-default)'
+    },
+    Skeleton: {
+      color: 'color-mix(in srgb, var(--tjg-border-strong) 60%, transparent)',
+      colorEnd: 'color-mix(in srgb, var(--tjg-border-default) 20%, transparent)'
+    }
   }
 }
 
 /** 浅色模式的主题颜色 */
-const lightThemeOverrides: GlobalThemeOverrides = {
-  ...commonTheme,
-  Scrollbar: {
-    color: 'var(--tjg-border-strong)',
-    colorHover: 'var(--tjg-border-default)'
-  },
-  Skeleton: {
-    color: 'color-mix(in srgb, var(--tjg-border-strong) 60%, transparent)',
-    colorEnd: 'color-mix(in srgb, var(--tjg-border-default) 20%, transparent)'
-  }
-}
+const lightThemeOverrides = createThemeOverrides('light')
 
 /** 深色模式的主题颜色 */
-const darkThemeOverrides: GlobalThemeOverrides = {
-  ...commonTheme,
-  Badge: {
-    color: '#ff7875'
-  },
-  Scrollbar: {
-    color: 'color-mix(in srgb, var(--tjg-text-inverse) 20%, transparent)',
-    colorHover: 'color-mix(in srgb, var(--tjg-text-inverse) 30%, transparent)'
-  },
-  Skeleton: {
-    color: 'color-mix(in srgb, var(--tjg-border-strong) 40%, transparent)',
-    colorEnd: 'color-mix(in srgb, var(--tjg-border-default) 15%, transparent)'
-  }
-}
+const darkThemeOverrides = createThemeOverrides('dark')
 
 const createMutedMessageApi = (): MessageApi =>
   ({
@@ -378,10 +373,11 @@ const NaiveProviderContent = defineComponent({
  * reduced-motion 用户由 design-tokens.css 全局 0.01ms 覆盖自动禁用运动感。
  * ==================================================================== */
 
-/* 暗色主题：暗底 + 1px 描边（#1a1a1a / rgba(255,255,255,0.1) 来自原型 verbatim） */
+/* 暗色主题：暗底 + 1px 描边（原型 .toast 的 #1a1a1a / rgba(255,255,255,0.1) 已 token 化：
+   --tjg-surface-dark 与 --tjg-text-inverse 10% 派生，视觉等值） */
 html[data-theme='dark'] .n-message {
-  background: #1a1a1a; /* 对齐原型 .toast background */
-  border: 1px solid rgba(255, 255, 255, 0.1); /* 对齐原型 .toast border */
+  background: var(--tjg-surface-dark);
+  border: 1px solid color-mix(in srgb, var(--tjg-text-inverse) 10%, transparent);
 }
 
 /* 语义色左 3px 边条 — 浅色主题（Naive UI 默认浅底）下叠加。
