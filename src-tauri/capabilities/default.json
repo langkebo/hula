@@ -118,7 +118,10 @@
           "path": "$APPDATA/**"
         },
         {
-          "path": "$LOCALAPPDATA/**"
+          "path": "$APPCACHE/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
         },
         {
           "path": "$DOWNLOAD/**"
@@ -135,7 +138,7 @@
           "path": "$APPDATA/**"
         },
         {
-          "path": "$LOCALAPPDATA/**"
+          "path": "$APPLOCALDATA/**"
         },
         {
           "path": "$DOWNLOAD/**"
@@ -152,7 +155,7 @@
           "path": "$APPDATA/**"
         },
         {
-          "path": "$LOCALAPPDATA/**"
+          "path": "$APPLOCALDATA/**"
         },
         {
           "path": "$DOWNLOAD/**"
@@ -169,25 +172,16 @@
           "path": "$APPDATA/**"
         },
         {
-          "path": "$LOCALAPPDATA/**"
+          "path": "$APPCACHE/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
         },
         {
           "path": "$DOWNLOAD/**"
         },
         {
           "path": "$RESOURCE/**"
-        },
-        {
-          "path": "$HOME/**"
-        },
-        {
-          "path": "$DESKTOP/**"
-        },
-        {
-          "path": "$PICTURES/**"
-        },
-        {
-          "path": "$DOCUMENTS/**"
         }
       ]
     },

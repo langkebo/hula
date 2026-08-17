@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { MATRIX_PATHS } from '@/services/matrix/paths'
-
 const getRtcTransportsMock = vi.fn()
 
 vi.mock('@/services/matrix/MatrixHttpClient', () => ({

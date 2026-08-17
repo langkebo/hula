@@ -189,7 +189,7 @@ pnpm commit  # fix(messaging): 修正消息分页方向与 isLast/cursor 语义
 **Files:**
 - Modify: `src-tauri/tauri.conf.json:76`、`.env.local`（不提交）
 
-- [ ] **Step 1:** 将 `endpoints` 里的 `tauriKey=geShj8UB7zd1DyrM_YFNdg` 移到环境变量（Tauri 配置支持 `{{ env.X }}` 或构建脚本注入），本地值放 `.env.local`。
+- [ ] **Step 1:** 将 `endpoints` 里的 `tauriKey=<redacted>` 移到环境变量（Tauri 配置支持 `{{ env.X }}` 或构建脚本注入），本地值放 `.env.local`。
 - [ ] **Step 2:** 提交：`fix(security): updater tauriKey 移出仓库`。
 
 ---

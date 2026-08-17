@@ -85,15 +85,7 @@ export const baseConfig: UserConfig = {
     modulePreload: {
       polyfill: true,
       resolveDependencies: (_filename, deps) => {
-        const heavyChunks = [
-          'shiki-core',
-          'shiki-themes',
-          'shiki-langs',
-          'shiki-engine',
-          'three',
-          'chart-vendor',
-          'vue-office'
-        ]
+        const heavyChunks = ['shiki-core', 'shiki-themes', 'shiki-langs', 'shiki-engine', 'three', 'vue-office']
         return deps.filter((dep) => {
           if (heavyChunks.some((chunk) => dep.includes(chunk))) {
             return false
@@ -164,9 +156,7 @@ export const baseConfig: UserConfig = {
       '@vue-office/pdf',
       '@vue-office/pptx',
       'shiki',
-      'markstream-vue',
-      'tlbs-map-vue',
-      'echarts'
+      'markstream-vue'
     ]
   },
   clearScreen: false,

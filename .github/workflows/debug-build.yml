@@ -85,6 +85,45 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      # 生成覆盖配置（注入 UPDATER_TAURI_KEY 与 homeserver CSP；未设置时生成空配置，不注入）
+      - name: Generate debug tauri config (inject updater key + homeserver CSP)
+        shell: bash
+        env:
+          UPDATER_TAURI_KEY: ${{ secrets.UPDATER_TAURI_KEY }}
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const { buildUpdaterConfigOverride, buildCspConfigOverride, HOMESERVER_URL_ENV } = await import("./scripts/updater-config.js");
+            function stripQuotes(v) {
+              if (v.length >= 2) {
+                const first = v[0];
+                const last = v[v.length - 1];
+                if ((first === "\x22" && last === "\x22") || (first === "\x27" && last === "\x27")) return v.slice(1, -1);
+              }
+              return v;
+            }
+            function envFromFile(file) {
+              const out = {};
+              if (fs.existsSync(file)) for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+                const t = line.trim();
+                if (!t || t.startsWith("#")) continue;
+                const i = t.indexOf("=");
+                if (i < 0) continue;
+                out[t.slice(0, i).trim()] = stripQuotes(t.slice(i + 1).trim());
+              }
+              return out;
+            }
+            const fileEnv = { ...envFromFile(".env"), ...envFromFile(".env.local") };
+            const homeserver = process.env[HOMESERVER_URL_ENV] ?? fileEnv[HOMESERVER_URL_ENV];
+            const config = {};
+            const updater = buildUpdaterConfigOverride(process.env.UPDATER_TAURI_KEY);
+            if (updater) Object.assign(config, updater);
+            const baseConf = JSON.parse(fs.readFileSync("src-tauri/tauri.conf.json", "utf8"));
+            const cspOverride = buildCspConfigOverride(homeserver, { csp: baseConf?.app?.security?.csp });
+            if (cspOverride) Object.assign(config, cspOverride);
+            fs.writeFileSync("debug-tauri-config.json", JSON.stringify(config, null, 2) + "\n");
+          '
+
       # 只构建不发布
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -96,3 +135,4 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
         with:
           releaseId: "debug-build"
+          args: --config debug-tauri-config.json

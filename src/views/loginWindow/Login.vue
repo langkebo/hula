@@ -67,6 +67,7 @@ import { useWindow } from '@/composables/common/useWindow'
 import router from '@/router'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
 import AutoLoginForm from './AutoLoginForm.vue'
@@ -121,7 +122,7 @@ onBeforeMount(async () => {
 onMounted(async () => {
   await mount()
   // 显式设置窗口尺寸为 420x580（按原型 TJG-prototype.html），覆盖 tauri-plugin-window-state 恢复的旧尺寸
-  if (isDesktop()) {
+  if (isDesktop() && hasTauriRuntime()) {
     try {
       const win = getCurrentWindow()
       await win.setSize(new LogicalSize(420, 580))

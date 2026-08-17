@@ -8,7 +8,7 @@ import { AdminReportService } from '../ReportService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const server = setupMswServer(
+setupMswServer(
   http.post(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/report`, () => {
     return HttpResponse.json({ report_id: 'rep-1' })
   }),

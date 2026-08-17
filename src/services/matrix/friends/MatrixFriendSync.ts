@@ -17,6 +17,17 @@ import {
 const logger = createLogger('MatrixFriendSync')
 
 /**
+ * FriendManager 获取结果（区分「客户端尚未创建」与「扩展真实缺失」）：
+ * - no-client：client 尚未创建（未登录 / 身份变更重建窗口），属瞬时态，不应判为降级。
+ * - missing：client 存在但 getFriendManager() 返回无效对象/抛错，属真实降级，回退 REST。
+ * - ready：manager 可用。
+ */
+type FriendManagerResolution =
+  | { status: 'no-client' }
+  | { status: 'missing' }
+  | { status: 'ready'; manager: FriendManagerCompat }
+
+/**
  * 承载好友同步与事件相关逻辑：FriendManager 生命周期、轮询、事件监听、同步状态。
  * 通过构造函数注入 emit 回调，与外层服务的事件系统解耦。
  */
@@ -48,18 +59,27 @@ export class MatrixFriendSync {
    */
   async initialize(): Promise<void> {
     try {
-      const manager = await this.ensureFriendManager(false)
-      if (!manager) {
-        if (!this.hasLoggedMissingFriendManager) {
-          this.hasLoggedMissingFriendManager = true
-          logger.info('[MatrixFriend] FriendManager 未在客户端上找到，已降级到好友 REST 接口')
-        }
-        // 即使 FriendManager 不可用，也启动轮询（使用 REST API）
-        this.startPolling()
-      } else {
-        this.hasLoggedMissingFriendManager = false
-        logger.info('[MatrixFriend] FriendService 初始化完成')
+      const resolution = this.syncFriendManager()
+
+      // 客户端尚未创建（未登录 / 身份变更重建窗口）：FriendManager 尚不可访问。
+      // 这不是「扩展缺失」的真实降级，不打印误导性的「已降级到 REST」日志；
+      // 只注册连接监听，待 CONNECTED 后由 handleClientReady 重新获取 manager。
+      if (resolution.status === 'no-client') {
+        logger.info('[MatrixFriend] 客户端尚未就绪，暂缓 FriendManager 初始化（待连接后自动重试）')
+        this.registerConnectionStateListener()
+        return
       }
+
+      if (resolution.status === 'missing') {
+        this.handleMissingFriendManager()
+        this.registerConnectionStateListener()
+        return
+      }
+
+      // ready：启动 manager 并进入 SDK 同步路径
+      this.hasLoggedMissingFriendManager = false
+      await this.ensureFriendManagerStarted(resolution.manager)
+      logger.info('[MatrixFriend] FriendService 初始化完成')
       // 始终注册连接状态监听，处理客户端重建后 FriendManager 丢失场景
       this.registerConnectionStateListener()
     } catch (err) {
@@ -68,9 +88,28 @@ export class MatrixFriendSync {
     }
   }
 
+  /**
+   * FriendManager 真实缺失（client 存在但扩展不可用）时的统一降级处理：
+   * 记录「已降级到好友 REST 接口」并启动 REST 轮询（幂等，由 hasLoggedMissingFriendManager 门控）。
+   * initialize() 与 handleClientReady() 共用，确保两条路径的降级行为一致。
+   */
+  private handleMissingFriendManager(): void {
+    if (!this.hasLoggedMissingFriendManager) {
+      this.hasLoggedMissingFriendManager = true
+      logger.info('[MatrixFriend] FriendManager 未在客户端上找到，已降级到好友 REST 接口')
+    }
+    // 即使 FriendManager 不可用，也启动轮询（使用 REST API）
+    this.startPolling()
+  }
+
   private getFriendManager(client: MatrixClient): FriendManagerCompat | null {
-    // 优先使用 SDK 注册的 getFriendManager() 方法
     const clientWithMethods = client as unknown as Record<string, unknown>
+
+    // SDK 通过 initializeManagerExtensions() 把 getFriendManager 挂到
+    // MatrixClient.prototype 上（幂等，且在 createClient 之前已 await 完成），
+    // 因此任意 client 实例都天然继承该访问器——「client 重建后访问器丢失」不是真实状态。
+    // 这里做深检查：真实调用 getFriendManager() 并校验返回对象具备 start，
+    // 避免访问器存在但工厂返回无效对象/抛错时静默失败。
     if (typeof clientWithMethods.getFriendManager === 'function') {
       try {
         const manager = clientWithMethods.getFriendManager()
@@ -90,10 +129,10 @@ export class MatrixFriendSync {
       : null
   }
 
-  private syncFriendManager(): FriendManagerCompat | null {
+  private syncFriendManager(): FriendManagerResolution {
     const client = matrixClientService.getClient()
     if (!client) {
-      return null
+      return { status: 'no-client' }
     }
 
     // 客户端变更检测：当 observedClient 与当前 client 不同时，
@@ -108,7 +147,7 @@ export class MatrixFriendSync {
 
     const manager = this.getFriendManager(client)
     if (!manager) {
-      return null
+      return { status: 'missing' }
     }
 
     if (this.friendManager !== manager) {
@@ -128,7 +167,7 @@ export class MatrixFriendSync {
       this.setupEventListeners()
     }
 
-    return this.friendManager
+    return { status: 'ready', manager: this.friendManager }
   }
 
   /** 安全清理旧 FriendManager（stop/removeAllListeners 可能抛错） */
@@ -147,22 +186,25 @@ export class MatrixFriendSync {
   /** 确保好友管理器已初始化
    */
   async ensureFriendManager(throwOnMissing = true): Promise<FriendManagerCompat | null> {
-    const manager = this.syncFriendManager()
-    if (!manager) {
+    const resolution = this.syncFriendManager()
+    if (resolution.status !== 'ready') {
       if (throwOnMissing) {
         throw new Error(useI18nGlobal().t('matrix_error.friends.manager_not_initialized'))
       }
       return null
     }
 
-    if (!this.managerStarted) {
-      await manager.start()
-      this.managerStarted = true
-      await this.updateSyncState()
-      this.startPolling()
-    }
+    await this.ensureFriendManagerStarted(resolution.manager)
+    return resolution.manager
+  }
 
-    return manager
+  /** 启动 manager 并触发首轮同步状态更新 + 启动轮询（幂等，由 managerStarted 门控） */
+  private async ensureFriendManagerStarted(manager: FriendManagerCompat): Promise<void> {
+    if (this.managerStarted) return
+    await manager.start()
+    this.managerStarted = true
+    await this.updateSyncState()
+    this.startPolling()
   }
 
   /** 获取好友管理器（不存在则抛异常）
@@ -370,12 +412,24 @@ export class MatrixFriendSync {
 
     this.isRetrying = true
     try {
-      const manager = await this.ensureFriendManager(false)
-      if (manager) {
-        this.hasLoggedMissingFriendManager = false
-        this.emit('sync', this.syncState)
-        logger.info('[MatrixFriend] 客户端就绪后 FriendManager 已恢复')
+      const resolution = this.syncFriendManager()
+
+      // 连接事件竞态：client 此刻仍未就绪，继续等待下次 CONNECTED
+      if (resolution.status === 'no-client') {
+        return
       }
+
+      // 扩展真实缺失：与 initialize() 一致，warn + 降级 REST 轮询
+      if (resolution.status === 'missing') {
+        this.handleMissingFriendManager()
+        return
+      }
+
+      // ready：manager 可用，恢复 SDK 同步路径
+      await this.ensureFriendManagerStarted(resolution.manager)
+      this.hasLoggedMissingFriendManager = false
+      this.emit('sync', this.syncState)
+      logger.info('[MatrixFriend] 客户端就绪后 FriendManager 已恢复')
     } catch (err) {
       logger.warn(`[MatrixFriend] 客户端就绪后重试获取 FriendManager 失败: ${err}`)
     } finally {

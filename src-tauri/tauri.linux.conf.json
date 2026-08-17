@@ -96,7 +96,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' tauri: asset: https://asset.localhost http://asset.localhost http://localhost:6130; img-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https:; media-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https: mediastream:; connect-src 'self' ipc: https: wss: ws://localhost:6130 tauri: https://asset.localhost http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval' http://localhost:6130; font-src 'self' data: https://at.alicdn.com; worker-src 'self' blob:; frame-src 'self' https:;"
+      "csp": "default-src 'self' tauri: asset: https://asset.localhost http://asset.localhost; img-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https:; media-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https: mediastream:; connect-src 'self' ipc: tauri: https://asset.localhost http://asset.localhost https://matrix.test wss://matrix.test; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; font-src 'self' data: https://at.alicdn.com; worker-src 'self' blob:; frame-src 'self' https:;",
+      "devCsp": "default-src 'self' tauri: asset: https://asset.localhost http://asset.localhost http://localhost:6130; img-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https:; media-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https: mediastream:; connect-src 'self' ipc: tauri: https://asset.localhost http://asset.localhost https://matrix.test wss://matrix.test http://localhost:6130 ws://localhost:6130; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval' http://localhost:6130; font-src 'self' data: https://at.alicdn.com; worker-src 'self' blob:; frame-src 'self' https:;"
     },
     "macOSPrivateApi": true
   }

@@ -24,8 +24,7 @@ const manager = {
   getStats: vi.fn()
 }
 
-const makeClient = () =>
-  ({ getBackgroundUpdateManager: () => manager }) as unknown as MatrixClient
+const makeClient = () => ({ getBackgroundUpdateManager: () => manager }) as unknown as MatrixClient
 
 const makeService = () => {
   const client = makeClient()
