@@ -67,7 +67,7 @@ interface WidgetsManagerLike {
   getWidgetSession(sessionId: string): Promise<SessionApiData>
   terminateWidgetSession(sessionId: string): Promise<void>
   getWidgetCapabilities?(roomId: string, widgetId: string): Promise<WidgetCapabilitiesResponse>
-  setWidgetCapabilities?(roomId: string, widgetId: string, capabilities: string[]): Promise<WidgetCapabilitiesResponse>
+  updateWidgetCapabilities?(roomId: string, widgetId: string, body: { capabilities: string[] }): Promise<WidgetCapabilitiesResponse>
   sendWidgetMessage?(
     roomId: string,
     widgetId: string,
@@ -473,9 +473,9 @@ class MatrixWidgetService {
     throwOnError = true
   ): Promise<WidgetCapabilitiesResponse | null> {
     const manager = this.getManager()
-    if (manager && typeof manager.setWidgetCapabilities === 'function') {
+    if (manager && typeof manager.updateWidgetCapabilities === 'function') {
       try {
-        return await manager.setWidgetCapabilities(roomId, widgetId, capabilities)
+        return await manager.updateWidgetCapabilities(roomId, widgetId, { capabilities })
       } catch (err) {
         logger.error(`[MatrixWidgetService] 设置Widget能力失败: ${widgetId} ${err}`)
         if (throwOnError) throw err
