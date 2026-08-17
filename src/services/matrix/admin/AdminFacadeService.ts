@@ -3,7 +3,6 @@ import { TauriCommand } from '@/enums'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
-import { MATRIX_PATHS } from '../paths'
 import { AdminFacadeOpsMethods } from './AdminFacadeOpsMethods'
 import { AdminModerationService } from './AdminModerationService'
 import type {
@@ -138,17 +137,11 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
         return this.cachedAdminStatus
       }
 
-      // 浏览器 dev 模式（无 Tauri runtime）：直接走 HTTP admin API 验证
+      // 浏览器 dev 模式（无 Tauri runtime）：走 AdminManager.getUser（v2）验证
       if (!hasTauriRuntime()) {
         try {
-          const userInfo = await client.http.authedRequest(
-            'GET',
-            `/users/${encodeURIComponent(userId)}`,
-            undefined,
-            undefined,
-            { prefix: MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE_V2 }
-          )
-          const isAdmin = Boolean((userInfo as { admin?: boolean }).admin)
+          const userInfo = await this.getClient().getAdminManager().getUser(userId)
+          const isAdmin = Boolean(userInfo?.admin)
           this.cachedAdminStatus = isAdmin
           this.adminVerifiedAt = now
           if (!isAdmin) {
@@ -375,10 +368,6 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
 
   async removeFromFederationBlacklist(domain: string): Promise<boolean> {
     return this.federation.removeFromFederationBlacklist(domain)
-  }
-
-  async getFederationStatus(): Promise<Record<string, unknown>> {
-    return this.federation.getFederationStatus()
   }
 
   // ==================== Notification Management ====================
