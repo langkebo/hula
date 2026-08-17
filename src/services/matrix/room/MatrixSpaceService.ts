@@ -1,8 +1,6 @@
 import type { Visibility } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
-import { MATRIX_PATHS } from '../paths'
 import type {
   SpaceChild as SdkSpaceChild,
   SpaceManager as SdkSpaceManager,
@@ -380,24 +378,8 @@ class SpaceService extends BaseMatrixService {
         suggested_only: options?.suggestedOnly
       })) as { rooms: Array<Record<string, unknown>>; next_batch?: string }
     } catch (err) {
-      logger.error(`[Space] SpaceManager 获取空间层级失败，回退: ${spaceId}, ${err}`)
-      try {
-        const client = this.getClient()
-        const queryParams: Record<string, string> = {}
-        if (options?.from) queryParams.from = options.from
-        if (options?.limit) queryParams.limit = String(options.limit)
-        if (options?.maxDepth) queryParams.max_depth = String(options.maxDepth)
-        if (options?.suggestedOnly) queryParams.suggested_only = String(options.suggestedOnly)
-        return await authedRequestWithPath(
-          client,
-          'GET',
-          MATRIX_PATHS.SPACE.HIERARCHY(spaceId),
-          Object.keys(queryParams).length > 0 ? queryParams : undefined
-        )
-      } catch (fallbackErr) {
-        logger.error(`[Space] 回退获取空间层级也失败: ${spaceId}, ${fallbackErr}`)
-        return { rooms: [] }
-      }
+      logger.error(`[Space] 获取空间层级失败: ${spaceId}, ${err}`)
+      return { rooms: [] }
     }
   }
 
@@ -408,17 +390,8 @@ class SpaceService extends BaseMatrixService {
       }
       return normalizeSpaceTreePathItems(result.path ?? [])
     } catch (err) {
-      logger.info(`[Space] SpaceManager tree_path 失败，回退: ${spaceId}, ${err}`)
-      try {
-        const client = this.getClient()
-        const result = (await client.http.authedRequest('GET', MATRIX_PATHS.SPACE.TREE_PATH(spaceId))) as {
-          path?: Array<{ space_id: string; name: string }>
-        }
-        return normalizeSpaceTreePathItems(result.path ?? [])
-      } catch (httpErr) {
-        logger.info(`[Space] HTTP tree_path 也不可用，回退到 parents 链路: ${spaceId}, ${httpErr}`)
-        return await this.getSpaceTreePathViaParents(spaceId)
-      }
+      logger.info(`[Space] tree_path 失败，回退到 parents 链路: ${spaceId}, ${err}`)
+      return await this.getSpaceTreePathViaParents(spaceId)
     }
   }
 
