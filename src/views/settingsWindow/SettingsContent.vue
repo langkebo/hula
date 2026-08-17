@@ -78,6 +78,9 @@ const currentTabComponent = computed(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  // 关键：flex 列容器必须约束最小高度，避免内容超高时把 header/body 撑破
+  // 并与其他栏位发生重叠（组件堆叠）。
+  min-height: 0;
 }
 
 .settings-content-header {
