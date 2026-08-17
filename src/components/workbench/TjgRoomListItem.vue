@@ -162,6 +162,8 @@ const badgeColor = computed(() => {
 })
 const isFavorite = computed(() => hasFavoriteTag.value)
 const isDm = computed(() => props.item.type === RoomTypeEnum.SINGLE)
+const isGroup = computed(() => props.item.type === RoomTypeEnum.GROUP)
+const isSpace = computed(() => props.item.type === RoomTypeEnum.SPACE)
 const isEncrypted = computed(() => props.item.isEncrypted ?? false)
 const isBurnAfterRead = computed(() => props.item.isBurnAfterRead ?? false)
 const isInvite = computed(() => props.item.membership === 'invite')
@@ -207,7 +209,9 @@ const itemClasses = computed(() => ({
   'tjg-room-list-item--batch-selected': isBatchSelected.value,
   'tjg-room-list-item--top': isTop.value,
   'tjg-room-list-item--muted': props.classes?.muted ?? false,
+  'tjg-room-list-item--group': isGroup.value,
   'tjg-room-list-item--dm': isDm.value,
+  'tjg-room-list-item--space': isSpace.value,
   'tjg-room-list-item--encrypted': isEncrypted.value,
   'tjg-room-list-item--burn': isBurnAfterRead.value
 }))
@@ -318,9 +322,15 @@ const handleBatchToggle = () => {
     opacity: 0.65;
   }
 
+  &--group {
+    .n-avatar {
+      border: 2px solid var(--tjg-color-primary-500);
+    }
+  }
+
   &--dm {
     .n-avatar {
-      border: 2px solid transparent;
+      border: 2px solid var(--tjg-color-info-500);
 
       .n-badge__dot {
         width: 10px !important;
@@ -328,6 +338,12 @@ const handleBatchToggle = () => {
         right: -1px !important;
         bottom: -1px !important;
       }
+    }
+  }
+
+  &--space {
+    .n-avatar {
+      border: 2px solid var(--tjg-color-warning-500);
     }
   }
 

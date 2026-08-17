@@ -66,7 +66,13 @@ export const useSessionListState = () => {
   const sessionList = computed(() => {
     sessionCacheRefreshKey.value
 
-    const dedupedByRoom = uniqBy(sourceSessionList.value, (item) => item.roomId)
+    // 防御性过滤：会话/房间列表只展示聊天类条目（群聊 / 单聊）。
+    // 空间(SPACE)及任何非 GROUP/SINGLE 类型不进入中间栏会话列表。
+    const chatOnlySessions = sourceSessionList.value.filter(
+      (item) => item.type === RoomTypeEnum.GROUP || item.type === RoomTypeEnum.SINGLE
+    )
+
+    const dedupedByRoom = uniqBy(chatOnlySessions, (item) => item.roomId)
 
     // 同一对方用户的多个 DM 房间（历史数据或旧版重复创建）只保留最近活跃一条，
     // 否则中间栏会出现同一成员多条重复会话。

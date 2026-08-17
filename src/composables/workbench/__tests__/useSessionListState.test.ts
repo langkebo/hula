@@ -363,4 +363,37 @@ describe('useSessionListState', () => {
 
     wrapper.unmount()
   })
+
+  it('空间(SPACE)及非聊天类条目不进入会话列表', async () => {
+    sessionStoreMock.sessionList = [
+      {
+        roomId: 'room-space',
+        type: RoomTypeEnum.SPACE,
+        name: '空间',
+        unreadCount: 0,
+        activeTime: 500,
+        top: false,
+        shield: false
+      },
+      {
+        roomId: 'room-group',
+        type: RoomTypeEnum.GROUP,
+        name: '群聊',
+        unreadCount: 0,
+        activeTime: 50,
+        top: false,
+        shield: false
+      }
+    ]
+
+    chatStoreMock.chatMessageListByRoomId.mockImplementation(() => [])
+
+    const { wrapper, api } = await createHarness()
+
+    const roomIds = api.sessionList.value.map((item) => item.roomId)
+    expect(roomIds).toContain('room-group')
+    expect(roomIds).not.toContain('room-space')
+
+    wrapper.unmount()
+  })
 })
