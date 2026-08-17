@@ -1,6 +1,6 @@
 import { useI18nGlobal } from '@/services/i18n'
 import type { MatrixClient } from '@/services/matrix/sdk'
-import { FriendEvent } from '@/services/matrix/sdk'
+import { FriendEvent, initializeManagerExtensions } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { isFriendManagerRegistered } from '../extensions/managerExtensions'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
@@ -68,9 +68,40 @@ export class MatrixFriendSync {
     }
   }
 
-  private getFriendManager(client: MatrixClient): FriendManagerCompat | null {
-    // 优先使用 SDK 注册的 getFriendManager() 方法
+  /**
+   * 懒确保 client 上的 FriendManager 扩展访问器已挂载。
+   *
+   * 解决两个时序问题：
+   * 1. client 身份变更重建后，friend 等私有 manager 经异步动态 import 挂载，
+   *    MatrixFriendSync 直接经 getClient() 访问，绕过了 waitForClientReady 的
+   *    whenManagerExtensionsReady() 门控，可能取到访问器尚未挂载的 client。
+   * 2. 若扩展未注册，在降级到 REST 前补一次 initializeManagerExtensions()
+   *    （SDK 侧幂等）+ whenManagerExtensionsReady()，再重试一次。
+   */
+  private async ensureFriendManagerAccessor(client: MatrixClient): Promise<void> {
     const clientWithMethods = client as unknown as Record<string, unknown>
+    if (typeof clientWithMethods.getFriendManager === 'function') {
+      return
+    }
+    try {
+      await initializeManagerExtensions()
+      const ready = (client as unknown as { whenManagerExtensionsReady?: () => Promise<void> })
+        .whenManagerExtensionsReady
+      await ready?.call(client)
+    } catch (err) {
+      logger.warn(`[MatrixFriend] 懒注册 FriendManager 扩展失败: ${err}`)
+    }
+  }
+
+  private async getFriendManager(client: MatrixClient): Promise<FriendManagerCompat | null> {
+    const clientWithMethods = client as unknown as Record<string, unknown>
+
+    // 优先使用 SDK 注册的 getFriendManager() 方法；缺失时先懒注册再重试，
+    // 避免 client 重建后扩展未重新挂载导致直接降级到 REST。
+    if (typeof clientWithMethods.getFriendManager !== 'function') {
+      await this.ensureFriendManagerAccessor(client)
+    }
+
     if (typeof clientWithMethods.getFriendManager === 'function') {
       try {
         const manager = clientWithMethods.getFriendManager()
@@ -90,7 +121,7 @@ export class MatrixFriendSync {
       : null
   }
 
-  private syncFriendManager(): FriendManagerCompat | null {
+  private async syncFriendManager(): Promise<FriendManagerCompat | null> {
     const client = matrixClientService.getClient()
     if (!client) {
       return null
@@ -106,7 +137,7 @@ export class MatrixFriendSync {
       this.syncState = { friends: [], incomingRequests: [], outgoingRequests: [] }
     }
 
-    const manager = this.getFriendManager(client)
+    const manager = await this.getFriendManager(client)
     if (!manager) {
       return null
     }
@@ -147,7 +178,7 @@ export class MatrixFriendSync {
   /** 确保好友管理器已初始化
    */
   async ensureFriendManager(throwOnMissing = true): Promise<FriendManagerCompat | null> {
-    const manager = this.syncFriendManager()
+    const manager = await this.syncFriendManager()
     if (!manager) {
       if (throwOnMissing) {
         throw new Error(useI18nGlobal().t('matrix_error.friends.manager_not_initialized'))
