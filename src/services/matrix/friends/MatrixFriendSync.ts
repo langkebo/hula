@@ -71,12 +71,7 @@ export class MatrixFriendSync {
       }
 
       if (resolution.status === 'missing') {
-        if (!this.hasLoggedMissingFriendManager) {
-          this.hasLoggedMissingFriendManager = true
-          logger.info('[MatrixFriend] FriendManager 未在客户端上找到，已降级到好友 REST 接口')
-        }
-        // 即使 FriendManager 不可用，也启动轮询（使用 REST API）
-        this.startPolling()
+        this.handleMissingFriendManager()
         this.registerConnectionStateListener()
         return
       }
@@ -91,6 +86,20 @@ export class MatrixFriendSync {
       logger.error(`[MatrixFriend] 初始化失败: ${err}`)
       throw err
     }
+  }
+
+  /**
+   * FriendManager 真实缺失（client 存在但扩展不可用）时的统一降级处理：
+   * 记录「已降级到好友 REST 接口」并启动 REST 轮询（幂等，由 hasLoggedMissingFriendManager 门控）。
+   * initialize() 与 handleClientReady() 共用，确保两条路径的降级行为一致。
+   */
+  private handleMissingFriendManager(): void {
+    if (!this.hasLoggedMissingFriendManager) {
+      this.hasLoggedMissingFriendManager = true
+      logger.info('[MatrixFriend] FriendManager 未在客户端上找到，已降级到好友 REST 接口')
+    }
+    // 即使 FriendManager 不可用，也启动轮询（使用 REST API）
+    this.startPolling()
   }
 
   private getFriendManager(client: MatrixClient): FriendManagerCompat | null {
@@ -403,12 +412,24 @@ export class MatrixFriendSync {
 
     this.isRetrying = true
     try {
-      const manager = await this.ensureFriendManager(false)
-      if (manager) {
-        this.hasLoggedMissingFriendManager = false
-        this.emit('sync', this.syncState)
-        logger.info('[MatrixFriend] 客户端就绪后 FriendManager 已恢复')
+      const resolution = this.syncFriendManager()
+
+      // 连接事件竞态：client 此刻仍未就绪，继续等待下次 CONNECTED
+      if (resolution.status === 'no-client') {
+        return
       }
+
+      // 扩展真实缺失：与 initialize() 一致，warn + 降级 REST 轮询
+      if (resolution.status === 'missing') {
+        this.handleMissingFriendManager()
+        return
+      }
+
+      // ready：manager 可用，恢复 SDK 同步路径
+      await this.ensureFriendManagerStarted(resolution.manager)
+      this.hasLoggedMissingFriendManager = false
+      this.emit('sync', this.syncState)
+      logger.info('[MatrixFriend] 客户端就绪后 FriendManager 已恢复')
     } catch (err) {
       logger.warn(`[MatrixFriend] 客户端就绪后重试获取 FriendManager 失败: ${err}`)
     } finally {
