@@ -108,7 +108,7 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
 
   async checkAdminApiAvailability(): Promise<boolean> {
     try {
-      await this.adminRequest('GET', '/whoami')
+      await this.getClient().getAdminManager().whoami()
       return true
     } catch (err) {
       // R-14: log silent catch in checkAdminApiAvailability
@@ -200,21 +200,6 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
       throw new Error(this.t('matrix_error.admin.sdk_manager_unavailable'))
     }
     return manager
-  }
-
-  private async adminRequest<TResponse>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    body?: Record<string, unknown>
-  ): Promise<TResponse> {
-    const client = this.getClient()
-    return client.http.authedRequest(
-      method,
-      path,
-      undefined,
-      method === 'GET' || method === 'DELETE' ? undefined : body,
-      { prefix: MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE }
-    ) as Promise<TResponse>
   }
 
   // ==================== Server Management ====================
