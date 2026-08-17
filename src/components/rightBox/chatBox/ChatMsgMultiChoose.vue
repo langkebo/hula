@@ -161,8 +161,7 @@ import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import ChatMultiMsg from './ChatMultiMsg.vue'
 
 const logger = createLogger('ChatMsgMultiChoose')
-const { forwardRoomMessages } = matrixForwardService
-const { sendStructuredMessage } = matrixMessageService
+// 注意：不能解构类方法后裸调，否则丢失 this 绑定（与 renderMessage 的 isBodyInThread 同类 bug）。
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -359,7 +358,7 @@ const isCustomImageTask = computed(
 )
 
 const forwardMessages = async (roomIds: string[], sourceRoomId: string, messageIds: string[]) => {
-  const results = await forwardRoomMessages(sourceRoomId, messageIds, roomIds)
+  const results = await matrixForwardService.forwardRoomMessages(sourceRoomId, messageIds, roomIds)
   const hasSuccess = results.some((result) => result.success)
   if (!hasSuccess) {
     throw new Error('All message forwards failed')
@@ -446,7 +445,7 @@ const sendCustomForwardTask = async (roomIds: string[]) => {
   const messageBody = await buildCustomTaskImageBody()
 
   for (const roomId of roomIds) {
-    await sendStructuredMessage({
+    await matrixMessageService.sendStructuredMessage({
       roomId,
       msgType: MsgEnum.IMAGE,
       body: {
