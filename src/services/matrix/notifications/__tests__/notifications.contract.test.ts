@@ -3,9 +3,9 @@
  *
  * Tests URL construction for MatrixPushService.
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, initializeManagerExtensions, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixPushService } from '../MatrixPushService'
 
@@ -32,6 +32,9 @@ vi.mock('@/services/i18n', () => ({
 }))
 
 setupMswServer(
+  http.get(`${HOMESERVER}/_matrix/client/versions`, () => {
+    return HttpResponse.json({ versions: ['v1.1', 'v1.2', 'v1.3', 'v1.4', 'v1.5', 'v1.6'] })
+  }),
   http.get(`${HOMESERVER}/_matrix/client/v3/pushers`, ({ request }) => {
     seenUrls.push(request.url)
     return HttpResponse.json({ pushers: [] })
@@ -43,6 +46,12 @@ setupMswServer(
 )
 
 describe('Push service URL construction contract (real SDK + msw)', () => {
+  beforeAll(async () => {
+    // MatrixPushService 现已直接调用 client.getPushManager()，需先注册 manager 扩展，
+    // 否则 createClient 出的裸 client 没有 getPushManager()。
+    await initializeManagerExtensions()
+  })
+
   beforeEach(() => {
     seenUrls.length = 0
     realClient = createClient({
