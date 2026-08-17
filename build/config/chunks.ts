@@ -46,13 +46,10 @@ export const manualChunkConfig: Record<string, string> = {
 
   // 图形与 3D
   'node_modules/three': 'three',
-  'node_modules/echarts': 'chart-vendor',
-  'node_modules/zrender': 'chart-vendor',
 
   // 工具库
   'node_modules/es-toolkit': 'utils-es-toolkit',
   'node_modules/dayjs': 'dayjs',
-  'node_modules/axios': 'axios',
   'node_modules/digest-wasm': 'crypto',
   'node_modules/qrcode': 'qrcode',
   'node_modules/mitt': 'mitt',
@@ -65,7 +62,6 @@ export const manualChunkConfig: Record<string, string> = {
   'node_modules/@tauri-apps/': 'tauri-sdk',
   'node_modules/@fingerprintjs/': 'fingerprint',
   'node_modules/markstream-vue': 'markdown-vendor',
-  'node_modules/tlbs-map-vue': 'map-vendor',
   'node_modules/driver.js': 'driver',
 
   // 业务逻辑与大型组件

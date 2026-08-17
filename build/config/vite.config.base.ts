@@ -91,7 +91,6 @@ export const baseConfig: UserConfig = {
           'shiki-langs',
           'shiki-engine',
           'three',
-          'chart-vendor',
           'vue-office'
         ]
         return deps.filter((dep) => {
@@ -164,9 +163,7 @@ export const baseConfig: UserConfig = {
       '@vue-office/pdf',
       '@vue-office/pptx',
       'shiki',
-      'markstream-vue',
-      'tlbs-map-vue',
-      'echarts'
+      'markstream-vue'
     ]
   },
   clearScreen: false,
