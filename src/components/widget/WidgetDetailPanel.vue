@@ -279,7 +279,7 @@ async function handleSendMessage() {
       ...messageHistory.value,
       {
         direction: 'sent',
-        type: result?.type ?? 'm.custom',
+        type: (result?.type as string | undefined) ?? 'm.custom',
         content: messageInput.value.trim(),
         timestamp: Date.now()
       }

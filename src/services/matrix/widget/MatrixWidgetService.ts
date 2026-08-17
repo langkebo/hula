@@ -1,7 +1,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
-import { MATRIX_PATHS } from '../paths'
+import type { WidgetMessageResponse, WidgetsManager } from '../sdk-compat'
 
 const logger = createLogger('MatrixWidgetService')
 
@@ -32,49 +32,6 @@ interface SdkWidget {
   data?: Record<string, unknown>
 }
 
-interface SdkWidgetResponse {
-  widget: SdkWidget
-}
-
-interface WidgetsManagerLike {
-  createWidget(body: {
-    room_id?: string
-    widget_type: string
-    url: string
-    name: string
-    data?: Record<string, unknown>
-  }): Promise<SdkWidgetResponse>
-  getWidgetById(widgetId: string): Promise<SdkWidgetResponse>
-  updateWidget(
-    widgetId: string,
-    body: { url?: string; name?: string; data?: Record<string, unknown> }
-  ): Promise<SdkWidgetResponse>
-  deleteWidget(widgetId: string): Promise<void>
-  listRoomWidgets(roomId: string): Promise<{ widgets: SdkWidget[] }>
-  getJitsiConfig(roomId: string): Promise<JitsiConfigResponse>
-  getWidgetConfig(widgetId: string): Promise<WidgetConfigResponse>
-  getWidgetPermissions(widgetId: string): Promise<WidgetPermissionsResponse>
-  setWidgetPermission(
-    widgetId: string,
-    body: { user_id: string; permissions: string[] }
-  ): Promise<SetPermissionResponse>
-  deleteWidgetPermission(widgetId: string, userId: string): Promise<void>
-  createWidgetSession(
-    widgetId: string,
-    body?: { widget_id?: string; device_id?: string; expires_in_ms?: number }
-  ): Promise<SessionApiData>
-  listWidgetSessions(widgetId: string): Promise<Record<string, unknown>>
-  getWidgetSession(sessionId: string): Promise<SessionApiData>
-  terminateWidgetSession(sessionId: string): Promise<void>
-  getWidgetCapabilities?(roomId: string, widgetId: string): Promise<WidgetCapabilitiesResponse>
-  updateWidgetCapabilities?(roomId: string, widgetId: string, body: { capabilities: string[] }): Promise<WidgetCapabilitiesResponse>
-  sendWidgetMessage?(
-    roomId: string,
-    widgetId: string,
-    body: SendWidgetMessageRequest
-  ): Promise<SendWidgetMessageResponse>
-}
-
 export interface WidgetCapabilitiesResponse {
   capabilities: string[]
   widget_id: string
@@ -86,25 +43,13 @@ export interface SendWidgetMessageRequest {
   content: Record<string, unknown>
 }
 
-export interface SendWidgetMessageResponse {
-  event_id: string
-  widget_id: string
-  room_id: string
-  type: string
-  content: Record<string, unknown>
-}
-
 class MatrixWidgetService {
-  private getManager(): WidgetsManagerLike | null {
+  private getManager(): WidgetsManager | null {
     const client = matrixClientService.getClient() as unknown as {
-      getWidgetsManager?: () => WidgetsManagerLike
-      widgetsManager?: WidgetsManagerLike
+      getWidgetsManager?: () => WidgetsManager
     } | null
     if (!client) return null
-    if (typeof client.getWidgetsManager === 'function') {
-      return client.getWidgetsManager()
-    }
-    return client.widgetsManager ?? null
+    return client.getWidgetsManager?.() ?? null
   }
 
   private toFacade(widget: SdkWidget): Widget {
@@ -287,7 +232,7 @@ class MatrixWidgetService {
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      return await manager.getWidgetConfig(widgetId)
+      return (await manager.getWidgetConfig(widgetId)) as unknown as WidgetConfigResponse
     } catch (err) {
       logger.error(`[MatrixWidgetService] 获取Widget配置失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
@@ -302,7 +247,7 @@ class MatrixWidgetService {
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      return await manager.getJitsiConfig(roomId)
+      return (await manager.getJitsiConfig(roomId)) as unknown as JitsiConfigResponse
     } catch (err) {
       logger.error(`[MatrixWidgetService] 获取Jitsi配置失败: ${roomId} ${err}`)
       if (throwOnError) throw err
@@ -317,7 +262,7 @@ class MatrixWidgetService {
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      return await manager.getWidgetPermissions(widgetId)
+      return (await manager.getWidgetPermissions(widgetId)) as unknown as WidgetPermissionsResponse
     } catch (err) {
       logger.error(`[MatrixWidgetService] 获取Widget权限失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
@@ -337,7 +282,10 @@ class MatrixWidgetService {
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      return await manager.setWidgetPermission(widgetId, { user_id: userId, permissions })
+      return (await manager.setWidgetPermission(widgetId, {
+        user_id: userId,
+        permissions
+      })) as unknown as SetPermissionResponse
     } catch (err) {
       logger.error(`[MatrixWidgetService] 设置Widget权限失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
@@ -372,10 +320,10 @@ class MatrixWidgetService {
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      return await manager.createWidgetSession(widgetId, {
+      return (await manager.createWidgetSession(widgetId, {
         device_id: options?.deviceId,
         expires_in_ms: options?.expiresInMs
-      })
+      })) as unknown as SessionApiData
     } catch (err) {
       logger.error(`[MatrixWidgetService] 创建Widget会话失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
@@ -390,7 +338,7 @@ class MatrixWidgetService {
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      return await manager.listWidgetSessions(widgetId)
+      return (await manager.listWidgetSessions(widgetId)) as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixWidgetService] 获取Widget会话列表失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
@@ -405,7 +353,7 @@ class MatrixWidgetService {
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      return await manager.getWidgetSession(sessionId)
+      return (await manager.getWidgetSession(sessionId)) as unknown as SessionApiData
     } catch (err) {
       logger.error(`[MatrixWidgetService] 获取Widget会话失败: ${sessionId} ${err}`)
       if (throwOnError) throw err
@@ -439,28 +387,14 @@ class MatrixWidgetService {
     throwOnError = true
   ): Promise<WidgetCapabilitiesResponse | null> {
     const manager = this.getManager()
-    if (manager && typeof manager.getWidgetCapabilities === 'function') {
-      try {
-        return await manager.getWidgetCapabilities(roomId, widgetId)
-      } catch (err) {
-        logger.error(`[MatrixWidgetService] 获取Widget能力失败: ${widgetId} ${err}`)
-        if (throwOnError) throw err
-        return null
-      }
-    }
-    const client = matrixClientService.getClient()
-    if (!client) {
+    if (!manager) {
       if (!throwOnError) return null
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      const result = (await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.WIDGET.CAPABILITIES(roomId, widgetId)
-      )) as WidgetCapabilitiesResponse
-      return result
+      return await manager.getWidgetCapabilities(roomId, widgetId)
     } catch (err) {
-      logger.error(`[MatrixWidgetService] 获取Widget能力失败(v3): ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 获取Widget能力失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -473,31 +407,14 @@ class MatrixWidgetService {
     throwOnError = true
   ): Promise<WidgetCapabilitiesResponse | null> {
     const manager = this.getManager()
-    if (manager && typeof manager.updateWidgetCapabilities === 'function') {
-      try {
-        return await manager.updateWidgetCapabilities(roomId, widgetId, { capabilities })
-      } catch (err) {
-        logger.error(`[MatrixWidgetService] 设置Widget能力失败: ${widgetId} ${err}`)
-        if (throwOnError) throw err
-        return null
-      }
-    }
-    const client = matrixClientService.getClient()
-    if (!client) {
+    if (!manager) {
       if (!throwOnError) return null
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      const result = (await client.http.authedRequest(
-        'PUT',
-        MATRIX_PATHS.WIDGET.CAPABILITIES(roomId, widgetId),
-        undefined,
-        { capabilities }
-      )) as WidgetCapabilitiesResponse
-      logger.info(`[MatrixWidgetService] 设置Widget能力成功: ${widgetId}`)
-      return result
+      return await manager.updateWidgetCapabilities(roomId, widgetId, { capabilities })
     } catch (err) {
-      logger.error(`[MatrixWidgetService] 设置Widget能力失败(v3): ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 设置Widget能力失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }
@@ -508,33 +425,16 @@ class MatrixWidgetService {
     widgetId: string,
     message: SendWidgetMessageRequest,
     throwOnError = true
-  ): Promise<SendWidgetMessageResponse | null> {
+  ): Promise<WidgetMessageResponse | null> {
     const manager = this.getManager()
-    if (manager && typeof manager.sendWidgetMessage === 'function') {
-      try {
-        return await manager.sendWidgetMessage(roomId, widgetId, message)
-      } catch (err) {
-        logger.error(`[MatrixWidgetService] 发送Widget消息失败: ${widgetId} ${err}`)
-        if (throwOnError) throw err
-        return null
-      }
-    }
-    const client = matrixClientService.getClient()
-    if (!client) {
+    if (!manager) {
       if (!throwOnError) return null
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
+      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      const result = (await client.http.authedRequest(
-        'POST',
-        MATRIX_PATHS.WIDGET.SEND(roomId, widgetId),
-        undefined,
-        message
-      )) as SendWidgetMessageResponse
-      logger.info(`[MatrixWidgetService] 发送Widget消息成功: ${widgetId}, event_id=${result.event_id}`)
-      return result
+      return await manager.sendWidgetMessage(roomId, widgetId, message)
     } catch (err) {
-      logger.error(`[MatrixWidgetService] 发送Widget消息失败(v3): ${widgetId} ${err}`)
+      logger.error(`[MatrixWidgetService] 发送Widget消息失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }
