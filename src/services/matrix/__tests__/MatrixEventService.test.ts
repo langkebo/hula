@@ -308,14 +308,14 @@ describe('MatrixEventService', () => {
       vi.mocked(matrixRoomQueryService.getRoom).mockResolvedValue(room)
 
       // loadMore 用 /messages 反向分页，前置 20 条更早事件（初始加载时不会被调用）
-      const paginate = vi.fn(
-        async (_timeline: unknown, _opts: { backwards: boolean; limit: number }) => {
-          const older = Array.from({ length: 20 }, (_, i) => makeMessageEvent(`older-${i + 1}`))
-          events = [...older, ...events]
-          return true // hasMore
-        }
-      )
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ paginateEventTimeline: paginate } as unknown as MatrixClient)
+      const paginate = vi.fn(async (_timeline: unknown, _opts: { backwards: boolean; limit: number }) => {
+        const older = Array.from({ length: 20 }, (_, i) => makeMessageEvent(`older-${i + 1}`))
+        events = [...older, ...events]
+        return true // hasMore
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        paginateEventTimeline: paginate
+      } as unknown as MatrixClient)
 
       // 初始：live 窗口 50 >= pageSize 20，不触发 scrollback，返回全部；cursor=最旧
       const first = await matrixEventService.getPagedRoomMessages('!room:e', 20, '')

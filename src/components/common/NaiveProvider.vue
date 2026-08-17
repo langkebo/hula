@@ -37,7 +37,7 @@ import {
 import { useI18n } from 'vue-i18n'
 import { ThemeEnum } from '@/enums'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { naiveColorsFor, withAlpha, type ThemeName } from '@/styles/naiveTokenSource'
+import { naiveColorsFor, type ThemeName, withAlpha } from '@/styles/naiveTokenSource'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
