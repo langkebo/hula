@@ -33,7 +33,13 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const sdkAdmin = async () => ({}) as unknown as AdminManager
+const adminManager = {
+  listReports: vi.fn(),
+  listRoomReports: vi.fn(),
+  getReport: vi.fn(),
+  deleteReport: vi.fn()
+}
+const sdkAdmin = async () => adminManager as unknown as AdminManager
 
 const authedRequestImpl = vi.fn()
 
@@ -144,93 +150,62 @@ describe('AdminReportService', () => {
     expect(reportEventMock).toHaveBeenCalledWith('!r:hs', '$first', -50, 'abuse')
   })
 
-  it('scoreReport 校验分值范围（-100~0），越界不发请求（FT-091: 使用 MATRIX_PATHS.MODERATION.REPORT_EVENT_SCORE）', async () => {
-    // 验证 L3 常量值
-    expect(MATRIX_PATHS.MODERATION.REPORT_EVENT_SCORE('v3', '!r:hs', '$e1')).toBe(
-      '/_matrix/client/v3/rooms/!r%3Ahs/report/%24e1/score'
-    )
+  it('scoreReport 校验分值范围并委托 ReportingManager.scoreReport', async () => {
+    const scoreReportMock = vi.fn().mockResolvedValue(undefined)
+    ;(client as unknown as { getReportingManager?: () => unknown }).getReportingManager = () => ({
+      scoreReport: scoreReportMock
+    })
+
     await expect(service.scoreReport('!r:hs', '$e1', 5)).rejects.toThrow('matrix_error.admin.score_range_invalid')
     await expect(service.scoreReport('!r:hs', '$e1', -101)).rejects.toThrow('matrix_error.admin.score_range_invalid')
-    expect(authedRequestImpl).not.toHaveBeenCalled()
+    expect(scoreReportMock).not.toHaveBeenCalled()
 
     await service.scoreReport('!r:hs', '$e1', -50)
-    // prefixedAuthedRequest 剥离默认 v3 前缀后，authedRequest 收到相对路径（opts=undefined）
-    expect(authedRequestImpl).toHaveBeenCalledWith(
-      'PUT',
-      '/rooms/!r%3Ahs/report/%24e1/score',
-      undefined,
-      { score: -50 },
-      undefined
-    )
+    expect(scoreReportMock).toHaveBeenCalledWith('!r:hs', '$e1', -50)
   })
 
-  it('getAdminReports 组装查询参数并映射响应', async () => {
+  it('getAdminReports 按 roomId 委托 listRoomReports 并映射响应', async () => {
+    adminManager.listRoomReports.mockResolvedValue({
+      reports: [{ id: 'rep-1' }],
+      next_batch: 'nb'
+    })
+
     await expect(service.getAdminReports('!r:hs', 25, 'from-1')).resolves.toEqual({
       reports: [{ id: 'rep-1' }],
       next_batch: 'nb'
     })
-    expect(authedRequestImpl).toHaveBeenCalledWith(
-      'GET',
-      '/reports',
-      {
-        limit: '25',
-        room_id: '!r:hs',
-        from: 'from-1'
-      },
-      undefined,
-      { prefix: '/_synapse/admin/v1' }
-    )
+    expect(adminManager.listRoomReports).toHaveBeenCalledWith('!r:hs', { from: 'from-1', limit: 25 })
   })
 
-  it('getAdminReports 出错时降级为空列表', async () => {
-    server.use(
-      http.get(`${TEST_BASE_URL}/_synapse/admin/v1/reports`, () => {
-        return new HttpResponse(null, { status: 500 })
-      })
-    )
+  it('getAdminReports 无 roomId 时委托 listReports，出错时降级为空列表', async () => {
+    adminManager.listReports.mockRejectedValueOnce(new Error('boom'))
     await expect(service.getAdminReports()).resolves.toEqual({ reports: [] })
+    expect(adminManager.listReports).toHaveBeenCalledWith({ from: undefined, limit: 50 })
   })
 
-  it('dismissReport 使用 DELETE 且失败时返回 false', async () => {
+  it('dismissReport 委托 deleteReport 且失败时返回 false', async () => {
+    adminManager.deleteReport.mockResolvedValueOnce(undefined)
     await expect(service.dismissReport('rep-1')).resolves.toBe(true)
-    expect(authedRequestImpl).toHaveBeenCalledWith('DELETE', '/reports/rep-1', undefined, undefined, {
-      prefix: '/_synapse/admin/v1'
-    })
+    expect(adminManager.deleteReport).toHaveBeenCalledWith('rep-1')
 
-    server.use(
-      http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/reports/:reportId`, () => {
-        return new HttpResponse(null, { status: 500 })
-      })
-    )
+    adminManager.deleteReport.mockRejectedValueOnce(new Error('boom'))
     await expect(service.dismissReport('rep-1')).resolves.toBe(false)
   })
 
   // FT-131-D: 所有降级方法支持 throwOnError 选项，让调用方可控区分 "not found" 与 "API 失败"
   describe('FT-131-D: throwOnError option', () => {
     it('getAdminReports throwOnError=true 时向上抛出而非降级空列表', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/reports`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      adminManager.listReports.mockRejectedValueOnce(new Error('boom'))
       await expect(service.getAdminReports(undefined, 50, undefined, true)).rejects.toThrow()
     })
 
     it('dismissReport throwOnError=true 时向上抛出而非返回 false', async () => {
-      server.use(
-        http.delete(`${TEST_BASE_URL}/_synapse/admin/v1/reports/:reportId`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      adminManager.deleteReport.mockRejectedValueOnce(new Error('boom'))
       await expect(service.dismissReport('rep-1', true)).rejects.toThrow()
     })
 
     it('getAdminReport throwOnError=true 时向上抛出而非返回 null', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/reports/:reportId`, () => {
-          return new HttpResponse(null, { status: 404 })
-        })
-      )
+      adminManager.getReport.mockRejectedValueOnce(new Error('boom'))
       await expect(service.getAdminReport('rep-1', true)).rejects.toThrow()
     })
   })

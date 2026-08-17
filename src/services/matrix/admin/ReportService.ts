@@ -123,18 +123,11 @@ export class AdminReportService {
   }
 
   async scoreReport(roomId: string, eventId: string, score: number): Promise<void> {
-    const client = this.getClient()
     if (score < -100 || score > 0) {
       throw new Error('matrix_error.admin.score_range_invalid')
     }
     try {
-      await this.prefixedAuthedRequest<void>(
-        client,
-        'PUT',
-        MATRIX_PATHS.MODERATION.REPORT_EVENT_SCORE('v3', roomId, eventId),
-        undefined,
-        { score }
-      )
+      await this.getReportingMgr().scoreReport(roomId, eventId, score)
       logger.info(`[Admin] 举报评分成功: ${roomId}/${eventId}, score=${score}`)
     } catch (err) {
       logger.error(`[Admin] 举报评分失败: ${err}`)
@@ -159,20 +152,14 @@ export class AdminReportService {
     from?: string,
     throwOnError = false
   ): Promise<{ reports: AdminReport[]; next_batch?: string }> {
-    const client = this.getClient()
     try {
-      const queryParams: Record<string, string> = { limit: String(limit) }
-      if (roomId) queryParams.room_id = roomId
-      if (from) queryParams.from = from
-      const result = await this.prefixedAuthedRequest<{ reports?: AdminReport[]; next_batch?: string }>(
-        client,
-        'GET',
-        MATRIX_PATHS.ADMIN.REPORTS,
-        queryParams
-      )
+      const admin = await this._sdkAdmin()
+      const result = roomId
+        ? await admin.listRoomReports(roomId, { from, limit })
+        : await admin.listReports({ from, limit })
       return {
-        reports: (result as { reports?: AdminReport[] }).reports ?? [],
-        next_batch: (result as { next_batch?: string }).next_batch
+        reports: ((result as unknown as { reports?: AdminReport[] }).reports ?? []) as AdminReport[],
+        next_batch: (result as unknown as { next_batch?: string }).next_batch
       }
     } catch (err) {
       logger.error(`[Admin] 获取管理端报表失败: ${err}`)
@@ -182,14 +169,9 @@ export class AdminReportService {
   }
 
   async getAdminReport(reportId: string, throwOnError = false): Promise<AdminReport | null> {
-    const client = this.getClient()
     try {
-      const result = await this.prefixedAuthedRequest<AdminReport>(
-        client,
-        'GET',
-        MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId)
-      )
-      return result as AdminReport
+      const admin = await this._sdkAdmin()
+      return (await admin.getReport(reportId)) as unknown as AdminReport
     } catch (err) {
       logger.error(`[Admin] 获取报表详情失败: ${err}`)
       if (throwOnError) throw err
@@ -198,9 +180,9 @@ export class AdminReportService {
   }
 
   async dismissReport(reportId: string, throwOnError = false): Promise<boolean> {
-    const client = this.getClient()
     try {
-      await this.prefixedAuthedRequest<void>(client, 'DELETE', MATRIX_PATHS.ADMIN.REPORT_BY_ID(reportId))
+      const admin = await this._sdkAdmin()
+      await admin.deleteReport(reportId)
       logger.info(`[Admin] 驳回报表成功: ${reportId}`)
       return true
     } catch (err) {
