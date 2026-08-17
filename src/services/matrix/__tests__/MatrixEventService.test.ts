@@ -1,7 +1,9 @@
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
+import { Direction } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum } from '@/enums'
 import { matrixEventService } from '../MatrixEventService'
+import { matrixRoomQueryService } from '../room/QueryService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -22,6 +24,7 @@ describe('MatrixEventService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+    vi.spyOn(matrixRoomQueryService, 'getRoom').mockResolvedValue(null)
   })
 
   afterEach(() => {
@@ -273,6 +276,82 @@ describe('MatrixEventService', () => {
 
       expect(msg?.message.type).toBe(MsgEnum.TEXT)
       expect(msg?.message.body).toEqual(content)
+    })
+  })
+
+  describe('getPagedRoomMessages', () => {
+    const makeMessageEvent = (id: string): MatrixEvent =>
+      ({
+        getId: () => id,
+        getSender: () => '@alice:e',
+        getType: () => 'm.room.message',
+        getContent: () => ({ msgtype: 'm.text', body: `body-${id}` }),
+        getTs: () => 1700000000000
+      }) as unknown as MatrixEvent
+
+    const makeRoom = (
+      events: MatrixEvent[],
+      opts: { getEvents?: ReturnType<typeof vi.fn>; getPaginationToken?: ReturnType<typeof vi.fn> } = {}
+    ): Room =>
+      ({
+        roomId: '!room:e',
+        getLiveTimeline: () => ({
+          getEvents: opts.getEvents ?? (() => events),
+          getPaginationToken: opts.getPaginationToken ?? (() => null)
+        }),
+        getMember: () => ({ name: 'Alice', getMxcAvatarUrl: () => 'mxc://a' })
+      }) as unknown as Room
+
+    it('分页方向：首次取最新一页，loadMore 取更早一页，直到最旧 isLast=true', async () => {
+      const events = Array.from({ length: 50 }, (_, i) => makeMessageEvent(`event-${i + 1}`))
+      const room = makeRoom(events)
+      vi.mocked(matrixRoomQueryService.getRoom).mockResolvedValue(room)
+
+      const first = await matrixEventService.getPagedRoomMessages('!room:e', 20, '')
+      expect(first.messages.length).toBe(20)
+      expect(first.messages[0].message.id).toBe('event-31')
+      expect(first.isLast).toBe(false)
+
+      const second = await matrixEventService.getPagedRoomMessages('!room:e', 20, first.cursor)
+      expect(second.messages.length).toBe(20)
+      expect(second.messages[0].message.id).toBe('event-11')
+      expect(second.isLast).toBe(false)
+
+      const last = await matrixEventService.getPagedRoomMessages('!room:e', 20, second.cursor)
+      expect(last.messages.length).toBe(10)
+      expect(last.isLast).toBe(true)
+    })
+
+    it('本地 timeline 耗尽但服务端仍有更早历史时，loadMore 触发 scrollback 拉取更早消息', async () => {
+      const serverEvents = Array.from({ length: 20 }, (_, i) => makeMessageEvent(`server-${i + 1}`))
+      let localEvents = Array.from({ length: 25 }, (_, i) => makeMessageEvent(`local-${i + 1}`))
+      let paginationToken: string | null = 't123'
+
+      const getEvents = vi.fn(() => localEvents)
+      const getPaginationToken = vi.fn(() => paginationToken)
+      const room = makeRoom([], { getEvents, getPaginationToken })
+
+      const scrollback = vi.fn(async () => {
+        // 模拟 SDK：把更早的历史前置到 timeline，并清空 backward token
+        localEvents = [...serverEvents, ...localEvents]
+        paginationToken = null
+        return room
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ scrollback } as unknown as MatrixClient)
+      vi.mocked(matrixRoomQueryService.getRoom).mockResolvedValue(room)
+
+      const first = await matrixEventService.getPagedRoomMessages('!room:e', 20, '')
+      expect(first.messages.length).toBe(20)
+      expect(first.messages[0].message.id).toBe('local-6')
+      expect(first.isLast).toBe(false)
+
+      const second = await matrixEventService.getPagedRoomMessages('!room:e', 20, first.cursor)
+      expect(scrollback).toHaveBeenCalledTimes(1)
+      expect(scrollback).toHaveBeenCalledWith(room, 20)
+      expect(getPaginationToken).toHaveBeenCalledWith(Direction.Backward)
+      expect(second.messages.length).toBe(20)
+      expect(second.messages[0].message.id).toBe('server-6')
+      expect(second.isLast).toBe(false)
     })
   })
 })
