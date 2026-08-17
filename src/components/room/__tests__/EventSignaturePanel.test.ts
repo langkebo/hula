@@ -81,7 +81,7 @@ describe('EventSignaturePanel — P2-8 事件签名与验证面板', () => {
   })
 
   it('点击验证按钮调用 verifyEvent 并显示结果', async () => {
-    verifyEventMock.mockResolvedValue({ valid: true, verifier: '@user:hs' })
+    verifyEventMock.mockResolvedValue({ valid: true })
     const wrapper = mountPanel()
     await wrapper.find('[data-testid="event-id-input"]').setValue('$e1:hs')
     await wrapper.find('[data-testid="verify-btn"]').trigger('click')
@@ -90,7 +90,6 @@ describe('EventSignaturePanel — P2-8 事件签名与验证面板', () => {
 
     expect(verifyEventMock).toHaveBeenCalledWith('!room:hs', '$e1:hs')
     expect(wrapper.text()).toContain('room.event_signature.valid')
-    expect(wrapper.text()).toContain('@user:hs')
   })
 
   it('签名失败时显示错误反馈', async () => {

@@ -10,9 +10,9 @@
  * - TimelineService.timestampToEvent → ROOM.TIMESTAMP_TO_EVENT (V1 prefix)
  * - AccountDataService.getReportScannerInfo → ROOM.REPORT_SCANNER_INFO (V1 prefix)
  */
-import { createClient, type MatrixClient } from 'matrix-js-sdk'
+import { createClient, initializeManagerExtensions, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixClientService } from '../../MatrixClientService'
 import { MatrixRoomAccountDataService } from '../AccountDataService'
@@ -46,6 +46,12 @@ const server = setupMswServer(
 describe('Timeline + AccountData services URL construction contract (real SDK + msw)', () => {
   let timelineService: MatrixRoomTimelineService
   let accountDataService: MatrixRoomAccountDataService
+
+  beforeAll(async () => {
+    // ReportingManager 等扩展 manager 需通过 initializeManagerExtensions 注册到
+    // MatrixClient.prototype，否则 getReportingManager() 不可用。
+    await initializeManagerExtensions()
+  })
 
   beforeEach(() => {
     seenUrls.length = 0

@@ -2,8 +2,7 @@ import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { type AIConnectionInfo, type McpTool, matrixAIConnectionService } from '../ai/MatrixAIConnectionService'
 import { BaseMatrixService } from '../BaseMatrixService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
-import { MATRIX_PATHS } from '../paths'
+import { matrixBurnAfterReadService } from '../messaging/MatrixBurnAfterReadService'
 import { matrixRoomSummaryService, type RoomSummary } from './MatrixRoomSummaryService'
 
 const logger = createLogger('AccountDataService')
@@ -65,11 +64,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getReportScannerInfo(roomId: string, eventId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {
-      const result = await authedRequestWithPath<Record<string, unknown>>(
-        client,
-        'GET',
-        MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId)
-      )
+      const result = await client.getReportingManager().getScannerInfo(roomId, eventId)
       return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取内容扫描信息失败: ${err}`)
@@ -84,8 +79,8 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getVaultData(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.VAULT_DATA(roomId))
-      return result as Record<string, unknown>
+      const result = await client.getRoomSummaryManager().getRoomVaultData(roomId)
+      return (result ?? {}) as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取保险库数据失败: ${err}`)
       return {}
@@ -97,7 +92,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async setVaultData(roomId: string, content: Record<string, unknown>): Promise<void> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('PUT', MATRIX_PATHS.ROOM.VAULT_DATA(roomId), undefined, content)
+      await client.getRoomSummaryManager().setRoomVaultData(roomId, content)
       logger.info(`[MatrixRoom] 更新保险库数据成功: ${roomId}`)
     } catch (err) {
       logger.error(`[MatrixRoom] 更新保险库数据失败: ${err}`)
@@ -106,12 +101,8 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   }
 
   async setReadLifetime(roomId: string, lifetimeMs: number): Promise<void> {
-    const client = this.getClient()
     try {
-      await authedRequestWithPath(client, 'PUT', MATRIX_PATHS.BURN.ROOM_BURN(roomId), undefined, {
-        enabled: true,
-        burn_after_ms: lifetimeMs
-      })
+      await matrixBurnAfterReadService.enableBurn(roomId, lifetimeMs, true)
       logger.info(`[MatrixRoom] 设置阅后即焚成功: ${roomId} (${lifetimeMs}ms)`)
     } catch (err) {
       logger.error(`[MatrixRoom] 设置阅后即焚失败: ${err}`)
@@ -121,23 +112,14 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   async getExternalServices(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
-    const adminPaths = [MATRIX_PATHS.ADMIN.EXTERNAL_SERVICES, MATRIX_PATHS.ADMIN.MATRIX_EXTERNAL_SERVICES]
-    for (const path of adminPaths) {
-      try {
-        const result = await client.http.authedRequest('GET', path)
-        const services =
-          result && typeof result === 'object' && 'services' in result
-            ? (result as { services: Array<Record<string, unknown>> }).services
-            : result && typeof result === 'object' && 'data' in result
-              ? (result as { data: Array<Record<string, unknown>> }).data
-              : (result as Array<Record<string, unknown>>)
-        return Array.isArray(services) ? services : []
-      } catch (err) {
-        logger.warn('Account data operation failed:', err)
-      }
+    try {
+      const result = await client.getExternalServiceManager().listServices()
+      const services = result?.services
+      return Array.isArray(services) ? (services as unknown as Array<Record<string, unknown>>) : []
+    } catch (err) {
+      logger.warn('Account data operation failed:', err)
+      return []
     }
-    logger.error('[MatrixRoom] 获取外部服务列表失败: Admin API not available')
-    return []
   }
 
   // ==================== Anti-Screenshot ====================
@@ -145,9 +127,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getAntiScreenshot(roomId: string): Promise<{ enabled: boolean }> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.ANTI_SCREENSHOT(roomId))
-      const data = result as { enabled?: boolean }
-      return { enabled: data.enabled ?? false }
+      return await client.getRoomSummaryManager().getAntiScreenshot(roomId)
     } catch (err) {
       logger.error(`[MatrixRoom] 获取防截屏设置失败: ${err}`)
       return { enabled: false }
@@ -157,7 +137,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async setAntiScreenshot(roomId: string, enabled: boolean): Promise<void> {
     const client = this.getClient()
     try {
-      await client.http.authedRequest('PUT', MATRIX_PATHS.ROOM.ANTI_SCREENSHOT(roomId), undefined, { enabled })
+      await client.getRoomSummaryManager().setAntiScreenshot(roomId, enabled)
       logger.info(`[MatrixRoom] 设置防截屏成功: ${roomId} (enabled=${enabled})`)
     } catch (err) {
       logger.error(`[MatrixRoom] 设置防截屏失败: ${err}`)
@@ -168,25 +148,12 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   // ==================== Burn (阅后即焚) ====================
 
   async getBurnStats(): Promise<{ total: number; active: number }> {
-    const client = this.getClient()
     try {
-      const result = await authedRequestWithPath(client, 'GET', MATRIX_PATHS.BURN.STATS)
-      const data = result as { total?: number; active?: number }
-      return { total: data.total ?? 0, active: data.active ?? 0 }
+      const stats = await matrixBurnAfterReadService.getBurnStats()
+      return { total: stats.totalBurned, active: stats.totalPending }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取阅后即焚统计失败: ${err}`)
       return { total: 0, active: 0 }
-    }
-  }
-
-  async burnRoom(roomId: string): Promise<void> {
-    const client = this.getClient()
-    try {
-      await authedRequestWithPath(client, 'POST', MATRIX_PATHS.BURN.ROOM_BURN(roomId))
-      logger.info(`[MatrixRoom] 立即焚毁房间成功: ${roomId}`)
-    } catch (err) {
-      logger.error(`[MatrixRoom] 立即焚毁房间失败: ${err}`)
-      throw err
     }
   }
 
@@ -204,8 +171,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getRoomSummaryMembers(roomId: string): Promise<unknown> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.SUMMARY_MEMBERS(roomId))
-      return result
+      return await client.getRoomSummaryManager().getRoomSummaryMembers(roomId)
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间摘要成员失败: ${err}`)
       throw err
@@ -215,8 +181,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   async getRoomSummaryState(roomId: string): Promise<unknown> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.SUMMARY_STATE(roomId))
-      return result
+      return await client.getRoomSummaryManager().getAllSummaryState(roomId)
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间摘要状态失败: ${err}`)
       throw err
@@ -277,13 +242,12 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   /** 签名事件
    */
-  async signEvent(roomId: string, eventId: string): Promise<{ signature: string; signed_by: string }> {
+  async signEvent(roomId: string, eventId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
-    const path = MATRIX_PATHS.ROOM.SIGN_EVENT(roomId, eventId)
     try {
-      const result = await client.http.authedRequest('PUT', path)
+      const result = await client.getRoomSummaryManager().signRoomEvent(roomId, eventId)
       logger.info(`[MatrixRoom] 事件签名成功: ${roomId}/${eventId}`)
-      return result as { signature: string; signed_by: string }
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 事件签名失败: ${err}`)
       throw err
@@ -292,13 +256,12 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   /** 验证事件签名
    */
-  async verifyEvent(roomId: string, eventId: string): Promise<{ valid: boolean; verifier: string }> {
+  async verifyEvent(roomId: string, eventId: string): Promise<{ valid: boolean }> {
     const client = this.getClient()
-    const path = MATRIX_PATHS.ROOM.VERIFY_EVENT(roomId, eventId)
     try {
-      const result = await client.http.authedRequest('POST', path)
+      const result = await client.getRoomSummaryManager().verifyRoomEvent(roomId, eventId)
       logger.info(`[MatrixRoom] 事件验证成功: ${roomId}/${eventId}`)
-      return result as { valid: boolean; verifier: string }
+      return { valid: Boolean(result.valid) }
     } catch (err) {
       logger.error(`[MatrixRoom] 事件验证失败: ${err}`)
       throw err
@@ -309,12 +272,11 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   /** 获取消息队列数据
    */
-  async getMessageQueue(roomId: string): Promise<{ queue?: Array<{ event_id: string; type: string }> }> {
+  async getMessageQueue(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
-    const path = MATRIX_PATHS.ROOM.MESSAGE_QUEUE(roomId)
     try {
-      const result = await client.http.authedRequest('GET', path)
-      return result as { queue?: Array<{ event_id: string; type: string }> }
+      const result = await client.getRoomSummaryManager().getRoomMessageQueue(roomId)
+      return result as unknown as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取消息队列失败: ${err}`)
       return {}
@@ -327,9 +289,8 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
    */
   async getEncryptedEvents(roomId: string): Promise<{ events?: Array<Record<string, unknown>> }> {
     const client = this.getClient()
-    const path = MATRIX_PATHS.ROOM.ENCRYPTED_EVENTS(roomId)
     try {
-      const result = await client.http.authedRequest('GET', path)
+      const result = await client.getRoomSummaryManager().getEncryptedEvents(roomId)
       return result as { events?: Array<Record<string, unknown>> }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取加密事件列表失败: ${err}`)

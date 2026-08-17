@@ -1,43 +1,10 @@
-import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { setupMswServer } from '@/../tests/msw'
 import type { MatrixClient } from '@/services/matrix/sdk'
 import matrixClientService from '../../MatrixClientService'
-import { MATRIX_PATHS } from '../../paths'
+import { matrixBurnAfterReadService } from '../../messaging/MatrixBurnAfterReadService'
 import { MatrixRoomAccountDataService } from '../AccountDataService'
 
-const TEST_BASE_URL = 'https://matrix.example.com'
-const PREFIX_V3 = '/_matrix/client/v3'
-
 type AccountDataManagerInstance = ReturnType<NonNullable<MatrixClient['getAccountDataManager']>>
-
-const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/_matrix/client/v1/rooms/:roomId/report/:eventId/scanner_info`, () => {
-    return HttpResponse.json({ clean: true })
-  }),
-  http.put(`${TEST_BASE_URL}/_matrix/vendor/v1/rooms/:roomId/burn`, async () => {
-    return HttpResponse.json({})
-  }),
-  http.get(`${TEST_BASE_URL}/_synapse/admin/v1/external_services`, () => {
-    return HttpResponse.json({ services: [{ id: 'a' }] })
-  }),
-  http.get(`${TEST_BASE_URL}/_matrix/admin/v1/external_services`, () => {
-    return new HttpResponse(null, { status: 500 })
-  }),
-  // FT-089: sign/verify/message_queue/encrypted_events
-  http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/sign/:eventId`, () => {
-    return HttpResponse.json({ signature: 'sig', signed_by: '@me:e' })
-  }),
-  http.post(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/verify/:eventId`, () => {
-    return HttpResponse.json({ valid: true, verifier: '@me:e' })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/message_queue`, () => {
-    return HttpResponse.json({ queue: [{ event_id: '$e:1', type: 'm.room.message' }] })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/encrypted_events`, () => {
-    return HttpResponse.json({ events: [{ event_id: '$e:1' }] })
-  })
-)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -45,7 +12,19 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const authedRequestImpl = vi.fn()
+// 各 Manager 方法 mock（迁移后服务不再直接 authedRequest，改走 SDK Manager）
+const getScannerInfoMock = vi.fn()
+const signRoomEventMock = vi.fn()
+const verifyRoomEventMock = vi.fn()
+const getRoomMessageQueueMock = vi.fn()
+const getEncryptedEventsMock = vi.fn()
+const getRoomVaultDataMock = vi.fn()
+const setRoomVaultDataMock = vi.fn()
+const getAntiScreenshotMock = vi.fn()
+const setAntiScreenshotMock = vi.fn()
+const getRoomSummaryMembersMock = vi.fn()
+const getAllSummaryStateMock = vi.fn()
+const listServicesMock = vi.fn()
 
 describe('MatrixRoomAccountDataService', () => {
   let service: InstanceType<typeof MatrixRoomAccountDataService>
@@ -56,40 +35,33 @@ describe('MatrixRoomAccountDataService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    authedRequestImpl.mockImplementation(
-      async (method: string, path: string, _queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
-        const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
-        const prefix = opts?.prefix ?? defaultPrefix
-        const url = `${TEST_BASE_URL}${prefix}${path}`
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer test-access-token'
-        }
-        const response = await fetch(url, {
-          method,
-          headers,
-          body: body ? JSON.stringify(body) : undefined
-        })
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-        return response.json()
-      }
-    )
     accountDataMgr = {
       getRoomAccountDataFromServer: vi.fn(),
       setRoomAccountData: vi.fn()
     }
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+    vi.spyOn(matrixBurnAfterReadService, 'enableBurn')
     service = new MatrixRoomAccountDataService()
   })
 
   const makeClient = (userId: string) => ({
     getUserId: () => userId,
-    http: {
-      authedRequest: authedRequestImpl
-    },
-    getAccountDataManager: () => accountDataMgr as unknown as AccountDataManagerInstance
+    http: { authedRequest: vi.fn() },
+    getAccountDataManager: () => accountDataMgr as unknown as AccountDataManagerInstance,
+    getReportingManager: () => ({ getScannerInfo: getScannerInfoMock }),
+    getRoomSummaryManager: () => ({
+      signRoomEvent: signRoomEventMock,
+      verifyRoomEvent: verifyRoomEventMock,
+      getRoomMessageQueue: getRoomMessageQueueMock,
+      getEncryptedEvents: getEncryptedEventsMock,
+      getRoomVaultData: getRoomVaultDataMock,
+      setRoomVaultData: setRoomVaultDataMock,
+      getAntiScreenshot: getAntiScreenshotMock,
+      setAntiScreenshot: setAntiScreenshotMock,
+      getRoomSummaryMembers: getRoomSummaryMembersMock,
+      getAllSummaryState: getAllSummaryStateMock
+    }),
+    getExternalServiceManager: () => ({ listServices: listServicesMock })
   })
 
   describe('getRoomAccountData via AccountDataManager', () => {
@@ -101,7 +73,6 @@ describe('MatrixRoomAccountDataService', () => {
     it('calls getRoomAccountDataFromServer and returns event content', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       const eventContent = { foo: 1 }
-      // AccountDataManager.getRoomAccountDataFromServer wraps the response in a MatrixEvent
       accountDataMgr.getRoomAccountDataFromServer.mockResolvedValue({
         getContent: () => eventContent
       })
@@ -138,156 +109,109 @@ describe('MatrixRoomAccountDataService', () => {
   })
 
   describe('getReportScannerInfo', () => {
-    it('GETs the v1 scanner_info endpoint', async () => {
+    it('delegates to ReportingManager.getScannerInfo', async () => {
+      getScannerInfoMock.mockResolvedValue({ clean: true })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       expect(await service.getReportScannerInfo('!r', '$e')).toEqual({ clean: true })
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'GET',
-        `/rooms/${encodeURIComponent('!r')}/report/${encodeURIComponent('$e')}/scanner_info`,
-        undefined,
-        undefined,
-        { prefix: '/_matrix/client/v1' }
-      )
+      expect(getScannerInfoMock).toHaveBeenCalledWith('!r', '$e')
     })
 
     it('swallows backend errors and returns null', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/v1/rooms/:roomId/report/:eventId/scanner_info`, () => {
-          return new HttpResponse(null, { status: 404 })
-        })
-      )
+      getScannerInfoMock.mockRejectedValue(new Error('HTTP 404'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       expect(await service.getReportScannerInfo('!r', '$e')).toBeNull()
     })
   })
 
   describe('setReadLifetime', () => {
-    it('PUTs burn config to BURN.ROOM_BURN(roomId)（FT-089: 使用 L3 常量）', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+    it('delegates to matrixBurnAfterReadService.enableBurn', async () => {
+      vi.mocked(matrixBurnAfterReadService.enableBurn).mockResolvedValue({ enabled: true, burnAfterMs: 5000 })
       await service.setReadLifetime('!r', 5000)
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'PUT',
-        '/rooms/!r/burn',
-        undefined,
-        {
-          enabled: true,
-          burn_after_ms: 5000
-        },
-        { prefix: '/_matrix/vendor/v1' }
-      )
+      expect(matrixBurnAfterReadService.enableBurn).toHaveBeenCalledWith('!r', 5000, true)
     })
 
     it('re-throws backend errors', async () => {
-      server.use(
-        http.put(`${TEST_BASE_URL}/_matrix/vendor/v1/rooms/:roomId/burn`, () => {
-          return new HttpResponse(null, { status: 403 })
-        })
-      )
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      vi.mocked(matrixBurnAfterReadService.enableBurn).mockRejectedValue(new Error('HTTP 403'))
       await expect(service.setReadLifetime('!r', 1000)).rejects.toThrow('403')
     })
   })
 
-  // FT-089: 4 个新方法的行为测试 — 验证 path 严格等于 L3 常量值
   describe('signEvent', () => {
-    it('PUTs to ROOM.SIGN_EVENT(roomId, eventId)（FT-089）', async () => {
+    it('delegates to RoomSummaryManager.signRoomEvent', async () => {
+      signRoomEventMock.mockResolvedValue({ signed: true })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
-      const result = await service.signEvent('!r:e', '$ev:1')
-      expect(result).toEqual({ signature: 'sig', signed_by: '@me:e' })
-      expect(authedRequestImpl).toHaveBeenCalledWith('PUT', MATRIX_PATHS.ROOM.SIGN_EVENT('!r:e', '$ev:1'))
+      expect(await service.signEvent('!r:e', '$ev:1')).toEqual({ signed: true })
+      expect(signRoomEventMock).toHaveBeenCalledWith('!r:e', '$ev:1')
     })
 
     it('re-throws backend errors', async () => {
-      server.use(
-        http.put(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/sign/:eventId`, () => {
-          return new HttpResponse(null, { status: 403 })
-        })
-      )
+      signRoomEventMock.mockRejectedValue(new Error('HTTP 403'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       await expect(service.signEvent('!r:e', '$ev:1')).rejects.toThrow('403')
     })
   })
 
   describe('verifyEvent', () => {
-    it('POSTs to ROOM.VERIFY_EVENT(roomId, eventId)（FT-089）', async () => {
+    it('delegates to RoomSummaryManager.verifyRoomEvent and maps valid', async () => {
+      verifyRoomEventMock.mockResolvedValue({ valid: true })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
-      const result = await service.verifyEvent('!r:e', '$ev:1')
-      expect(result).toEqual({ valid: true, verifier: '@me:e' })
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', MATRIX_PATHS.ROOM.VERIFY_EVENT('!r:e', '$ev:1'))
+      expect(await service.verifyEvent('!r:e', '$ev:1')).toEqual({ valid: true })
+      expect(verifyRoomEventMock).toHaveBeenCalledWith('!r:e', '$ev:1')
     })
 
     it('re-throws backend errors', async () => {
-      server.use(
-        http.post(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/verify/:eventId`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      verifyRoomEventMock.mockRejectedValue(new Error('HTTP 500'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       await expect(service.verifyEvent('!r:e', '$ev:1')).rejects.toThrow('500')
     })
   })
 
   describe('getMessageQueue', () => {
-    it('GETs ROOM.MESSAGE_QUEUE(roomId)（FT-089）', async () => {
+    it('delegates to RoomSummaryManager.getRoomMessageQueue', async () => {
+      getRoomMessageQueueMock.mockResolvedValue({ queue: { pending: [] } })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
-      const result = await service.getMessageQueue('!r:e')
-      expect(result.queue).toEqual([{ event_id: '$e:1', type: 'm.room.message' }])
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', MATRIX_PATHS.ROOM.MESSAGE_QUEUE('!r:e'))
+      expect(await service.getMessageQueue('!r:e')).toEqual({ queue: { pending: [] } })
+      expect(getRoomMessageQueueMock).toHaveBeenCalledWith('!r:e')
     })
 
     it('swallows backend errors and returns {}', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/message_queue`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      getRoomMessageQueueMock.mockRejectedValue(new Error('HTTP 500'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       expect(await service.getMessageQueue('!r:e')).toEqual({})
     })
   })
 
   describe('getEncryptedEvents', () => {
-    it('GETs ROOM.ENCRYPTED_EVENTS(roomId)（FT-089）', async () => {
+    it('delegates to RoomSummaryManager.getEncryptedEvents', async () => {
+      getEncryptedEventsMock.mockResolvedValue({ events: [{ event_id: '$e:1' }] })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
-      const result = await service.getEncryptedEvents('!r:e')
-      expect(result.events).toEqual([{ event_id: '$e:1' }])
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', MATRIX_PATHS.ROOM.ENCRYPTED_EVENTS('!r:e'))
+      expect((await service.getEncryptedEvents('!r:e')).events).toEqual([{ event_id: '$e:1' }])
+      expect(getEncryptedEventsMock).toHaveBeenCalledWith('!r:e')
     })
 
     it('swallows backend errors and returns {}', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/encrypted_events`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      getEncryptedEventsMock.mockRejectedValue(new Error('HTTP 500'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       expect(await service.getEncryptedEvents('!r:e')).toEqual({})
     })
   })
 
   describe('getExternalServices', () => {
-    it('unwraps `services` array from the response', async () => {
+    it('unwraps `services` array from ExternalServiceManager.listServices', async () => {
+      listServicesMock.mockResolvedValue({ services: [{ id: 'a' }] })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       expect(await service.getExternalServices()).toEqual([{ id: 'a' }])
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', '/_synapse/admin/v1/external_services')
+      expect(listServicesMock).toHaveBeenCalled()
     })
 
     it('returns [] when backend omits `services`', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/external_services`, () => {
-          return HttpResponse.json({})
-        })
-      )
+      listServicesMock.mockResolvedValue({})
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       expect(await service.getExternalServices()).toEqual([])
     })
 
     it('swallows backend errors and returns []', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_synapse/admin/v1/external_services`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      listServicesMock.mockRejectedValue(new Error('HTTP 500'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       expect(await service.getExternalServices()).toEqual([])
     })

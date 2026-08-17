@@ -1,8 +1,6 @@
 import { createLogger } from '@/utils/Logger'
 import type { Direction } from '@/services/matrix/sdk'
 import { BaseMatrixService } from '../BaseMatrixService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('TimelineService')
 
@@ -45,16 +43,11 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   }> {
     const client = this.getClient()
     try {
-      const queryParams: Record<string, string> = {}
-      if (options?.from) queryParams.from = options.from
-      if (options?.limit) queryParams.limit = String(options.limit)
-      if (options?.dir) queryParams.dir = options.dir
-
-      const result = await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.ROOM.TIMELINE(roomId),
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )
+      const result = await client.getRoomSummaryManager().getRoomTimeline(roomId, {
+        from: options?.from,
+        limit: options?.limit,
+        dir: options?.dir
+      })
       return result as { chunk: unknown[]; start: string; end: string }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间时间线失败: ${err}`)
@@ -100,16 +93,11 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   ): Promise<{ notifications: Array<Record<string, unknown>>; next_token?: string }> {
     const client = this.getClient()
     try {
-      const queryParams: Record<string, string> = {}
-      if (params?.from) queryParams.from = params.from
-      if (params?.limit) queryParams.limit = String(params.limit)
-
-      const result = await client.http.authedRequest(
-        'GET',
-        MATRIX_PATHS.ROOM.NOTIFICATIONS(roomId),
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )
-      return result as { notifications: Array<Record<string, unknown>>; next_token?: string }
+      const result = await client.getRoomSummaryManager().getRoomNotifications(roomId, {
+        from: params?.from,
+        limit: params?.limit
+      })
+      return result as unknown as { notifications: Array<Record<string, unknown>>; next_token?: string }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间通知失败: ${err}`)
       return { notifications: [] }
@@ -119,18 +107,17 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   /**
    * 获取房间通话会话信息。
    *
-   * **注意：** 此方法调用的 `GET /_matrix/client/v3/rooms/{roomId}/call/{callId}` 端点
-   * 当前后端尚未实现。请求失败时会返回 `null` 而非抛出异常。
+   * 调用 `GET /_matrix/client/v3/rooms/{roomId}/call/{callId}`（后端 voip_tracking 端点），
+   * 通过 SDK `RoomManager.getRoomCall` 薄封装发起。请求失败时返回 `null` 而非抛出异常。
    *
    * @param roomId - 房间 ID
    * @param callId - 通话 ID
    * @returns 通话会话数据，或 null（端点不可用时）
-   * @todo 等待后端实现 `/call/{callId}` 路由
    */
   async getRoomCall(roomId: string, callId: string): Promise<Record<string, unknown> | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.CALL(roomId, callId))
+      const result = await client.getRoomManager().getRoomCall(roomId, callId)
       return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取通话会话失败: ${err}`)
