@@ -43,6 +43,7 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
     announList.value = []
     announNum.value = 0
     announError.value = false
+    isLoading.value = false
   }
 
   const formatRecords = (records: Announcement[]): Announcement[] => {
@@ -58,6 +59,10 @@ export const useAnnouncementStore = defineStore(StoresEnum.ANNOUNCEMENT, () => {
       logger.error('当前会话没有roomId')
       return
     }
+    // 重入保护：App.vue 的会话切换 watch 与横幅加载会并发调用本方法，
+    // 若无保护则 isLoading 会被反复置位、共享标志可能卡死；
+    // 进行中的加载会由其自身的 finally 复位，故此处直接跳过即可
+    if (isLoading.value) return
 
     try {
       isLoading.value = true
