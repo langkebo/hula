@@ -31,7 +31,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' tauri: asset: https://asset.localhost http://asset.localhost http://127.0.0.1:5210; img-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https:; media-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https: mediastream:; connect-src 'self' ipc: https: wss: tauri:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval' http://127.0.0.1:5210; font-src 'self' data: https://at.alicdn.com; worker-src 'self' blob:; frame-src 'self' https:;"
+      "csp": "default-src 'self' tauri: asset: https://asset.localhost http://asset.localhost; img-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https:; media-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https: mediastream:; connect-src 'self' ipc: tauri: https://matrix.test wss://matrix.test; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; font-src 'self' data: https://at.alicdn.com; worker-src 'self' blob:; frame-src 'self' https:;",
+      "devCsp": "default-src 'self' tauri: asset: https://asset.localhost http://asset.localhost http://127.0.0.1:5210; img-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https:; media-src 'self' tauri: asset: https://asset.localhost http://asset.localhost data: blob: https: mediastream:; connect-src 'self' ipc: tauri: https://matrix.test wss://matrix.test http://127.0.0.1:5210 ws://127.0.0.1:5210; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval' http://127.0.0.1:5210; font-src 'self' data: https://at.alicdn.com; worker-src 'self' blob:; frame-src 'self' https:;"
     }
   }
 }
