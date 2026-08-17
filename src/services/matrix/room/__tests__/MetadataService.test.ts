@@ -1,29 +1,6 @@
-import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
 import { MatrixRoomMetadataService } from '../MetadataService'
-
-const TEST_BASE_URL = import.meta.env.VITE_HOMESERVER_URL || 'https://matrix.test'
-const PREFIX_V3 = '/_matrix/client/v3'
-
-const _server = setupMswServer(
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/capabilities`, () => {
-    return HttpResponse.json({ 'm.room_versions': { default: '11' } })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/metadata`, () => {
-    return HttpResponse.json({ a: 1 })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/turn_server`, () => {
-    return HttpResponse.json({ uris: ['turn:e'] })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/sync`, () => {
-    return HttpResponse.json({ timeline: [] })
-  }),
-  http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/permissions`, () => {
-    return HttpResponse.json({ read: true })
-  })
-)
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -31,16 +8,24 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
+const getRoomTurnServerMock = vi.fn()
+const getRoomSyncMock = vi.fn()
+const getRoomPermissionsMock = vi.fn()
+
 const makeRoomManager = () => ({
   getRoomCapabilities: vi.fn(() => Promise.resolve({ 'm.room_versions': { default: '11' } })),
   getRoomMetadata: vi.fn(() => Promise.resolve({ a: 1 }))
 })
 
+const makeRoomSummaryManager = () => ({
+  getRoomTurnServer: getRoomTurnServerMock,
+  getRoomSync: getRoomSyncMock,
+  getRoomPermissions: getRoomPermissionsMock
+})
+
 const makeHttpClient = () => ({
-  http: {
-    authedRequest: vi.fn()
-  },
-  getRoomManager: makeRoomManager
+  getRoomManager: makeRoomManager,
+  getRoomSummaryManager: makeRoomSummaryManager
 })
 
 describe('MatrixRoomMetadataService', () => {
@@ -124,39 +109,40 @@ describe('MatrixRoomMetadataService', () => {
       expect(roomManager.getRoomMetadata).toHaveBeenCalledWith('!r')
     })
 
-    it('getRoomTurnServer hits /turn_server', async () => {
+    it('getRoomTurnServer delegates to RoomSummaryManager', async () => {
+      getRoomTurnServerMock.mockResolvedValue({ uris: ['turn:e'] })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomTurnServer('!r')).toEqual({ uris: ['turn:e'] })
+      expect(getRoomTurnServerMock).toHaveBeenCalledWith('!r')
     })
 
-    it('getRoomSync hits /sync', async () => {
+    it('getRoomSync delegates to RoomSummaryManager', async () => {
+      getRoomSyncMock.mockResolvedValue({ timeline: [] })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomSync('!r')).toEqual({ timeline: [] })
+      expect(getRoomSyncMock).toHaveBeenCalledWith('!r')
     })
 
     it('all three swallow errors and return {}', async () => {
+      getRoomTurnServerMock.mockRejectedValue(new Error('boom'))
+      getRoomSyncMock.mockRejectedValue(new Error('boom'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
-      const httpClient = matrixClientService.getClient() as unknown as {
-        http: { authedRequest: ReturnType<typeof vi.fn> }
-      }
-      httpClient.http.authedRequest.mockRejectedValue(new Error('boom'))
       expect(await service.getRoomTurnServer('!r')).toEqual({})
       expect(await service.getRoomSync('!r')).toEqual({})
     })
   })
 
   describe('getRoomPermissions', () => {
-    it('GETs /permissions and returns the payload', async () => {
+    it('delegates to RoomSummaryManager and returns the payload', async () => {
+      getRoomPermissionsMock.mockResolvedValue({ read: true })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomPermissions('!r')).toEqual({ read: true })
+      expect(getRoomPermissionsMock).toHaveBeenCalledWith('!r')
     })
 
     it('swallows errors and returns {}', async () => {
+      getRoomPermissionsMock.mockRejectedValue(new Error('boom'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
-      const httpClient = matrixClientService.getClient() as unknown as {
-        http: { authedRequest: ReturnType<typeof vi.fn> }
-      }
-      httpClient.http.authedRequest.mockRejectedValue(new Error('boom'))
       expect(await service.getRoomPermissions('!r')).toEqual({})
     })
   })

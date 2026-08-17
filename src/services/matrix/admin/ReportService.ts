@@ -143,14 +143,9 @@ export class AdminReportService {
   }
 
   async getScannerInfo(roomId: string, eventId: string, throwOnError = false): Promise<ScannerInfo | null> {
-    const client = this.getClient()
     try {
-      const result = await this.prefixedAuthedRequest<ScannerInfo>(
-        client,
-        'GET',
-        MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO(roomId, eventId)
-      )
-      return result
+      const result = await this.getReportingMgr().getScannerInfo(roomId, eventId)
+      return result as unknown as ScannerInfo
     } catch (err) {
       logger.error(`[Admin] 获取扫描器信息失败: ${err}`)
       if (throwOnError) throw err

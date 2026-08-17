@@ -45,7 +45,6 @@
         <n-tag :type="verifyResult.valid ? 'success' : 'error'" size="small">
           {{ verifyResult.valid ? t('room.event_signature.valid') : t('room.event_signature.invalid') }}
         </n-tag>
-        <span v-if="verifyResult.verifier" class="result-verifier">{{ verifyResult.verifier }}</span>
       </div>
     </n-card>
   </div>
@@ -68,7 +67,7 @@ const eventId = ref('')
 const signing = ref(false)
 const verifying = ref(false)
 const signResult = ref<Record<string, unknown> | null>(null)
-const verifyResult = ref<{ valid: boolean; verifier?: string } | null>(null)
+const verifyResult = ref<{ valid: boolean } | null>(null)
 
 function handleEventIdChange(value: string): void {
   eventId.value = value
@@ -100,10 +99,7 @@ async function handleVerify(): Promise<void> {
   verifyResult.value = null
   try {
     const result = await matrixRoomAccountDataService.verifyEvent(props.roomId, id)
-    verifyResult.value = {
-      valid: Boolean(result.valid),
-      verifier: typeof result.verifier === 'string' ? result.verifier : undefined
-    }
+    verifyResult.value = { valid: Boolean(result.valid) }
     showFeedback(t('room.event_signature.verify_success'), 'success')
   } catch {
     showFeedback(t('room.event_signature.verify_failed'), 'error')
