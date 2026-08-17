@@ -7,7 +7,7 @@ import { MatrixRoomMembershipService } from '../MembershipService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const server = setupMswServer(
+const _server = setupMswServer(
   http.post(`${TEST_BASE_URL}${PREFIX_V3}/knock/:roomId`, () => {
     return HttpResponse.json({ room_id: '!r' })
   }),
@@ -158,28 +158,17 @@ describe('MatrixRoomMembershipService', () => {
       expect(forget).toHaveBeenCalledWith('!r')
     })
 
-    it('knockRoom forwards viaServers + reason to client.http.authedRequest', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValueOnce({
-        http: { authedRequest: authedRequestImpl }
-      } as never)
+    it('knockRoom forwards viaServers + reason to client.knockRoom', async () => {
+      const knockRoom = vi.fn().mockResolvedValue({ room_id: '!r' })
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce({ knockRoom } as never)
       const out = await service.knockRoom('!r', 'please', ['matrix.test'])
-      expect(authedRequestImpl).toHaveBeenCalledWith('POST', expect.stringContaining('/knock/'), undefined, {
-        room_id_or_alias: '!r',
-        reason: 'please',
-        via: ['matrix.test']
-      })
+      expect(knockRoom).toHaveBeenCalledWith('!r', { reason: 'please', viaServers: ['matrix.test'] })
       expect(out).toEqual({ room_id: '!r' })
     })
 
     it('knockRoom re-throws backend errors', async () => {
-      server.use(
-        http.post(`${TEST_BASE_URL}${PREFIX_V3}/knock/:roomId`, () => {
-          return new HttpResponse(null, { status: 403 })
-        })
-      )
-      vi.mocked(matrixClientService.getClient).mockReturnValueOnce({
-        http: { authedRequest: authedRequestImpl }
-      } as never)
+      const knockRoom = vi.fn().mockRejectedValue(new Error('403'))
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce({ knockRoom } as never)
       await expect(service.knockRoom('!r')).rejects.toThrow('403')
     })
   })
