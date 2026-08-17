@@ -2,7 +2,6 @@ import type { Room, RoomMember } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MembershipService')
 
@@ -132,13 +131,9 @@ export class MatrixRoomMembershipService {
   async knockRoom(roomId: string, reason?: string, viaServers?: string[]): Promise<{ room_id: string }> {
     const client = this.getClient()
     try {
-      const body: Record<string, unknown> = { room_id_or_alias: roomId }
-      if (reason) body.reason = reason
-      if (viaServers && viaServers.length > 0) body.via = viaServers
-
-      const result = await client.http.authedRequest('POST', MATRIX_PATHS.ROOM.KNOCK(roomId), undefined, body)
+      const result = await client.knockRoom(roomId, { reason, viaServers })
       logger.info(`[MatrixRoom] 敲门房间成功: ${roomId}`)
-      return result as { room_id: string }
+      return result
     } catch (err) {
       logger.error(`[MatrixRoom] 敲门房间失败: ${err}`)
       throw err
@@ -148,18 +143,12 @@ export class MatrixRoomMembershipService {
   async joinRoomByAlias(roomIdOrAlias: string, serverName?: string[]): Promise<{ room_id: string }> {
     const client = this.getClient()
     try {
-      const body: Record<string, unknown> = {}
-      if (serverName && serverName.length > 0) {
-        body.server_name = serverName
-      }
-      const result = await client.http.authedRequest(
-        'POST',
-        MATRIX_PATHS.ROOM.JOIN_BY_ALIAS(roomIdOrAlias),
-        undefined,
-        body
+      const room = await client.joinRoom(
+        roomIdOrAlias,
+        serverName && serverName.length > 0 ? { viaServers: serverName } : undefined
       )
       logger.info(`[MatrixRoom] 通过别名加入房间成功: ${roomIdOrAlias}`)
-      return result as { room_id: string }
+      return { room_id: room.roomId }
     } catch (err) {
       logger.error(`[MatrixRoom] 通过别名加入房间失败: ${err}`)
       throw err
