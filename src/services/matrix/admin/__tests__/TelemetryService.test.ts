@@ -8,11 +8,19 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
+const telemetryManager = {
+  getServerStatus: vi.fn(),
+  getServerAttributes: vi.fn(),
+  getServerMetricsSummary: vi.fn(),
+  getServerAlerts: vi.fn()
+}
+
 const makeClient = () => {
   const authedRequest = vi.fn()
   return {
     authedRequest,
-    http: { authedRequest }
+    http: { authedRequest },
+    getTelemetryManager: () => telemetryManager
   } as unknown as MatrixClient & {
     http: { authedRequest: typeof authedRequest }
   }
@@ -29,9 +37,9 @@ describe('AdminTelemetryService — P1-2 遥测监控', () => {
     vi.clearAllMocks()
   })
 
-  it('getStatus 使用 GET /telemetry/status', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({
+  it('getStatus 委托 TelemetryManager.getServerStatus', async () => {
+    const { service } = makeService()
+    telemetryManager.getServerStatus.mockResolvedValue({
       enabled: true,
       trace_enabled: false,
       metrics_enabled: true,
@@ -47,51 +55,39 @@ describe('AdminTelemetryService — P1-2 遥测监控', () => {
     })
 
     const result = await service.getStatus()
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/telemetry/status',
-      undefined,
-      undefined,
-      expect.objectContaining({ prefix: '/_synapse/admin/v1' })
-    )
+    expect(telemetryManager.getServerStatus).toHaveBeenCalled()
     expect(result?.enabled).toBe(true)
     expect(result?.export_config.prometheus_port).toBe(9090)
   })
 
   it('getStatus 在出错时降级为 null', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockRejectedValue(new Error('boom'))
+    const { service } = makeService()
+    telemetryManager.getServerStatus.mockRejectedValue(new Error('boom'))
     const result = await service.getStatus()
     expect(result).toBeNull()
   })
 
-  it('getResourceAttributes 使用 GET /telemetry/attributes', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({
+  it('getResourceAttributes 委托 getServerAttributes', async () => {
+    const { service } = makeService()
+    telemetryManager.getServerAttributes.mockResolvedValue({
       attributes: { service: 'synapse-rust', version: '0.1.0' }
     })
 
     const result = await service.getResourceAttributes()
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/telemetry/attributes',
-      undefined,
-      undefined,
-      expect.any(Object)
-    )
+    expect(telemetryManager.getServerAttributes).toHaveBeenCalled()
     expect(result.attributes.service).toBe('synapse-rust')
   })
 
   it('getResourceAttributes 在出错时返回空 attributes', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockRejectedValue(new Error('boom'))
+    const { service } = makeService()
+    telemetryManager.getServerAttributes.mockRejectedValue(new Error('boom'))
     const result = await service.getResourceAttributes()
     expect(result).toEqual({ attributes: {} })
   })
 
-  it('getMetricsSummary 使用 GET /telemetry/metrics', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({
+  it('getMetricsSummary 委托 getServerMetricsSummary', async () => {
+    const { service } = makeService()
+    telemetryManager.getServerMetricsSummary.mockResolvedValue({
       total_metrics: 42,
       total_counters: 20,
       total_gauges: 15,
@@ -115,56 +111,38 @@ describe('AdminTelemetryService — P1-2 遥测监控', () => {
     })
 
     const result = await service.getMetricsSummary()
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/telemetry/metrics',
-      undefined,
-      undefined,
-      expect.any(Object)
-    )
+    expect(telemetryManager.getServerMetricsSummary).toHaveBeenCalled()
     expect(result?.total_metrics).toBe(42)
     expect(result?.appservice_scheduler.total_success_count).toBe(100)
   })
 
   it('listAlerts 默认 refresh=true', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({
+    const { service } = makeService()
+    telemetryManager.getServerAlerts.mockResolvedValue({
       alerts: [{ alert_id: 'a-1', severity: 'critical', status: 'firing' }]
     })
 
     const result = await service.listAlerts()
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/telemetry/alerts',
-      expect.objectContaining({ refresh: true }),
-      undefined,
-      expect.any(Object)
-    )
+    expect(telemetryManager.getServerAlerts).toHaveBeenCalledWith({ refresh: true })
     expect(result).toHaveLength(1)
     expect(result[0].alert_id).toBe('a-1')
   })
 
   it('listAlerts 透传 status / severity / refresh 参数', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({ alerts: [] })
+    const { service } = makeService()
+    telemetryManager.getServerAlerts.mockResolvedValue({ alerts: [] })
 
     await service.listAlerts({ status: 'firing', severity: 'critical', refresh: false })
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/telemetry/alerts',
-      expect.objectContaining({
-        refresh: false,
-        status: 'firing',
-        severity: 'critical'
-      }),
-      undefined,
-      expect.any(Object)
-    )
+    expect(telemetryManager.getServerAlerts).toHaveBeenCalledWith({
+      refresh: false,
+      status: 'firing',
+      severity: 'critical'
+    })
   })
 
   it('listAlerts 在出错时降级为空数组', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockRejectedValue(new Error('boom'))
+    const { service } = makeService()
+    telemetryManager.getServerAlerts.mockRejectedValue(new Error('boom'))
     const result = await service.listAlerts()
     expect(result).toEqual([])
   })

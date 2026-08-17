@@ -125,6 +125,10 @@ const SYNAPSE_ADMIN_BASE = MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE
 export class AdminTelemetryService {
   constructor(private readonly getClient: GetClientGetter) {}
 
+  private getManager() {
+    return this.getClient().getTelemetryManager()
+  }
+
   private async adminRequest<TResponse>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
@@ -146,8 +150,8 @@ export class AdminTelemetryService {
    */
   async getStatus(): Promise<TelemetryStatus | null> {
     try {
-      const result = await this.adminRequest<TelemetryStatus>('GET', '/telemetry/status')
-      return result ?? null
+      const result = await this.getManager().getServerStatus()
+      return (result as TelemetryStatus) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getStatus 失败: ${err}`)
       return null
@@ -159,8 +163,8 @@ export class AdminTelemetryService {
    */
   async getResourceAttributes(): Promise<TelemetryResourceAttributes> {
     try {
-      const result = await this.adminRequest<TelemetryResourceAttributes>('GET', '/telemetry/attributes')
-      return result ?? { attributes: {} }
+      const result = await this.getManager().getServerAttributes()
+      return (result as TelemetryResourceAttributes) ?? { attributes: {} }
     } catch (err) {
       logger.error(`[AdminTelemetry] getResourceAttributes 失败: ${err}`)
       return { attributes: {} }
@@ -172,8 +176,8 @@ export class AdminTelemetryService {
    */
   async getMetricsSummary(): Promise<TelemetryMetricsSummary | null> {
     try {
-      const result = await this.adminRequest<TelemetryMetricsSummary>('GET', '/telemetry/metrics')
-      return result ?? null
+      const result = await this.getManager().getServerMetricsSummary()
+      return (result as TelemetryMetricsSummary) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getMetricsSummary 失败: ${err}`)
       return null
@@ -185,14 +189,12 @@ export class AdminTelemetryService {
    */
   async listAlerts(params: TelemetryAlertQueryParams = {}): Promise<TelemetryAlert[]> {
     try {
-      const queryParams: Record<string, string | number | boolean | string[] | undefined> = {
-        refresh: params.refresh ?? true
-      }
-      if (params.status) queryParams.status = params.status
-      if (params.severity) queryParams.severity = params.severity
-
-      const result = await this.adminRequest<TelemetryAlertsResponse>('GET', '/telemetry/alerts', queryParams)
-      return result?.alerts ?? []
+      const result = await this.getManager().getServerAlerts({
+        refresh: params.refresh ?? true,
+        ...(params.status ? { status: params.status } : {}),
+        ...(params.severity ? { severity: params.severity } : {})
+      })
+      return (result?.alerts ?? []) as TelemetryAlert[]
     } catch (err) {
       logger.error(`[AdminTelemetry] listAlerts 失败: ${err}`)
       return []
