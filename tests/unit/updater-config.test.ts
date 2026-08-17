@@ -64,9 +64,7 @@ describe('homeserverUrlToConnectSrc', () => {
   })
 
   it('http homeserver 生成 http + ws 来源', () => {
-    expect(homeserverUrlToConnectSrc('http://localhost:8008')).toBe(
-      'http://localhost:8008 ws://localhost:8008'
-    )
+    expect(homeserverUrlToConnectSrc('http://localhost:8008')).toBe('http://localhost:8008 ws://localhost:8008')
   })
 
   it('剥离路径与查询，保留 host（含端口）', () => {

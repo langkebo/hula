@@ -230,9 +230,7 @@ export function createGroupMembers(ctx: GroupMembersContext) {
     // 直接比较会导致同一成员出现两条记录），已存在则合并资料。
     const localpart = toLocalpart(user.userId || user.uid)
     const existingIndex = localpart
-      ? membersMap[targetRoomId].findIndex(
-          (m) => toLocalpart(m.userId || m.uid) === localpart
-        )
+      ? membersMap[targetRoomId].findIndex((m) => toLocalpart(m.userId || m.uid) === localpart)
       : -1
     if (existingIndex >= 0) {
       membersMap[targetRoomId][existingIndex] = {

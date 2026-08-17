@@ -54,9 +54,7 @@ function loadEnvFiles() {
 // 读取指定平台实际 conf 中的 csp / devCsp 字符串，供 CSP 注入覆盖使用。
 // 平台 conf 缺失时回退到 base tauri.conf.json（devCsp 仅在平台 conf 中存在）。
 function readSecurityCsp(platform) {
-  const baseConf = JSON.parse(
-    fs.readFileSync(path.join(repoRoot, 'src-tauri', 'tauri.conf.json'), 'utf8')
-  )
+  const baseConf = JSON.parse(fs.readFileSync(path.join(repoRoot, 'src-tauri', 'tauri.conf.json'), 'utf8'))
   const platformConfPath = path.join(repoRoot, 'src-tauri', `tauri.${platform}.conf.json`)
   let platformConf = {}
   if (fs.existsSync(platformConfPath)) {

@@ -70,9 +70,7 @@ export function homeserverUrlToConnectSrc(url) {
   const { protocol, host } = parsed
   if (!host || (protocol !== 'https:' && protocol !== 'http:')) return null
 
-  return protocol === 'https:'
-    ? `https://${host} wss://${host}`
-    : `http://${host} ws://${host}`
+  return protocol === 'https:' ? `https://${host} wss://${host}` : `http://${host} ws://${host}`
 }
 
 /**
@@ -98,9 +96,7 @@ export function replaceHomeserverInCsp(csp, homeserverUrl) {
  * @returns {object | null} `{ app: { security: { csp?, devCsp? } } }` 或 null
  */
 export function buildCspConfigOverride(homeserverUrl, sources = {}) {
-  const resolved = typeof homeserverUrl === 'string' && homeserverUrl.trim()
-    ? homeserverUrl
-    : DEFAULT_HOMESERVER_URL
+  const resolved = typeof homeserverUrl === 'string' && homeserverUrl.trim() ? homeserverUrl : DEFAULT_HOMESERVER_URL
   const tokens = homeserverUrlToConnectSrc(resolved)
   if (!tokens) return null
 
