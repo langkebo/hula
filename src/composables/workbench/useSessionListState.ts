@@ -1,3 +1,4 @@
+import { uniqBy } from 'es-toolkit'
 import { useI18n } from 'vue-i18n'
 import { useReplaceMsg } from '@/composables/chat/useReplaceMsg'
 import { useAriaLive } from '@/composables/common/useAriaLive'
@@ -9,6 +10,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatChatTime } from '@/utils/ComputedTime.ts'
+import { toLocalpart } from '@/utils/userIdentity'
 
 type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
 
@@ -64,7 +66,25 @@ export const useSessionListState = () => {
   const sessionList = computed(() => {
     sessionCacheRefreshKey.value
 
-    return sourceSessionList.value
+    const dedupedByRoom = uniqBy(sourceSessionList.value, (item) => item.roomId)
+
+    // 同一对方用户的多个 DM 房间（历史数据或旧版重复创建）只保留最近活跃一条，
+    // 否则中间栏会出现同一成员多条重复会话。
+    const dmSeen = new Set<string>()
+    const sessionItems = [...dedupedByRoom]
+      .sort((a, b) => b.activeTime - a.activeTime)
+      .filter((item) => {
+        if (item.type !== RoomTypeEnum.SINGLE) return true
+        // detailId/account 均为对方 MXID，但历史数据可能是 localpart，
+        // 用 localpart 归一化避免格式不一致漏判。
+        const counterpartKey = toLocalpart(item.detailId || item.account || '')
+        if (!counterpartKey) return true
+        if (dmSeen.has(counterpartKey)) return false
+        dmSeen.add(counterpartKey)
+        return true
+      })
+
+    return sessionItems
       .map((item) => {
         let latestAvatar = item.avatar
         if (item.type === RoomTypeEnum.SINGLE && item.detailId) {
@@ -148,6 +168,11 @@ export const useSessionListState = () => {
       .sort((a, b) => {
         if (a.top && !b.top) return -1
         if (!a.top && b.top) return 1
+
+        // 未读会话优先置顶，按最新未读（activeTime）降序，最新未读的成员排最上
+        const aUnread = (a.unreadCount ?? 0) > 0
+        const bUnread = (b.unreadCount ?? 0) > 0
+        if (aUnread !== bUnread) return aUnread ? -1 : 1
 
         return b.activeTime - a.activeTime
       })

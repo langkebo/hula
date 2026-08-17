@@ -6,6 +6,7 @@ import type { MatrixRoomMember } from '@/stores/domains/chat/group/types.ts'
 import type { useUserStore } from '@/stores/domains/user/user'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
+import { normalizeMatrixUserId } from '@/utils/userIdentity'
 
 const logger = createLogger('WsMemberHandler')
 
@@ -53,9 +54,13 @@ export function createMemberHandler(deps: MemberHandlerDeps) {
 
   const handleOtherMemberAdd = async (user: UserItem, roomId: string) => {
     logger.info('群成员加入群聊，添加群成员数据')
+    // WS 推送的 uid 可能是 localpart，规范化为完整 MXID，
+    // 避免与 SDK 来源成员（完整 MXID）形成同人的两条记录。
+    const normalizedUid = normalizeMatrixUserId(user.uid, userStore.userInfo?.uid)
     const matrixMember: MatrixRoomMember = {
       ...user,
-      userId: user.uid,
+      uid: normalizedUid || user.uid,
+      userId: normalizedUid || user.uid,
       displayName: user.name,
       avatarUrl: user.avatar,
       membership: 'join',

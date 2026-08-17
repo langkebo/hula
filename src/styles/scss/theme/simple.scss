@@ -1,15 +1,16 @@
 /**! 主题变量 */
 :root {
   .simple {
-    // 侧边栏样式
-    --left-bg-color: var(--tjg-surface-sidebar);
-    --left-active-bg-color: var(--tjg-surface-sidebar-selected);
-    --left-text-color: var(--tjg-text-secondary);
-    --left-icon-color: var(--tjg-text-secondary);
-    --left-active-hover: var(--tjg-color-primary-500);
-    --left-bg-hover: var(--tjg-surface-sidebar-hover);
-    --left-active-icon-color: var(--tjg-color-primary-500);
-    --left-win-icon-color: var(--tjg-color-primary-200);
+    // 侧边栏样式（浅色：项目主题色实底，参考 HuLa 桌面导航栏）
+    --left-bg-color: var(--tjg-color-primary-500);
+    --left-active-bg-color: rgba(255, 255, 255, 0.18);
+    --left-text-color: rgba(255, 255, 255, 0.92);
+    --left-icon-color: rgba(255, 255, 255, 0.78);
+    --left-active-hover: #ffffff;
+    --left-bg-hover: rgba(255, 255, 255, 0.12);
+    --left-active-icon-color: #ffffff;
+    --left-win-icon-color: rgba(255, 255, 255, 0.6);
+    --left-active-indicator-color: #ffffff;
 
     // 通用背景色
     --background: oklch(1 0 0);
@@ -19,8 +20,9 @@
     --card-foreground: oklch(0.141 0.005 285.823);
     --input: oklch(0.92 0.004 286.32);
 
-    // 右边布局内容背景
-    --right-theme-bg-color: var(--tjg-surface-subtle);
+    // 右边布局内容背景（第三栏背景图）
+    --right-theme-bg-color: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)) center / cover no-repeat,
+      url('/img/dispersion-bg.png') center / cover no-repeat;
 
     // 聊天框主体样式
     --right-chat-reply-color: var(--tjg-border-strong);
@@ -45,15 +47,16 @@
 
 html[data-theme='dark'] {
   .simple {
-    // 侧边栏样式
+    // 侧边栏样式（深色：保持深色实底，激活指示条用品牌色）
     --left-bg-color: var(--tjg-surface-sidebar);
     --left-active-bg-color: var(--tjg-surface-sidebar-selected);
-    --left-text-color: var(--tjg-border-default);
-    --left-icon-color: var(--tjg-border-default);
+    --left-text-color: rgba(255, 255, 255, 0.9);
+    --left-icon-color: rgba(255, 255, 255, 0.75);
     --left-active-hover: var(--tjg-color-primary-500);
     --left-bg-hover: var(--tjg-surface-sidebar-hover);
     --left-active-icon-color: var(--tjg-color-primary-500);
     --left-win-icon-color: var(--tjg-color-primary-200);
+    --left-active-indicator-color: var(--tjg-color-primary-500);
 
     --background: oklch(27, 27, 27);
     --foreground: oklch(0.985 0 0);
@@ -62,8 +65,9 @@ html[data-theme='dark'] {
     --card-foreground: oklch(0.985 0 0);
     --input: oklch(1 0 0 / 15%);
 
-    // 右边布局内容背景
-    --right-theme-bg-color: var(--tjg-surface-sidebar);
+    // 右边布局内容背景（第三栏背景图，深色蒙版）
+    --right-theme-bg-color: linear-gradient(rgba(18, 19, 22, 0.74), rgba(18, 19, 22, 0.74)) center / cover no-repeat,
+      url('/img/dispersion-bg.png') center / cover no-repeat;
 
     // 聊天框主体样式
     --right-chat-reply-color: var(--tjg-surface-subtle);

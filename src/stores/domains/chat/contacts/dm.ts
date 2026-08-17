@@ -47,6 +47,19 @@ export function createContactDm(ctx: ContactDmContext) {
         return existingContact.directRoomId
       }
 
+      // m.direct 账号数据兜底：DM 房间可能在其它入口/设备已创建，
+      // 仅查 contactsList 缓存会导致同一用户反复新建房间（会话列表出现重复成员）。
+      const existingDm = await matrixDirectMessageService.getDmForUser(userId, false)
+      if (existingDm) {
+        const contactIndex = contactsList.value.findIndex((c) => c.userId === userId)
+        if (contactIndex >= 0) {
+          contactsList.value[contactIndex].directRoomId = existingDm
+          triggerRef(contactsList)
+        }
+        logger.info(`[ContactStore] 复用已有私聊房间: ${existingDm}`)
+        return existingDm
+      }
+
       const roomId = await matrixDirectMessageService.createDm(userId, { userIds: [userId], isEncrypted: encrypted })
 
       const contactIndex = contactsList.value.findIndex((c) => c.userId === userId)

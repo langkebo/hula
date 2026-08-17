@@ -33,6 +33,26 @@ interface ThumbnailInfo {
 type EventContent = Record<string, unknown>
 type MessageSendSource = File | string
 
+// scrollback / 反向分页的超时保护：避免 SlidingSync 下 scrollback 挂起导致 UI 永久卡在骨架屏。
+const SCROLLBACK_TIMEOUT_MS = 15000
+const PAGINATE_TIMEOUT_MS = 15000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`操作超时(${ms}ms)`)), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (err) => {
+        clearTimeout(timer)
+        reject(err)
+      }
+    )
+  })
+}
+
 class MatrixEventService extends BaseMatrixService {
   private extractEventId(response: unknown): string {
     if (
@@ -336,30 +356,53 @@ class MatrixEventService extends BaseMatrixService {
       return { messages: [], isLast: true, cursor: '' }
     }
 
-    let timeline = room.getLiveTimeline()
+    const timeline = room.getLiveTimeline()
+    const client = this.getClient()
     let events = timeline.getEvents()
 
-    // SlidingSync 的 timeline_limit 较小（10-50），如果 timeline 为空或事件不足，
-    // 通过 /messages API（client.scrollback）从服务端拉取历史消息。
-    // 场景：client 重建后 room store 被清空，SlidingSync 尚未填充 timeline，
-    // 或房间长时间无活动导致 SlidingSync 未返回 timeline 事件。
-    if (events.length === 0) {
+    // 本客户端使用 SlidingSync，live timeline 仅含 1~10 条窗口
+    // （MatrixSyncManager.timelineLimit 按网络 1/3/5/10）。历史消息不能依赖该窗口，
+    // 必须用 /messages 反向分页拉取：
+    //   - 初始加载（cursor 为空）：live 窗口为空或不足一页时，scrollback 从服务端补齐最近历史；
+    //   - 上拉加载更早（cursor 非空）：client.paginateEventTimeline 反向翻页（/messages），
+    //     仅返回本次新加载的更早事件，游标前移至新的最旧一条。
+    let pageEvents: MatrixEvent[]
+    let isLast = false
+
+    if (cursor) {
+      // 上拉加载更早历史：用 /messages 反向分页，兼容 SlidingSync，不依赖 live timeline 窗口。
       try {
-        const client = this.getClient()
-        await client.scrollback(room, Math.max(pageSize, 30))
-        // scrollback 会将历史事件插入到 timeline 中，重新获取
-        timeline = room.getLiveTimeline()
-        events = timeline.getEvents()
+        const before = events.length
+        const hasMore = await withTimeout(
+          client.paginateEventTimeline(timeline, { backwards: true, limit: pageSize }),
+          PAGINATE_TIMEOUT_MS
+        )
+        events = room.getLiveTimeline().getEvents()
+        const added = events.length - before
+        // 仅返回本次新加载的更早事件（已 prepend 到时间线起点）。
+        pageEvents = added > 0 ? events.slice(0, added) : []
+        // 反向分页无新增 或 已无更早历史 => 终止上拉，避免死循环。
+        isLast = !hasMore || added === 0
       } catch (err) {
-        logger.error(`scrollback 获取历史消息失败: ${roomId}`, err)
-        // scrollback 失败时返回空结果，不阻塞 UI
+        logger.error(`加载更早消息失败: ${roomId}`, err)
         return { messages: [], isLast: true, cursor: '' }
       }
+    } else {
+      // 初始加载：live 窗口不足一页时，从服务端补齐最近 pageSize 条，避免“只显示最后一条”。
+      if (events.length < pageSize) {
+        try {
+          await withTimeout(client.scrollback(room, Math.max(pageSize, 30)), SCROLLBACK_TIMEOUT_MS)
+          events = room.getLiveTimeline().getEvents()
+        } catch (err) {
+          logger.error(`scrollback 补齐初始历史失败: ${roomId}`, err)
+          // 即使失败也返回已有时窗内容，不阻塞 UI
+        }
+      }
+      // 返回当前时间线中的全部消息（已含 scrollback 补齐的最近历史）。
+      pageEvents = events
+      // 不足一页 => 已无更多历史（全部拉取完毕）。
+      isLast = events.length < pageSize
     }
-
-    const startIndex = cursor ? events.findIndex((e: MatrixEvent) => e.getId() === cursor) : 0
-    const endIndex = Math.min(startIndex + pageSize, events.length)
-    const pageEvents = events.slice(startIndex, endIndex)
 
     const messages: MessageType[] = []
     for (const event of pageEvents) {
@@ -371,10 +414,12 @@ class MatrixEventService extends BaseMatrixService {
       }
     }
 
+    // 游标锚定本页最旧消息 id，供后续 loadMore 继续向前翻页。
+    const anchor = pageEvents[0]?.getId() || ''
     return {
       messages,
-      isLast: endIndex >= events.length,
-      cursor: pageEvents[pageEvents.length - 1]?.getId() || ''
+      isLast,
+      cursor: anchor
     }
   }
 }
