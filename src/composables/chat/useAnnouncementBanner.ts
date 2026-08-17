@@ -9,6 +9,31 @@ export type AnnouncementData = {
   top?: boolean
 }
 
+/** 横幅加载超时错误：仅用于在 finally 中安全复位加载态，不影响其它逻辑 */
+class AnnouncementLoadTimeoutError extends Error {
+  constructor(message = 'announcement load timeout') {
+    super(message)
+    this.name = 'AnnouncementLoadTimeoutError'
+  }
+}
+
+/** 给 Promise 加超时保护，避免底层请求异常挂起导致调用方加载态永远无法复位 */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new AnnouncementLoadTimeoutError()), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
+}
+
 export function useAnnouncementBanner(
   currentRoomId: Ref<string | null>,
   isGroup: Ref<boolean>,
@@ -18,20 +43,26 @@ export function useAnnouncementBanner(
   const logger = createLogger('useAnnouncementBanner')
   const announcementStore = useAnnouncementStore()
   const topAnnouncement = ref<AnnouncementData | null>(null)
+  // 横幅自身的加载态：与 store 共享的 isLoading 解耦，
+  // 避免被 App.vue 会话切换 watch 等其它调用方反复置位而卡死转圈
+  const isLoading = ref(false)
   let announcementUpdatedListener: UnlistenFn | null = null
   let announcementClearListener: UnlistenFn | null = null
 
   const loadTopAnnouncement = async (roomId?: string): Promise<void> => {
-    if (announcementStore.isLoading) return
     const targetRoomId = roomId ?? currentRoomId.value
 
     if (!targetRoomId || !isGroup.value) {
       topAnnouncement.value = null
+      isLoading.value = false
       return
     }
 
+    isLoading.value = true
     try {
-      const data = await announcementStore.getGroupAnnouncementList(targetRoomId, 1, 1)
+      // 底层加载加超时保护：即使请求异常挂起，横幅的加载态也一定会复位，
+      // 不会再出现“一直转圈、点其它会话也不刷新”的死状态
+      const data = await withTimeout(announcementStore.getGroupAnnouncementList(targetRoomId, 1, 1), 10000)
       if (targetRoomId !== currentRoomId.value) return
 
       if (data && data.records.length > 0) {
@@ -52,10 +83,16 @@ export function useAnnouncementBanner(
         topAnnouncement.value = null
       }
     } catch (error) {
-      logger.error('获取置顶公告失败:', error)
+      if (error instanceof AnnouncementLoadTimeoutError) {
+        logger.warn('获取置顶公告超时，已跳过该次加载')
+      } else {
+        logger.error('获取置顶公告失败:', error)
+      }
       if (targetRoomId === currentRoomId.value) {
         topAnnouncement.value = null
       }
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -65,6 +102,7 @@ export function useAnnouncementBanner(
       const [prevRoomId, prevIsGroup] = prevValue ?? [undefined, undefined]
       if (!roomId || !isGroupChat) {
         topAnnouncement.value = null
+        isLoading.value = false
         return
       }
       if (roomId === prevRoomId && prevIsGroup === isGroupChat) return
@@ -95,7 +133,7 @@ export function useAnnouncementBanner(
 
   return {
     topAnnouncement,
-    isLoading: announcementStore.isLoading,
+    isLoading,
     loadTopAnnouncement,
     initListeners,
     cleanupListeners

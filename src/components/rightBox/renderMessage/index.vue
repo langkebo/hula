@@ -23,12 +23,7 @@
     :history-mode="historyMode" />
 
   <!-- 好友或者群聊的信息 -->
-  <div
-    v-else
-    class="flex flex-col w-full msg-row"
-    :class="{ 'justify-end': isMe }"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false">
+  <div v-else class="flex flex-col w-full msg-row" :class="{ 'justify-end': isMe }">
     <div class="flex justify-center items-center">
       <n-checkbox
         v-model:checked="message.isCheck"
@@ -212,7 +207,7 @@
               :history-mode="historyMode" />
 
             <MessageActionBar
-              :visible="isHovered && !chatStore.isMsgMultiChoose"
+              :visible="!chatStore.isMsgMultiChoose"
               :is-me="isMe"
               :message-type="message.message.type"
               @react="showReactionPickerId = message.message.id"
@@ -492,7 +487,6 @@ const {
   handleEmojiSelect
 } = useMessageActions({ isMe, emojiList })
 
-const isHovered = ref(false)
 const showReactionPickerId = ref('')
 
 const { recordSelectionBeforeContext, handleContextMenuSelection, longPressOption, handleLongPress } =
