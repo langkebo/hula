@@ -140,6 +140,16 @@ declare module 'matrix-js-sdk' {
   // Note: Push types exist in matrix-js-sdk/@types/PushRules.ts but are not exported from main index
   // We re-export them here for convenience
 
+  // Note: ICreatePushRuleRequest 定义在 SDK `push/index.ts`（子路径导出），未上浮到顶层 index。
+  // 此处显式重声明，使服务层可从顶层 matrix-js-sdk 导入，避免 SDK 边界策略的裸子路径导入违规。
+  export interface ICreatePushRuleRequest {
+    actions: PushRuleAction[]
+    conditions?: PushRuleCondition[]
+    pattern?: string
+    before?: string
+    after?: string
+  }
+
   // ==================== Event 和 Timeline 类型 ====================
   // 这些类型已在 SDK 中正确定义，此处提供补充
 
