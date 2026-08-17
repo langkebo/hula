@@ -24,7 +24,6 @@ const mockWarn = vi.fn()
 const mockError = vi.fn()
 const mockHasAuthenticatedSession = vi.fn()
 const mockVerifyAdminAccess = vi.fn()
-const next = vi.fn()
 
 const createRoute = (path: string, requiresAdmin = false) =>
   ({
@@ -50,9 +49,9 @@ describe('authGuard', () => {
       }
     })
 
-    await guard(createRoute('/login'), createRoute('/'), next)
+    const result = await guard(createRoute('/login'))
 
-    expect(next).toHaveBeenCalledWith()
+    expect(result).toBe(true)
     expect(mockHasAuthenticatedSession).not.toHaveBeenCalled()
   })
 
@@ -67,11 +66,11 @@ describe('authGuard', () => {
       }
     })
 
-    await guard(createRoute('/capture'), createRoute('/'), next)
-    await guard(createRoute('/checkupdate'), createRoute('/'), next)
+    const result1 = await guard(createRoute('/capture'))
+    const result2 = await guard(createRoute('/checkupdate'))
 
-    expect(next).toHaveBeenNthCalledWith(1)
-    expect(next).toHaveBeenNthCalledWith(2)
+    expect(result1).toBe(true)
+    expect(result2).toBe(true)
     expect(mockHasAuthenticatedSession).not.toHaveBeenCalled()
   })
 
@@ -88,9 +87,9 @@ describe('authGuard', () => {
       }
     })
 
-    await guard(createRoute('/home'), createRoute('/'), next)
+    const result = await guard(createRoute('/home'))
 
-    expect(next).toHaveBeenCalledWith('/login')
+    expect(result).toBe('/login')
     expect(mockWarn).toHaveBeenCalledWith('未登录，跳转到 /login')
   })
 
@@ -107,9 +106,9 @@ describe('authGuard', () => {
       }
     })
 
-    await guard(createRoute('/mobile/home'), createRoute('/'), next)
+    const result = await guard(createRoute('/mobile/home'))
 
-    expect(next).toHaveBeenCalledWith('/mobile/login')
+    expect(result).toBe('/mobile/login')
   })
 
   it('blocks protected admin routes for non-admin users', async () => {
@@ -126,10 +125,10 @@ describe('authGuard', () => {
       }
     })
 
-    await guard(createRoute('/admin/users', true), createRoute('/'), next)
+    const result = await guard(createRoute('/admin/users', true))
 
     expect(mockVerifyAdminAccess).toHaveBeenCalledTimes(1)
-    expect(next).toHaveBeenCalledWith('/')
+    expect(result).toBe('/')
     // authGuard 不再直接操作 window.$message，而是通过 useActionFeedback
     expect(window.$message.warning).toHaveBeenCalledWith('error.matrix.forbidden')
   })
@@ -147,9 +146,9 @@ describe('authGuard', () => {
       }
     })
 
-    await guard(createRoute('/message'), createRoute('/'), next)
+    const result = await guard(createRoute('/message'))
 
-    expect(next).toHaveBeenCalledWith()
+    expect(result).toBe(true)
   })
 
   it('bypasses auth when E2E harness is enabled', async () => {
@@ -164,9 +163,9 @@ describe('authGuard', () => {
       shouldBypassAuth: () => true
     })
 
-    await guard(createRoute('/mobile/dynamic'), createRoute('/'), next)
+    const result = await guard(createRoute('/mobile/dynamic'))
 
-    expect(next).toHaveBeenCalledWith()
+    expect(result).toBe(true)
     expect(mockHasAuthenticatedSession).not.toHaveBeenCalled()
   })
 
@@ -184,10 +183,10 @@ describe('authGuard', () => {
       }
     })
 
-    await guard(createRoute('/message'), createRoute('/'), next)
+    const result = await guard(createRoute('/message'))
 
     expect(mockError).toHaveBeenCalledWith('认证检查错误:', failure)
-    expect(next).toHaveBeenCalledWith('/login')
+    expect(result).toBe('/login')
   })
 })
 
