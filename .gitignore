@@ -42,6 +42,7 @@ dist/bundle-metrics.json
 tsc*.log
 test_output*.log
 tmp-dynamic.png
+_tmp_*
 
 target
 .claude/
@@ -72,6 +73,7 @@ preview/
 # Backup files
 *.bak
 *.vue.bak
+*.tgz.bak.*
 
 # Vitest full report (large, regenerated on demand)
 vitest-full-report.json
