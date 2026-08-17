@@ -93,7 +93,12 @@ async fn upload_put(
         },
     );
 
-    let client = reqwest::Client::new();
+    // .test 自签名证书：debug 构建放宽 TLS 校验（与 start_homeserver_health_check 一致），
+    // 生产构建仍强制校验证书。
+    let client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(cfg!(debug_assertions))
+        .build()
+        .map_err(|e| format!("创建上传 HTTP 客户端失败: {e}"))?;
     let mut request = client
         .put(url)
         .header(reqwest::header::CONTENT_LENGTH, total)

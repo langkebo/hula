@@ -38,7 +38,12 @@ async fn verify_admin_via_matrix(
     user_id: &str,
     access_token: &str,
 ) -> Result<bool, String> {
-    let client = reqwest::Client::new();
+    // .test 自签名证书：debug 构建放宽 TLS 校验（与 start_homeserver_health_check 一致），
+    // 生产构建仍强制校验证书。
+    let client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(cfg!(debug_assertions))
+        .build()
+        .map_err(|e| format!("创建管理员验证 HTTP 客户端失败: {}", e))?;
 
     let url = format!(
         "{}/_synapse/admin/v1/users/{}",
