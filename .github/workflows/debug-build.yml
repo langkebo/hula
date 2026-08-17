@@ -85,6 +85,19 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      # 生成 updater 覆盖配置（注入 UPDATER_TAURI_KEY；未设置时生成空配置，不注入）
+      - name: Generate debug tauri config (inject updater key)
+        shell: bash
+        env:
+          UPDATER_TAURI_KEY: ${{ secrets.UPDATER_TAURI_KEY }}
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const { buildUpdaterConfigOverride } = await import("./scripts/updater-config.js");
+            const updater = buildUpdaterConfigOverride(process.env.UPDATER_TAURI_KEY);
+            fs.writeFileSync("debug-tauri-config.json", JSON.stringify(updater ?? {}, null, 2) + "\n");
+          '
+
       # 只构建不发布
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -96,3 +109,4 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
         with:
           releaseId: "debug-build"
+          args: --config debug-tauri-config.json

@@ -7,13 +7,9 @@
  * 3. 第二个 gitee fallback 端点保持不变。
  */
 import { describe, expect, it } from 'vitest'
-import {
-  buildUpdaterConfigOverride,
-  UPDATER_ENDPOINTS,
-  UPDATER_KEY_PLACEHOLDER
-} from '../../scripts/updater-config.js'
+import { buildUpdaterConfigOverride, UPDATER_ENDPOINTS, UPDATER_KEY_PLACEHOLDER } from '../../scripts/updater-config.js'
 
-const KEY = 'geShj8UB7zd1DyrM_YFNdg'
+const KEY = 'test-tauri-key-not-real'
 
 describe('buildUpdaterConfigOverride', () => {
   it('无 key 时返回 null（不注入 --config）', () => {

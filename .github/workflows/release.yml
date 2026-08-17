@@ -172,16 +172,19 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm install
 
-      - name: Disable frontend rebuild for release build
+      - name: Generate release tauri config (disable rebuild + inject updater key)
         shell: bash
+        env:
+          UPDATER_TAURI_KEY: ${{ secrets.UPDATER_TAURI_KEY }}
         run: |
-          cat <<'EOF' > release-tauri-config.json
-          {
-            "build": {
-              "beforeBuildCommand": ""
-            }
-          }
-          EOF
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const { buildUpdaterConfigOverride } = await import("./scripts/updater-config.js");
+            const config = { build: { beforeBuildCommand: "" } };
+            const updater = buildUpdaterConfigOverride(process.env.UPDATER_TAURI_KEY);
+            if (updater) config.plugins = updater.plugins;
+            fs.writeFileSync("release-tauri-config.json", JSON.stringify(config, null, 2) + "\n");
+          '
 
       - name: Prepare production config
         shell: bash
