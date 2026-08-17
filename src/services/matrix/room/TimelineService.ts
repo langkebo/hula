@@ -1,4 +1,5 @@
 import { createLogger } from '@/utils/Logger'
+import type { Direction } from '@/services/matrix/sdk'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
@@ -67,16 +68,10 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   }> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.ROOM.UNREAD_COUNT(roomId))
-      const unreadCountResult = result as {
-        unread_notifications?: number
-        unread_highlighted?: number
-        notification_count?: number
-        highlight_count?: number
-      }
+      const result = await client.getRoomManager().getRoomUnreadCount(roomId)
       return {
-        unread_notifications: unreadCountResult.unread_notifications ?? unreadCountResult.notification_count ?? 0,
-        unread_highlighted: unreadCountResult.unread_highlighted ?? unreadCountResult.highlight_count ?? 0
+        unread_notifications: result.notification_count ?? 0,
+        unread_highlighted: result.highlight_count ?? 0
       }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取未读计数失败: ${err}`)
@@ -91,15 +86,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   ): Promise<{ event_id: string; origin_server_ts: number } | null> {
     const client = this.getClient()
     try {
-      const result = await authedRequestWithPath<{ event_id: string; origin_server_ts: number }>(
-        client,
-        'GET',
-        MATRIX_PATHS.ROOM.TIMESTAMP_TO_EVENT(roomId),
-        {
-          ts: String(timestamp),
-          dir
-        }
-      )
+      const result = await client.timestampToEvent(roomId, timestamp, dir as Direction)
       return result as { event_id: string; origin_server_ts: number }
     } catch (err) {
       logger.error(`[MatrixRoom] 时间戳反查事件失败: ${err}`)

@@ -32,10 +32,17 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 const authedRequestImpl = vi.fn()
+const getRoomUnreadCountMock = vi.fn()
+const timestampToEventMock = vi.fn()
 
 describe('MatrixRoomTimelineService', () => {
   let service: InstanceType<typeof MatrixRoomTimelineService>
-  let mockClient: { http: { authedRequest: typeof authedRequestImpl }; getEventContext: ReturnType<typeof vi.fn> }
+  let mockClient: {
+    http: { authedRequest: typeof authedRequestImpl }
+    getEventContext: ReturnType<typeof vi.fn>
+    getRoomManager: () => { getRoomUnreadCount: typeof getRoomUnreadCountMock }
+    timestampToEvent: typeof timestampToEventMock
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -67,7 +74,9 @@ describe('MatrixRoomTimelineService', () => {
 
     mockClient = {
       http: { authedRequest: authedRequestImpl },
-      getEventContext: vi.fn()
+      getEventContext: vi.fn(),
+      getRoomManager: () => ({ getRoomUnreadCount: getRoomUnreadCountMock }),
+      timestampToEvent: timestampToEventMock
     }
 
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as never)
@@ -132,24 +141,17 @@ describe('MatrixRoomTimelineService', () => {
   })
 
   describe('getRoomUnreadCount', () => {
-    it('GETs /unread_count and defaults missing counters to 0', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
-          return HttpResponse.json({ unread_notifications: 3 })
-        })
-      )
+    it('delegates to RoomManager.getRoomUnreadCount and maps to unread_* shape', async () => {
+      getRoomUnreadCountMock.mockResolvedValue({ notification_count: 3, highlight_count: 0 })
       expect(await service.getRoomUnreadCount('!r')).toEqual({
         unread_notifications: 3,
         unread_highlighted: 0
       })
+      expect(getRoomUnreadCountMock).toHaveBeenCalledWith('!r')
     })
 
-    it('accepts synapse-rust notification_count/highlight_count fields', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
-          return HttpResponse.json({ notification_count: 7, highlight_count: 2 })
-        })
-      )
+    it('maps notification_count/highlight_count to unread_notifications/unread_highlighted', async () => {
+      getRoomUnreadCountMock.mockResolvedValue({ notification_count: 7, highlight_count: 2 })
       expect(await service.getRoomUnreadCount('!r')).toEqual({
         unread_notifications: 7,
         unread_highlighted: 2
@@ -157,11 +159,7 @@ describe('MatrixRoomTimelineService', () => {
     })
 
     it('returns zeros when backend throws', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/unread_count`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      getRoomUnreadCountMock.mockRejectedValue(new Error('boom'))
       expect(await service.getRoomUnreadCount('!r')).toEqual({
         unread_notifications: 0,
         unread_highlighted: 0
@@ -170,30 +168,20 @@ describe('MatrixRoomTimelineService', () => {
   })
 
   describe('timestampToEvent', () => {
-    it('hits v1 timestamp_to_event with { ts, dir }', async () => {
+    it('delegates to client.timestampToEvent with roomId/timestamp/dir', async () => {
+      timestampToEventMock.mockResolvedValue({ event_id: '$e', origin_server_ts: 42 })
       await service.timestampToEvent('!r:e', 42, 'f')
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'GET',
-        `/rooms/${encodeURIComponent('!r:e')}/timestamp_to_event`,
-        { ts: '42', dir: 'f' },
-        undefined,
-        { prefix: '/_matrix/client/v1' }
-      )
+      expect(timestampToEventMock).toHaveBeenCalledWith('!r:e', 42, 'f')
     })
 
     it('defaults dir to "b" when omitted', async () => {
+      timestampToEventMock.mockResolvedValue({ event_id: '$e', origin_server_ts: 10 })
       await service.timestampToEvent('!r', 10)
-      expect(authedRequestImpl).toHaveBeenCalledWith('GET', expect.any(String), { ts: '10', dir: 'b' }, undefined, {
-        prefix: '/_matrix/client/v1'
-      })
+      expect(timestampToEventMock).toHaveBeenCalledWith('!r', 10, 'b')
     })
 
     it('swallows errors and returns null', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/v1/rooms/:roomId/timestamp_to_event`, () => {
-          return new HttpResponse(null, { status: 404 })
-        })
-      )
+      timestampToEventMock.mockRejectedValue(new Error('boom'))
       expect(await service.timestampToEvent('!r', 10)).toBeNull()
     })
   })
