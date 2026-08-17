@@ -194,7 +194,7 @@ describe('MatrixDeviceService', () => {
     })
 
     it('应该在 DeviceManager 不可用时抛出错误', async () => {
-      mockClient.getDeviceManager = vi.fn(() => null)
+      mockClient.getDeviceManager = vi.fn(() => null) as never
 
       await expect(matrixDeviceService.getDevices()).rejects.toThrow('DeviceManager 不可用')
     })
@@ -225,7 +225,7 @@ describe('MatrixDeviceService', () => {
     })
 
     it('应该在 DeviceManager 不可用时抛出错误', async () => {
-      mockClient.getDeviceManager = vi.fn(() => null)
+      mockClient.getDeviceManager = vi.fn(() => null) as never
 
       await expect(matrixDeviceService.getDevice('DEVICE1')).rejects.toThrow('DeviceManager 不可用')
     })
@@ -384,7 +384,7 @@ describe('MatrixDeviceService', () => {
     })
 
     it('应该在 DeviceManager 不可用时抛出错误', async () => {
-      mockClient.getDeviceManager = vi.fn(() => null)
+      mockClient.getDeviceManager = vi.fn(() => null) as never
 
       await expect(matrixDeviceService.updateDevice('DEVICE1', 'New Name')).rejects.toThrow('DeviceManager 不可用')
     })
@@ -428,7 +428,7 @@ describe('MatrixDeviceService', () => {
     })
 
     it('应该在 DeviceManager 不可用时抛出错误', async () => {
-      mockClient.getDeviceManager = vi.fn(() => null)
+      mockClient.getDeviceManager = vi.fn(() => null) as never
       const deviceIds = ['DEVICE1', 'DEVICE2']
 
       await expect(matrixDeviceService.deleteDevices(deviceIds)).rejects.toThrow('DeviceManager 不可用')
