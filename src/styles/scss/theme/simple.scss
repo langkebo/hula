@@ -6,11 +6,11 @@
     --left-active-bg-color: rgba(255, 255, 255, 0.18);
     --left-text-color: rgba(255, 255, 255, 0.92);
     --left-icon-color: rgba(255, 255, 255, 0.78);
-    --left-active-hover: #ffffff;
+    --left-active-hover: var(--tjg-text-inverse);
     --left-bg-hover: rgba(255, 255, 255, 0.12);
-    --left-active-icon-color: #ffffff;
+    --left-active-icon-color: var(--tjg-text-inverse);
     --left-win-icon-color: rgba(255, 255, 255, 0.6);
-    --left-active-indicator-color: #ffffff;
+    --left-active-indicator-color: var(--tjg-text-inverse);
 
     // 通用背景色
     --background: oklch(1 0 0);

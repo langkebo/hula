@@ -160,7 +160,8 @@ describe('Design Tokens 完整性守卫', () => {
 
 describe('2.1.4 — 禁止硬编码品牌绿色（#13987f / rgba(19,152,127) / rgba(29,163,134)）', () => {
   // 排除：design-tokens.css（权威来源）、NaiveProvider.vue（JS 主题配置）、Console.ts（console.log 不支持 CSS 变量）、测试文件
-  const EXCLUDE_FILES = ['design-tokens.css', 'NaiveProvider.vue', 'Console.ts']
+  // naiveTokenSource.ts：Naive UI 的 TS 色值镜像（seemely/rgba 无法解析 CSS 变量），与 NaiveProvider.vue 同类，由 naiveTokenSource.test.ts 守护与 CSS 一致
+  const EXCLUDE_FILES = ['design-tokens.css', 'NaiveProvider.vue', 'Console.ts', 'naiveTokenSource.ts']
   const BRAND_GREEN_PATTERNS = [/#13987f/i, /rgba?\(\s*19\s*,\s*152\s*,\s*127/, /rgba?\(\s*29\s*,\s*163\s*,\s*134/]
 
   it('src/ 的 .vue/.scss/.css 文件中不应硬编码品牌绿色', () => {
