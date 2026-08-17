@@ -57,6 +57,16 @@ vi.mock('@/services/i18n', () => ({
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 
 const authedRequestImpl = vi.fn()
+const getRoomManagerMock = vi.fn(() => ({
+  translateText: (text: string, targetLang: string, sourceLang?: string) => {
+    const body: Record<string, unknown> = { text, target_lang: targetLang }
+    if (sourceLang) body.source_lang = sourceLang
+    return authedRequestImpl('POST', '/translate', undefined, body)
+  },
+  getStickyEvents: (roomId: string) => authedRequestImpl('GET', `/rooms/${encodeURIComponent(roomId)}/sticky_events`),
+  setStickyEvents: (roomId: string, events: Record<string, unknown>) =>
+    authedRequestImpl('POST', `/rooms/${encodeURIComponent(roomId)}/sticky_events`, undefined, events)
+}))
 
 describe('RoomOperations', () => {
   let ops: InstanceType<typeof RoomOperations>
@@ -326,7 +336,7 @@ describe('RoomOperations', () => {
 
   describe('translateText', () => {
     it('calls backend translate and returns translated text', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoomManager: getRoomManagerMock } as never)
       expect(await ops.translateText('Hello', 'zh-CN')).toBe('你好')
     })
 
@@ -336,7 +346,7 @@ describe('RoomOperations', () => {
           return new HttpResponse(null, { status: 502 })
         })
       )
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoomManager: getRoomManagerMock } as never)
       const result = await ops.translateText('Hello', 'de', false)
       expect(result).toBe('Hello')
     })
@@ -347,12 +357,12 @@ describe('RoomOperations', () => {
           return new HttpResponse(null, { status: 502 })
         })
       )
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoomManager: getRoomManagerMock } as never)
       await expect(ops.translateText('Hello', 'de', true)).rejects.toThrow()
     })
 
     it('defaults target language to zh-CN', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoomManager: getRoomManagerMock } as never)
       expect(await ops.translateText('Hello')).toBe('你好')
     })
   })
@@ -615,7 +625,7 @@ describe('RoomOperations', () => {
 
   describe('getStickyEvents', () => {
     it('GETs sticky events via client.http', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoomManager: getRoomManagerMock } as never)
       expect(await ops.getStickyEvents('!r')).toEqual({ key: 'value' })
     })
 
@@ -625,14 +635,14 @@ describe('RoomOperations', () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoomManager: getRoomManagerMock } as never)
       expect(await ops.getStickyEvents('!r')).toEqual({})
     })
   })
 
   describe('setStickyEvents', () => {
     it('POSTs sticky events via client.http', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoomManager: getRoomManagerMock } as never)
       await ops.setStickyEvents('!r', { key: 'value' })
       expect(authedRequestImpl).toHaveBeenCalledWith('POST', '/rooms/!r/sticky_events', undefined, {
         key: 'value'
@@ -736,7 +746,7 @@ describe('RoomOperations', () => {
           return new HttpResponse(null, { status: 500 })
         })
       )
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ http: { authedRequest: authedRequestImpl } } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoomManager: getRoomManagerMock } as never)
       expect(await ops.getStickyEvents('!r')).toEqual({})
       expect(logSpy.error).toHaveBeenCalled()
     })

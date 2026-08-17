@@ -356,11 +356,7 @@ export class RoomOperations extends BaseMatrixService {
     sourceLang?: string
   ): Promise<{ translated_text: string }> {
     const client = this.getClient()
-    const body: Record<string, unknown> = { text, target_lang: targetLang }
-    if (sourceLang) body.source_lang = sourceLang
-    return (await client.http.authedRequest('POST', '/translate', undefined, body)) as {
-      translated_text: string
-    }
+    return await client.getRoomManager().translateText(text, targetLang, sourceLang)
   }
 
   private async translateViaFallback(text: string, targetLang: string): Promise<string> {
@@ -443,8 +439,7 @@ export class RoomOperations extends BaseMatrixService {
   async getStickyEvents(roomId: string): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest('GET', `/rooms/${encodeURIComponent(roomId)}/sticky_events`)
-      return result as Record<string, unknown>
+      return await client.getRoomManager().getStickyEvents(roomId)
     } catch (err) {
       // R-12: sticky events 获取失败不应静默
       logger.error(`获取 sticky events 失败: ${roomId} ${err}`)
@@ -458,7 +453,7 @@ export class RoomOperations extends BaseMatrixService {
       return
     }
     const client = this.getClient()
-    await client.http.authedRequest('POST', `/rooms/${encodeURIComponent(roomId)}/sticky_events`, undefined, events)
+    await client.getRoomManager().setStickyEvents(roomId, events)
   }
 
   // --- MemberProfile (was MemberProfileService) ---
