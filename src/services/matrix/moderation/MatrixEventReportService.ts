@@ -6,6 +6,7 @@ import type {
   EventReportCountResponse,
   EventReportManager,
   QueryParams,
+  ReportHistoryResponse,
   ReportResponse,
   ResolveReportBody,
   StatsResponse,
@@ -238,7 +239,7 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
-  async getReportHistory(id: number): Promise<ReportResponse[]> {
+  async getReportHistory(id: number): Promise<ReportHistoryResponse[]> {
     try {
       const manager = await this.requireEventReportManager()
       const history = await manager.getReportHistory(id)

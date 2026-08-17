@@ -16,6 +16,8 @@ type MockClient = {
   getBeaconManager(): {
     getBeaconsForRoom(roomId: string): unknown[]
     setLiveBeacon(roomId: string, content: unknown): Promise<unknown>
+    sendBeaconLocation(roomId: string, beaconInfoEventId: string, geoUri: string, timestamp?: number): Promise<unknown>
+    stopBeaconSharing(roomId: string, timeout?: number, description?: string): Promise<unknown>
   }
   getUserId(): string
   search: (...args: unknown[]) => Promise<unknown>
@@ -285,8 +287,9 @@ describe('MatrixBeaconService', () => {
     })
 
     it('should send an M_BEACON event with the standard makeBeaconContent shape', async () => {
-      const sendEvent = vi.fn().mockResolvedValue({ event_id: '$beacon_loc_1' })
-      const mockClient = { sendEvent } as unknown as MockClient
+      const sendBeaconLocation = vi.fn().mockResolvedValue({ event_id: '$beacon_loc_1' })
+      const getBeaconManager = vi.fn(() => ({ sendBeaconLocation }))
+      const mockClient = { getBeaconManager } as unknown as MockClient
       mockGetClient(mockClient)
 
       const result = await matrixBeaconService.updateBeaconLocation({
@@ -297,20 +300,12 @@ describe('MatrixBeaconService', () => {
         uncertainty: 10
       })
 
-      expect(sendEvent).toHaveBeenCalledTimes(1)
-      expect(sendEvent).toHaveBeenCalledWith(
+      expect(sendBeaconLocation).toHaveBeenCalledTimes(1)
+      expect(sendBeaconLocation).toHaveBeenCalledWith(
         '!room:id',
-        'org.matrix.msc3672.beacon',
-        expect.objectContaining({
-          'org.matrix.msc3488.location': {
-            uri: 'geo:39.9042,116.4074'
-          },
-          'm.relates_to': {
-            rel_type: 'm.reference',
-            event_id: '$beacon_info_1'
-          },
-          'org.matrix.msc3488.ts': expect.any(Number)
-        })
+        '$beacon_info_1',
+        'geo:39.9042,116.4074',
+        expect.any(Number)
       )
       expect(result.event_id).toBe('$beacon_loc_1')
       expect(result.beacon_info_id).toBe('$beacon_info_1')
@@ -393,12 +388,12 @@ describe('MatrixBeaconService', () => {
       expect(result).toBe(false)
     })
 
-    it('should stop beacon via BeaconManager.setLiveBeacon with a live:false state event', async () => {
+    it('should stop beacon via BeaconManager.stopBeaconSharing with a live:false state event', async () => {
       const getRoomEvent = vi.fn().mockResolvedValue({
         getContent: () => ({ timeout: 3600000, description: 'Test beacon' })
       })
-      const setLiveBeacon = vi.fn().mockResolvedValue({ event_id: '$beacon_info_stopped' })
-      const getBeaconManager = vi.fn(() => ({ setLiveBeacon }))
+      const stopBeaconSharing = vi.fn().mockResolvedValue({ event_id: '$beacon_info_stopped' })
+      const getBeaconManager = vi.fn(() => ({ stopBeaconSharing }))
       const mockClient = { getRoomEvent, getBeaconManager } as unknown as MockClient
       mockGetClient(mockClient)
 
@@ -407,36 +402,22 @@ describe('MatrixBeaconService', () => {
       expect(result).toBe(true)
       expect(getRoomEvent).toHaveBeenCalledWith('!room:id', '$beacon_info_1')
       expect(getBeaconManager).toHaveBeenCalled()
-      expect(setLiveBeacon).toHaveBeenCalledWith(
-        '!room:id',
-        expect.objectContaining({
-          timeout: 3600000,
-          live: false,
-          description: 'Test beacon'
-        })
-      )
+      expect(stopBeaconSharing).toHaveBeenCalledWith('!room:id', 3600000, 'Test beacon')
     })
 
     it('should default timeout to 3600000 when beacon_info content omits timeout', async () => {
       const getRoomEvent = vi.fn().mockResolvedValue({
         getContent: () => ({ description: 'Test beacon' })
       })
-      const setLiveBeacon = vi.fn().mockResolvedValue({ event_id: '$beacon_info_stopped' })
-      const getBeaconManager = vi.fn(() => ({ setLiveBeacon }))
+      const stopBeaconSharing = vi.fn().mockResolvedValue({ event_id: '$beacon_info_stopped' })
+      const getBeaconManager = vi.fn(() => ({ stopBeaconSharing }))
       const mockClient = { getRoomEvent, getBeaconManager } as unknown as MockClient
       mockGetClient(mockClient)
 
       const result = await matrixBeaconService.stopBeacon('!room:id', '$beacon_info_1')
 
       expect(result).toBe(true)
-      expect(setLiveBeacon).toHaveBeenCalledWith(
-        '!room:id',
-        expect.objectContaining({
-          timeout: 3600000,
-          live: false,
-          description: 'Test beacon'
-        })
-      )
+      expect(stopBeaconSharing).toHaveBeenCalledWith('!room:id', 3600000, 'Test beacon')
     })
   })
 })

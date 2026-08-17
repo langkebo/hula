@@ -193,9 +193,9 @@ class MatrixBeaconService {
     const client = this.getClient()
     if (!client) throw new Error('Matrix client not initialized')
 
-    const content = ContentHelpers.makeBeaconContent(`geo:${latitude},${longitude}`, Date.now(), beaconInfoEventId)
-
-    const response = await client.sendEvent(roomId, M_BEACON.name, content)
+    const response = await client
+      .getBeaconManager()
+      .sendBeaconLocation(roomId, beaconInfoEventId, `geo:${latitude},${longitude}`, Date.now())
     if (!response) {
       throw new Error('Failed to send beacon location event')
     }
@@ -274,15 +274,8 @@ class MatrixBeaconService {
       const event = await client.getRoomEvent(roomId, beaconInfoEventId)
       const content = event.getContent() as { description?: string; timeout?: number }
 
-      // 本 fork 的 BeaconManager.stopBeacon(roomId, beaconId) 仅本地调用 beacon.destroy()，
-      // 不会向服务端发送 state event；改用 setLiveBeacon(live:false) 发送 m.beacon_info
-      // state event（state_key = 发送者 mxid），与 element-web 线上行为一致。
-      await client
-        .getBeaconManager()
-        .setLiveBeacon(
-          roomId,
-          ContentHelpers.makeBeaconInfoContent(content.timeout ?? 3600000, false, content.description)
-        )
+      // SDK BeaconManager.stopBeaconSharing 发送 live:false 的 m.beacon_info state event
+      await client.getBeaconManager().stopBeaconSharing(roomId, content.timeout ?? 3600000, content.description)
 
       return true
     } catch (err) {
