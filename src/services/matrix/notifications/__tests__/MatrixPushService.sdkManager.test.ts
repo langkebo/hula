@@ -3,33 +3,29 @@ import { type IPusher, PushRuleActionName } from '@/services/matrix/sdk'
 import { matrixPushService } from '../MatrixPushService'
 
 /**
- * FT-112: Push rule operations must use SDK PushManager when available,
- * falling back to direct HTTP only when the manager is unavailable.
+ * FT-112: Push operations must go through the SDK PushManager via client.getPushManager(),
+ * never through client.http.authedRequest.
  *
- * These tests verify the SDK-first contract for the 6 push rule methods
- * that previously bypassed the SDK Manager by calling client.http.authedRequest.
+ * These tests verify the SDK-direct contract for the 9 push methods that previously
+ * either bypassed the SDK Manager or fell back to HTTP when the manager was unavailable.
+ * The mock client deliberately omits `http.authedRequest` — any fallback would throw.
  */
 describe('MatrixPushService — SDK PushManager (FT-112)', () => {
-  let mockAuthedRequest: ReturnType<typeof vi.fn>
   let pushManagerMocks: Record<string, ReturnType<typeof vi.fn>>
 
-  function buildMockClient(withPushManager: boolean) {
+  function buildMockClient() {
     const client: Record<string, unknown> = {
-      http: { authedRequest: mockAuthedRequest },
       getDeviceId: () => 'TEST_DEVICE_ID',
       getPushRules: vi.fn().mockResolvedValue({
         global: { room: [{ rule_id: '!room:server', enabled: true }] }
-      })
-    }
-    if (withPushManager) {
-      client.getPushManager = () => pushManagerMocks
+      }),
+      getPushManager: () => pushManagerMocks
     }
     return client
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockAuthedRequest = vi.fn().mockResolvedValue({})
     pushManagerMocks = {
       getPushers: vi.fn().mockResolvedValue([] as IPusher[]),
       setPusher: vi.fn().mockResolvedValue(undefined),
@@ -43,83 +39,71 @@ describe('MatrixPushService — SDK PushManager (FT-112)', () => {
     }
   })
 
+  // ---- getPushers ----
+  describe('getPushers', () => {
+    it('getPushers 仅依赖 getPushManager，不依赖 http.authedRequest', async () => {
+      pushManagerMocks.getPushers.mockResolvedValue([{ app_id: 'a', pushkey: 'k', kind: 'http' }])
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
+
+      const result = await matrixPushService.getPushers()
+      expect(result).toHaveLength(1)
+      expect(pushManagerMocks.getPushers).toHaveBeenCalledTimes(1)
+    })
+  })
+
   // ---- setPushRuleEnabled ----
   describe('setPushRuleEnabled', () => {
-    it('uses SDK PushManager.setPushRuleEnabled when manager is available', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(true))
+    it('直接调用 getPushManager().setPushRuleEnabled，不依赖 http.authedRequest', async () => {
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
       await matrixPushService.setPushRuleEnabled('global', 'room', '!room:server', false)
       expect(pushManagerMocks.setPushRuleEnabled).toHaveBeenCalledWith('global', 'room', '!room:server', false)
-      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
 
-    it('falls back to HTTP when PushManager is unavailable', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(false))
-      await matrixPushService.setPushRuleEnabled('global', 'room', '!room:server', false)
-      expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
-      expect(mockAuthedRequest.mock.calls[0][0]).toBe('PUT')
-      expect(mockAuthedRequest.mock.calls[0][1]).toContain('/enabled')
+    it('getPushManager 缺失时不再回退到 http.authedRequest（直接抛出）', async () => {
+      const mockAuthedRequest = vi.fn().mockResolvedValue({})
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue({
+        getPushManager: () => undefined,
+        http: { authedRequest: mockAuthedRequest },
+        getDeviceId: () => 'TEST_DEVICE_ID'
+      })
+
+      await expect(matrixPushService.setPushRuleEnabled('global', 'room', '!room:server', false)).rejects.toThrow()
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
   })
 
   // ---- setPushRuleActions ----
   describe('setPushRuleActions', () => {
-    it('uses SDK PushManager.setPushRuleActions when manager is available', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(true))
+    it('直接调用 getPushManager().setPushRuleActions，不依赖 http.authedRequest', async () => {
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
       const actions = [PushRuleActionName.DontNotify]
       await matrixPushService.setPushRuleActions('global', 'room', '!room:server', actions)
       expect(pushManagerMocks.setPushRuleActions).toHaveBeenCalledWith('global', 'room', '!room:server', actions)
-      expect(mockAuthedRequest).not.toHaveBeenCalled()
-    })
-
-    it('falls back to HTTP when PushManager is unavailable', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(false))
-      await matrixPushService.setPushRuleActions('global', 'room', '!room:server', [PushRuleActionName.DontNotify])
-      expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
-      expect(mockAuthedRequest.mock.calls[0][0]).toBe('PUT')
-      expect(mockAuthedRequest.mock.calls[0][1]).toContain('/actions')
     })
   })
 
   // ---- muteRoom ----
   describe('muteRoom', () => {
-    it('uses SDK PushManager.muteRoom when manager is available', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(true))
+    it('直接调用 getPushManager().muteRoom，不依赖 http.authedRequest', async () => {
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
       await matrixPushService.muteRoom('!room:server')
       expect(pushManagerMocks.muteRoom).toHaveBeenCalledWith('!room:server')
-      expect(mockAuthedRequest).not.toHaveBeenCalled()
-    })
-
-    it('falls back to HTTP when PushManager is unavailable', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(false))
-      await matrixPushService.muteRoom('!room:server')
-      expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
-      expect(mockAuthedRequest.mock.calls[0][0]).toBe('PUT')
-      expect(mockAuthedRequest.mock.calls[0][1]).toContain('pushrules/global/room/')
     })
   })
 
   // ---- unmuteRoom ----
   describe('unmuteRoom', () => {
-    it('uses SDK PushManager.unmuteRoom when manager is available', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(true))
+    it('直接调用 getPushManager().unmuteRoom，不依赖 http.authedRequest', async () => {
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
       await matrixPushService.unmuteRoom('!room:server')
       expect(pushManagerMocks.unmuteRoom).toHaveBeenCalledWith('!room:server')
-      expect(mockAuthedRequest).not.toHaveBeenCalled()
-    })
-
-    it('falls back to HTTP when PushManager is unavailable', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(false))
-      await matrixPushService.unmuteRoom('!room:server')
-      expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
-      expect(mockAuthedRequest.mock.calls[0][0]).toBe('DELETE')
-      expect(mockAuthedRequest.mock.calls[0][1]).toContain('pushrules/global/room/')
     })
   })
 
   // ---- addPushRule ----
   describe('addPushRule', () => {
-    it('uses SDK PushManager.createPushRule when manager is available', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(true))
+    it('直接调用 getPushManager().createPushRule，组装 conditions/pattern', async () => {
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
       const actions = [PushRuleActionName.Notify]
       const conditions = [{ kind: 'event_match', key: 'content.body', pattern: 'foo' }]
       await matrixPushService.addPushRule('global', 'override', '!rule:server', actions, conditions, 'foo')
@@ -128,33 +112,15 @@ describe('MatrixPushService — SDK PushManager (FT-112)', () => {
         conditions,
         pattern: 'foo'
       })
-      expect(mockAuthedRequest).not.toHaveBeenCalled()
-    })
-
-    it('falls back to HTTP when PushManager is unavailable', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(false))
-      await matrixPushService.addPushRule('global', 'room', '!room:server', [PushRuleActionName.Notify])
-      expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
-      expect(mockAuthedRequest.mock.calls[0][0]).toBe('PUT')
-      expect(mockAuthedRequest.mock.calls[0][1]).toContain('pushrules/global/room/')
     })
   })
 
   // ---- deletePushRule ----
   describe('deletePushRule', () => {
-    it('uses SDK PushManager.deletePushRule when manager is available', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(true))
+    it('直接调用 getPushManager().deletePushRule，不依赖 http.authedRequest', async () => {
+      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
       await matrixPushService.deletePushRule('global', 'room', '!room:server')
       expect(pushManagerMocks.deletePushRule).toHaveBeenCalledWith('global', 'room', '!room:server')
-      expect(mockAuthedRequest).not.toHaveBeenCalled()
-    })
-
-    it('falls back to HTTP when PushManager is unavailable', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient(false))
-      await matrixPushService.deletePushRule('global', 'room', '!room:server')
-      expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
-      expect(mockAuthedRequest.mock.calls[0][0]).toBe('DELETE')
-      expect(mockAuthedRequest.mock.calls[0][1]).toContain('pushrules/global/room/')
     })
   })
 })
