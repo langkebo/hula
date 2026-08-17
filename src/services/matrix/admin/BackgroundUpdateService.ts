@@ -4,30 +4,11 @@
  * 对应 synapse-rust 的 `/_synapse/admin/v1/background_updates/*` 路由，
  * 提供后台任务（如数据库迁移、索引重建）的查询与生命周期管理。
  *
- * 路由清单：
- *   GET    /background_updates                         列表
- *   POST   /background_updates                         创建
- *   GET    /background_updates/count                   总数
- *   GET    /background_updates/pending                 pending 列表
- *   GET    /background_updates/running                 running 列表
- *   GET    /background_updates/next                    下一个待执行
- *   GET    /background_updates/status                  汇总状态
- *   POST   /background_updates/retry_failed            重试所有失败
- *   POST   /background_updates/cleanup_locks           清理过期锁
- *   GET    /background_updates/status/{status}/count   按状态计数
- *   GET    /background_updates/{job_name}              详情
- *   DELETE /background_updates/{job_name}              删除
- *   POST   /background_updates/{job_name}/start        启动
- *   POST   /background_updates/{job_name}/progress     更新进度
- *   POST   /background_updates/{job_name}/complete     完成
- *   POST   /background_updates/{job_name}/fail         失败
- *   POST   /background_updates/{job_name}/cancel       取消
- *   GET    /background_updates/{job_name}/history      历史
- *   GET    /background_updates/stats                   统计
+ * 封装：委托 SDK `client.getBackgroundUpdateManager()`（`BackgroundUpdateManager`），
+ * 不再直接 `http.authedRequest` 拼路径。
  */
 import type { MatrixClient } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('AdminBackgroundUpdate')
 
@@ -126,25 +107,11 @@ export interface GetStatsParams {
   limit?: number
 }
 
-const SYNAPSE_ADMIN_BASE = MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE
-
 export class AdminBackgroundUpdateService {
   constructor(private readonly getClient: GetClientGetter) {}
 
-  private async adminRequest<TResponse>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    queryParams?: Record<string, string | number | boolean | string[] | undefined>,
-    body?: Record<string, unknown>
-  ): Promise<TResponse> {
-    const client = this.getClient()
-    return client.http.authedRequest(
-      method,
-      path,
-      queryParams,
-      method === 'GET' || method === 'DELETE' ? undefined : body,
-      { prefix: SYNAPSE_ADMIN_BASE }
-    ) as Promise<TResponse>
+  private getManager() {
+    return this.getClient().getBackgroundUpdateManager()
   }
 
   /**
@@ -152,17 +119,13 @@ export class AdminBackgroundUpdateService {
    */
   async listUpdates(params: ListUpdatesParams = {}): Promise<{ updates: BackgroundUpdate[]; next_batch?: string }> {
     try {
-      const result = await this.adminRequest<{ updates: BackgroundUpdate[]; next_batch?: string }>(
-        'GET',
-        '/background_updates',
-        {
-          limit: params.limit ?? 100,
-          ...(params.from ? { from: params.from } : {})
-        }
-      )
+      const result = await this.getManager().listBackgroundUpdates({
+        limit: params.limit ?? 100,
+        ...(params.from ? { from: params.from } : {})
+      })
       return {
-        updates: result?.updates ?? [],
-        next_batch: result?.next_batch
+        updates: (result?.updates ?? []) as BackgroundUpdate[],
+        next_batch: result?.next_batch ?? undefined
       }
     } catch (err) {
       logger.error(`[AdminBackgroundUpdate] listUpdates 失败: ${err}`)
@@ -175,7 +138,7 @@ export class AdminBackgroundUpdateService {
    */
   async getUpdate(jobName: string): Promise<BackgroundUpdate | null> {
     try {
-      return await this.adminRequest<BackgroundUpdate>('GET', `/background_updates/${encodeURIComponent(jobName)}`)
+      return (await this.getManager().getUpdate(jobName)) as BackgroundUpdate
     } catch (err) {
       const status = (err as { httpStatus?: number }).httpStatus
       if (status === 404) {
@@ -190,71 +153,52 @@ export class AdminBackgroundUpdateService {
    * 创建后台更新任务。
    */
   async createUpdate(request: CreateBackgroundUpdateRequest): Promise<BackgroundUpdate> {
-    const result = await this.adminRequest<BackgroundUpdate>(
-      'POST',
-      '/background_updates',
-      undefined,
-      request as unknown as Record<string, unknown>
-    )
+    const result = await this.getManager().createBackgroundUpdate(request)
     logger.info(`[AdminBackgroundUpdate] 创建任务: ${request.job_name}`)
-    return result
+    return result as BackgroundUpdate
   }
 
   /**
    * 启动一个 pending 状态的任务。
    */
   async startUpdate(jobName: string): Promise<BackgroundUpdate> {
-    const result = await this.adminRequest<BackgroundUpdate>(
-      'POST',
-      `/background_updates/${encodeURIComponent(jobName)}/start`
-    )
+    const result = await this.getManager().startUpdate(jobName)
     logger.info(`[AdminBackgroundUpdate] 启动任务: ${jobName}`)
-    return result
+    return result as BackgroundUpdate
   }
 
   /**
    * 取消一个尚未完成的任务。
    */
   async cancelUpdate(jobName: string): Promise<BackgroundUpdate> {
-    const result = await this.adminRequest<BackgroundUpdate>(
-      'POST',
-      `/background_updates/${encodeURIComponent(jobName)}/cancel`
-    )
+    const result = await this.getManager().cancelUpdate(jobName)
     logger.info(`[AdminBackgroundUpdate] 取消任务: ${jobName}`)
-    return result
+    return result as BackgroundUpdate
   }
 
   /**
    * 标记任务完成。
    */
   async completeUpdate(jobName: string): Promise<BackgroundUpdate> {
-    const result = await this.adminRequest<BackgroundUpdate>(
-      'POST',
-      `/background_updates/${encodeURIComponent(jobName)}/complete`
-    )
+    const result = await this.getManager().completeUpdate(jobName)
     logger.info(`[AdminBackgroundUpdate] 完成任务: ${jobName}`)
-    return result
+    return result as BackgroundUpdate
   }
 
   /**
    * 标记任务失败并记录错误信息。
    */
   async failUpdate(jobName: string, errorMessage: string): Promise<BackgroundUpdate> {
-    const result = await this.adminRequest<BackgroundUpdate>(
-      'POST',
-      `/background_updates/${encodeURIComponent(jobName)}/fail`,
-      undefined,
-      { error_message: errorMessage }
-    )
+    const result = await this.getManager().failUpdate(jobName, { error_message: errorMessage })
     logger.warn(`[AdminBackgroundUpdate] 任务失败: ${jobName} -> ${errorMessage}`)
-    return result
+    return result as BackgroundUpdate
   }
 
   /**
    * 删除任务记录（不会取消运行中的任务）。
    */
   async deleteUpdate(jobName: string): Promise<void> {
-    await this.adminRequest<void>('DELETE', `/background_updates/${encodeURIComponent(jobName)}`)
+    await this.getManager().deleteUpdate(jobName)
     logger.info(`[AdminBackgroundUpdate] 删除任务: ${jobName}`)
   }
 
@@ -262,7 +206,7 @@ export class AdminBackgroundUpdateService {
    * 重试所有失败状态的任务。
    */
   async retryFailed(): Promise<RetryFailedResult> {
-    const result = await this.adminRequest<RetryFailedResult>('POST', '/background_updates/retry_failed')
+    const result = await this.getManager().retryFailedUpdates()
     logger.info(`[AdminBackgroundUpdate] 重试失败任务: ${result?.retried_count ?? 0}`)
     return result ?? { retried_count: 0 }
   }
@@ -271,7 +215,7 @@ export class AdminBackgroundUpdateService {
    * 清理过期的任务锁。
    */
   async cleanupLocks(): Promise<CleanupLocksResult> {
-    const result = await this.adminRequest<CleanupLocksResult>('POST', '/background_updates/cleanup_locks')
+    const result = await this.getManager().cleanupLocks()
     logger.info(`[AdminBackgroundUpdate] 清理过期锁: ${result?.cleaned_count ?? 0}`)
     return result ?? { cleaned_count: 0 }
   }
@@ -281,9 +225,9 @@ export class AdminBackgroundUpdateService {
    */
   async getStatus(): Promise<BackgroundUpdateStatusSummary> {
     try {
-      const result = await this.adminRequest<BackgroundUpdateStatusSummary>('GET', '/background_updates/status')
+      const result = await this.getManager().getStatus()
       return (
-        result ?? {
+        (result as BackgroundUpdateStatusSummary) ?? {
           pending_count: 0,
           running_count: 0,
           completed_count: 0,
@@ -310,15 +254,8 @@ export class AdminBackgroundUpdateService {
    */
   async getHistory(jobName: string, params: GetHistoryParams = {}): Promise<BackgroundUpdateHistory[]> {
     try {
-      const result = await this.adminRequest<BackgroundUpdateHistory[]>(
-        'GET',
-        `/background_updates/${encodeURIComponent(jobName)}/history`,
-        {
-          limit: params.limit ?? 100,
-          ...(params.from ? { from: params.from } : {})
-        }
-      )
-      return result ?? []
+      const result = await this.getManager().getHistory(jobName, { limit: params.limit ?? 100 })
+      return (result ?? []) as BackgroundUpdateHistory[]
     } catch (err) {
       logger.error(`[AdminBackgroundUpdate] getHistory 失败: ${err}`)
       return []
@@ -330,10 +267,8 @@ export class AdminBackgroundUpdateService {
    */
   async getStats(params: GetStatsParams = {}): Promise<BackgroundUpdateStats[]> {
     try {
-      const result = await this.adminRequest<BackgroundUpdateStats[]>('GET', '/background_updates/stats', {
-        limit: params.limit ?? 30
-      })
-      return result ?? []
+      const result = await this.getManager().getStats(params.limit ?? 30)
+      return (result ?? []) as BackgroundUpdateStats[]
     } catch (err) {
       logger.error(`[AdminBackgroundUpdate] getStats 失败: ${err}`)
       return []
