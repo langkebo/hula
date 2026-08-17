@@ -103,6 +103,10 @@ describe('MatrixDeviceService', () => {
     getDeviceListUpdates: ReturnType<typeof vi.fn>
   }
   let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
+  let mockE2eeManager: {
+    listRoomKeyRequests: ReturnType<typeof vi.fn>
+    deleteRoomKeyRequest: ReturnType<typeof vi.fn>
+  }
 
   const authedRequestImpl = vi
     .fn()
@@ -141,12 +145,20 @@ describe('MatrixDeviceService', () => {
       getDeviceListUpdates: vi.fn()
     }
 
+    mockE2eeManager = {
+      listRoomKeyRequests: vi.fn(),
+      deleteRoomKeyRequest: vi.fn()
+    }
+
     mockHttp = { authedRequest: authedRequestImpl }
 
     mockClient = {
       http: mockHttp as unknown as MatrixClient['http'],
       getDeviceManager: vi.fn(
         () => mockDeviceManager as unknown as MatrixClientExtended['getDeviceManager'] extends () => infer T ? T : never
+      ),
+      getE2EEManager: vi.fn(
+        () => mockE2eeManager as unknown as MatrixClientExtended['getE2EEManager'] extends () => infer T ? T : never
       ),
       getDeviceId: vi.fn(() => 'CURRENT_DEVICE')
     }
@@ -216,6 +228,41 @@ describe('MatrixDeviceService', () => {
       mockClient.getDeviceManager = vi.fn(() => null)
 
       await expect(matrixDeviceService.getDevice('DEVICE1')).rejects.toThrow('DeviceManager 不可用')
+    })
+  })
+
+  describe('getRoomKeyRequests', () => {
+    it('从 SDK 响应体解包 requests 数组（不返回包裹对象）', async () => {
+      mockE2eeManager.listRoomKeyRequests.mockResolvedValue({
+        requests: [
+          { request_id: 'r1', requesting_user_id: '@a:matrix.test' },
+          { request_id: 'r2', requesting_user_id: '@b:matrix.test' }
+        ]
+      })
+
+      const result = await matrixDeviceService.getRoomKeyRequests()
+
+      // 必须返回数组本身，而非 { requests: [...] } 包裹对象
+      expect(Array.isArray(result)).toBe(true)
+      expect(result).toHaveLength(2)
+      expect(result[0]).toEqual({ request_id: 'r1', requesting_user_id: '@a:matrix.test' })
+      expect(mockE2eeManager.listRoomKeyRequests).toHaveBeenCalled()
+    })
+
+    it('响应体无 requests 时回退为空数组', async () => {
+      mockE2eeManager.listRoomKeyRequests.mockResolvedValue({})
+
+      const result = await matrixDeviceService.getRoomKeyRequests()
+
+      expect(result).toEqual([])
+    })
+
+    it('SDK 调用失败时回退为空数组', async () => {
+      mockE2eeManager.listRoomKeyRequests.mockRejectedValue(new Error('boom'))
+
+      const result = await matrixDeviceService.getRoomKeyRequests()
+
+      expect(result).toEqual([])
     })
   })
 

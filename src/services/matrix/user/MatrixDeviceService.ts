@@ -10,7 +10,6 @@ import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixDeviceService')
 
@@ -315,13 +314,13 @@ class MatrixDeviceService extends BaseMatrixService {
   async getRoomKeyRequests(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
     try {
-      const result = await authedRequestWithPath<{ requests?: Array<Record<string, unknown>> }>(
-        client,
-        'GET',
-        MATRIX_PATHS.CRYPTO.ROOM_KEYS_REQUEST
-      )
+      // 注意：SDK 的 listRoomKeyRequests() 类型声明为 RoomKeyRequestResponse[]，但运行时实际返回
+      // 的是 GET /room_keys/request 的原始响应体 { requests: [...] }（Matrix 规范的包裹结构）。
+      // 必须按真实结构解包，否则会把包裹对象当成数组返回，违反本函数声明的 Array 契约。
+      const response = await client.getE2EEManager().listRoomKeyRequests()
+      const requests = (response as unknown as { requests?: Array<Record<string, unknown>> }).requests
       logger.info('[DeviceService] 获取密钥请求列表成功')
-      return result.requests ?? []
+      return requests ?? []
     } catch (err) {
       logger.error(`[DeviceService] 获取密钥请求列表失败: ${err}`)
       return []
@@ -331,7 +330,7 @@ class MatrixDeviceService extends BaseMatrixService {
   async deleteRoomKeyRequest(requestId: string): Promise<boolean> {
     const client = this.getClient()
     try {
-      await authedRequestWithPath(client, 'DELETE', `/room_keys/request/${encodeURIComponent(requestId)}`)
+      await client.getE2EEManager().deleteRoomKeyRequest(requestId)
       logger.info(`[DeviceService] 删除密钥请求成功: ${requestId}`)
       return true
     } catch (err) {
