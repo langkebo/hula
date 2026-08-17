@@ -442,7 +442,7 @@ const buildPathUploadFiles = async (paths: string[]) => {
   if (!paths?.length) return []
   try {
     const filesMeta = (await getFilesMeta<FilesMeta>(paths)) ?? []
-    return await FileUtil.map2PathUploadFile(paths, filesMeta)
+    return await FileUtil.copyDroppedFilesToResourceDir(paths, filesMeta)
   } catch (error) {
     logger.error('解析拖拽文件元数据失败:', error)
     showFeedback('解析拖拽文件失败', 'error')

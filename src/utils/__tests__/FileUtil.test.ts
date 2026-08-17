@@ -170,6 +170,80 @@ describe('FileUtil', () => {
       expect(copyFileMock).toHaveBeenCalledWith('/tmp/a.pdf', '/custom/dir/a.pdf')
       expect(getUserRoomAbsoluteDirMock).not.toHaveBeenCalled()
     })
+
+    it('returns source-to-dest map for successfully copied files', async () => {
+      const files = ['/tmp/a.pdf', '/tmp/b.txt']
+      const filesMeta = [
+        { path: '/tmp/a.pdf', name: 'a.pdf' },
+        { path: '/tmp/b.txt', name: 'b.txt' }
+      ] as never
+      copyFileMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('copy fail'))
+
+      const result = await FileUtil.copyUploadFile(files, filesMeta)
+
+      expect(result).toBeInstanceOf(Map)
+      expect(result.get('/tmp/a.pdf')).toBe('/user/dir/a.pdf')
+      expect(result.has('/tmp/b.txt')).toBe(false)
+    })
+  })
+
+  describe('copyDroppedFilesToResourceDir', () => {
+    it('copies dropped files first, then stats and maps the app-scoped paths', async () => {
+      const files = ['/home/user/a.pdf', '/home/user/b.txt']
+      const filesMeta = [
+        { path: '/home/user/a.pdf', name: 'a.pdf', mime_type: 'application/pdf' },
+        { path: '/home/user/b.txt', name: 'b.txt', mime_type: 'text/plain' }
+      ] as never
+      copyFileMock.mockResolvedValue(undefined)
+      statMock.mockResolvedValue({ size: 100 })
+
+      const result = await FileUtil.copyDroppedFilesToResourceDir(files, filesMeta)
+
+      expect(copyFileMock).toHaveBeenCalledWith('/home/user/a.pdf', '/user/dir/a.pdf')
+      expect(copyFileMock).toHaveBeenCalledWith('/home/user/b.txt', '/user/dir/b.txt')
+      // stat 必须作用在复制后的应用作用域路径上，而非拖入的原始绝对路径
+      expect(statMock).toHaveBeenCalledWith('/user/dir/a.pdf')
+      expect(statMock).toHaveBeenCalledWith('/user/dir/b.txt')
+      expect(result).toHaveLength(2)
+      expect(result[0]).toEqual({
+        kind: 'path',
+        path: '/user/dir/a.pdf',
+        name: 'a.pdf',
+        size: 100,
+        type: 'application/pdf'
+      })
+      expect(result[1].path).toBe('/user/dir/b.txt')
+    })
+
+    it('skips dropped files whose copy fails', async () => {
+      const files = ['/home/user/a.pdf', '/home/user/b.txt']
+      const filesMeta = [
+        { path: '/home/user/a.pdf', name: 'a.pdf', mime_type: 'application/pdf' },
+        { path: '/home/user/b.txt', name: 'b.txt', mime_type: 'text/plain' }
+      ] as never
+      copyFileMock.mockRejectedValueOnce(new Error('copy fail')).mockResolvedValue(undefined)
+      statMock.mockResolvedValue({ size: 50 })
+
+      const result = await FileUtil.copyDroppedFilesToResourceDir(files, filesMeta)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].path).toBe('/user/dir/b.txt')
+      expect(statMock).toHaveBeenCalledTimes(1)
+      expect(statMock).toHaveBeenCalledWith('/user/dir/b.txt')
+    })
+
+    it('uses provided userResourceDir for dropped files', async () => {
+      const files = ['/home/user/a.pdf']
+      const filesMeta = [{ path: '/home/user/a.pdf', name: 'a.pdf', mime_type: 'application/pdf' }] as never
+      copyFileMock.mockResolvedValue(undefined)
+      statMock.mockResolvedValue({ size: 200 })
+
+      const result = await FileUtil.copyDroppedFilesToResourceDir(files, filesMeta, '/custom/dir')
+
+      expect(copyFileMock).toHaveBeenCalledWith('/home/user/a.pdf', '/custom/dir/a.pdf')
+      expect(result[0].path).toBe('/custom/dir/a.pdf')
+      expect(getUserRoomAbsoluteDirMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('openAndCopyFile', () => {
