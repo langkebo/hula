@@ -46,7 +46,14 @@ const mockMatrixGetCaptcha = vi.mocked(matrixGetCaptcha)
 const mockCreateTemporaryMatrixClient = vi.mocked(createTemporaryMatrixClient)
 
 const registerRequest = vi.fn()
-const dummyClient = { some: 'client' } as unknown as Parameters<typeof authedRequestWithPath>[0]
+const mockCaptchaManager = {
+  deleteExpiredCaptchas: vi.fn(),
+  getCaptchaStatus: vi.fn()
+}
+const dummyClient = {
+  some: 'client',
+  getCaptchaManager: () => mockCaptchaManager
+} as unknown as Parameters<typeof authedRequestWithPath>[0]
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -148,25 +155,19 @@ describe('cleanupExpiredCaptchas', () => {
   })
 
   it('returns the cleaned count from the homeserver', async () => {
-    mockAuthedRequestWithPath.mockResolvedValue({ cleaned: 3 })
+    mockCaptchaManager.deleteExpiredCaptchas.mockResolvedValue({ cleaned_count: 3, message: 'ok' })
     const result = await cleanupExpiredCaptchas()
     expect(result).toEqual({ cleaned: 3 })
-    expect(mockAuthedRequestWithPath).toHaveBeenCalledWith(
-      dummyClient,
-      'DELETE',
-      '/register/captcha/clean',
-      undefined,
-      {}
-    )
+    expect(mockCaptchaManager.deleteExpiredCaptchas).toHaveBeenCalled()
   })
 
   it('defaults cleaned to 0 when absent', async () => {
-    mockAuthedRequestWithPath.mockResolvedValue({})
+    mockCaptchaManager.deleteExpiredCaptchas.mockResolvedValue({})
     await expect(cleanupExpiredCaptchas()).resolves.toEqual({ cleaned: 0 })
   })
 
   it('normalizes the error when cleanup fails', async () => {
-    mockAuthedRequestWithPath.mockRejectedValue(new Error('boom'))
+    mockCaptchaManager.deleteExpiredCaptchas.mockRejectedValue(new Error('boom'))
     await expect(cleanupExpiredCaptchas()).rejects.toThrow('清理过期验证码失败')
     expect(mockNormalizeSdkMatrixError).toHaveBeenCalled()
   })
