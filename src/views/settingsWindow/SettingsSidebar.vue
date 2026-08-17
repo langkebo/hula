@@ -194,6 +194,9 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 
 .settings-sidebar-groups {
   flex: 1;
+  // 滚动容器必须 min-height: 0，否则标签项多时会把侧边栏撑高溢出，
+  // 触发与内容栏的堆叠/重叠。
+  min-height: 0;
   overflow-y: auto;
   padding: var(--tjg-space-2) 0;
 }
