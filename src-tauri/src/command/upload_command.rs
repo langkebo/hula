@@ -1,6 +1,7 @@
 use bytes::Bytes;
 use futures_util::stream::try_unfold;
 use serde::Serialize;
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{AppHandle, Manager, ipc::Channel, path::BaseDirectory};
 use tokio::{fs::File, io::AsyncReadExt};
@@ -53,6 +54,58 @@ fn resolve_upload_path(
         .path()
         .resolve(path, base_dir)
         .map_err(|e| format!("Failed to resolve file path: {e}"))
+}
+
+/// 将任意绝对路径的文件复制到应用作用域目录（`$APPDATA/userData/dropped`），
+/// 并返回复制后的目标绝对路径。
+///
+/// 该命令使用 `std::fs::copy`，不经过 `tauri-plugin-fs` 的能力 scope 检查，
+/// 因此可以复制位于 `$HOME/$DESKTOP/$PICTURES/$DOCUMENTS` 下的拖拽文件。
+/// 复制后的文件位于 `$APPDATA/**` 内，前端随后用 plugin-fs 的 `readFile`/`stat`
+/// 以绝对路径读取即可通过 `fs:read-files` 收窄后的 scope。
+#[tauri::command]
+pub async fn copy_file_to_app_scope(
+    app_handle: AppHandle,
+    source_path: String,
+) -> Result<String, String> {
+    let source = PathBuf::from(&source_path);
+    if !source.is_absolute() {
+        return Err(format!("拖拽文件路径不是绝对路径: {source_path}"));
+    }
+    if !source.is_file() {
+        return Err(format!("拖拽文件不存在: {source_path}"));
+    }
+
+    let file_name = source
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("file")
+        .to_string();
+
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("获取应用数据目录失败: {e}"))?;
+    // 与前端 PathUtil 的 USER_DATA（"userData"）根目录保持一致，落在 $APPDATA/** 作用域内
+    let dest_dir = app_data_dir.join("userData").join("dropped");
+    std::fs::create_dir_all(&dest_dir).map_err(|e| format!("创建目标目录失败: {e}"))?;
+
+    let dest_path = dest_dir.join(unique_file_name(&file_name));
+    std::fs::copy(&source, &dest_path).map_err(|e| format!("复制文件失败: {e}"))?;
+
+    Ok(dest_path.to_string_lossy().to_string())
+}
+
+/// 为目标文件名追加纳秒时间戳，避免同名拖拽文件相互覆盖。
+fn unique_file_name(file_name: &str) -> String {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    match file_name.rfind('.') {
+        Some(idx) if idx > 0 => format!("{}_{}{}", &file_name[..idx], nanos, &file_name[idx..]),
+        _ => format!("{file_name}_{nanos}"),
+    }
 }
 
 async fn upload_put(

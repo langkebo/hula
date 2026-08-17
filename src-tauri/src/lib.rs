@@ -522,6 +522,7 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
     use crate::command::markdown_command::parse_markdown;
     #[cfg(mobile)]
     use crate::command::set_complete;
+    use crate::command::upload_command::copy_file_to_app_scope;
     use crate::command::upload_command::upload_file_put;
     use crate::command::user_command::get_user_tokens;
     use crate::command::user_command::save_user_info;
@@ -603,6 +604,7 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         parse_markdown,
         get_readme_html,
         upload_file_put,
+        copy_file_to_app_scope,
         #[cfg(mobile)]
         set_complete,
         #[cfg(mobile)]

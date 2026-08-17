@@ -28,6 +28,8 @@ export enum TauriCommand {
   /** 生成 MinIO 预签名 URL */
   /** 通过 Rust 端 PUT 上传本地文件 */
   UPLOAD_FILE_PUT = 'upload_file_put',
+  /** 将任意绝对路径文件复制到应用作用域目录（供拖拽上传规避 fs scope 收窄） */
+  COPY_FILE_TO_APP_SCOPE = 'copy_file_to_app_scope',
   /** 检查管理员状态 */
   CHECK_ADMIN_STATUS = 'check_admin_status'
 }
