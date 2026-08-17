@@ -318,4 +318,49 @@ describe('useSessionListState', () => {
 
     wrapper.unmount()
   })
+
+  it('同一对方用户的多个 DM 会话只保留最近活跃一条（根因 C 去重，含 localpart 归一化）', async () => {
+    sessionStoreMock.sessionList = [
+      {
+        roomId: 'dm-old',
+        type: RoomTypeEnum.SINGLE,
+        detailId: 'test1', // localpart 形式（历史数据）
+        name: 'test1(旧)',
+        unreadCount: 0,
+        activeTime: 100,
+        top: false,
+        shield: false
+      },
+      {
+        roomId: 'dm-new',
+        type: RoomTypeEnum.SINGLE,
+        detailId: '@test1:matrix.test', // 完整 MXID 形式
+        name: 'test1(新)',
+        unreadCount: 0,
+        activeTime: 300,
+        top: false,
+        shield: false
+      },
+      {
+        roomId: 'room-group',
+        type: RoomTypeEnum.GROUP,
+        name: '群聊',
+        unreadCount: 0,
+        activeTime: 50,
+        top: false,
+        shield: false
+      }
+    ]
+
+    chatStoreMock.chatMessageListByRoomId.mockImplementation(() => [])
+
+    const { wrapper, api } = await createHarness()
+
+    const roomIds = api.sessionList.value.map((item) => item.roomId)
+    expect(roomIds).toContain('dm-new') // 最近一条 test1 DM 保留
+    expect(roomIds).not.toContain('dm-old') // 旧 DM 被过滤
+    expect(roomIds).toContain('room-group')
+
+    wrapper.unmount()
+  })
 })

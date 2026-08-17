@@ -216,6 +216,21 @@ describe('acceptFriendRequest', () => {
     expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('!dm-room:matrix.org')
   })
 
+  it('m.direct 已有 DM 房间时复用而不重复创建（根因 A）', async () => {
+    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    // m.direct 账号数据已存在该用户的 DM 房间 → startDirectRoom 应复用，不再 createDm
+    vi.mocked(matrixDirectMessageService.getDmForUser).mockResolvedValueOnce('!existing-dm:matrix.org')
+
+    const store = useContactStore()
+    const result = await store.acceptFriendRequest('@bob:matrix.org')
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(result).toBe(true)
+    expect(matrixDirectMessageService.getDmForUser).toHaveBeenCalledWith('@bob:matrix.org', false)
+    expect(matrixDirectMessageService.createDm).not.toHaveBeenCalled() // 未重复创建
+    expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('!existing-dm:matrix.org')
+  })
+
   it('removes the accepted request from incoming list', async () => {
     vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
     vi.mocked(matrixDirectMessageService.createDm).mockResolvedValueOnce('!dm-carol:matrix.org')
