@@ -27,7 +27,8 @@ const mockWidgetsManager = {
   createWidgetSession: vi.fn(),
   listWidgetSessions: vi.fn(),
   getWidgetSession: vi.fn(),
-  terminateWidgetSession: vi.fn()
+  terminateWidgetSession: vi.fn(),
+  updateWidgetCapabilities: vi.fn()
 }
 
 type WidgetsManagerLike = typeof mockWidgetsManager
@@ -143,6 +144,28 @@ describe('MatrixWidgetService', () => {
         data: undefined
       }
     ])
+  })
+
+  it('setWidgetCapabilities 委托 SDK updateWidgetCapabilities 并包装 body', async () => {
+    mockWidgetsManager.updateWidgetCapabilities.mockResolvedValueOnce({
+      widget_id: 'widget-1',
+      room_id: '!room:example.com',
+      capabilities: ['m.text', 'm.capability.screenshot']
+    })
+
+    const result = await matrixWidgetService.setWidgetCapabilities('!room:example.com', 'widget-1', [
+      'm.text',
+      'm.capability.screenshot'
+    ])
+
+    expect(mockWidgetsManager.updateWidgetCapabilities).toHaveBeenCalledWith('!room:example.com', 'widget-1', {
+      capabilities: ['m.text', 'm.capability.screenshot']
+    })
+    expect(result).toEqual({
+      widget_id: 'widget-1',
+      room_id: '!room:example.com',
+      capabilities: ['m.text', 'm.capability.screenshot']
+    })
   })
 
   it('creates a widget via createWidget with the new body shape', async () => {
