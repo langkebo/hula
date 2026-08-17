@@ -1,5 +1,4 @@
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
-import { Direction } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum } from '@/enums'
 import { matrixEventService } from '../MatrixEventService'
@@ -302,56 +301,61 @@ describe('MatrixEventService', () => {
         getMember: () => ({ name: 'Alice', getMxcAvatarUrl: () => 'mxc://a' })
       }) as unknown as Room
 
-    it('分页方向：首次取最新一页，loadMore 取更早一页，直到最旧 isLast=true', async () => {
-      const events = Array.from({ length: 50 }, (_, i) => makeMessageEvent(`event-${i + 1}`))
-      const room = makeRoom(events)
+    it('初始加载返回整个 live 窗口；loadMore 用 /messages 反向分页取更早历史直到 isLast', async () => {
+      let events = Array.from({ length: 50 }, (_, i) => makeMessageEvent(`event-${i + 1}`))
+      const getEvents = vi.fn(() => events)
+      const room = makeRoom([], { getEvents })
       vi.mocked(matrixRoomQueryService.getRoom).mockResolvedValue(room)
 
+      // loadMore 用 /messages 反向分页，前置 20 条更早事件（初始加载时不会被调用）
+      const paginate = vi.fn(async () => {
+        const older = Array.from({ length: 20 }, (_, i) => makeMessageEvent(`older-${i + 1}`))
+        events = [...older, ...events]
+        return true // hasMore
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ paginateEventTimeline: paginate } as unknown as MatrixClient)
+
+      // 初始：live 窗口 50 >= pageSize 20，不触发 scrollback，返回全部；cursor=最旧
       const first = await matrixEventService.getPagedRoomMessages('!room:e', 20, '')
-      expect(first.messages.length).toBe(20)
-      expect(first.messages[0].message.id).toBe('event-31')
+      expect(first.messages.length).toBe(50)
+      expect(first.messages[0].message.id).toBe('event-1')
       expect(first.isLast).toBe(false)
 
+      // loadMore：/messages 反向分页，仅返回新增的更早事件
       const second = await matrixEventService.getPagedRoomMessages('!room:e', 20, first.cursor)
+      expect(paginate).toHaveBeenCalledTimes(1)
+      expect(paginate.mock.calls[0][1]).toEqual({ backwards: true, limit: 20 })
       expect(second.messages.length).toBe(20)
-      expect(second.messages[0].message.id).toBe('event-11')
+      expect(second.messages[0].message.id).toBe('older-1')
       expect(second.isLast).toBe(false)
 
+      // 无更多历史：paginate 返回 false 且无新增 => isLast=true
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        paginateEventTimeline: vi.fn(async () => false)
+      } as unknown as MatrixClient)
       const last = await matrixEventService.getPagedRoomMessages('!room:e', 20, second.cursor)
-      expect(last.messages.length).toBe(10)
+      expect(last.messages.length).toBe(0)
       expect(last.isLast).toBe(true)
     })
 
-    it('本地 timeline 耗尽但服务端仍有更早历史时，loadMore 触发 scrollback 拉取更早消息', async () => {
-      const serverEvents = Array.from({ length: 20 }, (_, i) => makeMessageEvent(`server-${i + 1}`))
-      let localEvents = Array.from({ length: 25 }, (_, i) => makeMessageEvent(`local-${i + 1}`))
-      let paginationToken: string | null = 't123'
-
-      const getEvents = vi.fn(() => localEvents)
-      const getPaginationToken = vi.fn(() => paginationToken)
-      const room = makeRoom([], { getEvents, getPaginationToken })
+    it('初始 live 窗口不足一页时，scrollback 从服务端补齐最近历史', async () => {
+      let events = Array.from({ length: 15 }, (_, i) => makeMessageEvent(`local-${i + 1}`))
+      const getEvents = vi.fn(() => events)
+      const room = makeRoom([], { getEvents })
+      vi.mocked(matrixRoomQueryService.getRoom).mockResolvedValue(room)
 
       const scrollback = vi.fn(async () => {
-        // 模拟 SDK：把更早的历史前置到 timeline，并清空 backward token
-        localEvents = [...serverEvents, ...localEvents]
-        paginationToken = null
+        const server = Array.from({ length: 15 }, (_, i) => makeMessageEvent(`server-${i + 1}`))
+        events = [...server, ...events] // 服务端更早，前置到时间线
         return room
       })
       vi.mocked(matrixClientService.getClient).mockReturnValue({ scrollback } as unknown as MatrixClient)
-      vi.mocked(matrixRoomQueryService.getRoom).mockResolvedValue(room)
 
       const first = await matrixEventService.getPagedRoomMessages('!room:e', 20, '')
-      expect(first.messages.length).toBe(20)
-      expect(first.messages[0].message.id).toBe('local-6')
-      expect(first.isLast).toBe(false)
-
-      const second = await matrixEventService.getPagedRoomMessages('!room:e', 20, first.cursor)
       expect(scrollback).toHaveBeenCalledTimes(1)
-      expect(scrollback).toHaveBeenCalledWith(room, 20)
-      expect(getPaginationToken).toHaveBeenCalledWith(Direction.Backward)
-      expect(second.messages.length).toBe(20)
-      expect(second.messages[0].message.id).toBe('server-6')
-      expect(second.isLast).toBe(false)
+      expect(first.messages.length).toBe(30)
+      expect(first.messages[0].message.id).toBe('server-1')
+      expect(first.isLast).toBe(false)
     })
   })
 })
