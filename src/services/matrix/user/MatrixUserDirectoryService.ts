@@ -113,18 +113,8 @@ class UserDirectoryService extends BaseMatrixService {
   }> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest<{
-        results?: Array<{
-          user_id: string
-          display_name?: string
-          avatar_url?: string
-        }>
-        next_batch?: string
-      }>('POST', '/user_directory/list', undefined, {
-        limit,
-        from: from || undefined
-      })
-      const users = (result.results ?? []).map((u) => ({
+      const result = await client.getUserDirectoryManager().listUserDirectoryPaginated(limit, from)
+      const users = (result.users ?? []).map((u) => ({
         userId: u.user_id,
         displayName: u.display_name,
         avatarUrl: u.avatar_url
@@ -139,13 +129,10 @@ class UserDirectoryService extends BaseMatrixService {
   async getUserDirectoryProfile(userId: string): Promise<UserDirectorySearchResult | null> {
     const client = this.getClient()
     try {
-      const result = await client.http.authedRequest<{
-        display_name?: string
-        avatar_url?: string
-      }>('GET', `/user_directory/profiles/${encodeURIComponent(userId)}`)
+      const result = await client.getUserDirectoryManager().getProfile(userId)
       return {
         userId,
-        displayName: result.display_name,
+        displayName: result.displayname,
         avatarUrl: result.avatar_url
       }
     } catch (err) {
