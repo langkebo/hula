@@ -32,14 +32,16 @@ function parseDotenv(body) {
   return out
 }
 
-// 加载 .env 与 .env.local（.env.local 后加载，覆盖 .env；已存在的 process.env 变量优先）
+// 加载 .env 与 .env.local（后加载者覆盖先加载者：.env.local 覆盖 .env；
+// 加载前已存在于 process.env 的 shell 环境变量优先，不被任何文件覆盖）
 function loadEnvFiles() {
+  const preExisting = new Set(Object.keys(process.env))
   for (const file of ['.env', '.env.local']) {
     const envPath = path.join(repoRoot, file)
     if (!fs.existsSync(envPath)) continue
     const vars = parseDotenv(fs.readFileSync(envPath, 'utf8'))
     for (const [key, value] of Object.entries(vars)) {
-      if (process.env[key] === undefined) process.env[key] = value
+      if (!preExisting.has(key)) process.env[key] = value
     }
   }
 }
