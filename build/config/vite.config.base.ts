@@ -85,14 +85,7 @@ export const baseConfig: UserConfig = {
     modulePreload: {
       polyfill: true,
       resolveDependencies: (_filename, deps) => {
-        const heavyChunks = [
-          'shiki-core',
-          'shiki-themes',
-          'shiki-langs',
-          'shiki-engine',
-          'three',
-          'vue-office'
-        ]
+        const heavyChunks = ['shiki-core', 'shiki-themes', 'shiki-langs', 'shiki-engine', 'three', 'vue-office']
         return deps.filter((dep) => {
           if (heavyChunks.some((chunk) => dep.includes(chunk))) {
             return false
