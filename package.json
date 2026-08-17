@@ -203,7 +203,16 @@
       "brace-expansion@>=4.0.0 <5.0.9": "^5.0.9",
       "js-yaml@>=4.0.0 <4.3.1": "^4.3.1"
     },
-    "onlyBuiltDependencies": ["msw", "unrs-resolver", "vue-demi"],
-    "ignoredBuiltDependencies": ["@parcel/watcher", "esbuild", "sharp", "tlbs-map-vue"]
+    "onlyBuiltDependencies": [
+      "msw",
+      "unrs-resolver",
+      "vue-demi"
+    ],
+    "ignoredBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "sharp",
+      "tlbs-map-vue"
+    ]
   }
 }

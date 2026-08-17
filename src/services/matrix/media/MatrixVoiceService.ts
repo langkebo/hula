@@ -451,14 +451,13 @@ class MatrixVoiceService extends BaseMatrixService {
   /**
    * 获取 RTC 传输协议信息（MSC4143）
    *
-   * 调用 GET /_matrix/client/unstable/org.matrix.msc4143/rtc/transports
-   * VoiceManager 无此方法（MSC4143 unstable 端点），保留 http.authedRequest 直连。
+   * 通过 SDK VoiceManager.getRtcTransports 获取（MSC4143 unstable 端点）。
    * 失败时返回空对象，调用方按无 RTC 能力处理。
    */
   async getRtcTransports(): Promise<Record<string, unknown>> {
     try {
       const client = this.getClient()
-      const result = await client.http.authedRequest('GET', MATRIX_PATHS.VOICE.RTC_TRANSPORTS)
+      const result = await client.getVoiceManager().getRtcTransports()
       return result as Record<string, unknown>
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getRtcTransports failed: ${err}`)

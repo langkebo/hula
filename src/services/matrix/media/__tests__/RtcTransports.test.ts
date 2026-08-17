@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MATRIX_PATHS } from '@/services/matrix/paths'
 
-const authedRequestMock = vi.fn()
+const getRtcTransportsMock = vi.fn()
 
 vi.mock('@/services/matrix/MatrixHttpClient', () => ({
   matrixHttpClient: { buildRoomPath: (roomId: string, type: string) => `/rooms/${roomId}/${type}` },
-  authedRequestWithPath: (...args: unknown[]) => authedRequestMock(...args)
+  authedRequestWithPath: (...args: unknown[]) => vi.fn()(...args)
 }))
 
 vi.mock('@/services/matrix/paths', async () => {
@@ -17,7 +17,7 @@ vi.mock('@/services/matrix/paths', async () => {
 vi.mock('@/services/matrix/BaseMatrixService', () => ({
   BaseMatrixService: class {
     protected getClient() {
-      return { http: { authedRequest: authedRequestMock } }
+      return { getVoiceManager: () => ({ getRtcTransports: getRtcTransportsMock }) }
     }
   }
 }))
@@ -49,23 +49,22 @@ import { matrixVoiceService } from '../MatrixVoiceService'
 
 describe('MatrixVoiceService — P2-7 RTC 传输协议信息扩展', () => {
   beforeEach(() => {
-    authedRequestMock.mockReset()
+    getRtcTransportsMock.mockReset()
   })
 
-  it('getRtcTransports 调用 GET VOICE.RTC_TRANSPORTS（FT-096: 使用 L3 常量）', async () => {
-    authedRequestMock.mockResolvedValue({
+  it('getRtcTransports 委托 SDK VoiceManager.getRtcTransports（FT-096）', async () => {
+    getRtcTransportsMock.mockResolvedValue({
       transports: [{ transport: 'webrtc', version: '1.0' }]
     })
 
     const result = await matrixVoiceService.getRtcTransports()
 
-    expect(authedRequestMock).toHaveBeenCalledWith('GET', MATRIX_PATHS.VOICE.RTC_TRANSPORTS)
-    expect(MATRIX_PATHS.VOICE.RTC_TRANSPORTS).toBe('/_matrix/client/unstable/org.matrix.msc4143/rtc/transports')
+    expect(getRtcTransportsMock).toHaveBeenCalledTimes(1)
     expect(result).toEqual({ transports: [{ transport: 'webrtc', version: '1.0' }] })
   })
 
   it('getRtcTransports 失败时返回空对象', async () => {
-    authedRequestMock.mockRejectedValue(new Error('boom'))
+    getRtcTransportsMock.mockRejectedValue(new Error('boom'))
 
     const result = await matrixVoiceService.getRtcTransports()
 
