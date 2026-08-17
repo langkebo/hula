@@ -1,7 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import { MATRIX_PATHS } from '../paths'
 import type { FederationBlacklistEntry, FederationDestination } from './AdminTypes'
 
 const logger = createLogger('FederationService')
@@ -14,21 +13,6 @@ export class AdminFederationService {
     private readonly sdkAdmin: SdkAdminGetter,
     private readonly getClient: GetClientGetter
   ) {}
-
-  private async adminRequest<TResponse>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    body?: Record<string, unknown>
-  ): Promise<TResponse> {
-    const client = this.getClient()
-    return client.http.authedRequest(
-      method,
-      path,
-      undefined,
-      method === 'GET' || method === 'DELETE' ? undefined : body,
-      { prefix: MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE }
-    ) as Promise<TResponse>
-  }
 
   async getFederationDestinations(): Promise<FederationDestination[]> {
     try {
@@ -100,17 +84,6 @@ export class AdminFederationService {
     } catch (err) {
       logger.error(`[AdminFederation] 删除联邦黑名单失败: ${err}`)
       return false
-    }
-  }
-
-  async getFederationStatus(): Promise<Record<string, unknown>> {
-    try {
-      const response = await this.adminRequest<Record<string, unknown>>('GET', '/federation/status')
-      logger.info('[AdminFederation] 获取联邦状态成功')
-      return response
-    } catch (err) {
-      logger.error(`[AdminFederation] 获取联邦状态失败: ${err}`)
-      return {}
     }
   }
 

@@ -144,13 +144,4 @@ describe('AdminFederationService', () => {
     admin.removeFromFederationBlacklist.mockRejectedValueOnce(new Error('boom'))
     await expect(service.removeFromFederationBlacklist('evil.hs')).resolves.toBe(false)
   })
-
-  it('getFederationStatus 出错时降级为空对象', async () => {
-    server.use(
-      http.get(`${TEST_BASE_URL}/_synapse/admin/v1/federation/status`, () => {
-        return new HttpResponse(null, { status: 500 })
-      })
-    )
-    await expect(service.getFederationStatus()).resolves.toEqual({})
-  })
 })

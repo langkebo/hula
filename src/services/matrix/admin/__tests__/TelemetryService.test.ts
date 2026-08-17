@@ -12,7 +12,9 @@ const telemetryManager = {
   getServerStatus: vi.fn(),
   getServerAttributes: vi.fn(),
   getServerMetricsSummary: vi.fn(),
-  getServerAlerts: vi.fn()
+  getServerAlerts: vi.fn(),
+  acknowledgeServerAlert: vi.fn(),
+  getServerHealth: vi.fn()
 }
 
 const makeClient = () => {
@@ -147,41 +149,22 @@ describe('AdminTelemetryService — P1-2 遥测监控', () => {
     expect(result).toEqual([])
   })
 
-  it('acknowledgeAlert 使用 POST /telemetry/alerts/{alert_id}/ack', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({
+  it('acknowledgeAlert 委托 acknowledgeServerAlert', async () => {
+    const { service } = makeService()
+    telemetryManager.acknowledgeServerAlert.mockResolvedValue({
       alert_id: 'alert-1',
       status: 'acknowledged',
       acknowledged_by: '@admin:matrix.test'
     })
 
     const result = await service.acknowledgeAlert('alert-1')
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'POST',
-      '/telemetry/alerts/alert-1/ack',
-      undefined,
-      undefined,
-      expect.any(Object)
-    )
+    expect(telemetryManager.acknowledgeServerAlert).toHaveBeenCalledWith('alert-1')
     expect(result.status).toBe('acknowledged')
   })
 
-  it('acknowledgeAlert 对 alert_id 进行 URL 编码', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({ alert_id: 'a b/c' })
-    await service.acknowledgeAlert('a b/c')
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'POST',
-      '/telemetry/alerts/a%20b%2Fc/ack',
-      undefined,
-      undefined,
-      expect.any(Object)
-    )
-  })
-
-  it('getHealth 使用 GET /telemetry/health', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockResolvedValue({
+  it('getHealth 委托 getServerHealth', async () => {
+    const { service } = makeService()
+    telemetryManager.getServerHealth.mockResolvedValue({
       status: 'ok',
       service: 'synapse-rust',
       trace_enabled: false,
@@ -192,20 +175,14 @@ describe('AdminTelemetryService — P1-2 遥测监控', () => {
     })
 
     const result = await service.getHealth()
-    expect(client.http.authedRequest).toHaveBeenCalledWith(
-      'GET',
-      '/telemetry/health',
-      undefined,
-      undefined,
-      expect.any(Object)
-    )
+    expect(telemetryManager.getServerHealth).toHaveBeenCalled()
     expect(result?.status).toBe('ok')
     expect(result?.database.is_healthy).toBe(true)
   })
 
   it('getHealth 在出错时降级为 null', async () => {
-    const { service, client } = makeService()
-    client.http.authedRequest.mockRejectedValue(new Error('boom'))
+    const { service } = makeService()
+    telemetryManager.getServerHealth.mockRejectedValue(new Error('boom'))
     const result = await service.getHealth()
     expect(result).toBeNull()
   })

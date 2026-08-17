@@ -14,7 +14,6 @@
  */
 import type { MatrixClient } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
-import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('AdminTelemetry')
 
@@ -120,29 +119,11 @@ export interface TelemetryHealthCheck {
   alerts: TelemetryAlert[]
 }
 
-const SYNAPSE_ADMIN_BASE = MATRIX_PATHS.ADMIN.SYNAPSE_ADMIN_BASE
-
 export class AdminTelemetryService {
   constructor(private readonly getClient: GetClientGetter) {}
 
   private getManager() {
     return this.getClient().getTelemetryManager()
-  }
-
-  private async adminRequest<TResponse>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    queryParams?: Record<string, string | number | boolean | string[] | undefined>,
-    body?: Record<string, unknown>
-  ): Promise<TResponse> {
-    const client = this.getClient()
-    return client.http.authedRequest(
-      method,
-      path,
-      queryParams,
-      method === 'GET' || method === 'DELETE' ? undefined : body,
-      { prefix: SYNAPSE_ADMIN_BASE }
-    ) as Promise<TResponse>
   }
 
   /**
@@ -205,12 +186,9 @@ export class AdminTelemetryService {
    * 确认单条告警。
    */
   async acknowledgeAlert(alertId: string): Promise<TelemetryAlert> {
-    const result = await this.adminRequest<TelemetryAlert>(
-      'POST',
-      `/telemetry/alerts/${encodeURIComponent(alertId)}/ack`
-    )
+    const result = await this.getManager().acknowledgeServerAlert(alertId)
     logger.info(`[AdminTelemetry] 已确认告警: ${alertId}`)
-    return result
+    return result as TelemetryAlert
   }
 
   /**
@@ -218,8 +196,8 @@ export class AdminTelemetryService {
    */
   async getHealth(): Promise<TelemetryHealthCheck | null> {
     try {
-      const result = await this.adminRequest<TelemetryHealthCheck>('GET', '/telemetry/health')
-      return result ?? null
+      const result = await this.getManager().getServerHealth()
+      return (result as unknown as TelemetryHealthCheck) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getHealth 失败: ${err}`)
       return null

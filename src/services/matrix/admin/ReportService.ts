@@ -1,8 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import { stripMatrixPrefix } from '../MatrixHttpClient'
-import { MATRIX_PATHS } from '../paths'
 import type { AdminReport, ReportRequest, ReportRoomResponse, ScannerInfo } from './AdminTypes'
 
 const logger = createLogger('ReportService')
@@ -23,22 +21,6 @@ export class AdminReportService {
     readonly _sdkAdmin: ReportDomainSdkGetter,
     private readonly getClient: ReportDomainClientGetter
   ) {}
-
-  /**
-   * 调用 authedRequest 前先用 stripMatrixPrefix 剥离已知前缀，
-   * 避免 SDK 默认 ClientPrefix.V3 与路径中的前缀重复拼接。
-   */
-  private async prefixedAuthedRequest<T>(
-    client: MatrixClient,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    fullPath: string,
-    queryParams?: Record<string, string>,
-    body?: Record<string, unknown>
-  ): Promise<T> {
-    const { path, prefix } = stripMatrixPrefix(fullPath)
-    const opts = prefix ? { prefix } : undefined
-    return (await client.http.authedRequest(method, path, queryParams, body, opts)) as T
-  }
 
   async reportEvent(request: ReportRequest): Promise<void> {
     const { roomId, eventId, reason, explanation } = request
@@ -92,15 +74,9 @@ export class AdminReportService {
   async reportRoom(roomId: string, reason: string, description?: string): Promise<ReportRoomResponse | null> {
     const client = this.getClient()
     try {
-      const result = await this.prefixedAuthedRequest<ReportRoomResponse>(
-        client,
-        'POST',
-        MATRIX_PATHS.MODERATION.REPORT_ROOM(roomId),
-        undefined,
-        { reason, description }
-      )
+      const result = await this.getReportingMgr().reportRoom(roomId, reason, description)
       logger.info(`[Admin] 举报房间成功: ${roomId}, report_id=${result.report_id}`)
-      return result
+      return { report_id: result.report_id }
     } catch (err) {
       logger.error(`[Admin] v3 举报房间失败，回退到事件举报: ${err}`)
       try {

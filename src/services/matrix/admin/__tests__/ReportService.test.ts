@@ -3,7 +3,6 @@ import type { AdminManager } from 'matrix-js-sdk/admin'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
-import { MATRIX_PATHS } from '../../paths'
 import { AdminReportService } from '../ReportService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
@@ -117,29 +116,21 @@ describe('AdminReportService', () => {
     })
   })
 
-  it('reportRoom 走 v3 房间举报端点（FT-091: 使用 MATRIX_PATHS.MODERATION.REPORT_ROOM）', async () => {
-    // 验证 L3 常量值（完整路径含 v3 前缀）
-    expect(MATRIX_PATHS.MODERATION.REPORT_ROOM('!r:hs')).toBe('/_matrix/client/v3/rooms/!r%3Ahs/report')
+  it('reportRoom 委托 ReportingManager.reportRoom 并传 description', async () => {
+    const reportRoomMock = vi.fn().mockResolvedValue({ report_id: 'rep-1', status: 'submitted' })
+    ;(client as unknown as { getReportingManager?: () => unknown }).getReportingManager = () => ({
+      reportRoom: reportRoomMock
+    })
+
     await expect(service.reportRoom('!r:hs', 'abuse', 'desc')).resolves.toEqual({ report_id: 'rep-1' })
-    // prefixedAuthedRequest 剥离默认 v3 前缀后，authedRequest 收到相对路径（v3 是 SDK 默认前缀，opts=undefined）
-    expect(authedRequestImpl).toHaveBeenCalledWith(
-      'POST',
-      '/rooms/!r%3Ahs/report',
-      undefined,
-      { reason: 'abuse', description: 'desc' },
-      undefined
-    )
+    expect(reportRoomMock).toHaveBeenCalledWith('!r:hs', 'abuse', 'desc')
   })
 
-  it('reportRoom v3 失败时回退到首条时间线事件举报', async () => {
-    server.use(
-      http.post(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/report`, () => {
-        return HttpResponse.json({ errcode: 'M_UNRECOGNIZED' }, { status: 400 })
-      })
-    )
-    // 回退会调用 reportEvent → ReportingManager.reportEvent
+  it('reportRoom 失败时回退到首条时间线事件举报', async () => {
+    const reportRoomMock = vi.fn().mockRejectedValue(new Error('boom'))
     const reportEventMock = vi.fn().mockResolvedValue({})
     ;(client as unknown as { getReportingManager?: () => unknown }).getReportingManager = () => ({
+      reportRoom: reportRoomMock,
       reportEvent: reportEventMock
     })
     client.getRoom.mockReturnValueOnce({
