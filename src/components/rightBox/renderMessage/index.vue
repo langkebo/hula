@@ -524,12 +524,12 @@ const handleDeleteAction = (item: MessageType) => {
   delRoomId.value = item.message.roomId
 }
 
-const { isBodyInThread } = matrixThreadService
-
 const isThreadReply = computed(() => {
   const msg = props.message?.message
   if (!msg) return false
-  return isBodyInThread(msg.body)
+  // 注意：不能解构类方法（const { isBodyInThread } = matrixThreadService）后裸调，
+  // 否则会丢失 this 绑定，this.state 为 undefined 抛错（2026-08-17 聊天界面卡死根因）。
+  return matrixThreadService.isBodyInThread(msg.body)
 })
 
 const handleOpenThread = (eventId: string) => {
