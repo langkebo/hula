@@ -209,7 +209,13 @@ export function createGroupMembers(ctx: GroupMembersContext) {
   function removeUserItem(uid: string, roomId?: string): boolean {
     const targetRoomId = roomId || globalStore.currentSessionRoomId
     if (!targetRoomId) return false
-    membersMap[targetRoomId] = membersMap[targetRoomId]?.filter((m) => m.userId !== uid && m.uid !== uid) || []
+    // 与 addUserItem 一致：按 localpart 归一化匹配，兼容 WS localpart 与 SDK 完整 MXID。
+    const localpart = toLocalpart(uid)
+    membersMap[targetRoomId] =
+      membersMap[targetRoomId]?.filter((m) => {
+        if (m.userId === uid || m.uid === uid) return false
+        return localpart ? toLocalpart(m.userId || m.uid) !== localpart : true
+      }) || []
     return true
   }
 
@@ -219,6 +225,23 @@ export function createGroupMembers(ctx: GroupMembersContext) {
     if (!membersMap[targetRoomId]) {
       membersMap[targetRoomId] = []
     }
+
+    // 去重：按 localpart 匹配（WS 推送可能是 localpart，SDK 是完整 MXID，
+    // 直接比较会导致同一成员出现两条记录），已存在则合并资料。
+    const localpart = toLocalpart(user.userId || user.uid)
+    const existingIndex = localpart
+      ? membersMap[targetRoomId].findIndex(
+          (m) => toLocalpart(m.userId || m.uid) === localpart
+        )
+      : -1
+    if (existingIndex >= 0) {
+      membersMap[targetRoomId][existingIndex] = {
+        ...membersMap[targetRoomId][existingIndex],
+        ...user
+      }
+      return true
+    }
+
     membersMap[targetRoomId].push(user)
     return true
   }

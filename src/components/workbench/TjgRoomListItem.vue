@@ -72,7 +72,7 @@
               :value="badgeCount"
               :max="99"
               :show="badgeCount > 0"
-              :color="hasMention ? 'var(--tjg-room-highlight-badge-bg)' : 'var(--tjg-room-unread-badge-bg)'"
+              :color="badgeColor"
               class="shrink-0" />
             <RoomInviteActions
               v-if="isInvite"
@@ -154,6 +154,12 @@ const unreadDetail = computed(() => {
 })
 const badgeCount = computed(() => unreadDetail.value?.total ?? props.item.notificationCount ?? unreadCount.value)
 const hasMention = computed(() => (unreadDetail.value?.highlight ?? props.item.highlightCount ?? 0) > 0)
+// 未读角标配色：@提及用警示红；静音/屏蔽会话用灰色（参考 HuLa 设计）；普通未读用品牌绿
+const badgeColor = computed(() => {
+  if (hasMention.value) return 'var(--tjg-room-highlight-badge-bg)'
+  if (isMuted.value || isShielded.value) return 'rgba(128, 128, 128, 0.5)'
+  return 'var(--tjg-room-unread-badge-bg)'
+})
 const isFavorite = computed(() => hasFavoriteTag.value)
 const isDm = computed(() => props.item.type === RoomTypeEnum.SINGLE)
 const isEncrypted = computed(() => props.item.isEncrypted ?? false)

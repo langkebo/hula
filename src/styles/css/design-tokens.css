@@ -273,14 +273,16 @@
      统一映射到规范 --tjg-* 令牌。零引用别名已于 2026-08-09 清零。 */
   --color-primary: var(--tjg-color-primary-500);
   --color-text-tertiary: var(--tjg-text-tertiary);
-  --left-bg-color: var(--tjg-surface-sidebar);
-  --left-active-bg-color: var(--tjg-surface-sidebar-selected);
-  --left-text-color: var(--tjg-text-primary);
-  --left-icon-color: var(--tjg-text-primary);
-  --left-active-hover: var(--tjg-text-primary);
-  --left-bg-hover: var(--tjg-surface-sidebar-hover);
-  --left-active-icon-color: var(--tjg-text-primary);
-  --left-win-icon-color: rgba(255, 255, 255, 0.4);
+  /* 浅色模式导航栏：使用项目主题色（品牌青绿）实底，参考 HuLa 桌面端导航栏配色 */
+  --left-bg-color: var(--tjg-color-primary-500);
+  --left-active-bg-color: rgba(255, 255, 255, 0.18);
+  --left-text-color: rgba(255, 255, 255, 0.92);
+  --left-icon-color: rgba(255, 255, 255, 0.78);
+  --left-active-hover: #ffffff;
+  --left-bg-hover: rgba(255, 255, 255, 0.12);
+  --left-active-icon-color: #ffffff;
+  --left-win-icon-color: rgba(255, 255, 255, 0.6);
+  --left-active-indicator-color: #ffffff;
   --right-bg-color: var(--tjg-surface-subtle);
   --text-color: var(--tjg-text-primary);
   --setting-item-line: var(--tjg-surface-subtle);
@@ -336,8 +338,9 @@
   --bg-offline-avatar-overlay: color-mix(in srgb, var(--tjg-text-tertiary) 70%, transparent);
   --bg-long-press-menu: var(--tjg-surface-subtle);
 
-  /* 右侧面板主题渐变背景 */
-  --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.3) 20%, rgba(130, 193, 187, 0.3) 100%);
+  /* 右侧面板主题背景：dispersion-bg.png + 浅色蒙版保证可读性（第三栏背景图） */
+  --right-theme-bg-color: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)) center / cover no-repeat,
+    url('/img/dispersion-bg.png') center / cover no-repeat;
   /* 选中边框品牌色 */
   /* 消息激活色 */
   --msg-active-color: var(--tjg-brand);
@@ -471,11 +474,16 @@ html[data-theme='dark'] {
 
 
   /* ==================== Dark Theme Semantic Overrides ==================== */
-  --left-text-color: #ccc;
-  --left-icon-color: #ccc;
-  --left-active-hover: color-mix(in srgb, var(--tjg-color-primary-400) 80%, transparent);
+  /* 深色模式导航栏：保持深色实底（避免继承浅色绿色），激活指示条用品牌色 */
+  --left-bg-color: var(--tjg-surface-sidebar);
+  --left-active-bg-color: var(--tjg-surface-sidebar-selected);
+  --left-text-color: rgba(255, 255, 255, 0.9);
+  --left-icon-color: rgba(255, 255, 255, 0.75);
+  --left-active-hover: var(--tjg-color-primary-400);
+  --left-bg-hover: var(--tjg-surface-sidebar-hover);
   --left-active-icon-color: var(--tjg-color-primary-400);
   --left-win-icon-color: var(--tjg-color-primary-400);
+  --left-active-indicator-color: var(--tjg-color-primary-500);
   --right-bg-color: var(--tjg-surface-sidebar);
   --text-color: var(--tjg-text-primary);
   --setting-item-line: var(--tjg-surface-subtle);
@@ -515,7 +523,9 @@ html[data-theme='dark'] {
   --bg-long-press-menu: var(--tjg-surface-subtle);
 
   /* 暗色右侧面板主题渐变背景 */
-  --right-theme-bg-color: radial-gradient(circle at top left, rgba(255, 209, 255, 0.2) 0%, rgba(130, 193, 187, 0.2) 150%);
+  /* 右侧面板主题背景（深色）：dispersion-bg.png + 深色蒙版保证可读性 */
+  --right-theme-bg-color: linear-gradient(rgba(18, 19, 22, 0.74), rgba(18, 19, 22, 0.74)) center / cover no-repeat,
+    url('/img/dispersion-bg.png') center / cover no-repeat;
   --msg-active-color: rgba(19, 152, 127, 0.4);
 }
 
