@@ -1,4 +1,3 @@
-import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import type { FederationBlacklistEntry, FederationDestination } from './AdminTypes'
@@ -6,13 +5,9 @@ import type { FederationBlacklistEntry, FederationDestination } from './AdminTyp
 const logger = createLogger('FederationService')
 
 type SdkAdminGetter = () => Promise<AdminManager>
-type GetClientGetter = () => MatrixClient
 
 export class AdminFederationService {
-  constructor(
-    private readonly sdkAdmin: SdkAdminGetter,
-    private readonly getClient: GetClientGetter
-  ) {}
+  constructor(private readonly sdkAdmin: SdkAdminGetter) {}
 
   async getFederationDestinations(): Promise<FederationDestination[]> {
     try {

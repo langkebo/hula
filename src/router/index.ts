@@ -1,7 +1,6 @@
 import {
   createRouter,
   createWebHistory,
-  type NavigationGuardNext,
   type RouteLocationNormalized,
   type RouteRecordRaw,
   type Router
@@ -48,12 +47,12 @@ const authGuard = createAuthGuard({
   shouldBypassAuth: () => shouldBypassAuthForE2E()
 })
 
-router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
+router.beforeEach(async (to: RouteLocationNormalized) => {
   const title = to.meta.title as string | undefined
   if (title) {
     document.title = `${title} - Tjg`
   }
-  return authGuard(to, from, next)
+  return authGuard(to)
 })
 
 export default router

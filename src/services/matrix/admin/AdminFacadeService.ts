@@ -92,10 +92,7 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
     () => this.sdkAdmin(),
     () => this.getClient()
   )
-  readonly federation = new AdminFederationService(
-    () => this.sdkAdmin(),
-    () => this.getClient()
-  )
+  readonly federation = new AdminFederationService(() => this.sdkAdmin())
   readonly moderation = new AdminModerationService(() => this.getClient())
   readonly backgroundUpdates = new AdminBackgroundUpdateService(() => this.getClient())
   readonly externalServices = new AdminExternalServiceService(() => this.getClient())

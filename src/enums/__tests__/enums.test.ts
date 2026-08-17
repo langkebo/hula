@@ -468,6 +468,7 @@ describe('enums/index.ts', () => {
       expect(TauriCommand.REMOVE_TOKENS).toBe('remove_tokens')
       expect(TauriCommand.QUERY_CHAT_HISTORY).toBe('query_chat_history')
       expect(TauriCommand.UPLOAD_FILE_PUT).toBe('upload_file_put')
+      expect(TauriCommand.COPY_FILE_TO_APP_SCOPE).toBe('copy_file_to_app_scope')
       expect(TauriCommand.CHECK_ADMIN_STATUS).toBe('check_admin_status')
     })
     it('字符串值唯一', () => {

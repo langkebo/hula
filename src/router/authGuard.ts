@@ -1,4 +1,4 @@
-import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useI18nGlobal } from '@/services/i18n'
 
@@ -41,14 +41,14 @@ export const createAuthGuard = ({
   logger,
   shouldBypassAuth
 }: CreateAuthGuardOptions) => {
-  return async (to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
+  return async (to: RouteLocationNormalized) => {
     if (isPublicRoute(to.path)) {
-      return next()
+      return true
     }
 
     if (shouldBypassAuth?.(to)) {
       logger.warn(`[E2E] 已绕过认证检查: ${to.fullPath || to.path}`)
-      return next()
+      return true
     }
 
     const loginPath = isMobile ? '/mobile/login' : '/login'
@@ -57,7 +57,7 @@ export const createAuthGuard = ({
       const isLoggedIn = await hasAuthenticatedSession()
       if (!isLoggedIn) {
         logger.warn(`未登录，跳转到 ${loginPath}`)
-        return next(loginPath)
+        return loginPath
       }
 
       const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
@@ -67,17 +67,17 @@ export const createAuthGuard = ({
           logger.warn(`非管理员尝试访问受限路径: ${to.path}`)
           const i18n = useI18nGlobal()
           useActionFeedback().showFeedback(i18n.t('error.matrix.forbidden'), 'warning')
-          return next('/')
+          return '/'
         }
       }
 
-      return next()
+      return true
     } catch (error) {
       logger.error('认证检查错误:', error)
       if (to.path !== loginPath) {
-        return next(loginPath)
+        return loginPath
       }
-      return next()
+      return true
     }
   }
 }

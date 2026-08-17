@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { openMock, copyFileMock, statMock, joinMock, getFilesMetaMock, getUserRoomAbsoluteDirMock } = vi.hoisted(() => ({
-  openMock: vi.fn(),
-  copyFileMock: vi.fn(),
-  statMock: vi.fn(),
-  joinMock: vi.fn(),
-  getFilesMetaMock: vi.fn(),
-  getUserRoomAbsoluteDirMock: vi.fn()
-}))
+const { openMock, copyFileMock, statMock, joinMock, getFilesMetaMock, getUserRoomAbsoluteDirMock, invokeMock } =
+  vi.hoisted(() => ({
+    openMock: vi.fn(),
+    copyFileMock: vi.fn(),
+    statMock: vi.fn(),
+    joinMock: vi.fn(),
+    getFilesMetaMock: vi.fn(),
+    getUserRoomAbsoluteDirMock: vi.fn(),
+    invokeMock: vi.fn()
+  }))
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
   open: openMock
@@ -24,6 +26,10 @@ vi.mock('@tauri-apps/api/path', () => ({
 
 vi.mock('@/utils/PathUtil', () => ({
   getFilesMeta: getFilesMetaMock
+}))
+
+vi.mock('@/utils/TauriInvokeHandler', () => ({
+  invokeWithErrorHandler: invokeMock
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -45,6 +51,7 @@ vi.mock('@/utils/Formatting', () => ({
   extractFileName: vi.fn((path: string) => path.split('/').pop() || path)
 }))
 
+import { TauriCommand } from '@/enums/tauri'
 import FileUtil from '../FileUtil'
 
 describe('FileUtil', () => {
@@ -169,6 +176,83 @@ describe('FileUtil', () => {
 
       expect(copyFileMock).toHaveBeenCalledWith('/tmp/a.pdf', '/custom/dir/a.pdf')
       expect(getUserRoomAbsoluteDirMock).not.toHaveBeenCalled()
+    })
+
+    it('resolves without returning a value (void)', async () => {
+      const files = ['/tmp/a.pdf', '/tmp/b.txt']
+      const filesMeta = [
+        { path: '/tmp/a.pdf', name: 'a.pdf' },
+        { path: '/tmp/b.txt', name: 'b.txt' }
+      ] as never
+      copyFileMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('copy fail'))
+
+      const result = await FileUtil.copyUploadFile(files, filesMeta)
+
+      expect(result).toBeUndefined()
+    })
+  })
+
+  describe('copyDroppedFilesToAppScope', () => {
+    it('copies dropped files via Rust command, then stats and maps the app-scoped paths', async () => {
+      const files = ['/home/user/a.pdf', '/home/user/b.txt']
+      const filesMeta = [
+        { path: '/home/user/a.pdf', name: 'a.pdf', mime_type: 'application/pdf' },
+        { path: '/home/user/b.txt', name: 'b.txt', mime_type: 'text/plain' }
+      ] as never
+      invokeMock
+        .mockResolvedValueOnce('/app/data/userData/dropped/a_1.pdf')
+        .mockResolvedValueOnce('/app/data/userData/dropped/b_1.txt')
+      statMock.mockResolvedValue({ size: 100 })
+
+      const result = await FileUtil.copyDroppedFilesToAppScope(files, filesMeta)
+
+      expect(invokeMock).toHaveBeenCalledWith(TauriCommand.COPY_FILE_TO_APP_SCOPE, {
+        sourcePath: '/home/user/a.pdf'
+      })
+      expect(invokeMock).toHaveBeenCalledWith(TauriCommand.COPY_FILE_TO_APP_SCOPE, {
+        sourcePath: '/home/user/b.txt'
+      })
+      // stat 必须作用在 Rust 复制后的应用作用域路径上，而非拖入的原始绝对路径
+      expect(statMock).toHaveBeenCalledWith('/app/data/userData/dropped/a_1.pdf')
+      expect(statMock).toHaveBeenCalledWith('/app/data/userData/dropped/b_1.txt')
+      expect(result).toHaveLength(2)
+      expect(result[0]).toEqual({
+        kind: 'path',
+        path: '/app/data/userData/dropped/a_1.pdf',
+        name: 'a.pdf',
+        size: 100,
+        type: 'application/pdf'
+      })
+      expect(result[1].path).toBe('/app/data/userData/dropped/b_1.txt')
+    })
+
+    it('skips dropped files whose Rust copy fails', async () => {
+      const files = ['/home/user/a.pdf', '/home/user/b.txt']
+      const filesMeta = [
+        { path: '/home/user/a.pdf', name: 'a.pdf', mime_type: 'application/pdf' },
+        { path: '/home/user/b.txt', name: 'b.txt', mime_type: 'text/plain' }
+      ] as never
+      invokeMock
+        .mockRejectedValueOnce(new Error('copy fail'))
+        .mockResolvedValueOnce('/app/data/userData/dropped/b_1.txt')
+      statMock.mockResolvedValue({ size: 50 })
+
+      const result = await FileUtil.copyDroppedFilesToAppScope(files, filesMeta)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].path).toBe('/app/data/userData/dropped/b_1.txt')
+      expect(statMock).toHaveBeenCalledTimes(1)
+      expect(statMock).toHaveBeenCalledWith('/app/data/userData/dropped/b_1.txt')
+    })
+
+    it('skips files without matching meta without invoking the copy command', async () => {
+      const files = ['/home/user/a.pdf']
+      const filesMeta = [] as never
+
+      const result = await FileUtil.copyDroppedFilesToAppScope(files, filesMeta)
+
+      expect(invokeMock).not.toHaveBeenCalled()
+      expect(result).toEqual([])
     })
   })
 

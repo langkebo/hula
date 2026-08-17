@@ -1,5 +1,5 @@
-import { createLogger } from '@/utils/Logger'
 import type { Direction } from '@/services/matrix/sdk'
+import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 
 const logger = createLogger('TimelineService')

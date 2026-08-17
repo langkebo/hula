@@ -3,7 +3,102 @@
 
 import { select } from '@inquirer/prompts'
 import { spawn } from 'child_process'
+import fs from 'fs'
 import os from 'os'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+import {
+  buildCspConfigOverride,
+  buildUpdaterConfigOverride,
+  HOMESERVER_URL_ENV,
+  UPDATER_KEY_ENV
+} from './updater-config.js'
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+// 解析 dotenv 格式（与 Vite / scripts/verify-env.mjs 保持一致）
+function parseDotenv(body) {
+  const out = {}
+  for (const raw of body.split(/\r?\n/)) {
+    const line = raw.trim()
+    if (!line || line.startsWith('#')) continue
+    const eq = line.indexOf('=')
+    if (eq < 0) continue
+    const key = line.slice(0, eq).trim()
+    let value = line.slice(eq + 1).trim()
+    if (value.startsWith('"') && value.endsWith('"') && value.length >= 2) {
+      value = value.slice(1, -1)
+    } else if (value.startsWith("'") && value.endsWith("'") && value.length >= 2) {
+      value = value.slice(1, -1)
+    }
+    out[key] = value
+  }
+  return out
+}
+
+// 加载 .env 与 .env.local（后加载者覆盖先加载者：.env.local 覆盖 .env；
+// 加载前已存在于 process.env 的 shell 环境变量优先，不被任何文件覆盖）
+function loadEnvFiles() {
+  const preExisting = new Set(Object.keys(process.env))
+  for (const file of ['.env', '.env.local']) {
+    const envPath = path.join(repoRoot, file)
+    if (!fs.existsSync(envPath)) continue
+    const vars = parseDotenv(fs.readFileSync(envPath, 'utf8'))
+    for (const [key, value] of Object.entries(vars)) {
+      if (!preExisting.has(key)) process.env[key] = value
+    }
+  }
+}
+
+// 读取指定平台实际 conf 中的 csp / devCsp 字符串，供 CSP 注入覆盖使用。
+// 平台 conf 缺失时回退到 base tauri.conf.json（devCsp 仅在平台 conf 中存在）。
+function readSecurityCsp(platform) {
+  const baseConf = JSON.parse(
+    fs.readFileSync(path.join(repoRoot, 'src-tauri', 'tauri.conf.json'), 'utf8')
+  )
+  const platformConfPath = path.join(repoRoot, 'src-tauri', `tauri.${platform}.conf.json`)
+  let platformConf = {}
+  if (fs.existsSync(platformConfPath)) {
+    platformConf = JSON.parse(fs.readFileSync(platformConfPath, 'utf8'))
+  }
+
+  return {
+    csp: platformConf?.app?.security?.csp ?? baseConf?.app?.security?.csp,
+    devCsp: platformConf?.app?.security?.devCsp ?? baseConf?.app?.security?.devCsp
+  }
+}
+
+// 生成 `tauri build --config` 覆盖文件，合并 updater tauriKey 与 homeserver CSP 注入；
+// 两者都无需注入时返回 null（跳过 --config）。
+function writeConfigOverride(platform) {
+  const tauriKey = process.env[UPDATER_KEY_ENV]
+  const updater = buildUpdaterConfigOverride(tauriKey)
+
+  if (!updater) {
+    console.warn(
+      `\n⚠️  未设置 ${UPDATER_KEY_ENV}，updater 端点将不含真实 tauriKey（不影响本地运行，更新检查会退化为 gitee 端点）。` +
+        `\n    请在 .env.local 中设置 ${UPDATER_KEY_ENV}（切勿提交到仓库）。\n`
+    )
+  }
+
+  const homeserverUrl = process.env[HOMESERVER_URL_ENV]
+  const cspOverride = buildCspConfigOverride(homeserverUrl, readSecurityCsp(platform))
+
+  const override = {}
+  if (updater) Object.assign(override, updater)
+  if (cspOverride) Object.assign(override, cspOverride)
+
+  if (Object.keys(override).length === 0) {
+    return null
+  }
+
+  const configDir = path.join(repoRoot, 'src-tauri', 'target')
+  fs.mkdirSync(configDir, { recursive: true })
+  const configPath = path.join(configDir, 'tauri-config.override.json')
+  fs.writeFileSync(configPath, JSON.stringify(override))
+  return configPath
+}
 
 // 检测当前平台
 function getCurrentPlatform() {
@@ -239,10 +334,15 @@ function getDebugOptions() {
 }
 
 // 执行打包命令
-async function executeBuild(command, isDebug = false) {
+async function executeBuild(command, isDebug = false, platform = getCurrentPlatform().platform) {
+  // 若设置了 UPDATER_TAURI_KEY 或 VITE_HOMESERVER_URL，注入 --config 覆盖
+  const configPath = writeConfigOverride(platform)
+
   // 如果是调试模式，添加 --debug 参数
   const finalCommand = isDebug ? `${command} --debug` : command
-  const [cmd, ...args] = finalCommand.split(' ')
+  const [cmd, ...baseArgs] = finalCommand.split(' ')
+
+  const args = configPath ? [...baseArgs, '--config', configPath] : baseArgs
 
   const child = spawn(cmd, args, {
     stdio: 'inherit', // 直接继承父进程的 stdio，保留颜色输出
@@ -251,6 +351,15 @@ async function executeBuild(command, isDebug = false) {
 
   return new Promise((resolve, reject) => {
     child.on('close', (code) => {
+      // 清理临时 config 覆盖文件
+      if (configPath && fs.existsSync(configPath)) {
+        try {
+          fs.unlinkSync(configPath)
+        } catch {
+          // 忽略清理失败（文件位于 gitignored 的 src-tauri/target 下）
+        }
+      }
+
       if (code === 0) {
         console.log('\n🎉 打包完成')
         resolve(code)
@@ -350,6 +459,9 @@ async function selectBundle(selectedPlatform) {
 
 async function main() {
   try {
+    // 读取 .env / .env.local，使 UPDATER_TAURI_KEY 等变量对打包脚本可见
+    loadEnvFiles()
+
     // 主循环
     while (true) {
       // 第一步：选择平台
@@ -368,7 +480,7 @@ async function main() {
         const isMobilePlatform = selectedPlatform === 'ios' || selectedPlatform === 'android'
 
         if (isMobilePlatform) {
-          const exitCode = await executeBuild(bundleResult.command, false)
+          const exitCode = await executeBuild(bundleResult.command, false, selectedPlatform)
           process.exit(exitCode)
         } else {
           // 桌面端平台需要选择调试模式
@@ -381,7 +493,7 @@ async function main() {
               break
             }
 
-            const exitCode = await executeBuild(bundleResult.command, debugResult)
+            const exitCode = await executeBuild(bundleResult.command, debugResult, selectedPlatform)
             process.exit(exitCode)
           }
         }
