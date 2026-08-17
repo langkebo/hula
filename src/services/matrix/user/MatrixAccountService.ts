@@ -231,7 +231,7 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      const accountData = await client.getThreePids()
+      const accountData = await client.getThreePidsManager().getThreePids()
       logger.info('[MatrixAccount] 获取 3PID 列表成功')
       return {
         threepids: accountData.threepids || [],
@@ -243,11 +243,12 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
-  async addThreePid(sid: string, clientSecret: string, bind?: boolean): Promise<void> {
+  async addThreePid(sid: string, clientSecret: string, _bind?: boolean): Promise<void> {
     const client = this.getClient()
 
     try {
-      await client.addThreePidOnly({ sid, client_secret: clientSecret }, bind ?? false)
+      // 后端 /account/3pid/add 只读 sid+client_secret；bind 参数历史遗留（add/bind 同 handler），已忽略
+      await client.getThreePidsManager().addThreePidOnly(clientSecret, sid)
       logger.info(`[MatrixAccount] 添加 3PID 成功: ${sid}`)
     } catch (err) {
       logger.error(`[MatrixAccount] 添加 3PID 失败: ${err}`)
@@ -259,7 +260,8 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      await client.bindThreePid({ sid, client_secret: clientSecret, medium, address })
+      // 后端 /account/3pid/bind 与 /add 同一 handler，只读 sid+client_secret；medium/address 仅用于日志
+      await client.getThreePidsManager().addThreePidOnly(clientSecret, sid)
       logger.info(`[MatrixAccount] 绑定 3PID 成功: ${medium}:${address}`)
     } catch (err) {
       logger.error(`[MatrixAccount] 绑定 3PID 失败: ${err}`)
@@ -271,7 +273,7 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      await client.deleteThreePid({ medium, address })
+      await client.getThreePidsManager().deleteThreePid(medium, address)
       logger.info(`[MatrixAccount] 删除 3PID 成功: ${medium}:${address}`)
     } catch (err) {
       logger.error(`[MatrixAccount] 删除 3PID 失败: ${err}`)
@@ -283,7 +285,7 @@ class MatrixAccountService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      await client.unbindThreePid({ medium, address })
+      await client.getThreePidsManager().unbindThreePid(medium, address)
       logger.info(`[MatrixAccount] 解绑 3PID 成功: ${medium}:${address}`)
     } catch (err) {
       logger.error(`[MatrixAccount] 解绑 3PID 失败: ${err}`)

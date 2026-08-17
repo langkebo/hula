@@ -322,19 +322,6 @@ declare module 'matrix-js-sdk' {
     updateDevice(deviceId: string, updates: IDeviceUpdateRequest): Promise<void>
     deleteDevice(deviceId: string, auth?: Record<string, unknown>): Promise<void>
     deleteMultipleDevices(deviceIds: string[], auth?: Record<string, unknown>): Promise<void>
-    getThreePids(): Promise<{
-      threepids: Array<{ medium: string; address: string; validated_at: number; added_at: number }>
-    }>
-    addThreePidOnly(body: Record<string, unknown>, bind?: boolean): Promise<void>
-    bindThreePid(body: Record<string, unknown>, bind?: boolean): Promise<void>
-    deleteThreePid(
-      params: { medium: string; address: string },
-      idServer?: string
-    ): Promise<{ id_server_unbind_result: string }>
-    unbindThreePid(
-      params: { medium: string; address: string },
-      idServer?: string
-    ): Promise<{ id_server_unbind_result: string }>
     requestAdd3pidEmailToken(
       email: string,
       clientSecret: string,
