@@ -134,6 +134,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
 
   /**
    * 删除房间的保留策略。
+   * 注意：后端不支持删除保留策略，此方法为空操作（no-op）。
    * @param roomId 房间 ID。
    */
   async deleteRetentionPolicy(roomId: string): Promise<void> {
@@ -363,7 +364,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   }
 
   /**
-   * 获取服务器管理员信息。
+   * 获取服务器管理员信息（委托给 getServerInfo()）。
    * @returns 管理员信息，不存在时返回 null。
    */
   async getAdminInfo(): Promise<Record<string, unknown> | null> {
@@ -380,7 +381,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
 
   /**
    * 获取 IP 封禁列表。
-   * @returns 封禁条目列表，为空时返回 null。
+   * @returns 封禁条目列表，不存在时返回 null。
    */
   async getIpBlocks(): Promise<Array<Record<string, unknown>> | null> {
     return this.security.getIpBlocks()
