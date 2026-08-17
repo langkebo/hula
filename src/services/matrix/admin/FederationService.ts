@@ -65,18 +65,14 @@ export class AdminFederationService {
 
   async getFederationBlacklist(): Promise<FederationBlacklistEntry[]> {
     try {
-      const response = await this.adminRequest<{ blacklist?: unknown[]; servers?: unknown[] }>(
-        'GET',
-        '/federation/blacklist'
-      )
-      const items = Array.isArray(response.blacklist)
-        ? response.blacklist
-        : Array.isArray(response.servers)
-          ? response.servers
-          : []
-      return items
-        .map((item) => this.toBlacklistEntry(item))
-        .filter((entry): entry is FederationBlacklistEntry => entry !== null)
+      const admin = await this.sdkAdmin()
+      const items = await admin.getFederationBlacklist()
+      return (items ?? []).map((item) => ({
+        domain: item.server_name,
+        reason: item.reason,
+        addedBy: undefined,
+        addedAt: item.added_ts
+      }))
     } catch (err) {
       logger.error(`[AdminFederation] 获取联邦黑名单失败: ${err}`)
       return []
@@ -85,7 +81,8 @@ export class AdminFederationService {
 
   async addToFederationBlacklist(domain: string, reason?: string): Promise<boolean> {
     try {
-      await this.adminRequest('POST', `/federation/blacklist/${encodeURIComponent(domain)}`, { reason })
+      const admin = await this.sdkAdmin()
+      await admin.addToFederationBlacklist(domain, reason)
       logger.info(`[AdminFederation] 添加联邦黑名单成功: ${domain}`)
       return true
     } catch (err) {
@@ -96,7 +93,8 @@ export class AdminFederationService {
 
   async removeFromFederationBlacklist(domain: string): Promise<boolean> {
     try {
-      await this.adminRequest('DELETE', `/federation/blacklist/${encodeURIComponent(domain)}`)
+      const admin = await this.sdkAdmin()
+      await admin.removeFromFederationBlacklist(domain)
       logger.info(`[AdminFederation] 删除联邦黑名单成功: ${domain}`)
       return true
     } catch (err) {
@@ -113,24 +111,6 @@ export class AdminFederationService {
     } catch (err) {
       logger.error(`[AdminFederation] 获取联邦状态失败: ${err}`)
       return {}
-    }
-  }
-
-  private toBlacklistEntry(value: unknown): FederationBlacklistEntry | null {
-    if (typeof value !== 'object' || value === null) return null
-    const record = value as Record<string, unknown>
-    const domain =
-      typeof record.domain === 'string'
-        ? record.domain
-        : typeof record.server_name === 'string'
-          ? record.server_name
-          : null
-    if (!domain) return null
-    return {
-      domain,
-      reason: typeof record.reason === 'string' ? record.reason : undefined,
-      addedBy: typeof record.added_by === 'string' ? record.added_by : undefined,
-      addedAt: typeof record.added_at === 'number' ? record.added_at : undefined
     }
   }
 
