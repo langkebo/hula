@@ -76,7 +76,7 @@ describe('MatrixKeyBackupService', () => {
     })
 
     it('应该在 KeyBackupManager 不可用时抛出错误', async () => {
-      mockClient.getKeyBackupManager = vi.fn(() => null)
+      mockClient.getKeyBackupManager = vi.fn(() => null) as never
 
       await expect(matrixKeyBackupService.checkKeyBackup()).rejects.toThrow('[KeyBackup] KeyBackupManager 不可用')
     })
