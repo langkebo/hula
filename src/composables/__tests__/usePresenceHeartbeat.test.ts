@@ -2,10 +2,10 @@
  * usePresenceHeartbeat 单元测试
  *
  * 覆盖点:
- * - start 后固定间隔调 setPresence('online')
- * - 用户活动事件触发节流刷新, 不会每次事件都上报
+ * - start 后按固定 45s 间隔调 setPresence('online')
+ * - 用户活动/visibility 事件不再触发额外上报 (心跳只由固定定时器驱动)
  * - start 会把本地 userInfo.activeStatus 同步为 ONLINE
- * - stop 后定时器/监听器全部卸载
+ * - stop 后定时器被清除, 不再心跳
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -40,7 +40,11 @@ vi.mock('@/stores/domains/user/user', () => ({
   useUserStore: () => userStoreMock
 }))
 
-import { startPresenceHeartbeat, stopPresenceHeartbeat } from '@/composables/user/usePresenceHeartbeat'
+import {
+  PRESENCE_HEARTBEAT_INTERVAL_MS,
+  startPresenceHeartbeat,
+  stopPresenceHeartbeat
+} from '@/composables/user/usePresenceHeartbeat'
 
 // 让 pushOnline 的内部 microtask 跑完, 但不触发任何定时器前进
 const flushMicro = async () => {
@@ -62,9 +66,9 @@ describe('usePresenceHeartbeat', () => {
     vi.useRealTimers()
   })
 
-  it('定时器到期时调用 setPresence(online) 并回写本地 userStore', async () => {
+  it('定时器按固定 45s 间隔调用 setPresence(online) 并回写本地 userStore', async () => {
     startPresenceHeartbeat()
-    vi.advanceTimersByTime(4 * 60 * 1000)
+    vi.advanceTimersByTime(PRESENCE_HEARTBEAT_INTERVAL_MS)
     await flushMicro()
 
     expect(setPresenceMock).toHaveBeenCalledTimes(1)
@@ -73,34 +77,28 @@ describe('usePresenceHeartbeat', () => {
     expect(userStoreMock.userInfo.lastOptTime).toBeGreaterThan(0)
   })
 
-  it('用户活动事件节流: 60 秒内多次事件只上报一次, 超阈值后可再次上报', async () => {
+  it('心跳间隔为 45 秒 (而非更长的旧周期)', () => {
+    expect(PRESENCE_HEARTBEAT_INTERVAL_MS).toBe(45 * 1000)
+  })
+
+  it('用户活动/visibility 事件不再触发额外上报', async () => {
     startPresenceHeartbeat()
 
     window.dispatchEvent(new Event('mousemove'))
     window.dispatchEvent(new Event('mousedown'))
     window.dispatchEvent(new Event('keydown'))
+    document.dispatchEvent(new Event('visibilitychange'))
     await flushMicro()
-    expect(setPresenceMock).toHaveBeenCalledTimes(1)
 
-    // 30 秒后的再次 mousemove 仍被节流
-    vi.advanceTimersByTime(30 * 1000)
-    window.dispatchEvent(new Event('mousemove'))
-    await flushMicro()
-    expect(setPresenceMock).toHaveBeenCalledTimes(1)
-
-    // 超过 60 秒阈值后可再次上报
-    vi.advanceTimersByTime(31 * 1000)
-    window.dispatchEvent(new Event('mousemove'))
-    await flushMicro()
-    expect(setPresenceMock).toHaveBeenCalledTimes(2)
+    // 只有固定定时器会触发, 事件不应产生上报
+    expect(setPresenceMock).not.toHaveBeenCalled()
   })
 
-  it('stop 后既不再心跳, 也不再被活动事件触发', async () => {
+  it('stop 后定时器被清除, 不再心跳', async () => {
     startPresenceHeartbeat()
     stopPresenceHeartbeat()
 
-    vi.advanceTimersByTime(10 * 60 * 1000)
-    window.dispatchEvent(new Event('mousemove'))
+    vi.advanceTimersByTime(PRESENCE_HEARTBEAT_INTERVAL_MS * 10)
     await flushMicro()
 
     expect(setPresenceMock).not.toHaveBeenCalled()
@@ -111,7 +109,7 @@ describe('usePresenceHeartbeat', () => {
     startPresenceHeartbeat()
     startPresenceHeartbeat()
 
-    vi.advanceTimersByTime(4 * 60 * 1000)
+    vi.advanceTimersByTime(PRESENCE_HEARTBEAT_INTERVAL_MS)
     await flushMicro()
     expect(setPresenceMock).toHaveBeenCalledTimes(1)
   })
