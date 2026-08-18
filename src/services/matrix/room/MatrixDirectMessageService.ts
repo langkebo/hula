@@ -26,13 +26,8 @@ class MatrixDirectMessageService extends BaseMatrixService {
     }
 
     if (this.observedClient !== client || !this.dmManager) {
-      const manager =
-        typeof client.getDirectMessageManager === 'function'
-          ? (client.getDirectMessageManager() as DirectMessageManager)
-          : (client.dmManager as DirectMessageManager | null)
-
       this.observedClient = client
-      this.dmManager = manager ?? null
+      this.dmManager = client.getDirectMessageManager()
       this.dmRoomsCache.clear()
     }
 
@@ -56,10 +51,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       }
 
       this.observedClient = client
-      this.dmManager =
-        typeof client.getDirectMessageManager === 'function'
-          ? (client.getDirectMessageManager() as DirectMessageManager)
-          : (client.dmManager as DirectMessageManager)
+      this.dmManager = client.getDirectMessageManager()
       if (!this.dmManager) {
         // DirectMessageManager 未注册是暂时状态（扩展可能还在加载）
         return
