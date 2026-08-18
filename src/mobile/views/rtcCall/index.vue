@@ -341,7 +341,7 @@ onUnmounted(() => {
 
   .local-video {
     @apply absolute bottom-80px right-16px w-120px h-160px rounded-8px object-cover;
-    border: 2px solid rgba(255, 255, 255, 0.8);
+    border: 2px solid color-mix(in srgb, var(--tjg-text-inverse) 80%, transparent);
   }
 }
 
@@ -380,7 +380,7 @@ onUnmounted(() => {
 
   .btn-active-toggled {
     @apply size-48px;
-    background: rgba(255, 59, 48, 0.6);
+    background: color-mix(in srgb, var(--tjg-color-danger-500) 60%, transparent);
     color: var(--tjg-text-inverse);
     border: none;
   }
