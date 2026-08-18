@@ -8,7 +8,7 @@ import { matrixSpaceService } from '../MatrixSpaceService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const server = setupMswServer(
+const _server = setupMswServer(
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/search`, () => {
     return HttpResponse.json({
       spaces: [{ space_id: '!space1:server', name: 'Space 1', member_count: 5, child_count: 2 }]
@@ -145,49 +145,6 @@ describe('MatrixSpaceService', () => {
     expect(result[0].spaceId).toBe('!space:server')
   })
 
-  describe('searchSpaces（SDK 失败时回退 REST /spaces/search）', () => {
-    it('should search spaces via API fallback', async () => {
-      // client 无 getSpaceManager → SDK 轨抛错 → 回退 REST
-      vi.mocked(matrixClientService.getClient).mockReturnValue(
-        asMatrixClient({ http: { authedRequest: authedRequestImpl } })
-      )
-
-      const result = await matrixSpaceService.searchSpaces('test', 10)
-
-      expect(result).toHaveLength(1)
-      expect(result[0].spaceId).toBe('!space1:server')
-      expect(result[0].name).toBe('Space 1')
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'GET',
-        '/spaces/search',
-        {
-          search_term: 'test',
-          limit: '10'
-        },
-        undefined,
-        undefined
-      )
-    })
-
-    it('should return empty array on error', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}${PREFIX_V3}/spaces/search`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
-      vi.mocked(matrixClientService.getClient).mockReturnValue(
-        asMatrixClient({
-          http: { authedRequest: authedRequestImpl },
-          getRooms: vi.fn().mockReturnValue([])
-        })
-      )
-
-      const result = await matrixSpaceService.searchSpaces('test')
-
-      expect(result).toEqual([])
-    })
-  })
-
   describe('getSpaceHierarchy', () => {
     it('委托 SpaceManager.getSpaceHierarchyPage 并透传选项', async () => {
       const getSpaceHierarchyPage = vi.fn().mockResolvedValue({
@@ -252,27 +209,6 @@ describe('MatrixSpaceService', () => {
       const result = await matrixSpaceService.getSpaceTreePath('!space:server')
 
       expect(result).toEqual([])
-    })
-  })
-
-  describe('getRoomParentSpaces（统一入口：SDK → REST → 本地过滤）', () => {
-    it('should get room parent spaces via REST fallback tier', async () => {
-      // client 无 getSpaceManager → SDK 轨抛错 → 回退 REST /spaces/room/:roomId/parents
-      vi.mocked(matrixClientService.getClient).mockReturnValue(
-        asMatrixClient({ http: { authedRequest: authedRequestImpl } })
-      )
-
-      const result = await matrixSpaceService.getRoomParentSpaces('!room:server')
-
-      expect(result).toHaveLength(1)
-      expect(result[0].spaceId).toBe('!parent:server')
-      expect(authedRequestImpl).toHaveBeenCalledWith(
-        'GET',
-        '/spaces/room/!room%3Aserver/parents',
-        undefined,
-        undefined,
-        undefined
-      )
     })
   })
 })

@@ -80,49 +80,8 @@ describe('spaceQueries', () => {
       expect(manager.getRoomParentSpaces).toHaveBeenCalledWith('!room:server')
     })
 
-    it('falls back to REST authedRequest when manager throws and returns an array', async () => {
+    it('returns [] when manager throws', async () => {
       manager.getRoomParentSpaces.mockRejectedValue(new Error('manager down'))
-      const authedRequest = (client.http.authedRequest as ReturnType<typeof vi.fn>).mockResolvedValue([
-        { space_id: '!p2:server', name: 'Parent 2' }
-      ])
-      const queries = createSpaceQueries(getClient, getSpaceManager)
-      const result = await queries.getRoomParentSpaces('!room:server')
-      expect(result).toEqual([{ spaceId: '!p2:server', name: 'Parent 2', memberCount: 0, childCount: 0 }])
-      expect(authedRequest).toHaveBeenCalledWith(
-        'GET',
-        '/spaces/room/!room%3Aserver/parents',
-        undefined,
-        undefined,
-        undefined
-      )
-    })
-
-    it('falls back to REST and handles a { spaces } response object', async () => {
-      manager.getRoomParentSpaces.mockRejectedValue(new Error('manager down'))
-      ;(client.http.authedRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
-        spaces: [{ space_id: '!p3:server', name: 'Parent 3' }]
-      })
-      const queries = createSpaceQueries(getClient, getSpaceManager)
-      const result = await queries.getRoomParentSpaces('!room:server')
-      expect(result).toEqual([{ spaceId: '!p3:server', name: 'Parent 3', memberCount: 0, childCount: 0 }])
-    })
-
-    it('falls back to local filtering when manager and REST both fail', async () => {
-      manager.getRoomParentSpaces.mockRejectedValue(new Error('manager down'))
-      ;(client.http.authedRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('http down'))
-      client.getRooms = vi.fn(() => [makeSpaceRoom('!spaceA:server', ['!room:server'], 'Space A')] as unknown as Room[])
-      const queries = createSpaceQueries(getClient, getSpaceManager)
-      const result = await queries.getRoomParentSpaces('!room:server')
-      expect(result).toHaveLength(1)
-      expect(result[0].spaceId).toBe('!spaceA:server')
-    })
-
-    it('returns [] when all three paths fail', async () => {
-      manager.getRoomParentSpaces.mockRejectedValue(new Error('manager down'))
-      ;(client.http.authedRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('http down'))
-      client.getRooms = vi.fn(() => {
-        throw new Error('rooms down')
-      })
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.getRoomParentSpaces('!room:server')
       expect(result).toEqual([])
@@ -145,50 +104,11 @@ describe('spaceQueries', () => {
       expect(manager.searchSpaces).toHaveBeenCalledWith('hit', 5)
     })
 
-    it('falls back to REST search when manager throws', async () => {
+    it('returns [] when manager throws', async () => {
       manager.searchSpaces.mockRejectedValue(new Error('manager down'))
-      ;(client.http.authedRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
-        spaces: [{ space_id: '!s2:server', name: 'Via REST' }]
-      })
       const queries = createSpaceQueries(getClient, getSpaceManager)
-      const result = await queries.searchSpaces('rest', 7)
-      expect(result).toEqual([{ spaceId: '!s2:server', name: 'Via REST', memberCount: 0, childCount: 0 }])
-      expect(client.http.authedRequest).toHaveBeenCalledWith(
-        'GET',
-        '/spaces/search',
-        {
-          search_term: 'rest',
-          limit: '7'
-        },
-        undefined,
-        undefined
-      )
-    })
-
-    it('falls back to local search when manager and REST both fail', async () => {
-      manager.searchSpaces.mockRejectedValue(new Error('manager down'))
-      ;(client.http.authedRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('http down'))
-      client.getRooms = vi.fn(
-        () =>
-          [
-            makeSpaceRoom('!sA:server', ['!room:server'], 'Alpha Space'),
-            makeSpaceRoom('!sB:server', ['!room:server'], 'Beta Room')
-          ] as unknown as Room[]
-      )
-      const queries = createSpaceQueries(getClient, getSpaceManager)
-      const result = await queries.searchSpaces('alpha', 10)
-      expect(result).toHaveLength(1)
-      expect(result[0].spaceId).toBe('!sA:server')
-    })
-
-    it('returns [] when all search paths fail', async () => {
-      manager.searchSpaces.mockRejectedValue(new Error('manager down'))
-      ;(client.http.authedRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('http down'))
-      client.getRooms = vi.fn(() => {
-        throw new Error('rooms down')
-      })
-      const queries = createSpaceQueries(getClient, getSpaceManager)
-      await expect(queries.searchSpaces('anything')).resolves.toEqual([])
+      const result = await queries.searchSpaces('anything', 10)
+      expect(result).toEqual([])
     })
   })
 

@@ -6,6 +6,9 @@ import { normalizeSdkMatrixError } from './authErrors'
 import { type MatrixLoginResult, postMatrixJson } from './authHelpers'
 
 /** 获取 SAML 登录重定向地址
+ *
+ * NOTE: SDK getSamlAuthManager().getLoginRedirectUrl() 不支持 idpId 参数，
+ * 暂保留 authedRequestWithPath 以传递 idp_id 查询参数。
  */
 export async function getSamlRedirect(idpId?: string, redirectUrl?: string): Promise<string> {
   const client = matrixClientService.getClient()
@@ -52,13 +55,8 @@ export async function samlLogout(redirectUrl?: string): Promise<string | null> {
   }
 
   try {
-    const queryParams = redirectUrl ? { redirectUrl } : undefined
-    const result = await authedRequestWithPath<{ redirect_url?: string }>(
-      client,
-      'POST',
-      '/login/saml/logout',
-      queryParams
-    )
+    const manager = client.getSamlAuthManager()
+    const result = await manager.logout(redirectUrl)
     return result.redirect_url ?? null
   } catch (err) {
     throw normalizeSdkMatrixError(err, 'SAML 登出失败')
@@ -66,6 +64,9 @@ export async function samlLogout(redirectUrl?: string): Promise<string | null> {
 }
 
 /** 获取 SAML 元数据
+ *
+ * NOTE: SDK getSamlAuthManager().getIdpMetadata() 使用 /_matrix/client/r0/saml/metadata，
+ * 与现有 /_matrix/client/v3/login/saml/metadata 路径不一致，暂保留 authedRequestWithPath。
  */
 export async function getSamlMetadata(): Promise<Record<string, unknown>> {
   const client = matrixClientService.getClient()

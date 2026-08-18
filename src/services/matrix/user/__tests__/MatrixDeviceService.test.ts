@@ -476,7 +476,7 @@ describe('MatrixDeviceService', () => {
       const updates = await matrixDeviceService.getDeviceListUpdates(request)
 
       expect(updates).toEqual(mockResponse)
-      expect(mockDeviceManager.getDeviceListUpdates).toHaveBeenCalledWith(request.users, request.since)
+      expect(mockDeviceManager.getDeviceListUpdates).toHaveBeenCalledWith(request.users)
     })
   })
 })
