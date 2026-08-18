@@ -38,7 +38,7 @@ interface DeviceUpdateResponse {
  * 设备列表变更响应
  */
 interface DeviceListUpdatesResponse {
-  changed: string[]
+  changed: Array<{ user_id: string; device_id: string; device_data: unknown }>
   left: string[]
   deleted?: string[]
   stream_id?: number
@@ -254,31 +254,10 @@ class MatrixDeviceService extends BaseMatrixService {
   async getDeviceListUpdates(request: DeviceListUpdatesRequest): Promise<DeviceListUpdatesResponse> {
     try {
       const client = this.getClient()
-      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
-
-      if (deviceManager) {
-        // 使用 DeviceManager
-        const sinceToken =
-          typeof request.since === 'string'
-            ? request.since
-            : typeof request.from === 'string'
-              ? request.from
-              : undefined
-        const updates = await deviceManager.getDeviceListUpdates(request.users, sinceToken)
-        logger.info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
-        return updates
-      } else {
-        // 降级到 authedRequestWithPath（SDK 无高层方法）
-        const response = await authedRequestWithPath<DeviceListUpdatesResponse>(
-          client,
-          'POST',
-          '/keys/device_list_updates',
-          undefined,
-          request
-        )
-        logger.info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
-        return response
-      }
+      const deviceManager = client.getDeviceManager()
+      const updates = await deviceManager.getDeviceListUpdates(request.users)
+      logger.info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
+      return updates as unknown as DeviceListUpdatesResponse
     } catch (err) {
       logger.error(`[DeviceService] 获取设备变更失败: ${err}`)
       throw err

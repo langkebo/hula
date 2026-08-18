@@ -1,12 +1,10 @@
 import { createLogger } from '@/utils/Logger'
-import { USER } from '../paths/user'
 
 const logger = createLogger('MatrixProfile')
 
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
-import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { BaseMatrixService } from '../BaseMatrixService'
 
 interface MatrixProfile {
@@ -37,10 +35,6 @@ export class ExtendedProfileUnsupportedError extends Error {
 
 interface UploadContentResponse {
   content_uri: string
-}
-
-function toMatrixJsonBody(value: unknown): object {
-  return value as object
 }
 
 class MatrixProfileService extends BaseMatrixService {
@@ -136,15 +130,12 @@ class MatrixProfileService extends BaseMatrixService {
   async getExtendedProfile(userId: string): Promise<MatrixExtendedProfile> {
     try {
       const client = this.getClient()
-      const response = await authedRequestWithPath<unknown>(
-        client,
-        'GET',
-        `/_matrix/client/unstable${USER.EXTENDED_PROFILE(userId)}`
-      )
+      const profileManager = client.getProfileManager()
+      const response = await profileManager.getExtendedProfile(userId)
       if (!response || typeof response !== 'object' || Array.isArray(response)) {
         return {}
       }
-      return response as MatrixExtendedProfile
+      return response as unknown as MatrixExtendedProfile
     } catch (err) {
       if (this.isUnsupportedExtendedProfileError(err)) {
         logger.info(`服务器不支持扩展资料接口，返回空对象: ${userId}`)
@@ -162,13 +153,8 @@ class MatrixProfileService extends BaseMatrixService {
   async setExtendedProfileField(userId: string, keyName: string, value: unknown): Promise<void> {
     try {
       const client = this.getClient()
-      await authedRequestWithPath<void>(
-        client,
-        'PUT',
-        `/_matrix/client/unstable${USER.EXTENDED_PROFILE_FIELD(userId, keyName)}`,
-        undefined,
-        toMatrixJsonBody(value)
-      )
+      const profileManager = client.getProfileManager()
+      await profileManager.setExtendedProfilePropertyForUser(userId, keyName, value)
       logger.info(`设置扩展资料字段成功: ${userId}/${keyName}`)
     } catch (err) {
       if (this.isUnsupportedExtendedProfileError(err)) {
@@ -182,11 +168,8 @@ class MatrixProfileService extends BaseMatrixService {
   async deleteExtendedProfileField(userId: string, keyName: string): Promise<void> {
     try {
       const client = this.getClient()
-      await authedRequestWithPath<void>(
-        client,
-        'DELETE',
-        `/_matrix/client/unstable${USER.EXTENDED_PROFILE_FIELD(userId, keyName)}`
-      )
+      const profileManager = client.getProfileManager()
+      await profileManager.deleteExtendedProfilePropertyForUser(userId, keyName)
       logger.info(`删除扩展资料字段成功: ${userId}/${keyName}`)
     } catch (err) {
       if (this.isUnsupportedExtendedProfileError(err)) {

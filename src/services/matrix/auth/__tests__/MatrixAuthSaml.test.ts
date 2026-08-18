@@ -35,7 +35,17 @@ const mockAuthedRequestWithPath = vi.mocked(authedRequestWithPath)
 const mockPostMatrixJson = vi.mocked(postMatrixJson)
 const mockNormalizeSdkMatrixError = vi.mocked(normalizeSdkMatrixError)
 
-const dummyClient = { some: 'client' } as unknown as Parameters<typeof authedRequestWithPath>[0]
+const mockSamlManager = {
+  logout: vi.fn(),
+  getSpMetadata: vi.fn(),
+  initiateLogin: vi.fn(),
+  getLoginRedirectUrl: vi.fn()
+}
+
+const dummyClient = {
+  some: 'client',
+  getSamlAuthManager: vi.fn(() => mockSamlManager)
+} as unknown as Parameters<typeof authedRequestWithPath>[0]
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -106,21 +116,19 @@ describe('samlLogout', () => {
   })
 
   it('returns the redirect_url after logout', async () => {
-    mockAuthedRequestWithPath.mockResolvedValue({ redirect_url: 'https://saml.example/done' })
+    mockSamlManager.logout.mockResolvedValue({ redirect_url: 'https://saml.example/done' })
     const result = await samlLogout('https://cb.example')
     expect(result).toBe('https://saml.example/done')
-    expect(mockAuthedRequestWithPath).toHaveBeenCalledWith(dummyClient, 'POST', '/login/saml/logout', {
-      redirectUrl: 'https://cb.example'
-    })
+    expect(mockSamlManager.logout).toHaveBeenCalledWith('https://cb.example')
   })
 
   it('returns null when no redirect_url is present', async () => {
-    mockAuthedRequestWithPath.mockResolvedValue({})
+    mockSamlManager.logout.mockResolvedValue({})
     await expect(samlLogout()).resolves.toBeNull()
   })
 
   it('normalizes the error when logout fails', async () => {
-    mockAuthedRequestWithPath.mockRejectedValue(new Error('boom'))
+    mockSamlManager.logout.mockRejectedValue(new Error('boom'))
     await expect(samlLogout()).rejects.toThrow('SAML 登出失败')
     expect(mockNormalizeSdkMatrixError).toHaveBeenCalled()
   })

@@ -7,9 +7,8 @@
 
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
 import type { IPublicRoomsChunkRoom, MatrixClient, Room } from '../sdk'
-import type { Space as SdkSpace, SpaceManager as SdkSpaceManager } from '../sdk-compat'
+import type { SpaceManager as SdkSpaceManager } from '../sdk-compat'
 import type { SpaceInfo } from './MatrixSpaceService'
 import { getSpaceChildIds, normalizeSpaceTreePathItems, roomToSpaceInfo, sdkSpaceToSpaceInfo } from './spaceHelpers'
 
@@ -27,32 +26,7 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
         const spaces = await manager.getRoomParentSpaces(roomId)
         return spaces.map((s) => sdkSpaceToSpaceInfo(s))
       } catch (err) {
-        logger.info(`[Space] SpaceManager 获取父空间失败，回退 REST: ${err}`)
-      }
-      try {
-        const client = getClient()
-        const result = await authedRequestWithPath<unknown>(
-          client,
-          'GET',
-          `/spaces/room/${encodeURIComponent(roomId)}/parents`
-        )
-        const arr = Array.isArray(result) ? result : ((result as { spaces?: SdkSpace[] }).spaces ?? [])
-        return arr.map((s) => sdkSpaceToSpaceInfo(s))
-      } catch (err) {
-        logger.info(`[Space] REST 获取父空间失败，回退本地过滤: ${err}`)
-      }
-      try {
-        const client = getClient()
-        const rooms = client.getRooms().filter((room) => room.isSpaceRoom())
-        const parentSpaces: SpaceInfo[] = []
-        for (const space of rooms) {
-          if (getSpaceChildIds(space).includes(roomId)) {
-            parentSpaces.push(roomToSpaceInfo(space, getSpaceChildIds))
-          }
-        }
-        return parentSpaces
-      } catch (fallbackErr) {
-        logger.error(`[Space] 回退获取父空间也失败: ${fallbackErr}`)
+        logger.error(`[Space] 获取父空间失败: ${err}`)
         return []
       }
     },
@@ -66,30 +40,8 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
         const spaces = await manager.searchSpaces(query, limit)
         return spaces.map((s) => sdkSpaceToSpaceInfo(s))
       } catch (err) {
-        logger.warn('SpaceManager 搜索失败，回退:', err)
-        try {
-          const client = getClient()
-          const result = await authedRequestWithPath<unknown>(client, 'GET', '/spaces/search', {
-            search_term: query,
-            limit: String(limit)
-          })
-          const spaces = (result as { spaces?: SdkSpace[] }).spaces ?? []
-          return spaces.map((space) => sdkSpaceToSpaceInfo(space))
-        } catch {
-          // Final fallback: local search
-        }
-        try {
-          const client = getClient()
-          const allSpaces = client.getRooms().filter((room) => room.isSpaceRoom())
-          const q = query.toLowerCase()
-          return allSpaces
-            .filter((room) => (room.name || '').toLowerCase().includes(q))
-            .slice(0, limit)
-            .map((room) => roomToSpaceInfo(room, getSpaceChildIds))
-        } catch (fallbackErr) {
-          logger.error(`[Space] 本地搜索空间失败: ${fallbackErr}`)
-          return []
-        }
+        logger.error(`[Space] 搜索空间失败: ${err}`)
+        return []
       }
     },
 
