@@ -66,8 +66,11 @@ describe('MatrixRoomRealtimeService', () => {
   })
 
   describe('convertRoomToSession', () => {
-    it('maps fields and chooses SINGLE type when 2 members', () => {
+    const mockClient = () => ({ getUserId: () => '@me:e', getAccountData: () => undefined } as never)
+
+    it('maps fields, chooses SINGLE type when 2 members, fills detailId with counterpart', () => {
       getUnreadCountMock.mockReturnValueOnce(7)
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient())
       const room = makeRoom({ getJoinedMemberCount: () => 2 })
       expect(service.convertRoomToSession(room)).toEqual({
         roomId: '!r:e',
@@ -75,14 +78,31 @@ describe('MatrixRoomRealtimeService', () => {
         avatar: 'mxc://a',
         type: RoomTypeEnum.SINGLE,
         unreadCount: 7,
-        activeTime: 999
+        activeTime: 999,
+        detailId: '@other:e',
+        account: '@other:e'
       })
     })
 
-    it('chooses GROUP type when !== 2 members', () => {
+    it('SINGLE 房间用「除自己外的另一名成员」填充 detailId（供下游 counterpart 去重）', () => {
+      getUnreadCountMock.mockReturnValueOnce(0)
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient())
+      const room = makeRoom({
+        getJoinedMemberCount: () => 2,
+        getJoinedMembers: () => [{ userId: '@me:e' }, { userId: '@test1:matrix.test' }] as never
+      })
+      const session = service.convertRoomToSession(room)
+      expect(session.type).toBe(RoomTypeEnum.SINGLE)
+      expect(session.detailId).toBe('@test1:matrix.test')
+      expect(session.account).toBe('@test1:matrix.test')
+    })
+
+    it('chooses GROUP type when !== 2 members (no detailId)', () => {
       getUnreadCountMock.mockReturnValueOnce(0)
       const room = makeRoom()
-      expect(service.convertRoomToSession(room).type).toBe(RoomTypeEnum.GROUP)
+      const session = service.convertRoomToSession(room)
+      expect(session.type).toBe(RoomTypeEnum.GROUP)
+      expect(session.detailId).toBeUndefined()
     })
 
     it('falls back to "Unknown Room" when name is empty', () => {

@@ -31,6 +31,9 @@ interface RoomSession {
   type: RoomTypeEnum
   unreadCount: number
   activeTime: number
+  /** DM 对方用户 MXID（单聊时填充，供下游按 counterpart 去重；历史重复 DM 房间靠它合并） */
+  detailId?: string
+  account?: string
 }
 
 interface VisibleRoomSession extends RoomSession {
@@ -59,13 +62,27 @@ export class MatrixRoomRealtimeService {
     const lastEvent = room.getLiveTimeline().getEvents().slice(-1)[0]
     const activeTime = lastEvent?.getTs?.() || 0
 
+    // 单聊补 counterpart：从房间成员中解析「除自己外的另一名成员」作为 detailId/account。
+    // 与 MatrixSessionService.buildSessionFromRoom 一致——缺失该字段时，下游按 detailId
+    // 的会话去重会退回空值，导致同一联系人的多个历史 DM 房间在会话列表重复出现。
+    let detailId: string | undefined
+    if (type === RoomTypeEnum.SINGLE) {
+      try {
+        const selfId = client?.getUserId?.()
+        detailId = room.getJoinedMembers?.().find((m) => m.userId !== selfId)?.userId
+      } catch {
+        detailId = undefined
+      }
+    }
+
     return {
       roomId: room.roomId,
       name,
       avatar,
       type,
       unreadCount,
-      activeTime
+      activeTime,
+      ...(detailId ? { detailId, account: detailId } : {})
     }
   }
 
