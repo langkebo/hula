@@ -1,5 +1,6 @@
 import { useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import { useRoute } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
@@ -23,6 +24,7 @@ export const leftHook = () => {
   const { t } = useI18nGlobal()
   const { showFeedback } = useActionFeedback()
   const { menuTop } = storeToRefs(useMenuTopStore())
+  const route = useRoute()
   const loginHistoriesStore = useLoginHistoriesStore()
   const userStore = useUserStore()
   const userStatusStore = useUserStatusStore()
@@ -192,8 +194,10 @@ export const leftHook = () => {
   }
 
   onMounted(async () => {
-    /** 页面加载的时候默认显示消息列表 */
-    pageJumps(activeUrl.value)
+    /** 页面加载的时候默认显示消息列表（设置页内嵌 LeftNav 时不跳转） */
+    if (route.path !== '/settings') {
+      pageJumps(activeUrl.value)
+    }
     window.addEventListener('click', closeMenu, true)
 
     useMitt.on(MittEnum.SHRINK_WINDOW, (event: boolean) => {

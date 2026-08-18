@@ -40,7 +40,7 @@
       v-if="isMobileDevice"
       class="absolute inset-x-0 bottom-0 z-30 px-24px pb-24px pointer-events-none"
       :style="{
-        background: 'linear-gradient(180deg, rgba(15, 15, 15, 0) 0%, rgba(15, 15, 15, 0.88) 100%)',
+        background: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--tjg-surface-darkest) 88%, transparent) 100%)`,
         paddingBottom: 'calc(24px + env(safe-area-inset-bottom))'
       }">
       <!-- 通话时长 -->

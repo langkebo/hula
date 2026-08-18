@@ -285,7 +285,12 @@ onUnmounted(() => {
     top: 0;
     width: 100px;
     height: 100px;
-    background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--tjg-text-inverse) 50%, transparent),
+      transparent
+    );
     transform: skew(-30deg);
     pointer-events: none;
   }

@@ -208,17 +208,21 @@ useMitt.on('RoomClosed', handleCallEnd)
 
 <style scoped lang="scss">
 .rtc-call-card {
-  background: linear-gradient(135deg, rgba(34, 34, 38, 0.95), rgba(18, 18, 22, 0.92));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tjg-surface-darkest) 95%, transparent),
+    color-mix(in srgb, var(--tjg-surface-darkest) 92%, transparent)
+  );
   backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--tjg-border-contrast);
   border-radius: 18px;
   padding: 12px 16px;
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
 }
 
 .avatar-shell {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--tjg-border-contrast);
+  border: 1px solid color-mix(in srgb, var(--tjg-text-inverse) 14%, transparent);
   backdrop-filter: blur(14px);
 }
 
@@ -240,8 +244,8 @@ useMitt.on('RoomClosed', handleCallEnd)
   }
 
   &.reject {
-    background: rgba(213, 48, 79, 0.68);
-    box-shadow: 0 12px 26px rgba(213, 48, 79, 0.3);
+    background: color-mix(in srgb, var(--tjg-color-danger-500) 68%, transparent);
+    box-shadow: 0 12px 26px color-mix(in srgb, var(--tjg-color-danger-500) 30%, transparent);
   }
 
   &.accept {
