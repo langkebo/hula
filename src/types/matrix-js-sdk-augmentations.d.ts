@@ -442,7 +442,6 @@ declare module 'matrix-js-sdk' {
     // 注：getDirectMessageManager/getDeviceManager/getKeyBackupManager/getDeviceKeysManager/
     // getCryptoKeysManager/getKeyVerificationManager 已由 SDK matrix-client-extensions.d.ts
     // 上浮强类型 getter，此处不再重复声明（避免弱类型 `?: unknown` 遮蔽 SDK 类型）。
-    dmManager?: unknown
     getMediaQuotaManager?(): unknown
     quotaManager?: unknown
     // Upload
