@@ -50,7 +50,10 @@
     "invite_skip": "跳过",
     "invite_send": "邀请",
     "invite_success": "邀请已发送",
-    "invite_failed": "邀请失败"
+    "invite_failed": "邀请失败",
+    "duplicate_name_title": "检测到同名群",
+    "duplicate_name_confirm": "已存在名为「{name}」的群。仍然创建吗？",
+    "duplicate_name_continue": "仍然创建"
   },
   "join": {
     "title": "加入房间",

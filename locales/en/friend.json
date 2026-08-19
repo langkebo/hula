@@ -67,7 +67,8 @@
     "error": "Failed to send friend request",
     "mode_fuzzy": "Fuzzy",
     "mode_exact": "Exact",
-    "suggestions": "Suggested Friends"
+    "suggestions": "Suggested Friends",
+    "request_pending": "Friend request already sent, waiting for reply"
   },
   "detail": {
     "title": "Friend Details",

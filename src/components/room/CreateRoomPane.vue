@@ -98,7 +98,7 @@
       class="create-room-pane__footer flex items-center justify-end gap-12px px-20px py-12px border-t border-[--tjg-border-layout-divider]">
       <template v-if="stage === 'create'">
         <n-button @click="handleClose">{{ t('room.create.cancel') }}</n-button>
-        <n-button type="primary" :loading="creating" @click="handleCreate">
+        <n-button type="primary" :loading="creating" @click="() => handleCreate(false)">
           {{ t('room.create.create') }}
         </n-button>
       </template>
@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
+import { useDialog } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -131,6 +132,7 @@ const emit = defineEmits<(e: 'close') => void>()
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
+const dialog = useDialog()
 const draftStore = useRightViewDraftStore()
 const formRef = ref<FormInst>()
 const creating = ref(false)
@@ -205,7 +207,7 @@ const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
   }
 }
 
-const handleCreate = async () => {
+const handleCreate = async (ignoreDuplicate = false) => {
   try {
     await formRef.value?.validate()
   } catch {
@@ -222,7 +224,8 @@ const handleCreate = async () => {
       alias: formData.alias || undefined,
       isEncrypted: formData.isEncrypted,
       historyVisibility: formData.historyVisibility,
-      joinRule: formData.joinRule
+      joinRule: formData.joinRule,
+      ignoreDuplicateName: ignoreDuplicate
     })
 
     showFeedback(t('room.create.success'), 'success')
@@ -232,7 +235,24 @@ const handleCreate = async () => {
     // 切换到邀请阶段（可选步骤）
     stage.value = 'invite'
   } catch (error) {
-    logger.error('创建房间失败:', error instanceof Error ? error.message : String(error))
+    // 同名群防重：服务端返回 409 M_ROOM_IN_USE 时弹确认框，
+    // 用户选择"仍然创建"后带 ignore_duplicate_name 重发（逃生阀）。
+    const errMsg = error instanceof Error ? error.message : String(error)
+    if (errMsg.includes('M_ROOM_IN_USE') || errMsg.includes('already in use')) {
+      logger.warn('检测到同名群，等待用户确认:', formData.name)
+      creating.value = false
+      dialog.warning({
+        title: t('room.create.duplicate_name_title'),
+        content: t('room.create.duplicate_name_confirm', { name: formData.name }),
+        positiveText: t('room.create.duplicate_name_continue'),
+        negativeText: t('common.cancel'),
+        onPositiveClick: () => {
+          void handleCreate(true)
+        }
+      })
+      return
+    }
+    logger.error('创建房间失败:', errMsg)
     showFeedback(t('room.create.failed'), 'error')
   } finally {
     creating.value = false

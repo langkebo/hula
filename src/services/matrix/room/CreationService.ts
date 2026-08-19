@@ -18,6 +18,11 @@ export interface CreateGroupRoomOptions {
   historyVisibility?: 'shared' | 'invited' | 'joined' | 'world_readable'
   joinRule?: 'invite' | 'knock' | 'public' | 'restricted'
   invite?: string[]
+  /**
+   * 同名防重逃生阀：服务端对已存在同名群/空间返回 409 M_ROOM_IN_USE。
+   * 用户经确认弹窗选择"仍然创建"后置为 true 重发，跳过查重。
+   */
+  ignoreDuplicateName?: boolean
 }
 
 /**
@@ -95,6 +100,11 @@ export class MatrixRoomCreationService {
 
     if (options.invite && options.invite.length > 0) {
       createOpts.invite = options.invite
+    }
+
+    // 同名防重逃生阀：确认弹窗后置 true 重发，让服务端跳过 M_ROOM_IN_USE 查重。
+    if (options.ignoreDuplicateName) {
+      createOpts.ignore_duplicate_name = true
     }
 
     return this.createRoom(createOpts)

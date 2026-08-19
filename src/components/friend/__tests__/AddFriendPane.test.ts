@@ -15,7 +15,8 @@ const {
   announceMock,
   routerBackMock,
   rememberTermMock,
-  clearHistoryMock
+  clearHistoryMock,
+  requestFriendsListRef
 } = vi.hoisted(() => ({
   searchFriendsViaApiMock: vi.fn(),
   getFriendSuggestionsMock: vi.fn(),
@@ -27,7 +28,8 @@ const {
   announceMock: vi.fn(),
   routerBackMock: vi.fn(),
   rememberTermMock: vi.fn(),
-  clearHistoryMock: vi.fn()
+  clearHistoryMock: vi.fn(),
+  requestFriendsListRef: { value: [] as Array<{ userId: string; direction: string }> }
 }))
 
 // draftData 必须在 vi.hoisted 外部声明（reactive 在 hoisting 阶段不可用）
@@ -88,7 +90,8 @@ vi.mock('@/stores/domains/chat/contacts', () => ({
   useContactStore: () => ({
     getUserProfile: getUserProfileMock,
     isFriend: isFriendMock,
-    sendFriendRequest: sendFriendRequestMock
+    sendFriendRequest: sendFriendRequestMock,
+    requestFriendsList: requestFriendsListRef.value
   })
 }))
 
@@ -280,6 +283,7 @@ describe('AddFriendPane', () => {
     searchUsersMock.mockResolvedValue([])
     getUserProfileMock.mockResolvedValue(null)
     isFriendMock.mockResolvedValue(false)
+    requestFriendsListRef.value = []
     sendFriendRequestMock.mockResolvedValue(true)
   })
 
@@ -423,6 +427,46 @@ describe('AddFriendPane', () => {
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('network error', 'error', 'assertive')
+  })
+
+  // (g) 发送前查重：已是好友时不发送请求
+  it('blocks sending when target is already a friend', async () => {
+    searchFriendsViaApiMock.mockResolvedValue([{ user_id: '@alice:server', display_name: 'Alice' }])
+    getUserProfileMock.mockResolvedValue({ userId: '@alice:server', displayName: 'Alice', avatarUrl: '' })
+    isFriendMock.mockResolvedValue(true)
+    const wrapper = mountPane()
+    await flushPromises()
+
+    await wrapper.find('.friend-search-bar-stub__input').setValue('alice')
+    await wrapper.find('.friend-search-bar-stub__search').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('button.n-button--primary').trigger('click')
+    await flushPromises()
+
+    expect(sendFriendRequestMock).not.toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('friend.add.already_friend', 'info', 'polite')
+  })
+
+  // (h) 发送前查重：已有待处理请求时不重复发送
+  it('blocks sending when a friend request is already pending', async () => {
+    searchFriendsViaApiMock.mockResolvedValue([{ user_id: '@alice:server', display_name: 'Alice' }])
+    getUserProfileMock.mockResolvedValue({ userId: '@alice:server', displayName: 'Alice', avatarUrl: '' })
+    isFriendMock.mockResolvedValue(false)
+    // 注入一条 outgoing 待处理请求
+    requestFriendsListRef.value = [{ userId: '@alice:server', direction: 'outgoing' }]
+    const wrapper = mountPane()
+    await flushPromises()
+
+    await wrapper.find('.friend-search-bar-stub__input').setValue('alice')
+    await wrapper.find('.friend-search-bar-stub__search').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('button.n-button--primary').trigger('click')
+    await flushPromises()
+
+    expect(sendFriendRequestMock).not.toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('friend.add.request_pending', 'info', 'polite')
   })
 
   it('does not show success toast when sendFriendRequest returns false', async () => {

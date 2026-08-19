@@ -16,6 +16,11 @@ export interface SpaceOptions {
   topic?: string
   visibility?: Visibility
   avatarUrl?: string
+  /**
+   * 同名防重逃生阀：服务端对已存在同名空间返回 409 M_ROOM_IN_USE。
+   * 用户经确认弹窗选择"仍然创建"后置 true 重发，跳过查重。
+   */
+  ignoreDuplicateName?: boolean
 }
 
 export interface SpaceInfo {
@@ -58,6 +63,7 @@ class SpaceService extends BaseMatrixService {
         topic: options.topic,
         visibility: options.visibility,
         room_types: ['m.space'],
+        ignore_duplicate_name: options.ignoreDuplicateName,
         initial_state: [
           ...(options.avatarUrl ? [{ type: 'm.room.avatar', state_key: '', content: { url: options.avatarUrl } }] : [])
         ]
