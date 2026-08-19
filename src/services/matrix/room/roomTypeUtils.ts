@@ -50,6 +50,44 @@ export function findDmCounterpart(room: Room | null | undefined, selfId?: string
   if (!room) {
     return undefined
   }
+  // memo：同一 Room 实例且房间版本号(getVersion)未变时直接返回缓存，
+  // 否则重新扫描成员。房间成员变化会 bump getVersion，从而自动失效。
+  // 用 WeakMap 以 Room 对象为键（而非 roomId），避免单测里 roomId 为 undefined 的跨用例串扰，
+  // 也随房间实例被 GC 自动回收，不会随会话数量增长而泄漏。
+  const version = typeof room.getVersion === 'function' ? room.getVersion() : ''
+  const selfKey = selfId ?? ''
+  const roomCache = counterpartCache.get(room)
+  const cached = roomCache?.get(selfKey)
+  if (cached && cached.version === version) {
+    return cached.result
+  }
+  const result = resolveDmCounterpart(room, selfId)
+  if (roomCache) {
+    roomCache.set(selfKey, { version, result })
+  } else {
+    counterpartCache.set(room, new Map([[selfKey, { version, result }]]))
+  }
+  return result
+}
+
+const counterpartCache = new WeakMap<Room, Map<string, { version: string; result: string | undefined }>>()
+
+/**
+ * 从 Room 成员中解析「除自己外的另一名成员」（DM counterpart）的内部实现（无缓存）。
+ *
+ * 优先级：
+ *   1. 已加入（join）且非自己的成员；
+ * 2. 受邀（invite）且非自己的成员（对方尚未 join 的新建 DM）；
+ *   3. 任意非自己的成员（成员状态未完整同步时的兜底）。
+ *
+ * 数据源优先取 `getMembers()`（含全部 membership 状态），SDK 老版本或
+ * 测试 mock 仅暴露 `getJoinedMembers()`/`getMembersWithMembership()` 时回退到两者。
+ *
+ * 供 buildSessionFromRoom / convertRoomToSession 填充 detailId/account 使用，
+ * 保证下游按 counterpart 的会话去重能正确合并同一联系人的多个历史 DM 房间，
+ * 避免消息列表出现重复成员。缓存层见 findDmCounterpart。
+ */
+function resolveDmCounterpart(room: Room, selfId?: string | null): string | undefined {
   const collectMembers = (): Array<{ userId?: string | null; membership?: string | null }> => {
     if (typeof room.getMembers === 'function') {
       const all = room.getMembers() ?? []

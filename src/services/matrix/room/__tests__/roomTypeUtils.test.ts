@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { MatrixClient, Room } from '../../sdk'
 import { findDmCounterpart, isDirectMessageRoom, isDirectMessageRoomFromRoom } from '../roomTypeUtils'
 
@@ -169,5 +169,49 @@ describe('findDmCounterpart', () => {
         membership === 'invite' ? [member('@bob:example.org', 'invite')] : []
     } as unknown as Room
     expect(findDmCounterpart(room, '@me:example.org')).toBe('@bob:example.org')
+  })
+})
+
+describe('findDmCounterpart memoization', () => {
+  const member = (userId: string, membership = 'join') => ({ userId, membership })
+
+  it('returns cached result without re-scanning members when room version is unchanged', () => {
+    const version = 'v1'
+    const getMembers = vi.fn(() => [member('@me:example.org'), member('@bob:example.org')])
+    const room = { getMembers, getVersion: () => version } as unknown as Room
+
+    const first = findDmCounterpart(room, '@me:example.org')
+    const second = findDmCounterpart(room, '@me:example.org')
+    expect(first).toBe('@bob:example.org')
+    expect(second).toBe('@bob:example.org')
+    // 同版本只扫描一次成员；会话列表每次重算命中缓存，不再重复全量成员扫描。
+    expect(getMembers).toHaveBeenCalledTimes(1)
+  })
+
+  it('re-resolves when room version changes (member state updated)', () => {
+    let version = 'v1'
+    const getMembers = vi.fn(() => [member('@me:example.org'), member('@bob:example.org')])
+    const room = { getMembers, getVersion: () => version } as unknown as Room
+
+    expect(findDmCounterpart(room, '@me:example.org')).toBe('@bob:example.org')
+    expect(getMembers).toHaveBeenCalledTimes(1)
+
+    version = 'v2'
+    getMembers.mockImplementation(() => [member('@me:example.org'), member('@carol:example.org')])
+    expect(findDmCounterpart(room, '@me:example.org')).toBe('@carol:example.org')
+    expect(getMembers).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not share cache across different room instances', () => {
+    const roomA = {
+      getMembers: () => [member('@me:example.org'), member('@a:example.org')],
+      getVersion: () => 'v1'
+    } as unknown as Room
+    const roomB = {
+      getMembers: () => [member('@me:example.org'), member('@b:example.org')],
+      getVersion: () => 'v1'
+    } as unknown as Room
+    expect(findDmCounterpart(roomA, '@me:example.org')).toBe('@a:example.org')
+    expect(findDmCounterpart(roomB, '@me:example.org')).toBe('@b:example.org')
   })
 })
