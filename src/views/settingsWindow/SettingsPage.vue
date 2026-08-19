@@ -43,7 +43,6 @@ import { usePlatform } from '@/composables/usePlatform'
 import { getSettingsTabLabel, type SettingsTabType, useSettingsTabStore } from '@/stores/domains/settings/settingsTab'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
-// biome-ignore lint/style/useImportType: used as runtime component in template
 import SettingsContent from './SettingsContent.vue'
 import SettingsSidebar from './SettingsSidebar.vue'
 
