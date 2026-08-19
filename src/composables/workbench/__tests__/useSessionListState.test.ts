@@ -432,4 +432,89 @@ describe('useSessionListState', () => {
 
     wrapper.unmount()
   })
+
+  it('detailId 缺失时用房间成员兜底解析 counterpart，仍能合并同一联系人的重复 DM（防御纵深）', async () => {
+    const matrixClientService = (await import('@/services/matrix/MatrixClientService')).default
+    const getRoomSpy = vi.spyOn(matrixClientService, 'getRoom').mockReturnValue({
+      getMembers: () => [
+        { userId: '@me:matrix.test', membership: 'join' },
+        { userId: '@test1:matrix.test', membership: 'join' }
+      ]
+    } as never)
+    const getClientSpy = vi
+      .spyOn(matrixClientService, 'getClient')
+      .mockReturnValue({ getUserId: () => '@me:matrix.test' } as never)
+
+    sessionStoreMock.sessionList = [
+      {
+        roomId: 'dm-1',
+        type: RoomTypeEnum.SINGLE,
+        name: 'test1',
+        unreadCount: 1,
+        activeTime: 100,
+        top: false,
+        shield: false
+        // 无 detailId/account：模拟服务重建时成员状态未就绪的会话
+      },
+      {
+        roomId: 'dm-2',
+        type: RoomTypeEnum.SINGLE,
+        name: 'test1',
+        unreadCount: 2,
+        activeTime: 300,
+        top: false,
+        shield: false
+      }
+    ]
+
+    chatStoreMock.chatMessageListByRoomId.mockImplementation(() => [])
+
+    const { wrapper, api } = await createHarness()
+
+    const items = api.sessionList.value
+    expect(items).toHaveLength(1) // 兜底解析后仍只保留一条 test1
+    expect(items[0].roomId).toBe('dm-2')
+    expect(items[0].unreadCount).toBe(3) // 未读累加
+
+    getRoomSpy.mockRestore()
+    getClientSpy.mockRestore()
+    wrapper.unmount()
+  })
+
+  it('合并重复 DM 时保留身份字段 detailId/account（保留条目不缺 counterpart）', async () => {
+    sessionStoreMock.sessionList = [
+      {
+        roomId: 'dm-old',
+        type: RoomTypeEnum.SINGLE,
+        account: 'test1', // 旧房间只有 localpart account，无 detailId
+        name: 'test1(旧)',
+        unreadCount: 5,
+        activeTime: 300, // 更活跃 → 作为保留条目
+        top: false,
+        shield: false
+      },
+      {
+        roomId: 'dm-new',
+        type: RoomTypeEnum.SINGLE,
+        detailId: '@test1:matrix.test', // 新房间有完整 detailId
+        name: 'test1(新)',
+        unreadCount: 2,
+        activeTime: 100,
+        top: false,
+        shield: false
+      }
+    ]
+
+    chatStoreMock.chatMessageListByRoomId.mockImplementation(() => [])
+
+    const { wrapper, api } = await createHarness()
+
+    const items = api.sessionList.value
+    expect(items).toHaveLength(1)
+    expect(items[0].roomId).toBe('dm-old') // 保留更活跃的 dm-old
+    expect(items[0].detailId).toBe('@test1:matrix.test') // 身份字段从 dm-new 补全
+    expect(items[0].unreadCount).toBe(7)
+
+    wrapper.unmount()
+  })
 })

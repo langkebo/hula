@@ -3,6 +3,7 @@ import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
+import { findDmCounterpart } from '../room/roomTypeUtils'
 
 const logger = createLogger('MatrixSessionService')
 
@@ -271,15 +272,9 @@ class MatrixSessionService extends BaseMatrixService {
     // 优先用 m.direct 映射的对方身份；若房间未注册进 m.direct（历史/重复创建的 DM 房间常见），
     // 则从房间成员中解析"除自己外的另一名成员"作为 counterpart，确保 detailId 始终填充，
     // 否则下游按 detailId 的去重会退回 roomId，导致同一联系人的多个 DM 房间在消息列表重复出现。
+    // findDmCounterpart 优先 join 成员、回退 invite/任意成员，且不会误取自己。
     const selfId = this.getClient().getUserId() || undefined
-    const otherMember = (() => {
-      try {
-        const members = room.getJoinedMembers?.() ?? []
-        return members.find((m) => m.userId !== selfId)?.userId
-      } catch {
-        return undefined
-      }
-    })()
+    const otherMember = findDmCounterpart(room, selfId)
     const detailId = dmRoomInfo?.invitees?.[0] || dmRoomInfo?.inviter || otherMember
     const isSingle =
       !!detailId || (typeof room.getJoinedMemberCount === 'function' ? room.getJoinedMemberCount() === 2 : false)
