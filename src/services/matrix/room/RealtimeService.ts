@@ -6,7 +6,7 @@ import matrixEventServiceLocal from '../MatrixEventService'
 import { matrixReceiptService } from '../messaging/MatrixReceiptService'
 import matrixSlidingSyncService from '../sync/MatrixSlidingSyncService'
 import { matrixRoomCreationService } from './CreationService'
-import { isDirectMessageRoomFromRoom } from './roomTypeUtils'
+import { findDmCounterpart, isDirectMessageRoomFromRoom } from './roomTypeUtils'
 
 const ROOM_EVENTS = {
   Timeline: 'Room.timeline',
@@ -65,11 +65,16 @@ export class MatrixRoomRealtimeService {
     // 单聊补 counterpart：从房间成员中解析「除自己外的另一名成员」作为 detailId/account。
     // 与 MatrixSessionService.buildSessionFromRoom 一致——缺失该字段时，下游按 detailId
     // 的会话去重会退回空值，导致同一联系人的多个历史 DM 房间在会话列表重复出现。
+    // 用 findDmCounterpart：优先 join 成员，回退 invite/任意成员，且不会误取自己。
     let detailId: string | undefined
-    if (type === RoomTypeEnum.SINGLE) {
+    if (type === RoomTypeEnum.SINGLE && client) {
       try {
-        const selfId = client?.getUserId?.()
-        detailId = room.getJoinedMembers?.().find((m) => m.userId !== selfId)?.userId
+        const selfId = client.getUserId?.()
+        // selfId 未知时无法可靠区分自己/对方，宁可留空（下游按 roomId 兜底），
+        // 也不能误把「自己」当 counterpart，否则所有 DM 会被合并成一条。
+        if (selfId) {
+          detailId = findDmCounterpart(room, selfId)
+        }
       } catch {
         detailId = undefined
       }

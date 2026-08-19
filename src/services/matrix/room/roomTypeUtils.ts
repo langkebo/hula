@@ -32,6 +32,59 @@ export function isDirectMessageRoom(client: MatrixClient | null | undefined, roo
 }
 
 /**
+ * 从 Room 成员中解析「除自己外的另一名成员」（DM counterpart）。
+ *
+ * 优先级：
+ *   1. 已加入（join）且非自己的成员；
+ *   2. 受邀（invite）且非自己的成员（对方尚未 join 的新建 DM）；
+ *   3. 任意非自己的成员（成员状态未完整同步时的兜底）。
+ *
+ * 数据源优先取 `getMembers()`（含全部 membership 状态），SDK 老版本或
+ * 测试 mock 仅暴露 `getJoinedMembers()`/`getMembersWithMembership()` 时回退到两者。
+ *
+ * 供 buildSessionFromRoom / convertRoomToSession 填充 detailId/account 使用，
+ * 保证下游按 counterpart 的会话去重能正确合并同一联系人的多个历史 DM 房间，
+ * 避免消息列表出现重复成员。
+ */
+export function findDmCounterpart(room: Room | null | undefined, selfId?: string | null): string | undefined {
+  if (!room) {
+    return undefined
+  }
+  const collectMembers = (): Array<{ userId?: string | null; membership?: string | null }> => {
+    if (typeof room.getMembers === 'function') {
+      const all = room.getMembers() ?? []
+      if (all.length) return all
+    }
+    const joined = typeof room.getJoinedMembers === 'function' ? (room.getJoinedMembers() ?? []) : []
+    // SDK 无 getInvitedMembers()，用 getMembersWithMembership('invite') 兜底
+    const invited =
+      typeof room.getMembersWithMembership === 'function' ? (room.getMembersWithMembership('invite') ?? []) : []
+    return [...joined, ...invited]
+  }
+  try {
+    const members = collectMembers()
+    if (!members.length) {
+      return undefined
+    }
+    const isNotSelf = (userId?: string | null): userId is string => !!userId && userId !== selfId
+    const pick = (m?: { userId?: string | null }): string | undefined => {
+      const uid = m?.userId
+      return isNotSelf(uid) ? uid : undefined
+    }
+    // 按 membership 分优先级的两次扫描：join 优先、invite 其次、任意非自己兜底。
+    // 每次都要在「同一 membership」内排除自己，避免「self(join) + 对方(invite)」
+    // 的常见新建 DM 被误判为无 counterpart。
+    return (
+      pick(members.find((m) => m.membership === 'join' && isNotSelf(m.userId))) ??
+      pick(members.find((m) => m.membership === 'invite' && isNotSelf(m.userId))) ??
+      members.map((m) => m.userId).find(isNotSelf)
+    )
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * 判断房间是否为 DM 房间（基于 Room 对象）。
  * 用于 convertRoomToSession 等场景，已有 Room 对象时无需再查 client。
  */

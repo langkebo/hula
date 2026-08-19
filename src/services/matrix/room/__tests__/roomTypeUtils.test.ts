@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MatrixClient, Room } from '../../sdk'
-import { isDirectMessageRoom, isDirectMessageRoomFromRoom } from '../roomTypeUtils'
+import { findDmCounterpart, isDirectMessageRoom, isDirectMessageRoomFromRoom } from '../roomTypeUtils'
 
 function mockClient(opts: {
   directMap?: Record<string, { room_id: string }[]> | null
@@ -115,5 +115,59 @@ describe('isDirectMessageRoomFromRoom', () => {
     })
     const client = mockClient({ directMap: {} })
     expect(isDirectMessageRoomFromRoom(client, room)).toBe(false)
+  })
+})
+
+describe('findDmCounterpart', () => {
+  const member = (userId: string, membership = 'join') => ({ userId, membership })
+
+  const roomWithMembers = (members: Array<{ userId: string; membership?: string }>): Room =>
+    ({
+      getMembers: () => members
+    }) as unknown as Room
+
+  it('returns the other joined member excluding self', () => {
+    const room = roomWithMembers([member('@me:example.org'), member('@bob:example.org')])
+    expect(findDmCounterpart(room, '@me:example.org')).toBe('@bob:example.org')
+  })
+
+  it('prefers joined member over invited member', () => {
+    const room = roomWithMembers([
+      member('@me:example.org'),
+      member('@invited:example.org', 'invite'),
+      member('@joined:example.org', 'join')
+    ])
+    expect(findDmCounterpart(room, '@me:example.org')).toBe('@joined:example.org')
+  })
+
+  it('falls back to invited member when counterpart has not joined yet (新建 DM)', () => {
+    const room = roomWithMembers([member('@me:example.org'), member('@bob:example.org', 'invite')])
+    expect(findDmCounterpart(room, '@me:example.org')).toBe('@bob:example.org')
+  })
+
+  it('falls back to any non-self member when membership state is incomplete', () => {
+    const room = roomWithMembers([{ userId: '@me:example.org' }, { userId: '@bob:example.org' }])
+    expect(findDmCounterpart(room, '@me:example.org')).toBe('@bob:example.org')
+  })
+
+  it('returns undefined when only self is in the room', () => {
+    const room = roomWithMembers([member('@me:example.org')])
+    expect(findDmCounterpart(room, '@me:example.org')).toBeUndefined()
+  })
+
+  it('returns undefined when room or members are unavailable', () => {
+    expect(findDmCounterpart(null, '@me:example.org')).toBeUndefined()
+    expect(findDmCounterpart(undefined, '@me:example.org')).toBeUndefined()
+    const emptyRoom = {} as Room
+    expect(findDmCounterpart(emptyRoom, '@me:example.org')).toBeUndefined()
+  })
+
+  it('falls back to getJoinedMembers/getMembersWithMembership when getMembers is unavailable', () => {
+    const room = {
+      getJoinedMembers: () => [member('@me:example.org')],
+      getMembersWithMembership: (membership: string) =>
+        membership === 'invite' ? [member('@bob:example.org', 'invite')] : []
+    } as unknown as Room
+    expect(findDmCounterpart(room, '@me:example.org')).toBe('@bob:example.org')
   })
 })

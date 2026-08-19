@@ -218,6 +218,12 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
           return {
             ...previous,
             ...session,
+            // 服务重建时若房间成员状态未就绪，session.detailId/account 可能为 undefined，
+            // 直接展开会用 undefined 覆盖上一份已填充的 counterpart，导致下游按 detailId
+            // 的去重键退回 roomId、同一联系人的多个 DM 房间重复展示。
+            // 这里做非空保留：新值缺失时沿用 previous 已解析的身份。
+            detailId: session.detailId || previous?.detailId,
+            account: session.account || previous?.account,
             isFavorite: !!(favoriteId && favoriteFriendIds.has(favoriteId))
           }
         }),
