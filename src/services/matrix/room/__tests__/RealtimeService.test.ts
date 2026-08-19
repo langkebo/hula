@@ -66,7 +66,7 @@ describe('MatrixRoomRealtimeService', () => {
   })
 
   describe('convertRoomToSession', () => {
-    const mockClient = () => ({ getUserId: () => '@me:e', getAccountData: () => undefined } as never)
+    const mockClient = () => ({ getUserId: () => '@me:e', getAccountData: () => undefined }) as never
 
     it('maps fields, chooses SINGLE type when 2 members, fills detailId with counterpart', () => {
       getUnreadCountMock.mockReturnValueOnce(7)
