@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDialog } from 'naive-ui'
-import { computed, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import SkeletonSettings from '@/components/common/SkeletonSettings.vue'
@@ -34,6 +34,7 @@ import { findFirstMatchingSettingsTab, useSettingsShell } from '@/composables/se
 import { usePlatform } from '@/composables/usePlatform'
 import { getSettingsTabLabel, type SettingsTabType, useSettingsTabStore } from '@/stores/domains/settings/settingsTab'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+// biome-ignore lint/style/useImportType: used as runtime component in template
 import SettingsContent from './SettingsContent.vue'
 import SettingsSidebar from './SettingsSidebar.vue'
 
