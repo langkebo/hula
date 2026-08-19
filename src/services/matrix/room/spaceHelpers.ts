@@ -9,15 +9,16 @@ import type { Space as SdkSpace } from '../sdk-compat'
 import type { SpaceInfo } from './MatrixSpaceService'
 
 /** 将 SDK 空间对象转换为空间信息
+ * @param room - 可选的已加载房间对象，用于获取准确的成员和子房间计数
  */
-export function sdkSpaceToSpaceInfo(space: SdkSpace): SpaceInfo {
+export function sdkSpaceToSpaceInfo(space: SdkSpace, room?: Room): SpaceInfo {
   return {
     spaceId: space.space_id,
     name: space.name || '',
     topic: space.topic || undefined,
     avatarUrl: space.avatar_url || undefined,
-    memberCount: 0,
-    childCount: 0
+    memberCount: room ? room.getJoinedMembers().length : 0,
+    childCount: room ? getSpaceChildIds(room).length : 0
   }
 }
 

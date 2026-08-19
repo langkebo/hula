@@ -262,13 +262,30 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   getMediaUrl(mxcUrl: string, width?: number, height?: number): string | null {
     if (!mxcUrl?.startsWith('mxc://')) return null
     const client = this.getClient()
-    if (width && height) return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
-    return client.mxcUrlToHttp(mxcUrl) ?? null
+    // 容错：极少数 client 包装层会剥离 SDK 实例方法。优先调用标准方法；失败时回落到 mxc 原值返回。
+    try {
+      if (typeof client?.mxcUrlToHttp !== 'function') {
+        logger.warn('[MatrixMedia] client.mxcUrlToHttp 不可用，返回原始 mxc')
+        return mxcUrl
+      }
+      if (width && height) return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
+      return client.mxcUrlToHttp(mxcUrl) ?? null
+    } catch (err) {
+      logger.warn(`[MatrixMedia] mxcUrlToHttp 调用失败: ${(err as Error)?.message ?? err}`)
+      return mxcUrl
+    }
   }
 
   getThumbnailUrl(mxcUrl: string, width: number, height: number): string | null {
     if (!mxcUrl?.startsWith('mxc://')) return null
-    return this.getClient().mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
+    const client = this.getClient()
+    try {
+      if (typeof client?.mxcUrlToHttp !== 'function') return null
+      return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
+    } catch (err) {
+      logger.warn(`[MatrixMedia] mxcUrlToHttp(thumbnail) 失败: ${(err as Error)?.message ?? err}`)
+      return null
+    }
   }
 
   // ── 下载（委托 mediaDownloadHelpers）──

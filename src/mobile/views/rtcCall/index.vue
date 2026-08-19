@@ -105,7 +105,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useVoIPCallFlow } from '@/composables/webrtc/useVoIPCallFlow'
+import { useVoIPCallFlow } from '@/composables/useVoIPCallFlow'
 import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { createLogger } from '@/utils/Logger'
 

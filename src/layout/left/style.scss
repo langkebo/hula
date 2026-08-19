@@ -48,11 +48,6 @@
   }
 }
 
-.setting-item {
-  @include menu-item-style(absolute);
-  @include menu-list();
-}
-
 .item-hover {
   @apply select-none hover:bg-[--info-hover] cursor-pointer w-fit rounded-10px p-4px;
   transition: all var(--tjg-motion-duration-xslow) ease-in-out;

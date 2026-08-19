@@ -117,6 +117,11 @@ export const useUserStore = defineStore(
         if (matrixProfile.value) {
           matrixProfile.value.avatarUrl = avatarUrl
         }
+        // 关键同步：LeftAvatar / UserMenu 等大量入口读的是 userInfo.avatar（原始 mxc），
+        // 若不在这里同步，设置页改头像后侧边栏头像不会刷新（与 InfoEdit.vue 的更新路径保持一致）。
+        if (userInfo.value) {
+          userInfo.value.avatar = avatarUrl
+        }
         logger.info('[UserStore] 更新头像成功')
         return true
       } catch (err) {

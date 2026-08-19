@@ -59,10 +59,15 @@ interface ModuleInfo {
   description?: string
 }
 
-const props = defineProps<{
-  modules: ModuleInfo[]
-  loading: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    modules?: ModuleInfo[]
+    loading: boolean
+  }>(),
+  {
+    modules: () => []
+  }
+)
 
 const emit = defineEmits<(e: 'view-detail', moduleName: string) => void>()
 
@@ -78,8 +83,9 @@ const filterOptions = [
 ]
 
 const filteredModules = computed(() => {
-  if (statusFilter.value === 'all') return props.modules
-  return props.modules.filter((module) => module.status === statusFilter.value)
+  const modules = props.modules ?? []
+  if (statusFilter.value === 'all') return modules
+  return modules.filter((module) => module.status === statusFilter.value)
 })
 
 function statusColor(status: ModuleStatus): string {

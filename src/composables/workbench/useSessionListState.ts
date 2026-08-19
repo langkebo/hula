@@ -10,7 +10,10 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatChatTime } from '@/utils/ComputedTime.ts'
+import { createLogger } from '@/utils/Logger'
 import { toLocalpart } from '@/utils/userIdentity'
+
+const logger = createLogger('SessionListState')
 
 type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
 
@@ -73,6 +76,11 @@ export const useSessionListState = () => {
     )
 
     const dedupedByRoom = uniqBy(chatOnlySessions, (item) => item.roomId)
+    if (chatOnlySessions.length !== dedupedByRoom.length) {
+      logger.warn(
+        `[SessionListState] store 层存在重复 roomId：${chatOnlySessions.length} → ${dedupedByRoom.length}，请排查 addSession/getSessionList`
+      )
+    }
 
     // 同一对方用户的多个 DM 房间（历史数据或旧版重复创建）只保留最近活跃一条，
     // 否则中间栏会出现同一成员多条重复会话。
@@ -83,8 +91,8 @@ export const useSessionListState = () => {
         if (item.type !== RoomTypeEnum.SINGLE) return true
         // detailId/account 均为对方 MXID，但历史数据可能是 localpart，
         // 用 localpart 归一化避免格式不一致漏判。
-        const counterpartKey = toLocalpart(item.detailId || item.account || '')
-        if (!counterpartKey) return true
+        // 当 counterpartKey 为空时，用 roomId 作为 fallback 去重。
+        const counterpartKey = toLocalpart(item.detailId || item.account || '') || item.roomId
         if (dmSeen.has(counterpartKey)) return false
         dmSeen.add(counterpartKey)
         return true

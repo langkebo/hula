@@ -323,12 +323,18 @@ const handleBatchToggle = () => {
   }
 
   &--group {
+    border-left: 3px solid var(--tjg-color-primary-500);
+    padding-left: 9px;
+
     .n-avatar {
       border: 2px solid var(--tjg-color-primary-500);
     }
   }
 
   &--dm {
+    border-left: 3px solid var(--tjg-color-info-500);
+    padding-left: 9px;
+
     .n-avatar {
       border: 2px solid var(--tjg-color-info-500);
 
@@ -342,6 +348,9 @@ const handleBatchToggle = () => {
   }
 
   &--space {
+    border-left: 3px solid var(--tjg-color-warning-500);
+    padding-left: 9px;
+
     .n-avatar {
       border: 2px solid var(--tjg-color-warning-500);
     }

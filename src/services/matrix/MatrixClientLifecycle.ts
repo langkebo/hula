@@ -200,6 +200,10 @@ export class MatrixClientLifecycle {
       eventRouter.setup(client, syncManager)
       await client.startClient(startOpts)
 
+      // VoIP 服务初始化：注册 Call.incoming / Call.hangup / Call.replaced 监听器
+      const { matrixVoIPService } = await import('./media/MatrixVoIPService')
+      await matrixVoIPService.initialize()
+
       logger.info('客户端启动成功')
     } catch (err) {
       connectionManager.updateConnectionState('ERROR')

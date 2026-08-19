@@ -61,10 +61,25 @@ class MatrixSessionService extends BaseMatrixService {
       const dmRooms = await matrixDirectMessageService.getDMRooms(false)
       const dmRoomMap = new Map(dmRooms.map((roomInfo) => [roomInfo.roomId, roomInfo]))
 
-      return client.getRooms().map((room) => {
+      const sessions = client.getRooms().map((room) => {
         const dmRoomInfo = dmRoomMap.get(room.roomId) ?? null
         return this.buildSessionFromRoom(room, dmRoomInfo)
       })
+
+      // 防御性去重：按 counterpart 用户去重，保留最新活跃的
+      const seen = new Map<string, SessionInfo>()
+      for (const session of sessions) {
+        if (session.type !== RoomTypeEnum.SINGLE) {
+          seen.set(session.roomId, session)
+          continue
+        }
+        const counterpartId = session.detailId || session.roomId
+        const existing = seen.get(counterpartId)
+        if (!existing || session.activeTime > existing.activeTime) {
+          seen.set(counterpartId, session)
+        }
+      }
+      return Array.from(seen.values())
     } catch (err) {
       logger.error(`[MatrixSession] 获取会话列表失败: ${err}`)
       return []
@@ -149,29 +164,84 @@ class MatrixSessionService extends BaseMatrixService {
 
   private async getDirectSessionDetail(userId: string): Promise<SessionDetail | null> {
     const client = this.getClient()
-    const existingRoomId = await matrixDirectMessageService.getDmForUser(userId, false)
-    const roomId = existingRoomId ?? (await matrixDirectMessageService.createDm(userId))
-    const room = (await this.waitForRoomAvailable(roomId)) ?? client.getRoom(roomId)
 
-    if (room) {
-      const dmRoomInfo = await matrixDirectMessageService.getDmRoomInfo(roomId, false)
-      return this.buildSessionFromRoom(room, dmRoomInfo)
+    // 1) 优先从本地已同步的房间中按"对方成员"直接定位 DM 房间。
+    //    这样即使 DirectMessageManager 扩展尚未加载、或 m.direct 映射未同步，
+    //    也能正确跳转到已存在的私聊，避免"进入聊天/加密聊天"按钮点击无反应。
+    const localRoom = this.findLocalDirectRoom(userId)
+    if (localRoom) {
+      const dmRoomInfo = await matrixDirectMessageService.getDmRoomInfo(localRoom.roomId, false)
+      return this.buildSessionFromRoom(localRoom, dmRoomInfo)
     }
 
-    return {
-      roomId,
-      name: userId,
-      avatar: '',
-      type: RoomTypeEnum.SINGLE,
-      unreadCount: 0,
-      activeTime: 0,
-      top: false,
-      shield: false,
-      muteNotification: NotificationTypeEnum.RECEPTION,
-      detailId: userId,
-      account: userId,
-      id: userId
+    // 2) 走 DM 管理器查找/创建（需要 manager 就绪）
+    try {
+      const existingRoomId = await matrixDirectMessageService.getDmForUser(userId, false)
+      const roomId = existingRoomId ?? (await matrixDirectMessageService.createDm(userId))
+      const room = (await this.waitForRoomAvailable(roomId)) ?? client.getRoom(roomId)
+
+      if (room) {
+        const dmRoomInfo = await matrixDirectMessageService.getDmRoomInfo(roomId, false)
+        return this.buildSessionFromRoom(room, dmRoomInfo)
+      }
+
+      return {
+        roomId,
+        name: userId,
+        avatar: '',
+        type: RoomTypeEnum.SINGLE,
+        unreadCount: 0,
+        activeTime: 0,
+        top: false,
+        shield: false,
+        muteNotification: NotificationTypeEnum.RECEPTION,
+        detailId: userId,
+        account: userId,
+        id: userId
+      }
+    } catch (err) {
+      // 3) 兜底：manager 未就绪导致创建失败时，再次尝试本地定位，
+      //    尽可能让按钮仍能在已有会话上跳转，而不是静默失败。
+      logger.warn(`[MatrixSession] DM 管理器不可用，尝试本地兜底定位: ${err}`)
+      const fallback = this.findLocalDirectRoom(userId)
+      if (fallback) {
+        const dmRoomInfo = await matrixDirectMessageService.getDmRoomInfo(fallback.roomId, false)
+        return this.buildSessionFromRoom(fallback, dmRoomInfo)
+      }
+      logger.error(`[MatrixSession] 获取会话详情失败: ${err}`)
+      return null
     }
+  }
+
+  /**
+   * 从本地已同步的房间列表中查找与目标用户的一对一私聊房间。
+   * 用于不依赖 DirectMessageManager / m.direct 映射即可跳转到已有会话。
+   */
+  private findLocalDirectRoom(userId: string): Room | null {
+    const client = this.getClient()
+    const selfId = client.getUserId() ?? undefined
+    if (!selfId) {
+      return null
+    }
+    for (const room of client.getRooms() ?? []) {
+      try {
+        if (room.isSpaceRoom?.()) {
+          continue
+        }
+        const memberCount = typeof room.getJoinedMemberCount === 'function' ? room.getJoinedMemberCount() : 0
+        if (memberCount !== 2) {
+          continue
+        }
+        const members = room.getJoinedMembers?.() ?? []
+        const other = members.find((m) => m.userId !== selfId)
+        if (other && other.userId === userId) {
+          return room
+        }
+      } catch {
+        // 单个房间解析失败不影响其它房间
+      }
+    }
+    return null
   }
 
   private async waitForRoomAvailable(roomId: string): Promise<Room | null> {
@@ -198,7 +268,19 @@ class MatrixSessionService extends BaseMatrixService {
     room: Room,
     dmRoomInfo: { invitees?: string[]; inviter?: string; roomId?: string } | null
   ): SessionDetail {
-    const detailId = dmRoomInfo?.invitees?.[0] || dmRoomInfo?.inviter
+    // 优先用 m.direct 映射的对方身份；若房间未注册进 m.direct（历史/重复创建的 DM 房间常见），
+    // 则从房间成员中解析"除自己外的另一名成员"作为 counterpart，确保 detailId 始终填充，
+    // 否则下游按 detailId 的去重会退回 roomId，导致同一联系人的多个 DM 房间在消息列表重复出现。
+    const selfId = this.getClient().getUserId() || undefined
+    const otherMember = (() => {
+      try {
+        const members = room.getJoinedMembers?.() ?? []
+        return members.find((m) => m.userId !== selfId)?.userId
+      } catch {
+        return undefined
+      }
+    })()
+    const detailId = dmRoomInfo?.invitees?.[0] || dmRoomInfo?.inviter || otherMember
     const isSingle =
       !!detailId || (typeof room.getJoinedMemberCount === 'function' ? room.getJoinedMemberCount() === 2 : false)
     const notificationSettings = this.getRoomNotificationSettings(room)

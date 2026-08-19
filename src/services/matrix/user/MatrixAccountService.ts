@@ -60,7 +60,7 @@ class MatrixAccountService extends BaseMatrixService {
 
   async changePassword(oldPassword: string, newPassword: string, logoutDevices: boolean = false): Promise<boolean> {
     const client = this.getClient()
-    logger.warn(`[MatrixAccount] changePassword() 开始: logoutDevices=${logoutDevices}`)
+    logger.debug(`[MatrixAccount] changePassword() 开始: logoutDevices=${logoutDevices}`)
 
     try {
       const userId = client.getUserId()
@@ -68,7 +68,7 @@ class MatrixAccountService extends BaseMatrixService {
         logger.error('[MatrixAccount] changePassword() 失败: 无法获取 userId')
         throw new Error(this.t('matrix_error.account.cannot_get_user_id'))
       }
-      logger.warn(`[MatrixAccount] changePassword() userId=${userId}, 调用 client.setPassword()`)
+      logger.debug(`[MatrixAccount] changePassword() userId=${userId}, 调用 client.setPassword()`)
 
       const authData: Parameters<typeof client.setPassword>[0] = {
         type: 'm.login.password',
@@ -80,7 +80,7 @@ class MatrixAccountService extends BaseMatrixService {
       }
 
       await client.setPassword(authData, newPassword, logoutDevices)
-      logger.warn('[MatrixAccount] changePassword() 成功')
+      logger.info('[MatrixAccount] changePassword() 成功')
       return true
     } catch (err) {
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
@@ -90,9 +90,9 @@ class MatrixAccountService extends BaseMatrixService {
   }
 
   private getDeviceMgr(): DeviceManager {
-    logger.warn('[MatrixAccount] getDeviceMgr() 开始获取 DeviceManager')
+    logger.debug('[MatrixAccount] getDeviceMgr() 开始获取 DeviceManager')
     const client = this.getClient() as unknown as MatrixClientExtended
-    logger.warn(
+    logger.debug(
       `[MatrixAccount] getDeviceMgr() client 已获取, getDeviceManager 方法存在: ${typeof client.getDeviceManager === 'function'}`
     )
     const deviceManager = client.getDeviceManager?.()
@@ -102,21 +102,21 @@ class MatrixAccountService extends BaseMatrixService {
       )
       throw new Error('DeviceManager is not available. SDK extensions may not be initialized.')
     }
-    logger.warn('[MatrixAccount] getDeviceMgr() DeviceManager 获取成功')
+    logger.debug('[MatrixAccount] getDeviceMgr() DeviceManager 获取成功')
     return deviceManager
   }
 
   async getDevices(): Promise<DeviceInfo[]> {
     const client = this.getClient()
-    logger.warn('[MatrixAccount] getDevices() 开始获取设备列表')
+    logger.debug('[MatrixAccount] getDevices() 开始获取设备列表')
 
     try {
       const deviceManager = this.getDeviceMgr()
-      logger.warn('[MatrixAccount] getDevices() 调用 deviceManager.getDevices()')
+      logger.debug('[MatrixAccount] getDevices() 调用 deviceManager.getDevices()')
       const response = await deviceManager.getDevices()
       const userId = client.getUserId()
       const devices = Array.isArray(response) ? response : []
-      logger.warn(`[MatrixAccount] getDevices() 成功: ${devices.length} 个设备, userId=${userId}`)
+      logger.info(`[MatrixAccount] getDevices() 成功: ${devices.length} 个设备, userId=${userId}`)
       const result = (devices as DeviceResponse[]).map((d) => ({
         deviceId: d.device_id,
         userId: userId,
@@ -125,7 +125,7 @@ class MatrixAccountService extends BaseMatrixService {
         lastSeenTs: d.last_seen_ts,
         lastSeenUserAgent: undefined
       }))
-      logger.warn(`[MatrixAccount] getDevices() 设备ID列表: ${result.map((d) => d.deviceId).join(', ') || '(空)'}`)
+      logger.debug(`[MatrixAccount] getDevices() 设备ID列表: ${result.map((d) => d.deviceId).join(', ') || '(空)'}`)
       return result
     } catch (err) {
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
@@ -139,7 +139,7 @@ class MatrixAccountService extends BaseMatrixService {
 
   async getDevice(deviceId: string): Promise<DeviceInfo> {
     const client = this.getClient()
-    logger.warn(`[MatrixAccount] getDevice() 开始获取设备: deviceId=${deviceId}`)
+    logger.debug(`[MatrixAccount] getDevice() 开始获取设备: deviceId=${deviceId}`)
 
     try {
       const deviceManager = this.getDeviceMgr()
@@ -149,7 +149,7 @@ class MatrixAccountService extends BaseMatrixService {
         throw new Error(`Device not found: ${deviceId}`)
       }
       const userId = client.getUserId()
-      logger.warn(`[MatrixAccount] getDevice() 成功: deviceId=${deviceId}, name=${response.display_name ?? '(未命名)'}`)
+      logger.info(`[MatrixAccount] getDevice() 成功: deviceId=${deviceId}, name=${response.display_name ?? '(未命名)'}`)
       return {
         deviceId: response.device_id,
         userId: userId,
@@ -166,11 +166,11 @@ class MatrixAccountService extends BaseMatrixService {
   }
 
   async setDeviceName(deviceId: string, displayName: string): Promise<boolean> {
-    logger.warn(`[MatrixAccount] setDeviceName() 开始: deviceId=${deviceId}, displayName=${displayName}`)
+    logger.debug(`[MatrixAccount] setDeviceName() 开始: deviceId=${deviceId}, displayName=${displayName}`)
     try {
       const deviceManager = this.getDeviceMgr()
       await deviceManager.updateDevice(deviceId, { display_name: displayName })
-      logger.warn(`[MatrixAccount] setDeviceName() 成功: deviceId=${deviceId}`)
+      logger.info(`[MatrixAccount] setDeviceName() 成功: deviceId=${deviceId}`)
       return true
     } catch (err) {
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
@@ -180,11 +180,11 @@ class MatrixAccountService extends BaseMatrixService {
   }
 
   async deleteDevice(deviceId: string, authData?: AuthData): Promise<boolean> {
-    logger.warn(`[MatrixAccount] deleteDevice() 开始: deviceId=${deviceId}, hasAuth=${!!authData}`)
+    logger.debug(`[MatrixAccount] deleteDevice() 开始: deviceId=${deviceId}, hasAuth=${!!authData}`)
     try {
       const deviceManager = this.getDeviceMgr()
       await deviceManager.deleteDevice(deviceId, authData)
-      logger.warn(`[MatrixAccount] deleteDevice() 成功: deviceId=${deviceId}`)
+      logger.info(`[MatrixAccount] deleteDevice() 成功: deviceId=${deviceId}`)
       return true
     } catch (err) {
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
@@ -198,13 +198,13 @@ class MatrixAccountService extends BaseMatrixService {
   }
 
   async deleteDevices(deviceIds: string[], authData?: AuthData): Promise<boolean> {
-    logger.warn(
+    logger.debug(
       `[MatrixAccount] deleteDevices() 开始: count=${deviceIds.length}, ids=[${deviceIds.join(', ')}], hasAuth=${!!authData}`
     )
     try {
       const deviceManager = this.getDeviceMgr()
       await deviceManager.deleteDevices(deviceIds, authData)
-      logger.warn(`[MatrixAccount] deleteDevices() 成功: ${deviceIds.length} 个设备已删除`)
+      logger.info(`[MatrixAccount] deleteDevices() 成功: ${deviceIds.length} 个设备已删除`)
       return true
     } catch (err) {
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)

@@ -92,13 +92,10 @@ class SpaceService extends BaseMatrixService {
   async getSpace(spaceId: string): Promise<SpaceInfo | null> {
     try {
       const space = await this.getSpaceManager().getSpace(spaceId)
-      const info = sdkSpaceToSpaceInfo(space)
       const client = this.getClient()
-      const room = client.getRoom(spaceId)
-      if (room) {
-        info.memberCount = room.getJoinedMembers().length
-        info.childCount = getSpaceChildIds(room).length
-      } else {
+      const room = client.getRoom(spaceId) ?? undefined
+      const info = sdkSpaceToSpaceInfo(space, room)
+      if (!room) {
         try {
           const stats = await this.getSpaceManager().getSpaceStats(spaceId)
           info.memberCount = stats.memberCount

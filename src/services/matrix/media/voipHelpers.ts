@@ -7,15 +7,20 @@
 
 import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import type { CallStats, TurnServerConfig, VoIPCall, VoIPCallHandler } from './voipTypes'
+import type { CallStats, TurnServerConfig, VoIPCall } from './voipTypes'
 
 const logger = createLogger('VoIPHelpers')
 
-/** 根据 ID 获取通话实例
+/**
+ * 根据 ID 获取通话实例。
+ *
+ * SDK 的 CallEventHandler 挂在 client.callEventHandler（属性，非方法），
+ * 其 calls 字段是 Map<string, MatrixCall>。
+ * 此前代码误用 client.getCallHandler()（不存在），导致恒返回 undefined。
  */
 export function getCallById(callId: string, client: MatrixClient): VoIPCall | undefined {
-  const calls = (client as unknown as { getCallHandler?: () => VoIPCallHandler }).getCallHandler?.()?.calls || {}
-  return calls[callId]
+  const handler = (client as unknown as { callEventHandler?: { calls: Map<string, VoIPCall> } }).callEventHandler
+  return handler?.calls?.get(callId)
 }
 
 /** 从 PeerConnection 获取通话统计信息
@@ -143,7 +148,7 @@ export async function checkVoipAvailability(client: MatrixClient): Promise<{
 }> {
   const turnStatus = await checkTurnAvailability(client)
 
-  if (!client.voipHandler) {
+  if (!(client as unknown as { callEventHandler?: unknown }).callEventHandler) {
     return { voipAvailable: false, turnAvailable: turnStatus.available, message: 'VoIP 模块不可用' }
   }
 

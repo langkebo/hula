@@ -1,9 +1,11 @@
 import {
+  type ICreatePushRuleRequest,
   type IPusher,
   type IPusherRequest,
   type IPushRule,
   type IPushRules,
   type MatrixClient,
+  type PushRuleAction,
   PushRuleKind
 } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
@@ -203,7 +205,7 @@ class MatrixNotificationService extends BaseMatrixService {
   async initialize(): Promise<void> {
     try {
       const client = this.getNotificationClient()
-      const rules = await client.getPushRules()
+      const rules = await client.getPushManager().getPushRules()
       this.pushRules = this.flattenRules(rules)
       logger.info('[MatrixNotification] 初始化完成')
     } catch (err) {
@@ -215,7 +217,7 @@ class MatrixNotificationService extends BaseMatrixService {
   async setPushRule(rule: NotificationRule): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      await client.setPushRule('global', rule.kind as PushRuleKind, rule.ruleId, rule.actions)
+      await client.getPushManager().updatePushRule('global', rule.kind as PushRuleKind, rule.ruleId, { actions: rule.actions as PushRuleAction[] })
       logger.info(`[MatrixNotification] 设置推送规则成功: ${rule.ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
@@ -227,7 +229,7 @@ class MatrixNotificationService extends BaseMatrixService {
     const client = this.getNotificationClient()
     try {
       const resolvedKind = kind ?? (await this.findPushRuleKind(client, ruleId))
-      await client.deletePushRule('global', resolvedKind, ruleId)
+      await client.getPushManager().deletePushRule('global', resolvedKind, ruleId)
       logger.info(`[MatrixNotification] 删除推送规则成功: ${ruleId} (kind: ${resolvedKind})`)
     } catch (err) {
       logger.error(`[MatrixNotification] 删除推送规则失败: ${err}`)
@@ -237,7 +239,7 @@ class MatrixNotificationService extends BaseMatrixService {
 
   private async findPushRuleKind(client: MatrixClient, ruleId: string): Promise<PushRuleKind> {
     try {
-      const rules = await client.getPushRules()
+      const rules = await client.getPushManager().getPushRules()
       const kinds: PushRuleKind[] = [
         PushRuleKind.Override,
         PushRuleKind.ContentSpecific,
@@ -262,7 +264,7 @@ class MatrixNotificationService extends BaseMatrixService {
   async setPusher(pusher: IPusherRequest): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      await client.setPusher(pusher)
+      await client.getPushManager().setPusher(pusher)
       logger.info('[MatrixNotification] 设置 pusher 成功')
     } catch (err) {
       logger.error(`[MatrixNotification] 设置 pusher 失败: ${err}`)
@@ -440,7 +442,7 @@ class MatrixNotificationService extends BaseMatrixService {
   async fetchPushRules(): Promise<IPushRules> {
     const client = this.getNotificationClient()
     try {
-      return await client.getPushRules()
+      return await client.getPushManager().getPushRules()
     } catch (err) {
       logger.error(`[MatrixNotification] 获取推送规则失败: ${err}`)
       throw err
@@ -448,12 +450,12 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 设置推送规则 (使用 SDK 高层方法 client.addPushRule)
+   * 设置推送规则 (使用 SDK PushManager.createPushRule)
    */
   async setPushRuleByScope(scope: string, kind: string, ruleId: string, body: Record<string, unknown>): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      await client.addPushRule(scope, kind as PushRuleKind, ruleId, body)
+      await client.getPushManager().createPushRule(scope, kind as PushRuleKind, ruleId, body as unknown as ICreatePushRuleRequest)
       logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
@@ -462,12 +464,12 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 删除推送规则 (使用 SDK 高层方法)
+   * 删除推送规则 (使用 SDK PushManager.deletePushRule)
    */
   async deletePushRuleByScope(scope: string, kind: string, ruleId: string): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      await client.deletePushRule(scope, kind as PushRuleKind, ruleId)
+      await client.getPushManager().deletePushRule(scope, kind as PushRuleKind, ruleId)
       logger.info(`[MatrixNotification] 删除推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 删除推送规则失败: ${err}`)
@@ -482,8 +484,8 @@ class MatrixNotificationService extends BaseMatrixService {
   async fetchPushers(): Promise<IPusher[]> {
     const client = this.getNotificationClient()
     try {
-      const result = await client.getPushers()
-      return result.pushers ?? []
+      const result = await client.getPushManager().getPushers()
+      return result as unknown as IPusher[]
     } catch (err) {
       logger.error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
       throw err
@@ -507,7 +509,7 @@ class MatrixNotificationService extends BaseMatrixService {
 
     const client = this.getNotificationClient()
     try {
-      await client.setPusher(pusher as unknown as IPusherRequest)
+      await client.getPushManager().setPusher(pusher as unknown as IPusherRequest)
       logger.info('[MatrixNotification] 设置推送设备成功')
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送设备失败: ${err}`)

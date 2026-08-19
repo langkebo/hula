@@ -26,13 +26,21 @@ const logger = createLogger('MatrixVoIP')
 class MatrixVoIPService extends BaseMatrixService {
   private calls: Map<string, CallInfo> = new Map()
   private callHandlers: Map<string, Set<(call: CallInfo) => void>> = new Map()
-  private localStream: MediaStream | null = null
+  private incomingCallCallback: ((callInfo: CallInfo) => void) | null = null
   private screenStream: MediaStream | null = null
+  // v40：本地/远端媒体流由 SDK 在 placeCall/answer 之后通过 feeds_changed 事件下发，
+  // 服务层不再自行 getUserMedia 持有流，避免与 SDK 内部采集重复竞争摄像头/麦克风。
+  private callMediaState: Map<string, { audioMuted: boolean; videoMuted: boolean }> = new Map()
   private observedClient: MatrixClient | null = null
   private readonly incomingCallListener = (call: VoIPCall) => this.handleIncomingCall(call)
   private readonly hangupCallListener = (call: VoIPCall) => this.handleCallHangup(call)
   private readonly replacedCallListener = (newCall: VoIPCall, oldCall: VoIPCall) =>
     this.handleCallReplaced(newCall, oldCall)
+
+  /** 注册来电回调：收到 Call.incoming 时通知 UI 层创建来电窗口 */
+  setIncomingCallCallback(callback: (callInfo: CallInfo) => void): void {
+    this.incomingCallCallback = callback
+  }
 
   // ── 初始化 ──
 
@@ -52,7 +60,7 @@ class MatrixVoIPService extends BaseMatrixService {
         this.observedClient = null
       }
 
-      if (client.voipHandler) {
+      if ((client as unknown as { callEventHandler?: unknown }).callEventHandler) {
         if (this.observedClient === client) return
         this.setupCallHandlers(client)
         this.observedClient = client
@@ -80,8 +88,8 @@ class MatrixVoIPService extends BaseMatrixService {
   private resetRuntimeState(): void {
     this.calls.clear()
     this.callHandlers.clear()
-    this.localStream?.getTracks().forEach((t) => t.stop())
-    this.localStream = null
+    this.callMediaState.clear()
+    // screenStream 是服务层通过 getDisplayMedia 持有的共享屏幕流，需自行释放。
     this.screenStream?.getTracks().forEach((t) => t.stop())
     this.screenStream = null
   }
@@ -90,15 +98,33 @@ class MatrixVoIPService extends BaseMatrixService {
 
   private handleIncomingCall(call: VoIPCall): void {
     logger.info(`[VoIP] 收到来电: ${call.callId}`)
-    this.calls.set(call.callId, {
+    // SDK MatrixCall 有 getOpponentMember() 方法，提取来电者信息
+    const sdkCall = call as VoIPCall & { getOpponentMember?: () => { userId?: string; name?: string } | undefined }
+    const opponentMember = sdkCall.getOpponentMember?.()
+    const callerUserId = opponentMember?.userId ?? ''
+
+    const callInfo: CallInfo = {
       callId: call.callId,
       roomId: call.roomId,
       isVideo: call.isVideo || false,
       isGroup: false,
       state: 'ringing',
-      participants: []
-    })
+      participants: callerUserId
+        ? [
+            {
+              userId: callerUserId,
+              displayName: opponentMember?.name,
+              isMuted: false,
+              isVideoMuted: false,
+              isSpeaking: false
+            }
+          ]
+        : []
+    }
+    this.calls.set(call.callId, callInfo)
     this.notifyCallUpdate(call.callId)
+    // 通知 UI 层创建来电窗口
+    this.incomingCallCallback?.(callInfo)
   }
 
   private handleCallHangup(call: VoIPCall): void {
@@ -122,7 +148,6 @@ class MatrixVoIPService extends BaseMatrixService {
   async startCall(roomId: string, options: CallOptions): Promise<string> {
     const client = this.getClient()
     try {
-      this.localStream = await navigator.mediaDevices.getUserMedia({ audio: options.audio, video: options.video })
       const call = client.createCall(roomId, undefined, { audio: options.audio, video: options.video })
       if (!call) throw new Error(this.t('matrix_error.media.voip_call_creation_failed'))
 
@@ -133,11 +158,13 @@ class MatrixVoIPService extends BaseMatrixService {
         isVideo: options.video,
         isGroup: false,
         state: 'connecting',
-        localStream: this.localStream,
         participants: []
       })
+      this.callMediaState.set(callId, { audioMuted: false, videoMuted: false })
       this.setupCallEventHandlers(call, callId)
-      await call.placeCall(this.localStream, options.video)
+      // v40：placeCall(audio, video) 内部按布尔自行 getUserMedia 采集本地媒体并发起邀请；
+      // 切勿传入 MediaStream（旧 API 写法），否则 SDK 会把流对象当作 audio 布尔使用。
+      await call.placeCall(options.audio, options.video)
       logger.info(`[VoIP] 发起通话: ${callId}`)
       return callId
     } catch (err) {
@@ -149,17 +176,17 @@ class MatrixVoIPService extends BaseMatrixService {
   async answerCall(callId: string, options: CallOptions = { audio: true, video: false }): Promise<void> {
     const client = this.getClient()
     try {
-      this.localStream = await navigator.mediaDevices.getUserMedia({ audio: options.audio, video: options.video })
       const call = getCallById(callId, client)
       if (!call) throw new Error(this.t('matrix_error.media.voip_call_not_found', { callId }))
 
       const callInfo = this.calls.get(callId)
       if (callInfo) {
-        callInfo.localStream = this.localStream
         callInfo.state = 'connecting'
         this.notifyCallUpdate(callId)
       }
-      await call.answer(this.localStream, options.video)
+      this.callMediaState.set(callId, { audioMuted: false, videoMuted: false })
+      // v40：answer(audio, video) 内部自行采集本地媒体；勿传 MediaStream。
+      await call.answer(options.audio, options.video)
       logger.info(`[VoIP] 接听通话: ${callId}`)
     } catch (err) {
       logger.error(`[VoIP] 接听通话失败: ${err}`)
@@ -220,11 +247,16 @@ class MatrixVoIPService extends BaseMatrixService {
     const callInfo = this.calls.get(callId)
     if (!callInfo) return
 
+    // v40：feeds 同时包含本地与远端；按 isLocal() 区分，分别组装本地预览流与远端流。
+    const localStream = new MediaStream()
     const remoteStream = new MediaStream()
     for (const feed of feeds) {
-      feed.stream?.getTracks().forEach((track: MediaStreamTrack) => remoteStream.addTrack(track))
+      const isLocal = typeof feed.isLocal === 'function' ? feed.isLocal() : Boolean(feed.isLocal)
+      const target = isLocal ? localStream : remoteStream
+      feed.stream?.getTracks().forEach((track: MediaStreamTrack) => target.addTrack(track))
     }
-    callInfo.remoteStream = remoteStream
+    if (localStream.getTracks().length > 0) callInfo.localStream = localStream
+    if (remoteStream.getTracks().length > 0) callInfo.remoteStream = remoteStream
     this.notifyCallUpdate(callId)
   }
 
@@ -234,35 +266,37 @@ class MatrixVoIPService extends BaseMatrixService {
       callInfo.state = 'ended'
       this.notifyCallUpdate(callId)
     }
-    this.localStream?.getTracks().forEach((t) => t.stop())
-    this.localStream = null
-    this.screenStream?.getTracks().forEach((t) => t.stop())
-    this.screenStream = null
+    // 本地/远端 MediaStream 由 SDK 拥有，挂断时 SDK 自行释放，这里不应 stop 其轨道。
+    this.callMediaState.delete(callId)
     this.calls.delete(callId)
   }
 
   // ── 媒体控制 ──
 
   async toggleMute(callId: string): Promise<boolean> {
-    if (!this.localStream) return false
-    const audioTrack = this.localStream.getAudioTracks()[0]
-    if (audioTrack) {
-      audioTrack.enabled = !audioTrack.enabled
-      logger.info(`[VoIP] ${audioTrack.enabled ? '取消静音' : '静音'}: ${callId}`)
-      return !audioTrack.enabled
-    }
-    return false
+    const call = getCallById(callId, this.getClient())
+    if (!call) return false
+    const state = this.callMediaState.get(callId) ?? { audioMuted: false, videoMuted: false }
+    const next = !state.audioMuted
+    // v40：静音通过 SDK 的 setMicrophoneMuted 作用在真实发送轨道上，而非本地预览轨道。
+    await call.setMicrophoneMuted(next)
+    state.audioMuted = next
+    this.callMediaState.set(callId, state)
+    logger.info(`[VoIP] ${next ? '静音' : '取消静音'}: ${callId}`)
+    return next
   }
 
   async toggleVideo(callId: string): Promise<boolean> {
-    if (!this.localStream) return false
-    const videoTrack = this.localStream.getVideoTracks()[0]
-    if (videoTrack) {
-      videoTrack.enabled = !videoTrack.enabled
-      logger.info(`[VoIP] ${videoTrack.enabled ? '开启视频' : '关闭视频'}: ${callId}`)
-      return !videoTrack.enabled
-    }
-    return false
+    const call = getCallById(callId, this.getClient())
+    if (!call) return false
+    const state = this.callMediaState.get(callId) ?? { audioMuted: false, videoMuted: false }
+    const next = !state.videoMuted
+    // v40：通过 SDK 的 setLocalVideoMuted 作用在真实发送轨道上。
+    await call.setLocalVideoMuted(next)
+    state.videoMuted = next
+    this.callMediaState.set(callId, state)
+    logger.info(`[VoIP] ${next ? '开启视频' : '关闭视频'}: ${callId}`)
+    return next
   }
 
   async startScreenshare(callId: string): Promise<void> {

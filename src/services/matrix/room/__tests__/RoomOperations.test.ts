@@ -161,16 +161,20 @@ describe('RoomOperations', () => {
   describe('setPushRule', () => {
     it('enabled=true deletes override push rule', async () => {
       const deletePushRule = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ deletePushRule, addPushRule: vi.fn() } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getPushManager: vi.fn().mockReturnValue({ deletePushRule, createPushRule: vi.fn() })
+      } as never)
       await ops.setPushRule('!r', true)
       expect(deletePushRule).toHaveBeenCalledWith('global', 'override', '!r')
     })
 
     it('enabled=false installs an empty-actions override rule', async () => {
-      const addPushRule = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ deletePushRule: vi.fn(), addPushRule } as never)
+      const createPushRule = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getPushManager: vi.fn().mockReturnValue({ deletePushRule: vi.fn(), createPushRule })
+      } as never)
       await ops.setPushRule('!r', false)
-      expect(addPushRule).toHaveBeenCalledWith('global', 'override', '!r', {
+      expect(createPushRule).toHaveBeenCalledWith('global', 'override', '!r', {
         conditions: [{ kind: 'event_match', key: 'room_id', pattern: '!r' }],
         actions: []
       })

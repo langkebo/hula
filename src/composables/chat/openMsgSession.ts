@@ -53,24 +53,29 @@ async function focusSessionRoom(roomId: string) {
   globalStore.updateCurrentSessionRoomId(roomId)
 
   // 跳转条件：当前不在 /message 路由时跳转
+  // 直接导航到 /message/:roomId，避免两步导航导致的中间状态问题
   // Tauri 环境下检查窗口 label：仅在 'message' 独立聊天窗口中不重复跳转
   // 其他窗口（home、contact、friend 等）都应跳转到 /message
   const currentPath = router.currentRoute.value.path
+  const targetRoute = { name: 'message', params: { roomId } }
   if (currentPath !== '/message') {
     if (hasTauriRuntime()) {
       try {
         const label = WebviewWindow.getCurrent().label
         // 'message' 窗口本身就是聊天窗口，无需跳转；其他窗口都需要跳转
         if (label !== 'message') {
-          await router.push('/message')
+          await router.push(targetRoute)
         }
       } catch {
         // WebviewWindow.getCurrent() 失败时也跳转
-        await router.push('/message')
+        await router.push(targetRoute)
       }
     } else {
-      await router.push('/message')
+      await router.push(targetRoute)
     }
+  } else if (router.currentRoute.value.params.roomId !== roomId) {
+    // 已在 /message 但 roomId 不同，更新路由参数
+    await router.push(targetRoute)
   }
 
   // 阶段 2：路由驱动后，跳转到 /message 自动隐藏右侧栏详情视图，

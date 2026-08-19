@@ -119,10 +119,6 @@ declare module 'matrix-js-sdk' {
     [key: string]: unknown
   }
 
-  export interface VoIPHandler {
-    calls: Record<string, MatrixCall>
-  }
-
   export interface IMemberEvent {
     membership?: string
     avatar_url?: string
@@ -176,8 +172,8 @@ declare module 'matrix-js-sdk' {
     loginFlows(): Promise<{ flows: Array<{ type: string }> }>
     getSsoLoginUrl(redirectUrl: string, deviceName?: string, identityProviderId?: string): string
     getSsoLoginUrl(redirectUrl: string, deviceName?: string, idpId?: string): string
-    voipHandler?: VoIPHandler
-    getCallHandler(): VoIPHandler | undefined
+    // SDK 已声明 callEventHandler?: CallEventHandler（client.d.ts:354），
+    // 此处不再重复声明 voipHandler / getCallHandler（SDK 中不存在，是幻影声明）。
     createCall(roomId: string, threadId?: string, opts?: { audio: boolean; video: boolean }): MatrixCall | null
     isCryptoEnabled(): boolean
     getCrypto(): CryptoApi | null
@@ -309,18 +305,6 @@ declare module 'matrix-js-sdk' {
       allowRedirects?: boolean,
       useAuthentication?: boolean
     ): string | null
-    getPushRules(): Promise<IPushRules>
-    setPushRule(
-      scope: string,
-      kind: PushRuleKind,
-      ruleId: string,
-      actions: unknown[],
-      conditions?: IPushRuleCondition[],
-      pattern?: string
-    ): Promise<void>
-    deletePushRule(scope: string, kind: PushRuleKind, ruleId: string): Promise<void>
-    addPushRule(scope: string, kind: PushRuleKind, ruleId: string, body: Record<string, unknown>): Promise<void>
-    setPusher(pusher: IPusherRequest): Promise<void>
     setPresence(presence: string, opts?: Record<string, unknown>): Promise<void>
     setPresence(opts: { presence: string; status_msg?: string }): Promise<void>
     getPresence(userId: string): Promise<{ presence: string; last_active_ago?: number; status_msg?: string }>

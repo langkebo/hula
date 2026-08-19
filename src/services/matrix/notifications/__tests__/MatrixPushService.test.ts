@@ -9,6 +9,7 @@ describe('MatrixPushService', () => {
     getPushers: ReturnType<typeof vi.fn>
     setPusher: ReturnType<typeof vi.fn>
     removePusher: ReturnType<typeof vi.fn>
+    getPushRules: ReturnType<typeof vi.fn>
     setPushRuleEnabled: ReturnType<typeof vi.fn>
     setPushRuleActions: ReturnType<typeof vi.fn>
     createPushRule: ReturnType<typeof vi.fn>
@@ -25,6 +26,9 @@ describe('MatrixPushService', () => {
       getPushers: vi.fn().mockResolvedValue([]),
       setPusher: vi.fn().mockResolvedValue(undefined),
       removePusher: vi.fn().mockResolvedValue(undefined),
+      getPushRules: vi.fn().mockResolvedValue({
+        global: { room: [{ rule_id: '!room:server', enabled: true }] }
+      }),
       setPushRuleEnabled: vi.fn().mockResolvedValue(undefined),
       setPushRuleActions: vi.fn().mockResolvedValue(undefined),
       createPushRule: vi.fn().mockResolvedValue(undefined),
@@ -33,11 +37,9 @@ describe('MatrixPushService', () => {
       unmuteRoom: vi.fn().mockResolvedValue(undefined)
     }
     // 故意不提供 http.authedRequest —— 服务已改为直接调用 getPushManager()，不再依赖 HTTP 兜底
+    // getPushRules 由 PushManager 提供（client.getPushManager().getPushRules()），不放在 client 上
     vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue({
       getPushManager: () => mockPushManager,
-      getPushRules: vi.fn().mockResolvedValue({
-        global: { room: [{ rule_id: '!room:server', enabled: true }] }
-      }),
       getDeviceId: () => 'TEST_DEVICE_ID'
     })
   })
@@ -134,11 +136,7 @@ describe('MatrixPushService', () => {
 
     // FT-124: getPushRules 失败时应抛出错误，不能静默返回 false（掩盖鉴权失败/网络错误）
     it('getPushRules 失败时抛出错误而非静默返回 false (FT-124)', async () => {
-      vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue({
-        getPushManager: () => mockPushManager,
-        getPushRules: vi.fn().mockRejectedValue(new Error('HTTP 401')),
-        getDeviceId: () => 'TEST_DEVICE_ID'
-      })
+      mockPushManager.getPushRules.mockRejectedValue(new Error('HTTP 401'))
 
       await expect(matrixPushService.isRoomMuted('!room:server')).rejects.toThrow('HTTP 401')
     })

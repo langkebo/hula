@@ -20,6 +20,14 @@
 - **pnpm overrides 纪律**：caret 钉同主版本，`>=` 会解析到最新大版本
 - **icon.js 是压缩单行 sprite**：新增图标用 python 脚本定位 `<svg>` 标记插入（手动 Edit 易破坏）；sprite 坐标系 48×48，原型 24×24 path 需缩放 2 倍
 - **设置 tab 真实来源**：`settingsSchema.ts` 的 `SETTINGS_TABS` 定义，不是 desktop.ts 路由 redirect 列表（后者不完整）
+- **SDK VoIP 属性名**：matrix-js-sdk v40.2.0 中是 `client.callEventHandler`（属性，非方法），其 `calls` 是 `Map<string, MatrixCall>`。不存在 `voipHandler` / `getCallHandler()`（曾是幻影声明）。`createCall(roomId)` 只接受 roomId
+- **SDK PushManager 属性**：`client.getPushManager()` 返回 PushManager，`getPushRules()` 是 PushManager 的方法（不是 client 的）
+- **❗ 致命陷阱：SFC 默认导出严禁 `import type`**：写 `import type X from './Foo.vue'` 时 TS 类型对（vue-loader 把 SFC 当 default object 给类型），但**运行时 X === undefined** → 模板 `<X ref="r" />` 降级成未知 HTML 自定义元素，**Vue 功能全失效**（ref 是 HTMLUnknownElement、无事件、无生命周期、无 ErrorCaptured、Object.keys()===[]）。诊断信号：DOM 看到 tagName 小写化（如 `<settingscontent>`）+ `wrapper.element.constructor.name === 'HTMLUnknownElement'` + `wrapper.classes()/attributes()` 全空。正确写法：去掉 `type` 关键字 `import X from './Foo.vue'`；确实只要类型时用 `ref<InstanceType<typeof import('./Foo.vue')>>`。
+- **❗ 致命陷阱：共享 partial 的裸全局类名经 `@use` 泄漏（比 scoped 塌缩更隐蔽）**：`src/layout/left/style.scss` 曾用裸 `.setting-item` 写 `@include menu-item-style(absolute)`（mixin 在 `src/styles/scss/global/variable.scss:112`，展开 `position:absolute; width:fit-content; background; border-radius; box-shadow; z-index:999; white-space:nowrap; overflow:hidden; display:flex; flex-direction:column`）。`style.scss` 只被 `index.vue`/`LeftAvatar.vue`/`ActionList.vue` 的 `<style scoped>` 用 `@use` 引入——但本项目构建下 `@use` 进 scoped 的**外部 partial 未被加 scope 属性**，被 emit 成**全局规则**，泄漏污染设置窗（`src/views/settingsWindow/tabs/**`）与 `ChatHeaderSidebar.vue` 的 `.setting-item` → 全变成白色小卡飘浮、竖排塌缩、右侧控件被 `overflow:hidden` 裁掉。
+  - **前人的半成品修复**（易被误认"已解决"）：`ActionList.vue` 早就有 `.setting-item { position:static; z-index:auto }`（`@use '../style'` 在自身 scoped 块内，自带 `data-v-actionlist` 不泄漏，只护住左导航"更多"菜单 popover），但**没覆盖设置窗**——这就是为什么"看起来解决过其实没解决"。
+  - **✅ 正确根因修复（2026-08-18）**：把 `.setting-item` 规则从共享 `style.scss` **搬进 `ActionList.vue` 自己的 `<style scoped>`**（显式 `@use '@/styles/scss/global/variable.scss' as *` + `@include menu-item-style(absolute)/menu-list()` + `position:static`），并**删除 `style.scss` 中的裸 `.setting-item`**。这样全局泄漏消失，设置窗/ChatHeader 的 `.setting-item` 只受各自 scoped 样式控制。删除后原 design-tokens.css 的 `!important` 兜底补丁一并移除。
+  - **排查口诀**：出现"飘浮小卡/竖排塌缩"→ `grep -rn "^\.类名" src/` 找全局裸选择器 → 看其 `@include` 的 mixin 展开 → 确认是否被 `@use` 进 scoped 却泄漏 → 把规则移进真正需要它的那个组件的 scoped 块，而非在全局 css 里用 `!important` 反打。
+  - **铁证信号**：DOM 里 `.setting-item` 同时有 `position:absolute` + `width:fit-content` + `background` + `box-shadow` + `flex-direction:column`（mixin 展开全中）；受害组件 ref 正常（非 HTMLUnknownElement），排除 `import type` 陷阱。
 
 ## synapse-rust 要点
 - **两套配置树，只有 `docker/deploy/` 是活的**：改前先 `docker inspect` 确认挂载

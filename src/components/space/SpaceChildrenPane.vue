@@ -125,9 +125,24 @@ const isMember = computed(() => {
 })
 
 // 当前激活的空间对象（合并 SpaceInfo 与列表项信息，供 SpaceDetailsPane 展示）
+// 关键：计数（memberCount / childCount）与 name/topic 优先采用 useSpace 的 getSpace 结果
+// （已修复为基于已加载房间/服务端 stats 计算），而不是 spaces 列表项——列表项的计数常为 0/0，
+// 这正是"空间详情不展示"的根因：详情面板拿到的 memberCount/childCount 始终是 0。
 const activeSpaceItem = computed<SpaceListItem | null>(() => {
   if (!spaceId.value) return null
   const found = spaces.value.find((s) => s.spaceId === spaceId.value)
+  const detail = selectedSpaceDetail.value
+  if (detail) {
+    return {
+      spaceId: detail.spaceId,
+      name: detail.name || found?.name || '',
+      childCount: detail.childCount ?? found?.childCount ?? 0,
+      avatarUrl: detail.avatarUrl || found?.avatarUrl,
+      topic: detail.topic || found?.topic,
+      memberCount: detail.memberCount ?? found?.memberCount ?? 0,
+      isPinned: found ? roomStore.hasTag(found.spaceId, 'm.favourite') : false
+    }
+  }
   if (!found) return null
   return {
     spaceId: found.spaceId,

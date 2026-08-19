@@ -36,7 +36,7 @@ class MatrixPushService extends BaseMatrixService {
   async getPushRules(): Promise<IPushRules> {
     const client = this.getClient()
     try {
-      return await client.getPushRules()
+      return await client.getPushManager().getPushRules()
     } catch (err) {
       logger.error(`[MatrixPush] 获取 push rules 失败: ${err}`)
       throw err

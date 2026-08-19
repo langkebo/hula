@@ -88,6 +88,15 @@ export class AvatarUtils {
   }
 
   /**
+   * 为头像 URL 添加缓存破坏参数，用于强制浏览器重新加载图片
+   */
+  public static bustCache(url: string): string {
+    if (!url || url.startsWith('/avatar/') || url === AvatarUtils.DEFAULT) return url
+    const separator = url.includes('?') ? '&' : '?'
+    return `${url}${separator}_t=${Date.now()}`
+  }
+
+  /**
    * 从本地头像库中随机选取一个默认头像编号 (001-022)
    */
   public static getRandomDefaultAvatar(): string {

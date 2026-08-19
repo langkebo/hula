@@ -1,5 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import { Preset, Visibility } from 'matrix-js-sdk'
+import { ConditionKind, Preset, PushRuleActionName, PushRuleKind, TweakName, Visibility } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
@@ -163,10 +163,10 @@ export class RoomOperations extends BaseMatrixService {
     }
     const client = this.getClient()
     if (enabled) {
-      await client.deletePushRule('global', 'override', roomId)
+      await client.getPushManager().deletePushRule('global', PushRuleKind.Override, roomId)
     } else {
-      await client.addPushRule('global', 'override', roomId, {
-        conditions: [{ kind: 'event_match', key: 'room_id', pattern: roomId }],
+      await client.getPushManager().createPushRule('global', PushRuleKind.Override, roomId, {
+        conditions: [{ kind: ConditionKind.EventMatch, key: 'room_id', pattern: roomId }],
         actions: []
       })
     }
@@ -544,7 +544,7 @@ export class RoomOperations extends BaseMatrixService {
   async getNotificationLevel(roomId: string): Promise<'all' | 'mentions' | 'mute'> {
     const client = this.getClient()
     try {
-      const rules = await client.getPushRules()
+      const rules = await client.getPushManager().getPushRules()
       const overrideRules = rules?.global?.override ?? []
       const roomRule = overrideRules.find((r: { rule_id: string }) => r.rule_id === roomId)
       if (roomRule) {
@@ -563,14 +563,14 @@ export class RoomOperations extends BaseMatrixService {
     const client = this.getClient()
     // 先清除现有规则
     try {
-      await client.deletePushRule('global', 'override', roomId)
+      await client.getPushManager().deletePushRule('global', PushRuleKind.Override, roomId)
     } catch {
       // 规则不存在时忽略
     }
 
     if (level === 'mute') {
-      await client.addPushRule('global', 'override', roomId, {
-        conditions: [{ kind: 'event_match', key: 'room_id', pattern: roomId }],
+      await client.getPushManager().createPushRule('global', PushRuleKind.Override, roomId, {
+        conditions: [{ kind: ConditionKind.EventMatch, key: 'room_id', pattern: roomId }],
         actions: []
       })
     } else if (level === 'mentions') {
@@ -578,12 +578,12 @@ export class RoomOperations extends BaseMatrixService {
       const userId = client.getUserId()
       if (userId) {
         const localPart = userId.split(':')[0].replace('@', '')
-        await client.addPushRule('global', 'override', roomId, {
+        await client.getPushManager().createPushRule('global', PushRuleKind.Override, roomId, {
           conditions: [
-            { kind: 'event_match', key: 'room_id', pattern: roomId },
-            { kind: 'event_match', key: 'content.body', pattern: localPart }
+            { kind: ConditionKind.EventMatch, key: 'room_id', pattern: roomId },
+            { kind: ConditionKind.EventMatch, key: 'content.body', pattern: localPart }
           ],
-          actions: ['notify', { set_tweak: 'highlight', value: true }]
+          actions: [PushRuleActionName.Notify, { set_tweak: TweakName.Highlight, value: true }]
         })
       }
     }

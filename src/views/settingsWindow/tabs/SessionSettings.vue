@@ -31,11 +31,16 @@
             <div class="device-info">
               <Icon :icon="getDeviceIcon(device)" :width="24" />
               <div class="device-details">
-                <div class="device-name">{{ device.displayName || t('setting.sessions.unnamed_device') }}</div>
+                <div class="device-name">
+                  {{ device.displayName || t('setting.sessions.unnamed_device') }}
+                  <n-tag v-if="device.deviceId === currentDeviceId" size="tiny" type="success" :bordered="false">
+                    {{ t('setting.sessions.current') }}
+                  </n-tag>
+                </div>
                 <div class="device-meta">
                   <span v-if="device.lastSeenIp">IP: {{ device.lastSeenIp }}</span>
                   <span v-if="device.lastSeenTs">
-                    {{ t('setting.sessions.last_active') }}: {{ formatDate(device.lastSeenTs) }}
+                    {{ t('setting.sessions.last_active') }}: {{ formatRelativeTime(device.lastSeenTs) }}
                   </span>
                 </div>
               </div>
@@ -85,7 +90,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NEmpty, NForm, NFormItem, NInput, NModal, NSpin, useDialog } from 'naive-ui'
+import { NButton, NDivider, NEmpty, NForm, NFormItem, NInput, NModal, NSpin, NTag, useDialog } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -122,8 +127,25 @@ const currentDevice = computed(() => {
 })
 
 const otherDevices = computed(() => {
-  return devices.value.filter((d: DeviceInfo) => d.deviceId !== currentDeviceId.value)
+  return devices.value
+    .filter((d: DeviceInfo) => d.deviceId !== currentDeviceId.value)
+    .sort((a, b) => (b.lastSeenTs || 0) - (a.lastSeenTs || 0))
 })
+
+function formatRelativeTime(timestamp: number): string {
+  if (!timestamp) return t('setting.sessions.unknown')
+  const now = Date.now()
+  const diff = now - timestamp
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+
+  if (minutes < 1) return t('setting.sessions.just_now')
+  if (minutes < 60) return t('setting.sessions.minutes_ago', { count: minutes })
+  if (hours < 24) return t('setting.sessions.hours_ago', { count: hours })
+  if (days < 30) return t('setting.sessions.days_ago', { count: days })
+  return formatDate(timestamp)
+}
 
 onMounted(async () => {
   // 独立 WebView 窗口需要先恢复 MatrixClient 实例，否则 getClient() 返回 null
