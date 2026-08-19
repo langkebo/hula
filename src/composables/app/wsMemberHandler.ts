@@ -72,26 +72,36 @@ export function createMemberHandler(deps: MemberHandlerDeps) {
     groupStore.addUserItem(matrixMember, roomId)
   }
 
-  const handleSelfAdd = async (roomId: string) => {
-    logger.info('本人加入群聊，加载该群聊的会话数据')
+  const handleSelfAdd = async (userList: UserItem[], roomId: string) => {
+    // 本人通过 WS 加入房间：按成员数推导类型（2 人=单聊，其余=群聊），
+    // 单聊时用「除自己外的另一名成员」填充 detailId/account，保证下游 counterpart 去重生效，
+    // 避免同一联系人的 DM 在消息列表重复出现。
+    const isDm = userList.length === 2
+    const counterpartRaw = isDm ? userList.find((u) => !isSelfUser(u.uid))?.uid : undefined
+    const counterpart =
+      counterpartRaw ? normalizeMatrixUserId(counterpartRaw, userStore.userInfo?.uid) || counterpartRaw : undefined
+    logger.info('本人加入会话，加载会话数据', { roomId, isDm, counterpart })
     await sessionStore.addSession({
       roomId,
       name: roomId,
-      type: RoomTypeEnum.SINGLE,
+      type: isDm ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP,
+      ...(counterpart ? { detailId: counterpart, account: counterpart } : {}),
       unreadCount: 0,
       activeTime: Date.now()
     })
-    try {
-      await groupStore.getGroupUserList(roomId, true)
-    } catch (error) {
-      logger.error('初始化群成员失败:', error)
+    if (!isDm) {
+      try {
+        await groupStore.getGroupUserList(roomId, true)
+      } catch (error) {
+        logger.error('初始化群成员失败:', error)
+      }
     }
   }
 
   const handleMemberAdd = async (userList: UserItem[], roomId: string) => {
     for (const user of userList) {
       if (isSelfUser(user.uid)) {
-        await handleSelfAdd(roomId)
+        await handleSelfAdd(userList, roomId)
       } else {
         await handleOtherMemberAdd(user, roomId)
       }

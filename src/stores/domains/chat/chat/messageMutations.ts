@@ -4,6 +4,7 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useMitt } from '@/composables/common/useMitt'
 import { type MessageStatusEnum, MittEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
+import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
 import type { useGroupStore } from '@/stores/domains/chat/group'
 import type { useUserStore } from '@/stores/domains/user/user'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
@@ -210,11 +211,11 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
       try {
         const room = await matrixRoomQueryService.getRoom(msg.message.roomId, false)
         if (room) {
+          // 复用 convertRoomToSession：其会为 SINGLE 房间填充 detailId/account（对方 MXID），
+          // 保证下游按 counterpart 的会话去重（useSessionListState dmSeen）能正确合并同一联系人的
+          // 多个历史 DM 房间，避免消息列表出现重复成员。unreadCount/activeTime 按新会话语义覆盖。
           const newSession = {
-            roomId: room.roomId,
-            name: room.name || room.roomId,
-            avatar: room.getMxcAvatarUrl() || '',
-            type: room.getJoinedMemberCount() === 2 ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP,
+            ...matrixRoomRealtimeService.convertRoomToSession(room),
             unreadCount: 0,
             activeTime: Date.now()
           }
