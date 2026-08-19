@@ -33,7 +33,7 @@ export function useSessionEvents(options: UseSessionEventsOptions) {
     const roomId = payload?.roomId
     if (requireRoomIdForInvalidate && !roomId) return
 
-    void invalidateSessionCache(roomId)
+    void invalidateSessionCache()
   }
 
   const handleDeleteSessionEvent = (roomId: string) => {

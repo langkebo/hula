@@ -203,6 +203,15 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     return sortedMessageKeys[roomId].map((id) => messageMap[roomId][id]).filter(Boolean)
   })
 
+  // O(1) 末条消息读取：直接取排序后消息主键的最后一个 + messageMap 对应项，
+  // 不再为取「最后一条」重建整条消息数组。供会话列表末条预览细粒度订阅使用。
+  const getLastMessageByRoomId = (roomId: string): MessageType | undefined => {
+    const keys = sortedMessageKeys[roomId]
+    if (!keys || keys.length === 0) return undefined
+    const lastId = keys[keys.length - 1]
+    return messageMap[roomId]?.[lastId]
+  }
+
   const mutations = createMessageMutations({
     route,
     userStore,
@@ -396,6 +405,7 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     addSession: sessionStore.addSession,
     setAllSessionMsgList,
     chatMessageListByRoomId,
+    getLastMessageByRoomId,
     shouldShowNoMoreMessage,
     isMsgMultiChoose,
     currentMsgReply,

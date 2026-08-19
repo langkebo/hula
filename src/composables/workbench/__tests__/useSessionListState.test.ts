@@ -10,7 +10,12 @@ const networkStateMock = {
 }
 
 const chatStoreMock = reactive({
-  chatMessageListByRoomId: vi.fn<(roomId: string) => Array<Record<string, unknown>>>()
+  chatMessageListByRoomId: vi.fn<(roomId: string) => Array<Record<string, unknown>>>(),
+  getLastMessageByRoomId: vi.fn((roomId: string) => {
+    const arr = chatStoreMock.chatMessageListByRoomId(roomId)
+    return arr[arr.length - 1]
+  }),
+  getSession: vi.fn((roomId: string) => sessionStoreMock.sessionList.find((s) => s.roomId === roomId))
 })
 
 const sessionStoreMock = reactive({
@@ -73,7 +78,7 @@ vi.mock('@/utils/ComputedTime.ts', () => ({
   formatChatTime: (value: number) => `ts-${value}`
 }))
 
-const { useSessionListState } = await import('../useSessionListState')
+const { useSessionListState, useSessionLastMsg } = await import('../useSessionListState')
 
 const flushAll = async () => {
   await flushPromises()
@@ -210,21 +215,25 @@ describe('useSessionListState', () => {
     expect(api.sessionList.value[0]).toEqual(
       expect.objectContaining({
         roomId: 'room-group',
-        name: '群备注名',
-        lastMsg: 'formatted-room-group',
-        lastMsgTime: 'ts-50',
-        isAtMe: true
+        name: '群备注名'
       })
     )
     expect(api.sessionList.value[1]).toEqual(
       expect.objectContaining({
         roomId: 'room-single',
-        avatar: 'new-avatar.png',
-        lastMsg: 'bot-display',
-        lastMsgTime: 'ts-100'
+        avatar: 'new-avatar.png'
       })
     )
     expect(api.selectedSession.value?.roomId).toBe('room-group')
+
+    // 末条预览已下沉到 useSessionLastMsg（按 roomId 细粒度）
+    const groupPreview = useSessionLastMsg('room-group')
+    const singlePreview = useSessionLastMsg('room-single')
+    expect(groupPreview.lastMessage.value).toBe('formatted-room-group')
+    expect(groupPreview.lastMsgTime.value).toBe('ts-50')
+    expect(groupPreview.isAtMe.value).toBe(true)
+    expect(singlePreview.lastMessage.value).toBe('bot-display')
+    expect(singlePreview.lastMsgTime.value).toBe('ts-100')
 
     wrapper.unmount()
   })
@@ -232,16 +241,18 @@ describe('useSessionListState', () => {
   it('retries session loading and refreshes cached display text after invalidation', async () => {
     const { wrapper, api } = await createHarness()
 
-    expect(api.sessionList.value[0].lastMsg).toBe('formatted-room-group')
+    // 持有同一实例：末条预览的缓存随实例生命周期，非法调用 invalidateSessionCache 不算脏
+    const groupPreview = useSessionLastMsg('room-group')
+    expect(groupPreview.lastMessage.value).toBe('formatted-room-group')
 
     replaceMsgMock.formatMessageContent.mockImplementation(
       (_: unknown, __: unknown, ___: string, roomId: string) => `updated-${roomId}`
     )
-    expect(api.sessionList.value[0].lastMsg).toBe('formatted-room-group')
+    expect(groupPreview.lastMessage.value).toBe('formatted-room-group')
 
-    api.invalidateSessionCache('room-group')
+    api.invalidateSessionCache()
     await flushAll()
-    expect(api.sessionList.value[0].lastMsg).toBe('updated-room-group')
+    expect(groupPreview.lastMessage.value).toBe('updated-room-group')
 
     await api.retrySessions()
     expect(sessionStoreMock.getSessionList).toHaveBeenCalledWith(true)
@@ -285,9 +296,9 @@ describe('useSessionListState', () => {
       return []
     })
 
-    const { wrapper, api } = await createHarness()
+    const { wrapper } = await createHarness()
 
-    expect(api.sessionList.value.find((item) => item.roomId === 'room-fallback')?.lastMsg).toBe('timeline-preview')
+    expect(useSessionLastMsg('room-fallback').lastMessage.value).toBe('timeline-preview')
 
     wrapper.unmount()
   })
@@ -516,5 +527,27 @@ describe('useSessionListState', () => {
     expect(items[0].unreadCount).toBe(7)
 
     wrapper.unmount()
+  })
+
+  it('结构层与消息内容解耦：会话列表重算时不读取 chatMessageListByRoomId', async () => {
+    await createHarness()
+
+    chatStoreMock.chatMessageListByRoomId.mockClear()
+    // 触发一次会话列表重算（改变 sessionStore）
+    sessionStoreMock.sessionList = [
+      {
+        roomId: 'room-x',
+        type: RoomTypeEnum.GROUP,
+        name: 'X',
+        unreadCount: 0,
+        activeTime: 10,
+        top: false,
+        shield: false
+      }
+    ]
+    await flushAll()
+
+    // 结构层不应再为取末条而扫描整条消息数组（末条预览已下沉到 useSessionLastMsg）
+    expect(chatStoreMock.chatMessageListByRoomId).not.toHaveBeenCalled()
   })
 })
