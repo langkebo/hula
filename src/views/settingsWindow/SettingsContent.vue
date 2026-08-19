@@ -60,10 +60,9 @@
 import { Icon } from '@iconify/vue'
 import { NButton, NIcon, NSpin } from 'naive-ui'
 import type { Component } from 'vue'
-import { computed, defineAsyncComponent, defineComponent, h, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, defineComponent, h, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getSettingsTabLabel, type SettingsTabType } from '@/stores/domains/settings/settingsTab'
-import { createLogger } from '@/utils/Logger'
 import { SETTINGS_TAB_COMPONENT_LOADERS } from './tabComponentLoaders'
 
 defineOptions({
@@ -86,7 +85,6 @@ const props = withDefaults(defineProps<Props>(), {
 defineEmits<(e: 'close') => void>()
 
 const { t } = useI18n()
-const logger = createLogger('SettingsContent')
 
 const currentTabLabel = computed(() => getSettingsTabLabel(props.activeTab, t) || t('setting.dialog.current_tab'))
 
@@ -174,21 +172,11 @@ watch(
   () => {
     // 切换 tab 时清掉上一次的渲染异常，避免错误态卡住影响切换
     clearRenderError()
-    // 切 tab 时清理残留的 tooltip/popover DOM：
-    // 有些 tooltip（如 naive-ui n-tooltip）在异步加载或 DOM 重建场景下
-    // 会"卡住"留在屏幕中央，叠加出"重复 UI"的观感。主动销毁一次即可消除。
-    nextTick(() => {
-      try {
-        document
-          .querySelectorAll('.n-tooltip, [role="tooltip"], .n-popover, .v-binder-follower-content')
-          .forEach((el) => {
-            el.parentNode?.removeChild(el)
-          })
-      } catch (err) {
-        // 静默：清理失败不影响主流程
-        logger.warn('清理残留 tooltip 失败', err)
-      }
-    })
+    // 注意：不再全局 removeChild 清理 .n-tooltip/.n-popover/.v-binder-follower-content。
+    // Naive UI 弹层节点由 v-binder 内部管理，手动从其父节点摘除会破坏 binder 状态，
+    // 且 document.querySelectorAll 是全局作用域，会误关设置区之外的合法弹层（如左导航 tooltip）。
+    // 残留弹层的正解是让宿主组件在卸载时自行销毁：受控弹层用 v-model:show，非受控的在其
+    // onBeforeUnmount 中关闭；若某处仍出现"卡住"的弹层，应定位该宿主组件修复，而非全局摘 DOM。
   }
 )
 
