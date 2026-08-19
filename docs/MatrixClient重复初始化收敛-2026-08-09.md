@@ -162,3 +162,29 @@ await this.initialize({ ...config, accessToken: token, userId, deviceId: stableD
 - `MatrixConnection` 初始化日志不再成对出现
 - `keys/query` 无 429
 - 阅读回执不再重复
+
+## 九、Issue 5（设备列表过多）收口
+
+> 2026-08-18 追加 ｜ 用户反馈：设置-会话中设备列表显示大量设备，但用户仅在此设备登录过。
+
+### 现象与根因
+
+设备列表爆量，本质是 Matrix 服务端为该用户累积了大量历史 `device_id`。而 `device_id` 会随**每次重复建 client** 而新增——这正是本专项第二节因果链（非幂等 `initialize` → 旧 client 泄漏 → 重复 `keys/query`）的另一表现。每多建一个 client，服务端就多登记一个 device。
+
+### 现状（2026-08-18 核对）
+
+本专项的修复已从根上消除「重复建 client」，因此**不再累积新的 `device_id`**：
+
+- `MatrixConnectionManager.shouldReuse(config)` 幂等守卫（六字段等价判据）仍存活于 `MatrixConnectionManager.ts:394`
+- `loginWithToken` 前置 `resolveDeviceIdByWhoami` + `resolveStableDeviceId` 仍存活于 `MatrixClientAuth.ts:256-267`
+- 相关契约测试仍全绿：`MatrixClientService.spec.ts`、`MatrixConnectionManager.test.ts`、`MatrixClientLifecycle.test.ts`、`resolveStableDeviceId.test.ts`
+
+UI 侧（`SessionSettings.vue`）已正确分离「当前设备 / 其他设备」并排序，体验上不会再有「满屏设备」的混乱呈现。
+
+### 收口动作
+
+- **Issue 5 的 deviceId 收敛正式并入本 MatrixClient 重复初始化专项**：二者同源，不需另立项。
+- 存量历史多余 device 属「历史债务」，非代码持续产生；彻底清理需二选一：
+  1. 用户侧在设置-会话中点「登出其他设备」（若 `MatrixDeviceService` 已提供该能力）；
+  2. 服务端 `DELETE /_matrix/client/v3/devices/{deviceId}` 批量回收。
+- 建议实机验证：重新登录后设备列表不再新增；历史多余项按上面方式清理一次即可。

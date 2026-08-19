@@ -1,6 +1,6 @@
 <template>
   <article
-    class="room-card-item flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] border border-[--tjg-border-muted] cursor-pointer outline-none"
+    :class="cardClasses"
     data-testid="room-card-item"
     :data-room-id="item.roomId"
     role="button"
@@ -233,6 +233,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RoomTypeEnum } from '@/enums'
 
 export interface RoomCardViewModel {
   roomId: string
@@ -245,6 +246,7 @@ export interface RoomCardViewModel {
   isFederated?: boolean
   isEncrypted?: boolean
   isPinned?: boolean
+  roomType?: RoomTypeEnum
 }
 
 const props = defineProps<{
@@ -269,6 +271,31 @@ const truncatedTopic = computed(() => {
   const topic = props.item.topic ?? ''
   if (topic.length <= TOPIC_MAX_LEN) return topic
   return `${topic.slice(0, TOPIC_MAX_LEN)}...`
+})
+
+const roomTypeClass = computed(() => {
+  switch (props.item.roomType) {
+    case RoomTypeEnum.GROUP:
+      return 'room-card-item--group'
+    case RoomTypeEnum.SINGLE:
+      return 'room-card-item--dm'
+    case RoomTypeEnum.SPACE:
+      return 'room-card-item--space'
+    default:
+      return 'room-card-item--group'
+  }
+})
+
+const cardClasses = computed(() => {
+  const base = 'room-card-item flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] cursor-pointer outline-none'
+  const typeClass = roomTypeClass.value
+  if (props.item.isEncrypted) {
+    return `${base} ${typeClass} room-card-item--encrypted border border-[--tjg-room-card-encrypted-border]`
+  }
+  if (props.item.isFederated) {
+    return `${base} ${typeClass} room-card-item--federated border border-[--tjg-room-card-federated-border]`
+  }
+  return `${base} ${typeClass} border border-[--tjg-border-muted]`
 })
 
 const handlePreview = () => {
@@ -312,6 +339,36 @@ const handleAction = (action: 'message' | 'info' | 'settings' | 'pin') => {
     box-shadow:
       var(--tjg-shadow-card-hover),
       0 0 0 2px var(--tjg-color-primary-200);
+  }
+}
+
+.room-card-item--group {
+  border-left: 3px solid var(--tjg-room-card-group-accent);
+}
+
+.room-card-item--dm {
+  border-left: 3px solid var(--tjg-color-success-500);
+}
+
+.room-card-item--space {
+  border-left: 3px solid var(--tjg-color-warning-500);
+}
+
+.room-card-item--encrypted {
+  border-left: 3px solid var(--tjg-room-card-encrypted-accent);
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--tjg-room-card-encrypted-border);
+  }
+}
+
+.room-card-item--federated {
+  border-left: 3px solid var(--tjg-room-card-federated-accent);
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--tjg-room-card-federated-border);
   }
 }
 

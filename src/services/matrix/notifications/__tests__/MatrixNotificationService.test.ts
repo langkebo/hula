@@ -25,18 +25,24 @@ vi.mock('../../MatrixHttpClient', () => ({
   }
 }))
 
-const mockClient = {
+const mockPushManager = {
   getPushRules: vi.fn(),
-  setPushRule: vi.fn(),
-  addPushRule: vi.fn(),
+  updatePushRule: vi.fn(),
+  createPushRule: vi.fn(),
   deletePushRule: vi.fn(),
   setPusher: vi.fn(),
   getPushers: vi.fn()
 }
 
+const mockClient = {
+  getPushManager: vi.fn().mockReturnValue(mockPushManager)
+}
+
 describe('MatrixNotificationService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // 恢复 mock 实现（clearAllMocks 会清除 mockReturnValue）
+    mockClient.getPushManager.mockReturnValue(mockPushManager)
   })
 
   afterEach(() => {
@@ -51,8 +57,10 @@ describe('MatrixNotificationService', () => {
 
     it('should load push rules on initialization', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getPushRules: vi.fn().mockResolvedValue({
-          global: { rule_id: 'global-rule' }
+        getPushManager: vi.fn().mockReturnValue({
+          getPushRules: vi.fn().mockResolvedValue({
+            global: { rule_id: 'global-rule' }
+          })
         })
       } as unknown as MatrixClient)
 
@@ -104,10 +112,12 @@ describe('MatrixNotificationService', () => {
 
     it('should clear cached push rules when matrix client changes', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getPushRules: vi.fn().mockResolvedValue({
-          global: {
-            override: [{ rule_id: 'old-rule' }]
-          }
+        getPushManager: vi.fn().mockReturnValue({
+          getPushRules: vi.fn().mockResolvedValue({
+            global: {
+              override: [{ rule_id: 'old-rule' }]
+            }
+          })
         })
       } as unknown as MatrixClient)
 
@@ -115,10 +125,12 @@ describe('MatrixNotificationService', () => {
       expect(matrixNotificationService.getPushRules()).toHaveLength(1)
 
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getPushRules: vi.fn().mockResolvedValue({
-          global: {
-            override: [{ rule_id: 'new-rule' }]
-          }
+        getPushManager: vi.fn().mockReturnValue({
+          getPushRules: vi.fn().mockResolvedValue({
+            global: {
+              override: [{ rule_id: 'new-rule' }]
+            }
+          })
         })
       } as unknown as MatrixClient)
 
@@ -134,17 +146,21 @@ describe('MatrixNotificationService', () => {
 
     it('should load push rules from new client after re-initialize', async () => {
       const oldClient = {
-        getPushRules: vi.fn().mockResolvedValue({
-          global: {
-            override: [{ rule_id: 'old-rule' }]
-          }
+        getPushManager: vi.fn().mockReturnValue({
+          getPushRules: vi.fn().mockResolvedValue({
+            global: {
+              override: [{ rule_id: 'old-rule' }]
+            }
+          })
         })
       }
       const newClient = {
-        getPushRules: vi.fn().mockResolvedValue({
-          global: {
-            override: [{ rule_id: 'new-rule' }]
-          }
+        getPushManager: vi.fn().mockReturnValue({
+          getPushRules: vi.fn().mockResolvedValue({
+            global: {
+              override: [{ rule_id: 'new-rule' }]
+            }
+          })
         })
       }
 
@@ -230,7 +246,7 @@ describe('MatrixNotificationService', () => {
     })
 
     it('should set push rule successfully', async () => {
-      mockClient.setPushRule.mockResolvedValueOnce(undefined)
+      mockPushManager.updatePushRule.mockResolvedValueOnce(undefined)
 
       const rule = {
         ruleId: 'test-rule',
@@ -242,18 +258,18 @@ describe('MatrixNotificationService', () => {
       }
 
       await matrixNotificationService.setPushRule(rule)
-      expect(mockClient.setPushRule).toHaveBeenCalledWith('global', 'override', 'test-rule', ['notify'])
+      expect(mockPushManager.updatePushRule).toHaveBeenCalledWith('global', 'override', 'test-rule', { actions: ['notify'] })
     })
 
     it('should delete push rule successfully', async () => {
-      mockClient.deletePushRule.mockResolvedValueOnce(undefined)
+      mockPushManager.deletePushRule.mockResolvedValueOnce(undefined)
 
       await matrixNotificationService.deletePushRule('test-rule')
-      expect(mockClient.deletePushRule).toHaveBeenCalledWith('global', 'override', 'test-rule')
+      expect(mockPushManager.deletePushRule).toHaveBeenCalledWith('global', 'override', 'test-rule')
     })
 
     it('should set pusher successfully', async () => {
-      mockClient.setPusher.mockResolvedValueOnce(undefined)
+      mockPushManager.setPusher.mockResolvedValueOnce(undefined)
 
       const pusher = {
         app_id: 'tjg',
@@ -262,7 +278,7 @@ describe('MatrixNotificationService', () => {
       } as IPusherRequest
 
       await matrixNotificationService.setPusher(pusher)
-      expect(mockClient.setPusher).toHaveBeenCalledWith(pusher)
+      expect(mockPushManager.setPusher).toHaveBeenCalledWith(pusher)
     })
   })
 
@@ -275,17 +291,17 @@ describe('MatrixNotificationService', () => {
     })
 
     it('调用 SDK client.addPushRule 而非 matrixHttpClient.request', async () => {
-      mockClient.addPushRule.mockResolvedValueOnce(undefined)
+      mockPushManager.createPushRule.mockResolvedValueOnce(undefined)
 
       const body = { actions: ['notify'], conditions: [] }
       await matrixNotificationService.setPushRuleByScope('global', 'override', 'rule-1', body)
 
-      expect(mockClient.addPushRule).toHaveBeenCalledWith('global', 'override', 'rule-1', body)
+      expect(mockPushManager.createPushRule).toHaveBeenCalledWith('global', 'override', 'rule-1', body)
       expect(matrixHttpClientRequestMock).not.toHaveBeenCalled()
     })
 
     it('SDK 调用失败时抛出异常', async () => {
-      mockClient.addPushRule.mockRejectedValueOnce(new Error('boom'))
+      mockPushManager.createPushRule.mockRejectedValueOnce(new Error('boom'))
 
       await expect(
         matrixNotificationService.setPushRuleByScope('global', 'override', 'rule-1', { actions: [] })
@@ -305,18 +321,18 @@ describe('MatrixNotificationService', () => {
         { pushkey: 'k1', app_id: 'a1', kind: 'http' } as IPusher,
         { pushkey: 'k2', app_id: 'a2', kind: 'email' } as IPusher
       ]
-      mockClient.getPushers.mockResolvedValueOnce({ pushers })
+      mockPushManager.getPushers.mockResolvedValueOnce(pushers)
 
       const result = await matrixNotificationService.fetchPushers()
 
       expect(result).toHaveLength(2)
       expect(result[0].pushkey).toBe('k1')
       expect(result[0].app_id).toBe('a1')
-      expect(mockClient.getPushers).toHaveBeenCalled()
+      expect(mockPushManager.getPushers).toHaveBeenCalled()
     })
 
     it('pushers 为空时返回空数组', async () => {
-      mockClient.getPushers.mockResolvedValueOnce({ pushers: [] })
+      mockPushManager.getPushers.mockResolvedValueOnce([])
 
       const result = await matrixNotificationService.fetchPushers()
 
@@ -332,25 +348,25 @@ describe('MatrixNotificationService', () => {
 
     it('缺少 pushkey 时抛出错误', async () => {
       await expect(matrixNotificationService.setPusherByBody({ app_id: 'a1', kind: 'http' })).rejects.toThrow()
-      expect(mockClient.setPusher).not.toHaveBeenCalled()
+      expect(mockPushManager.setPusher).not.toHaveBeenCalled()
     })
 
     it('缺少 app_id 时抛出错误', async () => {
       await expect(matrixNotificationService.setPusherByBody({ pushkey: 'k1', kind: 'http' })).rejects.toThrow()
-      expect(mockClient.setPusher).not.toHaveBeenCalled()
+      expect(mockPushManager.setPusher).not.toHaveBeenCalled()
     })
 
     it('缺少 kind 时抛出错误', async () => {
       await expect(matrixNotificationService.setPusherByBody({ pushkey: 'k1', app_id: 'a1' })).rejects.toThrow()
-      expect(mockClient.setPusher).not.toHaveBeenCalled()
+      expect(mockPushManager.setPusher).not.toHaveBeenCalled()
     })
 
     it('必填字段齐全时调用 SDK setPusher', async () => {
-      mockClient.setPusher.mockResolvedValueOnce(undefined)
+      mockPushManager.setPusher.mockResolvedValueOnce(undefined)
 
       await matrixNotificationService.setPusherByBody({ pushkey: 'k1', app_id: 'a1', kind: 'http' })
 
-      expect(mockClient.setPusher).toHaveBeenCalledWith(
+      expect(mockPushManager.setPusher).toHaveBeenCalledWith(
         expect.objectContaining({ pushkey: 'k1', app_id: 'a1', kind: 'http' })
       )
     })

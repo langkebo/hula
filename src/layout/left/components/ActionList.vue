@@ -514,6 +514,7 @@ onUnmounted(() => {
 </script>
 <style lang="scss" scoped>
 @use '../style';
+@use '@/styles/scss/global/variable.scss' as *;
 
 // 键盘可达的导航项（role="button" 的 div）需要可见焦点环
 [role='button']:focus-visible {
@@ -523,8 +524,15 @@ onUnmounted(() => {
 }
 
 .setting-item {
-  left: 24px;
-  bottom: -40px;
+  // 2026-08-18：从共享 partial `style.scss` 移入本组件 scope。
+  // 原因：style.scss 的裸 .setting-item 经 @use 引入 scoped 块时未被加 scope 属性，
+  // 被编译成全局规则，泄漏污染了设置窗 / ChatHeaderSidebar 等同名元素（飘浮小白卡）。
+  // 移入此处后规则带 data-v-actionlist，popover 内容 teleport 到 body 也不泄漏。
+  @include menu-item-style(absolute);
+  @include menu-list();
+  // 已被 <n-popover> 包裹，popover 自身管理定位与层级，覆盖 absolute 防浮层重叠。
+  position: static;
+  z-index: auto;
 }
 
 .workspace-entry-group {

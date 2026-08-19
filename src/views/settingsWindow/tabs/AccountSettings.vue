@@ -155,6 +155,7 @@ import { profileService } from '@/services/matrix/user/MatrixProfileService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AccountSettings')
@@ -186,7 +187,14 @@ const supportsExtendedProfile = computed(() => hasUnstable('uk.tcpip.msc4133'))
 
 const displayAvatarUrl = computed(() => {
   if (userAvatar.value?.startsWith('mxc://')) {
-    return matrixMediaService.getMediaUrl(userAvatar.value, 160, 160) || userAvatar.value
+    // client.mxcUrlToHttp 在某些 client 包装层上会被剥离（导致整页 OnErrorCaptured 触发、整屏变红字）。
+    // 这里 try/catch 兜底：失败时直接展示 mxc 原值，naive-avatar 会降级到 placeholder。
+    try {
+      return matrixMediaService.getMediaUrl(userAvatar.value, 160, 160) || userAvatar.value
+    } catch (err) {
+      logger.warn('解析头像 mxc URL 失败:', err)
+      return userAvatar.value
+    }
   }
   return userAvatar.value
 })
@@ -297,6 +305,9 @@ async function handleCrop(blob: Blob) {
 
     // 只通过 userStore 更新头像（内部会调用 profileService.setAvatarUrl）
     await userStore.updateAvatar(mxcUrl)
+
+    // 清除头像缓存，确保 UI 显示新头像
+    AvatarUtils.clearCache()
 
     showFeedback(t('setting.account.avatar_updated'), 'success')
     showCropper.value = false

@@ -12,6 +12,7 @@ const mockDirectMessageService = {
 const mockClient = {
   getRooms: vi.fn(),
   getRoom: vi.fn(),
+  getUserId: vi.fn(),
   setRoomTag: vi.fn(),
   deleteRoomTag: vi.fn(),
   removeRoomTag: vi.fn()
@@ -51,6 +52,7 @@ function createRoom(options: {
   events?: Array<ReturnType<typeof createEvent>>
   tags?: Record<string, unknown>
   notificationSettings?: Record<string, unknown> | null
+  joinedMembers?: Array<{ userId: string }>
 }) {
   const {
     roomId = '!room:example.com',
@@ -60,7 +62,8 @@ function createRoom(options: {
     joinedMemberCount = 2,
     events = [],
     tags,
-    notificationSettings = null
+    notificationSettings = null,
+    joinedMembers
   } = options
 
   return {
@@ -69,6 +72,7 @@ function createRoom(options: {
     getMxcAvatarUrl: vi.fn(() => avatar),
     getUnreadNotificationCount: vi.fn(() => unreadCount),
     getJoinedMemberCount: vi.fn(() => joinedMemberCount),
+    getJoinedMembers: vi.fn(() => joinedMembers ?? []),
     getLiveTimeline: vi.fn(() => ({
       getEvents: vi.fn(() => events)
     })),
@@ -213,6 +217,32 @@ describe('MatrixSessionService', () => {
     })
 
     vi.useRealTimers()
+  })
+
+  it('should resolve an existing 1:1 room locally even when the DM manager has no mapping', async () => {
+    const room = createRoom({
+      roomId: '!existing:example.com',
+      name: 'Bob',
+      avatar: 'mxc://example.com/bob',
+      unreadCount: 2,
+      events: [createEvent(1713000000000, 'cached hi')],
+      joinedMembers: [{ userId: '@me:example.com' }, { userId: '@bob:example.com' }]
+    })
+    mockClient.getRooms.mockReturnValueOnce([room] as unknown as Room[])
+    mockClient.getUserId.mockReturnValue('@me:example.com')
+    // manager has no mapping AND would fail to create a new room:
+    mockDirectMessageService.getDmForUser.mockResolvedValueOnce(null)
+    mockDirectMessageService.createDm.mockRejectedValueOnce(new Error('manager not ready'))
+    mockDirectMessageService.getDmRoomInfo.mockResolvedValueOnce(null)
+
+    const result = await matrixSessionService.getSessionDetailWithFriends('@bob:example.com')
+
+    // local-first: createDm should NOT be called because the room was found locally
+    expect(mockDirectMessageService.createDm).not.toHaveBeenCalled()
+    expect(result?.roomId).toBe('!existing:example.com')
+    expect(result?.detailId).toBe('@bob:example.com')
+    expect(result?.type).toBe(RoomTypeEnum.SINGLE)
+    expect(result?.text).toBe('cached hi')
   })
 
   it('should wait for the newly created dm room to appear before building session detail', async () => {

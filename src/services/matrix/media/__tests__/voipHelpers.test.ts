@@ -49,16 +49,16 @@ function createMockCall(overrides: Partial<VoIPCall> = {}): VoIPCall {
   } as unknown as VoIPCall
 }
 
-/** 创建一个模拟的 MatrixClient，可自定义 voipHandler 和 turnServerManager */
+/** 创建一个模拟的 MatrixClient，可自定义 callEventHandler 和 turnServerManager */
 function createMockClient(
   options: {
     calls?: Record<string, VoIPCall>
-    voipHandler?: unknown
+    callEventHandler?: unknown
     turnServerConfig?: unknown
     turnServerThrows?: boolean
   } = {}
 ): MatrixClient {
-  const { calls = {}, voipHandler, turnServerConfig, turnServerThrows = false } = options
+  const { calls = {}, turnServerConfig, turnServerThrows = false } = options
 
   const turnServerManager = {
     getTurnServerConfig: turnServerThrows
@@ -66,10 +66,13 @@ function createMockClient(
       : vi.fn().mockResolvedValue(turnServerConfig ?? {})
   }
 
+  // SDK 的 CallEventHandler.calls 是 Map<string, MatrixCall>；
+  // 当显式传入 callEventHandler 时直接使用（含 undefined/null），否则用 calls Record 构建 Map
+  const handler = 'callEventHandler' in options ? options.callEventHandler : { calls: new Map(Object.entries(calls)) }
+
   const client: Record<string, unknown> = {
-    getCallHandler: () => ({ calls }),
-    getTurnServerManager: () => turnServerManager,
-    voipHandler
+    callEventHandler: handler,
+    getTurnServerManager: () => turnServerManager
   }
 
   return client as unknown as MatrixClient
@@ -94,7 +97,7 @@ describe('voipHelpers', () => {
       expect(result).toBeUndefined()
     })
 
-    it('当客户端没有 getCallHandler 方法时应返回 undefined', () => {
+    it('当客户端没有 callEventHandler 时应返回 undefined', () => {
       const client = {} as unknown as MatrixClient
 
       const result = getCallById('call-1', client)
@@ -102,9 +105,9 @@ describe('voipHelpers', () => {
       expect(result).toBeUndefined()
     })
 
-    it('当 getCallHandler 返回的对象没有 calls 属性时应返回 undefined', () => {
+    it('当 callEventHandler 没有 calls 属性时应返回 undefined', () => {
       const client = {
-        getCallHandler: () => ({})
+        callEventHandler: {}
       } as unknown as MatrixClient
 
       const result = getCallById('call-1', client)
@@ -569,9 +572,9 @@ describe('voipHelpers', () => {
   })
 
   describe('checkVoipAvailability', () => {
-    it('voipHandler 存在且 TURN 可用时应全部可用', async () => {
+    it('callEventHandler 存在且 TURN 可用时应全部可用', async () => {
       const client = createMockClient({
-        voipHandler: {},
+        callEventHandler: {},
         turnServerConfig: {
           username: 'user',
           password: 'pass',
@@ -589,9 +592,9 @@ describe('voipHelpers', () => {
       expect(result.message).toBeUndefined()
     })
 
-    it('没有 voipHandler 时应返回 voipAvailable=false', async () => {
+    it('没有 callEventHandler 时应返回 voipAvailable=false', async () => {
       const client = createMockClient({
-        voipHandler: undefined,
+        callEventHandler: undefined,
         turnServerConfig: {
           username: 'user',
           password: 'pass',
@@ -607,9 +610,9 @@ describe('voipHelpers', () => {
       expect(result.message).toBe('VoIP 模块不可用')
     })
 
-    it('voipHandler 存在但 TURN 不可用时应返回 turnAvailable=false', async () => {
+    it('callEventHandler 存在但 TURN 不可用时应返回 turnAvailable=false', async () => {
       const client = createMockClient({
-        voipHandler: {},
+        callEventHandler: {},
         turnServerConfig: {
           username: 'user',
           password: 'pass',
@@ -625,9 +628,9 @@ describe('voipHelpers', () => {
       expect(result.message).toBe('TURN 服务器未部署，语音通话可能在 NAT 环境下不可用')
     })
 
-    it('没有 voipHandler 且 TURN 也不可用时应全部不可用', async () => {
+    it('没有 callEventHandler 且 TURN 也不可用时应全部不可用', async () => {
       const client = createMockClient({
-        voipHandler: undefined,
+        callEventHandler: undefined,
         turnServerConfig: {
           uris: []
         }
@@ -640,9 +643,9 @@ describe('voipHelpers', () => {
       expect(result.message).toBe('VoIP 模块不可用')
     })
 
-    it('voipHandler 存在但 TURN 检测抛出异常时应返回 turnAvailable=false', async () => {
+    it('callEventHandler 存在但 TURN 检测抛出异常时应返回 turnAvailable=false', async () => {
       const client = createMockClient({
-        voipHandler: {},
+        callEventHandler: {},
         turnServerThrows: true
       })
 
@@ -653,9 +656,9 @@ describe('voipHelpers', () => {
       expect(result.message).toBe('TURN 服务检测失败，语音通话功能可能受限')
     })
 
-    it('voipHandler 为 null 时应返回 voipAvailable=false', async () => {
+    it('callEventHandler 为 null 时应返回 voipAvailable=false', async () => {
       const client = createMockClient({
-        voipHandler: null,
+        callEventHandler: null,
         turnServerConfig: {
           uris: ['turn:server:3478']
         }

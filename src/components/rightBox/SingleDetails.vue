@@ -227,6 +227,8 @@ const handleEncryptedChat = async () => {
     if (roomId) {
       const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
       await openMsgSessionByRoomId(roomId)
+    } else {
+      showFeedback(t('friend.detail.chat_error'), 'error', 'assertive')
     }
   } catch {
     showFeedback(t('friend.detail.chat_error'), 'error', 'assertive')

@@ -1,5 +1,6 @@
 import { computed, type MaybeRefOrGetter, toValue, watch } from 'vue'
 import type { RoomCardViewModel } from '@/components/room/RoomCardItem.vue'
+import type { RoomTypeEnum } from '@/enums'
 import type { MatrixGroupInfo } from '@/stores/domains/chat/group/types'
 
 interface UseRoomCardViewModelsOptions {
@@ -48,7 +49,8 @@ export function useRoomCardViewModels(
       unreadCount: session.unreadCount ?? 0,
       isFederated,
       isEncrypted,
-      isPinned: Boolean(session.top)
+      isPinned: Boolean(session.top),
+      roomType: session.type as RoomTypeEnum
     }
   }
 

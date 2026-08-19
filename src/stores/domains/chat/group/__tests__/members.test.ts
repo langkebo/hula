@@ -70,3 +70,45 @@ describe('createGroupMembers.addUserItem 去重（根因 B：localpart 与完整
     expect(members.membersMap['room-b']).toHaveLength(1)
   })
 })
+
+describe('createGroupMembers.allUserInfo localpart 归一化去重', () => {
+  beforeEach(() => {
+    globalStoreMock.currentSessionRoomId = 'room-1'
+  })
+
+  it('跨房间的 localpart 和完整 MXID 同人只保留一条', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+
+    // room-a 用完整 MXID
+    members.addUserItem(member('@test1:matrix.test'), 'room-a')
+    // room-b 用 localpart
+    members.addUserItem(member('test1'), 'room-b')
+
+    const all = members.allUserInfo.value
+    // 同一个人跨两个房间，allUserInfo 应只返回一条
+    const test1Entries = all.filter((m) => m.displayName?.includes('test1'))
+    expect(test1Entries).toHaveLength(1)
+  })
+
+  it('不同成员跨房间各自保留', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+
+    members.addUserItem(member('@test1:matrix.test'), 'room-a')
+    members.addUserItem(member('@alice:matrix.test'), 'room-b')
+
+    const all = members.allUserInfo.value
+    expect(all).toHaveLength(2)
+  })
+
+  it('同房间内 localpart + MXID 混合只保留一条', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+
+    members.addUserItem(member('@test1:matrix.test'), 'room-1')
+    members.addUserItem(member('test1', { displayName: 'test1-merged' }), 'room-1')
+
+    // membersMap 内部已有 addUserItem 去重
+    expect(members.membersMap['room-1']).toHaveLength(1)
+    // allUserInfo 也应只返回一条
+    expect(members.allUserInfo.value).toHaveLength(1)
+  })
+})

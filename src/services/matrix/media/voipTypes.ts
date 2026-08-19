@@ -11,9 +11,10 @@ export interface VoIPCall {
   on(event: string, callback: (...args: unknown[]) => void): void
   off(event: string, callback: (...args: unknown[]) => void): void
   hangup(reason?: string): void
-  answer(stream?: MediaStream, video?: boolean): void
-  setLocalVideoMuted(muted: boolean): void
-  setLocalAudioMuted(muted: boolean): void
+  answer(audio?: boolean, video?: boolean): Promise<void>
+  placeCall(audio: boolean, video: boolean): Promise<void>
+  setLocalVideoMuted(muted: boolean): Promise<boolean>
+  setMicrophoneMuted(muted: boolean): Promise<boolean>
   setScreensharingEnabled(enabled: boolean, opts?: { audio: boolean }): Promise<boolean>
   peerConn?: RTCPeerConnection
 }
@@ -26,10 +27,6 @@ export interface VoIPCallFeed {
   isLocal(): boolean
   setAudioMuted(muted: boolean): void
   setVideoMuted(muted: boolean): void
-}
-
-export interface VoIPCallHandler {
-  calls: Record<string, VoIPCall>
 }
 
 export interface CallInfo {

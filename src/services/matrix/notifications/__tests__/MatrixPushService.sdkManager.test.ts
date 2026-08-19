@@ -16,9 +16,6 @@ describe('MatrixPushService — SDK PushManager (FT-112)', () => {
   function buildMockClient() {
     const client: Record<string, unknown> = {
       getDeviceId: () => 'TEST_DEVICE_ID',
-      getPushRules: vi.fn().mockResolvedValue({
-        global: { room: [{ rule_id: '!room:server', enabled: true }] }
-      }),
       getPushManager: () => pushManagerMocks
     }
     return client
@@ -30,6 +27,9 @@ describe('MatrixPushService — SDK PushManager (FT-112)', () => {
       getPushers: vi.fn().mockResolvedValue([] as IPusher[]),
       setPusher: vi.fn().mockResolvedValue(undefined),
       removePusher: vi.fn().mockResolvedValue(undefined),
+      getPushRules: vi.fn().mockResolvedValue({
+        global: { room: [{ rule_id: '!room:server', enabled: true }] }
+      }),
       setPushRuleEnabled: vi.fn().mockResolvedValue(undefined),
       setPushRuleActions: vi.fn().mockResolvedValue(undefined),
       createPushRule: vi.fn().mockResolvedValue(undefined),

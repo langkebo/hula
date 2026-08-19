@@ -43,9 +43,12 @@ export function createGroupMembers(ctx: GroupMembersContext) {
 
   const allUserInfo = computed(() => {
     const allUsers: MatrixRoomMember[] = []
+    const seen = new Set<string>()
     Object.values(membersMap).forEach((members) => {
       members.forEach((m) => {
-        if (!allUsers.find((u) => u.userId === m.userId)) {
+        const key = toLocalpart(m.userId || m.uid)
+        if (key && !seen.has(key)) {
+          seen.add(key)
           allUsers.push(m)
         }
       })

@@ -38,6 +38,7 @@ import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
+import { useVoIPIncomingCall } from '@/composables/useVoIPIncomingCall'
 import { MittEnum, ThemeEnum } from '@/enums'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -95,10 +96,13 @@ const isLock = computed(() => {
 })
 
 // ========== Window & global shortcuts (desktop only) ==========
-const { ensureCheckUpdateWindow, createWebviewWindow } = isDesktop()
-  ? useWindow()
-  : { ensureCheckUpdateWindow: () => {}, createWebviewWindow: () => {} }
+const windowApi = isDesktop() ? useWindow() : null
+const ensureCheckUpdateWindow = windowApi?.ensureCheckUpdateWindow ?? (async () => null)
+const createWebviewWindow = windowApi?.createWebviewWindow ?? (async () => null)
 const { initializeGlobalShortcut, cleanupGlobalShortcut } = useGlobalShortcut()
+
+// VoIP 来电监听：收到 Call.incoming 时创建来电通知窗口
+useVoIPIncomingCall({ createRtcCallWindow: windowApi?.createRtcCallWindow })
 
 // ========== Security: prevent drag & context menu in production ==========
 const preventImageInputDrag = (e: MouseEvent) => {

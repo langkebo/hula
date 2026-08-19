@@ -22,7 +22,7 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('@/composables/webrtc/useVoIPCallFlow', () => ({
+vi.mock('@/composables/useVoIPCallFlow', () => ({
   useVoIPCallFlow: () => ({
     callInfo: sharedCallInfo,
     isAudioMuted: ref(false),
