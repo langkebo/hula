@@ -237,5 +237,8 @@
     "delete_success": "Space deleted",
     "delete_failed": "Failed to delete space",
     "load_failed": "Failed to load"
-  }
+  },
+  "duplicate_name_title": "Duplicate space name detected",
+  "duplicate_name_confirm": "A space named \"{name}\" already exists. Create anyway?",
+  "duplicate_name_continue": "Create anyway"
 }

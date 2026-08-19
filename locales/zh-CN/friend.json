@@ -67,7 +67,8 @@
     "error": "发送好友请求失败",
     "mode_fuzzy": "模糊搜索",
     "mode_exact": "精确搜索",
-    "suggestions": "推荐好友"
+    "suggestions": "推荐好友",
+    "request_pending": "已发送过好友请求，等待对方处理"
   },
   "detail": {
     "title": "好友详情",

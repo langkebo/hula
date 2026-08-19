@@ -39,7 +39,7 @@
     <!-- 底部操作栏 -->
     <div
       class="create-space-pane__footer flex items-center justify-end gap-12px px-20px py-12px border-t border-[--tjg-border-layout-divider]">
-      <n-button type="primary" :loading="loading" @click="handleSubmit">
+      <n-button type="primary" :loading="loading" @click="() => handleSubmit(false)">
         {{ t('common.create') }}
       </n-button>
     </div>
@@ -48,6 +48,7 @@
 
 <script setup lang="ts">
 import type { FormInst, UploadCustomRequestOptions } from 'naive-ui'
+import { useDialog } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { type SpaceInfo, useSpaces } from '@/composables/space'
@@ -61,6 +62,7 @@ const RESTORED_HINT_DURATION = 3000
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
+const dialog = useDialog()
 const draftStore = useRightViewDraftStore()
 const { create: createSpace } = useSpaces()
 
@@ -93,14 +95,15 @@ const handleAvatarUpload = async (options: UploadCustomRequestOptions) => {
   }
 }
 
-const handleSubmit = async () => {
+const handleSubmit = async (ignoreDuplicate = false) => {
   try {
     loading.value = true
     await formRef.value?.validate()
     const createdSpace = await createSpace({
       name: formData.name,
       topic: formData.topic,
-      avatarUrl: formData.avatarUrl
+      avatarUrl: formData.avatarUrl,
+      ignoreDuplicateName: ignoreDuplicate
     })
     if (!createdSpace) {
       showFeedback(t('space.create_failed'), 'error')
@@ -113,6 +116,23 @@ const handleSubmit = async () => {
     const { default: router } = await import('@/router')
     void router.replace(buildSpaceWorkbenchRoute((createdSpace as SpaceInfo).spaceId))
   } catch (error) {
+    // 同名空间防重：服务端返回 409 M_ROOM_IN_USE 时弹确认框，
+    // 用户选择"仍然创建"后带 ignore_duplicate_name 重发（逃生阀）。
+    const errMsg = error instanceof Error ? error.message : String(error)
+    if (errMsg.includes('M_ROOM_IN_USE') || errMsg.includes('already in use')) {
+      logger.warn('检测到同名空间，等待用户确认:', formData.name)
+      loading.value = false
+      dialog.warning({
+        title: t('space.duplicate_name_title'),
+        content: t('space.duplicate_name_confirm', { name: formData.name }),
+        positiveText: t('space.duplicate_name_continue'),
+        negativeText: t('common.cancel'),
+        onPositiveClick: () => {
+          void handleSubmit(true)
+        }
+      })
+      return
+    }
     logger.error('[CreateSpacePane] 创建空间失败:', error)
     showFeedback(t('space.create_failed'), 'error')
   } finally {

@@ -10,14 +10,16 @@ const {
   showFeedbackMock,
   routerReplaceMock,
   buildSpaceWorkbenchRouteMock,
-  formValidateMock
+  formValidateMock,
+  dialogWarningMock
 } = vi.hoisted(() => ({
   createSpaceMock: vi.fn(),
   uploadFileMock: vi.fn(),
   showFeedbackMock: vi.fn(),
   routerReplaceMock: vi.fn(),
   buildSpaceWorkbenchRouteMock: vi.fn((spaceId: string) => `/space/${spaceId}`),
-  formValidateMock: vi.fn().mockResolvedValue(true)
+  formValidateMock: vi.fn().mockResolvedValue(true),
+  dialogWarningMock: vi.fn()
 }))
 
 // draftData 必须在 vi.hoisted 外部声明（reactive 在 hoisting 阶段不可用）
@@ -139,6 +141,11 @@ vi.mock('naive-ui', () => {
       setup(props) {
         return () => h('span', { class: 'n-avatar', 'data-src': props.src || '' }, 'avatar')
       }
+    }),
+    useDialog: () => ({
+      warning: dialogWarningMock,
+      info: vi.fn(),
+      error: vi.fn()
     })
   }
 })
@@ -197,7 +204,8 @@ describe('CreateSpacePane', () => {
     expect(createSpaceMock).toHaveBeenCalledWith({
       name: 'My Space',
       topic: 'A topic',
-      avatarUrl: ''
+      avatarUrl: '',
+      ignoreDuplicateName: false
     })
   })
 
@@ -243,6 +251,37 @@ describe('CreateSpacePane', () => {
 
     expect(showFeedbackMock).toHaveBeenCalledWith('space.create_failed', 'error')
     expect(routerReplaceMock).not.toHaveBeenCalled()
+  })
+
+  // 同名空间防重：409 M_ROOM_IN_USE 时弹确认框，确认后带 ignoreDuplicateName 重发
+  it('shows duplicate-name confirm dialog and retries with ignoreDuplicateName on confirm', async () => {
+    createSpaceMock.mockRejectedValueOnce(new Error('M_ROOM_IN_USE: Room name is already in use'))
+    createSpaceMock.mockResolvedValueOnce({
+      spaceId: '!new-space:server',
+      name: 'My Space',
+      memberCount: 1,
+      childCount: 0
+    })
+    const wrapper = mountPane()
+    await setFormData(wrapper, 'My Space', 'A topic')
+    await wrapper.find('button.n-button--primary').trigger('click')
+    await flushPromises()
+
+    expect(dialogWarningMock).toHaveBeenCalled()
+    const dialogOptions = dialogWarningMock.mock.calls[0][0]
+    expect(typeof dialogOptions.onPositiveClick).toBe('function')
+
+    // 用户确认"仍然创建" → 带 ignoreDuplicateName: true 重发
+    await dialogOptions.onPositiveClick()
+    await flushPromises()
+
+    expect(createSpaceMock).toHaveBeenLastCalledWith({
+      name: 'My Space',
+      topic: 'A topic',
+      avatarUrl: '',
+      ignoreDuplicateName: true
+    })
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.create_success', 'success')
   })
 
   // 表单校验失败不提交

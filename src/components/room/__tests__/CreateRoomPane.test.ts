@@ -18,6 +18,19 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
   })
 }))
 
+const dialogWarningMock = vi.fn()
+vi.mock('naive-ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('naive-ui')>()
+  return {
+    ...actual,
+    useDialog: () => ({
+      warning: dialogWarningMock,
+      info: vi.fn(),
+      error: vi.fn()
+    })
+  }
+})
+
 const uploadAvatarCropMock = vi.fn()
 const openAvatarCropperMock = vi.fn()
 const handleFileChangeMock = vi.fn()

@@ -84,6 +84,15 @@ declare module 'matrix-js-sdk' {
     third_party_instance_id?: string
   }
 
+  // 同名防重逃生阀：synapse-rust 的 create_room 支持 ignore_duplicate_name，
+  // 用户在确认弹窗选择"仍然创建"后置 true 重发，跳过 409 M_ROOM_IN_USE 查重。
+  // room_types：空间创建（client.createRoom({ room_types: ['m.space'] })）所需，
+  // 由 MatrixSpaceService 使用。
+  interface ICreateRoomOpts {
+    ignore_duplicate_name?: boolean
+    room_types?: string[]
+  }
+
   export interface SlidingSyncList {
     ranges: number[][]
     sort: string[]

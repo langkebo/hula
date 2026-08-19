@@ -332,9 +332,24 @@ const handleSendRequest = async () => {
     return
   }
 
+  // 发送前查重（前后端双保险，后端同样返回 409）：
+  // 已是好友或已有待处理请求时不重复发送，避免同一联系人堆积多条好友请求。
+  const targetUserId = searchResult.value.userId
+  if (await contactStore.isFriend(targetUserId)) {
+    showFeedback(t('friend.add.already_friend'), 'info', 'polite')
+    return
+  }
+  const hasPendingRequest = contactStore.requestFriendsList.some(
+    (r) => r.userId === targetUserId && (r.direction === 'outgoing' || r.direction === 'incoming')
+  )
+  if (hasPendingRequest) {
+    showFeedback(t('friend.add.request_pending'), 'info', 'polite')
+    return
+  }
+
   sending.value = true
   try {
-    const success = await contactStore.sendFriendRequest(searchResult.value.userId, requestMessage.value)
+    const success = await contactStore.sendFriendRequest(targetUserId, requestMessage.value)
     if (success) {
       showFeedback(t('friend.add.success'), 'success', 'polite')
       // 提交成功后清除草稿并返回上一视图

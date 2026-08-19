@@ -237,5 +237,8 @@
     "delete_success": "已删除空间",
     "delete_failed": "删除空间失败",
     "load_failed": "加载失败"
-  }
+  },
+  "duplicate_name_title": "检测到同名空间",
+  "duplicate_name_confirm": "已存在名为「{name}」的空间。仍然创建吗？",
+  "duplicate_name_continue": "仍然创建"
 }
