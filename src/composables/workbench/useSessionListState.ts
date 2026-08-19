@@ -1,4 +1,5 @@
 import { uniqBy } from 'es-toolkit'
+import { type Ref, unref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useReplaceMsg } from '@/composables/chat/useReplaceMsg'
 import { useAriaLive } from '@/composables/common/useAriaLive'
@@ -16,7 +17,10 @@ import { toLocalpart } from '@/utils/userIdentity'
 
 const logger = createLogger('SessionListState')
 
-type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
+// 末条预览失效键：invalidateSessionCache 时整体自增，强制 useSessionLastMsg 重新格式化
+// （用于撤回 / 菜单展开等需要立即刷新预览的场景）。与 sessionList 结构层解耦：
+// 单条消息到达只触发对应房间的 useSessionLastMsg 重算，不会重排整个会话列表。
+const previewRefreshKey = ref(0)
 
 export const useSessionListState = () => {
   const { t } = useI18n()
@@ -24,15 +28,10 @@ export const useSessionListState = () => {
   const sessionStore = useSessionStore()
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
-  const botStore = useBotStore()
   const networkStatus = useNetworkStatus()
   const syncLoading = toRef(sessionStore, 'syncLoading')
   const sourceSessionList = toRef(sessionStore, 'sessionList')
-  const botDisplayText = computed(() => botStore.displayText)
-  const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
   const { announce } = useAriaLive()
-  const sessionMsgCache = reactive<Record<string, SessionMsgCacheItem>>({})
-  const sessionCacheRefreshKey = ref(0)
 
   watch(syncLoading, (loading, prevLoading) => {
     if (prevLoading === true && loading === false) {
@@ -68,8 +67,6 @@ export const useSessionListState = () => {
   }
 
   const sessionList = computed(() => {
-    sessionCacheRefreshKey.value
-
     // 防御性过滤：会话/房间列表只展示聊天类条目（群聊 / 单聊）。
     // 空间(SPACE)及任何非 GROUP/SINGLE 类型不进入中间栏会话列表。
     const chatOnlySessions = sourceSessionList.value.filter(
@@ -136,6 +133,9 @@ export const useSessionListState = () => {
       if (idx >= 0) sessionItems[idx] = merged
     }
 
+    // 结构层只依赖 sessionStore / groupStore / matrixClientService：
+    // 不再读取消息内容（末条预览已下沉到 useSessionLastMsg，按 roomId 细粒度订阅），
+    // 因此单条消息到达只会更新对应房间的末条预览，不会重排整个会话列表、也不会为取末条分配整条消息数组。
     return sessionItems
       .map((item) => {
         let latestAvatar = item.avatar
@@ -148,60 +148,6 @@ export const useSessionListState = () => {
           displayName = item.remark
         }
 
-        const messages = chatStore.chatMessageListByRoomId(item.roomId)
-
-        let displayMsg = ''
-        let isAtMe = false
-
-        const lastMsg = messages[messages.length - 1]
-        const cacheKey = item.roomId
-        const cached = sessionMsgCache[cacheKey]
-        const sendTime = lastMsg?.message?.sendTime || 0
-
-        if (lastMsg) {
-          const senderName = getMessageSenderName(lastMsg, '', item.roomId, item.type)
-          const shouldRefreshCache = !cached || cached.time < sendTime || cached.senderName !== senderName
-
-          if (shouldRefreshCache) {
-            isAtMe = checkRoomAtMe(
-              item.roomId,
-              item.type,
-              globalStore.currentSessionRoomId!,
-              messages,
-              item.unreadCount
-            )
-            displayMsg = formatMessageContent(lastMsg, item.type, senderName, item.roomId)
-
-            if (item.type === RoomTypeEnum.GROUP && lastMsg.message?.type === MsgEnum.SYSTEM && displayMsg) {
-              const separatorIndex = displayMsg.indexOf(':')
-              if (separatorIndex > -1) {
-                displayMsg = displayMsg.slice(separatorIndex + 1)
-              }
-            }
-
-            sessionMsgCache[cacheKey] = {
-              msg: displayMsg,
-              isAtMe,
-              time: sendTime,
-              senderName
-            }
-          } else {
-            displayMsg = cached.msg
-            isAtMe = item.unreadCount > 0 ? cached.isAtMe : false
-          }
-        } else if (cached) {
-          displayMsg = cached.msg
-          isAtMe = item.unreadCount > 0 ? cached.isAtMe : false
-        }
-
-        if (!displayMsg && item.text) {
-          displayMsg = item.text
-        }
-
-        if (item.account === UserType.BOT) {
-          displayMsg = botDisplayText.value || displayMsg
-        }
-
         const room = matrixClientService.getRoom(item.roomId)
         const isEncrypted = room ? matrixClientService.isRoomEncrypted(item.roomId) : false
         const isBurnAfterRead = !!room?.currentState?.getStateEvents('m.burn_after_read')?.length
@@ -210,9 +156,6 @@ export const useSessionListState = () => {
           ...item,
           avatar: latestAvatar,
           name: displayName,
-          lastMsg: displayMsg || t('message.message_list.default_last_msg'),
-          lastMsgTime: formatChatTime(item?.activeTime),
-          isAtMe,
           isEncrypted,
           isBurnAfterRead
         }
@@ -235,15 +178,13 @@ export const useSessionListState = () => {
     return sessionList.value.find((item) => item.roomId === globalStore.currentSessionRoomId) ?? null
   })
 
-  const invalidateSessionCache = (roomId?: string) => {
-    if (!roomId) return
-    Reflect.deleteProperty(sessionMsgCache, roomId)
-    sessionCacheRefreshKey.value++
+  const invalidateSessionCache = () => {
+    previewRefreshKey.value++
   }
 
-  const handleMenuShow = (roomId: string, isShow: boolean) => {
+  const handleMenuShow = (_roomId: string, isShow: boolean) => {
     if (!isShow) return
-    invalidateSessionCache(roomId)
+    invalidateSessionCache()
   }
 
   const getItemClasses = (item: SessionItem) => {
@@ -266,6 +207,69 @@ export const useSessionListState = () => {
     selectedSession,
     invalidateSessionCache,
     handleMenuShow,
-    getItemClasses
+    getItemClasses,
+    useSessionLastMsg
   }
+}
+
+/**
+ * 单房间末条消息预览（细粒度、按 roomId 订阅）。
+ *
+ * 与 sessionList 结构层解耦：只在「该房间消息变化 / 当前会话切换 / 失效键变化」时重算，
+ * 单条消息到达不会触发整个会话列表重排，也不为取末条分配整条消息数组（O(1) 读取）。
+ * 在每行组件（TjgRoomListItem）内调用即可获得逐行独立的响应式预览。
+ */
+export const useSessionLastMsg = (roomId: string | Ref<string>) => {
+  const { t } = useI18n()
+  const chatStore = useChatStore()
+  const globalStore = useGlobalStore()
+  const botStore = useBotStore()
+  const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
+  const botDisplayText = computed(() => botStore.displayText)
+
+  const lastMessage = computed(() => {
+    previewRefreshKey.value
+    const rid = unref(roomId)
+    const session = chatStore.getSession(rid)
+    const raw = chatStore.getLastMessageByRoomId(rid)
+    let displayMsg = ''
+    if (raw) {
+      const senderName = getMessageSenderName(raw, '', rid, session?.type)
+      displayMsg = formatMessageContent(raw, session?.type ?? RoomTypeEnum.GROUP, senderName, rid)
+      if (session?.type === RoomTypeEnum.GROUP && raw.message?.type === MsgEnum.SYSTEM && displayMsg) {
+        const separatorIndex = displayMsg.indexOf(':')
+        if (separatorIndex > -1) {
+          displayMsg = displayMsg.slice(separatorIndex + 1)
+        }
+      }
+    } else if (session?.text) {
+      displayMsg = session.text
+    }
+    if (session?.account === UserType.BOT) {
+      displayMsg = botDisplayText.value || displayMsg
+    }
+    return displayMsg || t('message.message_list.default_last_msg')
+  })
+
+  const lastMsgTime = computed(() => {
+    const rid = unref(roomId)
+    const session = chatStore.getSession(rid)
+    return session?.activeTime ? formatChatTime(session.activeTime) : ''
+  })
+
+  const isAtMe = computed(() => {
+    previewRefreshKey.value
+    const rid = unref(roomId)
+    const session = chatStore.getSession(rid)
+    const messages = chatStore.chatMessageListByRoomId(rid)
+    return checkRoomAtMe(
+      rid,
+      session?.type ?? RoomTypeEnum.GROUP,
+      globalStore.currentSessionRoomId!,
+      messages,
+      session?.unreadCount ?? 0
+    )
+  })
+
+  return { lastMessage, lastMsgTime, isAtMe }
 }

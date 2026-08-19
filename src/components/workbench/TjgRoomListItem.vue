@@ -90,6 +90,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTyping } from '@/composables/chat/useTyping'
+import { useSessionLastMsg } from '@/composables/workbench/useSessionListState'
 import { RoomTypeEnum, ThemeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
@@ -139,7 +140,9 @@ const displayName = computed(() => props.item.name)
 const avatarSrc = computed(() => props.item.avatar ?? '')
 const unreadCount = computed(() => props.item.unreadCount ?? 0)
 const activeTime = computed(() => props.item.activeTime ?? 0)
-const lastMessage = computed(() => props.item.lastMsg ?? props.item.text ?? '')
+// 末条预览下沉为按 roomId 细粒度订阅：单条消息到达只重算对应行，不重排整个会话列表
+const { lastMessage: previewLastMessage } = useSessionLastMsg(roomId)
+const lastMessage = computed(() => previewLastMessage.value ?? props.item.lastMsg ?? props.item.text ?? '')
 const isTop = computed(() => !!props.item.top)
 const isMuted = computed(
   () => props.item.muteNotification === 1 || (props.item.muteNotification as number) === 2 || !!props.item.shield

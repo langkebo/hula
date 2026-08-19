@@ -244,8 +244,8 @@ onBeforeMount(async () => {
 })
 
 // useMitt 监听器必须在同步 setup 上下文中注册，确保 onUnmounted 自动清理生效。
-useMitt.on(MittEnum.UPDATE_SESSION_LAST_MSG, (payload?: { roomId?: string }) => {
-  invalidateSessionCache(payload?.roomId)
+useMitt.on(MittEnum.UPDATE_SESSION_LAST_MSG, (_payload?: { roomId?: string }) => {
+  invalidateSessionCache()
 })
 useMitt.on(MittEnum.DELETE_SESSION, async (roomId: string) => {
   await handleMsgDelete(roomId)
