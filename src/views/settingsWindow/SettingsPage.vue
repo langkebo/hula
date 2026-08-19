@@ -1,5 +1,13 @@
 <template>
   <SkeletonSettings v-if="loading" />
+  <div v-else-if="shellError" class="settings-page-error" role="alert" data-test="settings-shell-error">
+    <n-icon size="22" color="var(--tjg-color-danger-500)">
+      <svg><use href="#warning" /></svg>
+    </n-icon>
+    <p class="settings-page-error__title">{{ t('setting.dialog.shell_error_title') }}</p>
+    <p class="settings-page-error__detail">{{ shellError.message }}</p>
+    <n-button size="small" type="primary" @click="shellError = null">{{ t('setting.dialog.shell_retry') }}</n-button>
+  </div>
   <div v-else class="settings-page" :class="{ 'settings-page-standalone': standalone }">
     <LeftNav v-if="!standalone" class="settings-page-left" />
     <SettingsSidebar
@@ -22,7 +30,7 @@
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDialog } from 'naive-ui'
-import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onErrorCaptured, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import SkeletonSettings from '@/components/common/SkeletonSettings.vue'
@@ -34,6 +42,7 @@ import { findFirstMatchingSettingsTab, useSettingsShell } from '@/composables/se
 import { usePlatform } from '@/composables/usePlatform'
 import { getSettingsTabLabel, type SettingsTabType, useSettingsTabStore } from '@/stores/domains/settings/settingsTab'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { createLogger } from '@/utils/Logger'
 // biome-ignore lint/style/useImportType: used as runtime component in template
 import SettingsContent from './SettingsContent.vue'
 import SettingsSidebar from './SettingsSidebar.vue'
@@ -61,6 +70,20 @@ const { t, tm } = useI18n()
 const router = useRouter()
 const dialog = useDialog()
 const SETTINGS_CONTENT_ID = 'settings-tab-panel'
+
+// ── 页面级错误兜底 ──
+// SettingsContent 内部已有 tab 级错误边界（onErrorCaptured 返回 false，错误不冒泡到此处）。
+// 这里捕获壳层组件（LeftNav / SettingsSidebar，含异步加载失败）的渲染异常，
+// 避免整页静默空白；提供重试入口。错误被吞掉后仍向全局 errorHandler 上报。
+const shellError = ref<Error | null>(null)
+const logger = createLogger('SettingsPage')
+
+onErrorCaptured((err) => {
+  shellError.value = err instanceof Error ? err : new Error(typeof err === 'string' ? err : '设置页面壳层异常')
+  logger.error('[SettingsPage] 壳层组件渲染异常:', err)
+  // 返回 false：阻止继续冒泡，由本页 fallback 承接
+  return false
+})
 
 const resolveSearchKeywords = (tabId: SettingsTabType): string[] => {
   const value = tm(`setting.dialog.search_terms.${tabId}`) as unknown
@@ -209,5 +232,30 @@ onUnmounted(() => {
   border-radius: var(--tjg-radius-lg);
   box-shadow: var(--tjg-shadow-border), var(--tjg-shadow-md);
   overflow: hidden;
+}
+
+.settings-page-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tjg-space-3);
+  height: 100%;
+  padding: var(--tjg-space-6);
+  background: var(--tjg-surface-app);
+  color: var(--tjg-text-primary);
+  text-align: center;
+
+  &__title {
+    font-size: var(--tjg-font-size-lg);
+    font-weight: 600;
+  }
+
+  &__detail {
+    max-width: 480px;
+    font-size: var(--tjg-font-size-sm);
+    color: var(--tjg-text-secondary);
+    word-break: break-all;
+  }
 }
 </style>
