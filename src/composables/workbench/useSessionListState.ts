@@ -83,20 +83,33 @@ export const useSessionListState = () => {
     }
 
     // 同一对方用户的多个 DM 房间（历史数据或旧版重复创建）只保留最近活跃一条，
-    // 否则中间栏会出现同一成员多条重复会话。
-    const dmSeen = new Set<string>()
-    const sessionItems = [...dedupedByRoom]
-      .sort((a, b) => b.activeTime - a.activeTime)
-      .filter((item) => {
-        if (item.type !== RoomTypeEnum.SINGLE) return true
-        // detailId/account 均为对方 MXID，但历史数据可能是 localpart，
-        // 用 localpart 归一化避免格式不一致漏判。
-        // 当 counterpartKey 为空时，用 roomId 作为 fallback 去重。
-        const counterpartKey = toLocalpart(item.detailId || item.account || '') || item.roomId
-        if (dmSeen.has(counterpartKey)) return false
-        dmSeen.add(counterpartKey)
-        return true
-      })
+    // 并把各重复房间的未读数累加到保留条目，避免"去重后未读丢失"（旧房间的未读也应计入数字角标）。
+    // 注意：不 mutate store 原对象，合并结果生成副本，保证 computed 纯函数。
+    const dmSeen = new Map<string, SessionItem>()
+    const sessionItems: SessionItem[] = []
+    for (const item of [...dedupedByRoom].sort((a, b) => b.activeTime - a.activeTime)) {
+      if (item.type !== RoomTypeEnum.SINGLE) {
+        sessionItems.push(item)
+        continue
+      }
+      // detailId/account 均为对方 MXID，但历史数据可能是 localpart，
+      // 用 localpart 归一化避免格式不一致漏判。
+      // 当 counterpartKey 为空时，用 roomId 作为 fallback 去重。
+      const counterpartKey = toLocalpart(item.detailId || item.account || '') || item.roomId
+      const existing = dmSeen.get(counterpartKey)
+      if (!existing) {
+        dmSeen.set(counterpartKey, item)
+        sessionItems.push(item)
+        continue
+      }
+      // 同人重复 DM 房间：保留活跃时间更大的一条，未读数累加
+      const base = item.activeTime > existing.activeTime ? item : existing
+      const other = item.activeTime > existing.activeTime ? existing : item
+      const merged: SessionItem = { ...base, unreadCount: (base.unreadCount || 0) + (other.unreadCount || 0) }
+      dmSeen.set(counterpartKey, merged)
+      const idx = sessionItems.indexOf(existing)
+      if (idx >= 0) sessionItems[idx] = merged
+    }
 
     return sessionItems
       .map((item) => {

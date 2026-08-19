@@ -364,6 +364,42 @@ describe('useSessionListState', () => {
     wrapper.unmount()
   })
 
+  it('同人重复 DM 房间去重时未读数累加到保留条目（数字角标正确）', async () => {
+    sessionStoreMock.sessionList = [
+      {
+        roomId: 'dm-old',
+        type: RoomTypeEnum.SINGLE,
+        detailId: '@test1:matrix.test',
+        name: 'test1(旧)',
+        unreadCount: 5,
+        activeTime: 100,
+        top: false,
+        shield: false
+      },
+      {
+        roomId: 'dm-new',
+        type: RoomTypeEnum.SINGLE,
+        detailId: '@test1:matrix.test',
+        name: 'test1(新)',
+        unreadCount: 2,
+        activeTime: 300,
+        top: false,
+        shield: false
+      }
+    ]
+
+    chatStoreMock.chatMessageListByRoomId.mockImplementation(() => [])
+
+    const { wrapper, api } = await createHarness()
+
+    const items = api.sessionList.value
+    expect(items).toHaveLength(1) // 只保留一条 test1
+    expect(items[0].roomId).toBe('dm-new') // 保留更活跃的一条
+    expect(items[0].unreadCount).toBe(7) // 未读 5 + 2 累加
+
+    wrapper.unmount()
+  })
+
   it('空间(SPACE)及非聊天类条目不进入会话列表', async () => {
     sessionStoreMock.sessionList = [
       {
