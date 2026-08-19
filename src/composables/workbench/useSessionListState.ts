@@ -67,32 +67,8 @@ export const useSessionListState = () => {
     }
   }
 
-  // [TEMP-DIAG] 排查消息列表成员重复：仅当 SINGLE 会话明细变化时打印一次，避免 computed 重算刷屏
-  let diagSinglesSignature = ''
-  const diagSingles = () => {
-    if (!import.meta.env.DEV) return
-    const singles = sourceSessionList.value.filter((s) => s.type === RoomTypeEnum.SINGLE)
-    if (!singles.length) return
-    const signature = singles
-      .map((s) => `${s.roomId}|${s.name}|${s.detailId ?? '-'}|${s.account ?? '-'}|${s.unreadCount}|${s.activeTime}`)
-      .join(';')
-    if (signature === diagSinglesSignature) return
-    diagSinglesSignature = signature
-    logger.warn(
-      `[DIAG-sessionList] SINGLE 会话数=${singles.length} 明细=` +
-        singles
-          .map(
-            (s) =>
-              `${s.roomId.slice(0, 14)}|name=${s.name}|detailId=${s.detailId ?? '-'}|account=${s.account ?? '-'}|unread=${s.unreadCount}`
-          )
-          .join(' || ')
-    )
-  }
-
   const sessionList = computed(() => {
     sessionCacheRefreshKey.value
-
-    diagSingles()
 
     // 防御性过滤：会话/房间列表只展示聊天类条目（群聊 / 单聊）。
     // 空间(SPACE)及任何非 GROUP/SINGLE 类型不进入中间栏会话列表。
