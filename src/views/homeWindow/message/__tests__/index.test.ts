@@ -298,6 +298,14 @@ describe('MessageView', () => {
     vi.useRealTimers()
   })
 
+  it('renders RoomSessionList as a real child component (guards import-type regression)', async () => {
+    const wrapper = mount(MessageView)
+    await flushPromises()
+
+    // 会话列表必须以真实子组件形式渲染，而非因 `import type` 降级为未知 HTML 元素
+    expect(wrapper.findComponent({ name: 'RoomSessionListStub' }).exists()).toBe(true)
+  })
+
   it('reads the initial search value from the route query', async () => {
     route.query = { search: 'alice' }
 

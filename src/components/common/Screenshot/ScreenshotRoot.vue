@@ -54,8 +54,10 @@ import { useMaskSelection } from './composables/useMaskSelection'
 import { useScreenshotCanvas } from './composables/useScreenshotCanvas'
 import { useScreenshotExport } from './composables/useScreenshotExport'
 import { useSelectionDragResize } from './composables/useSelectionDragResize'
-import type ScreenshotMagnifier from './ScreenshotMagnifier.vue'
-import type ScreenshotToolbar from './ScreenshotToolbar.vue'
+// biome-ignore lint/style/useImportType: SFC used in <template> at runtime (magnifier), must stay a runtime import
+import ScreenshotMagnifier from './ScreenshotMagnifier.vue'
+// biome-ignore lint/style/useImportType: SFC used in <template> at runtime (toolbar), must stay a runtime import
+import ScreenshotToolbar from './ScreenshotToolbar.vue'
 import type { ScreenConfig } from './types'
 
 const logger = createLogger('Screenshot')
