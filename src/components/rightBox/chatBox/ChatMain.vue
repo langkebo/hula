@@ -530,6 +530,8 @@ onUnmounted(() => {
 .scrollbar-container {
   flex: 1;
   overflow-y: auto;
+  // P3-4 实验性修复：阻止滚动到边界时链式传播到 body（原生滚动条/页面跳动的来源）
+  overscroll-behavior: contain;
   // 滚动性能优化
   -webkit-overflow-scrolling: touch;
   will-change: scroll-position;

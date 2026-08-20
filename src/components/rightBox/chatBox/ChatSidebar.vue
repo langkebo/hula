@@ -667,4 +667,9 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/scss/chat-sidebar';
+
+// P3-4 实验性修复：阻止成员列表滚动到边界时链式传播到 body
+#image-chat-sidebar {
+  overscroll-behavior: contain;
+}
 </style>
