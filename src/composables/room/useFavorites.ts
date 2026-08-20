@@ -1,5 +1,6 @@
 import { computed, type MaybeRefOrGetter, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useFavorites')
@@ -13,18 +14,40 @@ export interface FavoriteMessageInfo {
   msgtype: string
 }
 
+/**
+ * 收藏消息 account-data 事件类型（用户级）。
+ * 内容结构为 `{ [roomId]: FavoriteMessageInfo[] }`，按房间维度隔离收藏。
+ * 复用 MatrixAccountService.getAccountData 读取（内部已做 null 安全与异常兜底）。
+ * 命名空间 im.hula.* 与项目自定义 account-data（如 im.hula.user_emotes）保持一致。
+ */
+const FAVORITE_MESSAGES_EVENT = 'im.hula.favorite_messages'
+
+/** 用户级收藏 account-data 内容：roomId -> 该房间收藏列表 */
+type FavoriteAccountDataContent = Record<string, FavoriteMessageInfo[]>
+
+/** 过滤服务端返回的异常条目，避免脏数据破坏渲染 */
+function sanitizeFavorites(raw: unknown): FavoriteMessageInfo[] {
+  if (!Array.isArray(raw)) return []
+  return raw.filter(
+    (item): item is FavoriteMessageInfo =>
+      !!item &&
+      typeof item === 'object' &&
+      typeof (item as FavoriteMessageInfo).eventId === 'string' &&
+      typeof (item as FavoriteMessageInfo).timestamp === 'number'
+  )
+}
+
 interface UseFavoritesOptions {
   /** 房间 ID，支持 ref / getter / 字符串 */
   roomId: MaybeRefOrGetter<string | null>
 }
 
 /**
- * 收藏消息 composable（P0-4 骨架）
+ * 收藏消息 composable
  *
- * 数据源说明：
- * Matrix `m.tag` account data 是房间级标签（标注房间，非单条消息），
- * 单条消息的收藏需要 synapse-rust 扩展或客户端本地缓存支持。
- * 当前 `load()` 先返回空列表，待数据源确定后在此接入。
+ * 数据源：用户级 Matrix account-data 事件 `im.hula.favorite_messages`，
+ * 内容为 `{ [roomId]: FavoriteMessageInfo[] }`。load() 读取后按当前 roomId 过滤展示。
+ * 跨设备实时性依赖客户端 sync；纯读取场景下 in-memory 缓存已足够。
  */
 export function useFavorites(options: UseFavoritesOptions) {
   const { t } = useI18n()
@@ -47,10 +70,10 @@ export function useFavorites(options: UseFavoritesOptions) {
     loading.value = true
     errorMessage.value = null
     try {
-      // TODO(P0-4): 收藏消息数据接入
-      // m.tag 为房间级标签，单条消息收藏需服务端扩展或本地缓存。
-      // 数据源确定后在此实现拉取与解析逻辑。
-      favorites.value = []
+      const content = await matrixAccountService.getAccountData<FavoriteAccountDataContent>(FAVORITE_MESSAGES_EVENT)
+      // 事件不存在（content 为 null）或当前房间无收藏时均返回空列表
+      const roomFavorites = content?.[roomId] ?? []
+      favorites.value = sanitizeFavorites(roomFavorites)
     } catch (err) {
       logger.error('加载收藏消息失败', err)
       errorMessage.value = t('home.chat_sidebar.favorites.load_failed')
