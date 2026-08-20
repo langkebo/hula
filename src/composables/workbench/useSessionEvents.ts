@@ -39,6 +39,7 @@ export function useSessionEvents(options: UseSessionEventsOptions) {
   const handleDeleteSessionEvent = (roomId: string) => {
     if (!roomId) return
     void handleSessionDelete(roomId)
+    void invalidateSessionCache(roomId)
   }
 
   const handleLocateSessionEvent = async (event?: { roomId?: string }) => {
