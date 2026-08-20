@@ -198,7 +198,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { InputInst, VirtualListInst } from 'naive-ui'
+import type { InputInst, ScrollbarInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
@@ -223,7 +223,7 @@ import { openExternalUrl } from '@/composables/common/useLinkSegments'
 
 const userStore = useUserStore()
 const activeItem = ref<ChatItem | null>(null)
-const scrollbar = ref<VirtualListInst>()
+const scrollbar = ref<ScrollbarInst>()
 const inputInstRef = ref<InputInst | null>(null)
 const editingItemId = ref<string | null>()
 const loading = ref(false)
@@ -477,7 +477,7 @@ const add = async () => {
 
       // 滚动到顶部
       nextTick(() => {
-        scrollbar.value?.scrollTo({ position: 'top' })
+        scrollbar.value?.scrollTo({ top: 0 })
       })
 
       // 激活新会话
@@ -671,7 +671,7 @@ onMounted(async () => {
 
           // 滚动到顶部
           nextTick(() => {
-            scrollbar.value?.scrollTo({ position: 'top' })
+            scrollbar.value?.scrollTo({ top: 0 })
           })
 
           handleActive(normalizedChat)
