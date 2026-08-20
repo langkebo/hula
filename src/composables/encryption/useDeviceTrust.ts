@@ -135,7 +135,7 @@ export function useDeviceTrust() {
     return {
       isVerified: status.verified,
       isCrossSigningVerified: status.crossSigningVerified,
-      isTofu: false
+      isTofu: status.tofu ?? false
     }
   }
 
