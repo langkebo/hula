@@ -83,13 +83,23 @@
         </n-flex>
       </n-flex>
     </n-flex>
+
+    <ContextMenu
+      ref="contextMenuRef"
+      :content="item"
+      :menu="menu"
+      :special-menu="props['special-menu']"
+      @select="handleMenuSelect"
+      @menu-show="handleMenuShow" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { useTyping } from '@/composables/chat/useTyping'
+import type { ContextMenuItem } from '@/composables/common/useContextMenuTypes'
 import { useSessionLastMsg } from '@/composables/workbench/useSessionListState'
 import { RoomTypeEnum, ThemeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
@@ -113,8 +123,8 @@ const props = defineProps<{
     memberCount?: number
   }
   classes?: Record<string, boolean>
-  menu?: unknown[]
-  'special-menu'?: unknown[]
+  menu?: ContextMenuItem[]
+  'special-menu'?: ContextMenuItem[]
   batchMode?: boolean
   batchSelected?: boolean
 }>()
@@ -234,8 +244,19 @@ const handleClick = () => {
   emit('click', props.item)
 }
 
+const contextMenuRef = useTemplateRef<{ show: (event: MouseEvent) => void }>('contextMenuRef')
+
 const handleContextMenu = (event: MouseEvent) => {
   event.preventDefault()
+  contextMenuRef.value?.show(event)
+}
+
+const handleMenuSelect = (menuItem: ContextMenuItem) => {
+  emit('select', props.item, menuItem)
+}
+
+const handleMenuShow = () => {
+  emit('menu-show')
 }
 
 const handleAcceptInvite = () => {

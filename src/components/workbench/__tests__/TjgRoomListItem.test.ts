@@ -62,6 +62,10 @@ vi.mock('@/utils/AvatarUtils', () => ({
   }
 }))
 
+vi.mock('@/composables/workbench/useSessionListState', () => ({
+  useSessionLastMsg: () => ({ lastMessage: { value: '' } })
+}))
+
 vi.mock('naive-ui', async () => {
   const { defineComponent, h } = await import('vue')
 

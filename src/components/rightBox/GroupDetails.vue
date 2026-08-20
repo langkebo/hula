@@ -50,13 +50,6 @@
         <span class="single-details__action-label">{{ t('home.chat_details.actions.message') }}</span>
       </button>
 
-      <button class="single-details__action" type="button" @click="handleVideoCall">
-        <span class="single-details__action-icon">
-          <svg><use href="#video" /></svg>
-        </span>
-        <span class="single-details__action-label">{{ t('home.chat_details.single.footer.video_call') }}</span>
-      </button>
-
       <button v-if="!isMobile" class="single-details__action" type="button" @click="handleOpenInNewWindow">
         <span class="single-details__action-icon">
           <svg><use href="#expand" /></svg>
@@ -132,7 +125,7 @@ const props = defineProps({
   }
 })
 
-const { isMobile, handleSendMessage, handleVideoCall, handleOpenInNewWindow } = useDetailsActions(props.content)
+const { isMobile, handleSendMessage, handleOpenInNewWindow } = useDetailsActions(props.content)
 
 const item = ref<
   Partial<MatrixGroupInfo> & {

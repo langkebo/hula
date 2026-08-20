@@ -1,6 +1,6 @@
 <template>
   <div class="chat-header-toolbar">
-    <n-tooltip trigger="hover" :delay="500">
+    <n-tooltip v-if="!isGroup" trigger="hover" :delay="500">
       <template #trigger>
         <n-button quaternary circle size="small" :aria-label="t('chat.header.video_call')" @click="handleVideoCall">
           <template #icon>
@@ -16,7 +16,7 @@
       {{ t('chat.header.video_call') }}
     </n-tooltip>
 
-    <n-tooltip trigger="hover" :delay="500">
+    <n-tooltip v-if="!isGroup" trigger="hover" :delay="500">
       <template #trigger>
         <n-button quaternary circle size="small" :aria-label="t('chat.header.voice_call')" @click="handleVoiceCall">
           <template #icon>
