@@ -116,6 +116,8 @@
     @group-nickname-confirm="handleGroupNicknameConfirm"
     @cancel-private-mode="cancelPrivateMode"
     @confirm-private-mode="confirmPrivateMode" />
+
+  <PinMessageSelector v-model:show="pinSelectorVisible" @select="handlePinSelect" />
 </template>
 
 <script setup lang="ts">
@@ -166,6 +168,7 @@ import ChatBanners from './ChatBanners.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import ChatModals from './ChatModals.vue'
 import ChatRoomSearch from './ChatRoomSearch.vue'
+import PinMessageSelector from './PinMessageSelector.vue'
 
 const FileUploadProgress = defineAsyncComponent(() => import('@/components/rightBox/FileUploadProgress.vue'))
 
@@ -276,9 +279,16 @@ const pinnedMessageFlow = usePinnedMessage({ roomId: () => globalStore.currentSe
 const stickyEvents = pinnedMessageFlow.pinnedMessages
 const canSetSticky = pinnedMessageFlow.canSetSticky
 
+/** 置顶消息选择器可见性（横幅「设为粘性事件」按钮触发） */
+const pinSelectorVisible = ref(false)
+
 function handleSetSticky() {
-  // TODO: 打开消息选择器选择要置顶的消息（横幅按钮入口）
-  logger.info('Set sticky event requested')
+  pinSelectorVisible.value = true
+}
+
+async function handlePinSelect(eventId: string) {
+  await pinnedMessageFlow.pin(eventId)
+  pinSelectorVisible.value = false
 }
 
 async function handleCancelSticky(eventId: string) {

@@ -692,6 +692,24 @@ describe('ChatMain sticky events', () => {
     const banners = wrapper.findComponent({ name: 'ChatBanners' })
     expect(banners.props('stickyEvents')).toHaveLength(1)
   })
+
+  it('opens PinMessageSelector when set-sticky is emitted', async () => {
+    const wrapper = mountComponent()
+    wrapper.findComponent({ name: 'ChatBanners' }).vm.$emit('setSticky')
+    await flushPromises()
+    const selector = wrapper.findComponent({ name: 'PinMessageSelector' })
+    expect(selector.exists()).toBe(true)
+    expect(selector.props('show')).toBe(true)
+  })
+
+  it('pins selected message and closes selector', async () => {
+    const wrapper = mountComponent()
+    const selector = wrapper.findComponent({ name: 'PinMessageSelector' })
+    selector.vm.$emit('select', '$evt1')
+    await flushPromises()
+    expect(pinMock).toHaveBeenCalledWith('$evt1')
+    expect(selector.props('show')).toBe(false)
+  })
 })
 
 describe('ChatMain BurnAfterReadToggle service integration', () => {
