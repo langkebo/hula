@@ -1,6 +1,7 @@
 import { type Ref, ref } from 'vue'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useDeviceTrust')
@@ -138,41 +139,52 @@ export function useDeviceTrust() {
     }
   }
 
-  async function loadUnverifiedDevicesInRoom(_roomId: string): Promise<void> {
+  async function loadUnverifiedDevicesInRoom(roomId: string): Promise<void> {
     loading.value = true
     error.value = null
     try {
-      // TODO: No direct replacement in MatrixCryptoService yet
-      const deviceIds: string[] = []
+      const room = matrixClientService.getRoom(roomId)
+      if (!room) {
+        unverifiedDevices.value = []
+        return
+      }
+
+      const members = room.getJoinedMembers()
       const result: DeviceTrustInfo[] = []
 
-      for (const entry of deviceIds) {
-        const colonIndex = entry.indexOf(':')
-        if (colonIndex === -1) continue
-        const entryUserId = entry.substring(0, colonIndex)
-        const entryDeviceId = entry.substring(colonIndex + 1)
-        if (!entryUserId || !entryDeviceId) continue
-
+      for (const member of members.values()) {
+        const userId = member.userId
+        let rawDevices: Awaited<ReturnType<typeof cryptoSDKAdapter.getDevices>> = []
         try {
-          const status = await matrixCryptoService.getDeviceVerificationStatus(entryUserId, entryDeviceId)
-          const trustLevel = {
-            isVerified: status.verified,
-            isCrossSigningVerified: status.crossSigningVerified,
-            isTofu: false
-          }
-          result.push({
-            deviceId: entryDeviceId,
-            userId: entryUserId,
-            isVerified: trustLevel.isVerified,
-            isCrossSigningVerified: trustLevel.isCrossSigningVerified,
-            isBlocked: false
-          })
+          rawDevices = await cryptoSDKAdapter.getDevices(userId)
         } catch {
+          // 单个成员设备列表拉取失败不阻断整体
+          continue
+        }
+
+        for (const device of rawDevices) {
+          let isVerified = false
+          let isCrossSigningVerified = false
+          try {
+            const status = await matrixCryptoService.getDeviceVerificationStatus(userId, device.deviceId)
+            isVerified = status.verified
+            isCrossSigningVerified = status.crossSigningVerified
+          } catch {
+            isVerified = false
+            isCrossSigningVerified = false
+          }
+
+          // 仅收集未验证且未通过跨签名的设备
+          if (isVerified || isCrossSigningVerified) continue
+
           result.push({
-            deviceId: entryDeviceId,
-            userId: entryUserId,
-            isVerified: false,
-            isCrossSigningVerified: false,
+            deviceId: device.deviceId,
+            userId,
+            displayName: device.displayName,
+            lastSeenTs: device.lastSeenTs,
+            lastSeenIp: device.lastSeenIp,
+            isVerified,
+            isCrossSigningVerified,
             isBlocked: false
           })
         }
