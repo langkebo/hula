@@ -50,6 +50,21 @@ async function focusSessionRoom(roomId: string) {
     }
   }
 
+  // 兜底：轮询超时仍未同步到该 room（降级 / 慢网络 / DM 管理器未就绪），
+  // 主动拉取会话详情并写入 store，确保 currentSessionInfo 能派生；
+  // 否则消息视图 watch(currentSessionInfo) 不触发 → 会话不切换（按钮“无反应”）。
+  if (!existingSession) {
+    try {
+      const detail = await matrixSessionService.getSessionDetailWithFriends(roomId)
+      if (detail) {
+        chatStore.addSession?.(detail)
+        existingSession = chatStore.getSession(roomId)
+      }
+    } catch (err) {
+      logger.warn(`[openMsgSession] 兜底拉取会话详情失败，会话视图可能不切换: ${err}`)
+    }
+  }
+
   globalStore.updateCurrentSessionRoomId(roomId)
 
   // 跳转条件：当前不在 /message 路由时跳转
