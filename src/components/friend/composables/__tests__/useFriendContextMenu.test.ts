@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-import { OnlineEnum } from '@/enums'
+import { CallTypeEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 
 const {
@@ -9,7 +9,9 @@ const {
   addSpecialFriendMock,
   getFriendDmRoomMock,
   openMsgSessionByRoomIdMock,
-  contextMenuShowMock
+  contextMenuShowMock,
+  openMsgSessionMock,
+  startRtcCallMock
 } = vi.hoisted(() => ({
   contactStoreMock: {
     contactsList: [] as MatrixContact[],
@@ -27,7 +29,9 @@ const {
   addSpecialFriendMock: vi.fn(),
   getFriendDmRoomMock: vi.fn(),
   openMsgSessionByRoomIdMock: vi.fn(),
-  contextMenuShowMock: vi.fn()
+  contextMenuShowMock: vi.fn(),
+  openMsgSessionMock: vi.fn().mockResolvedValue(undefined),
+  startRtcCallMock: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('@/stores/domains/chat/contacts', () => ({
@@ -53,7 +57,12 @@ vi.mock('@/services/matrix/friends/MatrixSpecialFriendService', () => ({
 }))
 
 vi.mock('@/composables/chat/openMsgSession', () => ({
-  openMsgSessionByRoomId: openMsgSessionByRoomIdMock
+  openMsgSessionByRoomId: openMsgSessionByRoomIdMock,
+  openMsgSession: openMsgSessionMock
+}))
+
+vi.mock('@/composables/common/useWindow', () => ({
+  useWindow: () => ({ startRtcCall: startRtcCallMock })
 }))
 
 import { useFriendContextMenu } from '../useFriendContextMenu'
@@ -96,6 +105,8 @@ describe('useFriendContextMenu', () => {
       const labels = menu.contextMenuItems.value.map((item) => item.label)
 
       expect(labels).toContain('friend.context.send_message')
+      expect(labels).toContain('friend.context.voice_call')
+      expect(labels).toContain('friend.context.video_call')
       expect(labels).toContain('friend.context.encrypted_chat')
       expect(labels).toContain('friend.context.secret_chat')
       expect(labels).toContain('friend.context.set_note')
@@ -275,6 +286,28 @@ describe('useFriendContextMenu', () => {
 
       expect(contactStoreMock.startDirectRoom).toHaveBeenCalledWith(friend.userId, true)
       expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@new-room:example.com')
+    })
+
+    it('dispatches voice_call to open session then startRtcCall(AUDIO)', async () => {
+      const { menu } = setupMenu()
+      const friend = makeFriend()
+      menu.selectedFriend.value = friend
+
+      await menu.handleContextMenuSelect({ label: 'friend.context.voice_call' })
+
+      expect(openMsgSessionMock).toHaveBeenCalledWith(friend.userId, RoomTypeEnum.SINGLE)
+      expect(startRtcCallMock).toHaveBeenCalledWith(CallTypeEnum.AUDIO)
+    })
+
+    it('dispatches video_call to open session then startRtcCall(VIDEO)', async () => {
+      const { menu } = setupMenu()
+      const friend = makeFriend()
+      menu.selectedFriend.value = friend
+
+      await menu.handleContextMenuSelect({ label: 'friend.context.video_call' })
+
+      expect(openMsgSessionMock).toHaveBeenCalledWith(friend.userId, RoomTypeEnum.SINGLE)
+      expect(startRtcCallMock).toHaveBeenCalledWith(CallTypeEnum.VIDEO)
     })
 
     it('dispatches secret_chat to handleSetSecretFriend', async () => {

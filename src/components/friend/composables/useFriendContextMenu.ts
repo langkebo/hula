@@ -1,6 +1,9 @@
-import { computed, h, type Ref, ref } from 'vue'
+import { computed, h, nextTick, type Ref, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useWindow } from '@/composables/common/useWindow'
+import { CallTypeEnum, RoomTypeEnum } from '@/enums'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
@@ -30,6 +33,8 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
   const contextMenuItems = computed(() => {
     const items = [
       { label: t('friend.context.send_message'), icon: 'message' },
+      { label: t('friend.context.voice_call'), icon: 'phone' },
+      { label: t('friend.context.video_call'), icon: 'video' },
       { label: t('friend.context.encrypted_chat'), icon: 'lock' },
       { label: t('friend.context.secret_chat'), icon: 'eye-close' },
       { label: 'divider', icon: '' },
@@ -58,6 +63,15 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
         await openMsgSessionByRoomId(roomId)
       }
     }
+  }
+
+  // 共享：发起语音/视频通话（先切换到目标好友会话，再复用 startRtcCall 开窗）
+  const performCall = async (friend: MatrixContact, callType: CallTypeEnum) => {
+    if (!friend.userId) return
+    await openMsgSession(friend.userId, RoomTypeEnum.SINGLE)
+    await nextTick()
+    const { startRtcCall } = useWindow()
+    await startRtcCall(callType)
   }
 
   // 共享：移除好友（FriendListItem 移除按钮与右键菜单 remove 复用同一逻辑）
@@ -144,6 +158,12 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
     switch (item.label) {
       case t('friend.context.send_message'):
         await performSendMessage(friend)
+        break
+      case t('friend.context.voice_call'):
+        await performCall(friend, CallTypeEnum.AUDIO)
+        break
+      case t('friend.context.video_call'):
+        await performCall(friend, CallTypeEnum.VIDEO)
         break
       case t('friend.context.encrypted_chat'): {
         const roomId = await contactStore.startDirectRoom(friend.userId, true)

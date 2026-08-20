@@ -196,7 +196,10 @@ const visibleSpecialMenu = computed(() => {
 const isNull = computed(() => props.menu === void 0)
 const ContextMenuRef = useTemplateRef('ContextMenuRef')
 const emit = defineEmits(['select', 'reply-emoji', 'menu-show'])
-const { x, y, showMenu } = useContextMenu(ContextMenuRef, isNull)
+const { x, y, showMenu, handleContextMenu } = useContextMenu(ContextMenuRef, isNull)
+
+// 暴露 show(event) 供外部手动触发（好友列表/会话列表右键），与 slot 包裹自动触发互补。
+defineExpose({ show: handleContextMenu })
 
 watch(
   () => showMenu.value,

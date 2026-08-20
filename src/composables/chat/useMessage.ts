@@ -2,7 +2,8 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
-import { MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
+import { useWindow } from '@/composables/common/useWindow'
+import { CallTypeEnum, MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
@@ -37,6 +38,7 @@ const logger = createLogger('Message')
 export const useMessage = () => {
   const { t } = useI18n()
   const { showFeedback } = useActionFeedback()
+  const { startRtcCall } = useWindow()
   const _globalStore = useGlobalStore()
   const chatStore = useChatStore()
   const settingStore = useSettingStore()
@@ -72,6 +74,24 @@ export const useMessage = () => {
   }
 
   const menuList = ref<OPT.RightMenu[]>([
+    {
+      label: () => t('friend.context.voice_call'),
+      icon: 'phone',
+      visible: (item: SessionItem) => item.type === RoomTypeEnum.SINGLE,
+      click: (item: SessionItem) => {
+        _globalStore.updateCurrentSessionRoomId(item.roomId)
+        void startRtcCall(CallTypeEnum.AUDIO)
+      }
+    },
+    {
+      label: () => t('friend.context.video_call'),
+      icon: 'video',
+      visible: (item: SessionItem) => item.type === RoomTypeEnum.SINGLE,
+      click: (item: SessionItem) => {
+        _globalStore.updateCurrentSessionRoomId(item.roomId)
+        void startRtcCall(CallTypeEnum.VIDEO)
+      }
+    },
     {
       label: (item: SessionItem) => (item.top ? t('menu.unpin') : t('menu.pin')),
       icon: (item: SessionItem) => (item.top ? 'to-bottom' : 'to-top'),
