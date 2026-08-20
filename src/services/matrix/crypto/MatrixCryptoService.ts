@@ -18,6 +18,8 @@ interface VerificationStatus {
   verified: boolean
   crossSigningVerified: boolean
   devicesCrossSigningVerified: boolean
+  /** Trust On First Use：设备已被客户端见过（已知）但尚未显式验证 */
+  tofu: boolean
 }
 
 export type EncryptionAlgorithm = 'm.megolm.v1.aes-sha2' | 'm.olm.v1.curve25519-aes-sha2'

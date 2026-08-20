@@ -290,7 +290,8 @@ describe('CryptoSDKAdapter', () => {
       expect(result).toEqual({
         verified: true,
         crossSigningVerified: true,
-        devicesCrossSigningVerified: true
+        devicesCrossSigningVerified: true,
+        tofu: false
       })
     })
 
@@ -303,7 +304,8 @@ describe('CryptoSDKAdapter', () => {
       expect(result).toEqual({
         verified: false,
         crossSigningVerified: false,
-        devicesCrossSigningVerified: false
+        devicesCrossSigningVerified: false,
+        tofu: false
       })
     })
 
@@ -317,7 +319,8 @@ describe('CryptoSDKAdapter', () => {
       expect(result).toEqual({
         verified: false,
         crossSigningVerified: false,
-        devicesCrossSigningVerified: false
+        devicesCrossSigningVerified: false,
+        tofu: false
       })
     })
 
@@ -328,7 +331,8 @@ describe('CryptoSDKAdapter', () => {
       expect(result).toEqual({
         verified: false,
         crossSigningVerified: false,
-        devicesCrossSigningVerified: false
+        devicesCrossSigningVerified: false,
+        tofu: false
       })
     })
   })

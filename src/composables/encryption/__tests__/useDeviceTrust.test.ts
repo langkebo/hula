@@ -48,9 +48,24 @@ describe('useDeviceTrust.loadUnverifiedDevicesInRoom', () => {
 
     // aliceDev1 -> verified (skip); bobDev1 -> unverified; bobDev2 -> cross-signed (skip)
     mockGetStatus
-      .mockResolvedValueOnce({ verified: true, crossSigningVerified: true, devicesCrossSigningVerified: true })
-      .mockResolvedValueOnce({ verified: false, crossSigningVerified: false, devicesCrossSigningVerified: false })
-      .mockResolvedValueOnce({ verified: false, crossSigningVerified: true, devicesCrossSigningVerified: true })
+      .mockResolvedValueOnce({
+        verified: true,
+        crossSigningVerified: true,
+        devicesCrossSigningVerified: true,
+        tofu: false
+      })
+      .mockResolvedValueOnce({
+        verified: false,
+        crossSigningVerified: false,
+        devicesCrossSigningVerified: false,
+        tofu: true
+      })
+      .mockResolvedValueOnce({
+        verified: false,
+        crossSigningVerified: true,
+        devicesCrossSigningVerified: true,
+        tofu: false
+      })
 
     const { unverifiedDevices, loadUnverifiedDevicesInRoom } = useDeviceTrust()
     await loadUnverifiedDevicesInRoom('!room:server')
@@ -79,7 +94,8 @@ describe('useDeviceTrust.loadUnverifiedDevicesInRoom', () => {
     mockGetStatus.mockResolvedValueOnce({
       verified: false,
       crossSigningVerified: false,
-      devicesCrossSigningVerified: false
+      devicesCrossSigningVerified: false,
+      tofu: false
     })
 
     const { unverifiedDevices, loadUnverifiedDevicesInRoom } = useDeviceTrust()

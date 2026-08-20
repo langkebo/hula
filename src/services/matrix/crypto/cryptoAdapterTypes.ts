@@ -33,6 +33,8 @@ export interface DeviceVerificationResult {
   verified: boolean
   crossSigningVerified: boolean
   devicesCrossSigningVerified: boolean
+  /** Trust On First Use：设备已被客户端见过（已知）但尚未显式验证 */
+  tofu: boolean
 }
 
 export interface CrossSigningStatusResult {

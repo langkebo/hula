@@ -135,12 +135,13 @@ export class CryptoDeviceAdapter {
     if (crypto) {
       const status = await crypto.getDeviceVerificationStatus(userId, deviceId)
       if (!status) {
-        return { verified: false, crossSigningVerified: false, devicesCrossSigningVerified: false }
+        return { verified: false, crossSigningVerified: false, devicesCrossSigningVerified: false, tofu: false }
       }
       return {
         verified: status.isVerified(),
         crossSigningVerified: status.crossSigningVerified,
-        devicesCrossSigningVerified: status.crossSigningVerified
+        devicesCrossSigningVerified: status.crossSigningVerified,
+        tofu: status.tofu ?? false
       }
     }
 
@@ -150,11 +151,12 @@ export class CryptoDeviceAdapter {
       return {
         verified: trust.isVerified(),
         crossSigningVerified: trust.crossSigningVerified,
-        devicesCrossSigningVerified: trust.crossSigningVerified
+        devicesCrossSigningVerified: trust.crossSigningVerified,
+        tofu: trust.tofu ?? false
       }
     }
 
-    return { verified: false, crossSigningVerified: false, devicesCrossSigningVerified: false }
+    return { verified: false, crossSigningVerified: false, devicesCrossSigningVerified: false, tofu: false }
   }
 
   /** 请求设备验证

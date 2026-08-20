@@ -430,6 +430,18 @@ describe('useEncryption', () => {
       expect(mockMatrixCryptoGetDeviceVerificationStatus).toHaveBeenCalledWith('@user:server', 'DEVICE1')
     })
 
+    it('getDeviceTrustLevel maps tofu from verification status', async () => {
+      mockMatrixCryptoGetDeviceVerificationStatus.mockResolvedValueOnce({
+        verified: false,
+        crossSigningVerified: false,
+        devicesCrossSigningVerified: false,
+        tofu: true
+      })
+      const { getDeviceTrustLevel } = useEncryption()
+      const result = await getDeviceTrustLevel('@user:server', 'DEVICE1')
+      expect(result.isTofu).toBe(true)
+    })
+
     it('requestDeviceVerification delegates to matrixCryptoService', async () => {
       const req = { requestId: 'req1' }
       mockMatrixCryptoRequestDeviceVerification.mockResolvedValueOnce(req)

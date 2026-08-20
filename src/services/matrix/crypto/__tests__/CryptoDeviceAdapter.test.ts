@@ -250,8 +250,24 @@ describe('CryptoDeviceAdapter', () => {
       expect(result).toEqual({
         verified: true,
         crossSigningVerified: true,
-        devicesCrossSigningVerified: true
+        devicesCrossSigningVerified: true,
+        tofu: false
       })
+    })
+
+    it('maps tofu from CryptoApi status', async () => {
+      const crypto = {
+        getDeviceVerificationStatus: vi.fn().mockResolvedValue({
+          isVerified: () => true,
+          crossSigningVerified: true,
+          tofu: true
+        })
+      } as unknown as CryptoApi
+      const adapter = new CryptoDeviceAdapter(createMockAccessors({ crypto }))
+
+      const result = await adapter.getDeviceVerificationStatus('@alice:matrix.org', 'DEV1')
+
+      expect(result.tofu).toBe(true)
     })
 
     it('returns false status when CryptoApi returns null', async () => {
@@ -265,7 +281,8 @@ describe('CryptoDeviceAdapter', () => {
       expect(result).toEqual({
         verified: false,
         crossSigningVerified: false,
-        devicesCrossSigningVerified: false
+        devicesCrossSigningVerified: false,
+        tofu: false
       })
     })
 
@@ -283,7 +300,8 @@ describe('CryptoDeviceAdapter', () => {
       expect(result).toEqual({
         verified: false,
         crossSigningVerified: false,
-        devicesCrossSigningVerified: false
+        devicesCrossSigningVerified: false,
+        tofu: false
       })
     })
 
@@ -293,7 +311,8 @@ describe('CryptoDeviceAdapter', () => {
       expect(result).toEqual({
         verified: false,
         crossSigningVerified: false,
-        devicesCrossSigningVerified: false
+        devicesCrossSigningVerified: false,
+        tofu: false
       })
     })
   })
