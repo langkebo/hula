@@ -19,6 +19,7 @@ import { clearCryptoStoragePasswordCache, deleteCryptoStoragePassword } from '@/
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
+import { getPersistedDeviceId, persistDeviceId } from './deviceIdPersistence'
 import { loginByHttpFallback, tokenLoginByHttpFallback } from './MatrixClientAuthHttp'
 import type { MatrixClientLifecycle } from './MatrixClientLifecycle'
 import type { MatrixClientConfig, MatrixConnectionManager } from './MatrixConnectionManager'
@@ -93,19 +94,23 @@ export class MatrixClientAuth {
       connectionManager.updateConnectionState('CONNECTING')
       let loginResponse: LoginResponse
 
+      // 复用已有 deviceId，避免每次密码登录在服务器端累积新设备
+      const config = connectionManager.getConfig()
+      const reusedDeviceId = config?.deviceId ?? getPersistedDeviceId(username)
+
       try {
         loginResponse = await client.loginRequest({
           type: 'm.login.password',
           identifier: { type: 'm.id.user', user: username },
           password,
-          initial_device_display_name: deviceName || 'Tjg Client'
+          initial_device_display_name: deviceName || 'Tjg Client',
+          ...(reusedDeviceId ? { device_id: reusedDeviceId } : {})
         })
       } catch (error) {
         const errInfo = error instanceof Error ? error.message : String(error)
         const httpStatus = (error as { httpStatus?: number })?.httpStatus
         const errcode = (error as { errcode?: string })?.errcode
         logger.warn(`SDK 密码登录失败 (status=${httpStatus}, errcode=${errcode}): ${errInfo}，尝试 HTTP 回退`)
-        const config = connectionManager.getConfig()
         if (!config?.homeserverUrl) {
           throw new Error(useI18nGlobal().t('matrix_error.auth.client_config_missing'))
         }
@@ -118,6 +123,11 @@ export class MatrixClientAuth {
         userId: loginResponse.user_id,
         deviceId: loginResponse.device_id ?? undefined
       })
+
+      // 登录成功后持久化 deviceId，供下次密码登录复用
+      if (loginResponse.user_id && loginResponse.device_id) {
+        persistDeviceId(username, loginResponse.device_id)
+      }
 
       connectionManager.updateConnectionState('CONNECTED')
       const expiresInMs = loginResponse.expires_in_ms ?? 0
@@ -207,6 +217,11 @@ export class MatrixClientAuth {
         userId: loginResponse.user_id,
         deviceId: loginResponse.device_id ?? undefined
       })
+
+      // SSO 登录成功后持久化 deviceId，供后续登录复用
+      if (loginResponse.user_id && loginResponse.device_id) {
+        persistDeviceId(loginResponse.user_id, loginResponse.device_id)
+      }
 
       connectionManager.updateConnectionState('CONNECTED')
       const expiresInMs = loginResponse.expires_in_ms ?? 0

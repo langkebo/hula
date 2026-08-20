@@ -114,6 +114,12 @@ describe('resolveStableDeviceId', () => {
 })
 
 describe('MatrixClientAuth.login', () => {
+  beforeEach(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('tjg.persistedDeviceId:')) localStorage.removeItem(key)
+    }
+  })
+
   it('无 client 时返回客户端未初始化', async () => {
     const { auth, deps } = makeAuth()
     const result = await auth.login('alice', 'pw')
@@ -133,7 +139,8 @@ describe('MatrixClientAuth.login', () => {
       type: 'm.login.password',
       identifier: { type: 'm.id.user', user: 'alice' },
       password: 'pw',
-      initial_device_display_name: 'MyDevice'
+      initial_device_display_name: 'MyDevice',
+      device_id: 'DEV1'
     })
     expect(deps.connectionManager.updateConnectionState).toHaveBeenCalledWith('CONNECTED')
     expect(deps.lifecycle.initialize).toHaveBeenCalledWith(
@@ -188,6 +195,29 @@ describe('MatrixClientAuth.login', () => {
     expect(result).toEqual({ success: false, error: 'http fallback failed' })
     expect(deps.connectionManager.updateConnectionState).toHaveBeenCalledWith('ERROR')
   })
+
+  it('复用持久化 deviceId 作为 device_id 登录，避免累积新设备', async () => {
+    const { auth, deps, client } = makeAuth()
+    deps.connectionManager.getClient.mockReturnValue(client)
+    deps.connectionManager.getConfig.mockReturnValue({ homeserverUrl: 'https://hs' })
+    localStorage.setItem('tjg.persistedDeviceId:alice', 'PERSISTED-DEV')
+    client.loginRequest.mockResolvedValue(makeLoginResponse({ device_id: 'PERSISTED-DEV' }))
+
+    await auth.login('alice', 'pw', 'MyDevice')
+
+    expect(client.loginRequest).toHaveBeenCalledWith(expect.objectContaining({ device_id: 'PERSISTED-DEV' }))
+  })
+
+  it('登录成功后持久化 deviceId，供下次登录复用', async () => {
+    const { auth, deps, client } = makeAuth()
+    deps.connectionManager.getClient.mockReturnValue(client)
+    deps.connectionManager.getConfig.mockReturnValue({ homeserverUrl: 'https://hs' })
+    client.loginRequest.mockResolvedValue(makeLoginResponse({ device_id: 'NEW-DEV' }))
+
+    await auth.login('alice', 'pw')
+
+    expect(localStorage.getItem('tjg.persistedDeviceId:alice')).toBe('NEW-DEV')
+  })
 })
 
 describe('MatrixClientAuth.getSSOLoginUrl', () => {
@@ -225,6 +255,12 @@ describe('MatrixClientAuth.getSSOLoginUrl', () => {
 })
 
 describe('MatrixClientAuth.completeSSOLogin', () => {
+  beforeEach(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('tjg.persistedDeviceId:')) localStorage.removeItem(key)
+    }
+  })
+
   it('无 client 时返回客户端未初始化', async () => {
     const { auth } = makeAuth()
     const result = await auth.completeSSOLogin('sso-token')
@@ -254,6 +290,16 @@ describe('MatrixClientAuth.completeSSOLogin', () => {
 
     expect(tokenLoginByHttpFallback).toHaveBeenCalledWith('https://hs', 'sso-token')
     expect(result.success).toBe(true)
+  })
+
+  it('SSO 登录成功后持久化 deviceId，供下次登录复用', async () => {
+    const { auth, deps, client } = makeAuth()
+    deps.connectionManager.getClient.mockReturnValue(client)
+    client.login.mockResolvedValue(makeLoginResponse({ user_id: '@alice:hs', device_id: 'SSO-DEV' }))
+
+    await auth.completeSSOLogin('sso-token')
+
+    expect(localStorage.getItem('tjg.persistedDeviceId:@alice:hs')).toBe('SSO-DEV')
   })
 })
 
