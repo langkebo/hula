@@ -49,8 +49,12 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
   }
 
   function handleFriendSync(): void {
-    list.loadContacts()
-    requests.loadFriendRequests()
+    // 从缓存的 syncState 直接更新 store，避免额外 HTTP 请求。
+    // updateSyncState() 已在 MatrixFriendSync 的事件回调中执行，
+    // 此处只需读取最新状态并反映到本地数据。
+    const syncState = matrixFriendService.getSyncStateValue()
+    list.updateContactsFromFriends(syncState.friends)
+    requests.updateFromSyncState(syncState.incomingRequests, syncState.outgoingRequests)
   }
 
   const list = createContactsList({ ensureFriendServicesReady })

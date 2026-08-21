@@ -138,14 +138,21 @@ describe('acceptFriendRequest', () => {
     expect(synapseFriendExtensionService.acceptFriendRequest).not.toHaveBeenCalled()
   })
 
-  it('manager 抛错时降级到 REST API', async () => {
-    mockSync.requireFriendManager.mockResolvedValue(mockManager)
-    mockManager.acceptFriendRequest.mockRejectedValue(new Error('boom'))
+  it('manager 未初始化时降级到 REST API', async () => {
+    mockSync.requireFriendManager.mockRejectedValue(new Error('朋友管理器未初始化 (not initialized)'))
     vi.mocked(synapseFriendExtensionService.acceptFriendRequest).mockResolvedValue({ status: 'ok', room_id: '!r' })
 
     await operations.acceptFriendRequest('@alice:example.org')
 
     expect(synapseFriendExtensionService.acceptFriendRequest).toHaveBeenCalledWith('@alice:example.org')
+  })
+
+  it('manager 抛服务端错误时不降级，直接抛出', async () => {
+    mockSync.requireFriendManager.mockResolvedValue(mockManager)
+    mockManager.acceptFriendRequest.mockRejectedValue(new Error('An internal error occurred'))
+
+    await expect(operations.acceptFriendRequest('@alice:example.org')).rejects.toThrow('An internal error occurred')
+    expect(synapseFriendExtensionService.acceptFriendRequest).not.toHaveBeenCalled()
   })
 })
 
@@ -198,14 +205,21 @@ describe('rejectFriendRequest', () => {
     expect(synapseFriendExtensionService.declineFriendRequest).not.toHaveBeenCalled()
   })
 
-  it('manager 抛错时降级到 REST API declineFriendRequest', async () => {
-    mockSync.requireFriendManager.mockResolvedValue(mockManager)
-    mockManager.rejectFriendRequest.mockRejectedValue(new Error('boom'))
+  it('manager 未初始化时降级到 REST API declineFriendRequest', async () => {
+    mockSync.requireFriendManager.mockRejectedValue(new Error('朋友管理器未初始化 (not initialized)'))
     vi.mocked(synapseFriendExtensionService.declineFriendRequest).mockResolvedValue(undefined)
 
     await operations.rejectFriendRequest('@alice:example.org')
 
     expect(synapseFriendExtensionService.declineFriendRequest).toHaveBeenCalledWith('@alice:example.org')
+  })
+
+  it('manager 抛服务端错误时不降级，直接抛出', async () => {
+    mockSync.requireFriendManager.mockResolvedValue(mockManager)
+    mockManager.rejectFriendRequest.mockRejectedValue(new Error('An internal error occurred'))
+
+    await expect(operations.rejectFriendRequest('@alice:example.org')).rejects.toThrow('An internal error occurred')
+    expect(synapseFriendExtensionService.declineFriendRequest).not.toHaveBeenCalled()
   })
 })
 
@@ -220,14 +234,21 @@ describe('removeFriend', () => {
     expect(synapseFriendExtensionService.removeFriend).not.toHaveBeenCalled()
   })
 
-  it('manager 抛错时降级到 REST API removeFriend', async () => {
-    mockSync.requireFriendManager.mockResolvedValue(mockManager)
-    mockManager.removeFriend.mockRejectedValue(new Error('boom'))
+  it('manager 未初始化时降级到 REST API removeFriend', async () => {
+    mockSync.requireFriendManager.mockRejectedValue(new Error('朋友管理器未初始化 (not initialized)'))
     vi.mocked(synapseFriendExtensionService.removeFriend).mockResolvedValue(undefined)
 
     await operations.removeFriend('@alice:example.org')
 
     expect(synapseFriendExtensionService.removeFriend).toHaveBeenCalledWith('@alice:example.org')
+  })
+
+  it('manager 抛服务端错误时不降级，直接抛出', async () => {
+    mockSync.requireFriendManager.mockResolvedValue(mockManager)
+    mockManager.removeFriend.mockRejectedValue(new Error('An internal error occurred'))
+
+    await expect(operations.removeFriend('@alice:example.org')).rejects.toThrow('An internal error occurred')
+    expect(synapseFriendExtensionService.removeFriend).not.toHaveBeenCalled()
   })
 })
 

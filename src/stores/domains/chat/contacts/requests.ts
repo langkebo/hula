@@ -22,6 +22,8 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
 
   const requestFriendsList = shallowRef<FriendRequestItem[]>([])
   const applyPageOptions = ref({ isLast: false, cursor: '', pageNo: 1 })
+  /** 防止 acceptFriendRequest 被重复调用 */
+  const pendingAccepts = new Set<string>()
 
   const incomingRequestsCount = computed(
     () => requestFriendsList.value.filter((r) => r.direction === 'incoming').length
@@ -91,6 +93,9 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
   }
 
   async function acceptFriendRequest(userId: string): Promise<boolean> {
+    // 防重入：同一用户同时只允许一个 accept 请求
+    if (pendingAccepts.has(userId)) return false
+    pendingAccepts.add(userId)
     try {
       await matrixFriendService.acceptFriendRequest(userId)
       requestFriendsList.value = requestFriendsList.value.filter(
@@ -99,7 +104,9 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
       globalStore.decrementFriendUnreadCount()
       logger.info(`[ContactStore] 接受好友请求成功: ${userId}`)
 
-      loadContacts()
+      // 并行执行非关键操作：加载联系人 + 创建/打开 DM 房间
+      void loadContacts()
+
       const roomId = await startDirectRoom(userId)
       if (roomId) {
         const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
@@ -110,6 +117,8 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
     } catch (err) {
       logger.error(`[ContactStore] 接受好友请求失败: ${err}`)
       return false
+    } finally {
+      pendingAccepts.delete(userId)
     }
   }
 
@@ -157,6 +166,34 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
     }
   }
 
+  /**
+   * 从 FriendSyncState 的请求列表直接更新本地状态，
+   * 避免每次 sync 事件触发全量 HTTP 请求。
+   */
+  function updateFromSyncState(incoming: FriendRequest[], outgoing: FriendRequest[]): void {
+    requestFriendsList.value = [
+      ...incoming.map((r) => ({
+        userId: r.user_id,
+        displayName: r.display_name,
+        avatarUrl: r.avatar_url,
+        message: r.message,
+        timestamp: r.timestamp,
+        direction: 'incoming' as const,
+        applyId: r.user_id
+      })),
+      ...outgoing.map((r) => ({
+        userId: r.user_id,
+        displayName: r.display_name,
+        avatarUrl: r.avatar_url,
+        message: r.message,
+        timestamp: r.timestamp,
+        direction: 'outgoing' as const,
+        applyId: r.user_id
+      }))
+    ]
+    globalStore.setFriendUnreadCount(incoming.length)
+  }
+
   return {
     requestFriendsList,
     applyPageOptions,
@@ -169,6 +206,7 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
     cancelFriendRequest,
     getApplyUnReadCount,
     getApplyPage,
-    onHandleInvite
+    onHandleInvite,
+    updateFromSyncState
   }
 }

@@ -279,6 +279,11 @@ class MatrixFriendService {
     }
   }
 
+  /** 同步获取缓存的 FriendSyncState（不发 HTTP 请求） */
+  getSyncStateValue(): FriendSyncState {
+    return this.friendSync.getSyncStateValue()
+  }
+
   async getSpecialFriends(): Promise<string[]> {
     try {
       return matrixSpecialFriendService.getSpecialFriends()
