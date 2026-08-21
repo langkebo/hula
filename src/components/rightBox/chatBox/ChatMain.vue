@@ -150,7 +150,6 @@ import { useRoomSearch } from '@/composables/chat/useRoomSearch'
 import { useWheelScrollLimiter } from '@/composables/chat/useWheelScrollLimiter'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
-import { usePopover } from '@/composables/common/usePopover'
 import { useWindow } from '@/composables/common/useWindow'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
@@ -203,7 +202,6 @@ const {
   groupNicknameSubmitting,
   handleGroupNicknameConfirm
 } = chatMainContext
-const { enableScroll } = usePopover(selectKey, 'image-chat-main')
 
 // Batch preload avatar URLs when message list changes
 useAvatarPreloader()
@@ -303,8 +301,6 @@ function handleViewStickyEvent(eventId: string) {
 defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId, stickyEvents, canSetSticky })
 
 const isMobileRef = ref(isMobile())
-
-provide('popoverControls', { enableScroll })
 
 const isGroup = computed<boolean>(() => chatStore.isGroup)
 const userUid = computed(() => userStore.userInfo?.uid ?? '')

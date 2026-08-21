@@ -96,10 +96,6 @@ vi.mock('@/composables/common/useMitt', () => ({
   useMitt: { on: mittOnMock, off: mittOffMock, emit: mittEmitMock }
 }))
 
-vi.mock('@/composables/common/usePopover', () => ({
-  usePopover: () => ({ handlePopoverUpdate: vi.fn(), enableScroll: vi.fn() })
-}))
-
 vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({ createWebviewWindow: vi.fn() })
 }))
