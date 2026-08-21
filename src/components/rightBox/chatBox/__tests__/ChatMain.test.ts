@@ -236,12 +236,6 @@ vi.mock('@/composables/common/useNetworkStatus', () => ({
   })
 }))
 
-vi.mock('@/composables/common/usePopover', () => ({
-  usePopover: () => ({
-    enableScroll: vi.fn()
-  })
-}))
-
 vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     createWebviewWindow: vi.fn()

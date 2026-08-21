@@ -171,7 +171,6 @@
               <n-popover
                 v-else
                 :ref="(el: any) => (infoPopoverRefs[item.user.uid] = el)"
-                @update:show="handlePopoverUpdate(item.user.uid, $event)"
                 trigger="click"
                 placement="left"
                 :show-arrow="false"
@@ -323,7 +322,6 @@ import { useChatMain } from '@/composables/chat/useChatMain'
 import { useRoomType } from '@/composables/chat/useRoomType'
 import { useLinkSegments } from '@/composables/common/useLinkSegments'
 import { useMitt } from '@/composables/common/useMitt'
-import { usePopover } from '@/composables/common/usePopover'
 import { useWindow } from '@/composables/common/useWindow'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { MittEnum, OnlineEnum, RoleEnum, RoomTypeEnum, ThemeEnum, WsResponseMessageType } from '@/enums'
@@ -374,8 +372,6 @@ const infoPopoverRefs = ref<Record<string, { setShow: (show: boolean) => void } 
 const inputInstRef = ref<InputInst | null>(null)
 const isCollapsed = ref(true)
 const { optionsList, report, selectKey } = useChatMain()
-const { handlePopoverUpdate, enableScroll } = usePopover(selectKey, 'image-chat-sidebar')
-provide('popoverControls', { enableScroll })
 
 // 用于稳定展示的用户列表
 const displayedUserList = ref<UserItem[]>([])
@@ -606,7 +602,6 @@ onMounted(async () => {
   useMitt.on(`${MittEnum.INFO_POPOVER}-Sidebar`, (event: { uid: string }) => {
     selectKey.value = event.uid
     infoPopoverRefs.value[event.uid]?.setShow(true)
-    handlePopoverUpdate(event.uid)
   })
 
   useMitt.on(MittEnum.OPEN_ANNOUNCEMENT_PANEL, () => {

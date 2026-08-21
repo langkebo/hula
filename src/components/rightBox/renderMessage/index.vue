@@ -42,7 +42,6 @@
         <!-- 头像 -->
         <n-popover
           :ref="(el: unknown) => setInfoPopoverRef(message.message.id, el)"
-          @update:show="handlePopoverUpdate(message.message.id, $event)"
           trigger="click"
           :placement="isMe ? 'left' : 'right'"
           :show-arrow="false"
@@ -344,7 +343,6 @@ import BurnMessage from '@/components/burn/BurnMessage.vue'
 import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useMitt } from '@/composables/common/useMitt'
-import { usePopover } from '@/composables/common/usePopover'
 import { MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
 import router from '@/router'
@@ -427,7 +425,6 @@ const messageBody = computed((): MessageBody => {
 
 const selectKey = ref(senderUid.value || props.message.message.id)
 const infoPopoverRefs = reactive<Record<string, ShowablePopover | null>>({})
-const { handlePopoverUpdate } = usePopover(selectKey, 'image-chat-main')
 const setInfoPopoverRef = (messageId: string, el: unknown) => {
   infoPopoverRefs[messageId] = isShowablePopover(el) ? el : null
 }
@@ -583,7 +580,6 @@ useMitt.on(`${MittEnum.INFO_POPOVER}-Main`, (event: { uid: string }) => {
   const popover = infoPopoverRefs[messageId]
   if (popover) {
     popover.setShow(true)
-    handlePopoverUpdate(messageId)
   }
 })
 </script>

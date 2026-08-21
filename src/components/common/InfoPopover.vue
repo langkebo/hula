@@ -169,7 +169,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, inject, nextTick, onMounted, type Ref, ref } from 'vue'
+import { computed, nextTick, onMounted, type Ref, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -482,10 +482,7 @@ const openEditInfo = () => {
   }
 }
 
-let enableScroll = () => {}
-
 const handleOpenMsgSession = async (targetUid: string) => {
-  enableScroll()
   await openMsgSession(targetUid)
 }
 
@@ -542,12 +539,6 @@ function legacyCopy(text: string): boolean {
 const rootEl: Ref<HTMLElement | null> = ref(null)
 
 onMounted(() => {
-  const popoverControls = inject('popoverControls', { enableScroll: () => {} })
-  enableScroll = () => {
-    if (typeof popoverControls.enableScroll === 'function') {
-      popoverControls.enableScroll()
-    }
-  }
   void loadProfile()
   nextTick(() => {
     const el = (rootEl.value as { $el?: HTMLElement } | null)?.$el ?? (rootEl.value as HTMLElement | null)
