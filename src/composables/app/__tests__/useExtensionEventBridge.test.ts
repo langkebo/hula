@@ -53,7 +53,7 @@ function createMockManager() {
 }
 
 describe('useExtensionEventBridge', () => {
-  it('订阅好友请求收到事件并转发到 mitt', () => {
+  it('不再桥接好友事件（由 MatrixFriendSync 直接处理）', () => {
     const friendManager = createMockManager()
     const client = {
       getFriendManager: () => friendManager,
@@ -62,29 +62,35 @@ describe('useExtensionEventBridge', () => {
     }
 
     const { cleanup } = useExtensionEventBridge(client)
-    expect(friendManager.on).toHaveBeenCalledWith('RequestReceived', expect.any(Function))
+    // 好友事件已移除桥接，FriendManager 不应注册任何监听器
+    expect(friendManager.on).not.toHaveBeenCalled()
 
-    // Simulate friend request received
+    // 模拟触发也不会转发到 mitt
     const request = { userId: '@alice:server', reason: 'hi' }
     friendManager._emit('RequestReceived', request)
-
-    expect(emitMock).toHaveBeenCalledWith(MittEnum.FRIEND_REQUEST_RECEIVED, request)
+    expect(emitMock).not.toHaveBeenCalled()
     cleanup()
   })
 
-  it('订阅好友被移除事件并转发到 mitt', () => {
-    const friendManager = createMockManager()
+  it('cleanup 取消所有事件订阅', () => {
+    const burnManager = createMockManager()
+    const widgetManager = createMockManager()
     const client = {
-      getFriendManager: () => friendManager,
-      getBurnAfterReadManager: () => createMockManager(),
-      getWidgetManager: () => createMockManager()
+      getFriendManager: () => createMockManager(),
+      getBurnAfterReadManager: () => burnManager,
+      getWidgetManager: () => widgetManager
     }
 
     const { cleanup } = useExtensionEventBridge(client)
-    friendManager._emit('FriendRemoved', '@bob:server')
+    // burn 和 widget manager 应有监听器注册
+    expect(burnManager.on).toHaveBeenCalled()
+    expect(widgetManager.on).toHaveBeenCalled()
 
-    expect(emitMock).toHaveBeenCalledWith(MittEnum.FRIEND_REMOVED, '@bob:server')
     cleanup()
+
+    // cleanup 后 off 应被调用
+    expect(burnManager.off).toHaveBeenCalled()
+    expect(widgetManager.off).toHaveBeenCalled()
   })
 
   it('订阅阅后即焚消息已读事件并转发到 mitt', () => {
@@ -152,30 +158,6 @@ describe('useExtensionEventBridge', () => {
 
     expect(emitMock).toHaveBeenCalledWith(MittEnum.WIDGET_DELETED, 'w1')
     cleanup()
-  })
-
-  it('cleanup 取消所有事件订阅', () => {
-    const friendManager = createMockManager()
-    const burnManager = createMockManager()
-    const widgetManager = createMockManager()
-    const client = {
-      getFriendManager: () => friendManager,
-      getBurnAfterReadManager: () => burnManager,
-      getWidgetManager: () => widgetManager
-    }
-
-    const { cleanup } = useExtensionEventBridge(client)
-    // Each manager should have listeners registered
-    expect(friendManager.on).toHaveBeenCalled()
-    expect(burnManager.on).toHaveBeenCalled()
-    expect(widgetManager.on).toHaveBeenCalled()
-
-    cleanup()
-
-    // After cleanup, off should be called for each registered handler
-    expect(friendManager.off).toHaveBeenCalled()
-    expect(burnManager.off).toHaveBeenCalled()
-    expect(widgetManager.off).toHaveBeenCalled()
   })
 
   it('当 client 没有 getFriendManager 时不崩溃', () => {

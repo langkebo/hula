@@ -76,13 +76,28 @@ export class MatrixFriendOperations {
   }
 
   /** 接受好友请求
+   *
+   * 仅在 FriendManager 不可用（未初始化）时 fallback REST，
+   * 服务端错误（500 等）不重试，避免双重接受。
    */
   async acceptFriendRequest(userId: string): Promise<void> {
+    let sdkFailed = false
     try {
       const manager = await this.sync.requireFriendManager()
       await manager.acceptFriendRequest(userId)
       logger.info(`[MatrixFriend] 接受好友请求成功: ${userId}`)
-    } catch {
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      // 只有 manager 未初始化时才走 REST 降级
+      if (errMsg.includes('not initialized') || errMsg.includes('不可用')) {
+        sdkFailed = true
+      } else {
+        logger.error(`[MatrixFriend] 接受好友请求失败: ${err}`)
+        throw err
+      }
+    }
+
+    if (sdkFailed) {
       await synapseFriendExtensionService.acceptFriendRequest(userId)
       logger.info(`[MatrixFriend] 接受好友请求成功(REST降级): ${userId}`)
     }
@@ -114,26 +129,52 @@ export class MatrixFriendOperations {
   }
 
   /** 拒绝好友请求
+   *
+   * 仅在 FriendManager 不可用时 fallback REST，服务端错误不重试。
    */
   async rejectFriendRequest(userId: string): Promise<void> {
+    let sdkFailed = false
     try {
       const manager = await this.sync.requireFriendManager()
       await manager.rejectFriendRequest(userId)
       logger.info(`[MatrixFriend] 拒绝好友请求成功: ${userId}`)
-    } catch {
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (errMsg.includes('not initialized') || errMsg.includes('不可用')) {
+        sdkFailed = true
+      } else {
+        logger.error(`[MatrixFriend] 拒绝好友请求失败: ${err}`)
+        throw err
+      }
+    }
+
+    if (sdkFailed) {
       await synapseFriendExtensionService.declineFriendRequest(userId)
       logger.info(`[MatrixFriend] 拒绝好友请求成功(REST降级): ${userId}`)
     }
   }
 
   /** 删除好友
+   *
+   * 仅在 FriendManager 不可用时 fallback REST，服务端错误不重试。
    */
   async removeFriend(userId: string): Promise<void> {
+    let sdkFailed = false
     try {
       const manager = await this.sync.requireFriendManager()
       await manager.removeFriend(userId)
       logger.info(`[MatrixFriend] 删除好友成功: ${userId}`)
-    } catch {
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      if (errMsg.includes('not initialized') || errMsg.includes('不可用')) {
+        sdkFailed = true
+      } else {
+        logger.error(`[MatrixFriend] 删除好友失败: ${err}`)
+        throw err
+      }
+    }
+
+    if (sdkFailed) {
       await synapseFriendExtensionService.removeFriend(userId)
       logger.info(`[MatrixFriend] 删除好友成功(REST降级): ${userId}`)
     }
@@ -166,9 +207,16 @@ export class MatrixFriendOperations {
       }
 
       logger.info(`[MatrixFriend] 设置好友笔记成功: ${userId}`)
-    } catch {
-      await synapseFriendExtensionService.setFriendNote(userId, note)
-      logger.info(`[MatrixFriend] 设置好友笔记成功(REST降级): ${userId}`)
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      // manager 未初始化或不支持备注功能时 fallback REST
+      if (errMsg.includes('not initialized') || errMsg.includes('不可用') || errMsg.includes('unsupported')) {
+        await synapseFriendExtensionService.setFriendNote(userId, note)
+        logger.info(`[MatrixFriend] 设置好友笔记成功(REST降级): ${userId}`)
+      } else {
+        logger.error(`[MatrixFriend] 设置好友笔记失败: ${err}`)
+        throw err
+      }
     }
   }
 

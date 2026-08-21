@@ -249,16 +249,17 @@ export function useWsEventHandler() {
       }
     })
 
-    // ===== Manager 事件 → store 联动（由 subscribeManagerEvents 桥接的 mitt 事件）=====
+    // ===== Manager 事件 → store 联动 =====
+    // 注意：好友相关事件已由 MatrixFriendSync 通过 MatrixFriendService 事件通道
+    // 直接更新 contact store，此处仅补充 badge 刷新，避免重复全量重载导致请求风暴。
     useMitt.on(MittEnum.FRIEND_REQUEST_RECEIVED, async () => {
       logger.debug('[ManagerEvent] 收到好友请求')
-      await contactStore.getApplyPage('friend', true)
       globalStore.refreshUnreadBadge()
     })
 
     useMitt.on(MittEnum.FRIEND_REQUEST_ACCEPTED, async () => {
       logger.debug('[ManagerEvent] 好友请求被接受')
-      await contactStore.getContactList(true)
+      globalStore.refreshUnreadBadge()
     })
 
     useMitt.on(MittEnum.FRIEND_REMOVED, async () => {

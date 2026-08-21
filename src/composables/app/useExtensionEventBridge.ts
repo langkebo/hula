@@ -38,10 +38,10 @@ export function useExtensionEventBridge(client: ClientLike) {
     unlisteners.push(() => manager.off(event, handler))
   }
 
-  // Friend events
-  bridge(client.getFriendManager, 'RequestReceived', MittEnum.FRIEND_REQUEST_RECEIVED)
-  bridge(client.getFriendManager, 'RequestAccepted', MittEnum.FRIEND_REQUEST_ACCEPTED)
-  bridge(client.getFriendManager, 'FriendRemoved', MittEnum.FRIEND_REMOVED)
+  // Friend events: 已移除冗余桥接。
+  // MatrixFriendSync.setupEventListeners() 已通过 MatrixFriendService 事件通道
+  // (on requestReceived/friendRemoved/sync) 直接更新 contact store，
+  // 无需再经 mitt 二次转发导致重复触发和请求风暴。
 
   // Burn after read events
   bridge(

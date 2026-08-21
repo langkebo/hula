@@ -280,6 +280,32 @@ export function createContactsList(ctx: ContactsListContext) {
     return matrixFriendService.isFriend(userId)
   }
 
+  /**
+   * 从 FriendSyncState 中的 friends 增量更新联系人列表，
+   * 避免每次 sync 事件触发全量 HTTP 请求。
+   */
+  function updateContactsFromFriends(friends: Friend[]): void {
+    const existingMap = new Map(contactsList.value.map((c) => [c.userId, c]))
+    const updated: MatrixContact[] = []
+    const seenIds = new Set<string>()
+
+    for (const friend of friends) {
+      const contact = friendToContact(friend)
+      const existing = existingMap.get(friend.user_id)
+      updated.push(existing ? { ...existing, ...contact } : contact)
+      seenIds.add(friend.user_id)
+    }
+
+    // 保留 syncState 中不存在但本地已有的联系人（如非好友的 DM 对话）
+    for (const [userId, contact] of existingMap) {
+      if (!seenIds.has(userId)) {
+        updated.push(contact)
+      }
+    }
+
+    contactsList.value = updated
+  }
+
   return {
     contactsList,
     isLoading,
@@ -301,6 +327,7 @@ export function createContactsList(ctx: ContactsListContext) {
     setFriendDisplayName,
     setFriendStatus,
     getContactByUserId,
+    updateContactsFromFriends,
     updateContactPresence,
     isFriend
   }

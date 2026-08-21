@@ -32,6 +32,9 @@ type FriendManagerResolution =
  * 通过构造函数注入 emit 回调，与外层服务的事件系统解耦。
  */
 export class MatrixFriendSync {
+  private static readonly POLL_INTERVAL = 30_000
+  private static readonly POLL_MAX_INTERVAL = 120_000
+
   private friendManager: FriendManagerCompat | null = null
   private observedClient: MatrixClient | null = null
   private managerStarted = false
@@ -41,14 +44,18 @@ export class MatrixFriendSync {
     incomingRequests: [],
     outgoingRequests: []
   }
-  /** 好友请求轮询定时器（后端不推送事件，需要前端定时拉取） */
-  private pollTimer: ReturnType<typeof setInterval> | null = null
-  /** 轮询间隔（毫秒） */
-  private static readonly POLL_INTERVAL = 30_000
+  /** 好友请求轮询定时器（后端不推送好友请求事件，需要前端定时拉取） */
+  private pollTimer: ReturnType<typeof setTimeout> | null = null
+  /** 当前轮询间隔（毫秒），429 时自适应延长 */
+  private pollIntervalMs = MatrixFriendSync.POLL_INTERVAL
   /** 连接状态变更回调引用（用于注销） */
   private connectionStateCallback: ((...args: unknown[]) => void) | null = null
   /** 防止 handleClientReady 并发重试 */
   private isRetrying = false
+  /** 防止 updateSyncState 递归调用 */
+  private isUpdatingSyncState = false
+  /** 同步完成后抑制下一次轮询的 emit，避免 client 重置后重复触发 */
+  private suppressNextPollEmit = false
 
   constructor(private readonly emit: (event: string, data?: unknown) => void) {}
 
@@ -143,6 +150,7 @@ export class MatrixFriendSync {
       this.managerStarted = false
       this.hasLoggedMissingFriendManager = false
       this.syncState = { friends: [], incomingRequests: [], outgoingRequests: [] }
+      this.suppressNextPollEmit = true
     }
 
     const manager = this.getFriendManager(client)
@@ -217,10 +225,11 @@ export class MatrixFriendSync {
     return manager
   }
 
-  /** 更新同步状态
-   */
+  /** 更新同步状态（幂等，防止 SDK 事件回调递归） */
   async updateSyncState(): Promise<void> {
     if (!this.friendManager) return
+    if (this.isUpdatingSyncState) return
+    this.isUpdatingSyncState = true
     try {
       const results = await Promise.allSettled([
         this.friendManager.getFriends(),
@@ -234,6 +243,8 @@ export class MatrixFriendSync {
       }
     } catch (err) {
       logger.error(`[MatrixFriend] 更新同步状态失败: ${err}`)
+    } finally {
+      this.isUpdatingSyncState = false
     }
   }
 
@@ -308,31 +319,45 @@ export class MatrixFriendSync {
 
   /**
    * 启动好友请求轮询
-   * 后端 synapse-rust 不推送好友请求事件，需要前端定时拉取
+   * 后端 synapse-rust 不推送好友请求事件，需要前端定时拉取。
+   * 使用自适应间隔：429 限流时自动延长间隔，成功后恢复。
    */
   private startPolling(): void {
     this.stopPolling()
-    this.pollTimer = setInterval(async () => {
+    this.scheduleNextPoll()
+  }
+
+  private scheduleNextPoll(): void {
+    this.pollTimer = setTimeout(async () => {
       try {
-        await this.pollFriendRequests()
+        const wasRateLimited = await this.pollFriendRequests()
+        if (wasRateLimited) {
+          this.pollIntervalMs = Math.min(this.pollIntervalMs * 2, MatrixFriendSync.POLL_MAX_INTERVAL)
+          logger.info(`[MatrixFriend] 轮询间隔延长至 ${this.pollIntervalMs / 1000}s（429 限流）`)
+        } else {
+          this.pollIntervalMs = MatrixFriendSync.POLL_INTERVAL
+        }
       } catch (err) {
         logger.warn(`[MatrixFriend] 轮询好友请求失败: ${err}`)
       }
-    }, MatrixFriendSync.POLL_INTERVAL)
+      this.scheduleNextPoll()
+    }, this.pollIntervalMs)
   }
 
   /** 停止好友请求轮询 */
   private stopPolling(): void {
     if (this.pollTimer !== null) {
-      clearInterval(this.pollTimer)
+      clearTimeout(this.pollTimer)
       this.pollTimer = null
     }
   }
 
-  /** 轮询好友请求，检测新增/变更的请求 */
-  private async pollFriendRequests(): Promise<void> {
+  /** 轮询好友请求，检测新增/变更的请求。返回 true 表示被 429 限流。 */
+  private async pollFriendRequests(): Promise<boolean> {
     const prevIncomingIds = new Set(this.syncState.incomingRequests.map((r) => r.user_id))
     const prevOutgoingIds = new Set(this.syncState.outgoingRequests.map((r) => r.user_id))
+
+    let wasRateLimited = false
 
     if (this.friendManager && this.managerStarted) {
       // FriendManager 可用时，通过 SDK 拉取
@@ -347,9 +372,17 @@ export class MatrixFriendSync {
           outgoingRequests: (pending.outgoing ?? []).map((r) => normalizeSynapseFriendRequest(r, 'outgoing'))
         }
       } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err)
+        wasRateLimited = errMsg.includes('rate_limited') || errMsg.includes('429')
         logger.warn(`[MatrixFriend] REST API 轮询好友请求失败: ${err}`)
-        return
+        return wasRateLimited
       }
+    }
+
+    // 首次轮询（client 重置后）只更新状态不触发事件，避免将已有请求误识别为"新增"
+    if (this.suppressNextPollEmit) {
+      this.suppressNextPollEmit = false
+      return false
     }
 
     // 检测新增的入站好友请求
@@ -366,6 +399,8 @@ export class MatrixFriendSync {
     if (newIncoming.length > 0 || newOutgoing.length > 0) {
       this.emit('sync', this.syncState)
     }
+
+    return wasRateLimited
   }
 
   /** 执行好友列表同步
