@@ -12,8 +12,10 @@
       <SpaceRoomGrid
         :rooms="spaceRooms"
         :loading="roomsLoading"
+        :can-manage="canManageSelectedSpace"
         @enter-room="handleEnterRoom"
-        @preview-room="handleEnterRoom" />
+        @preview-room="handleEnterRoom"
+        @toggle-suggested="handleToggleSuggested" />
     </section>
 
     <!-- 完整详情面板（保留既有全部能力） -->
@@ -103,6 +105,7 @@ const {
   loading: roomsLoading,
   load: loadSpaceRooms,
   addRoom: addRoomToSpace,
+  toggleSuggested: toggleSuggestedInSpace,
   mutating: addRoomMutating
 } = useSpaceRooms(() => spaceId.value)
 
@@ -190,6 +193,23 @@ const handleEnterRoom = async (roomId: string) => {
     await enterChatFn(roomId, 'room')
   } catch (err) {
     showFeedback(String(err), 'error')
+  }
+}
+
+// 切换子房间建议标记（星标）
+const handleToggleSuggested = async (roomId: string, currentSuggested: boolean) => {
+  try {
+    const ok = await toggleSuggestedInSpace(roomId, currentSuggested)
+    if (ok) {
+      showFeedback(
+        currentSuggested ? t('space.unmark_suggested_success') : t('space.mark_suggested_success'),
+        'success'
+      )
+    } else {
+      showFeedback(t('space.toggle_suggested_failed'), 'error')
+    }
+  } catch (err) {
+    showFeedback(String(err) || t('space.toggle_suggested_failed'), 'error')
   }
 }
 

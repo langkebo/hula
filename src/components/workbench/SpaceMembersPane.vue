@@ -49,12 +49,16 @@
         {{ t('space.detail_members_empty') }}
       </div>
     </div>
+
+    <!-- 搜索式邀请（管理员可见，位于成员列表下方） -->
+    <SpaceInviteBar v-if="canManage" :space-id="spaceId" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import SpaceInviteBar from '@/components/space/SpaceInviteBar.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSpaceMembers } from '@/composables/space/useSpaceMembers'
 

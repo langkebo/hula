@@ -15,6 +15,7 @@ const {
   loadSpaceRoomsMock,
   inviteSpaceMemberMock,
   addRoomToSpaceMock,
+  toggleSuggestedInSpaceMock,
   canManageSpaceMock,
   leaveSpaceMock,
   deleteSpaceMock,
@@ -34,6 +35,7 @@ const {
   loadSpaceRoomsMock: vi.fn(async () => undefined),
   inviteSpaceMemberMock: vi.fn(async () => true),
   addRoomToSpaceMock: vi.fn(async () => true),
+  toggleSuggestedInSpaceMock: vi.fn(async () => true),
   canManageSpaceMock: vi.fn(() => true),
   leaveSpaceMock: vi.fn(async () => undefined),
   deleteSpaceMock: vi.fn(async () => undefined),
@@ -121,6 +123,7 @@ vi.mock('@/composables/space', () => ({
     loading: ref(false),
     load: loadSpaceRoomsMock,
     addRoom: addRoomToSpaceMock,
+    toggleSuggested: toggleSuggestedInSpaceMock,
     mutating: ref(false)
   })
 }))
@@ -498,5 +501,32 @@ describe('SpaceChildrenPane', () => {
 
     vm.openInviteSpaceMember()
     expect(vm.manageMode).toBeNull()
+  })
+
+  it('toggles suggested flag via useSpaceRooms and shows success feedback', async () => {
+    const wrapper = mount(SpaceChildrenPane)
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as { handleToggleSuggested: (roomId: string, current: boolean) => Promise<void> }
+    toggleSuggestedInSpaceMock.mockResolvedValueOnce(true)
+    showFeedbackMock.mockClear()
+
+    await vm.handleToggleSuggested('!room-1:server', false)
+
+    expect(toggleSuggestedInSpaceMock).toHaveBeenCalledWith('!room-1:server', false)
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.mark_suggested_success', 'success')
+  })
+
+  it('shows failure feedback when toggleSuggested returns false', async () => {
+    const wrapper = mount(SpaceChildrenPane)
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as { handleToggleSuggested: (roomId: string, current: boolean) => Promise<void> }
+    toggleSuggestedInSpaceMock.mockResolvedValueOnce(false)
+    showFeedbackMock.mockClear()
+
+    await vm.handleToggleSuggested('!room-1:server', true)
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.toggle_suggested_failed', 'error')
   })
 })

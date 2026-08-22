@@ -34,31 +34,34 @@
         </svg>
       </button>
 
-      <!-- 创建空间按钮 -->
-      <button
-        type="button"
-        class="space-view-header__icon-btn"
-        :aria-label="t('space.create')"
-        :title="t('space.create')"
-        @click="handleCreate">
-        <svg
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </button>
+      <!-- 创建下拉（创建空间 / 创建房间） -->
+      <n-dropdown :options="createOptions" @select="handleCreateSelect">
+        <button
+          type="button"
+          class="space-view-header__icon-btn"
+          :aria-label="t('space.create')"
+          :title="t('space.create')">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      </n-dropdown>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
+import { NDropdown } from 'naive-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SpaceSwitcher from '@/components/space/SpaceSwitcher.vue'
 
@@ -70,7 +73,7 @@ interface SpaceInfo {
   memberCount?: number
 }
 
-defineProps<{
+const props = defineProps<{
   spaces: SpaceInfo[]
   currentSpaceId: string
   showSwitcher?: boolean
@@ -80,6 +83,7 @@ const emit = defineEmits<{
   'space-select': [spaceId: string]
   search: []
   create: []
+  'create-room': []
 }>()
 
 const { t } = useI18n()
@@ -92,8 +96,19 @@ const handleSearch = () => {
   emit('search')
 }
 
-const handleCreate = () => {
-  emit('create')
+// 创建下拉选项：创建空间始终可用；创建房间需先选中一个空间
+const createOptions = computed(() => [
+  { label: t('space.create'), key: 'create-space' },
+  {
+    label: t('space.create_room'),
+    key: 'create-room',
+    disabled: !props.currentSpaceId
+  }
+])
+
+const handleCreateSelect = (key: string) => {
+  if (key === 'create-room') emit('create-room')
+  else emit('create')
 }
 </script>
 
