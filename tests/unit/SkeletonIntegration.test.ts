@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, defineComponent, ref } from 'vue'
 
 // ============ 共享 mocks ============
 vi.mock('vue-i18n', () => ({
@@ -15,6 +15,17 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ name: 'space', path: '/space', params: {}, query: {} }),
   useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
   onBeforeRouteLeave: vi.fn()
+}))
+
+// SpaceCreateRoomPane 是 SpaceList 的新增子组件；桩掉以避免其依赖链
+// （openMsgSession → router/index.ts → createRouter）被拉入 SpaceList 测试。
+vi.mock('@/components/space/SpaceCreateRoomPane.vue', () => ({
+  default: defineComponent({
+    name: 'SpaceCreateRoomPaneStub',
+    props: { spaceId: String, show: Boolean },
+    emits: ['update:show', 'created'],
+    template: '<div class="space-create-room-pane-stub" />'
+  })
 }))
 
 vi.mock('naive-ui', () => ({

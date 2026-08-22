@@ -14,7 +14,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 /**
  * 用户目录搜索结果
  */
-interface UserDirectorySearchResult {
+export interface UserDirectorySearchResult {
   /** 用户 ID */
   userId: string
   /** 显示名 */

@@ -62,6 +62,29 @@
           </div>
         </div>
 
+        <!-- 建议标记切换（仅空间创建者可见） -->
+        <button
+          v-if="canManage"
+          type="button"
+          class="space-room-grid__star-btn"
+          :class="{ 'is-suggested': room.suggested }"
+          :aria-label="room.suggested ? t('space.unmark_suggested') : t('space.mark_suggested')"
+          :title="room.suggested ? t('space.unmark_suggested') : t('space.mark_suggested')"
+          @click.stop="handleToggleSuggested(room, $event)">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            :fill="room.suggested ? 'currentColor' : 'none'"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+            aria-hidden="true">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+        </button>
+        <span v-if="room.suggested" class="space-room-grid__suggested-tag">{{ t('space.suggested_label') }}</span>
+
         <!-- 聊天入口图标 -->
         <button
           type="button"
@@ -100,17 +123,25 @@ const SKELETON_COUNT = 5
 defineProps<{
   rooms: SpaceChildRoom[]
   loading?: boolean
+  /** 当前用户是否为空间创建者（决定是否显示建议标记按钮） */
+  canManage?: boolean
 }>()
 
 const emit = defineEmits<{
   'enter-room': [roomId: string]
   'preview-room': [roomId: string]
+  'toggle-suggested': [roomId: string, currentSuggested: boolean]
 }>()
 
 const { t } = useI18n()
 
 const getInitial = (name: string): string => {
   return name?.charAt(0)?.toUpperCase() || '?'
+}
+
+const handleToggleSuggested = (room: SpaceChildRoom, e: MouseEvent) => {
+  e.stopPropagation()
+  emit('toggle-suggested', room.roomId, room.suggested ?? false)
 }
 </script>
 
@@ -246,6 +277,46 @@ const getInitial = (name: string): string => {
     outline: 2px solid var(--tjg-color-primary-500);
     outline-offset: 2px;
   }
+}
+
+.space-room-grid__star-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--tjg-radius-xs);
+  background: transparent;
+  color: var(--tjg-text-quaternary);
+  cursor: pointer;
+  transition:
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+
+  &:hover {
+    background: var(--tjg-surface-list-hover);
+    color: var(--tjg-color-primary-500);
+  }
+
+  &.is-suggested {
+    color: var(--tjg-color-primary-500);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tjg-color-primary-500);
+    outline-offset: 2px;
+  }
+}
+
+.space-room-grid__suggested-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--tjg-color-primary-600, var(--tjg-color-primary-500));
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--tjg-color-primary-50, var(--tjg-surface-search));
 }
 
 /* 骨架屏 */

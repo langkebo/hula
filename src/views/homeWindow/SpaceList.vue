@@ -7,7 +7,8 @@
       :current-space-id="selectedSpaceId"
       @space-select="handleSelectSpace"
       @search="handleGlobalSearch"
-      @create="openCreateSpace" />
+      @create="openCreateSpace"
+      @create-room="openCreateRoomModal" />
 
     <!-- 视图切换工具条：列表 / 层级树 -->
     <div v-if="!isLoading" class="space-list-page__view-bar" role="tablist" :aria-label="t('space.title')">
@@ -88,12 +89,15 @@
         @delete-space="handleDeleteSpace"
         @create-space="openCreateSpace" />
     </div>
+
+    <SpaceCreateRoomPane :space-id="selectedSpaceId" v-model:show="showCreateRoomModal" />
   </div>
 </template>
 
 <script lang="ts" setup name="spaceList">
 import { useI18n } from 'vue-i18n'
 import SkeletonSpaceTree from '@/components/common/SkeletonSpaceTree.vue'
+import SpaceCreateRoomPane from '@/components/space/SpaceCreateRoomPane.vue'
 import type { SpaceTreeNode } from '@/components/space/SpaceTree.vue'
 import SpaceTree from '@/components/space/SpaceTree.vue'
 import SpaceViewHeader from '@/components/space/SpaceViewHeader.vue'
@@ -197,6 +201,16 @@ const handleSelectRoom = async (roomId: string) => {
 // 创建空间
 const openCreateSpace = () => {
   void router.push(buildCreateSpaceRoute())
+}
+
+// 创建空间内房间（需先选中一个空间）
+const showCreateRoomModal = ref(false)
+const openCreateRoomModal = () => {
+  if (!selectedSpaceId.value) {
+    showFeedback(t('space.create_room_need_space'), 'warning')
+    return
+  }
+  showCreateRoomModal.value = true
 }
 
 // 全局搜索（跳转到搜索页面，限定类型为空间）

@@ -46,6 +46,9 @@ const sampleRooms = [
   { roomId: '!room-2:server', name: 'Random', avatarUrl: 'https://example.com/a.png' }
 ]
 
+const suggestedRoom = { roomId: '!room-s:server', name: 'Starred', avatarUrl: undefined, suggested: true }
+const unsuggestedRoom = { roomId: '!room-u:server', name: 'Plain', avatarUrl: undefined, suggested: false }
+
 describe('SpaceRoomGrid', () => {
   it('renders the list container', () => {
     const wrapper = mountGrid({ rooms: sampleRooms })
@@ -129,5 +132,45 @@ describe('SpaceRoomGrid', () => {
     const items = wrapper.findAll('.space-room-grid__item')
     await items[0].trigger('keydown', { key: 'Enter' })
     expect(wrapper.emitted('enter-room')).toEqual([['!room-1:server']])
+  })
+
+  // ── 建议标记（星标）按钮（功能3）──
+  it('renders star button when canManage is true', () => {
+    const wrapper = mountGrid({ rooms: [suggestedRoom], canManage: true })
+    expect(wrapper.find('.space-room-grid__star-btn').exists()).toBe(true)
+  })
+
+  it('does not render star button when canManage is false', () => {
+    const wrapper = mountGrid({ rooms: [suggestedRoom], canManage: false })
+    expect(wrapper.find('.space-room-grid__star-btn').exists()).toBe(false)
+  })
+
+  it('renders suggested tag when room.suggested is true', () => {
+    const wrapper = mountGrid({ rooms: [suggestedRoom], canManage: true })
+    const tag = wrapper.find('.space-room-grid__suggested-tag')
+    expect(tag.exists()).toBe(true)
+    expect(tag.text()).toBe('space.suggested_label')
+  })
+
+  it('does not render suggested tag when room is not suggested', () => {
+    const wrapper = mountGrid({ rooms: [unsuggestedRoom], canManage: true })
+    expect(wrapper.find('.space-room-grid__suggested-tag').exists()).toBe(false)
+  })
+
+  it('marks star button as is-suggested when room is suggested', () => {
+    const wrapper = mountGrid({ rooms: [suggestedRoom], canManage: true })
+    expect(wrapper.find('.space-room-grid__star-btn').classes()).toContain('is-suggested')
+  })
+
+  it('emits toggle-suggested with roomId and currentSuggested on star click', async () => {
+    const wrapper = mountGrid({ rooms: [suggestedRoom], canManage: true })
+    await wrapper.find('.space-room-grid__star-btn').trigger('click')
+    expect(wrapper.emitted('toggle-suggested')).toEqual([[suggestedRoom.roomId, true]])
+  })
+
+  it('does not emit enter-room when star button clicked (stop propagation)', async () => {
+    const wrapper = mountGrid({ rooms: [suggestedRoom], canManage: true })
+    await wrapper.find('.space-room-grid__star-btn').trigger('click')
+    expect(wrapper.emitted('enter-room')).toBeUndefined()
   })
 })

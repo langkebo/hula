@@ -93,6 +93,9 @@ export type I18nKeys = {
       "deactivateConfirm": "确定要停用用户 {userId} 吗？",
       "deactivateSuccess": "用户已停用",
       "deactivateFailed": "停用用户失败",
+      "reactivateConfirm": "确定要重新激活用户 {userId} 吗？",
+      "reactivateSuccess": "用户已重新激活",
+      "reactivateFailed": "重新激活用户失败",
       "createSuccess": "用户创建成功",
       "createFailed": "创建用户失败",
       "usernameRequired": "用户名不能为空",
@@ -1651,8 +1654,8 @@ export type I18nKeys = {
         "confirm_placeholder": "请确认密码"
       },
       "password_hints": {
-        "min_length": "最少6位",
-        "alpha_numeric": "由英文和数字构成",
+        "min_length": "最少8位",
+        "alpha_numeric": "包含大写、小写字母和数字",
         "special_char": "必须有一个特殊字符"
       },
       "form": {
@@ -1660,7 +1663,8 @@ export type I18nKeys = {
           "nickname_required": "请输入昵称",
           "email_format": "请输入正确的邮箱格式",
           "password_required": "请输入密码",
-          "confirm_mismatch": "两次密码不一致"
+          "confirm_mismatch": "两次密码不一致",
+          "nickname_invalid_chars": "昵称仅支持小写字母、数字和 . _ = - 符号"
         }
       },
       "tips": {
@@ -1712,8 +1716,8 @@ export type I18nKeys = {
         "confirm_placeholder": "请再次输入密码"
       },
       "password_hints": {
-        "length": "密码长度为6-16位",
-        "alpha_numeric": "由英文和数字构成",
+        "length": "密码长度为8-16位",
+        "alpha_numeric": "包含大写、小写字母和数字",
         "special_char": "必须有一个特殊字符",
         "confirm_match": "两次密码输入一致"
       },
@@ -2974,7 +2978,8 @@ export type I18nKeys = {
       "error": "发送好友请求失败",
       "mode_fuzzy": "模糊搜索",
       "mode_exact": "精确搜索",
-      "suggestions": "推荐好友"
+      "suggestions": "推荐好友",
+      "request_pending": "已发送过好友请求，等待对方处理"
     },
     "detail": {
       "title": "好友详情",
@@ -3990,8 +3995,9 @@ export type I18nKeys = {
         },
         "pass_validate_info": {
           "minlength": "至少 {len} 个字符",
-          "valid_characters": "由英语和数字组成",
-          "must_special_char": "必须有一个特殊字符"
+          "valid_characters": "包含大写、小写字母和数字",
+          "must_special_char": "必须有一个特殊字符",
+          "valid_nickname": "昵称仅支持小写字母、数字和 . _ = - 符号"
         }
       },
       "email_invalid": "无效的邮箱地址。",
@@ -4953,7 +4959,7 @@ export type I18nKeys = {
     },
     "validation": {
       "minlength": "至少 {len} 个字符",
-      "valid_characters": "由英文字母和数字组成",
+      "valid_characters": "包含大写、小写字母和数字",
       "must_special_char": "必须包含特殊字符",
       "passwords_match": "密码一致"
     },
@@ -5811,7 +5817,10 @@ export type I18nKeys = {
       "invite_skip": "跳过",
       "invite_send": "邀请",
       "invite_success": "邀请已发送",
-      "invite_failed": "邀请失败"
+      "invite_failed": "邀请失败",
+      "duplicate_name_title": "检测到同名群",
+      "duplicate_name_confirm": "已存在名为「{name}」的群。仍然创建吗？",
+      "duplicate_name_continue": "仍然创建"
     },
     "join": {
       "title": "加入房间",
@@ -8006,6 +8015,16 @@ export type I18nKeys = {
     "settings": "空间设置",
     "create_success": "创建成功",
     "create_failed": "创建失败",
+    "create_room": "创建房间",
+    "create_room_title": "创建房间",
+    "create_room_name_placeholder": "请输入房间名称",
+    "create_room_topic_placeholder": "请输入房间简介",
+    "create_room_suggested": "标记为建议房间",
+    "create_room_name_required": "请输入房间名称",
+    "create_room_success": "房间创建成功",
+    "create_room_failed": "房间创建失败",
+    "create_room_duplicate": "已存在同名房间，请修改名称后重试",
+    "create_room_need_space": "请先选择一个空间",
     "load_failed": "加载失败",
     "invite_title": "邀请成员",
     "invite_user_placeholder": "请输入用户 ID，如 {'@'}alice:example.com",
@@ -8013,6 +8032,14 @@ export type I18nKeys = {
     "invite_success": "邀请成功",
     "invite_failed": "邀请失败",
     "invite_button": "邀请",
+    "invite_search_placeholder": "输入用户名或 Matrix ID 搜索邀请…",
+    "invite_searching": "搜索中…",
+    "invite_search_empty": "未找到用户",
+    "invite_directory_unavailable": "用户目录不可用",
+    "invite_self_tag": "我自己",
+    "invite_already_member": "已是成员",
+    "invite_pending_tag": "已邀请",
+    "invite_inviting": "邀请中…",
     "members_title": "成员列表",
     "membership_join": "已加入",
     "membership_leave": "已离开",
@@ -8030,6 +8057,12 @@ export type I18nKeys = {
     "add_room_suggested": "标记为推荐房间",
     "add_room_success": "添加成功",
     "add_room_failed": "添加失败",
+    "mark_suggested": "标记为建议",
+    "unmark_suggested": "取消建议",
+    "suggested_label": "建议",
+    "mark_suggested_success": "已标记为建议房间",
+    "unmark_suggested_success": "已取消建议标记",
+    "toggle_suggested_failed": "建议标记操作失败",
     "settings_title": "空间设置",
     "settings_success": "保存成功",
     "settings_failed": "保存失败",
@@ -8124,7 +8157,10 @@ export type I18nKeys = {
       "delete_success": "已删除空间",
       "delete_failed": "删除空间失败",
       "load_failed": "加载失败"
-    }
+    },
+    "duplicate_name_title": "检测到同名空间",
+    "duplicate_name_confirm": "已存在名为「{name}」的空间。仍然创建吗？",
+    "duplicate_name_continue": "仍然创建"
   },
   "telemetry": {
     "title": "遥测监控",
