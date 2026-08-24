@@ -1,4 +1,4 @@
-import type { Visibility } from 'matrix-js-sdk'
+import { Visibility } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import type {
@@ -16,6 +16,10 @@ export interface SpaceOptions {
   topic?: string
   visibility?: Visibility
   avatarUrl?: string
+  /** 加入规则："public" | "invite"（仅空间创建者可通过设置页修改） */
+  joinRule?: string
+  /** 是否公开，与 visibility 联动（public → true，private → false） */
+  isPublic?: boolean
   /**
    * 同名防重逃生阀：服务端对已存在同名空间返回 409 M_ROOM_IN_USE。
    * 用户经确认弹窗选择"仍然创建"后置 true 重发，跳过查重。
@@ -127,11 +131,23 @@ class SpaceService extends BaseMatrixService {
   }
 
   async updateSpace(spaceId: string, options: Partial<SpaceOptions>): Promise<void> {
+    // Visibility 枚举值（"public"/"private"）与 SDK UpdateSpaceOptions.visibility 的
+    // 字符串字面量精确一致，这里显式映射避免类型歧义。
+    const visibility =
+      options.visibility === Visibility.Public
+        ? 'public'
+        : options.visibility === Visibility.Private
+          ? 'private'
+          : undefined
+
     try {
       await this.getSpaceManager().updateSpace(spaceId, {
         name: options.name,
         topic: options.topic,
-        avatar_url: options.avatarUrl
+        avatar_url: options.avatarUrl,
+        join_rule: options.joinRule,
+        visibility,
+        is_public: options.isPublic
       })
       logger.info(`[Space] Space 已更新: ${spaceId}`)
     } catch (err) {
