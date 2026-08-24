@@ -122,8 +122,13 @@ export class CryptoKeyBackupAdapter {
     if (generatedKey && typeof crypto.bootstrapSecretStorage === 'function') {
       // 非阻塞模式：密钥已生成，SSSS 上传改为后台执行，不阻塞用户界面
       // 根因：bootstrapSecretStorage 内部 setDefaultKeyId 上传 account_data 后
-      // 等待 /sync 回送 AccountData 事件才 resolve。若 sync 循环未运行则永久挂起。
-      // 修复：确保 sync 正在运行后再调用 bootstrapSecretStorage。
+      // 等待 /sync 回送 AccountData 事件才 resolve。客户端使用 sliding sync
+      // （pollTimeout 15-30s），传统 /sync 的 long-poll 周期可能需要 30s+ 才
+      // 回送 AccountData 事件，15s 超时必定不够。
+      // 修复：
+      // 1. 超时从 15s 增至 45s（覆盖至少一个 sync long-poll 周期）
+      // 2. 超时后用 getAccountDataFromServer 直接 REST GET 验证密钥是否已上传
+      //    若已上传则视为成功（PUT 已完成，只是 sync echo 未及时到达）
       log('分支 3: SSSS 上传改为非阻塞（后台执行），立即返回密钥')
       const t3 = Date.now()
 
@@ -165,7 +170,7 @@ export class CryptoKeyBackupAdapter {
               setupNewKeyBackup: false
             }),
             new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('bootstrapSecretStorage(SSSS) 后台超时 (15s)')), 15000)
+              setTimeout(() => reject(new Error('bootstrapSecretStorage(SSSS) 后台超时 (45s)')), 45000)
             )
           ])
           log(`分支 3a 完成: bootstrapSecretStorage(SSSS) 后台成功 (${Date.now() - t3}ms)`)
@@ -175,7 +180,7 @@ export class CryptoKeyBackupAdapter {
             await Promise.race([
               crypto.resetKeyBackup(),
               new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('resetKeyBackup 后台超时 (15s)')), 15000)
+                setTimeout(() => reject(new Error('resetKeyBackup 后台超时 (45s)')), 45000)
               )
             ])
             log(`分支 3b 完成: resetKeyBackup 后台成功 (${Date.now() - t3}ms)`)
@@ -185,6 +190,38 @@ export class CryptoKeyBackupAdapter {
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err)
+          // 超时后验证密钥是否已上传到服务端：bootstrapSecretStorage 内部先 PUT
+          // account_data（成功），再等 sync echo（可能超时）。若 PUT 已完成，
+          // 密钥已在服务端，可视为成功。
+          if (msg.includes('超时')) {
+            try {
+              const defaultKey = await client?.getAccountDataFromServer?.('m.secret_storage.default_key')
+              if (defaultKey?.key) {
+                log(
+                  `分支 3a 验证: SSSS 密钥已上传至服务端 (defaultKeyId=${defaultKey.key})，sync echo 超时但密钥已就绪 (${Date.now() - t3}ms)`
+                )
+                // 密钥已上传，继续执行 resetKeyBackup
+                log('分支 3b: 后台调用 resetKeyBackup')
+                try {
+                  await Promise.race([
+                    crypto.resetKeyBackup(),
+                    new Promise<never>((_, reject) =>
+                      setTimeout(() => reject(new Error('resetKeyBackup 后台超时 (45s)')), 45000)
+                    )
+                  ])
+                  log(`分支 3b 完成: resetKeyBackup 后台成功 (${Date.now() - t3}ms)`)
+                } catch (err2) {
+                  const msg2 = err2 instanceof Error ? err2.message : String(err2)
+                  log(`分支 3b 结果: resetKeyBackup 后台失败 (${Date.now() - t3}ms): ${msg2}`)
+                }
+                return
+              }
+            } catch (verifyErr) {
+              log(
+                `分支 3a 验证: getAccountDataFromServer 失败: ${verifyErr instanceof Error ? verifyErr.message : String(verifyErr)}`
+              )
+            }
+          }
           log(`分支 3a 结果: bootstrapSecretStorage(SSSS) 后台失败 (${Date.now() - t3}ms): ${msg}`)
         }
       })()
