@@ -87,6 +87,9 @@
     "deactivateConfirm": "确定要停用用户 {userId} 吗？",
     "deactivateSuccess": "用户已停用",
     "deactivateFailed": "停用用户失败",
+    "reactivateConfirm": "确定要重新激活用户 {userId} 吗？",
+    "reactivateSuccess": "用户已重新激活",
+    "reactivateFailed": "重新激活用户失败",
     "createSuccess": "用户创建成功",
     "createFailed": "创建用户失败",
     "usernameRequired": "用户名不能为空",
@@ -207,7 +210,9 @@
     "fileMessages": "文件消息",
     "cpu": "CPU",
     "memory": "内存",
-    "disk": "磁盘"
+    "disk": "磁盘",
+    "database": "数据库",
+    "unknown": "未知"
   },
   "moderation": "审核管理",
   "quick_actions": "快速操作",

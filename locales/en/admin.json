@@ -100,7 +100,10 @@
     "filterStatus": "Filter by Status",
     "allRoles": "All Roles",
     "allStatuses": "All Statuses",
-    "unshadowBan": "Remove Shadow Ban"
+    "unshadowBan": "Remove Shadow Ban",
+    "reactivateConfirm": "Are you sure you want to reactivate user {userId}?",
+    "reactivateSuccess": "User reactivated",
+    "reactivateFailed": "Failed to reactivate user"
   },
   "rooms": {
     "title": "Rooms",
@@ -207,7 +210,9 @@
     "fileMessages": "File Messages",
     "cpu": "CPU",
     "memory": "Memory",
-    "disk": "Disk"
+    "disk": "Disk",
+    "database": "Database",
+    "unknown": "Unknown"
   },
   "moderation": "Moderation",
   "quick_actions": "Quick Actions",

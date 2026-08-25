@@ -19,7 +19,7 @@
   },
   "validation": {
     "minlength": "至少 {len} 个字符",
-    "valid_characters": "由英文字母和数字组成",
+    "valid_characters": "包含大写、小写字母和数字",
     "must_special_char": "必须包含特殊字符",
     "passwords_match": "密码一致"
   },

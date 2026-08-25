@@ -598,6 +598,7 @@
     "no_password": "Please set a secret chat password in settings first",
     "hidden_sessions_list": "Hidden Sessions",
     "no_hidden_sessions": "No hidden sessions",
-    "no_messages": "No messages"
+    "no_messages": "No messages",
+    "hidden_sessions": "Hidden sessions"
   }
 }

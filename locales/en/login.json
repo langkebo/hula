@@ -222,8 +222,9 @@
       },
       "pass_validate_info": {
         "minlength": "At least {len} characters",
-        "valid_characters": "Composed of English and numbers",
-        "must_special_char": "There must be a special character"
+        "valid_characters": "Use upper & lower case letters and numbers",
+        "must_special_char": "There must be a special character",
+        "valid_nickname": "Nickname can only contain lowercase letters, digits and . _ = - symbols"
       }
     },
     "email_invalid": "Invalid email.",

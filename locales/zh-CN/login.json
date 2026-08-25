@@ -222,8 +222,9 @@
       },
       "pass_validate_info": {
         "minlength": "至少 {len} 个字符",
-        "valid_characters": "由英语和数字组成",
-        "must_special_char": "必须有一个特殊字符"
+        "valid_characters": "包含大写、小写字母和数字",
+        "must_special_char": "必须有一个特殊字符",
+        "valid_nickname": "昵称仅支持小写字母、数字和 . _ = - 符号"
       }
     },
     "email_invalid": "无效的邮箱地址。",

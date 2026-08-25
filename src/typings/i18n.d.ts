@@ -216,7 +216,9 @@ export type I18nKeys = {
       "fileMessages": "文件消息",
       "cpu": "CPU",
       "memory": "内存",
-      "disk": "磁盘"
+      "disk": "磁盘",
+      "database": "数据库",
+      "unknown": "未知"
     },
     "moderation": "审核管理",
     "quick_actions": "快速操作",
@@ -3047,7 +3049,8 @@ export type I18nKeys = {
       "set_favorite": "设为收藏",
       "set_normal": "设为普通",
       "set_blocked": "屏蔽好友",
-      "remove": "删除好友"
+      "remove": "删除好友",
+      "friend_offline": "对方当前离线，无法发起通话"
     },
     "secret_chat": {
       "success": "已设为私密好友",
@@ -3691,7 +3694,8 @@ export type I18nKeys = {
       "no_password": "请先在设置中设置私密聊天密码",
       "hidden_sessions_list": "隐藏会话列表",
       "no_hidden_sessions": "暂无隐藏会话",
-      "no_messages": "暂无消息"
+      "no_messages": "暂无消息",
+      "hidden_sessions": "已隐藏的会话"
     }
   },
   "hooks": {

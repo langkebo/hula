@@ -136,7 +136,8 @@
     "set_favorite": "设为收藏",
     "set_normal": "设为普通",
     "set_blocked": "屏蔽好友",
-    "remove": "删除好友"
+    "remove": "删除好友",
+    "friend_offline": "对方当前离线，无法发起通话"
   },
   "secret_chat": {
     "success": "已设为私密好友",

@@ -19,7 +19,7 @@
   },
   "validation": {
     "minlength": "At least {len} characters",
-    "valid_characters": "Composed of English and numbers",
+    "valid_characters": "Use upper & lower case letters and numbers",
     "must_special_char": "There must be a special character",
     "passwords_match": "Passwords match"
   },
