@@ -8,6 +8,12 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
+vi.mock('@/utils/inputValidation', () => ({
+  isNonEmptyString: (s: string) => s.length > 0,
+  isValidMatrixUserId: (s: string) => /^@[^:]+:.+$/.test(s),
+  isValidMatrixRoomId: (s: string) => /^![^:]+:.+$/.test(s)
+}))
+
 const makeAdmin = () =>
   ({
     getUsersPaginated: vi.fn(),

@@ -52,12 +52,21 @@ export class AdminServerService {
   async getServerHealth(): Promise<ServerHealth | null> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.getServerHealth()
+      // SDK 类型声明为 Python Synapse 风格 { healthy, checks }，
+      // 但 synapse-rust 实际返回 { status: 'ok'|'error', database: 'ok'|'error' }，
+      // 这里做归一化：healthy 优先取显式字段，否则由 status/database 推导，
+      // 否则 result.healthy 恒为 undefined → 仪表盘永远显示"异常"。
+      const result = (await admin.getServerHealth()) as unknown as Record<string, unknown> | null
       if (!result) return null
-      return {
-        healthy: result.healthy,
-        checks: result.checks as Record<string, unknown> | undefined
+
+      const rawHealthy = result.healthy
+      const healthy = typeof rawHealthy === 'boolean' ? rawHealthy : result.status === 'ok' && result.database === 'ok'
+
+      const checks = (result.checks as Record<string, unknown> | undefined) ?? {
+        database: { status: result.database === 'ok' ? 'ok' : 'error' }
       }
+
+      return { healthy, checks }
     } catch (err) {
       logger.error(`[AdminServer] 获取服务器健康状态失败: ${err}`)
       return null

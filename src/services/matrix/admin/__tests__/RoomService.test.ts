@@ -150,12 +150,7 @@ describe('AdminRoomService', () => {
   })
 
   it('deleteRoom maps option keys and response fields', async () => {
-    ;(admin as any).deleteRoomAdmin.mockResolvedValueOnce({
-      kicked_users: ['@u1:server.com'],
-      failed_to_kick_users: [],
-      local_aliases: ['#room:server.com'],
-      new_room_id: '!new:server.com'
-    })
+    ;(admin as any).deleteRoom.mockResolvedValueOnce(undefined)
 
     const result = await service.deleteRoom('!room:server.com', {
       purge: true,
@@ -166,14 +161,13 @@ describe('AdminRoomService', () => {
       block: true
     })
 
-    expect((admin as any).deleteRoomAdmin).toHaveBeenCalledWith('!room:server.com', {
+    expect((admin as any).deleteRoom).toHaveBeenCalledWith('!room:server.com', {
+      block: true,
       purge: true,
       force_purge: true,
-      new_room_user_id: '@admin:server.com',
-      room_name: 'Archive',
-      message: 'bye',
-      block: true
+      reason: 'bye'
     })
-    expect(result.newRoomId).toBe('!new:server.com')
+    expect(result.kickedUsers).toEqual([])
+    expect(result.newRoomId).toBeUndefined()
   })
 })

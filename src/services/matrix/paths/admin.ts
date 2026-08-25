@@ -16,6 +16,8 @@ export const ADMIN = {
   WHOIS: (userId: string) => `/_synapse/admin/v1/whois/${encodeURIComponent(userId)}`,
   /** @deprecated Use AdminUserService methods instead */
   USERS: '/_synapse/admin/v2/users',
+  /** 用户停用/激活 API */
+  USER_DEACTIVATE: (userId: string) => `/_synapse/admin/v2/users/${encodeURIComponent(userId)}/deactivate`,
   /** @deprecated Use AdminRoomService methods instead */
   ROOMS: '/_synapse/admin/v1/rooms',
   /** @deprecated Use RegistrationTokensService methods instead */
