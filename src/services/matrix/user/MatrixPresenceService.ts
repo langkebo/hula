@@ -178,9 +178,19 @@ class MatrixPresenceService extends BaseMatrixService {
         currently_active: presence.currently_active
       }
     } catch (err) {
-      const isForbidden = this.isForbiddenError(err)
-      if (isForbidden) {
+      if (this.isForbiddenError(err)) {
         logger.info(`[Presence] 无权查看用户 ${userId} 在线状态，降级为离线`)
+        return {
+          user_id: userId,
+          presence: 'offline' as PresenceState,
+          status_msg: null,
+          last_active_ago: undefined,
+          currently_active: undefined
+        }
+      }
+      // 用户不存在（已被删除/停用）：静默降级为离线，避免持续 404 噪音
+      if (this.isNotFoundError(err)) {
+        logger.warn(`[Presence] 用户 ${userId} 不存在 (M_NOT_FOUND)，降级为离线`)
         return {
           user_id: userId,
           presence: 'offline' as PresenceState,
@@ -350,14 +360,26 @@ class MatrixPresenceService extends BaseMatrixService {
    * 判断是否为 403/M_FORBIDDEN 错误
    */
   private isForbiddenError(err: unknown): boolean {
-    if (!err) return false
-    if (typeof err === 'object') {
-      const e = err as Record<string, unknown>
-      if (e.httpStatus === 403 || e.errcode === 'M_FORBIDDEN') return true
-      if (e.cause && typeof e.cause === 'object') {
-        const cause = e.cause as Record<string, unknown>
-        if (cause.httpStatus === 403 || cause.errcode === 'M_FORBIDDEN') return true
-      }
+    return this.matchError(err, 403, 'M_FORBIDDEN')
+  }
+
+  /**
+   * 判断是否为 404/M_NOT_FOUND 错误（用户不存在/已删除）
+   */
+  private isNotFoundError(err: unknown): boolean {
+    return this.matchError(err, 404, 'M_NOT_FOUND')
+  }
+
+  /**
+   * 通用错误码匹配：检查 httpStatus / errcode（含 cause 链）
+   */
+  private matchError(err: unknown, httpStatus: number, errcode: string): boolean {
+    if (!err || typeof err !== 'object') return false
+    const e = err as Record<string, unknown>
+    if (e.httpStatus === httpStatus || e.errcode === errcode) return true
+    if (e.cause && typeof e.cause === 'object') {
+      const cause = e.cause as Record<string, unknown>
+      if (cause.httpStatus === httpStatus || cause.errcode === errcode) return true
     }
     return false
   }
