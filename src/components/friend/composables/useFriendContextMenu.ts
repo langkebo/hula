@@ -6,6 +6,7 @@ import { useWindow } from '@/composables/common/useWindow'
 import { CallTypeEnum, RoomTypeEnum } from '@/enums'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
+import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 
 interface UseFriendContextMenuOptions {
@@ -65,9 +66,21 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
     }
   }
 
-  // 共享：发起语音/视频通话（先切换到目标好友会话，再复用 startRtcCall 开窗）
+  // 共享：发起语音/视频通话（先校验对方在线，再切换到目标好友会话，复用 startRtcCall 开窗）
   const performCall = async (friend: MatrixContact, callType: CallTypeEnum) => {
     if (!friend.userId) return
+
+    // 对方离线时直接提示并中止，避免拨出后无人应答且没有任何反馈
+    try {
+      const presence = await matrixPresenceService.getPresence(friend.userId)
+      if (presence.presence === 'offline') {
+        showFeedback(t('friend.context.friend_offline'), 'warning')
+        return
+      }
+    } catch {
+      // presence 查询失败（如 404 用户不存在/权限限制）不阻断拨号，交给通话窗口处理应答超时
+    }
+
     await openMsgSession(friend.userId, RoomTypeEnum.SINGLE)
     await nextTick()
     const { startRtcCall } = useWindow()

@@ -1,12 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import FriendsList from '../FriendsList.vue'
-
-const routerPushMock = vi.hoisted(() => vi.fn())
-const secretChatConfiguredMock = vi.hoisted(() => vi.fn(() => true))
-const announceMock = vi.hoisted(() => vi.fn())
-const showFeedbackMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vue-i18n', () => ({
   createI18n: () => ({
@@ -19,46 +13,6 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: routerPushMock }),
-  createRouter: () => ({
-    install: vi.fn(),
-    push: vi.fn(),
-    replace: vi.fn(),
-    go: vi.fn(),
-    back: vi.fn(),
-    forward: vi.fn(),
-    resolve: vi.fn(),
-    beforeEach: vi.fn(),
-    afterEach: vi.fn(),
-    getRoutes: vi.fn(() => []),
-    addRoute: vi.fn(),
-    removeRoute: vi.fn(),
-    hasRoute: vi.fn(() => false),
-    options: { routes: [] }
-  }),
-  createWebHashHistory: vi.fn()
-}))
-
-vi.mock('@/composables/common/useAriaLive', () => ({
-  useAriaLive: () => ({
-    announce: announceMock
-  })
-}))
-
-vi.mock('@/composables/common/useActionFeedback', () => ({
-  useActionFeedback: () => ({
-    showFeedback: showFeedbackMock
-  })
-}))
-
-vi.mock('@/stores/domains/settings/setting', () => ({
-  useSettingStore: () => ({
-    themeContent: 'light',
-    isSecretChatConfigured: secretChatConfiguredMock
-  })
-}))
-
 vi.mock('@/components/friend/FriendListView.vue', () => ({
   default: {
     name: 'FriendListView',
@@ -66,14 +20,11 @@ vi.mock('@/components/friend/FriendListView.vue', () => ({
   }
 }))
 
+// 方案B：好友页顶部的「私密聊天」入口已移除，隐藏会话入口统一收口到
+// 消息列表工具栏（MessageSessionToolbar openHiddenSessions → /secretChat）。
+// 原 FriendsList 的跳转/密码校验行为断言随入口一并迁移。
 describe('FriendsList', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
-    secretChatConfiguredMock.mockReturnValue(true)
-  })
-
-  it('承载 FriendListView 主入口并保留好友页壳层 shortcut', async () => {
+  it('仅承载 FriendListView，不再渲染私密聊天 shortcut 入口', () => {
     const wrapper = mount(FriendsList, {
       global: {
         plugins: [createPinia()]
@@ -81,32 +32,6 @@ describe('FriendsList', () => {
     })
 
     expect(wrapper.find('.friend-list-view-stub').exists()).toBe(true)
-    expect(wrapper.find('.friends-list-shell__shortcut').exists()).toBe(true)
-  })
-
-  it('点击私密聊天入口时在已配置密码情况下跳转到 secretChat', async () => {
-    const wrapper = mount(FriendsList, {
-      global: {
-        plugins: [createPinia()]
-      }
-    })
-
-    await wrapper.find('.friends-list-shell__shortcut').trigger('click')
-
-    expect(routerPushMock).toHaveBeenCalledWith('/secretChat')
-  })
-
-  it('未配置私密聊天密码时提示而不是跳转', async () => {
-    secretChatConfiguredMock.mockReturnValue(false)
-    const wrapper = mount(FriendsList, {
-      global: {
-        plugins: [createPinia()]
-      }
-    })
-
-    await wrapper.find('.friends-list-shell__shortcut').trigger('click')
-
-    expect(showFeedbackMock).toHaveBeenCalledWith('home.secret_chat.no_password', 'warning')
-    expect(routerPushMock).not.toHaveBeenCalled()
+    expect(wrapper.find('.friends-list-shell__shortcut').exists()).toBe(false)
   })
 })

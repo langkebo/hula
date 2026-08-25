@@ -107,7 +107,7 @@ vi.mock('naive-ui', async (importOriginal) => {
 })
 
 // Mock leftHook — return minimal shape needed by LeftAvatar
-vi.mock('../hook', () => ({
+vi.mock('../../hook', () => ({
   leftHook: () => ({
     shrinkStatus: false,
     infoShow: false,

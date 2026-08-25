@@ -23,12 +23,24 @@ vi.mock('naive-ui', async () => {
       () =>
         h('button', { ...attrs, onClick: (e: Event) => emit('click', e) }, [slots.default?.()])
   })
+  const NBadgeStub = defineComponent({
+    name: 'NBadge',
+    props: { value: { type: Number, default: 0 }, max: { type: Number, default: 99 } },
+    setup:
+      (props, { slots }) =>
+      () =>
+        h('div', { class: 'n-nbadge', 'data-value': String(props.value) }, [
+          slots.default?.(),
+          h('span', { class: 'n-badge-sup' }, [String(props.value)])
+        ])
+  })
   return {
     NButton: NButtonStub,
     NFlex: passthrough('NFlex'),
     NInput: passthrough('NInput'),
     NDivider: passthrough('NDivider'),
-    NIcon: passthrough('NIcon')
+    NIcon: passthrough('NIcon'),
+    NBadge: NBadgeStub
   }
 })
 
@@ -39,7 +51,7 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const mountToolbar = (props: Partial<{ sessionTypeFilter: WorkbenchSessionTypeFilter }> = {}) =>
+const mountToolbar = (props: Partial<{ sessionTypeFilter: WorkbenchSessionTypeFilter; hiddenCount: number }> = {}) =>
   mount(MessageSessionToolbar, {
     props: {
       searchKeyword: '',
@@ -87,5 +99,31 @@ describe('MessageSessionToolbar · 群聊/单人 类型过滤', () => {
     const wrapper = mountToolbar({ sessionTypeFilter: 'single' })
     expect(typeButtons(wrapper)[1].attributes('aria-pressed')).toBe('true')
     expect(typeButtons(wrapper)[0].attributes('aria-pressed')).toBe('false')
+  })
+})
+
+describe('MessageSessionToolbar · 已隐藏会话入口（方案B）', () => {
+  it('hiddenCount > 0 时渲染入口按钮并显示角标数值', () => {
+    const wrapper = mountToolbar({ hiddenCount: 3 })
+    const entry = wrapper.find('[aria-label="home.secret_chat.hidden_sessions"]')
+    expect(entry.exists()).toBe(true)
+    expect(wrapper.find('.n-nbadge').attributes('data-value')).toBe('3')
+  })
+
+  it('hiddenCount 为 0 或缺省时不渲染入口', () => {
+    expect(mountToolbar({ hiddenCount: 0 }).find('.n-nbadge').exists()).toBe(false)
+    expect(mountToolbar().find('.n-nbadge').exists()).toBe(false)
+  })
+
+  it('点击入口 emit openHiddenSessions', async () => {
+    const wrapper = mountToolbar({ hiddenCount: 1 })
+    await wrapper.find('[aria-label="home.secret_chat.hidden_sessions"]').trigger('click')
+    expect(wrapper.emitted('openHiddenSessions')).toBeTruthy()
+  })
+
+  it('角标超过 99 显示 99+（max 封顶由 NBadge 承担，此处验证透传）', () => {
+    const wrapper = mountToolbar({ hiddenCount: 120 })
+    // NBadge stub 直接透传原始值；真实组件按 max=99 渲染为 99+
+    expect(wrapper.find('.n-nbadge').attributes('data-value')).toBe('120')
   })
 })
