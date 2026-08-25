@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { RTCCallStatus } from '@/enums'
+import type { RTCCallStatus } from '@/enums'
 import router from '@/router'
 
 interface UseCallControlsParams {

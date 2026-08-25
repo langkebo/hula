@@ -1,5 +1,5 @@
 import { onMounted, onUnmounted } from 'vue'
-import { CallTypeEnum, RoomTypeEnum } from '@/enums'
+import { CallTypeEnum } from '@/enums'
 import type { CallInfo } from '@/services/matrix/media/MatrixVoIPService'
 import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { createLogger } from '@/utils/Logger'

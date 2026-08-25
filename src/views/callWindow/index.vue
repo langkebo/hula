@@ -104,8 +104,8 @@ import { isDesktop, isMac, isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { useTimerManager } from '@/utils/TimerManager'
 import { CallAvatarStage, CallControlsBar, CallIncomingBanner, CallVideoStage } from './components'
-import { parseCallRoute, useCallState } from './composables/useCallState'
 import { useCallControls } from './composables/useCallControls'
+import { parseCallRoute, useCallState } from './composables/useCallState'
 
 const logger = createLogger('CallWindow')
 const timerManager = useTimerManager()
@@ -255,16 +255,13 @@ const stopDurationTimer = () => {
   }
 }
 
-watch(
-  state,
-  (s) => {
-    if (s === 'connected') {
-      startDurationTimer()
-    } else if (s === 'ended' || s === 'error') {
-      stopDurationTimer()
-    }
+watch(state, (s) => {
+  if (s === 'connected') {
+    startDurationTimer()
+  } else if (s === 'ended' || s === 'error') {
+    stopDurationTimer()
   }
-)
+})
 
 // 生命周期清理
 onUnmounted(() => {
@@ -410,9 +407,7 @@ onMounted(async () => {
       const currentWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
       if (!currentWindow) return
       // 来电通知窗口尺寸
-      const size = isWindows()
-        ? new LogicalSize(360, 90)
-        : new PhysicalSize(360, 90)
+      const size = isWindows() ? new LogicalSize(360, 90) : new PhysicalSize(360, 90)
       await currentWindow.setSize(size)
       if (isMac()) {
         await invokeSilently('hide_title_bar_buttons', { windowLabel: currentWindow.label, hideCloseButton: true })
