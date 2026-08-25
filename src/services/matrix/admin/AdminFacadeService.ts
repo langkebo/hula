@@ -120,7 +120,17 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
 
   private async verifyServerSidePermission(): Promise<boolean> {
     try {
-      const client = this.getClient()
+      // 客户端尚未初始化时（启动早期竞态），跳过权限验证，
+      // 避免 "客户端未初始化" 错误产生误导性 ERROR 日志。
+      // 由 AdminStore.checkAdminStatus() 在 isLoggedIn 变为 true 后重新触发。
+      let client: import('matrix-js-sdk').MatrixClient | null = null
+      try {
+        client = this.getClient()
+      } catch {
+        logger.debug('[Admin] 客户端尚未就绪，跳过权限验证（待连接后自动重试）')
+        return false
+      }
+
       const userId = client.getUserId()
       const accessToken = client.getAccessToken()
 
@@ -251,6 +261,14 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
 
   async deactivateUser(userId: string): Promise<void> {
     return this.users.deactivateUser(userId)
+  }
+
+  /**
+   * 重新激活已停用的用户（deactivated: false）。
+   * @param userId 目标用户 ID
+   */
+  async activateUser(userId: string): Promise<void> {
+    return this.users.activateUser(userId)
   }
 
   async getUserDevices(userId: string): Promise<UserDevice[]> {
