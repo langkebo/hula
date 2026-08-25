@@ -77,7 +77,12 @@ function hasJsDocAbove(lines, idx) {
   let i = idx - 1
   while (i >= 0 && lines[i].trim() === '') i--
   if (i < 0) return false
-  return lines[i].trimStart().startsWith('*/')
+  const trimmed = lines[i].trimStart()
+  // 多行 JSDoc 结尾：*/
+  if (trimmed.startsWith('*/')) return true
+  // 单行 JSDoc：/** ... */
+  if (trimmed.startsWith('/**') && trimmed.endsWith('*/')) return true
+  return false
 }
 
 async function scanFile(file) {
