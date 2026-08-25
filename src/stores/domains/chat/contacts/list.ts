@@ -2,6 +2,7 @@ import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum } from '@/enums'
 import { type Friend, type FriendStatus, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
+import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { createLogger } from '@/utils/Logger'
 import type { FriendListErrorState, MatrixContact } from './types'
 
@@ -151,23 +152,63 @@ export function createContactsList(ctx: ContactsListContext) {
         if (!partnerId) continue
 
         if (!contacts.find((c) => c.userId === partnerId)) {
-          const isSpecial = specialFriends.includes(partnerId)
-          contacts.push({
-            userId: partnerId,
-            uid: partnerId,
-            displayName: dmRoom.name ?? null,
-            name: dmRoom.name ?? partnerId.split(':')[0],
-            avatarUrl: dmRoom.avatarUrl ?? null,
-            avatar: dmRoom.avatarUrl ?? '',
-            account: partnerId.split(':')[0],
-            activeStatus: OnlineEnum.OFFLINE,
-            remark: '',
-            lastOptTime: dmRoom.lastMessage?.timestamp ?? Date.now(),
-            hideMyPosts: false,
-            hideTheirPosts: false,
-            directRoomId: dmRoom.roomId,
-            friendStatus: isSpecial ? ('favorite' as FriendStatus) : undefined
-          })
+          // 验证用户是否存在（异步，不阻塞加载）
+          let isUserValid = true
+          try {
+            const presence = await matrixPresenceService.getPresence(partnerId)
+            // 用户不存在（M_NOT_FOUND）时跳过，避免幽灵账号进入联系人列表
+            if (presence.notFound) {
+              isUserValid = false
+              logger.warn(`[ContactStore] DM 房间对方用户不存在，跳过: ${partnerId}`)
+            }
+          } catch {
+            // 获取 presence 失败时，仍然添加联系人（保守策略）
+          }
+
+          if (isUserValid) {
+            const isSpecial = specialFriends.includes(partnerId)
+            contacts.push({
+              userId: partnerId,
+              uid: partnerId,
+              displayName: dmRoom.name ?? null,
+              name: dmRoom.name ?? partnerId.split(':')[0],
+              avatarUrl: dmRoom.avatarUrl ?? null,
+              avatar: dmRoom.avatarUrl ?? '',
+              account: partnerId.split(':')[0],
+              activeStatus: OnlineEnum.OFFLINE,
+              remark: '',
+              lastOptTime: dmRoom.lastMessage?.timestamp ?? Date.now(),
+              hideMyPosts: false,
+              hideTheirPosts: false,
+              directRoomId: dmRoom.roomId,
+              friendStatus: isSpecial ? ('favorite' as FriendStatus) : undefined
+            })
+          }
+        }
+      }
+
+      // 批量校验联系人存在性：过滤服务端已删除/停用的幽灵账号（如测试残留 @test3）。
+      // getBatchPresence 优先走 presence/list 批量接口，失败降级为逐个，避免阻塞加载。
+      const candidateUserIds = contacts.map((c) => c.userId).filter((id): id is string => !!id)
+      if (candidateUserIds.length > 0) {
+        try {
+          const presences = await matrixPresenceService.getBatchPresence(candidateUserIds)
+          const notFoundIds = new Set(presences.filter((p) => p.notFound).map((p) => p.user_id))
+          if (notFoundIds.size > 0) {
+            const before = contacts.length
+            for (let i = contacts.length - 1; i >= 0; i--) {
+              if (notFoundIds.has(contacts[i].userId)) {
+                logger.warn(`[ContactStore] 联系人用户不存在，从列表移除: ${contacts[i].userId}`)
+                contacts.splice(i, 1)
+              }
+            }
+            if (contacts.length < before) {
+              logger.info(`[ContactStore] 已过滤 ${before - contacts.length} 个不存在的联系人`)
+            }
+          }
+        } catch (err) {
+          // 校验失败时保留原列表，避免因 presence 服务异常误删联系人
+          logger.warn(`[ContactStore] 批量校验联系人存在性失败，保留原列表: ${err}`)
         }
       }
 

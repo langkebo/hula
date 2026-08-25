@@ -27,6 +27,8 @@ export interface PresenceInfo {
   status_msg?: string | null
   last_active_ago?: number
   currently_active?: boolean
+  /** 用户不存在（服务端返回 M_NOT_FOUND，已被删除/停用），用于联系人列表过滤幽灵账号 */
+  notFound?: boolean
 }
 
 /**
@@ -188,7 +190,8 @@ class MatrixPresenceService extends BaseMatrixService {
           currently_active: undefined
         }
       }
-      // 用户不存在（已被删除/停用）：静默降级为离线，避免持续 404 噪音
+      // 用户不存在（已被删除/停用）：静默降级为离线，避免持续 404 噪音。
+      // 同时标记 notFound，供联系人列表过滤幽灵账号（如 @test3 测试残留）。
       if (this.isNotFoundError(err)) {
         logger.warn(`[Presence] 用户 ${userId} 不存在 (M_NOT_FOUND)，降级为离线`)
         return {
@@ -196,7 +199,8 @@ class MatrixPresenceService extends BaseMatrixService {
           presence: 'offline' as PresenceState,
           status_msg: null,
           last_active_ago: undefined,
-          currently_active: undefined
+          currently_active: undefined,
+          notFound: true
         }
       }
       logger.error(`[Presence] 获取在线状态失败: ${userId}, ${formatMatrixError(err)}`)
