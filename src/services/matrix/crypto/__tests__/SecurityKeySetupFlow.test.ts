@@ -148,7 +148,8 @@ describe('SecurityKeySetupFlow', () => {
     it('should generate security key when client is ready immediately', async () => {
       // 模拟客户端已就绪
       const mockClient = {
-        getCrypto: vi.fn(() => createMockCrypto())
+        getCrypto: vi.fn(() => createMockCrypto()),
+        setAccountDataRaw: vi.fn().mockResolvedValue({})
       } as unknown as MatrixClient
       vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient)
       // waitForClientReady 通过 connectionManager 检查 client，但 SecurityKeySetupDialog
@@ -167,7 +168,8 @@ describe('SecurityKeySetupFlow', () => {
     it('should generate security key when client becomes ready after delay', async () => {
       // 模拟客户端延迟就绪（200ms 后）
       const mockClient = {
-        getCrypto: vi.fn(() => createMockCrypto())
+        getCrypto: vi.fn(() => createMockCrypto()),
+        setAccountDataRaw: vi.fn().mockResolvedValue({})
       } as unknown as MatrixClient
 
       vi.spyOn(matrixClientService, 'waitForClientReady').mockImplementation(async () => {
@@ -200,7 +202,8 @@ describe('SecurityKeySetupFlow', () => {
       // 模拟客户端延迟就绪
       const mockCrypto = createMockCrypto()
       const mockClient = {
-        getCrypto: vi.fn(() => mockCrypto)
+        getCrypto: vi.fn(() => mockCrypto),
+        setAccountDataRaw: vi.fn().mockResolvedValue({})
       } as unknown as MatrixClient
 
       vi.spyOn(matrixClientService, 'waitForClientReady').mockResolvedValue(mockClient)
@@ -216,10 +219,12 @@ describe('SecurityKeySetupFlow', () => {
 
       // 验证：密码被正确传递到 createRecoveryKeyFromPassphrase
       expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledWith(password)
-      // 验证：bootstrapSecretStorage 被调用
-      expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledTimes(1)
       // 验证：返回密钥
       expect(result).toBe(mockEncodedKey)
+      // 验证：后台 bootstrapSecretStorage 被调用（fire-and-forget，需等待微任务完成）
+      await vi.waitFor(() => {
+        expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })

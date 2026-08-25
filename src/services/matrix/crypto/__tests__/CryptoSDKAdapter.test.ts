@@ -48,6 +48,7 @@ interface MockExtendedClient {
   getStoredDevicesForUser: MockFn
   getStoredDevice: MockFn
   isCrossSigningReady: MockFn
+  setAccountDataRaw: MockFn
 }
 
 function createMockExtendedClient(): MockExtendedClient {
@@ -68,7 +69,8 @@ function createMockExtendedClient(): MockExtendedClient {
     checkDeviceTrust: vi.fn(),
     getStoredDevicesForUser: vi.fn(),
     getStoredDevice: vi.fn(),
-    isCrossSigningReady: vi.fn(() => false)
+    isCrossSigningReady: vi.fn(() => false),
+    setAccountDataRaw: vi.fn().mockResolvedValue({})
   }
 }
 
@@ -525,16 +527,18 @@ describe('CryptoSDKAdapter', () => {
       expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledTimes(1)
       expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledWith(undefined)
 
-      // 验证：调用 bootstrapSecretStorage（仅 SSSS，不含 keyBackup）— 后台立即启动
-      expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledTimes(1)
+      // 验证：返回 encodedPrivateKey
+      expect(result).toBe(mockEncodedKey)
+
+      // 验证：后台 bootstrapSecretStorage 被调用（fire-and-forget，需等待微任务完成）
+      await vi.waitFor(() => {
+        expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledTimes(1)
+      })
       expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledWith({
         createSecretStorageKey: expect.any(Function),
         setupNewSecretStorage: true,
         setupNewKeyBackup: false
       })
-
-      // 验证：返回 encodedPrivateKey
-      expect(result).toBe(mockEncodedKey)
 
       // 验证：后台 resetKeyBackup 被调用（fire-and-forget，需等待微任务完成）
       await vi.waitFor(() => {
@@ -553,11 +557,13 @@ describe('CryptoSDKAdapter', () => {
       expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledTimes(1)
       expect(mockCrypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledWith(password)
 
-      // 验证：调用 bootstrapSecretStorage
-      expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledTimes(1)
-
       // 验证：返回 encodedPrivateKey
       expect(result).toBe(mockEncodedKey)
+
+      // 验证：后台 bootstrapSecretStorage 被调用（fire-and-forget，需等待微任务完成）
+      await vi.waitFor(() => {
+        expect(mockCrypto.bootstrapSecretStorage).toHaveBeenCalledTimes(1)
+      })
     })
 
     it('should restore key backup when recoveryKey is provided', async () => {
