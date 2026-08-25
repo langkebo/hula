@@ -78,7 +78,7 @@
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
     "@fingerprintjs/fingerprintjs": "^5.2.0",
-    "@matrix-org/matrix-sdk-crypto-wasm": "^17.1.0",
+    "@matrix-org/matrix-sdk-crypto-wasm": "^18.5.0",
     "@shikijs/core": "^4.4.1",
     "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-autostart": "2.5.1",
