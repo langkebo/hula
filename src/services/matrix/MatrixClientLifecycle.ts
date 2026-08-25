@@ -30,6 +30,9 @@ const logger = createLogger('MatrixClient')
 
 type StartClientOptions = Parameters<MatrixClient['startClient']>[0]
 
+/** Sliding Sync 端点探测超时（ms）：探测挂起时降级到传统 /sync，避免 startClient 卡死 */
+const SLIDING_SYNC_PROBE_TIMEOUT_MS = 5000
+
 /** Lifecycle 子服务依赖的主类协作模块集合 */
 export interface MatrixClientLifecycleDeps {
   readonly connectionManager: MatrixConnectionManager
@@ -120,6 +123,43 @@ export class MatrixClientLifecycle {
     return this.deps.startClientGuard.run(() => this.doStartClient())
   }
 
+  /**
+   * 探测 Sliding Sync 端点是否可用，带超时保护。
+   *
+   * 根因（2026-08-25）：`client.isSlidingSyncSupported()` 在服务器端点不响应时会挂起
+   * （日志中 08:46:08 → 08:46:23 无任何输出，startClient 被卡约 15s 直到 settlePostLoginStartup 超时）。
+   * 加 5s 超时兜底：超时即降级到传统 /sync，避免整个启动流程被探测拖死。
+   */
+  private probeSlidingSyncSupport(client: MatrixClient): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      let settled = false
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true
+          logger.warn(`Sliding Sync 端点探测超过 ${SLIDING_SYNC_PROBE_TIMEOUT_MS}ms，降级到传统 /sync`)
+          resolve(false)
+        }
+      }, SLIDING_SYNC_PROBE_TIMEOUT_MS)
+
+      client.isSlidingSyncSupported().then(
+        (supported) => {
+          if (!settled) {
+            settled = true
+            clearTimeout(timer)
+            resolve(supported)
+          }
+        },
+        () => {
+          if (!settled) {
+            settled = true
+            clearTimeout(timer)
+            resolve(false)
+          }
+        }
+      )
+    })
+  }
+
   private async doStartClient(): Promise<void> {
     const { connectionManager, eventRouter, syncManager, cryptoTracker } = this.deps
     const client = connectionManager.getClient()
@@ -154,7 +194,7 @@ export class MatrixClientLifecycle {
         // SDK 会自动降级到传统 /sync 端点，避免 404 反复重试导致 sync 永不 prepared。
         let slidingSyncSupported = true
         try {
-          slidingSyncSupported = await client.isSlidingSyncSupported()
+          slidingSyncSupported = await this.probeSlidingSyncSupport(client)
         } catch (probeErr) {
           // 探测失败时保守降级为不使用 SlidingSync，避免 sync 卡死
           logger.warn('Sliding Sync 端点探测失败，降级到 /sync:', probeErr)
