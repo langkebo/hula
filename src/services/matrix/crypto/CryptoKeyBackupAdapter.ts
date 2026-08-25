@@ -5,6 +5,7 @@
  * flow (multi-branch with SSSS non-blocking upload and timeout protection).
  */
 
+import type { MatrixClient } from 'matrix-js-sdk'
 import type { GeneratedSecretStorageKey, MatrixAuthData } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
@@ -17,6 +18,70 @@ import type {
 } from './cryptoAdapterTypes'
 
 const logger = createLogger('CryptoKeyBackupAdapter')
+
+/**
+ * 直接通过 REST API 上传 SSSS 密钥到 account_data（绕过 SDK 的 sync echo 等待）。
+ *
+ * 根因：SDK 的 bootstrapSecretStorage → setDefaultKeyId 内部先 PUT account_data，
+ * 再等待 /sync 回送 AccountData 事件。在 sliding sync 模式下，account_data 回送
+ * 可能延迟 30s+ 或不回送，导致 bootstrap 永久挂起。
+ *
+ * 本函数使用 SDK 的 `setAccountDataRaw`（底层 HTTP PUT，不等待 sync echo）上传：
+ *   1. m.secret_storage.key.{keyId} — 密钥描述（iv、mac 等）
+ *   2. m.secret_storage.default_key — 默认密钥 ID
+ *
+ * 生成唯一的 keyId，上传后密钥立即持久化到服务端，无需等待 sync 回声。
+ *
+ * @param client MatrixClient 实例
+ * @param generatedKey 由 createRecoveryKeyFromPassphrase 生成的密钥
+ * @returns 上传成功的 keyId（供后续 bootstrap 对比验证）
+ */
+async function uploadSsssKeyDirectly(client: MatrixClient, generatedKey: GeneratedSecretStorageKey): Promise<string> {
+  // 生成唯一 keyId（与 SDK 的 secureRandomString(32) 对齐）
+  const keyId = crypto.randomUUID().replace(/-/g, '')
+
+  // 计算 iv 和 mac（与 SDK 的 calculateKeyCheck 对齐）
+  const keyData = generatedKey.privateKey
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const ivBase64 = btoa(String.fromCharCode(...iv))
+
+  // 使用 SubtleCrypto 计算 HMAC-SHA256 作为 mac
+  const macKey = await crypto.subtle.importKey(
+    'raw',
+    keyData.buffer.slice(keyData.byteOffset, keyData.byteOffset + keyData.byteLength) as ArrayBuffer,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const macBuffer = await crypto.subtle.sign('HMAC', macKey, iv)
+  const macBase64 = btoa(String.fromCharCode(...new Uint8Array(macBuffer)))
+
+  // 构造密钥描述（对齐 SSSS AES-128 规范）
+  const keyInfo: Record<string, unknown> = {
+    algorithm: 'm.vodozemac.v1',
+    iv: ivBase64,
+    mac: macBase64
+  }
+  if (generatedKey.keyInfo?.passphrase) {
+    keyInfo.passphrase = generatedKey.keyInfo.passphrase
+  }
+
+  // 使用 setAccountDataRaw（底层 HTTP PUT，不等待 sync echo）直接上传。
+  // SDK 的 setAccountData 会等待 ClientEvent.AccountData 回声（sliding sync 下可能 30s+），
+  // 而 setAccountDataRaw 立即返回（仅 HTTP PUT 完成即 resolve）。
+  const clientWithRaw = client as MatrixClient & {
+    setAccountDataRaw?: (eventType: string, content: unknown) => Promise<unknown>
+  }
+  const uploadFn = clientWithRaw.setAccountDataRaw?.bind(client) ?? client.setAccountData.bind(client)
+
+  await uploadFn(`m.secret_storage.key.${keyId}`, keyInfo)
+  logger.info(`[SSSS] 已通过 REST 上传密钥描述: m.secret_storage.key.${keyId}`)
+
+  await uploadFn('m.secret_storage.default_key', { key: keyId })
+  logger.info(`[SSSS] 已通过 REST 上传默认密钥 ID: ${keyId}`)
+
+  return keyId
+}
 
 export class CryptoKeyBackupAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
@@ -121,30 +186,51 @@ export class CryptoKeyBackupAdapter {
 
     if (generatedKey && typeof crypto.bootstrapSecretStorage === 'function') {
       // 非阻塞模式：密钥已生成，SSSS 上传改为后台执行，不阻塞用户界面
-      // 根因：bootstrapSecretStorage 内部 setDefaultKeyId 上传 account_data 后
+      //
+      // 根因（SSSS-45s-timeout）：
+      // bootstrapSecretStorage 内部 setDefaultKeyId 上传 account_data 后，
       // 等待 /sync 回送 AccountData 事件才 resolve。客户端使用 sliding sync
       // （pollTimeout 15-30s），传统 /sync 的 long-poll 周期可能需要 30s+ 才
-      // 回送 AccountData 事件，15s 超时必定不够。
-      // 修复：
-      // 1. 超时从 15s 增至 45s（覆盖至少一个 sync long-poll 周期）
-      // 2. 超时后用 getAccountDataFromServer 直接 REST GET 验证密钥是否已上传
-      //    若已上传则视为成功（PUT 已完成，只是 sync echo 未及时到达）
+      // 回送 AccountData 事件。45s 超时仍可能不够。
+      //
+      // 修复策略（两阶段）：
+      //   阶段 A：直接通过 REST API 上传 SSSS 密钥到 account_data（绕过 SDK 的
+      //   setDefaultKeyId 内部 sync echo 等待），确保密钥立即持久化到服务端。
+      //   阶段 B：调用 bootstrapSecretStorage 完成 SDK 内部状态注册（它会检测到
+      //   密钥已存在而跳过重复上传，但仍需等待 sync echo）。若阶段 B 超时，
+      //   密钥已在服务端，可安全继续 resetKeyBackup。
       log('分支 3: SSSS 上传改为非阻塞（后台执行），立即返回密钥')
       const t3 = Date.now()
 
       void (async () => {
-        // 确保 sync 循环正在运行，否则 setDefaultKeyId 等待 AccountData 事件会永久挂起
         const client = matrixClientService.getClient()
-        const syncState = client?.getSyncState?.()
+        if (!client) {
+          log('分支 3 中止: client 不可用')
+          return
+        }
+
+        // ── 阶段 A：直接 REST 上传 SSSS 密钥（不依赖 sync echo） ──
+        try {
+          await uploadSsssKeyDirectly(client, generatedKey)
+          log(`分支 3A 完成: SSSS 密钥已通过 REST 直接上传 (${Date.now() - t3}ms)`)
+        } catch (uploadErr) {
+          log(
+            `分支 3A 失败: REST 直接上传 SSSS 密钥失败 (${Date.now() - t3}ms): ${uploadErr instanceof Error ? uploadErr.message : String(uploadErr)}`
+          )
+          // REST 上传失败，继续尝试 bootstrap 流程（兜底）
+        }
+
+        // ── 阶段 B：bootstrapSecretStorage 完成 SDK 内部状态注册 ──
+        // 确保 sync 循环正在运行
+        const syncState = client.getSyncState?.()
         if (syncState === 'STOPPED' || syncState === null || syncState === 'ERROR') {
           log(`分支 3 前置: sync 未运行 (state=${syncState})，调用 startClient() 启动 sync`)
           try {
-            client?.startClient()
-            // 等待 sync 开始运行（最多 5s）
+            client.startClient?.()
             await new Promise<void>((resolve) => {
               const deadline = Date.now() + 5000
               const check = () => {
-                const state = client?.getSyncState?.()
+                const state = client.getSyncState?.()
                 if (state === 'SYNCING' || state === 'PREPARED' || Date.now() > deadline) {
                   resolve()
                 } else {
@@ -153,7 +239,7 @@ export class CryptoKeyBackupAdapter {
               }
               check()
             })
-            log(`分支 3 前置: sync 已启动 (state=${client?.getSyncState?.()})`)
+            log(`分支 3 前置: sync 已启动 (state=${client.getSyncState?.()})`)
           } catch (e) {
             log(`分支 3 前置: startClient 失败: ${e instanceof Error ? e.message : String(e)}`)
           }
@@ -174,55 +260,42 @@ export class CryptoKeyBackupAdapter {
             )
           ])
           log(`分支 3a 完成: bootstrapSecretStorage(SSSS) 后台成功 (${Date.now() - t3}ms)`)
-
-          log('分支 3b: 后台调用 resetKeyBackup')
-          try {
-            await Promise.race([
-              crypto.resetKeyBackup(),
-              new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('resetKeyBackup 后台超时 (45s)')), 45000)
-              )
-            ])
-            log(`分支 3b 完成: resetKeyBackup 后台成功 (${Date.now() - t3}ms)`)
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err)
-            log(`分支 3b 结果: resetKeyBackup 后台失败 (${Date.now() - t3}ms): ${msg}`)
-          }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err)
-          // 超时后验证密钥是否已上传到服务端：bootstrapSecretStorage 内部先 PUT
-          // account_data（成功），再等 sync echo（可能超时）。若 PUT 已完成，
-          // 密钥已在服务端，可视为成功。
+          // 超时后验证密钥是否已上传到服务端（阶段 A 已通过 REST 上传，此处为二次验证）
           if (msg.includes('超时')) {
             try {
-              const defaultKey = await client?.getAccountDataFromServer?.('m.secret_storage.default_key')
+              const defaultKey = await client.getAccountDataFromServer?.('m.secret_storage.default_key')
               if (defaultKey?.key) {
                 log(
                   `分支 3a 验证: SSSS 密钥已上传至服务端 (defaultKeyId=${defaultKey.key})，sync echo 超时但密钥已就绪 (${Date.now() - t3}ms)`
                 )
-                // 密钥已上传，继续执行 resetKeyBackup
-                log('分支 3b: 后台调用 resetKeyBackup')
-                try {
-                  await Promise.race([
-                    crypto.resetKeyBackup(),
-                    new Promise<never>((_, reject) =>
-                      setTimeout(() => reject(new Error('resetKeyBackup 后台超时 (45s)')), 45000)
-                    )
-                  ])
-                  log(`分支 3b 完成: resetKeyBackup 后台成功 (${Date.now() - t3}ms)`)
-                } catch (err2) {
-                  const msg2 = err2 instanceof Error ? err2.message : String(err2)
-                  log(`分支 3b 结果: resetKeyBackup 后台失败 (${Date.now() - t3}ms): ${msg2}`)
-                }
-                return
+              } else {
+                log(`分支 3a 结果: bootstrapSecretStorage 后台超时且密钥未验证到: ${msg}`)
               }
             } catch (verifyErr) {
               log(
                 `分支 3a 验证: getAccountDataFromServer 失败: ${verifyErr instanceof Error ? verifyErr.message : String(verifyErr)}`
               )
             }
+          } else {
+            log(`分支 3a 结果: bootstrapSecretStorage(SSSS) 后台失败 (${Date.now() - t3}ms): ${msg}`)
           }
-          log(`分支 3a 结果: bootstrapSecretStorage(SSSS) 后台失败 (${Date.now() - t3}ms): ${msg}`)
+        }
+
+        // ── 阶段 C：resetKeyBackup ──
+        log('分支 3b: 后台调用 resetKeyBackup')
+        try {
+          await Promise.race([
+            crypto.resetKeyBackup(),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('resetKeyBackup 后台超时 (45s)')), 45000)
+            )
+          ])
+          log(`分支 3b 完成: resetKeyBackup 后台成功 (${Date.now() - t3}ms)`)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          log(`分支 3b 结果: resetKeyBackup 后台失败 (${Date.now() - t3}ms): ${msg}`)
         }
       })()
 
