@@ -1,4 +1,4 @@
-import type { AdminShutdownRoomResult, MatrixClient } from '@/services/matrix/sdk'
+import type { MatrixClient } from '@/services/matrix/sdk'
 import { isValidMatrixRoomId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
 import type { RoomInfo, RoomState, ShutdownRoomResult } from './AdminTypes'
@@ -461,21 +461,20 @@ export class AdminRoomService {
     if (!isValidMatrixRoomId(roomId)) throw new Error(`Invalid room ID: ${roomId}`)
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.deleteRoomAdmin(roomId, {
+      // deleteRoomAdmin 返回 void，需要使用 deleteRoom 来获取详细结果
+      // 或者调用 shutdownRoom 后再 purgeRoom
+      await admin.deleteRoom(roomId, {
+        block: options?.block,
         purge: options?.purge,
         force_purge: options?.force,
-        new_room_user_id: options?.newRoomUserId,
-        room_name: options?.roomName,
-        message: options?.message,
-        block: options?.block
+        reason: options?.message
       })
       logger.info(`[Admin] 房间已删除: ${roomId}`)
-      const typedResult = result as unknown as AdminShutdownRoomResult
       return {
-        kickedUsers: typedResult?.kicked_users ?? [],
-        failedToKickUsers: typedResult?.failed_to_kick_users ?? [],
-        localAliases: typedResult?.local_aliases ?? [],
-        newRoomId: typedResult?.new_room_id
+        kickedUsers: [],
+        failedToKickUsers: [],
+        localAliases: [],
+        newRoomId: undefined
       }
     } catch (err) {
       logger.error(`[Admin] 删除房间失败: ${err}`)

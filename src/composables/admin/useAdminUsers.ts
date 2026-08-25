@@ -72,6 +72,7 @@ interface UseAdminUsersResult {
   ) => Promise<UserInfo | null>
   resetPassword: (userId: string, newPassword: string) => Promise<void>
   deactivateUser: (userId: string) => Promise<void>
+  activateUser: (userId: string) => Promise<void>
   setAdmin: (userId: string, isAdmin: boolean) => Promise<void>
   deleteUserDevice: (userId: string, deviceId: string) => Promise<void>
   overrideUserRateLimit: (userId: string) => Promise<void>
@@ -207,6 +208,11 @@ export function useAdminUsers(): UseAdminUsersResult {
 
   async function deactivateUser(userId: string) {
     await adminService.deactivateUser(userId)
+    await loadUsers()
+  }
+
+  async function activateUser(userId: string) {
+    await adminService.activateUser(userId)
     await loadUsers()
   }
 
@@ -350,6 +356,7 @@ export function useAdminUsers(): UseAdminUsersResult {
     createUser,
     resetPassword,
     deactivateUser,
+    activateUser,
     setAdmin,
     deleteUserDevice,
     overrideUserRateLimit,

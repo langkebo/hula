@@ -17,6 +17,12 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => loggerSpy
 }))
 
+vi.mock('@/utils/inputValidation', () => ({
+  isNonEmptyString: (s: string) => s.length > 0,
+  isValidMatrixUserId: (s: string) => /^@[^:]+:.+$/.test(s),
+  isValidMatrixRoomId: (s: string) => /^![^:]+:.+$/.test(s)
+}))
+
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn()
 }))
@@ -621,26 +627,19 @@ describe('adminService facade', () => {
     })
 
     it('should delete room via SDK with field mapping', async () => {
-      mockAdminManager.deleteRoomAdmin.mockResolvedValue({
-        kicked_users: ['@u1:server'],
-        failed_to_kick_users: [],
-        local_aliases: ['#room:server'],
-        new_room_id: '!new:server'
-      })
+      mockAdminManager.deleteRoom.mockResolvedValue(undefined)
       const result = await adminService.deleteRoom('!room:server', {
         purge: true,
         newRoomUserId: '@new:server',
         roomName: 'n'
       })
-      expect(result.kickedUsers).toHaveLength(1)
-      expect(result.newRoomId).toBe('!new:server')
-      expect(mockAdminManager.deleteRoomAdmin).toHaveBeenCalledWith('!room:server', {
+      expect(result.kickedUsers).toEqual([])
+      expect(result.newRoomId).toBeUndefined()
+      expect(mockAdminManager.deleteRoom).toHaveBeenCalledWith('!room:server', {
+        block: undefined,
         purge: true,
         force_purge: undefined,
-        new_room_user_id: '@new:server',
-        room_name: 'n',
-        message: undefined,
-        block: undefined
+        reason: undefined
       })
     })
   })

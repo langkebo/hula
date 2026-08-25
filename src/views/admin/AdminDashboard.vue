@@ -172,14 +172,15 @@
         <div class="dashboard-section">
           <h3>{{ t('admin.dashboard.serverHealth') }}</h3>
           <div class="health-status">
-            <div class="health-indicator" :class="serverHealth?.healthy ? 'healthy' : 'unhealthy'">
+            <div class="health-indicator" :class="`health-indicator--${healthState}`">
               <svg class="size-20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path v-if="serverHealth?.healthy" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path v-if="healthState === 'healthy'" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 <path
-                  v-else
+                  v-else-if="healthState === 'unhealthy'"
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <path v-else d="M12 8v5m0 3h.01" stroke-linecap="round" />
               </svg>
-              <span>{{ serverHealth?.healthy ? t('admin.dashboard.healthy') : t('admin.dashboard.unhealthy') }}</span>
+              <span>{{ t(`admin.dashboard.${healthState}`) }}</span>
             </div>
           </div>
 
@@ -230,8 +231,10 @@ import { useI18n } from 'vue-i18n'
 import AdminStatCard from '@/components/admin/AdminStatCard.vue'
 import { adminService, type ServerHealth, type ServerStats, type ServerVersion } from '@/services/matrix/admin'
 import { useAdminStore } from '@/stores/domains/admin/admin'
+import { createLogger } from '@/utils/Logger'
 import { useAdminErrorHandler } from './useAdminError'
 
+const logger = createLogger('AdminDashboard')
 const { t } = useI18n()
 const adminStore = useAdminStore()
 const { handleAdminError } = useAdminErrorHandler()
@@ -240,6 +243,12 @@ const stats = ref<ServerStats | null>(null)
 const serverHealth = ref<ServerHealth | null>(null)
 const serverVersion = ref<ServerVersion | null>(null)
 const loading = ref(false)
+
+// 三态健康：接口失败/未加载（null）显示"未知"，而非误报"异常"
+const healthState = computed<'healthy' | 'unhealthy' | 'unknown'>(() => {
+  if (!serverHealth.value || typeof serverHealth.value.healthy !== 'boolean') return 'unknown'
+  return serverHealth.value.healthy ? 'healthy' : 'unhealthy'
+})
 
 // ===== Activity Trend (Line Chart) =====
 interface TrendPoint {
@@ -353,29 +362,34 @@ const healthRings = computed<HealthRing[]>(() => {
     return v.status === 'ok' ? '100%' : '0%'
   }
 
-  return [
-    {
-      label: t('admin.dashboard.cpu'),
-      percent: extractPercent('cpu'),
-      display: extractDisplay('cpu', '-'),
-      color: 'var(--tjg-color-info-500)',
-      circumference
-    },
-    {
-      label: t('admin.dashboard.memory'),
-      percent: extractPercent('memory'),
-      display: extractDisplay('memory', '-'),
-      color: 'var(--tjg-color-success-500)',
-      circumference
-    },
-    {
-      label: t('admin.dashboard.disk'),
-      percent: extractPercent('disk'),
-      display: extractDisplay('disk', '-'),
-      color: 'var(--tjg-color-warning-500)',
-      circumference
-    }
-  ]
+  const buildRing = (
+    key: string,
+    label: string,
+    color: string
+  ): { key: string; label: string; percent: number; display: string; color: string; circumference: number } => ({
+    key,
+    label,
+    percent: extractPercent(key),
+    display: extractDisplay(key, '-'),
+    color,
+    circumference
+  })
+
+  // 只渲染后端实际返回的检查项；synapse-rust 的 /health 不提供 cpu/memory/disk
+  // （仅 status/database），此时回退展示数据库健康环，避免三个空环假数据。
+  const resourceRings = [
+    buildRing('cpu', t('admin.dashboard.cpu'), 'var(--tjg-color-info-500)'),
+    buildRing('memory', t('admin.dashboard.memory'), 'var(--tjg-color-success-500)'),
+    buildRing('disk', t('admin.dashboard.disk'), 'var(--tjg-color-warning-500)')
+  ].filter((ring) => checks?.[ring.key])
+
+  if (resourceRings.length > 0) return resourceRings
+
+  if (checks?.database) {
+    return [buildRing('database', t('admin.dashboard.database'), 'var(--tjg-color-success-500)')]
+  }
+
+  return []
 })
 
 const statCards = computed(() => [
@@ -427,7 +441,8 @@ async function loadData() {
     if (healthResult.status === 'fulfilled') serverHealth.value = healthResult.value
     if (versionResult.status === 'fulfilled') serverVersion.value = versionResult.value
   } catch (err) {
-    handleAdminError(err)
+    // 静默处理错误，仪表盘数据加载失败不应阻断用户操作
+    logger.warn('仪表盘数据加载失败:', err)
   } finally {
     loading.value = false
   }
@@ -489,14 +504,19 @@ onMounted(loadData)
   border-radius: 8px;
   font-weight: 500;
 
-  &.healthy {
+  &--healthy {
     background: var(--admin-health-ok-bg);
     color: var(--admin-health-ok-text);
   }
 
-  &.unhealthy {
+  &--unhealthy {
     background: var(--admin-health-err-bg);
     color: var(--admin-health-err-text);
+  }
+
+  &--unknown {
+    background: var(--tjg-surface-subtle);
+    color: var(--tjg-text-secondary);
   }
 }
 

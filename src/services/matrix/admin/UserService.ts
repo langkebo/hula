@@ -7,6 +7,7 @@ import type {
 } from 'matrix-js-sdk/admin'
 import { isNonEmptyString, isValidMatrixUserId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
+import { authedRequestWithPath } from '../MatrixHttpClient'
 import type { RateLimit, ShadowBanStatus, UserDevice, UserInfo } from './AdminTypes'
 
 const logger = createLogger('UserService')
@@ -157,6 +158,26 @@ export class AdminUserService {
       logger.info(`[Admin] 用户已停用: ${userId}`)
     } catch (err) {
       logger.error(`[Admin] 停用用户失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 重新激活已停用的用户：调用 Synapse Admin v2 API 将 deactivated 置为 false。
+   * @param userId 目标用户 ID
+   */
+  async activateUser(userId: string): Promise<void> {
+    if (!isValidMatrixUserId(userId)) throw new Error(`Invalid user ID: ${userId}`)
+    try {
+      const client = this.getClient()
+      // Synapse Admin v2 API：PUT /_synapse/admin/v2/users/{userId}
+      // 设置 deactivated: false 来重新激活用户
+      await authedRequestWithPath(client, 'PUT', `/_synapse/admin/v2/users/${encodeURIComponent(userId)}`, undefined, {
+        deactivated: false
+      })
+      logger.info(`[Admin] 用户已激活: ${userId}`)
+    } catch (err) {
+      logger.error(`[Admin] 激活用户失败: ${err}`)
       throw err
     }
   }

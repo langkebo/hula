@@ -525,7 +525,24 @@ async function handleResetPassword(userId: string) {
 }
 
 async function handleToggleDeactivate(user: UserInfo) {
-  if (!user.deactivated) {
+  if (user.deactivated) {
+    // 重新激活用户
+    dialog.info({
+      title: t('admin.users.reactivate'),
+      content: t('admin.users.reactivateConfirm', { userId: user.userId }),
+      positiveText: t('admin.common.confirm'),
+      negativeText: t('admin.common.cancel'),
+      onPositiveClick: async () => {
+        try {
+          await admin.activateUser(user.userId)
+          showFeedback(t('admin.users.reactivateSuccess'), 'success')
+        } catch (err) {
+          if (handleAdminError(err)) showFeedback(t('admin.users.reactivateFailed'), 'error')
+        }
+      }
+    })
+  } else {
+    // 停用用户
     dialog.warning({
       title: t('admin.users.deactivate'),
       content: t('admin.users.deactivateConfirm', { userId: user.userId }),

@@ -78,6 +78,40 @@ describe('AdminServerService', () => {
     await expect(service.getServerStatus()).resolves.toBeNull()
   })
 
+  it('getServerHealth 归一化 synapse-rust 的 {status, database} 响应（healthy 推导 + database checks）', async () => {
+    admin.getServerHealth.mockResolvedValueOnce({ status: 'ok', database: 'ok' })
+
+    await expect(service.getServerHealth()).resolves.toEqual({
+      healthy: true,
+      checks: { database: { status: 'ok' } }
+    })
+  })
+
+  it('getServerHealth 数据库异常时 healthy 为 false', async () => {
+    admin.getServerHealth.mockResolvedValueOnce({ status: 'error', database: 'error' })
+
+    const result = await service.getServerHealth()
+    expect(result?.healthy).toBe(false)
+    expect(result?.checks).toEqual({ database: { status: 'error' } })
+  })
+
+  it('getServerHealth 优先透传 Python Synapse 风格的 healthy/checks 字段', async () => {
+    admin.getServerHealth.mockResolvedValueOnce({
+      healthy: true,
+      checks: { cpu: { status: 'ok' }, memory: { status: 'ok' } }
+    })
+
+    await expect(service.getServerHealth()).resolves.toEqual({
+      healthy: true,
+      checks: { cpu: { status: 'ok' }, memory: { status: 'ok' } }
+    })
+  })
+
+  it('getServerHealth 出错时返回 null', async () => {
+    admin.getServerHealth.mockRejectedValueOnce(new Error('boom'))
+    await expect(service.getServerHealth()).resolves.toBeNull()
+  })
+
   it('getServerVersion 映射 server_version/python_version', async () => {
     admin.getServerVersion.mockResolvedValueOnce({ server_version: '1.2.3', python_version: null })
 
