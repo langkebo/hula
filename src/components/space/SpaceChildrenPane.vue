@@ -189,6 +189,12 @@ const handleEnterChat = async () => {
 
 // 进入指定子房间
 const handleEnterRoom = async (roomId: string) => {
+  // 子房间 room_id 为空时（如 m.space.child 状态事件缺 state_key）直接拦截，
+  // 避免把空 targetId 传入 useEnterChat 触发告警与无效跳转。
+  if (!roomId) {
+    showFeedback(t('space.load_failed'), 'warning')
+    return
+  }
   try {
     await enterChatFn(roomId, 'room')
   } catch (err) {
