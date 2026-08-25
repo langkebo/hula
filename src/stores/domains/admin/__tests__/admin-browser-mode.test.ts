@@ -47,6 +47,7 @@ vi.mock('@/utils/Logger', () => ({
 vi.mock('../../chat/matrix', () => ({
   useMatrixStore: () => ({
     isLoggedIn: true,
+    isInitialized: true,
     userId: '@admin1:matrix.test',
     accessToken: 'syt_admin_token',
     homeserverUrl: 'https://matrix.test'

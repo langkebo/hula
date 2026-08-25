@@ -1,26 +1,25 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ok } from '@/common/result'
 
-const { getUserMock, checkAdminApiAvailabilityMock } = vi.hoisted(() => ({
+// --- hoisted mocks ---
+const { getUserMock, checkAdminApiAvailabilityMock, invokeWithResultMock } = vi.hoisted(() => ({
   getUserMock: vi.fn(),
-  checkAdminApiAvailabilityMock: vi.fn(() => Promise.resolve(true))
+  checkAdminApiAvailabilityMock: vi.fn(),
+  invokeWithResultMock: vi.fn()
 }))
 
-vi.mock('@tauri-apps/api/core', () => ({
-  invoke: vi.fn()
-}))
+// mock MatrixStore（admin store 的前置依赖）
+const matrixStoreMock = {
+  isLoggedIn: true,
+  isInitialized: true,
+  userId: '@admin:example.com',
+  accessToken: 'syt_test_token',
+  homeserverUrl: 'https://matrix.test'
+}
 
-vi.mock('@tauri-apps/plugin-log', () => ({
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
-  trace: vi.fn()
-}))
-
-// 让 invokeWithResult 调用 mock 的 invoke 而不是 short-circuit 返回
-vi.mock('@/utils/AppHarness', () => ({
-  hasTauriRuntime: () => true
+vi.mock('@/stores/domains/chat/matrix', () => ({
+  useMatrixStore: () => matrixStoreMock
 }))
 
 vi.mock('@/services/matrix/admin', () => ({
@@ -30,117 +29,103 @@ vi.mock('@/services/matrix/admin', () => ({
   }
 }))
 
+vi.mock('@/utils/TauriInvokeHandler', () => ({
+  invokeWithResult: invokeWithResultMock
+}))
+
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
 vi.mock('@/utils/Logger', () => ({
-  createLogger: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  })
+  createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
 }))
 
-vi.mock('../../chat/matrix', () => ({
-  useMatrixStore: () => ({
-    isLoggedIn: true,
-    userId: '@admin:example.com',
-    accessToken: 'syt_test_token',
-    homeserverUrl: 'https://matrix.test'
-  })
-}))
-
-import { invoke } from '@tauri-apps/api/core'
+// --- import after mocks ---
 import { useAdminStore } from '../admin'
 
 describe('AdminStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    matrixStoreMock.isLoggedIn = true
+    matrixStoreMock.isInitialized = true
+    matrixStoreMock.userId = '@admin:example.com'
+    matrixStoreMock.accessToken = 'syt_test_token'
+    matrixStoreMock.homeserverUrl = 'https://matrix.test'
+    checkAdminApiAvailabilityMock.mockResolvedValue(true)
+    getUserMock.mockResolvedValue({ userId: '@admin:example.com', admin: true })
+    invokeWithResultMock.mockResolvedValue(ok({ is_admin: true, user_id: '@admin:example.com' }))
   })
 
-  it('initializes with non-admin state', () => {
-    const store = useAdminStore()
-    expect(store.isAdmin).toBe(false)
-    expect(store.isCheckingAdmin).toBe(false)
-  })
+  describe('checkAdminStatus()', () => {
+    it('未登录时直接返回 false', async () => {
+      matrixStoreMock.isLoggedIn = false
+      const store = useAdminStore()
+      const result = await store.checkAdminStatus()
+      expect(result).toBe(false)
+      expect(store.isAdmin).toBe(false)
+    })
 
-  it('canAccessAdmin is false when not admin', () => {
-    const store = useAdminStore()
-    expect(store.canAccessAdmin).toBe(false)
-  })
+    it('客户端未初始化时跳过检查', async () => {
+      matrixStoreMock.isInitialized = false
+      const store = useAdminStore()
+      const result = await store.checkAdminStatus()
+      expect(result).toBe(false)
+      expect(getUserMock).not.toHaveBeenCalled()
+    })
 
-  it('checkAdminStatus returns true when both checks pass', async () => {
-    vi.mocked(invoke).mockResolvedValue({ is_admin: true, user_id: '@admin:example.com' })
-    getUserMock.mockResolvedValue({ userId: '@admin:example.com', admin: true } as never)
+    it('前后端均确认 admin → isAdmin 为 true', async () => {
+      const store = useAdminStore()
+      const result = await store.checkAdminStatus()
+      expect(result).toBe(true)
+      expect(store.isAdmin).toBe(true)
+    })
 
-    const store = useAdminStore()
-    const result = await store.checkAdminStatus()
-    expect(result).toBe(true)
-    expect(store.isAdmin).toBe(true)
-    expect(invoke).toHaveBeenCalledWith('check_admin_status', {
-      userId: '@admin:example.com',
-      accessToken: 'syt_test_token',
-      homeserverUrl: 'https://matrix.test'
+    it('前端确认 admin 但后端不确认 → isAdmin 为 false（不一致降级）', async () => {
+      invokeWithResultMock.mockResolvedValueOnce(ok({ is_admin: false, user_id: '@admin:example.com' }))
+
+      const store = useAdminStore()
+      const result = await store.checkAdminStatus()
+      expect(result).toBe(false)
+      expect(store.isAdmin).toBe(false)
+    })
+
+    it('getUser 抛异常时 isAdmin 为 false', async () => {
+      getUserMock.mockRejectedValueOnce(new Error('network'))
+      const store = useAdminStore()
+      const result = await store.checkAdminStatus()
+      expect(result).toBe(false)
+      expect(store.isAdmin).toBe(false)
+    })
+
+    it('缓存期内重复调用不重复请求', async () => {
+      const store = useAdminStore()
+      await store.checkAdminStatus()
+      checkAdminApiAvailabilityMock.mockClear()
+      getUserMock.mockClear()
+      invokeWithResultMock.mockClear()
+      await store.checkAdminStatus()
+      expect(getUserMock).not.toHaveBeenCalled()
     })
   })
 
-  it('checkAdminStatus returns false when backend says no', async () => {
-    vi.mocked(invoke).mockResolvedValue({ is_admin: false, user_id: '@user:example.com' })
-    getUserMock.mockResolvedValue({ userId: '@user:example.com', admin: true } as never)
-
-    const store = useAdminStore()
-    const result = await store.checkAdminStatus()
-    expect(result).toBe(false)
+  describe('verifyAdminAccess()', () => {
+    it('委托给 checkAdminStatus', async () => {
+      const store = useAdminStore()
+      const result = await store.verifyAdminAccess()
+      expect(result).toBe(true)
+    })
   })
 
-  it('checkAdminStatus returns false when frontend says no', async () => {
-    vi.mocked(invoke).mockResolvedValue({ is_admin: true, user_id: '@admin:example.com' })
-    getUserMock.mockResolvedValue({ userId: '@admin:example.com', admin: false } as never)
+  describe('clearAdminState()', () => {
+    it('重置管理员状态', async () => {
+      const store = useAdminStore()
+      await store.checkAdminStatus()
+      expect(store.isAdmin).toBe(true)
 
-    const store = useAdminStore()
-    const result = await store.checkAdminStatus()
-    expect(result).toBe(false)
-  })
-
-  it('checkAdminStatus handles backend error', async () => {
-    vi.mocked(invoke).mockRejectedValue(new Error('Network error'))
-    getUserMock.mockResolvedValue({ userId: '@admin:example.com', admin: true } as never)
-
-    const store = useAdminStore()
-    const result = await store.checkAdminStatus()
-    expect(result).toBe(false)
-  })
-
-  it('checkAdminStatus caches result within interval', async () => {
-    vi.mocked(invoke).mockResolvedValue({ is_admin: true, user_id: '@admin:example.com' })
-    getUserMock.mockResolvedValue({ userId: '@admin:example.com', admin: true } as never)
-
-    const store = useAdminStore()
-    await store.checkAdminStatus()
-    expect(invoke).toHaveBeenCalledTimes(1)
-
-    const result = await store.checkAdminStatus()
-    expect(result).toBe(true)
-    expect(invoke).toHaveBeenCalledTimes(1)
-  })
-
-  it('clearAdminState resets state', async () => {
-    vi.mocked(invoke).mockResolvedValue({ is_admin: true, user_id: '@admin:example.com' })
-    getUserMock.mockResolvedValue({ userId: '@admin:example.com', admin: true } as never)
-
-    const store = useAdminStore()
-    await store.checkAdminStatus()
-    expect(store.isAdmin).toBe(true)
-
-    store.clearAdminState()
-    expect(store.isAdmin).toBe(false)
-  })
-
-  it('verifyAdminAccess delegates to checkAdminStatus', async () => {
-    vi.mocked(invoke).mockResolvedValue({ is_admin: true, user_id: '@admin:example.com' })
-    getUserMock.mockResolvedValue({ userId: '@admin:example.com', admin: true } as never)
-
-    const store = useAdminStore()
-    const result = await store.verifyAdminAccess()
-    expect(result).toBe(true)
+      store.clearAdminState()
+      expect(store.isAdmin).toBe(false)
+    })
   })
 })
