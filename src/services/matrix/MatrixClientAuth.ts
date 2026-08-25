@@ -261,67 +261,86 @@ export class MatrixClientAuth {
     }
 
     try {
-      // P0-#2（优化）：在首次 initialize 前解析稳定 deviceId，避免「先建 client 再发现
-      // deviceId 又重建」的泄漏与重复 E2EE 查询（keys/query 翻倍 / 重复回执）。
-      // 优先复用配置中已持久化的 deviceId；缺失时通过 whoami 端点（带 token 直连，无需已初始化的 client）
-      // 预解析 access token 绑定的设备，再一次性 initialize。
-      // 短路：已持久化 deviceId 时不发 whoami 请求，避免多余往返。
-      const whoamiDeviceId = config.deviceId
-        ? undefined
-        : await lifecycle.resolveDeviceIdByWhoami(token, config.homeserverUrl)
-      const stableDeviceId = resolveStableDeviceId(config, whoamiDeviceId)
-
-      await lifecycle.initialize({
-        ...config,
-        accessToken: token,
-        userId,
-        deviceId: stableDeviceId
-      })
-
-      // 回退：若 whoami 也未返回 deviceId，则采用 SDK 实际使用的设备（首次 sync 后才落定）。
-      const resolvedDeviceId = resolveStableDeviceId(
-        { ...config, deviceId: stableDeviceId },
-        connectionManager.getClient()?.getDeviceId?.() ?? undefined
-      )
-
-      connectionManager.updateConnectionState('CONNECTED')
-
-      let activeAccessToken = token
-      if (refreshToken) {
-        try {
-          const client = connectionManager.getClient()
-          if (client) {
-            const refreshResult = await client.refreshToken(refreshToken)
-
-            const newAccessToken = refreshResult.access_token
-            const newRefreshToken = refreshResult.refresh_token
-            let newExpiresInMs = refreshResult.expires_in_ms
-            // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
-            const expiresInSec = (refreshResult as unknown as Record<string, unknown>).expires_in as number | undefined
-            if (!newExpiresInMs && expiresInSec) {
-              newExpiresInMs = expiresInSec * 1000
-            }
-
-            if (newAccessToken && newExpiresInMs && newExpiresInMs > 0) {
-              client.setAccessToken(newAccessToken)
-              activeAccessToken = newAccessToken
-              const uid = client.getUserId()
-              if (uid) {
-                await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? refreshToken)
-              }
-              tokenManager.schedule(client, newRefreshToken ?? refreshToken, newExpiresInMs)
-            }
-          }
-        } catch {
-          // 服务器不支持 refresh 或刷新失败，不影响登录
+      // P0-#2（优化）：如果客户端已初始化且用户一致，跳过重复 initialize()
+      // 避免 SessionRestoreService.restoreWithAccessToken() 已调用 initialize() 后
+      // 再次调用导致的重复初始化和不必要的客户端重建
+      const existingClient = connectionManager.getClient()
+      if (existingClient && connectionManager.shouldReuse({ ...config, userId })) {
+        logger.info('[MatrixClientAuth] 客户端已初始化且用户一致，跳过重复 initialize()')
+        // 返回当前 token 和设备 ID
+        const currentAccessToken = existingClient.getAccessToken() ?? token
+        const currentDeviceId = existingClient.getDeviceId?.() ?? config.deviceId
+        return {
+          success: true,
+          userId,
+          deviceId: currentDeviceId,
+          accessToken: currentAccessToken
         }
-      }
+      } else {
+        // P0-#2（优化）：在首次 initialize 前解析稳定 deviceId，避免「先建 client 再发现
+        // deviceId 又重建」的泄漏与重复 E2EE 查询（keys/query 翻倍 / 重复回执）。
+        // 优先复用配置中已持久化的 deviceId；缺失时通过 whoami 端点（带 token 直连，无需已初始化的 client）
+        // 预解析 access token 绑定的设备，再一次性 initialize。
+        // 短路：已持久化 deviceId 时不发 whoami 请求，避免多余往返。
+        const whoamiDeviceId = config.deviceId
+          ? undefined
+          : await lifecycle.resolveDeviceIdByWhoami(token, config.homeserverUrl)
+        const stableDeviceId = resolveStableDeviceId(config, whoamiDeviceId)
 
-      return {
-        success: true,
-        userId: userId,
-        deviceId: resolvedDeviceId,
-        accessToken: activeAccessToken
+        await lifecycle.initialize({
+          ...config,
+          accessToken: token,
+          userId,
+          deviceId: stableDeviceId
+        })
+
+        // 回退：若 whoami 也未返回 deviceId，则采用 SDK 实际使用的设备（首次 sync 后才落定）。
+        const resolvedDeviceId = resolveStableDeviceId(
+          { ...config, deviceId: stableDeviceId },
+          connectionManager.getClient()?.getDeviceId?.() ?? undefined
+        )
+
+        connectionManager.updateConnectionState('CONNECTED')
+
+        let activeAccessToken = token
+        if (refreshToken) {
+          try {
+            const client = connectionManager.getClient()
+            if (client) {
+              const refreshResult = await client.refreshToken(refreshToken)
+
+              const newAccessToken = refreshResult.access_token
+              const newRefreshToken = refreshResult.refresh_token
+              let newExpiresInMs = refreshResult.expires_in_ms
+              // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
+              const expiresInSec = (refreshResult as unknown as Record<string, unknown>).expires_in as
+                | number
+                | undefined
+              if (!newExpiresInMs && expiresInSec) {
+                newExpiresInMs = expiresInSec * 1000
+              }
+
+              if (newAccessToken && newExpiresInMs && newExpiresInMs > 0) {
+                client.setAccessToken(newAccessToken)
+                activeAccessToken = newAccessToken
+                const uid = client.getUserId()
+                if (uid) {
+                  await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? refreshToken)
+                }
+                tokenManager.schedule(client, newRefreshToken ?? refreshToken, newExpiresInMs)
+              }
+            }
+          } catch {
+            // 服务器不支持 refresh 或刷新失败，不影响登录
+          }
+        }
+
+        return {
+          success: true,
+          userId: userId,
+          deviceId: resolvedDeviceId,
+          accessToken: activeAccessToken
+        }
       }
     } catch (err) {
       connectionManager.updateConnectionState('ERROR')
