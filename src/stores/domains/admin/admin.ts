@@ -80,6 +80,13 @@ export const useAdminStore = defineStore('admin', () => {
       return false
     }
 
+    // 客户端尚未初始化时（启动早期竞态），延迟验证，
+    // 避免 "客户端未初始化" 错误产生误导性 ERROR 日志和前后端不一致误报。
+    if (!matrixStore.isInitialized) {
+      logger.debug('管理员状态检查: 客户端尚未初始化，跳过本次检查')
+      return isAdmin.value
+    }
+
     const now = Date.now()
     if (now - lastCheckedAt.value < ADMIN_CHECK_INTERVAL && !isCheckingAdmin.value) {
       return isAdmin.value
