@@ -159,7 +159,8 @@ vi.mock('@/stores/domains/chat/contacts', () => ({
             activeStatus: 0,
             friendStatus: 'normal',
             note: '',
-            remark: ''
+            remark: '',
+            directRoomId: '!dm-kevins:matrix.test'
           }
         : undefined
     ),
@@ -298,5 +299,25 @@ describe('SingleDetails', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('暂无设备')
+  })
+
+  describe('阅后即焚设置区（RoomBurnSettings 接入）', () => {
+    vi.mock('@/composables/useBurnAfterRead', () => ({
+      useBurnAfterRead: () => ({
+        refreshBurnSettings: vi.fn(async () => undefined),
+        isRoomBurnEnabled: vi.fn(() => false),
+        getRoomBurnDuration: vi.fn(() => 60000),
+        getPendingBurns: vi.fn(async () => []),
+        enableBurn: vi.fn(async () => true),
+        disableBurn: vi.fn(async () => true)
+      })
+    }))
+
+    it('好友有 directRoomId 时渲染阅后即焚设置区', async () => {
+      const wrapper = mountComponent('@kevins:matrix.test')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="room-burn-settings"]').exists()).toBe(true)
+    })
   })
 })

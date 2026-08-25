@@ -10,10 +10,12 @@
         :session-sort="sessionSort"
         :filtered-count="filteredSessionList.length"
         :total-count="sessionList.length"
+        :hidden-count="hiddenSessionCount"
         @update:search-keyword="setSearchKeyword"
         @update:session-type-filter="setSessionTypeFilter"
         @update:session-engagement-filter="setSessionEngagementFilter"
-        @update:session-sort="setSessionSort" />
+        @update:session-sort="setSessionSort"
+        @open-hidden-sessions="handleOpenHiddenSessions" />
     </template>
 
     <template #default>
@@ -43,6 +45,7 @@ import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.
 import RoomSessionList from '@/components/workbench/RoomSessionList.vue'
 import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useMessage } from '@/composables/chat/useMessage'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useMessageSessionFilters } from '@/composables/workbench/useMessageSessionFilters'
@@ -54,6 +57,7 @@ import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useRoomStore } from '@/stores/domains/chat/room'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -69,7 +73,9 @@ const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const roomStore = useRoomStore()
+const settingStore = useSettingStore()
 const { addListener } = useTauriListener()
+const { showFeedback } = useActionFeedback()
 const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visibleSpecialMenu } = useMessage()
 
 // 包装 handleMsgClick：更新会话状态后跳转路由到 /message/:roomId，
@@ -106,6 +112,21 @@ const {
 
 const sessionListRef = ref<InstanceType<typeof RoomSessionList> | null>(null)
 let clearUnreadTimer: number | null = null // Moved this up
+
+// 已隐藏（私密）会话数量：驱动工具栏「已隐藏」入口角标。
+// store 的 sessionList 含 hide 会话（UI 过滤在 filteredSessionList），
+// 因此直接从源头统计，与 SecretChatPage 的数据口径一致。
+const hiddenSessionCount = computed(() => sessionList.value.filter((item) => item.hide).length)
+
+// 方案B：隐藏会话入口统一收口到消息列表。未配置密码时提示先设置，
+// 与原好友页入口行为一致；已配置则进入密码校验页 /secretChat。
+const handleOpenHiddenSessions = () => {
+  if (!settingStore.isSecretChatConfigured()) {
+    showFeedback(t('home.secret_chat.no_password'), 'warning')
+    return
+  }
+  void router.push('/secretChat')
+}
 
 const ensureSessionListLoaded = async (): Promise<void> => {
   if (route.path !== '/message') return

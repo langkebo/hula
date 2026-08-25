@@ -92,21 +92,25 @@ describe('Wave 1 - 问题 2：中间栏宽度范围过窄', () => {
 describe('Wave 1 - 问题 3：置顶会话的左边框与圆角冲突', () => {
   const source = readSource(ROOM_LIST_ITEM_PATH)
 
-  it('--top 规则不应使用 border-left: 3px', () => {
-    // 提取 &--top { ... } 块（可能含嵌套 ::before）
-    const topRuleMatch = source.match(/&--top\s*\{([\s\S]*?)\n\s*\}/)
-    expect(topRuleMatch, '应存在 &--top 规则').not.toBeNull()
-    const block = topRuleMatch![1]
-    expect(block).not.toMatch(/border-left:\s*3px/)
+  // 原型对齐（TJG-prototype.html .room-item）：置顶不再用左边条指示，
+  // 改为名称行 pin 小图标（#topping sprite），--top 类型边框类已整体移除。
+  it('不再存在 &--top 边框规则（置顶改用名称行 pin 图标）', () => {
+    const topRuleMatch = source.match(/&--top\s*\{/)
+    expect(topRuleMatch, '&--top 规则应已移除').toBeNull()
   })
 
-  it('--top 规则应使用 ::before 伪元素作为指示条', () => {
-    const topRuleMatch = source.match(/&--top\s*\{([\s\S]*?)\n\s*\}/)
-    expect(topRuleMatch, '应存在 &--top 规则').not.toBeNull()
-    const block = topRuleMatch![1]
-    expect(block).toMatch(/&::before\s*\{/)
-    expect(block).toMatch(/width:\s*3px/)
-    expect(block).toMatch(/background:\s*var\(--tjg-color-primary-500\)/)
+  it('任何会话项修饰类都不再使用 border-left 类型配色', () => {
+    // group/dm/space/encrypted 类型左边框已按原型全部移除
+    for (const mod of ['--group', '--dm', '--space', '--encrypted']) {
+      const ruleMatch = source.match(new RegExp(`&${mod}\\s*\\{`))
+      expect(ruleMatch, `&${mod} 规则应已移除`).toBeNull()
+    }
+    expect(source).not.toMatch(/border-left:\s*3px/)
+  })
+
+  it('置顶/静音语义由名称行小图标表达（topping / volume-mute）', () => {
+    expect(source).toMatch(/#topping/)
+    expect(source).toMatch(/#volume-mute/)
   })
 })
 

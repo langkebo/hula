@@ -30,11 +30,21 @@
         <n-flex align="center" justify="space-between" :gap="8">
           <span class="tjg-room-list-item__name truncate flex-1">{{ displayName }}</span>
           <n-flex align="center" :size="4" shrink="0">
-            <n-icon v-if="isEncrypted" size="14" class="text-[--tjg-text-tertiary]">
+            <n-icon v-if="isEncrypted" size="14" class="text-[--tjg-text-tertiary]" :title="t('room.detail.encrypted')">
               <svg><use href="#lock" /></svg>
             </n-icon>
             <n-icon v-if="isBurnAfterRead" size="14" class="text-[--tjg-color-danger-500]">
               <svg><use href="#fire" /></svg>
+            </n-icon>
+            <n-icon v-if="isTop" size="14" class="text-[--tjg-text-tertiary]" :title="t('menu.pin')">
+              <svg><use href="#topping" /></svg>
+            </n-icon>
+            <n-icon
+              v-if="isMuted"
+              size="14"
+              class="text-[--tjg-text-tertiary]"
+              :title="t('home.plugins.room_detail.mute')">
+              <svg><use href="#volume-mute" /></svg>
             </n-icon>
             <span class="tjg-room-list-item__time whitespace-nowrap">{{ timeText }}</span>
           </n-flex>
@@ -59,14 +69,6 @@
             <span v-else class="tjg-room-list-item__placeholder truncate flex-1">--</span>
           </n-flex>
           <n-flex align="center" :gap="4" shrink="0">
-            <n-tag
-              v-if="(isMuted || isShielded) && !isBurnAfterRead"
-              size="tiny"
-              round
-              :bordered="false"
-              class="shrink-0">
-              {{ t('home.plugins.room_detail.mute') }}
-            </n-tag>
             <n-badge
               v-if="!isInvite"
               :value="badgeCount"
@@ -101,7 +103,7 @@ import ContextMenu from '@/components/common/ContextMenu.vue'
 import { useTyping } from '@/composables/chat/useTyping'
 import type { ContextMenuItem } from '@/composables/common/useContextMenuTypes'
 import { useSessionLastMsg } from '@/composables/workbench/useSessionListState'
-import { RoomTypeEnum, ThemeEnum } from '@/enums'
+import { ThemeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useRoomStore } from '@/stores/domains/chat/room'
@@ -174,9 +176,6 @@ const badgeColor = computed(() => {
   return 'var(--tjg-room-unread-badge-bg)'
 })
 const isFavorite = computed(() => hasFavoriteTag.value)
-const isDm = computed(() => props.item.type === RoomTypeEnum.SINGLE)
-const isGroup = computed(() => props.item.type === RoomTypeEnum.GROUP)
-const isSpace = computed(() => props.item.type === RoomTypeEnum.SPACE)
 const isEncrypted = computed(() => props.item.isEncrypted ?? false)
 const isBurnAfterRead = computed(() => props.item.isBurnAfterRead ?? false)
 const isInvite = computed(() => props.item.membership === 'invite')
@@ -216,16 +215,13 @@ const typingText = computed(() => {
   return getTypingUsersText(roomId.value, 2)
 })
 
+// 原型（TJG-prototype.html .room-item）：会话项统一无类型配色，
+// 加密/置顶/静音等语义由名称行小图标表达；类型 group/dm/space 类已废弃。
 const itemClasses = computed(() => ({
   'tjg-room-list-item--selected': isActive.value,
   'tjg-room-list-item--batch': isBatchMode.value,
   'tjg-room-list-item--batch-selected': isBatchSelected.value,
-  'tjg-room-list-item--top': isTop.value,
   'tjg-room-list-item--muted': props.classes?.muted ?? false,
-  'tjg-room-list-item--group': isGroup.value,
-  'tjg-room-list-item--dm': isDm.value,
-  'tjg-room-list-item--space': isSpace.value,
-  'tjg-room-list-item--encrypted': isEncrypted.value,
   'tjg-room-list-item--burn': isBurnAfterRead.value
 }))
 
@@ -327,57 +323,8 @@ const handleBatchToggle = () => {
     box-shadow: inset 0 0 0 1px var(--tjg-color-primary-300-alpha);
   }
 
-  &--top {
-    padding-left: 9px;
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background: var(--tjg-color-primary-500);
-    }
-  }
-
   &--muted {
     opacity: 0.65;
-  }
-
-  &--group {
-    border-left: 3px solid var(--tjg-color-primary-500);
-    padding-left: 9px;
-
-    .n-avatar {
-      border: 2px solid var(--tjg-color-primary-500);
-    }
-  }
-
-  &--dm {
-    border-left: 3px solid var(--tjg-color-info-500);
-    padding-left: 9px;
-
-    .n-avatar {
-      border: 2px solid var(--tjg-color-info-500);
-
-      .n-badge__dot {
-        width: 10px !important;
-        height: 10px !important;
-        right: -1px !important;
-        bottom: -1px !important;
-      }
-    }
-  }
-
-  &--space {
-    border-left: 3px solid var(--tjg-color-warning-500);
-    padding-left: 9px;
-
-    .n-avatar {
-      border: 2px solid var(--tjg-color-warning-500);
-    }
   }
 
   &--burn {

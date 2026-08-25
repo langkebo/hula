@@ -1,6 +1,5 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { RoomTypeEnum } from '@/enums'
 import type { RoomCardViewModel } from '../RoomCardItem.vue'
 import RoomCardItem from '../RoomCardItem.vue'
 
@@ -18,8 +17,7 @@ const sampleRoom: RoomCardViewModel = {
   avatar: undefined,
   isFederated: true,
   isEncrypted: true,
-  isPinned: false,
-  roomType: RoomTypeEnum.GROUP
+  isPinned: false
 }
 
 const mountCard = (props: Partial<{ item: RoomCardViewModel }> = {}) =>
@@ -142,25 +140,27 @@ describe('RoomCardItem', () => {
     expect(topicEl.text()).toContain('...')
   })
 
-  it('applies encrypted class when isEncrypted is true', () => {
-    const wrapper = mountCard({ item: { ...sampleRoom, isEncrypted: true, isFederated: false } })
-    expect(wrapper.find('[data-testid="room-card-item"].room-card-item--encrypted').exists()).toBe(true)
+  it('卡片按属性配色：加密挂 encrypted 类、联邦挂 federated 类、普通挂 group 类', () => {
+    const encrypted = mountCard({ item: { ...sampleRoom, isEncrypted: true, isFederated: false } })
+    expect(encrypted.find('[data-testid="room-card-item"].room-card-item--encrypted').exists()).toBe(true)
+
+    const federated = mountCard({ item: { ...sampleRoom, isEncrypted: false, isFederated: true } })
+    expect(federated.find('[data-testid="room-card-item"].room-card-item--federated').exists()).toBe(true)
+
+    const plain = mountCard({ item: { ...sampleRoom, isEncrypted: false, isFederated: false } })
+    expect(plain.find('[data-testid="room-card-item"].room-card-item--group').exists()).toBe(true)
   })
 
-  it('applies federated class when isFederated is true and not encrypted', () => {
-    const wrapper = mountCard({ item: { ...sampleRoom, isEncrypted: false, isFederated: true } })
-    expect(wrapper.find('[data-testid="room-card-item"].room-card-item--federated').exists()).toBe(true)
-  })
-
-  it('applies group class when neither encrypted nor federated', () => {
-    const wrapper = mountCard({ item: { ...sampleRoom, isEncrypted: false, isFederated: false } })
-    expect(wrapper.find('[data-testid="room-card-item"].room-card-item--group').exists()).toBe(true)
-  })
-
-  it('prefers encrypted class over federated when both are true', () => {
+  it('加密属性优先于联邦属性（两者都为真时挂 encrypted 类）', () => {
     const wrapper = mountCard({ item: { ...sampleRoom, isEncrypted: true, isFederated: true } })
-    const el = wrapper.find('[data-testid="room-card-item"]')
-    expect(el.classes()).toContain('room-card-item--encrypted')
-    expect(el.classes()).not.toContain('room-card-item--federated')
+    const classes = wrapper.find('[data-testid="room-card-item"]').classes()
+    expect(classes).toContain('room-card-item--encrypted')
+    expect(classes).not.toContain('room-card-item--federated')
+  })
+
+  it('普通群聊卡片保留透明边框占位（hover 由 SCSS 接管品牌色）', () => {
+    const wrapper = mountCard({ item: { ...sampleRoom, isEncrypted: false, isFederated: false } })
+    const classes = wrapper.find('[data-testid="room-card-item"]').classes()
+    expect(classes).toContain('border-transparent')
   })
 })

@@ -116,6 +116,19 @@ vi.mock('@/composables/chat/useMessage', () => ({
   })
 }))
 
+// 方案B：index.vue 新增已隐藏会话入口，依赖设置密码校验与操作反馈
+vi.mock('@/stores/domains/settings/setting', () => ({
+  useSettingStore: () => ({
+    isSecretChatConfigured: vi.fn(() => true)
+  })
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({
+    showFeedback: vi.fn()
+  })
+}))
+
 vi.mock('@/composables/chat/useReplaceMsg', () => ({
   useReplaceMsg: () => ({
     checkRoomAtMe: vi.fn(() => false),

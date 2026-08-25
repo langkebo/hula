@@ -215,12 +215,12 @@
   /* 业务语义色 */
   --tjg-room-unread-badge-bg: var(--tjg-color-primary-600);
   --tjg-room-highlight-badge-bg: var(--tjg-color-danger-600);
-  /* 房间卡片类型色 — 普通群聊（品牌色左边条） */
+  /* 房间卡片属性色 — 普通群聊（品牌色左边条） */
   --tjg-room-card-group-accent: var(--tjg-color-primary-500);
-  /* 房间卡片类型色 — 加密群聊（成功色左边条） */
+  /* 房间卡片属性色 — 加密群聊（成功色左边条） */
   --tjg-room-card-encrypted-accent: var(--tjg-color-success-500);
   --tjg-room-card-encrypted-border: color-mix(in srgb, var(--tjg-color-success-500) 20%, var(--tjg-border-muted));
-  /* 房间卡片类型色 — 联邦群聊（信息色左边条） */
+  /* 房间卡片属性色 — 联邦群聊（信息色左边条） */
   --tjg-room-card-federated-accent: var(--tjg-color-info-500);
   --tjg-room-card-federated-border: color-mix(in srgb, var(--tjg-color-info-500) 20%, var(--tjg-border-muted));
   /* <mark> 搜索命中高亮背景 */

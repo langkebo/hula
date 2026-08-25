@@ -9,6 +9,23 @@
           </span>
         </n-flex>
         <n-flex :size="8">
+          <!-- 已隐藏会话入口（方案B）：与右键「设为私密聊天」形成闭环，
+               隐藏会话统一从消息列表进入，替代原好友页顶部的私密聊天入口 -->
+          <n-badge v-if="hiddenCount > 0" :value="hiddenCount" :max="99">
+            <n-button
+              quaternary
+              circle
+              size="small"
+              :aria-label="t('home.secret_chat.hidden_sessions')"
+              :title="t('home.secret_chat.hidden_sessions')"
+              @click="emit('openHiddenSessions')">
+              <template #icon>
+                <n-icon>
+                  <svg><use href="#eye-close" /></svg>
+                </n-icon>
+              </template>
+            </n-button>
+          </n-badge>
           <n-button v-if="showJoinAction" quaternary circle size="small" @click="emit('joinRoom')">
             <template #icon>
               <n-icon>
@@ -86,6 +103,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
+import { NBadge } from 'naive-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
@@ -107,6 +125,8 @@ const props = withDefaults(
     sessionSort: WorkbenchSessionSort
     filteredCount: number
     totalCount: number
+    /** 已隐藏（私密）会话数量，>0 时显示入口按钮与角标 */
+    hiddenCount?: number
     title?: string
     showCreateAction?: boolean
     showJoinAction?: boolean
@@ -114,6 +134,7 @@ const props = withDefaults(
   }>(),
   {
     sessionEngagementFilter: WORKBENCH_SESSION_ENGAGEMENT_FILTERS.all,
+    hiddenCount: 0,
     title: '',
     showCreateAction: false,
     showJoinAction: false
@@ -128,6 +149,7 @@ const emit = defineEmits<{
   createRoom: []
   joinRoom: []
   searchSubmit: []
+  openHiddenSessions: []
 }>()
 
 const filterOptions = computed(() => [

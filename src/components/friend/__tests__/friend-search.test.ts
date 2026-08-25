@@ -19,7 +19,9 @@ vi.mock('@vue-i18n', () => ({
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: {}, query: {} }),
-  useRouter: () => ({ push: vi.fn() })
+  useRouter: () => ({ push: vi.fn() }),
+  createRouter: vi.fn(() => ({ beforeEach: vi.fn() })),
+  createWebHistory: vi.fn()
 }))
 
 vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
@@ -138,7 +140,8 @@ vi.mock('@/stores/domains/settings/setting', () => ({
 
 vi.mock('@/enums', () => ({
   OnlineEnum: { ONLINE: 1, OFFLINE: 0 },
-  ThemeEnum: { DARK: 'dark', LIGHT: 'light' }
+  ThemeEnum: { DARK: 'dark', LIGHT: 'light' },
+  StoresEnum: { CAPABILITY: 'capability' }
 }))
 
 vi.mock('@/utils/AvatarUtils', () => ({

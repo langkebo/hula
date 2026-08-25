@@ -233,7 +233,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RoomTypeEnum } from '@/enums'
 
 export interface RoomCardViewModel {
   roomId: string
@@ -246,7 +245,6 @@ export interface RoomCardViewModel {
   isFederated?: boolean
   isEncrypted?: boolean
   isPinned?: boolean
-  roomType?: RoomTypeEnum
 }
 
 const props = defineProps<{
@@ -273,29 +271,18 @@ const truncatedTopic = computed(() => {
   return `${topic.slice(0, TOPIC_MAX_LEN)}...`
 })
 
-const roomTypeClass = computed(() => {
-  switch (props.item.roomType) {
-    case RoomTypeEnum.GROUP:
-      return 'room-card-item--group'
-    case RoomTypeEnum.SINGLE:
-      return 'room-card-item--dm'
-    case RoomTypeEnum.SPACE:
-      return 'room-card-item--space'
-    default:
-      return 'room-card-item--group'
-  }
-})
-
 const cardClasses = computed(() => {
-  const base = 'room-card-item flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] cursor-pointer outline-none'
-  const typeClass = roomTypeClass.value
+  // 属性配色（产品决策）：按房间属性（加密/联邦/普通群聊）区分卡片颜色，
+  // 发现页只展示群聊（DM/空间不进此列表），故无类型色、只有属性色。
+  const base =
+    'room-card-item flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] cursor-pointer outline-none'
   if (props.item.isEncrypted) {
-    return `${base} ${typeClass} room-card-item--encrypted border border-[--tjg-room-card-encrypted-border]`
+    return `${base} room-card-item--encrypted border border-[--tjg-room-card-encrypted-border]`
   }
   if (props.item.isFederated) {
-    return `${base} ${typeClass} room-card-item--federated border border-[--tjg-room-card-federated-border]`
+    return `${base} room-card-item--federated border border-[--tjg-room-card-federated-border]`
   }
-  return `${base} ${typeClass} border border-[--tjg-border-muted]`
+  return `${base} room-card-item--group border border-transparent`
 })
 
 const handlePreview = () => {
@@ -330,7 +317,7 @@ const handleAction = (action: 'message' | 'info' | 'settings' | 'pin') => {
 
   &:hover,
   &:focus-visible {
-    border-color: var(--tjg-border-default);
+    border-color: var(--tjg-color-primary-200);
     box-shadow: var(--tjg-shadow-card-hover);
     transform: translateY(-2px);
   }
@@ -342,16 +329,9 @@ const handleAction = (action: 'message' | 'info' | 'settings' | 'pin') => {
   }
 }
 
+/* 属性配色：普通群聊（品牌色）/ 加密（成功色）/ 联邦（信息色）左边条 */
 .room-card-item--group {
   border-left: 3px solid var(--tjg-room-card-group-accent);
-}
-
-.room-card-item--dm {
-  border-left: 3px solid var(--tjg-color-success-500);
-}
-
-.room-card-item--space {
-  border-left: 3px solid var(--tjg-color-warning-500);
 }
 
 .room-card-item--encrypted {

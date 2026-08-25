@@ -110,6 +110,8 @@
         </div>
       </div>
 
+      <RoomBurnSettings v-if="directRoomId" :room-id="directRoomId" />
+
       <div class="management-section management-section--danger">
         <n-button size="small" type="error" block @click="handleRemoveFriend">
           {{ t('friend.detail.remove_friend') }}
@@ -128,6 +130,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import InlineEdit from '@/components/atomic/InlineEdit.vue'
 import FriendDetailsSections from '@/components/rightBox/FriendDetailsSections.vue'
+import RoomBurnSettings from '@/components/room/RoomBurnSettings.vue'
 import { useDetailsActions } from '@/composables/chat/useDetailsActions'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum, RoomTypeEnum, UserType } from '@/enums'
@@ -166,6 +169,9 @@ const contactInfo = computed<Partial<MatrixContact>>(() => {
 
 const singleName = computed(() => contactInfo.value.name || contactInfo.value.displayName || '未知用户')
 const singleUid = computed(() => contactInfo.value.uid || props.content.uid || '')
+
+// 阅后即焚设置作用于 DM 房间；好友尚未建立 DM（directRoomId 为空）时不显示设置区
+const directRoomId = computed(() => contactInfo.value.directRoomId || '')
 const singleAccount = computed(
   () => contactInfo.value.account || singleUid.value.replace(/^@/, '').split(':')[0] || '未知'
 )
