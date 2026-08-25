@@ -136,7 +136,8 @@
     "set_favorite": "Set as Favorite",
     "set_normal": "Set as Normal",
     "set_blocked": "Block Friend",
-    "remove": "Remove Friend"
+    "remove": "Remove Friend",
+    "friend_offline": "The friend is currently offline. Cannot start a call"
   },
   "secret_chat": {
     "success": "Set as secret friend",

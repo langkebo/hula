@@ -598,6 +598,7 @@
     "no_password": "请先在设置中设置私密聊天密码",
     "hidden_sessions_list": "隐藏会话列表",
     "no_hidden_sessions": "暂无隐藏会话",
-    "no_messages": "暂无消息"
+    "no_messages": "暂无消息",
+    "hidden_sessions": "已隐藏的会话"
   }
 }
