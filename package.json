@@ -193,7 +193,7 @@
     "vite-plugin-vue-setup-extend": "^0.4.0",
     "vitest": "4.1.10",
     "vue-tsc": "^3.3.9",
-    "web-vitals": "^5.3.0"
+    "web-vitals": "^6.1.0"
   },
   "config": {
     "commitizen": {
