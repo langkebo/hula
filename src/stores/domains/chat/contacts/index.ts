@@ -72,6 +72,10 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       await ensureFriendServicesReady()
       await list.loadContacts()
       await requests.loadFriendRequests()
+      // 异步清理无效联系人，不阻塞初始化
+      cleanupInvalidContacts().catch((err) => {
+        logger.warn(`[ContactStore] 清理无效联系人失败: ${err}`)
+      })
       logger.info('[ContactStore] 初始化完成')
     } catch (err) {
       logger.error(`[ContactStore] 初始化失败: ${err}`)
@@ -91,6 +95,51 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     matrixDirectMessageService.stop()
     isServicesReady.value = false
     clearContacts()
+  }
+
+  /**
+   * 清理无效联系人（不存在的用户）
+   * 在后台异步执行，不阻塞主流程
+   */
+  async function cleanupInvalidContacts(): Promise<void> {
+    const contacts = list.contactsList.value
+    if (contacts.length === 0) return
+
+    const invalidIds: string[] = []
+
+    // 批量验证用户是否存在（限制并发数避免过多请求）
+    const batchSize = 5
+    for (let i = 0; i < contacts.length; i += batchSize) {
+      const batch = contacts.slice(i, i + batchSize)
+      const results = await Promise.allSettled(
+        batch.map(async (contact) => {
+          try {
+            // 使用 presence 服务验证用户是否存在
+            const presence = await import('@/services/matrix/user/MatrixPresenceService').then((m) =>
+              m.matrixPresenceService.getPresence(contact.userId)
+            )
+            // 用户不存在（M_NOT_FOUND）时返回其 userId 以清理
+            if (presence.notFound) {
+              return contact.userId
+            }
+          } catch {
+            // 获取 presence 失败时，保守认为用户存在
+          }
+          return null
+        })
+      )
+
+      results.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value) {
+          invalidIds.push(result.value)
+        }
+      })
+    }
+
+    if (invalidIds.length > 0) {
+      logger.info(`[ContactStore] 清理 ${invalidIds.length} 个无效联系人`)
+      list.contactsList.value = contacts.filter((c) => !invalidIds.includes(c.userId))
+    }
   }
 
   return {
