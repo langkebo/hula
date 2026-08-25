@@ -89,7 +89,7 @@
                     <n-input
                       class="w-full"
                       maxlength="16"
-                      minlength="6"
+                      minlength="8"
                       size="large"
                       spellCheck="false"
                       autoComplete="off"
@@ -117,7 +117,7 @@
                     <n-input
                       class="w-full"
                       maxlength="16"
-                      minlength="6"
+                      minlength="8"
                       size="large"
                       spellCheck="false"
                       autoComplete="off"
@@ -280,7 +280,12 @@ import router from '@/router'
 import type { RegisterUserReq } from '@/services/types.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
-import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
+import {
+  validateAlphaNumeric,
+  validatePasswordMinLength,
+  validateSpecialChar,
+  validateUsername
+} from '@/utils/Validate'
 
 // 输入框类型定义
 type InputType = 'nickName' | 'email' | 'password' | 'confirmPassword'
@@ -356,6 +361,8 @@ const emailCode = ref('')
 const pinInputRef = ref()
 const isEmailCodeComplete = computed(() => emailCode.value.length === 6)
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** 服务端用户名规则（synapse-rust）：仅小写字母、数字和 . _ = - 符号 */
 const isEmailValid = computed(() => !info.email || emailPattern.test(info.email.trim()))
 
 /** 检查是否填写了邮箱 */
@@ -365,8 +372,17 @@ const hasEmail = computed(() => !!info.email.trim())
 const rules = {
   nickName: {
     required: true,
-    message: t('auth.register.form.rules.nickname_required'),
-    trigger: 'blur'
+    trigger: ['blur', 'input'],
+    validator(_: unknown, value: string) {
+      const nickname = (value || '').trim()
+      if (!nickname) {
+        return new Error(t('auth.register.form.rules.nickname_required'))
+      }
+      if (!validateUsername(nickname)) {
+        return new Error(t('auth.register.form.rules.nickname_invalid_chars'))
+      }
+      return true
+    }
   },
   email: {
     required: false,
@@ -417,8 +433,8 @@ const openPrivacyAgreement = async () => {
 /** 不允许输入空格 */
 const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith(' ')
 
-/** 密码验证函数 */
-const validateMinLength = (value: string) => value.length >= 6
+/** 密码验证函数（对齐服务端：最少 8 位） */
+const validateMinLength = validatePasswordMinLength
 
 /** 检查密码是否满足所有条件 */
 const isPasswordValid = computed(() => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeMatrixUserId, toLocalpart } from '../userIdentity'
+import { normalizeMatrixUserId, resolveDmIdentityKey, toLocalpart } from '../userIdentity'
 
 describe('userIdentity', () => {
   describe('toLocalpart', () => {
@@ -55,6 +55,29 @@ describe('userIdentity', () => {
 
     it('returns trimmed value when currentUserId has no server name', () => {
       expect(normalizeMatrixUserId('ljf1', 'ljf1')).toBe('ljf1')
+    })
+  })
+
+  describe('resolveDmIdentityKey（DM 同人判定单一事实源）', () => {
+    it('localpart 与完整 MXID 归一化到同一 key（根治同人漏判）', () => {
+      expect(resolveDmIdentityKey({ detailId: 'test1' })).toBe(resolveDmIdentityKey({ detailId: '@test1:matrix.test' }))
+      expect(resolveDmIdentityKey({ detailId: 'test1' })).toBe('test1')
+      expect(resolveDmIdentityKey({ detailId: '@test1:matrix.test' })).toBe('test1')
+    })
+
+    it('detailId 优先，缺失时回退 account', () => {
+      expect(resolveDmIdentityKey({ detailId: '@a:matrix.test', account: 'b' })).toBe('a')
+      expect(resolveDmIdentityKey({ detailId: undefined, account: '@b:matrix.test' })).toBe('b')
+      expect(resolveDmIdentityKey({ account: 'b' })).toBe('b')
+    })
+
+    it('两者皆缺失返回空串（调用方回退 roomId 兜底）', () => {
+      expect(resolveDmIdentityKey({})).toBe('')
+      expect(resolveDmIdentityKey({ detailId: null, account: null })).toBe('')
+    })
+
+    it('空壳 MXID（localpart 为空）回退 account', () => {
+      expect(resolveDmIdentityKey({ detailId: '@:matrix.test', account: 'fallback' })).toBe('fallback')
     })
   })
 })

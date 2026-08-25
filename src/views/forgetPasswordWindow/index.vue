@@ -121,7 +121,7 @@
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
-                minlength="6" />
+                minlength="8" />
               <n-flex vertical :size="4" class="space-y-4px">
                 <Validation
                   :value="passwordForm.password"
@@ -154,7 +154,7 @@
                 autoCorrect="off"
                 autoCapitalize="off"
                 maxlength="16"
-                minlength="6" />
+                minlength="8" />
               <n-flex vertical :size="4">
                 <Validation
                   :value="passwordForm.confirmPassword"
@@ -307,8 +307,8 @@ const nextDisabled = computed(() => {
 /** 不允许输入空格 */
 const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith(' ')
 
-/** 密码验证函数 */
-const validateMinLength = (value: string) => value.length >= 6
+/** 密码验证函数（对齐服务端：最少 8 位） */
+const validateMinLength = (value: string) => value.length >= 8
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error && error.message ? error.message : fallback

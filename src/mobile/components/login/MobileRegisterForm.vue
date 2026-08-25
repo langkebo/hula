@@ -15,6 +15,12 @@
       autocorrect="off"
       autocapitalize="off" />
 
+    <Validation
+      v-if="registerInfo.nickName"
+      :value="registerInfo.nickName"
+      :message="t('login.mobile.register.pass_validate_info.valid_nickname')"
+      :validator="validateUsername" />
+
     <van-field
       class="pl-16px"
       v-model="registerInfo.password"
@@ -53,8 +59,8 @@
     <div v-if="registerInfo.password" class="flex flex-col gap-10px mt-8px">
       <Validation
         :value="registerInfo.password"
-        :message="t('login.mobile.register.pass_validate_info.minlength', { len: 6 })"
-        :validator="validateMinLength" />
+        :message="t('login.mobile.register.pass_validate_info.minlength', { len: 8 })"
+        :validator="validatePasswordMinLength" />
       <Validation
         :value="registerInfo.password"
         :message="t('login.mobile.register.pass_validate_info.valid_characters')"
@@ -163,7 +169,12 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSessionActions } from '@/composables/user/useSessionActions'
 import type { RegisterUserReq } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
-import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
+import {
+  validateAlphaNumeric,
+  validatePasswordMinLength,
+  validateSpecialChar,
+  validateUsername
+} from '@/utils/Validate'
 import { useSendCodeCountdown } from '../../composables/useSendCodeCountdown'
 
 const logger = createLogger('MobileRegisterForm')
@@ -246,11 +257,11 @@ const isEmailValid = computed(() => {
   return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
 })
 
-const validateMinLength = (value: string) => value.length >= 6
+const isNicknameValid = computed(() => validateUsername(registerInfo.value.nickName))
 
 const isPasswordValid = computed(() => {
   return (
-    validateMinLength(registerInfo.value.password) &&
+    validatePasswordMinLength(registerInfo.value.password) &&
     validateAlphaNumeric(registerInfo.value.password) &&
     validateSpecialChar(registerInfo.value.password)
   )
@@ -259,6 +270,7 @@ const isPasswordValid = computed(() => {
 const isStep1Valid = computed(() => {
   return (
     registerInfo.value.nickName &&
+    isNicknameValid.value &&
     isPasswordValid.value &&
     registerInfo.value.confirmPassword === registerInfo.value.password &&
     registerProtocol.value

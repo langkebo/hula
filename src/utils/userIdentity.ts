@@ -75,3 +75,20 @@ export function normalizeMatrixUserId(value?: string | null, currentUserId?: str
   const localpart = toLocalpart(trimmed)
   return localpart ? `@${localpart}:${serverName}` : trimmed
 }
+
+/**
+ * DM 会话"同人判定"的统一归一化键（单一事实源）。
+ *
+ * 历史教训：会话去重曾在服务层（getSessionList）、store 层（addSession）、
+ * UI 层（useSessionListState dmSeen）各自实现，且 key 归一化口径不一致
+ * （有的比较原始值、有的比较 localpart），导致同一联系人 `test1` 与
+ * `@test1:matrix.test` 被判为两人、消息列表反复出现重复会话。
+ *
+ * 所有层判断"两条 SINGLE 会话是否同一联系人"必须经过本函数：
+ * detailId 优先、account 其次，统一取 localpart 归一化后比较。
+ *
+ * @returns 归一化 localpart；两者皆缺失返回 ''（调用方应回退其他兜底键，如 roomId）
+ */
+export function resolveDmIdentityKey(identity: { detailId?: string | null; account?: string | null }): string {
+  return toLocalpart(identity.detailId) || toLocalpart(identity.account)
+}

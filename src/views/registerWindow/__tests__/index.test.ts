@@ -60,9 +60,29 @@ vi.mock('vue-i18n', () => ({
 vi.mock('naive-ui', () => {
   const NForm = defineComponent({
     name: 'NForm',
-    setup(_, { slots, expose }) {
+    props: ['model', 'rules'],
+    setup(props, { slots, expose }) {
       expose({
-        validate: vi.fn().mockResolvedValue(undefined)
+        validate: vi.fn().mockImplementation(async () => {
+          const rules = (props.rules as Record<string, unknown>) || {}
+          const model = (props.model as Record<string, unknown>) || {}
+          for (const key of Object.keys(rules)) {
+            const fieldRules = Array.isArray(rules[key]) ? rules[key] : [rules[key]]
+            const value = model[key]
+            for (const rule of fieldRules) {
+              const validator = (rule as { validator?: (r: unknown, v: unknown) => unknown })?.validator
+              if (typeof validator === 'function') {
+                const result = await validator(rule, value)
+                if (result === false || result instanceof Error) {
+                  throw result instanceof Error
+                    ? result
+                    : new Error((rule as { message?: string }).message || 'invalid')
+                }
+              }
+            }
+          }
+          return undefined
+        })
       })
 
       return () => h('form', {}, slots.default?.())
@@ -183,10 +203,10 @@ vi.mock('@/utils/PlatformConstants', () => ({
   isWindows: () => false
 }))
 
-vi.mock('@/utils/Validate', () => ({
-  validateAlphaNumeric: vi.fn(() => true),
-  validateSpecialChar: vi.fn(() => true)
-}))
+vi.mock('@/utils/Validate', async () => {
+  const actual = await import('@/utils/Validate')
+  return { ...actual }
+})
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
@@ -256,14 +276,14 @@ describe('registerWindow', () => {
     const inputs = wrapper.findAll('input')
 
     await inputs[0].setValue('alice')
-    await inputs[1].setValue('secret!')
-    await inputs[2].setValue('secret!')
+    await inputs[1].setValue('Secret1!')
+    await inputs[2].setValue('Secret1!')
     await inputs[4].setValue(true)
 
     await wrapper.get('button').trigger('click')
     await flushPromises()
 
-    expect(matrixRegisterMock).toHaveBeenCalledWith('alice', 'secret!', undefined, undefined, undefined, undefined)
+    expect(matrixRegisterMock).toHaveBeenCalledWith('alice', 'Secret1!', undefined, undefined, undefined, undefined)
     expect(saveMatrixSessionEndpointConfigMock).toHaveBeenCalledWith({
       homeserverUrl: 'https://matrix.example.com',
       identityServerUrl: 'https://identity.example.com'
@@ -296,5 +316,47 @@ describe('registerWindow', () => {
     })
     const backLink = wrapper.find('[aria-label="返回登录"]')
     expect(backLink.exists()).toBe(true)
+  })
+
+  it('blocks registration when nickname contains invalid characters', async () => {
+    const wrapper = mount(RegisterView, {
+      global: {
+        stubs: {
+          'action-bar': true
+        }
+      }
+    })
+    const inputs = wrapper.findAll('input')
+
+    await inputs[0].setValue('Alice!') // uppercase + '!' → violates server username rules
+    await inputs[1].setValue('Secret1!')
+    await inputs[2].setValue('Secret1!')
+    await inputs[4].setValue(true)
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(matrixRegisterMock).not.toHaveBeenCalled()
+  })
+
+  it('blocks registration when password is too weak', async () => {
+    const wrapper = mount(RegisterView, {
+      global: {
+        stubs: {
+          'action-bar': true
+        }
+      }
+    })
+    const inputs = wrapper.findAll('input')
+
+    await inputs[0].setValue('alice')
+    await inputs[1].setValue('abc') // < 8 chars, no uppercase/digit/special char
+    await inputs[2].setValue('abc')
+    await inputs[4].setValue(true)
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(matrixRegisterMock).not.toHaveBeenCalled()
   })
 })
