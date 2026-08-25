@@ -136,7 +136,8 @@ class MatrixPresenceService extends BaseMatrixService {
       }
 
       await presenceManager.setPresence(presence, statusMsg ?? '')
-      logger.info(`[Presence] 设置在线状态成功: ${presence}`)
+      // 心跳调用频率高（每45s），降为 DEBUG 避免 INFO 噪音淹没关键日志
+      logger.debug(`[Presence] 设置在线状态成功: ${presence}`)
     } catch (err) {
       const isClientNotReady = err instanceof Error && err.message === '客户端未初始化'
       const isFetchFailed = err instanceof Error && err.message.includes('Failed to fetch')
