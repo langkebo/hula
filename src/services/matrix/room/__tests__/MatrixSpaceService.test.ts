@@ -85,7 +85,12 @@ describe('MatrixSpaceService', () => {
 
   it('should create space successfully', async () => {
     const mockCreateRoom = vi.fn().mockResolvedValue({ room_id: '!space:server' })
-    vi.mocked(matrixClientService.getClient).mockReturnValue(asMatrixClient({ createRoom: mockCreateRoom }))
+    vi.mocked(matrixClientService.getClient).mockReturnValue(
+      asMatrixClient({
+        createRoom: mockCreateRoom,
+        getUserId: vi.fn().mockReturnValue('@admin:matrix.test')
+      })
+    )
 
     const result = await matrixSpaceService.createSpace({
       name: 'Team Space',

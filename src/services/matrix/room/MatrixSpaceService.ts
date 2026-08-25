@@ -55,9 +55,27 @@ class SpaceService extends BaseMatrixService {
 
   // ── Space CRUD ──
 
+  /**
+   * 从 spaceId 中提取服务器名作为 viaServers
+   * 例如：!abc:matrix.test -> ['matrix.test']
+   */
+  private extractViaServers(spaceId: string): string[] {
+    try {
+      const serverName = spaceId.split(':')[1]
+      return serverName ? [serverName] : []
+    } catch {
+      return []
+    }
+  }
+
   async createSpace(options: SpaceOptions): Promise<SpaceInfo | null> {
     const client = this.getClient()
     try {
+      const userId = client.getUserId()
+      if (!userId) {
+        throw new Error('用户未登录，无法创建 Space')
+      }
+
       const { room_id } = await client.createRoom({
         name: options.name,
         topic: options.topic,
@@ -65,6 +83,15 @@ class SpaceService extends BaseMatrixService {
         room_types: ['m.space'],
         ignore_duplicate_name: options.ignoreDuplicateName,
         initial_state: [
+          // 明确添加创建者为成员，确保创建者可以正常加入
+          {
+            type: 'm.room.member',
+            state_key: userId,
+            content: {
+              membership: 'join',
+              displayname: userId.split(':')[0].replace(/^@/, '')
+            }
+          },
           ...(options.avatarUrl ? [{ type: 'm.room.avatar', state_key: '', content: { url: options.avatarUrl } }] : [])
         ]
       })
@@ -202,18 +229,51 @@ class SpaceService extends BaseMatrixService {
   }
 
   async joinSpace(spaceId: string, viaServers?: string[]): Promise<void> {
-    try {
-      await this.getSpaceManager().joinSpace(spaceId, viaServers ? { via_servers: viaServers } : undefined)
-      logger.info(`[Space] 加入 Space 成功: ${spaceId}`)
-    } catch (err) {
-      logger.info(`[Space] SpaceManager 加入失败，回退到客户端调用: ${err}`)
+    // 自动获取 viaServers（如果未提供）
+    if (!viaServers || viaServers.length === 0) {
+      viaServers = this.extractViaServers(spaceId)
+    }
+
+    let lastError: Error | null = null
+    const maxRetries = 2
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        await this.getClient().joinRoom(spaceId, { viaServers })
-        logger.info(`[Space] 加入 Space 成功（回退）: ${spaceId}`)
-      } catch (fallbackErr) {
-        logger.error(`[Space] 加入 Space 失败: ${fallbackErr}`)
-        throw fallbackErr
+        await this.getSpaceManager().joinSpace(spaceId, { via_servers: viaServers })
+        logger.info(`[Space] 加入 Space 成功: ${spaceId} (尝试 ${attempt + 1})`)
+        return
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err))
+        const errMsg = lastError.message
+
+        // 403 错误：需要邀请，不重试
+        if (errMsg.includes('403') || errMsg.includes('invite-only')) {
+          throw new Error('该空间仅限邀请加入，请联系空间管理员获取邀请')
+        }
+
+        // 临时性错误：重试
+        if (attempt < maxRetries) {
+          logger.info(`[Space] 加入 Space 失败，${attempt + 1}/${maxRetries} 重试: ${err}`)
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)))
+        }
       }
+    }
+
+    // 所有重试失败，尝试回退到客户端调用
+    logger.info(`[Space] SpaceManager 加入失败，回退到客户端调用: ${lastError}`)
+    try {
+      await this.getClient().joinRoom(spaceId, { viaServers })
+      logger.info(`[Space] 加入 Space 成功（回退）: ${spaceId}`)
+    } catch (fallbackErr) {
+      const fallbackErrMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)
+
+      // 400 错误：联邦连接问题
+      if (fallbackErrMsg.includes('400') || fallbackErrMsg.includes('make_join')) {
+        throw new Error('无法连接到远程服务器，请稍后重试或检查网络连接')
+      }
+
+      logger.error(`[Space] 加入 Space 失败: ${fallbackErr}`)
+      throw fallbackErr
     }
   }
 
