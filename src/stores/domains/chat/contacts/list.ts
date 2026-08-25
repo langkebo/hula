@@ -96,8 +96,12 @@ export function createContactsList(ctx: ContactsListContext) {
       last_active_ts?: number
     }
     const displayName = friend.display_name ?? friendRecord.displayname ?? friendRecord.username ?? null
-    const activeStatus =
-      friendRecord.online === true || friendRecord.presence === 'online' ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE
+
+    // 默认设为离线，等待 Matrix presence 同步后更新真实状态。
+    // 后端 API 返回的 online/presence 字段可能不准确（如用户未登录但标记为 online），
+    // 避免依赖可能错误的初始状态，让 presence 同步机制来决定真实在线状态。
+    const activeStatus = OnlineEnum.OFFLINE
+
     const lastOptTime = friend.since ?? friendRecord.last_active_ts ?? Date.now()
 
     return {
@@ -156,7 +160,7 @@ export function createContactsList(ctx: ContactsListContext) {
             avatarUrl: dmRoom.avatarUrl ?? null,
             avatar: dmRoom.avatarUrl ?? '',
             account: partnerId.split(':')[0],
-            activeStatus: OnlineEnum.ONLINE,
+            activeStatus: OnlineEnum.OFFLINE,
             remark: '',
             lastOptTime: dmRoom.lastMessage?.timestamp ?? Date.now(),
             hideMyPosts: false,

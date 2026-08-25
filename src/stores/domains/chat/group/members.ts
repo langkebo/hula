@@ -96,9 +96,28 @@ export function createGroupMembers(ctx: GroupMembersContext) {
         account: toLocalpart(m.userId)
       }))
 
-      membersMap[roomId] = matrixMembers
-      logger.info(`[GroupStore] 加载房间成员成功: ${roomId}, ${matrixMembers.length} 个成员`)
-      return matrixMembers
+      // 防御性去重：后端/SDK 偶发返回同一用户的重复成员记录时，
+      // 在进入 membersMap 前按 localpart 归一化去重（join 状态优先保留），
+      // 否则成员面板会出现同一用户的多条记录（如多个 test1）。
+      const seen = new Map<string, MatrixRoomMember>()
+      for (const member of matrixMembers) {
+        const key = toLocalpart(member.userId || member.uid)
+        if (!key) continue
+        const existing = seen.get(key)
+        if (!existing || (existing.membership !== 'join' && member.membership === 'join')) {
+          seen.set(key, member)
+        }
+      }
+      const dedupedMembers = Array.from(seen.values())
+      if (dedupedMembers.length !== matrixMembers.length) {
+        logger.warn(
+          `[GroupStore] 房间成员存在重复记录，已去重: ${roomId}, ${matrixMembers.length} → ${dedupedMembers.length}`
+        )
+      }
+
+      membersMap[roomId] = dedupedMembers
+      logger.info(`[GroupStore] 加载房间成员成功: ${roomId}, ${dedupedMembers.length} 个成员`)
+      return dedupedMembers
     } catch (err) {
       logger.error(`[GroupStore] 加载房间成员失败: ${err}`)
       return []

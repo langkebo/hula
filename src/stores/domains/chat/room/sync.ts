@@ -132,8 +132,10 @@ export function createRoomSync(ctx: RoomSyncContext) {
       for (const event of roomData.timeline) {
         if (!DISPLAYABLE_EVENT_TYPES.has(event.type ?? '')) continue
         const msgtype = event.content?.msgtype as string | undefined
+        const isBadEncrypted = msgtype === 'm.bad.encrypted'
         let msgEnum = MsgEnum.TEXT
-        if (msgtype === 'm.image') msgEnum = MsgEnum.IMAGE
+        if (isBadEncrypted) msgEnum = MsgEnum.TEXT
+        else if (msgtype === 'm.image') msgEnum = MsgEnum.IMAGE
         else if (msgtype === 'm.video') msgEnum = MsgEnum.VIDEO
         else if (msgtype === 'm.audio' || msgtype === 'm.voice') msgEnum = MsgEnum.VOICE
         else if (msgtype === 'm.file') msgEnum = MsgEnum.FILE
@@ -145,7 +147,9 @@ export function createRoomSync(ctx: RoomSyncContext) {
         const body: MessageType['message']['body'] =
           msgEnum === MsgEnum.LOCATION || msgEnum === MsgEnum.BEACON
             ? (matrixMessageAdapter.convertMatrixContent(content, msgEnum) as MessageType['message']['body'])
-            : ((event.content?.body as Record<string, unknown>) ?? '')
+            : isBadEncrypted
+              ? { content: '[无法解密的消息]' }
+              : ((event.content?.body as Record<string, unknown>) ?? '')
 
         const msg: MessageType = {
           clientKey: event.event_id ?? '',

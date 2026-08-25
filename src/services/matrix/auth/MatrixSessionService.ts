@@ -1,6 +1,8 @@
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
+import type { DmRoomInfo } from 'matrix-js-sdk/dm'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import { createLogger } from '@/utils/Logger'
+import { resolveDmIdentityKey } from '@/utils/userIdentity'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
 import { findDmCounterpart } from '../room/roomTypeUtils'
@@ -62,23 +64,49 @@ class MatrixSessionService extends BaseMatrixService {
       const dmRooms = await matrixDirectMessageService.getDMRooms(false)
       const dmRoomMap = new Map(dmRooms.map((roomInfo) => [roomInfo.roomId, roomInfo]))
 
-      const sessions = client.getRooms().map((room) => {
-        const dmRoomInfo = dmRoomMap.get(room.roomId) ?? null
-        return this.buildSessionFromRoom(room, dmRoomInfo)
-      })
+      // 死房间过滤：仅剩自己（对方从未加入/已离开）且无未读、非待处理邀请的房间
+      // 不进会话列表。这类房间（测试期反复创建的空房间 / 对方已退出的历史 DM）
+      // 会以 "Empty room" 或对方用户名的形式在消息列表大量重复刷屏；
+      // 且成员仅剩一人导致 DM 判型失败（被判 GROUP），绕过所有同人去重。
+      const isDeadRoom = (room: Room): boolean => {
+        if (room.getMyMembership?.() === 'invite') return false
+        const joinedCount = typeof room.getJoinedMemberCount === 'function' ? room.getJoinedMemberCount() : 0
+        if (joinedCount > 1) return false
+        return this.getUnreadCount(room) === 0
+      }
 
-      // 防御性去重：按 counterpart 用户去重，保留最新活跃的
+      const sessions = client
+        .getRooms()
+        .filter((room) => !isDeadRoom(room))
+        .map((room) => {
+          const dmRoomInfo = dmRoomMap.get(room.roomId) ?? null
+          return this.buildSessionFromRoom(room, dmRoomInfo)
+        })
+
+      // 防御性去重：按 counterpart 用户去重（resolveDmIdentityKey 统一 localpart 归一化，
+      // 避免历史 localpart 与完整 MXID 混存时同一联系人被拆成两条），
+      // 保留最新活跃的，未读数累加到保留条目，身份字段互补防丢。
       const seen = new Map<string, SessionInfo>()
       for (const session of sessions) {
         if (session.type !== RoomTypeEnum.SINGLE) {
           seen.set(session.roomId, session)
           continue
         }
-        const counterpartId = session.detailId || session.roomId
+        const identityKey = resolveDmIdentityKey(session)
+        const counterpartId = identityKey || session.roomId
         const existing = seen.get(counterpartId)
-        if (!existing || session.activeTime > existing.activeTime) {
+        if (!existing) {
           seen.set(counterpartId, session)
+          continue
         }
+        const base = session.activeTime > existing.activeTime ? session : existing
+        const other = session.activeTime > existing.activeTime ? existing : session
+        seen.set(counterpartId, {
+          ...base,
+          detailId: base.detailId || other.detailId,
+          account: base.account || other.account,
+          unreadCount: (base.unreadCount ?? 0) + (other.unreadCount ?? 0)
+        })
       }
       return Array.from(seen.values())
     } catch (err) {
@@ -161,6 +189,18 @@ class MatrixSessionService extends BaseMatrixService {
       return null
     }
     return this.buildSessionFromRoom(room, null)
+  }
+
+  /**
+   * 按已同步的 Room 实例直接构建会话详情（roomId 路径专用）。
+   *
+   * openMsgSession 兜底场景手里只有 roomId，绝不能走 SINGLE 分支——
+   * 那条链路把参数当 userId 喂给 DM 管理器（历史事故：
+   * "Invalid user ID format: !xxx" ValidationError）。此方法供其
+   * 在房间已同步时同步构建会话，避免异步查询。
+   */
+  buildSessionFromRoomPublic(room: Room, dmRoomInfo: DmRoomInfo | null): SessionDetail {
+    return this.buildSessionFromRoom(room, dmRoomInfo)
   }
 
   private async getDirectSessionDetail(userId: string): Promise<SessionDetail | null> {

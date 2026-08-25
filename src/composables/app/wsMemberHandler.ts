@@ -78,8 +78,9 @@ export function createMemberHandler(deps: MemberHandlerDeps) {
     // 避免同一联系人的 DM 在消息列表重复出现。
     const isDm = userList.length === 2
     const counterpartRaw = isDm ? userList.find((u) => !isSelfUser(u.uid))?.uid : undefined
-    const counterpart =
-      counterpartRaw ? normalizeMatrixUserId(counterpartRaw, userStore.userInfo?.uid) || counterpartRaw : undefined
+    const counterpart = counterpartRaw
+      ? normalizeMatrixUserId(counterpartRaw, userStore.userInfo?.uid) || counterpartRaw
+      : undefined
     logger.info('本人加入会话，加载会话数据', { roomId, isDm, counterpart })
     await sessionStore.addSession({
       roomId,

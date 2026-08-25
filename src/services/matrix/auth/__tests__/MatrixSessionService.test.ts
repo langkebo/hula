@@ -181,6 +181,109 @@ describe('MatrixSessionService', () => {
     expect(mockDirectMessageService.getDMRooms).toHaveBeenCalledWith(false)
   })
 
+  it('同人 DM 去重：localpart 与完整 MXID 混存时合并为一条，未读累加、身份互补（回归守护）', async () => {
+    const dmOld = createRoom({
+      roomId: '!dm-old:example.com',
+      unreadCount: 5,
+      events: [createEvent(1000, 'old message')]
+    })
+    const dmNew = createRoom({
+      roomId: '!dm-new:example.com',
+      unreadCount: 2,
+      events: [createEvent(2000, 'new message')]
+    })
+
+    // 历史脏数据场景：旧房间 m.direct 记录的是 localpart，新房间是完整 MXID
+    mockDirectMessageService.getDMRooms.mockResolvedValueOnce([
+      { roomId: '!dm-old:example.com', invitees: ['test1'], inviter: 'test1' },
+      { roomId: '!dm-new:example.com', invitees: ['@test1:example.com'], inviter: '@test1:example.com' }
+    ])
+    mockClient.getRooms.mockReturnValueOnce([dmOld, dmNew] as unknown as Room[])
+
+    const result = await matrixSessionService.getSessionList()
+
+    expect(result).toHaveLength(1)
+    // 保留更活跃的 dm-new，未读 5 + 2 累加
+    expect(result[0].roomId).toBe('!dm-new:example.com')
+    expect(result[0].unreadCount).toBe(7)
+  })
+
+  it('同人 DM 去重：一条有身份一条缺失身份时不误合并（缺失条按 roomId 独立保留）', async () => {
+    const withIdentity = createRoom({
+      roomId: '!dm-known:example.com',
+      events: [createEvent(2000, 'known')]
+    })
+    // 无 m.direct 映射、无成员信息 → detailId undefined，去重键退化为 roomId
+    const noIdentity = createRoom({
+      roomId: '!dm-unknown:example.com',
+      events: [createEvent(1000, 'unknown')]
+    })
+
+    mockDirectMessageService.getDMRooms.mockResolvedValueOnce([
+      { roomId: '!dm-known:example.com', invitees: ['@test1:example.com'], inviter: '@test1:example.com' }
+    ])
+    mockClient.getRooms.mockReturnValueOnce([withIdentity, noIdentity] as unknown as Room[])
+
+    const result = await matrixSessionService.getSessionList()
+
+    // 服务层无法关联（身份缺失），两条都保留；由 store 层 directRoomId 回填 + UI 兜底合并
+    expect(result).toHaveLength(2)
+    expect(result.map((s) => s.roomId).sort()).toEqual(['!dm-known:example.com', '!dm-unknown:example.com'])
+  })
+
+  it('死房间过滤：仅剩自己且无未读的房间不进会话列表（Empty room 刷屏根治）', async () => {
+    const deadEmpty = createRoom({
+      roomId: '!dead-empty:example.com',
+      name: 'Empty room',
+      joinedMemberCount: 1,
+      events: []
+    })
+    const deadDm = createRoom({
+      roomId: '!dead-dm:example.com',
+      name: 'test1',
+      joinedMemberCount: 1,
+      unreadCount: 0,
+      events: []
+    })
+    const aliveDm = createRoom({
+      roomId: '!alive-dm:example.com',
+      joinedMemberCount: 2,
+      unreadCount: 1,
+      events: [createEvent(3000, 'hi')]
+    })
+
+    mockDirectMessageService.getDMRooms.mockResolvedValueOnce([
+      { roomId: '!alive-dm:example.com', invitees: ['@test1:example.com'], inviter: '@test1:example.com' }
+    ])
+    mockClient.getRooms.mockReturnValueOnce([deadEmpty, deadDm, aliveDm] as unknown as Room[])
+
+    const result = await matrixSessionService.getSessionList()
+
+    expect(result).toHaveLength(1)
+    expect(result[0].roomId).toBe('!alive-dm:example.com')
+  })
+
+  it('死房间过滤：invite 状态或仍有未读的单人房间保留', async () => {
+    const invited = {
+      ...createRoom({ roomId: '!invited:example.com', joinedMemberCount: 1, events: [] }),
+      getMyMembership: vi.fn(() => 'invite')
+    }
+    const unreadLeft = createRoom({
+      roomId: '!unread-left:example.com',
+      joinedMemberCount: 1,
+      unreadCount: 3,
+      events: [createEvent(100, 'pending')]
+    })
+
+    mockDirectMessageService.getDMRooms.mockResolvedValueOnce([])
+    mockClient.getRooms.mockReturnValueOnce([invited, unreadLeft] as unknown as Room[])
+
+    const result = await matrixSessionService.getSessionList()
+
+    expect(result).toHaveLength(2)
+    expect(result.map((s) => s.roomId).sort()).toEqual(['!invited:example.com', '!unread-left:example.com'])
+  })
+
   it('should use room tag api when setting session top', async () => {
     mockClient.setRoomTag.mockResolvedValueOnce(undefined)
 

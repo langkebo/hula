@@ -6,10 +6,12 @@ import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionServic
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
+import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
+import { resolveDmIdentityKey, toLocalpart } from '@/utils/userIdentity'
 
 const logger = createLogger('SessionStore')
 
@@ -165,11 +167,43 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     return false
   }
 
+  /**
+   * DM 会话身份回填（数据层收口，根治同人 DM 重复）。
+   *
+   * 历史根因：m.direct 未注册 / 房间成员未就绪时，写入的 SINGLE 会话缺
+   * detailId/account，下游按身份的去重键退化为 roomId，同一联系人的多个
+   * DM 房间在消息列表重复展示，且该问题随各写入路径反复回归。
+   *
+   * 收口策略：所有增量写入（addSession）在进入 store 前，用好友列表的
+   * directRoomId（好友接受的 DM 房间映射，服务端真源）反查联系人身份，
+   * 保证「凡有好友关系的 DM 房间，身份必被填充」——UI 层 dmSeen 去重
+   * 不再依赖实时 Room 成员兜底即可合并同人。
+   */
+  const backfillDmIdentityFromContacts = (session: SessionItem): void => {
+    if (session.type !== RoomTypeEnum.SINGLE || resolveDmIdentityKey(session)) return
+    try {
+      const contactStore = useContactStore()
+      const contact = contactStore.contactsList.find((c) => c.directRoomId === session.roomId)
+      if (contact?.userId) {
+        session.detailId = contact.userId
+        session.account = toLocalpart(contact.userId)
+      }
+    } catch {
+      // contacts store 未就绪时静默跳过，UI 层成员兜底仍可用
+    }
+  }
+
   const addSession = (session: SessionItem) => {
     if (!session.roomId) return
+    backfillDmIdentityFromContacts(session)
     const existingSession = resolveSessionByRoomId(session.roomId)
     if (existingSession) {
-      Object.assign(existingSession, session)
+      Object.assign(existingSession, {
+        ...session,
+        // 非空保留：防止新写入的 undefined 覆盖已解析身份（服务重建竞态）
+        detailId: existingSession.detailId || session.detailId,
+        account: existingSession.account || session.account
+      })
       triggerRef(sessionList)
       triggerRef(sessionMap)
     } else {
