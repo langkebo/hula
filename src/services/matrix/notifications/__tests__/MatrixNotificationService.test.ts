@@ -258,7 +258,9 @@ describe('MatrixNotificationService', () => {
       }
 
       await matrixNotificationService.setPushRule(rule)
-      expect(mockPushManager.updatePushRule).toHaveBeenCalledWith('global', 'override', 'test-rule', { actions: ['notify'] })
+      expect(mockPushManager.updatePushRule).toHaveBeenCalledWith('global', 'override', 'test-rule', {
+        actions: ['notify']
+      })
     })
 
     it('should delete push rule successfully', async () => {

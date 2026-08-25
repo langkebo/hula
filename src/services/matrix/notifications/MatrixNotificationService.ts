@@ -217,7 +217,9 @@ class MatrixNotificationService extends BaseMatrixService {
   async setPushRule(rule: NotificationRule): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      await client.getPushManager().updatePushRule('global', rule.kind as PushRuleKind, rule.ruleId, { actions: rule.actions as PushRuleAction[] })
+      await client
+        .getPushManager()
+        .updatePushRule('global', rule.kind as PushRuleKind, rule.ruleId, { actions: rule.actions as PushRuleAction[] })
       logger.info(`[MatrixNotification] 设置推送规则成功: ${rule.ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
@@ -455,7 +457,9 @@ class MatrixNotificationService extends BaseMatrixService {
   async setPushRuleByScope(scope: string, kind: string, ruleId: string, body: Record<string, unknown>): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      await client.getPushManager().createPushRule(scope, kind as PushRuleKind, ruleId, body as unknown as ICreatePushRuleRequest)
+      await client
+        .getPushManager()
+        .createPushRule(scope, kind as PushRuleKind, ruleId, body as unknown as ICreatePushRuleRequest)
       logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
