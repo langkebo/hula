@@ -249,7 +249,7 @@ jobs:
             cargo-target-${{ matrix.platform }}-
 
       - name: Create release
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # 使用之前配置的私钥
