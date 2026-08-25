@@ -48,8 +48,13 @@ export const useCallState = (params: UseCallStateParams) => {
   const groupStore = useGroupStore()
   const { remoteUserId, roomId, callType, isReceiver, shouldAutoAccept, isMobileDevice } = params
 
-  const remoteUserInfo = groupStore.getUserInfo(remoteUserId)!
-  const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(remoteUserInfo.avatar as string))
+  const remoteUserInfo = groupStore.getUserInfo(remoteUserId) ?? {
+    uid: remoteUserId,
+    name: remoteUserId.split(':')[0].replace(/^@/, ''),
+    avatar: '',
+    displayName: null
+  }
+  const avatarSrc = computed(() => AvatarUtils.getAvatarUrl(remoteUserInfo?.avatar as string))
 
   const isCallAccepted = ref(!isReceiver)
   const isMuted = ref(false)
