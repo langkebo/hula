@@ -70,7 +70,7 @@
         <van-field
           v-model="passwordForm.password"
           :type="showNewPassword ? 'text' : 'password'"
-          :placeholder="t('mobile_forget_code.input.new_pass', { len: '6-16' })"
+          :placeholder="t('mobile_forget_code.input.new_pass', { len: '8-16' })"
           :formatter="filterNoSideSpace"
           format-trigger="onChange"
           maxlength="16"
@@ -86,7 +86,7 @@
         <div class="flex flex-col gap-4px px-16px mt-4px">
           <Validation
             :value="passwordForm.password"
-            :message="t('mobile_forget_code.validation.minlength', { len: '6-16' })"
+            :message="t('mobile_forget_code.validation.minlength', { len: '8-16' })"
             :validator="validateMinLength" />
           <Validation
             :value="passwordForm.password"
@@ -197,7 +197,7 @@ const nextDisabled = computed(() => {
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
 
-const validateMinLength = (value: string) => value.length >= 6
+const validateMinLength = (value: string) => value.length >= 8
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error && error.message ? error.message : fallback
