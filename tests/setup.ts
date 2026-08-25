@@ -101,4 +101,3 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   mkdir: vi.fn(),
   remove: vi.fn().mockResolvedValue(undefined)
 }))
-
