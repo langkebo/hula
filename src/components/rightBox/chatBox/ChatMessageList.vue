@@ -17,7 +17,7 @@
     v-if="isMainViewReady"
     class="scroller flex-1"
     :items="chatStore.chatMessageList"
-    :min-item-size="40"
+    :min-item-size="62"
     :buffer="10"
     key-field="clientKey"
     v-slot="{ item, index, active }">
@@ -26,7 +26,7 @@
       :active="active"
       :size-dependencies="[
         item.message.body,
-        item.message.msgtype,
+        item.message.type,
         item.message.content?.info?.h?._,
         item.message.content?.file?._,
         item.replyEvent

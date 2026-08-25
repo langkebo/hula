@@ -311,15 +311,18 @@ class MatrixEventService extends BaseMatrixService {
     const burnExpiresIn = burnAfterReadMeta?.expires_in || MatrixBurnDuration.DEFAULT_MS
     const burnRemainingSeconds = burnAfterRead ? Math.round(burnExpiresIn / 1000) : undefined
 
-    // 位置/信标消息复用 C6 的 MatrixMessageAdapter 解析为 LocationBody/BeaconBody，
-    // 其余类型保持原始 content 透传，兼容现有渲染路径。
+    // 所有消息类型统一经 MatrixMessageAdapter.convertMatrixContent 映射为客户端 body 结构：
+    // TEXT→{content}、IMAGE/VIDEO/VOICE/FILE→媒体结构、LOCATION/BEACON→位置/信标结构。
+    // 仅 LINK_PREVIEW 保留 content 透传（其渲染组件读取 msc2788 原始结构，适配器未覆盖）。
+    // 历史根因（2026-08-25）：此前非 LOCATION/BEACON 类型直接透传 Matrix 原始 content（{msgtype,body}），
+    // 而 Text.vue 读取 body.content，导致 TEXT 消息渲染为空气泡。
     const body: MessageType['message']['body'] =
-      msgType === MsgEnum.LOCATION || msgType === MsgEnum.BEACON
-        ? (matrixMessageAdapter.convertMatrixContent(
+      msgType === MsgEnum.LINK_PREVIEW
+        ? content
+        : (matrixMessageAdapter.convertMatrixContent(
             content as Record<string, unknown>,
             msgType
           ) as MessageType['message']['body'])
-        : content
 
     return {
       clientKey: event.getId() || '',
@@ -389,17 +392,27 @@ class MatrixEventService extends BaseMatrixService {
         return { messages: [], isLast: true, cursor: '' }
       }
     } else {
-      // 初始加载：live 窗口不足一页时，从服务端补齐最近 pageSize 条，避免“只显示最后一条”。
+      // 初始加载：SlidingSync 下 live timeline 窗口仅含 1~10 条，
+      // scrollback 极易超时（10s）且 SlidingSync 适配不完整，
+      // 导致”只显示最后一条”。改用 paginateEventTimeline（走 /messages 端点）
+      // 拉取最近 pageSize 条历史，该接口走标准 REST 分页，不依赖 timeline 窗口。
       if (events.length < pageSize) {
         try {
-          await withTimeout(client.scrollback(room, Math.max(pageSize, 30)), SCROLLBACK_TIMEOUT_MS)
-          events = room.getLiveTimeline().getEvents()
+          const backwards = true
+          const timeline = room.getLiveTimeline()
+          const result = await withTimeout(
+            client.paginateEventTimeline(timeline, { backwards, limit: pageSize }),
+            SCROLLBACK_TIMEOUT_MS
+          )
+          if (result) {
+            events = timeline.getEvents()
+          }
         } catch (err) {
-          logger.error(`scrollback 补齐初始历史失败: ${roomId}`, err)
-          // 即使失败也返回已有时窗内容，不阻塞 UI
+          logger.error(`初始历史补齐失败（paginateEventTimeline）: ${roomId}`, err)
+          // 失败时保留 live 窗口已有事件，不阻塞 UI
         }
       }
-      // 返回当前时间线中的全部消息（已含 scrollback 补齐的最近历史）。
+      // 返回当前时间线中的全部消息（已含补齐的最近历史）。
       pageEvents = events
       // 不足一页 => 已无更多历史（全部拉取完毕）。
       isLast = events.length < pageSize
