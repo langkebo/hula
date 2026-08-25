@@ -278,6 +278,7 @@ class MatrixEventService extends BaseMatrixService {
 
   convertEventToMessageType(event: MatrixEvent): MessageType {
     const content = event.getContent()
+    const isBadEncrypted = content?.msgtype === 'm.bad.encrypted'
     return {
       clientKey: event.getId() ?? '',
       fromUser: {
@@ -289,7 +290,7 @@ class MatrixEventService extends BaseMatrixService {
         id: event.getId() ?? '',
         roomId: event.getRoomId() ?? '',
         type: MsgEnum.TEXT,
-        body: { content: content.body as string },
+        body: { content: isBadEncrypted ? '[无法解密的消息]' : (content.body as string) },
         sendTime: event.getTs(),
         messageMarks: {},
         status: MessageStatusEnum.SUCCESS

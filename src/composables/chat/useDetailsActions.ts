@@ -8,6 +8,7 @@ import { useIndependentChatWindow } from '@/composables/chat/useIndependentChatW
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindow } from '@/composables/common/useWindow'
 import { CallTypeEnum, RoomTypeEnum } from '@/enums'
+import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMobile } from '@/utils/PlatformConstants'
 
@@ -23,6 +24,22 @@ export function useDetailsActions(content: PropType<ContentProp> | ContentProp) 
   const { enterChat } = useEnterChat()
 
   const contentValue = content as ContentProp
+
+  /** 单聊对方离线校验：离线直接提示并中止拨号（群聊跳过） */
+  const ensurePeerOnline = async (): Promise<boolean> => {
+    const uid = contentValue.uid
+    if (contentValue.type === RoomTypeEnum.GROUP || !uid) return true
+    try {
+      const presence = await matrixPresenceService.getPresence(uid)
+      if (presence.presence === 'offline') {
+        showFeedback(t('friend.context.friend_offline'), 'warning')
+        return false
+      }
+    } catch {
+      // presence 查询失败不阻断拨号，交给通话窗口处理应答超时
+    }
+    return true
+  }
 
   const ensureSessionReady = async () => {
     const uid = contentValue.uid
@@ -49,11 +66,13 @@ export function useDetailsActions(content: PropType<ContentProp> | ContentProp) 
 
   const handleVoiceCall = async () => {
     if (!(await ensureSessionReady())) return
+    if (!(await ensurePeerOnline())) return
     await startRtcCall(CallTypeEnum.AUDIO)
   }
 
   const handleVideoCall = async () => {
     if (!(await ensureSessionReady())) return
+    if (!(await ensurePeerOnline())) return
     await startRtcCall(CallTypeEnum.VIDEO)
   }
 

@@ -10,6 +10,11 @@
  */
 const KEY_PREFIX = 'tjg.persistedDeviceId:'
 
+/**
+ * 读取本地持久化的 deviceId；无存储/未设置时返回 null。
+ * @param identifier 登录标识（密码登录为 username，SSO 登录为完整 userId）
+ * @returns 持久化的 deviceId，或 null
+ */
 export function getPersistedDeviceId(identifier: string): string | null {
   if (!identifier) return null
   if (typeof globalThis.localStorage === 'undefined') return null
@@ -20,6 +25,11 @@ export function getPersistedDeviceId(identifier: string): string | null {
   }
 }
 
+/**
+ * 将 deviceId 持久化到 localStorage，供下次登录复用，避免重复创建设备。
+ * @param identifier 登录标识（密码登录为 username，SSO 登录为完整 userId）
+ * @param deviceId 待持久化的设备 ID
+ */
 export function persistDeviceId(identifier: string, deviceId: string): void {
   if (!identifier || !deviceId) return
   if (typeof globalThis.localStorage === 'undefined') return

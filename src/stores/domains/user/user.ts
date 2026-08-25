@@ -13,6 +13,27 @@ import { useGlobalStore } from '../widget/global'
 
 const logger = createLogger('user')
 
+/** user store 的 localStorage 持久化键（pinia-plugin-persistedstate 以 store id 为键） */
+const USER_STORAGE_KEY = StoresEnum.USER
+
+// 跨窗口同步：设置窗口等独立 webview 更新头像/资料后写入 localStorage，
+// 主窗口通过 storage 事件接收并刷新内存中的 userInfo，
+// 否则导航栏头像（LeftAvatar 读 userInfo.avatar）只在窗口重建后才更新。
+let crossWindowSyncRegistered = false
+function registerCrossWindowUserInfoSync(applyUserInfo: (next: UserInfoType | undefined) => void) {
+  if (crossWindowSyncRegistered || typeof window === 'undefined') return
+  crossWindowSyncRegistered = true
+  window.addEventListener('storage', (event) => {
+    if (event.key !== USER_STORAGE_KEY || event.newValue === null) return
+    try {
+      const persisted = JSON.parse(event.newValue) as { userInfo?: UserInfoType }
+      applyUserInfo(persisted.userInfo)
+    } catch {
+      // 忽略其他窗口写入的非法持久化数据
+    }
+  })
+}
+
 interface MatrixUserProfile {
   userId: string
   displayName: string | null
@@ -30,6 +51,12 @@ export const useUserStore = defineStore(
     const matrixProfile = ref<MatrixUserProfile | null>(null)
     const globalStore = useGlobalStore()
     const matrixStore = useMatrixStore()
+
+    registerCrossWindowUserInfoSync((next) => {
+      if (next) {
+        userInfo.value = { ...userInfo.value, ...next }
+      }
+    })
 
     const isMe = computed(() => (id: string) => {
       return userInfo.value?.uid === id || matrixStore.userId === id

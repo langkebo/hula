@@ -10,10 +10,11 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
-import { MittEnum } from '@/enums'
+import { MittEnum, RoomTypeEnum } from '@/enums'
 import router from '@/router'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
+import matrixClientService from '@/services/matrix/MatrixClientService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -55,7 +56,15 @@ async function focusSessionRoom(roomId: string) {
   // 否则消息视图 watch(currentSessionInfo) 不触发 → 会话不切换（按钮“无反应”）。
   if (!existingSession) {
     try {
-      const detail = await matrixSessionService.getSessionDetailWithFriends(roomId)
+      // 此处手里是 roomId（!xxx:server），不能走默认 SINGLE 分支——
+      // 那条链路把参数当 userId 喂给 DM 管理器（getDmForUser/createDm），
+      // 触发 "Invalid user ID format: !xxx" ValidationError。
+      // 按 roomId 直接取已同步房间构建会话；房间尚未同步时再退回
+      // GROUP 详情查询（同样按 roomId 定位），两条路径都不经过 DM 管理器。
+      const client = matrixClientService.getRoom(roomId)
+      const detail = client
+        ? matrixSessionService.buildSessionFromRoomPublic(client, null)
+        : await matrixSessionService.getSessionDetailWithFriends({ id: roomId, roomType: RoomTypeEnum.GROUP })
       if (detail) {
         chatStore.addSession?.(detail)
         existingSession = chatStore.getSession(roomId)

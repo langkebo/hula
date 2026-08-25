@@ -13,7 +13,7 @@ import { useBotStore } from '@/stores/domains/user/bot'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatChatTime } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
-import { toLocalpart } from '@/utils/userIdentity'
+import { resolveDmIdentityKey, toLocalpart } from '@/utils/userIdentity'
 
 const logger = createLogger('SessionListState')
 
@@ -67,8 +67,10 @@ export const useSessionListState = () => {
   }
 
   const sessionList = computed(() => {
-    // 防御性过滤：会话/房间列表只展示聊天类条目（群聊 / 单聊）。
+    // 防御性过滤：消息会话列表展示聊天类条目（群聊 / 单聊）。
     // 空间(SPACE)及任何非 GROUP/SINGLE 类型不进入中间栏会话列表。
+    // 注意：单聊必须保留——好友页「进入聊天/加密聊天」按钮依赖此列表渲染 DM 会话；
+    // 「房间列表」页（RoomList.vue）的 GROUP-only 过滤在那一层单独实现。
     const chatOnlySessions = sourceSessionList.value.filter(
       (item) => item.type === RoomTypeEnum.GROUP || item.type === RoomTypeEnum.SINGLE
     )
@@ -88,7 +90,8 @@ export const useSessionListState = () => {
     // 从实时 Room 成员中兜底解析 counterpart（会话缺 detailId/account 时的最后防线），
     // 使同一联系人的历史 DM 房间即使没填身份字段也能归一化去重。
     const resolveCounterpartKey = (item: SessionItem): string => {
-      const explicit = toLocalpart(item.detailId || item.account || '')
+      // 统一走 resolveDmIdentityKey（单一事实源），避免各层归一化口径漂移导致同人漏判
+      const explicit = resolveDmIdentityKey(item)
       if (explicit) return explicit
       try {
         const client = matrixClientService.getClient()
