@@ -53,11 +53,121 @@ type RustCryptoCapableClient = MatrixClient & {
 const CRYPTO_LOCK_NAME = 'tjg-ensure-crypto'
 
 /**
+ * 跨 WebView crypto 初始化协调 Channel 名称。
+ *
+ * 背景：每个 WebView 有独立的 globalThis，导致 globalThis 级单例无法跨窗口共享。
+ * 多个 WebView（home/settings/call）各自创建 MatrixClientService 实例，
+ * 各自独立调用 initRustCrypto，竞争同一 IndexedDB，导致：
+ * 1. 重复初始化开销（每次约 5-10s）
+ * 2. RoomStore.DetailCache 被反复清空→重拉网络
+ * 3. 跨窗口状态竞态
+ *
+ * 方案：使用 BroadcastChannel 实现跨窗口协调。
+ * - 第一个初始化的窗口广播 "crypto-init-started"
+ * - 其他窗口收到后等待 "crypto-init-done" 消息
+ * - 初始化完成后广播 "crypto-init-done"
+ */
+const CRYPTO_CHANNEL_NAME = 'tjg-crypto-init'
+
+/**
  * 检测 Web Locks API 是否可用。
  * 测试环境（Node.js/vitest）和旧浏览器可能不支持，需要 fallback。
  */
 function isWebLocksAvailable(): boolean {
   return typeof navigator !== 'undefined' && navigator.locks != null && typeof navigator.locks.request === 'function'
+}
+
+/**
+ * 检测 BroadcastChannel API 是否可用（跨窗口通信）。
+ * 测试环境（Node.js/vitest）下跳过：BroadcastChannel 存在但无其他窗口响应，
+ * 会导致 15s 超时阻塞测试。
+ */
+function isBroadcastChannelAvailable(): boolean {
+  if (typeof BroadcastChannel === 'undefined') return false
+  // Node.js 测试环境（vitest）：跳过跨窗口协调
+  if (typeof globalThis.process !== 'undefined') return false
+  return true
+}
+
+/**
+ * 跨窗口 crypto 初始化协调状态。
+ *
+ * 使用 BroadcastChannel 实现跨 WebView 的初始化协调：
+ * - 窗口 A 开始初始化时广播 "started"
+ * - 窗口 B/C 收到 "started" 后等待 "done"（最多等 15s）
+ * - 窗口 A 完成后广播 "done"
+ * - 超时后窗口 B/C 自行初始化（兜底）
+ */
+let crossWindowCoordinator: {
+  channel: BroadcastChannel
+  isInitializing: boolean
+  initPromise: Promise<boolean> | null
+} | null = null
+
+function getCrossWindowCoordinator(): typeof crossWindowCoordinator {
+  if (crossWindowCoordinator) return crossWindowCoordinator
+  if (!isBroadcastChannelAvailable()) return null
+
+  const channel = new BroadcastChannel(CRYPTO_CHANNEL_NAME)
+  crossWindowCoordinator = {
+    channel,
+    isInitializing: false,
+    initPromise: null
+  }
+  return crossWindowCoordinator
+}
+
+/**
+ * 等待其他窗口完成 crypto 初始化。
+ *
+ * @returns true 表示其他窗口已完成，本窗口可跳过初始化；false 表示超时需自行初始化
+ */
+async function waitForCrossWindowCryptoInit(): Promise<boolean> {
+  const coord = getCrossWindowCoordinator()
+  if (!coord) return false
+
+  return new Promise<boolean>((resolve) => {
+    const timeout = setTimeout(() => {
+      coord.channel.onmessage = null
+      resolve(false)
+    }, 15_000)
+
+    coord.channel.onmessage = (event: MessageEvent) => {
+      if (event.data === 'crypto-init-done') {
+        clearTimeout(timeout)
+        coord.channel.onmessage = null
+        resolve(true)
+      }
+    }
+
+    // 通知其他窗口：本窗口即将开始初始化
+    coord.channel.postMessage('crypto-init-started')
+  })
+}
+
+/**
+ * 广播 crypto 初始化完成事件。
+ */
+function broadcastCryptoInitDone(): void {
+  const coord = getCrossWindowCoordinator()
+  if (coord) {
+    coord.channel.postMessage('crypto-init-done')
+  }
+}
+
+/**
+ * 跨窗口事件处理器：当其他窗口开始初始化时，本窗口暂停并等待。
+ */
+function _setupCrossWindowListener(): void {
+  const coord = getCrossWindowCoordinator()
+  if (!coord || coord.isInitializing) return
+
+  coord.channel.onmessage = (event: MessageEvent) => {
+    if (event.data === 'crypto-init-started' && !coord.isInitializing) {
+      // 其他窗口正在初始化，本窗口等待
+      logger.info('[Crypto] 检测到其他窗口正在初始化 crypto，等待完成...')
+    }
+  }
 }
 
 /**
@@ -203,6 +313,24 @@ export class MatrixCryptoStateTracker {
    * 超时后此任务仍会在后台继续执行（fire-and-forget），最终更新 rustCryptoDebugState。
    */
   private async doEnsureCrypto(cryptoClient: RustCryptoCapableClient): Promise<void> {
+    // 跨窗口协调：如果其他 WebView 正在初始化 crypto，等待其完成
+    // 避免多窗口并发 initRustCrypto 竞争 IndexedDB
+    const otherWindowDone = await waitForCrossWindowCryptoInit()
+    if (otherWindowDone) {
+      // 其他窗口已完成初始化，检查 crypto 是否已可用
+      if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
+        this.rustCryptoDebugState = {
+          attempted: false,
+          initialized: true,
+          skippedReason: 'crypto-initialized-by-other-window',
+          error: null,
+          usedIndexedDB: null
+        }
+        logger.info('[Crypto] 其他窗口已完成 crypto 初始化，本窗口跳过')
+        return
+      }
+    }
+
     const userId = cryptoClient.getUserId?.()
     const deviceId = cryptoClient.getDeviceId?.()
     if (!userId || !deviceId) {
@@ -282,6 +410,7 @@ export class MatrixCryptoStateTracker {
         usedIndexedDB: useIndexedDB
       }
       logger.info(`Rust Crypto 初始化完成: ${userId}/${deviceId}`)
+      broadcastCryptoInitDone()
     } catch (err) {
       const errMsg = normalizeCryptoError(err)
       // WASM 抛出的错误通常是空对象 {}（wasm-bindgen 转换），
@@ -317,6 +446,7 @@ export class MatrixCryptoStateTracker {
             usedIndexedDB: useIndexedDB
           }
           logger.info(`Rust Crypto 重试初始化完成: ${userId}/${deviceId}`)
+          broadcastCryptoInitDone()
           return
         } catch (retryErr) {
           const retryMsg = normalizeCryptoError(retryErr)
