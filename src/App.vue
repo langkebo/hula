@@ -47,6 +47,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
+import { isNonMatrixWindow } from '@/utils/windowLabels'
 
 const logger = createLogger('App')
 
@@ -390,15 +391,22 @@ onMounted(async () => {
     logger.error('Bootstrap 失败，跳过依赖初始化的步骤:', err)
     return
   }
-  await initOfflineQueue()
+  // 非 Matrix 窗口（截图/托盘/通知/更新）跳过 Matrix 运行时初始化：
+  // 离线消息队列、WebSocket 事件处理、在线状态轮询均无意义且会重复注册监听。
+  const skipMatrixInit = isNonMatrixWindow()
+  if (!skipMatrixInit) {
+    await initOfflineQueue()
+  }
   await requestIOSNetworkPermission()
   initPlatformStyles()
   installSecurityListeners()
   await setupWindowHandlers()
   await setupMobileReLoginListener()
   setupThemeWatchers()
-  wsEventHandler.registerHandlers()
-  presenceSync.startPresenceWatch()
+  if (!skipMatrixInit) {
+    wsEventHandler.registerHandlers()
+    presenceSync.startPresenceWatch()
+  }
 })
 
 onUnmounted(async () => {

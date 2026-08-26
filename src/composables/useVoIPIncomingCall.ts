@@ -4,6 +4,7 @@ import type { CallInfo } from '@/services/matrix/media/MatrixVoIPService'
 import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
+import { isNonMatrixWindow } from '@/utils/windowLabels'
 
 const logger = createLogger('VoIPIncomingCall')
 
@@ -41,6 +42,11 @@ export function useVoIPIncomingCall(deps?: {
   }
 
   onMounted(() => {
+    // 非 Matrix 窗口（截图/托盘/通知/更新）不需要监听来电，跳过注册避免无谓回调
+    if (isNonMatrixWindow()) {
+      logger.info('来电监听已跳过（非 Matrix 窗口）')
+      return
+    }
     matrixVoIPService.setIncomingCallCallback(handleIncomingCall)
     logger.info('来电监听已注册')
   })
