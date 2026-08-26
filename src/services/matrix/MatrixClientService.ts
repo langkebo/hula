@@ -1,4 +1,6 @@
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import type { ICreateRoomOpts, MatrixClient, Room, SlidingSync, TelemetryManager, User } from '@/services/matrix/sdk'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
 import { type LoginResult, MatrixClientAuth } from './MatrixClientAuth'
@@ -27,6 +29,19 @@ export type { ConnectionState, MatrixClientConfig } from './MatrixConnectionMana
 export type { EventDecryptedDebugState, RustCryptoDebugState } from './MatrixCryptoStateTracker'
 
 const logger = createLogger('MatrixClient')
+
+/**
+ * 解析当前窗口 label，用于坐实「多窗口各 new 一次 MatrixClientService」的窗口身份。
+ * 非 Tauri 运行时（浏览器/测试）返回 'browser'；窗口上下文不可用（如测试 stub）降级为 'unknown'。
+ */
+function resolveCurrentWindowLabel(): string {
+  if (!hasTauriRuntime()) return 'browser'
+  try {
+    return WebviewWindow.getCurrent().label || 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
 
 /**
  * Matrix 客户端服务（facade）
@@ -78,7 +93,7 @@ class MatrixClientService {
   private readonly telemetry: MatrixClientTelemetry
 
   constructor() {
-    logger.info?.('Matrix 客户端服务初始化')
+    logger.info?.(`Matrix 客户端服务初始化 [window=${resolveCurrentWindowLabel()}]`)
     // ConnectionManager 拥有连接状态机；将其状态变更桥接到外部事件订阅者，
     // 保持原先 updateConnectionState 触发 'connectionState' 事件的行为。
     this.connectionManager.onStateChange((state) => {
