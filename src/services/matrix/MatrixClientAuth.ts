@@ -19,7 +19,7 @@ import { clearCryptoStoragePasswordCache, deleteCryptoStoragePassword } from '@/
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
-import { getPersistedDeviceId, persistDeviceId } from './deviceIdPersistence'
+import { generateDeviceId, getPersistedDeviceId, persistDeviceId } from './deviceIdPersistence'
 import { loginByHttpFallback, tokenLoginByHttpFallback } from './MatrixClientAuthHttp'
 import type { MatrixClientLifecycle } from './MatrixClientLifecycle'
 import type { MatrixClientConfig, MatrixConnectionManager } from './MatrixConnectionManager'
@@ -121,7 +121,7 @@ export class MatrixClientAuth {
         ...connectionManager.getConfig()!,
         accessToken: loginResponse.access_token,
         userId: loginResponse.user_id,
-        deviceId: loginResponse.device_id ?? undefined
+        deviceId: loginResponse.device_id ?? reusedDeviceId ?? generateDeviceId()
       })
 
       // 登录成功后持久化 deviceId，供下次密码登录复用
@@ -215,7 +215,7 @@ export class MatrixClientAuth {
         ...connectionManager.getConfig()!,
         accessToken: loginResponse.access_token,
         userId: loginResponse.user_id,
-        deviceId: loginResponse.device_id ?? undefined
+        deviceId: loginResponse.device_id ?? generateDeviceId()
       })
 
       // SSO 登录成功后持久化 deviceId，供后续登录复用
@@ -265,15 +265,15 @@ export class MatrixClientAuth {
       // 避免 SessionRestoreService.restoreWithAccessToken() 已调用 initialize() 后
       // 再次调用导致的重复初始化和不必要的客户端重建
       const existingClient = connectionManager.getClient()
-      if (existingClient && connectionManager.shouldReuse({ ...config, userId })) {
+      const reusableDeviceId = existingClient?.getDeviceId?.() ?? config.deviceId
+      if (existingClient && reusableDeviceId && connectionManager.shouldReuse({ ...config, userId })) {
         logger.info('[MatrixClientAuth] 客户端已初始化且用户一致，跳过重复 initialize()')
         // 返回当前 token 和设备 ID
         const currentAccessToken = existingClient.getAccessToken() ?? token
-        const currentDeviceId = existingClient.getDeviceId?.() ?? config.deviceId
         return {
           success: true,
           userId,
-          deviceId: currentDeviceId,
+          deviceId: reusableDeviceId,
           accessToken: currentAccessToken
         }
       } else {
@@ -285,7 +285,10 @@ export class MatrixClientAuth {
         const whoamiDeviceId = config.deviceId
           ? undefined
           : await lifecycle.resolveDeviceIdByWhoami(token, config.homeserverUrl)
-        const stableDeviceId = resolveStableDeviceId(config, whoamiDeviceId)
+        // 兜底：whoami 也未返回 device_id 时（synapse-rust 的 whoami 端点可能不返回该字段），
+        // 本地生成一个稳定 deviceId，避免 createClient 无 deviceId → getDeviceId() 恒为 null
+        // → ensureCrypto 因「缺少 userId 或 deviceId」跳过 Rust Crypto 初始化（E2EE 失效）。
+        const stableDeviceId = resolveStableDeviceId(config, whoamiDeviceId) ?? generateDeviceId()
 
         await lifecycle.initialize({
           ...config,

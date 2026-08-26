@@ -39,3 +39,21 @@ export function persistDeviceId(identifier: string, deviceId: string): void {
     // localStorage 不可用（隐私模式/配额满）时静默降级，不阻塞登录
   }
 }
+
+/**
+ * 生成一个新的设备 ID（16 位大写十六进制）。
+ *
+ * 用于 token 登录 / 会话恢复时，若 whoami 端点也未返回 device_id 的兜底：
+ * 确保 createClient 时 deviceId 有值，否则 SDK 的 getDeviceId() 恒为 null，
+ * ensureCrypto 会因「缺少 userId 或 deviceId」跳过 Rust Crypto 初始化（E2EE 失效）。
+ *
+ * 与 qrLoginHelpers.generateDeviceId 同源（crypto.getRandomValues 8 字节），
+ * 独立在此实现以保持 deviceIdPersistence 零依赖，避免引入 QR 登录模块的重依赖链。
+ */
+export function generateDeviceId(): string {
+  const random = crypto.getRandomValues(new Uint8Array(8))
+  return Array.from(random)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase()
+}

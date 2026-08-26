@@ -57,7 +57,8 @@ function makeConnectionManager() {
     getClient: vi.fn(),
     getConfig: vi.fn(),
     updateConnectionState: vi.fn(),
-    setClient: vi.fn()
+    setClient: vi.fn(),
+    shouldReuse: vi.fn(() => false)
   }
 }
 
@@ -336,6 +337,23 @@ describe('MatrixClientAuth.loginWithToken', () => {
     expect(deps.lifecycle.resolveDeviceIdByWhoami).toHaveBeenCalledWith('tok', 'https://hs')
     expect(result.success).toBe(true)
     expect(result.deviceId).toBe('WHOAMI-DEV')
+  })
+
+  it('whoami 也未返回 deviceId 时兜底生成稳定 deviceId（E2EE 不因缺 deviceId 跳过）', async () => {
+    const { auth, deps } = makeAuth()
+    deps.connectionManager.getConfig.mockReturnValue({ homeserverUrl: 'https://hs' })
+    deps.connectionManager.getClient.mockReturnValue(null)
+    deps.lifecycle.resolveDeviceIdByWhoami.mockResolvedValue(undefined)
+
+    const result = await auth.loginWithToken('tok', '@alice:hs')
+
+    expect(result.success).toBe(true)
+    // 兜底生成：16 位大写十六进制，非空
+    expect(result.deviceId).toMatch(/^[0-9A-F]{16}$/)
+    // 兜底的 deviceId 必须被传入 initialize，确保 createClient 时 getDeviceId() 有值
+    expect(deps.lifecycle.initialize).toHaveBeenCalledWith(
+      expect.objectContaining({ accessToken: 'tok', userId: '@alice:hs', deviceId: result.deviceId })
+    )
   })
 
   it('提供 refreshToken 时刷新并持久化新 token', async () => {
