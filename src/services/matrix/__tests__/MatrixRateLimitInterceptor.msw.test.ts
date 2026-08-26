@@ -271,3 +271,82 @@ describe('MatrixRateLimitInterceptor — 幂等 POST 白名单与熔断器', () 
     expect(res2.status).toBe(200)
   })
 })
+
+describe('MatrixRateLimitInterceptor — key 归一化与全局熔断', () => {
+  beforeEach(() => {
+    server.resetHandlers()
+    __resetRateLimitCircuitForTests()
+  })
+
+  afterEach(() => {
+    server.resetHandlers()
+    __resetRateLimitCircuitForTests()
+  })
+
+  it('不同房间的 tags 请求共享端点级熔断（key 归一化）', async () => {
+    let callCount = 0
+    server.use(
+      http.get(`${HOMESERVER}/_matrix/client/v3/user/:userId/rooms/:roomId/tags`, () => {
+        callCount++
+        return HttpResponse.json({ errcode: 'M_LIMIT_EXCEEDED', retry_after_ms: 1 }, { status: 429 })
+      })
+    )
+    const rateLimitedFetch = createRateLimitedFetch(fetch)
+    const tagsUrl = (roomId: string) => `${HOMESERVER}/_matrix/client/v3/user/%40admin%3Ahs/rooms/${roomId}/tags`
+
+    // 3 个不同房间的 tags 都 429，归一化后共享同一个端点级熔断 key
+    for (const roomId of ['!a%3Ahs', '!b%3Ahs', '!c%3Ahs']) {
+      const res = await rateLimitedFetch(tagsUrl(roomId))
+      expect(res.status).toBe(429)
+    }
+
+    // 第 4 个房间：端点级熔断已触发，不再发真实请求
+    const before = callCount
+    const blocked = await rateLimitedFetch(tagsUrl('!d%3Ahs'))
+    expect(blocked.status).toBe(429)
+    expect(callCount).toBe(before)
+  })
+
+  it('短时间内跨端点 429 触发全局熔断', async () => {
+    let callCount = 0
+    server.use(
+      http.get(`${HOMESERVER}/_matrix/client/v3/account/whoami`, () => {
+        callCount++
+        return HttpResponse.json({ errcode: 'M_LIMIT_EXCEEDED', retry_after_ms: 1 }, { status: 429 })
+      }),
+      http.get(`${HOMESERVER}/_matrix/vendor/v1/friends`, () => {
+        callCount++
+        return HttpResponse.json({ errcode: 'M_LIMIT_EXCEEDED', retry_after_ms: 1 }, { status: 429 })
+      }),
+      http.get(`${HOMESERVER}/_matrix/client/v3/presence/:userId/status`, () => {
+        callCount++
+        return HttpResponse.json({ errcode: 'M_LIMIT_EXCEEDED', retry_after_ms: 1 }, { status: 429 })
+      }),
+      http.get(`${HOMESERVER}/_matrix/client/v3/user/:userId/rooms/:roomId/tags`, () => {
+        callCount++
+        return HttpResponse.json({ errcode: 'M_LIMIT_EXCEEDED', retry_after_ms: 1 }, { status: 429 })
+      })
+    )
+    const rateLimitedFetch = createRateLimitedFetch(fetch)
+
+    // 6 个跨端点请求都 429，触发全局熔断（滑动窗口 10s 内 6 次）
+    const urls = [
+      `${HOMESERVER}/_matrix/client/v3/account/whoami`,
+      `${HOMESERVER}/_matrix/vendor/v1/friends`,
+      `${HOMESERVER}/_matrix/client/v3/presence/%40admin%3Ahs/status`,
+      `${HOMESERVER}/_matrix/client/v3/user/%40admin%3Ahs/rooms/!a%3Ahs/tags`,
+      `${HOMESERVER}/_matrix/client/v3/user/%40admin%3Ahs/rooms/!b%3Ahs/tags`,
+      `${HOMESERVER}/_matrix/client/v3/user/%40admin%3Ahs/rooms/!c%3Ahs/tags`
+    ]
+    for (const url of urls) {
+      const res = await rateLimitedFetch(url)
+      expect(res.status).toBe(429)
+    }
+
+    // 全局熔断已触发，任意新请求被拦截，不再发真实请求
+    const before = callCount
+    const blocked = await rateLimitedFetch(`${HOMESERVER}/_matrix/client/v3/account/whoami`)
+    expect(blocked.status).toBe(429)
+    expect(callCount).toBe(before)
+  })
+})

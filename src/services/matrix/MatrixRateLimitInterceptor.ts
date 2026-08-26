@@ -12,6 +12,14 @@ const CIRCUIT_THRESHOLD = 3
 const CIRCUIT_BASE_COOLDOWN_MS = 5000
 const CIRCUIT_MAX_COOLDOWN_MS = 120000
 
+/** 全局熔断：滑动窗口内 429 总数达到该次数后开路（感知 nginx 跨端点全局限流风暴） */
+const GLOBAL_CIRCUIT_THRESHOLD = 6
+/** 全局熔断滑动窗口（ms） */
+const GLOBAL_CIRCUIT_WINDOW_MS = 10_000
+/** 全局熔断基础冷却时长（指数增长：10s → 20s → 40s → …） */
+const GLOBAL_CIRCUIT_BASE_COOLDOWN_MS = 10_000
+const GLOBAL_CIRCUIT_MAX_COOLDOWN_MS = 120_000
+
 interface RateLimitResponse {
   retry_after_ms?: number
   errcode?: string
@@ -82,11 +90,27 @@ interface CircuitState {
 
 const circuitByEndpoint = new Map<string, CircuitState>()
 
+/**
+ * 归一化 pathname 中的动态段（房间 ID / 用户 ID / 事件 ID），
+ * 让同类端点（如所有房间的 /tags、/friends/{uid}）共享同一个熔断 key。
+ *
+ * 否则 key 含房间 ID，每个房间的 tags 请求各自独立计数，
+ * 单个房间达不到「连续 N 次 429」的熔断阈值，熔断器在 nginx 全局限流下形同虚设。
+ *
+ * 注：URL 中 `@` 编码为 %40、`:` 编码为 %3A、`$` 编码为 %24，`!` 保持原样。
+ */
+function normalizePathname(pathname: string): string {
+  return pathname
+    .replace(/%40[^/]+/g, '{userId}')
+    .replace(/![^/]+/g, '{roomId}')
+    .replace(/%24[^/]+/g, '{eventId}')
+}
+
 function endpointKey(input: RequestInfo | URL, init?: RequestInit): string {
   const method = init?.method?.toUpperCase() ?? 'GET'
   try {
     const pathname = new URL(resolveUrl(input)).pathname
-    return `${method} ${pathname}`
+    return `${method} ${normalizePathname(pathname)}`
   } catch {
     return `${method} ${resolveUrl(input)}`
   }
@@ -135,21 +159,86 @@ function createSynthetic429(retryAfterMs: number): Response {
   )
 }
 
+// ==================== 全局熔断器 ====================
+// 端点级熔断器按 `${method} ${pathname}` 计数，只对「单个端点连续 429」敏感。
+// 但 nginx limit_req 是跨端点的全局限流：客户端在房间列表刷新/建房间时集中爆发
+// tags/friends/presence/whoami 等请求，每个端点各自只 429 一两次，端点级熔断器
+// 永不触发，风暴持续。全局熔断器按「滑动窗口内 429 总数」计数，感知整体风暴，
+// 达到阈值后开路，冷却期内所有非 /sync 请求直接返回合成 429，让流量降为 0。
+
+interface GlobalCircuitState {
+  /** 滑动窗口内的 429 时间戳 */
+  recent429Timestamps: number[]
+  /** 开路截止时间（0 表示未开路） */
+  openUntil: number
+  /** 连续开路次数（驱动冷却时长指数增长） */
+  consecutiveOpenCount: number
+}
+
+let globalCircuit: GlobalCircuitState = {
+  recent429Timestamps: [],
+  openUntil: 0,
+  consecutiveOpenCount: 0
+}
+
+function globalCircuitCooldownRemainingMs(now: number): number {
+  return globalCircuit.openUntil > now ? globalCircuit.openUntil - now : 0
+}
+
+function recordGlobal429(now: number): void {
+  globalCircuit.recent429Timestamps = globalCircuit.recent429Timestamps.filter(
+    (t) => now - t < GLOBAL_CIRCUIT_WINDOW_MS
+  )
+  globalCircuit.recent429Timestamps.push(now)
+  if (globalCircuit.recent429Timestamps.length >= GLOBAL_CIRCUIT_THRESHOLD) {
+    const exponent = globalCircuit.consecutiveOpenCount
+    const cooldown = Math.min(GLOBAL_CIRCUIT_BASE_COOLDOWN_MS * 2 ** exponent, GLOBAL_CIRCUIT_MAX_COOLDOWN_MS)
+    globalCircuit.openUntil = now + cooldown
+    globalCircuit.consecutiveOpenCount++
+    globalCircuit.recent429Timestamps = []
+    logger.warn(
+      `全局 429 风暴：${GLOBAL_CIRCUIT_WINDOW_MS / 1000}s 内 ${GLOBAL_CIRCUIT_THRESHOLD}+ 次，全局熔断 ${Math.round(cooldown / 1000)}s（请检查 nginx limit_req 配置）`
+    )
+  }
+}
+
+function recordGlobalSuccess(now: number): void {
+  globalCircuit.recent429Timestamps = []
+  if (globalCircuit.openUntil <= now) {
+    globalCircuit.consecutiveOpenCount = 0
+  }
+}
+
 export function createRateLimitedFetch(baseFetch: typeof fetch): typeof fetch {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     if (!shouldApplyClientRateLimit(input)) {
       return baseFetch(input, init)
     }
 
+    const now = Date.now()
+
+    // 全局熔断优先：感知跨端点全局限流风暴
+    const globalCooldown = globalCircuitCooldownRemainingMs(now)
+    if (globalCooldown > 0) {
+      logger.warn(`全局熔断中，跳过真实请求，${Math.round(globalCooldown / 1000)}s 后恢复`)
+      return createSynthetic429(globalCooldown)
+    }
+
+    // 端点级熔断
     const key = endpointKey(input, init)
-    const cooldownMs = circuitCooldownRemainingMs(key, Date.now())
+    const cooldownMs = circuitCooldownRemainingMs(key, now)
     if (cooldownMs > 0) {
       logger.warn(`熔断中，跳过真实请求，${Math.round(cooldownMs / 1000)}s 后恢复: ${key}`)
       return createSynthetic429(cooldownMs)
     }
 
     const response = await fetchWithRetry(baseFetch, input, init, 0)
-    recordCircuitResult(key, response.status, Date.now())
+    recordCircuitResult(key, response.status, now)
+    if (response.status === 429) {
+      recordGlobal429(now)
+    } else {
+      recordGlobalSuccess(now)
+    }
     return response
   }
 }
@@ -189,4 +278,5 @@ async function fetchWithRetry(
 /** 仅供测试：清空熔断器状态 */
 export function __resetRateLimitCircuitForTests(): void {
   circuitByEndpoint.clear()
+  globalCircuit = { recent429Timestamps: [], openUntil: 0, consecutiveOpenCount: 0 }
 }
