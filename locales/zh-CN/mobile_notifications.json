@@ -8,7 +8,7 @@
   "all_messages": "私聊消息",
   "group_messages": "群聊消息",
   "notify": "通知",
-  "mention_only": "仅@提及",
+  "mention_only": "仅{'@'}提及",
   "mute": "静音",
   "push_notifications": "移动推送通知",
   "email_notifications": "邮件通知",

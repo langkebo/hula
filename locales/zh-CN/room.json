@@ -213,7 +213,7 @@
     "toggle_allow_external_join": "允许外部用户加入",
     "toggle_show_in_directory": "显示在房间目录",
     "notification_all": "所有消息",
-    "notification_mentions": "仅 @提及",
+    "notification_mentions": "仅 {'@'}提及",
     "notification_mute": "静音",
     "history_shared": "共享（加入后可看到所有历史）",
     "history_invited": "受邀（仅看到被邀后）",

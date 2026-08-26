@@ -286,7 +286,7 @@
     "password_need_uppercase": "密码必须包含至少一个大写字母",
     "password_need_lowercase": "密码必须包含至少一个小写字母",
     "password_need_digit": "密码必须包含至少一个数字",
-    "password_need_special": "密码必须包含至少一个特殊字符（如 !@#$%^&*）",
+    "password_need_special": "密码必须包含至少一个特殊字符（如 !{'@'}#$%^&*）",
     "password_too_weak": "密码强度不足，请设置更复杂的密码",
     "password_wrong_current": "当前密码不正确，请重新输入",
     "logout_other_devices": "修改密码后登出其他设备",

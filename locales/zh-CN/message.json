@@ -78,7 +78,7 @@
     "sync_complete": "消息同步完成",
     "official_popover": "官方群聊认证",
     "bot_popover": "Tjg助手",
-    "mention_tag": "[有人@我]",
+    "mention_tag": "[有人{'@'}我]",
     "favorite_tag": "已置顶",
     "low_priority_tag": "低优先级",
     "migrated_tag": "已迁移",

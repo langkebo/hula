@@ -286,7 +286,7 @@
     "password_need_uppercase": "Password must contain at least one uppercase letter",
     "password_need_lowercase": "Password must contain at least one lowercase letter",
     "password_need_digit": "Password must contain at least one digit",
-    "password_need_special": "Password must contain at least one special character (e.g. !@#$%^&*)",
+    "password_need_special": "Password must contain at least one special character (e.g. !{'@'}#$%^&*)",
     "password_too_weak": "Password is too weak, please choose a stronger password",
     "password_wrong_current": "Current password is incorrect, please try again",
     "logout_other_devices": "Sign out other devices after password change",
