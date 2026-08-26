@@ -121,7 +121,17 @@ function getCrossWindowCoordinator(): typeof crossWindowCoordinator {
  * 等待其他窗口完成 crypto 初始化。
  *
  * @returns true 表示其他窗口已完成，本窗口可跳过初始化；false 表示超时需自行初始化
+ *
+ * 根因（2026-08-25）：原实现无条件等待 15s「crypto-init-done」广播，但第一个初始化窗口
+ * 没有任何其他窗口给它广播 done，导致白等 15s —— 这正是日志中「登录后 Matrix 启动收尾
+ * 超过 15000ms」的直接来源（28.059 初始化 → 42.920 超时，中间完全静默）。
+ *
+ * 修复：将等待缩短到 1s。跨窗口互斥已由 ensureCrypto 层的 Web Locks
+ * （navigator.locks.request exclusive）保证，此处的 done 广播仅是「其他窗口恰好已完成」
+ * 的短探测，无需长等。
  */
+const CROSS_WINDOW_DONE_WAIT_MS = 1_000
+
 async function waitForCrossWindowCryptoInit(): Promise<boolean> {
   const coord = getCrossWindowCoordinator()
   if (!coord) return false
@@ -130,7 +140,7 @@ async function waitForCrossWindowCryptoInit(): Promise<boolean> {
     const timeout = setTimeout(() => {
       coord.channel.onmessage = null
       resolve(false)
-    }, 15_000)
+    }, CROSS_WINDOW_DONE_WAIT_MS)
 
     coord.channel.onmessage = (event: MessageEvent) => {
       if (event.data === 'crypto-init-done') {
