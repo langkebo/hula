@@ -83,15 +83,6 @@ class SpaceService extends BaseMatrixService {
         room_types: ['m.space'],
         ignore_duplicate_name: options.ignoreDuplicateName,
         initial_state: [
-          // 明确添加创建者为成员，确保创建者可以正常加入
-          {
-            type: 'm.room.member',
-            state_key: userId,
-            content: {
-              membership: 'join',
-              displayname: userId.split(':')[0].replace(/^@/, '')
-            }
-          },
           ...(options.avatarUrl ? [{ type: 'm.room.avatar', state_key: '', content: { url: options.avatarUrl } }] : [])
         ]
       })

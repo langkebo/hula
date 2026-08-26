@@ -112,6 +112,9 @@ describe('MatrixSpaceService', () => {
     const createRoomArg = mockCreateRoom.mock.calls[0][0]
     expect(createRoomArg.room_types).toEqual(['m.space'])
     expect(createRoomArg.initial_state).not.toContainEqual(expect.objectContaining({ type: 'm.room.create' }))
+    // 契约：不得把 m.room.member 放进 initial_state（synapse-rust 同样返回 400）。
+    // 创建者由服务端自动设为 joined 成员，无需显式声明。
+    expect(createRoomArg.initial_state).not.toContainEqual(expect.objectContaining({ type: 'm.room.member' }))
   })
 
   it('should return null when target space room does not exist', async () => {
