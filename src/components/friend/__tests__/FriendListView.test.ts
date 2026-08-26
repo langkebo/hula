@@ -31,6 +31,7 @@ const {
   addSpecialFriendMock,
   showFeedbackMock,
   getFriendDmRoomMock,
+  getRoomMock,
   openMsgSessionByRoomIdMock,
   groupingState
 } = vi.hoisted(() => ({
@@ -56,6 +57,7 @@ const {
   addSpecialFriendMock: vi.fn(),
   showFeedbackMock: vi.fn(),
   getFriendDmRoomMock: vi.fn(),
+  getRoomMock: vi.fn(),
   openMsgSessionByRoomIdMock: vi.fn(),
   groupingState: {
     refs: null as null | {
@@ -136,6 +138,13 @@ vi.mock('@/services/matrix/friends/MatrixSpecialFriendService', () => ({
 vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
   matrixFriendService: {
     getFriendDmRoom: getFriendDmRoomMock
+  }
+}))
+
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    getRoom: getRoomMock,
+    getClient: () => null
   }
 }))
 
@@ -445,6 +454,7 @@ describe('FriendListView', () => {
     contactStoreMock.lastFriendError = null
     // 默认：未找到已有 DM 房间，startDirectRoom 返回新房间 ID
     getFriendDmRoomMock.mockResolvedValue({ room_id: '', exists: false })
+    getRoomMock.mockReturnValue(null)
     contactStoreMock.startDirectRoom.mockResolvedValue('@new-room:example.com')
     // 重置分组状态
     if (groupingState.refs) {
@@ -615,6 +625,7 @@ describe('FriendListView', () => {
 
   it('clicking send-message action button opens existing DM room without creating a new one', async () => {
     getFriendDmRoomMock.mockResolvedValue({ room_id: '@existing-dm:example.com', exists: true })
+    getRoomMock.mockReturnValue({ getMyMembership: () => 'join' })
 
     const wrapper = mountView()
     await flushPromises()

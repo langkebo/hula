@@ -8,6 +8,7 @@ const {
   showFeedbackMock,
   addSpecialFriendMock,
   getFriendDmRoomMock,
+  getRoomMock,
   openMsgSessionByRoomIdMock,
   contextMenuShowMock,
   openMsgSessionMock,
@@ -28,6 +29,7 @@ const {
   showFeedbackMock: vi.fn(),
   addSpecialFriendMock: vi.fn(),
   getFriendDmRoomMock: vi.fn(),
+  getRoomMock: vi.fn(),
   openMsgSessionByRoomIdMock: vi.fn(),
   contextMenuShowMock: vi.fn(),
   openMsgSessionMock: vi.fn().mockResolvedValue(undefined),
@@ -47,6 +49,13 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
   matrixFriendService: {
     getFriendDmRoom: getFriendDmRoomMock
+  }
+}))
+
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    getRoom: getRoomMock,
+    getClient: () => null
   }
 }))
 
@@ -96,6 +105,7 @@ describe('useFriendContextMenu', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getFriendDmRoomMock.mockResolvedValue({ room_id: '', exists: false })
+    getRoomMock.mockReturnValue(null)
     contactStoreMock.startDirectRoom.mockResolvedValue('@new-room:example.com')
   })
 
@@ -135,8 +145,9 @@ describe('useFriendContextMenu', () => {
   })
 
   describe('performSendMessage', () => {
-    it('opens existing DM room when getFriendDmRoom returns a room_id', async () => {
+    it('opens existing DM room when getFriendDmRoom returns a room_id and current user is joined', async () => {
       getFriendDmRoomMock.mockResolvedValue({ room_id: '@existing-dm:example.com', exists: true })
+      getRoomMock.mockReturnValue({ getMyMembership: () => 'join' })
       const { menu } = setupMenu()
       const friend = makeFriend()
 
@@ -145,6 +156,32 @@ describe('useFriendContextMenu', () => {
       expect(getFriendDmRoomMock).toHaveBeenCalledWith(friend.userId)
       expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@existing-dm:example.com')
       expect(contactStoreMock.startDirectRoom).not.toHaveBeenCalled()
+    })
+
+    it('falls back to startDirectRoom when the backend room is not a joined room', async () => {
+      getFriendDmRoomMock.mockResolvedValue({ room_id: '@stale-dm:example.com', exists: true })
+      getRoomMock.mockReturnValue({ getMyMembership: () => 'leave' })
+      const { menu } = setupMenu()
+      const friend = makeFriend()
+
+      await menu.performSendMessage(friend)
+
+      expect(getFriendDmRoomMock).toHaveBeenCalledWith(friend.userId)
+      expect(openMsgSessionByRoomIdMock).not.toHaveBeenCalledWith('@stale-dm:example.com')
+      expect(contactStoreMock.startDirectRoom).toHaveBeenCalledWith(friend.userId, false)
+      expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@new-room:example.com')
+    })
+
+    it('falls back to startDirectRoom when the backend room is not locally synced', async () => {
+      getFriendDmRoomMock.mockResolvedValue({ room_id: '@unsynced-dm:example.com', exists: true })
+      getRoomMock.mockReturnValue(null)
+      const { menu } = setupMenu()
+      const friend = makeFriend()
+
+      await menu.performSendMessage(friend)
+
+      expect(contactStoreMock.startDirectRoom).toHaveBeenCalledWith(friend.userId, false)
+      expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@new-room:example.com')
     })
 
     it('creates a new DM room when no existing room_id', async () => {

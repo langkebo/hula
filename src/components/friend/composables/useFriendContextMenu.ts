@@ -6,12 +6,22 @@ import { useWindow } from '@/composables/common/useWindow'
 import { CallTypeEnum, RoomTypeEnum } from '@/enums'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpecialFriendService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
 
 interface UseFriendContextMenuOptions {
   /** ContextMenu 组件的模板引用，需暴露 show(event) 方法 */
   contextMenuRef: Ref<{ show: (event: MouseEvent) => void } | undefined>
+}
+
+/**
+ * 校验当前用户是否为指定房间的 joined 成员。
+ * 房间未同步到本地（getRoom 返回 null）时视为非成员，避免打开一个会 403 的房间。
+ */
+function isJoinedRoom(roomId: string): boolean {
+  const room = matrixClientService.getRoom(roomId)
+  return !!room && room.getMyMembership?.() === 'join'
 }
 
 /**
@@ -54,7 +64,10 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
   // 共享：发起直接消息会话（FriendListItem 发送消息按钮与右键菜单 send_message 复用同一逻辑）
   const performSendMessage = async (friend: MatrixContact) => {
     const dmInfo = await matrixFriendService.getFriendDmRoom(friend.userId)
-    if (dmInfo.room_id) {
+    // 后端返回的 DM 房间必须「当前用户确为 joined 成员」才可直接打开；
+    // 否则（后端残留 stale/非成员房间，如账号被移出后 friends/dm 仍返回 room_id）
+    // 回落到本地 DM 建立，避免切到一个 unread_count/typing/send 全被 403 拒绝的无效房间。
+    if (dmInfo.room_id && isJoinedRoom(dmInfo.room_id)) {
       const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
       await openMsgSessionByRoomId(dmInfo.room_id)
     } else {
