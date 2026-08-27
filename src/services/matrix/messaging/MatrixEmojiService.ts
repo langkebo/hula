@@ -102,6 +102,12 @@ class MatrixEmojiService extends BaseMatrixService {
       logger.info(`[MatrixEmoji] 获取表情包列表成功，用户: ${userId}`)
       return this.parseEmojiResponse(response)
     } catch (err) {
+      // P1 fix: 非当前用户的表情数据不支持时，降级返回空列表而非抛异常，
+      // 避免控制台 ERROR 日志和用户可见的错误提示。
+      if (err instanceof Error && err.message.includes('other_user_emoji_unsupported')) {
+        logger.debug(`[MatrixEmoji] 暂不支持获取其他用户表情数据，返回空列表`)
+        return []
+      }
       logger.error(`[MatrixEmoji] 获取表情包列表失败: ${err}`)
       throw err
     }
