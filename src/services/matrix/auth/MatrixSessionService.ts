@@ -70,6 +70,13 @@ class MatrixSessionService extends BaseMatrixService {
       // 且成员仅剩一人导致 DM 判型失败（被判 GROUP），绕过所有同人去重。
       const isDeadRoom = (room: Room): boolean => {
         if (room.getMyMembership?.() === 'invite') return false
+        // 有 m.room.name 状态事件 = 用户主动命名（如空间里新建的子房间），不是死房间。
+        // 真正要过滤的是「无 name 事件」的测试空房间（SDK 默认名 "Empty room"）/
+        // 对方已退出的历史 DM（其 room.name 是 fallback 用户名，非真实 name 事件）。
+        // 空间新建子房间创建后只有创建者 1 人且无未读，若不排除会被误过滤，
+        // 导致会话列表缺失 + 右侧成员栏（依赖 type===GROUP）不显示。
+        const nameEvents = room.currentState?.getStateEvents?.('m.room.name')
+        if (nameEvents && nameEvents.length > 0) return false
         const joinedCount = typeof room.getJoinedMemberCount === 'function' ? room.getJoinedMemberCount() : 0
         if (joinedCount > 1) return false
         return this.getUnreadCount(room) === 0

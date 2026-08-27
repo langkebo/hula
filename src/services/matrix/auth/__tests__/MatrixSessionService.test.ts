@@ -263,6 +263,30 @@ describe('MatrixSessionService', () => {
     expect(result[0].roomId).toBe('!alive-dm:example.com')
   })
 
+  it('死房间过滤：有 m.room.name 事件的空间子房间（仅 1 人）保留', async () => {
+    const spaceChild = {
+      ...createRoom({
+        roomId: '!space-child:example.com',
+        name: '我的空间房间',
+        joinedMemberCount: 1,
+        events: []
+      }),
+      currentState: {
+        getStateEvents: vi.fn((eventType: string) =>
+          eventType === 'm.room.name' ? [{ getContent: () => ({ name: '我的空间房间' }) }] : []
+        )
+      }
+    }
+
+    mockDirectMessageService.getDMRooms.mockResolvedValueOnce([])
+    mockClient.getRooms.mockReturnValueOnce([spaceChild] as unknown as Room[])
+
+    const result = await matrixSessionService.getSessionList()
+
+    expect(result).toHaveLength(1)
+    expect(result[0].roomId).toBe('!space-child:example.com')
+  })
+
   it('死房间过滤：invite 状态或仍有未读的单人房间保留', async () => {
     const invited = {
       ...createRoom({ roomId: '!invited:example.com', joinedMemberCount: 1, events: [] }),
