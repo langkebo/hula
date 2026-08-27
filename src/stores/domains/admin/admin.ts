@@ -28,8 +28,8 @@ export const useAdminStore = defineStore('admin', () => {
     try {
       const adminApiAvailable = await adminService.checkAdminApiAvailability()
       if (!adminApiAvailable) {
-        logger.warn('后端 Admin API 不可用，跳过管理员验证')
-        return true
+        logger.warn('后端 Admin API 不可用，无法验证管理员身份')
+        return false
       }
 
       const userId = matrixStore.userId
