@@ -107,6 +107,22 @@ describe('MatrixConnectionManager', () => {
       expect(manager.getConfig()).toEqual(baseConfig)
     })
 
+    it('injects a store via createMatrixStore (W2: IndexedDBStore persistence)', async () => {
+      const { createClient } = await import('@/services/matrix/sdk')
+      await manager.initialize(baseConfig)
+
+      // createClient must be called with a `store` property so the SDK
+      // does not fall back to a no-op StubStore (which would lose
+      // room/timeline state on every restart).
+      const callArgs = vi.mocked(createClient).mock.calls
+      expect(callArgs.length).toBeGreaterThanOrEqual(1)
+      const lastCallOpts = callArgs[callArgs.length - 1][0] as { store?: unknown }
+      expect(lastCallOpts.store).toBeDefined()
+      // The store is either an IndexedDBStore (in real runtime) or a
+      // MemoryStore (when IDB is unavailable, e.g. happy-dom without
+      // fake-indexeddb). Both are valid: the contract is "not undefined".
+    })
+
     it('reuses existing client when identity is equivalent and token unchanged', async () => {
       await manager.initialize(baseConfig)
       const firstClient = manager.getClient()

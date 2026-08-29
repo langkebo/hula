@@ -27,11 +27,13 @@ export {
   createClient,
   Direction,
   EventType,
+  IndexedDBStore,
   initializeManagerExtensions,
   LocationAssetType,
   M_BEACON,
   M_BEACON_INFO,
   M_LOCATION,
+  MemoryStore,
   Preset,
   PushRuleActionName,
   PushRuleKind,
@@ -51,4 +53,5 @@ export type { MediaManager } from 'matrix-js-sdk/media'
 export { RoomEvent } from 'matrix-js-sdk/models/room'
 export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'
 export type { MSC4108RendezvousSession, MSC4108SecureChannel } from 'matrix-js-sdk/rendezvous'
+export type { IStore } from 'matrix-js-sdk/store'
 export type { TelemetryManager } from 'matrix-js-sdk/telemetry'

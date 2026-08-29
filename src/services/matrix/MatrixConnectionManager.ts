@@ -27,6 +27,7 @@ import {
   initializeManagerExtensions,
   type MatrixClient
 } from '@/services/matrix/sdk'
+import { createMatrixStore } from '@/services/matrix/storeFactory'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import type { ICreateClientOpts } from '@/types/matrix-js-sdk'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -175,7 +176,10 @@ export class MatrixConnectionManager {
         useAuthorizationHeader: true,
         allowInsecureHttp: config.allowInsecureHttp,
         fetchFn,
-        cryptoCallbacks
+        cryptoCallbacks,
+        // W2 优化：注入 IndexedDBStore 实现持久化（重启后房间列表/时间线立即可见）
+        // storeFactory 失败时退到 MemoryStore（createMatrixStore 内部 try-catch）
+        store: await createMatrixStore(config.userId)
       }
 
       if (config.identityServerUrl) {
