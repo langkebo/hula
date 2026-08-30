@@ -29,8 +29,9 @@
 
 /*
  * 登录按钮样式覆盖
- * Naive UI 的 n-button 内部样式优先级高，必须用 !important 强制覆盖
- * 穿透 .n-button__content 确保白色文字生效
+ * 兼容两套 UI 库：Naive UI (n-button) 与 Vant (van-button) — 移动端使用 Vant
+ * 两套库内部样式优先级高，必须用 !important 强制覆盖
+ * 穿透 .n-button__content / .van-button__content 确保白色文字生效
  */
 .gradient-button {
   border: none !important;
@@ -47,7 +48,7 @@
     filter 0.15s ease,
     opacity 0.2s ease;
 
-  /* 默认态：深青绿渐变，与亮色品牌背景形成强对比 */
+  /* 默认态：深青绿渐变 */
   &:hover:not(:disabled) {
     background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-600)) !important;
     box-shadow:
@@ -65,9 +66,10 @@
     filter: brightness(0.88);
   }
 
-  /* 禁用状态：灰阶渐变 */
+  /* 禁用状态：灰阶渐变（兼容 Naive UI n-button 和 Vant van-button） */
   &:disabled,
-  &.n-button--disabled {
+  &.n-button--disabled,
+  &.van-button--disabled {
     background: linear-gradient(135deg, var(--tjg-text-disabled), var(--tjg-border-strong)) !important;
     box-shadow: inset 0px 1px 0px color-mix(in srgb, white 10%, transparent) !important;
     opacity: 0.7;
@@ -76,16 +78,20 @@
     filter: none;
   }
 
-  /* 加载中状态：脉冲动画 */
-  &.n-button--loading {
+  /* 加载中状态：脉冲动画（兼容 Naive UI n-button 和 Vant van-button） */
+  &.n-button--loading,
+  &.van-button--loading {
     background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-400)) !important;
     box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha) !important;
     animation: gradient-button-pulse 1.4s ease-in-out infinite;
   }
 
-  /* 穿透 n-button 内部 DOM，强制白色文字 */
+  /* 穿透内部 DOM，强制白色文字（兼容 Naive UI n-button 和 Vant van-button） */
   .n-button__content,
   .n-button__content > span,
+  .van-button__content,
+  .van-button__content > span,
+  .van-button__text,
   span {
     color: var(--tjg-text-inverse) !important;
   }
@@ -119,12 +125,14 @@
     }
 
     &:disabled,
-    &.n-button--disabled {
+    &.n-button--disabled,
+    &.van-button--disabled {
       background: linear-gradient(135deg, var(--tjg-text-tertiary), var(--tjg-text-quaternary)) !important;
       opacity: 0.6;
     }
 
-    &.n-button--loading {
+    &.n-button--loading,
+    &.van-button--loading {
       background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-500)) !important;
     }
   }

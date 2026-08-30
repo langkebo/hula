@@ -1,5 +1,40 @@
 <template>
   <div data-testid="mobile-login-form" class="text-center w-80% flex flex-col gap-16px">
+    <!-- Homeserver 地址输入框 -->
+    <div class="homeserver-wrap">
+      <van-field
+        v-model="homeserverUrl"
+        :placeholder="t('login.input.homeserver.placeholder')"
+        :title="t('login.input.homeserver.toggle_title')"
+        clearable
+        autocomplete="off"
+        :spellcheck="false"
+        autocorrect="off"
+        autocapitalize="off"
+        :right-icon="showHomeserverAdvanced ? 'arrow-up' : 'arrow-down'"
+        @click-right-icon="showHomeserverAdvanced = !showHomeserverAdvanced"
+        class="homeserver-field" />
+      <!-- 高级服务器提示折叠区域 -->
+      <transition name="homeserver-advanced">
+        <div v-if="showHomeserverAdvanced" class="homeserver-hint show">
+          <svg
+            class="size-11px flex-shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+          <span>{{ t('login.input.homeserver.advanced_hint') }}</span>
+        </div>
+      </transition>
+    </div>
+
     <van-field
       :class="{ 'pl-22px': loginHistories.length > 0 }"
       v-model="userInfo.account"
@@ -121,6 +156,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:protocol', value: boolean): void
+  (e: 'update:homeserverUrl', value: string): void
   (e: 'select-account', item: UserInfoType): void
   (e: 'delete-account', item: UserInfoType): void
   (e: 'forget-password'): void
@@ -136,11 +172,13 @@ const mobileStore = useMobileStore()
 const safeArea = computed(() => mobileStore.safeArea)
 
 const protocol = defineModel<boolean>('protocol', { default: true })
+const homeserverUrl = defineModel<string>('homeserverUrl')
 
 const accountPH = ref(t('login.mobile.input.account_placeholder'))
 const passwordPH = ref(t('login.mobile.input.code_placeholder'))
 const arrowStatus = ref(false)
 const showLoginPassword = ref(false)
+const showHomeserverAdvanced = ref(false)
 
 const agreementStyle = computed(() => {
   const inset = safeArea.value.bottom || 0
@@ -205,4 +243,60 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/scss/login';
+
+/* 移动端 homeserver 输入框容器 */
+.homeserver-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.homeserver-field {
+  --van-field-height: 48px;
+  --van-field-control-height: 48px;
+  --van-field-input-color: var(--tjg-text-primary);
+  --van-field-placeholder-color: var(--tjg-text-tertiary);
+  --van-field-border-color: var(--tjg-border-strong);
+}
+
+.homeserver-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  margin-top: -4px;
+  font-size: 12px;
+  color: var(--tjg-text-tertiary);
+  line-height: 1.6;
+  transition: max-height 0.25s ease;
+  overflow: hidden;
+  max-height: 0;
+
+  &.show {
+    max-height: 60px;
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+}
+
+.homeserver-advanced-enter-active,
+.homeserver-advanced-leave-active {
+  transition:
+    opacity 0.25s ease,
+    max-height 0.25s ease;
+  overflow: hidden;
+  max-height: 60px;
+}
+
+.homeserver-advanced-enter-from,
+.homeserver-advanced-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
 </style>

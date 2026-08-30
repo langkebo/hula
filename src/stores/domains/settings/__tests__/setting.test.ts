@@ -73,7 +73,7 @@ describe('SettingStore', () => {
 
     it('has normalized page and login getters', () => {
       const store = useSettingStore()
-      expect(store.languagePreference).toBe('AUTO')
+      expect(store.languagePreference).toBe('zh-CN')
       expect(store.pageFontFamily).toBe('PingFang')
       expect(store.pageShadowEnabled).toBe(true)
       expect(store.pageBlurEnabled).toBe(true)
@@ -191,7 +191,7 @@ describe('SettingStore', () => {
       const store = useSettingStore()
       store.page = undefined as never
       store.ensurePageSettings()
-      expect(store.languagePreference).toBe('AUTO')
+      expect(store.languagePreference).toBe('zh-CN')
       expect(store.pageFontFamily).toBe('PingFang')
       expect(store.pageShadowEnabled).toBe(true)
       expect(store.pageBlurEnabled).toBe(true)

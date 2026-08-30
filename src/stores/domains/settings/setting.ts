@@ -55,7 +55,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       shadow: true,
       fonts: 'PingFang',
       blur: true,
-      lang: 'AUTO'
+      lang: 'zh-CN'
     },
     update: {
       dismiss: ''
@@ -88,7 +88,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       state.shortcuts?.openMainPanel ?? getDefaultShortcuts().openMainPanel,
     themeContent: (state: STO.Setting) => state.themes?.content ?? ThemeEnum.LIGHT,
     themePattern: (state: STO.Setting) => state.themes?.pattern ?? ThemeEnum.LIGHT,
-    languagePreference: (state: STO.Setting) => state.page?.lang ?? 'AUTO',
+    languagePreference: (state: STO.Setting) => state.page?.lang ?? 'zh-CN',
     pageFontFamily: (state: STO.Setting) => state.page?.fonts ?? 'PingFang',
     pageShadowEnabled: (state: STO.Setting) => state.page?.shadow ?? true,
     pageBlurEnabled: (state: STO.Setting) => state.page?.blur ?? true,
@@ -394,14 +394,14 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
           shadow: true,
           fonts: 'PingFang',
           blur: true,
-          lang: 'AUTO'
+          lang: 'zh-CN'
         }
         return
       }
       this.page.shadow = this.page.shadow ?? true
       this.page.fonts = this.page.fonts || 'PingFang'
       this.page.blur = this.page.blur ?? true
-      this.page.lang = this.page.lang || 'AUTO'
+      this.page.lang = this.page.lang || 'zh-CN'
     },
     setPageFont(font: string) {
       this.ensurePageSettings()

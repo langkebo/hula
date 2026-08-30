@@ -282,7 +282,11 @@
     "copy_failed": "Failed to copy, please try again later",
     "select_messages_first": "Please select messages to save",
     "save_success": "Selected messages saved to PC",
-    "save_failed": "Failed to save, please try again later"
+    "save_failed": "Failed to save, please try again later",
+    "selected_count": "{count} selected",
+    "unselect_all": "Deselect all",
+    "select_all": "Select all",
+    "batch_forward_preview": "Forward {count} messages"
   },
   "forward": {
     "title": "Forward Message",
@@ -298,6 +302,10 @@
     "selected_count": "{count} selected",
     "copy": "Copy",
     "forward": "Forward",
-    "delete": "Delete"
+    "delete": "Delete",
+    "empty_selection": "Please select messages first",
+    "copy_success": "Selected messages copied",
+    "copy_failed": "Failed to copy, please try again later",
+    "delete_success": "Selected messages deleted"
   }
 }

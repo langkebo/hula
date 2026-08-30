@@ -282,7 +282,11 @@
     "copy_failed": "复制消息失败，请稍后再试",
     "select_messages_first": "请选择需要保存的消息",
     "save_success": "已保存选中消息到电脑",
-    "save_failed": "保存消息失败，请稍后再试"
+    "save_failed": "保存消息失败，请稍后再试",
+    "selected_count": "已选 {count} 条",
+    "unselect_all": "取消全选",
+    "select_all": "全选",
+    "batch_forward_preview": "批量转发 {count} 条消息"
   },
   "forward": {
     "title": "转发消息",
@@ -298,6 +302,10 @@
     "selected_count": "已选 {count} 条",
     "copy": "复制",
     "forward": "转发",
-    "delete": "删除"
+    "delete": "删除",
+    "empty_selection": "请先选择消息",
+    "copy_success": "已复制选中消息",
+    "copy_failed": "复制消息失败，请稍后再试",
+    "delete_success": "已删除选中消息"
   }
 }

@@ -1,6 +1,6 @@
 <template>
-  <MobileLayout :backgroundImage="'/login_bg.png'" :safeAreaTop="false" :safeAreaBottom="false">
-    <div class="h-full flex-col-center gap-40px">
+  <MobileLayout :safeAreaTop="false" :safeAreaBottom="false">
+    <div class="h-full flex-col-center gap-40px" style="background: var(--tjg-mobile-login-bg)">
       <div class="flex-center absolute top-13vh left-36px">
         <p class="text-(20px [--tjg-text-primary])">{{ t('login.mobile.welcome_title') }}</p>
         <img src="@/assets/mobile/2.svg" alt="Tjg" class="w-80px h-20px" />
@@ -42,6 +42,7 @@
       <MobileLoginForm
         v-if="activeTab === 'login'"
         v-model:protocol="protocol"
+        v-model:homeserver-url="homeserverUrl"
         :user-info="userInfo"
         :loading="loading"
         :login-text="loginText"
@@ -103,6 +104,7 @@ const {
   loginText,
   loginDisabled,
   info: userInfo,
+  homeserverUrl,
   selectAccount,
   deleteAccountHistory,
   lastLoginError

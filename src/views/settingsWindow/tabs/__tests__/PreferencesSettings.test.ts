@@ -168,7 +168,7 @@ const settingStoreMock = {
   chat: { sendKey: 'Enter' },
   autoLoginEnabled: false,
   autoStartupEnabled: false,
-  languagePreference: 'AUTO',
+  languagePreference: 'zh-CN',
   sendMessageShortcut: 'Enter',
   messageConfirmEnabled: false,
   linkPreviewEnabled: true,
@@ -296,7 +296,7 @@ describe('PreferencesSettings', () => {
     settingStoreMock.chat.sendKey = 'Enter'
     settingStoreMock.autoLoginEnabled = false
     settingStoreMock.autoStartupEnabled = false
-    settingStoreMock.languagePreference = 'AUTO'
+    settingStoreMock.languagePreference = 'zh-CN'
     settingStoreMock.sendMessageShortcut = 'Enter'
     settingStoreMock.messageConfirmEnabled = false
     settingStoreMock.linkPreviewEnabled = true
@@ -324,7 +324,7 @@ describe('PreferencesSettings', () => {
   it('has correct default values', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    expect(vm.language).toBe('AUTO')
+    expect(vm.language).toBe('zh-CN')
     expect(vm.sendKey).toBe('Enter')
     expect(vm.messageConfirm).toBe(false)
     expect(vm.linkPreview).toBe(true)
