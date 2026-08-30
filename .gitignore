@@ -84,3 +84,7 @@ build/config/*.js
 vite.config.d.ts
 vite.config.js
 .superpowers/
+
+# Xcode user data (personal IDE state — per-machine, never commit)
+**/*.xcuserstate
+**/xcuserdata/
