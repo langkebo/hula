@@ -1,6 +1,6 @@
-name: hula
+name: tjg
 options:
-  bundleIdPrefix: com.hula-app.app
+  bundleIdPrefix: com.tjg.ios
   deploymentTarget:
     iOS: 13.0
 fileGroups: [../../src]
@@ -10,8 +10,8 @@ configs:
 settingGroups:
   app:
     base:
-      PRODUCT_NAME: HuLa
-      PRODUCT_BUNDLE_IDENTIFIER: com.hula-app.app
+      PRODUCT_NAME: Tjg
+      PRODUCT_BUNDLE_IDENTIFIER: com.tjg.ios
 targetTemplates:
   app:
     type: application
@@ -24,19 +24,19 @@ targetTemplates:
     settings:
       groups: [app]
 targets:
-  hula_iOS:
+  tjg_iOS:
     type: application
     platform: iOS
     sources:
       - path: Sources
       - path: Assets.xcassets
-      - path: hula_iOS
+      - path: tjg_iOS
       - path: assets
         buildPhase: resources
         type: folder
       - path: LaunchScreen.storyboard
     info:
-      path: hula_iOS/Info.plist
+      path: tjg_iOS/Info.plist
       properties:
         LSRequiresIPhoneOS: true
         UILaunchStoryboardName: LaunchScreen
@@ -53,7 +53,7 @@ targets:
         CFBundleShortVersionString: 2.6.10
         CFBundleVersion: 2.6.10
     entitlements:
-      path: hula_iOS/hula_iOS.entitlements
+      path: tjg_iOS/tjg_iOS.entitlements
     scheme:
       environmentVariables:
         RUST_BACKTRACE: full

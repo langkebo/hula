@@ -89,7 +89,7 @@
 		B95348A7F1567588F739A120 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
 		BC64FCD69E86EA39FE9D8E0D /* ai_command.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = ai_command.rs; sourceTree = "<group>"; };
 		BEB6A0287B0C05B54BB18D76 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
-		C06894DAF450154EAA9FAA93 /* HuLa.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HuLa.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C06894DAF450154EAA9FAA93 /* Tjg.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tjg.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A5845CBADF7638F3604280 /* macos_runtime_guard.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = macos_runtime_guard.rs; sourceTree = "<group>"; };
 		C5561AC4EF6A7D22351F4123 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		C9367026A9D8ADA3FD094036 /* configuration.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = configuration.rs; sourceTree = "<group>"; };
@@ -99,7 +99,7 @@
 		CFA870C7B772C580417E0CB8 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		CFDA24FF2BFDE29680E1F579 /* init.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = init.rs; sourceTree = "<group>"; };
 		D946040252B503B40FD765B3 /* keyboard.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = keyboard.rs; sourceTree = "<group>"; };
-		E0470560901F8DD6C9D04C90 /* hula_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = hula_iOS.entitlements; sourceTree = "<group>"; };
+		E0470560901F8DD6C9D04C90 /* tjg_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = tjg_iOS.entitlements; sourceTree = "<group>"; };
 		E0D58092E5EAD80CE1062F64 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
 		E3903F47D4AEE5A072216104 /* user_command.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = user_command.rs; sourceTree = "<group>"; };
 		E394AAC33B16EE84DB2587EA /* message_mark_command.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = message_mark_command.rs; sourceTree = "<group>"; };
@@ -136,7 +136,7 @@
 				0B6EF43A950A8BAEED368AF5 /* Assets.xcassets */,
 				16A9640EAB3DEA1B09E9250C /* LaunchScreen.storyboard */,
 				DE510D2C172B684A951787F8 /* Externals */,
-				9C5737242B5910584AEC182A /* hula_iOS */,
+				9C5737242B5910584AEC182A /* tjg_iOS */,
 				4A37CB4A40EBF1A60A36E77D /* Sources */,
 				3B17F5DA74559A9153C5BDAC /* src */,
 				C776CC4AE1CA158AD2B3B6AF /* Frameworks */,
@@ -200,7 +200,7 @@
 		4A37CB4A40EBF1A60A36E77D /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				F7DEC45DDF5F933D27E0328E /* hula */,
+				F7DEC45DDF5F933D27E0328E /* tjg */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -301,13 +301,13 @@
 			path = utils;
 			sourceTree = "<group>";
 		};
-		9C5737242B5910584AEC182A /* hula_iOS */ = {
+		9C5737242B5910584AEC182A /* tjg_iOS */ = {
 			isa = PBXGroup;
 			children = (
-				E0470560901F8DD6C9D04C90 /* hula_iOS.entitlements */,
+				E0470560901F8DD6C9D04C90 /* tjg_iOS.entitlements */,
 				446C901E80ED5F4820629A70 /* Info.plist */,
 			);
-			path = hula_iOS;
+			path = tjg_iOS;
 			sourceTree = "<group>";
 		};
 		9F2C297ABE448EBDB9DEDE77 /* repository */ = {
@@ -368,12 +368,12 @@
 		EBB8EABBB9D585A2001DACE6 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C06894DAF450154EAA9FAA93 /* HuLa.app */,
+				C06894DAF450154EAA9FAA93 /* Tjg.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		F7DEC45DDF5F933D27E0328E /* hula */ = {
+		F7DEC45DDF5F933D27E0328E /* tjg */ = {
 			isa = PBXGroup;
 			children = (
 				116EAAD2A6E3F6A66C37084E /* BadgeBridge.mm */,
@@ -382,7 +382,7 @@
 				CEF65E2365062B72506BF2E2 /* SplashScreen.mm */,
 				4927FA144B0F8AA1B601E34F /* bindings */,
 			);
-			path = hula;
+			path = tjg;
 			sourceTree = "<group>";
 		};
 		FB4CD4D72B63C8F04F25D9A6 /* common */ = {
@@ -398,9 +398,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		D1C276871C7C4757B5DF8C93 /* hula_iOS */ = {
+		D1C276871C7C4757B5DF8C93 /* tjg_iOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4B0BF0B0E9E74F171FC6F91A /* Build configuration list for PBXNativeTarget "hula_iOS" */;
+			buildConfigurationList = 4B0BF0B0E9E74F171FC6F91A /* Build configuration list for PBXNativeTarget "tjg_iOS" */;
 			buildPhases = (
 				60C47CFA6681755DC983806C /* Build Rust Code */,
 				320D7D3798704BEC7F8A3F6E /* Sources */,
@@ -411,11 +411,11 @@
 			);
 			dependencies = (
 			);
-			name = hula_iOS;
+			name = tjg_iOS;
 			packageProductDependencies = (
 			);
-			productName = hula_iOS;
-			productReference = C06894DAF450154EAA9FAA93 /* HuLa.app */;
+			productName = tjg_iOS;
+			productReference = C06894DAF450154EAA9FAA93 /* Tjg.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -427,7 +427,7 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 			};
-			buildConfigurationList = 06E19C25CF276AFE18C2087A /* Build configuration list for PBXProject "hula" */;
+			buildConfigurationList = 06E19C25CF276AFE18C2087A /* Build configuration list for PBXProject "tjg" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -440,7 +440,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				D1C276871C7C4757B5DF8C93 /* hula_iOS */,
+				D1C276871C7C4757B5DF8C93 /* tjg_iOS */,
 			);
 		};
 /* End PBXProject section */
@@ -504,7 +504,7 @@
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
-				CODE_SIGN_ENTITLEMENTS = hula_iOS/hula_iOS.entitlements;
+				CODE_SIGN_ENTITLEMENTS = tjg_iOS/tjg_iOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = A9KV47CC3V;
 				ENABLE_BITCODE = NO;
@@ -513,7 +513,7 @@
 					"$(inherited)",
 					"\".\"",
 				);
-				INFOPLIST_FILE = hula_iOS/Info.plist;
+				INFOPLIST_FILE = tjg_iOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -540,8 +540,8 @@
 					"$(inherited)",
 					"-lswiftCompatibilityConcurrency",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.hula.ios;
-				PRODUCT_NAME = "HuLa";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tjg.ios;
+				PRODUCT_NAME = "Tjg";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -555,7 +555,7 @@
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
-				CODE_SIGN_ENTITLEMENTS = hula_iOS/hula_iOS.entitlements;
+				CODE_SIGN_ENTITLEMENTS = tjg_iOS/tjg_iOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = A9KV47CC3V;
 				ENABLE_BITCODE = NO;
@@ -564,7 +564,7 @@
 					"$(inherited)",
 					"\".\"",
 				);
-				INFOPLIST_FILE = hula_iOS/Info.plist;
+				INFOPLIST_FILE = tjg_iOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -591,8 +591,8 @@
 					"$(inherited)",
 					"-lswiftCompatibilityConcurrency",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.hula.ios;
-				PRODUCT_NAME = "HuLa";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tjg.ios;
+				PRODUCT_NAME = "Tjg";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -721,7 +721,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		06E19C25CF276AFE18C2087A /* Build configuration list for PBXProject "hula" */ = {
+		06E19C25CF276AFE18C2087A /* Build configuration list for PBXProject "tjg" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				77FA996E776EF4BBAB13B5C8 /* debug */,
@@ -730,7 +730,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = debug;
 		};
-		4B0BF0B0E9E74F171FC6F91A /* Build configuration list for PBXNativeTarget "hula_iOS" */ = {
+		4B0BF0B0E9E74F171FC6F91A /* Build configuration list for PBXNativeTarget "tjg_iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				19C2056DA7AAAD31E3C3A11C /* debug */,
