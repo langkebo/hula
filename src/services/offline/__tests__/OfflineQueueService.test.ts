@@ -26,10 +26,30 @@ describe('OfflineQueueService', () => {
     expect(service.getQueue()[0].type).toBe('message')
   })
 
-  it('persists and restores from localStorage', () => {
-    service.enqueue('message', '!room:test', { text: 'hello' })
+  it('persists and restores from localStorage (non-sensitive types)', () => {
+    service.enqueue('receipt', '!room:test', { eventId: '$event:123' })
     const restored = new OfflineQueueService()
     expect(restored.getPendingCount()).toBe(1)
+  })
+
+  it('redacts sensitive payload fields on persist (F-13)', () => {
+    service.enqueue('message', '!room:test', { text: 'hello', msgtype: 'm.text' })
+    // 验证 text 字段被脱敏为 '[redacted]' 后写入 localStorage
+    const stored = localStorage.getItem('tjg-offline-queue')
+    expect(stored).toBeTruthy()
+    const parsed = JSON.parse(stored!)
+    expect(parsed[0].payload.text).toBe('[redacted]')
+    // msgtype 等非敏感字段应保留原值
+    expect(parsed[0].payload.msgtype).toBe('m.text')
+  })
+
+  it('marks redacted message operations as failed on restore (F-13)', () => {
+    service.enqueue('message', '!room:test', { text: 'hello' })
+    const restored = new OfflineQueueService()
+    // 被脱敏的操作无法 replay，应被标记为 failed 并从 pending 队列中移除
+    expect(restored.getPendingCount()).toBe(0)
+    const queue = restored.getQueue()
+    expect(queue.length).toBe(0) // failed operations are filtered out on restore
   })
 
   it('replays operations in order', async () => {

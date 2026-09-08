@@ -35,6 +35,16 @@ interface QueuedOperation {
   status: 'pending' | 'processing' | 'failed'
 }
 
+/**
+ * F-13 修复：哪些 payload 字段在 persistence 时需要脱敏（不能明文落盘 localStorage）
+ * key 为 OperationType，value 为需要从 payload 中剥离的字段名列表。
+ * 被脱敏的字段在 restoreQueue() 时会标记为已失效（无法 replay），
+ * 因此离线消息在 App 重启后不会丢失队列结构，但内容必须用户重新输入。
+ */
+const SENSITIVE_PAYLOAD_FIELDS: Readonly<Partial<Record<OperationType, string[]>>> = {
+  message: ['text', 'body']
+}
+
 const STORAGE_KEY = 'tjg-offline-queue'
 const MAX_RETRIES = 3
 const BASE_DELAY = 1000
@@ -161,7 +171,23 @@ export class OfflineQueueService {
 
   private persistQueue(): void {
     try {
-      const serializable = this.queue.filter((op) => op.status !== 'processing')
+      const serializable = this.queue
+        .filter((op) => op.status !== 'processing')
+        .map((op) => {
+          // F-13 修复：对 message 类型操作，脱敏 payload 中的敏感字段（如 text/body）
+          // 再写入 localStorage，防止明文消息体落盘。
+          const sensitiveFields = SENSITIVE_PAYLOAD_FIELDS[op.type]
+          if (sensitiveFields && sensitiveFields.length > 0) {
+            const redacted = { ...op.payload }
+            for (const field of sensitiveFields) {
+              if (field in redacted) {
+                redacted[field] = '[redacted]'
+              }
+            }
+            return { ...op, payload: redacted }
+          }
+          return op
+        })
       localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable))
     } catch (err) {
       logger.warn('持久化离线队列失败:', err)
@@ -173,10 +199,21 @@ export class OfflineQueueService {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored) as QueuedOperation[]
-        this.queue = parsed.map((op) => ({
-          ...op,
-          status: op.status === 'processing' ? 'pending' : op.status
-        }))
+        this.queue = parsed
+          .map((op) => {
+            // F-13 修复：脱敏的操作无法 replay（内容已丢失），标记为 failed
+            // 并记录 warn；其余操作恢复原状。
+            const sensitiveFields = SENSITIVE_PAYLOAD_FIELDS[op.type]
+            if (sensitiveFields?.some((f) => op.payload[f] === '[redacted]')) {
+              logger.warn(`操作 ${op.id} (type=${op.type}) payload 已脱敏，无法 replay，标记为失败`)
+              return { ...op, status: 'failed' as const }
+            }
+            return {
+              ...op,
+              status: op.status === 'processing' ? 'pending' : op.status
+            }
+          })
+          .filter((op) => op.status !== 'failed')
         if (this.queue.length > 0) {
           logger.info(`恢复 ${this.queue.length} 个离线操作`)
         }

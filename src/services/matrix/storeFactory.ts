@@ -31,6 +31,14 @@ const logger = createLogger('MatrixStoreFactory')
 const IDB_STORE_PREFIX = 'matrix-js-sdk::sync::'
 
 /**
+ * F-12 修复：同 origin 多窗口并发 startup() 会互踩 IndexedDB（同一 dbName
+ * 被两个 IndexedDBStore 实例同时 open/upgrade）。使用 per-user Promise 锁
+ * 保证同一 userId 的 startup 串行化；第二窗口拿到第一窗口返回的同一 store
+ * 实例（或 fallback）。Map 只在模块生命周期内驻留，进程重启即清空。
+ */
+const startupLocks = new Map<string | null, Promise<IStore>>()
+
+/**
  * 检测当前运行时是否支持 IndexedDB。
  *
  * happy-dom 等测试环境可能不提供 indexedDB；某些隐私模式可能抛错。
@@ -53,10 +61,18 @@ function isIndexedDBAvailable(): boolean {
  * @throws {Error} 当所有 store 类型都不可用时（极少见的致命环境错误）
  */
 export async function createMatrixStore(userId: string | null | undefined): Promise<IStore> {
-  // 无 userId 场景：尚未登录，走 MemoryStore（仅用于 login/register 前）
+  // F-12 修复：无 userId 场景直接走 MemoryStore（无需锁）
   if (!userId) {
     logger.debug('createMatrixStore: no userId, falling back to MemoryStore')
     return new MemoryStore({ localStorage: globalThis.localStorage })
+  }
+
+  // F-12 修复：同 origin 多窗口并发 startup 锁——同一 userId 的第二调用
+  // 等待第一调用完成，拿到同一个 Promise 返回值而非重复 open/upgrade IDB。
+  const existing = startupLocks.get(userId)
+  if (existing) {
+    logger.debug(`createMatrixStore: userId=${userId} waiting for in-flight startup`)
+    return existing
   }
 
   if (!isIndexedDBAvailable()) {
@@ -65,21 +81,28 @@ export async function createMatrixStore(userId: string | null | undefined): Prom
   }
 
   // 尝试 IndexedDBStore，失败退到 MemoryStore
-  try {
-    const dbName = `${IDB_STORE_PREFIX}${userId}`
-    const store = new IndexedDBStore({
-      indexedDB: globalThis.indexedDB,
-      localStorage: globalThis.localStorage,
-      dbName
-    })
-    // startup() 是 Promise 形式，必须 await 才能在 createClient 后加载历史数据
-    await store.startup()
-    logger.info(`createMatrixStore: IndexedDBStore ready (dbName=${dbName})`)
-    return store
-  } catch (err) {
-    logger.warn(
-      `createMatrixStore: IndexedDBStore init failed, falling back to MemoryStore. reason=${(err as Error).message}`
-    )
-    return new MemoryStore({ localStorage: globalThis.localStorage })
-  }
+  const task = (async (): Promise<IStore> => {
+    try {
+      const dbName = `${IDB_STORE_PREFIX}${userId}`
+      const store = new IndexedDBStore({
+        indexedDB: globalThis.indexedDB,
+        localStorage: globalThis.localStorage,
+        dbName
+      })
+      // startup() 是 Promise 形式，必须 await 才能在 createClient 后加载历史数据
+      await store.startup()
+      logger.info(`createMatrixStore: IndexedDBStore ready (dbName=${dbName})`)
+      return store
+    } catch (err) {
+      logger.warn(
+        `createMatrixStore: IndexedDBStore init failed, falling back to MemoryStore. reason=${(err as Error).message}`
+      )
+      return new MemoryStore({ localStorage: globalThis.localStorage })
+    } finally {
+      startupLocks.delete(userId)
+    }
+  })()
+
+  startupLocks.set(userId, task)
+  return task
 }

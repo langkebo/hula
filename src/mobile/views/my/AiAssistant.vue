@@ -57,9 +57,7 @@
             v-if="characters.length > 0"
             class="flex-shrink-0 bg-[--tjg-surface-panel-muted] px-12px py-8px overflow-x-auto">
             <div class="flex items-center gap-8px">
-              <span class="text-12px text-[--tjg-text-tertiary] flex-shrink-0">
-                {{ t('ai_assistant.character') }}:
-              </span>
+              <span class="text-12px text-[--tjg-text-tertiary] flex-shrink-0">{{ t('ai_assistant.character') }}:</span>
               <van-tag
                 v-for="char in characters"
                 :key="char.id"
@@ -112,7 +110,10 @@
                       ? 'bg-[--tjg-color-primary-500]'
                       : 'bg-gradient-to-br from-purple-400 to-blue-500'
                   ]">
-                  <Icon :icon="message.role === 'user' ? 'mdi:account' : 'mdi:robot'" :width="20" color="var(--tjg-text-inverse)" />
+                  <Icon
+                    :icon="message.role === 'user' ? 'mdi:account' : 'mdi:robot'"
+                    :width="20"
+                    color="var(--tjg-text-inverse)" />
                 </div>
                 <div
                   :class="[
@@ -568,14 +569,24 @@ async function saveCharacter() {
 }
 
 function saveApiKeySettings() {
-  localStorage.setItem('ai_api_settings', JSON.stringify(apiKeySettings.value))
+  // F-11 修复：apiKey 是敏感凭据，绝不能明文落入 localStorage（磁盘可被
+  // 备份同步 / 磁盘访问 / XSS 读取）。持久化时剥离 apiKey，仅保留 baseUrl；
+  // apiKey 只存在于内存 ref 中，随会话生命周期失效。用户每次打开 App
+  // 需重新输入 apiKey（与 F-9 桌面端策略一致）。
+  const { apiKey: _strip, ...safe } = apiKeySettings.value
+  localStorage.setItem('ai_api_settings', JSON.stringify(safe))
 }
 
 function loadApiKeySettings() {
   try {
     const stored = localStorage.getItem('ai_api_settings')
     if (stored) {
-      apiKeySettings.value = JSON.parse(stored)
+      const parsed = JSON.parse(stored)
+      // 恢复 baseUrl；apiKey 不持久化，留空强制用户重新输入
+      apiKeySettings.value = {
+        baseUrl: parsed.baseUrl ?? '',
+        apiKey: ''
+      }
     }
   } catch (e) {
     logger.warn('Failed to load API settings', e)
