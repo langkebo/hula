@@ -87,7 +87,14 @@ vi.mock('matrix-js-sdk', () => {
     SlidingSync: class {
       start = vi.fn()
       stop = vi.fn()
-    }
+    },
+    // W2: storeFactory 在 happy-dom 测试里走 MemoryStore fallback，需要
+    // mock 暴露这两个 store 类（real matrix-js-sdk 主入口已 re-export，
+    // 但 vi.mock 不会自动 spread）。
+    MemoryStore: class {
+      // minimal stub — storeFactory 仅 instanceof 检查
+    },
+    IndexedDBStore: class {}
   }
 })
 

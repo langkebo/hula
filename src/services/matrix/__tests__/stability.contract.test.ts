@@ -80,7 +80,10 @@ vi.mock('matrix-js-sdk', () => {
     SlidingSync: class {
       start = vi.fn()
       stop = vi.fn()
-    }
+    },
+    // W2: storeFactory 走 MemoryStore fallback 时需要这些类。
+    MemoryStore: class {},
+    IndexedDBStore: class {}
   }
 })
 

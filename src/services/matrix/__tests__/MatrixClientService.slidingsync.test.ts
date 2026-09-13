@@ -36,7 +36,10 @@ vi.mock('matrix-js-sdk', () => ({
   },
   PendingEventOrdering: {
     Detached: 'detached'
-  }
+  },
+  // W2: storeFactory 走 MemoryStore fallback 时需要这些类。
+  MemoryStore: class {},
+  IndexedDBStore: class {}
 }))
 
 // Mock logger
