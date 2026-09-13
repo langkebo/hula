@@ -189,7 +189,8 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
   private async sdkAdmin(): Promise<import('matrix-js-sdk/admin').AdminManager> {
     const hasPermission = await this.verifyServerSidePermission()
     if (!hasPermission) {
-      logger.error('[Admin] 权限不足，拒绝访问 SDK AdminManager')
+      // 非管理员用户访问 Admin API 是正常业务流，不是异常，降级为 debug
+      logger.debug('[Admin] 非管理员用户，跳过 SDK AdminManager 访问')
       throw new Error('ADMIN_PERMISSION_DENIED')
     }
     const client = this.getClient() as MatrixClient & {

@@ -7,7 +7,6 @@ import type {
 } from 'matrix-js-sdk/admin'
 import { isNonEmptyString, isValidMatrixUserId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
-import { authedRequestWithPath } from '../MatrixHttpClient'
 import type { RateLimit, ShadowBanStatus, UserDevice, UserInfo } from './AdminTypes'
 
 const logger = createLogger('UserService')
@@ -23,10 +22,18 @@ interface SynapseUserRoom {
 }
 
 export class AdminUserService {
+  /** 非管理员用户的正常业务流标记，各方法 catch 中统一识别并降级为 debug */
+  private static readonly PERMISSION_DENIED_MSG = 'ADMIN_PERMISSION_DENIED'
+
   constructor(
     private readonly sdkAdmin: UserDomainSdkGetter,
     private readonly getClient: UserDomainClientGetter
   ) {}
+
+  /** 判断错误是否为非管理员权限拒绝（正常业务流，非异常） */
+  private isPermissionDenied(err: unknown): boolean {
+    return err instanceof Error && err.message === AdminUserService.PERMISSION_DENIED_MSG
+  }
 
   async getUsers(
     limit = 100,
@@ -42,6 +49,7 @@ export class AdminUserService {
         typeof guests === 'boolean' ? users.filter((user) => Boolean(user.isGuest) === guests) : users
       return { users: filteredUsers, nextToken: result?.nextToken }
     } catch (err) {
+      if (this.isPermissionDenied(err)) return { users: [] }
       logger.error(`[Admin] 获取用户列表失败: ${err}`)
       return { users: [] }
     }
@@ -53,6 +61,7 @@ export class AdminUserService {
       const user = await admin.getUser(userId, false)
       return user ? this.mapUserInfo(user, userId) : null
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取用户信息失败: ${err}`)
       return null
     }
@@ -80,6 +89,7 @@ export class AdminUserService {
         displayname: options?.displayname
       }
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 创建用户失败: ${err}`)
       return null
     }
@@ -91,6 +101,7 @@ export class AdminUserService {
       const result = await admin.getRegisterNonce()
       return result?.nonce ?? ''
     } catch (err) {
+      if (this.isPermissionDenied(err)) return ''
       logger.error(`[Admin] 获取注册 nonce 失败: ${err}`)
       return ''
     }
@@ -120,6 +131,7 @@ export class AdminUserService {
         deviceId: result?.device_id ?? ''
       }
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 管理员注册用户失败: ${err}`)
       return null
     }
@@ -133,6 +145,7 @@ export class AdminUserService {
       await admin.resetPassword(userId, newPassword)
       logger.info(`[Admin] 密码已重置: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 重置密码失败: ${err}`)
       throw err
     }
@@ -145,6 +158,7 @@ export class AdminUserService {
       await admin.setAdmin(userId, isAdmin)
       logger.info(`[Admin] 管理员权限已${isAdmin ? '授予' : '撤销'}: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 设置管理员权限失败: ${err}`)
       throw err
     }
@@ -157,6 +171,7 @@ export class AdminUserService {
       await admin.deactivateUser(userId)
       logger.info(`[Admin] 用户已停用: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 停用用户失败: ${err}`)
       throw err
     }
@@ -165,18 +180,19 @@ export class AdminUserService {
   /**
    * 重新激活已停用的用户：调用 Synapse Admin v2 API 将 deactivated 置为 false。
    * @param userId 目标用户 ID
+   *
+   * S-14 已收口：改走 SDK `AdminUserManager.activateUser()`（同一 v2 PUT
+   * `/_synapse/admin/v2/users/{id}` 路由），消除最后一个裸 `authedRequestWithPath`
+   * 调用点；vendor tarball 已重打包并刷新 `meta/sdk-pin.json`（2026-09-11）。
    */
   async activateUser(userId: string): Promise<void> {
     if (!isValidMatrixUserId(userId)) throw new Error(`Invalid user ID: ${userId}`)
     try {
-      const client = this.getClient()
-      // Synapse Admin v2 API：PUT /_synapse/admin/v2/users/{userId}
-      // 设置 deactivated: false 来重新激活用户
-      await authedRequestWithPath(client, 'PUT', `/_synapse/admin/v2/users/${encodeURIComponent(userId)}`, undefined, {
-        deactivated: false
-      })
+      const admin = await this.sdkAdmin()
+      await admin.activateUser(userId)
       logger.info(`[Admin] 用户已激活: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 激活用户失败: ${err}`)
       throw err
     }
@@ -194,6 +210,7 @@ export class AdminUserService {
         userAgent: undefined
       }))
     } catch (err) {
+      if (this.isPermissionDenied(err)) return []
       logger.error(`[Admin] 获取用户设备失败: ${err}`)
       return []
     }
@@ -205,6 +222,7 @@ export class AdminUserService {
       await admin.deleteUserDevice(userId, deviceId)
       logger.info(`[Admin] 设备已删除: ${deviceId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 删除设备失败: ${err}`)
       throw err
     }
@@ -216,6 +234,7 @@ export class AdminUserService {
       await admin.deleteUserDevices(userId, deviceIds)
       logger.info(`[Admin] 批量删除设备: ${deviceIds.length}个`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 批量删除设备失败: ${err}`)
       throw err
     }
@@ -231,6 +250,7 @@ export class AdminUserService {
         burstCount: result.burst_count
       }
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取速率限制失败: ${err}`)
       return null
     }
@@ -245,6 +265,7 @@ export class AdminUserService {
       await admin.overrideRateLimit(userId)
       logger.info(`[Admin] 用户速率限制已覆盖（禁用）: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 覆盖速率限制失败: ${err}`)
       throw err
     }
@@ -257,6 +278,7 @@ export class AdminUserService {
       await admin.deleteRateLimitOverride(userId)
       logger.info(`[Admin] 速率限制已删除: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 删除速率限制失败: ${err}`)
       throw err
     }
@@ -268,6 +290,7 @@ export class AdminUserService {
       await admin.shadowBanUser(userId)
       logger.info(`[Admin] 用户已影子封禁: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 影子封禁失败: ${err}`)
       throw err
     }
@@ -279,6 +302,7 @@ export class AdminUserService {
       await admin.unshadowBanUser(userId)
       logger.info(`[Admin] 用户已解除影子封禁: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 解除影子封禁失败: ${err}`)
       throw err
     }
@@ -294,6 +318,7 @@ export class AdminUserService {
         bannedAt: result.banned_at
       }
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取影子封禁状态失败: ${err}`)
       return null
     }
@@ -305,6 +330,7 @@ export class AdminUserService {
       const result = await admin.whois(userId)
       return result as unknown as Record<string, unknown> | null
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取 Whois 失败: ${err}`)
       return null
     }
@@ -314,8 +340,6 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserRooms(userId)
-      // SDK types rooms as string[], but synapse-rust returns room objects with
-      // room_id/membership/is_room_admin. Cast to a union to enable type narrowing.
       const rooms = (result?.rooms ?? []) as Array<string | SynapseUserRoom>
       if (Array.isArray(rooms)) {
         return rooms.map((room) => {
@@ -331,6 +355,7 @@ export class AdminUserService {
       }
       return []
     } catch (err) {
+      if (this.isPermissionDenied(err)) return []
       logger.error(`[Admin] 获取用户房间列表失败: ${err}`)
       return []
     }
@@ -342,6 +367,7 @@ export class AdminUserService {
       const result = await admin.getUserStats(userId)
       return (result as unknown as Record<string, unknown>) ?? null
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取用户统计失败: ${err}`)
       return null
     }
@@ -359,6 +385,7 @@ export class AdminUserService {
         nextToken: undefined
       }
     } catch (err) {
+      if (this.isPermissionDenied(err)) return { stats: [] }
       logger.error(`[Admin] 获取用户统计列表失败: ${err}`)
       return { stats: [] }
     }
@@ -389,6 +416,7 @@ export class AdminUserService {
       const errors = (result?.errors ?? []).map((e) => ({ userId: e.user_id, success: false }))
       return [...created, ...errors]
     } catch (err) {
+      if (this.isPermissionDenied(err)) return []
       logger.error(`[Admin] 批量创建用户失败: ${err}`)
       return []
     }
@@ -404,6 +432,7 @@ export class AdminUserService {
       const errors = (result?.errors ?? []).map((e) => ({ userId: e.user_id, success: false }))
       return [...deactivated, ...errors]
     } catch (err) {
+      if (this.isPermissionDenied(err)) return []
       logger.error(`[Admin] 批量停用用户失败: ${err}`)
       return []
     }
@@ -415,6 +444,7 @@ export class AdminUserService {
       await admin.evictUser(userId)
       logger.info(`[Admin] 用户已从全部房间逐出: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 逐出用户失败: ${err}`)
       throw err
     }
@@ -430,6 +460,7 @@ export class AdminUserService {
         deviceId: result?.device_id ?? ''
       }
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 以用户身份登录失败: ${err}`)
       return null
     }
@@ -441,6 +472,7 @@ export class AdminUserService {
       await admin.logoutUser(userId)
       logger.info(`[Admin] 登出用户全部设备: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 登出用户全部设备失败: ${err}`)
       throw err
     }
@@ -452,6 +484,7 @@ export class AdminUserService {
       const result = await admin.getUserSession(userId)
       return [result as unknown as Record<string, unknown>]
     } catch (err) {
+      if (this.isPermissionDenied(err)) return []
       logger.error(`[Admin] 获取用户会话失败: ${err}`)
       return []
     }
@@ -463,6 +496,7 @@ export class AdminUserService {
       await admin.invalidateUserSession(userId)
       logger.info(`[Admin] 用户会话已失效: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 失效用户会话失败: ${err}`)
       throw err
     }
@@ -474,6 +508,7 @@ export class AdminUserService {
       const result = await admin.getAccountDetails(userId)
       return (result as unknown as Record<string, unknown>) ?? null
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取账户详情失败: ${err}`)
       return null
     }
@@ -488,6 +523,7 @@ export class AdminUserService {
       )
       logger.info(`[Admin] 更新账户详情: ${userId}`)
     } catch (err) {
+      if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 更新账户详情失败: ${err}`)
       throw err
     }
@@ -498,6 +534,7 @@ export class AdminUserService {
       const admin = await this.sdkAdmin()
       return (await admin.isAdmin(userId, false)) ?? false
     } catch (err) {
+      if (this.isPermissionDenied(err)) return false
       logger.error(`[Admin] 检查管理员状态失败: ${err}`)
       return false
     }
@@ -509,6 +546,7 @@ export class AdminUserService {
       const result = await admin.getAccountStatus(userId)
       return (result as unknown as Record<string, unknown>) ?? null
     } catch (err) {
+      if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取账户状态失败: ${err}`)
       return null
     }
@@ -529,6 +567,7 @@ export class AdminUserService {
         nextToken: result?.next_token
       }
     } catch (err) {
+      if (this.isPermissionDenied(err)) return { failures: [] }
       logger.error(`[Admin] 获取登录失败记录失败: ${err}`)
       return { failures: [] }
     }

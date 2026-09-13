@@ -22,6 +22,7 @@ const makeAdmin = () =>
     resetPassword: vi.fn(),
     setAdmin: vi.fn(),
     deactivateUser: vi.fn(),
+    activateUser: vi.fn(),
     getUserDevices: vi.fn(),
     deleteUserDevice: vi.fn(),
     deleteUserDevices: vi.fn(),
@@ -140,6 +141,14 @@ describe('AdminUserService', () => {
 
   it('deactivateUser rejects invalid user id', async () => {
     await expect(service.deactivateUser('bad-id')).rejects.toThrow('Invalid user ID')
+  })
+
+  it('activateUser rejects invalid user id', async () => {
+    await expect(service.activateUser('bad-id')).rejects.toThrow('Invalid user ID')
+    expect(admin.activateUser).not.toHaveBeenCalled()
+
+    await service.activateUser('@alice:server.com')
+    expect(admin.activateUser).toHaveBeenCalledWith('@alice:server.com')
   })
 
   it('setAdmin rejects invalid user id', async () => {
