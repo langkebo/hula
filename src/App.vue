@@ -240,9 +240,11 @@ function initPlatformStyles() {
 
   if (isDesktop()) {
     import('@/styles/scss/global/desktop.scss').catch((e) => logger.warn('load desktop styles failed:', e))
-    import('@/styles/scss/theme/simple.scss').then(() => {
-      document.querySelector('#app')?.classList.add('simple')
-    })
+    import('@/styles/scss/theme/simple.scss')
+      .then(() => {
+        document.querySelector('#app')?.classList.add('simple')
+      })
+      .catch((e) => logger.warn('load simple styles failed:', e))
   }
 
   if (isMobile()) {

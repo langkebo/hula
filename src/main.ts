@@ -137,18 +137,24 @@ app.config.errorHandler = (err, instance, info) => {
   throw err
 }
 
-router.isReady().then(() => {
-  markTjgAppReady('router-ready')
-  performance.mark('tjg-router-ready')
-  performance.measure('tjg-total-boot', 'tjg-init-start', 'tjg-router-ready')
-  performance.measure('tjg-app-creation', 'tjg-app-create-start', 'tjg-app-create-end')
-  performance.measure('tjg-plugin-install', 'tjg-plugin-install-start', 'tjg-plugin-install-end')
-  performance.measure('tjg-mount-to-ready', 'tjg-mount-start', 'tjg-router-ready')
+router
+  .isReady()
+  .then(() => {
+    markTjgAppReady('router-ready')
+    performance.mark('tjg-router-ready')
+    performance.measure('tjg-total-boot', 'tjg-init-start', 'tjg-router-ready')
+    performance.measure('tjg-app-creation', 'tjg-app-create-start', 'tjg-app-create-end')
+    performance.measure('tjg-plugin-install', 'tjg-plugin-install-start', 'tjg-plugin-install-end')
+    performance.measure('tjg-mount-to-ready', 'tjg-mount-start', 'tjg-router-ready')
 
-  const measures = performance.getEntriesByType('measure')
-  if (import.meta.env.DEV) {
-    measures.forEach((measure) => {
-      logger.debug(`性能指标 [${measure.name}]: ${measure.duration.toFixed(2)}ms`)
-    })
-  }
-})
+    const measures = performance.getEntriesByType('measure')
+    if (import.meta.env.DEV) {
+      measures.forEach((measure) => {
+        logger.debug(`性能指标 [${measure.name}]: ${measure.duration.toFixed(2)}ms`)
+      })
+    }
+  })
+  .catch((err) => {
+    // F-2 修复：路由就绪失败时记录日志，避免 unhandledrejection
+    logger.error('router.isReady failed:', err)
+  })
