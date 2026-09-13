@@ -309,6 +309,7 @@ pub fn get_configuration(app_handle: &AppHandle) -> Result<Settings, config::Con
     }
 }
 
+#[cfg(not(target_os = "android"))]
 fn get_config_path_buf(
     app_handle: &AppHandle,
     is_desktop_dev: bool,

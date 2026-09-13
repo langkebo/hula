@@ -1,3 +1,22 @@
+// 启动画面（splash）控制。
+//
+// 平台说明（Tauri 2.11.5）：
+// - iOS：调用链接的 C 函数（由 Swift/Objective-C 提供）。
+// - 桌面 / Android：无原生 splash，no-op。
+//
+// 关于 Android 原生 splash 为什么被移除（根因分析）：
+// 原实现在 Android 上调用 ndk_context::android_context() 以拿到 JNI 的
+// JavaVM/Activity 句柄，再 call_method(activity, "show" / "hide")。
+// 但 Tauri 2.x 的 runtime 完全不初始化 ndk_context（它用的是自己的
+// mobile_entry_point + wry glue，而非 ndk-glue），因此 android_context()
+// 内部 `ANDROID_CONTEXT.expect("android context was not initialized")` 会直接
+// panic（SIGABRT），导致 App 在启动瞬间崩溃、永远进不去界面。
+// 此外，应用层也无法访问 Tauri 内部的 run_on_android_context / RuntimeHandle
+// （二者均为 pub(crate)），且生成的 MainActivity 也根本没有 show()/hide()
+// 方法，所以这条原生 splash 路径在 Android 上既会崩溃、也不可能产生任何效果。
+// 故 Android 端改为 no-op；如需原生 splash，应在 Kotlin 侧初始化 ndk_context
+// 并为 MainActivity 实现 show()/hide()（属于额外功能，非本次崩溃修复范围）。
+
 #[cfg(target_os = "ios")]
 mod platform {
     unsafe extern "C" {
@@ -16,39 +35,8 @@ mod platform {
 
 #[cfg(target_os = "android")]
 mod platform {
-    use jni::{JavaVM, objects::JObject};
-
-    fn invoke(method: &str) -> Result<(), jni::errors::Error> {
-        let ctx = ndk_context::android_context();
-        let vm = unsafe { JavaVM::from_raw(ctx.vm().cast()) }?;
-        let mut env = vm.attach_current_thread()?;
-        let activity = unsafe { JObject::from_raw(ctx.context() as jni::sys::jobject) };
-
-        // 直接调用Activity实例的方法，不使用静态方法
-        let result = env.call_method(&activity, method, "()V", &[]);
-
-        let _ = activity.into_raw();
-
-        result.map(|_| ()).map_err(|err| {
-            if env.exception_check().unwrap_or(false) {
-                let _ = env.exception_describe();
-                let _ = env.exception_clear();
-            }
-            err
-        })
-    }
-
-    pub fn show() {
-        if let Err(err) = invoke("show") {
-            tracing::error!("[Splashscreen] failed to show on Android: {}", err);
-        }
-    }
-
-    pub fn hide() {
-        if let Err(err) = invoke("hide") {
-            tracing::error!("[Splashscreen] failed to hide on Android: {}", err);
-        }
-    }
+    pub fn show() {}
+    pub fn hide() {}
 }
 
 #[cfg(not(any(target_os = "ios", target_os = "android")))]

@@ -101,11 +101,15 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
                 };
 
                 {
-                    let mut mode = handling_mode_arc_observer.lock().unwrap();
+                    let mut mode = handling_mode_arc_observer
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     *mode = desired_mode;
                 }
 
-                let mut old_delegate = old_delegate_arc_will_show.lock().unwrap();
+                let mut old_delegate = old_delegate_arc_will_show
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 *old_delegate = scroll_view_arc_observer.delegate();
 
                 match desired_mode {
@@ -181,7 +185,9 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
                         }
 
                         // 清理键盘高度，避免误触发还原逻辑
-                        let mut keyboard_height = keyboard_height_arc_observer.lock().unwrap();
+                        let mut keyboard_height = keyboard_height_arc_observer
+                            .lock()
+                            .unwrap_or_else(|poisoned| poisoned.into_inner());
                         *keyboard_height = 0.0;
 
                         // 在锁定模式下不需要执行下方的高度调整逻辑
@@ -205,16 +211,22 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
                 let keyboard_rect: CGRect = msg_send![value, CGRectValue];
                 let new_keyboard_height = keyboard_rect.size.height;
 
-                let original_frame = *original_frame_arc_observer.lock().unwrap();
+                let original_frame = *original_frame_arc_observer
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 let mut adjusted_frame = original_frame;
                 adjusted_frame.size.height -= new_keyboard_height;
 
-                let original_inset = *original_inset_arc_observer.lock().unwrap();
+                let original_inset = *original_inset_arc_observer
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 let mut adjusted_inset = original_inset;
                 adjusted_inset.bottom += new_keyboard_height;
 
                 {
-                    let mut keyboard_height = keyboard_height_arc_observer.lock().unwrap();
+                    let mut keyboard_height = keyboard_height_arc_observer
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     *keyboard_height = new_keyboard_height as f64;
                 }
 
@@ -275,10 +287,14 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
             &notification_center,
             &UIKeyboardWillHideNotification,
             move |notification| {
-                let current_mode = *handling_mode_arc_observer.lock().unwrap();
+                let current_mode = *handling_mode_arc_observer
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
 
                 if current_mode == KeyboardHandlingMode::Adjust {
-                    let keyboard_height = keyboard_height_arc_observer.lock().unwrap();
+                    let keyboard_height = keyboard_height_arc_observer
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     if *keyboard_height <= 0.0 {
                         return;
                     }
@@ -311,8 +327,12 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
                         | UIViewAnimationOptions::AllowUserInteraction;
                     options |= UIViewAnimationOptions::from_bits_retain(curve_bits as _);
 
-                    let original_frame = *original_frame_arc_observer.lock().unwrap();
-                    let original_inset = *original_inset_arc_observer.lock().unwrap();
+                    let original_frame = *original_frame_arc_observer
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
+                    let original_inset = *original_inset_arc_observer
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
 
                     let scroll_view_for_animation = scroll_view_arc_observer.clone();
                     let animation_block = block2::StackBlock::new(move || {
@@ -334,9 +354,13 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
                         );
                     }
 
-                    let mut keyboard_height = keyboard_height_arc_observer.lock().unwrap();
+                    let mut keyboard_height = keyboard_height_arc_observer
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     *keyboard_height = 0.0;
-                    let mut mode = handling_mode_arc_observer.lock().unwrap();
+                    let mut mode = handling_mode_arc_observer
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     *mode = KeyboardHandlingMode::None;
                 } else if current_mode == KeyboardHandlingMode::Lock {
                     // 在锁定模式下，恢复滚动视图的默认行为并保持键盘隐藏
@@ -362,7 +386,9 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
                         *cell.borrow_mut() = None;
                     });
 
-                    let mut old_delegate = old_delegate_arc_will_hide.lock().unwrap();
+                    let mut old_delegate = old_delegate_arc_will_hide
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     // 恢复原始 UIScrollViewDelegate，确保键盘逻辑结束后行为回到默认。
                     if let Some(delegate) = old_delegate.take() {
                         scroll_view_arc_observer.setDelegate(Some(delegate.as_ref()));
@@ -370,7 +396,9 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
                         scroll_view_arc_observer.setDelegate(None);
                     }
 
-                    let mut mode = handling_mode_arc_observer.lock().unwrap();
+                    let mut mode = handling_mode_arc_observer
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     *mode = KeyboardHandlingMode::None;
                 }
             },
@@ -387,7 +415,9 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
             &notification_center,
             &UIKeyboardDidShowNotification,
             move |notification| {
-                let current_mode = *handling_mode_arc_observer.lock().unwrap();
+                let current_mode = *handling_mode_arc_observer
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 if current_mode != KeyboardHandlingMode::Adjust {
                     return;
                 }
@@ -408,23 +438,31 @@ pub fn initialize_keyboard_adjustment(webview_window: &WebviewWindow) {
                 let new_keyboard_height = keyboard_rect.size.height;
 
                 // 基于原始状态进行调整，避免累积
-                let original_frame = original_frame_arc_observer.lock().unwrap();
+                let original_frame = original_frame_arc_observer
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 let mut adjusted_frame = *original_frame;
                 adjusted_frame.size.height -= new_keyboard_height;
                 webview.setFrame(adjusted_frame);
 
                 // 基于原始 inset 进行调整
-                let original_inset = original_inset_arc_observer.lock().unwrap();
+                let original_inset = original_inset_arc_observer
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 let mut adjusted_inset = *original_inset;
                 adjusted_inset.bottom += new_keyboard_height;
                 scroll_view_arc_observer.setContentInset(adjusted_inset);
                 scroll_view_arc_observer.setScrollIndicatorInsets(adjusted_inset);
 
                 // 更新键盘高度记录
-                let mut keyboard_height = keyboard_height_arc_observer.lock().unwrap();
+                let mut keyboard_height = keyboard_height_arc_observer
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 *keyboard_height = new_keyboard_height;
 
-                let mut old_delegate = old_delegate_arc_did_show.lock().unwrap();
+                let mut old_delegate = old_delegate_arc_did_show
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 // 键盘显示完毕后恢复原 delegate，避免累积的自定义 delegate 影响后续滚动事件。
                 if let Some(delegate) = old_delegate.take() {
                     scroll_view_arc_observer.setDelegate(Some(delegate.as_ref()));

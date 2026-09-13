@@ -187,7 +187,7 @@ fn focused_main_window<R: Runtime>(app: &AppHandle<R>) -> Option<tauri::WebviewW
 }
 
 fn apply_zoom<R: Runtime>(app: &AppHandle<R>, delta: f64) {
-    let mut z = ZOOM.lock().unwrap();
+    let mut z = ZOOM.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     *z = (*z + delta).clamp(ZOOM_MIN, ZOOM_MAX);
     let value = *z;
     drop(z);
@@ -195,7 +195,7 @@ fn apply_zoom<R: Runtime>(app: &AppHandle<R>, delta: f64) {
 }
 
 fn set_zoom<R: Runtime>(app: &AppHandle<R>, value: f64) {
-    *ZOOM.lock().unwrap() = value;
+    *ZOOM.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = value;
     set_all_webviews_zoom(app, value);
 }
 

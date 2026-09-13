@@ -17,13 +17,16 @@ mod platform {
 
 #[cfg(not(target_os = "ios"))]
 mod platform {
+    #[allow(dead_code)]
     pub fn set_badge(_count: Option<u32>) {
         // 非 iOS 平台无需处理
     }
 
+    #[allow(dead_code)]
     pub fn request_authorization() {}
 }
 
+#[cfg(target_os = "ios")]
 pub fn set_badge_count(count: Option<u32>) {
     platform::set_badge(count);
 }

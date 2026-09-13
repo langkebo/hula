@@ -113,8 +113,11 @@ reqwest = { version = "0.12", default-features = false, features = [
     "json",
     "socks",
     "rustls-tls",
+    "rustls-tls-webpki-roots",
     "stream",
 ] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "logging", "std", "tls12"] }
+rustls-pki-types = "1"
 futures = "0.3"
 bytes = "1.11"
 urlencoding = "2.1"
@@ -141,10 +144,6 @@ objc2-core-foundation = "0.3.2"
 objc2-foundation = "0.3.2"
 objc2-ui-kit = "0.3.2"
 block2 = "0.6.2"
-
-[target."cfg(target_os = \"android\")".dependencies]
-jni = "0.21"
-ndk-context = "0.1"
 
 [target."cfg(target_os = \"linux\")".dependencies]
 libc = "0.2"

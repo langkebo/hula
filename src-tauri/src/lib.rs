@@ -400,7 +400,17 @@ fn setup_logout_listener(app_handle: tauri::AppHandle) {
 #[cfg(mobile)]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn setup_mobile() {
-    splash::show();
+    // 初始化 rustls 加密提供者（ring）
+    // F-5：启动期关键初始化，失败即 panic 是 by-design（无加密提供者则所有 TLS 均不可用，
+    // 应用无法正常工作）。此处保留 expect 并给出明确错误信息，而非静默降级。
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
+    // 注意：Android 端的原生 splash 已改为 no-op（Tauri 2.x 不初始化
+    // ndk_context，且应用层无法访问 run_on_android_context / RuntimeHandle），
+    // 因此 splash::show() 在 Android 上不会触发任何 JNI 调用，App 可正常启动。
+
     // 创建一个缓存实例
     // let cache: Cache<String, String> = Cache::builder()
     //     // Time to idle (TTI):  30 minutes
@@ -412,6 +422,8 @@ fn setup_mobile() {
         .init_plugin()
         .setup(move |app| {
             let app_handle = app.handle().clone();
+            // Android 上为 no-op（见上方说明），iOS 调用原生 C 函数，桌面无操作
+            splash::show();
             #[cfg(target_os = "ios")]
             {
                 if let Some(webview_window) = app_handle.get_webview_window("mobile-home") {

@@ -5744,6 +5744,7 @@ version = "0.23.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c54fcab019b409d04215d3a17cb438fd7fbf192ee61461f20f4fe18704bc138"
 dependencies = [
+ "log",
  "once_cell",
  "ring",
  "rustls-pki-types",
@@ -7956,7 +7957,6 @@ dependencies = [
  "futures-util",
  "http",
  "image 0.25.10",
- "jni 0.21.1",
  "keyring",
  "lazy_static",
  "libc",
@@ -7965,7 +7965,6 @@ dependencies = [
  "migration",
  "mime_guess",
  "moka",
- "ndk-context",
  "objc2",
  "objc2-app-kit",
  "objc2-core-foundation",
@@ -7977,6 +7976,8 @@ dependencies = [
  "rand 0.8.7",
  "reqwest 0.12.28",
  "rodio",
+ "rustls",
+ "rustls-pki-types",
  "screenshots",
  "sea-orm",
  "serde",
