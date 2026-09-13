@@ -49,9 +49,9 @@ const MANUAL_HINTS = [
   '  if ("caches" in window) caches.keys().then(n => n.forEach(x => caches.delete(x)));',
   '',
   'Tauri app state (only after confirming no debug session needs it):',
-  '  macOS:   rm -rf "$HOME/Library/Application Support/com.hula.pc" "$HOME/Library/Caches/com.hula.pc"',
-  '  Linux:   rm -rf "$HOME/.local/share/com.hula.pc" "$HOME/.cache/com.hula.pc"',
-  '  Windows: Remove-Item -Recurse -Force "$env:APPDATA\\com.hula.pc"',
+  '  macOS:   rm -rf "$HOME/Library/Application Support/com.tjg.pc" "$HOME/Library/Caches/com.tjg.pc"',
+  '  Linux:   rm -rf "$HOME/.local/share/com.tjg.pc" "$HOME/.cache/com.tjg.pc"',
+  '  Windows: Remove-Item -Recurse -Force "$env:APPDATA\\com.tjg.pc"',
 ]
 
 function parseArgs(argv) {
