@@ -42,7 +42,7 @@ const goHome = () => {
 .not-found-container {
   text-align: center;
   padding: 60px 40px;
-  background: white;
+  background: var(--tjg-surface-panel);
   border-radius: 16px;
   box-shadow: var(--tjg-shadow-md);
   max-width: 480px;

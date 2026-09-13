@@ -171,7 +171,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
         emojiList.value.map((emoji) =>
           limit(() =>
             ensureEmojiCached(emoji, emojiDir, baseDir, baseDirPath).catch((error) => {
-              logger.error('缓存失败:', emoji.expressionUrl, error)
+              logger.warn('缓存失败:', emoji.expressionUrl, error)
             })
           )
         )
@@ -216,7 +216,8 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
         emojiList.value = items
       }
     } catch (error) {
-      logger.error('获取表情列表失败:', error)
+      // 登录窗口初始化时用户信息/account data 可能未就绪，获取表情失败属正常降级，勿用 error 级别
+      logger.warn('获取表情列表失败:', error)
     }
     isLoading.value = false
     if (requestUid !== currentEmojiOwnerUid.value) {
@@ -237,7 +238,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
       await getEmojiList()
       return true
     } catch (error) {
-      logger.error('添加表情失败:', error)
+      logger.warn('添加表情失败:', error)
       return false
     }
   }
@@ -252,7 +253,7 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
       await getEmojiList()
       return true
     } catch (error) {
-      logger.error('删除表情失败:', error)
+      logger.warn('删除表情失败:', error)
       return false
     }
   }
