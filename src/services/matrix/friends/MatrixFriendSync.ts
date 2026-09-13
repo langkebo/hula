@@ -278,9 +278,15 @@ export class MatrixFriendSync {
     this.friendManager.on(FriendEvent.RequestReceived, (...args: unknown[]) => {
       const request = toFriendRequest(args[0])
       if (!request) return
+      const userId = getRequestUserId(request)
+      // 防重复：如果该用户已在好友列表中（已 accept 但 SDK 内部未清理），
+      // 跳过重复 emit，避免前端角标反复 increment。
+      if (userId && this.syncState.friends.some((f) => f.user_id === userId)) {
+        return
+      }
       this.updateSyncState()
       this.emit('requestReceived', request)
-      logger.info(`[MatrixFriend] 收到好友请求: ${getRequestUserId(request)}`)
+      logger.info(`[MatrixFriend] 收到好友请求: ${userId}`)
     })
 
     this.friendManager.on(FriendEvent.Invited, (...args: unknown[]) => {

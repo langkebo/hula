@@ -164,7 +164,7 @@ const PREFIX_LANG_MAP: Record<string, Locale> = {
 
 // 根据语言前缀映射受支持的 locale，未匹配则回退中文
 const mapByPrefix = (lang: string): Locale => {
-  return PREFIX_LANG_MAP[getLangPrefix(lang)] ?? 'en'
+  return PREFIX_LANG_MAP[getLangPrefix(lang)] ?? 'zh-CN'
 }
 
 // AUTO 语言解析：使用映射表限定支持的前缀，其他一律回退中文
@@ -172,7 +172,7 @@ const resolveAutoLanguage = (): Locale => {
   if (typeof navigator !== 'undefined') {
     return mapByPrefix(navigator.language)
   }
-  return 'en'
+  return 'zh-CN'
 }
 
 // 归一化语言值：优先显式支持的语言，其次按前缀映射，最后回退中文
@@ -205,7 +205,7 @@ function findLocales(lang: string) {
 
   const prefix = getLangPrefix(lang)
   const like = availableLocales.find((lang) => getLangPrefix(lang) === prefix)
-  return locales[like ?? 'en']
+  return locales[like ?? 'zh-CN']
 }
 
 // 加载语言包并切换语言，确保 lang 被归一化后再加载

@@ -109,23 +109,32 @@ export class CryptoSecurityAdapter {
       return null
     }
 
-    await crypto.bootstrapCrossSigning?.({
-      authUploadDeviceSigningKeys: async (makeRequest: (authData: unknown) => Promise<unknown>) => {
-        const baseAuthData =
-          (authParams?.authData as Record<string, unknown> | undefined) ?? buildPasswordAuthData(authParams?.password)
-        if (baseAuthData) {
-          try {
-            return await makeRequest(baseAuthData)
-          } catch (err) {
-            const uiaData = extractUiaErrorData(err)
-            if (uiaData?.session && !baseAuthData.session) {
-              return makeRequest({ ...baseAuthData, session: uiaData.session })
+    try {
+      await crypto.bootstrapCrossSigning?.({
+        authUploadDeviceSigningKeys: async (makeRequest: (authData: unknown) => Promise<unknown>) => {
+          const baseAuthData =
+            (authParams?.authData as Record<string, unknown> | undefined) ?? buildPasswordAuthData(authParams?.password)
+          if (baseAuthData) {
+            try {
+              return await makeRequest(baseAuthData)
+            } catch (err) {
+              const uiaData = extractUiaErrorData(err)
+              if (uiaData?.session && !baseAuthData.session) {
+                return makeRequest({ ...baseAuthData, session: uiaData.session })
+              }
+              throw err
             }
-            throw err
           }
+          throw new Error('需要认证参数')
         }
-        throw new Error('需要认证参数')
+      })
+    } catch (err) {
+      // 将服务端原始 UIA 错误转为用户可读信息
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('Invalid password') || msg.includes('M_FORBIDDEN')) {
+        throw new Error('密码错误，请重新输入')
       }
-    })
+      throw err
+    }
   }
 }

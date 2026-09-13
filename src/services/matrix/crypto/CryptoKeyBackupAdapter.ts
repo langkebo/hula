@@ -19,6 +19,9 @@ import type {
 
 const logger = createLogger('CryptoKeyBackupAdapter')
 
+/** setupKeyBackupWithOptions 并发锁：同一时间只允许一个 bootstrap 流程运行，防止并行 SSSS 上传 */
+let setupInFlight: Promise<string> | null = null
+
 /**
  * 直接通过 REST API 上传 SSSS 密钥到 account_data（绕过 SDK 的 sync echo 等待）。
  *
@@ -128,6 +131,31 @@ export class CryptoKeyBackupAdapter {
   }
 
   async setupKeyBackupWithOptions(
+    input?:
+      | string
+      | {
+          recoveryKey?: string
+          password?: string
+          authData?: unknown
+          generatedKey?: GeneratedSecretStorageKey | null
+        }
+  ): Promise<string> {
+    // 并发锁：如果已有 setup 流程在执行，复用其结果（防止并行 SSSS 上传）
+    if (setupInFlight) {
+      logger.warn('[CryptoKeyBackupAdapter] setupKeyBackupWithOptions 已有流程在执行，复用现有 Promise')
+      return setupInFlight
+    }
+
+    const task = this._doSetupKeyBackup(input)
+    setupInFlight = task
+    task.finally(() => {
+      if (setupInFlight === task) setupInFlight = null
+    })
+    return task
+  }
+
+  /** 实际执行密钥备份设置（内部方法，受 setupInFlight 锁保护） */
+  private async _doSetupKeyBackup(
     input?:
       | string
       | {

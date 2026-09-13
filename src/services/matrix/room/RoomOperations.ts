@@ -163,7 +163,13 @@ export class RoomOperations extends BaseMatrixService {
     }
     const client = this.getClient()
     if (enabled) {
-      await client.getPushManager().deletePushRule('global', PushRuleKind.Override, roomId)
+      // 置顶 = 删除 override 推送规则（恢复默认通知）；规则不存在时 M_NOT_FOUND 属良性，静默处理
+      try {
+        await client.getPushManager().deletePushRule('global', PushRuleKind.Override, roomId)
+      } catch (err) {
+        const errcode = (err as Record<string, unknown>)?.errcode
+        if (errcode !== 'M_NOT_FOUND') throw err
+      }
     } else {
       await client.getPushManager().createPushRule('global', PushRuleKind.Override, roomId, {
         conditions: [{ kind: ConditionKind.EventMatch, key: 'room_id', pattern: roomId }],
