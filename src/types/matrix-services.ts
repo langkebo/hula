@@ -1,5 +1,4 @@
 export type { Report } from '@/services/matrix/admin'
-export type { AIConnectionInfo } from '@/services/matrix/ai/MatrixAIConnectionService'
 
 export type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 export type { FriendStatus } from '@/services/matrix/friends/MatrixFriendService'

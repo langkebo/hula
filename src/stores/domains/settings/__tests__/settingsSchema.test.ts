@@ -29,7 +29,6 @@ describe('settingsSchema · 常量定义', () => {
       'helpAbout',
       'friends',
       'burnAfterRead',
-      'aiConnection',
       'storage'
     ])
   })
@@ -161,6 +160,6 @@ describe('settingsSchema · normalizeSettingsTab', () => {
   it('已是新 tab 时原样返回', () => {
     expect(normalizeSettingsTab('account')).toBe('account')
     expect(normalizeSettingsTab('encryption')).toBe('encryption')
-    expect(normalizeSettingsTab('aiConnection')).toBe('aiConnection')
+    expect(normalizeSettingsTab('storage')).toBe('storage')
   })
 })

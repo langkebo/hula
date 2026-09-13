@@ -38,7 +38,6 @@ export type TjgCapability =
   | 'admin-api'
   | 'burn-after-read'
   | 'openclaw'
-  | 'ai-connection'
 
 const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capabilities: string[] }> = {
   'sliding-sync': {
@@ -68,10 +67,6 @@ const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capab
   openclaw: {
     unstable: ['openclaw'],
     capabilities: ['openclaw']
-  },
-  'ai-connection': {
-    unstable: ['ai_connection'],
-    capabilities: ['ai_connection']
   }
 }
 
@@ -190,12 +185,6 @@ class MatrixCapabilityService {
    */
   canUseOpenClaw(): boolean {
     return this.hasCapability('openclaw')
-  }
-
-  /** 检测是否支持 AI 连接能力
-   */
-  canUseAiConnection(): boolean {
-    return this.hasCapability('ai-connection')
   }
 
   canUseThreads(): boolean {
@@ -352,7 +341,6 @@ export function useServerCapability() {
     canUseE2EE: computed(() => service.canUseE2EE()),
     canUseVoip: computed(() => service.canUseVoip()),
     canUseBurnAfterRead: computed(() => service.canUseBurnAfterRead()),
-    canUseOpenclaw: computed(() => service.canUseOpenClaw()),
-    canUseAiConnection: computed(() => service.canUseAiConnection())
+    canUseOpenclaw: computed(() => service.canUseOpenClaw())
   }
 }

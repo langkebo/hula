@@ -4583,7 +4583,11 @@ export type I18nKeys = {
       "copy_failed": "复制消息失败，请稍后再试",
       "select_messages_first": "请选择需要保存的消息",
       "save_success": "已保存选中消息到电脑",
-      "save_failed": "保存消息失败，请稍后再试"
+      "save_failed": "保存消息失败，请稍后再试",
+      "selected_count": "已选 {count} 条",
+      "unselect_all": "取消全选",
+      "select_all": "全选",
+      "batch_forward_preview": "批量转发 {count} 条消息"
     },
     "forward": {
       "title": "转发消息",
@@ -4599,7 +4603,11 @@ export type I18nKeys = {
       "selected_count": "已选 {count} 条",
       "copy": "复制",
       "forward": "转发",
-      "delete": "删除"
+      "delete": "删除",
+      "empty_selection": "请先选择消息",
+      "copy_success": "已复制选中消息",
+      "copy_failed": "复制消息失败，请稍后再试",
+      "delete_success": "已删除选中消息"
     }
   },
   "message_container": {
@@ -6323,7 +6331,6 @@ export type I18nKeys = {
         "help_about": "帮助与关于",
         "friends": "好友管理",
         "burn_after_read": "阅后即焚",
-        "ai_connection": "AI 连接",
         "storage": "存储管理"
       },
       "search_terms": {
@@ -6445,14 +6452,6 @@ export type I18nKeys = {
           "ephemeral",
           "burn",
           "timer"
-        ],
-        "ai_connection": [
-          "AI",
-          "连接",
-          "MCP",
-          "工具",
-          "openai",
-          "assistant"
         ]
       },
       "groups": {
@@ -7852,34 +7851,6 @@ export type I18nKeys = {
       "delete_success": "删除成功",
       "delete_failed": "删除失败",
       "phone_verify_pending": "手机号验证功能开发中"
-    },
-    "ai_connection": {
-      "title": "AI 连接管理",
-      "description": "管理 AI 服务连接和 MCP 工具。连接配置将跨设备同步。",
-      "empty": "暂无 AI 连接",
-      "no_tools": "暂无可用 MCP 工具",
-      "mcp_tools_title": "MCP 工具",
-      "actions": {
-        "create": "添加连接",
-        "delete": "删除"
-      },
-      "create_dialog": {
-        "title": "添加 AI 连接",
-        "name_label": "连接名称",
-        "name_placeholder": "例如: My OpenAI",
-        "name_required": "请输入连接名称",
-        "type_label": "连接类型",
-        "type_required": "请选择连接类型",
-        "config_label": "连接配置",
-        "config_placeholder": "请输入 JSON 格式的连接配置",
-        "config_invalid": "配置格式无效，请输入有效的 JSON"
-      },
-      "messages": {
-        "create_success": "连接创建成功",
-        "create_failed": "连接创建失败",
-        "delete_success": "连接已删除",
-        "delete_failed": "删除连接失败"
-      }
     },
     "invite_permission": {
       "title": "邀请权限管理",

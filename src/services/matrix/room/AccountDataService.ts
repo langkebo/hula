@@ -1,14 +1,10 @@
 import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import { type AIConnectionInfo, type McpTool, matrixAIConnectionService } from '../ai/MatrixAIConnectionService'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixBurnAfterReadService } from '../messaging/MatrixBurnAfterReadService'
 import { matrixRoomSummaryService, type RoomSummary } from './MatrixRoomSummaryService'
 
 const logger = createLogger('AccountDataService')
-
-type AIConnection = AIConnectionInfo
-type MCPTool = McpTool
 
 /**
  * AccountDataManager 实例类型。
@@ -24,7 +20,7 @@ type AccountDataManagerInstance = ReturnType<NonNullable<MatrixClient['getAccoun
  *
  * Covers per-user-per-room account_data, content-scanner reports,
  * read-lifetime (阅后即焚), anti-screenshot, room summary REST API,
- * AI connections, and the external-service registry list.
+ * and the external-service registry list.
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
 export class MatrixRoomAccountDataService extends BaseMatrixService {
@@ -184,56 +180,6 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
       return await client.getRoomSummaryManager().getAllSummaryState(roomId)
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间摘要状态失败: ${err}`)
-      throw err
-    }
-  }
-
-  // ==================== AI Connections ====================
-
-  async getAIConnections(): Promise<AIConnection[]> {
-    try {
-      return await matrixAIConnectionService.listConnections()
-    } catch (err) {
-      logger.error(`[MatrixRoom] 获取 AI 连接列表失败: ${err}`)
-      throw err
-    }
-  }
-
-  async createAIConnection(config: Record<string, unknown>): Promise<AIConnection> {
-    try {
-      const id = await matrixAIConnectionService.createConnection(
-        config as unknown as Parameters<typeof matrixAIConnectionService.createConnection>[0]
-      )
-      return await matrixAIConnectionService.getConnection(id)
-    } catch (err) {
-      logger.error(`[MatrixRoom] 创建 AI 连接失败: ${err}`)
-      throw err
-    }
-  }
-
-  async deleteAIConnection(id: string): Promise<void> {
-    try {
-      await matrixAIConnectionService.deleteConnection(id)
-    } catch (err) {
-      logger.error(`[MatrixRoom] 删除 AI 连接失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getMCPTools(): Promise<MCPTool[]> {
-    try {
-      return await matrixAIConnectionService.listMcpTools()
-    } catch (err) {
-      logger.error(`[MatrixRoom] 获取 MCP 工具列表失败: ${err}`)
-      throw err
-    }
-  }
-
-  async callMCPTool(toolId: string, params: Record<string, unknown>): Promise<unknown> {
-    try {
-      return await matrixAIConnectionService.callMcpTool({ tool: toolId, parameters: params })
-    } catch (err) {
-      logger.error(`[MatrixRoom] 调用 MCP 工具失败: ${err}`)
       throw err
     }
   }

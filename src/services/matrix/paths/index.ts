@@ -1,7 +1,6 @@
 import { matrixExtensionEndpoints } from '@/services/backend/endpoints'
 import { ACCOUNT_DATA } from './accountData'
 import { ADMIN } from './admin'
-import { AI } from './ai'
 import { AUTH } from './auth'
 import { BURN } from './burn'
 import { CLIENT_CONFIG } from './clientConfig'
@@ -43,7 +42,6 @@ export const MATRIX_PATHS = {
   FRIENDS,
   CRYPTO,
   SPACE,
-  AI,
   SYNC,
   NOTIFICATION,
   MEDIA,

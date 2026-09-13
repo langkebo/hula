@@ -127,8 +127,6 @@ export interface SynapseRustCapabilities {
   'm.voice'?: SynapseRustCapability
   /** OpenClaw 路由（openclaw-routes feature） */
   openclaw?: SynapseRustCapability
-  /** AI 连接（ai-connection feature） */
-  ai_connection?: SynapseRustCapability
 }
 
 export interface MatrixCapabilities {

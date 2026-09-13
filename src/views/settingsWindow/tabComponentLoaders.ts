@@ -16,7 +16,6 @@ export const SETTINGS_TAB_COMPONENT_LOADERS: Record<SettingsTabType, () => Promi
   mjolnir: () => import('./tabs/MjolnirSettings.vue'),
   friends: () => import('./tabs/FriendsSettings.vue'),
   burnAfterRead: () => import('./tabs/BurnAfterReadSettings.vue'),
-  aiConnection: () => import('./tabs/AiConnectionSettings.vue'),
   storage: () => import('./tabs/StorageSettings.vue'),
   helpAbout: () => import('./tabs/HelpSettings.vue')
 }
