@@ -178,6 +178,53 @@ export function useMessageForward(options: UseMessageForwardOptions) {
     error.value = null
   }
 
+  /**
+   * 批量转发多个消息到选中的目标房间
+   *
+   * 用于移动端多选批量转发场景:用户选择了多条消息,
+   * 选中目标房间后调用此方法将所有消息转发到各目标房间。
+   *
+   * @param sourceRoomId 源消息所在房间 ID
+   * @param eventIds 需要转发的消息 ID 列表
+   */
+  const forwardMultiple = async (
+    sourceRoomId: string,
+    eventIds: string[]
+  ): Promise<{ total: number; success: number }> => {
+    if (forwarding.value) return { total: 0, success: 0 }
+    const roomIds = [...targetRoomIds.value]
+    if (roomIds.length === 0) return { total: 0, success: 0 }
+    if (eventIds.length === 0) return { total: 0, success: 0 }
+
+    forwarding.value = true
+    error.value = null
+
+    try {
+      const results = await matrixForwardService.forwardRoomMessages(sourceRoomId, eventIds, roomIds)
+      const successCount = results.filter((r) => r.success).length
+      const totalCount = eventIds.length
+
+      if (successCount > 0) {
+        showFeedback(t('message.forward.success', { count: successCount }), 'success')
+      } else {
+        const message = t('message.forward.failed')
+        error.value = message
+        showFeedback(message, 'error')
+      }
+
+      logger.info(`[forwardMultiple] 批量转发 ${totalCount} 条消息到 ${roomIds.length} 个房间,成功 ${successCount}`)
+      return { total: totalCount, success: successCount }
+    } catch (err) {
+      const message = t('message.forward.failed')
+      error.value = message
+      logger.error('[forwardMultiple] 批量转发异常:', err)
+      showFeedback(message, 'error')
+      return { total: eventIds.length, success: 0 }
+    } finally {
+      forwarding.value = false
+    }
+  }
+
   return {
     // 状态
     targetRoomIds,
@@ -190,6 +237,7 @@ export function useMessageForward(options: UseMessageForwardOptions) {
     isRoomSelected,
     setSourceEvent,
     forward,
+    forwardMultiple,
     reset
   }
 }

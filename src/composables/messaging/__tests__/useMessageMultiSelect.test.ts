@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 
 const {
   mockRecallMessage,
@@ -22,6 +22,7 @@ const {
 // chat store 状态 mock
 const mockIsMsgMultiChoose = vi.hoisted(() => ({ value: false }))
 const mockSetMsgMultiChoose = vi.hoisted(() => vi.fn())
+const mockClearMsgCheck = vi.hoisted(() => vi.fn())
 const mockChatMessageListByRoomId = vi.hoisted(() => vi.fn(() => [] as any[]))
 
 vi.mock('@/services/matrix/messaging/MatrixMessageService', () => ({
@@ -57,6 +58,7 @@ vi.mock('@/stores/domains/chat/chat', () => ({
       return mockIsMsgMultiChoose.value
     },
     setMsgMultiChoose: mockSetMsgMultiChoose,
+    clearMsgCheck: mockClearMsgCheck,
     chatMessageListByRoomId: mockChatMessageListByRoomId
   })
 }))
@@ -80,6 +82,7 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
+import { MsgEnum } from '@/enums/chat'
 import type { MessageType } from '@/types/message'
 import { useMessageMultiSelect } from '../useMessageMultiSelect'
 
@@ -93,7 +96,7 @@ const createMockMessage = (
       id,
       roomId: '!room:server',
       sendTime: Date.now(),
-      type: 'text' as any,
+      type: MsgEnum.TEXT,
       body: { content, body, text }
     },
     fromUser: { uid: '@user:server' }
@@ -101,9 +104,9 @@ const createMockMessage = (
 }
 
 const roomMessagesFixture: MessageType[] = [
-  createMockMessage({ id: '$msg:1', content: '第一条消息' }),
-  createMockMessage({ id: '$msg:2', content: '第二条消息' }),
-  createMockMessage({ id: '$msg:3', content: '第三条消息' })
+  reactive(createMockMessage({ id: '$msg:1', content: '第一条消息' })) as MessageType,
+  reactive(createMockMessage({ id: '$msg:2', content: '第二条消息' })) as MessageType,
+  reactive(createMockMessage({ id: '$msg:3', content: '第三条消息' })) as MessageType
 ]
 
 // mock clipboard
@@ -122,6 +125,16 @@ describe('useMessageMultiSelect', () => {
     mockIsMsgMultiChoose.value = false
     mockSetMsgMultiChoose.mockImplementation((flag: boolean) => {
       mockIsMsgMultiChoose.value = flag
+    })
+    // chat store 的 clearMsgCheck 在真实实现中会清空 chatMessageList 上所有 msg.isCheck
+    mockClearMsgCheck.mockImplementation(() => {
+      roomMessagesFixture.forEach((m) => {
+        m.isCheck = false
+      })
+    })
+    // 重置 fixture 消息的 isCheck 状态,防止跨测试状态泄漏
+    roomMessagesFixture.forEach((msg) => {
+      msg.isCheck = false
     })
     mockChatMessageListByRoomId.mockReturnValue(roomMessagesFixture)
     mockClipboardWriteText.mockResolvedValue(undefined)
@@ -238,14 +251,14 @@ describe('useMessageMultiSelect', () => {
       const result = await ms.batchCopy()
       expect(result).toBe(true)
       expect(mockClipboardWriteText).toHaveBeenCalledWith('第一条消息\n第二条消息')
-      expect(mockShowFeedback).toHaveBeenCalledWith('mobile_chat.multi_select.copy_success', 'success')
+      expect(mockShowFeedback).toHaveBeenCalledWith('message.multi_select.copy_success', 'success')
     })
 
     it('空选择时显示警告并返回 false', async () => {
       const ms = useMessageMultiSelect({ roomId: '!room:server' })
       const result = await ms.batchCopy()
       expect(result).toBe(false)
-      expect(mockShowFeedback).toHaveBeenCalledWith('mobile_chat.multi_select.empty_selection', 'warning')
+      expect(mockShowFeedback).toHaveBeenCalledWith('message.multi_select.empty_selection', 'warning')
       expect(mockClipboardWriteText).not.toHaveBeenCalled()
     })
 
@@ -255,7 +268,7 @@ describe('useMessageMultiSelect', () => {
       ms.toggleSelect('$msg:1')
       const result = await ms.batchCopy()
       expect(result).toBe(false)
-      expect(mockShowFeedback).toHaveBeenCalledWith('mobile_chat.multi_select.copy_failed', 'error')
+      expect(mockShowFeedback).toHaveBeenCalledWith('message.multi_select.copy_failed', 'error')
       expect(mockLoggerError).toHaveBeenCalled()
     })
   })
@@ -285,7 +298,7 @@ describe('useMessageMultiSelect', () => {
       const ms = useMessageMultiSelect({ roomId: '!room:server' })
       const result = await ms.batchForward()
       expect(result).toBeNull()
-      expect(mockShowFeedback).toHaveBeenCalledWith('mobile_chat.multi_select.empty_selection', 'warning')
+      expect(mockShowFeedback).toHaveBeenCalledWith('message.multi_select.empty_selection', 'warning')
       expect(mockGetRoomMessage).not.toHaveBeenCalled()
     })
   })
@@ -300,7 +313,7 @@ describe('useMessageMultiSelect', () => {
       expect(mockRecallMessage).toHaveBeenCalledTimes(2)
       expect(mockRecallMessage).toHaveBeenCalledWith('!room:server', '$msg:1')
       expect(mockRecallMessage).toHaveBeenCalledWith('!room:server', '$msg:2')
-      expect(mockShowFeedback).toHaveBeenCalledWith('mobile_chat.multi_select.delete_success', 'success')
+      expect(mockShowFeedback).toHaveBeenCalledWith('message.multi_select.delete_success', 'success')
       expect(ms.selectedIds.value).toEqual([])
     })
 
@@ -320,14 +333,14 @@ describe('useMessageMultiSelect', () => {
       ms.toggleSelect('$msg:1')
       const result = await ms.batchDelete()
       expect(result).toBe(0)
-      expect(mockShowFeedback).toHaveBeenCalledWith('mobile_chat.multi_select.copy_failed', 'error')
+      expect(mockShowFeedback).toHaveBeenCalledWith('message.multi_select.copy_failed', 'error')
     })
 
     it('空选择显示警告并返回 0', async () => {
       const ms = useMessageMultiSelect({ roomId: '!room:server' })
       const result = await ms.batchDelete()
       expect(result).toBe(0)
-      expect(mockShowFeedback).toHaveBeenCalledWith('mobile_chat.multi_select.empty_selection', 'warning')
+      expect(mockShowFeedback).toHaveBeenCalledWith('message.multi_select.empty_selection', 'warning')
       expect(mockRecallMessage).not.toHaveBeenCalled()
     })
 
@@ -350,7 +363,10 @@ describe('useMessageMultiSelect', () => {
 
     it('batchDelete 进行中切换房间仍按开始时的 roomId 删除', async () => {
       const roomIdRef = ref('!a:hs')
-      mockChatMessageListByRoomId.mockReturnValue([{ message: { id: '$m1' } }, { message: { id: '$m2' } }] as any[])
+      mockChatMessageListByRoomId.mockReturnValue([
+        { message: { id: '$m1', type: MsgEnum.TEXT } },
+        { message: { id: '$m2', type: MsgEnum.TEXT } }
+      ] as any[])
       let releaseFirst!: () => void
       mockRecallMessage
         .mockImplementationOnce(() => new Promise<void>((r) => (releaseFirst = r)))
@@ -370,7 +386,7 @@ describe('useMessageMultiSelect', () => {
     })
 
     it('batchDelete 双击只执行一轮', async () => {
-      mockChatMessageListByRoomId.mockReturnValue([{ message: { id: '$m1' } }] as any[])
+      mockChatMessageListByRoomId.mockReturnValue([{ message: { id: '$m1', type: MsgEnum.TEXT } }] as any[])
       let release!: () => void
       mockRecallMessage.mockImplementationOnce(() => new Promise<void>((r) => (release = r)))
 
