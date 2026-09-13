@@ -47,6 +47,7 @@ import { writeImage } from '@tauri-apps/plugin-clipboard-manager'
 import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useTauriListener } from '@/composables/common/useTauriListener'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { useDrawTools } from './composables/useDrawTools'
@@ -64,6 +65,9 @@ const logger = createLogger('Screenshot')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+
+// F-1 修复：Tauri 监听器统一走 useTauriListener（onUnmounted 自动 unlisten）
+const { addListener } = useTauriListener()
 
 const imgCanvas = ref<HTMLCanvasElement | null>(null)
 const imgCtx = ref<CanvasRenderingContext2D | null>(null)
@@ -335,16 +339,24 @@ const handleScreenshot = () => {
 }
 
 onMounted(async () => {
-  appWindow?.listen('capture', () => {
-    resetDrawTools()
-    initCanvas()
-    magnifierRef.value?.initMagnifier()
-  })
+  if (appWindow) {
+    addListener(
+      appWindow.listen('capture', () => {
+        resetDrawTools()
+        initCanvas()
+        magnifierRef.value?.initMagnifier()
+      }),
+      'screenshot-capture'
+    )
 
-  appWindow?.listen('capture-reset', () => {
-    resetDrawTools()
-    resetScreenshot()
-  })
+    addListener(
+      appWindow.listen('capture-reset', () => {
+        resetDrawTools()
+        resetScreenshot()
+      }),
+      'screenshot-capture-reset'
+    )
+  }
 
   window.addEventListener('trigger-screenshot', handleScreenshot)
 })

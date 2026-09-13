@@ -72,6 +72,8 @@ const { t } = useI18n()
   justify-content: center;
   align-items: center;
   background: var(--tjg-surface-elevated);
+  padding: 0 16px;
+  box-sizing: border-box;
 }
 
 .splash-screen.is-minimal {
@@ -83,14 +85,27 @@ const { t } = useI18n()
   flex-direction: column;
   align-items: center;
   gap: 24px;
+  width: 100%;
+  max-width: 360px;
 }
 
 .logo-container {
   width: 220px;
+  max-width: 70vw;
   height: 104px;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+@media screen and (max-width: 480px) {
+  .logo-container {
+    width: 160px;
+    height: 76px;
+  }
+  .splash-content {
+    gap: 20px;
+  }
 }
 
 .logo-image {
@@ -107,6 +122,7 @@ const { t } = useI18n()
 
 .progress-section {
   width: 280px;
+  max-width: 80vw;
   display: flex;
   flex-direction: column;
   gap: 12px;
