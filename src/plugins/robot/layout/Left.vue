@@ -400,11 +400,16 @@ const handleActive = (item: ChatItem) => {
   activeItem.value = item
 
   if (router.currentRoute.value.path !== '/chat') {
-    router.push('/chat').then(() => {
-      nextTick(() => {
-        useMitt.emit('chat-active', item)
+    router
+      .push('/chat')
+      .then(() => {
+        nextTick(() => {
+          useMitt.emit('chat-active', item)
+        })
       })
-    })
+      .catch(() => {
+        // F-2 修复：路由重复导航/失败时静默降级，避免 unhandledrejection
+      })
   } else {
     // 已经在 /chat 路由，直接触发事件
     nextTick(() => {

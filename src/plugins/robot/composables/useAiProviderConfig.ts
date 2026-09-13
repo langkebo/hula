@@ -29,7 +29,8 @@ export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
   })
 
   const trendRadarConfig = ref({
-    apiUrl: 'http://127.0.0.1:3333/mcp',
+    // F-4 修复：默认地址抽为环境变量，生产构建可覆盖；保留本地联调默认值作为 fallback
+    apiUrl: import.meta.env.VITE_TRENDRADAR_API_URL || 'http://127.0.0.1:3333/mcp',
     apiKey: ''
   })
 
@@ -68,7 +69,10 @@ export const useAiProviderConfig = (options: UseAiProviderConfigOptions) => {
   }
 
   const saveTrendRadarConfig = () => {
-    localStorage.setItem(STORAGE_KEYS.TRENDRADAR_CONFIG, JSON.stringify(trendRadarConfig.value))
+    // F-9 修复：apiKey 是敏感凭据，绝不能落入 Tauri webview 的 localStorage（磁盘明文，
+    // 可被备份同步 / 磁盘访问 / XSS 读取）。持久化时剥离 apiKey，仅保留 apiUrl 等非敏感字段；
+    // apiKey 只存在于内存 ref 中，随会话生命周期失效。
+    localStorage.setItem(STORAGE_KEYS.TRENDRADAR_CONFIG, JSON.stringify({ apiUrl: trendRadarConfig.value.apiUrl }))
   }
 
   watch(trendRadarConfig, saveTrendRadarConfig, { deep: true })
