@@ -63,11 +63,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/trendradar/TrendRadarView.vue')
   },
   {
-    path: '/openclaw',
-    name: 'openclaw',
-    component: () => import('@/views/openclaw/OpenClawView.vue')
-  },
-  {
     path: '/mail',
     name: 'mail',
     component: () => import('@/views/mailWindow/index.vue')

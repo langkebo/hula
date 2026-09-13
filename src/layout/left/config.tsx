@@ -175,24 +175,6 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
     miniShow: false
   },
   {
-    icon: 'robot',
-    iconAction: 'GPT',
-    url: 'openclaw',
-    state: PluginEnum.BUILTIN,
-    isAdd: true,
-    dot: false,
-    progress: 0,
-    size: {
-      minWidth: 1240,
-      width: 1380,
-      height: 800
-    },
-    window: {
-      resizable: true
-    },
-    miniShow: false
-  },
-  {
     url: 'federation',
     icon: 'federation',
     iconAction: 'federation',
@@ -283,11 +265,6 @@ const usePluginsList = () =>
       },
       {
         ...basePluginsList[2],
-        title: t('home.plugins.chatbot'),
-        shortTitle: t('home.plugins.chatbot_short_title')
-      },
-      {
-        ...basePluginsList[3],
         title: t('home.plugins.federation'),
         shortTitle: t('home.plugins.federation_short_title')
       }
