@@ -47,7 +47,7 @@ const colorClass = computed(() => `mac-close-button--${props.color}`)
 .mac-close-button__icon {
   width: 8px;
   height: 8px;
-  color: white;
+  color: var(--tjg-text-inverse);
 }
 
 .mac-close-button:hover .mac-close-button__icon {

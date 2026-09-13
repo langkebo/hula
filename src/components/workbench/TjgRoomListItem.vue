@@ -172,7 +172,7 @@ const hasMention = computed(() => (unreadDetail.value?.highlight ?? props.item.h
 // 未读角标配色：@提及用警示红；静音/屏蔽会话用灰色（参考 HuLa 设计）；普通未读用品牌绿
 const badgeColor = computed(() => {
   if (hasMention.value) return 'var(--tjg-room-highlight-badge-bg)'
-  if (isMuted.value || isShielded.value) return 'rgba(128, 128, 128, 0.5)'
+  if (isMuted.value || isShielded.value) return 'var(--tjg-text-disabled)'
   return 'var(--tjg-room-unread-badge-bg)'
 })
 const isFavorite = computed(() => hasFavoriteTag.value)

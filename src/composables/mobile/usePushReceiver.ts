@@ -15,9 +15,14 @@ export function usePushReceiver() {
   const notifications = ref<NotificationItem[]>([])
   const hasPermission = ref(false)
 
-  isPermissionGranted().then((granted) => {
-    hasPermission.value = granted
-  })
+  isPermissionGranted()
+    .then((granted) => {
+      hasPermission.value = granted
+    })
+    .catch(() => {
+      // F-2 修复：权限检查失败时静默降级为无权限，避免 unhandledrejection
+      hasPermission.value = false
+    })
 
   function receivePush(item: Omit<NotificationItem, 'timestamp'> & { timestamp?: number }) {
     notifications.value = [...notifications.value, { ...item, timestamp: item.timestamp || Date.now() }]
