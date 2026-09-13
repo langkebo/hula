@@ -22,6 +22,14 @@ const HOMESERVER = 'https://hs.message-contract.test'
 const seenUrls: { method: string; url: string }[] = []
 let realClient: MatrixClient
 
+/** 比较 URL：pathname 必相等，查询参数顺序不敏感 */
+function expectUrlMatches(url: string, expectedPath: string, expectedParams: Record<string, string>) {
+  const parsed = new URL(url)
+  expect(parsed.origin + parsed.pathname).toBe(expectedPath)
+  const actualParams = Object.fromEntries(parsed.searchParams)
+  expect(actualParams).toEqual(expectedParams)
+}
+
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -95,9 +103,11 @@ describe('Message service URL construction contract (real SDK + msw)', () => {
     expect(seenUrls[0].method).toBe('GET')
     // encodeURIComponent('!r:hs') = '!r%3Ahs'; the `$` in the from token is
     // URL-encoded by the SDK's query-string builder.
-    expect(seenUrls[0].url).toBe(
-      `${HOMESERVER}/_matrix/client/v3/rooms/!r%3Ahs/messages?from=%24nonexistent&limit=20&dir=b`
-    )
+    expectUrlMatches(seenUrls[0].url, `${HOMESERVER}/_matrix/client/v3/rooms/!r%3Ahs/messages`, {
+      from: '$nonexistent',
+      limit: '20',
+      dir: 'b'
+    })
     expect(seenUrls[0].url).not.toMatch(/\/_matrix\/client\/v3\/_matrix\/client\/v3/)
     // Server events are prepended to the (empty) local timeline.
     expect(result.events).toHaveLength(2)
@@ -112,9 +122,11 @@ describe('Message service URL construction contract (real SDK + msw)', () => {
     })
 
     expect(seenUrls).toHaveLength(1)
-    expect(seenUrls[0].url).toBe(
-      `${HOMESERVER}/_matrix/client/v3/rooms/!r%3Ahs/messages?from=%24nonexistent&limit=5&dir=f`
-    )
+    expectUrlMatches(seenUrls[0].url, `${HOMESERVER}/_matrix/client/v3/rooms/!r%3Ahs/messages`, {
+      from: '$nonexistent',
+      limit: '5',
+      dir: 'f'
+    })
     expect(seenUrls[0].url).not.toMatch(/\/_matrix\/client\/v3\/_matrix\/client\/v3/)
   })
 

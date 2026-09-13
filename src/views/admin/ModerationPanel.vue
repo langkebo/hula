@@ -166,7 +166,8 @@ import {
   NTabPane,
   NTabs,
   NTag,
-  NThing
+  NThing,
+  useDialog
 } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { computed, h, onMounted, ref } from 'vue'
@@ -182,6 +183,7 @@ defineOptions({
 })
 
 const { t } = useI18n()
+const dialog = useDialog()
 const { showFeedback } = useActionFeedback()
 const moderationStore = useModerationStore()
 const { openReports, enabledFilters, loading } = storeToRefs(moderationStore)
@@ -433,27 +435,34 @@ async function handleEscalate(id: number) {
   }
 }
 
-async function handleDelete(id: number) {
-  if (!window.confirm(t('moderation.event_reports.dialog.deleteConfirm'))) return
-  // SDK deleteReport 对后端 204 No Content（空 body）执行 res.json() 会误抛错，
-  // 但服务端实际已删除成功。因此不因 deleteReport 抛错就放弃：无论成败都重新加载
-  // 列表，再按「被删 id 是否仍在列表」判定真实结果——旧 MatrixHttpClient 靠
-  // responseText ? JSON.parse : {} 正确处理空 body（SDK 侧修复另立 backlog）。
-  try {
-    await matrixEventReportService.deleteReport(id)
-  } catch {
-    // 忽略 deleteReport 抛错（204 空 body 误判），以 reload 后的列表为准
-  }
-  const reloaded = await loadEventReports()
-  if (!reloaded) {
-    // 重新加载失败时 loadEventReports 已给出 loadFailed 错误反馈，不再重复提示
-    return
-  }
-  if (eventReports.value.some((report) => report.id === id)) {
-    showFeedback(t('moderation.event_reports.toast.deleteFailed'), 'error')
-  } else {
-    showFeedback(t('moderation.event_reports.toast.deleteSuccess'), 'success')
-  }
+function handleDelete(id: number) {
+  dialog.warning({
+    title: t('common.tip'),
+    content: t('moderation.event_reports.dialog.deleteConfirm'),
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: async () => {
+      // SDK deleteReport 对后端 204 No Content（空 body）执行 res.json() 会误抛错，
+      // 但服务端实际已删除成功。因此不因 deleteReport 抛错就放弃：无论成败都重新加载
+      // 列表，再按「被删 id 是否仍在列表」判定真实结果——旧 MatrixHttpClient 靠
+      // responseText ? JSON.parse : {} 正确处理空 body（SDK 侧修复另立 backlog）。
+      try {
+        await matrixEventReportService.deleteReport(id)
+      } catch {
+        // 忽略 deleteReport 抛错（204 空 body 误判），以 reload 后的列表为准
+      }
+      const reloaded = await loadEventReports()
+      if (!reloaded) {
+        // 重新加载失败时 loadEventReports 已给出 loadFailed 错误反馈，不再重复提示
+        return
+      }
+      if (eventReports.value.some((report) => report.id === id)) {
+        showFeedback(t('moderation.event_reports.toast.deleteFailed'), 'error')
+      } else {
+        showFeedback(t('moderation.event_reports.toast.deleteSuccess'), 'success')
+      }
+    }
+  })
 }
 
 function openActionDialog(type: 'resolve' | 'dismiss', reportId: number) {

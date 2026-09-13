@@ -1,7 +1,7 @@
 import { MatrixEventType } from '@/common/matrixConstants'
 import { createLogger } from '@/utils/Logger'
-import { authedRequestWithPath } from '../MatrixHttpClient'
 import type { MatrixClient, MatrixEvent } from '../sdk'
+import { Direction } from '../sdk'
 
 const logger = createLogger('MessageQueryHelpers')
 
@@ -189,18 +189,14 @@ async function fetchServerMessages(
   dir: 'b' | 'f'
 ): Promise<MatrixEvent[]> {
   try {
-    const response = (await authedRequestWithPath<Record<string, unknown>>(
-      client,
-      'GET',
-      `/rooms/${encodeURIComponent(roomId)}/messages`,
-      {
-        from: fromToken,
-        limit: String(limit),
-        dir
-      }
-    )) as Record<string, unknown>
-    const chunk = response.chunk
-    return Array.isArray(chunk) ? (chunk as MatrixEvent[]) : []
+    const response = await client.createMessagesRequest(
+      roomId,
+      fromToken,
+      limit,
+      dir === 'f' ? Direction.Forward : Direction.Backward
+    )
+    const chunk = response?.chunk
+    return Array.isArray(chunk) ? (chunk as unknown as MatrixEvent[]) : []
   } catch (err) {
     logger.error(`[MatrixMessage] Failed to fetch server messages: ${err}`)
     return []

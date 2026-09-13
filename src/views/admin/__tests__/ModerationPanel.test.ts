@@ -17,6 +17,24 @@ vi.mock('@iconify/vue', () => ({
   Icon: { template: '<span class="icon"><slot /></span>' }
 }))
 
+// ModerationPanel 使用 naive-ui useDialog（window.confirm 替代），
+// 测试环境无 <n-dialog-provider>，必须 mock composable 本身。
+// dialog.warning 需要可控的确认/取消状态，否则 “取消” 用例永绿。
+const confirmState = vi.hoisted(() => ({ value: true }))
+vi.mock('naive-ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('naive-ui')>()
+  return {
+    ...actual,
+    useDialog: () => ({
+      warning: (opts: { onPositiveClick?: () => void }) => {
+        if (confirmState.value) {
+          opts.onPositiveClick?.()
+        }
+      }
+    })
+  }
+})
+
 // Moderation Store mock
 const fetchReportsMock = vi.fn().mockResolvedValue(undefined)
 const fetchContentFiltersMock = vi.fn().mockResolvedValue(undefined)
@@ -141,15 +159,9 @@ const naiveStubs = {
   Thing: { template: '<div class="n-thing"><slot /></div>', props: ['title', 'description'] }
 }
 
-// jsdom 在某些环境下不提供 window.confirm，需要预先定义
-function setupWindowConfirm(returnValue: boolean) {
-  const impl = () => returnValue
-  if (typeof window.confirm !== 'function') {
-    Object.defineProperty(window, 'confirm', { value: impl, writable: true, configurable: true })
-  } else {
-    window.confirm = impl
-  }
-  return impl
+// 控制 dialog.warning 的确认/取消行为（替代旧 window.confirm 桩）
+function setupDialogConfirm(returnValue: boolean) {
+  confirmState.value = returnValue
 }
 
 describe('ModerationPanel — P1-4 事件举报管理', () => {
@@ -255,7 +267,7 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
   it('删除事件举报弹出确认并调用 deleteReport，reload 后 id 消失给出成功反馈', async () => {
     // 挂载时列表含该举报；删除后 reload 的列表不再包含（模拟删除成功）
     listReportsMock.mockResolvedValueOnce([sampleEventReport]).mockResolvedValueOnce([])
-    setupWindowConfirm(true)
+    setupDialogConfirm(true)
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -272,7 +284,7 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     // SDK 对 204 No Content（空 body）执行 res.json() 必然 reject，但服务端已删除成功
     listReportsMock.mockResolvedValueOnce([sampleEventReport]).mockResolvedValueOnce([])
     deleteReportMock.mockRejectedValue(new Error('Unexpected end of JSON input'))
-    setupWindowConfirm(true)
+    setupDialogConfirm(true)
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -289,7 +301,7 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
 
   it('删除后 reload 列表中该 id 仍在时给出删除失败反馈', async () => {
     listReportsMock.mockResolvedValue([sampleEventReport])
-    setupWindowConfirm(true)
+    setupDialogConfirm(true)
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -303,7 +315,7 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
 
   it('删除确认取消时不调用 deleteReport', async () => {
     listReportsMock.mockResolvedValue([sampleEventReport])
-    setupWindowConfirm(false)
+    setupDialogConfirm(false)
 
     const wrapper = mountPanel()
     await flushPromises()

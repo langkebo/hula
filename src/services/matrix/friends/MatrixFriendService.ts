@@ -4,8 +4,6 @@ import { createLogger } from '@/utils/Logger'
 import { type SynapseDmInfo, synapseDmExtensionService } from '../extensions/SynapseDmExtensionService'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import matrixClientService from '../MatrixClientService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
-import { MATRIX_PATHS } from '../paths'
 import {
   type FriendGroup,
   type FriendServiceEventHandler,
@@ -363,16 +361,18 @@ class MatrixFriendService {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const result = (await authedRequestWithPath<Record<string, unknown>>(
-        client,
-        'GET',
-        MATRIX_PATHS.FRIENDS.STATUS(userId)
-      )) as Record<string, unknown>
-      return result
+      const friendManager = client.getFriendManager()
+      if (friendManager?.getFriendStatusInfo) {
+        const result = await friendManager.getFriendStatusInfo(userId)
+        logger.info(`[MatrixFriend] 获取好友状态详情成功: ${userId}`)
+        // SDK 返回 FriendStatusInfo（具体接口，无索引签名）；保持公开契约 Record<string, unknown> | null
+        return result as unknown as Record<string, unknown>
+      }
     } catch (err) {
-      logger.error(`[MatrixFriend] 获取好友状态详情失败: ${userId}, ${err}`)
+      logger.error(`[MatrixFriend] FriendManager 获取好友状态详情失败: ${err}`)
       return null
     }
+    return null
   }
 
   async searchFriendsViaApi(

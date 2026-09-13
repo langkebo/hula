@@ -66,11 +66,16 @@ type ClientOverrides = {
 /** 创建模拟 MatrixClient 对象 */
 function createClient(overrides: ClientOverrides = {}): MatrixClient {
   const rooms = overrides.rooms ?? []
+  const http = overrides.http ?? { authedRequest: async () => ({ chunk: [] }) }
   return {
     getRooms: () => rooms,
     getRoom: overrides.getRoom ?? ((id: string) => rooms.find((r) => r.id === id) ?? null),
     getUserId: overrides.getUserId ?? (() => '@me:server.com'),
-    http: overrides.http ?? { authedRequest: async () => ({ chunk: [] }) }
+    http,
+    // 迁移到 SDK createMessagesRequest 后，测试桩沿用 http.authedRequest 作为底层数据源，
+    // 保持返回原始 { chunk } 形状（与真实 SDK 一致，透传 server 端 event JSON）。
+    createMessagesRequest: (roomId: string, from: string, limit: number) =>
+      http.authedRequest('GET', `/rooms/${roomId}/messages`, { from, limit }) as Promise<{ chunk: unknown }>
   } as unknown as MatrixClient
 }
 
