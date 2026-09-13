@@ -4,36 +4,42 @@ import matrixClientService from '../../MatrixClientService'
 import { matrixThreadService } from '../MatrixThreadService'
 
 // 定义 ThreadingManager 的兼容接口，用于测试 mock
+// 注：此接口需与 threadTypes.ts 中的 ThreadingManagerCompat 严格保持一致
 interface ThreadingManagerCompat {
-  getGlobalThreadList?: (
-    limit?: number,
-    from?: string
-  ) => Promise<{ threads: unknown[]; next_batch?: string; total: number }>
-  createGlobalThread?: (
-    roomId: string,
-    rootEventId: string,
+  getGlobalThreadList?: (query?: { limit?: number; from?: string }) => Promise<{
+    threads: unknown[]
+    next_batch?: string | null
+    total: number
+  }>
+  createGlobalThread?: (params: {
+    roomId?: string
+    rootEventId: string
     content?: Record<string, unknown>
-  ) => Promise<Record<string, unknown>>
-  getSubscribedThreads?: () => Promise<unknown[]>
-  getGlobalUnreadThreads?: () => Promise<unknown[]>
+    originServerTs?: number
+  }) => Promise<{ thread_id: string | null; root_event_id: string; room_id: string }>
+  getSubscribedThreads?: (query?: { limit?: number; from?: string }) => Promise<{
+    threads: unknown[]
+    subscribed: unknown[]
+    next_batch?: string | null
+  }>
+  getGlobalUnreadThreads?: () => Promise<{ threads: unknown[]; total_unread: number; total_threads: number }>
   createRoomThread?: (
     roomId: string,
     rootEventId: string,
-    content?: Record<string, unknown>
-  ) => Promise<Record<string, unknown>>
+    options?: { content?: Record<string, unknown>; originServerTs?: number }
+  ) => Promise<{ thread_id: string | null; root_event_id: string; room_id: string }>
   getRoomThreadList?: (
     roomId: string,
-    limit?: number,
-    from?: string,
-    includeAll?: boolean
-  ) => Promise<{ threads: unknown[]; next_batch?: string }>
-  searchRoomThreads?: (roomId: string, query: string, limit?: number) => Promise<unknown[]>
-  getRoomUnreadThreads?: (roomId: string) => Promise<unknown[]>
+    query?: { limit?: number; from?: string; includeAll?: boolean }
+  ) => Promise<{ threads: unknown[]; next_batch?: string | null; total: number }>
+  searchRoomThreads?: (roomId: string, query: { q: string; limit?: number }) => Promise<unknown[]>
+  getRoomUnreadThreads?: (
+    roomId: string
+  ) => Promise<{ threads: unknown[]; total_unread: number; total_threads: number }>
   getRoomThread?: (
     roomId: string,
     threadId: string,
-    includeReplies?: boolean,
-    replyLimit?: number
+    query?: { includeReplies?: boolean; replyLimit?: number }
   ) => Promise<Record<string, unknown> | null>
   deleteRoomThread?: (roomId: string, threadId: string) => Promise<void>
   freezeThread?: (roomId: string, threadId: string) => Promise<void>
@@ -41,22 +47,48 @@ interface ThreadingManagerCompat {
   addThreadReply?: (
     roomId: string,
     threadId: string,
-    content: Record<string, unknown>,
-    inReplyToEventId?: string
-  ) => Promise<Record<string, unknown>>
-  getThreadReplies?: (roomId: string, threadId: string) => Promise<unknown[]>
-  subscribeToThread?: (roomId: string, threadId: string, notificationLevel?: string) => Promise<unknown | null>
+    params: {
+      eventId: string
+      rootEventId: string
+      content: Record<string, unknown>
+      inReplyToEventId?: string
+      originServerTs?: number
+    }
+  ) => Promise<unknown>
+  getThreadReplies?: (roomId: string, threadId: string, query?: { limit?: number; from?: string }) => Promise<unknown[]>
+  subscribeToThread?: (
+    roomId: string,
+    threadId: string,
+    notificationLevel?: string
+  ) => Promise<{
+    notification_level: string
+    is_muted: boolean
+    subscribed_ts?: number
+    updated_ts?: number
+  }>
   unsubscribeFromThread?: (roomId: string, threadId: string) => Promise<void>
-  muteThread?: (roomId: string, threadId: string) => Promise<unknown | null>
+  muteThread?: (
+    roomId: string,
+    threadId: string
+  ) => Promise<{
+    notification_level: string
+    is_muted: boolean
+    subscribed_ts?: number
+    updated_ts?: number
+  }>
   markThreadRead?: (
     roomId: string,
     threadId: string,
     eventId: string,
-    originServerTs: number
-  ) => Promise<Record<string, unknown> | null>
-  getThreadStats?: (roomId: string, threadId: string) => Promise<unknown | null>
+    originServerTs?: number
+  ) => Promise<Record<string, unknown>>
+  getThreadStats?: (roomId: string, threadId: string) => Promise<Record<string, unknown> | null>
   redactThreadReply?: (roomId: string, eventId: string) => Promise<void>
-  getLegacyRoomThreadList?: (roomId: string) => Promise<unknown[]>
+  getLegacyRoomThreadList?: (
+    userId: string,
+    roomId: string,
+    query?: { limit?: number; from?: string; includeAll?: boolean }
+  ) => Promise<{ chunk: unknown[]; next_batch?: string | null }>
 }
 
 vi.mock('../../MatrixReceiptService', () => ({
@@ -184,7 +216,11 @@ describe('MatrixThreadService - REST API Methods', () => {
 
   describe('getSubscribedThreadsViaApi', () => {
     it('should return subscribed threads', async () => {
-      mockThreadingManager.getSubscribedThreads.mockResolvedValue([{ id: 't1' }])
+      // Mock 必须返回 SDK 实际输出的 snake_case 结构，API 层负责映射
+      mockThreadingManager.getSubscribedThreads.mockResolvedValue({
+        threads: [{ thread_id: 't1' }],
+        subscribed: [{ thread_id: 't1', notification_level: 'all', is_muted: false, subscribed_ts: 1234567890 }]
+      })
 
       const result = await matrixThreadService.getSubscribedThreadsViaApi()
 
@@ -270,7 +306,12 @@ describe('MatrixThreadService - REST API Methods', () => {
 
   describe('subscribeToThreadViaApi / unsubscribeFromThreadViaApi', () => {
     it('should subscribe to thread', async () => {
-      mockThreadingManager.subscribeToThread.mockResolvedValue({ notificationLevel: 'all', isMuted: false })
+      // Mock 必须返回 SDK 实际输出的 snake_case 结构，API 层负责映射 notification_level → notificationLevel
+      mockThreadingManager.subscribeToThread.mockResolvedValue({
+        notification_level: 'all',
+        is_muted: false,
+        subscribed_ts: 1234567890
+      })
 
       const result = await matrixThreadService.subscribeToThreadViaApi('!room', 't1')
 
@@ -288,7 +329,12 @@ describe('MatrixThreadService - REST API Methods', () => {
 
   describe('muteThreadViaApi', () => {
     it('should mute thread', async () => {
-      mockThreadingManager.muteThread.mockResolvedValue({ notificationLevel: 'none', isMuted: true })
+      // Mock 必须返回 SDK 实际输出的 snake_case 结构，API 层负责映射 is_muted → isMuted
+      mockThreadingManager.muteThread.mockResolvedValue({
+        notification_level: 'none',
+        is_muted: true,
+        subscribed_ts: 1234567890
+      })
 
       const result = await matrixThreadService.muteThreadViaApi('!room', 't1')
 
@@ -308,9 +354,10 @@ describe('MatrixThreadService - REST API Methods', () => {
 
   describe('getThreadStatsViaApi', () => {
     it('should return thread statistics', async () => {
+      // Mock 必须返回 SDK ThreadStatisticsResponse 的 snake_case 结构，API 层负责映射
       mockThreadingManager.getThreadStats.mockResolvedValue({
-        totalReplies: 10,
-        totalParticipants: 3
+        total_replies: 10,
+        total_participants: 3
       })
 
       const result = await matrixThreadService.getThreadStatsViaApi('!room', 't1')

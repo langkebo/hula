@@ -53,11 +53,29 @@ describe('getThreadingManager', () => {
 
   beforeEach(() => {
     manager = { getGlobalThreadList: vi.fn() }
-    mockClient = { threadingManager: manager } as unknown as MatrixClient
+    mockClient = {} as unknown as MatrixClient
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as MatrixClient)
   })
 
-  it('should return the threadingManager when client exposes it', () => {
+  /** 辅助：启用方法路径的 manager（SDK 方式） */
+  function enableMethodPath() {
+    ;(mockClient as unknown as { getThreadingManager: () => ThreadingManagerCompat }).getThreadingManager = () =>
+      manager
+  }
+
+  /** 辅助：启用属性路径的 fallback（旧式/测试） */
+  function enablePropertyPath() {
+    delete (mockClient as unknown as { getThreadingManager?: unknown }).getThreadingManager
+    ;(mockClient as unknown as { threadingManager: ThreadingManagerCompat }).threadingManager = manager
+  }
+
+  it('should call getThreadingManager() when SDK method is available (preferred path)', () => {
+    enableMethodPath()
+    expect(getThreadingManager()).toBe(manager)
+  })
+
+  it('should fall back to threadingManager property when method is unavailable (legacy path)', () => {
+    enablePropertyPath()
     expect(getThreadingManager()).toBe(manager)
   })
 
@@ -66,9 +84,16 @@ describe('getThreadingManager', () => {
     expect(getThreadingManager()).toBeNull()
   })
 
-  it('should return null when client has no threadingManager', () => {
-    ;(mockClient as unknown as { threadingManager: unknown }).threadingManager = undefined
+  it('should return null when client has neither method nor property', () => {
+    // 无 getThreadingManager，也无 threadingManager 属性
     expect(getThreadingManager()).toBeNull()
+  })
+
+  it('should prefer method over property when both exist', () => {
+    const legacyManager = { getGlobalThreadList: vi.fn() }
+    enableMethodPath()
+    ;(mockClient as unknown as { threadingManager: typeof legacyManager }).threadingManager = legacyManager
+    expect(getThreadingManager()).toBe(manager)
   })
 })
 
