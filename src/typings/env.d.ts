@@ -10,6 +10,8 @@ interface ImportMetaEnv {
   readonly VITE_HOMESERVER_URL: string
   /** Matrix Identity Server 地址 */
   readonly VITE_IDENTITY_SERVER_URL?: string
+  /** TrendRadar MCP 服务地址（F-4：默认 127.0.0.1:3333，生产构建可覆盖） */
+  readonly VITE_TRENDRADAR_API_URL?: string
   /** giteeToken */
   readonly VITE_GITEE_TOKEN: string
   /** Prometheus Pushgateway / ingest endpoint */
