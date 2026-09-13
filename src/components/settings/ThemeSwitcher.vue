@@ -15,7 +15,48 @@
         :class="{ 'theme-switcher__option--active': modelValue === option.value }"
         :aria-pressed="modelValue === option.value"
         @click="handleSelect(option.value)">
-        <span class="theme-switcher__icon" v-html="option.icon" />
+        <!-- F-10 修复：图标改为内联 SVG 组件，消除 v-html（原 v-html 注入 SVG 字符串，若来源失控即 XSS 入口） -->
+        <span class="theme-switcher__icon" aria-hidden="true">
+          <svg
+            v-if="option.value === ThemeEnum.LIGHT"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+          </svg>
+          <svg
+            v-else-if="option.value === ThemeEnum.DARK"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+          <svg
+            v-else
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" />
+            <path d="M8 21h8M12 17v4" />
+          </svg>
+        </span>
         <span class="theme-switcher__label">{{ option.label }}</span>
       </button>
     </div>
@@ -47,17 +88,10 @@ const { t } = useI18n()
 const settingStore = useSettingStore()
 const { showFeedback } = useActionFeedback()
 
-// SVG 图标：1.5px stroke-width，currentColor 描边，符合设计规范
-const sunIcon = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>`
-
-const moonIcon = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>`
-
-const monitorIcon = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>`
-
 const themeOptions = computed(() => [
-  { value: ThemeEnum.LIGHT, label: t('setting.appearance.theme_light'), icon: sunIcon },
-  { value: ThemeEnum.DARK, label: t('setting.appearance.theme_dark'), icon: moonIcon },
-  { value: ThemeEnum.OS, label: t('setting.appearance.theme_auto'), icon: monitorIcon }
+  { value: ThemeEnum.LIGHT, label: t('setting.appearance.theme_light') },
+  { value: ThemeEnum.DARK, label: t('setting.appearance.theme_dark') },
+  { value: ThemeEnum.OS, label: t('setting.appearance.theme_auto') }
 ])
 
 function handleSelect(value: ThemeValue) {

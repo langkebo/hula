@@ -322,6 +322,7 @@ import { useChatMain } from '@/composables/chat/useChatMain'
 import { useRoomType } from '@/composables/chat/useRoomType'
 import { useLinkSegments } from '@/composables/common/useLinkSegments'
 import { useMitt } from '@/composables/common/useMitt'
+import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useWindow } from '@/composables/common/useWindow'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { MittEnum, OnlineEnum, RoleEnum, RoomTypeEnum, ThemeEnum, WsResponseMessageType } from '@/enums'
@@ -341,6 +342,12 @@ const logger = createLogger('ChatSidebar')
 
 const { t } = useI18n()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+
+// F-1 修复：Tauri 监听器统一走 useTauriListener（onUnmounted 自动 unlisten）
+const { addListener } = useTauriListener()
+// F-1 修复：async onMounted 里注册的 mitt handler（getCurrentInstance 已失效，不自动清理），
+// 收集其 cleanup 函数，onUnmounted 时统一移除，避免组件反复进出会话累积回调。
+const mittCleanups: Array<() => void> = []
 const emit = defineEmits<(e: 'ready') => void>()
 const { createWebviewWindow } = useWindow()
 const groupStore = useGroupStore()
@@ -584,36 +591,50 @@ watch(
   { immediate: true }
 )
 
-appWindow?.listen<{ hasAnnouncements?: boolean }>('announcementUpdated', async (event) => {
-  if (event.payload) {
-    const { hasAnnouncements } = event.payload
-    if (hasAnnouncements) {
-      // 初始化群公告
-      await announcementStore.loadGroupAnnouncements()
-      await nextTick()
-    }
-  }
-})
+if (appWindow) {
+  addListener(
+    appWindow.listen<{ hasAnnouncements?: boolean }>('announcementUpdated', async (event) => {
+      if (event.payload) {
+        const { hasAnnouncements } = event.payload
+        if (hasAnnouncements) {
+          // 初始化群公告
+          await announcementStore.loadGroupAnnouncements()
+          await nextTick()
+        }
+      }
+    }),
+    'sidebar-announcement-updated'
+  )
+}
 
 onMounted(async () => {
   // 通知父级：Sidebar 已挂载，可移除占位
   emit('ready')
 
-  useMitt.on(`${MittEnum.INFO_POPOVER}-Sidebar`, (event: { uid: string }) => {
-    selectKey.value = event.uid
-    infoPopoverRefs.value[event.uid]?.setShow(true)
-  })
+  mittCleanups.push(
+    useMitt.on(`${MittEnum.INFO_POPOVER}-Sidebar`, (event: { uid: string }) => {
+      selectKey.value = event.uid
+      infoPopoverRefs.value[event.uid]?.setShow(true)
+    })
+  )
 
-  useMitt.on(MittEnum.OPEN_ANNOUNCEMENT_PANEL, () => {
-    showAnnouncementPanel.value = true
-  })
+  mittCleanups.push(
+    useMitt.on(MittEnum.OPEN_ANNOUNCEMENT_PANEL, () => {
+      showAnnouncementPanel.value = true
+    })
+  )
 
   // 置顶消息变更 → 刷新侧栏置顶列表
-  useMitt.on(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
+  mittCleanups.push(useMitt.on(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged))
 
-  appWindow?.listen('announcementClear', async () => {
-    clearAnnouncements()
-  })
+  if (appWindow) {
+    addListener(
+      appWindow.listen('announcementClear', async () => {
+        clearAnnouncements()
+      }),
+      'sidebar-announcement-clear'
+    )
+  }
 
   // 初始化时获取当前群组用户的信息
   if (groupStore.userList.length > 0) {
@@ -649,14 +670,17 @@ onMounted(async () => {
       }
     }
     // 监听群公告消息
-    useMitt.on(WsResponseMessageType.ROOM_GROUP_NOTICE_MSG, handleAnnounInitOnEvent(true))
-    useMitt.on(WsResponseMessageType.ROOM_EDIT_GROUP_NOTICE_MSG, handleAnnounInitOnEvent(true))
+    mittCleanups.push(useMitt.on(WsResponseMessageType.ROOM_GROUP_NOTICE_MSG, handleAnnounInitOnEvent(true)))
+    mittCleanups.push(useMitt.on(WsResponseMessageType.ROOM_EDIT_GROUP_NOTICE_MSG, handleAnnounInitOnEvent(true)))
   }
 })
 
 onUnmounted(() => {
   groupStore.cleanupSession()
   useMitt.off(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
+  // F-1 修复：清理 async onMounted 中注册的 mitt handler（防重复响应、内存增长）
+  mittCleanups.forEach((cleanup) => cleanup())
+  mittCleanups.length = 0
 })
 </script>
 

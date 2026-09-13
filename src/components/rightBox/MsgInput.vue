@@ -35,6 +35,9 @@
             <div
               id="message-input"
               ref="messageInputDom"
+              role="textbox"
+              aria-multiline="true"
+              :aria-label="t('editor.placeholder')"
               :style="{
                 minHeight: inputMinHeight,
                 lineHeight: inputLineHeight,
@@ -89,7 +92,12 @@
                 @click="handleAit(item)"
                 :key="item.uid"
                 align="center"
-                class="ait-item">
+                class="ait-item"
+                role="option"
+                tabindex="0"
+                :aria-selected="selectedAitKey === item.uid"
+                :aria-label="item.myName || item.name"
+                @keydown.enter.prevent="handleAit(item)">
                 <n-avatar
                   lazy
                   round
@@ -170,6 +178,7 @@ import { useTyping } from '@/composables/chat/useTyping'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useCommon } from '@/composables/common/useCommon'
 import { useMitt } from '@/composables/common/useMitt'
+import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useSendOptions } from '@/composables/settings/settingsOptions'
 import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import type { AIModel, UserItem } from '@/services/types.ts'
@@ -206,6 +215,13 @@ const props = withDefaults(defineProps<Props>(), {
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+
+// F-1 修复：Tauri 监听器统一走 useTauriListener（onUnmounted 自动 unlisten）
+const { addListener } = useTauriListener()
+// F-1 修复：async onMounted 中注册的 mitt/键盘 handler（getCurrentInstance 已失效，不自动清理），
+// 收集其 cleanup/stop 函数，onUnmounted 统一清理，避免重复响应与内存增长。
+const mittCleanups: Array<() => void> = []
+const keyStrokeStops: Array<() => void> = []
 const settingStore = useSettingStore()
 const { handlePaste, processFiles } = useCommon()
 const sendOptions = useSendOptions()
@@ -620,28 +636,34 @@ onMounted(async () => {
   if (isMobileRef.value) {
     listenMobileClosePanel()
   }
-  onKeyStroke('Enter', () => {
-    if (ait.value && Number(selectedAitKey.value) > -1) {
-      const item = personList.value.find((item) => item.uid === selectedAitKey.value)
-      if (item) handleAit(item)
-    }
-  })
-  onKeyStroke('ArrowUp', (e) => {
-    e.preventDefault()
-    if (ait.value) {
-      handleAitKeyChange(-1, personList, virtualListInstAit.value!, selectedAitKey)
-    } else if (aiDialogVisible.value) {
-      handleAitKeyChange(-1, groupedAIModels, virtualListInstAI.value!, selectedAIKey)
-    }
-  })
-  onKeyStroke('ArrowDown', (e) => {
-    e.preventDefault()
-    if (ait.value) {
-      handleAitKeyChange(1, personList, virtualListInstAit.value!, selectedAitKey)
-    } else if (aiDialogVisible.value) {
-      handleAitKeyChange(1, groupedAIModels, virtualListInstAI.value!, selectedAIKey)
-    }
-  })
+  keyStrokeStops.push(
+    onKeyStroke('Enter', () => {
+      if (ait.value && Number(selectedAitKey.value) > -1) {
+        const item = personList.value.find((item) => item.uid === selectedAitKey.value)
+        if (item) handleAit(item)
+      }
+    })
+  )
+  keyStrokeStops.push(
+    onKeyStroke('ArrowUp', (e) => {
+      e.preventDefault()
+      if (ait.value) {
+        handleAitKeyChange(-1, personList, virtualListInstAit.value!, selectedAitKey)
+      } else if (aiDialogVisible.value) {
+        handleAitKeyChange(-1, groupedAIModels, virtualListInstAI.value!, selectedAIKey)
+      }
+    })
+  )
+  keyStrokeStops.push(
+    onKeyStroke('ArrowDown', (e) => {
+      e.preventDefault()
+      if (ait.value) {
+        handleAitKeyChange(1, personList, virtualListInstAit.value!, selectedAitKey)
+      } else if (aiDialogVisible.value) {
+        handleAitKeyChange(1, groupedAIModels, virtualListInstAI.value!, selectedAIKey)
+      }
+    })
+  )
   nextTick(() => {
     if (!isMobileRef.value) {
       const inputDiv = document.getElementById('message-input')
@@ -649,33 +671,44 @@ onMounted(async () => {
       setIsFocus(true)
     }
   })
-  useMitt.on(MittEnum.AT, (event: string | { user: UserItem }) => {
-    if (typeof event === 'object' && event.user) {
-      handleAit(event.user)
-    } else {
-      const userInfo = groupStore.getUserInfo(event as string)
-      if (userInfo) handleAit(userInfo)
-    }
-  })
-  useMitt.on(MittEnum.VOICE_RECORD_TOGGLE, () => {
-    isVoiceMode.value = !isVoiceMode.value
-  })
-  onKeyStroke('Escape', () => {
-    if (isVoiceMode.value) isVoiceMode.value = false
-  })
-  appWindow?.listen<{ buffer: number[]; mimeType: string }>('screenshot', async (e) => {
-    if (messageInputDom.value) {
-      messageInputDom.value.focus()
-      try {
-        const buffer = new Uint8Array(e.payload.buffer)
-        const blob = new Blob([buffer], { type: e.payload.mimeType })
-        const file = new File([blob], 'screenshot.png', { type: e.payload.mimeType })
-        await processFiles([file], messageInputDom.value, showFileModalCallback)
-      } catch (error) {
-        logger.error('处理截图失败:', error)
+  mittCleanups.push(
+    useMitt.on(MittEnum.AT, (event: string | { user: UserItem }) => {
+      if (typeof event === 'object' && event.user) {
+        handleAit(event.user)
+      } else {
+        const userInfo = groupStore.getUserInfo(event as string)
+        if (userInfo) handleAit(userInfo)
       }
-    }
-  })
+    })
+  )
+  mittCleanups.push(
+    useMitt.on(MittEnum.VOICE_RECORD_TOGGLE, () => {
+      isVoiceMode.value = !isVoiceMode.value
+    })
+  )
+  keyStrokeStops.push(
+    onKeyStroke('Escape', () => {
+      if (isVoiceMode.value) isVoiceMode.value = false
+    })
+  )
+  if (appWindow) {
+    addListener(
+      appWindow.listen<{ buffer: number[]; mimeType: string }>('screenshot', async (e) => {
+        if (messageInputDom.value) {
+          messageInputDom.value.focus()
+          try {
+            const buffer = new Uint8Array(e.payload.buffer)
+            const blob = new Blob([buffer], { type: e.payload.mimeType })
+            const file = new File([blob], 'screenshot.png', { type: e.payload.mimeType })
+            await processFiles([file], messageInputDom.value, showFileModalCallback)
+          } catch (error) {
+            logger.error('处理截图失败:', error)
+          }
+        }
+      }),
+      'msg-input-screenshot'
+    )
+  }
   window.addEventListener('click', closeMenu, true)
   window.addEventListener('keydown', disableSelectAll)
 })
@@ -684,6 +717,11 @@ onUnmounted(() => {
   window.removeEventListener('click', closeMenu, true)
   window.removeEventListener('keydown', disableSelectAll)
   useMitt.off(MittEnum.GLOBAL_FILES_DROP, handleGlobalFilesDrop)
+  // F-1 修复：清理 async onMounted 中注册的 mitt handler 与键盘监听
+  mittCleanups.forEach((cleanup) => cleanup())
+  mittCleanups.length = 0
+  keyStrokeStops.forEach((stop) => stop())
+  keyStrokeStops.length = 0
   if (isMobileRef.value) {
     removeMobileClosePanel()
   }

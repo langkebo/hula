@@ -192,6 +192,11 @@ watch(isOpen, (open) => {
     document.removeEventListener('click', handleClickOutside)
   }
 })
+
+// F-1 修复：组件卸载时若 isOpen 仍为 true，watch 不会再次触发，需手动清理 document 监听器
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped lang="scss">

@@ -118,6 +118,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDialog } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -144,6 +145,7 @@ import ChatHeaderToolbar from './ChatHeaderToolbar.vue'
 
 const logger = createLogger('ChatHeader')
 const { t } = useI18n()
+const dialog = useDialog()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
@@ -310,16 +312,22 @@ const handleUpdateRemark = async (remark: string) => {
   }
 }
 
-const handleClearMessages = async () => {
+const handleClearMessages = () => {
   if (!currentSessionRoomId.value) return
 
-  if (!window.confirm(t('home.chat_header.clear_messages_confirm_message'))) return
-
-  try {
-    chatStore.clearRoomMessages(currentSessionRoomId.value)
-  } catch (error) {
-    logger.error('清空消息失败:', error)
-  }
+  dialog.warning({
+    title: t('common.tip'),
+    content: t('home.chat_header.clear_messages_confirm_message'),
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: () => {
+      try {
+        chatStore.clearRoomMessages(currentSessionRoomId.value!)
+      } catch (error) {
+        logger.error('清空消息失败:', error)
+      }
+    }
+  })
 }
 
 const handleShowQRCode = async () => {

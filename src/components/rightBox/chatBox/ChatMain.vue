@@ -63,7 +63,15 @@
       class="float-footer-button"
       v-if="shouldShowFloatButton && currentNewMsgCount && !isMobileRef"
       :style="{ bottom: '24px', right: '50px' }">
-      <div class="float-box" :class="{ max: currentNewMsgCount?.count > 99 }" @click="handleFloatButtonClick">
+      <div
+        class="float-box"
+        :class="{ max: currentNewMsgCount?.count > 99 }"
+        role="button"
+        tabindex="0"
+        :aria-label="t('home.chat_main.new_messages', { count: newMsgCountLabel })"
+        @click="handleFloatButtonClick"
+        @keydown.enter.prevent="handleFloatButtonClick"
+        @keydown.space.prevent="handleFloatButtonClick">
         <n-flex justify="space-between" align="center">
           <n-icon
             :color="currentNewMsgCount?.count > 99 ? 'var(--tjg-color-danger-500)' : 'var(--tjg-color-primary-500)'">

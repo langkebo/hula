@@ -147,6 +147,13 @@ watch(
 onMounted(() => {
   fetchImage()
 })
+
+// F-1 修复：组件在拖动中卸载时 onMouseUp 不会触发，需手动清理 window 上的 mousemove/mouseup 监听器
+onUnmounted(() => {
+  dragging = false
+  window.removeEventListener('mousemove', onMouseMove)
+  window.removeEventListener('mouseup', onMouseUp)
+})
 </script>
 
 <style scoped lang="scss">

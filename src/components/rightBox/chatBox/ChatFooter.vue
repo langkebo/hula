@@ -65,7 +65,8 @@
       @emoji-handle="emojiHandle"
       @mobile-voice-cancel="handleMobileVoiceCancel"
       @mobile-voice-send="handleMobileVoiceSend"
-      @more-send-files="handleMoreSendFiles" />
+      @more-send-files="handleMoreSendFiles"
+      @more-location="showLocationModal = true" />
   </main>
 </template>
 
