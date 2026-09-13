@@ -1,68 +1,40 @@
 <template>
   <div class="h-15rem w-full">
-    <van-swipe class="h-full" :loop="false" :show-indicators="true" indicator-color="var(--tjg-text-tertiary)">
-      <van-swipe-item v-for="(page, pageIndex) in pages" :key="pageIndex">
-        <div class="px-15px pt-15px pb-30px grid grid-cols-4 gap-3 auto-rows-18">
-          <div
-            @click="handleClickIcon(item)"
-            v-for="item in page"
-            :key="item.label"
-            class="flex flex-col gap-8px items-center justify-center rounded-2">
-            <svg
-              v-if="item.label !== '文件' && item.label !== '图片' && item.isShow()"
-              class="h-24px w-24px iconpark-icon">
-              <use :href="`#${item.icon}`"></use>
-            </svg>
+    <div class="px-15px pt-15px pb-20px flex flex-wrap justify-around gap-4">
+      <div
+        v-for="item in options"
+        :key="item.label"
+        v-show="item.isShow()"
+        class="flex flex-col gap-8px items-center justify-center w-16"
+        @click="handleClickIcon(item)">
+        <!-- 文件：原生选择器 -->
+        <van-uploader v-if="item.label === '文件'" accept="*/*" multiple :after-read="afterReadFile">
+          <svg class="h-24px w-24px iconpark-icon">
+            <use :href="`#${item.icon}`"></use>
+          </svg>
+        </van-uploader>
 
-            <van-uploader
-              v-if="item.label === '文件' && item.isShow()"
-              accept="*/*"
-              multiple
-              :after-read="afterReadFile">
-              <svg class="h-24px w-24px iconpark-icon">
-                <use :href="`#${item.icon}`"></use>
-              </svg>
-              <svg
-                v-if="item.showArrow"
-                :class="[
-                  'h-15px w-15px iconpark-icon transition-transform duration-300',
-                  item.isRotate ? 'rotate' : ''
-                ]">
-                <use href="#down" />
-              </svg>
-            </van-uploader>
+        <!-- 图片：原生选择器 -->
+        <van-uploader v-else-if="item.label === '图片'" accept="image/*" multiple :after-read="afterReadImage">
+          <svg class="h-24px w-24px iconpark-icon">
+            <use :href="`#${item.icon}`"></use>
+          </svg>
+        </van-uploader>
 
-            <van-uploader
-              v-if="item.label === '图片' && item.isShow()"
-              accept="image/*"
-              multiple
-              :after-read="afterReadImage">
-              <svg class="h-24px w-24px iconpark-icon">
-                <use :href="`#${item.icon}`"></use>
-              </svg>
-              <svg
-                v-if="item.showArrow"
-                :class="[
-                  'h-15px w-15px iconpark-icon transition-transform duration-300',
-                  item.isRotate ? 'rotate' : ''
-                ]">
-                <use href="#down" />
-              </svg>
-            </van-uploader>
+        <!-- 位置：触发位置选择 -->
+        <svg v-else class="h-24px w-24px iconpark-icon">
+          <use :href="`#${item.icon}`"></use>
+        </svg>
 
-            <div class="text-10px" v-if="item.isShow()">
-              {{ item.label }}
-            </div>
-          </div>
-        </div>
-      </van-swipe-item>
-    </van-swipe>
+        <div class="text-10px">{{ item.label }}</div>
+      </div>
+    </div>
 
     <van-popup v-model:show="pickRtcCall" position="bottom">
       <div class="flex flex-col items-center justify-center">
         <div class="w-full text-center py-3" @click="startVideoCall">视频通话</div>
         <div class="w-full text-center py-3" @click="startAudioCall">语音通话</div>
-        <div class="w-full text-center py-3">取消</div>
+        <div class="w-full text-center py-3" @click="pickRtcCall = false">取消</div>
       </div>
     </van-popup>
   </div>
@@ -72,7 +44,7 @@
 import type { UploaderFileListItem } from 'vant'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { CallTypeEnum } from '@/enums'
-import { CallTypeEnum as CallTypeEnumValue, RoomTypeEnum } from '@/enums'
+import { CallTypeEnum as CallTypeEnumValue } from '@/enums'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
@@ -82,40 +54,39 @@ const { showFeedback } = useActionFeedback()
 
 const globalStore = useGlobalStore()
 
-const isGroup = computed(() => globalStore.currentSession?.type === RoomTypeEnum.GROUP)
-
 const pickRtcCall = ref(false)
-// ==== 展开面板 ====
+
+// 对齐原型《移动端聊天输入栏》九宫格：图片 / 文件 / 语音 / 视频 / 位置
 const options = ref([
-  { label: '文件', icon: 'file', showArrow: false, isRotate: true, onClick: () => {}, isShow: () => true },
-  { label: '图片', icon: 'photo', showArrow: false, isRotate: true, onClick: () => {}, isShow: () => true },
-  { label: '视频', icon: 'voice', showArrow: true, isRotate: false, onClick: () => {}, isShow: () => true },
-  { label: '历史', icon: 'history', showArrow: true, isRotate: false, onClick: () => {}, isShow: () => true },
+  { label: '图片', icon: 'photo', onClick: () => {}, isShow: () => true },
+  { label: '文件', icon: 'file', onClick: () => {}, isShow: () => true },
   {
-    label: '视频通话',
-    icon: 'video-one',
-    showArrow: true,
-    isRotate: false,
+    label: '语音',
+    icon: 'voice',
     onClick: () => {
       pickRtcCall.value = true
     },
-    isShow: () => {
-      return !isGroup.value
-    }
+    isShow: () => true
+  },
+  {
+    label: '视频',
+    icon: 'video-one',
+    onClick: () => {
+      pickRtcCall.value = true
+    },
+    isShow: () => true
+  },
+  {
+    label: '位置',
+    icon: 'location',
+    onClick: () => {
+      emit('location')
+    },
+    isShow: () => true
   }
 ])
 
 type PanelOption = (typeof options.value)[number]
-
-// 将数据分页，每页8个（2行4列）
-const pages = computed(() => {
-  const pageSize = 8
-  const result: PanelOption[][] = []
-  for (let i = 0; i < options.value.length; i += pageSize) {
-    result.push(options.value.slice(i, i + pageSize))
-  }
-  return result
-})
 
 const handleClickIcon = (item: PanelOption) => {
   item.onClick()
@@ -145,7 +116,10 @@ const startAudioCall = () => {
   startCall(CallTypeEnumValue.AUDIO)
 }
 
-const emit = defineEmits<(e: 'sendFiles', files: File[]) => void>()
+const emit = defineEmits<{
+  (e: 'sendFiles', files: File[]): void
+  (e: 'location'): void
+}>()
 
 const selectedFiles = ref<File[]>([])
 

@@ -3,6 +3,9 @@
     <Settings />
     <PersonalInfo :is-show="isShow"></PersonalInfo>
 
+    <!-- 快捷功能入口（对齐原型《移动端我的页》九宫格） -->
+    <MobileQuickActions />
+
     <!-- 显示名称编辑 -->
     <div class="px-16px mt-16px z-1">
       <div class="text-14px font-500 text-[--tjg-text-secondary] mb-8px">
@@ -39,6 +42,7 @@
 import { showConfirmDialog, showFailToast, showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import MobileQuickActions from '#/components/my/MobileQuickActions.vue'
 import PersonalInfo from '#/components/my/PersonalInfo.vue'
 import Settings from '#/components/my/Settings.vue'
 import { matrixClientService, profileService } from '@/services/matrix'

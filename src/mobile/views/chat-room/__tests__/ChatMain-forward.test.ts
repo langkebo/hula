@@ -31,7 +31,7 @@ vi.mock('#/views/chat-room/MobileForwardDialog.vue', () => ({
   default: {
     name: 'MobileForwardDialog',
     template: '<div class="mock-forward-dialog"></div>',
-    props: ['visible', 'eventId', 'roomId'],
+    props: ['visible', 'eventId', 'roomId', 'eventIds'],
     emits: ['update:visible']
   }
 }))
@@ -50,8 +50,7 @@ const i18n = createI18n({
           forward: '',
           react: '',
           pin: '',
-          delete: '',
-          multi_select: ''
+          delete: ''
         },
         reaction: { add_failed: '' }
       },
@@ -72,9 +71,7 @@ describe('MobileChatMain - forward dialog', () => {
           HeaderBar: true,
           FooterBar: true,
           ChatMain: true,
-          MobileMessageActions: true,
           MobileReactionPicker: true,
-          MobileBatchToolbar: true,
           LocationShare: true,
           MobileForwardDialog: true,
           'van-popover': true,

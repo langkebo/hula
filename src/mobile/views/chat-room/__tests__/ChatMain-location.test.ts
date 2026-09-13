@@ -47,8 +47,7 @@ const i18n = createI18n({
           forward: '',
           react: '',
           pin: '',
-          delete: '',
-          multi_select: ''
+          delete: ''
         },
         reaction: { add_failed: '' }
       },
@@ -68,9 +67,7 @@ describe('MobileChatMain - location sharing', () => {
           HeaderBar: true,
           FooterBar: true,
           ChatMain: true,
-          MobileMessageActions: true,
           MobileReactionPicker: true,
-          MobileBatchToolbar: true,
           LocationShare: true,
           'van-popover': true,
           'van-button': true,

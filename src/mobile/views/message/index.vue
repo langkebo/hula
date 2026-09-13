@@ -36,6 +36,9 @@
       </template>
     </NavBar>
 
+    <!-- 连接状态横幅：同步/重连/断线时提示（对齐原型「正在连接…」banner） -->
+    <MobileConnectionBanner />
+
     <MobileSessionList
       :filtered-session-list="filteredSessionList"
       v-model:search-text="searchText"
@@ -94,6 +97,7 @@
 import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
 import { useMessage } from '@/composables/chat/useMessage'
+import MobileConnectionBanner from '@/mobile/components/common/MobileConnectionBanner.vue'
 import MobileCreateDialogs from '@/mobile/components/message/MobileCreateDialogs.vue'
 import MobileSessionHeader from '@/mobile/components/message/MobileSessionHeader.vue'
 import MobileSessionList from '@/mobile/components/message/MobileSessionList.vue'

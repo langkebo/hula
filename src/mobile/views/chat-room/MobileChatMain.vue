@@ -38,15 +38,11 @@
     </template>
     <template #footer>
       <MobileBatchToolbar
-        v-if="showBatchToolbar"
-        :room-id="globalStore.currentSessionRoomId"
-        @forward="showForwardDialog = true"
-        @cancel="showBatchToolbar = false" />
-      <FooterBar v-else-if="!isBotSession" ref="footerBar" @location="handleLocationClick"></FooterBar>
+        v-if="!isBotSession && chatStore.isMsgMultiChoose"
+        @forward="handleBatchForward"
+        @exit="handleBatchExit" />
+      <FooterBar v-else-if="!isBotSession" ref="footerBar" @location="handleLocationClick" />
     </template>
-
-    <!-- 移动端消息长按操作面板 -->
-    <MobileMessageActions v-model:visible="showMessageActions" @select="handleMessageActionSelect" />
 
     <!-- 移动端快捷表情回应面板 -->
     <MobileReactionPicker
@@ -62,7 +58,11 @@
       @update:show="showLocationShare = $event" />
 
     <!-- 移动端转发对话框 -->
-    <MobileForwardDialog v-model:visible="showForwardDialog" :event-id="reactionEventId" :room-id="reactionRoomId" />
+    <MobileForwardDialog
+      v-model:visible="showForwardDialog"
+      :event-id="reactionEventId"
+      :room-id="reactionRoomId"
+      :event-ids="forwardEventIds" />
 
     <!-- 移动端私密模式确认对话框（van-dialog） -->
     <PrivateModeConfirmDialog
@@ -85,18 +85,13 @@ import { createLogger } from '@/utils/Logger'
 
 const TjgAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/TjgAssistant.vue'))
 
+import MobileBatchToolbar from '#/components/chat-room/MobileBatchToolbar.vue'
 import PrivateModeConfirmDialog from '#/components/chat-room/PrivateModeConfirmDialog.vue'
-import MobileBatchToolbar from '#/components/message/MobileBatchToolbar.vue'
 import LocationShare from '#/views/chat-room/LocationShare.vue'
 import MobileForwardDialog from '#/views/chat-room/MobileForwardDialog.vue'
 
 import { type AssistantModelPreset, useAssistantModelPresets } from '@/composables/chat/useAssistantModelPresets'
-
-/**
- * 提供给子级组件触发消息操作面板的 injection key
- * 子级调用: `(eventId: string, roomId: string) => void`
- */
-const MOBILE_MESSAGE_ACTIONS_INJECTION_KEY = Symbol('mobileMessageActions')
+import { useChatStore } from '@/stores/domains/chat/chat'
 
 const logger = createLogger('MobileChatMain')
 const { t } = useI18n()
@@ -107,6 +102,7 @@ defineOptions({
 })
 
 const globalStore = useGlobalStore()
+const chatStore = useChatStore()
 const { currentSession } = storeToRefs(globalStore)
 const globalUnreadCount = computed(() => globalStore.messageUnreadCount ?? 0)
 
@@ -307,9 +303,6 @@ const handleAssistantImport = async () => {
 
 // ── 消息操作面板 & 快捷表情回应 ──────────────────────────
 
-/** 消息操作面板（长按菜单） */
-const showMessageActions = ref(false)
-
 /** 快捷表情回应面板 */
 const showReactionPicker = ref(false)
 const reactionEventId = ref('')
@@ -320,34 +313,10 @@ const showLocationShare = ref(false)
 
 /** 转发对话框 */
 const showForwardDialog = ref(false)
+/** 批量转发的 eventId 列表(单条转发时为空数组) */
+const forwardEventIds = ref<string[]>([])
 
-/** 多选批量操作工具栏 */
-const showBatchToolbar = ref(false)
-
-/** 子级组件（如 renderMessage/ContextMenu）调用此函数以显示操作面板 */
-const showMessageActionsForEvent = (eventId: string, roomId: string) => {
-  reactionEventId.value = eventId
-  reactionRoomId.value = roomId
-  showMessageActions.value = true
-}
-
-provide(MOBILE_MESSAGE_ACTIONS_INJECTION_KEY, showMessageActionsForEvent)
-
-const handleMessageActionSelect = (action: string) => {
-  logger.info('消息操作选中:', action)
-  switch (action) {
-    case 'react':
-      showReactionPicker.value = true
-      break
-    case 'forward':
-      showForwardDialog.value = true
-      break
-    case 'multi_select':
-      showBatchToolbar.value = true
-      break
-    // 其他操作由子级组件自行处理
-  }
-}
+/** 子级组件（如 renderMessage/ContextMenu）通过 mitt 等通道直接触发各面板 */
 
 const handleReacted = (emoji: string) => {
   logger.info('表情回应已添加:', emoji)
@@ -360,6 +329,27 @@ const handleReacted = (emoji: string) => {
 /** 位置共享点击处理 */
 const handleLocationClick = () => {
   showLocationShare.value = true
+}
+
+/**
+ * 多选模式下的转发处理
+ * MobileBatchToolbar 触发 forward 事件时,设置当前源事件并打开转发对话框
+ * (此时多选模式已由 toolbar 内部 exitMultiSelect 退出)
+ *
+ * payload.eventIds 长度为多选条数;为兼容单条链路,保持 reactionEventId 作为首条 eventId
+ */
+const handleBatchForward = (payload: { eventId: string; roomId: string; eventIds: string[] }): void => {
+  reactionEventId.value = payload.eventId
+  reactionRoomId.value = payload.roomId
+  forwardEventIds.value = payload.eventIds
+  showForwardDialog.value = true
+}
+
+/** 多选模式退出处理 */
+const handleBatchExit = (): void => {
+  // chat store 的 isMsgMultiChoose 已由 toolbar 内部清空
+  // 此处仅记录日志,后续如需清理其他状态可在此扩展
+  logger.info('[MobileChatMain] 退出多选模式')
 }
 </script>
 

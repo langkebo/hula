@@ -348,7 +348,10 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .space-view {
-  min-height: 100vh;
+  height: 100%;
+  min-height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--van-background-2);
   padding: 16px;
 }

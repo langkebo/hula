@@ -45,7 +45,9 @@
         :buffer="6"
         key-field="roomId"
         @scroll="emit('scroll', $event)">
-        <template #default="{ item }">
+        <template #default="{ item, index }">
+          <!-- 置顶分组标签：仅在首个置顶项前显示 -->
+          <div v-if="isFirstPinned(item, index)" class="pinned-group-label">置顶</div>
           <van-swipe-cell
             @open="emit('swipe-open')"
             @close="emit('swipe-close')"
@@ -147,7 +149,7 @@ import { formatChatTime } from '@/utils/ComputedTime.ts'
 
 defineOptions({ name: 'MobileSessionList' })
 
-defineProps<{
+const props = defineProps<{
   filteredSessionList: MobileSessionListItem[]
   searchText: string
   loading: boolean
@@ -172,6 +174,13 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+/** 是否为置顶分组的第一项（用于渲染「置顶」分组标签） */
+function isFirstPinned(item: MobileSessionListItem, index: number): boolean {
+  if (!item.top) return false
+  if (index <= 0) return true
+  return !props.filteredSessionList[index - 1]?.top
+}
 </script>
 
 <style scoped lang="scss">
@@ -194,5 +203,13 @@ const { t } = useI18n()
 ::deep(#search) {
   position: relative;
   z-index: 1500;
+}
+
+.pinned-group-label {
+  padding: 6px 16px 2px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--tjg-text-tertiary);
+  background: var(--tjg-surface-subtle);
 }
 </style>

@@ -21,7 +21,13 @@
           <van-loading size="16px" />
         </div>
         <template v-else-if="sourcePreview">
-          <span class="mobile-forward-dialog__preview-label">{{ t('message_container.long_press.forward') }}:</span>
+          <span class="mobile-forward-dialog__preview-label">
+            {{
+              isBatch
+                ? t('message.multi_choose.batch_forward_preview', { count: eventIds?.length ?? 0 })
+                : t('message_container.long_press.forward')
+            }}:
+          </span>
           <span class="mobile-forward-dialog__preview-text">{{ sourcePreview }}</span>
         </template>
       </div>
@@ -97,10 +103,16 @@ const logger = createLogger('MobileForwardDialog')
 
 const props = defineProps<{
   visible: boolean
-  /** 源消息 eventId */
+  /** 源消息 eventId(单条转发时使用) */
   eventId: string
   /** 源消息所在 roomId */
   roomId: string
+  /**
+   * 批量转发的 eventId 列表
+   * - 提供时表示批量转发模式,使用 forwardMultiple 一次性转发所有 eventId
+   * - 不提供或长度 = 1 时回退到单条 forward 行为
+   */
+  eventIds?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -125,6 +137,11 @@ const loadingEvent = ref(false)
 const sourceEvent = ref<SourceEvent | null>(null)
 // 搜索关键字
 const searchQuery = ref('')
+
+/**
+ * 是否批量转发模式(eventIds 长度 > 1)
+ */
+const isBatch = computed(() => Array.isArray(props.eventIds) && props.eventIds.length > 1)
 
 /**
  * 源消息预览文本
@@ -184,12 +201,21 @@ const handleToggleRoom = (roomId: string): void => {
 
 /**
  * 提交转发
+ * - 单条走 flow.forward()(转 sourceEvent)
+ * - 多条走 flow.forwardMultiple()(转 eventIds 列表)
  */
 const handleSubmit = async (): Promise<void> => {
   const selectedRoomIds = [...flow.targetRoomIds.value]
   if (selectedRoomIds.length === 0) return
 
-  const successCount = await flow.forward()
+  let successCount = 0
+  if (isBatch.value && props.eventIds && props.roomId) {
+    const result = await flow.forwardMultiple(props.roomId, props.eventIds)
+    successCount = result.success
+  } else {
+    successCount = await flow.forward()
+  }
+
   if (successCount > 0) {
     emit('forwarded', selectedRoomIds)
     emit('update:visible', false)
