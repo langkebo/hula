@@ -284,6 +284,14 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: '/mobile/dynamic/:id',
         name: 'mobileDynamicDetail',
         component: MobileDynamicDetail
+      },
+      {
+        // 空间页作为主导航 Tab 之一，必须置于 /mobile/home 壳层内，
+        // 才能与消息/好友/房间/我的共享底部 TabBar（原型移动端 5 Tab 同壳）。
+        path: '/mobile/space',
+        name: 'mobileSpaceView',
+        component: () => import('../../mobile/views/space/SpaceView.vue'),
+        meta: { keepAlive: true }
       }
     ]
   },
@@ -422,11 +430,6 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
     path: '/mobile/encryption',
     name: 'mobileEncryption',
     component: () => import('../../mobile/views/my/EncryptionSettings.vue')
-  },
-  {
-    path: '/mobile/space',
-    name: 'mobileSpaceView',
-    component: () => import('../../mobile/views/space/SpaceView.vue')
   },
   {
     path: '/mobile/addGroupQRCode',
