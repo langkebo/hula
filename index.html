@@ -164,6 +164,70 @@
         height: 34px;
         opacity: 0.3;
       }
+      /* === Mobile portrait skeleton (max-width 480px) === */
+      @media screen and (max-width: 480px) {
+        #skeleton {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: #fafafa;
+        }
+        html[data-theme="dark"] #skeleton {
+          background: #1b1b1b;
+        }
+        /* Hide desktop columns on mobile */
+        .sk-sidebar,
+        .sk-list,
+        .sk-main {
+          display: none;
+        }
+        /* Mobile-friendly logo centered */
+        .sk-mobile-splash {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 24px;
+          width: 100%;
+          padding: 40px 24px;
+          box-sizing: border-box;
+        }
+        .sk-mobile-logo {
+          width: 120px;
+          height: auto;
+          opacity: 0.5;
+        }
+        .sk-mobile-loading-bar {
+          width: 200px;
+          height: 3px;
+          background: #e0e0e0;
+          border-radius: 2px;
+          overflow: hidden;
+        }
+        html[data-theme="dark"] .sk-mobile-loading-bar {
+          background: #333;
+        }
+        .sk-mobile-loading-bar::after {
+          content: '';
+          display: block;
+          height: 100%;
+          width: 40%;
+          background: #ccc;
+          border-radius: 2px;
+          animation: sk-mobile-pulse 1.5s ease-in-out infinite;
+        }
+        html[data-theme="dark"] .sk-mobile-loading-bar::after {
+          background: #555;
+        }
+        @keyframes sk-mobile-pulse {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(350%); }
+        }
+      }
+      /* Ensure mobile splash container exists (injected by JS before Vue mounts) */
+      .sk-mobile-splash { display: none; }
+
       @keyframes sk-pulse {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.4; }
@@ -179,6 +243,12 @@
     <div id="app">
       <!-- 骨架屏：Vue 挂载后自动替换 -->
       <div id="skeleton">
+        <!-- Mobile portrait splash (shown via CSS media query on ≤480px) -->
+        <div class="sk-mobile-splash">
+          <img class="sk-mobile-logo" src="/tjg.png" alt="" />
+          <div class="sk-mobile-loading-bar"></div>
+        </div>
+        <!-- Desktop skeleton (hidden on mobile via CSS media query) -->
         <div class="sk-sidebar">
           <div class="sk-avatar"></div>
           <div class="sk-icon"></div>
