@@ -31,19 +31,18 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
 
   function handleRequestReceived(request: FriendRequest): void {
     const existing = requestFriendsList.value.find((r) => r.userId === request.user_id)
-    if (!existing) {
-      requestFriendsList.value.push({
-        userId: request.user_id,
-        displayName: request.display_name,
-        avatarUrl: request.avatar_url,
-        message: request.message,
-        timestamp: request.timestamp,
-        direction: request.direction,
-        applyId: request.user_id
-      })
-      triggerRef(requestFriendsList)
-      globalStore.incrementFriendUnreadCount()
-    }
+    if (existing) return
+    requestFriendsList.value.push({
+      userId: request.user_id,
+      displayName: request.display_name,
+      avatarUrl: request.avatar_url,
+      message: request.message,
+      timestamp: request.timestamp,
+      direction: request.direction,
+      applyId: request.user_id
+    })
+    triggerRef(requestFriendsList)
+    globalStore.incrementFriendUnreadCount()
   }
 
   async function loadFriendRequests(): Promise<void> {
