@@ -49,8 +49,14 @@ export function useSpaces(): UseSpacesResult {
       if (result) await load()
       return result
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      // 409 M_ROOM_IN_USE：同名 Space 已存在，给用户友好提示
+      if (msg.includes('409') || msg.includes('M_ROOM_IN_USE')) {
+        error.value = '该名称已被使用，请更换名称'
+      } else {
+        error.value = msg
+      }
       logger.error('create space failed', err)
-      error.value = err instanceof Error ? err.message : String(err)
       return null
     } finally {
       mutating.value = false
