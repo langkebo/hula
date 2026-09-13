@@ -141,20 +141,28 @@ function ensureCommitMatchesPin(pin) {
 
 function runPnpmPack() {
   fs.mkdirSync(vendorDir, { recursive: true })
+  // `pnpm pack` derives the file name from the package name. Since the fork was
+  // renamed to the scoped `@langkebo/matrix-js-sdk`, the artefact is
+  // `langkebo-matrix-js-sdk-<version>.tgz` — NOT `matrix-js-sdk-<version>.tgz`.
+  // Derive the stem from package.json so both the stale cleanup and the
+  // candidate scan keep working across (un)scoped renames, and keep matching the
+  // stable `matrix-js-sdk*.tgz` spec name referenced by package.json.
+  const sdkPkgName = readJson(path.join(sdkSiblingRoot, 'package.json')).name || ''
+  const packStem = sdkPkgName.replace(/^@/, '').replace(/\//g, '-')
+  const isPackTarball = (name) =>
+    name.endsWith('.tgz') && (name.startsWith(packStem) || name.startsWith('matrix-js-sdk'))
   for (const stale of fs.readdirSync(vendorDir)) {
-    if (stale.startsWith('matrix-js-sdk') && stale.endsWith('.tgz')) {
+    if (isPackTarball(stale)) {
       fs.rmSync(path.join(vendorDir, stale))
     }
   }
-  // pnpm pack writes the file into --pack-destination with a deterministic
-  // name `matrix-js-sdk-<version>.tgz`; we rename to the stable spec name.
+  // pnpm pack writes the file into --pack-destination with the package-derived
+  // name; we rename it to the stable spec name `matrix-js-sdk.tgz`.
   execSync(`pnpm pack --pack-destination "${vendorDir}"`, {
     cwd: sdkSiblingRoot,
     stdio: 'inherit'
   })
-  const candidates = fs
-    .readdirSync(vendorDir)
-    .filter((n) => n.startsWith('matrix-js-sdk') && n.endsWith('.tgz'))
+  const candidates = fs.readdirSync(vendorDir).filter(isPackTarball)
   if (candidates.length !== 1) {
     fail(2, `expected exactly one packed tarball in ${vendorDir}, found ${candidates.length}`)
   }
