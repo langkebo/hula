@@ -3,11 +3,11 @@
   "comment": "Release-branch SDK/backend pin. CI blocks merges to release/* unless every field here matches the actually installed artifacts. See docs/HULA_SDK_REINTEGRATION_OPTIMIZATION_PLAN_2026-05-03.md §16.1.3.",
   "sdk_package_name": "matrix-js-sdk",
   "sdk_version": "40.2.0-langkebo.1",
-  "sdk_commit": "22df2d53a507c877a78410fc93298064466b06b2",
+  "sdk_commit": "b031f2cbe9583737a91058efe1b590880884f13f",
   "sdk_mode": "tarball",
   "ledger_schema": "1",
-  "synapse_rust_commit": "f0db222fc131b608982f2ce81dc40f8643079ba8",
-  "tarball_sha256": "sha256-20a5e0de9f4b619ca784ffb18e6b8ca6175b91560c672eae4649f0990797a7f6",
-  "pinned_at": "2026-09-13T04:07:35.190Z",
+  "synapse_rust_commit": "59d527f96b53b65ce474eeaaf7785f5babaa7d8d",
+  "tarball_sha256": "sha256-71fa396b63c176fc51999774329a08286f4be941689275a85ae58123c2283ea4",
+  "pinned_at": "2026-09-13T04:40:47.346Z",
   "pinned_by": "ljf"
 }
