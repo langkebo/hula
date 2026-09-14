@@ -105,6 +105,22 @@ function main() {
     die(1, `meta/sdk-pin.json schema violations:\n  - ${schemaErrors.join('\n  - ')}`)
   }
 
+  // Ledger schema three-way binding: pin.ledger_schema must match the SDK's
+  // LEDGER_SCHEMA_VERSION (scripts/contract-sync.mjs). This closes the blind
+  // spot where backend schema 1->2->3->4 left the pin frozen at "1" while the
+  // commit/hash bindings above stayed green.
+  const sdkContractSync = path.join(repoRoot, '..', 'matrix-js-sdk', 'scripts', 'contract-sync.mjs')
+  if (fs.existsSync(sdkContractSync)) {
+    const m = /LEDGER_SCHEMA_VERSION\s*=\s*["']([^"']+)["']/.exec(fs.readFileSync(sdkContractSync, 'utf8'))
+    if (m && m[1] !== pin.ledger_schema) {
+      die(
+        1,
+        `ledger_schema mismatch: pin='${pin.ledger_schema}' but SDK LEDGER_SCHEMA_VERSION='${m[1]}' (${sdkContractSync}). ` +
+          `Run \`pnpm contract:sync\` in matrix-js-sdk, commit the regenerated files, then set meta/sdk-pin.json ledger_schema to '${m[1]}'.`,
+      )
+    }
+  }
+
   const sdkSpec = pkg.dependencies?.['matrix-js-sdk'] ?? pkg.devDependencies?.['matrix-js-sdk']
   if (!sdkSpec) die(1, 'matrix-js-sdk is not a dependency of hula')
 

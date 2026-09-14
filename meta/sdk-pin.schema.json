@@ -27,7 +27,10 @@
       "description": "Git SHA of the matrix-js-sdk checkout."
     },
     "sdk_mode": { "enum": ["link", "tarball", "registry"] },
-    "ledger_schema": { "const": "1" },
+    "ledger_schema": {
+      "enum": ["1", "2", "3", "4"],
+      "description": "Matches LEDGER_SCHEMA_VERSION in matrix-js-sdk/scripts/contract-sync.mjs and SCHEMA_VERSION in synapse-rust/src/web/routes/ledger_export.rs."
+    },
     "synapse_rust_commit": {
       "type": "string",
       "pattern": "^([0-9a-f]{7,40}|)$"
