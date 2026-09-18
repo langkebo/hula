@@ -18,6 +18,7 @@ const makeAdmin = () =>
   ({
     getUsersPaginated: vi.fn(),
     getUser: vi.fn(),
+    getUserById: vi.fn(),
     createUser: vi.fn(),
     resetPassword: vi.fn(),
     setAdmin: vi.fn(),
@@ -118,6 +119,40 @@ describe('AdminUserService', () => {
         isGuest: true
       })
     ])
+  })
+
+  it('getUserById returns mapped user info from SDK', async () => {
+    ;(admin as any).getUserById.mockResolvedValueOnce({
+      name: '@bob:server.com',
+      displayname: 'Bob Test',
+      avatar_url: 'mxc://bob-avatar',
+      admin: false,
+      deactivated: false,
+      is_guest: false,
+      created_ts: 789
+    })
+
+    const result = await service.getUserById('@bob:server.com')
+
+    expect((admin as any).getUserById).toHaveBeenCalledWith('@bob:server.com', false)
+    expect(result).toEqual({
+      userId: '@bob:server.com',
+      name: '@bob:server.com',
+      avatarUrl: 'mxc://bob-avatar',
+      admin: false,
+      deactivated: false,
+      isGuest: false,
+      createdTs: 789,
+      displayname: 'Bob Test'
+    })
+  })
+
+  it('getUserById returns null when SDK returns null', async () => {
+    ;(admin as any).getUserById.mockResolvedValueOnce(null)
+
+    const result = await service.getUserById('@missing:server.com')
+
+    expect(result).toBeNull()
   })
 
   it('createUser composes full matrix user id from client domain', async () => {

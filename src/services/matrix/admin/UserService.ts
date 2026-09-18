@@ -67,6 +67,28 @@ export class AdminUserService {
     }
   }
 
+  /**
+   * 获取用户详情（getUser 的语义化别名）
+   * 通过 SDK 的 getUserById 方法封装，消除裸调用 authedRequestWithPath。
+   *
+   * @param userId 目标用户 ID
+   * @returns 用户信息或 null
+   *
+   * @see SDK 方法: AdminUserManager.getUserById(userId, throwOnError)
+   *   - 走 synapse-rust `/v2/users/{id}` 路由的 upsert 语义
+   */
+  async getUserById(userId: string): Promise<UserInfo | null> {
+    try {
+      const admin = await this.sdkAdmin()
+      const user = await admin.getUserById(userId, false)
+      return user ? this.mapUserInfo(user, userId) : null
+    } catch (err) {
+      if (this.isPermissionDenied(err)) return null
+      logger.error(`[Admin] 获取用户详情失败: ${err}`)
+      return null
+    }
+  }
+
   async createUser(
     username: string,
     password: string,
