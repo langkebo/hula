@@ -52,7 +52,7 @@ vi.mock('@/services/i18n', () => ({
 
 // MSW handlers at FULL V1-prefixed URLs.
 // VoiceManager uses REST-style paths: /voice/{mediaId}/convert (not /voice/convert).
-// Backend (synapse-rust/src/web/routes/voice.rs) registers the same pattern.
+// Backend (synapse-web/src/routes/voice.rs) registers the same pattern.
 // Specific paths registered before the :messageId wildcard so /voice/config etc. don't get swallowed.
 setupMswServer(
   http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/upload`, ({ request }) => {

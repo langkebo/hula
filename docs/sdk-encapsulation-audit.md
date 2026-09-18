@@ -141,7 +141,7 @@
 - **前端落点（收口后）**：`MatrixCapabilityService.ts` 用 `getUnstableFeatures()` 替换手写 `unstable_features` 解析。
 
 ### 6.2 P0-2 · `uploadVoice` 传输格式不匹配（**前后端二选一，推荐后端补 multipart**）
-- **事实**：后端 `synapse-rust/src/web/routes/voice.rs::upload_voice_message` 接收 `Json<Value>`，要求 `{content: base64, content_type, duration_ms, waveform}`；前端 `MatrixVoiceService.ts:158-162` 发 `FormData`（`file` + `roomId`）→ **视频/语音消息上传必然失败**。
+- **事实**：后端 `synapse-web/src/routes/voice.rs::upload_voice_message` 接收 `Json<Value>`，要求 `{content: base64, content_type, duration_ms, waveform}`；前端 `MatrixVoiceService.ts:158-162` 发 `FormData`（`file` + `roomId`）→ **视频/语音消息上传必然失败**。
 - **方案 A（推荐，后端）**：后端 handler 改 `multipart/form-data`（axum `multipart::Multipart`），与语音原始字节上传天然契合，避免 base64 膨胀 ~33%。SDK `uploadVoiceMessage` 同步改 FormData 通道。
 - **方案 B（前端）**：前端读文件 → base64 → 按 `{content, content_type, duration_ms}` JSON 提交；大文件有内存/体积代价。
 - **决策点**：需后端确认 wire format 后再动 SDK `voice/index.ts`。二者不匹配期间**前端保留裸调合理**。

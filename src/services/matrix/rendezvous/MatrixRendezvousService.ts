@@ -2,7 +2,7 @@
  * Matrix Rendezvous 服务
  *
  * 封装 SDK RendezvousManager，提供二维码登录会话管理功能（MSC3886）。
- * 对应后端: synapse-rust/src/web/routes/rendezvous.rs
+ * 对应后端: synapse-web/src/routes/rendezvous.rs
  */
 
 import { createLogger } from '@/utils/Logger'

@@ -1,6 +1,16 @@
 packages:
   - "."
 
+allowBuilds:
+  '@parcel/watcher': set this to true or false
+  '@vue-office/docx': set this to true or false
+  '@vue-office/excel': set this to true or false
+  '@vue-office/pdf': set this to true or false
+  '@vue-office/pptx': set this to true or false
+  esbuild: set this to true or false
+  msw: set this to true or false
+  vue-demi: set this to true or false
+
 onlyBuiltDependencies:
   - '@vue-office/docx'
   - '@vue-office/excel'

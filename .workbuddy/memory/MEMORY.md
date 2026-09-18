@@ -55,3 +55,9 @@
 - ✅ S1-S7, S9-S10, S14-S16, S22, S27 已修复（TDD）
 - 待办：S8（EventNotifier Redis 扇出接线）、S11-S13, S17-S21, S23-S26
 - 测试命令：`cd /Users/ljf/Desktop/hu_ts/synapse-rust && cargo test --package synapse-services --lib --features test-utils sync_service`
+
+## SDK 收口事实（2026-09-11 审计，详见 docs/sdk-encapsulation-audit.md）
+- **可安全收口**：getFriendStatusInfo（getFriendManager 代理）、fetchServerMessages（createMessagesRequest 透传原始 chunk，dir 需转 Direction 枚举）
+- **必须保留裸调**：getCapabilities（SDK 丢顶层 unstable_features）、getUserDevices（downloadKeysForUsers 写 crypto store 有副作用）、SSO/SAML（synapse-rust 私有端点）
+- **三方 wire format 不一致待解**：voice 上传（后端收 Json content=base64，前端发 FormData）、AIConnection（后端路由未实现 + SDK/前端参数结构不同）
+- 收口铁律：必须三方核对（前端请求体 vs SDK 方法内部发什么 vs 后端 handler 收什么），SDK 有同名方法 ≠ 可收口

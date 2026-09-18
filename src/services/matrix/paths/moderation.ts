@@ -9,7 +9,7 @@
  *   - REPORT_USER   — ReportService.reportUser 遍历事件调用 reportEvent，不走 user-report 端点
  *   - SCANNER_INFO   — ReportService.getScannerInfo 使用 MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO
  *
- * 后端路由（synapse-rust/src/web/routes/moderation.rs）：
+ * 后端路由（synapse-web/src/routes/moderation.rs）：
  *   v3（含 MSC4260 room report）
  *     PUT  /_matrix/client/v3/rooms/{room_id}/report/{event_id}/score
  *     POST /_matrix/client/v3/rooms/{room_id}/report
