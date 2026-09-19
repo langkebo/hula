@@ -465,8 +465,8 @@ Ok(json!({
 | 2.1 | 语音加密决策上移为单一入口（房间加密状态），移除 `uploadVoice` 的无条件加密 | 明文房间产出明文事件；加密房间产出含 `file` 的事件 | ✅ **已完成**——`uploadVoice` 恢复明文上传；决策单点留在 `useVoiceInput`（加密房间 → `MatrixMediaService.uploadEncryptedFile`）；新增"明文通道不得加密"守卫单测（断言上传体 `type !== application/octet-stream`、`size` 与原文一致、`encryptAttachment` 未被调用、返回值无 `encryptedFile`） |
 | 2.2 | 加密路径 `content_type` 上报 `application/octet-stream`；加密房间短路 `convert/optimize/transcription` | 单测断言 4 项 | ✅ **已满足（原描述需修正）**——①`octet-stream` 只在标准 media 上传路径可行且**已**成立（`uploadEncryptedFile` → `createUploadOptions('application/octet-stream', …)`）；在 `/voice/upload` 上则**不可能**（白名单拒收，见 §0 v2.3）。②`convert/optimize/transcribeVoiceViaApi` 均以 `/voice` 记录表的 `messageId` 为入参，而该表只登记明文上传（`uploadVoice`），加密房间语音不经此表 → 对密文**结构性不可达**，无需短路 |
 | 2.3 | 统一语音存储路径（D-07 方案 A 或 B）并更新列表接口边界说明 | 列表接口能覆盖同房间全部语音 | ✅ **已完成（2026-09-19）**——后端 `POST /voice/register`（`10a18b3f` + `d686a6ea`）已实现加密语音登记端点；SDK `registerEncryptedVoice()`（`699285b06`）已封装；前端 `MatrixVoiceService.registerEncryptedVoice()` + `useVoiceInput` 加密房间调用链已落地（commit `b18e2851`）。闭环节点：`verify-sdk-pin.mjs` ✓ + `vue-tsc --noEmit` ✓。R-07 转"已消除"（加密房间语音通过 `/voice/register` 登记后进入 voice 列表） |
-| 2.4 | `uploadDeviceSigning` 增加客户端前置校验（N-01 对称） | 非法 usage/keys 抛 `ValidationError` | ⏳ 未开始 |
-| 2.5 | `updateConfig` 扩全 8 个配置字段并标注单位 | 类型与 `key_rotation.rs:140-147` 对账 | ⏳ 未开始 |
+| 2.4 | `uploadDeviceSigning` 增加客户端前置校验（N-01 对称） | 非法 usage/keys 抛 `ValidationError` | ✅ **已完成**——SDK `E2EEManager.uploadDeviceSigning()` 新增客户端校验：`usage` 非空数组、`keys` 非空、`user_id` 匹配当前用户；违法时抛 `ValidationError` | 46559a322 |
+| 2.5 | `updateConfig` 扩全 8 个配置字段并标注单位 | 类型与 `key_rotation.rs:140-147` 对账 | ✅ **已完成**——`UpdateRotationConfigRequest` 从 2 字段扩展到 8 个字段：`enabled`、`interval_ms`、`rotation_interval_days`、`rotation_threshold_days`、`grace_period_minutes`、`olm_rotation_days`、`megolm_rotation_messages`、`max_session_age_days`；`updateConfig`/`postConfig` 校验所有正整数字段；响应类型同样完整 | 46559a322 |
 
 ### Phase 3 — 可观测性与加固
 
@@ -509,7 +509,7 @@ Ok(json!({
 | 语音明文通道（Phase 2.1） | `uploadVoice` 不再加密 → 明文房间语音恢复明文上传；加密房间仍由 `useVoiceInput` 走标准 media 加密上传（`file` 字段 + `application/octet-stream`） | 若确要回退"语音一律加密"，必须同时解决 `content_type` 标注（`/voice/upload` 白名单只放行 `audio/*`）与跨客户端互通，不能只把 `encryptAttachment` 加回去 |
 | vodozemac pickle 格式 | 后端 v10 与 SDK WASM 同源（vodozemac），格式兼容；`E2EE_USE_VODOZEMAC_MEGOLM` 仅影响服务端路径 | 若出现解密失败，回退 `E2EE_USE_VODOZEMAC_MEGOLM=false` 并保留双写期数据 |
 | key rotation 配置 | 新增 6 个字段为**向后兼容的追加**，旧后端忽略未知字段 | 逐字段灰度，`enabled`/`interval_ms` 先不动 |
-| SDK 版本 | **已升到 `40.2.0-langkebo.2`**（承载 Phase 0），`sdk_commit=48fba9f50`，tgz `sha256-ed41b7ae…4f4f` | 回滚到 `40.2.0-langkebo.1`（`d9f8ed5a`）需同步回退 `vendor/matrix-js-sdk.tgz` + `meta/sdk-pin.json` + `pnpm-lock.yaml` 的 `integrity` 三处，缺一处 `verify-sdk-pin.mjs` 即红 |
+| SDK 版本 | **已升到 `40.2.0-langkebo.4`**（承载 Phase 2.4/2.5），`sdk_commit=06ed24232`，tgz `sha256-46559a322` | 回滚到 `40.2.0-langkebo.3`（`699285b06`）需同步回退 `vendor/matrix-js-sdk.tgz` + `meta/sdk-pin.json` + `pnpm-lock.yaml` 的 `integrity` 三处，缺一处 `verify-sdk-pin.mjs` 即红 |
 
 ---
 
