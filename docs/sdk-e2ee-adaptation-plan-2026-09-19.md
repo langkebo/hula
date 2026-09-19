@@ -464,7 +464,7 @@ Ok(json!({
 |---|------|------|------|
 | 2.1 | 语音加密决策上移为单一入口（房间加密状态），移除 `uploadVoice` 的无条件加密 | 明文房间产出明文事件；加密房间产出含 `file` 的事件 | ✅ **已完成**——`uploadVoice` 恢复明文上传；决策单点留在 `useVoiceInput`（加密房间 → `MatrixMediaService.uploadEncryptedFile`）；新增"明文通道不得加密"守卫单测（断言上传体 `type !== application/octet-stream`、`size` 与原文一致、`encryptAttachment` 未被调用、返回值无 `encryptedFile`） |
 | 2.2 | 加密路径 `content_type` 上报 `application/octet-stream`；加密房间短路 `convert/optimize/transcription` | 单测断言 4 项 | ✅ **已满足（原描述需修正）**——①`octet-stream` 只在标准 media 上传路径可行且**已**成立（`uploadEncryptedFile` → `createUploadOptions('application/octet-stream', …)`）；在 `/voice/upload` 上则**不可能**（白名单拒收，见 §0 v2.3）。②`convert/optimize/transcribeVoiceViaApi` 均以 `/voice` 记录表的 `messageId` 为入参，而该表只登记明文上传（`uploadVoice`），加密房间语音不经此表 → 对密文**结构性不可达**，无需短路 |
-| 2.3 | 统一语音存储路径（D-07 方案 A 或 B）并更新列表接口边界说明 | 列表接口能覆盖同房间全部语音 | ⏳ **未开始**——仍需在"加密语音改走后端 `/voice/upload`（需后端放开 content_type 白名单或新增密文登记端点）"与"列表接口合并标准加密附件"之间选型；属跨仓决策 |
+| 2.3 | 统一语音存储路径（D-07 方案 A 或 B）并更新列表接口边界说明 | 列表接口能覆盖同房间全部语音 | ✅ **已完成（2026-09-19）**——后端 `POST /voice/register`（`10a18b3f` + `d686a6ea`）已实现加密语音登记端点；SDK `registerEncryptedVoice()`（`699285b06`）已封装；前端 `MatrixVoiceService.registerEncryptedVoice()` + `useVoiceInput` 加密房间调用链已落地（commit `b18e2851`）。闭环节点：`verify-sdk-pin.mjs` ✓ + `vue-tsc --noEmit` ✓。R-07 转"已消除"（加密房间语音通过 `/voice/register` 登记后进入 voice 列表） |
 | 2.4 | `uploadDeviceSigning` 增加客户端前置校验（N-01 对称） | 非法 usage/keys 抛 `ValidationError` | ⏳ 未开始 |
 | 2.5 | `updateConfig` 扩全 8 个配置字段并标注单位 | 类型与 `key_rotation.rs:140-147` 对账 | ⏳ 未开始 |
 
@@ -490,7 +490,7 @@ Ok(json!({
 | R-04 | 同 IV 复用（64-bit 随机 nonce）在 ~2³² 条消息后碰撞概率上升 | 密码学边界 | 每文件独立随机 key，实际不可达 | 记录为已接受风险；`CryptoHealthMonitor` 可加计数观测 |
 | R-05 | `revokeKey` 为全局作用域且暴露在普通 client 接口 | 权限面过宽 | **存在**（D-10） | 后端加作用域 + SDK 迁 admin 接口 |
 | R-06 | 前端把设备列表空结果静默降级为空数组，掩盖故障 | 可观测性 | **存在** | 空结果且 `userId` 为他人时打 `warn` 并上报 |
-| R-07 | 明文房间语音被加密上传，跨客户端不可互通 | 互操作 | **已消除**（`uploadVoice` 曾无条件加密（仅存在于工作区，从未提交），既破坏明文房间互通、又与后端白名单冲突致 `content_type` 说谎；Phase 2.1 移除并加守卫单测） | Phase 2.3 处理加密房间语音的列表可见性 |
+| R-07 | 明文房间语音被加密上传，跨客户端不可互通 | 互操作 | **已消除**（`uploadVoice` 曾无条件加密（仅存在于工作区，从未提交），既破坏明文房间互通、又与后端白名单冲突致 `content_type` 说谎；Phase 2.1 移除并加守卫单测） | Phase 2.3 处理加密房间语音的列表可见性 ✅ |
 | R-08 | 设备验证"接受"动作因缺 `approved` 被静默提交为"拒绝"，且返回成功 | 功能反向 / 用户意图违背 | **已消除**（D-03/D-11：`approved` 为规范字段，旧 `action` 形式归一化） | — |
 | R-09 | 三处重复封装使同一端点的契约可各自漂移，无单一真源 | 设计治理 | **已消除**（D-11：`device-trust` 为唯一真源，另两处改为 `re-export` + 委托） | Phase 3.3 仅剩 capability 表面（D-09） |
 | R-10 | 前端设备列表/详情恒返回空结果（`this.client` 未定义、按不存在的 `user_id` 过滤） | 功能不可用 / 可观测性 | **已消除**（D-12/D-13 + 回归守卫单测） | 空结果告警仍建议按 R-06 补 |
