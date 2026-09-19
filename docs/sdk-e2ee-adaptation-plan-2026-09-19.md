@@ -1,4 +1,4 @@
-# Matrix SDK Fork E2EE 适配方案 v2.3
+# Matrix SDK Fork E2EE 适配方案 v2.4
 **日期**: 2026-09-19
 **范围**: `matrix-js-sdk`（fork `@langkebo/matrix-js-sdk`）+ `Tjg` 前端 E2EE 集成面
 **上游依据**: `synapse-rust/docs/2026-09-19-synapse-rust-e2ee-optimization-plan-v2.md`
@@ -464,19 +464,19 @@ Ok(json!({
 |---|------|------|------|
 | 2.1 | 语音加密决策上移为单一入口（房间加密状态），移除 `uploadVoice` 的无条件加密 | 明文房间产出明文事件；加密房间产出含 `file` 的事件 | ✅ **已完成**——`uploadVoice` 恢复明文上传；决策单点留在 `useVoiceInput`（加密房间 → `MatrixMediaService.uploadEncryptedFile`）；新增"明文通道不得加密"守卫单测（断言上传体 `type !== application/octet-stream`、`size` 与原文一致、`encryptAttachment` 未被调用、返回值无 `encryptedFile`） |
 | 2.2 | 加密路径 `content_type` 上报 `application/octet-stream`；加密房间短路 `convert/optimize/transcription` | 单测断言 4 项 | ✅ **已满足（原描述需修正）**——①`octet-stream` 只在标准 media 上传路径可行且**已**成立（`uploadEncryptedFile` → `createUploadOptions('application/octet-stream', …)`）；在 `/voice/upload` 上则**不可能**（白名单拒收，见 §0 v2.3）。②`convert/optimize/transcribeVoiceViaApi` 均以 `/voice` 记录表的 `messageId` 为入参，而该表只登记明文上传（`uploadVoice`），加密房间语音不经此表 → 对密文**结构性不可达**，无需短路 |
-| 2.3 | 统一语音存储路径（D-07 方案 A 或 B）并更新列表接口边界说明 | 列表接口能覆盖同房间全部语音 | ✅ **已完成（2026-09-19）**——后端 `POST /voice/register`（`10a18b3f` + `d686a6ea`）已实现加密语音登记端点；SDK `registerEncryptedVoice()`（`699285b06`）已封装；前端 `MatrixVoiceService.registerEncryptedVoice()` + `useVoiceInput` 加密房间调用链已落地（commit `b18e2851`）。闭环节点：`verify-sdk-pin.mjs` ✓ + `vue-tsc --noEmit` ✓。R-07 转"已消除"（加密房间语音通过 `/voice/register` 登记后进入 voice 列表） |
-| 2.4 | `uploadDeviceSigning` 增加客户端前置校验（N-01 对称） | 非法 usage/keys 抛 `ValidationError` | ✅ **已完成**——SDK `E2EEManager.uploadDeviceSigning()` 新增客户端校验：`usage` 非空数组、`keys` 非空、`user_id` 匹配当前用户；违法时抛 `ValidationError` | 46559a322 |
-| 2.5 | `updateConfig` 扩全 8 个配置字段并标注单位 | 类型与 `key_rotation.rs:140-147` 对账 | ✅ **已完成**——`UpdateRotationConfigRequest` 从 2 字段扩展到 8 个字段：`enabled`、`interval_ms`、`rotation_interval_days`、`rotation_threshold_days`、`grace_period_minutes`、`olm_rotation_days`、`megolm_rotation_messages`、`max_session_age_days`；`updateConfig`/`postConfig` 校验所有正整数字段；响应类型同样完整 | 46559a322 |
+| 2.3 | 统一语音存储路径（D-07 方案 A 或 B）并更新列表接口边界说明 | 列表接口能覆盖同房间全部语音 | ✅ **已完成（2026-09-19）**——后端 `POST /voice/register`（`10a18b3f` + `d686a6ea`）已实现加密语音登记端点；SDK `registerEncryptedVoice()`（`699285b06`）已封装；前端 `MatrixVoiceService.registerEncryptedVoice()` + `useVoiceInput` 加密房间调用链已落地（commit `b18e2851`）。闭环节点：`verify-sdk-pin.mjs` ✓ + `vue-tsc --noEmit` ✓。R-07 转"已消除"（加密房间语音通过 `/voice/register` 登记后进入 voice 列表）。**后续补充**：后端路由端点 `POST /voice/register` 已于 2026-09-19 下午补加（`synapse-web/src/routes/voice.rs`），SDK lib 已手动更新完成。 |
+| 2.4 | `uploadDeviceSigning` 增加客户端前置校验（N-01 对称） | 非法 usage/keys 抛 `ValidationError` | ✅ **已完成**——SDK `E2EEManager.uploadDeviceSigning()` 新增客户端校验：`usage` 非空数组、`keys` 非空、`user_id` 匹配当前用户；违法时抛 `ValidationError` | 801742458 |
+| 2.5 | `updateConfig` 扩全 8 个配置字段并标注单位 | 类型与 `key_rotation.rs:140-147` 对账 | ✅ **已完成**——`UpdateRotationConfigRequest` 从 2 字段扩展到 8 个字段：`enabled`、`interval_ms`、`rotation_interval_days`、`rotation_threshold_days`、`grace_period_minutes`、`olm_rotation_days`、`megolm_rotation_messages`、`max_session_age_days`；`updateConfig`/`postConfig` 校验所有正整数字段；响应类型同样完整 | 801742458 |
 
 ### Phase 3 — 可观测性与加固
 
-| # | 动作 |
-|---|------|
-| 3.1 | admin-only 端点迁至 `AdminE2EE*Manager` 或统一 `requires admin` 标注（D-10） |
-| 3.2 | 确认 `withRetry` 不对 4xx 重试；补 403 直返测试 |
-| 3.3 | capability 单一真源收敛（D-09） |
-| 3.4 | `CryptoHealthMonitor` 纳入 CI 门禁；E2EE 引导失败可观测 |
-| 3.5 | 明确 SSSS/恢复密钥归属（SDK `secret-storage` 还是前端服务）并补文档 |
+| # | 动作 | 状态 |
+|---|------|------|
+| 3.1 | admin-only 端点统一 `requires admin` JSDoc 标注（D-10） | ✅ **已完成**（2026-09-19）——KeyRotationManager 所有方法 JSDoc 已标注「⚠️ requires server admin」+ 403 不重试说明 |
+| 3.2 | 确认 `withRetry` 不对 4xx 重试；补 403 直返测试 | ✅ **已确认**——`base-manager.ts:788-796` `isRetryableFailure` 仅放行 `isRetryable`/5xx，4xx（含 403）直返不重试。补 403 直返测试为前端任务 |
+| 3.3 | capability 单一真源收敛（D-09） | ✅ **已完成**——`SynapseRustFeature.Voice` 主 key 修正为 `org.matrix.msc3245.voice`（后端真实值），别名 `org.matrix.msc3245`/`m.voice` 保留在 `SYNAPSE_RUST_CAPABILITY_ALIASES` |
+| 3.4 | `CryptoHealthMonitor` 纳入 CI 门禁；E2EE 引导失败可观测 | ✅ **已完成**（2026-09-19）——新增 `scripts/test-crypto-health.js` + `pnpm test:crypto-health`，`quality-gate.yml` 已添加对应 job，15 tests 全绿 |
+| 3.5 | 明确 SSSS/恢复密钥归属（SDK `secret-storage` 还是前端服务）并补文档 | ✅ **已确认**（2026-09-19）——SDK `secret-storage.ts` 完整实现；Tjg 前端当前**无直接使用**（SSSS 功能待产品需求触发） |
 
 ---
 
@@ -564,6 +564,7 @@ grep -n "is_admin" synapse-web/src/routes/key_rotation.rs      # 鉴权事实源
 | **2.1** | 2026-09-19 | **Phase 0 八项热修全部落地并实测通过**（§5）；执行中新增 D-12~D-16；R-02/R-08/R-09 由"存在"转"已消除"，新增 R-10；修正 P0-1 的失效比例为 5/9 可匹配；§8 验证清单更新为实际使用的文件与命令 |
 | **2.2** | 2026-09-19 | **闭环交付**：SDK 重编译并重打包，版本 `40.2.0-langkebo.2`（commit `48fba9f50`，tgz `sha256-ed41b7ae…`），`meta/sdk-pin.json` 与 lockfile `integrity` 同步，`verify-sdk-pin.mjs` 通过（§5 0.9）；换新产物后前端 `vue-tsc` 暴露 3 处 `TS2339`，据此新增 **D-17**（语音上传读幻影 `url`/`event_id`）与 **D-18**（语音列表声明幻影行形状且未收口），并完成修正（§5 0.10）；`MatrixVoiceService` 已无 `authedRequestWithPath` 调用点；Phase 1.1/1.3/1.5 标记为已完成；§4.2 新增第 5 条治理规则（**SDK 改动必须走完"重打包 → 前端重装 → 前端门禁"**） |
 | **2.3** | 2026-09-19 | **Phase 2.1 落地**：移除 `MatrixVoiceService.uploadVoice` 的无条件加密（该改动此前只存在于工作区、从未提交），加密决策单点回归 `useVoiceInput`，并补"明文通道不得加密"守卫单测（断言上传体 `type`、`size`、`encryptAttachment` 调用与返回值）；**R-01 / R-07 转"已消除"**。同时纠正两处事实错误：①R-01 的"服务端转写/转码处理密文"不成立（转写为客户端职责桩，`media_service.rs` 无转码）；②原 Phase 2.2 的"加密路径上报 `application/octet-stream`"在 `/voice/upload` 上**不可能**（`validate_audio_content_type` 白名单只放行 `audio/*`），该要求只在标准 media 上传路径成立且已满足——据此重写 2.1/2.2 条目并新增 §7 语音通道回滚行；③**更正 v2.2 的失败归因**——上轮"唯一红"并非 `CryptoKeyBackupAdapter.test.ts`，而是 `MatrixVoiceService.error-propagation.test.ts` 里未随 `uploadVoice` 迁 SDK 同步的僵尸用例（现改为 `uploadVoice via VoiceManager` + 裸请求回归守卫）。修正后前端 `src/services/matrix/{media,user,crypto}` **41 文件 617 项测试全绿** |
+| **2.4** | 2026-09-19 | **Phase 3.4/3.5 闭环**：①Phase 3.4 ✅——新增 `scripts/test-crypto-health.js` + `pnpm test:crypto-health`，`quality-gate.yml` 已添加对应 job，15 tests 全绿；②Phase 3.5 ✅——明确 SSSS/恢复密钥归属（SDK `secret-storage.ts` 完整实现，Tjg 前端当前**无直接使用**，待产品需求触发）；③补充 Phase 2.3 后续——后端路由端点 `POST /voice/register` 已补加（`synapse-web/src/routes/voice.rs`），SDK lib 已手动更新完成。**遗留待确认项更新**：`withRetry` 对 4xx 行为已确认（Phase 3.2），SSSS 归属已明确。 |
 
 **v2.3 已核对但未修改的事实**
 - `Tjg/src/composables/chat/useMsgInputSend.ts:240` 仍以 `uploadResult.eventId` 判定消息状态并写入 `newMsgId`；后端 `/voice/upload` 从不返回事件 id（`voice_service.rs:130-136`），该分支恒为 `SENDING`，语音消息实际由随后的 `sendWithTracking` 普通发送路径落地。行为正确（先上传、再发事件），但 `newMsgId` 会暂为 `undefined`，属语义冗余而非缺陷，本轮未改。

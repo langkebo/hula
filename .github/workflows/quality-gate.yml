@@ -86,6 +86,9 @@ jobs:
       - name: Stability Contract Tests
         run: pnpm test:contract
 
+      - name: Crypto Health Monitor Tests (Phase 3.4)
+        run: pnpm test:crypto-health
+
       - name: SDK Pin Verification
         continue-on-error: true
         run: pnpm verify:sdk-pin
