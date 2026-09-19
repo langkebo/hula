@@ -4,7 +4,6 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import matrixClientService from '../MatrixClientService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 interface VoiceTranscriptionParams {
@@ -83,6 +82,21 @@ function isObject(value: unknown): value is Record<string, unknown> {
  */
 type VoiceManagerInstance = ReturnType<NonNullable<MatrixClient['getVoiceManager']>>
 
+/**
+ * 语音列表行的真实形状。
+ *
+ * 由 SDK 的 `IVoiceMessage` 派生（`voice_service.rs::record_to_message_json`）：
+ * `{ media_id, user_id, room_id, content_uri, content_type, duration_ms, size_bytes, created_ts }`。
+ *
+ * ⚠️ 此前这里声明的是 `{ event_id, sender, duration, timestamp }` —— 后端从未
+ * 返回过这四个字段，调用方读到的永远是 `undefined`。声明式为假却没有触发类型
+ * 报错，是因为响应体被 `Record<string, unknown>` + `as` 转换吞掉了。
+ */
+type VoiceMessageRow = Awaited<ReturnType<VoiceManagerInstance['listRoomVoiceMessages']>>['messages'][number]
+
+/** 列表页游标：后端 `next_batch` 是毫秒 `created_ts`（i64），不是字符串。 */
+type VoiceListPage = { messages: VoiceMessageRow[]; next_batch: number | null }
+
 class MatrixVoiceService extends BaseMatrixService {
   // FT-122: 校验必需的 ID 参数非空，避免空字符串传给后端
   private requireNonEmpty(value: string, name: string): void {
@@ -141,7 +155,29 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
-  async uploadVoice(roomId: string, file: Blob | File, filename = 'voice.webm'): Promise<VoiceMessageResult> {
+  /**
+   * 上传语音到后端 `POST /voice/upload`（**明文通道**）。
+   *
+   * ⚠️ 本方法**不做加密**：加密与否的决策在调用方 `useVoiceInput.uploadVoiceToMatrix`
+   * 单点完成——加密房间走 `matrixMediaService.uploadEncryptedFile`（标准 media 上传，
+   * 密文以 `application/octet-stream` 落库），明文房间才走这里。
+   *
+   * 之所以不能让密文走本通道：`/voice/upload` 的 `content_type` 有 `audio/*` 白名单校验
+   * （`synapse-services/src/voice_service.rs:7,43-48,81`，`validate_audio_content_type`），
+   * 密文只能被错误地标注成 `audio/webm`，而该值会被当作落库 mimetype
+   * （`media_service.rs:187-195`，扩展名亦由此推导）并在语音列表行里回显
+   * （`voice_service.rs:284,302`）——即"字节与声明不符"，读取方按 mimetype 解码必得垃圾。
+   *
+   * @param roomId 语音归属房间（作为 media 记录的 `room_id`，非事件房间）
+   * @param contentType 原始音频 MIME，必须命中后端白名单
+   */
+  async uploadVoice(
+    roomId: string,
+    file: Blob | File,
+    filename = 'voice.webm',
+    durationMs = 0,
+    contentType = 'audio/webm'
+  ): Promise<VoiceMessageResult> {
     this.requireNonEmpty(roomId, 'roomId')
     const client = matrixClientService.getClient()
     if (!client) {
@@ -157,13 +193,17 @@ class MatrixVoiceService extends BaseMatrixService {
 
       const formData = new FormData()
       formData.append('file', file, filename)
-      if (roomId) formData.append('roomId', roomId)
+      if (roomId) formData.append('room_id', roomId)
+      if (durationMs > 0) formData.append('duration_ms', String(durationMs))
+      formData.append('content_type', contentType)
 
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'POST', path, undefined, formData)
+      const result = await this.getVoiceMgr().uploadVoiceMessageMultipart({ formData })
 
-      const mxcUrl = (result.url as string) ?? (result.content_uri as string)
+      // 后端 upload 响应只有 { content_uri, content, content_type, duration_ms, size }
+      // （synapse-services/src/voice_service.rs:130-136），既没有 event_id 也没有 url。
+      // 事件 id 由「发送房间事件」那一步产生，上传阶段无法也不应伪造。
+      const mxcUrl = result.content_uri
       return {
-        eventId: (result.event_id as string) ?? (result.eventId as string),
         url: mxcUrl,
         filename,
         mxcUrl,
@@ -299,73 +339,50 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
-  async getRoomVoiceList(
-    roomId: string,
-    limit: number = 50,
-    offset: number = 0
-  ): Promise<{
-    voices: Array<{ event_id: string; sender: string; duration: number; timestamp: number }>
-    total: number
-  }> {
+  /**
+   * 房间语音列表（keyset 分页）。
+   *
+   * 收口到 SDK `VoiceManager.listRoomVoiceMessages`：路径、query（`limit`/`from`）
+   * 与响应形状都由 SDK 契约层负责，前端不再自己拼 query 字符串。
+   *
+   * @param offset 上一页返回的 `next_batch`（毫秒 `created_ts` 游标），首页传 0。
+   */
+  async getRoomVoiceList(roomId: string, limit: number = 50, offset: number = 0): Promise<VoiceListPage> {
     this.requireNonEmpty(roomId, 'roomId')
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
 
     try {
       const path = MATRIX_PATHS.VOICE.ROOM_LIST(roomId)
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
-        return { voices: [], total: 0 }
+        return { messages: [], next_batch: null }
       }
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path, {
-        limit: String(limit),
-        offset: String(offset)
-      })
-      return {
-        voices:
-          (result.voices as Array<{ event_id: string; sender: string; duration: number; timestamp: number }>) ?? [],
-        total: (result.total as number) ?? 0
-      }
+      const page = await this.getVoiceMgr().listRoomVoiceMessages(roomId, { limit, from: offset })
+      return { messages: page?.messages ?? [], next_batch: page?.next_batch ?? null }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getRoomVoiceList failed: ${err}`)
-      return { voices: [], total: 0 }
+      return { messages: [], next_batch: null }
     }
   }
 
-  async getUserVoiceList(
-    userId: string,
-    limit: number = 50,
-    offset: number = 0
-  ): Promise<{
-    voices: Array<{ event_id: string; room_id: string; duration: number; timestamp: number }>
-    total: number
-  }> {
+  /**
+   * 用户语音列表（keyset 分页）。后端只允许查询调用者本人。
+   *
+   * @param offset 上一页返回的 `next_batch`（毫秒 `created_ts` 游标），首页传 0。
+   */
+  async getUserVoiceList(userId: string, limit: number = 50, offset: number = 0): Promise<VoiceListPage> {
     this.requireNonEmpty(userId, 'userId')
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
 
     try {
       const path = MATRIX_PATHS.VOICE.USER_LIST(userId)
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
-        return { voices: [], total: 0 }
+        return { messages: [], next_batch: null }
       }
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', path, {
-        limit: String(limit),
-        offset: String(offset)
-      })
-      return {
-        voices:
-          (result.voices as Array<{ event_id: string; room_id: string; duration: number; timestamp: number }>) ?? [],
-        total: (result.total as number) ?? 0
-      }
+      const page = await this.getVoiceMgr().listUserVoiceMessages(userId, { limit, from: offset })
+      return { messages: page?.messages ?? [], next_batch: page?.next_batch ?? null }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getUserVoiceList failed: ${err}`)
-      return { voices: [], total: 0 }
+      return { messages: [], next_batch: null }
     }
   }
 

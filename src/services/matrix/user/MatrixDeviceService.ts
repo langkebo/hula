@@ -6,7 +6,6 @@
  */
 
 import type { IDeviceUpdateRequest } from 'matrix-js-sdk'
-import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -83,36 +82,25 @@ class MatrixDeviceService extends BaseMatrixService {
   /**
    * 获取指定用户的所有设备（用于好友详情页设备列表展示）
    *
-   * 通过 `client.getUserDevices(userId)` 拉取目标用户的设备信息。该方法在本
-   * SDK fork 中已实现（`device-keys/index.ts:482`），返回
-   * `Record<string, IContent>`（以 device_id 为键的对象映射，不是数组）。
-   * 使用 `Object.values()` 转为数组后归一化为 `Device[]`。
+   * 契约：`DeviceKeysManager.getUserDevices(userId)`
+   *   → `MatrixClient.getUserDevices` → `POST /_matrix/client/v3/keys/query`
+   *   → 返回 `{ device_keys: { [userId]: { [deviceId]: DeviceKeys } } }`，
+   *   SDK 已解包为 `{ [deviceId]: DeviceKeys }`。
    *
-   * `IContent` 为通用内容映射，设备信息典型字段包括 `device_id`、
-   * `display_name`、`last_seen_ts`、`last_seen_ip`、`last_seen_user_agent`。
-   * `verified` 字段若不存在则默认 `false`。
-   *
-   * 失败时返回空数组，不抛出异常（优雅降级）。
+   * ⚠️ 不能用 `GET /devices` 收口：该端点没有 `{user_id}` 路径段
+   * （`synapse-web/src/routes/device.rs` 用 `auth_user.user_id`），只能查自己，
+   * 且响应是 `{ devices: [...] }` 数组。用它做第三方查询会让好友设备列表恒为空。
    *
    * @param userId 目标用户 MXID
    * @returns 设备列表（失败时返回空数组，不抛出异常）
    */
   async getUserDevices(userId: string): Promise<Device[]> {
     try {
-      const client = this.getClient()
-      // 本 SDK fork（matrix-js-sdk）的 MatrixClient.getUserDevices 仅有类型声明
-      // （src/types/matrix-js-sdk-augmentations.d.ts:178），运行时并未实现；
-      // DeviceKeysManager 内的同名方法（matrix-js-sdk/lib/device-keys/index.js:308）
-      // 又代理到不存在的 client.getUserDevices，同样抛 "is not a function"。
-      // 因此直接打 keys/query 端点查询目标用户设备密钥，响应结构：
-      // { device_keys: { [userId]: { [deviceId]: 设备密钥内容 } } }。
-      const resp = await authedRequestWithPath<{
-        device_keys?: Record<string, Record<string, Record<string, unknown>>>
-      }>(client, 'POST', '/_matrix/client/v3/keys/query', undefined, {
-        device_keys: { [userId]: [] }
-      })
-      const deviceMap = resp?.device_keys?.[userId] ?? {}
-      const rawDevices = Object.values(deviceMap)
+      // ⚠️ 必须走 `this.getClient()`（BaseMatrixService 的 provider 取 client）。
+      // 上一版收口写成 `this.client.getDeviceKeysManager()`，而本类没有 `client`
+      // 字段 → 运行期 TypeError 被 catch 吞掉，好友设备列表恒为空。
+      const deviceMap = (await this.getClient().getDeviceKeysManager().getUserDevices(userId)) ?? {}
+      const rawDevices = Object.values(deviceMap) as Array<Record<string, unknown>>
       const devices: Device[] = rawDevices
         .map((content) => {
           // keys/query 返回的是设备密钥，display_name 通常位于 unsigned.device_display_name

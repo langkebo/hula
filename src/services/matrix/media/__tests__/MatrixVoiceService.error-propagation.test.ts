@@ -7,9 +7,9 @@
  * 这些测试与 MatrixVoiceService.test.ts 互补：前者验证成功路径，
  * 此文件专门覆盖错误传播路径。
  *
- * 注：deleteVoice/getVoiceConfig 已迁移到 VoiceManager（Task 5），
- * 这些方法通过 getVoiceMgr() 调用 VoiceManager。uploadVoice 仍走
- * authedRequestWithPath（FormData 上传），保留 authedRequestMock。
+ * 注：uploadVoice / deleteVoice / getVoiceConfig 均已迁到 `VoiceManager`
+ * （Phase 0 收口），全部经 `getVoiceMgr()` 调用；`authedRequestMock` 仅保留
+ * 用于断言"上传不再走裸请求"这一回归守卫。
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -38,10 +38,12 @@ const authedRequestMock = vi.fn()
 
 const deleteVoiceMessageMock = vi.fn()
 const getVoiceConfigMock = vi.fn()
+const uploadVoiceMessageMultipartMock = vi.fn()
 
 const voiceMgr = {
   deleteVoiceMessage: deleteVoiceMessageMock,
-  getVoiceConfig: getVoiceConfigMock
+  getVoiceConfig: getVoiceConfigMock,
+  uploadVoiceMessageMultipart: uploadVoiceMessageMultipartMock
 }
 
 const mockClient = {
@@ -114,13 +116,16 @@ describe('MatrixVoiceService error propagation (FT-113)', () => {
     })
   })
 
-  describe('uploadVoice (still uses authedRequestWithPath)', () => {
+  describe('uploadVoice via VoiceManager', () => {
     it('propagates HTTP errors from the upload endpoint', async () => {
-      authedRequestMock.mockRejectedValueOnce(new Error('HTTP 401'))
+      // Phase 0 收口后 uploadVoice 走 SDK `VoiceManager.uploadVoiceMessageMultipart`
+      // （multipart/FormData），不再经过 authedRequestWithPath。
+      uploadVoiceMessageMultipartMock.mockRejectedValueOnce(new Error('HTTP 401'))
 
       await expect(
         matrixVoiceService.uploadVoice('!room:example.org', new Blob(['bytes']), 'voice.webm')
       ).rejects.toThrow('HTTP 401')
+      expect(authedRequestMock).not.toHaveBeenCalled()
     })
   })
 })

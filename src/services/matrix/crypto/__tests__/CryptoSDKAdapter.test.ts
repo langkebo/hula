@@ -166,28 +166,28 @@ describe('CryptoSDKAdapter', () => {
   })
 
   describe('getDevices', () => {
-    it('should use DeviceTrustManager when available', async () => {
+    it('should source devices from keys/query and trust from DeviceTrustManager', async () => {
       const mockTrustManager = {
-        getDeviceTrustList: vi.fn().mockResolvedValue([
-          {
-            device_id: 'D1',
-            user_id: '@user:server',
-            display_name: 'Phone',
-            last_seen_ts: 123,
-            last_seen_ip: '1.2.3.4',
-            trust_level: 'verified'
-          }
-        ])
+        getDeviceTrustList: vi.fn().mockResolvedValue([{ device_id: 'D1', trust_level: 'verified' }])
+      }
+      const mockDeviceKeysManager = {
+        getUserDevices: vi.fn().mockResolvedValue({
+          D1: { device_id: 'D1', unsigned: { device_display_name: 'Phone' } }
+        })
       }
       mockClient.getDeviceTrustManager = vi.fn(() => mockTrustManager)
+      mockClient.getDeviceKeysManager = vi.fn(() => mockDeviceKeysManager)
+
       const result = await cryptoSDKAdapter.getDevices('@user:server')
+
+      // 回归守卫：设备必须来自 keys/query（唯一能查他人设备的端点），
+      // 信任列表只负责 isVerified，且不含 user_id / display_name。
+      expect(mockDeviceKeysManager.getUserDevices).toHaveBeenCalledWith('@user:server')
       expect(result).toEqual([
         {
           deviceId: 'D1',
           userId: '@user:server',
           displayName: 'Phone',
-          lastSeenTs: 123,
-          lastSeenIp: '1.2.3.4',
           isVerified: true
         }
       ])
@@ -195,17 +195,28 @@ describe('CryptoSDKAdapter', () => {
 
     it('should map trust_level correctly for unverified devices', async () => {
       const mockTrustManager = {
-        getDeviceTrustList: vi.fn().mockResolvedValue([
-          {
-            device_id: 'D2',
-            user_id: '@user:server',
-            trust_level: 'unverified'
-          }
-        ])
+        getDeviceTrustList: vi.fn().mockResolvedValue([{ device_id: 'D2', trust_level: 'unverified' }])
       }
       mockClient.getDeviceTrustManager = vi.fn(() => mockTrustManager)
+      mockClient.getDeviceKeysManager = vi.fn(() => ({
+        getUserDevices: vi.fn().mockResolvedValue({ D2: { device_id: 'D2' } })
+      }))
+
       const result = await cryptoSDKAdapter.getDevices('@user:server')
+
       expect(result[0].isVerified).toBe(false)
+    })
+
+    it('should not derive devices from the caller-scoped trust list alone', async () => {
+      mockClient.getDeviceTrustManager = vi.fn(() => ({
+        getDeviceTrustList: vi.fn().mockResolvedValue([{ device_id: 'D3', trust_level: 'verified' }])
+      }))
+      mockClient.getDeviceKeysManager = vi.fn(() => null)
+      mockClient.getStoredDevicesForUser = vi.fn().mockResolvedValue([])
+
+      const result = await cryptoSDKAdapter.getDevices('@user:server')
+
+      expect(result).toEqual([])
     })
 
     it('should fall back to getStoredDevicesForUser when no Manager', async () => {

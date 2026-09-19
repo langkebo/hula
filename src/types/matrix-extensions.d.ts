@@ -335,15 +335,23 @@ export interface KeyBackupManager {
 // Device Trust Manager 扩展 (SDK Manager Layer)
 // ============================================
 
-export type TrustLevel = 'verified' | 'cross_signed' | 'unverified' | 'blacklisted'
+// 取值与后端 `synapse-e2ee/src/device_trust/models.rs::DeviceTrustLevel` 的 Display 一致：
+// 只有 verified / unverified / blocked 三个值。旧声明的 'cross_signed' / 'blacklisted'
+// 后端永远不会返回（'blacklisted' 拼写错误，真实值是 'blocked'）。
+export type TrustLevel = 'verified' | 'unverified' | 'blocked'
 
+/**
+ * `GET /device_trust` / `GET /device_trust/{device_id}` 的单条记录。
+ *
+ * 契约来源：`synapse-web/src/routes/e2ee/devices.rs::get_device_trust_list`
+ * → `{ device_id, trust_level, verified_at, verified_by }`。
+ *
+ * 后端在此**不返回** `user_id` / `display_name` / `last_seen_ts` / `last_seen_ip`
+ * ——那些字段属于 `/devices` 与 `/keys/query`。因此不能按 `user_id` 过滤本列表。
+ */
 export interface IDeviceTrustInfo {
   device_id: string
-  user_id?: string
-  display_name?: string
   trust_level: TrustLevel
-  last_seen_ts?: number
-  last_seen_ip?: string
   verified_at?: number
   verified_by?: string
 }
@@ -362,11 +370,26 @@ export interface IDeviceVerificationResponse {
   methods_available: ('sas' | 'qr' | 'emoji')[]
 }
 
+/**
+ * `GET /device_verification/status/{token}` 的响应。
+ *
+ * 未知 token 时后端返回 HTTP 200 + `{ "status": "not_found" }`（不是 404），
+ * 故除 `status` 外所有字段都可选。
+ */
+export interface IVerificationStatusResponse {
+  request_token?: string
+  token?: string
+  status: 'pending' | 'approved' | 'rejected' | 'expired' | 'not_found'
+  expires_at?: number
+  methods_available?: ('sas' | 'qr' | 'emoji')[]
+}
+
 export interface IVerificationRespondResult {
   success: boolean
   trust_level: TrustLevel
 }
 
+/** `GET /security/summary` 的响应，字段名以后端 `json!({...})` 为准。 */
 export interface ISecuritySummary {
   verified_devices: number
   unverified_devices: number
@@ -378,8 +401,11 @@ export interface ISecuritySummary {
 
 export interface DeviceTrustManager {
   requestVerification(request: IDeviceVerificationRequest): Promise<IDeviceVerificationResponse>
+  /**
+   * ⚠️ 后端只读 `approved`（缺省 false）。传 `{token, action}` 会让「接受」变成静默拒绝。
+   */
   respondToVerification(token: string, approved: boolean): Promise<IVerificationRespondResult>
-  getVerificationStatus(token: string): Promise<IDeviceVerificationResponse>
+  getVerificationStatus(token: string): Promise<IVerificationStatusResponse>
   getDeviceTrustList(forceRefresh?: boolean): Promise<IDeviceTrustInfo[]>
   getDeviceTrust(deviceId: string, forceRefresh?: boolean): Promise<IDeviceTrustInfo | null>
   getSecuritySummary(forceRefresh?: boolean): Promise<ISecuritySummary>

@@ -41,7 +41,12 @@ function createDefaultMockClient() {
       isCrossSigningReady: vi.fn().mockResolvedValue(true)
     })),
     getDeviceKeysManager: vi.fn(() => ({
-      createRoomKeyRequest: vi.fn().mockResolvedValue(undefined)
+      createRoomKeyRequest: vi.fn().mockResolvedValue(undefined),
+      // 设备来源是 keys/query（`getDevices` 的权威通道）；信任列表只提供 isVerified。
+      getUserDevices: vi.fn().mockResolvedValue({
+        dev1: { device_id: 'dev1' },
+        dev2: { device_id: 'dev2' }
+      })
     }))
   }
 }

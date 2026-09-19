@@ -65,8 +65,9 @@ export async function samlLogout(redirectUrl?: string): Promise<string | null> {
 
 /** 获取 SAML 元数据
  *
- * NOTE: SDK getSamlAuthManager().getIdpMetadata() 使用 /_matrix/client/r0/saml/metadata，
- * 与现有 /_matrix/client/v3/login/saml/metadata 路径不一致，暂保留 authedRequestWithPath。
+ * P2-1 收口：使用 `client.getSamlAuthManager().getIdpMetadata()` 收口后端
+ * `/_matrix/client/v3/saml/metadata`（SDK 内部以 ClientPrefix.V3 拼接，
+ * 与 `synapse-web/src/routes/saml.rs` 注册的路由一致），移除裸调 authedRequestWithPath。
  */
 export async function getSamlMetadata(): Promise<Record<string, unknown>> {
   const client = matrixClientService.getClient()
@@ -75,7 +76,8 @@ export async function getSamlMetadata(): Promise<Record<string, unknown>> {
   }
 
   try {
-    const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/login/saml/metadata')
+    const manager = client.getSamlAuthManager()
+    const result = await manager.getIdpMetadata()
     return result
   } catch (err) {
     throw normalizeSdkMatrixError(err, '获取 SAML 元数据失败')

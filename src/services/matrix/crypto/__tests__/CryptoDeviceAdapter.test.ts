@@ -1,12 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
-import type {
-  CryptoApi,
-  DeviceTrustManager,
-  IDeviceTrustInfo,
-  LegacyStoredDevice,
-  MatrixClientExtended
-} from '@/types/matrix-extensions'
+import type { CryptoApi, DeviceTrustManager, LegacyStoredDevice, MatrixClientExtended } from '@/types/matrix-extensions'
 import { CryptoDeviceAdapter } from '../CryptoDeviceAdapter'
 import type { CryptoAdapterAccessors } from '../cryptoAdapterTypes'
 
@@ -24,6 +18,7 @@ function createMockAccessors(opts: {
   crypto?: CryptoApi | null
   client?: Partial<MatrixClientExtended> | null
   matrixClient?: Partial<MatrixClient> | null
+  sdkDeviceKeysManager?: unknown
 }): CryptoAdapterAccessors {
   const client = (opts.client ?? {}) as MatrixClientExtended
   const matrixClient = (opts.matrixClient ?? { getDeviceId: () => 'current-device' }) as MatrixClient
@@ -34,49 +29,67 @@ function createMockAccessors(opts: {
     getDeviceTrustManager: () => opts.trustManager ?? null,
     getSecureBackupManager: () => null,
     getKeyBackupManager: () => null,
-    getSDKDeviceKeysManager: () => null,
+    getSDKDeviceKeysManager: () => (opts.sdkDeviceKeysManager ?? null) as never,
     getSDKKeyBackupManager: () => null,
     getSDKKeyVerificationManager: () => null
   } as CryptoAdapterAccessors
 }
 
+/** `keys/query` 的 device_keys 形状：deviceId → DeviceKeys */
+function makeDeviceKeysManager(deviceKeys: Record<string, unknown>) {
+  return { getUserDevices: vi.fn().mockResolvedValue(deviceKeys) }
+}
+
 describe('CryptoDeviceAdapter', () => {
   describe('getDevices', () => {
-    it('returns mapped devices from DeviceTrustManager when available', async () => {
-      const trustList: IDeviceTrustInfo[] = [
+    it('sources devices from keys/query and enriches isVerified from the trust list', async () => {
+      // keys/query 是唯一能查他人设备的地方；信任列表只提供 trust_level。
+      const sdkDeviceKeysManager = makeDeviceKeysManager({
+        DEV1: { device_id: 'DEV1', unsigned: { device_display_name: 'Alice Phone' } },
+        DEV2: { device_id: 'DEV2' }
+      })
+      const trustManager = {
+        getDeviceTrustList: vi.fn().mockResolvedValue([
+          { device_id: 'DEV1', trust_level: 'verified' },
+          { device_id: 'DEV2', trust_level: 'unverified' }
+        ])
+      } as unknown as DeviceTrustManager
+      const adapter = new CryptoDeviceAdapter(createMockAccessors({ trustManager, sdkDeviceKeysManager }))
+
+      const result = await adapter.getDevices('@alice:matrix.org')
+
+      expect(sdkDeviceKeysManager.getUserDevices).toHaveBeenCalledWith('@alice:matrix.org')
+      expect(result).toEqual([
         {
-          device_id: 'DEV1',
-          user_id: '@alice:matrix.org',
-          display_name: 'Alice Phone',
-          trust_level: 'verified',
-          last_seen_ts: 1700000000,
-          last_seen_ip: '1.2.3.4'
+          deviceId: 'DEV1',
+          userId: '@alice:matrix.org',
+          displayName: 'Alice Phone',
+          isVerified: true
         },
         {
-          device_id: 'DEV2',
-          user_id: '@bob:matrix.org',
-          trust_level: 'unverified'
+          deviceId: 'DEV2',
+          userId: '@alice:matrix.org',
+          displayName: undefined,
+          isVerified: false
         }
-      ]
+      ])
+    })
+
+    it('does NOT use GET /device_trust as a device source (it has no user_id and is caller-scoped)', async () => {
+      // 回归守卫：旧实现按 `d.user_id === userId` 过滤信任列表，
+      // 但后端 `devices.rs::get_device_trust_list` 只返回
+      // {device_id, trust_level, verified_at, verified_by} —— 好友设备列表恒为空。
       const trustManager = {
-        getDeviceTrustList: vi.fn().mockResolvedValue(trustList)
+        getDeviceTrustList: vi.fn().mockResolvedValue([{ device_id: 'DEV1', trust_level: 'verified' }])
       } as unknown as DeviceTrustManager
       const adapter = new CryptoDeviceAdapter(createMockAccessors({ trustManager }))
 
       const result = await adapter.getDevices('@alice:matrix.org')
 
-      expect(result).toHaveLength(1)
-      expect(result[0]).toEqual({
-        deviceId: 'DEV1',
-        userId: '@alice:matrix.org',
-        displayName: 'Alice Phone',
-        lastSeenTs: 1700000000,
-        lastSeenIp: '1.2.3.4',
-        isVerified: true
-      })
+      expect(result).toEqual([])
     })
 
-    it('falls back to legacy getStoredDevicesForUser when no TrustManager', async () => {
+    it('falls back to legacy getStoredDevicesForUser when no DeviceKeysManager', async () => {
       const legacyDevices: LegacyStoredDevice[] = [
         {
           deviceId: 'DEV1',
@@ -107,7 +120,7 @@ describe('CryptoDeviceAdapter', () => {
       })
     })
 
-    it('returns empty array when neither TrustManager nor legacy method available', async () => {
+    it('returns empty array when no device source is available', async () => {
       const adapter = new CryptoDeviceAdapter(createMockAccessors({}))
       const result = await adapter.getDevices('@alice:matrix.org')
       expect(result).toEqual([])
@@ -115,16 +128,30 @@ describe('CryptoDeviceAdapter', () => {
   })
 
   describe('getDevice', () => {
-    it('returns device from TrustManager when available', async () => {
-      const trustInfo: IDeviceTrustInfo = {
-        device_id: 'DEV1',
-        user_id: '@alice:matrix.org',
-        display_name: 'Alice Phone',
-        trust_level: 'verified',
-        last_seen_ts: 1700000000
-      }
+    it('sources the device from keys/query and takes trust from the trust list', async () => {
+      const sdkDeviceKeysManager = makeDeviceKeysManager({
+        DEV1: { device_id: 'DEV1', unsigned: { device_display_name: 'Alice Phone' } }
+      })
       const trustManager = {
-        getDeviceTrust: vi.fn().mockResolvedValue(trustInfo)
+        getDeviceTrustList: vi.fn().mockResolvedValue([{ device_id: 'DEV1', trust_level: 'verified' }])
+      } as unknown as DeviceTrustManager
+      const adapter = new CryptoDeviceAdapter(createMockAccessors({ trustManager, sdkDeviceKeysManager }))
+
+      const result = await adapter.getDevice('@alice:matrix.org', 'DEV1')
+
+      expect(result).toEqual({
+        deviceId: 'DEV1',
+        userId: '@alice:matrix.org',
+        displayName: 'Alice Phone',
+        isVerified: true
+      })
+    })
+
+    it('falls back to DeviceTrustManager.getDeviceTrust without inventing display_name/user_id', async () => {
+      // 后端 `GET /device_trust/{device_id}` 只返回
+      // {device_id, trust_level, verified_at, verified_by}；user_id 由调用方提供。
+      const trustManager = {
+        getDeviceTrust: vi.fn().mockResolvedValue({ device_id: 'DEV1', trust_level: 'verified' })
       } as unknown as DeviceTrustManager
       const adapter = new CryptoDeviceAdapter(createMockAccessors({ trustManager }))
 
@@ -133,17 +160,18 @@ describe('CryptoDeviceAdapter', () => {
       expect(result).toEqual({
         deviceId: 'DEV1',
         userId: '@alice:matrix.org',
-        displayName: 'Alice Phone',
-        lastSeenTs: 1700000000,
         isVerified: true
       })
+      expect(result).not.toHaveProperty('displayName')
+      expect(result).not.toHaveProperty('lastSeenTs')
     })
 
-    it('returns null when TrustManager returns null', async () => {
+    it('returns null when the device is unknown to keys/query and to the trust manager', async () => {
+      const sdkDeviceKeysManager = makeDeviceKeysManager({})
       const trustManager = {
         getDeviceTrust: vi.fn().mockResolvedValue(null)
       } as unknown as DeviceTrustManager
-      const adapter = new CryptoDeviceAdapter(createMockAccessors({ trustManager }))
+      const adapter = new CryptoDeviceAdapter(createMockAccessors({ trustManager, sdkDeviceKeysManager }))
       const result = await adapter.getDevice('@alice:matrix.org', 'UNKNOWN')
       expect(result).toBeNull()
     })

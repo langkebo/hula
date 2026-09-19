@@ -6,16 +6,16 @@
  * (/_matrix/client/v3/_matrix/vendor/v1/voice/... → 404) that vi.mock
  * tests miss because the stub authedRequest bypasses SDK URL construction.
  *
- * Covers all 11 authedRequestWithPath call sites in MatrixVoiceService:
+ * Covers every voice call site in MatrixVoiceService at the HTTP boundary:
  * uploadVoice, getVoiceStats, getUserVoiceStats, getVoiceConfig,
  * deleteVoice, getRoomVoiceList, getUserVoiceList, getVoiceContent,
  * convertVoice, optimizeVoice, transcribeVoiceViaApi.
  *
- * After Task 5 migration:
- * - uploadVoice / getRoomVoiceList / getUserVoiceList still use authedRequestWithPath
- * - getVoiceStats / getUserVoiceStats / getVoiceConfig / deleteVoice / getVoiceContent /
- *   convertVoice / optimizeVoice / transcribeVoiceViaApi use getVoiceManager()
- *   (VoiceManager internally hits the same V1 endpoints via SDK HTTP layer)
+ * 全部走 SDK `VoiceManager`（`getVoiceManager()`），SDK 内部统一用 VendorPrefix
+ * 命中同一批 V1 端点。MatrixVoiceService 已不再直接调用 `authedRequestWithPath`：
+ * 上传（multipart）与两个列表方法在 Phase 0 收口时一并迁入 SDK；**加密与否不在本服务内决策**
+ * （明文房间走 `uploadVoice`，加密房间由 `useVoiceInput` 改走标准 media 加密上传），
+ * 本服务只负责明文通道与能力探测，避免第五处 URL 拼装逻辑与后端漂移。
  */
 import { createClient, extendMatrixClientWithManagers, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
@@ -57,7 +57,14 @@ vi.mock('@/services/i18n', () => ({
 setupMswServer(
   http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/upload`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ event_id: '$evt-1', content_uri: 'mxc://hs.voice-contract.test/m1' })
+    // 后端 upload 响应形状（voice_service.rs:130-136）：没有 event_id / url
+    return HttpResponse.json({
+      content_uri: 'mxc://hs.voice-contract.test/m1',
+      content: { msgtype: 'm.audio', url: 'mxc://hs.voice-contract.test/m1' },
+      content_type: 'audio/webm',
+      duration_ms: 3000,
+      size: 1024
+    })
   }),
   http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/config`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
@@ -73,7 +80,29 @@ setupMswServer(
   }),
   http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/room/:roomId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ voices: [{ event_id: '$v1', sender: '@a:hs', duration: 5, timestamp: 1 }], total: 1 })
+    // 后端真实响应：{ room_id, messages: [IVoiceMessage...], next_batch: <i64|null> }
+    // （voice_service.rs::record_to_message_json / get_room_voice_messages）
+    const url = request.url
+    const fromParam = url.match(/from=(\d+)/)
+    const from = fromParam ? parseInt(fromParam[1], 10) : 0
+    const limitParam = url.match(/limit=(\d+)/)
+    const limit = limitParam ? parseInt(limitParam[1], 10) : 50
+    const mockMessages = Array.from({ length: limit }, (_, i) => ({
+      media_id: 'm' + (from + i),
+      user_id: '@a:hs',
+      room_id: '!room:hs',
+      content_uri: `mxc://hs.voice-contract.test/m${from + i}`,
+      content_type: 'audio/webm',
+      duration_ms: 5 + i,
+      size_bytes: 1024,
+      created_ts: 1000000 + i * 1000
+    }))
+    return HttpResponse.json({
+      room_id: '!room:hs',
+      messages: mockMessages,
+      // 毫秒时间戳游标，不是字符串
+      next_batch: from + limit
+    })
   }),
   http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/user/:userId/stats`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
@@ -81,7 +110,22 @@ setupMswServer(
   }),
   http.get(`${HOMESERVER}/_matrix/vendor/v1/voice/user/:userId`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ voices: [{ event_id: '$v2', room_id: '!r:hs', duration: 8, timestamp: 2 }], total: 1 })
+    return HttpResponse.json({
+      user_id: '@bob:hs',
+      messages: [
+        {
+          media_id: 'm2',
+          user_id: '@bob:hs',
+          room_id: '!r:hs',
+          content_uri: 'mxc://hs.voice-contract.test/m2',
+          content_type: 'audio/webm',
+          duration_ms: 8,
+          size_bytes: 512,
+          created_ts: 2
+        }
+      ],
+      next_batch: 42
+    })
   }),
   // VoiceManager REST-style paths: /voice/{mediaId}/convert|optimize|transcription
   http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/:mediaId/convert`, ({ request }) => {
@@ -141,7 +185,8 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     expect(calls[0].method).toBe('POST')
     expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/upload`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
-    expect(result.eventId).toBe('$evt-1')
+    // 后端不上报 event_id，上传结果里不该有它
+    expect(result.eventId).toBeUndefined()
     expect(result.mxcUrl).toBe('mxc://hs.voice-contract.test/m1')
   })
 
@@ -202,26 +247,28 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
   })
 
-  it('getRoomVoiceList hits /voice/room/:roomId with limit/offset query (no V1 double-prefix)', async () => {
+  it('getRoomVoiceList hits /voice/room/:roomId with limit/from query (no V1 double-prefix)', async () => {
     const result = await matrixVoiceService.getRoomVoiceList('!room:hs', 25, 10)
 
     const calls = seenUrls.filter((u) => u.url.includes('/voice/room/!room%3Ahs?'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/room/!room%3Ahs?limit=25&offset=10`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/room/!room%3Ahs?limit=25&from=10`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
-    expect(result.total).toBe(1)
+    expect(result.messages).toHaveLength(25)
+    expect(result.next_batch).toBe(35)
   })
 
-  it('getUserVoiceList hits /voice/user/:userId with limit/offset query (no V1 double-prefix)', async () => {
+  it('getUserVoiceList hits /voice/user/:userId with limit/from query (no V1 double-prefix)', async () => {
     const result = await matrixVoiceService.getUserVoiceList('@bob:hs', 5, 0)
 
     const calls = seenUrls.filter((u) => u.url.includes('/voice/user/%40bob%3Ahs?'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/user/%40bob%3Ahs?limit=5&offset=0`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/user/%40bob%3Ahs?limit=5&from=0`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
-    expect(result.total).toBe(1)
+    expect(result.messages).toHaveLength(1)
+    expect(result.next_batch).toBe(42)
   })
 
   it('getVoiceContent hits GET /voice/:messageId (no V1 double-prefix)', async () => {

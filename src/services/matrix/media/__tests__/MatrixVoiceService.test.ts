@@ -2,15 +2,20 @@ import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
+import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
 import matrixClientService from '../../MatrixClientService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
 
 const _server = setupMswServer(
   http.post(`${TEST_BASE_URL}/_matrix/vendor/v1/voice/upload`, () => {
+    // 后端 upload 响应形状（voice_service.rs:130-136），无 event_id
     return HttpResponse.json({
-      event_id: '$voice-event',
-      content_uri: 'mxc://example.org/media'
+      content_uri: 'mxc://example.org/media',
+      content: { msgtype: 'm.audio', url: 'mxc://example.org/media' },
+      content_type: 'audio/webm',
+      duration_ms: 3000,
+      size: 1024
     })
   }),
   http.post(`${TEST_BASE_URL}/_matrix/vendor/v1/voice/transcription`, async ({ request }) => {
@@ -31,7 +36,23 @@ vi.mock('../../EndpointCapabilityService', () => ({
   }
 }))
 
+vi.mock('../../crypto/MatrixAttachmentEncryptionService', () => ({
+  matrixAttachmentEncryptionService: {
+    encryptAttachment: vi.fn().mockResolvedValue({
+      encryptedData: new Blob(['encrypted-bytes']),
+      encryptedFile: {
+        url: '',
+        key: { alg: 'A256CTR', key_ops: ['encrypt', 'decrypt'], kty: 'oct', k: 'test-key', ext: true },
+        iv: 'test-iv',
+        hashes: { sha256: 'test-hash' },
+        v: 'v2'
+      }
+    })
+  }
+}))
+
 const endpointCheckMock = vi.fn()
+const encryptAttachmentMock = vi.mocked(matrixAttachmentEncryptionService.encryptAttachment)
 
 const authedRequestMock = vi
   .fn()
@@ -55,9 +76,19 @@ const authedRequestMock = vi
   )
 
 const transcribeVoiceMessageMock = vi.fn()
+// 后端真实响应形状：synapse-services/src/voice_service.rs:130-136
+// `{ content_uri, content, content_type, duration_ms, size }` —— 没有 message_id / url。
+const uploadVoiceMessageMultipartMock = vi.fn().mockResolvedValue({
+  content_uri: 'mxc://example.org/media',
+  content: { msgtype: 'm.audio', url: 'mxc://example.org/media' },
+  content_type: 'audio/webm',
+  duration_ms: 3000,
+  size: 1024
+})
 
 const voiceMgr = {
-  transcribeVoiceMessage: transcribeVoiceMessageMock
+  transcribeVoiceMessage: transcribeVoiceMessageMock,
+  uploadVoiceMessageMultipart: uploadVoiceMessageMultipartMock
 }
 
 const mockClient = {
@@ -84,16 +115,55 @@ describe('MatrixVoiceService', () => {
     const result = await matrixVoiceService.uploadVoice('!room:example.org', file)
 
     expect(result).toEqual({
-      eventId: '$voice-event',
+      // 上传端点不回 event_id（后端 upload 响应里没有该字段），不得伪造
       url: 'mxc://example.org/media',
       filename: 'voice.webm',
       mxcUrl: 'mxc://example.org/media',
       httpUrl: 'https://cdn.example.com/example.org/media'
     })
+    expect(result.eventId).toBeUndefined()
     expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/vendor/v1/voice/upload')
-    expect(authedRequestMock).toHaveBeenCalledWith('POST', '/voice/upload', undefined, expect.any(FormData), {
-      prefix: '/_matrix/vendor/v1'
-    })
+    expect(uploadVoiceMessageMultipartMock).toHaveBeenCalledTimes(1)
+    const call = uploadVoiceMessageMultipartMock.mock.calls[0]
+    expect(call[0].formData.get('file')).toBeInstanceOf(File)
+    expect(call[0].formData.get('room_id')).toBe('!room:example.org')
+    expect(call[0].formData.get('content_type')).toBe('audio/webm')
+    expect(authedRequestMock).not.toHaveBeenCalled()
+  })
+
+  it('上传明文通道不得加密：字节与 content_type 必须保持一致', async () => {
+    const file = new Blob(['voice-bytes'], { type: 'audio/webm' })
+
+    const result = await matrixVoiceService.uploadVoice('!room:example.org', file, 'voice.webm', 3000, 'audio/webm')
+
+    // 加密与否由调用方 useVoiceInput 按房间加密状态单点决策；本通道只接受明文。
+    // 密文若走这里会被标成 audio/webm（后端 validate_audio_content_type 只放行
+    // audio/*），落库 mimetype 与真实字节不符，读取方解码必得垃圾。
+    const uploaded = uploadVoiceMessageMultipartMock.mock.calls[0][0].formData.get('file') as File
+    expect(uploaded.type).toBe('audio/webm')
+    expect(uploaded.type).not.toBe('application/octet-stream')
+    expect(uploaded.size).toBe(file.size)
+    expect(result.encryptedFile).toBeUndefined()
+    expect(encryptAttachmentMock).not.toHaveBeenCalled()
+  })
+
+  it('uploads voice with duration_ms when provided', async () => {
+    const file = new Blob(['voice-bytes'], { type: 'audio/webm' })
+
+    await matrixVoiceService.uploadVoice('!room:example.org', file, 'voice.webm', 5000, 'audio/ogg')
+
+    const call = uploadVoiceMessageMultipartMock.mock.calls[0]
+    expect(call[0].formData.get('duration_ms')).toBe('5000')
+    expect(call[0].formData.get('content_type')).toBe('audio/ogg')
+  })
+
+  it('rejects an empty roomId instead of uploading an unscoped voice message', async () => {
+    const file = new Blob(['voice-bytes'], { type: 'audio/webm' })
+
+    // 语音上传按房间记账（后端 record_upload 的 room_id 虽有 Option 语义，
+    // 但本服务的契约是「必须属于某个房间」），空 roomId 直接拒绝，不发请求。
+    await expect(matrixVoiceService.uploadVoice('', file)).rejects.toThrow(/roomId/)
+    expect(uploadVoiceMessageMultipartMock).not.toHaveBeenCalled()
   })
 
   it('should resolve playback urls from room event content', async () => {
