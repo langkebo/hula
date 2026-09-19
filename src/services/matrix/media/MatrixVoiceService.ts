@@ -215,34 +215,43 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
-  async getVoice(roomId: string, eventId: string): Promise<VoicePlaybackInfo | null> {
+  /**
+   * Register an encrypted voice message to the voice_usage_stats table.
+   *
+   * Phase 2.3: After uploading encrypted voice via standard media service,
+   * this method registers it to `voice_usage_stats` so it appears in lists.
+   *
+   * @param roomId - The room the voice belongs to
+   * @param mediaId - The media_id from the mxc:// URL
+   * @param durationMs - Duration in milliseconds
+   * @param sizeBytes - File size in bytes
+   * @param contentType - Content type (default: 'audio/webm')
+   */
+  async registerEncryptedVoice(
+    roomId: string,
+    mediaId: string,
+    durationMs: number,
+    sizeBytes: number,
+    contentType: string = 'audio/webm'
+  ): Promise<{ contentUri: string; exists: boolean }> {
     this.requireNonEmpty(roomId, 'roomId')
-    this.requireNonEmpty(eventId, 'eventId')
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
+    this.requireNonEmpty(mediaId, 'mediaId')
 
     try {
-      const client_ = this.getVoiceClient()
-      const room = client_.getRoom(roomId) as RoomLike | null
-      const event = room?.findEventById?.(eventId) ?? null
-      const content = event?.getContent?.()
-      const mxcUrl = content?.url
-
-      if (!mxcUrl) {
-        return null
-      }
-
+      const result = await this.getVoiceMgr().registerEncryptedVoice(
+        roomId,
+        mediaId,
+        durationMs,
+        sizeBytes,
+        contentType
+      )
       return {
-        mimeType: content?.info?.mimetype,
-        size: content?.info?.size,
-        mxcUrl,
-        httpUrl: this.resolveHttpUrl(mxcUrl)
+        contentUri: result.content_uri,
+        exists: result.exists
       }
     } catch (err) {
-      logger.error(`[MatrixVoiceService] 获取语音信息失败: ${roomId}/${eventId} ${err}`)
-      return null
+      logger.error(`[MatrixVoiceService] 注册加密语音失败: ${err}`)
+      throw err
     }
   }
 

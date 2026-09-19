@@ -179,14 +179,11 @@ describe('MatrixVoiceService', () => {
       }))
     } as unknown as Room)
 
-    const result = await matrixVoiceService.getVoice('!room:example.org', '$event')
-
-    expect(result).toEqual({
-      mimeType: 'audio/ogg',
-      size: 2048,
-      mxcUrl: 'mxc://example.org/voice-file',
-      httpUrl: 'https://cdn.example.com/example.org/voice-file'
-    })
+    // getVoice was removed in Phase 2.3; replaced by registerEncryptedVoice path.
+    // This test now verifies getPlayableUrl only.
+    expect(matrixVoiceService.getPlayableUrl('mxc://example.org/voice-file')).toBe(
+      'https://cdn.example.com/example.org/voice-file'
+    )
   })
 
   it('should resolve playable urls without exposing matrix client to components', () => {
@@ -262,12 +259,12 @@ describe('MatrixVoiceService', () => {
       await expect(matrixVoiceService.uploadVoice('', new Blob(['x']))).rejects.toThrow()
     })
 
-    it('getVoice 空 roomId 抛出错误', async () => {
-      await expect(matrixVoiceService.getVoice('', '$event')).rejects.toThrow()
+    it('registerEncryptedVoice 空 roomId 抛出错误', async () => {
+      await expect(matrixVoiceService.registerEncryptedVoice('', '', 0, 0)).rejects.toThrow()
     })
 
-    it('getVoice 空 eventId 抛出错误', async () => {
-      await expect(matrixVoiceService.getVoice('!room:id', '')).rejects.toThrow()
+    it('registerEncryptedVoice 空 mediaId 抛出错误', async () => {
+      await expect(matrixVoiceService.registerEncryptedVoice('!room:id', '', 0, 0)).rejects.toThrow()
     })
 
     it('getUserVoiceStats 空 userId 抛出错误', async () => {
