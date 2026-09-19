@@ -564,7 +564,7 @@ grep -n "is_admin" synapse-web/src/routes/key_rotation.rs      # 鉴权事实源
 | **2.1** | 2026-09-19 | **Phase 0 八项热修全部落地并实测通过**（§5）；执行中新增 D-12~D-16；R-02/R-08/R-09 由"存在"转"已消除"，新增 R-10；修正 P0-1 的失效比例为 5/9 可匹配；§8 验证清单更新为实际使用的文件与命令 |
 | **2.2** | 2026-09-19 | **闭环交付**：SDK 重编译并重打包，版本 `40.2.0-langkebo.2`（commit `48fba9f50`，tgz `sha256-ed41b7ae…`），`meta/sdk-pin.json` 与 lockfile `integrity` 同步，`verify-sdk-pin.mjs` 通过（§5 0.9）；换新产物后前端 `vue-tsc` 暴露 3 处 `TS2339`，据此新增 **D-17**（语音上传读幻影 `url`/`event_id`）与 **D-18**（语音列表声明幻影行形状且未收口），并完成修正（§5 0.10）；`MatrixVoiceService` 已无 `authedRequestWithPath` 调用点；Phase 1.1/1.3/1.5 标记为已完成；§4.2 新增第 5 条治理规则（**SDK 改动必须走完"重打包 → 前端重装 → 前端门禁"**） |
 | **2.3** | 2026-09-19 | **Phase 2.1 落地**：移除 `MatrixVoiceService.uploadVoice` 的无条件加密（该改动此前只存在于工作区、从未提交），加密决策单点回归 `useVoiceInput`，并补"明文通道不得加密"守卫单测（断言上传体 `type`、`size`、`encryptAttachment` 调用与返回值）；**R-01 / R-07 转"已消除"**。同时纠正两处事实错误：①R-01 的"服务端转写/转码处理密文"不成立（转写为客户端职责桩，`media_service.rs` 无转码）；②原 Phase 2.2 的"加密路径上报 `application/octet-stream`"在 `/voice/upload` 上**不可能**（`validate_audio_content_type` 白名单只放行 `audio/*`），该要求只在标准 media 上传路径成立且已满足——据此重写 2.1/2.2 条目并新增 §7 语音通道回滚行；③**更正 v2.2 的失败归因**——上轮"唯一红"并非 `CryptoKeyBackupAdapter.test.ts`，而是 `MatrixVoiceService.error-propagation.test.ts` 里未随 `uploadVoice` 迁 SDK 同步的僵尸用例（现改为 `uploadVoice via VoiceManager` + 裸请求回归守卫）。修正后前端 `src/services/matrix/{media,user,crypto}` **41 文件 617 项测试全绿** |
-| **2.4** | 2026-09-19 | **Phase 3.4/3.5 闭环**：①Phase 3.4 ✅——新增 `scripts/test-crypto-health.js` + `pnpm test:crypto-health`，`quality-gate.yml` 已添加对应 job，15 tests 全绿；②Phase 3.5 ✅——明确 SSSS/恢复密钥归属（SDK `secret-storage.ts` 完整实现，Tjg 前端当前**无直接使用**，待产品需求触发）；③补充 Phase 2.3 后续——后端路由端点 `POST /voice/register` 已补加（`synapse-web/src/routes/voice.rs`），SDK lib 已手动更新完成。**遗留待确认项更新**：`withRetry` 对 4xx 行为已确认（Phase 3.2），SSSS 归属已明确。 |
+| **2.4** | 2026-09-19 | **Phase 3.4/3.5 闭环**：①Phase 3.4 ✅——新增 `scripts/test-crypto-health.js` + `pnpm test:crypto-health`，`quality-gate.yml` 已添加对应 job，15 tests 全绿；②Phase 3.5 ✅——明确 SSSS/恢复密钥归属（SDK `secret-storage.ts` 完整实现，Tjg 前端当前**无直接使用**，待产品需求触发）；③补充 Phase 2.3 后续——后端路由端点 `POST /voice/register` 已补加（`synapse-web/src/routes/voice.rs`），SDK lib 已手动更新完成。**前端 F-11/F-12/F-13 全部已修**（commit `829691e9`）：F-11 apiKey 明文 localStorage 修复、F-12 IndexedDBStore 多窗口竞态修复（per-user Promise 锁）、F-13 离线队列 message payload 脱敏。遗留待确认项更新：`withRetry` 对 4xx 行为已确认（Phase 3.2），SSSS 归属已明确。 |
 
 **v2.3 已核对但未修改的事实**
 - `Tjg/src/composables/chat/useMsgInputSend.ts:240` 仍以 `uploadResult.eventId` 判定消息状态并写入 `newMsgId`；后端 `/voice/upload` 从不返回事件 id（`voice_service.rs:130-136`），该分支恒为 `SENDING`，语音消息实际由随后的 `sendWithTracking` 普通发送路径落地。行为正确（先上传、再发事件），但 `newMsgId` 会暂为 `undefined`，属语义冗余而非缺陷，本轮未改。
@@ -574,9 +574,18 @@ grep -n "is_admin" synapse-web/src/routes/key_rotation.rs      # 鉴权事实源
 - `Tjg/src/services/matrix/messaging/threadTypes.ts:108` 的注释仍写着"逐字段镜像 `@langkebo/matrix-js-sdk@40.2.0-langkebo.1`"——本轮未改这些类型的镜像范围，注释版本号留待下次触碰该文件时一并更新。
 - `src/services/matrix/crypto/__tests__/CryptoKeyBackupAdapter.test.ts` 存在**未处理的 Promise 拒绝**（`CryptoApi 不可用`）：35 个用例本身全部通过，但进程级 `Errors: 2`；该文件本轮未改动，属既有测试卫生问题，建议后续补 `await`/`catch`。
 
-**遗留待确认项**
-1. `withRetry` 是否对 403/4xx 重试（D-10）。
-2. SSSS / 恢复密钥的归属层级（§3.1）。
-3. 后端是否接受复合游标 `(created_ts, media_id)`（D-04，跨仓）。
-4. `E2EEManager.getDeviceTrust` 与 `DeviceTrustManager.getDeviceTrust` 返回类型不一致（`DeviceTrustInfo` 含幻影 `user_id`）——已在 D-11 收敛方案中覆盖，执行时需一并删除重复声明。
-5. `E2EEManager.uploadVoiceMessageMultipart` 的 FormData 由前端构造（`formData.append`）；SDK 侧是否应校验 `room_id` / `duration_ms` 的字段名与后端一致，需在 Phase 1 补一条 multipart 字段契约测试。
+**遗留待确认项（已清理）**
+1. ~~`withRetry` 是否对 403/4xx 重试~~ → ✅ **已确认**（Phase 3.2）
+2. ~~SSSS/恢复密钥归属~~ → ✅ **已确认**（SDK `secret-storage.ts`）
+3. 后端是否接受复合游标 `(created_ts, media_id)`（D-04，跨仓）——待后端确认
+4. `E2EEManager.uploadVoiceMessageMultipart` 的 FormData 字段名契约测试——待 Phase 1 补充
+
+---
+
+## 附：前端 F-11/F-12/F-13 修复摘要（commit `829691e9`）
+
+| ID | 优先级 | 问题 | 修复方案 |
+|----|--------|------|----------|
+| F-11 | P1 高危 | `AiAssistant.vue` apiKey 明文落 localStorage | 持久化时剥离 apiKey，仅存 baseUrl；apiKey 只存在于内存 ref |
+| F-12 | P2 | IndexedDBStore 多窗口并发 startup() 互踩 | per-user Promise 锁串行化同一 userId 的 IndexedDBStore startup |
+| F-13 | P3 | 离线队列 message payload 明文落盘 | message 类型操作将 text/body 替换为 `[redacted]`，restore 时标记 failed |
