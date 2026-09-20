@@ -7,22 +7,16 @@ describe('MatrixEncryptionContextService', () => {
   let mockCrypto: {
     getOwnDeviceKeys: ReturnType<typeof vi.fn>
   }
-  let mockKeyBackupManager: {}
   let mockClient: {
     getCrypto: ReturnType<typeof vi.fn>
-    getKeyBackupManager: ReturnType<typeof vi.fn>
-    getStoredDevice: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
     mockCrypto = {
       getOwnDeviceKeys: vi.fn()
     }
-    mockKeyBackupManager = {}
     mockClient = {
-      getCrypto: vi.fn(() => mockCrypto),
-      getKeyBackupManager: vi.fn(() => mockKeyBackupManager),
-      getStoredDevice: vi.fn()
+      getCrypto: vi.fn(() => mockCrypto)
     }
 
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
@@ -71,7 +65,6 @@ describe('MatrixEncryptionContextService', () => {
     await expect(matrixEncryptionContextService.getDeviceFingerprint('@alice:example.com', 'DEVICE123')).resolves.toBe(
       'self-fingerprint'
     )
-    expect(mockClient.getStoredDevice).not.toHaveBeenCalled()
   })
 
   it('非本机设备返回 null，且不再依赖幻影 getStoredDevice', async () => {

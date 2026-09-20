@@ -313,5 +313,43 @@
     "create": "Create",
     "create_success": "Dehydrated device created successfully",
     "create_failed": "Failed to create dehydrated device"
+  },
+  "cross_signing": {
+    "password_required": "Enter your account password to continue",
+    "password_placeholder": "Account password"
+  },
+  "backup_restore_dialog": {
+    "title": "Restore from key backup",
+    "intro_primary": "Restore the encryption keys for your message history from the backup on the server.",
+    "intro_hint": "Use the same method you chose when creating the backup: recovery key, key file, or passphrase.",
+    "tab_recovery_key": "Recovery key",
+    "tab_key_file": "Key file",
+    "tab_passphrase": "Passphrase",
+    "recovery_key_label": "Recovery key",
+    "version_label": "Backup version",
+    "version_placeholder": "Select the backup version to restore",
+    "select_file": "Select key file",
+    "file_hint": "Supports key files exported from another device (.txt / .json).",
+    "file_required": "Select a key file first",
+    "file_read_failed": "Could not read the key file. Make sure it is complete and not corrupted.",
+    "passphrase_label": "Passphrase",
+    "passphrase_placeholder": "Enter the passphrase you set when creating the backup",
+    "passphrase_required": "Enter your passphrase",
+    "restoring_progress": "Restoring: {progress}%",
+    "restore_result_success": "Restored {imported} keys",
+    "restore_result_failed": "Restore failed. Check that your key is correct.",
+    "advanced_title": "Advanced options",
+    "room_id_label": "Room ID",
+    "room_id_placeholder": "e.g. !abcdef:example.com",
+    "room_id_required": "Enter a room ID",
+    "session_id_label": "Session ID",
+    "session_id_placeholder": "Enter the session ID to restore",
+    "session_id_required": "Enter a session ID",
+    "recover_room": "Recover keys for this room",
+    "recover_session": "Recover keys for this session",
+    "room_recover_success": "Recovered keys for room {roomId}",
+    "room_recover_failed": "Could not recover keys for this room. Check the room and session ID.",
+    "session_recover_success": "Recovered keys for this session",
+    "session_recover_failed": "Could not recover keys for this session. Check the session ID."
   }
 }

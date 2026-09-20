@@ -313,5 +313,43 @@
     "create": "创建",
     "create_success": "脱水设备创建成功",
     "create_failed": "创建脱水设备失败"
+  },
+  "cross_signing": {
+    "password_required": "请输入账号密码以完成认证",
+    "password_placeholder": "账号密码"
+  },
+  "backup_restore_dialog": {
+    "title": "从密钥备份恢复",
+    "intro_primary": "从服务器上的密钥备份恢复历史消息的加密密钥。",
+    "intro_hint": "请选择与你创建备份时相同的方式：恢复密钥、密钥文件或安全短语。",
+    "tab_recovery_key": "恢复密钥",
+    "tab_key_file": "密钥文件",
+    "tab_passphrase": "安全短语",
+    "recovery_key_label": "恢复密钥",
+    "version_label": "备份版本",
+    "version_placeholder": "请选择要恢复的备份版本",
+    "select_file": "选择密钥文件",
+    "file_hint": "支持从其他设备导出的密钥文件（.txt / .json）。",
+    "file_required": "请先选择密钥文件",
+    "file_read_failed": "读取密钥文件失败，请确认文件内容完整且未损坏",
+    "passphrase_label": "安全短语",
+    "passphrase_placeholder": "请输入创建备份时设置的安全短语",
+    "passphrase_required": "请输入安全短语",
+    "restoring_progress": "正在恢复：{progress}%",
+    "restore_result_success": "成功恢复 {imported} 个密钥",
+    "restore_result_failed": "恢复失败，请检查密钥是否正确",
+    "advanced_title": "高级选项",
+    "room_id_label": "房间 ID",
+    "room_id_placeholder": "例如 !abcdef:example.com",
+    "room_id_required": "请输入房间 ID",
+    "session_id_label": "会话 ID",
+    "session_id_placeholder": "请输入要恢复的会话 ID",
+    "session_id_required": "请输入会话 ID",
+    "recover_room": "恢复该房间的密钥",
+    "recover_session": "恢复该会话的密钥",
+    "room_recover_success": "已恢复房间 {roomId} 的密钥",
+    "room_recover_failed": "恢复该房间密钥失败，请确认房间与会话 ID 是否正确",
+    "session_recover_success": "已恢复该会话的密钥",
+    "session_recover_failed": "恢复该会话密钥失败，请确认会话 ID 是否正确"
   }
 }

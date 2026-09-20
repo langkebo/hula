@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
+import { createI18nMock } from '~/tests/i18n-messages'
 import KeyBackupRestoreDialog from '../KeyBackupRestoreDialog.vue'
 
 const {
@@ -142,23 +143,18 @@ vi.mock('@iconify/vue', () => ({
   }
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
-      const messages: Record<string, string> = {
-        'encryption.recovery_key_required': '请输入恢复密钥',
-        'encryption.restore_success': '恢复成功',
-        'encryption.restore_backup_failed': '恢复失败',
-        'encryption.backup_restore_dialog.restore_result_failed': '恢复失败，请检查密钥是否正确',
-        'encryption.backup_restore_dialog.passphrase_required': '请输入安全短语'
-      }
-      if (key === 'encryption.backup_restore_dialog.restore_result_success') {
-        return `成功恢复 ${params?.imported ?? 0} 个密钥`
-      }
-      return messages[key] ?? key
-    }
-  })
-}))
+/**
+ * 真实语言表驱动，而非手写文案 stub —— 见 `~/tests/i18n-messages`。
+ *
+ * 本文件原先在 mock 里手写了一张 key → 中文映射表，且是从组件源码「抄」出来的
+ * （含当时源码里错误的键名 `encryption.recovery_key_required`，实际应为
+ * `setting.encryption.recovery_key_required`）。源码写错键名时测试依然全绿，
+ * 这是第三例「自洽 stub」反模式，改为真实语言表解析后不再可能发生。
+ */
+// 缺口已补齐：`encryption.backup_restore_dialog.*` 32 个键已写入
+// locales/{zh-CN,en}/encryption.json，因此不再需要 provisional 表——
+// 全部键走真实语言表解析（未解析会渲染裸 key 使断言失败）。
+vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({
@@ -253,7 +249,7 @@ describe('KeyBackupRestoreDialog', () => {
       success: true,
       message: '成功恢复 3 个密钥'
     })
-    expect(messageSuccessMock).toHaveBeenCalledWith('恢复成功')
+    expect(messageSuccessMock).toHaveBeenCalledWith('密钥恢复成功')
     expect(setTimeoutMock).toHaveBeenCalledWith(expect.any(Function), 1500)
 
     timeoutCallbackRef.current?.()
@@ -295,7 +291,7 @@ describe('KeyBackupRestoreDialog', () => {
       success: false,
       message: '恢复失败，请检查密钥是否正确'
     })
-    expect(messageErrorMock).toHaveBeenCalledWith('恢复失败')
+    expect(messageErrorMock).toHaveBeenCalledWith('密钥恢复失败')
   })
 
   it('取消时重置表单和恢复状态', async () => {

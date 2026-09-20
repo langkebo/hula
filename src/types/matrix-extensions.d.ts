@@ -279,18 +279,10 @@ export interface KeyBackupManager {
    * 既不能声明不存在的方法（幻影契约），也不能缺少真实存在的方法。
    */
   ensureBackupVersion(algorithm?: string): Promise<string>
-  createBackupVersion(
-    algorithm?: string,
-    authData?: { algorithm: string; auth_data: Record<string, unknown> }
-  ): Promise<{ version: string; algorithm: string; auth_data: Record<string, unknown> }>
-  deleteBackupVersion(version: string): Promise<{ version: string }>
   getLatestBackupVersion(forceRefresh?: boolean): Promise<BackupInfo>
   getBackupVersion(version: string, forceRefresh?: boolean): Promise<BackupInfo>
-  createBackupVersion(
-    algorithm?: string,
-    authData?: Record<string, unknown>,
-    auth?: Record<string, unknown>
-  ): Promise<{ version: string }>
+  /** SDK 真身签名：只有两个参数，auth_data 为 AuthData | Aes256AuthData 联合 */
+  createBackupVersion(algorithm?: string, authData?: Record<string, unknown>): Promise<{ version: string }>
   updateBackupVersion(version: string, authData: Record<string, unknown>): Promise<{ version: string }>
   deleteBackupVersion(version: string): Promise<{ deleted: boolean; version: string }>
   getAllRoomKeys(version: string): Promise<RoomKeyBackup>
@@ -457,4 +449,3 @@ export interface MatrixClientExtended extends MatrixClient {
 // ============================================
 // HTTP 扩展
 // ============================================
-

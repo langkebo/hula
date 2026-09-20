@@ -125,43 +125,19 @@ describe('CryptoSDKAdapter', () => {
     })
   })
 
-  describe('blockDevice', () => {
-    it('should use legacy setDeviceBlocked when available', async () => {
-      mockClient.getCrypto = vi.fn(() => null)
-      mockClient.setDeviceBlocked = vi.fn().mockResolvedValue(undefined)
-      await cryptoSDKAdapter.blockDevice('@user:server', 'DEVICE1')
-      expect(mockClient.setDeviceBlocked).toHaveBeenCalledWith('@user:server', 'DEVICE1', true)
+  // 屏蔽/取消屏蔽：SDK 无写入 API，必须显式失败而不是降级为「取消验证」。
+  // 契约细节由 CryptoDeviceAdapter.block.test.ts 覆盖。
+  describe('blockDevice / unblockDevice 显式失败', () => {
+    it('blockDevice 抛错且不调用 setDeviceVerified', async () => {
+      const setDeviceVerified = vi.fn()
+      mockClient.getCrypto = vi.fn(() => ({ setDeviceVerified }) as never)
+      await expect(cryptoSDKAdapter.blockDevice('@user:server', 'DEVICE1')).rejects.toThrow(/不支持屏蔽/)
+      expect(setDeviceVerified).not.toHaveBeenCalled()
     })
 
-    it('should fall back to CryptoApi.setDeviceVerified(false) when no legacy', async () => {
-      const mockCrypto = { setDeviceVerified: vi.fn().mockResolvedValue(undefined) }
-      mockClient.getCrypto = vi.fn(() => mockCrypto)
-      delete (mockClient as unknown as Record<string, unknown>).setDeviceBlocked
-      await cryptoSDKAdapter.blockDevice('@user:server', 'DEVICE1')
-      expect(mockCrypto.setDeviceVerified).toHaveBeenCalledWith('@user:server', 'DEVICE1', false)
-    })
-
-    it('should warn when no interface available', async () => {
-      mockClient.getCrypto = vi.fn(() => null)
-      delete (mockClient as unknown as Record<string, unknown>).setDeviceBlocked
-      await cryptoSDKAdapter.blockDevice('@user:server', 'DEVICE1')
-    })
-  })
-
-  describe('unblockDevice', () => {
-    it('should use legacy setDeviceBlocked with false when available', async () => {
-      mockClient.getCrypto = vi.fn(() => null)
-      mockClient.setDeviceBlocked = vi.fn().mockResolvedValue(undefined)
-      await cryptoSDKAdapter.unblockDevice('@user:server', 'DEVICE1')
-      expect(mockClient.setDeviceBlocked).toHaveBeenCalledWith('@user:server', 'DEVICE1', false)
-    })
-
-    it('should fall back to CryptoApi.setDeviceVerified(false) when no legacy', async () => {
-      const mockCrypto = { setDeviceVerified: vi.fn().mockResolvedValue(undefined) }
-      mockClient.getCrypto = vi.fn(() => mockCrypto)
-      delete (mockClient as unknown as Record<string, unknown>).setDeviceBlocked
-      await cryptoSDKAdapter.unblockDevice('@user:server', 'DEVICE1')
-      expect(mockCrypto.setDeviceVerified).toHaveBeenCalledWith('@user:server', 'DEVICE1', false)
+    it('unblockDevice 抛错', async () => {
+      mockClient.getCrypto = vi.fn(() => ({ setDeviceVerified: vi.fn() }) as never)
+      await expect(cryptoSDKAdapter.unblockDevice('@user:server', 'DEVICE1')).rejects.toThrow(/不支持/)
     })
   })
 
@@ -208,40 +184,22 @@ describe('CryptoSDKAdapter', () => {
     })
 
     it('should not derive devices from the caller-scoped trust list alone', async () => {
-      mockClient.getDeviceTrustManager = vi.fn(() => ({
-        getDeviceTrustList: vi.fn().mockResolvedValue([{ device_id: 'D3', trust_level: 'verified' }])
-      }))
+      const getDeviceTrustList = vi.fn().mockResolvedValue([{ device_id: 'D3', trust_level: 'verified' }])
+      mockClient.getDeviceTrustManager = vi.fn(() => ({ getDeviceTrustList }))
       mockClient.getDeviceKeysManager = vi.fn(() => null)
-      mockClient.getStoredDevicesForUser = vi.fn().mockResolvedValue([])
 
-      const result = await cryptoSDKAdapter.getDevices('@user:server')
-
-      expect(result).toEqual([])
+      // 没有 keys/query 能力时显式失败，绝不把 device_trust 列表当设备来源
+      await expect(cryptoSDKAdapter.getDevices('@user:server')).rejects.toThrow(/DeviceKeysManager/)
+      expect(getDeviceTrustList).not.toHaveBeenCalled()
     })
 
-    it('should fall back to getStoredDevicesForUser when no Manager', async () => {
-      mockClient.getDeviceTrustManager = vi.fn(() => null)
-      mockClient.getStoredDevicesForUser = vi
-        .fn()
-        .mockResolvedValue([
-          { deviceId: 'D1', userId: '@user:server', displayName: 'Phone', isVerified: vi.fn(() => true) }
-        ])
-      const result = await cryptoSDKAdapter.getDevices('@user:server')
-      expect(result).toEqual([
-        {
-          deviceId: 'D1',
-          userId: '@user:server',
-          displayName: 'Phone',
-          isVerified: true
-        }
-      ])
-    })
+    it('should fail loudly instead of falling back to the phantom getStoredDevicesForUser', async () => {
+      mockClient.getDeviceKeysManager = vi.fn(() => null)
+      const phantom = vi.fn().mockResolvedValue([{ deviceId: 'D1' }])
+      ;(mockClient as unknown as Record<string, unknown>).getStoredDevicesForUser = phantom
 
-    it('should return empty array when no method available', async () => {
-      mockClient.getDeviceTrustManager = vi.fn(() => null)
-      delete (mockClient as unknown as Record<string, unknown>).getStoredDevicesForUser
-      const result = await cryptoSDKAdapter.getDevices('@user:server')
-      expect(result).toEqual([])
+      await expect(cryptoSDKAdapter.getDevices('@user:server')).rejects.toThrow(/DeviceKeysManager/)
+      expect(phantom).not.toHaveBeenCalled()
     })
   })
 
@@ -322,31 +280,13 @@ describe('CryptoSDKAdapter', () => {
       })
     })
 
-    it('should fall back to legacy checkDeviceTrust', async () => {
+    it('should fail loudly instead of falling back to the phantom checkDeviceTrust', async () => {
       mockClient.getCrypto = vi.fn(() => null)
-      mockClient.checkDeviceTrust = vi.fn().mockResolvedValue({
-        isVerified: vi.fn(() => false),
-        crossSigningVerified: false
-      })
-      const result = await cryptoSDKAdapter.getDeviceVerificationStatus('@user:server', 'DEVICE1')
-      expect(result).toEqual({
-        verified: false,
-        crossSigningVerified: false,
-        devicesCrossSigningVerified: false,
-        tofu: false
-      })
-    })
+      const phantom = vi.fn().mockResolvedValue({ isVerified: () => false })
+      ;(mockClient as unknown as Record<string, unknown>).checkDeviceTrust = phantom
 
-    it('should return default when no method available', async () => {
-      mockClient.getCrypto = vi.fn(() => null)
-      delete (mockClient as unknown as Record<string, unknown>).checkDeviceTrust
-      const result = await cryptoSDKAdapter.getDeviceVerificationStatus('@user:server', 'DEVICE1')
-      expect(result).toEqual({
-        verified: false,
-        crossSigningVerified: false,
-        devicesCrossSigningVerified: false,
-        tofu: false
-      })
+      await expect(cryptoSDKAdapter.getDeviceVerificationStatus('@user:server', 'DEVICE1')).rejects.toThrow(/CryptoApi/)
+      expect(phantom).not.toHaveBeenCalled()
     })
   })
 
