@@ -100,7 +100,7 @@ describe('SyncStatusBar', () => {
     expect(bar.element.outerHTML).toContain('data-testid="custom-sync-status"')
   })
 
-  it('should emit update:isVisible when isVisible prop changes', async () => {
+  it('should hide when isVisible prop turns false', async () => {
     const wrapper = createWrapper({ isVisible: true })
     await nextTick()
 
@@ -126,5 +126,132 @@ describe('SyncStatusBar', () => {
 
     const bar = wrapper.find('.sync-status-bar')
     expect(bar.element.outerHTML).toContain('78%')
+  })
+})
+
+/**
+ * CONNECTED 自动收起 + 重试加锁
+ *
+ * 回归背景：本组件原先声明了 `autoHideTimer` 却从未赋值，
+ * 注释承诺的「CONNECTED 延迟 2 秒自动隐藏」实际未实现 ——
+ * 「已连接」横幅会永久驻留；`isRetrying` 同样恒为 false，
+ * 重试按钮可被连续点击并反复触发父组件重连。
+ */
+describe('SyncStatusBar - 自动收起与重试加锁', () => {
+  const createWrapper = (props = {}) =>
+    mount(SyncStatusBar, {
+      props: {
+        connectionState: 'CONNECTED',
+        ...props
+      }
+    })
+
+  const AUTO_HIDE_DELAY = 2000
+  const RETRY_LOCK_TIMEOUT = 8000
+
+  it('CONNECTED 状态应在 2 秒后自动收起', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = createWrapper({ connectionState: 'CONNECTED' })
+      expect(wrapper.find('.sync-status-bar').exists()).toBe(true)
+
+      vi.advanceTimersByTime(AUTO_HIDE_DELAY - 1)
+      await nextTick()
+      expect(wrapper.find('.sync-status-bar').exists(), '未到期不应提前收起').toBe(true)
+
+      vi.advanceTimersByTime(1)
+      await nextTick()
+      expect(wrapper.find('.sync-status-bar').exists(), '到期后应自动收起').toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('非 CONNECTED 状态不应自动收起', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = createWrapper({ connectionState: 'CATCHUP' })
+      vi.advanceTimersByTime(30_000)
+      await nextTick()
+
+      expect(wrapper.find('.sync-status-bar').exists()).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('自动收起后状态再变化应重新显示', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = createWrapper({ connectionState: 'CONNECTED' })
+      vi.advanceTimersByTime(AUTO_HIDE_DELAY)
+      await nextTick()
+      expect(wrapper.find('.sync-status-bar').exists()).toBe(false)
+
+      await wrapper.setProps({ connectionState: 'RECONNECTING' })
+      await nextTick()
+
+      expect(wrapper.find('.sync-status-bar').exists(), '新状态应重新露出').toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('重试按钮应加锁：同一 tick 内连点只触发一次 retry', async () => {
+    const wrapper = createWrapper({ connectionState: 'ERROR' })
+    const button = wrapper.find('button')
+
+    // 关键：同一 tick 内连续派发点击。此刻 `:disabled` 尚未渲染到 DOM，
+    // 去重**只能**依赖组件内的加锁守卫，而非 DOM 的 disabled 属性。
+    // （若改用 await trigger()，第一次点击后 disabled 已生效，
+    //   守卫即使被删除用例也会通过 —— 那是假绿。）
+    button.element.dispatchEvent(new Event('click'))
+    button.element.dispatchEvent(new Event('click'))
+    button.element.dispatchEvent(new Event('click'))
+    await nextTick()
+
+    expect(wrapper.emitted('retry')).toHaveLength(1)
+  })
+
+  it('加锁后按钮应呈禁用态（第二道防线）', async () => {
+    const wrapper = createWrapper({ connectionState: 'ERROR' })
+    const button = wrapper.find('button')
+
+    await button.trigger('click')
+    await nextTick()
+
+    expect(button.attributes('disabled')).toBeDefined()
+  })
+
+  it('父组件未响应时，重试锁定应在保护超时后自动解除', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = createWrapper({ connectionState: 'ERROR' })
+      const button = wrapper.find('button')
+
+      await button.trigger('click')
+      expect(wrapper.emitted('retry')).toHaveLength(1)
+
+      vi.advanceTimersByTime(RETRY_LOCK_TIMEOUT)
+      await nextTick()
+
+      await button.trigger('click')
+      expect(wrapper.emitted('retry'), '超时后应恢复可重试').toHaveLength(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('状态离开 ERROR 后应解除重试锁定', async () => {
+    const wrapper = createWrapper({ connectionState: 'ERROR' })
+    await wrapper.find('button').trigger('click')
+
+    await wrapper.setProps({ connectionState: 'CONNECTING' })
+    await nextTick()
+    await wrapper.setProps({ connectionState: 'ERROR' })
+    await nextTick()
+
+    await wrapper.find('button').trigger('click')
+    expect(wrapper.emitted('retry')).toHaveLength(2)
   })
 })

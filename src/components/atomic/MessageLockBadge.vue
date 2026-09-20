@@ -105,27 +105,36 @@ const label = computed(() => {
 <style scoped lang="scss">
 /* ==================== 消息锁徽章 ==================== */
 .msg-lock-badge {
+  // 定位上下文：`.msg-lock-badge--ring::after` 使用 position: absolute，
+  // 若根元素不是定位祖先，外环会逃逸到最近的定位祖先（消息气泡 / 视口）上
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 3px;
   font-size: var(--tjg-font-size-xs);
   line-height: 1;
+
+  // 三态配色必须挂在**根元素**的修饰类上，由 svg 的 currentColor 继承。
+  // 若挂在 `__icon` 上会编译成复合选择器
+  // `.msg-lock-badge__icon.msg-lock-badge--verified` —— 两个类不在同一元素，
+  // DOM 中永不共存，配色会静默失效。
+  &--verified {
+    color: var(--tjg-status-encryption-verified, var(--tjg-color-success-500));
+  }
+
+  &--unverified {
+    color: var(--tjg-status-encryption-unverified, var(--tjg-text-disabled));
+  }
+
+  &--risk {
+    color: var(--tjg-status-encryption-risk, var(--tjg-color-danger-500));
+  }
 }
 
 .msg-lock-badge__icon {
   flex-shrink: 0;
-
-  &.msg-lock-badge--verified {
-    color: var(--tjg-status-encryption-verified, var(--tjg-color-success-500));
-  }
-
-  &.msg-lock-badge--unverified {
-    color: var(--tjg-status-encryption-unverified, var(--tjg-text-disabled));
-  }
-
-  &.msg-lock-badge--risk {
-    color: var(--tjg-status-encryption-risk, var(--tjg-color-danger-500));
-  }
+  // 故意不声明 color：svg 通过 currentColor 继承根元素的三态配色，
+  // 此处设色会遮蔽三种状态之间的颜色差异
 }
 
 .msg-lock-badge__label {

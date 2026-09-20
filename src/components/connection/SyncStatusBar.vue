@@ -32,7 +32,12 @@
       </div>
 
       <!-- 重试按钮（错误状态） -->
-      <n-button v-if="connectionState === CS.ERROR" size="tiny" secondary @click="emit('retry')" :disabled="isRetrying">
+      <n-button
+        v-if="connectionState === CS.ERROR"
+        size="tiny"
+        secondary
+        :disabled="isRetrying"
+        @click="handleRetry">
         重试
       </n-button>
     </div>
@@ -41,7 +46,7 @@
 
 <script setup lang="ts">
 import { NButton } from 'naive-ui'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, type Ref, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ConnectionState } from '@/services/matrix/MatrixConnectionManager'
 
@@ -73,19 +78,63 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   retry: []
-  'update:isVisible': [visible: boolean]
 }>()
 
 const { t } = useI18n()
 
-// 自动隐藏逻辑
-const autoHideTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+/** CONNECTED 状态展示时长（ms）：到期后自动收起，避免「已连接」横幅永久驻留 */
+const AUTO_HIDE_DELAY = 2000
+/** 重试按钮解锁保护时长（ms）：父组件未响应时不至于让按钮永久禁用 */
+const RETRY_LOCK_TIMEOUT = 8000
 
-const shouldShow = computed(() => {
-  if (!props.isVisible) return false
-  // CONNECTED 状态延迟 2 秒后自动隐藏
-  return true
-})
+const autoHideTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const retryLockTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+/**
+ * 内部自动收起标记。
+ * 与外部 `isVisible` 开关分离：自动收起只影响自身显隐，
+ * 不反向修改外部受控值（否则下次状态变化时组件将无法再显示）。
+ */
+const autoHidden = ref(false)
+
+const isRetrying = ref(false)
+
+function clearTimer(timer: Ref<ReturnType<typeof setTimeout> | null>) {
+  if (timer.value) {
+    clearTimeout(timer.value)
+    timer.value = null
+  }
+}
+
+const shouldShow = computed(() => props.isVisible && !autoHidden.value)
+
+// 状态变化时：重置自动收起、重排 CONNECTED 的收起定时器、解除重试锁定
+watch(
+  () => props.connectionState,
+  (state) => {
+    clearTimer(autoHideTimer)
+    autoHidden.value = false
+    if (state !== CS.ERROR) {
+      isRetrying.value = false
+    }
+    if (state === CS.CONNECTED) {
+      autoHideTimer.value = setTimeout(() => {
+        autoHidden.value = true
+      }, AUTO_HIDE_DELAY)
+    }
+  },
+  { immediate: true }
+)
+
+/** 重试：加锁防重复点击；状态离开 ERROR 或保护超时到期后解锁 */
+function handleRetry() {
+  if (isRetrying.value) return
+  isRetrying.value = true
+  clearTimer(retryLockTimer)
+  retryLockTimer.value = setTimeout(() => {
+    isRetrying.value = false
+  }, RETRY_LOCK_TIMEOUT)
+  emit('retry')
+}
 
 const statusLabel = computed(() => {
   switch (props.connectionState) {
@@ -115,13 +164,10 @@ const ariaLabel = computed(() => {
   return base
 })
 
-const isRetrying = ref(false)
-
-// 组件卸载时清理定时器
+// 组件卸载时清理定时器，避免卸载后仍触发状态写入
 onUnmounted(() => {
-  if (autoHideTimer.value) {
-    clearTimeout(autoHideTimer.value)
-  }
+  clearTimer(autoHideTimer)
+  clearTimer(retryLockTimer)
 })
 </script>
 

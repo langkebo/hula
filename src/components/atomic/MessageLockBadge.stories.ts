@@ -73,11 +73,14 @@ export const IconOnly: Story = {
   }
 }
 
-export const PlainMessage: Story = {
+export const UnverifiedPlain: Story = {
   args: {
-    trustLevel: 'plain' as never,
-    label: '未加密',
-    title: '消息未加密'
+    // 未加密消息不会渲染徽章（调用方以 isEncryptedMessage 作显隐守卫），
+    // 因此这里用组件真实支持的 unverified 表达「未验证/未加密」态。
+    // 早前此处传 `'plain' as never`，三态 v-else-if 全不匹配 → 渲染出无图标的空徽章。
+    trustLevel: 'unverified',
+    label: '未验证',
+    title: '消息未加密，或对端设备未完成验证'
   }
 }
 

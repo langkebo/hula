@@ -619,23 +619,35 @@ pnpm check                   # Biome lint + i18n 检查
 11. ✅ 液态玻璃性能降级补齐：SearchPane 补 `liquid-glass-fallback`，SingleDetails 改用 `liquid-glass-panel`
 12. ✅ GroupDetails 补齐玻璃 hero 卡（消除死导入 + 与 SingleDetails 视觉规格对齐）
 13. ✅ 新增 3 个契约测试文件（liquid-glass 降级 / GroupDetails hero 规格 / renderMessage 绑定），共 25 个用例
+14. ✅ **修复 MessageLockBadge 三态配色完全失效**：配色写在 `__icon` 的复合选择器（`.msg-lock-badge__icon.msg-lock-badge--verified`）上，而 `--verified` 在根 span、`__icon` 在 svg，两个类永不共存 → 绿/灰/红三态**渲染成同一种颜色**。改为根元素修饰类 + svg `currentColor` 继承
+15. ✅ **修复外环定位逃逸**：`.msg-lock-badge--ring::after` 使用 `position: absolute`，但根元素无定位上下文 → 外环会逃逸到最近定位祖先（消息气泡/视口）。根元素补 `position: relative`
+16. ✅ 新增 `MessageLockBadge.styles.test.ts`（10 用例）：用 sass 真实编译样式块 + 挂载真实 DOM，校验**选择器可达性**——能捕获「class 断言通过但配色静默失效」这类纸面测试盲区
+17. ✅ 修正 `MessageLockBadge.stories.ts` 的 `PlainMessage`：原先传 `'plain' as never`（类型逃逸），三态 `v-else-if` 全不匹配 → 渲染出**无图标的空徽章**；改用组件真实支持的 `unverified`
+18. ✅ **修复 SyncStatusBar 的「声明了却没实现」**：`autoHideTimer` 声明后从未被赋值、`onUnmounted` 清理它，但注释承诺的「CONNECTED 延迟 2 秒自动隐藏」从未生效 → 连上后「已连接」横幅**永久驻留**。已实现自动收起（含卸载清理、状态变化重置）
+19. ✅ **修复 SyncStatusBar 重试无防重复**：`isRetrying` 恒为 `false`，`@click` 直接 `emit('retry')`。改为 `handleRetry` 加锁 + 状态离开 ERROR 解锁 + 8s 保护超时兜底
+20. ✅ 移除 SyncStatusBar 的死事件 `update:isVisible`（声明后从未 emit，且全仓无消费方）
+21. ✅ SyncStatusBar 测试 11 → 18 用例，新增自动收起（fake timers）、重试加锁、保护超时解锁；并修正一处**名实不符**的用例名（原「should emit update:isVisible」实际只断言 prop 控制显隐）
+22. ⚠️ **测试假绿教训**：重试加锁用例最初用 `await trigger('click')` 连点三次 —— 第一次点击后 `:disabled` 已渲染，后续点击是被 **DOM 的 disabled** 拦下的，删除组件内守卫用例仍绿（变异验证未捕获）。改为同一 tick 内直接 `dispatchEvent`（disabled 尚未渲染）后，删守卫即 3 次触发 → 用例转红
 
 **当前状态验证：**
 - vue-tsc --noEmit: 类型检查通过（0 错误）✅
 - pnpm check:ratchet: hardcoded_color 31, matrix_prefix_hardcoded 68, ts_expect_error 3（基线不变）✅
 - Biome check: 改动文件 clean ✅
-- 受影响测试套件：41 文件 / 343 用例全绿 ✅
+- 受影响测试套件：42 文件 / 360 用例全绿 ✅
+- 全仓扫描「BEM 元素类 + 修饰类复合选择器」反模式：仅 MessageLockBadge 一处，未扩散 ✅
 - atomic 组件：8 个（MxidText, FederationBadge, MessageLockBadge, useMessageTrust, 等）
 - Storybook stories: 3 个（MxidText, FederationBadge, MessageLockBadge）
 - 液态玻璃落地：SettingsSidebar、SearchPane、SingleDetails、GroupDetails（每视图 ≤3 面板级元素）
-- 测试文件：8 个（FederationBadge, MessageLockBadge, useMessageTrust, SyncStatusBar, renderMessage/index, liquid-glass, GroupDetailsHero 等）
+- 测试文件：9 个（FederationBadge, MessageLockBadge, MessageLockBadge.styles, useMessageTrust, SyncStatusBar, renderMessage/index, liquid-glass, GroupDetailsHero 等）
 
-**下一步待办：**
-- [ ] 移动端 SyncStatusBar 复用（阶段 4 收尾）
-- [ ] 设备验证串联（MessageLockBadge 点击后打开设备会话面板 useDeviceSessionPanel）
-- [ ] SSSS 备份引导页（与 docs/sdk-e2ee-adaptation-plan-2026-09-19.md 同步）
-- [ ] 视觉验收：本次改动含布局变更（GroupDetails hero 卡、顶部间距 30px→8px），需实际渲染确认
+**下一步待办（已核实前提）：**
+- [x] ~~移动端 SyncStatusBar 复用~~ —— **前提有误，实际已覆盖**：全仓只有一个 `ChatMain.vue`（`components/rightBox/chatBox/`），`MobileChatMain.vue` 第 36 行渲染的就是它，桌面/移动共用同一实例，组件级集成自动覆盖两端
+- [x] ~~SSSS 备份引导页~~ —— **前提过期，实际已实现**：桌面 `settingsWindow/tabs/SecuritySettings.vue` 已接 `SecureBackupDialog` + `SecurityKeySetupDialog`，移动端 `SecuritySettings.vue` 已接 `MobileSecureBackupDialog`，另有 `E2EEOnboardingDialog`
+- [ ] 设备会话面板 —— **前提有误**：`useDeviceSessionPanel` 在仓库中不存在。若确需该能力，应基于已有的 `mobile/views/my/DeviceManagement.vue` 与 `services/matrix/user/MatrixDeviceService.ts` 抽取桌面端组件，而非接入一个不存在的 composable
+- [ ] 视觉验收（唯一的真待办）：GroupDetails hero 卡与顶部间距 30px→8px、MessageLockBadge 三态配色、SyncStatusBar 自动收起，均属渲染行为变更，需实际跑起来确认
 - [ ] 清理遗留：`src/styles/scss/global/variable.scss.bak`（未被 git 跟踪的旧备份）
+- [ ] 可选：`render-message.scss` 被 3 个 scoped 块 `@use`（`renderMessage/index.vue`、robot `Chat.vue`、`MobileChatMain.vue`），其中的 `.msg-lock-badge--left/--right` 会被 emit 成全局规则并重复 3 份。无功能危害，但可考虑移入组件自身 scoped 块
+- [ ] 可选：`useMessageTrust.trustLevel` 目前对已加密消息恒定返回 `'verified'`（见 composable 内注释「简化版」）。`unverified` / `risk` 分支尚未接入真实设备验证状态，因此徽章的灰锁/红锁当前为**不可达状态**
 
 **本次未复核项（诚实声明）：**
 - 无浏览器渲染环境，hero 卡与玻璃效果的实际像素表现未做视觉回归，仅做了源码契约与几何一致性校验
