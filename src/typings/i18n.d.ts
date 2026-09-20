@@ -5842,7 +5842,8 @@ export type I18nKeys = {
     "mjolnir": "屏蔽管理",
     "change_password": "修改密码",
     "social_section": "社交",
-    "friend_groups": "好友分组"
+    "friend_groups": "好友分组",
+    "storage": "存储管理"
   },
   "mobile_status": {
     "title": "在线状态",
@@ -5858,6 +5859,24 @@ export type I18nKeys = {
       "busy": "忙碌",
       "offline": "隐身"
     }
+  },
+  "mobile_storage": {
+    "title": "存储管理",
+    "loading": "加载中...",
+    "cache_section": "缓存统计",
+    "hit_rate": "缓存命中率",
+    "cached_items": "缓存条目数",
+    "usage_section": "存储用量",
+    "used": "已使用",
+    "quota": "可用配额",
+    "danger_section": "清理",
+    "clear": "清理缓存",
+    "clear_desc": "清理本地缓存后可释放空间，但离线消息需要重新同步。",
+    "clear_confirm": "确定清理本地缓存？离线期间的消息需要重新同步后才能查看。",
+    "clear_success": "缓存已清理",
+    "clear_failed": "清理缓存失败",
+    "load_failed": "获取存储信息失败",
+    "memory_usage": "内存占用"
   },
   "mobile_tabbar": {
     "items": {

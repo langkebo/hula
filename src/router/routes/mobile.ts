@@ -45,6 +45,7 @@ const DeviceManagement = () => import('#/views/my/DeviceManagement.vue')
 const PasswordSettings = () => import('#/views/my/PasswordSettings.vue')
 const MobileIgnoredUsers = () => import('#/views/my/MobileIgnoredUsers.vue')
 const MobileSecurityKeySetup = () => import('#/views/my/MobileSecurityKeySetup.vue')
+const MobileStorageSettings = () => import('#/views/my/MobileStorageSettings.vue')
 const NotificationSettings = () => import('#/views/my/NotificationSettings.vue')
 const HelpFeedback = () => import('#/views/my/HelpFeedback.vue')
 const VoiceVideoSettings = () => import('#/views/my/VoiceVideoSettings.vue')
@@ -92,6 +93,11 @@ const MOBILE_MY_SETTINGS_CHILD_ROUTES: RouteRecordRaw[] = [
     path: MOBILE_SETTINGS_RELATIVE_PATHS.securityKey,
     name: MOBILE_SETTINGS_ROUTE_NAMES.securityKey,
     component: MobileSecurityKeySetup
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.storage,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.storage,
+    component: MobileStorageSettings
   },
   {
     path: 'notifications',

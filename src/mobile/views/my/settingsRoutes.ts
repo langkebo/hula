@@ -13,6 +13,7 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   ignoredUsers: 'ignoredUsers',
   simpleBio: 'simpleBio',
   securityKey: 'securityKey',
+  storage: 'storage',
   helpAbout: SETTINGS_CANONICAL_ROUTE_SEGMENTS.helpAbout
 } as const
 
@@ -31,5 +32,6 @@ export const MOBILE_SETTINGS_ROUTE_NAMES = {
   password: 'mobilePasswordSettings',
   ignoredUsers: 'mobileIgnoredUsers',
   securityKey: 'mobileSecurityKeySetup',
+  storage: 'mobileStorageSettings',
   helpAbout: 'mobileHelpAboutSettings'
 } as const

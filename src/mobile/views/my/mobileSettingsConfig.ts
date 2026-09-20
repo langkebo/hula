@@ -17,6 +17,13 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
     iconBackgroundColor: 'var(--tjg-color-success-100)'
   },
   {
+    titleKey: 'mobile_setting.storage',
+    path: '/mobile/mobileMy/storage',
+    icon: 'mdi:database',
+    iconColor: 'var(--tjg-color-info-500)',
+    iconBackgroundColor: 'var(--tjg-color-info-100)'
+  },
+  {
     titleKey: 'mobile_setting.labs',
     path: MOBILE_SETTINGS_LABS_PATH,
     icon: 'mdi:flask',
