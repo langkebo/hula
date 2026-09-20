@@ -2,11 +2,29 @@
 
 ## 铁律
 - **禁 `git add -A`/`.`**：常驻并行 E2EE WIP → 逐文件 add，先 `git status --short`
-- **Bash `grep` 在本仓会假阴性**（亦不认 `\s`）→「找不到」必须用 ripgrep 复核。**已两次致误判**：`RoomCard.vue` 被判「功能缺失」（实为 testid 不一致）、`RenderPollMessage.vue` 被判「不调用 `t('poll.*')`」（实为在用，背后是真实生产缺陷）
+- **Bash `grep` 在本仓会假阴性**（亦不认 `\s`）→「找不到」必须用 ripgrep 复核。**已三次致误判**：①`RoomCard.vue` 被判「无 federation 字样/功能缺失」，实为第 30 行有 `<FederationBadge>`（真因是测试 testid `room-federation-badge` ≠ 组件写死的 `federation-badge`）；②`RenderPollMessage.vue` 被判「不调用 `t('poll.*')`」，实为第 29–31 行在用（背后是真实生产缺陷）；③FederationBadge testid 不一致
+- **同一文件多处 Edit 不可并发**（只落一处）→ 串行 + 读回确认
+- P1 完成：`check-ratchet` 新增 hardcoded_radius/inline_style/important_css 棘轮；hardcoded_radius 20→0；important_css 116→85（20 处 reduced-motion 合规保留）；inline_style 285 基线冻结
+- P0-3 完成：锁徽章→设备验证接线（跨用户 targetUserId + 单例启动器 + 84 处 i18n 键修正）
+- **P0 安全**：useMessageTrust 假安全信号已修复（ getUserDevices + 30s 刷新 + unverified 默认值）
+- 联邦标识 4/4 接入 FederationBadge：RoomCardItem / RoomCard / RoomPreviewDialog / ChatHeaderInfo
+- AvatarCropper 圆角字面量归零；voice.ts 死常量 REGISTER_ENCRYPTED 清除
+- 已提交 fix(service): 三色锁 + 联邦 + 圆角（b10d6b5d）
+
+## 待办/决策遗留
+- `biome check` 3 error 全部 HEAD 既有（MatrixEncryptionContextService.test.ts + matrix-extensions.d.ts + auth.contract 已修）
+- `encryption.backup_restore_dialog.*` 32 键语言表已补齐（b10d6b5d）
+- 未读数/同步状态条/设备面板双端取数/UserIdentity.vue/SSSS 文案/message.scss 共享 partial 泄漏/inline_style+important_css 专项下降/i18n.d.ts 随 WIP/requestUserVerification 删除
+- `poll.json` 占位符已修（Handlebars `{{}}` → `{count}`）
+
+## 铁律
+- **禁 `git add -A`/`.`**：常驻并行 E2EE WIP → 逐文件 add，先 `git status --short`
+- **Bash `grep` 在本仓会假阴性**（亦不认 `\s`）→「找不到」必须用 ripgrep/Grep 复核。**已三次致误判**（RoomCard / RenderPollMessage / FederationBadge testid）
 - **同一文件多处 Edit 不可并发**（只落一处）→ 串行 + 读回确认
 - **基线**：vue-tsc 0 错 + vitest 全绿 + biome clean + `check:ratchet` 不升（color 31 / matrix_prefix 68 / ts_expect_error 3 / radius 0 / inline_style 285 / important_css 85）+ `check:i18n-refs`（unresolved 379 / fallback 7）
-- **禁「纸面测试」**；**否定断言必须变异验证**。改完 `.vue` 跑 `prettier --write`
-- **归属取证法**：`git worktree add --detach /tmp/head HEAD` + symlink node_modules → 同环境只换源码
+- 归属取证法：`git worktree add --detach /tmp/head HEAD` + symlink node_modules
+- 禁「纸面测试」；否定断言必须变异验证。改完 `.vue` 跑 `prettier --write`
+- **自洽桩**：桩照源码错键抄 map → 互证、语言表被架空。已检出三例，末例是**真实生产缺陷**（RenderPollMessage） → 同环境只换源码
 
 ## 项目约定
 - commitlint scope: core/ui/chat/mobile/plugin/hook/service/util/i18n/config/ci/test/tauri；**管理后台用 `ui`**。设计 token `--tjg-*` 唯一前缀；新图标 Iconify
@@ -30,7 +48,7 @@
 
 ## 液态玻璃 / 消息信任
 - `-panel`/`-subtle` **自带** `low-perf` 降级；裸 `liquid-glass(...)` 须跟 `@include liquid-glass-fallback;`。降级类由 `utils/performanceTier.ts` 写 `html.low-perf`；`backdrop-filter` 仅面板级 ≤3
-- 锁态映射**只允许**在 `useMessageTrust.ts`。`trustLevel` 对已加密消息**恒返回 `verified`** → `unverified`/`risk` **不可达**。`MessageLockBadge` 的 `&--interactive` **不得声明 color**
+- 锁态映射**只允许**在 `useMessageTrust.ts`。已修复假安全信号：trustLevel 恒返回 verified → 接入 `matrixDeviceService.getUserDevices()` 查询真实设备验证状态 + effectScope 30s 自动刷新 + 'unverified' 安全默认值。`MessageLockBadge` 的 `&--interactive` **不得声明 color**
 
 ## 其他易错点
 - 禁止解构 class 单例方法（丢 `this`）；全仓只有一个 `ChatMain.vue`（`rightBox/chatBox/`），移动端共用
