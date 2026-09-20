@@ -328,6 +328,7 @@
 <script setup lang="ts">
 import { vOnLongPress } from '@vueuse/components'
 import type { Component } from 'vue'
+import { defineAsyncComponent, onMounted, onUnmounted, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MessageLockBadge from '@/components/atomic/MessageLockBadge.vue'
 import BurnMessage from '@/components/burn/BurnMessage.vue'
@@ -335,7 +336,7 @@ import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useMitt } from '@/composables/common/useMitt'
 import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
-import { useMessageTrust } from '@/composables/encryption/useMessageTrust'
+import { refreshTrustLevel, useMessageTrust } from '@/composables/encryption/useMessageTrust'
 import { MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
 import router from '@/router'
@@ -436,9 +437,32 @@ const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarCl
 )
 
 // 消息加密信任计算（getter 入参：列表复用组件实例时信任等级随 props 同步）
-const messageTrust = useMessageTrust(() => props.message?.message?.body?.hasEncryption === true)
+// 传入 senderId：解锁真实设备验证查询（无 senderId 时安全默认 'unverified'）
+const messageTrust = useMessageTrust(() => props.message?.message?.body?.hasEncryption === true, {
+  senderId: props.fromUser?.uid || props.message?.fromUser?.uid || ''
+})
 // lockBadgeLevel 已在 composable 内把 'plain' 收敛为 'unverified'，此处直接绑定保证类型安全
 const { isEncrypted: isEncryptedMessage, lockBadgeLevel, trustDescription } = messageTrust
+
+// ===== 设备验证状态刷新（挂载 + senderUid 变化时异步升级锁色）=====
+let trustRefreshTimer: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  if (senderUid.value && isEncryptedMessage.value) {
+    // 初始刷新：unverified → 真实设备验证状态
+    refreshTrustLevel(senderUid.value).catch(() => {})
+    // 周期刷新（设备验证状态可能在会话中被用户改变）
+    trustRefreshTimer = setInterval(() => {
+      if (isEncryptedMessage.value && senderUid.value) {
+        refreshTrustLevel(senderUid.value).catch(() => {})
+      }
+    }, 30_000)
+  }
+})
+
+onUnmounted(() => {
+  if (trustRefreshTimer) clearInterval(trustRefreshTimer)
+})
 
 // ===== 锁徽章 → 设备验证（方案 3.1「可操作入口」）=====
 const { open: openDeviceVerification } = useDeviceVerifyLauncher()

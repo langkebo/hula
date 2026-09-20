@@ -1,8 +1,28 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { useMessageTrust } from '@/composables/encryption/useMessageTrust'
+import { refreshTrustLevel, senderDeviceCache, useMessageTrust } from '@/composables/encryption/useMessageTrust'
+import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
+
+vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
+  matrixDeviceService: {
+    getUserDevices: vi.fn()
+  }
+}))
+
+const mockGetUserDevices = vi.mocked(matrixDeviceService.getUserDevices)
 
 describe('useMessageTrust', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // 清空缓存（避免跨测试污染）
+    senderDeviceCache.clear()
+    // 模拟 mock 模块级缓存
+    vi.doMock('@/composables/encryption/useMessageTrust', async (importOriginal) => {
+      const mod = await importOriginal<typeof import('@/composables/encryption/useMessageTrust')>()
+      Object.assign(mod.senderDeviceCache, senderDeviceCache)
+      return mod
+    })
+  })
   it('returns plain for non-encrypted messages', () => {
     const result = useMessageTrust(false)
     expect(result.trustLevel.value).toBe('plain')
@@ -11,19 +31,21 @@ describe('useMessageTrust', () => {
     expect(result.encryptionAlgorithm.value).toBeNull()
   })
 
-  it('returns verified for encrypted messages', () => {
+  it('returns unverified for encrypted messages without senderId (security default)', () => {
     const result = useMessageTrust(true)
-    expect(result.trustLevel.value).toBe('verified')
+    // 无 senderId → 安全默认值 'unverified'（旧实现返回 'verified'）
+    expect(result.trustLevel.value).toBe('unverified')
     expect(result.isEncrypted.value).toBe(true)
-    expect(result.isVerified.value).toBe(true)
+    expect(result.isVerified.value).toBe(false)
   })
 
   it('provides correct trust description for plain messages', () => {
     expect(useMessageTrust(false).trustDescription.value).toBe('消息未加密')
   })
 
-  it('provides correct trust description for verified messages', () => {
-    expect(useMessageTrust(true).trustDescription.value).toBe('端到端加密已验证')
+  it('provides correct trust description for unverified messages', () => {
+    const result = useMessageTrust(true, { senderId: '@alice:server' })
+    expect(result.trustDescription.value).toBe('端到端加密未完全验证')
   })
 
   it('reads encryption algorithm from room when encrypted', () => {
@@ -49,8 +71,9 @@ describe('useMessageTrust', () => {
     expect(result.lockBadgeLevel.value).toBe('unverified')
   })
 
-  it('lockBadgeLevel mirrors verified for encrypted messages', () => {
-    expect(useMessageTrust(true).lockBadgeLevel.value).toBe('verified')
+  it('lockBadgeLevel mirrors trust level for encrypted messages (unverified by default)', () => {
+    // 无 senderId → unverified（安全默认值）
+    expect(useMessageTrust(true).lockBadgeLevel.value).toBe('unverified')
   })
 
   it('lockBadgeLevel never emits plain (contract with MessageLockBadge)', () => {
@@ -73,8 +96,9 @@ describe('useMessageTrust', () => {
     await nextTick()
 
     expect(result.isEncrypted.value).toBe(true)
-    expect(result.lockBadgeLevel.value).toBe('verified')
-    expect(result.trustDescription.value).toBe('端到端加密已验证')
+    // 无 senderId → 安全默认值 'unverified'
+    expect(result.lockBadgeLevel.value).toBe('unverified')
+    expect(result.trustDescription.value).toBe('端到端加密未完全验证')
 
     encrypted.value = false
     await nextTick()
@@ -92,5 +116,36 @@ describe('useMessageTrust', () => {
     encrypted.value = false
     await nextTick()
     expect(result.isEncrypted.value).toBe(false)
+  })
+
+  // ---- senderId + refreshTrustLevel：异步刷新验证状态 ----
+
+  it('with senderId and empty device list → unverified (cache miss)', async () => {
+    mockGetUserDevices.mockResolvedValue([])
+    const result = useMessageTrust(true, { senderId: '@alice:server' })
+    // 初始：cache miss → unverified
+    expect(result.trustLevel.value).toBe('unverified')
+    // 异步刷新后仍为 unverified（无设备）
+    await refreshTrustLevel('@alice:server')
+    expect(result.trustLevel.value).toBe('unverified')
+  })
+
+  it('with senderId and verified device → verified after refresh', async () => {
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true }])
+    const result = useMessageTrust(true, { senderId: '@alice:server' })
+    // 初始：cache miss → unverified
+    expect(result.trustLevel.value).toBe('unverified')
+    // 异步刷新：缓存更新 → verified
+    await refreshTrustLevel('@alice:server')
+    expect(result.trustLevel.value).toBe('verified')
+  })
+
+  it('refreshTrustLevel handles network errors gracefully', async () => {
+    mockGetUserDevices.mockRejectedValue(new Error('network'))
+    const result = useMessageTrust(true, { senderId: '@alice:server' })
+    expect(result.trustLevel.value).toBe('unverified')
+    // 失败时保持缓存原值，不抛错
+    await expect(refreshTrustLevel('@alice:server')).resolves.toBe('unverified')
+    expect(result.trustLevel.value).toBe('unverified')
   })
 })

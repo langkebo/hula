@@ -54,28 +54,13 @@
         </div>
 
         <div class="room-card-item__meta flex items-center gap-[--tjg-space-2] mt-2px">
-          <span
+          <FederationBadge
             v-if="item.isFederated"
-            class="inline-flex items-center gap-2px shrink-0 px-6px py-1px rounded-[--tjg-radius-xs] bg-[--tjg-color-info-100] text-[--tjg-color-info-600] text-[length:var(--tjg-font-size-2xs)]"
-            data-testid="room-card-federation"
-            :title="t('room.discovery.federated')">
-            <svg
-              viewBox="0 0 24 24"
-              width="12"
-              height="12"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M3 12h18" />
-              <path d="M12 3a14 14 0 0 1 0 18" />
-              <path d="M12 3a14 14 0 0 0 0 18" />
-            </svg>
-            {{ t('room.discovery.federated') }}
-          </span>
+            :is-local="false"
+            size="xs"
+            show-icon
+            show-label
+            :title="t('room.discovery.federated')" />
           <span
             v-if="item.isEncrypted"
             class="inline-flex items-center shrink-0 color-[--tjg-color-success-500]"
@@ -233,6 +218,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import FederationBadge from '@/components/atomic/FederationBadge.vue'
 
 export interface RoomCardViewModel {
   roomId: string

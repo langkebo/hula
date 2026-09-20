@@ -242,14 +242,14 @@ onUnmounted(() => {
 <style scoped>
 /* 修改裁剪框样式 */
 :deep(.cropper-view-box) {
-  border-radius: 50%;
+  border-radius: var(--tjg-radius-full);
   outline: none;
   outline-color: transparent;
 }
 
 :deep(.cropper-face) {
   background-color: transparent;
-  border-radius: 50%;
+  border-radius: var(--tjg-radius-full);
 }
 
 :deep(.cropper-dashed) {
@@ -269,11 +269,11 @@ img {
 }
 
 .preview-round {
-  border-radius: 50%;
+  border-radius: var(--tjg-radius-full);
 }
 
 .preview-square {
-  border-radius: 36px;
+  border-radius: var(--tjg-radius-2xl);
 }
 
 .preview-content {

@@ -67,12 +67,12 @@ describe('RoomCardItem', () => {
 
   it('shows federation badge when isFederated is true', () => {
     const wrapper = mountCard({ item: { ...sampleRoom, isFederated: true } })
-    expect(wrapper.find('[data-testid="room-card-federation"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="federation-badge"]').exists()).toBe(true)
   })
 
   it('hides federation badge when isFederated is false', () => {
     const wrapper = mountCard({ item: { ...sampleRoom, isFederated: false } })
-    expect(wrapper.find('[data-testid="room-card-federation"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="federation-badge"]').exists()).toBe(false)
   })
 
   it('shows encryption indicator when isEncrypted is true', () => {
