@@ -149,16 +149,21 @@ export function useMessageTrust(
     })
   )!
 
-  /** 信任描述 */
-  const trustDescription = scope.run(() =>
+  /**
+   * 信任描述的 i18n key
+   *
+   * 返回 key 而不是文案：composable 层没有 i18n 上下文，硬编码中文会绕过
+   * vue-i18n（英文界面下会漏出中文）。由调用方用 `t()` 渲染。
+   */
+  const trustDescriptionKey = scope.run(() =>
     computed(() => {
-      const descriptions: Record<MessageTrustLevel, string> = {
-        verified: '端到端加密已验证',
-        unverified: '端到端加密未完全验证',
-        risk: '端到端加密存在安全风险',
-        plain: '消息未加密'
+      const keys: Record<MessageTrustLevel, string> = {
+        verified: 'chat.encryption.verified_title',
+        unverified: 'chat.encryption.unverified_title',
+        risk: 'chat.encryption.risk_title',
+        plain: 'chat.encryption.plain_title'
       }
-      return descriptions[trustLevel.value]
+      return keys[trustLevel.value]
     })
   )!
 
@@ -188,7 +193,7 @@ export function useMessageTrust(
     lockBadgeLevel,
     isEncrypted: isEncryptedEvent,
     isVerified,
-    trustDescription,
+    trustDescriptionKey,
     encryptionAlgorithm
   }
 }

@@ -39,13 +39,28 @@ describe('useMessageTrust', () => {
     expect(result.isVerified.value).toBe(false)
   })
 
-  it('provides correct trust description for plain messages', () => {
-    expect(useMessageTrust(false).trustDescription.value).toBe('消息未加密')
+  // trustDescriptionKey 返回 i18n key 而不是文案：
+  // composable 层没有 i18n 上下文，硬编码中文会在英文界面漏出中文。
+  it('returns the i18n key for plain messages', () => {
+    expect(useMessageTrust(false).trustDescriptionKey.value).toBe('chat.encryption.plain_title')
   })
 
-  it('provides correct trust description for unverified messages', () => {
+  it('returns the i18n key for unverified messages', () => {
     const result = useMessageTrust(true, { senderId: '@alice:server' })
-    expect(result.trustDescription.value).toBe('端到端加密未完全验证')
+    expect(result.trustDescriptionKey.value).toBe('chat.encryption.unverified_title')
+  })
+
+  it('returns the i18n key for verified messages', async () => {
+    mockGetUserDevices.mockResolvedValue([{ verified: true }] as never)
+    const result = useMessageTrust(true, { senderId: '@alice:server' })
+    await refreshTrustLevel('@alice:server')
+    await nextTick()
+    expect(result.trustDescriptionKey.value).toBe('chat.encryption.verified_title')
+  })
+
+  it('never returns a hardcoded human-readable string', () => {
+    const key = useMessageTrust(false).trustDescriptionKey.value
+    expect(key).toMatch(/^[a-z0-9_.]+$/)
   })
 
   it('reads encryption algorithm from room when encrypted', () => {
@@ -90,7 +105,7 @@ describe('useMessageTrust', () => {
 
     expect(result.isEncrypted.value).toBe(false)
     expect(result.lockBadgeLevel.value).toBe('unverified')
-    expect(result.trustDescription.value).toBe('消息未加密')
+    expect(result.trustDescriptionKey.value).toBe('chat.encryption.plain_title')
 
     encrypted.value = true
     await nextTick()
@@ -98,7 +113,7 @@ describe('useMessageTrust', () => {
     expect(result.isEncrypted.value).toBe(true)
     // 无 senderId → 安全默认值 'unverified'
     expect(result.lockBadgeLevel.value).toBe('unverified')
-    expect(result.trustDescription.value).toBe('端到端加密未完全验证')
+    expect(result.trustDescriptionKey.value).toBe('chat.encryption.unverified_title')
 
     encrypted.value = false
     await nextTick()

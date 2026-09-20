@@ -315,7 +315,7 @@
           <MessageLockBadge
             v-if="isEncryptedMessage"
             :trust-level="lockBadgeLevel"
-            :title="trustDescription"
+            :title="t(trustDescriptionKey)"
             :interactive="canVerifySender"
             :aria-label="canVerifySender ? t('message_container.verify_sender_device') : undefined"
             :class="isMe ? 'msg-lock-badge--right' : 'msg-lock-badge--left'"
@@ -442,7 +442,7 @@ const messageTrust = useMessageTrust(() => props.message?.message?.body?.hasEncr
   senderId: props.fromUser?.uid || props.message?.fromUser?.uid || ''
 })
 // lockBadgeLevel 已在 composable 内把 'plain' 收敛为 'unverified'，此处直接绑定保证类型安全
-const { isEncrypted: isEncryptedMessage, lockBadgeLevel, trustDescription } = messageTrust
+const { isEncrypted: isEncryptedMessage, lockBadgeLevel, trustDescriptionKey } = messageTrust
 
 // ===== 设备验证状态刷新（挂载 + senderUid 变化时异步升级锁色）=====
 let trustRefreshTimer: ReturnType<typeof setInterval> | null = null
