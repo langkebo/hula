@@ -143,12 +143,20 @@
   --tjg-space-6: 24px;
   --tjg-space-8: 32px;
 
-  /* 圆角 */
+/* 圆角 */
   --tjg-radius-xs: 4px;
   --tjg-radius-sm: 8px;
   --tjg-radius-md: 10px;
   --tjg-radius-lg: 12px;
+  --tjg-radius-xl: 16px;
+  --tjg-radius-2xl: 20px;
+  --tjg-radius-3xl: 24px;
   --tjg-radius-full: 9999px;
+
+  /* 语义圆角别名（按视觉层级） */
+  --tjg-radius-surface: var(--tjg-radius-xl);    /* 聊天气泡、卡片、列表项 */
+  --tjg-radius-panel: var(--tjg-radius-2xl);    /* 面板、侧栏、弹层 */
+  --tjg-radius-sheet: var(--tjg-radius-3xl);    /* 移动端底部抽屉 */
 
   /* 阴影 */
   --tjg-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -186,6 +194,35 @@
   --tjg-settings-meter-bg: rgba(0, 0, 0, 0.1);
   --tjg-settings-warning-bg: var(--tjg-color-warning-100);
   --tjg-surface-media-preview: #000000;
+
+  /* ============ 联邦身份 (Federation) ============ */
+  --tjg-federation-local-accent: var(--tjg-color-primary-500);
+  --tjg-federation-remote-accent: var(--tjg-color-info-500);
+  --tjg-federation-remote-bg: rgba(24, 144, 255, 0.08);
+  --tjg-federation-remote-border: rgba(24, 144, 255, 0.2);
+  --tjg-identity-mxid-color: var(--tjg-text-tertiary);
+
+  /* ============ 加密信任 (Encryption Trust) ============ */
+  --tjg-status-encryption-verified: var(--tjg-color-success-500);
+  --tjg-status-encryption-unverified: var(--tjg-color-warning-500);
+  --tjg-status-encryption-risk: var(--tjg-color-danger-500);
+  --tjg-status-encryption-risk-ring: var(--tjg-color-danger-500);
+
+  /* ============ 同步状态 (Sync Status) ============ */
+  --tjg-sync-track-bg: var(--tjg-surface-subtle);
+  --tjg-sync-fill-bg: var(--tjg-color-primary-500);
+  --tjg-sync-indeterminate-bg: var(--tjg-surface-subtle);
+  --tjg-sync-offline-bg: var(--tjg-surface-panel);
+  --tjg-sync-offline-text: var(--tjg-text-tertiary);
+
+  /* ============ 液态玻璃 (Liquid Glass) ============ */
+  --tjg-glass-blur: 20px;
+  --tjg-glass-saturate: 1.8;
+  --tjg-glass-panel-opacity: 0.85;
+  --tjg-glass-nav-opacity: 0.85;
+  --tjg-glass-bubble-opacity: 0.7;
+  --tjg-glass-border: 1px solid rgba(255, 255, 255, 0.06);
+  --tjg-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 
   /* 对话框宽度（对齐原型 C5/G10）
    * sm: 窄面板/线程抽屉 320px（原型 4574 行）
@@ -427,6 +464,35 @@ html[data-theme='dark'] {
   --tjg-status-busy: #ff7875;
   --tjg-status-away: #ffa940;
 
+  /* 联邦身份 (暗色) */
+  --tjg-federation-local-accent: var(--tjg-color-primary-400);
+  --tjg-federation-remote-accent: var(--tjg-color-info-400);
+  --tjg-federation-remote-bg: rgba(64, 169, 255, 0.12);
+  --tjg-federation-remote-border: rgba(64, 169, 255, 0.25);
+  --tjg-identity-mxid-color: var(--tjg-text-tertiary);
+
+  /* 加密信任 (暗色) */
+  --tjg-status-encryption-verified: var(--tjg-color-success-400);
+  --tjg-status-encryption-unverified: var(--tjg-color-warning-400);
+  --tjg-status-encryption-risk: var(--tjg-color-danger-400);
+  --tjg-status-encryption-risk-ring: var(--tjg-color-danger-400);
+
+  /* 同步状态 (暗色) */
+  --tjg-sync-track-bg: var(--tjg-surface-subtle);
+  --tjg-sync-fill-bg: var(--tjg-color-primary-400);
+  --tjg-sync-indeterminate-bg: var(--tjg-surface-subtle);
+  --tjg-sync-offline-bg: var(--tjg-surface-panel-muted);
+  --tjg-sync-offline-text: var(--tjg-text-tertiary);
+
+  /* 液态玻璃 (暗色) */
+  --tjg-glass-blur: 20px;
+  --tjg-glass-saturate: 1.8;
+  --tjg-glass-panel-opacity: 0.8;
+  --tjg-glass-nav-opacity: 0.8;
+  --tjg-glass-bubble-opacity: 0.65;
+  --tjg-glass-border: 1px solid rgba(255, 255, 255, 0.08);
+  --tjg-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+
   --tjg-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --tjg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.24);
   --tjg-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.32);
@@ -646,5 +712,38 @@ button:not(:disabled):not(.n-button--disabled):active,
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ==================== 联邦身份标识 ====================
+ * 2026-09-20 阶段 2.1 新增：Matrix 联邦身份可视化 token
+ * ================================================================== */
+:root {
+  /* 联邦徽标背景色 */
+  --tjg-federation-badge-bg: color-mix(in srgb, var(--tjg-color-info-500) 8%, transparent);
+  --tjg-federation-badge-border: color-mix(in srgb, var(--tjg-color-info-500) 28%, transparent);
+  --tjg-federation-badge-text: var(--tjg-color-info-600);
+  
+  /* MXID 文本颜色 */
+  --tjg-identity-mxid-color: var(--tjg-text-muted);
+}
+
+html[data-theme='dark'] {
+  --tjg-federation-badge-bg: color-mix(in srgb, var(--tjg-color-info-500) 12%, transparent);
+  --tjg-federation-badge-border: color-mix(in srgb, var(--tjg-color-info-500) 40%, transparent);
+  --tjg-federation-badge-text: var(--tjg-color-info-400);
+}
+
+/* ==================== 加密信任状态 ====================
+ * 2026-09-20 阶段 3.1 新增：消息级 E2EE 信任可视化 token
+ * 绿锁=已验证、灰锁=未验证、红锁=风险
+ * ================================================================== */
+:root {
+  /* 加密状态颜色 */
+  --tjg-status-encryption-verified: var(--tjg-color-success-500);
+  --tjg-status-encryption-unverified: var(--tjg-text-disabled);
+  --tjg-status-encryption-risk: var(--tjg-color-danger-500);
+  
+  /* 红锁风险环（颜色混合） */
+  --tjg-status-encryption-risk-ring: color-mix(in srgb, var(--tjg-color-danger-500) 35%, transparent);
 }
 

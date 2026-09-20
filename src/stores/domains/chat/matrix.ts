@@ -255,6 +255,19 @@ export const useMatrixStore = defineStore(
       await matrixClientService.stopClient()
     }
 
+    async function reconnect(): Promise<void> {
+      try {
+        lastError.value = null
+        connectionState.value = 'CONNECTING'
+        await matrixClientService.startClient()
+        connectionState.value = 'CONNECTED'
+      } catch (error) {
+        logger.error('重连失败:', error)
+        connectionState.value = 'ERROR'
+        lastError.value = error instanceof Error ? error.message : '重连失败'
+      }
+    }
+
     return {
       connectionState,
       userId,
@@ -274,7 +287,8 @@ export const useMatrixStore = defineStore(
       completeSSOLogin,
       logout,
       startClient,
-      stopClient
+      stopClient,
+      reconnect
     }
   },
   {

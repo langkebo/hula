@@ -40,9 +40,55 @@ interface QueuedOperation {
  * key 为 OperationType，value 为需要从 payload 中剥离的字段名列表。
  * 被脱敏的字段在 restoreQueue() 时会标记为已失效（无法 replay），
  * 因此离线消息在 App 重启后不会丢失队列结构，但内容必须用户重新输入。
+ *
+ * 注意：真实调用方的消息内容**嵌套**在 payload 内层，例如
+ * `{ roomId, eventType, content: { body } }` 与 `{ tempMsgId, payload: { body } }`，
+ * 因此脱敏必须按字段名递归进行，只匹配顶层字段会完全失效。
  */
 const SENSITIVE_PAYLOAD_FIELDS: Readonly<Partial<Record<OperationType, string[]>>> = {
   message: ['text', 'body']
+}
+
+/** 脱敏占位符 */
+const REDACTED = '[redacted]'
+
+/**
+ * 递归按字段名脱敏。
+ *
+ * @param value 任意 payload 片段
+ * @param sensitiveFields 当前 operation 需要脱敏的字段名
+ */
+function redactDeep(value: unknown, sensitiveFields: readonly string[]): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => redactDeep(item, sensitiveFields))
+  }
+  if (typeof value !== 'object' || value === null) {
+    return value
+  }
+
+  const result: Record<string, unknown> = {}
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    result[key] = sensitiveFields.includes(key) ? REDACTED : redactDeep(child, sensitiveFields)
+  }
+  return result
+}
+
+/**
+ * 判断 payload 中是否已存在脱敏标记（任意层级）。
+ *
+ * 与 redactDeep 使用同一套字段名，保证"写了脱敏"与"识别脱敏"口径一致——
+ * 否则嵌套脱敏后的操作会在 restore 时被误判为可 replay。
+ */
+function hasRedactedField(value: unknown, sensitiveFields: readonly string[]): boolean {
+  if (Array.isArray(value)) {
+    return value.some((item) => hasRedactedField(item, sensitiveFields))
+  }
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+  return Object.entries(value as Record<string, unknown>).some(([key, child]) =>
+    sensitiveFields.includes(key) ? child === REDACTED : hasRedactedField(child, sensitiveFields)
+  )
 }
 
 const STORAGE_KEY = 'tjg-offline-queue'
@@ -174,17 +220,14 @@ export class OfflineQueueService {
       const serializable = this.queue
         .filter((op) => op.status !== 'processing')
         .map((op) => {
-          // F-13 修复：对 message 类型操作，脱敏 payload 中的敏感字段（如 text/body）
+          // F-13 修复：对 message 类型操作递归脱敏（真实内容嵌套在内层），
           // 再写入 localStorage，防止明文消息体落盘。
           const sensitiveFields = SENSITIVE_PAYLOAD_FIELDS[op.type]
           if (sensitiveFields && sensitiveFields.length > 0) {
-            const redacted = { ...op.payload }
-            for (const field of sensitiveFields) {
-              if (field in redacted) {
-                redacted[field] = '[redacted]'
-              }
+            return {
+              ...op,
+              payload: redactDeep(op.payload, sensitiveFields) as Record<string, unknown>
             }
-            return { ...op, payload: redacted }
           }
           return op
         })
@@ -204,7 +247,7 @@ export class OfflineQueueService {
             // F-13 修复：脱敏的操作无法 replay（内容已丢失），标记为 failed
             // 并记录 warn；其余操作恢复原状。
             const sensitiveFields = SENSITIVE_PAYLOAD_FIELDS[op.type]
-            if (sensitiveFields?.some((f) => op.payload[f] === '[redacted]')) {
+            if (sensitiveFields?.length && hasRedactedField(op.payload, sensitiveFields)) {
               logger.warn(`操作 ${op.id} (type=${op.type}) payload 已脱敏，无法 replay，标记为失败`)
               return { ...op, status: 'failed' as const }
             }

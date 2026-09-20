@@ -2,7 +2,7 @@ import { computed, ref, type WritableComputedRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useEncryption } from '@/composables/encryption'
-import type { VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
+import type { VerificationTransaction } from '@/services/matrix/crypto/MatrixVerificationService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DeviceVerify')
@@ -14,7 +14,7 @@ export interface DeviceVerifyDialogProps {
   show: boolean
   deviceId?: string
   deviceName?: string
-  inboundRequest?: VerificationRequest | null
+  inboundRequest?: VerificationTransaction | null
   initialMode?: 'sas' | 'qr_show' | 'qr_scan'
 }
 
@@ -49,7 +49,7 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
   const qrCodeToScan = ref('')
   const cancelReason = ref('')
   const showCancelReason = ref(false)
-  const pendingVerifications = ref<VerificationRequest[]>([])
+  const pendingVerifications = ref<VerificationTransaction[]>([])
 
   const currentStepIndex = computed(() => {
     switch (step.value) {
@@ -73,7 +73,7 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     return fingerprint.value.match(/.{1,4}/g) || []
   })
 
-  function resetState(initialInboundRequest: VerificationRequest | null = null) {
+  function resetState(initialInboundRequest: VerificationTransaction | null = null) {
     step.value = 'intro'
     fingerprint.value = ''
     loading.value = false
@@ -136,7 +136,7 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     step.value = 'intro'
   }
 
-  async function acceptPendingRequest(req: VerificationRequest) {
+  async function acceptPendingRequest(req: VerificationTransaction) {
     loading.value = true
     try {
       await encryption.acceptVerification(req.transactionId)

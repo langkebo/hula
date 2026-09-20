@@ -52,7 +52,7 @@
           </div>
         </div>
       </n-spin>
-      <n-button size="small" style="margin-top: 8px" @click="showCreateGroup = true">
+      <n-button class="create-group-btn" size="small" @click="showCreateGroup = true">
         {{ t('setting.friends.groups.create_action') }}
       </n-button>
     </div>
@@ -85,7 +85,7 @@
           </div>
         </div>
 
-        <div class="request-section" style="margin-top: 16px">
+        <div class="request-section request-section--second">
           <h4 class="subsection-title">
             {{ t('setting.friends.pending.outgoing_title', { count: String(outgoingRequests.length) }) }}
           </h4>
@@ -487,5 +487,13 @@ async function handleCancelRequest(req: FriendRequest) {
 .empty-text {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
+}
+
+.create-group-btn {
+  margin-top: var(--tjg-space-2);
+}
+
+.request-section--second {
+  margin-top: var(--tjg-space-4);
 }
 </style>

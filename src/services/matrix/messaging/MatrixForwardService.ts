@@ -1,5 +1,6 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
+import { cryptoSDKAdapter } from '../crypto/CryptoSDKAdapter'
 import { matrixEventService } from '../MatrixEventService'
 import { matrixMessageService } from './MatrixMessageService'
 
@@ -14,11 +15,39 @@ interface ForwardResult {
 
 type EventContent = Record<string, unknown>
 
+/**
+ * 判断内容是否携带**已解密**的加密附件描述符。
+ *
+ * SDK 的 `event.getContent()` 返回解密后的内容，因此加密房间里的附件会带着
+ * `file.key.k`（AES 解密密钥）出现在这里。把它原样发进明文房间等于公开该密钥。
+ *
+ * @param content 事件内容
+ */
+function hasEncryptedFile(content: EventContent): boolean {
+  const file = content.file
+  if (typeof file !== 'object' || file === null) return false
+  const key = (file as { key?: unknown }).key
+  const url = (file as { url?: unknown }).url
+  return typeof url === 'string' && typeof key === 'object' && key !== null
+}
+
+/** 判断内容是否携带加密缩略图描述符 */
+function hasEncryptedThumbnail(content: EventContent): boolean {
+  return hasEncryptedFile({ file: content.thumbnail_file })
+}
+
 class MatrixForwardService {
   async forwardEvent(event: MatrixEvent, roomId: string): Promise<string> {
     try {
       const eventType = event.getType()
       const content = event.getContent() as EventContent
+      const carriesEncryptedMedia = hasEncryptedFile(content) || hasEncryptedThumbnail(content)
+
+      // 安全门：带加密描述符的消息只能转发进加密房间。
+      // 明文房间会把它当作普通 file/url 存储并公开 key.k，导致附件失去端到端保护。
+      if (carriesEncryptedMedia && !(await cryptoSDKAdapter.isRoomEncrypted(roomId))) {
+        throw new Error('无法转发加密附件到未加密房间：这会泄露该附件的解密密钥。请先为目标房间开启加密。')
+      }
 
       return await matrixEventService.sendEvent(roomId, eventType, {
         ...content,

@@ -81,7 +81,7 @@ import { NModal, NSpin } from 'naive-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeviceVerifyDialog } from '@/composables/encryption/useDeviceVerifyDialog'
-import type { VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
+import type { VerificationTransaction } from '@/services/matrix/crypto/MatrixVerificationService'
 import DeviceVerifyFingerprintStep from './DeviceVerifyFingerprintStep.vue'
 import DeviceVerifyIntroStep from './DeviceVerifyIntroStep.vue'
 import DeviceVerifyPendingStep from './DeviceVerifyPendingStep.vue'
@@ -96,7 +96,7 @@ const props = defineProps<{
   show: boolean
   deviceId?: string
   deviceName?: string
-  inboundRequest?: VerificationRequest | null
+  inboundRequest?: VerificationTransaction | null
   initialMode?: 'sas' | 'qr_show' | 'qr_scan'
 }>()
 

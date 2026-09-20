@@ -18,7 +18,7 @@
         <n-select
           v-model:value="fontFamily"
           :options="fontOptions"
-          style="width: 150px"
+          class="font-family-select"
           @update:value="handleFontChange" />
       </div>
       <div class="setting-item">
@@ -32,7 +32,7 @@
             :min="12"
             :max="20"
             :step="1"
-            style="width: 120px"
+            class="font-size-slider"
             @update:value="handleFontSizeChange" />
           <span class="font-value">{{ fontSize }}px</span>
         </div>
@@ -215,6 +215,15 @@ function handleBubbleStyleChange(value: boolean) {
   display: flex;
   align-items: center;
   gap: var(--tjg-space-3);
+}
+
+.font-family-select,
+.font-size-slider {
+  width: 150px;
+}
+
+.font-size-slider {
+  width: 120px;
 }
 
 .font-value {

@@ -33,7 +33,6 @@
           </n-form>
 
           <n-button
-            style="color: var(--tjg-text-inverse)"
             class="w-full"
             color="var(--tjg-color-primary-500)"
             size="large"
@@ -146,5 +145,10 @@ onUnmounted(async () => {
   align-items: center;
   justify-content: center;
   background: transparent;
+}
+
+/* 渐变按钮样式 */
+.n-button {
+  color: var(--tjg-text-inverse) !important;
 }
 </style>

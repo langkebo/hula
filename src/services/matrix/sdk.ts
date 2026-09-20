@@ -43,6 +43,7 @@ export {
 export type { AdminManager, AdminShutdownRoomResult } from 'matrix-js-sdk/admin'
 export { ClientEvent } from 'matrix-js-sdk/client'
 export type { CryptoCallbacks } from 'matrix-js-sdk/crypto'
+export { decodeRecoveryKey, encodeRecoveryKey } from 'matrix-js-sdk/crypto'
 export type { DeviceKeysManager } from 'matrix-js-sdk/device-keys'
 export type { Friend, FriendManager, FriendRequest } from 'matrix-js-sdk/friend'
 export { FriendEvent } from 'matrix-js-sdk/friend'

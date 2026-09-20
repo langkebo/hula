@@ -51,18 +51,18 @@
 import { Icon } from '@iconify/vue'
 import { NAlert, NButton, NList, NListItem, NSpace, NTag } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import type { VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
+import type { VerificationTransaction } from '@/services/matrix/crypto/MatrixVerificationService'
 
 defineOptions({ name: 'DeviceVerifyPendingStep' })
 
 defineProps<{
-  pendingVerifications: VerificationRequest[]
+  pendingVerifications: VerificationTransaction[]
 }>()
 
 const emit = defineEmits<{
   (e: 'back'): void
   (e: 'refresh'): void
-  (e: 'accept-pending', req: VerificationRequest): void
+  (e: 'accept-pending', req: VerificationTransaction): void
   (e: 'decline-pending', transactionId: string): void
 }>()
 

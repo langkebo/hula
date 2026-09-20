@@ -40,7 +40,7 @@
         <n-input
           :value="shortcutsStore.screenshot"
           readonly
-          style="width: 150px"
+          class="shortcut-input"
           @click="handleEditShortcut('screenshot')" />
       </div>
       <div class="setting-item">
@@ -51,7 +51,7 @@
         <n-input
           :value="shortcutsStore.openMainPanel"
           readonly
-          style="width: 150px"
+          class="shortcut-input"
           @click="handleEditShortcut('openMainPanel')" />
       </div>
       <div class="reset-section">
@@ -308,6 +308,10 @@ onUnmounted(() => {
   border: 1px solid var(--tjg-border-default);
   border-radius: var(--tjg-radius-xs);
   box-shadow: var(--tjg-shadow-sm);
+}
+
+.shortcut-input {
+  width: 150px;
 }
 
 .reset-section {

@@ -61,3 +61,10 @@
 - **必须保留裸调**：getCapabilities（SDK 丢顶层 unstable_features）、getUserDevices（downloadKeysForUsers 写 crypto store 有副作用）、SSO/SAML（synapse-rust 私有端点）
 - **三方 wire format 不一致待解**：voice 上传（后端收 Json content=base64，前端发 FormData）、AIConnection（后端路由未实现 + SDK/前端参数结构不同）
 - 收口铁律：必须三方核对（前端请求体 vs SDK 方法内部发什么 vs 后端 handler 收什么），SDK 有同名方法 ≠ 可收口
+
+## UI 优化进度（2026-09-19）
+- 完成全面 UI/UX 审计诊断
+- 制定详细优化方案（3阶段，6-8周）
+- 创建 Token 迁移助手脚本
+- 提供核心组件优化示例
+- 发现主要问题：内联样式 73处，!important 48处，admin 视觉脱节

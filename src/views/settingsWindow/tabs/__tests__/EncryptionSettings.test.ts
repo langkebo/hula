@@ -485,7 +485,7 @@ describe('EncryptionSettings', () => {
     })
 
     expect((wrapper.vm as any).showVerifyDialog).toBe(true)
-    expect((wrapper.vm as any).selectedVerificationRequest.deviceId).toBe('DEVICE_TWO')
+    expect((wrapper.vm as any).selectedVerificationTransaction.deviceId).toBe('DEVICE_TWO')
   })
 
   it('在加密未启用和指纹缺失时走降级逻辑', async () => {

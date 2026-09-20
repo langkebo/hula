@@ -82,7 +82,11 @@
           <span class="setting-label">{{ t('setting.sidebar.room_sort') }}</span>
           <span class="setting-desc">{{ t('setting.sidebar.room_sort_desc') }}</span>
         </div>
-        <n-select v-model:value="sortBy" :options="sortOptions" style="width: 150px" @update:value="handleSortChange" />
+        <n-select
+          v-model:value="sortBy"
+          :options="sortOptions"
+          class="sidebar-sort-select"
+          @update:value="handleSortChange" />
       </div>
     </div>
 
@@ -98,7 +102,7 @@
         <n-select
           v-model:value="itemSize"
           :options="itemSizeOptions"
-          style="width: 120px"
+          class="sidebar-item-size-select"
           @update:value="handleItemSizeChange" />
       </div>
     </div>
@@ -294,5 +298,14 @@ function handleItemSizeChange(value: string) {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
   margin-top: var(--tjg-space-1);
+}
+
+.sidebar-sort-select,
+.sidebar-item-size-select {
+  width: 150px;
+}
+
+.sidebar-item-size-select {
+  width: 120px;
 }
 </style>

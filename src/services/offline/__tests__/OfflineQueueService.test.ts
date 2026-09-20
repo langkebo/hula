@@ -43,6 +43,50 @@ describe('OfflineQueueService', () => {
     expect(parsed[0].payload.msgtype).toBe('m.text')
   })
 
+  it('redacts nested message body on persist（真实调用方 payload 形状）', () => {
+    // 真实形状：MatrixEventService 走 { roomId, eventType, content: { body, msgtype } }
+    service.enqueue('message', '!room:test', {
+      roomId: '!room:test',
+      eventType: 'm.room.message',
+      content: { msgtype: 'm.text', body: 'SECRET_NESTED_BODY' }
+    })
+
+    const stored = localStorage.getItem('tjg-offline-queue')
+    expect(stored).toBeTruthy()
+    // 明文不得出现在任何位置
+    expect(stored).not.toContain('SECRET_NESTED_BODY')
+    const parsed = JSON.parse(stored!)
+    expect(parsed[0].payload.content.body).toBe('[redacted]')
+    // 非敏感字段保留，保证队列结构可用于诊断
+    expect(parsed[0].payload.content.msgtype).toBe('m.text')
+    expect(parsed[0].payload.eventType).toBe('m.room.message')
+  })
+
+  it('redacts deeply nested { tempMsgId, payload } 形状', () => {
+    service.enqueue('message', '!room:test', {
+      tempMsgId: 'tmp-1',
+      payload: { body: { msgtype: 'm.image', body: 'SECRET_DEEP' } }
+    })
+
+    const stored = localStorage.getItem('tjg-offline-queue')
+    expect(stored).not.toContain('SECRET_DEEP')
+    const parsed = JSON.parse(stored!)
+    expect(parsed[0].payload.payload.body).toBe('[redacted]')
+  })
+
+  it('嵌套载荷被脱敏的操作在 restore 后不得残留为 pending', () => {
+    service.enqueue('message', '!room:test', {
+      roomId: '!room:test',
+      eventType: 'm.room.message',
+      content: { msgtype: 'm.text', body: 'SECRET_RESTORE' }
+    })
+
+    const restored = new OfflineQueueService()
+    // 内容已丢失，无法 replay：必须按失败处理而不是留在 pending
+    expect(restored.getPendingCount()).toBe(0)
+    expect(restored.getQueue().length).toBe(0)
+  })
+
   it('marks redacted message operations as failed on restore (F-13)', () => {
     service.enqueue('message', '!room:test', { text: 'hello' })
     const restored = new OfflineQueueService()

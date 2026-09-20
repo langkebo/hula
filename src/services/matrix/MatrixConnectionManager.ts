@@ -27,6 +27,7 @@ import {
   initializeManagerExtensions,
   type MatrixClient
 } from '@/services/matrix/sdk'
+import { createSecretStorageCryptoCallbacks } from '@/services/matrix/secretStorageCallbacks'
 import { createMatrixStore } from '@/services/matrix/storeFactory'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import type { ICreateClientOpts } from '@/types/matrix-js-sdk'
@@ -147,26 +148,8 @@ export class MatrixConnectionManager {
         `初始化 MatrixClient: baseUrl=${config.homeserverUrl}, hasTauriRuntime=${hasTauriRuntime()}, fetchFn=${fetchFn ? 'custom' : 'undefined(SDK default)'}`
       )
 
-      const cryptoCallbacks: CryptoCallbacks = {
-        getSecretStorageKey: async (opts: { keys: Record<string, unknown> }) => {
-          // Try to find a cached key in sessionStorage
-          for (const keyId of Object.keys(opts.keys)) {
-            const cached = sessionStorage.getItem(`ssss_${keyId}`)
-            if (cached) {
-              try {
-                const key = Uint8Array.from(atob(cached), (c) => c.charCodeAt(0))
-                return [keyId, key]
-              } catch {
-                sessionStorage.removeItem(`ssss_${keyId}`)
-              }
-            }
-          }
-          return null
-        },
-        cacheSecretStorageKey: (keyId: string, _keyInfo: unknown, key: Uint8Array) => {
-          sessionStorage.setItem(`ssss_${keyId}`, btoa(String.fromCharCode(...key)))
-        }
-      }
+      // SSSS 私钥只驻内存保险箱，绝不写 sessionStorage（历史缺陷：持久化且登出不清除）
+      const cryptoCallbacks: CryptoCallbacks = createSecretStorageCryptoCallbacks()
 
       const clientOpts: ICreateClientOpts = {
         baseUrl: config.homeserverUrl,

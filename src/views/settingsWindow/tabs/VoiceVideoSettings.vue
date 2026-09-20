@@ -13,7 +13,7 @@
           :options="audioInputOptions"
           :loading="devicesLoading"
           :placeholder="t('setting.voice_video.select_microphone')"
-          style="width: 200px"
+          class="device-select-width"
           @update:value="handleAudioInputChange" />
       </div>
 
@@ -27,7 +27,7 @@
           :options="audioOutputOptions"
           :loading="devicesLoading"
           :placeholder="t('setting.voice_video.select_speaker')"
-          style="width: 200px"
+          class="device-select-width"
           @update:value="handleAudioOutputChange" />
       </div>
 
@@ -42,7 +42,7 @@
             :min="0"
             :max="100"
             :step="1"
-            style="width: 150px"
+            class="volume-slider"
             @update:value="handleInputVolumeChange" />
           <span class="volume-value">{{ inputVolume }}%</span>
         </div>
@@ -59,7 +59,7 @@
             :min="0"
             :max="100"
             :step="1"
-            style="width: 150px"
+            class="volume-slider"
             @update:value="handleOutputVolumeChange" />
           <span class="volume-value">{{ outputVolume }}%</span>
         </div>
@@ -100,7 +100,7 @@
           :options="videoInputOptions"
           :loading="devicesLoading"
           :placeholder="t('setting.voice_video.select_camera')"
-          style="width: 200px"
+          class="device-select-width"
           @update:value="handleVideoInputChange" />
       </div>
 
@@ -533,5 +533,15 @@ function stopPreview() {
   width: 100%;
   max-height: 240px;
   object-fit: cover;
+}
+
+/* 统一选择器宽度（避免每个 select 都内联 style） */
+.device-select-width {
+  width: 200px;
+}
+
+/* 音量滑杆宽度 */
+.volume-slider {
+  width: 150px;
 }
 </style>

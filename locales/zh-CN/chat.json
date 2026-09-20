@@ -78,5 +78,23 @@
   },
   "crypto_unavailable": {
     "message": "加密功能未就绪，此房间的消息无法发送。请重新登录或联系管理员。"
+  },
+  "connection": {
+    "connecting": "正在连接...",
+    "catchup": "正在同步历史消息",
+    "reconnecting": "重连中",
+    "error": "连接错误",
+    "connected": "已连接",
+    "offline_hint": "离线模式：显示本地缓存消息"
+  },
+  "encryption": {
+    "verified": "E2E 已验证",
+    "unverified": "未验证",
+    "risk": "存在风险",
+    "plain": "未加密",
+    "verified_title": "端到端加密已验证",
+    "unverified_title": "端到端加密未完全验证",
+    "risk_title": "端到端加密存在安全风险",
+    "plain_title": "消息未加密"
   }
 }

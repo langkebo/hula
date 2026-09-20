@@ -44,3 +44,21 @@
     background: var(--tjg-surface-panel);
   }
 }
+
+/// 面板级液态玻璃（阶段 2.2 — SettingsSidebar 等）
+/// @param {Number} $blur 模糊半径（默认 20px）
+/// @param {Number} $opacity 不透明度 0-1（默认 0.85）
+@mixin liquid-glass-panel($blur: 20px, $opacity: 0.85) {
+  @include liquid-glass($blur, $opacity, 1.8);
+  
+  /* 性能回退 */
+  @include liquid-glass-fallback;
+}
+
+/// 轻量级玻璃效果（用于副标题、分隔栏）
+@mixin liquid-glass-subtle {
+  @include liquid-glass(16px, 0.7, 1.5);
+  
+  /* 性能回退 */
+  @include liquid-glass-fallback;
+}

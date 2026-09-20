@@ -10,7 +10,7 @@
         <n-select
           v-model:value="language"
           :options="languageOptions"
-          style="width: 150px"
+          class="pref-width-150"
           @update:value="handleLanguageChange" />
       </div>
     </div>
@@ -93,7 +93,7 @@
         <n-select
           v-model:value="sendKey"
           :options="sendKeyOptions"
-          style="width: 150px"
+          class="pref-width-150"
           @update:value="handleSendKeyChange" />
       </div>
       <div class="setting-item">
@@ -108,7 +108,7 @@
           <span class="setting-label">{{ t('setting.preferences.recall_time_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.recall_time_desc') }}</span>
         </div>
-        <n-select v-model:value="recallTime" :options="recallTimeOptions" style="width: 150px" />
+        <n-select v-model:value="recallTime" :options="recallTimeOptions" class="pref-width-150" />
       </div>
     </div>
 
@@ -144,7 +144,7 @@
         <n-select
           v-model:value="emojiSize"
           :options="emojiSizeOptions"
-          style="width: 120px"
+          class="pref-width-120"
           @update:value="handleEmojiSizeChange" />
       </div>
     </div>
@@ -168,7 +168,7 @@
         <n-select
           v-model:value="burnDefaultDuration"
           :options="burnDurationOptions"
-          style="width: 130px"
+          class="pref-width-130"
           @update:value="handleBurnDurationChange" />
       </div>
       <div class="setting-item">
@@ -206,7 +206,7 @@
         <n-select
           v-model:value="threadNotificationLevel"
           :options="threadNotificationOptions"
-          style="width: 130px"
+          class="pref-width-130"
           @update:value="handleThreadNotificationChange" />
       </div>
     </div>
@@ -623,5 +623,18 @@ function handleTypingToggle(value: boolean) {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-secondary);
   word-break: break-all;
+}
+
+/* 统一选择器宽度（避免每个 select 都内联 style） */
+.pref-width-150 {
+  width: 150px;
+}
+
+.pref-width-130 {
+  width: 130px;
+}
+
+.pref-width-120 {
+  width: 120px;
 }
 </style>

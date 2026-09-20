@@ -1,17 +1,12 @@
 <template>
   <n-config-provider :theme="naiveTheme">
-    <div
-      data-tauri-drag-region
-      class="login-box rounded-8px select-none flex flex-col"
-      style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; box-sizing: border-box">
+    <div data-tauri-drag-region class="login-box rounded-8px select-none flex flex-col login-box-container">
       <ActionBar :max-w="false" :shrink="false" proxy class="shrink-0" />
 
-      <div
-        class="flex flex-col"
-        style="flex: 1 1 0%; min-height: 0; box-sizing: border-box; padding: 20px 32px; overflow: hidden">
+      <div class="flex flex-col login-body">
         <ManualLoginForm
           v-if="uiState === 'manual'"
-          style="width: 100%"
+          class="w-full"
           v-model:login-info="loginInfo"
           v-model:protocol="protocol"
           v-model:homeserver-url="homeserverUrl"
@@ -33,13 +28,12 @@
           :user-info="userStore.userInfo"
           @login="triggerAutoLogin" />
 
-        <div v-if="uiState !== 'auto'" class="w-full flex justify-center shrink-0" style="margin-top: 18px">
+        <div v-if="uiState !== 'auto'" class="w-full flex justify-center shrink-0 login-divider">
           <ThirdPartyLogin :login-context="loginContext" />
         </div>
 
         <LoginBottomBar
-          class="shrink-0 w-full"
-          style="margin-top: 18px"
+          class="shrink-0 w-full login-divider"
           :mode="uiState"
           @switch-to-qr="router.push('/qrCode')"
           @cancel-auto-login="cancelAutoLoginAndShowManual"
@@ -140,4 +134,25 @@ onUnmounted(() => {
 <style lang="scss">
 @use '@/styles/scss/global/login-bg';
 @use '@/styles/scss/login';
+
+.login-box-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  box-sizing: border-box;
+}
+
+.login-body {
+  flex: 1 1 0%;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: var(--tjg-space-5) var(--tjg-space-8);
+  overflow: hidden;
+}
+
+.login-divider {
+  margin-top: var(--tjg-space-4);
+}
 </style>

@@ -67,6 +67,7 @@ export interface MessageType {
     burnRemainingSeconds?: number
     isBurning?: boolean
     isBurned?: boolean
+    encrypted?: boolean
   }
   fromUser: {
     uid: string

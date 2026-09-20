@@ -1,11 +1,6 @@
 <template>
-  <div
-    class="login-form-root"
-    style="display: flex; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box">
-    <div
-      class="login-avatar-row"
-      data-tauri-drag-region
-      style="display: flex; justify-content: center; width: 100%; margin: 8px 0 20px; box-sizing: border-box">
+  <div class="login-form-root">
+    <div class="login-avatar-row" data-tauri-drag-region>
       <div class="login-avatar-wrap relative">
         <n-avatar
           class="welcome size-80px rounded-50% border-(3px solid [--login-avatar-border])"
@@ -16,9 +11,7 @@
       </div>
     </div>
 
-    <div
-      class="login-form-body"
-      style="display: flex; flex-direction: column; gap: 14px; width: 300px; max-width: 100%; box-sizing: border-box">
+    <div class="login-form-body">
       <!-- 服务器地址（家服务）输入框 -->
       <div class="homeserver-wrap">
         <n-input
@@ -117,7 +110,7 @@
       <div
         v-if="loginHistories.length > 0 && arrowStatus"
         class="account-box absolute max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border"
-        style="width: 100%; max-width: 340px; border: 1px solid var(--login-dropdown-border)">
+        :style="{ width: '100%', maxWidth: '340px', border: '1px solid var(--login-dropdown-border)' }">
         <n-scrollbar style="max-height: 120px" trigger="none">
           <div
             v-for="item in loginHistories"
@@ -172,7 +165,6 @@
       <n-button
         :loading="loading"
         :disabled="loginDisabled"
-        style="color: var(--tjg-text-inverse)"
         class="gradient-button w-full mt-4px mb-4px"
         @click="emit('login')">
         <span>{{ loginText }}</span>
@@ -304,9 +296,11 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   width: 100%;
+  margin: 8px 0 20px;
+  box-sizing: border-box;
 }
 
-/* 表单主体：固定宽度 300px（按原型 auth-form max-width），由父容器 align-items: center 居中 */
+/* 表单主体：固定宽度 300px（按原型 TJG-prototype.html），由父容器 align-items: center 居中 */
 .login-form-body {
   display: flex;
   flex-direction: column;
@@ -314,6 +308,11 @@ onUnmounted(() => {
   width: 300px;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* 渐变按钮样式（兼容 Naive UI / Vant 内部优先级） */
+.gradient-button {
+  /* .gradient-button 的完整样式由 login.scss 的全局规则覆盖，此处仅保留颜色兜底 */
 }
 
 /* 确保表单内的 n-input 填满父容器宽度 */

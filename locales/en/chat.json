@@ -78,5 +78,23 @@
   },
   "crypto_unavailable": {
     "message": "Encryption is not ready. Messages in this room cannot be sent. Please re-login or contact the administrator."
+  },
+  "connection": {
+    "connecting": "Connecting...",
+    "catchup": "Syncing history",
+    "reconnecting": "Reconnecting",
+    "error": "Connection error",
+    "connected": "Connected",
+    "offline_hint": "Offline: showing cached messages"
+  },
+  "encryption": {
+    "verified": "E2E Verified",
+    "unverified": "Unverified",
+    "risk": "Risk",
+    "plain": "Plain",
+    "verified_title": "End-to-end encryption verified",
+    "unverified_title": "End-to-end encryption not fully verified",
+    "risk_title": "End-to-end encryption risk detected",
+    "plain_title": "Message not encrypted"
   }
 }

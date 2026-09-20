@@ -23,13 +23,7 @@
     <template v-if="loginMode === 'quick'">
       <!-- 二维码 -->
       <n-flex justify="center" class="mt-15px" data-tauri-drag-region>
-        <n-skeleton
-          v-if="loading"
-          style="border-radius: 12px"
-          :width="204"
-          :height="204"
-          :sharp="false"
-          size="medium" />
+        <n-skeleton v-if="loading" class="rounded-12px" :width="204" :height="204" :sharp="false" size="medium" />
         <div v-else class="relative">
           <n-qr-code
             :size="180"
@@ -50,8 +44,7 @@
             vertical
             :size="12"
             align="center"
-            class="w-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-            style="pointer-events: none">
+            class="w-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
             <svg class="size-42px animate-pulse">
               <use :href="`#${scanStatus.icon}`"></use>
             </svg>
@@ -63,8 +56,7 @@
             vertical
             :size="12"
             align="center"
-            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-            style="pointer-events: none">
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
             <n-spin size="small" />
             <span class="text-(16px [--tjg-text-quaternary])">{{ t('login.qr.overlay.refreshing') }}</span>
           </n-flex>

@@ -1,13 +1,9 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import matrixCryptoService from '@/services/matrix/crypto/MatrixCryptoService'
-import type {
-  BackupVersionInfo,
-  ExportResult,
-  ImportResult,
-  VerifyResult
-} from '@/services/matrix/crypto/MatrixKeyBackupService'
+import type { BackupVersionInfo, ImportResult, VerifyResult } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { createLogger } from '@/utils/Logger'
 
@@ -159,16 +155,15 @@ export function useKeyBackupFlow(options: UseKeyBackupFlowOptions = {}) {
     step.value = 'restore'
     errorMessage.value = null
     try {
-      // 用 recovery key 直接 import(适用于换设备场景)
-      const result = await matrixKeyBackupService.importKeys({
-        recoveryKey: recoveryKeyInput
-      } as unknown as ExportResult)
-      lastImportResult.value = result
+      // 恢复密钥只在本机使用（换设备场景）：写内存保险箱 → 从 SSSS 取备份密钥 → 恢复。
+      // 历史缺陷：把恢复密钥当 room key 传给 importKeys，最终明文进入 POST /room_keys/import。
+      const restResult = await cryptoSDKAdapter.restoreFromBackup(recoveryKeyInput)
+      lastImportResult.value = { count: restResult.imported, failed: 0, total: restResult.total }
       step.value = 'success'
-      // ImportResult 真实结构为 {count, failed, total}
-      const imported = result?.count ?? 0
-      const total = result?.total ?? 0
-      showFeedback(t('encryption.backup.restore_success', { imported, total }), 'success')
+      showFeedback(
+        t('encryption.backup.restore_success', { imported: restResult.imported, total: restResult.total }),
+        'success'
+      )
       return true
     } catch (err) {
       logger.error('importFromRecoveryKey failed', err)

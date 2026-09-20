@@ -16,27 +16,13 @@
           </div>
           <div class="room-preview-dialog__title flex items-center gap-[--tjg-space-2] min-w-0">
             <span class="room-preview-dialog__name truncate text-[--tjg-text-primary]">{{ room.name }}</span>
-            <span
-              v-if="room.isFederated"
-              class="room-preview-dialog__federated inline-flex items-center gap-2px shrink-0 px-6px py-1px rounded-[--tjg-radius-xs] bg-[--tjg-color-info-100] text-[--tjg-color-info-600]"
-              :title="t('room.discovery.federated')">
-              <svg
-                viewBox="0 0 24 24"
-                width="12"
-                height="12"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M3 12h18" />
-                <path d="M12 3a14 14 0 0 1 0 18" />
-                <path d="M12 3a14 14 0 0 0 0 18" />
-              </svg>
-              {{ t('room.discovery.federated') }}
-            </span>
+            <FederationBadge
+              v-if="room?.isFederated"
+              :is-local="false"
+              size="xs"
+              show-icon
+              show-label
+              :title="t('room.discovery.federated')" />
           </div>
         </div>
 
@@ -125,6 +111,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import FederationBadge from '@/components/atomic/FederationBadge.vue'
 import JoinReasonInput from './JoinReasonInput.vue'
 import type { RoomCardData } from './RoomCard.vue'
 
@@ -199,11 +186,6 @@ watch(
 .room-preview-dialog__name {
   font-size: var(--tjg-font-size-lg);
   font-weight: var(--tjg-font-weight-semibold);
-}
-
-.room-preview-dialog__federated {
-  font-size: var(--tjg-font-size-2xs);
-  line-height: 1.4;
 }
 
 .room-preview-dialog__label {

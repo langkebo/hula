@@ -239,9 +239,9 @@
 
     <DeviceVerifyDialog
       :show="showVerifyDialog"
-      :device-id="selectedVerificationRequest?.deviceId"
-      :device-name="selectedVerificationRequest?.deviceId"
-      :inbound-request="selectedVerificationRequest"
+      :device-id="selectedVerificationTransaction?.deviceId"
+      :device-name="selectedVerificationTransaction?.deviceId"
+      :inbound-request="selectedVerificationTransaction"
       :initial-mode="verifyDialogMode"
       @update:show="handleVerifyDialogVisibilityChange"
       @success="handleVerifySuccess" />
@@ -270,7 +270,7 @@
       v-model:show="deviceKeyVisible"
       preset="card"
       :title="t('setting.encryption.device_key_fingerprint_title')"
-      style="width: 400px">
+      class="modal-width-400">
       <div class="device-key-display">
         <div class="fingerprint">{{ deviceFingerprint }}</div>
         <n-button size="small" @click="copyFingerprint">{{ t('setting.encryption.copy') }}</n-button>
@@ -299,7 +299,10 @@ import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDial
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
-import { matrixVerificationService, type VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
+import {
+  matrixVerificationService,
+  type VerificationTransaction
+} from '@/services/matrix/crypto/MatrixVerificationService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 
@@ -328,8 +331,8 @@ const showDeviceTrustManager = ref(false)
 const showDehydratedDeviceManager = ref(false)
 const showE2EEBootstrapWizard = ref(false)
 const createBackupLoading = ref(false)
-const pendingVerifications = ref<VerificationRequest[]>([])
-const selectedVerificationRequest = ref<VerificationRequest | null>(null)
+const pendingVerifications = ref<VerificationTransaction[]>([])
+const selectedVerificationTransaction = ref<VerificationTransaction | null>(null)
 const verifyDialogMode = ref<'sas' | 'qr_show' | 'qr_scan'>('sas')
 
 const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
@@ -424,14 +427,14 @@ function handleVerifyDevice() {
 
 function openVerifyDialog(mode: 'sas' | 'qr_show' | 'qr_scan') {
   verifyDialogMode.value = mode
-  selectedVerificationRequest.value = null
+  selectedVerificationTransaction.value = null
   showVerifyDialog.value = true
 }
 
 function handleVerifyDialogVisibilityChange(value: boolean) {
   showVerifyDialog.value = value
   if (!value) {
-    selectedVerificationRequest.value = null
+    selectedVerificationTransaction.value = null
     verifyDialogMode.value = 'sas'
     void loadEncryptionInfo()
   }
@@ -444,13 +447,13 @@ function handleVerifySuccess() {
   void loadEncryptionInfo()
 }
 
-function handleAcceptPendingVerification(request: VerificationRequest) {
+function handleAcceptPendingVerification(request: VerificationTransaction) {
   verifyDialogMode.value = 'sas'
-  selectedVerificationRequest.value = request
+  selectedVerificationTransaction.value = request
   showVerifyDialog.value = true
 }
 
-async function handleCancelPendingVerification(request: VerificationRequest) {
+async function handleCancelPendingVerification(request: VerificationTransaction) {
   try {
     await matrixVerificationService.cancelVerification(request.transactionId, 'User cancelled verification')
     showFeedback(t('setting.encryption.pending_verification_cancelled'), 'success')
@@ -682,5 +685,10 @@ function handleE2EEBootstrapSkip() {
 .pending-user {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
+}
+
+/* 弹窗宽度 */
+.modal-width-400 {
+  width: 400px;
 }
 </style>

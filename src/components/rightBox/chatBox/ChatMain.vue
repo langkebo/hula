@@ -17,6 +17,9 @@
       @cancel-sticky="handleCancelSticky"
       @view-sticky-event="handleViewStickyEvent" />
 
+    <!-- 同步状态条 -->
+    <SyncStatusBar :connection-state="matrixStore.connectionState" @retry="matrixStore.reconnect()" />
+
     <!-- 房间内消息搜索面板（F2） -->
     <ChatRoomSearch
       :is-open="searchIsOpen"
@@ -146,6 +149,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
+import SyncStatusBar from '@/components/connection/SyncStatusBar.vue'
 import { type AnnouncementData, useAnnouncementBanner } from '@/composables/chat/useAnnouncementBanner'
 import { useAvatarPreloader } from '@/composables/chat/useAvatarPreloader'
 import { useChatDialogs } from '@/composables/chat/useChatDialogs'
@@ -164,6 +168,7 @@ import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { MittEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -194,6 +199,7 @@ const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
 const userStore = useUserStore()
+const matrixStore = useMatrixStore()
 const networkStatus = useNetworkStatus()
 // const { footerHeight } = useChatLayoutGlobal() // 已移除，不再需要
 const { createWebviewWindow } = useWindow()
@@ -501,6 +507,15 @@ onMounted(() => {
   useMitt.on(MittEnum.SESSION_CHANGED, handleSessionChanged)
   useMitt.on(MittEnum.OPEN_ROOM_SEARCH, onOpenRoomSearch)
   useMitt.on(MittEnum.NAVIGATE_TO_MESSAGE, onNavigateToMessage)
+
+  // F2 快捷键打开搜索面板
+  window.addEventListener('keydown', (event: KeyboardEvent) => {
+    if (event.key === 'F2' && !searchIsOpen.value) {
+      event.preventDefault()
+      openRoomSearch()
+    }
+  })
+
   // 初始化公告监听器
   if (appWindow) {
     initAnnouncementListeners(appWindow).catch((e) => logger.error('initAnnouncementListeners failed:', e))
@@ -516,6 +531,12 @@ onUnmounted(() => {
   useMitt.off(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
   useMitt.off(MittEnum.OPEN_ROOM_SEARCH, onOpenRoomSearch)
   useMitt.off(MittEnum.NAVIGATE_TO_MESSAGE, onNavigateToMessage)
+})
+
+window.removeEventListener('keydown', (event: KeyboardEvent) => {
+  if (event.key === 'F2') {
+    event.preventDefault()
+  }
 })
 </script>
 

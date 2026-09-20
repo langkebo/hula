@@ -27,28 +27,13 @@
     <div class="room-card__info flex-1 min-w-0">
       <div class="room-card__header flex items-center gap-[--tjg-space-2]">
         <span class="room-card__name truncate text-[--tjg-text-primary]" :title="item.name">{{ item.name }}</span>
-        <span
+        <FederationBadge
           v-if="item.isFederated"
-          class="room-card__federation-badge inline-flex items-center gap-2px shrink-0 px-6px py-1px rounded-[--tjg-radius-xs] bg-[--tjg-color-info-100] text-[--tjg-color-info-600]"
-          data-testid="room-federation-badge"
-          :title="t('room.discovery.federated')">
-          <svg
-            viewBox="0 0 24 24"
-            width="12"
-            height="12"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M3 12h18" />
-            <path d="M12 3a14 14 0 0 1 0 18" />
-            <path d="M12 3a14 14 0 0 0 0 18" />
-          </svg>
-          {{ t('room.discovery.federated') }}
-        </span>
+          :is-local="false"
+          size="xs"
+          show-icon
+          show-label
+          :title="t('room.discovery.federated')" />
       </div>
 
       <div class="room-card__meta flex items-center gap-[--tjg-space-2] mt-2px">
@@ -94,6 +79,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import FederationBadge from '@/components/atomic/FederationBadge.vue'
 
 export interface RoomCardData {
   roomId: string
@@ -163,11 +149,6 @@ const handlePreview = () => {
 .room-card__name {
   font-size: var(--tjg-font-size-base);
   font-weight: var(--tjg-font-weight-medium);
-}
-
-.room-card__federation-badge {
-  font-size: var(--tjg-font-size-2xs);
-  line-height: 1.4;
 }
 
 .room-card__members {

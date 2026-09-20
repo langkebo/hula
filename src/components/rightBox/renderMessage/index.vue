@@ -306,6 +306,13 @@
             :is-me="isMe"
             :is-last-message="isLastRoomMessage"
             @retry="handleRetry(message)" />
+
+          <!-- 消息加密信任徽章 -->
+          <MessageLockBadge
+            v-if="shouldShowLockBadge"
+            :trust-level="trustLevel"
+            :title="trustDescription"
+            :class="isMe ? 'msg-lock-badge--right' : 'msg-lock-badge--left'" />
         </n-flex>
       </div>
     </div>
@@ -315,10 +322,12 @@
 import { vOnLongPress } from '@vueuse/components'
 import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import MessageLockBadge from '@/components/atomic/MessageLockBadge.vue'
 import BurnMessage from '@/components/burn/BurnMessage.vue'
 import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useMitt } from '@/composables/common/useMitt'
+import { useMessageTrust } from '@/composables/encryption/useMessageTrust'
 import { MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
 import router from '@/router'
@@ -417,6 +426,12 @@ const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarCl
     selectKey
   }
 )
+
+// 消息加密信任计算
+const messageTrust = useMessageTrust(!!props.message?.message?.body?.hasEncryption)
+const shouldShowLockBadge = computed(() => {
+  return props.message?.message?.body?.hasEncryption === true
+})
 
 const activeReply = ref<string>('')
 const settingStore = useSettingStore()

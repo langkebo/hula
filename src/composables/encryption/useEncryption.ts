@@ -14,7 +14,10 @@ import {
   type SetupKeyBackupOptions
 } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
-import { matrixVerificationService, type VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
+import {
+  matrixVerificationService,
+  type VerificationTransaction
+} from '@/services/matrix/crypto/MatrixVerificationService'
 
 export type { CryptoHealthStatus } from '@/services/matrix/crypto/CryptoHealthMonitor'
 
@@ -72,7 +75,7 @@ interface UseEncryptionResult {
   acceptVerification: (transactionId: string) => Promise<void>
   confirmSas: (transactionId: string) => Promise<void>
   cancelVerification: (transactionId: string, reason: string) => Promise<void>
-  getPendingVerifications: () => Promise<VerificationRequest[]>
+  getPendingVerifications: () => Promise<VerificationTransaction[]>
   getQrCodeShow: () => Promise<{ qr_code: string; transaction_id: string } | null>
   scanQrCode: (qrCodeData: string) => Promise<boolean>
 

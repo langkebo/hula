@@ -52,13 +52,7 @@ export function useVoiceInput(): VoiceInputHook {
       const mediaId = extractMediaIdFromMxc(result.contentUri)
       const durationMs = await getAudioDuration(file)
 
-      await matrixVoiceService.registerEncryptedVoice(
-        roomId,
-        mediaId,
-        durationMs,
-        result.size,
-        result.mimetype
-      )
+      await matrixVoiceService.registerEncryptedVoice(roomId, mediaId, durationMs, result.size, result.mimetype)
 
       // 返回兼容 VoiceUploadResult 的格式
       return {

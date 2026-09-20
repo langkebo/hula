@@ -26,7 +26,6 @@
         :loading="loading"
         :disabled="loginDisabled"
         tertiary
-        style="color: var(--tjg-text-inverse)"
         class="gradient-button w-200px mt-12px mb-40px"
         @click="emit('login')">
         <span>{{ loginText }}</span>

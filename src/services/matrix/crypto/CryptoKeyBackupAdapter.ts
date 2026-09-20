@@ -9,6 +9,7 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import type { GeneratedSecretStorageKey, MatrixAuthData } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import { setSecretStorageKeyFromRecoveryKey } from '../secretStorageKeyVault'
 import type {
   CryptoAdapterAccessors,
   KeyBackupRestoreResult,
@@ -16,6 +17,7 @@ import type {
   KeyExportResult,
   KeyImportResult
 } from './cryptoAdapterTypes'
+import { buildSsssAccountData } from './ssssKeyDescription'
 
 const logger = createLogger('CryptoKeyBackupAdapter')
 
@@ -43,31 +45,12 @@ async function uploadSsssKeyDirectly(client: MatrixClient, generatedKey: Generat
   // 生成唯一 keyId（与 SDK 的 secureRandomString(32) 对齐）
   const keyId = crypto.randomUUID().replace(/-/g, '')
 
-  // 计算 iv 和 mac（与 SDK 的 calculateKeyCheck 对齐）
-  const keyData = generatedKey.privateKey
-  const iv = crypto.getRandomValues(new Uint8Array(12))
-  const ivBase64 = btoa(String.fromCharCode(...iv))
-
-  // 使用 SubtleCrypto 计算 HMAC-SHA256 作为 mac
-  const macKey = await crypto.subtle.importKey(
-    'raw',
-    keyData.buffer.slice(keyData.byteOffset, keyData.byteOffset + keyData.byteLength) as ArrayBuffer,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  )
-  const macBuffer = await crypto.subtle.sign('HMAC', macKey, iv)
-  const macBase64 = btoa(String.fromCharCode(...new Uint8Array(macBuffer)))
-
-  // 构造密钥描述（对齐 SSSS AES-128 规范）
-  const keyInfo: Record<string, unknown> = {
-    algorithm: 'm.vodozemac.v1',
-    iv: ivBase64,
-    mac: macBase64
-  }
-  if (generatedKey.keyInfo?.passphrase) {
-    keyInfo.passphrase = generatedKey.keyInfo.passphrase
-  }
+  // 构造密钥描述：**必须**采用 SDK 生成结果，不得手写 algorithm/iv/mac。
+  // 历史缺陷：本函数曾自行以 `m.vodozemac.v1` + 12 字节 IV + HMAC(iv) 拼装，
+  // 与规范（m.secret_storage.v1.aes-hmac-sha2、16 字节 IV、MAC 覆盖 encrypted(32×0)‖IV）
+  // 不符，导致 SDK addKey/checkKey 抛 `Unknown algorithm`，密钥无法被任何客户端校验。
+  const { keyDescription } = buildSsssAccountData(generatedKey)
+  const keyInfo: Record<string, unknown> = { ...keyDescription }
 
   // 使用 setAccountDataRaw（底层 HTTP PUT，不等待 sync echo）直接上传。
   // SDK 的 setAccountData 会等待 ClientEvent.AccountData 回声（sliding sync 下可能 30s+），
@@ -363,12 +346,27 @@ export class CryptoKeyBackupAdapter {
     return { imported: 0, total: 0 }
   }
 
-  /** 从密钥备份恢复
+  /**
+   * 用恢复密钥从服务端备份恢复房间密钥。
+   *
+   * 恢复密钥**只在本机使用**：写入内存保险箱后由 SDK 从 SSSS 取出备份解密密钥，
+   * 再执行恢复。绝不把恢复密钥包装成 room key 上送服务端。
+   *
+   * @param recoveryKey 用户输入的恢复密钥
+   * @throws 恢复密钥格式非法、账号无 SSSS 密钥、或本机不支持从 SSSS 取密钥
    */
-  async restoreFromBackup(_recoveryKey: string): Promise<KeyBackupRestoreResult> {
+  async restoreFromBackup(recoveryKey: string): Promise<KeyBackupRestoreResult> {
     const crypto = this.accessors.getCrypto()
     if (!crypto) {
       throw new Error('CryptoApi 不可用')
+    }
+
+    if (typeof crypto.loadSessionBackupPrivateKeyFromSecretStorage !== 'function') {
+      throw new Error('当前客户端不支持通过恢复密钥恢复密钥备份')
+    }
+
+    if (typeof crypto.getSecretStorageStatus !== 'function') {
+      throw new Error('当前客户端不支持读取安全备份密钥状态')
     }
 
     const backupInfo = await crypto.getKeyBackupInfo()
@@ -376,6 +374,18 @@ export class CryptoKeyBackupAdapter {
       throw new Error('无可用密钥备份')
     }
 
+    // 1. 把恢复密钥放进内存保险箱（非法密钥在此抛错，不会触碰任何恢复接口）
+    const status = await crypto.getSecretStorageStatus()
+    const keyId = status?.defaultKeyId
+    if (!keyId) {
+      throw new Error('账号未配置安全备份密钥，无法使用恢复密钥')
+    }
+    setSecretStorageKeyFromRecoveryKey(recoveryKey, { [keyId]: {} })
+
+    // 2. 由 SDK 从 SSSS 解出备份解密密钥并存进 crypto store
+    await crypto.loadSessionBackupPrivateKeyFromSecretStorage()
+
+    // 3. 用已就位的密钥恢复备份
     const result = await crypto.restoreKeyBackup()
     return {
       imported: result.imported,

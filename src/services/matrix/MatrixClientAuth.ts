@@ -15,6 +15,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { persistRefreshedToken } from '@/services/matrix/matrixClientPlatform'
 import type { LoginResponse } from '@/services/matrix/sdk'
+import { clearSecretStorageKeys } from '@/services/matrix/secretStorageKeyVault'
 import { clearCryptoStoragePasswordCache, deleteCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { IdempotencyGuard } from '@/utils/ExecutionGuard'
@@ -392,6 +393,8 @@ export class MatrixClientAuth {
       }
       // 全量清理内存缓存中的 crypto storagePassword，防止切换账号时复用旧密码
       clearCryptoStoragePasswordCache()
+      // 清空 SSSS 私钥内存保险箱，避免登出后残留（历史缺陷：sessionStorage 缓存从不清理）
+      clearSecretStorageKeys()
       // 清除 IndexedDB crypto store 与 localStorage 记录，确保下次登录从干净状态开始
       if (userId) {
         cryptoTracker.clearCryptoStoreForLogout(userId).catch((err) => {

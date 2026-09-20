@@ -132,15 +132,15 @@
 import { Icon } from '@iconify/vue'
 import { NButton, NList, NListItem, NSpace } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import type { VerificationRequest } from '@/services/matrix/crypto/MatrixVerificationService'
+import type { VerificationTransaction } from '@/services/matrix/crypto/MatrixVerificationService'
 
 defineOptions({ name: 'DeviceVerifyIntroStep' })
 
 defineProps<{
-  inboundRequest?: VerificationRequest | null
+  inboundRequest?: VerificationTransaction | null
   deviceId?: string
   deviceName?: string
-  pendingVerifications: VerificationRequest[]
+  pendingVerifications: VerificationTransaction[]
 }>()
 
 const emit = defineEmits<{
@@ -150,7 +150,7 @@ const emit = defineEmits<{
   (e: 'scan-qr'): void
   (e: 'decline'): void
   (e: 'start'): void
-  (e: 'accept-pending', req: VerificationRequest): void
+  (e: 'accept-pending', req: VerificationTransaction): void
   (e: 'decline-pending', transactionId: string): void
 }>()
 

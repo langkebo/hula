@@ -5,6 +5,7 @@ import type {
   MatrixClient,
   SDKKeyBackupManager
 } from '@/services/matrix/sdk'
+import { encodeRecoveryKey as encodeRecoveryKeyReal } from '@/services/matrix/sdk'
 import type {
   CryptoApi,
   GeneratedSecretStorageKey,
@@ -14,6 +15,14 @@ import type {
 } from '@/types/matrix-extensions'
 import { CryptoKeyBackupAdapter } from '../CryptoKeyBackupAdapter'
 import type { CryptoAdapterAccessors } from '../cryptoAdapterTypes'
+
+// Mock: 测试辅助函数 - 生成 base58 编码的恢复密钥
+function _encodeRecoveryKey(bytes: Uint8Array): string {
+  // 简化实现：直接将字节转为 hex 字符串作为模拟密钥
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
@@ -56,6 +65,11 @@ const fakeGeneratedKey: GeneratedSecretStorageKey = {
   keyInfo: { algorithm: 'm.secret_storage.v1.aes-hmac-sha2', iv: 'iv', mac: 'mac' },
   encodedPrivateKey: 'EsTj LW6N 9WqD ...',
   privateKey: new Uint8Array([1, 2, 3])
+}
+
+/** 生成一个格式合法的恢复密钥（base58 + 校验字节），用于 restoreFromBackup 用例 */
+function validRecoveryKey(): string {
+  return encodeRecoveryKeyReal(crypto.getRandomValues(new Uint8Array(32))) as string
 }
 
 describe('CryptoKeyBackupAdapter', () => {
@@ -283,20 +297,28 @@ describe('CryptoKeyBackupAdapter', () => {
     })
 
     it('throws when no backup exists', async () => {
-      const crypto = { getKeyBackupInfo: vi.fn().mockResolvedValue(null) } as unknown as CryptoApi
+      const crypto = {
+        loadSessionBackupPrivateKeyFromSecretStorage: vi.fn(),
+        getSecretStorageStatus: vi.fn().mockResolvedValue({ ready: true, defaultKeyId: 'key-1' }),
+        getKeyBackupInfo: vi.fn().mockResolvedValue(null)
+      } as unknown as CryptoApi
       const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
-      await expect(adapter.restoreFromBackup('key')).rejects.toThrow('无可用密钥备份')
+      await expect(adapter.restoreFromBackup(validRecoveryKey())).rejects.toThrow('无可用密钥备份')
     })
 
-    it('restores via CryptoApi.restoreKeyBackup', async () => {
+    it('restores via CryptoApi.restoreKeyBackup（恢复密钥经内存保险箱，不经 importKeys）', async () => {
+      const loadFromSecretStorage = vi.fn().mockResolvedValue(undefined)
       const crypto = {
+        loadSessionBackupPrivateKeyFromSecretStorage: loadFromSecretStorage,
+        getSecretStorageStatus: vi.fn().mockResolvedValue({ ready: true, defaultKeyId: 'key-1' }),
         getKeyBackupInfo: vi.fn().mockResolvedValue({ version: '1' }),
         restoreKeyBackup: vi.fn().mockResolvedValue({ imported: 4, total: 6 })
       } as unknown as CryptoApi
       const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
 
-      const result = await adapter.restoreFromBackup('key')
+      const result = await adapter.restoreFromBackup(validRecoveryKey())
 
+      expect(loadFromSecretStorage).toHaveBeenCalledTimes(1)
       expect(crypto.restoreKeyBackup).toHaveBeenCalled()
       expect(result).toEqual({ imported: 4, total: 6 })
     })

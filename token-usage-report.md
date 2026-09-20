@@ -1,0 +1,493 @@
+# Design Token Usage Report
+
+Generated: 2026-09-19T21:02:11.223223
+Total unique tokens: 472
+
+
+## 规范 (240 tokens)
+- `--tjg-text-tertiary`: 217 uses in 217 files
+- `--tjg-text-primary`: 215 uses in 215 files
+- `--tjg-text-secondary`: 187 uses in 187 files
+- `--tjg-color-primary-500`: 175 uses in 175 files
+- `--tjg-surface-panel`: 139 uses in 139 files
+- `--tjg-border-default`: 125 uses in 125 files
+- `--tjg-color-danger-500`: 105 uses in 105 files
+- `--tjg-font-size-sm`: 84 uses in 84 files
+- `--tjg-text-inverse`: 70 uses in 70 files
+- `--tjg-font-weight-medium`: 66 uses in 66 files
+- `--tjg-text-quaternary`: 66 uses in 66 files
+- `--tjg-font-size-base`: 63 uses in 63 files
+- `--tjg-surface-list-hover`: 55 uses in 55 files
+- `--tjg-surface-panel-muted`: 49 uses in 49 files
+- `--tjg-radius-sm`: 48 uses in 48 files
+- `--tjg-color-success-500`: 48 uses in 48 files
+- `--tjg-color-warning-500`: 46 uses in 46 files
+- `--tjg-space-2`: 45 uses in 45 files
+- `--tjg-color-primary-100`: 44 uses in 44 files
+- `--tjg-surface-subtle`: 44 uses in 44 files
+- `--tjg-font-size-lg`: 42 uses in 42 files
+- `--tjg-space-3`: 41 uses in 41 files
+- `--tjg-space-4`: 41 uses in 41 files
+- `--tjg-motion-ease-standard`: 39 uses in 39 files
+- `--tjg-motion-duration-fast`: 35 uses in 35 files
+- `--tjg-space-1`: 34 uses in 34 files
+- `--tjg-surface-search`: 28 uses in 28 files
+- `--tjg-color-info-500`: 27 uses in 27 files
+- `--tjg-color-primary-600`: 26 uses in 26 files
+- `--tjg-motion-duration-normal`: 25 uses in 25 files
+- `--tjg-surface-app`: 23 uses in 23 files
+- `--tjg-border-layout-divider`: 23 uses in 23 files
+- `--tjg-surface-elevated`: 22 uses in 22 files
+- `--tjg-radius-xs`: 21 uses in 21 files
+- `--tjg-color-info-100`: 20 uses in 20 files
+- `--tjg-color-danger-100`: 20 uses in 20 files
+- `--tjg-font-size-2xs`: 19 uses in 19 files
+- `--tjg-border-muted`: 18 uses in 18 files
+- `--tjg-color-warning-100`: 18 uses in 18 files
+- `--tjg-settings-divider`: 18 uses in 18 files
+- `--tjg-color-primary-200`: 17 uses in 17 files
+- `--tjg-settings-card-bg`: 17 uses in 17 files
+- `--tjg-font-size-xs`: 17 uses in 17 files
+- `--tjg-status-online`: 16 uses in 16 files
+- `--tjg-color-primary-300-alpha`: 16 uses in 16 files
+- `--tjg-color-primary-50`: 15 uses in 15 files
+- `--tjg-radius-full`: 15 uses in 15 files
+- `--tjg-color-success-100`: 14 uses in 14 files
+- `--tjg-shadow-md`: 14 uses in 14 files
+- `--tjg-color-warning-400`: 14 uses in 14 files
+- `--tjg-color-primary-400`: 13 uses in 13 files
+- `--tjg-text-disabled`: 13 uses in 13 files
+- `--tjg-radius-md`: 13 uses in 13 files
+- `--tjg-status-offline`: 12 uses in 12 files
+- `--tjg-border-strong`: 11 uses in 11 files
+- `--tjg-font-weight-semibold`: 11 uses in 11 files
+- `--tjg-overlay-mobile-sheet`: 11 uses in 11 files
+- `--tjg-motion-duration-overlay`: 10 uses in 10 files
+- `--tjg-surface-media-preview`: 10 uses in 10 files
+- `--tjg-shadow-card`: 9 uses in 9 files
+- `--tjg-surface-sidebar-selected`: 9 uses in 9 files
+- `--tjg-color-beta-500`: 9 uses in 9 files
+- `--tjg-shadow-lg`: 8 uses in 8 files
+- `--tjg-font-size-xl`: 8 uses in 8 files
+- `--tjg-radius-lg`: 8 uses in 8 files
+- `--tjg-surface-sidebar-hover`: 8 uses in 8 files
+- `--tjg-overlay-inverse-strong`: 8 uses in 8 files
+- `--tjg-fill-hover`: 8 uses in 8 files
+- `--tjg-brand`: 7 uses in 7 files
+- `--tjg-color-danger-600`: 7 uses in 7 files
+- `--tjg-font-size-md`: 7 uses in 7 files
+- `--tjg-border-contrast`: 7 uses in 7 files
+- `--tjg-color-primary-600, var(--tjg-color-primary-500`: 7 uses in 7 files
+- `--tjg-overlay-mask-default`: 6 uses in 6 files
+- `--tjg-encryption-surface-dark`: 6 uses in 6 files
+- `--tjg-color-beta-100`: 6 uses in 6 files
+- `--tjg-encryption-surface-subtle`: 6 uses in 6 files
+- `--tjg-surface-session-active`: 6 uses in 6 files
+- `--tjg-surface-muted`: 6 uses in 6 files
+- `--tjg-motion-duration-xslow`: 5 uses in 5 files
+- `--tjg-space-6`: 5 uses in 5 files
+- `--tjg-status-busy`: 5 uses in 5 files
+- `--tjg-color-info-600`: 5 uses in 5 files
+- `--tjg-menu-hover`: 5 uses in 5 files
+- `--tjg-surface-inverse-hover`: 5 uses in 5 files
+- `--tjg-motion-ease-enter`: 5 uses in 5 files
+- `--tjg-shadow-floating-menu`: 5 uses in 5 files
+- `--tjg-surface-session-active-shadow`: 5 uses in 5 files
+- `--tjg-color-warning-600`: 5 uses in 5 files
+- `--tjg-color-primary-700`: 5 uses in 5 files
+- `--tjg-motion-duration-fast, 150ms`: 5 uses in 5 files
+- `--tjg-font-weight-medium, 500`: 5 uses in 5 files
+- `--tjg-color-success-600`: 4 uses in 4 files
+- `--tjg-line-height-tight`: 4 uses in 4 files
+- `--tjg-motion-duration-slow`: 4 uses in 4 files
+- `--tjg-surface-sidebar`: 4 uses in 4 files
+- `--tjg-surface-overlay`: 4 uses in 4 files
+- `--tjg-status-away`: 4 uses in 4 files
+- `--tjg-settings-warning-bg`: 4 uses in 4 files
+- `--tjg-surface-darkest`: 4 uses in 4 files
+- `--tjg-surface-input`: 4 uses in 4 files
+- `--tjg-shadow-sm`: 4 uses in 4 files
+- `--tjg-space-5`: 4 uses in 4 files
+- `--tjg-space-8`: 4 uses in 4 files
+- `--tjg-font-size-sm, 12px`: 4 uses in 4 files
+- `--tjg-font-size-base, 14px`: 4 uses in 4 files
+- `--tjg-motion-ease-standard, ease`: 4 uses in 4 files
+- `--tjg-text-muted`: 3 uses in 3 files
+- `--tjg-settings-meter-bg`: 3 uses in 3 files
+- `--tjg-color-info-400`: 3 uses in 3 files
+- `--tjg-color-danger-200`: 3 uses in 3 files
+- `--tjg-settings-card-bg-hover`: 3 uses in 3 files
+- `--tjg-border-inverse-muted`: 3 uses in 3 files
+- `--tjg-color-primary-300`: 3 uses in 3 files
+- `--tjg-shadow-card-hover`: 3 uses in 3 files
+- `--tjg-motion-scale-active`: 3 uses in 3 files
+- `--tjg-surface-list`: 3 uses in 3 files
+- `--tjg-color-danger-400`: 3 uses in 3 files
+- `--tjg-shadow-top-bar`: 3 uses in 3 files
+- `--tjg-motion-duration-normal, 180ms`: 3 uses in 3 files
+- `--tjg-radius-sm, 4px`: 3 uses in 3 files
+- `--tjg-radius-sm, 6px`: 3 uses in 3 files
+- `--tjg-color-danger-100, color-mix(in srgb, var(--tjg-color-danger-500`: 3 uses in 3 files
+- `--tjg-bg-secondary`: 3 uses in 3 files
+- `--tjg-overlay`: 2 uses in 2 files
+- `--tjg-color-danger-50`: 2 uses in 2 files
+- `--tjg-motion-duration-2xslow`: 2 uses in 2 files
+- `--tjg-shadow-border`: 2 uses in 2 files
+- `--tjg-room-card-federated-accent`: 2 uses in 2 files
+- `--tjg-font-size-2lg`: 2 uses in 2 files
+- `--tjg-line-height-normal`: 2 uses in 2 files
+- `--tjg-room-card-encrypted-border`: 2 uses in 2 files
+- `--tjg-surface-dark`: 2 uses in 2 files
+- `--tjg-dialog-width-md`: 2 uses in 2 files
+- `--tjg-room-card-encrypted-accent`: 2 uses in 2 files
+- `--tjg-admin-stat-value-color`: 2 uses in 2 files
+- `--tjg-settings-sidebar-width`: 2 uses in 2 files
+- `--tjg-color-success-bg`: 2 uses in 2 files
+- `--tjg-mobile-login-bg`: 2 uses in 2 files
+- `--tjg-room-unread-badge-bg`: 2 uses in 2 files
+- `--tjg-font-size-2xl`: 2 uses in 2 files
+- `--tjg-color-warning-bg`: 2 uses in 2 files
+- `--tjg-menu-bg`: 2 uses in 2 files
+- `--tjg-room-highlight-badge-bg`: 2 uses in 2 files
+- `--tjg-shadow-dropdown`: 2 uses in 2 files
+- `--tjg-bubble-received-bg`: 2 uses in 2 files
+- `--tjg-surface-sidebar-active`: 2 uses in 2 files
+- `--tjg-room-card-group-accent`: 2 uses in 2 files
+- `--tjg-room-card-federated-border`: 2 uses in 2 files
+- `--tjg-overlay-mask-subtle`: 2 uses in 2 files
+- `--tjg-admin-card-bg`: 2 uses in 2 files
+- `--tjg-font-family-mono`: 2 uses in 2 files
+- `--tjg-admin-card-shadow`: 2 uses in 2 files
+- `--tjg-surface-list-selected`: 2 uses in 2 files
+- `--tjg-avatar-scrim-bg`: 2 uses in 2 files
+- `--tjg-font-size-3xl`: 2 uses in 2 files
+- `--tjg-bubble-sent-bg`: 2 uses in 2 files
+- `--tjg-brand-light`: 2 uses in 2 files
+- `--tjg-admin-card-shadow-hover`: 2 uses in 2 files
+- `--tjg-color-purple-500`: 2 uses in 2 files
+- `--tjg-font-weight-bold`: 2 uses in 2 files
+- `--tjg-mark-highlight-bg`: 2 uses in 2 files
+- `--tjg-color-success-400`: 2 uses in 2 files
+- `--tjg-motion-ease-exit`: 2 uses in 2 files
+- `--tjg-settings-header-height`: 2 uses in 2 files
+- `--tjg-color-primary`: 2 uses in 2 files
+- `--tjg-surface-raised`: 2 uses in 2 files
+- `--tjg-radius-sm, 8px`: 2 uses in 2 files
+- `--tjg-font-size-xs, 11px`: 2 uses in 2 files
+- `--tjg-font-weight-semibold, 600`: 2 uses in 2 files
+- `--tjg-color-success-100, rgba(34, 197, 94, 0.1`: 2 uses in 2 files
+- `--tjg-border-contrast, rgba(255, 255, 255, 0.06`: 2 uses in 2 files
+- `--tjg-color-primary-50, color-mix(in srgb, var(--tjg-color-primary-500`: 2 uses in 2 files
+- `--tjg-bg-pressed`: 2 uses in 2 files
+- `--tjg-admin-sidebar-bg`: 1 uses in 1 files
+- `--tjg-admin-header-border`: 1 uses in 1 files
+- `--tjg-mobile-login-bg-end`: 1 uses in 1 files
+- `--tjg-dialog-width-sm`: 1 uses in 1 files
+- `--tjg-dialog-width-lg`: 1 uses in 1 files
+- `--tjg-admin-sidebar-text`: 1 uses in 1 files
+- `--tjg-admin-health-err-bg`: 1 uses in 1 files
+- `--tjg-`: 1 uses in 1 files
+- `--tjg-admin-health-ok-text`: 1 uses in 1 files
+- `--tjg-admin-sidebar-hover`: 1 uses in 1 files
+- `--tjg-admin-health-ok-bg`: 1 uses in 1 files
+- `--tjg-admin-health-err-text`: 1 uses in 1 files
+- `--tjg-fill-default`: 1 uses in 1 files
+- `--tjg-mobile-login-bg-start`: 1 uses in 1 files
+- `--tjg-admin-bg`: 1 uses in 1 files
+- `--tjg-font-family`: 1 uses in 1 files
+- `--tjg-admin-sidebar-border`: 1 uses in 1 files
+- `--tjg-admin-title-color`: 1 uses in 1 files
+- `--tjg-color-error-600`: 1 uses in 1 files
+- `--tjg-color-error`: 1 uses in 1 files
+- `--tjg-motion-duration-fast, 120ms`: 1 uses in 1 files
+- `--tjg-radius-xs, 4px`: 1 uses in 1 files
+- `--tjg-radius-lg, 12px`: 1 uses in 1 files
+- `--tjg-text-xs`: 1 uses in 1 files
+- `--tjg-status-error`: 1 uses in 1 files
+- `--tjg-color-primary-700, var(--tjg-text-primary`: 1 uses in 1 files
+- `--tjg-surface-search, transparent`: 1 uses in 1 files
+- `--tjg-radius-md, 10px`: 1 uses in 1 files
+- `--tjg-space-10`: 1 uses in 1 files
+- `--tjg-status-danger, var(--tjg-color-danger-500`: 1 uses in 1 files
+- `--tjg-status-danger`: 1 uses in 1 files
+- `--tjg-color-warning-100, rgba(245, 158, 11, 0.1`: 1 uses in 1 files
+- `--tjg-surface-canvas`: 1 uses in 1 files
+- `--tjg-shadow-overlay, 0 8px 24px rgba(0, 0, 0, 0.18`: 1 uses in 1 files
+- `--tjg-shadow-overlay`: 1 uses in 1 files
+- `--tjg-motion-duration-normal, 200ms`: 1 uses in 1 files
+- `--tjg-color-danger-600, var(--tjg-color-danger-500`: 1 uses in 1 files
+- `--tjg-surface-elevated, var(--tjg-surface-elevated`: 1 uses in 1 files
+- `--tjg-surface-input, rgba(0, 0, 0, 0.04`: 1 uses in 1 files
+- `--tjg-text-sm`: 1 uses in 1 files
+- `--tjg-color-`: 1 uses in 1 files
+- `--tjg-motion-duration-normal, 0.2s`: 1 uses in 1 files
+- `--tjg-color-danger-200, color-mix(in srgb, var(--tjg-color-danger-500`: 1 uses in 1 files
+- `--tjg-motion-duration-fast, 0.2s`: 1 uses in 1 files
+- `--tjg-status-`: 1 uses in 1 files
+- `--tjg-color-primary-50, var(--tjg-surface-search`: 1 uses in 1 files
+- `--tjg-status-success`: 1 uses in 1 files
+- `--tjg-surface-page`: 1 uses in 1 files
+- `--tjg-color-warning-bg, rgba(255, 196, 0, 0.1`: 1 uses in 1 files
+- `--tjg-page-bg-color`: 1 uses in 1 files
+- `--tjg-border-color`: 1 uses in 1 files
+- `--tjg-space-1, 4px`: 1 uses in 1 files
+- `--tjg-font-size-lg, 15px`: 1 uses in 1 files
+- `--tjg-font-weight-medium, 600`: 1 uses in 1 files
+- `--tjg-font-family-mono, monospace`: 1 uses in 1 files
+- `--tjg-border-subtle`: 1 uses in 1 files
+- `--tjg-settings-header-height, 56px`: 1 uses in 1 files
+- `--tjg-settings-sidebar-width, 260px`: 1 uses in 1 files
+- `--tjg-font-size-xs, 12px`: 1 uses in 1 files
+- `--tjg-text-inverse, #fff`: 1 uses in 1 files
+- `--tjg-font-size-sm, 13px`: 1 uses in 1 files
+- `--tjg-color-danger-500, #ff4d4f`: 1 uses in 1 files
+- `--tjg-color-success`: 1 uses in 1 files
+- `--tjg-font-size-lg, 16px`: 1 uses in 1 files
+- `--tjg-color-success, #10b981`: 1 uses in 1 files
+- `--tjg-color-danger-600, #dc2626`: 1 uses in 1 files
+
+## 未迁移 (6 tokens)
+- `--color-primary`: 6 uses in 6 files
+- `--bg-offline-avatar-overlay`: 2 uses in 2 files
+- `--bg-menu-hover`: 2 uses in 2 files
+- `--bg-menu`: 2 uses in 2 files
+- `--bg-long-press-menu`: 2 uses in 2 files
+- `--color-text-tertiary`: 2 uses in 2 files
+
+## 自定义 (226 tokens)
+- `--text-xs`: 19 uses in 19 files
+- `--text-sm`: 18 uses in 18 files
+- `--right-bg-color`: 10 uses in 10 files
+- `--avatar-border-color`: 10 uses in 10 files
+- `--active`: 10 uses in 10 files
+- `--page-scale, 1`: 9 uses in 9 files
+- `--page-scale`: 9 uses in 9 files
+- `--safe-area-inset-top`: 6 uses in 6 files
+- `--safe-area-inset-bottom`: 6 uses in 6 files
+- `--left-bg-color`: 5 uses in 5 files
+- `--text-base`: 5 uses in 5 files
+- `--text-lg`: 5 uses in 5 files
+- `--font-family`: 4 uses in 4 files
+- `--right-theme-bg-color`: 4 uses in 4 files
+- `--left-active-icon-color`: 4 uses in 4 files
+- `--left-active-bg-color`: 4 uses in 4 files
+- `--left-active-hover`: 4 uses in 4 files
+- `--left-bg-hover`: 4 uses in 4 files
+- `--font-semibold`: 4 uses in 4 files
+- `--bate-bg`: 3 uses in 3 files
+- `--chat-bt-color`: 3 uses in 3 files
+- `--bate-color`: 3 uses in 3 files
+- `--left-text-color`: 3 uses in 3 files
+- `--icon-hover-color`: 3 uses in 3 files
+- `--left-active-indicator-color`: 3 uses in 3 files
+- `--left-win-icon-color`: 3 uses in 3 files
+- `--left-icon-color`: 3 uses in 3 files
+- `--progress-bg`: 3 uses in 3 files
+- `--tag-danger-bg`: 3 uses in 3 files
+- `--tag-neutral-bg`: 3 uses in 3 files
+- `--chat-text-color`: 3 uses in 3 files
+- `--login-divider-color`: 3 uses in 3 files
+- `--avatar-fallback-color`: 3 uses in 3 files
+- `--admin-title-color`: 3 uses in 3 files
+- `--login-dropdown-bg`: 3 uses in 3 files
+- `--tray-hover`: 3 uses in 3 files
+- `--avatar-fallback-src`: 3 uses in 3 files
+- `--login-avatar-bg`: 3 uses in 3 files
+- `--admin-card-bg`: 3 uses in 3 files
+- `--n-height`: 3 uses in 3 files
+- `--n-border-radius`: 3 uses in 3 files
+- `--n-font-size`: 3 uses in 3 files
+- `--compact`: 3 uses in 3 files
+- `--selected`: 3 uses in 3 files
+- `--van-background-2`: 3 uses in 3 files
+- `--shadow-enabled`: 2 uses in 2 files
+- `--reply-bg`: 2 uses in 2 files
+- `--chat-right-bg`: 2 uses in 2 files
+- `--chat-left-bg`: 2 uses in 2 files
+- `--chat-hover-color`: 2 uses in 2 files
+- `--primary-color`: 2 uses in 2 files
+- `--info-hover`: 2 uses in 2 files
+- `--setting-item-line`: 2 uses in 2 files
+- `--plugin-bg-color`: 2 uses in 2 files
+- `--plugin-downloading-text`: 2 uses in 2 files
+- `--plugin-downloading-bg`: 2 uses in 2 files
+- `--tag-info-bg`: 2 uses in 2 files
+- `--danger-text`: 2 uses in 2 files
+- `--plugin-icon-bg`: 2 uses in 2 files
+- `--login-surface-bg`: 2 uses in 2 files
+- `--pin-input-bg`: 2 uses in 2 files
+- `--font-size-base`: 2 uses in 2 files
+- `--action-close-hover-icon`: 2 uses in 2 files
+- `--admin-header-border`: 2 uses in 2 files
+- `--tray-hover-e`: 2 uses in 2 files
+- `--time-group-bg`: 2 uses in 2 files
+- `--login-dropdown-border`: 2 uses in 2 files
+- `--admin-health-ok-text`: 2 uses in 2 files
+- `--admin-sidebar-hover`: 2 uses in 2 files
+- `--info-text-color`: 2 uses in 2 files
+- `--admin-sidebar-border`: 2 uses in 2 files
+- `--msg-active-color`: 2 uses in 2 files
+- `--admin-health-err-text`: 2 uses in 2 files
+- `--action-close-hover-bg`: 2 uses in 2 files
+- `--admin-card-shadow`: 2 uses in 2 files
+- `--login-avatar-border`: 2 uses in 2 files
+- `--admin-sidebar-text`: 2 uses in 2 files
+- `--admin-health-ok-bg`: 2 uses in 2 files
+- `--text-color`: 2 uses in 2 files
+- `--admin-sidebar-bg`: 2 uses in 2 files
+- `--admin-bg`: 2 uses in 2 files
+- `--admin-health-err-bg`: 2 uses in 2 files
+- `--bubble-max-width`: 2 uses in 2 files
+- `--card`: 2 uses in 2 files
+- `--leading-snug`: 2 uses in 2 files
+- `--text-xl`: 2 uses in 2 files
+- `--font-medium`: 2 uses in 2 files
+- `--safe-area-inset-left`: 2 uses in 2 files
+- `--safe-area-inset-right`: 2 uses in 2 files
+- `--danger`: 2 uses in 2 files
+- `--van-gray-5`: 2 uses in 2 files
+- `--van-text-color-2`: 2 uses in 2 files
+- `--van-text-color-3`: 2 uses in 2 files
+- `--van-background`: 2 uses in 2 files
+- `--link-color`: 1 uses in 1 files
+- `--token`: 1 uses in 1 files
+- `--n-color-pressed`: 1 uses in 1 files
+- `--n-label-height`: 1 uses in 1 files
+- `--n-feedback-height`: 1 uses in 1 files
+- `--n-blank-height`: 1 uses in 1 files
+- `--bubble-max-width, 32vw`: 1 uses in 1 files
+- `--agreement-accent-color`: 1 uses in 1 files
+- `--agreement-scrollbar-track`: 1 uses in 1 files
+- `--agreement-scrollbar-thumb`: 1 uses in 1 files
+- `--agreement-muted-color`: 1 uses in 1 files
+- `--agreement-subheading-color`: 1 uses in 1 files
+- `--agreement-heading-color`: 1 uses in 1 files
+- `--agreement-paragraph-color`: 1 uses in 1 files
+- `--agreement-scrollbar-thumb-hover`: 1 uses in 1 files
+- `--code-block-bg`: 1 uses in 1 files
+- `--code-block-toolbar-border-color`: 1 uses in 1 files
+- `--code-block-toolbar-active-bg`: 1 uses in 1 files
+- `--code-block-header-bg`: 1 uses in 1 files
+- `--code-block-toolbar-hover-bg`: 1 uses in 1 files
+- `--code-block-toolbar-color`: 1 uses in 1 files
+- `--code-block-border-color`: 1 uses in 1 files
+- `--code-block-skeleton-line`: 1 uses in 1 files
+- `--tab-bar-icon-color`: 1 uses in 1 files
+- `--input`: 1 uses in 1 files
+- `--card-foreground`: 1 uses in 1 files
+- `--right-chat-reply-active-color`: 1 uses in 1 files
+- `--group-notice-bg`: 1 uses in 1 files
+- `--list-hover-color`: 1 uses in 1 files
+- `--border`: 1 uses in 1 files
+- `--background`: 1 uses in 1 files
+- `--foreground`: 1 uses in 1 files
+- `--right-chat-reply-color`: 1 uses in 1 files
+- `--right-chat-footer-line-color`: 1 uses in 1 files
+- `--font-normal`: 1 uses in 1 files
+- `--leading-loose`: 1 uses in 1 files
+- `--text-3xl`: 1 uses in 1 files
+- `--font-light`: 1 uses in 1 files
+- `--leading-tight`: 1 uses in 1 files
+- `--text-2xl`: 1 uses in 1 files
+- `--text-4xl`: 1 uses in 1 files
+- `--leading-normal`: 1 uses in 1 files
+- `--font-bold`: 1 uses in 1 files
+- `--leading-none`: 1 uses in 1 files
+- `--leading-relaxed`: 1 uses in 1 files
+- `--n-border-hover`: 1 uses in 1 files
+- `--n-box-shadow-active`: 1 uses in 1 files
+- `--n-border-active`: 1 uses in 1 files
+- `--friend-card-bg`: 1 uses in 1 files
+- `--friend-card-subtle`: 1 uses in 1 files
+- `--friend-card-text`: 1 uses in 1 files
+- `--rtl`: 1 uses in 1 files
+- `--friend-card-border`: 1 uses in 1 files
+- `--warning`: 1 uses in 1 files
+- `--success`: 1 uses in 1 files
+- `--public`: 1 uses in 1 files
+- `--private`: 1 uses in 1 files
+- `--bgColor-default`: 1 uses in 1 files
+- `--fgColor-muted`: 1 uses in 1 files
+- `--borderColor-accent-emphasis`: 1 uses in 1 files
+- `--borderColor-muted`: 1 uses in 1 files
+- `--borderColor-neutral-muted`: 1 uses in 1 files
+- `--bgColor-neutral-muted`: 1 uses in 1 files
+- `--fgColor-success`: 1 uses in 1 files
+- `--bgColor-muted`: 1 uses in 1 files
+- `--bgColor-attention-muted`: 1 uses in 1 files
+- `--borderColor-default`: 1 uses in 1 files
+- `--fgColor-attention`: 1 uses in 1 files
+- `--fgColor-default`: 1 uses in 1 files
+- `--fgColor-danger`: 1 uses in 1 files
+- `--down`: 1 uses in 1 files
+- `--up`: 1 uses in 1 files
+- `--round`: 1 uses in 1 files
+- `--level-1`: 1 uses in 1 files
+- `--level-0`: 1 uses in 1 files
+- `--rect`: 1 uses in 1 files
+- `--avatar`: 1 uses in 1 files
+- `--text`: 1 uses in 1 files
+- `--n-bezier`: 1 uses in 1 files
+- `--n-border`: 1 uses in 1 files
+- `--empty`: 1 uses in 1 files
+- `--primary`: 1 uses in 1 files
+- `--batch`: 1 uses in 1 files
+- `--batch-selected`: 1 uses in 1 files
+- `--burn`: 1 uses in 1 files
+- `--muted`: 1 uses in 1 files
+- `--fed-status-color`: 1 uses in 1 files
+- `--open`: 1 uses in 1 files
+- `--disabled`: 1 uses in 1 files
+- `--collapsed`: 1 uses in 1 files
+- `--safe-area-inset-top, 0`: 1 uses in 1 files
+- `--safe-area-inset-bottom, 10px`: 1 uses in 1 files
+- `--text-secondary`: 1 uses in 1 files
+- `--van-warning-color`: 1 uses in 1 files
+- `--pending`: 1 uses in 1 files
+- `--offline`: 1 uses in 1 files
+- `--error`: 1 uses in 1 files
+- `--syncing`: 1 uses in 1 files
+- `--connecting`: 1 uses in 1 files
+- `--reconnecting`: 1 uses in 1 files
+- `--van-primary-color`: 1 uses in 1 files
+- `--van-text-color`: 1 uses in 1 files
+- `--van-border-color`: 1 uses in 1 files
+- `--van-field-control-height`: 1 uses in 1 files
+- `--van-field-input-color`: 1 uses in 1 files
+- `--van-field-height`: 1 uses in 1 files
+- `--van-field-border-color`: 1 uses in 1 files
+- `--van-field-placeholder-color`: 1 uses in 1 files
+- `--van-gray-2`: 1 uses in 1 files
+- `--lock-action-color, var(--tjg-text-inverse`: 1 uses in 1 files
+- `--lock-action-color`: 1 uses in 1 files
+- `--lock-input-color, var(--tjg-text-inverse`: 1 uses in 1 files
+- `--lock-hover-bg, var(--tjg-surface-sidebar-active`: 1 uses in 1 files
+- `--lock-border-color, var(--tjg-surface-subtle`: 1 uses in 1 files
+- `--lock-input-bg`: 1 uses in 1 files
+- `--lock-icon-color`: 1 uses in 1 files
+- `--lock-icon-color, var(--tjg-surface-subtle`: 1 uses in 1 files
+- `--lock-border-color`: 1 uses in 1 files
+- `--lock-icon-bg, rgba(128, 128, 128, 0.5`: 1 uses in 1 files
+- `--lock-icon-bg`: 1 uses in 1 files
+- `--lock-input-color`: 1 uses in 1 files
+- `--lock-hover-bg`: 1 uses in 1 files
+- `--lock-input-bg, var(--tjg-surface-panel-muted`: 1 uses in 1 files
+- `--border-color`: 1 uses in 1 files
+- `--n-color-embedded`: 1 uses in 1 files
+- `--n-text-color`: 1 uses in 1 files
+- `--n-color-modal`: 1 uses in 1 files
+- `--n-text-color-2`: 1 uses in 1 files
+- `--n-error-color`: 1 uses in 1 files
+- `--unknown`: 1 uses in 1 files
+- `--healthy`: 1 uses in 1 files
+- `--unhealthy`: 1 uses in 1 files
+
+## Recommendations
+
+### High Priority: 迁移未迁移的 token
+- 使用 --tjg-* 命名空间替代 `--color-primary`
+- 使用 --tjg-* 命名空间替代 `--bg-offline-avatar-overlay`
+- 使用 --tjg-* 命名空间替代 `--bg-menu-hover`
+- 使用 --tjg-* 命名空间替代 `--bg-menu`
+- 使用 --tjg-* 命名空间替代 `--bg-long-press-menu`
+- 使用 --tjg-* 命名空间替代 `--color-text-tertiary`

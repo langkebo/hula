@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import matrixCryptoService from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { createLogger } from '@/utils/Logger'
@@ -102,10 +103,9 @@ export function useSecureBackupFlow() {
         errorMessage.value = t('mobile_security.secure_backup.enter_recovery_key')
         return false
       }
-      // 用 recovery key 直接 import 恢复
-      await matrixKeyBackupService.importKeys({
-        recoveryKey: input
-      } as unknown as Record<string, unknown>)
+      // 恢复密钥只在本机使用：写入内存保险箱 → 从 SSSS 解出备份密钥 → 恢复。
+      // 绝不把恢复密钥当 room key 上送服务端（历史缺陷：importKeys({ recoveryKey })）。
+      await cryptoSDKAdapter.restoreFromBackup(input)
       phase.value = 'success'
       showFeedback(t('mobile_security.secure_backup.restore_success'), 'success')
       await refreshStatus()

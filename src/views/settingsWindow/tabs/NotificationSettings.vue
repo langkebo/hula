@@ -27,7 +27,7 @@
             :min="0"
             :max="100"
             :step="10"
-            style="width: 100px"
+            class="volume-slider-small"
             @update:value="handleVolumeChange" />
           <span class="volume-value">{{ soundVolume }}%</span>
         </div>
@@ -466,5 +466,10 @@ function handleFriendAcceptNotify(value: boolean) {
   margin: calc(var(--tjg-space-2) * -1) 0 var(--tjg-space-4);
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
+}
+
+/* 音量滑杆宽度 */
+.volume-slider-small {
+  width: 100px;
 }
 </style>

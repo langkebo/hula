@@ -58,15 +58,9 @@ interface VoiceMessageResult {
   mxcUrl?: string
   httpUrl?: string
   encryptedFile?: EncryptedAttachmentFile
-}
-
-interface VoicePlaybackInfo {
   duration?: number
-  waveform?: number[]
-  mimeType?: string
   size?: number
-  mxcUrl?: string
-  httpUrl?: string
+  mimetype?: string
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

@@ -169,6 +169,7 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 
 <style scoped lang="scss">
 @use '@/styles/scss/global/responsive.scss' as responsive;
+@use '@/styles/scss/mixins/liquid-glass' as *;
 
 .settings-sidebar {
   display: flex;
@@ -178,6 +179,9 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
   background: color-mix(in srgb, var(--tjg-surface-panel) 78%, var(--tjg-surface-subtle) 22%);
   border-right: 1px solid var(--tjg-border-default);
   overflow: hidden;
+
+  /* 液态玻璃面板（阶段 2.2 — 首个应用场景） */
+  @include liquid-glass-panel;
 
   @include responsive.respond-to-max('md') {
     width: 100%;

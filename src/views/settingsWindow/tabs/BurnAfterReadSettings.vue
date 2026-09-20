@@ -18,7 +18,7 @@
         <n-select
           v-model:value="globalBurnDuration"
           :options="burnDurationOptions"
-          style="width: 130px"
+          class="pref-width-130"
           @update:value="handleBurnDurationChange" />
       </div>
 
@@ -136,7 +136,7 @@
       @positive-click="handleSaveRoomBurn">
       <n-form>
         <n-form-item :label="t('setting.burn_after_read.rooms.duration_label')">
-          <n-select v-model:value="editRoomDuration" :options="burnDurationOptions" style="width: 100%" />
+          <n-select v-model:value="editRoomDuration" :options="burnDurationOptions" class="pref-width-100" />
         </n-form-item>
       </n-form>
     </n-modal>
@@ -474,5 +474,14 @@ async function handleDisableRoomBurn(room: BurnRoom) {
 .empty-text {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
+}
+
+/* 统一选择器宽度 */
+.pref-width-130 {
+  width: 130px;
+}
+
+.pref-width-100 {
+  width: 100%;
 }
 </style>

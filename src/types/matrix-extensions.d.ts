@@ -112,6 +112,15 @@ export interface CryptoApi {
     }
   }>
   isCrossSigningReady(): Promise<boolean>
+  /**
+   * SSSS 状态详情（SDK 真身成员：CryptoApi.getSecretStorageStatus）。
+   *
+   * 注意：本接口是**手写的 SDK 契约**，必须与 vendored matrix-js-sdk 保持一致；
+   * 缺失成员会被 `as unknown as` 掩盖，导致运行时 `undefined is not a function`。
+   */
+  getSecretStorageStatus?(): Promise<{ ready: boolean; defaultKeyId: string | null }>
+  /** 从 SSSS 取出备份解密密钥并存入 crypto store（SDK 真身成员） */
+  loadSessionBackupPrivateKeyFromSecretStorage?(): Promise<void>
   restoreKeyBackup(opts?: KeyBackupRestoreOpts): Promise<KeyBackupRestoreResult>
   restoreKeyBackupWithPassphrase(passphrase: string, opts?: KeyBackupRestoreOpts): Promise<KeyBackupRestoreResult>
   resetKeyBackup(auth?: MatrixAuthData): Promise<void>
