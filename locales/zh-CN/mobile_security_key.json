@@ -1,0 +1,23 @@
+{
+  "title": "安全密钥",
+  "step_intro": "开始",
+  "step_generate": "生成密钥",
+  "step_save": "保存密钥",
+  "intro": "安全密钥用于加密你的密钥备份。生成后请离线抄写并妥善保管。",
+  "trust_notice": "私钥仅由你掌控，服务器无法读取你的明文消息，也无法恢复你的私钥。",
+  "begin": "开始设置",
+  "passphrase_hint": "可选：设置一个安全短语来保护恢复密钥。留空则生成随机密钥。",
+  "passphrase_label": "安全短语（可选）",
+  "passphrase_placeholder": "留空表示不使用短语",
+  "generate": "生成安全密钥",
+  "generating": "正在生成安全密钥...",
+  "no_screenshot_hint": "请勿截图。建议手写到纸上并存放在安全的地方。",
+  "recovery_key_label": "你的恢复密钥",
+  "acknowledge": "我已抄写并妥善保管，且知晓丢失后无法找回",
+  "confirm": "完成",
+  "success_desc": "安全密钥已设置。请确认你已妥善保存恢复密钥。",
+  "failed": "生成安全密钥失败",
+  "failed_desc": "生成安全密钥失败，请重试。",
+  "retry": "重试",
+  "manage": "管理安全密钥"
+}

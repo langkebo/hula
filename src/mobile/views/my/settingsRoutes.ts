@@ -12,6 +12,7 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   password: 'password',
   ignoredUsers: 'ignoredUsers',
   simpleBio: 'simpleBio',
+  securityKey: 'securityKey',
   helpAbout: SETTINGS_CANONICAL_ROUTE_SEGMENTS.helpAbout
 } as const
 
@@ -20,6 +21,7 @@ export const MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH = `${MOBILE_SETTINGS_BASE_PA
 export const MOBILE_SETTINGS_SECURITY_PRIVACY_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.securityPrivacy}`
 export const MOBILE_SETTINGS_PASSWORD_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.password}`
 export const MOBILE_SETTINGS_IGNORED_USERS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.ignoredUsers}`
+export const MOBILE_SETTINGS_SECURITY_KEY_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.securityKey}`
 export const MOBILE_SETTINGS_HELP_ABOUT_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.helpAbout}`
 
 export const MOBILE_SETTINGS_ROUTE_NAMES = {
@@ -28,5 +30,6 @@ export const MOBILE_SETTINGS_ROUTE_NAMES = {
   securityPrivacy: 'mobileSecurityPrivacySettings',
   password: 'mobilePasswordSettings',
   ignoredUsers: 'mobileIgnoredUsers',
+  securityKey: 'mobileSecurityKeySetup',
   helpAbout: 'mobileHelpAboutSettings'
 } as const

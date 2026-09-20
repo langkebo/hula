@@ -1,0 +1,23 @@
+{
+  "title": "Security key",
+  "step_intro": "Start",
+  "step_generate": "Generate",
+  "step_save": "Save",
+  "intro": "Your security key encrypts your key backup. After generating it, write it down offline and keep it safe.",
+  "trust_notice": "Only you hold the private key. The server cannot read your messages and cannot recover your key.",
+  "begin": "Get started",
+  "passphrase_hint": "Optional: protect the recovery key with a passphrase. Leave empty to generate a random key.",
+  "passphrase_label": "Passphrase (optional)",
+  "passphrase_placeholder": "Leave empty to skip",
+  "generate": "Generate security key",
+  "generating": "Generating security key...",
+  "no_screenshot_hint": "Do not take a screenshot. Write it down on paper and store it safely.",
+  "recovery_key_label": "Your recovery key",
+  "acknowledge": "I have written it down and understand it cannot be recovered",
+  "confirm": "Done",
+  "success_desc": "Security key is set up. Make sure you have saved the recovery key.",
+  "failed": "Could not generate security key",
+  "failed_desc": "Generating the security key failed. Please retry.",
+  "retry": "Retry",
+  "manage": "Manage security key"
+}
