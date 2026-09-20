@@ -1,0 +1,6 @@
+{
+  "declined_title": "Invite declined automatically",
+  "declined_message": "This invite did not match your invite permission settings, so it was declined for you.",
+  "undo": "Undo and join",
+  "dismiss": "Got it"
+}

@@ -22,8 +22,8 @@ vi.mock('vant', () => ({ showToast: (...args: any[]) => showToastMock(...args) }
 
 vi.mock('@/services/matrix', () => ({
   matrixAccountService: {
-    getInvitePermissionConfig: () => getConfigMock(),
-    setInvitePermissionConfig: (...args: any[]) => setConfigMock(...args)
+    getInvitePolicy: () => getConfigMock(),
+    setInvitePolicy: (...args: any[]) => setConfigMock(...args)
   }
 }))
 
@@ -64,7 +64,13 @@ function mountPage() {
 describe('MobileInvitePermission', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getConfigMock.mockResolvedValue({ mode: 'allow_all', blocklist: [], allowlist: [] })
+    getConfigMock.mockResolvedValue({
+      mode: 'allow_all',
+      blocklist: [],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
     setConfigMock.mockResolvedValue(true)
   })
 
@@ -88,7 +94,13 @@ describe('MobileInvitePermission', () => {
   })
 
   it('applies a loaded blocklist config', async () => {
-    getConfigMock.mockResolvedValue({ mode: 'blocklist', blocklist: ['@spam:evil.org'], allowlist: [] })
+    getConfigMock.mockResolvedValue({
+      mode: 'blocklist',
+      blocklist: ['@spam:evil.org'],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
     const wrapper = mountPage()
     await flushPromises()
     const vm = wrapper.vm as any
@@ -97,14 +109,26 @@ describe('MobileInvitePermission', () => {
   })
 
   it('shows the blocklist as the active list in blocklist mode', async () => {
-    getConfigMock.mockResolvedValue({ mode: 'blocklist', blocklist: ['@a:b'], allowlist: ['@c:d'] })
+    getConfigMock.mockResolvedValue({
+      mode: 'blocklist',
+      blocklist: ['@a:b'],
+      allowlist: ['@c:d'],
+      allowStrangers: true,
+      contacts: []
+    })
     const wrapper = mountPage()
     await flushPromises()
     expect((wrapper.vm as any).activeList).toEqual(['@a:b'])
   })
 
   it('shows the allowlist as the active list in allowlist mode', async () => {
-    getConfigMock.mockResolvedValue({ mode: 'allowlist', blocklist: ['@a:b'], allowlist: ['@c:d'] })
+    getConfigMock.mockResolvedValue({
+      mode: 'allowlist',
+      blocklist: ['@a:b'],
+      allowlist: ['@c:d'],
+      allowStrangers: true,
+      contacts: []
+    })
     const wrapper = mountPage()
     await flushPromises()
     expect((wrapper.vm as any).activeList).toEqual(['@c:d'])
@@ -119,7 +143,13 @@ describe('MobileInvitePermission', () => {
   })
 
   it('renders the list editor once a list mode is selected', async () => {
-    getConfigMock.mockResolvedValue({ mode: 'blocklist', blocklist: [], allowlist: [] })
+    getConfigMock.mockResolvedValue({
+      mode: 'blocklist',
+      blocklist: [],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
     const wrapper = mountPage()
     await flushPromises()
     expect(wrapper.find('[data-testid="invite-user-input"]').exists()).toBe(true)
@@ -130,7 +160,13 @@ describe('MobileInvitePermission', () => {
     const wrapper = mountPage()
     await flushPromises()
     await (wrapper.vm as any).handleModeChange('blocklist')
-    expect(setConfigMock).toHaveBeenCalledWith({ mode: 'blocklist', blocklist: [], allowlist: [] })
+    expect(setConfigMock).toHaveBeenCalledWith({
+      mode: 'blocklist',
+      blocklist: [],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
   })
 
   it('ignores a mode change to the same mode', async () => {
@@ -149,7 +185,13 @@ describe('MobileInvitePermission', () => {
   })
 
   it('adds a trimmed user id to the blocklist and clears the input', async () => {
-    getConfigMock.mockResolvedValue({ mode: 'blocklist', blocklist: [], allowlist: [] })
+    getConfigMock.mockResolvedValue({
+      mode: 'blocklist',
+      blocklist: [],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
     const wrapper = mountPage()
     await flushPromises()
     const vm = wrapper.vm as any
@@ -160,12 +202,20 @@ describe('MobileInvitePermission', () => {
     expect(setConfigMock).toHaveBeenCalledWith({
       mode: 'blocklist',
       blocklist: ['@spam:evil.org'],
-      allowlist: []
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
     })
   })
 
   it('adds to the allowlist when in allowlist mode', async () => {
-    getConfigMock.mockResolvedValue({ mode: 'allowlist', blocklist: [], allowlist: [] })
+    getConfigMock.mockResolvedValue({
+      mode: 'allowlist',
+      blocklist: [],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
     const wrapper = mountPage()
     await flushPromises()
     const vm = wrapper.vm as any
@@ -176,7 +226,13 @@ describe('MobileInvitePermission', () => {
   })
 
   it('rejects an empty user id', async () => {
-    getConfigMock.mockResolvedValue({ mode: 'blocklist', blocklist: [], allowlist: [] })
+    getConfigMock.mockResolvedValue({
+      mode: 'blocklist',
+      blocklist: [],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
     const wrapper = mountPage()
     await flushPromises()
     const vm = wrapper.vm as any
@@ -186,7 +242,13 @@ describe('MobileInvitePermission', () => {
   })
 
   it('refuses duplicates', async () => {
-    getConfigMock.mockResolvedValue({ mode: 'blocklist', blocklist: ['@a:b'], allowlist: [] })
+    getConfigMock.mockResolvedValue({
+      mode: 'blocklist',
+      blocklist: ['@a:b'],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
     const wrapper = mountPage()
     await flushPromises()
     const vm = wrapper.vm as any
@@ -197,12 +259,99 @@ describe('MobileInvitePermission', () => {
   })
 
   it('removes a user from the active list', async () => {
-    getConfigMock.mockResolvedValue({ mode: 'blocklist', blocklist: ['@a:b', '@c:d'], allowlist: [] })
+    getConfigMock.mockResolvedValue({
+      mode: 'blocklist',
+      blocklist: ['@a:b', '@c:d'],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
     const wrapper = mountPage()
     await flushPromises()
     await (wrapper.vm as any).handleRemove('@a:b')
     expect((wrapper.vm as any).blocklist).toEqual(['@c:d'])
     expect(setConfigMock).toHaveBeenCalled()
+  })
+
+  describe('private-chat toggles', () => {
+    it('defaults to allowing strangers and encrypting new DMs', async () => {
+      localStorage.clear()
+      const wrapper = mountPage()
+      await flushPromises()
+      const vm = wrapper.vm as any
+      expect(vm.allowStrangers).toBe(true)
+      expect(vm.encryptByDefault).toBe(true)
+    })
+
+    it('restores a disabled stranger setting from the policy', async () => {
+      getConfigMock.mockResolvedValue({
+        mode: 'allow_all',
+        blocklist: [],
+        allowlist: [],
+        allowStrangers: false,
+        contacts: ['@friend:server']
+      })
+      const wrapper = mountPage()
+      await flushPromises()
+      expect((wrapper.vm as any).allowStrangers).toBe(false)
+    })
+
+    it('persists the stranger toggle together with the rest of the policy', async () => {
+      const wrapper = mountPage()
+      await flushPromises()
+      await (wrapper.vm as any).handleAllowStrangersChange(false)
+      expect(setConfigMock).toHaveBeenCalledWith(expect.objectContaining({ allowStrangers: false, mode: 'allow_all' }))
+    })
+
+    it('keeps the contact snapshot when persisting the stranger toggle', async () => {
+      // contacts 不能在这里被清空，否则关闭"非联系人私聊"后好友也会被拒
+      getConfigMock.mockResolvedValue({
+        mode: 'allow_all',
+        blocklist: [],
+        allowlist: [],
+        allowStrangers: true,
+        contacts: ['@friend:server']
+      })
+      const wrapper = mountPage()
+      await flushPromises()
+      await (wrapper.vm as any).handleAllowStrangersChange(false)
+      expect(setConfigMock).toHaveBeenCalledWith(expect.objectContaining({ contacts: ['@friend:server'] }))
+    })
+
+    it('disables the stranger switch in list modes', async () => {
+      getConfigMock.mockResolvedValue({
+        mode: 'blocklist',
+        blocklist: [],
+        allowlist: [],
+        allowStrangers: true,
+        contacts: []
+      })
+      const wrapper = mountPage()
+      await flushPromises()
+      expect(wrapper.find('[data-testid="allow-strangers"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="allow-strangers-note"]').exists()).toBe(true)
+    })
+
+    it('hides the inactive note in allow_all mode', async () => {
+      const wrapper = mountPage()
+      await flushPromises()
+      expect(wrapper.find('[data-testid="allow-strangers-note"]').exists()).toBe(false)
+    })
+
+    it('persists the DM encryption default locally without touching account data', async () => {
+      const wrapper = mountPage()
+      await flushPromises()
+      ;(wrapper.vm as any).handleEncryptByDefaultChange(false)
+      expect(localStorage.getItem('tjg-dm-privacy-preferences')).toBe('{"encryptByDefault":false}')
+      expect(setConfigMock).not.toHaveBeenCalled()
+    })
+
+    it('restores the DM encryption default from local storage', async () => {
+      localStorage.setItem('tjg-dm-privacy-preferences', '{"encryptByDefault":false}')
+      const wrapper = mountPage()
+      await flushPromises()
+      expect((wrapper.vm as any).encryptByDefault).toBe(false)
+    })
   })
 
   it('surfaces a toast when saving fails', async () => {

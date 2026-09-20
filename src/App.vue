@@ -28,7 +28,10 @@
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { exit } from '@tauri-apps/plugin-process'
+import { showDialog } from 'vant'
 import type { WatchStopHandle } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useInvitePolicyEnforcement } from '@/composables/app/useInvitePolicyEnforcement'
 import { useOfflineQueueReplay } from '@/composables/app/useOfflineQueueReplay'
 import { usePresenceSync } from '@/composables/app/usePresenceSync'
 import { useWsEventHandler } from '@/composables/app/useWsEventHandler'
@@ -40,7 +43,10 @@ import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useVoIPIncomingCall } from '@/composables/useVoIPIncomingCall'
 import { MittEnum, ThemeEnum } from '@/enums'
+import { cacheInvitePolicy, loadInvitePolicy } from '@/services/matrix/user/invitePolicy'
+import { createInvitePolicyEnforcer } from '@/services/matrix/user/invitePolicyEnforcer'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -50,6 +56,9 @@ import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstan
 import { isNonMatrixWindow } from '@/utils/windowLabels'
 
 const logger = createLogger('App')
+
+const { t } = useI18n()
+const matrixStore = useMatrixStore()
 
 const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
 const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
@@ -187,6 +196,47 @@ const { initOfflineQueue } = useOfflineQueueReplay({
   getMatrixFriendService,
   getMatrixBurnAfterReadService,
   getMatrixWidgetService
+})
+
+// ========== Invite policy enforcement ==========
+// 账号级邀请策略只能在客户端强制（后端无账号级策略强制点，见 invitePolicy.ts 说明）。
+// 自动拒邀后给一次可撤回的提示：静默拒邀一旦判错，用户无从察觉。
+const invitePolicyEnforcement = useInvitePolicyEnforcement({
+  // 强制点必须同步建好：start() 依赖 on/off 立刻注册，异步工厂会漏掉首批事件
+  createEnforcer: (options) => createInvitePolicyEnforcer(options),
+  getCurrentUserId: () => matrixStore.userId ?? undefined,
+  getPolicy: () => loadInvitePolicy(),
+  savePolicy: async (policy) => {
+    cacheInvitePolicy(policy)
+    const account = await import('@/services/matrix/user/MatrixAccountService')
+    return account.matrixAccountService.setInvitePolicy(policy)
+  },
+  getContacts: async () => {
+    const friends = await (await getMatrixFriendService()).getFriends()
+    return friends.map((friend) => friend.user_id).filter(Boolean)
+  },
+  onDeclined: (info) => {
+    // 不用 Toast 的 action 按钮：Vant 4.10 的 ToastOptions 类型没有 action 字段
+    // （运行时支持，类型不支持），用 Dialog 走完全类型化的路径，同时更显眼。
+    showDialog({
+      title: t('invite_policy.declined_title'),
+      message: t('invite_policy.declined_message'),
+      showCancelButton: true,
+      confirmButtonText: t('invite_policy.undo'),
+      cancelButtonText: t('invite_policy.dismiss'),
+      closeOnClickOverlay: true
+    })
+      .then(() => {
+        void invitePolicyEnforcement.undo(info.roomId).then((ok) => {
+          if (!ok) {
+            logger.warn(`撤回自动拒邀失败: ${info.roomId}`)
+          }
+        })
+      })
+      .catch(() => {
+        // 用户选择不撤回，符合预期
+      })
+  }
 })
 
 // ========== Presence sync (delegates to composable) ==========
@@ -408,11 +458,14 @@ onMounted(async () => {
   if (!skipMatrixInit) {
     wsEventHandler.registerHandlers()
     presenceSync.startPresenceWatch()
+    invitePolicyEnforcement.start()
+    await invitePolicyEnforcement.syncContacts()
   }
 })
 
 onUnmounted(async () => {
   wsEventHandler.cleanup()
+  invitePolicyEnforcement.stop()
   presenceSync.cleanup()
   uninstallSecurityListeners()
   if (isDesktop() && appWindow?.label === 'home') {

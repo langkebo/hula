@@ -14,7 +14,7 @@
           <van-cell-group inset>
             <van-radio-group v-model="mode" data-testid="invite-mode-group" @change="handleModeChange">
               <van-cell
-                v-for="option in INVITE_PERMISSION_MODES"
+                v-for="option in INVITE_POLICY_MODES"
                 :key="option"
                 :title="t(`mobile_invite_permission.mode.${option}`)"
                 :label="t(`mobile_invite_permission.mode_hint.${option}`)"
@@ -26,6 +26,36 @@
                 </template>
               </van-cell>
             </van-radio-group>
+          </van-cell-group>
+
+          <van-cell-group inset :title="t('mobile_invite_permission.dm_section')">
+            <van-cell
+              :title="t('mobile_invite_permission.allow_strangers')"
+              :label="t('mobile_invite_permission.allow_strangers_hint')">
+              <template #right-icon>
+                <van-switch
+                  v-model="allowStrangers"
+                  data-testid="allow-strangers"
+                  :disabled="mode !== 'allow_all'"
+                  @change="handleAllowStrangersChange" />
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('mobile_invite_permission.encrypt_new_dm')"
+              :label="t('mobile_invite_permission.encrypt_new_dm_hint')">
+              <template #right-icon>
+                <van-switch
+                  v-model="encryptByDefault"
+                  data-testid="encrypt-new-dm"
+                  @change="handleEncryptByDefaultChange" />
+              </template>
+            </van-cell>
+
+            <van-cell
+              v-if="mode !== 'allow_all'"
+              data-testid="allow-strangers-note"
+              :title="t('mobile_invite_permission.allow_strangers_inactive')" />
           </van-cell-group>
 
           <van-cell-group
@@ -81,33 +111,39 @@ import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { matrixAccountService } from '@/services/matrix'
+import { cacheDmPrivacyPreferences, loadDmPrivacyPreferences } from '@/services/matrix/user/dmPrivacyPreferences'
 import {
-  INVITE_PERMISSION_MODES,
-  type InvitePermissionConfig,
-  type InvitePermissionMode,
-  normalizeInvitePermissionConfig,
+  INVITE_POLICY_MODES,
+  type InvitePolicy,
+  type InvitePolicyMode,
+  isInvitePolicyMode,
+  normalizeInvitePolicy,
   normalizeUserId
-} from '@/services/matrix/user/invitePermissionPolicy'
+} from '@/services/matrix/user/invitePolicy'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileInvitePermission')
 
 const { t } = useI18n()
+const INVITE_PERMISSION_MODES = INVITE_POLICY_MODES
 
 const loading = ref(true)
 const saving = ref(false)
-const mode = ref<InvitePermissionMode>('allow_all')
+const mode = ref<InvitePolicyMode>('allow_all')
 const blocklist = ref<string[]>([])
 const allowlist = ref<string[]>([])
+const allowStrangers = ref(true)
+const contacts = ref<string[]>([])
 const newUserId = ref('')
+const encryptByDefault = ref(loadDmPrivacyPreferences().encryptByDefault)
 
 /** 当前模式对应的名单。allow_all 下两个名单都不展示。 */
 const activeList = computed(() => (mode.value === 'blocklist' ? blocklist.value : allowlist.value))
 
 onMounted(async () => {
   try {
-    const config = await matrixAccountService.getInvitePermissionConfig()
-    applyConfig(config)
+    const policy = await matrixAccountService.getInvitePolicy()
+    applyConfig(policy)
   } catch (error) {
     logger.error('Failed to load invite permission config', error)
     showToast({ type: 'fail', message: t('mobile_invite_permission.load_failed') })
@@ -116,40 +152,59 @@ onMounted(async () => {
   }
 })
 
-function applyConfig(config: InvitePermissionConfig) {
-  const normalized = normalizeInvitePermissionConfig(config)
+function applyConfig(policy: InvitePolicy) {
+  const normalized = normalizeInvitePolicy(policy)
   mode.value = normalized.mode
   blocklist.value = normalized.blocklist
   allowlist.value = normalized.allowlist
+  allowStrangers.value = normalized.allowStrangers
+  contacts.value = normalized.contacts
 }
 
-function buildConfig(): InvitePermissionConfig {
+function buildPolicy(): InvitePolicy {
   return {
     mode: mode.value,
     blocklist: blocklist.value,
-    allowlist: allowlist.value
+    allowlist: allowlist.value,
+    allowStrangers: allowStrangers.value,
+    contacts: contacts.value
   }
 }
 
 async function persist() {
   saving.value = true
   try {
-    await matrixAccountService.setInvitePermissionConfig(buildConfig())
+    await matrixAccountService.setInvitePolicy(buildPolicy())
   } catch (error) {
-    logger.error('Failed to persist invite permission config', error)
+    logger.error('Failed to persist invite policy', error)
     showToast({ type: 'fail', message: t('mobile_invite_permission.save_failed') })
   } finally {
     saving.value = false
   }
 }
 
-async function handleModeChange(next: InvitePermissionMode | number | string) {
-  const value = String(next) as InvitePermissionMode
-  if (!INVITE_PERMISSION_MODES.includes(value) || value === mode.value) {
+async function handleModeChange(next: InvitePolicyMode | number | string) {
+  const value = String(next)
+  if (!isInvitePolicyMode(value) || value === mode.value) {
     return
   }
   mode.value = value
   await persist()
+}
+
+/**
+ * 「允许非联系人私聊」只在 allow_all 下有意义：
+ * 名单模式已经表达了"谁能进"，再用 contacts 判一次会互相矛盾。
+ */
+async function handleAllowStrangersChange(next: boolean) {
+  allowStrangers.value = next
+  await persist()
+}
+
+/** 新私聊默认加密是本机偏好，不进 account data。 */
+function handleEncryptByDefaultChange(next: boolean) {
+  encryptByDefault.value = next
+  cacheDmPrivacyPreferences({ encryptByDefault: next })
 }
 
 async function handleAdd() {

@@ -1,16 +1,18 @@
 {
-  "title": "邀请权限",
-  "loading": "加载中...",
-  "load_failed": "邀请权限加载失败",
-  "save_failed": "邀请权限保存失败",
-  "duplicate": "该用户已在名单中",
-  "user_id": "用户 ID",
-  "user_id_placeholder": "例如 @alice:example.org",
   "add": "添加",
-  "remove": "移除",
-  "empty": "名单为空",
-  "blocklist_section": "拒绝名单",
+  "allow_strangers": "允许非联系人私聊",
+  "allow_strangers_hint": "关闭后，不在好友列表里的人发起的私聊邀请会被自动拒绝",
+  "allow_strangers_inactive": "名单模式已生效，此开关在「所有人」模式下才起作用",
   "allowlist_section": "允许名单",
+  "blocklist_section": "拒绝名单",
+  "dm_section": "私聊",
+  "duplicate": "该用户已在名单中",
+  "empty": "名单为空",
+  "encrypt_new_dm": "新私聊默认加密",
+  "encrypt_new_dm_hint": "新建私聊时默认开启端到端加密",
+  "encrypt_required": "无法关闭：服务端要求新私聊必须加密",
+  "load_failed": "邀请权限加载失败",
+  "loading": "加载中...",
   "mode": {
     "allow_all": "所有人",
     "blocklist": "拒绝名单内的用户",
@@ -20,5 +22,10 @@
     "allow_all": "不拒绝任何邀请",
     "blocklist": "来自名单内用户的邀请会被自动拒绝",
     "allowlist": "名单之外的邀请会被自动拒绝"
-  }
+  },
+  "remove": "移除",
+  "save_failed": "邀请权限保存失败",
+  "title": "邀请权限",
+  "user_id": "用户 ID",
+  "user_id_placeholder": "例如 @alice:example.org"
 }

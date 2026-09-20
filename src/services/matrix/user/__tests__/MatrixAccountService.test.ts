@@ -321,13 +321,15 @@ describe('MatrixAccountService', () => {
       }
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
 
-      const config = await matrixAccountService.getInvitePermissionConfig()
+      const config = await matrixAccountService.getInvitePolicy()
       expect(config).toEqual({
         mode: 'blocklist',
         blocklist: ['@spam:evil.org'],
-        allowlist: ['@friend:server']
+        allowlist: ['@friend:server'],
+        allowStrangers: true,
+        contacts: []
       })
-      expect(mockClientWithData.getAccountDataFromServer).toHaveBeenCalledWith('im.hula.invite_blocklist')
+      expect(mockClientWithData.getAccountDataFromServer).toHaveBeenCalledWith('im.hula.invite_policy')
     })
 
     it('falls back to allow_all when reading fails', async () => {
@@ -337,10 +339,12 @@ describe('MatrixAccountService', () => {
       }
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
 
-      await expect(matrixAccountService.getInvitePermissionConfig()).resolves.toEqual({
+      await expect(matrixAccountService.getInvitePolicy()).resolves.toEqual({
         mode: 'allow_all',
         blocklist: [],
-        allowlist: []
+        allowlist: [],
+        allowStrangers: true,
+        contacts: []
       })
     })
 
@@ -351,7 +355,7 @@ describe('MatrixAccountService', () => {
       }
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
 
-      expect((await matrixAccountService.getInvitePermissionConfig()).mode).toBe('allow_all')
+      expect((await matrixAccountService.getInvitePolicy()).mode).toBe('allow_all')
     })
 
     it('writes the normalized config to account data', async () => {
@@ -361,17 +365,21 @@ describe('MatrixAccountService', () => {
       }
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
 
-      const result = await matrixAccountService.setInvitePermissionConfig({
+      const result = await matrixAccountService.setInvitePolicy({
         mode: 'allowlist',
         blocklist: ['@a:b', '@a:b'],
-        allowlist: ['@c:d']
+        allowlist: ['@c:d'],
+        allowStrangers: true,
+        contacts: []
       })
 
       expect(result).toBe(true)
-      expect(mockClientWithData.setAccountData).toHaveBeenCalledWith('im.hula.invite_blocklist', {
+      expect(mockClientWithData.setAccountData).toHaveBeenCalledWith('im.hula.invite_policy', {
         mode: 'allowlist',
         blocklist: ['@a:b'],
-        allowlist: ['@c:d']
+        allowlist: ['@c:d'],
+        allowStrangers: true,
+        contacts: []
       })
     })
 
@@ -383,7 +391,13 @@ describe('MatrixAccountService', () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
 
       await expect(
-        matrixAccountService.setInvitePermissionConfig({ mode: 'blocklist', blocklist: [], allowlist: [] })
+        matrixAccountService.setInvitePolicy({
+          mode: 'blocklist',
+          blocklist: [],
+          allowlist: [],
+          allowStrangers: true,
+          contacts: []
+        })
       ).rejects.toThrow('Server error')
     })
   })

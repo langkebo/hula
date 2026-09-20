@@ -9,6 +9,7 @@ import type {
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { loadDmPrivacyPreferences, resolveDmEncryption } from '../user/dmPrivacyPreferences'
 
 const logger = createLogger('MatrixDirectMessageService')
 
@@ -329,7 +330,14 @@ class MatrixDirectMessageService extends BaseMatrixService {
     return new Map(this.dmRoomsCache)
   }
 
-  async getOrCreateDmRoom(userId: string, encrypted = false): Promise<string> {
+  /**
+   * 取得或创建与某人的私聊房间。
+   *
+   * `encrypted` 省略时落到本机的「新私聊默认加密」偏好，而不是硬编码 `false`。
+   * 此前默认值是 `false`，导致 `MatrixContactService` 这类不传参数的调用
+   * 从联系人发起的私聊全部是明文——用户设置里也没有任何开关能改变它。
+   */
+  async getOrCreateDmRoom(userId: string, encrypted?: boolean): Promise<string> {
     try {
       const existingRoomId = await this.getDmForUser(userId)
       if (existingRoomId) {
@@ -337,7 +345,9 @@ class MatrixDirectMessageService extends BaseMatrixService {
         return existingRoomId
       }
 
-      if (encrypted) {
+      const shouldEncrypt = resolveDmEncryption(encrypted, loadDmPrivacyPreferences())
+
+      if (shouldEncrypt) {
         return this.createTrustedDm(userId)
       }
       return this.createDm(userId)

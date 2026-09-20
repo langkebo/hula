@@ -5,13 +5,16 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { PREFIX_VENDOR_V1 } from '../paths/prefixes'
 import {
-  cacheInvitePermissionConfig,
-  INVITE_PERMISSION_ACCOUNT_DATA_TYPE,
-  type InvitePermissionConfig,
-  normalizeInvitePermissionConfig
-} from './invitePermissionPolicy'
+  cacheInvitePolicy,
+  INVITE_POLICY_ACCOUNT_DATA_TYPE,
+  type InvitePolicy,
+  normalizeInvitePolicy
+} from './invitePolicy'
 
 const logger = createLogger('MatrixAccountService')
+
+/** 旧版本账号级策略 key；与后端房间级表名同名，仅用于一次性迁移读取。 */
+const LEGACY_INVITE_POLICY_ACCOUNT_DATA_TYPE = 'im.hula.invite_blocklist'
 
 export interface DeviceInfo {
   deviceId: string
@@ -406,42 +409,62 @@ class MatrixAccountService extends BaseMatrixService {
   }
 
   /**
-   * 读取邀请权限配置（`im.hula.invite_blocklist` account data）。
+   * 读取邀请策略（`im.hula.invite_policy` account data）。
    *
    * account data 是权威来源；读取失败时返回归一化后的默认值（allow_all），
    * 而不是抛错——隐私设置页拿到默认值仍可正常渲染。
+   *
+   * 兼容旧 key：早期版本把账号级策略写在 `im.hula.invite_blocklist`，
+   * 该名字与后端**房间级**表/端点同名（语义不同）。这里做一次性回退读取，
+   * 避免老用户升级后策略被静默重置为 allow_all。
    */
-  async getInvitePermissionConfig(): Promise<InvitePermissionConfig> {
+  async getInvitePolicy(): Promise<InvitePolicy> {
     const client = this.getClient()
 
     try {
-      const accountData = await client.getAccountDataFromServer(INVITE_PERMISSION_ACCOUNT_DATA_TYPE)
-      const config = normalizeInvitePermissionConfig(accountData)
-      cacheInvitePermissionConfig(config)
-      logger.info(`[MatrixAccount] 获取邀请权限配置成功: mode=${config.mode}`)
-      return config
+      const accountData = await client.getAccountDataFromServer(INVITE_POLICY_ACCOUNT_DATA_TYPE)
+      if (accountData) {
+        const policy = normalizeInvitePolicy(accountData)
+        cacheInvitePolicy(policy)
+        logger.info(`[MatrixAccount] 获取邀请策略成功: mode=${policy.mode}`)
+        return policy
+      }
     } catch (err) {
-      logger.error(`[MatrixAccount] 获取邀请权限配置失败: ${err}`)
-      return normalizeInvitePermissionConfig(null)
+      logger.error(`[MatrixAccount] 获取邀请策略失败: ${err}`)
+      return normalizeInvitePolicy(null)
     }
+
+    try {
+      const legacy = await client.getAccountDataFromServer(LEGACY_INVITE_POLICY_ACCOUNT_DATA_TYPE)
+      if (legacy) {
+        const policy = normalizeInvitePolicy(legacy)
+        cacheInvitePolicy(policy)
+        logger.info(`[MatrixAccount] 已从旧 key 迁移邀请策略: mode=${policy.mode}`)
+        return policy
+      }
+    } catch (err) {
+      logger.warn(`[MatrixAccount] 读取旧邀请策略 key 失败（忽略）: ${err}`)
+    }
+
+    return normalizeInvitePolicy(null)
   }
 
   /**
-   * 写入邀请权限配置。
+   * 写入邀请策略。
    *
    * 写入成功后同步本地缓存，保证离线/未登录时策略不回退到 allow_all。
    */
-  async setInvitePermissionConfig(config: InvitePermissionConfig): Promise<boolean> {
+  async setInvitePolicy(policy: InvitePolicy): Promise<boolean> {
     const client = this.getClient()
-    const normalized = normalizeInvitePermissionConfig(config)
+    const normalized = normalizeInvitePolicy(policy)
 
     try {
-      await client.setAccountData(INVITE_PERMISSION_ACCOUNT_DATA_TYPE, { ...normalized })
-      cacheInvitePermissionConfig(normalized)
-      logger.info(`[MatrixAccount] 设置邀请权限配置成功: mode=${normalized.mode}`)
+      await client.setAccountData(INVITE_POLICY_ACCOUNT_DATA_TYPE, { ...normalized })
+      cacheInvitePolicy(normalized)
+      logger.info(`[MatrixAccount] 设置邀请策略成功: mode=${normalized.mode}`)
       return true
     } catch (err) {
-      logger.error(`[MatrixAccount] 设置邀请权限配置失败: ${err}`)
+      logger.error(`[MatrixAccount] 设置邀请策略失败: ${err}`)
       throw err
     }
   }
