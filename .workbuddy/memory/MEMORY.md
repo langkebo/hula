@@ -46,6 +46,13 @@
 - 跨用户时 **`targetDeviceId` 不得回退本机 deviceId**。单例挂载点 `ChatMain.vue`，经 `useDeviceVerifyLauncher`；**别挂 `renderMessage`**
 - `useEncryption.requestUserVerification(userId)` → `startSasVerification(userId,'')`：**建议整体删除**（`useDeviceVerifyLauncher` 已是正确替代），属并行 WIP
 
+## 设备查询契约（铁律）
+- **统一到 keys/query**：所有设备查询必须通过 `DeviceKeysManager.getUserDevices(userId)`（SDK 层封装 → `POST /keys/query`）。这是**唯一能查他人设备的端点**。
+- **禁止 GET /devices**：`GET /devices` 只能查当前用户自己（路径无 `{user_id}`），用它做第三方查询会让好友设备列表恒为空。已在 `CryptoDeviceAdapter` 与 `MatrixDeviceService` 中收口。
+- **移动端设备不需要管理面板**：移动端用户自己的设备列表仅用于展示（如好友详情页），不开放「管理面板」UI（编辑 display_name、屏蔽等操作）。
+- **管理面板仅限管理员**：如未来需要设备管理功能（屏蔽/注销等写操作），仅允许在「管理后台」或「管理员专属页面」中提供，普通客户端用户不可见。
+- 信任等级来源：`GET /device_trust` 只返回 `{ device_id, trust_level }` 无 user_id，**只能按 device_id 建索引**，不能按 user_id 过滤。
+
 ## 液态玻璃 / 消息信任
 - `-panel`/`-subtle` **自带** `low-perf` 降级；裸 `liquid-glass(...)` 须跟 `@include liquid-glass-fallback;`。降级类由 `utils/performanceTier.ts` 写 `html.low-perf`；`backdrop-filter` 仅面板级 ≤3
 - 锁态映射**只允许**在 `useMessageTrust.ts`。已修复假安全信号：trustLevel 恒返回 verified → 接入 `matrixDeviceService.getUserDevices()` 查询真实设备验证状态 + effectScope 30s 自动刷新 + 'unverified' 安全默认值。`MessageLockBadge` 的 `&--interactive` **不得声明 color**
