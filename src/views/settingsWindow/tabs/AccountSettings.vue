@@ -157,6 +157,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
+import { firstPasswordRuleViolationKey } from '@/utils/passwordStrength'
 
 const logger = createLogger('AccountSettings')
 
@@ -400,15 +401,15 @@ async function handleBirthdayChange() {
   await updateExtendedProfileField('birthday', formData.birthday.trim(), initialExtendedProfile.birthday)
 }
 
-/** 校验密码强度（与后端 synapse-rust 策略一致） */
+/**
+ * 校验密码强度（与后端 synapse-rust 策略一致）。
+ *
+ * 规则实现已抽到 `@/utils/passwordStrength`，与移动端共用同一事实源；
+ * 此处只负责把规则 id 映射到 i18n 文案。
+ */
 function validatePasswordStrength(password: string): string | null {
-  if (password.length < 8) return t('setting.account.password_too_short')
-  if (password.length > 128) return t('setting.account.password_too_long')
-  if (!/[A-Z]/.test(password)) return t('setting.account.password_need_uppercase')
-  if (!/[a-z]/.test(password)) return t('setting.account.password_need_lowercase')
-  if (!/[0-9]/.test(password)) return t('setting.account.password_need_digit')
-  if (!/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)) return t('setting.account.password_need_special')
-  return null
+  const key = firstPasswordRuleViolationKey(password)
+  return key ? t(`setting.account.${key}`) : null
 }
 
 async function handlePasswordChange() {

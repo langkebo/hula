@@ -1,0 +1,22 @@
+{
+  "title": "Push settings",
+  "loading": "Loading...",
+  "load_failed": "Failed to load push information",
+  "save_failed": "Failed to save push settings",
+  "master_section": "Master switch",
+  "master_switch": "Enable push",
+  "master_switch_hint": "When off, the server stops pushing notifications to this account",
+  "devices_section": "Push devices",
+  "no_devices": "No registered push devices",
+  "unknown_device": "Unknown device",
+  "device_enabled": "Enabled",
+  "device_disabled": "Disabled",
+  "no_rules": "No push rules",
+  "kinds": {
+    "override": "Override rules",
+    "content": "Content rules",
+    "room": "Room rules",
+    "sender": "Sender rules",
+    "underride": "Underride rules"
+  }
+}

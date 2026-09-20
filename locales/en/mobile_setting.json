@@ -50,5 +50,9 @@
   "privacy_section": "Privacy & Preferences",
   "preferences": "General Preferences",
   "burn_after_read": "Burn After Read",
-  "mjolnir": "Moderation"
+  "mjolnir": "Moderation",
+  "change_password": "Change password",
+  "social_section": "Social",
+  "friend_groups": "Friend groups",
+  "storage": "Storage"
 }

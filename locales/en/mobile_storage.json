@@ -1,0 +1,18 @@
+{
+  "title": "Storage",
+  "loading": "Loading...",
+  "cache_section": "Cache",
+  "hit_rate": "Cache hit rate",
+  "cached_items": "Cached entries",
+  "usage_section": "Storage usage",
+  "used": "Used",
+  "quota": "Quota",
+  "danger_section": "Cleanup",
+  "clear": "Clear cache",
+  "clear_desc": "Clearing local cache frees space, but offline messages must re-sync.",
+  "clear_confirm": "Clear local cache? Offline messages will need to re-sync before viewing.",
+  "clear_success": "Cache cleared",
+  "clear_failed": "Could not clear cache",
+  "load_failed": "Could not load storage info",
+  "memory_usage": "Memory usage"
+}

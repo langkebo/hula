@@ -57,8 +57,13 @@ describe('renderMessage/index.vue - MessageLockBadge 绑定契约', () => {
     expect(source).toMatch(/:class="isMe \? 'msg-lock-badge--right' : 'msg-lock-badge--left'"/)
   })
 
-  it('title 应绑定 trustDescription（可访问性提示）', () => {
-    expect(source).toMatch(/:title="trustDescription"/)
+  it('title 应绑定翻译后的 trustDescriptionKey（可访问性提示）', () => {
+    // composable 只给 i18n key，文案由调用方 t() 渲染，避免英文界面漏出中文
+    expect(source).toMatch(/:title="t\(trustDescriptionKey\)"/)
+  })
+
+  it('不应残留已改名为 trustDescriptionKey 的旧属性', () => {
+    expect(source).not.toMatch(/\btrustDescription\b(?!Key)/)
   })
 
   it('不应保留重复的内联加密判断（收敛到 composable）', () => {

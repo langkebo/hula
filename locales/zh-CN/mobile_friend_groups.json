@@ -1,0 +1,22 @@
+{
+  "title": "好友分组",
+  "loading": "加载中...",
+  "empty": "还没有好友分组，创建一个来整理你的好友",
+  "member_count": "{count} 位好友",
+  "no_member": "该分组暂无好友",
+  "new_placeholder": "输入新分组名称",
+  "create": "创建分组",
+  "create_success": "分组已创建",
+  "create_failed": "创建分组失败",
+  "rename": "重命名",
+  "rename_placeholder": "输入新的分组名称",
+  "rename_success": "分组已重命名",
+  "rename_failed": "重命名失败",
+  "delete": "删除分组",
+  "delete_confirm": "确定删除分组「{name}」？分组内的好友不会被删除。",
+  "delete_success": "分组已删除",
+  "delete_failed": "删除分组失败",
+  "name_required": "分组名称不能为空",
+  "unnamed": "未命名分组",
+  "load_failed": "获取好友分组失败"
+}

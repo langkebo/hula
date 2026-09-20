@@ -23,6 +23,7 @@ const AddFriends = () => import('#/views/friends/AddFriends.vue')
 const FriendInfo = () => import('#/views/friends/FriendInfo.vue')
 const MobileFriendPage = () => import('#/views/friends/index.vue')
 const StartGroupChat = () => import('#/views/friends/StartGroupChat.vue')
+const FriendGroups = () => import('#/views/friends/FriendGroups.vue')
 const MobileMessagePage = () => import('#/views/message/index.vue')
 const MobileDynamicPage = () => import('#/views/dynamic/index.vue')
 const MobileDynamicDetail = () => import('#/views/dynamic/detail.vue')
@@ -41,6 +42,13 @@ const MyAlbum = () => import('#/views/my/MyAlbum.vue')
 const StatusSettings = () => import('#/views/my/StatusSettings.vue')
 const SecuritySettings = () => import('#/views/my/SecuritySettings.vue')
 const DeviceManagement = () => import('#/views/my/DeviceManagement.vue')
+const PasswordSettings = () => import('#/views/my/PasswordSettings.vue')
+const MobileIgnoredUsers = () => import('#/views/my/MobileIgnoredUsers.vue')
+const MobileSecurityKeySetup = () => import('#/views/my/MobileSecurityKeySetup.vue')
+const MobileStorageSettings = () => import('#/views/my/MobileStorageSettings.vue')
+const MobilePushSettings = () => import('#/views/my/MobilePushSettings.vue')
+const MobileInvitePermission = () => import('#/views/my/MobileInvitePermission.vue')
+const MobileDeactivateAccount = () => import('#/views/my/MobileDeactivateAccount.vue')
 const NotificationSettings = () => import('#/views/my/NotificationSettings.vue')
 const HelpFeedback = () => import('#/views/my/HelpFeedback.vue')
 const VoiceVideoSettings = () => import('#/views/my/VoiceVideoSettings.vue')
@@ -65,9 +73,49 @@ const MOBILE_MY_SETTINGS_CHILD_ROUTES: RouteRecordRaw[] = [
     component: SecuritySettings
   },
   {
-    path: 'devices',
-    name: 'mobileDeviceManagement',
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.devices,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.devices,
     component: DeviceManagement
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.password,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.password,
+    component: PasswordSettings
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.ignoredUsers,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.ignoredUsers,
+    component: MobileIgnoredUsers
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.simpleBio,
+    name: 'mobileSimpleBio',
+    component: SimpleBio
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.securityKey,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.securityKey,
+    component: MobileSecurityKeySetup
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.storage,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.storage,
+    component: MobileStorageSettings
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.pushSettings,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.pushSettings,
+    component: MobilePushSettings
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.invitePermission,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.invitePermission,
+    component: MobileInvitePermission
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.deactivateAccount,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.deactivateAccount,
+    component: MobileDeactivateAccount
   },
   {
     path: 'notifications',
@@ -382,6 +430,11 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'startGroupChat',
         name: 'mobileStartGroupChat',
         component: StartGroupChat
+      },
+      {
+        path: 'groups',
+        name: 'mobileFriendGroups',
+        component: FriendGroups
       },
       {
         path: 'confirmAddFriend',

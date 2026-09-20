@@ -1,0 +1,11 @@
+{
+  "title": "Ignored users",
+  "intro": "Users you ignore cannot start a direct chat with you.",
+  "loading": "Loading...",
+  "empty": "No ignored users",
+  "unignore": "Unignore",
+  "unignore_confirm": "Unignore {userId}? They will be able to message you again.",
+  "unignore_success": "User unignored",
+  "unignore_failed": "Could not unignore user",
+  "load_failed": "Could not load ignored users"
+}

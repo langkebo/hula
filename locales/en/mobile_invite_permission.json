@@ -1,0 +1,24 @@
+{
+  "title": "Invite permission",
+  "loading": "Loading...",
+  "load_failed": "Failed to load invite permission",
+  "save_failed": "Failed to save invite permission",
+  "duplicate": "That user is already in the list",
+  "user_id": "User ID",
+  "user_id_placeholder": "e.g. @alice:example.org",
+  "add": "Add",
+  "remove": "Remove",
+  "empty": "The list is empty",
+  "blocklist_section": "Blocklist",
+  "allowlist_section": "Allowlist",
+  "mode": {
+    "allow_all": "Everyone",
+    "blocklist": "Users on the blocklist",
+    "allowlist": "Only users on the allowlist"
+  },
+  "mode_hint": {
+    "allow_all": "Do not reject any invite",
+    "blocklist": "Invites from listed users are rejected automatically",
+    "allowlist": "Invites from anyone else are rejected automatically"
+  }
+}

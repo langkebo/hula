@@ -37,6 +37,19 @@
             </van-cell>
 
             <van-cell
+              :title="t('mobile_setting.change_password')"
+              is-link
+              @click="router.push(MOBILE_SETTINGS_PASSWORD_PATH)">
+              <template #icon>
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.password">
+                  <Icon icon="mdi:lock-reset" :width="20" color="var(--tjg-color-warning-500)" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell
               :title="t('mobile_setting.security')"
               is-link
               @click="router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)">
@@ -45,6 +58,25 @@
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.security">
                   <Icon icon="mdi:shield-lock" :width="20" color="var(--tjg-color-danger-500)" />
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
+            {{ t('mobile_setting.social_section') }}
+          </div>
+
+          <van-cell-group inset>
+            <van-cell
+              :title="t('mobile_setting.friend_groups')"
+              is-link
+              @click="router.push('/mobile/mobileFriends/groups')">
+              <template #icon>
+                <div
+                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
+                  :style="iconShellStyles.social">
+                  <Icon icon="mdi:account-group" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
               </template>
             </van-cell>
@@ -217,7 +249,11 @@ import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
-import { MOBILE_SETTINGS_HELP_ABOUT_PATH, MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from './settingsRoutes'
+import {
+  MOBILE_SETTINGS_HELP_ABOUT_PATH,
+  MOBILE_SETTINGS_PASSWORD_PATH,
+  MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
+} from './settingsRoutes'
 
 const logger = createLogger('MobileSettings')
 
@@ -245,6 +281,8 @@ const iconShellStyles = {
   status: { backgroundColor: 'var(--tjg-color-success-100)' },
   profile: { backgroundColor: 'var(--tjg-color-info-100)' },
   security: { backgroundColor: 'var(--tjg-color-danger-100)' },
+  password: { backgroundColor: 'var(--tjg-color-warning-100)' },
+  social: { backgroundColor: 'var(--tjg-color-info-100)' },
   notification: { backgroundColor: 'var(--tjg-color-warning-100)' },
   theme: { backgroundColor: 'var(--tjg-color-beta-100)' },
   language: { backgroundColor: 'var(--tjg-color-info-100)' },

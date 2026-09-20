@@ -128,6 +128,15 @@
             @click="showCrossSigningSetup = true" />
         </van-cell-group>
 
+        <!-- 安全密钥（SSSS 恢复密钥）入口：方案 4.2 -->
+        <van-cell-group :title="t('mobile_security_key.title')" inset>
+          <van-cell
+            :title="t('mobile_security_key.manage')"
+            :label="t('mobile_security_key.intro')"
+            is-link
+            @click="router.push(MOBILE_SETTINGS_SECURITY_KEY_PATH)" />
+        </van-cell-group>
+
         <!-- 设备信任管理入口 -->
         <van-cell-group :title="t('setting.encryption.trust_section')" inset>
           <van-cell
@@ -217,7 +226,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
+import { useRouter } from 'vue-router'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileDehydratedDeviceDialog from '@/mobile/components/encryption/MobileDehydratedDeviceDialog.vue'
@@ -229,8 +238,10 @@ import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackup
 import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
 import type { Device } from '@/services/matrix/user/MatrixDeviceService'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
+import { MOBILE_SETTINGS_SECURITY_KEY_PATH } from './settingsRoutes'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const loading = ref(false)
 const refreshing = ref(false)
