@@ -206,7 +206,7 @@
             @click="handleStepAction">
             {{ btnText }}
           </n-button>
-          <p v-if="sendCodeCooldown > 0" class="text-(12px --color-primary) mt-6px whitespace-nowrap">
+          <p v-if="sendCodeCooldown > 0" class="text-(12px var(--tjg-color-primary-500)) mt-6px whitespace-nowrap">
             {{ t('auth.register.tips.reopen_code') }}
           </p>
         </div>

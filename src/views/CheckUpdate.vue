@@ -21,7 +21,7 @@
               <use href="#RightArrow"></use>
             </svg>
 
-            <p class="relative text-(20px --color-primary) font-500">{{ newVersion }}</p>
+            <p class="relative text-(20px var(--tjg-color-primary-500)) font-500">{{ newVersion }}</p>
 
             <span
               class="absolute top--10px right--44px p-[4px_8px] bg-[--tag-danger-bg] rounded-6px text-(12px [--tjg-color-danger-500])">
@@ -32,12 +32,12 @@
         <n-flex align="center" size="medium">
           <div v-if="newVersionTime">
             <span class="text-(12px --tjg-text-tertiary)">{{ t('message.check_update.new_release_date') }}</span>
-            <span class="text-(12px --color-primary)">{{ handRelativeTime(newVersionTime) }}</span>
+            <span class="text-(12px var(--tjg-color-primary-500))">{{ handRelativeTime(newVersionTime) }}</span>
           </div>
 
           <div v-else>
             <span class="text-(12px --tjg-text-tertiary)">{{ t('message.check_update.release_date') }}</span>
-            <span class="text-(12px --color-primary)">{{ handRelativeTime(versionTime) }}</span>
+            <span class="text-(12px var(--tjg-color-primary-500))">{{ handRelativeTime(versionTime) }}</span>
           </div>
         </n-flex>
       </n-flex>
@@ -45,7 +45,7 @@
         <p class="text-(12px --tjg-text-tertiary)">{{ t('message.check_update.log_title') }}</p>
         <n-button text @click="toggleLogVisible">
           <n-flex align="center">
-            <span class="text-(12px --color-primary)">
+            <span class="text-(12px var(--tjg-color-primary-500))">
               {{ logVisible ? t('message.check_update.collapse') : t('message.check_update.expand') }}
             </span>
             <svg

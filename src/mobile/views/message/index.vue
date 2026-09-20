@@ -63,7 +63,7 @@
         :style="{ top: longPressState.longPressMenuTop + 'px' }"
         class="fixed gap-10px z-999 left-1/2 transform -translate-x-1/2">
         <div
-          class="flex justify-between p-18px text-16px gap-22px rounded-16px bg-[--bg-long-press-menu] whitespace-nowrap">
+          class="flex justify-between p-18px text-16px gap-22px rounded-16px bg-[var(--tjg-surface-subtle)] whitespace-nowrap">
           <div class="text-white" @click="handleDelete(currentLongPressItem)">{{ t('mobile_home.menu.delete') }}</div>
           <div class="text-white" @click="handleToggleTop(currentLongPressItem)">
             {{ currentLongPressItem?.top ? t('mobile_home.menu.unpin') : t('mobile_home.menu.pintop') }}

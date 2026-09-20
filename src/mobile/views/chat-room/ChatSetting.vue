@@ -82,7 +82,7 @@
                     class="rounded-full relative bg-[--tjg-color-primary-100] w-36px h-36px flex items-center justify-center">
                     <div
                       v-if="i.activeStatus !== OnlineEnum.ONLINE"
-                      class="w-36px h-36px absolute rounded-full bg-[--bg-offline-avatar-overlay] z-4"></div>
+                      class="w-36px h-36px absolute rounded-full bg-[color-mix(in_srgb,var(--tjg-text-tertiary)_60%,transparent)] z-4"></div>
                     <img
                       class="absolute z-3 size-36px rounded-full object-cover"
                       :src="avatarSrc(i.avatar)"

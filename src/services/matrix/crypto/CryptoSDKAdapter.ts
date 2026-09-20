@@ -39,7 +39,8 @@ import type {
   KeyBackupRestoreResult,
   KeyBackupSetupResult,
   KeyExportResult,
-  KeyImportResult
+  KeyImportResult,
+  RoomEncryptionState
 } from './cryptoAdapterTypes'
 
 // Re-export types for backward compatibility with existing consumers
@@ -244,29 +245,50 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
 
   // ==================== Room Encryption ====================
 
-  async isRoomEncrypted(roomId: string): Promise<boolean> {
+  /**
+   * 查询房间加密状态（三态）。
+   *
+   * 为什么需要三态：上传路径形如 `if (isEncrypted) 加密上传 else 明文上传`。
+   * 若"房间尚未加载/状态读取失败"与"房间确实未加密"共用 `false`，
+   * 任何查询失败都会**静默降级为明文上传**，包括本应加密房间的附件。
+   * 因此调用方必须显式处理 `unknown`（拒绝发送，而不是明文发送）。
+   *
+   * @param roomId 房间 ID
+   * @returns `encrypted` 已加密；`plaintext` 确认未加密；`unknown` 无法判定
+   */
+  async getRoomEncryptionState(roomId: string): Promise<RoomEncryptionState> {
     const client = this.getClient()
     const room = client.getRoom(roomId)
-    if (!room) return false
+    if (!room) {
+      // 房间不在本地 store：无法判定，绝不能当作"未加密"
+      return 'unknown'
+    }
 
-    const crypto = this.getCrypto()
-    if (crypto) {
-      if ((room as unknown as { hasEncryptionStateEvent: () => boolean }).hasEncryptionStateEvent()) {
-        return true
+    // SDK 的权威判据：房间状态里是否存在 m.room.encryption
+    try {
+      const hasEncryptionStateEvent = (room as unknown as { hasEncryptionStateEvent?: () => boolean })
+        .hasEncryptionStateEvent
+      if (typeof hasEncryptionStateEvent === 'function' && hasEncryptionStateEvent.call(room)) {
+        return 'encrypted'
       }
+    } catch {
+      return 'unknown'
     }
 
     try {
       const encryptionEvent = room.currentState.getStateEvents('m.room.encryption', '')
       if (encryptionEvent) {
         const content = encryptionEvent.getContent() as { algorithm?: string }
-        if (content.algorithm) return true
+        if (content?.algorithm) return 'encrypted'
       }
+      return 'plaintext'
     } catch {
-      // Ignore
+      return 'unknown'
     }
+  }
 
-    return false
+  async isRoomEncrypted(roomId: string): Promise<boolean> {
+    return (await this.getRoomEncryptionState(roomId)) === 'encrypted'
   }
 
   async enableEncryption(roomId: string, algorithm: string = 'm.megolm.v1.aes-sha2'): Promise<void> {
@@ -324,6 +346,25 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
     const manager = this.getSDKKeyVerificationManager()
     if (!manager) throw new Error('KeyVerificationManager not available')
     return manager
+  }
+
+  /**
+   * 要求必须能判定房间加密状态，供安全敏感路径（媒体上传）使用。
+   *
+   * 与 {@link getRoomEncryptionState} 的区别：状态为 `unknown` 时**抛错**，
+   * 调用方不得继续走明文分支。历史缺陷是 `if (isEncrypted) 加密上传 else 明文上传`，
+   * 任何查询失败都静默降级为明文上传。
+   *
+   * @param roomId 房间 ID
+   * @returns `true` 已加密；`false` 确认未加密
+   * @throws 无法判定房间加密状态
+   */
+  async requireRoomEncryptionState(roomId: string): Promise<boolean> {
+    const state = await this.getRoomEncryptionState(roomId)
+    if (state === 'unknown') {
+      throw new Error('无法确定房间加密状态，已阻止上传以避免明文外发。请重试或重新进入该房间。')
+    }
+    return state === 'encrypted'
   }
 }
 

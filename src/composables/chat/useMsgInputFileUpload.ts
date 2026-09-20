@@ -69,7 +69,7 @@ async function processGenericFile(
     }
     void _progressCallback
 
-    const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(targetRoomId)
+    const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
     if (isEncrypted) {
       const result = await matrixMediaService.uploadEncryptedFile(file, _progressCallback)
@@ -152,7 +152,7 @@ async function processGenericPathFile(
     }
     void _progressCallback
 
-    const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(targetRoomId)
+    const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
     if (isEncrypted) {
       // file.path 可能是两种来源，均可通过收窄后的 fs:read-files scope：

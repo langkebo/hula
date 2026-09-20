@@ -15,7 +15,7 @@
           'bg-[--pin-input-bg]',
           'text-center rounded-8px',
           'border-(2px solid transparent)',
-          'focus:border-(2px solid --color-primary)',
+          'focus:border-(2px solid var(--tjg-color-primary-500))',
           'focus:outline-none',
           'box-border',
           inputClass

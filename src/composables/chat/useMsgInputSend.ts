@@ -115,7 +115,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     tempMsgId: string,
     messageStrategy: MessageStrategy
   ): Promise<void> {
-    const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(targetRoomId)
+    const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
     if (isEncrypted) {
       const fileData = await readFile(msg.path as string, {
@@ -150,7 +150,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     tempMsgId: string,
     messageStrategy: MessageStrategy
   ): Promise<void> {
-    const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(targetRoomId)
+    const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
     if (isEncrypted) {
       let thumbnailEncryptedFile: EncryptedAttachmentFile | undefined

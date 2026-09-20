@@ -111,7 +111,7 @@ html[data-blur='1'] {
 /**! 通用菜单项目样式 */
 @mixin menu-item-style($position: fixed) {
   position: $position;
-  background: var(--bg-menu);
+  background: var(--tjg-menu-bg);
   color: var(--tjg-text-primary);
   border-radius: 6px;
   -webkit-backdrop-filter: blur(10px);
@@ -144,7 +144,7 @@ html[data-blur='1'] {
       height: 16px;
     }
     &:hover {
-      background-color: var(--bg-menu-hover);
+      background-color: var(--tjg-menu-hover);
       svg {
         animation: twinkle 0.3s ease-in-out;
       }

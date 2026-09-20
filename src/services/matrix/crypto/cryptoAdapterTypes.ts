@@ -78,3 +78,11 @@ export interface CryptoAdapterAccessors {
   getSDKKeyBackupManager(): SDKKeyBackupManager | null
   getSDKKeyVerificationManager(): KeyVerificationManager | null
 }
+
+/**
+ * 房间加密状态三态。
+ *
+ * `unknown` 必须与 `plaintext` 区分：前者表示"无法判定"（房间未加载/状态读取失败），
+ * 上传等安全敏感路径必须拒绝发送而不是降级为明文。
+ */
+export type RoomEncryptionState = 'encrypted' | 'plaintext' | 'unknown'

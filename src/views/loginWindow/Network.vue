@@ -98,7 +98,7 @@
       </n-tabs>
 
       <n-flex align="center" justify="center" :size="40" class="pt-10px">
-        <p @click="handleSave" class="text-(14px --color-primary) cursor-pointer">
+        <p @click="handleSave" class="text-(14px var(--tjg-color-primary-500)) cursor-pointer">
           {{ t('login.network.actions.save') }}
         </p>
         <p @click="router.push('/login')" class="text-(14px [--tjg-text-tertiary]) cursor-pointer">

@@ -45,7 +45,7 @@
       </n-flex>
     </n-scrollbar>
     <component :is="division" />
-    <p @click="handleTip" class="pt-4px pl-6px text-(12px --color-primary) cursor-pointer">
+    <p @click="handleTip" class="pt-4px pl-6px text-(12px var(--tjg-color-primary-500)) cursor-pointer">
       {{ t('message.notify.ignore_all') }}
     </p>
   </n-flex>

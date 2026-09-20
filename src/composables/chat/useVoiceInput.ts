@@ -42,7 +42,7 @@ export function useVoiceInput(): VoiceInputHook {
     const file = new File([fileBytes], filename, { type: mimeType })
 
     // 检查房间是否加密
-    const isEncrypted = await cryptoSDKAdapter.isRoomEncrypted(roomId)
+    const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(roomId)
 
     if (isEncrypted) {
       // 加密房间：使用加密上传 + 登记到 voice_usage_stats 表
