@@ -745,7 +745,7 @@ pnpm check                   # Biome lint + i18n 检查
 - ⚠️ **遗留**：`src/typings/i18n.d.ts` 是 `scripts/generate-i18n-types.mjs` 从 `locales/zh-CN/*.json` 生成的产物，本次新增键后它**相对工作树已陈旧**。未重新生成的原因：该脚本整树生成，会一并写入**并行会话正在改的 `encryption.json` 键**，造成跨会话污染。已确认 `pnpm check:i18n`（en/zh-CN 键对齐）通过、无 CI 校验该产物新鲜度、且 `I18nKeys` 不约束 `t()`（vue-tsc 0 错误）——故留待两侧 locale 改动都落地后统一执行 `pnpm gen:i18n`。
 - 测试：`MxidText.test.ts`（8 用例，含「解析结果与 `toLocalpart` 逐例一致」的 SSoT 守卫）、`FriendDetailsSections.test.ts` 8 → 12 用例（MxidText 接线、FederationBadge local/远端语义、本机域名未就绪兜底）、`userIdentity.test.ts` 16 → 31 用例
 
-#### ⏸ P0-3 锁徽章点击（**受阻，需决策**）
+#### ⏸ P0-3 锁徽章点击（**受阻，需决策**）→ 已于第三轮完成，见文末「第三轮执行记录」
 
 实测确认既有验证对话框**不具备**方案 3.1 要求的能力：
 
@@ -760,3 +760,276 @@ pnpm check                   # Biome lint + i18n 检查
 - Biome：改动文件 clean
 - 受影响测试：**75 文件 / 850 用例全绿**
 - 新增守卫逐条变异验证：（1）注释掉 `main.ts` 接线 → 2 条契约用例转红；（2）`_liquid-glass.scss` 改类名 → 契约用例 + 既有 liquid-glass 用例转红；（3）`FriendDetailsSections` 反转 `:is-local` → 3 条语义用例转红；（4）去掉 MxidText 的 `show-full` → 完整 MXID 用例转红；（5）`normalizeHomeserver` 去掉小写归一 → 大小写用例转红；（6）`MxidText` 改用朴素 `slice(1)` 解析 → 4 条用例转红（含 SSoT 一致性）
+
+---
+
+### 2026-09-20 第三轮执行记录
+
+#### ✅ P0-3 锁徽章 → 设备验证（扩展对话框 + 接线）
+
+**问题本质**：既有 `DeviceVerifyDialog` 只能验证「自己账号的其它设备」——`useDeviceVerifyDialog.resetState()` 把 `targetUserId` 固定成当前会话用户，且 `targetDeviceId` 会兜底成**本机 deviceId**。于是「验证消息发送方设备」在数据层就无从表达：即使硬塞 `deviceId`，也会拼出 `(对方 userId, 我的 deviceId)` 这种 SDK 侧不存在的事务。
+
+**改动**：
+
+1. **对话框支持目标用户**（`useDeviceVerifyDialog.ts` + `DeviceVerifyDialog.vue` + `DeviceVerifyIntroStep.vue`）
+   - 新增 `userId?: string` prop：**缺省 = 验证本机其它设备（保持历史语义）；指定 = 验证该用户的设备**
+   - 跨用户时经 `matrixDeviceService.getUserDevices()`（`keys/query`）拉设备列表，`DeviceVerifyIntroStep` 新增设备选择器（`n-select`）。**不能用 `GET /devices`** —— 该端点无 `{user_id}` 路径段，只能查自己，会把他人设备列表查成空
+   - **新增不变量：跨用户时 `targetDeviceId` 不得回退本机 deviceId**（留空，等用户选择）
+   - 恰好一台设备时自动选中；多台且未选时 `startVerification()` 被阻断并提示 `select_device_required`（此前会发起 `deviceId=''` 的空请求）
+   - 设备守卫只在 `hasLocalDeviceContext()` 为真时生效，避免掩盖「crypto 未就绪」这类更根本的错误
+2. **新增单例启动器 `src/composables/encryption/useDeviceVerifyLauncher.ts`**
+   - 模块级 `ref`（非 pinia）：`visible` / `target` / `open()` / `close()` / 测试用 `reset()`
+   - `close()` **同时清空 target**，避免下次打开残留上一条消息的 userId
+3. **锁徽章交互态**（`MessageLockBadge.vue`）
+   - 非交互渲染 `<span>`（与历史完全一致）；`interactive` 渲染 `<button type="button">`，新增 `verify` 事件
+   - 新增 `ariaLabel` prop，可访问名称回退链 `ariaLabel → title → 状态文案`（避免渲染出无名称 button）
+   - `&--interactive` **刻意不声明 `color`**：它与 `--verified/--unverified/--risk` 同特异度，声明了会遮蔽三态配色
+4. **接线**（`renderMessage/index.vue` + `ChatMain.vue`）
+   - `renderMessage` 传 `:interactive="canVerifySender"` + `@verify="handleVerifySender"`；`canVerifySender = 已加密 && !isMe && !!senderUid`（自己的消息没有可验证对端）
+   - `ChatMain.vue` 作为**单例挂载点**（桌面/移动共用唯一实例）渲染一份 `DeviceVerifyDialog`（`defineAsyncComponent` 按需加载）。**不挂在 `renderMessage`** —— 那会按消息条数实例化 N 个对话框
+5. **修掉同族缺陷：`DeviceTrustManager` 跨用户验证漏传 userId**
+   - 「未验证设备」「已屏蔽设备」两个 tab 的条目可能属于**其他用户**，但 `handleVerifyDevice()` 只传 `device-id`/`device-name` → 对话框把 `targetUserId` 解析成自己，发出 `(自己, 对方 deviceId)` 的无效事务。现补传 `verifyTargetUserId = device.userId`
+6. **新增 i18n 键**：`setting.encryption.device_verify_dialog.{verify_user_label, select_device_label, select_device_placeholder, select_device_required, no_device_available}`、`message_container.verify_sender_device`（zh-CN / en 双语）
+
+#### ❗ 第三轮新发现（P0 级）：i18n 键路径错配导致对话框整体渲染原始 key
+
+排查 P0-3 时顺带实测出**独立缺陷**：
+
+- `locales/{zh-CN,en}/setting.json` 中该子树的真实路径是 **`setting.encryption.device_verify_dialog.*`**（嵌套在 `encryption` 分组下，与 `verify_success` / `fingerprint_hint` 同级），但全仓 **84 处 / 10 个文件**写成 `setting.device_verify_dialog.*`，`src` 中**零处**使用正确路径。
+- 后果：`t()` 命中不到键 → 直接回显 key 字符串。即**整个设备验证对话框（标题、步骤条、每个按钮、每个提示）显示的都是 `setting.device_verify_dialog.xxx`**。
+- **为什么长期没人发现**：所有相关组件测试都在 `vi.mock('vue-i18n')` 里**照着源码的错键写 `t` 映射表**，源码与测试桩共用同一个错误路径 → 永远自洽全绿。这是「纸面测试」的变体：**断言对象是自造的桩，而非真实语言包**。
+- 已修复：84 处统一改为正确路径；并顺带补上 `EncryptionSettings.vue` 中两处真实缺失键 `device_trust_label` / `device_trust_desc`（新守卫测试直接抓出来的）。
+- **同族问题的量级（实测）**：生产代码中 `t('字面量')` 有 **564 个 key 在 `locales/zh-CN` 无法解析**，分布在 **80 个文件**；按命名空间：`encryption` 138 / `setting` 78 / `widget` 69 / `room` 65 / `moderation` 43 / `message` 29 / `home` 25 …；其中 `call.json`、`widget.json`、`memoryMonitor.json`、`private_mode.json`、`e2ee.json` 等**命名空间文件根本不存在**。`scripts/check-i18n.mjs` 只校验 zh-CN 与 en 的**键集合对齐**，**不校验源码引用**，所以漏网。
+- **建议（未实施，需单独立项）**：把「源码 `t('字面量')` 键必须能在真实语言包解析」做成仓级门禁（可复用本次的解析逻辑：**文件名即命名空间且首段需剥掉**）。本次已在设备验证范围内落地该守卫，全仓铺开需先清 564 个存量。
+
+#### 测试与验证（第三轮）
+
+新增测试：
+- `src/composables/encryption/__tests__/useDeviceVerifyLauncher.test.ts`（5 用例）
+- `src/components/encryption/__tests__/DeviceVerifyDialog.crossUser.test.ts`（8 用例）
+- `src/components/encryption/__tests__/deviceVerifyFlow.contract.test.ts`（13 用例，含 i18n 键可达性守卫）
+- `src/components/atomic/__tests__/MessageLockBadge.test.ts` 10 → 16 用例（交互态 + 单根结构回归）
+
+门禁：`vue-tsc --noEmit` 0 错误；`check:ratchet` 三项基线不变；`check:i18n` 通过；Biome clean；变更波及测试全绿。
+
+**变异验证：14 组全部有效**（改坏源码 → 对应用例转红 → 还原后逐字节一致）：
+
+| # | 变异 | 结果 |
+|---|---|---|
+| M1 | 跨用户时把 `targetDeviceId` 回退成本机 deviceId | 4 用例红 |
+| M2 | 去掉「未选设备」阻断守卫 | 1 用例红 |
+| M3 | 去掉单设备自动选中 | 1 用例红 |
+| M4 | 跨用户不拉设备列表 | 3 用例红 |
+| M5 | `userId` prop 不传入 `targetUserId` | 6 用例红 |
+| M6 | i18n 键路径回退成旧错误前缀 | 2 用例红 |
+| M7 | `DeviceTrustManager` 移除 `:user-id` 绑定 | 1 用例红 |
+| M8 | `handleVerifyDevice` 不写 `device.userId` | 1 用例红 |
+| M9 | `renderMessage` 移除 `@verify` | 1 用例红 |
+| M10 | `canVerifySender` 去掉 `!isMe` | 1 用例红 |
+| M11 | `ChatMain` 移除对话框单例挂载 | 1 用例红 |
+| M12 | 徽章非交互态也派发 `verify` | 1 用例红 |
+| M13 | 徽章交互态不渲染 `<button>` | 1 用例红 |
+| M14 | 模板顶部加 HTML 注释（制造多根片段） | 8 用例红 |
+
+#### ⚠️ 第三轮附带发现（已修）
+
+`MessageLockBadge.vue` 在加交互态时一度把说明性 **HTML 注释写在 `<template>` 顶部**，导致组件退化为**多根片段**（注释本身算一个根节点）：`wrapper.element` 落到外层容器，`classes()/attributes()` 全部失空（而 `exists()` / `find()` 仍正常）。已移除该注释（说明移入 `<script>` 头注释），并补「单根结构回归守卫」用例 + 变异验证 M14。
+
+---
+
+### 2026-09-20 第四轮执行记录（P1：阶段 1 三项验收线）
+
+#### ✅ 1.4 硬编码大圆角清零
+
+- 实测 **20 处** 16–29px 字面量（含移动端登录页内联 `border-radius: 24px 42px 4px 24px`）。
+- **映射规则**：容器 / 卡片 / 气泡 → 语义别名 `--tjg-radius-surface`(`=xl`) / `-panel`(`=2xl`) / `-sheet`(`=3xl`)。这三个别名此前**全仓零调用**（定义了没人用，又一个「token 死代码」）；控件 / 输入框 → 原子刻度 `--tjg-radius-xl` / `-2xl`（同值，零视觉变化）。
+- **唯一真实视觉微调**是两处离刻度值向最近刻度收敛：语音气泡 18→16（`-surface`）、RTC 浮层 18→20（`-panel`）。本环境无浏览器，**未做像素级验收**。
+- 移动端登录页 tab 指示条：内联 style 移入 `.tab-indicator`（`4px`→`--tjg-radius-xs`；造型用的 `42px` 属离刻度装饰值，保留字面量）。
+- **验收正则过窄导致漏网**：正文口径写的是 `border-radius: 1[6-9]px|2[0-9]px`，**漏掉 `border-top-left-radius` 这类长写**——实测另有 **6 处** 20px（`FriendInfo` / `friends/index` / `PersonalInfo` 的移动端抽屉顶角）。已一并 token 化，并把门禁正则改为 `-radius:` 以覆盖长写。
+- 结果：`hardcoded_radius = **0**`（ratchet 永久冻结）。
+
+#### ✅ 1.2 核心视图内联样式清零
+
+- 实测 **19 处**（loginWindow 2 / settingsWindow 8 / homeWindow 1 / components/room 8）。
+- 迁移方式以 **UnoCSS 工具类**为主（`max-w-200px` / `w-130px` / `hidden` / `flex-1` / `my-8px` / `w-full` / `grid-cols-3` / `max-h-*` / `bg-[--var]`）；无对应简写类的两处落到 scoped 规则（`.room-card-grid__body` 的 auto-fill 栅格、`.tab-indicator`）。
+- **顺带发现两处「假动态」内联样式**：
+  - `PublicRoomDiscovery.vue` 的 `:style="gridStyle"` —— `gridStyle` 其实是**常量对象**（注释写「响应式 minmax 网格」，但该对象没有任何响应性）→ 迁入 `.room-list`。
+  - `ManualLoginForm.vue` 的 `:style` 三项全是静态值 → 转工具类（`border-1 border-solid border-[--login-dropdown-border]`）。
+- 剩余 1 处动态 `:style` 是 `VoiceVideoSettings` 的音频电平条（`width: ${audioLevel}%`），属真动态值，**保留**。
+- 结果：核心视图静态 `style="` = **0**；顺带清理消息/弹层组件 6 处，全仓 ratchet 口径 **285**（冻结）。
+
+#### ⚠️ 1.3 `!important` 收敛（大幅下降，但**未达**「仅剩 NaiveProvider.vue」）
+
+实测 **116 处**（含死备份 `variable.scss.bak` 的 5 处；`NaiveProvider.vue` 实测 **0 处**）。分三步处置：
+
+1. **可判定冗余的直接删除（−15）**
+   - 删死备份 `src/styles/scss/global/variable.scss.bak`（git-ignored 草稿，长期与正式文件双轨）
+   - 清理 `-moz-` / `-ms-` / `-khtml-user-select` **失效厂商前缀**（`render-message.scss` / `chatHistory` / `multiMsgWindow` / `useContextMenu`）
+   - `File.vue` 的 `cursor` / `user-select`：元素自声明必胜父级继承值，`!important` 冗余
+   - `CaptchaVerify.vue` 的 `cursor`：全仓**不存在任何 `cursor + !important` 的竞争规则**
+   - `LinkPreview.vue` 的 `-webkit-line-clamp`
+   - `PushRuleEditor.vue` / `InvitePermissionPanel.vue` 的 n-list-item padding：scoped 属性 + 类名特异性已高于 naive-ui 的 `.n-list-item`
+2. **内联 `!important` 归零（−4，同时把 6 个内联 style 转 scoped 类）**
+   - `Text.vue`(2) / `Emoji.vue` / `Image.vue` / `InfoPopover.vue` / `MobileSessionHeader.vue`
+   - 其中 `InfoPopover` / `MobileSessionHeader` 的内联 `font-family` 是**死声明**：被全局 `* { font-family: ... !important }`（`variable.scss`）压掉，**从未生效**，一并删除
+   - `Text.vue` 提及 token 的 `user-select` 保留 `!important`（需抵消上下文菜单注入的 `.no-select{... !important}`），但改为 scoped 类以便承载解释注释
+3. **保留项逐处补解释注释（35 处）**
+   - `@media (prefers-reduced-motion: reduce)` 区块内 **20 处豁免**（媒体查询本身即理由）
+   - 其余每处都在**前 8 行内**写明理由（覆盖 naive-ui / Vant 内部样式、抵消 `.no-select`、抵消 `@use` 进来的 non-scoped 规则等）
+
+结果：116 → **91**（ratchet 冻结）。**未清零的原因**：剩余 91 处里 20 处属 a11y 合规保留，其余集中在「登录/消息按钮渐变覆盖两套 UI 库」「naive-ui 主题变量覆盖」「库内部结构穿透」。**逐条移除必须用真实浏览器做层叠回归**，本环境无法验证 → 按「可判定冗余才删」的原则收敛，其余用注释固化。**这一项按正文口径仍属未完全达标。**
+
+#### ✅ 门禁与防倒退（正文 1.2/1.3 步骤 4）
+
+- `scripts/check-ratchet.mjs` 新增三个计数器，并给计数器引入 `extensions` 维度以覆盖 `.scss/.css/.mdx`：
+  `hardcoded_radius`(**0**) / `inline_style`(**285**) / `important_css`(**91**)；原有三项基线不变（68 / 31 / 3）。
+- 新增契约测试 `src/styles/__tests__/design-baseline.test.ts`（**14 用例**）：
+  - 1.4：零容忍计数 + **悬空 token 守卫**（`var(--tjg-radius-*)` 必须在 `design-tokens.css` 有定义）+ 三个语义别名必须仍被真实引用
+  - 1.2：四个核心视图目录为 0 + 全仓不超基线
+  - 1.3：注释政策 + 总量 + **禁模板内联 `style` 携带 `!important`**
+  - 配套：`.gitignore` 必须忽略 `*.bak`；`design-tokens.css` 必须定义三个语义别名
+- `.github/PULL_REQUEST_TEMPLATE.md` 新增「UI 约束自检」四项。
+- **变异验证 12/12 有效**（改坏源码 → 对应用例转红 → 还原后逐字节一致）：
+  M1 简写 16px｜M2 长写 20px｜M3 核心视图内联 style｜M4 新增无注释 `!important`｜M4c 删除既有解释注释（**计数不变、仅政策测试红**，证明政策守卫不是被总量守卫掩盖）｜M5 语义别名调用点全部消失｜M6 悬空 token｜M7 `.gitignore` 去掉 `*.bak`｜M8 内联 style 重新带 `!important`｜M9/M10/M11 ratchet 侧圆角 / 内联 / `!important` 三类增长。
+
+#### 本轮踩到的两个坑（高价值，值得记）
+
+1. **契约测试里用正则在循环中 `exec` 必须带 `g` 标志**。`REDUCED_MOTION` 漏写 `g` 时 `lastIndex` 永不前进 → **死循环** → 进程被 OOM 杀掉。外部表现是 **`exit 137` + 零输出**，极易误判成「测试环境坏了」。
+2. **计数正则跨行会误抓**。`border-radius:[^;]*` 里的 `[^;]*` 能跨行匹配：`style="border-radius: 8px"`（无分号）会一路吃到后面某个 `16px`，产生幽灵违规。收紧为 `[^;"}\n]*`，并加 `(?<![\d.])` 防止命中「`216px` 里的 `16px`」；正则已用 9 条正反样例自测。
+
+#### 遗留
+
+- `!important` 91 处未清零（需浏览器层叠回归；其中 20 处属 reduced-motion 合规保留）。
+- 离刻度圆角仍在：`12px`(多处) / `14px`(4) / `9px` / `3px` / `2px` / `1px` / `36px`(`AvatarCropper` 方形预览) / `50px`(`.float-box`) / `999px`。`DESIGN.md` 只规定「12px 及以下不得用于**新增**界面容器」，故未纳入本轮验收口径。
+- 全仓仍有 285 处内联 style（本轮只要求核心视图清零）。
+
+---
+
+## 第五轮执行记录（2026-09-20）：P1 收尾核验 + 一处自伤缺陷 + 归属取证
+
+第四轮结束时只做完「改 + 自测」，两项收尾尚未取结果：后台 `vue-tsc --noEmit`、以及受影响测试面的完整复跑。本轮把它们跑完，并因此**揪出一个 P1 自己引入的模板缺陷**。
+
+### 1. `vue-tsc --noEmit` 结果：与 P1 零交集
+
+```text
+src/services/matrix/crypto/CryptoSecurityAdapter.ts(81,23): error TS2339: Property 'getCrossSigningKeyId' does not exist on type 'CryptoApi'.
+src/services/matrix/crypto/CryptoSecurityAdapter.ts(85,27): error TS2339: Property 'getCrossSigningKeyId' does not exist on type 'CryptoApi'.
+```
+
+两个错误**全在并行 E2EE 会话的文件**里（`CryptoSecurityAdapter.ts` 为未暂存修改，同目录还有未跟踪的 `CryptoSecurityAdapter.crossSigning.test.ts`），**P1 改动 0 错误**。这正是第四轮 24 文件提交被卡住的同一个根因，等并行会话落地后再重跑提交。
+
+### 2. 测试面复跑：35 failed → 逐项归属
+
+```text
+Test Files  5 failed | 133 passed (138)
+Tests       35 failed | 997 passed (1032)
+```
+
+35 个失败**不是同源的**，本轮把它们拆成「本轮自伤」与「既有失败」两类。
+
+#### ✅ 本轮自伤 2 项（已修）
+
+1. **`RoomDetailStats.vue` 模板出现重复 `class` 属性**（`SyntaxError: Duplicate attribute`）
+   - 现象：SFC 编译失败 → `RoomDetailStats.test.ts` 整个文件退化成 **`(0 test)`**，组件彻底无法挂载。
+   - 根因：1.2 迁移把 `style="grid-template-columns: repeat(3, 1fr)"` 换成 UnoCSS 类时，**写成了第二个 `class` 属性**（而不是并进已有 class）：
+     `class="room-detail-stats grid gap-[--tjg-space-2]" data-testid="stat-grid" role="list" class="grid-cols-3"`
+   - 修复：合并为单属性 `class="room-detail-stats grid gap-[--tjg-space-2] grid-cols-3"`（`grid-cols-3` = `repeat(3, minmax(0, 1fr))`，与 HEAD 的 `repeat(3, 1fr)` 语义等价）。
+   - **关键教训**：`vue-tsc --noEmit` **不校验模板属性唯一性**，对这类缺陷完全失明。这次能暴露纯属「该组件恰好有测试」的运气——没有测试的组件会静默带着编译错误留在仓库里。
+2. **`PublicRoomDiscovery.test.ts` 断言失配**
+   - 现象：`expected '' to contain 'minmax(240px, 1fr)'`。
+   - 根因：原用例断言的是**内联** `style.gridTemplateColumns`，而第四轮已把该网格声明从常量对象迁进 scoped `.room-list`。
+   - 修复：改写为两段契约——**DOM 侧**「元素不再挂内联网格」（`style.gridTemplateColumns === ''`）+ **源码侧**「scoped 规则仍声明 `repeat(auto-fill, minmax(240px, 1fr))`」（`node:fs` 读 SFC + 正则取 `.room-list` 规则体）。
+   - 路径解析用仓库既有惯例 `resolve(__dirname, '..', 'X.vue')`；**不要用 `fileURLToPath(new URL(..., import.meta.url))`**——happy-dom 环境下 `import.meta.url` 是 http URL，会抛 `TypeError: The URL must be of scheme file`。
+   - **变异验证 2/2 有效**：M1 删掉 scoped 里的 `grid-template-columns` → 红；M2 把内联 `style` 加回 → 红。
+
+#### ⚠️ 既有失败 4 项（**非本轮引入**，已实证）
+
+**取证方法**：`git worktree add --detach /tmp/tjg-head HEAD` 拉一份 HEAD 干净副本，再把 `node_modules` 软链过去（**源码 = HEAD，运行环境与工作区逐字节相同**），跑同样 4 个文件 → **同样失败**。此方案不触碰工作区，避免了 `git stash` 会打断并行会话的风险。
+
+| # | 文件 | 实测报错 | 根因判定 |
+| - | ---- | -------- | -------- |
+| 1 | `RoomCard.test.ts`（1） | `[data-testid="room-federation-badge"]` 不存在 | ~~**疑似真实功能缺口**：`RoomCard.vue` 内**根本不含 `federation` 字样**，从未渲染该徽章 → 属「测试先行的规格没落地」。且配套的「isFederated=false 时不显示」那条因**恒不显示而假绿**~~ **⬅ 第六轮已证伪并修复**：实为 Bash `grep` 假阴性导致的误判，组件确有该徽章，根因是**测试 testid 与组件命名不一致** |
+| 2 | `ChatMain.test.ts`（29，全挂） | `[🍍] getActivePinia() was called but there was no active Pinia` @ `ChatMain.vue:218 useMatrixStore()` | 测试基建缺口：`useMatrixStore` 在 **HEAD 就存在**（171/202 行），而 `ChatMain.test.ts` **全程未装 Pinia**（`shallowMount` 缺 `global.plugins: [createPinia()]`） |
+| 3 | `ChatHeaderRoot.test.ts`（4，全挂） | `[naive/use-dialog]: No outer <n-dialog-provider /> founded` @ `ChatHeaderRoot.vue:148` | 测试基建缺口：缺 provider（或 `useDialog` stub） |
+| 4 | `ScreenshotRoot.test.ts`（2 个 unhandled rejection） | `TypeError: Cannot read properties of undefined (reading 'catch')` @ `useTauriListener.ts:25` | 测试基建缺口：非 Tauri 环境拿到 undefined 的 listener promise |
+
+这四个文件的**源码与测试文件本轮、上一轮均未改动**（`git status` 无记录；`RoomCard.vue` / `ChatHeaderRoot.vue` / `ScreenshotRoot.vue` / `useTauriListener.ts` 四者全部处于 clean 状态）。
+
+### 3. 新增门禁：模板属性卫生（补 `vue-tsc` 盲区）
+
+既然 `vue-tsc` 看不见重复属性、而这次差点让一个编译错误组件留在仓库里，就在 `design-baseline.test.ts` 追加 `describe('模板属性卫生（vue-tsc 盲区）')`（**+2 用例，共 16**）：
+
+- 扫描全仓 `.vue` 模板，禁止**重复的静态** `class` / `style` 属性。
+- 用负向后顾 `(?<![:\w-])` 排除两类噪声：**合法的 `:class` + `class` 组合**（Vue 会合并，全仓现有 4 处）、以及 `data-class` 这类带 `-` 前缀者。已确认这 4 处正当组合**不误报**。
+- 模板切片对嵌套 `<template #slot>` 安全：`/<template>[\s\S]*<\/template>/` 用贪婪匹配吃到**最后一个** `</template>`。
+- **变异验证有效**：把重复 `class` 重新注入 `RoomDetailStats.vue` → 用例转红并**准确点名违规文件**。
+- 另加自检 `expect(VUE_TEMPLATES.length).toBeGreaterThan(50)`，防止收集器失效后守卫静默空转。
+
+### 4. 门禁复核
+
+- `scripts/check-ratchet.mjs`：6 项全在基线 → `matrix_prefix_hardcoded 68` / `ts_expect_error 3` / `hardcoded_color 31` / `hardcoded_radius **0**` / `inline_style **285**` / `important_css **91**`。
+- prettier + biome：本轮改动 3 个文件全部 clean。
+
+### 5. 遗留（本轮新增）
+
+- **4 项既有失败需单独决策**。其中 `RoomCard` 联邦徽章疑似**真实功能缺口**（不是测试写错），另 3 项是测试基建缺口。均不属 P1 验收线，也未被本轮改动影响。
+
+## 第六轮执行记录（2026-09-20）：i18n 三件遗留收口 + 桩键门禁
+
+### 1. 三件遗留的处置结果
+
+| 遗留项 | 处置 |
+| --- | --- |
+| 564 个 i18n 键待清 | 第一轮修 111 处调用点（`unresolved 503 → 414`）；本轮再清 `poll.*` 3 键 → **411**，基线已收紧 |
+| `i18n.d.ts` 未随新键重生成 | 已 `pnpm gen:i18n` 重生成（陈旧量 955 字符，缺 `chat.connection` 组）；新增「产物新鲜度」守护用例 |
+| `useEncryption.requestUserVerification(userId)` 内部传空 deviceId | **只诊断未改动**（属并行 E2EE WIP）。SDK 层 `deviceId` 必填，`''` 必然抛 `Not a known device`；生产零调用、2 个用例还把 bug 写成期望值。建议**删除**而非修补 |
+
+### 2. 本轮最有价值的发现：自洽桩掩盖的是**真实生产缺陷**（第三例）
+
+建立「桩键可达性」门禁后立刻在 `RenderPollMessage` 上抓到：
+
+- 测试桩声明 `poll.votes` / `poll.ended` / `poll.ends_at`，**组件源码用的正是同样三个键** —— 双方互证，语言表被架空；
+- 真实语言表里只有 `poll.message.votes` / `poll.message.ended`，`poll.ends_at` **根本不存在** → 聊天里投票卡片直接显示三个裸键。
+
+顺带发现**第二类缺陷**：`poll.json` 的占位符写成 Handlebars 风格 `{{count}}`，vue-i18n 只认 `{count}` → 渲染成 `{0} 人投票`。全仓仅 `poll.json` 中招（每语言 4 处），已修正。
+
+**⚠️ 排查陷阱（已写入项目记忆）**：本轮曾用 Bash `grep` 查该组件是否调用 `t('poll.*')`，返回**空**，一度误判为「桩里的孤儿条目、无害」。换 `Grep` 工具后立刻看到组件第 29–31 行确在使用。**本仓任何「找不到」的结论必须用 `Grep` 工具复核。**
+
+### 3. 从「修调用点」升级为「堵来源」
+
+- 新增共享助手 `tests/i18n-messages.ts`：`createI18nMock()` 按「首段即命名空间」读**真实语言表**，解析不到就**原样返回裸 key**（不抛错、不静默兜底），让断言直接看到未翻译的键名。
+- 已迁移 3 个文件：`KeyBackupRestoreDialog` / `SyncStatusBar` / `RenderPollMessage` 的测试。
+- `sourceRefs.test.ts` 15 → **18 用例**，新增「桩键可达性」组：白名单外的无法解析键一律 FAIL 并点名；**白名单不得陈旧**（已能解析必须删除，防注水）；收集器自检。
+- 为什么必要：`check-i18n-refs.mjs` 只扫**生产源码**，而缺陷载体在**测试桩**里 —— 只扫源码永远看不见「桩与语言表脱节」。
+
+### 4. 顺手修掉一个 HEAD 就存在的红灯（非本轮引入）
+
+`RoomCard.test.ts` 断言 `[data-testid="room-federation-badge"]`，而 `FederationBadge.vue` 的 testid 是 `federation-badge`（该组件自身测试、`FriendDetailsSections.test.ts` 均用后者 = 仓库主流命名）。三个相关文件 `git status` 全部无记录，即 **HEAD 状态就红**。
+
+已改测试跟随主流命名（**未动组件**，避免影响另外 3 个依赖该 testid 的测试）→ `RoomCard.test.ts` **13/13 绿**。
+
+> 📌 **修正上一轮结论**：第五轮判定 RoomCard 联邦徽章「疑似真实功能缺口 / `RoomCard.vue` 内根本不含 `federation` 字样」是**错的** —— 组件第 30–36 行确实渲染了 `<FederationBadge>`，第 82 行也 import 了。真相是**测试契约与实现命名不一致**。上一轮之所以误判，正是同一类 Bash `grep` 假阴性。
+
+### 5. 验收基线（本轮实测）
+
+| 门禁 | 结果 |
+| --- | --- |
+| `vue-tsc --noEmit` | **0 error**（第五轮遗留的并行 WIP 类型错误已随其落地消失） |
+| 受影响测试面（11 个目录） | **88 文件 / 657 用例全绿** |
+| `check-i18n.mjs`（zh/en 键对齐） | passed |
+| `check-i18n-refs.mjs` | `unresolved 411（基线 411）/ fallback 7（基线 7）` |
+| `check-ratchet.mjs` | 6 项全在基线 |
+| `sourceRefs.test.ts` | 18/18 |
+| 变异验证 | 4/4 有效（含「改造前该变异不会红」的对照，证明自洽桩已被消除） |
+
+### 6. 遗留（本轮新增）
+
+- **`biome check` 仍有 3 error**，**全部非本轮引入**，明确归属如下：
+  - `src/types/matrix-extensions.d.ts`（format 尾随空行 + `useAdjacentOverloadSignatures`）、`src/services/matrix/crypto/__tests__/MatrixEncryptionContextService.test.ts`（`noBannedTypes`）→ 两文件 `git status` 无记录，**HEAD 即存在**；
+  - `MessageLockBadge.vue`（`useShorthandFunctionType`，warning）与 crypto 目录 2 个测试文件 → **并行 WIP 修改中**；
+  - `biome.json` schema 版本 2.5.6 vs CLI 2.5.12 → 仅 info。
+  - 未改动上述**未修改文件**，以免与并行会话冲突；如需让 `pnpm check` 转绿，建议单独一批处理。
+- `encryption.backup_restore_dialog.*` 32 键内容缺口仍在（需产品文案），白名单已登记。
+- 其余 `unresolved 411` 需逐个定案（91 键属「命名空间文件不存在」）。
+
+
