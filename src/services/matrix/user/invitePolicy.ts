@@ -10,7 +10,7 @@ const logger = createLogger('InvitePolicy')
  *
  * 后端 `synapse-rust` 确实有邀请名单能力，但**是房间级且没有强制**：
  * - `room_invite_blocklist` / `room_invite_allowlist` 两张表 +
- *   `GET|POST /_matrix/client/v3/rooms/{room_id}/invite_blocklist|invite_allowlist`
+ *   `GET|POST` 形式的房间级 invite_blocklist / invite_allowlist 读写端点
  * - `InviteBlocklistStorage::is_user_blocked()` 全仓只有定义与它自己的存储测试，
  *   **零调用点**；邀请授权路径 `authorize_inbound_member_transition` 只校验
  *   ban / join_rule / 状态机，没有策略钩子
