@@ -107,6 +107,36 @@
             @click="showDehydratedDevice = true" />
         </van-cell-group>
 
+        <!-- 交叉签名状态 -->
+        <van-cell-group :title="t('setting.encryption.cross_signing_section')" inset>
+          <van-cell :title="t('setting.encryption.cross_signing_status')">
+            <template #right-icon>
+              <van-tag :type="crossSigningConfigured ? 'success' : 'warning'" size="medium">
+                {{
+                  crossSigningConfigured
+                    ? t('setting.encryption.cross_signing_configured')
+                    : t('setting.encryption.cross_signing_not_setup')
+                }}
+              </van-tag>
+            </template>
+          </van-cell>
+          <van-cell
+            v-if="!crossSigningConfigured"
+            :title="t('setting.encryption.cross_signing_setup')"
+            :label="t('setting.encryption.cross_signing_not_setup_desc')"
+            is-link
+            @click="showCrossSigningSetup = true" />
+        </van-cell-group>
+
+        <!-- 设备信任管理入口 -->
+        <van-cell-group :title="t('setting.encryption.trust_section')" inset>
+          <van-cell
+            :title="t('encryption.device_trust.device_list_tab')"
+            :label="t('setting.encryption.device_management')"
+            is-link
+            @click="showDeviceTrustManager = true" />
+        </van-cell-group>
+
         <!-- 加密设置 -->
         <van-cell-group :title="t('setting.encryption.settings')" inset>
           <van-cell
@@ -176,6 +206,7 @@
       <MobileKeyBackupDialog v-model="showKeyBackupSetup" mode="setup" @complete="onKeyBackupComplete" />
       <MobileKeyBackupDialog v-model="showKeyBackupRestore" mode="restore" @complete="onKeyBackupComplete" />
       <MobileDehydratedDeviceDialog v-model:show="showDehydratedDevice" @complete="loadEncryptionStatus()" />
+      <MobileDeviceTrustManager v-model:show="showDeviceTrustManager" @complete="loadDevices()" />
     </template>
   </AutoFixHeightPage>
 </template>
@@ -190,8 +221,10 @@ import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileDehydratedDeviceDialog from '@/mobile/components/encryption/MobileDehydratedDeviceDialog.vue'
+import MobileDeviceTrustManager from '@/mobile/components/encryption/MobileDeviceTrustManager.vue'
 import MobileKeyBackupDialog from '@/mobile/components/encryption/MobileKeyBackupDialog.vue'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
+import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
 import type { Device } from '@/services/matrix/user/MatrixDeviceService'
@@ -215,6 +248,11 @@ const selectedDevice = ref<Device | null>(null)
 const showKeyBackupSetup = ref(false)
 const showKeyBackupRestore = ref(false)
 const showDehydratedDevice = ref(false)
+// Cross-signing state
+const crossSigningConfigured = ref(false)
+const showCrossSigningSetup = ref(false)
+// Device trust manager
+const showDeviceTrustManager = ref(false)
 function onKeyBackupComplete() {
   loadBackupStatus()
 }

@@ -23,5 +23,25 @@
     "confirm": "Delete",
     "cancel": "Cancel"
   },
-  "verification_started": "Verification started, Transaction ID: {transactionId}"
+  "verification_started": "Verification request sent",
+  "trust": "Trust device",
+  "untrust": "Untrust",
+  "verify": "Verify",
+  "block": "Block",
+  "unblock": "Unblock",
+  "verified": "Verified",
+  "unverified": "Unverified",
+  "blocked": "Blocked",
+  "cross_signed": "Cross-signed",
+  "trust_success": "Device trusted",
+  "trust_failed": "Device trust failed",
+  "untrust_confirm": "Are you sure you want to untrust this device? Its signatures will no longer be recognized.",
+  "untrust_success": "Device untrusted",
+  "untrust_failed": "Device untrust failed",
+  "block_confirm": "Are you sure you want to block this device? Blocked devices will not be able to send encrypted messages.",
+  "block_success": "Device blocked",
+  "block_failed": "Device block failed",
+  "unblock_success": "Device unblocked",
+  "unblock_failed": "Device unblock failed",
+  "verification_failed": "Verification failed"
 }

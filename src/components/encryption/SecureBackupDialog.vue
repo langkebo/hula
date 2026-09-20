@@ -177,7 +177,7 @@
         <n-input
           v-model:value="restoreRecoveryKey"
           type="textarea"
-          :placeholder="t('encryption.recovery_key_placeholder')"
+          :placeholder="t('setting.encryption.recovery_key_placeholder')"
           :rows="4"
           :disabled="restoreLoading" />
 
@@ -208,7 +208,7 @@
             :loading="restoreLoading"
             :disabled="!restoreRecoveryKey.trim()"
             @click="handleRestore">
-            {{ t('encryption.restore') }}
+            {{ t('setting.encryption.restore') }}
           </n-button>
         </div>
       </div>
@@ -450,7 +450,7 @@ function downloadKey() {
 async function handleRestore() {
   const key = restoreRecoveryKey.value.trim()
   if (!key) {
-    showFeedback(t('encryption.recovery_key_required'), 'warning')
+    showFeedback(t('setting.encryption.recovery_key_required'), 'warning')
     return
   }
 

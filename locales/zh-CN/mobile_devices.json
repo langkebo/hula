@@ -23,5 +23,25 @@
     "confirm": "删除",
     "cancel": "取消"
   },
-  "verification_started": "验证已开始，事务ID: {transactionId}"
+  "verification_started": "验证请求已发送",
+  "trust": "信任设备",
+  "untrust": "取消信任",
+  "verify": "验证设备",
+  "block": "屏蔽设备",
+  "unblock": "解除屏蔽",
+  "verified": "已验证",
+  "unverified": "未验证",
+  "blocked": "已屏蔽",
+  "cross_signed": "交叉签名已验证",
+  "trust_success": "设备信任成功",
+  "trust_failed": "设备信任失败",
+  "untrust_confirm": "确定要取消信任此设备？该设备的签名将不再被认可。",
+  "untrust_success": "设备取消信任成功",
+  "untrust_failed": "设备取消信任失败",
+  "block_confirm": "确定要屏蔽此设备吗？被屏蔽的设备将无法发送加密消息。",
+  "block_success": "设备屏蔽成功",
+  "block_failed": "设备屏蔽失败",
+  "unblock_success": "设备解除屏蔽成功",
+  "unblock_failed": "设备解除屏蔽失败",
+  "verification_failed": "验证失败"
 }
