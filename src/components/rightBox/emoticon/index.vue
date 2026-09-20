@@ -1,11 +1,10 @@
 <template>
   <n-scrollbar
     ref="panelScrollbarRef"
-    style="max-height: 290px"
     :class="[isMobileRef ? 'h-15rem w-auto' : 'h-290px w-460px', isSeriesView ? 'emoji-panel-series' : '']"
-    class="p-[14px_14px_0_14px] box-border select-none"
     :size="isSeriesView ? 0 : undefined"
     :trigger="isSeriesView ? 'none' : undefined"
+    class="p-[14px_14px_0_14px] box-border select-none max-h-290px"
     @scroll="handlePanelScroll">
     <transition name="fade" mode="out-in">
       <div :key="activeIndex" class="emoji-content">

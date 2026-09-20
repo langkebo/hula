@@ -35,7 +35,7 @@
           <van-tab v-for="tab in tabs" :key="tab.name" :name="tab.name" :title="tab.label">
             <!-- 初始加载状态 -->
             <template v-if="initialLoading">
-              <div class="flex-center" style="height: calc(100vh / var(--page-scale, 1) - 200px)">
+              <div class="flex-center h-[calc(100vh/var(--page-scale,1)-200px)]">
                 <van-loading size="36px" />
               </div>
             </template>
@@ -91,7 +91,7 @@
 
             <!-- 搜索中状态 -->
             <template v-else-if="loading">
-              <div class="flex-center" style="height: calc(100vh / var(--page-scale, 1) - 200px)">
+              <div class="flex-center h-[calc(100vh/var(--page-scale,1)-200px)]">
                 <van-loading size="36px" />
               </div>
             </template>

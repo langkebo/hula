@@ -78,7 +78,7 @@
                   {{ t('ai_assistant.robot.confirm_delete_message') }}
                 </n-popconfirm>
               </n-flex>
-              <div :class="getMessageBubbleClass(message)" class="select-text text-14px" style="white-space: pre-wrap">
+              <div :class="[getMessageBubbleClass(message), 'select-text text-14px']" class="whitespace-pre-wrap">
                 <template v-if="message.type === 'user'">
                   {{ message.content }}
                 </template>
@@ -93,7 +93,7 @@
                     </template>
                     <template v-else>
                       <div class="flex flex-col gap-8px">
-                        <div class="bubble bubble-ai select-text text-14px" style="white-space: pre-wrap">
+                        <div class="bubble bubble-ai select-text text-14px whitespace-pre-wrap">
                           {{ getAiPlaceholderText(message) }}
                         </div>
                       </div>
@@ -110,7 +110,7 @@
                       </video>
                     </template>
                     <template v-else>
-                      <div class="bubble bubble-ai select-text text-14px" style="white-space: pre-wrap">
+                      <div class="bubble bubble-ai select-text text-14px whitespace-pre-wrap">
                         {{ getAiPlaceholderText(message) }}
                       </div>
                     </template>
@@ -122,7 +122,7 @@
                       </audio>
                     </template>
                     <template v-else>
-                      <div class="bubble bubble-ai select-text text-14px" style="white-space: pre-wrap">
+                      <div class="bubble bubble-ai select-text text-14px whitespace-pre-wrap">
                         {{ getAiPlaceholderText(message) }}
                       </div>
                     </template>

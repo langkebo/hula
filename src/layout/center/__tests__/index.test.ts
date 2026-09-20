@@ -167,11 +167,13 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
     wrapper.unmount()
   })
 
-  it('resize-handle 有 touch-action: none 样式（兼容触摸）', async () => {
+  it('resize-handle 用 touch-none 工具类禁用触摸手势（兼容触摸）', async () => {
     isShrinkRef.value = false
     const wrapper = await mountCenter()
     const handle = wrapper.find('[data-testid="panel-resize-handle"]')
-    expect(handle.attributes('style')).toContain('touch-action: none')
+    // 原先断言内联 style="touch-action: none"；该内联样式已按设计规范
+    // 改为 UnoCSS 工具类 touch-none（等价于 touch-action: none）。
+    expect(handle.classes()).toContain('touch-none')
     wrapper.unmount()
   })
 })

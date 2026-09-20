@@ -58,10 +58,9 @@
 
     <!-- 账号选择框 -->
     <div
-      style="border: 1px solid rgba(70, 70, 70, 0.1)"
       v-if="loginHistories.length > 0 && arrowStatus"
-      class="account-box absolute w-80% max-h-140px bg-[--tjg-surface-elevated] mt-45px z-99 rounded-8px p-8px box-border">
-      <div style="max-height: 120px; overflow-y: auto">
+      class="account-box absolute w-80% max-h-140px bg-[--tjg-surface-elevated] mt-45px z-99 rounded-8px p-8px box-border border border-(1px solid rgba(70_70_70_/_0.1))">
+      <div class="max-h-120px overflow-y-auto">
         <div
           v-for="item in loginHistories"
           :key="item.account"
