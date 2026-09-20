@@ -4,7 +4,7 @@ import EncryptionSettings from '../EncryptionSettings.vue'
 
 const {
   getCurrentSessionContextMock,
-  prepareKeyBackupVersionMock,
+  ensureKeyBackupVersionMock,
   getCurrentDeviceIdMock,
   getDevicesMock,
   deleteDeviceMock,
@@ -16,7 +16,7 @@ const {
   showConfirmDialogMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
-  prepareKeyBackupVersionMock: vi.fn(),
+  ensureKeyBackupVersionMock: vi.fn(),
   getCurrentDeviceIdMock: vi.fn(),
   getDevicesMock: vi.fn(),
   deleteDeviceMock: vi.fn(),
@@ -144,7 +144,7 @@ vi.mock('@/router', () => ({
 vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
     getCurrentSessionContext: getCurrentSessionContextMock,
-    prepareKeyBackupVersion: prepareKeyBackupVersionMock
+    ensureKeyBackupVersion: ensureKeyBackupVersionMock
   }
 }))
 
@@ -179,11 +179,7 @@ describe('Mobile EncryptionSettings', () => {
       deviceId: 'CURRENT_DEVICE',
       isCryptoEnabled: true
     })
-    prepareKeyBackupVersionMock.mockResolvedValue({
-      algorithm: 'm.megolm.backup.v1',
-      authData: { public_key: 'pk' },
-      privateKey: new Uint8Array([1, 2, 3])
-    })
+    ensureKeyBackupVersionMock.mockResolvedValue(true)
     getCurrentDeviceIdMock.mockReturnValue('CURRENT_DEVICE')
     getDevicesMock.mockResolvedValue([
       { device_id: 'CURRENT_DEVICE', display_name: 'Current Device' },
@@ -292,8 +288,9 @@ describe('Mobile EncryptionSettings', () => {
     await vm.handleBackupClick()
     ;(wrapper.vm as any).handleRestoreBackup()
 
-    expect(prepareKeyBackupVersionMock).toHaveBeenCalled()
-    expect(createBackupVersionMock).toHaveBeenCalledWith('m.megolm.backup.v1', { public_key: 'pk' })
+    expect(ensureKeyBackupVersionMock).toHaveBeenCalled()
+    // 新实现直接使用 SDK resetKeyBackup，不再手工 createBackupVersion
+    expect(createBackupVersionMock).not.toHaveBeenCalled()
     expect(showToastMock).toHaveBeenCalledWith('setting.encryption.setup_backup')
     expect(showToastMock).toHaveBeenCalledWith('setting.encryption.manage_backup: v1')
     expect((wrapper.vm as any).showRestoreDialog).toBe(true)
@@ -305,7 +302,7 @@ describe('Mobile EncryptionSettings', () => {
       deviceId: null,
       isCryptoEnabled: false
     })
-    prepareKeyBackupVersionMock.mockResolvedValue(null)
+    ensureKeyBackupVersionMock.mockResolvedValue(false)
     getDevicesMock.mockRejectedValue(new Error('load failed'))
 
     const wrapper = mountComponent()
@@ -374,7 +371,7 @@ describe('Mobile EncryptionSettings', () => {
     await vm.handleBackupClick()
 
     ;(wrapper.vm as any).backupEnabled = false
-    prepareKeyBackupVersionMock.mockRejectedValueOnce(new Error('prepare failed'))
+    ensureKeyBackupVersionMock.mockRejectedValueOnce(new Error('ensure failed'))
     await vm.handleBackupClick()
 
     expect(showToastMock).not.toHaveBeenCalledWith('setting.encryption.delete_device_failed')

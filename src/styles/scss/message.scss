@@ -56,19 +56,18 @@
   }
 }
 
-/** 助手样式 */
-.active-bot {
-  background: linear-gradient(135deg, var(--tjg-color-primary-500) 0%, var(--tjg-color-primary-600) 100%) !important;
-  color: var(--tjg-text-inverse) !important;
-  box-shadow: 0 2px 10px var(--tjg-color-primary-300-alpha) !important;
-}
-
-/** 屏蔽会话样式 */
-.active-shield {
-  background: linear-gradient(135deg, var(--tjg-color-danger-500) 0%, var(--tjg-color-danger-600) 100%) !important;
-  color: var(--tjg-text-inverse) !important;
-  box-shadow: 0 2px 10px var(--tjg-color-danger-100) !important;
-}
+/**
+ * 助手 / 屏蔽会话的选中态高亮（`.active-bot` / `.active-shield`）已移除。
+ *
+ * 原因：这两个类名在 `src` 全量文本中**从未被应用到任何元素**（会话项的选中态由
+ * `useSessionListState.getItemClasses()` 产出 `tjg-room-list-item--{selected,pinned,muted}`），
+ * 因此整条规则不可匹配 —— 规则内的 6 处 `!important` 属死声明，已随规则一并清掉。
+ *
+ * ⚠️ 产品意图（助手会话用主色渐变、屏蔽会话用危险色渐变）**尚未在任何地方实现**。
+ * 若需要恢复，应按现行 BEM 命名新增 `tjg-room-list-item--bot` / `--shield`，
+ * 且不必使用 `!important`：`.active` 只声明 background/box-shadow 且特异性相同，
+ * 同文件内后出现的规则本就胜出。
+ */
 
 :deep(.n-badge .n-badge-sup) {
   font-weight: bold;

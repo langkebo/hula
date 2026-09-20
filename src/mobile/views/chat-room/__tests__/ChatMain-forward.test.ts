@@ -60,9 +60,17 @@ const i18n = createI18n({
   } as any
 })
 
+/**
+ * 模块级触发动态导入：`await import()` 写在用例体内时，整棵模块图的转换耗时
+ * 会被计入该用例的 `testTimeout`（并行负载下 ChatSetting/MobileChatMain 实测
+ * 9–36s，远超 15s/30s）→ 随机超时。放到模块级后成本落在文件的 import 阶段，
+ * 该阶段不受 `testTimeout` 约束，同时保留「按需加载」的语义。
+ */
+const MobileChatMainModule = import('#/views/chat-room/MobileChatMain.vue')
+
 describe('MobileChatMain - forward dialog', () => {
   it('renders with MobileForwardDialog component', { timeout: 30000 }, async () => {
-    const MobileChatMain = (await import('#/views/chat-room/MobileChatMain.vue')).default
+    const MobileChatMain = (await MobileChatMainModule).default
     const wrapper = mount(MobileChatMain, {
       global: {
         plugins: [i18n, createTestingPinia({ createSpy: vi.fn })],

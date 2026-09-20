@@ -4,9 +4,19 @@ import { defineComponent, h, ref } from 'vue'
 import ScreenshotRoot from '../ScreenshotRoot.vue'
 
 vi.mock('@tauri-apps/api/event', () => ({ emitTo: vi.fn() }))
+/**
+ * `listen` 必须返回 Promise：`useTauriListener.addListener()` 会立刻对返回值调用
+ * `.catch()`（`normalizeListenerPromise`）。早期 mock 写成无返回值的 `vi.fn()`，
+ * 于是 undefined.catch 抛 TypeError，以 unhandled rejection 形式污染测试结果。
+ */
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
   WebviewWindow: {
-    getCurrent: () => ({ label: 'screenshot', listen: vi.fn(), hide: vi.fn(), show: vi.fn() })
+    getCurrent: () => ({
+      label: 'screenshot',
+      listen: vi.fn(async () => () => {}),
+      hide: vi.fn(),
+      show: vi.fn()
+    })
   }
 }))
 vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({ writeImage: vi.fn() }))

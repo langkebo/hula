@@ -88,9 +88,12 @@ const i18n = createI18n({
   } as any
 })
 
+/** 见 `ChatMain-forward.test.ts` 同名说明：模块级触发，避免吃用例超时预算。 */
+const ChatSettingModule = import('#/views/chat-room/ChatSetting.vue')
+
 describe('ChatSetting - list management entries', () => {
   it('renders without error', { timeout: 15000 }, async () => {
-    const ChatSetting = (await import('#/views/chat-room/ChatSetting.vue')).default
+    const ChatSetting = (await ChatSettingModule).default
     const wrapper = mount(ChatSetting, {
       global: {
         plugins: [i18n, createTestingPinia({ createSpy: vi.fn })],

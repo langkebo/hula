@@ -62,7 +62,8 @@ function createMockAccessors(opts: {
 }
 
 const fakeGeneratedKey: GeneratedSecretStorageKey = {
-  keyInfo: { algorithm: 'm.secret_storage.v1.aes-hmac-sha2', iv: 'iv', mac: 'mac' },
+  // SDK 的 keyInfo 只有 passphrase/name（algorithm/iv/mac 由本地按规范计算）
+  keyInfo: { name: 'TJG Security Key' },
   encodedPrivateKey: 'EsTj LW6N 9WqD ...',
   privateKey: new Uint8Array([1, 2, 3])
 }
@@ -73,34 +74,25 @@ function validRecoveryKey(): string {
 }
 
 describe('CryptoKeyBackupAdapter', () => {
+  // 参考：真实的 KeyBackupManager 没有 scheduleKeyBackupSend；
+  // 备份调度由 SDK backup engine 自动完成，本适配层只需确保版本存在。
   describe('backupKeys', () => {
-    it('creates new backup when none exists via KeyBackupManager, then schedules send', async () => {
+    it('通过 ensureBackupVersion 确保版本存在（不调用任何幻影方法）', async () => {
       const keyBackupManager = {
-        checkKeyBackup: vi.fn().mockResolvedValue(null),
-        scheduleKeyBackupSend: vi.fn().mockResolvedValue(undefined)
+        ensureBackupVersion: vi.fn().mockResolvedValue('1')
       } as unknown as KeyBackupManager
-      const crypto = { resetKeyBackup: vi.fn().mockResolvedValue(undefined) } as unknown as CryptoApi
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ keyBackupManager, crypto }))
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ keyBackupManager }))
 
       await adapter.backupKeys()
 
-      expect(keyBackupManager.checkKeyBackup).toHaveBeenCalled()
-      expect(crypto.resetKeyBackup).toHaveBeenCalled()
-      expect(keyBackupManager.scheduleKeyBackupSend).toHaveBeenCalled()
+      expect(keyBackupManager.ensureBackupVersion).toHaveBeenCalled()
     })
 
-    it('skips reset when backup already exists, but still schedules send', async () => {
-      const keyBackupManager = {
-        checkKeyBackup: vi.fn().mockResolvedValue({ version: '1', algorithm: 'm.megolm_backup.v1' }),
-        scheduleKeyBackupSend: vi.fn().mockResolvedValue(undefined)
-      } as unknown as KeyBackupManager
-      const crypto = { resetKeyBackup: vi.fn() } as unknown as CryptoApi
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ keyBackupManager, crypto }))
+    it('manager 缺少 ensureBackupVersion 时显式失败，而不是静默无事发生', async () => {
+      const keyBackupManager = { checkKeyBackup: vi.fn() } as unknown as KeyBackupManager
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ keyBackupManager }))
 
-      await adapter.backupKeys()
-
-      expect(crypto.resetKeyBackup).not.toHaveBeenCalled()
-      expect(keyBackupManager.scheduleKeyBackupSend).toHaveBeenCalled()
+      await expect(adapter.backupKeys()).rejects.toThrow(/ensureBackupVersion/)
     })
 
     it('falls back to CryptoApi when no KeyBackupManager', async () => {
@@ -246,47 +238,44 @@ describe('CryptoKeyBackupAdapter', () => {
   })
 
   describe('restoreKeys', () => {
-    it('uses KeyBackupManager when SecureBackupManager not available', async () => {
-      const keyBackupManager = {
-        checkKeyBackup: vi.fn().mockResolvedValue({ version: '1' }),
-        restoreKeyBackupWithRecoveryKey: vi.fn().mockResolvedValue({ imported: 3, total: 5 })
-      } as unknown as KeyBackupManager
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ keyBackupManager }))
-
-      const result = await adapter.restoreKeys('recovery-key')
-
-      expect(keyBackupManager.restoreKeyBackupWithRecoveryKey).toHaveBeenCalledWith('recovery-key')
-      expect(result).toEqual({ imported: 3, total: 5 })
-    })
-
-    it('returns zeros when KeyBackupManager has no backup', async () => {
-      const keyBackupManager = {
-        checkKeyBackup: vi.fn().mockResolvedValue(null)
-      } as unknown as KeyBackupManager
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ keyBackupManager }))
-
-      const result = await adapter.restoreKeys('key')
-
-      expect(result).toEqual({ imported: 0, total: 0 })
-    })
-
-    it('falls back to CryptoApi when no managers', async () => {
+    it('委派给 restoreFromBackup：经 SSSS 取密钥，不走幻影的 recoveryKey 直导', async () => {
+      const loadFromSecretStorage = vi.fn().mockResolvedValue(undefined)
       const crypto = {
+        getSecretStorageStatus: vi.fn().mockResolvedValue({ ready: true, defaultKeyId: 'key-1' }),
+        loadSessionBackupPrivateKeyFromSecretStorage: loadFromSecretStorage,
         getKeyBackupInfo: vi.fn().mockResolvedValue({ version: '1' }),
-        restoreKeyBackup: vi.fn().mockResolvedValue({ imported: 7, total: 8 })
+        restoreKeyBackup: vi.fn().mockResolvedValue({ imported: 3, total: 5 })
       } as unknown as CryptoApi
       const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
 
-      const result = await adapter.restoreKeys('ignored')
+      const result = await adapter.restoreKeys(validRecoveryKey())
 
-      expect(crypto.restoreKeyBackup).toHaveBeenCalled()
-      expect(result).toEqual({ imported: 7, total: 8 })
+      expect(loadFromSecretStorage).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({ imported: 3, total: 5 })
     })
 
-    it('returns zeros when no managers or crypto available', async () => {
-      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({}))
-      const result = await adapter.restoreKeys('key')
-      expect(result).toEqual({ imported: 0, total: 0 })
+    it('非法恢复密钥抛错（不再静默返回 0）', async () => {
+      const crypto = {
+        getSecretStorageStatus: vi.fn().mockResolvedValue({ ready: true, defaultKeyId: 'key-1' }),
+        loadSessionBackupPrivateKeyFromSecretStorage: vi.fn(),
+        getKeyBackupInfo: vi.fn().mockResolvedValue({ version: '1' }),
+        restoreKeyBackup: vi.fn()
+      } as unknown as CryptoApi
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.restoreKeys('not-a-valid-key')).rejects.toThrow()
+    })
+
+    it('无备份时抛错（不再静默返回 0/0）', async () => {
+      const crypto = {
+        getSecretStorageStatus: vi.fn().mockResolvedValue({ ready: true, defaultKeyId: 'key-1' }),
+        loadSessionBackupPrivateKeyFromSecretStorage: vi.fn(),
+        getKeyBackupInfo: vi.fn().mockResolvedValue(null),
+        restoreKeyBackup: vi.fn()
+      } as unknown as CryptoApi
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.restoreKeys(validRecoveryKey())).rejects.toThrow(/无可用密钥备份/)
     })
   })
 

@@ -56,9 +56,12 @@ const i18n = createI18n({
   } as any
 })
 
+/** 见 `ChatMain-forward.test.ts` 同名说明：模块级触发，避免吃用例超时预算。 */
+const MobileChatMainModule = import('#/views/chat-room/MobileChatMain.vue')
+
 describe('MobileChatMain - location sharing', () => {
   it('renders with LocationShare component', { timeout: 30000 }, async () => {
-    const MobileChatMain = (await import('#/views/chat-room/MobileChatMain.vue')).default
+    const MobileChatMain = (await MobileChatMainModule).default
     const wrapper = mount(MobileChatMain, {
       global: {
         plugins: [i18n, createTestingPinia({ createSpy: vi.fn })],

@@ -17,7 +17,7 @@ import type {
   KeyExportResult,
   KeyImportResult
 } from './cryptoAdapterTypes'
-import { buildSsssAccountData } from './ssssKeyDescription'
+import { buildSsssKeyDescription } from './ssssKeyDescription'
 
 const logger = createLogger('CryptoKeyBackupAdapter')
 
@@ -45,12 +45,13 @@ async function uploadSsssKeyDirectly(client: MatrixClient, generatedKey: Generat
   // 生成唯一 keyId（与 SDK 的 secureRandomString(32) 对齐）
   const keyId = crypto.randomUUID().replace(/-/g, '')
 
-  // 构造密钥描述：**必须**采用 SDK 生成结果，不得手写 algorithm/iv/mac。
-  // 历史缺陷：本函数曾自行以 `m.vodozemac.v1` + 12 字节 IV + HMAC(iv) 拼装，
-  // 与规范（m.secret_storage.v1.aes-hmac-sha2、16 字节 IV、MAC 覆盖 encrypted(32×0)‖IV）
-  // 不符，导致 SDK addKey/checkKey 抛 `Unknown algorithm`，密钥无法被任何客户端校验。
-  const { keyDescription } = buildSsssAccountData(generatedKey)
-  const keyInfo: Record<string, unknown> = { ...keyDescription }
+  // 按规范从原始私钥本地计算 algorithm/iv/mac。
+  // 重要：**不要**从 generatedKey.keyInfo 读取这三个字段——vendored SDK 的
+  // GeneratedSecretStorageKey.keyInfo 只有 `{ passphrase?, name? }`，
+  // 历史上正因为读了不存在的字段，本函数必然抛错并导致 SSSS 密钥从未上传。
+  const keyInfo = await buildSsssKeyDescription(Uint8Array.from(generatedKey.privateKey), {
+    passphrase: generatedKey.keyInfo?.passphrase
+  })
 
   // 使用 setAccountDataRaw（底层 HTTP PUT，不等待 sync echo）直接上传。
   // SDK 的 setAccountData 会等待 ClientEvent.AccountData 回声（sliding sync 下可能 30s+），
@@ -72,20 +73,21 @@ async function uploadSsssKeyDirectly(client: MatrixClient, generatedKey: Generat
 export class CryptoKeyBackupAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
 
-  /** 备份密钥
+  /**
+   * 备份密钥。
+   *
+   * 真实 `KeyBackupManager` **没有** `scheduleKeyBackupSend`（历史缺陷 F-14：无守卫调用
+   * 导致运行时 `is not a function`）。备份调度在 SDK 内部由 backup engine 自动完成，
+   * 这里只需确保存在可用备份版本——`ensureBackupVersion` 在缺失时创建，已存在时复用。
    */
   async backupKeys(): Promise<void> {
     const backupManager = this.accessors.getKeyBackupManager()
     if (backupManager) {
-      const backupInfo = await backupManager.checkKeyBackup()
-      if (!backupInfo) {
-        const crypto = this.accessors.getCrypto()
-        if (crypto) {
-          await crypto.resetKeyBackup()
-          logger.info('创建新的密钥备份')
-        }
+      if (typeof backupManager.ensureBackupVersion !== 'function') {
+        throw new Error('当前客户端不支持创建密钥备份版本：KeyBackupManager 缺少 ensureBackupVersion')
       }
-      backupManager.scheduleKeyBackupSend()
+      const version = await backupManager.ensureBackupVersion()
+      logger.info(`密钥备份版本已就绪: ${version}`)
       return
     }
 
@@ -311,6 +313,9 @@ export class CryptoKeyBackupAdapter {
       })()
 
       log(`分支 3: SSSS 后台上传已启动，立即返回密钥 (${Date.now() - t3}ms)`)
+      if (!generatedKey.encodedPrivateKey) {
+        throw new Error('无法展示恢复密钥：SDK 未返回 encodedPrivateKey')
+      }
       return generatedKey.encodedPrivateKey
     } else {
       log('分支 4: 调用 resetKeyBackup (bootstrapSecretStorage 不可用)')
@@ -324,26 +329,11 @@ export class CryptoKeyBackupAdapter {
   /** 从备份恢复密钥
    */
   async restoreKeys(backupKey: string): Promise<KeyBackupRestoreResult> {
-    const backupManager = this.accessors.getKeyBackupManager()
-    if (backupManager) {
-      const backupInfo = await backupManager.checkKeyBackup()
-      if (backupInfo) {
-        const result = await backupManager.restoreKeyBackupWithRecoveryKey(backupKey)
-        return { imported: result.imported, total: result.total }
-      }
-      return { imported: 0, total: 0 }
-    }
-
-    const crypto = this.accessors.getCrypto()
-    if (crypto) {
-      const backupInfo = await crypto.getKeyBackupInfo()
-      if (backupInfo) {
-        const result = await crypto.restoreKeyBackup()
-        return { imported: result.imported, total: result.total }
-      }
-    }
-
-    return { imported: 0, total: 0 }
+    // 与 restoreFromBackup 共用同一正确机制。
+    // 历史缺陷（F-13）：此处无守卫调用 `backupManager.restoreKeyBackupWithRecoveryKey(key)`，
+    // 该方法在真实 KeyBackupManager 上不存在（运行时报 is not a function），
+    // 且语义错误——SSSS 恢复密钥不是 room key，不能交给备份管理器直接导入。
+    return this.restoreFromBackup(backupKey)
   }
 
   /**

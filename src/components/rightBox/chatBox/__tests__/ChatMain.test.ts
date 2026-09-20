@@ -1,8 +1,18 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive, ref } from 'vue'
 import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import ChatMain from '../ChatMain.vue'
+
+/**
+ * `ChatMain.vue` 直接调用 `useMatrixStore()`，而本文件只 mock 了 chat / user /
+ * global / announcement 四个 store —— 未被 mock 的 matrix store 会走真实实现，
+ * 在缺少 active Pinia 时抛 `getActivePinia() was called but there was no active
+ * Pinia`，导致该文件全部用例挂掉。挂一个干净的 Pinia 实例即可（不需要 mock
+ * matrix store 本身：它的 setup 只建 ref / computed，不触碰 MatrixClientService）。
+ */
+const pinia = createPinia()
 
 const pinnedMessagesRef = ref<unknown[]>([])
 const canSetStickyRef = ref(false)
@@ -313,6 +323,7 @@ vi.mock('@/utils/TimerManager', () => ({
 const mountComponent = () =>
   shallowMount(ChatMain, {
     global: {
+      plugins: [pinia],
       stubs: {
         RenderMessage: true,
         FileUploadProgress: true,

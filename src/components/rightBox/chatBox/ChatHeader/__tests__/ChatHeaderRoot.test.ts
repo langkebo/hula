@@ -9,6 +9,28 @@ const { startRtcCallMock } = vi.hoisted(() => ({
   startRtcCallMock: vi.fn().mockResolvedValue(undefined)
 }))
 
+/**
+ * `ChatHeaderRoot.vue` 在 setup 里 `useDialog()`，而 naive-ui 的 `useDialog`
+ * 要求祖先链上存在 `<n-dialog-provider>`，否则抛
+ * `[naive/use-dialog]: No outer <n-dialog-provider /> founded`。
+ * 本用例只关心通话按钮接线，不适合为了一个 dialog 去搭整棵 provider 树，
+ * 故按仓库既有惯例（见 `CreateRoomPane.test.ts` / `AccountSettings.test.ts`）
+ * 局部替换 `useDialog`，其余 naive-ui 导出保持真实。
+ */
+vi.mock('naive-ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('naive-ui')>()
+  return {
+    ...actual,
+    useDialog: () => ({
+      warning: vi.fn(),
+      info: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+      create: vi.fn()
+    })
+  }
+})
+
 vi.mock('@/composables/common/useWindow', () => ({
   useWindow: () => ({
     startRtcCall: startRtcCallMock

@@ -154,6 +154,9 @@ function mountOptions() {
   }
 }
 
+/** 见 `ChatMain-forward.test.ts` 同名说明：模块级触发，避免吃用例超时预算。 */
+const ChatSettingModule = import('#/views/chat-room/ChatSetting.vue')
+
 describe('ChatSetting - room upgrade entry', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -162,7 +165,7 @@ describe('ChatSetting - room upgrade entry', () => {
   it('renders the upgrade cell with Room Upgrade title and current version, dialog hidden initially', {
     timeout: 30000
   }, async () => {
-    const ChatSetting = (await import('#/views/chat-room/ChatSetting.vue')).default
+    const ChatSetting = (await ChatSettingModule).default
     const wrapper = mount(ChatSetting, mountOptions())
     expect(wrapper.html()).toBeTruthy()
     expect(wrapper.text()).toContain('Room Upgrade')
@@ -173,7 +176,7 @@ describe('ChatSetting - room upgrade entry', () => {
   it('mounts without throwing and renders upgrade section with title, version, and hidden dialog', {
     timeout: 30000
   }, async () => {
-    const ChatSetting = (await import('#/views/chat-room/ChatSetting.vue')).default
+    const ChatSetting = (await ChatSettingModule).default
     const wrapper = mount(ChatSetting, mountOptions())
     expect(wrapper.text()).toContain('Room Upgrade')
     expect(wrapper.text()).toContain('10')
