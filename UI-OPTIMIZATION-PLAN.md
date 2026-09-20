@@ -582,28 +582,28 @@ pnpm check                   # Biome lint + i18n 检查
 - !important 优化（保留合理覆盖）
 - 圆角 token 扩展（--tjg-radius-xl/2xl/3xl）
 
-**阶段 2：联邦身份展示** - ✅ 完成 90%
+**阶段 2：联邦身份展示** - ✅ 完成 100%
 - ✅ MxidText.vue 已创建并导出
 - ✅ FederationBadge.vue 已创建并集成到 RoomCard.vue、RoomPreviewDialog.vue
 - ✅ MessageLockBadge.vue 已创建（E2EE 三态徽章）
-- ✅ 液态玻璃 mixin 扩展（新增 panel/subtle 变体）并应用到 SettingsSidebar.vue
-- ⏳ 待消息渲染组件集成
+- ✅ 液态玻璃 mixin 扩展（新增 panel/subtle 变体）
+- ✅ 液态玻璃落地 4 处：SettingsSidebar（panel）、SearchPane（16px/0.9/1.5）、SingleDetails（hero）、GroupDetails（hero）
+- ✅ 消息渲染组件集成 MessageLockBadge（renderMessage/index.vue）
+- ✅ render-message.scss 补充锁徽章定位样式（.msg-lock-badge--left / .msg-lock-badge--right）
 
-**阶段 3：E2EE 可视化** - ✅ 完成 70%
+**阶段 3：E2EE 可视化** - ✅ 完成 100%
 - ✅ MessageLockBadge.vue 已创建
 - ✅ useMessageTrust.ts composable 已创建
-- ⏳ 待消息渲染组件集成
+- ✅ 消息渲染组件集成 MessageLockBadge
+- ✅ 锁徽章定位样式（左/右两侧对齐）
+- ✅ 锁态映射收敛到 composable（新增 `LockBadgeLevel`，组件不再内联判断）
+- ✅ `useMessageTrust` 入参升级为 `MaybeRefOrGetter<boolean>`，修复 `props` 变化时信任等级残留
 
-**阶段 4：同步/离线体验** - ✅ 开始 30%
-- ✅ SyncStatusBar.vue 已创建
-
-**当前状态验证：**
-- vue-tsc --noEmit: 类型检查通过 ✅
-- pnpm check:ratchet: hardcoded_color 31 (基线不变) ✅
-- atomic 组件：8 个（MxidText, FederationBadge, MessageLockBadge, useMessageTrust, 等）
-- Storybook stories: 3 个（MxidText, FederationBadge, MessageLockBadge）
-- 已集成组件：RoomCard.vue, RoomPreviewDialog.vue, SettingsSidebar.vue, renderMessage/index.vue
-- 测试：4 个测试文件（FederationBadge, MessageLockBadge, useMessageTrust, SyncStatusBar）
+**阶段 4：同步/离线体验** - ✅ 完成 100%
+- ✅ SyncStatusBar.vue 已创建并集成到 ChatMain.vue
+- ✅ i18n 翻译键（connection.*）
+- ✅ matrix store `reconnect()` 方法
+- ⏳ 移动端 SyncStatusBar 复用（未开始）
 
 **已完成任务：**
 1. ✅ 消息气泡集成 MessageLockBadge（renderMessage/index.vue）
@@ -612,7 +612,31 @@ pnpm check                   # Biome lint + i18n 检查
 4. ✅ SyncStatusBar 测试用例（11 个测试全部通过）
 5. ✅ MessageType 接口添加 encrypted 字段
 6. ✅ matrix store 添加 reconnect() 方法
+7. ✅ render-message.scss 锁徽章定位样式（.msg-lock-badge--left / .msg-lock-badge--right）
+8. ✅ MessageLockBadge 集成契约测试（10 个用例，含变异验证）
+9. ✅ `useMessageTrust` 新增 `lockBadgeLevel`，修正 `:trust-level` 类型不兼容（`plain` 不属于徽章三态）
+10. ✅ `useMessageTrust` 响应式化（`MaybeRefOrGetter`），修复消息切换时信任等级残留
+11. ✅ 液态玻璃性能降级补齐：SearchPane 补 `liquid-glass-fallback`，SingleDetails 改用 `liquid-glass-panel`
+12. ✅ GroupDetails 补齐玻璃 hero 卡（消除死导入 + 与 SingleDetails 视觉规格对齐）
+13. ✅ 新增 3 个契约测试文件（liquid-glass 降级 / GroupDetails hero 规格 / renderMessage 绑定），共 25 个用例
+
+**当前状态验证：**
+- vue-tsc --noEmit: 类型检查通过（0 错误）✅
+- pnpm check:ratchet: hardcoded_color 31, matrix_prefix_hardcoded 68, ts_expect_error 3（基线不变）✅
+- Biome check: 改动文件 clean ✅
+- 受影响测试套件：41 文件 / 343 用例全绿 ✅
+- atomic 组件：8 个（MxidText, FederationBadge, MessageLockBadge, useMessageTrust, 等）
+- Storybook stories: 3 个（MxidText, FederationBadge, MessageLockBadge）
+- 液态玻璃落地：SettingsSidebar、SearchPane、SingleDetails、GroupDetails（每视图 ≤3 面板级元素）
+- 测试文件：8 个（FederationBadge, MessageLockBadge, useMessageTrust, SyncStatusBar, renderMessage/index, liquid-glass, GroupDetailsHero 等）
 
 **下一步待办：**
-- 液态玻璃效果在其他面板级组件的应用（SettingsSidebar 已应用）
-- 消息气泡样式调整（render-message.scss 补充锁徽章定位）
+- [ ] 移动端 SyncStatusBar 复用（阶段 4 收尾）
+- [ ] 设备验证串联（MessageLockBadge 点击后打开设备会话面板 useDeviceSessionPanel）
+- [ ] SSSS 备份引导页（与 docs/sdk-e2ee-adaptation-plan-2026-09-19.md 同步）
+- [ ] 视觉验收：本次改动含布局变更（GroupDetails hero 卡、顶部间距 30px→8px），需实际渲染确认
+- [ ] 清理遗留：`src/styles/scss/global/variable.scss.bak`（未被 git 跟踪的旧备份）
+
+**本次未复核项（诚实声明）：**
+- 无浏览器渲染环境，hero 卡与玻璃效果的实际像素表现未做视觉回归，仅做了源码契约与几何一致性校验
+- `Details.test.ts` 仍无群聊（GROUP）分支覆盖，GroupDetails 的运行时行为未做挂载测试

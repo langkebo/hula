@@ -309,8 +309,8 @@
 
           <!-- 消息加密信任徽章 -->
           <MessageLockBadge
-            v-if="shouldShowLockBadge"
-            :trust-level="trustLevel"
+            v-if="isEncryptedMessage"
+            :trust-level="lockBadgeLevel"
             :title="trustDescription"
             :class="isMe ? 'msg-lock-badge--right' : 'msg-lock-badge--left'" />
         </n-flex>
@@ -427,11 +427,10 @@ const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarCl
   }
 )
 
-// 消息加密信任计算
-const messageTrust = useMessageTrust(!!props.message?.message?.body?.hasEncryption)
-const shouldShowLockBadge = computed(() => {
-  return props.message?.message?.body?.hasEncryption === true
-})
+// 消息加密信任计算（getter 入参：列表复用组件实例时信任等级随 props 同步）
+const messageTrust = useMessageTrust(() => props.message?.message?.body?.hasEncryption === true)
+// lockBadgeLevel 已在 composable 内把 'plain' 收敛为 'unverified'，此处直接绑定保证类型安全
+const { isEncrypted: isEncryptedMessage, lockBadgeLevel, trustDescription } = messageTrust
 
 const activeReply = ref<string>('')
 const settingStore = useSettingStore()

@@ -297,3 +297,21 @@
     border: 1px solid var(--tjg-color-danger-500);
   }
 }
+
+/* ==================== 消息加密信任徽章位置 ==================== */
+/* 左侧（接收方）：显示在气泡左下方 */
+.msg-lock-badge--left {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  margin-left: 2px;
+}
+
+/* 右侧（发送方）：右对齐显示 */
+.msg-lock-badge--right {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  margin-right: 2px;
+  flex-direction: row-reverse;
+}

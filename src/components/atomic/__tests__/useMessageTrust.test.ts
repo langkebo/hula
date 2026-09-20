@@ -1,48 +1,96 @@
 import { describe, expect, it } from 'vitest'
-import { computed } from 'vue'
-
-// Mock useMessageTrust composable (simplified for unit testing)
-const useMessageTrust = (isEncrypted: boolean, _roomId: string) => {
-  const trustLevel = computed(() => {
-    if (!isEncrypted) return 'plain' as const
-    return 'verified' as const
-  })
-  const isEncryptedEvent = computed(() => isEncrypted)
-  const isVerified = computed(() => trustLevel.value === 'verified')
-  const trustDescription = computed(() => {
-    const descriptions: Record<string, string> = {
-      verified: '端到端加密已验证',
-      unverified: '端到端加密未完全验证',
-      risk: '端到端加密存在安全风险',
-      plain: '消息未加密'
-    }
-    return descriptions[trustLevel.value]
-  })
-  return { trustLevel, isEncryptedEvent, isVerified, trustDescription }
-}
+import { nextTick, ref } from 'vue'
+import { useMessageTrust } from '@/composables/encryption/useMessageTrust'
 
 describe('useMessageTrust', () => {
   it('returns plain for non-encrypted messages', () => {
-    const result = useMessageTrust(false, 'room1')
+    const result = useMessageTrust(false)
     expect(result.trustLevel.value).toBe('plain')
-    expect(result.isEncryptedEvent.value).toBe(false)
+    expect(result.isEncrypted.value).toBe(false)
     expect(result.isVerified.value).toBe(false)
+    expect(result.encryptionAlgorithm.value).toBeNull()
   })
 
   it('returns verified for encrypted messages', () => {
-    const result = useMessageTrust(true, 'room1')
+    const result = useMessageTrust(true)
     expect(result.trustLevel.value).toBe('verified')
-    expect(result.isEncryptedEvent.value).toBe(true)
+    expect(result.isEncrypted.value).toBe(true)
     expect(result.isVerified.value).toBe(true)
   })
 
   it('provides correct trust description for plain messages', () => {
-    const result = useMessageTrust(false, 'room1')
-    expect(result.trustDescription.value).toBe('消息未加密')
+    expect(useMessageTrust(false).trustDescription.value).toBe('消息未加密')
   })
 
   it('provides correct trust description for verified messages', () => {
-    const result = useMessageTrust(true, 'room1')
+    expect(useMessageTrust(true).trustDescription.value).toBe('端到端加密已验证')
+  })
+
+  it('reads encryption algorithm from room when encrypted', () => {
+    const result = useMessageTrust(true, { getEncryptionAlgorithm: () => 'm.megolm.v1.aes-sha2' })
+    expect(result.encryptionAlgorithm.value).toBe('m.megolm.v1.aes-sha2')
+  })
+
+  it('does not read encryption algorithm when room accessor is absent', () => {
+    expect(useMessageTrust(true).encryptionAlgorithm.value).toBeNull()
+  })
+
+  it('does not read encryption algorithm for plain messages even when room exposes one', () => {
+    const result = useMessageTrust(false, { getEncryptionAlgorithm: () => 'm.megolm.v1.aes-sha2' })
+    expect(result.encryptionAlgorithm.value).toBeNull()
+  })
+
+  // ---- lockBadgeLevel：MessageLockBadge 的 trust-level 绑定来源 ----
+
+  it('lockBadgeLevel collapses plain to unverified (type-safe fallback)', () => {
+    const result = useMessageTrust(false)
+    expect(result.trustLevel.value).toBe('plain')
+    // plain 不属于 LockBadgeLevel，必须收敛为中性 unverified
+    expect(result.lockBadgeLevel.value).toBe('unverified')
+  })
+
+  it('lockBadgeLevel mirrors verified for encrypted messages', () => {
+    expect(useMessageTrust(true).lockBadgeLevel.value).toBe('verified')
+  })
+
+  it('lockBadgeLevel never emits plain (contract with MessageLockBadge)', () => {
+    for (const encrypted of [true, false]) {
+      expect(useMessageTrust(encrypted).lockBadgeLevel.value).not.toBe('plain')
+    }
+  })
+
+  // ---- 响应式：props 变化时信任等级必须同步（虚拟列表复用组件实例场景）----
+
+  it('tracks reactive source passed as getter', async () => {
+    const encrypted = ref(false)
+    const result = useMessageTrust(() => encrypted.value)
+
+    expect(result.isEncrypted.value).toBe(false)
+    expect(result.lockBadgeLevel.value).toBe('unverified')
+    expect(result.trustDescription.value).toBe('消息未加密')
+
+    encrypted.value = true
+    await nextTick()
+
+    expect(result.isEncrypted.value).toBe(true)
+    expect(result.lockBadgeLevel.value).toBe('verified')
     expect(result.trustDescription.value).toBe('端到端加密已验证')
+
+    encrypted.value = false
+    await nextTick()
+
+    // 回退同样生效，不残留上一条消息的信任状态
+    expect(result.isEncrypted.value).toBe(false)
+    expect(result.lockBadgeLevel.value).toBe('unverified')
+  })
+
+  it('accepts a ref directly as reactive source', async () => {
+    const encrypted = ref(true)
+    const result = useMessageTrust(encrypted)
+    expect(result.isEncrypted.value).toBe(true)
+
+    encrypted.value = false
+    await nextTick()
+    expect(result.isEncrypted.value).toBe(false)
   })
 })

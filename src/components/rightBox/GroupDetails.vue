@@ -1,14 +1,28 @@
 <template>
   <n-flex vertical align="center" :size="20" class="group-details">
-    <!-- 房间头像（管理员可上传） -->
-    <n-upload
-      v-if="canManageRoom"
-      :max="1"
-      accept="image/*"
-      :custom-request="handleAvatarUpload"
-      :show-file-list="false"
-      :disabled="uploadingAvatar">
+    <!-- 群信息 hero 卡：与 SingleDetails 的 .single-details__hero 保持同一玻璃规格与几何 -->
+    <div class="group-details__hero">
+      <!-- 房间头像（管理员可上传） -->
+      <n-upload
+        v-if="canManageRoom"
+        :max="1"
+        accept="image/*"
+        :custom-request="handleAvatarUpload"
+        :show-file-list="false"
+        :disabled="uploadingAvatar">
+        <n-image
+          object-fit="cover"
+          show-toolbar-tooltip
+          preview-disabled
+          width="120"
+          height="120"
+          style="border: 2px solid var(--tjg-text-inverse)"
+          class="rounded-12px select-none cursor-pointer"
+          :src="AvatarUtils.getAvatarUrl(item.avatar)"
+          alt="群头像" />
+      </n-upload>
       <n-image
+        v-else
         object-fit="cover"
         show-toolbar-tooltip
         preview-disabled
@@ -17,30 +31,19 @@
         style="border: 2px solid var(--tjg-text-inverse)"
         class="rounded-12px select-none cursor-pointer"
         :src="AvatarUtils.getAvatarUrl(item.avatar)"
+        @dblclick="openImageViewer"
         alt="群头像" />
-    </n-upload>
-    <n-image
-      v-else
-      object-fit="cover"
-      show-toolbar-tooltip
-      preview-disabled
-      width="120"
-      height="120"
-      style="border: 2px solid var(--tjg-text-inverse)"
-      class="rounded-12px select-none cursor-pointer"
-      :src="AvatarUtils.getAvatarUrl(item.avatar)"
-      @dblclick="openImageViewer"
-      alt="群头像" />
 
-    <InlineEdit
-      class="group-details__name-edit"
-      :label="t('home.chat_details.group.name_label')"
-      :value="item.name || ''"
-      :placeholder="t('room.detail.name_placeholder')"
-      :loading="savingRoomName"
-      :edit-aria-label="t('home.chat_details.group.edit_name')"
-      :maxlength="100"
-      @submit="handleSaveRoomName" />
+      <InlineEdit
+        class="group-details__name-edit"
+        :label="t('home.chat_details.group.name_label')"
+        :value="item.name || ''"
+        :placeholder="t('room.detail.name_placeholder')"
+        :loading="savingRoomName"
+        :edit-aria-label="t('home.chat_details.group.edit_name')"
+        :maxlength="100"
+        @submit="handleSaveRoomName" />
+    </div>
 
     <div class="single-details__actions single-details__actions--group">
       <button class="single-details__action" type="button" @click="handleSendMessage">
@@ -291,7 +294,22 @@ const handleForgetRoom = () => {
 @use '@/styles/scss/mixins/liquid-glass' as *;
 
 .group-details {
-  margin-top: 30px;
+  // 与 .single-details 的 padding: 8px 0 对齐，保证两种详情面板 hero 卡顶部间距一致
+  margin-top: 8px;
+}
+
+/* 群信息 hero 卡：与 SingleDetails 的 .single-details__hero 同规格（面板级玻璃 + 低性能降级） */
+.group-details__hero {
+  @include liquid-glass-panel(20px, 0.85);
+  border-radius: 16px;
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
 }
 
 .group-details__name-edit {

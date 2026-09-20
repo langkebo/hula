@@ -382,6 +382,8 @@ onMounted(() => {
   &__input-area {
     // 阶段 9：玻璃质感（需求文档 3.4.5b）—— 搜索结果面板使用 16px / 90% / 150%
     @include liquid-glass(16px, 0.9, 1.5);
+    // 低性能设备（html.low-perf）降级为纯色，避免 backdrop-filter 造成滚动卡顿
+    @include liquid-glass-fallback;
     border-radius: 0;
     border-bottom: 1px solid color-mix(in srgb, var(--tjg-border-layout-divider) 50%, transparent);
   }
