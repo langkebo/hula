@@ -632,3 +632,14 @@
 3. 并行会话正在同一工作区修改约 22 个文件，其中 `src/mobile/views/friends/index.vue`
    存在未闭合的重复 `<img` 标签，导致 `vue-tsc` 与 `prettier` 全局失败。
    本次提交只暂存自身文件，不使用 `--no-verify`，不修改对方文件。
+
+### 12.6 第五轮补充（2026-09-21）
+
+| 项 | 结论 | 依据 |
+| --- | --- | --- |
+| 账号注销三重确认 | 已实现 | 提交 `109b642a`。原先只有**单次**确认对话框。新增 `MobileDeactivateAccount.vue`：后果说明 + 显式勾选 → 输入完整 MXID 校验 → 最终确认对话框（含 erase 选项、防重复提交）。会话拿不到 MXID 时判定为不匹配，不提供「无可比对即放行」的路径。 |
+| `useMessageTrust` 假 verified | 经核实已修复 | 当前实现已返回安全默认值 `unverified`，源码内有「旧实现恒回 'verified'，造成假安全信号——已修复」的注释。无需改动。 |
+| `useMessageTrust` 文案硬编码 | 已修复 | 源码内确有硬编码中文，绕过 vue-i18n（英文界面下锁徽章 title 显示中文）。改为返回 `trustDescriptionKey`，由调用方 `t()` 渲染；所用 key `chat.encryption.*_title` 已存在。 |
+
+12.5 节第 2 条（`useMessageTrust` 恒判 verified）**已不成立**，第 3 条（文案硬编码）已修复；
+第 1 条（邀请权限自动拒绝）仍未接入，见 12.5 节。
