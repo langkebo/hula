@@ -80,6 +80,20 @@
               </template>
             </van-cell>
 
+            <van-cell
+              data-testid="notif-manage-push"
+              :title="t('mobile_notifications.manage_push')"
+              :label="t('mobile_notifications.manage_push_hint')"
+              is-link
+              @click="openPushSettings">
+              <template #icon>
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:bell-cog-outline" :width="20" color="var(--tjg-color-info-500)" />
+                </div>
+              </template>
+            </van-cell>
+
             <van-cell :title="t('mobile_notifications.email_notifications')">
               <template #icon>
                 <div
@@ -203,6 +217,7 @@ import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import type { IPushRule } from '@/services/matrix/notifications/MatrixPushService'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
 import {
@@ -214,10 +229,12 @@ import {
   saveNotificationDisplayPreferences
 } from '@/services/matrix/notifications/notificationDisplayPreferences'
 import { createLogger } from '@/utils/Logger'
+import { MOBILE_SETTINGS_PUSH_PATH } from './settingsRoutes'
 
 const logger = createLogger('NotificationSettings')
 
 const { t } = useI18n()
+const router = useRouter()
 
 const notificationsEnabled = ref(true)
 const soundEnabled = ref(true)
@@ -245,6 +262,10 @@ const priorityLabel = computed(() => t(`mobile_notifications.priority_${priority
 onMounted(async () => {
   await loadPushRules()
 })
+
+function openPushSettings() {
+  router.push(MOBILE_SETTINGS_PUSH_PATH)
+}
 
 function persistDisplayPreferences() {
   saveNotificationDisplayPreferences({

@@ -1,0 +1,24 @@
+{
+  "title": "邀请权限",
+  "loading": "加载中...",
+  "load_failed": "邀请权限加载失败",
+  "save_failed": "邀请权限保存失败",
+  "duplicate": "该用户已在名单中",
+  "user_id": "用户 ID",
+  "user_id_placeholder": "例如 @alice:example.org",
+  "add": "添加",
+  "remove": "移除",
+  "empty": "名单为空",
+  "blocklist_section": "拒绝名单",
+  "allowlist_section": "允许名单",
+  "mode": {
+    "allow_all": "所有人",
+    "blocklist": "拒绝名单内的用户",
+    "allowlist": "仅允许名单内的用户"
+  },
+  "mode_hint": {
+    "allow_all": "不拒绝任何邀请",
+    "blocklist": "来自名单内用户的邀请会被自动拒绝",
+    "allowlist": "名单之外的邀请会被自动拒绝"
+  }
+}

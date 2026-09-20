@@ -21,7 +21,7 @@
               :title="t('mobile_security.devices')"
               is-link
               :value="deviceCount"
-              @click="router.push('/mobile/mobileMy/devices')">
+              @click="router.push(MOBILE_SETTINGS_DEVICES_PATH)">
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-success-100)] mr-12px flex items-center justify-center">
@@ -117,11 +117,25 @@
               :title="t('mobile_security.ignored_users')"
               is-link
               :value="ignoredUsersCount"
-              @click="router.push('/mobile/mobileMy/ignoredUsers')">
+              @click="router.push(MOBILE_SETTINGS_IGNORED_USERS_PATH)">
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-danger-100)] mr-12px flex items-center justify-center">
                   <Icon icon="mdi:account-cancel" :width="20" color="var(--tjg-color-danger-500)" />
+                </div>
+              </template>
+            </van-cell>
+
+            <van-cell
+              data-testid="security-invite-permission"
+              :title="t('mobile_security.invite_permission')"
+              :label="t('mobile_security.invite_permission_hint')"
+              is-link
+              @click="router.push(MOBILE_SETTINGS_INVITE_PERMISSION_PATH)">
+              <template #icon>
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-danger-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:account-arrow-left-outline" :width="20" color="var(--tjg-color-danger-500)" />
                 </div>
               </template>
             </van-cell>
@@ -205,6 +219,11 @@ import { matrixAccountService } from '@/services/matrix/user/MatrixAccountServic
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { createLogger } from '@/utils/Logger'
+import {
+  MOBILE_SETTINGS_DEVICES_PATH,
+  MOBILE_SETTINGS_IGNORED_USERS_PATH,
+  MOBILE_SETTINGS_INVITE_PERMISSION_PATH
+} from './settingsRoutes'
 
 const logger = createLogger('SecuritySettings')
 

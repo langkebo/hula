@@ -309,6 +309,85 @@ describe('MatrixAccountService', () => {
     })
   })
 
+  describe('invite permission config', () => {
+    it('reads and normalizes the account data', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountDataFromServer: vi.fn().mockResolvedValue({
+          mode: 'blocklist',
+          blocklist: ['@spam:evil.org', '  ', '@spam:evil.org'],
+          allowlist: ['@friend:server']
+        })
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      const config = await matrixAccountService.getInvitePermissionConfig()
+      expect(config).toEqual({
+        mode: 'blocklist',
+        blocklist: ['@spam:evil.org'],
+        allowlist: ['@friend:server']
+      })
+      expect(mockClientWithData.getAccountDataFromServer).toHaveBeenCalledWith('im.hula.invite_blocklist')
+    })
+
+    it('falls back to allow_all when reading fails', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountDataFromServer: vi.fn().mockRejectedValue(new Error('boom'))
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      await expect(matrixAccountService.getInvitePermissionConfig()).resolves.toEqual({
+        mode: 'allow_all',
+        blocklist: [],
+        allowlist: []
+      })
+    })
+
+    it('falls back to allow_all for an unknown mode', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountDataFromServer: vi.fn().mockResolvedValue({ mode: 'nobody' })
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      expect((await matrixAccountService.getInvitePermissionConfig()).mode).toBe('allow_all')
+    })
+
+    it('writes the normalized config to account data', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        setAccountData: vi.fn().mockResolvedValue(undefined)
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      const result = await matrixAccountService.setInvitePermissionConfig({
+        mode: 'allowlist',
+        blocklist: ['@a:b', '@a:b'],
+        allowlist: ['@c:d']
+      })
+
+      expect(result).toBe(true)
+      expect(mockClientWithData.setAccountData).toHaveBeenCalledWith('im.hula.invite_blocklist', {
+        mode: 'allowlist',
+        blocklist: ['@a:b'],
+        allowlist: ['@c:d']
+      })
+    })
+
+    it('throws when writing the config fails', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        setAccountData: vi.fn().mockRejectedValue(new Error('Server error'))
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      await expect(
+        matrixAccountService.setInvitePermissionConfig({ mode: 'blocklist', blocklist: [], allowlist: [] })
+      ).rejects.toThrow('Server error')
+    })
+  })
+
   describe('setAccountData', () => {
     it('should set account data successfully', async () => {
       const mockClientWithData = {

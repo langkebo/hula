@@ -14,6 +14,8 @@
   "keyword_highlight_hint": "消息命中关键词时在通知中标记",
   "keywords": "关键词",
   "keywords_placeholder": "多个关键词用逗号分隔",
+  "manage_push": "推送设备与规则",
+  "manage_push_hint": "查看已注册的推送凭证并逐条调整推送规则",
   "mention_only": "仅{'@'}提及",
   "mute": "静音",
   "notify": "通知",

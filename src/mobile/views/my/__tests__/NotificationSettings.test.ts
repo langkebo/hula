@@ -13,19 +13,36 @@ const { showToastMock, getPushRulesMock, setPushRuleEnabledMock, setPushRuleActi
 
 vi.mock('vant', async () => {
   const { defineComponent } = await import('vue')
+  // 同时导出 PascalCase 与 kebab-case：模板里写的是小写标签，
+  // 只导出 PascalCase 时 Vue 解析不到，组件会被当成未解析标签整体丢弃（槽位一起消失）。
   const passthrough = (name: string, tag = 'div') =>
-    defineComponent({ name, inheritAttrs: false, template: `<${tag} v-bind="$attrs"><slot /></${tag}>` })
+    defineComponent({
+      name,
+      inheritAttrs: false,
+      template: `<${tag} v-bind="$attrs"><slot name="icon" /><slot name="title" /><slot /><slot name="value" /><slot name="right-icon" /></${tag}>`
+    })
   return {
     showToast: (...args: any[]) => showToastMock(...args),
     VanCellGroup: passthrough('VanCellGroup'),
+    'van-cell-group': passthrough('VanCellGroup'),
     VanCell: passthrough('VanCell'),
+    'van-cell': passthrough('VanCell'),
     VanField: passthrough('VanField'),
+    'van-field': passthrough('VanField'),
     VanSwitch: passthrough('VanSwitch'),
+    'van-switch': passthrough('VanSwitch'),
     VanRadioGroup: passthrough('VanRadioGroup'),
+    'van-radio-group': passthrough('VanRadioGroup'),
     VanRadio: passthrough('VanRadio'),
-    VanButton: passthrough('VanButton'),
+    'van-radio': passthrough('VanRadio'),
+    VanButton: passthrough('VanButton', 'button'),
+    'van-button': passthrough('VanButton', 'button'),
     VanPopup: passthrough('VanPopup'),
-    VanPicker: passthrough('VanPicker')
+    'van-popup': passthrough('VanPopup'),
+    VanPicker: passthrough('VanPicker'),
+    'van-picker': passthrough('VanPicker'),
+    VanLoading: passthrough('VanLoading'),
+    'van-loading': passthrough('VanLoading')
   }
 })
 

@@ -4,6 +4,12 @@ import type { DeviceManager, MatrixClientExtended } from '@/types/matrix-extensi
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { PREFIX_VENDOR_V1 } from '../paths/prefixes'
+import {
+  cacheInvitePermissionConfig,
+  INVITE_PERMISSION_ACCOUNT_DATA_TYPE,
+  type InvitePermissionConfig,
+  normalizeInvitePermissionConfig
+} from './invitePermissionPolicy'
 
 const logger = createLogger('MatrixAccountService')
 
@@ -395,6 +401,47 @@ class MatrixAccountService extends BaseMatrixService {
       return true
     } catch (err) {
       logger.error(`[MatrixAccount] 设置忽略用户列表失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 读取邀请权限配置（`im.hula.invite_blocklist` account data）。
+   *
+   * account data 是权威来源；读取失败时返回归一化后的默认值（allow_all），
+   * 而不是抛错——隐私设置页拿到默认值仍可正常渲染。
+   */
+  async getInvitePermissionConfig(): Promise<InvitePermissionConfig> {
+    const client = this.getClient()
+
+    try {
+      const accountData = await client.getAccountDataFromServer(INVITE_PERMISSION_ACCOUNT_DATA_TYPE)
+      const config = normalizeInvitePermissionConfig(accountData)
+      cacheInvitePermissionConfig(config)
+      logger.info(`[MatrixAccount] 获取邀请权限配置成功: mode=${config.mode}`)
+      return config
+    } catch (err) {
+      logger.error(`[MatrixAccount] 获取邀请权限配置失败: ${err}`)
+      return normalizeInvitePermissionConfig(null)
+    }
+  }
+
+  /**
+   * 写入邀请权限配置。
+   *
+   * 写入成功后同步本地缓存，保证离线/未登录时策略不回退到 allow_all。
+   */
+  async setInvitePermissionConfig(config: InvitePermissionConfig): Promise<boolean> {
+    const client = this.getClient()
+    const normalized = normalizeInvitePermissionConfig(config)
+
+    try {
+      await client.setAccountData(INVITE_PERMISSION_ACCOUNT_DATA_TYPE, { ...normalized })
+      cacheInvitePermissionConfig(normalized)
+      logger.info(`[MatrixAccount] 设置邀请权限配置成功: mode=${normalized.mode}`)
+      return true
+    } catch (err) {
+      logger.error(`[MatrixAccount] 设置邀请权限配置失败: ${err}`)
       throw err
     }
   }
