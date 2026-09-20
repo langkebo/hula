@@ -1,8 +1,8 @@
 {
   "comment": "i18n 源码引用可达性 ratchet 基线：各命名空间计数只允许下降。清理后用 `node scripts/check-i18n-refs.mjs --update` 重刷。见 i18n-source-reference-audit skill。",
-  "updated_at": "2026-09-20T06:58:26.843Z",
+  "updated_at": "2026-09-20T10:27:06.114Z",
   "unresolved": {
-    "total": 379,
+    "total": 377,
     "by_namespace": {
       "room": 65,
       "chat": 3,
@@ -10,7 +10,7 @@
       "e2ee": 2,
       "common": 6,
       "encryption": 104,
-      "friend": 4,
+      "friend": 2,
       "moderation": 43,
       "setting": 23,
       "message": 29,

@@ -18,6 +18,12 @@
         <svg v-if="props.isOfficial" class="w-18px h-18px iconpark-icon text-[--tjg-color-primary-500]">
           <use href="#auth"></use>
         </svg>
+        <FederationBadge
+          v-if="props.federationServer"
+          :is-local="false"
+          size="xs"
+          :label="props.federationServer"
+          :title="props.federationServer" />
       </div>
     </div>
     <div class="w-full h-full flex items-center">
@@ -41,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+import FederationBadge from '@/components/atomic/FederationBadge.vue'
 import router from '@/router'
 
 interface HeaderBarProps {
@@ -53,6 +60,8 @@ interface HeaderBarProps {
   roomName?: string | false
   border?: boolean
   privateModeActive?: boolean
+  /** 联邦服务器域名（非空即显示联邦标识） */
+  federationServer?: string
 }
 
 const props = withDefaults(defineProps<HeaderBarProps>(), {
@@ -63,7 +72,8 @@ const props = withDefaults(defineProps<HeaderBarProps>(), {
   enableShadow: true,
   roomName: false,
   border: false,
-  privateModeActive: false
+  privateModeActive: false,
+  federationServer: ''
 })
 
 const emits = defineEmits<{

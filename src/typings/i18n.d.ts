@@ -3107,7 +3107,9 @@ export type I18nKeys = {
       "set_normal": "设为普通",
       "set_blocked": "屏蔽好友",
       "remove": "删除好友",
-      "friend_offline": "对方当前离线，无法发起通话"
+      "friend_offline": "对方当前离线，无法发起通话",
+      "video_call": "视频通话",
+      "voice_call": "语音通话"
     },
     "secret_chat": {
       "success": "已设为私密好友",
@@ -3149,7 +3151,9 @@ export type I18nKeys = {
         "favorite": "星标好友",
         "ungrouped": "未分组"
       }
-    }
+    },
+    "federated_user": "联邦用户",
+    "local_user": "本地用户"
   },
   "home": {
     "room": {

@@ -8,6 +8,7 @@
         :is-official="globalStore.currentSessionRoomId === '1'"
         :is-group="isGroupSession"
         :private-mode-active="privateModeActive"
+        :federation-server="isFederated ? federationServer : ''"
         @room-name-click="handleRoomNameClick"
         @toggle-private-mode="onTogglePrivateMode" />
     </template>
@@ -80,8 +81,10 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, RoomTypeEnum, UserType } from '@/enums'
 import router from '@/router'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
+import { extractServerName } from '@/utils/userIdentity'
 
 const TjgAssistant = defineAsyncComponent(() => import('@/components/rightBox/chatBox/TjgAssistant.vue'))
 
@@ -105,6 +108,15 @@ const globalStore = useGlobalStore()
 const chatStore = useChatStore()
 const { currentSession } = storeToRefs(globalStore)
 const globalUnreadCount = computed(() => globalStore.messageUnreadCount ?? 0)
+
+// 联邦判定（与 ChatHeaderRoot 单一事实源一致）
+const currentSessionRoomId = computed(() => globalStore.currentSessionRoomId)
+const federationServer = computed(() => extractServerName(currentSessionRoomId.value))
+const isFederated = computed(() => {
+  const roomServer = federationServer.value
+  const localServer = extractServerName(matrixClientService.getUserId())
+  return Boolean(roomServer) && roomServer !== localServer
+})
 
 const props = defineProps<{
   uid?: ''

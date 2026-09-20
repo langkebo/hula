@@ -138,7 +138,9 @@
     "set_normal": "Set as Normal",
     "set_blocked": "Block Friend",
     "remove": "Remove Friend",
-    "friend_offline": "The friend is currently offline. Cannot start a call"
+    "friend_offline": "The friend is currently offline. Cannot start a call",
+    "video_call": "Video call",
+    "voice_call": "Voice call"
   },
   "secret_chat": {
     "success": "Set as secret friend",
@@ -180,5 +182,7 @@
       "favorite": "Favorites",
       "ungrouped": "Ungrouped"
     }
-  }
+  },
+  "federated_user": "Federated user",
+  "local_user": "Local user"
 }
