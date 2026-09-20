@@ -260,17 +260,14 @@ describe('i18n 桩键可达性', () => {
     LOCALES.some((locale) => typeof resolveKey(locale, ref.key) !== 'string')
   )
 
-  /**
-   * 已知「内容缺口」：语言表中确实不存在这些键，组件会渲染裸 key。
+  /** 已知「内容缺口」：语言表中确实不存在这些键，组件会渲染裸 key。
    * 允许测试桩临时提供文案，但必须在这里登记并注明出处。
    * 补齐语言表后必须删除登记项 —— 下面的「登记项不得陈旧」用例会强制这一点。
+   *
+   * 当前无登记项：encryption.json 已有 backup_restore_dialog 子树
+   * （8db0840c 补齐 32 键），白名单已清空。
    */
-  const ALLOWED_MISSING_STUB_KEYS = new Set([
-    // locales/{zh-CN,en}/encryption.json 无 backup_restore_dialog 子树
-    'encryption.backup_restore_dialog.restore_result_success',
-    'encryption.backup_restore_dialog.restore_result_failed',
-    'encryption.backup_restore_dialog.passphrase_required'
-  ])
+  const ALLOWED_MISSING_STUB_KEYS = new Set<string>([])
 
   it('收集器自检：确实扫到了测试桩里的键（否则守卫会静默空转）', () => {
     expect(collectTestFiles(SRC).length).toBeGreaterThan(150)
