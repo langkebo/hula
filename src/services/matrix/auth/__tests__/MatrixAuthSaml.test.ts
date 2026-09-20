@@ -38,6 +38,7 @@ const mockNormalizeSdkMatrixError = vi.mocked(normalizeSdkMatrixError)
 const mockSamlManager = {
   logout: vi.fn(),
   getSpMetadata: vi.fn(),
+  getIdpMetadata: vi.fn().mockResolvedValue({ entityID: 'https://saml.example/meta' }),
   initiateLogin: vi.fn(),
   getLoginRedirectUrl: vi.fn()
 }
@@ -141,14 +142,14 @@ describe('getSamlMetadata', () => {
   })
 
   it('returns the raw metadata object', async () => {
-    mockAuthedRequestWithPath.mockResolvedValue({ entityID: 'https://saml.example/meta' })
+    // getSamlMetadata 已改用 client.getSamlAuthManager().getIdpMetadata()
     const result = await getSamlMetadata()
     expect(result).toEqual({ entityID: 'https://saml.example/meta' })
-    expect(mockAuthedRequestWithPath).toHaveBeenCalledWith(dummyClient, 'GET', '/login/saml/metadata')
+    expect(mockSamlManager.getIdpMetadata).toHaveBeenCalled()
   })
 
   it('normalizes the error when metadata fetch fails', async () => {
-    mockAuthedRequestWithPath.mockRejectedValue(new Error('boom'))
+    mockSamlManager.getIdpMetadata.mockRejectedValue(new Error('boom'))
     await expect(getSamlMetadata()).rejects.toThrow('获取 SAML 元数据失败')
     expect(mockNormalizeSdkMatrixError).toHaveBeenCalled()
   })

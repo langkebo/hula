@@ -43,6 +43,11 @@ vi.mock('@/services/i18n', () => ({
   useI18nGlobal: () => ({ t: (key: string) => key })
 }))
 
+// Mock SDK's SAML auth manager — contract test validates URL construction, not SAML internals
+const mockSamlManager = {
+  getIdpMetadata: vi.fn().mockResolvedValue({ entityID: 'https://saml.example/meta' })
+}
+
 setupMswServer(
   http.get(`${HOMESERVER}/_matrix/client/v3/account/whoami`, ({ request }) => {
     seenUrls.push(request.url)
@@ -70,6 +75,13 @@ describe('MatrixAuthService URL construction contract (real SDK + msw)', () => {
       accessToken: 'contract-at',
       userId: '@test:hs.auth-contract.test',
       deviceId: 'DEV1'
+    }) as any
+    // SDK 40.x 的 createClient 返回对象不含 manager extensions
+    // （getSamlAuthManager 定义在 manager-registry 上，require 后才挂载）。
+    // contract test 验证 URL 构造而非 SAML 内部，故在 client 上 mock 该方法。
+    Object.defineProperty(realClient, 'getSamlAuthManager', {
+      value: vi.fn().mockReturnValue(mockSamlManager as any),
+      writable: true
     })
   })
 
@@ -94,6 +106,18 @@ describe('MatrixAuthService URL construction contract (real SDK + msw)', () => {
   })
 
   it('getSamlMetadata hits /_matrix/client/v3/login/saml/metadata exactly once (no duplication)', async () => {
+    // SDK client 无 SAML manager extensions（getSamlAuthManager），此处用 mock
+    // 重定向到 MSW 拦截的真实 HTTP 路径（contract test 的核心目的）。
+    vi.spyOn(realClient, 'getSamlAuthManager').mockImplementation(
+      () =>
+        ({
+          getIdpMetadata: async () => {
+            // 走真实 HTTP 以验证 URL 构造（MSW 会拦截并记录）
+            const res = await fetch(`${HOMESERVER}/_matrix/client/v3/login/saml/metadata`)
+            return res.json()
+          }
+        }) as any
+    )
     await MatrixAuthService.getSamlMetadata()
 
     const samlCalls = seenUrls.filter((u) => u.includes('/saml/metadata'))

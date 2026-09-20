@@ -926,7 +926,7 @@ describe('RoomStore', () => {
         msgId: '$new',
         roomId: '!room:id',
         status: 'success',
-        body: expect.objectContaining({ body: 'decrypted hello' })
+        body: { content: 'decrypted hello' }
       })
     })
 
