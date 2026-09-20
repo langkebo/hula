@@ -10,6 +10,8 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   labsIntegrations: `${SETTINGS_CANONICAL_ROUTE_SEGMENTS.labs}/${SETTINGS_LABS_CHILD_ROUTE_SEGMENTS.integrations}`,
   securityPrivacy: SETTINGS_CANONICAL_ROUTE_SEGMENTS.securityPrivacy,
   password: 'password',
+  ignoredUsers: 'ignoredUsers',
+  simpleBio: 'simpleBio',
   helpAbout: SETTINGS_CANONICAL_ROUTE_SEGMENTS.helpAbout
 } as const
 
@@ -17,6 +19,7 @@ export const MOBILE_SETTINGS_LABS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_
 export const MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.labsIntegrations}`
 export const MOBILE_SETTINGS_SECURITY_PRIVACY_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.securityPrivacy}`
 export const MOBILE_SETTINGS_PASSWORD_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.password}`
+export const MOBILE_SETTINGS_IGNORED_USERS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.ignoredUsers}`
 export const MOBILE_SETTINGS_HELP_ABOUT_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.helpAbout}`
 
 export const MOBILE_SETTINGS_ROUTE_NAMES = {
@@ -24,5 +27,6 @@ export const MOBILE_SETTINGS_ROUTE_NAMES = {
   labsIntegrations: 'mobileLabsIntegrationsSettings',
   securityPrivacy: 'mobileSecurityPrivacySettings',
   password: 'mobilePasswordSettings',
+  ignoredUsers: 'mobileIgnoredUsers',
   helpAbout: 'mobileHelpAboutSettings'
 } as const

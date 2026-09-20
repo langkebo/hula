@@ -5316,6 +5316,17 @@ export type I18nKeys = {
     "create_group_success": "群聊创建成功",
     "create_group_failed": "创建群聊失败"
   },
+  "mobile_ignored_users": {
+    "title": "已忽略用户",
+    "intro": "被你忽略的用户无法向你发起私聊。",
+    "loading": "加载中...",
+    "empty": "没有已忽略的用户",
+    "unignore": "取消忽略",
+    "unignore_confirm": "取消忽略 {userId}？对方将可以再次向你发起私聊。",
+    "unignore_success": "已取消忽略",
+    "unignore_failed": "取消忽略失败",
+    "load_failed": "获取忽略列表失败"
+  },
   "mobile_integrations": {
     "title": "集成管理",
     "description": "管理第三方集成和小部件，扩展 Tjg 的功能。",
