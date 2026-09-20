@@ -15,7 +15,7 @@
       </n-flex>
 
       <n-flex justify="center">
-        <n-ellipsis style="max-width: 200px" class="text-(18px [--tjg-text-secondary])">
+        <n-ellipsis class="max-w-200px text-(18px [--tjg-text-secondary])">
           {{ userInfo?.name || '' }}
         </n-ellipsis>
       </n-flex>

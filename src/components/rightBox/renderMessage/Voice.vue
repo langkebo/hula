@@ -296,7 +296,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  border-radius: 18px;
+  border-radius: var(--tjg-radius-surface);
   cursor: pointer;
   transition: all var(--tjg-motion-duration-normal) ease;
   &.loading {

@@ -2,7 +2,7 @@
   <div v-bind="$attrs">
     <n-image
       v-if="body?.url"
-      class="select-none cursor-pointer"
+      class="select-none cursor-pointer msg-emoji"
       :img-props="{
         style: {
           maxWidth: '120px',
@@ -12,7 +12,6 @@
       }"
       show-toolbar-tooltip
       preview-disabled
-      style="border-radius: 8px; cursor: pointer !important"
       :src="displayEmojiSrc"
       @click="handleOpenImage"
       @dblclick="handleOpenImageViewer"
@@ -166,3 +165,10 @@ watch(
   }
 )
 </script>
+
+<style scoped lang="scss">
+/* 表情预览圆角（原为模板内联 style；cursor: pointer 已由 cursor-pointer 工具类提供） */
+.msg-emoji {
+  border-radius: var(--tjg-radius-sm);
+}
+</style>

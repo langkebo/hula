@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
@@ -268,7 +270,13 @@ describe('PublicRoomDiscovery', () => {
     const wrapper = mountComponent()
     const grid = wrapper.find('.room-list')
     expect(grid.exists()).toBe(true)
-    const style = (grid.element as HTMLElement).style
-    expect(style.gridTemplateColumns).toContain('minmax(240px, 1fr)')
+    // 网格声明已由常量内联 style 迁入 scoped 规则（P1-29 内联样式清零），
+    // 因此断言拆成两段契约：DOM 侧不再挂内联网格 + 源码侧 scoped 规则仍声明响应式 minmax 网格。
+    expect((grid.element as HTMLElement).style.gridTemplateColumns).toBe('')
+
+    const source = readFileSync(resolve(__dirname, '..', 'PublicRoomDiscovery.vue'), 'utf8')
+    const rule = source.match(/\.room-list\s*\{([\s\S]*?)\}/)
+    expect(rule, '.room-list scoped 规则存在').not.toBeNull()
+    expect(rule?.[1]).toContain('repeat(auto-fill, minmax(240px, 1fr))')
   })
 })

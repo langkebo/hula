@@ -187,7 +187,8 @@ function kindTagType(kind: PushRuleKindValue): 'default' | 'success' | 'warning'
 }
 
 .rule-item {
-  padding: var(--tjg-space-2) var(--tjg-space-3) !important;
+  // scoped 属性 + 类名特异性高于 naive-ui 的 .n-list-item，无需 !important
+  padding: var(--tjg-space-2) var(--tjg-space-3);
 }
 
 .rule-row {

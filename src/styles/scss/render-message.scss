@@ -248,13 +248,11 @@
   @apply text-inherit cursor-pointer;
 }
 
-/** 确保文本可选中的通用类 */
+/** 确保文本可选中的通用类（!important 用于抵消上下文菜单注入的 `.no-select`） */
 .select-text {
   user-select: text !important;
+  // 仅保留仍生效的 WebKit 前缀；-moz/-ms/-khtml 在当前目标浏览器已无作用
   -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
-  -khtml-user-select: text !important;
 }
 
 /** 默认禁选外层，避免选中空白区域；具体内容元素再单独开启 */

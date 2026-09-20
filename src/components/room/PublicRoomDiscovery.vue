@@ -26,7 +26,7 @@
     </div>
 
     <n-spin :show="loading">
-      <div v-if="rooms.length > 0" class="room-list" :style="gridStyle">
+      <div v-if="rooms.length > 0" class="room-list">
         <RoomCard v-for="room in rooms" :key="room.roomId" :item="room" @join="openPreview" @preview="openPreview" />
         <div ref="sentinelEl" class="room-list__sentinel" data-testid="load-more-sentinel" />
       </div>
@@ -65,11 +65,6 @@ const searchQuery = ref('')
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const DEBOUNCE_MS = 300
-
-/** 响应式 minmax 网格：窄主窗自动降列 */
-const gridStyle = {
-  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))'
-} as const
 
 const nextBatch = ref<string | null>(null)
 const sentinelEl = ref<HTMLElement | null>(null)
@@ -156,6 +151,8 @@ defineExpose({ nextBatch, loadMore })
 .room-list {
   display: grid;
   gap: var(--tjg-space-2);
+  // 响应式 minmax 网格：窄主窗自动降列（原为常量内联 style，迁至此处）
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
 .room-list__sentinel {

@@ -471,8 +471,9 @@ onMounted(async () => {
 <style scoped lang="scss">
 .file-container {
   @apply relative custom-shadow bg-[--tjg-surface-panel-muted] w-225px h-70px rounded-8px px-14px py-4px flex-y-center;
-  cursor: default !important;
-  user-select: none !important;
+  // 元素自声明即胜过父级继承值，无需 !important
+  cursor: default;
+  user-select: none;
   transition: all var(--tjg-motion-duration-normal) ease;
 
   &.downloading {

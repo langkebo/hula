@@ -145,6 +145,7 @@ const navItems: NavItem[] = [
   display: flex;
   flex-direction: row;
 
+  /* 需 !important：覆盖 Vant Tabbar 的横向 flex 默认值 */
   .tab-bar {
     height: 100%;
     width: 100%;

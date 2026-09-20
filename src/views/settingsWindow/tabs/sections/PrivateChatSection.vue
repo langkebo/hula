@@ -42,7 +42,7 @@
         <span class="setting-label">{{ t('setting.private_chat.lock_timeout') }}</span>
         <span class="setting-desc">{{ t('setting.security.private_chat_lock_timeout_desc') }}</span>
       </div>
-      <n-select v-model:value="secretChatLockTimeout" size="small" style="width: 140px" :options="lockTimeoutOptions" />
+      <n-select v-model:value="secretChatLockTimeout" size="small" class="w-140px" :options="lockTimeoutOptions" />
     </div>
     <div v-if="secretChatConfigured" class="setting-item">
       <div class="setting-info">
@@ -57,7 +57,7 @@
     v-model:show="showSecretChatDialog"
     preset="card"
     :title="t('setting.private_chat.set_password')"
-    style="width: 400px">
+    class="w-400px">
     <div class="secret-chat-form">
       <n-form :model="secretChatForm" :rules="secretChatRules">
         <n-form-item path="password" :label="t('setting.private_chat.password')">

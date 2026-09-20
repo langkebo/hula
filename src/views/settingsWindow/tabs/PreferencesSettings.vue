@@ -237,7 +237,7 @@
         <n-select
           v-model:value="spaceDefaultNotification"
           :options="spaceNotificationOptions"
-          style="width: 130px"
+          class="w-130px"
           @update:value="handleSpaceNotificationChange" />
       </div>
     </div>

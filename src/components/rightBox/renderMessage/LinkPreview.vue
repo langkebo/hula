@@ -139,7 +139,7 @@ const handleLinkClick = () => {
     .preview-desc {
       @apply: text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-secondary] leading-snug;
       /* 在水平模式下描述最多显示两行 */
-      -webkit-line-clamp: 2 !important;
+      -webkit-line-clamp: 2;
     }
   }
 

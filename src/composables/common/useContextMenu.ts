@@ -103,11 +103,10 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
     if (!document.querySelector('#no-select-style')) {
       const style = document.createElement('style')
       style.id = 'no-select-style'
+      // !important：注入的全局规则要压过消息区里的可选文本声明
       style.textContent = `.no-select {
         user-select: none !important;
         -webkit-user-select: none !important;
-        -moz-user-select: none !important;
-        -ms-user-select: none !important;
       }`
       document.head.appendChild(style)
     }

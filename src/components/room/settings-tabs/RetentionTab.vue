@@ -6,7 +6,7 @@
 
         <!-- Enable Toggle -->
         <div class="rs-tab__field-row">
-          <span class="rs-tab__field-label" style="margin-bottom: 0">
+          <span class="rs-tab__field-label mb-0">
             {{ t('room.settings_drawer.toggle_enable_retention') }}
           </span>
           <n-switch :value="retentionEnabled" @update:value="handleToggleRetention" />
@@ -27,7 +27,7 @@
               :value="retention.days.value"
               :min="1"
               :max="3650"
-              style="width: 100%"
+              class="w-full"
               @update:value="(v: number | null) => retention.setDays(v ?? 1)" />
           </div>
 
@@ -38,7 +38,7 @@
               :value="retention.count.value"
               :min="1"
               :max="100000"
-              style="width: 100%"
+              class="w-full"
               @update:value="(v: number | null) => retention.setCount(v ?? 1)" />
           </div>
 

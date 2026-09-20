@@ -33,7 +33,7 @@
         </n-flex>
       </div>
 
-      <n-divider style="margin: 8px 0" />
+      <n-divider class="my-8px" />
 
       <!-- 当前标签列表 -->
       <n-spin :show="flow.loading.value">

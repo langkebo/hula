@@ -44,7 +44,7 @@
 /* 移动端输入框胶囊样式 */
 .mobile #message-form #message-input {
   border: 1px solid transparent;
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-xl);
   transition: border-color 0.15s ease;
 }
 

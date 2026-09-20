@@ -8,10 +8,7 @@
         style="padding: 0; background: var(--tjg-surface-panel)"
         v-if="mentionTokenSet.has(item) && !props.historyMode">
         <template #trigger>
-          <span
-            :key="item"
-            style="-webkit-user-select: text !important; user-select: text !important"
-            class="text-[--tjg-color-warning-400] cursor-pointer">
+          <span :key="item" class="mention-token text-[--tjg-color-warning-400] cursor-pointer">
             {{ item }}
           </span>
         </template>
@@ -20,8 +17,7 @@
       <span
         v-else-if="mentionTokenSet.has(item)"
         :key="item"
-        style="-webkit-user-select: text !important; user-select: text !important"
-        class="text-[--tjg-color-warning-400] cursor-text">
+        class="mention-token text-[--tjg-color-warning-400] cursor-text">
         {{ item }}
       </span>
       <template v-else-if="item.startsWith('http')">
@@ -267,6 +263,14 @@ const onImageLoadError = (e: Event) => {
 </script>
 
 <style scoped>
+/* 提及 token 必须始终可选中：上下文菜单会注入
+   `.no-select { user-select: none !important }`，只有 scoped 特异性 + !important
+   才能保住选中能力（原为模板内联 style）。 */
+.mention-token {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
 .text-card {
   display: flex;
   margin: 8px 0;

@@ -301,7 +301,7 @@ const handleForgetRoom = () => {
 /* 群信息 hero 卡：与 SingleDetails 的 .single-details__hero 同规格（面板级玻璃 + 低性能降级） */
 .group-details__hero {
   @include liquid-glass-panel(20px, 0.85);
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-surface);
   padding: 20px;
   width: 100%;
   box-sizing: border-box;

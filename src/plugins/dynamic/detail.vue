@@ -52,7 +52,7 @@ onMounted(() => {
 .dynamic-detail-shell {
   width: min(720px, 100%);
   padding: 32px;
-  border-radius: 20px;
+  border-radius: var(--tjg-radius-panel);
   background: var(--tjg-surface-panel);
   box-shadow: var(--tjg-shadow-lg);
 }
@@ -82,7 +82,7 @@ onMounted(() => {
 .dynamic-detail-note {
   margin-top: 20px;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-surface);
   background: var(--tjg-surface-panel-muted);
   color: var(--tjg-text-secondary);
   line-height: 1.6;

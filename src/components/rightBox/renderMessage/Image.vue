@@ -7,6 +7,7 @@
       :style="{ ...imageStyle, borderRadius: '8px', overflow: 'hidden' }">
       <n-image
         v-if="isInViewport"
+        class="msg-image"
         :img-props="{
           style: {
             ...imageStyle
@@ -15,7 +16,6 @@
         object-fit="cover"
         show-toolbar-tooltip
         preview-disabled
-        style="border-radius: 8px; cursor: pointer !important; width: 100%; height: 100%"
         :src="displayImageSrc"
         @dblclick="handleOpenImageViewer"
         @click="handleOpenImage"
@@ -400,4 +400,13 @@ onMounted(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+/* 图片消息：圆角 + 可点击查看原图（原为模板内联 style）。
+   内联的 `cursor: pointer !important` 属冗余——全仓不存在 !important 的 cursor 竞争规则。 */
+.msg-image {
+  border-radius: var(--tjg-radius-sm);
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+</style>

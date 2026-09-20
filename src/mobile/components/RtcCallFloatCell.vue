@@ -215,7 +215,7 @@ useMitt.on('RoomClosed', handleCallEnd)
   );
   backdrop-filter: blur(18px);
   border: 1px solid var(--tjg-border-contrast);
-  border-radius: 18px;
+  border-radius: var(--tjg-radius-panel);
   padding: 12px 16px;
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
 }

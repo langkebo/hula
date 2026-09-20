@@ -1,9 +1,5 @@
 <template>
-  <div
-    class="room-detail-stats grid gap-[--tjg-space-2]"
-    data-testid="stat-grid"
-    role="list"
-    style="grid-template-columns: repeat(3, 1fr)">
+  <div class="room-detail-stats grid gap-[--tjg-space-2] grid-cols-3" data-testid="stat-grid" role="list">
     <div
       class="room-detail-stats__card flex flex-col items-center justify-center py-[--tjg-space-3] rounded-[--tjg-radius-md] bg-[--tjg-surface-subtle]"
       data-testid="stat-card-members"

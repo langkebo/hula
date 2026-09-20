@@ -73,16 +73,9 @@
         <n-flex vertical :size="4">
           <n-flex align="center" :size="8">
             <p
-              class="text-(18px [--tjg-text-secondary]) w-fit"
+              class="info-popover__display-name text-(18px [--tjg-text-secondary]) w-fit"
               :class="{ 'cursor-pointer text-underline': isCurrentUserUid }"
-              @click="openEditInfo"
-              style="
-                font-weight: bold !important;
-                font-family:
-                  system-ui,
-                  -apple-system,
-                  sans-serif;
-              ">
+              @click="openEditInfo">
               {{ displayName }}
             </p>
             <span v-if="groupNickname && groupNickname !== displayName" class="text-(13px [--tjg-text-secondary])">
@@ -571,5 +564,12 @@ onMounted(() => {
 
 .developer-cover {
   background: var(--tjg-surface-panel-muted);
+}
+
+/* 昵称加粗（原为模板内联 style）。原先同时写了内联 font-family，
+   但全局 `* { font-family: var(--font-family) !important }`（variable.scss）优先级更高，
+   该声明从未生效，故一并删除。 */
+.info-popover__display-name {
+  font-weight: var(--tjg-font-weight-bold);
 }
 </style>

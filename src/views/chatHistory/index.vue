@@ -403,10 +403,9 @@ onMounted(async () => {
   -webkit-backdrop-filter: blur(8px);
 }
 
+/* 需 !important：抵消上下文菜单注入的 .no-select */
 .user-select-text {
   -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
   user-select: text !important;
 }
 </style>
@@ -418,6 +417,7 @@ onMounted(async () => {
   border-radius: 14px;
 }
 
+/* 需 !important：本块为全局样式（无 scoped 特异性可借），仍要压过 naive-ui 日期面板底部按钮 */
 .n-date-panel-actions .n-button {
   background-color: var(--tjg-color-primary-400) !important;
   border: none !important;

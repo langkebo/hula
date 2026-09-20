@@ -98,7 +98,7 @@ watch(() => props.roomId, loadVisibility)
   height: 30px;
   padding: 0 12px;
   border: 1px solid var(--tjg-border-default);
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-xl);
   background: var(--tjg-surface-panel);
   color: var(--tjg-text-primary);
   font-size: 12px;

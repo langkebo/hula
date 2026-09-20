@@ -533,7 +533,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   margin: 16px;
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-surface);
   background: radial-gradient(
     ellipse at center,
     color-mix(in srgb, var(--tjg-color-primary-500) 24%, transparent),

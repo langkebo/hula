@@ -12,6 +12,12 @@
  *  - hardcoded_color: literal hex/rgb colors in src (non-test, excluding
  *    SVG `<use href="#...">` refs and comments). New colors should use
  *    `--tjg-*` design tokens instead of raw literals.
+ *  - hardcoded_radius: `border-radius` with a raw 16–29px value (non-test).
+ *    Large radii must use `--tjg-radius-*` (16px 起的大圆角是产品规格）。
+ *  - inline_style: static `style="..."` attributes in .vue (non-test).
+ *    Prefer scoped CSS / UnoCSS utilities so theming keeps working.
+ *  - important_css: `!important` declarations in style sources (non-test,
+ *    comments stripped). Converge on design tokens / specificity instead.
  *
  * Usage:
  *   node scripts/check-ratchet.mjs            # verify (CI / pre-merge)
@@ -27,21 +33,19 @@ const baselinePath = path.join(repoRoot, 'meta', 'ratchet-baseline.json')
 const srcRoot = path.join(repoRoot, 'src')
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.mts', '.cts', '.tsx', '.vue'])
+/** 样式相关计数器需覆盖 scss/css/输出文档（mdx） */
+const STYLE_EXTENSIONS = new Set([...SOURCE_EXTENSIONS, '.scss', '.css', '.mdx'])
 
 function isTestPath(relPath) {
-  return (
-    relPath.includes('__tests__') ||
-    /\.(test|spec)\.[cm]?tsx?$/.test(relPath) ||
-    relPath.endsWith('.stories.ts')
-  )
+  return relPath.includes('__tests__') || /\.(test|spec)\.[cm]?tsx?$/.test(relPath) || relPath.endsWith('.stories.ts')
 }
 
-function* walk(dir) {
+function* walk(dir, extensions = SOURCE_EXTENSIONS) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name)
     if (entry.isDirectory()) {
-      yield* walk(fullPath)
-    } else if (entry.isFile() && SOURCE_EXTENSIONS.has(path.extname(entry.name))) {
+      yield* walk(fullPath, extensions)
+    } else if (entry.isFile() && extensions.has(path.extname(entry.name))) {
       yield fullPath
     }
   }
@@ -60,6 +64,11 @@ function stripCommentsAndSvgRefs(content) {
     .replace(/var\([^)]*\)/g, '') // CSS var(...) 表达式（含 fallback 色，属安全模式）
 }
 
+/** 仅剥离注释（用于计数 `!important`：注释里提到它不应计入） */
+function stripCommentsOnly(content) {
+  return content.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
 const counters = {
   matrix_prefix_hardcoded: { pattern: /\/_matrix/g, includeTests: false, total: 0, files: new Map() },
   ts_expect_error: { pattern: /@ts-expect-error/g, includeTests: true, total: 0, files: new Map() },
@@ -69,14 +78,44 @@ const counters = {
     total: 0,
     files: new Map(),
     strip: stripCommentsAndSvgRefs
+  },
+  /**
+   * 大圆角必须走 `--tjg-radius-*`；16px 及以上属产品规格，不接受字面量。
+   * 值区间限制在 `[^;"}\n]` 内，避免跨行/跨属性误抓（如 `style="border-radius: 8px"` 之后的行）。
+   * `(?<![\d.])` 防止命中更长数字的尾段（如 216px 里的 16px）。
+   */
+  hardcoded_radius: {
+    pattern: /-radius:[^;"}\n]*(?<![\d.])(?:1[6-9]px|2[0-9]px)/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    extensions: STYLE_EXTENSIONS
+  },
+  /** 静态内联 style 破坏主题化能力；核心视图要求为 0（见 src/styles/__tests__/design-baseline.test.ts） */
+  inline_style: {
+    pattern: /(?<![:\w@-])style\s*=\s*"/g,
+    includeTests: false,
+    total: 0,
+    files: new Map()
+  },
+  /** `!important` 只允许在能说明理由处保留；总量只能降不能升 */
+  important_css: {
+    pattern: /!important/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsOnly,
+    extensions: STYLE_EXTENSIONS
   }
 }
 
-for (const filePath of walk(srcRoot)) {
+for (const filePath of walk(srcRoot, STYLE_EXTENSIONS)) {
   const relPath = path.relative(repoRoot, filePath)
   const content = fs.readFileSync(filePath, 'utf8')
   for (const counter of Object.values(counters)) {
     if (!counter.includeTests && isTestPath(relPath)) continue
+    const extensions = counter.extensions ?? SOURCE_EXTENSIONS
+    if (!extensions.has(path.extname(filePath))) continue
     const text = counter.strip ? counter.strip(content) : content
     const count = countOccurrences(text, counter.pattern)
     if (count > 0) {

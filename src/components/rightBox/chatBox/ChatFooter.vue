@@ -325,6 +325,7 @@ onUnmounted(() => {
   padding: 0;
 }
 
+/* 需 !important：覆盖共享输入区 partial（msg-input.scss）里的上边框 */
 .private-mode-footer {
   border-top: 2px dashed var(--tjg-color-danger-500) !important;
 }

@@ -71,6 +71,7 @@ onMounted(() => {
 })
 </script>
 <style scoped lang="scss">
+/* 面板分隔条：需 !important 覆盖 naive-ui n-split 的默认高度与背景 */
 :deep(.n-split .n-split__resize-trigger) {
   height: 16px !important;
   cursor: ns-resize;

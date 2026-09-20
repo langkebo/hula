@@ -109,9 +109,8 @@
 
       <div
         v-if="loginHistories.length > 0 && arrowStatus"
-        class="account-box absolute max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border"
-        :style="{ width: '100%', maxWidth: '340px', border: '1px solid var(--login-dropdown-border)' }">
-        <n-scrollbar style="max-height: 120px" trigger="none">
+        class="account-box absolute max-h-140px bg-[--login-dropdown-bg] backdrop-blur-sm mt-45px z-99 rounded-8px p-8px box-border w-full max-w-340px border-1 border-solid border-[--login-dropdown-border]">
+        <n-scrollbar class="max-h-120px" trigger="none">
           <div
             v-for="item in loginHistories"
             :key="item.account"

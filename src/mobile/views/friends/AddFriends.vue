@@ -261,7 +261,7 @@ onMounted(async () => {
 
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
-  border-radius: 20px;
+  border-radius: var(--tjg-radius-2xl);
   background: var(--tjg-overlay-mobile-sheet);
 }
 

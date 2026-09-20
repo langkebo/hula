@@ -523,6 +523,7 @@ onBeforeUnmount(() => {
       cursor: pointer;
     }
 
+    /* 需 !important：压过 naive-ui 菜单项的选中态背景 */
     &.active {
       background-color: var(--tjg-color-primary-500) !important;
     }

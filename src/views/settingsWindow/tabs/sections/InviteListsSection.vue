@@ -28,7 +28,7 @@
     v-model:show="showInviteBlocklist"
     preset="card"
     :title="t('setting.security.invite_blocklist_manage_title')"
-    style="width: 450px">
+    class="w-450px">
     <div class="list-management">
       <div v-for="user in inviteBlocklist" :key="user" class="ignored-item">
         <span class="user-id">{{ user }}</span>
@@ -40,7 +40,7 @@
           v-model:value="newBlocklistUser"
           :placeholder="t('setting.security.user_id_placeholder')"
           size="small"
-          style="flex: 1" />
+          class="flex-1" />
         <n-button size="small" type="primary" @click="handleAddInviteBlocklist">
           {{ t('setting.security.add') }}
         </n-button>
@@ -52,7 +52,7 @@
     v-model:show="showInviteAllowlist"
     preset="card"
     :title="t('setting.security.invite_allowlist_manage_title')"
-    style="width: 450px">
+    class="w-450px">
     <div class="list-management">
       <div v-for="user in inviteAllowlist" :key="user" class="ignored-item">
         <span class="user-id">{{ user }}</span>
@@ -64,7 +64,7 @@
           v-model:value="newAllowlistUser"
           :placeholder="t('setting.security.user_id_placeholder')"
           size="small"
-          style="flex: 1" />
+          class="flex-1" />
         <n-button size="small" type="primary" @click="handleAddInviteAllowlist">
           {{ t('setting.security.add') }}
         </n-button>

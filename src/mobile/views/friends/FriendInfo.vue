@@ -90,8 +90,8 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .custom-rounded {
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
+  border-top-left-radius: var(--tjg-radius-2xl);
+  border-top-right-radius: var(--tjg-radius-2xl);
   overflow: hidden;
 }
 </style>

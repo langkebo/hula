@@ -1,3 +1,4 @@
+/* 压缩表单行高：!important 用于确保 naive-ui 主题变量被本覆盖取代（本文件为共享 partial） */
 .n-form .n-form-item {
   --n-blank-height: 20px !important;
   --n-label-height: 0 !important;

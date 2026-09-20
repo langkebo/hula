@@ -326,7 +326,7 @@ const handleRemoveFriend = async () => {
 .single-details__hero {
   // 面板级玻璃：与 GroupDetails 的 hero 保持一致；-panel 变体自带 html.low-perf 降级
   @include liquid-glass-panel(20px, 0.85);
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-surface);
   padding: 20px;
   width: 100%;
   box-sizing: border-box;

@@ -540,7 +540,7 @@ watch(
   min-height: 168px;
   padding: 12px;
   border: 1px solid var(--tjg-border-default);
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-surface);
   background-color: var(--tjg-surface-panel);
   cursor: pointer;
 }

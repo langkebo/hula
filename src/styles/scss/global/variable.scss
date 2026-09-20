@@ -1,4 +1,5 @@
 @use 'fonts';
+/* 全局字体与光标色：需 !important 才能压过 naive-ui / Vant 在各自组件根上声明的 font-family */
 * {
   font-family: var(--font-family), sans-serif !important;
   caret-color: var(--tjg-color-primary-500) !important;

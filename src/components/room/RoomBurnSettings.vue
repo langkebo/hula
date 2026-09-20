@@ -24,7 +24,7 @@
         data-testid="room-burn-duration"
         :value="durationSeconds"
         :options="durationOptions"
-        style="width: 130px"
+        class="w-130px"
         @update:value="handleDurationChange" />
     </div>
 

@@ -10,7 +10,7 @@
       </n-input>
 
       <div class="user-list">
-        <n-scrollbar style="max-height: 300px">
+        <n-scrollbar class="max-h-300px">
           <div
             v-for="user in filteredUsers"
             :key="user.userId"

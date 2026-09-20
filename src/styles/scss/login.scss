@@ -2,7 +2,8 @@
   margin-left: 22px;
 }
 
-:deep(.van-field .van-field__control[type="password"]) {
+/* Vant 密码输入框：库内部对该 control 有自身字号/字体声明，需 !important 压过 */
+:deep(.van-field .van-field__control[type='password']) {
   font-size: 22px !important;
   font-family: 'Courier New', monospace !important;
   line-height: 22px;
@@ -57,6 +58,7 @@
     transform: translateY(-1px) scale(1.01);
   }
 
+  /* 各状态分支同样需要 !important：两套 UI 库（naive-ui / Vant）的按钮背景与阴影优先级高于本类 */
   &:active:not(:disabled) {
     background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700)) !important;
     transform: translateY(0) scale(0.97);
@@ -109,6 +111,7 @@
   }
 }
 
+/* 暗色主题：同上，渐变与阴影仍需 !important 压过两套 UI 库 */
 [data-theme='dark'] {
   .gradient-button {
     background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-brand)) !important;
@@ -119,11 +122,13 @@
       box-shadow: 0 6px 20px color-mix(in srgb, var(--tjg-brand) 40%, transparent) !important;
     }
 
+    /* 同上：压过库的按钮背景 */
     &:active:not(:disabled) {
       background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700)) !important;
       filter: brightness(0.82);
     }
 
+    /* 同上：禁用态灰阶 */
     &:disabled,
     &.n-button--disabled,
     &.van-button--disabled {
@@ -131,6 +136,7 @@
       opacity: 0.6;
     }
 
+    /* 同上：加载态 */
     &.n-button--loading,
     &.van-button--loading {
       background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-500)) !important;

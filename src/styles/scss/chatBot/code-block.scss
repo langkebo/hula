@@ -47,6 +47,7 @@
     background: var(--code-block-skeleton-line);
   }
 
+  /* 展开代码块：需 !important 解除库对内容区的滚动高度限制 */
   :deep(.code-block-content) {
     max-height: none !important;
     overflow: visible !important;

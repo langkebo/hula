@@ -22,10 +22,7 @@
         </n-empty>
       </div>
 
-      <div
-        v-else
-        class="room-card-grid__body grid gap-[--tjg-space-3] p-[--tjg-space-3]"
-        style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))">
+      <div v-else class="room-card-grid__body grid gap-[--tjg-space-3] p-[--tjg-space-3]">
         <RoomCardItem
           v-for="room in rooms"
           :key="room.roomId"
@@ -77,5 +74,7 @@ const onPin = (roomId: string) => emit('pin', roomId)
 
 .room-card-grid__body {
   align-content: start;
+  // 自适应卡片列宽（原为模板内联 style，迁至此处以便主题化）
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 </style>

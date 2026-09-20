@@ -177,7 +177,8 @@ function handleRemoveUser(listType: 'blocklist' | 'allowlist', userId: string) {
   }
 
   &__list-item {
-    padding: var(--tjg-space-1) var(--tjg-space-2) !important;
+    // scoped 属性 + BEM 类特异性高于 naive-ui 的 .n-list-item，无需 !important
+    padding: var(--tjg-space-1) var(--tjg-space-2);
   }
 
   &__user-row {

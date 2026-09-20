@@ -27,7 +27,7 @@
             {{ t('login.mobile.tabs.register') }}
           </div>
           <div
-            style="border-radius: 24px 42px 4px 24px"
+            class="tab-indicator"
             :class="[
               'z-10 absolute bottom--4px h-6px w-34px bg-[--tjg-color-primary-500] transition-all duration-300 ease-out',
               activeTab === 'login' ? 'left-[33px]' : 'left-[133px]'
@@ -267,4 +267,10 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/scss/login';
+
+// 激活 tab 下方的指示条：非对称圆角即其造型本身。
+// 4px/24px 走刻度 token；42px 属造型用的离刻度装饰值，保留字面量。
+.tab-indicator {
+  border-radius: var(--tjg-radius-sheet) 42px var(--tjg-radius-xs) var(--tjg-radius-sheet);
+}
 </style>

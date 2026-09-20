@@ -57,7 +57,7 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
 .dynamic-shell {
   width: min(840px, 100%);
   padding: 32px;
-  border-radius: 20px;
+  border-radius: var(--tjg-radius-panel);
   background: var(--tjg-surface-panel);
   box-shadow: var(--tjg-shadow-lg);
 }
@@ -89,7 +89,7 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
 .dynamic-card {
   padding: 16px;
   border: 1px solid var(--tjg-border-default);
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-surface);
   background: var(--tjg-surface-panel-muted);
 }
 

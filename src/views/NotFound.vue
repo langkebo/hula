@@ -43,7 +43,7 @@ const goHome = () => {
   text-align: center;
   padding: 60px 40px;
   background: var(--tjg-surface-panel);
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-surface);
   box-shadow: var(--tjg-shadow-md);
   max-width: 480px;
   width: 90%;

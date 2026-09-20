@@ -191,10 +191,9 @@ onMounted(async () => {
   background: var(--tjg-surface-subtle);
 }
 
+/* 需 !important：抵消上下文菜单注入的 .no-select */
 .user-select-text {
   -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
   user-select: text !important;
 }
 
