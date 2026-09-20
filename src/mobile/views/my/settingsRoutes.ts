@@ -9,17 +9,20 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   labs: SETTINGS_CANONICAL_ROUTE_SEGMENTS.labs,
   labsIntegrations: `${SETTINGS_CANONICAL_ROUTE_SEGMENTS.labs}/${SETTINGS_LABS_CHILD_ROUTE_SEGMENTS.integrations}`,
   securityPrivacy: SETTINGS_CANONICAL_ROUTE_SEGMENTS.securityPrivacy,
+  password: 'password',
   helpAbout: SETTINGS_CANONICAL_ROUTE_SEGMENTS.helpAbout
 } as const
 
 export const MOBILE_SETTINGS_LABS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.labs}`
 export const MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.labsIntegrations}`
 export const MOBILE_SETTINGS_SECURITY_PRIVACY_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.securityPrivacy}`
+export const MOBILE_SETTINGS_PASSWORD_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.password}`
 export const MOBILE_SETTINGS_HELP_ABOUT_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.helpAbout}`
 
 export const MOBILE_SETTINGS_ROUTE_NAMES = {
   labs: 'mobileLabsSettings',
   labsIntegrations: 'mobileLabsIntegrationsSettings',
   securityPrivacy: 'mobileSecurityPrivacySettings',
+  password: 'mobilePasswordSettings',
   helpAbout: 'mobileHelpAboutSettings'
 } as const
