@@ -26,9 +26,9 @@
     </div>
 
     <div class="poll-footer">
-      <span class="total-votes">{{ pollData.totalVotes || 0 }} {{ t('poll.votes') }}</span>
-      <span v-if="isEnded" class="ended-badge">{{ t('poll.ended') }}</span>
-      <span v-else-if="endTime" class="end-time">{{ t('poll.ends_at') }} {{ formatTime(endTime) }}</span>
+      <span class="total-votes">{{ t('poll.message.votes', { count: pollData.totalVotes || 0 }) }}</span>
+      <span v-if="isEnded" class="ended-badge">{{ t('poll.message.ended') }}</span>
+      <span v-else-if="endTime" class="end-time">{{ t('poll.message.ends_at') }} {{ formatTime(endTime) }}</span>
     </div>
   </div>
 </template>

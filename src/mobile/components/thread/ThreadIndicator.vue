@@ -5,7 +5,7 @@
     <van-icon name="arrow" size="12" />
   </div>
   <van-button v-else plain size="mini" type="primary" icon="chat-o" @click="handleOpenThread">
-    {{ t('thread.start') }}
+    {{ t('common.thread.start') }}
   </van-button>
 </template>
 

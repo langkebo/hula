@@ -10,13 +10,13 @@
       v-if="!isMinimized"
       class="minimize-btn"
       type="button"
-      :title="t('memoryMonitor.minimize')"
+      :title="t('components.memoryMonitor.minimize')"
       @click.stop="toggleMinimize(true)"
       @pointerdown.stop>
       <svg class="size-16px color-[--tjg-text-inverse] rotate-90"><use href="#right"></use></svg>
     </button>
     <template v-if="!isMinimized">
-      <div class="title">{{ t('memoryMonitor.title') }}</div>
+      <div class="title">{{ t('components.memoryMonitor.title') }}</div>
       <div v-if="expanded" class="section">
         <template v-for="(value, name) in storeInfo" :key="name">
           <div v-if="String(name).startsWith('--')" class="label">{{ name }}</div>
@@ -27,11 +27,11 @@
         </template>
       </div>
       <div v-else class="section">
-        <div class="item color-[--tjg-text-tertiary]">{{ t('memoryMonitor.expandHint') }}</div>
+        <div class="item color-[--tjg-text-tertiary]">{{ t('components.memoryMonitor.expandHint') }}</div>
       </div>
     </template>
 
-    <img v-else class="size-24px" :title="t('memoryMonitor.restore')" src="/logoL.png" alt="Tjg" />
+    <img v-else class="size-24px" :title="t('components.memoryMonitor.restore')" src="/logoL.png" alt="Tjg" />
   </div>
 </template>
 <script setup lang="ts">

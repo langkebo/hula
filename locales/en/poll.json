@@ -5,7 +5,7 @@
     "question_placeholder": "Enter poll question",
     "question_required": "Please enter a question",
     "options": "Options",
-    "option_placeholder": "Option {{n}}",
+    "option_placeholder": "Option {n}",
     "options_required": "Please add at least two options",
     "add_option": "Add Option",
     "settings": "Settings",
@@ -17,12 +17,13 @@
     "error": "Failed to create poll"
   },
   "message": {
-    "votes": "{{count}} votes",
+    "votes": "{count} votes",
     "anonymous": "Anonymous",
     "ended": "Ended",
+    "ends_at": "Ends at",
     "soon": "Ending soon",
-    "minutes": "Ends in {{n}} minutes",
-    "hours": "Ends in {{n}} hours",
+    "minutes": "Ends in {n} minutes",
+    "hours": "Ends in {n} hours",
     "vote": "Vote",
     "vote_success": "Vote submitted",
     "vote_error": "Failed to vote"

@@ -1,12 +1,12 @@
 <template>
   <div class="widget-manager">
     <div class="manager-header">
-      <h3>{{ t('widget.title') }}</h3>
+      <h3>{{ t('common.widget.title') }}</h3>
       <n-button type="primary" size="small" @click="showAddDialog = true">
         <template #icon>
           <n-icon><Icon icon="mdi:plus" /></n-icon>
         </template>
-        {{ t('widget.add') }}
+        {{ t('common.widget.add') }}
       </n-button>
     </div>
 
@@ -14,7 +14,7 @@
     <div class="widget-search-bar">
       <n-input
         v-model:value="searchWidgetId"
-        :placeholder="t('widget.search_by_id_placeholder')"
+        :placeholder="t('common.widget.search_by_id_placeholder')"
         size="small"
         style="flex: 1"
         @keyup.enter="handleSearchWidgetById" />
@@ -22,7 +22,7 @@
         <template #icon>
           <n-icon><Icon icon="mdi:magnify" /></n-icon>
         </template>
-        {{ t('widget.search') }}
+        {{ t('common.widget.search') }}
       </n-button>
     </div>
 
@@ -30,7 +30,7 @@
     <div v-if="searchedWidget" class="widget-search-result">
       <n-divider />
       <div class="detail-header">
-        <h4>{{ t('widget.search_result') }}</h4>
+        <h4>{{ t('common.widget.search_result') }}</h4>
         <n-button text @click="searchedWidget = null">
           <template #icon>
             <n-icon><Icon icon="mdi:close" /></n-icon>
@@ -39,16 +39,16 @@
       </div>
       <n-descriptions bordered :column="1" label-placement="left" size="small">
         <n-descriptions-item label="ID">{{ searchedWidget.id }}</n-descriptions-item>
-        <n-descriptions-item :label="t('widget.type')">{{ searchedWidget.type }}</n-descriptions-item>
-        <n-descriptions-item :label="t('widget.url')">{{ searchedWidget.url }}</n-descriptions-item>
-        <n-descriptions-item :label="t('widget.name')">{{ searchedWidget.name || '-' }}</n-descriptions-item>
+        <n-descriptions-item :label="t('common.widget.type')">{{ searchedWidget.type }}</n-descriptions-item>
+        <n-descriptions-item :label="t('common.widget.url')">{{ searchedWidget.url }}</n-descriptions-item>
+        <n-descriptions-item :label="t('common.widget.name')">{{ searchedWidget.name || '-' }}</n-descriptions-item>
       </n-descriptions>
     </div>
 
     <!-- Widget 列表 -->
     <n-spin :show="loading">
       <div v-if="widgets.length === 0" class="empty-state">
-        <n-empty :description="t('widget.no_widgets')" />
+        <n-empty :description="t('common.widget.no_widgets')" />
       </div>
       <div v-else class="widget-list">
         <div
@@ -196,7 +196,7 @@ const getWidgetIcon = (type: string) => {
 async function handleSearchWidgetById() {
   const id = searchWidgetId.value.trim()
   if (!id) {
-    showFeedback(t('widget.search_id_required'), 'warning')
+    showFeedback(t('common.widget.search_id_required'), 'warning')
     return
   }
   searchingWidget.value = true
@@ -204,11 +204,11 @@ async function handleSearchWidgetById() {
     const result = await matrixWidgetService.getWidgetById(id, false)
     searchedWidget.value = result
     if (!result) {
-      showFeedback(t('widget.search_not_found'), 'warning')
+      showFeedback(t('common.widget.search_not_found'), 'warning')
     }
   } catch (e) {
     logger.error('搜索Widget失败', e)
-    showFeedback(t('widget.search_failed'), 'error')
+    showFeedback(t('common.widget.search_failed'), 'error')
     searchedWidget.value = null
   } finally {
     searchingWidget.value = false
@@ -242,22 +242,22 @@ const handleAddWidget = async (data: { name: string; type: string; url: string }
       name: data.name
     })
     if (!result) {
-      showFeedback(t('widget.add_failed'), 'error')
+      showFeedback(t('common.widget.add_failed'), 'error')
       return
     }
-    showFeedback(t('widget.add_success'), 'success')
+    showFeedback(t('common.widget.add_success'), 'success')
     showAddDialog.value = false
     dialogsRef.value?.resetAddWidgetForm()
   } catch (error) {
     logger.error('[WidgetManager] 添加 Widget 失败:', error)
-    showFeedback(t('widget.add_failed'), 'error')
+    showFeedback(t('common.widget.add_failed'), 'error')
   }
 }
 
 const handleRemoveWidget = (widget: Widget) => {
   dialog.warning({
-    title: t('widget.remove_confirm_title'),
-    content: t('widget.remove_confirm_content', { name: widget.name || widget.id }),
+    title: t('common.widget.remove_confirm_title'),
+    content: t('common.widget.remove_confirm_content', { name: widget.name || widget.id }),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: async () => {
@@ -266,9 +266,9 @@ const handleRemoveWidget = (widget: Widget) => {
         if (selectedWidget.value?.id === widget.id) {
           selectedWidget.value = null
         }
-        showFeedback(t('widget.remove_success'), 'success')
+        showFeedback(t('common.widget.remove_success'), 'success')
       } else {
-        showFeedback(t('widget.remove_failed'), 'error')
+        showFeedback(t('common.widget.remove_failed'), 'error')
       }
     }
   })
@@ -288,19 +288,19 @@ const handleAddPermission = async (data: { userId: string; permissions: string[]
   if (!selectedWidget.value) return
   const userId = data.userId.trim()
   if (!userId) {
-    showFeedback(t('widget.permission_user_required'), 'warning')
+    showFeedback(t('common.widget.permission_user_required'), 'warning')
     return
   }
   if (data.permissions.length === 0) {
-    showFeedback(t('widget.permission_scope_required'), 'warning')
+    showFeedback(t('common.widget.permission_scope_required'), 'warning')
     return
   }
   const ok = await grantPermission(selectedWidget.value.id, userId, data.permissions)
   if (ok) {
-    showFeedback(t('widget.permission_added'), 'success')
+    showFeedback(t('common.widget.permission_added'), 'success')
     dialogsRef.value?.resetPermissionForm()
   } else {
-    showFeedback(t('widget.permission_add_failed'), 'error')
+    showFeedback(t('common.widget.permission_add_failed'), 'error')
   }
 }
 
@@ -308,16 +308,16 @@ const handleRemovePermission = (row: PermissionRow) => {
   if (!selectedWidget.value) return
   const widgetId = selectedWidget.value.id
   dialog.warning({
-    title: t('widget.permission_remove_confirm_title'),
-    content: t('widget.permission_remove_confirm_content', { user: row.userId }),
+    title: t('common.widget.permission_remove_confirm_title'),
+    content: t('common.widget.permission_remove_confirm_content', { user: row.userId }),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: async () => {
       const ok = await revokePermission(widgetId, row.userId)
       if (ok) {
-        showFeedback(t('widget.permission_removed'), 'success')
+        showFeedback(t('common.widget.permission_removed'), 'success')
       } else {
-        showFeedback(t('widget.permission_remove_failed'), 'error')
+        showFeedback(t('common.widget.permission_remove_failed'), 'error')
       }
     }
   })
@@ -333,16 +333,16 @@ async function handleSaveConfig(data: { name: string; url: string }) {
       false
     )
     if (result) {
-      showFeedback(t('widget.config_saved'), 'success')
+      showFeedback(t('common.widget.config_saved'), 'success')
       showConfigDialog.value = false
       await detailPanelRef.value?.reload()
       await loadWidgets()
     } else {
-      showFeedback(t('widget.config_save_failed'), 'error')
+      showFeedback(t('common.widget.config_save_failed'), 'error')
     }
   } catch (e) {
     logger.error('保存Widget配置失败', e)
-    showFeedback(t('widget.config_save_failed'), 'error')
+    showFeedback(t('common.widget.config_save_failed'), 'error')
   } finally {
     savingConfig.value = false
   }
@@ -354,15 +354,15 @@ async function handleSaveCapabilities(caps: string[]) {
   try {
     const result = await matrixWidgetService.setWidgetCapabilities(props.roomId, selectedWidget.value.id, caps, true)
     if (result) {
-      showFeedback(t('widget.capabilities_saved'), 'success')
+      showFeedback(t('common.widget.capabilities_saved'), 'success')
       showCapabilitiesDialog.value = false
       await detailPanelRef.value?.reload()
     } else {
-      showFeedback(t('widget.capabilities_save_failed'), 'error')
+      showFeedback(t('common.widget.capabilities_save_failed'), 'error')
     }
   } catch (e) {
     logger.error('保存Widget能力失败', e)
-    showFeedback(t('widget.capabilities_save_failed'), 'error')
+    showFeedback(t('common.widget.capabilities_save_failed'), 'error')
   } finally {
     savingCapabilities.value = false
   }

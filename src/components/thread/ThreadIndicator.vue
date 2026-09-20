@@ -12,7 +12,7 @@
     <template #icon>
       <n-icon><Icon icon="mdi:message-reply-text" /></n-icon>
     </template>
-    {{ t('thread.start') }}
+    {{ t('common.thread.start') }}
   </n-button>
 </template>
 

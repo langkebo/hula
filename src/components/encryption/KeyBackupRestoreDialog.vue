@@ -32,7 +32,7 @@
                 <n-input
                   v-model:value="formData.recoveryKey"
                   type="textarea"
-                  :placeholder="t('encryption.recovery_key_placeholder')"
+                  :placeholder="t('setting.encryption.recovery_key_placeholder')"
                   :rows="4"
                   :disabled="loading" />
               </n-form-item>
@@ -135,7 +135,7 @@
       <div class="dialog-footer">
         <n-button @click="handleCancel" :disabled="loading">{{ t('common.cancel') }}</n-button>
         <n-button type="primary" :loading="loading" :disabled="!canRestore" @click="handleRestore">
-          {{ t('encryption.restore') }}
+          {{ t('setting.encryption.restore') }}
         </n-button>
       </div>
     </template>
@@ -306,7 +306,7 @@ async function handleRestore() {
   if (activeTab.value === 'recoveryKey') {
     const recoveryKey = formData.recoveryKey.trim()
     if (!recoveryKey) {
-      showFeedback(t('encryption.recovery_key_required'), 'warning')
+      showFeedback(t('setting.encryption.recovery_key_required'), 'warning')
       return
     }
     await runRestore(() => encryption.restoreFromBackup(recoveryKey))
@@ -350,7 +350,7 @@ async function runRestore(restoreOperation: () => Promise<{ imported: number; to
       message: t('encryption.backup_restore_dialog.restore_result_success', { imported: result.imported })
     }
 
-    showFeedback(t('encryption.restore_success'), 'success')
+    showFeedback(t('setting.encryption.restore_success'), 'success')
 
     timerManager.setTimeout(() => {
       visible.value = false
@@ -364,7 +364,7 @@ async function runRestore(restoreOperation: () => Promise<{ imported: number; to
       success: false,
       message: t('encryption.backup_restore_dialog.restore_result_failed')
     }
-    showFeedback(t('encryption.restore_backup_failed'), 'error')
+    showFeedback(t('setting.encryption.restore_backup_failed'), 'error')
   } finally {
     if (progressInterval !== null) {
       timerManager.clearInterval(progressInterval)
@@ -389,14 +389,14 @@ async function handleRoomRecover() {
       success: true,
       message: t('encryption.backup_restore_dialog.room_recover_success', { roomId })
     }
-    showFeedback(t('encryption.restore_success'), 'success')
+    showFeedback(t('setting.encryption.restore_success'), 'success')
   } catch (error) {
     logger.error('Failed to recover room keys:', error)
     restoreResult.value = {
       success: false,
       message: t('encryption.backup_restore_dialog.room_recover_failed')
     }
-    showFeedback(t('encryption.restore_backup_failed'), 'error')
+    showFeedback(t('setting.encryption.restore_backup_failed'), 'error')
   } finally {
     loading.value = false
   }
@@ -419,14 +419,14 @@ async function handleSessionRecover() {
       success: true,
       message: t('encryption.backup_restore_dialog.session_recover_success')
     }
-    showFeedback(t('encryption.restore_success'), 'success')
+    showFeedback(t('setting.encryption.restore_success'), 'success')
   } catch (error) {
     logger.error('Failed to recover session key:', error)
     restoreResult.value = {
       success: false,
       message: t('encryption.backup_restore_dialog.session_recover_failed')
     }
-    showFeedback(t('encryption.restore_backup_failed'), 'error')
+    showFeedback(t('setting.encryption.restore_backup_failed'), 'error')
   } finally {
     loading.value = false
   }

@@ -5,7 +5,7 @@
     "question_placeholder": "输入投票问题",
     "question_required": "请输入投票问题",
     "options": "选项",
-    "option_placeholder": "选项 {{n}}",
+    "option_placeholder": "选项 {n}",
     "options_required": "请至少添加两个选项",
     "add_option": "添加选项",
     "settings": "设置",
@@ -17,12 +17,13 @@
     "error": "创建投票失败"
   },
   "message": {
-    "votes": "{{count}} 人投票",
+    "votes": "{count} 人投票",
     "anonymous": "匿名",
     "ended": "已结束",
+    "ends_at": "截止",
     "soon": "即将结束",
-    "minutes": "{{n}} 分钟后结束",
-    "hours": "{{n}} 小时后结束",
+    "minutes": "{n} 分钟后结束",
+    "hours": "{n} 小时后结束",
     "vote": "投票",
     "vote_success": "投票成功",
     "vote_error": "投票失败"

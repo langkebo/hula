@@ -12,7 +12,7 @@
 
     <n-tabs v-model:value="detailTab" type="line" size="small">
       <!-- Config -->
-      <n-tab-pane name="config" :tab="t('widget.config')">
+      <n-tab-pane name="config" :tab="t('common.widget.config')">
         <n-spin :show="configLoading">
           <div class="config-section">
             <div class="section-toolbar">
@@ -20,11 +20,11 @@
                 <template #icon>
                   <n-icon><Icon icon="mdi:pencil" /></n-icon>
                 </template>
-                {{ t('widget.edit_config') }}
+                {{ t('common.widget.edit_config') }}
               </n-button>
             </div>
             <div v-if="!widgetConfig || Object.keys(widgetConfig).length === 0" class="empty-row">
-              <n-empty size="small" :description="t('widget.no_config')" />
+              <n-empty size="small" :description="t('common.widget.no_config')" />
             </div>
             <n-descriptions v-else bordered :column="1" label-placement="left" size="small">
               <n-descriptions-item v-for="(value, key) in widgetConfig" :key="String(key)" :label="String(key)">
@@ -39,7 +39,7 @@
       </n-tab-pane>
 
       <!-- Capabilities -->
-      <n-tab-pane name="capabilities" :tab="t('widget.capabilities')">
+      <n-tab-pane name="capabilities" :tab="t('common.widget.capabilities')">
         <n-spin :show="capabilitiesLoading">
           <div class="capabilities-section">
             <div class="section-toolbar">
@@ -47,11 +47,11 @@
                 <template #icon>
                   <n-icon><Icon icon="mdi:pencil" /></n-icon>
                 </template>
-                {{ t('widget.edit_capabilities') }}
+                {{ t('common.widget.edit_capabilities') }}
               </n-button>
             </div>
             <div v-if="capabilities.length === 0" class="empty-row">
-              <n-empty size="small" :description="t('widget.no_capabilities')" />
+              <n-empty size="small" :description="t('common.widget.no_capabilities')" />
             </div>
             <div v-else class="capabilities-tags">
               <n-tag v-for="cap in capabilities" :key="cap" size="small" type="info" class="cap-tag">
@@ -63,30 +63,30 @@
       </n-tab-pane>
 
       <!-- Sessions -->
-      <n-tab-pane name="sessions" :tab="t('widget.sessions')">
+      <n-tab-pane name="sessions" :tab="t('common.widget.sessions')">
         <n-spin :show="sessionsLoading">
           <div v-if="sessions.length === 0" class="empty-row">
-            <n-empty size="small" :description="t('widget.no_sessions')" />
+            <n-empty size="small" :description="t('common.widget.no_sessions')" />
           </div>
           <div v-else class="sessions-list">
             <div v-for="session in sessions" :key="session.session_id" class="session-item">
               <div class="session-info">
                 <div class="session-row">
-                  <span class="session-label">{{ t('widget.session_id') }}:</span>
+                  <span class="session-label">{{ t('common.widget.session_id') }}:</span>
                   <span class="session-value">{{ session.session_id }}</span>
                 </div>
                 <div class="session-row">
-                  <span class="session-label">{{ t('widget.session_user') }}:</span>
+                  <span class="session-label">{{ t('common.widget.session_user') }}:</span>
                   <span class="session-value">{{ session.user_id ?? '-' }}</span>
                 </div>
                 <div class="session-row">
-                  <span class="session-label">{{ t('widget.session_created') }}:</span>
+                  <span class="session-label">{{ t('common.widget.session_created') }}:</span>
                   <span class="session-value">
                     {{ session.created_at ? new Date(Number(session.created_at)).toLocaleString() : '-' }}
                   </span>
                 </div>
                 <div class="session-row">
-                  <span class="session-label">{{ t('widget.session_last_active') }}:</span>
+                  <span class="session-label">{{ t('common.widget.session_last_active') }}:</span>
                   <span class="session-value">
                     {{ session.last_active ? new Date(Number(session.last_active)).toLocaleString() : '-' }}
                   </span>
@@ -95,10 +95,10 @@
               <n-popconfirm @positive-click="handleTerminateSession(session.session_id)">
                 <template #trigger>
                   <n-button type="error" size="small">
-                    {{ t('widget.terminate_session') }}
+                    {{ t('common.widget.terminate_session') }}
                   </n-button>
                 </template>
-                {{ t('widget.terminate_session_confirm') }}
+                {{ t('common.widget.terminate_session_confirm') }}
               </n-popconfirm>
             </div>
           </div>
@@ -106,15 +106,15 @@
       </n-tab-pane>
 
       <!-- Messages -->
-      <n-tab-pane name="messages" :tab="t('widget.messages')">
+      <n-tab-pane name="messages" :tab="t('common.widget.messages')">
         <div class="messages-section">
           <div class="message-history">
             <div v-if="messageHistory.length === 0" class="empty-row">
-              <n-empty size="small" :description="t('widget.no_messages')" />
+              <n-empty size="small" :description="t('common.widget.no_messages')" />
             </div>
             <div v-for="(msg, index) in messageHistory" :key="index" class="message-item">
               <n-tag size="small" :type="msg.direction === 'sent' ? 'success' : 'info'" class="msg-tag">
-                {{ msg.direction === 'sent' ? t('widget.msg_sent') : t('widget.msg_received') }}
+                {{ msg.direction === 'sent' ? t('common.widget.msg_sent') : t('common.widget.msg_received') }}
               </n-tag>
               <span class="msg-type">{{ msg.type }}</span>
               <span class="msg-content">{{ msg.content }}</span>
@@ -124,7 +124,7 @@
           <div class="message-input-row">
             <n-input
               v-model:value="messageInput"
-              :placeholder="t('widget.message_placeholder')"
+              :placeholder="t('common.widget.message_placeholder')"
               size="small"
               style="flex: 1"
               @keyup.enter="handleSendMessage" />
@@ -242,14 +242,14 @@ async function handleTerminateSession(sessionId: string) {
   try {
     const ok = await matrixWidgetService.terminateWidgetSession(sessionId, true)
     if (ok) {
-      showFeedback(t('widget.session_terminated'), 'success')
+      showFeedback(t('common.widget.session_terminated'), 'success')
       await loadSessions()
     } else {
-      showFeedback(t('widget.session_terminate_failed'), 'error')
+      showFeedback(t('common.widget.session_terminate_failed'), 'error')
     }
   } catch (e) {
     logger.error('终止Widget会话失败', e)
-    showFeedback(t('widget.session_terminate_failed'), 'error')
+    showFeedback(t('common.widget.session_terminate_failed'), 'error')
   }
 }
 
@@ -285,10 +285,10 @@ async function handleSendMessage() {
       }
     ]
     messageInput.value = ''
-    showFeedback(t('widget.message_sent'), 'success')
+    showFeedback(t('common.widget.message_sent'), 'success')
   } catch (e) {
     logger.error('发送Widget消息失败', e)
-    showFeedback(t('widget.message_send_failed'), 'error')
+    showFeedback(t('common.widget.message_send_failed'), 'error')
   } finally {
     sendingMessage.value = false
   }

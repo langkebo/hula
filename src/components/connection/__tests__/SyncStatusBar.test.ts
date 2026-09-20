@@ -1,22 +1,13 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18nMock } from '~/tests/i18n-messages'
 import SyncStatusBar from '../SyncStatusBar.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'connection.connecting': '正在连接...',
-        'connection.catchup': '正在同步历史消息',
-        'connection.reconnecting': '重连中',
-        'connection.error': '连接错误',
-        'connection.connected': '已连接'
-      }
-      return translations[key] || key
-    }
-  })
-}))
+// 真实语言表驱动，而非手写文案 stub —— 见 `~/tests/i18n-messages`。
+// 本文件原先手写了一张 key → 中文映射表（含当时源码里错误的
+// `connection.*` 键名，实际应为 `chat.connection.*`），源码写错键名时测试依然全绿。
+vi.mock('vue-i18n', () => createI18nMock())
 
 describe('SyncStatusBar', () => {
   const createWrapper = (props = {}) => {

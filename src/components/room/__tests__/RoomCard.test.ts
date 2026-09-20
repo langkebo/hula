@@ -111,12 +111,12 @@ describe('RoomCard', () => {
 
   it('shows federation badge when isFederated is true', () => {
     const wrapper = mountCard({ item: { ...sampleRoom, isFederated: true } })
-    expect(wrapper.find('[data-testid="room-federation-badge"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="federation-badge"]').exists()).toBe(true)
   })
 
   it('hides federation badge when isFederated is false', () => {
     const wrapper = mountCard({ item: { ...sampleRoom, isFederated: false } })
-    expect(wrapper.find('[data-testid="room-federation-badge"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="federation-badge"]').exists()).toBe(false)
   })
 
   it('truncates long topic text', () => {

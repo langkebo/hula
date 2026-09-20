@@ -3,18 +3,18 @@
   <n-modal
     :show="showAddDialog"
     preset="card"
-    :title="t('widget.add')"
+    :title="t('common.widget.add')"
     style="width: 600px"
     @update:show="emit('update:showAddDialog', $event)">
     <n-form ref="formRef" :model="formData" :rules="rules">
-      <n-form-item :label="t('widget.name')" path="name">
-        <n-input v-model:value="formData.name" :placeholder="t('widget.name_placeholder')" />
+      <n-form-item :label="t('common.widget.name')" path="name">
+        <n-input v-model:value="formData.name" :placeholder="t('common.widget.name_placeholder')" />
       </n-form-item>
-      <n-form-item :label="t('widget.type')" path="type">
+      <n-form-item :label="t('common.widget.type')" path="type">
         <n-select v-model:value="formData.type" :options="widgetTypeOptions" />
       </n-form-item>
-      <n-form-item :label="t('widget.url')" path="url">
-        <n-input v-model:value="formData.url" :placeholder="t('widget.url_placeholder')" />
+      <n-form-item :label="t('common.widget.url')" path="url">
+        <n-input v-model:value="formData.url" :placeholder="t('common.widget.url_placeholder')" />
       </n-form-item>
     </n-form>
     <template #footer>
@@ -31,7 +31,7 @@
   <n-modal
     :show="showPermissionsDialog"
     preset="card"
-    :title="t('widget.permissions')"
+    :title="t('common.widget.permissions')"
     style="width: 560px"
     @update:show="emit('update:showPermissionsDialog', $event)">
     <div v-if="selectedWidget" class="permissions-content">
@@ -43,7 +43,7 @@
       <n-spin :show="permissionsLoading">
         <div class="permissions-list">
           <div v-if="permissionRows.length === 0" class="empty-row">
-            <n-empty size="small" :description="t('widget.no_permissions')" />
+            <n-empty size="small" :description="t('common.widget.no_permissions')" />
           </div>
           <div v-for="row in permissionRows" :key="row.userId" class="permission-row">
             <div class="permission-user">
@@ -72,7 +72,7 @@
       <div class="add-permission-form">
         <n-input
           v-model:value="newPermission.userId"
-          :placeholder="t('widget.permission_user_placeholder')"
+          :placeholder="t('common.widget.permission_user_placeholder')"
           size="small"
           style="flex: 1" />
         <n-select
@@ -97,7 +97,7 @@
   <n-modal
     :show="showCapabilitiesDialog"
     preset="card"
-    :title="t('widget.edit_capabilities')"
+    :title="t('common.widget.edit_capabilities')"
     style="width: 520px"
     @update:show="emit('update:showCapabilitiesDialog', $event)">
     <div v-if="selectedWidget" class="capabilities-dialog-content">
@@ -115,7 +115,7 @@
         <div class="custom-capability-row">
           <n-input
             v-model:value="customCapability"
-            :placeholder="t('widget.custom_capability_placeholder')"
+            :placeholder="t('common.widget.custom_capability_placeholder')"
             size="small"
             style="flex: 1"
             @keyup.enter="addCustomCapability" />
@@ -139,19 +139,19 @@
   <n-modal
     :show="showConfigDialog"
     preset="card"
-    :title="t('widget.edit_config')"
+    :title="t('common.widget.edit_config')"
     style="width: 600px"
     @update:show="emit('update:showConfigDialog', $event)">
     <div v-if="selectedWidget" class="config-dialog-content">
       <n-spin :show="savingConfig">
         <n-form :model="configFormData">
-          <n-form-item :label="t('widget.name')">
+          <n-form-item :label="t('common.widget.name')">
             <n-input v-model:value="configFormData.name" />
           </n-form-item>
-          <n-form-item :label="t('widget.url')">
+          <n-form-item :label="t('common.widget.url')">
             <n-input v-model:value="configFormData.url" />
           </n-form-item>
-          <n-form-item :label="t('widget.type')">
+          <n-form-item :label="t('common.widget.type')">
             <n-input v-model:value="configFormData.type" disabled />
           </n-form-item>
         </n-form>
@@ -217,24 +217,24 @@ const formData = reactive({
 })
 
 const widgetTypeOptions = [
-  { label: t('widget.type_custom'), value: 'custom' },
-  { label: t('widget.type_jitsi'), value: 'jitsi' },
-  { label: t('widget.type_etherpad'), value: 'etherpad' },
-  { label: t('widget.type_poll'), value: 'poll' }
+  { label: t('common.widget.type_custom'), value: 'custom' },
+  { label: t('common.widget.type_jitsi'), value: 'jitsi' },
+  { label: t('common.widget.type_etherpad'), value: 'etherpad' },
+  { label: t('common.widget.type_poll'), value: 'poll' }
 ]
 
 const rules = {
   name: {
     required: true,
-    message: t('widget.name_required')
+    message: t('common.widget.name_required')
   },
   type: {
     required: true,
-    message: t('widget.type_required')
+    message: t('common.widget.type_required')
   },
   url: {
     required: true,
-    message: t('widget.url_required'),
+    message: t('common.widget.url_required'),
     trigger: ['blur', 'input']
   }
 }
@@ -310,9 +310,9 @@ const newPermission = reactive<{ userId: string; permissions: string[] }>({
 })
 
 const permissionPresetOptions = [
-  { label: t('widget.permission_read'), value: 'read' },
-  { label: t('widget.permission_write'), value: 'write' },
-  { label: t('widget.permission_admin'), value: 'admin' }
+  { label: t('common.widget.permission_read'), value: 'read' },
+  { label: t('common.widget.permission_write'), value: 'write' },
+  { label: t('common.widget.permission_admin'), value: 'admin' }
 ]
 
 function handleSubmitAddPermission() {

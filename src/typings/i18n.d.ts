@@ -1926,6 +1926,24 @@ export type I18nKeys = {
     },
     "crypto_unavailable": {
       "message": "加密功能未就绪，此房间的消息无法发送。请重新登录或联系管理员。"
+    },
+    "connection": {
+      "connecting": "正在连接...",
+      "catchup": "正在同步历史消息",
+      "reconnecting": "重连中",
+      "error": "连接错误",
+      "connected": "已连接",
+      "offline_hint": "离线模式：显示本地缓存消息"
+    },
+    "encryption": {
+      "verified": "E2E 已验证",
+      "unverified": "未验证",
+      "risk": "存在风险",
+      "plain": "未加密",
+      "verified_title": "端到端加密已验证",
+      "unverified_title": "端到端加密未完全验证",
+      "risk_title": "端到端加密存在安全风险",
+      "plain_title": "消息未加密"
     }
   },
   "chatHistory": {
@@ -2705,6 +2723,44 @@ export type I18nKeys = {
       "create": "创建",
       "create_success": "脱水设备创建成功",
       "create_failed": "创建脱水设备失败"
+    },
+    "cross_signing": {
+      "password_required": "请输入账号密码以完成认证",
+      "password_placeholder": "账号密码"
+    },
+    "backup_restore_dialog": {
+      "title": "从密钥备份恢复",
+      "intro_primary": "从服务器上的密钥备份恢复历史消息的加密密钥。",
+      "intro_hint": "请选择与你创建备份时相同的方式：恢复密钥、密钥文件或安全短语。",
+      "tab_recovery_key": "恢复密钥",
+      "tab_key_file": "密钥文件",
+      "tab_passphrase": "安全短语",
+      "recovery_key_label": "恢复密钥",
+      "version_label": "备份版本",
+      "version_placeholder": "请选择要恢复的备份版本",
+      "select_file": "选择密钥文件",
+      "file_hint": "支持从其他设备导出的密钥文件（.txt / .json）。",
+      "file_required": "请先选择密钥文件",
+      "file_read_failed": "读取密钥文件失败，请确认文件内容完整且未损坏",
+      "passphrase_label": "安全短语",
+      "passphrase_placeholder": "请输入创建备份时设置的安全短语",
+      "passphrase_required": "请输入安全短语",
+      "restoring_progress": "正在恢复：{progress}%",
+      "restore_result_success": "成功恢复 {imported} 个密钥",
+      "restore_result_failed": "恢复失败，请检查密钥是否正确",
+      "advanced_title": "高级选项",
+      "room_id_label": "房间 ID",
+      "room_id_placeholder": "例如 !abcdef:example.com",
+      "room_id_required": "请输入房间 ID",
+      "session_id_label": "会话 ID",
+      "session_id_placeholder": "请输入要恢复的会话 ID",
+      "session_id_required": "请输入会话 ID",
+      "recover_room": "恢复该房间的密钥",
+      "recover_session": "恢复该会话的密钥",
+      "room_recover_success": "已恢复房间 {roomId} 的密钥",
+      "room_recover_failed": "恢复该房间密钥失败，请确认房间与会话 ID 是否正确",
+      "session_recover_success": "已恢复该会话的密钥",
+      "session_recover_failed": "恢复该会话密钥失败，请确认会话 ID 是否正确"
     }
   },
   "error": {
@@ -3035,6 +3091,7 @@ export type I18nKeys = {
       "device_last_seen": "最后活跃",
       "device_unknown": "未知设备",
       "federation_section": "联邦/服务器",
+      "matrix_id": "Matrix ID",
       "server_address": "服务器地址",
       "federated_user": "联邦用户",
       "local_user": "本地用户"
@@ -4621,7 +4678,8 @@ export type I18nKeys = {
     "copy_success": "复制成功",
     "emoji_already_marked": "该表情已标记",
     "retry": "重试",
-    "send_failed_retry": "发送失败，点击重试"
+    "send_failed_retry": "发送失败，点击重试",
+    "verify_sender_device": "验证发送方设备"
   },
   "mobile_burn": {
     "title": "阅后即焚",
@@ -5674,7 +5732,7 @@ export type I18nKeys = {
       "question_placeholder": "输入投票问题",
       "question_required": "请输入投票问题",
       "options": "选项",
-      "option_placeholder": "选项 {{n}}",
+      "option_placeholder": "选项 {n}",
       "options_required": "请至少添加两个选项",
       "add_option": "添加选项",
       "settings": "设置",
@@ -5686,12 +5744,13 @@ export type I18nKeys = {
       "error": "创建投票失败"
     },
     "message": {
-      "votes": "{{count}} 人投票",
+      "votes": "{count} 人投票",
       "anonymous": "匿名",
       "ended": "已结束",
+      "ends_at": "截止",
       "soon": "即将结束",
-      "minutes": "{{n}} 分钟后结束",
-      "hours": "{{n}} 小时后结束",
+      "minutes": "{n} 分钟后结束",
+      "hours": "{n} 小时后结束",
       "vote": "投票",
       "vote_success": "投票成功",
       "vote_error": "投票失败"
@@ -7694,6 +7753,8 @@ export type I18nKeys = {
       "pending_verification_cancel_failed": "取消待处理验证失败",
       "device_key_label": "设备密钥",
       "device_key_desc": "查看此设备的加密密钥指纹",
+      "device_trust_label": "设备信任",
+      "device_trust_desc": "管理已验证的设备与待处理的验证请求",
       "view": "查看",
       "info_section": "加密信息",
       "algorithm_label": "加密算法",
@@ -7714,6 +7775,11 @@ export type I18nKeys = {
       "copied": "已复制到剪贴板",
       "device_verify_dialog": {
         "title": "设备验证",
+        "verify_user_label": "目标用户",
+        "select_device_label": "选择要验证的设备",
+        "select_device_placeholder": "请选择设备",
+        "select_device_required": "请先选择要验证的设备",
+        "no_device_available": "该用户暂无可验证的设备",
         "intro_primary": "验证此设备可以确保您的加密通信安全。",
         "intro_secondary": "验证后，您可以确认此设备确实是您本人的设备。",
         "device_id": "设备 ID",

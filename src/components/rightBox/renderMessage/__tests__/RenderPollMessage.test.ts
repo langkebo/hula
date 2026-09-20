@@ -1,19 +1,17 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18nMock } from '~/tests/i18n-messages'
 import RenderPollMessage from '../RenderPollMessage.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'poll.votes': '票',
-        'poll.ended': '已结束',
-        'poll.ends_at': '截止'
-      }
-      return translations[key] || key
-    }
-  })
-}))
+/**
+ * 真实语言表驱动，而非手写文案 stub —— 见 `~/tests/i18n-messages`。
+ *
+ * 本文件原先手写了 `poll.votes` / `poll.ended` / `poll.ends_at` 三个映射，
+ * 而组件源码用的正是这三个键 —— 于是测试全绿，但真实语言表里
+ * 只有 `poll.message.votes` / `poll.message.ended`，`poll.ends_at` 根本不存在，
+ * 界面在聊天里直接显示裸 key。这正是自洽 stub 掩盖真实缺陷的典型样本。
+ */
+vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('@/utils/ComputedTime', () => ({
   formatChatTime: vi.fn(() => '2026-07-17 10:00')
@@ -81,7 +79,7 @@ describe('RenderPollMessage', () => {
     })
 
     expect(wrapper.text()).toContain('0 (0%)')
-    expect(wrapper.text()).toContain('0 票')
+    expect(wrapper.text()).toContain('0 人投票')
   })
 
   it('未结束且有截止时间时展示截止时间', () => {

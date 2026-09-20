@@ -32,12 +32,7 @@
       </div>
 
       <!-- 重试按钮（错误状态） -->
-      <n-button
-        v-if="connectionState === CS.ERROR"
-        size="tiny"
-        secondary
-        :disabled="isRetrying"
-        @click="handleRetry">
+      <n-button v-if="connectionState === CS.ERROR" size="tiny" secondary :disabled="isRetrying" @click="handleRetry">
         重试
       </n-button>
     </div>
@@ -139,15 +134,15 @@ function handleRetry() {
 const statusLabel = computed(() => {
   switch (props.connectionState) {
     case CS.CONNECTING:
-      return t('connection.connecting')
+      return t('chat.connection.connecting')
     case CS.CATCHUP:
-      return t('connection.catchup')
+      return t('chat.connection.catchup')
     case CS.RECONNECTING:
-      return t('connection.reconnecting')
+      return t('chat.connection.reconnecting')
     case CS.ERROR:
-      return t('connection.error')
+      return t('chat.connection.error')
     case CS.CONNECTED:
-      return t('connection.connected')
+      return t('chat.connection.connected')
     default:
       return ''
   }

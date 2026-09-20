@@ -55,7 +55,7 @@
         :autosize="{ minHeight: 40, maxHeight: 100 }"
         rows="1" />
       <van-button type="primary" size="small" :loading="sending" :disabled="!replyText.trim()" @click="handleSendReply">
-        {{ t('thread.send') }}
+        {{ t('common.thread.send') }}
       </van-button>
     </div>
   </div>
@@ -100,7 +100,7 @@ const loadThread = async () => {
     rootMessage.value = viewData.rootMessage
   } catch (error) {
     logger.error('[MobileThreadView] 加载线程失败:', error)
-    showToast(t('thread.load_failed'))
+    showToast(t('common.thread.load_failed'))
   }
 }
 
@@ -114,7 +114,7 @@ const loadMessages = async () => {
     finished.value = true
   } catch (error) {
     logger.error('[MobileThreadView] 加载消息失败:', error)
-    showToast(t('thread.load_failed'))
+    showToast(t('common.thread.load_failed'))
   } finally {
     loading.value = false
   }
@@ -140,14 +140,14 @@ const handleSendReply = async () => {
       body: replyText.value
     })
     replyText.value = ''
-    showToast(t('thread.send_success'))
+    showToast(t('common.thread.send_success'))
 
     // 重新加载消息
     finished.value = false
     await loadMessages()
   } catch (error) {
     logger.error('[MobileThreadView] 发送回复失败:', error)
-    showToast(t('thread.send_failed'))
+    showToast(t('common.thread.send_failed'))
   } finally {
     sending.value = false
   }
@@ -262,13 +262,13 @@ onMounted(() => {
   :deep(.van-field) {
     flex: 1;
     background: var(--van-background-2);
-    border-radius: 20px;
+    border-radius: var(--tjg-radius-2xl);
     padding: 8px 16px;
   }
 
   .van-button {
     flex-shrink: 0;
-    border-radius: 20px;
+    border-radius: var(--tjg-radius-2xl);
     padding: 0 20px;
     height: 36px;
   }

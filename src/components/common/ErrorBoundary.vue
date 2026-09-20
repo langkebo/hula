@@ -8,18 +8,18 @@
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h2 class="error-title">{{ t('errorBoundary.title') }}</h2>
+      <h2 class="error-title">{{ t('errorBoundary.errorBoundary.title') }}</h2>
       <p class="error-message">{{ errorMessage }}</p>
       <div class="error-actions">
         <n-button type="primary" @click="handleRetry">
-          {{ t('errorBoundary.retry') }}
+          {{ t('errorBoundary.errorBoundary.retry') }}
         </n-button>
         <n-button @click="handleReload">
-          {{ t('errorBoundary.reload') }}
+          {{ t('errorBoundary.errorBoundary.reload') }}
         </n-button>
       </div>
       <details v-if="isDev" class="error-details">
-        <summary>{{ t('errorBoundary.details') }}</summary>
+        <summary>{{ t('errorBoundary.errorBoundary.details') }}</summary>
         <pre>{{ errorStack }}</pre>
       </details>
     </div>
@@ -40,7 +40,7 @@ const isDev = import.meta.env.DEV
 
 const error = ref<Error | null>(null)
 const hasError = computed(() => error.value !== null)
-const errorMessage = computed(() => error.value?.message || t('errorBoundary.unknownError'))
+const errorMessage = computed(() => error.value?.message || t('errorBoundary.errorBoundary.unknownError'))
 const errorStack = computed(() => error.value?.stack || '')
 
 onErrorCaptured((err: Error) => {
@@ -78,7 +78,7 @@ const handleReload = async () => {
   padding: 32px;
   text-align: center;
   background: var(--tjg-surface-panel);
-  border-radius: 16px;
+  border-radius: var(--tjg-radius-surface);
   box-shadow: var(--tjg-shadow-md);
 }
 
