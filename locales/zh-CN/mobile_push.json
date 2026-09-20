@@ -1,0 +1,22 @@
+{
+  "title": "推送设置",
+  "loading": "加载中...",
+  "load_failed": "推送信息加载失败",
+  "save_failed": "推送设置保存失败",
+  "master_section": "推送总开关",
+  "master_switch": "启用推送",
+  "master_switch_hint": "关闭后服务器不再向本账号推送任何通知",
+  "devices_section": "推送设备",
+  "no_devices": "暂无已注册的推送设备",
+  "unknown_device": "未知设备",
+  "device_enabled": "已启用",
+  "device_disabled": "已停用",
+  "no_rules": "暂无推送规则",
+  "kinds": {
+    "override": "优先规则",
+    "content": "内容规则",
+    "room": "房间规则",
+    "sender": "发送者规则",
+    "underride": "兜底规则"
+  }
+}
