@@ -4,7 +4,7 @@
  * Extracted from CryptoSDKAdapter to keep file sizes under the 400-line budget.
  */
 
-import type { ISecuritySummary } from '@/types/matrix-extensions'
+import type { CryptoApi, ISecuritySummary } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import type { CrossSigningStatusResult, CryptoAdapterAccessors } from './cryptoAdapterTypes'
 
@@ -47,16 +47,45 @@ export class CryptoSecurityAdapter {
       logger.warn('Check cross-signing ready failed:', err)
     }
 
-    const crossSigningInfo = (crypto as unknown as { crossSigningInfo?: { getId?(type?: string): string | undefined } })
-      .crossSigningInfo
+    // 交叉签名密钥 ID 通过真实 SDK API 获取。
+    // 历史缺陷：曾用 `as unknown as { crossSigningInfo }` 读取 crypto store 的内部成员
+    // （`CryptoApi` 上没有该属性），三个 key 字段因此恒为 undefined，
+    // 弹窗永远把密钥显示为「缺失」。真实 API 返回 null 表示尚未初始化。
+    const [masterPublicKey, selfSigningPublicKey, userSigningPublicKey] = await Promise.all([
+      this.getCrossSigningKeyId(crypto),
+      this.getCrossSigningKeyId(crypto, 'self_signing'),
+      this.getCrossSigningKeyId(crypto, 'user_signing')
+    ])
 
     return {
       privateKeysCached,
       crossSigningVerified,
       isSetup: privateKeysCached,
-      masterPublicKey: crossSigningInfo?.getId?.(),
-      selfSigningPublicKey: crossSigningInfo?.getId?.('self_signing'),
-      userSigningPublicKey: crossSigningInfo?.getId?.('user_signing')
+      masterPublicKey,
+      selfSigningPublicKey,
+      userSigningPublicKey
+    }
+  }
+
+  /**
+   * 读取指定交叉签名密钥的 ID。
+   *
+   * @param crypto CryptoApi 实例
+   * @param type 密钥类型；缺省为主密钥
+   * @returns 密钥 ID，或 null（未初始化 / SDK 未提供该能力）
+   */
+  private async getCrossSigningKeyId(
+    crypto: CryptoApi,
+    type?: 'master' | 'self_signing' | 'user_signing'
+  ): Promise<string | null> {
+    if (typeof crypto.getCrossSigningKeyId !== 'function') {
+      return null
+    }
+    try {
+      return await crypto.getCrossSigningKeyId(type as never)
+    } catch (err) {
+      logger.warn(`Get cross-signing key id failed (type=${type ?? 'master'}):`, err)
+      return null
     }
   }
 

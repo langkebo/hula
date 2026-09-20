@@ -343,13 +343,14 @@ const handleBackupClick = async () => {
     }
   } else {
     try {
-      const preparedBackup = await matrixEncryptionContextService.prepareKeyBackupVersion()
-      if (!preparedBackup) {
+      // 直接使用 SDK 的真实 API：生成备份密钥 → 存入 SSSS → 创建备份版本 → 启用引擎。
+      // 历史缺陷：调用不存在的 prepareKeyBackupVersion，恒为 null，必然走「已禁用」分支。
+      const ready = await matrixEncryptionContextService.ensureKeyBackupVersion()
+      if (!ready) {
         showToast(t('setting.encryption.disabled'))
         return
       }
 
-      await matrixKeyBackupService.createBackupVersion(preparedBackup.algorithm, preparedBackup.authData)
       showToast(t('setting.encryption.setup_backup'))
       await loadBackupStatus()
     } catch {

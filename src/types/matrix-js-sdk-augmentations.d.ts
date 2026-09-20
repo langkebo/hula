@@ -186,12 +186,10 @@ declare module 'matrix-js-sdk' {
     createCall(roomId: string, threadId?: string, opts?: { audio: boolean; video: boolean }): MatrixCall | null
     isCryptoEnabled(): boolean
     getCrypto(): CryptoApi | null
-    crypto: CryptoApi
+    // 说明：SDK 没有 `client.crypto` 属性（只有 getCrypto()），
+    // 也没有 getCrossSigningInfo / getStoredDevice / getUserDevices / getKeyBackupEnabled。
+    // 这些幻影声明已移除——保留会让 vue-tsc 通过而运行时 undefined。
     isRoomEncrypted(roomId: string): boolean
-    getCrossSigningInfo(userId: string): unknown
-    getStoredDevice(userId: string, deviceId: string): unknown
-    getUserDevices(userId: string): Promise<unknown[]>
-    getKeyBackupEnabled(): Promise<boolean>
     createFilter(filter: unknown): Promise<unknown>
     getRoom(roomId: string): Room | null
     getRooms(): Room[]
@@ -378,26 +376,6 @@ declare module 'matrix-js-sdk' {
     on(event: 'Call.incoming', listener: (call: MatrixCall) => void): void
     on(event: 'Call.hangup', listener: (call: MatrixCall) => void): void
     on(event: 'Call.replaced', listener: (newCall: MatrixCall, oldCall: MatrixCall) => void): void
-    on(
-      event: 'crypto.verification.requested',
-      listener: (request: { transactionId: string; userId: string; deviceId: string; methods: string[] }) => void
-    ): void
-    on(
-      event: 'crypto.verification.finished',
-      listener: (request: { transactionId: string; userId: string; deviceId: string }) => void
-    ): void
-    on(
-      event: 'crypto.verification.cancelled',
-      listener: (request: { transactionId: string; userId: string; deviceId: string; cancelReason?: string }) => void
-    ): void
-    on(
-      event: 'crypto.verification.started',
-      listener: (request: { transactionId: string; userId: string; deviceId: string }) => void
-    ): void
-    on(
-      event: 'crypto.verification.ready',
-      listener: (request: { transactionId: string; userId: string; deviceId: string; methods: string[] }) => void
-    ): void
     on(event: string, listener: (...args: unknown[]) => void): void
     off(event: 'sync', listener: (state: string) => void): void
     off(event: 'room', listener: (room: Room) => void): void

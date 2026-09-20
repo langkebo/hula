@@ -225,7 +225,9 @@ class MatrixDeviceService extends BaseMatrixService {
         throw new Error('DeviceManager 不可用')
       }
 
-      await deviceManager.deleteDevices(deviceIds, auth)
+      // SDK 真实签名只接受一个参数，且仅对象形式会读取 auth。
+      // 传第二个位置参数会被静默丢弃，导致 UIA 重试永远失败。
+      await deviceManager.deleteDevices(auth ? { devices: deviceIds, auth } : { devices: deviceIds })
       logger.info(`[DeviceService] 批量删除设备成功: ${deviceIds.length} 个设备`)
     } catch (err) {
       logger.error(`[DeviceService] 批量删除设备失败: ${err}`)

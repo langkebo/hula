@@ -42,6 +42,8 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
   const step = ref<VerificationStep>('intro')
   const loading = ref(false)
   const emojis = ref<Array<{ emoji: string; description: string }>>([])
+  /** decimal SAS（三个 0-8191 数字），emoji 方法未协商时使用 */
+  const sasDecimal = ref<number[]>([])
   const pendingRequests = ref<PendingRequest[]>([])
   const currentTransactionId = ref<string | null>(options.transactionId ?? null)
   const targetUserId = ref<string>(options.userId ?? '')
@@ -98,6 +100,14 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     try {
       await matrixVerificationService.acceptVerification(transactionId)
       currentTransactionId.value = transactionId
+
+      // 载入真实 SAS：没有可展示的 SAS 时绝不能进入 showKey，
+      // 否则用户会对着空白网格点"匹配"，形成假的安全信号。
+      const sas = await matrixVerificationService.getSasView(transactionId)
+      // 消费方（MobileDeviceVerifyDialog）读取 emoji.description，保持该字段名
+      emojis.value = sas.emoji.map(([emoji, name]) => ({ emoji, description: name }))
+      sasDecimal.value = sas.decimal ? [...sas.decimal] : []
+
       step.value = 'showKey'
       return true
     } catch (err) {
@@ -122,8 +132,8 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
         await matrixVerificationService.confirmSas(currentTransactionId.value)
         step.value = 'success'
       } else {
-        // 不匹配时以 mismatch 原因取消
-        await matrixVerificationService.cancelVerification(currentTransactionId.value, 'mismatch')
+        // 不匹配：发送 m.mismatched_sas，让对端明确知道是 SAS 不一致而非普通取消
+        await matrixVerificationService.mismatchSas(currentTransactionId.value)
         step.value = 'rejected'
       }
       return true
@@ -155,6 +165,7 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
   const reset = (): void => {
     step.value = 'intro'
     emojis.value = []
+    sasDecimal.value = []
     errorMessage.value = null
     currentTransactionId.value = options.transactionId ?? null
     targetUserId.value = options.userId ?? ''
@@ -174,6 +185,7 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     step,
     loading,
     emojis,
+    sasDecimal,
     pendingRequests,
     currentTransactionId,
     targetUserId,

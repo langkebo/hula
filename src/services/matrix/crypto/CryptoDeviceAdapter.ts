@@ -5,7 +5,7 @@
  * All methods delegate to SDK managers via CryptoAdapterAccessors.
  */
 
-import type { LegacyStoredDevice, TrustLevel, VerificationRequest } from '@/types/matrix-extensions'
+import type { TrustLevel, VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import type { CryptoAdapterAccessors, DeviceInfo, DeviceVerificationResult } from './cryptoAdapterTypes'
 
@@ -47,18 +47,10 @@ export class CryptoDeviceAdapter {
       })
     }
 
-    const client = this.accessors.getExtendedClient()
-    if (typeof client.getStoredDevicesForUser === 'function') {
-      const devices = (await client.getStoredDevicesForUser(userId)) ?? []
-      return devices.map((device: LegacyStoredDevice) => ({
-        deviceId: device.deviceId,
-        userId: device.userId,
-        displayName: device.displayName,
-        isVerified: device.isVerified()
-      }))
-    }
-
-    return []
+    // 历史缺陷：这里曾有一个 `client.getStoredDevicesForUser` 兜底——该方法在
+    // vendored matrix-js-sdk 中不存在，兜底永远不可达，却让「设备列表为空」看起来正常。
+    // 现在显式失败，避免把「能力缺失」伪装成「没有设备」。
+    throw new Error('无法获取设备列表：DeviceKeysManager 不可用（keys/query 是查询他人设备的唯一端点）')
   }
 
   /** 获取指定设备信息
@@ -97,17 +89,8 @@ export class CryptoDeviceAdapter {
       }
     }
 
-    const client = this.accessors.getExtendedClient()
-    if (typeof client.getStoredDevice === 'function') {
-      const device = client.getStoredDevice(userId, deviceId)
-      if (!device) return null
-      return {
-        deviceId: device.deviceId,
-        userId: device.userId,
-        displayName: device.displayName,
-        isVerified: device.isVerified()
-      }
-    }
+    // 历史缺陷：此处曾用 `client.getStoredDevice` 兜底——该方法在 SDK 中不存在，
+    // 兜底不可达，却让「查不到设备」与「能力缺失」难以区分。
 
     return null
   }
@@ -195,18 +178,10 @@ export class CryptoDeviceAdapter {
       }
     }
 
-    const client = this.accessors.getExtendedClient()
-    if (typeof client.checkDeviceTrust === 'function') {
-      const trust = await client.checkDeviceTrust(userId, deviceId)
-      return {
-        verified: trust.isVerified(),
-        crossSigningVerified: trust.crossSigningVerified,
-        devicesCrossSigningVerified: trust.crossSigningVerified,
-        tofu: trust.tofu ?? false
-      }
-    }
-
-    return { verified: false, crossSigningVerified: false, devicesCrossSigningVerified: false, tofu: false }
+    // 历史缺陷：这里曾用 `client.checkDeviceTrust` 兜底——该方法在 SDK 中不存在，
+    // 兜底永远不可达，最终恒返回「全部 false」，使所有设备都被显示为未验证。
+    // 明确报错，让上层区分「查询失败」与「确实未验证」。
+    throw new Error('无法获取设备验证状态：CryptoApi 不可用')
   }
 
   /** 请求设备验证
@@ -230,43 +205,29 @@ export class CryptoDeviceAdapter {
     return null
   }
 
-  /** 屏蔽设备
+  /**
+   * 屏蔽设备。
+   *
+   * **当前客户端不支持该操作。** vendored matrix-js-sdk 没有设备屏蔽的写入 API
+   * （`DeviceTrustManager` 只提供只读的 `isDeviceBlocked`，也不存在 `client.setDeviceBlocked`）。
+   * 此前的实现会退化成 `setDeviceVerified(userId, deviceId, false)`，即把"屏蔽"
+   * 悄悄变成"取消验证"——设备仍可参与加密通信，而 UI 却显示已屏蔽。
+   * 在真正实现之前显式失败，让调用方与用户看到真实状态。
+   *
+   * @throws 始终抛出，表示当前客户端不支持设备屏蔽
    */
-  async blockDevice(userId: string, deviceId: string): Promise<void> {
-    const client = this.accessors.getExtendedClient()
-    if (typeof client.setDeviceBlocked === 'function') {
-      await client.setDeviceBlocked(userId, deviceId, true)
-      logger.info(`设备已屏蔽(Legacy): ${userId}:${deviceId}`)
-      return
-    }
-
-    const crypto = this.accessors.getCrypto()
-    if (crypto) {
-      await crypto.setDeviceVerified(userId, deviceId, false)
-      logger.info(`设备已标记为未验证(CryptoApi, 等效屏蔽): ${userId}:${deviceId}`)
-      return
-    }
-
-    logger.warn(`无法屏蔽设备：无可用的加密接口`)
+  async blockDevice(_userId: string, _deviceId: string): Promise<void> {
+    throw new Error('当前客户端不支持屏蔽设备：SDK 未提供设备屏蔽接口')
   }
 
-  /** 取消屏蔽设备
+  /**
+   * 取消屏蔽设备。
+   *
+   * 同 {@link blockDevice}：SDK 无对应 API，显式失败而不是谎称已取消屏蔽。
+   *
+   * @throws 始终抛出，表示当前客户端不支持该操作
    */
-  async unblockDevice(userId: string, deviceId: string): Promise<void> {
-    const client = this.accessors.getExtendedClient()
-    if (typeof client.setDeviceBlocked === 'function') {
-      await client.setDeviceBlocked(userId, deviceId, false)
-      logger.info(`设备已取消屏蔽(Legacy): ${userId}:${deviceId}`)
-      return
-    }
-
-    const crypto = this.accessors.getCrypto()
-    if (crypto) {
-      await crypto.setDeviceVerified(userId, deviceId, false)
-      logger.info(`设备已恢复为未验证状态(CryptoApi): ${userId}:${deviceId}`)
-      return
-    }
-
-    logger.warn(`无法取消屏蔽设备：无可用的加密接口`)
+  async unblockDevice(_userId: string, _deviceId: string): Promise<void> {
+    throw new Error('当前客户端不支持取消屏蔽设备：SDK 未提供设备屏蔽接口')
   }
 }

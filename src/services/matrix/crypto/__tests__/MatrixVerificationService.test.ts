@@ -75,7 +75,7 @@ describe('MatrixVerificationService', () => {
     }
 
     mockClient = {
-      getCrypto: vi.fn(() => mockCrypto as unknown as MatrixClient['crypto']),
+      getCrypto: vi.fn(() => mockCrypto as unknown as ReturnType<MatrixClient['getCrypto']>),
       getUserId: vi.fn(() => '@test:example.com'),
       getDeviceId: vi.fn(() => 'TEST_DEVICE')
     }

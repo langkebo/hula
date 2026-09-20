@@ -64,16 +64,15 @@ describe('CryptoSecurityAdapter', () => {
     })
 
     it('returns full status with keys and public keys', async () => {
+      // 真实 API 是 getCrossSigningKeyId（不是幻影 crossSigningInfo.getId）
       const crypto = {
         getCrossSigningStatus: vi.fn().mockResolvedValue({ privateKeysInSecretStorage: true }),
         isCrossSigningReady: vi.fn().mockResolvedValue(true),
-        crossSigningInfo: {
-          getId: (type?: string) => {
-            if (type === 'self_signing') return 'self-pub'
-            if (type === 'user_signing') return 'user-pub'
-            return 'master-pub'
-          }
-        }
+        getCrossSigningKeyId: vi.fn(async (type?: string) => {
+          if (type === 'self_signing') return 'self-pub'
+          if (type === 'user_signing') return 'user-pub'
+          return 'master-pub'
+        })
       } as unknown as CryptoApi
       const adapter = new CryptoSecurityAdapter(createMockAccessors({ crypto }))
 
@@ -89,7 +88,7 @@ describe('CryptoSecurityAdapter', () => {
       })
     })
 
-    it('leaves public keys undefined when no crossSigningInfo', async () => {
+    it('在交叉签名未初始化时把密钥 ID 返回为 null', async () => {
       const crypto = {
         getCrossSigningStatus: vi.fn().mockResolvedValue({ privateKeysInSecretStorage: false }),
         isCrossSigningReady: vi.fn().mockResolvedValue(false)
@@ -101,9 +100,10 @@ describe('CryptoSecurityAdapter', () => {
       expect(result.privateKeysCached).toBe(false)
       expect(result.crossSigningVerified).toBe(false)
       expect(result.isSetup).toBe(false)
-      expect(result.masterPublicKey).toBeUndefined()
-      expect(result.selfSigningPublicKey).toBeUndefined()
-      expect(result.userSigningPublicKey).toBeUndefined()
+      // SDK 未提供该能力时为 null（明确语义），而不是 undefined
+      expect(result.masterPublicKey).toBeNull()
+      expect(result.selfSigningPublicKey).toBeNull()
+      expect(result.userSigningPublicKey).toBeNull()
     })
 
     it('degrades gracefully when both crypto calls throw', async () => {

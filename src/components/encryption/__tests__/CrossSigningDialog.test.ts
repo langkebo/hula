@@ -58,6 +58,13 @@ vi.mock('naive-ui', async () => {
       name: 'NTag',
       template: '<span data-test="tag"><slot /></span>'
     }),
+    NInput: defineComponent({
+      name: 'NInput',
+      props: { value: { type: String, default: '' } },
+      emits: ['update:value'],
+      template:
+        '<input data-test="password-input" :value="value" @input="$emit(\'update:value\', $event.target.value)" />'
+    }),
     NDivider: defineComponent({
       name: 'NDivider',
       template: '<hr />'
@@ -189,6 +196,8 @@ describe('CrossSigningDialog', () => {
     const wrapper = mountComponent(true)
 
     await flushPromises()
+    ;(wrapper.vm as unknown as { setupPassword: string }).setupPassword = 'pass'
+    ;(wrapper.vm as unknown as { setupPassword: string }).setupPassword = 'pass'
     await (wrapper.vm as unknown as CrossSigningDialogVm).handleSetup()
     await (wrapper.vm as unknown as CrossSigningDialogVm).handleReset()
 
@@ -197,6 +206,61 @@ describe('CrossSigningDialog', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('encryption.cross_signing.setup_success', 'success')
     expect(showFeedbackMock).toHaveBeenCalledWith('encryption.cross_signing.reset_success', 'success')
     expect(getCrossSigningInfoMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('设置交叉签名必须携带 UIA 密码（否则适配层抛「需要认证参数」）', async () => {
+    getCrossSigningInfoMock.mockResolvedValue({
+      isSetup: false,
+      masterPublicKey: null,
+      selfSigningPublicKey: null,
+      userSigningPublicKey: null
+    })
+
+    const wrapper = mountComponent(true)
+    await flushPromises()
+
+    ;(wrapper.vm as unknown as { setupPassword: string }).setupPassword = 'correct horse'
+    await (wrapper.vm as unknown as CrossSigningDialogVm).handleSetup()
+    await flushPromises()
+
+    expect(setupCrossSigningMock).toHaveBeenCalledWith({ password: 'correct horse' })
+  })
+
+  it('未输入密码时不得发起设置请求（避免必然失败的调用）', async () => {
+    getCrossSigningInfoMock.mockResolvedValue({
+      isSetup: false,
+      masterPublicKey: null,
+      selfSigningPublicKey: null,
+      userSigningPublicKey: null
+    })
+
+    const wrapper = mountComponent(true)
+    await flushPromises()
+
+    ;(wrapper.vm as unknown as { setupPassword: string }).setupPassword = ''
+    await (wrapper.vm as unknown as CrossSigningDialogVm).handleSetup()
+    await flushPromises()
+
+    expect(setupCrossSigningMock).not.toHaveBeenCalled()
+  })
+
+  it('重置失败时不得提示成功（禁止假成功）', async () => {
+    getCrossSigningInfoMock.mockResolvedValue({
+      isSetup: true,
+      masterPublicKey: 'm',
+      selfSigningPublicKey: 's',
+      userSigningPublicKey: 'u'
+    })
+    resetCrossSigningMock.mockRejectedValueOnce(new Error('当前客户端不支持重置交叉签名'))
+
+    const wrapper = mountComponent(true)
+    await flushPromises()
+
+    await (wrapper.vm as unknown as CrossSigningDialogVm).handleReset()
+    await flushPromises()
+
+    expect(showFeedbackMock).not.toHaveBeenCalledWith('encryption.cross_signing.reset_success', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith('encryption.cross_signing.reset_failed', 'error')
   })
 
   it('支持复制公钥并在失败时给出提示', async () => {
@@ -232,6 +296,7 @@ describe('CrossSigningDialog', () => {
     setupCrossSigningMock.mockRejectedValueOnce(new Error('setup failed'))
     resetCrossSigningMock.mockRejectedValueOnce(new Error('reset failed'))
 
+    ;(wrapper.vm as unknown as { setupPassword: string }).setupPassword = 'pass'
     await (wrapper.vm as unknown as CrossSigningDialogVm).handleSetup()
     await (wrapper.vm as unknown as CrossSigningDialogVm).handleReset()
 

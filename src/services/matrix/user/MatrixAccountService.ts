@@ -203,7 +203,9 @@ class MatrixAccountService extends BaseMatrixService {
     )
     try {
       const deviceManager = this.getDeviceMgr()
-      await deviceManager.deleteDevices(deviceIds, authData)
+      // SDK 真实签名：deleteDevices(request: string[] | { devices, auth })。
+      // 只有对象形式才会读取 auth——位置参数的第二位会被静默丢弃。
+      await deviceManager.deleteDevices(authData ? { devices: deviceIds, auth: authData } : { devices: deviceIds })
       logger.info(`[MatrixAccount] deleteDevices() 成功: ${deviceIds.length} 个设备已删除`)
       return true
     } catch (err) {

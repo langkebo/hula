@@ -81,7 +81,15 @@
               <span class="action-desc">{{ t('encryption.cross_signing.setup_cross_signing_desc') }}</span>
             </div>
           </div>
-          <n-button type="primary" :loading="settingUp" @click="handleSetup">
+          <n-input
+            v-model:value="setupPassword"
+            type="password"
+            show-password-on="click"
+            class="setup-password-input"
+            :placeholder="t('encryption.cross_signing.password_placeholder')"
+            :aria-label="t('encryption.cross_signing.password_placeholder')"
+            @keyup.enter="handleSetup" />
+          <n-button type="primary" :loading="settingUp" :disabled="!setupPassword" @click="handleSetup">
             {{ t('encryption.cross_signing.setup') }}
           </n-button>
         </div>
@@ -124,7 +132,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NFlex, NModal, NSpin, NTag } from 'naive-ui'
+import { NButton, NDivider, NFlex, NInput, NModal, NSpin, NTag } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -142,6 +150,8 @@ const visible = defineModel<boolean>('show', { default: false })
 const loading = ref(false)
 const settingUp = ref(false)
 const resetting = ref(false)
+/** UIA 密码：上传交叉签名公钥需要认证，缺失时适配层会抛「需要认证参数」 */
+const setupPassword = ref('')
 const isSetup = ref(false)
 const masterKey = ref<string | null>(null)
 const selfSigningKey = ref<string | null>(null)
@@ -175,9 +185,17 @@ const loadCrossSigningInfo = async () => {
 }
 
 const handleSetup = async () => {
+  // 上传交叉签名公钥属于 UIA 保护的操作用户交互认证，必须有密码才能发起；
+  // 缺失时直接返回，避免必然失败的请求与误导性的错误提示
+  if (!setupPassword.value) {
+    showFeedback(t('encryption.cross_signing.password_required'), 'error')
+    return
+  }
+
   settingUp.value = true
   try {
-    await encryption.setupCrossSigning()
+    await encryption.setupCrossSigning({ password: setupPassword.value })
+    setupPassword.value = ''
     showFeedback(t('encryption.cross_signing.setup_success'), 'success')
     await loadCrossSigningInfo()
   } catch (err) {

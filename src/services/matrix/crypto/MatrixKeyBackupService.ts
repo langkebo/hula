@@ -168,22 +168,6 @@ class MatrixKeyBackupService extends BaseMatrixService {
     }
   }
 
-  scheduleKeyBackup(): void {
-    const keyBackupManager = this.getKeyBackupManager()
-    if (!keyBackupManager) {
-      logger.warn('[KeyBackup] KeyBackupManager 不可用，跳过调度')
-      return
-    }
-    if (
-      'scheduleKeyBackupSend' in keyBackupManager &&
-      typeof (keyBackupManager as unknown as Record<string, unknown>).scheduleKeyBackupSend === 'function'
-    ) {
-      ;(keyBackupManager as unknown as Record<string, () => void>).scheduleKeyBackupSend()
-    } else {
-      logger.warn('[KeyBackup] KeyBackupManager 不支持 scheduleKeyBackupSend，跳过调度')
-    }
-  }
-
   async getBackupVersions(): Promise<BackupVersionInfo[]> {
     const backupInfo = await this.checkKeyBackup()
     return backupInfo ? [backupInfo] : []

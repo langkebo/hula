@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
-import type { CryptoApi, DeviceTrustManager, LegacyStoredDevice, MatrixClientExtended } from '@/types/matrix-extensions'
+import type { CryptoApi, DeviceTrustManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { CryptoDeviceAdapter } from '../CryptoDeviceAdapter'
 import type { CryptoAdapterAccessors } from '../cryptoAdapterTypes'
 
@@ -84,46 +84,16 @@ describe('CryptoDeviceAdapter', () => {
       } as unknown as DeviceTrustManager
       const adapter = new CryptoDeviceAdapter(createMockAccessors({ trustManager }))
 
-      const result = await adapter.getDevices('@alice:matrix.org')
-
-      expect(result).toEqual([])
+      // 没有 keys/query 能力时显式失败，绝不退化成「用 device_trust 列表当设备来源」
+      await expect(adapter.getDevices('@alice:matrix.org')).rejects.toThrow(/DeviceKeysManager/)
     })
 
-    it('falls back to legacy getStoredDevicesForUser when no DeviceKeysManager', async () => {
-      const legacyDevices: LegacyStoredDevice[] = [
-        {
-          deviceId: 'DEV1',
-          userId: '@alice:matrix.org',
-          displayName: 'Laptop',
-          isVerified: () => true,
-          isUnverified: () => false
-        },
-        {
-          deviceId: 'DEV2',
-          userId: '@alice:matrix.org',
-          displayName: 'Phone',
-          isVerified: () => false,
-          isUnverified: () => true
-        }
-      ]
-      const client = { getStoredDevicesForUser: vi.fn().mockResolvedValue(legacyDevices) }
-      const adapter = new CryptoDeviceAdapter(createMockAccessors({ client }))
-
-      const result = await adapter.getDevices('@alice:matrix.org')
-
-      expect(result).toHaveLength(2)
-      expect(result[0]).toEqual({
-        deviceId: 'DEV1',
-        userId: '@alice:matrix.org',
-        displayName: 'Laptop',
-        isVerified: true
-      })
-    })
-
-    it('returns empty array when no device source is available', async () => {
+    it('无 DeviceKeysManager 时显式失败，而不是谎称「没有设备」', async () => {
+      // 历史缺陷：曾用不存在的 client.getStoredDevicesForUser 兜底并 return []，
+      // 让「能力缺失」看起来像「该用户没有设备」。
       const adapter = new CryptoDeviceAdapter(createMockAccessors({}))
-      const result = await adapter.getDevices('@alice:matrix.org')
-      expect(result).toEqual([])
+
+      await expect(adapter.getDevices('@alice:matrix.org')).rejects.toThrow(/DeviceKeysManager/)
     })
   })
 
@@ -176,31 +146,13 @@ describe('CryptoDeviceAdapter', () => {
       expect(result).toBeNull()
     })
 
-    it('falls back to legacy getStoredDevice when no TrustManager', async () => {
-      const legacyDevice: LegacyStoredDevice = {
-        deviceId: 'DEV1',
-        userId: '@alice:matrix.org',
-        displayName: 'Laptop',
-        isVerified: () => true,
-        isUnverified: () => false
-      }
-      const client = { getStoredDevice: vi.fn().mockReturnValue(legacyDevice) }
+    it('无 DeviceKeysManager 时 getDevice 返回 null，且不再依赖幻影 getStoredDevice', async () => {
+      // 历史缺陷：曾用不存在的 client.getStoredDevice 兜底。
+      const client = { getStoredDevice: vi.fn() } as unknown as Partial<MatrixClientExtended>
       const adapter = new CryptoDeviceAdapter(createMockAccessors({ client }))
 
       const result = await adapter.getDevice('@alice:matrix.org', 'DEV1')
 
-      expect(result).toEqual({
-        deviceId: 'DEV1',
-        userId: '@alice:matrix.org',
-        displayName: 'Laptop',
-        isVerified: true
-      })
-    })
-
-    it('returns null when legacy getStoredDevice returns null', async () => {
-      const client = { getStoredDevice: vi.fn().mockReturnValue(null) }
-      const adapter = new CryptoDeviceAdapter(createMockAccessors({ client }))
-      const result = await adapter.getDevice('@alice:matrix.org', 'MISSING')
       expect(result).toBeNull()
     })
   })
@@ -314,34 +266,12 @@ describe('CryptoDeviceAdapter', () => {
       })
     })
 
-    it('falls back to legacy checkDeviceTrust when no CryptoApi', async () => {
-      const client = {
-        checkDeviceTrust: vi.fn().mockResolvedValue({
-          isVerified: () => false,
-          crossSigningVerified: false
-        })
-      }
-      const adapter = new CryptoDeviceAdapter(createMockAccessors({ client }))
-
-      const result = await adapter.getDeviceVerificationStatus('@alice:matrix.org', 'DEV1')
-
-      expect(result).toEqual({
-        verified: false,
-        crossSigningVerified: false,
-        devicesCrossSigningVerified: false,
-        tofu: false
-      })
-    })
-
-    it('returns false status when neither CryptoApi nor legacy available', async () => {
+    it('无 CryptoApi 时显式失败，而不是恒返回「全部未验证」', async () => {
+      // 历史缺陷：曾用不存在的 client.checkDeviceTrust 兜底并恒返回「全部 false」，
+      // 使所有设备被显示为未验证。现在必须显式失败，让上层区分「查询失败」与「确实未验证」。
       const adapter = new CryptoDeviceAdapter(createMockAccessors({}))
-      const result = await adapter.getDeviceVerificationStatus('@alice:matrix.org', 'DEV1')
-      expect(result).toEqual({
-        verified: false,
-        crossSigningVerified: false,
-        devicesCrossSigningVerified: false,
-        tofu: false
-      })
+
+      await expect(adapter.getDeviceVerificationStatus('@alice:matrix.org', 'DEV1')).rejects.toThrow(/CryptoApi/)
     })
   })
 
@@ -383,43 +313,13 @@ describe('CryptoDeviceAdapter', () => {
     })
   })
 
-  describe('blockDevice', () => {
-    it('uses legacy client.setDeviceBlocked when available', async () => {
-      const client = { setDeviceBlocked: vi.fn().mockResolvedValue(undefined) }
-      const adapter = new CryptoDeviceAdapter(createMockAccessors({ client }))
-
-      await adapter.blockDevice('@alice:matrix.org', 'DEV1')
-
-      expect(client.setDeviceBlocked).toHaveBeenCalledWith('@alice:matrix.org', 'DEV1', true)
-    })
-
-    it('falls back to CryptoApi.setDeviceVerified(false) when no legacy method', async () => {
-      const crypto = { setDeviceVerified: vi.fn().mockResolvedValue(undefined) } as unknown as CryptoApi
-      const adapter = new CryptoDeviceAdapter(createMockAccessors({ crypto }))
-
-      await adapter.blockDevice('@alice:matrix.org', 'DEV1')
-
-      expect(crypto.setDeviceVerified).toHaveBeenCalledWith('@alice:matrix.org', 'DEV1', false)
-    })
-  })
-
-  describe('unblockDevice', () => {
-    it('uses legacy client.setDeviceBlocked(false) when available', async () => {
-      const client = { setDeviceBlocked: vi.fn().mockResolvedValue(undefined) }
-      const adapter = new CryptoDeviceAdapter(createMockAccessors({ client }))
-
-      await adapter.unblockDevice('@alice:matrix.org', 'DEV1')
-
-      expect(client.setDeviceBlocked).toHaveBeenCalledWith('@alice:matrix.org', 'DEV1', false)
-    })
-
-    it('falls back to CryptoApi.setDeviceVerified(false) when no legacy method', async () => {
-      const crypto = { setDeviceVerified: vi.fn().mockResolvedValue(undefined) } as unknown as CryptoApi
-      const adapter = new CryptoDeviceAdapter(createMockAccessors({ crypto }))
-
-      await adapter.unblockDevice('@alice:matrix.org', 'DEV1')
-
-      expect(crypto.setDeviceVerified).toHaveBeenCalledWith('@alice:matrix.org', 'DEV1', false)
+  // 屏蔽/取消屏蔽的契约由 CryptoDeviceAdapter.block.test.ts 覆盖：
+  // SDK 无写入 API，必须显式失败而不是降级为「取消验证」。
+  describe('blockDevice / unblockDevice 已不再伪实现', () => {
+    it('两种操作都显式失败', async () => {
+      const adapter = new CryptoDeviceAdapter(createMockAccessors({}))
+      await expect(adapter.blockDevice('@alice:matrix.org', 'DEV1')).rejects.toThrow(/不支持屏蔽/)
+      await expect(adapter.unblockDevice('@alice:matrix.org', 'DEV1')).rejects.toThrow(/不支持/)
     })
   })
 })

@@ -42,7 +42,8 @@ interface UseEncryptionResult {
   restoreFromBackup: (recoveryKey: string) => Promise<{ imported: number; total: number }>
   restoreFromBackupWithPassphrase: (passphrase: string) => Promise<{ imported: number; total: number }>
   deleteKeyBackup: () => Promise<void>
-  prepareKeyBackupVersionAuthData: () => Promise<Record<string, unknown> | null>
+  /** 确保密钥备份版本存在（内部走 SDK resetKeyBackup）；返回 false 表示加密未启用 */
+  ensureKeyBackupVersion: () => Promise<boolean>
 
   getKeyRotationStatus: () => Promise<KeyRotationStatus>
   rotateKeys: () => Promise<{ success: boolean; keyId: string; rotatedAt: number }>
@@ -131,7 +132,19 @@ export function useEncryption(): UseEncryptionResult {
     await cryptoSDKAdapter.setupCrossSigning(authParams)
   }
 
-  async function resetCrossSigning() {}
+  /**
+   * 重置交叉签名。
+   *
+   * 注意：vendored matrix-js-sdk 的 CryptoApi **没有** resetCrossSigning 能力
+   * （只有 bootstrapCrossSigning）。此前这里是一个空函数，UI 却提示"重置成功"，
+   * 属于安全操作上的假成功。在真正实现（DELETE /keys/device_signing/keys + UIA）之前，
+   * 这里显式抛错，让调用方走失败分支。
+   *
+   * @throws 始终抛出，表示当前客户端不支持该操作
+   */
+  async function resetCrossSigning(): Promise<void> {
+    throw new Error('当前客户端不支持重置交叉签名（SDK 未提供该能力）')
+  }
 
   async function checkCrossSigningReady() {
     const ready = await cryptoSDKAdapter.isCrossSigningReady()
@@ -170,9 +183,16 @@ export function useEncryption(): UseEncryptionResult {
     }
   }
 
-  async function prepareKeyBackupVersionAuthData() {
-    const prepared = await matrixEncryptionContextService.prepareKeyBackupVersion()
-    return prepared?.authData ?? null
+  /**
+   * 确保密钥备份版本存在。
+   *
+   * 历史缺陷（F-11）：旧实现调用不存在的 `prepareKeyBackupVersion`，恒返回 null，
+   * 导致移动端"启用备份"必然走失败分支。现直接使用 SDK 的 resetKeyBackup。
+   *
+   * @returns false 表示加密未启用
+   */
+  async function ensureKeyBackupVersion(): Promise<boolean> {
+    return matrixEncryptionContextService.ensureKeyBackupVersion()
   }
 
   async function getKeyRotationStatus() {
@@ -294,7 +314,7 @@ export function useEncryption(): UseEncryptionResult {
     restoreFromBackup,
     restoreFromBackupWithPassphrase,
     deleteKeyBackup,
-    prepareKeyBackupVersionAuthData,
+    ensureKeyBackupVersion,
     getKeyRotationStatus,
     rotateKeys,
     getCurrentDeviceId,

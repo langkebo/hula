@@ -10,19 +10,28 @@ import type { IPusher, IPusherRequest, MatrixClient, PushRuleAction } from 'matr
 // Crypto API 扩展
 // ============================================
 
+/**
+ * SDK `CryptoApi.createRecoveryKeyFromPassphrase` 的返回类型。
+ *
+ * 必须与 vendored matrix-js-sdk 的 `GeneratedSecretStorageKey`
+ * （`lib/crypto-api/index.d.ts`）逐字段一致：
+ * `keyInfo` 是**可选**的，且**只含** `passphrase?` 与 `name?`。
+ *
+ * 历史缺陷：本地曾把 `algorithm`/`iv`/`mac` 声明为 `keyInfo` 的必填字段，
+ * 调用方据此读取（`ssssKeyDescription` 的守卫），于是必然抛错且被 catch 吞掉，
+ * 导致 SSSS 密钥从未上传到服务端。这三个值必须由本地按规范从私钥计算。
+ */
 export interface GeneratedSecretStorageKey {
-  keyInfo: {
+  keyInfo?: {
     passphrase?: {
       algorithm: string
       iterations: number
       salt: string
       bits?: number
     }
-    algorithm: string
-    iv: string
-    mac: string
+    name?: string
   }
-  encodedPrivateKey: string
+  encodedPrivateKey?: string
   privateKey: Uint8Array
 }
 
@@ -61,36 +70,9 @@ export interface DeviceVerificationStatus {
   readonly tofu: boolean
 }
 
-export interface LegacyStoredDevice {
-  deviceId: string
-  userId: string
-  displayName?: string
-  isVerified(): boolean
-  isUnverified(): boolean
-}
-
-export interface LegacyDeviceTrustInfo {
-  isVerified(): boolean
-  readonly crossSigningVerified: boolean
-  readonly tofu: boolean
-}
-
-export interface LegacyUserTrustInfo extends LegacyDeviceTrustInfo {
-  wasCrossSigningVerified(): boolean
-}
-
-export interface LegacyVerificationRequest {
-  transactionId?: string
-  userId?: string
-  deviceId?: string
-  methods?: string[]
-  phase?: string
-}
-
 export interface CryptoApi {
   requestDeviceVerification(userId: string, deviceId: string): Promise<VerificationRequest>
   getDeviceVerificationStatus(userId: string, deviceId: string): Promise<DeviceVerificationStatus | null>
-  verificationRequests?: Map<string, VerificationRequest>
   getOwnDeviceKeys(): Promise<{ ed25519: string; curve25519: string }>
   isSecretStorageReady(): Promise<boolean>
   bootstrapSecretStorage(opts?: {
@@ -112,6 +94,8 @@ export interface CryptoApi {
     }
   }>
   isCrossSigningReady(): Promise<boolean>
+  /** 读取交叉签名密钥 ID；null 表示该密钥尚未初始化（SDK 真身成员） */
+  getCrossSigningKeyId(type?: 'master' | 'self_signing' | 'user_signing'): Promise<string | null>
   /**
    * SSSS 状态详情（SDK 真身成员：CryptoApi.getSecretStorageStatus）。
    *
@@ -124,16 +108,12 @@ export interface CryptoApi {
   restoreKeyBackup(opts?: KeyBackupRestoreOpts): Promise<KeyBackupRestoreResult>
   restoreKeyBackupWithPassphrase(passphrase: string, opts?: KeyBackupRestoreOpts): Promise<KeyBackupRestoreResult>
   resetKeyBackup(auth?: MatrixAuthData): Promise<void>
-  prepareKeyBackupVersion(
-    key?: string,
-    opts?: Record<string, unknown>
-  ): Promise<{ version: string; algorithm: string; auth_data: Record<string, unknown> }>
   getKeyBackupInfo(): Promise<KeyBackupInfo | null>
   deleteKeyBackupVersion(version: string): Promise<void>
   exportRoomKeys(opts?: Record<string, unknown>): Promise<Array<Record<string, unknown>>>
   importRoomKeys(keys: Array<Record<string, unknown>>, opts?: Record<string, unknown>): Promise<void>
-  resetCrossSigningKeys(opts?: Record<string, unknown>): Promise<void>
-  getUserDeviceInfo(userId: string, timeoutMs?: number): Promise<unknown>
+  /** SDK 真身签名：接收 userId 数组，返回 DeviceMap（不是单个 userId + timeout） */
+  getUserDeviceInfo(userIds: string[], downloadUncached?: boolean): Promise<Record<string, unknown>>
   setDeviceVerified(userId: string, deviceId: string, verified?: boolean): Promise<void>
   createRecoveryKeyFromPassphrase(password?: string): Promise<GeneratedSecretStorageKey>
 }
@@ -172,7 +152,13 @@ export interface DeviceManager {
   getDevice(deviceId: string): Promise<Device>
   updateDevice(deviceId: string, updates: IDeviceUpdateRequest): Promise<void> // SDK-9: IDeviceUpdateRequest 对象签名
   deleteDevice(deviceId: string, auth?: AuthDict): Promise<void>
-  deleteDevices(deviceIds: string[], auth?: AuthDict): Promise<void>
+  /**
+   * 批量删除设备（SDK 真身签名）。
+   *
+   * 注意：SDK 只接受一个参数；只有对象形式 `{ devices, auth }` 才会读取 auth，
+   * 传第二个位置参数会被静默丢弃，导致 UIA 重试永远失败。
+   */
+  deleteDevices(request: string[] | { devices: string[]; auth?: AuthDict }): Promise<void>
   getDeviceListUpdates(users: string[], since?: string): Promise<DeviceListUpdatesResponse>
 }
 
@@ -201,13 +187,6 @@ export interface PushManager {
   deletePushRule(scope: string, kind: string, ruleId: string): Promise<void>
   muteRoom(roomId: string): Promise<void>
   unmuteRoom(roomId: string): Promise<void>
-}
-
-export interface DeviceListUpdatesResponse {
-  changed: string[]
-  left: string[]
-  deleted?: string[]
-  stream_id?: number
 }
 
 export interface AuthDict {
@@ -293,20 +272,18 @@ export interface VerifyResult {
 
 export interface KeyBackupManager {
   checkKeyBackup(): Promise<BackupInfo | null>
-  prepareKeyBackupVersion(key?: Uint8Array): Promise<{
-    algorithm: string
-    auth_data: Record<string, unknown>
-    privateKey: Uint8Array
-  }>
-  createKeyBackupVersion(info: { algorithm: string; auth_data: Record<string, unknown> }): Promise<{ version: string }>
-  deleteKeyBackupVersion(version: string): Promise<void>
-  restoreKeyBackupWithRecoveryKey(
-    recoveryKey: string,
-    roomId?: string,
-    sessionId?: string,
-    backupInfo?: BackupInfo
-  ): Promise<{ total: number; imported: number }>
-  scheduleKeyBackupSend(): void
+  /**
+   * 确保存在可用的备份版本，返回版本号（SDK 真身成员：KeyBackupManager.ensureBackupVersion）。
+   *
+   * 注意：本接口为**手写的 SDK 契约**，必须与 vendored matrix-js-sdk 逐项对齐——
+   * 既不能声明不存在的方法（幻影契约），也不能缺少真实存在的方法。
+   */
+  ensureBackupVersion(algorithm?: string): Promise<string>
+  createBackupVersion(
+    algorithm?: string,
+    authData?: { algorithm: string; auth_data: Record<string, unknown> }
+  ): Promise<{ version: string; algorithm: string; auth_data: Record<string, unknown> }>
+  deleteBackupVersion(version: string): Promise<{ version: string }>
   getLatestBackupVersion(forceRefresh?: boolean): Promise<BackupInfo>
   getBackupVersion(version: string, forceRefresh?: boolean): Promise<BackupInfo>
   createBackupVersion(
@@ -424,15 +401,6 @@ export interface DeviceTrustManager {
 // Secure Backup Manager 扩展 (SDK Manager Layer)
 // ============================================
 
-export interface SecureBackupInfo {
-  backup_id: string
-  algorithm: string
-  auth_data: Record<string, unknown>
-  created_ts?: number
-  key_count?: number
-  version?: string
-}
-
 export interface SecureBackupKeysResponse {
   count: number
   message?: string
@@ -454,7 +422,8 @@ export interface SecureBackupManager {
   addKeysToSecureBackup(
     backupId: string,
     passphrase: string,
-    sessionKeys: Array<{ session_id: string; session_data: Record<string, unknown> }>
+    /** SDK 真身字段为 { room_id, session_id, session_key }（不是 session_data） */
+    sessionKeys: Array<{ room_id: string; session_id: string; session_key: string }>
   ): Promise<SecureBackupKeysResponse>
   restoreFromSecureBackup(backupId: string, passphrase: string): Promise<SecureBackupRestoreResponse>
   verifySecureBackup(backupId: string, passphrase: string): Promise<SecureBackupVerifyResponse>
@@ -476,13 +445,8 @@ export interface MatrixClientExtended extends MatrixClient {
   getSDKKeyBackupManager?(): import('matrix-js-sdk/key-backup').KeyBackupManager | null
   getDeviceTrustManager?(): DeviceTrustManager | null
   getSecureBackupManager?(): SecureBackupManager | null
-  checkUserTrust?(userId: string): Promise<LegacyUserTrustInfo>
-  checkDeviceTrust?(userId: string, deviceId: string): Promise<LegacyDeviceTrustInfo>
-  getStoredDevicesForUser?(userId: string): Promise<LegacyStoredDevice[]>
-  getStoredDevice?(userId: string, deviceId: string): LegacyStoredDevice | null
-  getVerificationRequestsToDevice?(userId: string): LegacyVerificationRequest[]
+  // 以下为真实 SDK 成员（保留）：
   setDeviceVerified?(userId: string, deviceId: string, verified?: boolean): Promise<void>
-  setDeviceBlocked?(userId: string, deviceId: string, blocked: boolean): Promise<void>
   isCrossSigningReady?(): Promise<boolean>
 }
 
@@ -494,26 +458,3 @@ export interface MatrixClientExtended extends MatrixClient {
 // HTTP 扩展
 // ============================================
 
-export interface MatrixHttpApi {
-  authedRequest<T = unknown>(
-    method: string,
-    path: string,
-    queryParams?: Record<string, unknown>,
-    data?: unknown,
-    opts?: {
-      prefix?: string
-      headers?: Record<string, string>
-    }
-  ): Promise<T>
-
-  request<T = unknown>(
-    method: string,
-    path: string,
-    queryParams?: Record<string, unknown>,
-    data?: unknown,
-    opts?: {
-      prefix?: string
-      headers?: Record<string, string>
-    }
-  ): Promise<T>
-}

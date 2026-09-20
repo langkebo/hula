@@ -424,7 +424,7 @@ describe('MatrixDeviceService', () => {
 
       await matrixDeviceService.deleteDevices(deviceIds)
 
-      expect(mockDeviceManager.deleteDevices).toHaveBeenCalledWith(deviceIds, undefined)
+      expect(mockDeviceManager.deleteDevices).toHaveBeenCalledWith({ devices: deviceIds })
     })
 
     it('应该在 DeviceManager 不可用时抛出错误', async () => {

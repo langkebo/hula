@@ -13,16 +13,12 @@ describe('MatrixKeyBackupService', () => {
     vi.spyOn(matrixClientService, 'getClient')
     mockKeyBackupManager = {
       checkKeyBackup: vi.fn(),
-      prepareKeyBackupVersion: vi.fn(),
-      createKeyBackupVersion: vi.fn(),
-      deleteKeyBackupVersion: vi.fn(),
-      restoreKeyBackupWithRecoveryKey: vi.fn(),
-      scheduleKeyBackupSend: vi.fn(),
       getLatestBackupVersion: vi.fn(),
       getBackupVersion: vi.fn(),
       createBackupVersion: vi.fn(),
       updateBackupVersion: vi.fn(),
       deleteBackupVersion: vi.fn(),
+      ensureBackupVersion: vi.fn(),
       getAllRoomKeys: vi.fn(),
       putAllRoomKeys: vi.fn(),
       getRoomKeys: vi.fn(),
@@ -142,15 +138,8 @@ describe('MatrixKeyBackupService', () => {
     })
   })
 
-  describe('scheduleKeyBackup', () => {
-    it('应该调度密钥备份', () => {
-      mockKeyBackupManager.scheduleKeyBackupSend = vi.fn()
-
-      matrixKeyBackupService.scheduleKeyBackup()
-
-      expect(mockKeyBackupManager.scheduleKeyBackupSend).toHaveBeenCalled()
-    })
-  })
+  // scheduleKeyBackup 已删除：它只为守卫一个 SDK 中不存在的 scheduleKeyBackupSend-REMOVED 而存在，
+  // 且无生产调用方（备份调度由 SDK backup engine 自动完成）。
 
   describe('getBackupKeysByVersion', () => {
     it('应该获取指定版本的备份密钥', async () => {

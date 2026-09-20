@@ -7,7 +7,7 @@ const {
   mockStop,
   mockGetCurrentSessionContext,
   mockGetDeviceFingerprint,
-  mockContextPrepareKeyBackupVersion,
+  mockContextEnsureKeyBackupVersion,
   mockCryptoSDKIsEncryptionAvailable,
   mockCryptoSDKIsRoomEncrypted,
   mockCryptoSDKGetCrossSigningStatus,
@@ -40,7 +40,7 @@ const {
   mockStop: vi.fn(),
   mockGetCurrentSessionContext: vi.fn(),
   mockGetDeviceFingerprint: vi.fn(),
-  mockContextPrepareKeyBackupVersion: vi.fn(),
+  mockContextEnsureKeyBackupVersion: vi.fn(),
   mockCryptoSDKIsEncryptionAvailable: vi.fn(),
   mockCryptoSDKIsRoomEncrypted: vi.fn(),
   mockCryptoSDKGetCrossSigningStatus: vi.fn(),
@@ -81,7 +81,7 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
     getCurrentSessionContext: mockGetCurrentSessionContext,
     getDeviceFingerprint: mockGetDeviceFingerprint,
-    prepareKeyBackupVersion: mockContextPrepareKeyBackupVersion
+    ensureKeyBackupVersion: mockContextEnsureKeyBackupVersion
   }
 }))
 
@@ -232,9 +232,9 @@ describe('useEncryption', () => {
       expect(mockCryptoSDKSetupCrossSigning).toHaveBeenCalledWith(undefined)
     })
 
-    it('resetCrossSigning completes without error', async () => {
+    it('resetCrossSigning 显式失败，而不是静默成功（SDK 无该能力）', async () => {
       const { resetCrossSigning } = useEncryption()
-      await expect(resetCrossSigning()).resolves.toBeUndefined()
+      await expect(resetCrossSigning()).rejects.toThrow(/不支持重置交叉签名/)
     })
 
     it('checkCrossSigningReady updates ref and returns value', async () => {
@@ -322,17 +322,17 @@ describe('useEncryption', () => {
       expect(mockKeyBackupDeleteKeyBackupVersion).not.toHaveBeenCalled()
     })
 
-    it('prepareKeyBackupVersionAuthData returns auth data', async () => {
-      const authData = { iv: 'abc', mac: 'def' }
-      mockContextPrepareKeyBackupVersion.mockResolvedValueOnce({
-        algorithm: 'm.megolm_backup.v1.aes-sha2',
-        authData,
-        privateKey: new Uint8Array()
-      })
-      const { prepareKeyBackupVersionAuthData } = useEncryption()
-      const result = await prepareKeyBackupVersionAuthData()
-      expect(result).toEqual(authData)
-      expect(mockContextPrepareKeyBackupVersion).toHaveBeenCalled()
+    it('ensureKeyBackupVersion 委派给 context 服务并透传结果', async () => {
+      mockContextEnsureKeyBackupVersion.mockResolvedValueOnce(true)
+      const { ensureKeyBackupVersion } = useEncryption()
+      await expect(ensureKeyBackupVersion()).resolves.toBe(true)
+      expect(mockContextEnsureKeyBackupVersion).toHaveBeenCalled()
+    })
+
+    it('ensureKeyBackupVersion 在加密未启用时返回 false', async () => {
+      mockContextEnsureKeyBackupVersion.mockResolvedValueOnce(false)
+      const { ensureKeyBackupVersion } = useEncryption()
+      await expect(ensureKeyBackupVersion()).resolves.toBe(false)
     })
   })
 

@@ -41,9 +41,10 @@ export interface CrossSigningStatusResult {
   privateKeysCached: boolean
   crossSigningVerified: boolean
   isSetup: boolean
-  masterPublicKey?: string
-  selfSigningPublicKey?: string
-  userSigningPublicKey?: string
+  /** 交叉签名密钥 ID；null 表示尚未初始化 */
+  masterPublicKey?: string | null
+  selfSigningPublicKey?: string | null
+  userSigningPublicKey?: string | null
 }
 
 export interface KeyBackupSetupResult {

@@ -86,22 +86,13 @@ describe('MatrixCryptoService', () => {
   })
 
   describe('getDevices', () => {
-    it('should return empty array when method not available', async () => {
+    it('无 DeviceKeysManager 时显式失败，而不是谎称「没有设备」', async () => {
+      // 历史缺陷：曾退化为不存在的 client.getStoredDevicesForUser 并返回 []，
+      // 使「能力缺失」看起来像「该用户没有设备」。契约详情见
+      // CryptoDeviceAdapter.test.ts 与 CryptoSDKAdapter.test.ts。
       vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
-      const result = await matrixCryptoService.getDevices('@user:server')
-      expect(result).toEqual([])
-    })
 
-    it('should map device info', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getStoredDevicesForUser: vi.fn(() => [
-          { deviceId: 'DEV1', userId: '@user:server', getDisplayName: () => 'My Device', isVerified: () => true }
-        ])
-      } as unknown as MatrixClient)
-      const result = await matrixCryptoService.getDevices('@user:server')
-      expect(result).toHaveLength(1)
-      expect(result[0].deviceId).toBe('DEV1')
-      expect(result[0].isVerified).toBe(true)
+      await expect(matrixCryptoService.getDevices('@user:server')).rejects.toThrow(/DeviceKeysManager/)
     })
   })
 
