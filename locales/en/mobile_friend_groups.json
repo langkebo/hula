@@ -1,0 +1,22 @@
+{
+  "title": "Friend groups",
+  "loading": "Loading...",
+  "empty": "No friend groups yet. Create one to organise your friends.",
+  "member_count": "{count} friends",
+  "no_member": "No friends in this group",
+  "new_placeholder": "Enter a new group name",
+  "create": "Create group",
+  "create_success": "Group created",
+  "create_failed": "Could not create group",
+  "rename": "Rename",
+  "rename_placeholder": "Enter a new group name",
+  "rename_success": "Group renamed",
+  "rename_failed": "Could not rename group",
+  "delete": "Delete group",
+  "delete_confirm": "Delete group \"{name}\"? Friends in it will not be removed.",
+  "delete_success": "Group deleted",
+  "delete_failed": "Could not delete group",
+  "name_required": "Group name cannot be empty",
+  "unnamed": "Unnamed group",
+  "load_failed": "Could not load friend groups"
+}

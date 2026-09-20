@@ -4464,7 +4464,8 @@ export type I18nKeys = {
           "failed": "退出登录失败"
         }
       }
-    }
+    },
+    "manage_friend_groups": "好友分组"
   },
   "message": {
     "file": {
@@ -5219,6 +5220,28 @@ export type I18nKeys = {
     "complete_email_verify_first": "请先完成邮箱验证码校验",
     "reset_password_failed": "重置密码失败，请稍后重试"
   },
+  "mobile_friend_groups": {
+    "title": "好友分组",
+    "loading": "加载中...",
+    "empty": "还没有好友分组，创建一个来整理你的好友",
+    "member_count": "{count} 位好友",
+    "no_member": "该分组暂无好友",
+    "new_placeholder": "输入新分组名称",
+    "create": "创建分组",
+    "create_success": "分组已创建",
+    "create_failed": "创建分组失败",
+    "rename": "重命名",
+    "rename_placeholder": "输入新的分组名称",
+    "rename_success": "分组已重命名",
+    "rename_failed": "重命名失败",
+    "delete": "删除分组",
+    "delete_confirm": "确定删除分组「{name}」？分组内的好友不会被删除。",
+    "delete_success": "分组已删除",
+    "delete_failed": "删除分组失败",
+    "name_required": "分组名称不能为空",
+    "unnamed": "未命名分组",
+    "load_failed": "获取好友分组失败"
+  },
   "mobile_help": {
     "title": "帮助与反馈",
     "help_section": "帮助中心",
@@ -5783,7 +5806,9 @@ export type I18nKeys = {
     "preferences": "通用偏好",
     "burn_after_read": "阅后即焚",
     "mjolnir": "屏蔽管理",
-    "change_password": "修改密码"
+    "change_password": "修改密码",
+    "social_section": "社交",
+    "friend_groups": "好友分组"
   },
   "mobile_status": {
     "title": "在线状态",

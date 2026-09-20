@@ -23,6 +23,7 @@ const AddFriends = () => import('#/views/friends/AddFriends.vue')
 const FriendInfo = () => import('#/views/friends/FriendInfo.vue')
 const MobileFriendPage = () => import('#/views/friends/index.vue')
 const StartGroupChat = () => import('#/views/friends/StartGroupChat.vue')
+const FriendGroups = () => import('#/views/friends/FriendGroups.vue')
 const MobileMessagePage = () => import('#/views/message/index.vue')
 const MobileDynamicPage = () => import('#/views/dynamic/index.vue')
 const MobileDynamicDetail = () => import('#/views/dynamic/detail.vue')
@@ -388,6 +389,11 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'startGroupChat',
         name: 'mobileStartGroupChat',
         component: StartGroupChat
+      },
+      {
+        path: 'groups',
+        name: 'mobileFriendGroups',
+        component: FriendGroups
       },
       {
         path: 'confirmAddFriend',
