@@ -146,7 +146,11 @@
           </div>
 
           <van-cell-group inset>
-            <van-cell :title="t('mobile_security.deactivate_account')" is-link @click="handleDeactivate">
+            <van-cell
+              data-testid="security-deactivate"
+              :title="t('mobile_security.deactivate_account')"
+              is-link
+              @click="openDeactivateAccount">
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-danger-100)] mr-12px flex items-center justify-center">
@@ -220,6 +224,7 @@ import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { createLogger } from '@/utils/Logger'
 import {
+  MOBILE_SETTINGS_DEACTIVATE_PATH,
   MOBILE_SETTINGS_DEVICES_PATH,
   MOBILE_SETTINGS_IGNORED_USERS_PATH,
   MOBILE_SETTINGS_INVITE_PERMISSION_PATH
@@ -415,30 +420,12 @@ async function handleExportKeys() {
   }
 }
 
-async function handleDeactivate() {
-  try {
-    await showConfirmDialog({
-      title: t('mobile_security.deactivate_confirm.title'),
-      message: t('mobile_security.deactivate_confirm.message'),
-      confirmButtonText: t('mobile_security.deactivate_confirm.confirm'),
-      cancelButtonText: t('mobile_security.deactivate_confirm.cancel')
-    })
-
-    await matrixAccountService.deactivateAccount()
-    showToast({
-      type: 'success',
-      message: t('mobile_security.deactivate_success')
-    })
-    await logout()
-    router.push('/mobile/login')
-  } catch (error) {
-    if (error !== 'cancel') {
-      logger.error('Failed to deactivate account', error)
-      showToast({
-        type: 'fail',
-        message: t('mobile_security.deactivate_failed')
-      })
-    }
-  }
+/**
+ * 注销改为独立页面完成三重确认（后果确认 -> MXID 校验 -> 最终确认）。
+ *
+ * 原先这里只有一个确认对话框，注销不可撤销，单次确认的误操作风险过高。
+ */
+function openDeactivateAccount() {
+  router.push(MOBILE_SETTINGS_DEACTIVATE_PATH)
 }
 </script>

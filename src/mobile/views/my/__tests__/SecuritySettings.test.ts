@@ -200,12 +200,20 @@ describe('SecuritySettings', () => {
     expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
   })
 
-  it('shows confirm dialog for deactivate', async () => {
+  it('navigates to the dedicated triple-confirm page for deactivate', async () => {
+    // 单次确认对话框已移到独立页面（MobileDeactivateAccount.vue）：
+    // 注销不可撤销，确认强度要求在 P0 里被明确提高。
     const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
-    await vm.handleDeactivate()
-    expect(showConfirmDialogMock).toHaveBeenCalled()
+    vm.openDeactivateAccount()
+    expect(routerPushMock).toHaveBeenCalledWith('/mobile/mobileMy/deactivateAccount')
+  })
+
+  it('no longer deactivates directly from the security page', async () => {
+    const wrapper = mountSecuritySettings()
+    await vi.dynamicImportSettled()
+    expect((wrapper.vm as any).handleDeactivate).toBeUndefined()
   })
 
   it('calls exportKeys on export', async () => {

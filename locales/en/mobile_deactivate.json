@@ -1,0 +1,47 @@
+{
+  "title": "Deactivate account",
+  "back": "Back",
+  "success": "Account deactivated",
+  "failed": "Failed to deactivate the account",
+  "step": {
+    "consequences": "Consequences",
+    "verify": "Verify",
+    "final": "Final confirm"
+  },
+  "consequences": {
+    "title": "Before you continue",
+    "acknowledge": "I understand the consequences and want to continue",
+    "continue": "I understand, continue",
+    "cancel": "Cancel",
+    "items": {
+      "profile": "Your profile will be permanently deleted",
+      "rooms": "You will leave every room you created or joined",
+      "devices": "All devices will be signed out and your end-to-end keys will be invalidated",
+      "backup": "Your key backup will no longer restore old messages"
+    },
+    "hints": {
+      "profile": "Display name, avatar and bio cannot be recovered",
+      "rooms": "Other members keep the messages they already received",
+      "devices": "Unverified history will no longer be decryptable",
+      "backup": "Make sure you no longer need those messages"
+    }
+  },
+  "verify": {
+    "title": "Verify your identity",
+    "instruction": "Type your full Matrix ID to confirm",
+    "field": "Matrix ID",
+    "continue": "Confirm identity, continue",
+    "mismatch": "That does not match the current account"
+  },
+  "final": {
+    "title": "Final confirmation",
+    "warning": "This is the last step; the account is deactivated immediately after",
+    "erase": "Also erase server-side data (cannot be undone)",
+    "confirm": "Permanently deactivate my account",
+    "keep": "Keep my account",
+    "dialog_title": "Deactivate account",
+    "dialog_message": "This cannot be undone. Permanently deactivate this account?",
+    "dialog_confirm": "Deactivate",
+    "dialog_cancel": "Cancel"
+  }
+}

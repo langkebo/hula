@@ -48,6 +48,7 @@ const MobileSecurityKeySetup = () => import('#/views/my/MobileSecurityKeySetup.v
 const MobileStorageSettings = () => import('#/views/my/MobileStorageSettings.vue')
 const MobilePushSettings = () => import('#/views/my/MobilePushSettings.vue')
 const MobileInvitePermission = () => import('#/views/my/MobileInvitePermission.vue')
+const MobileDeactivateAccount = () => import('#/views/my/MobileDeactivateAccount.vue')
 const NotificationSettings = () => import('#/views/my/NotificationSettings.vue')
 const HelpFeedback = () => import('#/views/my/HelpFeedback.vue')
 const VoiceVideoSettings = () => import('#/views/my/VoiceVideoSettings.vue')
@@ -110,6 +111,11 @@ const MOBILE_MY_SETTINGS_CHILD_ROUTES: RouteRecordRaw[] = [
     path: MOBILE_SETTINGS_RELATIVE_PATHS.invitePermission,
     name: MOBILE_SETTINGS_ROUTE_NAMES.invitePermission,
     component: MobileInvitePermission
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.deactivateAccount,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.deactivateAccount,
+    component: MobileDeactivateAccount
   },
   {
     path: 'notifications',

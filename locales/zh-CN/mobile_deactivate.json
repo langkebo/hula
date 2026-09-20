@@ -1,0 +1,47 @@
+{
+  "title": "注销账户",
+  "back": "返回上一步",
+  "success": "账户已注销",
+  "failed": "账户注销失败",
+  "step": {
+    "consequences": "确认后果",
+    "verify": "验证身份",
+    "final": "最终确认"
+  },
+  "consequences": {
+    "title": "注销前请确认",
+    "acknowledge": "我已了解以上后果，并愿意继续",
+    "continue": "我已了解，继续",
+    "cancel": "取消",
+    "items": {
+      "profile": "账号资料将被永久删除",
+      "rooms": "你创建的房间与加入的房间将全部退出",
+      "devices": "所有设备会被登出，端到端加密密钥将失效",
+      "backup": "密钥备份无法再用于恢复历史消息"
+    },
+    "hints": {
+      "profile": "昵称、头像、签名等不可恢复",
+      "rooms": "其他人仍能看到自己发送的历史消息",
+      "devices": "未验证的历史消息将无法解密",
+      "backup": "请确保你已不再需要这些消息"
+    }
+  },
+  "verify": {
+    "title": "验证身份",
+    "instruction": "请输入你的完整 Matrix ID 以确认",
+    "field": "Matrix ID",
+    "continue": "确认身份，继续",
+    "mismatch": "输入与当前账号不一致"
+  },
+  "final": {
+    "title": "最终确认",
+    "warning": "这是最后一次确认，点击后账号将立即注销",
+    "erase": "同时抹除服务端数据（不可恢复）",
+    "confirm": "永久注销我的账户",
+    "keep": "保留账户",
+    "dialog_title": "确认注销账户",
+    "dialog_message": "此操作不可撤销。确定要永久注销该账户吗？",
+    "dialog_confirm": "永久注销",
+    "dialog_cancel": "取消"
+  }
+}

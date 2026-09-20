@@ -17,6 +17,7 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   pushSettings: 'pushSettings',
   invitePermission: 'invitePermission',
   devices: 'devices',
+  deactivateAccount: 'deactivateAccount',
   helpAbout: SETTINGS_CANONICAL_ROUTE_SEGMENTS.helpAbout
 } as const
 
@@ -30,6 +31,7 @@ export const MOBILE_SETTINGS_STORAGE_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBI
 export const MOBILE_SETTINGS_PUSH_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.pushSettings}`
 export const MOBILE_SETTINGS_INVITE_PERMISSION_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.invitePermission}`
 export const MOBILE_SETTINGS_DEVICES_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.devices}`
+export const MOBILE_SETTINGS_DEACTIVATE_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.deactivateAccount}`
 export const MOBILE_SETTINGS_HELP_ABOUT_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.helpAbout}`
 
 export const MOBILE_SETTINGS_ROUTE_NAMES = {
@@ -43,5 +45,6 @@ export const MOBILE_SETTINGS_ROUTE_NAMES = {
   pushSettings: 'mobilePushSettings',
   invitePermission: 'mobileInvitePermission',
   devices: 'mobileDeviceManagement',
+  deactivateAccount: 'mobileDeactivateAccount',
   helpAbout: 'mobileHelpAboutSettings'
 } as const
