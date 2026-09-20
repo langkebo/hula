@@ -9,5 +9,6 @@
   "copy_success": "Copied successfully",
   "emoji_already_marked": "Emoji already marked",
   "retry": "Retry",
-  "send_failed_retry": "Send failed. Click to retry."
+  "send_failed_retry": "Send failed. Click to retry.",
+  "verify_sender_device": "Verify sender's device"
 }

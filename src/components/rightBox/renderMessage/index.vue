@@ -307,12 +307,19 @@
             :is-last-message="isLastRoomMessage"
             @retry="handleRetry(message)" />
 
-          <!-- 消息加密信任徽章 -->
+          <!--
+            消息加密信任徽章。
+            他人发送的加密消息上，徽章同时是「验证发送方设备」的可操作入口（方案 3.1）；
+            自己的消息不做交互（自己设备的验证入口在设置页）。
+          -->
           <MessageLockBadge
             v-if="isEncryptedMessage"
             :trust-level="lockBadgeLevel"
             :title="trustDescription"
-            :class="isMe ? 'msg-lock-badge--right' : 'msg-lock-badge--left'" />
+            :interactive="canVerifySender"
+            :aria-label="canVerifySender ? t('message_container.verify_sender_device') : undefined"
+            :class="isMe ? 'msg-lock-badge--right' : 'msg-lock-badge--left'"
+            @verify="handleVerifySender" />
         </n-flex>
       </div>
     </div>
@@ -327,6 +334,7 @@ import BurnMessage from '@/components/burn/BurnMessage.vue'
 import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useMitt } from '@/composables/common/useMitt'
+import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
 import { useMessageTrust } from '@/composables/encryption/useMessageTrust'
 import { MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
@@ -431,6 +439,22 @@ const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarCl
 const messageTrust = useMessageTrust(() => props.message?.message?.body?.hasEncryption === true)
 // lockBadgeLevel 已在 composable 内把 'plain' 收敛为 'unverified'，此处直接绑定保证类型安全
 const { isEncrypted: isEncryptedMessage, lockBadgeLevel, trustDescription } = messageTrust
+
+// ===== 锁徽章 → 设备验证（方案 3.1「可操作入口」）=====
+const { open: openDeviceVerification } = useDeviceVerifyLauncher()
+
+/**
+ * 徽章是否可点击。
+ *
+ * 只有「他人发送的加密消息」才有验证对象：自己的消息没有对端设备可验证；
+ * senderUid 为空（发送者未知）时也构造不出验证目标，此时保持纯展示语义。
+ */
+const canVerifySender = computed(() => isEncryptedMessage.value && !isMe.value && !!senderUid.value)
+
+/** 点击锁徽章：以发送者为目标打开设备验证对话框（设备由对话框内选择） */
+function handleVerifySender() {
+  openDeviceVerification({ userId: senderUid.value })
+}
 
 const activeReply = ref<string>('')
 const settingStore = useSettingStore()

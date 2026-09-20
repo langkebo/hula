@@ -129,6 +129,19 @@
     @confirm-private-mode="confirmPrivateMode" />
 
   <PinMessageSelector v-model:show="pinSelectorVisible" @select="handlePinSelect" />
+
+  <!--
+    设备验证对话框的单例挂载点。
+    消息列表内部（MessageLockBadge 点击）通过 useDeviceVerifyLauncher 唤起，
+    对话框只在此处挂载一次 —— 若挂在 renderMessage 上会按消息条数各实例化一份。
+  -->
+  <DeviceVerifyDialog
+    :show="deviceVerifyVisible"
+    :user-id="deviceVerifyTarget.userId"
+    :device-id="deviceVerifyTarget.deviceId"
+    :device-name="deviceVerifyTarget.deviceName"
+    @update:show="handleDeviceVerifyShowChange"
+    @success="handleDeviceVerifySuccess" />
 </template>
 
 <script setup lang="ts">
@@ -163,6 +176,7 @@ import { useWheelScrollLimiter } from '@/composables/chat/useWheelScrollLimiter'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
+import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { MittEnum } from '@/enums'
@@ -183,6 +197,8 @@ import ChatRoomSearch from './ChatRoomSearch.vue'
 import PinMessageSelector from './PinMessageSelector.vue'
 
 const FileUploadProgress = defineAsyncComponent(() => import('@/components/rightBox/FileUploadProgress.vue'))
+/** 验证对话框只在被唤起时才可能渲染，按需加载以免拖大会话主 chunk */
+const DeviceVerifyDialog = defineAsyncComponent(() => import('@/components/encryption/DeviceVerifyDialog.vue'))
 
 const logger = createLogger('ChatMain')
 const timerManager = useTimerManager()
@@ -310,6 +326,18 @@ async function handleCancelSticky(eventId: string) {
 function handleViewStickyEvent(eventId: string) {
   logger.info('View sticky event:', eventId)
   jumpToReplyMsg(eventId)
+}
+
+// ===== 设备验证对话框（消息锁徽章 → 验证发送方设备）=====
+const { visible: deviceVerifyVisible, target: deviceVerifyTarget, close: closeDeviceVerify } = useDeviceVerifyLauncher()
+
+/** 对话框自行关闭时同步单例状态，避免下次打开残留上一条消息的 userId */
+function handleDeviceVerifyShowChange(value: boolean) {
+  if (!value) closeDeviceVerify()
+}
+
+function handleDeviceVerifySuccess() {
+  closeDeviceVerify()
 }
 
 defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId, stickyEvents, canSetSticky })

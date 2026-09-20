@@ -56,9 +56,9 @@ const translationMap: Record<string, string> = {
   'setting.encryption.restore_success': '密钥恢复成功',
   'setting.encryption.verify_success': '设备验证成功',
   'setting.encryption.copied': '已复制到剪贴板',
-  'setting.device_verify_dialog.show_qr': '显示二维码',
-  'setting.device_verify_dialog.scan_qr': '扫描二维码',
-  'setting.device_verify_dialog.accept_request': '接受请求'
+  'setting.encryption.device_verify_dialog.show_qr': '显示二维码',
+  'setting.encryption.device_verify_dialog.scan_qr': '扫描二维码',
+  'setting.encryption.device_verify_dialog.accept_request': '接受请求'
 }
 
 const {

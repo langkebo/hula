@@ -188,6 +188,7 @@
 
     <DeviceVerifyDialog
       :show="showVerifyDialog"
+      :user-id="verifyTargetUserId"
       :device-id="verifyTargetDeviceId"
       :device-name="verifyTargetDeviceName"
       initial-mode="sas"
@@ -234,6 +235,7 @@ const activeTab = ref('devices')
 const actionLoading = ref<string | null>(null)
 const selectedRoomId = ref<string | null>(null)
 const showVerifyDialog = ref(false)
+const verifyTargetUserId = ref<string | undefined>()
 const verifyTargetDeviceId = ref<string | undefined>()
 const verifyTargetDeviceName = ref<string | undefined>()
 
@@ -320,6 +322,10 @@ async function handleUnblockDevice(device: DeviceTrustInfo) {
 }
 
 function handleVerifyDevice(device: DeviceTrustInfo) {
+  // 必须带上 userId：「未验证设备」「已屏蔽设备」两个 tab 里的条目可能属于**其他用户**，
+  // 只传 deviceId 会让对话框把 targetUserId 解析成自己，从而发出
+  // (自己, 对方 deviceId) 这种 SDK 侧不存在的验证事务。
+  verifyTargetUserId.value = device.userId
   verifyTargetDeviceId.value = device.deviceId
   verifyTargetDeviceName.value = device.displayName || device.deviceId
   showVerifyDialog.value = true

@@ -4,11 +4,11 @@
       <Icon icon="mdi:clock-outline" :width="48" />
     </div>
     <h3 class="text-[var(--text-lg)] font-medium color-[var(--tjg-text-primary)] mb-8px">
-      {{ t('setting.device_verify_dialog.pending_list_title') }}
+      {{ t('setting.encryption.device_verify_dialog.pending_list_title') }}
     </h3>
     <div class="w-full mb-24px">
       <n-alert v-if="pendingVerifications.length === 0" type="info" class="mb-16px">
-        {{ t('setting.device_verify_dialog.pending_list_empty') }}
+        {{ t('setting.encryption.device_verify_dialog.pending_list_empty') }}
       </n-alert>
       <n-list v-else size="small" bordered>
         <n-list-item v-for="req in pendingVerifications" :key="req.transactionId">
@@ -18,7 +18,7 @@
                 {{ req.userId }}
               </div>
               <div class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
-                {{ t('setting.device_verify_dialog.pending_request_device') }}: {{ req.deviceId }}
+                {{ t('setting.encryption.device_verify_dialog.pending_request_device') }}: {{ req.deviceId }}
               </div>
               <div class="mt-4px">
                 <n-tag v-for="method in req.methods" :key="method" size="small" class="mr-4px">
@@ -28,10 +28,10 @@
             </div>
             <n-space size="small">
               <n-button size="small" type="error" ghost @click="emit('decline-pending', req.transactionId)">
-                {{ t('setting.device_verify_dialog.decline_request') }}
+                {{ t('setting.encryption.device_verify_dialog.decline_request') }}
               </n-button>
               <n-button size="small" type="primary" @click="emit('accept-pending', req)">
-                {{ t('setting.device_verify_dialog.accept_request') }}
+                {{ t('setting.encryption.device_verify_dialog.accept_request') }}
               </n-button>
             </n-space>
           </div>

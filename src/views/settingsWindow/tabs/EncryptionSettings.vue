@@ -165,10 +165,10 @@
         </div>
         <div class="flex gap-8px">
           <n-button size="small" @click="openVerifyDialog('qr_show')">
-            {{ t('setting.device_verify_dialog.show_qr') }}
+            {{ t('setting.encryption.device_verify_dialog.show_qr') }}
           </n-button>
           <n-button size="small" @click="openVerifyDialog('qr_scan')">
-            {{ t('setting.device_verify_dialog.scan_qr') }}
+            {{ t('setting.encryption.device_verify_dialog.scan_qr') }}
           </n-button>
         </div>
       </div>
@@ -181,7 +181,7 @@
           </div>
           <div class="flex gap-8px">
             <n-button size="small" type="primary" @click="handleAcceptPendingVerification(request)">
-              {{ t('setting.device_verify_dialog.accept_request') }}
+              {{ t('setting.encryption.device_verify_dialog.accept_request') }}
             </n-button>
             <n-button size="small" @click="handleCancelPendingVerification(request)">
               {{ t('common.cancel') }}

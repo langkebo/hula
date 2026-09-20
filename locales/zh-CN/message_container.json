@@ -9,5 +9,6 @@
   "copy_success": "复制成功",
   "emoji_already_marked": "该表情已标记",
   "retry": "重试",
-  "send_failed_retry": "发送失败，点击重试"
+  "send_failed_retry": "发送失败，点击重试",
+  "verify_sender_device": "验证发送方设备"
 }

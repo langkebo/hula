@@ -150,13 +150,13 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => {
       const map: Record<string, string> = {
-        'setting.device_verify_dialog.fingerprint_unavailable': '无法获取指纹',
-        'setting.device_verify_dialog.load_fingerprint_failed': '获取设备密钥失败',
-        'setting.device_verify_dialog.verify_failed': '验证失败',
-        'setting.device_verify_dialog.scan_qr_required': '请输入二维码内容',
-        'setting.device_verify_dialog.qr_scan_success': '二维码验证成功',
-        'setting.device_verify_dialog.qr_scan_failed': '二维码验证失败',
-        'setting.device_verify_dialog.qr_load_failed': '二维码加载失败',
+        'setting.encryption.device_verify_dialog.fingerprint_unavailable': '无法获取指纹',
+        'setting.encryption.device_verify_dialog.load_fingerprint_failed': '获取设备密钥失败',
+        'setting.encryption.device_verify_dialog.verify_failed': '验证失败',
+        'setting.encryption.device_verify_dialog.scan_qr_required': '请输入二维码内容',
+        'setting.encryption.device_verify_dialog.qr_scan_success': '二维码验证成功',
+        'setting.encryption.device_verify_dialog.qr_scan_failed': '二维码验证失败',
+        'setting.encryption.device_verify_dialog.qr_load_failed': '二维码加载失败',
         'setting.encryption.verify_success': '设备验证成功'
       }
       return map[key] ?? key
