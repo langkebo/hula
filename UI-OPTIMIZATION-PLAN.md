@@ -582,7 +582,7 @@ pnpm check                   # Biome lint + i18n 检查
 - !important 优化（保留合理覆盖）
 - 圆角 token 扩展（--tjg-radius-xl/2xl/3xl）
 
-**阶段 2：联邦身份展示** - ✅ 完成 100%
+**阶段 2：联邦身份展示** - ⚠️ 组件层完成，**接入层未开工**（`MxidText` 零调用、`UserIdentity`/`RoomHomeserverLabel` 未创建、`low-perf` 接线缺失，见文末清单 B 段）
 - ✅ MxidText.vue 已创建并导出
 - ✅ FederationBadge.vue 已创建并集成到 RoomCard.vue、RoomPreviewDialog.vue
 - ✅ MessageLockBadge.vue 已创建（E2EE 三态徽章）
@@ -599,11 +599,11 @@ pnpm check                   # Biome lint + i18n 检查
 - ✅ 锁态映射收敛到 composable（新增 `LockBadgeLevel`，组件不再内联判断）
 - ✅ `useMessageTrust` 入参升级为 `MaybeRefOrGetter<boolean>`，修复 `props` 变化时信任等级残留
 
-**阶段 4：同步/离线体验** - ✅ 完成 100%
+**阶段 4：同步/离线体验** - ⚠️ 状态条骨架完成，**离线能力未接线**（离线常驻条 / 未读刷新 / 横幅去重 / 离线缓存均未开工，见文末清单 D 段）
 - ✅ SyncStatusBar.vue 已创建并集成到 ChatMain.vue
 - ✅ i18n 翻译键（connection.*）
 - ✅ matrix store `reconnect()` 方法
-- ⏳ 移动端 SyncStatusBar 复用（未开始）
+- ✅ 移动端 SyncStatusBar 覆盖（**正文要求的 `MobileSyncStatusBar.vue` 独立实现未落地**，但 `MobileChatMain.vue` 复用桌面 `ChatMain.vue`，功能上两端已共享同一实例；详见文末清单 D 段）
 
 **已完成任务：**
 1. ✅ 消息气泡集成 MessageLockBadge（renderMessage/index.vue）
@@ -652,3 +652,111 @@ pnpm check                   # Biome lint + i18n 检查
 **本次未复核项（诚实声明）：**
 - 无浏览器渲染环境，hero 卡与玻璃效果的实际像素表现未做视觉回归，仅做了源码契约与几何一致性校验
 - `Details.test.ts` 仍无群聊（GROUP）分支覆盖，GroupDetails 的运行时行为未做挂载测试
+
+---
+
+### 2026-09-20 未完成任务清单（逐条实测取证）
+
+> **重要校正：** 上文各阶段的「✅ 完成 100%」**仅指该批次已执行的具体条目**，不等于本方案第 2 章正文的验收标准全部达成。经逐条实测，正文中大量条目**未开工或未达验收线**。以下清单每项均附取证命令与实测结果，结论以源码为唯一依据。
+
+#### A. 阶段 1 基础修复（正文验收未达标）
+
+| 条目 | 正文验收标准 | 实测结果 | 状态 |
+| :--- | :--- | :--- | :--- |
+| 1.2 内联样式迁移 | 核心视图 `grep -c 'style="'` 为 0 | loginWindow 3 / settingsWindow 9 / homeWindow 1 / components/room 9（全仓 469） | ❌ 未达标 |
+| 1.3 `!important` 优化 | 逐条收敛至 `NaiveProvider.vue` + 必须有解释注释 | 全仓 104 处（v1.0 审计基线约 48 处，**反而增长**） | ❌ 未达标 |
+| 1.4 圆角 token 扩展 | `border-radius: 1[6-9]px\|2[0-9]px` 为 0 | 19 处硬编码残留 | ❌ 未达标 |
+| 1.5 无障碍与响应式 | `@axe-core/vue` 扫描 + 断点 token 化 | axe 走 `e2e/a11y-baseline.spec.ts`（仅登录壳 + 移动消息骨架两个面）✅；`SkipLink.vue` 已存在 ✅；**`design-tokens.css` 无 `--breakpoint-*`** ❌；移动端路由尚未纳入 axe 覆盖面 ❌ | ⚠️ 部分完成 |
+| 1.2/1.3 步骤 4 | PR 模板加入内联样式 / `!important` 检查项 | `.github/PULL_REQUEST_TEMPLATE.md` 仅变更类型勾选框，**无任何 UI 检查项** | ❌ 未开工 |
+
+#### B. 阶段 2 联邦身份 + 液态玻璃（正文大面积未开工）
+
+| 条目 | 正文要求 | 实测结果 | 状态 |
+| :--- | :--- | :--- | :--- |
+| 2.1 组件产物 | `UserIdentity.vue`、`RoomHomeserverLabel.vue` | **两个文件均不存在** | ❌ 未创建 |
+| 2.1 `MxidText` 接线 | 会话列表 / 消息头部 / 成员面板 / 好友详情 / 移动端 | `MxidText` 全仓**仅自身文档注释**，零真实调用 | ❌ 未接线 |
+| 2.1 `FederationBadge` 接线 | `ChatHeaderRoot` / `RoomMembersPane` / `FriendDetailsSections` / 移动 `HeaderBar` | 仅 `RoomCard.vue`、`RoomPreviewDialog.vue` 两处 | ❌ 未接线 |
+| 2.2 `performanceTier.ts` | 新增 `src/utils/performanceTier.ts` + `main.ts` 早期写 `html.low-perf` | **文件不存在**；全仓 `low-perf` 仅出现在 CSS 选择器、测试与 mixin 注释（注释直言「占位」）→ **降级类永不被写入，降级路径实为死代码** | ❌ 未开工 |
+| 2.2 玻璃接入点收口 | `layout/index.vue`、`layout/left/**`、移动 `navBar`/`tabBar`、`rightBox/**` 统一改用 mixin | 移动 `tabBar/index.vue:128` 仍写裸 `backdrop-filter: blur(12px)`；`navBar/index.vue:29` 用 `backdrop-blur-md`；另有 23 个文件共 30+ 处裸 `backdrop-filter`（`FooterToolbar`、`FileUploadProgress`、`ContextMenu`、`ContextMenuEmoji`、`TjgAssistant`、`BurnMessage`、`InfoEdit`、`variable.scss`、`chatHistory` 等） | ❌ 未达标 |
+| 2.2 双兜底 | `prefers-reduced-transparency` 可验证 | 全仓**零命中**（仅 `prefers-reduced-motion` 有） | ❌ 未开工 |
+| 2.2 单视图 ≤3 处 | `grep -c backdrop-filter` ≤3 | 聊天视图内 `FooterToolbar`(2) + `FileUploadProgress`(1) + `TjgAssistant`(1) + `BurnMessage`(1) + `SearchPane`(1) 等，**超标** | ❌ 未达标 |
+| 2.3 组件复用体系 | 新 atomic 组件均补 `.stories.ts` + 双主题/low-perf 控件 | 新组件 stories 已有；**`SyncStatusBar` 无 stories 文件** | ⚠️ 部分完成 |
+
+#### C. 阶段 3 E2EE 可视化（核心交互未开工）
+
+| 条目 | 正文要求 | 实测结果 | 状态 |
+| :--- | :--- | :--- | :--- |
+| 3.1 锁点击交互 | 点击锁 → 打开 `DeviceVerifyDialog`，跨签名未就绪先引导 `SecurityKeySetupDialog` | `MessageLockBadge.vue` **无任何 `emit` / `@click` / `cursor`**，是纯静态展示 | ❌ 未开工 |
+| 3.1 锁态真实判定 | `verified` = 设备已验证且跨签名就绪；`risk` = blocked / 解密失败 | `useMessageTrust.ts` 自注「简化版」，对已加密消息**恒定返回 `verified`** → 灰锁/红锁为不可达状态 | ❌ 未开工（灰/红态永远不出现） |
+| 3.1 性能红线 | `Map` 缓存 + 单次批量 `getDevices`；禁渲染期 `await` | 未接入任何设备查询，验收用例（1000 条消息断言调用次数）未编写 | ❌ 未开工 |
+| 3.2 信任声明文案 | `locales/*/encryption.json` 新增 `encryption.trust_notice.private_key_local` / `server_cannot_read` / `recovery.phrase_title` / `phrase_confirm` | **四个键全部不存在**（仅 `encryption.security_key.passphrase_confirm_label` 等同名近义键） | ❌ 未开工 |
+| 3.3 私有化部署 | URL 校验 + `.well-known` 发现 + 企业预设走配置注入 | `ServerConfigModal.vue` 仅有 `isValidHttpUrl`；**无 well-known 发现、无企业预设项** | ⚠️ 部分完成 |
+| 3.4 共享 composable | 新增 `src/composables/encryption/useDeviceSessionPanel.ts` | **文件不存在**；`DeviceTrustManager.vue` 与 `DeviceManagement.vue` 仍各自查设备 | ❌ 未开工 |
+| 3.4 信任链总览 | 本机 → 交叉签名密钥 → 已信任设备数；未验证/block 置顶标红 | 全仓无「信任链」相关实现 | ❌ 未开工 |
+| 3.4 导出交叉签名 | 导出公钥信息 JSON/文本 | 全仓无导出实现 | ❌ 未开工 |
+| 3.4 注销二次确认 | 复用 `deleteDevice(id, auth)` UIA 流程 | 未核实到危险操作二次确认接入 | ⚠️ 待核 |
+
+#### D. 阶段 4 同步/离线（骨架完成，业务逻辑未接线）
+
+| 条目 | 正文要求 | 实测结果 | 状态 |
+| :--- | :--- | :--- | :--- |
+| 4.1 移动端独立组件 | `src/mobile/components/connection/MobileSyncStatusBar.vue` | **文件不存在**（因 `MobileChatMain.vue` 复用桌面 `ChatMain.vue`，功能上已覆盖，但正文要求的独立实现未落地） | ⚠️ 前提可复议 |
+| 4.1 离线态常驻条 | `navigator.onLine` + `connectionState` 组合判定，离线时顶部常驻「离线模式：显示本地缓存消息」 | `SyncStatusBar` **无离线分支**；`navigator.onLine` 仅散落在各 service 的守卫里 | ❌ 未开工 |
+| 4.1 未读刷新 | `CATCHUP → CONNECTED` 触发未读重算 | 全仓无该转换的未读重算钩子 | ❌ 未开工 |
+| 4.1 横幅去重 | `ChatBanners.networkBannerText` 与新状态条去重，避免双横幅 | `ChatMain.vue` 同时渲染 `ChatBanners`（第 3 行）与 `SyncStatusBar`（第 21 行），**双横幅风险实际存在** | ❌ 未开工 |
+| 4.1 `RECONNECTING` 退避倒计时 | 「重连中（第 N 次）」+ 倒计时 | `SyncStatusBar` 仅静态文案，无次数与倒计时 | ❌ 未开工 |
+| 4.2 离线缓存与历史可读 | 4 步全套（persist 字段核查 / 历史来源定案 / 离线首屏不白屏 / mock `onLine=false` 测试） | `matrix.ts:298` persist `pick` 仍为 `['userId','deviceId','homeserverUrl','accessToken']`，**不含房间列表与消息**；`MatrixCacheManager.ts` 存在但未接离线首屏；无对应测试 | ❌ 未开工 |
+| 4.3 Storybook + 视觉回归 | 新组件 stories（含 `SyncStatusBar`）；Chromatic（可选） | `SyncStatusBar` 无 stories；无 Chromatic 接入 | ⚠️ 部分完成 |
+
+#### E. 文档内部矛盾（需修正）
+
+- 第 606 行仍写「⏳ 移动端 SyncStatusBar 复用（未开始）」，与第 644 行「**前提有误，实际已覆盖**」自相矛盾；以 644 行为准（全仓仅一个 `ChatMain.vue`，移动端复用同一实例）。
+
+#### F. 优先级建议
+
+1. **P0 — 接线缺失导致能力空转**：`performanceTier.ts` 未创建 → 玻璃降级路径是死代码；`MxidText` 零调用 → 阶段 2 主目标（联邦特性「看得见」）实际未达成；锁徽章无点击 → 阶段 3 的「可操作入口」未达成。
+2. **P1 — 验收线明确未达**：阶段 1 的 1.2/1.3/1.4 三项验收（内联样式 0、`!important` 收敛、硬编码圆角 0）。
+3. **P2 — 离线与安全面板**：4.2 离线缓存、3.4 跨设备会话面板。
+
+---
+
+### 2026-09-20 第二轮执行记录（按 P0/P1/P2 优先级整改）
+
+#### ✅ P0-1 性能分级接线（激活死代码）
+
+- **新增 `src/utils/performanceTier.ts`**：判级规则 = 粗指针（触屏）/ `prefers-reduced-transparency: reduce` / `hardwareConcurrency < 4` / `deviceMemory < 4` 任一命中即为 `low`。**核心数与内存不可用时不降级**（Safari/Firefox 无 `deviceMemory`，缺失 ≠ 低性能）。
+- **`src/main.ts` 在模块体早期（早于 `createApp`）调用 `applyPerformanceTier()`**，幂等写入 `<html>.low-perf`。
+- 清理 `_liquid-glass.scss` 中的死占位 `@media (max-width: 1px) {}`，注释改为指向真实实现。
+- **连带影响（正向）**：`SyncStatusBar.vue` 的 `:global(html.low-perf)` 规则此前永不生效，现已真正启用。
+- 新增 `src/utils/__tests__/performanceTier.test.ts`（16 用例）。**其中 3 条为接线契约测试**：`main.ts` 必须含真实调用行（行首匹配，注释不算）、调用必须早于 `createApp`、`_liquid-glass.scss` 必须消费 `html.low-perf` 且类名与常量一致。
+- 验收对应：阶段 2.2「`html.low-perf` 下无 `backdrop-filter` 生效」「`prefers-reduced-transparency` 双兜底可验证」——**降级路径从死代码变为可达**。
+
+#### ✅ P0-2 MxidText 真实接线 + 联邦判定单一事实源
+
+- **`MxidText` 此前零真实调用**（全仓仅自身文档注释），且自身违反方案 2.1 的硬约束——组件内自行实现 `extractLocalpart` / `extractServerName`（后者还是**死函数**）。现改为消费 `@/utils/userIdentity`，删除两处本地解析。
+- **`FriendDetailsSections.vue` 同样违规**：自写 `parseServerName`（`indexOf(':')`），现改用 `extractServerName`。
+- **`utils/userIdentity.ts` 补齐方案 2.1 要求但此前不存在的联邦判定 API**：
+  - `sameHomeserver(a, b)` —— MXID 与纯 server name 可混用，房间 ID（`!:opaque:server`）亦可；统一小写 + trim
+  - `resolveFederationPeer(mxid, localServer)` → `{ server, isRemote }`；**无法判定时按本地处理**，避免本机信息未就绪的瞬间把所有联系人误标为「联邦用户」
+- **真实接入点**：`FriendDetailsSections` 联邦信息区
+  - 新增「Matrix ID」行，用 `<MxidText show-full is-mono>` 展示完整 MXID（含 `title` 全量值）——阶段 2「让联邦特性看得见」的可见入口
+  - 手写的 `.single-details__federation-badge--ok/--warn` 内联徽章**替换为既有 `FederationBadge` 组件**，删除 3 条随之失效的本地样式规则
+- 新增 i18n 键 `friend.detail.matrix_id`（zh-CN / en）
+- ⚠️ **遗留**：`src/typings/i18n.d.ts` 是 `scripts/generate-i18n-types.mjs` 从 `locales/zh-CN/*.json` 生成的产物，本次新增键后它**相对工作树已陈旧**。未重新生成的原因：该脚本整树生成，会一并写入**并行会话正在改的 `encryption.json` 键**，造成跨会话污染。已确认 `pnpm check:i18n`（en/zh-CN 键对齐）通过、无 CI 校验该产物新鲜度、且 `I18nKeys` 不约束 `t()`（vue-tsc 0 错误）——故留待两侧 locale 改动都落地后统一执行 `pnpm gen:i18n`。
+- 测试：`MxidText.test.ts`（8 用例，含「解析结果与 `toLocalpart` 逐例一致」的 SSoT 守卫）、`FriendDetailsSections.test.ts` 8 → 12 用例（MxidText 接线、FederationBadge local/远端语义、本机域名未就绪兜底）、`userIdentity.test.ts` 16 → 31 用例
+
+#### ⏸ P0-3 锁徽章点击（**受阻，需决策**）
+
+实测确认既有验证对话框**不具备**方案 3.1 要求的能力：
+
+- `DeviceVerifyDialog` 的 props 为 `{ show, deviceId, deviceName, inboundRequest, initialMode }` —— **没有目标用户**；`useDeviceVerifyDialog.resetState()` 中 `targetUserId = 当前会话 userId`（即自己）。
+- 即该对话框只能验证**自己账号的其它设备**；「点击消息锁 → 验证该消息发送者的设备」需要扩展 props 才能支持，属 E2EE 验证面的改动。
+- 另：锁徽章当前也拿不到发送者 **deviceId**（`useMessageTrust` 只消费 `hasEncryption`，没有设备维度信息）。
+
+#### 验证（本轮）
+
+- `vue-tsc --noEmit`：0 错误
+- `pnpm check:ratchet`：hardcoded_color 31 / matrix_prefix_hardcoded 68 / ts_expect_error 3 —— 基线不变
+- Biome：改动文件 clean
+- 受影响测试：**75 文件 / 850 用例全绿**
+- 新增守卫逐条变异验证：（1）注释掉 `main.ts` 接线 → 2 条契约用例转红；（2）`_liquid-glass.scss` 改类名 → 契约用例 + 既有 liquid-glass 用例转红；（3）`FriendDetailsSections` 反转 `:is-local` → 3 条语义用例转红；（4）去掉 MxidText 的 `show-full` → 完整 MXID 用例转红；（5）`normalizeHomeserver` 去掉小写归一 → 大小写用例转红；（6）`MxidText` 改用朴素 `slice(1)` 解析 → 4 条用例转红（含 SSoT 一致性）

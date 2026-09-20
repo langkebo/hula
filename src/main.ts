@@ -18,6 +18,7 @@ import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { errorTracker } from '@/utils/ErrorTracker'
 import { initializePlatform, isIOS, isMobile } from '@/utils/PlatformConstants'
+import { applyPerformanceTier } from '@/utils/performanceTier'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
@@ -27,6 +28,9 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Main')
 const { showFeedback } = useActionFeedback()
+
+// 性能分级必须在首次绘制前完成：液态玻璃等重特效依赖 <html>.low-perf 决定是否启用 backdrop-filter
+applyPerformanceTier()
 
 // Pre-emptively hide splash screen on mobile to reduce perceived startup time
 if (isMobile() && hasTauriRuntime()) {

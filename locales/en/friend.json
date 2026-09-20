@@ -122,6 +122,7 @@
     "device_last_seen": "Last seen",
     "device_unknown": "Unknown device",
     "federation_section": "Federation / Server",
+    "matrix_id": "Matrix ID",
     "server_address": "Server address",
     "federated_user": "Federated user",
     "local_user": "Local user"

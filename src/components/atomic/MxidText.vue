@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { toLocalpart } from '@/utils/userIdentity'
 
 /**
  * Matrix MXID 文本展示组件
@@ -42,28 +43,10 @@ const props = withDefaults(
 )
 
 /**
- * 从 MXID 中提取 localpart（@user:server.name → user）
- */
-function extractLocalpart(mxid: string): string {
-  if (!mxid) return ''
-  const trimmed = mxid.trim()
-  if (!trimmed.startsWith('@')) return trimmed
-  const withoutAt = trimmed.slice(1)
-  const colonIdx = withoutAt.indexOf(':')
-  return colonIdx === -1 ? withoutAt : withoutAt.slice(0, colonIdx)
-}
-
-/**
- * 从 MXID 中提取 server name（@user:server.name → server.name）
- */
-function extractServerName(mxid: string): string {
-  if (!mxid) return ''
-  const idx = mxid.indexOf(':')
-  return idx === -1 ? '' : mxid.slice(idx + 1)
-}
-
-/**
  * 显示文本：根据 showFull 决定显示完整 MXID 或仅 localpart
+ *
+ * localpart 解析统一走 `@/utils/userIdentity` 的单一事实源 —— 方案 2.1 明确
+ * 禁止各组件自行 `split(':')` 解析 MXID。
  */
 const displayText = computed(() => {
   if (!props.mxid) return ''
@@ -71,10 +54,10 @@ const displayText = computed(() => {
   if (props.showFull) {
     const display = props.mxid
     return display.length > props.maxLength ? display.slice(0, props.maxLength - 1) + '\u2026' : display
-  } else {
-    const localpart = extractLocalpart(props.mxid)
-    return localpart.length > props.maxLength ? localpart.slice(0, props.maxLength - 1) + '\u2026' : localpart
   }
+
+  const localpart = toLocalpart(props.mxid)
+  return localpart.length > props.maxLength ? localpart.slice(0, props.maxLength - 1) + '\u2026' : localpart
 })
 
 /**

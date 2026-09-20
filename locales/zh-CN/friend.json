@@ -122,6 +122,7 @@
     "device_last_seen": "最后活跃",
     "device_unknown": "未知设备",
     "federation_section": "联邦/服务器",
+    "matrix_id": "Matrix ID",
     "server_address": "服务器地址",
     "federated_user": "联邦用户",
     "local_user": "本地用户"

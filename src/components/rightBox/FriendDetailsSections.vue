@@ -65,16 +65,21 @@
         <span class="management-label">{{ t('friend.detail.federation_section') }}</span>
       </div>
       <div class="single-details__federation-row">
+        <span class="single-details__federation-label">{{ t('friend.detail.matrix_id') }}</span>
+        <!-- 完整 MXID（等宽 + 截断 + title 全量）：联邦身份的主要可见入口 -->
+        <MxidText class="single-details__federation-value" :mxid="props.userId" show-full is-mono :max-length="40" />
+      </div>
+      <div class="single-details__federation-row">
         <span class="single-details__federation-label">{{ t('friend.detail.server_address') }}</span>
         <span class="single-details__federation-value">{{ serverName || '-' }}</span>
       </div>
       <div class="single-details__federation-row">
         <span class="single-details__federation-label">{{ t('friend.detail.federated_user') }}</span>
-        <span
-          class="single-details__federation-badge"
-          :class="isFederatedUser ? 'single-details__federation-badge--warn' : 'single-details__federation-badge--ok'">
-          {{ isFederatedUser ? t('friend.detail.federated_user') : t('friend.detail.local_user') }}
-        </span>
+        <FederationBadge
+          :is-local="!isFederatedUser"
+          size="sm"
+          :label="isFederatedUser ? t('friend.detail.federated_user') : t('friend.detail.local_user')"
+          :title="serverName || undefined" />
       </div>
     </div>
   </div>
@@ -83,6 +88,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import FederationBadge from '@/components/atomic/FederationBadge.vue'
+import MxidText from '@/components/atomic/MxidText.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
@@ -90,6 +97,7 @@ import matrixClientService from '@/services/matrix/MatrixClientService'
 import type { Device } from '@/services/matrix/user/MatrixDeviceService'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 import { createLogger } from '@/utils/Logger'
+import { extractServerName, resolveFederationPeer } from '@/utils/userIdentity'
 
 const logger = createLogger('FriendDetailsSections')
 const { t } = useI18n()
@@ -216,23 +224,14 @@ const loadDevices = async () => {
 // ==================== 联邦/服务器信息区 ====================
 
 /**
- * 从 Matrix user ID `@localpart:server.name` 中解析出 server name。
- * 输入不符合 MXID 规范时返回空字符串。
+ * server name 与联邦判定统一走 `@/utils/userIdentity` 的单一事实源。
+ * 此前组件内自行 `indexOf(':')` 解析，与 `MxidText` 的本地实现重复，
+ * 违反方案 2.1「禁止各组件自行解析 MXID」的约定。
  */
-const parseServerName = (userId: string): string => {
-  const colonIdx = userId.indexOf(':')
-  if (colonIdx <= 0 || colonIdx === userId.length - 1) return ''
-  return userId.slice(colonIdx + 1)
-}
-
 const localDomain = computed<string>(() => matrixClientService.getServerDomain())
 
-const serverName = computed(() => parseServerName(props.userId))
-const isFederatedUser = computed(() => {
-  const server = serverName.value
-  if (!server || !localDomain.value) return false
-  return server !== localDomain.value
-})
+const serverName = computed(() => extractServerName(props.userId))
+const isFederatedUser = computed(() => resolveFederationPeer(props.userId, localDomain.value).isRemote)
 
 // ==================== 联动加载 ====================
 
@@ -374,28 +373,6 @@ watch(
 }
 
 .single-details__device-verified--warn {
-  color: var(--tjg-color-warning-600);
-  background: var(--tjg-color-warning-100);
-  border-color: var(--tjg-color-warning-100);
-}
-
-.single-details__federation-badge {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  font-size: 11px;
-  border-radius: var(--tjg-radius-full);
-  border: 1px solid transparent;
-}
-
-.single-details__federation-badge--ok {
-  color: var(--tjg-color-success-600);
-  background: var(--tjg-color-success-100);
-  border-color: var(--tjg-color-success-100);
-}
-
-.single-details__federation-badge--warn {
   color: var(--tjg-color-warning-600);
   background: var(--tjg-color-warning-100);
   border-color: var(--tjg-color-warning-100);

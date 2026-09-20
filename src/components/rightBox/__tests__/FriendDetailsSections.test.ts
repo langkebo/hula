@@ -32,6 +32,8 @@ const getUserDevicesMock = vi.hoisted(() =>
     }
   ])
 )
+/** 本机 homeserver 域名 —— 联邦判定的对照基准 */
+const getServerDomainMock = vi.hoisted(() => vi.fn().mockReturnValue('matrix.test'))
 
 // --- Module mocks ---
 
@@ -55,6 +57,7 @@ vi.mock('vue-i18n', () => ({
         'friend.detail.device_last_seen': 'Last seen',
         'friend.detail.device_unknown': 'Unknown device',
         'friend.detail.federation_section': 'Federation',
+        'friend.detail.matrix_id': 'Matrix ID',
         'friend.detail.server_address': 'Server',
         'friend.detail.federated_user': 'Federated',
         'friend.detail.local_user': 'Local',
@@ -104,7 +107,7 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
       getDomain: () => 'matrix.test',
       getHomeserverUrl: () => 'https://matrix.test'
     }),
-    getServerDomain: () => 'matrix.test'
+    getServerDomain: getServerDomainMock
   }
 }))
 
@@ -124,6 +127,8 @@ const globalStubs = {
 describe('FriendDetailsSections', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // clearAllMocks 不清除实现，但用例可能改写它 —— 每个用例显式复位基准值
+    getServerDomainMock.mockReturnValue('matrix.test')
   })
 
   const mountComponent = (userId = '@kevins:matrix.test') =>
@@ -184,6 +189,45 @@ describe('FriendDetailsSections', () => {
     expect(federationSection.exists()).toBe(true)
     expect(federationSection.text()).toContain('other-server.test')
     expect(federationSection.text()).toContain('Federated')
+  })
+
+  it('联邦信息区用 MxidText 展示完整 MXID（联邦身份可见入口）', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const mxid = wrapper.find('[data-testid="mxid-text"]')
+    expect(mxid.exists()).toBe(true)
+    // 完整 MXID（非仅 localpart），并带 title 全量值
+    expect(mxid.text()).toBe('@kevins:matrix.test')
+    expect(mxid.attributes('title')).toBe('@kevins:matrix.test')
+    expect(wrapper.find('.single-details__federation-section').text()).toContain('Matrix ID')
+  })
+
+  it('本地用户：FederationBadge 标记为 local', async () => {
+    const wrapper = mountComponent('@kevins:matrix.test')
+    await flushPromises()
+
+    const badge = wrapper.find('[data-testid="federation-badge"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.classes()).toContain('federation-badge--local')
+  })
+
+  it('跨域用户：FederationBadge 不标记 local（远端 chip）', async () => {
+    const wrapper = mountComponent('@kevins:other-server.test')
+    await flushPromises()
+
+    const badge = wrapper.find('[data-testid="federation-badge"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.classes()).not.toContain('federation-badge--local')
+  })
+
+  it('本机域名未就绪时按本地处理，不误报「联邦用户」', async () => {
+    getServerDomainMock.mockReturnValue('')
+    const wrapper = mountComponent('@kevins:other-server.test')
+    await flushPromises()
+
+    const badge = wrapper.find('[data-testid="federation-badge"]')
+    expect(badge.classes()).toContain('federation-badge--local')
   })
 
   it('shows empty device hint when no devices are returned', async () => {

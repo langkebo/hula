@@ -47,6 +47,65 @@ export function extractServerName(mxid?: string | null): string {
 }
 
 /**
+ * 把「MXID 或纯 server name」统一归一化为可比较的 server name。
+ *
+ * - `@user:matrix.test` → `matrix.test`
+ * - `!room:matrix.test` → `matrix.test`
+ * - `matrix.test`       → `matrix.test`（已是 server name，直接使用）
+ * - 空值                → `''`
+ *
+ * 统一小写：homeserver 名是 DNS 风格，大小写不应造成「同一服务器被判为远端」。
+ */
+function normalizeHomeserver(value?: string | null): string {
+  const trimmed = (value ?? '').trim().toLowerCase()
+  if (!trimmed) return ''
+  if (trimmed.startsWith('@') || trimmed.startsWith('!')) {
+    return toServerName(trimmed)
+  }
+  return trimmed
+}
+
+/**
+ * 联邦判定（单一事实源）：两个标识是否属于同一 homeserver。
+ *
+ * 入参可以是 MXID，也可以直接是 server name，二者可混用。
+ * 任一方无法解析出 server name 时返回 `false`（不轻易断言「本地」）。
+ */
+export function sameHomeserver(a?: string | null, b?: string | null): boolean {
+  const left = normalizeHomeserver(a)
+  const right = normalizeHomeserver(b)
+  if (!left || !right) return false
+  return left === right
+}
+
+/** 联邦对端解析结果 */
+export interface FederationPeer {
+  /** 对端 server name；无法解析时为空串 */
+  server: string
+  /** 是否来自远端 homeserver */
+  isRemote: boolean
+}
+
+/**
+ * 解析联邦对端：给出对端 server 与「是否远端」。
+ *
+ * 无法判定时（对端 MXID 解析不出 server，或本机 homeserver 尚未就绪）
+ * 一律返回 `isRemote: false`，即**按本地处理**——避免本机信息未就绪的瞬间
+ * 把所有联系人误标为「联邦用户」。
+ *
+ * @param mxid 待判定的 MXID（或纯 server name）
+ * @param localServer 本机 homeserver（可传 MXID 或 server name）
+ */
+export function resolveFederationPeer(mxid?: string | null, localServer?: string | null): FederationPeer {
+  const server = normalizeHomeserver(mxid)
+  const local = normalizeHomeserver(localServer)
+
+  if (!server || !local) return { server, isRemote: false }
+
+  return { server, isRemote: server !== local }
+}
+
+/**
  * 校验是否为合法 MXID。
  */
 function isMatrixUserId(value?: string | null): boolean {
