@@ -226,6 +226,59 @@ describe('MatrixNotificationService', () => {
     })
   })
 
+  describe('buildNotificationDisplay', () => {
+    const PREF_KEY = 'tjg-notification-display-preferences'
+
+    beforeEach(() => {
+      localStorage.removeItem(PREF_KEY)
+      matrixNotificationService.updateConfig({ showMessageContent: true })
+    })
+
+    afterEach(() => {
+      localStorage.removeItem(PREF_KEY)
+    })
+
+    it('shows the body when summary and priority allow it', () => {
+      const display = matrixNotificationService.buildNotificationDisplay('Title', 'Body')
+      expect(display.title).toBe('Title')
+      expect(display.body).toBe('Body')
+    })
+
+    it('hides the body when the account-level summary switch is off', () => {
+      matrixNotificationService.updateConfig({ showMessageContent: false })
+      const display = matrixNotificationService.buildNotificationDisplay('Title', 'Body')
+      expect(display.body).toBeUndefined()
+      expect(display.title).toContain('Title')
+    })
+
+    it('lets high priority override the account-level summary switch', () => {
+      matrixNotificationService.updateConfig({ showMessageContent: false })
+      localStorage.setItem(PREF_KEY, JSON.stringify({ priority: 'high' }))
+      const display = matrixNotificationService.buildNotificationDisplay('Title', 'Body')
+      expect(display.body).toBe('Body')
+    })
+
+    it('lets low priority fold the body even when summary is on', () => {
+      localStorage.setItem(PREF_KEY, JSON.stringify({ priority: 'low' }))
+      const display = matrixNotificationService.buildNotificationDisplay('Title', 'Body')
+      expect(display.body).toBeUndefined()
+    })
+
+    it('prefixes the title when a keyword is highlighted', () => {
+      localStorage.setItem(PREF_KEY, JSON.stringify({ keywords: ['deploy'], keywordHighlight: true, priority: 'high' }))
+      const display = matrixNotificationService.buildNotificationDisplay('Title', 'the deploy is green')
+      expect(display.title).toContain('[*]')
+      expect(display.body).toBe('the deploy is green')
+    })
+
+    it('does not highlight while the body is folded', () => {
+      localStorage.setItem(PREF_KEY, JSON.stringify({ keywords: ['deploy'], keywordHighlight: true, priority: 'low' }))
+      const display = matrixNotificationService.buildNotificationDisplay('Title', 'the deploy is green')
+      expect(display.title).not.toContain('[*]')
+      expect(display.body).toBeUndefined()
+    })
+  })
+
   describe('playSound', () => {
     it('should not play sound when sound is disabled', async () => {
       matrixNotificationService.updateConfig({ enableSound: false })

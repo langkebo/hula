@@ -14,6 +14,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
+import { loadNotificationDisplayPreferences, materializeNotificationContent } from './notificationDisplayPreferences'
 
 const logger = createLogger('MatrixNotificationService')
 
@@ -333,12 +334,35 @@ class MatrixNotificationService extends BaseMatrixService {
         }
       }
 
-      new Notification(title, {
-        body: this.config.showMessageContent ? body : undefined
+      const display = this.buildNotificationDisplay(title, body)
+      new Notification(display.title, {
+        body: display.body
       })
     } catch (err) {
       logger.error(`[MatrixNotification] 显示通知失败: ${err}`)
     }
+  }
+
+  /**
+   * 供移动端/桌面端在收到新消息时决定标题与正文。
+   *
+   * 合并两处偏好：账号级 `showMessageContent` 先并入本地展示偏好，
+   * 再由优先级裁定（high 可突破账号级开关，low 强制折叠）。
+   * 正文隐藏时标题加折叠标记，避免偏好静默失效、用户无从察觉。
+   */
+  buildNotificationDisplay(title: string, body: string): { title: string; body: string | undefined } {
+    const preferences = loadNotificationDisplayPreferences()
+    const decision = materializeNotificationContent(
+      { title, body },
+      { ...preferences, contentSummary: preferences.contentSummary && this.config.showMessageContent }
+    )
+
+    if (!decision.contentVisible) {
+      return { title: `[•] ${title}`, body: undefined }
+    }
+
+    const prefix = decision.highlighted ? '[*] ' : ''
+    return { title: `${prefix}${decision.title}`, body: decision.body }
   }
 
   async playSound(url: string): Promise<void> {

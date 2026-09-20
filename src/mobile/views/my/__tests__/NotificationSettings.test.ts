@@ -11,9 +11,23 @@ const { showToastMock, getPushRulesMock, setPushRuleEnabledMock, setPushRuleActi
   }
 })
 
-vi.mock('vant', () => ({
-  showToast: (...args: any[]) => showToastMock(...args)
-}))
+vi.mock('vant', async () => {
+  const { defineComponent } = await import('vue')
+  const passthrough = (name: string, tag = 'div') =>
+    defineComponent({ name, inheritAttrs: false, template: `<${tag} v-bind="$attrs"><slot /></${tag}>` })
+  return {
+    showToast: (...args: any[]) => showToastMock(...args),
+    VanCellGroup: passthrough('VanCellGroup'),
+    VanCell: passthrough('VanCell'),
+    VanField: passthrough('VanField'),
+    VanSwitch: passthrough('VanSwitch'),
+    VanRadioGroup: passthrough('VanRadioGroup'),
+    VanRadio: passthrough('VanRadio'),
+    VanButton: passthrough('VanButton'),
+    VanPopup: passthrough('VanPopup'),
+    VanPicker: passthrough('VanPicker')
+  }
+})
 
 vi.mock('@iconify/vue', () => ({
   Icon: { name: 'Icon', template: '<i />', props: ['icon', 'width', 'color'] }
@@ -146,6 +160,91 @@ describe('NotificationSettings', () => {
     const vm = wrapper.vm as any
     vm.handleEncryptedRoomToggle(true)
     expect(localStorage.getItem('tjg-encrypted-room-notifications')).toBe('true')
+  })
+
+  describe('notification display preferences', () => {
+    it('exposes the three controls with defaults', () => {
+      const wrapper = mount(NotificationSettings)
+      const vm = wrapper.vm as any
+      expect(vm.contentSummary).toBe(true)
+      expect(vm.keywordHighlight).toBe(true)
+      expect(vm.priority).toBe('medium')
+      expect(vm.keywordsInput).toBe('')
+    })
+
+    it('restores saved preferences on mount', () => {
+      localStorage.setItem(
+        'tjg-notification-display-preferences',
+        JSON.stringify({ contentSummary: false, keywordHighlight: false, keywords: ['deploy'], priority: 'low' })
+      )
+      const wrapper = mount(NotificationSettings)
+      const vm = wrapper.vm as any
+      expect(vm.contentSummary).toBe(false)
+      expect(vm.keywordHighlight).toBe(false)
+      expect(vm.priority).toBe('low')
+      expect(vm.keywordsInput).toBe('deploy')
+    })
+
+    it('persists the content summary toggle', () => {
+      const wrapper = mount(NotificationSettings)
+      const vm = wrapper.vm as any
+      vm.contentSummary = false
+      vm.handleContentSummaryToggle()
+      const stored = JSON.parse(localStorage.getItem('tjg-notification-display-preferences') as string)
+      expect(stored.contentSummary).toBe(false)
+    })
+
+    it('persists the keyword highlight toggle', () => {
+      const wrapper = mount(NotificationSettings)
+      const vm = wrapper.vm as any
+      vm.keywordHighlight = false
+      vm.handleKeywordHighlightToggle()
+      const stored = JSON.parse(localStorage.getItem('tjg-notification-display-preferences') as string)
+      expect(stored.keywordHighlight).toBe(false)
+    })
+
+    it('normalizes keywords on blur', () => {
+      const wrapper = mount(NotificationSettings)
+      const vm = wrapper.vm as any
+      vm.keywordsInput = ' deploy ,, DEPLOY ， 运维 '
+      vm.handleKeywordsCommit()
+      expect(vm.keywordsInput).toBe('deploy, 运维')
+      const stored = JSON.parse(localStorage.getItem('tjg-notification-display-preferences') as string)
+      expect(stored.keywords).toEqual(['deploy', '运维'])
+    })
+
+    it('persists a confirmed priority and closes the picker', () => {
+      const wrapper = mount(NotificationSettings)
+      const vm = wrapper.vm as any
+      vm.showPriorityPicker = true
+      vm.handlePriorityConfirm({ selectedValues: ['high'] })
+      expect(vm.priority).toBe('high')
+      expect(vm.showPriorityPicker).toBe(false)
+      const stored = JSON.parse(localStorage.getItem('tjg-notification-display-preferences') as string)
+      expect(stored.priority).toBe('high')
+    })
+
+    it('ignores an unknown priority value', () => {
+      const wrapper = mount(NotificationSettings)
+      const vm = wrapper.vm as any
+      vm.handlePriorityConfirm({ selectedValues: ['urgent'] })
+      expect(vm.priority).toBe('medium')
+    })
+
+    it('renders the priority labels from i18n keys', () => {
+      const wrapper = mount(NotificationSettings)
+      const vm = wrapper.vm as any
+      expect(vm.priorityColumns.map((c: any) => c.value)).toEqual(['low', 'medium', 'high'])
+      expect(vm.priorityLabel).toBe('mobile_notifications.priority_medium')
+    })
+
+    it('renders the display section controls', () => {
+      const wrapper = mount(NotificationSettings)
+      expect(wrapper.find('[data-testid="notif-content-summary"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="notif-keyword-highlight"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="notif-keywords"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="notif-priority"]').exists()).toBe(true)
+    })
   })
 
   it('saves push rules on handleSave', async () => {
