@@ -1,5 +1,5 @@
-import type { IPushRule, IPushRules } from 'matrix-js-sdk'
 import { describe, expect, it } from 'vitest'
+import type { IPushRule, IPushRules } from '../MatrixPushService'
 import {
   countPushRules,
   formatPushRuleId,
