@@ -422,6 +422,73 @@ describe('MatrixNotificationService', () => {
     })
   })
 
+  /**
+   * I3 回归：独立聊天窗口是各自独立的 realm，各持一份模块级内存快照。
+   * 只读构造时的快照会导致「在设置窗口改了通知/DND，已打开的聊天窗口不生效」，
+   * 且写回整份快照会覆盖别的窗口刚改的字段。
+   */
+  describe('cross-window freshness', () => {
+    const CONFIG_STORAGE_KEY = 'tjg-notification-config'
+    const DND_ENABLED_KEY = 'tjg-push-dnd'
+    const DND_START_KEY = 'tjg-push-dnd-start'
+    const DND_END_KEY = 'tjg-push-dnd-end'
+
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it('getConfig observes a config written by another window', () => {
+      matrixNotificationService.updateConfig({ showSender: true, showMessageContent: true })
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ showSender: false, showMessageContent: false }))
+
+      const config = matrixNotificationService.getConfig()
+
+      expect(config.showSender).toBe(false)
+      expect(config.showMessageContent).toBe(false)
+    })
+
+    it('a stale window cannot clobber a newer field when it changes another field', () => {
+      // 另一个窗口刚把内容预览关掉
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ showMessageContent: false, showSender: true }))
+
+      // 本窗口的旧快照只改 showSender，写回时不能把 showMessageContent 顶回旧值
+      matrixNotificationService.updateConfig({ showSender: false })
+
+      const persisted = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) as string)
+      expect(persisted.showMessageContent).toBe(false)
+      expect(persisted.showSender).toBe(false)
+    })
+
+    it('setEventNotificationEnabled merges into the freshest persisted events map', () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ events: { other_kind: true } }))
+
+      matrixNotificationService.setEventNotificationEnabled('thread_mention', false)
+
+      const persisted = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) as string)
+      expect(persisted.events).toEqual({ other_kind: true, thread_mention: false })
+    })
+
+    it('shouldNotifyMessage reads the freshest persisted event switches', () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ events: { thread_mention: false } }))
+
+      expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: true, body: 'hi' })).toBe(false)
+    })
+
+    it('the DND gate observes a window written by another window', () => {
+      const start = new Date(2026, 5, 15, 1, 0).getTime()
+      const end = new Date(2026, 5, 15, 23, 0).getTime()
+      localStorage.setItem(DND_ENABLED_KEY, 'true')
+      localStorage.setItem(DND_START_KEY, String(start))
+      localStorage.setItem(DND_END_KEY, String(end))
+
+      expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: start, endTime: end })
+      expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(true)
+      expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(
+        false
+      )
+    })
+  })
+
   describe('requestNotificationPermission', () => {
     it('should return false when Notification API is not available', async () => {
       const originalNotification = window.Notification

@@ -117,27 +117,40 @@ class MatrixNotificationService extends BaseMatrixService {
     this.loadDndFromMirror()
   }
 
+  /**
+   * 从 localStorage 重新读一份配置到内存快照。
+   *
+   * 每次读取都从默认值重建，而不是在旧内存快照上打补丁：独立聊天窗口是各自独立的
+   * realm，设置窗口改了配置后，已开着的聊天窗口必须能观察到，否则开关"点了没反应"。
+   */
   private loadConfig(): void {
-    const stored = localStorage.getItem(MatrixNotificationService.CONFIG_STORAGE_KEY)
+    const isValidNotificationConfig = (val: unknown): val is Partial<NotificationConfig> =>
+      validateObject<Record<string, unknown>>(val, [], {
+        enableDesktop: (v) => v === undefined || typeof v === 'boolean',
+        enableSound: (v) => v === undefined || typeof v === 'boolean',
+        enableVibrate: (v) => v === undefined || typeof v === 'boolean',
+        showPreview: (v) => v === undefined || typeof v === 'boolean',
+        showSender: (v) => v === undefined || typeof v === 'boolean',
+        showMessageContent: (v) => v === undefined || typeof v === 'boolean',
+        events: (v) => v === undefined || (typeof v === 'object' && v !== null && !Array.isArray(v))
+      })
+
+    let stored: string | null = null
+    try {
+      stored = localStorage.getItem(MatrixNotificationService.CONFIG_STORAGE_KEY)
+    } catch (err) {
+      logger.warn('读取通知配置失败:', err)
+    }
 
     if (stored) {
-      const isValidNotificationConfig = (val: unknown): val is Partial<NotificationConfig> =>
-        validateObject<Record<string, unknown>>(val, [], {
-          enableDesktop: (v) => v === undefined || typeof v === 'boolean',
-          enableSound: (v) => v === undefined || typeof v === 'boolean',
-          enableVibrate: (v) => v === undefined || typeof v === 'boolean',
-          showPreview: (v) => v === undefined || typeof v === 'boolean',
-          showSender: (v) => v === undefined || typeof v === 'boolean',
-          showMessageContent: (v) => v === undefined || typeof v === 'boolean',
-          events: (v) => v === undefined || (typeof v === 'object' && v !== null && !Array.isArray(v))
-        })
-
       const parsed = safeJsonParse(stored, isValidNotificationConfig, DEFAULT_NOTIFICATION_CONFIG)
       this.config = {
         ...DEFAULT_NOTIFICATION_CONFIG,
         ...parsed,
         events: sanitizeNotificationEvents(parsed.events)
       }
+    } else {
+      this.config = { ...DEFAULT_NOTIFICATION_CONFIG, events: {} }
     }
 
     // 迁移必须在「配置 key 不存在」时也执行：老用户可能只动过线程开关，从未写过配置。
@@ -204,6 +217,7 @@ class MatrixNotificationService extends BaseMatrixService {
       if (event) {
         const serverConfig = event.getContent() as Partial<NotificationConfig>
         if (serverConfig && typeof serverConfig === 'object') {
+          this.loadConfig()
           this.config = {
             ...this.config,
             ...serverConfig,
@@ -305,8 +319,9 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
-  /** 读取当前勿扰时段（缓存副本，调用方无法就地改写服务状态）。 */
+  /** 读取当前勿扰时段（每次都从 localStorage 镜像刷新，跨窗口改动无需重启即可生效）。 */
   getDndSettings(): DndWindow {
+    this.loadDndFromMirror()
     return { ...this.dndSettings }
   }
 
@@ -325,6 +340,8 @@ class MatrixNotificationService extends BaseMatrixService {
 
   /** 当前是否处于勿扰窗口；`now` 可注入，便于测试与纯函数保持一致。 */
   isWithinDndWindow(now: Date = new Date()): boolean {
+    // 先刷新镜像：设置窗口/其它窗口改了 DND，已打开的聊天窗口要立刻看到
+    this.loadDndFromMirror()
     return computeWithinDndWindow(this.dndSettings, now)
   }
 
@@ -438,22 +455,35 @@ class MatrixNotificationService extends BaseMatrixService {
     return this.pushRules.find((rule) => rule.rule_id === ruleId)
   }
 
+  /**
+   * 局部更新通知配置。
+   *
+   * 写前先从 localStorage 读一份最新配置再合并，**只覆盖调用方传入的字段**：
+   * 独立窗口各有自己的内存快照，若把旧快照整份写回，别的窗口刚改的
+   * `showSender` / `showMessageContent` 会被静默顶回旧值。
+   */
   updateConfig(config: Partial<NotificationConfig>): void {
+    this.loadConfig()
     this.config = {
       ...this.config,
-      ...config
+      ...config,
+      // events 做浅合并：调用方通常只改其中一个 kind，不能把别的 kind 一起覆盖
+      events: config.events !== undefined ? { ...this.config.events, ...config.events } : this.config.events
     }
     this.persistConfig()
     this.syncConfigToAccountData()
   }
 
   getConfig(): NotificationConfig {
+    // 每次读取都从持久化存储刷新，跨窗口改动无需重启即可生效
+    this.loadConfig()
     return { ...this.config, events: { ...this.config.events } }
   }
 
   /** 写入细粒度事件开关（目前唯一 kind：`thread_mention`），与 `enableDesktop` 同一份配置、同一发送路径读取。 */
   setEventNotificationEnabled(kind: NotificationEventKind, enabled: boolean): void {
-    this.updateConfig({ events: { ...this.config.events, [kind]: enabled } })
+    // 只传被改的 kind，交给 updateConfig 与最新持久化快照浅合并
+    this.updateConfig({ events: { [kind]: enabled } })
   }
 
   /**
@@ -462,9 +492,10 @@ class MatrixNotificationService extends BaseMatrixService {
    * 自己发送的消息由调用方先排除（发送路径还持有 userStore 身份）。
    */
   shouldNotifyMessage(input: NotificationMessageInput): boolean {
+    const config = this.getConfig()
     const preferences = loadNotificationDisplayPreferences()
     const decisionPreferences: NotificationDecisionPreferences = {
-      events: this.config.events,
+      events: config.events,
       keywordNotifications: preferences.keywordNotifications,
       keywords: preferences.keywords,
       dndActive: this.isWithinDndWindow()
