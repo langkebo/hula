@@ -64,22 +64,22 @@
       <div class="management-header">
         <span class="management-label">{{ t('friend.detail.federation_section') }}</span>
       </div>
-      <div class="single-details__federation-row">
+      <!-- 联邦身份组合单元：主标识 + 联邦 chip + 完整 MXID -->
+      <!-- MXID / 域名 / 联邦判定统一走 @/utils/userIdentity，禁止组件内自行 split -->
+      <div class="single-details__federation-row single-details__federation-row--identity">
         <span class="single-details__federation-label">{{ t('friend.detail.matrix_id') }}</span>
-        <!-- 完整 MXID（等宽 + 截断 + title 全量）：联邦身份的主要可见入口 -->
-        <MxidText class="single-details__federation-value" :mxid="props.userId" show-full is-mono :max-length="40" />
+        <UserIdentity
+          class="single-details__identity"
+          data-testid="friend-identity"
+          :mxid="props.userId"
+          :local-server="localDomain"
+          :show-avatar="false"
+          show-full-mxid
+          :mxid-max-length="40" />
       </div>
       <div class="single-details__federation-row">
         <span class="single-details__federation-label">{{ t('friend.detail.server_address') }}</span>
         <span class="single-details__federation-value">{{ serverName || '-' }}</span>
-      </div>
-      <div class="single-details__federation-row">
-        <span class="single-details__federation-label">{{ t('friend.detail.federated_user') }}</span>
-        <FederationBadge
-          :is-local="!isFederatedUser"
-          size="sm"
-          :label="isFederatedUser ? t('friend.detail.federated_user') : t('friend.detail.local_user')"
-          :title="serverName || undefined" />
       </div>
     </div>
   </div>
@@ -88,8 +88,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import FederationBadge from '@/components/atomic/FederationBadge.vue'
-import MxidText from '@/components/atomic/MxidText.vue'
+import UserIdentity from '@/components/common/UserIdentity.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
@@ -97,7 +96,7 @@ import matrixClientService from '@/services/matrix/MatrixClientService'
 import type { Device } from '@/services/matrix/user/MatrixDeviceService'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 import { createLogger } from '@/utils/Logger'
-import { extractServerName, resolveFederationPeer } from '@/utils/userIdentity'
+import { extractServerName } from '@/utils/userIdentity'
 
 const logger = createLogger('FriendDetailsSections')
 const { t } = useI18n()
@@ -227,11 +226,13 @@ const loadDevices = async () => {
  * server name 与联邦判定统一走 `@/utils/userIdentity` 的单一事实源。
  * 此前组件内自行 `indexOf(':')` 解析，与 `MxidText` 的本地实现重复，
  * 违反方案 2.1「禁止各组件自行解析 MXID」的约定。
+ *
+ * 联邦 chip 的「本地 / 联邦」判定现由 `UserIdentity` 内部经 `sameHomeserver`
+ * 完成，本组件只负责提供 `localDomain` 作为对照基准，不再自行判定。
  */
 const localDomain = computed<string>(() => matrixClientService.getServerDomain())
 
 const serverName = computed(() => extractServerName(props.userId))
-const isFederatedUser = computed(() => resolveFederationPeer(props.userId, localDomain.value).isRemote)
 
 // ==================== 联动加载 ====================
 
@@ -394,5 +395,17 @@ watch(
   color: var(--tjg-text-primary);
   word-break: break-all;
   text-align: right;
+}
+
+/* 身份行：标签在上、联邦身份单元在下（MXID 需要完整宽度，不能与标签同行右对齐） */
+.single-details__federation-row--identity {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.single-details__identity {
+  width: 100%;
+  min-width: 0;
 }
 </style>

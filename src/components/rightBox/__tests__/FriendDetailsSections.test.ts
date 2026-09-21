@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { NSelect } from 'naive-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18nMock, resolveMessage } from '~/tests/i18n-messages'
 import FriendDetailsSections from '../FriendDetailsSections.vue'
 
 // --- Hoisted mocks ---
@@ -37,39 +38,16 @@ const getServerDomainMock = vi.hoisted(() => vi.fn().mockReturnValue('matrix.tes
 
 // --- Module mocks ---
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, _params?: Record<string, string | number>) => {
-      const map: Record<string, string> = {
-        'friend.detail.group_section': 'Group Assignment',
-        'friend.detail.group_placeholder': 'Select group',
-        'friend.detail.group_load_error': 'Failed to load groups',
-        'friend.detail.group_assign_success': 'Assigned to group',
-        'friend.detail.group_assign_error': 'Failed to assign group',
-        'friend.detail.group_remove_success': 'Removed from group',
-        'friend.detail.group_remove_error': 'Failed to remove from group',
-        'friend.detail.devices_section': 'Devices',
-        'friend.detail.devices_loading': 'Loading devices...',
-        'friend.detail.devices_empty': 'No devices',
-        'friend.detail.devices_load_error': 'Failed to load devices',
-        'friend.detail.device_verified': 'Verified',
-        'friend.detail.device_unverified': 'Unverified',
-        'friend.detail.device_last_seen': 'Last seen',
-        'friend.detail.device_unknown': 'Unknown device',
-        'friend.detail.federation_section': 'Federation',
-        'friend.detail.matrix_id': 'Matrix ID',
-        'friend.detail.server_address': 'Server',
-        'friend.detail.federated_user': 'Federated',
-        'friend.detail.local_user': 'Local',
-        'friend.detail.just_now': 'just now',
-        'friend.detail.minutes_ago': '{count}m ago',
-        'friend.detail.hours_ago': '{count}h ago',
-        'friend.detail.days_ago': '{count}d ago'
-      }
-      return map[key] ?? key
-    }
-  })
-}))
+/**
+ * i18n 桩改为**真实语言表驱动**。
+ *
+ * 此前这里手写了一张 key → 英文文案映射表，而它是照着组件源码抄的：
+ * 源码键名写错时桩抄的也是错键名，测试全绿、界面渲染裸 key（「自洽 stub」反模式）。
+ * `createI18nMock()` 直接解析 `locales/zh-CN/*.json`，未解析到的键原样返回，
+ * 断言立刻暴露。故下面的文案断言一律用 `resolveMessage()` 取真实文案，
+ * 既不会漏判错键，也不会因文案微调而误报。
+ */
+vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({
@@ -143,7 +121,7 @@ describe('FriendDetailsSections', () => {
 
     const groupSection = wrapper.find('.single-details__group-section')
     expect(groupSection.exists()).toBe(true)
-    expect(groupSection.text()).toContain('Group Assignment')
+    expect(groupSection.text()).toContain(resolveMessage('friend.detail.group_section'))
   })
 
   it('renders the device list section with title and loads devices', async () => {
@@ -152,7 +130,7 @@ describe('FriendDetailsSections', () => {
 
     const deviceSection = wrapper.find('.single-details__device-section')
     expect(deviceSection.exists()).toBe(true)
-    expect(deviceSection.text()).toContain('Devices')
+    expect(deviceSection.text()).toContain(resolveMessage('friend.detail.devices_section'))
     expect(getUserDevicesMock).toHaveBeenCalledWith('@kevins:matrix.test')
 
     const items = wrapper.findAll('.single-details__device-item')
@@ -167,10 +145,10 @@ describe('FriendDetailsSections', () => {
 
     const federationSection = wrapper.find('.single-details__federation-section')
     expect(federationSection.exists()).toBe(true)
-    expect(federationSection.text()).toContain('Federation')
+    expect(federationSection.text()).toContain(resolveMessage('friend.detail.federation_section'))
     // @kevins:matrix.test → server name is "matrix.test", which matches local domain
     expect(federationSection.text()).toContain('matrix.test')
-    expect(federationSection.text()).toContain('Local')
+    expect(federationSection.text()).toContain(resolveMessage('friend.local_user'))
   })
 
   it('renders all three management sections', async () => {
@@ -188,7 +166,7 @@ describe('FriendDetailsSections', () => {
     const federationSection = wrapper.find('.single-details__federation-section')
     expect(federationSection.exists()).toBe(true)
     expect(federationSection.text()).toContain('other-server.test')
-    expect(federationSection.text()).toContain('Federated')
+    expect(federationSection.text()).toContain(resolveMessage('friend.federated_user'))
   })
 
   it('联邦信息区用 MxidText 展示完整 MXID（联邦身份可见入口）', async () => {
@@ -200,7 +178,22 @@ describe('FriendDetailsSections', () => {
     // 完整 MXID（非仅 localpart），并带 title 全量值
     expect(mxid.text()).toBe('@kevins:matrix.test')
     expect(mxid.attributes('title')).toBe('@kevins:matrix.test')
-    expect(wrapper.find('.single-details__federation-section').text()).toContain('Matrix ID')
+    expect(wrapper.find('.single-details__federation-section').text()).toContain(
+      resolveMessage('friend.detail.matrix_id')
+    )
+  })
+
+  it('联邦身份区由 UserIdentity 组合单元承载（单一事实源入口）', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const identity = wrapper.find('[data-testid="friend-identity"]')
+    expect(identity.exists()).toBe(true)
+    // 组合单元内部同时给出 MXID 与联邦 chip，两者必须并存
+    expect(identity.find('[data-testid="mxid-text"]').exists()).toBe(true)
+    expect(identity.find('[data-testid="federation-badge"]').exists()).toBe(true)
+    // 不接管头像：好友详情头像由外层提供，避免重复渲染
+    expect(identity.find('.tjg-avatar').exists()).toBe(false)
   })
 
   it('本地用户：FederationBadge 标记为 local', async () => {
@@ -236,7 +229,7 @@ describe('FriendDetailsSections', () => {
     await flushPromises()
 
     expect(wrapper.find('.single-details__device-list').exists()).toBe(false)
-    expect(wrapper.text()).toContain('No devices')
+    expect(wrapper.text()).toContain(resolveMessage('friend.detail.devices_empty'))
   })
 
   it('assigns the friend to a newly selected group', async () => {

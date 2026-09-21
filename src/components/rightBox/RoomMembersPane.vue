@@ -35,8 +35,16 @@
         data-test="member-item"
         @click="emit('memberClick', member.userId)">
         <n-avatar :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '', 72)" :size="36" round />
-        <div class="room-members-pane__item-info">
-          <span class="room-members-pane__item-name">{{ member.name || member.displayName || member.userId }}</span>
+        <!-- 联邦身份组合单元：显示名 + 联邦 chip + MXID（解析统一走 @/utils/userIdentity） -->
+        <UserIdentity
+          class="room-members-pane__identity"
+          data-test="member-identity"
+          :display-name="member.name || member.displayName || ''"
+          :mxid="member.userId"
+          :local-server="localDomain"
+          :show-avatar="false"
+          :mxid-max-length="30" />
+        <div class="room-members-pane__item-roles">
           <span v-if="member.isCreator" class="room-members-pane__item-role">{{ t('room.detail.role_creator') }}</span>
           <span v-else-if="member.isModerator" class="room-members-pane__item-role">
             {{ t('room.detail.role_moderator') }}
@@ -74,8 +82,15 @@
           class="room-members-pane__item room-members-pane__item--banned"
           data-test="member-item">
           <n-avatar :src="AvatarUtils.getAvatarUrl(member.avatar || member.avatarUrl || '', 72)" :size="36" round />
-          <div class="room-members-pane__item-info">
-            <span class="room-members-pane__item-name">{{ member.name || member.displayName || member.userId }}</span>
+          <UserIdentity
+            class="room-members-pane__identity"
+            data-test="banned-member-identity"
+            :display-name="member.name || member.displayName || ''"
+            :mxid="member.userId"
+            :local-server="localDomain"
+            :show-avatar="false"
+            :mxid-max-length="30" />
+          <div class="room-members-pane__item-roles">
             <span class="room-members-pane__item-status">{{ t('room.detail.status_banned') }}</span>
           </div>
           <div v-if="canManage" class="room-members-pane__item-actions">
@@ -96,7 +111,9 @@
 
 <script lang="ts" setup name="RoomMembersPane">
 import { useI18n } from 'vue-i18n'
+import UserIdentity from '@/components/common/UserIdentity.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import matrixClientService from '@/services/matrix/MatrixClientService'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -104,6 +121,13 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const groupStore = useGroupStore()
+
+/**
+ * 本机 homeserver 域名 —— 联邦判定的对照基准。
+ * 统一经 `matrixClientService.getServerDomain()` 获取；未初始化时为空串，
+ * `UserIdentity` 会按「本地」处理（不会把所有人误标为联邦用户）。
+ */
+const localDomain = computed<string>(() => matrixClientService.getServerDomain())
 
 const props = defineProps<{
   roomId: string
@@ -329,20 +353,17 @@ const handleUnban = async (userId: string) => {
   }
 }
 
-.room-members-pane__item-info {
+/* 联邦身份单元：占满头像与操作区之间的剩余宽度，MXID 过长时在组件内截断 */
+.room-members-pane__identity {
   flex: 1;
   min-width: 0;
+}
+
+.room-members-pane__item-roles {
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-
-.room-members-pane__item-name {
-  font-size: 13px;
-  color: var(--tjg-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .room-members-pane__item-role {

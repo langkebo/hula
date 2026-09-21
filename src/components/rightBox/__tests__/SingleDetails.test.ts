@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoomTypeEnum } from '@/enums'
+import { createI18nMock, resolveMessage } from '~/tests/i18n-messages'
 import SingleDetails from '../SingleDetails.vue'
 
 // --- Mocks (hoisted) ---
@@ -35,75 +36,18 @@ const getUserDevicesMock = vi.hoisted(() =>
   ])
 )
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, string | number>) => {
-      const map: Record<string, string> = {
-        'friend.detail.group_section': '分组分配',
-        'friend.detail.group_placeholder': '选择分组',
-        'friend.detail.group_unassigned': '未分组',
-        'friend.detail.group_load_error': '加载分组失败',
-        'friend.detail.group_assign_success': '已分配分组',
-        'friend.detail.group_assign_error': '分配分组失败',
-        'friend.detail.group_remove_success': '已移出分组',
-        'friend.detail.group_remove_error': '移出分组失败',
-        'friend.detail.devices_section': '设备列表',
-        'friend.detail.devices_loading': '加载设备中...',
-        'friend.detail.devices_empty': '暂无设备',
-        'friend.detail.devices_load_error': '加载设备失败',
-        'friend.detail.device_verified': '已验证',
-        'friend.detail.device_unverified': '未验证',
-        'friend.detail.device_last_seen': '最后活跃',
-        'friend.detail.device_unknown': '未知设备',
-        'friend.detail.federation_section': '联邦/服务器',
-        'friend.detail.server_address': '服务器地址',
-        'friend.detail.federated_user': '联邦用户',
-        'friend.detail.local_user': '本地用户',
-        'friend.detail.last_seen': '最后活跃',
-        'friend.detail.just_now': '刚刚',
-        'friend.detail.minutes_ago': '{count}分钟前',
-        'friend.detail.hours_ago': '{count}小时前',
-        'friend.detail.days_ago': '{count}天前',
-        'friend.status.normal': '普通好友',
-        'friend.status.favorite': '收藏好友',
-        'friend.status.blocked': '已屏蔽',
-        'friend.status.hidden': '已隐藏',
-        'friend.detail.encrypted_chat': '加密聊天',
-        'friend.detail.note': '备注',
-        'friend.detail.note_section': '修改备注',
-        'friend.detail.note_placeholder': '设置好友备注',
-        'friend.detail.note_saved': '备注已保存',
-        'friend.detail.note_error': '保存备注失败',
-        'friend.detail.display_name': '显示名称',
-        'friend.detail.edit_display_name': '修改显示名',
-        'friend.detail.display_name_placeholder': '设置好友显示名称',
-        'friend.detail.display_name_saved': '显示名已保存',
-        'friend.detail.display_name_error': '保存显示名失败',
-        'friend.detail.status_section': '设置状态',
-        'friend.detail.remove_friend': '删除好友',
-        'friend.detail.remove_confirm.title': '删除好友',
-        'friend.detail.remove_confirm.content': '确定要删除该好友吗？',
-        'friend.detail.remove_success': '已删除好友',
-        'friend.detail.remove_error': '删除好友失败',
-        'friend.detail.chat_error': '创建聊天失败',
-        'friend.list.online': '在线',
-        'home.chat_details.actions.message': '发信息',
-        'home.chat_details.single.footer.audio_call': '打电话',
-        'home.chat_details.single.footer.video_call': '打视频',
-        'home.chat_details.single.empty_signature': '这个人很高冷，暂时没有留下什么',
-        'home.chat_details.single.region': `地区：${params?.place ?? '未知'}`,
-        'home.chat_details.single.unknown': '未知',
-        'common.confirm': '确认',
-        'common.cancel': '取消',
-        'friend.context.set_favorite': '设为收藏',
-        'friend.context.set_normal': '设为普通',
-        'friend.context.set_blocked': '屏蔽好友',
-        'chat.header.open_in_new_window': '在新窗口打开'
-      }
-      return map[key] ?? key
-    }
-  })
-}))
+/**
+ * i18n 桩改为**真实语言表驱动**。
+ *
+ * 此前这里手写了一张 key → 中文文案映射表，而它是照着组件源码抄的：
+ * 源码键名写错时桩抄的也是错键名，测试全绿、界面渲染裸 key（「自洽 stub」反模式）。
+ * 本文件即实证：`FriendDetailsSections` 的联邦 chip 从 `friend.detail.federated_user`
+ * 换到 `friend.federated_user` 后，手写桩仍是旧键 → 断言拿到裸 key，
+ * 而真实语言表里两个键都健全（`friend.json` 的 `detail.federated_user` 与顶层 `federated_user`）。
+ * `createI18nMock()` 直接解析 `locales/zh-CN/*.json`，未解析到的键原样返回，
+ * 断言立刻暴露。故下面的文案断言一律用 `resolveMessage()` 取真实文案。
+ */
+vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({
@@ -263,8 +207,8 @@ describe('SingleDetails', () => {
 
     const badges = wrapper.findAll('.single-details__device-verified')
     expect(badges).toHaveLength(2)
-    expect(badges[0].text()).toBe('已验证')
-    expect(badges[1].text()).toBe('未验证')
+    expect(badges[0].text()).toBe(resolveMessage('friend.detail.device_verified'))
+    expect(badges[1].text()).toBe(resolveMessage('friend.detail.device_unverified'))
   })
 
   it('渲染联邦/服务器信息区，并从 userId 解析 server name', async () => {
@@ -274,7 +218,20 @@ describe('SingleDetails', () => {
     expect(wrapper.find('.single-details__federation-section').exists()).toBe(true)
     expect(wrapper.text()).toContain('matrix.test')
     // @kevins:matrix.test 的 server 等于本地 domain，应判定为本地用户
-    expect(wrapper.text()).toContain('本地用户')
+    expect(wrapper.text()).toContain(resolveMessage('friend.local_user'))
+  })
+
+  it('联邦身份行经 UserIdentity 组合单元渲染，且联邦区不重复出现 chip', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const identity = wrapper.find('[data-testid="friend-identity"]')
+    expect(identity.exists()).toBe(true)
+    // 组合单元内部自带「主标识 + 联邦 chip + 完整 MXID」
+    expect(identity.find('[data-testid="federation-badge"]').exists()).toBe(true)
+    expect(identity.find('[data-testid="mxid-text"]').exists()).toBe(true)
+    // 旧实现是「label 行 + badge 行」两处联邦语义，合并后整区只应有一个 chip
+    expect(wrapper.findAll('.single-details__federation-section [data-testid="federation-badge"]')).toHaveLength(1)
   })
 
   it('联邦用户（server 与本地 domain 不同）显示联邦用户标识', async () => {
@@ -282,7 +239,8 @@ describe('SingleDetails', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('remote.example')
-    expect(wrapper.text()).toContain('联邦用户')
+    expect(wrapper.text()).toContain(resolveMessage('friend.federated_user'))
+    expect(wrapper.text()).not.toContain(resolveMessage('friend.local_user'))
   })
 
   it('getUserDevices 失败时显示错误提示', async () => {
@@ -290,7 +248,7 @@ describe('SingleDetails', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('加载设备失败')
+    expect(wrapper.text()).toContain(resolveMessage('friend.detail.devices_load_error'))
   })
 
   it('设备列表为空时显示空状态', async () => {
@@ -298,7 +256,7 @@ describe('SingleDetails', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('暂无设备')
+    expect(wrapper.text()).toContain(resolveMessage('friend.detail.devices_empty'))
   })
 
   describe('阅后即焚设置区（RoomBurnSettings 接入）', () => {

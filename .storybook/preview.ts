@@ -14,7 +14,9 @@ const messages = {
     'common.edit': 'Edit',
     'common.cancel': 'Cancel',
     'common.save': 'Save',
-    'common.confirm': 'Confirm'
+    'common.confirm': 'Confirm',
+    'friend.federated_user': 'Federated user',
+    'friend.local_user': 'Local user'
   },
   zh: {
     'room.tab.all': '全部',
@@ -26,7 +28,9 @@ const messages = {
     'common.edit': '编辑',
     'common.cancel': '取消',
     'common.save': '保存',
-    'common.confirm': '确认'
+    'common.confirm': '确认',
+    'friend.federated_user': '联邦用户',
+    'friend.local_user': '本地用户'
   }
 }
 

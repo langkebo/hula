@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { OnlineEnum } from '@/enums'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group'
+import { createI18nMock, resolveMessage } from '~/tests/i18n-messages'
 import RoomMembersPane from '../RoomMembersPane.vue'
 
 const { showFeedbackMock, inviteUserMock, kickUserMock, banUserMock, unbanUserMock, loadRoomMembersMock } = vi.hoisted(
@@ -15,6 +16,9 @@ const { showFeedbackMock, inviteUserMock, kickUserMock, banUserMock, unbanUserMo
     loadRoomMembersMock: vi.fn(async () => undefined)
   })
 )
+
+/** 本机 homeserver 域名 —— 成员行联邦判定的对照基准 */
+const getServerDomainMock = vi.hoisted(() => vi.fn(() => 'server'))
 
 const OFFLINE = OnlineEnum.OFFLINE
 
@@ -53,11 +57,12 @@ const membersRef = ref<MatrixRoomMember[]>([
   }
 ])
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, unknown>) => (params ? `${key}:${JSON.stringify(params)}` : key)
-  })
-}))
+/**
+ * i18n 桩来自**真实 zh-CN 语言表**（`createI18nMock`），不再手写 key → 文案映射。
+ * 手写映射表常是照组件源码抄的，源码键名写错时桩抄的也是错键名，
+ * 测试全绿而界面渲染裸 key（自洽 stub 反模式）。
+ */
+vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({
@@ -84,6 +89,10 @@ vi.mock('@/stores/domains/chat/group', () => ({
   }
 }))
 
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  default: { getServerDomain: getServerDomainMock }
+}))
+
 vi.mock('@/utils/AvatarUtils', () => ({
   AvatarUtils: {
     getAvatarUrl: (url: string) => url || ''
@@ -94,9 +103,27 @@ vi.mock('@/utils/PlatformConstants', () => ({
   isMobile: false
 }))
 
+const MEMBER = (over: Partial<MatrixRoomMember> & { userId: string }): MatrixRoomMember => ({
+  displayName: '',
+  name: '',
+  uid: over.userId,
+  avatar: '',
+  avatarUrl: null,
+  membership: 'join',
+  powerLevel: 0,
+  isModerator: false,
+  isCreator: false,
+  account: '',
+  activeStatus: OFFLINE,
+  roleId: 0,
+  lastOptTime: 0,
+  ...over
+})
+
 describe('RoomMembersPane', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getServerDomainMock.mockReturnValue('server')
     membersRef.value = [
       {
         userId: '@alice:server',
@@ -254,7 +281,7 @@ describe('RoomMembersPane', () => {
     const vm = wrapper.vm as unknown as { handleInvite: () => Promise<void> }
     await vm.handleInvite()
 
-    expect(showFeedbackMock).toHaveBeenCalledWith('room.detail.invite_user_required', 'warning')
+    expect(showFeedbackMock).toHaveBeenCalledWith(resolveMessage('room.detail.invite_user_required'), 'warning')
     expect(inviteUserMock).not.toHaveBeenCalled()
   })
 
@@ -271,7 +298,7 @@ describe('RoomMembersPane', () => {
     await vm.handleInvite()
 
     expect(inviteUserMock).toHaveBeenCalledWith('!room-1:server', '@newuser:server')
-    expect(showFeedbackMock).toHaveBeenCalledWith('room.detail.invite_success', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith(resolveMessage('room.detail.invite_success'), 'success')
     // 成功后清空输入
     expect(vm.inviteUserId).toBe('')
   })
@@ -289,7 +316,7 @@ describe('RoomMembersPane', () => {
     vm.inviteUserId = '@newuser:server'
     await vm.handleInvite()
 
-    expect(showFeedbackMock).toHaveBeenCalledWith('room.detail.invite_failed', 'error')
+    expect(showFeedbackMock).toHaveBeenCalledWith(resolveMessage('room.detail.invite_failed'), 'error')
   })
 
   it('kicks member with confirm dialog', async () => {
@@ -303,7 +330,7 @@ describe('RoomMembersPane', () => {
     await flushPromises()
 
     expect(kickUserMock).toHaveBeenCalledWith('!room-1:server', '@alice:server')
-    expect(showFeedbackMock).toHaveBeenCalledWith('room.detail.kick_success', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith(resolveMessage('room.detail.kick_success'), 'success')
   })
 
   it('bans member with confirm dialog', async () => {
@@ -317,7 +344,7 @@ describe('RoomMembersPane', () => {
     await flushPromises()
 
     expect(banUserMock).toHaveBeenCalledWith('!room-1:server', '@alice:server')
-    expect(showFeedbackMock).toHaveBeenCalledWith('room.detail.ban_success', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith(resolveMessage('room.detail.ban_success'), 'success')
   })
 
   it('unbans member directly without confirm dialog', async () => {
@@ -331,7 +358,7 @@ describe('RoomMembersPane', () => {
     await flushPromises()
 
     expect(unbanUserMock).toHaveBeenCalledWith('!room-1:server', '@spammer:server')
-    expect(showFeedbackMock).toHaveBeenCalledWith('room.detail.unban_success', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith(resolveMessage('room.detail.unban_success'), 'success')
   })
 
   it('emits member-click when clicking a member', async () => {
@@ -408,5 +435,86 @@ describe('RoomMembersPane', () => {
 
     // 失败时不清空输入，便于用户重试
     expect(vm.inviteUserId).toBe('@newuser:server')
+  })
+})
+
+/**
+ * 成员面板的「联邦身份可见」接线契约。
+ *
+ * 背景：`UserIdentity.vue` 在方案 §2.1 就已创建，但长期无人调用
+ * （全仓只在自动生成的 typings 里出现），阶段 2「让联邦看得见」实际未达成。
+ * 本组用例锁死：成员行确实由 `UserIdentity` 承载、chip 的本地/联邦分支正确、
+ * 完整 MXID 可见，且不重复渲染头像（头像由外层提供）。
+ */
+describe('RoomMembersPane 联邦身份接线', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getServerDomainMock.mockReturnValue('server')
+    membersRef.value = [
+      MEMBER({ userId: '@alice:server', displayName: 'Alice', name: 'Alice', isCreator: true }),
+      MEMBER({ userId: '@bob:server', displayName: 'Bob', name: 'Bob', isModerator: true }),
+      MEMBER({ userId: '@carol:remote.example', displayName: 'Carol', name: 'Carol' })
+    ]
+  })
+
+  const mountPane = () => mount(RoomMembersPane, { props: { roomId: '!room-1:server', canManage: false } })
+
+  it('成员行由 UserIdentity 承载：显示名 + 联邦 chip + 完整 MXID', () => {
+    const wrapper = mountPane()
+
+    const identities = wrapper.findAll('[data-test="member-identity"]')
+    expect(identities, '成员行未接入 UserIdentity').toHaveLength(3)
+
+    // 同域成员 → 本地 chip；跨域成员 → 联邦 chip
+    expect(identities[0].text()).toContain(resolveMessage('friend.local_user'))
+    expect(identities[2].text()).toContain(resolveMessage('friend.federated_user'))
+    // 同域成员不应出现「联邦用户」字样
+    expect(identities[0].text()).not.toContain(resolveMessage('friend.federated_user'))
+
+    // 显示名优先于 MXID localpart
+    expect(identities[2].text()).toContain('Carol')
+
+    // 完整 MXID 为次级标识（title 带全量，避免截断后无法核对）
+    const mxid = identities[2].find('[data-testid="mxid-text"]')
+    expect(mxid.exists()).toBe(true)
+    expect(mxid.attributes('title')).toBe('@carol:remote.example')
+  })
+
+  it('头像由外层提供，UserIdentity 内不重复渲染头像', () => {
+    const wrapper = mountPane()
+
+    for (const identity of wrapper.findAll('[data-test="member-identity"]')) {
+      expect(identity.find('.tjg-avatar').exists()).toBe(false)
+    }
+  })
+
+  it('角色标记与身份单元并存（未被身份单元替换掉）', () => {
+    const wrapper = mountPane()
+
+    expect(wrapper.text()).toContain(resolveMessage('room.detail.role_creator'))
+    expect(wrapper.text()).toContain(resolveMessage('room.detail.role_moderator'))
+  })
+
+  it('本机域名未就绪时按本地处理，不把成员误标为联邦用户', () => {
+    getServerDomainMock.mockReturnValue('')
+    const wrapper = mountPane()
+
+    const identities = wrapper.findAll('[data-test="member-identity"]')
+    expect(identities[2].text()).toContain(resolveMessage('friend.local_user'))
+    expect(identities[2].text()).not.toContain(resolveMessage('friend.federated_user'))
+  })
+
+  it('已封禁成员同样接入 UserIdentity 并保留封禁状态', () => {
+    membersRef.value = [
+      MEMBER({ userId: '@alice:server', displayName: 'Alice', name: 'Alice' }),
+      MEMBER({ userId: '@spam:remote.example', displayName: 'spammer', name: 'spammer', membership: 'ban' })
+    ]
+
+    const wrapper = mount(RoomMembersPane, { props: { roomId: '!room-1:server', canManage: true } })
+
+    const banned = wrapper.find('[data-test="banned-member-identity"]')
+    expect(banned.exists()).toBe(true)
+    expect(banned.text()).toContain(resolveMessage('friend.federated_user'))
+    expect(wrapper.text()).toContain(resolveMessage('room.detail.status_banned'))
   })
 })
