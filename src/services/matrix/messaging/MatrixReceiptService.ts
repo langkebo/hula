@@ -80,22 +80,27 @@ class MatrixReceiptService extends BaseMatrixService {
     this.pendingMarkAsReadTasks.delete(roomId)
   }
 
-  private async sendLatestReadReceipt(roomId: string, room: Room): Promise<void> {
+  /**
+   * 发送房间最新事件回执。
+   * 返回是否真的发出（或已存在）回执：偏好关闭 / 房间无事件时返回 false，
+   * 供调用方判断能否回读服务端未读数（未发回执时服务端计数不会清零）。
+   */
+  private async sendLatestReadReceipt(roomId: string, room: Room): Promise<boolean> {
     const timeline = room.getLiveTimeline()
     const events = timeline.getEvents()
     const lastEvent = events[events.length - 1]
 
-    if (!lastEvent) return
+    if (!lastEvent) return false
 
     // 如果 lastEvent 是 MatrixEvent 实例，直接使用；否则提取 eventId 用 sendReadReceiptByEventId
     if (typeof lastEvent.getId === 'function') {
-      await this.sendReadReceipt(roomId, lastEvent)
-    } else {
-      const eventId = (lastEvent as unknown as { event_id?: string }).event_id
-      if (eventId) {
-        await this.sendReadReceiptByEventId(roomId, eventId)
-      }
+      return (await this.sendReadReceipt(roomId, lastEvent)) !== undefined
     }
+    const eventId = (lastEvent as unknown as { event_id?: string }).event_id
+    if (eventId) {
+      return (await this.sendReadReceiptByEventId(roomId, eventId)) !== undefined
+    }
+    return false
   }
 
   private enqueuePendingMarkAsRead(roomId: string): void {
@@ -249,6 +254,11 @@ class MatrixReceiptService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 设置 m.fully_read 阅读位置标记。
+   * 刻意不受「发送已读回执」偏好约束：它写的是自己的账户数据（阅读位置），
+   * 不是对同房间成员可见的 m.read 回执，关闭回执不应冻结本地阅读位置。
+   */
   async sendReadMarker(roomId: string, eventId: string): Promise<void> {
     try {
       const manager = this.getReadReceiptsManager()
@@ -260,9 +270,15 @@ class MatrixReceiptService extends BaseMatrixService {
     }
   }
 
-  async markRoomAsRead(roomId: string): Promise<void> {
+  /**
+   * 标记房间已读。
+   * 返回是否真的发出（或已存在）回执：关闭「发送已读回执」偏好、房间未就绪
+   * （仅入延迟补发队列）时返回 false。调用方据此决定是否回读服务端未读数——
+   * 未发回执时服务端 unread_count 不会清零，回读会把本地刚清掉的角标弹回来。
+   */
+  async markRoomAsRead(roomId: string): Promise<boolean> {
     if (!this.shouldSendReadReceipts()) {
-      return
+      return false
     }
 
     this.getClient()
@@ -271,12 +287,12 @@ class MatrixReceiptService extends BaseMatrixService {
       const room = await this.waitForRoomAvailable(roomId)
       if (!room) {
         this.enqueuePendingMarkAsRead(roomId)
-        return
+        return false
       }
 
       this.loggedDroppedReceiptRooms.delete(roomId)
       this.clearPendingMarkAsReadTask(roomId)
-      await this.sendLatestReadReceipt(roomId, room)
+      return await this.sendLatestReadReceipt(roomId, room)
     } catch (err) {
       logger.error(`[MatrixReceipt] 标记房间已读失败: ${err}`)
       throw err

@@ -282,8 +282,13 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     persistUnreadCount(roomId, 0)
     writeUnreadDetail(roomId, { total: 0, highlight: 0, silent: getUnreadDetail(roomId)?.silent ?? false })
     try {
-      await matrixReceiptService.markRoomAsRead(roomId)
-      void refreshUnreadDetail(roomId).catch(() => null)
+      // 关闭「发送已读回执」时服务端收不到 m.read，unread_count 仍 >0；
+      // 若无条件回读，用户正在浏览的房间会出现「角标清零 -> 弹回」并跨重启存活。
+      // 因此只在实际发出回执后回读，本地清零保持无条件。
+      const receiptSent = await matrixReceiptService.markRoomAsRead(roomId)
+      if (receiptSent) {
+        void refreshUnreadDetail(roomId).catch(() => null)
+      }
     } catch (err) {
       logger.error('标记会话已读失败:', err)
     }

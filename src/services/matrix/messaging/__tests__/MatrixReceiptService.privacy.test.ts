@@ -56,10 +56,18 @@ describe('MatrixReceiptService 尊重「发送已读回执」偏好', () => {
     expect(sendReceiptByEventIdMock).not.toHaveBeenCalled()
   })
 
-  it('关闭偏好后标记房间已读也不发送回执', async () => {
+  it('关闭偏好后标记房间已读也不发送回执，并报告「未发出」', async () => {
     useSettingStore().setSendReadReceiptsEnabled(false)
-    await matrixReceiptService.markRoomAsRead('!r:off-mark')
+    const sent = await matrixReceiptService.markRoomAsRead('!r:off-mark')
+    expect(sent).toBe(false)
     expect(sendReceiptByEventIdMock).not.toHaveBeenCalled()
+  })
+
+  it('偏好开启时标记房间已读会发出回执，并报告「已发出」', async () => {
+    useSettingStore().setSendReadReceiptsEnabled(true)
+    const sent = await matrixReceiptService.markRoomAsRead('!r:on-mark')
+    expect(sent).toBe(true)
+    expect(sendReceiptByEventIdMock).toHaveBeenCalledWith('!r:on-mark', '$e1')
   })
 
   it('关闭偏好后离线也不入队回执，避免联网后补发', async () => {
