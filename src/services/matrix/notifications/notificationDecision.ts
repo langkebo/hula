@@ -19,6 +19,8 @@ export interface NotificationDecisionPreferences {
   events: Record<string, boolean> | undefined
   keywordNotifications: boolean
   keywords: readonly string[]
+  /** 勿扰窗口是否正在生效。为真时抑制全部系统通知（含普通提及）。 */
+  dndActive: boolean
 }
 
 /**
@@ -36,11 +38,17 @@ export function classifyNotificationMessage(input: { isMention: boolean; isThrea
  * 统一通知决策门（纯函数，不读 Pinia / localStorage）。
  *
  * 语义（缺省必须与接线前一致）：
+ * - 勿扰窗口内：一律不通知，优先于其它所有开关；
  * - 普通提及：始终通知，不受任何细粒度开关影响；
  * - 线程内提及：`events.thread_mention` 缺省或 `true` 通知，显式 `false` 不通知；
  * - 非提及：仅在关键词通知开关打开且正文命中关键词时通知（默认关闭）。
  */
 export function shouldNotify(input: NotificationMessageInput, preferences: NotificationDecisionPreferences): boolean {
+  // 勿扰优先级最高：窗口内连普通提及一并抑制
+  if (preferences.dndActive) {
+    return false
+  }
+
   const kind = classifyNotificationMessage(input)
 
   if (kind === 'mention') {

@@ -1,5 +1,5 @@
 {
-  "deadKeys": 25,
+  "deadKeys": 22,
   "deadKeyNames": [
     "tjg-audio-input",
     "tjg-audio-output",
@@ -20,9 +20,6 @@
     "tjg-mjolnir-ban-lists",
     "tjg-noise-suppression",
     "tjg-output-volume",
-    "tjg-push-dnd",
-    "tjg-push-dnd-end",
-    "tjg-push-dnd-start",
     "tjg-show-performance",
     "tjg-sidebar-settings",
     "tjg-video-input"

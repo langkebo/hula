@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { classifyNotificationMessage, shouldNotify } from '../notificationDecision'
+import {
+  classifyNotificationMessage,
+  type NotificationDecisionPreferences,
+  shouldNotify
+} from '../notificationDecision'
 
-interface DecisionPreferences {
-  events: Record<string, boolean> | undefined
-  keywordNotifications: boolean
-  keywords: readonly string[]
-}
-
-function prefs(overrides: Partial<DecisionPreferences> = {}): DecisionPreferences {
+function prefs(overrides: Partial<NotificationDecisionPreferences> = {}): NotificationDecisionPreferences {
   return {
     events: undefined,
     keywordNotifications: false,
     keywords: [],
+    dndActive: false,
     ...overrides
   }
 }
@@ -124,6 +123,43 @@ describe('shouldNotify', () => {
         { isMention: false, isThread: false, body: 'the deploy is green' },
         prefs({ keywordNotifications: true, keywords: ['incident'] })
       )
+    ).toBe(false)
+  })
+})
+
+describe('shouldNotify while Do Not Disturb is active', () => {
+  it('suppresses a plain mention', () => {
+    expect(shouldNotify({ isMention: true, isThread: false, body: 'hi' }, prefs({ dndActive: true }))).toBe(false)
+  })
+
+  it('suppresses a thread mention even when its switch is on', () => {
+    expect(
+      shouldNotify(
+        { isMention: true, isThread: true, body: 'hi' },
+        prefs({ events: { thread_mention: true }, dndActive: true })
+      )
+    ).toBe(false)
+  })
+
+  it('suppresses a keyword hit even when keyword notifications are on', () => {
+    expect(
+      shouldNotify(
+        { isMention: false, isThread: false, body: 'the deploy is green' },
+        prefs({ keywordNotifications: true, keywords: ['deploy'], dndActive: true })
+      )
+    ).toBe(false)
+  })
+
+  it('keeps the existing semantics while Do Not Disturb is inactive', () => {
+    expect(shouldNotify({ isMention: true, isThread: false, body: 'hi' }, prefs({ dndActive: false }))).toBe(true)
+    expect(
+      shouldNotify(
+        { isMention: false, isThread: false, body: 'the deploy is green' },
+        prefs({ keywordNotifications: true, keywords: ['deploy'], dndActive: false })
+      )
+    ).toBe(true)
+    expect(
+      shouldNotify({ isMention: false, isThread: false, body: 'the deploy is green' }, prefs({ dndActive: false }))
     ).toBe(false)
   })
 })

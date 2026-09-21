@@ -11,7 +11,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null as MatrixClient | null)
+    getClient: vi.fn(() => null as MatrixClient | null),
+    waitForClientReady: vi.fn().mockResolvedValue(undefined)
   }
 }))
 
@@ -275,6 +276,116 @@ describe('MatrixNotificationService', () => {
 
       expect(fresh.getConfig().events.thread_mention).toBe(false)
       expect(localStorage.getItem(LEGACY_THREAD_MENTION_KEY)).toBeNull()
+    })
+  })
+
+  describe('dnd settings', () => {
+    const DND_ENABLED_KEY = 'tjg-push-dnd'
+    const DND_START_KEY = 'tjg-push-dnd-start'
+    const DND_END_KEY = 'tjg-push-dnd-end'
+
+    /** 起止同一时刻 = 全天勿扰（与纯函数语义一致），避免依赖真实时钟。 */
+    const allDayWindow = () => {
+      const now = Date.now()
+      return { enabled: true, startTime: now, endTime: now }
+    }
+
+    // 账号数据同步是副作用（客户端未初始化时会打错误日志），这里只打桩同步，不碰缓存/镜像断言
+    let dndSyncSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      localStorage.clear()
+      dndSyncSpy = vi.spyOn(matrixNotificationService, 'syncDndToAccountData').mockResolvedValue(undefined)
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: null, endTime: null })
+    })
+
+    afterEach(() => {
+      dndSyncSpy.mockRestore()
+    })
+
+    it('defaults to a disabled, boundary-less window when the mirror is empty', async () => {
+      localStorage.clear()
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getDndSettings()).toEqual({ enabled: false, startTime: null, endTime: null })
+    })
+
+    it('writes the window to the localStorage mirror', () => {
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: 1000, endTime: 2000 })
+
+      expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+      expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('true')
+      expect(localStorage.getItem(DND_START_KEY)).toBe('1000')
+      expect(localStorage.getItem(DND_END_KEY)).toBe('2000')
+    })
+
+    it('clears a boundary from the mirror when the picker is emptied', () => {
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: 1000, endTime: 2000 })
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: null, endTime: 2000 })
+
+      expect(matrixNotificationService.getDndSettings().startTime).toBeNull()
+      expect(localStorage.getItem(DND_START_KEY)).toBeNull()
+    })
+
+    it('hydrates a fresh instance from the mirror in the constructor', async () => {
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: 1000, endTime: 2000 })
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+    })
+
+    it('drops a corrupt mirror timestamp instead of guessing', async () => {
+      localStorage.setItem(DND_ENABLED_KEY, 'true')
+      localStorage.setItem(DND_START_KEY, 'not-a-number')
+      localStorage.setItem(DND_END_KEY, '2000')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: null, endTime: 2000 })
+    })
+
+    it('reports the injected clock inside an all-day window and outside a bounded one', () => {
+      matrixNotificationService.setDndSettings(allDayWindow())
+      expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(true)
+
+      matrixNotificationService.setDndSettings({
+        enabled: true,
+        startTime: new Date(2026, 5, 15, 22, 0).getTime(),
+        endTime: new Date(2026, 5, 15, 23, 0).getTime()
+      })
+      expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(false)
+    })
+
+    it('refreshes the cache when the account data has a window', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getAccountData: vi.fn(() => ({
+          getContent: () => ({ enabled: true, startTime: 1000, endTime: 2000 })
+        }))
+      } as unknown as MatrixClient)
+
+      const result = await matrixNotificationService.syncDndFromAccountData()
+
+      expect(result).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+      expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+    })
+
+    it('suppresses a plain mention through the decision gate while DND is active', () => {
+      matrixNotificationService.setDndSettings(allDayWindow())
+
+      expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(
+        false
+      )
+    })
+
+    it('leaves a plain mention untouched while DND is inactive', () => {
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: null, endTime: null })
+
+      expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(true)
     })
   })
 

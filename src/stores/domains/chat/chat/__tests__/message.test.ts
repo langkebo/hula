@@ -148,6 +148,8 @@ import type { MessageType } from '@/stores/domains/chat/chat/types'
 // 真实单例：通知开关由 UI 通过 updateConfig 写入，这里复用同一条写入路径，
 // 只把「同步到服务端」的副作用打桩，避免测试触发网络等待。
 const syncNotificationConfigSpy = vi.spyOn(matrixNotificationService, 'syncConfigToAccountData')
+// 勿扰设置同样只对「同步到服务端」打桩：本地镜像走真实服务路径，是行为断言的一部分。
+const syncDndToAccountDataSpy = vi.spyOn(matrixNotificationService, 'syncDndToAccountData')
 
 // sendNotification 的入参签名是 `Options | string`，这里收敛成最近一次实际发送的选项对象
 const lastSentOptions = (): Options => vi.mocked(sendNotification).mock.calls[0][0] as Options
@@ -595,6 +597,9 @@ describe('ChatMessageStore', () => {
       matrixNotificationService.updateConfig({ events: {} })
       groupUserRef.value = { name: 'Alice', avatar: 'mxc://alice' }
       syncNotificationConfigSpy.mockResolvedValue(undefined)
+      syncDndToAccountDataSpy.mockResolvedValue(undefined)
+      // 单例跨用例存活，勿扰窗口必须逐例复位，否则会污染后续通知断言
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: null, endTime: null })
       // 逐例复位为默认配置，等价于用户在设置里把三个开关都打开
       matrixNotificationService.updateConfig({
         enableDesktop: true,
@@ -765,6 +770,45 @@ describe('ChatMessageStore', () => {
       expect(lastSentOptions().title).toBe('[*] tester')
       expect(lastSentOptions().body).toBe('the deploy is green')
       expect(lastSentOptions().icon).toBeUndefined()
+    })
+
+    // 勿扰窗口只用「当前时刻起止」构造（起止相同 = 全天），因此不受真实时钟影响；
+    // 越界判定另用「一小时后开始」的窗口验证，同样与时区/时刻无关。
+    it('suppresses a plain mention while the Do Not Disturb window is active', async () => {
+      const now = Date.now()
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: now, endTime: now })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('16', 'quiet hours'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('notifies again once the Do Not Disturb switch is turned off', async () => {
+      const now = Date.now()
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: now, endTime: now })
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: now, endTime: now })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('17', 'loud again'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('loud again')
+    })
+
+    it('still notifies while DND is enabled but the window does not cover now', async () => {
+      const now = Date.now()
+      matrixNotificationService.setDndSettings({
+        enabled: true,
+        startTime: now + 60 * 60 * 1000,
+        endTime: now + 2 * 60 * 60 * 1000
+      })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('18', 'outside the window'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('outside the window')
     })
   })
 })

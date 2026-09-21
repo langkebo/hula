@@ -139,16 +139,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import {
-  NButton,
-  NDivider,
-  NEmpty,
-  NInput,
-  NSpin,
-  NSwitch,
-  NTimePicker,
-  useDialog
-} from 'naive-ui'
+import { NButton, NDivider, NEmpty, NInput, NSpin, NSwitch, NTimePicker, useDialog } from 'naive-ui'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -291,28 +282,12 @@ function loadSavedSettings() {
 }
 
 async function loadDndSettings() {
-  const serverDnd = await matrixNotificationService.syncDndFromAccountData()
-  if (serverDnd) {
-    dndEnabled.value = serverDnd.enabled
-    dndStartTime.value = serverDnd.startTime
-    dndEndTime.value = serverDnd.endTime
-    return
-  }
-
-  const savedDnd = localStorage.getItem('tjg-push-dnd')
-  if (savedDnd !== null) {
-    dndEnabled.value = savedDnd === 'true'
-  }
-
-  const savedDndStart = localStorage.getItem('tjg-push-dnd-start')
-  if (savedDndStart) {
-    dndStartTime.value = parseInt(savedDndStart, 10)
-  }
-
-  const savedDndEnd = localStorage.getItem('tjg-push-dnd-end')
-  if (savedDndEnd) {
-    dndEndTime.value = parseInt(savedDndEnd, 10)
-  }
+  // 服务是勿扰状态的唯一所有者：先尝试账号数据刷新缓存，再统一从服务读取
+  await matrixNotificationService.syncDndFromAccountData()
+  const settings = matrixNotificationService.getDndSettings()
+  dndEnabled.value = settings.enabled
+  dndStartTime.value = settings.startTime
+  dndEndTime.value = settings.endTime
 }
 
 function getRulesByKind(kind: string): IPushRule[] {
@@ -446,8 +421,7 @@ async function handleInvitePushToggle(enabled: boolean) {
 }
 
 function handleDndToggle(enabled: boolean) {
-  localStorage.setItem('tjg-push-dnd', enabled.toString())
-  matrixNotificationService.syncDndToAccountData({
+  matrixNotificationService.setDndSettings({
     enabled,
     startTime: dndStartTime.value,
     endTime: dndEndTime.value
@@ -456,13 +430,7 @@ function handleDndToggle(enabled: boolean) {
 }
 
 function handleDndTimeChange() {
-  if (dndStartTime.value !== null) {
-    localStorage.setItem('tjg-push-dnd-start', dndStartTime.value.toString())
-  }
-  if (dndEndTime.value !== null) {
-    localStorage.setItem('tjg-push-dnd-end', dndEndTime.value.toString())
-  }
-  matrixNotificationService.syncDndToAccountData({
+  matrixNotificationService.setDndSettings({
     enabled: dndEnabled.value,
     startTime: dndStartTime.value,
     endTime: dndEndTime.value

@@ -14,6 +14,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
+import { isWithinDndWindow as computeWithinDndWindow, type DndWindow } from './dndWindow'
 import {
   type NotificationDecisionPreferences,
   type NotificationMessageInput,
@@ -81,18 +82,34 @@ const DEFAULT_NOTIFICATION_CONFIG: NotificationConfig = {
   events: {}
 }
 
+/** localStorage 镜像值 → 时间戳；非法值视为未配置（null），不猜。 */
+function parseStoredDndTimestamp(value: string | null): number | null {
+  if (value === null) {
+    return null
+  }
+
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 class MatrixNotificationService extends BaseMatrixService {
   private pushRules: IPushRule[] = []
   private observedClient: MatrixClient | null = null
   private config: NotificationConfig = { ...DEFAULT_NOTIFICATION_CONFIG, events: {} }
+  /** 勿扰时段的唯一所有者，构造时从 localStorage 镜像同步水合。 */
+  private dndSettings: DndWindow = { enabled: false, startTime: null, endTime: null }
 
   private static readonly CONFIG_STORAGE_KEY = 'tjg-notification-config'
   private static readonly ACCOUNT_DATA_TYPE = 'io.hula.notification_settings'
   private static readonly DND_ACCOUNT_DATA_TYPE = 'io.hula.dnd_settings'
+  private static readonly DND_ENABLED_STORAGE_KEY = 'tjg-push-dnd'
+  private static readonly DND_START_STORAGE_KEY = 'tjg-push-dnd-start'
+  private static readonly DND_END_STORAGE_KEY = 'tjg-push-dnd-end'
 
   constructor() {
     super()
     this.loadConfig()
+    this.loadDndFromMirror()
   }
 
   private loadConfig(): void {
@@ -199,25 +216,21 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
-  async syncDndToAccountData(settings: {
-    enabled: boolean
-    startTime: number | null
-    endTime: number | null
-  }): Promise<void> {
+  /** 把勿扰时段写入账号数据 `io.hula.dnd_settings`（`setDndSettings` 复用它，不复制实现）。 */
+  async syncDndToAccountData(settings: DndWindow): Promise<void> {
     try {
       const client = this.getNotificationClient()
-      await client.setAccountData(MatrixNotificationService.DND_ACCOUNT_DATA_TYPE, settings as Record<string, unknown>)
+      await client.setAccountData(
+        MatrixNotificationService.DND_ACCOUNT_DATA_TYPE,
+        settings as unknown as Record<string, unknown>
+      )
       logger.info('[MatrixNotification] DND 设置已同步到服务端')
     } catch (err) {
       logger.error(`[MatrixNotification] 同步 DND 设置到服务端失败: ${err}`)
     }
   }
 
-  async syncDndFromAccountData(): Promise<{
-    enabled: boolean
-    startTime: number | null
-    endTime: number | null
-  } | null> {
+  async syncDndFromAccountData(): Promise<DndWindow | null> {
     try {
       await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
       const client = this.getNotificationClient()
@@ -229,12 +242,14 @@ class MatrixNotificationService extends BaseMatrixService {
           endTime?: number | null
         }
         if (dndSettings && typeof dndSettings === 'object') {
-          logger.info('[MatrixNotification] 从服务端同步 DND 设置成功')
-          return {
+          const normalized: DndWindow = {
             enabled: (dndSettings.enabled ?? false) as boolean,
             startTime: (dndSettings.startTime ?? null) as number | null,
             endTime: (dndSettings.endTime ?? null) as number | null
           }
+          this.dndSettings = normalized
+          logger.info('[MatrixNotification] 从服务端同步 DND 设置成功')
+          return normalized
         }
       }
       return null
@@ -242,6 +257,61 @@ class MatrixNotificationService extends BaseMatrixService {
       logger.warn(`[MatrixNotification] 从服务端同步 DND 设置失败: ${err}`)
       return null
     }
+  }
+
+  /**
+   * 构造时从 localStorage 镜像同步水合。
+   *
+   * `syncConfigFromAccountData()` 生产零调用方，账号数据在启动时并不可用，
+   * 因此必须在这里读本地镜像，否则不打开设置窗口就不会生效。
+   */
+  private loadDndFromMirror(): void {
+    try {
+      this.dndSettings = {
+        enabled: localStorage.getItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY) === 'true',
+        startTime: parseStoredDndTimestamp(localStorage.getItem(MatrixNotificationService.DND_START_STORAGE_KEY)),
+        endTime: parseStoredDndTimestamp(localStorage.getItem(MatrixNotificationService.DND_END_STORAGE_KEY))
+      }
+    } catch (err) {
+      logger.warn('读取勿扰时段设置失败:', err)
+    }
+  }
+
+  private writeMirroredTimestamp(key: string, value: number | null): void {
+    if (value === null) {
+      localStorage.removeItem(key)
+      return
+    }
+    localStorage.setItem(key, value.toString())
+  }
+
+  /** 读取当前勿扰时段（缓存副本，调用方无法就地改写服务状态）。 */
+  getDndSettings(): DndWindow {
+    return { ...this.dndSettings }
+  }
+
+  /** 勿扰时段的唯一写入点：更新缓存 + localStorage 镜像，并复用既有 account data 同步。 */
+  setDndSettings(settings: DndWindow): void {
+    this.dndSettings = {
+      enabled: settings.enabled,
+      startTime: settings.startTime,
+      endTime: settings.endTime
+    }
+
+    try {
+      localStorage.setItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY, this.dndSettings.enabled.toString())
+      this.writeMirroredTimestamp(MatrixNotificationService.DND_START_STORAGE_KEY, this.dndSettings.startTime)
+      this.writeMirroredTimestamp(MatrixNotificationService.DND_END_STORAGE_KEY, this.dndSettings.endTime)
+    } catch (err) {
+      logger.warn('写入勿扰时段设置失败:', err)
+    }
+
+    this.syncDndToAccountData(this.dndSettings)
+  }
+
+  /** 当前是否处于勿扰窗口；`now` 可注入，便于测试与纯函数保持一致。 */
+  isWithinDndWindow(now: Date = new Date()): boolean {
+    return computeWithinDndWindow(this.dndSettings, now)
   }
 
   private syncClientState(): MatrixClient | null {
@@ -373,7 +443,7 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 消息到达时的统一通知决策门：汇总 `config.events` 与关键词展示偏好后委托纯函数。
+   * 消息到达时的统一通知决策门：汇总 `config.events`、关键词展示偏好与勿扰窗口后委托纯函数。
    *
    * 自己发送的消息由调用方先排除（发送路径还持有 userStore 身份）。
    */
@@ -382,7 +452,8 @@ class MatrixNotificationService extends BaseMatrixService {
     const decisionPreferences: NotificationDecisionPreferences = {
       events: this.config.events,
       keywordNotifications: preferences.keywordNotifications,
-      keywords: preferences.keywords
+      keywords: preferences.keywords,
+      dndActive: this.isWithinDndWindow()
     }
     return shouldNotify(input, decisionPreferences)
   }
