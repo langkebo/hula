@@ -4,7 +4,7 @@
     preset="card"
     :title="t('space.create_room_title')"
     :auto-focus="false"
-    style="width: 440px; max-width: calc(100vw - 32px)">
+    class="w-[440px] max-w-[calc(100vw-32px)]">
     <n-form
       ref="formRef"
       :model="formData"

@@ -19,7 +19,7 @@
         vertical
         class="w-full h-100vh bg-[--right-bg-color] rounded-6px box-border p-13px"
         data-tauri-drag-region>
-        <n-scrollbar style="max-height: 215px">
+        <n-scrollbar class="max-h-215px">
           <n-flex align="center" :size="10">
             <n-flex @click="handleResetState" vertical justify="center" align="center" :size="8" class="status-item">
               <svg class="size-24px color-[--tjg-color-danger-500]">

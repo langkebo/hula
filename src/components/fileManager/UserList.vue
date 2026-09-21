@@ -31,7 +31,7 @@
         </span>
       </div>
 
-      <n-scrollbar style="height: calc(100vh / var(--page-scale, 1) - 110px)">
+      <n-scrollbar class="h-[calc(100vh/var(--page-scale,1)-110px)]">
         <div class="pr-12px">
           <!-- 全部选项 -->
           <UserItem

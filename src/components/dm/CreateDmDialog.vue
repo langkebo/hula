@@ -39,7 +39,7 @@
             </n-flex>
           </n-flex>
 
-          <n-divider style="margin: 12px 0" />
+          <n-divider class="my-12px" />
 
           <n-flex justify="end" :size="12">
             <n-button @click="handleCancel">{{ t('common.cancel') }}</n-button>
@@ -59,11 +59,11 @@
         </div>
       </n-spin>
 
-      <n-divider style="margin: 0" />
+      <n-divider class="m-0" />
 
       <n-flex vertical :size="8">
         <span class="text-[length:var(--tjg-font-size-sm)] text-gray-500">{{ t('dm.create.recent_contacts') }}</span>
-        <n-scrollbar style="max-height: 200px">
+        <n-scrollbar class="max-h-200px">
           <div v-if="recentContacts.length === 0" class="text-[length:var(--tjg-font-size-sm)] text-gray-400">
             {{ t('dm.create.no_recent') }}
           </div>

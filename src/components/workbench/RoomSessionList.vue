@@ -7,8 +7,7 @@
 
     <div
       v-if="networkBanner && !syncLoading && !globalStore.currentSessionRoomId"
-      class="room-session-list__network-banner"
-      style="position: sticky; top: 8px; z-index: 999">
+      class="room-session-list__network-banner sticky top-8px z-[999]">
       <svg class="size-16px flex-shrink-0">
         <use href="#cloudError"></use>
       </svg>
@@ -54,13 +53,13 @@
 
     <n-flex v-else-if="sessionLoading" vertical :size="8" class="room-session-list__body relative h-full box-border">
       <div v-for="i in 5" :key="i" class="room-session-list__skeleton">
-        <n-skeleton circle style="width: 44px; height: 44px" :sharp="false" />
+        <n-skeleton circle class="w-44px h-44px" :sharp="false" />
         <n-flex vertical :size="4" class="flex-1 min-w-0">
           <n-flex align="center" justify="space-between">
-            <n-skeleton height="14px" width="60%" :sharp="false" style="border-radius: 4px" />
-            <n-skeleton height="10px" width="30px" :sharp="false" style="border-radius: 4px" />
+            <n-skeleton height="14px" width="60%" :sharp="false" class="rounded-4px" />
+            <n-skeleton height="10px" width="30px" :sharp="false" class="rounded-4px" />
           </n-flex>
-          <n-skeleton height="12px" width="80%" :sharp="false" style="border-radius: 4px" />
+          <n-skeleton height="12px" width="80%" :sharp="false" class="rounded-4px" />
         </n-flex>
       </div>
     </n-flex>

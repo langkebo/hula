@@ -86,7 +86,7 @@
       @hangup="handleHangup()" />
   </div>
 
-  <audio ref="remoteAudioRef" autoplay playsinline style="display: none"></audio>
+  <audio ref="remoteAudioRef" autoplay playsinline class="call-audio-hidden"></audio>
 </template>
 
 <script setup lang="ts">
@@ -470,3 +470,10 @@ defineExpose({
   hangUp: handleHangup
 })
 </script>
+
+<style scoped lang="scss">
+/* 远端音频元素只用于播放，不参与布局（迁移前为内联 display:none） */
+.call-audio-hidden {
+  display: none;
+}
+</style>

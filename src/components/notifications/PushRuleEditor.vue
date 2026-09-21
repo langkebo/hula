@@ -55,7 +55,7 @@
                         :options="actionOptions"
                         size="small"
                         :disabled="updating || !item.rule.enabled"
-                        style="width: 140px"
+                        class="w-[140px]"
                         @update:value="(value: PushActionType) => handleActionChange(item.rule.rule_id, value)" />
                     </div>
                   </div>

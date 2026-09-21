@@ -240,9 +240,8 @@
               :loading="registerLoading"
               :disabled="!isEmailCodeComplete"
               tertiary
-              style="color: var(--tjg-text-inverse)"
-              class="w-full gradient-button"
-              @click="register">
+              @click="register"
+              class="text-[--tjg-text-inverse] w-full gradient-button">
               {{ t('auth.register.actions.submit') }}
             </n-button>
           </n-flex>

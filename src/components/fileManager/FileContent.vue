@@ -22,9 +22,8 @@
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
-          style="width: 200px"
-          class="rounded-6px border-(solid 1px [--tjg-border-default])"
-          size="small">
+          size="small"
+          class="w-[200px] rounded-6px border-(solid 1px [--tjg-border-default])">
           <template #prefix>
             <svg class="size-16px text-[--tjg-text-secondary] opacity-60">
               <use href="#search"></use>

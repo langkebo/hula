@@ -95,9 +95,8 @@
             :loading="verifyLoading"
             :disabled="nextDisabled"
             tertiary
-            style="color: var(--tjg-text-inverse)"
-            @click="verifyEmail"
-            class="mt-10px w-full gradient-button">
+            class="text-[--tjg-text-inverse] mt-10px w-full gradient-button"
+            @click="verifyEmail">
             {{ t('auth.forget.buttons.next') }}
           </n-button>
         </n-form>
@@ -169,9 +168,8 @@
             <n-button
               :loading="submitLoading"
               tertiary
-              style="color: var(--tjg-text-inverse)"
-              @click="submitNewPassword"
-              class="flex-1 gradient-button">
+              class="text-[--tjg-text-inverse] flex-1 gradient-button"
+              @click="submitNewPassword">
               {{ t('auth.forget.buttons.submit') }}
             </n-button>
           </n-flex>

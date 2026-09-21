@@ -63,7 +63,7 @@
       v-model:show="showQRCodeModal"
       preset="card"
       :title="t('home.chat_header.group_qr_code')"
-      style="width: 300px">
+      class="w-[300px]">
       <div class="qr-code-container">
         <canvas ref="qrCanvasRef" width="200" height="200"></canvas>
       </div>

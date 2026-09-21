@@ -8,15 +8,7 @@
         :show-arrow="false"
         placement="top-start"
         :disabled="disabled"
-        style="
-          padding: 0;
-          background: var(--tjg-surface-panel);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          box-shadow: var(--tjg-shadow-md);
-          border: 1px solid var(--tjg-border-default);
-          width: auto;
-        ">
+        class="liquid-glass-popover">
         <template #trigger>
           <n-popover
             v-model:show="recentlyTipLocal"
@@ -53,20 +45,9 @@
         <svg @click="$emit('handleScreenshot')" role="button" :aria-label="t('chat.footer.screenshot')">
           <use href="#screenshot"></use>
         </svg>
-        <n-popover
-          style="
-            padding: 0;
-            background: var(--tjg-surface-panel);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            box-shadow: var(--tjg-shadow-md);
-            border: 1px solid var(--tjg-border-default);
-          "
-          trigger="hover"
-          :show-arrow="false"
-          placement="top">
+        <n-popover class="liquid-glass-popover" trigger="hover" :show-arrow="false" placement="top">
           <template #trigger>
-            <svg class="dropdown-arrow" style="width: 14px; height: 14px">
+            <svg class="dropdown-arrow w-14px h-14px">
               <use href="#down"></use>
             </svg>
           </template>
@@ -104,7 +85,7 @@
             <svg @click="$emit('handleFileOpen')" role="button" :aria-label="t('chat.footer.send_file')">
               <use href="#file2"></use>
             </svg>
-            <svg style="width: 14px; height: 14px">
+            <svg class="w-14px h-14px">
               <use href="#down"></use>
             </svg>
           </div>
@@ -289,5 +270,13 @@ const onEmojiHandle = (item: string | EmojiUrlPayload, type?: 'emoji' | 'emoji-u
       }
     }
   }
+}
+.liquid-glass-popover {
+  padding: 0;
+  background: var(--tjg-surface-panel);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--tjg-shadow-md);
+  border: 1px solid var(--tjg-border-default);
 }
 </style>

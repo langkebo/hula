@@ -126,7 +126,7 @@
               v-model:value="messageInput"
               :placeholder="t('common.widget.message_placeholder')"
               size="small"
-              style="flex: 1"
+              class="flex-1"
               @keyup.enter="handleSendMessage" />
             <n-button type="primary" size="small" :loading="sendingMessage" @click="handleSendMessage">
               <template #icon>

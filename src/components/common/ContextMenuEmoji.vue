@@ -1,9 +1,5 @@
 <template>
-  <div
-    v-if="showMenu && emoji.length > 0"
-    class="context-menu select-none"
-    style="height: fit-content"
-    :style="menuPosition">
+  <div v-if="showMenu && emoji.length > 0" class="context-menu select-none h-fit" :style="menuPosition">
     <div class="emoji-container">
       <div v-for="(item, index) in displayedEmojis" :key="index" class="p-4px">
         <n-popover :delay="500" :duration="0" trigger="hover" :show-arrow="false" placement="top">

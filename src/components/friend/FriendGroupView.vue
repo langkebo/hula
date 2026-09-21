@@ -33,10 +33,10 @@
       </div>
     </n-flex>
 
-    <n-divider style="margin: 0" />
+    <n-divider class="m-0" />
 
     <n-spin :show="loading">
-      <n-scrollbar style="height: calc(100vh - 200px)">
+      <n-scrollbar class="h-[calc(100vh-200px)]">
         <n-empty
           v-if="filteredGroups.length === 0"
           :description="hasSearchKeyword ? searchEmptyDescription : t('friend.group.empty')"

@@ -6,8 +6,7 @@
     :bordered="false"
     :closable="true"
     :mask-closable="false"
-    style="width: 520px; max-width: 90vw"
-    class="rendezvous-session-manager">
+    class="w-[520px] max-w-[90vw] rendezvous-session-manager">
     <n-spin :show="loading">
       <div class="px-4px py-8px">
         <!-- 步骤条 -->

@@ -23,7 +23,7 @@
             <n-tag size="small" type="info">{{ threadReplies.length }}</n-tag>
           </n-flex>
 
-          <n-scrollbar style="height: calc(100vh - 350px)">
+          <n-scrollbar class="h-[calc(100vh-350px)]">
             <n-empty v-if="threadReplies.length === 0" :description="t('thread.no_replies')" />
             <div v-else class="reply-list">
               <div v-for="reply in threadReplies" :key="reply.id" class="reply-item">

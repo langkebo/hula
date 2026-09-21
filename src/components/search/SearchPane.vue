@@ -30,7 +30,7 @@
 
       <!-- 加载骨架 -->
       <div v-else-if="isLoading && !hasResults" class="search-pane__loading px-20px py-16px">
-        <n-skeleton v-for="i in 5" :key="i" height="48px" class="mb-8px" :sharp="false" style="border-radius: 8px" />
+        <n-skeleton v-for="i in 5" :key="i" height="48px" class="mb-8px rounded-8px" :sharp="false" />
       </div>
 
       <!-- 错误状态 -->

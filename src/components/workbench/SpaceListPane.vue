@@ -57,8 +57,8 @@
             <div v-for="i in 4" :key="i" class="space-list-pane__skeleton-item">
               <n-skeleton circle :width="36" :height="36" :sharp="false" />
               <n-flex vertical :size="4" class="flex-1 min-w-0">
-                <n-skeleton height="13px" width="70%" :sharp="false" style="border-radius: 4px" />
-                <n-skeleton height="11px" width="40%" :sharp="false" style="border-radius: 4px" />
+                <n-skeleton height="13px" width="70%" :sharp="false" class="rounded-4px" />
+                <n-skeleton height="11px" width="40%" :sharp="false" class="rounded-4px" />
               </n-flex>
             </div>
           </n-flex>

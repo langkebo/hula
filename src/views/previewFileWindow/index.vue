@@ -2,16 +2,15 @@
   <div class="size-full bg-[--right-bg-color]">
     <ActionBar :shrink="false" :current-label="currentWindowLabel" />
     <n-scrollbar
-      style="max-height: calc(100vh)"
-      class="w-full box-border bg-[--tjg-surface-panel] rounded-b-8px border-(solid 1px [--tjg-border-default])">
+      class="max-h-screen w-full box-border bg-[--tjg-surface-panel] rounded-b-8px border-(solid 1px [--tjg-border-default])">
       <div class="flex flex-col gap-4 bg-[--tjg-surface-subtle]">
-        <VueOfficeDocx v-if="isShowWord" :src="resourceSrc" style="height: 100vh" />
+        <VueOfficeDocx v-if="isShowWord" :src="resourceSrc" class="h-screen" />
 
-        <VueOfficePdf v-else-if="isShowPdf" :src="resourceSrc" style="height: 95vh" />
+        <VueOfficePdf v-else-if="isShowPdf" :src="resourceSrc" class="h-[95vh]" />
 
-        <VueOfficeExcel v-else-if="isShowExcel" :src="resourceSrc" style="height: 95vh" />
+        <VueOfficeExcel v-else-if="isShowExcel" :src="resourceSrc" class="h-[95vh]" />
 
-        <VueOfficePptx v-else-if="isShowPpt" :src="resourceSrc" style="height: 95vh" />
+        <VueOfficePptx v-else-if="isShowPpt" :src="resourceSrc" class="h-[95vh]" />
 
         <EmptyState
           v-else

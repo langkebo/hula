@@ -7,7 +7,7 @@
         <div class="preview-content">{{ eventContent }}</div>
       </div>
 
-      <n-divider v-if="eventContent" style="margin: 12px 0" />
+      <n-divider v-if="eventContent" class="my-12px" />
 
       <!-- 举报表单 -->
       <n-form :model="form" :rules="rules">
