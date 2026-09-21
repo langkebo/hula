@@ -22,7 +22,7 @@ vi.mock('vant', () => ({ showToast: (...args: any[]) => showToastMock(...args) }
 
 vi.mock('@/services/matrix', () => ({
   matrixAccountService: {
-    getInvitePolicy: () => getConfigMock(),
+    getInvitePolicyStrict: () => getConfigMock(),
     setInvitePolicy: (...args: any[]) => setConfigMock(...args)
   }
 }))
@@ -381,6 +381,71 @@ describe('MobileInvitePermission', () => {
     const wrapper = mountPage()
     await flushPromises()
     await (wrapper.vm as any).handleModeChange('blocklist')
+    expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
+  })
+
+  /**
+   * I2 回归：persist 曾用挂载时的快照整对象写回。若挂载后服务端策略被别处更新
+   * （或挂载读失败），一次开关就会覆盖成默认值。现在写前严格重读、只覆盖本页字段。
+   */
+  it('re-reads the strict server policy before writing instead of using the mount snapshot', async () => {
+    getConfigMock
+      .mockResolvedValueOnce({
+        mode: 'allow_all',
+        blocklist: [],
+        allowlist: [],
+        allowStrangers: true,
+        allowFriendRequests: true,
+        autoAcceptFriends: false,
+        requireFriendRequestMessage: true,
+        contacts: ['@friend:server']
+      })
+      // 挂载后另一个编辑面（桌面端）改了本页不拥有的字段
+      .mockResolvedValueOnce({
+        mode: 'allow_all',
+        blocklist: ['@spam:evil.org'],
+        allowlist: [],
+        allowStrangers: true,
+        allowFriendRequests: false,
+        autoAcceptFriends: true,
+        requireFriendRequestMessage: false,
+        contacts: ['@fresh:server']
+      })
+
+    const wrapper = mountPage()
+    await flushPromises()
+    await (wrapper.vm as any).handleModeChange('blocklist')
+
+    expect(setConfigMock).toHaveBeenCalledWith({
+      mode: 'blocklist',
+      // 本页拥有的字段以当前界面状态为准
+      blocklist: [],
+      allowlist: [],
+      allowStrangers: true,
+      // 本页不拥有的字段必须来自写前的严格重读，而不是挂载快照
+      allowFriendRequests: false,
+      autoAcceptFriends: true,
+      requireFriendRequestMessage: false,
+      contacts: ['@fresh:server']
+    })
+  })
+
+  it('aborts the write with a toast when the strict re-read fails', async () => {
+    getConfigMock
+      .mockResolvedValueOnce({
+        mode: 'allow_all',
+        blocklist: [],
+        allowlist: [],
+        allowStrangers: true,
+        contacts: []
+      })
+      .mockRejectedValueOnce(new Error('read failed'))
+
+    const wrapper = mountPage()
+    await flushPromises()
+    await (wrapper.vm as any).handleModeChange('blocklist')
+
+    expect(setConfigMock).not.toHaveBeenCalled()
     expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
   })
 

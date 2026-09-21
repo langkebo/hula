@@ -133,7 +133,6 @@ const mode = ref<InvitePolicyMode>('allow_all')
 const blocklist = ref<string[]>([])
 const allowlist = ref<string[]>([])
 const allowStrangers = ref(true)
-const contacts = ref<string[]>([])
 const newUserId = ref('')
 const encryptByDefault = ref(loadDmPrivacyPreferences().encryptByDefault)
 
@@ -142,7 +141,9 @@ const activeList = computed(() => (mode.value === 'blocklist' ? blocklist.value 
 
 onMounted(async () => {
   try {
-    const policy = await matrixAccountService.getInvitePolicy()
+    // 严格读取：能区分「从未存过」（null）与「读取失败」（抛错），
+    // 读取失败时展示错误而不是把默认策略当成账号真实策略渲染。
+    const policy = await matrixAccountService.getInvitePolicyStrict()
     applyConfig(policy)
   } catch (error) {
     logger.error('Failed to load invite permission config', error)
@@ -152,39 +153,34 @@ onMounted(async () => {
   }
 })
 
-/**
- * 最近一次读到的完整策略。
- *
- * `buildPolicy()` 只覆盖本页拥有的字段，其余字段（如好友请求三项）从这里原样
- * 带过去——否则在本页改模式/名单会把账号上的好友请求策略重置成默认值。
- */
-let appliedPolicy: InvitePolicy = normalizeInvitePolicy(null)
-
-function applyConfig(policy: InvitePolicy) {
+function applyConfig(policy: InvitePolicy | null) {
   const normalized = normalizeInvitePolicy(policy)
-  appliedPolicy = normalized
   mode.value = normalized.mode
   blocklist.value = normalized.blocklist
   allowlist.value = normalized.allowlist
   allowStrangers.value = normalized.allowStrangers
-  contacts.value = normalized.contacts
 }
 
-function buildPolicy(): InvitePolicy {
-  return {
-    ...appliedPolicy,
-    mode: mode.value,
-    blocklist: blocklist.value,
-    allowlist: allowlist.value,
-    allowStrangers: allowStrangers.value,
-    contacts: contacts.value
-  }
-}
-
+/**
+ * 写回本页拥有的四个字段。
+ *
+ * **写前必须严格重读**（与桌面编辑器一致）：本页只拥有 mode / blocklist /
+ * allowlist / allowStrangers，其余字段（好友请求三项、contacts）必须来自
+ * 服务端最新值。读取失败会抛错 → 中止写入并提示；绝不拿挂载快照或默认值
+ * 整对象覆盖，否则一次读取失败 + 一次成功的 PUT 就会静默删掉服务端策略。
+ */
 async function persist() {
   saving.value = true
   try {
-    await matrixAccountService.setInvitePolicy(buildPolicy())
+    const latest = await matrixAccountService.getInvitePolicyStrict()
+    const base = normalizeInvitePolicy(latest)
+    await matrixAccountService.setInvitePolicy({
+      ...base,
+      mode: mode.value,
+      blocklist: blocklist.value,
+      allowlist: allowlist.value,
+      allowStrangers: allowStrangers.value
+    })
   } catch (error) {
     logger.error('Failed to persist invite policy', error)
     showToast({ type: 'fail', message: t('mobile_invite_permission.save_failed') })
