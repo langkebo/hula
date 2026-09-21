@@ -41,9 +41,7 @@
         @preview-image="handleImagePreview"
         @delete-message="handleDeleteMessage" />
       <!-- 流式输出光标动画 -->
-      <div
-        v-if="isAIStreaming"
-        class="flex items-center px-16px py-4px bg-[--tjg-surface-panel-muted]">
+      <div v-if="isAIStreaming" class="flex items-center px-16px py-4px bg-[--tjg-surface-panel-muted]">
         <StreamingCursor :active="isAIStreaming" />
       </div>
       <div class="h-1px bg-[--tjg-border-default]"></div>
@@ -100,7 +98,7 @@
     v-model:show="showHistoryModal"
     preset="card"
     :title="t('ai_assistant.robot.generation_history')"
-    style="width: 90%; max-width: 1200px"
+    class="w-90% max-w-[1200px]"
     :bordered="false">
     <!-- 类型切换按钮 -->
     <template #header-extra>
@@ -212,7 +210,7 @@
     v-model:show="showImagePreview"
     preset="card"
     :title="t('ai_assistant.robot.image_preview')"
-    style="width: 90%; max-width: 1000px">
+    class="w-90% max-w-[1000px]">
     <div v-if="previewItem" class="preview-container">
       <img :src="previewItem.picUrl" :alt="previewItem.prompt" class="preview-image" />
       <div class="preview-info mt-16px">
@@ -233,7 +231,7 @@
     v-model:show="showVideoPreview"
     preset="card"
     :title="t('ai_assistant.robot.video_preview')"
-    style="width: 90%; max-width: 1000px">
+    class="w-90% max-w-[1000px]">
     <div v-if="previewItem" class="preview-container">
       <video :src="previewItem.videoUrl" controls class="preview-video" />
       <div class="preview-info mt-16px">

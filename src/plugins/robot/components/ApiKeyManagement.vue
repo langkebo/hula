@@ -3,7 +3,7 @@
     v-model:show="showModal"
     preset="card"
     :title="t('ai_assistant.robot.api_key_management')"
-    style="width: 900px"
+    class="w-[900px]"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
     <template #header-extra>
@@ -129,7 +129,7 @@
     v-model:show="showEditModal"
     preset="card"
     :title="editingApiKey ? t('ai_assistant.robot.edit_api_key') : t('ai_assistant.robot.new_api_key')"
-    style="width: 600px"
+    class="w-[600px]"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
     <n-form ref="formRef" :model="formData" :rules="formRules" label-placement="left" label-width="100px">

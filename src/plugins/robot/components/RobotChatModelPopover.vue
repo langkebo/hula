@@ -4,7 +4,7 @@
     trigger="click"
     placement="top-start"
     :show-arrow="false"
-    style="padding: 0; width: 320px"
+    class="p-0 w-[320px]"
     @update:show="emit('update:show', $event)">
     <template #trigger>
       <div class="flex items-center gap-6px cursor-pointer">
@@ -29,7 +29,7 @@
             :placeholder="t('ai_assistant.robot.search_model')"
             clearable
             size="small"
-            style="width: 140px"
+            class="w-[140px]"
             @update:value="emit('update:model-search', $event)">
             <template #prefix>
               <Icon icon="mdi:magnify" class="text-16px color-[--tjg-text-tertiary]" />

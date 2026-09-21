@@ -37,10 +37,7 @@
         </div> -->
       </n-flex>
       <!-- 会话列表 -->
-      <n-scrollbar
-        ref="scrollbar"
-        style="max-height: calc(100vh / var(--page-scale, 1) - 286px); padding-right: 8px"
-        @scroll="handleScroll">
+      <n-scrollbar ref="scrollbar" class="max-h-[calc(100vh/var(--page-scale,1)-286px)] pr-8px" @scroll="handleScroll">
         <!-- 加载状态 -->
         <div v-if="loading && pageNo === 1" class="flex justify-center items-center py-20px">
           <n-spin size="small" />
@@ -55,12 +52,7 @@
           <p>{{ t('ai_assistant.robot.no_conversation') }}</p>
         </div>
 
-        <TransitionGroup
-          v-else
-          name="list"
-          tag="div"
-          style="padding: 4px"
-          class="sort-target flex flex-col-center gap-12px">
+        <TransitionGroup v-else name="list" tag="div" class="p-4px sort-target flex flex-col-center gap-12px">
           <div v-for="(item, index) in chatList" :key="item.id" class="chat-item-wrapper relative mb-5px">
             <ContextMenu
               :menu="menuList"
@@ -85,8 +77,7 @@
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
-                  style="width: 200px"
-                  class="h-22px lh-22px rounded-6px"></n-input>
+                  class="w-[200px] h-22px lh-22px rounded-6px"></n-input>
                 <svg
                   @click.stop="deleteChat(item)"
                   class="chat-item-delete color-[--tjg-text-primary] size-20px absolute right-4px top-4px">

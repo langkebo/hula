@@ -21,8 +21,7 @@
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        style="width: 200px; height: 28px"
-        class="text-14px rounded-6px"
+        class="w-[200px] h-[28px] text-14px rounded-6px"
         @blur="emit('blur')"
         @update:value="emit('update:chat-title', $event)" />
 
@@ -31,7 +30,7 @@
           :value="aiProvider"
           :options="providerOptions"
           size="tiny"
-          style="width: 120px"
+          class="w-[120px]"
           @update:value="handleProviderSelect" />
 
         <div v-if="aiProvider === 'tjg'" class="flex items-center gap-6px">
@@ -119,7 +118,7 @@
         trigger="click"
         placement="bottom"
         :show-arrow="true"
-        style="padding: 16px; width: 280px"
+        class="p-16px w-[280px]"
         @update:show="emit('update:show-delete-chat-confirm', $event)">
         <template #trigger>
           <div class="right-btn right-btn-danger" :title="t('ai_assistant.robot.delete_conversation')">

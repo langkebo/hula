@@ -1,21 +1,23 @@
 <template>
   <!-- 新增/编辑模型弹窗 -->
-  <BaseRightDrawer v-model:show="show" :title="editingModel ? t('ai_assistant.robot.edit_model') : t('ai_assistant.robot.add_model')">
-    <n-scrollbar style="max-height: calc(80vh - 140px)">
+  <BaseRightDrawer
+    v-model:show="show"
+    :title="editingModel ? t('ai_assistant.robot.edit_model') : t('ai_assistant.robot.add_model')">
+    <n-scrollbar class="max-h-[calc(80vh-140px)]">
       <n-form
         ref="formRef"
         :model="formData"
         :rules="formRules"
         label-placement="left"
         label-width="120px"
-        style="padding-right: 12px">
+        class="pr-12px">
         <n-form-item :label="t('ai_assistant.robot.api_key_label')" path="keyId">
-          <n-flex :size="8" style="width: 100%">
+          <n-flex :size="8" class="w-full">
             <n-select
               v-model:value="formData.keyId"
               :options="apiKeyOptions"
               :placeholder="t('ai_assistant.robot.select_api_key')"
-              style="flex: 1"
+              class="flex-1"
               @update:value="emit('keyIdChange', $event)" />
             <n-button @click="emit('openApiKeyManagement')">
               <template #icon>
@@ -34,11 +36,11 @@
         </n-form-item>
 
         <n-form-item :label="t('ai_assistant.robot.model_avatar')" path="avatar">
-          <n-flex :size="12" align="center" style="width: 100%">
+          <n-flex :size="12" align="center" class="w-full">
             <n-avatar :key="formData.avatar" :src="formData.avatar" :size="60" round fallback-src="">
               <Icon v-if="!formData.avatar" icon="mdi:account-circle" :size="40" />
             </n-avatar>
-            <n-flex vertical :size="8" style="flex: 1">
+            <n-flex vertical :size="8" class="flex-1">
               <n-button size="small" @click="openAvatarCropper">
                 <template #icon>
                   <Icon icon="mdi:upload" />
@@ -62,7 +64,7 @@
         </n-form-item>
 
         <n-form-item :label="t('ai_assistant.robot.model_type_label')" path="type">
-          <n-flex :size="8" style="flex-wrap: wrap">
+          <n-flex :size="8" class="flex-wrap">
             <n-button :type="formData.type === 1 ? 'primary' : 'default'" size="small" @click="formData.type = 1">
               <template #icon>
                 <Icon icon="mdi:message-text" />
@@ -104,8 +106,8 @@
         </n-form-item>
 
         <n-form-item :label="t('ai_assistant.robot.model_flag')" path="model">
-          <n-flex vertical :size="4" style="width: 100%">
-            <n-flex :size="8" style="width: 100%">
+          <n-flex vertical :size="4" class="w-full">
+            <n-flex :size="8" class="w-full">
               <n-select
                 v-if="modelExamples.length > 0"
                 v-model:value="formData.model"
@@ -114,23 +116,23 @@
                 :disabled="!formData.platform"
                 filterable
                 tag
-                style="flex: 1" />
+                class="flex-1" />
               <n-input
                 v-else
                 v-model:value="formData.model"
                 :placeholder="modelPlaceholder"
                 :disabled="!formData.platform"
-                style="flex: 1" />
-              <n-button v-if="modelDocsUrl" text type="info" style="padding: 0" @click="openExternalUrl(modelDocsUrl)">
+                class="flex-1" />
+              <n-button v-if="modelDocsUrl" text type="info" class="p-0" @click="openExternalUrl(modelDocsUrl)">
                 {{ t('ai_assistant.robot.view_docs') }}
               </n-button>
             </n-flex>
-            <n-text depth="3" style="font-size: 12px">
+            <n-text depth="3" class="text-12px">
               {{ modelHint }}
             </n-text>
             <n-flex v-if="modelDocsUrl" align="center" :size="8" class="mt-4px">
-              <n-text depth="3" style="font-size: 12px">{{ t('ai_assistant.robot.view_docs_label') }}</n-text>
-              <n-button text type="info" style="font-size: 12px" @click="openExternalUrl(modelDocsUrl)">
+              <n-text depth="3" class="text-12px">{{ t('ai_assistant.robot.view_docs_label') }}</n-text>
+              <n-button text type="info" class="text-12px" @click="openExternalUrl(modelDocsUrl)">
                 {{ modelDocsUrl }}
               </n-button>
             </n-flex>
@@ -149,7 +151,7 @@
             v-model:value="formData.sort"
             :min="0"
             :placeholder="t('ai_assistant.robot.sort_hint')"
-            style="width: 100%" />
+            class="w-full" />
         </n-form-item>
 
         <n-form-item :label="t('ai_assistant.robot.temperature_param')" path="temperature">
@@ -159,7 +161,7 @@
             :max="2"
             :step="0.1"
             :placeholder="t('ai_assistant.robot.temperature_hint')"
-            style="width: 100%" />
+            class="w-full" />
         </n-form-item>
 
         <n-form-item :label="t('ai_assistant.robot.max_token')" path="maxTokens">
@@ -167,7 +169,7 @@
             v-model:value="formData.maxTokens"
             :min="1"
             :placeholder="t('ai_assistant.robot.max_token_hint')"
-            style="width: 100%" />
+            class="w-full" />
         </n-form-item>
 
         <n-form-item :label="t('ai_assistant.robot.max_context')" path="maxContexts">
@@ -175,7 +177,7 @@
             v-model:value="formData.maxContexts"
             :min="1"
             :placeholder="t('ai_assistant.robot.max_context_hint')"
-            style="width: 100%" />
+            class="w-full" />
         </n-form-item>
 
         <n-form-item :label="t('ai_assistant.robot.is_public')" path="publicStatus">

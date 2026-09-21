@@ -4,7 +4,7 @@
     trigger="click"
     placement="top-start"
     :show-arrow="false"
-    style="padding: 0; width: 320px"
+    class="p-0 w-[320px]"
     @update:show="emit('update:show', $event)">
     <template #trigger>
       <div class="flex items-center gap-6px cursor-pointer" @click="emit('update:show', !show)">

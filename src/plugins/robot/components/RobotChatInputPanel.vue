@@ -35,21 +35,21 @@
           :options="imageSizeOptions"
           size="small"
           :placeholder="t('ai_assistant.robot.image_size')"
-          style="width: 150px" />
+          class="w-150px" />
         <n-select
           v-if="selectedModel && (selectedModel.type === 4 || selectedModel.type === 7 || selectedModel.type === 8)"
           v-model:value="videoParams.size"
           :options="videoSizeOptions"
           size="small"
           :placeholder="t('ai_assistant.robot.video_size')"
-          style="width: 150px" />
+          class="w-150px" />
         <n-select
           v-if="selectedModel && (selectedModel.type === 4 || selectedModel.type === 7 || selectedModel.type === 8)"
           v-model:value="videoParams.duration"
           :options="videoDurationOptions"
           size="small"
           :placeholder="t('ai_assistant.robot.video_duration')"
-          style="width: 100px" />
+          class="w-100px" />
 
         <n-select
           v-if="selectedModel && selectedModel.type === 3"
@@ -57,18 +57,18 @@
           :options="audioVoiceOptions"
           size="small"
           :placeholder="t('ai_assistant.robot.select_voice')"
-          style="width: 150px" />
+          class="w-150px" />
         <n-select
           v-if="selectedModel && selectedModel.type === 3"
           v-model:value="audioParams.speed"
           :options="audioSpeedOptions"
           size="small"
           :placeholder="t('ai_assistant.robot.playback_speed')"
-          style="width: 120px" />
+          class="w-120px" />
 
         <n-popover v-if="selectedModel && selectedModel.type === 8" trigger="hover" :show-arrow="false" placement="top">
           <template #trigger>
-            <div style="position: relative; display: inline-block">
+            <div class="relative inline-block">
               <n-upload
                 ref="videoImageUploadRef"
                 :show-file-list="false"
@@ -80,7 +80,7 @@
                   :type="videoImagePreview ? 'success' : 'default'"
                   :loading="isUploadingVideoImage"
                   :disabled="isUploadingVideoImage"
-                  style="margin-left: 8px">
+                  class="ml-8px">
                   <template #icon v-if="!isUploadingVideoImage">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -112,15 +112,7 @@
                 circle
                 type="error"
                 @click="emit('clear-video-image')"
-                style="
-                  position: absolute;
-                  top: -6px;
-                  right: -6px;
-                  width: 18px;
-                  height: 18px;
-                  padding: 0;
-                  min-width: 18px;
-                ">
+                class="close-btn-overlay">
                 <template #icon>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -139,12 +131,12 @@
               </n-button>
             </div>
           </template>
-          <div style="max-width: 300px">
-            <div v-if="videoImagePreview" style="margin-bottom: 8px">
-              <img :src="videoImagePreview" style="max-width: 100%; border-radius: 4px" alt="视频预览" />
+          <div class="max-w-300px">
+            <div v-if="videoImagePreview" class="mb-8px">
+              <img :src="videoImagePreview" class="max-w-full rounded-4px" alt="视频预览" />
             </div>
-            <div style="font-size: 12px; color: var(--tjg-text-tertiary)">
-              <div v-if="isUploadingVideoImage" style="color: var(--tjg-color-success-500)">
+            <div class="text-12px text-[--tjg-text-tertiary]">
+              <div v-if="isUploadingVideoImage" class="text-[--tjg-color-success-500]">
                 {{ t('ai_assistant.robot.uploading_reference_image') }}
               </div>
               <div v-else>
@@ -158,7 +150,7 @@
                 <br />
                 {{ t('ai_assistant.robot.max_size_10mb') }}
                 <br />
-                <span style="color: var(--tjg-text-tertiary); font-size: 11px">
+                <span class="text-[--tjg-text-tertiary] text-11px">
                   {{ t('ai_assistant.robot.image_upload_to_storage') }}
                 </span>
               </div>
@@ -179,7 +171,7 @@
         </n-popover>
 
         <div class="flex items-center gap-6px bg-[--chat-hover-color] rounded-50px w-fit h-fit p-[4px_6px]">
-          <svg style="width: 22px; height: 22px; outline: none; cursor: pointer"><use href="#explosion"></use></svg>
+          <svg class="w-22px h-22px outline-none cursor-pointer"><use href="#explosion"></use></svg>
           <n-popover trigger="hover" :show-arrow="false" placement="top">
             <template #trigger>
               <TokenUsageMeter
@@ -202,7 +194,7 @@
         </div>
       </n-flex>
 
-      <div style="height: 100px" class="flex flex-col items-end gap-6px">
+      <div class="h-100px flex flex-col items-end gap-6px">
         <MsgInput
           ref="innerMsgInputRef"
           :isAIMode="!!selectedModel"
@@ -311,5 +303,14 @@ defineExpose({
   svg {
     @apply size-22px cursor-pointer outline-none;
   }
+}
+.close-btn-overlay {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  min-width: 18px;
 }
 </style>

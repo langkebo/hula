@@ -3,7 +3,7 @@
     v-model:show="showModal"
     preset="card"
     :title="t('ai_assistant.robot.role_management')"
-    style="width: 1000px"
+    class="w-[1000px]"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
     <template #header-extra>
@@ -16,7 +16,7 @@
     </template>
 
     <!-- 角色列表 - 添加滚动容器 -->
-    <n-scrollbar style="max-height: calc(80vh - 140px)">
+    <n-scrollbar class="max-h-[calc(80vh-140px)]">
       <n-spin :show="loading">
         <div v-if="roleList.length === 0" class="empty-container">
           <n-empty :description="t('ai_assistant.robot.no_roles')" size="large">
@@ -110,27 +110,27 @@
     v-model:show="showEditModal"
     preset="card"
     :title="editingRole ? t('ai_assistant.robot.edit_role') : t('ai_assistant.robot.add_role')"
-    style="width: 700px"
+    class="w-[700px]"
     :bordered="false"
     :segmented="{ content: 'soft', footer: 'soft' }">
-    <n-scrollbar style="max-height: calc(80vh - 140px)">
+    <n-scrollbar class="max-h-[calc(80vh-140px)]">
       <n-form
         ref="formRef"
         :model="formData"
         :rules="formRules"
         label-placement="left"
         label-width="100px"
-        style="padding-right: 12px">
+        class="pr-12px">
         <n-form-item :label="t('ai_assistant.robot.role_name')" path="name">
           <n-input v-model:value="formData.name" :placeholder="t('ai_assistant.robot.role_name_placeholder')" />
         </n-form-item>
 
         <n-form-item :label="t('ai_assistant.robot.role_avatar')" path="avatar">
-          <n-flex :size="12" align="center" style="width: 100%">
+          <n-flex :size="12" align="center" class="w-full">
             <n-avatar :key="formData.avatar" :src="formData.avatar" :size="60" round fallback-src="">
               <Icon v-if="!formData.avatar" icon="mdi:account-circle" :size="40" />
             </n-avatar>
-            <n-flex vertical :size="8" style="flex: 1">
+            <n-flex vertical :size="8" class="flex-1">
               <n-button size="small" @click="openAvatarCropper">
                 <template #icon>
                   <Icon icon="mdi:upload" />
@@ -176,7 +176,7 @@
             v-model:value="formData.sort"
             :min="0"
             :placeholder="t('ai_assistant.robot.sort_hint')"
-            style="width: 100%" />
+            class="w-full" />
         </n-form-item>
 
         <n-form-item :label="t('ai_assistant.robot.status_label')" path="status">
