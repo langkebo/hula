@@ -461,7 +461,30 @@ if (skipped.length > 0) {
   for (const item of skipped) console.log(`  skip ${item}`)
 }
 
+/** 读取现有基线；缺失返回 null，损坏返回 'invalid'。 */
+function readBaseline() {
+  if (!existsSync(BASELINE)) return null
+  try {
+    return JSON.parse(readFileSync(BASELINE, 'utf8'))
+  } catch {
+    return 'invalid'
+  }
+}
+
 if (process.argv.includes('--update')) {
+  // ratchet 只允许收紧：--update 不能把基线抬高
+  const previous = readBaseline()
+  if (
+    previous &&
+    previous !== 'invalid' &&
+    typeof previous.unlistenedEvents === 'number' &&
+    sorted.length > previous.unlistenedEvents
+  ) {
+    console.error(`check-component-contracts: 拒绝抬高基线 — 本次 ${sorted.length} > 现有 ${previous.unlistenedEvents}`)
+    for (const entry of sorted) console.error(`  ${entry.event.padEnd(28)} ${entry.component}`)
+    console.error('ratchet 只允许收紧：新增断线必须先接线，或写进 ACCEPTED_PATTERNS 说明理由。')
+    process.exit(1)
+  }
   writeFileSync(
     BASELINE,
     `${JSON.stringify({ unlistenedEvents: sorted.length, unlistenedEventNames: entryNames }, null, 2)}\n`
@@ -476,18 +499,22 @@ if (!existsSync(BASELINE)) {
   process.exit(1)
 }
 
-let baseline
-try {
-  baseline = JSON.parse(readFileSync(BASELINE, 'utf8'))
-} catch (error) {
+const baseline = readBaseline()
+
+if (baseline === 'invalid') {
   console.error(`check-component-contracts: FAIL — 基线文件无法解析：${BASELINE}`)
-  console.error(`  ${error.message}`)
   console.error(REGENERATE_HINT)
   process.exit(1)
 }
 
 if (typeof baseline?.unlistenedEvents !== 'number' || !Number.isFinite(baseline.unlistenedEvents)) {
   console.error(`check-component-contracts: FAIL — 基线文件缺少数值型 unlistenedEvents：${BASELINE}`)
+  console.error(REGENERATE_HINT)
+  process.exit(1)
+}
+
+if (!Array.isArray(baseline.unlistenedEventNames)) {
+  console.error(`check-component-contracts: FAIL — 基线文件缺少数组型 unlistenedEventNames：${BASELINE}`)
   console.error(REGENERATE_HINT)
   process.exit(1)
 }
@@ -499,7 +526,22 @@ if (sorted.length > baseline.unlistenedEvents) {
   process.exit(1)
 }
 
-console.log(`check-component-contracts: OK 无人监听事件 ${sorted.length}（基线 ${baseline.unlistenedEvents}）`)
+/**
+ * 只比数量会漏掉「修掉一条真实断线又引入一条等价断线」（总数不变）。这里额外断言
+ * 当前集合 ⊆ 基线集合：出现基线里没有的条目一律失败。
+ */
+const baselineNames = new Set(baseline.unlistenedEventNames)
+const unexpected = entryNames.filter((name) => !baselineNames.has(name))
+if (unexpected.length > 0) {
+  console.error('check-component-contracts: FAIL — 出现基线未记录的无人监听事件（换名绕过数量 ratchet）')
+  for (const name of unexpected) console.error(`  ${name}`)
+  console.error('修掉一条又引入一条等价断线同样不允许：先接线，或说明理由后更新基线。')
+  process.exit(1)
+}
+
+console.log(
+  `check-component-contracts: OK 无人监听事件 ${sorted.length}（基线 ${baseline.unlistenedEvents}，条目均在基线内）`
+)
 if (sorted.length < baseline.unlistenedEvents) {
   console.log('  可运行 node scripts/check-component-contracts.mjs --update 收紧基线')
 }

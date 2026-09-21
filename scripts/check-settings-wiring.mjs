@@ -79,7 +79,25 @@ const dead = [...written.entries()]
 
 const regenerateHint = '  运行 node scripts/check-settings-wiring.mjs --update 重建基线。'
 
+/** 读取现有基线；缺失返回 null，损坏返回 'invalid'。 */
+function readBaseline() {
+  if (!existsSync(BASELINE)) return null
+  try {
+    return JSON.parse(readFileSync(BASELINE, 'utf8'))
+  } catch {
+    return 'invalid'
+  }
+}
+
 if (process.argv.includes('--update')) {
+  // ratchet 只允许收紧：--update 不能把基线抬高（否则新增死配置会被一次性赦免）
+  const previous = readBaseline()
+  if (previous && previous !== 'invalid' && typeof previous.deadKeys === 'number' && dead.length > previous.deadKeys) {
+    console.error(`check-settings-wiring: 拒绝抬高基线 — 本次 ${dead.length} > 现有 ${previous.deadKeys}`)
+    for (const d of dead) console.error(`  ${d.key.padEnd(36)} ${d.path}`)
+    console.error('ratchet 只允许收紧：新增设置项必须先给出真实消费方。')
+    process.exit(1)
+  }
   writeFileSync(BASELINE, `${JSON.stringify({ deadKeys: dead.length, deadKeyNames: dead.map((d) => d.key) }, null, 2)}\n`)
   console.log(`check-settings-wiring: 基线已更新为 ${dead.length}`)
   process.exit(0)
@@ -91,18 +109,22 @@ if (!existsSync(BASELINE)) {
   process.exit(1)
 }
 
-let baseline
-try {
-  baseline = JSON.parse(readFileSync(BASELINE, 'utf8'))
-} catch (error) {
+const baseline = readBaseline()
+
+if (baseline === 'invalid') {
   console.error(`check-settings-wiring: FAIL — 基线文件无法解析：${BASELINE}`)
-  console.error(`  ${error.message}`)
   console.error(regenerateHint)
   process.exit(1)
 }
 
 if (typeof baseline?.deadKeys !== 'number' || !Number.isFinite(baseline.deadKeys)) {
   console.error(`check-settings-wiring: FAIL — 基线文件缺少数值型 deadKeys：${BASELINE}`)
+  console.error(regenerateHint)
+  process.exit(1)
+}
+
+if (!Array.isArray(baseline.deadKeyNames)) {
+  console.error(`check-settings-wiring: FAIL — 基线文件缺少数组型 deadKeyNames：${BASELINE}`)
   console.error(regenerateHint)
   process.exit(1)
 }
@@ -114,7 +136,20 @@ if (dead.length > baseline.deadKeys) {
   process.exit(1)
 }
 
-console.log(`check-settings-wiring: OK 死配置 ${dead.length}（基线 ${baseline.deadKeys}）`)
+/**
+ * 只比数量会漏掉「修掉一个又引入一个」的等价替换（总数不变）。这里额外断言
+ * 当前死配置集合 ⊆ 基线集合：出现基线里没有的 key 一律失败，逼出显式处置。
+ */
+const baselineNames = new Set(baseline.deadKeyNames)
+const unexpected = dead.filter((d) => !baselineNames.has(d.key))
+if (unexpected.length > 0) {
+  console.error(`check-settings-wiring: FAIL — 出现基线未记录的死配置（换名绕过数量 ratchet）`)
+  for (const d of unexpected) console.error(`  ${d.key.padEnd(36)} ${d.path}`)
+  console.error('修掉一个又引入一个等价的死配置同样不允许：先接线，或说明理由后更新基线。')
+  process.exit(1)
+}
+
+console.log(`check-settings-wiring: OK 死配置 ${dead.length}（基线 ${baseline.deadKeys}，键名均在基线内）`)
 if (dead.length < baseline.deadKeys) {
   console.log('  可运行 node scripts/check-settings-wiring.mjs --update 收紧基线')
 }

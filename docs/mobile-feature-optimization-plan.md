@@ -858,7 +858,7 @@ Task 2/3 发现的"开关存了、也读了，但发送路径上没有守卫"这
 | **零消费方** | key 被设置 UI 写、也被设置 UI 回读，运行时没有任何消费方 | 通知 9 个（Task 6）；勿扰时段 3 个（Task 7）；侧边栏/阅后即焚/好友（Task 9）；字体大小（Task 10）；气泡样式与 Labs（Task 11）；备份开关（Task 12）；音视频 8 项（Task 13） | 先找**真实消费点**：找得到就接线并补真实路径行为测试；找不到且没有可挂分发点就按 **YAGNI 删 UI 与 key**（提交信息写明依据）。**不搬迁**——把 key 搬到 store / account data 不创造消费方，属于"假完成" |
 | **平行实现** | 同一概念两套实现，"哪份说了算"永久含糊 | `useInvitePermissionFilter` vs `invitePolicy`（Task 8）；侧边栏 `showIconsOnly` vs store 的 `showMode`；勿扰时段的第 4 份表示（Task 7） | 选**唯一来源**，删掉另一份，旧数据一次性迁移；不做长期兼容层 |
 | **装饰组件** | 组件渲染正常、事件也 emit，但没有任何使用处监听；测试只断言 `emitted(...)`，于是长期绿着不生效 | `InvitePermissionPanel` 的三档模式与名单（12.9 节）；Task 14 删除的三个死事件 | 要么补真实 props/事件接线并把测试改为断言真实落库，要么删除；并新增 `check:component-contracts` 守住复发 |
-| **无实现** | UI 存在，但运行时/后端根本没有对应能力 | 音视频设备选择与音量、字体大小（接线前） | 只实现**能安全生效**的部分（音频三个布尔经 `applyConstraints`）；不能生效的（`deviceId` 不可变、`MediaTrackConstraintSet` 没有 `volume`）如实标注"未接线"，不造假接线 |
+| **无实现** | UI 存在，但运行时/后端根本没有对应能力 | 音视频设备选择与音量（接线前） | 只实现**能安全生效**的部分（音频三个布尔经 `applyConstraints`）；不能生效且无消费方的（输出设备、输入/输出音量）连同控件一起删除；设备选择如实标注"仅作用于测试/预览，应用到真实通话需要 `replaceTrack`（未实现）"，不造假接线 |
 
 ### 13.4 两个新守门
 
@@ -877,13 +877,20 @@ node scripts/check-settings-wiring.mjs --update # 收紧基线，数量只减不
 
 - **只守引用，不守生效。** 判活是引用计数，"消费方是否真在运行时消费"它判断不了。
   Task 13 是实证：8 个音视频 key 并入 `mediaDevicePreferences` 后全部被记为"已消费"，
-  但其中设备选择与音量 5 项在通话路径上仍无效果（Task 13 minor #1）。
+  但其中设备选择与音量在通话路径上仍无效果；最终修复波按用户裁决（M1）删掉了
+  `audioOutputId` / `inputVolume` / `outputVolume` 三个**零消费方**控件与字段，
+  只留能经 `applyConstraints` 真实生效的音质布尔，以及作用于测试/预览的设备选择。
   Task 2/3 的"存了不生效"同理是它的盲区，需要行为测试补位。
-- **写入面只覆盖设置窗口。** Task 11 把气泡样式写入搬进共享 util 后，
-  该 key 就离开了守门视野（`progress.md` Task 11 minor #1）。
+- **写入面只覆盖设置窗口，写入一旦搬走就脱离视野。** 守门只扫
+  `src/views/settingsWindow/**/*.vue` 里的 `localStorage.setItem`。Task 11 把气泡样式
+  写入搬进共享 util、Task 13 把 8 个音视频 key 搬进 `mediaDevicePreferences` 之后，
+  这些 key 就不再被扫描——数字下降可能只是"写入离开了扫描面"，而不是"死配置被消除"。
+  更根本的修法是改成扫描持久层 / 建"key → owner → consumer"清单（设计工作，follow-up）。
 - **刻意保守带来假阳性。** 把设置界面排除出消费方，会把"仅被设置页消费"的 key
   报成死配置——`tjg-mjolnir-ban-lists` 即为此列，故收尾值为 1。
 - 平行实现、装饰组件、无实现这三类它**看不见**，那是下一节的守门与行为测试的职责。
+- **ratchet 口径**：`--update` 拒绝抬高基线，且校验"当前死配置键名集合 ⊆ 基线集合"，
+  因此"修掉一个又引入一个等价死配置"（总数不变）同样会 FAIL。
 
 #### `check:component-contracts`（`scripts/check-component-contracts.mjs`）
 
@@ -929,7 +936,16 @@ node scripts/check-component-contracts.mjs --update # 收紧基线
 | `check:v-html` | FAIL（既有） | `ThemeSwitcher.vue` 的注释里出现 "v-html" 字样被 grep 命中；基线提交上同样 FAIL，本分支未改该文件 |
 | `check:file-size` | FAIL（既有） | 基线提交上同样 FAIL（同样点到 `Image.vue`）。本分支让 6 个基线文件继续变长，并使 `MatrixReceiptService.ts`（376 → 414 行）越过 400 行线。未做 `--update`：那会一次性赦免全部既有增长，把 ratchet 变成橡皮图章 |
 
-结论：本次治理**没有引入新的死配置**（守门从 34 降到 1 后保持不变），
+结论：在守门**可扫描的范围内**（仅 `src/views/settingsWindow/**/*.vue` 的直接写入），
+本次治理没有引入新的死配置（34 → 1 后保持不变）。**这个数字只能证明"扫描面内没有新增"，
+不能证明"开关真的生效"，也不能证明"没有死配置"**——写入搬进 store/util/service 后
+就脱离了扫描面（见 13.4 已知局限），有效性只能由各任务的行为测试提供证据。
 两个新守门的可证伪性在 Task 14 已验证（临时删真实监听/接线会 FAIL；
-见 `task-14-report.md`），doc-coverage 的既有漂移用纯注释补齐。
+见 `task-14-report.md`），并在最终修复波接入 CI、禁止 `--update` 抬高基线、校验键名集合。
 剩余两处 FAIL（`check:v-html`、`check:file-size`）在基线提交上就存在，属独立债务。
+
+音视频设置治理后的**剩余债务**（如实记录）：`audioInputId` / `videoInputId` 目前
+只作用于设置页的麦克风测试与摄像头预览；把设备选择应用到真实通话需要
+`replaceTrack`（本分支未实现）。三个音质布尔（回声消除/降噪/自动增益）经
+`applyConstraints` 在真实通话上生效。`audioOutputId` / `inputVolume` /
+`outputVolume` 因全仓零消费方已连同控件删除。
