@@ -1,12 +1,11 @@
 {
-  "deadKeys": 18,
+  "deadKeys": 17,
   "deadKeyNames": [
     "tjg-audio-input",
     "tjg-audio-output",
     "tjg-auto-gain",
     "tjg-backup-enabled",
     "tjg-bubble-style",
-    "tjg-burn-after-read-settings",
     "tjg-debug-mode",
     "tjg-echo-cancellation",
     "tjg-enable-devtools",

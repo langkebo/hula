@@ -1,34 +1,17 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import BurnAfterReadSettings from '../BurnAfterReadSettings.vue'
 
 const translationMap: Record<string, string> = {
-  'setting.common.save': '保存',
   'setting.common.cancel': '取消',
   'setting.burn_after_read.global.title': '全局设置',
   'setting.burn_after_read.global.enabled_label': '全局默认开启阅后即焚',
   'setting.burn_after_read.global.enabled_desc': '新私聊默认开启阅后即焚功能',
   'setting.burn_after_read.global.duration_label': '默认焚毁时间',
   'setting.burn_after_read.global.duration_desc': '消息阅后的默认焚毁倒计时',
-  'setting.burn_after_read.global.auto_read_label': '已读消息自动开始倒计时',
-  'setting.burn_after_read.global.auto_read_desc': '消息被标记为已读后自动启动焚毁倒计时',
-  'setting.burn_after_read.global.notification_label': '消息即将焚毁时通知',
-  'setting.burn_after_read.global.notification_desc': '消息焚毁前发送通知提醒',
   'setting.burn_after_read.global.countdown_label': '显示焚毁倒计时',
   'setting.burn_after_read.global.countdown_desc': '在消息上显示焚毁倒计时进度',
-  'setting.burn_after_read.global.sound_label': '消息焚毁时播放音效',
-  'setting.burn_after_read.global.sound_desc': '消息焚毁完成时播放提示音',
-  'setting.burn_after_read.rooms.title': '房间级别设置',
-  'setting.burn_after_read.rooms.empty': '暂无开启阅后即焚的私聊',
-  'setting.burn_after_read.rooms.enabled': '已开启',
-  'setting.burn_after_read.rooms.disabled': '已关闭',
-  'setting.burn_after_read.rooms.duration_value': '焚毁时间: {duration}',
-  'setting.burn_after_read.rooms.edit': '修改',
-  'setting.burn_after_read.rooms.enable': '开启',
-  'setting.burn_after_read.rooms.disable': '关闭',
-  'setting.burn_after_read.rooms.edit_title': '修改房间焚毁时间',
-  'setting.burn_after_read.rooms.duration_label': '焚毁时间',
   'setting.burn_after_read.stats.title': '焚毁统计',
   'setting.burn_after_read.stats.total_burned': '总焚毁消息',
   'setting.burn_after_read.stats.total_pending': '待焚毁消息',
@@ -39,15 +22,12 @@ const translationMap: Record<string, string> = {
   'setting.burn_after_read.formats.days': '{count}天',
   'setting.burn_after_read.feedback.duration_changed': '默认焚毁时间已设置为{duration}',
   'setting.burn_after_read.feedback.settings_updated': '设置已更新',
-  'setting.burn_after_read.feedback.room_enabled': '已开启房间阅后即焚',
-  'setting.burn_after_read.feedback.room_enable_failed': '开启房间阅后即焚失败',
-  'setting.burn_after_read.feedback.room_disabled': '已关闭房间阅后即焚',
   'setting.burn_after_read.warning':
     '阅后即焚不能保证对方未截图或保存消息。服务器会在消息到期后删除，但无法控制客户端行为。'
 }
 
 const {
-  mockManager,
+  getBurnStatsMock,
   messageSuccessMock,
   messageErrorMock,
   dialogWarningMock,
@@ -56,11 +36,7 @@ const {
   setBurnShowCountdownEnabledMock,
   settingStoreMock
 } = vi.hoisted(() => ({
-  mockManager: {
-    getBurnStats: vi.fn(),
-    enableBurn: vi.fn(),
-    disableBurn: vi.fn()
-  },
+  getBurnStatsMock: vi.fn(),
   messageSuccessMock: vi.fn(),
   messageErrorMock: vi.fn(),
   dialogWarningMock: vi.fn(),
@@ -71,9 +47,9 @@ const {
     burnDefaultEnabled: false,
     burnDefaultDuration: 60,
     burnShowCountdownEnabled: true,
-    setBurnDefaultEnabled: (...args: any[]) => setBurnDefaultEnabledMock(...args),
-    setBurnDefaultDuration: (...args: any[]) => setBurnDefaultDurationMock(...args),
-    setBurnShowCountdownEnabled: (...args: any[]) => setBurnShowCountdownEnabledMock(...args)
+    setBurnDefaultEnabled: (...args: unknown[]) => setBurnDefaultEnabledMock(...args),
+    setBurnDefaultDuration: (...args: unknown[]) => setBurnDefaultDurationMock(...args),
+    setBurnShowCountdownEnabled: (...args: unknown[]) => setBurnShowCountdownEnabledMock(...args)
   }
 }))
 
@@ -93,7 +69,7 @@ vi.mock('naive-ui', () => ({
 }))
 
 vi.mock('@/services/matrix/messaging/MatrixBurnAfterReadService', () => ({
-  matrixBurnAfterReadService: mockManager
+  matrixBurnAfterReadService: { getBurnStats: (...args: unknown[]) => getBurnStatsMock(...args) }
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -119,6 +95,8 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+const STORAGE_KEY = 'tjg-burn-after-read-settings'
+
 describe('BurnAfterReadSettings', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -129,23 +107,76 @@ describe('BurnAfterReadSettings', () => {
     settingStoreMock.burnDefaultEnabled = false
     settingStoreMock.burnDefaultDuration = 60
     settingStoreMock.burnShowCountdownEnabled = true
-    mockManager.getBurnStats.mockResolvedValue({ totalBurned: 128, pendingBurns: 3, activeRooms: 2 })
+    getBurnStatsMock.mockResolvedValue({ totalBurned: 0, totalPending: 0, roomsWithBurnEnabled: 0 })
   })
 
-  it('renders correctly', () => {
+  it('renders the retained sections, without the removed room list', () => {
     const wrapper = mount(BurnAfterReadSettings)
     expect(wrapper.find('.burn-after-read-settings').exists()).toBe(true)
     expect(wrapper.text()).toContain('全局设置')
-    expect(wrapper.text()).toContain('房间级别设置')
     expect(wrapper.text()).toContain('焚毁统计')
+    // 房间列表区块整个移除：它只有这份死 blob 一个写入源，永远显示空
+    expect(wrapper.text()).not.toContain('房间级别设置')
+    expect(wrapper.find('.room-list').exists()).toBe(false)
+    expect(wrapper.find('.room-item').exists()).toBe(false)
   })
 
-  it('shows all global settings', () => {
+  it('shows only the retained global settings', () => {
     const wrapper = mount(BurnAfterReadSettings)
     expect(wrapper.text()).toContain('全局默认开启阅后即焚')
     expect(wrapper.text()).toContain('默认焚毁时间')
-    expect(wrapper.text()).toContain('已读消息自动开始倒计时')
     expect(wrapper.text()).toContain('显示焚毁倒计时')
+    expect(wrapper.text()).not.toContain('已读消息自动开始倒计时')
+    expect(wrapper.text()).not.toContain('消息焚毁前发送通知提醒')
+    expect(wrapper.text()).not.toContain('消息焚毁完成时播放提示音')
+  })
+
+  it('no longer exposes the dead preference refs or the room list state', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    const vm = wrapper.vm as any
+    expect(vm.autoBurnRead).toBeUndefined()
+    expect(vm.burnNotification).toBeUndefined()
+    expect(vm.burnSound).toBeUndefined()
+    expect(vm.burnRooms).toBeUndefined()
+    expect(vm.saveSettings).toBeUndefined()
+  })
+
+  it('never writes tjg-burn-after-read-settings when the retained global toggles change', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+
+    const vm = wrapper.vm as any
+    vm.handleBurnDurationChange(300)
+    vm.handleGlobalBurnToggle(false)
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
+  it('never writes tjg-burn-after-read-settings when the countdown toggle changes', () => {
+    const wrapper = mount(BurnAfterReadSettings)
+    const vm = wrapper.vm as any
+    vm.handleCountdownToggle()
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
+  it('ignores the legacy localStorage blob entirely', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        autoBurnRead: false,
+        burnSound: true,
+        globalBurnEnabled: true,
+        globalBurnDuration: 300,
+        showBurnCountdown: false,
+        burnRooms: [{ roomId: '!room:test', name: 'Test Room', burnEnabled: true, burnDuration: 60 }]
+      })
+    )
+    const wrapper = mount(BurnAfterReadSettings)
+    const vm = wrapper.vm as any
+    // 全部来自 settingStore，localStorage 中的任何字段都不参与
+    expect(vm.globalBurnEnabled).toBe(false)
+    expect(vm.globalBurnDuration).toBe(60)
+    expect(vm.showBurnCountdown).toBe(true)
   })
 
   it('reads globalBurnEnabled/globalBurnDuration from settingStore', () => {
@@ -162,65 +193,11 @@ describe('BurnAfterReadSettings', () => {
     expect((wrapper.vm as any).showBurnCountdown).toBe(false)
   })
 
-  it('loads pure UI prefs (autoBurnRead/burnSound/burnRooms) from localStorage', () => {
-    localStorage.setItem(
-      'tjg-burn-after-read-settings',
-      JSON.stringify({
-        autoBurnRead: false,
-        burnSound: true,
-        burnRooms: []
-      })
-    )
+  it('renders the retained burn statistics', async () => {
+    getBurnStatsMock.mockResolvedValue({ totalBurned: 128, totalPending: 3, roomsWithBurnEnabled: 2 })
     const wrapper = mount(BurnAfterReadSettings)
-    expect((wrapper.vm as any).autoBurnRead).toBe(false)
-    expect((wrapper.vm as any).burnSound).toBe(true)
-  })
-
-  it('does NOT read globalBurnEnabled from localStorage (uses settingStore)', () => {
-    localStorage.setItem(
-      'tjg-burn-after-read-settings',
-      JSON.stringify({
-        globalBurnEnabled: true,
-        globalBurnDuration: 300
-      })
-    )
-    // settingStore 默认 false/60，localStorage 中即使有也不应被读取
-    const wrapper = mount(BurnAfterReadSettings)
-    expect((wrapper.vm as any).globalBurnEnabled).toBe(false)
-    expect((wrapper.vm as any).globalBurnDuration).toBe(60)
-  })
-
-  it('saveSettings only persists pure UI prefs + burnRooms to localStorage', () => {
-    const wrapper = mount(BurnAfterReadSettings)
-    const vm = wrapper.vm as any
-    vm.autoBurnRead = false
-    vm.burnNotification = true
-    vm.burnSound = true
-    vm.saveSettings()
-    const saved = JSON.parse(localStorage.getItem('tjg-burn-after-read-settings')!)
-    expect(saved).toHaveProperty('autoBurnRead', false)
-    expect(saved).toHaveProperty('burnNotification', true)
-    expect(saved).toHaveProperty('burnSound', true)
-    expect(saved).toHaveProperty('burnRooms')
-    // 不应再持久化这三个全局字段
-    expect(saved).not.toHaveProperty('globalBurnEnabled')
-    expect(saved).not.toHaveProperty('globalBurnDuration')
-    expect(saved).not.toHaveProperty('showBurnCountdown')
-  })
-
-  it('defaults globalBurnEnabled to false (from settingStore)', () => {
-    const wrapper = mount(BurnAfterReadSettings)
-    expect((wrapper.vm as any).globalBurnEnabled).toBe(false)
-  })
-
-  it('defaults globalBurnDuration to 60 (from settingStore)', () => {
-    const wrapper = mount(BurnAfterReadSettings)
-    expect((wrapper.vm as any).globalBurnDuration).toBe(60)
-  })
-
-  it('defaults showBurnCountdown to true (from settingStore)', () => {
-    const wrapper = mount(BurnAfterReadSettings)
-    expect((wrapper.vm as any).showBurnCountdown).toBe(true)
+    await flushPromises()
+    expect(wrapper.findAll('.stat-value').map((node) => node.text())).toEqual(['128', '3', '2'])
   })
 
   it('formatDuration works correctly', () => {
@@ -264,54 +241,12 @@ describe('BurnAfterReadSettings', () => {
   it('calls setBurnShowCountdownEnabled when countdown toggle changes', () => {
     const wrapper = mount(BurnAfterReadSettings)
     const vm = wrapper.vm as any
-    vm.handleToggle('showBurnCountdown')
+    vm.handleCountdownToggle()
     expect(setBurnShowCountdownEnabledMock).toHaveBeenCalledWith(vm.showBurnCountdown)
-  })
-
-  it('does NOT call settingStore setters for pure UI prefs', () => {
-    const wrapper = mount(BurnAfterReadSettings)
-    const vm = wrapper.vm as any
-    vm.handleToggle('autoBurnRead')
-    vm.handleToggle('burnNotification')
-    vm.handleToggle('burnSound')
-    expect(setBurnShowCountdownEnabledMock).not.toHaveBeenCalled()
   })
 
   it('shows security warning', () => {
     const wrapper = mount(BurnAfterReadSettings)
     expect(wrapper.text()).toContain('阅后即焚不能保证对方未截图或保存消息')
-  })
-
-  it('enables room burn', async () => {
-    mockManager.enableBurn.mockResolvedValue({ enabled: true, burn_after_ms: 60000 })
-    const wrapper = mount(BurnAfterReadSettings)
-    const room = { roomId: '!room:test', name: 'Test Room', burnEnabled: false, burnDuration: 60 }
-    const vm = wrapper.vm as any
-    await vm.handleEnableRoomBurn(room)
-    expect(mockManager.enableBurn).toHaveBeenCalledWith('!room:test', 60000)
-    expect(room.burnEnabled).toBe(true)
-    expect(messageSuccessMock).toHaveBeenCalledWith('已开启房间阅后即焚')
-  })
-
-  it('disables room burn', async () => {
-    mockManager.disableBurn.mockResolvedValue({ enabled: false })
-    const wrapper = mount(BurnAfterReadSettings)
-    const room = { roomId: '!room:test', name: 'Test Room', burnEnabled: true, burnDuration: 60 }
-    const vm = wrapper.vm as any
-    await vm.handleDisableRoomBurn(room)
-    expect(mockManager.disableBurn).toHaveBeenCalledWith('!room:test')
-    expect(room.burnEnabled).toBe(false)
-    expect(messageSuccessMock).toHaveBeenCalledWith('已关闭房间阅后即焚')
-  })
-
-  it('handles service errors gracefully', async () => {
-    mockManager.enableBurn.mockRejectedValue(new Error('network error'))
-    const wrapper = mount(BurnAfterReadSettings)
-    const room = { roomId: '!room:test', name: 'Test Room', burnEnabled: false, burnDuration: 60 }
-    const vm = wrapper.vm as any
-    await vm.handleEnableRoomBurn(room)
-    // enableBurn in useBurnAfterRead swallows the error, so handleEnableRoomBurn proceeds normally
-    expect(room.burnEnabled).toBe(true)
-    expect(messageSuccessMock).toHaveBeenCalledWith('已开启房间阅后即焚')
   })
 })
