@@ -1,10 +1,9 @@
 {
-  "deadKeys": 10,
+  "deadKeys": 9,
   "deadKeyNames": [
     "tjg-audio-input",
     "tjg-audio-output",
     "tjg-auto-gain",
-    "tjg-backup-enabled",
     "tjg-echo-cancellation",
     "tjg-input-volume",
     "tjg-mjolnir-ban-lists",

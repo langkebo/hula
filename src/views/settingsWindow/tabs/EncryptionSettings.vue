@@ -54,7 +54,7 @@
           <span class="setting-label">{{ t('setting.encryption.backup_enable_label') }}</span>
           <span class="setting-desc">{{ t('setting.encryption.backup_enable_desc') }}</span>
         </div>
-        <n-switch v-model:value="backupEnabled" :disabled="!encryptionEnabled" @update:value="handleBackupToggle" />
+        <n-switch :value="backupEnabled" :disabled="!encryptionEnabled" @update:value="handleBackupToggle" />
       </div>
       <div v-if="backupEnabled && encryptionEnabled" class="setting-item">
         <div class="setting-info">
@@ -390,13 +390,14 @@ function formatFingerprint(key: string): string {
   return key.match(/.{1,4}/g)?.join(' ') || key
 }
 
+// 开关值只由 encryptionStore.backupEnabled（matrixKeyBackupService.checkKeyBackup 的服务器状态）决定。
+// 打开走设置向导，关闭是刻意的空操作：当前没有"删除服务器备份"的入口，因此只提示、不改变任何状态。
 function handleBackupToggle(value: boolean) {
   if (!encryptionEnabled.value) {
     showFeedback(t('setting.encryption.enable_required'), 'warning')
     return
   }
 
-  localStorage.setItem('tjg-backup-enabled', value.toString())
   if (value) {
     showBackupDialog.value = true
   } else {
