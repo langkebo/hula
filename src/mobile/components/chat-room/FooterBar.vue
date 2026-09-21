@@ -1,10 +1,6 @@
 <template>
   <div ref="root">
-    <div
-      ref="messageInputDom"
-      contenteditable="true"
-      spellcheck="false"
-      style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; white-space: pre-wrap"></div>
+    <div ref="messageInputDom" contenteditable="true" spellcheck="false" class="sr-only"></div>
 
     <div class="w-full min-h-20px flex flex-col z-2 footer-bar-shadow">
       <div v-if="showVoicePanel" class="voice-panel-container">

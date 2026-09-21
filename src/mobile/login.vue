@@ -1,6 +1,6 @@
 <template>
   <MobileLayout :safeAreaTop="false" :safeAreaBottom="false">
-    <div class="h-full flex-col-center gap-40px" style="background: var(--tjg-mobile-login-bg)">
+    <div class="h-full flex-col-center gap-40px bg-[--tjg-mobile-login-bg]">
       <div class="flex-center absolute top-13vh left-36px">
         <p class="text-(20px [--tjg-text-primary])">{{ t('login.mobile.welcome_title') }}</p>
         <img src="@/assets/mobile/2.svg" alt="Tjg" class="w-80px h-20px" />

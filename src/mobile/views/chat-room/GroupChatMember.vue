@@ -26,8 +26,7 @@
                   v-for="item in filteredList"
                   :key="item.uid"
                   @click="toFriendInfo(item.uid)"
-                  class="flex items-start"
-                  style="height: 52px">
+                  class="flex items-start h-[52px]">
                   <div class="flex items-center gap-10px">
                     <img
                       class="w-42px h-42px rounded-full object-cover flex-shrink-0"

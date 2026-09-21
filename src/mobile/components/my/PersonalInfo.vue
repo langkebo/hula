@@ -2,7 +2,7 @@
   <!-- 个人信息区 -->
   <div class="flex flex-col px-16px border-b border-[--tjg-border-layout-divider] pb-16px">
     <!-- 头像基本信息 -->
-    <div ref="avatarBox" class="grid grid-cols-[64px_1fr] z-1 items-start mt-6 gap-2" style="transform: translateZ(0)">
+    <div ref="avatarBox" class="grid grid-cols-[64px_1fr] z-1 items-start mt-6 gap-2 will-change-transform">
       <!-- 头像 -->
       <div
         class="self-center h-auto transition-transform duration-300 ease-in-out origin-top"
@@ -28,7 +28,7 @@
                 :alt="friendUserState?.title || currentState?.title || ''"
                 class="rounded-50% size-14px" />
             </span>
-            <span class="text-bold-style" style="font-size: 12px; color: var(--tjg-text-secondary)">
+            <span class="text-bold-style text-12px text-[--tjg-text-secondary]">
               {{ friendUserState?.title ? friendUserState.title : currentState?.title || '' }}
             </span>
           </div>
@@ -46,7 +46,7 @@
   </div>
   <!-- 个人描述和点赞关注区 -->
   <Transition name="slide-fade" @before-enter="beforeEnter" @enter="enter" @leave="leave">
-    <div v-if="props.isShow" ref="animatedBox" style="transform: translateZ(0)" class="flex flex-col px-16px">
+    <div v-if="props.isShow" ref="animatedBox" class="will-change-transform flex flex-col px-16px">
       <!-- 个人描述 -->
       <div class="mt-2 text-bold-style line-height-24px">
         {{ displayResume }}

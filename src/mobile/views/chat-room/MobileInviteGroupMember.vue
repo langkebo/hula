@@ -35,7 +35,7 @@
 
       <!-- 好友列表 -->
       <div ref="scrollArea" class="flex-1 overflow-y-auto px-16px mt-10px" :style="{ height: scrollHeight + 'px' }">
-        <div style="max-height: calc(100vh - 150px); overflow-y: auto">
+        <div class="max-h-[calc(100vh-150px)] overflow-y-auto">
           <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
             <div
               v-for="item in filteredContacts"
@@ -55,8 +55,7 @@
                   <div class="flex items-center gap-10px px-8px py-10px">
                     <img
                       :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                      class="size-44px rounded-full object-cover"
-                      style="border: 1px solid var(--avatar-border-color)"
+                      class="size-44px rounded-full object-cover border-[1px] border-[--avatar-border-color]"
                       alt="用户头像"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <div class="flex flex-col leading-tight truncate">

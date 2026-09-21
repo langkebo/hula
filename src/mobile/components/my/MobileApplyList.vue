@@ -49,8 +49,7 @@
           <div v-if="isFriendApplyOrGroupInvite(item)" class="flex gap-2 flex-1 text-12px text-gray-500 min-w-0">
             <div class="whitespace-nowrap flex-shrink-0">{{ t('mobile_mymessage.message_label') }}</div>
             <span
-              class="flex-1 min-w-0 line-clamp-1"
-              style="max-width: 100%"
+              class="flex-1 min-w-0 line-clamp-1 max-w-100%"
               @click="($event.target as HTMLElement)?.classList?.toggle('line-clamp-1')">
               {{ item.content }}
             </span>
@@ -58,8 +57,7 @@
           <div v-else class="flex gap-2 flex-1 text-12px text-gray-500 min-w-0">
             <div class="whitespace-nowrap flex-shrink-0">{{ t('mobile_mymessage.handler_label') }}</div>
             <span
-              class="flex-1 min-w-0 line-clamp-1"
-              style="max-width: 100%"
+              class="flex-1 min-w-0 line-clamp-1 max-w-100%"
               @click="($event.target as HTMLElement)?.classList?.toggle('line-clamp-1')">
               {{ groupStore.getUserInfo(item.senderId || '')?.name || t('mobile_mymessage.unknown_user') }}
             </span>

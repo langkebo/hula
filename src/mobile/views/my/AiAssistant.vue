@@ -3,8 +3,7 @@
     <template #header>
       <HeaderBar
         :isOfficial="false"
-        class="bg-[--tjg-surface-panel]"
-        style="border-bottom: 1px solid; border-color: var(--tjg-border-default)"
+        class="bg-[--tjg-surface-panel] border-b border-[--tjg-border-default]"
         :hidden-right="true"
         :room-name="t('ai_assistant.title')" />
     </template>

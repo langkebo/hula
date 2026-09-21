@@ -19,8 +19,7 @@
                       </span>
                       <span
                         v-if="item.isTop"
-                        class="text-[--tjg-color-primary-500] rounded-15px px-7px py-5px text-12px"
-                        style="border: 1px solid; border-color: var(--tjg-color-primary-500)">
+                        class="text-[--tjg-color-primary-500] rounded-15px px-7px py-5px text-12px border-[1px] border-solid border-[--tjg-color-primary-500]">
                         {{ t('mobile_chat.notice.pinned') }}
                       </span>
                     </div>

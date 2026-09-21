@@ -9,7 +9,7 @@
                 <div
                   class="bg-[--tjg-color-primary-100] flex flex-wrap ps-2 items-center rounded-full gap-1 h-24px px-2">
                   <span class="w-12px h-12px rounded-15px bg-[--tjg-status-online]"></span>
-                  <span style="font-size: 12px">
+                  <span class="text-12px">
                     {{ t('mobile_my.online') }}
                   </span>
                 </div>

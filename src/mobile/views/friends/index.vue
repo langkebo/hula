@@ -107,14 +107,12 @@
         <van-tab :title="t('mobile_contact.tab.contacts')">
           <div
             v-if="isMobileFriendStateLoading"
-            class="flex items-center justify-center text-[--tjg-text-secondary]"
-            style="min-height: 240px">
+            class="flex items-center justify-center text-[--tjg-text-secondary] min-h-240px">
             <van-loading size="24px" />
           </div>
           <div
             v-else-if="mobileFriendViewState === 'capability'"
-            class="flex items-center justify-center px-16px text-center"
-            style="min-height: 240px">
+            class="flex items-center justify-center px-16px text-center min-h-240px">
             <van-empty :description="t('friend.list.capability_unavailable_description')">
               <template #image>
                 <svg class="size-40px color-[--tjg-text-tertiary]"><use href="#friends"></use></svg>
@@ -128,8 +126,7 @@
           </div>
           <div
             v-else-if="mobileFriendViewState === 'error'"
-            class="flex items-center justify-center px-16px text-center"
-            style="min-height: 240px">
+            class="flex items-center justify-center px-16px text-center min-h-240px">
             <van-empty :description="mobileFriendErrorMessage">
               <template #image>
                 <svg class="size-40px color-[--tjg-text-tertiary]"><use href="#warning"></use></svg>
@@ -148,8 +145,7 @@
           </div>
           <div
             v-else-if="mobileFriendViewState === 'empty'"
-            class="flex items-center justify-center px-16px text-center"
-            style="min-height: 240px">
+            class="flex items-center justify-center px-16px text-center min-h-240px">
             <van-empty :description="t('friend.list.empty')" />
           </div>
           <van-collapse v-else v-model="activeCollapseNames">
@@ -167,18 +163,19 @@
                     {{ specialOnlineCount }}/{{ specialContacts.length }}
                   </span>
                 </template>
-                <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
+                <div class="max-h-[calc(100vh_-_calc(340px_var(--safe-area-inset-top)))] overflow-y-auto">
                   <div @contextmenu.stop="$event.preventDefault()">
                     <div
                       v-for="item in specialContacts"
                       :key="item.uid"
                       @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
-                      :class="{ active: activeItem === item.uid }"
-                      class="item-box w-full h-75px mb-5px flex items-center gap-10px">
+                      :class="[
+                        { active: activeItem === item.uid },
+                        'item-box w-full h-75px mb-5px flex items-center gap-10px'
+                      ]">
                       <img
-                        class="size-44px rounded-full object-cover grayscale"
+                        class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
                         :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
-                        style="border: 1px solid var(--avatar-border-color)"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
                         alt="用户头像"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
@@ -232,17 +229,18 @@
                     {{ normalOnlineCount }}/{{ normalContacts.length }}
                   </span>
                 </template>
-                <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
+                <div class="max-h-[calc(100vh_-_calc(340px_var(--safe-area-inset-top)))] overflow-y-auto">
                   <div @contextmenu.stop="$event.preventDefault()">
                     <van-swipe-cell v-for="item in normalContacts" :key="item.uid">
                       <div
                         @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
-                        :class="{ active: activeItem === item.uid }"
-                        class="item-box w-full h-75px mb-5px flex items-center gap-10px">
+                        :class="[
+                          { active: activeItem === item.uid },
+                          'item-box w-full h-75px mb-5px flex items-center gap-10px'
+                        ]">
                         <img
-                          class="size-44px rounded-full object-cover grayscale"
+                          class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
                           :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
-                          style="border: 1px solid var(--avatar-border-color)"
                           :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
                           alt="用户头像"
                           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
@@ -300,17 +298,18 @@
                 <template #value>
                   <span class="text-(10px [--tjg-text-secondary])">{{ blockedContacts.length }}</span>
                 </template>
-                <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
+                <div class="max-h-[calc(100vh_-_calc(340px_var(--safe-area-inset-top)))] overflow-y-auto">
                   <div @contextmenu.stop="$event.preventDefault()">
                     <div
                       v-for="item in blockedContacts"
                       :key="item.uid"
                       @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
-                      :class="{ active: activeItem === item.uid }"
-                      class="item-box w-full h-75px mb-5px opacity-60 flex items-center gap-10px">
+                      :class="[
+                        { active: activeItem === item.uid },
+                        'item-box w-full h-75px mb-5px opacity-60 flex items-center gap-10px'
+                      ]">
                       <img
-                        class="size-44px rounded-full object-cover grayscale"
-                        style="border: 1px solid var(--avatar-border-color)"
+                        class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
                         alt="用户头像"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
@@ -335,17 +334,15 @@
               <template #value>
                 <span class="text-(10px [--tjg-text-secondary])">{{ groupChatList.length }}</span>
               </template>
-              <div style="max-height: calc(100vh - (340px + var(--safe-area-inset-top))); overflow-y: auto">
+              <div class="max-h-[calc(100vh_-_calc(340px_var(--safe-area-inset-top)))] overflow-y-auto">
                 <div
                   @click="handleClick(item.roomId, RoomTypeEnum.GROUP)"
-                  :class="{ active: activeItem === item.roomId }"
-                  class="item-box w-full h-75px mb-5px"
+                  :class="[{ active: activeItem === item.roomId }, 'item-box w-full h-75px mb-5px']"
                   v-for="item in groupChatList"
                   :key="item.roomId">
                   <div class="flex items-center gap-10px h-75px pl-6px pr-8px flex-1 truncate">
                     <img
-                      class="size-44px rounded-full object-cover"
-                      style="border: 1px solid var(--avatar-border-color)"
+                      class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))"
                       :src="AvatarUtils.getAvatarUrl(item.avatar)"
                       alt="群头像"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />

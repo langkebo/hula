@@ -31,7 +31,7 @@
 
       <!-- 成员列表 -->
       <div ref="scrollArea" class="flex-1 overflow-y-auto px-16px mt-10px" :style="{ height: scrollHeight + 'px' }">
-        <n-scrollbar style="max-height: calc(100vh - 150px)">
+        <n-scrollbar class="max-h-[calc(100vh-150px)]">
           <n-checkbox-group v-model:value="selectedList" class="flex flex-col gap-2">
             <div
               v-for="item in filteredMembers"
@@ -53,7 +53,7 @@
                       :size="44"
                       :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
                       fallback-src="/logo.png"
-                      style="border: 1px solid var(--avatar-border-color)" />
+                      class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))" />
                     <!-- 文字信息 -->
                     <div class="flex flex-col leading-tight truncate">
                       <span class="text-14px font-medium truncate">
@@ -123,7 +123,7 @@
 
     <!-- 成员列表 -->
     <div ref="scrollArea" class="flex-1 overflow-y-auto px-20px mt-10px">
-      <n-scrollbar style="max-height: 450px">
+      <n-scrollbar class="max-h-450px">
         <n-checkbox-group v-model:value="selectedList" class="flex flex-col gap-2">
           <div
             v-for="item in filteredMembers"
@@ -145,7 +145,7 @@
                     :size="40"
                     :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
                     fallback-src="/logo.png"
-                    style="border: 1px solid var(--avatar-border-color)" />
+                    class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))" />
                   <!-- 文字信息 -->
                   <div class="flex flex-col leading-tight truncate">
                     <span class="text-13px font-medium truncate text-[--tjg-text-primary]">

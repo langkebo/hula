@@ -15,12 +15,9 @@
             <div class="flex py-10px rounded-10px w-full items-center gap-10px" @click="clickInfo">
               <!-- 群头像 -->
               <div class="flex justify-center">
-                <div
-                  class="rounded-full relative bg-[--tjg-surface-panel] w-38px h-38px overflow-hidden"
-                  style="margin-left: 10px">
+                <div class="rounded-full relative bg-[--tjg-surface-panel] w-38px h-38px overflow-hidden ml-10px">
                   <img
-                    class="absolute size-38px rounded-full object-cover"
-                    style="top: 50%; left: 50%; transform: translate(-50%, -50%)"
+                    class="absolute size-38px rounded-full object-cover centered-overlay"
                     :src="AvatarUtils.getAvatarUrl(activeItem?.avatar || '')"
                     alt="群头像"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
@@ -728,5 +725,11 @@ onMounted(async () => {
 
 :deep(.van-cell.van-field::after) {
   display: none;
+}
+.centered-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>

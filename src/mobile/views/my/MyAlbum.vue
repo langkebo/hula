@@ -4,8 +4,7 @@
       <template #header>
         <HeaderBar
           :isOfficial="false"
-          class="bg-white"
-          style="border-bottom: 1px solid; border-color: var(--tjg-border-default)"
+          class="bg-white border-b border-[--tjg-border-default]"
           :hidden-right="true"
           :room-name="t('mobile_photo.title')" />
       </template>
