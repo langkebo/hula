@@ -10,14 +10,16 @@ import InvitePermissionPanel from '../InvitePermissionPanel.vue'
  * 名单加了也不落库，等于一个纯装饰组件。本次改为自包含（与移动端同一套 API）。
  */
 
-const { getPolicyMock, setPolicyMock } = vi.hoisted(() => ({
+const { getPolicyMock, getPolicyStrictMock, setPolicyMock } = vi.hoisted(() => ({
   getPolicyMock: vi.fn(),
+  getPolicyStrictMock: vi.fn(),
   setPolicyMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix', () => ({
   matrixAccountService: {
     getInvitePolicy: () => getPolicyMock(),
+    getInvitePolicyStrict: () => getPolicyStrictMock(),
     setInvitePolicy: (...args: unknown[]) => setPolicyMock(...args)
   }
 }))
@@ -112,6 +114,14 @@ describe('InvitePermissionPanel', () => {
     vi.clearAllMocks()
     localStorage.clear()
     getPolicyMock.mockResolvedValue({
+      mode: 'allow_all',
+      blocklist: [],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
+    // 写前重读走严格变体：默认与宽松变体同一份值
+    getPolicyStrictMock.mockResolvedValue({
       mode: 'allow_all',
       blocklist: [],
       allowlist: [],
@@ -232,8 +242,8 @@ describe('InvitePermissionPanel', () => {
       const wrapper = mount(InvitePermissionPanel)
       await flushPromises()
 
-      // BlockedUsersSection 在面板挂载之后屏蔽了一个人
-      getPolicyMock.mockResolvedValue({
+      // BlockedUsersSection 在面板挂载之后屏蔽了一个人（写前严格重读看得到）
+      getPolicyStrictMock.mockResolvedValue({
         mode: 'allow_all',
         blocklist: ['@blocked:evil.org'],
         allowlist: [],
@@ -248,6 +258,23 @@ describe('InvitePermissionPanel', () => {
       expect(setPolicyMock).toHaveBeenCalledWith(
         expect.objectContaining({ mode: 'blocklist', blocklist: ['@blocked:evil.org'] })
       )
+    })
+
+    /**
+     * 评审 Important #1（同类残留）：宽松的 `getInvitePolicy()` 读取失败时返回默认
+     * 策略，写前重读若用它，会把账号上的 mode/blocklist/allowlist 静默覆盖成默认值。
+     * 严格变体读取失败必须中止写入。
+     */
+    it('写前严格重读失败时中止写入，不拿默认策略覆盖账号', async () => {
+      const wrapper = mount(InvitePermissionPanel)
+      await flushPromises()
+
+      getPolicyStrictMock.mockRejectedValue(new TypeError('read failed'))
+
+      wrapper.findComponent({ name: 'NRadioGroup' }).vm.$emit('update:value', 'blocklist')
+      await flushPromises()
+
+      expect(setPolicyMock).not.toHaveBeenCalled()
     })
 
     /**
@@ -281,13 +308,15 @@ describe('InvitePermissionPanel', () => {
     })
 
     it('blocklist 模式下切换开关会写回且不丢名单', async () => {
-      getPolicyMock.mockResolvedValue({
+      const policy = {
         mode: 'blocklist',
         blocklist: ['@spam:evil.org'],
         allowlist: [],
         allowStrangers: false,
         contacts: []
-      })
+      }
+      getPolicyMock.mockResolvedValue(policy)
+      getPolicyStrictMock.mockResolvedValue(policy)
       const wrapper = mount(InvitePermissionPanel)
       await flushPromises()
       await wrapper.find('[data-test="allow-strangers"]').trigger('click')

@@ -176,6 +176,18 @@ const allowFriendRequests = ref(DEFAULT_INVITE_POLICY.allowFriendRequests)
 const autoAcceptFriends = ref(DEFAULT_INVITE_POLICY.autoAcceptFriends)
 const requireFriendRequestMessage = ref(DEFAULT_INVITE_POLICY.requireFriendRequestMessage)
 
+/**
+ * 最近一次「成功读入或成功写回」的三个开关值。
+ *
+ * `n-switch` 是先改本地模型再触发 `handleToggle`：保存失败时若不回滚，
+ * 界面会显示成已保存，而账号上的策略其实没变。失败时回滚到这里。
+ */
+const persistedFlags = ref({
+  allowFriendRequests: DEFAULT_INVITE_POLICY.allowFriendRequests,
+  autoAcceptFriends: DEFAULT_INVITE_POLICY.autoAcceptFriends,
+  requireFriendRequestMessage: DEFAULT_INVITE_POLICY.requireFriendRequestMessage
+})
+
 const loadingGroups = ref(false)
 const loadingRequests = ref(false)
 const friendGroups = ref<FriendGroup[]>([])
@@ -208,6 +220,11 @@ async function loadSettings() {
     allowFriendRequests.value = policy.allowFriendRequests
     autoAcceptFriends.value = policy.autoAcceptFriends
     requireFriendRequestMessage.value = policy.requireFriendRequestMessage
+    persistedFlags.value = {
+      allowFriendRequests: policy.allowFriendRequests,
+      autoAcceptFriends: policy.autoAcceptFriends,
+      requireFriendRequestMessage: policy.requireFriendRequestMessage
+    }
   } catch (error) {
     logger.warn('加载好友请求策略失败:', error)
   }
@@ -219,9 +236,14 @@ async function loadSettings() {
  * **写前必须重读**：同一份 account data 还被 `BlockedUsersSection` 与
  * `InvitePermissionPanel` 编辑（SecuritySettings 同时挂载它们）。若用挂载时的
  * 快照整份写回，对方刚保存的改动会被静默覆盖。这里只覆盖本组件拥有的三个字段。
+ *
+ * 重读走**严格**变体 `getInvitePolicyStrict()`：读取失败会抛错而不是回落
+ * `normalizeInvitePolicy(null)` 的默认策略。否则「读失败 + 写成功」会用
+ * `{mode: 'allow_all', blocklist: [], allowlist: []}` 静默删掉用户已有的策略，
+ * 还会因为 PUT 成功而弹「已保存」。
  */
 async function saveSettings() {
-  const latest = normalizeInvitePolicy(await matrixAccountService.getInvitePolicy())
+  const latest = normalizeInvitePolicy(await matrixAccountService.getInvitePolicyStrict())
   const next: InvitePolicy = {
     ...latest,
     allowFriendRequests: allowFriendRequests.value,
@@ -229,6 +251,11 @@ async function saveSettings() {
     requireFriendRequestMessage: requireFriendRequestMessage.value
   }
   await matrixAccountService.setInvitePolicy(next)
+  persistedFlags.value = {
+    allowFriendRequests: next.allowFriendRequests,
+    autoAcceptFriends: next.autoAcceptFriends,
+    requireFriendRequestMessage: next.requireFriendRequestMessage
+  }
 }
 
 async function loadFriendGroups() {
@@ -277,6 +304,10 @@ async function handleToggle() {
     showFeedback(t('setting.friends.feedback.settings_updated'), 'success')
   } catch (error) {
     logger.error('保存好友请求策略失败:', error)
+    // 保存没有成功：把开关回滚到最近一次确认过的值，不显示成已生效
+    allowFriendRequests.value = persistedFlags.value.allowFriendRequests
+    autoAcceptFriends.value = persistedFlags.value.autoAcceptFriends
+    requireFriendRequestMessage.value = persistedFlags.value.requireFriendRequestMessage
     showFeedback(t('setting.invite_permission.save_failed'), 'error')
   }
 }

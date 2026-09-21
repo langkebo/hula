@@ -234,13 +234,15 @@ function buildPolicy(): InvitePolicy {
  *
  * 传了显式策略初值（props override）时以本地面板状态为基：该场景约定面板不读
  * account data，回读会反过来覆盖调用方给的初值。读取失败只记录，不回滚 UI——
- * 用户可重试，避免输入被吞；但也不会拿默认策略盖掉账号上的数据。
+ * 用户可重试，避免输入被吞；但也不会拿默认策略盖掉账号上的数据：重读走**严格**
+ * 变体 `getInvitePolicyStrict()`，读取失败直接抛错中止写入（宽松的
+ * `getInvitePolicy()` 会把失败折叠成默认策略，写回就是静默删账号数据）。
  */
 async function persist(mutate: (base: InvitePolicy) => InvitePolicy): Promise<void> {
   try {
     const base = hasPolicyOverride
       ? normalizeInvitePolicy(buildPolicy())
-      : normalizeInvitePolicy(await matrixAccountService.getInvitePolicy())
+      : normalizeInvitePolicy(await matrixAccountService.getInvitePolicyStrict())
     const next = mutate(base)
     applyPolicy(next)
     await matrixAccountService.setInvitePolicy(next)

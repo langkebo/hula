@@ -8,7 +8,7 @@ import BlockedUsersSection from '../sections/BlockedUsersSection.vue'
  * mock 用**可变 state** 而不是固定返回值：组件写回后再读一次时，断言的是
  * 「account data 里最终是什么」而不是「mock 自己返回了什么」。
  */
-const { getPolicyMock, setPolicyMock, invitePolicyState } = vi.hoisted(() => {
+const { getPolicyMock, getPolicyStrictMock, setPolicyMock, invitePolicyState } = vi.hoisted(() => {
   const invitePolicyState = {
     mode: 'blocklist',
     blocklist: ['@spam:evil.org'] as string[],
@@ -20,6 +20,7 @@ const { getPolicyMock, setPolicyMock, invitePolicyState } = vi.hoisted(() => {
   return {
     invitePolicyState,
     getPolicyMock: vi.fn(),
+    getPolicyStrictMock: vi.fn(),
     setPolicyMock: vi.fn()
   }
 })
@@ -27,6 +28,7 @@ const { getPolicyMock, setPolicyMock, invitePolicyState } = vi.hoisted(() => {
 vi.mock('@/services/matrix', () => ({
   matrixAccountService: {
     getInvitePolicy: () => getPolicyMock(),
+    getInvitePolicyStrict: () => getPolicyStrictMock(),
     setInvitePolicy: (...a: unknown[]) => setPolicyMock(...(a as [typeof invitePolicyState]))
   }
 }))
@@ -52,6 +54,12 @@ describe('BlockedUsersSection', () => {
     invitePolicyState.contacts = []
 
     getPolicyMock.mockImplementation(async () => ({
+      ...invitePolicyState,
+      blocklist: [...invitePolicyState.blocklist],
+      allowlist: [...invitePolicyState.allowlist]
+    }))
+    // 写路径走严格变体：默认与宽松变体返回同一份「账号上的最新策略」
+    getPolicyStrictMock.mockImplementation(async () => ({
       ...invitePolicyState,
       blocklist: [...invitePolicyState.blocklist],
       allowlist: [...invitePolicyState.allowlist]
@@ -96,6 +104,7 @@ describe('BlockedUsersSection', () => {
    */
   it('加载失败后不写回，也不把默认策略覆盖到账号', async () => {
     getPolicyMock.mockRejectedValue(new Error('offline'))
+    getPolicyStrictMock.mockRejectedValue(new Error('offline'))
     const wrapper = mount(BlockedUsersSection)
     await flushPromises()
 
@@ -106,6 +115,28 @@ describe('BlockedUsersSection', () => {
 
     expect(setPolicyMock).not.toHaveBeenCalled()
     expect(vm.blockedUsers).toEqual([])
+  })
+
+  /**
+   * 评审 Important #1（同类残留）：写前重读必须用严格变体。宽松的
+   * `getInvitePolicy()` 在读取失败时返回默认策略（mode: allow_all + 空名单），
+   * 若拿它当基线再写回，一次读失败就会把账号上已有的策略整份删成默认值。
+   */
+  it('写前严格重读失败时中止写入，不拿默认策略覆盖账号', async () => {
+    const wrapper = mount(BlockedUsersSection)
+    await flushPromises()
+
+    getPolicyStrictMock.mockRejectedValue(new TypeError('read failed'))
+
+    const vm = getBlockedVm(wrapper)
+    vm.newBlockedUser = '@new:evil.org'
+    await vm.handleAddBlocked()
+    await flushPromises()
+
+    expect(setPolicyMock).not.toHaveBeenCalled()
+    // account data 一字未动
+    expect(invitePolicyState.mode).toBe('blocklist')
+    expect(invitePolicyState.blocklist).toEqual(['@spam:evil.org'])
   })
 
   /**

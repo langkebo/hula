@@ -9,14 +9,18 @@ const {
   getIncomingRequestsMock,
   getOutgoingRequestsMock,
   getInvitePolicyMock,
-  setInvitePolicyMock
+  getInvitePolicyStrictMock,
+  setInvitePolicyMock,
+  showFeedbackMock
 } = vi.hoisted(() => ({
   waitForClientReadyMock: vi.fn(),
   getFriendGroupsMock: vi.fn().mockResolvedValue([]),
   getIncomingRequestsMock: vi.fn().mockResolvedValue([]),
   getOutgoingRequestsMock: vi.fn().mockResolvedValue([]),
   getInvitePolicyMock: vi.fn(),
-  setInvitePolicyMock: vi.fn()
+  getInvitePolicyStrictMock: vi.fn(),
+  setInvitePolicyMock: vi.fn(),
+  showFeedbackMock: vi.fn()
 }))
 
 let resolveReady: () => void
@@ -38,12 +42,13 @@ vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
 vi.mock('@/services/matrix', () => ({
   matrixAccountService: {
     getInvitePolicy: () => getInvitePolicyMock(),
+    getInvitePolicyStrict: () => getInvitePolicyStrictMock(),
     setInvitePolicy: (...args: unknown[]) => setInvitePolicyMock(...args)
   }
 }))
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
-  useActionFeedback: () => ({ showFeedback: vi.fn() })
+  useActionFeedback: () => ({ showFeedback: showFeedbackMock })
 }))
 
 vi.mock('naive-ui', () => ({
@@ -102,8 +107,11 @@ describe('FriendsSettings — P0-#3 客户端就绪竞态', () => {
     getOutgoingRequestsMock.mockClear()
     waitForClientReadyMock.mockClear()
     getInvitePolicyMock.mockReset()
+    getInvitePolicyStrictMock.mockReset()
     setInvitePolicyMock.mockReset()
+    showFeedbackMock.mockClear()
     getInvitePolicyMock.mockResolvedValue(accountPolicy())
+    getInvitePolicyStrictMock.mockResolvedValue(accountPolicy())
     setInvitePolicyMock.mockResolvedValue(true)
     localStorage.clear()
     primeReady()
@@ -154,7 +162,10 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
     getOutgoingRequestsMock.mockClear()
     waitForClientReadyMock.mockClear()
     getInvitePolicyMock.mockReset()
+    getInvitePolicyStrictMock.mockReset()
     setInvitePolicyMock.mockReset()
+    showFeedbackMock.mockClear()
+    getInvitePolicyStrictMock.mockResolvedValue(accountPolicy())
     setInvitePolicyMock.mockResolvedValue(true)
     localStorage.clear()
     // 本组关注策略读写，直接让客户端就绪，避免 readyPromise 悬挂挡住 onMounted 后续步骤
@@ -181,6 +192,7 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
 
   it('writes the toggled flag back while preserving the fields it does not own', async () => {
     getInvitePolicyMock.mockResolvedValue(accountPolicy())
+    getInvitePolicyStrictMock.mockResolvedValue(accountPolicy())
     const wrapper = mount(FriendsSettings)
     await flushPromises()
 
@@ -207,10 +219,10 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
   })
 
   it('re-reads the policy before writing so a sibling editor edit is not clobbered', async () => {
-    // 挂载时 blocklist 为空，写回前兄弟编辑器（BlockedUsersSection）刚加了一个人
-    getInvitePolicyMock
-      .mockResolvedValueOnce(accountPolicy({ blocklist: [] }))
-      .mockResolvedValueOnce(accountPolicy({ blocklist: ['@added-by-sibling:server'] }))
+    // 挂载时 blocklist 为空，写回前兄弟编辑器（BlockedUsersSection）刚加了一个人。
+    // 加载走宽松变体（渲染可用），写入必须走严格变体重读。
+    getInvitePolicyMock.mockResolvedValueOnce(accountPolicy({ blocklist: [] }))
+    getInvitePolicyStrictMock.mockResolvedValueOnce(accountPolicy({ blocklist: ['@added-by-sibling:server'] }))
 
     const wrapper = mount(FriendsSettings)
     await flushPromises()
@@ -220,11 +232,60 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
     await vm.handleToggle()
     await flushPromises()
 
-    expect(getInvitePolicyMock).toHaveBeenCalledTimes(2)
+    expect(getInvitePolicyMock).toHaveBeenCalledTimes(1)
+    expect(getInvitePolicyStrictMock).toHaveBeenCalledTimes(1)
     const written = setInvitePolicyMock.mock.calls.at(-1)?.[0] as InvitePolicy
     expect(written.blocklist).toEqual(['@added-by-sibling:server'])
     expect(written.autoAcceptFriends).toBe(true)
     expect(localStorage.getItem(FRIEND_SETTINGS_KEY)).toBeNull()
+
+    wrapper.unmount()
+  })
+
+  /**
+   * 评审 Important #1：宽松的 `getInvitePolicy()` 读取失败时返回默认策略
+   * （mode: allow_all + 空名单 + 空 allowlist）。若写前重读用它，一次读取失败 +
+   * 一次成功的 PUT 就会把用户账号上的整份策略静默删成默认值，且因为
+   * `setInvitePolicy` 成功还会弹"已保存"。写入必须走严格变体：读取失败就中止。
+   */
+  it('aborts the write with error feedback when the strict re-read fails', async () => {
+    getInvitePolicyMock.mockResolvedValue(accountPolicy({ allowFriendRequests: true }))
+    getInvitePolicyStrictMock.mockRejectedValue(new TypeError('read failed'))
+
+    const wrapper = mount(FriendsSettings)
+    await flushPromises()
+
+    const vm = getVm(wrapper)
+    vm.allowFriendRequests = false
+    await vm.handleToggle()
+    await flushPromises()
+
+    expect(setInvitePolicyMock).not.toHaveBeenCalled()
+    // 没有成功反馈，只有既有的保存失败提示
+    expect(showFeedbackMock).toHaveBeenCalledWith('setting.invite_permission.save_failed', 'error')
+    expect(showFeedbackMock).not.toHaveBeenCalledWith('setting.friends.feedback.settings_updated', 'success')
+    // 开关回滚到最近一次确认过的值，不显示成已保存
+    expect(vm.allowFriendRequests).toBe(true)
+    expect(localStorage.getItem(FRIEND_SETTINGS_KEY)).toBeNull()
+
+    wrapper.unmount()
+  })
+
+  it('rolls the switch back when the write itself fails', async () => {
+    getInvitePolicyMock.mockResolvedValue(accountPolicy({ autoAcceptFriends: false }))
+    getInvitePolicyStrictMock.mockResolvedValue(accountPolicy({ autoAcceptFriends: false }))
+    setInvitePolicyMock.mockRejectedValue(new Error('server error'))
+
+    const wrapper = mount(FriendsSettings)
+    await flushPromises()
+
+    const vm = getVm(wrapper)
+    vm.autoAcceptFriends = true
+    await vm.handleToggle()
+    await flushPromises()
+
+    expect(vm.autoAcceptFriends).toBe(false)
+    expect(showFeedbackMock).toHaveBeenCalledWith('setting.invite_permission.save_failed', 'error')
 
     wrapper.unmount()
   })

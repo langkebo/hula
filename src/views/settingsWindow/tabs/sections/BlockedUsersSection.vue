@@ -85,13 +85,15 @@ async function loadBlockedUsers() {
  * 改动被回滚）。
  *
  * 读取失败直接抛出，由调用方走错误反馈：绝不拿 `normalizeInvitePolicy(null)` 的
- * 默认策略（`mode: allow_all` + 空名单）覆盖账号上已有的策略。
+ * 默认策略（`mode: allow_all` + 空名单）覆盖账号上已有的策略。为此重读走
+ * **严格**变体 `getInvitePolicyStrict()`——宽松的 `getInvitePolicy()` 会把读取
+ * 失败折叠成那份默认策略，写回就等于静默删策略。
  *
  * 只改 `blocklist`，**不动 `mode`**：`mode` 是用户显式选择的模式，
  * 强行改成 `blocklist` 会把「仅允许联系人」这条基线静默关掉。
  */
 async function updateBlocklist(mutate: (current: string[]) => string[]) {
-  const latest = normalizeInvitePolicy(await matrixAccountService.getInvitePolicy())
+  const latest = normalizeInvitePolicy(await matrixAccountService.getInvitePolicyStrict())
   const next: InvitePolicy = { ...latest, blocklist: mutate(latest.blocklist) }
   await matrixAccountService.setInvitePolicy(next)
   policy.value = next

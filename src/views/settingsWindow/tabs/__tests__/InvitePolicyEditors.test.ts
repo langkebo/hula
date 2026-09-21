@@ -29,6 +29,12 @@ vi.mock('@/services/matrix', () => ({
       blocklist: [...invitePolicyState.blocklist],
       allowlist: [...invitePolicyState.allowlist]
     }),
+    // 写路径的严格重读：同样返回账号上的最新策略
+    getInvitePolicyStrict: async () => ({
+      ...invitePolicyState,
+      blocklist: [...invitePolicyState.blocklist],
+      allowlist: [...invitePolicyState.allowlist]
+    }),
     setInvitePolicy: async (policy: typeof invitePolicyState) => {
       Object.assign(invitePolicyState, policy)
       return true

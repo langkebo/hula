@@ -367,6 +367,50 @@ describe('MatrixAccountService', () => {
       expect(policy.allowStrangers).toBe(false)
     })
 
+    /**
+     * 写路径必须用严格变体：宽松的 `getInvitePolicy()` 把「读取失败」与
+     * 「账号上还没存过策略」都折叠成默认值，写前重读一旦拿到这个默认值再写回，
+     * 就会静默删掉用户已有的 mode/blocklist/allowlist。
+     */
+    it('strict read returns null when neither the new nor the legacy key exists', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountDataFromServer: vi.fn().mockResolvedValue(null)
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      await expect(matrixAccountService.getInvitePolicyStrict()).resolves.toBeNull()
+      expect(mockClientWithData.getAccountDataFromServer).toHaveBeenCalledWith('im.hula.invite_policy')
+      expect(mockClientWithData.getAccountDataFromServer).toHaveBeenCalledWith('im.hula.invite_blocklist')
+    })
+
+    it('strict read propagates the read error instead of returning the default policy', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountDataFromServer: vi.fn().mockRejectedValue(new TypeError('read failed'))
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      await expect(matrixAccountService.getInvitePolicyStrict()).rejects.toThrow('read failed')
+    })
+
+    it('strict read returns the stored policy so a write can preserve sibling fields', async () => {
+      const mockClientWithData = {
+        ...mockClient,
+        getAccountDataFromServer: vi.fn().mockResolvedValue({
+          mode: 'blocklist',
+          blocklist: ['@spam:evil.org'],
+          allowFriendRequests: false
+        })
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
+
+      const policy = await matrixAccountService.getInvitePolicyStrict()
+      expect(policy?.mode).toBe('blocklist')
+      expect(policy?.blocklist).toEqual(['@spam:evil.org'])
+      expect(policy?.allowFriendRequests).toBe(false)
+    })
+
     it('writes the normalized config to account data', async () => {
       const mockClientWithData = {
         ...mockClient,

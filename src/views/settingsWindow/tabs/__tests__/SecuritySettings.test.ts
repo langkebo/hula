@@ -15,6 +15,7 @@ const {
   getIgnoredUsersMock,
   setIgnoredUsersMock,
   getInvitePolicyMock,
+  getInvitePolicyStrictMock,
   setInvitePolicyMock,
   invitePolicyState,
   isEncryptionAvailableMock,
@@ -55,6 +56,7 @@ const {
     contacts: [] as string[]
   }
   const getInvitePolicyMock = vi.fn(async () => ({ ...invitePolicyState }))
+  const getInvitePolicyStrictMock = vi.fn(async () => ({ ...invitePolicyState }))
   const setInvitePolicyMock = vi.fn(async (policy: typeof invitePolicyState) => {
     Object.assign(invitePolicyState, policy)
     return true
@@ -95,6 +97,7 @@ const {
     getIgnoredUsersMock,
     setIgnoredUsersMock,
     getInvitePolicyMock,
+    getInvitePolicyStrictMock,
     setInvitePolicyMock,
     invitePolicyState,
     isEncryptionAvailableMock,
@@ -170,6 +173,8 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
     getIgnoredUsers: (...args: unknown[]) => getIgnoredUsersMock(...args),
     setIgnoredUsers: (...args: unknown[]) => setIgnoredUsersMock(...args),
     getInvitePolicy: (...args: Parameters<typeof getInvitePolicyMock>) => getInvitePolicyMock(...args),
+    getInvitePolicyStrict: (...args: Parameters<typeof getInvitePolicyStrictMock>) =>
+      getInvitePolicyStrictMock(...args),
     setInvitePolicy: (...args: Parameters<typeof setInvitePolicyMock>) => setInvitePolicyMock(...args)
   }
 }))
