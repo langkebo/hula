@@ -1,72 +1,45 @@
 # 项目长期记忆 — Tjg (HuLa IM)
 
 ## 铁律
-- **禁 `git add -A`/`.`**：常驻并行 WIP → 逐文件 `git add`，先 `git status --short`
-- **工作区有并发会话时禁批量提交**（2026-09-21 实证）：同一 working tree 下另一会话在跑 `git add`/`commit`/**`reset`** 时——共享 `index` 会把我 `add` 的文件**吞进对方提交**；`.git/COMMIT_EDITMSG` 被对方覆盖会让我的提交**信息张冠李戴**（内容对、信息错）；对方的 `git reset` 会**回退掉我已提交的批次**。防护：①一律 `git commit -m "msg" -- <显式路径>`（pathspec 模式让钩子只见我的路径，不会吞对方暂存）；②提交后 `git merge-base --is-ancestor <sha> HEAD` 确认仍在祖先链；③大批量改动前 `cp` 一份工作区副本到仓外；④**最稳：先让对方会话停下再提交**
-- **Bash `grep` 在本仓会假阴性**（亦不认 `\s`）→「找不到」必须用 Grep/ripgrep 复核。**已三次致误判**（`RoomCard.vue` 联邦徽章实际存在 / `RenderPollMessage.vue` 实际在用 `t('poll.*')` / FederationBadge testid 不一致）
-- **并行 WIP 在场时禁改 `i18n.d.ts` 的归属**（2026-09-21 实证）：`sourceRefs.test.ts` 的新鲜度守卫按**当前工作区**语言表算 expected。别人未提交的 `locales/*/menu.json`（如 `manage_friend_groups`）会让它**瞬态变红**（本次差 36 字符）——**这是预期，不是缺陷**（临时 `git checkout HEAD -- locales/zh-CN/menu.json` 即 18/18 全绿）。**禁止**为「让门禁当场绿」把别人的键抄进自己的 `i18n.d.ts`：那样我的提交在**干净检出**上反而变红（典型「有键无表」）。只提交「HEAD 语言表 + 自己的键」，瞬态红留证即可
-- **同一文件多处 Edit 不可并发**（只落一处）→ 串行 + 读回确认
-- **基线**：vue-tsc 0 错 + vitest 全绿 + `biome check` 0 error（原记「3 error 既有」**已失效**，现存 2 info：配置版本提示 + `MessageLockBadge` 的 `useShorthandFunctionType` 建议）+ `check:ratchet` 不升（color 31 / matrix_prefix 68 / ts_expect_error 3 / radius 0 / **inline_style 5（全属 n-popover 具名 allowlist）** / important_css 85）+ `check:i18n-refs`（unresolved **273**（基线 280）/ fallback 7；`unresolved.mobile_devices` 已 0、基线 7 可收紧）
-- 归属取证法：`git worktree add --detach /tmp/head HEAD` + symlink node_modules
-- 禁「纸面测试」；否定断言必须变异验证（守卫类改动改完要构造变异确认会 FAIL）。改完 `.vue` 跑 `prettier --write`
-- **自洽桩**：桩照源码错键抄 map → 互证、语言表被架空。已检出**四例**，末例是**真实生产缺陷**（RenderPollMessage）→ 同环境只换源码。**第 4 例（`SingleDetails.test.ts`，2026-09-21）性质不同**：桩写 `friend.detail.federated_user`，组件用 `friend.federated_user`，**语言表两键都在** → 桩过期而非生产缺陷，症状同样是**断言拿到裸 key**。⇒ 判据：手写桩的键必须回真实语言表核对，出现原型链外的键先怀疑桩
-- **守卫阈值不可设在「反模式存量」上**（2026-09-21 实证）：`sourceRefs.test.ts` 的 `expect(STUB_REFS.length).toBeGreaterThan(100)` 是**带刺棘轮**——阈值随手写桩数量上升，而该守卫的诉求正是消灭它们；把手写桩换成 `createI18nMock()` 后 120→61，于是「修得越对、守卫越红」，还反向激励保留错键桩。**修法：夹具自证**（用内联 fixture 钉住「找 mock 块→括号配对→取带点键」链路 + 反向探针）。**连带坑**：夹具写在守卫文件自身里会被收集器当**真实**桩键扫走 → 收集器必须排除本文件
-- **注释里的字面量会误触棘轮计数**：`style="..."` → inline_style、`/_matrix` → matrix_prefix。写注释要避开这些形态
+- **禁 `git add -A`/`.`**（常驻并行 WIP）：一律 `git commit -m "msg" -- <显式路径>`；提交后 `git merge-base --is-ancestor <sha> HEAD` 复核
+- **Bash `grep` 在本仓会假阴性**（不认 `\s`）→「找不到」必须用 Grep/ripgrep 复核。已 4 次致误判，末例：查 lockfile 顶层块写成 `^  overrides:`（多两空格）而漏
+- 归属取证：`git worktree add --detach /tmp/head HEAD` + symlink node_modules
+- **禁纸面测试**：守卫/否定断言改动必须构造变异确认会 FAIL。改 `.vue` 后 `prettier --write`
+- 同一文件多处 Edit 不可并发 → 串行 + 读回
+- **基线**：vue-tsc 0 错 · biome 0 error/2 info · ratchet(31/68/3/0/5/85，inline_style 5 全属 n-popover allowlist) · i18n-refs unresolved 273（基线 280）/fallback 7
 
-## 待办/决策遗留
-- **未完成任务全清单见 `UI-OPTIMIZATION-PLAN.md` 第八轮章节末尾（2026-09-21）**，勿再依赖本节的旧概述
-- ~~`biome check` 3 error 全部 HEAD 既有~~ → **已失效**：2026-09-21 实测 `biome check` = **0 error / 2 info**
-- `encryption.backup_restore_dialog.*`：zh/en **均已有 32 键**，缺口在**文案内容**（需产品文案）
-- `poll.json` 占位符已修（Handlebars `{{}}` → `{count}`）
+## pnpm（版本漂移；详见 skill `pnpm-allowbuilds-version-drift`）
+- 版本三处不一：corepack **12.4.1** / homebrew **10.30.1** / CI `version: 10` → 交替 install 会**来回重写 lockfile**
+- `allowBuilds` 是构建审批唯一事实源（v10.26 引入，v11 取代 `onlyBuiltDependencies` 等）；`set this to true or false` 是 pnpm 自动写的占位符
+- **依赖新鲜时 install 整段跳过**（含审批检查）→ 验证必须 `--force`（`--dry-run` 也不查）
+- **禁用旧版 pnpm 对高版本 lockfile 跑 `--force`**：先删后链，失败留残骸（`typescript`/`.bin/vue-tsc` 消失 → npx 抓错版本）
+- 后果：CI `--frozen-lockfile` 报 `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`（pnpm12 抹掉 lockfile 顶层 `overrides:` 块，pnpm10 仍读 package.json）→ 建议 `packageManager` 钉版本
 
 ## 项目约定
-- commitlint scope: core/ui/chat/mobile/plugin/hook/service/util/i18n/config/ci/test/tauri；**管理后台用 `ui`**。设计 token `--tjg-*` 唯一前缀；新图标 Iconify
-- i18n：文件名即命名空间，**首段要剥掉**（`setting.encryption.x` → `setting.json` 的 `{encryption:{x}}`）。占位符 **`{name}`**；写成 `{{name}}` 会渲染成 `{值}`（全仓仅 `poll.json` 曾中招）
-- **组件测试的 `vue-i18n` 桩必须读真实语言表**：用 `createI18nMock()`（`tests/i18n-messages.ts`），**禁止手写 key→文案 map**（= 自洽 stub，会掩盖错键）。内容缺口用 `createI18nMock({ provisional })` 并同步 `sourceRefs.test.ts` 白名单
-- i18n.d.ts 由 `scripts/generate-i18n-types.mjs` 生成；含并行 WIP 新增键时随代码一并提交
+- commitlint scope: core/ui/chat/mobile/plugin/hook/service/util/i18n/config/ci/test/tauri；**管理后台用 `ui`**。token 前缀 `--tjg-*`
+- i18n：文件名即命名空间，**首段要剥掉**；占位符 **`{name}`**（`{{name}}` 会渲染成 `{值}`）
+- **组件测试的 vue-i18n 桩必须用 `createI18nMock()` 读真实语言表**，禁手写 key→文案 map（=自洽桩）；内容缺口走 `createI18nMock({provisional})` + `sourceRefs` 白名单
+- `i18n.d.ts` 由 `scripts/generate-i18n-types.mjs` 生成；并行 WIP 在场时只提交「HEAD 语言表+自己的键」
+- 测试写法见 skill `vue-component-testing`
 
-## 静默失效陷阱（共同点：不报错、测试照常绿）
-1. **SFC 默认导出严禁 `import type`** → 运行时 `undefined` → 降级为 HTMLUnknownElement。信号：tagName 小写 + `HTMLUnknownElement` + `classes()/attributes()` 全空
-2. **共享 partial 裸全局类名经 `@use` 泄漏**（emit 成全局规则）。修法：规则移进真正需要它的组件 scoped 块
-3. **BEM 复合 = 死选择器**（`.block__icon.block--verified`）：配色失效而测试照常绿
-4. **模板不得以 HTML 注释开头** → 变多根片段，`wrapper.element`/`classes()` 落空
-5. **模板重复静态属性** → `SyntaxError: Duplicate attribute`，vue-tsc 完全失明。守门：`design-baseline.test.ts`「模板属性卫生」
-6. **自洽 stub**：桩照源码错键抄 map → 互证、语言表被架空。已检出三例，末例是**真实生产缺陷**
-7. **`.select-text` 桌面端不全局可达**：其 `!important` 定义仅在 `styles/scss/render-message.scss:252`，`@use` 点为 `renderMessage/index.vue`（**scoped**）+ `MobileChatMain.vue`（global，**仅移动端**）。跨组件复用**必须**在各组件 scoped 块内自行声明 `.select-text`。同类症状：模板 class 改名而 CSS 选择器没同步 → 保护静默失效
-8. **内联样式迁移的两种「不该迁」**：①`n-popover/n-scrollbar/n-flex` 的 `style=` 是组件参数，UnoCSS `.p-0` 同特异性受注入顺序影响（慎迁）；②`display:none` 等可能被 JS 改写（先查 JS）。UnoCSS 任意值有先例：HEAD 801 处 `{w,h,max-w,max-h,text,p,border}-[...]`
-
-## 联邦身份 / 设备验证
-- 禁止组件自行解析 MXID → `utils/userIdentity.ts`（`toLocalpart`/`extractServerName`/`sameHomeserver`/`resolveFederationPeer`/`normalizeMatrixUserId`；无法判定按本地处理）
-- `DeviceVerifyDialog` props `{show, userId?, deviceId?, deviceName?, inboundRequest?, initialMode?}`；`userId` 缺省=本机其它设备，指定=验证他人（经 `matrixDeviceService.getUserDevices` → `keys/query`；**不能用 `GET /devices`**）
-- 跨用户时 **`targetDeviceId` 不得回退本机 deviceId**。单例挂载点 `ChatMain.vue`，经 `useDeviceVerifyLauncher`；**别挂 `renderMessage`**
-- `useEncryption.requestUserVerification(userId)` → `startSasVerification(userId,'')`：**建议整体删除**（`useDeviceVerifyLauncher` 已是正确替代），属并行 WIP
+## 静默失效陷阱（不报错、测试照常绿）
+1 SFC 默认导出禁 `import type`（→HTMLUnknownElement） 2 共享 partial 裸全局类名经 `@use` 泄漏 3 BEM 复合=死选择器 4 模板首行禁 HTML 注释 5 模板重复静态属性（vue-tsc 失明） 6 **自洽桩**（桩抄源码错键→互证；已 4 例） 7 `.select-text` 桌面端不全局可达，跨组件复用须各自 scoped 声明
+- **守卫阈值不可设在反模式存量上**（带刺棘轮）；夹具写在守卫文件内会被收集器当真实桩键扫走 → 排除本文件
+- 注释里的字面量会误触棘轮计数（`style="..."` / `_matrix`）
 
 ## 设备查询契约（铁律）
-- **统一到 keys/query**：所有设备查询必须通过 `DeviceKeysManager.getUserDevices(userId)`（SDK 层封装 → `POST /keys/query`）。这是**唯一能查他人设备的端点**。
-- **禁止 GET /devices**：`GET /devices` 只能查当前用户自己（路径无 `{user_id}`），用它做第三方查询会让好友设备列表恒为空。已在 `CryptoDeviceAdapter` 与 `MatrixDeviceService` 中收口。
-- **移动端设备不需要管理面板**：移动端用户自己的设备列表仅用于展示（如好友详情页），不开放「管理面板」UI（编辑 display_name、屏蔽等操作）。
-- **管理面板仅限管理员**：如未来需要设备管理功能（屏蔽/注销等写操作），仅允许在「管理后台」或「管理员专属页面」中提供，普通客户端用户不可见。
-- 信任等级来源：`GET /device_trust` 只返回 `{ device_id, trust_level }` 无 user_id，**只能按 device_id 建索引**，不能按 user_id 过滤。
+- 统一走 `DeviceKeysManager.getUserDevices(userId)` → `POST /keys/query`（**唯一**能查他人设备的端点）。**禁 `GET /devices`**（只查自己）
+- 移动端不开放设备管理面板；写操作仅限管理后台
+- `GET /device_trust` 只返回 `{device_id, trust_level}` 无 user_id → 只能按 device_id 索引
 
-## 液态玻璃 / 消息信任
-- `-panel`/`-subtle` **自带** `low-perf` 降级；裸 `liquid-glass(...)` 须跟 `@include liquid-glass-fallback;`。降级类由 `utils/performanceTier.ts` 写 `html.low-perf`；`backdrop-filter` 仅面板级 ≤3
-- 锁态映射**只允许**在 `useMessageTrust.ts`。已修复假安全信号：trustLevel 恒返回 verified → 接入 `matrixDeviceService.getUserDevices()` 查询真实设备验证状态 + effectScope 30s 自动刷新 + 'unverified' 安全默认值。`MessageLockBadge` 的 `&--interactive` **不得声明 color**
+## 联邦身份 / 消息信任
+- 禁组件自解析 MXID → `utils/userIdentity.ts`（`toLocalpart`/`extractServerName`/`sameHomeserver`/`resolveFederationPeer`）；无法判定按本地
+- `DeviceVerifyDialog`：`userId` 缺省=本机其它设备；单例挂 `ChatMain.vue` 经 `useDeviceVerifyLauncher`，**别挂 `renderMessage`**；跨用户 `targetDeviceId` 不得回退本机
+- 锁态映射**只允许**在 `useMessageTrust.ts`（已修假安全信号）；`MessageLockBadge` 的 `&--interactive` 不得声明 color
+- 裸 `liquid-glass(...)` 须跟 `@include liquid-glass-fallback`
 
-## 其他易错点
-- 禁止解构 class 单例方法（丢 `this`）；全仓只有一个 `ChatMain.vue`（`rightBox/chatBox/`），移动端共用
-- 设置页 `onMounted` 先 `await matrixClientService.waitForClientReady({timeoutMs:10000})`；Tauri `resource id invalid` = 请求取消竞态
-- `loginWithToken` 须在首次 initialize 前定好 deviceId；createRoom 的 Space 必须 `room_types:['m.space']`
-- pnpm overrides 用 caret 钉同主版本；matrix-js-sdk 已去 link 化（tgz+pin）
-- **测试写法细节见 `vue-component-testing` skill**（`vi.hoisted` / naive-ui stub / `resolve(__dirname,'..','X.vue')` / 循环 `exec` 必须带 `g`）
-
-## UI 优化进度（明细见 `UI-OPTIMIZATION-PLAN.md`）
-- **inline_style 285→5 已收口**（2026-09-21，7 次提交：admin / 加密 / robot / mobile / 布局 / 其余组件+窗口 / 基线收紧）。剩余 **5 处全为 n-popover 组件参数**（`ChatSidebar.vue` / `renderMessage/index.vue` / `LeftAvatar.vue` / `definePlugins/Card.vue` / `definePlugins/List.vue`），已在 `scripts/check-ratchet.mjs` 的 `INLINE_STYLE_ALLOWLIST` 登记为**已裁定例外 + 漂移守卫**，**勿再尝试迁移**
-- 本次迁移暴露并修好的 3 处静默回归（迁移把内联样式换成**没有定义的类名**）：`callWindow` 音频元素 `display:none`、`BotMessage` 气泡描边、`LockScreen` `<n-input>` 的 width/border/bg/color（naive-ui 的 `.n-input` 与 `:hover`/`--focus` 同特异性 → 用**双类名 `.lock-input.lock-input`** 提升特异性）。另修 `mobile/views/friends/index.vue` 重复 `<img` 开标签（模板语法损坏）
-- P1 收敛：`border-radius` 硬编码 19→0、`!important` 116→91→**85**（20 处 reduced-motion 合规保留）、棘轮门禁 4 项入基线
-- i18n：`unresolved` 503→414→379→**273**（基线已收紧 280），`i18n.d.ts` 已重生成 + 新鲜度守护用例 + 桩键可达性门禁
-- 历史完成：P0-3 锁徽章→设备验证接线（跨用户 targetUserId + 单例启动器 + 84 处 i18n 键修正）；P0 `useMessageTrust` 假安全信号修复（getUserDevices + 30s 刷新 + unverified 默认）；联邦标识 4/4 接入 FederationBadge（RoomCardItem / RoomCard / RoomPreviewDialog / ChatHeaderInfo）；AvatarCropper 圆角字面量归零；voice.ts 死常量 REGISTER_ENCRYPTED 清除
-- 已证伪旧待办：「移动端 SyncStatusBar 复用」「SSSS 备份引导页」「useDeviceSessionPanel」「RoomCard 联邦徽章功能缺失」「performanceTier 死代码」「ServerConfigModal 无 well-known」「useMessageTrust 恒 verified」
-- **第七轮复核（2026-09-21，HEAD 1773ee8a）实测待办**：~~①`UserIdentity.vue`/`RoomHomeserverLabel.vue` **已创建但零真实接入**~~ → **第八轮已接入**（成员面板 / 好友详情 / 移动 HeaderBar / 会话列表；详见下条）；②`--breakpoint-*` 定义数 **0**（未动）；~~③信任声明 4 键 zh/en 全缺~~ → **第八轮已补**（`trust_notice.private_key_local`/`server_cannot_read`/`recovery.phrase_title`/`phrase_confirm`，zh+en+i18n.d.ts）；④`useDeviceSessionPanel.ts` 不存在、信任链总览/导出交叉签名 **0 命中**；⑤`SyncStatusBar` 无离线分支/无退避倒计时、`ChatMain` 同时渲染 `ChatBanners`+`SyncStatusBar`（双横幅）、persist pick 仍只有 4 字段（无房间/消息）、无未读刷新钩子；⑥裸 `backdrop-filter` 42 行/约25文件（`@include liquid-glass` 仅 11）；~~⑦stories 缺 `SyncStatusBar`/`UserIdentity`/`RoomHomeserverLabel`~~ → `UserIdentity`/`RoomHomeserverLabel` 已补，仅缺 `SyncStatusBar`
-- **第八轮完成（2026-09-21）联邦身份接线**：`UserIdentity` → `RoomMembersPane.vue`（在册/禁言两类行）+ `FriendDetailsSections.vue`；`RoomHomeserverLabel` → 移动 `HeaderBar.vue`（新增 `roomServer` prop，`MobileChatMain` 传 `federationServer`）+ `RoomCardItem.vue`。**联邦判定已收敛**：`FriendDetailsSections` 删掉自实现的 `isFederatedUser`，改由 `UserIdentity` 内部 `sameHomeserver` 判定，组件只提供 `localDomain` 基准（勿再加回组件内自解析）。`RoomHomeserverLabel` 的 computed 曾**遮蔽同名 prop** → 已改名 `resolvedServerName`。新守卫：`HeaderBar.identity.test.ts`、`RoomMembersPane` 联邦接线 describe、`SingleDetails` 联邦身份行用例
-- **重要修正**：`important_css` 可安全下降实测**只有 16 处**（7×settings-tabs 的 reduced-motion 块 14 + TjgSpaceTree 2）→ 目标应为 **85→69**，原设想「→60」**不可达**（余下属库覆盖链/`.no-select` 对抗链，须浏览器层叠回归）。阶段1.1 token 清理：非 `--tjg-*` 变量 64 个但**真实零引用 = 0** → 无可直接删项
-- 待办（既有）：`encryption.backup_restore_dialog.*` 文案内容缺口（键已有 32）；~~`biome check` 3 个既有 error~~ 已不成立（0 error / 2 info）；`check-i18n-refs` 可 `--update` 收紧基线（`mobile_devices` 7→0）
+## 其他
+- 禁解构 class 单例方法（丢 `this`）；全仓只有一个 `ChatMain.vue`，移动端共用
+- 设置页 `onMounted` 先 `await matrixClientService.waitForClientReady({timeoutMs:10000})`
+- `loginWithToken` 须在首次 initialize 前定好 deviceId；createRoom 的 Space 需 `room_types:['m.space']`
+- **未完成任务与 UI 优化进度明细见 `UI-OPTIMIZATION-PLAN.md`**
