@@ -63,7 +63,7 @@
             :options="securityEventTypeOptions"
             :placeholder="t('admin.security.filter_event_type')"
             clearable
-            style="width: 200px" />
+            class="w-[200px]" />
         </div>
 
         <n-spin :show="securityEventsLoading">
@@ -177,7 +177,7 @@
     </n-tabs>
 
     <!-- 封禁 IP 对话框 -->
-    <n-modal v-model:show="showBlockIpDialog" preset="card" :title="t('admin.security.block_ip')" style="width: 480px">
+    <n-modal v-model:show="showBlockIpDialog" preset="card" :title="t('admin.security.block_ip')" class="w-[480px]">
       <n-form ref="blockIpFormRef" :model="blockIpForm" :rules="blockIpRules">
         <n-form-item :label="t('admin.security.ip_placeholder')" path="ip">
           <n-input v-model:value="blockIpForm.ip" :placeholder="t('admin.security.ip_placeholder')" />

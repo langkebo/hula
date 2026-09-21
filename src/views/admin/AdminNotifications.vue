@@ -8,7 +8,7 @@
               v-model:value="userId"
               :placeholder="t('admin.notifications.userIdPlaceholder')"
               clearable
-              style="width: 300px" />
+              class="w-[300px]" />
             <n-button type="primary" :loading="settingsLoading" @click="handleLoadSettings">
               {{ t('admin.notifications.load') }}
             </n-button>
@@ -16,7 +16,7 @@
         </div>
 
         <template v-if="notificationSettings">
-          <n-card :title="t('admin.notifications.settingsTitle', { userId })" style="margin-bottom: 16px">
+          <n-card :title="t('admin.notifications.settingsTitle', { userId })" class="mb-16px">
             <n-spin :show="settingsLoading">
               <div class="settings-grid">
                 <template v-for="(value, key) in flattenedSettings" :key="key">
@@ -48,7 +48,7 @@
               v-model:value="pusherUserId"
               :placeholder="t('admin.notifications.userIdPlaceholder')"
               clearable
-              style="width: 300px" />
+              class="w-[300px]" />
             <n-button type="primary" :loading="pushersLoading" @click="handleLoadPushers">
               {{ t('admin.notifications.load') }}
             </n-button>

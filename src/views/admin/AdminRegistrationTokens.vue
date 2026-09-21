@@ -34,10 +34,10 @@
             v-model:value="dialogForm.usesAllowed"
             :min="0"
             :placeholder="t('admin.registration_tokens.unlimited')"
-            style="width: 100%" />
+            class="w-full" />
         </n-form-item>
         <n-form-item :label="t('admin.registration_tokens.expiry_time')">
-          <n-date-picker v-model:value="dialogForm.expiryTime" type="datetime" clearable style="width: 100%" />
+          <n-date-picker v-model:value="dialogForm.expiryTime" type="datetime" clearable class="w-full" />
         </n-form-item>
       </n-form>
       <template #action>

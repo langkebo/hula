@@ -1,3 +1,4 @@
+import type { ContactState } from './contactStateResolver'
 import { type InvitePolicy, normalizeInvitePolicy, normalizeUserId, shouldRejectInvite } from './invitePolicy'
 
 /**
@@ -34,7 +35,8 @@ export function decideInviteAction(
   event: InviteEventLike,
   policy: InvitePolicy,
   currentUserId: string | undefined,
-  fallbackInviterUserId?: string | undefined
+  fallbackInviterUserId?: string | undefined,
+  contactState?: ContactState
 ): InvitePolicyDecision | null {
   if (event.membership !== 'invite') {
     return null
@@ -69,6 +71,19 @@ export function decideInviteAction(
     return normalizeInvitePolicy(policy).blocklist.includes(me)
       ? { action: 'decline', roomId, inviterUserId: inviter }
       : null
+  }
+
+  /*
+   * 「仅允许联系人私聊」是唯一依赖**动态查询**的判定，因此必须 fail-open：
+   *
+   * `MatrixFriendService.isFriend()` 查询失败时返回 false，与"确认不是好友"
+   * 不可区分。如果把失败当陌生人，后端抖动或离线一次，用户就会在那个窗口里
+   * 把所有好友的邀请都拒掉。所以只有拿到确凿的 `stranger` 才拒，`unknown` 放行。
+   *
+   * 名单模式（blocklist / allowlist）是用户显式写下的静态表达，不受此限制。
+   */
+  if (policy.allowStrangers === false && contactState !== 'stranger') {
+    return null
   }
 
   if (!shouldRejectInvite(inviter, policy)) {

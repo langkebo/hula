@@ -9,7 +9,7 @@
                 v-model:value="statusFilter"
                 :options="statusOptions"
                 :placeholder="t('moderation.filterByStatus')"
-                style="width: 150px"
+                class="w-[150px]"
                 @update:value="handleFilterChange" />
               <n-button @click="fetchReports">
                 <template #icon>
@@ -71,7 +71,7 @@
                 data-testid="event-report-status-filter"
                 :options="eventReportStatusOptions"
                 :placeholder="t('moderation.filterByStatus')"
-                style="width: 150px"
+                class="w-[150px]"
                 @update:value="handleEventReportFilterChange" />
               <n-button data-testid="event-report-refresh-btn" @click="loadEventReports">
                 <template #icon>

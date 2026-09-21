@@ -2,7 +2,7 @@
   <div class="admin-users">
     <div class="admin-users-header">
       <n-space align="center" :size="12">
-        <n-input v-model:value="searchQuery" :placeholder="t('admin.users.search')" clearable style="width: 300px">
+        <n-input v-model:value="searchQuery" :placeholder="t('admin.users.search')" clearable class="w-[300px]">
           <template #prefix>
             <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8" />
@@ -17,7 +17,7 @@
             { label: t('admin.users.adminRole'), value: 'admin' },
             { label: t('admin.users.userRole'), value: 'user' }
           ]"
-          style="width: 140px" />
+          class="w-[140px]" />
         <n-select
           v-model:value="filterStatus"
           :options="[
@@ -25,7 +25,7 @@
             { label: t('admin.users.active'), value: 'active' },
             { label: t('admin.users.deactivated'), value: 'deactivated' }
           ]"
-          style="width: 140px" />
+          class="w-[140px]" />
       </n-space>
       <n-space>
         <n-button type="primary" @click="showCreateDialog = true">
@@ -43,7 +43,7 @@
       :pagination="{ pageSize: 20 }"
       :row-key="(row: UserInfo) => row.userId" />
 
-    <n-modal v-model:show="showCreateDialog" :title="t('admin.users.createUser')" preset="dialog" style="width: 500px">
+    <n-modal v-model:show="showCreateDialog" :title="t('admin.users.createUser')" preset="dialog" class="w-[500px]">
       <n-form ref="createFormRef" :model="createForm" :rules="createRules">
         <n-form-item :label="t('admin.users.username')" path="username">
           <n-input v-model:value="createForm.username" />
@@ -66,9 +66,9 @@
       </template>
     </n-modal>
 
-    <n-modal v-model:show="showUserDetail" :title="t('admin.users.userDetail')" preset="dialog" style="width: 700px">
+    <n-modal v-model:show="showUserDetail" :title="t('admin.users.userDetail')" preset="dialog" class="w-[700px]">
       <template v-if="selectedUser">
-        <n-descriptions bordered :column="2" label-placement="left" style="margin-bottom: 16px">
+        <n-descriptions bordered :column="2" label-placement="left" class="mb-16px">
           <n-descriptions-item :label="t('admin.users.userId')">{{ selectedUser.userId }}</n-descriptions-item>
           <n-descriptions-item :label="t('admin.users.displayName')">
             {{ selectedUser.displayname || '-' }}
@@ -114,7 +114,7 @@
                 :bordered="false"
                 size="small"
                 :row-key="(row: UserDevice) => row.deviceId" />
-              <n-empty v-else :description="t('admin.users.noDevices')" style="padding: 24px 0" />
+              <n-empty v-else :description="t('admin.users.noDevices')" class="py-24px" />
             </n-spin>
           </n-tab-pane>
 
@@ -127,14 +127,14 @@
                 :bordered="false"
                 size="small"
                 :row-key="(row: UserSession) => row.deviceId" />
-              <n-empty v-else :description="t('admin.users.noSessions')" style="padding: 24px 0" />
+              <n-empty v-else :description="t('admin.users.noSessions')" class="py-24px" />
             </n-spin>
           </n-tab-pane>
 
           <n-tab-pane name="statistics" :tab="t('admin.users.statistics')">
             <n-spin :show="statsLoading">
               <template v-if="userStats">
-                <n-space :size="24" style="padding: 16px 0">
+                <n-space :size="24" class="py-16px">
                   <n-statistic
                     :label="t('admin.users.roomsJoined')"
                     :value="userStats.joined_rooms ?? userStats.joinedRooms ?? '-'" />
@@ -154,7 +154,7 @@
                   </n-descriptions-item>
                 </n-descriptions>
               </template>
-              <n-empty v-else :description="t('admin.users.noStats')" style="padding: 24px 0" />
+              <n-empty v-else :description="t('admin.users.noStats')" class="py-24px" />
             </n-spin>
           </n-tab-pane>
 
@@ -239,13 +239,13 @@
       v-model:show="showRateLimitDialog"
       :title="t('admin.users.setRateLimit')"
       preset="dialog"
-      style="width: 400px">
+      class="w-[400px]">
       <n-form :model="rateLimitForm">
         <n-form-item :label="t('admin.users.messagesPerSecond')">
-          <n-input-number v-model:value="rateLimitForm.messagesPerSecond" :min="0" :max="1000" style="width: 100%" />
+          <n-input-number v-model:value="rateLimitForm.messagesPerSecond" :min="0" :max="1000" class="w-full" />
         </n-form-item>
         <n-form-item :label="t('admin.users.burstCount')">
-          <n-input-number v-model:value="rateLimitForm.burstCount" :min="0" :max="10000" style="width: 100%" />
+          <n-input-number v-model:value="rateLimitForm.burstCount" :min="0" :max="10000" class="w-full" />
         </n-form-item>
       </n-form>
       <template #action>

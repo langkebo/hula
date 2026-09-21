@@ -25,7 +25,7 @@
             {{ new Date(guestInfo.latestGuestCreatedAt).toLocaleString() }}
           </n-descriptions-item>
         </n-descriptions>
-        <n-space style="margin-top: 12px">
+        <n-space class="mt-12px">
           <n-button size="small" @click="handleRefreshGuestInfo">
             <template #icon>
               <n-icon><Icon icon="mdi:refresh" /></n-icon>
@@ -55,7 +55,7 @@
         striped
         size="small"
         :row-key="(row: GuestAccountRow) => row.userId" />
-      <n-empty v-else :description="t('admin.guests.no_accounts')" style="padding: 24px 0" />
+      <n-empty v-else :description="t('admin.guests.no_accounts')" class="py-24px" />
     </n-spin>
 
     <n-divider />
@@ -77,7 +77,7 @@
         striped
         size="small"
         :row-key="(row: GuestRoomRow) => row.roomId" />
-      <n-empty v-else :description="t('admin.guests.no_rooms')" style="padding: 24px 0" />
+      <n-empty v-else :description="t('admin.guests.no_rooms')" class="py-24px" />
     </n-spin>
   </div>
 </template>

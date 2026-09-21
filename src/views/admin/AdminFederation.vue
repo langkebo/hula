@@ -7,7 +7,7 @@
             v-model:value="destSearchQuery"
             :placeholder="t('admin.federation.searchDestinations')"
             clearable
-            style="width: 300px">
+            class="w-[300px]">
             <template #prefix>
               <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8" />
@@ -37,7 +37,7 @@
             v-model:value="blacklistSearchQuery"
             :placeholder="t('admin.federation.searchBlacklist')"
             clearable
-            style="width: 300px">
+            class="w-[300px]">
             <template #prefix>
               <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8" />
@@ -71,7 +71,7 @@
       v-model:show="showAddBlacklistDialog"
       :title="t('admin.federation.addToBlacklist')"
       preset="dialog"
-      style="width: 400px">
+      class="w-[400px]">
       <n-form :model="addBlacklistForm">
         <n-form-item :label="t('admin.federation.domain')" path="domain">
           <n-input v-model:value="addBlacklistForm.domain" placeholder="spam-server.com" />
@@ -95,7 +95,7 @@
       v-model:show="showDestDetail"
       :title="t('admin.federation.destinationDetail')"
       preset="dialog"
-      style="width: 500px">
+      class="w-[500px]">
       <template v-if="selectedDest">
         <n-descriptions bordered :column="1" label-placement="left">
           <n-descriptions-item :label="t('admin.federation.destination')">
@@ -114,7 +114,7 @@
             {{ selectedDest.lastSuccessfulStreamOrdering ?? '-' }}
           </n-descriptions-item>
         </n-descriptions>
-        <n-space style="margin-top: 16px">
+        <n-space class="mt-16px">
           <n-button size="small" type="primary" @click="handleResetConnection(selectedDest.destination)">
             {{ t('admin.federation.resetConnection') }}
           </n-button>

@@ -1,6 +1,7 @@
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import { matrixRoomMembershipService } from '../room/MembershipService'
+import type { ContactState } from './contactStateResolver'
 import type { InvitePolicy } from './invitePolicy'
 import { decideInviteAction } from './invitePolicyDecision'
 
@@ -40,6 +41,12 @@ export interface InvitePolicyEnforcerOptions {
   getCurrentUserId: () => string | undefined
   getPolicy: () => InvitePolicy
   onDeclined: (info: InviteDeclinedInfo) => void
+  /**
+   * 解析邀请人是否为联系人（三态）。
+   *
+   * 省略时按 `unknown` 处理——即「仅允许联系人私聊」在缺少该依赖时不会误拒。
+   */
+  resolveContactState?: (userId: string) => Promise<ContactState>
 }
 
 interface EventTarget {
@@ -151,15 +158,29 @@ export class InvitePolicyEnforcer {
       return
     }
 
+    const policy = this.options.getPolicy()
+    const inviterUserId = this.resolveInviter(member)
+
+    /*
+     * 只在「仅允许联系人私聊」时才去查联系人状态：这是唯一需要网络查询的判定，
+     * 其余模式用不上就不该为一个必然被拒的邀请多打一次请求。
+     */
+    let contactState: ContactState | undefined
+    if (policy.allowStrangers === false && policy.mode === 'allow_all' && inviterUserId) {
+      contactState = (await this.options.resolveContactState?.(inviterUserId)) ?? 'unknown'
+    }
+
     const decision = decideInviteAction(
       {
         roomId,
         targetUserId: member.userId,
         membership: member.membership,
-        inviterUserId: this.resolveInviter(member)
+        inviterUserId
       },
-      this.options.getPolicy(),
-      this.options.getCurrentUserId()
+      policy,
+      this.options.getCurrentUserId(),
+      undefined,
+      contactState
     )
 
     if (!decision) {

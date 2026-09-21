@@ -12,8 +12,15 @@ import {
   shouldRejectInvite
 } from '../invitePolicy'
 
+/**
+ * 测试替身：显式放开 allowStrangers。
+ *
+ * DEFAULT_INVITE_POLICY 现在是「仅允许联系人」（allowStrangers: false），
+ * 而本文件大部分用例在验证**名单模式**本身，不该被联系人规则干扰；
+ * 联系人相关的用例自己显式覆盖 allowStrangers。
+ */
 function policy(overrides: Partial<InvitePolicy> = {}): InvitePolicy {
-  return { ...DEFAULT_INVITE_POLICY, ...overrides }
+  return { ...DEFAULT_INVITE_POLICY, allowStrangers: true, ...overrides }
 }
 
 describe('INVITE_POLICY_ACCOUNT_DATA_TYPE', () => {
@@ -87,9 +94,13 @@ describe('normalizeInvitePolicy', () => {
 })
 
 describe('shouldRejectInvite — 静态名单策略', () => {
-  it('never rejects in allow_all', () => {
-    expect(shouldRejectInvite('@anyone:server', policy({ mode: 'allow_all' }))).toBe(false)
-    expect(shouldRejectInvite('', policy({ mode: 'allow_all' }))).toBe(false)
+  it('never rejects in allow_all when strangers are allowed', () => {
+    expect(shouldRejectInvite('@anyone:server', policy({ mode: 'allow_all', allowStrangers: true }))).toBe(false)
+    expect(shouldRejectInvite('', policy({ mode: 'allow_all', allowStrangers: true }))).toBe(false)
+  })
+
+  it('rejects non-contacts in allow_all when strangers are disallowed', () => {
+    expect(shouldRejectInvite('@anyone:server', policy({ mode: 'allow_all', allowStrangers: false }))).toBe(true)
   })
 
   it('rejects listed users in blocklist mode', () => {
@@ -116,7 +127,8 @@ describe('shouldRejectInvite — 静态名单策略', () => {
   })
 
   it('normalizes a malformed policy instead of throwing', () => {
-    expect(shouldRejectInvite('@a:b', { mode: 'bogus' } as unknown as InvitePolicy)).toBe(false)
+    // 未知 mode 归一化为 allow_all；此时 allowStrangers 落到默认值（false）→ 拒
+    expect(shouldRejectInvite('@a:b', { mode: 'bogus' } as unknown as InvitePolicy)).toBe(true)
   })
 
   it('treats a non-array blocklist as empty (so nobody is rejected)', () => {
@@ -176,8 +188,8 @@ describe('shouldRejectInvite — 非联系人私聊（allow_strangers）', () =>
     expect(shouldRejectInvite('@friend:server', p)).toBe(true)
   })
 
-  it('does not apply the stranger rule while the policy is in a list mode', () => {
-    // 名单模式已经表达了"谁能进"，再用 contacts 二次判定会互相矛盾
+  it('list modes are decided by the list alone, not by the stranger rule', () => {
+    // 名单模式已经表达了"谁能进"，不该再被 allowStrangers 二次判定
     const p = policy({ mode: 'allowlist', allowlist: ['@a:b'], allowStrangers: false, contacts: [] })
     expect(shouldRejectInvite('@a:b', p)).toBe(false)
   })

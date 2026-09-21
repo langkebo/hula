@@ -49,8 +49,7 @@
       v-model:value="searchTerm"
       :placeholder="t('admin.federation_monitor.search_placeholder')"
       clearable
-      class="mb-16px"
-      style="max-width: 320px" />
+      class="mb-16px max-w-[320px]" />
 
     <n-data-table
       :columns="columns"

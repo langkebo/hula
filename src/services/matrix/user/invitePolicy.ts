@@ -45,15 +45,31 @@ export interface InvitePolicy {
    * 再用 contacts 二次判定会互相矛盾。
    */
   allowStrangers: boolean
-  /** 联系人（好友）user id 快照，由调用方在保存/同步时写入。 */
+  /**
+   * 联系人（好友）user id 快照。
+   *
+   * 仅用于展示/调试：**不再参与判定**。判定改用 `ContactStateResolver` 的三态结果，
+   * 因为这份静态快照在查询失败时是空的，会让"仅允许联系人"退化成"谁都不认识"。
+   */
   contacts: string[]
 }
 
+/**
+ * 默认策略：不按名单拒绝，但**只允许联系人发起私聊**。
+ *
+ * 为什么默认开启「仅允许联系人」：私聊是陌生人触达用户最直接的通道，
+ * 默认放开等于默认接受任意人建立加密会话。默认收紧、由用户显式放开，
+ * 是更合理的安全基线。
+ *
+ * 这个默认值只在「从未保存过策略」时生效（`loadInvitePolicy` 的兜底分支）：
+ * 已有本地策略的用户保留自己的选择，不会被静默改写。
+ * 详见本文件关于迁移的说明。
+ */
 export const DEFAULT_INVITE_POLICY: InvitePolicy = {
   mode: 'allow_all',
   blocklist: [],
   allowlist: [],
-  allowStrangers: true,
+  allowStrangers: false,
   contacts: []
 }
 

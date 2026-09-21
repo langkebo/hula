@@ -22,7 +22,7 @@
                 type="datetime"
                 clearable
                 :placeholder="t('admin.maintenance.purge_before')"
-                style="width: 220px" />
+                class="w-[220px]" />
               <n-button type="warning" :loading="purging" @click="handlePurge">
                 {{ t('admin.maintenance.purge') }}
               </n-button>

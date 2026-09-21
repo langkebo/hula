@@ -73,7 +73,7 @@
           </div>
           <div class="chart-legend">
             <span class="legend-item">
-              <span class="legend-dot" style="background: var(--tjg-color-primary-500)"></span>
+              <span class="legend-dot legend-dot-primary"></span>
               {{ t('admin.dashboard.dailyActive') }}
             </span>
           </div>
@@ -129,15 +129,15 @@
           </div>
           <div class="chart-legend">
             <span class="legend-item">
-              <span class="legend-dot" style="background: var(--tjg-color-info-500)"></span>
+              <span class="legend-dot legend-dot-info"></span>
               {{ t('admin.dashboard.textMessages') }}
             </span>
             <span class="legend-item">
-              <span class="legend-dot" style="background: var(--tjg-color-success-500)"></span>
+              <span class="legend-dot legend-dot-success"></span>
               {{ t('admin.dashboard.mediaMessages') }}
             </span>
             <span class="legend-item">
-              <span class="legend-dot" style="background: var(--tjg-color-warning-500)"></span>
+              <span class="legend-dot legend-dot-warning"></span>
               {{ t('admin.dashboard.fileMessages') }}
             </span>
           </div>
@@ -638,5 +638,17 @@ onMounted(loadData)
   .dashboard-section {
     padding: 16px;
   }
+}
+.legend-dot-primary {
+  background: var(--tjg-color-primary-500);
+}
+.legend-dot-info {
+  background: var(--tjg-color-info-500);
+}
+.legend-dot-success {
+  background: var(--tjg-color-success-500);
+}
+.legend-dot-warning {
+  background: var(--tjg-color-warning-500);
 }
 </style>

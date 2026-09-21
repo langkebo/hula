@@ -4,8 +4,14 @@ import { decideInviteAction, type InviteEventLike, type InvitePolicyDecision } f
 
 const ME = '@me:example.org'
 
+/**
+ * 测试替身：默认放开 allowStrangers。
+ *
+ * DEFAULT_INVITE_POLICY 现在是「仅允许联系人」，而本文件多数用例在验证
+ * 名单模式/事件定位逻辑本身；联系人 Fail-open 的用例自己显式覆盖。
+ */
 function policy(overrides: Partial<InvitePolicy> = {}): InvitePolicy {
-  return { ...DEFAULT_INVITE_POLICY, ...overrides }
+  return { ...DEFAULT_INVITE_POLICY, allowStrangers: true, ...overrides }
 }
 
 function event(overrides: Partial<InviteEventLike> = {}): InviteEventLike {
@@ -119,21 +125,55 @@ describe('decideInviteAction', () => {
     ).toBeNull()
   })
 
-  it('honours the non-contact DM rule', () => {
+  it('honours the non-contact DM rule through the supplied contact state', () => {
+    // 判定不再读 policy.contacts 静态快照：那份快照在查询失败时是空的，
+    // 会退化成"谁都不认识"→ 误拒所有人。联系人状态改由 ContactStateResolver 提供。
     const p = policy({ mode: 'allow_all', allowStrangers: false, contacts: [] })
-    expect(decideInviteAction(event(), p, ME)?.action).toBe('decline')
-    expect(
-      decideInviteAction(
-        event({ inviterUserId: '@friend:server' }),
-        policy({ mode: 'allow_all', allowStrangers: false, contacts: ['@friend:server'] }),
-        ME
-      )
-    ).toBeNull()
+    expect(decideInviteAction(event(), p, ME, undefined, 'stranger')?.action).toBe('decline')
+    expect(decideInviteAction(event(), p, ME, undefined, 'contact')).toBeNull()
   })
 
   it('returns the room id so the caller can leave it', () => {
     const decision = decideInviteAction(event({ roomId: '!abc:example.org' }), policy({ mode: 'allowlist' }), ME)
     expect(decision?.roomId).toBe('!abc:example.org')
+  })
+
+  describe('contact state (only-contacts mode must fail open)', () => {
+    const onlyContacts = policy({ mode: 'allow_all', allowStrangers: false })
+
+    it('declines a confirmed stranger', () => {
+      expect(decideInviteAction(event(), onlyContacts, ME, undefined, 'stranger')?.action).toBe('decline')
+    })
+
+    it('allows a confirmed contact', () => {
+      expect(decideInviteAction(event(), onlyContacts, ME, undefined, 'contact')).toBeNull()
+    })
+
+    it('fails open when the contact state is unknown', () => {
+      // 关键：联系人查询失败时绝不能当陌生人拒掉，否则后端抖动会误拒所有好友
+      expect(decideInviteAction(event(), onlyContacts, ME, undefined, 'unknown')).toBeNull()
+    })
+
+    it('fails open when no contact state was supplied', () => {
+      expect(decideInviteAction(event(), onlyContacts, ME)).toBeNull()
+    })
+
+    it('still declines a blocklisted user regardless of contact state', () => {
+      const p = policy({ mode: 'blocklist', blocklist: ['@spam:evil.org'] })
+      expect(decideInviteAction(event(), p, ME, undefined, 'contact')?.action).toBe('decline')
+      expect(decideInviteAction(event(), p, ME, undefined, 'unknown')?.action).toBe('decline')
+    })
+
+    it('does not fail open for allowlist mode when the state is unknown', () => {
+      // 名单模式是显式表达，不受联系人查询结果影响
+      const p = policy({ mode: 'allowlist', allowlist: ['@friend:server'] })
+      expect(decideInviteAction(event(), p, ME, undefined, 'unknown')?.action).toBe('decline')
+    })
+
+    it('does not fail open in allow_all when strangers are allowed', () => {
+      const p = policy({ mode: 'allow_all', allowStrangers: true })
+      expect(decideInviteAction(event(), p, ME, undefined, 'stranger')).toBeNull()
+    })
   })
 
   it('does not act without a room id', () => {

@@ -326,7 +326,7 @@ describe('MatrixAccountService', () => {
         mode: 'blocklist',
         blocklist: ['@spam:evil.org'],
         allowlist: ['@friend:server'],
-        allowStrangers: true,
+        allowStrangers: false,
         contacts: []
       })
       expect(mockClientWithData.getAccountDataFromServer).toHaveBeenCalledWith('im.hula.invite_policy')
@@ -343,7 +343,7 @@ describe('MatrixAccountService', () => {
         mode: 'allow_all',
         blocklist: [],
         allowlist: [],
-        allowStrangers: true,
+        allowStrangers: false,
         contacts: []
       })
     })
@@ -355,7 +355,10 @@ describe('MatrixAccountService', () => {
       }
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClientWithData as unknown as MatrixClient)
 
-      expect((await matrixAccountService.getInvitePolicy()).mode).toBe('allow_all')
+      // 未知 mode 归一化为 allow_all；allowStrangers 落默认值（false，仅允许联系人）
+      const policy = await matrixAccountService.getInvitePolicy()
+      expect(policy.mode).toBe('allow_all')
+      expect(policy.allowStrangers).toBe(false)
     })
 
     it('writes the normalized config to account data', async () => {

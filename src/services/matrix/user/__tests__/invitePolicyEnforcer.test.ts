@@ -46,8 +46,12 @@ function makeClient() {
   }
 }
 
+/**
+ * 测试替身：默认放开 allowStrangers，避免"仅允许联系人"默认值干扰名单模式用例；
+ * only-contacts 用例自己构造策略。
+ */
 function policy(overrides: Partial<InvitePolicy> = {}): InvitePolicy {
-  return { ...DEFAULT_INVITE_POLICY, ...overrides }
+  return { ...DEFAULT_INVITE_POLICY, allowStrangers: true, ...overrides }
 }
 
 function enforcer(overrides: { currentUserId?: string; policy?: InvitePolicy; onDeclined?: (info: any) => void } = {}) {
@@ -180,6 +184,89 @@ describe('InvitePolicyEnforcer', () => {
     fireMember(memberWithInviter({ events: undefined }))
     await new Promise((r) => setTimeout(r, 20))
     expect(state.leaveCalls).toEqual([])
+  })
+
+  describe('only-contacts mode', () => {
+    const onlyContacts = policy({ mode: 'allow_all', allowStrangers: false })
+
+    it('declines a confirmed stranger', async () => {
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => onlyContacts,
+        onDeclined: vi.fn(),
+        resolveContactState: async () => 'stranger'
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
+    })
+
+    it('allows a confirmed contact', async () => {
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => onlyContacts,
+        onDeclined: vi.fn(),
+        resolveContactState: async () => 'contact'
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await new Promise((r) => setTimeout(r, 20))
+      expect(state.leaveCalls).toEqual([])
+    })
+
+    it('fails open when the contact state is unknown', async () => {
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => onlyContacts,
+        onDeclined: vi.fn(),
+        resolveContactState: async () => 'unknown'
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await new Promise((r) => setTimeout(r, 20))
+      expect(state.leaveCalls).toEqual([])
+    })
+
+    it('fails open when no resolver is wired at all', async () => {
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => onlyContacts,
+        onDeclined: vi.fn()
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await new Promise((r) => setTimeout(r, 20))
+      expect(state.leaveCalls).toEqual([])
+    })
+
+    it('does not query contacts in blocklist mode', async () => {
+      const resolveContactState = vi.fn(async () => 'stranger' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@spam:evil.org'] }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
+      expect(resolveContactState).not.toHaveBeenCalled()
+    })
+
+    it('does not query contacts when strangers are allowed', async () => {
+      const resolveContactState = vi.fn(async () => 'stranger' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'allow_all', allowStrangers: true }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await new Promise((r) => setTimeout(r, 20))
+      expect(resolveContactState).not.toHaveBeenCalled()
+      expect(state.leaveCalls).toEqual([])
+    })
   })
 
   it('unsubscribes on stop', () => {

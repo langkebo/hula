@@ -43,6 +43,7 @@ import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useVoIPIncomingCall } from '@/composables/useVoIPIncomingCall'
 import { MittEnum, ThemeEnum } from '@/enums'
+import { createContactStateResolver } from '@/services/matrix/user/contactStateResolver'
 import { cacheInvitePolicy, loadInvitePolicy } from '@/services/matrix/user/invitePolicy'
 import { createInvitePolicyEnforcer } from '@/services/matrix/user/invitePolicyEnforcer'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
@@ -198,12 +199,26 @@ const { initOfflineQueue } = useOfflineQueueReplay({
   getMatrixWidgetService
 })
 
+// 联系人三态解析器：查询失败返回 unknown，绝不把失败当"陌生人"
+// （MatrixFriendService.isFriend 失败时返回 false，不可区分）
+const contactStateResolver = createContactStateResolver({
+  isFriend: async (userId) => {
+    const friendService = await getMatrixFriendService()
+    return friendService.isFriend(userId)
+  }
+})
+
 // ========== Invite policy enforcement ==========
 // 账号级邀请策略只能在客户端强制（后端无账号级策略强制点，见 invitePolicy.ts 说明）。
 // 自动拒邀后给一次可撤回的提示：静默拒邀一旦判错，用户无从察觉。
 const invitePolicyEnforcement = useInvitePolicyEnforcement({
   // 强制点必须同步建好：start() 依赖 on/off 立刻注册，异步工厂会漏掉首批事件
-  createEnforcer: (options) => createInvitePolicyEnforcer(options),
+  createEnforcer: (options) =>
+    createInvitePolicyEnforcer({
+      ...options,
+      // 联系人查询失败返回 unknown → 判定 fail-open，不会误拒好友
+      resolveContactState: (userId) => contactStateResolver.resolve(userId)
+    }),
   getCurrentUserId: () => matrixStore.userId ?? undefined,
   getPolicy: () => loadInvitePolicy(),
   savePolicy: async (policy) => {
@@ -433,6 +448,21 @@ async function setupSessionWatch() {
   }
 }
 
+/**
+ * 预热联系人状态缓存。
+ *
+ * 后台任务：好友列表加载失败不影响启动（缓存为空只会退化为逐个查询 + fail-open）。
+ */
+async function seedContactStateCache(): Promise<void> {
+  try {
+    const friendService = await getMatrixFriendService()
+    const friends = await friendService.getFriends()
+    contactStateResolver.seed(friends.map((friend) => friend.user_id).filter(Boolean))
+  } catch (err) {
+    logger.warn('预热联系人状态缓存失败（忽略）:', err)
+  }
+}
+
 // ========== Lifecycle ==========
 onMounted(async () => {
   // bootstrap 内部失败会 re-throw，必须 catch 避免未处理 rejection 中断后续初始化。
@@ -460,12 +490,15 @@ onMounted(async () => {
     presenceSync.startPresenceWatch()
     invitePolicyEnforcement.start()
     await invitePolicyEnforcement.syncContacts()
+    // 用同一份好友列表预热联系人状态缓存，省掉逐个查询
+    await seedContactStateCache()
   }
 })
 
 onUnmounted(async () => {
   wsEventHandler.cleanup()
   invitePolicyEnforcement.stop()
+  contactStateResolver.clear()
   presenceSync.cleanup()
   uninstallSecurityListeners()
   if (isDesktop() && appWindow?.label === 'home') {

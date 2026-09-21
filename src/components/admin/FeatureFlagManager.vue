@@ -8,7 +8,7 @@
             v-model:value="searchQuery"
             :placeholder="t('admin.feature_flags.search_placeholder')"
             clearable
-            style="width: 260px">
+            class="w-[260px]">
             <template #prefix>
               <Icon icon="mdi:magnify" />
             </template>
@@ -41,7 +41,7 @@
         v-model:show="showFormDialog"
         :title="isEditing ? t('admin.feature_flags.edit_title') : t('admin.feature_flags.create_title')"
         preset="dialog"
-        style="width: 560px">
+        class="w-[560px]">
         <n-form :model="formData" label-placement="left" label-width="120">
           <n-form-item
             :label="t('admin.feature_flags.flag_key')"
@@ -73,11 +73,11 @@
               v-model:value="formData.rolloutPercent"
               :min="0"
               :max="100"
-              style="width: 100%"
+              class="w-full"
               :placeholder="t('admin.feature_flags.rollout_placeholder')" />
           </n-form-item>
           <n-form-item :label="t('admin.feature_flags.expires_at')">
-            <n-date-picker v-model:value="formData.expiresAt" type="datetime" clearable style="width: 100%" />
+            <n-date-picker v-model:value="formData.expiresAt" type="datetime" clearable class="w-full" />
           </n-form-item>
           <n-form-item :label="t('admin.feature_flags.reason')">
             <n-input v-model:value="formData.reason" :placeholder="t('admin.feature_flags.reason_placeholder')" />

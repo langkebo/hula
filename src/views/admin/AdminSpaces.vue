@@ -7,7 +7,7 @@
             v-model:value="searchQuery"
             :placeholder="t('admin.spaces.searchSpaces')"
             clearable
-            style="width: 300px">
+            class="w-[300px]">
             <template #prefix>
               <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8" />
@@ -34,7 +34,7 @@
       <n-tab-pane v-if="selectedSpaceId" name="detail" :tab="t('admin.spaces.detail')">
         <n-spin :show="detailLoading">
           <template v-if="selectedSpace">
-            <n-descriptions bordered :column="2" label-placement="left" style="margin-bottom: 16px">
+            <n-descriptions bordered :column="2" label-placement="left" class="mb-16px">
               <n-descriptions-item :label="t('admin.spaces.name')">
                 {{ selectedSpace.name || '-' }}
               </n-descriptions-item>
@@ -55,7 +55,7 @@
               </n-descriptions-item>
             </n-descriptions>
 
-            <n-tabs type="segment" style="margin-top: 16px">
+            <n-tabs type="segment" class="mt-16px">
               <n-tab-pane name="members" :tab="t('admin.spaces.members')">
                 <n-data-table
                   :columns="memberColumns"
@@ -73,7 +73,7 @@
                   size="small" />
               </n-tab-pane>
               <n-tab-pane name="statistics" :tab="t('admin.spaces.statistics')">
-                <n-space v-if="spaceStats" :size="24" style="margin-top: 12px">
+                <n-space v-if="spaceStats" :size="24" class="mt-12px">
                   <n-statistic :label="t('admin.spaces.statsJoinedMembers')" :value="spaceStats.joinedMembers ?? 0" />
                   <n-statistic
                     :label="t('admin.spaces.statsJoinedLocalMembers')"

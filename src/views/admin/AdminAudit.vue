@@ -8,18 +8,18 @@
             :options="typeOptions"
             :placeholder="t('admin.audit.filter_type')"
             clearable
-            style="width: 160px" />
+            class="w-[160px]" />
           <n-input
             v-model:value="filterUserId"
             :placeholder="t('admin.audit.filter_user')"
             clearable
-            style="width: 200px" />
+            class="w-[200px]" />
           <n-date-picker
             v-model:value="dateRange"
             type="daterange"
             clearable
             :placeholder="t('admin.audit.filter_time_range')"
-            style="width: 280px" />
+            class="w-[280px]" />
           <n-button @click="loadAuditLogs" :loading="loading">
             {{ t('common.refresh') }}
           </n-button>
@@ -42,7 +42,7 @@
       striped
       class="mt-16px" />
 
-    <n-modal v-model:show="detailVisible" preset="card" :title="t('admin.audit.detail_title')" style="width: 600px">
+    <n-modal v-model:show="detailVisible" preset="card" :title="t('admin.audit.detail_title')" class="w-[600px]">
       <n-descriptions :column="1" bordered label-placement="left" v-if="selectedEntry">
         <n-descriptions-item :label="t('admin.audit.col_id')">{{ selectedEntry.id }}</n-descriptions-item>
         <n-descriptions-item :label="t('admin.audit.col_type')">{{ selectedEntry.type }}</n-descriptions-item>

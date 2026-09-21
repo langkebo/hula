@@ -5,7 +5,7 @@
         v-model:value="searchQuery"
         :placeholder="t('admin.rooms.search')"
         clearable
-        style="width: 300px"
+        class="w-[300px]"
         @keyup.enter="handleSearch">
         <template #prefix>
           <Icon icon="mdi:magnify" class="size-16px" />
@@ -23,9 +23,9 @@
       :pagination="{ pageSize: 20 }"
       :row-key="(row: RoomInfo) => row.roomId" />
 
-    <n-modal v-model:show="showRoomDetail" :title="t('admin.rooms.roomDetail')" preset="dialog" style="width: 800px">
+    <n-modal v-model:show="showRoomDetail" :title="t('admin.rooms.roomDetail')" preset="dialog" class="w-[800px]">
       <template v-if="selectedRoom">
-        <n-descriptions bordered :column="2" label-placement="left" style="margin-bottom: 16px">
+        <n-descriptions bordered :column="2" label-placement="left" class="mb-16px">
           <n-descriptions-item :label="t('admin.rooms.roomId')" :span="2">
             {{ selectedRoom.roomId }}
           </n-descriptions-item>
@@ -56,7 +56,7 @@
                 :bordered="false"
                 size="small"
                 :pagination="{ pageSize: 10 }" />
-              <n-empty v-else :description="t('admin.rooms.noMembers')" style="padding: 24px 0" />
+              <n-empty v-else :description="t('admin.rooms.noMembers')" class="py-24px" />
             </n-spin>
           </n-tab-pane>
 
@@ -70,8 +70,8 @@
                 :bordered="false"
                 size="small"
                 :pagination="{ pageSize: 10 }" />
-              <n-empty v-else :description="t('admin.rooms.noMessages')" style="padding: 24px 0" />
-              <div v-if="messagesPaginationToken" style="text-align: center; margin-top: 12px">
+              <n-empty v-else :description="t('admin.rooms.noMessages')" class="py-24px" />
+              <div v-if="messagesPaginationToken" class="text-center mt-12px">
                 <n-button size="small" :loading="messagesLoading" @click="loadMoreMessages">
                   {{ t('admin.rooms.loadMore') }}
                 </n-button>
@@ -89,7 +89,7 @@
                 :bordered="false"
                 size="small"
                 :pagination="{ pageSize: 10 }" />
-              <n-empty v-else :description="t('admin.rooms.noState')" style="padding: 24px 0" />
+              <n-empty v-else :description="t('admin.rooms.noState')" class="py-24px" />
             </n-spin>
           </n-tab-pane>
 
@@ -101,12 +101,12 @@
                   v-for="alias in roomAliases"
                   :key="alias"
                   closable
-                  style="margin: 4px"
+                  class="m-4px"
                   @close="handleRemoveAlias(alias)">
                   {{ alias }}
                 </n-tag>
               </div>
-              <n-empty v-else :description="t('admin.rooms.noAliases')" style="padding: 24px 0" />
+              <n-empty v-else :description="t('admin.rooms.noAliases')" class="py-24px" />
             </n-spin>
           </n-tab-pane>
 
@@ -137,7 +137,7 @@
                     </n-card>
                   </n-gi>
                 </n-grid>
-                <n-grid :cols="3" :x-gap="12" :y-gap="12" style="margin-top: 12px">
+                <n-grid :cols="3" :x-gap="12" :y-gap="12" class="mt-12px">
                   <n-gi>
                     <n-card size="small">
                       <n-statistic :label="t('admin.rooms.statsStateEvents')">
@@ -161,7 +161,7 @@
                   </n-gi>
                 </n-grid>
               </template>
-              <n-empty v-else :description="t('admin.rooms.noStats')" style="padding: 24px 0" />
+              <n-empty v-else :description="t('admin.rooms.noStats')" class="py-24px" />
             </n-spin>
           </n-tab-pane>
 
@@ -174,7 +174,7 @@
                   <n-input
                     v-model:value="makeAdminUserId"
                     :placeholder="t('admin.rooms.makeAdminPlaceholder')"
-                    style="width: 300px" />
+                    class="w-[300px]" />
                   <n-button size="small" type="primary" :loading="makeAdminLoading" @click="handleMakeAdmin">
                     {{ t('admin.rooms.makeAdminBtn') }}
                   </n-button>
@@ -201,7 +201,7 @@
               </n-card>
 
               <!-- Danger Zone -->
-              <n-card size="small" :title="t('admin.rooms.dangerZone')" style="border-color: var(--n-error-color)">
+              <n-card size="small" :title="t('admin.rooms.dangerZone')" class="border-[var(--n-error-color)]">
                 <n-space vertical>
                   <n-popconfirm @positive-click="handlePurgeHistory">
                     <template #trigger>
@@ -229,11 +229,7 @@
       </template>
     </n-modal>
 
-    <n-modal
-      v-model:show="showForceJoinDialog"
-      :title="t('admin.rooms.forceJoin')"
-      preset="dialog"
-      style="width: 400px">
+    <n-modal v-model:show="showForceJoinDialog" :title="t('admin.rooms.forceJoin')" preset="dialog" class="w-[400px]">
       <n-form :model="forceJoinForm">
         <n-form-item :label="t('admin.rooms.targetUserId')">
           <n-input v-model:value="forceJoinForm.userId" placeholder="@user:example.com" />
@@ -247,11 +243,7 @@
       </template>
     </n-modal>
 
-    <n-modal
-      v-model:show="showForceLeaveDialog"
-      :title="t('admin.rooms.forceLeave')"
-      preset="dialog"
-      style="width: 400px">
+    <n-modal v-model:show="showForceLeaveDialog" :title="t('admin.rooms.forceLeave')" preset="dialog" class="w-[400px]">
       <n-form :model="forceLeaveForm">
         <n-form-item :label="t('admin.rooms.targetUserId')">
           <n-input v-model:value="forceLeaveForm.userId" placeholder="@user:example.com" />

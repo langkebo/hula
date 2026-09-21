@@ -20,7 +20,7 @@
               <n-switch v-model:value="form.registrationEnabled" />
             </n-form-item>
             <n-form-item :label="t('admin.server_config.general.max_upload_size')">
-              <n-input-number v-model:value="form.maxUploadSize" :min="0" :step="1" style="width: 200px">
+              <n-input-number v-model:value="form.maxUploadSize" :min="0" :step="1" class="w-[200px]">
                 <template #suffix>MB</template>
               </n-input-number>
             </n-form-item>
@@ -40,7 +40,7 @@
               <n-switch v-model:value="form.rbacEnabled" />
             </n-form-item>
             <n-form-item :label="t('admin.server_config.security.login_lockout_threshold')">
-              <n-input-number v-model:value="form.loginLockoutThreshold" :min="0" :max="100" style="width: 200px" />
+              <n-input-number v-model:value="form.loginLockoutThreshold" :min="0" :max="100" class="w-[200px]" />
             </n-form-item>
           </n-form>
         </n-card>
@@ -55,7 +55,7 @@
               <n-select
                 v-model:value="form.federationAdmissionMode"
                 :options="federationAdmissionOptions"
-                style="width: 200px" />
+                class="w-[200px]" />
             </n-form-item>
           </n-form>
         </n-card>
@@ -67,10 +67,10 @@
               <n-switch v-model:value="form.rateLimitEnabled" />
             </n-form-item>
             <n-form-item :label="t('admin.server_config.rate_limit.requests_per_second')">
-              <n-input-number v-model:value="form.rateLimitRps" :min="0" :step="1" style="width: 200px" />
+              <n-input-number v-model:value="form.rateLimitRps" :min="0" :step="1" class="w-[200px]" />
             </n-form-item>
             <n-form-item :label="t('admin.server_config.rate_limit.burst_count')">
-              <n-input-number v-model:value="form.rateLimitBurst" :min="0" :step="1" style="width: 200px" />
+              <n-input-number v-model:value="form.rateLimitBurst" :min="0" :step="1" class="w-[200px]" />
             </n-form-item>
           </n-form>
         </n-card>
@@ -85,13 +85,13 @@
               <n-select
                 v-model:value="form.translationProvider"
                 :options="translationProviderOptions"
-                style="width: 200px" />
+                class="w-[200px]" />
             </n-form-item>
             <n-form-item :label="t('admin.server_config.translation.target_language')">
               <n-select
                 v-model:value="form.translationTargetLanguage"
                 :options="targetLanguageOptions"
-                style="width: 200px"
+                class="w-[200px]"
                 filterable />
             </n-form-item>
           </n-form>
