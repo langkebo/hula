@@ -4,7 +4,7 @@
     :show="showAddDialog"
     preset="card"
     :title="t('common.widget.add')"
-    style="width: 600px"
+    class="w-[600px]"
     @update:show="emit('update:showAddDialog', $event)">
     <n-form ref="formRef" :model="formData" :rules="rules">
       <n-form-item :label="t('common.widget.name')" path="name">
@@ -32,7 +32,7 @@
     :show="showPermissionsDialog"
     preset="card"
     :title="t('common.widget.permissions')"
-    style="width: 560px"
+    class="w-[560px]"
     @update:show="emit('update:showPermissionsDialog', $event)">
     <div v-if="selectedWidget" class="permissions-content">
       <div class="widget-info-header">
@@ -74,13 +74,13 @@
           v-model:value="newPermission.userId"
           :placeholder="t('common.widget.permission_user_placeholder')"
           size="small"
-          style="flex: 1" />
+          class="flex-1" />
         <n-select
           v-model:value="newPermission.permissions"
           :options="permissionPresetOptions"
           multiple
           size="small"
-          style="width: 200px" />
+          class="w-[200px]" />
         <n-button type="primary" size="small" :loading="savingPermissions" @click="handleSubmitAddPermission">
           {{ t('common.add') }}
         </n-button>
@@ -98,7 +98,7 @@
     :show="showCapabilitiesDialog"
     preset="card"
     :title="t('common.widget.edit_capabilities')"
-    style="width: 520px"
+    class="w-[520px]"
     @update:show="emit('update:showCapabilitiesDialog', $event)">
     <div v-if="selectedWidget" class="capabilities-dialog-content">
       <n-spin :show="capabilitiesLoading">
@@ -117,7 +117,7 @@
             v-model:value="customCapability"
             :placeholder="t('common.widget.custom_capability_placeholder')"
             size="small"
-            style="flex: 1"
+            class="flex-1"
             @keyup.enter="addCustomCapability" />
           <n-button size="small" @click="addCustomCapability">
             {{ t('common.add') }}
@@ -140,7 +140,7 @@
     :show="showConfigDialog"
     preset="card"
     :title="t('common.widget.edit_config')"
-    style="width: 600px"
+    class="w-[600px]"
     @update:show="emit('update:showConfigDialog', $event)">
     <div v-if="selectedWidget" class="config-dialog-content">
       <n-spin :show="savingConfig">

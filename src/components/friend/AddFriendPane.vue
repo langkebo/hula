@@ -20,7 +20,7 @@
             @select-history="handleSelectHistory"
             @clear-history="handleClearSearchHistory" />
         </div>
-        <n-select v-model:value="searchMode" :options="searchModeOptions" size="large" style="width: 100px" />
+        <n-select v-model:value="searchMode" :options="searchModeOptions" size="large" class="w-[100px]" />
       </n-flex>
 
       <div v-if="showSearchSummary" class="add-friend-pane__search-summary">
@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <n-divider style="margin: 0" />
+    <n-divider class="m-0" />
 
     <n-scrollbar class="flex-1 min-h-0">
       <div class="px-20px py-16px">
@@ -57,7 +57,7 @@
               </n-flex>
             </n-flex>
 
-            <n-divider style="margin: 12px 0" />
+            <n-divider class="my-12px" />
 
             <n-flex vertical :size="8">
               <span class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-tertiary]">

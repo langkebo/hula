@@ -10,7 +10,7 @@
         </div>
       </div>
 
-      <n-divider v-if="userId" style="margin: 12px 0" />
+      <n-divider v-if="userId" class="my-12px" />
 
       <!-- 举报表单 -->
       <n-form :model="form" :rules="rules">

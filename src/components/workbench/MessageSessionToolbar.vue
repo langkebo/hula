@@ -97,7 +97,7 @@
         </n-button>
       </n-flex>
     </n-flex>
-    <n-divider style="margin: 0" />
+    <n-divider class="m-0" />
   </div>
 </template>
 

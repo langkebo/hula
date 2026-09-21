@@ -2,8 +2,7 @@
   <!-- 消息为机器人消息时 -->
   <main class="w-full flex-center">
     <div
-      class="chat-message-max-width bg-[--tjg-settings-warning-bg] flex-center chat-bot-message-gap px-12px py-4px rounded-8px"
-      style="border: 1px solid color-mix(in srgb, var(--tjg-color-warning-400) 30%, transparent)">
+      class="chat-message-max-width bg-[--tjg-settings-warning-bg] flex-center chat-bot-message-gap px-12px py-4px rounded-8px bot-message-border">
       <n-avatar class="select-none" round :size="22" :src="getAvatarSrc(fromUserUid)" />
       <div
         v-for="(part, index) in parseMessage(body.content ?? '')"
@@ -61,3 +60,10 @@ const getAvatarSrc = (uid: string) => {
   return AvatarUtils.getAvatarUrl(avatar as string)
 }
 </script>
+
+<style scoped lang="scss">
+/* 机器人消息气泡描边（原先为内联 style，迁移后需在此保留等价规则） */
+.bot-message-border {
+  border: 1px solid color-mix(in srgb, var(--tjg-color-warning-400) 30%, transparent);
+}
+</style>

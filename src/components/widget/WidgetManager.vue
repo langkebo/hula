@@ -16,7 +16,7 @@
         v-model:value="searchWidgetId"
         :placeholder="t('common.widget.search_by_id_placeholder')"
         size="small"
-        style="flex: 1"
+        class="flex-1"
         @keyup.enter="handleSearchWidgetById" />
       <n-button type="primary" size="small" :loading="searchingWidget" @click="handleSearchWidgetById">
         <template #icon>

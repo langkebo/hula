@@ -53,11 +53,11 @@
         @quick-accept="handleQuickAccept"
         @quick-reject="handleQuickReject" />
 
-      <n-divider style="margin: 0" />
+      <n-divider class="m-0" />
 
       <main class="friend-list-view__main" :aria-busy="isCapabilityLoading">
         <n-spin :show="isCapabilityLoading">
-          <n-scrollbar style="height: calc(100vh - 200px)">
+          <n-scrollbar class="h-[calc(100vh-200px)]">
             <SkeletonFriendList v-if="isLoading" :rows="6" />
             <EmptyState
               v-else-if="showSearchEmptyState"

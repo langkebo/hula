@@ -23,7 +23,7 @@
 
           <ContextMenu
             :content="item"
-            class="w-fit relative flex flex-col pl-44px text-(14px [--tjg-text-primary]) leading-26px user-select-text"
+            class="w-fit relative flex flex-col pl-44px text-(14px [--tjg-text-primary]) leading-26px select-text"
             :data-key="item.fromUser.uid === userUid ? `U${item.message.id}` : `Q${item.message.id}`"
             :special-menu="specialMenuList(item.message.type)"
             @select="$event.click(item)">
@@ -192,7 +192,7 @@ onMounted(async () => {
 }
 
 /* 需 !important：抵消上下文菜单注入的 .no-select */
-.user-select-text {
+.select-text {
   -webkit-user-select: text !important;
   user-select: text !important;
 }

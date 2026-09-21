@@ -6,7 +6,7 @@
       <p>{{ msgCount }}</p>
     </n-flex>
     <component :is="division" />
-    <n-scrollbar style="max-height: 320px">
+    <n-scrollbar class="max-h-320px">
       <n-flex
         v-for="group in content"
         :key="group.id"

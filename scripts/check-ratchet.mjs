@@ -69,6 +69,25 @@ function stripCommentsOnly(content) {
   return content.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
 }
 
+/**
+ * `inline_style` 具名 allowlist —— **已裁定例外**（2026-09-21 inline_style 专项收口时裁定）。
+ *
+ * 这 5 处 `style="..."` 不是「静态内联样式」，而是 `<n-popover>` 的**组件参数**
+ * （`padding: 0`、`background: var(--tjg-surface-panel)`）：naive-ui 会把 popover 内容
+ * teleport 到 body，父级 scoped 的 `:deep()` 够不到；换成 UnoCSS（如 `.p-0`）会因
+ * **同特异性**退化为「由样式注入顺序决定」。结论：不迁移，就地登记为例外，勿再尝试。
+ *
+ * 该表同时是**漂移守卫**：某文件一旦出现超出登记数量的内联样式（含新增行）即 FAIL，
+ * 既防「悄悄新增」，也防「把例外换成新的例外」（单纯比对总量看不见后者）。
+ */
+const INLINE_STYLE_ALLOWLIST = new Map([
+  ['src/components/rightBox/chatBox/ChatSidebar.vue', 1], // n-popover：padding: 0; background: var(--tjg-surface-panel)
+  ['src/components/rightBox/renderMessage/index.vue', 1], // 同上
+  ['src/layout/left/components/LeftAvatar.vue', 1], // 同上
+  ['src/layout/left/components/definePlugins/Card.vue', 1], // n-popover：padding: 0
+  ['src/layout/left/components/definePlugins/List.vue', 1] // 同上
+])
+
 const counters = {
   matrix_prefix_hardcoded: { pattern: /\/_matrix/g, includeTests: false, total: 0, files: new Map() },
   ts_expect_error: { pattern: /@ts-expect-error/g, includeTests: true, total: 0, files: new Map() },
@@ -153,6 +172,23 @@ if (!fs.existsSync(baselinePath)) {
 const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'))
 let failed = false
 
+/**
+ * inline_style 漂移守卫：具名 allowlist 之外的内联样式一律视为新增 → FAIL。
+ * 总量比对只能发现「变多」，发现不了「把旧例外删掉、同时加个新例外」。
+ */
+{
+  const unexpected = [...counters.inline_style.files.entries()].filter(
+    ([file, count]) => count > (INLINE_STYLE_ALLOWLIST.get(file) ?? 0)
+  )
+  if (unexpected.length > 0) {
+    console.error('check-ratchet: FAIL inline_style: 出现具名 allowlist 之外的内联样式（n-popover 参数是唯一已裁定例外）：')
+    for (const [file, count] of unexpected) {
+      console.error(`    ${count}\t${file}（allowlist 登记 ${INLINE_STYLE_ALLOWLIST.get(file) ?? 0} 处）`)
+    }
+    failed = true
+  }
+}
+
 for (const [name, counter] of Object.entries(counters)) {
   const allowed = baseline.counters?.[name]
   const actual = counter.total
@@ -173,7 +209,8 @@ for (const [name, counter] of Object.entries(counters)) {
       `check-ratchet: OK ${name}: ${actual} (baseline ${allowed}) — tighten with \`node scripts/check-ratchet.mjs --update\`.`
     )
   } else {
-    console.log(`check-ratchet: OK ${name}: ${actual} (baseline ${allowed})`)
+    const note = name === 'inline_style' ? ' —— 全部命中具名 allowlist（n-popover 组件参数，已裁定例外）' : ''
+    console.log(`check-ratchet: OK ${name}: ${actual} (baseline ${allowed})${note}`)
   }
 }
 

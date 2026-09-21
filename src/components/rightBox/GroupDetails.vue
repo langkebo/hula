@@ -16,8 +16,7 @@
           preview-disabled
           width="120"
           height="120"
-          style="border: 2px solid var(--tjg-text-inverse)"
-          class="rounded-12px select-none cursor-pointer"
+          class="border-[2px] border-solid border-[--tjg-text-inverse] rounded-12px select-none cursor-pointer"
           :src="AvatarUtils.getAvatarUrl(item.avatar)"
           alt="群头像" />
       </n-upload>
@@ -28,8 +27,7 @@
         preview-disabled
         width="120"
         height="120"
-        style="border: 2px solid var(--tjg-text-inverse)"
-        class="rounded-12px select-none cursor-pointer"
+        class="border-[2px] border-solid border-[--tjg-text-inverse] rounded-12px select-none cursor-pointer"
         :src="AvatarUtils.getAvatarUrl(item.avatar)"
         @dblclick="openImageViewer"
         alt="群头像" />

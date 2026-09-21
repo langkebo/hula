@@ -87,7 +87,7 @@
               v-model:value="messageSettingValue"
               :options="messageOptions"
               size="small"
-              style="width: 120px"
+              class="w-[120px]"
               @update:value="handleMuteChange" />
           </div>
 

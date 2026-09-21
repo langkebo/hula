@@ -5,7 +5,7 @@
         trigger="click"
         placement="left"
         :show-arrow="false"
-        style="padding: 0; background: var(--tjg-surface-panel)"
+        class="p-0 bg-[--tjg-surface-panel]"
         v-if="mentionTokenSet.has(item) && !props.historyMode">
         <template #trigger>
           <span :key="item" class="mention-token text-[--tjg-color-warning-400] cursor-pointer">
@@ -22,7 +22,7 @@
       </span>
       <template v-else-if="item.startsWith('http')">
         <n-flex align="center" :wrap="false">
-          <n-tooltip trigger="hover" style="flex-shrink: 0">
+          <n-tooltip trigger="hover" class="shrink-0">
             <template #trigger>
               <svg class="size-12px cursor-pointer pr-4px" @click="handleCopy(item)">
                 <use href="#copy"></use>
@@ -30,7 +30,7 @@
             </template>
             <span>{{ t('chat.text.copy_url') }}</span>
           </n-tooltip>
-          <div style="flex: 1; word-wrap: break-word; overflow-wrap: anywhere">
+          <div class="flex-1">
             <n-highlight
               v-if="props.searchKeyword"
               :text="item"
@@ -42,7 +42,7 @@
                 color: 'var(--tjg-text-inverse)',
                 background: 'var(--tjg-color-primary-500)'
               }" />
-            <p v-else style="margin: 0">{{ item }}</p>
+            <p v-else class="m-0">{{ item }}</p>
           </div>
         </n-flex>
       </template>
@@ -308,5 +308,8 @@ const onImageLoadError = (e: Event) => {
   justify-content: space-between;
   flex: 1;
   min-width: 0;
+}
+.break-anywhere {
+  overflow-wrap: anywhere;
 }
 </style>

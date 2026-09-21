@@ -81,7 +81,7 @@
           <n-virtual-list
             id="image-chat-ait"
             ref="virtualListInst-ait"
-            style="max-height: 180px"
+            class="max-h-180px"
             :item-size="36"
             :items="personList"
             v-model:selectedKey="selectedAitKey">
@@ -121,7 +121,7 @@
           class="AI-options">
           <n-virtual-list
             ref="virtualListInst-AI"
-            style="max-height: 180px"
+            class="max-h-180px"
             :item-size="36"
             :items="groupedAIModels"
             v-model:selectedKey="selectedAIKey">

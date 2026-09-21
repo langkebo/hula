@@ -12,7 +12,7 @@
       </n-flex>
 
       <!-- 状态列表 -->
-      <n-scrollbar style="max-height: 250px">
+      <n-scrollbar class="max-h-250px">
         <n-flex align="center" :size="10">
           <n-flex @click="handleResetState" vertical justify="center" align="center" :size="8" class="status-item">
             <svg class="size-24px color-[--tjg-color-danger-500]">

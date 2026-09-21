@@ -38,7 +38,7 @@
         <n-flex vertical align="center" justify="center" :size="30" class="mt--75px">
           <n-avatar
             round
-            style="border: 2px solid var(--lock-border-color, var(--tjg-surface-subtle))"
+            class="lock-border"
             :size="120"
             :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ?? '')" />
           <p class="text-(24px [--tjg-text-secondary]) font-500">{{ userStore.userInfo?.name ?? '' }}</p>
@@ -47,13 +47,7 @@
           <n-input
             v-if="!isLogining && !isWrongPassword"
             ref="inputInstRef"
-            style="
-              width: 320px;
-              border: 2px solid var(--tjg-border-contrast);
-              border-bottom-color: var(--tjg-color-primary-500);
-              background-color: var(--lock-input-bg, var(--tjg-surface-panel-muted));
-              color: var(--lock-input-color, var(--tjg-text-inverse));
-            "
+            class="lock-input"
             spellCheck="false"
             autoComplete="off"
             autoCorrect="off"
@@ -307,5 +301,20 @@ onUnmounted(() => {
 .slide-fade-leave-to {
   transform: translateY(20px);
   opacity: 0;
+}
+.lock-border {
+  border: 2px solid var(--lock-border-color, var(--tjg-surface-subtle));
+}
+
+/*
+  双类名是为提升特异性：naive-ui 的 `.n-input` 及其 `&:hover` / `--focus` 背景规则同为 (0,2,0)，
+  单类名会退化为「由样式注入顺序决定」；锁屏输入框底色必须恒定，故提到 (0,3,0)。
+*/
+.lock-input.lock-input {
+  width: 320px;
+  border: 2px solid var(--tjg-border-contrast);
+  border-bottom-color: var(--tjg-color-primary-500);
+  background-color: var(--lock-input-bg, var(--tjg-surface-panel-muted));
+  color: var(--lock-input-color, var(--tjg-text-inverse));
 }
 </style>
