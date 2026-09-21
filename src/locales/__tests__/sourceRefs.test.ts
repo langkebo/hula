@@ -20,7 +20,8 @@ import { describe, expect, it } from 'vitest'
  *  - `KeyBackupRestoreDialog.vue` 的已知缺口（`encryption.backup_restore_dialog.*`
  *    整棵子树在任何语言包中都不存在）必须不扩大
  *  - 全仓总数不得超过 `meta/i18n-refs-baseline.json` 的 ratchet 基线
- *  - 收集器自检：扫到的引用数必须合理，否则守卫会静默空转
+ *  - 收集器自检：用合成夹具证明「找 mock 块 + 取键」的机制没坏（否则守卫会静默空转）
+ *    ——刻意**不**用「全仓扫出多少键 > N」这类阈值，那会被反模式本身的存量撑起来
  * 不覆盖：
  *  - 翻译质量 / 语义正确性 / zh 与 en 的键集合对齐（后者由 `scripts/check-i18n.mjs` 负责）
  *  - `t(someVariable)` 这类动态键（静态无法判定，故意不纳入）
@@ -249,12 +250,21 @@ describe('i18n 桩键可达性', () => {
     return out
   }
 
-  const STUB_REFS: SourceRef[] = collectTestFiles(SRC).flatMap((file) => {
-    const path = relative(ROOT, file)
-    return extractMockBlocks(readFileSync(file, 'utf-8')).flatMap((block) =>
-      [...block.matchAll(STUB_KEY)].map((match) => ({ path, key: match[1] }))
-    )
-  })
+  /**
+   * 本文件自身必须排除：下面的「收集器自检」用例里有一个**合成夹具**，
+   * 夹具内刻意含有语言表里不存在的键（`a.b.c` / `leaked.key`）。
+   * 不排除的话，夹具会被当成真实桩键扫进来，守卫立刻自伤误报。
+   */
+  const SELF_PATH = relative(ROOT, __filename)
+
+  const STUB_REFS: SourceRef[] = collectTestFiles(SRC)
+    .filter((file) => relative(ROOT, file) !== SELF_PATH)
+    .flatMap((file) => {
+      const path = relative(ROOT, file)
+      return extractMockBlocks(readFileSync(file, 'utf-8')).flatMap((block) =>
+        [...block.matchAll(STUB_KEY)].map((match) => ({ path, key: match[1] }))
+      )
+    })
 
   const MISSING_STUB_REFS = STUB_REFS.filter((ref) =>
     LOCALES.some((locale) => typeof resolveKey(locale, ref.key) !== 'string')
@@ -269,9 +279,39 @@ describe('i18n 桩键可达性', () => {
    */
   const ALLOWED_MISSING_STUB_KEYS = new Set<string>([])
 
-  it('收集器自检：确实扫到了测试桩里的键（否则守卫会静默空转）', () => {
+  it('收集器自检：抽取机制对合成夹具能正确取键（否则守卫会静默空转）', () => {
+    // 测试文件的发现能力与「桩里有多少键」无关，用稳定的下限即可
     expect(collectTestFiles(SRC).length).toBeGreaterThan(150)
-    expect(STUB_REFS.length).toBeGreaterThan(100)
+
+    /**
+     * 用**合成夹具**自证，而不是「全仓扫出多少键」。
+     *
+     * 旧写法是 `expect(STUB_REFS.length).toBeGreaterThan(100)`。这个阈值是
+     * **被反模式本身撑起来的**：手写桩越多，计数越高。而本守卫的诉求恰恰是把它们
+     * 换成 `createI18nMock()`——每换一个，计数就掉一批（本次 120 → 61），
+     * 于是「修得越对、守卫越红」，还会反向激励保留错键桩。
+     *
+     * 夹具方案下夹具恒定、机制恒定：反模式清零导致计数归零也不会误报，
+     * 同时顺带把「括号配对」这一真正易错处钉住——若配对写错、把其它 `vi.mock`
+     * 的对象键一并吸入，`leaked.key` 就会出现在结果里。
+     */
+    const fixture = [
+      "vi.mock('vue-i18n', () => ({",
+      '  useI18n: () => ({',
+      "    t: (key: string) => ({ 'a.b.c': 'x', 'setting.encryption.title': 'y', 'no_dot': 'z' }[key] ?? key)",
+      '  })',
+      '}))',
+      "vi.mock('@/other/module', () => ({ 'leaked.key': 'v' }))"
+    ].join('\n')
+
+    const extracted = extractMockBlocks(fixture).flatMap((block) =>
+      [...block.matchAll(STUB_KEY)].map((match) => match[1])
+    )
+    expect(extracted).toEqual(['a.b.c', 'setting.encryption.title'])
+    // 无点号的键不是 i18n 命名空间键，不应计入
+    expect(extracted).not.toContain('no_dot')
+    // 括号配对边界：非 vue-i18n 的 mock 体不得被吸入
+    expect(extracted).not.toContain('leaked.key')
   })
 
   it('测试桩声明的键必须能在真实语言表解析出来', () => {
