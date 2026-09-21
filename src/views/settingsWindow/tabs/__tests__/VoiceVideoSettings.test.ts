@@ -7,14 +7,7 @@ const translationMap: Record<string, string> = {
   'setting.voice_video.audio_section': '音频设置',
   'setting.voice_video.audio_input_label': '音频输入设备',
   'setting.voice_video.audio_input_desc': '选择用于语音通话的麦克风',
-  'setting.voice_video.audio_output_label': '音频输出设备',
-  'setting.voice_video.audio_output_desc': '选择用于播放声音的扬声器',
   'setting.voice_video.select_microphone': '选择麦克风',
-  'setting.voice_video.select_speaker': '选择扬声器',
-  'setting.voice_video.input_volume_label': '输入音量',
-  'setting.voice_video.input_volume_desc': '调整麦克风音量',
-  'setting.voice_video.output_volume_label': '输出音量',
-  'setting.voice_video.output_volume_desc': '调整扬声器音量',
   'setting.voice_video.audio_test_label': '音频测试',
   'setting.voice_video.audio_test_desc': '测试麦克风是否正常工作',
   'setting.voice_video.stop_test': '停止测试',
@@ -36,7 +29,6 @@ const translationMap: Record<string, string> = {
   'setting.voice_video.auto_gain_label': '自动增益',
   'setting.voice_video.auto_gain_desc': '自动调整麦克风音量',
   'setting.voice_video.microphone_fallback': '麦克风 {id}',
-  'setting.voice_video.speaker_fallback': '扬声器 {id}',
   'setting.voice_video.camera_fallback': '摄像头 {id}',
   'setting.voice_video.load_devices_failed': '获取设备列表失败，请检查权限',
   'setting.voice_video.microphone_test_started': '麦克风测试已开始',
@@ -87,7 +79,6 @@ vi.mock('naive-ui', () => ({
     template: '<div class="n-select" />',
     props: ['value', 'options', 'loading', 'placeholder']
   },
-  NSlider: { name: 'NSlider', template: '<div class="n-slider" />', props: ['value', 'min', 'max', 'step'] },
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['type', 'loading'] },
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
   NDivider: { name: 'NDivider', template: '<hr />' },
@@ -156,16 +147,26 @@ describe('VoiceVideoSettings', () => {
     expect(wrapper.text()).toContain('通话设置')
     expect((wrapper.vm as any).audioInputId).toBe('audio-input-1')
     expect((wrapper.vm as any).audioInputOptions[1].label).toBe('麦克风 audio-in')
-    expect((wrapper.vm as any).audioOutputOptions[0].label).toBe('扬声器 audio-ou')
     expect((wrapper.vm as any).videoInputOptions[0].label).toBe('摄像头 video-in')
+  })
+
+  /**
+   * I9 / 用户裁决 M1：输出设备与输入/输出音量零消费方，控件与字段一并删除。
+   */
+  it('不再渲染无消费方的扬声器选择与输入/输出音量控件', async () => {
+    const wrapper = mount(VoiceVideoSettings)
+    await flushPromises()
+
+    const vm = wrapper.vm as any
+    expect(vm.audioOutputId).toBeUndefined()
+    expect(vm.audioOutputOptions).toBeUndefined()
+    expect(vm.inputVolume).toBeUndefined()
+    expect(vm.outputVolume).toBeUndefined()
   })
 
   it('restores saved device and call settings from localStorage', async () => {
     localStorage.setItem('tjg-audio-input', 'saved-audio-input')
-    localStorage.setItem('tjg-audio-output', 'saved-audio-output')
     localStorage.setItem('tjg-video-input', 'saved-video-input')
-    localStorage.setItem('tjg-input-volume', '80')
-    localStorage.setItem('tjg-output-volume', '60')
     localStorage.setItem('tjg-echo-cancellation', 'false')
     localStorage.setItem('tjg-noise-suppression', 'false')
     localStorage.setItem('tjg-auto-gain', 'false')
@@ -175,10 +176,7 @@ describe('VoiceVideoSettings', () => {
 
     const vm = wrapper.vm as any
     expect(vm.audioInputId).toBe('saved-audio-input')
-    expect(vm.audioOutputId).toBe('saved-audio-output')
     expect(vm.videoInputId).toBe('saved-video-input')
-    expect(vm.inputVolume).toBe(80)
-    expect(vm.outputVolume).toBe(60)
     expect(vm.echoCancellation).toBe(false)
     expect(vm.noiseSuppression).toBe(false)
     expect(vm.autoGainControl).toBe(false)

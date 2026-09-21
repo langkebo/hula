@@ -19,54 +19,6 @@
 
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">{{ t('setting.voice_video.audio_output_label') }}</span>
-          <span class="setting-desc">{{ t('setting.voice_video.audio_output_desc') }}</span>
-        </div>
-        <n-select
-          v-model:value="audioOutputId"
-          :options="audioOutputOptions"
-          :loading="devicesLoading"
-          :placeholder="t('setting.voice_video.select_speaker')"
-          class="device-select-width"
-          @update:value="handleAudioOutputChange" />
-      </div>
-
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.voice_video.input_volume_label') }}</span>
-          <span class="setting-desc">{{ t('setting.voice_video.input_volume_desc') }}</span>
-        </div>
-        <div class="volume-control">
-          <n-slider
-            v-model:value="inputVolume"
-            :min="0"
-            :max="100"
-            :step="1"
-            class="volume-slider"
-            @update:value="handleInputVolumeChange" />
-          <span class="volume-value">{{ inputVolume }}%</span>
-        </div>
-      </div>
-
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.voice_video.output_volume_label') }}</span>
-          <span class="setting-desc">{{ t('setting.voice_video.output_volume_desc') }}</span>
-        </div>
-        <div class="volume-control">
-          <n-slider
-            v-model:value="outputVolume"
-            :min="0"
-            :max="100"
-            :step="1"
-            class="volume-slider"
-            @update:value="handleOutputVolumeChange" />
-          <span class="volume-value">{{ outputVolume }}%</span>
-        </div>
-      </div>
-
-      <div class="setting-item">
-        <div class="setting-info">
           <span class="setting-label">{{ t('setting.voice_video.audio_test_label') }}</span>
           <span class="setting-desc">{{ t('setting.voice_video.audio_test_desc') }}</span>
         </div>
@@ -152,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NDivider, NSelect, NSlider, NSwitch } from 'naive-ui'
+import { NButton, NDivider, NSelect, NSwitch } from 'naive-ui'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -175,28 +127,17 @@ const isPreviewing = ref(false)
 const audioLevel = ref(0)
 
 const audioInputId = ref<string | null>(null)
-const audioOutputId = ref<string | null>(null)
 const videoInputId = ref<string | null>(null)
-const inputVolume = ref(100)
-const outputVolume = ref(100)
 const echoCancellation = ref(true)
 const noiseSuppression = ref(true)
 const autoGainControl = ref(true)
 
 const audioInputDevices = ref<MediaDeviceInfo[]>([])
-const audioOutputDevices = ref<MediaDeviceInfo[]>([])
 const videoInputDevices = ref<MediaDeviceInfo[]>([])
 
 const audioInputOptions = computed(() =>
   audioInputDevices.value.map((d) => ({
     label: d.label || t('setting.voice_video.microphone_fallback', { id: d.deviceId.slice(0, 8) }),
-    value: d.deviceId
-  }))
-)
-
-const audioOutputOptions = computed(() =>
-  audioOutputDevices.value.map((d) => ({
-    label: d.label || t('setting.voice_video.speaker_fallback', { id: d.deviceId.slice(0, 8) }),
     value: d.deviceId
   }))
 )
@@ -230,14 +171,10 @@ async function loadDevices() {
     const devices = await navigator.mediaDevices.enumerateDevices()
 
     audioInputDevices.value = devices.filter((d) => d.kind === 'audioinput')
-    audioOutputDevices.value = devices.filter((d) => d.kind === 'audiooutput')
     videoInputDevices.value = devices.filter((d) => d.kind === 'videoinput')
 
     if (audioInputOptions.value.length > 0 && !audioInputId.value) {
       audioInputId.value = audioInputOptions.value[0].value
-    }
-    if (audioOutputOptions.value.length > 0 && !audioOutputId.value) {
-      audioOutputId.value = audioOutputOptions.value[0].value
     }
     if (videoInputOptions.value.length > 0 && !videoInputId.value) {
       videoInputId.value = videoInputOptions.value[0].value
@@ -255,11 +192,8 @@ function loadSavedSettings() {
 
   // 设备 id 为 null 表示"没保存过"，此时保留 loadDevices() 选出的默认设备，不要清空。
   if (preferences.audioInputId) audioInputId.value = preferences.audioInputId
-  if (preferences.audioOutputId) audioOutputId.value = preferences.audioOutputId
   if (preferences.videoInputId) videoInputId.value = preferences.videoInputId
 
-  inputVolume.value = preferences.inputVolume
-  outputVolume.value = preferences.outputVolume
   echoCancellation.value = preferences.echoCancellation
   noiseSuppression.value = preferences.noiseSuppression
   autoGainControl.value = preferences.autoGain
@@ -269,24 +203,12 @@ function handleAudioInputChange(value: string) {
   saveMediaDevicePreferences({ audioInputId: value })
 }
 
-function handleAudioOutputChange(value: string) {
-  saveMediaDevicePreferences({ audioOutputId: value })
-}
-
 function handleVideoInputChange(value: string) {
   saveMediaDevicePreferences({ videoInputId: value })
   if (isPreviewing.value) {
     stopPreview()
     startPreview()
   }
-}
-
-function handleInputVolumeChange(value: number) {
-  saveMediaDevicePreferences({ inputVolume: value })
-}
-
-function handleOutputVolumeChange(value: number) {
-  saveMediaDevicePreferences({ outputVolume: value })
 }
 
 function handleEchoCancellationChange(value: boolean) {
@@ -455,18 +377,6 @@ function stopPreview() {
   margin-top: var(--tjg-space-1);
 }
 
-.volume-control {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-3);
-}
-
-.volume-value {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-quaternary);
-  min-width: 40px;
-}
-
 .audio-level-display {
   margin-top: var(--tjg-space-3);
   padding: var(--tjg-space-3);
@@ -515,7 +425,4 @@ function stopPreview() {
 }
 
 /* 音量滑杆宽度 */
-.volume-slider {
-  width: 150px;
-}
 </style>
