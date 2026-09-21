@@ -451,7 +451,7 @@ class MatrixAccountService extends BaseMatrixService {
     const accountData = await client.getAccountDataFromServer(INVITE_POLICY_ACCOUNT_DATA_TYPE)
     if (accountData) {
       const policy = normalizeInvitePolicy(accountData)
-      cacheInvitePolicy(policy)
+      cacheInvitePolicy(policy, client.getUserId())
       logger.info(`[MatrixAccount] 获取邀请策略成功: mode=${policy.mode}`)
       return policy
     }
@@ -459,7 +459,7 @@ class MatrixAccountService extends BaseMatrixService {
     const legacy = await client.getAccountDataFromServer(LEGACY_INVITE_POLICY_ACCOUNT_DATA_TYPE)
     if (legacy) {
       const policy = normalizeInvitePolicy(legacy)
-      cacheInvitePolicy(policy)
+      cacheInvitePolicy(policy, client.getUserId())
       logger.info(`[MatrixAccount] 已从旧 key 迁移邀请策略: mode=${policy.mode}`)
       return policy
     }
@@ -478,7 +478,7 @@ class MatrixAccountService extends BaseMatrixService {
 
     try {
       await client.setAccountData(INVITE_POLICY_ACCOUNT_DATA_TYPE, { ...normalized })
-      cacheInvitePolicy(normalized)
+      cacheInvitePolicy(normalized, client.getUserId())
       logger.info(`[MatrixAccount] 设置邀请策略成功: mode=${normalized.mode}`)
       return true
     } catch (err) {

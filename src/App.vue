@@ -222,7 +222,8 @@ const invitePolicyEnforcement = useInvitePolicyEnforcement({
       resolveContactState: (userId) => contactStateResolver.resolve(userId)
     }),
   getCurrentUserId: () => matrixStore.userId ?? undefined,
-  getPolicy: () => loadInvitePolicy(),
+  // 缓存按 userId 隔离；早期还没拿到 user id 时返回默认策略（不会读到别人的缓存）
+  getPolicy: () => loadInvitePolicy(matrixStore.userId ?? undefined),
   /**
    * 写路径的严格重读：`syncContacts()` 只拥有 `contacts`，其余字段必须来自服务端。
    * 抛错（读取失败）会被 composable 捕获并跳过写入，绝不回落默认值整对象覆盖。

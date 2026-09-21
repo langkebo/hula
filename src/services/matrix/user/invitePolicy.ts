@@ -205,11 +205,35 @@ export function shouldRejectInvite(inviterUserId: unknown, policy: InvitePolicy,
   return !inviter
 }
 
-/** 从本地存储读取邀请策略缓存；读取失败或无数据时回落默认策略。 */
-export function loadInvitePolicy(storage: Pick<Storage, 'getItem'> = localStorage): InvitePolicy {
+/**
+ * 本地缓存的 storage key：**按账号隔离**。
+ *
+ * 同设备 A→B 换账号时，全局 key 会让 B 读到 A 的策略（名单/黑名单/隐私字段）。
+ * 登出时由 `clearInvitePolicyCache` 回收当前账号这一条；其它账号的缓存不受影响，
+ * 因为它们是不同的 key。
+ */
+export function invitePolicyCacheKey(userId: string): string {
+  return `${INVITE_POLICY_ACCOUNT_DATA_TYPE}:${userId}`
+}
+
+/**
+ * 从本地存储读取邀请策略缓存；读取失败或无数据时回落默认策略。
+ *
+ * `userId` 缺失（启动早期尚未拿到账号）时不读任何 key，直接返回默认策略：
+ * 既不会读到别的账号的缓存，也不会因为"还没有身份"而把谁的数据当成自己的。
+ */
+export function loadInvitePolicy(
+  userId?: string | null,
+  storage: Pick<Storage, 'getItem'> = localStorage
+): InvitePolicy {
+  const normalizedUserId = normalizeUserId(userId)
+  if (!normalizedUserId) {
+    return normalizeInvitePolicy(null)
+  }
+
   let stored: string | null = null
   try {
-    stored = storage.getItem(INVITE_POLICY_ACCOUNT_DATA_TYPE)
+    stored = storage.getItem(invitePolicyCacheKey(normalizedUserId))
   } catch (err) {
     logger.warn('读取本地邀请策略缓存失败:', err)
     return normalizeInvitePolicy(null)
@@ -239,11 +263,44 @@ export function loadInvitePolicy(storage: Pick<Storage, 'getItem'> = localStorag
  *
  * account data 是权威来源，但读取需要已登录客户端；缓存一份可让未登录/离线时
  * 沿用上次策略，而不是退回 allow_all（那会让自动拒邀静默失效）。
+ *
+ * `userId` 缺失时**跳过写入**：没有账号身份就没有隔离维度，写无主 key 会让下一个
+ * 登录的账号读到它。读取侧同样在无 user id 时返回默认值，语义对称。
  */
-export function cacheInvitePolicy(policy: InvitePolicy, storage: Pick<Storage, 'setItem'> = localStorage): void {
+export function cacheInvitePolicy(
+  policy: InvitePolicy,
+  userId?: string | null,
+  storage: Pick<Storage, 'setItem'> = localStorage
+): void {
+  const normalizedUserId = normalizeUserId(userId)
+  if (!normalizedUserId) {
+    return
+  }
+
   try {
-    storage.setItem(INVITE_POLICY_ACCOUNT_DATA_TYPE, JSON.stringify(normalizeInvitePolicy(policy)))
+    storage.setItem(invitePolicyCacheKey(normalizedUserId), JSON.stringify(normalizeInvitePolicy(policy)))
   } catch (err) {
     logger.warn('缓存邀请策略失败:', err)
+  }
+}
+
+/**
+ * 登出/账号重置时清掉当前账号的本地策略缓存。
+ *
+ * 不清别的账号：它们的缓存是不同的 key，换回该账号时仍可离线沿用。
+ */
+export function clearInvitePolicyCache(
+  userId?: string | null,
+  storage: Pick<Storage, 'removeItem'> = localStorage
+): void {
+  const normalizedUserId = normalizeUserId(userId)
+  if (!normalizedUserId) {
+    return
+  }
+
+  try {
+    storage.removeItem(invitePolicyCacheKey(normalizedUserId))
+  } catch (err) {
+    logger.warn('清理邀请策略缓存失败:', err)
   }
 }

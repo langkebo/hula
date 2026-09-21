@@ -7,6 +7,7 @@ import { clearMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
 import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
+import { clearInvitePolicyCache } from '@/services/matrix/user/invitePolicy'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMac } from '@/utils/PlatformConstants'
@@ -49,6 +50,10 @@ export class SessionLogoutService {
       // 这里是显式登出 / 账号重置路径，与 preserveTokens 无关：即使保留令牌，本地未读账本也随
       // 当前会话一起作废（换账号后旧 uid 的数据本就不会被新账号读到，这里是主动回收）。
       localStorage.removeItem('sessionUnread')
+
+      // 邀请策略缓存按 userId 隔离，登出必须回收当前账号那一条：
+      // 否则同设备换账号后仍可能读到上一个账号的策略（与未读账本同理，主动回收）。
+      clearInvitePolicyCache(port.matrix.getUserId())
 
       if (!preserveTokens) {
         localStorage.removeItem('user')

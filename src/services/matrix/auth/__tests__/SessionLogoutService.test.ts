@@ -52,6 +52,10 @@ vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
   }
 }))
 
+vi.mock('@/services/matrix/user/invitePolicy', () => ({
+  clearInvitePolicyCache: vi.fn()
+}))
+
 vi.mock('@tauri-apps/api/event', () => ({
   emit: vi.fn().mockResolvedValue(undefined)
 }))
@@ -71,6 +75,7 @@ const { stopPresenceHeartbeat } = await import('@/composables/user/usePresenceHe
 const { matrixWsBridge } = await import('@/services/matrix/MatrixWsBridge')
 const { matrixWorkerHost } = await import('@/services/matrix/MatrixWorkerHost')
 const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
+const { clearInvitePolicyCache } = await import('@/services/matrix/user/invitePolicy')
 const { emit } = await import('@tauri-apps/api/event')
 
 const clearMatrixSessionEndpointConfigMock = vi.mocked(clearMatrixSessionEndpointConfig)
@@ -81,6 +86,7 @@ const matrixWsBridgeStopMock = vi.mocked(matrixWsBridge.stop)
 const resetSearchIndexMock = vi.mocked(matrixWorkerHost.resetSearchIndex)
 const matrixWorkerTerminateMock = vi.mocked(matrixWorkerHost.terminate)
 const setPresenceMock = vi.mocked(matrixPresenceService.setPresence)
+const clearInvitePolicyCacheMock = vi.mocked(clearInvitePolicyCache)
 const emitMock = vi.mocked(emit)
 
 // useWindow is mocked per test so we can control isDesktop dependent branches.
@@ -233,6 +239,15 @@ describe('SessionLogoutService.resetLocalSessionState', () => {
     await service.resetLocalSessionState()
 
     expect(resetSpy).toHaveBeenCalled()
+  })
+
+  it('clears the current account invite-policy cache so a switch cannot leak it', async () => {
+    const { host } = createMockHost()
+    const service = new SessionLogoutService(host, new SessionRuntimeState())
+
+    await service.resetLocalSessionState()
+
+    expect(clearInvitePolicyCacheMock).toHaveBeenCalledWith('@alice:test')
   })
 
   it('preserves tokens when preserveTokens is true', async () => {

@@ -1,16 +1,21 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   cacheInvitePolicy,
+  clearInvitePolicyCache,
   DEFAULT_INVITE_POLICY,
   INVITE_POLICY_ACCOUNT_DATA_TYPE,
   INVITE_POLICY_MODES,
   type InvitePolicy,
+  invitePolicyCacheKey,
   isInvitePolicyMode,
   loadInvitePolicy,
   normalizeInvitePolicy,
   normalizeUserId,
   shouldRejectInvite
 } from '../invitePolicy'
+
+const UID = '@me:example.org'
+const OTHER_UID = '@other:example.org'
 
 /**
  * 测试替身：显式放开 allowStrangers。
@@ -131,13 +136,16 @@ describe('normalizeInvitePolicy — 好友请求策略字段', () => {
   })
 
   it('round-trips the friend-request fields through cache/load', () => {
-    cacheInvitePolicy({
-      ...DEFAULT_INVITE_POLICY,
-      allowFriendRequests: false,
-      autoAcceptFriends: true,
-      requireFriendRequestMessage: false
-    })
-    const loaded = loadInvitePolicy()
+    cacheInvitePolicy(
+      {
+        ...DEFAULT_INVITE_POLICY,
+        allowFriendRequests: false,
+        autoAcceptFriends: true,
+        requireFriendRequestMessage: false
+      },
+      UID
+    )
+    const loaded = loadInvitePolicy(UID)
     expect(loaded.allowFriendRequests).toBe(false)
     expect(loaded.autoAcceptFriends).toBe(true)
     expect(loaded.requireFriendRequestMessage).toBe(false)
@@ -389,7 +397,7 @@ describe('load / cache round trip', () => {
   })
 
   it('returns defaults when nothing is cached', () => {
-    expect(loadInvitePolicy()).toEqual(DEFAULT_INVITE_POLICY)
+    expect(loadInvitePolicy(UID)).toEqual(DEFAULT_INVITE_POLICY)
   })
 
   it('round-trips a policy', () => {
@@ -400,23 +408,64 @@ describe('load / cache round trip', () => {
       allowStrangers: false,
       contacts: ['@e:f']
     })
-    cacheInvitePolicy(p)
-    expect(loadInvitePolicy()).toEqual(p)
+    cacheInvitePolicy(p, UID)
+    expect(loadInvitePolicy(UID)).toEqual(p)
   })
 
-  it('writes under the account-data type key', () => {
-    cacheInvitePolicy(policy({ mode: 'blocklist' }))
-    expect(localStorage.getItem(INVITE_POLICY_ACCOUNT_DATA_TYPE)).toBeTruthy()
+  it('writes under a per-user key derived from the account-data type', () => {
+    cacheInvitePolicy(policy({ mode: 'blocklist' }), UID)
+    expect(localStorage.getItem(invitePolicyCacheKey(UID))).toBeTruthy()
+    // 不再写全局 key：否则同设备换账号会读到别人的策略
+    expect(localStorage.getItem(INVITE_POLICY_ACCOUNT_DATA_TYPE)).toBeNull()
+  })
+
+  it('keeps two accounts on the same device isolated', () => {
+    cacheInvitePolicy(policy({ mode: 'blocklist', blocklist: ['@a-secret:evil.org'] }), UID)
+    cacheInvitePolicy(policy({ mode: 'allowlist', allowlist: ['@b-friend:corp.org'] }), OTHER_UID)
+
+    expect(loadInvitePolicy(UID).mode).toBe('blocklist')
+    expect(loadInvitePolicy(UID).blocklist).toEqual(['@a-secret:evil.org'])
+    expect(loadInvitePolicy(OTHER_UID).mode).toBe('allowlist')
+    // A→B 换账号不会串到 A 的策略
+    expect(loadInvitePolicy(OTHER_UID).blocklist).toEqual([])
+  })
+
+  it('clears only the requested account cache on logout', () => {
+    cacheInvitePolicy(policy({ mode: 'blocklist' }), UID)
+    cacheInvitePolicy(policy({ mode: 'allowlist' }), OTHER_UID)
+
+    clearInvitePolicyCache(UID)
+
+    expect(localStorage.getItem(invitePolicyCacheKey(UID))).toBeNull()
+    expect(loadInvitePolicy(UID)).toEqual(DEFAULT_INVITE_POLICY)
+    // 另一个账号的缓存不能被登出清理误删
+    expect(loadInvitePolicy(OTHER_UID).mode).toBe('allowlist')
+  })
+
+  it('does not read or write an unscoped key when no user id is known yet', () => {
+    expect(loadInvitePolicy(undefined)).toEqual(DEFAULT_INVITE_POLICY)
+    expect(loadInvitePolicy('')).toEqual(DEFAULT_INVITE_POLICY)
+
+    cacheInvitePolicy(policy({ mode: 'blocklist' }), undefined)
+    expect(localStorage.getItem(INVITE_POLICY_ACCOUNT_DATA_TYPE)).toBeNull()
+    // 不写无主 key，也不误删别的账号
+    expect(loadInvitePolicy(UID)).toEqual(DEFAULT_INVITE_POLICY)
+  })
+
+  it('clear is a no-op without a user id', () => {
+    cacheInvitePolicy(policy({ mode: 'blocklist' }), UID)
+    expect(() => clearInvitePolicyCache(undefined)).not.toThrow()
+    expect(loadInvitePolicy(UID).mode).toBe('blocklist')
   })
 
   it('recovers from corrupt JSON', () => {
-    localStorage.setItem(INVITE_POLICY_ACCOUNT_DATA_TYPE, '{broken')
-    expect(loadInvitePolicy()).toEqual(DEFAULT_INVITE_POLICY)
+    localStorage.setItem(invitePolicyCacheKey(UID), '{broken')
+    expect(loadInvitePolicy(UID)).toEqual(DEFAULT_INVITE_POLICY)
   })
 
   it('normalizes before caching', () => {
-    cacheInvitePolicy({ mode: 'bogus' } as unknown as InvitePolicy)
-    expect(loadInvitePolicy().mode).toBe('allow_all')
+    cacheInvitePolicy({ mode: 'bogus' } as unknown as InvitePolicy, UID)
+    expect(loadInvitePolicy(UID).mode).toBe('allow_all')
   })
 
   it('tolerates storage that throws', () => {
@@ -430,12 +479,12 @@ describe('load / cache round trip', () => {
         throw new Error('quota')
       }
     } as unknown as Pick<Storage, 'setItem'>
-    expect(loadInvitePolicy(throwingRead)).toEqual(DEFAULT_INVITE_POLICY)
-    expect(() => cacheInvitePolicy(policy(), throwingWrite)).not.toThrow()
+    expect(loadInvitePolicy(UID, throwingRead)).toEqual(DEFAULT_INVITE_POLICY)
+    expect(() => cacheInvitePolicy(policy(), UID, throwingWrite)).not.toThrow()
   })
 
   it('does not silently drop allowStrangers on a full round trip', () => {
-    cacheInvitePolicy(policy({ allowStrangers: false }))
-    expect(loadInvitePolicy().allowStrangers).toBe(false)
+    cacheInvitePolicy(policy({ allowStrangers: false }), UID)
+    expect(loadInvitePolicy(UID).allowStrangers).toBe(false)
   })
 })
