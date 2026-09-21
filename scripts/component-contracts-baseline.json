@@ -1,6 +1,7 @@
 {
-  "unlistenedEvents": 31,
+  "unlistenedEvents": 32,
   "unlistenedEventNames": [
+    "src/components/common/AreaDrawer.vue::update:value",
     "src/components/common/GuestModeBanner.vue::exit",
     "src/components/common/GuestModeBanner.vue::upgrade",
     "src/components/common/Screenshot/ScreenshotSelection.vue::drag-end",

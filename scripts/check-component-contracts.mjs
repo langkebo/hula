@@ -21,7 +21,9 @@
  * 刻意保守、不猜：
  * - `v-on="obj"` / `v-bind="obj"`（无参数的对象展开）可能绑定任意事件，遇到就把该组件
  *   标为"不可判定"并整体跳过，不把可能的活事件报成死的；
- * - 动态参数 `@[name]`、`<component :is>` 同样不可判定，跳过；
+ * - 动态参数 `@[name]` / `v-model:[name]` / `v-bind:[name]`（arg 非静态）的文本不是事件名，
+ *   同样按不可判定整体跳过；
+ * - `<component :is>` 动态挂载的组件当前不识别，按"从未使用"处理（见已知局限），不计入；
  * - `emits` 无法解析（编译或 babel 解析失败）时跳过该文件，并在输出里点名；
  * - `__tests__` 目录下的文件既不算声明方也不算使用方（测试自己 emit/监听不代表真实接线）；
  * - 从未被使用的组件不计入（那是死代码问题，不是"没人监听"问题）。
@@ -115,6 +117,12 @@ const ACCEPTED_PATTERNS = [
 const canonicalEvent = (name) => name.replace(/-(\w)/g, (_, c) => c.toUpperCase())
 
 const kebab = (name) => name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+
+/** `area-drawer` → `AreaDrawer`：把 kebab 标签归一成组件 basename（调用方只对带 `-` 的标签用它）。 */
+const pascalize = (name) => {
+  const camel = canonicalEvent(name)
+  return camel.charAt(0).toUpperCase() + camel.slice(1)
+}
 
 const isTestPath = (path) => path.includes('__tests__') || /\.(test|spec)\.[cm]?[jt]sx?$/.test(path)
 
@@ -335,20 +343,29 @@ function scanTemplate(tagMap, templateAst, componentPaths) {
   const visit = (node) => {
     if (node.type !== 1 /* ELEMENT */) return
     const tag = node.tag
-    const target = tagMap.get(tag) ?? componentPaths.get(tag) ?? componentPaths.get(kebab(tag))
+    // 全局注册的标签既可能写成 `<AreaDrawer>` 也可能写成 `<area-drawer>`（mobile 侧
+    // 大量使用 kebab）。只有带 `-` 的标签才做 kebab→Pascal 归一：原生标签（`<button>`、
+    // `<video>`、SVG `<text>` 等）都是无短横的单词，若一并 pascalize 会被错认成
+    // `Button.vue`/`Video.vue`/`Text.vue` 这类同名组件 → 张冠李戴的误报。
+    const target =
+      tagMap.get(tag) ?? componentPaths.get(tag) ?? (tag.includes('-') ? componentPaths.get(pascalize(tag)) : undefined)
     if (target === undefined) return
     if (!usages.has(target)) usages.set(target, new Set())
     for (const prop of node.props) {
-      if (prop.type === 7 /* DIRECTIVE */) {
-        if (prop.name === 'on') {
-          if (prop.arg?.type === 4 /* SIMPLE_EXPRESSION */) usages.get(target).add(canonicalEvent(String(prop.arg.content)))
-          else opaque.add(target)
-        } else if (prop.name === 'model') {
-          const arg = prop.arg?.type === 4 ? String(prop.arg.content) : 'modelValue'
-          usages.get(target).add(canonicalEvent(`update:${arg}`))
-        } else if (prop.name === 'bind' && !prop.arg) {
-          opaque.add(target)
-        }
+      if (prop.type !== 7 /* DIRECTIVE */) continue
+      // 动态参数（`@[name]` / `v-model:[name]` / `v-bind:[name]`）的 arg 是表达式而非字面量，
+      // 其文本不是事件名。当成事件名会漏掉真实绑定（误报），因此整体标不可判定。
+      if (prop.arg && !(prop.arg.type === 4 /* SIMPLE_EXPRESSION */ && prop.arg.isStatic)) {
+        opaque.add(target)
+        continue
+      }
+      if (prop.name === 'on') {
+        if (prop.arg) usages.get(target).add(canonicalEvent(String(prop.arg.content)))
+        else opaque.add(target) // `v-on="obj"`：可能绑定任意事件
+      } else if (prop.name === 'model') {
+        usages.get(target).add(canonicalEvent(`update:${prop.arg ? String(prop.arg.content) : 'modelValue'}`))
+      } else if (prop.name === 'bind' && !prop.arg) {
+        opaque.add(target) // `v-bind="obj"`：可能包含 onXxx 监听
       }
     }
   }
@@ -365,7 +382,9 @@ function scanTemplate(tagMap, templateAst, componentPaths) {
 
 const files = collectVueFiles(ROOT)
 
-// 组件名 → 文件路径，用于识别全局注册（unplugin-vue-components）的标签
+// 组件名 → 文件路径，用于识别全局注册（unplugin-vue-components）的标签。
+// 查找时对带 `-` 的标签再按 kebab→Pascal 归一（见 scanTemplate），因此这里保持
+// 只登记 basename，避免把 `button`/`video` 这类原生标签的别名也塞进来。
 const componentPaths = new Map()
 const basenameCounts = new Map()
 for (const path of files) {
