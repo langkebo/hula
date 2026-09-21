@@ -1,5 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { createPersistedState } from 'pinia-plugin-persistedstate'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, nextTick } from 'vue'
+import { RoomTypeEnum } from '@/enums'
+import type { SessionItem } from '@/stores/domains/chat/chat'
+import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import type { SessionStorePort } from '../MatrixRuntimeSessionService'
 
 const mockInvoke = vi.fn()
@@ -608,5 +613,79 @@ describe('MatrixRuntimeSessionService', () => {
       await service.bootstrapPostLoginState(bootstrapOptions)
       expect(mockPort.room.setupEventListeners).toHaveBeenCalledTimes(1)
     })
+  })
+})
+
+/**
+ * 回归守门（Task 2b 评审补修 2）：sessionUnread 记录必须活过「水合 -> bootstrap 清理」的启动顺序。
+ *
+ * 真实启动顺序是 App.vue 先 useSessionStore()（内部 useSessionUnreadStore() 完成 localStorage 水合），
+ * 随后 mounted 里的 bootstrapPostLoginState 才执行 clearUserLocalStorage()。若该清理例程把
+ * sessionUnread 一起删掉，记录在本次运行仍然留着内存里，但下一次冷启动就没有东西可水合，
+ * 跨重启的未读纠正只生效一次。这里完整驱动这条顺序：写入记录 -> 换 pinia 水合 -> 跑真实 bootstrap
+ * -> 再换 pinia 水合，确认记录仍在且仍能把服务端脏未读数纠正为 0。
+ */
+describe('sessionUnread 记录与 bootstrap 清理顺序', () => {
+  const UID = '@alice:example.com'
+  const ROOM = '!unread:example.com'
+
+  const buildSession = (): SessionItem =>
+    ({
+      roomId: ROOM,
+      name: 'unread-room',
+      type: RoomTypeEnum.SINGLE,
+      unreadCount: 3,
+      activeTime: 100
+    }) as SessionItem
+
+  // 与 src/stores/index.ts 一致：独立 pinia + 持久化插件，挂在一次性 app 上插件才真正注册。
+  const bootPersistedPinia = () => {
+    const pinia = createPinia()
+    pinia.use(createPersistedState({ auto: false }))
+    createApp({}).use(pinia)
+    setActivePinia(pinia)
+  }
+
+  it('冷启动 bootstrap 不抹掉 sessionUnread 记录，再次重启后仍能纠正服务端脏未读数', async () => {
+    localStorage.clear()
+    // 预置其它 user-scoped 键：下面断言它们被清理，用来证明 bootstrap 的清理例程确实执行了
+    localStorage.setItem('chat', 'cached-chat')
+    localStorage.setItem('group', 'cached-group')
+
+    // 第 1 次运行：记录「已读到 activeTime=100」并持久化
+    bootPersistedPinia()
+    useSessionUnreadStore().setLastRead(UID, ROOM, 100)
+    await nextTick()
+    expect(localStorage.getItem('sessionUnread')).not.toBeNull()
+
+    // 重启（第 2 次启动）：先水合，再执行真实 bootstrap 清理例程
+    bootPersistedPinia()
+    expect(useSessionUnreadStore().lastReadActiveTimeStore[UID]?.[ROOM]).toBe(100)
+
+    mockPort.matrix.getUserId.mockReturnValue(UID)
+    mockPort.matrix.getAccessToken.mockReturnValue('access-token')
+    const service = createService()
+    await service.bootstrapPostLoginState({ account: 'alice', displayName: 'Alice', client: 'PC' })
+
+    // 清理例程确实跑了（chat/group 被删），但它不能碰未读账本
+    expect(localStorage.getItem('chat')).toBeNull()
+    expect(localStorage.getItem('group')).toBeNull()
+    expect(localStorage.getItem('sessionUnread')).not.toBeNull()
+
+    // 再重启一次：记录仍能水合，且 apply 的情况 1 把服务端旧计数纠正为 0
+    bootPersistedPinia()
+    const restarted = useSessionUnreadStore()
+    expect(restarted.lastReadActiveTimeStore[UID]?.[ROOM]).toBe(100)
+    expect(restarted.apply(UID, [buildSession()])[ROOM]).toBe(0)
+  })
+
+  it('显式登出/账号重置时清除 sessionUnread 记录', async () => {
+    localStorage.clear()
+    localStorage.setItem('sessionUnread', JSON.stringify({ lastReadActiveTimeStore: { [UID]: { [ROOM]: 100 } } }))
+
+    const service = createService()
+    await service.resetLocalSessionState({ preserveTokens: true })
+
+    expect(localStorage.getItem('sessionUnread')).toBeNull()
   })
 })

@@ -44,6 +44,12 @@ export class SessionLogoutService {
       // 重置 bootstrap 幂等守卫，确保下次登录能重新执行 bootstrap pipeline
       this.state.bootstrapGuard.reset()
 
+      // 未读账本（sessionUnread，含 lastReadActiveTimeStore）的清除点在这里，而不是 bootstrap：
+      // bootstrap 在每次冷启动自动登录时都会跑，清掉它会让跨重启的已读纠正只生效一次。
+      // 这里是显式登出 / 账号重置路径，与 preserveTokens 无关：即使保留令牌，本地未读账本也随
+      // 当前会话一起作废（换账号后旧 uid 的数据本就不会被新账号读到，这里是主动回收）。
+      localStorage.removeItem('sessionUnread')
+
       if (!preserveTokens) {
         localStorage.removeItem('user')
         localStorage.removeItem('TOKEN')
