@@ -4470,8 +4470,7 @@ export type I18nKeys = {
           "failed": "退出登录失败"
         }
       }
-    },
-    "manage_friend_groups": "好友分组"
+    }
   },
   "message": {
     "file": {
@@ -8357,7 +8356,15 @@ export type I18nKeys = {
         "title": "邀请白名单"
       },
       "user_id_placeholder": "{'@'}user:example.com",
-      "add": "添加"
+      "add": "添加",
+      "dm_section": "私聊",
+      "allow_strangers": "允许非联系人私聊",
+      "allow_strangers_hint": "关闭后，不在好友列表里的人发起的私聊邀请会被自动拒绝",
+      "allow_strangers_inactive": "名单模式已生效，此开关在「允许所有人邀请」模式下才起作用",
+      "encrypt_new_dm": "新私聊默认加密",
+      "encrypt_new_dm_hint": "新建私聊时默认开启端到端加密",
+      "load_failed": "邀请权限加载失败",
+      "save_failed": "邀请权限保存失败"
     }
   },
   "space": {
