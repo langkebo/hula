@@ -165,6 +165,7 @@ import { NButton, NDivider, NInput, NSlider, NSwitch, NTag } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
 
@@ -176,7 +177,29 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const settingStore = useSettingStore()
 
-const desktopNotification = ref(true)
+// 桌面通知/消息内容/发送者三项配置持久化在 tjg-notification-config，由
+// MatrixNotificationService 的 showNotification() 消费；组件只读写这份服务配置。
+const notificationConfig = ref(matrixNotificationService.getConfig())
+
+type NotificationToggle = 'enableDesktop' | 'showMessageContent' | 'showSender'
+
+// 模板上 v-model:value 与 @update:value 会同时触发，这里按值去重，保证每次切换只落一次配置。
+function writeConfig(patch: Partial<Record<NotificationToggle, boolean>>) {
+  const changed = (Object.keys(patch) as NotificationToggle[]).some(
+    (key) => patch[key] !== notificationConfig.value[key]
+  )
+  if (!changed) {
+    return
+  }
+
+  notificationConfig.value = { ...notificationConfig.value, ...patch }
+  matrixNotificationService.updateConfig(patch)
+}
+
+const desktopNotification = computed({
+  get: () => notificationConfig.value.enableDesktop,
+  set: (value: boolean) => writeConfig({ enableDesktop: value })
+})
 const notificationSound = computed({
   get: () => settingStore.messageSoundEnabled,
   set: (value: boolean) => settingStore.setMessageSoundEnabled(value)
@@ -185,8 +208,14 @@ const soundVolume = computed({
   get: () => settingStore.notificationVolume,
   set: (value: number) => settingStore.setNotificationVolume(value)
 })
-const showMessageContent = ref(true)
-const showSenderName = ref(true)
+const showMessageContent = computed({
+  get: () => notificationConfig.value.showMessageContent,
+  set: (value: boolean) => writeConfig({ showMessageContent: value })
+})
+const showSenderName = computed({
+  get: () => notificationConfig.value.showSender,
+  set: (value: boolean) => writeConfig({ showSender: value })
+})
 const keywordNotification = ref(false)
 const newKeyword = ref('')
 const keywords = ref<string[]>([])
@@ -202,20 +231,7 @@ const friendRequestNotify = ref(true)
 const friendAcceptNotify = ref(true)
 
 onMounted(() => {
-  const savedDesktopNotification = localStorage.getItem('tjg-desktop-notification')
-  if (savedDesktopNotification !== null) {
-    desktopNotification.value = savedDesktopNotification === 'true'
-  }
-
-  const savedShowContent = localStorage.getItem('tjg-show-content')
-  if (savedShowContent !== null) {
-    showMessageContent.value = savedShowContent === 'true'
-  }
-
-  const savedShowSender = localStorage.getItem('tjg-show-sender')
-  if (savedShowSender !== null) {
-    showSenderName.value = savedShowSender === 'true'
-  }
+  notificationConfig.value = matrixNotificationService.getConfig()
 
   const savedKeywords = localStorage.getItem('tjg-keywords')
   if (savedKeywords) {
@@ -254,7 +270,7 @@ async function handleNotificationChange(value: boolean) {
       return
     }
   }
-  localStorage.setItem('tjg-desktop-notification', value.toString())
+  desktopNotification.value = value
   showFeedback(
     t('setting.notification.feedback.desktop', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -278,7 +294,7 @@ function handleVolumeChange(value: number) {
 }
 
 function handleContentChange(value: boolean) {
-  localStorage.setItem('tjg-show-content', value.toString())
+  showMessageContent.value = value
   showFeedback(
     t('setting.notification.feedback.message_content', {
       state: t(value ? 'setting.notification.common.shown' : 'setting.notification.common.hidden')
@@ -288,7 +304,7 @@ function handleContentChange(value: boolean) {
 }
 
 function handleSenderChange(value: boolean) {
-  localStorage.setItem('tjg-show-sender', value.toString())
+  showSenderName.value = value
   showFeedback(
     t('setting.notification.feedback.sender_name', {
       state: t(value ? 'setting.notification.common.shown' : 'setting.notification.common.hidden')

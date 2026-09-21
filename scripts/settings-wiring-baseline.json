@@ -1,11 +1,10 @@
 {
-  "deadKeys": 25,
+  "deadKeys": 22,
   "deadKeyNames": [
     "tjg-backup-enabled",
     "tjg-blocked-users",
     "tjg-bubble-style",
     "tjg-burn-after-read-settings",
-    "tjg-desktop-notification",
     "tjg-enable-devtools",
     "tjg-font-size",
     "tjg-friend-accept-notify",
@@ -18,8 +17,6 @@
     "tjg-push-dnd",
     "tjg-push-dnd-end",
     "tjg-push-dnd-start",
-    "tjg-show-content",
-    "tjg-show-sender",
     "tjg-sidebar-settings",
     "tjg-space-member-change-notify",
     "tjg-space-new-room-notify",
