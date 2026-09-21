@@ -1,7 +1,16 @@
 packages:
   - "."
 
-# 版本锁定：pnpm 12 不再读取 package.json 的 `pnpm` 字段，必须在这里声明。
+# 【pnpm 版本约束说明】
+# 真正生效的 pnpm 版本钉固是 package.json 的 `packageManager` 字段：
+#   "packageManager": "pnpm@12.4.1"
+# 该字段是核心职责所必需的约束与事实源，一旦设置，不可替代。
+# `engines.pnpm` 仅作声明性二次描述（用于 IDE / preinstall 的 only-allow 提示），
+# 不可视为 packageManager 的替代品。pnpm 12 不再读取 package.json 的 `pnpm` 段，
+# 因此 overrides / allowBuilds 必须写在下面这里（pnpm-workspace.yaml）。
+# 本文档为 pnpm 12 独有，完全不可替代。
+#
+# 覆盖版本锁定：
 overrides:
   conventional-changelog-conventionalcommits: 8.0.0
   uuid@<14.0.0: '>=14.0.0'
