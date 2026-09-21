@@ -165,6 +165,10 @@ describe('MobileInvitePermission', () => {
       blocklist: [],
       allowlist: [],
       allowStrangers: true,
+      // 本页不拥有的好友请求字段必须原样带过去，不能被重置
+      allowFriendRequests: true,
+      autoAcceptFriends: false,
+      requireFriendRequestMessage: true,
       contacts: []
     })
   })
@@ -204,6 +208,9 @@ describe('MobileInvitePermission', () => {
       blocklist: ['@spam:evil.org'],
       allowlist: [],
       allowStrangers: true,
+      allowFriendRequests: true,
+      autoAcceptFriends: false,
+      requireFriendRequestMessage: true,
       contacts: []
     })
   })

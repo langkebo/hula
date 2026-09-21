@@ -327,6 +327,9 @@ describe('MatrixAccountService', () => {
         blocklist: ['@spam:evil.org'],
         allowlist: ['@friend:server'],
         allowStrangers: false,
+        allowFriendRequests: true,
+        autoAcceptFriends: false,
+        requireFriendRequestMessage: true,
         contacts: []
       })
       expect(mockClientWithData.getAccountDataFromServer).toHaveBeenCalledWith('im.hula.invite_policy')
@@ -344,6 +347,9 @@ describe('MatrixAccountService', () => {
         blocklist: [],
         allowlist: [],
         allowStrangers: false,
+        allowFriendRequests: true,
+        autoAcceptFriends: false,
+        requireFriendRequestMessage: true,
         contacts: []
       })
     })
@@ -373,6 +379,9 @@ describe('MatrixAccountService', () => {
         blocklist: ['@a:b', '@a:b'],
         allowlist: ['@c:d'],
         allowStrangers: true,
+        allowFriendRequests: true,
+        autoAcceptFriends: false,
+        requireFriendRequestMessage: true,
         contacts: []
       })
 
@@ -382,6 +391,9 @@ describe('MatrixAccountService', () => {
         blocklist: ['@a:b'],
         allowlist: ['@c:d'],
         allowStrangers: true,
+        allowFriendRequests: true,
+        autoAcceptFriends: false,
+        requireFriendRequestMessage: true,
         contacts: []
       })
     })
@@ -399,6 +411,9 @@ describe('MatrixAccountService', () => {
           blocklist: [],
           allowlist: [],
           allowStrangers: true,
+          allowFriendRequests: true,
+          autoAcceptFriends: false,
+          requireFriendRequestMessage: true,
           contacts: []
         })
       ).rejects.toThrow('Server error')

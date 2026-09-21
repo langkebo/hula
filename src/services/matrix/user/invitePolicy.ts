@@ -50,6 +50,18 @@ export interface InvitePolicy {
    */
   allowStrangers: boolean
   /**
+   * 是否允许接收好友请求。
+   *
+   * **消费方在 synapse-rust 后端**：它读取同一份 `im.hula.invite_policy`
+   * account data 来裁决好友请求。前端只负责读写与归一化，不做本地强制，
+   * 因此本仓库无法给出「开关真的生效」的行为证据。
+   */
+  allowFriendRequests: boolean
+  /** 是否自动接受收到的好友请求。消费方同上（后端 account data）。 */
+  autoAcceptFriends: boolean
+  /** 发送好友请求是否必须附言。消费方同上（后端 account data）。 */
+  requireFriendRequestMessage: boolean
+  /**
    * 联系人（好友）user id 快照。
    *
    * **不参与判定**，只随 account data 往返保存（展示/调试/兼容旧数据）。
@@ -77,6 +89,10 @@ export const DEFAULT_INVITE_POLICY: InvitePolicy = {
   blocklist: [],
   allowlist: [],
   allowStrangers: false,
+  // 好友请求默认放开接收，但不自动接受；附言是默认要求（与旧 UI 默认一致）
+  allowFriendRequests: true,
+  autoAcceptFriends: false,
+  requireFriendRequestMessage: true,
   contacts: []
 }
 
@@ -87,6 +103,11 @@ export function isInvitePolicyMode(value: unknown): value is InvitePolicyMode {
 /** 归一化 Matrix 用户 id：去空白。不做大小写折叠——Matrix id 局部部分大小写敏感。 */
 export function normalizeUserId(userId: unknown): string {
   return typeof userId === 'string' ? userId.trim() : ''
+}
+
+/** 布尔字段归一化：非法输入（缺失 / 字符串 / 数字 / null）一律回落默认值。 */
+function normalizeBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback
 }
 
 function normalizeUserIdList(value: unknown): string[] {
@@ -117,8 +138,13 @@ export function normalizeInvitePolicy(input: unknown): InvitePolicy {
     mode: isInvitePolicyMode(candidate.mode) ? candidate.mode : DEFAULT_INVITE_POLICY.mode,
     blocklist: normalizeUserIdList(candidate.blocklist),
     allowlist: normalizeUserIdList(candidate.allowlist),
-    allowStrangers:
-      typeof candidate.allowStrangers === 'boolean' ? candidate.allowStrangers : DEFAULT_INVITE_POLICY.allowStrangers,
+    allowStrangers: normalizeBoolean(candidate.allowStrangers, DEFAULT_INVITE_POLICY.allowStrangers),
+    allowFriendRequests: normalizeBoolean(candidate.allowFriendRequests, DEFAULT_INVITE_POLICY.allowFriendRequests),
+    autoAcceptFriends: normalizeBoolean(candidate.autoAcceptFriends, DEFAULT_INVITE_POLICY.autoAcceptFriends),
+    requireFriendRequestMessage: normalizeBoolean(
+      candidate.requireFriendRequestMessage,
+      DEFAULT_INVITE_POLICY.requireFriendRequestMessage
+    ),
     contacts: normalizeUserIdList(candidate.contacts)
   }
 }
@@ -196,6 +222,9 @@ export function loadInvitePolicy(storage: Pick<Storage, 'getItem'> = localStorag
       blocklist: (v) => v === undefined || Array.isArray(v),
       allowlist: (v) => v === undefined || Array.isArray(v),
       allowStrangers: (v) => v === undefined || typeof v === 'boolean',
+      allowFriendRequests: (v) => v === undefined || typeof v === 'boolean',
+      autoAcceptFriends: (v) => v === undefined || typeof v === 'boolean',
+      requireFriendRequestMessage: (v) => v === undefined || typeof v === 'boolean',
       contacts: (v) => v === undefined || Array.isArray(v)
     })
 

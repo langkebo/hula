@@ -93,6 +93,69 @@ describe('normalizeInvitePolicy', () => {
   })
 })
 
+/**
+ * 好友请求策略字段。
+ *
+ * 消费方在 synapse-rust 后端（它读同一份 `im.hula.invite_policy` account data），
+ * 所以这里只能钉死「归一化 / 默认值 / 往返」这些客户端契约，
+ * **不能**据此断言功能已在后端生效。
+ */
+describe('normalizeInvitePolicy — 好友请求策略字段', () => {
+  it('defaults to permissive requests, manual accept, and required message', () => {
+    expect(DEFAULT_INVITE_POLICY.allowFriendRequests).toBe(true)
+    expect(DEFAULT_INVITE_POLICY.autoAcceptFriends).toBe(false)
+    expect(DEFAULT_INVITE_POLICY.requireFriendRequestMessage).toBe(true)
+    expect(normalizeInvitePolicy(null)).toEqual(DEFAULT_INVITE_POLICY)
+  })
+
+  it('falls back to the defaults for non-boolean input', () => {
+    const result = normalizeInvitePolicy({
+      allowFriendRequests: 'yes',
+      autoAcceptFriends: 1,
+      requireFriendRequestMessage: null
+    })
+    expect(result.allowFriendRequests).toBe(true)
+    expect(result.autoAcceptFriends).toBe(false)
+    expect(result.requireFriendRequestMessage).toBe(true)
+  })
+
+  it('keeps explicit booleans, including false', () => {
+    const result = normalizeInvitePolicy({
+      allowFriendRequests: false,
+      autoAcceptFriends: true,
+      requireFriendRequestMessage: false
+    })
+    expect(result.allowFriendRequests).toBe(false)
+    expect(result.autoAcceptFriends).toBe(true)
+    expect(result.requireFriendRequestMessage).toBe(false)
+  })
+
+  it('round-trips the friend-request fields through cache/load', () => {
+    cacheInvitePolicy({
+      ...DEFAULT_INVITE_POLICY,
+      allowFriendRequests: false,
+      autoAcceptFriends: true,
+      requireFriendRequestMessage: false
+    })
+    const loaded = loadInvitePolicy()
+    expect(loaded.allowFriendRequests).toBe(false)
+    expect(loaded.autoAcceptFriends).toBe(true)
+    expect(loaded.requireFriendRequestMessage).toBe(false)
+  })
+
+  it('does not disturb the invite-list fields when only a friend flag changes', () => {
+    const base = normalizeInvitePolicy({
+      mode: 'blocklist',
+      blocklist: ['@blocked:evil.org'],
+      allowlist: ['@allow:server'],
+      allowStrangers: true,
+      contacts: ['@friend:server']
+    })
+    const next = normalizeInvitePolicy({ ...base, allowFriendRequests: false })
+    expect(next).toEqual({ ...base, allowFriendRequests: false })
+  })
+})
+
 describe('shouldRejectInvite — 静态名单策略', () => {
   it('never rejects in allow_all when strangers are allowed', () => {
     expect(shouldRejectInvite('@anyone:server', policy({ mode: 'allow_all', allowStrangers: true }))).toBe(false)

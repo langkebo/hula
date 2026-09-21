@@ -1,5 +1,5 @@
 {
-  "deadKeys": 17,
+  "deadKeys": 16,
   "deadKeyNames": [
     "tjg-audio-input",
     "tjg-audio-output",
@@ -10,7 +10,6 @@
     "tjg-echo-cancellation",
     "tjg-enable-devtools",
     "tjg-font-size",
-    "tjg-friend-settings",
     "tjg-input-volume",
     "tjg-lab-features",
     "tjg-mjolnir-ban-lists",

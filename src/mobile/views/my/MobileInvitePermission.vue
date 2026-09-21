@@ -152,8 +152,17 @@ onMounted(async () => {
   }
 })
 
+/**
+ * 最近一次读到的完整策略。
+ *
+ * `buildPolicy()` 只覆盖本页拥有的字段，其余字段（如好友请求三项）从这里原样
+ * 带过去——否则在本页改模式/名单会把账号上的好友请求策略重置成默认值。
+ */
+let appliedPolicy: InvitePolicy = normalizeInvitePolicy(null)
+
 function applyConfig(policy: InvitePolicy) {
   const normalized = normalizeInvitePolicy(policy)
+  appliedPolicy = normalized
   mode.value = normalized.mode
   blocklist.value = normalized.blocklist
   allowlist.value = normalized.allowlist
@@ -163,6 +172,7 @@ function applyConfig(policy: InvitePolicy) {
 
 function buildPolicy(): InvitePolicy {
   return {
+    ...appliedPolicy,
     mode: mode.value,
     blocklist: blocklist.value,
     allowlist: allowlist.value,

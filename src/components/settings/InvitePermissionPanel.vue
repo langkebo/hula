@@ -195,8 +195,17 @@ onMounted(async () => {
   }
 })
 
+/**
+ * 最近一次读到的完整策略。
+ *
+ * `buildPolicy()` 只覆盖本面板拥有的字段，其余字段（如好友请求三项）从这里
+ * 原样带过去——否则每次改模式/名单都会把兄弟编辑器拥有的字段重置成默认值。
+ */
+let appliedPolicy: InvitePolicy = normalizeInvitePolicy(null)
+
 function applyPolicy(policy: InvitePolicy) {
   const normalized = normalizeInvitePolicy(policy)
+  appliedPolicy = normalized
   mode.value = normalized.mode
   blocklist.value = normalized.blocklist
   allowlist.value = normalized.allowlist
@@ -206,6 +215,7 @@ function applyPolicy(policy: InvitePolicy) {
 
 function buildPolicy(): InvitePolicy {
   return {
+    ...appliedPolicy,
     mode: mode.value,
     blocklist: blocklist.value,
     allowlist: allowlist.value,
