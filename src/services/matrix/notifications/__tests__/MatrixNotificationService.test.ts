@@ -374,6 +374,39 @@ describe('MatrixNotificationService', () => {
       expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
     })
 
+    it('writes the local mirror after a successful account-data read so boot hydration sees it', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getAccountData: vi.fn(() => ({
+          getContent: () => ({ enabled: true, startTime: 1000, endTime: 2000 })
+        }))
+      } as unknown as MatrixClient)
+
+      await matrixNotificationService.syncDndFromAccountData()
+
+      expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('true')
+      expect(localStorage.getItem(DND_START_KEY)).toBe('1000')
+      expect(localStorage.getItem(DND_END_KEY)).toBe('2000')
+
+      // 冷启动：新实例只能从镜像水合，必须拿到账号数据那份窗口
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+    })
+
+    it('drops non-finite account-data timestamps instead of suppressing notifications', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getAccountData: vi.fn(() => ({
+          getContent: () => ({ enabled: true, startTime: Number.NaN, endTime: 2000 })
+        }))
+      } as unknown as MatrixClient)
+
+      const result = await matrixNotificationService.syncDndFromAccountData()
+
+      expect(result).toEqual({ enabled: true, startTime: null, endTime: 2000 })
+      // 边界不完整 → 不抑制，而不是凭一个 NaN 走跨午夜分支误判
+      expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(false)
+    })
+
     it('suppresses a plain mention through the decision gate while DND is active', () => {
       matrixNotificationService.setDndSettings(allDayWindow())
 

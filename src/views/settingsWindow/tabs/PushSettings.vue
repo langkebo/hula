@@ -420,7 +420,27 @@ async function handleInvitePushToggle(enabled: boolean) {
   }
 }
 
+/**
+ * 默认勿扰窗口：本地时间 22:00 → 次日 08:00。
+ *
+ * 开关默认没有时间边界（`null`），而 `isWithinDndWindow` 对缺边界的窗口返回 false。
+ * 直接打开开关会得到一个"看着打开、什么也不抑制"的死开关——用户没有任何反馈。
+ * 打开时用这组默认值补齐空边界，选择器随即显示它，用户可再调整。
+ */
+function defaultDndBounds(): { startTime: number; endTime: number } {
+  const start = new Date()
+  start.setHours(22, 0, 0, 0)
+  const end = new Date()
+  end.setHours(8, 0, 0, 0)
+  return { startTime: start.getTime(), endTime: end.getTime() }
+}
+
 function handleDndToggle(enabled: boolean) {
+  if (enabled && (dndStartTime.value === null || dndEndTime.value === null)) {
+    const fallback = defaultDndBounds()
+    dndStartTime.value = dndStartTime.value ?? fallback.startTime
+    dndEndTime.value = dndEndTime.value ?? fallback.endTime
+  }
   matrixNotificationService.setDndSettings({
     enabled,
     startTime: dndStartTime.value,

@@ -92,6 +92,11 @@ function parseStoredDndTimestamp(value: string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+/** 账号数据里的时间戳：只有有限数值才是有效边界；缺失 / NaN / 非法类型一律视为未设置。 */
+function normalizeDndTimestamp(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
 class MatrixNotificationService extends BaseMatrixService {
   private pushRules: IPushRule[] = []
   private observedClient: MatrixClient | null = null
@@ -243,11 +248,15 @@ class MatrixNotificationService extends BaseMatrixService {
         }
         if (dndSettings && typeof dndSettings === 'object') {
           const normalized: DndWindow = {
-            enabled: (dndSettings.enabled ?? false) as boolean,
-            startTime: (dndSettings.startTime ?? null) as number | null,
-            endTime: (dndSettings.endTime ?? null) as number | null
+            enabled: dndSettings.enabled === true,
+            // 账号数据未经校验：非有限数一律视为"未设置"，否则会静默抑制通知
+            startTime: normalizeDndTimestamp(dndSettings.startTime),
+            endTime: normalizeDndTimestamp(dndSettings.endTime)
           }
           this.dndSettings = normalized
+          // 回写本地镜像：否则冷启动时 DND 不水合，用户会被静默重新打开通知，
+          // 或在设置页看到一份与账号数据不一致的本地状态。
+          this.writeDndMirror(normalized)
           logger.info('[MatrixNotification] 从服务端同步 DND 设置成功')
           return normalized
         }
@@ -285,6 +294,17 @@ class MatrixNotificationService extends BaseMatrixService {
     localStorage.setItem(key, value.toString())
   }
 
+  /** 把勿扰时段写入 localStorage 镜像（`setDndSettings` 与账号数据水合共用一份实现）。 */
+  private writeDndMirror(settings: DndWindow): void {
+    try {
+      localStorage.setItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY, settings.enabled.toString())
+      this.writeMirroredTimestamp(MatrixNotificationService.DND_START_STORAGE_KEY, settings.startTime)
+      this.writeMirroredTimestamp(MatrixNotificationService.DND_END_STORAGE_KEY, settings.endTime)
+    } catch (err) {
+      logger.warn('写入勿扰时段设置失败:', err)
+    }
+  }
+
   /** 读取当前勿扰时段（缓存副本，调用方无法就地改写服务状态）。 */
   getDndSettings(): DndWindow {
     return { ...this.dndSettings }
@@ -298,13 +318,7 @@ class MatrixNotificationService extends BaseMatrixService {
       endTime: settings.endTime
     }
 
-    try {
-      localStorage.setItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY, this.dndSettings.enabled.toString())
-      this.writeMirroredTimestamp(MatrixNotificationService.DND_START_STORAGE_KEY, this.dndSettings.startTime)
-      this.writeMirroredTimestamp(MatrixNotificationService.DND_END_STORAGE_KEY, this.dndSettings.endTime)
-    } catch (err) {
-      logger.warn('写入勿扰时段设置失败:', err)
-    }
+    this.writeDndMirror(this.dndSettings)
 
     this.syncDndToAccountData(this.dndSettings)
   }

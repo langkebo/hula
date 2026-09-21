@@ -168,7 +168,7 @@ describe('PushSettings — P0-#3 客户端就绪竞态', () => {
     wrapper.unmount()
   })
 
-  it('勿扰开关变更通过 setDndSettings 持久化，不再直接写 localStorage', async () => {
+  it('勿扰开关在空边界时补齐默认时段，避免"看着打开却不生效"', async () => {
     const wrapper = await mountReady()
 
     // 勿扰开关是模板里最后一个开关
@@ -176,8 +176,34 @@ describe('PushSettings — P0-#3 客户端就绪竞态', () => {
     switches[switches.length - 1].vm.$emit('update:value', true)
     await nextTick()
 
-    expect(setDndSettingsMock).toHaveBeenCalledWith({ enabled: true, startTime: null, endTime: null })
+    // 空边界会让 isWithinDndWindow 恒为 false；打开时必须给一组真实窗口
+    const start = new Date()
+    start.setHours(22, 0, 0, 0)
+    const end = new Date()
+    end.setHours(8, 0, 0, 0)
+    expect(setDndSettingsMock).toHaveBeenCalledWith({
+      enabled: true,
+      startTime: start.getTime(),
+      endTime: end.getTime()
+    })
+    // 补齐的边界要反映到界面选择器上，而不是只写给服务
+    const pickers = wrapper.findAllComponents({ name: 'NTimePicker' })
+    expect(pickers[0].props('value')).toBe(start.getTime())
+    expect(pickers[1].props('value')).toBe(end.getTime())
     expect(localStorage.getItem('tjg-push-dnd')).toBeNull()
+
+    wrapper.unmount()
+  })
+
+  it('勿扰开关不覆盖已有的时间边界', async () => {
+    getDndSettingsMock.mockReturnValue({ enabled: false, startTime: 1000, endTime: 2000 })
+
+    const wrapper = await mountReady()
+    const switches = wrapper.findAllComponents({ name: 'NSwitch' })
+    switches[switches.length - 1].vm.$emit('update:value', true)
+    await nextTick()
+
+    expect(setDndSettingsMock).toHaveBeenCalledWith({ enabled: true, startTime: 1000, endTime: 2000 })
 
     wrapper.unmount()
   })

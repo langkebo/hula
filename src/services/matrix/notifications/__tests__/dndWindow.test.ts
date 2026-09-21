@@ -23,6 +23,15 @@ describe('isWithinDndWindow', () => {
     expect(isWithinDndWindow(dnd({ startTime: null, endTime: null }), nowAt(23, 0))).toBe(false)
   })
 
+  it('is off when a boundary is not a finite number', () => {
+    // 账号数据未校验时可能存进 NaN。旧的跨午夜分支会算成
+    // `current >= NaN || current < end` → 上午恒真，静默抑制通知。
+    expect(isWithinDndWindow(dnd({ startTime: Number.NaN, endTime: at(8, 0) }), nowAt(3, 0))).toBe(false)
+    expect(isWithinDndWindow(dnd({ startTime: Number.NaN, endTime: at(8, 0) }), nowAt(12, 0))).toBe(false)
+    expect(isWithinDndWindow(dnd({ startTime: at(22, 0), endTime: Number.NaN }), nowAt(3, 0))).toBe(false)
+    expect(isWithinDndWindow(dnd({ startTime: Number.POSITIVE_INFINITY }), nowAt(3, 0))).toBe(false)
+  })
+
   it('treats an identical start and end as all-day', () => {
     const allDay = dnd({ startTime: at(9, 30), endTime: at(9, 30) })
     expect(isWithinDndWindow(allDay, nowAt(3, 0))).toBe(true)

@@ -9,7 +9,7 @@ export interface DndWindow {
   endTime: number | null
 }
 
-/** 时间戳 → 本地时区当天分钟数。非法时间戳得到 NaN，后续比较一律为 false（不抑制）。 */
+/** 时间戳 → 本地时区当天分钟数。非法时间戳得到 NaN，由调用方先做有限性校验。 */
 function minutesOfDay(timestamp: number): number {
   const date = new Date(timestamp)
   return date.getHours() * 60 + date.getMinutes()
@@ -19,6 +19,9 @@ function minutesOfDay(timestamp: number): number {
  * 判断 now（本地时区）是否落在 [startTime, endTime) 内。
  *
  * - `enabled` 为假，或 `startTime` / `endTime` 任一为 null（配置不完整）→ false，不抑制；
+ * - `startTime` / `endTime` 不是有限数（账号数据里可能出现 NaN）→ false，不抑制：
+ *   否则 `start=NaN, end=08:00` 会走跨午夜分支 `current >= NaN || current < end`
+ *   在上午误判为"在勿扰窗口内"，把正常通知静默吃掉；
  * - 起止同一时刻视为全天勿扰；
  * - 跨午夜按 [start, end) 处理（如 22:00 -> 08:00）。
  */
@@ -28,6 +31,10 @@ export function isWithinDndWindow(window: DndWindow, now: Date): boolean {
   }
 
   if (window.startTime === null || window.endTime === null) {
+    return false
+  }
+
+  if (!Number.isFinite(window.startTime) || !Number.isFinite(window.endTime)) {
     return false
   }
 
