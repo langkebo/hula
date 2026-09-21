@@ -1,0 +1,30 @@
+{
+  "deadKeys": 25,
+  "deadKeyNames": [
+    "tjg-backup-enabled",
+    "tjg-blocked-users",
+    "tjg-bubble-style",
+    "tjg-desktop-notification",
+    "tjg-enable-devtools",
+    "tjg-font-size",
+    "tjg-friend-accept-notify",
+    "tjg-friend-request-notify",
+    "tjg-invite-allowlist",
+    "tjg-invite-blocklist",
+    "tjg-keyword-notification",
+    "tjg-keywords",
+    "tjg-push-dnd",
+    "tjg-push-dnd-end",
+    "tjg-push-dnd-start",
+    "tjg-send-receipts",
+    "tjg-show-content",
+    "tjg-show-online",
+    "tjg-show-sender",
+    "tjg-show-typing",
+    "tjg-space-member-change-notify",
+    "tjg-space-new-room-notify",
+    "tjg-thread-mention-notify",
+    "tjg-thread-participate-notify",
+    "tjg-thread-reply-notify"
+  ]
+}

@@ -63,6 +63,7 @@
     "check:doc-coverage": "node scripts/check-doc-coverage.mjs",
     "check:sdk-boundary": "node scripts/check-sdk-boundary.mjs",
     "check:ratchet": "node scripts/check-ratchet.mjs",
+    "check:settings-wiring": "node scripts/check-settings-wiring.mjs",
     "check:file-size": "node scripts/check-file-size.mjs",
     "verify:sdk-pin": "node scripts/verify-sdk-pin.mjs",
     "quality:no-raw-fetch": "node scripts/check-no-raw-fetch.mjs",
