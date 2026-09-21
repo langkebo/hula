@@ -324,6 +324,14 @@ class MatrixEventService extends BaseMatrixService {
             msgType
           ) as MessageType['message']['body'])
 
+    // 线程内消息：m.relates_to.rel_type === 'm.thread'，event_id 指向线程根。
+    // body 是新建对象（LINK_PREVIEW 例外但同样可安全附加），这里直接补字段。
+    const relatesTo = content?.['m.relates_to'] as { rel_type?: string; event_id?: string } | undefined
+    const threadId = relatesTo?.rel_type === 'm.thread' ? relatesTo.event_id : undefined
+    if (threadId) {
+      body.threadId = threadId
+    }
+
     return {
       clientKey: event.getId() || '',
       message: {

@@ -2,6 +2,10 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
+import {
+  DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES,
+  loadNotificationDisplayPreferences
+} from '@/services/matrix/notifications/notificationDisplayPreferences'
 import NotificationSettings from '../NotificationSettings.vue'
 
 const messageSuccessMock = vi.fn()
@@ -18,13 +22,19 @@ const notificationConfigMock = {
   enableVibrate: true,
   showPreview: true,
   showSender: true,
-  showMessageContent: true
+  showMessageContent: true,
+  events: {} as Record<string, boolean>
 }
 const updateNotificationConfigMock = vi.fn((partial: Partial<typeof notificationConfigMock>) => {
   Object.assign(notificationConfigMock, partial)
 })
+const setEventNotificationEnabledMock = vi.fn()
 const translationMap: Record<string, string> = {
   'setting.notification.desktop.title': '桌面通知',
+  'setting.notification.keyword.title': '关键词通知',
+  'setting.notification.thread.title': '线程通知',
+  'setting.notification.space.title': '空间通知',
+  'setting.notification.friend.title': '好友通知',
   'setting.notification.push_section.title': '推送与规则'
 }
 
@@ -36,13 +46,7 @@ type NotificationSettingsVm = ComponentPublicInstance & {
   keywords: string[]
   keywordNotification: boolean
   newKeyword: string
-  threadReplyNotify: boolean
-  threadParticipateNotify: boolean
   threadMentionNotify: boolean
-  spaceNewRoomNotify: boolean
-  spaceMemberChangeNotify: boolean
-  friendRequestNotify: boolean
-  friendAcceptNotify: boolean
   addKeyword: () => void
   removeKeyword: (keyword: string) => void
   handleNotificationChange: (value: boolean) => Promise<void>
@@ -51,13 +55,7 @@ type NotificationSettingsVm = ComponentPublicInstance & {
   handleKeywordToggle: (value: boolean) => void
   handleSoundChange: (value: boolean) => void
   handleVolumeChange: (value: number) => void
-  handleThreadReplyNotify: (value: boolean) => void
-  handleThreadParticipateNotify: (value: boolean) => void
   handleThreadMentionNotify: (value: boolean) => void
-  handleSpaceNewRoomNotify: (value: boolean) => void
-  handleSpaceMemberChangeNotify: (value: boolean) => void
-  handleFriendRequestNotify: (value: boolean) => void
-  handleFriendAcceptNotify: (value: boolean) => void
 }
 
 vi.mock('naive-ui', () => ({
@@ -109,8 +107,9 @@ vi.mock('@/stores/domains/settings/setting', () => ({
 
 vi.mock('@/services/matrix/notifications/MatrixNotificationService', () => ({
   matrixNotificationService: {
-    getConfig: () => ({ ...notificationConfigMock }),
-    updateConfig: (partial: Partial<typeof notificationConfigMock>) => updateNotificationConfigMock(partial)
+    getConfig: () => ({ ...notificationConfigMock, events: { ...notificationConfigMock.events } }),
+    updateConfig: (partial: Partial<typeof notificationConfigMock>) => updateNotificationConfigMock(partial),
+    setEventNotificationEnabled: (kind: string, enabled: boolean) => setEventNotificationEnabledMock(kind, enabled)
   }
 }))
 
@@ -126,7 +125,8 @@ describe('NotificationSettings', () => {
       enableVibrate: true,
       showPreview: true,
       showSender: true,
-      showMessageContent: true
+      showMessageContent: true,
+      events: {}
     })
     ;(window as any).$message = { success: messageSuccessMock, warning: messageWarningMock }
     localStorage.clear()
@@ -162,44 +162,121 @@ describe('NotificationSettings', () => {
     expect(vm.showSenderName).toBe(false)
   })
 
-  it('loads keywords from localStorage', () => {
-    localStorage.setItem('tjg-keywords', JSON.stringify(['urgent', 'important']))
+  it('loads keywords from the display preferences store', () => {
+    localStorage.setItem(
+      'tjg-notification-display-preferences',
+      JSON.stringify({ ...DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES, keywords: ['urgent', 'important'] })
+    )
+
     const wrapper = mount(NotificationSettings)
+
     expect(getVm(wrapper).keywords).toEqual(['urgent', 'important'])
   })
 
-  it('loads keyword notification from localStorage', () => {
-    localStorage.setItem('tjg-keyword-notification', 'true')
+  it('loads the keyword notification toggle from the display preferences store', () => {
+    localStorage.setItem(
+      'tjg-notification-display-preferences',
+      JSON.stringify({ ...DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES, keywordNotifications: true })
+    )
+
     const wrapper = mount(NotificationSettings)
+
     expect(getVm(wrapper).keywordNotification).toBe(true)
   })
 
-  it('adds keyword and saves to localStorage', () => {
+  it('migrates the legacy keyword keys into the display preferences store on mount', async () => {
+    localStorage.setItem('tjg-keyword-notification', 'true')
+    localStorage.setItem('tjg-keywords', JSON.stringify(['deploy']))
+
+    const wrapper = mount(NotificationSettings)
+    await flushPromises()
+    const vm = getVm(wrapper)
+
+    expect(vm.keywordNotification).toBe(true)
+    expect(vm.keywords).toEqual(['deploy'])
+    expect(localStorage.getItem('tjg-keyword-notification')).toBeNull()
+    expect(localStorage.getItem('tjg-keywords')).toBeNull()
+  })
+
+  it('adds a keyword into the display preferences store instead of the dead legacy key', () => {
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
     vm.newKeyword = 'test-keyword'
     vm.addKeyword()
-    expect(vm.keywords).toContain('test-keyword')
-    expect(JSON.parse(localStorage.getItem('tjg-keywords')!)).toContain('test-keyword')
+
+    expect(loadNotificationDisplayPreferences().keywords).toContain('test-keyword')
+    expect(localStorage.getItem('tjg-keywords')).toBeNull()
     expect(vm.newKeyword).toBe('')
   })
 
   it('does not add duplicate keyword', () => {
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
-    vm.keywords = ['existing']
+    vm.addKeyword()
     vm.newKeyword = 'existing'
     vm.addKeyword()
+    vm.newKeyword = 'existing'
+    vm.addKeyword()
+
     expect(vm.keywords).toHaveLength(1)
   })
 
-  it('removes keyword and saves to localStorage', () => {
-    localStorage.setItem('tjg-keywords', JSON.stringify(['a', 'b', 'c']))
+  it('removes a keyword from the display preferences store', () => {
+    localStorage.setItem(
+      'tjg-notification-display-preferences',
+      JSON.stringify({ ...DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES, keywords: ['a', 'b', 'c'] })
+    )
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
+
     vm.removeKeyword('b')
+
     expect(vm.keywords).not.toContain('b')
     expect(vm.keywords).toHaveLength(2)
+    expect(loadNotificationDisplayPreferences().keywords).toEqual(['a', 'c'])
+  })
+
+  it('saves the keyword toggle into the display preferences store', () => {
+    const wrapper = mount(NotificationSettings)
+    const vm = getVm(wrapper)
+
+    vm.handleKeywordToggle(true)
+
+    expect(loadNotificationDisplayPreferences().keywordNotifications).toBe(true)
+    expect(localStorage.getItem('tjg-keyword-notification')).toBeNull()
+  })
+
+  it('loads the thread mention switch from the service config, defaulting to on', async () => {
+    const wrapper = mount(NotificationSettings)
+    await flushPromises()
+    expect(getVm(wrapper).threadMentionNotify).toBe(true)
+
+    notificationConfigMock.events = { thread_mention: false }
+    const second = mount(NotificationSettings)
+    await flushPromises()
+    expect(getVm(second).threadMentionNotify).toBe(false)
+  })
+
+  it('saves the thread mention switch through the service, never through the legacy key', () => {
+    const wrapper = mount(NotificationSettings)
+    const vm = getVm(wrapper)
+
+    vm.handleThreadMentionNotify(false)
+
+    expect(setEventNotificationEnabledMock).toHaveBeenCalledWith('thread_mention', false)
+    expect(localStorage.getItem('tjg-thread-mention-notify')).toBeNull()
+    expect(messageSuccessMock).toHaveBeenCalled()
+  })
+
+  it('no longer renders the six switches that had no delivery path', () => {
+    const wrapper = mount(NotificationSettings)
+    const text = wrapper.text()
+
+    expect(text).not.toContain('setting.notification.thread.reply_label')
+    expect(text).not.toContain('setting.notification.thread.participate_label')
+    expect(text).not.toContain('空间通知')
+    expect(text).not.toContain('好友通知')
+    expect(wrapper.text()).toContain('线程通知')
   })
 
   it('saves content visibility through MatrixNotificationService', () => {
@@ -219,13 +296,6 @@ describe('NotificationSettings', () => {
     expect(localStorage.getItem('tjg-show-sender')).toBeNull()
   })
 
-  it('saves keyword toggle to localStorage', () => {
-    const wrapper = mount(NotificationSettings)
-    const vm = getVm(wrapper)
-    vm.handleKeywordToggle(true)
-    expect(localStorage.getItem('tjg-keyword-notification')).toBe('true')
-  })
-
   it('calls settingStore on sound change', () => {
     const wrapper = mount(NotificationSettings)
     const vm = getVm(wrapper)
@@ -240,64 +310,6 @@ describe('NotificationSettings', () => {
     expect(setNotificationVolumeMock).toHaveBeenCalledWith(50)
   })
 
-  it('loads thread notification settings from localStorage', () => {
-    localStorage.setItem('tjg-thread-reply-notify', 'false')
-    localStorage.setItem('tjg-thread-participate-notify', 'false')
-    localStorage.setItem('tjg-thread-mention-notify', 'false')
-    const wrapper = mount(NotificationSettings)
-    const vm = getVm(wrapper)
-    expect(vm.threadReplyNotify).toBe(false)
-    expect(vm.threadParticipateNotify).toBe(false)
-    expect(vm.threadMentionNotify).toBe(false)
-  })
-
-  it('saves thread notification settings to localStorage', () => {
-    const wrapper = mount(NotificationSettings)
-    const vm = getVm(wrapper)
-    vm.handleThreadReplyNotify(false)
-    expect(localStorage.getItem('tjg-thread-reply-notify')).toBe('false')
-    vm.handleThreadParticipateNotify(false)
-    expect(localStorage.getItem('tjg-thread-participate-notify')).toBe('false')
-    vm.handleThreadMentionNotify(false)
-    expect(localStorage.getItem('tjg-thread-mention-notify')).toBe('false')
-  })
-
-  it('loads space notification settings from localStorage', () => {
-    localStorage.setItem('tjg-space-new-room-notify', 'false')
-    localStorage.setItem('tjg-space-member-change-notify', 'true')
-    const wrapper = mount(NotificationSettings)
-    const vm = getVm(wrapper)
-    expect(vm.spaceNewRoomNotify).toBe(false)
-    expect(vm.spaceMemberChangeNotify).toBe(true)
-  })
-
-  it('saves space notification settings to localStorage', () => {
-    const wrapper = mount(NotificationSettings)
-    const vm = getVm(wrapper)
-    vm.handleSpaceNewRoomNotify(false)
-    expect(localStorage.getItem('tjg-space-new-room-notify')).toBe('false')
-    vm.handleSpaceMemberChangeNotify(true)
-    expect(localStorage.getItem('tjg-space-member-change-notify')).toBe('true')
-  })
-
-  it('loads friend notification settings from localStorage', () => {
-    localStorage.setItem('tjg-friend-request-notify', 'false')
-    localStorage.setItem('tjg-friend-accept-notify', 'false')
-    const wrapper = mount(NotificationSettings)
-    const vm = getVm(wrapper)
-    expect(vm.friendRequestNotify).toBe(false)
-    expect(vm.friendAcceptNotify).toBe(false)
-  })
-
-  it('saves friend notification settings to localStorage', () => {
-    const wrapper = mount(NotificationSettings)
-    const vm = getVm(wrapper)
-    vm.handleFriendRequestNotify(false)
-    expect(localStorage.getItem('tjg-friend-request-notify')).toBe('false')
-    vm.handleFriendAcceptNotify(false)
-    expect(localStorage.getItem('tjg-friend-accept-notify')).toBe('false')
-  })
-
   it('桌面通知总开关写入 MatrixNotificationService 配置而不是死 key', async () => {
     const wrapper = mount(NotificationSettings)
     await flushPromises()
@@ -306,25 +318,5 @@ describe('NotificationSettings', () => {
 
     expect(updateNotificationConfigMock).toHaveBeenCalledWith({ enableDesktop: false })
     expect(localStorage.getItem('tjg-desktop-notification')).toBeNull()
-  })
-
-  it('消息内容开关写入 MatrixNotificationService 配置而不是死 key', async () => {
-    const wrapper = mount(NotificationSettings)
-    await flushPromises()
-
-    getVm(wrapper).handleContentChange(false)
-
-    expect(updateNotificationConfigMock).toHaveBeenCalledWith({ showMessageContent: false })
-    expect(localStorage.getItem('tjg-show-content')).toBeNull()
-  })
-
-  it('发送者开关写入 MatrixNotificationService 配置而不是死 key', async () => {
-    const wrapper = mount(NotificationSettings)
-    await flushPromises()
-
-    getVm(wrapper).handleSenderChange(false)
-
-    expect(updateNotificationConfigMock).toHaveBeenCalledWith({ showSender: false })
-    expect(localStorage.getItem('tjg-show-sender')).toBeNull()
   })
 })

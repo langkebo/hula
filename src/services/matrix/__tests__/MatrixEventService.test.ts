@@ -277,6 +277,37 @@ describe('MatrixEventService', () => {
       expect(msg?.message.type).toBe(MsgEnum.TEXT)
       expect(msg?.message.body).toEqual({ content: 'hello' })
     })
+
+    it('fills threadId from m.relates_to when the event is a threaded reply', () => {
+      const msg = matrixEventService.convertEventToMessage(
+        makeEvent('m.room.message', {
+          msgtype: 'm.text',
+          body: 'thread reply',
+          'm.relates_to': { rel_type: 'm.thread', event_id: '$root' }
+        }),
+        makeRoom()
+      )
+
+      expect(msg?.message.body.threadId).toBe('$root')
+    })
+
+    it('leaves threadId undefined for a plain message and for a non-thread relation', () => {
+      const plain = matrixEventService.convertEventToMessage(
+        makeEvent('m.room.message', { msgtype: 'm.text', body: 'plain' }),
+        makeRoom()
+      )
+      expect(plain?.message.body.threadId).toBeUndefined()
+
+      const reply = matrixEventService.convertEventToMessage(
+        makeEvent('m.room.message', {
+          msgtype: 'm.text',
+          body: 'reply',
+          'm.relates_to': { 'm.in_reply_to': { event_id: '$parent' } }
+        }),
+        makeRoom()
+      )
+      expect(reply?.message.body.threadId).toBeUndefined()
+    })
   })
 
   describe('getPagedRoomMessages', () => {

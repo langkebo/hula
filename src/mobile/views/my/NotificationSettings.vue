@@ -268,7 +268,10 @@ function openPushSettings() {
 }
 
 function persistDisplayPreferences() {
+  // 展示偏好是桌面/移动共用的同一份存储：这里只覆盖本页拥有的字段，
+  // 其余字段（如桌面端的 keywordNotifications）必须原样保留，避免移动端一保存就把桌面开关重置。
   saveNotificationDisplayPreferences({
+    ...loadNotificationDisplayPreferences(),
     contentSummary: contentSummary.value,
     keywordHighlight: keywordHighlight.value,
     keywords: parseNotificationKeywords(keywordsInput.value),

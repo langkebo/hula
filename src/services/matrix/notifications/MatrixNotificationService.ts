@@ -14,6 +14,11 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
+import {
+  type NotificationDecisionPreferences,
+  type NotificationMessageInput,
+  shouldNotify
+} from './notificationDecision'
 import { loadNotificationDisplayPreferences, materializeNotificationContent } from './notificationDisplayPreferences'
 
 const logger = createLogger('MatrixNotificationService')
@@ -21,6 +26,30 @@ const logger = createLogger('MatrixNotificationService')
 let ackEndpointAvailableCache: boolean | null = null
 let ackCheckTimestamp = 0
 const ACK_CHECK_TTL = 5 * 60 * 1000
+
+/** 唯一有真实分发点、可以接线的细粒度事件开关。缺省视为开启。 */
+export type NotificationEventKind = 'thread_mention'
+
+/** 旧「线程中提及」开关（localStorage 字符串），一次性迁移进 `events.thread_mention`。 */
+const LEGACY_THREAD_MENTION_STORAGE_KEY = 'tjg-thread-mention-notify'
+
+/**
+ * `validateObject` 在 requiredKeys 为空时不会执行单键校验器，因此 events 必须显式清洗。
+ * 只保留布尔值：非法条目视为缺省（开启），避免坏配置静默关掉通知。
+ */
+function sanitizeNotificationEvents(value: unknown): Record<string, boolean> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  const events: Record<string, boolean> = {}
+  for (const [kind, enabled] of Object.entries(value)) {
+    if (typeof enabled === 'boolean') {
+      events[kind] = enabled
+    }
+  }
+  return events
+}
 
 interface NotificationRule {
   ruleId: string
@@ -38,19 +67,24 @@ interface NotificationConfig {
   showPreview: boolean
   showSender: boolean
   showMessageContent: boolean
+  /** 细粒度事件开关，缺省视为开启（`thread_mention` 是唯一有真实分发点的 kind）。 */
+  events: Record<string, boolean>
+}
+
+const DEFAULT_NOTIFICATION_CONFIG: NotificationConfig = {
+  enableDesktop: true,
+  enableSound: true,
+  enableVibrate: true,
+  showPreview: true,
+  showSender: true,
+  showMessageContent: true,
+  events: {}
 }
 
 class MatrixNotificationService extends BaseMatrixService {
   private pushRules: IPushRule[] = []
   private observedClient: MatrixClient | null = null
-  private config: NotificationConfig = {
-    enableDesktop: true,
-    enableSound: true,
-    enableVibrate: true,
-    showPreview: true,
-    showSender: true,
-    showMessageContent: true
-  }
+  private config: NotificationConfig = { ...DEFAULT_NOTIFICATION_CONFIG, events: {} }
 
   private static readonly CONFIG_STORAGE_KEY = 'tjg-notification-config'
   private static readonly ACCOUNT_DATA_TYPE = 'io.hula.notification_settings'
@@ -63,28 +97,59 @@ class MatrixNotificationService extends BaseMatrixService {
 
   private loadConfig(): void {
     const stored = localStorage.getItem(MatrixNotificationService.CONFIG_STORAGE_KEY)
-    if (!stored) return
 
-    const isValidNotificationConfig = (val: unknown): val is Partial<NotificationConfig> =>
-      validateObject<Record<string, unknown>>(val, [], {
-        enableDesktop: (v) => v === undefined || typeof v === 'boolean',
-        enableSound: (v) => v === undefined || typeof v === 'boolean',
-        enableVibrate: (v) => v === undefined || typeof v === 'boolean',
-        showPreview: (v) => v === undefined || typeof v === 'boolean',
-        showSender: (v) => v === undefined || typeof v === 'boolean',
-        showMessageContent: (v) => v === undefined || typeof v === 'boolean'
-      })
+    if (stored) {
+      const isValidNotificationConfig = (val: unknown): val is Partial<NotificationConfig> =>
+        validateObject<Record<string, unknown>>(val, [], {
+          enableDesktop: (v) => v === undefined || typeof v === 'boolean',
+          enableSound: (v) => v === undefined || typeof v === 'boolean',
+          enableVibrate: (v) => v === undefined || typeof v === 'boolean',
+          showPreview: (v) => v === undefined || typeof v === 'boolean',
+          showSender: (v) => v === undefined || typeof v === 'boolean',
+          showMessageContent: (v) => v === undefined || typeof v === 'boolean',
+          events: (v) => v === undefined || (typeof v === 'object' && v !== null && !Array.isArray(v))
+        })
 
-    const defaults: NotificationConfig = {
-      enableDesktop: true,
-      enableSound: true,
-      enableVibrate: true,
-      showPreview: true,
-      showSender: true,
-      showMessageContent: true
+      const parsed = safeJsonParse(stored, isValidNotificationConfig, DEFAULT_NOTIFICATION_CONFIG)
+      this.config = {
+        ...DEFAULT_NOTIFICATION_CONFIG,
+        ...parsed,
+        events: sanitizeNotificationEvents(parsed.events)
+      }
     }
-    const parsed = safeJsonParse(stored, isValidNotificationConfig, defaults)
-    this.config = { ...defaults, ...parsed }
+
+    // 迁移必须在「配置 key 不存在」时也执行：老用户可能只动过线程开关，从未写过配置。
+    this.migrateLegacyEventNotification()
+  }
+
+  /**
+   * 旧 `tjg-thread-mention-notify` 一次性并入 `events.thread_mention`，幂等：
+   * 新值已存在时保留新值，旧 key 无论是否被采用都清理掉。
+   */
+  private migrateLegacyEventNotification(): void {
+    let legacy: string | null = null
+    try {
+      legacy = localStorage.getItem(LEGACY_THREAD_MENTION_STORAGE_KEY)
+    } catch (err) {
+      logger.warn('读取旧线程通知开关失败:', err)
+      return
+    }
+
+    if (legacy === null) return
+
+    if (legacy === 'true' || legacy === 'false') {
+      const enabled = legacy === 'true'
+      if (this.config.events.thread_mention === undefined) {
+        this.config.events = { ...this.config.events, thread_mention: enabled }
+        this.persistConfig()
+      }
+    }
+
+    try {
+      localStorage.removeItem(LEGACY_THREAD_MENTION_STORAGE_KEY)
+    } catch (err) {
+      logger.warn('清理旧线程通知开关失败:', err)
+    }
   }
 
   private persistConfig(): void {
@@ -117,7 +182,11 @@ class MatrixNotificationService extends BaseMatrixService {
       if (event) {
         const serverConfig = event.getContent() as Partial<NotificationConfig>
         if (serverConfig && typeof serverConfig === 'object') {
-          this.config = { ...this.config, ...serverConfig }
+          this.config = {
+            ...this.config,
+            ...serverConfig,
+            events: sanitizeNotificationEvents(serverConfig.events ?? this.config.events)
+          }
           this.persistConfig()
           logger.info('[MatrixNotification] 从服务端同步通知配置成功')
           return true
@@ -295,7 +364,27 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   getConfig(): NotificationConfig {
-    return { ...this.config }
+    return { ...this.config, events: { ...this.config.events } }
+  }
+
+  /** 写入细粒度事件开关（目前唯一 kind：`thread_mention`），与 `enableDesktop` 同一份配置、同一发送路径读取。 */
+  setEventNotificationEnabled(kind: NotificationEventKind, enabled: boolean): void {
+    this.updateConfig({ events: { ...this.config.events, [kind]: enabled } })
+  }
+
+  /**
+   * 消息到达时的统一通知决策门：汇总 `config.events` 与关键词展示偏好后委托纯函数。
+   *
+   * 自己发送的消息由调用方先排除（发送路径还持有 userStore 身份）。
+   */
+  shouldNotifyMessage(input: NotificationMessageInput): boolean {
+    const preferences = loadNotificationDisplayPreferences()
+    const decisionPreferences: NotificationDecisionPreferences = {
+      events: this.config.events,
+      keywordNotifications: preferences.keywordNotifications,
+      keywords: preferences.keywords
+    }
+    return shouldNotify(input, decisionPreferences)
   }
 
   async requestNotificationPermission(): Promise<boolean> {

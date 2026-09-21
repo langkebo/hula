@@ -11,6 +11,8 @@ export interface MessageBody {
   content?: string
   body?: string
   atUidList?: string[]
+  /** 线程根事件 id：来自 `m.relates_to.rel_type === 'm.thread'`，用于线程提及通知开关。 */
+  threadId?: string
   url?: string
   text?: string
   fileName?: string

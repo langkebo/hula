@@ -89,64 +89,10 @@
       <h3 class="section-title">{{ t('setting.notification.thread.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">{{ t('setting.notification.thread.reply_label') }}</span>
-          <span class="setting-desc">{{ t('setting.notification.thread.reply_desc') }}</span>
-        </div>
-        <n-switch v-model:value="threadReplyNotify" @update:value="handleThreadReplyNotify" />
-      </div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.notification.thread.participate_label') }}</span>
-          <span class="setting-desc">{{ t('setting.notification.thread.participate_desc') }}</span>
-        </div>
-        <n-switch v-model:value="threadParticipateNotify" @update:value="handleThreadParticipateNotify" />
-      </div>
-      <div class="setting-item">
-        <div class="setting-info">
           <span class="setting-label">{{ t('setting.notification.thread.mention_label') }}</span>
           <span class="setting-desc">{{ t('setting.notification.thread.mention_desc') }}</span>
         </div>
         <n-switch v-model:value="threadMentionNotify" @update:value="handleThreadMentionNotify" />
-      </div>
-    </div>
-
-    <n-divider />
-
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.notification.space.title') }}</h3>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.notification.space.new_room_label') }}</span>
-          <span class="setting-desc">{{ t('setting.notification.space.new_room_desc') }}</span>
-        </div>
-        <n-switch v-model:value="spaceNewRoomNotify" @update:value="handleSpaceNewRoomNotify" />
-      </div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.notification.space.member_change_label') }}</span>
-          <span class="setting-desc">{{ t('setting.notification.space.member_change_desc') }}</span>
-        </div>
-        <n-switch v-model:value="spaceMemberChangeNotify" @update:value="handleSpaceMemberChangeNotify" />
-      </div>
-    </div>
-
-    <n-divider />
-
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.notification.friend.title') }}</h3>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.notification.friend.request_label') }}</span>
-          <span class="setting-desc">{{ t('setting.notification.friend.request_desc') }}</span>
-        </div>
-        <n-switch v-model:value="friendRequestNotify" @update:value="handleFriendRequestNotify" />
-      </div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.notification.friend.accept_label') }}</span>
-          <span class="setting-desc">{{ t('setting.notification.friend.accept_desc') }}</span>
-        </div>
-        <n-switch v-model:value="friendAcceptNotify" @update:value="handleFriendAcceptNotify" />
       </div>
     </div>
 
@@ -166,6 +112,12 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
+import {
+  loadNotificationDisplayPreferences,
+  type NotificationDisplayPreferences,
+  parseNotificationKeywords,
+  saveNotificationDisplayPreferences
+} from '@/services/matrix/notifications/notificationDisplayPreferences'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
 
@@ -177,10 +129,14 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const settingStore = useSettingStore()
 
-// 桌面通知/消息内容/发送者三项配置持久化在 tjg-notification-config，由
-// MatrixNotificationService.getConfig() + buildNotificationDisplay() 在实际发送路径
-// （chat 收到命中当前用户的消息时）读取；组件只读写这份服务配置，不自己消费。
+// 桌面通知/消息内容/发送者/线程提及四项配置持久化在 tjg-notification-config，由
+// MatrixNotificationService.getConfig() + shouldNotifyMessage() 在实际发送路径
+// （chat 收到消息时）读取；组件只读写这份服务配置，不自己消费。
 const notificationConfig = ref(matrixNotificationService.getConfig())
+
+// 关键词开关 + 关键词列表的唯一来源是 notificationDisplayPreferences
+// （tjg-notification-display-preferences），与上面的事件开关不重叠、不互相镜像。
+const displayPreferences = ref(loadNotificationDisplayPreferences())
 
 type NotificationToggle = 'enableDesktop' | 'showMessageContent' | 'showSender'
 
@@ -195,6 +151,11 @@ function writeConfig(patch: Partial<Record<NotificationToggle, boolean>>) {
 
   notificationConfig.value = { ...notificationConfig.value, ...patch }
   matrixNotificationService.updateConfig(patch)
+}
+
+function writeDisplayPreferences(patch: Partial<NotificationDisplayPreferences>) {
+  displayPreferences.value = { ...displayPreferences.value, ...patch }
+  saveNotificationDisplayPreferences(displayPreferences.value)
 }
 
 const desktopNotification = computed({
@@ -217,49 +178,28 @@ const showSenderName = computed({
   get: () => notificationConfig.value.showSender,
   set: (value: boolean) => writeConfig({ showSender: value })
 })
-const keywordNotification = ref(false)
+const keywordNotification = computed({
+  get: () => displayPreferences.value.keywordNotifications,
+  set: (value: boolean) => writeDisplayPreferences({ keywordNotifications: value })
+})
+const keywords = computed(() => displayPreferences.value.keywords)
 const newKeyword = ref('')
-const keywords = ref<string[]>([])
 
-const threadReplyNotify = ref(true)
-const threadParticipateNotify = ref(true)
-const threadMentionNotify = ref(true)
-
-const spaceNewRoomNotify = ref(true)
-const spaceMemberChangeNotify = ref(false)
-
-const friendRequestNotify = ref(true)
-const friendAcceptNotify = ref(true)
+// events.thread_mention 缺省即开启，因此未写入过时开关显示为打开。
+const threadMentionNotify = computed({
+  get: () => notificationConfig.value.events?.thread_mention ?? true,
+  set: (value: boolean) => {
+    notificationConfig.value = {
+      ...notificationConfig.value,
+      events: { ...notificationConfig.value.events, thread_mention: value }
+    }
+    matrixNotificationService.setEventNotificationEnabled('thread_mention', value)
+  }
+})
 
 onMounted(() => {
   notificationConfig.value = matrixNotificationService.getConfig()
-
-  const savedKeywords = localStorage.getItem('tjg-keywords')
-  if (savedKeywords) {
-    keywords.value = JSON.parse(savedKeywords)
-  }
-
-  const savedKeywordNotification = localStorage.getItem('tjg-keyword-notification')
-  if (savedKeywordNotification !== null) {
-    keywordNotification.value = savedKeywordNotification === 'true'
-  }
-
-  const savedThreadReply = localStorage.getItem('tjg-thread-reply-notify')
-  if (savedThreadReply !== null) threadReplyNotify.value = savedThreadReply === 'true'
-  const savedThreadParticipate = localStorage.getItem('tjg-thread-participate-notify')
-  if (savedThreadParticipate !== null) threadParticipateNotify.value = savedThreadParticipate === 'true'
-  const savedThreadMention = localStorage.getItem('tjg-thread-mention-notify')
-  if (savedThreadMention !== null) threadMentionNotify.value = savedThreadMention === 'true'
-
-  const savedSpaceNewRoom = localStorage.getItem('tjg-space-new-room-notify')
-  if (savedSpaceNewRoom !== null) spaceNewRoomNotify.value = savedSpaceNewRoom === 'true'
-  const savedSpaceMember = localStorage.getItem('tjg-space-member-change-notify')
-  if (savedSpaceMember !== null) spaceMemberChangeNotify.value = savedSpaceMember === 'true'
-
-  const savedFriendRequest = localStorage.getItem('tjg-friend-request-notify')
-  if (savedFriendRequest !== null) friendRequestNotify.value = savedFriendRequest === 'true'
-  const savedFriendAccept = localStorage.getItem('tjg-friend-accept-notify')
-  if (savedFriendAccept !== null) friendAcceptNotify.value = savedFriendAccept === 'true'
+  displayPreferences.value = loadNotificationDisplayPreferences()
 })
 
 async function handleNotificationChange(value: boolean) {
@@ -315,7 +255,7 @@ function handleSenderChange(value: boolean) {
 }
 
 function handleKeywordToggle(value: boolean) {
-  localStorage.setItem('tjg-keyword-notification', value.toString())
+  keywordNotification.value = value
   showFeedback(
     t('setting.notification.feedback.keyword', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -326,84 +266,30 @@ function handleKeywordToggle(value: boolean) {
 
 function addKeyword() {
   const keyword = newKeyword.value.trim()
-  if (keyword && !keywords.value.includes(keyword)) {
-    keywords.value.push(keyword)
-    localStorage.setItem('tjg-keywords', JSON.stringify(keywords.value))
-    newKeyword.value = ''
-    showFeedback(t('setting.notification.feedback.keyword_added', { keyword }), 'success')
+  if (!keyword) {
+    return
   }
+
+  const current = keywords.value
+  const next = parseNotificationKeywords([...current, keyword].join(','))
+  if (next.length === current.length) {
+    return
+  }
+
+  writeDisplayPreferences({ keywords: next })
+  newKeyword.value = ''
+  showFeedback(t('setting.notification.feedback.keyword_added', { keyword }), 'success')
 }
 
 function removeKeyword(keyword: string) {
-  keywords.value = keywords.value.filter((k) => k !== keyword)
-  localStorage.setItem('tjg-keywords', JSON.stringify(keywords.value))
+  writeDisplayPreferences({ keywords: keywords.value.filter((k) => k !== keyword) })
   showFeedback(t('setting.notification.feedback.keyword_removed', { keyword }), 'success')
 }
 
-function handleThreadReplyNotify(value: boolean) {
-  localStorage.setItem('tjg-thread-reply-notify', value.toString())
-  showFeedback(
-    t('setting.notification.feedback.thread_reply', {
-      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    }),
-    'success'
-  )
-}
-
-function handleThreadParticipateNotify(value: boolean) {
-  localStorage.setItem('tjg-thread-participate-notify', value.toString())
-  showFeedback(
-    t('setting.notification.feedback.thread_participate', {
-      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    }),
-    'success'
-  )
-}
-
 function handleThreadMentionNotify(value: boolean) {
-  localStorage.setItem('tjg-thread-mention-notify', value.toString())
+  threadMentionNotify.value = value
   showFeedback(
     t('setting.notification.feedback.thread_mention', {
-      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    }),
-    'success'
-  )
-}
-
-function handleSpaceNewRoomNotify(value: boolean) {
-  localStorage.setItem('tjg-space-new-room-notify', value.toString())
-  showFeedback(
-    t('setting.notification.feedback.space_new_room', {
-      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    }),
-    'success'
-  )
-}
-
-function handleSpaceMemberChangeNotify(value: boolean) {
-  localStorage.setItem('tjg-space-member-change-notify', value.toString())
-  showFeedback(
-    t('setting.notification.feedback.space_member_change', {
-      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    }),
-    'success'
-  )
-}
-
-function handleFriendRequestNotify(value: boolean) {
-  localStorage.setItem('tjg-friend-request-notify', value.toString())
-  showFeedback(
-    t('setting.notification.feedback.friend_request', {
-      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    }),
-    'success'
-  )
-}
-
-function handleFriendAcceptNotify(value: boolean) {
-  localStorage.setItem('tjg-friend-accept-notify', value.toString())
-  showFeedback(
-    t('setting.notification.feedback.friend_accept', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
     }),
     'success'

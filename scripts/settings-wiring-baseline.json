@@ -1,5 +1,5 @@
 {
-  "deadKeys": 34,
+  "deadKeys": 25,
   "deadKeyNames": [
     "tjg-audio-input",
     "tjg-audio-output",
@@ -12,14 +12,10 @@
     "tjg-echo-cancellation",
     "tjg-enable-devtools",
     "tjg-font-size",
-    "tjg-friend-accept-notify",
-    "tjg-friend-request-notify",
     "tjg-friend-settings",
     "tjg-input-volume",
     "tjg-invite-allowlist",
     "tjg-invite-blocklist",
-    "tjg-keyword-notification",
-    "tjg-keywords",
     "tjg-lab-features",
     "tjg-mjolnir-ban-lists",
     "tjg-noise-suppression",
@@ -29,11 +25,6 @@
     "tjg-push-dnd-start",
     "tjg-show-performance",
     "tjg-sidebar-settings",
-    "tjg-space-member-change-notify",
-    "tjg-space-new-room-notify",
-    "tjg-thread-mention-notify",
-    "tjg-thread-participate-notify",
-    "tjg-thread-reply-notify",
     "tjg-video-input"
   ]
 }

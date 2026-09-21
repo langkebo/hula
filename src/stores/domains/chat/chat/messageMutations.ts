@@ -237,24 +237,35 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
       }
     }
 
-    if (msg.message.body.atUidList?.includes(userStore.userInfo?.uid ?? '') && cacheUser) {
+    const isOwnMessage = msg.fromUser?.uid === userStore.userInfo?.uid
+    const notificationBody = msg.message.body.content || msg.message.body.body || ''
+    const isMention = msg.message.body.atUidList?.includes(userStore.userInfo?.uid ?? '') ?? false
+    // 唯一的系统通知分发点：统一决策门在 messageMutations 生效（提及 / 线程提及 / 关键词）。
+    // 自己发送的消息永不通知，因此不进入决策门。
+    const shouldSendNotification =
+      !isOwnMessage &&
+      matrixNotificationService.shouldNotifyMessage({
+        isMention,
+        isThread: Boolean(msg.message.body.threadId),
+        body: notificationBody
+      })
+
+    if (shouldSendNotification) {
       const notificationConfig = matrixNotificationService.getConfig()
 
       if (notificationConfig.enableDesktop) {
         // showSender=false 时退化为中性标题而非房间名：单聊的房间名就是对方昵称，
         // 沿用房间名仍会泄漏发送者身份，中性标题对所有房间类型都安全。
-        const title = notificationConfig.showSender
-          ? (cacheUser.name as string)
-          : useI18nGlobal().t('message.notify.new_messages')
-        const display = matrixNotificationService.buildNotificationDisplay(
-          title,
-          msg.message.body.content || msg.message.body.body || ''
-        )
+        // 群缓存冷时退化为消息自带发送者，避免关键词通知静默失效。
+        const senderName = cacheUser?.name || msg.fromUser?.username || msg.fromUser?.uid || ''
+        const senderAvatar = cacheUser?.avatar ?? msg.fromUser?.avatar
+        const title = notificationConfig.showSender ? senderName : useI18nGlobal().t('message.notify.new_messages')
+        const display = matrixNotificationService.buildNotificationDisplay(title, notificationBody)
 
         sendNotification({
           title: display.title,
           body: display.body,
-          icon: cacheUser.avatar as string
+          icon: senderAvatar
         })
       }
     }

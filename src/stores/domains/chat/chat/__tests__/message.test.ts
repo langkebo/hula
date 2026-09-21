@@ -7,7 +7,7 @@ const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef, grou
     currentSessionRoomId: 'room-1',
     currentSession: null as null | { type?: number }
   },
-  // 群成员信息解析结果，决定桌面通知是否有发送者可用（null 表示拿不到，不通知）
+  // 群成员信息解析结果，决定桌面通知标题/头像的来源（null 表示群缓存冷，回退到消息自带发送者）
   groupUserRef: { value: null as null | { name: string; avatar: string } },
   timerWorkerMock: {
     postMessage: vi.fn(),
@@ -136,6 +136,11 @@ import { type Options, sendNotification } from '@tauri-apps/plugin-notification'
 import { useI18nGlobal } from '@/services/i18n'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
+import {
+  DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES,
+  type NotificationDisplayPreferences,
+  saveNotificationDisplayPreferences
+} from '@/services/matrix/notifications/notificationDisplayPreferences'
 import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { useChatStore } from '@/stores/domains/chat/chat/message'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
@@ -559,7 +564,35 @@ describe('ChatMessageStore', () => {
       fromUser: { uid: 'user-2', username: 'tester' }
     })
 
+    const threadMentionMessage = (id: string, content = `message-${id}`, roomId = 'room-1'): MessageType => {
+      const msg = mentionMessage(id, content, roomId)
+      msg.message.body.threadId = '$thread-root'
+      return msg
+    }
+
+    const keywordMessage = (id: string, content: string, roomId = 'room-1'): MessageType => ({
+      clientKey: id,
+      message: {
+        id,
+        roomId,
+        sendTime: Number(id),
+        type: MsgEnum.TEXT,
+        body: {
+          body: content,
+          content
+        }
+      },
+      fromUser: { uid: 'user-2', username: 'tester' }
+    })
+
+    const setDisplayPreferences = (overrides: Partial<NotificationDisplayPreferences>) => {
+      saveNotificationDisplayPreferences({ ...DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES, ...overrides })
+    }
+
     beforeEach(() => {
+      // updateConfig 是合并语义，必须同时复位 events 与关键词展示偏好，否则用例互相污染
+      localStorage.clear()
+      matrixNotificationService.updateConfig({ events: {} })
       groupUserRef.value = { name: 'Alice', avatar: 'mxc://alice' }
       syncNotificationConfigSpy.mockResolvedValue(undefined)
       // 逐例复位为默认配置，等价于用户在设置里把三个开关都打开
@@ -628,6 +661,88 @@ describe('ChatMessageStore', () => {
       await store.pushMsg(msg)
 
       expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('keeps notifying for a thread mention while the thread switch is at its default', async () => {
+      const store = useChatStore()
+
+      await store.pushMsg(threadMentionMessage('6', 'threaded hello'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('threaded hello')
+    })
+
+    it('stops notifying for a thread mention once the thread switch is off', async () => {
+      matrixNotificationService.setEventNotificationEnabled('thread_mention', false)
+      const store = useChatStore()
+
+      await store.pushMsg(threadMentionMessage('7', 'threaded hello'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('still notifies for a plain mention while the thread switch is off', async () => {
+      matrixNotificationService.setEventNotificationEnabled('thread_mention', false)
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('8', 'plain hello'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('plain hello')
+    })
+
+    it('stays silent for a keyword hit while keyword notifications are off (default)', async () => {
+      setDisplayPreferences({ keywordNotifications: false, keywords: ['deploy'] })
+      const store = useChatStore()
+
+      await store.pushMsg(keywordMessage('9', 'the deploy is green'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('notifies for a keyword hit once keyword notifications are on', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['deploy'] })
+      const store = useChatStore()
+
+      await store.pushMsg(keywordMessage('10', 'the deploy is green'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('the deploy is green')
+      // 关键词高亮（展示偏好，默认开启）仍按现状给标题加前缀
+      expect(lastSentOptions().title).toBe('[*] Alice')
+    })
+
+    it('stays silent when keyword notifications are on but the body misses every keyword', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['incident'] })
+      const store = useChatStore()
+
+      await store.pushMsg(keywordMessage('11', 'the deploy is green'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('never notifies for a message sent by the current user, even on a keyword hit', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['deploy'] })
+      const store = useChatStore()
+      const msg = keywordMessage('12', 'the deploy is green')
+      msg.fromUser = { uid: 'user-1', username: 'me' }
+
+      await store.pushMsg(msg)
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the message sender when the group cache has no entry', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['deploy'] })
+      groupUserRef.value = null
+      const store = useChatStore()
+
+      await store.pushMsg(keywordMessage('13', 'the deploy is green'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().title).toBe('[*] tester')
+      expect(lastSentOptions().body).toBe('the deploy is green')
+      expect(lastSentOptions().icon).toBeUndefined()
     })
   })
 })

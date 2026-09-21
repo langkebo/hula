@@ -20,11 +20,24 @@ export const DEFAULT_NOTIFICATION_PRIORITY: NotificationPriority = 'medium'
 /** 与 MatrixNotificationService 的 `tjg-notification-config` 区分：这里是本地展示偏好，不参与 account data 同步。 */
 export const NOTIFICATION_DISPLAY_PREFERENCES_STORAGE_KEY = 'tjg-notification-display-preferences'
 
+/**
+ * 迁移来源（一次性，幂等）。这两个 key 曾由设置界面直接写入且没有任何消费方，
+ * 现在统一并入本模块持有的展示偏好；迁移后删除旧 key，新值始终优先。
+ */
+export const LEGACY_KEYWORD_NOTIFICATION_STORAGE_KEY = 'tjg-keyword-notification'
+export const LEGACY_KEYWORDS_STORAGE_KEY = 'tjg-keywords'
+
 export interface NotificationDisplayPreferences {
   /** 通知中显示消息内容摘要。 */
   contentSummary: boolean
   /** 命中关键词的通知标记为高亮（由调用方决定具体呈现）。 */
   keywordHighlight: boolean
+  /**
+   * 非提及消息命中关键词时是否发送系统通知。
+   *
+   * 默认 `false`：接线前关键词只影响展示，从未触发过系统通知，默认值必须保持这一行为。
+   */
+  keywordNotifications: boolean
   /** 关键词列表，大小写不敏感，逗号分隔输入。 */
   keywords: string[]
   priority: NotificationPriority
@@ -48,6 +61,7 @@ export interface NotificationDisplayDecision {
 export const DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES: NotificationDisplayPreferences = {
   contentSummary: true,
   keywordHighlight: true,
+  keywordNotifications: false,
   keywords: [],
   priority: DEFAULT_NOTIFICATION_PRIORITY
 }
@@ -114,6 +128,10 @@ export function normalizeNotificationDisplayPreferences(input: unknown): Notific
       typeof candidate.keywordHighlight === 'boolean'
         ? candidate.keywordHighlight
         : DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES.keywordHighlight,
+    keywordNotifications:
+      typeof candidate.keywordNotifications === 'boolean'
+        ? candidate.keywordNotifications
+        : DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES.keywordNotifications,
     keywords: Array.isArray(candidate.keywords)
       ? parseNotificationKeywords(candidate.keywords.filter((k) => typeof k === 'string').join(','))
       : [],
@@ -121,8 +139,75 @@ export function normalizeNotificationDisplayPreferences(input: unknown): Notific
   }
 }
 
+type NotificationDisplayPreferencesStorage = Pick<Storage, 'getItem'> & Partial<Pick<Storage, 'setItem' | 'removeItem'>>
+
+type WritableNotificationDisplayPreferencesStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+
+function isWritableStorage(
+  storage: NotificationDisplayPreferencesStorage
+): storage is WritableNotificationDisplayPreferencesStorage {
+  return typeof storage.setItem === 'function' && typeof storage.removeItem === 'function'
+}
+
+/**
+ * 把旧 key 一次性并进展示偏好，幂等：
+ * - 新字段已存在时保持新值（旧 key 只做清理，不覆盖）；
+ * - 旧值非法时丢弃，不伪造默认值；
+ * - 存储只读时跳过写入，不抛错。
+ *
+ * 返回合并后的原始对象（非法字段交给 normalize 兜底）。
+ */
+function migrateLegacyPreferences(
+  raw: Partial<NotificationDisplayPreferences>,
+  storage: NotificationDisplayPreferencesStorage
+): { value: Partial<NotificationDisplayPreferences>; migrated: boolean } {
+  const value = { ...raw }
+  let migrated = false
+  let sawLegacyKey = false
+
+  try {
+    const legacyKeywordToggle = storage.getItem(LEGACY_KEYWORD_NOTIFICATION_STORAGE_KEY)
+    if (legacyKeywordToggle !== null) {
+      sawLegacyKey = true
+      const parsedToggle = legacyKeywordToggle === 'true' ? true : legacyKeywordToggle === 'false' ? false : undefined
+      if (value.keywordNotifications === undefined && parsedToggle !== undefined) {
+        value.keywordNotifications = parsedToggle
+        migrated = true
+      }
+    }
+
+    const rawLegacyKeywords = storage.getItem(LEGACY_KEYWORDS_STORAGE_KEY)
+    if (rawLegacyKeywords !== null) {
+      sawLegacyKey = true
+      const parsedKeywords: unknown = JSON.parse(rawLegacyKeywords)
+      if (value.keywords === undefined && Array.isArray(parsedKeywords)) {
+        value.keywords = parseNotificationKeywords(parsedKeywords.filter((k) => typeof k === 'string').join(','))
+        migrated = true
+      }
+    }
+  } catch (err) {
+    logger.warn('读取旧通知偏好失败:', err)
+  }
+
+  if (sawLegacyKey) {
+    cleanupLegacyKeys(storage)
+  }
+
+  return { value, migrated }
+}
+
+function cleanupLegacyKeys(storage: NotificationDisplayPreferencesStorage): void {
+  if (!isWritableStorage(storage)) return
+  try {
+    storage.removeItem(LEGACY_KEYWORD_NOTIFICATION_STORAGE_KEY)
+    storage.removeItem(LEGACY_KEYWORDS_STORAGE_KEY)
+  } catch (err) {
+    logger.warn('清理旧通知偏好失败:', err)
+  }
+}
+
 export function loadNotificationDisplayPreferences(
-  storage: Pick<Storage, 'getItem'> = localStorage
+  storage: NotificationDisplayPreferencesStorage = localStorage
 ): NotificationDisplayPreferences {
   let stored: string | null = null
   try {
@@ -132,19 +217,23 @@ export function loadNotificationDisplayPreferences(
     return { ...DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES }
   }
 
-  if (!stored) {
-    return { ...DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES }
-  }
-
   const isValidShape = (val: unknown): val is Partial<NotificationDisplayPreferences> =>
     validateObject<Record<string, unknown>>(val, [], {
       contentSummary: (v) => v === undefined || typeof v === 'boolean',
       keywordHighlight: (v) => v === undefined || typeof v === 'boolean',
+      keywordNotifications: (v) => v === undefined || typeof v === 'boolean',
       keywords: (v) => v === undefined || Array.isArray(v),
       priority: (v) => v === undefined || isNotificationPriority(v)
     })
 
-  return normalizeNotificationDisplayPreferences(safeJsonParse(stored, isValidShape, {}))
+  const parsed = stored ? safeJsonParse(stored, isValidShape, {}) : {}
+  const { value, migrated } = migrateLegacyPreferences(parsed, storage)
+
+  if (migrated && isWritableStorage(storage)) {
+    saveNotificationDisplayPreferences(normalizeNotificationDisplayPreferences(value), storage)
+  }
+
+  return normalizeNotificationDisplayPreferences(value)
 }
 
 export function saveNotificationDisplayPreferences(

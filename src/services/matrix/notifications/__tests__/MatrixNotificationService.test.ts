@@ -198,6 +198,83 @@ describe('MatrixNotificationService', () => {
       expect(config).toHaveProperty('showPreview')
       expect(config).toHaveProperty('showSender')
       expect(config).toHaveProperty('showMessageContent')
+      expect(config).toHaveProperty('events')
+    })
+  })
+
+  describe('events config', () => {
+    const CONFIG_STORAGE_KEY = 'tjg-notification-config'
+    const LEGACY_THREAD_MENTION_KEY = 'tjg-thread-mention-notify'
+
+    beforeEach(() => {
+      localStorage.clear()
+      matrixNotificationService.updateConfig({ events: {} })
+    })
+
+    it('exposes an empty events map by default (missing field means enabled)', () => {
+      expect(matrixNotificationService.getConfig().events).toEqual({})
+    })
+
+    it('persists the thread_mention switch and restores it in a fresh instance', async () => {
+      matrixNotificationService.setEventNotificationEnabled('thread_mention', false)
+
+      expect(matrixNotificationService.getConfig().events.thread_mention).toBe(false)
+      expect(JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) as string).events.thread_mention).toBe(false)
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events.thread_mention).toBe(false)
+    })
+
+    it('drops a persisted events value that is not a boolean map', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ events: 'nope' }))
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events).toEqual({})
+    })
+
+    it('drops non-boolean event entries but keeps the boolean ones', async () => {
+      localStorage.setItem(
+        CONFIG_STORAGE_KEY,
+        JSON.stringify({ events: { thread_mention: 'false', other_kind: true } })
+      )
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events).toEqual({ other_kind: true })
+    })
+
+    it('migrates the legacy thread mention key once, letting the new value win', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ events: {} }))
+      localStorage.setItem(LEGACY_THREAD_MENTION_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events.thread_mention).toBe(false)
+      expect(localStorage.getItem(LEGACY_THREAD_MENTION_KEY)).toBeNull()
+
+      // 新值已存在时以新值为准：再次构造实例不会被旧 key 覆盖回去
+      localStorage.setItem(LEGACY_THREAD_MENTION_KEY, 'true')
+      fresh.setEventNotificationEnabled('thread_mention', false)
+      vi.resetModules()
+      const again = (await import('../MatrixNotificationService')).matrixNotificationService
+      expect(again.getConfig().events.thread_mention).toBe(false)
+    })
+
+    it('migrates the legacy thread mention key even when no config was ever persisted', async () => {
+      localStorage.removeItem(CONFIG_STORAGE_KEY)
+      localStorage.setItem(LEGACY_THREAD_MENTION_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events.thread_mention).toBe(false)
+      expect(localStorage.getItem(LEGACY_THREAD_MENTION_KEY)).toBeNull()
     })
   })
 

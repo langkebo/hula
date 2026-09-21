@@ -220,6 +220,28 @@ describe('NotificationSettings', () => {
       expect(stored.keywordHighlight).toBe(false)
     })
 
+    it('keeps the desktop keyword notification switch untouched when this screen saves', () => {
+      localStorage.setItem(
+        'tjg-notification-display-preferences',
+        JSON.stringify({
+          contentSummary: true,
+          keywordHighlight: true,
+          keywordNotifications: true,
+          keywords: [],
+          priority: 'medium'
+        })
+      )
+      const wrapper = mount(NotificationSettings)
+      const vm = wrapper.vm as any
+      vm.contentSummary = false
+
+      vm.handleContentSummaryToggle()
+
+      const stored = JSON.parse(localStorage.getItem('tjg-notification-display-preferences') as string)
+      expect(stored.contentSummary).toBe(false)
+      expect(stored.keywordNotifications).toBe(true)
+    })
+
     it('normalizes keywords on blur', () => {
       const wrapper = mount(NotificationSettings)
       const vm = wrapper.vm as any
