@@ -6,8 +6,7 @@
     :bordered="false"
     :closable="true"
     :mask-closable="false"
-    class="e2ee-onboarding-dialog"
-    style="width: 540px; max-width: 90vw">
+    class="e2ee-onboarding-dialog w-[540px] max-w-[90vw]">
     <n-spin :show="loading">
       <div v-if="currentStep === 'welcome'" class="step-content">
         <div class="welcome-icon">

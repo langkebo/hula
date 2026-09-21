@@ -6,8 +6,7 @@
     :bordered="false"
     :closable="true"
     :mask-closable="false"
-    class="key-rotation-dialog"
-    style="width: var(--tjg-dialog-width-md); max-width: 90vw">
+    class="key-rotation-dialog w-[var(--tjg-dialog-width-md)] max-w-[90vw]">
     <n-spin :show="loading">
       <div class="rotation-status">
         <div class="status-header">
@@ -118,7 +117,7 @@
             <div class="action-text">
               <span class="action-label">
                 {{ t('encryption.key_rotation.revoke_key') }}
-                <n-tag size="small" type="warning" style="margin-left: 6px">
+                <n-tag size="small" type="warning" class="ml-6px">
                   {{ t('encryption.key_rotation.admin_only') }}
                 </n-tag>
               </span>
@@ -151,7 +150,7 @@
           <n-select
             v-model:value="rotationInterval"
             :options="intervalOptions"
-            style="width: 120px"
+            class="w-[120px]"
             @update:value="handleConfigChange" />
         </div>
       </div>
@@ -178,12 +177,12 @@
         v-model:value="revokeKeyId"
         :placeholder="t('encryption.key_rotation.revoke_key_id_placeholder')"
         :label="t('encryption.key_rotation.revoke_key_id_label')"
-        style="margin-top: 12px" />
+        class="mt-12px" />
       <n-input
         v-model:value="revokeReason"
         :placeholder="t('encryption.key_rotation.revoke_reason_placeholder')"
         :label="t('encryption.key_rotation.revoke_reason_label')"
-        style="margin-top: 8px" />
+        class="mt-8px" />
     </div>
   </n-modal>
 </template>

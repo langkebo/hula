@@ -1,5 +1,5 @@
 <template>
-  <n-modal v-model:show="visible" preset="card" :title="dialogTitle" style="width: 560px" :mask-closable="false">
+  <n-modal v-model:show="visible" preset="card" :title="dialogTitle" class="w-[560px]" :mask-closable="false">
     <n-spin :show="loading">
       <!-- Status Section -->
       <div v-if="activeTab === 'status'" class="tab-content">
@@ -39,7 +39,7 @@
               </n-button>
             </div>
 
-            <n-divider style="margin: 12px 0" />
+            <n-divider class="my-12px" />
 
             <div class="danger-zone">
               <div class="danger-title">
@@ -81,7 +81,7 @@
           "
           closable
           @close="verifyResult = null"
-          style="margin-top: 12px">
+          class="mt-12px">
           <template v-if="verifyResult.valid">
             {{ t('encryption.secure_backup.verify_valid_desc', { keyCount: verifyResult.key_count }) }}
           </template>
@@ -133,8 +133,8 @@
           <n-checkbox v-model:checked="keySaved" class="key-checkbox">
             {{ t('encryption.secure_backup.key_saved_confirm') }}
           </n-checkbox>
-          <div class="password-field" style="margin-top: 16px; margin-bottom: 16px">
-            <div class="password-label" style="font-size: 14px; margin-bottom: 8px">
+          <div class="password-field my-16px">
+            <div class="password-label text-14px mb-8px">
               {{ t('setting.account.current_password') }}
             </div>
             <n-input
@@ -192,7 +192,7 @@
           "
           closable
           @close="restoreResult = null"
-          style="margin-top: 12px">
+          class="mt-12px">
           <template v-if="restoreResult.success">
             {{ t('encryption.secure_backup.restore_success_desc', { imported: restoreResult.imported }) }}
           </template>
@@ -201,7 +201,7 @@
           </template>
         </n-alert>
 
-        <div class="step-actions" style="margin-top: 16px">
+        <div class="step-actions mt-16px">
           <n-button @click="activeTab = 'status'">{{ t('common.back') }}</n-button>
           <n-button
             type="primary"

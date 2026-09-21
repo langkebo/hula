@@ -3,9 +3,8 @@
     v-model:show="visible"
     preset="card"
     :title="t('setting.encryption.device_verify_dialog.title')"
-    style="width: 500px"
-    :mask-closable="false"
-    class="rounded-12px overflow-hidden shadow-lg">
+    class="w-[500px] rounded-12px overflow-hidden shadow-lg"
+    :mask-closable="false">
     <n-spin :show="loading">
       <div class="px-24px py-20px">
         <!-- 步骤条引导 -->

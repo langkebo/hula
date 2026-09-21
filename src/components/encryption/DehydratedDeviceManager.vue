@@ -6,7 +6,7 @@
     :bordered="false"
     :closable="true"
     :mask-closable="false"
-    style="width: 600px; max-width: 90vw">
+    class="w-[600px] max-w-[90vw]">
     <n-spin :show="loading">
       <div class="device-list">
         <div v-if="devices.length === 0" class="empty-state">

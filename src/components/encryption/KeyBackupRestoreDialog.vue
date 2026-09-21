@@ -3,7 +3,7 @@
     v-model:show="visible"
     preset="card"
     :title="t('encryption.backup_restore_dialog.title')"
-    style="width: 560px"
+    class="w-[560px]"
     :mask-closable="false">
     <n-spin :show="loading">
       <div class="restore-content">

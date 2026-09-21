@@ -6,8 +6,7 @@
     :bordered="false"
     :closable="true"
     :mask-closable="false"
-    class="cross-signing-dialog"
-    style="width: 500px; max-width: 90vw">
+    class="cross-signing-dialog w-[500px] max-w-[90vw]">
     <n-spin :show="loading">
       <div class="cross-signing-status">
         <div class="status-icon" :class="isSetup ? 'status-active' : 'status-inactive'">

@@ -6,7 +6,7 @@
     :bordered="false"
     :closable="true"
     :mask-closable="false"
-    style="width: 580px; max-width: 90vw">
+    class="w-[580px] max-w-[90vw]">
     <n-steps :current="currentStepIndex" class="bootstrap-steps">
       <n-step :title="t('encryption.bootstrap.step_intro')" />
       <n-step :title="t('encryption.bootstrap.step_cross_signing')" />

@@ -6,8 +6,7 @@
     :bordered="false"
     :closable="true"
     :mask-closable="false"
-    class="device-trust-manager"
-    style="width: 700px; max-width: 90vw">
+    class="device-trust-manager w-[700px] max-w-[90vw]">
     <n-spin :show="loading">
       <n-tabs v-model:value="activeTab" type="line">
         <!-- Device List Tab -->
