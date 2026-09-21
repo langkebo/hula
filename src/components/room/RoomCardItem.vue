@@ -54,6 +54,13 @@
         </div>
 
         <div class="room-card-item__meta flex items-center gap-[--tjg-space-2] mt-2px">
+          <!-- 房间 homeserver 域名：房间旁常显的服务器标识 -->
+          <!-- 域名解析由 RoomHomeserverLabel 内部经 @/utils/userIdentity 完成 -->
+          <RoomHomeserverLabel
+            v-if="item.roomId"
+            class="shrink-0"
+            data-testid="room-card-server"
+            :room-id="item.roomId" />
           <FederationBadge
             v-if="item.isFederated"
             :is-local="false"
@@ -219,6 +226,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import FederationBadge from '@/components/atomic/FederationBadge.vue'
+import RoomHomeserverLabel from '@/components/room/RoomHomeserverLabel.vue'
 
 export interface RoomCardViewModel {
   roomId: string

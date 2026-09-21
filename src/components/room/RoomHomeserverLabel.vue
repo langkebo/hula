@@ -1,6 +1,6 @@
 <template>
-  <span class="room-homeserver-label" :title="serverName">
-    {{ serverName }}
+  <span class="room-homeserver-label" :title="resolvedServerName" data-testid="room-homeserver-label">
+    {{ resolvedServerName }}
   </span>
 </template>
 
@@ -24,13 +24,14 @@ const props = withDefaults(
 /**
  * 房间 homeserver 标注：复用 `extractServerName` 单一事实源
  * 禁止组件内自行 `split(':')` 解析
+ *
+ * 注意：计算结果**不得**与 prop 同名（`serverName`），否则会遮蔽 prop，
+ * 模板读到的到底是 prop 还是 computed 将无法从字面判断。故命名为 `resolvedServerName`。
  */
-const serverName = computed(() => {
+const resolvedServerName = computed(() => {
   if (props.serverName) return props.serverName
   if (!props.roomId) return ''
-  const parsed = extractServerName(props.roomId)
-  // roomId 形如 !opaque:server → 只取 server 部分
-  return parsed || ''
+  return extractServerName(props.roomId) || ''
 })
 </script>
 

@@ -158,6 +158,19 @@ describe('RoomCardItem', () => {
     expect(classes).not.toContain('room-card-item--federated')
   })
 
+  it('显示房间 homeserver 域名 chip（房间旁服务器标识）', () => {
+    const wrapper = mountCard()
+    const server = wrapper.find('[data-testid="room-card-server"]')
+    expect(server.exists()).toBe(true)
+    // !room1:matrix.test → 只取 server 段（不得残留 '!' 或 opaque 部分）
+    expect(server.text()).toBe('matrix.test')
+  })
+
+  it('域名 chip 随 roomId 的 homeserver 变化（证明解析真的走了 roomId）', () => {
+    const wrapper = mountCard({ item: { ...sampleRoom, roomId: '!abc:other.example' } })
+    expect(wrapper.find('[data-testid="room-card-server"]').text()).toBe('other.example')
+  })
+
   it('普通群聊卡片保留透明边框占位（hover 由 SCSS 接管品牌色）', () => {
     const wrapper = mountCard({ item: { ...sampleRoom, isEncrypted: false, isFederated: false } })
     const classes = wrapper.find('[data-testid="room-card-item"]').classes()
