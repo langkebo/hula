@@ -8,6 +8,10 @@ import InvitePermissionPanel from '../InvitePermissionPanel.vue'
  * 背景：该面板原先被 `SecuritySettings.vue` 以 `<InvitePermissionPanel />` 挂载，
  * **不传 props 也不接事件**，而面板自身没有任何状态与服务调用——三档模式点了没反应，
  * 名单加了也不落库，等于一个纯装饰组件。本次改为自包含（与移动端同一套 API）。
+ *
+ * 面板自包含后，原先抛给父组件的 `mode-change` / `add-user` / `remove-user`
+ * 三个事件没有任何使用处监听，已删除；对应断言"emit 了某个事件"的测试一并删除，
+ * 保留的是断言 account data 真的被写回的持久化测试。
  */
 
 const { getPolicyMock, getPolicyStrictMock, setPolicyMock } = vi.hoisted(() => ({
@@ -358,17 +362,6 @@ describe('InvitePermissionPanel', () => {
     expect(values).toEqual(['allow_all', 'blocklist', 'allowlist'])
   })
 
-  it('切换模式时触发 mode-change 事件', async () => {
-    const wrapper = mount(InvitePermissionPanel, {
-      props: { visible: true, mode: 'allow_all', blocklist: [], allowlist: [] }
-    })
-    const radioGroup = wrapper.findComponent({ name: 'NRadioGroup' })
-    radioGroup.vm.$emit('update:value', 'blocklist')
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted('mode-change')).toBeTruthy()
-    expect(wrapper.emitted('mode-change')?.[0]).toEqual(['blocklist'])
-  })
-
   it('blocklist 模式下显示黑名单列表', () => {
     const wrapper = mount(InvitePermissionPanel, {
       props: {
@@ -395,41 +388,5 @@ describe('InvitePermissionPanel', () => {
     const section = wrapper.find('[data-test="allowlist-section"]')
     expect(section.exists()).toBe(true)
     expect(section.text()).toContain('@bob:example.com')
-  })
-
-  it('添加用户到黑名单时触发 add-user 事件', async () => {
-    const wrapper = mount(InvitePermissionPanel, {
-      props: { visible: true, mode: 'blocklist', blocklist: [], allowlist: [] }
-    })
-    const section = wrapper.find('[data-test="blocklist-section"]')
-    await section.find('[data-test="NInput"]').setValue('@newuser:example.com')
-    await section.find('[data-test="add-blocklist-button"]').trigger('click')
-    expect(wrapper.emitted('add-user')).toBeTruthy()
-    expect(wrapper.emitted('add-user')?.[0]).toEqual(['blocklist', '@newuser:example.com'])
-  })
-
-  it('添加用户到白名单时触发 add-user 事件', async () => {
-    const wrapper = mount(InvitePermissionPanel, {
-      props: { visible: true, mode: 'allowlist', blocklist: [], allowlist: [] }
-    })
-    const section = wrapper.find('[data-test="allowlist-section"]')
-    await section.find('[data-test="NInput"]').setValue('@newuser2:example.com')
-    await section.find('[data-test="add-allowlist-button"]').trigger('click')
-    expect(wrapper.emitted('add-user')?.[0]).toEqual(['allowlist', '@newuser2:example.com'])
-  })
-
-  it('移除用户时触发 remove-user 事件', async () => {
-    const wrapper = mount(InvitePermissionPanel, {
-      props: {
-        visible: true,
-        mode: 'blocklist',
-        blocklist: ['@alice:example.com'],
-        allowlist: []
-      }
-    })
-    const removeButton = wrapper.find('[data-test="blocklist-section"] [data-test="NListItem"] [data-test="NButton"]')
-    await removeButton.trigger('click')
-    expect(wrapper.emitted('remove-user')).toBeTruthy()
-    expect(wrapper.emitted('remove-user')?.[0]).toEqual(['blocklist', '@alice:example.com'])
   })
 })

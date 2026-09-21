@@ -136,6 +136,10 @@ import { createLogger } from '@/utils/Logger'
  *
  * `visible` 仍作为显示开关保留；`mode`/`blocklist`/`allowlist` 仍可传入用于
  * 覆盖初值（测试与嵌入场景），但不再要求父组件回写。
+ *
+ * 原先把改动抛给父组件的 `mode-change` / `add-user` / `remove-user` 三个事件已删除：
+ * 全仓库没有任何使用处监听它们，面板又已经自己落库，留着只是没人消费的死 API——
+ * `scripts/check-component-contracts.mjs` 会盯着这类事件不再新增。
  */
 const props = withDefaults(
   defineProps<{
@@ -151,12 +155,6 @@ const props = withDefaults(
     allowlist: undefined
   }
 )
-
-const emit = defineEmits<{
-  'mode-change': [mode: InvitePolicyMode]
-  'add-user': [listType: 'blocklist' | 'allowlist', userId: string]
-  'remove-user': [listType: 'blocklist' | 'allowlist', userId: string]
-}>()
 
 const logger = createLogger('InvitePermissionPanel')
 
@@ -257,7 +255,6 @@ async function handleModeChange(value: InvitePolicyMode | number | string) {
     return
   }
   mode.value = next
-  emit('mode-change', next)
   await persist((base) => ({ ...base, mode: next }))
 }
 
@@ -295,7 +292,6 @@ async function handleAddUser(listType: 'blocklist' | 'allowlist') {
     allowlistInput.value = ''
   }
 
-  emit('add-user', listType, userId)
   await persist((base) => {
     const current = base[listType]
     return current.includes(userId) ? base : { ...base, [listType]: [...current, userId] }
@@ -303,7 +299,6 @@ async function handleAddUser(listType: 'blocklist' | 'allowlist') {
 }
 
 async function handleRemoveUser(listType: 'blocklist' | 'allowlist', userId: string) {
-  emit('remove-user', listType, userId)
   await persist((base) => ({ ...base, [listType]: base[listType].filter((id) => id !== userId) }))
 }
 </script>
