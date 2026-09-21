@@ -24,6 +24,11 @@ const {
   setSecretChatHideSessionsMock,
   setSecretChatAutoLockMock,
   setSecretChatLockTimeoutMock,
+  setShowOnlineStatusEnabledMock,
+  setSendTypingNotificationsEnabledMock,
+  setSendReadReceiptsEnabledMock,
+  migrateLegacyPreferenceSettingsMock,
+  privacyState,
   translationMap
 } = vi.hoisted(() => {
   const messageSuccessMock = vi.fn()
@@ -43,6 +48,15 @@ const {
   const setSecretChatHideSessionsMock = vi.fn()
   const setSecretChatAutoLockMock = vi.fn()
   const setSecretChatLockTimeoutMock = vi.fn()
+  const setShowOnlineStatusEnabledMock = vi.fn()
+  const setSendTypingNotificationsEnabledMock = vi.fn()
+  const setSendReadReceiptsEnabledMock = vi.fn()
+  const migrateLegacyPreferenceSettingsMock = vi.fn()
+  const privacyState = {
+    showOnlineStatus: true,
+    sendTypingNotifications: true,
+    sendReadReceipts: true
+  }
   const translationMap: Record<string, string> = {
     'setting.security.encryption_status': '加密状态',
     'setting.security.encryption_disabled_title': '端到端加密未启用',
@@ -67,6 +81,11 @@ const {
     setSecretChatHideSessionsMock,
     setSecretChatAutoLockMock,
     setSecretChatLockTimeoutMock,
+    setShowOnlineStatusEnabledMock,
+    setSendTypingNotificationsEnabledMock,
+    setSendReadReceiptsEnabledMock,
+    migrateLegacyPreferenceSettingsMock,
+    privacyState,
     translationMap
   }
 })
@@ -88,6 +107,7 @@ type PrivacySettingsVm = ComponentPublicInstance & {
   sendReadReceipts: boolean
   handleOnlineStatusChange: (value: boolean) => void
   handleTypingStatusChange: (value: boolean) => void
+  handleReadReceiptsChange: (value: boolean) => void
 }
 
 type InviteListsVm = ComponentPublicInstance & {
@@ -177,7 +197,29 @@ vi.mock('@/stores/domains/settings/setting', () => ({
     setSecretChatEnabled: (enabled: boolean) => setSecretChatEnabledMock(enabled),
     setSecretChatHideSessions: (enabled: boolean) => setSecretChatHideSessionsMock(enabled),
     setSecretChatAutoLock: (enabled: boolean) => setSecretChatAutoLockMock(enabled),
-    setSecretChatLockTimeout: (value: number) => setSecretChatLockTimeoutMock(value)
+    setSecretChatLockTimeout: (value: number) => setSecretChatLockTimeoutMock(value),
+    get showOnlineStatusEnabled() {
+      return privacyState.showOnlineStatus
+    },
+    get sendTypingNotificationsEnabled() {
+      return privacyState.sendTypingNotifications
+    },
+    get sendReadReceiptsEnabled() {
+      return privacyState.sendReadReceipts
+    },
+    setShowOnlineStatusEnabled: (enabled: boolean) => {
+      privacyState.showOnlineStatus = enabled
+      setShowOnlineStatusEnabledMock(enabled)
+    },
+    setSendTypingNotificationsEnabled: (enabled: boolean) => {
+      privacyState.sendTypingNotifications = enabled
+      setSendTypingNotificationsEnabledMock(enabled)
+    },
+    setSendReadReceiptsEnabled: (enabled: boolean) => {
+      privacyState.sendReadReceipts = enabled
+      setSendReadReceiptsEnabledMock(enabled)
+    },
+    migrateLegacyPreferenceSettings: () => migrateLegacyPreferenceSettingsMock()
   })
 }))
 
@@ -236,6 +278,9 @@ describe('SecuritySettings', () => {
     isEncryptionAvailableMock.mockResolvedValue(false)
     getKeyBackupInfoMock.mockResolvedValue(null)
     isSecretChatConfiguredMock.mockReturnValue(false)
+    privacyState.showOnlineStatus = true
+    privacyState.sendTypingNotifications = true
+    privacyState.sendReadReceipts = true
   })
 
   it('renders correctly', async () => {
@@ -284,33 +329,49 @@ describe('SecuritySettings', () => {
     expect(vm.inviteAllowlist).toContain('@allow:test.com')
   })
 
-  it('loads privacy settings from localStorage', async () => {
-    localStorage.setItem('tjg-show-online', 'false')
-    localStorage.setItem('tjg-show-typing', 'false')
-    localStorage.setItem('tjg-send-receipts', 'false')
+  it('loads privacy settings from the setting store', async () => {
+    privacyState.showOnlineStatus = false
+    privacyState.sendTypingNotifications = false
+    privacyState.sendReadReceipts = false
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     const vm = getPrivacyVm(wrapper)
     expect(vm.showOnlineStatus).toBe(false)
     expect(vm.showTypingStatus).toBe(false)
     expect(vm.sendReadReceipts).toBe(false)
+    expect(migrateLegacyPreferenceSettingsMock).toHaveBeenCalled()
   })
 
-  it('saves online status to localStorage', async () => {
+  it('writes online status to the setting store', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     const vm = getPrivacyVm(wrapper)
     vm.handleOnlineStatusChange(false)
-    expect(localStorage.getItem('tjg-show-online')).toBe('false')
+    expect(setShowOnlineStatusEnabledMock).toHaveBeenCalledWith(false)
+    expect(privacyState.showOnlineStatus).toBe(false)
+    // 组件不再写 localStorage 死 key
+    expect(localStorage.getItem('tjg-show-online')).toBeNull()
     expect(messageSuccessMock).toHaveBeenCalled()
   })
 
-  it('saves typing status to localStorage', async () => {
+  it('writes typing status to the setting store', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     const vm = getPrivacyVm(wrapper)
     vm.handleTypingStatusChange(false)
-    expect(localStorage.getItem('tjg-show-typing')).toBe('false')
+    expect(setSendTypingNotificationsEnabledMock).toHaveBeenCalledWith(false)
+    expect(privacyState.sendTypingNotifications).toBe(false)
+    expect(localStorage.getItem('tjg-show-typing')).toBeNull()
+  })
+
+  it('writes read receipts to the setting store', async () => {
+    const wrapper = mount(SecuritySettings)
+    await vi.dynamicImportSettled()
+    const vm = getPrivacyVm(wrapper)
+    vm.handleReadReceiptsChange(false)
+    expect(setSendReadReceiptsEnabledMock).toHaveBeenCalledWith(false)
+    expect(privacyState.sendReadReceipts).toBe(false)
+    expect(localStorage.getItem('tjg-send-receipts')).toBeNull()
   })
 
   it('adds blocked user and saves to localStorage', async () => {

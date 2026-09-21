@@ -74,6 +74,8 @@ declare namespace STO {
       sendReadReceipts: boolean
       /** 是否发送输入状态 */
       sendTypingNotifications: boolean
+      /** 是否向他人展示在线状态 */
+      showOnlineStatus: boolean
     }
     /** 聊天设置 */
     chat: {

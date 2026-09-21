@@ -30,7 +30,8 @@ export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
   spaceShowSubspaces: true,
   spaceDefaultNotification: 'all_messages' as 'all_messages' | 'mentions_only' | 'none',
   sendReadReceipts: true,
-  sendTypingNotifications: true
+  sendTypingNotifications: true,
+  showOnlineStatus: true
 })
 
 export const normalizeNotificationVolume = (volume?: number) => {
@@ -53,7 +54,8 @@ export const LEGACY_PREFERENCE_STORAGE_KEYS = {
   spaceShowSubspaces: 'tjg-space-show-subspaces',
   spaceDefaultNotification: 'tjg-space-default-notification',
   sendReadReceipts: 'tjg-send-read-receipts',
-  sendTypingNotifications: 'tjg-send-typing-notifications'
+  sendTypingNotifications: 'tjg-send-typing-notifications',
+  showOnlineStatus: 'tjg-show-online'
 } as const
 
 export const readLegacyBooleanPreference = (key: string) => {

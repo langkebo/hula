@@ -121,7 +121,8 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     spaceDefaultNotification: (state: STO.Setting) =>
       normalizeSpaceDefaultNotification(state.preferences?.spaceDefaultNotification),
     sendReadReceiptsEnabled: (state: STO.Setting) => state.preferences?.sendReadReceipts ?? true,
-    sendTypingNotificationsEnabled: (state: STO.Setting) => state.preferences?.sendTypingNotifications ?? true
+    sendTypingNotificationsEnabled: (state: STO.Setting) => state.preferences?.sendTypingNotifications ?? true,
+    showOnlineStatusEnabled: (state: STO.Setting) => state.preferences?.showOnlineStatus ?? true
   },
   actions: {
     /** 初始化主题 */
@@ -231,6 +232,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.preferences.sendReadReceipts = this.preferences.sendReadReceipts ?? defaults.sendReadReceipts
       this.preferences.sendTypingNotifications =
         this.preferences.sendTypingNotifications ?? defaults.sendTypingNotifications
+      this.preferences.showOnlineStatus = this.preferences.showOnlineStatus ?? defaults.showOnlineStatus
     },
     migrateLegacyPreferenceSettings() {
       this.ensurePreferenceSettings()
@@ -327,6 +329,12 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
         this.preferences.sendTypingNotifications = sendTypingNotifications
         localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.sendTypingNotifications)
       }
+
+      const showOnlineStatus = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.showOnlineStatus)
+      if (typeof showOnlineStatus === 'boolean') {
+        this.preferences.showOnlineStatus = showOnlineStatus
+        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.showOnlineStatus)
+      }
     },
     setMessageConfirmEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()
@@ -387,6 +395,10 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     setSendTypingNotificationsEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()
       this.preferences.sendTypingNotifications = enabled
+    },
+    setShowOnlineStatusEnabled(enabled: boolean) {
+      this.ensurePreferenceSettings()
+      this.preferences.showOnlineStatus = enabled
     },
     ensurePageSettings() {
       if (!this.page) {

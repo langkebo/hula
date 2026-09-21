@@ -1,5 +1,5 @@
 {
-  "deadKeys": 28,
+  "deadKeys": 25,
   "deadKeyNames": [
     "tjg-backup-enabled",
     "tjg-blocked-users",
@@ -18,11 +18,8 @@
     "tjg-push-dnd",
     "tjg-push-dnd-end",
     "tjg-push-dnd-start",
-    "tjg-send-receipts",
     "tjg-show-content",
-    "tjg-show-online",
     "tjg-show-sender",
-    "tjg-show-typing",
     "tjg-sidebar-settings",
     "tjg-space-member-change-notify",
     "tjg-space-new-room-notify",
