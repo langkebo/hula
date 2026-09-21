@@ -1,18 +1,22 @@
 packages:
   - "."
 
+# 依赖安装脚本的审批清单。pnpm 11 起 `onlyBuiltDependencies` /
+# `ignoredBuiltDependencies` 已被本设置取代，且不再读取 package.json 的 `pnpm` 字段，
+# 因此这里是唯一事实源。
+# 语义：true = 允许运行 install 生命周期脚本；false = 明确禁止。
+# 未列出的包一律视为「未审查」，在 strictDepBuilds（默认 true）下报
+# ERR_PNPM_IGNORED_BUILDS。占位符 `set this to true or false` 是 pnpm 自动写入的，
+# 必须手工裁决。
 allowBuilds:
-  '@parcel/watcher': set this to true or false
-  '@vue-office/docx': set this to true or false
-  '@vue-office/excel': set this to true or false
-  '@vue-office/pdf': set this to true or false
-  '@vue-office/pptx': set this to true or false
-  esbuild: set this to true or false
-  msw: set this to true or false
-  vue-demi: set this to true or false
-
-onlyBuiltDependencies:
-  - '@vue-office/docx'
-  - '@vue-office/excel'
-  - '@vue-office/pdf'
-  - '@vue-office/pptx'
+  # 两者均已有预编译平台包（@parcel/watcher-darwin-arm64 / @esbuild-darwin-arm64），
+  # 本地编译是回退路径，禁止以免触发 node-gyp / 二进制下载。
+  '@parcel/watcher': false
+  esbuild: false
+  # postinstall 按 Vue 版本切换入口（当前 Vue 3），幂等。
+  '@vue-office/docx': true
+  '@vue-office/excel': true
+  '@vue-office/pdf': true
+  '@vue-office/pptx': true
+  msw: true
+  vue-demi: true
