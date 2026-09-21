@@ -1,9 +1,10 @@
 // @ts-expect-error colorthief 3.x d.ts named exports not resolved by TS bundler mode; runtime works
 import { getColor } from 'colorthief'
 import { defineStore } from 'pinia'
-import { StoresEnum } from '@/enums'
+import { OnlineEnum, StoresEnum } from '@/enums'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { mapUserStateToPresence } from '@/utils/userStatus'
 
@@ -60,12 +61,22 @@ export const useUserStatusStore = defineStore(StoresEnum.USER_STATE, () => {
     const userStore = useUserStore()
     const groupStore = useGroupStore()
 
-    await matrixAccountService.setPresence(mapUserStateToPresence(state))
+    const targetPresence = mapUserStateToPresence(state)
+    // 「允许其他用户看到您的在线状态」关闭时把在线选择降级为 offline（与状态菜单里的
+    // 「离线」同语义），并把本地 activeStatus 一并置为离线，避免本地显示在线而对端看不到。
+    // 其它状态（away/busy/隐身）是用户的显式选择，语义上本就不是「在线」，保持原行为。
+    const hidesOnline = targetPresence === 'online' && !useSettingStore().showOnlineStatusEnabled
+    const presence = hidesOnline ? 'offline' : targetPresence
+
+    await matrixAccountService.setPresence(presence)
 
     stateId.value = state.id
 
     if (userStore.userInfo?.uid) {
       userStore.userInfo.userStateId = state.id
+      if (hidesOnline) {
+        userStore.userInfo.activeStatus = OnlineEnum.OFFLINE
+      }
       groupStore.updateUserItem(userStore.userInfo.uid, {
         userStateId: state.id
       })

@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionStorePort } from '../MatrixRuntimeSessionService'
 
@@ -194,6 +195,8 @@ function createService(port: SessionStorePort = mockPort as unknown as SessionSt
 
 describe('MatrixRuntimeSessionService', () => {
   beforeEach(() => {
+    // bootstrap 的 startPresencePipeline 读取「显示在线状态」偏好（默认开启），需要激活 Pinia
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     localStorage.clear()
     localStorage.setItem('chat', 'cached-chat')

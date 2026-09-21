@@ -1,5 +1,7 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum, OnlineEnum } from '@/enums'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { SessionBootstrapService } from '../SessionBootstrapService'
 import type { MatrixPostLoginBootstrapOptions, SessionRuntimeHost } from '../sessionRuntimeInternal'
 import { SessionRuntimeState } from '../sessionRuntimeInternal'
@@ -67,7 +69,9 @@ vi.mock('@/utils/extensionHealth', () => ({
 }))
 
 vi.mock('@/utils/PlatformConstants', () => ({
-  isDesktop: () => true
+  isDesktop: () => true,
+  // 真实 useSettingStore 经 settings-helpers 依赖 isMac，缺失会让 store 初始化抛错
+  isMac: () => true
 }))
 
 vi.mock('@/utils/presenceStatus', () => ({
@@ -210,6 +214,8 @@ describe('SessionBootstrapService', () => {
   let state: SessionRuntimeState
 
   beforeEach(() => {
+    // startPresencePipeline 读取「显示在线状态」偏好（默认开启），需要激活 Pinia
+    setActivePinia(createPinia())
     state = new SessionRuntimeState()
   })
 
@@ -395,6 +401,43 @@ describe('SessionBootstrapService', () => {
 
       const service = new SessionBootstrapService(host, state)
       await expect(service.bootstrapPostLoginState()).rejects.toThrow('sync failed')
+    })
+  })
+
+  describe('bootstrapPostLoginState - 在线状态开关', () => {
+    it('关闭开关后登录不再上报 online，且本地不置为在线', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getClient.mockReturnValue({})
+      useSettingStore().setShowOnlineStatusEnabled(false)
+
+      const service = new SessionBootstrapService(host, state)
+      await service.bootstrapPostLoginState()
+
+      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
+      const setPresence = vi.mocked(matrixPresenceService.setPresence)
+      expect(setPresence).not.toHaveBeenCalledWith('online')
+      expect(setPresence).toHaveBeenCalledWith('offline')
+      expect(mocks.updateProfileFields).toHaveBeenCalledWith(
+        expect.objectContaining({ activeStatus: OnlineEnum.OFFLINE })
+      )
+      expect(mocks.updateProfileFields).not.toHaveBeenCalledWith(
+        expect.objectContaining({ activeStatus: OnlineEnum.ONLINE })
+      )
+    })
+
+    it('开启开关时登录照旧上报 online，并把本地置为在线', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getClient.mockReturnValue({})
+      useSettingStore().setShowOnlineStatusEnabled(true)
+
+      const service = new SessionBootstrapService(host, state)
+      await service.bootstrapPostLoginState()
+
+      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
+      expect(vi.mocked(matrixPresenceService.setPresence)).toHaveBeenCalledWith('online')
+      expect(mocks.updateProfileFields).toHaveBeenCalledWith(
+        expect.objectContaining({ activeStatus: OnlineEnum.ONLINE })
+      )
     })
   })
 
