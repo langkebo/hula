@@ -4,17 +4,19 @@
 - **禁 `git add -A`/`.`**：常驻并行 WIP → 逐文件 `git add`，先 `git status --short`
 - **工作区有并发会话时禁批量提交**（2026-09-21 实证）：同一 working tree 下另一会话在跑 `git add`/`commit`/**`reset`** 时——共享 `index` 会把我 `add` 的文件**吞进对方提交**；`.git/COMMIT_EDITMSG` 被对方覆盖会让我的提交**信息张冠李戴**（内容对、信息错）；对方的 `git reset` 会**回退掉我已提交的批次**。防护：①一律 `git commit -m "msg" -- <显式路径>`（pathspec 模式让钩子只见我的路径，不会吞对方暂存）；②提交后 `git merge-base --is-ancestor <sha> HEAD` 确认仍在祖先链；③大批量改动前 `cp` 一份工作区副本到仓外；④**最稳：先让对方会话停下再提交**
 - **Bash `grep` 在本仓会假阴性**（亦不认 `\s`）→「找不到」必须用 Grep/ripgrep 复核。**已三次致误判**（`RoomCard.vue` 联邦徽章实际存在 / `RenderPollMessage.vue` 实际在用 `t('poll.*')` / FederationBadge testid 不一致）
+- **并行 WIP 在场时禁改 `i18n.d.ts` 的归属**（2026-09-21 实证）：`sourceRefs.test.ts` 的新鲜度守卫按**当前工作区**语言表算 expected。别人未提交的 `locales/*/menu.json`（如 `manage_friend_groups`）会让它**瞬态变红**（本次差 36 字符）——**这是预期，不是缺陷**（临时 `git checkout HEAD -- locales/zh-CN/menu.json` 即 18/18 全绿）。**禁止**为「让门禁当场绿」把别人的键抄进自己的 `i18n.d.ts`：那样我的提交在**干净检出**上反而变红（典型「有键无表」）。只提交「HEAD 语言表 + 自己的键」，瞬态红留证即可
 - **同一文件多处 Edit 不可并发**（只落一处）→ 串行 + 读回确认
-- **基线**：vue-tsc 0 错 + vitest 全绿 + biome clean + `check:ratchet` 不升（color 31 / matrix_prefix 68 / ts_expect_error 3 / radius 0 / **inline_style 5（全属 n-popover 具名 allowlist）** / important_css 85）+ `check:i18n-refs`（unresolved 379 / fallback 7）
+- **基线**：vue-tsc 0 错 + vitest 全绿 + `biome check` 0 error（原记「3 error 既有」**已失效**，现存 2 info：配置版本提示 + `MessageLockBadge` 的 `useShorthandFunctionType` 建议）+ `check:ratchet` 不升（color 31 / matrix_prefix 68 / ts_expect_error 3 / radius 0 / **inline_style 5（全属 n-popover 具名 allowlist）** / important_css 85）+ `check:i18n-refs`（unresolved **273**（基线 280）/ fallback 7；`unresolved.mobile_devices` 已 0、基线 7 可收紧）
 - 归属取证法：`git worktree add --detach /tmp/head HEAD` + symlink node_modules
 - 禁「纸面测试」；否定断言必须变异验证（守卫类改动改完要构造变异确认会 FAIL）。改完 `.vue` 跑 `prettier --write`
-- **自洽桩**：桩照源码错键抄 map → 互证、语言表被架空。已检出三例，末例是**真实生产缺陷**（RenderPollMessage） → 同环境只换源码
+- **自洽桩**：桩照源码错键抄 map → 互证、语言表被架空。已检出**四例**，末例是**真实生产缺陷**（RenderPollMessage）→ 同环境只换源码。**第 4 例（`SingleDetails.test.ts`，2026-09-21）性质不同**：桩写 `friend.detail.federated_user`，组件用 `friend.federated_user`，**语言表两键都在** → 桩过期而非生产缺陷，症状同样是**断言拿到裸 key**。⇒ 判据：手写桩的键必须回真实语言表核对，出现原型链外的键先怀疑桩
+- **守卫阈值不可设在「反模式存量」上**（2026-09-21 实证）：`sourceRefs.test.ts` 的 `expect(STUB_REFS.length).toBeGreaterThan(100)` 是**带刺棘轮**——阈值随手写桩数量上升，而该守卫的诉求正是消灭它们；把手写桩换成 `createI18nMock()` 后 120→61，于是「修得越对、守卫越红」，还反向激励保留错键桩。**修法：夹具自证**（用内联 fixture 钉住「找 mock 块→括号配对→取带点键」链路 + 反向探针）。**连带坑**：夹具写在守卫文件自身里会被收集器当**真实**桩键扫走 → 收集器必须排除本文件
 - **注释里的字面量会误触棘轮计数**：`style="..."` → inline_style、`/_matrix` → matrix_prefix。写注释要避开这些形态
 
 ## 待办/决策遗留
-- `biome check` 3 error 全部 HEAD 既有（MatrixEncryptionContextService.test.ts + matrix-extensions.d.ts + auth.contract 已修）
-- `encryption.backup_restore_dialog.*` 32 键语言表已补齐（b10d6b5d）
-- 未读数/同步状态条/设备面板双端取数/UserIdentity.vue/SSSS 文案/message.scss 共享 partial 泄漏/inline_style+important_css 专项下降/i18n.d.ts 随 WIP/requestUserVerification 删除
+- **未完成任务全清单见 `UI-OPTIMIZATION-PLAN.md` 第八轮章节末尾（2026-09-21）**，勿再依赖本节的旧概述
+- ~~`biome check` 3 error 全部 HEAD 既有~~ → **已失效**：2026-09-21 实测 `biome check` = **0 error / 2 info**
+- `encryption.backup_restore_dialog.*`：zh/en **均已有 32 键**，缺口在**文案内容**（需产品文案）
 - `poll.json` 占位符已修（Handlebars `{{}}` → `{count}`）
 
 ## 项目约定
@@ -61,6 +63,10 @@
 - **inline_style 285→5 已收口**（2026-09-21，7 次提交：admin / 加密 / robot / mobile / 布局 / 其余组件+窗口 / 基线收紧）。剩余 **5 处全为 n-popover 组件参数**（`ChatSidebar.vue` / `renderMessage/index.vue` / `LeftAvatar.vue` / `definePlugins/Card.vue` / `definePlugins/List.vue`），已在 `scripts/check-ratchet.mjs` 的 `INLINE_STYLE_ALLOWLIST` 登记为**已裁定例外 + 漂移守卫**，**勿再尝试迁移**
 - 本次迁移暴露并修好的 3 处静默回归（迁移把内联样式换成**没有定义的类名**）：`callWindow` 音频元素 `display:none`、`BotMessage` 气泡描边、`LockScreen` `<n-input>` 的 width/border/bg/color（naive-ui 的 `.n-input` 与 `:hover`/`--focus` 同特异性 → 用**双类名 `.lock-input.lock-input`** 提升特异性）。另修 `mobile/views/friends/index.vue` 重复 `<img` 开标签（模板语法损坏）
 - P1 收敛：`border-radius` 硬编码 19→0、`!important` 116→91→**85**（20 处 reduced-motion 合规保留）、棘轮门禁 4 项入基线
-- i18n：`unresolved` 503→414→**379**（修 111 处调用点 + 3 处 poll 键），`i18n.d.ts` 已重生成 + 新鲜度守护用例 + 桩键可达性门禁
+- i18n：`unresolved` 503→414→379→**273**（基线已收紧 280），`i18n.d.ts` 已重生成 + 新鲜度守护用例 + 桩键可达性门禁
 - 历史完成：P0-3 锁徽章→设备验证接线（跨用户 targetUserId + 单例启动器 + 84 处 i18n 键修正）；P0 `useMessageTrust` 假安全信号修复（getUserDevices + 30s 刷新 + unverified 默认）；联邦标识 4/4 接入 FederationBadge（RoomCardItem / RoomCard / RoomPreviewDialog / ChatHeaderInfo）；AvatarCropper 圆角字面量归零；voice.ts 死常量 REGISTER_ENCRYPTED 清除
-- 已证伪旧待办：「移动端 SyncStatusBar 复用」「SSSS 备份引导页」「useDeviceSessionPanel」「RoomCard 联邦徽章功能缺失」。待办：`encryption.backup_restore_dialog.*` 32 键内容缺口（需产品文案）、`biome check` 3 个**既有** error、important_css 85→60（7 个 settings-tabs reduced-motion 块提共享 partial + TjgSpaceTree 2 处）
+- 已证伪旧待办：「移动端 SyncStatusBar 复用」「SSSS 备份引导页」「useDeviceSessionPanel」「RoomCard 联邦徽章功能缺失」「performanceTier 死代码」「ServerConfigModal 无 well-known」「useMessageTrust 恒 verified」
+- **第七轮复核（2026-09-21，HEAD 1773ee8a）实测待办**：~~①`UserIdentity.vue`/`RoomHomeserverLabel.vue` **已创建但零真实接入**~~ → **第八轮已接入**（成员面板 / 好友详情 / 移动 HeaderBar / 会话列表；详见下条）；②`--breakpoint-*` 定义数 **0**（未动）；~~③信任声明 4 键 zh/en 全缺~~ → **第八轮已补**（`trust_notice.private_key_local`/`server_cannot_read`/`recovery.phrase_title`/`phrase_confirm`，zh+en+i18n.d.ts）；④`useDeviceSessionPanel.ts` 不存在、信任链总览/导出交叉签名 **0 命中**；⑤`SyncStatusBar` 无离线分支/无退避倒计时、`ChatMain` 同时渲染 `ChatBanners`+`SyncStatusBar`（双横幅）、persist pick 仍只有 4 字段（无房间/消息）、无未读刷新钩子；⑥裸 `backdrop-filter` 42 行/约25文件（`@include liquid-glass` 仅 11）；~~⑦stories 缺 `SyncStatusBar`/`UserIdentity`/`RoomHomeserverLabel`~~ → `UserIdentity`/`RoomHomeserverLabel` 已补，仅缺 `SyncStatusBar`
+- **第八轮完成（2026-09-21）联邦身份接线**：`UserIdentity` → `RoomMembersPane.vue`（在册/禁言两类行）+ `FriendDetailsSections.vue`；`RoomHomeserverLabel` → 移动 `HeaderBar.vue`（新增 `roomServer` prop，`MobileChatMain` 传 `federationServer`）+ `RoomCardItem.vue`。**联邦判定已收敛**：`FriendDetailsSections` 删掉自实现的 `isFederatedUser`，改由 `UserIdentity` 内部 `sameHomeserver` 判定，组件只提供 `localDomain` 基准（勿再加回组件内自解析）。`RoomHomeserverLabel` 的 computed 曾**遮蔽同名 prop** → 已改名 `resolvedServerName`。新守卫：`HeaderBar.identity.test.ts`、`RoomMembersPane` 联邦接线 describe、`SingleDetails` 联邦身份行用例
+- **重要修正**：`important_css` 可安全下降实测**只有 16 处**（7×settings-tabs 的 reduced-motion 块 14 + TjgSpaceTree 2）→ 目标应为 **85→69**，原设想「→60」**不可达**（余下属库覆盖链/`.no-select` 对抗链，须浏览器层叠回归）。阶段1.1 token 清理：非 `--tjg-*` 变量 64 个但**真实零引用 = 0** → 无可直接删项
+- 待办（既有）：`encryption.backup_restore_dialog.*` 文案内容缺口（键已有 32）；~~`biome check` 3 个既有 error~~ 已不成立（0 error / 2 info）；`check-i18n-refs` 可 `--update` 收紧基线（`mobile_devices` 7→0）

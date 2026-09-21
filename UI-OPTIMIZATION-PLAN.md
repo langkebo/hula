@@ -1033,3 +1033,165 @@ Tests       35 failed | 997 passed (1032)
 - 其余 `unresolved 411` 需逐个定案（91 键属「命名空间文件不存在」）。
 
 
+---
+
+## 第七轮执行记录（2026-09-21）：全量复核 + 未完成任务清单
+
+> **本轮性质：** 不写新功能，只做「文档结论 vs 当前 HEAD 实况」的对账。第六轮之后仓库又经历了 **inline_style 285→5 收口专项**（7 个提交 + 2 个收尾提交，已全部落库），因此前六轮的部分「未开工」结论**已经过期**，另有部分结论**经实测被证伪**。以下每条均附本轮实测命令与结果，结论以当前 HEAD（`1773ee8a`）源码为唯一依据。
+>
+> **基线（本轮实测）：** `vue-tsc` 0 错误 · `check-ratchet` 六项全绿（`matrix_prefix_hardcoded 68 / ts_expect_error 3 / hardcoded_color 31 / hardcoded_radius 0 / inline_style 5 / important_css 85`）· `design-baseline.test.ts` 16/16 · `check-i18n-refs` `unresolved 273（基线 280）/ fallback 7（基线 7）` · 工作区仅剩 3 项并行 WIP（`docs/重构优化方案.md`、`locales/{en,zh-CN}/menu.json`）。
+
+### 7.1 结论校正（前六轮已过期 / 已证伪的条目）
+
+| 前六轮结论 | 本轮实测 | 判定 |
+| :--- | :--- | :--- |
+| 1.2 内联样式未达标（全仓 285） | `inline_style = 5`，且 5 处全为 n-popover 组件参数并已登记具名 allowlist | ✅ **已完成**（本轮专项成果） |
+| 1.3 步骤 4：PR 模板无 UI 检查项 | `.github/PULL_REQUEST_TEMPLATE.md` 已有「UI 约束自检」四项（内联 / `!important` / 圆角 token / 颜色 token） | ✅ 已完成 |
+| 2.1 `UserIdentity.vue` / `RoomHomeserverLabel.vue` 未创建 | 两文件**均已存在**（`src/components/common/UserIdentity.vue`、`src/components/room/RoomHomeserverLabel.vue`） | ⚠️ 结论过期，但**零真实接入**（见 7.2） |
+| 2.1 `MxidText` 零真实调用 | 已接入 `FriendDetailsSections.vue` + `UserIdentity.vue` | ✅ 已接线（仍有扩展空间） |
+| 2.2 `performanceTier.ts` 不存在、`low-perf` 是死代码 | `src/utils/performanceTier.ts` 存在，`main.ts` 模块体早期调用 `applyPerformanceTier()`；`low-perf` 出现在 9 个文件 | ✅ **已修复** |
+| 3.3 `ServerConfigModal` 无 well-known 发现 | 已接 `discoverAndSaveMatrixEndpoints`（`ServerConfigModal.vue:29/65`） | ✅ 结论过期（原判定按字面 `well-known` 检索，漏判） |
+| 3.1 `useMessageTrust` 对加密消息恒返回 `verified` | 已接 `matrixDeviceService.getUserDevices()`；`unverified` 出现 21 次、`risk` 6 次、`effectScope` 3 次；「简化版」注释已删除 | ✅ **已修复**（灰/红态可达） |
+| E. 第 606 行与 644 行自相矛盾 | 第 606 行文字已改为「功能上两端已共享同一实例」，但仍以 ⏸ 语义表述 | ⚠️ 语义残留，建议收敛（见 7.2-E） |
+| 遗留 `variable.scss.bak` | 文件已不存在 | ✅ 已清理 |
+
+### 7.2 未完成任务清单（逐条实测，当前 HEAD 为准）
+
+#### A. 阶段 1 基础修复
+
+| 条目 | 正文验收标准 | 本轮实测 | 状态 |
+| :--- | :--- | :--- | :--- |
+| 1.1 Design Token 清理 | 删除零引用 alias，只保留 `--tjg-*` | `design-tokens.css` 现有 **263** 个变量定义，其中 **64** 个非 `--tjg-*` 前缀；**真实零引用（`var()` / UnoCSS `[--x]` / 裸用 全仓 0 次）= 0** | ⚠️ **无可直接删除项**——需做**传递引用分析**（仅被其它变量引用、而后者零引用）才可能有收获；本条实际收益已很低 |
+| 1.2 内联样式迁移 | 核心视图 `style="` 为 0 | 全仓 **5**（全为 n-popover 参数，已裁定例外） | ✅ 完成（超出验收线） |
+| 1.3 `!important` 收敛 | 收敛至 `NaiveProvider.vue` + 逐条注释 | 棘轮口径 **85**；分布：`login.scss` 26 / `chatHistory` 7 / `variable.scss` 6 / `emoticon` 6 / 其余零散 | ⚠️ 未达标（20 处属 reduced-motion 合规保留；其余需浏览器层叠回归） |
+| 1.4 圆角 token 扩展 | 无 16px+ 字面量 | `hardcoded_radius = 0` | ✅ 完成 |
+| 1.5 断点 token 化 | 新增 `--breakpoint-sm/md/lg/xl/2xl` | `design-tokens.css` 中 `--breakpoint-*` 定义数 = **0** | ❌ 未开工 |
+| 1.5 无障碍扫描 | `@axe-core/vue` 扫描 | 依赖已在 `package.json` ✅；`SkipLink.vue` 存在 ✅；移动端路由未纳入 axe 覆盖面 | ⚠️ 部分完成 |
+
+#### B. 阶段 2 联邦身份 + 液态玻璃
+
+| 条目 | 正文要求 | 本轮实测 | 状态 |
+| :--- | :--- | :--- | :--- |
+| 2.1 `UserIdentity` 接入 | 会话列表 / 消息头 / 成员面板 / 好友详情 / 移动端 | 全仓引用 **仅 2 处，且都是自动生成的 typings** → 真实接入 **0** | ❌ **造好未接线** |
+| 2.1 `RoomHomeserverLabel` 接入 | 房间名旁标注 homeserver | 同上，真实接入 **0** | ❌ **造好未接线** |
+| 2.1 `FederationBadge` 接入 | `ChatHeaderRoot` / `RoomMembersPane` / `FriendDetailsSections` / 移动 `HeaderBar` | 已接 `RoomCardItem` / `RoomCard` / `RoomPreviewDialog` / `FriendDetailsSections` / `ChatHeaderInfo`；**移动端 `HeaderBar` 未接** | ⚠️ 部分完成 |
+| 2.2 玻璃接入点收口 | 统一改用 mixin | 全仓裸 `backdrop-filter` / `backdrop-blur` **42 行、约 25 个文件**（`FooterOverlays` 3、`InfoEdit` 2、`FileUploadProgress` 2、`FooterToolbar` 2、移动 `tabBar` 2、`RtcCallFloatCell` 2、`variable.scss` 4…）；`@include liquid-glass` 仅 **11** 处 | ❌ 未达标 |
+| 2.2 单视图 ≤3 处 | `grep -c backdrop-filter` ≤3 | 聊天视图 `chatBox/` 目录内 = **3**（刚达线）；但全视图统计仍超标 | ⚠️ 临界 |
+| 2.2 `prefers-reduced-transparency` 兜底 | 可验证 | 仅存在于 `performanceTier.ts` 的 **JS `matchMedia` 判级**（经 `html.low-perf` 间接生效）；**CSS 层无对应 `@media` 兜底** | ⚠️ 间接达成 |
+| 2.3 新组件 stories | 每个新 atomic 补 stories | `MxidText` ✅ / `FederationBadge` ✅ / `MessageLockBadge` ✅；**`SyncStatusBar` / `UserIdentity` / `RoomHomeserverLabel` 均缺** | ⚠️ 部分完成 |
+
+#### C. 阶段 3 E2EE 可视化 + 安全 UI
+
+| 条目 | 正文要求 | 本轮实测 | 状态 |
+| :--- | :--- | :--- | :--- |
+| 3.1 锁点击 → 设备验证 | 点击锁打开 `DeviceVerifyDialog` | `MessageLockBadge.vue` 有 `emit` / `verify` / `<button>`；`ChatMain.vue` 单例挂载 | ✅ 完成（第三轮） |
+| 3.1 锁态真实判定 | verified / unverified / risk 三态可达 | `useMessageTrust.ts`（201 行）已接 `getUserDevices` + 安全默认 + `effectScope` | ✅ 完成 |
+| 3.1 性能红线用例 | 1000 条消息断言设备查询次数 | 本轮未复核到对应断言用例 | ⚠️ **待核** |
+| 3.2 信任声明文案 | `trust_notice.private_key_local` / `server_cannot_read` / `recovery.phrase_title` / `phrase_confirm` | zh-CN 与 en **四个键全部不存在**（`encryption.trust_notice.*` 与 `encryption.recovery.phrase_*` 无命中） | ❌ 未开工 |
+| 3.3 企业预设服务器 | 以配置/环境变量注入的快捷项 | `isValidHttpUrl` ✅、well-known 发现 ✅；**企业预设项 0 命中** | ⚠️ 部分完成 |
+| 3.4 共享 composable | `useDeviceSessionPanel.ts` | 文件**不存在**；桌面/移动仍各自查设备 | ❌ 未开工 |
+| 3.4 信任链总览 | 本机 → 交叉签名 → 已信任设备数 | 全仓 `信任链` / `trustChain` 命中 **0** | ❌ 未开工 |
+| 3.4 导出交叉签名 | 导出公钥 JSON/文本 | `exportCrossSigning` / `exportDevice` 命中 **0**（服务层有 `crossSigning` 能力 16 处，但无导出 UI） | ❌ 未开工 |
+
+#### D. 阶段 4 同步 / 离线
+
+| 条目 | 正文要求 | 本轮实测 | 状态 |
+| :--- | :--- | :--- | :--- |
+| 4.1 离线态常驻条 | `navigator.onLine` + `connectionState` 组合 | `SyncStatusBar.vue`（251 行）内 `navigator.onLine` / `offline` / `离线` 命中 **全为 0** | ❌ 未开工 |
+| 4.1 未读刷新 | `CATCHUP → CONNECTED` 触发未读重算 | 全仓无该转换的未读重算钩子 | ❌ 未开工 |
+| 4.1 横幅去重 | 与 `ChatBanners` 去重 | `ChatMain.vue` **同时渲染** `ChatBanners` 与 `SyncStatusBar` → 双横幅风险仍在 | ❌ 未开工 |
+| 4.1 `RECONNECTING` 退避倒计时 | 「重连中（第 N 次）」+ 倒计时 | `retryCount` / `countdown` / `退避` 命中 **全为 0** | ❌ 未开工 |
+| 4.1 自动收起 | CONNECTED 2s 淡出 | `autoHide` 命中 4 → 已实现 | ✅ 完成 |
+| 4.2 离线缓存与历史可读 | persist 字段核查 / 离线首屏 / mock 测试 | `matrix.ts` persist `pick` 仍为 `['userId','deviceId','homeserverUrl','accessToken']`，**不含房间列表与消息**；无 mock 测试 | ❌ 未开工 |
+| 4.3 视觉回归 | Chromatic 或等效 | 未接入 | ⚠️ 可选 |
+
+#### E. 文档与门禁遗留
+
+- **E1 文档内部语义残留**：第 606 行仍以 ⏸ 表述「移动端独立实现未落地」，与 644 行「功能上已覆盖」并存。建议把正文 4.1 的 `MobileSyncStatusBar.vue` 条目**显式注销**（复用唯一 `ChatMain.vue` 已是既定事实），消除歧义。
+- **E2 `biome check` 仍 3 error**，全部 HEAD 既有 / 并行 WIP（`matrix-extensions.d.ts`、`MatrixEncryptionContextService.test.ts`、`MessageLockBadge.vue`），**非本专项引入**，建议单独一批处理。
+- **E3 `encryption.backup_restore_dialog.*`**：zh-CN 与 en **均已有 32 键**（键存在），缺口在**文案内容**，需产品文案。
+- **E4 i18n 基线可再收紧**：`check-i18n-refs` 已降至 `unresolved 273（基线 280）`，且输出提示 `unresolved.mobile_devices: 0（基线 7）` → 可执行 `--update` 收紧基线，防止倒退。
+
+### 7.3 下一步优化建议（按「价值/风险比」排序）
+
+**P0 — 组件已造好却零调用，属纯接入，价值最高、风险最低**
+
+1. **把 `UserIdentity` / `RoomHomeserverLabel` 接进真实界面**（阶段 2 的「联邦特性看得见」目前**实际未达成**）。
+   - 建议接入点：成员面板 `RoomMembersPane.vue`、好友详情 `FriendDetailsSections.vue`、移动 `HeaderBar.vue`、会话列表 `RoomCardItem.vue`。
+   - 硬约束：MXID/域名解析必须走 `@/utils/userIdentity`（`toLocalpart` / `extractServerName` / `resolveFederationPeer`），`UserIdentity` 内部禁止再自解析（第二轮的 `MxidText` 就犯过这个错）。
+   - 配套：给两组件补 `.stories.ts`（顺带清掉 2.3 的两项缺口）。
+2. **补齐信任声明文案 4 键**（阶段 3.2）：`encryption.trust_notice.private_key_local`、`encryption.trust_notice.server_cannot_read`、`encryption.recovery.phrase_title`、`encryption.recovery.phrase_confirm`（zh-CN + en）。纯文案 + i18n，是安全合规的必答题，零架构风险。
+
+**P1 — 棘轮验收线（本专项的自然延续）**
+
+3. **`important_css 85 → 69`**：可安全下降的正好 **16 处** = 7 个 `settings-tabs/*.vue` 各自重复的 reduced-motion 块（**实测 7 文件 × 2 处 = 14**）+ `TjgSpaceTree.vue` 2 处。
+   - **注意：正文此前设想的「→60」不可达**——实测可判定冗余只有 16 处，其余（`login.scss` 26、`variable.scss` 6、`form-item.scss` 4 等库覆盖链与 `.no-select` 对抗链）**必须用真实浏览器做层叠回归**才能继续下降，本环境无法验证。建议把目标修正为 **69**，并同步收紧基线。
+   - 做法：把 7 个 settings-tabs 的 `.rs-tab *` reduced-motion 块抽成**共享 partial**，规则移入真正需要它的组件 scoped 块（避免 `@use` 暴露成全局规则——本仓已有此类静默泄漏先例）。
+4. **补 `--breakpoint-*` token**（阶段 1.5）：在 `design-tokens.css` 新增 `--breakpoint-sm/md/lg/xl/2xl`。**务必遵守**：媒体查询内必须写字面值，token 仅用于 JS 侧 `matchMedia`（此约束已写入正文 1.5，实施时不要写成 `@media (min-width: var(--breakpoint-md))`）。
+5. **玻璃接入点收口**（阶段 2.2）：42 处裸 `backdrop-filter` 统一改走 `@include liquid-glass(...)`。建议先收口**移动端 `tabBar` / `navBar`**（Vant 侧、改动面小、视觉可预期），再按目录逐批推进；每批独立提交便于视觉回归定位。
+
+**P2 — 功能缺口（需产品/设计确认后再开工）**
+
+6. **4.2 离线缓存**：扩 `matrix.ts` persist `pick`（房间列表 + 最近消息），定案离线历史来源（SQLite vs `MatrixCacheManager`），并补「`navigator.onLine = false` → 渲染缓存 + 不发网络请求」的测试。**前提**：需先确认 Tauri 侧 `src-tauri/src/repository/im_message` 的可用性。
+7. **4.1 `SyncStatusBar` 补四项**：离线常驻条、`RECONNECTING` 退避倒计时、与 `ChatBanners` 去重（避免双横幅）、`CATCHUP → CONNECTED` 未读刷新钩子。
+8. **3.4 设备会话面板**：抽 `useDeviceSessionPanel.ts` 统一取数 → 桌面 `DeviceTrustManager` / 移动 `DeviceManagement` 改为纯展示 → 再加「信任链总览」与「导出交叉签名（仅公钥）」。**注意**：移动端设备面板**仅展示**，管理写操作仅限管理后台（已入项目铁律）。
+9. **收尾**：E1 文档注销 `MobileSyncStatusBar` 条目、E2 单独一批清 `biome` 3 error、E4 执行 `check-i18n-refs --update` 收紧基线。
+
+**建议的推进顺序（可并行两线）：**
+- 线 A（纯接入/文案，低风险）：第 1、2 项 → 第 9 项收尾。
+- 线 B（棘轮/视觉）：第 3、4、5 项。
+- 线 C（功能缺口，需前置确认）：第 6、7、8 项。
+
+---
+
+## 第八轮执行记录（2026-09-21）：联邦身份接线落地 + 信任声明文案
+
+承接 7.3 的 **P0 第 1、2 项**（本次全部完成），并在过程中抓到 3 个新的**方法论级**问题。
+
+### 8.1 完成项
+
+| # | 项 | 落地位置 | 守卫 |
+|---|---|---|---|
+| 1 | `UserIdentity` 接入**成员面板** | `rightBox/RoomMembersPane.vue`（在册 + 已禁言两类行） | `RoomMembersPane.test.ts` 新增 `describe('RoomMembersPane 联邦身份接线')` 5 例 |
+| 2 | `UserIdentity` 接入**好友详情** | `rightBox/FriendDetailsSections.vue`（替换原「MxidText + 独立 badge 行」双块） | `FriendDetailsSections.test.ts` 断言组合单元同时带 mxid + chip 且无内嵌头像 |
+| 3 | `RoomHomeserverLabel` 接入**移动 HeaderBar** | `mobile/components/chat-room/HeaderBar.vue`（新增 `roomServer` prop）+ `MobileChatMain.vue` 传 `:room-server="federationServer"` | `HeaderBar.identity.test.ts`（新建，6 例） |
+| 4 | `RoomHomeserverLabel` 接入**会话列表** | `room/RoomCardItem.vue`（meta 行，`data-testid="room-card-server"`） | `RoomCardItem.test.ts` 2 例（本地域 / 远端域各一） |
+| 5 | 补 2 个 stories | `common/UserIdentity.stories.ts`、`room/RoomHomeserverLabel.stories.ts`（各 5–7 例，含 AllDark） | `vue-tsc`（`src/**/*.ts` 覆盖 `.stories.ts`） |
+| 6 | 信任声明 4 键 | `locales/{zh-CN,en}/encryption.json` 的 `trust_notice.private_key_local` / `server_cannot_read` / `recovery.phrase_title` / `phrase_confirm` + `src/typings/i18n.d.ts` 重生成 | `check-i18n`（键集合对齐）、`sourceRefs` 新鲜度 |
+
+**硬约束遵守情况**：所有 MXID / 域名解析一律走 `@/utils/userIdentity`。`FriendDetailsSections.vue` 顺带**删除**了自己实现的 `isFederatedUser`（`resolveFederationPeer` 调用），联邦判定改由 `UserIdentity` 内部 `sameHomeserver` 完成，组件只提供 `localDomain` 作为对照基准 —— 消除了一处「同一语义两处实现」。
+
+**顺带修的既有隐患**：`RoomHomeserverLabel.vue` 内 `computed` 名 `serverName` 与同名 prop **遮蔽**（可读性/真值陷阱），改名 `resolvedServerName` 并补 `data-testid`。
+
+**变异自证（守卫类改动必做）**：
+- 移除 HeaderBar 的 `<RoomHomeserverLabel>` → 5 例 FAIL；
+- `:local-server="localDomain"` 置空 → 1 例 FAIL（联邦判定）；
+- 移除 `FriendDetailsSections` 的 `<UserIdentity>` 块 → 3 例 FAIL；
+- 同上但只置空 `:local-server` → 1 例 FAIL。
+全部还原后 9/9、28/28 复绿。
+
+### 8.2 新发现（方法论级，值得沉淀）
+
+**F1 「自洽桩」反模式第 4 例（真实、且被守卫抓到）**
+`SingleDetails.test.ts` 手写 i18n 映射表里声明 `friend.detail.federated_user` / `friend.detail.local_user`，而 `UserIdentity` 用的是 **`friend.federated_user` / `friend.local_user`**（无 `.detail`）。真实语言表**两个键都健全**（`friend.json` 的 `detail.federated_user` 与顶层 `federated_user`）—— 也就是说**生产无缺陷，是桩过期**。症状与前三例（`RenderPollMessage` / `SyncStatusBar` / `KeyBackupRestoreDialog`）完全一致：断言拿到**裸 key**。
+> **判据**：手写桩的键必须逐个回真实语言表核对；只要桩里出现原型链外的键，就优先怀疑桩而非源码。已按铁律改用 `createI18nMock()` + `resolveMessage()`。
+
+**F2 `sourceRefs.test.ts` 的 `STUB_REFS` 计数阈值是「被反模式撑起来的」**
+原自检：`expect(STUB_REFS.length).toBeGreaterThan(100)`。这个数**随反模式存量上升**，而本守卫的诉求正是消除反模式 —— 本次 120 → 61，于是**「修得越对、守卫越红」**，甚至反向激励保留错键桩。这是**带刺的棘轮**：门槛设在被测对象的存量上，而不是设在机制本身。
+> **修法**：改为**合成夹具自证** —— 用一段内联 fixture 钉住「找 `vi.mock('vue-i18n')` 块 → 括号配对 → 取带点键」这条链路（含 `leaked.key` 反向探针，配对写错即报警）。夹具恒定、机制恒定，反模式清零导致计数归零也不误报。
+> **连带坑**：夹具写在守卫文件自身里，会被收集器当成**真实**桩键扫走（`a.b.c` / `leaked.key` 报 2 个越界）→ 收集器必须排除本文件。两处改动都做了变异自证（配对退化 / 去掉自排除，均正确 FAIL）。
+
+**F3 i18n.d.ts 新鲜度守卫在**并行 WIP** 下会瞬态变红（非缺陷）**
+守卫用**当前工作区**的 `locales/zh-CN/*.json` 计算 expected，而并行会话往 `menu.json` 加了 `manage_friend_groups` → 长度差 36 字符报警。**实测**：临时 `git checkout HEAD -- locales/zh-CN/menu.json` 后该文件 **18/18 全绿**。
+> **结论**：不是缺陷。我的提交只含「HEAD 语言表 + 自己的 encryption 键」，clean checkout 下自洽（绿）。
+> **规则（建议入铁律）**：并行 WIP 在场时，**禁止**为了「让门禁当场变绿」把别人的键抄进自己的 `i18n.d.ts` —— 那会让我的提交在干净检出上**反而**变红（i18n.d.ts 有键、menu.json 无键）。正确做法是保留瞬态红并留证。
+
+### 8.3 遗留修正与待办更新
+
+- **E2 已失效（注销）**：原文记「`biome check` 仍 3 error」。本次实测 `biome check` = **0 error / 2 info**（配置版本提示 + `MessageLockBadge.vue` 的 `useShorthandFunctionType` 建议），**全仓已无 lint error**。该项可从待办移除。
+- **E4 仍有效**：`check-i18n-refs` = `unresolved 273（基线 280）`、`unresolved.mobile_devices: 0（基线 7）` → 可 `--update` 收紧。
+- **`important_css` 目标维持 85 → 69**（可判定冗余 16 处），正文「→60」仍不可达。
+- 7.3 的 P1/P2（`--breakpoint-*`、玻璃收口、离线缓存、`SyncStatusBar` 四项、设备会话面板）**全部未动**，仍是下一步主体。
+
+
+
