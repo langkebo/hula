@@ -56,6 +56,10 @@
       "invalid": "Invalid"
     }
   },
+  "recovery": {
+    "phrase_title": "Recovery phrase",
+    "phrase_confirm": "I have written down the recovery phrase and stored it safely"
+  },
   "room_settings": {
     "title": "Encryption Settings",
     "not_encrypted": "This room is not encrypted",
@@ -457,5 +461,9 @@
     "delete_success": "Backup deleted successfully",
     "delete_failed": "Backup deletion failed",
     "copy_failed": "Copy failed"
+  },
+  "trust_notice": {
+    "private_key_local": "Your private keys stay on this device and are never uploaded",
+    "server_cannot_read": "The server cannot read the content of your messages"
   }
 }

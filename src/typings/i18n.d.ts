@@ -2466,6 +2466,10 @@ export type I18nKeys = {
         "invalid": "验证失败"
       }
     },
+    "recovery": {
+      "phrase_title": "恢复短语",
+      "phrase_confirm": "我已抄写恢复短语，并已妥善保管"
+    },
     "room_settings": {
       "title": "加密设置",
       "not_encrypted": "此房间未启用加密",
@@ -2867,6 +2871,10 @@ export type I18nKeys = {
       "delete_success": "备份删除成功",
       "delete_failed": "删除备份失败",
       "copy_failed": "复制失败"
+    },
+    "trust_notice": {
+      "private_key_local": "私钥只保存在本机，不会上传到服务器",
+      "server_cannot_read": "服务器无法读取你的消息内容"
     }
   },
   "error": {
