@@ -12,17 +12,20 @@
     </div>
     <div class="w-full h-full overflow-hidden flex items-center justify-center">
       <div @click="handleRoomNameClick" :class="props.isOfficial ? ['chat-room-name-official'] : ['chat-room-name']">
-        <div class="truncate whitespace-nowrap overflow-hidden text-foreground text-ellipsis w-full text-center">
+        <div class="chat-room-name__text truncate whitespace-nowrap overflow-hidden text-foreground text-ellipsis">
           {{ props.roomName }}
         </div>
-        <svg v-if="props.isOfficial" class="w-18px h-18px iconpark-icon text-[--tjg-color-primary-500]">
+        <svg v-if="props.isOfficial" class="w-18px h-18px iconpark-icon shrink-0 text-[--tjg-color-primary-500]">
           <use href="#auth"></use>
         </svg>
+        <!-- 房间 homeserver 常显（不限联邦房间）；域名由组件的 resolvedServerName 解析，禁止在此 split -->
+        <RoomHomeserverLabel v-if="props.roomServer" class="shrink-0" :server-name="props.roomServer" />
+        <!-- 联邦房间额外挂徽章：域名已由上方 chip 承载，这里只留图标避免重复文案 -->
         <FederationBadge
           v-if="props.federationServer"
           :is-local="false"
           size="xs"
-          :label="props.federationServer"
+          :show-label="false"
           :title="props.federationServer" />
       </div>
     </div>
@@ -48,6 +51,7 @@
 
 <script setup lang="ts">
 import FederationBadge from '@/components/atomic/FederationBadge.vue'
+import RoomHomeserverLabel from '@/components/room/RoomHomeserverLabel.vue'
 import router from '@/router'
 
 interface HeaderBarProps {
@@ -60,8 +64,10 @@ interface HeaderBarProps {
   roomName?: string | false
   border?: boolean
   privateModeActive?: boolean
-  /** 联邦服务器域名（非空即显示联邦标识） */
+  /** 联邦服务器域名（非空即显示联邦图标徽章） */
   federationServer?: string
+  /** 当前房间的 homeserver 域名（非空即常显域名 chip，与是否联邦无关） */
+  roomServer?: string
 }
 
 const props = withDefaults(defineProps<HeaderBarProps>(), {
@@ -73,7 +79,8 @@ const props = withDefaults(defineProps<HeaderBarProps>(), {
   roomName: false,
   border: false,
   privateModeActive: false,
-  federationServer: ''
+  federationServer: '',
+  roomServer: ''
 })
 
 const emits = defineEmits<{
@@ -100,12 +107,18 @@ const handleMoreClick = () => {
 </script>
 
 <style lang="scss" scoped>
+/* 房间名行：单行 flex（原来是单列 grid，多个子元素会各自换行，
+ * 56px 头部很容易被撑破）。域名 chip / 徽章固定不缩，房间名负责截断。 */
 .chat-room-name {
-  @apply grid items-center;
+  @apply flex items-center gap-5px min-w-0 max-w-full;
 }
 
 .chat-room-name-official {
-  @apply grid grid-cols-[1fr_20px] items-center gap-5px;
+  @apply flex items-center gap-5px min-w-0 max-w-full;
+}
+
+.chat-room-name__text {
+  @apply min-w-0;
 }
 
 .private-toggle-btn-mobile {

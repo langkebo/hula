@@ -9,6 +9,7 @@
         :is-group="isGroupSession"
         :private-mode-active="privateModeActive"
         :federation-server="isFederated ? federationServer : ''"
+        :room-server="federationServer"
         @room-name-click="handleRoomNameClick"
         @toggle-private-mode="onTogglePrivateMode" />
     </template>
