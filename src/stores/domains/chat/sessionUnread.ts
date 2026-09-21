@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { StoresEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 
 type UnreadCache = Record<string, number>
 type CacheStore = Record<string, UnreadCache>
@@ -82,8 +83,19 @@ export const useSessionUnreadStore = defineStore(
         }
 
         // 情况2：有lastReadTime记录，且activeTime > lastReadTime（有新消息产生）
-        // 此时应该信任服务端的未读数，因为本地缓存可能是脏数据
         if (lastReadTime > 0 && activeTime > lastReadTime) {
+          // 关闭「发送已读回执」时服务端收不到 m.read，unread_count 不会因本机已读而减少。
+          // 此时采信服务端会把已读过的消息重新算进角标：读 3 条 → 来 1 条新消息 → 角标 4。
+          // 本机账本才是可信计数；服务端快照只在账本缺失时兜底（冷启动 / 从未记过账）。
+          if (!useSettingStore().sendReadReceiptsEnabled && typeof cached === 'number') {
+            const localCount = cachedCount!
+            if (currentUnread !== localCount) {
+              updates[session.roomId] = localCount
+            }
+            cache[session.roomId] = localCount
+            return
+          }
+
           // 如果服务端返回的值与本地缓存不一致，需要生成更新
           if (currentUnread !== cache[session.roomId]) {
             updates[session.roomId] = currentUnread

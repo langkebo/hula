@@ -122,6 +122,19 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     sessionUnreadStore.set(userStore.userInfo?.uid, roomId, count)
   }
 
+  /**
+   * 设置会话未读数：界面与 sessionUnread 本地账本一起更新。
+   *
+   * 本机产生的未读变化（新消息 +1、已读清零）必须记账：关闭已读回执时服务端
+   * unread_count 不会因本机已读而减少，apply 的「情况 2」以本地账本为准，
+   * 账本不更新就会在会话列表重建 / 重连时把增量丢掉或把已读的算回来。
+   */
+  const setUnreadCount = (roomId: string, count: number) => {
+    if (!roomId) return
+    updateSession(roomId, { unreadCount: count })
+    persistUnreadCount(roomId, count)
+  }
+
   const rebuildSessionMap = () => {
     if (!sessionList.value.length) return
     sessionMap.value = sessionList.value.reduce(
@@ -278,8 +291,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
 
   const markSessionRead = async (roomId: string) => {
     if (!roomId) return
-    updateSession(roomId, { unreadCount: 0 })
-    persistUnreadCount(roomId, 0)
+    setUnreadCount(roomId, 0)
     writeUnreadDetail(roomId, { total: 0, highlight: 0, silent: getUnreadDetail(roomId)?.silent ?? false })
 
     // 记录「已读到的活跃时间」：sessionUnread.apply 的情况 1 依赖它来清零并纠正
@@ -373,6 +385,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     getGroupSessions,
     removeSession,
     addSession,
+    setUnreadCount,
     resetSessionSelection,
     clearCurrentSessionUnread,
     updateTotalUnreadCount,

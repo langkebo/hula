@@ -218,4 +218,46 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
 
     expect(restarted.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(0)
   })
+
+  /**
+   * I4 回归：关闭已读回执后「读过的消息 + 新消息」。
+   *
+   * 服务端永远不会因本机已读而减计数，apply 的「情况 2」原样采信服务端快照，
+   * 于是读 3 条后再来 1 条新消息，会话列表重建时角标变成 4（把已读的 3 条又算回来）。
+   * 本地账本必须优先于服务端快照。
+   */
+  it('关闭已读回执时，读过之后的新消息只累计本地增量（读 3 → 新消息 → 1）', async () => {
+    useSettingStore().setSendReadReceiptsEnabled(false)
+
+    const store = useSessionStore()
+    store.addSession(makeSession({ unreadCount: 3, activeTime: 100 }))
+
+    await store.markSessionRead(ROOM_ID)
+    expect(store.getSession(ROOM_ID)?.unreadCount).toBe(0)
+
+    // 新消息到达：走真实增量路径（界面 + 本地账本 +1）
+    store.setUnreadCount(ROOM_ID, 1)
+    expect(store.getSession(ROOM_ID)?.unreadCount).toBe(1)
+
+    // 会话列表重建：服务端因为没有 m.read 仍报累计 4，activeTime 200 > lastRead 100
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 4, activeTime: 200 })])
+    await store.getSessionList()
+
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(1)
+  })
+
+  it('开启已读回执时仍采信服务端未读数（不改变原行为）', async () => {
+    useSettingStore().setSendReadReceiptsEnabled(true)
+
+    const store = useSessionStore()
+    store.addSession(makeSession({ unreadCount: 3, activeTime: 100 }))
+
+    await store.markSessionRead(ROOM_ID)
+    store.setUnreadCount(ROOM_ID, 1)
+
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 4, activeTime: 200 })])
+    await store.getSessionList()
+
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(4)
+  })
 })

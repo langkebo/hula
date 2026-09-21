@@ -204,8 +204,10 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
       const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
 
       if (shouldIncreaseUnread) {
-        updateData.unreadCount = (session.unreadCount || 0) + 1
-        logger.debug('增加未读数:', msg.message.roomId, updateData.unreadCount)
+        const nextUnread = (session.unreadCount || 0) + 1
+        // 走 setUnreadCount：界面与 sessionUnread 本地账本一起更新（关闭已读回执时账本是唯一可信计数）
+        sessionStore.setUnreadCount(msg.message.roomId, nextUnread)
+        logger.debug('增加未读数:', msg.message.roomId, nextUnread)
       }
 
       sessionStore.updateSession(msg.message.roomId, updateData)
@@ -225,7 +227,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
           const isSelfMessage = msg.fromUser?.uid === userStore.userInfo?.uid
           const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
           if (shouldIncreaseUnread) {
-            sessionStore.updateSession(msg.message.roomId, { unreadCount: 1 })
+            sessionStore.setUnreadCount(msg.message.roomId, 1)
           }
         }
       } catch (err) {
