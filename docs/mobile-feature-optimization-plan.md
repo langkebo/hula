@@ -779,3 +779,157 @@ fail-open 守卫必须**限定在 `mode === 'allow_all'`**。第一版实现漏�
 固定了一条容易踩的规则：**显式传入的初值优先于 account data**。
 否则挂载后策略会被账号数据覆盖，传入的 `mode` 静默失效——与"面板点了没反应"
 属于同一类问题，只是换了形式。实现时先写出了这个回归用例（红了才修）。
+
+## 十三、桌面设置死配置治理（分支 `feat/settings-wiring`，Task 0-15）
+
+本节记录一次专项治理的结论。起因：桌面设置窗口（`src/views/settingsWindow`）里
+大量开关"点了没反应"——写进去的 `localStorage` key 没有任何运行时消费方。
+治理从基线提交 `e157675a` 到代码收尾提交 `7df690ab`，共 15 个任务
+（本节的提交在其后）。
+
+**验收判据是行为测试，不是死配置数量。** 数量只能证明"没有新增"，
+不能证明"开关真的生效"；后者由各任务先红后绿的真实路径测试负责
+（完整过程见进度账本 `.superpowers/sdd/2026-09-21-desktop-settings-wiring/progress.md`）。
+
+### 13.1 审计方法
+
+三步：
+
+1. **枚举写入**：只扫 `src/views/settingsWindow/**/*.vue`，抓 `localStorage.setItem`。
+   两种形式都要认：字面量 `setItem('tjg-xxx', ...)`，以及同文件
+   `const NAME = 'tjg-xxx'` 后再 `setItem(NAME, ...)`。第一版只认字面量，
+   漏了 3 个别名写入键（`tjg-sidebar-settings`、`tjg-burn-after-read-settings`、
+   `tjg-friend-settings`），评审发现后补齐（提交 `a090dc2b`）。解析不到字面量就跳过，不猜。
+2. **判定消费方**：一个 key 算"有消费方"，当且仅当在设置窗口**之外**、且不属于
+   `__tests__`、且**不是另一个设置界面**的 `.ts`/`.vue` 里出现该 key 的带引号字面量。
+   用带引号精确匹配，避免 `--tjg-font-size-*` 这类 CSS token 干扰。
+3. **数量 ratchet**：死配置数量只减不增；基线缺失或结构不合法时直接失败，
+   绝不静默退化为 exit 0 空转。
+
+**判据改过一次，而且是改严。** 初版把"另一个设置界面回读"也算消费方，
+于是 `tjg-debug-mode` / `tjg-lab-features` / `tjg-show-performance` 这类
+"只有设置 UI 读写、零运行时消费方"的 key 被判成 live。整分支评审（`991479e5`）
+核实后，提交 `d3668363` 改为"另一个设置界面不算消费方"，基线从 22 重测为 **34**。
+这条修正很重要：它把一次"看起来已经完成"的审计打回原形。
+
+**审计方法本身的边界**（必须写在前面，否则会误读后面的数字）：
+审计只测"写入的 key 有没有被别处引用"，**不测读取是否真的改变行为**。
+Task 2/3 发现的"开关存了、也读了，但发送路径上没有守卫"这类缺陷，
+对审计和守门都是盲区——它只能靠行为测试暴露。
+
+### 13.2 实测死配置数：25 → 28 → 25 → 22 → 34 → 25 → 22 → 19 → 16 → 15 → 10 → 9 → 1
+
+每个数字都来自当时 `node scripts/check-settings-wiring.mjs` 的实测输出，
+可逐版复核（`scripts/settings-wiring-baseline.json` 的提交历史保留了每一版的
+`deadKeyNames`）：
+
+| 阶段 | 提交 | 实测 | 本次消失的 key |
+| --- | --- | --- | --- |
+| Task 0 首测 | `ee7d199b` | 25 | （首测；判据只认字面量写入，是低估） |
+| Task 0 修判据 | `a090dc2b` | 28 | 无；补 3 个别名写入键后重测，**28 才是起点诚实值** |
+| Task 1 | `fb5bc2b3` | 25 | `tjg-send-receipts`、`tjg-show-typing`、`tjg-show-online`（键名错位，统一到 store） |
+| Task 4 | `f68f01cf` | 22 | `tjg-desktop-notification`、`tjg-show-content`、`tjg-show-sender`（键名错位，并入展示偏好） |
+| 评审后重基线 | `d3668363` | 34 | 无；判据改严（另一个设置界面不算消费方），22 → 34 |
+| Task 6 | `5aa92acc` | 25 | 9 个通知 key：3 个接线后不再死（线程提及、关键词开关、关键词列表），6 个无可挂分发点按 YAGNI 删 UI 与 key |
+| Task 7 | `7014c6d6` | 22 | `tjg-push-dnd`、`tjg-push-dnd-start`、`tjg-push-dnd-end`（收归服务单一表示） |
+| Task 8 | `c5c3688c` | 19 | `tjg-blocked-users`、`tjg-invite-blocklist`、`tjg-invite-allowlist`（并入 `im.hula.invite_policy`） |
+| Task 9 | `c3954669` / `19752cbe` / `0fddf185` | 16 | `tjg-sidebar-settings`（整个侧边栏面板，1 个 blob 覆盖 11 字段）、`tjg-burn-after-read-settings`、`tjg-friend-settings` |
+| Task 10 | `6346db0c` | 15 | `tjg-font-size`（落地为 `--tjg-font-scale`） |
+| Task 11 | `c9385982` | 10 | `tjg-bubble-style`、`tjg-debug-mode`、`tjg-lab-features`、`tjg-show-performance`、`tjg-enable-devtools`（气泡落地 + 删整个桌面 Labs tab） |
+| Task 12 | `8cb2c4ee` | 9 | `tjg-backup-enabled`（开关改读 `encryptionStore.backupEnabled` 真实状态） |
+| Task 13 | `bd51d097` | 1 | 8 个音视频 key 并入 `mediaDevicePreferences` |
+| 收尾 | `7df690ab` | 1 | 无；只剩 `tjg-mjolnir-ban-lists` |
+
+两个必须注意的点：
+
+1. **25 是低估，28 才是起点。** 把 25 当基线会漏掉 3 个别名写入键。
+2. **22 → 34 是上升，但那是"更诚实"。** 数字变大不等于质量变差：
+   ratchet 的语义是"不许在诚实判据下新增"，不是"数字必须一路向下"。
+   同理，**收尾值是 1 而不是 0，是判据使然**：`tjg-mjolnir-ban-lists` 的真实消费方是
+   `src/mobile/views/my/MjolnirSettings.vue`，而守门刻意把"设置界面"排除出消费方
+   （宁可多报死，也不要把死配置判活），所以它保留在基线里。按方案约定，
+   完成判据是行为测试，不是把数字刷到 0。
+
+### 13.3 五类问题与各自的修复路径
+
+| 类别 | 症状 | 本次实例 | 选择的修复路径 |
+| --- | --- | --- | --- |
+| **键名错位** | 设置 UI 写的 key 与消费方读的 key 不是同一个，开关永远不生效 | 已读回执/输入中/在线状态（Task 1）；桌面通知/通知内容/发送者（Task 4） | 合并到**单一 storage 模块**（一个 key、一套 load/save），保留一次性幂等迁移清理旧 key；顺序是先接线、再删旧 |
+| **零消费方** | key 被设置 UI 写、也被设置 UI 回读，运行时没有任何消费方 | 通知 9 个（Task 6）；勿扰时段 3 个（Task 7）；侧边栏/阅后即焚/好友（Task 9）；字体大小（Task 10）；气泡样式与 Labs（Task 11）；备份开关（Task 12）；音视频 8 项（Task 13） | 先找**真实消费点**：找得到就接线并补真实路径行为测试；找不到且没有可挂分发点就按 **YAGNI 删 UI 与 key**（提交信息写明依据）。**不搬迁**——把 key 搬到 store / account data 不创造消费方，属于"假完成" |
+| **平行实现** | 同一概念两套实现，"哪份说了算"永久含糊 | `useInvitePermissionFilter` vs `invitePolicy`（Task 8）；侧边栏 `showIconsOnly` vs store 的 `showMode`；勿扰时段的第 4 份表示（Task 7） | 选**唯一来源**，删掉另一份，旧数据一次性迁移；不做长期兼容层 |
+| **装饰组件** | 组件渲染正常、事件也 emit，但没有任何使用处监听；测试只断言 `emitted(...)`，于是长期绿着不生效 | `InvitePermissionPanel` 的三档模式与名单（12.9 节）；Task 14 删除的三个死事件 | 要么补真实 props/事件接线并把测试改为断言真实落库，要么删除；并新增 `check:component-contracts` 守住复发 |
+| **无实现** | UI 存在，但运行时/后端根本没有对应能力 | 音视频设备选择与音量、字体大小（接线前） | 只实现**能安全生效**的部分（音频三个布尔经 `applyConstraints`）；不能生效的（`deviceId` 不可变、`MediaTrackConstraintSet` 没有 `volume`）如实标注"未接线"，不造假接线 |
+
+### 13.4 两个新守门
+
+#### `check:settings-wiring`（`scripts/check-settings-wiring.mjs`）
+
+```
+node scripts/check-settings-wiring.mjs          # 校验（CI / pre-merge）
+node scripts/check-settings-wiring.mjs --update # 收紧基线，数量只减不增
+```
+
+判据：只统计 `src/views/settingsWindow` 下 `.vue` 写入的 key（字面量或同文件常量别名）；
+一个 key 只有在设置窗口之外、非 `__tests__`、非另一个设置界面的 `.ts`/`.vue` 里
+出现带引号字面量时才算有消费方。基线缺失、不可解析或缺少数值字段一律 FAIL。
+
+已知局限：
+
+- **只守引用，不守生效。** 判活是引用计数，"消费方是否真在运行时消费"它判断不了。
+  Task 13 是实证：8 个音视频 key 并入 `mediaDevicePreferences` 后全部被记为"已消费"，
+  但其中设备选择与音量 5 项在通话路径上仍无效果（Task 13 minor #1）。
+  Task 2/3 的"存了不生效"同理是它的盲区，需要行为测试补位。
+- **写入面只覆盖设置窗口。** Task 11 把气泡样式写入搬进共享 util 后，
+  该 key 就离开了守门视野（`progress.md` Task 11 minor #1）。
+- **刻意保守带来假阳性。** 把设置界面排除出消费方，会把"仅被设置页消费"的 key
+  报成死配置——`tjg-mjolnir-ban-lists` 即为此列，故收尾值为 1。
+- 平行实现、装饰组件、无实现这三类它**看不见**，那是下一节的守门与行为测试的职责。
+
+#### `check:component-contracts`（`scripts/check-component-contracts.mjs`）
+
+```
+node scripts/check-component-contracts.mjs          # 校验
+node scripts/check-component-contracts.mjs --update # 收紧基线
+```
+
+判据：用 `vue/compiler-sfc` 的 `parse()` + `compileScript()` 与模板 AST 做结构化解析
+（**不做字符串包含匹配**——审计脚本第一版用子串匹配时 `SpaceTree` 被 `SkeletonSpaceTree` 命中，
+产生大量误报）。组件被使用、但它声明的事件在所有使用处都没绑定，就记一条；
+`v-model` 归一为 `update:modelValue` / `update:arg`；事件名按 Vue 的连字符/驼峰双查找规则
+归一；`__tests__` 既不算声明方也不算使用方；从未被使用的组件不计入（那是死代码问题）。
+`v-on="obj"` / `v-bind="obj"` / 动态参数 `@[name]` / `<component :is>` 一律判为不可判定并跳过
+（宁可漏报，不误报）。
+
+已知局限：
+
+- **ratchet 只比条数。** 基线里同时保存 `unlistenedEventNames` 供人工 diff，
+  但脚本不校验集合，因此"修掉一条真实断线又引入一条等价断线"可以通过。
+- `<component :is>` 动态挂载不识别，按"从未使用"漏报；同名 basename 的全局组件
+  （约 10 组，如 `index`）不走标签兜底。
+- Windows 反斜杠路径会让白名单/基线失配；`skip` 降低总数却不影响退出码；
+  白名单条目失配无人提示。
+- **基线 32 条里 19 条是既有的真实断线**（触发过 emit 但无人接，属用户可见行为缺失，
+  如 GuestModeBanner 按钮、ThreepidManager 增删、RoomSessionList 批量、
+  UserMenuHeader 的 `avatar-click`）。本次**冻结为债务**，不在 `feat/settings-wiring`
+  范围内修复；逐条分类见 `task-14-report.md` 的 C-real。
+
+### 13.5 收尾门禁（Task 15 实测）
+
+| 门禁 | 结果 | 说明 |
+| --- | --- | --- |
+| `npx vue-tsc --noEmit` | 0 错误，exit 0 | |
+| `npx vitest run` | 796/796 文件、9199/9199 用例通过；exit 1 | 唯一的非零来源是 3 个**既有** crypto unhandled rejection（`CryptoSDKAdapter` / `CryptoKeyBackupAdapter` 报 `CryptoApi 不可用`）。本分支未触碰 `src/services/matrix/crypto/`；单独跑这两个文件（74/74 用例通过）同样复现 exit 1 |
+| `check:settings-wiring` | OK 死配置 1（基线 1） | 仅剩 `tjg-mjolnir-ban-lists` |
+| `check:component-contracts` | OK 无人监听事件 32（基线 32） | 其中 19 条为既有真实断线，本次冻结为债务 |
+| `check:doc-coverage` | OK（1069 → 1054，基线 1064，无回归） | 补 15 处缺失 JSDoc 摘要，纯注释改动；这 15 处在基线提交 `e157675a` 上同样报错，属分支级既有漂移 |
+| `check:ratchet` | 6/6 OK | |
+| `check:sdk-boundary` | OK（205 / 基线 187，无回归） | |
+| `check-i18n` / `check-i18n-refs` | 通过 | refs 273 / 基线 280 |
+| `quality:no-raw-fetch` | OK | 5 处 `fetch()` 全在 allowlist |
+| `check:v-html` | FAIL（既有） | `ThemeSwitcher.vue` 的注释里出现 "v-html" 字样被 grep 命中；基线提交上同样 FAIL，本分支未改该文件 |
+| `check:file-size` | FAIL（既有） | 基线提交上同样 FAIL（同样点到 `Image.vue`）。本分支让 6 个基线文件继续变长，并使 `MatrixReceiptService.ts`（376 → 414 行）越过 400 行线。未做 `--update`：那会一次性赦免全部既有增长，把 ratchet 变成橡皮图章 |
+
+结论：本次治理**没有引入新的死配置**（守门从 34 降到 1 后保持不变），
+两个新守门的可证伪性在 Task 14 已验证（临时删真实监听/接线会 FAIL；
+见 `task-14-report.md`），doc-coverage 的既有漂移用纯注释补齐。
+剩余两处 FAIL（`check:v-html`、`check:file-size`）在基线提交上就存在，属独立债务。

@@ -96,6 +96,7 @@ export const DEFAULT_INVITE_POLICY: InvitePolicy = {
   contacts: []
 }
 
+/** 类型守卫：判断未知输入是否为合法的邀请策略模式。 */
 export function isInvitePolicyMode(value: unknown): value is InvitePolicyMode {
   return typeof value === 'string' && (INVITE_POLICY_MODES as readonly string[]).includes(value)
 }
@@ -127,6 +128,7 @@ function normalizeUserIdList(value: unknown): string[] {
   return result
 }
 
+/** 归一化任意输入为完整的邀请策略：非法字段逐个回落默认值，名单去重去空白。 */
 export function normalizeInvitePolicy(input: unknown): InvitePolicy {
   if (!input || typeof input !== 'object') {
     return { ...DEFAULT_INVITE_POLICY, blocklist: [], allowlist: [], contacts: [] }
@@ -203,6 +205,7 @@ export function shouldRejectInvite(inviterUserId: unknown, policy: InvitePolicy,
   return !inviter
 }
 
+/** 从本地存储读取邀请策略缓存；读取失败或无数据时回落默认策略。 */
 export function loadInvitePolicy(storage: Pick<Storage, 'getItem'> = localStorage): InvitePolicy {
   let stored: string | null = null
   try {

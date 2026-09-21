@@ -81,6 +81,7 @@ export class InvitePolicyEnforcer {
 
   constructor(private readonly options: InvitePolicyEnforcerOptions) {}
 
+  /** 订阅 `Room.member` 事件；重复调用是幂等的，客户端未初始化时只记警告。 */
   start(): void {
     if (this.handler) {
       return
@@ -100,6 +101,7 @@ export class InvitePolicyEnforcer {
     logger.info('邀请策略强制已启动')
   }
 
+  /** 退订事件并清空监听引用；未启动时调用是安全的空操作。 */
   stop(): void {
     if (this.handler && this.client) {
       this.client.off(ROOM_MEMBER_EVENT, this.handler)
@@ -225,6 +227,7 @@ export class InvitePolicyEnforcer {
   }
 }
 
+/** 创建邀请策略强制点实例。 */
 export function createInvitePolicyEnforcer(options: InvitePolicyEnforcerOptions): InvitePolicyEnforcer {
   return new InvitePolicyEnforcer(options)
 }

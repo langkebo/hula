@@ -66,6 +66,7 @@ export const DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES: NotificationDisplayPrefer
   priority: DEFAULT_NOTIFICATION_PRIORITY
 }
 
+/** 类型守卫：判断未知输入是否为合法的通知优先级。 */
 export function isNotificationPriority(value: unknown): value is NotificationPriority {
   return typeof value === 'string' && (NOTIFICATION_PRIORITIES as readonly string[]).includes(value)
 }
@@ -103,6 +104,7 @@ export function formatNotificationKeywords(keywords: readonly string[]): string 
   return keywords.join(', ')
 }
 
+/** 判断文本（大小写不敏感）是否命中任一非空关键词。 */
 export function matchesNotificationKeyword(text: string, keywords: readonly string[]): boolean {
   if (!text || keywords.length === 0) {
     return false
@@ -112,6 +114,7 @@ export function matchesNotificationKeyword(text: string, keywords: readonly stri
   return keywords.some((keyword) => keyword.length > 0 && haystack.includes(keyword.toLowerCase()))
 }
 
+/** 归一化任意输入为完整的展示偏好：非法字段逐个回落默认值，关键词去重去空白。 */
 export function normalizeNotificationDisplayPreferences(input: unknown): NotificationDisplayPreferences {
   if (!input || typeof input !== 'object') {
     return { ...DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES }
@@ -206,6 +209,10 @@ function cleanupLegacyKeys(storage: NotificationDisplayPreferencesStorage): void
   }
 }
 
+/**
+ * 从本地存储读取展示偏好；读取失败或数据非法时回落默认值，
+ * 并顺带完成旧关键词 key 的幂等迁移。
+ */
 export function loadNotificationDisplayPreferences(
   storage: NotificationDisplayPreferencesStorage = localStorage
 ): NotificationDisplayPreferences {
@@ -236,6 +243,7 @@ export function loadNotificationDisplayPreferences(
   return normalizeNotificationDisplayPreferences(value)
 }
 
+/** 归一化后写入本地存储；存储不可用或写入失败只记警告，不抛出。 */
 export function saveNotificationDisplayPreferences(
   preferences: NotificationDisplayPreferences,
   storage: Pick<Storage, 'setItem'> = localStorage
