@@ -1,4 +1,5 @@
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixReceiptService } from '../MatrixReceiptService'
 
@@ -41,6 +42,8 @@ describe('MatrixReceiptService', () => {
   }
 
   beforeEach(() => {
+    // 回执发送路径现在读取「发送已读回执」偏好（默认开启），需要激活 Pinia
+    setActivePinia(createPinia())
     const pendingTasks = (matrixReceiptService as any).pendingMarkAsReadTasks as Map<
       string,
       { timer: ReturnType<typeof setTimeout> | null }

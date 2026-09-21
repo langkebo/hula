@@ -1,5 +1,6 @@
 import type { MatrixClient, MatrixEvent, ReadReceiptsManager, Room } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { NotificationCountType } from '@/types/matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -161,7 +162,20 @@ class MatrixReceiptService extends BaseMatrixService {
     return this.cachedManager!
   }
 
+  /**
+   * 唯一的回执发送闸门：关闭「发送已读回执」后，所有实际发出回执的路径
+   * （sendReadReceipt / sendReadReceiptByEventId / markRoomAsRead 及其延迟补发）
+   * 都必须经过它，避免三处各写一遍判断而漏掉其中一条。
+   */
+  private shouldSendReadReceipts(): boolean {
+    return useSettingStore().sendReadReceiptsEnabled
+  }
+
   async sendReadReceipt(roomId: string, event: MatrixEvent): Promise<string | undefined> {
+    if (!this.shouldSendReadReceipts()) {
+      return undefined
+    }
+
     try {
       // event 可能是普通对象（如从 Sliding Sync/Worker 传来的序列化数据），需要兼容处理
       const eventId =
@@ -204,6 +218,10 @@ class MatrixReceiptService extends BaseMatrixService {
   }
 
   async sendReadReceiptByEventId(roomId: string, eventId: string): Promise<string | undefined> {
+    if (!this.shouldSendReadReceipts()) {
+      return undefined
+    }
+
     if (!navigator.onLine) {
       offlineQueueService.enqueue('receipt', roomId, { roomId, eventId })
       logger.info(`[MatrixReceipt] 离线状态，已将阅读回执入队: ${roomId}/${eventId}`)
@@ -243,6 +261,10 @@ class MatrixReceiptService extends BaseMatrixService {
   }
 
   async markRoomAsRead(roomId: string): Promise<void> {
+    if (!this.shouldSendReadReceipts()) {
+      return
+    }
+
     this.getClient()
 
     try {

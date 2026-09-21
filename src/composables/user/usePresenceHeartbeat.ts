@@ -16,6 +16,7 @@
 import { OnlineEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 
@@ -27,6 +28,9 @@ export const PRESENCE_HEARTBEAT_INTERVAL_MS = 45 * 1000
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 
 async function pushOnline(): Promise<void> {
+  // 关闭「显示在线状态」后不再心跳上报，否则服务端会把用户一直置为 online
+  if (!useSettingStore().showOnlineStatusEnabled) return
+
   // client 未初始化时静默跳过，避免登录时序竞态产生噪音日志
   if (!matrixClientService.getClient()) return
   try {
@@ -46,6 +50,14 @@ async function pushOnline(): Promise<void> {
       logger.error(`[PresenceHeartbeat] setPresence(online) 失败: ${err}`)
     }
   }
+}
+
+/**
+ * 仅供测试：绕过 45 秒定时器直接触发一次在线心跳。
+ * 生产路径只经由 startPresenceHeartbeat 的定时器调用 pushOnline。
+ */
+export async function pushOnlineForTest(): Promise<void> {
+  await pushOnline()
 }
 
 export function startPresenceHeartbeat(): void {

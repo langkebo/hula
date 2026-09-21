@@ -1,4 +1,5 @@
 import type { MatrixClient, Room } from 'matrix-js-sdk'
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixTypingService } from '../MatrixTypingService'
@@ -35,6 +36,8 @@ const mockClient = {
 
 describe('MatrixTypingService', () => {
   beforeEach(() => {
+    // sendTypingNotification 现在读取「发送输入中提示」偏好（默认开启），需要激活 Pinia
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
     vi.useFakeTimers()
