@@ -748,3 +748,34 @@ fail-open 守卫必须**限定在 `mode === 'allow_all'`**。第一版实现漏�
 
 覆盖该设计的测试（`invitePolicyDecision` / `invitePolicyEnforcer`）：
 `unknown` 与"未注入解析器"都必须放行；blocklist 模式必须不查联系人。
+
+### 12.9 桌面端与移动端统一邀请策略（提交 60b562f4）
+
+12.8 节末尾提到"桌面端仍写旧的 im.hula.invite_blocklist，两端不一致"。统一时发现
+桌面端的问题比"不一致"更严重：
+
+**桌面 `InvitePermissionPanel.vue` 是个纯装饰组件。**
+`SecuritySettings.vue` 以 `<InvitePermissionPanel />` 挂载——不传 props、不接事件，
+而面板自身没有状态、没有服务调用，emit 也没人监听。于是三档模式点了没反应、
+名单加了不落库。它的 10 个测试断言的是"emit 了事件"，所以一直绿着，
+恰好掩盖了"事件无人接收"——这类"自洽 stub"在本项目已出现多次。
+
+**`useInvitePermissionFilter` 是一份平行实现。**
+自带一套 `allow_all/blocklist/allowlist` 与 `shouldRejectInvite`，写旧 key。
+全仓只有它自己的测试引用过它，过滤逻辑从未被调用。两份实现并存会让
+"哪份说了算"永久含糊，因此直接删除，而不是留着当兼容层。
+
+统一后的结构：
+
+| 关注点 | 唯一实现 |
+| --- | --- |
+| 策略读写 | `matrixAccountService.getInvitePolicy / setInvitePolicy`（`im.hula.invite_policy`） |
+| 判定 | `invitePolicyDecision.decideInviteAction` + `contactStateResolver` 三态 |
+| 强制 | `invitePolicyEnforcer`（`App.vue` 接线，两端共用） |
+| 移动端 UI | `MobileInvitePermission.vue` |
+| 桌面端 UI | `InvitePermissionPanel.vue`（自包含，同一套 API） |
+
+桌面端同时补齐了两个开关（允许非联系人私聊、新私聊默认加密），并在测试中
+固定了一条容易踩的规则：**显式传入的初值优先于 account data**。
+否则挂载后策略会被账号数据覆盖，传入的 `mode` 静默失效——与"面板点了没反应"
+属于同一类问题，只是换了形式。实现时先写出了这个回归用例（红了才修）。
