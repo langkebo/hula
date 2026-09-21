@@ -9,7 +9,7 @@
 - **基线**：vue-tsc 0 错 · biome 0 error/2 info · ratchet(31/68/3/0/5/85，inline_style 5 全属 n-popover allowlist) · i18n-refs unresolved 273（基线 280）/fallback 7
 
 ## pnpm（版本漂移；详见 skill `pnpm-allowbuilds-version-drift`）
-- 版本三处不一：corepack **12.4.1** / homebrew **10.30.1** / CI `version: 10` → 交替 install 会**来回重写 lockfile**
+- 版本漂移已消除：本机与 CI 同钉 **pnpm@12.4.1**（packageManager 字段），alternating install 不再重写 lockfile
 - `allowBuilds` 是构建审批唯一事实源（v10.26 引入，v11 取代 `onlyBuiltDependencies` 等）；`set this to true or false` 是 pnpm 自动写的占位符
 - **依赖新鲜时 install 整段跳过**（含审批检查）→ 验证必须 `--force`（`--dry-run` 也不查）
 - **禁用旧版 pnpm 对高版本 lockfile 跑 `--force`**：先删后链，失败留残骸（`typescript`/`.bin/vue-tsc` 消失 → npx 抓错版本）
