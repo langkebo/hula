@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
+import { FONT_SCALE_STEPS } from '@/utils/fontScale'
 import AppearanceSettings from '../AppearanceSettings.vue'
 
 const messageSuccessMock = vi.fn()
@@ -26,6 +27,10 @@ const translationMap: Record<string, string> = {
   'setting.appearance.font_microsoft_yahei': '微软雅黑',
   'setting.appearance.font_pingfang_sc': '苹方',
   'setting.appearance.font_source_han_sans': '思源黑体',
+  'setting.appearance.font_size_small': '小',
+  'setting.appearance.font_size_standard': '标准',
+  'setting.appearance.font_size_large': '大',
+  'setting.appearance.font_size_extra_large': '超大',
   'setting.appearance.effects_section': '界面效果',
   'setting.appearance.window_shadow_label': '窗口阴影',
   'setting.appearance.window_shadow_desc': '显示窗口外阴影效果',
@@ -38,7 +43,7 @@ const translationMap: Record<string, string> = {
   'setting.appearance.bubble_square': '方角气泡',
   'setting.appearance.feedback.theme_changed': '主题已切换',
   'setting.appearance.feedback.font_changed': '字体已更新',
-  'setting.appearance.feedback.font_size_changed': '字体大小已调整为 {size}px',
+  'setting.appearance.feedback.font_size_changed': '字体大小已调整为 {size}',
   'setting.appearance.feedback.window_shadow_enabled': '窗口阴影已启用',
   'setting.appearance.feedback.window_shadow_disabled': '窗口阴影已关闭',
   'setting.appearance.feedback.blur_enabled': '模糊效果已启用',
@@ -50,13 +55,14 @@ const translationMap: Record<string, string> = {
 type AppearanceSettingsVm = ComponentPublicInstance & {
   currentTheme: string
   fontFamily: string
-  fontSize: number
+  fontScale: number
   windowShadow: boolean
   blurEffect: boolean
   bubbleStyle: boolean
   fontOptions: Array<{ value: string; label: string }>
+  fontScaleOptions: Array<{ value: number; label: string }>
   handleFontChange: (value: string) => void
-  handleFontSizeChange: (value: number) => void
+  handleFontScaleChange: (value: number) => void
   handleShadowChange: (value: boolean) => void
   handleBlurChange: (value: boolean) => void
   handleBubbleStyleChange: (value: boolean) => void
@@ -120,7 +126,7 @@ describe('AppearanceSettings', () => {
     ;(window as any).$message = { success: messageSuccessMock }
     localStorage.clear()
     document.documentElement.style.removeProperty('--font-family')
-    document.documentElement.style.removeProperty('--font-size-base')
+    document.documentElement.style.removeProperty('--tjg-font-scale')
 
     mockStore = {
       themePattern: 'dark',
@@ -178,16 +184,31 @@ describe('AppearanceSettings', () => {
     expect(getVm(wrapper).currentTheme).toBe('os')
   })
 
-  it('loads saved font size and bubble style on mount', () => {
-    localStorage.setItem('tjg-font-size', '18')
+  it('loads saved font scale and bubble style on mount', () => {
+    localStorage.setItem('tjg-font-scale', '1.25')
     localStorage.setItem('tjg-bubble-style', 'false')
 
     const wrapper = mount(AppearanceSettings)
     const vm = getVm(wrapper)
 
-    expect(vm.fontSize).toBe(18)
+    expect(vm.fontScale).toBe(1.25)
     expect(vm.bubbleStyle).toBe(false)
-    expect(document.documentElement.style.getPropertyValue('--font-size-base')).toBe('18px')
+  })
+
+  it('falls back to the standard step when the stored font scale is corrupted', () => {
+    localStorage.setItem('tjg-font-scale', '{broken')
+
+    const wrapper = mount(AppearanceSettings)
+
+    expect(getVm(wrapper).fontScale).toBe(1)
+  })
+
+  it('offers exactly the font scale steps as selector options', () => {
+    const wrapper = mount(AppearanceSettings)
+    const vm = getVm(wrapper)
+
+    expect(vm.fontScaleOptions.map((option) => option.value)).toEqual([...FONT_SCALE_STEPS])
+    expect(vm.fontScaleOptions.map((option) => option.label)).toEqual(['小', '标准', '大', '超大'])
   })
 
   it('updates theme through ThemeSwitcher child calling store toggleTheme', async () => {
@@ -214,15 +235,43 @@ describe('AppearanceSettings', () => {
     expect(messageSuccessMock).toHaveBeenCalledWith('字体已更新')
   })
 
-  it('persists font size and shows translated feedback', () => {
+  it('persists the font scale, applies it to :root, and shows translated feedback', () => {
     const wrapper = mount(AppearanceSettings)
     const vm = getVm(wrapper)
 
-    vm.handleFontSizeChange(16)
+    vm.handleFontScaleChange(1.125)
 
-    expect(localStorage.getItem('tjg-font-size')).toBe('16')
-    expect(document.documentElement.style.getPropertyValue('--font-size-base')).toBe('16px')
-    expect(messageSuccessMock).toHaveBeenCalledWith('字体大小已调整为 16px')
+    expect(localStorage.getItem('tjg-font-scale')).toBe('1.125')
+    expect(document.documentElement.style.getPropertyValue('--tjg-font-scale')).toBe('1.125')
+    expect(messageSuccessMock).toHaveBeenCalledWith('字体大小已调整为 大')
+    // 旧机制的死 key 不再写入：它从来没有消费方
+    expect(localStorage.getItem('tjg-font-size')).toBeNull()
+  })
+
+  it('wires the font scale selector to the persist/apply handler', async () => {
+    const wrapper = mount(AppearanceSettings)
+    const scaleSelect = wrapper
+      .findAllComponents({ name: 'NSelect' })
+      .find((component) => component.classes().includes('font-scale-select'))
+    if (!scaleSelect) throw new Error('font-scale-select 未渲染')
+
+    await scaleSelect.vm.$emit('update:value', 1.25)
+
+    expect(localStorage.getItem('tjg-font-scale')).toBe('1.25')
+    expect(document.documentElement.style.getPropertyValue('--tjg-font-scale')).toBe('1.25')
+  })
+
+  it('clamps an out-of-range font scale back to the standard step', () => {
+    const wrapper = mount(AppearanceSettings)
+    const vm = getVm(wrapper)
+
+    vm.handleFontScaleChange(9)
+
+    expect(vm.fontScale).toBe(1)
+    expect((FONT_SCALE_STEPS as readonly number[]).includes(vm.fontScale)).toBe(true)
+    expect(localStorage.getItem('tjg-font-scale')).toBe('1')
+    expect(document.documentElement.style.getPropertyValue('--tjg-font-scale')).toBe('1')
+    expect(messageSuccessMock).toHaveBeenCalledWith('字体大小已调整为 标准')
   })
 
   it('writes effect switches back to store', () => {

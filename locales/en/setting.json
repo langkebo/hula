@@ -369,6 +369,10 @@
     "font_microsoft_yahei": "Microsoft YaHei",
     "font_pingfang_sc": "PingFang SC",
     "font_source_han_sans": "Source Han Sans",
+    "font_size_small": "Small",
+    "font_size_standard": "Standard",
+    "font_size_large": "Large",
+    "font_size_extra_large": "Extra large",
     "preview": {
       "title": "Live Preview",
       "sample_text": "This is sample text to preview the current theme.",
@@ -379,7 +383,7 @@
     "feedback": {
       "theme_changed": "Theme switched",
       "font_changed": "Font changed",
-      "font_size_changed": "Font size changed to {size}px",
+      "font_size_changed": "Font size changed to {size}",
       "window_shadow_enabled": "Window shadow enabled",
       "window_shadow_disabled": "Window shadow disabled",
       "blur_enabled": "Blur effect enabled",

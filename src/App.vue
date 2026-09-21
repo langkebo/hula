@@ -52,6 +52,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { applyFontScale, loadFontScale } from '@/utils/fontScale'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
 import { isNonMatrixWindow } from '@/utils/windowLabels'
@@ -485,6 +486,8 @@ onMounted(async () => {
   await setupWindowHandlers()
   await setupMobileReLoginListener()
   setupThemeWatchers()
+  // 字体缩放不是响应式 store：启动时读一次 localStorage 并写到 :root，供字号 token 消费
+  applyFontScale(loadFontScale())
   if (!skipMatrixInit) {
     wsEventHandler.registerHandlers()
     presenceSync.startPresenceWatch()

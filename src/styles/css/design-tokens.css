@@ -113,19 +113,22 @@
     sans-serif;
   --tjg-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
 
-  --tjg-font-size-xs: 10px;
+  /* 字体缩放系数：由 src/utils/fontScale.ts 写入，1 为基准（下方字号全部乘以它） */
+  --tjg-font-scale: 1;
+
+  --tjg-font-size-xs: calc(10px * var(--tjg-font-scale));
   /* 2xs：辅助文字（原型 11px） */
-  --tjg-font-size-2xs: 11px;
-  --tjg-font-size-sm: 12px;
+  --tjg-font-size-2xs: calc(11px * var(--tjg-font-scale));
+  --tjg-font-size-sm: calc(12px * var(--tjg-font-scale));
   /* md：气泡正文（原型 13px） */
-  --tjg-font-size-md: 13px;
-  --tjg-font-size-base: 14px;
+  --tjg-font-size-md: calc(13px * var(--tjg-font-scale));
+  --tjg-font-size-base: calc(14px * var(--tjg-font-scale));
   /* 2lg：标题（原型 15px） */
-  --tjg-font-size-2lg: 15px;
-  --tjg-font-size-lg: 16px;
-  --tjg-font-size-xl: 18px;
-  --tjg-font-size-2xl: 20px;
-  --tjg-font-size-3xl: 24px;
+  --tjg-font-size-2lg: calc(15px * var(--tjg-font-scale));
+  --tjg-font-size-lg: calc(16px * var(--tjg-font-scale));
+  --tjg-font-size-xl: calc(18px * var(--tjg-font-scale));
+  --tjg-font-size-2xl: calc(20px * var(--tjg-font-scale));
+  --tjg-font-size-3xl: calc(24px * var(--tjg-font-scale));
 
   --tjg-font-weight-medium: 500;
   --tjg-font-weight-semibold: 600;
