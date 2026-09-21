@@ -29,6 +29,7 @@ function harness() {
   }
   const policyRef: { value: InvitePolicy } = { value: { ...DEFAULT_INVITE_POLICY } }
   const getPolicy = vi.fn((): InvitePolicy => policyRef.value)
+  const getPolicyStrict = vi.fn(async (): Promise<InvitePolicy | null> => policyRef.value)
   const savePolicy = vi.fn(async (_policy: InvitePolicy) => true)
   const getContacts = vi.fn(async (): Promise<string[]> => ['@friend:server'])
   const captured: { options?: InvitePolicyEnforcerOptions } = {}
@@ -40,11 +41,12 @@ function harness() {
     }),
     getCurrentUserId: vi.fn((): string | undefined => '@me:example.org'),
     getPolicy,
+    getPolicyStrict,
     savePolicy,
     getContacts,
     onDeclined: vi.fn()
   }
-  return { enforcer, deps, getPolicy, savePolicy, getContacts, policyRef, captured }
+  return { enforcer, deps, getPolicy, getPolicyStrict, savePolicy, getContacts, policyRef, captured }
 }
 
 describe('useInvitePolicyEnforcement', () => {
@@ -135,6 +137,53 @@ describe('useInvitePolicyEnforcement', () => {
     getContacts.mockRejectedValueOnce(new Error('offline'))
     const api = useInvitePolicyEnforcement(deps)
     await expect(api.syncContacts()).resolves.toBeUndefined()
+  })
+
+  /**
+   * C1 回归：启动时的 contacts 同步曾用宽松读（localStorage 缓存/默认值）整对象 PUT。
+   * 新设备 / 清缓存 / 换账号后，服务端的 mode/blocklist/allowlist/allowStrangers/
+   * 好友请求字段会被默认值静默覆盖。现在必须严格重读、只合并 contacts。
+   */
+  it('writes from the strict server read, preserving every field it does not own', async () => {
+    const { deps, savePolicy, getPolicyStrict } = harness()
+    getPolicyStrict.mockResolvedValueOnce({
+      mode: 'allowlist',
+      blocklist: ['@blocked:evil.org'],
+      allowlist: ['@boss:corp.org'],
+      allowStrangers: false,
+      allowFriendRequests: false,
+      autoAcceptFriends: true,
+      requireFriendRequestMessage: false,
+      contacts: []
+    })
+    const api = useInvitePolicyEnforcement(deps)
+    await api.syncContacts()
+    expect(savePolicy).toHaveBeenCalledWith({
+      mode: 'allowlist',
+      blocklist: ['@blocked:evil.org'],
+      allowlist: ['@boss:corp.org'],
+      allowStrangers: false,
+      allowFriendRequests: false,
+      autoAcceptFriends: true,
+      requireFriendRequestMessage: false,
+      contacts: ['@friend:server']
+    })
+  })
+
+  it('skips the write entirely when the strict read fails', async () => {
+    const { deps, savePolicy, getPolicyStrict } = harness()
+    getPolicyStrict.mockRejectedValueOnce(new Error('network down'))
+    const api = useInvitePolicyEnforcement(deps)
+    await expect(api.syncContacts()).resolves.toBeUndefined()
+    expect(savePolicy).not.toHaveBeenCalled()
+  })
+
+  it('creates from defaults only when the account never stored a policy', async () => {
+    const { deps, savePolicy, getPolicyStrict } = harness()
+    getPolicyStrict.mockResolvedValueOnce(null)
+    const api = useInvitePolicyEnforcement(deps)
+    await api.syncContacts()
+    expect(savePolicy).toHaveBeenCalledWith({ ...DEFAULT_INVITE_POLICY, contacts: ['@friend:server'] })
   })
 
   it('delegates undo to the enforcer', async () => {

@@ -44,7 +44,7 @@ import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useVoIPIncomingCall } from '@/composables/useVoIPIncomingCall'
 import { MittEnum, ThemeEnum } from '@/enums'
 import { createContactStateResolver } from '@/services/matrix/user/contactStateResolver'
-import { cacheInvitePolicy, loadInvitePolicy } from '@/services/matrix/user/invitePolicy'
+import { loadInvitePolicy } from '@/services/matrix/user/invitePolicy'
 import { createInvitePolicyEnforcer } from '@/services/matrix/user/invitePolicyEnforcer'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
@@ -223,8 +223,16 @@ const invitePolicyEnforcement = useInvitePolicyEnforcement({
     }),
   getCurrentUserId: () => matrixStore.userId ?? undefined,
   getPolicy: () => loadInvitePolicy(),
+  /**
+   * 写路径的严格重读：`syncContacts()` 只拥有 `contacts`，其余字段必须来自服务端。
+   * 抛错（读取失败）会被 composable 捕获并跳过写入，绝不回落默认值整对象覆盖。
+   */
+  getPolicyStrict: async () => {
+    const account = await import('@/services/matrix/user/MatrixAccountService')
+    return account.matrixAccountService.getInvitePolicyStrict()
+  },
   savePolicy: async (policy) => {
-    cacheInvitePolicy(policy)
+    // `setInvitePolicy` 成功后才写本地缓存，避免 PUT 失败时缓存先被污染
     const account = await import('@/services/matrix/user/MatrixAccountService')
     return account.matrixAccountService.setInvitePolicy(policy)
   },
