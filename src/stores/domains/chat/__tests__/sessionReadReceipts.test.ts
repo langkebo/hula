@@ -1,6 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { createPersistedState } from 'pinia-plugin-persistedstate'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, nextTick } from 'vue'
 import { RoomTypeEnum } from '@/enums'
+import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { SessionItem } from '../chat'
 import { useSessionStore } from '../chat/session'
@@ -134,5 +137,50 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
     await store.getSessionList()
 
     expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(0)
+  })
+
+  /**
+   * 回归守门（Task 2b 补修）：角标跨重启存活。
+   *
+   * 上一条用例只覆盖「同一个 pinia 实例内重建会话列表」。冷启动时 pinia 与所有 store
+   * 都会重新创建：若 sessionUnread 不持久化，lastRead 记录丢失，apply 又退回情况 3，
+   * 服务端的旧 unread_count 会再次把角标写回来。
+   *
+   * 这里真实地模拟重启：换一个全新的 pinia（重新安装持久化插件）并重新创建 store，
+   * 让 state 只能来自 localStorage 的水合，而不是同一实例的内存残留。
+   */
+  it('冷启动（新 pinia 水合）后重建会话列表，角标仍不会被服务端旧值写回', async () => {
+    localStorage.clear()
+
+    // 与 src/stores/index.ts 一致：全新 pinia + 持久化插件，仅重建 store 而不复用实例。
+    // 注意 pinia 插件只在 pinia 被 app.use() 安装后才真正注册（_p 才有内容），
+    // 所以这里挂到一个一次性 app 上，否则插件不会生效、持久化根本不会发生。
+    const bootPersistedPinia = () => {
+      const pinia = createPinia()
+      pinia.use(createPersistedState({ auto: false }))
+      createApp({}).use(pinia)
+      setActivePinia(pinia)
+    }
+
+    bootPersistedPinia()
+    useSettingStore().setSendReadReceiptsEnabled(false)
+    const store = useSessionStore()
+    store.addSession(makeSession({ unreadCount: 3, activeTime: 100 }))
+
+    await store.markSessionRead(ROOM_ID)
+    expect(store.getSession(ROOM_ID)?.unreadCount).toBe(0)
+    // $subscribe 默认 pre flush，等一拍确保写入 localStorage
+    await nextTick()
+
+    // 重启：全新 pinia，sessionUnread 只能从 localStorage 水合
+    bootPersistedPinia()
+    const restarted = useSessionStore()
+    // 服务端始终没收到 m.read：unread_count 仍是 3，activeTime 未变
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 3, activeTime: 100 })])
+    await restarted.getSessionList()
+
+    expect(restarted.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(0)
+    // 证明确实发生了「水合」而非同一 pinia 的内存残留
+    expect(useSessionUnreadStore().lastReadActiveTimeStore['@me:matrix.test']?.[ROOM_ID]).toBe(100)
   })
 })
