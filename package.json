@@ -78,7 +78,8 @@
     "audit:deps": "node scripts/audit-deps.mjs",
     "deploy:openclaw": "bash scripts/deploy_openclaw.sh",
     "test:e2e:mobile": "playwright test --project=mobile-chromium --project=mobile-safari",
-    "test:e2e:dynamic": "playwright test e2e/dynamic-flow.spec.ts --project=mobile-chromium"
+    "test:e2e:dynamic": "playwright test e2e/dynamic-flow.spec.ts --project=mobile-chromium",
+    "check:a11y": "node scripts/check-a11y.mjs"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
@@ -141,6 +142,7 @@
     "vue-virtual-scroller": "3.0.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "^2.5.12",
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^20.5.3",
