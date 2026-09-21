@@ -949,3 +949,72 @@ node scripts/check-component-contracts.mjs --update # 收紧基线
 `replaceTrack`（本分支未实现）。三个音质布尔（回声消除/降噪/自动增益）经
 `applyConstraints` 在真实通话上生效。`audioOutputId` / `inputVolume` /
 `outputVolume` 因全仓零消费方已连同控件删除。
+
+### 遗留债务与后续项（不阻塞合并）
+
+本分支的验收判据是各任务在**真实路径上的行为测试**，不是死配置数量（见 13.2、13.5）。
+以下条目是最终评审 triage 后**有意留给后续**的已知债务，不阻塞本次合并；本节只如实
+记录，不声称它们已被修复。
+
+**口径更正（[I-3]）**：ledger 中"设置开关请求的是 Web `Notification.requestPermission()`、
+而非 Tauri 插件"这一条经最终评审核实**不成立**——`tauri-plugin-notification` 的
+init-iife 会替换 `window.Notification`，并把 `requestPermission` / `permission` 转发到
+原生通道，开关触发的就是原生权限。真实残留只有一个：发送前没有检查
+`isPermissionGranted()`。通知权限代码本次未改动。
+
+**（1）需要产品/设计裁决**
+
+- 未读账本是否持久化：关闭已读回执后角标以本地账本为准（I4），但账本只在内存中，
+  冷启动后该修复仅在账本存在时生效；`sessionUnread.ts` 的 case-3 `Math.max(cached, server)`
+  还会让"在别的设备读过"的房间保留本机旧计数，直到本机打开该房间——需要裁决
+  "关闭回执时的未读语义 + 跨设备一致性"。涉及 `src/stores/domains/chat/`。
+- 通知展示配置与 DND 的跨设备/冷启动语义：跨窗口已改为读取最新持久化状态（I3），
+  但 `syncConfigFromAccountData()` 生产零调用方、DND 的账号数据同步只在
+  `PushSettings.vue` 手动触发；跨设备是否要求传播、是否启动即同步需要产品裁决。
+  涉及 `src/services/matrix/notifications/MatrixNotificationService.ts`。
+
+**（2）工程 follow-up（含门禁自身的改进）**
+
+- 损坏配置下的旧键迁移边界：`tjg-notification-config` 为损坏 JSON 时 `safeJsonParse`
+  回落默认值并被当成"显式值"，旧通知展示 key 不被采纳且被删除；仅损坏 JSON 可达，
+  故本次未修。`MatrixNotificationService.ts` 的 `migrateLegacyDisplayConfig()`。
+- `check:settings-wiring` 的扫描面：只覆盖 `src/views/settingsWindow/**/*.vue` 的直接
+  写入，写入搬进 store/util/service 后即脱离视野；根本修法是改扫持久层或建
+  key→owner→consumer 清单（设计工作）。`scripts/check-settings-wiring.mjs`。
+- 两个守门剩余的口径缺口：`--update` 只拒绝抬高数量，仍允许"同数量换键"（正常运行时的
+  键名子集校验挡不住 `--update`）；`check:component-contracts` 冻结基线 32 条，其中约
+  19 条是既有的真实断线（GuestModeBanner 按钮、ThreepidManager 增删、RoomSessionList
+  批量、UserMenuHeader 的 `avatar-click` 等），本次不修。`scripts/check-component-contracts.mjs`
+  与两个 `*-baseline.json`。
+- `MatrixReceiptService.ts` 由 376 行增至 414 行，越过 400 行红线；`check:file-size`
+  在基点即为红色（17 个既有超标），一次性 `--update` 会赦免全部既有增长，故本阶段不重构，
+  留 follow-up。
+- presence 门控仍依赖调用点自觉：规则实现已收敛到 `resolveOutgoingPresence` 一处，但
+  "是否按 `showOnlineStatusEnabled` 门控"仍由各调用点自行决定，新增调用点容易再次漏掉；
+  现有调用点为 `usePresenceHeartbeat.ts`、`userStatus.ts`、`UserMenuHeader.vue`、
+  `SessionBootstrapService.ts`。
+- 通知标题原文标记：`[•]` / `[*]` 会直接进入系统通知标题，未做展示层清理；
+  `MatrixNotificationService.ts`。
+- 发送者头像 icon：`showSender=false` 时仍把 `mxc://` 头像作为系统通知 icon 传入，
+  无法渲染为系统图标，且与"保留 icon"的简报要求冲突——需求级取舍未裁决；
+  `MatrixNotificationService.ts`。
+- `sendNotification` 未 await、无 catch：发送失败没有隔离（既有行为，本次未改动）。
+- `showNotification()` 零生产调用方：潜在的第二条发送路径，待删除或正式接线；
+  `MatrixNotificationService.ts`。
+- 每个开关双写：`v-model` 与 `@update:value` 同时触发 handler，绕过 `writeConfig` 去重；
+  `NotificationSettings.vue`。
+- orphan locale key：已删除开关与控件的文案残留，未清理。
+- `.photo-wall` 零使用：`@extend .bubble-oneself` 的选择器没有使用方，复活时需补选择器；
+  `render-message.scss`。
+- 守门实现 nits：Windows 反斜杠路径会让白名单/基线失配；`skip` 会降低总数却不影响退出码；
+  白名单条目失配无人提示；两个守门脚本。
+
+**（3）移动端平行实现缺口**
+
+- mobile `StatusSettings.vue` 的 presence 上报未按 `showOnlineStatusEnabled` 门控
+  （桌面四个调用点已门控）；本次未新增移动端开关 UI，属已知 follow-up。
+- mobile `VoiceVideoSettings.vue` 仍有桌面已删除的同名输出设备/音量控件，并直接写 key；
+  I9 的删除只覆盖共享模块与桌面页，移动端独立实现按同类"死配置"处置留 follow-up。
+- mobile `LabsSettings.vue` 仍写桌面已删除的 labs 死 key（`tjg-lab-features` /
+  `tjg-debug-mode` / `tjg-show-performance` 等），全仓无运行时消费方；属移动端新功能
+  缺口，不是本分支引入的回归。
