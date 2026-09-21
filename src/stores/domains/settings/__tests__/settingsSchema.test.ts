@@ -20,7 +20,6 @@ describe('settingsSchema · 常量定义', () => {
       'notifications',
       'preferences',
       'keyboard',
-      'sidebar',
       'voiceVideo',
       'securityPrivacy',
       'encryption',
@@ -40,11 +39,9 @@ describe('settingsSchema · 常量定义', () => {
 
   it('SETTINGS_TABS 中 desktopOnly / mobileOnly 标记仅出现在预期 tab', () => {
     const keyboard = SETTINGS_TABS.find((t) => t.id === 'keyboard')
-    const sidebar = SETTINGS_TABS.find((t) => t.id === 'sidebar')
     expect(keyboard?.desktopOnly).toBe(true)
-    expect(sidebar?.desktopOnly).toBe(true)
     // 其它 tab 不应携带 desktopOnly
-    expect(SETTINGS_TABS.filter((t) => t.desktopOnly).map((t) => t.id)).toEqual(['keyboard', 'sidebar'])
+    expect(SETTINGS_TABS.filter((t) => t.desktopOnly).map((t) => t.id)).toEqual(['keyboard'])
   })
 
   it('SETTINGS_LEGACY_TAB_MAP 将旧 tab 映射到新 tab', () => {

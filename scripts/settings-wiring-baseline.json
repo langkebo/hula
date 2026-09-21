@@ -1,5 +1,5 @@
 {
-  "deadKeys": 19,
+  "deadKeys": 18,
   "deadKeyNames": [
     "tjg-audio-input",
     "tjg-audio-output",
@@ -18,7 +18,6 @@
     "tjg-noise-suppression",
     "tjg-output-volume",
     "tjg-show-performance",
-    "tjg-sidebar-settings",
     "tjg-video-input"
   ]
 }

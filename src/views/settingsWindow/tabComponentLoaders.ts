@@ -9,7 +9,6 @@ export const SETTINGS_TAB_COMPONENT_LOADERS: Record<SettingsTabType, () => Promi
   voiceVideo: () => import('./tabs/VoiceVideoSettings.vue'),
   preferences: () => import('./tabs/PreferencesSettings.vue'),
   keyboard: () => import('./tabs/KeyboardSettings.vue'),
-  sidebar: () => import('./tabs/SidebarSettings.vue'),
   securityPrivacy: () => import('./tabs/SecuritySettings.vue'),
   encryption: () => import('./tabs/EncryptionSettings.vue'),
   labs: () => import('./tabs/LabsSettings.vue'),

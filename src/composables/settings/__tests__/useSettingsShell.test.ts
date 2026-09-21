@@ -8,7 +8,6 @@ const translationMap: Record<string, string> = {
   'setting.dialog.tabs.notifications': 'Notifications',
   'setting.dialog.tabs.preferences': 'Preferences',
   'setting.dialog.tabs.keyboard': 'Keyboard',
-  'setting.dialog.tabs.sidebar': 'Sidebar',
   'setting.dialog.tabs.voice_video': 'Voice & Video',
   'setting.dialog.tabs.security_privacy': 'Security & Privacy',
   'setting.dialog.tabs.encryption': 'Encryption',
@@ -28,7 +27,6 @@ const keywordMap = {
   notifications: ['通知', '提醒', 'push', 'push-rules', 'pusher'],
   preferences: ['偏好', 'media', 'language', 'privacy', 'startup', 'storage', 'scan', 'autostart'],
   keyboard: ['快捷键', 'hotkey', 'keymap'],
-  sidebar: ['侧边栏', 'left-panel', 'navigation'],
   voiceVideo: ['语音', '视频', 'audio', 'video', 'webrtc'],
   securityPrivacy: ['安全', '隐私', 'security', 'privacy', 'visibility', 'secret-chat', 'lock', 'hidden'],
   encryption: ['加密', 'secret-storage', 'secure-backup', 'cross-signing'],
@@ -43,12 +41,11 @@ const keywordMap = {
 const resolveSearchKeywords = (tabId: keyof typeof keywordMap) => [...keywordMap[tabId]]
 
 describe('useSettingsShell', () => {
-  it('keeps the documented 16 tabs visible on desktop', () => {
+  it('keeps the documented 15 tabs visible on desktop', () => {
     const shell = useSettingsShell({ isDesktop: true })
 
-    expect(shell.visibleTabs.value).toHaveLength(16)
+    expect(shell.visibleTabs.value).toHaveLength(15)
     expect(shell.visibleTabs.value.map((tab) => tab.id)).toContain('keyboard')
-    expect(shell.visibleTabs.value.map((tab) => tab.id)).toContain('sidebar')
     expect(shell.visibleTabs.value.find((tab) => tab.id === 'account')?.label).toBe('Account')
   })
 
@@ -56,7 +53,6 @@ describe('useSettingsShell', () => {
     const shell = useSettingsShell({ isDesktop: false })
 
     expect(shell.visibleTabs.value.map((tab) => tab.id)).not.toContain('keyboard')
-    expect(shell.visibleTabs.value.map((tab) => tab.id)).not.toContain('sidebar')
   })
 
   it('matches legacy and canonical aliases from the shared search index', () => {
