@@ -174,13 +174,17 @@ export const useSessionUnreadStore = defineStore(
     }
   },
   {
-    // 两个映射都必须跨重启存活：
-    // - lastReadActiveTimeStore 决定 apply 走「情况 1」（activeTime <= lastReadTime 时清零并
-    //   纠正服务端脏未读数），丢了它冷启动就会退回情况 3 的 Math.max 兜底，把已读房间的
-    //   角标写回来（跨重启存活的那条回归路径）。
-    // - cacheStore 是未读数的本地快照，丢了会让服务端计数直接覆盖本地已读状态。
-    // 状态只有这两个映射（uid 已作为一级键做账号隔离），无需 pick；旧版本从未持久化过，
-    // 不存在需要版本迁移的历史写入。
-    persist: true
+    // 只持久化 lastReadActiveTimeStore：apply 的「情况 1」（activeTime <= lastReadTime 时清零
+    // 并纠正服务端脏未读数）依赖它，丢了它冷启动就退回「情况 3」的 Math.max 兜底，把已读房间
+    // 的角标写回来。
+    //
+    // cacheStore 刻意不持久化：它是本地未读快照，而 apply 的「情况 3」用
+    // Math.max(cached, serverCount) 兜底。若缓存跨重启存活，一个本客户端从未打开过、因此没有
+    // lastRead 记录的房间（例如用户在别的设备读完、服务端 unread_count 已归零）就会拿着旧缓存
+    // 把角标重新顶回来——那是另一个跨重启存活的错误角标。缓存留在内存里，服务端才是真源。
+    // uid 已作为一级键做账号隔离，因此不需要额外的版本迁移。
+    persist: {
+      pick: ['lastReadActiveTimeStore']
+    }
   }
 )

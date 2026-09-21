@@ -183,4 +183,39 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
     // 证明确实发生了「水合」而非同一 pinia 的内存残留
     expect(useSessionUnreadStore().lastReadActiveTimeStore['@me:matrix.test']?.[ROOM_ID]).toBe(100)
   })
+
+  /**
+   * 回归守门（Task 2b 评审补修 1）：未读缓存不得跨重启把角标顶回来。
+   *
+   * apply 的「情况 3」在没有 lastRead 记录时用 Math.max(cached, serverCount) 兜底。
+   * 若 cacheStore 也被持久化，一个本客户端从未打开过的房间会把旧缓存带到重启后：
+   * 用户在别的设备读完了消息、服务端 unread_count 已归零，本机却仍按旧缓存把角标写回。
+   * 持久化只需覆盖 lastReadActiveTimeStore（apply 情况 1 依赖它），缓存必须留在内存里。
+   */
+  it('冷启动后，无 lastRead 记录的房间不会被持久化的旧缓存顶回角标', async () => {
+    localStorage.clear()
+
+    const bootPersistedPinia = () => {
+      const pinia = createPinia()
+      pinia.use(createPersistedState({ auto: false }))
+      createApp({}).use(pinia)
+      setActivePinia(pinia)
+    }
+
+    // 第一次启动：服务端报 5，本客户端从未打开该房间（因此没有 lastRead 记录）
+    bootPersistedPinia()
+    const first = useSessionStore()
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 5, activeTime: 100 })])
+    await first.getSessionList()
+    expect(first.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(5)
+    await nextTick()
+
+    // 重启：期间用户在别的设备读完了该房间，服务端 unread_count 归零且没有新消息
+    bootPersistedPinia()
+    const restarted = useSessionStore()
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 0, activeTime: 100 })])
+    await restarted.getSessionList()
+
+    expect(restarted.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(0)
+  })
 })
