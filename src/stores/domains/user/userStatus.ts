@@ -6,7 +6,7 @@ import { matrixAccountService } from '@/services/matrix/user/MatrixAccountServic
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
-import { mapUserStateToPresence } from '@/utils/userStatus'
+import { mapUserStateToPresence, recordSentPresence, resolveOutgoingPresence } from '@/utils/userStatus'
 
 const ensureStateColor = (state?: STO.UserState) => {
   if (!state || state.bgColor || !state.url) return
@@ -65,10 +65,13 @@ export const useUserStatusStore = defineStore(StoresEnum.USER_STATE, () => {
     // 「允许其他用户看到您的在线状态」关闭时把在线选择降级为 offline（与状态菜单里的
     // 「离线」同语义），并把本地 activeStatus 一并置为离线，避免本地显示在线而对端看不到。
     // 其它状态（away/busy/隐身）是用户的显式选择，语义上本就不是「在线」，保持原行为。
-    const hidesOnline = targetPresence === 'online' && !useSettingStore().showOnlineStatusEnabled
-    const presence = hidesOnline ? 'offline' : targetPresence
+    // 规则本身只在 utils/userStatus.resolveOutgoingPresence 里实现一份。
+    const presence = resolveOutgoingPresence(targetPresence, useSettingStore().showOnlineStatusEnabled)
+    const hidesOnline = presence !== targetPresence
 
     await matrixAccountService.setPresence(presence)
+    // 记下最近成功上报的 presence，心跳据此判断是否还需要降级
+    recordSentPresence(presence)
 
     stateId.value = state.id
 

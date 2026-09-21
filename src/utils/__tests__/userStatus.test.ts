@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapUserStateToPresence } from '../userStatus'
+import { mapUserStateToPresence, resolveOutgoingPresence } from '../userStatus'
 
 describe('mapUserStateToPresence', () => {
   it('returns online for id 0 regardless of title', () => {
@@ -37,5 +37,22 @@ describe('mapUserStateToPresence', () => {
 
   it('trims whitespace before comparing the title', () => {
     expect(mapUserStateToPresence({ id: '5', title: '  online  ' })).toBe('online')
+  })
+})
+
+describe('resolveOutgoingPresence', () => {
+  it('开关开启时原样返回所有状态', () => {
+    expect(resolveOutgoingPresence('online', true)).toBe('online')
+    expect(resolveOutgoingPresence('unavailable', true)).toBe('unavailable')
+    expect(resolveOutgoingPresence('offline', true)).toBe('offline')
+  })
+
+  it('开关关闭时把 online 降级为 offline', () => {
+    expect(resolveOutgoingPresence('online', false)).toBe('offline')
+  })
+
+  it('开关关闭时不影响 away(unavailable) 与 offline 等用户的显式选择', () => {
+    expect(resolveOutgoingPresence('unavailable', false)).toBe('unavailable')
+    expect(resolveOutgoingPresence('offline', false)).toBe('offline')
   })
 })

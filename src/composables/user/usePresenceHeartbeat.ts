@@ -22,6 +22,7 @@ import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceServ
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
+import { getLastSentPresence, recordSentPresence, resetSentPresence, resolveOutgoingPresence } from '@/utils/userStatus'
 
 const logger = createLogger('usePresenceHeartbeat')
 
@@ -30,21 +31,19 @@ export const PRESENCE_HEARTBEAT_INTERVAL_MS = 45 * 1000
 
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 
-/**
- * 本会话是否已下发过「开关关闭 → offline」的降级。
- * online 心跳必须每 45s 重复（对抗服务端 idle 降级），但降级只需要一次；
- * 失败时不置位，下一个心跳周期自动重试。登出时由 stopPresenceHeartbeat 复位。
- */
-let offlineDowngradeSent = false
-
 async function pushOfflineDowngrade(): Promise<void> {
-  if (offlineDowngradeSent) return
+  // 只有「最近一次成功上报的是 online（或本会话尚未成功上报）」时才需要降级：
+  // offline / unavailable（用户显式选择的 away/busy）都不是「在线」，既不需要重复
+  // 发送，也不该被心跳改写成 offline。用最近一次实际上报值判断，而不是一次性布尔量，
+  // 所以「关→开（选择器直报 online）→关」后仍能重新降级，不会被永久抑制。
+  const lastSent = getLastSentPresence()
+  if (lastSent === 'offline' || lastSent === 'unavailable') return
 
   // client 未初始化时静默跳过，避免登录时序竞态产生噪音日志
   if (!matrixClientService.getClient()) return
   try {
     await matrixPresenceService.setPresence('offline')
-    offlineDowngradeSent = true
+    recordSentPresence('offline')
     const userStore = useUserStore()
     if (userStore.userInfo) {
       userStore.userInfo.activeStatus = OnlineEnum.OFFLINE
@@ -59,18 +58,18 @@ async function pushOfflineDowngrade(): Promise<void> {
 async function pushOnline(): Promise<void> {
   // 关闭「显示在线状态」后不再心跳上报 online；同时主动降级为 offline，
   // 让对端在一个心跳周期内停止看到在线，而不是等 service 侧 presence 超时。
-  if (!useSettingStore().showOnlineStatusEnabled) {
+  const outgoing = resolveOutgoingPresence('online', useSettingStore().showOnlineStatusEnabled)
+  if (outgoing === 'offline') {
     await pushOfflineDowngrade()
     return
   }
 
-  // 开关重新打开后，下一次关闭需要重新降级
-  offlineDowngradeSent = false
-
   // client 未初始化时静默跳过，避免登录时序竞态产生噪音日志
   if (!matrixClientService.getClient()) return
   try {
+    // online 心跳必须每 45s 重复（对抗服务端 idle 降级），因此这里不做去重
     await matrixPresenceService.setPresence('online')
+    recordSentPresence('online')
     const userStore = useUserStore()
     if (userStore.userInfo) {
       userStore.userInfo.activeStatus = OnlineEnum.ONLINE
@@ -110,5 +109,5 @@ export function stopPresenceHeartbeat(): void {
     heartbeatTimer = null
   }
   // 登出（或重新登录）后若开关仍关闭，需要重新下发一次 offline 降级
-  offlineDowngradeSent = false
+  resetSentPresence()
 }
