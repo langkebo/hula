@@ -166,6 +166,25 @@ describe('decideInviteAction', () => {
       expect(decideInviteAction(event(), p, ME)?.action).toBe('decline')
     })
 
+    it('declines a stranger when a blocklist is in use and strangers are disallowed', () => {
+      // 隐私回归：屏蔽只是往黑名单里加人，不该顺手关掉「仅允许联系人」基线。
+      // 旧实现里 mode === 'blocklist' 提前 return，非联系人反而被放行。
+      const p = policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: false, contacts: [] })
+      expect(decideInviteAction(event({ inviterUserId: '@x:evil.org' }), p, ME)?.action).toBe('decline')
+      expect(decideInviteAction(event({ inviterUserId: '@stranger:server' }), p, ME)?.action).toBe('decline')
+    })
+
+    it('declines a blocklisted user in allowlist mode as well', () => {
+      const p = policy({
+        mode: 'allowlist',
+        allowlist: ['@spam:evil.org', '@friend:server'],
+        blocklist: ['@spam:evil.org'],
+        allowStrangers: false
+      })
+      expect(decideInviteAction(event(), p, ME)?.action).toBe('decline')
+      expect(decideInviteAction(event({ inviterUserId: '@friend:server' }), p, ME)).toBeNull()
+    })
+
     it('declines a non-allowlisted user even with no contact state at all', () => {
       const p = policy({ mode: 'allowlist', allowlist: ['@friend:server'], allowStrangers: false })
       expect(decideInviteAction(event(), p, ME)?.action).toBe('decline')

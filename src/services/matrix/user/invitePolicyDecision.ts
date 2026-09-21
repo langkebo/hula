@@ -83,6 +83,10 @@ export function decideInviteAction(
    * 注意 `mode === 'allow_all'` 这个前提不能少：强制点只在 allow_all 下查联系人，
    * 若不给名单模式放行，blocklist / allowlist 会因为拿不到 contactState 而被
    * 一并拦掉——用户拉黑的人反而能进房间（已有回归测试覆盖）。
+   *
+   * 副作用：`blocklist` 的名单检查已与 mode 正交（见 `shouldRejectInvite`），
+   * 但这条守卫仍然只认 allow_all；因此 blocklist 模式下由 `shouldRejectInvite`
+   * 的兜底规则直接拒掉非联系人，而不是 fail-open。
    */
   if (policy.mode === 'allow_all' && policy.allowStrangers === false && contactState !== 'stranger') {
     return null

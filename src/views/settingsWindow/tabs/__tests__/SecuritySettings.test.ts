@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
 import SecuritySettings from '../SecuritySettings.vue'
 import BlockedUsersSection from '../sections/BlockedUsersSection.vue'
-import InviteListsSection from '../sections/InviteListsSection.vue'
 import PrivacySettingsSection from '../sections/PrivacySettingsSection.vue'
 import PrivateChatSection from '../sections/PrivateChatSection.vue'
 
@@ -15,6 +14,9 @@ const {
   dialogWarningMock,
   getIgnoredUsersMock,
   setIgnoredUsersMock,
+  getInvitePolicyMock,
+  setInvitePolicyMock,
+  invitePolicyState,
   isEncryptionAvailableMock,
   getKeyBackupInfoMock,
   isSecretChatConfiguredMock,
@@ -38,6 +40,26 @@ const {
 
   const getIgnoredUsersMock = vi.fn().mockResolvedValue([])
   const setIgnoredUsersMock = vi.fn().mockResolvedValue(undefined)
+
+  /**
+   * 屏蔽名单已统一到账号级邀请策略（account data）。
+   *
+   * 用可变 state 而不是固定返回值：组件挂载时读一次、写回后再读一次，
+   * 断言的是「写回的策略是什么」而不是「mock 自己返回了什么」。
+   */
+  const invitePolicyState = {
+    mode: 'allow_all',
+    blocklist: [] as string[],
+    allowlist: [] as string[],
+    allowStrangers: false,
+    contacts: [] as string[]
+  }
+  const getInvitePolicyMock = vi.fn(async () => ({ ...invitePolicyState }))
+  const setInvitePolicyMock = vi.fn(async (policy: typeof invitePolicyState) => {
+    Object.assign(invitePolicyState, policy)
+    return true
+  })
+
   const isEncryptionAvailableMock = vi.fn().mockResolvedValue(false)
   const getKeyBackupInfoMock = vi.fn().mockResolvedValue(null)
 
@@ -72,6 +94,9 @@ const {
     dialogWarningMock,
     getIgnoredUsersMock,
     setIgnoredUsersMock,
+    getInvitePolicyMock,
+    setInvitePolicyMock,
+    invitePolicyState,
     isEncryptionAvailableMock,
     getKeyBackupInfoMock,
     isSecretChatConfiguredMock,
@@ -98,7 +123,7 @@ type BlockedUsersVm = ComponentPublicInstance & {
   blockedUsers: string[]
   newBlockedUser: string
   handleAddBlocked: () => void
-  handleUnblock: (userId: string) => void
+  handleUnblock: (userId: string) => Promise<void>
 }
 
 type PrivacySettingsVm = ComponentPublicInstance & {
@@ -108,14 +133,6 @@ type PrivacySettingsVm = ComponentPublicInstance & {
   handleOnlineStatusChange: (value: boolean) => void
   handleTypingStatusChange: (value: boolean) => void
   handleReadReceiptsChange: (value: boolean) => void
-}
-
-type InviteListsVm = ComponentPublicInstance & {
-  inviteBlocklist: string[]
-  inviteAllowlist: string[]
-  newBlocklistUser: string
-  handleAddInviteBlocklist: () => void
-  handleRemoveInviteAllowlist: (userId: string) => void
 }
 
 type PrivateChatVm = ComponentPublicInstance & {
@@ -151,7 +168,9 @@ vi.mock('@iconify/vue', () => ({
 vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   matrixAccountService: {
     getIgnoredUsers: (...args: unknown[]) => getIgnoredUsersMock(...args),
-    setIgnoredUsers: (...args: unknown[]) => setIgnoredUsersMock(...args)
+    setIgnoredUsers: (...args: unknown[]) => setIgnoredUsersMock(...args),
+    getInvitePolicy: (...args: Parameters<typeof getInvitePolicyMock>) => getInvitePolicyMock(...args),
+    setInvitePolicy: (...args: Parameters<typeof setInvitePolicyMock>) => setInvitePolicyMock(...args)
   }
 }))
 
@@ -264,8 +283,6 @@ describe('SecuritySettings', () => {
     wrapper.findComponent(BlockedUsersSection).vm as BlockedUsersVm
   const getPrivacyVm = (wrapper: ReturnType<typeof mount>) =>
     wrapper.findComponent(PrivacySettingsSection).vm as PrivacySettingsVm
-  const getInviteVm = (wrapper: ReturnType<typeof mount>) =>
-    wrapper.findComponent(InviteListsSection).vm as InviteListsVm
   const getPrivateChatVm = (wrapper: ReturnType<typeof mount>) =>
     wrapper.findComponent(PrivateChatSection).vm as PrivateChatVm
 
@@ -275,6 +292,11 @@ describe('SecuritySettings', () => {
     ;(window as any).$message = { success: messageSuccessMock, warning: messageWarningMock, error: messageErrorMock }
     localStorage.clear()
     getIgnoredUsersMock.mockResolvedValue([])
+    invitePolicyState.mode = 'allow_all'
+    invitePolicyState.blocklist = []
+    invitePolicyState.allowlist = []
+    invitePolicyState.allowStrangers = false
+    invitePolicyState.contacts = []
     isEncryptionAvailableMock.mockResolvedValue(false)
     getKeyBackupInfoMock.mockResolvedValue(null)
     isSecretChatConfiguredMock.mockReturnValue(false)
@@ -312,21 +334,12 @@ describe('SecuritySettings', () => {
     expect(getIgnoredUsersMock).toHaveBeenCalled()
   })
 
-  it('loads blocked users from localStorage', async () => {
-    localStorage.setItem('tjg-blocked-users', JSON.stringify(['@blocked:test.com']))
+  it('loads blocked users from the invite policy (not localStorage)', async () => {
+    invitePolicyState.blocklist = ['@blocked:test.com']
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     expect(getBlockedVm(wrapper).blockedUsers).toContain('@blocked:test.com')
-  })
-
-  it('loads invite lists from localStorage', async () => {
-    localStorage.setItem('tjg-invite-blocklist', JSON.stringify(['@block:test.com']))
-    localStorage.setItem('tjg-invite-allowlist', JSON.stringify(['@allow:test.com']))
-    const wrapper = mount(SecuritySettings)
-    await vi.dynamicImportSettled()
-    const vm = getInviteVm(wrapper)
-    expect(vm.inviteBlocklist).toContain('@block:test.com')
-    expect(vm.inviteAllowlist).toContain('@allow:test.com')
+    expect(localStorage.getItem('tjg-blocked-users')).toBeNull()
   })
 
   it('loads privacy settings from the setting store', async () => {
@@ -374,54 +387,38 @@ describe('SecuritySettings', () => {
     expect(localStorage.getItem('tjg-send-receipts')).toBeNull()
   })
 
-  it('adds blocked user and saves to localStorage', async () => {
+  it('adds blocked user through the invite policy without flipping mode', async () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     const vm = getBlockedVm(wrapper)
     vm.newBlockedUser = '@newblocked:test.com'
-    vm.handleAddBlocked()
+    await vm.handleAddBlocked()
     expect(vm.blockedUsers).toContain('@newblocked:test.com')
-    const saved = JSON.parse(localStorage.getItem('tjg-blocked-users')!)
-    expect(saved).toContain('@newblocked:test.com')
+    expect(setInvitePolicyMock).toHaveBeenCalledWith(expect.objectContaining({ blocklist: ['@newblocked:test.com'] }))
+    // mode 是用户显式选择，屏蔽操作不得把它改成 blocklist
+    expect(invitePolicyState.mode).toBe('allow_all')
+    expect(localStorage.getItem('tjg-blocked-users')).toBeNull()
   })
 
   it('rejects duplicate blocked user', async () => {
-    localStorage.setItem('tjg-blocked-users', JSON.stringify(['@dup:test.com']))
+    invitePolicyState.blocklist = ['@dup:test.com']
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     const vm = getBlockedVm(wrapper)
     vm.newBlockedUser = '@dup:test.com'
-    vm.handleAddBlocked()
+    await vm.handleAddBlocked()
     expect(messageWarningMock).toHaveBeenCalledWith('该用户已在屏蔽列表中')
   })
 
   it('removes blocked user', async () => {
-    localStorage.setItem('tjg-blocked-users', JSON.stringify(['@rm:test.com', '@keep:test.com']))
+    invitePolicyState.blocklist = ['@rm:test.com', '@keep:test.com']
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     const vm = getBlockedVm(wrapper)
-    vm.handleUnblock('@rm:test.com')
+    await vm.handleUnblock('@rm:test.com')
     expect(vm.blockedUsers).not.toContain('@rm:test.com')
     expect(vm.blockedUsers).toContain('@keep:test.com')
-  })
-
-  it('adds user to invite blocklist', async () => {
-    const wrapper = mount(SecuritySettings)
-    await vi.dynamicImportSettled()
-    const vm = getInviteVm(wrapper)
-    vm.newBlocklistUser = '@blockuser:test.com'
-    vm.handleAddInviteBlocklist()
-    expect(vm.inviteBlocklist).toContain('@blockuser:test.com')
-    expect(JSON.parse(localStorage.getItem('tjg-invite-blocklist')!)).toContain('@blockuser:test.com')
-  })
-
-  it('removes user from invite allowlist', async () => {
-    localStorage.setItem('tjg-invite-allowlist', JSON.stringify(['@rm:test.com', '@keep:test.com']))
-    const wrapper = mount(SecuritySettings)
-    await vi.dynamicImportSettled()
-    const vm = getInviteVm(wrapper)
-    vm.handleRemoveInviteAllowlist('@rm:test.com')
-    expect(vm.inviteAllowlist).not.toContain('@rm:test.com')
+    expect(setInvitePolicyMock).toHaveBeenCalledWith(expect.objectContaining({ blocklist: ['@keep:test.com'] }))
   })
 
   it('clears secret chat triggers dialog', async () => {

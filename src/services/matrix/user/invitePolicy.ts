@@ -32,17 +32,20 @@ export const INVITE_POLICY_MODES = ['allow_all', 'blocklist', 'allowlist'] as co
 export type InvitePolicyMode = (typeof INVITE_POLICY_MODES)[number]
 
 export interface InvitePolicy {
-  /** `allow_all` 不按名单拒绝；`blocklist` 拒绝名单内；`allowlist` 仅放行名单内。 */
+  /** `allow_all` 不按名单拒绝；`blocklist` 仅表示「默认放行」（名单本身与 mode 正交）；`allowlist` 仅放行名单内。 */
   mode: InvitePolicyMode
-  /** mode === 'blocklist' 时生效。 */
+  /**
+   * 拒绝名单。与 `mode` 正交：名单内的人在任何 mode 下都被拒绝，
+   * 包括 `allow_all`（否则一屏蔽某人就会把「仅允许联系人」基线静默关掉）。
+   */
   blocklist: string[]
-  /** mode === 'allowlist' 时生效。 */
+  /** `mode === 'allowlist'` 时生效。 */
   allowlist: string[]
   /**
    * 是否允许非联系人发起的私聊（房间邀请）。
    *
-   * 仅在 `mode === 'allow_all'` 时参与判定：名单模式已经表达了「谁能进」，
-   * 再用 contacts 二次判定会互相矛盾。
+   * 除 `mode === 'allowlist'` 外都参与判定：名单里没写的人走这条规则，
+   * 名单是叠加在它之上的拒绝维度，而不是替代它的模式。
    */
   allowStrangers: boolean
   /**
@@ -120,18 +123,24 @@ export function normalizeInvitePolicy(input: unknown): InvitePolicy {
  * 是否应自动拒绝来自 `inviterUserId` 的邀请。
  *
  * 判定顺序：
- * 1. 名单模式优先（blocklist / allowlist）——名单是显式表达，优先级最高
- * 2. `allow_all` 下若关闭了「允许非联系人私聊」，非联系人一律拒绝
+ * 1. `blocklist` 与 `mode` 正交，先判：名单内的人永远拒绝。
+ *    这条规则不能落在任何 mode 分支里——`mode === 'blocklist'` 一旦提前
+ *    return，`allowStrangers` 就被绕过，用户屏蔽一个人就会静默关掉
+ *    「仅允许联系人」基线（`allowStrangers` 默认 false）。
+ * 2. `allowlist` 是显式白名单，只放行名单内的人。
+ * 3. 其余情况看 `allowStrangers`：放开则放行，否则只放行联系人。
  *
- * 无法确定邀请人身份（空白 id）时，只要不是 allow_all 就拒绝：
- * 拿不到身份不能默认放行。
+ * 无法确定邀请人身份（空白 id）时，只要不是 `allow_all` + `allowStrangers`
+ * 的放行分支就拒绝：拿不到身份不能默认放行。
  */
 export function shouldRejectInvite(inviterUserId: unknown, policy: InvitePolicy): boolean {
   const normalized = normalizeInvitePolicy(policy)
   const inviter = normalizeUserId(inviterUserId)
 
-  if (normalized.mode === 'blocklist') {
-    return inviter ? normalized.blocklist.includes(inviter) : true
+  // blocklist 是与 mode 正交的独立维度：黑名单里的人永远拒绝，
+  // 不因为 mode 是 allow_all 就被跳过（否则一屏蔽某人就会关掉"仅联系人"基线）
+  if (inviter && normalized.blocklist.includes(inviter)) {
+    return true
   }
 
   if (normalized.mode === 'allowlist') {

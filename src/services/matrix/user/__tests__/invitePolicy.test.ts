@@ -115,10 +115,13 @@ describe('shouldRejectInvite — 静态名单策略', () => {
     expect(shouldRejectInvite('@stranger:server', p)).toBe(true)
   })
 
-  it('rejects an empty inviter when a list mode is active', () => {
-    expect(shouldRejectInvite('   ', policy({ mode: 'blocklist' }))).toBe(true)
-    expect(shouldRejectInvite(undefined, policy({ mode: 'blocklist' }))).toBe(true)
+  it('rejects an unknown inviter unless strangers are explicitly allowed', () => {
+    // 空 id 在"仅允许联系人"下不能默认放行（拿不到身份 → 拒），
+    // 而显式放开陌生人时连空 id 也放行。
+    expect(shouldRejectInvite('   ', policy({ mode: 'blocklist', allowStrangers: false }))).toBe(true)
+    expect(shouldRejectInvite(undefined, policy({ mode: 'blocklist', allowStrangers: false }))).toBe(true)
     expect(shouldRejectInvite('', policy({ mode: 'allowlist', allowlist: ['@a:b'] }))).toBe(true)
+    expect(shouldRejectInvite('   ', policy({ mode: 'blocklist' }))).toBe(false)
   })
 
   it('trims the inviter before comparing', () => {
@@ -131,8 +134,11 @@ describe('shouldRejectInvite — 静态名单策略', () => {
     expect(shouldRejectInvite('@a:b', { mode: 'bogus' } as unknown as InvitePolicy)).toBe(true)
   })
 
-  it('treats a non-array blocklist as empty (so nobody is rejected)', () => {
-    const p = { mode: 'blocklist', blocklist: 'nope' } as unknown as InvitePolicy
+  it('treats a non-array blocklist as empty (so nobody is rejected by it)', () => {
+    // 归一化把非法 blocklist 变成 []，因此它不会拒任何人；此时是否拒绝由
+    // allowStrangers 决定（放开陌生人 → 放行）。旧实现里 mode === 'blocklist'
+    // 会无条件拒绝，与"名单为空"矛盾。
+    const p = { mode: 'blocklist', blocklist: 'nope', allowStrangers: true } as unknown as InvitePolicy
     expect(shouldRejectInvite('@a:b', p)).toBe(false)
   })
 
@@ -176,6 +182,41 @@ describe('shouldRejectInvite — 非联系人私聊（allow_strangers）', () =>
       contacts: ['@bad:server']
     })
     expect(shouldRejectInvite('@bad:server', p)).toBe(true)
+  })
+
+  it('blocklist is orthogonal to mode and does not disable the only-contacts baseline', () => {
+    // 回归（整分支评审）：旧实现里 mode === 'blocklist' 提前 return，绕过 allowStrangers。
+    // 于是"屏蔽某人"这一步会把"仅允许联系人"静默关掉——屏蔽 X 之后非联系人 Y 反而能进来。
+    const p: InvitePolicy = {
+      ...DEFAULT_INVITE_POLICY,
+      mode: 'allow_all',
+      allowStrangers: false,
+      blocklist: ['@x:evil.org'],
+      contacts: []
+    }
+    expect(shouldRejectInvite('@x:evil.org', p)).toBe(true)
+    // 基线仍然生效：非联系人照样被拒，且联系人照常放行
+    expect(shouldRejectInvite('@y:server', p)).toBe(true)
+    expect(shouldRejectInvite('@friend:server', { ...p, contacts: ['@friend:server'] })).toBe(false)
+  })
+
+  it('honours the blocklist in allowlist mode too', () => {
+    // 黑名单是叠加在显式白名单之上的拒绝维度：白名单也救不回来
+    const p: InvitePolicy = {
+      ...DEFAULT_INVITE_POLICY,
+      mode: 'allowlist',
+      allowStrangers: true,
+      allowlist: ['@x:evil.org', '@friend:server'],
+      blocklist: ['@x:evil.org'],
+      contacts: []
+    }
+    expect(shouldRejectInvite('@x:evil.org', p)).toBe(true)
+    expect(shouldRejectInvite('@friend:server', p)).toBe(false)
+  })
+
+  it('honours the blocklist when strangers are explicitly allowed in allow_all mode', () => {
+    // 正交维度：连 allowStrangers: true 也压不过黑名单
+    expect(shouldRejectInvite('@x:evil.org', policy({ mode: 'allow_all', blocklist: ['@x:evil.org'] }))).toBe(true)
   })
 
   it('allowlist still rejects a non-listed contact', () => {

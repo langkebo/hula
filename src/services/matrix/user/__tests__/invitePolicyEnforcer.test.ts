@@ -253,6 +253,22 @@ describe('InvitePolicyEnforcer', () => {
       expect(resolveContactState).not.toHaveBeenCalled()
     })
 
+    it('still declines strangers when a blocklist is in use and strangers are disallowed', async () => {
+      // 隐私回归（强制点视角）：屏蔽只是往 blocklist 里加人，不该顺手关掉
+      // 「仅允许联系人」基线。旧实现里 mode === 'blocklist' 提前 return，
+      // 非联系人反而被放行。
+      const resolveContactState = vi.fn(async () => 'contact' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: false }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
+    })
+
     it('does not query contacts when strangers are allowed', async () => {
       const resolveContactState = vi.fn(async () => 'stranger' as const)
       const e = new InvitePolicyEnforcer({
