@@ -60,8 +60,18 @@ for (const { path, text } of sources) {
   }
 }
 
+/**
+ * 什么算"消费方"。
+ *
+ * 关键：**另一个设置界面不算消费方**。否则 mobile 的设置页（只读写自己的开关）
+ * 会把一个死 key 判成 live——实测 tjg-debug-mode / tjg-lab-features /
+ * tjg-show-performance 只有设置 UI 读写、零运行时消费方，却被旧判据当成 live。
+ *
+ * 这里刻意保守：宁可多报"死"（给人复核），也不要把死配置判活。
+ */
+const isSettingsUi = (path) => path.startsWith(SW) || /\/mobile\/views\/.*Settings\.vue$/.test(path)
 const consumers = ({ path, text }, key) =>
-  !path.startsWith(SW) && !path.includes('__tests__') && text.includes(`'${key}'`)
+  !isSettingsUi(path) && !path.includes('__tests__') && text.includes(`'${key}'`)
 const dead = [...written.entries()]
   .filter(([key]) => !sources.some((s) => consumers(s, key)))
   .map(([key, path]) => ({ key, path }))
