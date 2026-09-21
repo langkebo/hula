@@ -3,6 +3,8 @@ import type { ComputedRef, Ref } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useMitt } from '@/composables/common/useMitt'
 import { type MessageStatusEnum, MittEnum, MsgEnum, RoomTypeEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
 import type { useGroupStore } from '@/stores/domains/chat/group'
@@ -236,11 +238,25 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     }
 
     if (msg.message.body.atUidList?.includes(userStore.userInfo?.uid ?? '') && cacheUser) {
-      sendNotification({
-        title: cacheUser.name as string,
-        body: msg.message.body.content || msg.message.body.body || '',
-        icon: cacheUser.avatar as string
-      })
+      const notificationConfig = matrixNotificationService.getConfig()
+
+      if (notificationConfig.enableDesktop) {
+        // showSender=false 时退化为中性标题而非房间名：单聊的房间名就是对方昵称，
+        // 沿用房间名仍会泄漏发送者身份，中性标题对所有房间类型都安全。
+        const title = notificationConfig.showSender
+          ? (cacheUser.name as string)
+          : useI18nGlobal().t('message.notify.new_messages')
+        const display = matrixNotificationService.buildNotificationDisplay(
+          title,
+          msg.message.body.content || msg.message.body.body || ''
+        )
+
+        sendNotification({
+          title: display.title,
+          body: display.body,
+          icon: cacheUser.avatar as string
+        })
+      }
     }
 
     if (!isActiveChatView || msg.message.roomId !== targetRoomId) {

@@ -316,6 +316,13 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 通过浏览器 Notification API 弹出通知（Web 场景）。
+   *
+   * 注意：Tauri 桌面端的真实发送路径不经过这里——chat 收到命中当前用户的消息时，
+   * 由 `messageMutations` 读取 `getConfig()` 并用 `buildNotificationDisplay()` 裁定
+   * 标题/正文后交给 `@tauri-apps/plugin-notification` 发送。
+   */
   async showNotification(title: string, body: string): Promise<void> {
     try {
       if (!this.config.enableDesktop) {
@@ -344,7 +351,7 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 供移动端/桌面端在收到新消息时决定标题与正文。
+   * 供消息到达时决定通知标题与正文，`messageMutations` 的桌面通知路径消费此处结果。
    *
    * 合并两处偏好：账号级 `showMessageContent` 先并入本地展示偏好，
    * 再由优先级裁定（high 可突破账号级开关，low 强制折叠）。

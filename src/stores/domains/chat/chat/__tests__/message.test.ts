@@ -2,11 +2,13 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 
-const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef } = vi.hoisted(() => ({
+const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef, groupUserRef } = vi.hoisted(() => ({
   globalStoreMock: {
     currentSessionRoomId: 'room-1',
     currentSession: null as null | { type?: number }
   },
+  // 群成员信息解析结果，决定桌面通知是否有发送者可用（null 表示拿不到，不通知）
+  groupUserRef: { value: null as null | { name: string; avatar: string } },
   timerWorkerMock: {
     postMessage: vi.fn(),
     terminate: vi.fn(),
@@ -74,7 +76,7 @@ vi.mock('@/stores/domains/widget/global', () => ({
 
 vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => ({
-    getUserInfo: vi.fn(() => null),
+    getUserInfo: vi.fn(() => groupUserRef.value),
     myNameInCurrentGroup: ''
   })
 }))
@@ -130,10 +132,20 @@ vi.mock('@/services/matrix/MatrixEventService', () => ({
   }
 }))
 
+import { type Options, sendNotification } from '@tauri-apps/plugin-notification'
+import { useI18nGlobal } from '@/services/i18n'
 import matrixEventService from '@/services/matrix/MatrixEventService'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { useChatStore } from '@/stores/domains/chat/chat/message'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
+
+// 真实单例：通知开关由 UI 通过 updateConfig 写入，这里复用同一条写入路径，
+// 只把「同步到服务端」的副作用打桩，避免测试触发网络等待。
+const syncNotificationConfigSpy = vi.spyOn(matrixNotificationService, 'syncConfigToAccountData')
+
+// sendNotification 的入参签名是 `Options | string`，这里收敛成最近一次实际发送的选项对象
+const lastSentOptions = (): Options => vi.mocked(sendNotification).mock.calls[0][0] as Options
 
 const createMessage = (id: string, roomId = 'room-1'): MessageType => ({
   clientKey: id,
@@ -157,6 +169,7 @@ describe('ChatMessageStore', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     windowLabelRef.value = 'home'
+    groupUserRef.value = null
     globalStoreMock.currentSessionRoomId = 'room-1'
     globalStoreMock.currentSession = null
     timerWorkerMock.postMessage.mockClear()
@@ -527,5 +540,94 @@ describe('ChatMessageStore', () => {
     expect(store.getMsgIndex('20')).toBe(1)
     expect(store.getMsgIndex('40')).toBe(3)
     expect(store.currentMessageOptions).toMatchObject({ hasLoadedOnce: true, isLoading: false })
+  })
+
+  describe('desktop notification wiring', () => {
+    const mentionMessage = (id: string, content = `message-${id}`, roomId = 'room-1'): MessageType => ({
+      clientKey: id,
+      message: {
+        id,
+        roomId,
+        sendTime: Number(id),
+        type: MsgEnum.TEXT,
+        body: {
+          body: content,
+          content,
+          atUidList: ['user-1']
+        }
+      },
+      fromUser: { uid: 'user-2', username: 'tester' }
+    })
+
+    beforeEach(() => {
+      groupUserRef.value = { name: 'Alice', avatar: 'mxc://alice' }
+      syncNotificationConfigSpy.mockResolvedValue(undefined)
+      // 逐例复位为默认配置，等价于用户在设置里把三个开关都打开
+      matrixNotificationService.updateConfig({
+        enableDesktop: true,
+        showMessageContent: true,
+        showSender: true
+      })
+      vi.mocked(sendNotification).mockClear()
+    })
+
+    it('sends sender, content and avatar by default', async () => {
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('1', 'hello there'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(sendNotification).mock.calls[0][0]).toMatchObject({
+        title: 'Alice',
+        body: 'hello there',
+        icon: 'mxc://alice'
+      })
+    })
+
+    it('sends nothing at all when desktop notifications are disabled', async () => {
+      matrixNotificationService.updateConfig({ enableDesktop: false })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('2', 'hello there'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('hides the content when the message-content switch is off', async () => {
+      matrixNotificationService.updateConfig({ showMessageContent: false })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('3', 'hello there'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      const payload = lastSentOptions()
+      expect(payload.body).toBeUndefined()
+      expect(payload.title).toBe('[•] Alice')
+    })
+
+    it('never exposes the sender name when the sender switch is off', async () => {
+      matrixNotificationService.updateConfig({ showSender: false })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('4', 'hello there'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      const payload = lastSentOptions()
+      expect(JSON.stringify(payload)).not.toContain('Alice')
+      expect(payload.title).toBe(useI18nGlobal().t('message.notify.new_messages'))
+      expect(payload.body).toBe('hello there')
+      // 头像按现状保留：showSender 只约束标题里的发送者名字
+      expect(payload.icon).toBe('mxc://alice')
+    })
+
+    it('ignores messages that do not mention the current user', async () => {
+      const store = useChatStore()
+      const msg = mentionMessage('5', 'hello there')
+      msg.message.body.atUidList = ['user-9']
+
+      await store.pushMsg(msg)
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
   })
 })

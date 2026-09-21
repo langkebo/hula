@@ -178,7 +178,8 @@ const { showFeedback } = useActionFeedback()
 const settingStore = useSettingStore()
 
 // 桌面通知/消息内容/发送者三项配置持久化在 tjg-notification-config，由
-// MatrixNotificationService 的 showNotification() 消费；组件只读写这份服务配置。
+// MatrixNotificationService.getConfig() + buildNotificationDisplay() 在实际发送路径
+// （chat 收到命中当前用户的消息时）读取；组件只读写这份服务配置，不自己消费。
 const notificationConfig = ref(matrixNotificationService.getConfig())
 
 type NotificationToggle = 'enableDesktop' | 'showMessageContent' | 'showSender'
