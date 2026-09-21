@@ -156,6 +156,7 @@ import { NButton, NDivider, NSelect, NSlider, NSwitch } from 'naive-ui'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { loadMediaDevicePreferences, saveMediaDevicePreferences } from '@/services/media/mediaDevicePreferences'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('VoiceVideoSettings')
@@ -250,57 +251,30 @@ async function loadDevices() {
 }
 
 function loadSavedSettings() {
-  const savedAudioInput = localStorage.getItem('tjg-audio-input')
-  if (savedAudioInput) {
-    audioInputId.value = savedAudioInput
-  }
+  const preferences = loadMediaDevicePreferences()
 
-  const savedAudioOutput = localStorage.getItem('tjg-audio-output')
-  if (savedAudioOutput) {
-    audioOutputId.value = savedAudioOutput
-  }
+  // 设备 id 为 null 表示"没保存过"，此时保留 loadDevices() 选出的默认设备，不要清空。
+  if (preferences.audioInputId) audioInputId.value = preferences.audioInputId
+  if (preferences.audioOutputId) audioOutputId.value = preferences.audioOutputId
+  if (preferences.videoInputId) videoInputId.value = preferences.videoInputId
 
-  const savedVideoInput = localStorage.getItem('tjg-video-input')
-  if (savedVideoInput) {
-    videoInputId.value = savedVideoInput
-  }
-
-  const savedInputVolume = localStorage.getItem('tjg-input-volume')
-  if (savedInputVolume) {
-    inputVolume.value = parseInt(savedInputVolume, 10)
-  }
-
-  const savedOutputVolume = localStorage.getItem('tjg-output-volume')
-  if (savedOutputVolume) {
-    outputVolume.value = parseInt(savedOutputVolume, 10)
-  }
-
-  const savedEcho = localStorage.getItem('tjg-echo-cancellation')
-  if (savedEcho) {
-    echoCancellation.value = savedEcho === 'true'
-  }
-
-  const savedNoise = localStorage.getItem('tjg-noise-suppression')
-  if (savedNoise) {
-    noiseSuppression.value = savedNoise === 'true'
-  }
-
-  const savedAutoGain = localStorage.getItem('tjg-auto-gain')
-  if (savedAutoGain) {
-    autoGainControl.value = savedAutoGain === 'true'
-  }
+  inputVolume.value = preferences.inputVolume
+  outputVolume.value = preferences.outputVolume
+  echoCancellation.value = preferences.echoCancellation
+  noiseSuppression.value = preferences.noiseSuppression
+  autoGainControl.value = preferences.autoGain
 }
 
 function handleAudioInputChange(value: string) {
-  localStorage.setItem('tjg-audio-input', value)
+  saveMediaDevicePreferences({ audioInputId: value })
 }
 
 function handleAudioOutputChange(value: string) {
-  localStorage.setItem('tjg-audio-output', value)
+  saveMediaDevicePreferences({ audioOutputId: value })
 }
 
 function handleVideoInputChange(value: string) {
-  localStorage.setItem('tjg-video-input', value)
+  saveMediaDevicePreferences({ videoInputId: value })
   if (isPreviewing.value) {
     stopPreview()
     startPreview()
@@ -308,23 +282,23 @@ function handleVideoInputChange(value: string) {
 }
 
 function handleInputVolumeChange(value: number) {
-  localStorage.setItem('tjg-input-volume', value.toString())
+  saveMediaDevicePreferences({ inputVolume: value })
 }
 
 function handleOutputVolumeChange(value: number) {
-  localStorage.setItem('tjg-output-volume', value.toString())
+  saveMediaDevicePreferences({ outputVolume: value })
 }
 
 function handleEchoCancellationChange(value: boolean) {
-  localStorage.setItem('tjg-echo-cancellation', value.toString())
+  saveMediaDevicePreferences({ echoCancellation: value })
 }
 
 function handleNoiseSuppressionChange(value: boolean) {
-  localStorage.setItem('tjg-noise-suppression', value.toString())
+  saveMediaDevicePreferences({ noiseSuppression: value })
 }
 
 function handleAutoGainChange(value: boolean) {
-  localStorage.setItem('tjg-auto-gain', value.toString())
+  saveMediaDevicePreferences({ autoGain: value })
 }
 
 async function handleTestAudio() {

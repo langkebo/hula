@@ -47,7 +47,9 @@ const translationMap: Record<string, string> = {
 
 const messageSuccessMock = vi.fn()
 const messageErrorMock = vi.fn()
-const loggerErrorMock = vi.fn()
+// vi.hoisted：mock 工厂会在 import 求值阶段执行（媒体偏好模块在顶层就 createLogger），
+// 普通 const 此时仍在 TDZ，必须把 loggerErrorMock 提前到 imports 之前。
+const { loggerErrorMock } = vi.hoisted(() => ({ loggerErrorMock: vi.fn() }))
 const enumerateDevicesMock = vi.fn()
 const getUserMediaMock = vi.fn()
 const requestAnimationFrameMock = vi.fn(() => 1)
