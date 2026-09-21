@@ -35,6 +35,19 @@ export type NotificationEventKind = 'thread_mention'
 const LEGACY_THREAD_MENTION_STORAGE_KEY = 'tjg-thread-mention-notify'
 
 /**
+ * 旧通知展示开关（base 的 NotificationSettings.vue 直接写 localStorage）→ 当前字段。
+ * 新配置里已显式写过该字段时以新值为准，旧 key 一律清理。
+ */
+const LEGACY_NOTIFICATION_CONFIG_KEYS: ReadonlyArray<{
+  key: string
+  field: 'enableDesktop' | 'showMessageContent' | 'showSender'
+}> = [
+  { key: 'tjg-desktop-notification', field: 'enableDesktop' },
+  { key: 'tjg-show-content', field: 'showMessageContent' },
+  { key: 'tjg-show-sender', field: 'showSender' }
+]
+
+/**
  * `validateObject` 在 requiredKeys 为空时不会执行单键校验器，因此 events 必须显式清洗。
  * 只保留布尔值：非法条目视为缺省（开启），避免坏配置静默关掉通知。
  */
@@ -142,8 +155,9 @@ class MatrixNotificationService extends BaseMatrixService {
       logger.warn('读取通知配置失败:', err)
     }
 
+    let parsed: Partial<NotificationConfig> | null = null
     if (stored) {
-      const parsed = safeJsonParse(stored, isValidNotificationConfig, DEFAULT_NOTIFICATION_CONFIG)
+      parsed = safeJsonParse(stored, isValidNotificationConfig, DEFAULT_NOTIFICATION_CONFIG)
       this.config = {
         ...DEFAULT_NOTIFICATION_CONFIG,
         ...parsed,
@@ -155,6 +169,38 @@ class MatrixNotificationService extends BaseMatrixService {
 
     // 迁移必须在「配置 key 不存在」时也执行：老用户可能只动过线程开关，从未写过配置。
     this.migrateLegacyEventNotification()
+    // 旧通知展示开关（base UI 写入）同理：只有在新配置未显式设置该字段时才采用旧值，
+    // 否则关过「通知内容 / 发送者」的用户升级后会被静默恢复成开启。
+    this.migrateLegacyDisplayConfig(parsed)
+  }
+
+  /**
+   * 旧通知展示开关（`tjg-desktop-notification` / `tjg-show-content` / `tjg-show-sender`，
+   * 由 base 的 NotificationSettings.vue 写入）一次性并入配置，幂等且「新值优先」：
+   * 新配置里已显式写过该字段就保留新值；旧 key 无论是否被采用都清理掉。
+   */
+  private migrateLegacyDisplayConfig(explicit: Partial<NotificationConfig> | null): void {
+    for (const { key, field } of LEGACY_NOTIFICATION_CONFIG_KEYS) {
+      let legacy: string | null = null
+      try {
+        legacy = localStorage.getItem(key)
+      } catch (err) {
+        logger.warn(`读取旧通知设置失败: ${key}`, err)
+        continue
+      }
+      if (legacy === null) continue
+
+      if (explicit?.[field] === undefined && (legacy === 'true' || legacy === 'false')) {
+        this.config = { ...this.config, [field]: legacy === 'true' }
+        this.persistConfig()
+      }
+
+      try {
+        localStorage.removeItem(key)
+      } catch (err) {
+        logger.warn(`清理旧通知设置失败: ${key}`, err)
+      }
+    }
   }
 
   /**

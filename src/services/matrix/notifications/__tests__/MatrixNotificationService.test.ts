@@ -279,6 +279,56 @@ describe('MatrixNotificationService', () => {
     })
   })
 
+  describe('legacy display config migration', () => {
+    const CONFIG_STORAGE_KEY = 'tjg-notification-config'
+    const LEGACY_DESKTOP_KEY = 'tjg-desktop-notification'
+    const LEGACY_CONTENT_KEY = 'tjg-show-content'
+    const LEGACY_SENDER_KEY = 'tjg-show-sender'
+
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it('adopts the base notification keys once when the new config never set them', async () => {
+      localStorage.setItem(LEGACY_DESKTOP_KEY, 'false')
+      localStorage.setItem(LEGACY_CONTENT_KEY, 'false')
+      localStorage.setItem(LEGACY_SENDER_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      const config = fresh.getConfig()
+      expect(config.enableDesktop).toBe(false)
+      expect(config.showMessageContent).toBe(false)
+      expect(config.showSender).toBe(false)
+      expect(localStorage.getItem(LEGACY_DESKTOP_KEY)).toBeNull()
+      expect(localStorage.getItem(LEGACY_CONTENT_KEY)).toBeNull()
+      expect(localStorage.getItem(LEGACY_SENDER_KEY)).toBeNull()
+
+      // 已持久化：再次冷启动仍然保持"关"，不依赖旧 key
+      vi.resetModules()
+      const again = (await import('../MatrixNotificationService')).matrixNotificationService
+      expect(again.getConfig().enableDesktop).toBe(false)
+      expect(again.getConfig().showMessageContent).toBe(false)
+      expect(again.getConfig().showSender).toBe(false)
+    })
+
+    it('lets a newer persisted value win over the legacy key', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ showMessageContent: true, showSender: true }))
+      localStorage.setItem(LEGACY_CONTENT_KEY, 'false')
+      localStorage.setItem(LEGACY_SENDER_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      const config = fresh.getConfig()
+      expect(config.showMessageContent).toBe(true)
+      expect(config.showSender).toBe(true)
+      expect(localStorage.getItem(LEGACY_CONTENT_KEY)).toBeNull()
+      expect(localStorage.getItem(LEGACY_SENDER_KEY)).toBeNull()
+    })
+  })
+
   describe('dnd settings', () => {
     const DND_ENABLED_KEY = 'tjg-push-dnd'
     const DND_START_KEY = 'tjg-push-dnd-start'

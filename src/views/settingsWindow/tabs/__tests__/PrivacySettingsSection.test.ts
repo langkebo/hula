@@ -32,7 +32,7 @@ describe('PrivacySettingsSection', () => {
 
     expect(store.preferences.sendReadReceipts).toBe(false)
     expect(store.sendReadReceiptsEnabled).toBe(false)
-    // 旧实现写的是 tjg-send-receipts，与 store 的 legacy key 不一致，且会被迁移逻辑主动清掉
+    // 组件只写 store，不再直接写 localStorage（tjg-send-receipts 是待迁移的旧 key）
     expect(localStorage.getItem('tjg-send-receipts')).toBeNull()
   })
 
@@ -93,6 +93,29 @@ describe('PrivacySettingsSection', () => {
     getVm(wrapper).handleTypingStatusChange(false)
     getVm(wrapper).handleReadReceiptsChange(false)
 
+    expect(localStorage.getItem('tjg-show-online')).toBeNull()
+    expect(localStorage.getItem('tjg-show-typing')).toBeNull()
+    expect(localStorage.getItem('tjg-send-receipts')).toBeNull()
+  })
+
+  /**
+   * I7 回归：旧隐私设置页实际写入的三个 key 必须被一次性迁移并清理。
+   *
+   * 之前的用例断言的是 `tjg-send-read-receipts` / `tjg-send-typing-notifications`
+   * ——那两个 key 从没有任何 UI 写过，断言恒真，只提供假信心。
+   */
+  it('挂载时迁移旧隐私 UI 真正写入的三个 key，并清掉旧 key', async () => {
+    localStorage.setItem('tjg-show-online', 'false')
+    localStorage.setItem('tjg-show-typing', 'false')
+    localStorage.setItem('tjg-send-receipts', 'false')
+
+    const store = useSettingStore()
+    mount(PrivacySettingsSection)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(store.preferences.showOnlineStatus).toBe(false)
+    expect(store.preferences.sendTypingNotifications).toBe(false)
+    expect(store.preferences.sendReadReceipts).toBe(false)
     expect(localStorage.getItem('tjg-show-online')).toBeNull()
     expect(localStorage.getItem('tjg-show-typing')).toBeNull()
     expect(localStorage.getItem('tjg-send-receipts')).toBeNull()
