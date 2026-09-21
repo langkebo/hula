@@ -10,7 +10,7 @@
           openWindowsList.has(item.url) ? 'color-[--left-win-icon-color]' : 'top-action flex-col-center',
           showMode === ShowModeEnum.ICON ? 'p-[6px_8px]' : 'w-46px py-4px'
         ]"
-        style="text-align: center"
+        class="text-center"
         role="button"
         tabindex="0"
         :aria-label="item.title"
@@ -31,7 +31,7 @@
           <p>{{ item.title }} {{ t('home.action.opened') }}</p>
         </n-popover>
         <!-- 该选项有提示时展示 -->
-        <n-popover style="padding: 12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
+        <n-popover class="p-12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge" dot :show="item.dot">
               <svg class="size-22px" @click="handleTipShow(item)" aria-hidden="true">
@@ -103,7 +103,7 @@
           openWindowsList.has(item.url) ? 'color-[--left-win-icon-color]' : 'top-action flex-col-center',
           showMode === ShowModeEnum.ICON ? 'p-[6px_8px]' : 'w-46px py-4px'
         ]"
-        style="text-align: center"
+        class="text-center"
         role="button"
         tabindex="0"
         :aria-label="item.title"
@@ -124,7 +124,7 @@
           <p>{{ item.title }} {{ t('home.action.opened') }}</p>
         </n-popover>
         <!-- 该选项有提示时展示 -->
-        <n-popover style="padding: 12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
+        <n-popover class="p-12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge" dot :show="item.dot">
               <svg class="size-22px" @click="handleTipShow(item)" aria-hidden="true">
@@ -161,7 +161,7 @@
       <div
         :class="showMode === ShowModeEnum.ICON ? 'top-action p-[6px_8px]' : 'top-action w-46px py-4px flex-col-center'">
         <n-popover
-          style="padding: 8px; margin-left: 4px; background: var(--tjg-surface-elevated)"
+          class="p-8px ml-4px bg-[--tjg-surface-elevated]"
           :show-arrow="false"
           trigger="hover"
           placement="right">
@@ -210,7 +210,7 @@
           openWindowsList.has(item.url) ? 'color-[--left-win-icon-color]' : 'bottom-action flex-col-center',
           showMode === ShowModeEnum.ICON ? 'p-[6px_8px]' : 'w-46px py-4px'
         ]"
-        style="text-align: center"
+        class="text-center"
         role="button"
         tabindex="0"
         :aria-label="item.title"
@@ -231,7 +231,7 @@
           <p>{{ item.title }} {{ t('home.action.opened') }}</p>
         </n-popover>
         <!-- 该选项有提示时展示 -->
-        <n-popover style="padding: 12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
+        <n-popover class="p-12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
           <template #trigger>
             <n-badge :max="99" :value="item.badge">
               <svg class="size-22px" @click="tipShow = false" aria-hidden="true">
@@ -263,7 +263,7 @@
       <div
         v-if="adminStore.canAccessAdmin"
         :class="[{ active: activeUrl === 'admin' }, 'bottom-action flex-col-center']"
-        style="text-align: center"
+        class="text-center"
         role="button"
         tabindex="0"
         :aria-label="t('menu.admin_panel')"
@@ -290,7 +290,7 @@
         @keydown.space.prevent="settingShow = !settingShow">
         <n-popover
           v-model:show="settingShow"
-          style="padding: 0; background: transparent; user-select: none"
+          class="p-0 bg-transparent select-none"
           :show-arrow="false"
           trigger="click">
           <template #trigger>

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <n-scrollbar style="max-height: 280px">
+    <n-scrollbar class="max-h-280px">
       <n-flex :size="26" class="z-10 p-[18px_18px_36px_18px] box-border w-full">
         <template v-for="(plugin, index) in allPlugins" :key="index">
           <Transition name="state-change" mode="out-in">

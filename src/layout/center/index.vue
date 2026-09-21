@@ -8,7 +8,7 @@
     class="resizable relative select-none flex flex-col border-r-(1px solid [--tjg-border-layout-divider])"
     :style="centerStyle">
     <!-- 分隔条（shrink 模式 / 房间列表页隐藏） -->
-    <PanelResizeHandle v-show="!isShrink && !isRoomListRoute" side="left" style="touch-action: none" />
+    <PanelResizeHandle v-show="!isShrink && !isRoomListRoute" side="left" class="touch-none" />
 
     <ActionBar
       class="absolute right-0 w-full"
