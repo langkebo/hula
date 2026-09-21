@@ -170,16 +170,23 @@ describe('InvitePolicyEnforcer', () => {
     await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
   })
 
-  it('does not decline when the member event has no sender', async () => {
+  it('declines in allowlist mode when the member event has no sender', async () => {
+    // I10：allowlist 是显式白名单，邀请人无法解析时不能 fail-open
     const e = enforcer({ policy: policy({ mode: 'allowlist' }) })
     e.start()
     fireMember(memberWithInviter({ events: { member: {} } }))
-    await new Promise((r) => setTimeout(r, 20))
-    expect(state.leaveCalls).toEqual([])
+    await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
   })
 
-  it('does not decline when the member has no event at all', async () => {
+  it('declines in allowlist mode when the member has no event at all', async () => {
     const e = enforcer({ policy: policy({ mode: 'allowlist' }) })
+    e.start()
+    fireMember(memberWithInviter({ events: undefined }))
+    await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
+  })
+
+  it('does not decline an unresolvable inviter in permissive modes', async () => {
+    const e = enforcer({ policy: policy({ mode: 'allow_all' }) })
     e.start()
     fireMember(memberWithInviter({ events: undefined }))
     await new Promise((r) => setTimeout(r, 20))

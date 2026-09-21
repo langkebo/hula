@@ -115,7 +115,7 @@ describe('decideInviteAction', () => {
     expect(decision?.action).toBe('decline')
   })
 
-  it('does not act when there is no inviter to evaluate', () => {
+  it('does not act when there is no inviter to evaluate in permissive modes', () => {
     expect(
       decideInviteAction(
         event({ inviterUserId: undefined }),
@@ -123,6 +123,34 @@ describe('decideInviteAction', () => {
         ME
       )
     ).toBeNull()
+    expect(decideInviteAction(event({ inviterUserId: undefined }), policy({ mode: 'allow_all' }), ME)).toBeNull()
+  })
+
+  /**
+   * I10 回归：allowlist 是显式白名单，未列出的人一律拒绝（`shouldRejectInvite`）。
+   * 拿不到邀请人时提前 return null 会让最严格的模式反而 fail-open。
+   */
+  it('declines in allowlist mode when the inviter cannot be resolved', () => {
+    const decision = decideInviteAction(
+      event({ inviterUserId: undefined }),
+      policy({ mode: 'allowlist', allowlist: ['@friend:server'] }),
+      ME
+    )
+    expect(decision).toEqual<InvitePolicyDecision>({
+      action: 'decline',
+      roomId: '!r:example.org',
+      inviterUserId: ''
+    })
+  })
+
+  it('also declines in allowlist mode when a whitespace-only inviter is supplied', () => {
+    expect(
+      decideInviteAction(
+        event({ inviterUserId: '   ' }),
+        policy({ mode: 'allowlist', allowlist: ['@friend:server'] }),
+        ME
+      )?.action
+    ).toBe('decline')
   })
 
   it('honours the non-contact DM rule through the supplied contact state', () => {

@@ -30,6 +30,10 @@ export interface InvitePolicyDecision {
  * 返回 `null` 表示不动作。**失败方向是"不动作"而不是"拒邀"**：
  * - 拿不到自己的 user id 时无法判断邀请是不是给自己的，此时按策略一律拒邀会误拒他人邀请
  * - 拿不到邀请人时无法评估策略，同样不动作（宁可漏放，不可误拒）
+ *
+ * 唯一的例外是 `mode === 'allowlist'`：它是显式白名单，未列出的人一律拒绝
+ * （见 `shouldRejectInvite`）。拿不到邀请人就无法证明其在名单内，必须拒绝，
+ * 否则最严格的模式反而 fail-open。
  */
 export function decideInviteAction(
   event: InviteEventLike,
@@ -58,7 +62,15 @@ export function decideInviteAction(
 
   const inviter = normalizeUserId(event.inviterUserId) || normalizeUserId(fallbackInviterUserId)
   if (!inviter) {
-    return null
+    /*
+     * 拿不到邀请人（member 事件没有 sender，房间状态也解析不出）：
+     * - `allowlist` 是显式白名单，未列出的人一律拒绝；无法证明邀请人在名单内就必须拒，
+     *   否则最严格的模式反而 fail-open，与 `shouldRejectInvite` 的 allowlist 语义矛盾；
+     * - 其它模式无法评估策略，保持不动作（宁可漏放，不可误拒好友）。
+     *
+     * 拒邀记录的 inviterUserId 为空字符串：调用方只有一个房间可离开，撤回不需要邀请人。
+     */
+    return normalizeInvitePolicy(policy).mode === 'allowlist' ? { action: 'decline', roomId, inviterUserId: '' } : null
   }
 
   /**
