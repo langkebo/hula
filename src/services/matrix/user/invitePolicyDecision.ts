@@ -80,9 +80,11 @@ export function decideInviteAction(
    * 不可区分。如果把失败当陌生人，后端抖动或离线一次，用户就会在那个窗口里
    * 把所有好友的邀请都拒掉。所以只有拿到确凿的 `stranger` 才拒，`unknown` 放行。
    *
-   * 名单模式（blocklist / allowlist）是用户显式写下的静态表达，不受此限制。
+   * 注意 `mode === 'allow_all'` 这个前提不能少：强制点只在 allow_all 下查联系人，
+   * 若不给名单模式放行，blocklist / allowlist 会因为拿不到 contactState 而被
+   * 一并拦掉——用户拉黑的人反而能进房间（已有回归测试覆盖）。
    */
-  if (policy.allowStrangers === false && contactState !== 'stranger') {
+  if (policy.mode === 'allow_all' && policy.allowStrangers === false && contactState !== 'stranger') {
     return null
   }
 

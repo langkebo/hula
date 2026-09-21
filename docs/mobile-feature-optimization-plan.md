@@ -740,7 +740,11 @@ class="text-12px class="border-[1px] ...""
 
 **fail-open 的取舍**：宁可漏放一个陌生人的邀请，也不误拒好友的邀请。
 误拒好友的代价（丢失会话、且用户无从察觉）高于漏放一个可被手动拒绝的邀请。
-名单模式（blocklist / allowlist）是用户显式写下的静态表达，不受此限制。
+
+fail-open 守卫必须**限定在 `mode === 'allow_all'`**。第一版实现漏了这个前提，
+而强制点只在 allow_all 下查联系人，于是 blocklist / allowlist 因为拿不到
+`contactState` 被守卫一并拦掉——**用户拉黑的人反而能进房间**。
+已补两条回归测试（"无 contactState 时名单模式仍须拒绝"）并修正条件。
 
 覆盖该设计的测试（`invitePolicyDecision` / `invitePolicyEnforcer`）：
 `unknown` 与"未注入解析器"都必须放行；blocklist 模式必须不查联系人。

@@ -158,6 +158,19 @@ describe('decideInviteAction', () => {
       expect(decideInviteAction(event(), onlyContacts, ME)).toBeNull()
     })
 
+    it('declines a blocklisted user even with no contact state at all', () => {
+      // 回归：默认 allowStrangers=false 时，fail-open 守卫曾把 blocklist 模式
+      // 一并拦掉（强制点只在 allow_all 下查联系人，因此 blocklist 拿不到
+      // contactState）——结果用户把自己拉黑的人放进了房间。
+      const p = policy({ mode: 'blocklist', blocklist: ['@spam:evil.org'], allowStrangers: false })
+      expect(decideInviteAction(event(), p, ME)?.action).toBe('decline')
+    })
+
+    it('declines a non-allowlisted user even with no contact state at all', () => {
+      const p = policy({ mode: 'allowlist', allowlist: ['@friend:server'], allowStrangers: false })
+      expect(decideInviteAction(event(), p, ME)?.action).toBe('decline')
+    })
+
     it('still declines a blocklisted user regardless of contact state', () => {
       const p = policy({ mode: 'blocklist', blocklist: ['@spam:evil.org'] })
       expect(decideInviteAction(event(), p, ME, undefined, 'contact')?.action).toBe('decline')
