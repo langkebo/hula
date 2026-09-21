@@ -1135,7 +1135,7 @@ Tests       35 failed | 997 passed (1032)
 6. **4.2 离线缓存**：扩 `matrix.ts` persist `pick`（房间列表 + 最近消息），定案离线历史来源（SQLite vs `MatrixCacheManager`），并补「`navigator.onLine = false` → 渲染缓存 + 不发网络请求」的测试。**前提**：需先确认 Tauri 侧 `src-tauri/src/repository/im_message` 的可用性。
 7. **4.1 `SyncStatusBar` 补四项**：离线常驻条、`RECONNECTING` 退避倒计时、与 `ChatBanners` 去重（避免双横幅）、`CATCHUP → CONNECTED` 未读刷新钩子。
 8. **3.4 设备会话面板**：抽 `useDeviceSessionPanel.ts` 统一取数 → 桌面 `DeviceTrustManager` / 移动 `DeviceManagement` 改为纯展示 → 再加「信任链总览」与「导出交叉签名（仅公钥）」。**注意**：移动端设备面板**仅展示**，管理写操作仅限管理后台（已入项目铁律）。
-9. **收尾**：E1 文档注销 `MobileSyncStatusBar` 条目、E2 单独一批清 `biome` 3 error、E4 执行 `check-i18n-refs --update` 收紧基线。
+9. **收尾**：E1 文档注销 `MobileSyncStatusBar` 条目、~~E2 单独一批清 `biome` 3 error~~ → **已失效**（0 error）、~~E4 执行 `check-i18n-refs --update` 收紧基线~~ → **已执行**。
 
 **建议的推进顺序（可并行两线）：**
 - 线 A（纯接入/文案，低风险）：第 1、2 项 → 第 9 项收尾。
@@ -1188,9 +1188,9 @@ Tests       35 failed | 997 passed (1032)
 
 ### 8.3 遗留修正与待办更新
 
-- **E2 已失效（注销）**：原文记「`biome check` 仍 3 error」。本次实测 `biome check` = **0 error / 2 info**（配置版本提示 + `MessageLockBadge.vue` 的 `useShorthandFunctionType` 建议），**全仓已无 lint error**。该项可从待办移除。
-- **E4 仍有效**：`check-i18n-refs` = `unresolved 273（基线 280）`、`unresolved.mobile_devices: 0（基线 7）` → 可 `--update` 收紧。
-- **`important_css` 目标维持 85 → 69**（可判定冗余 16 处），正文「→60」仍不可达。
+- **E2 已失效（注销）**：原文记「`biome check` 仍 3 error」。本次实测 `biome check` = **0 error / 2 info**（配置版本提示 2.5.6→2.5.12 + `MessageLockBadge.vue:118` 的 `useShorthandFunctionType` 建议：`(e: 'verify'): void` 可改写为函数类型），**全仓已无 lint error**。该项已从待办移除。
+- **E4 已执行**：`check-i18n-refs --update` 已运行，基线从 `unresolved 280` 降至 **273**，`mobile_devices` 命名空间从基线表中移除（原 7 个已清零）。当前门禁：`unresolved 273 / fallback 7` 均与基线一致。
+- **`important_css` 目标维持 85 → 69**（可判定冗余 16 处），正文「→60」**仍不可达**——实测可安全下降只有 16 处，其余是库覆盖链与 `.no-select` 对抗链，必须浏览器层叠回归。
 - 7.3 的 P1/P2（`--breakpoint-*`、玻璃收口、离线缓存、`SyncStatusBar` 四项、设备会话面板）**全部未动**，仍是下一步主体。
 
 
