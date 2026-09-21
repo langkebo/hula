@@ -281,6 +281,17 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     updateSession(roomId, { unreadCount: 0 })
     persistUnreadCount(roomId, 0)
     writeUnreadDetail(roomId, { total: 0, highlight: 0, silent: getUnreadDetail(roomId)?.silent ?? false })
+
+    // 记录「已读到的活跃时间」：sessionUnread.apply 的情况 1 依赖它来清零并纠正
+    // 服务端脏未读数。关闭已读回执时服务端 unread_count 不会归零，没有这条记录，
+    // 下一次 syncPersistedUnreadCounts（会话列表重建 / 重连）就会用 Math.max 把角标写回来。
+    // 与本地清零一致：无条件记录，不受回执开关影响。
+    const session = resolveSessionByRoomId(roomId)
+    const activeTime = session?.activeTime ?? 0
+    if (activeTime) {
+      sessionUnreadStore.setLastRead(userStore.userInfo?.uid, roomId, activeTime)
+    }
+
     try {
       // 关闭「发送已读回执」时服务端收不到 m.read，unread_count 仍 >0；
       // 若无条件回读，用户正在浏览的房间会出现「角标清零 -> 弹回」并跨重启存活。

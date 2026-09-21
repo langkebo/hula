@@ -5,13 +5,14 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { SessionItem } from '../chat'
 import { useSessionStore } from '../chat/session'
 
-const { sendReceiptByEventIdMock, fetchUnreadCountMock, clientMock } = vi.hoisted(() => {
+const { sendReceiptByEventIdMock, fetchUnreadCountMock, getSessionListMock, clientMock } = vi.hoisted(() => {
   const room = {
     getLiveTimeline: () => ({ getEvents: () => [{ getId: () => '$e1' }] })
   }
   return {
     sendReceiptByEventIdMock: vi.fn().mockResolvedValue(undefined),
     fetchUnreadCountMock: vi.fn(),
+    getSessionListMock: vi.fn(async (): Promise<SessionItem[]> => []),
     clientMock: {
       getReadReceiptsManager: () => ({ sendReadReceiptByEventId: sendReceiptByEventIdMock }),
       getRoom: () => room
@@ -30,7 +31,7 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
 }))
 
 vi.mock('@/services/matrix/auth/MatrixSessionService', () => ({
-  matrixSessionService: { getSessionList: vi.fn(async () => []) }
+  matrixSessionService: { getSessionList: getSessionListMock }
 }))
 
 vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
@@ -41,10 +42,9 @@ vi.mock('@/services/matrix/notifications/MatrixRoomNotificationService', () => (
   matrixRoomNotificationService: { fetchUnreadCount: fetchUnreadCountMock }
 }))
 
-vi.mock('../sessionUnread', () => ({
-  useSessionUnreadStore: () => ({ apply: vi.fn(() => ({})), set: vi.fn() })
-}))
-
+// 刻意不 mock ../sessionUnread：真实的 useSessionUnreadStore 是「角标被服务端旧值写回」
+// 这条回归路径上唯一能恢复计数的组件，桩掉它等于把被测的核心逻辑移出测试。
+// 同理不 mock ../chat/session：必须驱动真实的 markSessionRead / getSessionList。
 vi.mock('@/stores/domains/user/user', () => ({
   useUserStore: () => ({ userInfo: { uid: '@me:matrix.test' } })
 }))
@@ -79,6 +79,7 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    getSessionListMock.mockResolvedValue([])
   })
 
   it('关闭偏好时不回读服务端未读数，本地角标保持清零', async () => {
@@ -109,5 +110,29 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
     expect(fetchUnreadCountMock).toHaveBeenCalledTimes(1)
     expect(fetchUnreadCountMock).toHaveBeenCalledWith(ROOM_ID)
     expect(store.getSession(ROOM_ID)?.unreadCount).toBe(0)
+  })
+
+  /**
+   * 回归守门（Task 2b）：角标回来的第二条路径。
+   *
+   * syncPersistedUnreadCounts() 在会话列表重建后会调用 sessionUnread.apply()，
+   * 而 apply 的「情况 3」（没有 lastRead 记录）用 Math.max(cached, serverCount) 兜底。
+   * 关闭已读回执后服务端 unread_count 不会清零，于是重连/刷新重建列表就把角标写回来。
+   * markSessionRead 必须记录 lastRead，让 apply 走「情况 1」清零并纠正服务端脏数据。
+   */
+  it('关闭已读回执时，会话列表重建后角标不会被服务端旧值写回', async () => {
+    useSettingStore().setSendReadReceiptsEnabled(false)
+
+    const store = useSessionStore()
+    store.addSession(makeSession({ unreadCount: 3, activeTime: 100 }))
+
+    await store.markSessionRead(ROOM_ID)
+    expect(store.getSession(ROOM_ID)?.unreadCount).toBe(0)
+
+    // 服务端没收到 m.read，unread_count 仍是 3；activeTime 未变。重连/刷新重建会话列表。
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 3, activeTime: 100 })])
+    await store.getSessionList()
+
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(0)
   })
 })
