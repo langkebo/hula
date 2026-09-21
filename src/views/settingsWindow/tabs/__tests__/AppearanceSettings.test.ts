@@ -127,6 +127,7 @@ describe('AppearanceSettings', () => {
     localStorage.clear()
     document.documentElement.style.removeProperty('--font-family')
     document.documentElement.style.removeProperty('--tjg-font-scale')
+    document.documentElement.removeAttribute('data-bubble-style')
 
     mockStore = {
       themePattern: 'dark',
@@ -186,13 +187,21 @@ describe('AppearanceSettings', () => {
 
   it('loads saved font scale and bubble style on mount', () => {
     localStorage.setItem('tjg-font-scale', '1.25')
-    localStorage.setItem('tjg-bubble-style', 'false')
+    localStorage.setItem('tjg-bubble-style', 'square')
 
     const wrapper = mount(AppearanceSettings)
     const vm = getVm(wrapper)
 
     expect(vm.fontScale).toBe(1.25)
     expect(vm.bubbleStyle).toBe(false)
+  })
+
+  it('migrates the legacy boolean bubble style on mount', () => {
+    localStorage.setItem('tjg-bubble-style', 'false')
+
+    const wrapper = mount(AppearanceSettings)
+
+    expect(getVm(wrapper).bubbleStyle).toBe(false)
   })
 
   it('falls back to the standard step when the stored font scale is corrupted', () => {
@@ -287,13 +296,20 @@ describe('AppearanceSettings', () => {
     expect(messageSuccessMock).toHaveBeenNthCalledWith(2, '模糊效果已关闭')
   })
 
-  it('persists bubble style selection', () => {
+  it('persists bubble style, applies it to the root, and shows translated feedback', () => {
     const wrapper = mount(AppearanceSettings)
     const vm = getVm(wrapper)
 
     vm.handleBubbleStyleChange(false)
 
-    expect(localStorage.getItem('tjg-bubble-style')).toBe('false')
+    expect(localStorage.getItem('tjg-bubble-style')).toBe('square')
+    expect(document.documentElement.getAttribute('data-bubble-style')).toBe('square')
     expect(messageSuccessMock).toHaveBeenCalledWith('方角气泡')
+
+    vm.handleBubbleStyleChange(true)
+
+    expect(localStorage.getItem('tjg-bubble-style')).toBe('rounded')
+    expect(document.documentElement.getAttribute('data-bubble-style')).toBe('rounded')
+    expect(messageSuccessMock).toHaveBeenLastCalledWith('圆角气泡')
   })
 })

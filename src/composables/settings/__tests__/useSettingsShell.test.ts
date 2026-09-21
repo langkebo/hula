@@ -11,7 +11,6 @@ const translationMap: Record<string, string> = {
   'setting.dialog.tabs.voice_video': 'Voice & Video',
   'setting.dialog.tabs.security_privacy': 'Security & Privacy',
   'setting.dialog.tabs.encryption': 'Encryption',
-  'setting.dialog.tabs.labs': 'Labs',
   'setting.dialog.tabs.mjolnir': 'Moderation',
   'setting.dialog.tabs.help_about': 'Help & About',
   'setting.dialog.tabs.friends': 'Friends',
@@ -30,7 +29,6 @@ const keywordMap = {
   voiceVideo: ['语音', '视频', 'audio', 'video', 'webrtc'],
   securityPrivacy: ['安全', '隐私', 'security', 'privacy', 'visibility', 'secret-chat', 'lock', 'hidden'],
   encryption: ['加密', 'secret-storage', 'secure-backup', 'cross-signing'],
-  labs: ['实验功能', 'beta', 'integrations', '扩展中心'],
   mjolnir: ['屏蔽', '封禁', 'moderation', 'block'],
   helpAbout: ['帮助', '关于', '更新', '诊断', 'help', 'about'],
   friends: ['好友', 'contacts', 'remark'],
@@ -41,10 +39,11 @@ const keywordMap = {
 const resolveSearchKeywords = (tabId: keyof typeof keywordMap) => [...keywordMap[tabId]]
 
 describe('useSettingsShell', () => {
-  it('keeps the documented 15 tabs visible on desktop', () => {
+  it('keeps the documented 14 tabs visible on desktop', () => {
     const shell = useSettingsShell({ isDesktop: true })
 
-    expect(shell.visibleTabs.value).toHaveLength(15)
+    expect(shell.visibleTabs.value).toHaveLength(14)
+    expect(shell.visibleTabs.value.map((tab) => tab.id)).not.toContain('labs')
     expect(shell.visibleTabs.value.map((tab) => tab.id)).toContain('keyboard')
     expect(shell.visibleTabs.value.find((tab) => tab.id === 'account')?.label).toBe('Account')
   })
@@ -64,8 +63,9 @@ describe('useSettingsShell', () => {
     shell.setSearchQuery('security-privacy')
     expect(shell.filteredTabs.value.map((tab) => tab.id)).toEqual(['securityPrivacy'])
 
+    // 桌面 Labs tab 已删除，其子路由别名不再命中任何 tab
     shell.setSearchQuery('integrations')
-    expect(shell.filteredTabs.value.map((tab) => tab.id)).toEqual(['labs'])
+    expect(shell.filteredTabs.value.map((tab) => tab.id)).toEqual([])
   })
 
   it('supports Chinese keywords and reset flow', () => {

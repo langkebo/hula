@@ -23,7 +23,6 @@ describe('settingsSchema · 常量定义', () => {
       'voiceVideo',
       'securityPrivacy',
       'encryption',
-      'labs',
       'mjolnir',
       'helpAbout',
       'friends',

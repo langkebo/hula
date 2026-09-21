@@ -11,7 +11,6 @@ export const SETTINGS_TAB_COMPONENT_LOADERS: Record<SettingsTabType, () => Promi
   keyboard: () => import('./tabs/KeyboardSettings.vue'),
   securityPrivacy: () => import('./tabs/SecuritySettings.vue'),
   encryption: () => import('./tabs/EncryptionSettings.vue'),
-  labs: () => import('./tabs/LabsSettings.vue'),
   mjolnir: () => import('./tabs/MjolnirSettings.vue'),
   friends: () => import('./tabs/FriendsSettings.vue'),
   burnAfterRead: () => import('./tabs/BurnAfterReadSettings.vue'),

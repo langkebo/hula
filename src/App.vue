@@ -52,6 +52,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { applyBubbleStyle, loadBubbleStyle } from '@/utils/bubbleStyle'
 import { applyFontScale, loadFontScale } from '@/utils/fontScale'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
@@ -488,6 +489,8 @@ onMounted(async () => {
   setupThemeWatchers()
   // 字体缩放不是响应式 store：启动时读一次 localStorage 并写到 :root，供字号 token 消费
   applyFontScale(loadFontScale())
+  // 气泡样式同理：读一次存储写到根元素 data 属性，由 render-message.scss 消费
+  applyBubbleStyle(loadBubbleStyle())
   if (!skipMatrixInit) {
     wsEventHandler.registerHandlers()
     presenceSync.startPresenceWatch()

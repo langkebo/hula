@@ -74,12 +74,13 @@
 
 <script setup lang="ts">
 import { NDivider, NSelect, NSwitch } from 'naive-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppearancePreview from '@/components/settings/AppearancePreview.vue'
 import ThemeSwitcher from '@/components/settings/ThemeSwitcher.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { applyBubbleStyle, loadBubbleStyle, saveBubbleStyle } from '@/utils/bubbleStyle'
 import { applyFontScale, FONT_SCALE_STEPS, loadFontScale, normalizeFontScale, saveFontScale } from '@/utils/fontScale'
 
 defineOptions({
@@ -123,14 +124,8 @@ const fontFamily = ref(settingStore.pageFontFamily)
 const fontScale = ref(loadFontScale())
 const windowShadow = ref(settingStore.pageShadowEnabled)
 const blurEffect = ref(settingStore.pageBlurEnabled)
-const bubbleStyle = ref(true)
-
-onMounted(() => {
-  const savedBubbleStyle = localStorage.getItem('tjg-bubble-style')
-  if (savedBubbleStyle !== null) {
-    bubbleStyle.value = savedBubbleStyle === 'true'
-  }
-})
+/** 开关 checked = 圆角，与既有文案一致；存储层用 rounded / square 两个值 */
+const bubbleStyle = ref(loadBubbleStyle() === 'rounded')
 
 function handleFontChange(value: string) {
   settingStore.setPageFont(value)
@@ -165,7 +160,9 @@ function handleBlurChange(value: boolean) {
 }
 
 function handleBubbleStyleChange(value: boolean) {
-  localStorage.setItem('tjg-bubble-style', value.toString())
+  const style = value ? 'rounded' : 'square'
+  applyBubbleStyle(style)
+  saveBubbleStyle(style)
   showFeedback(
     value ? t('setting.appearance.feedback.bubble_rounded') : t('setting.appearance.feedback.bubble_square'),
     'success'
