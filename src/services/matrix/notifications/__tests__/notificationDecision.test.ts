@@ -59,6 +59,38 @@ describe('shouldNotify', () => {
     ).toBe(false)
   })
 
+  it('stays silent for a non-mention threaded reply under the default preferences', () => {
+    // 回归：默认配置下，线程回复只要没提及当前用户，就必须走关键词门，不得被 thread_mention 开关放行
+    expect(shouldNotify({ isMention: false, isThread: true, body: 'threaded reply' }, prefs())).toBe(false)
+    expect(shouldNotify({ isMention: false, isThread: true, body: 'threaded reply' }, prefs({ events: {} }))).toBe(
+      false
+    )
+  })
+
+  it('cannot be unlocked by the thread switch alone when there is no mention', () => {
+    expect(
+      shouldNotify(
+        { isMention: false, isThread: true, body: 'threaded reply' },
+        prefs({ events: { thread_mention: true }, keywordNotifications: false, keywords: ['deploy'] })
+      )
+    ).toBe(false)
+  })
+
+  it('applies the keyword gate to non-mention threaded replies too', () => {
+    expect(
+      shouldNotify(
+        { isMention: false, isThread: true, body: 'the deploy is green' },
+        prefs({ keywordNotifications: true, keywords: ['deploy'] })
+      )
+    ).toBe(true)
+    expect(
+      shouldNotify(
+        { isMention: false, isThread: true, body: 'the deploy is green' },
+        prefs({ keywordNotifications: true, keywords: ['incident'] })
+      )
+    ).toBe(false)
+  })
+
   it('stays silent for a keyword hit while keyword notifications are off (default)', () => {
     expect(
       shouldNotify(

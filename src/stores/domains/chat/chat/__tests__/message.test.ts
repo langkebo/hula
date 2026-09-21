@@ -691,6 +691,28 @@ describe('ChatMessageStore', () => {
       expect(lastSentOptions().body).toBe('plain hello')
     })
 
+    it('stays silent for a threaded reply that does not mention the current user', async () => {
+      const store = useChatStore()
+      const msg = keywordMessage('14', 'threaded reply')
+      msg.message.body.threadId = '$thread-root'
+
+      await store.pushMsg(msg)
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('notifies for a threaded reply once keyword notifications are on and the body hits a keyword', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['deploy'] })
+      const store = useChatStore()
+      const msg = keywordMessage('15', 'the deploy is green')
+      msg.message.body.threadId = '$thread-root'
+
+      await store.pushMsg(msg)
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('the deploy is green')
+    })
+
     it('stays silent for a keyword hit while keyword notifications are off (default)', async () => {
       setDisplayPreferences({ keywordNotifications: false, keywords: ['deploy'] })
       const store = useChatStore()

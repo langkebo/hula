@@ -41,11 +41,13 @@ export function classifyNotificationMessage(input: { isMention: boolean; isThrea
  * - 非提及：仅在关键词通知开关打开且正文命中关键词时通知（默认关闭）。
  */
 export function shouldNotify(input: NotificationMessageInput, preferences: NotificationDecisionPreferences): boolean {
-  if (classifyNotificationMessage(input) === 'mention') {
+  const kind = classifyNotificationMessage(input)
+
+  if (kind === 'mention') {
     return true
   }
 
-  if (input.isThread) {
+  if (kind === 'thread_mention') {
     // 字段缺省视为开启，避免旧配置升级后线程提及被静默关闭
     return preferences.events?.thread_mention !== false
   }
