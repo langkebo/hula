@@ -2,7 +2,7 @@
   "add": "Add",
   "allow_strangers": "Allow direct messages from non-contacts",
   "allow_strangers_hint": "When off, DM invites from people outside your friend list are declined automatically",
-  "allow_strangers_inactive": "A list mode is active; this switch only applies in \"Everyone\" mode",
+  "allow_strangers_inactive": "Only allowlist mode ignores this switch (anyone outside the list is declined); in blocklist mode it still applies to people who are not listed",
   "allowlist_section": "Allowlist",
   "blocklist_section": "Blocklist",
   "dm_section": "Direct messages",

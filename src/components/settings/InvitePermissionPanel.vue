@@ -88,10 +88,10 @@
           <n-switch
             data-test="allow-strangers"
             :value="allowStrangers"
-            :disabled="mode !== 'allow_all'"
+            :disabled="mode === 'allowlist'"
             @update:value="handleAllowStrangersChange" />
         </div>
-        <p v-if="mode !== 'allow_all'" data-test="allow-strangers-note" class="setting-desc">
+        <p v-if="mode === 'allowlist'" data-test="allow-strangers-note" class="setting-desc">
           {{ t('setting.invite_permission.allow_strangers_inactive') }}
         </p>
 
@@ -214,10 +214,26 @@ function buildPolicy(): InvitePolicy {
   }
 }
 
-/** 写回 account data。失败只记录，不回滚 UI——用户可重试，避免输入被吞。 */
-async function persist(): Promise<void> {
+/**
+ * 写回 account data。
+ *
+ * **写前必须重读最新策略**：`SecuritySettings` 同时挂了 `BlockedUsersSection`，
+ * 它有自己的一份屏蔽名单编辑 UI，两者写同一份 account data。面板挂载时的快照
+ * 会过期，整份写回会把对方刚保存的改动静默覆盖（在屏蔽区加人 → 回面板点模式
+ * → 加的人被回滚）。
+ *
+ * 传了显式策略初值（props override）时以本地面板状态为基：该场景约定面板不读
+ * account data，回读会反过来覆盖调用方给的初值。读取失败只记录，不回滚 UI——
+ * 用户可重试，避免输入被吞；但也不会拿默认策略盖掉账号上的数据。
+ */
+async function persist(mutate: (base: InvitePolicy) => InvitePolicy): Promise<void> {
   try {
-    await matrixAccountService.setInvitePolicy(buildPolicy())
+    const base = hasPolicyOverride
+      ? normalizeInvitePolicy(buildPolicy())
+      : normalizeInvitePolicy(await matrixAccountService.getInvitePolicy())
+    const next = mutate(base)
+    applyPolicy(next)
+    await matrixAccountService.setInvitePolicy(next)
   } catch (error) {
     logger.error('Failed to persist invite policy', error)
   }
@@ -230,16 +246,17 @@ async function handleModeChange(value: InvitePolicyMode | number | string) {
   }
   mode.value = next
   emit('mode-change', next)
-  await persist()
+  await persist((base) => ({ ...base, mode: next }))
 }
 
 /**
- * 「允许非联系人私聊」只在 allow_all 下有意义：名单模式已经表达了"谁能进"，
- * 再用 contacts 判一次会互相矛盾（与判定层 `decideInviteAction` 一致）。
+ * 「允许非联系人私聊」在 `allow_all` 与 `blocklist` 下都参与判定：
+ * `blocklist` 是叠加在它之上的拒绝维度（名单里的人无条件拒），名单外的用户
+ * 仍由这个开关决定。只有 `allowlist` 由名单显式决定，开关不生效。
  */
 async function handleAllowStrangersChange(value: boolean) {
   allowStrangers.value = value
-  await persist()
+  await persist((base) => ({ ...base, allowStrangers: value }))
 }
 
 /** 新私聊默认加密是本机偏好，不进 account data。 */
@@ -260,7 +277,6 @@ async function handleAddUser(listType: 'blocklist' | 'allowlist') {
     return
   }
 
-  list.value = [...list.value, userId]
   if (listType === 'blocklist') {
     blocklistInput.value = ''
   } else {
@@ -268,18 +284,15 @@ async function handleAddUser(listType: 'blocklist' | 'allowlist') {
   }
 
   emit('add-user', listType, userId)
-  await persist()
+  await persist((base) => {
+    const current = base[listType]
+    return current.includes(userId) ? base : { ...base, [listType]: [...current, userId] }
+  })
 }
 
 async function handleRemoveUser(listType: 'blocklist' | 'allowlist', userId: string) {
-  if (listType === 'blocklist') {
-    blocklist.value = blocklist.value.filter((id) => id !== userId)
-  } else {
-    allowlist.value = allowlist.value.filter((id) => id !== userId)
-  }
-
   emit('remove-user', listType, userId)
-  await persist()
+  await persist((base) => ({ ...base, [listType]: base[listType].filter((id) => id !== userId) }))
 }
 </script>
 

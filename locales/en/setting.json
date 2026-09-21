@@ -1550,7 +1550,7 @@
     "dm_section": "Direct messages",
     "allow_strangers": "Allow direct messages from non-contacts",
     "allow_strangers_hint": "When off, DM invites from people outside your friend list are declined automatically",
-    "allow_strangers_inactive": "A list mode is active; this switch only applies in \"Allow everyone\" mode",
+    "allow_strangers_inactive": "Only allowlist mode ignores this switch (anyone outside the list is declined); in blocklist mode it still applies to people who are not listed",
     "encrypt_new_dm": "Encrypt new direct messages",
     "encrypt_new_dm_hint": "Turn on end-to-end encryption by default for new DMs",
     "load_failed": "Failed to load invite permission",

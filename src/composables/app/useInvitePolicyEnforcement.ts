@@ -33,8 +33,9 @@ function sameUserIdList(a: readonly string[], b: readonly string[]): boolean {
  * - `InvitePolicyEnforcer` 负责"收到邀请事件后做什么"
  * - 这里负责"什么时候启动/停止"，以及把**好友列表同步进策略**
  *
- * contacts 同步不能省：`allowStrangers === false` 时判定依据是 contacts，
- * 如果它一直是空的，关闭"允许非联系人私聊"会把所有好友的邀请一并拒掉。
+ * `contacts` 同步只维护 account data 里的展示/调试快照，**不参与判定**：
+ * 判定依据是 `ContactStateResolver` 的动态三态结果（查询失败 = `unknown` → fail-open），
+ * 详见 `invitePolicy.ts` 的 `shouldRejectInvite`。
  */
 export function useInvitePolicyEnforcement(deps: InvitePolicyEnforcementDeps) {
   let enforcer: InvitePolicyEnforcer | null = null

@@ -1,5 +1,6 @@
 import { createLogger } from '@/utils/Logger'
 import { safeJsonParse, validateObject } from '@/utils/typeGuard'
+import type { ContactState } from './contactStateResolver'
 
 const logger = createLogger('InvitePolicy')
 
@@ -51,8 +52,11 @@ export interface InvitePolicy {
   /**
    * 联系人（好友）user id 快照。
    *
-   * 仅用于展示/调试：**不再参与判定**。判定改用 `ContactStateResolver` 的三态结果，
-   * 因为这份静态快照在查询失败时是空的，会让"仅允许联系人"退化成"谁都不认识"。
+   * **不参与判定**，只随 account data 往返保存（展示/调试/兼容旧数据）。
+   * 判定一律用 `ContactStateResolver` 的**动态**三态结果，由调用方传给
+   * `shouldRejectInvite` / `decideInviteAction`：
+   * 这份静态快照在查询失败时是空的，一旦拿它当依据，「仅允许联系人」就会
+   * 退化成「谁都不认识」，把好友的邀请一起拒掉。
    */
   contacts: string[]
 }
@@ -122,18 +126,29 @@ export function normalizeInvitePolicy(input: unknown): InvitePolicy {
 /**
  * 是否应自动拒绝来自 `inviterUserId` 的邀请。
  *
- * 判定顺序：
- * 1. `blocklist` 与 `mode` 正交，先判：名单内的人永远拒绝。
- *    这条规则不能落在任何 mode 分支里——`mode === 'blocklist'` 一旦提前
- *    return，`allowStrangers` 就被绕过，用户屏蔽一个人就会静默关掉
- *    「仅允许联系人」基线（`allowStrangers` 默认 false）。
- * 2. `allowlist` 是显式白名单，只放行名单内的人。
- * 3. 其余情况看 `allowStrangers`：放开则放行，否则只放行联系人。
+ * `contactState` 是「仅允许联系人」规则的**唯一**依据，必须是
+ * `ContactStateResolver` 的**动态**三态结果：
+ * - `stranger` 拒绝
+ * - `contact` 放行
+ * - `unknown` / 未提供：fail-open 放行——查询失败与「确认不是好友」不可区分，
+ *   把失败当陌生人会在后端抖动时误拒所有好友
  *
- * 无法确定邀请人身份（空白 id）时，只要不是 `allow_all` + `allowStrangers`
- * 的放行分支就拒绝：拿不到身份不能默认放行。
+ * `policy.contacts` 里那份静态快照**不参与判定**（查询失败时它是空的）。
+ *
+ * 判定顺序：
+ * 1. `blocklist` 与 `mode` 正交，先判：名单内的人永远拒绝，任何 mode、任何
+ *    `contactState` 都压不过它。这条规则不能落在任何 mode 分支里——
+ *    `mode === 'blocklist'` 一旦提前 return，`allowStrangers` 就被绕过，
+ *    用户屏蔽一个人就会静默关掉「仅允许联系人」基线。
+ * 2. `allowlist` 是显式白名单，只放行名单内的人，不看 `contactState`（显式表达
+ *    优先于动态查询，失败也不 fail-open）。
+ * 3. 其余模式看 `allowStrangers`：放开则放行。
+ * 4. 最后才是「仅允许联系人」：只有确认的 `stranger` 才拒。
+ *
+ * 拿不到邀请人身份（空白 id）时，只要走到最后一步就拒绝：连身份都读不到，
+ * 谈不上"可能的好友"，不能默认放行。
  */
-export function shouldRejectInvite(inviterUserId: unknown, policy: InvitePolicy): boolean {
+export function shouldRejectInvite(inviterUserId: unknown, policy: InvitePolicy, contactState?: ContactState): boolean {
   const normalized = normalizeInvitePolicy(policy)
   const inviter = normalizeUserId(inviterUserId)
 
@@ -151,8 +166,15 @@ export function shouldRejectInvite(inviterUserId: unknown, policy: InvitePolicy)
     return false
   }
 
-  // 非联系人私聊未开启：拿不到身份时同样不放行
-  return inviter ? !normalized.contacts.includes(inviter) : true
+  // 「仅允许联系人」：fail-open，只有确认的陌生人才拒
+  if (contactState === 'stranger') {
+    return true
+  }
+  if (contactState === 'contact') {
+    return false
+  }
+
+  return !inviter
 }
 
 export function loadInvitePolicy(storage: Pick<Storage, 'getItem'> = localStorage): InvitePolicy {

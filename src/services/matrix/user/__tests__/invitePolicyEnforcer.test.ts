@@ -239,7 +239,7 @@ describe('InvitePolicyEnforcer', () => {
       expect(state.leaveCalls).toEqual([])
     })
 
-    it('does not query contacts in blocklist mode', async () => {
+    it('does not query contacts in blocklist mode while strangers are allowed', async () => {
       const resolveContactState = vi.fn(async () => 'stranger' as const)
       const e = new InvitePolicyEnforcer({
         getCurrentUserId: () => '@me:example.org',
@@ -253,10 +253,12 @@ describe('InvitePolicyEnforcer', () => {
       expect(resolveContactState).not.toHaveBeenCalled()
     })
 
-    it('still declines strangers when a blocklist is in use and strangers are disallowed', async () => {
-      // 隐私回归（强制点视角）：屏蔽只是往 blocklist 里加人，不该顺手关掉
-      // 「仅允许联系人」基线。旧实现里 mode === 'blocklist' 提前 return，
-      // 非联系人反而被放行。
+    /**
+     * 评审 Critical #1：旧实现只在 allow_all 下解析联系人状态，blocklist 模式下
+     * `contactState` 恒为 undefined，判定退回不可靠的静态 contacts 快照——
+     * 默认 allowStrangers=false 时好友的邀请也会被自动拒掉。
+     */
+    it('does not decline a confirmed contact when a blocklist is in use', async () => {
       const resolveContactState = vi.fn(async () => 'contact' as const)
       const e = new InvitePolicyEnforcer({
         getCurrentUserId: () => '@me:example.org',
@@ -266,7 +268,64 @@ describe('InvitePolicyEnforcer', () => {
       })
       e.start()
       fireMember(memberWithInviter())
+      await vi.waitFor(() => expect(resolveContactState).toHaveBeenCalledWith('@spam:evil.org'))
+      await new Promise((r) => setTimeout(r, 20))
+      expect(state.leaveCalls).toEqual([])
+    })
+
+    it('still declines a confirmed stranger when a blocklist is in use', async () => {
+      const resolveContactState = vi.fn(async () => 'stranger' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: false }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
       await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
+    })
+
+    it('declines a blocklisted user even when the contact state says contact', async () => {
+      const resolveContactState = vi.fn(async () => 'contact' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@spam:evil.org'], allowStrangers: false }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
+    })
+
+    it('allows a non-blocklisted inviter in blocklist mode when strangers are allowed', async () => {
+      const resolveContactState = vi.fn(async () => 'stranger' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: true }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await new Promise((r) => setTimeout(r, 20))
+      expect(state.leaveCalls).toEqual([])
+      expect(resolveContactState).not.toHaveBeenCalled()
+    })
+
+    it('fails open in blocklist mode when the contact state is unknown', async () => {
+      const resolveContactState = vi.fn(async () => 'unknown' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: false }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await new Promise((r) => setTimeout(r, 20))
+      expect(state.leaveCalls).toEqual([])
     })
 
     it('does not query contacts when strangers are allowed', async () => {

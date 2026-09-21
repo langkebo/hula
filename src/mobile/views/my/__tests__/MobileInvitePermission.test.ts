@@ -318,9 +318,24 @@ describe('MobileInvitePermission', () => {
       expect(setConfigMock).toHaveBeenCalledWith(expect.objectContaining({ contacts: ['@friend:server'] }))
     })
 
-    it('disables the stranger switch in list modes', async () => {
+    it('keeps the stranger switch usable in blocklist mode', async () => {
+      // blocklist 模式下 allowStrangers 决定"非名单用户"是否放行，开关必须是活的
       getConfigMock.mockResolvedValue({
         mode: 'blocklist',
+        blocklist: [],
+        allowlist: [],
+        allowStrangers: true,
+        contacts: []
+      })
+      const wrapper = mountPage()
+      await flushPromises()
+      expect(wrapper.find('[data-testid="allow-strangers"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="allow-strangers-note"]').exists()).toBe(false)
+    })
+
+    it('disables the stranger switch in allowlist mode', async () => {
+      getConfigMock.mockResolvedValue({
+        mode: 'allowlist',
         blocklist: [],
         allowlist: [],
         allowStrangers: true,

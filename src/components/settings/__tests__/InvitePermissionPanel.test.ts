@@ -216,6 +216,86 @@ describe('InvitePermissionPanel', () => {
       await flushPromises()
       expect(wrapper.find('.invite-permission-panel').exists()).toBe(true)
     })
+
+    /**
+     * Important #2：`SecuritySettings` 同时挂了 `BlockedUsersSection`，两者写同一份
+     * account data。面板挂载时的快照会过期，写前必须重读最新策略。
+     */
+    it('写回前重读最新策略，不覆盖另一编辑器的改动', async () => {
+      getPolicyMock.mockResolvedValueOnce({
+        mode: 'allow_all',
+        blocklist: [],
+        allowlist: [],
+        allowStrangers: false,
+        contacts: []
+      })
+      const wrapper = mount(InvitePermissionPanel)
+      await flushPromises()
+
+      // BlockedUsersSection 在面板挂载之后屏蔽了一个人
+      getPolicyMock.mockResolvedValue({
+        mode: 'allow_all',
+        blocklist: ['@blocked:evil.org'],
+        allowlist: [],
+        allowStrangers: false,
+        contacts: []
+      })
+
+      wrapper.findComponent({ name: 'NRadioGroup' }).vm.$emit('update:value', 'blocklist')
+      await flushPromises()
+
+      // 旧实现：面板用挂载时的空快照写回 → @blocked 被静默解除屏蔽
+      expect(setPolicyMock).toHaveBeenCalledWith(
+        expect.objectContaining({ mode: 'blocklist', blocklist: ['@blocked:evil.org'] })
+      )
+    })
+
+    /**
+     * Important #3：`allowStrangers` 在 blocklist 模式下决定"非名单用户"是否放行，
+     * 因此该模式下面板必须允许操作这个开关；只有 allowlist 由名单独占决定。
+     */
+    it('blocklist 模式下允许非联系人私聊开关可用，且不再显示失效提示', () => {
+      const wrapper = mount(InvitePermissionPanel, {
+        props: { visible: true, mode: 'blocklist', blocklist: [], allowlist: [] }
+      })
+      const toggle = wrapper.find('[data-test="allow-strangers"]')
+      expect(toggle.exists()).toBe(true)
+      expect(toggle.attributes('disabled')).toBeUndefined()
+      expect(wrapper.find('[data-test="allow-strangers-note"]').exists()).toBe(false)
+    })
+
+    it('allowlist 模式下开关禁用并提示名单决定一切', () => {
+      const wrapper = mount(InvitePermissionPanel, {
+        props: { visible: true, mode: 'allowlist', blocklist: [], allowlist: [] }
+      })
+      expect(wrapper.find('[data-test="allow-strangers"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-test="allow-strangers-note"]').exists()).toBe(true)
+    })
+
+    it('allow_all 模式下开关可用且不显示失效提示', () => {
+      const wrapper = mount(InvitePermissionPanel, {
+        props: { visible: true, mode: 'allow_all', blocklist: [], allowlist: [] }
+      })
+      expect(wrapper.find('[data-test="allow-strangers"]').attributes('disabled')).toBeUndefined()
+      expect(wrapper.find('[data-test="allow-strangers-note"]').exists()).toBe(false)
+    })
+
+    it('blocklist 模式下切换开关会写回且不丢名单', async () => {
+      getPolicyMock.mockResolvedValue({
+        mode: 'blocklist',
+        blocklist: ['@spam:evil.org'],
+        allowlist: [],
+        allowStrangers: false,
+        contacts: []
+      })
+      const wrapper = mount(InvitePermissionPanel)
+      await flushPromises()
+      await wrapper.find('[data-test="allow-strangers"]').trigger('click')
+      await flushPromises()
+      expect(setPolicyMock).toHaveBeenCalledWith(
+        expect.objectContaining({ allowStrangers: true, blocklist: ['@spam:evil.org'] })
+      )
+    })
   })
 
   it('visible=true 时渲染面板', () => {

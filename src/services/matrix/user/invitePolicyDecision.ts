@@ -74,25 +74,18 @@ export function decideInviteAction(
   }
 
   /*
-   * 「仅允许联系人私聊」是唯一依赖**动态查询**的判定，因此必须 fail-open：
+   * 判定唯一入口是 `shouldRejectInvite`（单点策略逻辑）：它第一件做的事就是
+   * 与 mode 正交的 blocklist 检查，随后才轮到「仅允许联系人」。
    *
+   * 「仅允许联系人」依赖**动态查询**，因此 must fail-open：
    * `MatrixFriendService.isFriend()` 查询失败时返回 false，与"确认不是好友"
    * 不可区分。如果把失败当陌生人，后端抖动或离线一次，用户就会在那个窗口里
-   * 把所有好友的邀请都拒掉。所以只有拿到确凿的 `stranger` 才拒，`unknown` 放行。
-   *
-   * 注意 `mode === 'allow_all'` 这个前提不能少：强制点只在 allow_all 下查联系人，
-   * 若不给名单模式放行，blocklist / allowlist 会因为拿不到 contactState 而被
-   * 一并拦掉——用户拉黑的人反而能进房间（已有回归测试覆盖）。
-   *
-   * 副作用：`blocklist` 的名单检查已与 mode 正交（见 `shouldRejectInvite`），
-   * 但这条守卫仍然只认 allow_all；因此 blocklist 模式下由 `shouldRejectInvite`
-   * 的兜底规则直接拒掉非联系人，而不是 fail-open。
+   * 把所有好友的邀请都拒掉。所以只有拿到确凿的 `stranger` 才拒，`unknown`
+   * 与缺省一律放行——这条 fail-open 规则对**每个** contacts 生效的模式
+   * （allow_all 与 blocklist）都成立，不能在判定层另开一份只认 allow_all 的
+   * 守卫：那会让 blocklist 模式下的好友邀请被静默拒掉。
    */
-  if (policy.mode === 'allow_all' && policy.allowStrangers === false && contactState !== 'stranger') {
-    return null
-  }
-
-  if (!shouldRejectInvite(inviter, policy)) {
+  if (!shouldRejectInvite(inviter, policy, contactState)) {
     return null
   }
 

@@ -162,11 +162,16 @@ export class InvitePolicyEnforcer {
     const inviterUserId = this.resolveInviter(member)
 
     /*
-     * 只在「仅允许联系人私聊」时才去查联系人状态：这是唯一需要网络查询的判定，
-     * 其余模式用不上就不该为一个必然被拒的邀请多打一次请求。
+     * 只在「仅允许联系人私聊」时才去查联系人状态：这是唯一需要网络查询的判定。
+     *
+     * 条件必须同时覆盖 `allow_all` 与 `blocklist`——这两个模式下非名单用户都受
+     * `allowStrangers` 约束。旧实现只认 `allow_all`，于是 blocklist 模式拿不到
+     * `contactState`，判定退回不可靠的静态 contacts 快照，默认 `allowStrangers:
+     * false` 时连好友的邀请都会被自动拒掉（评审 Critical #1）。
+     * `allowlist` 由名单显式决定，不需要查询。
      */
     let contactState: ContactState | undefined
-    if (policy.allowStrangers === false && policy.mode === 'allow_all' && inviterUserId) {
+    if (policy.allowStrangers === false && policy.mode !== 'allowlist' && inviterUserId) {
       contactState = (await this.options.resolveContactState?.(inviterUserId)) ?? 'unknown'
     }
 

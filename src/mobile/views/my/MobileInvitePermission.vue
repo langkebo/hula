@@ -36,7 +36,7 @@
                 <van-switch
                   v-model="allowStrangers"
                   data-testid="allow-strangers"
-                  :disabled="mode !== 'allow_all'"
+                  :disabled="mode === 'allowlist'"
                   @change="handleAllowStrangersChange" />
               </template>
             </van-cell>
@@ -53,7 +53,7 @@
             </van-cell>
 
             <van-cell
-              v-if="mode !== 'allow_all'"
+              v-if="mode === 'allowlist'"
               data-testid="allow-strangers-note"
               :title="t('mobile_invite_permission.allow_strangers_inactive')" />
           </van-cell-group>
@@ -193,8 +193,9 @@ async function handleModeChange(next: InvitePolicyMode | number | string) {
 }
 
 /**
- * 「允许非联系人私聊」只在 allow_all 下有意义：
- * 名单模式已经表达了"谁能进"，再用 contacts 判一次会互相矛盾。
+ * 「允许非联系人私聊」在 `allow_all` 与 `blocklist` 下都参与判定：
+ * `blocklist` 是叠加在它之上的拒绝维度（名单里的人无条件拒），名单外的用户
+ * 仍由这个开关决定。只有 `allowlist` 由名单显式决定，开关不生效。
  */
 async function handleAllowStrangersChange(next: boolean) {
   allowStrangers.value = next

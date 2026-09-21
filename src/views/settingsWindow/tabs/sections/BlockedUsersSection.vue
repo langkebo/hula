@@ -79,16 +79,22 @@ async function loadBlockedUsers() {
 /**
  * 写回屏蔽名单。
  *
+ * **写前必须重读**：`SecuritySettings` 同时挂了 `InvitePermissionPanel`，它有自己
+ * 的一份屏蔽名单编辑 UI，两者写同一份 account data。若用挂载时的快照整份写回，
+ * 对方刚保存的改动会被静默覆盖（在面板加了人 → 回到这里删除另一个人 → 前一个
+ * 改动被回滚）。
+ *
+ * 读取失败直接抛出，由调用方走错误反馈：绝不拿 `normalizeInvitePolicy(null)` 的
+ * 默认策略（`mode: allow_all` + 空名单）覆盖账号上已有的策略。
+ *
  * 只改 `blocklist`，**不动 `mode`**：`mode` 是用户显式选择的模式，
  * 强行改成 `blocklist` 会把「仅允许联系人」这条基线静默关掉。
  */
-async function persistBlocklist(next: string[]) {
-  const nextPolicy: InvitePolicy = {
-    ...normalizeInvitePolicy(policy.value),
-    blocklist: next
-  }
-  policy.value = nextPolicy
-  await matrixAccountService.setInvitePolicy(nextPolicy)
+async function updateBlocklist(mutate: (current: string[]) => string[]) {
+  const latest = normalizeInvitePolicy(await matrixAccountService.getInvitePolicy())
+  const next: InvitePolicy = { ...latest, blocklist: mutate(latest.blocklist) }
+  await matrixAccountService.setInvitePolicy(next)
+  policy.value = next
 }
 
 async function handleAddBlocked() {
@@ -104,7 +110,7 @@ async function handleAddBlocked() {
 
   newBlockedUser.value = ''
   try {
-    await persistBlocklist([...blockedUsers.value, userId])
+    await updateBlocklist((current) => (current.includes(userId) ? current : [...current, userId]))
     showFeedback(t('setting.security.blocked_user_added'), 'success')
   } catch (error) {
     logger.error('添加屏蔽用户失败:', error)
@@ -115,7 +121,7 @@ async function handleAddBlocked() {
 
 async function handleUnblock(userId: string) {
   try {
-    await persistBlocklist(blockedUsers.value.filter((u) => u !== userId))
+    await updateBlocklist((current) => current.filter((u) => u !== userId))
     showFeedback(t('setting.security.blocked_user_removed'), 'success')
   } catch (error) {
     logger.error('取消屏蔽失败:', error)
