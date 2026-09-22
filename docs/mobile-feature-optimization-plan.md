@@ -1106,9 +1106,11 @@ Task 6 已把这 11 条逐条处置（能接的接、接不上的删），`ACCEP
 挂账随之清空、本节表格删除，守门不再打印 `todo`；逐条处置见
 `.superpowers/sdd/2026-09-23-issues-cleanup/task-6-report.md`。
 
-补充（不计入上表，检测器口径说明）：`renderMessage/index::jump2Reply` 的"无人监听"是
-检测器误报，已随全局组件名解析修复；但历史窗口仍有**逐使用处**的真实缺口——
-`src/views/multiMsgWindow/index.vue:31-38` 与 `src/views/chatHistory/index.vue:81-90`
-在 `<RenderMessage>` 上不绑 `@jump2-reply`，回复气泡点击无响应。本守门的事件判据是"所有
-使用处的并集"，表达不了这种"一处监听、另一处断线"，故只能在此登记为人工复核项。
+补充（不计入上表，检测器口径说明）：`renderMessage/index::jump2Reply` 的"无人监听"本是
+检测器误报（全局组件名按 `src/typings/components.d.ts` 的路径派生名解析后消失）；但历史窗口
+还有**逐使用处**的真实缺口——`src/views/multiMsgWindow/index.vue` 与
+`src/views/chatHistory/index.vue` 的 `<RenderMessage>` 不绑 `@jump2-reply`，回复气泡点击无响应。
+本守门的事件判据是"所有使用处的并集"，表达不了这种"一处监听、另一处断线"。Task 6 已给两处
+补上 `@jump2-reply`（共用 `useReplyJump`：命中则高亮 + 滚动，未命中给 warning），
+并各带行为测试。
 
