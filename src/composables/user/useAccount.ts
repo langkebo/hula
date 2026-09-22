@@ -43,26 +43,6 @@ export function useAccount() {
     return matrixAccountService.deleteDevices(deviceIds, authData)
   }
 
-  const getThreePids = () => {
-    return matrixAccountService.getThreePids()
-  }
-
-  const addThreePid = (sid: string, clientSecret: string, bind?: boolean) => {
-    return matrixAccountService.addThreePid(sid, clientSecret, bind)
-  }
-
-  const bindThreePid = (sid: string, clientSecret: string, medium: string, address: string) => {
-    return matrixAccountService.bindThreePid(sid, clientSecret, medium, address)
-  }
-
-  const deleteThreePid = (medium: string, address: string) => {
-    return matrixAccountService.deleteThreePid(medium, address)
-  }
-
-  const unbindThreePid = (medium: string, address: string) => {
-    return matrixAccountService.unbindThreePid(medium, address)
-  }
-
   const requestEmailTokenFor3Pid = (email: string, clientSecret: string, sendAttempt?: number) => {
     return matrixAccountService.requestEmailTokenFor3Pid(email, clientSecret, sendAttempt)
   }
@@ -118,11 +98,6 @@ export function useAccount() {
     setDeviceName,
     deleteDevice,
     deleteDevices,
-    getThreePids,
-    addThreePid,
-    bindThreePid,
-    deleteThreePid,
-    unbindThreePid,
     requestEmailTokenFor3Pid,
     requestMsisdnTokenFor3Pid,
     deactivateAccount,

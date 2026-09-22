@@ -169,24 +169,6 @@ const ACCEPTED_PATTERNS = [
   },
   /* --- 产品行为断线：功能真缺，登记为 follow-up 待办，不允许静默冻结 --- */
   {
-    component: 'src/components/userMenu/ThreepidManager.vue',
-    event: 'add-email',
-    reason: 'AccountSettings.vue:122 以零 props/零监听挂载，邮箱管理完全不生效（输入框清空但请求不发出）',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #1'
-  },
-  {
-    component: 'src/components/userMenu/ThreepidManager.vue',
-    event: 'add-phone',
-    reason: '同上；手机号绑定同样不生效，useAccount.addThreePid/bindThreePid 零生产消费方',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #1'
-  },
-  {
-    component: 'src/components/userMenu/ThreepidManager.vue',
-    event: 'unbind',
-    reason: '同上；解绑按钮无监听，deleteThreePid/unbindThreePid 零生产消费方',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #1'
-  },
-  {
     component: 'src/components/userMenu/UserMenuHeader.vue',
     event: 'avatar-click',
     reason: '头像有 cursor:pointer 但点击无任何行为，需要产品决定打开资料/设置/仅关闭',

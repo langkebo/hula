@@ -118,10 +118,6 @@
       </n-form>
     </div>
 
-    <n-card title="邮箱与手机号" class="settings-card">
-      <ThreepidManager />
-    </n-card>
-
     <n-divider />
 
     <div class="settings-section danger-zone">
@@ -136,14 +132,13 @@
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
-import { NAvatar, NButton, NCard, NCheckbox, NDivider, NForm, NFormItem, NInput, NSelect, useDialog } from 'naive-ui'
+import { NAvatar, NButton, NCheckbox, NDivider, NForm, NFormItem, NInput, NSelect, useDialog } from 'naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import defaultAvatarImg from '@/assets/img/win.png'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
-import ThreepidManager from '@/components/userMenu/ThreepidManager.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingsTabDirty } from '@/composables/settings/useSettingsDirtyRegistry'
 import { useAccount } from '@/composables/user/useAccount'
