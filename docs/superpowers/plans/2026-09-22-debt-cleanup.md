@@ -402,7 +402,7 @@ npx vitest run src/services/matrix/notifications src/stores/domains/chat/chat/__
 ## Task 5: 守门改造与门禁口径（债务 D8/E2/E3）
 
 **裁决（用户已确认）**：settings-wiring 采用「清单 + 持久层发现」；component-contracts 修能修的 3 条、
-清 13 条可选/死声明/检测器误报、把 10 条需产品行为的移出基线写成 follow-up。
+清 13 条可选/死声明/检测器误报、把 11 条需产品行为的移出基线写成 follow-up。
 
 **Files:**
 - Create: `scripts/settings-wiring-manifest.json`（key → owner / consumer 路径）
@@ -429,7 +429,9 @@ npx vitest run src/services/matrix/notifications src/stores/domains/chat/chat/__
   `SpaceDetailsPane::selectSpace` / `memberClick`（use `SpaceChildrenPane.vue:22-56`）。
 - 13 条可选/死声明：能在无风险下删除的删除（未 emit 的声明、`@extend` 死选择器等），
   其余进 `ACCEPTED_PATTERNS` 并写明理由（含 `renderMessage/index::jump2Reply` 误报）。
-- 10 条产品行为断线：从基线移除，写入 `docs/mobile-feature-optimization-plan.md` §13 的 follow-up
+- 11 条产品行为断线（8 行表格；`ThreepidManager` 的 add-email/add-phone/unbind 与
+  `GuestModeBanner` 的 exit/upgrade 各占一行多事件）：从基线移除，写入
+  `docs/mobile-feature-optimization-plan.md` §13 的 follow-up
   （ThreepidManager 增删/解绑、guest 登录与 GuestModeBanner、UserMenuHeader::avatar-click、
   RoomInviteActions::error、ThreadPanel::sendReply、SpaceListItemCard::contextmenu、
   RoomSessionList::batchToggle），每条带 file:line 与"缺什么"。
@@ -449,7 +451,7 @@ npx vitest run src/services/matrix/notifications src/stores/domains/chat/chat/__
 **Files:**
 - Create: `src/services/matrix/messaging/MatrixReadStateService.ts`（~110 行）
 - Modify: `src/services/matrix/messaging/MatrixReceiptService.ts`（414 → ~319 行）
-- Modify: `src/components/rightBox/chatBox/TjgMessageMeta.vue`、`src/services/matrix/sync/RealtimeService.ts`（改消费点）
+- Modify: `src/components/rightBox/chatBox/TjgMessageMeta.vue`、`src/services/matrix/room/RealtimeService.ts`（改消费点）
 - Test: 新建 `src/services/matrix/messaging/__tests__/MatrixReadStateService.test.ts`
 - Test: `MatrixReceiptService.test.ts`（把 `:169-205`、`:323-340` 的查询用例迁出）
 
@@ -463,7 +465,7 @@ npx vitest run src/services/matrix/notifications src/stores/domains/chat/chat/__
 - [ ] **Step 1: 先跑现有三套测试记录基线**（`MatrixReceiptService.test.ts`、
   `MatrixReceiptService.privacy.test.ts`、`sessionReadReceipts.test.ts`）
 - [ ] **Step 2: 迁移查询方法 + 测试**（保持行为等价，先跑绿再删原实现）
-- [ ] **Step 3: 更新两个消费点**（`TjgMessageMeta.vue:54/90`、`RealtimeService.ts:6/61`）
+- [ ] **Step 3: 更新两个消费点**（`TjgMessageMeta.vue:54/90`、`src/services/matrix/room/RealtimeService.ts:6/61`）
 - [ ] **Step 4: 跑测试与守门**（`npx vitest run` 三套 + `node scripts/check-file-size.mjs` 记录新行数；
   该守门基点即红、不在 CI，不要求全局转绿，但本文件必须 < 400）
 - [ ] **Step 5: 提交**（`refactor(service): 拆分只读回执查询到 MatrixReadStateService`）
