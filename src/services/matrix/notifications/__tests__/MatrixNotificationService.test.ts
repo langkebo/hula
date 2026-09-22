@@ -998,6 +998,41 @@ describe('MatrixNotificationService', () => {
     })
   })
 
+  /**
+   * 拆分引入的回归：抽到 `notificationAck` 后，门面把客户端作为前导实参 eager 解析，
+   * 于是「纯 ack 路径」（探测成功 / 命中 ack 可用缓存）在客户端未初始化时也会抛错。
+   * 旧实现只在回执兜底分支（`sendReadReceipt` 内部）才解析客户端。这里钉住惰性解析。
+   */
+  describe('ackNotificationWithFallback (lazy client resolution)', () => {
+    beforeEach(() => {
+      matrixHttpClientRequestMock.mockReset()
+      matrixNotificationService.clearAckCache()
+    })
+
+    it('acks without resolving an initialized client on the pure-ack path', async () => {
+      const getClient = vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+      matrixHttpClientRequestMock.mockResolvedValue({})
+
+      const result = await matrixNotificationService.ackNotificationWithFallback('notif-1', '!room:test', '$event-1')
+
+      expect(result).toEqual({ success: true, method: 'ack' })
+      expect(getClient).not.toHaveBeenCalled()
+    })
+
+    it('still sends a read receipt through the lazily resolved client on the fallback path', async () => {
+      matrixHttpClientRequestMock.mockRejectedValue(new Error('ack unsupported'))
+      const sendReceiptForce = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getReadReceiptsManager: () => ({ sendReceiptForce })
+      } as unknown as MatrixClient)
+
+      const result = await matrixNotificationService.ackNotificationWithFallback('notif-2', '!room:test', '$event-2')
+
+      expect(result).toEqual({ success: true, method: 'receipt' })
+      expect(sendReceiptForce).toHaveBeenCalledWith('!room:test', 'm.read', '$event-2')
+    })
+  })
+
   // FT-116: setPushRuleByScope 必须使用 SDK 的 client.addPushRule，
   // 不能绕过 SDK 直接走 matrixHttpClient（同文件 line 211 已用 client.setPushRule，
   // SDK 提供了 addPushRule，"SDK 无 addPushRule" 的注释是错误的）。
