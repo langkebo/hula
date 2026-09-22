@@ -18,7 +18,9 @@
  *        对象成员 / 静态成员参数
  *      - `*PREFIX` 常量（形如 `` `${PREFIX}${id}` `` 的动态键族，登记为 `<prefix>*`）
  *    凡发现但未登记在 `scripts/settings-wiring-manifest.json` 的 key → FAIL。
- *    清单里每个条目的 `owner` / `consumers` 路径必须存在（删文件/改名即 FAIL）。
+ *    清单里每个条目的 `owner` / `consumers` 路径必须存在（删文件/改名即 FAIL）；
+ *    且每个 key 至少要有一个 consumer 能在文件里查到引用证据（只有路径不算，
+ *    见下方"消费方引用证据"），否则 FAIL。
  *
  *    漏报自检（阻塞）：`permissiveScanKeys()` 用**故意更宽松**的语法假设重扫同一批目录，
  *    任何"宽松扫到、上面的发现器没扫到"的 key 都说明正则又与真实声明语法脱节了。
@@ -36,16 +38,21 @@
  *    （`` `${PREFIX}${id}` ``）无法求值时会记录到"无法静态判定"清单并计数，不伪造 key。
  *  - 发现范围是 `src/{stores,services,utils,composables,components}` 五个目录；其它目录
  *    （views/layout/stores 之外的 mobile 私有实现等）里新写的持久化 key 不在此守门。
- *  - 消费方校验是**路径存在性**，不是"这个路径真的读了该 key"：`consumers` 里的文件只要
- *    存在即通过。判活仍是"有登记、有引用"，不代表开关在运行时生效（见 §13.4 的说明）。
+ *  - 消费方判据分档（见 "消费方引用证据"）：`verified`（文件里能查到 key 字面量 /
+ *    `*_STORAGE_KEY` 常量 / 映射成员出现在非写入位置，或引用了 owner 模块/store）、
+ *    `write-only`（只在 `setItem`/`removeItem` 写入位置出现）、`none`（路径存在但零引用）。
+ *    只有 verified 才算证据；write-only / none 会单列打印为 "consumer unverified"，
+ *    但仍无法证明"这个文件在运行时真的读了该 key"（静态近似）。
+ *  - `--update` 先校验清单：清单不合法或存在未登记的发现 key 时拒绝写入；陈旧 manifest
+ *    条目只告警、不自动删除。
  *
  * 用法：
  *   node scripts/check-settings-wiring.mjs             校验（CI / pre-commit）
  *   node scripts/check-settings-wiring.mjs --update    收紧死配置基线（拒绝新增键名）
- *   node scripts/check-settings-wiring.mjs --list      打印发现的持久化 key 与归属，供维护清单
+ *   node scripts/check-settings-wiring.mjs --list      打印发现的持久化 key、归属与消费方证据
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 
 const ROOT = 'src'
 const SW = 'src/views/settingsWindow'
@@ -362,6 +369,186 @@ function isCommentedOut(text, index) {
   return prefix.startsWith('//') || prefix.startsWith('*') || prefix.startsWith('/*')
 }
 
+/* ------------------------------------------------------------------ *
+ * 消费方引用证据（判据 A 的加强版）
+ *
+ * 旧口径只要求 `consumers` 路径存在：把某个 consumer 文件里的读取逻辑整段删掉，
+ * 守门仍旧打印 OK。现在要求 consumer 文件里真的出现该 key 的引用形态，并按证据
+ * 强弱分档：
+ *   verified    —— key 字面量 / `*_STORAGE_KEY` 常量 / 映射成员出现在**非写入**位置，
+ *                  或引用了 owner 模块（store / barrel），说明该文件确实与 key 有关；
+ *   write-only  —— 只在 `setItem` / `removeItem` 的写入位置出现（写方不是读方）；
+ *   none        —— 路径存在，但文件里找不到任何引用。
+ * `write-only` / `none` 单列打印为 "consumer unverified"，**不**静默通过；而某个 key
+ * 在所有 consumer 上都拿不到 verified 时直接 FAIL —— 否则清单可以靠一堆空路径维持绿。
+ * ------------------------------------------------------------------ */
+
+/** 文件内容缓存：owner / consumer 会被反复引用，避免重复读盘。 */
+const sourceCache = new Map()
+function fileText(path) {
+  if (!sourceCache.has(path)) {
+    sourceCache.set(path, existsSync(path) ? readFileSync(path, 'utf8') : null)
+  }
+  return sourceCache.get(path)
+}
+
+/** 发现器为该 key 记录到的符号名（常量名 / 映射成员），用于在消费方文件里找引用。 */
+function keySymbolNames(discoveredEntry) {
+  const names = new Set()
+  for (const sources of discoveredEntry?.sources.values() ?? []) {
+    for (const source of sources) {
+      // `defineStore+persist` 是 store id，`localStorage.setItem` 只是写入位置说明，都不是符号名。
+      if (source === 'defineStore+persist' || source.endsWith('Storage.setItem')) continue
+      names.add(source)
+    }
+  }
+  return names
+}
+
+/** 从 import / 动态 import 里提取说明符。 */
+const IMPORT_SPECIFIER = /(?:from\s*|import\s*\(\s*|import\s+)['"]([^'"]+)['"]/g
+
+/**
+ * 把 import 说明符解析成仓库内 POSIX 路径（去掉扩展名）；裸包名返回 null。
+ *
+ * 用于判断 consumer 是否引用了 owner 模块（含 barrel：`@/services/backend` 覆盖
+ * `src/services/backend/config.ts`），而不是解析真实模块图。
+ */
+function resolveImportSpecifier(specifier, fromPath) {
+  const stripExt = (p) => p.replace(/\.\w+$/, '')
+  if (specifier.startsWith('@/')) return stripExt(toPosix(join(ROOT, specifier.slice(2))))
+  if (specifier.startsWith('#/')) return stripExt(toPosix(join(ROOT, 'mobile', specifier.slice(2))))
+  if (specifier.startsWith('~/')) return stripExt(toPosix(specifier.slice(2)))
+  if (specifier.startsWith('.')) {
+    return stripExt(toPosix(relative(process.cwd(), resolve(dirname(fromPath), specifier))))
+  }
+  return null
+}
+
+/** 带词边界的整名匹配（`STORAGE_KEYS.audioInputId` 这类含点号的名字原样匹配）。 */
+function mentions(text, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?<![\\w$.])${escaped}(?![\\w$])`).test(text)
+}
+
+/** key 字面量出现的位置；动态键族（`prefix*`）退化成前缀匹配。 */
+function literalPositions(text, key) {
+  const out = []
+  const needles = key.endsWith('*')
+    ? [key.slice(0, -1)]
+    : [`'${key}'`, `"${key}"`, `\`${key}\``]
+  for (const needle of needles) {
+    let index = text.indexOf(needle)
+    while (index >= 0) {
+      out.push({ index, write: /\.(?:set|remove)Item\(\s*$/.test(text.slice(Math.max(0, index - 48), index)) })
+      index = text.indexOf(needle, index + 1)
+    }
+  }
+  return out
+}
+
+/**
+ * 单个 consumer 对单个 key 的证据分档。
+ *
+ * `ownerModules` 是"可能定义/写出该 key 的模块"（发现器记录的来源路径 + manifest owner，
+ * 去扩展名）；consumer 引用其中任意一个（含 barrel 父目录）都算有据可查。
+ *
+ * 返回 `{ strength: 'verified'|'weak'|'none', reason }`。
+ */
+function consumerEvidence(consumerPath, key, ownerModules, symbolNames, discoveredEntry) {
+  const text = fileText(consumerPath)
+  if (text === null) return { strength: 'none', reason: '路径不存在' }
+
+  // owner 本体定义 pinia persist store：store id 就是持久化 key，定义处即是接线处。
+  if (discoveredEntry?.sources.get(consumerPath)?.has('defineStore+persist')) {
+    return { strength: 'verified', reason: 'owner 定义 pinia persist store' }
+  }
+
+  let writeOnly = false
+  for (const position of literalPositions(text, key)) {
+    if (isCommentedOut(text, position.index)) continue
+    if (position.write) {
+      writeOnly = true
+      continue
+    }
+    return { strength: 'verified', reason: 'key 字面量（非写入位置）' }
+  }
+
+  for (const symbol of symbolNames) {
+    // 映射成员只认 `OBJ.field` 全名：裸字段名（`enabled`、`state`）随处可见，会假阳性。
+    if (mentions(text, symbol)) return { strength: 'verified', reason: `常量 ${symbol}` }
+  }
+
+  for (const match of text.matchAll(IMPORT_SPECIFIER)) {
+    const resolved = resolveImportSpecifier(match[1], consumerPath)
+    if (resolved === null) continue
+    for (const module of ownerModules) {
+      if (resolved === module || module.startsWith(`${resolved}/`)) {
+        return { strength: 'verified', reason: `引用 owner 模块 ${match[1]}` }
+      }
+    }
+  }
+
+  return writeOnly
+    ? { strength: 'weak', reason: '仅在 setItem/removeItem 写入位置出现' }
+    : { strength: 'none', reason: '无引用' }
+}
+
+/**
+ * 逐条审计清单消费方证据。
+ *
+ * 返回 `{ verified, unverified, unverifiedKeys }`：`unverifiedKeys` 是**仍然存在却一个
+ * verified 消费方都没有**的 key —— 这类条目等于把"消费方"写成了空路径，必须 FAIL。
+ * 已陈旧的条目（发现器找不到该 key）不计入硬校验，交给 stale 告警处置。
+ */
+function auditConsumerEvidence(entries, discoveredKeys) {
+  const verified = []
+  const unverified = []
+  const unverifiedKeys = []
+  for (const [key, entry] of entries) {
+    const discoveredEntry = discoveredKeys.get(key)
+    const ownerModules = new Set(
+      [entry.owner.split(':')[0], ...(discoveredEntry?.sources.keys() ?? [])].map((path) =>
+        path.replace(/\.\w+$/, '')
+      )
+    )
+    const symbolNames = keySymbolNames(discoveredEntry)
+    let hasVerified = false
+    for (const consumer of entry.consumers) {
+      const evidence = consumerEvidence(consumer, key, ownerModules, symbolNames, discoveredEntry)
+      if (evidence.strength === 'verified') {
+        hasVerified = true
+        verified.push({ key, consumer })
+      } else {
+        unverified.push({ key, consumer, reason: evidence.reason })
+      }
+    }
+    // 陈旧条目（发现器已找不到该 key）由 stale 告警负责；这里只对仍然存在的 key 硬校验，
+    // 避免"key 已删除、清单忘删"报出误导性的"消费方无证据"FAIL。
+    if (!hasVerified && discoveredEntry !== undefined) unverifiedKeys.push({ key, consumers: entry.consumers })
+  }
+  return { verified, unverified, unverifiedKeys }
+}
+
+/** manifest 里已不再对应任何发现 key 的陈旧条目（只告警，不自动删除）。 */
+function staleManifestKeys(entries) {
+  return [...entries.keys()]
+    .filter((key) => !discovered.has(key))
+    .sort((a, b) => a.localeCompare(b))
+}
+
+/** 打印陈旧 manifest 条目告警；返回条目名列表（无陈旧条目时返回空数组且不打印）。 */
+function warnStaleManifestEntries(entries) {
+  const stale = staleManifestKeys(entries)
+  if (stale.length === 0) return stale
+  console.log(
+    `check-settings-wiring: 提示 ${stale.length} 个 manifest 条目已不再对应任何可静态求值的持久化 key（陈旧登记）`
+  )
+  for (const key of stale) console.log(`  stale ${key}`)
+  console.log(`  请从 ${MANIFEST} 删除这些条目，或恢复它们对应的持久化写入代码。`)
+  return stale
+}
+
 /**
  * 漏报自检：用**故意更宽松**的语法假设重扫同一批目录，返回"宽松扫到"的 key 集合。
  *
@@ -512,6 +699,11 @@ const notIn = (names, baselineNames) => names.filter((name) => !baselineNames.ha
 const { keys: discovered, unresolved, describeKey, describeStorage } = discoverPersistedKeys()
 const discoveredNames = [...discovered.keys()].sort((a, b) => a.localeCompare(b))
 
+// 清单在三种模式下都要先读：`--list` 打印消费方证据、`--update` 先校验清单再写基线、
+// verify 走完整判据。清单不合法时不在这里退出，交给各模式给出各自语义的拒绝信息。
+const manifest = readJson(MANIFEST)
+const { entries, errors } = validateManifest(manifest)
+
 /* ------------------------------------------------------------------ *
  * --list / --update / 校验
  * ------------------------------------------------------------------ */
@@ -525,6 +717,16 @@ if (process.argv.includes('--list')) {
   const drift = [...permissive].filter((key) => !discovered.has(key)).sort((a, b) => a.localeCompare(b))
   console.log(`--- 漏报自检：宽松扫描 ${permissive.size} 个 key，其中发现器漏报 ${drift.length} 个`)
   for (const key of drift) console.log(`  ! ${key}`)
+  if (entries !== null) {
+    const audit = auditConsumerEvidence(entries, discovered)
+    console.log(
+      `--- 消费方证据：verified ${audit.verified.length}，consumer unverified ${audit.unverified.length}（只有路径、查不到引用）`
+    )
+    for (const item of audit.unverified) console.log(`  ? ${item.key} ← ${item.consumer}（${item.reason}）`)
+    for (const item of audit.unverifiedKeys) {
+      console.log(`  ! ${item.key} 在所有 consumer 上都没有引用证据：${item.consumers.join('、')}`)
+    }
+  }
   if (unresolved.length > 0) {
     console.log(`--- 无法静态判定（不计入、不判定）${unresolved.length} 处`)
     for (const item of unresolved) console.log(`  ? ${item}`)
@@ -533,6 +735,24 @@ if (process.argv.includes('--list')) {
 }
 
 if (process.argv.includes('--update')) {
+  // --update 先校验清单：发现但未登记的 key 一律拒绝写入基线，否则
+  // "新 key 不登记 + 顺手收紧死配置基线"会在同一次 --update 里蒙混过关。
+  if (errors.length > 0) {
+    console.error(`check-settings-wiring: 拒绝写入基线 — 清单不合法：${MANIFEST}`)
+    for (const error of errors) console.error(`  ${error}`)
+    process.exit(1)
+  }
+  const unregisteredNow = notIn(discoveredNames, new Set(entries.keys()))
+  if (unregisteredNow.length > 0) {
+    console.error(`check-settings-wiring: 拒绝写入基线 — 发现未登记的持久化 key ${unregisteredNow.length} 个`)
+    for (const key of unregisteredNow) {
+      console.error(`  ${key.padEnd(48)} ${describeStorage(key).padEnd(18)} ${describeKey(key)}`)
+    }
+    console.error(`先把它们写进 ${MANIFEST}（owner + 至少一个真实消费方路径），再谈基线。`)
+    process.exit(1)
+  }
+  // 陈旧条目只告警：清理是显式维护动作，--update 不替人删登记。
+  warnStaleManifestEntries(entries)
   // ratchet 只允许收紧：--update 不能把基线抬高（否则新增死配置会被一次性赦免）
   const previous = readJson(BASELINE)
   if (
@@ -565,8 +785,6 @@ if (process.argv.includes('--update')) {
 }
 
 // --- 判据 A ---
-const manifest = readJson(MANIFEST)
-const { entries, errors } = validateManifest(manifest)
 if (errors.length > 0) {
   console.error(`check-settings-wiring: FAIL — 清单不合法：${MANIFEST}`)
   for (const error of errors) console.error(`  ${error}`)
@@ -606,6 +824,25 @@ if (unregistered.length > 0) {
     console.error(`  ${key.padEnd(48)} ${describeStorage(key).padEnd(18)} ${describeKey(key)}`)
   }
   console.error(`新增持久化 key 必须先写进 ${MANIFEST}：给出 owner 与至少一个真实消费方路径。`)
+  process.exit(1)
+}
+
+// 消费方引用证据：路径存在还不够，必须能在文件里查到该 key 的引用形态。
+warnStaleManifestEntries(entries)
+const audit = auditConsumerEvidence(entries, discovered)
+if (audit.unverified.length > 0) {
+  console.log(
+    `check-settings-wiring: 提示 ${audit.unverified.length} 个已登记消费方只有路径存在、查不到引用证据（consumer unverified）`
+  )
+  for (const item of audit.unverified) console.log(`  ? ${item.key} ← ${item.consumer}（${item.reason}）`)
+  console.log('  这些条目当前只靠 existsSync 维持登记；若读取逻辑已被删除，请改清单或恢复接线。')
+}
+if (audit.unverifiedKeys.length > 0) {
+  console.error(`check-settings-wiring: FAIL — ${audit.unverifiedKeys.length} 个 key 在所有登记消费方里都没有引用证据`)
+  for (const item of audit.unverifiedKeys) {
+    console.error(`  ${item.key}：consumers = ${item.consumers.join('、')}`)
+  }
+  console.error('消费方不能只是"路径存在"：请在 consumer 文件里保留读取该 key 的代码（字面量/常量/store/owner 模块）。')
   process.exit(1)
 }
 
@@ -663,7 +900,10 @@ console.log(
     `死配置 ${dead.length}（基线 ${baseline.deadKeys}，键名均在基线内）`
 )
 console.log(`  扫描范围：${DISCOVERY_ROOTS.join('、')}（超出此范围的持久化写入不在本守门覆盖面）`)
-console.log('  口径提示：消费方只校验路径存在性，不证明该文件真的读取该 key；判活≠生效。')
+console.log(
+  `  消费方证据：verified ${audit.verified.length}/${audit.verified.length + audit.unverified.length}，` +
+    `consumer unverified ${audit.unverified.length}（仅路径存在，判活≠生效）`
+)
 console.log(`  漏报自检通过：宽松扫描 ${permissive.size} 个 key 全部被发现器识别（含类型标注映射与 sessionStorage）`)
 if (unresolved.length > 0) {
   console.log(`  提示：${unresolved.length} 处持久化写入是动态 key，无法静态判定（已知局限，见脚本注释）`)
