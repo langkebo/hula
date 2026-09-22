@@ -233,6 +233,5 @@
     "verify_failed": "验证失败"
   },
   "service_agreement_title": "服务协议",
-  "privacy_policy_title": "隐私保护指引",
-  "guest": "以游客身份登录"
+  "privacy_policy_title": "隐私保护指引"
 }

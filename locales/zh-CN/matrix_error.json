@@ -93,8 +93,5 @@
   },
   "event_report": {
     "manager_not_initialized": "事件举报服务未初始化"
-  },
-  "guest": {
-    "manager_not_initialized": "访客服务未初始化"
   }
 }
