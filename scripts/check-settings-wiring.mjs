@@ -39,7 +39,8 @@
  *  - 发现范围是 `src/{stores,services,utils,composables,components}` 五个目录；其它目录
  *    （views/layout/stores 之外的 mobile 私有实现等）里新写的持久化 key 不在此守门。
  *  - 消费方判据分档（见 "消费方引用证据"）：`verified`（文件里能查到 key 字面量 /
- *    `*_STORAGE_KEY` 常量 / 映射成员出现在非写入位置，或引用了 owner 模块/store）、
+ *    `*_STORAGE_KEY` 常量 / 映射成员出现在非写入位置，或**精确**引用 owner 模块本体/
+ *    其所在目录的 barrel 且真的用到了导入绑定；注释一律不算证据）、
  *    `write-only`（只在 `setItem`/`removeItem` 写入位置出现）、`none`（路径存在但零引用）。
  *    只有 verified 才算证据；write-only / none 会单列打印为 "consumer unverified"，
  *    但仍无法证明"这个文件在运行时真的读了该 key"（静态近似）。
@@ -376,18 +377,124 @@ function isCommentedOut(text, index) {
  * 守门仍旧打印 OK。现在要求 consumer 文件里真的出现该 key 的引用形态，并按证据
  * 强弱分档：
  *   verified    —— key 字面量 / `*_STORAGE_KEY` 常量 / 映射成员出现在**非写入**位置，
- *                  或引用了 owner 模块（store / barrel），说明该文件确实与 key 有关；
+ *                  或**精确**引用了 owner 模块本体（或它所在目录的 barrel）**且真的用到了
+ *                  导入绑定**，说明该文件确实与 key 有关；
  *   write-only  —— 只在 `setItem` / `removeItem` 的写入位置出现（写方不是读方）；
  *   none        —— 路径存在，但文件里找不到任何引用。
  * `write-only` / `none` 单列打印为 "consumer unverified"，**不**静默通过；而某个 key
  * 在所有 consumer 上都拿不到 verified 时直接 FAIL —— 否则清单可以靠一堆空路径维持绿。
+ *
+ * 两条硬性收紧（2026-09-23 review Important #1）：
+ *   1. 注释不是证据：扫描前先 `stripComments()`，注释里出现的 `*_STORAGE_KEY` / key 字面量
+ *      一律不算（偏移与行号保持不变，报告仍指向原始行）。
+ *   2. 只有精确 owner 模块（或其所在目录的 barrel，`dir` / `dir/index`）才算模块证据，
+ *      **祖先目录不算**：`import '@/services'` 覆盖 `src/services/**` 下任意 owner，等于
+ *      不点名 key 的免检通行证，必须排除；且导入绑定要在文件里被真实使用，纯副作用
+ *      import（`import '@/services'`）不能凭空制造证据。被淘汰的引用会如实降级成
+ *      "consumer unverified" 并打印原因，而不是硬 FAIL 整个 key。
  * ------------------------------------------------------------------ */
+
+/**
+ * 把注释内容替换成空格（保留换行），使基于下标的扫描看不到注释里的符号/字面量，
+ * 同时保持偏移与行号不变（报告里的行号仍指原始行）。字符串字面量原样保留。
+ */
+function stripComments(text) {
+  let out = ''
+  let i = 0
+  // 上下文栈：'code'（顶层或模板 `${}` 内）与 'template'（模板字面量体内）。
+  const stack = ['code']
+  const blank = (ch) => (ch === '\n' ? '\n' : ' ')
+  while (i < text.length) {
+    const ch = text[i]
+    const next = text[i + 1]
+    if (stack[stack.length - 1] === 'template') {
+      if (ch === '\\') {
+        out += ch + (next ?? '')
+        i += 2
+        continue
+      }
+      if (ch === '`') {
+        stack.pop()
+        out += ch
+        i++
+        continue
+      }
+      if (ch === '$' && next === '{') {
+        stack.push('code')
+        out += '${'
+        i += 2
+        continue
+      }
+      out += ch
+      i++
+      continue
+    }
+    if (ch === '/' && next === '/') {
+      while (i < text.length && text[i] !== '\n') {
+        out += ' '
+        i++
+      }
+      continue
+    }
+    if (ch === '/' && next === '*') {
+      out += '  '
+      i += 2
+      while (i < text.length && !(text[i] === '*' && text[i + 1] === '/')) {
+        out += blank(text[i])
+        i++
+      }
+      if (i < text.length) {
+        out += '  '
+        i += 2
+      }
+      continue
+    }
+    if (ch === "'" || ch === '"') {
+      const quote = ch
+      out += ch
+      i++
+      while (i < text.length) {
+        if (text[i] === '\\') {
+          out += text[i] + (text[i + 1] ?? '')
+          i += 2
+          continue
+        }
+        if (text[i] === quote) {
+          out += quote
+          i++
+          break
+        }
+        if (text[i] === '\n') break // 未闭合字符串：容错，按行终止
+        out += text[i]
+        i++
+      }
+      continue
+    }
+    if (ch === '`') {
+      stack.push('template')
+      out += ch
+      i++
+      continue
+    }
+    if (ch === '}' && stack.length > 1) {
+      stack.pop()
+      out += ch
+      i++
+      continue
+    }
+    out += ch
+    i++
+  }
+  return out
+}
 
 /** 文件内容缓存：owner / consumer 会被反复引用，避免重复读盘。 */
 const sourceCache = new Map()
+/** 返回**剥离注释后**的文件内容（偏移与行号仍与原文件一致）；路径不存在返回 null。 */
 function fileText(path) {
   if (!sourceCache.has(path)) {
-    sourceCache.set(path, existsSync(path) ? readFileSync(path, 'utf8') : null)
+    const raw = existsSync(path) ? readFileSync(path, 'utf8') : null
+    sourceCache.set(path, raw === null ? null : stripComments(raw))
   }
   return sourceCache.get(path)
 }
@@ -408,11 +515,68 @@ function keySymbolNames(discoveredEntry) {
 /** 从 import / 动态 import 里提取说明符。 */
 const IMPORT_SPECIFIER = /(?:from\s*|import\s*\(\s*|import\s+)['"]([^'"]+)['"]/g
 
+/** 带绑定子句的静态 import（`import X from` / `import { a as b } from` / `import * as ns from`）。 */
+const IMPORT_WITH_BINDINGS = /import\s+(?!\()([^'"]*?)\s*from\s*['"]([^'"]+)['"]/g
+
+/**
+ * 动态 import 的赋值形态：`const { a } = await import('x')` / `const mod = await import('x')`。
+ * 捕获组：绑定子句、说明符。
+ */
+const DYNAMIC_IMPORT_BINDING =
+  /(?:const|let|var)\s+(\{[^}]*\}|[\w$]+)\s*=\s*(?:await\s+)?import\(\s*['"]([^'"]+)['"]\s*\)/g
+
+/** 把 import 声明整体抹成空白（保留换行），用于检查绑定是否在声明之外被使用。 */
+function blankImports(code) {
+  const blank = (statement) => statement.replace(/[^\n]/g, ' ')
+  return code.replace(IMPORT_WITH_BINDINGS, blank).replace(DYNAMIC_IMPORT_BINDING, blank)
+}
+
+/**
+ * 从静态 import 的绑定子句里抽本地名：默认 / 具名（含 `as`）/ 命名空间。
+ * 副作用 import（`import 'x'`）没有绑定子句，返回空数组 —— 它无法证明"用到了 owner"。
+ */
+function importBindings(clause) {
+  const names = []
+  const body = clause.replace(/\btype\b/g, ' ').trim()
+  const braced = /\{([\s\S]*?)\}/.exec(body)
+  if (braced) {
+    for (const raw of braced[1].split(',')) {
+      const piece = raw.trim()
+      if (piece.length === 0) continue
+      const as = /\bas\s+([\w$]+)$/.exec(piece)
+      if (as) names.push(as[1])
+      else if (/^[\w$]+$/.test(piece)) names.push(piece)
+    }
+  }
+  const ns = /\*\s+as\s+([\w$]+)/.exec(body)
+  if (ns) names.push(ns[1])
+  const beforeBrace = body.split('{')[0].replace(/\*\s+as\s+[\w$]+/, '').trim()
+  const def = /^([\w$]+)\s*,?$/.exec(beforeBrace)
+  if (def) names.push(def[1])
+  return [...new Set(names)]
+}
+
+/** 从动态 import 的赋值目标里抽本地名：`const { a, b: c } = …` / `const mod = …`。 */
+function destructuringBindings(clause) {
+  const trimmed = clause.trim()
+  if (/^[\w$]+$/.test(trimmed)) return [trimmed]
+  const braced = /\{([\s\S]*?)\}/.exec(trimmed)
+  if (!braced) return []
+  const names = []
+  for (const raw of braced[1].split(',')) {
+    const piece = raw.trim()
+    if (piece.length === 0) continue
+    const renamed = /:\s*([\w$]+)$/.exec(piece)
+    if (renamed) names.push(renamed[1])
+    else if (/^[\w$]+$/.test(piece)) names.push(piece)
+  }
+  return [...new Set(names)]
+}
+
 /**
  * 把 import 说明符解析成仓库内 POSIX 路径（去掉扩展名）；裸包名返回 null。
  *
- * 用于判断 consumer 是否引用了 owner 模块（含 barrel：`@/services/backend` 覆盖
- * `src/services/backend/config.ts`），而不是解析真实模块图。
+ * 用于判断 consumer 是否引用了 owner 模块，而不是解析真实模块图。
  */
 function resolveImportSpecifier(specifier, fromPath) {
   const stripExt = (p) => p.replace(/\.\w+$/, '')
@@ -423,6 +587,24 @@ function resolveImportSpecifier(specifier, fromPath) {
     return stripExt(toPosix(relative(process.cwd(), resolve(dirname(fromPath), specifier))))
   }
   return null
+}
+
+/**
+ * owner 模块可接受的引用形态：模块本体，以及**它所在目录**的 barrel（`dir` 与 `dir/index`
+ * 两种写法，`dir` 须真实存在为目录）。刻意**不**包含祖先目录：`import '@/services'`
+ * 覆盖 `src/services/**` 下任意 owner，等于不点名 key 的免检通行证（review Important #1）。
+ */
+function ownerModuleVariants(ownerModule) {
+  const variants = new Set([ownerModule])
+  const dir = dirname(ownerModule)
+  if (dir !== '.' && dir !== '/') {
+    if (ownerModule.endsWith('/index')) variants.add(dir)
+    if (existsSync(dir)) {
+      variants.add(dir)
+      variants.add(`${dir}/index`)
+    }
+  }
+  return variants
 }
 
 /** 带词边界的整名匹配（`STORAGE_KEYS.audioInputId` 这类含点号的名字原样匹配）。 */
@@ -451,11 +633,13 @@ function literalPositions(text, key) {
  * 单个 consumer 对单个 key 的证据分档。
  *
  * `ownerModules` 是"可能定义/写出该 key 的模块"（发现器记录的来源路径 + manifest owner，
- * 去扩展名）；consumer 引用其中任意一个（含 barrel 父目录）都算有据可查。
+ * 去扩展名）。模块证据必须**精确**命中 owner 本体（或它所在目录的 barrel）且导入绑定被
+ * 真实使用；祖先目录 import（`@/services`）与纯副作用 import 都不算。
  *
  * 返回 `{ strength: 'verified'|'weak'|'none', reason }`。
  */
 function consumerEvidence(consumerPath, key, ownerModules, symbolNames, discoveredEntry) {
+  // text 已剥离注释（偏移与行号与原文件一致）：注释里的符号/字面量不算证据。
   const text = fileText(consumerPath)
   if (text === null) return { strength: 'none', reason: '路径不存在' }
 
@@ -479,16 +663,53 @@ function consumerEvidence(consumerPath, key, ownerModules, symbolNames, discover
     if (mentions(text, symbol)) return { strength: 'verified', reason: `常量 ${symbol}` }
   }
 
+  // 模块证据：精确命中 owner 本体（或其所在目录的 barrel），且导入绑定真的被用到。
+  const accepted = new Set()
+  for (const module of ownerModules) {
+    for (const variant of ownerModuleVariants(module)) accepted.add(variant)
+  }
+  const codeWithoutImports = blankImports(text)
+  let unusedOwnerImport = null
+  for (const match of text.matchAll(IMPORT_WITH_BINDINGS)) {
+    const specifier = match[2]
+    const resolved = resolveImportSpecifier(specifier, consumerPath)
+    if (resolved === null || !accepted.has(resolved)) continue
+    const used = importBindings(match[1]).filter((name) => mentions(codeWithoutImports, name))
+    if (used.length === 0) {
+      unusedOwnerImport ??= `引用了 owner 模块 ${specifier} 但未使用其绑定`
+      continue
+    }
+    return { strength: 'verified', reason: `引用并使用 owner 模块 ${specifier}（${used.join('、')}）` }
+  }
+
+  // 动态 import（`await import('owner')`）同为精确 owner 引用：绑定从解构/赋值目标里取。
+  for (const match of text.matchAll(DYNAMIC_IMPORT_BINDING)) {
+    const specifier = match[2]
+    const resolved = resolveImportSpecifier(specifier, consumerPath)
+    if (resolved === null || !accepted.has(resolved)) continue
+    const used = destructuringBindings(match[1]).filter((name) => mentions(codeWithoutImports, name))
+    if (used.length > 0) {
+      return {
+        strength: 'verified',
+        reason: `动态 import 并使用 owner 模块 ${specifier}（${used.join('、')}）`
+      }
+    }
+    unusedOwnerImport ??= `动态 import owner 模块 ${specifier} 但未使用其绑定`
+  }
+
+  // 祖先目录 import（`@/services` 之于 `@/services/matrix/auth/X`）与具体 key 无关：
+  // 如实降级成弱证据并点名，而不是继续算 verified，也不是硬 FAIL 整个 key。
+  let ancestorOnly = null
   for (const match of text.matchAll(IMPORT_SPECIFIER)) {
     const resolved = resolveImportSpecifier(match[1], consumerPath)
     if (resolved === null) continue
-    for (const module of ownerModules) {
-      if (resolved === module || module.startsWith(`${resolved}/`)) {
-        return { strength: 'verified', reason: `引用 owner 模块 ${match[1]}` }
-      }
+    if ([...ownerModules].some((module) => module.startsWith(`${resolved}/`))) {
+      ancestorOnly ??= `仅引用 owner 的祖先目录 ${match[1]}（未精确引用 owner 模块）`
     }
   }
 
+  if (unusedOwnerImport !== null) return { strength: 'weak', reason: unusedOwnerImport }
+  if (ancestorOnly !== null) return { strength: 'weak', reason: ancestorOnly }
   return writeOnly
     ? { strength: 'weak', reason: '仅在 setItem/removeItem 写入位置出现' }
     : { strength: 'none', reason: '无引用' }
@@ -842,7 +1063,10 @@ if (audit.unverifiedKeys.length > 0) {
   for (const item of audit.unverifiedKeys) {
     console.error(`  ${item.key}：consumers = ${item.consumers.join('、')}`)
   }
-  console.error('消费方不能只是"路径存在"：请在 consumer 文件里保留读取该 key 的代码（字面量/常量/store/owner 模块）。')
+  console.error(
+    '消费方不能只是"路径存在"：请在 consumer 文件里保留读取该 key 的代码（字面量/常量/store），' +
+      '或精确 import owner 模块并使用其绑定（祖先目录 import 不算）。'
+  )
   process.exit(1)
 }
 
