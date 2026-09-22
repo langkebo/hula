@@ -1,5 +1,35 @@
 {
   "unlistenedEvents": 0,
   "unlistenedEventNames": [],
-  "skippedLocations": []
+  "skippedLocations": [],
+  "acceptedPatternNames": [
+    "src/components/atomic/InlineEdit.vue::cancel",
+    "src/components/moderation/EventReportDialog.vue::reported",
+    "src/components/rightBox/chatBox/ChatSidebar.vue::ready",
+    "src/components/search/SearchPane.vue::select",
+    "src/components/space/SpaceCreateRoomPane.vue::created",
+    "src/components/userMenu/UserMenuDropdown.vue::theme-toggle",
+    "src/mobile/components/ImagePreview.vue::forward",
+    "src/mobile/components/ImagePreview.vue::save",
+    "src/mobile/components/ImagePreview.vue::more",
+    "src/mobile/views/chat-room/LocationShare.vue::sent",
+    "src/mobile/views/chat-room/MobileForwardDialog.vue::forwarded",
+    "src/mobile/components/chat-room/FooterBar.vue::updateHeight",
+    "src/components/common/AreaDrawer.vue::update:value",
+    "src/components/settings/ThemeSwitcher.vue::update:modelValue",
+    "src/components/rightBox/MsgInput.vue::input",
+    "src/mobile/components/virtual-scroll/SmartVirtualList.vue::loadMore",
+    "src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue::upgraded",
+    "src/components/userMenu/ThreepidManager.vue::add-email",
+    "src/components/userMenu/ThreepidManager.vue::add-phone",
+    "src/components/userMenu/ThreepidManager.vue::unbind",
+    "src/components/userMenu/UserMenuHeader.vue::avatar-click",
+    "src/components/room/RoomInviteActions.vue::error",
+    "src/components/common/GuestModeBanner.vue::exit",
+    "src/components/common/GuestModeBanner.vue::upgrade",
+    "src/views/loginWindow/LoginBottomBar.vue::guest-login",
+    "src/components/thread/ThreadPanel.vue::sendReply",
+    "src/components/workbench/SpaceListItemCard.vue::contextmenu",
+    "src/components/workbench/RoomSessionList.vue::batchToggle"
+  ]
 }

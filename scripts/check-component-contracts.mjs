@@ -38,7 +38,9 @@
  * （同数量换条目同样不放行）；"新增不可判定位置"（解析失败 / 对象展开 / 动态参数）会让
  * 计数凭空下降，基线用 `skippedLocations` 冻结，新增同样 FAIL。
  * "可接受"的个案写进 `ACCEPTED_PATTERNS` 并注明理由，而不是留在基线里；白名单条目一旦
- * 失效（组件删除 / 事件不再声明 / 已不再压制任何事件）会在运行时告警。
+ * 失效（组件删除 / 事件不再声明 / 已不再压制任何事件）直接 FAIL，防止赦免腐化。
+ * 白名单名称集合本身也是 ratchet（当前 ⊆ 基线，`--update` 拒绝新增）：否则"破坏监听 +
+ * 追加白名单"一步就能洗绿。`followUp` 字段必须指向 §13.6 里真实存在的 follow-up 行。
  *
  * 已知局限（见报告）：不分析渲染函数 / `h()` / JSX 里手写的 `onXxx` 监听，`<component :is>`
  * 动态挂载不识别，也不跨文件追踪 `v-bind` 透传；这些场景由上面的"跳过"策略兜底，
@@ -228,6 +230,56 @@ const ACCEPTED_PATTERNS = [
 
 /** Vue 运行时的双查找规则：`mode-change` / `modeChange` / `mode:change` 归一。 */
 const canonicalEvent = (name) => name.replace(/-(\w)/g, (_, c) => c.toUpperCase())
+
+/** 白名单名称集合（`component::event`）。它是**只减不增**的 ratchet 对象，见基线校验。 */
+const acceptedPatternNames = ACCEPTED_PATTERNS.map((p) => `${p.component}::${p.event}`)
+const acceptedNameSet = new Set(acceptedPatternNames)
+
+/** 产品行为断线的登记文档：`followUp` 必须指向其中真实存在的 §13.6 行。 */
+const FOLLOW_UP_DOC = 'docs/mobile-feature-optimization-plan.md'
+
+/**
+ * 校验 `ACCEPTED_PATTERNS` 里的 `followUp` 字段指向真实存在的 §13 follow-up 行。
+ *
+ * 为什么必须校验：`followUp` 是"这条断线挂在 §13 里待补"的承诺。文档改版/删行后，
+ * 一个只在注释里出现的字符串会继续打印 todo，指向一个不存在的待办——挂账变成假象。
+ * 这里解析 §13.6 表格首列的编号，要求 `followUp` 里的 `#N` 命中其中一行。
+ */
+function validateFollowUps() {
+  const errors = []
+  const withFollowUp = ACCEPTED_PATTERNS.filter((p) => p.followUp)
+  if (withFollowUp.length === 0) return errors
+  if (!existsSync(FOLLOW_UP_DOC)) {
+    errors.push(`${FOLLOW_UP_DOC} 不存在，无法校验 ${withFollowUp.length} 条 followUp`)
+    return errors
+  }
+  const text = readFileSync(FOLLOW_UP_DOC, 'utf8')
+  const start = text.indexOf('### 13.6')
+  const end = start < 0 ? -1 : text.indexOf('\n### ', start + 1)
+  const section = start < 0 ? '' : text.slice(start, end < 0 ? undefined : end)
+  const rows = new Set()
+  for (const m of section.matchAll(/^\|\s*(\d+)\s*\|/gm)) rows.add(Number(m[1]))
+  const rowList = [...rows].sort((a, b) => a - b)
+  for (const pattern of withFollowUp) {
+    const name = `${pattern.component}::${pattern.event}`
+    const ref = /([^\s]+\.md)\s+§13\s+follow-up\s+#(\d+)/.exec(pattern.followUp)
+    if (!ref) {
+      errors.push(`${name}：followUp 无法解析（应为 "<doc>.md §13 follow-up #N"）：${pattern.followUp}`)
+      continue
+    }
+    if (!existsSync(ref[1])) errors.push(`${name}：followUp 文档不存在 ${ref[1]}`)
+    if (rowList.length === 0) {
+      errors.push(`${name}：${FOLLOW_UP_DOC} 里找不到 §13.6 的 follow-up 表格行`)
+    } else if (!rows.has(Number(ref[2]))) {
+      errors.push(
+        `${name}：followUp #${ref[2]} 在 ${FOLLOW_UP_DOC} §13.6 里没有对应行（现有行：${rowList.join(', ')}）`
+      )
+    }
+  }
+  return errors
+}
+
+const followUpErrors = validateFollowUps()
 
 const kebab = (name) => name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
 
@@ -595,17 +647,17 @@ for (const [path, emits] of declared) {
   }
 }
 
-const accepted = new Set(ACCEPTED_PATTERNS.map((p) => `${p.component}::${p.event}`))
 const sorted = rawUnlistened
-  .filter((entry) => !accepted.has(`${entry.component}::${entry.event}`))
+  .filter((entry) => !acceptedNameSet.has(`${entry.component}::${entry.event}`))
   .sort((a, b) => a.component.localeCompare(b.component) || a.event.localeCompare(b.event))
 const entryNames = sorted.map((e) => `${e.component}::${e.event}`)
 
 /**
- * 白名单活性告警（只警告、不阻塞）。
+ * 白名单活性检查（失效即 FAIL）。
  *
  * 白名单一旦失效就变成"永久赦免"：将来同一事件再断线也悄无声息。三种失效形态都点名：
  * 组件文件被删除、组件已不再声明该事件、条目已不再压制任何事件（说明已接线）。
+ * 失效条目属于**死配置**，必须删掉；只告警不阻塞等于把"永久赦免"从事件搬到了白名单。
  */
 const rawNames = new Set(rawUnlistened.map((e) => `${e.component}::${e.event}`))
 const inertAccepted = []
@@ -619,13 +671,17 @@ for (const pattern of ACCEPTED_PATTERNS) {
   } else if (!rawNames.has(name)) inertAccepted.push(`${name}（已不再压制任何事件，应删除该白名单条目）`)
 }
 if (inertAccepted.length > 0) {
-  console.log(`check-component-contracts: 警告 ${inertAccepted.length} 条 ACCEPTED_PATTERNS 已失效`)
-  for (const item of inertAccepted) console.log(`  warn ${item}`)
+  console.log(`check-component-contracts: ACCEPTED_PATTERNS 已失效 ${inertAccepted.length} 条（阻塞，须删除条目）`)
+  for (const item of inertAccepted) console.log(`  inert ${item}`)
 }
 // 产品行为断线不允许静默：每次运行都点名，指向 follow-up 文档
 if (deferredAccepted.length > 0) {
   console.log(`check-component-contracts: 提示 ${deferredAccepted.length} 条产品行为断线挂账待补（非可接受模式）`)
   for (const item of deferredAccepted) console.log(`  todo ${item}`)
+}
+if (followUpErrors.length > 0) {
+  console.log(`check-component-contracts: followUp 指向无效 ${followUpErrors.length} 条（阻塞）`)
+  for (const item of followUpErrors) console.log(`  invalid ${item}`)
 }
 
 // 无论 OK / FAIL / --update，都先把不可判定的位置点名，避免"漏报被当成通过"
@@ -676,12 +732,47 @@ if (process.argv.includes('--update')) {
       process.exit(1)
     }
   }
+  // 白名单只减不增：把断线塞进 ACCEPTED_PATTERNS 会把它移出计数集合，
+  // --update 若接受新增白名单条目，等于"破坏监听 + 追加白名单"一步洗绿。
+  // 确需新增白名单条目时必须手工改基线文件（显式、可评审），不能由 --update 代劳。
+  if (usable && Array.isArray(previous.acceptedPatternNames)) {
+    const addedAccepted = notInBaseline(acceptedPatternNames, new Set(previous.acceptedPatternNames))
+    if (addedAccepted.length > 0) {
+      console.error('check-component-contracts: 拒绝新增白名单条目 — --update 不允许把新条目写进 ACCEPTED_PATTERNS 基线')
+      for (const name of addedAccepted) console.error(`  ${name}`)
+      console.error('白名单只减不增；确需赦免请在基线文件里手工登记该条目并说明理由。')
+      process.exit(1)
+    }
+  }
   writeFileSync(
     BASELINE,
-    `${JSON.stringify({ unlistenedEvents: sorted.length, unlistenedEventNames: entryNames, skippedLocations: skipped }, null, 2)}\n`
+    `${JSON.stringify(
+      {
+        unlistenedEvents: sorted.length,
+        unlistenedEventNames: entryNames,
+        skippedLocations: skipped,
+        acceptedPatternNames
+      },
+      null,
+      2
+    )}\n`
   )
-  console.log(`check-component-contracts: 基线已更新为 ${sorted.length}`)
+  console.log(`check-component-contracts: 基线已更新为 ${sorted.length}（白名单 ${acceptedPatternNames.length} 条）`)
   process.exit(0)
+}
+
+// 白名单失效与 followUp 悬空都是"挂账变假象"，一律阻塞（--update 不豁免）。
+if (inertAccepted.length > 0) {
+  console.error(`check-component-contracts: FAIL — ${inertAccepted.length} 条 ACCEPTED_PATTERNS 已失效`)
+  for (const item of inertAccepted) console.error(`  ${item}`)
+  console.error('失效条目是死配置：从 ACCEPTED_PATTERNS 删除它，而不是留着继续赦免。')
+  process.exit(1)
+}
+if (followUpErrors.length > 0) {
+  console.error(`check-component-contracts: FAIL — ${followUpErrors.length} 条 followUp 指向不存在的 §13 行`)
+  for (const item of followUpErrors) console.error(`  ${item}`)
+  console.error('要么在 §13.6 补上对应行，要么删掉这条 followUp 挂账。')
+  process.exit(1)
 }
 
 if (!existsSync(BASELINE)) {
@@ -713,6 +804,27 @@ if (!Array.isArray(baseline.unlistenedEventNames)) {
 if (!Array.isArray(baseline.skippedLocations)) {
   console.error(`check-component-contracts: FAIL — 基线文件缺少数组型 skippedLocations：${BASELINE}`)
   console.error(REGENERATE_HINT)
+  process.exit(1)
+}
+
+if (!Array.isArray(baseline.acceptedPatternNames)) {
+  console.error(`check-component-contracts: FAIL — 基线文件缺少数组型 acceptedPatternNames：${BASELINE}`)
+  console.error('白名单名称集合是只减不增的 ratchet；补上该字段（或运行 --update 首次登记）后才能校验。')
+  process.exit(1)
+}
+
+/**
+ * 白名单名称集合 ratchet：当前 ACCEPTED_PATTERNS ⊆ 基线。
+ *
+ * 这是防"破坏监听 + 追加白名单"一步洗绿的关键：白名单条目会被 `sorted` 过滤掉，
+ * 只冻结"无人监听事件"数量时，新增白名单等于凭空变绿。新增条目必须手工改基线。
+ */
+const newAccepted = notInBaseline(acceptedPatternNames, new Set(baseline.acceptedPatternNames))
+if (newAccepted.length > 0) {
+  console.error(`check-component-contracts: FAIL — ACCEPTED_PATTERNS 新增 ${newAccepted.length} 条基线未登记的白名单条目`)
+  for (const name of newAccepted) console.error(`  ${name}`)
+  console.error('白名单只减不增：不许用"破坏监听 + 追加白名单"把断线洗绿。')
+  console.error('确需赦免请手工在基线 acceptedPatternNames 里登记该条目并说明理由（评审可见）。')
   process.exit(1)
 }
 
@@ -748,7 +860,8 @@ if (unexpected.length > 0) {
 }
 
 console.log(
-  `check-component-contracts: OK 无人监听事件 ${sorted.length}（基线 ${baseline.unlistenedEvents}，条目均在基线内）`
+  `check-component-contracts: OK 无人监听事件 ${sorted.length}（基线 ${baseline.unlistenedEvents}，条目均在基线内）；` +
+    `白名单 ${acceptedPatternNames.length}/${baseline.acceptedPatternNames.length} 条（只减不增）`
 )
 if (sorted.length < baseline.unlistenedEvents) {
   console.log('  可运行 node scripts/check-component-contracts.mjs --update 收紧基线')

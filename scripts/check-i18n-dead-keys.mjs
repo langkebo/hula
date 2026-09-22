@@ -15,17 +15,22 @@
  *    的 key，**不是**孤儿，只是无法用字面量静态匹配。它们单独成节、单独计数，
  *    Task 7 不得把它们当可删文案（旧口径把它们混进孤儿集合，会误删活翻译）。
  * 正常校验：dead 集合必须 ⊆ 基线 dead 集合、数量不得增加；`--update` 同样拒绝任何新增
- * dead 键名。dynamic 集合只记账 + 报告新增（动态引用的 key 本来就无法"接线修好"，
- * 给它上阻塞 ratchet 只会制造假红灯）。
+ * dead 键名。dynamic 集合是**阻塞 delta**：命中动态前缀的 key 不计入孤儿，因此新增动态族成员
+ * 会让可删孤儿"凭空减少"（等价于洗绿）。`--update` 不得静默吸收，必须显式带
+ * `--accept-new-dynamic` 才记账（见文末"动态族 delta"）。
  * **本守门不删除任何 key**：基线收缩由 Task 7 的逐批人工清理负责。
  *
  * 已知局限：动态拼接 key 仍只能按"第一个插值之前的字面前缀"归类；前缀不含 `.`
  * （例如 `` t(`setting.${x}`) ``）或整条模板完全动态时无法安全归类，会在输出里计数提示。
  * 数字下标段（`privacy.sections.0.title`）是数组动态访问，直接跳过不计入。
+ * **判活证据仍是"全仓点分 token 集合"**：`collectReferencedTokens` 不区分 token 出现在
+ * 翻译调用、注释还是 URL 里，任何同形 token 都会把一个 key 判成"已引用"。把判活收紧到
+ * `t()`/`tc()` 等调用点需要重写引用侧解析，属后续项（已记入 §13）。
  *
  * 用法：
  *   node scripts/check-i18n-dead-keys.mjs            校验
- *   node scripts/check-i18n-dead-keys.mjs --update   收紧基线（拒绝新增 dead 键名）
+ *   node scripts/check-i18n-dead-keys.mjs --update   收紧基线（拒绝新增 dead 键名与动态族 delta）
+ *   node scripts/check-i18n-dead-keys.mjs --update --accept-new-dynamic  显式确认动态族新增后记账
  *   node scripts/check-i18n-dead-keys.mjs --list [--limit N]  打印孤儿集合 + 动态族排除集合
  */
 import fs from 'node:fs'
@@ -230,6 +235,21 @@ if (process.argv.includes('--update')) {
       process.exit(1)
     }
   }
+  // 动态族是 warn-only 的逃生口：新增一个动态前缀/动态 key 会让孤儿"凭空减少"。
+  // --update 不得静默吸收：新增动态 key 必须显式带 --accept-new-dynamic 才能记账。
+  const newDynamicForUpdate = usable && Array.isArray(previous.dynamicKeyNames)
+    ? notIn(dynamicKeys, new Set(previous.dynamicKeyNames))
+    : []
+  if (newDynamicForUpdate.length > 0 && !process.argv.includes('--accept-new-dynamic')) {
+    console.error(
+      `check-i18n-dead-keys: 拒绝 --update 静默吸收动态族新增 ${newDynamicForUpdate.length} 个 key`
+    )
+    for (const key of newDynamicForUpdate.slice(0, 50)) console.error(`  ${key}`)
+    if (newDynamicForUpdate.length > 50) console.error(`  ... 其余 ${newDynamicForUpdate.length - 50} 个省略`)
+    console.error('动态前缀会把这些 key 从可删孤儿里"洗掉"。确认它们确为动态可达后，')
+    console.error('用 node scripts/check-i18n-dead-keys.mjs --update --accept-new-dynamic 显式记账。')
+    process.exit(1)
+  }
   fs.writeFileSync(
     BASELINE,
     `${JSON.stringify(
@@ -293,9 +313,19 @@ if (unexpected.length > 0) {
   process.exit(1)
 }
 
-// dynamic 只记账、不阻塞：动态引用的 key 本来就无法"接线修好"，上阻塞 ratchet 只会造假设红灯。
-// 新增成员用 WARN 明示，避免它被当成"干净的孤儿集合"悄悄变化。
+// 动态族是阻塞 ratchet：命中动态前缀的 key 不计入孤儿，所以"新增动态族成员"会让可删孤儿
+// 凭空减少（等价于洗绿）。新增动态 key 必须显式记账，不能靠 warn 悄悄过去。
 const newDynamic = notIn(dynamicKeys, new Set(baseline.dynamicKeyNames))
+if (newDynamic.length > 0) {
+  console.error(
+    `check-i18n-dead-keys: FAIL — 动态族新增 ${newDynamic.length} 个 key（会把它们从孤儿集合里洗掉）`
+  )
+  for (const key of newDynamic.slice(0, 50)) console.error(`  ${key}`)
+  if (newDynamic.length > 50) console.error(`  ... 其余 ${newDynamic.length - 50} 个省略`)
+  console.error('确认这些 key 确实被动态前缀可达后，运行：')
+  console.error('  node scripts/check-i18n-dead-keys.mjs --update --accept-new-dynamic')
+  process.exit(1)
+}
 
 console.log(
   `check-i18n-dead-keys: OK 孤儿 key ${deadKeys.length}（基线 ${baseline.deadKeys}，键名均在基线内）；` +
@@ -303,12 +333,6 @@ console.log(
 )
 if (unfilterableTemplates.length > 0) {
   console.log(`  提示：${unfilterableTemplates.length} 处动态模板无法归类为前缀（已知局限，见脚本注释）`)
-}
-if (newDynamic.length > 0) {
-  console.log(`  注意：动态族新增 ${newDynamic.length} 个 key（不计入孤儿，也不得当可删文案）:`)
-  for (const key of newDynamic.slice(0, 20)) console.log(`    ${key}`)
-  if (newDynamic.length > 20) console.log(`    ... 其余 ${newDynamic.length - 20} 个省略`)
-  console.log('  可运行 node scripts/check-i18n-dead-keys.mjs --update 记账。')
 }
 if (deadKeys.length < baseline.deadKeys) {
   console.log('  可运行 node scripts/check-i18n-dead-keys.mjs --update 收紧基线（Task 7 逐批清理）')
