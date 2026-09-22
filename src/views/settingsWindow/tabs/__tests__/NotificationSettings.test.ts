@@ -30,8 +30,6 @@ const translationMap: Record<string, string> = {
   'setting.notification.desktop.title': '桌面通知',
   'setting.notification.keyword.title': '关键词通知',
   'setting.notification.thread.title': '线程通知',
-  'setting.notification.space.title': '空间通知',
-  'setting.notification.friend.title': '好友通知',
   'setting.notification.push_section.title': '推送与规则'
 }
 
@@ -271,10 +269,12 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     const text = wrapper.text()
 
+    // 下列 4 个 key 已在 2026-09-22 孤儿文案清理中删除（Task 7）。桩件对未命中 key 原样返回，
+    // 所以断言"不出现 key 名"等价于断言对应控件没有被重新接回（接回后会渲染裸 key）。
     expect(text).not.toContain('setting.notification.thread.reply_label')
     expect(text).not.toContain('setting.notification.thread.participate_label')
-    expect(text).not.toContain('空间通知')
-    expect(text).not.toContain('好友通知')
+    expect(text).not.toContain('setting.notification.space.title')
+    expect(text).not.toContain('setting.notification.friend.title')
     expect(wrapper.text()).toContain('线程通知')
   })
 

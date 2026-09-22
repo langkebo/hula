@@ -69,6 +69,8 @@ describe('LabsSettings', () => {
   it('不再渲染零消费方的实验特性/调试/性能开关', () => {
     const wrapper = mountComponent()
 
+    // 下列 key 已随 2026-09-22 孤儿文案清理删除（Task 7）；桩件对未命中 key 原样返回，
+    // 断言其不出现即断言这些开关没有被重新接回。
     expect(wrapper.text()).not.toContain('mobile_labs.features.threads')
     expect(wrapper.text()).not.toContain('mobile_labs.features.reactions')
     expect(wrapper.text()).not.toContain('mobile_labs.debug_mode')

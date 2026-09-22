@@ -111,6 +111,8 @@ describe('VoiceVideoSettings', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
+    // 下列 key 已随 2026-09-22 孤儿文案清理删除（Task 7）；桩件对未命中 key 原样返回，
+    // 断言其不出现即断言这些控件没有被重新接回。
     expect(wrapper.text()).not.toContain('mobile_voice_video.audio_output')
     expect(wrapper.text()).not.toContain('mobile_voice_video.input_volume')
     expect(wrapper.text()).not.toContain('mobile_voice_video.output_volume')

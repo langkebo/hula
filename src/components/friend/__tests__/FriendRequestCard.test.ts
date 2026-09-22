@@ -68,7 +68,8 @@ describe('FriendRequestCard', () => {
     })
 
     // outgoing（已发出的申请）没有生产挂载点：取消入口由 FriendsSettings 承担，
-    // 卡片本身不再渲染任何动作按钮。
+    // 卡片本身不再渲染任何动作按钮。`friend.request.cancel` 已作为孤儿文案删除（Task 7），
+    // 桩件对未命中 key 原样返回，故断言其不出现 = 断言取消入口没有被重新接回卡片。
     expect(wrapper.text()).not.toContain('friend.request.cancel')
     expect(wrapper.text()).not.toContain('friend.request.accept')
     expect(wrapper.find('[data-test="friend-request-accept"]').exists()).toBe(false)

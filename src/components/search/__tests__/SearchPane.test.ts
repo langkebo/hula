@@ -42,7 +42,6 @@ vi.mock('vue-i18n', () => ({
       if (key === 'search.error') return 'Search failed'
       if (key === 'search.room_members') return `${(params?.count as number) ?? 0} members`
       if (key === 'search.space_members') return `${(params?.count as number) ?? 0} members`
-      if (key === 'search.space_children') return `${(params?.count as number) ?? 0} rooms`
       if (key === 'search.join_space') return 'Join'
       if (key === 'search.join_success') return 'Joined'
       if (key === 'search.join_failed') return 'Join failed'
