@@ -22,7 +22,6 @@
     "src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue::upgraded",
     "src/components/userMenu/UserMenuHeader.vue::avatar-click",
     "src/components/room/RoomInviteActions.vue::error",
-    "src/views/loginWindow/LoginBottomBar.vue::guest-login",
     "src/components/thread/ThreadPanel.vue::sendReply"
   ]
 }

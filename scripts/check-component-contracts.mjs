@@ -181,12 +181,6 @@ const ACCEPTED_PATTERNS = [
     followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #3'
   },
   {
-    component: 'src/views/loginWindow/LoginBottomBar.vue',
-    event: 'guest-login',
-    reason: '登录页"更多选项"里的游客登录可见但无监听，且 i18n key login.guest 缺失（渲染原始 key）',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #5'
-  },
-  {
     component: 'src/components/thread/ThreadPanel.vue',
     event: 'sendReply',
     reason: '发送会丢弃输入（无 store/service 调用），loadThreadReplies 是设空数组的 stub',
