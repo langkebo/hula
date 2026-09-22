@@ -1,5 +1,5 @@
-import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MatrixClient, Room } from '@/types/matrix-js-sdk'
 import matrixClientService from '../../MatrixClientService'
 import { matrixReadStateService } from '../MatrixReadStateService'
 

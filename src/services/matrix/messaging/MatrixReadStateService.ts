@@ -1,6 +1,5 @@
-import type { ReadReceiptsManager } from 'matrix-js-sdk'
+import type { ReadReceiptsManager } from '@/types/matrix-js-sdk'
 import { NotificationCountType } from '@/types/matrix-js-sdk'
-import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 /**
@@ -24,8 +23,11 @@ export interface ReadReceipt {
  * 所有方法在 Matrix client 未初始化时安全降级为 `0` / `[]` / `false`，
  * 因此直接使用 `matrixClientService.getClient()` 的 null 守卫，而非会抛错的
  * `BaseMatrixService.getClient()`；调用方无需 try-catch。
+ *
+ * 不继承 `BaseMatrixService`：本服务只做只读查询，既不需要基类带 `throwOnError`
+ * 的 `getClient()`，也不需要 `t()`，继承只会把用不到的契约一并带进来。
  */
-class MatrixReadStateService extends BaseMatrixService {
+class MatrixReadStateService {
   /**
    * 读取指定事件的回执列表，并用房间成员信息补全头像与展示名。
    * client 未初始化或房间不存在时返回空数组。
