@@ -10,6 +10,8 @@ import NotificationSettings from '../NotificationSettings.vue'
 
 const messageSuccessMock = vi.fn()
 const messageWarningMock = vi.fn()
+const setMessageSoundEnabledMock = vi.fn()
+const setNotificationVolumeMock = vi.fn()
 
 // 真实配置由 MatrixNotificationService 持久化在 tjg-notification-config。
 // 组件必须先静态导入本模块，受 ESM 静态导入顺序约束无法用 vi.doMock 拦截，
@@ -48,11 +50,19 @@ type NotificationSettingsVm = ComponentPublicInstance & {
   handleContentChange: (value: boolean) => void
   handleSenderChange: (value: boolean) => void
   handleKeywordToggle: (value: boolean) => void
+  handleSoundChange: (value: boolean) => void
+  handleVolumeChange: (value: number) => void
   handleThreadMentionNotify: (value: boolean) => void
 }
 
 vi.mock('naive-ui', () => ({
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'], emits: ['update:value'] },
+  NSlider: {
+    name: 'NSlider',
+    template: '<div class="n-slider" />',
+    props: ['value', 'min', 'max', 'step'],
+    emits: ['update:value']
+  },
   NDivider: { name: 'NDivider', template: '<hr />' },
   NModal: {
     name: 'NModal',
@@ -86,6 +96,15 @@ vi.mock('@/views/settingsWindow/tabs/PushSettings.vue', () => ({
     name: 'PushSettings',
     template: '<div class="push-settings-stub">Push Settings Stub</div>'
   }
+}))
+
+vi.mock('@/stores/domains/settings/setting', () => ({
+  useSettingStore: () => ({
+    messageSoundEnabled: true,
+    notificationVolume: 80,
+    setMessageSoundEnabled: (value: boolean) => setMessageSoundEnabledMock(value),
+    setNotificationVolume: (value: number) => setNotificationVolumeMock(value)
+  })
 }))
 
 vi.mock('@/services/matrix/notifications/MatrixNotificationService', () => ({
@@ -276,12 +295,39 @@ describe('NotificationSettings', () => {
     expect(localStorage.getItem('tjg-show-sender')).toBeNull()
   })
 
-  it('no longer renders the dead notification-sound switch or its volume slider', () => {
+  it('renders the notification sound switch and the volume slider bound to the setting store', async () => {
     const wrapper = mount(NotificationSettings)
-    const labels = wrapper.text()
+    await flushPromises()
 
-    expect(labels).not.toContain('setting.notification.desktop.sound_label')
-    expect(labels).not.toContain('setting.notification.desktop.volume_label')
+    expect(wrapper.text()).toContain('setting.notification.desktop.sound_label')
+    expect(wrapper.text()).toContain('setting.notification.desktop.volume_label')
+    // 默认音量 80% 由 store 读取后显示在数值标签上
+    expect(wrapper.text()).toContain('80%')
+    expect(wrapper.findComponent({ name: 'NSlider' }).exists()).toBe(true)
+  })
+
+  it('sound switch toggles messageSound through the setting store', async () => {
+    const wrapper = mount(NotificationSettings)
+    await flushPromises()
+
+    // 开关顺序：桌面(0) / 通知声音(1) / 内容(2) / 发送者(3) / 关键词(4) / 线程提及(5)
+    wrapper.findAllComponents({ name: 'NSwitch' })[1].vm.$emit('update:value', false)
+    await flushPromises()
+
+    expect(setMessageSoundEnabledMock).toHaveBeenCalledTimes(1)
+    expect(setMessageSoundEnabledMock).toHaveBeenCalledWith(false)
+    expect(messageSuccessMock).toHaveBeenCalled()
+  })
+
+  it('volume slider writes notification.volume through the setting store', async () => {
+    const wrapper = mount(NotificationSettings)
+    await flushPromises()
+
+    wrapper.findComponent({ name: 'NSlider' }).vm.$emit('update:value', 30)
+    await flushPromises()
+
+    expect(setNotificationVolumeMock).toHaveBeenCalledTimes(1)
+    expect(setNotificationVolumeMock).toHaveBeenCalledWith(30)
   })
 
   it('desktop toggle writes the config exactly once per click', async () => {
@@ -299,8 +345,8 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     await flushPromises()
 
-    // 删除提示音开关后顺序：桌面(0) / 内容(1) / 发送者(2) / 关键词(3) / 线程提及(4)
-    wrapper.findAllComponents({ name: 'NSwitch' })[1].vm.$emit('update:value', false)
+    // 恢复通知声音开关/音量滑块后顺序：桌面(0) / 声音(1) / 内容(2) / 发送者(3) / 关键词(4) / 线程提及(5)
+    wrapper.findAllComponents({ name: 'NSwitch' })[2].vm.$emit('update:value', false)
     await flushPromises()
 
     expect(updateNotificationConfigMock).toHaveBeenCalledTimes(1)
@@ -311,7 +357,7 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     await flushPromises()
 
-    wrapper.findAllComponents({ name: 'NSwitch' })[2].vm.$emit('update:value', false)
+    wrapper.findAllComponents({ name: 'NSwitch' })[3].vm.$emit('update:value', false)
     await flushPromises()
 
     expect(updateNotificationConfigMock).toHaveBeenCalledTimes(1)
@@ -324,7 +370,7 @@ describe('NotificationSettings', () => {
 
     // v-model:value + @update:value 会同时触发 setter 与 handler，每次点击写两次
     // （两次 account data PUT）；改成 :value + handler 后必须恰好一次。
-    wrapper.findAllComponents({ name: 'NSwitch' })[4].vm.$emit('update:value', false)
+    wrapper.findAllComponents({ name: 'NSwitch' })[5].vm.$emit('update:value', false)
     await flushPromises()
 
     expect(setEventNotificationEnabledMock).toHaveBeenCalledTimes(1)

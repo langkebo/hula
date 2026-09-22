@@ -9,6 +9,29 @@
         </div>
         <n-switch :value="desktopNotification" @update:value="handleNotificationChange" />
       </div>
+      <div v-if="desktopNotification" class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.notification.desktop.sound_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.desktop.sound_desc') }}</span>
+        </div>
+        <n-switch :value="notificationSound" @update:value="handleSoundChange" />
+      </div>
+      <div v-if="notificationSound" class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.notification.desktop.volume_label') }}</span>
+          <span class="setting-desc">{{ t('setting.notification.desktop.volume_desc') }}</span>
+        </div>
+        <div class="volume-control">
+          <n-slider
+            :value="soundVolume"
+            :min="0"
+            :max="100"
+            :step="10"
+            class="volume-slider-small"
+            @update:value="handleVolumeChange" />
+          <span class="volume-value">{{ soundVolume }}%</span>
+        </div>
+      </div>
     </div>
 
     <n-divider />
@@ -84,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NDivider, NInput, NSwitch, NTag } from 'naive-ui'
+import { NButton, NDivider, NInput, NSlider, NSwitch, NTag } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -95,6 +118,7 @@ import {
   parseNotificationKeywords,
   saveNotificationDisplayPreferences
 } from '@/services/matrix/notifications/notificationDisplayPreferences'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
 
 defineOptions({
@@ -103,6 +127,7 @@ defineOptions({
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
+const settingStore = useSettingStore()
 
 // 桌面通知/消息内容/发送者/线程提及四项配置持久化在 tjg-notification-config，由
 // MatrixNotificationService.getConfig() + shouldNotifyMessage() 在实际发送路径
@@ -137,6 +162,16 @@ function writeDisplayPreferences(patch: Partial<NotificationDisplayPreferences>)
 const desktopNotification = computed({
   get: () => notificationConfig.value.enableDesktop,
   set: (value: boolean) => writeConfig({ enableDesktop: value })
+})
+// 提示音开关与音量来自 setting store（桌面/移动端布局播放提示音时读取），
+// 与上面持久化在 MatrixNotificationService 的桌面通知配置是两份独立状态。
+const notificationSound = computed({
+  get: () => settingStore.messageSoundEnabled,
+  set: (value: boolean) => settingStore.setMessageSoundEnabled(value)
+})
+const soundVolume = computed({
+  get: () => settingStore.notificationVolume,
+  set: (value: number) => settingStore.setNotificationVolume(value)
 })
 const showMessageContent = computed({
   get: () => notificationConfig.value.showMessageContent,
@@ -192,6 +227,22 @@ async function handleNotificationChange(value: boolean) {
     desktopNotification.value = false
     showFeedback(t('setting.notification.feedback.permission_denied'), 'error')
   }
+}
+
+// 单一写入者：模板用 `:value` + `@update:value`，由 handler 写 store；
+// 不叠加 v-model:value，否则 setter 与 handler 会各写一次。
+function handleSoundChange(value: boolean) {
+  notificationSound.value = value
+  showFeedback(
+    t('setting.notification.feedback.sound', {
+      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+    }),
+    'success'
+  )
+}
+
+function handleVolumeChange(value: number) {
+  soundVolume.value = value
 }
 
 function handleContentChange(value: boolean) {
@@ -297,6 +348,18 @@ function handleThreadMentionNotify(value: boolean) {
   margin-top: var(--tjg-space-1);
 }
 
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: var(--tjg-space-2);
+}
+
+.volume-value {
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
+  min-width: 36px;
+}
+
 .keywords-section {
   margin-top: var(--tjg-space-3);
 }
@@ -317,5 +380,10 @@ function handleThreadMentionNotify(value: boolean) {
   margin: calc(var(--tjg-space-2) * -1) 0 var(--tjg-space-4);
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
+}
+
+/* 音量滑杆宽度 */
+.volume-slider-small {
+  width: 100px;
 }
 </style>

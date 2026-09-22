@@ -11,7 +11,8 @@ export const getDefaultShortcuts = () => {
 }
 
 export const getDefaultNotificationSettings = () => ({
-  messageSound: true
+  messageSound: true,
+  volume: 80
 })
 
 export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
@@ -32,6 +33,11 @@ export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
   sendTypingNotifications: true,
   showOnlineStatus: true
 })
+
+export const normalizeNotificationVolume = (volume?: number) => {
+  if (typeof volume !== 'number') return 80
+  return Math.min(100, Math.max(0, Math.round(volume)))
+}
 
 export const LEGACY_PREFERENCE_STORAGE_KEYS = {
   messageConfirm: 'tjg-message-confirm',

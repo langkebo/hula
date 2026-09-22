@@ -46,6 +46,7 @@ import GuestModeBanner from '@/components/common/GuestModeBanner.vue'
 import SkipLink from '@/components/common/SkipLink.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
+import { useMessageSound } from '@/composables/common/useMessageSound'
 import { useMitt } from '@/composables/common/useMitt'
 import { useOverlayController } from '@/composables/common/useOverlayController'
 import { useWindow } from '@/composables/common/useWindow'
@@ -58,12 +59,10 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useInitialSyncStore } from '@/stores/domains/chat/initialSync'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime, shouldBypassAuthForE2E } from '@/utils/AppHarness'
-import { audioManager } from '@/utils/AudioManager'
 import FileUtil from '@/utils/FileUtil'
 import { createLogger } from '@/utils/Logger'
 import { getFilesMeta } from '@/utils/PathUtil'
@@ -80,7 +79,6 @@ const userStore = useUserStore()
 const chatStore = useChatStore()
 const groupStore = useGroupStore()
 const fileStore = useFileStore()
-const settingStore = useSettingStore()
 // 负责记录哪些账号已经完成过首次同步的全局 store，避免多账号串数据
 const initialSyncStore = useInitialSyncStore()
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
@@ -279,21 +277,7 @@ useMitt.on(MittEnum.SHRINK_WINDOW, (event: boolean) => {
 })
 
 // 播放消息音效
-const playMessageSound = async () => {
-  // 检查是否开启了消息提示音
-  if (!settingStore.notification?.messageSound) {
-    return
-  }
-
-  try {
-    const audio = new Audio('/sound/message.mp3')
-    // 音量滑块已删除，notification.volume 也不再持久化：提示音统一按 80% 播放
-    audio.volume = 0.8
-    await audioManager.play(audio, 'message-notification')
-  } catch (error) {
-    logger.warn('播放消息音效失败:', error)
-  }
-}
+const { playMessageSound } = useMessageSound()
 
 /**
  * 从消息中提取文件信息并添加到 file store

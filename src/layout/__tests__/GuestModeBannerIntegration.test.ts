@@ -21,6 +21,9 @@ vi.mock('@/composables/common/useCheckUpdate', () => ({
   useCheckUpdate: () => ({ checkUpdate: vi.fn(), CHECK_UPDATE_TIME: 60000 })
 }))
 vi.mock('@/composables/common/useMitt', () => ({ useMitt: { on: vi.fn(), off: vi.fn(), emit: vi.fn() } }))
+// 布局的提示音播放委托给 useMessageSound（读 store 的 notification.messageSound/volume）。
+// 这里只做浅挂载，播放行为由 useMessageSound.test.ts 覆盖，故按同类 composable 的做法打桩。
+vi.mock('@/composables/common/useMessageSound', () => ({ useMessageSound: () => ({ playMessageSound: vi.fn() }) }))
 vi.mock('@/composables/common/useOverlayController', () => ({
   useOverlayController: () => ({ overlayVisible: false, markAsyncLoaded: vi.fn() })
 }))
