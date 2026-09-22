@@ -11,8 +11,13 @@ export interface UseReplyJumpOptions {
 /**
  * 历史/多选窗口里的"跳到被回复的原消息"。
  *
- * 与 `useMessageJump` 同语义（找到则高亮 + 滚动，找不到给出 warning 反馈），
- * 但这些窗口的消息列表不属于 chatStore 当前时间线，因此由调用方提供下标查找与定位。
+ * 与 `useMessageJump` 相比只是简化版：命中已加载的本地消息时给出高亮 + 滚动，
+ * 未命中时给 warning 反馈。区别有两点——
+ * 1. 只在调用方提供的当前列表里查找，不会像 `useMessageJump` 那样反复 `loadMore()`
+ *    去时间线里翻历史；
+ * 2. 不提供清除高亮的入口（没有 `clearActiveReply` 对应实现），命中后 `activeReply`
+ *    会一直保留到组件卸载。
+ * 这些窗口的消息列表不属于 chatStore 当前时间线，因此由调用方提供下标查找与定位。
  */
 export function useReplyJump(options: UseReplyJumpOptions) {
   const { showFeedback } = useActionFeedback()
