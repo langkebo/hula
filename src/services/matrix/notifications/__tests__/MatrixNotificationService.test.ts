@@ -370,9 +370,9 @@ describe('MatrixNotificationService', () => {
     })
 
     it('adopts legacy display keys when the persisted config fails validation', async () => {
-      // 合法 JSON 但不是配置对象：isValidNotificationConfig 判否 → 同样必须回落 {}
-      // （注意 `{ enableDesktop: 'yes' }` 不会触发校验失败：validateObject 在 requiredKeys
-      //  为空时不执行单键校验器，该字段类型错误被静默接受，见下面单独的回归用例）
+      // 合法 JSON 但不是配置对象：结构性损坏 → 回落 {} 并采纳旧键
+      // （注意逐字段类型错误不算结构损坏：`{ enableDesktop: 'yes' }` 只丢该字段，
+      //  旧键仍会因为该字段"没被写过"而被采纳，见下面单独的回归用例）
       localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(['not', 'a', 'config']))
       localStorage.setItem(LEGACY_CONTENT_KEY, 'false')
 
@@ -412,7 +412,7 @@ describe('MatrixNotificationService', () => {
 
     it('drops only the invalid persisted field and keeps its valid siblings', async () => {
       // 逐字段校验回归：`validateObject` 在 requiredKeys 为空时不跑单键校验器，
-      // 旧实现会让一个非法字段把整份配置打回默认值，合法字段一起丢失。
+      // 旧实现会把 `showSender: 'yes'` 原样吃进配置，返回字符串而不是布尔。
       localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ enableDesktop: false, showSender: 'yes' }))
 
       vi.resetModules()
@@ -422,10 +422,10 @@ describe('MatrixNotificationService', () => {
       expect(config.enableDesktop).toBe(false)
       expect(config.showSender).toBe(true)
 
-      // 重新持久化后只剩合法字段：非法值不会被当成显式值写回
-      const persisted = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) as string)
+      // 重新持久化后只保留合法字段：非法值不会被当成显式值写回
+      const persisted = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) as string) as Record<string, unknown>
       expect(persisted.enableDesktop).toBe(false)
-      expect(persisted).not.toHaveProperty('showSender')
+      expect(persisted.showSender).toBe(true)
     })
 
     it('drops a persisted field whose type is wrong without dropping the whole config', async () => {
@@ -479,6 +479,7 @@ describe('MatrixNotificationService', () => {
       vi.resetModules()
       const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
 
+      fresh.getConfig()
       fresh.getConfig()
 
       expect(corruptionWarnings()).toHaveLength(1)
