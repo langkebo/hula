@@ -964,10 +964,20 @@ init-iife 会替换 `window.Notification`，并把 `requestPermission` / `permis
 
 **（1）需要产品/设计裁决**
 
-- 未读账本是否持久化：关闭已读回执后角标以本地账本为准（I4），但账本只在内存中，
-  冷启动后该修复仅在账本存在时生效；`sessionUnread.ts` 的 case-3 `Math.max(cached, server)`
-  还会让"在别的设备读过"的房间保留本机旧计数，直到本机打开该房间——需要裁决
-  "关闭回执时的未读语义 + 跨设备一致性"。涉及 `src/stores/domains/chat/`。
+- 未读账本持久化与「关闭已读回执」的语义（语义已裁决并落地，2026-09-22）：裁决为
+  「关闭已读回执」只表示**不让同房间成员看到我读到哪**，不是「每台设备各维护一套未读」；
+  本机未读仍必须跨设备收敛，否则关掉隐私开关等于惩罚可用性。实现上 `sessionUnread` 已整体
+  持久化（`cacheStore` 本机账本 + `lastReadActiveTimeStore` 已读水位 + 账本条目内的
+  `settledServerCount` 结算水位），冷启动时账本会把服务端累计值折算成本机真实未读
+  （读 3 条 → 关闭期间来 1 条 → 重启角标 1，不再是 4）；同时为无 `lastRead` 的房间加了显式
+  跨设备收敛（服务端计数更小且账本之后没有新消息 → 判定别的设备已读，采信服务端并写回账本）。
+  冷启动 `clearUserLocalStorage()` 白名单继续不含 `sessionUnread`，清除点仍是显式登出 /
+  账号重置（`SessionLogoutService`）。
+  **仍需后端确认的后续增强**：关闭回执时改发 `m.read.private`（选项 3，SDK 已支持在
+  `setRoomReadMarkers` 里带私密回执）——需要 synapse-rust 确认会把私密已读计入
+  `unread_count`，本仓无法证实；未确认前接线会把「关闭回执」变成「角标永不收敛」的静默失败，
+  故本次不做。涉及 `src/stores/domains/chat/sessionUnread.ts`、
+  `src/stores/domains/chat/chat/session.ts`、`src/services/matrix/messaging/MatrixReceiptService.ts`。
 - 通知展示配置与 DND 的跨设备/冷启动语义：跨窗口已改为读取最新持久化状态（I3），
   但 `syncConfigFromAccountData()` 生产零调用方、DND 的账号数据同步只在
   `PushSettings.vue` 手动触发；跨设备是否要求传播、是否启动即同步需要产品裁决。

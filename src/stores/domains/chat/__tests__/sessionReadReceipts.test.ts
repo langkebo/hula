@@ -185,14 +185,14 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
   })
 
   /**
-   * 回归守门（Task 2b 评审补修 1）：未读缓存不得跨重启把角标顶回来。
+   * 跨设备收敛（本用例在账本整体持久化后改写，结论不变：角标 0）。
    *
-   * apply 的「情况 3」在没有 lastRead 记录时用 Math.max(cached, serverCount) 兜底。
-   * 若 cacheStore 也被持久化，一个本客户端从未打开过的房间会把旧缓存带到重启后：
-   * 用户在别的设备读完了消息、服务端 unread_count 已归零，本机却仍按旧缓存把角标写回。
-   * 持久化只需覆盖 lastReadActiveTimeStore（apply 情况 1 依赖它），缓存必须留在内存里。
+   * 旧版本靠「cacheStore 不持久化」保证这里归零（旧 cache 跨重启不存在）。
+   * 账本整体持久化后，归零的理由改为收敛规则：服务端计数比账本更小、且账本之后没有
+   * 新消息（activeTime 未前移）时，判定为别的设备已经读过，采信服务端并把账本写回 0。
+   * 「关闭已读回执」只表示不让同房间成员看到我读到哪，不代表每台设备各维护一套未读。
    */
-  it('冷启动后，无 lastRead 记录的房间不会被持久化的旧缓存顶回角标', async () => {
+  it('冷启动后，无 lastRead 记录的房间在别的设备已读完时收敛为 0 并写回账本', async () => {
     localStorage.clear()
 
     const bootPersistedPinia = () => {
@@ -208,6 +208,8 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
     getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 5, activeTime: 100 })])
     await first.getSessionList()
     expect(first.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(5)
+    // 账本记 5（证明下面归零靠的是收敛规则，而不是「缓存没被持久化」）
+    expect(useSessionUnreadStore().cacheStore['@me:matrix.test']?.[ROOM_ID]?.count).toBe(5)
     await nextTick()
 
     // 重启：期间用户在别的设备读完了该房间，服务端 unread_count 归零且没有新消息
@@ -217,6 +219,124 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
     await restarted.getSessionList()
 
     expect(restarted.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(0)
+    expect(useSessionUnreadStore().cacheStore['@me:matrix.test']?.[ROOM_ID]?.count).toBe(0)
+  })
+
+  /**
+   * 跨设备收敛（同进程）：本机从未打开过该房间（无 lastRead），旧账本记 3。
+   * 用户在别的设备读完，服务端 unread_count 归零且没有新消息：角标必须收敛为 0，
+   * 且账本一起写回 0，否则每轮会话列表重建都会用旧账本把角标顶回来。
+   */
+  it('关闭已读回执 + 同一进程内被别的设备读完：角标收敛为 0 且账本写回 0', async () => {
+    useSettingStore().setSendReadReceiptsEnabled(false)
+
+    const store = useSessionStore()
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 3, activeTime: 100 })])
+    await store.getSessionList()
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(3)
+
+    // 别的设备读完：服务端归零，activeTime 未变
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 0, activeTime: 100 })])
+    await store.getSessionList()
+
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(0)
+    expect(useSessionUnreadStore().cacheStore['@me:matrix.test']?.[ROOM_ID]?.count).toBe(0)
+  })
+
+  /**
+   * 收敛的反向保护：服务端计数更小但房间已有更新的消息时，不得用更小的服务端值
+   * 覆盖账本（那会把本机还没读的真实未读一起删掉）。
+   */
+  it('关闭已读回执 + 服务端计数更小但已有新消息：不误删真实未读', async () => {
+    useSettingStore().setSendReadReceiptsEnabled(false)
+
+    const store = useSessionStore()
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 10, activeTime: 100 })])
+    await store.getSessionList()
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(10)
+
+    // 本机又收到一条（走真实增量路径：界面 + 账本 +1），账本写入时间被刷新
+    store.setUnreadCount(ROOM_ID, 11)
+
+    // 服务端因别的设备已读只剩 3；activeTime 晚于账本写入时间 = 已有一条账本没记到的消息
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 3, activeTime: Date.now() + 1000 })])
+    await store.getSessionList()
+
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(11)
+  })
+
+  /**
+   * 核心回归（D1 缺口 a）：关闭已读回执时，关闭期间到达的新消息在冷启动后必须折算为
+   * 本地增量，而不是服务端累计值。
+   *
+   * 链路：读 3 条（lastRead=100、账本清零、把「已结算 3 条」记入账本）→ 关闭应用 →
+   * 期间来了 1 条（服务端累计 4、activeTime 200）→ 重启。服务端收不到 m.read，
+   * 累计值里仍包含已读的 3 条，只有持久化的账本水位才能把它折算成 1。
+   * 修复前 cacheStore 不跨重启，apply 的「情况 2」退回服务端累计 → 角标 4。
+   */
+  it('关闭已读回执 + 关闭期间到达新消息：冷启动后角标是本地增量而不是服务端累计', async () => {
+    localStorage.clear()
+
+    const bootPersistedPinia = () => {
+      const pinia = createPinia()
+      pinia.use(createPersistedState({ auto: false }))
+      createApp({}).use(pinia)
+      setActivePinia(pinia)
+    }
+
+    // 第一次启动：读 3 条
+    bootPersistedPinia()
+    useSettingStore().setSendReadReceiptsEnabled(false)
+    const first = useSessionStore()
+    first.addSession(makeSession({ unreadCount: 3, activeTime: 100 }))
+    await first.markSessionRead(ROOM_ID)
+    expect(first.getSession(ROOM_ID)?.unreadCount).toBe(0)
+    await nextTick()
+
+    // 重启：关闭期间来了 1 条新消息
+    bootPersistedPinia()
+    useSettingStore().setSendReadReceiptsEnabled(false)
+    const restarted = useSessionStore()
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 4, activeTime: 200 })])
+    await restarted.getSessionList()
+
+    expect(restarted.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(1)
+    expect(useSessionUnreadStore().cacheStore['@me:matrix.test']?.[ROOM_ID]?.count).toBe(1)
+  })
+
+  /**
+   * 核心回归（D1 缺口 a 的第二种形态）：本机已经记过的本地增量必须跨重启存活。
+   *
+   * 读 3 条 → 应用运行中又来 1 条（账本记 1）→ 重启。服务端因为没有 m.read 仍报累计 4；
+   * 修复前 cacheStore 不持久化，「情况 2」退回服务端累计 → 角标 4。
+   */
+  it('关闭已读回执 + 重启后账本里的本地增量仍优先于服务端累计', async () => {
+    localStorage.clear()
+
+    const bootPersistedPinia = () => {
+      const pinia = createPinia()
+      pinia.use(createPersistedState({ auto: false }))
+      createApp({}).use(pinia)
+      setActivePinia(pinia)
+    }
+
+    bootPersistedPinia()
+    useSettingStore().setSendReadReceiptsEnabled(false)
+    const first = useSessionStore()
+    first.addSession(makeSession({ unreadCount: 3, activeTime: 100 }))
+    await first.markSessionRead(ROOM_ID)
+    first.setUnreadCount(ROOM_ID, 1)
+    expect(first.getSession(ROOM_ID)?.unreadCount).toBe(1)
+    await nextTick()
+
+    bootPersistedPinia()
+    useSettingStore().setSendReadReceiptsEnabled(false)
+    const restarted = useSessionStore()
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 4, activeTime: 200 })])
+    await restarted.getSessionList()
+
+    expect(restarted.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(1)
+    expect(useSessionUnreadStore().cacheStore['@me:matrix.test']?.[ROOM_ID]?.count).toBe(1)
   })
 
   /**
