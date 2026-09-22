@@ -17,7 +17,7 @@ Task 0-5 执行并合并评审后，发现本方案有几处前提不成立。�
 | 守门判据 | 任何设置窗口外的字面量都算消费方 | **另一个设置 UI 不算消费方**。原判据把 `tjg-debug-mode` 等只有设置 UI 读写的 key 判成 live（假阴性）；修正后基线 **22 → 34**（诚实值） |
 | 完成判据 | "死配置从 X 降到 Y" | **行为测试才是验收标准**，守门计数只是早期预警。搬走写入会让计数下降但功能依旧不生效 |
 | 守门已知局限 | — | 只守**数量**，不守**键名**："修好一个死配置、同时引入一个新死配置"（数量不变）不会被发现；它也无法判断"消费方"是否真的在运行时消费。**不要把它当作功能已生效的证据** |
-| Task 6 | 9 个开关落 Pinia + `shouldNotifyEvent` 读 `config.events` | 两者无桥接，会再制造"存了不生效"；且没有可挂分发点、关键词会有第三份来源。**必须先引入统一决策门**并选定唯一来源 |
+| Task 6 | 9 个开关落 Pinia + `shouldNotifyEvent` 读 `config.events` | 控制器实测（用户确认）：9 个 key 里 6 个**没有通知分发点**（好友请求/接受有监听零 emitter；空间/线程无事件），接线只会再造"存了不生效"。改为**缩减为 3 个 key**：删 6 个开关的 UI，线程提及落 `config.events.thread_mention`，关键词列表与开关落现有 `notificationDisplayPreferences`，统一决策门接 `messageMutations` 真实发送路径 |
 | Task 7 | 新增 `config.dnd` + `HH:mm`，强制点在 `showNotification()` | DND 已有 account data `io.hula.dnd_settings` 与 `tjg-push-dnd*` 时间戳两份表示；且 `showNotification()` **零生产调用方**。改为扩展现有 `syncDnd*` + 挂到真实发送路径 |
 | Task 8 | 强制 `mode: 'blocklist'` | `shouldRejectInvite` 在 blocklist 分支提前 return、绕过 `allowStrangers`（默认 false）→ **一屏蔽某人就关掉"仅联系人"基线**（隐私回归）。改为保留 mode，让 blocklist 与 mode 正交 |
 | Task 11 | "`tjg-debug-mode` 已有 4 处消费方" | 实测 **0 处**（只有设置 UI 读写）。改为先找真实 devtools 路径，找不到就按 YAGNI 删 UI |
@@ -97,7 +97,7 @@ Task 0-5 执行并合并评审后，发现本方案有几处前提不成立。�
 
 **P1 - 零消费方（写入后被自己读回显示，运行时无人使用）**
 
-- `NotificationSettings.vue`：`tjg-friend-accept-notify`、`tjg-friend-request-notify`、`tjg-keyword-notification`、`tjg-keywords`、`tjg-space-member-change-notify`、`tjg-space-new-room-notify`、`tjg-thread-mention-notify`、`tjg-thread-participate-notify`、`tjg-thread-reply-notify`（共 9 个）
+- `NotificationSettings.vue`：`tjg-friend-accept-notify`、`tjg-friend-request-notify`、`tjg-keyword-notification`、`tjg-keywords`、`tjg-space-member-change-notify`、`tjg-space-new-room-notify`、`tjg-thread-mention-notify`、`tjg-thread-participate-notify`、`tjg-thread-reply-notify`（共 9 个；其中 6 个无分发点，Task 6 按 YAGNI 删 UI，只接线线程提及与关键词 3 个 key）
 - `PushSettings.vue`：`tjg-push-dnd`、`tjg-push-dnd-start`、`tjg-push-dnd-end`
 - `BlockedUsersSection.vue`：`tjg-blocked-users`
 - `AppearanceSettings.vue`：`tjg-font-size`、`tjg-bubble-style`
@@ -144,8 +144,8 @@ Task 0-5 执行并合并评审后，发现本方案有几处前提不成立。�
 - `src/views/settingsWindow/tabs/PushSettings.vue` — DND 改走 store
 - `src/views/settingsWindow/tabs/sections/BlockedUsersSection.vue` — 改走 `invitePolicy`
 - `src/views/settingsWindow/tabs/sections/InviteListsSection.vue` — **删除**（被 `InvitePermissionPanel` 取代）
-- `src/views/settingsWindow/tabs/AppearanceSettings.vue` — 字体缩放接线
-- `src/views/settingsWindow/tabs/LabsSettings.vue` — devtools 接线
+- `src/views/settingsWindow/tabs/AppearanceSettings.vue` — 字体缩放 + 气泡样式接线
+- `src/views/settingsWindow/tabs/LabsSettings.vue` — **删除**（devtools 等零消费方；真实入口是 Tauri 原生菜单）
 - `src/views/settingsWindow/tabs/EncryptionSettings.vue` — 备份开关改读真实状态
 - `src/views/settingsWindow/tabs/VoiceVideoSettings.vue` — 设备偏好接线
 - `src/views/settingsWindow/tabs/SecuritySettings.vue` — 移除 `InviteListsSection`
@@ -965,7 +965,7 @@ tjg-notification-config 里，且 showNotification() 只读后者。
 
 **Interfaces:**
 - Consumes: `matrixNotificationService.buildNotificationDisplay(title, body): { title: string; body: string | undefined }`
-  以及 `shouldNotifyEvent(kind)`（Task 6/7 引入）、`isWithinDndWindow()`（Task 7 引入）。
+  以及 `shouldNotifyMessage(...)`（Task 6 引入）、`isWithinDndWindow()`（Task 7 引入）。
   若这些尚未实现，先只做本任务需要的最小部分并在报告中说明顺序调整。
 - Produces: 桌面通知统一经 `matrixNotificationService` 发出，从而让 `enableDesktop` /
   `showMessageContent` / `showSender` 三个开关真实生效。
@@ -1022,176 +1022,158 @@ Task 4 之后配置仍不生效：showNotification()/buildNotificationDisplay()
 
 ---
 
-## Task 6: 通知/线程/空间细粒度开关接线（P1，9 个 key）
+## Task 6: 通知细粒度开关接线（P1，缩减为 3 个 key）
+
+> **控制器裁决（2026-09-21，用户确认；见顶部「执行中修正」）**
+> 实测桌面端**唯一**的系统通知发送点是 `messageMutations.ts:254`（`atUidList` 提及路径）。
+> 原「9 个 key」里 6 个**没有任何可挂的分发点**，接线只会再造一次"存了不生效"：
+> - `friend_request` / `friend_accept`：`useWsEventHandler.ts:255/260` 有监听，但
+>   `friendRequestReceived` / `friendRequestAccepted` 全仓零 emitter（只有枚举定义与这两处监听）；
+> - `space_new_room` / `space_member_change` / `thread_reply` / `thread_participate`：
+>   既无 mitt 事件也无 sync 监听，`thread_reply`/`thread_participate` 所需的父消息作者、
+>   线程参与关系也不在消息体里。
+>
+> 按 YAGNI 删除这 6 个开关的桌面 UI 与 key，提交信息写明依据（将来补齐通知发射路径再恢复）。
+> 本任务只接线能真正生效的 3 个 key：`tjg-thread-mention-notify`、`tjg-keyword-notification`、
+> `tjg-keywords`。
+
+**唯一偏好来源（裁决，不得两边都写）**
+- 「线程中提及」开关落 `MatrixNotificationService` 的 `tjg-notification-config.events`
+  （与 `enableDesktop`/`showSender` 同一来源、同一发送路径读取）。
+- 关键词列表与「关键词通知」开关落**现有** `notificationDisplayPreferences`
+  （`tjg-notification-display-preferences`），新增 `keywordNotifications: boolean`（默认 `false`）。
+  **禁止**新增 `config.keywords`，**禁止**继续把 `tjg-keywords` 当存储源。
+- 旧 key 一次性迁移进各自的新家，幂等：新值已存在时以新值为准。
 
 **Files:**
-- Modify: `src/stores/domains/settings/settings-helpers.ts`（补 9 个字段 + legacy key）
-- Modify: `src/stores/domains/settings/setting.ts`
+- New: `src/services/matrix/notifications/notificationDecision.ts`
+- New: `src/services/matrix/notifications/__tests__/notificationDecision.test.ts`
+- Modify: `src/services/matrix/notifications/MatrixNotificationService.ts`
+- Modify: `src/services/matrix/notifications/notificationDisplayPreferences.ts`
+- Modify: `src/services/matrix/notifications/__tests__/notificationDisplayPreferences.test.ts`
+- Modify: `src/services/matrix/notifications/__tests__/MatrixNotificationService.test.ts`
+- Modify: `src/services/matrix/MatrixEventService.ts`（消息携带线程信息）
+- Modify: `src/types/message.ts`
+- Modify: `src/stores/domains/chat/chat/messageMutations.ts`
+- Modify: `src/stores/domains/chat/chat/__tests__/message.test.ts`（真实发送路径行为测试）
 - Modify: `src/views/settingsWindow/tabs/NotificationSettings.vue`
-- Modify: `src/services/matrix/notifications/MatrixNotificationService.ts`（新增按类型判定）
-- Test: `src/services/matrix/notifications/__tests__/MatrixNotificationService.test.ts`（扩充）
-
-**⚠️ 整分支评审核实：原设计会再制造一次"存了不生效"，必须先补三件事**
-
-1. **两个偏好存储之间没有桥。** 步骤 4 把好友/空间/线程开关放进 Pinia
-   （`notifyFriendRequest` 等），而 `shouldNotifyEvent(kind)` 读的是
-   `config.events`——只有 `setEventNotificationEnabled` 会写它。
-   两者之间没有映射，开关就是**又一次"存了但没人读"**，
-   而且守门会变绿（因为写入已经离开了 `settingsWindow`）。
-   **必须选定唯一来源**：要么这 9 个开关全部落进 `config.events`（推荐，这样和服务读取一致），
-   要么全部落进 store 并由 `shouldNotifyEvent` 读 store。不要两边都写。
-2. **没有可挂的分发点。** 现状：好友请求只刷新角标（`useWsEventHandler.ts:255`），
-   唯一的系统通知路径是 `atUplIdList` 提及分支
-   （`messageMutations.ts`，Task 5 已接入服务）。所以本任务必须先引入**一个统一决策门**
-   （建议 `shouldNotify({ kind, roomId, isActive, isMention, body })`），
-   并让 Task 5 的发送路径调用它，把裸的 `atUidList` 判断替换掉。
-   「按类型关闭」才有地方生效。
-3. **关键词会有第三份来源。** `notificationDisplayPreferences.ts` 已有
-   `parseNotificationKeywords` / `matchesNotificationKeyword`，且
-   `buildNotificationDisplay` 用的就是它。不要再往 `config.keywords` 加一份；
-   关键词开关应接现有的那套（桌面写 `tjg-keywords` 而服务读
-   `tjg-notification-display-preferences` 也属于这里的统一问题）。
+- Modify: `src/views/settingsWindow/tabs/__tests__/NotificationSettings.test.ts`
+- Modify: `scripts/settings-wiring-baseline.json`（按实测 `--update`）
 
 **Interfaces:**
-- Produces: 统一的 `shouldNotify(...)` 决策门（位置由你选定并在报告中说明），
-  以及 `matrixNotificationService.shouldNotifyEvent(kind: NotificationEventKind): boolean`，其中
-  `type NotificationEventKind = 'friend_request' | 'friend_accept' | 'space_new_room' | 'space_member_change' | 'thread_reply' | 'thread_mention' | 'thread_participate' | 'keyword'`
-- Produces: store getters `notifyFriendRequest`、`notifyFriendAccept`、`notifySpaceNewRoom`、`notifySpaceMemberChange`、`notifyThreadReply`、`notifyThreadMention`、`notifyThreadParticipate`、`notifyKeywordEnabled`（均 `boolean`）、`notifyKeywords`（`string[]`）
+- Produces（纯函数，`notificationDecision.ts`，不得依赖 Pinia/localStorage）：
+  ```ts
+  export type NotificationMessageKind = 'mention' | 'thread_mention' | 'keyword'
+  export function classifyNotificationMessage(input: {
+    isMention: boolean
+    isThread: boolean
+  }): NotificationMessageKind
+  export function shouldNotify(
+    input: { isMention: boolean; isThread: boolean; body: string },
+    preferences: {
+      events: Record<string, boolean> | undefined
+      keywordNotifications: boolean
+      keywords: readonly string[]
+    }
+  ): boolean
+  ```
+- Produces（服务）：`matrixNotificationService.shouldNotifyMessage(input)`——组装
+  `this.config.events` + `loadNotificationDisplayPreferences()` 后委托纯函数。
+- Produces（服务）：`setEventNotificationEnabled(kind: 'thread_mention', enabled: boolean): void`
+  写入 `config.events`。原方案的 8 元 `NotificationEventKind` 联合类型**作废**：没有分发点的
+  kind 不进入类型，避免留下"有类型无消费方"的空壳。
+- Produces（展示偏好）：`NotificationDisplayPreferences.keywordNotifications: boolean`（默认 `false`），
+  并纳入 `normalizeNotificationDisplayPreferences` / `loadNotificationDisplayPreferences` /
+  `saveNotificationDisplayPreferences`。
+- Produces（消息体）：`MessageBody.threadId?: string`，由
+  `MatrixEventService.convertEventToMessage` 从 `content['m.relates_to']`（`rel_type === 'm.thread'`）填充。
 
-- [ ] **Step 1: 写失败测试（服务侧判定）**
+**行为语义（每条都要有行为测试；默认行为必须与现状完全一致）**
 
-在 `MatrixNotificationService.test.ts` 追加：
+| 消息 | 开关 | 是否发系统通知 |
+| --- | --- | --- |
+| 普通提及（非线程） | 任意 | 是（现状，无对应开关） |
+| 线程内提及 | `events.thread_mention` 缺省 / `true` | 是 |
+| 线程内提及 | `events.thread_mention === false` | 否 |
+| 非提及、正文命中关键词 | `keywordNotifications === false`（默认） | 否（默认行为不变） |
+| 非提及、正文命中关键词 | `keywordNotifications === true` | 是 |
+| 非提及、正文不命中 | 任意 | 否 |
+| 自己发送的消息（即使命中关键词） | 任意 | 否 |
 
-```ts
-describe('shouldNotifyEvent', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    matrixNotificationService.updateConfig({})
-  })
+- [ ] **Step 1: 写失败测试（真实发送路径，RED）**
 
-  it('默认全部允许', () => {
-    expect(matrixNotificationService.shouldNotifyEvent('friend_request')).toBe(true)
-    expect(matrixNotificationService.shouldNotifyEvent('thread_reply')).toBe(true)
-  })
+在 `src/stores/domains/chat/chat/__tests__/message.test.ts` 的
+`describe('desktop notification wiring')` 内追加行为测试，走同一条真实路径
+`store.pushMsg(...)` 并断言 `sendNotification`，沿用 Task 5 已有的
+`sendNotification` mock、`matrixNotificationService.updateConfig(...)` 写入方式与
+`groupUserRef`（`@/stores/domains/chat/group`）打桩。
 
-  it('按类型独立开关', () => {
-    matrixNotificationService.setEventNotificationEnabled('friend_request', false)
-    expect(matrixNotificationService.shouldNotifyEvent('friend_request')).toBe(false)
-    expect(matrixNotificationService.shouldNotifyEvent('friend_accept')).toBe(true)
-  })
+**测试隔离要求**：`updateConfig` 是合并语义，`beforeEach` 必须同时复位
+`events: {}` 与关键词展示偏好（`localStorage.clear()` 或写回默认值），否则用例间互相污染。
 
-  it('关键词为空时不命中', () => {
-    expect(matrixNotificationService.matchesNotificationKeyword('deploy 完成')).toBe(false)
-  })
-
-  it('关键词命中且开关打开时为真', () => {
-    matrixNotificationService.setNotificationKeywords(['deploy'])
-    expect(matrixNotificationService.matchesNotificationKeyword('the deploy is green')).toBe(true)
-  })
-
-  it('关键词开关关闭时不命中', () => {
-    matrixNotificationService.setNotificationKeywords(['deploy'])
-    matrixNotificationService.setEventNotificationEnabled('keyword', false)
-    expect(matrixNotificationService.matchesNotificationKeyword('the deploy is green')).toBe(false)
-  })
-})
-```
+同时补齐单元测试：
+- `notificationDecision.test.ts`：`classifyNotificationMessage` 三种归类 + `shouldNotify` 上表逐行；
+- `notificationDisplayPreferences.test.ts`：`keywordNotifications` 默认 `false`、normalize 容错、
+  旧 `tjg-keyword-notification`/`tjg-keywords` 迁移且幂等（新值优先）；
+- `MatrixNotificationService.test.ts`：`events` 的校验与持久化（写入后重建服务实例仍生效）；
+- `MatrixEventService` 侧：`m.relates_to.rel_type === 'm.thread'` 时 `MessageBody.threadId` 被填充。
 
 - [ ] **Step 2: 跑测试确认失败**
 
 ```bash
-npx vitest run src/services/matrix/notifications/__tests__/MatrixNotificationService.test.ts
+npx vitest run src/stores/domains/chat/chat/__tests__/message.test.ts src/services/matrix/notifications
 ```
 
-Expected: FAIL —— `shouldNotifyEvent` 不是函数。
+Expected: FAIL——线程开关与关键词两组断言与现状相反（只认 `atUidList` 的旧逻辑），
+纯函数与 `threadId` 尚不存在。
 
-- [ ] **Step 3: 服务实现**
+- [ ] **Step 3: 实现**
 
-在 `MatrixNotificationService.ts` 里：
+1) 新建 `notificationDecision.ts`。关键词匹配**必须**复用
+   `notificationDisplayPreferences.matchesNotificationKeyword`，不得再写第三份匹配逻辑。
+2) `src/types/message.ts` 的 `MessageBody` 增 `threadId?: string`；
+   `MatrixEventService.convertEventToMessage` 从 `content['m.relates_to']` 读取
+   `rel_type === 'm.thread'` 时填充。若发现其他入站转换点（如 `room/sync.ts` 的增量 timeline
+   分支）也喂给 `pushMsg`，同样处理，或在报告中明确说明为何不需要。
+3) `NotificationConfig` 增 `events: Record<string, boolean>`：补 `loadConfig` 的
+   `isValidNotificationConfig` 校验与默认值（缺省 `{}`；字段缺省视为开启），
+   并加 `setEventNotificationEnabled(kind: 'thread_mention', enabled: boolean)`。
+4) 加 `matrixNotificationService.shouldNotifyMessage(input)`：读 `this.config.events` +
+   `loadNotificationDisplayPreferences()`（含关键词）后委托 `shouldNotify`。
+5) `messageMutations.ts` 第 240 行那段裸 `atUidList` 判断改为调用决策门：
+   先排除自己发送的消息，再取 `isMention` / `isThread`（`body.threadId`）。
+   标题/图标来源优先 `groupStore.getUserInfo`，取不到时退化为 `msg.fromUser`，
+   **不得**因为拿不到群缓存而让关键词通知静默失效。
+6) 迁移（幂等，新值优先）：
+   - 旧 `tjg-thread-mention-notify`（`'true'`/`'false'` 字符串）→ `config.events.thread_mention`；
+   - 旧 `tjg-keyword-notification` → `keywordNotifications`；
+   - 旧 `tjg-keywords`（JSON 数组，需容错）→ `keywords`（复用 `parseNotificationKeywords`）。
+7) `NotificationSettings.vue`：删除 6 个开关（线程回复/参与、空间新房间/成员变动、
+   好友请求/接受）的模板、ref、handler 与 localStorage 读写；保留的「线程中提及」
+   「关键词通知」「关键词列表」改走上述唯一来源。若 `pnpm check` 的 i18n 守卫因未引用文案
+   报错，一并清理并跑 `pnpm gen:i18n`（`src/typings/i18n.d.ts` 是生成文件）。
 
-1）`NotificationConfig` 增字段（全部 `boolean`，`keyword` 另加 `keywords: string[]`）：
-
-```ts
-interface NotificationConfig {
-  enableDesktop: boolean
-  enableSound: boolean
-  enableVibrate: boolean
-  showPreview: boolean
-  showSender: boolean
-  showMessageContent: boolean
-  events: Record<string, boolean>
-  keywords: string[]
-}
-```
-
-2）默认值与 `isValidNotificationConfig` 校验里补 `events`（对象）与 `keywords`（数组）。
-
-3）新增方法：
-
-```ts
-  shouldNotifyEvent(kind: string): boolean {
-    return this.config.events?.[kind] !== false
-  }
-
-  setEventNotificationEnabled(kind: string, enabled: boolean): void {
-    this.updateConfig({ events: { ...(this.config.events ?? {}), [kind]: enabled } })
-  }
-
-  setNotificationKeywords(keywords: string[]): void {
-    this.updateConfig({ keywords: keywords.map((k) => k.trim()).filter(Boolean) })
-  }
-
-  matchesNotificationKeyword(text: string): boolean {
-    if (!this.shouldNotifyEvent('keyword')) return false
-    const keywords = this.config.keywords ?? []
-    if (keywords.length === 0 || !text) return false
-    const haystack = text.toLowerCase()
-    return keywords.some((k) => k.length > 0 && haystack.includes(k.toLowerCase()))
-  }
-```
-
-- [ ] **Step 4: 组件与 store 接线**
-
-`NotificationSettings.vue`：9 处 `localStorage` 改为经 store（`notifyFriendRequest` 等）或经服务（个性化通知走 store，通知内容类走服务）。线程/空间/好友类属偏好，统一走 store；关键词类走 `matrixNotificationService.setNotificationKeywords` + `setEventNotificationEnabled('keyword', ...)`。
-
-`settings-helpers.ts` 补 9 个字段默认值 `true`（`notifyKeywords` 默认 `[]`）与 legacy key：
-
-```ts
-  notifyFriendRequest: 'tjg-friend-request-notify',
-  notifyFriendAccept: 'tjg-friend-accept-notify',
-  notifySpaceNewRoom: 'tjg-space-new-room-notify',
-  notifySpaceMemberChange: 'tjg-space-member-change-notify',
-  notifyThreadReply: 'tjg-thread-reply-notify',
-  notifyThreadMention: 'tjg-thread-mention-notify',
-  notifyThreadParticipate: 'tjg-thread-participate-notify',
-  notifyKeywordEnabled: 'tjg-keyword-notification',
-  notifyKeywords: 'tjg-keywords'
-```
-
-`setting.ts` 补对应 getter/setter，并在 `migrateLegacyPreferenceSettings()` 里迁移（`notifyKeywords` 需 `JSON.parse`，参照该文件里已有的数组型 preference 迁移写法）。
-
-**接线消费方**：在 `MatrixNotificationService` 或事件分发处，对 `im.hula.friend_request`、`im.hula.widget_event` 等事件类型调用 `shouldNotifyEvent(kind)`，为假时不展示通知。关键词命中时在通知前加标记（复用 Task 4 之前已存在的 `notificationDisplayPreferences.materializeNotificationContent` 的 `highlighted`）。
-
-- [ ] **Step 5: 跑测试与守门**
+- [ ] **Step 4: 跑测试与守门**
 
 ```bash
-npx vitest run src/services/matrix/notifications src/views/settingsWindow/tabs
+npx vitest run src/stores/domains/chat/chat/__tests__/message.test.ts src/services/matrix/notifications src/views/settingsWindow/tabs
 node scripts/check-settings-wiring.mjs --update && node scripts/check-settings-wiring.mjs
+pnpm vue-tsc --noEmit
 ```
 
-Expected: PASS；并运行 `node scripts/check-settings-wiring.mjs --update` 按实测收紧基线。
+Expected: PASS；基线按实测 `--update` 收紧。**计数下降不是验收依据**——验收是 Step 1
+行为测试的 RED→GREEN 证据（Task 2/3/5/2b 同一标准）。
 
-- [ ] **Step 6: 提交**
+- [ ] **Step 5: 提交**
 
 ```bash
-git add src/stores/domains/settings src/services/matrix/notifications src/views/settingsWindow/tabs/NotificationSettings.vue src/views/settingsWindow/tabs/__tests__ scripts/settings-wiring-baseline.json
-git commit -m "fix(ui): 通知细粒度开关接入偏好与服务判定
+git add src/services/matrix src/types/message.ts src/stores/domains/chat scripts/settings-wiring-baseline.json src/views/settingsWindow/tabs
+git commit -m "fix(ui): 线程提及与关键词通知接入真实发送路径
 
-好友请求/接受、空间新房间/成员变动、线程回复/提及/参与、关键词开关
-这 9 个开关此前只写 localStorage，无任何消费方。
-
-改为：类型开关走 store 偏好并在事件分发处生效；
-关键词走 MatrixNotificationService 的 events/keywords 配置。"
+9 个细粒度开关里 6 个（好友请求/接受、空间新房间/成员变动、线程回复/参与）
+没有任何通知分发点，按 YAGNI 删除 UI 与 key。剩余 3 个真正接线：
+线程中提及走 config.events.thread_mention，关键词列表与开关走已有的
+notificationDisplayPreferences，统一决策门在 messageMutations 发送路径生效。"
 ```
 
 ---
@@ -1199,132 +1181,121 @@ git commit -m "fix(ui): 通知细粒度开关接入偏好与服务判定
 ## Task 7: 勿扰时段接线（P1，3 个 key）
 
 **Files:**
-- Modify: `src/views/settingsWindow/tabs/PushSettings.vue`
+- New: `src/services/matrix/notifications/dndWindow.ts`（纯函数）
+- New: `src/services/matrix/notifications/__tests__/dndWindow.test.ts`
 - Modify: `src/services/matrix/notifications/MatrixNotificationService.ts`
-- Test: `src/services/matrix/notifications/__tests__/MatrixNotificationService.test.ts`（扩充）
+- Modify: `src/services/matrix/notifications/__tests__/MatrixNotificationService.test.ts`
+- Modify: `src/services/matrix/notifications/notificationDecision.ts`（决策门加 DND 维度）
+- Modify: `src/services/matrix/notifications/__tests__/notificationDecision.test.ts`
+- Modify: `src/views/settingsWindow/tabs/PushSettings.vue`
+- Modify: `src/views/settingsWindow/tabs/__tests__/PushSettings.test.ts`
+- Modify: `src/stores/domains/chat/chat/__tests__/message.test.ts`（真实发送路径行为测试）
+- Modify: `scripts/settings-wiring-baseline.json`（按实测 `--update`）
 
-**⚠️ 整分支评审核实：DND 已有两份真实存储，且本任务原来的强制点是死代码**
+**⚠️ 整分支评审核实 + 控制器裁决：DND 已有两份真实存储，原 Step 3 会造第三份，且原强制点是死代码**
 
 现状（务必先读）：
-- account data `io.hula.dnd_settings` 已经通过
-  `MatrixNotificationService.syncDndToAccountData` / `syncDndFromAccountData`（`MatrixNotificationService.ts:133-173`）实现；
-- `PushSettings.vue` 的 `tjg-push-dnd*` 也已存在，且用的是**时间戳（数字）**而不是 `'HH:mm'`。
+- account data `io.hula.dnd_settings` = `{ enabled, startTime: number | null, endTime: number | null }`，
+  已由 `MatrixNotificationService.syncDndToAccountData` / `syncDndFromAccountData` 实现
+  （`MatrixNotificationService.ts:202` / `:216`）；
+- `PushSettings.vue` 的 `dndEnabled` / `dndStartTime` / `dndEndTime` 用 `n-time-picker`，
+  **值就是时间戳（number）**，并镜像进 `tjg-push-dnd` / `tjg-push-dnd-start` / `tjg-push-dnd-end`
+  （`PushSettings.vue:294-316` 读、`:448-469` 写）；
+- `syncConfigFromAccountData()` 生产零调用方，所以**不能**假设账号数据在启动时就绪；
+- `showNotification()` 零生产调用方（Task 4/5 评审结论）。
 
-原方案要新增 `config.dnd` + `'HH:mm'` 字符串，等于给同一状态做**第三份表示**，
-且把强制点放在 `showNotification()` 里——而整分支评审核实该方法
-**零生产调用方**，所以那样写运行时什么都不改。
-
-本任务的正确做法：
-1. **扩展现有的 `syncDnd*` 路径**，不要新增并行的 `config.dnd`；
-   时间格式沿用既有的时间戳表示（那是 PushSettings 已经在写的东西），
-   或在同一处做一次性迁移并说明；
-2. 强制点必须挂在**真实发送路径**上——即 Task 5 建立的那条
-   （`messageMutations.ts` 经 `MatrixNotificationService` 发送）。若 Task 6 已抽出
-   统一的 `shouldNotify(...)` 决策门，就把 DND 加进那个门，而不是加进 `showNotification()`；
-3. 若第 1、2 步任一处发现既有实现已足够，则本任务应缩为"接线 + 测试"而不是重写。
+控制器裁决（绑定）：
+1. **单一表示**：沿用既有的时间戳表示与 `syncDnd*` 路径。**禁止**新增 `config.dnd`，
+   **禁止**引入 `'HH:mm'` 字符串表示（那会是第三份）。
+2. **服务成为 DND 状态的唯一所有者**：服务新增私有 DND 缓存，在构造时从既有 localStorage 镜像
+   同步水合（保证不打开设置窗口也能生效），`syncDndFromAccountData()` 返回数据时刷新缓存；
+   新增 `getDndSettings()` / `setDndSettings({ enabled, startTime, endTime })`，后者是唯一写入点
+   （更新缓存 + localStorage 镜像 + 复用 `syncDndToAccountData`）。`PushSettings.vue` 不再直接读写
+   `tjg-push-dnd*`。
+3. **强制点**：并入 Task 6 的决策门（`messageMutations.ts` 真实发送路径上的
+   `shouldNotify` / `shouldNotifyMessage`）。勿扰生效时**抑制全部系统通知（含普通提及）**；
+   `enabled` 默认 `false`，所以默认行为不变。
+4. **边界**：`startTime` / `endTime` 任一为 `null` 时视为不在勿扰（配置不完整就不抑制）；
+   起止同一时刻视为全天勿扰；跨午夜按 `[start, end)` 处理。
 
 **Interfaces:**
-- Consumes: Task 6 抽出的通知决策门（`shouldNotify(...)`）与既有的 `syncDnd*` 方法
-- Produces: `matrixNotificationService.isWithinDndWindow(now?: Date): boolean`；`setDndWindow(start: string, end: string, enabled: boolean): void`（`start`/`end` 为 `'HH:mm'`）
+- Consumes: Task 6 的决策门 `shouldNotify(input, preferences)` / `shouldNotifyMessage(input)`，
+  以及既有的 `syncDndToAccountData` / `syncDndFromAccountData`
+- Produces（纯函数 `dndWindow.ts`）：
+  ```ts
+  export interface DndWindow {
+    enabled: boolean
+    startTime: number | null
+    endTime: number | null
+  }
+  /** 判断 now（本地时区）是否落在 [startTime, endTime) 内；enabled 为假或任一端为 null 时返回 false。 */
+  export function isWithinDndWindow(window: DndWindow, now: Date): boolean
+  ```
+- Produces（服务）：`getDndSettings(): DndWindow`；`setDndSettings(window: DndWindow): void`；
+  `isWithinDndWindow(now?: Date): boolean`
+- Produces（决策门）：`NotificationDecisionPreferences` 增 `dndActive: boolean`；
+  `dndActive === true` 时 `shouldNotify` 一律返回 `false`
 
 - [ ] **Step 1: 写失败测试**
 
-```ts
-describe('勿扰时段', () => {
-  beforeEach(() => localStorage.clear())
+纯函数（`dndWindow.test.ts`）：未启用 / 任一端为 `null` → `false`；跨午夜命中与不命中；
+同日区间命中与不命中；起止相同视为全天。
 
-  it('未启用时永远不在勿扰中', () => {
-    matrixNotificationService.setDndWindow('22:00', '08:00', false)
-    expect(matrixNotificationService.isWithinDndWindow(new Date('2026-01-01T23:00:00'))).toBe(false)
-  })
+决策门（`notificationDecision.test.ts`）：`dndActive: true` 时普通提及也返回 `false`；
+`dndActive: false` 时保持 Task 6 语义逐行不变。
 
-  it('跨午夜区间命中', () => {
-    matrixNotificationService.setDndWindow('22:00', '08:00', true)
-    expect(matrixNotificationService.isWithinDndWindow(new Date('2026-01-01T23:00:00'))).toBe(true)
-    expect(matrixNotificationService.isWithinDndWindow(new Date('2026-01-01T12:00:00'))).toBe(false)
-  })
+真实发送路径（`message.test.ts` 的 `describe('desktop notification wiring')`）：
+先造一个**当前时刻一定落在其中**的窗口（起止都取当前时间 → 全天勿扰），`pushMsg` 一条普通提及，
+断言 `sendNotification` **未被调用**；再 `enabled: false` 重跑，断言被调用。
+这条用例必须显式控制"当前时间"：优先给纯函数 / 服务方法注入 `now`（`isWithinDndWindow(now)`），
+或用 `vi.setSystemTime`，不要依赖真实时钟。
 
-  it('同日内区间命中', () => {
-    matrixNotificationService.setDndWindow('09:00', '18:00', true)
-    expect(matrixNotificationService.isWithinDndWindow(new Date('2026-01-01T10:00:00'))).toBe(true)
-    expect(matrixNotificationService.isWithinDndWindow(new Date('2026-01-01T20:00:00'))).toBe(false)
-  })
-
-  it('起止相同视为全天勿扰', () => {
-    matrixNotificationService.setDndWindow('00:00', '00:00', true)
-    expect(matrixNotificationService.isWithinDndWindow(new Date('2026-01-01T13:00:00'))).toBe(true)
-  })
-})
-```
+服务（`MatrixNotificationService.test.ts`）：`setDndSettings` 同时更新缓存与 localStorage 镜像；
+重建服务实例后 `getDndSettings()` 读到同一份（证明构造时水合，不依赖打开设置窗口）。
 
 - [ ] **Step 2: 跑测试确认失败**
 
 ```bash
-npx vitest run src/services/matrix/notifications/__tests__/MatrixNotificationService.test.ts
+npx vitest run src/services/matrix/notifications src/stores/domains/chat/chat/__tests__/message.test.ts
 ```
+Expected: FAIL —— `setDndSettings` / `isWithinDndWindow` 不是函数，决策门没有 `dndActive` 维度。
 
-Expected: FAIL —— `setDndWindow` 不是函数。
+- [ ] **Step 3: 实现**
 
-- [ ] **Step 3: 实现纯函数 + 服务方法**
+1) 新建 `dndWindow.ts` 纯函数：把 `startTime` / `endTime` 时间戳转成当地时间的分钟数
+   （`new Date(ts).getHours() * 60 + getMinutes()`），再按 `[start, end)` 判定；`start === end`
+   视为全天。
+2) 服务：加 DND 缓存 + 构造时从 `tjg-push-dnd*` 水合 + `getDndSettings()` / `setDndSettings()` /
+   `isWithinDndWindow(now?)`。`setDndSettings` 写 localStorage 镜像并调用现有的
+   `syncDndToAccountData`（不要复制它的实现）。`syncDndFromAccountData()` 命中时更新缓存。
+3) 决策门：`NotificationDecisionPreferences` 增 `dndActive`；`shouldNotify` 第一行
+   `if (preferences.dndActive) return false`；`shouldNotifyMessage` 组装
+   `dndActive: this.isWithinDndWindow()`。
+4) `PushSettings.vue`：初始化改用 `matrixNotificationService.getDndSettings()`，写入改用
+   `setDndSettings(...)`，删除三处直接 `localStorage` 读写；已有的 `n-time-picker`
+   时间戳绑定保持不变。
 
-新建 `src/services/matrix/notifications/dndWindow.ts`：
-
-```ts
-/** 判断 now 是否落在 [start, end) 的勿扰时段内；start === end 视为全天。 */
-export function isWithinDndWindow(start: string, end: string, enabled: boolean, now: Date): boolean {
-  if (!enabled) return false
-  const toMinutes = (v: string): number | null => {
-    const m = /^(\d{1,2}):(\d{2})$/.exec(v.trim())
-    if (!m) return null
-    const h = Number(m[1])
-    const min = Number(m[2])
-    if (h > 23 || min > 59) return null
-    return h * 60 + min
-  }
-  const from = toMinutes(start)
-  const to = toMinutes(end)
-  if (from === null || to === null) return false
-  if (from === to) return true
-  const current = now.getHours() * 60 + now.getMinutes()
-  return from < to ? current >= from && current < to : current >= from || current < to
-}
-```
-
-服务里 `NotificationConfig` 增 `dnd: { enabled: boolean; start: string; end: string }`，并加：
-
-```ts
-  setDndWindow(start: string, end: string, enabled: boolean): void {
-    this.updateConfig({ dnd: { enabled, start, end } })
-  }
-
-  isWithinDndWindow(now: Date = new Date()): boolean {
-    const dnd = this.config.dnd ?? { enabled: false, start: '22:00', end: '08:00' }
-    return isWithinDndWindow(dnd.start, dnd.end, dnd.enabled, now)
-  }
-```
-
-在 `showNotification()` 开头加：`if (this.isWithinDndWindow()) return`。
-
-- [ ] **Step 4: 组件接线 + 守门**
-
-`PushSettings.vue` 的 `tjg-push-dnd*` 三处改为 `matrixNotificationService.getConfig().dnd` 初始化 + `setDndWindow` 写入。
+- [ ] **Step 4: 跑测试与守门**
 
 ```bash
-npx vitest run src/services/matrix/notifications src/views/settingsWindow/tabs
+npx vitest run src/services/matrix/notifications src/stores/domains/chat/chat/__tests__/message.test.ts src/views/settingsWindow/tabs
 node scripts/check-settings-wiring.mjs --update && node scripts/check-settings-wiring.mjs
+npx vue-tsc --noEmit
 ```
 
-Expected: 基线按实测收紧（`--update`）。
+Expected: PASS；基线按实测 `--update` 收紧。**计数下降不是验收依据**——验收是 Step 1
+真实发送路径行为测试的 RED→GREEN。
 
 - [ ] **Step 5: 提交**
 
 ```bash
-git add src/services/matrix/notifications src/views/settingsWindow/tabs/PushSettings.vue scripts/settings-wiring-baseline.json
-git commit -m "fix(ui): 勿扰时段接入通知服务
+git add src/services/matrix/notifications src/views/settingsWindow/tabs scripts/settings-wiring-baseline.json
+git commit -m "fix(ui): 勿扰时段接入真实通知路径
 
-tjg-push-dnd / -start / -end 此前只写不读。新增 dndWindow 纯函数
-（含跨午夜与起止相同的边界）并接到 showNotification()，
-勿扰窗口内不弹通知。"
+tjg-push-dnd / -start / -end 此前只写不读。沿用既有时间戳表示与 syncDnd* 路径，
+把 DND 状态收归 MatrixNotificationService（构造时从本地镜像水合），
+并以纯函数 isWithinDndWindow 并入真实发送路径上的通知决策门：
+勿扰窗口内抑制全部系统通知。"
 ```
 
 ---
@@ -1490,222 +1461,134 @@ localStorage、InvitePermissionPanel 写 account data，两者互不知情。
 
 ---
 
-## Task 9: 三个"别名写入"键落地（P1，Task 0 评审发现）
+## Task 9: 三个"别名写入"孤立 key 的落地（P1，Task 0 评审发现；控制器裁决缩减）
 
-**背景**：首版审计用 `localStorage.setItem('literal')` 匹配，漏掉了 `const STORAGE_KEY` 别名写入的
-4 个位置。Task 0 的守门补上该形态后暴露出 3 个此前无人负责的死配置：
-
-| key | 写入于 | 实际存的内容 | 正确归属 |
-| --- | --- | --- | --- |
-| `tjg-sidebar-settings` | `SidebarSettings.vue:191` | 11 个侧边栏**纯 UI 偏好**（显示哪些区块、头像、图标模式、排序、条目尺寸） | 本机偏好 → store；**并补消费方** |
-| `tjg-friend-settings` | `FriendsSettings.vue:212` | `allowFriendRequests`、`autoAcceptFriends`、`friendRequestMessage` | **账号级隐私策略** → account data |
-| `tjg-burn-after-read-settings` | `BurnAfterReadSettings.vue:231` | `autoBurnRead`、`burnNotification`、`burnSound`（+ 遗留 `burnRooms`） | 本机偏好 → store |
-
-**依赖**：`tjg-friend-settings` 与 Task 8 同属邀请/私聊策略面，故排在 Task 8 之后。
-它的 `allowFriendRequests`/`autoAcceptFriends` 应并入 `InvitePolicy`（Task 8 已把 `BlockedUsersSection`
-统一到该结构），而不是新造一份配置。
+> **控制器裁决（2026-09-21，用户确认）**：实测三处共 17 个开关在前端与 `src-tauri`
+> **全仓零消费方**，而方案原定的归宿（store / account data）**不会创造消费方**——照原样搬迁
+> 只会让死配置计数下降、功能照样不生效（HANDOFF 明确禁止把计数当完成依据）。裁决：
+>
+> 1. **`tjg-sidebar-settings`（11 字段）→ 删除整个 SidebarSettings 面板。**
+>    实测：`src/layout/left/components/ActionList.vue` 只消费已有 store 的 `showMode`
+>    （`:358`），`SidebarSettings.vue` 的 `showIconsOnly` 与它重复；其余 10 个字段
+>    （showSpaces/showRooms/showDirectMessages/showFriends/showThreads/showAvatar/
+>     showCollapsed/showDrag/sortBy/itemSize）没有任何组件读取。方案 Step 1 的 YAGNI 分支
+>    已授权删除；`showMode` 是既有真实设置，**不要动它**。
+> 2. **`tjg-burn-after-read-settings` → 删除 3 个偏好开关与房间列表区块，blob 整个移除。**
+>    实测 `autoBurnRead`/`burnNotification`/`burnSound` 零消费方；`burnRooms` 列表只有这个
+>    blob 一个写入源（没有任何路径往列表里加房间，所以永远显示空），房间级开关的真实入口是
+>    聊天页 `ChatFooter` 的 `toggle-burn-after-read`。全局开关/时长/倒计时（已经在 settingStore
+>    与 burn 服务上）与统计区块**保留**。
+> 3. **`tjg-friend-settings`（3 字段）→ 保留 UI，迁入 `InvitePolicy`。**
+>    用户确认 synapse-rust 后端会读 account data `im.hula.invite_policy` 里的好友请求字段，
+>    因此这是唯一"搬进去就真生效"的一个。**注意字段类型**：现有 UI 的 `friendRequestMessage`
+>    实际是 **boolean**（locale `setting.friends.requests.message_required_label = 好友请求需要附言`，
+>    绑的是 `n-switch`），方案原文写的 `friendRequestMessage: string` 是误读——改为
+>    `requireFriendRequestMessage: boolean`。
 
 **Files:**
-- Modify: `src/stores/domains/settings/settings-helpers.ts`（侧边栏 11 字段 + 阅后即焚 3 字段 + legacy key）
-- Modify: `src/stores/domains/settings/setting.ts`（getter/setter + 迁移）
-- Modify: `src/views/settingsWindow/tabs/SidebarSettings.vue`
+- Delete: `src/views/settingsWindow/tabs/SidebarSettings.vue`
+- Delete: `src/views/settingsWindow/tabs/__tests__/SidebarSettings.test.ts`
+- Modify: `src/stores/domains/settings/settingsSchema.ts`（去掉 `sidebar` tab：类型联合、tab 定义、label 映射）
+- Modify: `src/views/settingsWindow/tabComponentLoaders.ts`（去掉 `sidebar` loader）
 - Modify: `src/views/settingsWindow/tabs/BurnAfterReadSettings.vue`
+- Modify: `src/views/settingsWindow/tabs/__tests__/BurnAfterReadSettings.test.ts`
+- Modify: `src/services/matrix/user/invitePolicy.ts`（`InvitePolicy` + 归一化 + 默认值）
+- Modify: `src/services/matrix/user/__tests__/invitePolicy.test.ts`
 - Modify: `src/views/settingsWindow/tabs/FriendsSettings.vue`
-- Modify: `src/services/matrix/user/invitePolicy.ts`（`InvitePolicy` 增好友请求字段）
-- Modify: 侧边栏渲染组件（消费方，Step 1 定位）
-- Test: 对应 `__tests__`
+- Modify: `src/views/settingsWindow/tabs/__tests__/FriendsSettings.test.ts`
+- Modify: `scripts/settings-wiring-baseline.json`（按实测 `--update`）
 
 **Interfaces:**
-- Produces: store getters/setters `sidebarShowSpaces`、`sidebarShowRooms`、`sidebarShowDirectMessages`、
-  `sidebarShowFriends`、`sidebarShowThreads`、`sidebarShowAvatar`、`sidebarShowCollapsed`、
-  `sidebarShowDrag`、`sidebarIconsOnly`、`sidebarSortBy`、`sidebarItemSize`（同名 `set*`）；
-  `autoBurnRead`、`burnNotification`、`burnSound`（同名 `set*`）
-- Produces: `InvitePolicy` 增 `allowFriendRequests: boolean`、`autoAcceptFriends: boolean`、`friendRequestMessage: string`
-- Consumes: Task 0 的 `pnpm check:settings-wiring`（本任务后基线从 28 降到 **25**）
+- Produces: `InvitePolicy` 增 `allowFriendRequests: boolean`（默认 `true`）、
+  `autoAcceptFriends: boolean`（默认 `false`）、`requireFriendRequestMessage: boolean`（默认 `true`）；
+  `normalizeInvitePolicy` 对三者做 `boolean` 校验（非法输入回落默认），`DEFAULT_INVITE_POLICY` 补默认值。
+- Consumes: Task 8 建立的 InvitePolicy 写入模式——**read-modify-write**：写前重新
+  `await matrixAccountService.getInvitePolicy()`，只覆盖本组件拥有的字段，避免与
+  `BlockedUsersSection` / `InvitePermissionPanel` 互相覆盖（Task 8 评审的 Important #2 就是这个问题）。
 
-- [ ] **Step 1: 先定位侧边栏消费方（决定「接线」还是「删除」）**
+**验收口径（重要）**：好友请求三字段的**消费方在 synapse-rust 后端**，本仓库前端无法给出
+"生效"的行为测试。因此本任务对 friend 部分只能验证：不再写 `tjg-friend-settings`、写入
+`im.hula.invite_policy`、且不覆盖同策略里的 `blocklist`/`mode` 等其它字段。报告中必须
+明确写出这一限制，**不得**把它当作"功能已生效"的证据。
 
-```bash
-grep -rn "showSpaces\|showRooms\|showDirectMessages\|iconsOnly\|itemSize" src/layout src/components --include=*.vue --include=*.ts | grep -v settingsWindow | head -20
-```
+- [ ] **Step 1: 删除 SidebarSettings 面板**
 
-- 若侧边栏组件已有同名局部状态 → 把它改为读 store（这是让 11 个开关真实生效的关键），
-  并在报告里写明是哪些组件。
-- 若侧边栏**完全没有**这些概念（即设置项凭空创造了一套不存在的 UI 配置）→ 按 YAGNI
-  **删除整个 SidebarSettings 面板**并在提交信息里说明依据。不要保留一堆永远不生效的开关。
-
-这一步的结论必须在报告里明确写出，不要含糊。
-
-- [ ] **Step 2: 写失败测试**
-
-```ts
-// src/views/settingsWindow/tabs/__tests__/FriendsSettings.localPolicy.test.ts
-import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import FriendsSettings from '../FriendsSettings.vue'
-
-const { getPolicyMock, setPolicyMock } = vi.hoisted(() => ({
-  getPolicyMock: vi.fn(),
-  setPolicyMock: vi.fn()
-}))
-
-vi.mock('@/services/matrix', () => ({
-  matrixAccountService: {
-    getInvitePolicy: () => getPolicyMock(),
-    setInvitePolicy: (...a: unknown[]) => setPolicyMock(...a)
-  }
-}))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (k: string) => k }) }))
-
-describe('FriendsSettings 好友请求策略', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    localStorage.clear()
-    getPolicyMock.mockResolvedValue({
-      mode: 'allow_all', blocklist: [], allowlist: [], allowStrangers: false,
-      contacts: [], allowFriendRequests: true, autoAcceptFriends: false, friendRequestMessage: ''
-    })
-    setPolicyMock.mockResolvedValue(true)
-  })
-
-  it('从 account data 读好友请求策略，而不是 localStorage', async () => {
-    mount(FriendsSettings)
-    await flushPromises()
-    expect(getPolicyMock).toHaveBeenCalled()
-    expect(localStorage.getItem('tjg-friend-settings')).toBeNull()
-  })
-
-  it('关闭「允许好友请求」写回 account data', async () => {
-    const wrapper = mount(FriendsSettings)
-    await flushPromises()
-    await (wrapper.vm as unknown as { saveSettings: () => Promise<void> }).saveSettings()
-    expect(setPolicyMock).toHaveBeenCalledWith(
-      expect.objectContaining({ allowFriendRequests: expect.any(Boolean) })
-    )
-  })
-})
-```
-
-```ts
-// src/views/settingsWindow/tabs/__tests__/BurnAfterReadSettings.localPrefs.test.ts
-import { flushPromises, mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import BurnAfterReadSettings from '../BurnAfterReadSettings.vue'
-
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (k: string) => k }) }))
-
-describe('BurnAfterReadSettings 本机偏好', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-  })
-
-  it('不再写 tjg-burn-after-read-settings 这个孤立 blob', async () => {
-    mount(BurnAfterReadSettings)
-    await flushPromises()
-    expect(localStorage.getItem('tjg-burn-after-read-settings')).toBeNull()
-  })
-
-  it('autoBurnRead 落到 store 偏好', async () => {
-    const store = useSettingStore()
-    const wrapper = mount(BurnAfterReadSettings)
-    await flushPromises()
-    ;(wrapper.vm as unknown as { saveSettings: () => void }).saveSettings()
-    expect(store.preferences.autoBurnRead).toBeDefined()
-  })
-})
-```
-
-- [ ] **Step 3: 跑测试确认失败**
+删除组件与测试；从 `settingsSchema.ts` 去掉 `sidebar`（类型联合第 8 行附近、tab 定义第 60 行附近、
+label 映射第 79 行附近）；从 `tabComponentLoaders.ts:12` 去掉 loader。然后：
 
 ```bash
-npx vitest run src/views/settingsWindow/tabs/__tests__/FriendsSettings.localPolicy.test.ts src/views/settingsWindow/tabs/__tests__/BurnAfterReadSettings.localPrefs.test.ts
+grep -rn "SidebarSettings\|'sidebar'" src/views/settingsWindow src/stores/domains/settings --include=*.ts --include=*.vue | grep -v __tests__
 ```
 
-Expected: FAIL —— `tjg-friend-settings` / `tjg-burn-after-read-settings` 仍被写入。
+Expected: 除 `settings-sidebar` 这类 CSS/aria 文案外无残留。若发现还有页面在用这些字段，
+停下报告 NEEDS_CONTEXT，不要硬删。
 
-- [ ] **Step 4: `InvitePolicy` 扩展好友请求字段**
+- [ ] **Step 2: 删除 BurnAfterReadSettings 的 3 个偏好开关与房间列表区块**
 
-在 `src/services/matrix/user/invitePolicy.ts` 的 `InvitePolicy` 接口与
-`normalizeInvitePolicy` / `DEFAULT_INVITE_POLICY` 里补三个字段：
+`BurnAfterReadSettings.vue`：删除 `autoBurnRead` / `burnNotification` / `burnSound` 三个 ref、
+模板开关、`handleToggle` 里对它们的写入，以及整个"房间列表"区块与 `BurnRoom` / `burnRooms` /
+`handleEditRoomBurn` / `handleSaveRoomBurn` / `handleEnableRoomBurn` / `handleDisableRoomBurn`、
+`STORAGE_KEY` 与 `tjg-burn-after-read-settings` 的全部读写。保留：全局阅后即焚开关、默认时长、
+`showBurnCountdown`（已走 settingStore）、统计区块、以及它们调用的 burn 服务方法。
 
-```ts
-  /** 是否允许他人向我发送好友请求。默认允许。 */
-  allowFriendRequests: boolean
-  /** 是否自动接受好友请求。默认关闭（自动接受陌生人好友是高风险默认）。 */
-  autoAcceptFriends: boolean
-  /** 好友请求附带的默认问候语。 */
-  friendRequestMessage: string
-```
+- [ ] **Step 3: 写失败测试**
 
-默认值：`allowFriendRequests: true`、`autoAcceptFriends: false`、`friendRequestMessage: ''`。
-归一化时 `string` 字段做类型校验与 `trim`。补齐对应单测（默认值、非法输入回落、round-trip）。
+`FriendsSettings`（新 describe，或扩充现有 `FriendsSettings.test.ts`）：
+- mock `@/services/matrix` 的 `matrixAccountService.getInvitePolicy` / `setInvitePolicy`；
+- 断言挂载后调用 `getInvitePolicy()`、且 `localStorage.getItem('tjg-friend-settings')` 为 `null`；
+- 切换「允许接收好友请求」后 `setInvitePolicy` 收到 `allowFriendRequests: false`，且
+  **`blocklist`/`mode`/`allowlist`/`allowStrangers` 保持原值**（证明 read-modify-write）；
+- 写回前重新读取：先让第一次 `getInvitePolicy()` 返回 A，写回前再返回含新 `blocklist` 的 B，
+  断言最终写入包含 B 的 `blocklist`。
 
-- [ ] **Step 5: store 补侧边栏 11 字段 + 阅后即焚 3 字段**
+`BurnAfterReadSettings`：断言挂载/切换后不再写 `tjg-burn-after-read-settings`，且
+`autoBurnRead`/`burnNotification`/`burnSound` 不再出现在组件里。
 
-`settings-helpers.ts` 的 `getDefaultPreferenceSettings()` 补：
+`invitePolicy.test.ts`：三个新字段的默认值、非法输入回落、round-trip。
 
-```ts
-  sidebarShowSpaces: true,
-  sidebarShowRooms: true,
-  sidebarShowDirectMessages: true,
-  sidebarShowFriends: true,
-  sidebarShowThreads: true,
-  sidebarShowAvatar: true,
-  sidebarShowCollapsed: true,
-  sidebarShowDrag: true,
-  sidebarIconsOnly: false,
-  sidebarSortBy: 'activity' as 'activity' | 'alphabetical' | 'manual',
-  sidebarItemSize: 'medium' as 'small' | 'medium' | 'large',
-  autoBurnRead: false,
-  burnNotification: true,
-  burnSound: true
-```
-
-`LEGACY_PREFERENCE_STORAGE_KEYS` 补（用于一次性迁移，然后 `removeItem`）：
-
-```ts
-  sidebarSettings: 'tjg-sidebar-settings',
-  burnAfterReadSettings: 'tjg-burn-after-read-settings'
-```
-
-注意这两个是 **JSON blob**，迁移时要 `JSON.parse` 并按字段逐个读取，
-参照 `setting.ts` 里已有的数组/对象型偏好迁移写法；解析失败要 `catch` 并保持默认值。
-
-- [ ] **Step 6: 组件改走 store / account data**
-
-- `SidebarSettings.vue`：删除 `STORAGE_KEY` 与 `localStorage`，11 个 `ref` 换成 store computed；
-  若 Step 1 判定该面板应删除，则改为删除面板并在 `SettingsSidebar`/路由里摘掉入口。
-- `BurnAfterReadSettings.vue`：三个偏好字段走 store；**不再写那个包含 `burnRooms` 的 blob**
-  （房间级阅后即焚状态应来自服务端，不应混在本机偏好里）。
-- `FriendsSettings.vue`：`loadSettings`/`saveSettings` 改为经 `matrixAccountService.getInvitePolicy()` /
-  `setInvitePolicy({ ...policy, allowFriendRequests, autoAcceptFriends, friendRequestMessage })`；
-  保留既有的好友分组/请求加载逻辑不动。
-
-- [ ] **Step 7: 跑测试与守门**
+- [ ] **Step 4: 跑测试确认失败**
 
 ```bash
-npx vitest run src/views/settingsWindow src/stores/domains/settings src/services/matrix/user
-pnpm check:ratchet
+npx vitest run src/views/settingsWindow/tabs/__tests__/FriendsSettings.test.ts src/views/settingsWindow/tabs/__tests__/BurnAfterReadSettings.test.ts src/services/matrix/user/__tests__/invitePolicy.test.ts
+```
+
+Expected: FAIL —— `tjg-friend-settings` 仍被写入 / 组件仍含三个偏好字段 / `InvitePolicy` 尚无新字段。
+
+- [ ] **Step 5: 实现**
+
+1) `invitePolicy.ts`：`InvitePolicy` 增三字段 + `normalizeInvitePolicy` 校验 + `DEFAULT_INVITE_POLICY`
+   默认值；补 JSDoc 说明消费方在后端 account data。
+2) `FriendsSettings.vue`：`loadSettings`/`saveSettings` 改走
+   `matrixAccountService.getInvitePolicy()` / `setInvitePolicy({ ...policy, allowFriendRequests,
+   autoAcceptFriends, requireFriendRequestMessage })`，写法必须是写前重新 get 的 read-modify-write；
+   删除 `STORAGE_KEY` 与 `tjg-friend-settings` 读写；保留好友分组/请求加载逻辑不动。
+3) 变量名同步：模板里的 `friendRequestMessage` 改名为 `requireFriendRequestMessage`（语义不变）。
+
+- [ ] **Step 6: 跑测试与守门**
+
+```bash
+npx vitest run src/views/settingsWindow src/services/matrix/user src/stores/domains/settings
+npx vue-tsc --noEmit
 node scripts/check-settings-wiring.mjs --update && node scripts/check-settings-wiring.mjs
 ```
 
-Expected: PASS；并运行 `node scripts/check-settings-wiring.mjs --update` 按实测收紧基线（三个别名键消失）。
+Expected: PASS；基线按实测 `--update` 收紧（`tjg-sidebar-settings` + `tjg-friend-settings` +
+`tjg-burn-after-read-settings` 三个别名 key 消失）。**计数下降不是验收依据**——验收是 Step 3
+行为测试的 RED→GREEN。
 
-- [ ] **Step 8: 提交**
+- [ ] **Step 7: 提交（按三块分成 3 个提交）**
 
 ```bash
-git add -A src/stores/domains/settings src/views/settingsWindow src/services/matrix/user scripts/settings-wiring-baseline.json
-git commit -m "fix(ui): 三个别名写入的孤立配置落地到 store 与账号策略
+git add src/views/settingsWindow src/stores/domains/settings src/services/matrix/user scripts/settings-wiring-baseline.json
+git commit -m "fix(ui): 三个别名写入的孤立配置按 YAGNI 与账号策略分别落地
 
 Task 0 的守门补上 const 别名形态后暴露出三个此前无人负责的死配置：
-- tjg-sidebar-settings：11 个侧边栏 UI 偏好，侧边栏从未读取
-- tjg-friend-settings：好友请求策略，属账号级，应在 account data
-- tjg-burn-after-read-settings：阅后即焚本机偏好，且混入了房间级状态
-
-分别落到 store 偏好、InvitePolicy、store 偏好；房间级状态不再混在本机 blob 里。"
+- tjg-sidebar-settings：11 个侧边栏 UI 偏好无任何消费方（showIconsOnly 与既有
+  store showMode 重复），删除整个面板
+- tjg-burn-after-read-settings：3 个偏好无消费方，房间列表只有本 blob 一个写入源，
+  删除；房间级开关的真实入口在聊天页
+- tjg-friend-settings：好友请求策略属账号级，迁入 InvitePolicy account data
+  （后端读取；friendRequestMessage 实为 boolean，改名 requireFriendRequestMessage）"
 ```
 
 ---
@@ -1873,152 +1756,124 @@ tjg-font-size 此前写入后无人读取——字号 token 是硬编码 px，
 
 ---
 
-## Task 11: 气泡样式与 devtools 落地（P1）
+## Task 11: 气泡样式落地 + 删除装饰性 Labs 面板（P1）
+
+> **控制器裁决（2026-09-21，用户确认）**
+>
+> **气泡样式**：现有 UI 是「圆角 / 方形」布尔开关（`AppearanceSettings.vue:66` 的 `n-switch`，
+> `checked=圆角`、`unchecked=方形`，写 `tjg-bubble-style = 'true'|'false'`）。方案原文假设的
+> `['default','compact','bubble']` 三档 enum 与这个 UI 无关，**不采用**。按现有语义落地：
+> 两个值 `rounded` / `square`，保留开关与文案。
+>
+> **Labs 面板**：实测 `tjg-enable-devtools` / `tjg-debug-mode` / `tjg-show-performance` /
+> `tjg-lab-features` 在前端与 `src-tauri` **全仓零运行时消费方**（只有桌面/移动设置 UI 自读自写）；
+> experimental feature 开关（threads/spaces/voip/widget/custom-status/...）同样只写不读。
+> 唯一真实的 devtools 入口是 Tauri 原生菜单（`src-tauri/src/desktops/menu.rs:151-157` 的
+> `w.open_devtools()`），由 Rust 侧菜单触发、不读任何偏好，前端也没有运行时可调的
+> devtools API（`@tauri-apps/api/webview` 只有创建期 `devtools?: boolean` 选项），**接不上**。
+> 因此按 YAGNI **删除整个桌面 Labs tab**；mobile 的平行 Labs 面板不在本轮范围，记入 ledger。
 
 **Files:**
-- Create: `src/styles/css/bubble-styles.css`（或追加到既有样式入口）
-- Modify: `src/views/settingsWindow/tabs/AppearanceSettings.vue`
-- Modify: `src/views/settingsWindow/tabs/LabsSettings.vue`
-- Test: `src/views/settingsWindow/tabs/__tests__/AppearanceSettings.test.ts`、`.../LabsSettings.devTools.test.ts`
+- Create: `src/utils/bubbleStyle.ts`
 - Create: `src/utils/__tests__/bubbleStyle.test.ts`
+- Modify: `src/styles/scss/render-message.scss`（气泡圆角消费点；类名为 `.bubble` / `.bubble-oneself`）
+- Modify: `src/views/settingsWindow/tabs/AppearanceSettings.vue`
+- Modify: `src/views/settingsWindow/tabs/__tests__/AppearanceSettings.test.ts`
+- Modify: `src/App.vue`（启动时应用已保存的气泡样式）
+- Delete: `src/views/settingsWindow/tabs/LabsSettings.vue`
+- Delete: `src/views/settingsWindow/tabs/__tests__/LabsSettings.test.ts`
+- Modify: `src/stores/domains/settings/settingsSchema.ts`（去掉 `labs` tab：类型联合、tab 定义、label 映射）
+- Modify: `src/views/settingsWindow/tabComponentLoaders.ts`（去掉 `labs` loader）
+- Modify: 相关设置 schema/shell 测试（`settingsSchema.test.ts`、`useSettingsShell.test.ts` 等，按报错逐个修）
+- Modify: `scripts/settings-wiring-baseline.json`（按实测 `--update`）
 
 **Interfaces:**
-- Produces: `BUBBLE_STYLES = ['default', 'compact', 'bubble'] as const`、`applyBubbleStyle(style: string, root?: HTMLElement): void`、`loadBubbleStyle()` / `saveBubbleStyle()`
+- Produces（`src/utils/bubbleStyle.ts`）：
+  ```ts
+  export const BUBBLE_STYLES = ['rounded', 'square'] as const
+  export type BubbleStyle = (typeof BUBBLE_STYLES)[number]
+  export function normalizeBubbleStyle(value: unknown): BubbleStyle
+  export function applyBubbleStyle(style: string, root?: HTMLElement): void   // 写 data-bubble-style
+  export function loadBubbleStyle(storage?): BubbleStyle
+  export function saveBubbleStyle(style: string, storage?): void
+  ```
+  `normalizeBubbleStyle` 除两个 enum 值外，还要把旧表示 `'true'` → `rounded`、`'false'` → `square`
+  （旧 UI 写的就是字符串 `'true'`/`'false'`），非法值回落 `rounded`。
 
 - [ ] **Step 1: 写失败测试**
 
-```ts
-// src/utils/__tests__/bubbleStyle.test.ts
-import { beforeEach, describe, expect, it } from 'vitest'
-import { applyBubbleStyle, BUBBLE_STYLES, loadBubbleStyle, saveBubbleStyle } from '../bubbleStyle'
+`src/utils/__tests__/bubbleStyle.test.ts`：
+- `applyBubbleStyle('square')` → `document.documentElement.getAttribute('data-bubble-style') === 'square'`；
+- 未知值 → `'rounded'`；
+- 旧值迁移：`'true'` → `rounded`、`'false'` → `square`（`normalizeBubbleStyle` 直接断言）；
+- `saveBubbleStyle` / `loadBubbleStyle` 往返一致，损坏/缺失回落 `rounded`；
+- `BUBBLE_STYLES` 恰为 `['rounded','square']`。
 
-describe('bubbleStyle', () => {
-  beforeEach(() => {
-    document.documentElement.removeAttribute('data-bubble-style')
-    localStorage.clear()
-  })
-  it('应用已知样式到 data 属性', () => {
-    applyBubbleStyle('compact')
-    expect(document.documentElement.getAttribute('data-bubble-style')).toBe('compact')
-  })
-  it('未知样式回落 default', () => {
-    applyBubbleStyle('nope')
-    expect(document.documentElement.getAttribute('data-bubble-style')).toBe('default')
-  })
-  it('往返一致', () => {
-    saveBubbleStyle('bubble')
-    expect(loadBubbleStyle()).toBe('bubble')
-  })
-  it('默认 default', () => expect(loadBubbleStyle()).toBe('default'))
-  it('档位固定为三个', () => expect([...BUBBLE_STYLES]).toEqual(['default', 'compact', 'bubble']))
-})
-```
+**链接真的接通了**（Task 10 同一标准）：追加一个从磁盘读 `src/styles/scss/render-message.scss`
+的用例，断言存在 `[data-bubble-style='square']` 且选择器覆盖 `.bubble` 与 `.bubble-oneself`
+的 `border-radius` 覆盖规则。只断言工具函数会写属性是不够的——原缺陷正是"属性写了但没人消费"。
 
 - [ ] **Step 2: 跑测试确认失败**
 
 ```bash
 npx vitest run src/utils/__tests__/bubbleStyle.test.ts
 ```
+Expected: FAIL —— 模块不存在 / scss 里没有 `data-bubble-style` 规则。
 
-Expected: FAIL —— 模块不存在。
+- [ ] **Step 3: 实现气泡样式**
 
-- [ ] **Step 3: 实现 `src/utils/bubbleStyle.ts` + 样式**
+1) 新建 `src/utils/bubbleStyle.ts`（纯函数 + localStorage，`STORAGE_KEY = 'tjg-bubble-style'`，
+   `ROOT_ATTR = 'data-bubble-style'`，错误 catch + logger.warn，参照 `fontScale.ts` 的写法）。
+2) 在 `src/styles/scss/render-message.scss` 里加方形覆盖（默认 `@include bubble` 已是圆角，
+   所以只需覆盖 square；**不得新增硬编码颜色**，圆角值使用既有 token `--tjg-radius-xs`）：
+   ```scss
+   [data-bubble-style='square'] .bubble,
+   [data-bubble-style='square'] .bubble-oneself {
+     border-radius: var(--tjg-radius-xs);
+   }
+   ```
+   注意 `.bubble-oneself` 自身有 `rounded-[12px_4px_12px_12px]` 覆盖，square 规则要能盖过它
+   （必要时提高选择器特异性并在报告中说明）。
+3) `AppearanceSettings.vue`：开关改为 `loadBubbleStyle()` 初始化、`handleBubbleStyleChange` 调
+   `applyBubbleStyle()` + `saveBubbleStyle()`，删除直接读写 `tjg-bubble-style` 的代码；
+   开关的 checked/unchecked 文案与 `rounded`/`square` 对应关系保持不变。
+4) `src/App.vue` 的 `onMounted` 里加 `applyBubbleStyle(loadBubbleStyle())`（与 `applyFontScale` 同区）。
 
-```ts
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('BubbleStyle')
-
-export const BUBBLE_STYLES = ['default', 'compact', 'bubble'] as const
-export type BubbleStyle = (typeof BUBBLE_STYLES)[number]
-
-const STORAGE_KEY = 'tjg-bubble-style'
-const ROOT_ATTR = 'data-bubble-style'
-
-export function normalizeBubbleStyle(value: unknown): BubbleStyle {
-  return typeof value === 'string' && (BUBBLE_STYLES as readonly string[]).includes(value)
-    ? (value as BubbleStyle)
-    : 'default'
-}
-
-export function applyBubbleStyle(style: string, root: HTMLElement = document.documentElement): void {
-  root.setAttribute(ROOT_ATTR, normalizeBubbleStyle(style))
-}
-
-export function loadBubbleStyle(storage: Pick<Storage, 'getItem'> = localStorage): BubbleStyle {
-  try {
-    return normalizeBubbleStyle(storage.getItem(STORAGE_KEY))
-  } catch (err) {
-    logger.warn('读取气泡样式失败:', err)
-    return 'default'
-  }
-}
-
-export function saveBubbleStyle(style: string, storage: Pick<Storage, 'setItem'> = localStorage): void {
-  try {
-    storage.setItem(STORAGE_KEY, normalizeBubbleStyle(style))
-  } catch (err) {
-    logger.warn('保存气泡样式失败:', err)
-  }
-}
-```
-
-样式（用 `--tjg-*` token，不得硬编码颜色）：
-
-```css
-[data-bubble-style='compact'] .chat-message-bubble { padding: 4px 8px; border-radius: var(--tjg-radius-sm); }
-[data-bubble-style='bubble'] .chat-message-bubble { padding: 10px 14px; border-radius: var(--tjg-radius-lg); }
-```
-
-（类名以实际消息气泡类为准；本步先确认消息气泡的根类名再落样式。）
-
-- [ ] **Step 4: devtools 落地**
-
-**⚠️ 整分支评审核实：`tjg-debug-mode` 并没有"4 处消费方"，实际是 0 处。**
-实测全仓（含 `src-tauri`、`e2e`、`scripts`）只有两处设置 UI 在读写它：
-`src/views/settingsWindow/tabs/LabsSettings.vue:174,214` 与
-`src/mobile/views/my/LabsSettings.vue:226,250`（外加各自测试）。
-`tjg-lab-features` / `tjg-show-performance` 同样只有设置 UI 读写。
-
-所以**把 `tjg-enable-devtools` 改写成 `tjg-debug-mode` 是重复 Task 4 的错误**——
-只是把死配置从一个 key 挪到另一个 key，同时让守门计数下降。
-
-本步的正确做法（按顺序）：
+- [ ] **Step 4: 删除桌面 Labs tab**
 
 ```bash
-# 1) 先找真实 devtools 开启逻辑（Tauri 侧或前端侧）
-grep -rn "devtools\|open_devtools\|debug_mode" src-tauri/src --include=*.rs | head
-grep -rn "devtools\|debug" src/utils src/services --include=*.ts | grep -viE "test|logger" | head
+grep -rn "LabsSettings\|'labs'" src/views/settingsWindow src/stores/domains/settings --include=*.ts --include=*.vue | grep -v __tests__
 ```
+删除组件与测试，去掉 `settingsSchema.ts` 的 `labs`（类型联合、tab 定义、label 映射）与
+`tabComponentLoaders.ts` 的 loader，再按编译/测试报错修掉引用 `labs` tab 的 schema/shell 测试。
+Expected: 上述 grep 无残留；`npx vue-tsc --noEmit` 0 错误。
 
-- 若存在真实的 devtools 开启路径 → 把这个开关接到**那条路径**上（该路径读什么就读什么），
-  并删掉 `tjg-enable-devtools`。
-- 若**不存在**任何 devtools 开启路径 → 该开关当前无法生效，按 YAGNI **删掉这个 UI 项**
-  （连同 `tjg-enable-devtools` 与 `tjg-debug-mode` 的设置项），在提交信息里写明依据。
-  不要把死配置搬家。
-
-**不要**在报告里声称"已接入既有开关"而不给出那条开关的**读取点** file:line。
-
-- [ ] **Step 5: 接线 + 守门**
-
-两个组件改为 `applyBubbleStyle/saveBubbleStyle` 与既有 devtools 路径；`App.vue` 启动时 `applyBubbleStyle(loadBubbleStyle())`。
+- [ ] **Step 5: 跑测试与守门**
 
 ```bash
-npx vitest run src/utils src/views/settingsWindow/tabs
+npx vitest run src/utils src/views/settingsWindow src/stores/domains/settings
+npx vue-tsc --noEmit
 node scripts/check-settings-wiring.mjs --update && node scripts/check-settings-wiring.mjs
 ```
 
-Expected: 死配置剩余 **0**（若 devtools 无既有路径可接，则明确删除该开关并在提交信息里说明，同样降到 0）。
+Expected: PASS；基线按实测 `--update` 收紧（`tjg-bubble-style` 变为有消费方，
+`tjg-debug-mode` / `tjg-enable-devtools` / `tjg-lab-features` / `tjg-show-performance` 消失）。
+**计数下降不是验收依据**——气泡的验收是 Step 1 的行为测试 + scss 磁盘守卫。
 
 - [ ] **Step 6: 提交**
 
 ```bash
-git add -A src/utils src/styles src/views/settingsWindow/tabs src/App.vue scripts/settings-wiring-baseline.json
-git commit -m "feat(ui): 气泡样式落地，devtools 开关接既有路径
+git add src/utils src/styles src/views/settingsWindow src/stores/domains/settings src/App.vue scripts/settings-wiring-baseline.json
+git commit -m "feat(ui): 气泡样式落地并删除零消费方的 Labs 面板
 
-tjg-bubble-style 与 tjg-enable-devtools 此前均无实现。
-气泡样式用 data 属性 + token 落地；devtools 接到既有调试开关，
-避免两套并行。"
+tjg-bubble-style 此前只写不读：消息气泡圆角由 render-message.scss 固定，
+开关没有任何消费方。改为 data-bubble-style 属性 + scss 覆盖，启动时应用，
+旧 'true'/'false' 迁移为 rounded/square。
+
+tjg-enable-devtools / tjg-debug-mode / tjg-show-performance / tjg-lab-features
+与全部 experimental feature 开关在前端与 src-tauri 均无运行时消费方；
+真实 devtools 入口是 Tauri 原生菜单（Rust 侧、读不到 localStorage），
+前端无可接路径，按 YAGNI 删除整个桌面 Labs tab。"
 ```
 
 ---
@@ -2303,22 +2158,39 @@ InvitePermissionPanel 能长期"绿着不生效"，根因是测试只断言 emit
 
 - [ ] **Step 1: 全量门禁**
 
+先重新生成生成型文件（Task 8 改过 locale 文案却没重生成 `src/typings/i18n.d.ts`，
+`src/locales/__tests__/sourceRefs.test.ts` 的"生成产物新鲜度"用例因此是红的）：
+
+```bash
+node scripts/generate-i18n-types.mjs
+git add src/typings/i18n.d.ts
+```
+
+再跑门禁（本 worktree 里 `pnpm` 会因软链的 node_modules 触发 `ERR_PNPM_IGNORED_BUILDS`，
+一律用 `npx` / `node scripts/*.mjs` 等价形式）：
+
 ```bash
 npx vitest run
-pnpm vue-tsc --noEmit
-pnpm check:ratchet
-pnpm check:sdk-boundary
+npx vue-tsc --noEmit
+node scripts/check-ratchet.mjs
+node scripts/check-sdk-boundary.mjs
 node scripts/check-i18n.mjs
 node scripts/check-i18n-refs.mjs
 node scripts/check-settings-wiring.mjs
 node scripts/check-component-contracts.mjs
 ```
 
-Expected: 全绿；两个新守门的死配置数已降到 0（或基线里只剩白名单条目）。
+Expected: 全绿。**基线数值只按实测 `--update` 收紧，不以"降到 0"为完成判据**——
+验收是各任务的行为测试（Task 2/3/5/2b/6/7/8 的 RED→GREEN 证据）。
+`check-doc-coverage.mjs` 的 15 条既有漂移（主树同样失败）在此一并处理：
+要么 `--update-baseline` 后只增不减地收紧，要么给缺 JSDoc 的方法补注释。
 
 - [ ] **Step 2: 文档记录**
 
-在 `docs/mobile-feature-optimization-plan.md` 追加一节，写明：审计方法、23 个死 key 的分布、五类问题（键名错位/零消费方/平行实现/装饰组件/无实现）、修复路径选择依据，以及两个新守门的用法。
+在 `docs/mobile-feature-optimization-plan.md` 追加一节，写明：审计方法、按 `check-settings-wiring.mjs`
+**实测**的死配置数与键名分布（不要写死过时数字；历史值 22/28/34/25/22/19/16 均以当时实测为准）、
+五类问题（键名错位/零消费方/平行实现/装饰组件/无实现）、修复路径选择依据，
+以及两个新守门的用法与已知局限（只守数量不守键名，且无法判断消费方是否真在运行时消费）。
 
 - [ ] **Step 3: 提交**
 
@@ -2356,7 +2228,7 @@ git merge --no-ff feat/<branch> -m "Merge branch '<branch>'"
 | 在线状态仍有登录/状态切换两条路径未覆盖 | Task 3 |
 | 键名错位：桌面通知 / 通知内容 / 发送者 | Task 4 |
 | 通知配置层不可达（真实路径绕过服务） | Task 5 |
-| 零消费方：通知/线程/空间 9 个（需先建决策门） | Task 6 |
+| 零消费方：通知 9 个 → 6 个按 YAGNI 删 UI，3 个接线（线程提及 + 关键词） | Task 6 |
 | 零消费方：勿扰时段 3 个（已有两份表示，勿造第三份） | Task 7 |
 | 零消费方 + 平行实现：屏蔽用户 / 邀请名单 | Task 8 |
 | 首版审计漏掉的 3 个别名写入键 | Task 9 |
