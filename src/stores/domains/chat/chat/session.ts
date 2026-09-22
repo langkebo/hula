@@ -348,13 +348,6 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     return sessionList.value.filter((s) => s.type === RoomTypeEnum.GROUP)
   }
 
-  const clearCurrentSessionUnread = () => {
-    if (globalStore.currentSessionRoomId) {
-      updateSession(globalStore.currentSessionRoomId, { unreadCount: 0 })
-      persistUnreadCount(globalStore.currentSessionRoomId, 0)
-    }
-  }
-
   const updateTotalUnreadCount = () => {
     // Stub for UI
   }
@@ -395,7 +388,6 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     addSession,
     setUnreadCount,
     resetSessionSelection,
-    clearCurrentSessionUnread,
     updateTotalUnreadCount,
     requestUnreadCountUpdate,
     clearUnreadCount,
