@@ -181,18 +181,6 @@ const ACCEPTED_PATTERNS = [
     followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #3'
   },
   {
-    component: 'src/components/common/GuestModeBanner.vue',
-    event: 'exit',
-    reason: '游客模式半成品：layout/index.vue 的 isGuestMode/guestUserId 从未被置真，横幅永不渲染',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #4'
-  },
-  {
-    component: 'src/components/common/GuestModeBanner.vue',
-    event: 'upgrade',
-    reason: '同上；MatrixGuestService 无生产引用，需要产品决定"实现游客态"还是"删除横幅"',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #4'
-  },
-  {
     component: 'src/views/loginWindow/LoginBottomBar.vue',
     event: 'guest-login',
     reason: '登录页"更多选项"里的游客登录可见但无监听，且 i18n key login.guest 缺失（渲染原始 key）',

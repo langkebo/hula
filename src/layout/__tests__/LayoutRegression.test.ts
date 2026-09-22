@@ -74,19 +74,11 @@ const mountLayout = async () => {
   return shallowMount(Layout, {
     global: {
       stubs: {
-        RouterView: true,
-        GuestModeBanner: { name: 'GuestModeBanner', template: '<div data-testid="guest-banner" />' }
+        RouterView: true
       }
     }
   })
 }
-
-describe('GuestModeBanner integration', () => {
-  it('renders GuestModeBanner component', async () => {
-    const wrapper = await mountLayout()
-    expect(wrapper.findComponent({ name: 'GuestModeBanner' }).exists()).toBe(true)
-  })
-})
 
 // Regression guard: layout/index.vue previously rendered <PrivacyOverlay v-if="isPrivacyMode">,
 // where isPrivacyMode was a LOCAL ref from usePrivacyProtection that was NEVER set to true

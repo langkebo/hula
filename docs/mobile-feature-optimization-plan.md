@@ -1080,7 +1080,7 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
   需自定义 composer 包装，把 `t()` 的 key 参数收紧为生成的字面量联合类型。
 - **测试清理 minor**：`LabsSettings.test` 遗留 vant mock / `VanSwitchStub` 死脚手架、
   toggle-all 循环已空转；通知相关测试未打桩 `syncDndToAccountData` 产生 stderr 噪音、
-  `GuestModeBannerIntegration` 打桩新 composable（仅计时，覆盖在 `useMessageSound.test`）；
+  `LayoutRegression.test`（原 `GuestModeBannerIntegration.test`）打桩新 composable（仅计时，覆盖在 `useMessageSound.test`）；
   `handleSelectSpace` 少 a11y announce；删除 emit 后遗留 `friend.request.cancel` locale。
 - **11 条产品行为断线（组件事件）见 13.6**：白名单以 `followUp` 挂账、每次运行打印 `todo`；
   `followUp` 现已校验必须命中 §13.6 表格里的真实行，悬空即 FAIL。
@@ -1106,7 +1106,6 @@ Task 5 把 `check:component-contracts` 的 32 条冻结基线收紧到 **0**：3
 | --- | --- | --- | --- | --- |
 | 2 | `UserMenuHeader::avatar-click` | `src/components/userMenu/UserMenuHeader.vue:133`（`handleAvatarClick`，emit 在 `:134`；`.user-avatar @click` 在 `:4`，`cursor:pointer` 在 `:188`） | `src/components/userMenu/UserMenuDropdown.vue:7`、`UserMenuMobile.vue:9`（只绑 `@theme-toggle`） | 可点击头像无任何行为；需要产品决定：打开个人资料 / 打开设置 / 仅关闭菜单 |
 | 3 | `RoomInviteActions::error` | `src/components/room/RoomInviteActions.vue:42`（接受失败）、`:56`（拒绝失败） | `src/components/workbench/TjgRoomListItem.vue:79-83`（只绑 `@accepted`/`@rejected`） | 接受/拒绝失败只有 `logger.error`，用户完全无感知。注意成功链路同样惰性：`RoomSessionList.vue:47-48` 转发给可选 `onAcceptInvite?`/`onRejectInvite?`，唯一生产消费方 `src/views/homeWindow/message/index.vue:22-36` 两个都没传；诚实的修法是在 `RoomInviteActions`/facade 内部就地给出错误反馈 |
-| 4 | `GuestModeBanner::exit` / `::upgrade` | `src/components/common/GuestModeBanner.vue:30` / `:27`（声明 `:47-50`） | `src/layout/index.vue:8`（`<GuestModeBanner :visible="isGuestMode" :guest-user-id="guestUserId" />`，零监听） | 半成品：`isGuestMode`（`layout/index.vue:232`）与 `guestUserId`（`:233`）从未被置真，横幅永不渲染；`MatrixGuestService` 除测试外无引用。需要产品决定"实现游客态 + upgrade/exit"还是"删除横幅 + 挂载 + refs" |
 | 5 | `LoginBottomBar::guest-login` | `src/views/loginWindow/LoginBottomBar.vue:54`（声明 `:79`，`data-test="guest-login-btn"`） | `src/views/loginWindow/Login.vue:35-43`（7 个事件绑了 6 个，没有 `@guest-login`） | 用户可见的死入口；同时 i18n key `login.guest` 在 `locales/{zh-CN,en}/login.json` 缺失，行内渲染原始 key。需要实现游客登录或移除该行 |
 | 6 | `ThreadPanel::sendReply` | `src/components/thread/ThreadPanel.vue:103`（`handleSendReply`；声明 `:90`） | `src/components/rightBox/chatBox/ChatModals.vue:66-69`（唯一挂载：`v-model:show` + props，无监听） | 点发送直接丢弃输入（无 store/service 调用、无乐观追加），`loadThreadReplies()`（`:113-115`）是设 `[]` 的 stub。需接 `matrixThreadService.sendThreadReply`（`MatrixThreadService.ts:67`）/ `getThreadRepliesViaApi`（`:359`） |
 
