@@ -129,5 +129,6 @@
         "failed": "Failed to sign out"
       }
     }
-  }
+  },
+  "manage_friend_groups": "Friend groups"
 }

@@ -126,5 +126,11 @@
     "preview_file": "Preview File",
     "settings": "Settings",
     "about": "About"
-  }
+  },
+  "copy": "Copy",
+  "exit": "Exit",
+  "load_more": "Load More",
+  "login": "Login",
+  "saving": "Saving…",
+  "unknownUser": "Unknown User"
 }

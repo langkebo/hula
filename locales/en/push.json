@@ -1,0 +1,8 @@
+{
+  "clear_all": "Clear All",
+  "hours_ago": "{count}h ago",
+  "just_now": "Just now",
+  "minutes_ago": "{count}m ago",
+  "no_notifications": "No notifications",
+  "notification_count": "{count} notifications"
+}

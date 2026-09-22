@@ -48,7 +48,9 @@
       "accept": "接受好友请求失败",
       "reject": "拒绝好友请求失败",
       "cancel": "撤销好友请求失败"
-    }
+    },
+    "expired": "请求已过期",
+    "expires_in": "{count} 秒后过期"
   },
   "add": {
     "title": "添加好友",

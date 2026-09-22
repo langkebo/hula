@@ -82,7 +82,7 @@
           </div>
 
           <div class="setting-item">
-            <span class="setting-label">{{ t('home.chat_header.message_setting') }}</span>
+            <span class="setting-label">{{ t('home.chat_header.sidebar.group.message_settings.title') }}</span>
             <n-select
               v-model:value="messageSettingValue"
               :options="messageOptions"

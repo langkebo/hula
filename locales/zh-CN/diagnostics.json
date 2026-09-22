@@ -9,5 +9,6 @@
   "sliding_sync_not_found": "未找到可用的 Sliding Sync 端点",
   "cors_ok": "CORS 配置正常",
   "cors_headers_missing": "CORS 头部缺失",
-  "cors_check_failed": "CORS 检查失败: {error}"
+  "cors_check_failed": "CORS 检查失败: {error}",
+  "cors_not_required": "无需配置 CORS"
 }

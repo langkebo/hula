@@ -44,7 +44,8 @@
   "burn": {
     "message_destroyed": "此消息已销毁",
     "destroyed": "已销毁",
-    "waiting_read": "等待阅读"
+    "waiting_read": "等待阅读",
+    "toggle_title": "阅后即焚"
   },
   "location": {
     "title": "位置",
@@ -96,5 +97,9 @@
     "unverified_title": "端到端加密未完全验证",
     "risk_title": "端到端加密存在安全风险",
     "plain_title": "消息未加密"
+  },
+  "private_mode": {
+    "burning": "私密模式：阅后即焚",
+    "enabled": "私密模式已开启"
   }
 }

@@ -1,0 +1,9 @@
+{
+  "video_call": "视频通话",
+  "voice_call": "语音通话",
+  "ringing": "呼叫中",
+  "connecting": "正在连接…",
+  "connected": "已接通",
+  "ended": "通话已结束",
+  "error": "通话出错"
+}

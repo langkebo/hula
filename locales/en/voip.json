@@ -81,5 +81,12 @@
     "back_to_call": "Back to Call",
     "minimize": "Minimize",
     "maximize": "Maximize"
-  }
+  },
+  "call": {
+    "hangup": "Hang Up",
+    "mute": "Mute",
+    "speaker": "Speaker",
+    "switch_camera": "Switch Camera"
+  },
+  "unknown": "Unknown"
 }

@@ -9,5 +9,6 @@
   "sliding_sync_not_found": "No available Sliding Sync endpoints found",
   "cors_ok": "CORS configuration is normal",
   "cors_headers_missing": "CORS headers are missing",
-  "cors_check_failed": "CORS check failed: {error}"
+  "cors_check_failed": "CORS check failed: {error}",
+  "cors_not_required": "CORS Not Required"
 }

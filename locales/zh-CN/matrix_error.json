@@ -78,7 +78,8 @@
     "reply_message_not_found": "回复的消息不存在: {replyToEventId}",
     "can_only_edit_own_messages": "只能编辑自己发送的消息",
     "can_only_delete_own_messages": "只能删除自己发送的消息",
-    "threading_manager_unavailable": "ThreadingManager 不可用"
+    "threading_manager_unavailable": "ThreadingManager 不可用",
+    "pack_not_found": "消息包未找到"
   },
   "admin": {
     "sdk_manager_unavailable": "SDK AdminManager 不可用",
@@ -108,5 +109,11 @@
   },
   "account": {
     "cannot_get_user_id": "无法获取用户ID"
+  },
+  "event_report": {
+    "manager_not_initialized": "事件举报服务未初始化"
+  },
+  "guest": {
+    "manager_not_initialized": "访客服务未初始化"
   }
 }

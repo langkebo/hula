@@ -126,5 +126,11 @@
     "preview_file": "预览文件",
     "settings": "设置",
     "about": "关于"
-  }
+  },
+  "copy": "复制",
+  "exit": "退出",
+  "load_more": "加载更多",
+  "login": "登录",
+  "saving": "保存中…",
+  "unknownUser": "未知用户"
 }

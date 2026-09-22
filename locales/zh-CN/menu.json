@@ -129,5 +129,6 @@
         "failed": "退出登录失败"
       }
     }
-  }
+  },
+  "manage_friend_groups": "好友分组"
 }

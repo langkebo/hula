@@ -48,7 +48,9 @@
       "accept": "Failed to accept friend request",
       "reject": "Failed to reject friend request",
       "cancel": "Failed to cancel friend request"
-    }
+    },
+    "expired": "Request Expired",
+    "expires_in": "Expires in {count}s"
   },
   "add": {
     "title": "Add Friend",

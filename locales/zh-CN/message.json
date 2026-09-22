@@ -36,7 +36,14 @@
     "tap_suffix": "说话",
     "recording": "正在录音",
     "processing": "正在处理音频",
-    "error": "录音失败"
+    "error": "录音失败",
+    "cancel_recording": "取消录音",
+    "pause": "暂停",
+    "play": "播放",
+    "re_record": "重新录制",
+    "send": "发送",
+    "start_recording": "开始录音",
+    "stop_recording": "停止录音"
   },
   "call_window": {
     "incoming": "来电",
@@ -307,5 +314,27 @@
     "copy_success": "已复制选中消息",
     "copy_failed": "复制消息失败，请稍后再试",
     "delete_success": "已删除选中消息"
-  }
+  },
+  "copy_empty": "剪贴板为空",
+  "copy_failed": "复制失败",
+  "copy_success": "复制成功",
+  "delete_confirm_content": "确定删除该条消息？此操作不可撤销。",
+  "delete_confirm_title": "删除消息",
+  "delete_failed": "删除失败",
+  "delete_success": "删除成功",
+  "edit_failed": "编辑失败",
+  "edit_inline_hint": "点击编辑…",
+  "edit_placeholder": "输入内容…",
+  "edit_success": "编辑成功",
+  "editing": "编辑中",
+  "load_messages_failed": "加载消息失败",
+  "mark_failed": "标记失败",
+  "no_actions": "暂无操作",
+  "pin_failed": "固定失败",
+  "pin_success": "已固定",
+  "recall_confirm_content": "确定撤回该条消息？",
+  "recall_confirm_title": "撤回消息",
+  "recall_failed": "撤回失败",
+  "recall_success": "已撤回",
+  "unpin_success": "已取消固定"
 }

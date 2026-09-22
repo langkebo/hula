@@ -78,7 +78,8 @@
     "reply_message_not_found": "Reply message not found: {replyToEventId}",
     "can_only_edit_own_messages": "Can only edit your own messages",
     "can_only_delete_own_messages": "Can only delete your own messages",
-    "threading_manager_unavailable": "ThreadingManager unavailable"
+    "threading_manager_unavailable": "ThreadingManager unavailable",
+    "pack_not_found": "Messaging Pack Not Found"
   },
   "admin": {
     "sdk_manager_unavailable": "SDK AdminManager unavailable",
@@ -108,5 +109,11 @@
   },
   "account": {
     "cannot_get_user_id": "Cannot get user ID"
+  },
+  "event_report": {
+    "manager_not_initialized": "Event Report Service Not Initialized"
+  },
+  "guest": {
+    "manager_not_initialized": "Guest Service Not Initialized"
   }
 }

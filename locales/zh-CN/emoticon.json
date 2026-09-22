@@ -17,5 +17,30 @@
     "expression": "小黄脸表情",
     "animal": "动物表情",
     "gesture": "手势表情"
+  },
+  "packs": {
+    "add_emoji": "添加表情",
+    "add_emoji_success": "添加成功",
+    "confirm_uninstall": "确定卸载此表情包？",
+    "create": "新建表情包",
+    "create_failed": "创建失败",
+    "create_success": "创建成功",
+    "description": "描述",
+    "empty": "暂无表情",
+    "load_failed": "加载失败",
+    "pack_count": "表情数",
+    "pack_name": "包名称",
+    "pack_name_placeholder": "输入表情包名称…",
+    "remove_emoji": "移除表情",
+    "remove_emoji_failed": "移除失败",
+    "remove_emoji_success": "移除成功",
+    "rename": "重命名",
+    "rename_failed": "重命名失败",
+    "rename_success": "重命名成功",
+    "title": "表情包管理",
+    "uninstall": "卸载",
+    "uninstall_failed": "卸载失败",
+    "uninstall_success": "卸载成功",
+    "upload_failed": "上传失败"
   }
 }
