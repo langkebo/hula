@@ -6,11 +6,6 @@ import { MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH } from '../settingsRoutes'
 
 const routerPushMock = vi.fn()
 
-vi.mock('vant', () => ({
-  showToast: vi.fn(),
-  showConfirmDialog: vi.fn()
-}))
-
 vi.mock('@iconify/vue', () => ({
   Icon: { name: 'Icon', template: '<i />', props: ['icon', 'width', 'color'] }
 }))
@@ -48,22 +43,13 @@ const VanCellStub = defineComponent({
   </div>`
 })
 
-const VanSwitchStub = defineComponent({
-  name: 'VanSwitch',
-  props: { modelValue: { type: Boolean, default: false }, size: [String, Number] },
-  emits: ['update:modelValue', 'change'],
-  template: `<button class="labs-switch" @click="$emit('update:modelValue', !modelValue); $emit('change', !modelValue)" />`
-})
-
 function mountComponent() {
   return mount(LabsSettings, {
     global: {
       stubs: {
         'van-cell-group': { template: '<div><slot /></div>' },
         'van-cell': VanCellStub,
-        'van-tag': { template: '<span><slot /></span>', props: ['type', 'size'] },
-        'van-switch': VanSwitchStub,
-        'van-button': { template: '<button><slot /></button>', props: ['type', 'block', 'plain'] }
+        'van-tag': { template: '<span><slot /></span>', props: ['type', 'size'] }
       }
     }
   })
@@ -88,15 +74,12 @@ describe('LabsSettings', () => {
     expect(wrapper.text()).not.toContain('mobile_labs.debug_mode')
     expect(wrapper.text()).not.toContain('mobile_labs.show_performance')
     expect(wrapper.text()).not.toContain('mobile_labs.reset')
-    expect(wrapper.find('.labs-switch').exists()).toBe(false)
+    expect(wrapper.find('van-switch').exists()).toBe(false)
   })
 
   it('切换页面内所有控件后不写死 labs key', async () => {
     const wrapper = mountComponent()
 
-    for (const control of wrapper.findAll('.labs-switch')) {
-      await control.trigger('click')
-    }
     for (const cell of wrapper.findAll('.van-cell')) {
       await cell.trigger('click')
     }

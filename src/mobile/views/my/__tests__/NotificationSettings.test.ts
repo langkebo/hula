@@ -103,8 +103,12 @@ function mountComponent() {
   })
 }
 
+function cellWithTitle(wrapper: VueWrapper, titleKey: string) {
+  return wrapper.findAll('.van-cell').find((c) => c.text().includes(titleKey))
+}
+
 function switchInCell(wrapper: VueWrapper, titleKey: string) {
-  const cell = wrapper.findAll('.van-cell').find((c) => c.text().includes(titleKey))
+  const cell = cellWithTitle(wrapper, titleKey)
   expect(cell, `cell ${titleKey} should exist`).toBeDefined()
   const toggle = cell!.findComponent({ name: 'VanSwitch' })
   expect(toggle.exists(), `switch in ${titleKey} should exist`).toBe(true)
@@ -131,11 +135,6 @@ describe('NotificationSettings', () => {
   it('has sound enabled by default', () => {
     const wrapper = mountComponent()
     expect((wrapper.vm as any).soundEnabled).toBe(true)
-  })
-
-  it('has push notifications enabled by default', () => {
-    const wrapper = mountComponent()
-    expect((wrapper.vm as any).pushNotifications).toBe(true)
   })
 
   it('loads push rules on mount', async () => {
@@ -182,21 +181,36 @@ describe('NotificationSettings', () => {
     expect(setPushRuleActionsMock).toHaveBeenCalled()
   })
 
-  it('三个零消费方的开关经真实交互后不写入死 key', async () => {
+  it('不再渲染三个零消费方的开关', () => {
     const wrapper = mountComponent()
-    await vi.dynamicImportSettled()
 
     for (const titleKey of [
       'mobile_notifications.push_notifications',
       'mobile_notifications.email_notifications',
       'mobile_notifications.encrypted_rooms'
     ]) {
-      await switchInCell(wrapper, titleKey).trigger('click')
+      expect(cellWithTitle(wrapper, titleKey), `cell ${titleKey} should be gone`).toBeUndefined()
+    }
+  })
+
+  it('切换页面内所有开关后不写入三个死 key', async () => {
+    const wrapper = mountComponent()
+    await vi.dynamicImportSettled()
+
+    for (const control of wrapper.findAll('.van-switch')) {
+      await control.trigger('click')
     }
 
     expect(localStorage.getItem('tjg-push-notifications')).toBeNull()
     expect(localStorage.getItem('tjg-email-notifications')).toBeNull()
     expect(localStorage.getItem('tjg-encrypted-room-notifications')).toBeNull()
+  })
+
+  it('保留总开关与 push 管理入口', () => {
+    const wrapper = mountComponent()
+
+    expect(cellWithTitle(wrapper, 'mobile_notifications.enable_notifications')).toBeDefined()
+    expect(wrapper.find('[data-testid="notif-manage-push"]').exists()).toBe(true)
   })
 
   describe('notification display preferences', () => {
