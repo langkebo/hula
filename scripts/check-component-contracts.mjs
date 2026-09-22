@@ -169,12 +169,6 @@ const ACCEPTED_PATTERNS = [
   },
   /* --- 产品行为断线：功能真缺，登记为 follow-up 待办，不允许静默冻结 --- */
   {
-    component: 'src/components/userMenu/UserMenuHeader.vue',
-    event: 'avatar-click',
-    reason: '头像有 cursor:pointer 但点击无任何行为，需要产品决定打开资料/设置/仅关闭',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #2'
-  },
-  {
     component: 'src/components/thread/ThreadPanel.vue',
     event: 'sendReply',
     reason: '发送会丢弃输入（无 store/service 调用），loadThreadReplies 是设空数组的 stub',

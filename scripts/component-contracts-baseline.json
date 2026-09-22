@@ -20,7 +20,6 @@
     "src/components/rightBox/MsgInput.vue::input",
     "src/mobile/components/virtual-scroll/SmartVirtualList.vue::loadMore",
     "src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue::upgraded",
-    "src/components/userMenu/UserMenuHeader.vue::avatar-click",
     "src/components/thread/ThreadPanel.vue::sendReply"
   ]
 }

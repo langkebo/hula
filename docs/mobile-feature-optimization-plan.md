@@ -1104,7 +1104,6 @@ Task 5 把 `check:component-contracts` 的 32 条冻结基线收紧到 **0**：3
 
 | # | 断线 | 触发点（emit） | 挂载点 | 缺什么 |
 | --- | --- | --- | --- | --- |
-| 2 | `UserMenuHeader::avatar-click` | `src/components/userMenu/UserMenuHeader.vue:133`（`handleAvatarClick`，emit 在 `:134`；`.user-avatar @click` 在 `:4`，`cursor:pointer` 在 `:188`） | `src/components/userMenu/UserMenuDropdown.vue:7`、`UserMenuMobile.vue:9`（只绑 `@theme-toggle`） | 可点击头像无任何行为；需要产品决定：打开个人资料 / 打开设置 / 仅关闭菜单 |
 | 6 | `ThreadPanel::sendReply` | `src/components/thread/ThreadPanel.vue:103`（`handleSendReply`；声明 `:90`） | `src/components/rightBox/chatBox/ChatModals.vue:66-69`（唯一挂载：`v-model:show` + props，无监听） | 点发送直接丢弃输入（无 store/service 调用、无乐观追加），`loadThreadReplies()`（`:113-115`）是设 `[]` 的 stub。需接 `matrixThreadService.sendThreadReply`（`MatrixThreadService.ts:67`）/ `getThreadRepliesViaApi`（`:359`） |
 
 补充（不计入上表，检测器口径说明）：`renderMessage/index::jump2Reply` 的"无人监听"是

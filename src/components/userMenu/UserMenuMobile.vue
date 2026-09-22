@@ -6,7 +6,7 @@
     <div v-if="showOnlineStatus" class="online-indicator" :class="onlineClass" />
 
     <van-popup v-model:show="isOpen" position="bottom" round :style="{ height: 'auto', maxHeight: '70vh' }">
-      <UserMenuHeader @theme-toggle="handleThemeToggle" />
+      <UserMenuHeader @theme-toggle="handleThemeToggle" @avatar-click="handleAvatarClick" />
 
       <template v-for="section in menuSections" :key="section.id">
         <div v-if="section.title" class="menu-section-title">{{ section.title }}</div>
@@ -37,6 +37,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import defaultAvatarImg from '@/assets/img/win.png'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -50,10 +51,17 @@ defineOptions({
   name: 'UserMenuMobile'
 })
 
+const router = useRouter()
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 
-const { isOpen, menuSections, handleMenuItemClick } = useUserMenu()
+const { isOpen, menuSections, handleMenuItemClick, closeMenu } = useUserMenu()
+
+/** 点头像打开个人资料：复用移动端「我的-编辑资料」路由，并关闭菜单。 */
+function handleAvatarClick() {
+  closeMenu()
+  router.push('/mobile/mobileMy/editProfile')
+}
 
 const userAvatar = computed(() => AvatarUtils.getAvatarUrl(userStore.currentUserAvatarUrl))
 const defaultAvatar = computed(() => defaultAvatarImg)
