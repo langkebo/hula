@@ -355,6 +355,21 @@
       "desc": "查看最近的通知记录",
       "empty": "暂无通知记录",
       "no_content": "无内容"
+    },
+    "editor": {
+      "action_coalesce": "合并通知",
+      "action_dont_notify": "不通知",
+      "action_notify": "通知",
+      "default_rule": "默认规则",
+      "desc": "推送规则配置说明",
+      "disabled": "已禁用",
+      "empty": "暂无推送规则",
+      "load_failed": "加载失败",
+      "refresh": "刷新",
+      "rule_not_found": "未找到规则",
+      "title": "推送规则",
+      "update_failed": "更新失败",
+      "update_success": "更新成功"
     }
   },
   "notification": {
@@ -532,7 +547,12 @@
     "logout_failed": "登出失败",
     "logout_all_confirm_with_count": "确定要登出所有其他设备吗？共 {count} 个设备将被登出。",
     "all_other_devices_logged_out": "所有其他设备已登出",
-    "logout_all_failed": "批量登出失败"
+    "logout_all_failed": "批量登出失败",
+    "current": "当前会话",
+    "days_ago": "{count} 天前",
+    "hours_ago": "{count} 小时前",
+    "just_now": "刚刚",
+    "minutes_ago": "{count} 分钟前"
   },
   "appearance": {
     "theme_auto": "跟随系统",
@@ -1019,7 +1039,12 @@
     "add": "添加绑定",
     "unbind": "解绑",
     "email_placeholder": "请输入邮箱地址",
-    "phone_placeholder": "请输入手机号码"
+    "phone_placeholder": "请输入手机号码",
+    "emails_title": "邮箱",
+    "no_emails": "暂无邮箱",
+    "no_phones": "暂无手机号",
+    "phones_title": "手机号",
+    "region_label": "地区"
   },
   "invite_permission": {
     "title": "邀请权限管理",

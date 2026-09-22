@@ -1,0 +1,9 @@
+{
+  "video_call": "Video Call",
+  "voice_call": "Voice Call",
+  "ringing": "Ringing",
+  "connecting": "Connecting…",
+  "connected": "Connected",
+  "ended": "Call Ended",
+  "error": "Call Error"
+}

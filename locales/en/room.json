@@ -42,7 +42,8 @@
     "invite_failed": "Failed to invite members",
     "duplicate_name_title": "Duplicate group name detected",
     "duplicate_name_confirm": "A group named \"{name}\" already exists. Create anyway?",
-    "duplicate_name_continue": "Create anyway"
+    "duplicate_name_continue": "Create anyway",
+    "cancel": "Cancel"
   },
   "join": {
     "title": "Join Room",
@@ -246,6 +247,84 @@
     "reason_placeholder": "Enter join reason (required for federated rooms)",
     "reason_required": "Please enter a join reason",
     "cancel": "Cancel",
-    "preview_join": "Join room"
+    "preview_join": "Join room",
+    "local": "Local Discovery"
+  },
+  "capabilities": {
+    "capabilities_section": "Capabilities",
+    "disabled": "Disabled",
+    "empty": "No capabilities",
+    "enabled": "Enabled",
+    "features_section": "Features",
+    "join_rule": "Join Rule",
+    "permissions_section": "Permissions",
+    "room_version": "Room Version",
+    "subtitle": "Manage room capabilities and permissions",
+    "title": "Room Capabilities"
+  },
+  "encrypted_events": {
+    "algorithm": "Algorithm",
+    "empty": "No encrypted events",
+    "event_id": "Event ID",
+    "sender": "Sender",
+    "session_id": "Session ID",
+    "subtitle": "View E2EE event details",
+    "title": "Encrypted Events"
+  },
+  "event_signature": {
+    "event_id_placeholder": "Enter event ID…",
+    "invalid": "Invalid Signature",
+    "sign": "Sign",
+    "sign_failed": "Signature Failed",
+    "sign_result": "Signature Result",
+    "sign_success": "Signature Success",
+    "subtitle": "Verify event sender identity",
+    "title": "Event Signature",
+    "valid": "Valid Signature",
+    "verify": "Verify",
+    "verify_failed": "Verification Failed",
+    "verify_result": "Verification Result",
+    "verify_success": "Verification Success"
+  },
+  "invite": {
+    "accept": "Accept",
+    "failed": "Invite Failed",
+    "invalid_user_id": "Invalid User ID",
+    "invite": "Invite",
+    "or_enter_id": "Or enter user ID",
+    "reject": "Reject",
+    "search_placeholder": "Search user ID…",
+    "success": "Invite Success",
+    "title": "Invite Users",
+    "user_id_placeholder": "Enter user ID…"
+  },
+  "message_queue": {
+    "content": "Queue Content",
+    "empty": "No queued messages",
+    "event_id": "Event ID",
+    "subtitle": "View pending message queue",
+    "title": "Message Queue",
+    "type": "Message Type"
+  },
+  "metadata": {
+    "empty": "No Metadata",
+    "subtitle": "View room metadata",
+    "title": "Room Metadata"
+  },
+  "retention": {
+    "count_hint": "Retain by message count",
+    "count_label": "Message Count",
+    "days_hint": "Retain by days",
+    "days_label": "Retention Days",
+    "load_failed": "Load Failed",
+    "mode_by_count": "By Count",
+    "mode_by_days": "By Days",
+    "mode_unlimited": "Unlimited",
+    "read_only_hint": "Cannot modify in read-only mode",
+    "save": "Save",
+    "save_failed": "Save Failed",
+    "save_success": "Save Success",
+    "subtitle": "Configure message retention policy",
+    "title": "Message Retention"
   }
 }

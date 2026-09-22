@@ -43,7 +43,8 @@
   "burn": {
     "message_destroyed": "This message has been destroyed",
     "destroyed": "Destroyed",
-    "waiting_read": "Waiting to be read"
+    "waiting_read": "Waiting to be read",
+    "toggle_title": "Burn After Reading"
   },
   "location": {
     "title": "Location",
@@ -83,5 +84,9 @@
     "unverified_title": "End-to-end encryption not fully verified",
     "risk_title": "End-to-end encryption risk detected",
     "plain_title": "Message not encrypted"
+  },
+  "private_mode": {
+    "burning": "Private Mode: Burn After Reading",
+    "enabled": "Private Mode Enabled"
   }
 }

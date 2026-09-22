@@ -21,5 +21,12 @@
     "mute_failed": "Mute operation failed",
     "video_failed": "Video toggle failed",
     "screenshare_failed": "Screen share failed"
-  }
+  },
+  "call": {
+    "hangup": "Hang Up",
+    "mute": "Mute",
+    "speaker": "Speaker",
+    "switch_camera": "Switch Camera"
+  },
+  "unknown": "Unknown"
 }

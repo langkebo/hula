@@ -21,5 +21,6 @@
   "genders": {
     "male": "男",
     "female": "女"
-  }
+  },
+  "extended_profile_unsupported": "暂不支持扩展资料"
 }

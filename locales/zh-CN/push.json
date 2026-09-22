@@ -1,0 +1,8 @@
+{
+  "clear_all": "全部清除",
+  "hours_ago": "{count} 小时前",
+  "just_now": "刚刚",
+  "minutes_ago": "{count} 分钟前",
+  "no_notifications": "暂无通知",
+  "notification_count": "{count} 条通知"
+}

@@ -21,5 +21,6 @@
   "genders": {
     "male": "Male",
     "female": "Female"
-  }
+  },
+  "extended_profile_unsupported": "Extended Profile Not Supported"
 }

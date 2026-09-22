@@ -56,5 +56,64 @@
     "filterAdded": "过滤器添加成功",
     "filterRemoved": "过滤器移除成功",
     "patternRequired": "请输入过滤模式"
+  },
+  "event_reports": {
+    "actions": {
+      "delete": "删除",
+      "dismiss": "驳回",
+      "escalate": "上报",
+      "history": "历史",
+      "resolve": "解决"
+    },
+    "dialog": {
+      "deleteConfirm": "确认删除该举报？",
+      "dismissTitle": "驳回原因",
+      "reasonPlaceholder": "请输入驳回原因…",
+      "reasonRequired": "请输入驳回原因",
+      "resolveTitle": "解决备注"
+    },
+    "history": {
+      "title": "处理历史"
+    },
+    "loadFailed": "加载失败，请重试",
+    "stats": {
+      "dismissed": "已驳回",
+      "open": "待处理",
+      "resolved": "已解决",
+      "total": "总计"
+    },
+    "table": {
+      "actions": "操作",
+      "event_id": "事件 ID",
+      "reason": "原因",
+      "reported_user": "被举报用户",
+      "reporter": "举报人",
+      "status": "状态"
+    },
+    "title": "事件举报",
+    "toast": {
+      "deleteFailed": "删除失败",
+      "deleteSuccess": "删除成功",
+      "dismissSuccess": "已驳回",
+      "escalateFailed": "上报失败",
+      "escalateSuccess": "已上报",
+      "resolveSuccess": "已解决"
+    }
+  },
+  "report_user": {
+    "comment": "备注",
+    "comment_placeholder": "请输入备注…",
+    "failed": "举报失败",
+    "reason": "原因",
+    "reason_abuse": "辱骂/骚扰",
+    "reason_inappropriate": "内容不当",
+    "reason_other": "其他",
+    "reason_placeholder": "请选择举报原因…",
+    "reason_required": "请选择举报原因",
+    "reason_spam": "垃圾信息",
+    "submit": "提交举报",
+    "success": "举报成功",
+    "title": "举报用户",
+    "user_preview": "用户预览"
   }
 }

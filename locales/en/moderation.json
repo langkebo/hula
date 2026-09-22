@@ -56,5 +56,64 @@
     "filterAdded": "Filter added successfully",
     "filterRemoved": "Filter removed successfully",
     "patternRequired": "Pattern is required"
+  },
+  "event_reports": {
+    "actions": {
+      "delete": "Delete",
+      "dismiss": "Dismiss",
+      "escalate": "Escalate",
+      "history": "History",
+      "resolve": "Resolve"
+    },
+    "dialog": {
+      "deleteConfirm": "Confirm deletion of this report?",
+      "dismissTitle": "Dismiss Reason",
+      "reasonPlaceholder": "Enter dismiss reason…",
+      "reasonRequired": "Dismiss reason is required",
+      "resolveTitle": "Resolve Note"
+    },
+    "history": {
+      "title": "History"
+    },
+    "loadFailed": "Load Failed, Please Retry",
+    "stats": {
+      "dismissed": "Dismissed",
+      "open": "Open",
+      "resolved": "Resolved",
+      "total": "Total"
+    },
+    "table": {
+      "actions": "Actions",
+      "event_id": "Event ID",
+      "reason": "Reason",
+      "reported_user": "Reported User",
+      "reporter": "Reporter",
+      "status": "Status"
+    },
+    "title": "Event Reports",
+    "toast": {
+      "deleteFailed": "Delete Failed",
+      "deleteSuccess": "Deleted",
+      "dismissSuccess": "Dismissed",
+      "escalateFailed": "Escalate Failed",
+      "escalateSuccess": "Escalated",
+      "resolveSuccess": "Resolved"
+    }
+  },
+  "report_user": {
+    "comment": "Comment",
+    "comment_placeholder": "Enter comment…",
+    "failed": "Report Failed",
+    "reason": "Reason",
+    "reason_abuse": "Abuse/Harassment",
+    "reason_inappropriate": "Inappropriate Content",
+    "reason_other": "Other",
+    "reason_placeholder": "Select a reason…",
+    "reason_required": "Please select a reason",
+    "reason_spam": "Spam",
+    "submit": "Submit Report",
+    "success": "Report Submitted",
+    "title": "Report User",
+    "user_preview": "User Preview"
   }
 }

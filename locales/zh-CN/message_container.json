@@ -6,5 +6,17 @@
   "copy_success": "复制成功",
   "emoji_already_marked": "该表情已标记",
   "retry": "重试",
-  "verify_sender_device": "验证发送方设备"
+  "verify_sender_device": "验证发送方设备",
+  "long_press": {
+    "forward": "转发"
+  },
+  "reaction": {
+    "add_failed": "添加表情失败",
+    "add_success": "添加成功",
+    "menu_title": "表情反应",
+    "more_emoji": "更多表情",
+    "pick_emoji": "选择表情",
+    "remove_failed": "移除表情失败",
+    "remove_success": "已移除"
+  }
 }

@@ -112,5 +112,11 @@
     "video_viewer": "Video Viewer",
     "preview_file": "Preview File",
     "about": "About"
-  }
+  },
+  "copy": "Copy",
+  "exit": "Exit",
+  "load_more": "Load More",
+  "login": "Login",
+  "saving": "Saving…",
+  "unknownUser": "Unknown User"
 }

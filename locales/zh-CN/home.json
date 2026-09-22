@@ -92,7 +92,25 @@
     "message_setting": {
       "receive_no_alert": "接收消息但不提醒",
       "shield": "屏蔽消息"
-    }
+    },
+    "chat_info": "聊天信息",
+    "clear_messages": "清除消息",
+    "clear_messages_confirm_message": "确定清除所有消息？",
+    "delete_friend": "删除好友",
+    "delete_friend_confirm": "确定删除该好友？",
+    "delete_room": "删除房间",
+    "delete_room_confirm": "确定删除该房间？",
+    "group_info": "群信息",
+    "group_members": "群成员",
+    "group_name": "群名称",
+    "group_qr_code": "群二维码",
+    "input_group_name": "输入群名称…",
+    "input_my_name": "输入我的名称…",
+    "input_remark": "输入备注…",
+    "my_name_in_group": "我在群中的名称",
+    "pin_room": "固定房间",
+    "remark": "备注",
+    "share_qr_code": "分享二维码"
   },
   "manage_group_member": {
     "title": "管理群成员",
@@ -179,7 +197,8 @@
       "rename_limit": "改名次数不足",
       "save_success": "保存成功",
       "badge_wear_success": "佩戴成功",
-      "badge_wear_failed": "佩戴失败，请稍后重试"
+      "badge_wear_failed": "佩戴失败，请稍后重试",
+      "save_failed": "保存失败"
     }
   },
   "chat_sidebar": {
@@ -203,7 +222,8 @@
     "empty": {
       "no_chat_selected": "未选择会话",
       "select_to_start": "选择一个会话或发起新聊天",
-      "pins": "暂无置顶消息"
+      "pins": "暂无置顶消息",
+      "files": "暂无文件"
     },
     "toggle": {
       "expand": "展开信息面板",
@@ -217,7 +237,9 @@
     },
     "pins": {
       "title": "置顶消息",
-      "cancel": "取消置顶"
+      "cancel": "取消置顶",
+      "selector_empty": "暂无置顶消息",
+      "selector_title": "置顶消息"
     },
     "favorites": {
       "total": "收藏消息 {count} 条",
@@ -226,6 +248,13 @@
       "search_placeholder": "搜索收藏消息",
       "empty": "暂无收藏消息",
       "load_failed": "加载收藏消息失败"
+    },
+    "groups": {
+      "offline": "离线",
+      "online": "在线"
+    },
+    "quota": {
+      "title": "配额"
     }
   },
   "about": {

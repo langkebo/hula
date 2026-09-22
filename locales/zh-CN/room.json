@@ -42,7 +42,8 @@
     "invite_failed": "邀请失败",
     "duplicate_name_title": "检测到同名群",
     "duplicate_name_confirm": "已存在名为「{name}」的群。仍然创建吗？",
-    "duplicate_name_continue": "仍然创建"
+    "duplicate_name_continue": "仍然创建",
+    "cancel": "取消"
   },
   "join": {
     "title": "加入房间",
@@ -246,6 +247,84 @@
     "reason_placeholder": "请输入加房理由（联邦房必填）",
     "reason_required": "请输入加房理由",
     "cancel": "取消",
-    "preview_join": "加入房间"
+    "preview_join": "加入房间",
+    "local": "本地发现"
+  },
+  "capabilities": {
+    "capabilities_section": "能力中心",
+    "disabled": "已禁用",
+    "empty": "暂无能力",
+    "enabled": "已启用",
+    "features_section": "功能列表",
+    "join_rule": "加入规则",
+    "permissions_section": "权限设置",
+    "room_version": "房间版本",
+    "subtitle": "管理房间能力与权限",
+    "title": "房间能力"
+  },
+  "encrypted_events": {
+    "algorithm": "加密算法",
+    "empty": "暂无加密事件",
+    "event_id": "事件 ID",
+    "sender": "发送者",
+    "session_id": "会话 ID",
+    "subtitle": "查看端到端加密事件详情",
+    "title": "加密事件"
+  },
+  "event_signature": {
+    "event_id_placeholder": "输入事件 ID…",
+    "invalid": "无效签名",
+    "sign": "签名",
+    "sign_failed": "签名失败",
+    "sign_result": "签名结果",
+    "sign_success": "签名成功",
+    "subtitle": "验证事件发送者身份",
+    "title": "事件签名",
+    "valid": "有效签名",
+    "verify": "验证",
+    "verify_failed": "验证失败",
+    "verify_result": "验证结果",
+    "verify_success": "验证成功"
+  },
+  "invite": {
+    "accept": "接受",
+    "failed": "邀请失败",
+    "invalid_user_id": "无效的用户 ID",
+    "invite": "邀请",
+    "or_enter_id": "或输入用户 ID",
+    "reject": "拒绝",
+    "search_placeholder": "搜索用户 ID…",
+    "success": "邀请成功",
+    "title": "邀请用户",
+    "user_id_placeholder": "输入用户 ID…"
+  },
+  "message_queue": {
+    "content": "消息队列内容",
+    "empty": "暂无排队消息",
+    "event_id": "事件 ID",
+    "subtitle": "查看待处理消息队列",
+    "title": "消息队列",
+    "type": "消息类型"
+  },
+  "metadata": {
+    "empty": "暂无元数据",
+    "subtitle": "查看房间元数据信息",
+    "title": "房间元数据"
+  },
+  "retention": {
+    "count_hint": "按消息条数保留",
+    "count_label": "保留条数",
+    "days_hint": "按天数保留",
+    "days_label": "保留天数",
+    "load_failed": "加载失败",
+    "mode_by_count": "按条数",
+    "mode_by_days": "按天数",
+    "mode_unlimited": "不限",
+    "read_only_hint": "只读模式下不可修改",
+    "save": "保存",
+    "save_failed": "保存失败",
+    "save_success": "保存成功",
+    "subtitle": "配置消息保留策略",
+    "title": "消息保留"
   }
 }

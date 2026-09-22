@@ -35,7 +35,14 @@
     "tap_suffix": "to speak",
     "recording": "Recording",
     "processing": "Processing audio",
-    "error": "Recording failed"
+    "error": "Recording failed",
+    "cancel_recording": "Cancel Recording",
+    "pause": "Pause",
+    "play": "Play",
+    "re_record": "Re-record",
+    "send": "Send",
+    "start_recording": "Start Recording",
+    "stop_recording": "Stop Recording"
   },
   "call_window": {
     "incoming": "Incoming call",
@@ -278,5 +285,27 @@
     "copy_success": "Selected messages copied",
     "copy_failed": "Failed to copy, please try again later",
     "delete_success": "Selected messages deleted"
-  }
+  },
+  "copy_empty": "Clipboard is empty",
+  "copy_failed": "Copy Failed",
+  "copy_success": "Copied",
+  "delete_confirm_content": "Delete this message? This cannot be undone.",
+  "delete_confirm_title": "Delete Message",
+  "delete_failed": "Delete Failed",
+  "delete_success": "Deleted",
+  "edit_failed": "Edit Failed",
+  "edit_inline_hint": "Click to edit…",
+  "edit_placeholder": "Type something…",
+  "edit_success": "Edited",
+  "editing": "Editing",
+  "load_messages_failed": "Failed to load messages",
+  "mark_failed": "Mark Failed",
+  "no_actions": "No Actions",
+  "pin_failed": "Pin Failed",
+  "pin_success": "Pinned",
+  "recall_confirm_content": "Recall this message?",
+  "recall_confirm_title": "Recall Message",
+  "recall_failed": "Recall Failed",
+  "recall_success": "Recalled",
+  "unpin_success": "Unpinned"
 }

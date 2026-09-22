@@ -17,5 +17,30 @@
     "expression": "Yellow face emojis",
     "animal": "Animal emojis",
     "gesture": "Gesture emojis"
+  },
+  "packs": {
+    "add_emoji": "Add Emoji",
+    "add_emoji_success": "Added",
+    "confirm_uninstall": "Uninstall this pack?",
+    "create": "Create Pack",
+    "create_failed": "Create Failed",
+    "create_success": "Created",
+    "description": "Description",
+    "empty": "No Emojis",
+    "load_failed": "Load Failed",
+    "pack_count": "Emoji Count",
+    "pack_name": "Pack Name",
+    "pack_name_placeholder": "Enter pack name…",
+    "remove_emoji": "Remove Emoji",
+    "remove_emoji_failed": "Remove Failed",
+    "remove_emoji_success": "Removed",
+    "rename": "Rename",
+    "rename_failed": "Rename Failed",
+    "rename_success": "Renamed",
+    "title": "Emoji Packs",
+    "uninstall": "Uninstall",
+    "uninstall_failed": "Uninstall Failed",
+    "uninstall_success": "Uninstalled",
+    "upload_failed": "Upload Failed"
   }
 }

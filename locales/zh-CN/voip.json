@@ -21,5 +21,12 @@
     "mute_failed": "静音操作失败",
     "video_failed": "切换视频失败",
     "screenshare_failed": "屏幕共享失败"
-  }
+  },
+  "call": {
+    "hangup": "挂断",
+    "mute": "静音",
+    "speaker": "扬声器",
+    "switch_camera": "翻转摄像头"
+  },
+  "unknown": "未知"
 }

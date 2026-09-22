@@ -279,7 +279,12 @@
     "logout_failed": "Failed to log out device",
     "logout_all_confirm_with_count": "Are you sure you want to log out all other devices? {count} devices will be logged out.",
     "all_other_devices_logged_out": "All other devices logged out",
-    "logout_all_failed": "Failed to log out devices in batch"
+    "logout_all_failed": "Failed to log out devices in batch",
+    "current": "Current Session",
+    "days_ago": "{count} days ago",
+    "hours_ago": "{count} hours ago",
+    "just_now": "Just now",
+    "minutes_ago": "{count} minutes ago"
   },
   "appearance": {
     "theme_auto": "Follow System",
@@ -563,6 +568,21 @@
       "desc": "View recent notification records",
       "empty": "No notification records",
       "no_content": "No content"
+    },
+    "editor": {
+      "action_coalesce": "Coalesce",
+      "action_dont_notify": "Do Not Notify",
+      "action_notify": "Notify",
+      "default_rule": "Default Rule",
+      "desc": "Push Rule Configuration",
+      "disabled": "Disabled",
+      "empty": "No Push Rules",
+      "load_failed": "Load Failed",
+      "refresh": "Refresh",
+      "rule_not_found": "Rule Not Found",
+      "title": "Push Rules",
+      "update_failed": "Update Failed",
+      "update_success": "Updated"
     }
   },
   "notification": {
@@ -1019,7 +1039,12 @@
     "add": "Add Binding",
     "unbind": "Unbind",
     "email_placeholder": "Enter email address",
-    "phone_placeholder": "Enter phone number"
+    "phone_placeholder": "Enter phone number",
+    "emails_title": "Emails",
+    "no_emails": "No Emails",
+    "no_phones": "No Phones",
+    "phones_title": "Phones",
+    "region_label": "Region"
   },
   "invite_permission": {
     "title": "Invite Permission Management",

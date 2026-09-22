@@ -92,7 +92,25 @@
     "message_setting": {
       "receive_no_alert": "Receive without alerts",
       "shield": "Block messages"
-    }
+    },
+    "chat_info": "Chat Info",
+    "clear_messages": "Clear Messages",
+    "clear_messages_confirm_message": "Clear all messages?",
+    "delete_friend": "Delete Friend",
+    "delete_friend_confirm": "Delete this friend?",
+    "delete_room": "Delete Room",
+    "delete_room_confirm": "Delete this room?",
+    "group_info": "Group Info",
+    "group_members": "Group Members",
+    "group_name": "Group Name",
+    "group_qr_code": "Group QR Code",
+    "input_group_name": "Enter group name…",
+    "input_my_name": "Enter my name…",
+    "input_remark": "Enter remark…",
+    "my_name_in_group": "My Name in Group",
+    "pin_room": "Pin Room",
+    "remark": "Remark",
+    "share_qr_code": "Share QR Code"
   },
   "manage_group_member": {
     "title": "Manage group members",
@@ -179,7 +197,8 @@
       "rename_limit": "No rename attempts left",
       "save_success": "Saved successfully",
       "badge_wear_success": "Badge worn successfully",
-      "badge_wear_failed": "Failed to wear badge, please try again later"
+      "badge_wear_failed": "Failed to wear badge, please try again later",
+      "save_failed": "Save Failed"
     }
   },
   "chat_sidebar": {
@@ -203,7 +222,8 @@
     "empty": {
       "no_chat_selected": "No chat selected",
       "select_to_start": "Select a conversation or start a new chat",
-      "pins": "No pinned messages"
+      "pins": "No pinned messages",
+      "files": "No Files"
     },
     "toggle": {
       "expand": "Expand info panel",
@@ -217,7 +237,9 @@
     },
     "pins": {
       "title": "Pinned Messages",
-      "cancel": "Unpin"
+      "cancel": "Unpin",
+      "selector_empty": "No Pinned Messages",
+      "selector_title": "Pinned Messages"
     },
     "favorites": {
       "total": "{count} favorite(s)",
@@ -226,6 +248,13 @@
       "search_placeholder": "Search favorites",
       "empty": "No favorite messages",
       "load_failed": "Failed to load favorites"
+    },
+    "groups": {
+      "offline": "Offline",
+      "online": "Online"
+    },
+    "quota": {
+      "title": "Quota"
     }
   },
   "about": {
