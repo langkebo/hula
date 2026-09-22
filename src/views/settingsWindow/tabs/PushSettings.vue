@@ -45,21 +45,21 @@
           <span class="setting-label">{{ t('setting.push.master.label') }}</span>
           <span class="setting-desc">{{ t('setting.push.master.desc') }}</span>
         </div>
-        <n-switch v-model:value="masterEnabled" @update:value="handleMasterToggle" />
+        <n-switch :value="masterEnabled" @update:value="handleMasterToggle" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.push.message.label') }}</span>
           <span class="setting-desc">{{ t('setting.push.message.desc') }}</span>
         </div>
-        <n-switch v-model:value="messagePushEnabled" @update:value="handleMessagePushToggle" />
+        <n-switch :value="messagePushEnabled" @update:value="handleMessagePushToggle" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.push.invite.label') }}</span>
           <span class="setting-desc">{{ t('setting.push.invite.desc') }}</span>
         </div>
-        <n-switch v-model:value="invitePushEnabled" @update:value="handleInvitePushToggle" />
+        <n-switch :value="invitePushEnabled" @update:value="handleInvitePushToggle" />
       </div>
     </div>
 
@@ -98,7 +98,7 @@
           <span class="setting-label">{{ t('setting.push.dnd.label') }}</span>
           <span class="setting-desc">{{ t('setting.push.dnd.desc') }}</span>
         </div>
-        <n-switch v-model:value="dndEnabled" @update:value="handleDndToggle" />
+        <n-switch :value="dndEnabled" @update:value="handleDndToggle" />
       </div>
       <div v-if="dndEnabled" class="time-range">
         <div class="time-item">
@@ -378,6 +378,8 @@ function formatTimestamp(ts: number): string {
 }
 
 async function handleMasterToggle(enabled: boolean) {
+  // 单一写入者：模板只保留 :value + @update:value，状态由 handler 写，失败时回滚
+  masterEnabled.value = enabled
   try {
     await matrixPushService.setPushRuleEnabled('global', 'override', '.m.rule.master', !enabled)
     showFeedback(enabled ? t('setting.push.enabled') : t('setting.push.disabled'), 'success')
@@ -389,6 +391,7 @@ async function handleMasterToggle(enabled: boolean) {
 }
 
 async function handleMessagePushToggle(enabled: boolean) {
+  messagePushEnabled.value = enabled
   try {
     const rules = pushRules.value?.global?.content || []
     const messageRule = rules.find((r: { rule_id?: string }) => r.rule_id === '.m.rule.contains_user_name')
@@ -410,6 +413,7 @@ async function handleMessagePushToggle(enabled: boolean) {
 }
 
 async function handleInvitePushToggle(enabled: boolean) {
+  invitePushEnabled.value = enabled
   try {
     await matrixPushService.setPushRuleEnabled('global', 'override' as PushRuleKind, '.m.rule.invite_for_me', enabled)
     showFeedback(enabled ? t('setting.push.enabled') : t('setting.push.disabled'), 'success')
@@ -436,6 +440,8 @@ function defaultDndBounds(): { startTime: number; endTime: number } {
 }
 
 function handleDndToggle(enabled: boolean) {
+  // 单一写入者：模板只保留 :value + @update:value
+  dndEnabled.value = enabled
   if (enabled && (dndStartTime.value === null || dndEndTime.value === null)) {
     const fallback = defaultDndBounds()
     dndStartTime.value = dndStartTime.value ?? fallback.startTime

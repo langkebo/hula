@@ -8,7 +8,8 @@ const {
   getPushersMock,
   getNotificationsMock,
   getDndSettingsMock,
-  setDndSettingsMock
+  setDndSettingsMock,
+  setPushRuleEnabledMock
 } = vi.hoisted(() => ({
   waitForClientReadyMock: vi.fn(),
   getPushRulesMock: vi.fn().mockResolvedValue({ global: {} }),
@@ -19,7 +20,8 @@ const {
     startTime: null,
     endTime: null
   })),
-  setDndSettingsMock: vi.fn()
+  setDndSettingsMock: vi.fn(),
+  setPushRuleEnabledMock: vi.fn().mockResolvedValue(undefined)
 }))
 
 // 关键：waitForClientReady 由组件 await，必须能由测试控制其 resolve 时机
@@ -35,6 +37,7 @@ vi.mock('@/services/matrix/notifications/MatrixPushService', () => ({
   matrixPushService: {
     getPushers: (...args: unknown[]) => getPushersMock(...args),
     getPushRules: (...args: unknown[]) => getPushRulesMock(...args),
+    setPushRuleEnabled: (...args: unknown[]) => setPushRuleEnabledMock(...args),
     subscribePushRules: vi.fn(() => vi.fn())
   }
 }))
@@ -81,6 +84,7 @@ describe('PushSettings — P0-#3 客户端就绪竞态', () => {
     waitForClientReadyMock.mockClear()
     getDndSettingsMock.mockClear()
     setDndSettingsMock.mockClear()
+    setPushRuleEnabledMock.mockClear()
     // mockClear 保留上一次的 mockReturnValue，勿扰设置必须逐例复位
     getDndSettingsMock.mockReturnValue({ enabled: false, startTime: null, endTime: null })
     localStorage.clear()
@@ -204,6 +208,32 @@ describe('PushSettings — P0-#3 客户端就绪竞态', () => {
     await nextTick()
 
     expect(setDndSettingsMock).toHaveBeenCalledWith({ enabled: true, startTime: 1000, endTime: 2000 })
+
+    wrapper.unmount()
+  })
+
+  it('一次点击只写一次勿扰设置（单一写入者）', async () => {
+    const wrapper = await mountReady()
+
+    const switches = wrapper.findAllComponents({ name: 'NSwitch' })
+    switches[switches.length - 1].vm.$emit('update:value', true)
+    await nextTick()
+
+    expect(setDndSettingsMock).toHaveBeenCalledTimes(1)
+
+    wrapper.unmount()
+  })
+
+  it('主开关一次点击只发一次推送规则请求（单一写入者）', async () => {
+    const wrapper = await mountReady()
+
+    const switches = wrapper.findAllComponents({ name: 'NSwitch' })
+    switches[0].vm.$emit('update:value', false)
+    await nextTick()
+    await flushPromises()
+
+    expect(setPushRuleEnabledMock).toHaveBeenCalledTimes(1)
+    expect(setPushRuleEnabledMock).toHaveBeenCalledWith('global', 'override', '.m.rule.master', true)
 
     wrapper.unmount()
   })

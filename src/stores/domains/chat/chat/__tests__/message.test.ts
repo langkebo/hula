@@ -1,41 +1,45 @@
+import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MessageStatusEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 
-const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef, groupUserRef } = vi.hoisted(() => ({
-  globalStoreMock: {
-    currentSessionRoomId: 'room-1',
-    currentSession: null as null | { type?: number }
-  },
-  // 群成员信息解析结果，决定桌面通知标题/头像的来源（null 表示群缓存冷，回退到消息自带发送者）
-  groupUserRef: { value: null as null | { name: string; avatar: string } },
-  timerWorkerMock: {
-    postMessage: vi.fn(),
-    terminate: vi.fn(),
-    onmessage: null as null | ((event: { data: { type: string; msgId?: string } }) => void)
-  },
-  // 可变窗口 label，便于按用例切换 home / message（独立聊天窗口）进行回归
-  windowLabelRef: { value: 'home' },
-  sessionStoreMock: {
-    sessionList: [],
-    sessionOptions: {},
-    syncLoading: false,
-    getSession: vi.fn(() => undefined),
-    getSessionList: vi.fn(() => []),
-    updateSession: vi.fn(),
-    updateSessionLastActiveTime: vi.fn(),
-    setUnreadCount: vi.fn(),
-    markSessionRead: vi.fn(),
-    updateTotalUnreadCount: vi.fn(),
-    requestUnreadCountUpdate: vi.fn(),
-    clearUnreadCount: vi.fn(),
-    getGroupSessions: vi.fn(() => []),
-    resetSessionSelection: vi.fn(),
-    addSession: vi.fn(),
-    removeSession: vi.fn(),
-    clearCurrentSessionUnread: vi.fn()
-  }
-}))
+const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef, groupUserRef, isPermissionGrantedMock } =
+  vi.hoisted(() => ({
+    globalStoreMock: {
+      currentSessionRoomId: 'room-1',
+      currentSession: null as null | { type?: number }
+    },
+    // 群成员信息解析结果，决定桌面通知标题/头像的来源（null 表示群缓存冷，回退到消息自带发送者）
+    groupUserRef: { value: null as null | { name: string; avatar: string } },
+    timerWorkerMock: {
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+      onmessage: null as null | ((event: { data: { type: string; msgId?: string } }) => void)
+    },
+    // 可变窗口 label，便于按用例切换 home / message（独立聊天窗口）进行回归
+    windowLabelRef: { value: 'home' },
+    // 系统通知权限门：发送路径在派发前调用 canSendSystemNotification → isPermissionGranted
+    isPermissionGrantedMock: vi.fn(),
+    sessionStoreMock: {
+      sessionList: [],
+      sessionOptions: {},
+      syncLoading: false,
+      getSession: vi.fn(() => undefined),
+      getSessionList: vi.fn(() => []),
+      updateSession: vi.fn(),
+      updateSessionLastActiveTime: vi.fn(),
+      setUnreadCount: vi.fn(),
+      markSessionRead: vi.fn(),
+      updateTotalUnreadCount: vi.fn(),
+      requestUnreadCountUpdate: vi.fn(),
+      clearUnreadCount: vi.fn(),
+      getGroupSessions: vi.fn(() => []),
+      resetSessionSelection: vi.fn(),
+      addSession: vi.fn(),
+      removeSession: vi.fn(),
+      clearCurrentSessionUnread: vi.fn()
+    }
+  }))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
@@ -61,7 +65,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 vi.mock('@tauri-apps/plugin-notification', () => ({
-  sendNotification: vi.fn()
+  sendNotification: vi.fn(),
+  isPermissionGranted: (...args: unknown[]) => isPermissionGrantedMock(...args)
 }))
 
 vi.mock('@/composables/common/useMitt', () => ({
@@ -592,6 +597,15 @@ describe('ChatMessageStore', () => {
       saveNotificationDisplayPreferences({ ...DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES, ...overrides })
     }
 
+    /**
+     * 权限检查是异步的，且派发用 `void ...catch` 与 pushMsg 解耦（不能 await 权限门进热路径），
+     * 因此断言发送结果前必须把微任务队列冲干净。
+     */
+    const pushMessage = async (store: ReturnType<typeof useChatStore>, msg: MessageType) => {
+      await store.pushMsg(msg)
+      await flushPromises()
+    }
+
     beforeEach(() => {
       // updateConfig 是合并语义，必须同时复位 events 与关键词展示偏好，否则用例互相污染
       localStorage.clear()
@@ -607,27 +621,49 @@ describe('ChatMessageStore', () => {
         showMessageContent: true,
         showSender: true
       })
+      // 默认授予系统通知权限；权限被拒/异常的场景由用例单独覆盖
+      isPermissionGrantedMock.mockResolvedValue(true)
       vi.mocked(sendNotification).mockClear()
     })
 
-    it('sends sender, content and avatar by default', async () => {
+    it('sends sender and content without an icon by default', async () => {
       const store = useChatStore()
 
-      await store.pushMsg(mentionMessage('1', 'hello there'))
+      await pushMessage(store, mentionMessage('1', 'hello there'))
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(sendNotification).mock.calls[0][0]).toMatchObject({
+      const payload = lastSentOptions()
+      expect(payload).toMatchObject({
         title: 'Alice',
-        body: 'hello there',
-        icon: 'mxc://alice'
+        body: 'hello there'
       })
+      // mxc:// 不是可渲染的 OS 图标；传 icon（哪怕空串）还会关掉桌面的应用图标回落
+      expect(payload).not.toHaveProperty('icon')
     })
 
     it('sends nothing at all when desktop notifications are disabled', async () => {
       matrixNotificationService.updateConfig({ enableDesktop: false })
       const store = useChatStore()
 
-      await store.pushMsg(mentionMessage('2', 'hello there'))
+      await pushMessage(store, mentionMessage('2', 'hello there'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('sends nothing when the system notification permission is not granted', async () => {
+      isPermissionGrantedMock.mockResolvedValue(false)
+      const store = useChatStore()
+
+      await pushMessage(store, mentionMessage('19', 'hello there'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('sends nothing and does not leak a rejection when the permission check fails', async () => {
+      isPermissionGrantedMock.mockRejectedValue(new Error('not a tauri runtime'))
+      const store = useChatStore()
+
+      await pushMessage(store, mentionMessage('20', 'hello there'))
 
       expect(sendNotification).not.toHaveBeenCalled()
     })
@@ -636,27 +672,26 @@ describe('ChatMessageStore', () => {
       matrixNotificationService.updateConfig({ showMessageContent: false })
       const store = useChatStore()
 
-      await store.pushMsg(mentionMessage('3', 'hello there'))
+      await pushMessage(store, mentionMessage('3', 'hello there'))
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
       const payload = lastSentOptions()
-      expect(payload.body).toBeUndefined()
-      expect(payload.title).toBe('[•] Alice')
+      expect(payload.body).toBe(useI18nGlobal().t('message.notify.folded'))
+      expect(payload.title).toBe('Alice')
     })
 
     it('never exposes the sender name when the sender switch is off', async () => {
       matrixNotificationService.updateConfig({ showSender: false })
       const store = useChatStore()
 
-      await store.pushMsg(mentionMessage('4', 'hello there'))
+      await pushMessage(store, mentionMessage('4', 'hello there'))
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
       const payload = lastSentOptions()
       expect(JSON.stringify(payload)).not.toContain('Alice')
+      expect(JSON.stringify(payload)).not.toContain('mxc://')
       expect(payload.title).toBe(useI18nGlobal().t('message.notify.new_messages'))
       expect(payload.body).toBe('hello there')
-      // 头像按现状保留：showSender 只约束标题里的发送者名字
-      expect(payload.icon).toBe('mxc://alice')
     })
 
     it('ignores messages that do not mention the current user', async () => {
@@ -664,7 +699,7 @@ describe('ChatMessageStore', () => {
       const msg = mentionMessage('5', 'hello there')
       msg.message.body.atUidList = ['user-9']
 
-      await store.pushMsg(msg)
+      await pushMessage(store, msg)
 
       expect(sendNotification).not.toHaveBeenCalled()
     })
@@ -672,7 +707,7 @@ describe('ChatMessageStore', () => {
     it('keeps notifying for a thread mention while the thread switch is at its default', async () => {
       const store = useChatStore()
 
-      await store.pushMsg(threadMentionMessage('6', 'threaded hello'))
+      await pushMessage(store, threadMentionMessage('6', 'threaded hello'))
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
       expect(lastSentOptions().body).toBe('threaded hello')
@@ -702,7 +737,7 @@ describe('ChatMessageStore', () => {
       const msg = keywordMessage('14', 'threaded reply')
       msg.message.body.threadId = '$thread-root'
 
-      await store.pushMsg(msg)
+      await pushMessage(store, msg)
 
       expect(sendNotification).not.toHaveBeenCalled()
     })
@@ -713,17 +748,19 @@ describe('ChatMessageStore', () => {
       const msg = keywordMessage('15', 'the deploy is green')
       msg.message.body.threadId = '$thread-root'
 
-      await store.pushMsg(msg)
+      await pushMessage(store, msg)
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
-      expect(lastSentOptions().body).toBe('the deploy is green')
+      expect(lastSentOptions().body).toBe(
+        useI18nGlobal().t('message.notify.keyword_hit', { body: 'the deploy is green' })
+      )
     })
 
     it('stays silent for a keyword hit while keyword notifications are off (default)', async () => {
       setDisplayPreferences({ keywordNotifications: false, keywords: ['deploy'] })
       const store = useChatStore()
 
-      await store.pushMsg(keywordMessage('9', 'the deploy is green'))
+      await pushMessage(store, keywordMessage('9', 'the deploy is green'))
 
       expect(sendNotification).not.toHaveBeenCalled()
     })
@@ -732,19 +769,21 @@ describe('ChatMessageStore', () => {
       setDisplayPreferences({ keywordNotifications: true, keywords: ['deploy'] })
       const store = useChatStore()
 
-      await store.pushMsg(keywordMessage('10', 'the deploy is green'))
+      await pushMessage(store, keywordMessage('10', 'the deploy is green'))
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
-      expect(lastSentOptions().body).toBe('the deploy is green')
-      // 关键词高亮（展示偏好，默认开启）仍按现状给标题加前缀
-      expect(lastSentOptions().title).toBe('[*] Alice')
+      // 命中信号进正文，标题保持干净的发送者名
+      expect(lastSentOptions().body).toBe(
+        useI18nGlobal().t('message.notify.keyword_hit', { body: 'the deploy is green' })
+      )
+      expect(lastSentOptions().title).toBe('Alice')
     })
 
     it('stays silent when keyword notifications are on but the body misses every keyword', async () => {
       setDisplayPreferences({ keywordNotifications: true, keywords: ['incident'] })
       const store = useChatStore()
 
-      await store.pushMsg(keywordMessage('11', 'the deploy is green'))
+      await pushMessage(store, keywordMessage('11', 'the deploy is green'))
 
       expect(sendNotification).not.toHaveBeenCalled()
     })
@@ -755,7 +794,7 @@ describe('ChatMessageStore', () => {
       const msg = keywordMessage('12', 'the deploy is green')
       msg.fromUser = { uid: 'user-1', username: 'me' }
 
-      await store.pushMsg(msg)
+      await pushMessage(store, msg)
 
       expect(sendNotification).not.toHaveBeenCalled()
     })
@@ -765,12 +804,14 @@ describe('ChatMessageStore', () => {
       groupUserRef.value = null
       const store = useChatStore()
 
-      await store.pushMsg(keywordMessage('13', 'the deploy is green'))
+      await pushMessage(store, keywordMessage('13', 'the deploy is green'))
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
-      expect(lastSentOptions().title).toBe('[*] tester')
-      expect(lastSentOptions().body).toBe('the deploy is green')
-      expect(lastSentOptions().icon).toBeUndefined()
+      expect(lastSentOptions().title).toBe('tester')
+      expect(lastSentOptions().body).toBe(
+        useI18nGlobal().t('message.notify.keyword_hit', { body: 'the deploy is green' })
+      )
+      expect(lastSentOptions()).not.toHaveProperty('icon')
     })
 
     // 勿扰窗口只用「当前时刻起止」构造（起止相同 = 全天），因此不受真实时钟影响；
@@ -780,7 +821,7 @@ describe('ChatMessageStore', () => {
       matrixNotificationService.setDndSettings({ enabled: true, startTime: now, endTime: now })
       const store = useChatStore()
 
-      await store.pushMsg(mentionMessage('16', 'quiet hours'))
+      await pushMessage(store, mentionMessage('16', 'quiet hours'))
 
       expect(sendNotification).not.toHaveBeenCalled()
     })
@@ -791,7 +832,7 @@ describe('ChatMessageStore', () => {
       matrixNotificationService.setDndSettings({ enabled: false, startTime: now, endTime: now })
       const store = useChatStore()
 
-      await store.pushMsg(mentionMessage('17', 'loud again'))
+      await pushMessage(store, mentionMessage('17', 'loud again'))
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
       expect(lastSentOptions().body).toBe('loud again')
@@ -806,7 +847,7 @@ describe('ChatMessageStore', () => {
       })
       const store = useChatStore()
 
-      await store.pushMsg(mentionMessage('18', 'outside the window'))
+      await pushMessage(store, mentionMessage('18', 'outside the window'))
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
       expect(lastSentOptions().body).toBe('outside the window')

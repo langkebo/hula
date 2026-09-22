@@ -9,6 +9,7 @@ const dnd = (overrides: Partial<DndWindow> = {}): DndWindow => ({
   enabled: true,
   startTime: at(22, 0),
   endTime: at(8, 0),
+  updatedAt: 0,
   ...overrides
 })
 

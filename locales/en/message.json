@@ -185,7 +185,9 @@
   },
   "notify": {
     "new_messages": "New messages",
-    "ignore_all": "Ignore all"
+    "ignore_all": "Ignore all",
+    "folded": "Content hidden",
+    "keyword_hit": "Keyword match: {body}"
   },
   "tray": {
     "online_status_window_title": "Online status",

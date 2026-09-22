@@ -4667,7 +4667,9 @@ export type I18nKeys = {
     },
     "notify": {
       "new_messages": "新消息",
-      "ignore_all": "忽略全部"
+      "ignore_all": "忽略全部",
+      "folded": "内容已隐藏",
+      "keyword_hit": "关键词命中：{body}"
     },
     "tray": {
       "online_status_window_title": "在线状态",

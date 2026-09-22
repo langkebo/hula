@@ -5,6 +5,7 @@ import { useI18nGlobal } from '@/services/i18n'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { matrixPresenceService, type PresenceState } from '@/services/matrix/user/MatrixPresenceService'
 import type { RoomInfo, UserInfoType } from '@/services/types'
 import type { MessageType } from '@/types/message'
@@ -148,6 +149,13 @@ export class SessionBootstrapService {
       // 等待一个永远不到的 sync 事件。
       await matrixClientService.waitForClientReady({ timeoutMs: 30_000 })
       await this.host.waitSyncPrepared()
+
+      // 仅勿扰时段跨设备：账号数据此时已同步（读取走本地账号数据存储，不发网络请求），
+      // 非阻塞拉一次并写回本地镜像。展示配置是设备本地偏好，刻意不在这里拉。
+      // 失败只记警告，不能影响 bootstrap（冲突规则见 syncDndFromAccountData）。
+      void matrixNotificationService.syncDndFromAccountData().catch((err) => {
+        logger.warn(`[login] 拉取服务端勿扰时段失败: ${err}`)
+      })
 
       this.host.clearUserLocalStorage()
       this.host.clearMessageCache()

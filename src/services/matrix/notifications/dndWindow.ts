@@ -7,7 +7,17 @@ export interface DndWindow {
   enabled: boolean
   startTime: number | null
   endTime: number | null
+  /**
+   * 最后一次写入时间戳，用于跨设备冲突判定（新者胜）。
+   *
+   * 由 `MatrixNotificationService.setDndSettings` 打点并随账号数据 / localStorage 镜像携带；
+   * 读取旧账号数据或旧镜像时缺失按 0 处理。
+   */
+  updatedAt: number
 }
+
+/** `setDndSettings` 的入参：`updatedAt` 由服务自己打，调用方不需要（也不能）伪造。 */
+export type DndWindowInput = Omit<DndWindow, 'updatedAt'>
 
 /** 时间戳 → 本地时区当天分钟数。非法时间戳得到 NaN，由调用方先做有限性校验。 */
 function minutesOfDay(timestamp: number): number {

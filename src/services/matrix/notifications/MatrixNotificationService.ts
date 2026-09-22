@@ -1,3 +1,4 @@
+import { isPermissionGranted } from '@tauri-apps/plugin-notification'
 import {
   type ICreatePushRuleRequest,
   type IPusher,
@@ -14,7 +15,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
-import { isWithinDndWindow as computeWithinDndWindow, type DndWindow } from './dndWindow'
+import { isWithinDndWindow as computeWithinDndWindow, type DndWindow, type DndWindowInput } from './dndWindow'
 import {
   type NotificationDecisionPreferences,
   type NotificationMessageInput,
@@ -76,9 +77,6 @@ interface NotificationRule {
 
 interface NotificationConfig {
   enableDesktop: boolean
-  enableSound: boolean
-  enableVibrate: boolean
-  showPreview: boolean
   showSender: boolean
   showMessageContent: boolean
   /** 细粒度事件开关，缺省视为开启（`thread_mention` 是唯一有真实分发点的 kind）。 */
@@ -87,9 +85,6 @@ interface NotificationConfig {
 
 const DEFAULT_NOTIFICATION_CONFIG: NotificationConfig = {
   enableDesktop: true,
-  enableSound: true,
-  enableVibrate: true,
-  showPreview: true,
   showSender: true,
   showMessageContent: true,
   events: {}
@@ -115,7 +110,7 @@ class MatrixNotificationService extends BaseMatrixService {
   private observedClient: MatrixClient | null = null
   private config: NotificationConfig = { ...DEFAULT_NOTIFICATION_CONFIG, events: {} }
   /** 勿扰时段的唯一所有者，构造时从 localStorage 镜像同步水合。 */
-  private dndSettings: DndWindow = { enabled: false, startTime: null, endTime: null }
+  private dndSettings: DndWindow = { enabled: false, startTime: null, endTime: null, updatedAt: 0 }
 
   private static readonly CONFIG_STORAGE_KEY = 'tjg-notification-config'
   private static readonly ACCOUNT_DATA_TYPE = 'io.hula.notification_settings'
@@ -123,6 +118,7 @@ class MatrixNotificationService extends BaseMatrixService {
   private static readonly DND_ENABLED_STORAGE_KEY = 'tjg-push-dnd'
   private static readonly DND_START_STORAGE_KEY = 'tjg-push-dnd-start'
   private static readonly DND_END_STORAGE_KEY = 'tjg-push-dnd-end'
+  private static readonly DND_UPDATED_AT_STORAGE_KEY = 'tjg-push-dnd-updated-at'
 
   constructor() {
     super()
@@ -140,9 +136,6 @@ class MatrixNotificationService extends BaseMatrixService {
     const isValidNotificationConfig = (val: unknown): val is Partial<NotificationConfig> =>
       validateObject<Record<string, unknown>>(val, [], {
         enableDesktop: (v) => v === undefined || typeof v === 'boolean',
-        enableSound: (v) => v === undefined || typeof v === 'boolean',
-        enableVibrate: (v) => v === undefined || typeof v === 'boolean',
-        showPreview: (v) => v === undefined || typeof v === 'boolean',
         showSender: (v) => v === undefined || typeof v === 'boolean',
         showMessageContent: (v) => v === undefined || typeof v === 'boolean',
         events: (v) => v === undefined || (typeof v === 'object' && v !== null && !Array.isArray(v))
@@ -155,16 +148,25 @@ class MatrixNotificationService extends BaseMatrixService {
       logger.warn('读取通知配置失败:', err)
     }
 
-    let parsed: Partial<NotificationConfig> | null = null
-    if (stored) {
-      parsed = safeJsonParse(stored, isValidNotificationConfig, DEFAULT_NOTIFICATION_CONFIG)
-      this.config = {
-        ...DEFAULT_NOTIFICATION_CONFIG,
-        ...parsed,
-        events: sanitizeNotificationEvents(parsed.events)
-      }
-    } else {
-      this.config = { ...DEFAULT_NOTIFICATION_CONFIG, events: {} }
+    // 损坏 / 非法时回落 `{}`（而不是填满的默认配置）：`{}` 表示「什么都没显式写过」，
+    // 旧展示键才会被 migrateLegacyDisplayConfig 采纳。回落到默认配置会把默认值误当成
+    // 显式值，导致用户关过的开关在升级后被静默恢复默认（隐私回退）。
+    const parsed: Partial<NotificationConfig> = stored
+      ? safeJsonParse<Partial<NotificationConfig>>(stored, isValidNotificationConfig, {})
+      : {}
+
+    if (stored && !this.isStoredConfigUsable(stored, isValidNotificationConfig)) {
+      // 只记存储 key 与长度：配置内容可能含隐私字段，不进日志
+      logger.warn('[MatrixNotification] 通知配置损坏或校验失败，已回落默认值', {
+        storageKey: MatrixNotificationService.CONFIG_STORAGE_KEY,
+        length: stored.length
+      })
+    }
+
+    this.config = {
+      ...DEFAULT_NOTIFICATION_CONFIG,
+      ...parsed,
+      events: sanitizeNotificationEvents(parsed.events)
     }
 
     // 迁移必须在「配置 key 不存在」时也执行：老用户可能只动过线程开关，从未写过配置。
@@ -174,12 +176,21 @@ class MatrixNotificationService extends BaseMatrixService {
     this.migrateLegacyDisplayConfig(parsed)
   }
 
+  /** 仅用于「是否要打损坏告警」：解析出的配置能否当作显式值使用。 */
+  private isStoredConfigUsable(stored: string, isValid: (val: unknown) => val is Partial<NotificationConfig>): boolean {
+    try {
+      return isValid(JSON.parse(stored) as unknown)
+    } catch {
+      return false
+    }
+  }
+
   /**
    * 旧通知展示开关（`tjg-desktop-notification` / `tjg-show-content` / `tjg-show-sender`，
    * 由 base 的 NotificationSettings.vue 写入）一次性并入配置，幂等且「新值优先」：
    * 新配置里已显式写过该字段就保留新值；旧 key 无论是否被采用都清理掉。
    */
-  private migrateLegacyDisplayConfig(explicit: Partial<NotificationConfig> | null): void {
+  private migrateLegacyDisplayConfig(explicit: Partial<NotificationConfig>): void {
     for (const { key, field } of LEGACY_NOTIFICATION_CONFIG_KEYS) {
       let legacy: string | null = null
       try {
@@ -190,7 +201,7 @@ class MatrixNotificationService extends BaseMatrixService {
       }
       if (legacy === null) continue
 
-      if (explicit?.[field] === undefined && (legacy === 'true' || legacy === 'false')) {
+      if (explicit[field] === undefined && (legacy === 'true' || legacy === 'false')) {
         this.config = { ...this.config, [field]: legacy === 'true' }
         this.persistConfig()
       }
@@ -241,6 +252,13 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 把通知展示配置写入账号数据 `io.hula.notification_settings`。
+   *
+   * **展示配置是设备本地偏好**（桌面是否显示内容、是否显示发送者等语义随屏幕与场景变化），
+   * 因此这里是**只写不读**的服务端备份：`updateConfig` 写入本地后 fire-and-forget 同步一份，
+   * 但启动 / 写入后都不会用它覆盖本地。冷启动水合只读 localStorage，见 `loadConfig`。
+   */
   async syncConfigToAccountData(): Promise<void> {
     try {
       await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
@@ -255,6 +273,13 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 从账号数据读回展示配置。
+   *
+   * **生产零调用方，且刻意不接线**：展示配置是设备本地偏好（见 `syncConfigToAccountData`），
+   * 跨设备同步会引入设备语义冲突与冲突判定成本。保留该方法只作为将来的显式恢复入口：
+   * 若要接线，必须先定义「哪些字段算账号级」与「服务端/本地谁赢」，不能直接整份覆盖本地。
+   */
   async syncConfigFromAccountData(): Promise<boolean> {
     try {
       await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
@@ -281,9 +306,16 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
-  /** 把勿扰时段写入账号数据 `io.hula.dnd_settings`（`setDndSettings` 复用它，不复制实现）。 */
+  /**
+   * 把勿扰时段（含 `updatedAt`）写入账号数据 `io.hula.dnd_settings`
+   * （`setDndSettings` 复用它，不复制实现）。
+   *
+   * 与另外两个同步方法一样先 `waitForClientReady`：否则冷启动 / 未就绪时会静默丢写，
+   * 本地镜像还在、用户看不出来，另一台设备永远收不到。
+   */
   async syncDndToAccountData(settings: DndWindow): Promise<void> {
     try {
+      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
       const client = this.getNotificationClient()
       await client.setAccountData(
         MatrixNotificationService.DND_ACCOUNT_DATA_TYPE,
@@ -295,6 +327,13 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 从账号数据 `io.hula.dnd_settings` 拉取勿扰时段（冷启动 + 打开设置页时调用）。
+   *
+   * 冲突规则（新者胜）：只有服务端 `updatedAt` **严格新于**本地镜像时才覆盖本地。
+   * 旧 payload 没有 `updatedAt`（视为 0）不能顶掉本地新改动；但本地从未配置过 DND 时
+   * （镜像为空）仍会采纳服务端的旧 payload，否则老用户的跨设备勿扰设置永远进不来。
+   */
   async syncDndFromAccountData(): Promise<DndWindow | null> {
     try {
       await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
@@ -305,14 +344,24 @@ class MatrixNotificationService extends BaseMatrixService {
           enabled?: boolean
           startTime?: number | null
           endTime?: number | null
+          updatedAt?: number
         }
         if (dndSettings && typeof dndSettings === 'object') {
           const normalized: DndWindow = {
             enabled: dndSettings.enabled === true,
             // 账号数据未经校验：非有限数一律视为"未设置"，否则会静默抑制通知
             startTime: normalizeDndTimestamp(dndSettings.startTime),
-            endTime: normalizeDndTimestamp(dndSettings.endTime)
+            endTime: normalizeDndTimestamp(dndSettings.endTime),
+            updatedAt: normalizeDndTimestamp(dndSettings.updatedAt) ?? 0
           }
+
+          // 先刷新本地镜像，跨窗口改动才算数（另一个窗口刚改的 DND 不能被旧的账号数据顶回）
+          this.loadDndFromMirror()
+          if (this.hasDndMirror() && normalized.updatedAt <= this.dndSettings.updatedAt) {
+            logger.info('[MatrixNotification] 服务端 DND 设置不新于本地，保留本地')
+            return { ...this.dndSettings }
+          }
+
           this.dndSettings = normalized
           // 回写本地镜像：否则冷启动时 DND 不水合，用户会被静默重新打开通知，
           // 或在设置页看到一份与账号数据不一致的本地状态。
@@ -331,18 +380,36 @@ class MatrixNotificationService extends BaseMatrixService {
   /**
    * 构造时从 localStorage 镜像同步水合。
    *
-   * `syncConfigFromAccountData()` 生产零调用方，账号数据在启动时并不可用，
-   * 因此必须在这里读本地镜像，否则不打开设置窗口就不会生效。
+   * 账号数据在启动时并不可用，因此必须在这里读本地镜像，否则不打开设置窗口就不会生效。
    */
   private loadDndFromMirror(): void {
     try {
       this.dndSettings = {
         enabled: localStorage.getItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY) === 'true',
         startTime: parseStoredDndTimestamp(localStorage.getItem(MatrixNotificationService.DND_START_STORAGE_KEY)),
-        endTime: parseStoredDndTimestamp(localStorage.getItem(MatrixNotificationService.DND_END_STORAGE_KEY))
+        endTime: parseStoredDndTimestamp(localStorage.getItem(MatrixNotificationService.DND_END_STORAGE_KEY)),
+        updatedAt:
+          parseStoredDndTimestamp(localStorage.getItem(MatrixNotificationService.DND_UPDATED_AT_STORAGE_KEY)) ?? 0
       }
     } catch (err) {
       logger.warn('读取勿扰时段设置失败:', err)
+    }
+  }
+
+  /**
+   * 本地镜像里是否曾经写过 DND。
+   *
+   * 只用于区分「本地从未配置过」（应当采纳服务端的旧 payload）与
+   * 「本地有值但旧 payload 没有 updatedAt」（本地赢），见 `syncDndFromAccountData`。
+   */
+  private hasDndMirror(): boolean {
+    try {
+      return (
+        localStorage.getItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY) !== null ||
+        localStorage.getItem(MatrixNotificationService.DND_UPDATED_AT_STORAGE_KEY) !== null
+      )
+    } catch {
+      return false
     }
   }
 
@@ -354,12 +421,13 @@ class MatrixNotificationService extends BaseMatrixService {
     localStorage.setItem(key, value.toString())
   }
 
-  /** 把勿扰时段写入 localStorage 镜像（`setDndSettings` 与账号数据水合共用一份实现）。 */
+  /** 把勿扰时段（含 `updatedAt`）写入 localStorage 镜像，账号数据水合与 `setDndSettings` 共用。 */
   private writeDndMirror(settings: DndWindow): void {
     try {
       localStorage.setItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY, settings.enabled.toString())
       this.writeMirroredTimestamp(MatrixNotificationService.DND_START_STORAGE_KEY, settings.startTime)
       this.writeMirroredTimestamp(MatrixNotificationService.DND_END_STORAGE_KEY, settings.endTime)
+      this.writeMirroredTimestamp(MatrixNotificationService.DND_UPDATED_AT_STORAGE_KEY, settings.updatedAt)
     } catch (err) {
       logger.warn('写入勿扰时段设置失败:', err)
     }
@@ -371,17 +439,25 @@ class MatrixNotificationService extends BaseMatrixService {
     return { ...this.dndSettings }
   }
 
-  /** 勿扰时段的唯一写入点：更新缓存 + localStorage 镜像，并复用既有 account data 同步。 */
-  setDndSettings(settings: DndWindow): void {
+  /**
+   * 勿扰时段的唯一写入点：更新时间戳 + localStorage 镜像，并复用既有 account data 同步。
+   *
+   * `updatedAt` 由服务打点，调用方只给窗口本身；同步是 fire-and-forget，但必须 `catch`，
+   * 否则未就绪 / 网络失败会变成 unhandled rejection（`syncDndToAccountData` 内部已兜底）。
+   */
+  setDndSettings(settings: DndWindowInput): void {
     this.dndSettings = {
       enabled: settings.enabled,
       startTime: settings.startTime,
-      endTime: settings.endTime
+      endTime: settings.endTime,
+      updatedAt: Date.now()
     }
 
     this.writeDndMirror(this.dndSettings)
 
-    this.syncDndToAccountData(this.dndSettings)
+    void this.syncDndToAccountData(this.dndSettings).catch((err) => {
+      logger.warn(`[MatrixNotification] DND 同步到服务端失败（本地镜像已写入）: ${err}`)
+    })
   }
 
   /** 当前是否处于勿扰窗口；`now` 可注入，便于测试与纯函数保持一致。 */
@@ -568,36 +644,20 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 通过浏览器 Notification API 弹出通知（Web 场景）。
+   * 发送系统通知前的权限门。
    *
-   * 注意：Tauri 桌面端的真实发送路径不经过这里——chat 收到命中当前用户的消息时，
-   * 由 `messageMutations` 读取 `getConfig()` 并用 `buildNotificationDisplay()` 裁定
-   * 标题/正文后交给 `@tauri-apps/plugin-notification` 发送。
+   * `@tauri-apps/plugin-notification` 的 `sendNotification` 返回 `void`（实现是
+   * `new window.Notification(...)`），没有 Promise 可以 await，插件内部的 invoke 失败也接不住，
+   * 因此调用点唯一能做的失败隔离就是「发之前先判权限」。
+   *
+   * 非 Tauri 运行时 / 插件不可用时 `isPermissionGranted()` 会抛错：降级为「无权限」并记日志。
    */
-  async showNotification(title: string, body: string): Promise<void> {
+  async canSendSystemNotification(): Promise<boolean> {
     try {
-      if (!this.config.enableDesktop) {
-        return
-      }
-
-      if (typeof Notification === 'undefined') {
-        logger.warn('[MatrixNotification] Notification API 不可用')
-        return
-      }
-
-      if (Notification.permission !== 'granted') {
-        const granted = await this.requestNotificationPermission()
-        if (!granted) {
-          return
-        }
-      }
-
-      const display = this.buildNotificationDisplay(title, body)
-      new Notification(display.title, {
-        body: display.body
-      })
+      return await isPermissionGranted()
     } catch (err) {
-      logger.error(`[MatrixNotification] 显示通知失败: ${err}`)
+      logger.warn(`[MatrixNotification] 系统通知权限检查失败（视为无权限）: ${err}`)
+      return false
     }
   }
 
@@ -606,9 +666,14 @@ class MatrixNotificationService extends BaseMatrixService {
    *
    * 合并两处偏好：账号级 `showMessageContent` 先并入本地展示偏好，
    * 再由优先级裁定（high 可突破账号级开关，low 强制折叠）。
-   * 正文隐藏时标题加折叠标记，避免偏好静默失效、用户无从察觉。
+   *
+   * **标题始终保持调用点传入的干净值**（发送者名或 `message.notify.new_messages`）：
+   * 系统通知标题不应塞入 `[•]` / `[*]` 这类非 i18n 符号，否则会污染系统通知中心的排版
+   * 与无障碍朗读。折叠 / 关键词命中的可见信号改由正文承载
+   * （`message.notify.folded` / `message.notify.keyword_hit`），既保留「偏好不静默失效」
+   * 的承诺，又不污染标题。
    */
-  buildNotificationDisplay(title: string, body: string): { title: string; body: string | undefined } {
+  buildNotificationDisplay(title: string, body: string): { title: string; body: string } {
     const preferences = loadNotificationDisplayPreferences()
     const decision = materializeNotificationContent(
       { title, body },
@@ -616,36 +681,14 @@ class MatrixNotificationService extends BaseMatrixService {
     )
 
     if (!decision.contentVisible) {
-      return { title: `[•] ${title}`, body: undefined }
+      return { title, body: this.t('message.notify.folded') }
     }
 
-    const prefix = decision.highlighted ? '[*] ' : ''
-    return { title: `${prefix}${decision.title}`, body: decision.body }
-  }
-
-  async playSound(url: string): Promise<void> {
-    try {
-      if (!this.config.enableSound) {
-        return
-      }
-
-      const audio = new Audio(url)
-      await audio.play()
-    } catch (err) {
-      logger.warn(`[MatrixNotification] 播放提示音失败: ${err}`)
+    if (decision.highlighted) {
+      return { title, body: this.t('message.notify.keyword_hit', { body: decision.body }) }
     }
-  }
 
-  async vibrate(pattern: number | number[] = [100, 50, 100]): Promise<void> {
-    try {
-      if (!this.config.enableVibrate || typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') {
-        return
-      }
-
-      navigator.vibrate(pattern)
-    } catch (err) {
-      logger.warn(`[MatrixNotification] 震动失败: ${err}`)
-    }
+    return { title, body: decision.body }
   }
 
   async getNotifications(

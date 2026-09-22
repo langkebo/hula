@@ -37,6 +37,16 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
   }
 }))
 
+const { syncDndFromAccountDataMock } = vi.hoisted(() => ({
+  syncDndFromAccountDataMock: vi.fn().mockResolvedValue(null)
+}))
+
+vi.mock('@/services/matrix/notifications/MatrixNotificationService', () => ({
+  matrixNotificationService: {
+    syncDndFromAccountData: (...args: unknown[]) => syncDndFromAccountDataMock(...args)
+  }
+}))
+
 vi.mock('@/services/matrix/MatrixWorkerHost', () => ({
   matrixWorkerHost: {
     start: vi.fn().mockResolvedValue(undefined),
@@ -360,6 +370,31 @@ describe('SessionBootstrapService', () => {
       expect(mocks.getSessionList).toHaveBeenCalledWith(true)
       expect(mocks.setUserInfo).toHaveBeenCalled()
       expect(mocks.addLoginHistory).toHaveBeenCalled()
+    })
+
+    it('pulls the DND window from account data once after sync is prepared', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getClient.mockReturnValue({})
+
+      const service = new SessionBootstrapService(host, state)
+      await service.bootstrapPostLoginState()
+
+      // 仅 DND 跨设备：展示配置保持设备本地，冷启动只拉一次勿扰时段
+      expect(syncDndFromAccountDataMock).toHaveBeenCalledTimes(1)
+      expect(syncDndFromAccountDataMock.mock.invocationCallOrder[0]).toBeGreaterThan(
+        mocks.waitSyncPrepared.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('does not let a failing DND pull break the bootstrap', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getClient.mockReturnValue({})
+      syncDndFromAccountDataMock.mockRejectedValueOnce(new Error('account data unavailable'))
+
+      const service = new SessionBootstrapService(host, state)
+
+      await expect(service.bootstrapPostLoginState()).resolves.toBeUndefined()
+      expect(mocks.loadRooms).toHaveBeenCalled()
     })
 
     it('sets current session room id when none is set and sessions exist', async () => {

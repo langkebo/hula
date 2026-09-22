@@ -260,15 +260,22 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
         // 沿用房间名仍会泄漏发送者身份，中性标题对所有房间类型都安全。
         // 群缓存冷时退化为消息自带发送者，避免关键词通知静默失效。
         const senderName = cacheUser?.name || msg.fromUser?.username || msg.fromUser?.uid || ''
-        const senderAvatar = cacheUser?.avatar ?? msg.fromUser?.avatar
         const title = notificationConfig.showSender ? senderName : useI18nGlobal().t('message.notify.new_messages')
         const display = matrixNotificationService.buildNotificationDisplay(title, notificationBody)
 
-        sendNotification({
-          title: display.title,
-          body: display.body,
-          icon: senderAvatar
-        })
+        // 发送前先判权限：`sendNotification` 返回 void，没有 Promise 可 await，
+        // 插件内部 invoke 失败也接不住，唯一能做的失败隔离就是"没权限就不发"。
+        // 必须 void + catch：权限检查是异步的，异常不能从 pushMsg 逃逸成 unhandled rejection。
+        // 不传 icon：avatar 是 mxc:// URI，插件无法把它渲染成系统图标，传 '' 还会关掉应用图标回落。
+        void matrixNotificationService
+          .canSendSystemNotification()
+          .then((granted) => {
+            if (!granted) {
+              return
+            }
+            sendNotification({ title: display.title, body: display.body })
+          })
+          .catch((err) => logger.warn('发送系统通知失败:', err))
       }
     }
 
