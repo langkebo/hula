@@ -342,6 +342,14 @@ labs 死 key（零运行时消费方，但保留 Integrations 入口）、三个
 **裁决（用户已确认）**：仅 DND 冷启动拉取 + `updatedAt`；删零调用方方法；删零读取字段与 UI 开关；
 标题不再带 `[•]`/`[*]`（改放 body）；payload 不再传 icon。
 
+**纠偏（执行中发现，必须遵守）**：设置页的「通知声音」开关实际绑的是 **live** 的
+`settingStore.messageSoundEnabled`（`layout/index.vue:284`、`mobile/components/MobileLayout.vue:66` 都在读），
+「音量」滑块绑的是 **live** 的 `notification.volume`（同上 `:290`/`:72` 读取，默认 80）。
+它们与死字段 `enableSound` 不是同一个东西。因此：
+- 删除 `enableSound`/`enableVibrate`/`showPreview` 三个**服务配置字段**与死方法即可；
+- **保留**设置页的通知声音开关与音量滑块，以及 store 的 `notificationVolume`/`setNotificationVolume`；
+- `layout/index.vue` / `MobileLayout.vue` 必须继续读 `settingStore.notification.volume`，不得硬编码 0.8。
+
 **Files:**
 - Modify: `src/services/matrix/notifications/MatrixNotificationService.ts`
 - Modify: `src/services/matrix/auth/SessionBootstrapService.ts`（`waitSyncPrepared()` 之后拉一次 DND）
